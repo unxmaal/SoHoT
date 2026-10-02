@@ -19,7 +19,7 @@ from pathlib import Path
 
 from harness import paths, store
 
-SCHEMA_VERSION = 17
+SCHEMA_VERSION = 18
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
 VERDICTS = ("measured", "declined", "broken", "queued", "ignored", "screened")
@@ -296,7 +296,8 @@ def until_met(until: str, facts: dict | None = None) -> bool:
     facts = facts if facts is not None else this_machine()
     key, _, want = until.partition(":")
     if key == "runtime":
-        return want in (facts.get("runtimes") or "").split(",")
+        have = (facts.get("runtimes") or "").split(",")
+        return any(rt in have for rt in want.split("|"))
     if key in ("memory_gb", "ceiling_gb") and want.startswith(">"):
         try:
             return float(facts.get(key) or 0) > float(want[1:])
@@ -354,12 +355,40 @@ def revisitable(conn: sqlite3.Connection, facts: dict | None = None) -> list:
                         WHERE w.proposal_id = p.id ORDER BY w.id DESC LIMIT 1)
            AND v.until != ''
     """).fetchall()
-    here = facts.get("fingerprint", "")
-    # A runtime version waits on THIS machine being upgraded, so it is the one
-    # predicate that can come true where it was decided. #293.
+    # Wherever it was decided: a refusal is written because its condition is
+    # unmet, so meeting it later means the machine changed. #295.
     return [dict(r) for r in rows
-            if (r["decided_on"] != here or r["until"].startswith("version:"))
-            and until_met(r["until"], facts)]
+            if r["outcome"] in TERMINAL and until_met(r["until"], facts)]
+
+
+_NONE_OF = re.compile(r"none of ([\w, ]+)$")
+_TOO_BIG = re.compile(r"^too-big:.*?([\d.]+)\s*GiB")
+
+
+def until_for(detail: str) -> str:
+    """The predicate a refusal's own sentence implies, or '' if none."""
+    detail = detail or ""
+    m = _TOO_BIG.match(detail)
+    if m:
+        return f"ceiling_gb:>{float(m.group(1)):.1f}"
+    for phrase, until in _UNTIL_FROM_DETAIL:
+        if detail.lower().startswith(phrase):
+            many = _NONE_OF.search(detail)
+            if many:
+                return "runtime:" + "|".join(
+                    rt.strip() for rt in many.group(1).split(","))
+            return until
+    return ""
+
+
+def _backfill_until(conn: sqlite3.Connection) -> None:
+    for vid, detail in conn.execute(
+            "SELECT id, detail FROM verdicts WHERE until = '' "
+            "AND outcome IN ('declined', 'broken')").fetchall():
+        until = until_for(detail)
+        if until:
+            conn.execute("UPDATE verdicts SET until = ? WHERE id = ?",
+                         (until, vid))
 
 
 #: What a pre-#266 refusal was waiting for, derived from the phrase the tier
@@ -504,10 +533,10 @@ def _attribute_old_verdicts(conn: sqlite3.Connection) -> None:
     for vid, detail in conn.execute(
             "SELECT id, detail FROM verdicts "
             "WHERE until = '' AND detail LIKE 'too-big:%'").fetchall():
-        m = re.search(r"([\d.]+)\s*GiB", detail or "")
-        if m:
+        until = until_for(detail)
+        if until:
             conn.execute("UPDATE verdicts SET until = ? WHERE id = ?",
-                         (f"ceiling_gb:>{float(m.group(1)):.1f}", vid))
+                         (until, vid))
 
 
 def _migrate(conn: sqlite3.Connection) -> None:
@@ -597,6 +626,8 @@ def _migrate(conn: sqlite3.Connection) -> None:
         _retract_screens_with_no_evidence(conn)
     if have and have < 17:
         _reopen_architecture_gaps(conn)
+    if have and have < 18:
+        _backfill_until(conn)
     conn.execute("INSERT OR REPLACE INTO meta VALUES ('schema', ?)",
                  (str(SCHEMA_VERSION),))
     conn.commit()
@@ -1113,6 +1144,8 @@ def decide(conn: sqlite3.Connection, name: str, outcome: str, *, tier: str = "",
     if outcome not in VERDICTS:
         raise ValueError(f"unknown outcome {outcome!r}; "
                          f"known: {', '.join(VERDICTS)}")
+    if not until and outcome in TERMINAL:
+        until = until_for(detail)
     # A RUN PATH THAT IS NOT A PATH IS NOT EVIDENCE. One row in the real store
     # holds `ok`, because a snapshot stand-in returned that string and the
     # column took it. A verdict claiming evidence it cannot produce is worse

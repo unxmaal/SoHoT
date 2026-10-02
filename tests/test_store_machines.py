@@ -400,3 +400,71 @@ def test_a_runtime_version_predicate_compares_numerically():
         "string comparison would call 0.31.10 older than 0.31.9")
     assert not ms.until_met("version:mlx-lm>0.31.3", f("unknown"))
     assert not ms.until_met("version:mlx-lm>0.31.3", {"versions": {}})
+
+
+# --- #295: a runtime this machine gains reopens its own refusals ----------
+
+def test_a_runtime_installed_here_reopens_this_machines_refusal(store):
+    _decide_as(store, MAC, "declined", "needs-llamacpp: GGUF only",
+               until="runtime:llamacpp")
+    later = {**MAC, "runtimes": "cpu,llamacpp,mlx"}
+    assert [r["name"] for r in ms.revisitable(store, later)] == ["org/c"]
+    assert not ms.revisitable(store, MAC)
+
+
+def test_a_queued_row_is_not_revisitable(store):
+    """The headroom guard queues with memory_gb:> the memory free at the time,
+    which total memory always meets. A queued row is already in the queue."""
+    _decide_as(store, MAC, "queued", "not enough headroom",
+               until="memory_gb:>6.8")
+    assert not ms.revisitable(store, MAC)
+
+
+def test_any_of_several_runtimes_meets_the_condition():
+    assert ms.until_met("runtime:cuda|mlx", MAC)
+    assert not ms.until_met("runtime:cuda|rocm", MAC)
+
+
+@pytest.mark.parametrize("detail,until", [
+    ("needs-llamacpp: depends on GGUF weights, and this machine has no "
+     "llamacpp", "runtime:llamacpp"),
+    ("needs-cuda: depends on torch, and this machine has none of cuda, rocm",
+     "runtime:cuda|rocm"),
+    ("too-big: smallest weight it names is 59.9 GiB, over the 22 GiB ceiling",
+     "ceiling_gb:>59.9"),
+    ("too-big: source tree is 259 MB, which is weights in git, not a source "
+     "repo", ""),
+    ("fits: weights from 5.5 to 8.9 GiB", ""),
+])
+def test_the_condition_is_read_from_the_refusal(detail, until):
+    assert ms.until_for(detail) == until
+
+
+def test_decide_records_the_condition_the_refusal_names(store):
+    """Since #266 only the migration filled these in, so every refusal the
+    inspect tier wrote afterwards could never reopen."""
+    ms.record(store, ms.Seen(name="org/g", source="t", kind="weights",
+                             lane="code", why="seeded"))
+    ms.decide(store, "org/g", "declined", tier=ms.INSPECT,
+              detail="needs-llamacpp: depends on GGUF weights")
+    got = store.execute("SELECT until FROM verdicts ORDER BY id DESC LIMIT 1"
+                        ).fetchone()[0]
+    assert got == "runtime:llamacpp"
+
+
+def test_schema_18_backfills_refusals_written_after_266(tmp_path):
+    conn = ms.connect(tmp_path / "s.db")
+    ms.record(conn, ms.Seen(name="org/g", source="t", kind="weights",
+                            lane="code", why="seeded"))
+    conn.execute("INSERT INTO verdicts (proposal_id, outcome, tier, detail, "
+                 "decided_at) SELECT id, 'declined', 'inspect', "
+                 "'needs-llamacpp: GGUF', 0 FROM proposals")
+    conn.execute("INSERT OR REPLACE INTO meta VALUES ('schema', '17')")
+    conn.commit()
+    conn.close()
+    again = ms.connect(tmp_path / "s.db")
+    try:
+        assert again.execute("SELECT until FROM verdicts").fetchone()[0] == (
+            "runtime:llamacpp")
+    finally:
+        again.close()
