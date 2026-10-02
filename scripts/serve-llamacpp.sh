@@ -60,10 +60,12 @@ fi
 # 2462 to 3296 MiB, and fifteen seconds after the last one it reads 2473
 # again. The router reloads on the next request, at the cost of the load
 # time and nothing else. Set LLAMACPP_SLEEP_IDLE=-1 to serve full time.
+# Context is explicit: unset, a 4B model sized its cache to ~21 GB. #286.
 exec "$BIN" \
   --models-dir "$MODELS" \
   --sleep-idle-seconds "${LLAMACPP_SLEEP_IDLE:-300}" \
   --models-max "${LLAMACPP_MAX_MODELS:-1}" \
   --n-gpu-layers "${LLAMACPP_GPU_LAYERS:-999}" \
+  --ctx-size "${LLAMACPP_CTX:-16384}" \
   --host "${LLAMACPP_HOST:-0.0.0.0}" \
   --port "${LLAMACPP_PORT:-8081}"

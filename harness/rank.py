@@ -310,6 +310,9 @@ def serving(config=None) -> set[str]:
         return set()
     out = set()
     for entry in data.get("model_list") or []:
+        if entry.get("source_repo"):
+            out.add(str(entry["source_repo"]).lower())
+            continue
         upstream = (entry.get("litellm_params") or {}).get("model", "")
         # `openai/mlx-community/Qwen2.5-7B-Instruct-4bit` -- the first segment
         # is the provider LiteLLM routes through, not part of the id.

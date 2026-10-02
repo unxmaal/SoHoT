@@ -988,6 +988,44 @@ It will refuse if the two runs are not fairly comparable, and tell you which
 difference disqualified them. Comparing a run from before a settings change
 against one from after compares two different exams, so it stops you.
 
+### Judging text against a rubric
+
+For a job where a model reads some text and answers in a fixed shape (is this
+a fact, which category, how severe). The answer is JSON that must match a
+schema, and the only reference is a person's labels.
+
+`mlx_lm.server` ignores `response_format`, so a schema sent to an MLX alias is
+dropped and the model writes whatever it likes. `llama-server` enforces it.
+`scripts/serve-eval.sh` runs it beside the MLX server on `:8082`, and the
+gateway's `eval-*` aliases point there. It unloads its model after five idle
+minutes. Weights are GGUF files in `$HF_HOME/gguf`:
+
+```bash
+./scripts/fetch-gguf.sh unsloth/Qwen3-4B-Instruct-2507-GGUF Qwen3-4B-Instruct-2507-Q4_K_M.gguf
+```
+
+An eval set is a directory under `$LOCALHARNESS_HOME/evalsets/<name>/`, kept
+out of the repo because the items are usually other people's words:
+
+| file | written by | holds |
+|---|---|---|
+| `rubric.yaml` | you | `name`, `version`, `instructions`, `schema`, and `label`, the schema field whose `enum` is the answer |
+| `items.jsonl` | you | one `{"id", "text"}` per line |
+| `labels.jsonl` | the labelling page only | append-only answers, each with the rubric stamp and the page's interface version |
+
+```bash
+lh rubric label <name>                     # a page, one item at a time
+lh rubric status <name>                    # how many are labelled, and your repeat agreement
+lh rubric run <name> --candidates eval-4b  # score models against your labels
+```
+
+About one item in five is shown again, looking like any other, so your
+agreement with yourself is measured. That is the ceiling: no model can be shown
+to agree with you more often than you agree with yourself. The floor is
+always answering with the most common label. A run prints both beside every
+model's agreement, says when a model does not clear the floor, and keeps every
+raw reply in its receipt.
+
 ## Developing
 
 ```bash
