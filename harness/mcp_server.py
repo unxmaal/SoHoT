@@ -28,6 +28,7 @@ The other machine adds one entry pointing at http://<host>.local:8899/mcp
 from __future__ import annotations
 
 import subprocess
+import sys
 import time
 from pathlib import Path
 
@@ -64,7 +65,8 @@ class JobInfo(BaseModel):
 # in its own subdirectory: a caller should be able to tell what a remote agent
 # asked for from what someone typed here.
 OUTDIR = paths.outputs() / "mcp"
-LH = "lh"
+#: This interpreter, not `lh` on PATH, which runs whatever checkout installed it. #290.
+LH = [sys.executable, "-m", "harness.cli"]
 DEFAULT_TIMEOUT = 300.0
 
 SERVER = MCPServer(
@@ -84,7 +86,7 @@ def run_lh(argv: list[str], timeout: float = DEFAULT_TIMEOUT) -> str:
                        env=_child_env())
     if r.returncode != 0:
         raise RuntimeError(
-            (r.stderr or r.stdout).strip()[:600] or f"{argv[1]} exited {r.returncode}")
+            (r.stderr or r.stdout).strip()[:600] or f"{argv[len(LH)]} exited {r.returncode}")
     return r.stdout.strip()
 
 
@@ -115,7 +117,7 @@ def _text_tool(verb: str, prompt: str, model: str = "") -> str:
     inspectable rather than merely reported.
     """
     out = _out(verb, SUFFIX[verb])
-    argv = [LH, verb, prompt, "-o", str(out)]
+    argv = [*LH, verb, prompt, "-o", str(out)]
     if model:
         argv += ["-m", model]
     run_lh(argv)
@@ -136,7 +138,7 @@ def _text_tool(verb: str, prompt: str, model: str = "") -> str:
 def prompt(lane: str, about: str = "", model: str = "") -> str:
     """Shells out like every other tool here, so the CLI and the MCP cannot
     disagree about which engine a lane runs."""
-    argv = [LH, "prompt", lane, "--quiet"]
+    argv = [*LH, "prompt", lane, "--quiet"]
     if about:
         argv.append(about)
     if model:
@@ -180,7 +182,7 @@ def image(prompt: str, width: int = 512, height: int = 512,
           seed: int = 0, model: str = "") -> JobInfo:
     def work() -> str:
         out = _out("image", ".png")
-        argv = [LH, "image", prompt, "-o", str(out),
+        argv = [*LH, "image", prompt, "-o", str(out),
                 "--width", str(width), "--height", str(height)]
         if seed:
             argv += ["--seed", str(seed)]

@@ -49,7 +49,8 @@ def spy(monkeypatch, tmp_path):
         calls.append(argv)
         assert "-o" in argv, "every verb should be given an explicit -o"
         out = argv[argv.index("-o") + 1]
-        body = (b"\x89PNG\r\n\x1a\n" + b"x" * 200 if argv[1] == "image"
+        body = (b"\x89PNG\r\n\x1a\n" + b"x" * 200
+                if argv[len(mcp_server.LH)] == "image"
                 else b"<svg xmlns='http://www.w3.org/2000/svg'/>")
         open(out, "wb").write(body)
         return out
@@ -64,7 +65,7 @@ def test_svg_returns_the_markup_not_the_path_it_was_written_to(spy):
     cannot open that path, and an agent asking for an SVG wants the document."""
     out = mcp_server.svg("two concentric gears")
     assert out.startswith("<svg"), out
-    assert spy[0][:2] == ["lh", "svg"]
+    assert spy[0][:len(mcp_server.LH) + 1] == [*mcp_server.LH, "svg"]
     assert "two concentric gears" in spy[0]
 
 
@@ -79,7 +80,8 @@ def test_the_artifact_is_kept_on_the_serving_machine_too(spy, tmp_path):
 def test_web_and_code_are_the_same_shape(spy):
     mcp_server.web("a landing page for a coffee roaster")
     mcp_server.code("a python function that parses an ISO timestamp")
-    assert spy[0][1] == "web" and spy[1][1] == "code"
+    n = len(mcp_server.LH)
+    assert spy[0][n] == "web" and spy[1][n] == "code"
 
 
 def test_the_model_can_be_chosen_per_call(spy):
@@ -101,7 +103,7 @@ def test_an_image_job_finishes_and_carries_the_file(spy):
     assert done.state == "done", done.error
     assert done.result.endswith(".png")
     argv = spy[0]
-    assert argv[:2] == ["lh", "image"]
+    assert argv[:len(mcp_server.LH) + 1] == [*mcp_server.LH, "image"]
     assert "--width" in argv and "64" in argv
 
 
@@ -176,3 +178,10 @@ def test_a_job_comes_back_as_fields_not_json_in_a_string():
         schema = tools[name].output_schema
         assert schema, f"{name} declares no output schema"
         assert "job" in schema["properties"] and "state" in schema["properties"]
+
+
+def test_lh_is_this_interpreter_and_never_a_path_lookup():
+    """`lh` on PATH is an editable install of whatever checkout ran
+    `uv tool install`, so the deployed server would run branch code. #290."""
+    import sys
+    assert mcp_server.LH == [sys.executable, "-m", "harness.cli"]

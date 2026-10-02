@@ -17,6 +17,10 @@ AGENTS="$HOME/Library/LaunchAgents"
 LH_HOME="${LOCALHARNESS_HOME:-$HOME/localharness}"
 LH_LOGS="$LH_HOME/logs"
 PREFIX="com.unxmaal.localharness"
+# The agents run DEPLOY, a worktree that only ever holds origin/main, so branch
+# work in the checkout this script lives in never becomes production. #290.
+SRC="${LH_REPO:-$REPO}"
+DEPLOY="${LH_DEPLOY:-$LH_HOME/deploy}"
 # `discover` is not a server. It is the scheduled sweep, and it is in this
 # list because the thing that must survive a reboot is the SCHEDULE. #261.
 SERVICES="gateway mlx eval tts mcp discover"
@@ -60,7 +64,7 @@ _hf_env() {
 }
 
 usage() {
-  echo "usage: $0 {generate [DIR]|install|uninstall|status|probe}" >&2
+  echo "usage: $0 {deploy|generate [DIR]|install|uninstall|status|probe}" >&2
   exit 2
 }
 
@@ -91,11 +95,11 @@ write_plist() {
   <key>ProgramArguments</key>
   <array>
     <string>/bin/bash</string>
-    <string>$REPO/scripts/serve-$service.sh</string>
+    <string>$DEPLOY/scripts/serve-$service.sh</string>
   </array>
   <key>RunAtLoad</key><true/>
 $(_schedule "$service")
-  <key>WorkingDirectory</key><string>$REPO</string>
+  <key>WorkingDirectory</key><string>$DEPLOY</string>
   <key>StandardOutPath</key><string>$LH_LOGS/$service.log</string>
   <key>StandardErrorPath</key><string>$LH_LOGS/$service.log</string>
   <key>EnvironmentVariables</key>
@@ -109,6 +113,21 @@ $(_hf_env)  </dict>
 </dict>
 </plist>
 PLIST
+}
+
+deploy() {
+  git -C "$SRC" fetch -q origin main
+  local want; want="$(git -C "$SRC" rev-parse origin/main)"
+  if [ ! -e "$DEPLOY/.git" ]; then
+    git -C "$SRC" worktree add -q --detach "$DEPLOY" "$want"
+  elif [ -n "$(git -C "$DEPLOY" status --porcelain --untracked-files=no)" ]; then
+    echo "FATAL: $DEPLOY has local edits. It only ever runs origin/main;" >&2
+    echo "       move the edits to a branch elsewhere, then re-run." >&2
+    exit 1
+  else
+    git -C "$DEPLOY" checkout -q --detach "$want"
+  fi
+  echo "deployed $(git -C "$DEPLOY" rev-parse --short HEAD) (origin/main) to $DEPLOY"
 }
 
 generate() {
@@ -193,6 +212,7 @@ _await_unload() {
 }
 
 install_units() {
+  deploy
   preflight
   mkdir -p "$AGENTS"
   generate "$AGENTS" >/dev/null
@@ -231,6 +251,12 @@ uninstall_units() {
 }
 
 status() {
+  if [ -e "$DEPLOY/.git" ]; then
+    echo "running $(git -C "$DEPLOY" rev-parse --short HEAD) from $DEPLOY;" \
+         "origin/main is $(git -C "$SRC" rev-parse --short origin/main)"
+  else
+    echo "no deploy checkout at $DEPLOY: run install"
+  fi
   for service in $SERVICES; do
     printf '%-12s ' "$service"
     # First match only: launchctl print reports the job state and then several
@@ -242,6 +268,7 @@ status() {
 }
 
 case "${1:-}" in
+  deploy)    deploy ;;
   generate)  shift; generate "${1:-}" ;;
   probe)     preflight && echo "ok: a launchd agent can read ${HF_ROOT:-$PWD/hf_root}" ;;
   install)   install_units ;;
