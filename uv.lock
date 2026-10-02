@@ -748,6 +748,7 @@ source = { editable = "." }
 dependencies = [
     { name = "httpx" },
     { name = "jiwer" },
+    { name = "jsonschema" },
     { name = "mlx-lm", marker = "sys_platform == 'darwin'" },
     { name = "num2words" },
     { name = "pillow" },
@@ -789,6 +790,7 @@ whisper = [
 requires-dist = [
     { name = "httpx", specifier = ">=0.27" },
     { name = "jiwer", specifier = ">=4.0.0" },
+    { name = "jsonschema", specifier = ">=4" },
     { name = "mlx-lm", marker = "sys_platform == 'darwin'", specifier = ">=0.31.3" },
     { name = "num2words", specifier = ">=0.5.14" },
     { name = "pillow", specifier = ">=10" },

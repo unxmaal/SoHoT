@@ -49,9 +49,14 @@ def test_every_alias_reaches_one_hot_swapping_server(path):
     """Both upstreams select the model from the request rather than from the
     port, so one api_base is right on either machine. One port per model would
     need every candidate in a sweep resident at once, which is the thing a
-    12 GB card cannot do."""
-    bases = {params["api_base"] for _, params in _entries(path)}
-    assert len(bases) == 1, f"{path.name} spreads its aliases over {bases}"
+    12 GB card cannot do.
+
+    One server PER ENGINE: on the Mac, eval-* aliases go to llama-server for
+    enforced JSON (#286) and everything else to mlx_lm.server."""
+    for group in (True, False):
+        bases = {params["api_base"] for name, params in _entries(path)
+                 if name.startswith("eval-") == group}
+        assert len(bases) <= 1, f"{path.name} spreads its aliases over {bases}"
 
 
 def test_the_cuda_server_holds_one_model_at_a_time():

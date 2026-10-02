@@ -20,6 +20,7 @@ dependencies = [
     # tesseract managed 6. See harness/checks/ocr.py.
     "rapidocr-onnxruntime>=1.4.4; sys_platform == 'linux'",
     "vtracer>=0.6.15",
+    "jsonschema>=4",
 ]
 
 [project.scripts]

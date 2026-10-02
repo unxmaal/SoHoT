@@ -19,7 +19,7 @@ LH_LOGS="$LH_HOME/logs"
 PREFIX="com.unxmaal.localharness"
 # `discover` is not a server. It is the scheduled sweep, and it is in this
 # list because the thing that must survive a reboot is the SCHEDULE. #261.
-SERVICES="gateway mlx tts mcp discover"
+SERVICES="gateway mlx eval tts mcp discover"
 
 #: Services that RUN AND EXIT rather than serve, with how often to run them.
 #: KeepAlive on one of these restarts a finished sweep at once and the machine

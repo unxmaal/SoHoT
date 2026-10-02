@@ -1015,6 +1015,53 @@ def _newest_receipt_for(lane: str):
     return max(got, key=lambda d: d.stat().st_mtime) / "results.json"
 
 
+def _evalset(name: str) -> Path:
+    p = Path(name).expanduser()
+    return p if p.is_dir() else paths.home() / "evalsets" / name
+
+
+def cmd_rubric(a) -> int:
+    """Label an eval set by hand, then score local models against it. #286."""
+    from harness import label_server, rubric_eval as rv
+
+    root = _evalset(a.set)
+    try:
+        s = rv.load_set(root)
+    except (OSError, ValueError, KeyError) as exc:
+        return err(f"no usable eval set at {root}: {exc}")
+    if a.action == "label":
+        label_server.serve(root, port=a.port, repeat_rate=a.repeat_rate,
+                           open_browser=not a.no_browser)
+        return 0
+    if a.action == "status":
+        agree, total = rv.self_agreement(root)
+        print(f"{s.rubric.stamp}: {len(rv.labels(root))} of {len(s.items)} "
+              f"labelled, {len(rv.gold(root))} decided, "
+              f"self-agreement {agree}/{total} on repeats")
+        return 0
+    candidates = [c.strip() for c in (a.candidates or "").split(",") if c.strip()]
+    if not candidates:
+        return err("--candidates is required for run")
+    try:
+        report = rv.run(s, candidates, a.gateway)
+    except ValueError as exc:
+        return err(str(exc))
+    out = paths.runs() / f"rubric-{time.strftime('%Y%m%d-%H%M%S')}-{s.rubric.name}"
+    out.mkdir(parents=True, exist_ok=True)
+    (out / "results.json").write_text(json.dumps(report, indent=2),
+                                      encoding="utf-8")
+    agree, total = report["ceiling"]
+    print(f"{report['rubric']}  floor {report['floor']:.2f} (always the most "
+          f"common label)  ceiling {agree}/{total} (your repeats)")
+    for model, row in report["candidates"].items():
+        print(f"  {model:24} agree {row['agree']}/{row['n']} "
+              f"({row['agreement']:.2f})  valid {row['valid']}/{row['n']}  "
+              f"median {row['median_s']}s"
+              f"{'' if row['beats_floor'] else '  NOT above the floor'}")
+    print(f"receipt: {out / 'results.json'}")
+    return 0
+
+
 def cmd_judge(a) -> int:
     """Serve the page a person votes on, for a lane no program can score.
 
@@ -2551,6 +2598,20 @@ def build_parser() -> argparse.ArgumentParser:
     rep.add_argument("--out", default="",
                      help="where to write it (default: $LOCALHARNESS_HOME/report.html)")
     rep.set_defaults(func=cmd_report)
+
+    rub = sub.add_parser(
+        "rubric",
+        help="label an eval set by hand and score local models on it. #286")
+    rub.add_argument("action", choices=["label", "status", "run"])
+    rub.add_argument("set", help="eval set directory, or a name under "
+                                 "$LOCALHARNESS_HOME/evalsets")
+    rub.add_argument("--candidates", default="",
+                     help="with run, comma-separated gateway aliases")
+    rub.add_argument("--gateway", default=completion.DEFAULT_GATEWAY)
+    rub.add_argument("--port", type=int, default=8766)
+    rub.add_argument("--repeat-rate", type=float, default=0.2)
+    rub.add_argument("--no-browser", action="store_true")
+    rub.set_defaults(func=cmd_rubric)
 
     jud = sub.add_parser(
         "judge",

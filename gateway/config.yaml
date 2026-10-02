@@ -66,6 +66,14 @@ model_list:
       model: openai/mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit
       api_base: http://127.0.0.1:8081/v1
       api_key: not-needed
+  # llama-server (scripts/serve-eval.sh): enforces response_format json_schema.
+  - model_name: eval-4b
+    source_repo: unsloth/Qwen3-4B-Instruct-2507-GGUF
+    source_file: Qwen3-4B-Instruct-2507-Q4_K_M.gguf
+    litellm_params:
+      model: openai/Qwen3-4B-Instruct-2507-Q4_K_M
+      api_base: http://127.0.0.1:8082/v1
+      api_key: not-needed
 
 litellm_settings:
   drop_params: true
