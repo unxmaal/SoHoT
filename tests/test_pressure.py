@@ -27,7 +27,7 @@ def test_every_signal_is_read_from_the_surface_that_carries_it():
         "kern.memorystatus_vm_pressure_level": 1,
         "vm.compressor.segment.swapout_regular": 42,
     })
-    got = pressure.sample(sysctl=sysctl, vm_stat=vm_stat)
+    got = pressure.sample(sysctl=sysctl, vm_stat=vm_stat, linux=dict)
     assert got.free_pct == 63
     assert got.level == pressure.NORMAL
     assert got.swapouts == 42
@@ -39,7 +39,8 @@ def test_every_signal_is_read_from_the_surface_that_carries_it():
 def test_an_unreadable_signal_is_none_rather_than_zero():
     """Zero is a reading. `swap_used_mb` returned 0 when it could not tell, so
     a machine that could not be measured looked like an idle one."""
-    got = pressure.sample(sysctl=lambda name: "", vm_stat=lambda: "")
+    got = pressure.sample(sysctl=lambda name: "", vm_stat=lambda: "",
+                          linux=dict)
     assert got.free_pct is None
     assert got.level is None
     assert got.swapouts is None
@@ -94,3 +95,12 @@ def test_linux_reads_memavailable_and_pswpout(tmp_path):
     got = pressure._linux_signals(meminfo=str(meminfo), vmstat=str(vmstat))
     assert got == {"free_pct": 25, "swapouts": 77}
     assert "level" not in got
+
+
+def test_injected_readers_never_reach_the_real_machine(monkeypatch):
+    """RULE #249: green on the Mac it was written on, red on the Linux runner,
+    because an empty injected reader fell through to the real /proc."""
+    monkeypatch.setattr(pressure, "_is_linux", lambda: True)
+    got = pressure.sample(sysctl=lambda name: "", vm_stat=lambda: "",
+                          linux=dict)
+    assert not got.known

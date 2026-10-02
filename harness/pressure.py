@@ -77,14 +77,16 @@ def wired_gb(vm_stat_output: str) -> float | None:
     return None if pages is None else round(pages * page / 1024 ** 3, 2)
 
 
-def sample(sysctl=_sysctl, vm_stat=_vm_stat) -> Pressure:
+def sample(sysctl=_sysctl, vm_stat=_vm_stat, linux=None) -> Pressure:
     """Every signal this platform offers. Readers injected for the tests."""
     got: dict[str, int | None] = {}
     for field, name in _SYSCTLS.items():
         raw = sysctl(name)
         got[field] = int(raw) if raw.lstrip("-").isdigit() else None
-    if not any(v is not None for v in got.values()) and _is_linux():
-        got.update(_linux_signals())
+    if linux is None:
+        linux = _linux_signals if _is_linux() else dict
+    if not any(v is not None for v in got.values()):
+        got.update(linux())
     return Pressure(free_pct=got.get("free_pct"), level=got.get("level"),
                     swapouts=got.get("swapouts"),
                     wired_gb=wired_gb(vm_stat()))
