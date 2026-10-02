@@ -6,6 +6,7 @@ template rather than hand-written, because near-identical plists drift:
 the last time this repo had three near-identical things, the copies disagreed
 about which port they used.
 """
+import os
 import plistlib
 import re
 import subprocess
@@ -202,3 +203,87 @@ def test_install_waits_for_a_teardown_before_loading_again():
     assert "failed=" in body and "FAILED to load" in body, (
         "a failed bootstrap must name the service and let the rest load, "
         "rather than aborting the loop and leaving the machine part old")
+
+
+# --- the agents run a deploy checkout, never the working one. #290 ----------
+
+def _git(cwd, *args):
+    return subprocess.run(["git", "-C", str(cwd), *args], check=True,
+                          capture_output=True, text=True).stdout.strip()
+
+
+@pytest.fixture
+def repos(tmp_path):
+    """A bare origin with `main`, and a working clone sitting on a branch."""
+    origin = tmp_path / "origin.git"
+    subprocess.run(["git", "init", "-q", "--bare", "-b", "main", str(origin)],
+                   check=True)
+    work = tmp_path / "work"
+    subprocess.run(["git", "clone", "-q", str(origin), str(work)], check=True)
+    _git(work, "config", "user.email", "t@example.invalid")
+    _git(work, "config", "user.name", "t")
+    (work / "f").write_text("main\n", encoding="utf-8")
+    _git(work, "add", "f")
+    _git(work, "commit", "-q", "-m", "main")
+    _git(work, "push", "-q", "origin", "HEAD:main")
+    _git(work, "checkout", "-q", "-b", "feature")
+    (work / "f").write_text("feature\n", encoding="utf-8")
+    _git(work, "commit", "-q", "-am", "feature")
+    return origin, work, tmp_path / "deploy"
+
+
+def _deploy(work, deploy):
+    env = {**os.environ, "LH_REPO": str(work), "LH_DEPLOY": str(deploy)}
+    return subprocess.run([shells.BASH, str(GEN), "deploy"], env=env,
+                          capture_output=True, text=True)
+
+
+def test_deploy_runs_origin_main_whatever_the_working_branch_is(repos):
+    origin, work, deploy = repos
+    proc = _deploy(work, deploy)
+    assert proc.returncode == 0, proc.stderr
+    assert _git(deploy, "rev-parse", "HEAD") == _git(origin, "rev-parse", "main")
+    assert (deploy / "f").read_text(encoding="utf-8") == "main\n"
+    assert _git(work, "rev-parse", "--abbrev-ref", "HEAD") == "feature"
+
+
+def test_deploy_follows_main_when_it_moves(repos):
+    origin, work, deploy = repos
+    assert _deploy(work, deploy).returncode == 0
+    other = work.parent / "other"
+    subprocess.run(["git", "clone", "-q", str(origin), str(other)], check=True)
+    _git(other, "config", "user.email", "t@example.invalid")
+    _git(other, "config", "user.name", "t")
+    (other / "f").write_text("main 2\n", encoding="utf-8")
+    _git(other, "commit", "-q", "-am", "main 2")
+    _git(other, "push", "-q", "origin", "HEAD:main")
+    assert _deploy(work, deploy).returncode == 0
+    assert (deploy / "f").read_text(encoding="utf-8") == "main 2\n"
+
+
+def test_deploy_refuses_to_overwrite_edits_in_the_deploy_checkout(repos):
+    _, work, deploy = repos
+    assert _deploy(work, deploy).returncode == 0
+    (deploy / "f").write_text("hand edit\n", encoding="utf-8")
+    proc = _deploy(work, deploy)
+    assert proc.returncode != 0
+    assert (deploy / "f").read_text(encoding="utf-8") == "hand edit\n"
+
+
+def test_units_point_at_the_deploy_checkout(tmp_path):
+    deploy = tmp_path / "deploy"
+    out = tmp_path / "units"
+    env = {**os.environ, "LH_DEPLOY": str(deploy)}
+    proc = subprocess.run([shells.BASH, str(GEN), "generate", str(out)],
+                          env=env, capture_output=True, text=True)
+    assert proc.returncode == 0, proc.stderr
+    for p in out.glob("*.plist"):
+        unit = plistlib.loads(p.read_bytes())
+        assert unit["ProgramArguments"][1].startswith(f"{deploy}/scripts/"), p
+        assert unit["WorkingDirectory"] == str(deploy), p
+
+
+def test_the_default_deploy_checkout_is_not_the_working_one(plists):
+    for unit in plists.values():
+        assert not unit["ProgramArguments"][1].startswith(f"{REPO}/"), (
+            "an agent runs the working checkout, so branch work goes live")

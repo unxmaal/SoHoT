@@ -709,6 +709,13 @@ Installed as launchd agents, so the machine comes back serving after a reboot:
 ./scripts/launchd.sh status
 ```
 
+The agents do not run the checkout you work in. `install` puts `origin/main` in
+a separate worktree, `$LOCALHARNESS_HOME/deploy`, and points every agent there,
+so checking out a branch here changes nothing that is serving. After a merge,
+run `install` again to deploy it; `status` names the commit the agents are
+running and the current `origin/main`. `deploy` refuses to overwrite local
+edits made inside the deploy worktree.
+
 **Run `probe` first, always.** macOS TCC denies `/Volumes` to launchd jobs, and
 the failure is horrible unprepared: the volume stats fine, reports free space and
 appears in `/Volumes`, so nothing looks wrong until mlx_lm hangs forever inside
