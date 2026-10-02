@@ -28,6 +28,26 @@ ENV_VAR = "TEXT_ENGINE"
 DEFAULT = "mlx_lm.server"
 
 
+#: llama-server for structured output and GGUF candidates (scripts/serve-eval.sh).
+LLAMACPP_URL = "http://127.0.0.1:8082"
+LLAMACPP = "llama-server"
+LLAMACPP_PREFIX = "llamacpp:"
+
+
+def engine_for(candidate: str, environ=None, config=None) -> str:
+    """The server that answers this candidate, read from where it routes."""
+    name = (candidate or "").partition(",")[0].strip()
+    if name.startswith(LLAMACPP_PREFIX):
+        return LLAMACPP
+    from harness import gateway
+    for entry in gateway.load(config).get("model_list") or []:
+        if str(entry.get("model_name", "")).lower() == name.lower():
+            base = str((entry.get("litellm_params") or {}).get("api_base", ""))
+            if base.rstrip("/").removesuffix("/v1") == LLAMACPP_URL:
+                return LLAMACPP
+    return text_engine(environ)
+
+
 def text_engine(environ=None) -> str:
     """The name of the server behind the text lane."""
     environ = os.environ if environ is None else environ

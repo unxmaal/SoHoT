@@ -102,6 +102,10 @@ def is_attachment(description: str) -> str:
     return ""
 
 
+#: A GGUF file served by llama-server's router, named by its stem. #295.
+from harness.serving import LLAMACPP_PREFIX  # noqa: E402
+
+
 def candidate_for(lane: str, model: str, description: str = "") -> str:
     """The best spelling of `model` for this lane, or "" when it has none.
 
@@ -129,6 +133,11 @@ def candidate_for(lane: str, model: str, description: str = "") -> str:
     specs = LANE_CANDIDATES.get(lanes.canonical(lane), ())
     if not specs:
         return ""
+    if lanes.canonical(lane) in lanes.TEXT_SERVED:
+        from harness import gguf
+        stem = gguf.fetched(model)
+        if stem:
+            return f"{LLAMACPP_PREFIX}{stem}"
     for spec in specs:
         prefix = spec.split("{model}", 1)[0]
         if prefix and model.startswith(prefix):
@@ -275,6 +284,9 @@ def routed_gateway(model: str, config=None) -> str:
     names, base = gateway_routes(config)
     if (model or "").strip().lower() in names:
         return ""
+    from harness import gguf
+    if gguf.fetched(model or ""):
+        return ""
     if "/" not in (model or ""):
         return ""
     return base.rsplit("/v1", 1)[0]
@@ -365,7 +377,8 @@ def row_for(summary: dict | None, candidate: str) -> dict | None:
     if not summary or not want:
         return None
     for key, row in summary.items():
-        if any(part.strip().lower() == want for part in str(key).split("/")):
+        if model_tail(str(key)) == want or any(
+                part.strip().lower() == want for part in str(key).split("/")):
             return row or {}
     return None
 

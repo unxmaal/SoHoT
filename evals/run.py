@@ -75,6 +75,12 @@ TTS_OPTIONS = {"voice", "ref_audio", "lang_code", "ear"}
 STT_OPTIONS = {"backend", "language"}
 
 
+#: A GGUF file by stem, sent straight to llama-server. #295.
+from harness.serving import LLAMACPP_PREFIX  # noqa: E402
+
+LLAMACPP_KIND = LLAMACPP_PREFIX.rstrip(":")
+
+
 def kind_of(candidate: str) -> str:
     """process, tts, or gateway. The prefix decides, so a typo in the rest of
     the spec is reported as a bad spec rather than silently becoming a model
@@ -92,6 +98,8 @@ def kind_of(candidate: str) -> str:
         return REPAIR_PREFIX
     if head in CHAIN_STAGES:
         return "chain"
+    if head == LLAMACPP_KIND:
+        return LLAMACPP_KIND
     return "gateway"
 
 
@@ -254,7 +262,7 @@ def effective_sampling(modality: str, candidates: list[str]) -> dict:
             out.setdefault(m, {})
             out[m].setdefault("temperature", completion.DEFAULT_TEMPERATURE)
     for candidate in candidates:
-        if kind_of(candidate) != "gateway":
+        if kind_of(candidate) not in ("gateway", LLAMACPP_KIND):
             continue
         _, _, optstr = candidate.partition(",")
         if not optstr:
@@ -284,7 +292,7 @@ def effective_sampling(modality: str, candidates: list[str]) -> dict:
 def build_runner(candidate: str, gateway: str, outdir: Path | None,
                  adherence: str | None = None):
     kind = kind_of(candidate)
-    if kind == "gateway":
+    if kind in ("gateway", LLAMACPP_KIND):
         # A gateway alias may carry sampling overrides, so a sweep is a command
         # rather than an edit to a constant. `temperature` is the one that had
         # never been varied: completion.SAMPLING pins svg and web at 0.4 and
@@ -302,6 +310,11 @@ def build_runner(candidate: str, gateway: str, outdir: Path | None,
         if options:
             raise SystemExit(f"{candidate}: unknown option(s) "
                              f"{', '.join(sorted(options))}")
+        if kind == LLAMACPP_KIND:
+            from harness import serving
+            return CompletionRunner(serving.LLAMACPP_URL, alias.strip(),
+                                    sampling=over or None,
+                                    model=alias.partition(":")[2].strip())
         return CompletionRunner(gateway, alias.strip(), sampling=over or None)
     if kind == "tts":
         return _speech_runner(candidate, outdir)
@@ -637,7 +650,8 @@ def main(argv: list[str] | None = None) -> int:
             adherence=getattr(args, "adherence", "") or "",
             tier="screen" if getattr(args, "screen", False) else "measure",
             accelerator=accelerator_id(),
-            instruments=instruments(),
+            instruments=instruments(candidates),
+            engines=engines(candidates),
             where=where_id(),
             swap_used_mb=swap_used_mb(),
             pressure=pressed.as_dict(),
@@ -653,7 +667,14 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
-def instruments() -> dict:
+def engines(candidates) -> dict:
+    """Which server answered each text candidate. #295."""
+    from harness import serving
+    return {c: serving.engine_for(c) for c in candidates
+            if kind_of(c) in ("gateway", LLAMACPP_KIND)}
+
+
+def instruments(candidates=()) -> dict:
     """What measured this run, for the receipt. See core.Receipt.instruments.
 
     Best effort by design: a receipt must not fail a finished run, and an
@@ -675,7 +696,8 @@ def instruments() -> dict:
         # WHICH SERVER PRODUCED THE TOKENS. Without it two runs across
         # different engines look like the same exam to comparable(). Issue #190.
         from harness import serving
-        found["serving"] = serving.text_engine()
+        found["serving"] = ("+".join(sorted(set(engines(candidates).values())))
+                            or serving.text_engine())
     except Exception:  # noqa: BLE001
         pass
     return {k: v for k, v in found.items() if v}
@@ -832,6 +854,7 @@ def compare_runs(files: list[str], across: str = "") -> int:
                                   where=raw.get("where", ""),
                                   swap_used_mb=raw.get("swap_used_mb", 0),
                                   pressure=raw.get("pressure") or {},
+                                  engines=raw.get("engines") or {},
                                   cases_digest=raw.get("cases_digest", "")),
                        data.get("summary") or {},
                        data.get("rows") or []))

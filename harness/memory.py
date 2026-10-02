@@ -276,6 +276,10 @@ def fits(need_gb: float, available_gb: float, ceiling_gb: float,
 
 def cache_path(repo: str) -> str | None:
     """Where huggingface_hub put this repo, or None if it is not cached."""
+    from harness import gguf
+    single = gguf.path_of(repo)
+    if single:
+        return str(single)
     root = Path(os.environ.get("HF_HOME", Path.home() / ".cache" / "huggingface"))
     d = root / "hub" / ("models--" + repo.replace("/", "--"))
     return str(d) if d.exists() else None
@@ -290,6 +294,8 @@ def size_gb(path: str) -> float | None:
     root = Path(path)
     if not root.exists():
         return None
+    if root.is_file():
+        return root.stat().st_size / 1024 ** 3 or None
     # Deduplicate by inode. The HuggingFace cache keeps the real weights in
     # blobs/ and symlinks them into snapshots/, so walking naively counts
     # every file TWICE -- which reported a 4.3 GB model as 8.6 GB and had the

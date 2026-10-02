@@ -99,7 +99,9 @@ def have(model_id: str, root: Path | None = None) -> bool:
     import os
     home = Path(root or os.environ.get("HF_HOME")
                 or Path.home() / ".cache" / "huggingface")
-    return (home / "hub" / f"models--{model_id.replace('/', '--')}").exists()
+    from harness import gguf
+    return ((home / "hub" / f"models--{model_id.replace('/', '--')}").exists()
+            or gguf.path_of(model_id) is not None)
 
 
 #: Config keys whose value names a repo you must ALSO have on disk. Kept as an
@@ -308,7 +310,7 @@ def size_of(row: dict) -> int:
     return 0
 
 
-def download(repo: str, snapshot=None) -> str:
+def download(repo: str, snapshot=None, listing=None, hf_download=None) -> str:
     """Weights into the shared cache. Returns the path.
 
     HF_HUB_OFFLINE is 1 everywhere else in this project on purpose: an eval
@@ -321,6 +323,12 @@ def download(repo: str, snapshot=None) -> str:
     os.environ["HF_HUB_OFFLINE"] = "0"
     constants = restore = None
     try:
+        single = _gguf_pick(repo, listing, snapshot)
+        if single == ():
+            raise FetchError("no single GGUF file fits the ceiling")
+        if single:
+            from harness import gguf
+            return gguf.download(repo, single[0], hf_download=hf_download)
         if snapshot is None:
             # The env var alone is not enough: huggingface_hub reads it ONCE at
             # import into a module constant, and harness.env has already set it
@@ -346,6 +354,23 @@ def download(repo: str, snapshot=None) -> str:
 #: on the strength of our own gap. screen.NOT_THE_CANDIDATE is the same list
 #: one tier along.
 NOT_THE_CANDIDATE = ("no measured size",)
+
+
+def _gguf_pick(repo: str, listing, snapshot):
+    """(file, bytes) for a GGUF-only repo, () if none fits, None otherwise."""
+    from harness import gguf
+    from harness import inspect as ins
+    if listing is None:
+        if snapshot is not None:
+            return None
+        listing = lambda r: ins.hf_model(r).get("siblings") or []  # noqa: E731
+    try:
+        siblings = listing(repo)
+    except Exception as exc:  # noqa: BLE001
+        raise FetchError(f"{repo}: listing failed: {str(exc)[:200]}") from exc
+    if not gguf.only(siblings):
+        return None
+    return gguf.choose(siblings, ins.ceiling_bytes()) or ()
 
 
 def refused_by_harness(why: str) -> str:
@@ -375,7 +400,8 @@ def machine_id() -> str:
 
 def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=None,
         free: int | None = None, lane: str = "",
-        budget: int | None = None) -> list[dict]:
+        budget: int | None = None, listing=None,
+        hf_download=None) -> list[dict]:
     """Fetch up to `limit` queued candidates, recording what happened.
 
     `budget` caps what ONE INVOCATION downloads in total, which is the job
@@ -473,7 +499,11 @@ def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=N
             done.append({"repo": name, "ok": False, "why": p.why})
             continue
         try:
-            where = download(name, snapshot=snapshot)
+            if listing is not None or hf_download is not None:
+                where = download(name, snapshot=snapshot, listing=listing,
+                                 hf_download=hf_download)
+            else:
+                where = download(name, snapshot=snapshot)
         except FetchError as exc:
             done.append({"repo": name, "ok": False, "why": str(exc)})
             continue

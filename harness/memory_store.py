@@ -361,6 +361,17 @@ def revisitable(conn: sqlite3.Connection, facts: dict | None = None) -> list:
             if r["outcome"] in TERMINAL and until_met(r["until"], facts)]
 
 
+def requeue_revisitable(conn, facts: dict | None = None) -> list[str]:
+    """Retract every revisitable verdict back to the inspect tier. #295."""
+    names = []
+    for r in revisitable(conn, facts):
+        decide(conn, r["name"], "queued", tier=INSPECT,
+               detail=f"retracted: {r['until']} is met here")
+        names.append(r["name"])
+    conn.commit()
+    return names
+
+
 _NONE_OF = re.compile(r"none of ([\w, ]+)$")
 _TOO_BIG = re.compile(r"^too-big:.*?([\d.]+)\s*GiB")
 
@@ -1248,11 +1259,10 @@ def pending(conn, limit: int = 50, registry: str | None = None) -> list[str]:
     q = f"""
         SELECT p.name, COUNT(s.id) AS times, MAX(s.seen_at) AS last_seen
         FROM proposals p JOIN sightings s ON s.proposal_id = p.id
-        WHERE p.resolved <> '' {where} AND p.name NOT IN (
-            SELECT DISTINCT p2.name FROM proposals p2
-            JOIN verdicts v ON v.proposal_id = p2.id
-            WHERE v.outcome IN ({','.join('?' * len(TERMINAL))})
-        )
+        WHERE p.resolved <> '' {where} AND COALESCE((
+            SELECT v.outcome FROM verdicts v WHERE v.proposal_id = p.id
+             ORDER BY v.id DESC LIMIT 1
+        ), '') NOT IN ({','.join('?' * len(TERMINAL))})
         GROUP BY p.id
         ORDER BY times DESC, last_seen DESC
         LIMIT ?

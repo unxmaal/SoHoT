@@ -19,9 +19,10 @@ from evals.runners.base import BaseRunner, RunnerError
 
 class CompletionRunner(BaseRunner):
     def __init__(self, gateway: str, candidate: str, timeout: float = 180.0,
-                 sampling: dict | None = None):
+                 sampling: dict | None = None, model: str = ""):
         self.gateway = gateway.rstrip("/")
         self.candidate = candidate
+        self.model = model or candidate
         self.timeout = timeout
         #: Overrides on top of completion.SAMPLING for this run. Empty means
         #: the shipped defaults, which is what the product uses.
@@ -37,7 +38,7 @@ class CompletionRunner(BaseRunner):
         started = time.perf_counter()
         try:
             text, usage = completion.complete_with_usage(
-                case.prompt, model=self.candidate, gateway=self.gateway,
+                case.prompt, model=self.model, gateway=self.gateway,
                 modality=case.modality, context=case.context,
                 timeout=self.timeout, sampling=self.sampling or None)
         except completion.CompletionError as exc:

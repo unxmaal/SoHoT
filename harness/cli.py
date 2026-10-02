@@ -597,6 +597,8 @@ def _report_revisit(a) -> int:
     try:
         here = ms.this_machine()
         rows = ms.revisitable(store)
+        if getattr(a, "requeue", False) and rows:
+            ms.requeue_revisitable(store)
     finally:
         store.close()
     print(f"this machine: {here['fingerprint']}")
@@ -615,7 +617,11 @@ def _report_revisit(a) -> int:
         print(f"           {r['outcome']} on {where}: "
               f"{(r['detail'] or '')[:70]}")
         print(f"           waiting on {r['until']}, which this machine meets")
-    print("\nRetract one by re-queueing it: a verdict is never deleted.")
+    if getattr(a, "requeue", False):
+        print(f"\nre-queued {len(rows)} for the inspect tier.")
+    else:
+        print("\n--requeue sends them back to inspect: a verdict is never "
+              "deleted.")
     return 0
 
 
@@ -2573,6 +2579,8 @@ def build_parser() -> argparse.ArgumentParser:
     d.add_argument("--evidence", action="store_true",
                    help="verdicts whose run receipt is no longer on disk, so "
                         "nothing can re-judge them")
+    d.add_argument("--requeue", action="store_true",
+                   help="with --revisit, retract each one back to inspect")
     d.add_argument("--revisit", action="store_true",
                    help="candidates another machine refused whose reason no "
                         "longer applies here. A verdict is a fact about the "

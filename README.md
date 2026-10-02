@@ -855,6 +855,49 @@ candidates in run receipts, the typed lane defaults -- and asks which
 configured source ever surfaced each. Anything adopted that no source produced
 is a coverage hole with a name, and the names are the useful part.
 
+### Refusals that stop being true
+
+A refusal records the condition that would end it, as a predicate rather than
+a sentence: `runtime:llamacpp`, `ceiling_gb:>52.7`, `version:mlx-lm>0.31.3`,
+`commit_after:<date>`. `runtime:cuda|rocm` is met by either. When the tier
+does not pass one, it is read from the refusal's own `needs-*` or `too-big`
+wording.
+
+```bash
+lh discover --revisit             # refusals this machine now satisfies
+lh discover --revisit --requeue   # send them back to inspect
+```
+
+This counts refusals made on this machine too. A machine that installs
+llama.cpp after declining 41 GGUF repos for lacking it has changed, and those
+refusals should reopen. Only terminal verdicts are listed, since a queued row
+is already waiting.
+
+### GGUF candidates in the text lanes
+
+A repo that ships only GGUF files (no safetensors) is run by llama-server
+rather than mlx_lm.server:
+
+- **Inspect** sizes it by the one file it would fetch, not the sum of every
+  quant. That file is Q4_K_M when it fits the ceiling, then Q4_K_S, IQ4_XS,
+  Q4_0, Q5_K_M, Q5_K_S, then the largest that fits. Split files, `mmproj`
+  projectors and files in subdirectories are never chosen, because the router
+  cannot serve them alone.
+- **Fetch** downloads that one file into `$LLAMACPP_MODELS_DIR` (default
+  `$HF_HOME/gguf`) and records the repo-to-file mapping in
+  `$LOCALHARNESS_HOME/gguf-sources.json`.
+- **Screen and measure** spell it `llamacpp:<file stem>`, and the run sends it
+  straight to the eval server at `127.0.0.1:8082` (`scripts/serve-eval.sh`).
+  LiteLLM would refuse a name it has no alias for. A measure pits it against
+  the lane's incumbent through the gateway, so the two halves of one run can
+  come from different engines.
+
+Each receipt has an `engines` map from candidate to server, and
+`instruments.serving` names every engine in the run, such as
+`llama-server+mlx_lm.server`. `comparable()` therefore refuses to pool a
+mixed run with a single-engine one. Adoption only records a GGUF winner. A
+lane command does not use one until the gateway has an alias for it.
+
 ### Writing a prompt for whatever is installed
 
 ```bash
