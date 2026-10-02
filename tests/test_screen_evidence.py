@@ -146,3 +146,49 @@ def test_a_genuinely_foreign_receipt_is_still_caught():
     turns wrong_run into a function that returns "" unconditionally."""
     foreign = {"mflux/z-image-turbo": {"total": 1, "passed": 1}}
     assert screen.wrong_run(foreign, "diffusers:SupraLabs/Supra2-IMG")
+
+
+# --- #293: a model the installed runtime cannot load is not broken ---------
+
+LOAD_FAILED = {"mlx/Qwen3.8-27B-DFlash2": {"total": 1, "passed": 0, "failures": [
+    "chunk-bytes: gateway returned HTTP 404: {\"error\": \"ModelArgs.__init__() "
+    "missing 1 required positional argument: 'rope_theta'\"}"]}}
+WRONG_ANSWER = {"mlx/Qwen3.8-27B-DFlash2": {"total": 1, "passed": 0, "failures": [
+    "chunk-bytes: expected 3 chunks, got 2"]}}
+
+
+def test_a_load_failure_waits_for_a_newer_runtime_instead_of_breaking():
+    got, why = screen.outcome(0, LOAD_FAILED, candidate="incoai/Qwen3.8-27B-DFlash2")
+    assert got == "declined", why
+    assert "rope_theta" in why
+
+
+def test_a_wrong_answer_is_still_broken():
+    """THE NEGATIVE CONTROL. A model that loaded and answered badly has been
+    measured, and that verdict stays terminal."""
+    got, _ = screen.outcome(0, WRONG_ANSWER, candidate="incoai/Qwen3.8-27B-DFlash2")
+    assert got == "broken"
+
+
+def test_the_load_failure_names_the_runtime_that_would_end_the_wait():
+    until = screen.load_until()
+    assert until.startswith("version:mlx-lm>"), until
+
+
+def test_a_missing_file_behind_a_404_is_not_a_runtime_gap():
+    """A newer runtime cannot supply a file the snapshot lacks."""
+    missing = {"mlx/x": {"total": 1, "passed": 0, "failures": [
+        "chunk-bytes: gateway returned HTTP 404: {\"error\": \"[Errno 2] No such "
+        "file or directory: 'tokenizer.json'\"}"]}}
+    got, _ = screen.outcome(0, missing, candidate="org/x")
+    assert got == "broken"
+
+
+def test_every_architecture_gap_spelling_in_the_store_is_recognised():
+    """Read from the live store's own rows, not invented. #293."""
+    for err in ("Model type gpt_x not supported.",
+                "ModelArgs.__init__() missing 1 required positional argument: 'rope_theta'",
+                "Received 58 parameters not in model"):
+        s = {"mlx/x": {"total": 1, "passed": 0, "failures": [
+            f"chunk-bytes: gateway returned HTTP 404: {{\"error\": \"{err}\"}}"]}}
+        assert screen.outcome(0, s, candidate="org/x")[0] == "declined", err

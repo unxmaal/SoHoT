@@ -373,7 +373,7 @@ def machine_id() -> str:
         return "this machine"
 
 
-def run(conn, sizes: dict[str, int], *, limit: int = 1, snapshot=None,
+def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=None,
         free: int | None = None, lane: str = "",
         budget: int | None = None) -> list[dict]:
     """Fetch up to `limit` queued candidates, recording what happened.
@@ -456,7 +456,9 @@ def run(conn, sizes: dict[str, int], *, limit: int = 1, snapshot=None,
         if fetched >= limit:
             break
         name = row["resolved"] or row["name"]
-        size = sizes.get(name, 0)
+        # Each row's own measured size; an override map covering only the
+        # first `limit` rows left the rest at 0 for 22 sweeps. #292.
+        size = (sizes or {}).get(name) or size_of(row)
         if budget is not None and size > 0 and spent + size > budget:
             why = (f"{size / GIB:.1f} GiB would take this run past its "
                    f"{budget / GIB:.0f} GiB budget ({spent / GIB:.1f} GiB "
@@ -476,7 +478,7 @@ def run(conn, sizes: dict[str, int], *, limit: int = 1, snapshot=None,
             done.append({"repo": name, "ok": False, "why": str(exc)})
             continue
         fetched += 1
-        spent += sizes.get(name, 0)
+        spent += size
         # WHAT IT NEEDS BESIDE ITSELF. Only readable once the config is on
         # disk, so this is after the download rather than in the plan. A model
         # whose tokenizer lives in another repo is `ready` and unloadable
