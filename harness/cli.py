@@ -607,8 +607,8 @@ def _report_revisit(a) -> int:
         print("nothing to revisit: no verdict from another machine has a "
               "condition this one satisfies.")
         return 0
-    print(f"{len(rows)} candidate(s) refused elsewhere for a reason that does "
-          f"not apply here:\n")
+    print(f"{len(rows)} candidate(s) refused for a reason that no longer "
+          f"applies here:\n")
     for r in sorted(rows, key=lambda r: (r["lane"] or "", r["name"])):
         print(f"  {(r['lane'] or '-'):8} {r['name']}")
         where = r["decided_on"] or "an unrecorded machine"
@@ -1207,11 +1207,9 @@ def cmd_fetch(a) -> int:
                 for r in orphans[:10]:
                     print(f"        {r['resolved'] or r['name']}")
             return 0
-        sizes = {(r["resolved"] or r["name"]): fetching.size_of(r)
-                 for r in rows[:a.limit]}
         gib = getattr(a, "budget_gib", None)
         budget = int(float(gib) * fetching.GIB) if gib else None
-        for got in fetching.run(store, sizes, limit=a.limit, lane=want,
+        for got in fetching.run(store, limit=a.limit, lane=want,
                                 budget=budget):
             print(f"  {'OK  ' if got['ok'] else 'skip'} {got['repo']}: {got['why']}")
     finally:
@@ -1498,7 +1496,8 @@ def _report_screen(a) -> int:
             detail = f"{why} || {evidence}" if evidence else why
             ms.decide(store, r["name"], got, tier=ms.SCREEN,
                       detail=detail[:600],
-                      run_path=str(outdir) if outdir.exists() else "")
+                      run_path=str(outdir) if outdir.exists() else "",
+                      until=screen.load_until() if got == "declined" else "")
     finally:
         store.close()
     return 0

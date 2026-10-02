@@ -377,6 +377,37 @@ def why_nothing_passed(summary: dict | None, candidate: str) -> str:
     return "; ".join(failures)[:300]
 
 
+#: mlx_lm.server answers 404 when it cannot construct the model at all, which
+#: is a fact about the installed runtime rather than the candidate. #293.
+LOAD_FAILED = "gateway returned http 404"
+#: Architecture gaps a newer runtime can close. A missing file or a weight
+#: format it cannot read is not one, and stays broken.
+ARCHITECTURE_GAPS = ("not supported", "modelargs", "parameters not in model",
+                     "required positional argument")
+LOAD_RUNTIME = "mlx-lm"
+
+
+def is_architecture_gap(text: str) -> bool:
+    low = (text or "").lower()
+    return LOAD_FAILED in low and any(g in low for g in ARCHITECTURE_GAPS)
+
+
+def load_failure(summary: dict | None, candidate: str) -> str:
+    """The server's error if this runtime could not build the architecture."""
+    why = why_nothing_passed(summary, candidate)
+    return why if is_architecture_gap(why) else ""
+
+
+def load_until() -> str:
+    """The predicate that reopens a load failure: a newer runtime."""
+    from importlib import metadata
+    try:
+        have = metadata.version(LOAD_RUNTIME)
+    except metadata.PackageNotFoundError:
+        have = "0"
+    return f"version:{LOAD_RUNTIME}>{have}"
+
+
 def outcome(returncode: int, summary: dict | None,
             detail: str = "", candidate: str = "") -> tuple[str, str]:
     """A store verdict from one screen run.
@@ -407,6 +438,9 @@ def outcome(returncode: int, summary: dict | None,
     if not summary:
         return "broken", "the screen produced no rows"
     if rows == 0:
+        failed = load_failure(summary, candidate) if candidate else ""
+        if failed:
+            return "declined", f"the installed runtime could not load it: {failed}"
         why = why_nothing_passed(summary, candidate) if candidate else ""
         return "broken", (f"it ran and passed nothing: {why}" if why
                           else "it ran and passed nothing")

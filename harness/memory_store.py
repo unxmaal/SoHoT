@@ -19,7 +19,7 @@ from pathlib import Path
 
 from harness import paths, store
 
-SCHEMA_VERSION = 16
+SCHEMA_VERSION = 17
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
 VERDICTS = ("measured", "declined", "broken", "queued", "ignored", "screened")
@@ -278,8 +278,9 @@ def until_met(until: str, facts: dict | None = None) -> bool:
     fact buried in prose cannot be queried, so writing the condition as prose
     would move the defect rather than fix it.
 
-    Four forms, which is all the real rows need:
+    Five forms, which is all the real rows need:
         runtime:<name>     the machine has that runtime
+        version:<pkg>><v>  the installed <pkg> is newer than v (#293)
         memory_gb:><n>     the machine holds more than n GB
         ceiling_gb:><n>    the machine will load weights larger than n GiB
         commit_after:<iso> the candidate's upstream has committed since
@@ -301,6 +302,18 @@ def until_met(until: str, facts: dict | None = None) -> bool:
             return float(facts.get(key) or 0) > float(want[1:])
         except ValueError:
             return False
+    if key == "version" and ">" in want:
+        pkg, _, floor = want.partition(">")
+        if "versions" in facts:
+            have = (facts.get("versions") or {}).get(pkg)
+        else:
+            from importlib import metadata
+            try:
+                have = metadata.version(pkg)
+            except metadata.PackageNotFoundError:
+                have = None
+        a, b = _version_tuple(have), _version_tuple(floor)
+        return a is not None and b is not None and a > b
     if key == "commit_after":
         seen = (facts.get("last_commit") or "").strip()
         # STRING COMPARISON IS CORRECT FOR ISO-8601 AND ONLY FOR IT, so both
@@ -312,6 +325,12 @@ def until_met(until: str, facts: dict | None = None) -> bool:
         return bool(_ISO_DATE.match(seen) and _ISO_DATE.match(want)
                     and seen > want)
     return False
+
+
+def _version_tuple(v) -> tuple | None:
+    """`0.31.10` as (0, 31, 10), so it sorts after `0.31.9`. None if unparseable."""
+    parts = str(v or "").split(".")
+    return tuple(int(x) for x in parts) if all(x.isdigit() for x in parts) else None
 
 
 def revisitable(conn: sqlite3.Connection, facts: dict | None = None) -> list:
@@ -336,8 +355,11 @@ def revisitable(conn: sqlite3.Connection, facts: dict | None = None) -> list:
            AND v.until != ''
     """).fetchall()
     here = facts.get("fingerprint", "")
+    # A runtime version waits on THIS machine being upgraded, so it is the one
+    # predicate that can come true where it was decided. #293.
     return [dict(r) for r in rows
-            if r["decided_on"] != here and until_met(r["until"], facts)]
+            if (r["decided_on"] != here or r["until"].startswith("version:"))
+            and until_met(r["until"], facts)]
 
 
 #: What a pre-#266 refusal was waiting for, derived from the phrase the tier
@@ -573,6 +595,8 @@ def _migrate(conn: sqlite3.Connection) -> None:
         _let_a_revived_upstream_be_reconsidered(conn)
     if have and have < 16:
         _retract_screens_with_no_evidence(conn)
+    if have and have < 17:
+        _reopen_architecture_gaps(conn)
     conn.execute("INSERT OR REPLACE INTO meta VALUES ('schema', ?)",
                  (str(SCHEMA_VERSION),))
     conn.commit()
@@ -605,6 +629,24 @@ def _retract_screens_with_no_evidence(conn) -> None:
              "retracted: the screen stored no run_path, so the reason it "
              "passed nothing is unrecoverable and the verdict cannot be "
              "re-judged. Issue #281.", time.time()))
+
+
+def _reopen_architecture_gaps(conn) -> None:
+    """A runtime that could not build the architecture is not a verdict on the
+    candidate: declined until a newer one is installed. #293."""
+    from harness import screen
+    until = screen.load_until()
+    rows = conn.execute(
+        "SELECT v.proposal_id, v.detail FROM verdicts v WHERE v.id IN "
+        "(SELECT MAX(id) FROM verdicts GROUP BY proposal_id) "
+        "AND v.tier = ? AND v.outcome = 'broken'", (SCREEN,)).fetchall()
+    for pid, detail in rows:
+        if screen.is_architecture_gap(detail):
+            conn.execute(
+                "INSERT INTO verdicts (proposal_id, outcome, tier, detail, "
+                "until, decided_at) VALUES (?, 'declined', ?, ?, ?, ?)",
+                (pid, SCREEN, "the installed runtime could not load it: "
+                 + str(detail)[:500], until, time.time()))
 
 
 def _canonical_lanes(conn) -> None:

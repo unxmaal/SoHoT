@@ -167,3 +167,31 @@ def test_every_recorded_card_says_why_it_is_kept():
     assert recorded == set(fakes.WHY), (
         f"unexplained: {sorted(recorded - set(fakes.WHY))}; "
         f"explained but absent: {sorted(set(fakes.WHY) - recorded)}")
+
+
+def test_a_candidate_past_the_limit_keeps_its_measured_size(store, tmp_path):
+    """#292. cmd_fetch sized only rows[:limit] while fetching.run walks the
+    whole queue, so every candidate past the third read size 0 and was skipped
+    as "no measured size" 40 seconds after inspect sized it, for 22 sweeps."""
+    fakes.seeded_store(store, [("org/first", "code", 0.1, 3),
+                               ("org/second", "code", 0.2, 2)])
+    downloads = fakes.Downloads(tmp_path / "hub")
+    got = fetching.run(store, {"org/first": int(0.1 * 1024 ** 3)}, limit=1,
+                       snapshot=downloads, budget=1)
+    why = {g["repo"]: g["why"] for g in got}
+    assert "no measured size" not in why.get("org/second", ""), why
+
+
+def test_the_size_column_alone_is_enough_to_fetch(store, tmp_path):
+    """The inspect tier now writes `size_bytes` and prose without `bytes=`."""
+    from harness import memory_store as ms
+    ms.record(store, ms.Seen(name="org/col", source="s", url="", why="",
+                             relevance=0, kind="candidate",
+                             registry=ms.HUGGINGFACE, lane="code",
+                             resolved="org/col", description="weights"))
+    ms.decide(store, "org/col", "queued", tier="inspect",
+              detail="fits: weights from 0.1 to 0.1 GiB",
+              size_bytes=int(0.1 * 1024 ** 3))
+    downloads = fakes.Downloads(tmp_path / "hub")
+    got = fetching.run(store, {}, limit=1, snapshot=downloads)
+    assert got and "no measured size" not in got[0]["why"], got

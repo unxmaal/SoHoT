@@ -389,3 +389,14 @@ def test_the_machine_conditions_still_ignore_an_upstream_fact():
                             {"runtimes": "cpu,cuda", "memory_gb": 61.0})
     assert not ms.until_met("runtime:cuda",
                             {"last_commit": "2026-09-01T00:00:00Z"})
+
+
+def test_a_runtime_version_predicate_compares_numerically():
+    from harness import memory_store as ms
+    f = lambda v: {"versions": {"mlx-lm": v}}
+    assert ms.until_met("version:mlx-lm>0.31.3", f("0.31.4"))
+    assert not ms.until_met("version:mlx-lm>0.31.3", f("0.31.3"))
+    assert ms.until_met("version:mlx-lm>0.31.9", f("0.31.10")), (
+        "string comparison would call 0.31.10 older than 0.31.9")
+    assert not ms.until_met("version:mlx-lm>0.31.3", f("unknown"))
+    assert not ms.until_met("version:mlx-lm>0.31.3", {"versions": {}})
