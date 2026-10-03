@@ -74,11 +74,32 @@ def remember(repo: str, filename: str) -> None:
 
 
 def path_of(repo: str) -> Path | None:
-    name = _load().get(repo)
+    name = _load().get(repo) or _adopt_from_hub(repo)
     if not name:
         return None
     path = models_dir() / name
     return path if path.exists() else None
+
+
+def _adopt_from_hub(repo: str) -> str:
+    """A GGUF-only repo fetched whole before #296: link its file in. #301."""
+    hf = os.environ.get("HF_HOME") or Path.home() / ".cache" / "huggingface"
+    snaps = Path(hf) / "hub" / f"models--{repo.replace('/', '--')}" / "snapshots"
+    if not snaps.is_dir():
+        return ""
+    from harness import inspect as ins
+    for snap in sorted(snaps.iterdir()):
+        files = [{"rfilename": f.name, "size": f.stat().st_size}
+                 for f in snap.iterdir() if f.is_file()]
+        pick = choose(files, ins.ceiling_bytes()) if only(files) else None
+        if pick:
+            models_dir().mkdir(parents=True, exist_ok=True)
+            link = models_dir() / pick[0]
+            if not link.exists():
+                link.symlink_to((snap / pick[0]).resolve())
+            remember(repo, pick[0])
+            return pick[0]
+    return ""
 
 
 def fetched(repo: str) -> str | None:

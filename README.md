@@ -887,7 +887,10 @@ download, since their runners load the repo:
   cannot serve them alone.
 - **Fetch** downloads that one file into `$LLAMACPP_MODELS_DIR` (default
   `$HF_HOME/gguf`) and records the repo-to-file mapping in
-  `$LOCALHARNESS_HOME/gguf-sources.json`.
+  `$LOCALHARNESS_HOME/gguf-sources.json`. A GGUF-only repo already in
+  `$HF_HOME/hub` from an older whole-repo fetch is not downloaded again. Its
+  chosen file is symlinked into the router's directory the first time
+  anything asks for it.
 - **Screen and measure** spell it `llamacpp:<file stem>`, and the run sends it
   straight to the eval server at `127.0.0.1:8082` (`scripts/serve-eval.sh`).
   LiteLLM would refuse a name it has no alias for. A measure pits it against
