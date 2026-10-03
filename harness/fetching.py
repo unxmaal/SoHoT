@@ -25,7 +25,7 @@ from pathlib import Path
 
 from harness import memory_store as ms
 from harness import rank
-from harness import screen
+from harness import lanes, screen
 
 GIB = 1024 ** 3
 #: Never fill the volume. A download that leaves no room is a download that
@@ -310,7 +310,8 @@ def size_of(row: dict) -> int:
     return 0
 
 
-def download(repo: str, snapshot=None, listing=None, hf_download=None) -> str:
+def download(repo: str, snapshot=None, listing=None, hf_download=None,
+             text: bool = True) -> str:
     """Weights into the shared cache. Returns the path.
 
     HF_HUB_OFFLINE is 1 everywhere else in this project on purpose: an eval
@@ -323,7 +324,7 @@ def download(repo: str, snapshot=None, listing=None, hf_download=None) -> str:
     os.environ["HF_HUB_OFFLINE"] = "0"
     constants = restore = None
     try:
-        single = _gguf_pick(repo, listing, snapshot)
+        single = _gguf_pick(repo, listing, snapshot) if text else None
         if single == ():
             raise FetchError("no single GGUF file fits the ceiling")
         if single:
@@ -499,9 +500,10 @@ def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=N
             done.append({"repo": name, "ok": False, "why": p.why})
             continue
         try:
-            if listing is not None or hf_download is not None:
+            text = lanes.canonical(row.get("lane") or "") in lanes.TEXT_SERVED
+            if listing is not None or hf_download is not None or not text:
                 where = download(name, snapshot=snapshot, listing=listing,
-                                 hf_download=hf_download)
+                                 hf_download=hf_download, text=text)
             else:
                 where = download(name, snapshot=snapshot)
         except FetchError as exc:

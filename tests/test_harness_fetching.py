@@ -286,7 +286,7 @@ def test_fetching_a_model_also_fetches_what_its_config_names(db, tmp_path, monke
     ms.decide(db, "org/model-8bit", "queued", tier="inspect")
 
     got = []
-    monkeypatch.setattr(f, "download", lambda repo, snapshot=None: got.append(repo) or "/x")
+    monkeypatch.setattr(f, "download", lambda repo, snapshot=None, **kw: got.append(repo) or "/x")
     monkeypatch.setattr(f, "requires", lambda name, root=None: ["org/base"])
     monkeypatch.setattr(f, "have", lambda name, root=None: False)
     monkeypatch.setattr(f, "plan",
@@ -304,7 +304,7 @@ def test_a_dependency_already_present_is_not_refetched(db, monkeypatch):
     ms.decide(db, "org/model-8bit", "queued", tier="inspect")
 
     got = []
-    monkeypatch.setattr(f, "download", lambda repo, snapshot=None: got.append(repo) or "/x")
+    monkeypatch.setattr(f, "download", lambda repo, snapshot=None, **kw: got.append(repo) or "/x")
     monkeypatch.setattr(f, "requires", lambda name, root=None: ["org/base"])
     # Only the DEPENDENCY is cached. Patching have() true for everything would
     # also take the model itself out of the queue, and the test would pass for
