@@ -255,6 +255,27 @@ def _meminfo_available_gb(path: str = "/proc/meminfo") -> float:
     return 0.0
 
 
+#: A measured margin below this is more likely noise than a safe reserve.
+MIN_RESERVE_GB = 1.0
+
+
+def _fingerprint() -> str:
+    from harness import memory_store as ms
+    return ms.this_machine()["fingerprint"]
+
+
+def measured_reserve_gb() -> float:
+    """The largest margin `lh memory ramp` measured here, else the default. #299."""
+    from harness import ramp
+    try:
+        margins = [r.get("margin_gb") for r in
+                   ramp.runs(ramp.default_path(), _fingerprint())]
+    except Exception:  # noqa: BLE001 - the guard must not fail on its own record
+        return DEFAULT_RESERVE_GB
+    margins = [m for m in margins if isinstance(m, (int, float))]
+    return max(max(margins), MIN_RESERVE_GB) if margins else DEFAULT_RESERVE_GB
+
+
 def fits(need_gb: float, available_gb: float, ceiling_gb: float,
          resident_gb: float = 0.0,
          reserve_gb: float = DEFAULT_RESERVE_GB) -> tuple[bool, str]:
@@ -323,7 +344,7 @@ _BASE_BITS = 16
 
 
 def check_model(repo: str, resident_gb: float = 0.0,
-                reserve_gb: float = DEFAULT_RESERVE_GB,
+                reserve_gb: float | None = None,
                 quantize: int | None = None) -> tuple[bool, str]:
     """One call: will loading `repo` be safe on this machine right now?
 
@@ -342,4 +363,6 @@ def check_model(repo: str, resident_gb: float = 0.0,
         # Allowed, but said out loud. Refusing everything uncached would make
         # the guard the thing that breaks the workflow.
         return True, f"size of {repo} is unknown (not cached); proceeding unchecked"
+    if reserve_gb is None:
+        reserve_gb = measured_reserve_gb()
     return fits(need, available_gb(), ceiling_gb(), resident_gb, reserve_gb)

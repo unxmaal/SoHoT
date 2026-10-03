@@ -1052,6 +1052,37 @@ It will refuse if the two runs are not fairly comparable, and tell you which
 difference disqualified them. Comparing a run from before a settings change
 against one from after compares two different exams, so it stops you.
 
+### How much memory a run can take
+
+```bash
+lh memory ramp    # allocate 1 GB at a time on the GPU until macOS first warns
+lh memory show    # what was measured, per machine
+```
+
+The ramp fills memory with random data, so the compressor cannot shrink it.
+It samples `kern.memorystatus_vm_pressure_level` after every step and stops
+at the first warning, at compressor swap-outs, or at a floor of 10% free. It
+frees everything at the end and appends the run to
+`$LOCALHARNESS_HOME/memory-limits.json` under this machine's fingerprint.
+
+Each run records a **margin**: how far short of the guard's own "available"
+figure (vm_stat free + inactive) macOS warned. The headroom guard reserves
+the largest margin measured on this machine. Before any measurement it
+reserves 6 GB, and it never trusts a margin under 1 GB.
+
+Measured 2026-10-03 on the M2 Pro (32 GB), with the gateway, mlx_lm.server and
+llama-server idle:
+
+| run | available at start | warned at | margin |
+|---|---|---|---|
+| 1 | 14.2 GB | +13 GB | 2.2 GB |
+| 2 | 17.8 GB | +15 GB | 3.8 GB |
+
+The kernel's own free percentage read 72-77% at the start of both runs
+(about 24 GB) and stayed there through the first 10 GB. It is not the
+figure to budget against. Wired pages did not move either: MLX buffers are
+not counted as wired.
+
 ### Judging text against a rubric
 
 For a job where a model reads some text and answers in a fixed shape (is this

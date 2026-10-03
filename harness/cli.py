@@ -1026,6 +1026,42 @@ def _evalset(name: str) -> Path:
     return p if p.is_dir() else paths.home() / "evalsets" / name
 
 
+def cmd_memory(a) -> int:
+    """How far this machine's memory goes before macOS pushes back. #299."""
+    from harness import memory_store as ms, ramp
+
+    if a.action == "show":
+        path = ramp.default_path()
+        try:
+            print(path.read_text(encoding="utf-8"))
+        except OSError:
+            return err(f"nothing measured yet: lh memory ramp writes {path}")
+        return 0
+    print(f"allocating {a.step_gb:g} GB at a time until macOS first warns; "
+          f"everything is freed at the end", flush=True)
+    try:
+        got = ramp.run(step_gb=a.step_gb, settle_s=a.settle,
+                       floor_pct=a.floor_pct, cap_gb=a.cap_gb)
+    except ValueError as exc:
+        return err(str(exc))
+    if not got["steps"]:
+        return err(f"nothing was allocated ({got['stopped']}), so there is "
+                   f"nothing to record")
+    for s in got["steps"]:
+        print(f"  {s['gb']:5.1f} GB  level {s['level']}  free {s['free_pct']}%  "
+              f"available {s['available_gb']:.1f} GB  wired {s['wired_gb']}  "
+              f"swapouts {s['swapouts']}", flush=True)
+    print(f"\nstopped: {got['stopped']}; last step at normal pressure: "
+          f"{got['last_normal_gb']:g} GB on top of what was already running")
+    if got["margin_gb"] is not None:
+        print(f"margin: macOS warned {got['margin_gb']:.1f} GB short of the "
+              f"guard's own available figure; the guard now reserves "
+              f"the largest margin measured on this machine")
+    ramp.save(got, ramp.default_path(), ms.this_machine()["fingerprint"])
+    print(f"recorded in {ramp.default_path()}")
+    return 0
+
+
 def cmd_rubric(a) -> int:
     """Label an eval set by hand, then score local models against it. #286."""
     from harness import label_server, rubric_eval as rv
@@ -2629,6 +2665,17 @@ def build_parser() -> argparse.ArgumentParser:
     rub.add_argument("--no-browser", action="store_true")
     rub.set_defaults(func=cmd_rubric)
 
+    mem = sub.add_parser("memory", help="measure how much memory a run can "
+                         "take before macOS starts pushing back")
+    mem.add_argument("action", choices=("ramp", "show"))
+    mem.add_argument("--step-gb", type=float, default=1.0)
+    mem.add_argument("--settle", type=float, default=3.0,
+                     help="seconds to wait after each step before sampling")
+    mem.add_argument("--floor-pct", type=int, default=10,
+                     help="stop if kern.memorystatus_level falls to this")
+    mem.add_argument("--cap-gb", type=float, default=None,
+                     help="never allocate more than this; default RAM - 4 GB")
+    mem.set_defaults(func=cmd_memory)
     jud = sub.add_parser(
         "judge",
         help="decide a human-judged lane by looking and listening. Issue #273")
