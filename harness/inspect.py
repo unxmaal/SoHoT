@@ -628,8 +628,17 @@ def inspect_model(model_id: str, *, data: dict | None = None, fetch=None,
     """
     data = hf_model(model_id, fetch=fetch) if data is None else data
     fit = Fit(repo=model_id, registry=ms.HUGGINGFACE)
-    sizes = [s.get("size") or 0 for s in (data.get("siblings") or [])]
+    siblings = data.get("siblings") or []
+    sizes = [s.get("size") or 0 for s in siblings]
     total = sum(sizes)
+    from harness import gguf
+    if gguf.only(siblings):
+        # One file is fetched, not every quant. #295.
+        pick = gguf.choose(siblings, ceiling if ceiling is not None
+                           else ceiling_bytes())
+        files = [s.get("size") or 0 for s in siblings
+                 if str(s.get("rfilename", "")).lower().endswith(".gguf")]
+        total = pick[1] if pick else min((f for f in files if f), default=0)
     if total > 0:
         fit.weights[model_id] = total
         fit.largest = fit.smallest = total

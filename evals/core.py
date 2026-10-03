@@ -478,6 +478,7 @@ class Receipt:
     #: different OCR engines. Those are two graders by exactly the argument
     #: that already disqualifies PickScore against HPSv2.
     instruments: dict = field(default_factory=dict)
+    engines: dict = field(default_factory=dict)
     #: WHERE THE WORK EXECUTED: in-pod, gpu-node, or a host outside the cluster
     #: (harness.machine.WHERE). A pod that dispatches to a host is a different
     #: exam from a pod that runs the work, and without this a result reads as
@@ -509,6 +510,7 @@ class Receipt:
                 "gateway": self.gateway, "adherence": self.adherence,
                 "tier": self.tier, "accelerator": self.accelerator,
                 "instruments": dict(self.instruments),
+                "engines": dict(self.engines),
                 "where": self.where,
                 "swap_used_mb": self.swap_used_mb,
                 "pressure": dict(self.pressure),
