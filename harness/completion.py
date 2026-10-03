@@ -116,19 +116,26 @@ def complete_with_usage(prompt: str, model: str, gateway: str = DEFAULT_GATEWAY,
         knobs.update(sampling)
     knobs.setdefault("temperature", DEFAULT_TEMPERATURE)
 
+    system = SYSTEM.get(modality, NEUTRAL_SYSTEM)
+    user = user_message(prompt, context)
     payload = {
         "model": model,
         "max_tokens": max_tokens,
         "messages": [
-            {"role": "system", "content": SYSTEM.get(modality, NEUTRAL_SYSTEM)},
-            {"role": "user", "content": user_message(prompt, context)},
+            {"role": "system", "content": system},
+            {"role": "user", "content": user},
         ],
         **knobs,
     }
     try:
-        r = httpx.post(f"{gateway.rstrip('/')}/v1/chat/completions",
-                       json=payload, timeout=timeout,
-                       headers={"Authorization": "Bearer sk-local"})
+        r = _post(gateway, payload, timeout)
+        if (400 <= getattr(r, "status_code", 200) < 500
+                and _refuses_system_role(getattr(r, "text", ""))):
+            # The model's chat template has no system role (Gemma 2, Mistral
+            # v0.3): same words, one user turn. #305.
+            payload["messages"] = [{"role": "user",
+                                    "content": f"{system}\n\n{user}"}]
+            r = _post(gateway, payload, timeout)
         r.raise_for_status()
         body = r.json()
         choices = body.get("choices") or []
@@ -165,6 +172,22 @@ def complete_with_usage(prompt: str, model: str, gateway: str = DEFAULT_GATEWAY,
         raise CompletionError("empty completion")
     return text, usage
 
+
+
+#: What a chat template says when it has no system role. #305.
+SYSTEM_ROLE_REFUSALS = ("system role not supported",
+                        "conversation roles must alternate")
+
+
+def _refuses_system_role(body: str) -> bool:
+    low = (body or "").lower()
+    return any(p in low for p in SYSTEM_ROLE_REFUSALS)
+
+
+def _post(gateway: str, payload: dict, timeout: float):
+    return httpx.post(f"{gateway.rstrip('/')}/v1/chat/completions",
+                      json=payload, timeout=timeout,
+                      headers={"Authorization": "Bearer sk-local"})
 
 
 def artifact(text: str, modality: str) -> str:

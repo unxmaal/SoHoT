@@ -307,6 +307,9 @@ def until_met(until: str, facts: dict | None = None) -> bool:
         pkg, _, floor = want.partition(">")
         if "versions" in facts:
             have = (facts.get("versions") or {}).get(pkg)
+        elif pkg == "llama.cpp":
+            from harness import serving
+            have = serving.llamacpp_build() or None
         else:
             from importlib import metadata
             try:

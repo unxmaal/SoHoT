@@ -1503,7 +1503,8 @@ def _report_screen(a) -> int:
             ms.decide(store, r["name"], got, tier=ms.SCREEN,
                       detail=detail[:600],
                       run_path=str(outdir) if outdir.exists() else "",
-                      until=screen.load_until() if got == "declined" else "")
+                      until=screen.load_until(r["candidate"])
+                      if got == "declined" else "")
     finally:
         store.close()
     return 0

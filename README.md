@@ -868,6 +868,14 @@ lh discover --revisit             # refusals this machine now satisfies
 lh discover --revisit --requeue   # send them back to inspect
 ```
 
+A runtime that cannot build a model is a fact about the runtime, so the
+screen declines it until a newer one: `version:mlx-lm>X` for mlx_lm.server's
+"Model type ... not supported", and `version:llama.cpp>BUILD` when
+llama-server's router answers "failed to load". The router keeps the reason,
+such as an unknown architecture, in `logs/eval.log`. A chat template that has
+no system role (Gemma 2, Mistral v0.3) is neither: the request is retried
+once with the system prompt at the top of the user turn.
+
 This counts refusals made on this machine too. A machine that installs
 llama.cpp after declining 41 GGUF repos for lacking it has changed, and those
 refusals should reopen. Only terminal verdicts are listed, since a queued row

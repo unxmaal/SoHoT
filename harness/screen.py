@@ -395,8 +395,10 @@ def why_nothing_passed(summary: dict | None, candidate: str) -> str:
 LOAD_FAILED = "gateway returned http 404"
 #: Architecture gaps a newer runtime can close. A missing file or a weight
 #: format it cannot read is not one, and stays broken.
-ARCHITECTURE_GAPS = ("not supported", "modelargs", "parameters not in model",
+ARCHITECTURE_GAPS = ("model type", "modelargs", "parameters not in model",
                      "required positional argument")
+#: llama-server's router reports only this; the reason is in its own log. #305.
+LLAMACPP_LOAD_FAILED = ("http 500", "failed to load")
 LOAD_RUNTIME = "mlx-lm"
 
 
@@ -408,11 +410,21 @@ def is_architecture_gap(text: str) -> bool:
 def load_failure(summary: dict | None, candidate: str) -> str:
     """The server's error if this runtime could not build the architecture."""
     why = why_nothing_passed(summary, candidate)
+    if candidate.startswith(LLAMACPP_PREFIX):
+        low = why.lower()
+        return why if all(p in low for p in LLAMACPP_LOAD_FAILED) else ""
     return why if is_architecture_gap(why) else ""
 
 
-def load_until() -> str:
+def _llamacpp_build() -> str:
+    from harness import serving
+    return serving.llamacpp_build() or "0"
+
+
+def load_until(candidate: str = "") -> str:
     """The predicate that reopens a load failure: a newer runtime."""
+    if candidate.startswith(LLAMACPP_PREFIX):
+        return f"version:llama.cpp>{_llamacpp_build()}"
     from importlib import metadata
     try:
         have = metadata.version(LOAD_RUNTIME)

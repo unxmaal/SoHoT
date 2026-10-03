@@ -34,6 +34,20 @@ LLAMACPP = "llama-server"
 LLAMACPP_PREFIX = "llamacpp:"
 
 
+def llamacpp_build(binary: str = "") -> str:
+    """The installed llama-server's build number, or "" if it cannot say."""
+    import re
+    import subprocess
+    try:
+        out = subprocess.run([binary or os.environ.get("LLAMACPP_BIN")
+                              or LLAMACPP, "--version"], capture_output=True,
+                             text=True, timeout=10)
+    except (OSError, subprocess.SubprocessError):
+        return ""
+    m = re.search(r"build (\d+)", out.stdout + out.stderr)
+    return m.group(1) if m else ""
+
+
 def engine_for(candidate: str, environ=None, config=None) -> str:
     """The server that answers this candidate, read from where it routes."""
     name = (candidate or "").partition(",")[0].strip()
