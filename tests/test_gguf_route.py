@@ -256,3 +256,29 @@ def test_a_non_text_lane_keeps_the_snapshot_route(home):
         hf_download=lambda *a: (_ for _ in ()).throw(AssertionError("gguf")),
         text=False)
     assert got == ["nvidia/magpie_tts"] and where == "/x"
+
+
+# --- #301 ---------------------------------------------------------------------
+
+def _hub(home, monkeypatch, repo, files):
+    monkeypatch.setenv("HF_HOME", str(home / "hf"))
+    snap = (home / "hf" / "hub" / f"models--{repo.replace('/', '--')}"
+            / "snapshots" / "abc")
+    snap.mkdir(parents=True)
+    for name, size in files.items():
+        (snap / name).write_bytes(b"x" * size)
+    return snap
+
+
+def test_a_gguf_repo_already_in_the_hub_cache_is_served_by_llama_server(
+        home, monkeypatch):
+    _hub(home, monkeypatch, "org/A-GGUF", {"A-Q4_K_M.gguf": 64, "README.md": 1})
+    assert gguf.fetched("org/A-GGUF") == "A-Q4_K_M"
+    assert (home / "gguf" / "A-Q4_K_M.gguf").exists()
+    assert screen.candidate_for("code", "org/A-GGUF") == "llamacpp:A-Q4_K_M"
+
+
+def test_a_hub_repo_with_safetensors_stays_on_its_own_route(home, monkeypatch):
+    _hub(home, monkeypatch, "org/B", {"b.gguf": 64, "model.safetensors": 64})
+    assert gguf.fetched("org/B") is None
+    assert not (home / "gguf" / "b.gguf").exists()
