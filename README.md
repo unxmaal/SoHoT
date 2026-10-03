@@ -875,12 +875,14 @@ is already waiting.
 
 ### GGUF candidates in the text lanes
 
-A repo that ships only GGUF files (no safetensors) is run by llama-server
-rather than mlx_lm.server:
+A text-lane repo that ships only GGUF files (no safetensors) is run by
+llama-server rather than mlx_lm.server. Other lanes keep the whole-repo
+download, since their runners load the repo:
 
 - **Inspect** sizes it by the one file it would fetch, not the sum of every
   quant. That file is Q4_K_M when it fits the ceiling, then Q4_K_S, IQ4_XS,
-  Q4_0, Q5_K_M, Q5_K_S, then the largest that fits. Split files, `mmproj`
+  Q4_0, Q5_K_M, Q5_K_S, then the largest that fits. Split files, imatrix
+  calibration data, `mmproj`
   projectors and files in subdirectories are never chosen, because the router
   cannot serve them alone.
 - **Fetch** downloads that one file into `$LLAMACPP_MODELS_DIR` (default

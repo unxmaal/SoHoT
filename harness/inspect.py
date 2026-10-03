@@ -631,14 +631,13 @@ def inspect_model(model_id: str, *, data: dict | None = None, fetch=None,
     siblings = data.get("siblings") or []
     sizes = [s.get("size") or 0 for s in siblings]
     total = sum(sizes)
-    from harness import gguf
-    if gguf.only(siblings):
-        # One file is fetched, not every quant. #295.
+    from harness import gguf, lanes
+    text = lanes.canonical(lane_for(data) or "") in ("", *lanes.TEXT_SERVED)
+    if text and gguf.only(siblings):
+        # One file is fetched, not every quant. #295, #298.
         pick = gguf.choose(siblings, ceiling if ceiling is not None
                            else ceiling_bytes())
-        files = [s.get("size") or 0 for s in siblings
-                 if str(s.get("rfilename", "")).lower().endswith(".gguf")]
-        total = pick[1] if pick else min((f for f in files if f), default=0)
+        total = pick[1] if pick else gguf.smallest(siblings)
     if total > 0:
         fit.weights[model_id] = total
         fit.largest = fit.smallest = total

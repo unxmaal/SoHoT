@@ -24,7 +24,14 @@ def _servable(f: dict) -> bool:
     name = str(f.get("rfilename", ""))
     return (name.lower().endswith(".gguf") and "/" not in name
             and not name.lower().startswith("mmproj")
+            and "imatrix" not in name.lower()
             and not _SPLIT.search(name))
+
+
+def smallest(siblings) -> int:
+    """The smallest file the router could serve, or 0 if none."""
+    return min((int(f.get("size") or 0) for f in siblings or []
+                if _servable(f) and f.get("size")), default=0)
 
 
 def only(siblings) -> bool:

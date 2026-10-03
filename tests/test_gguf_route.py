@@ -223,3 +223,36 @@ def test_the_models_dir_is_the_one_the_router_reads(monkeypatch):
     monkeypatch.delenv("LLAMACPP_MODELS_DIR", raising=False)
     monkeypatch.setenv("HF_HOME", "/hf")
     assert gguf.models_dir() == Path("/hf/gguf")
+
+
+# --- #298 ---------------------------------------------------------------------
+
+def test_an_imatrix_file_is_never_a_model():
+    """command-a-plus: every quant over the ceiling, so the fallback took the
+    208 MB calibration file."""
+    sibs = [sib("C-Q4_K_M.gguf", 60), sib("C-imatrix.gguf", 0.2)]
+    assert gguf.choose(sibs, 22 * GIB) is None
+
+
+def test_inspect_calls_an_oversized_gguf_repo_too_big():
+    import dataclasses
+    from harness import machine
+    here = dataclasses.replace(machine.detect(),
+                               runtimes=frozenset({"cpu", "llamacpp", "mlx"}))
+    sibs = [sib("C-Q4_K_M.gguf", 60), sib("C-Q2_K.gguf", 40),
+            sib("C-imatrix.gguf", 0.2)]
+    fit = ins.inspect_model("org/C-GGUF", ceiling=22 * GIB, machine=here,
+                            data={"siblings": sibs, "tags": ["gguf"]})
+    assert fit.verdict == "too-big", fit.why
+    assert fit.largest == 40 * GIB
+
+
+def test_a_non_text_lane_keeps_the_snapshot_route(home):
+    """magpie_tts ships only a GGUF; its runner wants the repo."""
+    got = []
+    where = fetching.download(
+        "nvidia/magpie_tts", snapshot=lambda repo_id: got.append(repo_id) or "/x",
+        listing=lambda r: [sib("magpie.f16.gguf", 0.5)],
+        hf_download=lambda *a: (_ for _ in ()).throw(AssertionError("gguf")),
+        text=False)
+    assert got == ["nvidia/magpie_tts"] and where == "/x"
