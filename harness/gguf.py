@@ -73,8 +73,9 @@ def remember(repo: str, filename: str) -> None:
                            encoding="utf-8")
 
 
-def path_of(repo: str) -> Path | None:
-    name = _load().get(repo) or _adopt_from_hub(repo)
+def path_of(repo: str, adopt: bool = False) -> Path | None:
+    """`adopt` only from a caller that knows the repo is text-lane. #303."""
+    name = _load().get(repo) or (_adopt_from_hub(repo) if adopt else "")
     if not name:
         return None
     path = models_dir() / name
@@ -102,9 +103,9 @@ def _adopt_from_hub(repo: str) -> str:
     return ""
 
 
-def fetched(repo: str) -> str | None:
+def fetched(repo: str, adopt: bool = False) -> str | None:
     """The stem llama-server's router serves this repo under, if on disk."""
-    path = path_of(repo)
+    path = path_of(repo, adopt)
     return path.name[:-len(".gguf")] if path else None
 
 
