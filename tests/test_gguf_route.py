@@ -273,9 +273,20 @@ def _hub(home, monkeypatch, repo, files):
 def test_a_gguf_repo_already_in_the_hub_cache_is_served_by_llama_server(
         home, monkeypatch):
     _hub(home, monkeypatch, "org/A-GGUF", {"A-Q4_K_M.gguf": 64, "README.md": 1})
-    assert gguf.fetched("org/A-GGUF") == "A-Q4_K_M"
-    assert (home / "gguf" / "A-Q4_K_M.gguf").exists()
     assert screen.candidate_for("code", "org/A-GGUF") == "llamacpp:A-Q4_K_M"
+    assert (home / "gguf" / "A-Q4_K_M.gguf").exists()
+    assert gguf.fetched("org/A-GGUF") == "A-Q4_K_M"
+
+
+def test_only_a_text_lane_adopts_from_the_hub(home, monkeypatch):
+    """#303: magpie (tts) was linked by a read that had no lane."""
+    _hub(home, monkeypatch, "org/T", {"t.f16.gguf": 64})
+    assert screen.candidate_for("tts", "org/T") != "llamacpp:t.f16"
+    assert fetching.have("org/T")
+    mem.cache_path("org/T")
+    screen.routed_gateway("org/T")
+    assert not (home / "gguf" / "t.f16.gguf").exists()
+    assert gguf.fetched("org/T") is None
 
 
 def test_a_hub_repo_with_safetensors_stays_on_its_own_route(home, monkeypatch):

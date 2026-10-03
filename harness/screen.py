@@ -135,7 +135,7 @@ def candidate_for(lane: str, model: str, description: str = "") -> str:
         return ""
     if lanes.canonical(lane) in lanes.TEXT_SERVED:
         from harness import gguf
-        stem = gguf.fetched(model)
+        stem = gguf.fetched(model, adopt=True)
         if stem:
             return f"{LLAMACPP_PREFIX}{stem}"
     for spec in specs:
