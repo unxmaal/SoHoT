@@ -243,6 +243,17 @@ def is_kokoro(model: str) -> bool:
     return "kokoro" in model.lower()
 
 
+def greedy(candidates: list[str]) -> list[str]:
+    """Pin text candidates to temperature 0, so a screen is one fixed draw. #308."""
+    out = []
+    for c in candidates:
+        if (kind_of(c) in ("gateway", LLAMACPP_KIND)
+                and "temperature" not in parse_options(c.partition(",")[2], c)):
+            c = f"{c},temperature=0"
+        out.append(c)
+    return out
+
+
 def effective_sampling(modality: str, candidates: list[str]) -> dict:
     """What this run actually asked for, per modality.
 
@@ -601,6 +612,8 @@ def main(argv: list[str] | None = None) -> int:
         args.candidates = winner_for(args.modality)
         print(f"── winner for {args.modality}: {args.candidates}", flush=True)
     candidates = split_candidates(args.candidates)
+    if args.screen:
+        candidates = greedy(candidates)
     outdir = resolve_outdir(args.out, args.modality)
     if outdir:
         outdir.mkdir(parents=True, exist_ok=True)
