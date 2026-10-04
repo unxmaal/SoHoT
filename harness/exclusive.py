@@ -43,6 +43,12 @@ LOCK = "generation.lock"
 #: rather than milliseconds to change it. The resource protected here is a
 #: large LOCAL working set, not the machine.
 EXCLUSIVE = {"image", "video"}
+#: Batch runs that load models on any engine, and other projects through
+#: scripts/with-gpu-lock. A lane prompt is not one of these. #314.
+BATCH = {"eval", "ramp", "external"}
+#: Set while held, so a child that also asks (a helper running `lh ...`)
+#: does not deadlock against its own parent.
+HELD_ENV = "LH_GPU_LOCK_HELD"
 
 #: How often a waiter re-reads the holder to refresh what it reports.
 POLL_SECONDS = 0.5
@@ -126,7 +132,7 @@ def held(kind: str, announce=None, poll: float = POLL_SECONDS):
     again whenever what it is waiting behind changes. Waiting silently for
     forty minutes is indistinguishable from hanging.
     """
-    if kind not in EXCLUSIVE:
+    if kind not in EXCLUSIVE | BATCH or os.environ.get(HELD_ENV) == "1":
         yield False
         return
 
@@ -147,9 +153,11 @@ def held(kind: str, announce=None, poll: float = POLL_SECONDS):
             time.sleep(poll)
 
         _write_holder(kind)
+        os.environ[HELD_ENV] = "1"
         try:
             yield waited
         finally:
+            os.environ.pop(HELD_ENV, None)
             with contextlib.suppress(OSError):
                 holder_path().unlink()
             _release(fd)

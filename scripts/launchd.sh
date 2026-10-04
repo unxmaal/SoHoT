@@ -271,7 +271,13 @@ case "${1:-}" in
   deploy)    deploy ;;
   generate)  shift; generate "${1:-}" ;;
   probe)     preflight && echo "ok: a launchd agent can read ${HF_ROOT:-$PWD/hf_root}" ;;
-  install)   install_units ;;
+  install)
+    # Restarting a model server mid-run killed 32 requests on 2026-10-04, so
+    # wait for any model-loading run to finish first. #314.
+    if [ "${LH_GPU_LOCK_HELD:-}" != 1 ]; then
+      exec "$REPO/scripts/with-gpu-lock" "$0" install
+    fi
+    install_units ;;
   uninstall) uninstall_units ;;
   status)    status ;;
   *)         usage ;;

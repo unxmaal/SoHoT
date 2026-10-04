@@ -1039,9 +1039,11 @@ def cmd_memory(a) -> int:
         return 0
     print(f"allocating {a.step_gb:g} GB at a time until macOS first warns; "
           f"everything is freed at the end", flush=True)
+    from harness import exclusive
     try:
-        got = ramp.run(step_gb=a.step_gb, settle_s=a.settle,
-                       floor_pct=a.floor_pct, cap_gb=a.cap_gb)
+        with exclusive.held("ramp", announce=lambda m: print(m, flush=True)):
+            got = ramp.run(step_gb=a.step_gb, settle_s=a.settle,
+                           floor_pct=a.floor_pct, cap_gb=a.cap_gb)
     except ValueError as exc:
         return err(str(exc))
     if not got["steps"]:
@@ -1085,7 +1087,9 @@ def cmd_rubric(a) -> int:
     if not candidates:
         return err("--candidates is required for run")
     try:
-        report = rv.run(s, candidates, a.gateway)
+        from harness import exclusive
+        with exclusive.held("eval", announce=lambda m: print(m, flush=True)):
+            report = rv.run(s, candidates, a.gateway)
     except ValueError as exc:
         return err(str(exc))
     out = paths.runs() / f"rubric-{time.strftime('%Y%m%d-%H%M%S')}-{s.rubric.name}"
