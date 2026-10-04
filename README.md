@@ -868,6 +868,11 @@ lh discover --revisit             # refusals this machine now satisfies
 lh discover --revisit --requeue   # send them back to inspect
 ```
 
+A screen runs one case once, so text candidates are screened at
+temperature 0 unless the spec sets one. A single sampled draw made
+Qwen3-0.6B pass on one screen and fail on the next, and a failure is
+terminal (#308). The receipt's `sampling` records the 0.
+
 A runtime that cannot build a model is a fact about the runtime, so the
 screen declines it until a newer one: `version:mlx-lm>X` for mlx_lm.server's
 "Model type ... not supported", and `version:llama.cpp>BUILD` when
