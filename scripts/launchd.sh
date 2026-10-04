@@ -278,6 +278,12 @@ case "${1:-}" in
       exec "$REPO/scripts/with-gpu-lock" "$0" install
     fi
     install_units ;;
+  restart)
+    # One loaded service, after any model-loading run. A no-op when the
+    # service is not loaded (another machine, or not installed). #319.
+    label="$PREFIX.${2:?usage: $0 restart SERVICE}"
+    launchctl print "gui/$UID/$label" >/dev/null 2>&1 || exit 0
+    "$REPO/scripts/with-gpu-lock" launchctl kickstart -k "gui/$UID/$label" ;;
   uninstall) uninstall_units ;;
   status)    status ;;
   *)         usage ;;

@@ -293,3 +293,17 @@ def test_a_hub_repo_with_safetensors_stays_on_its_own_route(home, monkeypatch):
     _hub(home, monkeypatch, "org/B", {"b.gguf": 64, "model.safetensors": 64})
     assert gguf.fetched("org/B") is None
     assert not (home / "gguf" / "b.gguf").exists()
+
+
+def test_a_downloaded_gguf_asks_for_the_router_to_rescan(home):
+    """#319: the router only reads its directory at startup."""
+    asked = []
+    gguf.download("org/M", "M-Q4_K_M.gguf",
+                  hf_download=lambda r, f, d: str(Path(d) / f),
+                  refresh=lambda: asked.append(True))
+    assert asked == [True]
+
+
+def test_the_suite_can_never_restart_the_real_eval_server():
+    real = gguf.__dict__["refresh_router"]
+    assert real.__module__ != "harness.gguf" or real.__name__ == "<lambda>"

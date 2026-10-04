@@ -74,6 +74,20 @@ model_list:
       model: openai/Qwen3-4B-Instruct-2507-Q4_K_M
       api_base: http://127.0.0.1:8082/v1
       api_key: not-needed
+  - model_name: eval-7b
+    source_repo: bartowski/Qwen2.5-7B-Instruct-GGUF
+    source_file: Qwen2.5-7B-Instruct-Q4_K_M.gguf
+    litellm_params:
+      model: openai/Qwen2.5-7B-Instruct-Q4_K_M
+      api_base: http://127.0.0.1:8082/v1
+      api_key: not-needed
+  - model_name: eval-12b
+    source_repo: bartowski/google_gemma-3-12b-it-GGUF
+    source_file: google_gemma-3-12b-it-Q4_K_M.gguf
+    litellm_params:
+      model: openai/google_gemma-3-12b-it-Q4_K_M
+      api_base: http://127.0.0.1:8082/v1
+      api_key: not-needed
 
 litellm_settings:
   drop_params: true

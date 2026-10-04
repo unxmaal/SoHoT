@@ -80,3 +80,24 @@ def test_the_context_size_is_always_explicit():
     m = re.search(r'--ctx-size "\$\{LLAMACPP_CTX:-(\d+)\}"', text)
     assert m, "serve-llamacpp.sh must pass --ctx-size"
     assert int(m.group(1)) <= 32768
+
+
+def test_the_fetch_script_is_allowed_online():
+    """env.sh sets HF_HUB_OFFLINE=1 for everything else; the one script whose
+    job is to download inherited it and could fetch nothing. #319."""
+    text = FETCH.read_text(encoding="utf-8")
+    assert "HF_HUB_OFFLINE=0" in text
+
+
+def test_a_fetched_gguf_restarts_the_router_so_it_can_be_served():
+    """llama-server's router reads --models-dir at startup only (build 10809):
+    a file fetched later answered `model ... not found`. #319."""
+    text = FETCH.read_text(encoding="utf-8")
+    assert "launchd.sh restart eval" in text
+
+
+def test_restart_runs_under_the_machine_lock():
+    text = LAUNCHD.read_text(encoding="utf-8")
+    assert "restart)" in text
+    block = text[text.index("restart)"):]
+    assert "with-gpu-lock" in block.split(";;")[0]
