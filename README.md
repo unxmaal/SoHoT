@@ -1081,6 +1081,28 @@ it does not wait on its own parent. `scripts/launchd.sh install` runs under
 the lock too: restarting mlx_lm.server in the middle of another project's run
 killed 32 of its 50 requests on 2026-10-04.
 
+### How many requests a server can take at once
+
+```bash
+lh throughput --model eval-7b --texts convos.jsonl --levels 1,2,4
+```
+
+The command sends every line's `text` to a gateway alias with 1, 2 and 4
+requests in flight, holding the machine lock, and reports requests per hour,
+the speedup over one at a time, p50/p95 latency and errors. llama-server runs
+four slots that batch together, so a client sending one request at a time
+leaves most of that unused.
+
+Measured 2026-10-04 on the M2 Pro: eval-7b (Qwen2.5-7B Q4_K_M), 16
+conversations of median 1,130 characters, 300-token budget (about 70 tokens
+used), warmed:
+
+| in flight | per hour | speedup | p50 |
+|---|---|---|---|
+| 1 | 985 | 1.0x | 4.3 s |
+| 2 | 1,959 | 2.0x | 3.6 s |
+| 4 | 2,465 | 2.5x | 5.8 s |
+
 ### How much memory a run can take
 
 ```bash

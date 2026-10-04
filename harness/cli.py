@@ -1026,6 +1026,29 @@ def _evalset(name: str) -> Path:
     return p if p.is_dir() else paths.home() / "evalsets" / name
 
 
+def cmd_throughput(a) -> int:
+    """How much faster an alias goes with several requests in flight. #310."""
+    import json as _json
+    from harness import throughput
+    try:
+        rows = [_json.loads(l) for l in open(a.texts, encoding="utf-8") if l.strip()]
+    except (OSError, ValueError) as exc:
+        return err(f"cannot read {a.texts}: {exc}")
+    texts = [str(r.get(a.field) or "") for r in rows][: a.n]
+    levels = tuple(int(x) for x in a.levels.split(",") if x.strip())
+    print(f"{a.model}: {len(texts)} texts at {levels} in flight, "
+          f"max_tokens {a.max_tokens}", flush=True)
+    got = throughput.sweep(a.model, texts, levels=levels,
+                           max_tokens=a.max_tokens, gateway=a.gateway)
+    base = got[0]["per_hour"] or 1
+    for r in got:
+        print(f"  {r['concurrency']:2d} in flight  {r['per_hour']:7.1f}/h  "
+              f"x{r['per_hour'] / base:.2f}  p50 {r['p50_s']:6.2f}s  "
+              f"p95 {r['p95_s']:6.2f}s  errors {r['errors']}  "
+              f"tokens {r['completion_tokens']}", flush=True)
+    return 0
+
+
 def cmd_memory(a) -> int:
     """How far this machine's memory goes before macOS pushes back. #299."""
     from harness import memory_store as ms, ramp
@@ -2669,6 +2692,17 @@ def build_parser() -> argparse.ArgumentParser:
     rub.add_argument("--no-browser", action="store_true")
     rub.set_defaults(func=cmd_rubric)
 
+    thr = sub.add_parser("throughput", help="requests per hour at several "
+                         "in-flight levels against one gateway alias")
+    thr.add_argument("--model", required=True)
+    thr.add_argument("--texts", required=True,
+                     help="JSONL file; each line's --field is one request")
+    thr.add_argument("--field", default="text")
+    thr.add_argument("--n", type=int, default=16)
+    thr.add_argument("--levels", default="1,2,4")
+    thr.add_argument("--max-tokens", type=int, default=300)
+    thr.add_argument("--gateway", default="http://127.0.0.1:4000")
+    thr.set_defaults(func=cmd_throughput)
     mem = sub.add_parser("memory", help="measure how much memory a run can "
                          "take before macOS starts pushing back")
     mem.add_argument("action", choices=("ramp", "show"))
