@@ -1072,8 +1072,11 @@ loads a model:
 ~/localharness/deploy/scripts/with-gpu-lock <command> [args...]
 ```
 
-The helper needs only the standard library, since macOS ships no `flock`
-command. It sets `LH_GPU_LOCK_HELD=1` for the command, so an `lh` run inside
+macOS's own `lockf -k ~/localharness/queue/generation.lock <command>` takes
+the same lock. Checked both ways on 2026-10-04: each refuses while the other
+holds it. The helper adds two things: it records who is holding the lock, so a
+waiter can say what it is waiting behind, and it marks nested runs so they
+don't deadlock. It sets `LH_GPU_LOCK_HELD=1` for the command, so an `lh` run inside
 it does not wait on its own parent. `scripts/launchd.sh install` runs under
 the lock too: restarting mlx_lm.server in the middle of another project's run
 killed 32 of its 50 requests on 2026-10-04.
