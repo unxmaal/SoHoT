@@ -109,7 +109,17 @@ def fetched(repo: str, adopt: bool = False) -> str | None:
     return path.name[:-len(".gguf")] if path else None
 
 
-def download(repo: str, filename: str, hf_download=None) -> str:
+def refresh_router() -> None:
+    """Restart the eval server so its router sees a new file. #319."""
+    import subprocess
+    import sys
+    if sys.platform != "darwin":
+        return
+    script = Path(__file__).resolve().parents[1] / "scripts" / "launchd.sh"
+    subprocess.run([str(script), "restart", "eval"], check=False)
+
+
+def download(repo: str, filename: str, hf_download=None, refresh=None) -> str:
     if hf_download is None:
         from huggingface_hub import hf_hub_download
 
@@ -119,4 +129,5 @@ def download(repo: str, filename: str, hf_download=None) -> str:
     models_dir().mkdir(parents=True, exist_ok=True)
     where = hf_download(repo, filename, str(models_dir()))
     remember(repo, filename)
+    (refresh or refresh_router)()
     return str(where)
