@@ -1,0 +1,19 @@
+#!/usr/bin/env python3
+"""Run a command holding localharness's machine lock. Usage: with-gpu-lock CMD...
+
+For any project that loads models on this machine. Standard library only.
+"""
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from harness import exclusive  # noqa: E402
+
+if len(sys.argv) < 2:
+    sys.exit("usage: with-gpu-lock CMD [ARGS...]")
+with exclusive.held("external",
+                    announce=lambda m: print(f"with-gpu-lock: {m}",
+                                             file=sys.stderr, flush=True)):
+    sys.exit(subprocess.call(sys.argv[1:], env=os.environ))

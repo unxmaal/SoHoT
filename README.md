@@ -1057,6 +1057,27 @@ It will refuse if the two runs are not fairly comparable, and tell you which
 difference disqualified them. Comparing a run from before a settings change
 against one from after compares two different exams, so it stops you.
 
+### One model-loading run at a time
+
+Image and video generation, eval runs (screen, measure, `lh rubric run`) and
+`lh memory ramp` hold one machine-wide lock,
+`$LOCALHARNESS_HOME/queue/generation.lock`. A second run waits and says what
+it is waiting behind. Text lane prompts do not take it, because each server
+already queues its own requests.
+
+Other projects on the same machine take the same lock around anything that
+loads a model:
+
+```bash
+~/localharness/deploy/scripts/with-gpu-lock <command> [args...]
+```
+
+The helper needs only the standard library, since macOS ships no `flock`
+command. It sets `LH_GPU_LOCK_HELD=1` for the command, so an `lh` run inside
+it does not wait on its own parent. `scripts/launchd.sh install` runs under
+the lock too: restarting mlx_lm.server in the middle of another project's run
+killed 32 of its 50 requests on 2026-10-04.
+
 ### How much memory a run can take
 
 ```bash

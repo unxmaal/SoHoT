@@ -591,7 +591,14 @@ def main(argv: list[str] | None = None) -> int:
                if not getattr(args, n)]
     if missing:
         raise SystemExit(f"{' and '.join(missing)} required (or use --compare)")
+    from harness import exclusive
+    # One model-loading run on the machine at a time, across projects. #314.
+    with exclusive.held("eval", announce=lambda m: print(
+            f"evals.run: {m}", file=sys.stderr, flush=True)):
+        return _execute(args)
 
+
+def _execute(args) -> int:
     if args.screen:
         # A screen is allowed to be statistically worthless. Its job is to
         # reject what does not run at all, which is how most things here have
