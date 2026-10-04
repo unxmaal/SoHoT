@@ -44,21 +44,21 @@
  "siblings": [
   {
    "rfilename": ".gitattributes",
-   "size": null
+   "size": 1519
   },
   {
    "rfilename": "README.md",
-   "size": null
+   "size": 6872
   },
   {
    "rfilename": "config.json",
-   "size": null
+   "size": 1374
   },
   {
    "rfilename": "pytorch_model.bin",
-   "size": null
+   "size": 17228778458
   }
  ],
  "lastModified": "2026-03-30T10:01:42.000Z",
- "downloads": 155
+ "downloads": 241
 }

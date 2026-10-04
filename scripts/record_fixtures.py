@@ -20,6 +20,9 @@ import sys
 import urllib.request
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from harness.inspect import MODEL_URL  # noqa: E402  the URL the tier reads
+
 FIXTURES = Path(__file__).resolve().parent.parent / "tests" / "fixtures" / "registry"
 #: Only the fields the ladder reads. A whole card is 40 KB of README that no
 #: test looks at and that changes on every push.
@@ -29,7 +32,7 @@ KEEP = ("id", "pipeline_tag", "tags", "library_name", "cardData",
 
 def record(model_id: str) -> Path:
     req = urllib.request.Request(
-        f"https://huggingface.co/api/models/{model_id}",
+        MODEL_URL.format(model_id=model_id),
         headers={"User-Agent": "localharness-fixtures"})
     with urllib.request.urlopen(req, timeout=30) as r:
         card = json.load(r)
@@ -37,7 +40,7 @@ def record(model_id: str) -> Path:
     if out.get("siblings"):
         out["siblings"] = [{"rfilename": s.get("rfilename"),
                             "size": s.get("size")}
-                           for s in out["siblings"][:20]]
+                           for s in out["siblings"]]
     path = FIXTURES / (model_id.replace("/", "_") + ".json")
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(out, indent=1), encoding="utf-8")

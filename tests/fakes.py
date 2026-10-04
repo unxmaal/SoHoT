@@ -30,6 +30,13 @@ FIXTURES = Path(__file__).resolve().parent / "fixtures" / "registry"
 #: Recorded card -> the defect it exists to reproduce. A fixture with no reason
 #: to be here gets deleted rather than kept for volume.
 WHY = {
+    "bartowski/Qwen2.5-7B-Instruct-GGUF":
+        "a GGUF-only repo of many quants: inspect must size it by the one file "
+        "it would fetch, not the sum, and the text lanes must route it to "
+        "llama-server (#295)",
+    "bartowski/command-a-plus-05-2026-GGUF":
+        "every quant over the ceiling and an imatrix file under it, which the "
+        "picker once fetched as a model (#298)",
     "EschaLabs/Qwen3.6-35B-A3B-Escha-W2":
         "a 2-bit MoE mlx_lm cannot load, and the only queued code candidate "
         "carrying published benchmarks (#254)",
