@@ -276,6 +276,26 @@ def measured_reserve_gb() -> float:
     return max(max(margins), MIN_RESERVE_GB) if margins else DEFAULT_RESERVE_GB
 
 
+def measured_peak_gb(spec: str, runs=None) -> float | None:
+    """The largest peak any receipt measured for `spec`, or None. #322.
+
+    0 means the work happened in a server process, so it is skipped.
+    """
+    import json
+    from harness import paths, screen
+    best = 0
+    for f in Path(runs or paths.runs()).rglob("results.json"):
+        try:
+            summary = json.loads(f.read_text(encoding="utf-8")).get("summary")
+        except (OSError, ValueError, AttributeError):
+            continue
+        row = screen.row_for(summary if isinstance(summary, dict) else None,
+                             spec)
+        if row:
+            best = max(best, int(row.get("peak_kb") or 0))
+    return best / 1024 ** 2 if best else None
+
+
 def fits(need_gb: float, available_gb: float, ceiling_gb: float,
          resident_gb: float = 0.0,
          reserve_gb: float = DEFAULT_RESERVE_GB) -> tuple[bool, str]:
@@ -345,7 +365,8 @@ _BASE_BITS = 16
 
 def check_model(repo: str, resident_gb: float = 0.0,
                 reserve_gb: float | None = None,
-                quantize: int | None = None) -> tuple[bool, str]:
+                quantize: int | None = None,
+                spec: str = "") -> tuple[bool, str]:
     """One call: will loading `repo` be safe on this machine right now?
 
     `quantize` is the bit width the CALLER will load at. Without it this used
@@ -359,6 +380,10 @@ def check_model(repo: str, resident_gb: float = 0.0,
     need = size_gb(path) if path else None
     if need is not None and quantize:
         need = need * quantize / _BASE_BITS
+    # A measured peak beats the weights-on-disk proxy. #322.
+    peak = measured_peak_gb(spec) if spec else None
+    if peak is not None and (need is None or peak > need):
+        need = peak
     if need is None:
         # Allowed, but said out loud. Refusing everything uncached would make
         # the guard the thing that breaks the workflow.

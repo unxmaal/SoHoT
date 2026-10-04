@@ -1503,7 +1503,7 @@ def _report_screen(a) -> int:
         for r in ready[:getattr(a, "limit", 1)]:
             print(f"\n── {r['name']}", flush=True)
             # Headroom, including what is already resident. #284.
-            room, why_not = memory.check_model(r["name"])
+            room, why_not = memory.check_model(r["name"], spec=r["candidate"])
             if not room:
                 print(f"   QUEUED: {why_not}")
                 ms.decide(store, r["name"], "queued", tier=ms.SCREEN,
