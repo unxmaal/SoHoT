@@ -1118,8 +1118,11 @@ For a job where a model reads some text and answers in a fixed shape (is this
 a fact, which category, how severe). The answer is JSON that must match a
 schema, and the only reference is a person's labels.
 
-`mlx_lm.server` ignores `response_format`, so a schema sent to an MLX alias is
-dropped and the model writes whatever it likes. `llama-server` enforces it.
+`mlx_lm.server` ignores `response_format`, so on the Mac the gateway refuses
+it for an MLX alias with a 400 naming the aliases that enforce it
+(`gateway/schema_guard.py`). Before that, the schema was silently dropped and
+the model wrote whatever it liked. `llama-server` enforces it. Each alias's
+real upstream id is at `GET :4000/model/info`.
 `scripts/serve-eval.sh` runs it beside the MLX server on `:8082`, and the
 gateway's `eval-*` aliases point there. It unloads its model after five idle
 minutes. Weights are GGUF files in `$HF_HOME/gguf`:
