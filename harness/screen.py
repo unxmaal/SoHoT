@@ -133,6 +133,12 @@ def candidate_for(lane: str, model: str, description: str = "") -> str:
     specs = LANE_CANDIDATES.get(lanes.canonical(lane), ())
     if not specs:
         return ""
+    if lanes.canonical(lane) == "svg":
+        # OmniSVG runs only through its own runner, not a text server. #318.
+        from evals.runners.omnisvg import MODELS
+        for size, (_, repo) in MODELS.items():
+            if model == repo:
+                return f"omnisvg:{size}"
     if lanes.canonical(lane) in lanes.TEXT_SERVED:
         from harness import gguf
         stem = gguf.fetched(model, adopt=True)
