@@ -41,85 +41,93 @@
  "siblings": [
   {
    "rfilename": ".gitattributes",
-   "size": null
+   "size": 1602
   },
   {
    "rfilename": "LICENSE",
-   "size": null
+   "size": 10174
   },
   {
    "rfilename": "NOTICE.md",
-   "size": null
+   "size": 623
   },
   {
    "rfilename": "README.md",
-   "size": null
+   "size": 12848
   },
   {
    "rfilename": "assets/bonsai-logo.svg",
-   "size": null
+   "size": 510
   },
   {
    "rfilename": "manifest.json",
-   "size": null
+   "size": 3497
   },
   {
    "rfilename": "model_index.json",
-   "size": null
+   "size": 81
   },
   {
    "rfilename": "text_encoder-hqq-4bit/config.json",
-   "size": null
+   "size": 1535
   },
   {
    "rfilename": "text_encoder-hqq-4bit/qmodel.pt",
-   "size": null
+   "size": 2822340711
   },
   {
    "rfilename": "text_encoder-hqq-4bit/tokenizer/added_tokens.json",
-   "size": null
+   "size": 707
   },
   {
    "rfilename": "text_encoder-hqq-4bit/tokenizer/chat_template.jinja",
-   "size": null
+   "size": 4168
   },
   {
    "rfilename": "text_encoder-hqq-4bit/tokenizer/merges.txt",
-   "size": null
+   "size": 1671853
   },
   {
    "rfilename": "text_encoder-hqq-4bit/tokenizer/special_tokens_map.json",
-   "size": null
+   "size": 613
   },
   {
    "rfilename": "text_encoder-hqq-4bit/tokenizer/tokenizer.json",
-   "size": null
+   "size": 11422654
   },
   {
    "rfilename": "text_encoder-hqq-4bit/tokenizer/tokenizer_config.json",
-   "size": null
+   "size": 5404
   },
   {
    "rfilename": "text_encoder-hqq-4bit/tokenizer/vocab.json",
-   "size": null
+   "size": 2776833
   },
   {
    "rfilename": "transformer-gemlite-int1/config.json",
-   "size": null
+   "size": 620
   },
   {
    "rfilename": "transformer-gemlite-int1/gemlite_autotune.json",
-   "size": null
+   "size": 470216
   },
   {
    "rfilename": "transformer-gemlite-int1/quantization_config.json",
-   "size": null
+   "size": 6010
   },
   {
    "rfilename": "transformer-gemlite-int1/state_dict.pt",
-   "size": null
+   "size": 1080394762
+  },
+  {
+   "rfilename": "vae/config.json",
+   "size": 864
+  },
+  {
+   "rfilename": "vae/diffusion_pytorch_model.safetensors",
+   "size": 168120878
   }
  ],
  "lastModified": "2026-06-01T22:12:51.000Z",
- "downloads": 87
+ "downloads": 123
 }

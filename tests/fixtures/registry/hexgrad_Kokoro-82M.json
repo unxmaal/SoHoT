@@ -26,85 +26,293 @@
  "siblings": [
   {
    "rfilename": ".gitattributes",
-   "size": null
+   "size": 1913
   },
   {
    "rfilename": "DONATE.md",
-   "size": null
+   "size": 2562
   },
   {
    "rfilename": "EVAL.md",
-   "size": null
+   "size": 534
   },
   {
    "rfilename": "README.md",
-   "size": null
+   "size": 6348
   },
   {
    "rfilename": "SAMPLES.md",
-   "size": null
+   "size": 5956
   },
   {
    "rfilename": "VOICES.md",
-   "size": null
+   "size": 7625
   },
   {
    "rfilename": "config.json",
-   "size": null
+   "size": 2351
   },
   {
    "rfilename": "eval/ArtificialAnalysis-2025-02-26.jpeg",
-   "size": null
+   "size": 939504
   },
   {
    "rfilename": "eval/TTS_Arena-2025-02-26.jpeg",
-   "size": null
+   "size": 560066
   },
   {
    "rfilename": "eval/TTS_Spaces_Arena-2025-02-26.jpeg",
-   "size": null
+   "size": 515255
   },
   {
    "rfilename": "kokoro-v1_0.pth",
-   "size": null
+   "size": 327212226
   },
   {
    "rfilename": "samples/HEARME.wav",
-   "size": null
+   "size": 996044
   },
   {
    "rfilename": "samples/af_heart_0.wav",
-   "size": null
+   "size": 237644
   },
   {
    "rfilename": "samples/af_heart_1.wav",
-   "size": null
+   "size": 517244
   },
   {
    "rfilename": "samples/af_heart_2.wav",
-   "size": null
+   "size": 496844
   },
   {
    "rfilename": "samples/af_heart_3.wav",
-   "size": null
+   "size": 1407644
   },
   {
    "rfilename": "samples/af_heart_4.wav",
-   "size": null
+   "size": 1116044
   },
   {
    "rfilename": "samples/af_heart_5.wav",
-   "size": null
+   "size": 1033244
   },
   {
    "rfilename": "voices/af_alloy.pt",
-   "size": null
+   "size": 523425
   },
   {
    "rfilename": "voices/af_aoede.pt",
-   "size": null
+   "size": 523425
+  },
+  {
+   "rfilename": "voices/af_bella.pt",
+   "size": 523425
+  },
+  {
+   "rfilename": "voices/af_heart.pt",
+   "size": 523425
+  },
+  {
+   "rfilename": "voices/af_jessica.pt",
+   "size": 523435
+  },
+  {
+   "rfilename": "voices/af_kore.pt",
+   "size": 523420
+  },
+  {
+   "rfilename": "voices/af_nicole.pt",
+   "size": 523430
+  },
+  {
+   "rfilename": "voices/af_nova.pt",
+   "size": 523420
+  },
+  {
+   "rfilename": "voices/af_river.pt",
+   "size": 523425
+  },
+  {
+   "rfilename": "voices/af_sarah.pt",
+   "size": 523425
+  },
+  {
+   "rfilename": "voices/af_sky.pt",
+   "size": 523351
+  },
+  {
+   "rfilename": "voices/am_adam.pt",
+   "size": 523420
+  },
+  {
+   "rfilename": "voices/am_echo.pt",
+   "size": 523420
+  },
+  {
+   "rfilename": "voices/am_eric.pt",
+   "size": 523420
+  },
+  {
+   "rfilename": "voices/am_fenrir.pt",
+   "size": 523430
+  },
+  {
+   "rfilename": "voices/am_liam.pt",
+   "size": 523420
+  },
+  {
+   "rfilename": "voices/am_michael.pt",
+   "size": 523435
+  },
+  {
+   "rfilename": "voices/am_onyx.pt",
+   "size": 523420
+  },
+  {
+   "rfilename": "voices/am_puck.pt",
+   "size": 523420
+  },
+  {
+   "rfilename": "voices/am_santa.pt",
+   "size": 523425
+  },
+  {
+   "rfilename": "voices/bf_alice.pt",
+   "size": 523425
+  },
+  {
+   "rfilename": "voices/bf_emma.pt",
+   "size": 523420
+  },
+  {
+   "rfilename": "voices/bf_isabella.pt",
+   "size": 523440
+  },
+  {
+   "rfilename": "voices/bf_lily.pt",
+   "size": 523420
+  },
+  {
+   "rfilename": "voices/bm_daniel.pt",
+   "size": 523430
+  },
+  {
+   "rfilename": "voices/bm_fable.pt",
+   "size": 523425
+  },
+  {
+   "rfilename": "voices/bm_george.pt",
+   "size": 523430
+  },
+  {
+   "rfilename": "voices/bm_lewis.pt",
+   "size": 523425
+  },
+  {
+   "rfilename": "voices/ef_dora.pt",
+   "size": 523420
+  },
+  {
+   "rfilename": "voices/em_alex.pt",
+   "size": 523420
+  },
+  {
+   "rfilename": "voices/em_santa.pt",
+   "size": 523430
+  },
+  {
+   "rfilename": "voices/ff_siwis.pt",
+   "size": 523425
+  },
+  {
+   "rfilename": "voices/hf_alpha.pt",
+   "size": 523425
+  },
+  {
+   "rfilename": "voices/hf_beta.pt",
+   "size": 523420
+  },
+  {
+   "rfilename": "voices/hm_omega.pt",
+   "size": 523425
+  },
+  {
+   "rfilename": "voices/hm_psi.pt",
+   "size": 523351
+  },
+  {
+   "rfilename": "voices/if_sara.pt",
+   "size": 523425
+  },
+  {
+   "rfilename": "voices/im_nicola.pt",
+   "size": 523341
+  },
+  {
+   "rfilename": "voices/jf_alpha.pt",
+   "size": 523425
+  },
+  {
+   "rfilename": "voices/jf_gongitsune.pt",
+   "size": 523351
+  },
+  {
+   "rfilename": "voices/jf_nezumi.pt",
+   "size": 523420
+  },
+  {
+   "rfilename": "voices/jf_tebukuro.pt",
+   "size": 523435
+  },
+  {
+   "rfilename": "voices/jm_kumo.pt",
+   "size": 523425
+  },
+  {
+   "rfilename": "voices/pf_dora.pt",
+   "size": 523425
+  },
+  {
+   "rfilename": "voices/pm_alex.pt",
+   "size": 523425
+  },
+  {
+   "rfilename": "voices/pm_santa.pt",
+   "size": 523430
+  },
+  {
+   "rfilename": "voices/zf_xiaobei.pt",
+   "size": 523435
+  },
+  {
+   "rfilename": "voices/zf_xiaoni.pt",
+   "size": 523430
+  },
+  {
+   "rfilename": "voices/zf_xiaoxiao.pt",
+   "size": 523440
+  },
+  {
+   "rfilename": "voices/zf_xiaoyi.pt",
+   "size": 523430
+  },
+  {
+   "rfilename": "voices/zm_yunjian.pt",
+   "size": 523435
+  },
+  {
+   "rfilename": "voices/zm_yunxi.pt",
+   "size": 523425
+  },
+  {
+   "rfilename": "voices/zm_yunxia.pt",
+   "size": 523430
+  },
+  {
+   "rfilename": "voices/zm_yunyang.pt",
+   "size": 523435
   }
  ],
  "lastModified": "2025-04-10T18:12:48.000Z",
- "downloads": 11652756
+ "downloads": 11314652
 }

@@ -1,0 +1,486 @@
+{
+ "id": "bartowski/command-a-plus-05-2026-GGUF",
+ "pipeline_tag": "text-generation",
+ "tags": [
+  "gguf",
+  "conversational",
+  "chat",
+  "text-generation",
+  "en",
+  "ar",
+  "bg",
+  "bn",
+  "ca",
+  "cs",
+  "da",
+  "de",
+  "el",
+  "es",
+  "et",
+  "fa",
+  "fi",
+  "fil",
+  "fr",
+  "ga",
+  "he",
+  "hi",
+  "hr",
+  "hu",
+  "id",
+  "is",
+  "it",
+  "ja",
+  "ko",
+  "lt",
+  "lv",
+  "ms",
+  "mt",
+  "nl",
+  "no",
+  "pa",
+  "pl",
+  "pt",
+  "ro",
+  "ru",
+  "sk",
+  "sl",
+  "sr",
+  "sv",
+  "ta",
+  "te",
+  "th",
+  "tr",
+  "uk",
+  "ur",
+  "vi",
+  "zh",
+  "base_model:CohereLabs/command-a-plus-05-2026-bf16",
+  "base_model:quantized:CohereLabs/command-a-plus-05-2026-bf16",
+  "license:apache-2.0",
+  "region:us",
+  "imatrix"
+ ],
+ "library_name": null,
+ "cardData": {
+  "quantized_by": "bartowski",
+  "pipeline_tag": "text-generation",
+  "base_model": "CohereLabs/command-a-plus-05-2026-bf16",
+  "language": [
+   "en",
+   "ar",
+   "bg",
+   "bn",
+   "ca",
+   "cs",
+   "da",
+   "de",
+   "el",
+   "es",
+   "et",
+   "fa",
+   "fi",
+   "fil",
+   "fr",
+   "ga",
+   "he",
+   "hi",
+   "hr",
+   "hu",
+   "id",
+   "is",
+   "it",
+   "ja",
+   "ko",
+   "lt",
+   "lv",
+   "ms",
+   "mt",
+   "nl",
+   "no",
+   "pa",
+   "pl",
+   "pt",
+   "ro",
+   "ru",
+   "sk",
+   "sl",
+   "sr",
+   "sv",
+   "ta",
+   "te",
+   "th",
+   "tr",
+   "uk",
+   "ur",
+   "vi",
+   "zh"
+  ],
+  "license": "apache-2.0",
+  "tags": [
+   "conversational",
+   "chat"
+  ],
+  "base_model_relation": "quantized",
+  "inference": false
+ },
+ "siblings": [
+  {
+   "rfilename": ".gitattributes",
+   "size": 11431
+  },
+  {
+   "rfilename": "README.md",
+   "size": 15439
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-IQ1_M/command-a-plus-05-2026-IQ1_M-00001-of-00002.gguf",
+   "size": 39601190944
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-IQ1_M/command-a-plus-05-2026-IQ1_M-00002-of-00002.gguf",
+   "size": 14718147200
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-IQ1_S.gguf",
+   "size": 49252618752
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-IQ2_M/command-a-plus-05-2026-IQ2_M-00001-of-00002.gguf",
+   "size": 39597335168
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-IQ2_M/command-a-plus-05-2026-IQ2_M-00002-of-00002.gguf",
+   "size": 36985368608
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-IQ2_S/command-a-plus-05-2026-IQ2_S-00001-of-00002.gguf",
+   "size": 39649830944
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-IQ2_S/command-a-plus-05-2026-IQ2_S-00002-of-00002.gguf",
+   "size": 30255540864
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-IQ2_XS/command-a-plus-05-2026-IQ2_XS-00001-of-00002.gguf",
+   "size": 39645636800
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-IQ2_XS/command-a-plus-05-2026-IQ2_XS-00002-of-00002.gguf",
+   "size": 29051775488
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-IQ2_XXS/command-a-plus-05-2026-IQ2_XXS-00001-of-00002.gguf",
+   "size": 39734800096
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-IQ2_XXS/command-a-plus-05-2026-IQ2_XXS-00002-of-00002.gguf",
+   "size": 22520161248
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-IQ3_M/command-a-plus-05-2026-IQ3_M-00001-of-00003.gguf",
+   "size": 39623726048
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-IQ3_M/command-a-plus-05-2026-IQ3_M-00002-of-00003.gguf",
+   "size": 39402563392
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-IQ3_M/command-a-plus-05-2026-IQ3_M-00003-of-00003.gguf",
+   "size": 27712935936
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-IQ3_XS/command-a-plus-05-2026-IQ3_XS-00001-of-00003.gguf",
+   "size": 38974674336
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-IQ3_XS/command-a-plus-05-2026-IQ3_XS-00002-of-00003.gguf",
+   "size": 39432955616
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-IQ3_XS/command-a-plus-05-2026-IQ3_XS-00003-of-00003.gguf",
+   "size": 23768192672
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-IQ3_XXS/command-a-plus-05-2026-IQ3_XXS-00001-of-00003.gguf",
+   "size": 39793629504
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-IQ3_XXS/command-a-plus-05-2026-IQ3_XXS-00002-of-00003.gguf",
+   "size": 39667870656
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-IQ3_XXS/command-a-plus-05-2026-IQ3_XXS-00003-of-00003.gguf",
+   "size": 14468320832
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-IQ4_NL/command-a-plus-05-2026-IQ4_NL-00001-of-00004.gguf",
+   "size": 40007749440
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-IQ4_NL/command-a-plus-05-2026-IQ4_NL-00002-of-00004.gguf",
+   "size": 39924441120
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-IQ4_NL/command-a-plus-05-2026-IQ4_NL-00003-of-00004.gguf",
+   "size": 38961061728
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-IQ4_NL/command-a-plus-05-2026-IQ4_NL-00004-of-00004.gguf",
+   "size": 6510626016
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-IQ4_XS/command-a-plus-05-2026-IQ4_XS-00001-of-00004.gguf",
+   "size": 39139790848
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-IQ4_XS/command-a-plus-05-2026-IQ4_XS-00002-of-00004.gguf",
+   "size": 39067509216
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-IQ4_XS/command-a-plus-05-2026-IQ4_XS-00003-of-00004.gguf",
+   "size": 39407755456
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-IQ4_XS/command-a-plus-05-2026-IQ4_XS-00004-of-00004.gguf",
+   "size": 1212154112
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-Q2_K/command-a-plus-05-2026-Q2_K-00001-of-00003.gguf",
+   "size": 39697195072
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-Q2_K/command-a-plus-05-2026-Q2_K-00002-of-00003.gguf",
+   "size": 39581921760
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-Q2_K/command-a-plus-05-2026-Q2_K-00003-of-00003.gguf",
+   "size": 775946496
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-Q2_K_L/command-a-plus-05-2026-Q2_K_L-00001-of-00003.gguf",
+   "size": 39957241920
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-Q2_K_L/command-a-plus-05-2026-Q2_K_L-00002-of-00003.gguf",
+   "size": 39581921760
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-Q2_K_L/command-a-plus-05-2026-Q2_K_L-00003-of-00003.gguf",
+   "size": 775946496
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-Q3_K_L/command-a-plus-05-2026-Q3_K_L-00001-of-00003.gguf",
+   "size": 39558714336
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-Q3_K_L/command-a-plus-05-2026-Q3_K_L-00002-of-00003.gguf",
+   "size": 39387359040
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-Q3_K_L/command-a-plus-05-2026-Q3_K_L-00003-of-00003.gguf",
+   "size": 27642157056
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-Q3_K_M/command-a-plus-05-2026-Q3_K_M-00001-of-00003.gguf",
+   "size": 39125669280
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-Q3_K_M/command-a-plus-05-2026-Q3_K_M-00002-of-00003.gguf",
+   "size": 39634282208
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-Q3_K_M/command-a-plus-05-2026-Q3_K_M-00003-of-00003.gguf",
+   "size": 23818524320
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-Q3_K_S/command-a-plus-05-2026-Q3_K_S-00001-of-00003.gguf",
+   "size": 39404590848
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-Q3_K_S/command-a-plus-05-2026-Q3_K_S-00002-of-00003.gguf",
+   "size": 39227451552
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-Q3_K_S/command-a-plus-05-2026-Q3_K_S-00003-of-00003.gguf",
+   "size": 19383030656
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-Q3_K_XL/command-a-plus-05-2026-Q3_K_XL-00001-of-00003.gguf",
+   "size": 39818761184
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-Q3_K_XL/command-a-plus-05-2026-Q3_K_XL-00002-of-00003.gguf",
+   "size": 39387359040
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-Q3_K_XL/command-a-plus-05-2026-Q3_K_XL-00003-of-00003.gguf",
+   "size": 27642157056
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-Q4_0/command-a-plus-05-2026-Q4_0-00001-of-00004.gguf",
+   "size": 39193775552
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-Q4_0/command-a-plus-05-2026-Q4_0-00002-of-00004.gguf",
+   "size": 39999676320
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-Q4_0/command-a-plus-05-2026-Q4_0-00003-of-00004.gguf",
+   "size": 39100014784
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-Q4_0/command-a-plus-05-2026-Q4_0-00004-of-00004.gguf",
+   "size": 7781500288
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-Q4_1/command-a-plus-05-2026-Q4_1-00001-of-00004.gguf",
+   "size": 39829212256
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-Q4_1/command-a-plus-05-2026-Q4_1-00002-of-00004.gguf",
+   "size": 38680026176
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-Q4_1/command-a-plus-05-2026-Q4_1-00003-of-00004.gguf",
+   "size": 38680026176
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-Q4_1/command-a-plus-05-2026-Q4_1-00004-of-00004.gguf",
+   "size": 21636386496
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-Q4_K_L/command-a-plus-05-2026-Q4_K_L-00001-of-00004.gguf",
+   "size": 39315410016
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-Q4_K_L/command-a-plus-05-2026-Q4_K_L-00002-of-00004.gguf",
+   "size": 39928880544
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-Q4_K_L/command-a-plus-05-2026-Q4_K_L-00003-of-00004.gguf",
+   "size": 39965597248
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-Q4_K_L/command-a-plus-05-2026-Q4_K_L-00004-of-00004.gguf",
+   "size": 16142879584
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-Q4_K_M/command-a-plus-05-2026-Q4_K_M-00001-of-00004.gguf",
+   "size": 39055363168
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-Q4_K_M/command-a-plus-05-2026-Q4_K_M-00002-of-00004.gguf",
+   "size": 39928880544
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-Q4_K_M/command-a-plus-05-2026-Q4_K_M-00003-of-00004.gguf",
+   "size": 39965597248
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-Q4_K_M/command-a-plus-05-2026-Q4_K_M-00004-of-00004.gguf",
+   "size": 16142879584
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-Q4_K_S/command-a-plus-05-2026-Q4_K_S-00001-of-00004.gguf",
+   "size": 38986157312
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-Q4_K_S/command-a-plus-05-2026-Q4_K_S-00002-of-00004.gguf",
+   "size": 39622188896
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-Q4_K_S/command-a-plus-05-2026-Q4_K_S-00003-of-00004.gguf",
+   "size": 38696296160
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-Q4_K_S/command-a-plus-05-2026-Q4_K_S-00004-of-00004.gguf",
+   "size": 12528421024
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-Q5_K_M/command-a-plus-05-2026-Q5_K_M-00001-of-00005.gguf",
+   "size": 38856624032
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-Q5_K_M/command-a-plus-05-2026-Q5_K_M-00002-of-00005.gguf",
+   "size": 38924851488
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-Q5_K_M/command-a-plus-05-2026-Q5_K_M-00003-of-00005.gguf",
+   "size": 38630725952
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-Q5_K_M/command-a-plus-05-2026-Q5_K_M-00004-of-00005.gguf",
+   "size": 39807228224
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-Q5_K_M/command-a-plus-05-2026-Q5_K_M-00005-of-00005.gguf",
+   "size": 1547698432
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-Q5_K_S/command-a-plus-05-2026-Q5_K_S-00001-of-00004.gguf",
+   "size": 38861883744
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-Q5_K_S/command-a-plus-05-2026-Q5_K_S-00002-of-00004.gguf",
+   "size": 39285561760
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-Q5_K_S/command-a-plus-05-2026-Q5_K_S-00003-of-00004.gguf",
+   "size": 39271406080
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-Q5_K_S/command-a-plus-05-2026-Q5_K_S-00004-of-00004.gguf",
+   "size": 34719520416
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-Q6_K/command-a-plus-05-2026-Q6_K-00001-of-00005.gguf",
+   "size": 39357826016
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-Q6_K/command-a-plus-05-2026-Q6_K-00002-of-00005.gguf",
+   "size": 38692574560
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-Q6_K/command-a-plus-05-2026-Q6_K-00003-of-00005.gguf",
+   "size": 38557291616
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-Q6_K/command-a-plus-05-2026-Q6_K-00004-of-00005.gguf",
+   "size": 38690477376
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-Q6_K/command-a-plus-05-2026-Q6_K-00005-of-00005.gguf",
+   "size": 34530218304
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-Q8_0/command-a-plus-05-2026-Q8_0-00001-of-00006.gguf",
+   "size": 39719043264
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-Q8_0/command-a-plus-05-2026-Q8_0-00002-of-00006.gguf",
+   "size": 38418337920
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-Q8_0/command-a-plus-05-2026-Q8_0-00003-of-00006.gguf",
+   "size": 38567776672
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-Q8_0/command-a-plus-05-2026-Q8_0-00004-of-00006.gguf",
+   "size": 38416240768
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-Q8_0/command-a-plus-05-2026-Q8_0-00005-of-00006.gguf",
+   "size": 38418337984
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-Q8_0/command-a-plus-05-2026-Q8_0-00006-of-00006.gguf",
+   "size": 38416240768
+  },
+  {
+   "rfilename": "command-a-plus-05-2026-imatrix.gguf",
+   "size": 208770720
+  }
+ ],
+ "lastModified": "2026-06-15T02:05:03.000Z",
+ "downloads": 2793
+}

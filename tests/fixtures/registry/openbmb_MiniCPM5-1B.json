@@ -58,49 +58,49 @@
  "siblings": [
   {
    "rfilename": ".gitattributes",
-   "size": null
+   "size": 1519
   },
   {
    "rfilename": "README-cn.md",
-   "size": null
+   "size": 22108
   },
   {
    "rfilename": "README.md",
-   "size": null
+   "size": 23472
   },
   {
    "rfilename": "chat_template.jinja",
-   "size": null
+   "size": 9062
   },
   {
    "rfilename": "config.json",
-   "size": null
+   "size": 726
   },
   {
    "rfilename": "generation_config.json",
-   "size": null
+   "size": 213
   },
   {
    "rfilename": "model-00000-of-00001.safetensors",
-   "size": null
+   "size": 2161290912
   },
   {
    "rfilename": "model.safetensors.index.json",
-   "size": null
+   "size": 18004
   },
   {
    "rfilename": "special_tokens_map.json",
-   "size": null
+   "size": 551
   },
   {
    "rfilename": "tokenizer.json",
-   "size": null
+   "size": 9894271
   },
   {
    "rfilename": "tokenizer_config.json",
-   "size": null
+   "size": 94416
   }
  ],
  "lastModified": "2026-08-17T09:59:02.000Z",
- "downloads": 599263
+ "downloads": 424776
 }

@@ -195,3 +195,71 @@ def test_the_size_column_alone_is_enough_to_fetch(store, tmp_path):
     downloads = fakes.Downloads(tmp_path / "hub")
     got = fetching.run(store, {}, limit=1, snapshot=downloads)
     assert got and "no measured size" not in got[0]["why"], got
+
+
+# --- the GGUF route, against recorded cards (#295, #298) ----------------------
+
+def _here_with_llamacpp():
+    import dataclasses
+    from harness import machine
+    return dataclasses.replace(machine.detect(),
+                               runtimes=frozenset({"cpu", "llamacpp", "mlx"}))
+
+
+def test_a_recorded_gguf_repo_is_sized_by_the_file_it_would_fetch():
+    from harness import inspect as ins
+    # Its repo is two years idle, which the dead rule would answer first.
+    fit = ins.inspect_model("bartowski/Qwen2.5-7B-Instruct-GGUF",
+                            fetch=fakes.registry(), ceiling=22 * 1024 ** 3,
+                            machine=_here_with_llamacpp(), dead_days=10 ** 6)
+    assert fit.verdict == "fits", fit.why
+    assert 4 * 1024 ** 3 < fit.largest < 5 * 1024 ** 3
+
+
+def test_a_recorded_repo_whose_quants_all_exceed_the_ceiling_is_too_big():
+    from harness import inspect as ins
+    fit = ins.inspect_model("bartowski/command-a-plus-05-2026-GGUF",
+                            fetch=fakes.registry(), ceiling=22 * 1024 ** 3,
+                            machine=_here_with_llamacpp(), dead_days=10 ** 6)
+    assert fit.verdict == "too-big", fit.why
+
+
+def test_a_recorded_gguf_travels_from_fetch_to_a_llama_server_screen(
+        tmp_path, monkeypatch):
+    import json
+    from harness import gguf
+    monkeypatch.setenv("LLAMACPP_MODELS_DIR", str(tmp_path / "gguf"))
+    repo = "bartowski/Qwen2.5-7B-Instruct-GGUF"
+    siblings = json.loads(
+        (fakes.FIXTURES / "bartowski_Qwen2.5-7B-Instruct-GGUF.json").read_text(
+            encoding="utf-8"))["siblings"]
+
+    def hf_download(r, f, d):
+        Path(d, f).write_bytes(b"GGUF")
+        return str(Path(d, f))
+    fetching.download(repo, listing=lambda r: siblings, hf_download=hf_download)
+    assert gguf.fetched(repo) == "Qwen2.5-7B-Instruct-Q4_K_M"
+    spec = screen.candidate_for("code", repo)
+    assert spec == "llamacpp:Qwen2.5-7B-Instruct-Q4_K_M"
+    argv = screen.argv({"name": repo, "modality": "code", "candidate": spec})
+    assert "--gateway" not in argv
+
+
+# --- the fakes' own negative control (#257) -----------------------------------
+
+def test_the_fake_server_can_make_the_real_checker_fail_and_pass(monkeypatch):
+    """A fake world that only ever agrees tests nothing: a wrong answer through
+    the fake completion server must fail the real code checker."""
+    from evals import run as er
+    from evals.runners.text import CompletionRunner
+    from harness import completion
+    case = next(c for c in er.select_cases(er.load_cases(er.ROOT / "cases"), "code")
+                if c.id == "slugify")
+    good = ("import re\ndef slugify(text):\n"
+            "    return re.sub(r'[^a-z0-9]+', '-', text.lower()).strip('-')\n")
+    fake = fakes.Completions({"good": good, "bad": "def slugify(t):\n    return t\n"})
+    monkeypatch.setattr(completion, "complete_with_usage",
+                        lambda prompt, model, **kw: (fake(model, prompt), {}))
+    assert not CompletionRunner("http://fake", "bad").run(case).passed
+    assert CompletionRunner("http://fake", "good").run(case).passed
+    assert [m for m, _ in fake.asked] == ["bad", "good"]
