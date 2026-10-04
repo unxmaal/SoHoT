@@ -127,3 +127,15 @@ def test_a_candidate_that_genuinely_failed_is_still_broken():
     got, _ = screen.outcome(
         1, None, detail="generated 0 of 3 cases; the model returned empty output")
     assert got == "broken"
+
+
+# --- #318: OmniSVG has its own runner ----------------------------------------
+
+def test_an_omnisvg_repo_is_spelled_for_its_runner():
+    from evals.runners.omnisvg import MODELS
+    for size, (_, repo) in MODELS.items():
+        assert screen.candidate_for("svg", repo) == f"omnisvg:{size}", repo
+
+
+def test_another_svg_repo_still_goes_to_the_text_gateway():
+    assert screen.candidate_for("svg", "org/some-svg-llm") == "org/some-svg-llm"
