@@ -125,7 +125,27 @@ def _newest_run_for(lane: str) -> str:
     got = [d for d in root.iterdir()
            if d.is_dir() and d.name.endswith(f"-{lane}")
            and (d / "results.json").is_file()]
-    return max(got, key=lambda d: d.stat().st_mtime).name if got else ""
+    here = _hw_model()
+    for d in sorted(got, key=lambda d: d.stat().st_mtime, reverse=True):
+        if _ran_on(d / "results.json") == here:
+            return d.name
+    return ""
+
+
+def _hw_model() -> str:
+    from harness import memory_store as ms
+    return ms.this_machine()["hw_model"]
+
+
+def _ran_on(results) -> str:
+    """The hw_model a receipt names. A runs directory migrates with the home,
+    so another machine's receipt is not this machine's measurement. #331."""
+    try:
+        got = json.loads(results.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return ""
+    env = got.get("environment") if isinstance(got, dict) else None
+    return (env or {}).get("hw_model", "") if isinstance(env, dict) else ""
 
 
 def _run_age_days(run: str, now: float) -> float | None:
