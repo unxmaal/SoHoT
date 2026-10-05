@@ -385,3 +385,31 @@ def test_h3_seconds_below_a_second_is_rejected_for_the_same_reason():
 def test_h3_one_second_is_above_the_floor():
     _, a = argv("h3", seconds=1)
     assert a[a.index("--seconds") + 1] == "1"
+
+
+def _h3_dir():
+    argv = resolve("h3").argv("a fox", Path("/tmp/o.mp4"), {})
+    return argv[argv.index("-d") + 1]
+
+
+def test_h3_reads_a_copy_under_the_localharness_home(monkeypatch):
+    """The home copy can sit on a faster disk than the weights cache. On the
+    Studio the external volume left the GPU idle at 0%. #351."""
+    from harness import paths
+    monkeypatch.delenv("H3_MODEL_DIR", raising=False)
+    (paths.home() / "MiniMax-H3").mkdir()
+    assert _h3_dir() == str(paths.home() / "MiniMax-H3")
+
+
+def test_h3_without_a_home_copy_looks_beside_the_cache(monkeypatch):
+    """Negative control: no copy in the home, the old default stands."""
+    from harness import env
+    monkeypatch.delenv("H3_MODEL_DIR", raising=False)
+    assert _h3_dir() == str(env.beside() / "MiniMax-H3")
+
+
+def test_an_explicit_h3_model_dir_still_wins(monkeypatch, tmp_path):
+    from harness import paths
+    (paths.home() / "MiniMax-H3").mkdir()
+    monkeypatch.setenv("H3_MODEL_DIR", str(tmp_path))
+    assert _h3_dir() == str(tmp_path)

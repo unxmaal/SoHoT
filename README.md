@@ -530,6 +530,13 @@ Both `lh` and the service scripts resolve it the same way. `lh` has to do it
 itself: on PATH it runs with nothing sourced, and an unset `HF_HOME` sends
 huggingface_hub off to re-download what is already on the drive.
 
+MiniMax-H3's 134 GiB checkpoint is read from `$H3_MODEL_DIR`, else
+`~/localharness/MiniMax-H3` when it exists, else beside the weights root. The
+video lane streams it from disk, so its speed is the disk's: on a Mac Studio an
+external USB volume read 376 MB/s with the GPU idle, against 5.27 GB/s from the
+internal SSD. A copy or symlink at the home path moves it without moving the
+cache.
+
 `HF_MIN_FREE_GB` is 20, which is enough for a normal model and deliberately not
 enough for MiniMax-H3. `fetch-h3-weights.sh` demands its own 160GB and
 `setup-omnisvg.sh` its own 40, where the size is actually known. A global floor
