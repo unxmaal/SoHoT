@@ -1005,7 +1005,14 @@ method can beat a better model:
 --candidates trace-icon:mflux:flux2-klein-4b   # same, tuned small: 3.2x fewer bytes
 --candidates omnisvg:4B                        # a model that emits SVG draw commands as tokens
 --candidates repair:q3-4b                      # generate, check it, fix it, repeat
+--candidates claude-code:claude-opus-5-5       # a frontier reference, through headless Claude Code
 ```
+
+`claude-code:` runs each text case through `claude -p` under the Claude Code
+login on this machine, with the lane's own system prompt and no tools, so a
+subscription covers it. It is a ceiling to measure the local models against,
+not a lane default. On the code lane it scored 9/9 at a 5.7 s median against
+q3-4b's 7/9 (Mac Studio, 2026-10-05).
 
 `omnisvg` needs `./scripts/setup-omnisvg.sh` first: it has its own checkout, its
 own venv and 16 GiB of weights.
