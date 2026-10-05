@@ -77,19 +77,25 @@ def lanes_state(conn) -> list[dict]:
         # because their best receipts are older than their newest. #234.
         newest = _newest_run_for(lane)
         age = _run_age_days(newest, now) if newest else None
+        serves = adopted.get(lane) or typed.get(lane, "")
+        # THE NUMBERS ARE THIS MACHINE'S. The winner may be another machine's
+        # receipt, and a median is a fact about the machine that ran it. #341.
+        here = _row_for(newest, lane, serves) if newest else {}
         out.append({
             "lane": lane,
             "wanted": lane in L.WANTED,
-            "serves": adopted.get(lane) or typed.get(lane, ""),
+            "serves": serves,
             "adopted": bool(adopted.get(lane)),
             "measured": got.get("candidate", ""),
             # exact / quantised / "" -- `quantised` means only a quantisation
             # of the named default has ever run, which is a finding rather
             # than a mismatch to smooth over.
             "match": got.get("match", ""),
-            "pass_rate": got.get("pass_rate"),
-            "median_s": got.get("median_s"),
-            "metrics": got.get("metrics") or {},
+            "pass_rate": here.get("pass_rate"),
+            "median_s": here.get("median_s"),
+            "metrics": here.get("metrics") or {},
+            "best_pass_rate": got.get("pass_rate"),
+            "best_median_s": got.get("median_s"),
             "run": run,
             "last_run": newest,
             "age_days": age,
@@ -125,7 +131,44 @@ def _newest_run_for(lane: str) -> str:
     got = [d for d in root.iterdir()
            if d.is_dir() and d.name.endswith(f"-{lane}")
            and (d / "results.json").is_file()]
-    return max(got, key=lambda d: d.stat().st_mtime).name if got else ""
+    here = _hw_model()
+    for d in sorted(got, key=lambda d: d.stat().st_mtime, reverse=True):
+        if _ran_on(d / "results.json") == here:
+            return d.name
+    return ""
+
+
+def _row_for(run: str, lane: str, serves: str) -> dict:
+    """The lane default's summary row in one run, or {}."""
+    from harness import paths, winners
+    try:
+        got = json.loads((paths.home() / "runs" / run / "results.json"
+                          ).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    summary = got.get("summary") or {}
+    family = winners.FAMILIES.get(lane, "alias")
+    for candidate, row in summary.items():
+        if serves and (candidate == serves
+                       or winners.matches(serves, candidate, family)):
+            return row
+    return next(iter(summary.values())) if len(summary) == 1 else {}
+
+
+def _hw_model() -> str:
+    from harness import memory_store as ms
+    return ms.this_machine()["hw_model"]
+
+
+def _ran_on(results) -> str:
+    """The hw_model a receipt names. A runs directory migrates with the home,
+    so another machine's receipt is not this machine's measurement. #331."""
+    try:
+        got = json.loads(results.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return ""
+    env = got.get("environment") if isinstance(got, dict) else None
+    return (env or {}).get("hw_model", "") if isinstance(env, dict) else ""
 
 
 def _run_age_days(run: str, now: float) -> float | None:

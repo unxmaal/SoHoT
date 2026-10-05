@@ -25,21 +25,21 @@ def _gateway_post(gateway: str, timeout: float):
 
 def sweep(model: str, texts: list[str], levels=(1, 2, 4), max_tokens: int = 300,
           gateway: str = "http://127.0.0.1:4000", timeout: float = 300.0,
-          post=None) -> list[dict]:
+          post=None, clock=time.perf_counter) -> list[dict]:
     """Each level sends every text with that many requests in flight."""
     post = post or _gateway_post(gateway, timeout)
 
     def one(text: str) -> tuple[float, int, bool]:
         payload = {"model": model, "max_tokens": max_tokens, "temperature": 0,
                    "messages": [{"role": "user", "content": INSTRUCTION + text}]}
-        t = time.perf_counter()
+        t = clock()
         try:
             body = post(payload) or {}
             tokens = int((body.get("usage") or {}).get("completion_tokens") or 0)
             ok = True
         except Exception:  # noqa: BLE001 - a failed request is a result
             tokens, ok = 0, False
-        return time.perf_counter() - t, tokens, ok
+        return clock() - t, tokens, ok
 
     out = []
     with exclusive.held("eval"):
@@ -47,10 +47,10 @@ def sweep(model: str, texts: list[str], levels=(1, 2, 4), max_tokens: int = 300,
         # and every ratio is taken against the first level. #333.
         warm_s, _, warm_ok = one(texts[0]) if texts else (0.0, 0, True)
         for level in levels:
-            t0 = time.perf_counter()
+            t0 = clock()
             with ThreadPoolExecutor(max_workers=level) as pool:
                 got = list(pool.map(one, texts))
-            wall = time.perf_counter() - t0
+            wall = clock() - t0
             lat = sorted(s for s, _, _ in got)
             out.append({
                 "concurrency": level, "n": len(got),
