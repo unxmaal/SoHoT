@@ -17,6 +17,14 @@ from harness import discover, inspect as ins, lanes, rank, screen
 
 CASES = Path(__file__).resolve().parents[1] / "evals" / "cases"
 
+@pytest.fixture
+def video_parked(monkeypatch):
+    """Video is not parked any more (#347); these test the mechanism."""
+    from harness import lanes
+    monkeypatch.setitem(lanes.PARKED, "video",
+                        ("too slow here", "a faster machine"))
+
+
 
 #: Lanes whose cases are GENERATED rather than committed, with the step that
 #: creates each. An allowlist that outlives its reason is how a check rots, so
@@ -266,7 +274,7 @@ def test_a_speech_candidate_does_not_leak_into_the_wanted_lanes():
 
 # --- a parked lane does not rank, and a tool is not a model (#249) --------
 
-def test_a_parked_lanes_candidates_sink_below_the_laneless():
+def test_a_parked_lanes_candidates_sink_below_the_laneless(video_parked):
     """#244 taught the report and verify that parking is a decision. It never
     reached the ranking, so four of the top twelve were video candidates for a
     lane nothing will run, and `--loop --run --top 4` would have downloaded
@@ -280,7 +288,7 @@ def test_a_parked_lanes_candidates_sink_below_the_laneless():
     assert parked < laneless
 
 
-def test_a_parked_candidate_stays_in_the_queue():
+def test_a_parked_candidate_stays_in_the_queue(video_parked):
     """Ranked down, never dropped. When the Studio arrives the lane un-parks
     and these candidates must still be here with their recurrence intact,
     which is why this is a ranking answer and never a stored verdict."""
@@ -291,11 +299,11 @@ def test_a_parked_candidate_stays_in_the_queue():
     assert got[-1] == "org/v", "a parked candidate must rank last"
 
 
-def test_the_reason_a_candidate_sank_names_the_condition():
+def test_the_reason_a_candidate_sank_names_the_condition(video_parked):
     """A score with no explanation is a number somebody has to re-derive."""
     _, why = rank.value(_row("org/v", lane="video"), measured_lanes=set())
     assert any("parked" in w for w in why)
-    assert any("Studio" in w for w in why), "say what would change it"
+    assert any("a faster machine" in w for w in why), "say what would change it"
 
 
 def test_a_browser_tool_with_a_lane_is_not_a_model():
@@ -315,3 +323,11 @@ def test_a_real_model_is_not_refused_as_a_tool():
                  "task text-to-image; tagged image, diffusion, sdxl",
                  "task text-generation; served by mlx; tagged qwen3, chat"):
         assert not screen.is_attachment(desc), desc
+
+
+def test_video_is_not_parked_now_that_it_runs():
+    """The park expired on 'the Mac Studio arrives'; it ran there in 7.3
+    minutes. Still DELIBERATE, so verify runs it only by name. #347."""
+    from harness import lanes, verify
+    assert lanes.parked("video") == ("", "")
+    assert "video" in verify.DELIBERATE

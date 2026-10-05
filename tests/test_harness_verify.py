@@ -119,7 +119,7 @@ def test_the_summary_line_names_the_candidate_and_its_metric():
 
 # --- parked is a decision, unverified is a gap (#244) ---------------------
 
-def test_a_parked_lane_is_not_reported_as_unverified():
+def test_a_parked_lane_is_not_reported_as_unverified(monkeypatch):
     """`video` read UNVERIFIED on every page this report has ever produced.
     Both mean "no receipt" and they want opposite things from a reader:
     unverified invites somebody to run it, parked says somebody decided not
@@ -127,6 +127,7 @@ def test_a_parked_lane_is_not_reported_as_unverified():
     from harness import lanes as L
     from harness import report
 
+    monkeypatch.setitem(L.PARKED, "video", ("too slow here", "a faster machine"))
     why, until = L.parked("video")
     assert why and until, "video must carry a reason and an expiry condition"
     state = {l["lane"]: l for l in report.state()["lanes"]}

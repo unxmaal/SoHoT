@@ -27,6 +27,14 @@ from harness import machine as _machine  # noqa: E402
 from harness import memory_store as ms  # noqa: E402
 from harness.memory import Accelerator  # noqa: E402
 
+@pytest.fixture
+def video_parked(monkeypatch):
+    """Video is not parked any more (#347); these test the mechanism."""
+    from harness import lanes
+    monkeypatch.setitem(lanes.PARKED, "video",
+                        ("too slow here", "a faster machine"))
+
+
 
 def mac():
     """Pinned, so a verdict does not vary with whichever runner asks.
@@ -100,7 +108,7 @@ def test_the_fetch_tier_reads_the_queue_in_rank_order(store):
         f"a parked lane's candidate must rank last, got {ranked}")
 
 
-def test_a_parked_lane_never_reaches_a_download(store, tmp_path):
+def test_a_parked_lane_never_reaches_a_download(store, tmp_path, video_parked):
     """#249. Four of the top twelve were video candidates for a lane nothing
     will run, and --top 4 would have downloaded 16.2 GiB for it."""
     fakes.seeded_store(store, [("org/parked", "video", 16.0, 9)])
