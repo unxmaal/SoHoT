@@ -68,7 +68,8 @@ def plan(lanes_state, *, only: str = "", include_stale: bool = True,
         default = lane.get("serves") or ""
         task = Task(lane=name, candidate=default,
                     cost_s=COST_S.get(name, 60),
-                    why=("no receipt on this machine" if lane["unverified"]
+                    why=("no receipt on this machine"
+                         if lane.get("age_days") is None
                          else f"last measured {lane['age_days']:.0f} days ago"))
         if not default:
             task.skip = "the lane names no default to run"

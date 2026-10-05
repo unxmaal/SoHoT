@@ -151,3 +151,13 @@ def test_a_parked_lane_is_never_planned_automatically():
     tasks = verify.plan(state, force=True)
     assert tasks and tasks[0].skip.startswith("parked:")
     assert not tasks[0].argv, "a parked lane must not carry a command to run"
+
+
+def test_all_plans_a_parked_lane_with_no_receipt_without_crashing():
+    """A parked lane is neither unverified nor stale and has no age. --all
+    formatted that None. #331."""
+    parked = {"lane": "video", "serves": "h3", "unverified": False,
+              "stale": False, "age_days": None, "parked": "too slow"}
+    got = verify.plan(_lanes(parked), force=True)
+    assert got[0].why == "no receipt on this machine"
+    assert got[0].skip.startswith("parked")
