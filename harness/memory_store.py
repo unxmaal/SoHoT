@@ -1095,7 +1095,7 @@ def this_machine() -> dict:
             "accelerator": f"{acc.get('kind', '')} "
                            f"{float(acc.get('total_gb') or 0):.0f}GB".strip(),
             "runtimes": ",".join(sorted(mach.runtimes)),
-            "ceiling_gb": _ins.MEMORY_CEILING / (1024 ** 3),
+            "ceiling_gb": _ins.ceiling_bytes() / (1024 ** 3),
         }
     except Exception:  # noqa: BLE001
         # A store write must never fail because a probe did. An unknown

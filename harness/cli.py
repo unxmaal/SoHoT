@@ -925,7 +925,7 @@ def _report_inspect(a) -> int:
                     "no longer among this repo's top-ranked weights"))
             for model_id in ranked:
                 size = fit.weights[model_id]
-                if size > ins.MEMORY_CEILING:
+                if size > ins.ceiling_bytes():
                     continue
                 ms.record(store, ms.Seen(
                     name=model_id, source="inspect", kind="weights",
