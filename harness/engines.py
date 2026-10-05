@@ -416,6 +416,7 @@ ACESTEP_SCRIPT = str(
 #: run THROUGH that environment rather than imported into this one. The
 #: checkout is named by $ACESTEP_ROOT, the pattern $LLAMACPP_BIN already uses.
 ACESTEP_ROOT_ENV = "ACESTEP_ROOT"
+ACESTEP_NAME_PREFIX = "acestep/"
 
 
 def acestep_root() -> str:
@@ -477,6 +478,11 @@ def _acestep(spec: str, model: str, options: dict) -> Engine:
         raise ValueError(
             f"{spec_error(spec)}: acestep needs a model, e.g. "
             f"acestep:acestep-v15-turbo")
+    if model.startswith(ACESTEP_NAME_PREFIX):
+        # Our own display name read back, as a hand adoption stored it before
+        # receipts carried specs: `acestep/<config>@k=v`. #337.
+        model, _, shown = model[len(ACESTEP_NAME_PREFIX):].partition("@")
+        options = {**parse_options(shown, spec), **options}
     _check_options(options, _ACESTEP_OPTIONS, spec)
     defaults = dict(options)
 
@@ -513,7 +519,7 @@ def _acestep(spec: str, model: str, options: dict) -> Engine:
             cmd.append("--instrumental")
         return cmd
 
-    return Engine(name=f"acestep/{model.rsplit('/', 1)[-1]}"
+    return Engine(name=f"{ACESTEP_NAME_PREFIX}{model.rsplit('/', 1)[-1]}"
                        f"{distinguish(options)}", spec=spec,
                   argv=argv, modality="music", output_suffix=".wav",
                   # Measured 2026-09-20 on the M2 Pro: 55s of model init then

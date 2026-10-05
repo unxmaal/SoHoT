@@ -630,7 +630,7 @@ def _execute(args) -> int:
     if skipped:
         print(f"\nnot run, no candidate for them -- {skipped}", file=sys.stderr)
 
-    results = []
+    results, specs = [], {}
     for candidate in candidates:
         mine = cases_for(candidate, cases)
         if not mine:
@@ -639,6 +639,7 @@ def _execute(args) -> int:
             continue
         runner = build_runner(candidate, args.gateway, outdir,
                               adherence=args.adherence)
+        specs[runner.candidate] = candidate
         print(f"\n── {runner.candidate}", flush=True)
         for case in mine:
             r = runner.run(case)
@@ -680,6 +681,8 @@ def _execute(args) -> int:
             {"generated": time.strftime("%Y-%m-%dT%H:%M:%S"),
              "environment": capture(),
              "receipt": receipt.as_dict(),
+             # A name is a label and can drop the repo org; the spec runs. #337.
+             "specs": specs,
              "summary": summarize(results),
              "rows": [vars(r) for r in results]}, indent=2),
             encoding="utf-8")

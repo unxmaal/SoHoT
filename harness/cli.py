@@ -23,6 +23,7 @@ reports success.
 from __future__ import annotations
 
 import argparse
+import dataclasses
 import json
 import subprocess
 import time
@@ -1199,6 +1200,8 @@ def cmd_judge(a) -> int:
     if not pairs:
         return err("no two candidates in that run share a case, so there is "
                    "nothing to compare")
+    specs = receipt.get("specs") or {}
+
     def _record(lane_, pairs_):
         """Write the lane's verdict the moment it becomes decidable."""
         won, why = human.lane_verdict(lane_, pairs_)
@@ -1209,9 +1212,13 @@ def cmd_judge(a) -> int:
         store = ms.connect()
         try:
             for challenger in names:
-                if challenger != incumbent:
-                    adopt.record(store, adopt.decide_by_hand(
-                        lane_, incumbent, challenger, pairs_))
+                spec = specs.get(challenger, challenger)
+                if incumbent not in (challenger, spec):
+                    # Decided on the names the pairs carry, recorded as the
+                    # spec, which is what a lane can run. #337.
+                    adopt.record(store, dataclasses.replace(
+                        adopt.decide_by_hand(lane_, incumbent, challenger,
+                                             pairs_), challenger=spec))
             store.commit()
         finally:
             store.close()
