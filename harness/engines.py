@@ -258,7 +258,18 @@ _H3_OPTIONS = {"steps", "layers", "reuse", "width", "height", "ssd_streaming"}
 H3_MIN_FRAMES = 22
 H3_FPS = 24
 H3_DEFAULT_BIN = str(Path.home() / "projects/github/antirez/h3.c/h3")
-H3_DEFAULT_MODEL_DIR = os.environ.get("H3_MODEL_DIR") or str(env.beside() / "MiniMax-H3")
+
+
+def h3_model_dir() -> str:
+    """$H3_MODEL_DIR, else <localharness home>/MiniMax-H3 when it exists, else
+    beside the weights cache. The home copy can sit on a faster disk than the
+    cache: on the Studio the external volume left the GPU idle. #351."""
+    from harness import paths
+    got = os.environ.get("H3_MODEL_DIR", "")
+    if got:
+        return got
+    home = paths.home() / "MiniMax-H3"
+    return str(home if home.exists() else env.beside() / "MiniMax-H3")
 
 
 def _h3(spec: str, model: str, options: dict) -> Engine:
@@ -297,7 +308,7 @@ def _h3(spec: str, model: str, options: dict) -> Engine:
         # Read at call time, not import time, so a test or a different volume
         # can point this somewhere else without reloading the module.
         cmd = [os.environ.get("H3_BIN", H3_DEFAULT_BIN),
-               "-d", os.environ.get("H3_MODEL_DIR", H3_DEFAULT_MODEL_DIR),
+               "-d", h3_model_dir(),
                "-p", prompt, "-o", str(out)]
         for name in ("width", "height", "frames", "seconds", "steps",
                      "layers", "reuse", "seed"):
