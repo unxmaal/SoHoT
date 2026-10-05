@@ -26,7 +26,7 @@ DEFAULT = REPO / "gateway" / "config.yaml"
 #: UNRECOGNISED prefix silently yields a model name nothing can serve. The
 #: tracked configs are asserted against this list, so adding a provider to one
 #: without adding it here fails rather than producing a wrong id.
-PROVIDER_PREFIXES = ("openai/", "hosted_vllm/", "ollama/")
+PROVIDER_PREFIXES = ("openai/", "hosted_vllm/", "ollama/", "anthropic/")
 
 
 def config_path(config=None) -> Path:

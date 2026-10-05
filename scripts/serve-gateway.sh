@@ -21,6 +21,13 @@ mkdir -p "$LH_LOGS"
 # because the failure mode is a confusing 404 rather than a clear error.
 export LITELLM_USE_CHAT_COMPLETIONS_URL_FOR_ANTHROPIC_MESSAGES=1
 
+# The cloud-opus alias's key, from the login Keychain so it is never in a file:
+#   security add-generic-password -a "$USER" -s localharness-anthropic -w
+if [ -z "${ANTHROPIC_API_KEY:-}" ] && command -v security >/dev/null 2>&1; then
+  ANTHROPIC_API_KEY="$(security find-generic-password -s localharness-anthropic -w 2>/dev/null || true)"
+  export ANTHROPIC_API_KEY
+fi
+
 # Binds every interface by default. Deliberate: this is a trusted LAN, the models
 # are local, and the point of the machine is that other machines on it can use
 # the GPU. It is also the shape the M5 Studio needs, with the Studio serving and
