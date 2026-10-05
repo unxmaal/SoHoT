@@ -139,3 +139,31 @@ def test_an_omnisvg_repo_is_spelled_for_its_runner():
 
 def test_another_svg_repo_still_goes_to_the_text_gateway():
     assert screen.candidate_for("svg", "org/some-svg-llm") == "org/some-svg-llm"
+
+
+@pytest.mark.parametrize("model,want", [
+    ("h3", "h3"),
+    ("h3,frames=8", "h3,frames=8"),
+    ("org/a-video-model", "diffusers-video:org/a-video-model"),
+])
+def test_a_spec_for_another_engine_is_not_rewrapped(model, want):
+    """Video's default is bare `h3`, a whole spec for h3.c. Wrapped, it became
+    `diffusers-video:h3` and the Studio's first video run used the wrong
+    engine. The repo id is the control: it still gets the lane's spelling.
+    #343."""
+    assert screen.candidate_for("video", model) == want
+
+
+def test_every_lanes_default_survives_candidate_for():
+    """The typed default of each engine lane is already a spec; spelling it
+    for the lane must run the same engine, not a different one."""
+    from harness import engines, winners
+    for lane, default in winners.typed().items():
+        if winners.FAMILIES.get(lane) != "engine":
+            continue
+        try:
+            want = engines.resolve(default).name
+        except ValueError:
+            continue
+        got = screen.candidate_for(lane, default)
+        assert engines.resolve(got).name == want, (lane, default, got)

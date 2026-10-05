@@ -148,6 +148,11 @@ def candidate_for(lane: str, model: str, description: str = "") -> str:
         prefix = spec.split("{model}", 1)[0]
         if prefix and model.startswith(prefix):
             return model
+    from harness import engines
+    if model.partition(",")[0].partition(":")[0] in engines.names():
+        # Already a spec for some engine: video's default is bare `h3`, and
+        # wrapping it made `diffusers-video:h3`. #343.
+        return model
     built = [spec.format(model=model) for spec in specs]
     for spec in built:
         if not no_runner(spec):
