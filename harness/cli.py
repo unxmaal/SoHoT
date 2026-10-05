@@ -1066,6 +1066,9 @@ def cmd_throughput(a) -> int:
          f"max_tokens {a.max_tokens}", flush=True)
     got = throughput.sweep(a.model, texts, levels=levels,
                            max_tokens=a.max_tokens, gateway=a.gateway)
+    if got:
+        print(f"  warm-up {got[0]['warmup_s']:.2f}s, not counted"
+              f"{'' if got[0]['warmup_ok'] else ' (FAILED)'}", flush=True)
     base = got[0]["per_hour"] or 1
     for r in got:
         note(f"  {r['concurrency']:2d} in flight  {r['per_hour']:7.1f}/h  "

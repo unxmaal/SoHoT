@@ -64,7 +64,7 @@ def test_the_sweep_holds_the_machine_lock():
     throughput.sweep("eval-7b", ["t"], levels=(1,),
                      post=lambda p: held.append(
                          __import__("os").environ.get(exclusive.HELD_ENV)) or {})
-    assert held == ["1"]
+    assert held and set(held) == {"1"}
 
 
 def test_lh_throughput_is_a_command():
@@ -72,3 +72,25 @@ def test_lh_throughput_is_a_command():
         ["throughput", "--model", "eval-7b", "--texts", "x.jsonl",
          "--levels", "1,2,4"])
     assert a.func is cli.cmd_throughput and a.levels == "1,2,4"
+
+
+def test_a_cold_load_is_not_timed_into_the_first_level():
+    """The first request after a model is evicted pays for the load. Timed,
+    it made a 1.9x speedup read as 6.8x on the Studio. #333."""
+    calls = []
+
+    def post(payload):
+        calls.append(payload)
+        time.sleep(0.3 if len(calls) == 1 else 0.01)
+        return {"usage": {"completion_tokens": 1}}
+    got = throughput.sweep("eval-7b", ["t"] * 4, levels=(1,), post=post)
+    assert len(calls) == 5 and got[0]["n"] == 4
+    assert got[0]["p95_s"] < 0.2
+    assert got[0]["warmup_s"] >= 0.3 and got[0]["warmup_ok"]
+
+
+def test_a_warm_server_reads_the_same_with_or_without_the_warmup():
+    """Negative control: a steady server's warm-up costs what any request
+    does."""
+    got = throughput.sweep("eval-7b", ["t"] * 4, levels=(1,), post=Fake().post)
+    assert abs(got[0]["warmup_s"] - got[0]["p50_s"]) < 0.05

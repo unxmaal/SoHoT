@@ -1091,7 +1091,9 @@ The command sends every line's `text` to a gateway alias with 1, 2 and 4
 requests in flight, holding the machine lock, and reports requests per hour,
 the speedup over one at a time, p50/p95 latency and errors. llama-server runs
 four slots that batch together, so a client sending one request at a time
-leaves most of that unused.
+leaves most of that unused. One untimed request goes first and its time is
+printed: a model that is not resident loads on it, and timed into the first
+level that load made a 1.9x speedup read as 6.8x (#333).
 
 Measured 2026-10-04 on the M2 Pro: eval-7b (Qwen2.5-7B Q4_K_M), 16
 conversations of median 1,130 characters, 300-token budget (about 70 tokens
@@ -1102,6 +1104,20 @@ used), warmed:
 | 1 | 985 | 1.0x | 4.3 s |
 | 2 | 1,959 | 2.0x | 3.6 s |
 | 4 | 2,465 | 2.5x | 5.8 s |
+
+Measured 2026-10-05 on the M5 Ultra (96 GB), same alias, texts and budget,
+warm, with Photos analysis paused:
+
+| in flight | per hour | speedup | p50 |
+|---|---|---|---|
+| 1 | 7,713 | 1.0x | 0.45 s |
+| 2 | 10,522 | 1.4x | 0.68 s |
+| 4 | 14,320 | 1.9x | 0.98 s |
+| 8 | 14,626 | 1.9x | 1.45 s |
+
+One request at a time is 7.8x faster than the M2 Pro, and concurrency buys
+less: a single request already keeps more of this GPU busy. Past four in
+flight nothing is gained, because the server has four slots.
 
 ### How much memory a run can take
 

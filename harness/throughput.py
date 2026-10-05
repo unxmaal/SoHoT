@@ -43,6 +43,9 @@ def sweep(model: str, texts: list[str], levels=(1, 2, 4), max_tokens: int = 300,
 
     out = []
     with exclusive.held("eval"):
+        # Untimed: a model that is not resident loads on the first request,
+        # and every ratio is taken against the first level. #333.
+        warm_s, _, warm_ok = one(texts[0]) if texts else (0.0, 0, True)
         for level in levels:
             t0 = time.perf_counter()
             with ThreadPoolExecutor(max_workers=level) as pool:
@@ -57,5 +60,6 @@ def sweep(model: str, texts: list[str], levels=(1, 2, 4), max_tokens: int = 300,
                 "p50_s": round(statistics.median(lat), 2),
                 "p95_s": round(lat[min(len(lat) - 1, int(len(lat) * 0.95))], 2),
                 "completion_tokens": sum(t for _, t, _ in got),
+                "warmup_s": round(warm_s, 2), "warmup_ok": warm_ok,
             })
     return out
