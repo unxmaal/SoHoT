@@ -227,3 +227,12 @@ def test_lh_is_this_interpreter_and_never_a_path_lookup():
     `uv tool install`, so the deployed server would run branch code. #290."""
     import sys
     assert mcp_server.LH == [sys.executable, "-m", "harness.cli"]
+
+
+def test_an_agents_image_goes_ahead_of_batch_work(spy):
+    """#361: the queue may hold a night of benchmarks."""
+    from harness import workqueue as wq
+    wq.add(["true"], title="overnight benchmark")
+    job = mcp_server.image("a fox")
+    assert wq.pending()[0]["id"] == job.job
+    assert mcp_server.job_status(job.job).ahead == 0

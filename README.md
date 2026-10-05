@@ -1085,6 +1085,7 @@ lh jobs list      # each job's state, and whether the next one may start
 lh jobs pause     # hold everything; a running job still finishes
 lh jobs resume
 lh jobs cancel 0003
+lh jobs priority 0005 10   # higher runs first; ties run in the order added
 ```
 
 The `worker` service runs them in order, each under the machine lock below,
@@ -1095,7 +1096,9 @@ input for `LH_IDLE_MINUTES` (10). Jobs are files under
 `~/localharness/logs/jobs/<id>.log`. A failed job is recorded and the next
 starts. A job cut off by a reboot is marked failed rather than rerun.
 
-Over MCP, `image` and `video` return a job id at once, `job_status` says what
+Over MCP, `image` and `video` are queued at priority 10, ahead of batch work
+at 0, so someone waiting on a picture is not behind a night of benchmarks. They
+return a job id at once, `job_status` says what
 it is waiting for, and `job_result` returns the file itself, so a caller on
 another machine gets the picture rather than a path it cannot open.
 

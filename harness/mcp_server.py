@@ -161,9 +161,14 @@ def code(prompt: str, model: str = "") -> str:
 # The expensive lanes, on the shared work queue. #353.
 # ---------------------------------------------------------------------------
 
+#: Someone waiting on a picture goes ahead of overnight batch work. #361.
+INTERACTIVE_PRIORITY = 10
+
+
 def _queue(kind: str, prompt: str, argv: list[str], out: Path) -> JobInfo:
     job = workqueue.add(argv, title=f"{kind}: {prompt[:80]}", kind=kind,
-                        output=str(out), cwd=str(Path(__file__).resolve().parents[1]))
+                        output=str(out), cwd=str(Path(__file__).resolve().parents[1]),
+                        priority=INTERACTIVE_PRIORITY)
     return _describe(job)
 
 
@@ -246,8 +251,9 @@ def _describe(job: dict) -> JobInfo:
                    state=_STATE.get(job["state"], job["state"]))
     if job["state"] == workqueue.PENDING:
         everyone = workqueue.jobs()
-        info.ahead = sum(1 for j in everyone if j["state"] == workqueue.RUNNING
-                         or (j["state"] == workqueue.PENDING and j["id"] < job["id"]))
+        line = [j["id"] for j in workqueue.pending()]
+        info.ahead = (sum(1 for j in everyone if j["state"] == workqueue.RUNNING)
+                      + line.index(job["id"]))
         running = next((j for j in everyone if j["state"] == workqueue.RUNNING), None)
         if running:
             info.waiting_for = running.get("kind") or "a job"

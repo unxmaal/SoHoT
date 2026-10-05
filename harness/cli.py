@@ -1087,20 +1087,40 @@ def cmd_jobs(a) -> int:
     global _JSON
     rest, title = list(a.rest), a.title
     # REMAINDER swallows options written after the action.
-    while rest[:1] in (["--title"], ["--json"]):
+    priority = a.priority
+    while rest[:1] in (["--title"], ["--json"], ["--priority"]):
         if rest[0] == "--json":
             _JSON, rest = True, rest[1:]
-        elif len(rest) > 1:
+        elif len(rest) > 1 and rest[0] == "--title":
             title, rest = rest[1], rest[2:]
+        elif len(rest) > 1:
+            try:
+                priority = int(rest[1])
+            except ValueError:
+                return err(f"--priority takes a number, not {rest[1]!r}")
+            rest = rest[2:]
         else:
             break
     if rest[:1] == ["--"]:
         rest = rest[1:]
+    elif a.action != "add" and "--json" in rest:
+        # Only `add` carries a command of its own; elsewhere a flag is a flag.
+        _JSON, rest = True, [x for x in rest if x != "--json"]
     a.title = title
     try:
         if a.action == "add":
-            job = wq.add(rest, title=a.title)
+            job = wq.add(rest, title=a.title, priority=priority)
             note(f"queued {job['id']}: {job['title']}")
+            emit(job=job)
+            return 0
+        if a.action == "priority":
+            if len(rest) != 2:
+                return err("priority needs a job id and a number: lh jobs priority 0005 10")
+            try:
+                job = wq.set_priority(rest[0], int(rest[1]))
+            except ValueError as exc:
+                return err(str(exc))
+            note(f"{job['id']} priority {job['priority']}: {job['title']}")
             emit(job=job)
             return 0
         if a.action == "cancel":
@@ -1123,9 +1143,13 @@ def cmd_jobs(a) -> int:
     note(f"{'a job is running' if wq.running() else 'nothing running'}; "
          f"{sum(j['state'] == wq.PENDING for j in got)} pending; next job "
          f"{'may start' if ok else 'waits'}: {why}")
-    for j in got:
+    shown = ([j for j in got if j["state"] == wq.RUNNING] + wq.order(
+        [j for j in got if j["state"] == wq.PENDING])
+             + [j for j in got if j["state"] in (wq.DONE, wq.FAILED)])
+    for j in shown:
         rc = "" if j["rc"] is None else f" rc={j['rc']}"
-        note(f"  {j['id']}  {j['state']:8}{rc:7}  {j['title']}")
+        pri = int(j.get("priority") or 0)
+        note(f"  {j['id']}  {j['state']:8}{rc:7}  p{pri:<3} {j['title']}")
     emit(running=wq.running(), gate_open=ok, why=why, jobs=got)
     return 0
 
@@ -2826,10 +2850,12 @@ def build_parser() -> argparse.ArgumentParser:
     jobs = sub.add_parser("jobs", help="the work queue: runs in order while "
                           "nobody is using this machine")
     jobs.add_argument("action", choices=("add", "list", "pause", "resume",
-                                         "cancel"))
+                                         "cancel", "priority"))
     jobs.add_argument("rest", nargs=argparse.REMAINDER,
                       help="add: -- <command...>; cancel: <id>")
     jobs.add_argument("--title", default="")
+    jobs.add_argument("--priority", type=int, default=0,
+                      help="higher runs first; ties run in the order added")
     jobs.set_defaults(func=cmd_jobs)
     jud = sub.add_parser(
         "judge",
