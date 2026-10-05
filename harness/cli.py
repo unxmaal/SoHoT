@@ -1080,6 +1080,56 @@ def cmd_throughput(a) -> int:
     return 0
 
 
+def cmd_jobs(a) -> int:
+    """The work queue every caller shares. #353."""
+    from harness import workqueue as wq
+
+    global _JSON
+    rest, title = list(a.rest), a.title
+    # REMAINDER swallows options written after the action.
+    while rest[:1] in (["--title"], ["--json"]):
+        if rest[0] == "--json":
+            _JSON, rest = True, rest[1:]
+        elif len(rest) > 1:
+            title, rest = rest[1], rest[2:]
+        else:
+            break
+    if rest[:1] == ["--"]:
+        rest = rest[1:]
+    a.title = title
+    try:
+        if a.action == "add":
+            job = wq.add(rest, title=a.title)
+            note(f"queued {job['id']}: {job['title']}")
+            emit(job=job)
+            return 0
+        if a.action == "cancel":
+            if not rest:
+                return err("cancel needs a job id")
+            job = wq.cancel(rest[0])
+            note(f"cancelled {job['id']}: {job['title']}")
+            emit(job=job)
+            return 0
+    except ValueError as exc:
+        return err(str(exc))
+    if a.action in ("pause", "resume"):
+        (wq.pause if a.action == "pause" else wq.resume)()
+        ok, why = wq.gate()
+        note(f"{a.action}d; next job {'may start' if ok else 'waits'}: {why}")
+        emit(paused=wq.paused(), gate_open=ok, why=why)
+        return 0
+    got = wq.jobs()
+    ok, why = wq.gate()
+    note(f"{'a job is running' if wq.running() else 'nothing running'}; "
+         f"{sum(j['state'] == wq.PENDING for j in got)} pending; next job "
+         f"{'may start' if ok else 'waits'}: {why}")
+    for j in got:
+        rc = "" if j["rc"] is None else f" rc={j['rc']}"
+        note(f"  {j['id']}  {j['state']:8}{rc:7}  {j['title']}")
+    emit(running=wq.running(), gate_open=ok, why=why, jobs=got)
+    return 0
+
+
 def cmd_memory(a) -> int:
     """How far this machine's memory goes before macOS pushes back. #299."""
     from harness import memory_store as ms, ramp
@@ -2773,6 +2823,14 @@ def build_parser() -> argparse.ArgumentParser:
     mem.add_argument("--cap-gb", type=float, default=None,
                      help="never allocate more than this; default RAM - 4 GB")
     mem.set_defaults(func=cmd_memory)
+    jobs = sub.add_parser("jobs", help="the work queue: runs in order while "
+                          "nobody is using this machine")
+    jobs.add_argument("action", choices=("add", "list", "pause", "resume",
+                                         "cancel"))
+    jobs.add_argument("rest", nargs=argparse.REMAINDER,
+                      help="add: -- <command...>; cancel: <id>")
+    jobs.add_argument("--title", default="")
+    jobs.set_defaults(func=cmd_jobs)
     jud = sub.add_parser(
         "judge",
         help="decide a human-judged lane by looking and listening. Issue #273")

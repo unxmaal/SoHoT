@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # localharness over MCP, so another machine's agent can use this one's GPU.
 #
-# Scoped to svg, web, code and image. Video needs job semantics past a queue and
-# speech over the LAN was ruled out; both stay reachable locally through `lh`.
+# svg, web and code answer directly; image and video go on the work queue that
+# serve-worker.sh runs (#353). Speech over the LAN was ruled out.
 #
 # Binds every interface by default, like the other services and for the same
 # reason: on a trusted LAN the models are local, and the point of the machine

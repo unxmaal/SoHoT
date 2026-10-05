@@ -475,19 +475,16 @@ claude mcp add --transport http localharness http://<host>.local:8899/mcp
 
 > **There is no authentication.** Anyone who can reach port 8899 can use this
 > machine's GPU. That is a deliberate choice for a home network. On any network
-> you do not control, bind to localhost instead: `TTS_HOST=127.0.0.1`.
+> you do not control, bind to localhost instead: `MCP_HOST=127.0.0.1`.
 
-That exposes `svg`, `web`, `code` and `image` to the assistant. Every tool shells
+That exposes `svg`, `web`, `code`, `image` and `video` to the assistant. Every tool shells
 out to `lh`, so the CLI, the eval suite and the MCP server run identical
 commands, and what gets measured is what ships.
 
-`image` is queued: it holds 11.4 GiB at the default 512x512, against 23.9 at
-1024, and the inference server swaps models
-through a single queue, so it returns a job id and `job_status` carries the queue
-position and the artifact path. Artifacts stay here, in `~/localharness/out/mcp/`.
-
-Video and speech are not exposed over MCP. Video needs more than a queue to be
-usable remotely, and speech was ruled out; both stay available locally.
+`image` and `video` go on the work queue (see "The work queue"): they return a
+job id, `job_status` carries the position and what it is waiting for, and
+`job_result` returns the file. Copies stay here, in `~/localharness/out/mcp/`.
+Speech is not exposed over MCP; that was ruled out.
 
 DNS-rebinding protection stays on, with an allowlist in `MCP_ALLOW`. It guards a
 different thing than the missing authentication does: rebinding needs only that
@@ -1069,6 +1066,31 @@ uv run python -m evals.run --compare a/results.json b/results.json
 It will refuse if the two runs are not fairly comparable, and tell you which
 difference disqualified them. Comparing a run from before a settings change
 against one from after compares two different exams, so it stops you.
+
+### The work queue
+
+Long jobs from anyone go on one queue: an agent on another machine calling the
+MCP `image` or `video` tool, or someone here typing
+
+```bash
+lh jobs add --title "30B coder on code" -- uv run python -m evals.run --modality code --candidates q3-coder,q3-4b
+lh jobs list      # each job's state, and whether the next one may start
+lh jobs pause     # hold everything; a running job still finishes
+lh jobs resume
+lh jobs cancel 0003
+```
+
+The `worker` service runs them in order, each under the machine lock below,
+but starts the next one only while the queue is not paused and nobody is using
+this machine: the screen is locked, or there has been no keyboard or mouse
+input for `LH_IDLE_MINUTES` (10). Jobs are files under
+`~/localharness/queue/jobs/`, so they survive a restart, and output goes to
+`~/localharness/logs/jobs/<id>.log`. A failed job is recorded and the next
+starts. A job cut off by a reboot is marked failed rather than rerun.
+
+Over MCP, `image` and `video` return a job id at once, `job_status` says what
+it is waiting for, and `job_result` returns the file itself, so a caller on
+another machine gets the picture rather than a path it cannot open.
 
 ### One model-loading run at a time
 
