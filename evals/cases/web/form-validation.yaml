@@ -10,5 +10,6 @@ prompt: |
   least 8 characters, and the two passwords must match. Show one error message
   per failing field, and do not submit while any field is invalid. Inline CSS.
 assert:
-  must_contain: ["<form", "<script", "addEventListener", "type=\"password\""]
+  # Either way of wiring "on submit" is the behaviour asked for. #365.
+  must_contain: ["<form", "<script", ["addEventListener", "onsubmit"], "type=\"password\""]
   must_not_contain: ["https://", "http://"]
