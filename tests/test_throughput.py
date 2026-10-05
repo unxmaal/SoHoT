@@ -74,23 +74,40 @@ def test_lh_throughput_is_a_command():
     assert a.func is cli.cmd_throughput and a.levels == "1,2,4"
 
 
+class Clock:
+    """Time that moves only when a request says so."""
+
+    def __init__(self):
+        self.now = 0.0
+
+    def __call__(self):
+        return self.now
+
+
 def test_a_cold_load_is_not_timed_into_the_first_level():
     """The first request after a model is evicted pays for the load. Timed,
     it made a 1.9x speedup read as 6.8x on the Studio. #333."""
-    calls = []
+    clock, calls = Clock(), []
 
     def post(payload):
         calls.append(payload)
-        time.sleep(0.3 if len(calls) == 1 else 0.01)
+        clock.now += 18.0 if len(calls) == 1 else 0.5
         return {"usage": {"completion_tokens": 1}}
-    got = throughput.sweep("eval-7b", ["t"] * 4, levels=(1,), post=post)
+    got = throughput.sweep("eval-7b", ["t"] * 4, levels=(1,), post=post,
+                           clock=clock)
     assert len(calls) == 5 and got[0]["n"] == 4
-    assert got[0]["p95_s"] < 0.2
-    assert got[0]["warmup_s"] >= 0.3 and got[0]["warmup_ok"]
+    assert got[0]["p95_s"] == 0.5
+    assert got[0]["warmup_s"] == 18.0 and got[0]["warmup_ok"]
 
 
 def test_a_warm_server_reads_the_same_with_or_without_the_warmup():
-    """Negative control: a steady server's warm-up costs what any request
-    does."""
-    got = throughput.sweep("eval-7b", ["t"] * 4, levels=(1,), post=Fake().post)
-    assert abs(got[0]["warmup_s"] - got[0]["p50_s"]) < 0.05
+    """Negative control: on a steady server the warm-up costs what any
+    request does. Exact, because the clock is ours (#349)."""
+    clock = Clock()
+
+    def post(payload):
+        clock.now += 0.5
+        return {"usage": {"completion_tokens": 1}}
+    got = throughput.sweep("eval-7b", ["t"] * 4, levels=(1,), post=post,
+                           clock=clock)
+    assert got[0]["warmup_s"] == got[0]["p50_s"] == 0.5
