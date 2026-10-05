@@ -99,7 +99,7 @@ def test_an_engine_refuses_a_model_it_would_ignore():
     assert engines.resolve("h3").modality == "video"
 
 
-def test_the_video_lane_is_parked_and_still_nameable():
+def test_a_parked_lane_is_still_nameable(monkeypatch):
     """Two different facts that were being carried by one missing entry.
 
     PARKED is about spend: 40.5 minutes for 22 frames on this machine, stated
@@ -108,8 +108,9 @@ def test_the_video_lane_is_parked_and_still_nameable():
     this month and still have to be nameable, or unparking it silently yields
     a lane that cannot screen.
     """
+    monkeypatch.setitem(lanes.PARKED, "video", ("too slow here", "a faster machine"))
     why, until = lanes.parked("video")
-    assert why and until, "this test is about the parked lane; video is not one"
+    assert why and until
     assert screen.candidate_for("video", DISCOVERED)
 
 

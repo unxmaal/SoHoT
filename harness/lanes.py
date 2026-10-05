@@ -51,18 +51,9 @@ ALIASES = {"text": "code", "all": ""}
 #: whereas parked says somebody looked and chose, and names the condition
 #: under which the choice expires.
 #:
-#: `video` is NOT blocked on memory. RULE #172 measured h3.c generating on
-#: this machine at 9.48 GiB peak with zero swaps, superseding the earlier
-#: conclusion that local video needed the Studio. It is blocked on throughput:
-#: engines.py records 512x512x22 frames at 40.5 minutes, roughly 0.9 seconds
-#: of output per 40 minutes, and verify.COST_S puts it at 2700s against 180
-#: for music and 60 for code. So the Studio makes it faster, not newly
-#: possible. Issue #244.
-PARKED = {
-    "video": ("40.5 minutes for 22 frames at 512x512 on this machine, an "
-              "order of magnitude past every other lane",
-              "the Mac Studio arrives"),
-}
+#: Empty since the Studio ran video in 7.3 minutes (#347). It stays in
+#: verify.DELIBERATE, so it runs only when asked for by name.
+PARKED: dict[str, tuple[str, str]] = {}
 
 
 def parked(lane) -> tuple[str, str]:
