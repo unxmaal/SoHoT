@@ -323,3 +323,36 @@ def test_the_checkout_is_read_at_call_time(checkout):
     argv = engines.resolve("acestep:acestep-v15-turbo").argv(
         "a song", Path("/tmp/o.wav"), {})
     assert argv[argv.index("--root") + 1] == str(checkout)
+
+
+def _venv(root):
+    python = root / ".venv" / "bin" / "python"
+    python.parent.mkdir(parents=True)
+    python.write_text("", encoding="utf-8")
+    return python
+
+
+def test_a_checkout_linked_in_the_home_needs_no_export(tmp_path, monkeypatch):
+    """Nothing persistent set $ACESTEP_ROOT, so verify and the loop could never
+    run this lane. #335."""
+    from harness import paths
+    monkeypatch.delenv(engines.ACESTEP_ROOT_ENV, raising=False)
+    real = tmp_path / "ACE-Step-1.5"
+    python = _venv(real)
+    (paths.home() / "acestep").symlink_to(real)
+    argv = engines.resolve("acestep:acestep-v15-turbo").argv(
+        "a song", Path("/tmp/o.wav"), {})
+    assert argv[0] == str(paths.home() / "acestep" / ".venv" / "bin" / "python")
+    assert Path(argv[0]).resolve() == python.resolve()
+
+
+def test_an_explicit_root_beats_the_home_default(tmp_path, monkeypatch):
+    """Negative control: the default is a fallback, never an override."""
+    from harness import paths
+    _venv(paths.home() / "acestep")
+    mine = tmp_path / "mine"
+    _venv(mine)
+    monkeypatch.setenv(engines.ACESTEP_ROOT_ENV, str(mine))
+    argv = engines.resolve("acestep:acestep-v15-turbo").argv(
+        "a song", Path("/tmp/o.wav"), {})
+    assert argv[0] == str(mine / ".venv" / "bin" / "python")

@@ -418,6 +418,16 @@ ACESTEP_SCRIPT = str(
 ACESTEP_ROOT_ENV = "ACESTEP_ROOT"
 
 
+def acestep_root() -> str:
+    """$ACESTEP_ROOT, else <localharness home>/acestep when it exists. #335."""
+    from harness import paths
+    got = os.environ.get(ACESTEP_ROOT_ENV, "")
+    if got:
+        return got
+    default = paths.home() / "acestep"
+    return str(default) if default.exists() else ""
+
+
 def acestep_python(root) -> str:
     """The interpreter inside the ACE-Step checkout, NOT `uv run`.
 
@@ -439,7 +449,8 @@ def acestep_python(root) -> str:
         # and run the generator against an environment with no acestep in it.
         raise ValueError(
             f"the music lane needs the ACE-Step checkout: set "
-            f"${ACESTEP_ROOT_ENV} or pass root=<path> in the engine spec")
+            f"${ACESTEP_ROOT_ENV}, link it at <localharness home>/acestep, "
+            f"or pass root=<path> in the engine spec")
     base = Path(root)
     for relative in ("bin/python", "Scripts/python.exe"):
         candidate = base / ".venv" / relative
@@ -473,7 +484,7 @@ def _acestep(spec: str, model: str, options: dict) -> Engine:
         p = {**defaults, **{k: v for k, v in params.items() if v is not None}}
         # Read at call time so a test or a second checkout can move it without
         # reloading the module.
-        root = p.get("root") or os.environ.get(ACESTEP_ROOT_ENV, "")
+        root = p.get("root") or acestep_root()
         cmd = [acestep_python(root), ACESTEP_SCRIPT,
                "--root", str(root or "."),
                "--out", str(out), "--caption", prompt]
