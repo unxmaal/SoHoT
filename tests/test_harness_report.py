@@ -246,3 +246,47 @@ def test_this_machines_newest_receipt_still_wins(tmp_path, monkeypatch):
           ("20261002-000000-svg", HERE))
     assert report._newest_run_for("svg") == "20261002-000000-svg"
 
+
+
+def test_the_numbers_are_this_machines_not_the_winners(tmp_path, monkeypatch):
+    """The winner may be another machine's receipt; its median is a fact about
+    that machine. Showing it beside today's date read 5.10 s for a lane that
+    took 1.36 s here. #341."""
+    import json
+    from harness import adopt, winners
+    from harness import memory_store as ms
+    _runs(tmp_path, monkeypatch, ("20261005-000000-svg", json.dumps({
+        "environment": {"hw_model": "Mac17,15"},
+        "summary": {"local-large": {"pass_rate": 0.667, "median_s": 1.36,
+                                    "metrics": {"ink": 0.34}}}})))
+    monkeypatch.setattr(winners, "typed", lambda: {"svg": "local-large"})
+    monkeypatch.setattr(adopt, "adopted", lambda conn: {})
+    monkeypatch.setattr(winners, "beaten_in", lambda runs=None: {"svg": {
+        "candidate": "local-large", "pass_rate": 1.0, "median_s": 5.10,
+        "metrics": {}, "run": "legacy", "match": "exact"}})
+    conn = ms.connect(tmp_path / "d.db")
+    try:
+        svg = {l["lane"]: l for l in report.lanes_state(conn)}["svg"]
+    finally:
+        conn.close()
+    assert (svg["pass_rate"], svg["median_s"]) == (0.667, 1.36)
+    assert (svg["best_pass_rate"], svg["best_median_s"]) == (1.0, 5.10)
+
+
+def test_a_lane_never_run_here_shows_no_numbers(tmp_path, monkeypatch):
+    """Negative control: another machine's best does not fill the gap."""
+    from harness import adopt, winners
+    from harness import memory_store as ms
+    _runs(tmp_path, monkeypatch)
+    monkeypatch.setattr(winners, "typed", lambda: {"svg": "local-large"})
+    monkeypatch.setattr(adopt, "adopted", lambda conn: {})
+    monkeypatch.setattr(winners, "beaten_in", lambda runs=None: {"svg": {
+        "candidate": "local-large", "pass_rate": 1.0, "median_s": 5.10,
+        "metrics": {}, "run": "legacy", "match": "exact"}})
+    conn = ms.connect(tmp_path / "d.db")
+    try:
+        svg = {l["lane"]: l for l in report.lanes_state(conn)}["svg"]
+    finally:
+        conn.close()
+    assert svg["pass_rate"] is None and svg["median_s"] is None
+    assert svg["unverified"]
