@@ -56,7 +56,7 @@ def test_no_other_alias_reaches_the_eval_server():
     """A non-eval alias on this port would silently lose the MLX engine."""
     port = _default_port()
     for name, params in _entries():
-        if not name.startswith("eval-"):
+        if not name.startswith("eval-") and "api_base" in params:
             assert f":{port}/" not in params["api_base"], name
 
 

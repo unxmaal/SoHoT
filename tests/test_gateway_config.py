@@ -55,7 +55,7 @@ def test_every_alias_reaches_one_hot_swapping_server(path):
     enforced JSON (#286) and everything else to mlx_lm.server."""
     for group in (True, False):
         bases = {params["api_base"] for name, params in _entries(path)
-                 if name.startswith("eval-") == group}
+                 if name.startswith("eval-") == group and "api_base" in params}
         assert len(bases) <= 1, f"{path.name} spreads its aliases over {bases}"
 
 
@@ -85,3 +85,20 @@ def test_both_configs_keep_the_anthropic_routing_workaround(path):
     body = yaml.safe_load(path.read_text(encoding="utf-8"))
     assert body.get("litellm_settings", {}).get(
         "use_chat_completions_url_for_anthropic_messages") is True
+
+
+def test_a_remote_alias_takes_its_key_from_the_environment():
+    """A cloud alias has no api_base. Its key must never be written into a
+    tracked config, and a local alias must never need one. #357."""
+    for path in (MAC, CUDA):
+        for name, params in _entries(path):
+            if "api_base" in params:
+                assert params.get("api_key") == "not-needed", name
+            else:
+                assert str(params.get("api_key", "")).startswith("os.environ/"), name
+
+
+def test_the_cloud_reference_drops_what_opus_5_5_rejects():
+    params = dict(_entries(MAC))["cloud-opus"]
+    assert params["model"] == "anthropic/claude-opus-5-5"
+    assert "temperature" in params["additional_drop_params"]
