@@ -545,8 +545,9 @@ Mac pulls no winsdk.
 ## Bringing up a Linux machine
 
 Written against Ubuntu 24.04 with an NVIDIA card. Any distribution will run
-this; 24.04 is the one under test, because GitHub's `ubuntu-latest` **is**
-24.04, so a red `check-linux` is a real failure rather than a runner-only one.
+this; 24.04 is the one under test, because `check-linux` runs on GitHub's
+`ubuntu-24.04` runner, so a red `check-linux` is a real failure rather than a
+runner-only one.
 On anything else the package names in step 2 are the part that changes.
 
 Nothing here is a lane. Linux needed instruments and launchers only, because
