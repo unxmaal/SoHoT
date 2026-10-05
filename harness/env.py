@@ -56,8 +56,10 @@ def default_root() -> str:
 
 
 def configured() -> str:
-    """What this machine says, or the default. One place that decides."""
-    return os.environ.get(ROOT_VAR) or default_root()
+    """HF_ROOT, then an HF_HOME already set, then the default: env.sh's order.
+    Reading HF_ROOT alone put H3's weights inside the checkout. #345."""
+    return (os.environ.get(ROOT_VAR) or os.environ.get("HF_HOME")
+            or default_root())
 
 
 def beside() -> Path:

@@ -308,3 +308,36 @@ def test_an_unusable_inherited_hf_home_is_refused(tmp_path):
         assert "HF_HOME" in err, "the message should name what the caller set"
     finally:
         subprocess.run(["chmod", "700", str(unwritable)], check=True)
+
+
+@pytest.mark.parametrize("set_root,set_home", [
+    (True, False), (False, True), (True, True)])
+def test_python_picks_the_root_env_sh_picks(tmp_path, monkeypatch, set_root,
+                                            set_home):
+    """One question, two halves. env.configured() read HF_ROOT alone, so a
+    machine that sets only HF_HOME had H3's weights looked for inside the
+    checkout while env.sh exported the volume. #345."""
+    from harness import env
+    root = tmp_path / "explicit"
+    root.mkdir()
+    home = tmp_path / "inherited"
+    home.mkdir()
+    r = str(root) if set_root else None
+    h = str(home) if set_home else None
+    code, got, err = run_env(hf_root=r, hf_home=h, cwd=tmp_path)
+    assert code == 0, err
+    monkeypatch.delenv("HF_ROOT", raising=False)
+    monkeypatch.delenv("HF_HOME", raising=False)
+    if r:
+        monkeypatch.setenv("HF_ROOT", r)
+    if h:
+        monkeypatch.setenv("HF_HOME", h)
+    assert same_dir(got, env.configured())
+
+
+def test_with_neither_set_python_uses_the_default(monkeypatch):
+    """Negative control."""
+    from harness import env
+    monkeypatch.delenv("HF_ROOT", raising=False)
+    monkeypatch.delenv("HF_HOME", raising=False)
+    assert env.configured() == env.default_root()
