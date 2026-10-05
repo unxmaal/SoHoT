@@ -1070,6 +1070,22 @@ It will refuse if the two runs are not fairly comparable, and tell you which
 difference disqualified them. Comparing a run from before a settings change
 against one from after compares two different exams, so it stops you.
 
+### Lining up a night's work
+
+```bash
+lh jobs add --title "30B coder on code" -- uv run python -m evals.run --modality code --candidates q3-coder,q3-4b
+lh jobs list
+lh jobs go        # starts the runner; nothing runs before this
+lh jobs cancel 0003
+```
+
+Jobs are JSON files under `~/localharness/queue/jobs/`, so they survive a
+restart. `go` starts one detached runner that takes them in order, each under
+the machine lock below, released between jobs so another project can get in.
+Output goes to `~/localharness/logs/jobs/<id>.log`. A failed job is recorded
+and the next one starts. A job cut off by a reboot is marked failed rather
+than rerun, because it may have stopped half way.
+
 ### One model-loading run at a time
 
 Image and video generation, eval runs (screen, measure, `lh rubric run`) and
