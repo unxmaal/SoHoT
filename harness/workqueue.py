@@ -49,6 +49,13 @@ def add(argv: list[str], title: str = "", cwd: str = "", kind: str = "command",
         output: str = "", priority: int = 0) -> dict:
     if not argv:
         raise ValueError("a job needs a command")
+    first = str(argv[0])
+    if first.startswith("-"):
+        raise ValueError(f"the command starts with {first!r}: an option this "
+                         f"lh did not recognise was taken as the command")
+    if any(c.isspace() for c in first) and not os.path.exists(first):
+        raise ValueError(f"{first!r} is a whole command line in one argument; "
+                         f"split it into words (zsh does not word-split $VAR). #363")
     taken = [int(j["id"]) for j in jobs() if str(j.get("id", "")).isdigit()]
     job = {"id": f"{max(taken, default=0) + 1:04d}", "title": title or " ".join(argv),
            "kind": kind, "output": output, "priority": int(priority),

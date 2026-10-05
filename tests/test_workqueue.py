@@ -177,3 +177,21 @@ def test_priority_through_the_cli(capsys):
     assert json.loads(capsys.readouterr().out)["job"]["priority"] == 9
     assert [j["id"] for j in wq.pending()] == ["0001", "0002"]
     assert cli.main(["jobs", "priority", "0001"]) == 1
+
+
+@pytest.mark.parametrize("argv,why", [
+    (["uv run python -m evals.run --repeat 3", "--modality", "code"], "one argument"),
+    (["--priority", "5", "--title", "x", "--", "true"], "did not recognise"),
+])
+def test_a_command_that_cannot_run_is_refused_when_queued(argv, why):
+    """#363: five overnight jobs failed rc=127 hours after queueing."""
+    with pytest.raises(ValueError, match=why):
+        wq.add(argv)
+    assert wq.jobs() == []
+
+
+def test_a_real_path_with_a_space_is_still_a_command(tmp_path):
+    """Negative control."""
+    exe = tmp_path / "my tool"
+    exe.write_text("", encoding="utf-8")
+    assert wq.add([str(exe)])["argv"] == [str(exe)]
