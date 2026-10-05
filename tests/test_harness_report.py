@@ -176,10 +176,11 @@ def test_staleness_comes_from_the_newest_run_not_the_winning_one(tmp_path,
                            ("20260919-204639-944-0000-svg", 0.0)):
         d = runs / name
         d.mkdir(parents=True)
-        (d / "results.json").write_text("{}", encoding="utf-8")
+        (d / "results.json").write_text(HERE, encoding="utf-8")
         when = time.time() - age_days * 86400
         os.utime(d, (when, when))
     monkeypatch.setattr("harness.paths.home", lambda: tmp_path)
+    monkeypatch.setattr(report, "_hw_model", lambda: "Mac17,15", raising=False)
 
     assert report._newest_run_for("svg") == "20260919-204639-944-0000-svg"
     assert report._run_age_days(report._newest_run_for("svg"),
@@ -197,3 +198,95 @@ def test_a_directory_with_no_receipt_does_not_count_as_a_run(tmp_path,
     (tmp_path / "runs" / "20260919-000000-000-0000-svg").mkdir(parents=True)
     monkeypatch.setattr("harness.paths.home", lambda: tmp_path)
     assert report._newest_run_for("svg") == ""
+
+
+HERE = '{"environment": {"hw_model": "Mac17,15"}}'
+
+
+def _runs(tmp_path, monkeypatch, *named):
+    import os
+    import time
+    for i, (name, body) in enumerate(named):
+        d = tmp_path / "runs" / name
+        d.mkdir(parents=True)
+        (d / "results.json").write_text(body, encoding="utf-8")
+        when = time.time() - (len(named) - i) * 60
+        os.utime(d, (when, when))
+    monkeypatch.setattr("harness.paths.home", lambda: tmp_path)
+    monkeypatch.setattr(report, "_hw_model", lambda: "Mac17,15", raising=False)
+
+
+def test_another_machines_receipt_is_not_this_machines_measurement(
+        tmp_path, monkeypatch):
+    """The runs directory migrates with the home. Another model's receipts stay theirs.
+    #331."""
+    _runs(tmp_path, monkeypatch,
+          ("20261001-000000-svg", HERE),
+          ("20261004-000000-svg", '{"environment": {"hw_model": "Mac14,12"}}'))
+    assert report._newest_run_for("svg") == "20261001-000000-svg"
+
+
+def test_only_another_machines_receipts_means_never_measured_here(
+        tmp_path, monkeypatch):
+    _runs(tmp_path, monkeypatch,
+          ("20261004-000000-svg", '{"environment": {"hw_model": "Mac14,12"}}'))
+    assert report._newest_run_for("svg") == ""
+
+
+def test_a_receipt_that_names_no_machine_is_not_assumed_to_be_this_one(
+        tmp_path, monkeypatch):
+    _runs(tmp_path, monkeypatch, ("20261004-000000-svg", "{}"),
+          ("20261005-000000-svg", "not json"))
+    assert report._newest_run_for("svg") == ""
+
+
+def test_this_machines_newest_receipt_still_wins(tmp_path, monkeypatch):
+    """Negative control: two of this machine's own, newest by mtime."""
+    _runs(tmp_path, monkeypatch, ("20261001-000000-svg", HERE),
+          ("20261002-000000-svg", HERE))
+    assert report._newest_run_for("svg") == "20261002-000000-svg"
+
+
+
+def test_the_numbers_are_this_machines_not_the_winners(tmp_path, monkeypatch):
+    """The winner may be another machine's receipt; its median is a fact about
+    that machine. Showing it beside today's date read 5.10 s for a lane that
+    took 1.36 s here. #341."""
+    import json
+    from harness import adopt, winners
+    from harness import memory_store as ms
+    _runs(tmp_path, monkeypatch, ("20261005-000000-svg", json.dumps({
+        "environment": {"hw_model": "Mac17,15"},
+        "summary": {"local-large": {"pass_rate": 0.667, "median_s": 1.36,
+                                    "metrics": {"ink": 0.34}}}})))
+    monkeypatch.setattr(winners, "typed", lambda: {"svg": "local-large"})
+    monkeypatch.setattr(adopt, "adopted", lambda conn: {})
+    monkeypatch.setattr(winners, "beaten_in", lambda runs=None: {"svg": {
+        "candidate": "local-large", "pass_rate": 1.0, "median_s": 5.10,
+        "metrics": {}, "run": "legacy", "match": "exact"}})
+    conn = ms.connect(tmp_path / "d.db")
+    try:
+        svg = {l["lane"]: l for l in report.lanes_state(conn)}["svg"]
+    finally:
+        conn.close()
+    assert (svg["pass_rate"], svg["median_s"]) == (0.667, 1.36)
+    assert (svg["best_pass_rate"], svg["best_median_s"]) == (1.0, 5.10)
+
+
+def test_a_lane_never_run_here_shows_no_numbers(tmp_path, monkeypatch):
+    """Negative control: another machine's best does not fill the gap."""
+    from harness import adopt, winners
+    from harness import memory_store as ms
+    _runs(tmp_path, monkeypatch)
+    monkeypatch.setattr(winners, "typed", lambda: {"svg": "local-large"})
+    monkeypatch.setattr(adopt, "adopted", lambda conn: {})
+    monkeypatch.setattr(winners, "beaten_in", lambda runs=None: {"svg": {
+        "candidate": "local-large", "pass_rate": 1.0, "median_s": 5.10,
+        "metrics": {}, "run": "legacy", "match": "exact"}})
+    conn = ms.connect(tmp_path / "d.db")
+    try:
+        svg = {l["lane"]: l for l in report.lanes_state(conn)}["svg"]
+    finally:
+        conn.close()
+    assert svg["pass_rate"] is None and svg["median_s"] is None
+    assert svg["unverified"]
