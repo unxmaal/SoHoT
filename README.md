@@ -1012,6 +1012,11 @@ method can beat a better model:
 `omnisvg` needs `./scripts/setup-omnisvg.sh` first: it has its own checkout, its
 own venv and 16 GiB of weights.
 
+The music lane (`acestep:`) runs an ACE-Step checkout through that checkout's
+own `.venv`. It looks at `$ACESTEP_ROOT`, then at `~/localharness/acestep`, so
+a checkout kept elsewhere needs only a symlink there for the services and
+`lh verify` to find it.
+
 `repair` costs nothing extra, so it is the one to understand. Everything already
 checks its own output. It runs the code it wrote, draws the SVG to see whether
 anything is visible, opens the web page in a browser. All of that was

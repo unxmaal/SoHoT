@@ -77,19 +77,25 @@ def lanes_state(conn) -> list[dict]:
         # because their best receipts are older than their newest. #234.
         newest = _newest_run_for(lane)
         age = _run_age_days(newest, now) if newest else None
+        serves = adopted.get(lane) or typed.get(lane, "")
+        # THE NUMBERS ARE THIS MACHINE'S. The winner may be another machine's
+        # receipt, and a median is a fact about the machine that ran it. #341.
+        here = _row_for(newest, lane, serves) if newest else {}
         out.append({
             "lane": lane,
             "wanted": lane in L.WANTED,
-            "serves": adopted.get(lane) or typed.get(lane, ""),
+            "serves": serves,
             "adopted": bool(adopted.get(lane)),
             "measured": got.get("candidate", ""),
             # exact / quantised / "" -- `quantised` means only a quantisation
             # of the named default has ever run, which is a finding rather
             # than a mismatch to smooth over.
             "match": got.get("match", ""),
-            "pass_rate": got.get("pass_rate"),
-            "median_s": got.get("median_s"),
-            "metrics": got.get("metrics") or {},
+            "pass_rate": here.get("pass_rate"),
+            "median_s": here.get("median_s"),
+            "metrics": here.get("metrics") or {},
+            "best_pass_rate": got.get("pass_rate"),
+            "best_median_s": got.get("median_s"),
             "run": run,
             "last_run": newest,
             "age_days": age,
@@ -130,6 +136,23 @@ def _newest_run_for(lane: str) -> str:
         if _ran_on(d / "results.json") == here:
             return d.name
     return ""
+
+
+def _row_for(run: str, lane: str, serves: str) -> dict:
+    """The lane default's summary row in one run, or {}."""
+    from harness import paths, winners
+    try:
+        got = json.loads((paths.home() / "runs" / run / "results.json"
+                          ).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    summary = got.get("summary") or {}
+    family = winners.FAMILIES.get(lane, "alias")
+    for candidate, row in summary.items():
+        if serves and (candidate == serves
+                       or winners.matches(serves, candidate, family)):
+            return row
+    return next(iter(summary.values())) if len(summary) == 1 else {}
 
 
 def _hw_model() -> str:
