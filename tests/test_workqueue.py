@@ -147,3 +147,33 @@ def test_pause_resume_and_list_through_the_cli(capsys):
     assert got["jobs"][0]["state"] == wq.PENDING and got["gate_open"] is False
     assert cli.main(["jobs", "resume", "--json"]) == 0
     assert json.loads(capsys.readouterr().out)["paused"] is False
+
+
+def test_higher_priority_runs_first_and_ties_keep_their_order(tmp_path):
+    """#361. An image someone is waiting for must not sit behind a night of
+    benchmarks."""
+    out = tmp_path / "order"
+    for n, p in (("a", 0), ("b", 0), ("c", 5)):
+        wq.add(py(f"open({str(out)!r}, 'a').write({n!r})"), priority=p)
+    wq.run_pending()
+    assert out.read_text(encoding="utf-8") == "cab"
+
+
+def test_a_pending_job_can_be_reprioritised_and_a_finished_one_cannot(tmp_path):
+    first = wq.add(py("pass"))
+    second = wq.add(py("pass"))
+    wq.set_priority(second["id"], 3)
+    assert [j["id"] for j in wq.pending()] == [second["id"], first["id"]]
+    wq.run_pending()
+    with pytest.raises(ValueError, match="only a pending job"):
+        wq.set_priority(first["id"], 9)
+
+
+def test_priority_through_the_cli(capsys):
+    cli.main(["jobs", "add", "--", "true"])
+    cli.main(["jobs", "add", "--priority", "7", "--", "true"])
+    capsys.readouterr()
+    assert cli.main(["jobs", "priority", "0001", "9", "--json"]) == 0
+    assert json.loads(capsys.readouterr().out)["job"]["priority"] == 9
+    assert [j["id"] for j in wq.pending()] == ["0001", "0002"]
+    assert cli.main(["jobs", "priority", "0001"]) == 1

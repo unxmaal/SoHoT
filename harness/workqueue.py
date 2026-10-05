@@ -46,15 +46,35 @@ def jobs() -> list[dict]:
 
 
 def add(argv: list[str], title: str = "", cwd: str = "", kind: str = "command",
-        output: str = "") -> dict:
+        output: str = "", priority: int = 0) -> dict:
     if not argv:
         raise ValueError("a job needs a command")
     taken = [int(j["id"]) for j in jobs() if str(j.get("id", "")).isdigit()]
     job = {"id": f"{max(taken, default=0) + 1:04d}", "title": title or " ".join(argv),
-           "kind": kind, "output": output,
+           "kind": kind, "output": output, "priority": int(priority),
            "argv": list(argv), "cwd": cwd or os.getcwd(), "state": PENDING,
            "added": time.strftime("%Y-%m-%dT%H:%M:%S"), "started": "",
            "finished": "", "rc": None, "log": ""}
+    _write(job)
+    return job
+
+
+def order(got: list[dict]) -> list[dict]:
+    """Run order: higher priority first, then the order added. #361."""
+    return sorted(got, key=lambda j: (-int(j.get("priority") or 0), j["id"]))
+
+
+def pending() -> list[dict]:
+    return order([j for j in jobs() if j["state"] == PENDING])
+
+
+def set_priority(job_id: str, priority: int) -> dict:
+    job = get(job_id)
+    if job is None:
+        raise ValueError(f"no job {job_id}")
+    if job["state"] != PENDING:
+        raise ValueError(f"job {job_id} is {job['state']}; only a pending job can be reordered")
+    job["priority"] = int(priority)
     _write(job)
     return job
 
@@ -152,7 +172,7 @@ def run_pending(popen=subprocess.run, gate=lambda: (True, "")) -> list[dict]:
     try:
         _recover()
         while True:
-            nxt = next((j for j in jobs() if j["state"] == PENDING), None)
+            nxt = next(iter(pending()), None)
             if nxt is None or not gate()[0]:
                 return done
             done.append(run_one(nxt, popen=popen))
