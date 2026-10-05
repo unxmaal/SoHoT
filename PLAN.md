@@ -887,7 +887,8 @@ the hours. Revisit every one on the Studio.
   once built on one.
 - `mlx_lm.server` serializes through a single queue and swaps models per
   request, so any concurrent client inserts a full model load into your timings.
-  `harness/jobs.py` now enforces one generation at a time; before it, that
+  `harness/exclusive.py` now enforces one generation at a time across
+  processes, and `harness/workqueue.py` holds the waiting; before them, that
   isolation was assumed.
 - **An abandoned request stays queued.** A readiness loop that fires every
   second and gives up after N seconds does not retry, it enqueues. 120 of them

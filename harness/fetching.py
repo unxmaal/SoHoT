@@ -1,7 +1,7 @@
 """Download queued weights in the background, durably. Issue #62.
 
-WHY NOT harness.jobs.Queue: its own docstring says jobs "live in memory and die
-with the process", and it is instantiated once inside the MCP server. A
+WHY NOT the MCP server's old in-memory queue: its jobs lived in memory and died
+with the process, and it existed only inside that server. A
 download queue that exists only while a server happens to be running is not
 automatic, which was the requirement.
 

@@ -1081,7 +1081,7 @@ def cmd_throughput(a) -> int:
 
 
 def cmd_jobs(a) -> int:
-    """A queue that waits for a go. #353."""
+    """The work queue every caller shares. #353."""
     from harness import workqueue as wq
 
     global _JSON
@@ -1100,8 +1100,7 @@ def cmd_jobs(a) -> int:
     try:
         if a.action == "add":
             job = wq.add(rest, title=a.title)
-            note(f"queued {job['id']}: {job['title']}  (nothing runs until "
-                 f"`lh jobs go`)")
+            note(f"queued {job['id']}: {job['title']}")
             emit(job=job)
             return 0
         if a.action == "cancel":
@@ -1113,23 +1112,21 @@ def cmd_jobs(a) -> int:
             return 0
     except ValueError as exc:
         return err(str(exc))
-    if a.action == "go":
-        pending = [j for j in wq.jobs() if j["state"] == wq.PENDING]
-        if not pending:
-            return err("nothing pending")
-        if not wq.go():
-            return err("a runner is already working the queue")
-        note(f"started: {len(pending)} job(s), one at a time under the machine "
-             f"lock; logs in {wq.log_dir()}")
-        emit(started=True, pending=len(pending))
+    if a.action in ("pause", "resume"):
+        (wq.pause if a.action == "pause" else wq.resume)()
+        ok, why = wq.gate()
+        note(f"{a.action}d; next job {'may start' if ok else 'waits'}: {why}")
+        emit(paused=wq.paused(), gate_open=ok, why=why)
         return 0
     got = wq.jobs()
-    note(f"{'runner working' if wq.running() else 'idle'}; "
-         f"{sum(j['state'] == wq.PENDING for j in got)} pending")
+    ok, why = wq.gate()
+    note(f"{'a job is running' if wq.running() else 'nothing running'}; "
+         f"{sum(j['state'] == wq.PENDING for j in got)} pending; next job "
+         f"{'may start' if ok else 'waits'}: {why}")
     for j in got:
         rc = "" if j["rc"] is None else f" rc={j['rc']}"
         note(f"  {j['id']}  {j['state']:8}{rc:7}  {j['title']}")
-    emit(running=wq.running(), jobs=got)
+    emit(running=wq.running(), gate_open=ok, why=why, jobs=got)
     return 0
 
 
@@ -2826,9 +2823,10 @@ def build_parser() -> argparse.ArgumentParser:
     mem.add_argument("--cap-gb", type=float, default=None,
                      help="never allocate more than this; default RAM - 4 GB")
     mem.set_defaults(func=cmd_memory)
-    jobs = sub.add_parser("jobs", help="line up long runs; nothing starts "
-                          "until `lh jobs go`")
-    jobs.add_argument("action", choices=("add", "list", "go", "cancel"))
+    jobs = sub.add_parser("jobs", help="the work queue: runs in order while "
+                          "nobody is using this machine")
+    jobs.add_argument("action", choices=("add", "list", "pause", "resume",
+                                         "cancel"))
     jobs.add_argument("rest", nargs=argparse.REMAINDER,
                       help="add: -- <command...>; cancel: <id>")
     jobs.add_argument("--title", default="")

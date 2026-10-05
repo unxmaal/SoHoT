@@ -1,7 +1,6 @@
 """One large working set at a time, across PROCESSES. Issue #137.
 
-tests/test_harness_jobs.py covers the in-process queue. The gap this closes is
-the one that actually bit: two separate `lh` invocations, each with its own
+The gap this closes is the one that actually bit: two separate `lh` invocations, each with its own
 interpreter, both going at the GPU. A test that only spawns threads cannot see
 it, so the collision tests here spawn real subprocesses.
 """

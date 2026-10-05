@@ -11,15 +11,9 @@ harness could measure something the product did not ship. A third caller obeys
 the same rule, and shelling out is how it stays true by construction rather
 than by discipline.
 
-SCOPED DELIBERATELY to svg, web, code and image. Video is 40 minutes and a
-large file, which needs job semantics past a queue, and speaking over the LAN
-was ruled out. Both are reachable locally with `lh`.
-
-THE EXPENSIVE LANE IS QUEUED. `lh image` holds 11.4 GiB for 20-54 seconds and
-mlx_lm.server swaps models per request through a single queue. Two callers
-without a queue means each inserts a full model load into the other's request
-on a machine that swaps if both hold weights at once. So `image` returns a job
-id, and the queue reports what a caller is waiting behind.
+svg, web and code answer directly. image and video go on the shared work
+queue (harness/workqueue.py, #353): they return a job id at once, run in order
+while nobody is using this machine, and job_result hands back the file.
 
     ./scripts/serve-mcp.sh          # 0.0.0.0, no auth, trusted LAN only
 
@@ -35,7 +29,7 @@ from pathlib import Path
 from mcp.server.mcpserver import MCPServer
 from pydantic import BaseModel
 
-from harness import env, exclusive, jobs, paths
+from harness import env, exclusive, paths, workqueue
 
 
 class JobInfo(BaseModel):
@@ -73,11 +67,11 @@ SERVER = MCPServer(
     name="localharness",
     instructions=(
         "Local media generation on Apple Silicon. svg, web and code answer in "
-        "a few seconds. image is queued because it holds 11 GiB: it returns a "
-        "job id, and job_status carries the file path when it finishes. "
-        "Artifacts stay on the serving machine."),
+        "a few seconds. image and video go on this machine's work queue and "
+        "return a job id at once: jobs run in order, and only while nobody is "
+        "using the machine, so a job may wait. Poll job_status; when it is "
+        "done, job_result returns the file itself."),
 )
-QUEUE = jobs.Queue()
 
 
 def run_lh(argv: list[str], timeout: float = DEFAULT_TIMEOUT) -> str:
@@ -164,68 +158,108 @@ def code(prompt: str, model: str = "") -> str:
 
 
 # ---------------------------------------------------------------------------
-# The expensive lane. The JOB here is about the network, not the machine: a
-# generation runs for 20-55s and a video for forty minutes, which is not a
-# synchronous HTTP call, so the caller gets an id and polls.
-#
-# SERIALISATION IS NO LONGER THIS QUEUE'S JOB (issue #137). `lh` takes a
-# cross-process lock around the run itself, which is the only layer that can
-# see a local invocation and a remote one at the same time. This queue stays
-# because a remote caller needs somewhere to put the wait, not because it is
-# what keeps two generations apart.
+# The expensive lanes, on the shared work queue. #353.
 # ---------------------------------------------------------------------------
 
-@SERVER.tool(description="Generate an image. Queued: returns a job id "
-                         "immediately, then poll job_status for the file path. "
-                         "Takes 20-55s once it starts.")
+def _queue(kind: str, prompt: str, argv: list[str], out: Path) -> JobInfo:
+    job = workqueue.add(argv, title=f"{kind}: {prompt[:80]}", kind=kind,
+                        output=str(out), cwd=str(Path(__file__).resolve().parents[1]))
+    return _describe(job)
+
+
+@SERVER.tool(description="Generate an image. Queued on this machine's work "
+                         "queue: returns a job id at once. Poll job_status, "
+                         "then job_result for the PNG. About 3 s once started.")
 def image(prompt: str, width: int = 512, height: int = 512,
           seed: int = 0, model: str = "") -> JobInfo:
-    def work() -> str:
-        out = _out("image", ".png")
-        argv = [*LH, "image", prompt, "-o", str(out),
-                "--width", str(width), "--height", str(height)]
-        if seed:
-            argv += ["--seed", str(seed)]
-        if model:
-            argv += ["-m", model]
-        run_lh(argv)
-        return str(out)
+    out = _out("image", ".png")
+    argv = [*LH, "image", prompt, "-o", str(out),
+            "--width", str(width), "--height", str(height)]
+    if seed:
+        argv += ["--seed", str(seed)]
+    if model:
+        argv += ["-m", model]
+    return _queue("image", prompt, argv, out)
 
-    job_id = QUEUE.submit("image", work)
-    return _describe(QUEUE.status(job_id))
+
+@SERVER.tool(description="Generate a short video clip (MP4). Queued on this "
+                         "machine's work queue: returns a job id at once. Poll "
+                         "job_status, then job_result for the file. Minutes "
+                         "once started.")
+def video(prompt: str, width: int = 512, height: int = 512, frames: int = 22,
+          seed: int = 0) -> JobInfo:
+    out = _out("video", ".mp4")
+    argv = [*LH, "video", prompt, "-o", str(out), "--width", str(width),
+            "--height", str(height), "--frames", str(frames)]
+    if seed:
+        argv += ["--seed", str(seed)]
+    return _queue("video", prompt, argv, out)
 
 
 @SERVER.tool(description="Check a queued job. States: queued, running, done, "
-                         "failed. When done, `path` is the artifact on the "
-                         "serving machine.")
+                         "failed. A queued job says what it is waiting for.")
 def job_status(job: str) -> JobInfo:
-    status = QUEUE.status(job)
-    if status is None:
-        return JobInfo(job=job, kind="", state="unknown",
-                       error="no such job; jobs do not survive a server restart")
-    return _describe(status)
+    got = workqueue.get(job)
+    if got is None:
+        return JobInfo(job=job, kind="", state="unknown", error="no such job")
+    return _describe(got)
 
 
-def _describe(job) -> JobInfo:
-    info = JobInfo(job=job.id, kind=job.kind, state=job.state,
-                   seconds=round(job.seconds, 1))
-    if job.state == "queued":
-        running = QUEUE.running()
-        info.ahead = job.ahead
-        # A wait that names what it is behind is a queue; one that does not is
-        # a slow tool.
-        #
-        # ISSUE #137: this queue can only see its OWN jobs, and since `lh`
-        # started taking the cross-process lock it is no longer the only thing
-        # holding the machine. Someone at the keyboard running `lh video` is
-        # forty minutes this caller will wait and zero jobs this queue knows
-        # about, so ask the lock who actually has it before answering.
-        info.waiting_for = running.kind if running else (
-            exclusive.holder().get("kind") or None)
-    if job.state == "done":
-        info.path = job.result
-    if job.state == "failed":
-        info.error = job.error
+#: An artifact larger than this is reported by path rather than sent inline.
+MAX_INLINE_BYTES = 50 * 1024 * 1024
+MIME = {".png": "image/png", ".mp4": "video/mp4", ".wav": "audio/wav"}
+
+
+@SERVER.tool(description="The finished artifact of a done job: the image "
+                         "itself, or the video as an embedded file, so it "
+                         "reaches a caller on another machine.")
+def job_result(job: str) -> list:
+    import base64
+
+    from mcp.server.mcpserver import Image
+    from mcp.types import BlobResourceContents, EmbeddedResource, TextContent
+
+    got = workqueue.get(job)
+    if got is None or got["state"] != workqueue.DONE:
+        state = "unknown" if got is None else _STATE.get(got["state"], got["state"])
+        return [TextContent(type="text", text=f"job {job} is {state}; nothing to return yet")]
+    path = Path(got.get("output") or "")
+    if not path.is_file():
+        return [TextContent(type="text", text=f"job {job} finished but {path} is missing")]
+    size = path.stat().st_size
+    note = TextContent(type="text", text=f"{got['kind']} {path.name}, {size} bytes")
+    if size > MAX_INLINE_BYTES:
+        return [TextContent(type="text", text=f"{path} is {size} bytes, over the "
+                            f"{MAX_INLINE_BYTES} inline limit; it stays on this machine")]
+    if path.suffix == ".png":
+        return [note, Image(path=path)]
+    return [note, EmbeddedResource(type="resource", resource=BlobResourceContents(
+        uri=path.resolve().as_uri(), mime_type=MIME.get(path.suffix, "application/octet-stream"),
+        blob=base64.b64encode(path.read_bytes()).decode("ascii")))]
+
+
+_STATE = {workqueue.PENDING: "queued"}
+
+
+def _describe(job: dict) -> JobInfo:
+    info = JobInfo(job=job["id"], kind=job.get("kind", ""),
+                   state=_STATE.get(job["state"], job["state"]))
+    if job["state"] == workqueue.PENDING:
+        everyone = workqueue.jobs()
+        info.ahead = sum(1 for j in everyone if j["state"] == workqueue.RUNNING
+                         or (j["state"] == workqueue.PENDING and j["id"] < job["id"]))
+        running = next((j for j in everyone if j["state"] == workqueue.RUNNING), None)
+        if running:
+            info.waiting_for = running.get("kind") or "a job"
+        else:
+            ok, why = workqueue.gate()
+            info.waiting_for = None if ok else why
+            if ok and exclusive.holder().get("kind"):
+                info.waiting_for = exclusive.holder().get("kind")
+    if job["state"] == workqueue.DONE:
+        info.path = job.get("output") or None
+    if job["state"] == workqueue.FAILED:
+        info.error = job.get("note") or f"exited {job.get('rc')}; log {job.get('log')}"
     return info
 
 

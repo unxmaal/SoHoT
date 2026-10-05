@@ -1,8 +1,8 @@
 """One large working set at a time, across processes. Issue #137.
 
-harness/jobs.py already enforces this, but only inside ONE process, so it
-guards the MCP caller and leaves `lh` free to collide with itself. Every `lh`
-invocation is a new process, so serialising them needs the operating system.
+An in-process queue (the MCP server's, retired in #353) guarded only its own
+caller and left `lh` free to collide with itself. Every `lh` invocation is a
+new process, so serialising them needs the operating system.
 
 MEASURED, NOT ASSUMED. 2026-09-12 on the M2 Pro: `lh image` started while
 `lh video` held the GPU. Both went straight at it, Metal returned

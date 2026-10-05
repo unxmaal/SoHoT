@@ -16,22 +16,6 @@ mcp_server = pytest.importorskip(
     reason="needs the `mcp` group: uv run --group mcp pytest")
 
 
-@pytest.fixture(autouse=True)
-def fresh_queue(monkeypatch):
-    """A NEW queue per test.
-
-    mcp_server.QUEUE is a module-level singleton with ONE worker thread, which
-    is right for the server and wrong for a test file: jobs from an earlier
-    test sit in front of a later one, so a test that passed alone failed in a
-    full run with its job still 'queued'. Shared mutable state across tests is
-    the defect, not the timeout."""
-    from harness import jobs
-    q = jobs.Queue()
-    monkeypatch.setattr(mcp_server, "QUEUE", q)
-    yield q
-    q.shutdown()
-
-
 @pytest.fixture
 def spy(monkeypatch, tmp_path):
     """Capture the argv, and fake `lh` writing its artifact."""
@@ -89,57 +73,115 @@ def test_the_model_can_be_chosen_per_call(spy):
     assert "-m" in spy[0] and "local-large" in spy[0]
 
 
-def test_image_returns_a_job_id_not_an_image(spy):
-    """54 seconds cold is past what an MCP client waits for, and 11.4 GiB is
-    why it has to be one at a time anyway."""
+def run_queue(fail=False):
+    """The worker, with `lh` faked: write the artifact the job names."""
+    from harness import workqueue as wq
+
+    def popen(argv, cwd=None, stdout=None, stderr=None):
+        if fail:
+            stdout.write("mflux exited 3: out of memory\n")
+            return type("R", (), {"returncode": 3})()
+        out = argv[argv.index("-o") + 1]
+        body = (b"\x89PNG\r\n\x1a\n" + b"x" * 200 if out.endswith(".png")
+                else b"\x00\x00\x00\x18ftypmp42" + b"v" * 200)
+        open(out, "wb").write(body)
+        return type("R", (), {"returncode": 0})()
+    return wq.run_pending(popen=popen)
+
+
+def test_image_returns_a_job_id_and_runs_nothing(spy):
+    """A caller on another machine gets an id at once; the work waits its turn."""
     out = mcp_server.image("a red fox in snow")
-    assert out.job.startswith("image-")
-    assert out.state in ("queued", "running")
+    assert out.state == "queued" and out.job
+    assert spy == []
 
 
-def test_an_image_job_finishes_and_carries_the_file(spy):
+def test_a_queued_image_finishes_and_carries_the_file(spy):
     job = mcp_server.image("a red fox in snow", width=64, height=64)
-    done = mcp_server.QUEUE.wait(job.job, timeout=10)
-    assert done.state == "done", done.error
-    assert done.result.endswith(".png")
-    argv = spy[0]
-    assert argv[:len(mcp_server.LH) + 1] == [*mcp_server.LH, "image"]
-    assert "--width" in argv and "64" in argv
-
-
-def test_job_status_reports_a_wait_it_can_explain(spy):
-    job = mcp_server.image("a fox")
-    mcp_server.QUEUE.wait(job.job, timeout=10)
+    run_queue()
     status = mcp_server.job_status(job.job)
-    assert status.state == "done"
-    assert status.seconds >= 0
+    assert status.state == "done" and status.path.endswith(".png")
+
+
+def test_the_image_job_runs_lh_image_with_the_callers_size(spy):
+    from harness import workqueue as wq
+    job = mcp_server.image("a fox", width=64, height=64)
+    argv = wq.get(job.job)["argv"]
+    assert argv[:len(mcp_server.LH) + 1] == [*mcp_server.LH, "image"]
+    assert argv[argv.index("--width") + 1] == "64"
+
+
+def test_video_is_queued_the_same_way(spy):
+    from harness import workqueue as wq
+    job = mcp_server.video("a fox running", frames=22)
+    argv = wq.get(job.job)["argv"]
+    assert argv[:len(mcp_server.LH) + 1] == [*mcp_server.LH, "video"]
+    assert job.kind == "video" and job.state == "queued"
+
+
+def test_a_queued_job_says_what_it_waits_for(spy):
+    from harness import workqueue as wq
+    wq.pause()
+    job = mcp_server.image("a fox")
+    assert "paused" in mcp_server.job_status(job.job).waiting_for
+
+
+def test_jobs_survive_a_server_restart(spy):
+    """The old queue lived in memory; a redeploy lost every waiting job."""
+    import importlib
+    job = mcp_server.image("a fox")
+    importlib.reload(mcp_server)
+    assert mcp_server.job_status(job.job).state == "queued"
 
 
 def test_an_unknown_job_says_so_rather_than_raising(spy):
-    assert mcp_server.job_status("nope-0-abcdef").state == "unknown"
+    assert mcp_server.job_status("nope").state == "unknown"
 
 
-def test_a_failed_generation_is_reported_not_raised(spy, monkeypatch):
-    def boom(argv, timeout=None):
-        raise RuntimeError("mflux exited 3: out of memory")
-    monkeypatch.setattr(mcp_server, "run_lh", boom)
+def test_a_failed_generation_is_reported_not_raised(spy):
     job = mcp_server.image("a fox")
-    mcp_server.QUEUE.wait(job.job, timeout=10)
+    run_queue(fail=True)
     status = mcp_server.job_status(job.job)
-    assert status.state == "failed"
-    assert "out of memory" in status.error
+    assert status.state == "failed" and "exited 3" in status.error
+
+
+def test_job_result_hands_back_the_image_itself(spy):
+    """A path on this machine is useless to an agent upstairs."""
+    job = mcp_server.image("a fox")
+    run_queue()
+    import base64
+    got = mcp_server.job_result(job.job)
+    img = [c for c in got if type(c).__name__ == "Image"][0].to_image_content()
+    assert img.mime_type == "image/png"
+    assert base64.b64decode(img.data)[:4] == b"\x89PNG"
+
+
+def test_job_result_hands_back_a_video_as_an_embedded_file(spy):
+    import base64
+    job = mcp_server.video("a fox running")
+    run_queue()
+    got = mcp_server.job_result(job.job)
+    res = [c for c in got if getattr(c, "type", "") == "resource"][0].resource
+    assert res.mime_type == "video/mp4"
+    assert base64.b64decode(res.blob)[4:8] == b"ftyp"
+
+
+def test_job_result_before_the_job_is_done_says_so(spy):
+    job = mcp_server.image("a fox")
+    got = mcp_server.job_result(job.job)
+    assert "queued" in got[0].text
 
 
 def test_every_tool_is_registered_on_the_server():
     names = {t.name for t in mcp_server.SERVER._tool_manager.list_tools()}
-    assert {"svg", "web", "code", "image", "job_status"} <= names
+    assert {"svg", "web", "code", "image", "video", "job_status",
+            "job_result"} <= names
 
 
-def test_video_and_speech_are_not_exposed():
-    """Scoped deliberately: 40 minutes and a large file need job semantics
-    nobody has asked for, and speech over the LAN was ruled out."""
+def test_speech_is_not_exposed():
+    """Speaking over the LAN was ruled out."""
     names = {t.name for t in mcp_server.SERVER._tool_manager.list_tools()}
-    assert "video" not in names and "say" not in names
+    assert "say" not in names
 
 
 # ---- reachable from the LAN, and only from it ------------------------------
@@ -174,7 +216,7 @@ def test_a_job_comes_back_as_fields_not_json_in_a_string():
     the dict as a JSON blob inside a text block and structured_content is None,
     so the caller has to parse a string to find out whether the job finished."""
     tools = {t.name: t for t in mcp_server.SERVER._tool_manager.list_tools()}
-    for name in ("image", "job_status"):
+    for name in ("image", "video", "job_status"):
         schema = tools[name].output_schema
         assert schema, f"{name} declares no output schema"
         assert "job" in schema["properties"] and "state" in schema["properties"]
