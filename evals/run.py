@@ -67,6 +67,8 @@ REPAIR_OPTIONS = {"attempts"}
 #: `omnisvg:4B` -- a size, not an engine spec, because the weights it needs
 #: are two fixed repos rather than anything the caller chooses.
 OMNISVG_PREFIX = "omnisvg"
+#: A frontier model through headless Claude Code (#359): `claude-code:claude-opus-5-5`.
+CLAUDE_CODE_PREFIX = "claude-code"
 OMNISVG_OPTIONS = {"candidates"}
 #: Two-stage image workflows, named for their second stage. See
 #: evals/runners/chain.py -- this is the ComfyUI vocabulary mflux already ships.
@@ -96,6 +98,8 @@ def kind_of(candidate: str) -> str:
         return OMNISVG_PREFIX
     if head == REPAIR_PREFIX:
         return REPAIR_PREFIX
+    if head == CLAUDE_CODE_PREFIX:
+        return CLAUDE_CODE_PREFIX
     if head in CHAIN_STAGES:
         return "chain"
     if head == LLAMACPP_KIND:
@@ -115,7 +119,7 @@ def modality_of(candidate: str) -> str | None:
         return "svg"
     if kind == OMNISVG_PREFIX:
         return "svg"
-    if kind == REPAIR_PREFIX:
+    if kind in (REPAIR_PREFIX, CLAUDE_CODE_PREFIX):
         # A text candidate wearing a loop: it runs every text lane, same as
         # the model it wraps.
         return None
@@ -331,6 +335,12 @@ def build_runner(candidate: str, gateway: str, outdir: Path | None,
         return _speech_runner(candidate, outdir)
     if kind == "stt":
         return _transcription_runner(candidate)
+    if kind == CLAUDE_CODE_PREFIX:
+        from evals.runners.claude_code import ClaudeCodeRunner
+        model = candidate.partition(":")[2].strip()
+        if not model:
+            raise SystemExit("claude-code needs a model, e.g. claude-code:claude-opus-5-5")
+        return ClaudeCodeRunner(model)
     if kind == REPAIR_PREFIX:
         _, _, rest = candidate.partition(":")
         model, _, optstr = rest.partition(",")
