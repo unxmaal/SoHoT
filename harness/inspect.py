@@ -40,6 +40,9 @@ GIB = 1024 ** 3
 #: exceeded the gate it screens candidates with. #157 gave the CLI a default of
 #: 512 so both numbers come from the same exam.
 MEMORY_CEILING = 22 * GIB
+#: The unified memory MEMORY_CEILING was measured on. Other unified machines
+#: scale it by their own RAM, so the 32 GB mini keeps 22 GiB. #355.
+MEMORY_CEILING_RAM_GB = 32
 
 
 def ceiling_bytes(acc=None) -> int:
@@ -63,6 +66,8 @@ def ceiling_bytes(acc=None) -> int:
     acc = machine.detect().accelerator if acc is None else acc
     if acc.kind == "discrete":
         return int(acc.total_gb * GIB)
+    if acc.total_gb > 0:
+        return int(MEMORY_CEILING * acc.total_gb / MEMORY_CEILING_RAM_GB)
     return MEMORY_CEILING
 #: A "source" repo past this is carrying weights or datasets in git, and
 #: cloning it is the download this tier exists to avoid.

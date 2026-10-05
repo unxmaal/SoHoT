@@ -60,10 +60,10 @@ def test_the_screen_records_the_receipt_it_produced():
 
 
 def test_the_static_ceiling_is_still_only_a_prefilter():
-    """MEMORY_CEILING describes one machine and cannot see what is resident.
-    It stays as a cheap early cut; it must not be the only check."""
+    """The static ceiling (per machine since #355) cannot see what is
+    resident. It stays as a cheap early cut; it must not be the only check."""
     src = reads("harness/cli.py")
-    assert "ins.MEMORY_CEILING" in src
+    assert "ins.ceiling_bytes()" in src
     assert "memory.check_model" in src, (
         "the static ceiling is the only memory check in the screen path")
 
