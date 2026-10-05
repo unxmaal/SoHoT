@@ -141,6 +141,17 @@ def say(*, path=None, body=None, seconds=None, peak_kb=None, size=None,
     return 0
 
 
+def note(*args, **kw) -> None:
+    """Human text. Under --json it goes to stderr so stdout stays one object."""
+    print(*args, file=sys.stderr if _JSON else sys.stdout, **kw)
+
+
+def emit(ok: bool = True, **data) -> None:
+    """Under --json, the verb's result as one object on stdout. #329."""
+    if _JSON:
+        print(json.dumps({"ok": ok, "verb": _VERB, **data}, default=str))
+
+
 def default_output(kind: str, suffix: str) -> Path:
     """Where an artifact goes when the caller did not say.
 
@@ -234,8 +245,10 @@ def cmd_prompt(a) -> int:
     if not a.about:
         # The guide alone is useful: it is the only place this knowledge is
         # readable by a person as well as by a model.
-        print(f"\n{a.lane} runs {engine.name}\n")
-        print(authoring.instructions(guide))
+        note(f"\n{a.lane} runs {engine.name}\n")
+        note(authoring.instructions(guide))
+        emit(lane=a.lane, engine=engine.name, guide=guide["identity"],
+             instructions=authoring.instructions(guide))
         return 0
     ask = (f"{authoring.instructions(guide)}\n\n"
            f"Write ONE prompt for this engine. The caller asked for:\n"
@@ -246,10 +259,13 @@ def cmd_prompt(a) -> int:
                                   modality="extract")
     except Exception as exc:  # noqa: BLE001
         return err(f"{exc}")
-    print(got.strip())
+    note(got.strip())
     if not a.quiet:
         # The provenance goes to stderr so the prompt itself can be piped.
-        err(f"[{engine.name}, guide {guide['identity']}, written by {a.model}]")
+        print(f"[{engine.name}, guide {guide['identity']}, written by {a.model}]",
+              file=sys.stderr)
+    emit(prompt=got.strip(), lane=a.lane, engine=engine.name,
+         guide=guide["identity"], model=a.model)
     return 0
 
 
@@ -967,40 +983,50 @@ def cmd_verify(a) -> int:
         # decision as a measurement -- the exact confusion #244 removed from
         # the report a few lines away.
         parked = [l for l in state["lanes"] if l.get("parked")]
-        print("every lane that should run here has a recent receipt")
+        note("every lane that should run here has a recent receipt")
         for l in parked:
-            print(f"  {l['lane']} is parked and was not run: {l['parked']}")
+            note(f"  {l['lane']} is parked and was not run: {l['parked']}")
+        emit(planned=[], parked={l["lane"]: l["parked"] for l in parked})
         return 0
 
     runnable = [t for t in tasks if not t.skip]
     budget = sum(t.cost_s for t in runnable)
-    print(f"\n{len(runnable)} lane(s) to verify, roughly {budget // 60}m "
-          f"{budget % 60}s in total:\n")
+    note(f"\n{len(runnable)} lane(s) to verify, roughly {budget // 60}m "
+         f"{budget % 60}s in total:\n")
     for t in tasks:
-        print(f"  {t.lane:8} {t.candidate[:40]:40} "
-              f"{t.skip or f'~{t.cost_s}s'}")
-        print(f"           {t.why}")
+        note(f"  {t.lane:8} {t.candidate[:40]:40} "
+             f"{t.skip or f'~{t.cost_s}s'}")
+        note(f"           {t.why}")
     if not getattr(a, "run", False):
-        print("\n--run to spend it. Nothing is downloaded either way.")
+        note("\n--run to spend it. Nothing is downloaded either way.")
+        emit(planned=[_task_row(t) for t in tasks], ran=False)
         return 0
 
     rc = 0
     results = []
     for t in runnable:
-        print(f"\n=== {t.lane} ===\n    {' '.join(t.argv)}", flush=True)
+        note(f"\n=== {t.lane} ===\n    {' '.join(t.argv)}", flush=True)
         proc = subprocess.run(t.argv, capture_output=True, text=True)
         data = report._load_state(_newest_receipt_for(t.lane))
         got = verify.verdict(data) if proc.returncode == 0 else "broken"
         line = (verify.summarise(t.lane, data) if proc.returncode == 0
                 else (proc.stderr.strip().splitlines() or ["no stderr"])[-1])
         results.append((t.lane, got, line))
-        print(f"    {got.upper()}: {line[:150]}")
+        note(f"    {got.upper()}: {line[:150]}")
         if got == "broken":
             rc = 1
-    print("\n=== what the lanes do ===")
+    note("\n=== what the lanes do ===")
     for lane, got, _ in results:
-        print(f"  {got:8} {lane}")
+        note(f"  {got:8} {lane}")
+    emit(ok=rc == 0, planned=[_task_row(t) for t in tasks], ran=True,
+         results=[{"lane": l, "verdict": g, "summary": s_}
+                  for l, g, s_ in results])
     return rc
+
+
+def _task_row(t) -> dict:
+    return {"lane": t.lane, "candidate": t.candidate, "cost_s": t.cost_s,
+            "skip": t.skip, "why": t.why}
 
 
 def _newest_receipt_for(lane: str):
@@ -1036,16 +1062,17 @@ def cmd_throughput(a) -> int:
         return err(f"cannot read {a.texts}: {exc}")
     texts = [str(r.get(a.field) or "") for r in rows][: a.n]
     levels = tuple(int(x) for x in a.levels.split(",") if x.strip())
-    print(f"{a.model}: {len(texts)} texts at {levels} in flight, "
-          f"max_tokens {a.max_tokens}", flush=True)
+    note(f"{a.model}: {len(texts)} texts at {levels} in flight, "
+         f"max_tokens {a.max_tokens}", flush=True)
     got = throughput.sweep(a.model, texts, levels=levels,
                            max_tokens=a.max_tokens, gateway=a.gateway)
     base = got[0]["per_hour"] or 1
     for r in got:
-        print(f"  {r['concurrency']:2d} in flight  {r['per_hour']:7.1f}/h  "
-              f"x{r['per_hour'] / base:.2f}  p50 {r['p50_s']:6.2f}s  "
-              f"p95 {r['p95_s']:6.2f}s  errors {r['errors']}  "
-              f"tokens {r['completion_tokens']}", flush=True)
+        note(f"  {r['concurrency']:2d} in flight  {r['per_hour']:7.1f}/h  "
+             f"x{r['per_hour'] / base:.2f}  p50 {r['p50_s']:6.2f}s  "
+             f"p95 {r['p95_s']:6.2f}s  errors {r['errors']}  "
+             f"tokens {r['completion_tokens']}", flush=True)
+    emit(model=a.model, max_tokens=a.max_tokens, levels=got)
     return 0
 
 
@@ -1056,15 +1083,17 @@ def cmd_memory(a) -> int:
     if a.action == "show":
         path = ramp.default_path()
         try:
-            print(path.read_text(encoding="utf-8"))
+            text = path.read_text(encoding="utf-8")
         except OSError:
             return err(f"nothing measured yet: lh memory ramp writes {path}")
+        note(text)
+        emit(path=path, limits=json.loads(text))
         return 0
-    print(f"allocating {a.step_gb:g} GB at a time until macOS first warns; "
-          f"everything is freed at the end", flush=True)
+    note(f"allocating {a.step_gb:g} GB at a time until macOS first warns; "
+         f"everything is freed at the end", flush=True)
     from harness import exclusive
     try:
-        with exclusive.held("ramp", announce=lambda m: print(m, flush=True)):
+        with exclusive.held("ramp", announce=lambda m: note(m, flush=True)):
             got = ramp.run(step_gb=a.step_gb, settle_s=a.settle,
                            floor_pct=a.floor_pct, cap_gb=a.cap_gb)
     except ValueError as exc:
@@ -1073,17 +1102,18 @@ def cmd_memory(a) -> int:
         return err(f"nothing was allocated ({got['stopped']}), so there is "
                    f"nothing to record")
     for s in got["steps"]:
-        print(f"  {s['gb']:5.1f} GB  level {s['level']}  free {s['free_pct']}%  "
-              f"available {s['available_gb']:.1f} GB  wired {s['wired_gb']}  "
-              f"swapouts {s['swapouts']}", flush=True)
-    print(f"\nstopped: {got['stopped']}; last step at normal pressure: "
-          f"{got['last_normal_gb']:g} GB on top of what was already running")
+        note(f"  {s['gb']:5.1f} GB  level {s['level']}  free {s['free_pct']}%  "
+             f"available {s['available_gb']:.1f} GB  wired {s['wired_gb']}  "
+             f"swapouts {s['swapouts']}", flush=True)
+    note(f"\nstopped: {got['stopped']}; last step at normal pressure: "
+         f"{got['last_normal_gb']:g} GB on top of what was already running")
     if got["margin_gb"] is not None:
-        print(f"margin: macOS warned {got['margin_gb']:.1f} GB short of the "
-              f"guard's own available figure; the guard now reserves "
-              f"the largest margin measured on this machine")
+        note(f"margin: macOS warned {got['margin_gb']:.1f} GB short of the "
+             f"guard's own available figure; the guard now reserves "
+             f"the largest margin measured on this machine")
     ramp.save(got, ramp.default_path(), ms.this_machine()["fingerprint"])
-    print(f"recorded in {ramp.default_path()}")
+    note(f"recorded in {ramp.default_path()}")
+    emit(path=ramp.default_path(), report=got)
     return 0
 
 
@@ -1102,16 +1132,19 @@ def cmd_rubric(a) -> int:
         return 0
     if a.action == "status":
         agree, total = rv.self_agreement(root)
-        print(f"{s.rubric.stamp}: {len(rv.labels(root))} of {len(s.items)} "
-              f"labelled, {len(rv.gold(root))} decided, "
-              f"self-agreement {agree}/{total} on repeats")
+        note(f"{s.rubric.stamp}: {len(rv.labels(root))} of {len(s.items)} "
+             f"labelled, {len(rv.gold(root))} decided, "
+             f"self-agreement {agree}/{total} on repeats")
+        emit(rubric=s.rubric.stamp, items=len(s.items),
+             labelled=len(rv.labels(root)), decided=len(rv.gold(root)),
+             self_agreement=[agree, total])
         return 0
     candidates = [c.strip() for c in (a.candidates or "").split(",") if c.strip()]
     if not candidates:
         return err("--candidates is required for run")
     try:
         from harness import exclusive
-        with exclusive.held("eval", announce=lambda m: print(m, flush=True)):
+        with exclusive.held("eval", announce=lambda m: note(m, flush=True)):
             report = rv.run(s, candidates, a.gateway)
     except ValueError as exc:
         return err(str(exc))
@@ -1120,14 +1153,15 @@ def cmd_rubric(a) -> int:
     (out / "results.json").write_text(json.dumps(report, indent=2),
                                       encoding="utf-8")
     agree, total = report["ceiling"]
-    print(f"{report['rubric']}  floor {report['floor']:.2f} (always the most "
-          f"common label)  ceiling {agree}/{total} (your repeats)")
+    note(f"{report['rubric']}  floor {report['floor']:.2f} (always the most "
+         f"common label)  ceiling {agree}/{total} (your repeats)")
     for model, row in report["candidates"].items():
-        print(f"  {model:24} agree {row['agree']}/{row['n']} "
-              f"({row['agreement']:.2f})  valid {row['valid']}/{row['n']}  "
-              f"median {row['median_s']}s"
-              f"{'' if row['beats_floor'] else '  NOT above the floor'}")
-    print(f"receipt: {out / 'results.json'}")
+        note(f"  {model:24} agree {row['agree']}/{row['n']} "
+             f"({row['agreement']:.2f})  valid {row['valid']}/{row['n']}  "
+             f"median {row['median_s']}s"
+             f"{'' if row['beats_floor'] else '  NOT above the floor'}")
+    note(f"receipt: {out / 'results.json'}")
+    emit(path=out / "results.json", report=report)
     return 0
 
 
@@ -1155,9 +1189,9 @@ def cmd_judge(a) -> int:
     if not lane:
         return err("that receipt does not name its modality; pass --lane")
     if not lanes.human_judged(lane):
-        print(f"note: the {lane} lane has programmatic checks and is not in "
-              f"lanes.HUMAN_JUDGED, so this verdict is extra rather than the "
-              f"deciding one.")
+        note(f"note: the {lane} lane has programmatic checks and is not in "
+             f"lanes.HUMAN_JUDGED, so this verdict is extra rather than the "
+             f"deciding one.")
     pairs = human.pairings(receipt)
     if not pairs:
         return err("no two candidates in that run share a case, so there is "
@@ -1178,7 +1212,7 @@ def cmd_judge(a) -> int:
             store.commit()
         finally:
             store.close()
-        print(f"  recorded: {won or 'no preference'} -- {why}")
+        note(f"  recorded: {won or 'no preference'} -- {why}")
 
     # A RUN THAT IS ALREADY JUDGED RECORDS WITHOUT ANYONE CLICKING. Recording
     # only on a new answer leaves a finished run unrecorded forever, and
@@ -1193,12 +1227,12 @@ def cmd_judge(a) -> int:
         return err(f"could not serve on port {a.port}: {exc}")
     settled = [p for p in pairs
                if human.decided(lane, p["case"], p["a"], p["b"]) is not None]
-    print(f"\n{len(settled)} of {len(pairs)} pairing(s) settled")
+    note(f"\n{len(settled)} of {len(pairs)} pairing(s) settled")
     for p in pairs:
         got = human.decided(lane, p["case"], p["a"], p["b"])
         if got is None:
             continue
-        print(f"  {p['case']:14} {got or 'no preference'}")
+        note(f"  {p['case']:14} {got or 'no preference'}")
 
     # THE VERDICT GOES IN THE STORE, or the whole exercise is a page somebody
     # clicked. adopt.record already knows how to write a winner that has no
@@ -1206,12 +1240,16 @@ def cmd_judge(a) -> int:
     # same way one from a sweep does.
     won, why = human.lane_verdict(lane, pairs)
     if won is None:
-        print(f"\nnot recorded: {why}")
+        note(f"\nnot recorded: {why}")
+        emit(lane=lane, settled=len(settled), pairings=len(pairs),
+             recorded=False, why=why)
         return 0
-    print(f"\n{lane}: {'no preference' if not won else won}")
-    print(f"  {why}")
+    note(f"\n{lane}: {'no preference' if not won else won}")
+    note(f"  {why}")
     _record(lane, pairs)           # idempotent; covers a run that was already
-    return 0                       # fully judged before the server started
+    emit(lane=lane, settled=len(settled), pairings=len(pairs),  # fully judged
+         recorded=True, winner=won or None, why=why)            # before serving
+    return 0
 
 
 def cmd_report(a) -> int:
@@ -1252,37 +1290,46 @@ def cmd_fetch(a) -> int:
     try:
         rows = fetching.queued(store, lane=want)
         if not rows:
-            print(f"nothing queued in the {want} lane. "
-                  f"`lh discover --inspect` fills the queue." if want else
-                  "nothing queued. `lh discover --inspect` fills the queue.")
+            note(f"nothing queued in the {want} lane. "
+                 f"`lh discover --inspect` fills the queue." if want else
+                 "nothing queued. `lh discover --inspect` fills the queue.")
+            emit(queued=[], orphans=[])
             return 0
         if not a.run:
             testable = [r for r in rows if r.get("lane")]
             orphans = [r for r in rows if not r.get("lane")]
-            print(f"\n{len(testable)} queued, "
-                  f"{fetching.free_bytes() / fetching.GIB:.0f} GiB free. "
-                  f"--run to start, one at a time. The score is the judged "
-                  f"score of the repo that named the weight.")
+            note(f"\n{len(testable)} queued, "
+                 f"{fetching.free_bytes() / fetching.GIB:.0f} GiB free. "
+                 f"--run to start, one at a time. The score is the judged "
+                 f"score of the repo that named the weight.")
             for r in testable[:20]:
                 size = fetching.size_of(r)
                 gib = f"{size / fetching.GIB:5.1f} GiB" if size else "  no size"
-                print(f"  {r['score'] or 0:>4.0f}  {gib}  {r['lane']:6s} "
-                      f"{r['resolved'] or r['name']}")
+                note(f"  {r['score'] or 0:>4.0f}  {gib}  {r['lane']:6s} "
+                     f"{r['resolved'] or r['name']}")
             if orphans:
-                print(f"\n{len(orphans)} named but NOT queued: nothing here can "
-                      f"measure them. Not a verdict on the model -- the eval "
-                      f"suite has no case, runner or metric for this kind of "
-                      f"thing, and building one is sometimes the work.")
+                note(f"\n{len(orphans)} named but NOT queued: nothing here can "
+                     f"measure them. Not a verdict on the model -- the eval "
+                     f"suite has no case, runner or metric for this kind of "
+                     f"thing, and building one is sometimes the work.")
                 for r in orphans[:10]:
-                    print(f"        {r['resolved'] or r['name']}")
+                    note(f"        {r['resolved'] or r['name']}")
+            emit(free_bytes=fetching.free_bytes(),
+                 queued=[{"repo": r["resolved"] or r["name"], "lane": r["lane"],
+                          "score": r["score"], "size": fetching.size_of(r)}
+                         for r in testable],
+                 orphans=[r["resolved"] or r["name"] for r in orphans])
             return 0
         gib = getattr(a, "budget_gib", None)
         budget = int(float(gib) * fetching.GIB) if gib else None
+        fetched = []
         for got in fetching.run(store, limit=a.limit, lane=want,
                                 budget=budget):
-            print(f"  {'OK  ' if got['ok'] else 'skip'} {got['repo']}: {got['why']}")
+            fetched.append(got)
+            note(f"  {'OK  ' if got['ok'] else 'skip'} {got['repo']}: {got['why']}")
     finally:
         store.close()
+    emit(fetched=fetched)
     return 0
 
 
@@ -2377,16 +2424,18 @@ def cmd_voices(a) -> int:
     def star(name):
         return " (default)" if name == audio.DEFAULT_VOICE else ""
 
-    print("cloned (a reference clip, so any language, any accent):")
+    note("cloned (a reference clip, so any language, any accent):")
     for name in sorted(audio.VOICE_PRESETS):
         v = audio.resolve_voice(name)
-        print(f"  {name}{star(name)}  {v.model.split('/')[-1]}"
-              f"  speaks {v.lang_code}  from {Path(v.ref_audio).name}")
-    print("\nkokoro (a fixed table, English unless noted; sub-second, "
-          "where a cloned voice takes seconds):")
+        note(f"  {name}{star(name)}  {v.model.split('/')[-1]}"
+             f"  speaks {v.lang_code}  from {Path(v.ref_audio).name}")
+    note("\nkokoro (a fixed table, English unless noted; sub-second, "
+         "where a cloned voice takes seconds):")
     for name in audio.KNOWN_VOICES:
-        note = "  French, female" if name == "ff_siwis" else ""
-        print(f"  {name}{star(name)}{note}")
+        extra = "  French, female" if name == "ff_siwis" else ""
+        note(f"  {name}{star(name)}{extra}")
+    emit(default=audio.DEFAULT_VOICE, cloned=sorted(audio.VOICE_PRESETS),
+         kokoro=list(audio.KNOWN_VOICES))
     return 0
 
 
