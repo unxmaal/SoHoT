@@ -19,6 +19,9 @@ def _home(tmp_path_factory, monkeypatch):
     """
     home = tmp_path_factory.mktemp("lh-home")
     monkeypatch.setenv(paths.ENV_VAR, str(home))
+    # Nor reads this machine's weights: what is on disk is a downloads row. #411.
+    monkeypatch.setenv("HF_HOME", str(tmp_path_factory.mktemp("hf-home")))
+    monkeypatch.delenv("LLAMACPP_MODELS_DIR", raising=False)
     return home
 
 

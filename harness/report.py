@@ -116,7 +116,7 @@ def _candidate_of(conn, lane: str, serves: str) -> int | None:
     from harness import candidates, screen
     if not serves:
         return None
-    spec = screen.candidate_for(lane, serves, adopt=False) or serves
+    spec = screen.candidate_for(lane, serves) or serves
     return candidates.ensure(conn, spec, lane=lane)
 
 

@@ -542,18 +542,28 @@ ordinary machine.
 
 ### What the weights cache holds
 
+Every download is a row in the store's `downloads` table: repo, kind (hub
+or gguf), path, bytes, whether it was complete (config or weights present, not
+just a card), when it started, finished and was removed, and on which machine.
+The fetch tier and `scripts/fetch-gguf.sh` write it; `have()`, the screen's
+readiness check, the memory guard and the GGUF route read it, never the hub
+directory names.
+
 `lh disk` lists every hub repo and GGUF file with its size, grouped as
 `keep` (a gateway alias, a lane default, an adopted winner, a measured verdict,
 or the tooling list in `harness/disk.py`), `queued` (discovery still wants it),
 `rejected` (latest verdict broken or declined after a fetch) and `unknown`.
+It also reports drift: rows whose path is gone, and paths no row explains.
+A path with no row is never deleted; `lh disk --record` gives each one a row
+and stamps gone rows removed.
 `lh disk --delete rejected` or `--delete unknown` removes only what the shared
 `safe_to_delete` rule allows, asks first, and needs `--yes` under `--json`.
-Each removal is recorded in the store's `disk_removals` table.
+Each removal stamps `removed_at` on the path's download row.
 
 Rejected weights stay for 24 hours, so a rejection that turns out to be a
 harness fault can be re-screened without a download. `lh discover --loop --run`
 then removes them itself at the start of each run, along with partial
-downloads (`*.incomplete`) untouched for an hour. Nothing outside the hub and
+downloads (`*.incomplete`) of a recorded download no fetch is still writing. Nothing outside the hub and
 GGUF directories is ever deleted, and if any keeper cannot be read, nothing is.
 
 A candidate rejected at the screen or measure tier is retested up to three
@@ -930,12 +940,11 @@ download, since their runners load the repo:
   projectors and files in subdirectories are never chosen, because the router
   cannot serve them alone.
 - **Fetch** downloads that one file into `$LLAMACPP_MODELS_DIR` (default
-  `$HF_HOME/gguf`) and records the repo-to-file mapping in
-  `$LOCALHARNESS_HOME/gguf-sources.json`. A GGUF-only repo already in
-  `$HF_HOME/hub` from an older whole-repo fetch is not downloaded again. Its
-  chosen file is symlinked into the router's directory when a text lane
-  first spells it. Other lanes never trigger this, because their runners load
-  the repo.
+  `$HF_HOME/gguf`) and records it as a `downloads` row. A GGUF-only repo
+  already in `$HF_HOME/hub` from an older whole-repo fetch is not downloaded
+  again. The fetch tier symlinks its chosen file into the router's directory
+  and records the link, for text-lane repos only. Other lanes never trigger
+  this, because their runners load the repo.
 - **Screen and measure** spell it `llamacpp:<file stem>`, and the run sends it
   straight to the eval server at `127.0.0.1:8082` (`scripts/serve-eval.sh`).
   LiteLLM would refuse a name it has no alias for. A measure pits it against

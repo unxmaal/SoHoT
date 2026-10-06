@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from harness import fetching, gguf, screen, serving
+from harness import downloads, fetching, gguf, screen, serving
 from harness import inspect as ins
 from harness import memory as mem
 from harness import memory_store as ms
@@ -114,23 +114,42 @@ def test_fetch_downloads_one_gguf_file_and_records_it(home, monkeypatch):
                         listing=lambda repo: SIBLINGS, hf_download=hf_download)
     assert done[0]["ok"], done
     assert got == [("org/Model-4B-GGUF", "Model-4B-Q4_K_M.gguf")]
-    assert gguf.fetched("org/Model-4B-GGUF") == "Model-4B-Q4_K_M"
-    assert fetching.have("org/Model-4B-GGUF")
+    assert gguf.fetched("org/Model-4B-GGUF", db) == "Model-4B-Q4_K_M"
+    assert fetching.have("org/Model-4B-GGUF", db)
+    row = db.execute("SELECT * FROM downloads").fetchone()
+    assert (row["kind"], row["file"], row["origin"], row["complete"]) == (
+        "gguf", "Model-4B-Q4_K_M.gguf", "fetch", 1)
     db.close()
 
 
-def test_a_manifest_entry_whose_file_is_gone_is_not_fetched(home):
-    gguf.remember("org/M", "M-Q4_K_M.gguf")
-    assert gguf.fetched("org/M") is None
-    (home / "gguf" / "M-Q4_K_M.gguf").write_bytes(b"GGUF")
+def _gguf(home, repo, name, data=b"GGUF"):
+    (home / "gguf" / name).write_bytes(data)
+    conn = ms.connect()
+    try:
+        return downloads.record(conn, repo, downloads.GGUF,
+                                home / "gguf" / name, file=name)
+    finally:
+        conn.close()
+
+
+def test_a_recorded_file_that_is_gone_is_not_fetched(home):
+    _gguf(home, "org/M", "M-Q4_K_M.gguf")
     assert gguf.fetched("org/M") == "M-Q4_K_M"
+    (home / "gguf" / "M-Q4_K_M.gguf").unlink()
+    assert gguf.fetched("org/M") is None
+    assert not fetching.have("org/M")
+
+
+def test_a_file_on_disk_with_no_row_is_not_fetched(home):
+    """The negative control: the directory alone is not the record. #411."""
+    (home / "gguf" / "M-Q4_K_M.gguf").write_bytes(b"GGUF")
+    assert gguf.fetched("org/M") is None
 
 
 # --- screen and measure spell it for llama-server --------------------------
 
 def test_a_fetched_gguf_is_spelled_for_llama_server(home):
-    gguf.remember("org/M-GGUF", "M-Q4_K_M.gguf")
-    (home / "gguf" / "M-Q4_K_M.gguf").write_bytes(b"GGUF")
+    _gguf(home, "org/M-GGUF", "M-Q4_K_M.gguf")
     assert screen.candidate_for("code", "org/M-GGUF") == "llamacpp:M-Q4_K_M"
     assert screen.candidate_for("code", "org/other") == "org/other"
     assert screen.candidate_for("code", "llamacpp:M-Q4_K_M") == (
@@ -148,8 +167,7 @@ def test_the_receipt_key_of_a_llamacpp_run_is_found():
 
 
 def test_the_headroom_guard_sizes_a_fetched_gguf(home):
-    gguf.remember("org/M-GGUF", "M-Q4_K_M.gguf")
-    (home / "gguf" / "M-Q4_K_M.gguf").write_bytes(b"x" * 4096)
+    _gguf(home, "org/M-GGUF", "M-Q4_K_M.gguf", b"x" * 4096)
     assert mem.cache_path("org/M-GGUF") == str(home / "gguf" / "M-Q4_K_M.gguf")
     assert mem.size_gb(mem.cache_path("org/M-GGUF")) is not None
 
@@ -260,39 +278,67 @@ def test_a_non_text_lane_keeps_the_snapshot_route(home):
 
 # --- #301 ---------------------------------------------------------------------
 
-def _hub(home, monkeypatch, repo, files):
+def _hub(home, monkeypatch, repo, files, lane):
+    """A whole hub download, recorded, of a proposal in `lane`."""
     monkeypatch.setenv("HF_HOME", str(home / "hf"))
-    snap = (home / "hf" / "hub" / f"models--{repo.replace('/', '--')}"
-            / "snapshots" / "abc")
+    snap = downloads.hub_dir(repo) / "snapshots" / "abc"
     snap.mkdir(parents=True)
     for name, size in files.items():
         (snap / name).write_bytes(b"x" * size)
-    return snap
+    conn = ms.connect()
+    ms.record(conn, ms.Seen(name=repo, source="t", lane=lane))
+    downloads.record(conn, repo, downloads.HUB, snap.parent.parent)
+    return conn
 
 
 def test_a_gguf_repo_already_in_the_hub_cache_is_served_by_llama_server(
         home, monkeypatch):
-    _hub(home, monkeypatch, "org/A-GGUF", {"A-Q4_K_M.gguf": 64, "README.md": 1})
+    conn = _hub(home, monkeypatch, "org/A-GGUF",
+                {"A-Q4_K_M.gguf": 64, "README.md": 1}, "code")
+    assert screen.candidate_for("code", "org/A-GGUF") == "org/A-GGUF"
+    assert gguf.adopt_pending(conn) == ["org/A-GGUF"]
+    link = home / "gguf" / "A-Q4_K_M.gguf"
+    assert link.is_symlink()
+    row = conn.execute("SELECT * FROM downloads WHERE kind = 'gguf'").fetchone()
+    assert (row["repo"], row["origin"], row["file"]) == (
+        "org/A-GGUF", downloads.LINK, "A-Q4_K_M.gguf")
+    assert row["source"] == str(link.resolve())
     assert screen.candidate_for("code", "org/A-GGUF") == "llamacpp:A-Q4_K_M"
-    assert (home / "gguf" / "A-Q4_K_M.gguf").exists()
     assert gguf.fetched("org/A-GGUF") == "A-Q4_K_M"
+    assert gguf.adopt_pending(conn) == []
+    conn.close()
 
 
 def test_only_a_text_lane_adopts_from_the_hub(home, monkeypatch):
     """#303: magpie (tts) was linked by a read that had no lane."""
-    _hub(home, monkeypatch, "org/T", {"t.f16.gguf": 64})
+    conn = _hub(home, monkeypatch, "org/T", {"t.f16.gguf": 64}, "tts")
     assert screen.candidate_for("tts", "org/T") != "llamacpp:t.f16"
     assert fetching.have("org/T")
     mem.cache_path("org/T")
     screen.routed_gateway("org/T")
+    assert gguf.adopt_pending(conn) == []
     assert not (home / "gguf" / "t.f16.gguf").exists()
     assert gguf.fetched("org/T") is None
+    conn.close()
+
+
+def test_a_read_never_adopts_even_in_a_text_lane(home, monkeypatch):
+    """RULE #334: the side effect lives in the fetch tier, not the lookup."""
+    conn = _hub(home, monkeypatch, "org/R-GGUF", {"r-Q4_K_M.gguf": 64}, "code")
+    screen.candidate_for("code", "org/R-GGUF")
+    fetching.have("org/R-GGUF")
+    mem.cache_path("org/R-GGUF")
+    assert not (home / "gguf" / "r-Q4_K_M.gguf").exists()
+    conn.close()
 
 
 def test_a_hub_repo_with_safetensors_stays_on_its_own_route(home, monkeypatch):
-    _hub(home, monkeypatch, "org/B", {"b.gguf": 64, "model.safetensors": 64})
+    conn = _hub(home, monkeypatch, "org/B",
+                {"b.gguf": 64, "model.safetensors": 64}, "code")
+    assert gguf.adopt_pending(conn) == []
     assert gguf.fetched("org/B") is None
     assert not (home / "gguf" / "b.gguf").exists()
+    conn.close()
 
 
 def test_a_downloaded_gguf_asks_for_the_router_to_rescan(home):

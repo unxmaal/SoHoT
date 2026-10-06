@@ -33,8 +33,8 @@ def _seed(conn, name, gib, lane="code"):
 def store(tmp_path, monkeypatch):
     monkeypatch.setattr(fetching, "have", lambda *a, **k: False)
     monkeypatch.setattr(fetching, "download",
-                        lambda name, snapshot=None: f"/x/{name}")
-    monkeypatch.setattr(fetching, "requires", lambda name: [])
+                        lambda name, snapshot=None, **k: f"/x/{name}")
+    monkeypatch.setattr(fetching, "requires", lambda name, conn=None: [])
     monkeypatch.setattr("harness.rank.serving", lambda *a, **k: set())
     monkeypatch.setattr("harness.rank.lanes_with_receipts", lambda *a, **k: set())
     conn = ms.connect(tmp_path / "d.db")

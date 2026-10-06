@@ -108,7 +108,7 @@ from harness.serving import LLAMACPP_PREFIX  # noqa: E402
 
 
 def candidate_for(lane: str, model: str, description: str = "",
-                  adopt: bool = True) -> str:
+                  conn=None) -> str:
     """The best spelling of `model` for this lane, or "" when it has none.
 
     THE FIRST ENGINE THAT CAN ACTUALLY RUN IT WINS, not simply the first one
@@ -143,7 +143,7 @@ def candidate_for(lane: str, model: str, description: str = "",
                 return f"omnisvg:{size}"
     if lanes.canonical(lane) in lanes.TEXT_SERVED:
         from harness import gguf
-        stem = gguf.fetched(model, adopt=adopt)
+        stem = gguf.fetched(model, conn)
         if stem:
             return f"{LLAMACPP_PREFIX}{stem}"
     for spec in specs:

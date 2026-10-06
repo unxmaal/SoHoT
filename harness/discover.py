@@ -252,19 +252,17 @@ def methods() -> list[Capability]:
     return out
 
 
-def cached_audio_models(root: Path | None = None) -> list[Capability]:
-    """Speech models already on disk. Downloading is the slow part, so what is
-    cached is what can be measured today."""
-    root = root or Path(os.environ.get("HF_HOME", Path.home() / ".cache/huggingface")) / "hub"
+def cached_audio_models(conn=None) -> list[Capability]:
+    """Speech models already downloaded. Downloading is the slow part, so what
+    is on disk is what can be measured today. Read from the store. #411."""
+    from harness import downloads
     try:
-        dirs = sorted(p.name for p in Path(root).iterdir() if p.is_dir())
-    except OSError:
+        rows = downloads.complete_hub(conn)
+    except Exception:  # noqa: BLE001
         return []
     out = []
-    for d in dirs:
-        if not d.startswith("models--"):
-            continue
-        repo = d[len("models--"):].replace("--", "/", 1).replace("--", "-")
+    for r in sorted(rows, key=lambda r: r["repo"].lower()):
+        repo = r["repo"]
         low = repo.lower()
         if any(k in low for k in ("parakeet", "whisper", "canary", "voxtral")):
             lane, how = "stt", f"--candidates stt:{repo}"
@@ -272,7 +270,7 @@ def cached_audio_models(root: Path | None = None) -> list[Capability]:
             lane, how = "tts", f"--candidates tts:{repo}"
         else:
             continue
-        out.append(Capability("model", repo, lane, str(root), how))
+        out.append(Capability("model", repo, lane, r["path"], how))
     return out
 
 
@@ -312,7 +310,7 @@ def _was_measured(name: str, done: set[str], lane: str = "",
     if conn is not None:
         keys |= candidates.keys(conn, name)
     if lane and lane != "text":
-        spec = screen.candidate_for(lane, name, adopt=False)
+        spec = screen.candidate_for(lane, name)
         if spec:
             keys.add(candidates.key_of(spec))
     return bool(keys & done)

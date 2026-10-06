@@ -23,6 +23,7 @@ import shutil
 from dataclasses import dataclass
 from pathlib import Path
 
+from harness import downloads
 from harness import memory_store as ms
 from harness import rank
 from harness import lanes, reasons, screen
@@ -100,89 +101,33 @@ FETCHABLE_TIERS = ("inspect", "fetch")
 FETCHABLE_KIND = "weights"
 
 
-def have(model_id: str, root: Path | None = None) -> bool:
-    """Already in the HuggingFace cache, so there is nothing to download."""
-    import os
-    home = Path(root or os.environ.get("HF_HOME")
-                or Path.home() / ".cache" / "huggingface")
-    from harness import gguf
-    return (_snapshot_has_weights(home / "hub" / f"models--{model_id.replace('/', '--')}")
-            or gguf.path_of(model_id) is not None)
+def have(model_id: str, conn=None) -> bool:
+    """A complete download of it on this machine is recorded and present. #411."""
+    return downloads.have(model_id, conn)
 
 
-#: A snapshot with only a card is not a download: Marlin-2B had LICENSE and
-#: README and was screened as if present. #399.
-LOADABLE = ("config.json", "model_index.json")
-WEIGHT_SUFFIXES = (".safetensors", ".bin", ".gguf", ".npz", ".pt", ".pth",
-                   ".ckpt", ".onnx")
+#: The #399 check and the #196 dependency keys live with the downloads table.
+LOADABLE = downloads.LOADABLE
+WEIGHT_SUFFIXES = downloads.WEIGHT_SUFFIXES
+REQUIRES_KEYS = downloads.REQUIRES_KEYS
+PROVENANCE_KEYS = downloads.PROVENANCE_KEYS
 
 
-def _snapshot_has_weights(repo_dir: Path) -> bool:
-    snaps = repo_dir / "snapshots"
-    if not snaps.is_dir():
-        return False
-    for f in snaps.rglob("*"):
-        if (f.name in LOADABLE or f.name.endswith(WEIGHT_SUFFIXES)) and f.exists():
-            return True
-    return False
-
-
-#: Config keys whose value names a repo you must ALSO have on disk. Kept as an
-#: allowlist rather than "anything repo-shaped", because the first real repo
-#: scanned proved that wrong. Issue #196.
-REQUIRES_KEYS = ("text_tokenizer", "tokenizer_name", "audio_tokenizer",
-                 "codec_model", "vocoder", "base_model")
-
-#: Repo-shaped and NOT a requirement, with the evidence. `_name_or_path` is
-#: HuggingFace boilerplate recording the checkpoint a config was derived from:
-#: microsoft/wavlm-base-plus-sv names microsoft/wavlm-base-plus, which is not on
-#: this machine, and the model loads anyway. Treating it as a dependency marks
-#: a working model unready.
-PROVENANCE_KEYS = {
-    "_name_or_path": "where the config came from, not what it needs",
-}
-
-#: `org/name`, and not a path, a mime type or a ratio.
-_REPO = re.compile(r"^[A-Za-z0-9][\w.-]*/[\w.-]+$")
-
-
-def _config(model_id: str, root: Path | None = None) -> dict:
-    """The cached config.json for a model, or {} if there is not one."""
-    import json
-    import os
-
-    home = Path(root or os.environ.get("HF_HOME")
-                or Path.home() / ".cache" / "huggingface")
-    d = home / "hub" / f"models--{model_id.replace('/', '--')}"
-    for cfg in sorted(d.glob("snapshots/*/config.json")):
-        try:
-            return json.loads(cfg.read_text(encoding="utf-8"))
-        except (OSError, ValueError):
-            return {}
-    return {}
-
-
-def requires(model_id: str, root: Path | None = None) -> list[str]:
-    """Other repos this model's own config says it needs.
+def requires(model_id: str, conn=None) -> list[str]:
+    """Other repos this model's own config named when it was downloaded.
 
     A REPO BEING COMPLETE IS NOT A MODEL BEING LOADABLE. Marvis-AI's 8-bit MLX
-    repo is whole -- every symlink resolving, no .incomplete files -- and names
-    `text_tokenizer: Marvis-AI/marvis-tts-250m-v0.2`, which is a different repo.
-    With HF_HUB_OFFLINE=1 the load fails rather than fetching it. Issue #196.
+    repo is whole and names `text_tokenizer: Marvis-AI/marvis-tts-250m-v0.2`,
+    a different repo. Issue #196.
     """
-    data = _config(model_id, root)
-    out = []
-    for key in REQUIRES_KEYS:
-        value = data.get(key)
-        if isinstance(value, str) and _REPO.match(value) and value != model_id:
-            out.append(value)
-    return sorted(set(out))
+    return downloads.requires(model_id, conn)
 
 
-def missing(model_id: str, root: Path | None = None) -> list[str]:
+def missing(model_id: str, conn=None) -> list[str]:
     """Everything this model needs that is not on disk, itself included."""
-    wanted = [model_id] + requires(model_id, root)
-    return [m for m in wanted if not have(m, root)]
+    with downloads.store(conn) as c:
+        wanted = [model_id] + requires(model_id, c)
+        return [m for m in wanted if not have(m, c)]
 
 
 def queued(conn, tiers=FETCHABLE_TIERS, kind: str = FETCHABLE_KIND,
@@ -227,7 +172,7 @@ def queued(conn, tiers=FETCHABLE_TIERS, kind: str = FETCHABLE_KIND,
     out = [dict(r) for r in rows
            if r["outcome"] == "queued" and r["tier"] in tiers
            and downloadable(r)
-           and not have(r["resolved"] or r["name"])]
+           and not have(r["resolved"] or r["name"], conn)]
     if lane:
         # A LANE-SCOPED LOOP MUST SCOPE THE STEP THAT SPENDS THE DISK. The loop
         # printed "(spending only on the image lane)" and then considered
@@ -277,7 +222,7 @@ def in_rank_order(rows: list[dict], conn=None) -> list[dict]:
 
 
 def download(repo: str, snapshot=None, listing=None, hf_download=None,
-             text: bool = True) -> str:
+             text: bool = True, conn=None) -> str:
     """Weights into the shared cache. Returns the path.
 
     HF_HUB_OFFLINE is 1 everywhere else in this project on purpose: an eval
@@ -295,7 +240,8 @@ def download(repo: str, snapshot=None, listing=None, hf_download=None,
             raise FetchError("no single GGUF file fits the ceiling")
         if single:
             from harness import gguf
-            return gguf.download(repo, single[0], hf_download=hf_download)
+            return gguf.download(repo, single[0], hf_download=hf_download,
+                                 conn=conn)
         if snapshot is None:
             # The env var alone is not enough: huggingface_hub reads it ONCE at
             # import into a module constant, and harness.env has already set it
@@ -304,7 +250,15 @@ def download(repo: str, snapshot=None, listing=None, hf_download=None,
             from huggingface_hub import snapshot_download as snapshot
             restore = constants.HF_HUB_OFFLINE
             constants.HF_HUB_OFFLINE = False
-        return str(snapshot(repo_id=repo))
+        with downloads.store(conn) as c:
+            rid = downloads.start(c, repo, downloads.HUB, downloads.hub_dir(repo))
+            try:
+                where = str(snapshot(repo_id=repo))
+            except BaseException:
+                downloads.finish(c, rid, failed=True)
+                raise
+            downloads.finish(c, rid, downloads.snapshot_dir(Path(where)))
+        return where
     except Exception as exc:  # noqa: BLE001
         raise FetchError(f"{repo}: {str(exc)[:200]}") from exc
     finally:
@@ -373,6 +327,8 @@ def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=N
     done = []
     fetched = 0
     spent = 0
+    from harness import gguf
+    gguf.adopt_pending(conn)
     for row in queued(conn, lane=lane):
         if not row.get("lane"):
             continue      # nothing here could measure it, so nothing fetches it
@@ -458,31 +414,32 @@ def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=N
             text = lanes.canonical(row.get("lane") or "") in lanes.TEXT_SERVED
             if listing is not None or hf_download is not None or not text:
                 where = download(name, snapshot=snapshot, listing=listing,
-                                 hf_download=hf_download, text=text)
+                                 hf_download=hf_download, text=text, conn=conn)
             else:
-                where = download(name, snapshot=snapshot)
+                where = download(name, snapshot=snapshot, conn=conn)
         except FetchError as exc:
             done.append({"repo": name, "ok": False, "why": str(exc)})
             continue
         fetched += 1
         spent += size
-        # WHAT IT NEEDS BESIDE ITSELF. Only readable once the config is on
-        # disk, so this is after the download rather than in the plan. A model
-        # whose tokenizer lives in another repo is `ready` and unloadable
-        # without it, and HF_HUB_OFFLINE turns that into a hard failure at run
-        # time rather than a slow first call. Issue #196.
-        for dep in requires(name):
-            if have(dep):
+        if text:
+            # A whole GGUF-only repo is served through the router. #301, #303.
+            from harness import gguf
+            gguf.adopt(conn, name)
+        # WHAT IT NEEDS BESIDE ITSELF, as its config recorded it on landing.
+        # A tokenizer in another repo makes a whole download unloadable. #196.
+        for dep in requires(name, conn):
+            if have(dep, conn):
                 continue
             try:
-                download(dep, snapshot=snapshot)
+                download(dep, snapshot=snapshot, conn=conn)
                 done.append({"repo": dep, "ok": True,
                              "why": f"needed by {name}"})
             except FetchError as exc:
                 done.append({"repo": dep, "ok": False,
                              "why": f"needed by {name}: {exc}"})
+        # Where it landed is a downloads row, not this verdict's run_path. #411.
         ms.decide_or_skip(conn, row["name"], "queued", tier="fetch",
-                          detail=f"downloaded to {where}", run_path=where,
-                          reason=reasons.CANDIDATE)
+                          detail="downloaded", reason=reasons.CANDIDATE)
         done.append({"repo": name, "ok": True, "why": where})
     return done

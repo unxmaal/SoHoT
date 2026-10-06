@@ -121,7 +121,7 @@ def served_ids(conn) -> dict[str, int]:
     for lane, name in typed().items():
         if lane in out:
             continue
-        spec = screen.candidate_for(lane, name, adopt=False) or name
+        spec = screen.candidate_for(lane, name) or name
         cid = candidates.ensure(conn, spec, lane=lane)
         if cid:
             out[lane] = cid

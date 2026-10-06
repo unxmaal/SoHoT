@@ -194,7 +194,7 @@ def _incumbent_id(conn, lane: str, name: str) -> int | None:
     try:
         from harness import screen
         return candidates.ensure(
-            conn, screen.candidate_for(lane, name, adopt=False) or name,
+            conn, screen.candidate_for(lane, name) or name,
             lane=lane)
     except Exception:  # noqa: BLE001
         return None

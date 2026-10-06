@@ -362,8 +362,8 @@ def _race(monkeypatch, victim):
 def test_a_refused_fetch_write_does_not_stop_the_next(store, monkeypatch, capsys):
     monkeypatch.setattr(fetching, "have", lambda *a, **k: False)
     monkeypatch.setattr(fetching, "download",
-                        lambda name, snapshot=None: f"/x/{name}")
-    monkeypatch.setattr(fetching, "requires", lambda name: [])
+                        lambda name, snapshot=None, **k: f"/x/{name}")
+    monkeypatch.setattr(fetching, "requires", lambda name, conn=None: [])
     monkeypatch.setattr("harness.rank.serving", lambda *a, **k: set())
     monkeypatch.setattr("harness.rank.lanes_with_receipts", lambda *a, **k: set())
     for name in ("org/a", "org/b"):
