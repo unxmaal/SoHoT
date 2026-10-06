@@ -161,3 +161,11 @@ def test_the_reason_names_the_lane():
     rows = [{"name": "org/m", "lane": "image", "times": 1, "bytes": 0}]
     got = rank.rank(rows, serving=(), measured_lanes=())
     assert "wanted lane" in got[0]["value_why"]
+
+
+def test_rank_reads_the_lineage_inspect_writes_for_an_adapter_and_a_finetune():
+    """#420: inspect writes 'adapter of' and rank looked only for 'built from'."""
+    from harness import inspect as ins
+    for kind in ("adapter", "finetune"):
+        desc = ins.card_description({"tags": [f"base_model:{kind}:Org/Base"]})
+        assert rank._parents(desc) == {"org/base"}, desc

@@ -147,6 +147,10 @@ def card_lane(task: str) -> str:
     return PIPELINE_LANES.get(task) or _lane_from_output(task, set())
 
 
+#: The words describe() writes before a card's parents; rank reads these. #420.
+LINEAGE_BUILT, LINEAGE_ADAPTER = "built from", "adapter of"
+
+
 def lane_for(meta: dict, prose: str = "") -> str:
     """Which lane could measure this, or "" when nothing here can.
 
@@ -633,7 +637,7 @@ def card_description(data: dict) -> str:
         parents = sorted({t.split(":")[-1] for t in lineage})
         kinds = {t.lower().split(":")[1] for t in lineage
                  if t.lower().count(":") >= 2}
-        how = "adapter of" if "adapter" in kinds else "built from"
+        how = LINEAGE_ADAPTER if "adapter" in kinds else LINEAGE_BUILT
         bits.append(f"{how} " + ", ".join(parents[:3]))
     total = sum(s.get("size") or 0 for s in (data.get("siblings") or []))
     if total > 0:
