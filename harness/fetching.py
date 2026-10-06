@@ -271,7 +271,7 @@ def in_rank_order(rows: list[dict], conn=None) -> list[dict]:
 
     ranked = rank.rank(_ms.judgeable(conn, limit=1_000_000),
                        serving=rank.serving(),
-                       measured_lanes=rank.lanes_with_receipts(),
+                       measured_lanes=rank.lanes_with_receipts(conn),
                        keep_laneless=True)
     order = {r["name"]: i for i, r in enumerate(ranked)}
     # A row rank DROPS (an adapter) sorts last rather than vanishing: this

@@ -65,21 +65,36 @@ def test_external_tools_report_whether_they_are_present(monkeypatch):
     assert tools["whisperkit-cli"].present is False
 
 
-def test_measured_names_come_from_the_run_receipts(tmp_path, monkeypatch):
-    run = tmp_path / "runs" / "20260907-0000-svg"
-    run.mkdir(parents=True)
-    (run / "results.json").write_text(json.dumps({
-        "receipt": {"modality": "svg"},
-        "summary": {"local-large": {"total": 3}, "trace/mflux/x": {"total": 3}}}), encoding="utf-8")
-    monkeypatch.setattr(discover.paths, "runs", lambda: tmp_path / "runs")
+def test_measured_names_come_from_the_stored_runs(store_run):
+    store_run("20260907-0000-svg", "svg",
+              {"local-large": {"total": 3}, "trace/mflux/x": {"total": 3}})
     assert discover.measured() == {"local-large", "trace/mflux/x"}
 
 
-def test_a_corrupt_results_file_does_not_stop_discovery(tmp_path, monkeypatch):
-    run = tmp_path / "runs" / "bad"
+def test_a_receipt_nobody_stored_is_not_measured():
+    """Pins the conversion off the directory scan. #410."""
+    from harness import memory_store as ms
+    ms.connect().close()
+    run = discover.paths.runs() / "20260907-0000-svg"
+    run.mkdir(parents=True)
+    (run / "results.json").write_text(json.dumps({
+        "receipt": {"modality": "svg"},
+        "rows": [{"case_id": "c", "candidate": "local-large", "passed": True}]}),
+        encoding="utf-8")
+    assert discover.measured() == set()
+
+
+def test_a_corrupt_results_file_does_not_stop_the_backfill():
+    from harness import memory_store as ms
+    from harness import runs
+    run = discover.paths.runs() / "bad"
     run.mkdir(parents=True)
     (run / "results.json").write_text("{not json", encoding="utf-8")
-    monkeypatch.setattr(discover.paths, "runs", lambda: tmp_path / "runs")
+    conn = ms.connect()
+    try:
+        assert runs.backfill(conn)["unreadable"] == ["bad"]
+    finally:
+        conn.close()
     assert discover.measured() == set()
 
 
@@ -99,20 +114,25 @@ def test_a_capability_carries_the_command_that_would_measure_it():
         assert c.how, f"{c.name} does not say how to measure it"
 
 
-def test_receipts_are_found_at_any_depth(tmp_path, monkeypatch):
+def test_the_backfill_finds_receipts_at_any_depth():
     """Runs nest: an archived batch is runs/legacy-logs/ev-extract/results.json,
     three levels down. Iterating only the top level found 12 names where 31
     receipts existed, and under-reporting sends someone to re-run work that was
     already done -- the dangerous direction for this tool to be wrong in."""
-    deep = tmp_path / "runs" / "legacy" / "batch" / "ev-extract"
-    deep.mkdir(parents=True)
-    (deep / "results.json").write_text(json.dumps(
-        {"summary": {"parakeet-tdt-0.6b-v2": {"total": 40}}}), encoding="utf-8")
-    shallow = tmp_path / "runs" / "recent"
-    shallow.mkdir(parents=True)
-    (shallow / "results.json").write_text(json.dumps(
-        {"summary": {"local-large": {"total": 3}}}), encoding="utf-8")
-    monkeypatch.setattr(discover.paths, "runs", lambda: tmp_path / "runs")
+    from harness import memory_store as ms
+    from harness import runs
+    root = discover.paths.runs()
+    for where, key in ((root / "legacy" / "batch" / "ev-extract",
+                        "parakeet-tdt-0.6b-v2"), (root / "recent", "local-large")):
+        where.mkdir(parents=True)
+        (where / "results.json").write_text(json.dumps({"rows": [
+            {"case_id": "c", "candidate": key, "passed": True}]}),
+            encoding="utf-8")
+    conn = ms.connect()
+    try:
+        runs.backfill(conn)
+    finally:
+        conn.close()
     assert discover.measured() == {"parakeet-tdt-0.6b-v2", "local-large"}
 
 

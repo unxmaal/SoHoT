@@ -991,7 +991,8 @@ One root, `~/localharness`, overridable with `$LOCALHARNESS_HOME`:
 ```
 out/                        artifacts: images, audio, svg, pages
 out/mcp/                    artifacts asked for over MCP
-runs/<stamp>-<modality>/    one eval run: artifacts and results.json
+runs/<stamp>-<modality>/    one eval run: artifacts and a results.json export;
+                            the run itself is the store's runs/results rows
 logs/                       service stdout and stderr
 ```
 

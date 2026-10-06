@@ -16,6 +16,10 @@ REFUSED = "gateway returned HTTP 400: Invalid model name passed in model=org/x"
 def _receipt(runs, name, summary, rows):
     d = runs / name
     d.mkdir(parents=True, exist_ok=True)
+    # Every real receipt row carries a case and a verdict; the migration
+    # imports rows, so the fixture must too. #410.
+    rows = [{"case_id": f"c{i}", "passed": False, **r}
+            for i, r in enumerate(rows)]
     (d / "results.json").write_text(json.dumps({"summary": summary,
                                                 "rows": rows}),
                                     encoding="utf-8")

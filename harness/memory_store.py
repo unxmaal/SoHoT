@@ -19,7 +19,7 @@ from pathlib import Path
 
 from harness import paths, store
 
-SCHEMA_VERSION = 26
+SCHEMA_VERSION = 27
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
 VERDICTS = ("measured", "declined", "broken", "queued", "ignored", "screened")
@@ -155,7 +155,9 @@ CREATE TABLE IF NOT EXISTS verdicts (
     candidate_id INTEGER REFERENCES candidates(id),
     -- A named reopen: the state verdict it overrode, and which kind. #409.
     reopens     INTEGER REFERENCES verdicts(id),
-    reopen_kind TEXT NOT NULL DEFAULT ''
+    reopen_kind TEXT NOT NULL DEFAULT '',
+    -- The stored run this verdict was read from. run_path is a download dir. #410.
+    run_id      INTEGER REFERENCES runs(id)
 );
 
 CREATE TABLE IF NOT EXISTS machines (
@@ -177,6 +179,42 @@ CREATE TABLE IF NOT EXISTS machines (
     ceiling_gb   REAL NOT NULL DEFAULT 0,
     first_seen   REAL NOT NULL,
     last_seen    REAL NOT NULL
+);
+
+-- One eval run, written by evals.run; results.json is its export. #410.
+CREATE TABLE IF NOT EXISTS runs (
+    id           INTEGER PRIMARY KEY,
+    -- Under the runs dir, relative to it; anywhere else, absolute.
+    path         TEXT NOT NULL UNIQUE,
+    lane         TEXT NOT NULL DEFAULT '',
+    tier         TEXT NOT NULL DEFAULT 'measure',
+    machine_id   INTEGER REFERENCES machines(id),
+    -- When the receipt says it ran; NULL if it did not say. Never mtime.
+    generated_at REAL,
+    repeat_count INTEGER NOT NULL DEFAULT 1,
+    cases_digest TEXT NOT NULL DEFAULT '',
+    receipt      TEXT NOT NULL DEFAULT '{}',
+    environment  TEXT NOT NULL DEFAULT '{}',
+    specs        TEXT NOT NULL DEFAULT '{}',
+    recorded_at  REAL NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS results (
+    id           INTEGER PRIMARY KEY,
+    run_id       INTEGER NOT NULL REFERENCES runs(id) ON DELETE CASCADE,
+    seq          INTEGER NOT NULL,
+    candidate_id INTEGER REFERENCES candidates(id),
+    -- The receipt key the runner wrote.
+    candidate    TEXT NOT NULL,
+    case_id      TEXT NOT NULL,
+    repeat_index INTEGER NOT NULL DEFAULT 1,
+    passed       INTEGER NOT NULL,
+    seconds      REAL NOT NULL DEFAULT 0,
+    peak_kb      INTEGER NOT NULL DEFAULT 0,
+    detail       TEXT NOT NULL DEFAULT '',
+    metrics      TEXT NOT NULL DEFAULT '{}',
+    warnings     TEXT NOT NULL DEFAULT '[]',
+    artifact     TEXT
 );
 
 CREATE TABLE IF NOT EXISTS edges (
@@ -221,6 +259,9 @@ CREATE INDEX IF NOT EXISTS ix_sight_prop ON sightings(proposal_id);
 CREATE INDEX IF NOT EXISTS ix_verdict_prop ON verdicts(proposal_id);
 CREATE INDEX IF NOT EXISTS ix_cand_prop ON candidates(proposal_id);
 CREATE INDEX IF NOT EXISTS ix_cand_key ON candidates(receipt_key);
+CREATE INDEX IF NOT EXISTS ix_runs_lane ON runs(lane, generated_at);
+CREATE INDEX IF NOT EXISTS ix_results_run ON results(run_id);
+CREATE INDEX IF NOT EXISTS ix_results_cand ON results(candidate_id);
 CREATE INDEX IF NOT EXISTS ix_edges_src ON edges(src);
 CREATE INDEX IF NOT EXISTS ix_edges_dst ON edges(dst);
 """
@@ -292,7 +333,7 @@ def dangling_receipts(conn: sqlite3.Connection, exists=None) -> list:
     rows = conn.execute(
         "SELECT v.id, v.outcome, v.tier, v.run_path, p.name "
         "FROM verdicts v JOIN proposals p ON p.id = v.proposal_id "
-        "WHERE v.run_path != ''").fetchall()
+        "WHERE v.run_path != '' AND v.run_id IS NULL").fetchall()
     out = []
     for r in rows:
         if any(exists(c) for c in resolved_run_paths(r["run_path"])):
@@ -619,6 +660,13 @@ def _migrate(conn: sqlite3.Connection) -> None:
             conn.execute("ALTER TABLE proposals "
                          "ADD COLUMN registry TEXT NOT NULL DEFAULT ''")
         _backfill_registry(conn)
+    if have < 27:
+        # Before the older steps, so they read stored runs, not the dir. #410.
+        if "run_id" not in _columns(conn, "verdicts"):
+            conn.execute("ALTER TABLE verdicts ADD COLUMN run_id "
+                         "INTEGER REFERENCES runs(id)")
+        from harness import runs
+        runs.backfill(conn)
     if have and have < 4 and "description" not in _columns(conn, "proposals"):
         conn.execute("ALTER TABLE proposals "
                      "ADD COLUMN description TEXT NOT NULL DEFAULT ''")
@@ -1021,24 +1069,11 @@ def _retract_verdicts_from_runs_that_never_ran(conn) -> None:
     candidate is a refusal this harness produced. One row that reached a model
     means the candidate really was measured and its score is its own.
     """
-    import json
+    from harness import cli, runs
 
-    from harness import cli, paths
-
-    runs = paths.home() / "runs"
-    if not runs.is_dir():
-        return
     never_ran = set()
-    for d in sorted(runs.iterdir()):
-        f = d / "results.json"
-        if not f.is_file():
-            continue
-        try:
-            data = json.loads(f.read_text(encoding="utf-8"))
-        except (OSError, ValueError):
-            continue
-        rows = data.get("rows") or []
-        for key, got in (data.get("summary") or {}).items():
+    for _, summary, rows in runs.summaries(conn, tier=""):
+        for key, got in summary.items():
             if got.get("passed") or not got.get("total"):
                 continue
             why = cli._all_refused(rows, key)
@@ -1144,35 +1179,31 @@ def backfill_candidates(conn, runs=None) -> dict:
         if cid:
             own[r["id"]] = cid
             counts["proposals"] += 1
-    root = runs or (paths.home() / "runs")
-    for f in sorted(root.rglob("results.json")) if root.is_dir() else []:
-        try:
-            data = json.loads(f.read_text(encoding="utf-8"))
-        except (OSError, ValueError):
-            continue
-        lane = str((data.get("receipt") or {}).get("modality") or "")
-        specs = {k: _legacy_spec(v) for k, v in (data.get("specs") or {}).items()}
+    from harness import runs as R
+    if runs is not None:
+        R.backfill(conn, runs)
+    for run in R.find(conn):
+        specs = {k: _legacy_spec(v)
+                 for k, v in json.loads(run["specs"] or "{}").items()}
         for key, spec in specs.items():
-            if C.key_of(spec) == key and C.ensure(conn, spec, key=key, lane=lane):
+            if C.key_of(spec) == key and C.ensure(conn, spec, key=key,
+                                                  lane=run["lane"]):
                 counts["receipt_specs"] += 1
-        for key in (data.get("summary") or {}):
+        for key in R.keys_in(conn, run["id"]):
             if key not in specs and ":" in key and C.key_of(key) == key \
-                    and C.ensure(conn, key, lane=lane):
+                    and C.ensure(conn, key, lane=run["lane"]):
                 counts["receipt_keys"] += 1
     for r in conn.execute(
             "SELECT DISTINCT v.proposal_id, v.run_path FROM verdicts v "
             "WHERE v.run_path != '' AND v.tier IN (?, ?)", (SCREEN, MEASURE)):
         cid = own.get(r["proposal_id"])
-        f = Path(r["run_path"]) / "results.json"
-        if not cid or not f.is_file():
-            continue
-        try:
-            summary = json.loads(f.read_text(encoding="utf-8")).get("summary")
-        except (OSError, ValueError):
+        run = next((R.at(conn, p) for p in resolved_run_paths(r["run_path"])
+                    if R.at(conn, p)), None)
+        if not cid or not run:
             continue
         key = conn.execute("SELECT receipt_key FROM candidates WHERE id = ?",
                            (cid,)).fetchone()[0]
-        if key in (summary or {}):
+        if key in R.keys_in(conn, run["id"]):
             counts["run_path_confirmed"] += 1
     for pid, fake in fakes.items():
         counts["fakes"] += 1
@@ -1529,7 +1560,7 @@ def fold(events) -> tuple[str, str]:
 def _held(conn, pid: int):
     return conn.execute(
         "SELECT p.state, p.state_verdict_id AS id, v.tier, v.outcome, v.detail, "
-        "v.score, v.run_path FROM proposals p LEFT JOIN verdicts v "
+        "v.score, v.run_path, v.run_id FROM proposals p LEFT JOIN verdicts v "
         "ON v.id = p.state_verdict_id WHERE p.id = ?", (pid,)).fetchone()
 
 
@@ -1543,11 +1574,11 @@ def _write(conn, pid: int, name: str, row: dict, reopen: str = "",
         # A deterministic tier restating its state is not a second fact (#184);
         # compared with the state row, so a retraction is never undone (#225).
         if (held["id"] and not reopen and row.get("score") is None
-                and not row.get("run_path")
+                and not row.get("run_path") and not row.get("run_id")
                 and held["tier"] == row["tier"]
                 and held["outcome"] == row["outcome"]
                 and held["detail"] == row["detail"] and held["score"] is None
-                and not held["run_path"]):
+                and not held["run_path"] and not held["run_id"]):
             return held["id"]
         why = transition_refused(held["state"], held["tier"] or "",
                                  row["outcome"], row["tier"], reopen)
@@ -1634,7 +1665,7 @@ def decide(conn: sqlite3.Connection, name: str, outcome: str, *, tier: str = "",
            size_bytes: int = 0, attaches_to: str = "",
            upstream_idle_days: float = 0.0,
            candidate_id: int | None = None, reopen: str = "",
-           reason: str = "") -> int:
+           reason: str = "", run_id: int | None = None) -> int:
     """Record what happened to a proposal, and move its state.
 
     The single write path for a verdict and for proposals.state. A move
@@ -1664,15 +1695,15 @@ def decide(conn: sqlite3.Connection, name: str, outcome: str, *, tier: str = "",
     if not row and not (candidate_id and not name):
         raise KeyError(f"no proposal named {name!r}")
     pid = row["id"] if row else None
-    if pid is None and score is None and not run_path:
+    if pid is None and score is None and not run_path and not run_id:
         # A candidate no proposal names has no state to compare with. #184.
         same = conn.execute(
-            "SELECT id, tier, outcome, detail, score, run_path FROM verdicts "
-            "WHERE candidate_id = ? ORDER BY id DESC LIMIT 1",
+            "SELECT id, tier, outcome, detail, score, run_path, run_id "
+            "FROM verdicts WHERE candidate_id = ? ORDER BY id DESC LIMIT 1",
             (candidate_id,)).fetchone()
         if (same and same["tier"] == tier and same["outcome"] == outcome
                 and same["detail"] == detail and same["score"] is None
-                and not same["run_path"]):
+                and not same["run_path"] and not same["run_id"]):
             return same["id"]
     fields = {"outcome": outcome, "tier": tier, "detail": detail,
               "issue": issue, "run_path": run_path, "score": score,
@@ -1682,7 +1713,7 @@ def decide(conn: sqlite3.Connection, name: str, outcome: str, *, tier: str = "",
               "machine_id": remember_machine(conn), "until": until,
               "size_bytes": int(size_bytes or 0), "attaches_to": attaches_to,
               "upstream_idle_days": float(upstream_idle_days or 0.0),
-              "candidate_id": candidate_id}
+              "candidate_id": candidate_id, "run_id": run_id}
     if pid is None:
         cols = {**fields, "proposal_id": None}
         vid = conn.execute(

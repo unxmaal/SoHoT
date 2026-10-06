@@ -58,57 +58,48 @@ def funnel(conn) -> list[dict]:
 
 
 def lanes_state(conn) -> list[dict]:
-    """Per lane: what it serves, what won, when, and whether they disagree."""
-    from harness import adopt, lanes as L, winners
+    """Per lane: what it serves, its own stored row, and what won.
+
+    The numbers are the SERVED candidate's row, by candidate id, from the
+    newest stored measure run on this machine that ran it (#410, #341). What
+    won is beaten_in(), reported beside it, never in its place.
+    """
+    from harness import adopt, lanes as L, runs, winners
 
     typed = winners.typed()
-    measured = winners.beaten_in()
+    measured = winners.beaten_in(conn)
     adopted = adopt.adopted(conn)
+    mine = runs.here(conn)
     now = time.time()
     out = []
     for lane in L.ALL:
         got = measured.get(lane) or {}
-        run = got.get("run") or ""
-        # TWO DIFFERENT QUESTIONS. `winners` answers "what WON this lane",
-        # which is the best receipt and may be months old. Staleness asks
-        # "when was this lane LAST measured", which is the newest receipt
-        # whatever it scored. Reading the age off the winner reported svg and
-        # stt as 12 days stale minutes after they had both been re-run,
-        # because their best receipts are older than their newest. #234.
-        newest = _newest_run_for(lane)
-        age = _run_age_days(newest, now) if newest else None
         serves = adopted.get(lane) or typed.get(lane, "")
-        # THE NUMBERS ARE THIS MACHINE'S. The winner may be another machine's
-        # receipt, and a median is a fact about the machine that ran it. #341.
-        here = _row_for(newest, _key_of_default(conn, lane, serves)) \
-            if newest else {}
+        cid = _candidate_of(conn, lane, serves)
+        # Last measured: any measure run of the lane; the row: the served one. #234.
+        newest = runs.newest(conn, lane=lane, machines=mine, tier=runs.MEASURE)
+        ran = runs.newest(conn, lane=lane, machines=mine,
+                          tier=runs.MEASURE, candidate_id=cid) if cid else None
+        here = runs.row_for(conn, ran["id"], cid) if ran else {}
+        age = runs.age_days(newest, now)
         out.append({
             "lane": lane,
             "wanted": lane in L.WANTED,
             "serves": serves,
             "adopted": bool(adopted.get(lane)),
-            "measured": got.get("candidate", ""),
-            # exact / quantised / "" -- `quantised` means only a quantisation
-            # of the named default has ever run, which is a finding rather
-            # than a mismatch to smooth over.
-            "match": got.get("match", ""),
+            "candidate_id": cid,
+            "measured": here.get("candidate") or "",
             "pass_rate": here.get("pass_rate"),
             "median_s": here.get("median_s"),
             "metrics": here.get("metrics") or {},
+            "run": ran["path"] if ran else "",
+            "best": got.get("candidate", ""),
             "best_pass_rate": got.get("pass_rate"),
             "best_median_s": got.get("median_s"),
-            "run": run,
-            "last_run": newest,
+            "best_run": got.get("run", ""),
+            "last_run": newest["path"] if newest else "",
             "age_days": age,
-            # NEVER MEASURED is not "stale". A lane with no receipt has no age
-            # to report and quoting one would be a fabrication.
-            # UNVERIFIED MEANS NOTHING HAS EVER RUN HERE. A lane with a newest
-            # receipt has been measured, even if nothing it produced won.
-            # PARKED IS NOT UNVERIFIED. Both mean "no receipt", and they want
-            # opposite things from a reader: unverified invites somebody to
-            # run it, parked says somebody already decided not to and names
-            # what would change that. `video` read UNVERIFIED on every page
-            # this report has ever produced. #244.
+            # Unverified: nothing ran here. Parked: somebody decided. #244.
             "unverified": not newest and not L.parked(lane)[0],
             "parked": L.parked(lane)[0],
             "parked_until": L.parked(lane)[1],
@@ -118,77 +109,13 @@ def lanes_state(conn) -> list[dict]:
     return out
 
 
-def _newest_run_for(lane: str) -> str:
-    """The most recent run directory for this lane, by mtime.
-
-    By MTIME, not by name: a name is a timestamp only by convention and
-    `legacy-ev-item2b` follows no convention at all, which is #222's defect.
-    """
-    from harness import paths
-
-    root = paths.home() / "runs"
-    if not root.is_dir():
-        return ""
-    got = [d for d in root.iterdir()
-           if d.is_dir() and d.name.endswith(f"-{lane}")
-           and (d / "results.json").is_file()]
-    here = _hw_model()
-    for d in sorted(got, key=lambda d: d.stat().st_mtime, reverse=True):
-        if _ran_on(d / "results.json") == here:
-            return d.name
-    return ""
-
-
-def _key_of_default(conn, lane: str, serves: str) -> str:
-    """The receipt key of what a lane serves, through the candidates table."""
+def _candidate_of(conn, lane: str, serves: str) -> int | None:
+    """The candidates row of what a lane serves."""
     from harness import candidates, screen
     if not serves:
-        return ""
-    spec = screen.candidate_for(lane, serves, adopt=False) or serves
-    return candidates.key_for(conn, spec)
-
-
-def _row_for(run: str, key: str) -> dict:
-    """The summary row under `key` in one run, or {}."""
-    from harness import paths
-    try:
-        got = json.loads((paths.home() / "runs" / run / "results.json"
-                          ).read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return {}
-    return (got.get("summary") or {}).get(key) or {} if key else {}
-
-
-def _hw_model() -> str:
-    from harness import memory_store as ms
-    return ms.this_machine()["hw_model"]
-
-
-def _ran_on(results) -> str:
-    """The hw_model a receipt names. A runs directory migrates with the home,
-    so another machine's receipt is not this machine's measurement. #331."""
-    try:
-        got = json.loads(results.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return ""
-    env = got.get("environment") if isinstance(got, dict) else None
-    return (env or {}).get("hw_model", "") if isinstance(env, dict) else ""
-
-
-def _run_age_days(run: str, now: float) -> float | None:
-    """A run directory's age, from its name's timestamp or its mtime.
-
-    The name is a timestamp BY CONVENTION and some directories predate it
-    (`legacy-ev-item2b`), which is the same trap #222 recorded; fall back to
-    the filesystem rather than guessing a date out of a name that has none.
-    """
-    from harness import paths
-
-    d = paths.home() / "runs" / run
-    try:
-        return max(0.0, (now - d.stat().st_mtime) / 86400.0)
-    except OSError:
         return None
+    spec = screen.candidate_for(lane, serves, adopt=False) or serves
+    return candidates.ensure(conn, spec, lane=lane)
 
 
 def queue_state(conn) -> dict:
@@ -196,7 +123,7 @@ def queue_state(conn) -> dict:
 
     rows = ms_judgeable(conn)
     ranked = rank.rank(rows, serving=rank.serving(),
-                       measured_lanes=rank.lanes_with_receipts())
+                       measured_lanes=rank.lanes_with_receipts(conn))
     per_lane = {}
     for r in ranked:
         per_lane.setdefault(rank.lane_of(r), []).append(r)
@@ -331,8 +258,6 @@ def _lane_rows(lanes, changed) -> str:
         elif l["stale"]:
             tags.append(f'<span class="tag warn">last run '
                         f'{_days(l["age_days"])} ago</span>')
-        if l["match"] == "quantised":
-            tags.append('<span class="tag warn">only a quantisation ran</span>')
         metric = " ".join(f"{k} {v:.3f}" for k, v in
                           sorted((l["metrics"] or {}).items()))[:44]
         rate = ("--" if l["pass_rate"] is None

@@ -325,8 +325,8 @@ def serving(config=None) -> set[str]:
     return out
 
 
-def lanes_with_receipts() -> set[str]:
-    """Lanes for which a run receipt exists on disk.
+def lanes_with_receipts(conn=None) -> set[str]:
+    """Lanes with result rows in a stored run. #410.
 
     NAMED FOR WHAT IT READS, not for what it means. Early measurements in this
     project were written to a gitignored directory before receipts existed, and
@@ -334,7 +334,7 @@ def lanes_with_receipts() -> set[str]:
     receipt here", which is weaker than "never measured" and must not be
     reported as the stronger claim.
 
-    Read from what the runs wrote rather than from a list, for the same reason
+    Read from the stored runs rather than from a list, for the same reason
     discover.measured() is: a hand-kept list of what has been measured, beside
     the thing that measures, drifts within a week.
 
@@ -342,22 +342,6 @@ def lanes_with_receipts() -> set[str]:
     than what we have"; a lane without one is where it answers "does anything
     here work at all", and the second is worth more.
     """
-    import json
-    from harness import paths
-    lanes: set[str] = set()
-    try:
-        receipts = sorted(paths.runs().rglob("results.json"))
-    except OSError:
-        return lanes
-    for f in receipts:
-        try:
-            data = json.loads(f.read_text(encoding="utf-8"))
-        except (OSError, ValueError):
-            continue        # a half-written run must not stop the ranking
-        receipt = data.get("receipt") or {}
-        lane = (receipt.get("modality") or "").strip().lower()
-        # Only a run that actually produced rows counts. An empty receipt is a
-        # run that was started, not a lane that was measured.
-        if lane and (data.get("summary") or data.get("rows")):
-            lanes.add(lane)
-    return lanes
+    from harness import runs
+    with runs.store(conn) as c:
+        return runs.lanes(c)

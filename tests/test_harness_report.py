@@ -17,7 +17,7 @@ NO_RECEIPT = '<span class="tag bad">no receipt here</span>'
 STALE = '<span class="tag warn">last run'
 
 LANE = {"lane": "code", "wanted": True, "serves": "q3-4b", "adopted": False,
-        "measured": "q3-4b", "match": "exact", "pass_rate": 0.78,
+        "measured": "q3-4b", "pass_rate": 0.78,
         "median_s": 1.4, "metrics": {"code_pass": 0.9}, "run": "r1",
         "age_days": 0.2, "unverified": False, "stale": False}
 
@@ -89,12 +89,6 @@ def test_a_lane_measured_long_ago_reports_its_age():
     assert NO_RECEIPT not in page
 
 
-def test_only_a_quantisation_having_run_is_called_out():
-    """`~` in --winners. A finding, not a mismatch to smooth over."""
-    page = report.render(_state(lanes=[dict(LANE, match="quantised")]), {})
-    assert "only a quantisation ran" in page
-
-
 def test_a_wanted_lane_with_an_empty_queue_is_named():
     assert "nothing queued for web" in report.render(_state(), {})
 
@@ -159,134 +153,181 @@ def test_the_funnel_orders_by_the_ladder_not_by_count(tmp_path):
 
 # --- what won a lane and when it last ran are different questions ---------
 
-def test_staleness_comes_from_the_newest_run_not_the_winning_one(tmp_path,
-                                                                 monkeypatch):
-    """`winners` answers "what WON this lane", which is the best receipt and
-    may be months old. Staleness asks "when was this lane LAST measured".
-
-    Reading the age off the winner reported svg and stt as 12 days stale
-    MINUTES after both had been re-run, because their best receipts are older
-    than their newest. Issue #234.
-    """
-    import os
+def _stamp(days_ago: float) -> str:
     import time
-
-    runs = tmp_path / "runs"
-    for name, age_days in (("legacy-ev-item2b", 30.0),
-                           ("20260919-204639-944-0000-svg", 0.0)):
-        d = runs / name
-        d.mkdir(parents=True)
-        (d / "results.json").write_text(HERE, encoding="utf-8")
-        when = time.time() - age_days * 86400
-        os.utime(d, (when, when))
-    monkeypatch.setattr("harness.paths.home", lambda: tmp_path)
-    monkeypatch.setattr(report, "_hw_model", lambda: "Mac17,15", raising=False)
-
-    assert report._newest_run_for("svg") == "20260919-204639-944-0000-svg"
-    assert report._run_age_days(report._newest_run_for("svg"),
-                                time.time()) < 1.0
+    return time.strftime("%Y-%m-%dT%H:%M:%S",
+                         time.localtime(time.time() - days_ago * 86400))
 
 
-def test_a_lane_with_no_run_directory_has_no_newest(tmp_path, monkeypatch):
-    monkeypatch.setattr("harness.paths.home", lambda: tmp_path)
-    assert report._newest_run_for("svg") == ""
-
-
-def test_a_directory_with_no_receipt_does_not_count_as_a_run(tmp_path,
-                                                             monkeypatch):
-    """A run that crashed before writing results is not a measurement."""
-    (tmp_path / "runs" / "20260919-000000-000-0000-svg").mkdir(parents=True)
-    monkeypatch.setattr("harness.paths.home", lambda: tmp_path)
-    assert report._newest_run_for("svg") == ""
-
-
-HERE = '{"environment": {"hw_model": "Mac17,15"}}'
-
-
-def _runs(tmp_path, monkeypatch, *named):
-    import os
-    import time
-    for i, (name, body) in enumerate(named):
-        d = tmp_path / "runs" / name
-        d.mkdir(parents=True)
-        (d / "results.json").write_text(body, encoding="utf-8")
-        when = time.time() - (len(named) - i) * 60
-        os.utime(d, (when, when))
-    monkeypatch.setattr("harness.paths.home", lambda: tmp_path)
-    monkeypatch.setattr(report, "_hw_model", lambda: "Mac17,15", raising=False)
-
-
-def test_another_machines_receipt_is_not_this_machines_measurement(
-        tmp_path, monkeypatch):
-    """The runs directory migrates with the home. Another model's receipts stay theirs.
-    #331."""
-    _runs(tmp_path, monkeypatch,
-          ("20261001-000000-svg", HERE),
-          ("20261004-000000-svg", '{"environment": {"hw_model": "Mac14,12"}}'))
-    assert report._newest_run_for("svg") == "20261001-000000-svg"
-
-
-def test_only_another_machines_receipts_means_never_measured_here(
-        tmp_path, monkeypatch):
-    _runs(tmp_path, monkeypatch,
-          ("20261004-000000-svg", '{"environment": {"hw_model": "Mac14,12"}}'))
-    assert report._newest_run_for("svg") == ""
-
-
-def test_a_receipt_that_names_no_machine_is_not_assumed_to_be_this_one(
-        tmp_path, monkeypatch):
-    _runs(tmp_path, monkeypatch, ("20261004-000000-svg", "{}"),
-          ("20261005-000000-svg", "not json"))
-    assert report._newest_run_for("svg") == ""
-
-
-def test_this_machines_newest_receipt_still_wins(tmp_path, monkeypatch):
-    """Negative control: two of this machine's own, newest by mtime."""
-    _runs(tmp_path, monkeypatch, ("20261001-000000-svg", HERE),
-          ("20261002-000000-svg", HERE))
-    assert report._newest_run_for("svg") == "20261002-000000-svg"
-
-
-
-def test_the_numbers_are_this_machines_not_the_winners(tmp_path, monkeypatch):
-    """The winner may be another machine's receipt; its median is a fact about
-    that machine. Showing it beside today's date read 5.10 s for a lane that
-    took 1.36 s here. #341."""
-    import json
+def _lanes(monkeypatch, typed=None, adopted=None):
     from harness import adopt, winners
     from harness import memory_store as ms
-    _runs(tmp_path, monkeypatch, ("20261005-000000-svg", json.dumps({
-        "environment": {"hw_model": "Mac17,15"},
-        "summary": {"local-large": {"pass_rate": 0.667, "median_s": 1.36,
-                                    "metrics": {"ink": 0.34}}}})))
-    monkeypatch.setattr(winners, "typed", lambda: {"svg": "local-large"})
-    monkeypatch.setattr(adopt, "adopted", lambda conn: {})
-    monkeypatch.setattr(winners, "beaten_in", lambda runs=None: {"svg": {
-        "candidate": "local-large", "pass_rate": 1.0, "median_s": 5.10,
-        "metrics": {}, "run": "legacy", "match": "exact"}})
-    conn = ms.connect(tmp_path / "d.db")
+    monkeypatch.setattr(winners, "typed",
+                        lambda: dict(typed or {"svg": "local-large"}))
+    monkeypatch.setattr(adopt, "adopted", lambda conn: dict(adopted or {}))
+    conn = ms.connect()
     try:
-        svg = {l["lane"]: l for l in report.lanes_state(conn)}["svg"]
+        return {l["lane"]: l for l in report.lanes_state(conn)}
     finally:
         conn.close()
+
+
+def test_staleness_comes_from_the_newest_run_not_the_winning_one(
+        store_run, monkeypatch):
+    """`winners` answers "what WON this lane"; staleness asks "when was this
+    lane LAST measured". Reading the age off the winner reported svg 12 days
+    stale minutes after it was re-run. #234. The age is the receipt's own
+    time, never a directory mtime. #331."""
+    store_run("legacy-ev-item2b", "svg", {"local-large": {"pass_rate": 1.0}},
+              generated=_stamp(30))
+    store_run("20260919-204639-944-0000-svg", "svg",
+              {"local-large": {"pass_rate": 0.5}}, generated=_stamp(0.01))
+    svg = _lanes(monkeypatch)["svg"]
+    assert svg["last_run"] == "20260919-204639-944-0000-svg"
+    assert svg["age_days"] < 1.0 and not svg["stale"]
+    assert (svg["pass_rate"], svg["best_pass_rate"]) == (0.5, 1.0)
+
+
+def test_a_lane_with_no_stored_run_is_unverified(monkeypatch):
+    svg = _lanes(monkeypatch)["svg"]
+    assert svg["last_run"] == "" and svg["unverified"]
+
+
+def test_a_results_json_nobody_stored_is_not_a_run(monkeypatch):
+    """Pins the conversion: a directory scan would find this file. #410."""
+    from harness import memory_store as ms
+    from harness import paths
+    ms.connect().close()      # the store exists, so no backfill reads it
+    d = paths.runs() / "20261006-000000-000-0000-svg"
+    d.mkdir(parents=True)
+    (d / "results.json").write_text(json.dumps({
+        "generated": _stamp(0), "environment": {"hw_model": "Mac17,15"},
+        "receipt": {"modality": "svg", "tier": "measure"},
+        "summary": {"local-large": {"pass_rate": 1.0}},
+        "rows": [{"case_id": "a", "candidate": "local-large", "passed": True,
+                  "seconds": 1.0, "peak_kb": 0, "detail": ""}]}),
+        encoding="utf-8")
+    svg = _lanes(monkeypatch)["svg"]
+    assert svg["last_run"] == "" and svg["pass_rate"] is None
+
+
+def test_another_machines_run_is_not_this_machines_measurement(
+        store_run, monkeypatch):
+    """The runs directory migrates with the home. #331."""
+    store_run("20261001-000000-svg", "svg", {"local-large": {"pass_rate": 0.5}},
+              generated=_stamp(3))
+    store_run("20261004-000000-svg", "svg", {"local-large": {"pass_rate": 1.0}},
+              generated=_stamp(1), hw_model="Another,1")
+    svg = _lanes(monkeypatch)["svg"]
+    assert (svg["last_run"], svg["pass_rate"]) == ("20261001-000000-svg", 0.5)
+
+
+def test_only_another_machines_runs_means_never_measured_here(
+        store_run, monkeypatch):
+    store_run("20261004-000000-svg", "svg", {"local-large": {"pass_rate": 1.0}},
+              hw_model="Another,1")
+    svg = _lanes(monkeypatch)["svg"]
+    assert svg["last_run"] == "" and svg["pass_rate"] is None
+
+
+def test_a_run_that_names_no_machine_is_not_assumed_to_be_this_one(
+        store_run, monkeypatch):
+    store_run("20261004-000000-svg", "svg", {"local-large": {"pass_rate": 1.0}},
+              hw_model="")
+    assert _lanes(monkeypatch)["svg"]["last_run"] == ""
+
+
+def test_this_machines_newest_run_still_wins(store_run, monkeypatch):
+    """Negative control: two of this machine's own, newest by receipt time."""
+    store_run("20261002-000000-svg", "svg", {"local-large": {"pass_rate": 0.9}},
+              generated=_stamp(1))
+    store_run("20261001-000000-svg", "svg", {"local-large": {"pass_rate": 0.4}},
+              generated=_stamp(2))
+    svg = _lanes(monkeypatch)["svg"]
+    assert (svg["last_run"], svg["pass_rate"]) == ("20261002-000000-svg", 0.9)
+
+
+def test_the_numbers_are_this_machines_not_the_winners(store_run, monkeypatch):
+    """The winner may be another machine's run; its median is a fact about
+    that machine. #341."""
+    store_run("legacy", "svg", {"local-large": {"pass_rate": 1.0,
+                                                "median_s": 5.10}},
+              hw_model="Another,1", generated=_stamp(10))
+    store_run("20261005-000000-svg", "svg",
+              {"local-large": {"passed": 2, "total": 3, "median_s": 1.36,
+                               "metrics": {"ink": 0.34}}})
+    svg = _lanes(monkeypatch)["svg"]
     assert (svg["pass_rate"], svg["median_s"]) == (0.667, 1.36)
     assert (svg["best_pass_rate"], svg["best_median_s"]) == (1.0, 5.10)
 
 
-def test_a_lane_never_run_here_shows_no_numbers(tmp_path, monkeypatch):
-    """Negative control: another machine's best does not fill the gap."""
-    from harness import adopt, winners
-    from harness import memory_store as ms
-    _runs(tmp_path, monkeypatch)
-    monkeypatch.setattr(winners, "typed", lambda: {"svg": "local-large"})
-    monkeypatch.setattr(adopt, "adopted", lambda conn: {})
-    monkeypatch.setattr(winners, "beaten_in", lambda runs=None: {"svg": {
-        "candidate": "local-large", "pass_rate": 1.0, "median_s": 5.10,
-        "metrics": {}, "run": "legacy", "match": "exact"}})
-    conn = ms.connect(tmp_path / "d.db")
-    try:
-        svg = {l["lane"]: l for l in report.lanes_state(conn)}["svg"]
-    finally:
-        conn.close()
-    assert svg["pass_rate"] is None and svg["median_s"] is None
-    assert svg["unverified"]
+# --- #410's acceptance: each lane shows the row of what it SERVES ----------
+
+def test_code_shows_the_adopted_candidate_not_a_newer_higher_scorer(
+        store_run, monkeypatch):
+    """code serves Ornith and showed q3-coder from another run. #410."""
+    ornith = "llamacpp:Ornith-1.5-35B-Q4_K_M"
+    store_run("20261006-001631-371-0000-code", "code",
+              {ornith: {"passed": 39, "total": 42},
+               "q3-coder": {"passed": 32, "total": 42}},
+              specs={ornith: ornith, "q3-coder": "q3-coder"},
+              generated=_stamp(1))
+    store_run("20261006-090000-000-0000-code", "code",
+              {"q3-coder": {"passed": 42, "total": 42}},
+              specs={"q3-coder": "q3-coder"}, generated=_stamp(0.1))
+    code = _lanes(monkeypatch, typed={"code": "q3-4b"},
+                  adopted={"code": ornith})["code"]
+    assert code["serves"] == ornith and code["measured"] == ornith
+    assert code["pass_rate"] == round(39 / 42, 3)
+    assert code["run"] == "20261006-001631-371-0000-code"
+
+
+def test_svg_shows_local_large_even_when_q3_30b_won_the_run(
+        store_run, monkeypatch):
+    store_run("20261005-194924-860-0000-svg", "svg",
+              {"q3-30b": {"passed": 9, "total": 9},
+               "local-large": {"passed": 4, "total": 9}},
+              specs={"q3-30b": "q3-30b", "local-large": "local-large"})
+    svg = _lanes(monkeypatch)["svg"]
+    assert (svg["measured"], svg["pass_rate"]) == ("local-large", 0.444)
+    assert svg["best"] == "q3-30b"
+
+
+def _key(lane, served):
+    from harness import candidates, screen
+    key = candidates.key_of(screen.candidate_for(lane, served, adopt=False)
+                            or served)
+    if not key:
+        pytest.skip(f"no runner for {served} on this platform")
+    return key
+
+
+def test_tts_shows_its_own_five_of_five_past_a_newer_screen(
+        store_run, monkeypatch):
+    """The receipt has no specs map; the row is found through the candidate
+    row of what the lane serves. A newer screen of something else is not
+    the lane's measurement."""
+    kokoro = "mlx-community/Kokoro-82M-bf16"
+    key = _key("tts", kokoro)
+    store_run("20261005-161337-201-0000-tts", "tts",
+              {key: {"passed": 5, "total": 5}}, generated=_stamp(1))
+    store_run("screen-1791290659-tts", "tts",
+              {"supertonic-3": {"passed": 0, "total": 1}}, tier="screen",
+              generated=_stamp(0.01))
+    tts = _lanes(monkeypatch, typed={"tts": kokoro})["tts"]
+    assert (tts["measured"], tts["pass_rate"]) == (key, 1.0)
+    assert tts["last_run"] == "20261005-161337-201-0000-tts"
+
+
+def test_video_shows_the_h3_run_not_the_newer_resident_variant(
+        store_run, monkeypatch):
+    key = _key("video", "h3")
+    store_run("20261005-174829-658-0000-video", "video",
+              {key: {"passed": 1, "total": 1}}, generated=_stamp(1))
+    store_run("20261005-180410-072-0000-video", "video",
+              {f"{key}@ssd_streaming=false": {"passed": 0, "total": 1}},
+              generated=_stamp(0.9))
+    video = _lanes(monkeypatch, typed={"video": "h3"})["video"]
+    assert (video["measured"], video["pass_rate"]) == (key, 1.0)
+    assert video["run"] == "20261005-174829-658-0000-video"
+    assert video["last_run"] == "20261005-180410-072-0000-video"

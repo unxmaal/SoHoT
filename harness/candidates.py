@@ -48,6 +48,12 @@ def ensure(conn, spec: str, *, proposal: str = "", lane: str = "",
         "UPDATE candidates SET proposal_id = COALESCE(?, proposal_id), "
         "receipt_key = ?, lane = CASE WHEN lane = '' THEN ? ELSE lane END "
         "WHERE spec = ?", (pid, key, lane or "", spec))
+    if "," not in spec:
+        # Rows a run stored before this candidate had a row. #410.
+        conn.execute(
+            "UPDATE results SET candidate_id = (SELECT id FROM candidates "
+            "WHERE spec = ?) WHERE candidate_id IS NULL AND candidate = ?",
+            (spec, key))
     conn.commit()
     return conn.execute("SELECT id FROM candidates WHERE spec = ?",
                         (spec,)).fetchone()["id"]
