@@ -942,6 +942,11 @@ def _report_inspect(a) -> int:
                     print(f"    lane corrected from the card: {model_id} "
                           f"-> {fit.lanes[model_id]}")
                 ms.link(store, repo, model_id, "needs")
+                # A sighting is not a reason to reopen a decided name. #399.
+                last = ms.latest(store, model_id)
+                if last and (last["outcome"] in ms.TERMINAL
+                             or last["outcome"] == "screened"):
+                    continue
                 ms.decide(store, model_id, "queued", tier=ms.INSPECT,
                           size_bytes=size,
                           detail=f"bytes={size} lane={fit.lanes.get(model_id) or '-'} "

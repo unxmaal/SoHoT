@@ -52,8 +52,9 @@ def test_an_architecture_gap_becomes_declined_until_a_newer_runtime(store, tmp_p
         again.close()
 
 
-def test_a_missing_file_stays_broken(store, tmp_path):
-    """THE NEGATIVE CONTROL."""
+def test_a_missing_file_stays_broken(store, tmp_path, monkeypatch):
+    """THE NEGATIVE CONTROL. The weights are on disk and lack the file (#399)."""
+    monkeypatch.setattr("harness.fetching.have", lambda m, root=None: True)
     seed(store, "org/missing", MISSING)
     again = migrate(store, tmp_path)
     try:

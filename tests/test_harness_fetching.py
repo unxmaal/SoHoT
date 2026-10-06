@@ -132,7 +132,7 @@ def test_a_github_repo_is_not_downloadable(db):
 
 def test_something_already_in_the_cache_is_not_queued(db, tmp_path, monkeypatch):
     monkeypatch.setenv("HF_HOME", str(tmp_path))
-    (tmp_path / "hub" / "models--org--have").mkdir(parents=True)
+    cached(tmp_path, "org/have")
     for name in ["org/have", "org/want"]:
         seen(db, name)
         ms.decide(db, name, "queued", tier="inspect")
@@ -220,8 +220,7 @@ def cached(root, model_id, config=None):
     d = (root / "hub" / f"models--{model_id.replace('/', '--')}"
          / "snapshots" / "abc123")
     d.mkdir(parents=True, exist_ok=True)
-    if config is not None:
-        (d / "config.json").write_text(json.dumps(config), encoding="utf-8")
+    (d / "config.json").write_text(json.dumps(config or {}), encoding="utf-8")
     return d
 
 

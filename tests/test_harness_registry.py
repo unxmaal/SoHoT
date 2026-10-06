@@ -407,3 +407,50 @@ def test_a_store_written_before_descriptions_existed_still_opens(tmp_path):
     conn.close()
     assert "description" in cols
     assert row["description"] == ""
+
+
+@pytest.mark.parametrize("outcome,tier,kept", [
+    ("declined", "adopt", "declined"),
+    ("screened", "screen", "screened"),
+    (None, None, "queued"),
+])
+def test_a_neighbor_sighting_does_not_reopen_a_decided_name(tmp_path, monkeypatch,
+                                                            outcome, tier, kept):
+    """#399: vllm-metal named Qwen3.5-0.8B and reopened its adopt decline."""
+    from harness import cli, github, paths
+
+    monkeypatch.setattr(paths, "home", lambda: tmp_path)
+    conn = ms.connect()
+    see(conn, "org/tool", registry=ms.GITHUB, resolved="org/tool")
+    see(conn, "org/w", registry=ms.HUGGINGFACE, resolved="org/w")
+    if outcome:
+        ms.decide(conn, "org/w", outcome, tier=tier, detail="seeded")
+    conn.close()
+
+    class Client:
+        stale: list = []
+        spent = 0
+
+        def __init__(self, **kw):
+            pass
+
+        def repo(self, name):
+            return {"size": 10, "description": "a tool"}
+
+    def fake_inspect(repo, work, meta=None, **kw):
+        return ins.Fit(repo=repo, registry=ms.GITHUB, verdict="fits",
+                       weights={"org/w": 100}, headline=["org/w"])
+
+    monkeypatch.setattr(github, "Client", Client)
+    monkeypatch.setattr(ins, "inspect", fake_inspect)
+    monkeypatch.setattr(ins, "inspect_model",
+                        lambda m, **kw: ins.Fit(repo=m, registry=ms.HUGGINGFACE))
+    args = type("A", (), {"repos": ["org/tool"], "from_store": False, "top": 10,
+                          "budget": 10, "shard": "", "judge": False,
+                          "json": False})()
+    cli._report_inspect(args)
+    conn = ms.connect()
+    try:
+        assert ms.latest(conn, "org/w")["outcome"] == kept
+    finally:
+        conn.close()

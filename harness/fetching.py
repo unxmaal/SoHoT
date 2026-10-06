@@ -100,8 +100,25 @@ def have(model_id: str, root: Path | None = None) -> bool:
     home = Path(root or os.environ.get("HF_HOME")
                 or Path.home() / ".cache" / "huggingface")
     from harness import gguf
-    return ((home / "hub" / f"models--{model_id.replace('/', '--')}").exists()
+    return (_snapshot_has_weights(home / "hub" / f"models--{model_id.replace('/', '--')}")
             or gguf.path_of(model_id) is not None)
+
+
+#: A snapshot with only a card is not a download: Marlin-2B had LICENSE and
+#: README and was screened as if present. #399.
+LOADABLE = ("config.json", "model_index.json")
+WEIGHT_SUFFIXES = (".safetensors", ".bin", ".gguf", ".npz", ".pt", ".pth",
+                   ".ckpt", ".onnx")
+
+
+def _snapshot_has_weights(repo_dir: Path) -> bool:
+    snaps = repo_dir / "snapshots"
+    if not snaps.is_dir():
+        return False
+    for f in snaps.rglob("*"):
+        if (f.name in LOADABLE or f.name.endswith(WEIGHT_SUFFIXES)) and f.exists():
+            return True
+    return False
 
 
 #: Config keys whose value names a repo you must ALSO have on disk. Kept as an
