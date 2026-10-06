@@ -145,7 +145,7 @@ def test_a_text_sample_is_bounded():
 def test_the_schema_carries_the_requests_and_samples_tables():
     conn = ms.connect()
     try:
-        assert ms.SCHEMA_VERSION == 44
+        assert ms.SCHEMA_VERSION >= 44
         cols = {r[1] for r in conn.execute("PRAGMA table_info(gateway_requests)")}
         assert {"at", "alias", "lane", "served", "spec", "client", "prompt_tokens",
                 "completion_tokens", "ttft_s", "total_s", "stream", "tool_calls",

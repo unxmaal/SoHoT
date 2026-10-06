@@ -60,12 +60,20 @@ fi
 # time and nothing else. Set LLAMACPP_SLEEP_IDLE=-1 to serve full time.
 # Context is explicit: unset, a 4B model sized its cache to ~21 GB. #286.
 # --jinja: the model's own chat template, which OpenAI tool calls need. #297.
+# Per-model context from the store via a preset; a CLI --ctx-size would override it. #498.
+PRESET="${LOCALHARNESS_HOME:-$HOME/localharness}/llamacpp-preset-${LLAMACPP_PORT:-8081}.ini"
+if uv run python -m harness.context "$PRESET" >/dev/null; then
+  CTX_ARGS=(--models-preset "$PRESET")
+else
+  echo "WARN: no per-model context preset; every model gets ${LLAMACPP_CTX:-16384}" >&2
+  CTX_ARGS=(--ctx-size "${LLAMACPP_CTX:-16384}")
+fi
 exec "$BIN" \
   --jinja \
   --models-dir "$MODELS" \
   --sleep-idle-seconds "${LLAMACPP_SLEEP_IDLE:-300}" \
   --models-max "${LLAMACPP_MAX_MODELS:-1}" \
   --n-gpu-layers "${LLAMACPP_GPU_LAYERS:-999}" \
-  --ctx-size "${LLAMACPP_CTX:-16384}" \
+  "${CTX_ARGS[@]}" \
   --host "${LLAMACPP_HOST:-127.0.0.1}" \
   --port "${LLAMACPP_PORT:-8081}"

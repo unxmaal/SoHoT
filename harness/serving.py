@@ -100,6 +100,15 @@ def _sampling(optstr: str, spec: str) -> dict:
     return out
 
 
+def _servable(stem: str) -> str:
+    """The stem, unless its recorded context was refused (#498)."""
+    from harness import context
+    why = context.refusal(stem)
+    if why:
+        raise ValueError(f"llamacpp:{stem} is not served: {why}")
+    return stem
+
+
 def route(spec: str, gateway: str = "", config=None) -> Route:
     """The server that serves a text spec, shared by lane commands and evals.run. #297.
 
@@ -115,7 +124,8 @@ def route(spec: str, gateway: str = "", config=None) -> Route:
         raise ValueError(f"{spec!r} is not served by a text server")
     if name.startswith(LLAMACPP_PREFIX):
         from harness import router
-        return Route(router.url(), name[len(LLAMACPP_PREFIX):].strip(), sampling)
+        return Route(router.url(), _servable(name[len(LLAMACPP_PREFIX):].strip()),
+                     sampling)
     if gateway:
         return Route(gateway.rstrip("/"), name, sampling)
     from harness.completion import DEFAULT_GATEWAY
@@ -131,5 +141,5 @@ def route(spec: str, gateway: str = "", config=None) -> Route:
     except Exception:  # noqa: BLE001
         stem = None
     if stem:
-        return Route(router.url(), stem, sampling)
+        return Route(router.url(), _servable(stem), sampling)
     return Route(screen.routed_gateway(name, config) or DEFAULT_GATEWAY, name, sampling)

@@ -1162,6 +1162,22 @@ download, since their runners load the repo:
   the lane's incumbent through the gateway, so the two halves of one run can
   come from different engines.
 
+Each GGUF gets its own context (#498). At startup `scripts/serve-llamacpp.sh`
+reads every recorded GGUF's header and serves it at the smaller of its trained
+context and the most whose f16 KV cache fits beside the weights, in steps of
+1024. The KV room is the machine's ceiling less its measured reserve, the
+weights and the largest text model mlx_lm.server serves beside it, and never
+more than `LLAMACPP_KV_MAX_GIB` (8), because llama-server allocates the whole
+cache at load. KV bytes per
+token come from the header (KV heads, key and value widths, and only the
+attention layers of a hybrid; sliding-window layers are costed as full). A
+model under 8192 tokens is refused, and `serving.route` says why. The result
+is stored on the `downloads` row and passed per model through a
+`--models-preset` file, with one slot per model unless `LLAMACPP_PARALLEL`
+asks for more (more slots share one pool, so each request can still use the
+whole context). If the preset cannot be written, every model gets
+`LLAMACPP_CTX` (16384).
+
 Each receipt has an `engines` map from candidate to server, and
 `instruments.serving` names every engine in the run, such as
 `llama-server+mlx_lm.server`. `comparable()` therefore refuses to pool a
