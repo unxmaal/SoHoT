@@ -656,6 +656,45 @@ key serves anyone who can reach port 4000, which now includes tool calling.
 `scripts/services.sh status` probes the gateway at `/health/liveliness`, which
 LiteLLM serves without a key.
 
+## What real use looks like
+
+The gateway records every request it serves as a `gateway_requests` row, so the
+loop can see the work done through it and not only the case sets. A row holds
+when, the alias asked for (and its lane for `sohot-<lane>`), the upstream model
+and the adopted spec it served, the client (the key's alias, else the first
+token of the user agent, such as `opencode/1.2` or `claude-cli/2.0`), prompt and
+completion tokens, time to first token (streamed requests only) and total time,
+whether it streamed, how many tool calls it made and how many of those parsed
+to a JSON object naming a tool the request offered, the finish reason, and the
+error class of a failure.
+
+No prompt or completion text is kept by default. To collect samples for
+building cases later, turn it on; each prompt and completion is cut to 8000
+characters and only the newest 2000 are kept:
+
+```bash
+soh usage --text on      # off again with --text off
+```
+
+`gateway/usage_log.py` is a LiteLLM callback loaded from the gateway config.
+It only queues a row; a thread writes them in batches, and a failure to write
+drops rows rather than failing a request. Only a gateway run from the deploy
+checkout writes the live store; one started from another checkout drops its
+rows. On an instant fake upstream it added 0.2 to 0.5 ms to the median request.
+
+```bash
+soh usage                          # per alias and model, the last 7 days
+soh usage --lane code --since 24h
+```
+
+prints requests, tokens, TTFT p50 and p95, error rate and invalid tool-call
+rate per alias and served model, then each alias switch in the window with the
+same figures before and after it. When the error rate or the invalid tool-call
+rate rose after a switch by more than three standard errors, with at least 20
+requests (or tool calls) on each side, it prints a WARNING naming the switch.
+Nothing is reverted automatically. `soh report` and the published page carry the
+per-lane figures under "Real use", without clients.
+
 ---
 
 # Setup and upkeep

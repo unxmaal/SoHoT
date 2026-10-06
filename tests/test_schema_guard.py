@@ -40,4 +40,5 @@ def test_the_mac_gateway_loads_the_guard_and_the_cuda_one_does_not():
     cuda = yaml.safe_load((REPO / "gateway" / "config.cuda.yaml").read_text(encoding="utf-8"))
     assert "schema_guard.proxy_handler_instance" in (
         mac["litellm_settings"].get("callbacks") or [])
-    assert not (cuda.get("litellm_settings") or {}).get("callbacks")
+    assert "schema_guard.proxy_handler_instance" not in (
+        (cuda.get("litellm_settings") or {}).get("callbacks") or [])

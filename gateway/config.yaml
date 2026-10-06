@@ -99,7 +99,8 @@ model_list:
 litellm_settings:
   drop_params: true
   # Refuse response_format on aliases whose server would silently ignore it (#315).
-  callbacks: ["schema_guard.proxy_handler_instance"]
+  # usage_log records each request's shape, never its text, to the store (#481).
+  callbacks: ["schema_guard.proxy_handler_instance", "usage_log.proxy_handler_instance"]
   # mlx_lm.server implements /v1/chat/completions but NOT /v1/responses.
   # Without this, LiteLLM routes /v1/messages through its Responses adapter
   # and every Anthropic-shaped request 404s upstream.
