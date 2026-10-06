@@ -1,0 +1,22 @@
+# Harder tier: parsing is easy and validating is not. A permissive parser
+# accepts IIII, VX and IC, and only the canonical form is a numeral.
+id: roman-strict
+modality: code
+prompt: |
+  Write two Python functions. `to_roman(n)` converts an integer from 1 to 3999
+  to its standard Roman numeral and raises ValueError outside that range.
+  `from_roman(s)` converts a standard Roman numeral back to an integer and
+  raises ValueError for anything that is not the standard form of a number
+  from 1 to 3999. Return only the functions.
+assert:
+  checks:
+    - "to_roman(1994) == 'MCMXCIV'"
+    - "to_roman(3999) == 'MMMCMXCIX'"
+    - "from_roman('MCMXCIV') == 1994"
+    - "all(from_roman(to_roman(n)) == n for n in range(1, 4000))"
+    - "raises(to_roman, 0, exc=ValueError)"
+    - "raises(from_roman, 'IIII', exc=ValueError)"
+    - "raises(from_roman, 'VX', exc=ValueError)"
+    - "raises(from_roman, 'IC', exc=ValueError)"
+    - "raises(from_roman, '', exc=ValueError)"
+    - "raises(from_roman, 'MMMM', exc=ValueError)"

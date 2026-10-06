@@ -1,0 +1,21 @@
+# Harder tier: the SemVer 2.0 precedence rules for pre-release identifiers, which
+# a string or tuple comparison gets wrong (beta.11 vs beta.2, alpha vs alpha.1).
+id: semver-compare
+modality: code
+prompt: |
+  Write a Python function `compare(a, b)` for Semantic Versioning 2.0.0
+  strings. Return -1 if a has lower precedence than b, 1 if higher, 0 if
+  equal. Follow the spec's precedence rules exactly, including pre-release
+  identifiers and ignoring build metadata. Return only the function.
+assert:
+  checks:
+    - "compare('1.0.0', '2.0.0') == -1"
+    - "compare('1.10.0', '1.9.0') == 1"
+    - "compare('1.0.0-alpha', '1.0.0') == -1"
+    - "compare('1.0.0-alpha', '1.0.0-alpha.1') == -1"
+    - "compare('1.0.0-alpha.1', '1.0.0-alpha.beta') == -1"
+    - "compare('1.0.0-beta.2', '1.0.0-beta.11') == -1"
+    - "compare('1.0.0-rc.1', '1.0.0-beta.11') == 1"
+    - "compare('1.0.0+build.5', '1.0.0+build.9') == 0"
+    - "compare('1.0.0-alpha+x', '1.0.0-alpha') == 0"
+    - "compare('2.0.0', '2.0.0') == 0"

@@ -1,0 +1,22 @@
+# Harder tier: several stars need backtracking or DP, and an escaped star is a
+# literal. fnmatch handles neither escape this way, so it does not pass.
+id: glob-match
+modality: code
+prompt: |
+  Write a Python function `match(pattern, s)` returning True if the whole
+  string `s` matches `pattern`, where `?` matches exactly one character, `*`
+  matches any sequence including the empty one, and a backslash makes the next
+  character literal (so `\*` matches only a star and `\\` only a backslash).
+  Every other character matches itself. Return only the function.
+assert:
+  checks:
+    - "match('a*b*c', 'abxbc') is True"
+    - "match('a*b*c', 'abxb') is False"
+    - "match('?', '') is False"
+    - "match('*', '') is True"
+    - "match('**a**', 'bab') is True"
+    - "match('a\\\\*b', 'a*b') is True"
+    - "match('a\\\\*b', 'axb') is False"
+    - "match('[a]', '[a]') is True"
+    - "match('*.py', 'x.pyc') is False"
+    - "match('a' * 30 + '*' * 30 + 'b', 'a' * 60) is False"
