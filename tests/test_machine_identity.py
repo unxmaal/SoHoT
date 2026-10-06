@@ -120,9 +120,8 @@ def _old_store(path):
                      (rows[key],))
         conn.execute("INSERT INTO downloads (kind, path, machine_id) "
                      "VALUES ('hub', ?, ?)", (f"/w/{key}", rows[key]))
-    # The schema before this one, so only the #415 step runs.
-    conn.execute("UPDATE meta SET value = ? WHERE key = 'schema'",
-                 (str(ms.SCHEMA_VERSION - 1),))
+    # Schema 32, the one before #415's step, so that step runs.
+    conn.execute("UPDATE meta SET value = '32' WHERE key = 'schema'")
     conn.commit()
     conn.close()
     return rows

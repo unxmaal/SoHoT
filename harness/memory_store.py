@@ -19,7 +19,7 @@ from pathlib import Path
 
 from harness import paths, store
 
-SCHEMA_VERSION = 33
+SCHEMA_VERSION = 34
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
 VERDICTS = ("measured", "declined", "broken", "queued", "ignored", "screened")
@@ -309,7 +309,28 @@ CREATE TABLE IF NOT EXISTS edges (
     dst         INTEGER NOT NULL REFERENCES proposals(id) ON DELETE CASCADE,
     relation    TEXT NOT NULL,
     note        TEXT NOT NULL DEFAULT '',
+    -- A crowd edge's neighbor score, as neighbors computed it; NULL elsewhere. #416.
+    shared      INTEGER,
+    crowd       INTEGER,
+    score       REAL,
     UNIQUE (src, dst, relation)
+);
+
+-- One discovery source and when it was last read, written by feeds.read. #416.
+CREATE TABLE IF NOT EXISTS sources (
+    id              INTEGER PRIMARY KEY,
+    name            TEXT NOT NULL UNIQUE,
+    kind            TEXT NOT NULL DEFAULT '',
+    url             TEXT NOT NULL DEFAULT '',
+    enabled         INTEGER NOT NULL DEFAULT 1,
+    -- Last successful read; NULL is never read.
+    last_read_at    REAL,
+    last_attempt_at REAL,
+    -- 'ok' or 'failed', of the last attempt.
+    last_status     TEXT NOT NULL DEFAULT '',
+    last_error      TEXT NOT NULL DEFAULT '',
+    -- Consecutive failed attempts since the last success.
+    failures        INTEGER NOT NULL DEFAULT 0
 );
 
 -- Names pulled out of prose and REJECTED. Without these there is no
@@ -929,6 +950,11 @@ def _migrate(conn: sqlite3.Connection) -> None:
         merge_duplicate_machines(conn)
         import_memory_limits_json(conn)
         strip_machine_from_fetch_details(conn)
+    if have < 34:
+        _add_edge_scores(conn)
+        lift_edge_scores(conn)
+        import_discovery_state_json(conn)
+        import_size_cache_lanes(conn)
     conn.execute("CREATE INDEX IF NOT EXISTS ix_verdict_cand "
                  "ON verdicts(candidate_id)")
     conn.execute("CREATE INDEX IF NOT EXISTS ix_prop_state ON proposals(state)")
@@ -1418,6 +1444,112 @@ def import_human_verdicts_json(conn, path: Path | None = None) -> int:
             (r["lane"], "", r["case"], lo, hi, r.get("winner") or "",
              r.get("shown_first") or "", "", None, at))
         n += 1
+    return n
+
+
+def _add_edge_scores(conn) -> None:
+    """edges.shared/crowd/score, on a store older than the DDL. #416."""
+    for col, ddl in (("shared", "INTEGER"), ("crowd", "INTEGER"),
+                     ("score", "REAL")):
+        if col not in _columns(conn, "edges"):
+            conn.execute(f"ALTER TABLE edges ADD COLUMN {col} {ddl}")
+
+
+#: The one prose shape the neighbors path wrote into edges.note. #416.
+_EDGE_NOTE = re.compile(r"^\s*(\d+)/(\d+) at (-?[\d.]+(?:e-?\d+)?)\s*$")
+
+
+def lift_edge_scores(conn) -> dict:
+    """Move the neighbor score out of edges.note into columns, once. #416."""
+    got = {"lifted": 0, "unparsed": []}
+    for r in conn.execute("SELECT id, note FROM edges WHERE note != '' "
+                          "AND score IS NULL").fetchall():
+        m = _EDGE_NOTE.match(r["note"])
+        if not m:
+            got["unparsed"].append(r["note"])
+            continue
+        conn.execute("UPDATE edges SET shared = ?, crowd = ?, score = ?, "
+                     "note = '' WHERE id = ?",
+                     (int(m.group(1)), int(m.group(2)), float(m.group(3)),
+                      r["id"]))
+        got["lifted"] += 1
+    return got
+
+
+def record_source(conn, name: str, *, kind: str = "", url: str = "",
+                  enabled: bool = True, ok: bool = True, error: str = "",
+                  at: float | None = None) -> None:
+    """One read of a discovery source, successful or not. #416."""
+    at = time.time() if at is None else float(at)
+    conn.execute(
+        "INSERT INTO sources (name, kind, url, enabled) VALUES (?,?,?,?) "
+        "ON CONFLICT (name) DO UPDATE SET kind = excluded.kind, "
+        "url = excluded.url, enabled = excluded.enabled",
+        (name, kind, url, int(bool(enabled))))
+    if ok:
+        conn.execute("UPDATE sources SET last_read_at = ?, last_attempt_at = ?, "
+                     "last_status = 'ok', last_error = '', failures = 0 "
+                     "WHERE name = ?", (at, at, name))
+    else:
+        conn.execute("UPDATE sources SET last_attempt_at = ?, "
+                     "last_status = 'failed', last_error = ?, "
+                     "failures = failures + 1 WHERE name = ?",
+                     (at, error[:500], name))
+    conn.commit()
+
+
+def source_row(conn, name: str) -> dict | None:
+    row = conn.execute("SELECT * FROM sources WHERE name = ?",
+                       (name,)).fetchone()
+    return dict(row) if row else None
+
+
+def import_discovery_state_json(conn, path: Path | None = None) -> int:
+    """Backfill sources from the retired discovery-state.json. Read-only. #416."""
+    from harness import feeds
+    path = (Path(path) if path is not None
+            else paths.home() / "discovery-state.json")
+    try:
+        fetched = json.loads(path.read_text(encoding="utf-8")).get("fetched")
+    except (OSError, ValueError, AttributeError):
+        return 0
+    known = {s.name: s for s in feeds.DEFAULT_SOURCES}
+    n = 0
+    for name, when in (fetched or {}).items():
+        if not isinstance(when, (int, float)) or isinstance(when, bool):
+            continue
+        s = known.get(name)
+        conn.execute(
+            "INSERT INTO sources (name, kind, url, enabled) VALUES (?,?,?,?) "
+            "ON CONFLICT (name) DO NOTHING",
+            (name, s.kind if s else "", s.url if s else "",
+             int(s.enabled) if s else 1))
+        cur = conn.execute(
+            "UPDATE sources SET last_read_at = ?, last_attempt_at = "
+            "COALESCE(last_attempt_at, ?), last_status = CASE WHEN "
+            "last_status = '' THEN 'ok' ELSE last_status END WHERE name = ? "
+            "AND (last_read_at IS NULL OR last_read_at < ?)",
+            (float(when), float(when), name, float(when)))
+        n += cur.rowcount or 0
+    return n
+
+
+def import_size_cache_lanes(conn, path: Path | None = None) -> int:
+    """Lanes the HF size cache carried, onto proposals that have none. #416."""
+    from harness import lanes
+    path = (Path(path) if path is not None
+            else paths.home() / "cache" / "github" / "hf-sizes.json")
+    try:
+        cache = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return 0
+    n = 0
+    for name, hit in (cache.items() if isinstance(cache, dict) else ()):
+        lane = lanes.canonical(hit.get("lane") or "") if isinstance(hit, dict) else ""
+        if lane:
+            cur = conn.execute("UPDATE proposals SET lane = ? WHERE name = ? "
+                               "AND lane = ''", (lane, name))
+            n += cur.rowcount or 0
     return n
 
 
@@ -2372,8 +2504,12 @@ def set_size(conn: sqlite3.Connection, name: str, size_bytes: int) -> bool:
 
 
 def link(conn: sqlite3.Connection, src: str, dst: str, relation: str,
-         note: str = "") -> None:
-    """An edge between two proposals. Both must already exist."""
+         note: str = "", *, shared: int | None = None,
+         crowd: int | None = None, score: float | None = None) -> None:
+    """An edge between two proposals. Both must already exist.
+
+    A neighbor score is columns, refreshed on every link; never prose. #416.
+    """
     ids = {}
     for n in (src, dst):
         row = conn.execute("SELECT id FROM proposals WHERE name = ?",
@@ -2381,8 +2517,16 @@ def link(conn: sqlite3.Connection, src: str, dst: str, relation: str,
         if not row:
             raise KeyError(f"no proposal named {n!r}")
         ids[n] = row["id"]
-    conn.execute("INSERT OR IGNORE INTO edges (src, dst, relation, note) "
-                 "VALUES (?,?,?,?)", (ids[src], ids[dst], relation, note))
+    if score is None:
+        conn.execute("INSERT OR IGNORE INTO edges (src, dst, relation, note) "
+                     "VALUES (?,?,?,?)", (ids[src], ids[dst], relation, note))
+    else:
+        conn.execute(
+            "INSERT INTO edges (src, dst, relation, note, shared, crowd, score) "
+            "VALUES (?,?,?,?,?,?,?) ON CONFLICT (src, dst, relation) DO UPDATE "
+            "SET shared = excluded.shared, crowd = excluded.crowd, "
+            "score = excluded.score",
+            (ids[src], ids[dst], relation, note, shared, crowd, float(score)))
     conn.commit()
 
 

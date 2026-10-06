@@ -42,9 +42,12 @@ def test_a_size_cache_holding_bare_integers_still_reads():
     assert probes.cached_facts("a/b", {"a/b": 4096})["size"] == 4096
 
 
-def test_a_size_cache_entry_may_carry_a_lane():
+def test_a_size_cache_lane_comes_from_the_card_not_a_stored_lane():
+    """The cache's old `lane` field is never read; the card's task is. #416."""
     got = probes.cached_facts("a/b", {"a/b": {"size": 8, "lane": "stt"}})
-    assert got == {"size": 8, "lane": "stt"}
+    assert got == {"size": 8, "lane": ""}
+    card = {"size": 8, "pipeline_tag": "automatic-speech-recognition", "tags": []}
+    assert probes.cached_facts("a/b", {"a/b": card})["lane"] == "stt"
 
 
 def test_clone_directory_names_map_back_to_repo_names(tmp_path, monkeypatch):

@@ -174,7 +174,7 @@ def state(conn=None) -> dict:
             "funnel": funnel(conn),
             "lanes": lanes_state(conn),
             "queue": queue_state(conn),
-            "sources": feeds.staleness(),
+            "sources": feeds.staleness(store=conn),
         }
     finally:
         if close:

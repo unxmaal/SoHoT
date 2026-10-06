@@ -1932,6 +1932,7 @@ def _report_neighbors(a) -> int:
     try:
         people = nb.cohort(client=client, limit=getattr(a, "crowd", 250))
     except github.GitHubError as exc:
+        feeds.record_failure("github-crowd", str(exc))
         return err(f"{exc}. `gh auth status` to check the token.")
     if getattr(a, "control", False):
         got = nb.control(list(nb.DEFAULT_SEEDS), people, client)
@@ -1973,7 +1974,7 @@ def _report_neighbors(a) -> int:
     # both ends to exist.
     store = ms.connect()
     try:
-        feeds.record_fetch("github-crowd")
+        feeds.record_fetch("github-crowd", store=store)
         for seed in nb.DEFAULT_SEEDS:
             ms.record(store, ms.Seen(name=seed, source="installed", kind="repo",
                                      registry=ms.GITHUB,
@@ -1990,7 +1991,7 @@ def _report_neighbors(a) -> int:
                                      resolved=n.repo))
             for seed in nb.DEFAULT_SEEDS:
                 ms.link(store, seed, n.repo, "crowd",
-                        note=f"{n.shared}/{n.crowd} at {n.score:.5f}")
+                        shared=n.shared, crowd=n.crowd, score=n.score)
         if getattr(a, "judge", False):
             _judge_neighbors(found, store)
     finally:
@@ -2053,7 +2054,9 @@ def _report_sources(a) -> int:
         age = ("never read" if r["age_days"] is None
                else f"{r['age_days']:.1f} days ago")
         mark = "STALE" if r["stale"] else "ok   "
-        print(f"  {mark} {r['name']:24} {age}")
+        fails = (f"; {r['failures']} failed read(s) since: {r['last_error'][:80]}"
+                 if r.get("failures") else "")
+        print(f"  {mark} {r['name']:24} {age}{fails}")
         print(f"        {r['url']}")
     # WHICH LANES CAN BE REACHED AT ALL. Three lanes had no source and nobody
     # could see it, because nothing anywhere asked the question (#240). Read
