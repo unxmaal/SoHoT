@@ -345,3 +345,13 @@ def test_a_declined_tool_is_not_a_gap():
 
 _APPLE = _mach.Machine(frozenset({"mlx", "cpu"}),
                        _Accelerator("unified", 32.0, 25.0, "Mac16,1"))
+
+
+def test_an_unmeasured_model_below_a_measured_registry_head_is_proposed(monkeypatch):
+    """#386: the registry's top `limit` were all measured, so nothing came back."""
+    registry = [{"id": f"org/m{i}", "downloads": 100 - i,
+                 "lastModified": "2026-09-01"} for i in range(10)]
+    monkeypatch.setattr(discover, "_hf_models", lambda q, limit: registry[:limit])
+    monkeypatch.setattr(discover, "measured", lambda: {"m0", "m1", "m2"})
+    names = [c.name for c in discover.external("stt", limit=3)]
+    assert names == ["org/m3", "org/m4", "org/m5"]
