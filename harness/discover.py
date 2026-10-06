@@ -635,7 +635,7 @@ def from_feeds(sources=None, reader=None, verify=True,
     from harness import memory_store as ms
 
     sources = feeds.load_sources() if sources is None else sources
-    reader = reader or feeds.read
+    reader = reader or (lambda src: feeds.read(src, store=store))
     done = measured()
     out: list[Capability] = []
     seen: set[str] = set()

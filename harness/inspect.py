@@ -451,12 +451,11 @@ def hf_facts(model_id: str, fetch=None, cache: dict | None = None) -> dict:
     from harness import feeds
     if cache is not None and model_id in cache:
         got = cache[model_id]
-        if isinstance(got, dict):
-            return got
-        # A size-only entry predates lanes. Returning it would report every
-        # already-sized model as unmeasurable, which is how this first read:
-        # 0 queued and 14 orphans, several of them plainly STT and image
-        # models. Fall through and upgrade the entry instead.
+        # The cache holds the registry's answer; the lane is derived on read.
+        # An entry without the card fields predates that and is refetched. #416.
+        if isinstance(got, dict) and "pipeline_tag" in got:
+            return {"size": int(got.get("size") or -1),
+                    "lane": lane_for(got)}
     if fetch is None:
         def fetch(url):
             return feeds.fetch(url, retries=SIZE_RETRIES, delay=SIZE_DELAY)
@@ -470,8 +469,27 @@ def hf_facts(model_id: str, fetch=None, cache: dict | None = None) -> dict:
     # Only a real answer is worth keeping. Caching a failure would freeze a
     # rate-limit into a permanent "unknown".
     if cache is not None and out["size"] > 0:
-        cache[model_id] = out
+        cache[model_id] = cache_entry(data, out["size"])
     return out
+
+
+#: What hf-sizes.json keeps of a registry answer: the response, never a verdict. #416.
+CACHED_CARD = ("pipeline_tag", "tags")
+
+
+def cache_entry(data: dict, size: int) -> dict:
+    entry = {"size": int(size)}
+    for k in CACHED_CARD:
+        entry[k] = data.get(k) or ([] if k == "tags" else "")
+    return entry
+
+
+def _write_size_cache(cache: dict) -> None:
+    """Write the HTTP cache, dropping the lane older entries carried. #416."""
+    clean = {k: ({f: x for f, x in v.items() if f != "lane"}
+                 if isinstance(v, dict) else v) for k, v in cache.items()}
+    _sizes_path().write_text(json.dumps(clean, indent=1, sort_keys=True),
+                             encoding="utf-8")
 
 
 def hf_size(model_id: str, fetch=None, cache: dict | None = None) -> int:
@@ -953,7 +971,7 @@ def inspect(repo: str, workdir: Path, *, meta: dict | None = None,
     fit.unsized += [i for i in found["hf_ids"] if i not in picked]
     if len(cache) > before:
         try:
-            _sizes_path().write_text(json.dumps(cache, indent=1, sort_keys=True), encoding="utf-8")
+            _write_size_cache(cache)
         except OSError:
             pass
     fit.largest = max(fit.weights.values(), default=0)

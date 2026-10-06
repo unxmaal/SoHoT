@@ -38,7 +38,9 @@ def cached_facts(model_id: str, cache: dict | None = None) -> dict:
     a verdict `decide` already understands, rather than a fetch."""
     hit = (cache or {}).get(model_id)
     if isinstance(hit, dict):
-        return {"size": int(hit.get("size") or 0), "lane": hit.get("lane") or ""}
+        from harness.inspect import lane_for
+        return {"size": int(hit.get("size") or 0),
+                "lane": lane_for(hit) if "pipeline_tag" in hit else ""}
     if isinstance(hit, (int, float)):
         return {"size": int(hit), "lane": ""}
     return {"size": 0, "lane": ""}

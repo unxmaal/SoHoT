@@ -10,6 +10,7 @@ from pathlib import Path
 import pytest
 
 from harness import discover, feeds, paths
+from harness import memory_store as ms
 from harness import machine as mach
 from harness.memory import Accelerator
 from harness.feeds import FeedError, Source
@@ -93,17 +94,18 @@ def test_a_known_source_is_not_proposed_back(week):
 # ---- schedule -------------------------------------------------------------
 
 def test_a_never_read_source_is_stale(tmp_path):
-    rows = feeds.staleness([Source("s", "u")], path=tmp_path / "state.json")
+    store = ms.connect(tmp_path / "d.db")
+    rows = feeds.staleness([Source("s", "u")], store=store)
     assert rows[0]["stale"] and rows[0]["last_fetched"] is None
 
 
 def test_staleness_turns_over_at_the_interval(tmp_path):
-    state = tmp_path / "state.json"
+    store = ms.connect(tmp_path / "d.db")
     now = time.time()
-    feeds.record_fetch("s", when=now - 20 * 86400, path=state)
-    fresh = feeds.staleness([Source("s", "u")], now=now, days=30, path=state)
+    feeds.record_fetch("s", when=now - 20 * 86400, store=store)
+    fresh = feeds.staleness([Source("s", "u")], now=now, days=30, store=store)
     assert not fresh[0]["stale"]
-    stale = feeds.staleness([Source("s", "u")], now=now, days=10, path=state)
+    stale = feeds.staleness([Source("s", "u")], now=now, days=10, store=store)
     assert stale[0]["stale"]
     assert stale[0]["age_days"] == pytest.approx(20, abs=0.01)
 
@@ -642,28 +644,30 @@ def test_the_suite_gets_its_own_home(_home):
     assert paths.home() != feeds.paths.DEFAULT_HOME
 
 
-def test_reading_a_source_stamps_the_state_it_was_given(tmp_path):
+def test_reading_a_source_stamps_the_store_it_was_given(tmp_path):
     """read() redirected cache_dir and not the state write, so a test that
-    looked isolated stamped the user's real discovery-state.json."""
-    state = tmp_path / "state.json"
+    looked isolated stamped the user's real discovery-state.json. #188, #416."""
+    store = ms.connect(tmp_path / "d.db")
     src = Source("s", "https://example.invalid/f.rss")
-    feeds.read(src, cache_dir=tmp_path, state=state,
+    feeds.read(src, cache_dir=tmp_path, store=store,
                fetcher=lambda u: WEEK.read_text(encoding="utf-8"))
-    assert feeds.last_fetched("s", path=state) is not None
+    assert feeds.last_fetched("s", store=store) is not None
+    assert not (paths.home() / "discovery.db").exists()
 
 
 def test_reading_a_source_never_stamps_the_developers_real_home(tmp_path, _home):
     """The negative half, and the one that would have caught #188: with no
-    `state` given the write still has to land under LOCALHARNESS_HOME, never
+    store given the write still has to land under LOCALHARNESS_HOME, never
     at the hardcoded default that is somebody's actual machine."""
-    real = paths.DEFAULT_HOME / "discovery-state.json"
-    before = real.read_bytes() if real.exists() else None
+    real = [paths.DEFAULT_HOME / "discovery-state.json"]
+    before = [p.stat().st_mtime_ns if p.exists() else None for p in real]
 
     src = Source("s", "https://example.invalid/f.rss")
     feeds.read(src, cache_dir=tmp_path,
                fetcher=lambda u: WEEK.read_text(encoding="utf-8"))
 
-    assert (_home / "discovery-state.json").exists()
+    assert (_home / "discovery.db").exists()
+    assert not (_home / "discovery-state.json").exists()
     assert feeds.last_fetched("s") is not None
-    after = real.read_bytes() if real.exists() else None
+    after = [p.stat().st_mtime_ns if p.exists() else None for p in real]
     assert after == before, "a test wrote to the developer's real home"

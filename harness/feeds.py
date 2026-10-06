@@ -262,10 +262,6 @@ def config_path() -> Path:
     return paths.home() / "discovery-sources.json"
 
 
-def state_path() -> Path:
-    return paths.home() / "discovery-state.json"
-
-
 def interval_days() -> int:
     raw = os.environ.get(INTERVAL_ENV, "")
     try:
@@ -299,39 +295,76 @@ def save_sources(sources: list[Source], path: Path | None = None) -> Path:
     return path
 
 
-def _state(path: Path | None = None) -> dict:
-    try:
-        return json.loads(Path(path or state_path()).read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return {}
+class _Store:
+    """The given store connection, or a default one opened and closed here."""
+
+    def __init__(self, conn=None):
+        self.conn, self.mine = conn, conn is None
+
+    def __enter__(self):
+        if self.mine:
+            from harness import memory_store as ms
+            self.conn = ms.connect()
+        return self.conn
+
+    def __exit__(self, *exc):
+        if self.mine:
+            self.conn.close()
 
 
-def record_fetch(name: str, when: float | None = None,
-                 path: Path | None = None) -> None:
-    p = Path(path or state_path())
-    s = _state(p)
-    s.setdefault("fetched", {})[name] = when if when is not None else time.time()
-    p.parent.mkdir(parents=True, exist_ok=True)
-    p.write_text(json.dumps(s, indent=2), encoding="utf-8")
+def _source(name) -> Source:
+    if isinstance(name, Source):
+        return name
+    for s in DEFAULT_SOURCES:
+        if s.name == name:
+            return s
+    return Source(name, "", kind="")
 
 
-def last_fetched(name: str, path: Path | None = None) -> float | None:
-    return _state(path).get("fetched", {}).get(name)
+def record_fetch(source, when: float | None = None, store=None) -> None:
+    """A successful read of `source`, into the store's sources table. #416."""
+    from harness import memory_store as ms
+    s = _source(source)
+    with _Store(store) as conn:
+        ms.record_source(conn, s.name, kind=s.kind, url=s.url,
+                         enabled=s.enabled, at=when)
+
+
+def record_failure(source, error: str, when: float | None = None,
+                   store=None) -> None:
+    """A failed read: last_read_at stays, failures counts up. #416."""
+    from harness import memory_store as ms
+    s = _source(source)
+    with _Store(store) as conn:
+        ms.record_source(conn, s.name, kind=s.kind, url=s.url,
+                         enabled=s.enabled, ok=False, error=error, at=when)
+
+
+def last_fetched(name: str, store=None) -> float | None:
+    from harness import memory_store as ms
+    with _Store(store) as conn:
+        row = ms.source_row(conn, name)
+    return None if row is None else row["last_read_at"]
 
 
 def staleness(sources: list[Source] | None = None, now: float | None = None,
-              days: int | None = None, path: Path | None = None) -> list[dict]:
+              days: int | None = None, store=None) -> list[dict]:
     """Per source: when it was last read and whether that is too long ago."""
+    from harness import memory_store as ms
     now = time.time() if now is None else now
     days = interval_days() if days is None else days
     out = []
-    for s in sources if sources is not None else load_sources():
-        when = last_fetched(s.name, path)
-        age = None if when is None else (now - when) / 86400.0
-        out.append({"name": s.name, "url": s.url, "enabled": s.enabled,
-                    "last_fetched": when, "age_days": age,
-                    "interval_days": days,
-                    "stale": when is None or age > days})
+    with _Store(store) as conn:
+        for s in sources if sources is not None else load_sources():
+            row = ms.source_row(conn, s.name) or {}
+            when = row.get("last_read_at")
+            age = None if when is None else (now - when) / 86400.0
+            out.append({"name": s.name, "url": s.url, "enabled": s.enabled,
+                        "last_fetched": when, "age_days": age,
+                        "interval_days": days,
+                        "failures": int(row.get("failures") or 0),
+                        "last_error": row.get("last_error") or "",
+                        "stale": when is None or age > days})
     return out
 
 
@@ -624,24 +657,25 @@ def find_feed(url: str, fetcher=fetch, probe=probe) -> tuple[str, str]:
 
 
 def read(source: Source, cache_dir: Path | None = None,
-         ttl_hours: float = 12.0, fetcher=fetch,
-         state: Path | None = None) -> list[Entry]:
+         ttl_hours: float = 12.0, fetcher=fetch, store=None) -> list[Entry]:
     """Entries for one source, from a cached copy when it is fresh enough.
 
-    `state` is redirectable for the same reason `cache_dir` is. Without it this
-    function wrote half its output to wherever the caller asked and half to the
-    real home, so a test that redirected the cache still stamped the user's
-    discovery-state.json. Issue #188.
+    Every network read, good or bad, is a sources row in `store` (the default
+    store under the current home when None). #188, #416.
     """
     cache_dir = Path(cache_dir or (paths.home() / "cache" / "feeds"))
     cache_dir.mkdir(parents=True, exist_ok=True)
     cached = cache_dir / f"{re.sub(r'[^A-Za-z0-9_-]', '_', source.name)}.xml"
     if cached.exists() and (time.time() - cached.stat().st_mtime) < ttl_hours * 3600:
         return parse(cached.read_text(encoding="utf-8"))
-    text = fetcher(source.url)
-    entries = parse(text)          # parse before caching, never cache a block page
+    try:
+        text = fetcher(source.url)
+        entries = parse(text)      # parse before caching, never cache a block page
+    except Exception as exc:
+        record_failure(source, str(exc), store=store)
+        raise
     cached.write_text(text, encoding="utf-8")
-    record_fetch(source.name, path=state)
+    record_fetch(source, store=store)
     return entries
 
 
