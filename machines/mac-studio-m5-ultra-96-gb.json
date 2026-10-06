@@ -23,12 +23,12 @@
   }
  ],
  "export_version": 1,
- "generated_at": "2026-10-06T19:39:27Z",
+ "generated_at": "2026-10-06T19:49:55Z",
  "lanes": [
   {
    "adopted": true,
    "adopted_how": "by-hand",
-   "age_days": 0.2,
+   "age_days": 0.21,
    "comparison": [
     {
      "candidate": "mflux/flux2-klein-4b-q8",
@@ -75,7 +75,7 @@
   {
    "adopted": true,
    "adopted_how": "measured",
-   "age_days": 0.04,
+   "age_days": 0.05,
    "comparison": [
     {
      "candidate": "llamacpp:Ornith-1.5-35B-Q4_K_M",
@@ -211,7 +211,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 0.0,
+   "age_days": 0.01,
    "comparison": [
     {
      "candidate": "q3-30b",
@@ -267,7 +267,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 0.9,
+   "age_days": 0.91,
    "comparison": [
     {
      "candidate": "h3/minimax-h3@ssd_streaming=false",
@@ -357,7 +357,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 0.79,
+   "age_days": 0.8,
    "comparison": [
     {
      "candidate": "claude-code:claude-opus-5-5",
@@ -435,7 +435,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 0.97,
+   "age_days": 0.98,
    "comparison": [
     {
      "candidate": "parakeet-tdt-0.6b-v2",
@@ -469,7 +469,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 0.28,
+   "age_days": 0.29,
    "comparison": [
     {
      "candidate": "Kokoro-82M-bf16/bm_george",
@@ -521,7 +521,7 @@
   "first_seen": "2026-10-05T19:28:52Z",
   "hw_model": "Mac17,15",
   "label": "Mac Studio M5 Ultra 96 GB",
-  "last_seen": "2026-10-06T19:39:27Z",
+  "last_seen": "2026-10-06T19:49:55Z",
   "memory_gb": 96.0,
   "os": "macOS 27.0.1",
   "runtimes": [
@@ -544,5 +544,5 @@
    "transformers": "5.16.1"
   }
  },
- "schema": 39
+ "schema": 40
 }
