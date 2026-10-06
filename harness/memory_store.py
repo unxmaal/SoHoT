@@ -21,7 +21,7 @@ from pathlib import Path
 
 from harness import paths, store
 
-SCHEMA_VERSION = 44
+SCHEMA_VERSION = 45
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
 VERDICTS = ("measured", "declined", "broken", "queued", "ignored", "screened")

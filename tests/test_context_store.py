@@ -227,7 +227,7 @@ def test_an_older_store_gains_the_columns(tmp_path):
     raw.execute("DROP TABLE downloads")
     raw.execute("ALTER TABLE d2 RENAME TO downloads")
     raw.execute("UPDATE meta SET value = ? WHERE key = 'schema'",
-                ("43",))
+                ("44",))
     raw.commit()
     raw.close()
     c = ms.connect(path)
