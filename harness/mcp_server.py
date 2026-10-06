@@ -4,12 +4,16 @@ A second agent on another machine (its own Claude Code, its own context) asks
 this one to draw something. What crosses the network is a tool call; what runs
 here is the same command line a local agent would type.
 
-THAT IS THE DESIGN CONSTRAINT. Every tool shells out to `lh`. The repo's
+THAT IS THE DESIGN CONSTRAINT. Every media tool shells out to `lh`. The repo's
 standing rule is that the CLI and the eval suite run identical commands,
 because for a while only the eval knew how to invoke a generator and the
 harness could measure something the product did not ship. A third caller obeys
 the same rule, and shelling out is how it stays true by construction rather
 than by discipline.
+
+local_complete and local_decide (#475) call harness.delegate in-process, because
+the caller wants the first-token time and the model that answered; they share
+the lane commands' route rather than their argv.
 
 svg, web and code answer directly. image and video go on the shared work
 queue (harness/workqueue.py, #353): they return a job id at once, run in order
@@ -27,9 +31,10 @@ import time
 from pathlib import Path
 
 from mcp.server.mcpserver import MCPServer
+from mcp.server.mcpserver.exceptions import ToolError
 from pydantic import BaseModel
 
-from harness import env, exclusive, paths, workqueue
+from harness import completion, delegate, env, exclusive, paths, workqueue
 
 
 class JobInfo(BaseModel):
@@ -58,7 +63,8 @@ class JobInfo(BaseModel):
 # what a tool result carries rather than the bytes. Under the ONE output root,
 # in its own subdirectory: a caller should be able to tell what a remote agent
 # asked for from what someone typed here.
-OUTDIR = paths.outputs() / "mcp"
+#: None means paths.outputs()/mcp, resolved per call so LOCALHARNESS_HOME is read when used.
+OUTDIR: Path | None = None
 #: This interpreter, not `lh` on PATH, which runs whatever checkout installed it. #290.
 LH = [sys.executable, "-m", "harness.cli"]
 DEFAULT_TIMEOUT = 300.0
@@ -70,7 +76,9 @@ SERVER = MCPServer(
         "a few seconds. image and video go on this machine's work queue and "
         "return a job id at once: jobs run in order, and only while nobody is "
         "using the machine, so a job may wait. Poll job_status; when it is "
-        "done, job_result returns the file itself."),
+        "done, job_result returns the file itself. local_complete and "
+        "local_decide hand a text subtask to this machine's adopted local "
+        "model and answer directly."),
 )
 
 
@@ -79,7 +87,8 @@ def run_lh(argv: list[str], timeout: float = DEFAULT_TIMEOUT) -> str:
     r = subprocess.run(argv, capture_output=True, text=True, timeout=timeout,
                        env=_child_env())
     if r.returncode != 0:
-        raise RuntimeError(
+        # ToolError, or the SDK hides the message from the caller. #477.
+        raise ToolError(
             (r.stderr or r.stdout).strip()[:600] or f"{argv[len(LH)]} exited {r.returncode}")
     return r.stdout.strip()
 
@@ -95,7 +104,7 @@ def _child_env() -> dict:
 
 
 def _out(kind: str, suffix: str) -> Path:
-    return paths.artifact(kind, suffix, where=OUTDIR)
+    return paths.artifact(kind, suffix, where=OUTDIR or paths.outputs() / "mcp")
 
 
 SUFFIX = {"svg": ".svg", "web": ".html", "code": ".txt"}
@@ -116,7 +125,7 @@ def _text_tool(verb: str, prompt: str, model: str = "") -> str:
         argv += ["-m", model]
     run_lh(argv)
     if not out.exists():
-        raise RuntimeError(f"soh {verb} exited 0 but wrote nothing to {out}")
+        raise ToolError(f"soh {verb} exited 0 but wrote nothing to {out}")
     return out.read_text(encoding="utf-8")
 
 
@@ -155,6 +164,67 @@ def web(prompt: str, model: str = "") -> str:
                          "around it.")
 def code(prompt: str, model: str = "") -> str:
     return _text_tool("code", prompt, model)
+
+
+# ---------------------------------------------------------------------------
+# Delegation: a text subtask on the lane's adopted model, answered directly. #475.
+# ---------------------------------------------------------------------------
+
+class LocalCompletion(BaseModel):
+    text: str
+    lane: str
+    #: What the lane resolved to (alias or repo id); `model` is what answered.
+    spec: str
+    model: str
+    ttft_s: float | None = None
+    seconds: float
+    prompt_tokens: int | None = None
+    completion_tokens: int | None = None
+
+
+class LocalDecision(BaseModel):
+    answers: dict[str, str]
+    probabilities: dict[str, dict[str, float]]
+    spec: str
+    model: str
+    ttft_s: float | None = None
+    seconds: float
+    prompt_tokens: int | None = None
+    completion_tokens: int | None = None
+
+
+def _delegated(call, *args, **kw) -> dict:
+    try:
+        return call(*args, **kw)
+    except (ValueError, completion.CompletionError) as exc:
+        raise ToolError(str(exc)) from exc
+
+
+@SERVER.tool(description=(
+    "Hand a text subtask to this machine's adopted local model for a lane "
+    "(code, web, svg, extract, decide) and get the text back with the model "
+    "that answered, time to first token and total seconds. Good for "
+    "boilerplate, test scaffolding, summaries and bulk rewriting; it sees only "
+    "the prompt you pass. `system` replaces the lane's own system prompt. "
+    "Refuses rather than waits when the machine is busy with a batch run."))
+def local_complete(prompt: str, lane: str = "code", system: str | None = None,
+                   max_tokens: int = 2048,
+                   temperature: float | None = None) -> LocalCompletion:
+    got = _delegated(delegate.complete, lane, prompt, system=system,
+                     max_tokens=max_tokens, temperature=temperature)
+    return LocalCompletion(**{k: got[k] for k in LocalCompletion.model_fields})
+
+
+@SERVER.tool(description=(
+    "Classify with the decide lane's adopted local model. `schema` maps each "
+    "snake_case field name to {\"type\": \"enum\", \"choices\": [...], "
+    "\"description\": ...} or {\"type\": \"boolean\", \"description\": ...}; "
+    "returns the "
+    "chosen answer per field and a probability per choice. `context` is the "
+    "material to judge. Cheap enough for bulk labelling."))
+def local_decide(question: str, schema: dict, context: str = "") -> LocalDecision:
+    got = _delegated(delegate.decide, question, schema, context=context)
+    return LocalDecision(**{k: got[k] for k in LocalDecision.model_fields})
 
 
 # ---------------------------------------------------------------------------
