@@ -246,7 +246,7 @@ refused rather than answered in a substitute voice.
 
 Each machine keeps its own receipts, so a GitHub runner has nothing to measure.
 Instead each machine publishes its own slice and a workflow renders the set at
-https://unxmaal.github.io/sohot/: a section per machine, a lane table across
+https://unxmaal.github.io/SoHoT/: a section per machine, a lane table across
 machines, and when each machine last published, so a quiet machine reads as
 stale rather than current.
 
