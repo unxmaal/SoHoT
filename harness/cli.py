@@ -1738,7 +1738,7 @@ def _report_screen(a) -> int:
     """
     import subprocess
 
-    from harness import candidates, rank, screen
+    from harness import candidates, rank, router, screen
     from harness import memory_store as ms
 
     want = (getattr(a, "lane", "") or "").strip().lower()
@@ -1820,6 +1820,7 @@ def _report_screen(a) -> int:
                               run_id=(stored or {}).get("run_id"),
                               reason=verdict.reason, until=verdict.until,
                               candidate_id=cid)
+            router.release_spec(r["candidate"], f"screened {r['name']}")
             if verdict.failure_class in reasons.STOPS:
                 print(f"   {verdict.failure_class}: the model server or GPU is "
                       f"suspect; stopping the screen so the rest are not "
@@ -2226,7 +2227,16 @@ def _report_loop(a) -> int:
         print("\ninspect, fetch, screen and measure not run. Add --run to "
               "spend the disk and the minutes.")
         return rc
-    return _loop_spend(a, rc)
+    return _spend_and_settle(a, rc)
+
+
+def _spend_and_settle(a, rc: int) -> int:
+    """_loop_spend, then leave only lane defaults resident in the router. #444."""
+    from harness import router
+    try:
+        return _loop_spend(a, rc)
+    finally:
+        router.settle("the discovery loop is done")
 
 
 def _loop_spend(a, rc: int) -> int:
@@ -2312,6 +2322,17 @@ def measurable(store, top: int, want: str = "") -> list[dict]:
 
 
 def _measure_and_adopt(a, row: dict) -> int:
+    """_measure, then unload the challenger it loaded. #444."""
+    from harness import router
+    loaded: list[str] = []
+    try:
+        return _measure(a, row, loaded)
+    finally:
+        for spec in loaded:
+            router.release_spec(spec, f"measured {row['name']}")
+
+
+def _measure(a, row: dict, loaded: list) -> int:
     """One challenger against the lane's incumbent, then the verdict.
 
     PAIRED AND IN ONE RUN. Both candidates see the same cases, the same repeat
@@ -2384,6 +2405,7 @@ def _measure_and_adopt(a, row: dict) -> int:
         argv += ["--gateway", route]
     print(f"\n  {lane}: {name} against {incumbent}")
     print(f"    {' '.join(argv)}", flush=True)
+    loaded.append(spec)
     proc = subprocess.run(argv, capture_output=True, text=True)
     if proc.returncode != 0:
         err(proc.stderr.strip()[-400:] or "no stderr")
