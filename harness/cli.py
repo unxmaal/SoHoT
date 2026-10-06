@@ -1371,9 +1371,12 @@ def cmd_judge(a) -> int:
                 if incumbent not in (challenger, spec):
                     # Decided on the names the pairs carry, recorded as the
                     # spec, which is what a lane can run. #337.
-                    adopt.record(store, dataclasses.replace(
-                        adopt.decide_by_hand(lane_, incumbent, challenger,
-                                             pairs_), challenger=spec))
+                    try:
+                        adopt.record(store, dataclasses.replace(
+                            adopt.decide_by_hand(lane_, incumbent, challenger,
+                                                 pairs_), challenger=spec))
+                    except ms.IllegalTransition as exc:
+                        note(f"  skipped {exc}")
             store.commit()
         finally:
             store.close()
@@ -1760,9 +1763,9 @@ def _report_screen(a) -> int:
             room, why_not = memory.check_model(r["name"], spec=r["candidate"])
             if not room:
                 print(f"   QUEUED: {why_not}")
-                ms.decide(store, r["name"], "queued", tier=ms.SCREEN,
-                          detail=f"not screened: {why_not}"[:600],
-                          until=f"memory_gb:>{memory.available_gb():.1f}")
+                ms.decide_or_skip(store, r["name"], "queued", tier=ms.SCREEN,
+                                  detail=f"not screened: {why_not}"[:600],
+                                  until=f"memory_gb:>{memory.available_gb():.1f}")
                 continue
             # Its own receipt directory, not the newest for the modality. #282.
             outdir = paths.runs() / f"screen-{int(time.time())}-{r['modality']}"
@@ -1771,9 +1774,9 @@ def _report_screen(a) -> int:
                                       capture_output=True, text=True)
             except OSError as exc:
                 print(f"   QUEUED: the screen could not start: {exc}")
-                ms.decide(store, r["name"], "queued", tier=ms.SCREEN,
-                          detail=f"not screened: the screen could not start: "
-                                 f"{exc}"[:600])
+                ms.decide_or_skip(store, r["name"], "queued", tier=ms.SCREEN,
+                                  detail=f"not screened: the screen could not start: "
+                                         f"{exc}"[:600])
                 continue
             # The RUN's own summary, read from what it wrote rather than parsed
             # out of its chatter: a tier that infers an outcome from stdout is
@@ -1800,10 +1803,10 @@ def _report_screen(a) -> int:
             # A terminal verdict whose evidence is gone cannot be re-judged.
             evidence = " ".join((proc.stderr or "").split())[-300:]
             detail = f"{why} || {evidence}" if evidence else why
-            ms.decide(store, r["name"], got, tier=ms.SCREEN,
-                      detail=detail[:600],
-                      run_path=str(outdir) if outdir.exists() else "",
-                      until=screen.load_until(r["candidate"])
+            ms.decide_or_skip(store, r["name"], got, tier=ms.SCREEN,
+                              detail=detail[:600],
+                              run_path=str(outdir) if outdir.exists() else "",
+                              until=screen.load_until(r["candidate"])
                       if got == "declined" else "", candidate_id=cid)
             if any(d in detail.lower() for d in screen.SERVER_DEAD):
                 print("   the model server has died; stopping the screen so "
@@ -2433,6 +2436,8 @@ def _measure_and_adopt(a, row: dict) -> int:
     try:
         # On the proposal the candidate maps to, so it leaves survivors. #393.
         adopt.record(store, verdict, spec=spec)
+    except ms.IllegalTransition as exc:
+        print(f"  skipped {exc}", flush=True)
     finally:
         store.close()
     return 0

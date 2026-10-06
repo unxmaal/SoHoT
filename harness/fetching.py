@@ -464,8 +464,8 @@ def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=N
             # the row is a dead end: 34 rows in the real store were declined
             # here and runnable on the box with the card, and nothing could
             # find them. Issue #266.
-            ms.decide(conn, row["name"], "declined", tier="fetch", detail=why,
-                      until=f"runtime:{needs.removeprefix('needs-')}")
+            ms.decide_or_skip(conn, row["name"], "declined", tier="fetch", detail=why,
+                              until=f"runtime:{needs.removeprefix('needs-')}")
             done.append({"repo": row["name"], "ok": False, "why": why})
             continue
         # A LANE HAVING A RUNNER IS NOT A RUNNER TAKING THIS MODEL, and this
@@ -480,15 +480,15 @@ def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=N
             row.get("lane") or "", row["name"], row.get("description") or ""))
         if gap:
             why = f"{gap}: no runner in the {row['lane']} lane can load it"
-            ms.decide(conn, row["name"], "queued", tier="fetch", detail=why)
+            ms.decide_or_skip(conn, row["name"], "queued", tier="fetch", detail=why)
             done.append({"repo": row["name"], "ok": False, "why": why})
             continue
         attachment = screen.is_attachment(row.get("description") or "")
         if attachment:
             why = (f"{attachment} in its own card: this attaches to a model "
                    f"rather than being one, and no lane can run it alone")
-            ms.decide(conn, row["name"], "declined", tier="fetch", detail=why,
-                      attaches_to=attachment)
+            ms.decide_or_skip(conn, row["name"], "declined", tier="fetch", detail=why,
+                              attaches_to=attachment)
             done.append({"repo": row["name"], "ok": False, "why": why})
             continue
         # `limit` bounds DOWNLOADS, not decisions. Counting refusals against it
@@ -504,13 +504,13 @@ def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=N
             why = (f"{size / GIB:.1f} GiB would take this run past its "
                    f"{budget / GIB:.0f} GiB budget ({spent / GIB:.1f} GiB "
                    f"already fetched)")
-            ms.decide(conn, row["name"], "queued", tier="fetch", detail=why)
+            ms.decide_or_skip(conn, row["name"], "queued", tier="fetch", detail=why)
             done.append({"repo": name, "ok": False, "why": why})
             continue
         p = plan(name, size, free=free)
         if not p.ok:
             outcome = "queued" if refused_by_harness(p.why) else "declined"
-            ms.decide(conn, row["name"], outcome, tier="fetch", detail=p.why)
+            ms.decide_or_skip(conn, row["name"], outcome, tier="fetch", detail=p.why)
             done.append({"repo": name, "ok": False, "why": p.why})
             continue
         try:
@@ -540,7 +540,7 @@ def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=N
             except FetchError as exc:
                 done.append({"repo": dep, "ok": False,
                              "why": f"needed by {name}: {exc}"})
-        ms.decide(conn, row["name"], "queued", tier="fetch",
-                  detail=f"downloaded to {where}", run_path=where)
+        ms.decide_or_skip(conn, row["name"], "queued", tier="fetch",
+                          detail=f"downloaded to {where}", run_path=where)
         done.append({"repo": name, "ok": True, "why": where})
     return done

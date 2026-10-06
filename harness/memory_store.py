@@ -1481,6 +1481,15 @@ def retract(conn, name: str, why: str, *, outcome: str = "queued",
                   reopen=RETRACTION, reason=why)
 
 
+def decide_or_skip(conn, name: str, outcome: str, **kw) -> int | None:
+    """decide() for a tier loop: a refused move says so and returns None."""
+    try:
+        return decide(conn, name, outcome, **kw)
+    except IllegalTransition as exc:
+        print(f"  skipped {exc}", flush=True)
+        return None
+
+
 def state_audit(conn) -> dict:
     """Proposals whose history the transition table would fold differently,
     and those once terminal and now open, for a person to decide. #409."""
@@ -1885,8 +1894,10 @@ def retire_unlisted(conn: sqlite3.Connection, name: str, keep,
             continue
         if any(p != name for p in parents(conn, other, relation)):
             continue      # another repo still names it; not ours to retire
-        decide(conn, other, outcome, tier="inspect", detail=reason[:200])
-        retired.append(other)
+        # The state can move between the read above and this write.
+        if decide_or_skip(conn, other, outcome, tier="inspect",
+                          detail=reason[:200]) is not None:
+            retired.append(other)
     return retired
 
 

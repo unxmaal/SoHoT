@@ -340,3 +340,138 @@ def test_a_reopen_kind_can_be_limited_to_some_states(store, monkeypatch):
     assert store.execute("SELECT reopen_kind FROM verdicts WHERE id = ?",
                          (vid,)).fetchone()[0] == "retest"
     assert _state(store, "org/x") == ("queued", ms.SCREEN)
+
+
+# --- a refusal in a tier loop skips one candidate, never the sweep -----------
+
+def _race(monkeypatch, victim):
+    """Another writer answers `victim` between this tier's plan and its write."""
+    real = ms.decide
+    fired = []
+
+    def racing(conn, name, outcome, **kw):
+        if name == victim and not fired:
+            fired.append(name)
+            real(conn, name, "measured", tier=ms.ADOPT, detail="decided elsewhere")
+        return real(conn, name, outcome, **kw)
+
+    monkeypatch.setattr(ms, "decide", racing)
+    return fired
+
+
+def test_a_refused_fetch_write_does_not_stop_the_next(store, monkeypatch, capsys):
+    monkeypatch.setattr(fetching, "have", lambda *a, **k: False)
+    monkeypatch.setattr(fetching, "download",
+                        lambda name, snapshot=None: f"/x/{name}")
+    monkeypatch.setattr(fetching, "requires", lambda name: [])
+    monkeypatch.setattr("harness.rank.serving", lambda *a, **k: set())
+    monkeypatch.setattr("harness.rank.lanes_with_receipts", lambda *a, **k: set())
+    for name in ("org/a", "org/b"):
+        _see(store, name)
+        ms.decide(store, name, "queued", tier=ms.INSPECT,
+                  detail=f"bytes={fetching.GIB}")
+    fired = _race(monkeypatch, "org/a")
+    got = fetching.run(store, {"org/a": fetching.GIB, "org/b": fetching.GIB},
+                       limit=5, free=500 * fetching.GIB)
+    assert fired and {g["repo"] for g in got} == {"org/a", "org/b"}
+    assert _state(store, "org/a") == ("measured", ms.ADOPT)
+    assert _state(store, "org/b") == ("queued", "fetch")
+    assert "skipped org/a" in capsys.readouterr().out
+
+
+class _Done:
+    returncode = 0
+    stderr = ""
+
+
+def test_a_refused_screen_write_does_not_stop_the_next(monkeypatch, tmp_path,
+                                                      capsys):
+    import argparse
+    import subprocess
+
+    from harness import cli, memory, screen
+
+    real = ms.connect
+    monkeypatch.setattr(ms, "connect", lambda *a, **k: real(tmp_path / "d.db"))
+    conn = ms.connect()
+    for n in ("org/first", "org/second"):
+        _see(conn, n)
+    conn.close()
+    plan = [{"name": n, "state": screen.READY, "candidate": n,
+             "modality": "code", "why_not": ""}
+            for n in ("org/first", "org/second")]
+    monkeypatch.setattr(cli, "_screen_plan", lambda want: plan)
+    monkeypatch.setattr(memory, "check_model", lambda *a, **k: (True, ""))
+    monkeypatch.setattr(screen, "argv", lambda r, **k: ["screen", r["name"]])
+    ran = []
+    monkeypatch.setattr(subprocess, "run", lambda argv, **kw: (
+        argv[0] == "screen" and ran.append(argv[-1])) or _Done())
+    monkeypatch.setattr(cli, "_summary_at", lambda out: {"x": {"passed": 0}})
+    monkeypatch.setattr(screen, "outcome",
+                        lambda *a, **k: ("broken", "it ran and passed nothing"))
+    fired = _race(monkeypatch, "org/first")
+    cli._report_screen(argparse.Namespace(lane="", top=5, limit=5, run=True,
+                                          json=False))
+    assert fired and ran == ["org/first", "org/second"]
+    conn = ms.connect()
+    try:
+        assert _state(conn, "org/first") == ("measured", ms.ADOPT)
+        assert _state(conn, "org/second") == ("broken", ms.SCREEN)
+    finally:
+        conn.close()
+    assert "skipped org/first" in capsys.readouterr().out
+
+
+def test_a_refused_adoption_returns_to_the_measure_loop(monkeypatch, tmp_path,
+                                                       capsys):
+    import argparse
+    import subprocess
+
+    from harness import adopt, cli
+
+    monkeypatch.setattr(subprocess, "run", lambda argv, **kw: _Done())
+    monkeypatch.setattr(adopt, "default_for",
+                        lambda lane, fallback, conn=None: "org/inc")
+    monkeypatch.setattr(cli, "_receipt_at", lambda out: {
+        "specs": {"inc": "tts:org/inc", "chal": "tts:org/chal"},
+        "summary": {k: {"passed": 8, "total": 8, "pass_rate": 1.0,
+                        "median_s": 1.0, "metrics": {"wer": w}}
+                    for k, w in (("inc", 0.05), ("chal", 0.01))},
+        "rows": [{"candidate": k, "case_id": f"c{i}", "passed": k == "chal"}
+                 for k in ("inc", "chal") for i in range(8)]})
+    real = ms.connect
+    monkeypatch.setattr(ms, "connect", lambda *a, **k: real(tmp_path / "d.db"))
+
+    def refuse(*a, **k):
+        raise ms.IllegalTransition("org/chal: decided elsewhere")
+
+    monkeypatch.setattr(adopt, "record", refuse)
+    rc = cli._measure_and_adopt(argparse.Namespace(repeat=3),
+                                {"name": "org/chal", "lane": "tts"})
+    assert rc == 0
+    assert "skipped org/chal" in capsys.readouterr().out
+
+
+def test_a_refused_retirement_does_not_stop_the_next(split, monkeypatch):
+    _see(split, "org/repo")
+    _see(split, "org/open2")
+    ms.decide(split, "org/open2", "queued", tier=ms.INSPECT, detail="fits")
+    for name in ("org/open", "org/open2"):
+        ms.link(split, "org/repo", name, "needs")
+    fired = _race(monkeypatch, "org/open")
+    assert ms.retire_unlisted(split, "org/repo", keep=[]) == ["org/open2"]
+    assert fired
+
+
+def test_a_retraction_raises_only_on_an_invalid_call(store):
+    _see(store, "org/w")
+    for outcome, tier in (("measured", ms.ADOPT), ("screened", ms.SCREEN),
+                          ("queued", ms.INSPECT), ("broken", ms.SCREEN)):
+        ms.retract(store, "org/w", "reset", tier=ms.INSPECT)
+        ms.decide(store, "org/w", outcome, tier=tier, detail=outcome)
+        ms.retract(store, "org/w", f"undo {outcome}", tier=ms.INSPECT)
+        assert _state(store, "org/w") == ("queued", ms.INSPECT)
+    with pytest.raises(ms.IllegalTransition):
+        ms.retract(store, "org/w", "")
+    with pytest.raises(KeyError):
+        ms.retract(store, "org/nobody", "why")
