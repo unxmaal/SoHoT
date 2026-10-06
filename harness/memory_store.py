@@ -19,7 +19,7 @@ from pathlib import Path
 
 from harness import paths, store
 
-SCHEMA_VERSION = 21
+SCHEMA_VERSION = 22
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
 VERDICTS = ("measured", "declined", "broken", "queued", "ignored", "screened")
@@ -652,6 +652,8 @@ def _migrate(conn: sqlite3.Connection) -> None:
         # Only the new phrase: rerunning the whole list reopens what earlier
         # schemas deliberately left. #401.
         _requeue_broken_matching(conn)
+    if have and have < 22:
+        _requeue_broken_matching(conn, ("generation thread died",))
     conn.execute("INSERT OR REPLACE INTO meta VALUES ('schema', ?)",
                  (str(SCHEMA_VERSION),))
     conn.commit()
