@@ -37,6 +37,17 @@ def _no_real_services(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def _no_real_router(monkeypatch):
+    """No test asks or unloads the real llama-server router. #444."""
+    from harness import router
+    posts = []
+    monkeypatch.setattr(router, "_get", lambda path: {"data": []})
+    monkeypatch.setattr(router, "_post",
+                        lambda path, body: posts.append((path, body)) or {})
+    return posts
+
+
+@pytest.fixture(autouse=True)
 def _free_disk_is_pinned(monkeypatch):
     """No test reads the runner's free disk: the tmp HF_HOME sits on whatever
     drive CI gives it (31 GiB on Windows), under the fetch floor. #411."""
