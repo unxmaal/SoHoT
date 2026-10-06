@@ -1,0 +1,15 @@
+id: agent-refactor-extract-money
+modality: agent
+prompt: shop/invoice.py and shop/receipt.py each define the same private _fmt money formatter.
+  Move it into a new module shop/money.py as format_cents(cents), make both modules import
+  and use it, and delete the duplicates. Output must not change. Run the tests.
+params:
+  repo: repos/extract-money
+  tools:
+  - read_file
+  - write_file
+  - list_dir
+  - run_tests
+  max_steps: 16
+assert:
+  hidden: true

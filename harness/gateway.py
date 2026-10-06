@@ -62,7 +62,7 @@ def strip_provider(model: str) -> str:
 
 
 #: Text lanes the served config names by lane, so a LAN client can ask for `sohot-code`. #297.
-TEXT_LANES = ("code", "web", "svg", "extract", "decide")
+TEXT_LANES = ("code", "web", "svg", "extract", "decide", "agent")
 LANE_ALIAS = "sohot-{}"
 
 

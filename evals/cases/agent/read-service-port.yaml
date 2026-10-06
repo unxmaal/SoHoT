@@ -1,0 +1,13 @@
+id: agent-read-service-port
+modality: agent
+prompt: What TCP port does this service listen on when it runs in production? Answer with
+  the number.
+params:
+  repo: repos/service-config
+  tools:
+  - read_file
+  - list_dir
+  max_steps: 8
+assert:
+  answer:
+  - '8443'

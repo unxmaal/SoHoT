@@ -274,7 +274,23 @@ def _check_decide(artifact, case: Case) -> CheckResult:
                               case.assertions["answers"])
 
 
+def _check_agent(artifact, case: Case) -> CheckResult:
+    """The runner graded the sandbox before deleting it; this reads its verdict. #474."""
+    try:
+        record = json.loads(artifact) if isinstance(artifact, str) else {}
+    except ValueError:
+        return CheckResult(False, "agent transcript is not JSON")
+    grade = record.get("grade") or {}
+    metrics = dict(record.get("metrics") or {})
+    if grade.get("passed") and not metrics.get("agent_valid_calls"):
+        grade = {"passed": False, "detail": "no valid tool call: the task needs tools"}
+    out = CheckResult(bool(grade.get("passed")), grade.get("detail") or "")
+    out.metrics = metrics
+    return out
+
+
 CHECKERS = {
+    "agent": lambda a, c, **kw: _check_agent(a, c),
     "decide": lambda a, c, **kw: _check_decide(a, c),
     "svg": lambda a, c, **kw: _check_svg(a, c),
     "music": _check_music,
@@ -336,6 +352,17 @@ METRIC_DIRECTION = {
     "decide_ece": "lower",
     # NEUTRAL: 1 when every field came with probabilities, 0 when one-hot.
     "calibrated": "neutral",
+    # agent (#474): completion decides; valid calls break ties; latency is reported beside.
+    "agent_valid_call_rate": "higher",
+    "agent_steps": "neutral",
+    "agent_tool_calls": "neutral",
+    "agent_valid_calls": "neutral",
+    "agent_ttft_sum_s": "neutral",
+    "agent_model_s": "neutral",
+    "agent_tool_s": "neutral",
+    "agent_wall_s": "neutral",
+    "agent_no_tool_steps": "neutral",
+    "prompt_tokens": "neutral",
 }
 
 
@@ -368,7 +395,9 @@ PARAM_KEYS = {"width", "height", "steps", "seed", "guidance", "frames",
               # what the case is asking about. #275.
               "task", "ref", "cover_strength",
               # decide: the flat schema of enum and boolean fields. #423.
-              "schema"}
+              "schema",
+              # agent: the case bundle, the pinned tools, the caps, the padding. #474.
+              "repo", "tools", "max_steps", "pad_tokens", "timeout_s"}
 # Assertions that need text to search. Declaring one on an image case can only
 # pass vacuously until the suite can OCR, so it is rejected rather than ignored.
 TEXT_ASSERTIONS = {"min_shapes", "must_contain", "must_not_contain"}
@@ -405,7 +434,8 @@ ASSERTION_KEYS = {"svg": TEXT_ASSERTIONS, "web": TEXT_ASSERTIONS,
                   # right words sung" to "was anything sung at all", which is
                   # both a capability check and the lane's own ceiling control.
                   "music": {"max_wer", "expect_vocals", "duration_s"},
-                  "decide": {"answers"}}
+                  "decide": {"answers"},
+                  "agent": {"answer", "hidden"}}
 
 
 #: Lanes whose runner returns text rather than a file.
@@ -413,7 +443,10 @@ TEXT_MODALITIES = {"svg", "web", "code", "extract", "decide"}
 #: Lanes whose runner returns the path of a file it made.
 MEDIA_MODALITIES = {"image", "video", "tts", "music"}
 #: The suffix a text lane's output is written to the run dir under.
-TEXT_SUFFIX = {"svg": ".svg", "web": ".html", "code": ".py", "decide": ".json"}
+TEXT_SUFFIX = {"svg": ".svg", "web": ".html", "code": ".py", "decide": ".json",
+               "agent": ".json"}
+#: Lanes whose runner drives a tool loop over a sandboxed repo. #474.
+AGENT_MODALITIES = {"agent"}
 
 
 def artifact_name(candidate: str, case_id: str, suffix: str) -> str:
@@ -705,12 +738,38 @@ def load_cases(directory: str | Path) -> list[Case]:
                 raise ValueError(f"{path.name}: {exc}") from exc
             # Every text runner then asks the same question; nimble reads the schema.
             prompt = f"{prompt.rstrip()}\n\n{decide_check.render(params['schema'])}"
+        if modality == "agent":
+            params = {**params, **_agent_params(path, params, assertions)}
         cases.append(Case(id=raw["id"], modality=modality, prompt=prompt,
                           context=context, audio=audio, params=params,
                           assertions=assertions, source=path,
                           language=raw.get("language") or "en",
                           methods=tuple(raw.get("methods") or ())))
     return cases
+
+
+def _agent_params(path: Path, params: dict, assertions: dict) -> dict:
+    """Validate an agent case's bundle and pin its content into the digest. #474."""
+    from evals import sandbox
+    bundle = path.parent / str(params.get("repo") or "")
+    if not params.get("repo") or not (bundle / "repo").is_dir():
+        raise ValueError(f"{path.name}: params.repo must name a bundle with a repo/ dir")
+    tools = params.get("tools") or []
+    unknown = set(tools) - set(sandbox.TOOLS)
+    if not tools or unknown:
+        raise ValueError(f"{path.name}: params.tools must pin tools from "
+                         f"{', '.join(sandbox.TOOLS)}; got {sorted(unknown) or 'none'}")
+    if not (assertions.get("answer") or assertions.get("hidden")):
+        raise ValueError(f"{path.name}: an agent case needs assert.answer or assert.hidden")
+    if assertions.get("hidden") and not (bundle / "hidden").is_dir():
+        raise ValueError(f"{path.name}: assert.hidden needs {params['repo']}/hidden/")
+    h = hashlib.sha256()
+    for f in sorted(p for p in bundle.rglob("*") if p.is_file()
+                    and "__pycache__" not in p.parts
+                    and p.relative_to(bundle).parts[0] in ("repo", "hidden")):
+        h.update(f.relative_to(bundle).as_posix().encode("utf-8") + b"\x00")
+        h.update(f.read_bytes().replace(b"\r\n", b"\n") + b"\x00")
+    return {"repo_digest": h.hexdigest()[:16]}
 
 
 def _load_context(path: Path, raw: dict) -> str:
@@ -873,8 +932,26 @@ def summarize(results: list[Result]) -> dict:
             # or to a language -- and then their pass rates are not comparable.
             "case_ids": sorted({r.case_id.split("#")[0] for r in rows}),
             **first_token(rows),
+            **agent_summary(rows),
         }
     return out
+
+
+def agent_summary(rows) -> dict:
+    """The agent lane's per-candidate roll-up, beside completion; {} elsewhere. #474."""
+    got = [r.metrics for r in rows if "agent_steps" in (r.metrics or {})]
+    if not got:
+        return {}
+    calls = sum(m.get("agent_tool_calls", 0) for m in got)
+    return {"agent": {
+        "completed": sum(1 for r in rows if r.passed and "agent_steps" in (r.metrics or {})),
+        "cases": len(got),
+        "valid_call_rate": round(sum(m.get("agent_valid_calls", 0) for m in got) / calls, 4)
+        if calls else 0.0,
+        "steps_median": statistics.median(m["agent_steps"] for m in got),
+        "total_s": round(sum(m.get("agent_wall_s", 0) for m in got), 1),
+        "ttft_sum_s": round(sum(m.get("agent_ttft_sum_s", 0) for m in got), 1),
+        "model_s": round(sum(m.get("agent_model_s", 0) for m in got), 1)}}
 
 
 def p95(values: list[float]) -> float | None:
@@ -943,6 +1020,7 @@ def _gather_metrics(rows: list[Result]) -> dict[str, list[float]]:
 #: weigh as much as a forty-word one; the correct total is sum(errors) over
 #: sum(words), which is what every ASR benchmark means by "WER".
 RATIO_METRICS = {"wer": ("wer_errors", "wer_words"),
+                 "agent_valid_call_rate": ("agent_valid_calls", "agent_tool_calls"),
                  "decide_accuracy": ("decide_correct", "decide_fields"),
                  "decide_brier": ("decide_brier_sum", "decide_fields")}
 #: Bookkeeping that should not appear as a column of its own.

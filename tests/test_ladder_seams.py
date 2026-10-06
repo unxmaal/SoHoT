@@ -93,7 +93,7 @@ def test_an_ordinary_card_survives_all_three():
 
 # --- one tier's output is the next tier's input ---------------------------
 
-def test_the_fetch_tier_reads_the_queue_in_rank_order(store):
+def test_the_fetch_tier_reads_the_queue_in_rank_order(store, video_parked):
     """#249 and RULE #275. Two tiers ordering one queue by different keys
     means the producer sizes rows the consumer never reaches, and both halves
     report success."""

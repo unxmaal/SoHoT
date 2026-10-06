@@ -1,0 +1,14 @@
+id: agent-edit-parse-bool-default
+modality: agent
+prompt: Give settings.parse_bool a `default` keyword argument (default None) that is returned
+  when the value is None or blank. Other behaviour must not change. Run the tests when done.
+params:
+  repo: repos/parse-bool-default
+  tools:
+  - read_file
+  - write_file
+  - list_dir
+  - run_tests
+  max_steps: 12
+assert:
+  hidden: true

@@ -475,6 +475,7 @@ _HOW = {
     "video": "--modality video --candidates <needs a runner>",
     "music": "--modality music --candidates acestep:{id}",
     "decide": "--modality decide --candidates {id}",
+    "agent": "--modality agent --candidates {id}",
 }
 
 #: runtime -> the lanes whose engine that runtime provides. Overrides _HOW for

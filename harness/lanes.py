@@ -28,7 +28,9 @@ from __future__ import annotations
 #: Issue #237.
 #: `decide` is appended the same way: asked for 2026-10-06 to measure
 #: Bespoke-Nimble-9B against its baselines, never ranked against the rest. #423.
-WANTED = ("image", "code", "web", "svg", "video", "music", "decide")
+#: `agent` is appended the same way: a model as opencode and Claude Code use it,
+#: tool calls over a repo, asked for 2026-10-06. #474.
+WANTED = ("image", "code", "web", "svg", "video", "music", "decide", "agent")
 
 #: Measured here, and not on the wanted list. `extract` has more cases than any
 #: lane but stt and is a text job; stt and tts have the most measurement
@@ -68,7 +70,9 @@ def parked(lane) -> tuple[str, str]:
 #: structural check on the output. The four differ in what they ask for and not
 #: in what runs them, which is why they can share both a registry query and a
 #: candidate spec.
-TEXT_SERVED = ("code", "web", "svg", "extract")
+#: `agent` is served by the same text model through the same route; its runner
+#: is a tool loop rather than one completion, chosen by modality in evals.run. #474.
+TEXT_SERVED = ("code", "web", "svg", "extract", "agent")
 
 #: Lanes whose winner no program can pick, so a person does. Not a failure to
 #: find the right metric: per the 2026 literature there is no per-clip

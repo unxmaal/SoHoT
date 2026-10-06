@@ -1,0 +1,14 @@
+id: agent-refactor-rename-total
+modality: agent
+prompt: Rename shop.orders.calc_total to order_total and update every caller in shop/ and
+  tests/. Do not keep the old name as an alias. Run the tests.
+params:
+  repo: repos/rename-total
+  tools:
+  - read_file
+  - write_file
+  - list_dir
+  - run_tests
+  max_steps: 16
+assert:
+  hidden: true

@@ -172,6 +172,8 @@ class Completion:
     timing: dict = field(default_factory=dict)
     #: The model the server says answered, which an alias hides; "" if unsaid.
     model: str = ""
+    #: The whole assistant message, tool_calls included; chat() only. #474.
+    message: dict = field(default_factory=dict)
 
 
 def complete_full(prompt: str, model: str, gateway: str = DEFAULT_GATEWAY,
@@ -335,6 +337,7 @@ class Streamed:
 def assemble(lines, started: float, timeout: float = TIMEOUT_S):
     """(body, timing) from OpenAI-style SSE lines; offsets from `started`."""
     content, reasoning, tokens = [], [], []
+    calls: dict[int, dict] = {}
     usage, timings, finish, model = {}, None, None, None
     first: dict = {"ttft_s": None, "first_reasoning_s": None}
     for line in lines:
@@ -365,15 +368,88 @@ def assemble(lines, started: float, timeout: float = TIMEOUT_S):
                 reasoning.append(think)
                 if first["first_reasoning_s"] is None:
                     first["first_reasoning_s"] = round(now, 4)
+            for part in delta.get("tool_calls") or []:
+                _merge_call(calls, part)
+                first.setdefault("first_tool_s", round(now, 4))
             tokens.extend((ch.get("logprobs") or {}).get("content") or [])
             finish = ch.get("finish_reason") or finish
     message = {"role": "assistant",
                "content": "".join(content) if content else None,
                "reasoning_content": "".join(reasoning) if reasoning else None}
+    if calls:
+        message["tool_calls"] = [calls[i] for i in sorted(calls)]
     body = {"choices": [{"message": message, "finish_reason": finish,
                          "logprobs": {"content": tokens} if tokens else None}],
             "usage": usage, "timings": timings, "model": model}
     return body, first
+
+
+def _merge_call(calls: dict, part: dict) -> None:
+    """Fold one streamed tool_calls fragment into the call at its index."""
+    at = part.get("index")
+    at = len(calls) if not isinstance(at, int) else at
+    got = calls.setdefault(at, {"id": "", "type": "function",
+                                "function": {"name": "", "arguments": ""}})
+    if part.get("id"):
+        got["id"] = part["id"]
+    fn = part.get("function") or {}
+    if fn.get("name"):
+        got["function"]["name"] += fn["name"]
+    if isinstance(fn.get("arguments"), str):
+        got["function"]["arguments"] += fn["arguments"]
+    elif fn.get("arguments") is not None:
+        got["function"]["arguments"] = json.dumps(fn["arguments"])
+
+
+def chat(messages: list, model: str, gateway: str = DEFAULT_GATEWAY,
+         tools: list | None = None, timeout: float = TIMEOUT_S,
+         max_tokens: int = MAX_TOKENS, sampling: dict | None = None,
+         stream: bool = True) -> Completion:
+    """One turn of a multi-turn conversation with OpenAI tools. #474.
+
+    `text` may be empty when the turn is tool calls; `message` is the whole
+    assistant message, tool_calls included. timing["first_tool_s"] is the
+    first tool-call fragment.
+    """
+    knobs = {"temperature": DEFAULT_TEMPERATURE, **(sampling or {})}
+    payload = {"model": model, "max_tokens": max_tokens,
+               "messages": list(messages), **knobs}
+    if tools:
+        payload["tools"] = list(tools)
+        payload["tool_choice"] = "auto"
+    if stream:
+        payload["stream"] = True
+        payload["stream_options"] = {"include_usage": True}
+    try:
+        r = _post(gateway, payload, timeout)
+        if (stream and 400 <= getattr(r, "status_code", 200) < 500
+                and "stream" in (getattr(r, "text", "") or "").lower()):
+            payload.pop("stream")
+            payload.pop("stream_options")
+            r = _post(gateway, payload, timeout)
+        r.raise_for_status()
+        body = r.json()
+        message = dict((body.get("choices") or [])[0]["message"])
+        usage = body.get("usage") or {}
+        timing = {"ttft_s": None, "first_reasoning_s": None,
+                  "first_tool_s": None,
+                  **(getattr(r, "timing", None) or {}),
+                  "prefill_s": prefill_s(body.get("timings"))}
+    except httpx.TimeoutException as exc:
+        raise CompletionError(f"timed out after {timeout}s", reasons.TIMEOUT,
+                              ("timeout_s", timeout)) from exc
+    except httpx.HTTPStatusError as exc:
+        raise CompletionError(
+            f"gateway returned HTTP {exc.response.status_code}: "
+            f"{exc.response.text[:400]}") from exc
+    except httpx.HTTPError as exc:
+        raise CompletionError(
+            f"gateway unreachable at {gateway}: {exc} ({_START_HINT})",
+            reasons.REFUSED_BY_GATEWAY) from exc
+    except (KeyError, IndexError, TypeError, ValueError) as exc:
+        raise CompletionError(f"malformed response: {exc}", reasons.CRASHED) from exc
+    return Completion(message.get("content") or "", usage, [], timing,
+                      model=str(body.get("model") or ""), message=message)
 
 
 def artifact(text: str, modality: str) -> str:

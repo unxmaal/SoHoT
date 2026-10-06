@@ -71,7 +71,8 @@ WHY = {
 #: RULE #269 exactly: one engine serving four lanes makes three look empty,
 #: and I reported that as a discovery hole once already before measuring it.
 #: These lanes are covered through the text-served path instead.
-SERVED_NOT_SIGHTED = ("web", "extract")
+#: `agent` likewise: no HF task names a tool-using agent, text-generation lands in code. #474.
+SERVED_NOT_SIGHTED = ("web", "extract", "agent")
 
 
 def card(model_id: str) -> dict:
