@@ -551,5 +551,17 @@ def test_a_tool_use_that_never_reached_the_sandbox_is_invalid():
     assert steps[0]["calls"][0]["valid"] is False and steps[0]["ttft_s"] == 0.2
 
 
+def test_the_summary_carries_the_agent_rollup(serve):
+    c = case("agent-read-service-port")
+    s = serve([{"calls": [("read_file", {"path": "config/production.ini"})]},
+               {"content": "8443"}, {"content": "no tools"}])
+    runner = AgentRunner(s.url, "fake")
+    rows = [runner.run(c), runner.run(c)]
+    got = summarize(rows)["fake"]["agent"]
+    assert got["cases"] == 2 and got["completed"] == 1
+    assert got["steps_median"] == 1.5 and got["valid_call_rate"] == 1.0
+    assert got["total_s"] > 0 and got["ttft_sum_s"] > 0
+
+
 def test_a_runner_returns_text_so_the_run_writes_the_transcript():
     assert issubclass(AgentRunner, BaseRunner) and issubclass(ClaudeAgentRunner, BaseRunner)

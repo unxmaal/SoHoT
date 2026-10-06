@@ -932,8 +932,26 @@ def summarize(results: list[Result]) -> dict:
             # or to a language -- and then their pass rates are not comparable.
             "case_ids": sorted({r.case_id.split("#")[0] for r in rows}),
             **first_token(rows),
+            **agent_summary(rows),
         }
     return out
+
+
+def agent_summary(rows) -> dict:
+    """The agent lane's per-candidate roll-up, beside completion; {} elsewhere. #474."""
+    got = [r.metrics for r in rows if "agent_steps" in (r.metrics or {})]
+    if not got:
+        return {}
+    calls = sum(m.get("agent_tool_calls", 0) for m in got)
+    return {"agent": {
+        "completed": sum(1 for r in rows if r.passed and "agent_steps" in (r.metrics or {})),
+        "cases": len(got),
+        "valid_call_rate": round(sum(m.get("agent_valid_calls", 0) for m in got) / calls, 4)
+        if calls else 0.0,
+        "steps_median": statistics.median(m["agent_steps"] for m in got),
+        "total_s": round(sum(m.get("agent_wall_s", 0) for m in got), 1),
+        "ttft_sum_s": round(sum(m.get("agent_ttft_sum_s", 0) for m in got), 1),
+        "model_s": round(sum(m.get("agent_model_s", 0) for m in got), 1)}}
 
 
 def p95(values: list[float]) -> float | None:

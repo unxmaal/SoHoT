@@ -246,7 +246,7 @@ class Sandbox:
                 str(self.root), *args]
 
     def run_tests(self, path=None) -> str:
-        if path in (None, "", "."):
+        if path in (None, "", ".", "tests", "tests/"):
             args = ["discover", "-s", "tests"]
         else:
             if not isinstance(path, str) or not _TEST_FILE.match(path):
