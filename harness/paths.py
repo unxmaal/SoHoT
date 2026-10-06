@@ -24,6 +24,8 @@ from __future__ import annotations
 
 import itertools
 import os
+import subprocess
+import sys
 import time
 from pathlib import Path
 
@@ -40,6 +42,38 @@ def home() -> Path:
     """The single root. Absolute, always: see the module docstring."""
     raw = os.environ.get(ENV_VAR)
     return (Path(raw).expanduser().resolve() if raw else DEFAULT_HOME)
+
+
+#: The checkout this code was imported from.
+REPO = Path(__file__).resolve().parents[1]
+#: Set to 1 to let a non-deploy checkout migrate the live store anyway. #455.
+ALLOW_MIGRATE_ENV = "LH_ALLOW_MIGRATE"
+
+
+def is_live(path: Path) -> bool:
+    """Is this the store the deployed services use: discovery.db under the default home."""
+    return Path(path).resolve() == (DEFAULT_HOME / "discovery.db").resolve()
+
+
+def deploy_checkout() -> Path | None:
+    """Where the services run from, as scripts/launchd.sh defines it; None without launchd."""
+    if sys.platform == "win32":
+        return None
+    try:
+        out = subprocess.run(["bash", str(REPO / "scripts" / "launchd.sh"), "deploy-path"],
+                             capture_output=True, text=True, timeout=30, check=True)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    got = out.stdout.strip()
+    return Path(got).resolve() if got else None
+
+
+def runs_elsewhere() -> Path | None:
+    """The deploy checkout, when this machine has one and this code is not it."""
+    deploy = deploy_checkout()
+    if deploy is None or deploy == REPO or not (deploy / ".git").exists():
+        return None
+    return deploy
 
 
 def _sub(name: str) -> Path:

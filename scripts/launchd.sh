@@ -64,7 +64,7 @@ _hf_env() {
 }
 
 usage() {
-  echo "usage: $0 {deploy|generate [DIR]|install|uninstall|status|probe}" >&2
+  echo "usage: $0 {deploy|deploy-path|generate [DIR]|install|uninstall|status|probe}" >&2
   exit 2
 }
 
@@ -269,6 +269,8 @@ status() {
 
 case "${1:-}" in
   deploy)    deploy ;;
+  # The one definition of DEPLOY; harness/paths.py asks here. #455.
+  deploy-path) printf '%s\n' "$DEPLOY" ;;
   generate)  shift; generate "${1:-}" ;;
   probe)     preflight && echo "ok: a launchd agent can read ${HF_ROOT:-$PWD/hf_root}" ;;
   install)

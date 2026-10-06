@@ -10,6 +10,7 @@ is what happened. The graph is the foreign keys; traversal is a join.
 from __future__ import annotations
 
 import json
+import os
 import re
 import sqlite3
 from datetime import datetime, timezone
@@ -418,9 +419,16 @@ def connect(path: Path | None = None):
         _migrate(conn)
         return conn
     path = Path(path) if path is not None else db_path()
+    if not path.exists():
+        _guard_live(path, lambda: 0)
     path.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(path, timeout=BUSY_TIMEOUT_SECONDS)
     conn.row_factory = sqlite3.Row
+    try:
+        _guard_live(path, lambda: _stored_schema(conn))
+    except Exception:
+        conn.close()
+        raise
     conn.execute("PRAGMA foreign_keys = ON")
     # SQLite does not corrupt under concurrent writers -- it SERIALISES them,
     # and an unprepared second writer gets `database is locked` at once. These
@@ -436,6 +444,37 @@ def connect(path: Path | None = None):
     conn.executescript(_DDL)
     _migrate(conn)
     return conn
+
+
+class LiveStoreRefused(RuntimeError):
+    """The live store is behind this code and this code is not the deploy. #455."""
+
+
+def _stored_schema(conn) -> int:
+    if not conn.execute("SELECT 1 FROM sqlite_master "
+                        "WHERE type='table' AND name='meta'").fetchone():
+        return 0
+    row = conn.execute("SELECT value FROM meta WHERE key='schema'").fetchone()
+    return int(row["value"]) if row else 0
+
+
+def _guard_live(path: Path, schema) -> None:
+    """Only the deploy checkout moves the live store's schema; else services refuse it."""
+    if not paths.is_live(path) or os.environ.get(paths.ALLOW_MIGRATE_ENV) == "1":
+        return
+    have = schema()
+    if have >= SCHEMA_VERSION:
+        return
+    deploy = paths.runs_elsewhere()
+    if deploy is None:
+        return
+    raise LiveStoreRefused(
+        f"{path} is the live store at schema {have}; this checkout "
+        f"({paths.REPO}) speaks {SCHEMA_VERSION} and is not the deploy checkout "
+        f"({deploy}). Migrating it would leave the deployed "
+        f"services refusing a newer store. Merge to main and run "
+        f"./scripts/launchd.sh install to deploy, or for a scratch run set "
+        f"{paths.ENV_VAR}=<scratch dir>. {paths.ALLOW_MIGRATE_ENV}=1 overrides.")
 
 
 def dangling_receipts(conn: sqlite3.Connection, exists=None) -> list:
