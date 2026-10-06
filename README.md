@@ -556,6 +556,16 @@ then removes them itself at the start of each run, along with partial
 downloads (`*.incomplete`) untouched for an hour. Nothing outside the hub and
 GGUF directories is ever deleted, and if any keeper cannot be read, nothing is.
 
+A candidate rejected at the screen or measure tier is retested up to three
+times, each about a week after its latest rejection, because many rejections
+have turned out to be harness faults. At the start of each `--loop --run`,
+before the disk cleanup, each due retest is reopened to `queued` as a named
+`retest` and goes through fetch and screen again, within the same budget and
+backpressure. A rejection waiting on a stated condition (too big, needs a
+runtime, dead upstream) is not retested; it reopens when that condition is
+met. `lh discover --queue` prints how many retests are due, scheduled and
+final, and how many retests then passed (recovered false negatives).
+
 The install carries no torch on Apple Silicon. `mlx-whisper` needs it
 unconditionally, so the multilingual ear lives in the `whisper` dependency
 group: 370MB installed rather than 1.1GB. Dependencies are marked by platform

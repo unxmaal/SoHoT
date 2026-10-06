@@ -19,7 +19,7 @@ from pathlib import Path
 
 from harness import paths, store
 
-SCHEMA_VERSION = 25
+SCHEMA_VERSION = 26
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
 VERDICTS = ("measured", "declined", "broken", "queued", "ignored", "screened")
@@ -76,7 +76,11 @@ CREATE TABLE IF NOT EXISTS proposals (
     last_seen   REAL NOT NULL,
     -- Written only by decide(); see transition_refused(). #409.
     state       TEXT NOT NULL DEFAULT '',
-    state_verdict_id INTEGER
+    state_verdict_id INTEGER,
+    -- Retests spent on a screen/measure rejection and when the next is due;
+    -- NULL beside a rejection means none is left. #431.
+    retest_count INTEGER NOT NULL DEFAULT 0,
+    next_retest_at REAL
 );
 
 CREATE TABLE IF NOT EXISTS sightings (
@@ -603,6 +607,7 @@ def _migrate(conn: sqlite3.Connection) -> None:
             f"Refusing to touch a newer store.")
     # First, so every retraction below moves the state it reads. #409.
     _add_state(conn)
+    _add_retest(conn)
     if have and have < 25:
         _backfill_state(conn)
     # The DDL above is CREATE IF NOT EXISTS, so v0 -> v1 and v1 -> v2 (which
@@ -703,6 +708,8 @@ def _migrate(conn: sqlite3.Connection) -> None:
     if have and have < 24:
         _verdicts_name_a_candidate(conn)
         backfill_candidates(conn)
+    if have and have < 26:
+        backfill_retests(conn)
     conn.execute("CREATE INDEX IF NOT EXISTS ix_verdict_cand "
                  "ON verdicts(candidate_id)")
     conn.execute("CREATE INDEX IF NOT EXISTS ix_prop_state ON proposals(state)")
@@ -720,6 +727,28 @@ def _add_state(conn) -> None:
             ("verdicts", "reopen_kind", "TEXT NOT NULL DEFAULT ''")):
         if col not in _columns(conn, table):
             conn.execute(f"ALTER TABLE {table} ADD COLUMN {col} {ddl}")
+
+
+def _add_retest(conn) -> None:
+    """The retest columns, on a store older than the DDL. #431."""
+    for col, ddl in (("retest_count", "INTEGER NOT NULL DEFAULT 0"),
+                     ("next_retest_at", "REAL")):
+        if col not in _columns(conn, "proposals"):
+            conn.execute(f"ALTER TABLE proposals ADD COLUMN {col} {ddl}")
+
+
+def backfill_retests(conn) -> int:
+    """Schedule a first retest for each eligible rejection already held. #431."""
+    n = 0
+    for r in conn.execute(
+            "SELECT p.id, p.state, v.tier, v.until, v.decided_at FROM proposals p "
+            "JOIN verdicts v ON v.id = p.state_verdict_id "
+            "WHERE p.next_retest_at IS NULL AND p.retest_count = 0").fetchall():
+        if retest_eligible(r["state"], r["tier"], r["until"]):
+            conn.execute("UPDATE proposals SET next_retest_at = ? WHERE id = ?",
+                         (float(r["decided_at"]) + RETEST_AFTER_SECONDS, r["id"]))
+            n += 1
+    return n
 
 
 def _backfill_state(conn) -> None:
@@ -1383,7 +1412,88 @@ class IllegalTransition(ValueError):
 #: Named reopens: kind -> the states it may reopen, None meaning any. Only
 #: these move a terminal state back to a waypoint, and each records why.
 RETRACTION = "retraction"
-REOPENS: dict = {RETRACTION: None}
+RETEST = "retest"
+REOPENS: dict = {RETRACTION: None, RETEST: ("broken", "declined")}
+
+#: A screen or measure rejection is asked again this often, this many times. #431.
+RETEST_AFTER_SECONDS = 7 * 86400
+RETESTS = 3
+#: Tiers whose rejection can be the harness's fault; the measure step records
+#: its verdict at adopt. Inspect and fetch decide facts.
+RETEST_TIERS = (SCREEN, MEASURE, ADOPT)
+
+
+def retest_eligible(state: str, tier: str, until: str = "") -> bool:
+    """A rejection a retest may reopen; one waiting on `until` reopens through it."""
+    return (state in REOPENS[RETEST] and tier in RETEST_TIERS
+            and not (until or "").strip())
+
+
+def _schedule_retest(conn, pid: int, row: dict, reopen: str) -> None:
+    """Keep retest_count and next_retest_at in step with the state just written."""
+    if reopen == RETEST:
+        conn.execute("UPDATE proposals SET retest_count = retest_count + 1, "
+                     "next_retest_at = NULL WHERE id = ?", (pid,))
+        return
+    due = None
+    if retest_eligible(row["outcome"], row.get("tier", ""), row.get("until", "")):
+        spent = conn.execute("SELECT retest_count FROM proposals WHERE id = ?",
+                             (pid,)).fetchone()[0]
+        if spent < RETESTS:
+            due = float(row["decided_at"]) + RETEST_AFTER_SECONDS
+    conn.execute("UPDATE proposals SET next_retest_at = ? WHERE id = ?",
+                 (due, pid))
+
+
+def due_retests(conn, now: float | None = None) -> list[dict]:
+    """Rejections whose next retest has come due, oldest first. #431."""
+    now = time.time() if now is None else now
+    rows = conn.execute(
+        "SELECT p.name, p.state, p.retest_count, p.next_retest_at, v.tier, "
+        "v.until FROM proposals p JOIN verdicts v ON v.id = p.state_verdict_id "
+        "WHERE p.next_retest_at IS NOT NULL AND p.next_retest_at <= ? "
+        "AND p.retest_count < ? ORDER BY p.next_retest_at, p.id",
+        (now, RETESTS)).fetchall()
+    return [dict(r) for r in rows
+            if retest_eligible(r["state"], r["tier"], r["until"])]
+
+
+def reopen_due_retests(conn, now: float | None = None) -> list[str]:
+    """Reopen each due retest to queued at inspect, naming the attempt. #431."""
+    now = time.time() if now is None else now
+    names = []
+    for r in due_retests(conn, now):
+        why = f"retest {r['retest_count'] + 1}/{RETESTS}: {r['state']} at {r['tier']}"
+        if decide_or_skip(conn, r["name"], "queued", tier=INSPECT, at=now,
+                          detail=why, reopen=RETEST, reason=why) is not None:
+            names.append(r["name"])
+    return names
+
+
+def recovered_false_negatives(conn) -> list[dict]:
+    """Candidates a screen or measure passed after a retest reopened them. #431."""
+    return [dict(r) for r in conn.execute(
+        "SELECT p.name, p.state, MAX(r.detail) AS attempt, "
+        "MIN(w.decided_at) AS recovered_at FROM verdicts r "
+        "JOIN proposals p ON p.id = r.proposal_id "
+        "JOIN verdicts w ON w.proposal_id = r.proposal_id AND w.id > r.id "
+        "AND w.outcome IN ('screened', 'measured') "
+        "WHERE r.reopen_kind = ? GROUP BY p.id, p.name, p.state ORDER BY p.name",
+        (RETEST,))]
+
+
+def retest_counts(conn, now: float | None = None) -> dict:
+    """Retests due now, scheduled later, spent for good, and recovered. #431."""
+    now = time.time() if now is None else now
+    pending = conn.execute(
+        "SELECT COUNT(*) FROM proposals WHERE next_retest_at > ?",
+        (now,)).fetchone()[0]
+    final = conn.execute(
+        "SELECT COUNT(*) FROM proposals WHERE retest_count >= ? "
+        "AND next_retest_at IS NULL AND state IN (?, ?)",
+        (RETESTS, *REOPENS[RETEST])).fetchone()[0]
+    return {"due": len(due_retests(conn, now)), "pending": pending,
+            "final": final, "recovered": len(recovered_false_negatives(conn))}
 
 
 def transition_refused(state: str, held_tier: str, outcome: str,
@@ -1455,6 +1565,7 @@ def _write(conn, pid: int, name: str, row: dict, reopen: str = "",
             "WHERE id = ? AND COALESCE(state_verdict_id, 0) = ?",
             (row["outcome"], vid, pid, held["id"] or 0)).rowcount
         if moved == 1:
+            _schedule_retest(conn, pid, row, reopen)
             return vid
         # Another writer moved the state first; re-check against theirs.
         conn.execute("DELETE FROM verdicts WHERE id = ?", (vid,))

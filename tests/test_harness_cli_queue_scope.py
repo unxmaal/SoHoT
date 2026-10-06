@@ -70,6 +70,8 @@ def test_the_denominator_counts_only_what_a_screen_could_answer(monkeypatch, cap
     monkeypatch.setattr("harness.memory_store.judgeable",
                         lambda conn, limit=50: rows)
     monkeypatch.setattr("harness.memory_store.connect", lambda *a, **k: _Store(rows))
+    monkeypatch.setattr("harness.memory_store.retest_counts", lambda conn: {
+        "due": 0, "pending": 0, "final": 0, "recovered": 0})
     monkeypatch.setattr("harness.rank.serving", lambda *a, **k: set())
     monkeypatch.setattr("harness.rank.lanes_with_receipts", lambda *a, **k: set())
     cli._report_queue(argparse.Namespace(lane="image", top=25, json=False))
