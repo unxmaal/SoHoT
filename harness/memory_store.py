@@ -20,7 +20,7 @@ from pathlib import Path
 
 from harness import paths, store
 
-SCHEMA_VERSION = 39
+SCHEMA_VERSION = 40
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
 VERDICTS = ("measured", "declined", "broken", "queued", "ignored", "screened")
@@ -1031,6 +1031,8 @@ def _migrate(conn: sqlite3.Connection) -> None:
         # a code row whose card says so moves too. #423.
         _relane_the_laneless_from_the_card(conn)
         _relane_from_the_card(conn)
+    if have and have < 40:
+        _relane_the_settled_tasks(conn)
     conn.execute("CREATE INDEX IF NOT EXISTS ix_verdict_cand "
                  "ON verdicts(candidate_id)")
     conn.execute("CREATE INDEX IF NOT EXISTS ix_prop_state ON proposals(state)")
@@ -1882,10 +1884,16 @@ def _relane_from_the_card(conn) -> None:
         conn.execute("UPDATE proposals SET lane = ? WHERE id = ?",
                      (card, row["id"]))
         moved.append((row["id"], row["name"], row["lane"], card))
+    _wrong_lane_requeues(conn, moved)
 
-    # A terminal verdict reached in the WRONG LANE says nothing about the
-    # candidate: the screen built its spec from the lane and handed it cases
-    # from a modality it does not serve. Re-queued, not deleted.
+
+def _wrong_lane_requeues(conn, moved) -> None:
+    """Re-queue a lane-tier terminal verdict on each (id, name, was, now) moved.
+
+    A terminal verdict reached in the WRONG LANE says nothing about the
+    candidate: the screen built its spec from the lane and handed it cases
+    from a modality it does not serve. Re-queued, not deleted.
+    """
     for pid, name, was, card in moved:
         last = _stated(conn, "p.id = ?", (pid,))
         # Only a tier that ran lane cases depends on the lane: "too big" and
@@ -1896,7 +1904,38 @@ def _relane_from_the_card(conn) -> None:
         _migration_retraction(conn, pid, name, "queued", SCREEN,
                      f"retracted: settled in the {was or 'unknown'} lane, which "
                      f"came from the source rather than from {name}'s own card "
-                     f"({card})")
+                     f"({card or 'no lane'})")
+
+
+def _relane_the_settled_tasks(conn) -> None:
+    """Move a row whose stored task #387 settled to the lane its card facts
+    now name: a text-only lane cannot feed an input image, table or video,
+    text-to-audio follows its tags, and an OCR card leaves code."""
+    import json
+
+    from harness import inspect as ins
+    from harness import lanes
+    marks = ",".join("?" * len(ins.SETTLED_TASKS))
+    rows = conn.execute(
+        "SELECT id, name, lane, hf_task, card_tags FROM proposals "
+        f"WHERE lower(hf_task) IN ({marks}) "
+        "OR (lower(hf_task) = 'image-text-to-text' AND card_tags LIKE '%ocr%')",
+        ins.SETTLED_TASKS).fetchall()
+    moved = []
+    for row in rows:
+        try:
+            tags = json.loads(row["card_tags"] or "[]")
+        except ValueError:
+            tags = []
+        lane, source = ins.lane_and_source(
+            {"pipeline_tag": row["hf_task"], "tags": tags, "id": row["name"]})
+        was = lanes.canonical(row["lane"])
+        if lane == was or (lane == "code" and was in lanes.TEXT_SERVED):
+            continue
+        conn.execute("UPDATE proposals SET lane = ?, lane_source = ? "
+                     "WHERE id = ?", (lane, source, row["id"]))
+        moved.append((row["id"], row["name"], row["lane"], lane))
+    _wrong_lane_requeues(conn, moved)
 
 
 def _relane_the_laneless_from_the_card(conn) -> None:

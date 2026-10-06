@@ -337,7 +337,7 @@ def test_the_fit_carries_the_repo_description(tmp_path):
 
 def test_the_registrys_own_task_label_names_the_lane():
     assert ins.lane_for({"pipeline_tag": "automatic-speech-recognition"}) == "stt"
-    assert ins.lane_for({"pipeline_tag": "text-to-audio"}) == "tts"
+    assert ins.lane_for({"pipeline_tag": "text-to-speech"}) == "tts"
 
 
 def test_free_text_tags_are_read_when_the_task_label_is_missing():
@@ -645,7 +645,7 @@ def test_a_nonzero_exit_is_still_an_inspect_error(monkeypatch):
     # generator. What it produces is text.
     ("image-text-to-text", ["text-to-image"], "code"),
     ("image-text-to-text", [], "code"),
-    ("image-text-to-image", [], "image"),
+    ("image-text-to-image", [], ""),
     ("image-text-to-video", ["text-to-image"], "video"),
     ("image-to-3d", ["diffusion"], ""),
     ("token-classification", [], ""),
@@ -691,6 +691,16 @@ TASK_LANES = {
     # A label from text is a typed decision; a fixed-head classifier that
     # cannot take a schema fails the decide screen and says so. #423.
     "text-classification": "decide",
+    # #387: with no tag naming speech or music, text-to-audio has no lane.
+    "text-to-audio": "",
+    # #387: captioners and OCR need an input image; every case is text.
+    "image-to-text": "",
+    # #387: T5-style summarisers need an input table; every case is text.
+    "table-to-text": "", "tabular-to-text": "",
+    # #387: editors and upscalers need an input image; the cases are text-to-image.
+    "image-to-image": "", "image-text-to-image": "",
+    # #387: needs an input video; the video case is text-to-video.
+    "video-to-video": "",
     **{t: "" for t in (
         "token-classification",
         "table-question-answering", "question-answering",
@@ -709,16 +719,61 @@ TASK_LANES = {
         "visual-document-retrieval", "any-to-any", "other")},
 }
 
-#: Answered today but the answer looks wrong; not pinned until #387 decides.
-QUESTIONED = {"text-to-audio", "image-to-text", "table-to-text",
-              "tabular-to-text", "image-to-image", "image-text-to-image",
-              "video-to-video"}
 
 
 def test_every_huggingface_task_has_a_deliberate_lane():
     assert len(HF_TASKS) == len(set(HF_TASKS))
-    assert not set(TASK_LANES) & QUESTIONED
-    assert set(TASK_LANES) | QUESTIONED == set(HF_TASKS)
+    assert set(TASK_LANES) == set(HF_TASKS)
+
+
+@pytest.mark.parametrize("tags,name,lane", [
+    (["music-generation"], "m-a-p/YuE2-3B", "music"),
+    (["musicgen", "text-to-audio"], "facebook/musicgen-medium", "music"),
+    (["text-to-speech"], "a/b", "tts"),
+    # Tie-break: no tag names either, so the repo name decides.
+    (["mlx-audio"], "Marvis-AI/marvis-tts-250m", "tts"),
+    (["sound-effects"], "OpenMOSS-Team/MOSS-SoundEffect-v2.0", ""),
+    # Both named is ambiguous, and the name is not read to break it.
+    (["music", "tts"], "a/music-tts", ""),
+])
+def test_text_to_audio_follows_the_cards_tags(tags, name, lane):
+    """#387."""
+    got = ins.lane_for({"pipeline_tag": "text-to-audio", "tags": tags,
+                        "id": name})
+    assert got == lane
+
+
+@pytest.mark.parametrize("task", ["image-to-image", "image-text-to-image"])
+def test_an_editor_that_also_generates_from_text_stays_in_image(task):
+    """#387: FLUX.2-klein-9B is image-to-image and tagged image-generation."""
+    assert ins.lane_for({"pipeline_tag": task,
+                         "tags": ["image-editing", "image-generation"]}) == "image"
+    assert ins.lane_for({"pipeline_tag": task, "tags": ["diffusion"]}) == ""
+
+
+def test_video_to_video_has_no_lane_whatever_its_tags():
+    """#387: Viggle-Animate-ComfyUI is tagged video-generation and needs a video."""
+    assert ins.lane_for({"pipeline_tag": "video-to-video",
+                         "tags": ["video-generation", "text-to-video"]}) == ""
+
+
+@pytest.mark.parametrize("tags,lane", [
+    (["vision-language", "ocr"], ""),
+    (["unlimited-ocr"], ""),
+    (["PaddleOCR", "ocr"], ""),
+    (["vision-language", "qwen3_5"], "code"),
+    (["svg"], "svg"),
+])
+def test_an_ocr_card_is_not_filed_under_code(tags, lane):
+    """#387: PaddleOCR-VL and hayai-ocr were fetched as code and declined."""
+    assert ins.lane_for({"pipeline_tag": "image-text-to-text",
+                         "tags": tags}) == lane
+
+
+@pytest.mark.parametrize("task", sorted(ins.SETTLED_TASKS))
+def test_card_lane_and_lane_for_agree_on_a_bare_settled_task(task):
+    """The backfill reads card_lane; inspect reads lane_for. #387."""
+    assert ins.card_lane(task) == ins.lane_for({"pipeline_tag": task}) == ""
 
 
 @pytest.mark.parametrize("task", sorted(TASK_LANES))
