@@ -205,7 +205,7 @@ HERE = object()
 
 
 def here(conn) -> tuple[int, ...]:
-    """This machine's ids: every machines row sharing its hw_model. #356."""
+    """This machine's id, as runs.here() finds it by fingerprint. #356, #415."""
     from harness import runs
     try:
         return tuple(runs.here(conn))

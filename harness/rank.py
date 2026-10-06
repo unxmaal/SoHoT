@@ -61,7 +61,7 @@ def parents(row) -> set[str]:
 
 def value(row: dict, *, serving: set[str] = frozenset(),
           measured_lanes: set[str] = frozenset(),
-          ceiling_gib: float = 22.0) -> tuple[float, list[str]]:
+          ceiling_gib: float) -> tuple[float, list[str]]:
     """What a screen would teach us about this candidate, and why.
 
     The reasons travel with the number. A ranking whose rows cannot say why
@@ -158,7 +158,7 @@ def lane_of(row) -> str:
     return lanes.canonical(row.get("lane"))
 
 
-def rank(rows, *, serving=(), measured_lanes=(), ceiling_gib: float = 22.0,
+def rank(rows, *, serving=(), measured_lanes=(), ceiling_gib: float | None = None,
          keep_laneless: bool = False):
     """Best first. Ties break on name so the order is stable across runs.
 
@@ -176,6 +176,10 @@ def rank(rows, *, serving=(), measured_lanes=(), ceiling_gib: float = 22.0,
     spent its whole first page on things the next tier would not run.
     """
     from harness import screen
+    if ceiling_gib is None:
+        # This machine's ceiling, never a literal from one 32 GB box. #355, #415.
+        from harness import memory_store as ms
+        ceiling_gib = ms.this_machine()["ceiling_gb"]
     serving = {s.lower() for s in serving}
     measured = {m.lower() for m in measured_lanes}
     out = []

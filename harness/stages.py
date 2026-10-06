@@ -11,17 +11,24 @@ MFLUX_TOOL_ROOT = Path.home() / ".local/share/uv/tools/mflux"
 _DIST_INFO = re.compile(r"^([A-Za-z0-9_.-]+?)-(\d[^-]*)\.dist-info$")
 
 
+def dist_versions(site) -> dict[str, str]:
+    """package -> version from the dist-info names in one site-packages."""
+    found: dict[str, str] = {}
+    for child in Path(site).iterdir():
+        m = _DIST_INFO.match(child.name)
+        if m:
+            found.setdefault(m.group(1).replace("_", "-").lower(), m.group(2))
+    return found
+
+
 @lru_cache(maxsize=1)
 def tool_versions(root: Path | None = None) -> dict[str, str]:
     """Installed mflux/mlx versions, read from the uv tool venv. {} if absent."""
     root = Path(root) if root is not None else MFLUX_TOOL_ROOT
     found: dict[str, str] = {}
     for site in sorted(root.glob("lib/python*/site-packages")):
-        for child in site.iterdir():
-            m = _DIST_INFO.match(child.name)
-            if m:
-                found.setdefault(m.group(1).replace("_", "-").lower(),
-                                 m.group(2))
+        for k, v in dist_versions(site).items():
+            found.setdefault(k, v)
     return found
 
 
@@ -50,7 +57,11 @@ def stage_unavailable(stage: str, versions: dict[str, str] | None = None) -> str
     if entry is None:
         return ""
     broken_at, why, issue = entry
-    have = tool_versions() if versions is None else versions
+    if versions is None:
+        # The recorded probe, not a second read of dist-info names. #415.
+        from harness import memory_store as ms
+        versions = ms.this_machine().get("versions") or {}
+    have = versions
     # An unknown version is not a broken one.
     for pkg, bad in broken_at.items():
         if have.get(pkg) != bad:

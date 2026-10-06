@@ -1,5 +1,4 @@
 """How far memory can be pushed before macOS pushes back. #299."""
-import json
 
 import pytest
 
@@ -81,13 +80,33 @@ def test_every_step_carries_both_free_memory_figures():
     assert got["baseline"]["available_gb"] == 20.0
 
 
-def test_the_result_is_kept_per_machine(tmp_path):
-    path = tmp_path / "limits.json"
-    ramp.save({"warn_at_gb": 9}, path, fingerprint="mac-a")
-    ramp.save({"warn_at_gb": 40}, path, fingerprint="studio")
-    got = json.loads(path.read_text(encoding="utf-8"))
-    assert got["mac-a"][-1]["warn_at_gb"] == 9
-    assert got["studio"][-1]["warn_at_gb"] == 40
+MAC = {"fingerprint": "Mac14,12/macOS/arm64", "hw_model": "Mac14,12",
+       "os": "macOS-26.5.1-arm64-arm-64bit", "arch": "arm64"}
+STUDIO = {"fingerprint": "Mac17,15/macOS/arm64", "hw_model": "Mac17,15",
+          "os": "macOS-27.0.1-arm64-arm-64bit", "arch": "arm64"}
+
+
+@pytest.fixture
+def store(monkeypatch):
+    """A store whose `this machine` is MAC; no test reads the real one. #415."""
+    from harness import memory_store as ms
+    monkeypatch.setattr(ms, "_THIS_MACHINE", dict(MAC))
+    conn = ms.connect()
+    yield conn
+    conn.close()
+
+
+def _mid(conn, facts):
+    from harness import memory_store as ms
+    return ms.remember_machine(conn, facts)
+
+
+def test_the_result_is_kept_per_machine(store):
+    ramp.save(store, {"warn_at_gb": 9}, _mid(store, MAC))
+    ramp.save(store, {"warn_at_gb": 40}, _mid(store, STUDIO))
+    assert ramp.runs(store, _mid(store, MAC))[-1]["warn_at_gb"] == 9
+    assert ramp.runs(store, _mid(store, STUDIO))[-1]["warn_at_gb"] == 40
+    assert store.execute("SELECT COUNT(*) FROM memory_limits").fetchone()[0] == 2
 
 
 def test_lh_memory_ramp_is_a_command():
@@ -119,11 +138,12 @@ def test_the_default_cap_comes_from_unified_memory(monkeypatch):
 
 # --- the guard reads what was measured ----------------------------------------
 
-def test_runs_accumulate_per_machine(tmp_path):
-    path = tmp_path / "limits.json"
-    ramp.save({"margin_gb": 2.2}, path, fingerprint="mac")
-    ramp.save({"margin_gb": 3.8}, path, fingerprint="mac")
-    assert [r["margin_gb"] for r in ramp.runs(path, "mac")] == [2.2, 3.8]
+def test_runs_accumulate_per_machine(store):
+    mac = _mid(store, MAC)
+    ramp.save(store, {"margin_gb": 2.2, "measured_at": "2026-10-01T00:00:00"}, mac)
+    ramp.save(store, {"margin_gb": 3.8, "measured_at": "2026-10-02T00:00:00"}, mac)
+    assert [r["margin_gb"] for r in ramp.runs(store, mac)] == [2.2, 3.8]
+    assert ramp.runs(store, None) == []
 
 
 def test_the_margin_is_available_at_start_minus_the_last_normal_step():
@@ -135,24 +155,30 @@ def test_a_run_ended_by_the_cap_measured_no_margin():
     assert run(Box(), cap_gb=5)["margin_gb"] is None
 
 
-def test_the_reserve_is_the_largest_measured_margin(tmp_path, monkeypatch):
+def test_the_reserve_is_the_largest_measured_margin(store):
+    """The guard reads the store, this machine's rows only. #299, #415."""
     from harness import memory
-    path = tmp_path / "limits.json"
-    monkeypatch.setattr(ramp, "default_path", lambda: path)
-    monkeypatch.setattr(memory, "_fingerprint", lambda: "mac")
-    assert memory.measured_reserve_gb() == memory.DEFAULT_RESERVE_GB
-    ramp.save({"margin_gb": 2.2}, path, fingerprint="mac")
-    ramp.save({"margin_gb": 3.8}, path, fingerprint="mac")
-    ramp.save({"margin_gb": None}, path, fingerprint="mac")
-    assert memory.measured_reserve_gb() == 3.8
-    ramp.save({"margin_gb": 9.0}, path, fingerprint="studio")
+    assert memory.measured_reserve_gb(store) == memory.DEFAULT_RESERVE_GB
+    mac = _mid(store, MAC)
+    ramp.save(store, {"margin_gb": 2.2}, mac)
+    ramp.save(store, {"margin_gb": 3.8}, mac)
+    ramp.save(store, {"margin_gb": None}, mac)
+    assert memory.measured_reserve_gb(store) == 3.8
+    ramp.save(store, {"margin_gb": 9.0}, _mid(store, STUDIO))
+    assert memory.measured_reserve_gb(store) == 3.8
+    # Opened by the guard itself, from the same home.
     assert memory.measured_reserve_gb() == 3.8
 
 
-def test_a_measured_margin_below_the_floor_is_not_trusted(tmp_path, monkeypatch):
+def test_a_memory_limits_file_is_not_read(store):
+    from harness import memory, paths
+    (paths.home() / "memory-limits.json").write_text(
+        '{"Mac14,12/macOS-26.5.1-arm64-arm-64bit/arm64": [{"margin_gb": 7.0}]}',
+        encoding="utf-8")
+    assert memory.measured_reserve_gb(store) == memory.DEFAULT_RESERVE_GB
+
+
+def test_a_measured_margin_below_the_floor_is_not_trusted(store):
     from harness import memory
-    path = tmp_path / "limits.json"
-    monkeypatch.setattr(ramp, "default_path", lambda: path)
-    monkeypatch.setattr(memory, "_fingerprint", lambda: "mac")
-    ramp.save({"margin_gb": 0.1}, path, fingerprint="mac")
-    assert memory.measured_reserve_gb() == memory.MIN_RESERVE_GB
+    ramp.save(store, {"margin_gb": 0.1}, _mid(store, MAC))
+    assert memory.measured_reserve_gb(store) == memory.MIN_RESERVE_GB

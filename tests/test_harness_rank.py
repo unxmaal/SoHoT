@@ -21,7 +21,8 @@ MEASURED = {"code", "image", "svg"}
 
 
 def value(r):
-    return rank.value(r, serving=SERVING, measured_lanes=MEASURED)[0]
+    return rank.value(r, serving=SERVING, measured_lanes=MEASURED,
+                      ceiling_gib=22.0)[0]
 
 
 # --- the control: known cases, in a known order ---------------------------
@@ -61,7 +62,7 @@ def test_a_candidate_no_lane_can_measure_ranks_last():
     unmeasurable = row("x/no-lane")
     anything = row("y/has-lane", lane="code")
     assert value(unmeasurable) < value(anything)
-    assert "no lane can measure it" in rank.value(unmeasurable)[1][0]
+    assert "no lane can measure it" in rank.value(unmeasurable, ceiling_gib=22.0)[1][0]
 
 
 def test_recurrence_counts_and_stops_counting():
@@ -81,7 +82,7 @@ def test_a_source_covering_every_lane_is_not_a_lane():
     since a recorded lane is never overwritten, the real one read off a model
     card could never land."""
     assert value(row("a", lane="all")) == value(row("a", lane=""))
-    assert "no lane can measure it" in rank.value(row("a", lane="all"))[1][0]
+    assert "no lane can measure it" in rank.value(row("a", lane="all"), ceiling_gib=22.0)[1][0]
 
 
 def test_every_row_says_why_it_is_where_it_is():
@@ -189,7 +190,7 @@ def test_rank_reads_the_lineage_inspect_writes_for_every_kind(tmp_path):
             r = rows[f"org/child-{kind or 'plain'}"]
             assert r["parents"] == [("Org/Base", kind)], r
             assert rank.parents(r) == {"org/base"}
-            _, why = rank.value(r, serving={"org/base"})
+            _, why = rank.value(r, serving={"org/base"}, ceiling_gib=22.0)
             assert any("already served" in w for w in why), (kind, why)
         assert rows["org/child-adapter"]["attaches_to"] == "adapter"
         assert rows["org/child-finetune"]["attaches_to"] == ""

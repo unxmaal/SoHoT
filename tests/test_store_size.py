@@ -103,8 +103,8 @@ def test_rank_reads_the_column_not_the_card_description(store):
     for name in ("org/card-only", "org/column"):
         ms.decide(store, name, "queued", tier=ms.INSPECT, detail="fits")
     rows = {r["name"]: r for r in ms.judgeable(store)}
-    _, why_card = rank.value(rows["org/card-only"])
-    _, why_col = rank.value(rows["org/column"])
+    _, why_card = rank.value(rows["org/card-only"], ceiling_gib=22.0)
+    _, why_col = rank.value(rows["org/column"], ceiling_gib=22.0)
     assert not any("cheap to screen" in w for w in why_card), why_card
     assert "2.3 GiB, cheap to screen" in why_col
 

@@ -249,7 +249,8 @@ def test_value_and_rank_agree_about_what_a_lane_is():
     """value() kept its own copy of the all/text rule and disagreed with
     lane_of() about `text`, so the score said no-lane while the filter said
     code. One question, two answers. Issue #207."""
-    scored, why = rank.value(_row("org/x", lane="text"), measured_lanes=set())
+    scored, why = rank.value(_row("org/x", lane="text"), measured_lanes=set(),
+                              ceiling_gib=22.0)
     assert "no lane can measure it" not in why
     assert "code is a wanted lane" in why
 
@@ -296,8 +297,10 @@ def test_a_parked_lanes_candidates_sink_below_the_laneless(video_parked):
     Below laneless on purpose: a laneless candidate might get a lane tomorrow,
     a parked one is waiting on hardware.
     """
-    parked, _ = rank.value(_row("org/v", lane="video"), measured_lanes=set())
-    laneless, _ = rank.value(_row("org/n", lane=""), measured_lanes=set())
+    parked, _ = rank.value(_row("org/v", lane="video"), measured_lanes=set(),
+                              ceiling_gib=22.0)
+    laneless, _ = rank.value(_row("org/n", lane=""), measured_lanes=set(),
+                              ceiling_gib=22.0)
     assert parked < laneless
 
 
@@ -314,7 +317,8 @@ def test_a_parked_candidate_stays_in_the_queue(video_parked):
 
 def test_the_reason_a_candidate_sank_names_the_condition(video_parked):
     """A score with no explanation is a number somebody has to re-derive."""
-    _, why = rank.value(_row("org/v", lane="video"), measured_lanes=set())
+    _, why = rank.value(_row("org/v", lane="video"), measured_lanes=set(),
+                              ceiling_gib=22.0)
     assert any("parked" in w for w in why)
     assert any("a faster machine" in w for w in why), "say what would change it"
 

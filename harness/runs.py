@@ -58,11 +58,19 @@ def _split_case(case_id: str) -> tuple[str, int]:
 
 def machine_for(conn, env: dict) -> int | None:
     """The machines row a receipt's environment names, inserted if new."""
+    from harness import machine
     env = env or {}
     parts = [str(env.get(k) or "") for k in ("hw_model", "os", "arch")]
-    fingerprint = "/".join(x for x in parts if x)
-    if not fingerprint:
+    if not any(parts):
         return None
+    if parts[0] and not machine.os_family(parts[1]):
+        # No OS named: the one machine with that board, as the merge decides.
+        same = conn.execute("SELECT id FROM machines WHERE hw_model = ? AND "
+                            "arch = ? AND os != ''", (parts[0], parts[2])).fetchall()
+        if len(same) == 1:
+            return same[0]["id"]
+    # The same identity remember_machine writes, never platform.platform(). #415.
+    fingerprint = machine.fingerprint(*parts)
     now = time.time()
     conn.execute(
         "INSERT OR IGNORE INTO machines (fingerprint, hw_model, os, arch, "
@@ -74,17 +82,14 @@ def machine_for(conn, env: dict) -> int | None:
 
 
 def here(conn) -> list[int]:
-    """Machine ids sharing this hw_model. #331, #356.
+    """This machine's id, by fingerprint; [] before it has a row. #331, #415.
 
-    The os string in a fingerprint changes with the Python build, so one
-    machine carries several rows; hw_model is what moves with the hardware.
+    One machine is one row now, so freshness and adoption no longer stand in
+    hw_model for identity. hw_model stays a column for comparability.
     """
     from harness import memory_store as ms
-    hw = ms.this_machine()["hw_model"]
-    if not hw:
-        return []
-    return [r["id"] for r in conn.execute(
-        "SELECT id FROM machines WHERE hw_model = ?", (hw,)).fetchall()]
+    mid = ms.machine_row(conn)
+    return [mid] if mid is not None else []
 
 
 def _in(column: str, ids) -> tuple[str, tuple]:

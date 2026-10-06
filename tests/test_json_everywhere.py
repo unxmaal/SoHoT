@@ -69,7 +69,10 @@ def test_voices_is_one_object(capsys):
 
 
 def test_memory_ramp_is_one_object(capsys, monkeypatch):
-    from harness import ramp
+    from harness import memory_store as ms, ramp
+    monkeypatch.setattr(ms, "_THIS_MACHINE", {
+        "hw_model": "Mac14,12", "os": "macOS-26", "arch": "arm64",
+        "fingerprint": "Mac14,12/macOS/arm64"})
     report = {"steps": [{"gb": 1.0, "level": 1, "free_pct": 90,
                          "available_gb": 10.0, "wired_gb": 1.0,
                          "swapouts": 0}],
@@ -78,11 +81,14 @@ def test_memory_ramp_is_one_object(capsys, monkeypatch):
     monkeypatch.setattr(ramp, "run", lambda **kw: report)
     assert cli.main(["memory", "ramp", "--json"]) == 0
     got = one_object(capsys)
-    assert got["report"]["margin_gb"] == 2.0 and got["path"]
+    assert got["report"]["margin_gb"] == 2.0 and got["machine_id"]
 
 
 def test_memory_show_is_one_object(capsys, monkeypatch):
-    from harness import ramp
+    from harness import memory_store as ms, ramp
+    monkeypatch.setattr(ms, "_THIS_MACHINE", {
+        "hw_model": "Mac14,12", "os": "macOS-26", "arch": "arm64",
+        "fingerprint": "Mac14,12/macOS/arm64"})
     monkeypatch.setattr(ramp, "run", lambda **kw: {
         "steps": [{"gb": 1.0, "level": 1, "free_pct": 90, "available_gb": 9.0,
                    "wired_gb": 1.0, "swapouts": 0}],

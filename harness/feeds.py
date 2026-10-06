@@ -671,27 +671,10 @@ def newest_release(entries: list[Entry]) -> str:
     return best
 
 
-def installed_version(package: str, pins: Path | None = None) -> str:
-    """What this machine actually runs, from the uv tool venv or the pins."""
-    from harness import stages
-    have = stages.tool_versions()
-    if package in have:
-        return have[package]
-    try:
-        import importlib.metadata as md
-        return md.version(package)
-    except Exception:  # noqa: BLE001
-        pass
-    # Services install their deps from scripts/versions.sh rather than pyproject.
-    path = pins or (Path(__file__).resolve().parent.parent
-                    / "scripts" / "versions.sh")
-    try:
-        text = Path(path).read_text(encoding="utf-8")
-    except OSError:
-        return ""
-    m = re.search(rf'^[A-Z_]+_PIN="{re.escape(package)}(?:\[[^\]]*\])?=='
-                  rf'([^"]+)"', text, re.M)
-    return m.group(1) if m else ""
+def installed_version(package: str) -> str:
+    """What this machine runs, from the one probe machines.versions records. #415."""
+    from harness import memory_store as ms
+    return (ms.this_machine().get("versions") or {}).get(package, "")
 
 
 def behind(newest: str, have: str) -> bool:

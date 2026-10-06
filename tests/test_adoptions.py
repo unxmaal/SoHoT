@@ -7,13 +7,13 @@ import pytest
 from harness import adopt, candidates, disk, winners
 from harness import memory_store as ms
 
-M2 = {"fingerprint": "Mac14,12/macOS-26/arm64", "hw_model": "Mac14,12",
+M2 = {"fingerprint": "Mac14,12/macOS/arm64", "hw_model": "Mac14,12",
       "os": "macOS-26", "arch": "arm64", "memory_gb": 32.0,
       "accelerator": "unified 32GB", "runtimes": "cpu,mlx", "ceiling_gb": 22.0}
-STUDIO = {**M2, "fingerprint": "Mac17,15/macOS-27/arm64", "hw_model": "Mac17,15",
+STUDIO = {**M2, "fingerprint": "Mac17,15/macOS/arm64", "hw_model": "Mac17,15",
           "os": "macOS-27", "memory_gb": 96.0}
-#: The M2 under another Python build: a second fingerprint, the same machine.
-M2_AGAIN = {**M2, "fingerprint": "Mac14,12/macOS-26-Mach-O/arm64"}
+#: The M2 under another Python build: another os string, the same fingerprint.
+M2_AGAIN = {**M2, "os": "macOS-26-Mach-O"}
 
 
 @pytest.fixture
@@ -107,10 +107,12 @@ def test_a_measured_adoption_serves_only_the_machine_that_measured_it(
     assert adopt.default_for("code", "q3-4b", conn) == "q3-4b"
 
 
-def test_the_same_hardware_under_a_new_fingerprint_is_still_here(conn, on):
+def test_the_same_machine_under_another_python_is_one_row(conn, on):
+    """#415: one machine is one row, so no hw_model stand-in is needed."""
     _adopt(conn, "code", "org/mine")
     on(M2_AGAIN)
     ms.remember_machine(conn)
+    assert conn.execute("SELECT COUNT(*) FROM machines").fetchone()[0] == 1
     assert adopt.adopted(conn) == {"code": "org/mine"}
 
 

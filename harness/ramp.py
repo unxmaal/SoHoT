@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import json
 import time
-from pathlib import Path
 
 from harness import pressure as pr
 
@@ -92,26 +91,41 @@ def _stop(now: dict, base: dict, floor_pct: int) -> str:
 KEEP = 10
 
 
-def _load(path: Path) -> dict:
+def _epoch(stamp) -> float:
     try:
-        got = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return {}
-    return got if isinstance(got, dict) else {}
+        return time.mktime(time.strptime(str(stamp), "%Y-%m-%dT%H:%M:%S"))
+    except (TypeError, ValueError, OverflowError):
+        return time.time()
 
 
-def runs(path: Path, fingerprint: str) -> list[dict]:
-    got = _load(path).get(fingerprint) or []
-    return got if isinstance(got, list) else [got]
+def _num(v):
+    return float(v) if isinstance(v, (int, float)) else None
 
 
-def save(report: dict, path: Path, fingerprint: str) -> None:
-    got = _load(path)
-    got[fingerprint] = (runs(path, fingerprint) + [report])[-KEEP:]
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(got, indent=1, sort_keys=True), encoding="utf-8")
+def save(conn, report: dict, machine_id: int) -> int:
+    """One ramp result as a memory_limits row for that machine. #415."""
+    cur = conn.execute(
+        "INSERT INTO memory_limits (machine_id, measured_at, margin_gb, "
+        "last_normal_gb, stopped, report) VALUES (?,?,?,?,?,?)",
+        (machine_id, _epoch(report.get("measured_at")),
+         _num(report.get("margin_gb")), _num(report.get("last_normal_gb")),
+         str(report.get("stopped") or ""), json.dumps(report, sort_keys=True)))
+    conn.commit()
+    return cur.lastrowid
 
 
-def default_path() -> Path:
-    from harness import paths
-    return paths.home() / "memory-limits.json"
+def runs(conn, machine_id: int | None) -> list[dict]:
+    """A machine's newest KEEP ramp results, oldest first."""
+    if machine_id is None:
+        return []
+    got = conn.execute(
+        "SELECT report FROM memory_limits WHERE machine_id = ? "
+        "ORDER BY measured_at DESC, id DESC LIMIT ?",
+        (machine_id, KEEP)).fetchall()
+    out = []
+    for r in reversed(got):
+        try:
+            out.append(json.loads(r["report"]))
+        except ValueError:
+            continue
+    return out
