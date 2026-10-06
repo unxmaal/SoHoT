@@ -1565,8 +1565,11 @@ def _report_queue(a) -> int:
     store = ms.connect()
     try:
         rows, waiting = _queueable(store, want)
+        retests = ms.retest_counts(store)
     finally:
         store.close()
+    if not a.json:
+        print(retest_line(retests))
     if not rows:
         print(f"nothing queued in the {want} lane that a screen has not answered"
               if want else "nothing queued that a screen has not answered")
@@ -1580,13 +1583,21 @@ def _report_queue(a) -> int:
                        ceiling_gib=22.0)
     waiting, ranked = len(ranked), ranked[:getattr(a, "top", 25)]
     if a.json:
-        print(json.dumps({"queue": ranked, "waiting": waiting}, indent=2))
+        print(json.dumps({"queue": ranked, "waiting": waiting,
+                          "retests": retests}, indent=2))
         return 0
     print(f"\n{len(ranked)} of {waiting} waiting, by what a screen would teach:")
     for r in ranked:
         print(f"\n  {r['value']:+6.1f}  {r['name']}")
         print(f"          {r['value_why'] or 'nothing known about it'}")
     return 0
+
+
+def retest_line(c: dict) -> str:
+    """The queue report's retest summary. #431."""
+    return (f"retests: {c['due']} due, {c['pending']} scheduled, "
+            f"{c['final']} final after 3; {c['recovered']} recovered false "
+            f"negative(s)")
 
 
 def _report_coverage(a) -> int:
@@ -2237,6 +2248,10 @@ def _loop_spend(a, rc: int) -> int:
 
     from harness import disk
 
+    print("\n=== retests ===")
+    _reopen_retests()
+
+    # After the retests, so a reopened candidate's weights are queued, not swept.
     print("\n=== disk ===")
     disk.sweep()
 
@@ -2274,6 +2289,20 @@ def _loop_spend(a, rc: int) -> int:
     for row in fresh:
         rc = _measure_and_adopt(a, row) or rc
     return rc
+
+
+def _reopen_retests(now: float | None = None) -> list[str]:
+    """Reopen screen and measure rejections whose retest is due. #431."""
+    from harness import memory_store as ms
+    store = ms.connect()
+    try:
+        names = ms.reopen_due_retests(store, now)
+    finally:
+        store.close()
+    print(f"  reopened {len(names)} rejection(s) for a retest")
+    for n in names:
+        print(f"    {n}")
+    return names
 
 
 def measurable(store, top: int, want: str = "") -> list[dict]:

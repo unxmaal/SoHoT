@@ -143,6 +143,19 @@ def test_a_queued_candidate_is_kept(world):
     assert d.exists()
 
 
+def test_a_candidate_reopened_for_retest_is_kept(world):
+    """#431: a retest re-uses the weights rather than fighting the cleanup."""
+    d = make_repo(world.hub, "org/retest")
+    verdict(world.conn, "org/retest", "broken", at=NOW - 30 * DAY)
+    assert entry(inv(world), "org/retest").group == disk.REJECTED
+    assert ms.reopen_due_retests(world.conn, NOW) == ["org/retest"]
+    i = inv(world)
+    assert entry(i, "org/retest").group == disk.QUEUED
+    for wanted in (disk.REJECTED, disk.UNKNOWN):
+        disk.delete(i, NOW, wanted, world.conn)
+    assert d.exists()
+
+
 def test_retracted_then_rejected_is_rejected(world):
     make_repo(world.hub, "org/again")
     verdict(world.conn, "org/again", "broken", at=NOW - 30 * DAY)
@@ -313,6 +326,8 @@ def test_cli_inventory_groups_and_totals(world, capsys):
 
 def test_the_loop_cleans_before_it_fetches(monkeypatch):
     order = []
+    monkeypatch.setattr(cli, "_reopen_retests",
+                        lambda *a, **k: order.append("retest") or [])
     monkeypatch.setattr(disk, "sweep",
                         lambda *a, **k: order.append("sweep") or {})
     monkeypatch.setattr(cli, "cmd_fetch",
@@ -320,4 +335,5 @@ def test_the_loop_cleans_before_it_fetches(monkeypatch):
     monkeypatch.setattr(cli, "cmd_discover", lambda a: 0)
     monkeypatch.setattr(cli, "measurable", lambda *a, **k: [])
     cli._loop_spend(argparse.Namespace(top=1, budget_gib=1.0, lane=""), 0)
-    assert order == ["sweep", "fetch"]
+    # Retests first, so a reopened candidate's weights are queued, not swept. #431.
+    assert order == ["retest", "sweep", "fetch"]

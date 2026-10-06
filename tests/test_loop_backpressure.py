@@ -18,6 +18,7 @@ def test_the_backlog_counts_only_what_the_screen_could_take_now():
 def _loop(monkeypatch, backlog):
     fetched = []
     monkeypatch.setattr(disk, "sweep", lambda *a, **k: {})
+    monkeypatch.setattr(cli, "_reopen_retests", lambda *a, **k: [])
     monkeypatch.setattr(cli, "screenable_backlog", lambda want="": backlog)
     monkeypatch.setattr(cli, "cmd_fetch", lambda a: fetched.append(a) or 0)
     monkeypatch.setattr(cli, "cmd_discover", lambda a: 0)
