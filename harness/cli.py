@@ -797,8 +797,9 @@ def _report_inspect(a) -> int:
     store = ms.connect()
     try:
         if a.repos:
-            # The flag says repos, so they are read as repos.
-            work_items = [(n, ms.GITHUB) for n in a.repos]
+            # org/name is valid in both registries, so ask rather than assume:
+            # a HuggingFace model named here was cloned from GitHub. #424.
+            work_items = [(n, "") for n in a.repos]
         elif getattr(a, "from_store", False):
             # The rung the ladder was missing: what the sweep found, rather
             # than the crowd. Without this the two tiers read different
