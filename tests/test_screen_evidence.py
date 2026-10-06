@@ -253,6 +253,8 @@ SAMPLES = {
                 "acestep:ACE-Step/acestep-v15-xl"],
     "nimble": ["nimble:bespokelabs/Bespoke-Nimble-9B",
                "nimble:bespokelabs/Bespoke-Nimble-9B,revision=abc"],
+    "decider": ["decider:StrandsAgents/strands-decider-2B-hobson-v21",
+                "decider:StrandsAgents/strands-decider-2B-hobson-v21,device=cpu"],
 }
 SAMPLE_SPECS = [s for specs in SAMPLES.values() for s in specs]
 LANE_OF = {"image": "image", "video": "video", "music": "music"}

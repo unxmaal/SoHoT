@@ -1430,6 +1430,16 @@ def parents_of(conn, names) -> dict[str, list[tuple[str, str]]]:
     return out
 
 
+def card_of(conn, name: str) -> dict | None:
+    """The card facts an engine is chosen by: library, tags, parents. #467."""
+    row = conn.execute("SELECT library, card_tags FROM proposals WHERE name = ?",
+                       (name,)).fetchone()
+    if not row:
+        return None
+    return {"library": row["library"], "card_tags": row["card_tags"],
+            "parents": parents_of(conn, [name])[name]}
+
+
 def with_lineage(conn, rows: list[dict]) -> list[dict]:
     """Each row with `parents`: its [(parent, kind)] lineage. #414."""
     got = parents_of(conn, [r["name"] for r in rows])
@@ -2930,7 +2940,7 @@ def judgeable(conn, limit: int = 50) -> list[dict]:
     q = f"""
         SELECT p.name, p.lane, p.registry, p.kind, p.description,
                p.size_bytes,
-               p.hf_task, p.library, p.attaches_to, p.runtime_needed,
+               p.hf_task, p.library, p.card_tags, p.attaches_to, p.runtime_needed,
                COUNT(s.id) AS times,
                MAX(CASE WHEN s.machine_id = ? THEN s.relevance END) AS relevance,
                MAX(s.seen_at) AS last_seen,

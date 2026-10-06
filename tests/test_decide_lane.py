@@ -513,3 +513,177 @@ def test_the_prose_names_decide_without_swallowing_other_classifiers():
     assert lanes.from_prose("a typed decision model with calibrated probabilities") == "decide"
     assert lanes.from_prose("an audio classification model") == ""
     assert re.search(r"decide", run.ALL_MODALITIES.__repr__())
+
+
+# --- the decider engine (strands-decider) ---------------------------------------
+
+DECIDER = "StrandsAgents/strands-decider-2B-hobson-v21"
+DECIDER_CARD = {"library": "peft", "card_tags": json.dumps(
+    ["peft", "strands-decider", "decision-model", "lora", "text-classification"]),
+    "parents": [("Qwen/Qwen3.5-2B-Base", "adapter")]}
+NIMBLE_CARD = {"library": "peft", "card_tags": ["peft", "lora", "structured-prediction"],
+               "parents": [("Qwen/Qwen3.5-9B", "adapter")]}
+
+
+def _fake_ask(path, device, context, qs):
+    """System One answers for whatever questions the mapping asked."""
+    out = {}
+    for name, q in qs.items():
+        if q["type"] == "noul":
+            out[name] = {"type": "noul", "noul": 0.7}
+        else:
+            opts = list(q["criteria"])
+            probs = {o: (0.8 if i == 1 else 0.2 / (len(opts) - 1)) for i, o in enumerate(opts)}
+            out[name] = {"type": "choice", "choice": opts[1], "probabilities": probs,
+                         "confidence": 0.5}
+    return {"model": "m", "answers": out, "usage": {}}
+
+
+def test_decider_is_a_decide_engine_that_loads_adapters():
+    eng = engines.resolve(f"decider:{DECIDER}")
+    assert (eng.modality, eng.output_suffix, eng.name) == (
+        "decide", ".json", "decider/strands-decider-2B-hobson-v21")
+    assert engines.loads_adapters(f"decider:{DECIDER}")
+    assert run.kind_of(f"decider:{DECIDER}") == "process"
+    assert run.modality_of(f"decider:{DECIDER}") == "decide"
+    with pytest.raises(ValueError, match="unknown option"):
+        engines.resolve(f"decider:{DECIDER},temperature=2")
+
+
+def test_the_engine_argv_is_what_the_decider_script_parses(tmp_path):
+    from harness import decider_score
+    eng = engines.resolve(f"decider:{DECIDER},revision=abc,device=cpu")
+    a = eng.argv("p", tmp_path / "o.json", {"schema": SPEC, "context": "ctx"})
+    got = decider_score.parse_args(a[1:])
+    assert (got.model, got.revision, got.context, got.device) == (DECIDER, "abc", "ctx", "cpu")
+    assert json.loads(got.schema) == SPEC and got.out == str(tmp_path / "o.json")
+    with pytest.raises(ValueError, match="no schema"):
+        eng.argv("p", tmp_path / "o.json", {})
+
+
+def test_enum_fields_are_choice_and_booleans_are_noul_questions():
+    from harness import decider_score
+    schema = {"route": {"type": "enum", "choices": ["billing", "tech"], "description": "Route?",
+                        "choice_descriptions": {"tech": "bugs"}},
+              "urgent": {"type": "boolean", "description": "Urgent?",
+                         "choice_descriptions": {"true": "now"}},
+              "level": {"type": "enum", "choices": [0, 1, 2], "description": "Rate"}}
+    q = decider_score.questions(schema)
+    assert q["route"] == {"type": "choice", "instructions": "Route?",
+                          "criteria": {"billing": None, "tech": "bugs"}}
+    assert q["urgent"] == {"type": "noul", "instructions": "Urgent?",
+                           "criteria": {"true": "now"}}
+    assert list(q["level"]["criteria"]) == ["0", "1", "2"]
+
+
+def test_p_true_becomes_the_boolean_fields_distribution(tmp_path):
+    from harness import decider_score
+    out = tmp_path / "o.json"
+    args = decider_score.parse_args(["--model", DECIDER, "--context", "ctx", "--schema",
+                                     json.dumps(SPEC), "--out", str(out), "--device", "cpu"])
+    body = decider_score.run(args, ask=_fake_ask, resolve=lambda m, r: ("p", "rev1"))
+    assert body["revision"] == "rev1" and body["device"] == "cpu"
+    got = decide.parse(out.read_text(encoding="utf-8"), SPEC)
+    assert got["urgent"]["answer"] == "true"
+    assert got["urgent"]["probs"] == pytest.approx({"false": 0.3, "true": 0.7})
+    assert got["route"]["answer"] == "tech"
+    assert got["route"]["probs"] == pytest.approx({"billing": 0.2, "tech": 0.8})
+
+
+def test_a_decider_run_through_the_process_runner_is_scored(tmp_path):
+    """The real mapping behind a fake System One engine, run as
+    [sys.executable, script, <the engine's own args>] (WinError 193)."""
+    import dataclasses
+    import sys
+
+    from evals.runners.process import ProcessRunner
+    fake = tmp_path / "fake_decider.py"
+    fake.write_text(
+        "import sys\n"
+        f"sys.path[:0] = [{str(ROOT)!r}, {str(Path(__file__).parent)!r}]\n"
+        "from harness import decider_score\n"
+        "from test_decide_lane import _fake_ask\n"
+        "decider_score.run(decider_score.parse_args(sys.argv[1:] + ['--device', 'cpu']),\n"
+        "                  ask=_fake_ask, resolve=lambda m, r: ('p', 'r'))\n",
+        encoding="utf-8")
+    real = engines.resolve(f"decider:{DECIDER}")
+    eng = dataclasses.replace(real, argv=lambda p, o, params: [
+        sys.executable, str(fake), *real.argv(p, o, params)[1:]])
+    c = Case(id="d", modality="decide", prompt="p", context="ctx", params={"schema": SPEC},
+             assertions={"answers": {"route": "tech", "urgent": True}})
+    r = ProcessRunner(eng, tmp_path / "out").run(c)
+    assert r.passed, r.detail
+    assert r.metrics["calibrated"] == 1.0
+    assert r.metrics["decide_brier_sum"] == pytest.approx(0.08 + 0.18)
+
+
+def test_an_adapters_engine_is_named_by_its_card_not_its_lane():
+    assert engines.adapter_engine(DECIDER, DECIDER_CARD) == "decider"
+    assert engines.adapter_engine("org/renamed", DECIDER_CARD) == "decider"
+    assert engines.adapter_engine("org/x", {"library": "strands-decider"}) == "decider"
+    assert engines.adapter_engine("org/ft", {"parents": [(DECIDER, "finetune")]}) == "decider"
+    assert engines.adapter_engine(NIMBLE, NIMBLE_CARD) == "nimble"
+    assert engines.adapter_engine("org/qwen-lora", NIMBLE_CARD) == ""
+    assert engines.adapter_engine("org/nimble-strands-decider", None) == ""
+    assert screen.candidate_for("decide", DECIDER, "lora", card=DECIDER_CARD) == \
+        f"decider:{DECIDER}"
+    assert screen.candidate_for("decide", NIMBLE, "lora", card=NIMBLE_CARD) == \
+        f"nimble:{NIMBLE}"
+
+
+def test_an_adapter_no_card_identifies_has_no_runner_and_is_reported():
+    from harness import rank
+    row = {"name": "org/qwen-lora", "lane": "decide", "attaches_to": "lora",
+           "library": "peft", "card_tags": '["lora"]',
+           "parents": [("Qwen/Qwen3.5-9B", "adapter")]}
+    assert screen.candidate_for("decide", row["name"], "lora", card=row) == ""
+    gap = screen.runner_gap("decide", row["name"], "lora", card=row)
+    assert "no decide engine is known to load this lora" in gap
+    assert [r["name"] for r in rank.runnerless([row])] == ["org/qwen-lora"]
+    planned = screen.plan([row], missing=lambda n: [])[0]
+    assert (planned["state"], planned["why_not"]) == (screen.NO_RUNNER, gap)
+    ok = {**row, "name": DECIDER, "card_tags": DECIDER_CARD["card_tags"]}
+    assert screen.runner_gap("decide", DECIDER, "lora", card=ok) == ""
+    assert rank.runnerless([ok]) == []
+
+
+def test_the_store_card_picks_the_engine(tmp_path):
+    from harness import candidates
+    from harness import inspect as ins
+    from harness import memory_store as ms
+    conn = ms.connect(tmp_path / "s.db")
+    try:
+        ms.record(conn, ms.Seen(name="org/my-router", source="t", lane="decide"))
+        ms.set_card(conn, "org/my-router", ins.card_facts(
+            {"pipeline_tag": "text-classification", "library_name": "peft",
+             "tags": ["lora", "strands-decider", "base_model:adapter:Qwen/Qwen3.5-2B-Base"]}))
+        assert screen.candidate_for("decide", "org/my-router", "lora", conn=conn) == \
+            "decider:org/my-router"
+        assert candidates.for_proposal(conn, "decide", "org/my-router", "lora") == \
+            "decider:org/my-router"
+        assert screen.candidate_for("decide", "org/my-router", "lora") == ""
+    finally:
+        conn.close()
+
+
+def test_the_fetch_tier_queues_an_adapter_no_engine_is_known_to_load(tmp_path):
+    from harness import fetching
+    from harness import memory_store as ms
+    conn = ms.connect(tmp_path / "s.db")
+    try:
+        import fakes
+        ms.record(conn, ms.Seen(name="org/qwen-lora", source="t", lane="decide",
+                                registry="huggingface", resolved="org/qwen-lora"))
+        ms.set_size(conn, "org/qwen-lora", 104857600)
+        fakes.carded(conn, "org/qwen-lora", {
+            "library_name": "peft", "tags": ["lora", "base_model:adapter:Qwen/Qwen3.5-9B"]})
+        ms.decide(conn, "org/qwen-lora", "queued", tier="inspect", detail="fits")
+        got = fetching.run(conn, {"org/qwen-lora": 100 * 1024 ** 2}, limit=1,
+                           snapshot=lambda *a, **k: pytest.fail("no engine loads it"))
+        assert got and not got[0]["ok"]
+        assert "no decide engine is known to load" in got[0]["why"]
+        state = conn.execute("SELECT state FROM proposals WHERE name = ?",
+                             ("org/qwen-lora",)).fetchone()["state"]
+        assert state == "queued"
+    finally:
+        conn.close()

@@ -26,7 +26,7 @@ from harness import env
 Argv = Callable[[str, Path, dict], list[str]]
 
 GRAMMAR = ("engine:model[,key=value,...]  "
-           "(engines: mflux, h3, diffusers, diffusers-video, acestep, nimble)")
+           "(engines: mflux, h3, diffusers, diffusers-video, acestep, nimble, decider)")
 
 
 def spec_error(spec: str) -> str:
@@ -542,13 +542,46 @@ _NIMBLE_OPTIONS = {"revision", "temperature"}
 NIMBLE_DEFAULT_BIN = str(
     Path(__file__).resolve().parent.parent / "scripts" / "nimble-score.sh")
 
+#: Adapter-loading engine -> the card words that say an adapter is its own: a
+#: repo id, base model, library or tag naming one of these. #423, #467.
+ADAPTER_MARKS = {
+    "nimble": ("nimble",),
+    "decider": ("strands-decider",),
+}
+
 #: Engines that load a peft adapter onto the base it names, so an adapter can
 #: be a candidate in their lane rather than being dropped from the ladder. #423.
-ADAPTER_ENGINES = frozenset({"nimble"})
+ADAPTER_ENGINES = frozenset(ADAPTER_MARKS)
 
 
 def loads_adapters(spec: str) -> bool:
     return spec.partition(",")[0].partition(":")[0].strip() in ADAPTER_ENGINES
+
+
+def _card_words(name: str, card) -> list[str]:
+    import json
+    card = card or {}
+    tags = card.get("card_tags", card.get("tags")) or []
+    if isinstance(tags, str):
+        try:
+            tags = json.loads(tags)
+        except ValueError:
+            tags = [tags]
+    parents = [p[0] if isinstance(p, (tuple, list)) else p
+               for p in card.get("parents") or []]
+    return [str(w).strip().lower()
+            for w in [name, card.get("library") or "", *tags, *parents] if w]
+
+
+def adapter_engine(name: str, card=None) -> str:
+    """The one adapter engine whose marks this adapter's card carries, or "".
+
+    Two engines matching is as unknown as none: an engine is never guessed. #467.
+    """
+    words = _card_words(name, card)
+    hits = [eng for eng, marks in ADAPTER_MARKS.items()
+            if any(m in w for m in marks for w in words)]
+    return hits[0] if len(hits) == 1 else ""
 
 
 def _nimble(spec: str, model: str, options: dict) -> Engine:
@@ -584,6 +617,46 @@ def _nimble(spec: str, model: str, options: dict) -> Engine:
                   timeout=3600.0)
 
 
+# ---- decider (the decide lane, strands-decider) --------------------------
+
+_DECIDER_OPTIONS = {"revision", "device"}
+
+DECIDER_DEFAULT_BIN = str(
+    Path(__file__).resolve().parent.parent / "scripts" / "decider-score.sh")
+
+
+def _decider(spec: str, model: str, options: dict) -> Engine:
+    """Typed decisions through strands-decider, in its own venv. #467.
+
+    Each enum field becomes a choice question and each boolean a noul (yes/no)
+    question; harness/decider_score.py writes the canonical decide artifact.
+    """
+    if not model:
+        raise ValueError(
+            f"{spec_error(spec)}: decider needs a model, e.g. "
+            f"decider:StrandsAgents/strands-decider-2B-hobson-v21")
+    _check_options(options, _DECIDER_OPTIONS, spec)
+    defaults = dict(options)
+
+    def argv(prompt: str, out: Path, params: dict) -> list[str]:
+        import json
+        p = {**defaults, **{k: v for k, v in params.items() if v is not None}}
+        if not p.get("schema"):
+            raise ValueError("decider scores a decide case; this one has no schema")
+        cmd = [os.environ.get("DECIDER_BIN", DECIDER_DEFAULT_BIN),
+               "--model", model, "--out", str(out),
+               "--context", str(p.get("context") or prompt),
+               "--schema", json.dumps(p["schema"])]
+        _flag(cmd, "--revision", p.get("revision"))
+        _flag(cmd, "--device", p.get("device"))
+        return cmd
+
+    return Engine(name=f"decider/{model.rsplit('/', 1)[-1]}{distinguish(options)}",
+                  spec=spec, argv=argv, modality="decide", output_suffix=".json",
+                  # The first case may download the checkpoint and its base.
+                  timeout=3600.0)
+
+
 _BUILDERS: dict[str, Callable[[str, str, dict], Engine]] = {
     "mflux": _mflux,
     "h3": _h3,
@@ -591,4 +664,5 @@ _BUILDERS: dict[str, Callable[[str, str, dict], Engine]] = {
     "diffusers-video": _diffusers_video,
     "acestep": _acestep,
     "nimble": _nimble,
+    "decider": _decider,
 }
