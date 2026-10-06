@@ -108,3 +108,49 @@ def store_run():
             if own:
                 conn.close()
     return make
+
+
+#: proposals, verdicts and machines as schema 13 left them. #442.
+SCHEMA_13 = """
+    CREATE TABLE proposals (id INTEGER PRIMARY KEY, name TEXT,
+        kind TEXT DEFAULT '', lane TEXT DEFAULT '',
+        resolved TEXT DEFAULT '', consumes TEXT DEFAULT '',
+        produces TEXT DEFAULT '', first_seen REAL DEFAULT 0,
+        last_seen REAL DEFAULT 0, registry TEXT DEFAULT '',
+        description TEXT DEFAULT ''{proposals});
+    CREATE TABLE verdicts (id INTEGER PRIMARY KEY, proposal_id INTEGER,
+        outcome TEXT, tier TEXT DEFAULT '', detail TEXT DEFAULT '',
+        issue INTEGER, run_path TEXT DEFAULT '', score REAL,
+        rubric TEXT DEFAULT '', judge TEXT DEFAULT '', decided_at REAL,
+        machine_id INTEGER, until TEXT DEFAULT '',
+        size_bytes INTEGER DEFAULT 0{verdicts});
+    CREATE TABLE machines (id INTEGER PRIMARY KEY, fingerprint TEXT UNIQUE,
+        hw_model TEXT DEFAULT '', os TEXT DEFAULT '', arch TEXT DEFAULT '',
+        memory_gb REAL DEFAULT 0, accelerator TEXT DEFAULT '',
+        runtimes TEXT DEFAULT '', ceiling_gb REAL DEFAULT 0,
+        first_seen REAL DEFAULT 0, last_seen REAL DEFAULT 0);
+"""
+
+
+@pytest.fixture
+def old_store(tmp_path):
+    """make(version, rows): an older store from explicit DDL, not DROP COLUMN. #442."""
+    import sqlite3
+
+    def make(version, rows="", *, ddl=None, proposals="", verdicts="",
+             name="old.db"):
+        path = tmp_path / name
+        tables = ddl if ddl is not None else SCHEMA_13.format(
+            proposals=proposals, verdicts=verdicts)
+        conn = sqlite3.connect(path)
+        try:
+            conn.executescript(
+                "CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT);"
+                + tables + rows)
+            conn.execute("INSERT INTO meta VALUES ('schema', ?)",
+                         (str(version),))
+            conn.commit()
+        finally:
+            conn.close()
+        return path
+    return make

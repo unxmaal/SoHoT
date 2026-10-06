@@ -177,15 +177,41 @@ def test_the_registry_column_and_its_migration_run_on_a_real_postgres():
     # rowcount through the Postgres cursor wrapper, which SQLite gave for free.
     assert memory_store._backfill_registry(conn) >= 0
 
-    # AND THE ALTER ITSELF, which a fresh database never reaches: the DDL
-    # creates the column, so only a store that predates it takes this path.
-    # Put the database back into that state and migrate it forward.
-    conn.execute("ALTER TABLE proposals DROP COLUMN registry")
-    conn.execute("UPDATE meta SET value = '2' WHERE key = 'schema'")
-    conn.commit()
-    assert "registry" not in memory_store._columns(conn, "proposals")
-    memory_store._migrate(conn)
-    assert "registry" in memory_store._columns(conn, "proposals")
-    got = conn.execute("SELECT registry FROM proposals WHERE name = 't/tool'"
-                       ).fetchone()["registry"]
-    assert got == memory_store.GITHUB, "the sighting's URL says which registry"
+
+SCHEMA_2 = """
+    CREATE TABLE proposals (id INTEGER PRIMARY KEY, name TEXT NOT NULL UNIQUE,
+        kind TEXT NOT NULL DEFAULT 'candidate', lane TEXT NOT NULL DEFAULT '',
+        resolved TEXT NOT NULL DEFAULT '', consumes TEXT NOT NULL DEFAULT '',
+        produces TEXT NOT NULL DEFAULT '', first_seen REAL NOT NULL,
+        last_seen REAL NOT NULL);
+    CREATE TABLE sightings (id INTEGER PRIMARY KEY, proposal_id INTEGER NOT NULL,
+        source TEXT NOT NULL, url TEXT NOT NULL DEFAULT '',
+        why TEXT NOT NULL DEFAULT '', relevance INTEGER NOT NULL DEFAULT 0,
+        seen_at REAL NOT NULL, UNIQUE (proposal_id, source, url));
+    CREATE TABLE verdicts (id INTEGER PRIMARY KEY, proposal_id INTEGER NOT NULL,
+        outcome TEXT NOT NULL, tier TEXT NOT NULL DEFAULT '',
+        detail TEXT NOT NULL DEFAULT '', issue INTEGER,
+        run_path TEXT NOT NULL DEFAULT '', score REAL,
+        rubric TEXT NOT NULL DEFAULT '', judge TEXT NOT NULL DEFAULT '',
+        decided_at REAL NOT NULL);
+"""
+
+
+def test_a_schema_2_store_gains_the_registry_column(old_store):
+    """The ALTER a fresh database never reaches, from schema 2's own DDL. #442."""
+    path = old_store(2, """
+        INSERT INTO proposals (id, name, first_seen, last_seen)
+          VALUES (1, 't/tool', 0, 0), (2, 't/model', 0, 0);
+        INSERT INTO sightings (proposal_id, source, url, seen_at)
+          VALUES (1, 'feed', 'https://github.com/t/tool', 0),
+                 (2, 'feed', 'https://huggingface.co/t/model', 0);
+    """, ddl=SCHEMA_2)
+    conn = memory_store.connect(path)
+    try:
+        assert "registry" in memory_store._columns(conn, "proposals")
+        got = {r["name"]: r["registry"] for r in conn.execute(
+            "SELECT name, registry FROM proposals")}
+        assert got == {"t/tool": memory_store.GITHUB,
+                       "t/model": memory_store.HUGGINGFACE}
+    finally:
+        conn.close()
