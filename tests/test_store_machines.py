@@ -636,3 +636,15 @@ def test_schema_20_requeues_a_screen_of_weights_never_downloaded(tmp_path, monke
                                  ).fetchone()[0] == want, name
         finally:
             again.close()
+
+
+def test_schema_21_requeues_a_sampling_setting_the_pipeline_refused(tmp_path):
+    """#401."""
+    again = _at_schema_18(tmp_path, "Photoroom/prxpixel-t2i", "image", "",
+                          "broken", "it ran and passed nothing: fox-snow: exit 1: "
+                          "ValueError: guidance_scale has to be >= 1.0 but is 0.0")
+    try:
+        assert again.execute("SELECT outcome FROM verdicts ORDER BY id DESC"
+                             ).fetchone()[0] == "queued"
+    finally:
+        again.close()

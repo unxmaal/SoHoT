@@ -348,6 +348,8 @@ NOT_THE_CANDIDATE = (
     "error while finding module specification",
     "command not found",
     "no such file or directory",
+    # A sampling setting the runner chose and the pipeline refused. #401.
+    "guidance_scale has to be",
 )
 
 
