@@ -32,17 +32,8 @@ def _sh(*argv: str) -> str:
         return ""
 
 
-def _version(module: str) -> str:
-    try:
-        from importlib.metadata import version
-        return version(module)
-    except Exception:  # noqa: BLE001 - absent or unreadable is not fatal
-        return ""
-
-
-def _last_word(s: str) -> str:
-    parts = s.split()
-    return parts[-1] if parts else ""
+#: Keys every receipt has carried, present even when the package is absent.
+RECEIPT_VERSIONS = ("python", "mlx", "mlx-lm", "mflux", "litellm")
 
 
 def _dmi_model(path: str = "/sys/devices/virtual/dmi/id/product_name") -> str:
@@ -63,10 +54,15 @@ def capture() -> dict:
     memory_gb = (round(int(mem_bytes) / 1024**3) if mem_bytes.isdigit()
                  else round(memory.system_memory_gb()))
     accelerator = memory.detect()
+    from harness import machine
+    hw_model = (_sh("sysctl", "-n", "hw.model") or _dmi_model()
+                or platform.processor() or platform.machine())
 
     return {
-        "hw_model": (_sh("sysctl", "-n", "hw.model") or _dmi_model()
-                     or platform.processor() or platform.machine()),
+        "hw_model": hw_model,
+        # The store's machine identity, so a receipt names its machines row. #415.
+        "fingerprint": machine.fingerprint(hw_model, platform.platform(),
+                                           platform.machine()),
         "os": platform.platform(),
         # The macOS version where there is one, empty elsewhere -- rather than
         # a key named `macos` holding a Windows string.
@@ -82,14 +78,7 @@ def capture() -> dict:
         },
         "git_sha": _sh("git", "rev-parse", "--short=12", "HEAD") or "unknown",
         "git_dirty": bool(_sh("git", "status", "--porcelain")),
-        "versions": {
-            "python": platform.python_version(),
-            "mlx": _version("mlx"),
-            "mlx-lm": _version("mlx-lm"),
-            # mflux installs as a uv tool, so it is not importable from this
-            # venv and has to be asked. Never index into a possibly-empty split.
-            "mflux": _version("mflux") or _last_word(
-                _sh("mflux-generate", "--version")),
-            "litellm": _version("litellm"),
-        },
+        # The one probe remember_machine records, not a second one. #415.
+        "versions": {**dict.fromkeys(RECEIPT_VERSIONS, ""),
+                     **machine.versions()},
     }

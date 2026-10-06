@@ -19,7 +19,7 @@ from pathlib import Path
 
 from harness import paths, store
 
-SCHEMA_VERSION = 32
+SCHEMA_VERSION = 33
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
 VERDICTS = ("measured", "declined", "broken", "queued", "ignored", "screened")
@@ -181,10 +181,8 @@ CREATE TABLE IF NOT EXISTS verdicts (
 
 CREATE TABLE IF NOT EXISTS machines (
     id           INTEGER PRIMARY KEY,
-    -- Stable across runs and distinct between rigs. NOT the architecture and
-    -- NOT the hostname: a hostname changes without the machine changing, and
-    -- an architecture stays the same across two machines that measure
-    -- differently.
+    -- hw_model/OS family/arch (machine.fingerprint): never the hostname, never
+    -- the interpreter's platform string, which split one machine in two. #415.
     fingerprint  TEXT NOT NULL UNIQUE,
     hw_model     TEXT NOT NULL DEFAULT '',
     os           TEXT NOT NULL DEFAULT '',
@@ -197,7 +195,30 @@ CREATE TABLE IF NOT EXISTS machines (
     runtimes     TEXT NOT NULL DEFAULT '',
     ceiling_gb   REAL NOT NULL DEFAULT 0,
     first_seen   REAL NOT NULL,
-    last_seen    REAL NOT NULL
+    last_seen    REAL NOT NULL,
+    -- json package -> installed version, from machine.versions(). #415.
+    versions     TEXT NOT NULL DEFAULT '{}'
+);
+
+-- One `lh memory ramp` result; the headroom guard reads these. #299, #415.
+CREATE TABLE IF NOT EXISTS memory_limits (
+    id           INTEGER PRIMARY KEY,
+    machine_id   INTEGER NOT NULL REFERENCES machines(id),
+    measured_at  REAL NOT NULL,
+    margin_gb    REAL,
+    last_normal_gb REAL,
+    stopped      TEXT NOT NULL DEFAULT '',
+    report       TEXT NOT NULL DEFAULT '{}'
+);
+
+-- A machines row folded into another when their fingerprints became one. #415.
+CREATE TABLE IF NOT EXISTS machine_merges (
+    id               INTEGER PRIMARY KEY,
+    from_id          INTEGER NOT NULL,
+    from_fingerprint TEXT NOT NULL,
+    into_id          INTEGER NOT NULL REFERENCES machines(id),
+    repointed        TEXT NOT NULL DEFAULT '{}',
+    merged_at        REAL NOT NULL
 );
 
 -- One eval run, written by evals.run; results.json is its export. #410.
@@ -461,16 +482,8 @@ def until_met(until: str, facts: dict | None = None) -> bool:
             return False
     if key == "version" and ">" in want:
         pkg, _, floor = want.partition(">")
-        if "versions" in facts:
-            have = (facts.get("versions") or {}).get(pkg)
-        elif pkg == "llama.cpp":
-            from harness import serving
-            have = serving.llamacpp_build() or None
-        else:
-            # The same source load_until wrote the floor from: diffusers and
-            # mflux live in their own venvs, which importlib cannot see. #389.
-            from harness import feeds
-            have = feeds.installed_version(pkg) or None
+        # The recorded versions, the same probe load_until wrote from. #389, #415.
+        have = (facts.get("versions") or {}).get(pkg)
         a, b = _version_tuple(have), _version_tuple(floor)
         return a is not None and b is not None and a > b
     if key == "limit" and ">" in want:
@@ -514,7 +527,9 @@ def revisitable(conn: sqlite3.Connection, facts: dict | None = None) -> list:
     Only the verdict holding the state counts, so a condition that was
     already retracted does not resurrect.
     """
-    facts = facts if facts is not None else this_machine()
+    if facts is None:
+        # What this machine recorded, versions included, not a second probe. #415.
+        facts = recorded_facts(conn, remember_machine(conn)) or this_machine()
     rows = conn.execute("""
         SELECT p.name, p.lane, v.outcome, v.detail, v.until, v.tier,
                m.fingerprint AS decided_on
@@ -784,6 +799,7 @@ def _migrate(conn: sqlite3.Connection) -> None:
         conn.execute("ALTER TABLE proposals "
                      "ADD COLUMN size_bytes INTEGER NOT NULL DEFAULT 0")
     _add_card_facts(conn)
+    _add_machine_versions(conn)
     if have and have < 25:
         _backfill_state(conn)
     # The DDL above is CREATE IF NOT EXISTS, so v0 -> v1 and v1 -> v2 (which
@@ -908,12 +924,143 @@ def _migrate(conn: sqlite3.Connection) -> None:
         _reopen_terminal_harness_and_limit_facts(conn)
     if have and have < 30:
         backfill_sizes(conn)
+    if have and have < 33:
+        # After #411's backfill, so its downloads rows are repointed too.
+        merge_duplicate_machines(conn)
+        import_memory_limits_json(conn)
+        strip_machine_from_fetch_details(conn)
     conn.execute("CREATE INDEX IF NOT EXISTS ix_verdict_cand "
                  "ON verdicts(candidate_id)")
     conn.execute("CREATE INDEX IF NOT EXISTS ix_prop_state ON proposals(state)")
     conn.execute("INSERT OR REPLACE INTO meta VALUES ('schema', ?)",
                  (str(SCHEMA_VERSION),))
     conn.commit()
+
+
+def _add_machine_versions(conn) -> None:
+    if "versions" not in _columns(conn, "machines"):
+        conn.execute("ALTER TABLE machines "
+                     "ADD COLUMN versions TEXT NOT NULL DEFAULT '{}'")
+
+
+def _machine_fk_tables(conn) -> list[str]:
+    """Every table with a machine_id column, so a merge misses none. #415."""
+    if store.backend() == store.POSTGRES:
+        names = [r["table_name"] for r in conn.execute(
+            "SELECT DISTINCT table_name FROM information_schema.columns "
+            "WHERE column_name = 'machine_id'")]
+    else:
+        names = [r["name"] for r in conn.execute(
+            "SELECT name FROM sqlite_master WHERE type = 'table'")]
+        names = [n for n in names if "machine_id" in _columns(conn, n)]
+    return sorted(names)
+
+
+def merge_duplicate_machines(conn) -> dict:
+    """Fold machines rows whose fingerprint is now one into the oldest. #415.
+
+    Every machine_id is repointed and each fold is a machine_merges row.
+    Returns {"merged": n, "repointed": {table: rows}}.
+    """
+    from harness import machine as _machine
+    rows = [dict(r) for r in conn.execute(
+        "SELECT * FROM machines ORDER BY id").fetchall()]
+    groups: dict[str, list[dict]] = {}
+    for r in rows:
+        fp = _machine.fingerprint(r["hw_model"], r["os"], r["arch"]) \
+            if (r["hw_model"] or r["os"] or r["arch"]) else r["fingerprint"]
+        groups.setdefault(fp, []).append(r)
+    # A receipt that named no OS: the one machine with that board, if only one.
+    for fp in [f for f, m in groups.items()
+               if m[0]["hw_model"] and not _machine.os_family(m[0]["os"])]:
+        hw, arch = groups[fp][0]["hw_model"], groups[fp][0]["arch"]
+        homes = [f for f, m in groups.items() if f != fp
+                 and m[0]["hw_model"] == hw and m[0]["arch"] == arch]
+        if len(homes) == 1:
+            groups[homes[0]] = sorted(groups[homes[0]] + groups.pop(fp),
+                                      key=lambda r: r["id"])
+    tables = _machine_fk_tables(conn)
+    out: dict = {"merged": 0, "repointed": dict.fromkeys(tables, 0)}
+    now = time.time()
+    for fp, members in groups.items():
+        keep, rest = members[0], members[1:]
+        for r in rest:
+            moved = {}
+            for t in tables:
+                n = conn.execute(f"UPDATE {t} SET machine_id = ? "
+                                 f"WHERE machine_id = ?",
+                                 (keep["id"], r["id"])).rowcount
+                moved[t] = n
+                out["repointed"][t] += n
+            conn.execute(
+                "INSERT INTO machine_merges (from_id, from_fingerprint, "
+                "into_id, repointed, merged_at) VALUES (?,?,?,?,?)",
+                (r["id"], r["fingerprint"], keep["id"],
+                 json.dumps(moved, sort_keys=True), now))
+            conn.execute("DELETE FROM machines WHERE id = ?", (r["id"],))
+            out["merged"] += 1
+        if keep["fingerprint"] != fp or rest:
+            # The newest probe that said anything describes the machine now.
+            recent = sorted(members, key=lambda r: (-r["last_seen"], -r["id"]))
+
+            def latest(col, recent=recent):
+                return next((r[col] for r in recent if r[col]), recent[0][col])
+            conn.execute(
+                "UPDATE machines SET fingerprint = ?, os = ?, first_seen = ?, "
+                "last_seen = ?, memory_gb = ?, accelerator = ?, runtimes = ?, "
+                "ceiling_gb = ?, versions = ? WHERE id = ?",
+                (fp, latest("os"), min(r["first_seen"] for r in members),
+                 recent[0]["last_seen"], latest("memory_gb"),
+                 latest("accelerator"), latest("runtimes"), latest("ceiling_gb"),
+                 next((r["versions"] for r in recent
+                       if r.get("versions") not in (None, "", "{}")), "{}"),
+                 keep["id"]))
+    return out
+
+
+def import_memory_limits_json(conn, path: Path | None = None) -> int:
+    """memory-limits.json's ramp runs as memory_limits rows; the file is then dead. #415."""
+    from harness import machine as _machine, ramp
+    path = Path(path) if path is not None else paths.home() / "memory-limits.json"
+    try:
+        got = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return 0
+    n = 0
+    for old_fp, reports in (got.items() if isinstance(got, dict) else ()):
+        parts = str(old_fp).split("/")
+        fp = (_machine.fingerprint(*parts) if len(parts) == 3 else str(old_fp))
+        row = conn.execute("SELECT id FROM machines WHERE fingerprint = ?",
+                           (fp,)).fetchone()
+        if row:
+            mid = row["id"]
+        else:
+            hw, os_, arch = (parts + ["", "", ""])[:3] if len(parts) == 3 \
+                else ("", "", "")
+            mid = remember_machine(conn, {
+                "fingerprint": fp, "hw_model": hw, "os": os_, "arch": arch})
+        for report in (reports if isinstance(reports, list) else [reports]):
+            if isinstance(report, dict):
+                ramp.save(conn, report, mid)
+                n += 1
+    return n
+
+
+#: `needs-vllm on Mac14,12/macOS-.../arm64: ...`: machine_id already says where.
+_MACHINE_IN_DETAIL = re.compile(r"^(needs-[\w.-]+) on [^:]+: ")
+
+
+def strip_machine_from_fetch_details(conn) -> int:
+    """Drop the machine string fetch wrote into detail; machine_id holds it. #415."""
+    n = 0
+    for v in conn.execute("SELECT id, detail FROM verdicts WHERE tier = 'fetch' "
+                          "AND detail LIKE 'needs-% on %'").fetchall():
+        new = _MACHINE_IN_DETAIL.sub(r"\1: ", v["detail"], count=1)
+        if new != v["detail"]:
+            conn.execute("UPDATE verdicts SET detail = ? WHERE id = ?",
+                         (new, v["id"]))
+            n += 1
+    return n
 
 
 def _add_reasons(conn) -> None:
@@ -1823,11 +1970,11 @@ def this_machine() -> dict:
     be a cycle -- and writing a second copy is how this repo collected four
     answers to "which engines exist" (RULE #237).
 
-    The fingerprint is hw_model + os + arch rather than a hostname: a hostname
-    changes without the machine changing, and an architecture stays the same
-    across two rigs that measure differently. The 4070 under Linux and under
-    Windows are different rigs by comparable()'s own definition -- different
-    peak-memory instrument, different OCR grader -- and must not pool.
+    The fingerprint is machine.fingerprint: hw_model + OS family + arch. Not a
+    hostname, which changes without the machine changing, and not the
+    interpreter's platform string, which differs between two venvs on one
+    machine (#415). The 4070 under Linux and under Windows are different rigs
+    by comparable()'s own definition and keep different fingerprints.
     """
     global _THIS_MACHINE
     if _THIS_MACHINE is not None:
@@ -1849,15 +1996,18 @@ def this_machine() -> dict:
                            f"{float(acc.get('total_gb') or 0):.0f}GB".strip(),
             "runtimes": ",".join(sorted(mach.runtimes)),
             "ceiling_gb": _ins.ceiling_bytes() / (1024 ** 3),
+            "versions": dict(env.get("versions") or {}),
         }
     except Exception:  # noqa: BLE001
         # A store write must never fail because a probe did. An unknown
         # machine is recorded AS unknown rather than silently attributed to
         # whichever one wrote last, which would be worse than no column.
         got = {"hw_model": "", "os": "", "arch": "", "memory_gb": 0.0,
-               "accelerator": "", "runtimes": "", "ceiling_gb": 0.0}
-    got["fingerprint"] = "/".join(
-        x for x in (got["hw_model"], got["os"], got["arch"]) if x) or "unknown"
+               "accelerator": "", "runtimes": "", "ceiling_gb": 0.0,
+               "versions": {}}
+    from harness import machine as _machine
+    got["fingerprint"] = _machine.fingerprint(got["hw_model"], got["os"],
+                                              got["arch"])
     _THIS_MACHINE = got
     return got
 
@@ -1865,21 +2015,51 @@ def this_machine() -> dict:
 def remember_machine(conn: sqlite3.Connection, facts: dict | None = None) -> int:
     """The id of the row for this machine, inserting or refreshing it."""
     facts = dict(facts or this_machine())
+    if not facts.get("fingerprint"):
+        from harness import machine as _machine
+        facts["fingerprint"] = _machine.fingerprint(
+            facts.get("hw_model", ""), facts.get("os", ""), facts.get("arch", ""))
+    versions = {k: v for k, v in (facts.get("versions") or {}).items() if v}
     now = time.time()
     # One statement: a SELECT-then-INSERT let two first writers collide. #422.
     conn.execute(
         "INSERT INTO machines (fingerprint, hw_model, os, arch, memory_gb, "
-        "accelerator, runtimes, ceiling_gb, first_seen, last_seen) "
-        "VALUES (?,?,?,?,?,?,?,?,?,?) ON CONFLICT (fingerprint) DO UPDATE SET "
+        "accelerator, runtimes, ceiling_gb, first_seen, last_seen, versions) "
+        "VALUES (?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT (fingerprint) DO UPDATE SET "
         "last_seen = excluded.last_seen, runtimes = excluded.runtimes, "
         "ceiling_gb = excluded.ceiling_gb, memory_gb = excluded.memory_gb, "
-        "accelerator = excluded.accelerator",
-        (facts["fingerprint"], facts["hw_model"], facts["os"], facts["arch"],
-         facts["memory_gb"], facts["accelerator"], facts["runtimes"],
-         facts["ceiling_gb"], now, now))
+        "accelerator = excluded.accelerator, os = excluded.os, "
+        "versions = excluded.versions",
+        (facts["fingerprint"], facts.get("hw_model", ""), facts.get("os", ""),
+         facts.get("arch", ""), facts.get("memory_gb", 0.0),
+         facts.get("accelerator", ""), facts.get("runtimes", ""),
+         facts.get("ceiling_gb", 0.0), now, now,
+         json.dumps(versions, sort_keys=True)))
     row = conn.execute("SELECT id FROM machines WHERE fingerprint = ?",
                        (facts["fingerprint"],)).fetchone()
     return int(row["id"])
+
+
+def machine_row(conn, fingerprint: str | None = None) -> int | None:
+    """The id stored for a fingerprint (this machine's by default), or None."""
+    fp = fingerprint if fingerprint is not None else this_machine()["fingerprint"]
+    row = conn.execute("SELECT id FROM machines WHERE fingerprint = ?",
+                       (fp,)).fetchone()
+    return int(row["id"]) if row else None
+
+
+def recorded_facts(conn, machine_id: int) -> dict:
+    """A machines row as until_met's facts, versions decoded. #415."""
+    row = conn.execute("SELECT * FROM machines WHERE id = ?",
+                       (machine_id,)).fetchone()
+    if not row:
+        return {}
+    got = dict(row)
+    try:
+        got["versions"] = json.loads(got.get("versions") or "{}")
+    except ValueError:
+        got["versions"] = {}
+    return got
 
 
 class IllegalTransition(ValueError):

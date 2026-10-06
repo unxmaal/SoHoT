@@ -286,22 +286,6 @@ def _gguf_pick(repo: str, listing, snapshot):
     return gguf.choose(siblings, ins.ceiling_bytes()) or ()
 
 
-def machine_id() -> str:
-    """This machine, named so a shared store stays legible from another.
-
-    THE ACCELERATOR NAME IS NOT A MACHINE. This returned `arm64`, which is an
-    architecture: the RTX 4070 box under Linux and the same box under Windows
-    both answer `x86_64`, and comparable() already refuses to pool those two
-    because they measure with different instruments. The store's own
-    fingerprint is hw_model/os/arch and separates them. Issue #266.
-    """
-    from harness import memory_store as _ms
-    try:
-        return _ms.this_machine()["fingerprint"]
-    except Exception:  # noqa: BLE001
-        return "this machine"
-
-
 def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=None,
         free: int | None = None, lane: str = "",
         budget: int | None = None, listing=None,
@@ -347,7 +331,8 @@ def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=N
         # elsewhere sees a fact about this machine rather than about the model.
         needs = rank.unrunnable(row, None)
         if needs:
-            why = (f"{needs} on {machine_id()}: this machine has no runtime "
+            # verdicts.machine_id says where; the detail no longer does. #415.
+            why = (f"{needs}: this machine has no runtime "
                    f"that can load these weights")
             # AND WHAT WOULD END THE WAIT, as a predicate. `needs-cuda` is
             # `unrunnable`'s own spelling, so the condition derives from it

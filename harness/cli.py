@@ -1161,13 +1161,18 @@ def cmd_memory(a) -> int:
     from harness import memory_store as ms, ramp
 
     if a.action == "show":
-        path = ramp.default_path()
+        store = ms.connect()
         try:
-            text = path.read_text(encoding="utf-8")
-        except OSError:
-            return err(f"nothing measured yet: lh memory ramp writes {path}")
-        note(text)
-        emit(path=path, limits=json.loads(text))
+            limits = {r["fingerprint"]: ramp.runs(store, r["id"]) for r in
+                      store.execute("SELECT DISTINCT m.id, m.fingerprint "
+                                    "FROM memory_limits l JOIN machines m "
+                                    "ON m.id = l.machine_id").fetchall()}
+        finally:
+            store.close()
+        if not limits:
+            return err("nothing measured yet: lh memory ramp records one")
+        note(json.dumps(limits, indent=1, sort_keys=True))
+        emit(limits=limits)
         return 0
     note(f"allocating {a.step_gb:g} GB at a time until macOS first warns; "
          f"everything is freed at the end", flush=True)
@@ -1191,9 +1196,14 @@ def cmd_memory(a) -> int:
         note(f"margin: macOS warned {got['margin_gb']:.1f} GB short of the "
              f"guard's own available figure; the guard now reserves "
              f"the largest margin measured on this machine")
-    ramp.save(got, ramp.default_path(), ms.this_machine()["fingerprint"])
-    note(f"recorded in {ramp.default_path()}")
-    emit(path=ramp.default_path(), report=got)
+    store = ms.connect()
+    try:
+        mid = ms.remember_machine(store)
+        ramp.save(store, got, mid)
+    finally:
+        store.close()
+    note(f"recorded for machine {mid} in the store")
+    emit(machine_id=mid, report=got)
     return 0
 
 
@@ -1573,8 +1583,7 @@ def _report_queue(a) -> int:
     # after that or it counts rows that will never be offered. The image lane
     # held 11 waiting of which 6 were LoRAs. Issue #209.
     ranked = rank.rank(rows, serving=rank.serving(),
-                       measured_lanes=rank.lanes_with_receipts(),
-                       ceiling_gib=22.0)
+                       measured_lanes=rank.lanes_with_receipts())
     waiting, ranked = len(ranked), ranked[:getattr(a, "top", 25)]
     if a.json:
         print(json.dumps({"queue": ranked, "waiting": waiting,

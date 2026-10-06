@@ -135,13 +135,9 @@ def this_machine(conn) -> int:
 
 
 def mine(conn) -> tuple:
-    """Machine ids that are this machine, without writing a row."""
-    from harness import memory_store as ms
+    """This machine's id, without writing a row; one row per machine. #415."""
     from harness import runs
-    fp = ms.this_machine()["fingerprint"]
-    ids = {r["id"] for r in conn.execute(
-        "SELECT id FROM machines WHERE fingerprint = ?", (fp,)).fetchall()}
-    return tuple(sorted(ids | set(runs.here(conn))))
+    return tuple(runs.here(conn))
 
 
 def _in(ids) -> tuple[str, tuple]:

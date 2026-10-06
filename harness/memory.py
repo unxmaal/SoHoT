@@ -259,17 +259,15 @@ def _meminfo_available_gb(path: str = "/proc/meminfo") -> float:
 MIN_RESERVE_GB = 1.0
 
 
-def _fingerprint() -> str:
+def measured_reserve_gb(conn=None) -> float:
+    """The largest margin `lh memory ramp` stored for this machine, else the
+    default. #299, #415."""
     from harness import memory_store as ms
-    return ms.this_machine()["fingerprint"]
-
-
-def measured_reserve_gb() -> float:
-    """The largest margin `lh memory ramp` measured here, else the default. #299."""
-    from harness import ramp
+    from harness import ramp, runs
     try:
-        margins = [r.get("margin_gb") for r in
-                   ramp.runs(ramp.default_path(), _fingerprint())]
+        with runs.store(conn) as c:
+            margins = [r.get("margin_gb") for r in
+                       ramp.runs(c, ms.machine_row(c))]
     except Exception:  # noqa: BLE001 - the guard must not fail on its own record
         return DEFAULT_RESERVE_GB
     margins = [m for m in margins if isinstance(m, (int, float))]

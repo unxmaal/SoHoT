@@ -375,25 +375,20 @@ def engine_runtime(candidate: str) -> str:
     return ENGINE_RUNTIMES.get(head, "")
 
 
-def _llamacpp_build() -> str:
-    from harness import serving
-    return serving.llamacpp_build() or "0"
+def _installed(pkg: str) -> str:
+    """The recorded version of pkg on this machine, "0" when absent. #415."""
+    from harness import memory_store as ms
+    return ms.this_machine().get("versions", {}).get(pkg) or "0"
 
 
 def load_until(candidate: str = "") -> str:
     """The predicate that reopens a load failure: a newer runtime."""
     if candidate.startswith(LLAMACPP_PREFIX):
-        return f"version:llama.cpp>{_llamacpp_build()}"
+        return f"version:llama.cpp>{_installed('llama.cpp')}"
     runtime = engine_runtime(candidate)
     if runtime:
-        from harness import feeds
-        return f"version:{runtime}>{feeds.installed_version(runtime) or '0'}"
-    from importlib import metadata
-    try:
-        have = metadata.version(LOAD_RUNTIME)
-    except metadata.PackageNotFoundError:
-        have = "0"
-    return f"version:{LOAD_RUNTIME}>{have}"
+        return f"version:{runtime}>{_installed(runtime)}"
+    return f"version:{LOAD_RUNTIME}>{_installed(LOAD_RUNTIME)}"
 
 
 def _sentence(cls: str, why: str, limit: str) -> str:

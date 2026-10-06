@@ -351,11 +351,21 @@ def test_behind_is_false_when_either_version_is_unreadable():
     assert not feeds.behind("0.5.1", "0.5.1")
 
 
-def test_a_pinned_service_version_is_found_in_versions_sh(tmp_path):
+def test_only_a_uv_with_service_pin_counts_as_installed(tmp_path):
+    """#415: a pin is what uv installs for a `uv run --with` service, nothing else."""
+    from harness import machine
     pins = tmp_path / "versions.sh"
     pins.write_text('MLX_AUDIO_PIN="mlx-audio==0.5.1"\n'
-                    'MISAKI_PIN="misaki[en]==0.9.4"\n', encoding="utf-8")
-    assert feeds.installed_version("misaki", pins) == "0.9.4"
+                    'MISAKI_PIN="misaki[en]==0.9.4"\n'
+                    'DIFFUSERS_PIN="diffusers==0.40.0"\n', encoding="utf-8")
+    assert machine._uv_with_pins(pins) == {"mlx-audio": "0.5.1"}
+
+
+def test_installed_version_reads_the_recorded_versions(monkeypatch):
+    from harness import memory_store as ms
+    monkeypatch.setattr(ms, "_THIS_MACHINE", {"versions": {"mlx": "0.31.2"}})
+    assert feeds.installed_version("mlx") == "0.31.2"
+    assert feeds.installed_version("diffusers") == ""
 
 
 def test_every_releases_source_declares_what_it_tracks():

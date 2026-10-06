@@ -67,7 +67,8 @@ def _summary(cand, failure):
 
 
 def test_llama_server_failing_to_load_waits_on_a_newer_build(monkeypatch):
-    monkeypatch.setattr(screen, "_llamacpp_build", lambda: "10809")
+    monkeypatch.setattr(screen, "_installed",
+                        lambda pkg: {"llama.cpp": "10809"}.get(pkg, "0"))
     cand = "llamacpp:K2-Horizon-7B-Q4_K_M"
     fail = ('chunk-bytes: gateway returned HTTP 500: {"error":{"code":500,'
             '"message":"model name=K2-Horizon-7B-Q4_K_M failed to load"}}')

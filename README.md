@@ -1212,8 +1212,11 @@ lh memory show    # what was measured, per machine
 The ramp fills memory with random data, so the compressor cannot shrink it.
 It samples `kern.memorystatus_vm_pressure_level` after every step and stops
 at the first warning, at compressor swap-outs, or at a floor of 10% free. It
-frees everything at the end and appends the run to
-`$LOCALHARNESS_HOME/memory-limits.json` under this machine's fingerprint.
+frees everything at the end and records the run as a `memory_limits` row in
+the store, against this machine's `machines` row. A machine is
+hw_model/OS family/arch, never the Python build, so two venvs on one Mac are
+one machine (#415). A `memory-limits.json` from before schema 30 is imported
+once and then ignored.
 
 Each run records a **margin**: how far short of the guard's own "available"
 figure (vm_stat free + inactive) macOS warned. The headroom guard reserves
