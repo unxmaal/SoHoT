@@ -1,0 +1,234 @@
+"""The context each GGUF is served at: trained length, capped by what its KV cache leaves room for. #498."""
+from __future__ import annotations
+
+import struct
+from pathlib import Path
+from typing import NamedTuple
+
+_SCALAR = {0: "<B", 1: "<b", 2: "<H", 3: "<h", 4: "<I", 5: "<i", 6: "<f",
+           7: "<?", 10: "<Q", 11: "<q", 12: "<d"}
+_STRING, _ARRAY = 8, 9
+#: Arrays longer than this (tokenizer vocabularies) are skipped, not kept.
+_KEEP_ARRAY = 4096
+
+
+def _read(fh, fmt: str):
+    size = struct.calcsize(fmt)
+    raw = fh.read(size)
+    if len(raw) != size:
+        raise ValueError("truncated GGUF header")
+    return struct.unpack(fmt, raw)[0]
+
+
+def _string(fh) -> str:
+    n = _read(fh, "<Q")
+    return fh.read(n).decode("utf-8", "replace")
+
+
+def _value(fh, kind: int):
+    if kind in _SCALAR:
+        return _read(fh, _SCALAR[kind])
+    if kind == _STRING:
+        return _string(fh)
+    if kind == _ARRAY:
+        inner, count = _read(fh, "<I"), _read(fh, "<Q")
+        if count > _KEEP_ARRAY:
+            if inner in _SCALAR:
+                fh.seek(count * struct.calcsize(_SCALAR[inner]), 1)
+            else:
+                for _ in range(count):
+                    _value(fh, inner)
+            return None
+        return [_value(fh, inner) for _ in range(count)]
+    raise ValueError(f"unknown GGUF value type {kind}")
+
+
+#: Below this a served model fails ordinary agent work; refuse rather than serve it.
+FLOOR = 8192
+STEP = 1024
+#: Bytes per cached element for each llama-server cache type, as (numerator, denominator).
+CACHE_BYTES = {"f32": (4, 1), "f16": (2, 1), "bf16": (2, 1), "q8_0": (34, 32),
+               "q5_1": (24, 32), "q5_0": (22, 32), "q4_1": (20, 32),
+               "q4_0": (18, 32), "iq4_nl": (18, 32)}
+
+
+class Choice(NamedTuple):
+    ctx: int
+    trained: int
+    kv_per_token: int
+    why: str
+
+
+def _arch(meta: dict, key: str, default=None):
+    return meta.get(f"{meta.get('general.architecture', '')}.{key}", default)
+
+
+def trained(meta: dict) -> int:
+    """The context the model was trained for, 0 when the header does not say."""
+    return int(_arch(meta, "context_length") or 0)
+
+
+def _kv_heads(meta: dict) -> list[int]:
+    """KV heads per KV-bearing layer; recurrent layers are left out."""
+    blocks = int(_arch(meta, "block_count") or 0)
+    heads = _arch(meta, "attention.head_count_kv", _arch(meta, "attention.head_count"))
+    if isinstance(heads, list):
+        return [int(h) for h in heads if h]
+    if not heads or not blocks:
+        return []
+    layers = blocks - int(_arch(meta, "nextn_predict_layers") or 0)
+    interval = int(_arch(meta, "full_attention_interval") or 0)
+    if interval > 1:
+        layers //= interval
+    return [int(heads)] * layers
+
+
+def kv_bytes_per_token(meta: dict, cache_type: str = "f16") -> int:
+    """f16 KV bytes one token costs; sliding-window layers are costed as full. 0 if unknown."""
+    heads = _kv_heads(meta)
+    q_heads = _arch(meta, "attention.head_count")
+    q_heads = max(q_heads) if isinstance(q_heads, list) else q_heads
+    embd = _arch(meta, "embedding_length")
+    per_head = embd // q_heads if embd and q_heads else 0
+    k = int(_arch(meta, "attention.key_length") or per_head)
+    v = int(_arch(meta, "attention.value_length") or per_head)
+    num, den = CACHE_BYTES[cache_type]
+    return sum(h * (k + v) for h in heads) * num // den
+
+
+def choose(meta: dict, weights: int, budget: int, slots: int = 1,
+           cache_type: str = "f16", floor: int = FLOOR) -> Choice:
+    """min(trained, what fits beside the weights), per slot, in steps of 1024; 0 below `floor`."""
+    full = trained(meta)
+    per = kv_bytes_per_token(meta, cache_type)
+    if not full or not per:
+        return Choice(0, full, per, "refused: the GGUF header gives no trained context "
+                      "or KV shape to size a cache from")
+    fits = max(budget - weights, 0) // per // max(slots, 1) // STEP * STEP
+    ctx = min(full // STEP * STEP or full, fits)
+    if ctx < floor:
+        limit = (f"trained for {full}" if full < floor else
+                 f"{(budget - weights) / 1024 ** 3:.1f} GiB left after the weights "
+                 f"holds {fits} tokens at {per} B/token")
+        return Choice(0, full, per, f"refused: {limit}, under the {floor}-token floor")
+    if ctx < full:
+        return Choice(ctx, full, per, f"memory: {fits} tokens fit at {per} B/token "
+                      f"(trained {full})")
+    return Choice(ctx, full, per, f"trained: {full} tokens, {per * ctx / 1024 ** 3:.1f} "
+                  "GiB of KV fits")
+
+
+def read_meta(path) -> dict:
+    """The key/value metadata of a GGUF file; long arrays come back as None."""
+    with open(path, "rb") as fh:
+        if fh.read(4) != b"GGUF":
+            raise ValueError(f"{Path(path).name}: not a GGUF file")
+        version = _read(fh, "<I")
+        if version < 2:
+            raise ValueError(f"{Path(path).name}: GGUF v{version} is not read")
+        _read(fh, "<Q")
+        count = _read(fh, "<Q")
+        meta = {}
+        for _ in range(count):
+            key = _string(fh)
+            meta[key] = _value(fh, _read(fh, "<I"))
+        return meta
+
+
+def _weights(path) -> int:
+    return Path(path).stat().st_size
+
+
+def budget_bytes(conn=None) -> int:
+    """The machine's ceiling less its measured reserve (#415): what weights plus KV may take."""
+    from harness import memory
+    return int((memory.ceiling_gb() - memory.measured_reserve_gb(conn)) * 1024 ** 3)
+
+
+def plan(conn, budget: int | None = None, slots: int = 1,
+         cache_type: str = "f16") -> list[dict]:
+    """Choose and record the context of every live GGUF row on this machine."""
+    import time
+
+    from harness import downloads
+    budget = budget_bytes(conn) if budget is None else budget
+    out = []
+    for row in downloads.live(conn, kind=downloads.GGUF):
+        path = Path(row["path"])
+        if not path.exists():
+            continue
+        try:
+            got = choose(read_meta(path), _weights(path), budget, slots, cache_type)
+        except (OSError, ValueError, KeyError, struct.error) as exc:
+            got = Choice(0, 0, 0, f"refused: unreadable GGUF header ({exc})")
+        conn.execute("UPDATE downloads SET ctx = ?, ctx_trained = ?, kv_bytes_token = ?, "
+                     "ctx_slots = ?, ctx_why = ?, ctx_at = ? WHERE id = ?",
+                     (got.ctx, got.trained, got.kv_per_token, slots, got.why,
+                      time.time(), row["id"]))
+        out.append({"stem": path.name[:-len(".gguf")], "path": str(path),
+                    "ctx": got.ctx, "why": got.why})
+    conn.commit()
+    return out
+
+
+def served(conn, stem: str) -> dict | None:
+    """The recorded context row for a router stem on this machine, or None."""
+    from harness import downloads
+    for row in downloads.live(conn, kind=downloads.GGUF):
+        if Path(row["path"]).name == f"{stem}.gguf" and row.get("ctx_at"):
+            return row
+    return None
+
+
+def refusal(stem: str, conn=None) -> str:
+    """Why this stem is not served, or "" when it is or nothing is recorded."""
+    from harness import downloads
+    try:
+        with downloads.store(conn) as c:
+            row = served(c, stem)
+    except Exception:  # noqa: BLE001
+        return ""
+    return row["ctx_why"] if row and not row["ctx"] else ""
+
+
+def preset_text(plans: list[dict], default_ctx: int, slots: int) -> str:
+    """llama-server's --models-preset INI: [*] for unrecorded files, one section per servable stem."""
+    def args(ctx: int) -> list[str]:
+        out = [f"c = {ctx}", f"parallel = {slots}"]
+        return out + ["kv-unified = true"] if slots > 1 else out
+    lines = ["version = 1", "", "[*]", *args(default_ctx), ""]
+    for p in sorted(plans, key=lambda p: p["stem"]):
+        if p["ctx"]:
+            lines += [f"; {p['why']}", f"[{p['stem']}]", *args(p["ctx"]), ""]
+        else:
+            lines += [f"; {p['stem']} {p['why']}", ""]
+    return "\n".join(lines)
+
+
+def main(argv=None) -> int:
+    """`python -m harness.context OUT.ini`: plan, record and write the router preset."""
+    import os
+    import sys
+
+    from harness import memory_store as ms
+    argv = sys.argv[1:] if argv is None else argv
+    if len(argv) != 1:
+        print("usage: python -m harness.context PRESET.ini", file=sys.stderr)
+        return 2
+    slots = max(int(os.environ.get("LLAMACPP_PARALLEL") or 1), 1)
+    cache = os.environ.get("LLAMACPP_CACHE_TYPE") or "f16"
+    default = int(os.environ.get("LLAMACPP_CTX") or 16384)
+    conn = ms.connect()
+    try:
+        plans = plan(conn, slots=slots, cache_type=cache)
+    finally:
+        conn.close()
+    for p in plans:
+        print(f"context: {p['stem']}: {p['ctx'] or 'refused'} ({p['why']})", file=sys.stderr)
+    Path(argv[0]).write_text(preset_text(plans, default, slots), encoding="utf-8")
+    print(argv[0])
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

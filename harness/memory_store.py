@@ -378,7 +378,14 @@ CREATE TABLE IF NOT EXISTS downloads (
     removed_at   REAL,
     removed_by   TEXT NOT NULL DEFAULT '',
     removal_verdict_id INTEGER REFERENCES verdicts(id),
-    machine_id   INTEGER REFERENCES machines(id)
+    machine_id   INTEGER REFERENCES machines(id),
+    -- A gguf row's served context per slot; 0 is refused or not computed. #498.
+    ctx          INTEGER NOT NULL DEFAULT 0,
+    ctx_trained  INTEGER NOT NULL DEFAULT 0,
+    kv_bytes_token INTEGER NOT NULL DEFAULT 0,
+    ctx_slots    INTEGER NOT NULL DEFAULT 0,
+    ctx_why      TEXT NOT NULL DEFAULT '',
+    ctx_at       REAL
 );
 
 CREATE TABLE IF NOT EXISTS edges (
@@ -977,6 +984,7 @@ def _migrate_steps(conn: sqlite3.Connection) -> None:
     _add_reasons(conn)
     _add_result_split(conn)
     _add_first_token(conn)
+    _add_served_context(conn)
     if "size_bytes" not in _columns(conn, "proposals"):
         conn.execute("ALTER TABLE proposals "
                      "ADD COLUMN size_bytes INTEGER NOT NULL DEFAULT 0")
@@ -1391,6 +1399,17 @@ def _add_first_token(conn) -> None:
                      ("prefill_s", "REAL"), ("cold", "INTEGER")):
         if col not in _columns(conn, "results"):
             conn.execute(f"ALTER TABLE results ADD COLUMN {col} {ddl}")
+
+
+def _add_served_context(conn) -> None:
+    """downloads' served-context columns, on an older store. #498."""
+    for col, ddl in (("ctx", "INTEGER NOT NULL DEFAULT 0"),
+                     ("ctx_trained", "INTEGER NOT NULL DEFAULT 0"),
+                     ("kv_bytes_token", "INTEGER NOT NULL DEFAULT 0"),
+                     ("ctx_slots", "INTEGER NOT NULL DEFAULT 0"),
+                     ("ctx_why", "TEXT NOT NULL DEFAULT ''"), ("ctx_at", "REAL")):
+        if col not in _columns(conn, "downloads"):
+            conn.execute(f"ALTER TABLE downloads ADD COLUMN {col} {ddl}")
 
 
 def _add_reasons(conn) -> None:
