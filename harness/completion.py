@@ -204,7 +204,9 @@ def complete_full(prompt: str, model: str, gateway: str = DEFAULT_GATEWAY,
     if top_logprobs:
         payload["logprobs"] = True
         payload["top_logprobs"] = int(top_logprobs)
-    if stream:
+    # LiteLLM drops logprobs from a streamed reply, and the logprobs are the
+    # product here, so a logprobs request is never streamed (RULE #426).
+    if stream and not top_logprobs:
         payload["stream"] = True
         payload["stream_options"] = {"include_usage": True}
     try:
