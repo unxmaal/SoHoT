@@ -19,7 +19,7 @@ from pathlib import Path
 
 from harness import paths, store
 
-SCHEMA_VERSION = 30
+SCHEMA_VERSION = 31
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
 VERDICTS = ("measured", "declined", "broken", "queued", "ignored", "screened")
@@ -234,6 +234,33 @@ CREATE TABLE IF NOT EXISTS adoptions (
     adopted_at   REAL NOT NULL
 );
 
+-- Weights on disk, one row per fetched or found path on one machine. #411.
+CREATE TABLE IF NOT EXISTS downloads (
+    id           INTEGER PRIMARY KEY,
+    proposal_id  INTEGER REFERENCES proposals(id) ON DELETE SET NULL,
+    repo         TEXT NOT NULL DEFAULT '',
+    -- hub: the models-- dir; gguf: the file in llama-server's models dir.
+    kind         TEXT NOT NULL,
+    path         TEXT NOT NULL,
+    file         TEXT NOT NULL DEFAULT '',
+    -- fetch, script, hub-link, scan, backfill, partial.
+    origin       TEXT NOT NULL DEFAULT '',
+    -- For a hub-link GGUF, the hub file it points at.
+    source       TEXT NOT NULL DEFAULT '',
+    bytes        INTEGER NOT NULL DEFAULT 0,
+    files        INTEGER NOT NULL DEFAULT 0,
+    -- Config or weights present when measured; a card alone is 0. #399.
+    complete     INTEGER NOT NULL DEFAULT 0,
+    -- Repos its own config names, as JSON. #196.
+    requires     TEXT NOT NULL DEFAULT '[]',
+    started_at   REAL,
+    finished_at  REAL,
+    removed_at   REAL,
+    removed_by   TEXT NOT NULL DEFAULT '',
+    removal_verdict_id INTEGER REFERENCES verdicts(id),
+    machine_id   INTEGER REFERENCES machines(id)
+);
+
 CREATE TABLE IF NOT EXISTS edges (
     id          INTEGER PRIMARY KEY,
     src         INTEGER NOT NULL REFERENCES proposals(id) ON DELETE CASCADE,
@@ -281,6 +308,8 @@ CREATE INDEX IF NOT EXISTS ix_results_run ON results(run_id);
 CREATE INDEX IF NOT EXISTS ix_results_cand ON results(candidate_id);
 CREATE INDEX IF NOT EXISTS ix_adoptions_lane ON adoptions(lane, adopted_at);
 CREATE INDEX IF NOT EXISTS ix_edges_src ON edges(src);
+CREATE INDEX IF NOT EXISTS ix_downloads_repo ON downloads(repo);
+CREATE INDEX IF NOT EXISTS ix_downloads_path ON downloads(path);
 CREATE INDEX IF NOT EXISTS ix_edges_dst ON edges(dst);
 """
 
@@ -751,6 +780,10 @@ def _migrate(conn: sqlite3.Connection) -> None:
                          "INTEGER REFERENCES runs(id)")
         from harness import runs
         runs.backfill(conn)
+    if have and have < 31:
+        # Before the older steps, so have() reads rows, not the hub. #411.
+        from harness import downloads
+        downloads.backfill(conn)
     if have and have < 4 and "description" not in _columns(conn, "proposals"):
         conn.execute("ALTER TABLE proposals "
                      "ADD COLUMN description TEXT NOT NULL DEFAULT ''")
@@ -1264,7 +1297,7 @@ def _requeue_screens_of_missing_weights(conn) -> None:
     from harness import fetching
     for r in _stated(conn, "p.state = 'broken'"):
         if "no such file or directory" in (r["detail"] or "").lower() \
-                and not fetching.have(r["name"]):
+                and not fetching.have(r["name"], conn):
             _migration_retraction(conn, r["id"], r["name"], "queued", SCREEN,
                          f"retracted: {r['name']}'s weights were never "
                          f"downloaded, so the screen ran on nothing")
@@ -1370,7 +1403,7 @@ def backfill_candidates(conn, runs=None) -> dict:
     off a spec-named proposal never becomes its new proposal's latest row.
     """
     import json
-    from harness import candidates as C, gguf, screen
+    from harness import candidates as C, screen
     from harness.serving import LLAMACPP_PREFIX
 
     counts = {"gguf": 0, "proposals": 0, "receipt_specs": 0,
@@ -1380,7 +1413,10 @@ def backfill_candidates(conn, runs=None) -> dict:
     fakes = {r["id"]: dict(r) for r in _adopted_by_name(conn)}
     lane_of = {r["name"]: r["lane"] for r in conn.execute(
         "SELECT name, lane FROM proposals")}
-    for repo, filename in sorted(gguf._load().items()):
+    for d in conn.execute(
+            "SELECT DISTINCT repo, file FROM downloads "
+            "WHERE kind = 'gguf' AND file != '' ORDER BY repo").fetchall():
+        repo, filename = d["repo"], d["file"]
         if repo in lane_of and str(filename).endswith(".gguf"):
             if C.ensure(conn, f"{LLAMACPP_PREFIX}{filename[:-len('.gguf')]}",
                         proposal=repo, lane=lane_of[repo]):
@@ -1395,7 +1431,7 @@ def backfill_candidates(conn, runs=None) -> dict:
             continue
         try:
             spec = screen.candidate_for(r["lane"], r["name"],
-                                        r["description"] or "", adopt=False)
+                                        r["description"] or "", conn=conn)
         except Exception:  # noqa: BLE001
             spec = ""
         cid = C.ensure(conn, spec, proposal=r["name"], lane=r["lane"]) \

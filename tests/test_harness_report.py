@@ -297,7 +297,7 @@ def test_svg_shows_local_large_even_when_q3_30b_won_the_run(
 
 def _key(lane, served):
     from harness import candidates, screen
-    key = candidates.key_of(screen.candidate_for(lane, served, adopt=False)
+    key = candidates.key_of(screen.candidate_for(lane, served)
                             or served)
     if not key:
         pytest.skip(f"no runner for {served} on this platform")

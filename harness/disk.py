@@ -1,4 +1,9 @@
-"""What the weights cache holds, what uses it, and what may go. #370, #373."""
+"""What the weights cache holds, what uses it, and what may go. #370, #373.
+
+The hub tree and the GGUF dir say what is physically present; the downloads
+table says what each path is (#411). A path with no row is drift: reported,
+never named by guessing, and never deleted.
+"""
 from __future__ import annotations
 
 import os
@@ -8,13 +13,13 @@ import time
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
+from harness import downloads
+
 KEEP, QUEUED, REJECTED, UNKNOWN = "keep", "queued", "rejected", "unknown"
 GROUPS = (KEEP, QUEUED, REJECTED, UNKNOWN)
 
 #: Rejected weights survive this long so a harness-fault verdict can be re-screened.
 GRACE_SECONDS = 24 * 3600
-#: A partial download untouched this long has no live fetch writing it.
-OWNED_SECONDS = 3600
 
 REJECTIONS = ("broken", "declined")
 #: Tiers that run after weights are fetched; an inspect refusal never downloaded anything.
@@ -39,6 +44,8 @@ ENGINE_REPOS = {
     "acestep": ("ACE-Step/Ace-Step1.5", "ACE-Step/acestep-5Hz-lm-0.6B"),
 }
 
+UNRECORDED = "no download row; `lh disk --record` names it"
+
 
 @dataclass
 class Entry:
@@ -55,6 +62,9 @@ class Entry:
     decided_at: float = 0.0
     verdict_id: int | None = None
     links: list = field(default_factory=list)
+    download_id: int | None = None
+    proposal_ids: list = field(default_factory=list)
+    unrecorded: bool = False
 
 
 @dataclass
@@ -71,6 +81,7 @@ class Inventory:
     entries: list
     incomplete: list
     problems: list
+    gone: list = field(default_factory=list)
 
     @property
     def complete(self) -> bool:
@@ -78,13 +89,11 @@ class Inventory:
 
 
 def hub_root() -> Path:
-    hf = os.environ.get("HF_HOME") or Path.home() / ".cache" / "huggingface"
-    return Path(hf) / "hub"
+    return downloads.hub_root()
 
 
 def gguf_root() -> Path:
-    from harness import gguf
-    return gguf.models_dir()
+    return downloads.gguf_root()
 
 
 def _stem(filename: str) -> str:
@@ -142,7 +151,17 @@ def _aliases(files, sources: dict | None = None) -> tuple[dict, list]:
     return out, problems
 
 
-def _resolve(spec: str, aliases: dict) -> tuple[set, set]:
+def _stored_repo(conn, spec: str) -> str:
+    """The proposal a stored candidate row names for `spec`, if any. #407."""
+    if conn is None or not spec:
+        return ""
+    row = conn.execute(
+        "SELECT p.name FROM candidates c JOIN proposals p "
+        "ON p.id = c.proposal_id WHERE c.spec = ?", (spec,)).fetchone()
+    return row["name"] if row else ""
+
+
+def _resolve(spec: str, aliases: dict, conn=None) -> tuple[set, set]:
     """The repos and GGUF stems an engine spec or alias loads."""
     s = (spec or "").strip()
     if s in aliases:
@@ -154,8 +173,9 @@ def _resolve(spec: str, aliases: dict) -> tuple[set, set]:
     for key in (bare, head):
         if key in ENGINE_REPOS:
             return set(ENGINE_REPOS[key]), set()
-    repo = repo_of(s)
-    return ({repo} if repo else set()), set()
+    # Both the stored row and the spelling: a keeper is never narrowed.
+    repos = {r for r in (_stored_repo(conn, s), repo_of(s)) if r}
+    return repos, set()
 
 
 def keepers(conn=None, gateway_files=None, typed=None, adopted=None) -> Keepers:
@@ -167,7 +187,7 @@ def keepers(conn=None, gateway_files=None, typed=None, adopted=None) -> Keepers:
         k.problems.append("no gateway aliases could be read")
 
     def add(spec: str, why: str) -> None:
-        repos, stems = _resolve(spec, aliases)
+        repos, stems = _resolve(spec, aliases, conn)
         for r in repos:
             k.repos.setdefault(r.lower(), why)
         for s in stems:
@@ -195,11 +215,11 @@ def keepers(conn=None, gateway_files=None, typed=None, adopted=None) -> Keepers:
 
 
 def latest_verdicts(conn) -> dict:
-    """Each proposal's state and the verdict that set it. #409."""
+    """Each proposal's state and the verdict that set it, by name. #409."""
     rows = conn.execute(
-        "SELECT p.name, v.id, p.state AS outcome, v.tier, v.decided_at "
-        "FROM proposals p JOIN verdicts v ON v.id = p.state_verdict_id "
-        "ORDER BY v.id").fetchall()
+        "SELECT p.name, p.id AS pid, v.id, p.state AS outcome, v.tier, "
+        "v.decided_at FROM proposals p JOIN verdicts v "
+        "ON v.id = p.state_verdict_id ORDER BY v.id").fetchall()
     return {str(r["name"]).lower(): dict(r) for r in rows}
 
 
@@ -214,75 +234,111 @@ def _du(path: Path) -> tuple[int, float]:
     return size, newest
 
 
-def _manifest_files() -> dict:
-    from harness import gguf
-    return {name: repo for repo, name in gguf._load().items()}
+def _rows(conn) -> dict:
+    """This machine's live download rows, by path."""
+    if conn is None:
+        return {}
+    out = {}
+    for r in downloads.live(conn):
+        out.setdefault(r["path"], r)
+    return out
 
 
-def _scan(hub: Path, ggufs: Path, sources: dict) -> tuple[list, list]:
+def _named(e: Entry, row: dict | None) -> None:
+    if row is None:
+        e.unrecorded = True
+        return
+    e.repo, e.download_id = row["repo"] or "", row["id"]
+    if row.get("proposal_id"):
+        e.proposal_ids.append(row["proposal_id"])
+    if e.kind == downloads.HUB and e.repo:
+        e.name = e.repo
+
+
+def _scan(hub: Path, ggufs: Path, rows: dict) -> tuple[list, list]:
     entries, by_dir = [], {}
-    if hub.is_dir():
-        for d in sorted(hub.iterdir()):
-            if not d.name.startswith("models--") or d.is_symlink() \
-                    or not d.is_dir():
-                continue
-            repo = d.name[len("models--"):].replace("--", "/", 1)
-            size, mtime = _du(d)
-            e = Entry("hub", str(d), repo, repo, size, mtime)
+    for kind, p in downloads.scan(hub, ggufs):
+        if kind == downloads.HUB:
+            size, mtime = _du(p)
+            e = Entry("hub", str(p), p.name, "", size, mtime)
+            _named(e, rows.get(downloads.key(p)))
             entries.append(e)
-            by_dir[d.name] = e
+            by_dir[p.name] = e
     hub_real = hub.resolve() if hub.exists() else hub
-    if ggufs.is_dir():
-        for f in sorted(ggufs.iterdir()):
-            if not f.name.lower().endswith(".gguf"):
+    for kind, f in downloads.scan(hub, ggufs):
+        if kind != downloads.GGUF:
+            continue
+        row = rows.get(downloads.key(f))
+        if f.is_symlink():
+            target = Path(os.path.realpath(f))
+            try:
+                top = target.relative_to(hub_real).parts[0]
+            except (ValueError, IndexError):
+                top = ""
+            if top in by_dir:
+                owner = by_dir[top]
+                owner.links.append(str(f))
+                if row and row.get("proposal_id"):
+                    owner.proposal_ids.append(row["proposal_id"])
                 continue
-            if f.is_symlink():
-                target = Path(os.path.realpath(f))
-                try:
-                    top = target.relative_to(hub_real).parts[0]
-                except (ValueError, IndexError):
-                    top = ""
-                if top in by_dir:
-                    by_dir[top].links.append(str(f))
-                    continue
-                st = os.lstat(f)
-                entries.append(Entry("gguf", str(f), f.name,
-                                     sources.get(f.name, ""), 0, st.st_mtime))
-                continue
+            st = os.lstat(f)
+            e = Entry("gguf", str(f), f.name, "", 0, st.st_mtime)
+        else:
             st = f.stat()
-            entries.append(Entry("gguf", str(f), f.name,
-                                 sources.get(f.name, ""), st.st_size,
-                                 st.st_mtime))
+            e = Entry("gguf", str(f), f.name, "", st.st_size, st.st_mtime)
+        _named(e, row)
+        entries.append(e)
     incomplete = []
     if hub.is_dir():
         for blob in sorted(hub.glob("models--*/blobs/*.incomplete")):
             st = os.lstat(blob)
             incomplete.append({"path": str(blob), "size": st.st_size,
-                               "mtime": st.st_mtime})
+                               "mtime": st.st_mtime,
+                               "dir": str(blob.parent.parent)})
     return entries, incomplete
 
 
-def _names(e: Entry) -> list[str]:
-    out = [e.repo.lower()] if e.repo else []
+def _proposal_ids(conn, e: Entry) -> set:
+    """The proposals this entry's rows name, and the GGUF stems' candidates."""
+    ids = set(e.proposal_ids)
+    if conn is None:
+        return ids
+    if e.repo:
+        for r in conn.execute("SELECT id FROM proposals WHERE lower(name) = ?",
+                              (e.repo.lower(),)):
+            ids.add(r["id"])
+    from harness.serving import LLAMACPP_PREFIX
+    for stem in _stems(e):
+        spec = f"{LLAMACPP_PREFIX}{stem}"
+        for r in conn.execute(
+                "SELECT c.proposal_id AS id FROM candidates c "
+                "WHERE lower(c.spec) = ? AND c.proposal_id IS NOT NULL "
+                "UNION SELECT id FROM proposals WHERE lower(name) = ?",
+                (spec, spec)):
+            ids.add(r["id"])
+    return ids
+
+
+def _stems(e: Entry) -> list[str]:
     stems = [_stem(Path(p).name) for p in e.links]
     if e.kind == "gguf":
         stems.append(_stem(e.name))
-    return out + [f"llamacpp:{s}" for s in stems]
+    return stems
 
 
-def _classify(e: Entry, k: Keepers, verdicts: dict) -> None:
-    seen = [verdicts[n] for n in _names(e) if n in verdicts]
+def _classify(e: Entry, k: Keepers, verdicts: dict, conn=None) -> None:
+    by_pid = {r["pid"]: r for r in verdicts.values()}
+    seen = [by_pid[i] for i in _proposal_ids(conn, e) if i in by_pid]
     last = max(seen, key=lambda r: r["id"]) if seen else None
     if last:
         e.outcome, e.tier = last["outcome"], last["tier"]
         e.decided_at, e.verdict_id = float(last["decided_at"]), last["id"]
-    stems = [_stem(Path(p).name) for p in e.links]
-    if e.kind == "gguf":
-        stems.append(_stem(e.name))
     why = (k.repos.get(e.repo.lower()) if e.repo else None) \
-        or next((k.stems[s] for s in stems if s in k.stems), None)
+        or next((k.stems[s] for s in _stems(e) if s in k.stems), None)
     if why:
         e.group, e.why = KEEP, why
+    elif e.unrecorded:
+        e.group, e.why = UNKNOWN, UNRECORDED
     elif last and last["outcome"] == "measured":
         e.group, e.why = KEEP, f"measured at {last['tier']}"
     elif last and last["outcome"] in WAITING:
@@ -297,8 +353,7 @@ def _classify(e: Entry, k: Keepers, verdicts: dict) -> None:
 
 
 def inventory(conn=None, hub: Path | None = None, ggufs: Path | None = None,
-              keep: Keepers | None = None, sources: dict | None = None
-              ) -> Inventory:
+              keep: Keepers | None = None) -> Inventory:
     hub = Path(hub) if hub is not None else hub_root()
     ggufs = Path(ggufs) if ggufs is not None else gguf_root()
     problems = []
@@ -309,13 +364,11 @@ def inventory(conn=None, hub: Path | None = None, ggufs: Path | None = None,
         verdicts = latest_verdicts(conn)
     keep = keep if keep is not None else keepers(conn)
     problems += keep.problems
-    if sources is None:
-        sources = _manifest_files()
-        _aliases(_gateway_files(), sources)
-    entries, incomplete = _scan(hub, ggufs, sources)
+    entries, incomplete = _scan(hub, ggufs, _rows(conn))
     for e in entries:
-        _classify(e, keep, verdicts)
-    return Inventory(str(hub), str(ggufs), entries, incomplete, problems)
+        _classify(e, keep, verdicts, conn)
+    gone = downloads.drift(conn, hub, ggufs)["gone"] if conn is not None else []
+    return Inventory(str(hub), str(ggufs), entries, incomplete, problems, gone)
 
 
 def _inside(path: Path, root: Path) -> bool:
@@ -333,6 +386,8 @@ def safe_to_delete(e: Entry, now: float, wanted: str = REJECTED,
     """The one decision `lh disk` and discovery share."""
     if e.group == KEEP:
         return False, f"kept: {e.why}"
+    if e.unrecorded:
+        return False, f"refused: {UNRECORDED}"
     if e.group != wanted or wanted not in (REJECTED, UNKNOWN):
         return False, f"{e.group}, not {wanted}"
     if e.group == REJECTED and now - e.decided_at < GRACE_SECONDS:
@@ -344,53 +399,44 @@ def safe_to_delete(e: Entry, now: float, wanted: str = REJECTED,
     return True, e.why
 
 
-_DDL = """
-CREATE TABLE IF NOT EXISTS disk_removals (
-    id          INTEGER PRIMARY KEY,
-    path        TEXT NOT NULL,
-    repo        TEXT NOT NULL DEFAULT '',
-    grp         TEXT NOT NULL,
-    bytes       INTEGER NOT NULL DEFAULT 0,
-    verdict_id  INTEGER,
-    source      TEXT NOT NULL DEFAULT '',
-    removed_at  REAL NOT NULL
-);
-"""
-
-
 def record(conn, rows: list[dict], source: str) -> None:
-    if conn is None or not rows:
+    """Stamp each removed path's download row. #411."""
+    if conn is None:
         return
-    conn.executescript(_DDL)
     for r in rows:
-        conn.execute(
-            "INSERT INTO disk_removals (path, repo, grp, bytes, verdict_id, "
-            "source, removed_at) VALUES (?,?,?,?,?,?,?)",
-            (r["path"], r.get("repo", ""), r["group"], int(r["bytes"]),
-             r.get("verdict_id"), source, r["at"]))
-    conn.commit()
+        for p in [r["path"]] + list(r.get("links") or []):
+            downloads.removed(conn, p, by=source,
+                              verdict_id=r.get("verdict_id"),
+                              repo=r.get("repo", ""),
+                              bytes_=int(r["bytes"]) if p == r["path"] else 0,
+                              at=r["at"], origin=r.get("origin", ""))
 
 
-def _remove(e: Entry, hub: Path, ggufs: Path) -> None:
+def _remove(e: Entry, hub: Path, ggufs: Path) -> list[str]:
+    """Delete one entry; returns the symlinks that went with it."""
     path = Path(e.path)
+    gone = []
     if e.kind == "hub":
         if path.is_symlink() or not _inside(path, hub):
             raise OSError(f"refused: {path}")
         for link in e.links:
             if Path(link).is_symlink() and _inside(Path(link), ggufs):
                 os.unlink(link)
+                gone.append(link)
         shutil.rmtree(path)
-        return
+        return gone
     if not _inside(path, ggufs):
         raise OSError(f"refused: {path}")
     if path.is_symlink():
         os.unlink(path)
-        return
+        return gone
     real = path.resolve()
     for other in ggufs.iterdir():
         if other.is_symlink() and Path(os.path.realpath(other)) == real:
             os.unlink(other)
+            gone.append(str(other))
     os.unlink(path)
+    return gone
 
 
 def plan(inv: Inventory, now: float, wanted: str = REJECTED) -> list[Entry]:
@@ -407,24 +453,29 @@ def delete(inv: Inventory, now: float, wanted: str = REJECTED, conn=None,
     removed = []
     for e in plan(inv, now, wanted):
         try:
-            _remove(e, hub, ggufs)
+            links = _remove(e, hub, ggufs)
         except OSError as exc:
             removed.append({"path": e.path, "error": str(exc)})
             continue
         removed.append({"path": e.path, "repo": e.repo, "group": e.group,
                         "bytes": e.size, "verdict_id": e.verdict_id,
-                        "at": time.time()})
+                        "links": links, "at": time.time()})
     record(conn, [r for r in removed if "error" not in r], source)
     return removed
 
 
-def clear_incomplete(inv: Inventory, before: float, conn=None,
-                     source: str = "discover") -> list[dict]:
+def clear_incomplete(inv: Inventory, conn=None, source: str = "discover",
+                     now: float | None = None) -> list[dict]:
+    """Partial blobs of a recorded download no live fetch is writing. #411."""
+    if conn is None:
+        return []
     hub = Path(inv.hub).resolve()
+    rows = _rows(conn)
     removed = []
     for blob in inv.incomplete:
         path = Path(blob["path"])
-        if blob["mtime"] >= before or path.is_symlink():
+        row = rows.get(downloads.key(blob["dir"]))
+        if row is None or downloads.in_flight(row, now) or path.is_symlink():
             continue
         try:
             path.resolve().relative_to(hub)
@@ -435,8 +486,8 @@ def clear_incomplete(inv: Inventory, before: float, conn=None,
         except OSError:
             continue
         removed.append({"path": str(path), "group": "incomplete",
-                        "repo": path.parent.parent.name,
-                        "bytes": blob["size"], "at": time.time()})
+                        "repo": row["repo"], "bytes": blob["size"],
+                        "origin": downloads.PARTIAL, "at": time.time()})
     record(conn, removed, source)
     return removed
 
@@ -444,7 +495,7 @@ def clear_incomplete(inv: Inventory, before: float, conn=None,
 def clean(inv: Inventory, run_start: float, conn=None) -> dict:
     """Discovery's own cleanup: rejected past grace, and orphaned partial downloads."""
     gone = delete(inv, run_start, REJECTED, conn, source="discover")
-    partial = clear_incomplete(inv, run_start - OWNED_SECONDS, conn)
+    partial = clear_incomplete(inv, conn, now=run_start)
     ok = [r for r in gone if "error" not in r]
     return {"rejected": ok, "incomplete": partial,
             "errors": [r for r in gone if "error" in r],
@@ -480,22 +531,33 @@ def gib(n: int) -> str:
     return f"{n / 1024 ** 3:.1f}"
 
 
+def drift(inv: Inventory) -> dict:
+    """Rows whose path is gone, and paths on disk no row explains."""
+    return {"gone": [{"id": r["id"], "repo": r["repo"], "path": r["path"]}
+                     for r in inv.gone],
+            "unrecorded": [e.path for e in inv.entries if e.unrecorded]}
+
+
 def summary(inv: Inventory, now: float) -> dict:
     groups = {g: {"count": 0, "bytes": 0} for g in GROUPS}
     for e in inv.entries:
         groups[e.group]["count"] += 1
         groups[e.group]["bytes"] += e.size
     due = plan(inv, now, REJECTED)
+    d = drift(inv)
     return {"hub": inv.hub, "gguf": inv.gguf, "groups": groups,
             "rejected_due": {"count": len(due),
                              "bytes": sum(e.size for e in due)},
             "incomplete": {"count": len(inv.incomplete),
                            "bytes": sum(b["size"] for b in inv.incomplete)},
+            "drift": {"gone": len(d["gone"]),
+                      "unrecorded": len(d["unrecorded"])},
             "problems": inv.problems}
 
 
 def as_json(inv: Inventory, now: float) -> dict:
-    return {**summary(inv, now), "entries": [asdict(e) for e in inv.entries]}
+    return {**summary(inv, now), "drift_rows": drift(inv),
+            "entries": [asdict(e) for e in inv.entries]}
 
 
 def table(inv: Inventory, now: float) -> str:
@@ -518,7 +580,13 @@ def table(inv: Inventory, now: float) -> str:
                  f"{gib(s['rejected_due']['bytes'])} GiB")
     lines.append(f"partial downloads: {s['incomplete']['count']}, "
                  f"{gib(s['incomplete']['bytes'])} GiB")
+    d = drift(inv)
+    lines.append(f"drift: {len(d['gone'])} recorded path(s) gone, "
+                 f"{len(d['unrecorded'])} on disk with no row")
+    for r in d["gone"]:
+        lines.append(f"  gone        {r['repo'] or '?':40} {r['path']}")
+    for p in d["unrecorded"]:
+        lines.append(f"  unrecorded  {p}")
     for p in inv.problems:
         lines.append(f"deletion disabled: {p}")
     return "\n".join(lines).lstrip("\n")
-

@@ -308,14 +308,10 @@ def fits(need_gb: float, available_gb: float, ceiling_gb: float,
 
 
 def cache_path(repo: str) -> str | None:
-    """Where huggingface_hub put this repo, or None if it is not cached."""
-    from harness import gguf
-    single = gguf.path_of(repo)
-    if single:
-        return str(single)
-    root = Path(os.environ.get("HF_HOME", Path.home() / ".cache" / "huggingface"))
-    d = root / "hub" / ("models--" + repo.replace("/", "--"))
-    return str(d) if d.exists() else None
+    """Where this repo's recorded download is, or None if none is. #411."""
+    from harness import downloads
+    found = downloads.path_of(repo)
+    return str(found) if found else None
 
 
 def size_gb(path: str) -> float | None:

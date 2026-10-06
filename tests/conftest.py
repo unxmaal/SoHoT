@@ -19,6 +19,9 @@ def _home(tmp_path_factory, monkeypatch):
     """
     home = tmp_path_factory.mktemp("lh-home")
     monkeypatch.setenv(paths.ENV_VAR, str(home))
+    # Nor reads this machine's weights: what is on disk is a downloads row. #411.
+    monkeypatch.setenv("HF_HOME", str(tmp_path_factory.mktemp("hf-home")))
+    monkeypatch.delenv("LLAMACPP_MODELS_DIR", raising=False)
     return home
 
 
@@ -31,6 +34,15 @@ def _no_real_services(monkeypatch):
     restarts = []
     monkeypatch.setattr(gguf, "refresh_router", lambda: restarts.append(True))
     return restarts
+
+
+@pytest.fixture(autouse=True)
+def _free_disk_is_pinned(monkeypatch):
+    """No test reads the runner's free disk: the tmp HF_HOME sits on whatever
+    drive CI gives it (31 GiB on Windows), under the fetch floor. #411."""
+    from harness import fetching
+    monkeypatch.setattr(fetching, "free_bytes",
+                        lambda path=None: 900 * fetching.GIB)
 
 
 @pytest.fixture(autouse=True)

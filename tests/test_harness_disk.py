@@ -6,7 +6,7 @@ import time
 
 import pytest
 
-from harness import cli, disk
+from harness import cli, disk, downloads
 from harness import memory_store as ms
 
 NOW = 2_000_000_000.0
@@ -23,7 +23,7 @@ GATEWAY = """model_list:
 """
 
 
-def make_repo(hub, repo, size=1000, mtime=NOW - 10 * DAY):
+def make_repo(hub, repo, size=1000, mtime=NOW - 10 * DAY, recorded=True):
     d = hub / f"models--{repo.replace('/', '--')}"
     (d / "blobs").mkdir(parents=True)
     (d / "snapshots" / "main").mkdir(parents=True)
@@ -31,7 +31,18 @@ def make_repo(hub, repo, size=1000, mtime=NOW - 10 * DAY):
     blob.write_bytes(b"x" * size)
     (d / "snapshots" / "main" / "model.safetensors").symlink_to(blob)
     os.utime(blob, (mtime, mtime))
+    if recorded:
+        remember(repo, downloads.HUB, d)
     return d
+
+
+def remember(repo, kind, path, **kw):
+    """The row the fetch tier writes when it downloads. #411."""
+    conn = ms.connect()
+    try:
+        return downloads.record(conn, repo, kind, path, **kw)
+    finally:
+        conn.close()
 
 
 @pytest.fixture
@@ -45,7 +56,7 @@ def world(tmp_path, monkeypatch):
     monkeypatch.setattr(cli.env, "guard", lambda *a, **k: None)
     gw = tmp_path / "config.yaml"
     gw.write_text(GATEWAY, encoding="utf-8")
-    conn = ms.connect(tmp_path / "d.db")
+    conn = ms.connect()
     yield argparse.Namespace(hub=hub, gguf=ggufs, gw=gw, conn=conn,
                              tmp=tmp_path)
     conn.close()
@@ -61,7 +72,7 @@ def inv(w, typed=None, adopted=None):
     keep = disk.keepers(w.conn, gateway_files=[w.gw],
                         typed=typed or {"code": "q3-4b"},
                         adopted=adopted or {})
-    return disk.inventory(w.conn, w.hub, w.gguf, keep, sources={})
+    return disk.inventory(w.conn, w.hub, w.gguf, keep)
 
 
 def entry(i, name):
@@ -77,9 +88,11 @@ def test_rejected_past_24_hours_is_deleted_and_recorded(world):
     assert not d.exists()
     assert got[0]["bytes"] == 4096
     row = world.conn.execute(
-        "SELECT repo, bytes, grp FROM disk_removals").fetchone()
-    assert (row["repo"], row["bytes"], row["grp"]) == ("org/bad", 4096,
-                                                       "rejected")
+        "SELECT repo, bytes, removed_by, removal_verdict_id FROM downloads"
+    ).fetchone()
+    assert (row["repo"], row["bytes"], row["removed_by"]) == ("org/bad", 4096,
+                                                              "lh disk")
+    assert row["removal_verdict_id"] == entry(i, "org/bad").verdict_id
 
 
 def test_rejected_inside_24_hours_is_kept(world):
@@ -177,13 +190,12 @@ def test_deleting_a_gguf_symlink_never_follows_it_into_a_kept_file(world):
     kept.write_bytes(b"k" * 100)
     link = world.gguf / "other.gguf"
     link.symlink_to(kept)
+    remember("unsloth/Qwen3-4B-Instruct-2507-GGUF", downloads.GGUF, kept)
+    remember("org/other-GGUF", downloads.GGUF, link, file="other.gguf")
     keep = disk.keepers(world.conn, gateway_files=[world.gw],
                         typed={}, adopted={})
-    i = disk.inventory(world.conn, world.hub, world.gguf, keep,
-                       sources={"other.gguf": "org/other-GGUF"})
     verdict(world.conn, "org/other-GGUF", "broken", at=NOW - 30 * DAY)
-    i = disk.inventory(world.conn, world.hub, world.gguf, keep,
-                       sources={"other.gguf": "org/other-GGUF"})
+    i = disk.inventory(world.conn, world.hub, world.gguf, keep)
     assert entry(i, "Qwen3-4B-Instruct-2507-Q4_K_M.gguf").group == disk.KEEP
     assert entry(i, "other.gguf").group == disk.REJECTED
     disk.delete(i, NOW, disk.REJECTED, world.conn)
@@ -257,7 +269,7 @@ def test_unreadable_keepers_refuse_every_deletion(world):
     empty.write_text("", encoding="utf-8")
     keep = disk.keepers(world.conn, gateway_files=[empty], typed={},
                         adopted={})
-    i = disk.inventory(world.conn, world.hub, world.gguf, keep, sources={})
+    i = disk.inventory(world.conn, world.hub, world.gguf, keep)
     with pytest.raises(RuntimeError, match="refusing"):
         disk.delete(i, NOW, disk.REJECTED, world.conn)
     assert d.exists()
@@ -275,17 +287,41 @@ def test_every_real_default_resolves_to_weights():
     assert keep.problems == []
 
 
-def test_old_incomplete_blob_deleted_fresh_one_kept(world):
-    d = make_repo(world.hub, "org/fetching")
-    old = d / "blobs" / "old.incomplete"
-    fresh = d / "blobs" / "fresh.incomplete"
-    for p in (old, fresh):
-        p.write_bytes(b"p" * 10)
-    os.utime(old, (NOW - 2 * 3600, NOW - 2 * 3600))
-    os.utime(fresh, (NOW - 600, NOW - 600))
+def _blob(d, name):
+    p = d / "blobs" / name
+    p.write_bytes(b"p" * 10)
+    return p
+
+
+def test_partial_blobs_of_a_finished_download_go_and_are_recorded(world):
+    """Ownership is the row, not the blob's mtime. #411."""
+    d = make_repo(world.hub, "org/done")
+    old = _blob(d, "old.incomplete")
+    os.utime(old, (time.time(), time.time()))
     got = disk.clean(inv(world), NOW, world.conn)
-    assert not old.exists() and fresh.exists()
+    assert not old.exists()
     assert [r["path"] for r in got["incomplete"]] == [str(old)]
+    row = world.conn.execute(
+        "SELECT repo, origin, removed_by FROM downloads WHERE path = ?",
+        (downloads.key(old),)).fetchone()
+    assert tuple(row) == ("org/done", downloads.PARTIAL, "discover")
+
+
+def test_partial_blobs_of_a_download_in_flight_are_kept(world):
+    d = make_repo(world.hub, "org/fetching", recorded=False)
+    fresh = _blob(d, "fresh.incomplete")
+    os.utime(fresh, (NOW - 30 * DAY, NOW - 30 * DAY))
+    downloads.start(world.conn, "org/fetching", downloads.HUB, d)
+    disk.clean(inv(world), time.time(), world.conn)
+    assert fresh.exists()
+
+
+def test_partial_blobs_in_a_dir_no_row_explains_are_kept(world):
+    d = make_repo(world.hub, "org/manual", recorded=False)
+    old = _blob(d, "old.incomplete")
+    os.utime(old, (NOW - 30 * DAY, NOW - 30 * DAY))
+    disk.clean(inv(world), NOW, world.conn)
+    assert old.exists()
 
 
 def test_cli_json_without_yes_deletes_nothing(world, monkeypatch, capsys):

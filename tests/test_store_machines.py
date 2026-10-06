@@ -585,25 +585,29 @@ def test_a_version_predicate_reads_the_same_source_load_until_wrote_from(monkeyp
     assert not ms.until_met("version:ace-step>1.0", {})
 
 
-def _hub(tmp_path, name, files):
-    snap = tmp_path / "hub" / f"models--{name.replace('/', '--')}" / "snapshots" / "abc"
+def _hub(conn, name, files):
+    from harness import downloads
+    snap = downloads.hub_dir(name) / "snapshots" / "abc"
     snap.mkdir(parents=True)
     for f in files:
         (snap / f).write_text("x", encoding="utf-8")
+    return downloads.record(conn, name, downloads.HUB, snap.parent.parent)
 
 
-def test_a_snapshot_with_only_a_card_is_not_downloaded(tmp_path, monkeypatch):
-    """#399: Marlin-2B had LICENSE and README and was screened as present."""
+def test_a_snapshot_with_only_a_card_is_not_downloaded(tmp_path):
+    """#399: Marlin-2B had LICENSE and README and was screened as present.
+    The row records it incomplete, and have() reads the row. #411."""
     from harness import fetching
-    monkeypatch.setattr("harness.gguf.path_of", lambda m: None)
-    _hub(tmp_path, "org/card", ["LICENSE", "README.md"])
-    _hub(tmp_path, "org/real", ["config.json", "model.safetensors"])
-    assert not fetching.have("org/card", root=tmp_path)
-    assert fetching.have("org/real", root=tmp_path)
+    conn = ms.connect(tmp_path / "d.db")
+    assert _hub(conn, "org/card", ["LICENSE", "README.md"])["complete"] == 0
+    assert _hub(conn, "org/real", ["config.json", "model.safetensors"])["complete"] == 1
+    assert not fetching.have("org/card", conn)
+    assert fetching.have("org/real", conn)
+    conn.close()
 
 
 def test_schema_20_requeues_a_screen_of_weights_never_downloaded(tmp_path, monkeypatch):
-    monkeypatch.setattr("harness.fetching.have", lambda m, root=None: m == "org/here")
+    monkeypatch.setattr("harness.fetching.have", lambda m, conn=None: m == "org/here")
     for name, want in (("org/gone", "queued"), ("org/here", "broken")):
         again = _at_schema_18(tmp_path / name.replace("/", "_"), name, "code", "",
                               "broken", "it ran and passed nothing: [Errno 2] "

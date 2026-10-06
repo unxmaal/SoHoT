@@ -1204,6 +1204,13 @@ def cmd_disk(a) -> int:
         note(f"no discovery store ({exc}); deletion disabled")
         conn = None
     try:
+        if getattr(a, "record", False):
+            if conn is None:
+                return err("no discovery store; nothing to record into")
+            from harness import downloads
+            got = downloads.record_unrecorded(conn)
+            note(f"recorded {got['recorded']} path(s) with no row, stamped "
+                 f"{got['gone']} gone row(s) removed")
         inv = disk.inventory(conn)
         if not a.delete:
             note(disk.table(inv, now))
@@ -2945,6 +2952,9 @@ def build_parser() -> argparse.ArgumentParser:
                      help="remove this group, only what is safe to delete")
     dsk.add_argument("--yes", action="store_true",
                      help="do not ask; required with --json")
+    dsk.add_argument("--record", action="store_true",
+                     help="give every path with no download row a row, and "
+                          "stamp rows whose path is gone as removed")
     dsk.set_defaults(func=cmd_disk)
     mem = sub.add_parser("memory", help="measure how much memory a run can "
                          "take before macOS starts pushing back")

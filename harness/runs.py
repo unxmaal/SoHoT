@@ -343,7 +343,7 @@ def backfill(conn, root=None) -> dict:
     # What a lane serves often ran before receipts carried a specs map.
     for lane, served in sorted(winners.typed().items()) if found else ():
         try:
-            C.ensure(conn, screen.candidate_for(lane, served, adopt=False)
+            C.ensure(conn, screen.candidate_for(lane, served, conn=conn)
                      or served, lane=lane)
         except Exception:  # noqa: BLE001
             pass

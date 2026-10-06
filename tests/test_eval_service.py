@@ -67,10 +67,15 @@ def test_the_eval_server_unloads_when_idle():
     assert "LLAMACPP_SLEEP_IDLE=-1" not in SERVE.read_text(encoding="utf-8")
 
 
-def test_weights_are_fetched_into_the_flat_directory_the_router_reads():
+def test_weights_are_fetched_into_the_flat_directory_the_router_reads(
+        monkeypatch):
+    """The script goes through harness.gguf, which records the row. #411."""
+    from harness import gguf
     text = FETCH.read_text(encoding="utf-8")
-    assert "$HF_HOME/gguf" in text
-    assert "--local-dir" in text
+    assert "python -m harness.gguf" in text
+    monkeypatch.setenv("HF_HOME", "/hf")
+    monkeypatch.delenv("LLAMACPP_MODELS_DIR", raising=False)
+    assert gguf.models_dir() == Path("/hf") / "gguf"
 
 
 def test_the_context_size_is_always_explicit():
@@ -92,8 +97,12 @@ def test_the_fetch_script_is_allowed_online():
 def test_a_fetched_gguf_restarts_the_router_so_it_can_be_served():
     """llama-server's router reads --models-dir at startup only (build 10809):
     a file fetched later answered `model ... not found`. #319."""
-    text = FETCH.read_text(encoding="utf-8")
-    assert "launchd.sh restart eval" in text
+    from harness import gguf
+    assert "python -m harness.gguf" in FETCH.read_text(encoding="utf-8")
+    import inspect
+    assert '"restart", "eval"' in (REPO / "harness" / "gguf.py").read_text(
+        encoding="utf-8")
+    assert "refresh_router" in inspect.getsource(gguf.download)
 
 
 def test_restart_runs_under_the_machine_lock():

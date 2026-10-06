@@ -108,12 +108,24 @@ def test_a_failed_download_does_not_condemn_the_candidate(db):
 
 
 def test_a_finished_download_records_where_it_landed(db):
+    """In the downloads table, not in the verdict's run_path. #411."""
+    from harness import downloads
     seen(db, "org/a")
     ms.decide(db, "org/a", "queued", tier="inspect")
-    f.run(db, {"org/a": 2 * f.GIB}, snapshot=lambda repo_id: "/Volumes/FAST/hf/a",
-          free=900 * f.GIB)
+    snap = downloads.hub_dir("org/a") / "snapshots" / "abc"
+
+    def fetch(repo_id):
+        snap.mkdir(parents=True)
+        (snap / "model.safetensors").write_bytes(b"w" * 64)
+        return str(snap)
+    f.run(db, {"org/a": 2 * f.GIB}, snapshot=fetch, free=900 * f.GIB)
     row = db.execute("SELECT run_path FROM verdicts WHERE tier='fetch'").fetchone()
-    assert row["run_path"] == "/Volumes/FAST/hf/a"
+    assert row["run_path"] == ""
+    got = db.execute("SELECT * FROM downloads").fetchone()
+    assert got["path"] == downloads.key(snap.parent.parent)
+    assert (got["repo"], got["kind"], got["complete"]) == ("org/a", "hub", 1)
+    assert got["started_at"] <= got["finished_at"]
+    assert f.have("org/a", db)
 
 
 # ---- a repo is not a weight ------------------------------------------------
@@ -130,9 +142,8 @@ def test_a_github_repo_is_not_downloadable(db):
     assert [r["name"] for r in f.queued(db)] == ["mlx-community/parakeet"]
 
 
-def test_something_already_in_the_cache_is_not_queued(db, tmp_path, monkeypatch):
-    monkeypatch.setenv("HF_HOME", str(tmp_path))
-    cached(tmp_path, "org/have")
+def test_something_already_in_the_cache_is_not_queued(db):
+    cached(db, "org/have")
     for name in ["org/have", "org/want"]:
         seen(db, name)
         ms.decide(db, name, "queued", tier="inspect")
@@ -215,67 +226,68 @@ def test_a_laneless_weight_is_not_declined(db):
 
 # ---- what a model needs beyond itself (issue #196) -------------------------
 
-def cached(root, model_id, config=None):
-    """A repo in the shape huggingface_hub leaves behind."""
+def cached(db, model_id, config=None):
+    """A repo in the shape huggingface_hub leaves, recorded as fetched."""
     import json
 
-    d = (root / "hub" / f"models--{model_id.replace('/', '--')}"
-         / "snapshots" / "abc123")
+    from harness import downloads
+    d = downloads.hub_dir(model_id) / "snapshots" / "abc123"
     d.mkdir(parents=True, exist_ok=True)
     (d / "config.json").write_text(json.dumps(config or {}), encoding="utf-8")
+    downloads.record(db, model_id, downloads.HUB, d.parent.parent)
     return d
 
 
-def test_a_config_naming_another_repo_declares_a_requirement(tmp_path):
+def test_a_config_naming_another_repo_declares_a_requirement(db):
     """Marvis-AI's 8-bit MLX repo is complete and names its tokenizer in a
     different repo. The load fails offline; the directory check cannot see it."""
-    cached(tmp_path, "org/model-8bit",
+    cached(db, "org/model-8bit",
            {"text_tokenizer": "org/model-base", "model_type": "llama"})
-    assert f.requires("org/model-8bit", tmp_path) == ["org/model-base"]
+    assert f.requires("org/model-8bit", db) == ["org/model-base"]
 
 
-def test_provenance_is_not_a_requirement(tmp_path):
+def test_provenance_is_not_a_requirement(db):
     """`_name_or_path` records where a config came from. microsoft/
     wavlm-base-plus-sv names microsoft/wavlm-base-plus, which is NOT on this
     machine, and the model loads anyway -- so treating it as a dependency marks
     a working model unready. The first real repo scanned proved this."""
-    cached(tmp_path, "org/derived", {"_name_or_path": "org/parent"})
-    assert f.requires("org/derived", tmp_path) == []
+    cached(db, "org/derived", {"_name_or_path": "org/parent"})
+    assert f.requires("org/derived", db) == []
 
 
-def test_a_value_that_is_not_repo_shaped_is_not_a_repo(tmp_path):
+def test_a_value_that_is_not_repo_shaped_is_not_a_repo(db):
     """The negative half. A matcher that claims everything claims nothing."""
-    cached(tmp_path, "org/m", {"text_tokenizer": "bfloat16",
+    cached(db, "org/m", {"text_tokenizer": "bfloat16",
                                "codec_model": "/absolute/path",
                                "vocoder": "has spaces/in it"})
-    assert f.requires("org/m", tmp_path) == []
+    assert f.requires("org/m", db) == []
 
 
-def test_a_model_naming_itself_is_not_its_own_dependency(tmp_path):
-    cached(tmp_path, "org/m", {"text_tokenizer": "org/m"})
-    assert f.requires("org/m", tmp_path) == []
+def test_a_model_naming_itself_is_not_its_own_dependency(db):
+    cached(db, "org/m", {"text_tokenizer": "org/m"})
+    assert f.requires("org/m", db) == []
 
 
-def test_a_model_with_no_config_requires_nothing(tmp_path):
+def test_a_model_with_no_config_requires_nothing(db):
     """Most repos have no config.json worth reading, and a missing one is not
     an error -- it is the common case."""
-    cached(tmp_path, "org/plain")
-    assert f.requires("org/plain", tmp_path) == []
+    cached(db, "org/plain")
+    assert f.requires("org/plain", db) == []
 
 
-def test_missing_reports_the_dependency_when_the_model_is_present(tmp_path):
-    cached(tmp_path, "org/model-8bit", {"text_tokenizer": "org/model-base"})
-    assert f.missing("org/model-8bit", tmp_path) == ["org/model-base"]
+def test_missing_reports_the_dependency_when_the_model_is_present(db):
+    cached(db, "org/model-8bit", {"text_tokenizer": "org/model-base"})
+    assert f.missing("org/model-8bit", db) == ["org/model-base"]
 
 
-def test_missing_reports_the_model_itself_when_nothing_is_there(tmp_path):
-    assert f.missing("org/absent", tmp_path) == ["org/absent"]
+def test_missing_reports_the_model_itself_when_nothing_is_there(db):
+    assert f.missing("org/absent", db) == ["org/absent"]
 
 
-def test_missing_is_empty_when_the_whole_closure_is_present(tmp_path):
-    cached(tmp_path, "org/model-8bit", {"text_tokenizer": "org/model-base"})
-    cached(tmp_path, "org/model-base")
-    assert f.missing("org/model-8bit", tmp_path) == []
+def test_missing_is_empty_when_the_whole_closure_is_present(db):
+    cached(db, "org/model-8bit", {"text_tokenizer": "org/model-base"})
+    cached(db, "org/model-base")
+    assert f.missing("org/model-8bit", db) == []
 
 
 def test_fetching_a_model_also_fetches_what_its_config_names(db, tmp_path, monkeypatch):
@@ -288,8 +300,8 @@ def test_fetching_a_model_also_fetches_what_its_config_names(db, tmp_path, monke
 
     got = []
     monkeypatch.setattr(f, "download", lambda repo, snapshot=None, **kw: got.append(repo) or "/x")
-    monkeypatch.setattr(f, "requires", lambda name, root=None: ["org/base"])
-    monkeypatch.setattr(f, "have", lambda name, root=None: False)
+    monkeypatch.setattr(f, "requires", lambda name, conn=None: ["org/base"])
+    monkeypatch.setattr(f, "have", lambda name, conn=None: False)
     monkeypatch.setattr(f, "plan",
                         lambda name, *a, **k: f.Plan(name, 1, True, "ok"))
 
@@ -306,11 +318,11 @@ def test_a_dependency_already_present_is_not_refetched(db, monkeypatch):
 
     got = []
     monkeypatch.setattr(f, "download", lambda repo, snapshot=None, **kw: got.append(repo) or "/x")
-    monkeypatch.setattr(f, "requires", lambda name, root=None: ["org/base"])
+    monkeypatch.setattr(f, "requires", lambda name, conn=None: ["org/base"])
     # Only the DEPENDENCY is cached. Patching have() true for everything would
     # also take the model itself out of the queue, and the test would pass for
     # the wrong reason.
-    monkeypatch.setattr(f, "have", lambda name, root=None: name == "org/base")
+    monkeypatch.setattr(f, "have", lambda name, conn=None: name == "org/base")
     monkeypatch.setattr(f, "plan",
                         lambda name, *a, **k: f.Plan(name, 1, True, "ok"))
 

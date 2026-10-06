@@ -91,6 +91,8 @@ def test_the_screen_tier_scopes_before_limiting_too(monkeypatch, capsys):
                         lambda conn, limit=50: rows)
     monkeypatch.setattr("harness.memory_store.connect",
                         lambda *a, **k: _Store(rows))
+    monkeypatch.setattr("harness.fetching.missing",
+                        lambda name, conn=None: [name])
     monkeypatch.setattr("harness.rank.serving", lambda *a, **k: set())
     monkeypatch.setattr("harness.rank.lanes_with_receipts", lambda *a, **k: set())
     cli._report_screen(argparse.Namespace(lane="image", top=2, run=False,
