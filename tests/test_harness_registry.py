@@ -445,6 +445,7 @@ def test_a_neighbor_sighting_does_not_reopen_a_decided_name(tmp_path, monkeypatc
     monkeypatch.setattr(ins, "inspect", fake_inspect)
     monkeypatch.setattr(ins, "inspect_model",
                         lambda m, **kw: ins.Fit(repo=m, registry=ms.HUGGINGFACE))
+    monkeypatch.setattr(ins, "hf_model", _no_model)
     args = type("A", (), {"repos": ["org/tool"], "from_store": False, "top": 10,
                           "budget": 10, "shard": "", "judge": False,
                           "json": False})()
@@ -454,3 +455,33 @@ def test_a_neighbor_sighting_does_not_reopen_a_decided_name(tmp_path, monkeypatc
         assert ms.latest(conn, "org/w")["outcome"] == kept
     finally:
         conn.close()
+
+
+def test_a_huggingface_model_named_by_hand_is_inspected_as_a_model(tmp_path, monkeypatch):
+    """#424: --repos forced GitHub, so a HF model id could not be added by hand."""
+    from harness import cli, github, paths
+
+    monkeypatch.setattr(paths, "home", lambda: tmp_path)
+    asked_hf, asked_github = [], []
+
+    class Client:
+        stale: list = []
+        spent = 0
+
+        def __init__(self, **kw):
+            pass
+
+        def repo(self, name):
+            asked_github.append(name)
+            raise github.NotFound(name)
+
+    monkeypatch.setattr(github, "Client", Client)
+    monkeypatch.setattr(ins, "hf_model", lambda m, fetch=None: _card())
+    monkeypatch.setattr(ins, "inspect_model",
+                        lambda m, data=None, **kw: (asked_hf.append(m), ins.Fit(
+                            repo=m, registry=ms.HUGGINGFACE))[1])
+    args = type("A", (), {"repos": ["org/model"], "from_store": False, "top": 10,
+                          "budget": 10, "shard": "", "judge": False,
+                          "json": False})()
+    assert cli._report_inspect(args) == 0
+    assert asked_hf == ["org/model"] and asked_github == []
