@@ -2319,14 +2319,74 @@ def backfill_candidates(conn, runs=None) -> dict:
         if key in R.keys_in(conn, run["id"]):
             counts["run_path_confirmed"] += 1
     _resolve_fakes(conn, fakes, counts)
-    for pid, cid in own.items():
-        cur = conn.execute(
-            "UPDATE verdicts SET candidate_id = ? WHERE proposal_id = ? "
-            "AND candidate_id IS NULL AND tier IN (?, ?, ?)",
-            (cid, pid, SCREEN, MEASURE, ADOPT))
-        counts["verdicts_linked"] += cur.rowcount or 0
+    guessed = []
+    for v in conn.execute(
+            "SELECT v.id, v.proposal_id, v.run_id, v.tier, p.name, p.lane "
+            "FROM verdicts v JOIN proposals p ON p.id = v.proposal_id "
+            "WHERE v.candidate_id IS NULL AND v.tier IN (?, ?, ?) ORDER BY v.id",
+            (SCREEN, MEASURE, ADOPT)).fetchall():
+        cid, how = _candidate_from_receipt(conn, v, own.get(v["proposal_id"]))
+        if cid is None:
+            continue
+        conn.execute("UPDATE verdicts SET candidate_id = ? WHERE id = ?",
+                     (cid, v["id"]))
+        counts["verdicts_linked"] += 1
+        counts[f"verdicts_{how}"] = counts.get(f"verdicts_{how}", 0) + 1
+        if how == "guessed":
+            guessed.append({"verdict": v["id"], "proposal": v["name"],
+                            "tier": v["tier"], "spec": conn.execute(
+                                "SELECT spec FROM candidates WHERE id = ?",
+                                (cid,)).fetchone()[0]})
+    # What no receipt named was read off this machine's disk: say so. #506.
+    conn.execute("INSERT OR REPLACE INTO meta VALUES ('candidate_guesses', ?)",
+                 (json.dumps(guessed, sort_keys=True),))
     conn.commit()
     return counts
+
+
+def _candidate_from_receipt(conn, verdict, disk_cid) -> tuple:
+    """(candidate id, how) for a pre-#407 verdict: its run's receipt first. #506.
+
+    how is 'confirmed' (the disk's spec ran in the cited run), 'receipt' (the
+    cited run has exactly one spec that can be this proposal's) or 'guessed'
+    (no receipt says, so the spec is what this machine's disk resolves now).
+    """
+    from harness import adopt, candidates as C, screen, winners
+    from harness import runs as R
+    run = R.get(conn, verdict["run_id"]) if verdict["run_id"] else None
+    if run is None:
+        return disk_cid, "guessed"
+    keys = R.keys_in(conn, run["id"])
+    specs = {k: _legacy_spec(s) for k, s in json.loads(run["specs"] or "{}").items()}
+    disk_key = conn.execute("SELECT receipt_key FROM candidates WHERE id = ?",
+                            (disk_cid,)).fetchone()[0] if disk_cid else None
+    if disk_key in keys:
+        if disk_key not in specs or specs[disk_key] == conn.execute(
+                "SELECT spec FROM candidates WHERE id = ?", (disk_cid,)).fetchone()[0]:
+            return disk_cid, "confirmed"
+        return C.ensure(conn, specs[disk_key], proposal=verdict["name"], key=disk_key,
+                        lane=verdict["lane"] or run["lane"]), "receipt"
+    try:
+        aliases, _ = screen.gateway_routes()
+    except Exception:  # noqa: BLE001
+        aliases = set()
+    typed = set(winners.typed().values())
+    pool = []
+    for key, spec in specs.items():
+        name = spec.split(",", 1)[0]
+        # A bare name is a gateway alias (serving.route), never a discovered repo.
+        alias = name.lower() in aliases or (":" not in name and "/" not in name)
+        if key not in keys or adopt.is_reference(spec) or spec in typed or alias:
+            continue
+        owner = conn.execute("SELECT proposal_id FROM candidates WHERE spec = ?",
+                             (spec,)).fetchone()
+        if owner is None or owner["proposal_id"] in (None, verdict["proposal_id"]):
+            pool.append((key, spec))
+    if len(pool) != 1:
+        return disk_cid, "guessed"
+    key, spec = pool[0]
+    return C.ensure(conn, spec, proposal=verdict["name"], key=key,
+                    lane=verdict["lane"] or run["lane"]), "receipt"
 
 
 def _by_download(conn, label: str, lane: str) -> str:

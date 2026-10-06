@@ -1,5 +1,6 @@
 """Each golden store, at its historical schema, migrates to head and holds. #478."""
 import importlib.util
+import json
 import sqlite3
 import subprocess
 import time
@@ -163,11 +164,17 @@ def test_adoptions_resolve_to_their_candidates(migrated):
         "JOIN proposals p ON p.id = c.proposal_id")}
     assert set(got) == {("code", "org-a/coder-7b-GGUF", "measured"),
                         ("svg", "org-l/svg-thing", "by-hand")}
+    # The code adoption's run receipt recorded its spec; the golden has no weights. #506.
+    assert got[("code", "org-a/coder-7b-GGUF", "measured")] == "llamacpp:coder-7b-Q4_K_M"
     if v >= 24:
-        # Before 24 no store named the spec, so the backfill derives it from
-        # what is on disk now; the golden has no weights.
-        assert sorted(got.values()) == ["llamacpp:coder-7b-Q4_K_M",
-                                        "mlx:org-l/svg-thing"]
+        assert got[("svg", "org-l/svg-thing", "by-hand")] == "mlx:org-l/svg-thing"
+    else:
+        # No run backs the by-hand svg verdict: its spec is a recorded guess.
+        row = conn.execute("SELECT value FROM meta WHERE key = "
+                           "'candidate_guesses'").fetchone()
+        guessed = {g["proposal"] for g in json.loads(row[0])}
+        assert "org-l/svg-thing" in guessed
+        assert "org-a/coder-7b-GGUF" not in guessed
 
 
 def test_one_row_per_machine(migrated):
