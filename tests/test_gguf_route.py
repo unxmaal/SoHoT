@@ -265,6 +265,66 @@ def test_inspect_calls_an_oversized_gguf_repo_too_big():
     assert fit.largest == 40 * GIB
 
 
+# --- #438 ---------------------------------------------------------------------
+
+def _glm():
+    """unsloth/GLM-5.2-GGUF as the registry lists it: every quant split, in a
+    folder, each first part a 9 MB metadata shard."""
+    sizes = {"UD-IQ1_S": [9423744, 49208128256, 49684417024, 49396052864,
+                          49246275936, 19171063136],
+             "UD-IQ1_M": [9423744, 49257241920, 48943068032, 48891518400,
+                          49934857248, 31456857280]}
+    sibs = [{"rfilename": "README.md", "size": 8048},
+            {"rfilename": "imatrix_unsloth.gguf_file", "size": 1131474112}]
+    for quant, parts in sizes.items():
+        n = len(parts)
+        sibs += [{"rfilename": f"{quant}/GLM-5.2-{quant}-{i:05d}-of-{n:05d}.gguf",
+                  "size": s} for i, s in enumerate(parts, 1)]
+    return sibs, sum(sizes["UD-IQ1_S"])
+
+
+def test_a_split_repo_is_sized_by_its_cheapest_whole_variant():
+    sibs, iq1_s = _glm()
+    assert gguf.smallest(sibs) == iq1_s
+    assert gguf.choose(sibs, 22 * GIB) is None, "fetch takes no shard"
+
+
+def test_inspect_calls_the_split_glm_repo_too_big_not_nine_megabytes():
+    import dataclasses
+    from harness import machine
+    here = dataclasses.replace(machine.detect(),
+                               runtimes=frozenset({"cpu", "llamacpp", "mlx"}))
+    sibs, iq1_s = _glm()
+    fit = ins.inspect_model("unsloth/GLM-5.2-GGUF", ceiling=22 * GIB,
+                            machine=here, data={"siblings": sibs, "tags": ["gguf"],
+                                                "pipeline_tag": "text-generation"})
+    assert fit.largest == iq1_s
+    assert fit.verdict == "too-big", fit.why
+
+
+def test_a_stray_small_gguf_beside_a_split_model_is_not_the_model():
+    sibs, iq1_s = _glm()
+    sibs.append(sib("GLM-5.2-vocab.gguf", 0.009))
+    assert gguf.choose(sibs, 22 * GIB) is None
+    assert gguf.smallest(sibs) == iq1_s
+
+
+def test_an_incomplete_split_set_is_not_a_variant():
+    sibs = [sib("M-Q4_K_M-00001-of-00003.gguf", 0.01),
+            sib("M-Q4_K_M-00002-of-00003.gguf", 9)]
+    assert gguf.shard_sets(sibs) == {}
+    assert gguf.smallest(sibs) == 0
+
+
+def test_a_real_single_quant_beside_a_split_one_is_still_chosen():
+    """Negative control: a quant a few times smaller is a quant, not a stray."""
+    sibs = [sib("M-Q8_0-00001-of-00002.gguf", 20),
+            sib("M-Q8_0-00002-of-00002.gguf", 20),
+            sib("M-Q4_K_M.gguf", 9.5)]
+    assert gguf.choose(sibs, 22 * GIB) == ("M-Q4_K_M.gguf", int(9.5 * GIB))
+    assert gguf.smallest(sibs) == int(9.5 * GIB)
+
+
 def test_a_non_text_lane_keeps_the_snapshot_route(home):
     """magpie_tts ships only a GGUF; its runner wants the repo."""
     got = []

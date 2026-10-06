@@ -8,6 +8,9 @@ from pathlib import Path
 #: First match wins; otherwise the largest file under the ceiling.
 PREFERRED = ("q4_k_m", "q4_k_s", "iq4_xs", "q4_0", "q5_k_m", "q5_k_s")
 _SPLIT = re.compile(r"-\d{5}-of-\d{5}\.gguf$", re.I)
+_PART = re.compile(r"^(.*)-(\d{5})-of-(\d{5})\.gguf$", re.I)
+#: A single file under this fraction of the smallest split variant is not the model. #438.
+STRAY = 16
 
 def models_dir() -> Path:
     """Where llama-server's router reads (scripts/serve-llamacpp.sh)."""
@@ -24,10 +27,33 @@ def _servable(f: dict) -> bool:
             and "imatrix" not in name.lower()
             and not _SPLIT.search(name))
 
+def shard_sets(siblings) -> dict[str, int]:
+    """Total bytes of each complete split variant, keyed by its stem. #438."""
+    parts: dict[str, dict[int, int]] = {}
+    want: dict[str, int] = {}
+    for f in siblings or []:
+        name = str(f.get("rfilename", ""))
+        m = _PART.match(name)
+        base = name.rsplit("/", 1)[-1].lower()
+        if not m or base.startswith("mmproj") or "imatrix" in base:
+            continue
+        parts.setdefault(m.group(1), {})[int(m.group(2))] = int(f.get("size") or 0)
+        want[m.group(1)] = int(m.group(3))
+    return {stem: sum(p.values()) for stem, p in parts.items()
+            if len(p) == want[stem] and all(p.values())}
+
+def _singles(siblings) -> list[tuple[str, int]]:
+    """Servable single files, less any stray far smaller than a split variant."""
+    files = [(str(f["rfilename"]), int(f.get("size") or 0))
+             for f in siblings or [] if _servable(f)]
+    sets = shard_sets(siblings)
+    floor = min(sets.values()) // STRAY if sets else 0
+    return [(n, s) for n, s in files if s > 0 and s >= floor]
+
 def smallest(siblings) -> int:
-    """The smallest file the router could serve, or 0 if none."""
-    return min((int(f.get("size") or 0) for f in siblings or []
-                if _servable(f) and f.get("size")), default=0)
+    """Bytes of the cheapest variant, single file or split set, or 0 if none."""
+    sizes = [s for _, s in _singles(siblings)] + list(shard_sets(siblings).values())
+    return min(sizes, default=0)
 
 def only(siblings) -> bool:
     """GGUF weights and nothing MLX or torch could load instead."""
@@ -37,9 +63,7 @@ def only(siblings) -> bool:
 
 def choose(siblings, ceiling: int) -> tuple[str, int] | None:
     """The file to fetch: (name, bytes), or None if none fits."""
-    fits = [(str(f["rfilename"]), int(f.get("size") or 0))
-            for f in siblings or [] if _servable(f)]
-    fits = [(n, s) for n, s in fits if 0 < s <= ceiling]
+    fits = [(n, s) for n, s in _singles(siblings) if s <= ceiling]
     for quant in PREFERRED:
         for name, size in fits:
             if quant in name.lower():
