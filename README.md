@@ -923,6 +923,12 @@ run `install` again to deploy it; `status` names the commit the agents are
 running and the current `origin/main`. `deploy` refuses to overwrite local
 edits made inside the deploy worktree.
 
+**Before deploying to a machine that has not deployed in a while, run
+`soh store dry-run` there from a checkout of the commit you are about to deploy.**
+It migrates a read-only copy of that machine's store with this checkout's code,
+checks the invariants CI checks on the golden stores in `tests/golden/`, and
+exits 1 if any fails; the live store is never opened for writing.
+
 **Run `probe` first, always.** macOS TCC denies `/Volumes` to launchd jobs, and
 the failure is horrible unprepared: the volume stats fine, reports free space and
 appears in `/Volumes`, so nothing looks wrong until mlx_lm hangs forever inside

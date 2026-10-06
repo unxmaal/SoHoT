@@ -1,0 +1,63 @@
+{
+ "environment": {
+  "arch": "arm64",
+  "hw_model": "Mac17,15",
+  "os": "macOS-27.0.1-arm64-arm-64bit"
+ },
+ "generated": "2026-09-18T23:20:00",
+ "receipt": {
+  "cases_digest": "digest-2",
+  "modality": "tts",
+  "tier": "measure"
+ },
+ "rows": [
+  {
+   "artifact": "/RUNS/0003-tts/tts-model-hello.wav",
+   "candidate": "tts-model",
+   "case_id": "hello#1",
+   "detail": "",
+   "metrics": {},
+   "passed": true,
+   "peak_kb": 524288,
+   "seconds": 2.5,
+   "warnings": []
+  },
+  {
+   "artifact": "/RUNS/0003-tts/tts-model-hello-2.wav",
+   "candidate": "tts-model",
+   "case_id": "hello#2",
+   "detail": "failed: wrong answer",
+   "metrics": {},
+   "passed": false,
+   "peak_kb": 524288,
+   "seconds": 2.5,
+   "warnings": []
+  },
+  {
+   "artifact": "/RUNS/0003-tts/kokoro-hello.wav",
+   "candidate": "kokoro",
+   "case_id": "hello#1",
+   "detail": "",
+   "metrics": {},
+   "passed": true,
+   "peak_kb": 524288,
+   "seconds": 2.5,
+   "warnings": []
+  },
+  {
+   "artifact": "/RUNS/0003-tts/kokoro-hello-2.wav",
+   "candidate": "kokoro",
+   "case_id": "hello#2",
+   "detail": "",
+   "metrics": {},
+   "passed": true,
+   "peak_kb": 524288,
+   "seconds": 2.5,
+   "warnings": []
+  }
+ ],
+ "specs": {
+  "kokoro": "kokoro",
+  "tts-model": "mlx:org-h/tts-model"
+ }
+}

@@ -420,6 +420,10 @@ def backfill(conn, hub: Path | None = None, ggufs: Path | None = None,
         if key(where) in done:
             return
         done.add(key(where))
+        # A retried migration finds this path's row, live or removed. #496.
+        if conn.execute("SELECT 1 FROM downloads WHERE path = ?",
+                        (key(where),)).fetchone():
+            return
         got = record(conn, repo, kind, where, **kw)
         settle(got["id"], got["path"])
         return got

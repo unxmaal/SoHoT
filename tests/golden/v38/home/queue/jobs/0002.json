@@ -1,0 +1,22 @@
+{
+ "id": "0002",
+ "title": "tts measure",
+ "kind": "command",
+ "output": "",
+ "priority": 5,
+ "argv": [
+  "uv",
+  "run",
+  "python",
+  "-m",
+  "evals.run"
+ ],
+ "cwd": "/REPO",
+ "state": "failed",
+ "added": "2026-09-20T09:00:00",
+ "started": "2026-09-20T09:00:05",
+ "finished": "2026-09-20T10:00:00",
+ "rc": 1,
+ "log": "/LOGS/0002.log",
+ "note": "one case failed"
+}

@@ -1,0 +1,26 @@
+[
+ {
+  "lane": "svg",
+  "case": "icon-1",
+  "left": "local-large",
+  "right": "svg-thing",
+  "winner": "svg-thing",
+  "shown_first": "left"
+ },
+ {
+  "lane": "svg",
+  "case": "icon-1",
+  "left": "local-large",
+  "right": "svg-thing",
+  "winner": "svg-thing",
+  "shown_first": "left"
+ },
+ {
+  "lane": "image",
+  "case": "cat",
+  "left": "image-gen",
+  "right": "screen-broke",
+  "winner": "image-gen",
+  "shown_first": "right"
+ }
+]

@@ -1,0 +1,85 @@
+{
+ "environment": {
+  "arch": "arm64",
+  "hw_model": "Mac14,12",
+  "os": "macOS-26.0-arm64-arm-64bit"
+ },
+ "generated": "2026-09-10T05:20:00",
+ "receipt": {
+  "cases_digest": "digest-0",
+  "modality": "code",
+  "tier": "screen"
+ },
+ "rows": [
+  {
+   "artifact": "def add(a, b):\n    return a + b\n",
+   "candidate": "coder-7b",
+   "case_id": "add",
+   "detail": "",
+   "metrics": {},
+   "passed": true,
+   "peak_kb": 524288,
+   "seconds": 2.5,
+   "warnings": []
+  },
+  {
+   "artifact": "def add(a, b):\n    return a + b\n",
+   "candidate": "coder-7b",
+   "case_id": "sort",
+   "detail": "",
+   "metrics": {},
+   "passed": true,
+   "peak_kb": 524288,
+   "seconds": 2.5,
+   "warnings": []
+  },
+  {
+   "artifact": "",
+   "candidate": "coder-7b",
+   "case_id": "parse",
+   "detail": "failed: wrong answer",
+   "metrics": {},
+   "passed": false,
+   "peak_kb": 524288,
+   "seconds": 2.5,
+   "warnings": []
+  },
+  {
+   "artifact": "def add(a, b):\n    return a + b\n",
+   "candidate": "local-mid",
+   "case_id": "add",
+   "detail": "",
+   "metrics": {},
+   "passed": true,
+   "peak_kb": 524288,
+   "seconds": 2.5,
+   "warnings": []
+  },
+  {
+   "artifact": "def add(a, b):\n    return a + b\n",
+   "candidate": "local-mid",
+   "case_id": "sort",
+   "detail": "failed: wrong answer",
+   "metrics": {},
+   "passed": false,
+   "peak_kb": 524288,
+   "seconds": 2.5,
+   "warnings": []
+  },
+  {
+   "artifact": null,
+   "candidate": "local-mid",
+   "case_id": "parse",
+   "detail": "failed: wrong answer",
+   "metrics": {},
+   "passed": false,
+   "peak_kb": 524288,
+   "seconds": 2.5,
+   "warnings": []
+  }
+ ],
+ "specs": {
+  "coder-7b": "llamacpp:coder-7b-Q4_K_M",
+  "local-mid": "local-mid"
+ }
+}
