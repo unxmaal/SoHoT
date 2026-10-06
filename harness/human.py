@@ -20,10 +20,12 @@ cheapest way to accidentally confirm what you already believed.
 from __future__ import annotations
 
 import getpass
+import glob
 import random
 import time
 from collections import Counter
 from contextlib import contextmanager
+from pathlib import Path
 
 from harness import lanes
 
@@ -59,7 +61,21 @@ def _voter() -> str:
         return ""
 
 
-def pairings(receipt: dict) -> list[dict]:
+def artifact_file(row: dict, run_dir: Path | None) -> str:
+    """The file a row's artifact lives in. Text lanes keep the output itself in
+    `artifact`; the runner also wrote it to the run dir by name. #461."""
+    art = str(row.get("artifact") or "")
+    if art and "\n" not in art and len(art) < 1024 and Path(art).is_file():
+        return art
+    if run_dir is not None:
+        stem = f"{str(row.get('candidate', '')).replace('/', '_')}--{row.get('case_id', '')}"
+        hits = sorted(Path(run_dir).glob(glob.escape(stem) + ".*"))
+        if hits:
+            return str(hits[0])
+    return ""
+
+
+def pairings(receipt: dict, run_dir: Path | None = None) -> list[dict]:
     """Every A/B a person could be asked about, from one run's receipt.
 
     Candidates are compared WITHIN a case, because two different prompts are
@@ -78,8 +94,10 @@ def pairings(receipt: dict) -> list[dict]:
         for i, a in enumerate(names):
             for b in names[i + 1:]:
                 out.append({"case": case, "a": a, "b": b,
-                            "a_file": seen[a]["artifact"],
-                            "b_file": seen[b]["artifact"]})
+                            "a_file": artifact_file(seen[a], run_dir),
+                            "b_file": artifact_file(seen[b], run_dir),
+                            "a_text": str(seen[a]["artifact"]),
+                            "b_text": str(seen[b]["artifact"])})
     return out
 
 
@@ -193,5 +211,7 @@ def pending(lane: str, pairs: list[dict], conn=None) -> list[dict]:
         out.append({**p, "asked": asked, "needs": ENOUGH - asked,
                     "left": left, "right": right,
                     "left_file": p["a_file"] if left == p["a"] else p["b_file"],
-                    "right_file": p["b_file"] if right == p["b"] else p["a_file"]})
+                    "right_file": p["b_file"] if right == p["b"] else p["a_file"],
+                    "left_text": p.get("a_text", "") if left == p["a"] else p.get("b_text", ""),
+                    "right_text": p.get("b_text", "") if right == p["b"] else p.get("a_text", "")})
     return out

@@ -23,7 +23,7 @@ def _judged_run(tmp_path, monkeypatch, specs):
     runs.record(conn, run, body)
     conn.close()
     pairs = [{"case": "c", "a": names[0], "b": names[1]}]
-    monkeypatch.setattr(human, "pairings", lambda receipt: pairs)
+    monkeypatch.setattr(human, "pairings", lambda receipt, *a, **k: pairs)
     monkeypatch.setattr(human, "decided", lambda *a: names[1])
     monkeypatch.setattr(human, "lane_verdict",
                         lambda lane, p: (names[1], "preferred 1-0"))

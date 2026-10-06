@@ -31,7 +31,8 @@ PAGE = """<!doctype html><meta charset=utf-8>
  .side{{background:#1c1f26;border:1px solid #2a2e38;border-radius:8px;
    padding:1rem;text-align:center}}
  .side h2{{font-size:.8rem;letter-spacing:.08em;color:#8b90a0;margin:0 0 .75rem}}
- img{{max-width:100%;border-radius:4px;display:block}}
+ img{{max-width:100%;border-radius:4px;display:block;background:#fff}}
+ iframe{{width:100%;height:70vh;border:0;border-radius:4px;background:#fff}}
  audio{{width:100%}}
  .vote{{margin:1.75rem 0;display:flex;gap:.75rem;max-width:960px}}
  button{{flex:1;padding:.85rem;font:inherit;border-radius:6px;cursor:pointer;
@@ -56,13 +57,24 @@ def _store_path():
     return ms.db_path()
 
 
-def _media(path: Path) -> str:
-    kind = (mimetypes.guess_type(path.name)[0] or "")
+#: What a text lane's raw output is, when no file was written for it. #461.
+LANE_KIND = {"svg": "image/svg+xml", "web": "text/html"}
+
+
+def _kind(name: str, lane: str) -> str:
+    return (mimetypes.guess_type(name)[0] or LANE_KIND.get(lane, "")
+            or "text/plain")
+
+
+def _media(kind: str) -> str:
+    """Every artifact shown in the page; nothing needs a click. #461."""
     if kind.startswith("audio"):
-        return f'<audio controls preload=auto src="{{src}}"></audio>'
-    if kind.startswith("image") or path.suffix == ".svg":
+        return '<audio controls preload=auto src="{src}"></audio>'
+    if kind.startswith("image"):
         return '<img src="{src}" alt="">'
-    return '<a href="{src}">open artifact</a>'
+    if kind == "text/html":
+        return '<iframe sandbox src="{src}" loading=lazy></iframe>'
+    return '<iframe src="{src}"></iframe>'
 
 
 class Judge(BaseHTTPRequestHandler):
@@ -87,10 +99,10 @@ class Judge(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
-    def _file_id(self, path: str) -> int:
-        if path not in self.files:
-            self.files.append(path)
-        return self.files.index(path)
+    def _file_id(self, entry: tuple) -> int:
+        if entry not in self.files:
+            self.files.append(entry)
+        return self.files.index(entry)
 
     # -- routes -----------------------------------------------------------
     def do_GET(self):
@@ -99,9 +111,9 @@ class Judge(BaseHTTPRequestHandler):
             idx = int(parse_qs(url.query).get("i", ["-1"])[0])
             if not 0 <= idx < len(self.files):
                 return self._send(b"no", "text/plain", 404)
-            p = Path(self.files[idx])
-            kind = mimetypes.guess_type(p.name)[0] or "application/octet-stream"
-            return self._send(p.read_bytes(), kind)
+            path, text, kind = self.files[idx]
+            body = Path(path).read_bytes() if path else text.encode("utf-8")
+            return self._send(body, kind)
         if url.path not in ("/", "/index.html"):
             return self._send(b"no", "text/plain", 404)
 
@@ -112,12 +124,14 @@ class Judge(BaseHTTPRequestHandler):
                             body=DONE.format(store=html.escape(str(_store_path())))
                             ).encode("utf-8"))
         p = todo[0]
-        left, right = Path(p["left_file"]), Path(p["right_file"])
-        sides = "".join(
-            f'<div class=side><h2>{name}</h2>'
-            + _media(f).format(src=f"/file?i={self._file_id(str(f))}")
-            + "</div>"
-            for name, f in (("A", left), ("B", right)))
+        def side(name, path, text):
+            kind = _kind(Path(path).name if path else "", self.lane)
+            src = f"/file?i={self._file_id((path, '' if path else text, kind))}"
+            return (f'<div class=side><h2>{name}</h2>'
+                    + _media(kind).format(src=src) + "</div>")
+
+        sides = (side("A", p["left_file"], p.get("left_text", ""))
+                 + side("B", p["right_file"], p.get("right_text", "")))
         done = len(self.pairs) - len(todo)
         body = (f'<div class=pair>{sides}</div>'
                 f'<form class=vote method=post action="/vote">'
@@ -158,10 +172,10 @@ class Judge(BaseHTTPRequestHandler):
 
 
 def serve(lane: str, receipt: dict, port: int = 8765, open_browser=True,
-          on_answer=None, run: str = "") -> None:
+          on_answer=None, run: str = "", run_dir: Path | None = None) -> None:
     Judge.lane = lane
     Judge.run = run
-    Judge.pairs = human.pairings(receipt)
+    Judge.pairs = human.pairings(receipt, run_dir)
     Judge.files = []
     Judge.on_answer = staticmethod(on_answer or (lambda lane, pairs: None))
     if not Judge.pairs:
