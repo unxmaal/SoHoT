@@ -105,6 +105,10 @@ def _hook(event, args):
             if i < len(args) and not _inside(args[i]):
                 raise PermissionError(f"sandbox: {event} outside the repo")
 
+try:
+    import ctypes  # its import dlopens the interpreter itself; later loads and calls are refused
+except ImportError:
+    pass
 sys.addaudithook(_hook)
 sys.dont_write_bytecode = True
 import unittest

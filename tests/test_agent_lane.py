@@ -247,6 +247,9 @@ def test_model_written_code_cannot_escape_when_the_tests_run(box, tmp_path):
             def test_ctypes(self):
                 with self.assertRaises(PermissionError):
                     ctypes.CDLL(None)
+            def test_pythonapi(self):
+                with self.assertRaises(PermissionError):
+                    ctypes.pythonapi.Py_GetVersion
             def test_rmtree_out(self):
                 with self.assertRaises(PermissionError):
                     shutil.rmtree({str(tmp_path)!r})
@@ -256,9 +259,48 @@ def test_model_written_code_cannot_escape_when_the_tests_run(box, tmp_path):
         '''))
     result = box.run_tests("tests/test_escape.py")
     assert result.startswith("exit code 0"), result
-    assert "Ran 10 tests" in result
+    assert "Ran 11 tests" in result
     assert not outside.exists() and tmp_path.exists()
     assert (box.root / "ok.txt").read_text(encoding="utf-8") == "fine"
+
+
+def test_importing_ctypes_is_not_an_escape(box):
+    """ctypes' own import runs PyDLL(None); only a later load or call escapes."""
+    box.write_file("tests/test_imports.py",
+                   "import ctypes, ctypes.util, unittest\n"
+                   "class T(unittest.TestCase):\n"
+                   "    def test_x(self):\n        self.assertTrue(ctypes.sizeof(ctypes.c_int))\n")
+    result = box.run_tests("tests/test_imports.py")
+    assert result.startswith("exit code 0"), result
+
+
+@pytest.mark.parametrize("version", ["3.11", "3.12", "3.13", "3.14"])
+def test_importing_ctypes_works_under_every_interpreter_here(tmp_path, version):
+    """3.11 and 3.12 dlopen at ctypes import where 3.13 here did not; CI caught it."""
+    import subprocess
+    exe = shutil.which(f"python{version}")
+    if not exe:
+        pytest.skip(f"no python{version} on PATH")
+    (tmp_path / "tests").mkdir()
+    (tmp_path / "tests" / "test_c.py").write_text(
+        "import ctypes, unittest\nclass T(unittest.TestCase):\n"
+        "    def test_ok(self):\n        self.assertTrue(ctypes.sizeof(ctypes.c_int))\n"
+        "    def test_load(self):\n"
+        "        with self.assertRaises(PermissionError):\n            ctypes.CDLL(None)\n",
+        encoding="utf-8")
+    out = subprocess.run([exe, "-I", "-X", "utf8", "-c", sandbox.BOOTSTRAP, str(tmp_path),
+                          "discover", "-s", "tests"], capture_output=True, text=True,
+                         encoding="utf-8", timeout=60)
+    assert out.returncode == 0, out.stderr[-800:]
+
+
+def test_ctypes_is_not_preloaded_by_the_parent():
+    """The CI condition: a clean -I child where ctypes was never imported."""
+    import subprocess
+    out = subprocess.run([sys.executable, "-I", "-c",
+                          "import sys; print('ctypes' in sys.modules)"],
+                         capture_output=True, text=True, encoding="utf-8")
+    assert out.stdout.strip() == "False"
 
 
 def test_a_test_run_is_time_capped(tmp_path):
