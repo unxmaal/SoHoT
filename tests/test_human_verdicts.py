@@ -138,13 +138,13 @@ def _votes():
 def test_a_vote_is_a_store_row_with_run_voter_machine_and_time(store):
     """#417: the JSON carried none of these, so a vote could not be traced."""
     human.record("music", "c", "beta", "alpha", "b", shown_first="beta",
-                 run="20261005-000000-music", voter="eric")
+                 run="20261005-000000-music", voter="voter-a")
     (row,) = _votes()
     assert (row["lane"], row["case_id"], row["left_candidate"],
             row["right_candidate"], row["winner"], row["shown_first"],
             row["run"], row["voter"]) == ("music", "c", "alpha", "beta",
                                           "alpha", "beta",
-                                          "20261005-000000-music", "eric")
+                                          "20261005-000000-music", "voter-a")
     assert row["machine_id"] and row["at"] > 0
     assert not (store / "human-verdicts.json").exists()
     assert human.tally("music", "c", "alpha", "beta")["alpha"] == 1

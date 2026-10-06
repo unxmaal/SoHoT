@@ -81,17 +81,21 @@ PATTERNS: list[tuple[str, re.Pattern[str], str]] = [
 NAMES_FILE = ".privacy-names"
 
 
-def name_pattern(root: Path) -> tuple[str, re.Pattern[str], str] | None:
+def names(root: Path) -> list[str]:
     import os
 
     raw = os.environ.get("LH_PRIVATE_NAMES", "")
     f = root / NAMES_FILE
     if f.exists():
         raw += "," + f.read_text(encoding="utf-8")
-    names = [n.strip() for n in raw.replace("\n", ",").split(",") if n.strip()]
-    if not names:
+    return [n.strip() for n in raw.replace("\n", ",").split(",") if n.strip()]
+
+
+def name_pattern(root: Path, more=()) -> tuple[str, re.Pattern[str], str] | None:
+    found = names(root) + [n for n in more if n]
+    if not found:
         return None
-    alt = "|".join(re.escape(n) for n in sorted(names, key=len, reverse=True))
+    alt = "|".join(re.escape(n) for n in sorted(set(found), key=len, reverse=True))
     return ("person-name", re.compile(rf"\b(?:{alt})\b", re.I),
             "a real person; say the role, or restructure to passive")
 
@@ -177,10 +181,17 @@ def main(argv: list[str] | None = None) -> int:
                                  description=__doc__.splitlines()[0])
     ap.add_argument("--github", action="store_true",
                     help="also scan every issue and PR body")
+    ap.add_argument("--files", nargs="+", default=None,
+                    help="scan only these files, e.g. a generated page")
     a = ap.parse_args(argv)
 
     root = Path(__file__).resolve().parent.parent
-    found = scan_paths(root)
+    if a.files:
+        found = [f for p in a.files for f in scan(
+            Path(p).read_text(encoding="utf-8", errors="replace"), p,
+            name_pattern(root))]
+    else:
+        found = scan_paths(root)
     if a.github:
         found += scan_github(extra=name_pattern(root))
     for f in found:
