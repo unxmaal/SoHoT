@@ -540,6 +540,22 @@ enough for MiniMax-H3. `fetch-h3-weights.sh` demands its own 160GB and
 cannot know what is about to be fetched, and set to 160 it refused every
 ordinary machine.
 
+### What the weights cache holds
+
+`lh disk` lists every hub repo and GGUF file with its size, grouped as
+`keep` (a gateway alias, a lane default, an adopted winner, a measured verdict,
+or the tooling list in `harness/disk.py`), `queued` (discovery still wants it),
+`rejected` (latest verdict broken or declined after a fetch) and `unknown`.
+`lh disk --delete rejected` or `--delete unknown` removes only what the shared
+`safe_to_delete` rule allows, asks first, and needs `--yes` under `--json`.
+Each removal is recorded in the store's `disk_removals` table.
+
+Rejected weights stay for 24 hours, so a rejection that turns out to be a
+harness fault can be re-screened without a download. `lh discover --loop --run`
+then removes them itself at the start of each run, along with partial
+downloads (`*.incomplete`) untouched for an hour. Nothing outside the hub and
+GGUF directories is ever deleted, and if any keeper cannot be read, nothing is.
+
 The install carries no torch on Apple Silicon. `mlx-whisper` needs it
 unconditionally, so the multilingual ear lives in the `whisper` dependency
 group: 370MB installed rather than 1.1GB. Dependencies are marked by platform
