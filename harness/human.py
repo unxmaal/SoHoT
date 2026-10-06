@@ -19,12 +19,13 @@ cheapest way to accidentally confirm what you already believed.
 """
 from __future__ import annotations
 
-import json
+import getpass
 import random
+import time
 from collections import Counter
-from pathlib import Path
+from contextlib import contextmanager
 
-from harness import lanes, paths
+from harness import lanes
 
 #: How many answers before a pairing counts. One is a draw, not a measurement:
 #: ACE-Step varies run to run at a pinned seed (RULE #280), and the same is
@@ -37,24 +38,25 @@ ENOUGH = 3
 ANSWERS = ("a", "b", "tie")
 
 
-def _file() -> Path:
-    return paths.home() / "human-verdicts.json"
+@contextmanager
+def _store(conn=None):
+    if conn is not None:
+        yield conn
+        return
+    from harness import memory_store as ms
 
-
-def _load() -> list[dict]:
-    f = _file()
-    if not f.is_file():
-        return []
+    own = ms.connect()
     try:
-        return json.loads(f.read_text(encoding="utf-8"))
-    except (ValueError, OSError):
-        return []
+        yield own
+    finally:
+        own.close()
 
 
-def _save(rows: list[dict]) -> None:
-    f = _file()
-    f.parent.mkdir(parents=True, exist_ok=True)
-    f.write_text(json.dumps(rows, indent=1), encoding="utf-8")
+def _voter() -> str:
+    try:
+        return getpass.getuser()
+    except Exception:  # noqa: BLE001
+        return ""
 
 
 def pairings(receipt: dict) -> list[dict]:
@@ -81,42 +83,48 @@ def pairings(receipt: dict) -> list[dict]:
     return out
 
 
-def key(lane: str, case: str, a: str, b: str) -> str:
-    """One pairing's identity, order-independent: asking B-vs-A is the same
-    question as A-vs-B and its answers belong in the same pile."""
-    lo, hi = sorted((a, b))
-    return f"{lanes.canonical(lane)}|{case}|{lo}|{hi}"
-
-
 def record(lane: str, case: str, a: str, b: str, answer: str,
-           shown_first: str = "") -> None:
+           shown_first: str = "", run: str = "", voter: str | None = None,
+           conn=None) -> None:
     """Store one answer. `shown_first` is which candidate was on the left, so
-    a later reader can tell whether the side was randomised."""
+    a later reader can tell whether the side was randomised. `run` names the
+    receipt the pairing came from."""
     if answer not in ANSWERS:
         raise ValueError(f"answer must be one of {ANSWERS}, got {answer!r}")
+    from harness import memory_store as ms
+
     lo, hi = sorted((a, b))
     winner = {"a": a, "b": b}.get(answer, "")
-    rows = _load()
-    rows.append({"key": key(lane, case, a, b), "lane": lanes.canonical(lane),
-                 "case": case, "left": lo, "right": hi, "winner": winner,
-                 "shown_first": shown_first})
-    _save(rows)
+    with _store(conn) as c:
+        c.execute(
+            "INSERT INTO human_votes (lane, run, case_id, left_candidate, "
+            "right_candidate, winner, shown_first, voter, machine_id, at) "
+            "VALUES (?,?,?,?,?,?,?,?,?,?)",
+            (lanes.canonical(lane), run, case, lo, hi, winner, shown_first,
+             _voter() if voter is None else voter, ms.remember_machine(c),
+             time.time()))
+        c.commit()
 
 
-def tally(lane: str, case: str, a: str, b: str) -> Counter:
+def tally(lane: str, case: str, a: str, b: str, conn=None) -> Counter:
     """Answers so far for one pairing, keyed by winner ("" means tie)."""
-    k = key(lane, case, a, b)
-    return Counter(r["winner"] for r in _load() if r["key"] == k)
+    lo, hi = sorted((a, b))
+    with _store(conn) as c:
+        rows = c.execute(
+            "SELECT winner FROM human_votes WHERE lane = ? AND case_id = ? "
+            "AND left_candidate = ? AND right_candidate = ?",
+            (lanes.canonical(lane), case, lo, hi)).fetchall()
+    return Counter(r["winner"] for r in rows)
 
 
-def decided(lane: str, case: str, a: str, b: str) -> str | None:
+def decided(lane: str, case: str, a: str, b: str, conn=None) -> str | None:
     """The winner, "" for a tie, or None when it has not been asked enough.
 
     A plurality decides. A pairing that ties or splits evenly IS decided --
     as a tie -- because three answers that disagree is the finding, not a
     reason to keep asking.
     """
-    counts = tally(lane, case, a, b)
+    counts = tally(lane, case, a, b, conn)
     if sum(counts.values()) < ENOUGH:
         return None
     top = counts.most_common()
@@ -125,7 +133,8 @@ def decided(lane: str, case: str, a: str, b: str) -> str | None:
     return top[0][0]
 
 
-def lane_verdict(lane: str, pairs: list[dict]) -> tuple[str | None, str]:
+def lane_verdict(lane: str, pairs: list[dict],
+                 conn=None) -> tuple[str | None, str]:
     """Who won the LANE, and why, from the per-case answers.
 
     Returns (winner, why). `None` means not enough has been judged to say;
@@ -144,12 +153,13 @@ def lane_verdict(lane: str, pairs: list[dict]) -> tuple[str | None, str]:
     from collections import Counter
 
     decided_by = {}
-    for p in pairs:
-        got = decided(lane, p["case"], p["a"], p["b"])
-        if got is None:
-            return None, (f"{p['case']} has fewer than {ENOUGH} answers, so "
-                          f"the lane is not judged yet")
-        decided_by[p["case"]] = got
+    with _store(conn) as c:
+        for p in pairs:
+            got = decided(lane, p["case"], p["a"], p["b"], c)
+            if got is None:
+                return None, (f"{p['case']} has fewer than {ENOUGH} answers, "
+                              f"so the lane is not judged yet")
+            decided_by[p["case"]] = got
     if not decided_by:
         return None, "nothing to judge"
 
@@ -168,12 +178,13 @@ def lane_verdict(lane: str, pairs: list[dict]) -> tuple[str | None, str]:
         f", {ties} with no preference" if ties else "")
 
 
-def pending(lane: str, pairs: list[dict]) -> list[dict]:
+def pending(lane: str, pairs: list[dict], conn=None) -> list[dict]:
     """Pairings still short of ENOUGH answers, each with what it still needs
     and the side to show first, shuffled."""
     out = []
-    for p in pairs:
-        counts = tally(lane, p["case"], p["a"], p["b"])
+    with _store(conn) as c:
+        counts_by = [tally(lane, p["case"], p["a"], p["b"], c) for p in pairs]
+    for p, counts in zip(pairs, counts_by):
         asked = sum(counts.values())
         if asked >= ENOUGH:
             continue

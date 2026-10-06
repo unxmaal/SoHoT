@@ -1303,6 +1303,14 @@ def cmd_rubric(a) -> int:
     return 0
 
 
+def _run_name(run: Path) -> str:
+    """A run under the runs dir by its directory name, anything else by path."""
+    try:
+        return str(run.resolve().relative_to((paths.home() / "runs").resolve()))
+    except ValueError:
+        return str(run)
+
+
 def cmd_judge(a) -> int:
     """Serve the page a person votes on, for a lane no program can score.
 
@@ -1366,7 +1374,8 @@ def cmd_judge(a) -> int:
 
     try:
         judge_server.serve(lane, receipt, port=a.port,
-                           open_browser=not a.no_browser, on_answer=_record)
+                           open_browser=not a.no_browser, on_answer=_record,
+                           run=_run_name(run))
     except OSError as exc:
         return err(f"could not serve on port {a.port}: {exc}")
     settled = [p for p in pairs
