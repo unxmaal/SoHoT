@@ -118,3 +118,20 @@ def test_a_fetched_candidate_below_the_rank_head_is_still_screened(monkeypatch, 
     cli._report_screen(argparse.Namespace(lane="", top=2, run=False, json=False))
     out = capsys.readouterr().out
     assert "1 ready to screen" in out and "org/fetched" in out, out
+
+
+def test_a_survivor_in_the_scoped_lane_below_the_cut_is_measured(tmp_path):
+    """#386: the loop took the newest N survivors, then kept the scoped lane."""
+    from harness import memory_store as ms
+    store = ms.connect(tmp_path / "s.db")
+    try:
+        for name, lane in [("org/theimage", "image")] + [
+                (f"org/code{i}", "code") for i in range(4)]:
+            ms.record(store, ms.Seen(name=name, source="t", kind="weights",
+                                     lane=lane, why="seeded"))
+            ms.decide(store, name, "screened", tier=ms.SCREEN,
+                      detail="1 case(s) passed a screen")
+        assert [r["name"] for r in cli.measurable(store, 2, "image")] == ["org/theimage"]
+        assert len(cli.measurable(store, 2, "")) == 2
+    finally:
+        store.close()

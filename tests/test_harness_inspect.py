@@ -659,3 +659,65 @@ def test_an_unlisted_task_is_filed_by_what_it_produces(tag, tags, lane):
 def test_tags_still_decide_when_the_publisher_named_no_task():
     """Negative control for #379."""
     assert ins.lane_for({"pipeline_tag": "", "tags": ["text-to-image"]}) == "image"
+
+
+#: Every HuggingFace pipeline task, from huggingface.js packages/tasks/src/
+#: pipelines.ts (57 on 2026-10-05). #383 class 2: an unlisted task fails here.
+HF_TASKS = (
+    "text-classification token-classification table-question-answering "
+    "question-answering zero-shot-classification translation summarization "
+    "feature-extraction text-generation fill-mask sentence-similarity "
+    "text-to-speech text-to-audio automatic-speech-recognition audio-to-audio "
+    "audio-classification audio-text-to-text voice-activity-detection "
+    "depth-estimation image-classification object-detection image-segmentation "
+    "text-to-image image-to-text image-to-image image-to-video "
+    "unconditional-image-generation video-classification reinforcement-learning "
+    "robotics tabular-classification tabular-regression tabular-to-text "
+    "table-to-text multiple-choice text-ranking text-retrieval "
+    "time-series-forecasting text-to-video image-text-to-text image-text-to-image "
+    "image-text-to-video visual-question-answering document-question-answering "
+    "zero-shot-image-classification graph-ml mask-generation "
+    "zero-shot-object-detection text-to-3d image-to-3d image-feature-extraction "
+    "video-text-to-text keypoint-detection visual-document-retrieval any-to-any "
+    "video-to-video other").split()
+
+#: The deliberate answer: a lane whose cases the task can take, else "".
+TASK_LANES = {
+    "text-generation": "code", "image-text-to-text": "code",
+    "audio-text-to-text": "code", "video-text-to-text": "code",
+    "text-to-image": "image", "text-to-video": "video",
+    "image-to-video": "video", "image-text-to-video": "video",
+    "text-to-speech": "tts", "automatic-speech-recognition": "stt",
+    **{t: "" for t in (
+        "text-classification", "token-classification",
+        "table-question-answering", "question-answering",
+        "zero-shot-classification", "translation", "summarization",
+        "feature-extraction", "fill-mask", "sentence-similarity",
+        "audio-to-audio", "audio-classification", "voice-activity-detection",
+        "depth-estimation", "image-classification", "object-detection",
+        "image-segmentation", "unconditional-image-generation",
+        "video-classification", "reinforcement-learning", "robotics",
+        "tabular-classification", "tabular-regression", "multiple-choice",
+        "text-ranking", "text-retrieval", "time-series-forecasting",
+        "visual-question-answering", "document-question-answering",
+        "zero-shot-image-classification", "graph-ml", "mask-generation",
+        "zero-shot-object-detection", "text-to-3d", "image-to-3d",
+        "image-feature-extraction", "keypoint-detection",
+        "visual-document-retrieval", "any-to-any", "other")},
+}
+
+#: Answered today but the answer looks wrong; not pinned until #387 decides.
+QUESTIONED = {"text-to-audio", "image-to-text", "table-to-text",
+              "tabular-to-text", "image-to-image", "image-text-to-image",
+              "video-to-video"}
+
+
+def test_every_huggingface_task_has_a_deliberate_lane():
+    assert len(HF_TASKS) == len(set(HF_TASKS))
+    assert not set(TASK_LANES) & QUESTIONED
+    assert set(TASK_LANES) | QUESTIONED == set(HF_TASKS)
+
+
+@pytest.mark.parametrize("task", sorted(TASK_LANES))
+def test_each_huggingface_task_lands_where_it_was_decided(task):
+    assert ins.lane_for({"pipeline_tag": task, "tags": []}) == TASK_LANES[task]

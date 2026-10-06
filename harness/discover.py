@@ -329,6 +329,10 @@ def _was_measured(name: str, done: set[str]) -> bool:
     something DONE hides work, which is worse than wrongly offering it twice.
     """
     tail = name.split("/")[-1]
+    # Each engine's own key for it: mflux keeps the owner and appends -q8. #384.
+    from harness import engines, screen
+    if any(screen.receipt_key(f"{e}:{name}") in done for e in engines.names()):
+        return True
     for m in done:
         segs = _segments(m)
         if name in segs or tail in segs:
@@ -584,7 +588,8 @@ def external(lane: str, limit: int = 8) -> list[Capability]:
     seen: set[str] = set()
     out: list[Capability] = []
     for query in queries:
-        for m in _hf_models(query, limit):
+        # Ask past what is already measured, or a measured head empties it. #386.
+        for m in _hf_models(query, limit + len(done)):
             repo = m.get("id") or ""
             if not repo or repo in seen:
                 continue

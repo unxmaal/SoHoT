@@ -351,6 +351,11 @@ NOT_THE_CANDIDATE = (
 )
 
 
+#: In stderr this is our missing script; inside a loader's error it is a file
+#: the candidate's snapshot lacks, which is the candidate's.
+ABOUT_THE_SNAPSHOT = ("no such file or directory",)
+
+
 def refused_by_harness(detail: str) -> str:
     """The phrase saying this never reached the candidate, or "".
 
@@ -372,6 +377,15 @@ def model_tail(spec: str) -> str:
     return model.rstrip("/").rpartition("/")[2].strip().lower()
 
 
+def receipt_key(spec: str) -> str:
+    """The summary key the engine writes for `spec`, or "" if it is not one."""
+    try:
+        from harness import engines
+        return engines.resolve(spec).name
+    except Exception:  # noqa: BLE001
+        return ""
+
+
 def wrong_run(summary: dict | None, candidate: str) -> str:
     """Why this receipt is another candidate's, or "". #282."""
     if not summary or not candidate:
@@ -384,18 +398,16 @@ def wrong_run(summary: dict | None, candidate: str) -> str:
 
 def row_for(summary: dict | None, candidate: str) -> dict | None:
     """This candidate's summary row, matched on the model portion. #282."""
-    want = model_tail(candidate)
-    if not summary or not want:
+    if not summary:
         return None
     # The engine that ran it names the key: mflux appends -q8, which no tail
     # match can see. #378.
-    try:
-        from harness import engines
-        named = engines.resolve(candidate).name
-    except Exception:
-        named = ""
-    if named in summary:
+    named = receipt_key(candidate)
+    if named and named in summary:
         return summary[named] or {}
+    want = model_tail(candidate)
+    if not want:
+        return None
     for key, row in summary.items():
         if model_tail(str(key)) == want or any(
                 part.strip().lower() == want for part in str(key).split("/")):
@@ -433,10 +445,23 @@ def is_architecture_gap(text: str) -> bool:
 def load_failure(summary: dict | None, candidate: str) -> str:
     """The server's error if this runtime could not build the architecture."""
     why = why_nothing_passed(summary, candidate)
+    low = why.lower()
     if candidate.startswith(LLAMACPP_PREFIX):
-        low = why.lower()
         return why if all(p in low for p in LLAMACPP_LOAD_FAILED) else ""
+    # A process engine's loader reports through `exit N:`, not a gateway. #385.
+    if engine_runtime(candidate) and any(g in low for g in ARCHITECTURE_GAPS):
+        return why
     return why if is_architecture_gap(why) else ""
+
+
+#: The package whose version decides what a process engine can load. #385.
+ENGINE_RUNTIMES = {"mflux": "mflux", "diffusers": "diffusers",
+                   "diffusers-video": "diffusers", "acestep": "ace-step"}
+
+
+def engine_runtime(candidate: str) -> str:
+    head = candidate.partition(",")[0].partition(":")[0].strip()
+    return ENGINE_RUNTIMES.get(head, "")
 
 
 def _llamacpp_build() -> str:
@@ -448,6 +473,10 @@ def load_until(candidate: str = "") -> str:
     """The predicate that reopens a load failure: a newer runtime."""
     if candidate.startswith(LLAMACPP_PREFIX):
         return f"version:llama.cpp>{_llamacpp_build()}"
+    runtime = engine_runtime(candidate)
+    if runtime:
+        from harness import feeds
+        return f"version:{runtime}>{feeds.installed_version(runtime) or '0'}"
     from importlib import metadata
     try:
         have = metadata.version(LOAD_RUNTIME)
@@ -490,6 +519,12 @@ def outcome(returncode: int, summary: dict | None,
         if failed:
             return "declined", f"the installed runtime could not load it: {failed}"
         why = why_nothing_passed(summary, candidate) if candidate else ""
+        # The same phrases as stderr: a loader failure lands in the summary. #385.
+        refused = refused_by_harness(why)
+        if refused and refused not in ABOUT_THE_SNAPSHOT:
+            return "queued", (f"not screened: {refused}. The harness could not "
+                              f"deliver the request, which says nothing about "
+                              f"the candidate: {why}")
         if any(g in why.lower() for g in DIFFUSERS_LAYOUT_GAPS):
             return "declined", (f"needs its own runner: stock diffusers could "
                                 f"not assemble it: {why}")

@@ -221,3 +221,90 @@ def test_a_model_that_ran_and_failed_is_still_broken(monkeypatch):
     """Negative control for #381."""
     monkeypatch.setattr(screen, "why_nothing_passed", lambda s, c: "fox-snow: no fox in image")
     assert screen.outcome(0, {"diffusers/x": {"passed": 0}}, candidate="diffusers:o/x")[0] == "broken"
+
+
+# --- #383 class 1: every consumer reads the key the engine wrote ------------
+
+#: Valid specs per engine, bare and optioned. A new engine fails until it has one.
+SAMPLES = {
+    "mflux": ["mflux:Qwen/Qwen-Image-Bench", "mflux:z-image-turbo,steps=4",
+              "mflux:flux2-klein-4b,quantize=none"],
+    "h3": ["h3", "h3:,steps=4"],
+    "diffusers": ["diffusers:stabilityai/sdxl-turbo", "diffusers:org/x,steps=4"],
+    "diffusers-video": ["diffusers-video:Lightricks/LTX-Video",
+                        "diffusers-video:org/v,frames=9"],
+    "acestep": ["acestep:acestep-v15-turbo,steps=8",
+                "acestep:ACE-Step/acestep-v15-xl"],
+}
+SAMPLE_SPECS = [s for specs in SAMPLES.values() for s in specs]
+LANE_OF = {"image": "image", "video": "video", "music": "music"}
+
+
+def test_every_engine_has_a_sample_spec():
+    assert set(SAMPLES) == set(engines._BUILDERS)
+
+
+@pytest.mark.parametrize("spec", SAMPLE_SPECS)
+def test_the_screen_recognises_the_key_its_engine_wrote(spec):
+    key = engines.resolve(spec).name
+    assert screen.wrong_run({key: {}}, spec) == ""
+    assert screen.wrong_run({"diffusers/someone-else": {}}, spec) != ""
+
+
+@pytest.mark.parametrize("spec", SAMPLE_SPECS)
+def test_measure_finds_the_row_its_engine_wrote(spec):
+    """#384: winners.matches only swaps ':' for '/', so diffusers and @k=v keys missed."""
+    from harness import cli
+    eng = engines.resolve(spec)
+    lane = LANE_OF[eng.modality]
+    row = cli._summary_row({eng.name: {"passed": 1}}, spec, lane)
+    assert row and row["candidate"] == eng.name
+    assert cli._summary_row({"diffusers/someone-else": {"passed": 1}}, spec, lane) is None
+
+
+@pytest.mark.parametrize("spec", [s for s in SAMPLE_SPECS if "," not in s and ":" in s])
+def test_discovery_counts_a_receipt_its_engine_wrote_as_measured(spec):
+    """#384: mflux keeps the owner and appends -q8, which no segment matches."""
+    from harness import discover
+    repo = spec.partition(":")[2]
+    assert discover._was_measured(repo, {engines.resolve(spec).name})
+    assert not discover._was_measured(repo, {"mflux/someone/else-q8"})
+
+
+# --- #383 class 5: a loader failure is not the model's fault ----------------
+
+#: How each loader's failure reaches the summary: a process engine's last stderr
+#: line, and mlx_lm.server's 404 for an architecture it cannot build.
+LOADER_FAILURES = (
+    [("diffusers:o/x", "diffusers/x", f"fox-snow: exit 1: ValueError: {p}")
+     for p in screen.DIFFUSERS_LAYOUT_GAPS]
+    + [(c, k, f"fox-snow: exit 1: {p}") for p in screen.NOT_THE_CANDIDATE
+       if p not in screen.ABOUT_THE_SNAPSHOT for c, k in (("diffusers:o/x", "diffusers/x"), ("o/x", "o/x"))]
+    + [("diffusers:o/x", "diffusers/x", f"fox-snow: exit 1: ValueError: {p}")
+       for p in screen.ARCHITECTURE_GAPS]
+    + [("o/x", "o/x", f"chunk-bytes: gateway returned HTTP 404: {{\"error\": \"{p}\"}}")
+       for p in screen.ARCHITECTURE_GAPS])
+
+
+@pytest.mark.parametrize("cand,key,failure", LOADER_FAILURES)
+def test_no_loader_failure_is_recorded_broken(cand, key, failure):
+    summary = {key: {"total": 1, "passed": 0, "failures": [failure]}}
+    assert screen.outcome(0, summary, candidate=cand)[0] != "broken", failure
+
+
+@pytest.mark.parametrize("cand,key,failure", [
+    ("diffusers:o/x", "diffusers/x", "fox-snow: no fox in the image (clip 0.12)"),
+    ("o/x", "o/x", "fox-snow: no fox in the image (clip 0.12)"),
+    ("diffusers:o/x", "diffusers/x",
+     "fox-snow: exit 1: OSError: [Errno 2] No such file or directory: 'vae/config.json'"),
+])
+def test_a_content_or_snapshot_failure_is_still_broken(cand, key, failure):
+    """Negative control: the output was wrong, or the snapshot lacks a file."""
+    summary = {key: {"total": 1, "passed": 0, "failures": [failure]}}
+    assert screen.outcome(0, summary, candidate=cand)[0] == "broken"
+
+
+def test_a_process_engine_decline_waits_on_its_own_runtime():
+    """#385: a diffusers gap waited on mlx-lm."""
+    assert screen.load_until("diffusers:o/x").startswith("version:diffusers>")
+    assert screen.load_until("mflux:z-image-turbo").startswith("version:mflux>")
