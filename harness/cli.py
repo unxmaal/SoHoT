@@ -1325,6 +1325,14 @@ def _run_name(run: Path) -> str:
         return str(run)
 
 
+def cmd_adopt(a) -> int:
+    """The discovery loop's paired measure-and-adopt, for a named challenger."""
+    lane = lanes.canonical(a.lane)
+    if lane not in lanes.ALL:
+        return err(f"unknown lane {a.lane!r}; known: {', '.join(lanes.ALL)}")
+    return _measure_and_adopt(a, {"name": a.challenger, "lane": lane})
+
+
 def cmd_judge(a) -> int:
     """Serve the page a person votes on, for a lane no program can score.
 
@@ -3087,6 +3095,15 @@ def build_parser() -> argparse.ArgumentParser:
     jud.add_argument("--port", type=int, default=8765)
     jud.add_argument("--no-browser", action="store_true")
     jud.set_defaults(func=cmd_judge)
+    ado = sub.add_parser(
+        "adopt",
+        help="measure a challenger against a lane's incumbent and adopt it "
+             "on a significant win. Issue #464")
+    ado.add_argument("--lane", required=True)
+    ado.add_argument("--challenger", required=True,
+                     help="a spec or gateway alias, e.g. q3-30b")
+    ado.add_argument("--repeat", type=int, default=3)
+    ado.set_defaults(func=cmd_adopt)
 
     ver = sub.add_parser(
         "verify",
