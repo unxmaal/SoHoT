@@ -1111,7 +1111,7 @@ def cmd_jobs(a) -> int:
     a.title = title
     try:
         if a.action == "add":
-            job = wq.add(rest, title=a.title, priority=priority)
+            job = wq.add(rest, title=a.title, priority=priority, requested_by="cli")
             note(f"queued {job['id']}: {job['title']}")
             emit(job=job)
             return 0

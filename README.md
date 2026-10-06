@@ -1129,10 +1129,11 @@ machine lock below for a whole job: each command takes it for the part that
 loads a model, so a job that is downloading does not block a GPU run. It starts
 the next one only while the queue is not paused and nobody is using
 this machine: the screen is locked, or there has been no keyboard or mouse
-input for `LH_IDLE_MINUTES` (10). Jobs are files under
-`~/localharness/queue/jobs/`, so they survive a restart, and output goes to
+input for `LH_IDLE_MINUTES` (10). Jobs are rows in the
+store's `jobs` table, so they survive a restart, and output goes to
 `~/localharness/logs/jobs/<id>.log`. A failed job is recorded and the next
-starts. A job cut off by a reboot is marked failed rather than rerun.
+starts. A job cut off by a reboot is marked failed rather than rerun. An eval
+run a job produced is linked to it (`runs.job_id`).
 
 Over MCP, `image` and `video` are queued at priority 10, ahead of batch work
 at 0, so someone waiting on a picture is not behind a night of benchmarks. They

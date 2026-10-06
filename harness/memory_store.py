@@ -19,7 +19,7 @@ from pathlib import Path
 
 from harness import paths, store
 
-SCHEMA_VERSION = 34
+SCHEMA_VERSION = 35
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
 VERDICTS = ("measured", "declined", "broken", "queued", "ignored", "screened")
@@ -221,6 +221,29 @@ CREATE TABLE IF NOT EXISTS machine_merges (
     merged_at        REAL NOT NULL
 );
 
+-- The work queue: one row per job any caller added. AUTOINCREMENT so a
+-- cancelled id is never handed out again. #418.
+CREATE TABLE IF NOT EXISTS jobs (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    title        TEXT NOT NULL DEFAULT '',
+    -- command, image or video; MCP jobs name their artifact in output.
+    kind         TEXT NOT NULL DEFAULT 'command',
+    output       TEXT NOT NULL DEFAULT '',
+    priority     INTEGER NOT NULL DEFAULT 0,
+    argv         TEXT NOT NULL DEFAULT '[]',
+    cwd          TEXT NOT NULL DEFAULT '',
+    state        TEXT NOT NULL DEFAULT 'pending',
+    created_at   REAL NOT NULL,
+    started_at   REAL,
+    finished_at  REAL,
+    rc           INTEGER,
+    log          TEXT NOT NULL DEFAULT '',
+    note         TEXT NOT NULL DEFAULT '',
+    -- cli, mcp or migration.
+    requested_by TEXT NOT NULL DEFAULT '',
+    machine_id   INTEGER REFERENCES machines(id)
+);
+
 -- One eval run, written by evals.run; results.json is its export. #410.
 CREATE TABLE IF NOT EXISTS runs (
     id           INTEGER PRIMARY KEY,
@@ -236,7 +259,9 @@ CREATE TABLE IF NOT EXISTS runs (
     receipt      TEXT NOT NULL DEFAULT '{}',
     environment  TEXT NOT NULL DEFAULT '{}',
     specs        TEXT NOT NULL DEFAULT '{}',
-    recorded_at  REAL NOT NULL
+    recorded_at  REAL NOT NULL,
+    -- The queued job that ran evals.run, if one did. #418.
+    job_id       INTEGER REFERENCES jobs(id) ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS results (
@@ -374,6 +399,7 @@ CREATE INDEX IF NOT EXISTS ix_edges_src ON edges(src);
 CREATE INDEX IF NOT EXISTS ix_downloads_repo ON downloads(repo);
 CREATE INDEX IF NOT EXISTS ix_downloads_path ON downloads(path);
 CREATE INDEX IF NOT EXISTS ix_edges_dst ON edges(dst);
+CREATE INDEX IF NOT EXISTS ix_jobs_state ON jobs(state, priority);
 """
 
 
@@ -821,6 +847,9 @@ def _migrate(conn: sqlite3.Connection) -> None:
                      "ADD COLUMN size_bytes INTEGER NOT NULL DEFAULT 0")
     _add_card_facts(conn)
     _add_machine_versions(conn)
+    if "job_id" not in _columns(conn, "runs"):
+        conn.execute("ALTER TABLE runs ADD COLUMN job_id "
+                     "INTEGER REFERENCES jobs(id) ON DELETE SET NULL")
     if have and have < 25:
         _backfill_state(conn)
     # The DDL above is CREATE IF NOT EXISTS, so v0 -> v1 and v1 -> v2 (which
@@ -955,9 +984,14 @@ def _migrate(conn: sqlite3.Connection) -> None:
         lift_edge_scores(conn)
         import_discovery_state_json(conn)
         import_size_cache_lanes(conn)
+    if have < 35:
+        # After the runs backfill, so an old job's log can name its run. #418.
+        from harness import workqueue
+        workqueue.import_json(conn)
     conn.execute("CREATE INDEX IF NOT EXISTS ix_verdict_cand "
                  "ON verdicts(candidate_id)")
     conn.execute("CREATE INDEX IF NOT EXISTS ix_prop_state ON proposals(state)")
+    conn.execute("CREATE INDEX IF NOT EXISTS ix_runs_job ON runs(job_id)")
     conn.execute("INSERT OR REPLACE INTO meta VALUES ('schema', ?)",
                  (str(SCHEMA_VERSION),))
     conn.commit()

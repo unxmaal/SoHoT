@@ -168,7 +168,7 @@ INTERACTIVE_PRIORITY = 10
 def _queue(kind: str, prompt: str, argv: list[str], out: Path) -> JobInfo:
     job = workqueue.add(argv, title=f"{kind}: {prompt[:80]}", kind=kind,
                         output=str(out), cwd=str(Path(__file__).resolve().parents[1]),
-                        priority=INTERACTIVE_PRIORITY)
+                        priority=INTERACTIVE_PRIORITY, requested_by="mcp")
     return _describe(job)
 
 
