@@ -735,9 +735,11 @@ def score(case: Case, artifact, **checker_kwargs) -> Result:
                       f"{r.shape_count}", warnings=r.warnings)
 
     for needle in a.get("must_contain") or []:
-        if not contains(artifact, needle):
+        # A list is alternatives: any one satisfies it. #365.
+        options = needle if isinstance(needle, list) else [needle]
+        if not any(contains(artifact, n) for n in options):
             return Result(case.id, "", False, 0.0, 0,
-                          f"missing required content: {needle}",
+                          f"missing required content: {' or '.join(options)}",
                           warnings=r.warnings)
 
     for needle in a.get("must_not_contain") or []:

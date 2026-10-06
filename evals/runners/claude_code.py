@@ -13,6 +13,10 @@ from harness import completion
 PREFIX = "claude-code"
 
 
+class EmptyResult(RunnerError):
+    pass
+
+
 class ClaudeCodeRunner(BaseRunner):
     def __init__(self, model: str, timeout: float = 600.0, execute=subprocess.run,
                  binary: str = "claude"):
@@ -34,6 +38,14 @@ class ClaudeCodeRunner(BaseRunner):
                 "--system-prompt", system, "--tools", ""]
 
     def generate(self, case: Case):
+        # One retry on an empty result: 1 in 45 calls came back empty and
+        # never reproduced. Empty twice is the model's answer. #366.
+        try:
+            return self._once(case, retries=0)
+        except EmptyResult:
+            return self._once(case, retries=1)
+
+    def _once(self, case: Case, retries: int):
         started = time.perf_counter()
         with tempfile.TemporaryDirectory(prefix="lh-claude-code-") as cwd:
             try:
@@ -54,11 +66,15 @@ class ClaudeCodeRunner(BaseRunner):
             raise RunnerError(f"claude -p: {str(body.get('result'))[:300]}")
         text = body.get("result") or ""
         if not text.strip():
-            raise RunnerError("claude -p returned an empty result")
+            if retries:
+                raise RunnerError("claude -p returned an empty result twice")
+            raise EmptyResult("claude -p returned an empty result")
         out = int((body.get("usage") or {}).get("output_tokens") or 0)
         self.last_metrics = ({"completion_tokens": out,
                               "tokens_per_s": round(out / elapsed, 1)}
                              if out and elapsed > 0 else {})
+        if retries:
+            self.last_metrics["retries"] = retries
         return text, 0
 
     def extra_metrics(self) -> dict:

@@ -77,3 +77,18 @@ def test_the_runner_keeps_the_base_run_method():
     r = ClaudeCodeRunner("m", execute=fake({"result": "def add(a, b): return a + b"}))
     row = r.run(case())
     assert row.candidate == "claude-code:m" and row.passed, row.detail
+
+
+def test_one_empty_result_is_retried_and_recorded():
+    """#366: 1 in 45 calls came back empty and never reproduced."""
+    bodies = iter([{"result": ""}, {"result": "def add(a, b): return a + b",
+                                    "usage": {"output_tokens": 9}}])
+    r = ClaudeCodeRunner("m", execute=lambda argv, **kw: Proc(next(bodies)))
+    text, _ = r.generate(case())
+    assert "def add" in text and r.extra_metrics()["retries"] == 1
+
+
+def test_empty_twice_is_the_models_answer():
+    r = ClaudeCodeRunner("m", execute=fake({"result": ""}))
+    with pytest.raises(RunnerError, match="twice"):
+        r.generate(case())
