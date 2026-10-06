@@ -105,10 +105,10 @@ def test_rank_reads_stored_lanes_only(conn, store_run):
 def test_coverage_dates_a_model_by_its_stored_run(conn, store_run):
     from harness import coverage
     _unstored(key="org/thing")
-    assert coverage._first_receipt(conn) == {}
+    assert coverage._measured(conn, {}) == {}
     store_run("r", "image", {"org/thing": {"pass_rate": 1.0}},
-              generated="2026-01-02T03:04:05")
-    assert list(coverage._first_receipt(conn)) == ["org/thing"]
+              specs={"org/thing": "org/thing"}, generated="2026-01-02T03:04:05")
+    assert list(coverage._measured(conn, {})) == ["org/thing"]
 
 
 def test_the_memory_guard_reads_stored_peaks_only(conn, store_run):
@@ -264,3 +264,56 @@ def test_the_screen_verdict_names_its_stored_run(conn, store_run):
     assert cited != bare, "a verdict with evidence is a new fact, never deduped"
     assert conn.execute("SELECT run_id FROM verdicts WHERE id = ?",
                         (cited,)).fetchone()["run_id"] == run_id
+
+
+# --- every row carries the candidate it ran as (#429) ----------------------
+
+def _execute(monkeypatch, tmp_path, specs: str, runner=None):
+    cases = [Case(id="a", modality="svg", prompt="p")]
+    monkeypatch.setattr(er, "load_cases", lambda path: cases)
+    monkeypatch.setattr(er, "build_runner", lambda *a, **k: runner or _Runner())
+    monkeypatch.setattr(er, "warn_if_pressed",
+                        lambda: argparse.Namespace(as_dict=lambda: {}))
+    monkeypatch.setattr(er, "capture", lambda: {"hw_model": "Test,1",
+                                                "os": "t", "arch": "a"})
+    out = tmp_path / "out"
+    args = argparse.Namespace(
+        modality="svg", candidates=specs, cases="x", out=str(out),
+        screen=False, repeat=1, adherence="", gateway="http://gw",
+        from_winners=False)
+    return er._execute(args), out
+
+
+def test_the_export_carries_the_candidate_each_row_ran_as(monkeypatch, tmp_path):
+    _, out = _execute(monkeypatch, tmp_path, "fake:spec")
+    on_disk = json.loads((out / "results.json").read_text(encoding="utf-8"))
+    c = ms.connect()
+    try:
+        cid = candidates.get(c, "fake:spec")["id"]
+    finally:
+        c.close()
+    assert {r["candidate_id"] for r in on_disk["rows"]} == {cid}
+
+
+def test_two_specs_that_run_as_one_key_are_refused_before_either_runs(
+        monkeypatch, tmp_path):
+    ran = []
+
+    class Counting(_Runner):
+        def run(self, case):
+            ran.append(case.id)
+            return super().run(case)
+
+    with pytest.raises(SystemExit, match="both run as fake/key"):
+        _execute(monkeypatch, tmp_path, "fake:spec,fake:other",
+                 runner=Counting())
+    assert ran == []
+
+
+def test_a_stamped_id_this_store_does_not_hold_is_looked_up_again(conn):
+    """An export from another store carries ids that mean nothing here."""
+    cid = candidates.ensure(conn, "org/x", key="org/x")
+    rows = [{"case_id": "c", "candidate": "org/x", "passed": True,
+             "candidate_id": cid + 999}]
+    run_id = runs.record(conn, paths.runs() / "r", {"rows": rows})
+    assert [r["candidate_id"] for r in runs.rows(conn, run_id)] == [cid]

@@ -19,7 +19,7 @@ from pathlib import Path
 
 from harness import paths, store
 
-SCHEMA_VERSION = 36
+SCHEMA_VERSION = 37
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
 VERDICTS = ("measured", "declined", "broken", "queued", "ignored", "screened")
@@ -980,6 +980,8 @@ def _migrate(conn: sqlite3.Connection) -> None:
         workqueue.import_json(conn)
     if have and have < 36:
         drop_dead_columns(conn)
+    if have and have < 37:
+        resolve_identity_leftovers(conn)
     conn.execute("CREATE INDEX IF NOT EXISTS ix_verdict_cand "
                  "ON verdicts(candidate_id)")
     conn.execute("CREATE INDEX IF NOT EXISTS ix_prop_state ON proposals(state)")
@@ -1998,6 +2000,35 @@ def backfill_candidates(conn, runs=None) -> dict:
                            (cid,)).fetchone()[0]
         if key in R.keys_in(conn, run["id"]):
             counts["run_path_confirmed"] += 1
+    _resolve_fakes(conn, fakes, counts)
+    for pid, cid in own.items():
+        cur = conn.execute(
+            "UPDATE verdicts SET candidate_id = ? WHERE proposal_id = ? "
+            "AND candidate_id IS NULL AND tier IN (?, ?, ?)",
+            (cid, pid, SCREEN, MEASURE, ADOPT))
+        counts["verdicts_linked"] += cur.rowcount or 0
+    conn.commit()
+    return counts
+
+
+def _by_download(conn, label: str, lane: str) -> str:
+    """The one spec, built from a downloaded repo, whose runner writes `label`. #429."""
+    from harness import candidates as C, screen
+    found = set()
+    for r in conn.execute("SELECT DISTINCT repo FROM downloads "
+                          "WHERE repo != ''").fetchall():
+        try:
+            spec = screen.candidate_for(lane, r["repo"], conn=conn)
+        except Exception:  # noqa: BLE001
+            spec = ""
+        if spec and C.key_of(spec) == label:
+            found.add(spec)
+    return found.pop() if len(found) == 1 else ""
+
+
+def _resolve_fakes(conn, fakes: dict, counts: dict) -> None:
+    """Fold each spec-named proposal into the candidate it names. #407, #429."""
+    from harness import candidates as C
     for pid, fake in fakes.items():
         counts["fakes"] += 1
         label = _legacy_spec(fake["name"])
@@ -2005,6 +2036,10 @@ def backfill_candidates(conn, runs=None) -> dict:
         if got is None and ":" in label:
             C.ensure(conn, label, lane=fake["lane"])
             got = C.get(conn, label)
+        if got is None and fake["lane"]:
+            spec = _by_download(conn, label, fake["lane"])
+            if spec and C.ensure(conn, spec, key=label, lane=fake["lane"]):
+                got = C.get(conn, spec)
         if got is None:
             counts["fakes_unresolved"] += 1
             continue
@@ -2023,12 +2058,23 @@ def backfill_candidates(conn, runs=None) -> dict:
         conn.execute("UPDATE candidates SET proposal_id = NULL "
                      "WHERE proposal_id = ?", (pid,))
         conn.execute("DELETE FROM proposals WHERE id = ?", (pid,))
-    for pid, cid in own.items():
-        cur = conn.execute(
-            "UPDATE verdicts SET candidate_id = ? WHERE proposal_id = ? "
-            "AND candidate_id IS NULL AND tier IN (?, ?, ?)",
-            (cid, pid, SCREEN, MEASURE, ADOPT))
-        counts["verdicts_linked"] += cur.rowcount or 0
+
+
+def resolve_identity_leftovers(conn) -> dict:
+    """Schema 37: variants get their proposal, spec-named proposals fold. #429."""
+    from harness import candidates as C
+    counts = {"fakes": 0, "fakes_to_proposal": 0, "fakes_unresolved": 0}
+    _resolve_fakes(conn, {r["id"]: dict(r) for r in _adopted_by_name(conn)},
+                   counts)
+    counts["variants_linked"] = C.link_variants(conn)
+    counts["downloads_linked"] = conn.execute(
+        "UPDATE downloads SET proposal_id = (SELECT MIN(p.id) FROM proposals p "
+        "WHERE lower(p.name) = lower(downloads.repo)) WHERE proposal_id IS NULL "
+        "AND repo != '' AND EXISTS (SELECT 1 FROM proposals p "
+        "WHERE lower(p.name) = lower(downloads.repo))").rowcount or 0
+    counts["unlinked_results"] = conn.execute(
+        "SELECT COUNT(*) AS n FROM results WHERE candidate_id IS NULL"
+    ).fetchone()["n"]
     conn.commit()
     return counts
 
@@ -2133,6 +2179,10 @@ def record(conn: sqlite3.Connection, seen: Seen, at: float | None = None) -> int
             (seen.name, seen.kind, seen.registry, seen.lane, seen.resolved,
              seen.description, seen.lane_source if seen.lane else "",
              now, now)).lastrowid
+        # Weights downloaded before this proposal existed are now its. #429.
+        conn.execute("UPDATE downloads SET proposal_id = ? WHERE "
+                     "proposal_id IS NULL AND lower(repo) = ?",
+                     (pid, seen.name.lower()))
     conn.execute(
         "INSERT OR IGNORE INTO sightings (proposal_id, source, url, why, "
         "relevance, seen_at) VALUES (?,?,?,?,?,?)",

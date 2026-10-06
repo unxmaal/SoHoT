@@ -46,8 +46,7 @@ class TraceRunner(BaseRunner):
         self.candidate = f"{name}/{engine.name}"
 
     def generate(self, case: Case):
-        stem = self.candidate.replace("/", "_")
-        png = (self.outdir / f"{stem}--{case.id}.png").resolve()
+        png = (self.outdir / self.artifact(case, ".png")).resolve()
         if png.exists():
             png.unlink()
 

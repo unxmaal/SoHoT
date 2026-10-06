@@ -137,18 +137,21 @@ def beaten_in(conn) -> dict[str, dict]:
     from harness import runs
     wanted = served_ids(conn)
     best: dict[str, dict] = {}
-    for run, summary, rows in runs.summaries(conn, tier=runs.MEASURE):
+    for run, _, rows in runs.summaries(conn, tier=runs.MEASURE):
         lane = run["lane"]
-        if lane not in wanted:
-            continue
-        mine = {r["candidate"] for r in rows
-                if r["candidate_id"] == wanted[lane]}
-        if not mine:
+        if lane not in wanted or not any(
+                r["candidate_id"] == wanted[lane] for r in rows):
             continue
         family = FAMILIES.get(lane, "alias")
-        for candidate, row in summary.items():
+        groups: dict = {}
+        for r in rows:
+            groups.setdefault(r["candidate_id"] or ("key", r["candidate"]),
+                              []).append(r)
+        for cid, group in groups.items():
+            candidate, row = next(iter(runs.summarize(group).items()))
+            served = cid == wanted[lane]
             if family != "engine" and not is_plain_model(candidate) \
-                    and candidate not in mine:
+                    and not served:
                 continue
             key = order_key(row)
             held = best.get(lane)
@@ -160,7 +163,8 @@ def beaten_in(conn) -> dict[str, dict]:
                     "metrics": dict(row.get("metrics") or {}),
                     "run": run["path"], "run_id": run["id"],
                     "total": int(row.get("total") or 0),
-                    "match": "exact" if candidate in mine else "",
+                    "match": "exact" if served else "",
+                    "candidate_id": cid if isinstance(cid, int) else None,
                     "family": family}
     return best
 

@@ -658,7 +658,7 @@ def _execute(args) -> int:
     if skipped:
         print(f"\nnot run, no candidate for them -- {skipped}", file=sys.stderr)
 
-    results, specs = [], {}
+    results, specs, planned = [], {}, []
     for candidate in candidates:
         mine = cases_for(candidate, cases)
         if not mine:
@@ -667,8 +667,14 @@ def _execute(args) -> int:
             continue
         runner = build_runner(candidate, args.gateway, outdir,
                               adherence=args.adherence)
-        runner.screening = bool(args.screen)
+        if runner.candidate in specs:
+            # One key, one row set and one artifact name: the second would overwrite the first. #429.
+            raise SystemExit(f"{specs[runner.candidate]} and {candidate} both "
+                             f"run as {runner.candidate}; run them separately")
         specs[runner.candidate] = candidate
+        planned.append((candidate, runner, mine))
+    for candidate, runner, mine in planned:
+        runner.screening = bool(args.screen)
         print(f"\n── {runner.candidate}", flush=True)
         # A cold load is not the case's to pay for; a failed one is every case's. #406.
         cold = None
@@ -688,8 +694,7 @@ def _execute(args) -> int:
             if outdir and r.artifact and case.modality in TEXT_MODALITIES:
                 ext = {"svg": "svg", "web": "html", "code": "py"}.get(
                     case.modality, "txt")
-                (outdir / f"{runner.candidate.replace('/', '_')}--{case.id}.{ext}"
-                 ).write_text(r.artifact, encoding="utf-8")
+                (outdir / runner.artifact(case, f".{ext}")).write_text(r.artifact, encoding="utf-8")
 
     if not results:
         raise SystemExit("nothing ran: no candidate matched any case")
@@ -714,6 +719,9 @@ def _execute(args) -> int:
             pressure=pressed.as_dict(),
             cases_digest=cases_digest(cases))
         now = time.time()
+        ids = candidate_ids(specs, args.modality)
+        for r in results:
+            r.candidate_id = ids.get(r.candidate)
         payload = {"generated": time.strftime("%Y-%m-%dT%H:%M:%S",
                                               time.localtime(now)),
                    "environment": capture(),
@@ -728,6 +736,18 @@ def _execute(args) -> int:
         run_id = store_run(outdir, payload, now)
         print(f"\nartifacts + results.json in {outdir}; stored as run {run_id}")
     return 0
+
+
+def candidate_ids(specs: dict, lane: str) -> dict:
+    """receipt key -> the candidates row this run's spec for it is. #429."""
+    from harness import candidates as C
+    from harness import memory_store as ms
+    conn = ms.connect()
+    try:
+        return {key: C.ensure(conn, spec, key=key, lane=lane)
+                for key, spec in specs.items()}
+    finally:
+        conn.close()
 
 
 def store_run(outdir, payload: dict, at: float) -> int | None:

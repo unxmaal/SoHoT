@@ -66,7 +66,7 @@ def test_a_source_that_agreed_afterwards_did_not_lead_us_to_it(db, store_run,
     monkeypatch.setattr(coverage, "adopted",
                         lambda *a, **kw: {"org/thing": {"measured"}})
     store_run("r", "image", {"org/thing": {"pass_rate": 1.0}}, conn=db,
-              generated=time.strftime("%Y-%m-%dT%H:%M:%S",
+              specs={"org/thing": "org/thing"}, generated=time.strftime("%Y-%m-%dT%H:%M:%S",
                                       time.localtime(1_000_000.0)))
     seen(db, "org/thing", source="reddit-sd-week", at=2_000_000.0)
     got = coverage.report(db)
@@ -75,14 +75,74 @@ def test_a_source_that_agreed_afterwards_did_not_lead_us_to_it(db, store_run,
     assert got["late"][0]["days_late"] > 10
 
 
-# --- the two sides spell things differently ------------------------------
+# --- a thing is the proposal its candidates row names (#429) --------------
 
-def test_a_receipt_key_and_a_registry_id_are_the_same_thing(db, tmp_path,
-                                                            monkeypatch):
-    monkeypatch.setattr(coverage, "adopted",
-                        lambda *a, **kw: {"parakeet-tdt-0.6b-v2": {"measured"}})
-    seen(db, "mlx-community/parakeet-tdt-0.6b-v2", source="reddit-localllama-week")
-    assert len(coverage.report(db)["found"]) == 1
+def _measured_run(db, store_run, key, spec, lane="stt"):
+    store_run(f"r-{key.replace('/', '_')}", lane, {key: {"pass_rate": 1.0}},
+              specs={key: spec}, conn=db)
+
+
+def test_a_receipt_key_and_a_registry_id_are_one_thing_through_the_row(
+        db, store_run):
+    from harness import candidates
+    seen(db, "mlx-community/parakeet-tdt-0.6b-v2", source="reddit-localllama-week",
+         at=1.0)
+    candidates.ensure(db, "stt:mlx-community/parakeet-tdt-0.6b-v2",
+                      proposal="mlx-community/parakeet-tdt-0.6b-v2",
+                      key="parakeet-tdt-0.6b-v2", lane="stt")
+    _measured_run(db, store_run, "parakeet-tdt-0.6b-v2",
+                  "stt:mlx-community/parakeet-tdt-0.6b-v2")
+    assert "mlx-community/parakeet-tdt-0.6b-v2" in coverage.adopted(db)
+    assert "mlx-community/parakeet-tdt-0.6b-v2" in \
+        [e["name"] for e in coverage.report(db)["found"]]
+
+
+def test_a_candidate_no_row_links_is_a_hole_not_a_spelling_match(
+        db, store_run):
+    """No segment rule: a shared tail does not make two names one thing."""
+    seen(db, "mlx-community/parakeet-tdt-0.6b-v2", source="reddit-localllama-week",
+         at=1.0)
+    _measured_run(db, store_run, "parakeet-tdt-0.6b-v2", "parakeet-tdt-0.6b-v2")
+    assert "parakeet-tdt-0.6b-v2" in coverage._measured(db, {})
+    got = coverage.report(db)
+    assert "parakeet-tdt-0.6b-v2" in [h["name"] for h in got["holes"]]
+    assert "parakeet-tdt-0.6b-v2" not in [e["name"] for e in got["found"]]
+
+
+def test_one_model_measured_across_voices_is_one_adopted_thing(db, store_run):
+    from harness import candidates
+    seen(db, "mlx-community/kokoro-82m-bf16")
+    for voice in ("af_sky", "am_adam"):
+        spec = f"tts:mlx-community/kokoro-82m-bf16,voice={voice}"
+        candidates.ensure(db, spec, proposal="mlx-community/kokoro-82m-bf16",
+                          key=f"kokoro-82m-bf16/{voice}", lane="tts")
+        _measured_run(db, store_run, f"kokoro-82m-bf16/{voice}", spec, "tts")
+    assert coverage._measured(db, {}).keys() == {"mlx-community/kokoro-82m-bf16"}
+
+
+def test_a_run_option_variant_is_its_bare_specs_proposal(db):
+    from harness import candidates
+    seen(db, "org/x")
+    candidates.ensure(db, "org/x", proposal="org/x", key="org/x")
+    candidates.ensure(db, "org/x,temperature=0", key="org/x")
+    assert candidates.get(db, "org/x,temperature=0")["proposal"] == "org/x"
+
+
+def test_a_variant_stored_first_gets_the_proposal_when_its_base_does(db):
+    from harness import candidates
+    seen(db, "org/x")
+    candidates.ensure(db, "org/x,temperature=0", key="org/x")
+    assert candidates.get(db, "org/x,temperature=0")["proposal"] is None
+    candidates.ensure(db, "org/x", proposal="org/x", key="org/x")
+    assert candidates.get(db, "org/x,temperature=0")["proposal"] == "org/x"
+
+
+def test_result_rows_with_no_candidate_are_counted_not_matched(db, store_run):
+    seen(db, "org/thing", source="reddit-sd-week")
+    store_run("r", "image", {"thing": {"pass_rate": 1.0}}, conn=db)
+    got = coverage.report(db)
+    assert set(got["unlinked"]) == {"thing"}
+    assert "thing" not in coverage.adopted(db)
 
 
 def test_a_publisher_is_not_a_model(db, tmp_path, monkeypatch):
@@ -105,44 +165,6 @@ def test_a_base_model_is_not_the_requantisation_we_run(db, tmp_path,
         "mlx-community/qwen2.5-7b-instruct-4bit": {"served"}})
     seen(db, "Qwen/Qwen2.5-7B")
     assert coverage.report(db)["found"] == []
-
-
-# --- the unit is the model, not the key ----------------------------------
-
-def test_a_voice_is_ours_to_pick_and_no_source_proposes_one():
-    assert coverage.model_of("Kokoro-82M-bf16/af_sky", speech=True) == \
-        "Kokoro-82M-bf16"
-    assert coverage.model_of("Chatterbox-MLX/fleurs-fr-male-1", speech=True) == \
-        "Chatterbox-MLX"
-
-
-def test_an_engine_in_front_is_not_the_model():
-    assert coverage.model_of("mflux/flux2-klein-4b-q8") == "flux2-klein-4b-q8"
-    assert coverage.model_of("trace/mflux/flux2-klein-4b-q8") == \
-        "flux2-klein-4b-q8"
-
-
-def test_a_registry_id_keeps_its_org():
-    """`mlx-community/X` IS how a registry names X, so the prefix stays."""
-    assert coverage.model_of("mlx-community/parakeet-tdt-0.6b-v2") == \
-        "mlx-community/parakeet-tdt-0.6b-v2"
-
-
-def test_one_model_measured_across_voices_is_one_adopted_thing():
-    """Counting five Kokoro voices as five adopted things overstates the holes
-    fivefold."""
-    got = coverage._collapse_variants({
-        "kokoro-82m-bf16/af_sky": {"measured"},
-        "kokoro-82m-bf16/am_adam": {"measured"},
-        "kokoro-82m-bf16/bm_george": {"measured"}})
-    assert list(got) == ["kokoro-82m-bf16"]
-
-
-def test_an_owner_with_several_models_is_never_folded_into_one():
-    got = coverage._collapse_variants(
-        {"mlx-community/a": {"served"}, "mlx-community/b": {"served"}},
-        orgs={"mlx-community"})
-    assert set(got) == {"mlx-community/a", "mlx-community/b"}
 
 
 # --- the report has to distinguish two opposite problems -----------------

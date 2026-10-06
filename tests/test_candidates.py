@@ -160,3 +160,46 @@ def test_a_receipt_key_beats_the_computed_one():
         assert candidates.get(conn, "mflux/org/pic-q8")["spec"] == "mflux:org/pic"
     finally:
         conn.close()
+
+
+def test_schema_37_folds_a_receipt_key_proposal_through_its_download(tmp_path):
+    """#429: diffusers/sdxl-turbo had no specs map; the downloaded repo whose
+    runner writes that key is the candidate, and its result rows link."""
+    from harness import downloads, paths, runs
+    path = tmp_path / "d.db"
+    conn = ms.connect(path)
+    fake = _proposal(conn, "diffusers/sdxl-turbo", "image", source="adopt")
+    moved = _verdict(conn, fake, "adopt", "declined", "image: lost")
+    downloads.record(conn, "stabilityai/sdxl-turbo", downloads.HUB,
+                     tmp_path / "hub" / "models--stabilityai--sdxl-turbo")
+    downloads.record(conn, "org/other", downloads.HUB,
+                     tmp_path / "hub" / "models--org--other")
+    runs.record(conn, paths.runs() / "image-engine", {
+        "receipt": {"modality": "image"},
+        "rows": [{"case_id": "c", "candidate": "diffusers/sdxl-turbo",
+                  "passed": True}]})
+    base = candidates.ensure(conn, "org/x", key="org/x")
+    variant = candidates.ensure(conn, "org/x,temperature=0", key="org/x")
+    real = _proposal(conn, "org/x", "code")
+    other = _proposal(conn, "Org/Other", "code")
+    conn.execute("UPDATE candidates SET proposal_id = ? WHERE id = ?",
+                 (real, base))
+    conn.execute("UPDATE meta SET value = '36' WHERE key = 'schema'")
+    conn.commit()
+    conn.close()
+    conn = ms.connect(path)
+    try:
+        got = candidates.get(conn, "diffusers/sdxl-turbo")
+        assert got["spec"] == "diffusers:stabilityai/sdxl-turbo"
+        assert conn.execute("SELECT COUNT(*) FROM proposals WHERE name = ?",
+                            ("diffusers/sdxl-turbo",)).fetchone()[0] == 0
+        assert conn.execute("SELECT candidate_id FROM verdicts WHERE id = ?",
+                            (moved,)).fetchone()[0] == got["id"]
+        assert {r["candidate_id"] for r in conn.execute(
+            "SELECT candidate_id FROM results")} == {got["id"]}
+        assert candidates.get(conn, "org/x,temperature=0")["proposal_id"] == real
+        assert variant != base
+        assert conn.execute("SELECT proposal_id FROM downloads WHERE repo = ?",
+                            ("org/other",)).fetchone()[0] == other
+    finally:
+        conn.close()

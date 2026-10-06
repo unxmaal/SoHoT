@@ -14,8 +14,13 @@ WHAT COUNTS AS ADOPTED is read from three places that cannot drift from the
 truth, because each is what the thing itself says:
 
     served      the gateway config's upstream ids -- what this machine runs
-    measured    receipt keys in stored runs -- what was evaluated
+    measured    candidates a stored result row ran as -- what was evaluated
     default     the typed lane defaults -- what a bare command reaches for
+
+A THING IS A PROPOSAL: a candidates row names the proposal it runs (#407), so a
+voice or a run option of one model is that one model. A candidate with no
+proposal is named by its spec and is a hole; a result row with no candidate is
+counted as unlinked, never matched by spelling. #429.
 
 A THING FOUND ONLY AFTER IT WAS ADOPTED DID NOT LEAD US TO IT. The store's
 first sighting is compared against the earliest receipt naming it, so a source
@@ -65,111 +70,67 @@ def aliases(config=None) -> dict[str, str]:
     return out
 
 
-def model_of(candidate: str, speech: bool = False) -> str:
-    """The MODEL inside a receipt key, which is the only part a source can
-    propose.
-
-    Two shapes share the same punctuation and want opposite halves:
-
-        Kokoro-82M-bf16/af_sky        a model and the voice we chose
-        mflux/flux2-klein-4b-q8       an engine and the model it ran
-
-    The engines are named in evals.run, so that is what tells them apart rather
-    than a guess about which side looks more like a model. A composition like
-    `trace/mflux/...` reduces the same way, one layer at a time.
-    """
-    from evals.run import PROCESS_ENGINES, REPAIR_PREFIX, TRACE_PREFIXES
-    wrappers = set(PROCESS_ENGINES) | set(TRACE_PREFIXES) | {REPAIR_PREFIX}
-    parts = [p for p in candidate.replace(":", "/").split("/") if p]
-    while len(parts) > 1 and parts[0].lower() in wrappers:
-        parts = parts[1:]
-    if speech and len(parts) == 2:
-        # A SPEECH receipt key is `model/voice` -- or `model/reference-clip`
-        # for a cloner. Either way the second half is ours to pick and no
-        # source proposes it. Told by the MODALITY rather than by guessing
-        # which half looks more like a model: `af_sky` and `fleurs-fr-male-1`
-        # are both voices and share no shape, while `mlx-community/X` is a
-        # registry id whose first half must stay.
-        return parts[0]
-    return "/".join(parts)
+def _proposal_named(conn, name: str) -> str:
+    """The proposal whose name is `name`, ignoring case; "" if none."""
+    row = conn.execute("SELECT name FROM proposals WHERE lower(name) = ? "
+                       "ORDER BY id LIMIT 1",
+                       ((name or "").lower(),)).fetchone()
+    return row["name"] if row else ""
 
 
-def adopted(conn, config=None, orgs=()) -> dict[str, set[str]]:
-    """name -> how this project came to own it: served, measured, default.
+def _thing(conn, cand: dict, known: dict) -> str:
+    """The proposal a candidates row runs, else what its alias serves, else its spec."""
+    if cand.get("proposal"):
+        return cand["proposal"]
+    served = known.get(cand["spec"], "")
+    if served:
+        return _proposal_named(conn, served) or served
+    return cand["spec"]
 
-    Aliases are resolved to what they serve, so the question asked of each
-    source is one a source could possibly have answered.
-    """
-    from harness import rank, winners
+
+def _measured(conn, known: dict) -> dict[str, float]:
+    """thing -> the earliest time a stored result row ran as it."""
+    seen: dict[str, float] = {}
+    for r in conn.execute(
+            "SELECT c.spec, p.name AS proposal, MIN(r.generated_at) AS at "
+            "FROM results x JOIN candidates c ON c.id = x.candidate_id "
+            "JOIN runs r ON r.id = x.run_id "
+            "LEFT JOIN proposals p ON p.id = c.proposal_id "
+            "GROUP BY c.id, c.spec, p.name").fetchall():
+        name = _thing(conn, dict(r), known).lower()
+        at = r["at"]
+        if name not in seen or (at is not None and (seen[name] is None
+                                                    or at < seen[name])):
+            seen[name] = at
+    return seen
+
+
+def unlinked(conn) -> dict[str, int]:
+    """Receipt keys of result rows no candidates row claims, with row counts."""
+    return {r["candidate"]: r["n"] for r in conn.execute(
+        "SELECT candidate, COUNT(*) AS n FROM results "
+        "WHERE candidate_id IS NULL GROUP BY candidate "
+        "ORDER BY COUNT(*) DESC, candidate").fetchall()}
+
+
+def adopted(conn, config=None) -> dict[str, set[str]]:
+    """thing, lowercased -> how this project came to own it: served, measured, default."""
+    from harness import candidates as C
+    from harness import rank, screen, winners
     known = aliases(config)
     out: dict[str, set[str]] = {}
-
-    def note(name: str, how: str):
-        name = (name or "").strip()
-        if not name:
-            return
-        name = known.get(name, name)
-        # LOWERCASED, because the same model arrives spelled two ways: the
-        # gateway config preserves `Qwen2.5-7B-Instruct-4bit` and the served
-        # list lowercases it. Counted twice, one thing becomes two holes.
-        out.setdefault(model_of(name).lower(), set()).add(how)
-
-    for name in rank.serving():
-        note(name, "served")
-    for name in _first_receipt(conn):
-        note(name, "measured")
-    for name in winners.typed().values():
-        note(name, "default")
-    return _collapse_variants(out, {o.lower() for o in orgs})
-
-
-def _collapse_variants(names: dict[str, set[str]],
-                       orgs: set[str] = frozenset()) -> dict[str, set[str]]:
-    """Fold `model/voice` into `model` where the data itself shows variants.
-
-    A run from before receipts carried a modality cannot say which lane it was,
-    so model_of() leaves its key whole. But a first segment carrying SEVERAL
-    different second segments is a model measured across voices -- five for
-    Kokoro, three reference clips for the cloner -- and counting those as five
-    adopted things overstates the holes fivefold.
-
-    Not applied to a segment that is an owner: `mlx-community` precedes a dozen
-    models and folding on it would call them all one thing.
-    """
-    variants: dict[str, set[str]] = {}
-    for name in names:
-        head, _, tail = name.partition("/")
-        if tail:
-            variants.setdefault(head, set()).add(tail)
-    # AN OWNER IS NOT A MODEL. `mlx-community` precedes a dozen different
-    # models and folding on it turned eleven adopted things into one; the
-    # publishers are the ones the store itself shows owning several names.
-    fold = {head for head, tails in variants.items()
-            if len(tails) > 1 and head not in orgs}
-    out: dict[str, set[str]] = {}
-    for name, how in names.items():
-        head = name.partition("/")[0]
-        out.setdefault(head if head in fold else name, set()).update(how)
+    for upstream in rank.serving(config):
+        out.setdefault((_proposal_named(conn, upstream) or upstream).lower(),
+                       set()).add("served")
+    for name in _measured(conn, known):
+        out.setdefault(name, set()).add("measured")
+    for lane, name in winners.typed().items():
+        spec = screen.candidate_for(lane, name, conn=conn) or name
+        C.ensure(conn, spec, lane=lane)
+        cand = C.get(conn, spec)
+        thing = (_thing(conn, cand, known) if cand else spec).lower()
+        out.setdefault(thing, set()).add("default")
     return out
-
-
-#: The lanes whose receipt keys carry a voice or a reference clip.
-SPEECH_LANES = {"tts", "stt"}
-
-
-def _first_receipt(conn) -> dict[str, float]:
-    """Earliest time each MODEL appears in a stored run, by the receipt's time.
-
-    Keyed by the model rather than the receipt key, so a tts model measured
-    across five voices is one adopted thing rather than five.
-    """
-    from harness import runs
-    seen: dict[str, float] = {}
-    for r in runs.first_seen(conn):
-        name = model_of(r["candidate"], speech=r["lane"] in SPEECH_LANES)
-        if name not in seen or r["at"] < seen[name]:
-            seen[name] = r["at"]
-    return seen
 
 
 def sightings(conn) -> list[dict]:
@@ -183,66 +144,14 @@ def sightings(conn) -> list[dict]:
     return [dict(r) for r in conn.execute(q)]
 
 
-def _segments(name: str) -> set[str]:
-    return {part for part in name.lower().replace(":", "/").split("/") if part}
-
-
-def common_segments(names) -> set[str]:
-    """Segments that identify a PUBLISHER rather than a thing.
-
-    Derived by counting rather than listed, because a hand-kept list of orgs is
-    one more thing to drift. An owner sits in FRONT: `mlx-community` precedes a
-    dozen models, so a first segment shared by several names is a publisher and
-    matching on it would call every MLX model the same model.
-
-    Counted over ONE side only. The first cut counted across both, so a
-    genuine match -- `parakeet-tdt-0.6b-v2` in a receipt and
-    `mlx-community/parakeet-tdt-0.6b-v2` in the store -- made the model name
-    itself look like an owner, and every single adopted thing came back a
-    coverage hole. A 100% result is a broken matcher, not a finding.
-    """
-    seen: dict[str, set[str]] = {}
-    for name in names:
-        parts = [p for p in name.lower().replace(":", "/").split("/") if p]
-        if len(parts) > 1:
-            seen.setdefault(parts[0], set()).add(name)
-    return {part for part, owners in seen.items() if len(owners) > 1}
-
-
-def _known(name: str, rows: dict, orgs: set[str]) -> dict | None:
-    """The store row naming the same thing, or None.
-
-    THE TWO SIDES SPELL IT DIFFERENTLY and are trimmed from opposite ends: an
-    adopted name may be a receipt key carrying a voice (`Kokoro-82M-bf16/
-    af_sky`), while the store holds a registry id carrying an org
-    (`mlx-community/parakeet-tdt-0.6b-v2`). So the comparison is on SEGMENTS,
-    and a segment that names a publisher does not count -- otherwise every
-    model under one org matches every other.
-
-    Deliberately strict about artifacts: `Qwen/Qwen2.5-7B` in the store and
-    `mlx-community/Qwen2.5-7B-Instruct-4bit` on the gateway are a base model
-    and a requantisation of it, which is not the same thing to download or to
-    run. Calling that a find would credit a source with surfacing something it
-    did not.
-    """
-    if name in rows:
-        return rows[name]
-    mine = _segments(name) - orgs
-    for candidate, row in rows.items():
-        if mine & (_segments(candidate) - orgs):
-            return row
-    return None
-
-
-def report(conn) -> dict:
+def report(conn, config=None) -> dict:
     """Which sources found what this project adopted, and what none of them did."""
-    rows = {r["name"]: r for r in sightings(conn)}
-    first_run = _first_receipt(conn)
-    orgs = common_segments(rows)
-    mine = adopted(conn, orgs=orgs)
+    rows = {r["name"].lower(): r for r in sightings(conn)}
+    first_run = _measured(conn, aliases(config))
+    mine = adopted(conn, config)
     found, holes, late = [], [], []
     for name, how in sorted(mine.items()):
-        row = _known(name, rows, orgs)
+        row = rows.get(name)
         if row is None:
             holes.append({"name": name, "how": sorted(how)})
             continue
@@ -266,12 +175,12 @@ def report(conn) -> dict:
         for source in entry["sources"]:
             by_source[source] = by_source.get(source, 0) + 1
     proposed = {}
-    for row in sightings(conn):
+    for row in rows.values():
         for source in (row["sources"] or "").split(","):
             if source and source not in NOT_DISCOVERY:
                 proposed[source] = proposed.get(source, 0) + 1
     return {"adopted": len(mine), "found": found, "late": late,
-            "holes": holes,
+            "holes": holes, "unlinked": unlinked(conn),
             "by_source": dict(sorted(by_source.items(),
                                      key=lambda kv: -kv[1])),
             # WHAT THE SOURCES DID PRODUCE, beside what was adopted. Without

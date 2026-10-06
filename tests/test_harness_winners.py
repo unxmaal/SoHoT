@@ -178,3 +178,27 @@ def test_a_speech_default_is_whichever_this_platform_would_actually_use():
     assert winners.typed()["tts"] == audio.DEFAULT_TTS_MODEL
     if sys.platform != "win32":
         assert "parakeet" in winners.typed()["stt"]
+
+
+def test_a_variant_sharing_the_served_key_is_its_own_candidate(conn,
+                                                               monkeypatch):
+    """#429: rows group by candidate id, so a variant's passes are not the default's."""
+    from harness import candidates, paths, runs
+    pin(monkeypatch, extract="local-large")
+    served = candidates.ensure(conn, "local-large", key="local-large",
+                               lane="extract")
+    variant = candidates.ensure(conn, "local-large,temperature=0",
+                                key="local-large", lane="extract")
+
+    def row(cid, case, passed):
+        return {"case_id": case, "candidate": "local-large", "passed": passed,
+                "seconds": 1.0, "candidate_id": cid}
+
+    runs.record(conn, paths.runs() / "pair", {
+        "generated": "2026-10-05T12:00:00",
+        "receipt": {"modality": "extract", "tier": "measure"},
+        "rows": [row(served, "a", False), row(served, "b", False),
+                 row(variant, "a", True), row(variant, "b", True)]})
+    got = winners.beaten_in(conn)["extract"]
+    assert (got["candidate_id"], got["pass_rate"], got["match"]) == \
+        (variant, 1.0, "")
