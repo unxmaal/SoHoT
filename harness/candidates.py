@@ -33,27 +33,24 @@ def ensure(conn, spec: str, *, proposal: str = "", lane: str = "",
     spec = (spec or "").strip()
     if not spec:
         return None
-    key = key or key_of(spec)
+    pid = _proposal_id(conn, proposal)
+    row = conn.execute("SELECT receipt_key FROM candidates WHERE spec = ?",
+                       (spec,)).fetchone()
+    key = key or (row["receipt_key"] if row else key_of(spec))
     if not key:
         return None
-    pid = _proposal_id(conn, proposal)
-    row = conn.execute("SELECT * FROM candidates WHERE spec = ?",
-                       (spec,)).fetchone()
-    if row is None:
-        cid = conn.execute(
-            "INSERT INTO candidates (proposal_id, spec, receipt_key, lane, "
-            "created_at) VALUES (?,?,?,?,?)",
-            (pid, spec, key, lane or "", time.time())).lastrowid
-        conn.commit()
-        return cid
-    if (pid and row["proposal_id"] != pid) or row["receipt_key"] != key \
-            or (lane and not row["lane"]):
-        conn.execute(
-            "UPDATE candidates SET proposal_id = COALESCE(?, proposal_id), "
-            "receipt_key = ?, lane = CASE WHEN lane = '' THEN ? ELSE lane END "
-            "WHERE id = ?", (pid, key, lane or "", row["id"]))
-        conn.commit()
-    return row["id"]
+    # Insert-or-ignore first: a select-then-insert races two writers. RULE #386.
+    conn.execute(
+        "INSERT OR IGNORE INTO candidates (proposal_id, spec, receipt_key, "
+        "lane, created_at) VALUES (?,?,?,?,?)",
+        (pid, spec, key, lane or "", time.time()))
+    conn.execute(
+        "UPDATE candidates SET proposal_id = COALESCE(?, proposal_id), "
+        "receipt_key = ?, lane = CASE WHEN lane = '' THEN ? ELSE lane END "
+        "WHERE spec = ?", (pid, key, lane or "", spec))
+    conn.commit()
+    return conn.execute("SELECT id FROM candidates WHERE spec = ?",
+                        (spec,)).fetchone()["id"]
 
 
 def for_proposal(conn, lane: str, name: str, description: str = "") -> str:

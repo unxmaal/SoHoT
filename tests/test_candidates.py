@@ -144,7 +144,8 @@ def test_a_receipt_key_beats_the_computed_one():
     """The receipt is evidence of what ran; a later rename must not erase it."""
     conn = ms.connect()
     try:
-        candidates.ensure(conn, "mflux:org/pic", key="mflux/org/pic-q8")
+        cid = candidates.ensure(conn, "mflux:org/pic", key="mflux/org/pic-q8")
+        assert candidates.ensure(conn, "mflux:org/pic", lane="image") == cid
         assert candidates.key_for(conn, "mflux:org/pic") == "mflux/org/pic-q8"
         assert candidates.get(conn, "mflux/org/pic-q8")["spec"] == "mflux:org/pic"
     finally:
