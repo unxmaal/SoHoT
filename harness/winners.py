@@ -110,11 +110,17 @@ def typed() -> dict[str, str]:
             "tts": audio.DEFAULT_TTS_MODEL, "stt": audio.DEFAULT_STT_MODEL}
 
 
-def typed_ids(conn) -> dict[str, int]:
-    """lane -> the candidates row of its typed default. #429."""
-    from harness import candidates, screen
-    out = {}
+def served_ids(conn) -> dict[str, int]:
+    """lane -> the candidates row of what it serves: adopted here, else typed.
+
+    #429; the adopted row comes from `adoptions`, by id. #412.
+    """
+    from harness import adopt, candidates, screen
+    held = adopt.current(conn)
+    out = {lane: row["candidate_id"] for lane, row in held.items()}
     for lane, name in typed().items():
+        if lane in out:
+            continue
         spec = screen.candidate_for(lane, name, adopt=False) or name
         cid = candidates.ensure(conn, spec, lane=lane)
         if cid:
@@ -123,13 +129,13 @@ def typed_ids(conn) -> dict[str, int]:
 
 
 def beaten_in(conn) -> dict[str, dict]:
-    """Per lane, the best candidate from stored runs THE TYPED DEFAULT WAS IN.
+    """Per lane, the best candidate from stored runs THE SERVED DEFAULT WAS IN.
 
     Only within one comparison: a default that was never in the room did not
     lose. "In the room" is its candidate id among the run's rows. #429.
     """
     from harness import runs
-    wanted = typed_ids(conn)
+    wanted = served_ids(conn)
     best: dict[str, dict] = {}
     for run, summary, rows in runs.summaries(conn, tier=runs.MEASURE):
         lane = run["lane"]
@@ -164,9 +170,10 @@ def disagreements(conn) -> list[dict]:
 
     A default in no stored run is `unmeasured`, not a disagreement.
     """
+    from harness import adopt
     best = beaten_in(conn)
     out = []
-    for modality, name in sorted(typed().items()):
+    for modality, name in sorted(adopt.lane_defaults(conn).items()):
         got = best.get(modality)
         if not got:
             out.append({"modality": modality, "typed": name,

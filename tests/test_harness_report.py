@@ -164,7 +164,9 @@ def _lanes(monkeypatch, typed=None, adopted=None):
     from harness import memory_store as ms
     monkeypatch.setattr(winners, "typed",
                         lambda: dict(typed or {"svg": "local-large"}))
-    monkeypatch.setattr(adopt, "adopted", lambda conn: dict(adopted or {}))
+    monkeypatch.setattr(adopt, "current", lambda conn, machine=None: {
+        lane: {"spec": spec, "candidate_id": None, "how": adopt.MEASURED}
+        for lane, spec in (adopted or {}).items()})
     conn = ms.connect()
     try:
         return {l["lane"]: l for l in report.lanes_state(conn)}

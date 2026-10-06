@@ -1639,23 +1639,24 @@ def _report_winners(a) -> int:
     disagree about -- but a hand copy with nothing watching it is this
     project's most-bitten failure class.
     """
-    from harness import winners
+    from harness import adopt, winners
 
     from harness import memory_store as ms
     store = ms.connect()
     try:
         best = winners.beaten_in(store)
         rows = winners.disagreements(store)
+        serves = adopt.lane_defaults(store)
     finally:
         store.close()
     if a.json:
-        print(json.dumps({"typed": winners.typed(), "measured": best,
-                          "disagreements": rows}, indent=2))
+        print(json.dumps({"typed": winners.typed(), "serves": serves,
+                          "measured": best, "disagreements": rows}, indent=2))
         return 0
     #: exact agreement needs no mark; the other two each say which they are.
     MARK = {"exact": " ", "": "*"}
-    print(f"\n  {'lane':9} {'typed':34} {'measured here':30} run")
-    for lane, name in sorted(winners.typed().items()):
+    print(f"\n  {'lane':9} {'serves':34} {'measured here':30} run")
+    for lane, name in sorted(serves.items()):
         got = best.get(lane)
         if not got:
             print(f"  {lane:9} {name:34} {'-- not in any receipt':30}")
@@ -2187,10 +2188,10 @@ def _report_loop(a) -> int:
                 print(f"  {row.get('lane', ''):8} {row['name']}\n"
                       f"           {row['why_not']}")
         print(f"\n=== adopted ===")
-        current = adopt.adopted(store)
+        current = adopt.current(store)
         if current:
-            for lane, name in sorted(current.items()):
-                print(f"  {lane:8} {name}")
+            for lane, row in sorted(current.items()):
+                print(f"  {lane:8} {row['spec']}  ({row['how']})")
         else:
             print("  nothing adopted yet; every lane serves its typed constant")
     finally:

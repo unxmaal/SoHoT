@@ -68,14 +68,15 @@ def lanes_state(conn) -> list[dict]:
 
     typed = winners.typed()
     measured = winners.beaten_in(conn)
-    adopted = adopt.adopted(conn)
+    adopted = adopt.current(conn)
     mine = runs.here(conn)
     now = time.time()
     out = []
     for lane in L.ALL:
         got = measured.get(lane) or {}
-        serves = adopted.get(lane) or typed.get(lane, "")
-        cid = _candidate_of(conn, lane, serves)
+        held = adopted.get(lane) or {}
+        serves = held.get("spec") or typed.get(lane, "")
+        cid = held.get("candidate_id") or _candidate_of(conn, lane, serves)
         # Last measured: any measure run of the lane; the row: the served one. #234.
         newest = runs.newest(conn, lane=lane, machines=mine, tier=runs.MEASURE)
         ran = runs.newest(conn, lane=lane, machines=mine,
@@ -86,7 +87,8 @@ def lanes_state(conn) -> list[dict]:
             "lane": lane,
             "wanted": lane in L.WANTED,
             "serves": serves,
-            "adopted": bool(adopted.get(lane)),
+            "adopted": bool(held),
+            "adopted_how": held.get("how", ""),
             "candidate_id": cid,
             "measured": here.get("candidate") or "",
             "pass_rate": here.get("pass_rate"),

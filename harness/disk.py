@@ -184,9 +184,11 @@ def keepers(conn=None, gateway_files=None, typed=None, adopted=None) -> Keepers:
         add(spec, f"{lane} default")
     if adopted is None and conn is not None:
         from harness import adopt
-        adopted = adopt.adopted(conn)
-    for lane, spec in (adopted or {}).items():
-        add(spec, f"{lane} adopted winner")
+        # Every machine's, not only this one's: the weights may be shared. #412.
+        adopted = adopt.everywhere(conn)
+    for lane, specs in (adopted or {}).items():
+        for spec in sorted({specs} if isinstance(specs, str) else specs):
+            add(spec, f"{lane} adopted winner")
     for repo, why in TOOLING.items():
         k.repos.setdefault(repo.lower(), f"tooling: {why}")
     return k
