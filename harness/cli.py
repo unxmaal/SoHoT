@@ -1197,6 +1197,59 @@ def cmd_memory(a) -> int:
     return 0
 
 
+def cmd_disk(a) -> int:
+    """What the weights cache holds and what may go. #370, #373."""
+    import time as _time
+
+    from harness import disk, memory_store as ms
+    now = _time.time()
+    try:
+        conn = ms.connect()
+    except Exception as exc:  # noqa: BLE001
+        note(f"no discovery store ({exc}); deletion disabled")
+        conn = None
+    try:
+        inv = disk.inventory(conn)
+        if not a.delete:
+            note(disk.table(inv, now))
+            emit(**disk.as_json(inv, now))
+            return 0
+        doomed = disk.plan(inv, now, a.delete)
+        size = sum(e.size for e in doomed)
+        for e in doomed:
+            note(f"  {disk.gib(e.size):>7} GiB  {e.name}  ({e.why})")
+        if not inv.complete:
+            return err("refusing to delete: " + "; ".join(inv.problems))
+        if not doomed:
+            note(f"nothing in {a.delete} is safe to delete")
+            emit(removed=[], bytes=0)
+            return 0
+        if not a.yes:
+            if _JSON:
+                return err(f"--json needs --yes to delete {len(doomed)} "
+                           f"entries ({disk.gib(size)} GiB)")
+            try:
+                answer = input(f"delete {len(doomed)} entries, "
+                               f"{disk.gib(size)} GiB? [y/N] ")
+            except EOFError:
+                answer = ""
+            if answer.strip().lower() not in ("y", "yes"):
+                note("nothing deleted")
+                return 1
+        removed = disk.delete(inv, now, a.delete, conn)
+    finally:
+        if conn is not None:
+            conn.close()
+    ok = [r for r in removed if "error" not in r]
+    freed = sum(r["bytes"] for r in ok)
+    for r in removed:
+        if "error" in r:
+            note(f"  not removed: {r['path']}: {r['error']}")
+    note(f"removed {len(ok)}, freed {disk.gib(freed)} GiB")
+    emit(ok=len(ok) == len(removed), removed=removed, bytes=freed)
+    return 0 if len(ok) == len(removed) else 1
+
+
 def cmd_rubric(a) -> int:
     """Label an eval set by hand, then score local models against it. #286."""
     from harness import label_server, rubric_eval as rv
@@ -2125,6 +2178,11 @@ def _loop_spend(a, rc: int) -> int:
     from harness import adopt, fetching, screen
     from harness import memory_store as ms
 
+    from harness import disk
+
+    print("\n=== disk ===")
+    disk.sweep()
+
     top = int(getattr(a, "top", 3) or 3)
     budget = float(getattr(a, "budget_gib", 20.0) or 20.0)
 
@@ -2875,6 +2933,13 @@ def build_parser() -> argparse.ArgumentParser:
     thr.add_argument("--max-tokens", type=int, default=300)
     thr.add_argument("--gateway", default="http://127.0.0.1:4000")
     thr.set_defaults(func=cmd_throughput)
+    dsk = sub.add_parser("disk", help="what the weights cache holds, what "
+                         "uses it, and what is safe to delete")
+    dsk.add_argument("--delete", choices=("rejected", "unknown"), default="",
+                     help="remove this group, only what is safe to delete")
+    dsk.add_argument("--yes", action="store_true",
+                     help="do not ask; required with --json")
+    dsk.set_defaults(func=cmd_disk)
     mem = sub.add_parser("memory", help="measure how much memory a run can "
                          "take before macOS starts pushing back")
     mem.add_argument("action", choices=("ramp", "show"))

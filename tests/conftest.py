@@ -31,3 +31,12 @@ def _no_real_services(monkeypatch):
     restarts = []
     monkeypatch.setattr(gguf, "refresh_router", lambda: restarts.append(True))
     return restarts
+
+
+@pytest.fixture(autouse=True)
+def _no_real_disk_sweep(monkeypatch):
+    """No test deletes from the real weights cache. #373."""
+    from harness import disk
+    calls = []
+    monkeypatch.setattr(disk, "sweep", lambda *a, **k: calls.append((a, k)) or {})
+    return calls
