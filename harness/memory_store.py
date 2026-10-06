@@ -13,6 +13,7 @@ import json
 import os
 import re
 import sqlite3
+from threading import local as _thread_local
 from datetime import datetime, timezone
 import time
 from dataclasses import dataclass
@@ -438,11 +439,13 @@ def connect(path: Path | None = None):
     runs in Kubernetes is a worse tool than the one that already exists.
     """
     if store.backend() == store.POSTGRES:
+        _refuse_reentry(None)
         conn = store.postgres_connect()
         conn.executescript(_DDL)
         _migrate(conn)
         return conn
     path = Path(path) if path is not None else db_path()
+    _refuse_reentry(path)
     if not path.exists():
         _guard_live(path, lambda: 0)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -884,7 +887,47 @@ def _attribute_old_verdicts(conn: sqlite3.Connection) -> None:
                          (until, vid))
 
 
+class MigrationReentered(RuntimeError):
+    """A migration step tried to open the store it is migrating. #495."""
+
+
+#: The store a migration in this thread is running on: (its file, its connection). #495.
+_MIGRATING = _thread_local()
+
+
+def migrating():
+    """The connection a migration in this thread is running on, or None."""
+    return getattr(_MIGRATING, "conn", None)
+
+
+def _store_file(conn) -> str:
+    """The migrated store's file; '' for postgres, which is one store."""
+    if store.backend() == store.POSTGRES:
+        return ""
+    row = conn.execute("PRAGMA database_list").fetchone()
+    return str(Path(row[2]).resolve()) if row and row[2] else ":memory:"
+
+
+def _refuse_reentry(path) -> None:
+    if migrating() is None:
+        return
+    target = "" if path is None else str(Path(path).resolve())
+    if target == _MIGRATING.file:
+        raise MigrationReentered(
+            f"{target or 'the postgres store'} is mid-migration on this thread; "
+            f"a step reads it through ms.migrating(), never a second connection")
+
+
 def _migrate(conn: sqlite3.Connection) -> None:
+    prior = (getattr(_MIGRATING, "conn", None), getattr(_MIGRATING, "file", None))
+    _MIGRATING.conn, _MIGRATING.file = conn, _store_file(conn)
+    try:
+        _migrate_steps(conn)
+    finally:
+        _MIGRATING.conn, _MIGRATING.file = prior
+
+
+def _migrate_steps(conn: sqlite3.Connection) -> None:
     row = conn.execute("SELECT value FROM meta WHERE key='schema'").fetchone()
     have = int(row["value"]) if row else 0
     if have == SCHEMA_VERSION:
@@ -1280,7 +1323,10 @@ def import_memory_limits_json(conn, path: Path | None = None) -> int:
             mid = remember_machine(conn, {
                 "fingerprint": fp, "hw_model": hw, "os": os_, "arch": arch})
         for report in (reports if isinstance(reports, list) else [reports]):
-            if isinstance(report, dict):
+            if isinstance(report, dict) and not conn.execute(
+                    "SELECT 1 FROM memory_limits WHERE machine_id = ? "
+                    "AND report = ?",
+                    (mid, json.dumps(report, sort_keys=True))).fetchone():
                 ramp.save(conn, report, mid)
                 n += 1
     return n
@@ -1655,6 +1701,12 @@ def _backfill_state(conn) -> None:
     conn.commit()
 
 
+#: Files under a home that a migration step imports, besides queue/jobs and runs. #478.
+LEGACY_FILES = ("human-verdicts.json", "discovery-state.json", "gguf-sources.json",
+                "memory-limits.json", "discovery-sources.json",
+                "cache/github/hf-sizes.json")
+
+
 def import_human_verdicts_json(conn, path: Path | None = None) -> int:
     """Backfill human_votes from the retired human-verdicts.json. Read-only."""
     path = Path(path) if path is not None else paths.home() / "human-verdicts.json"
@@ -1664,10 +1716,21 @@ def import_human_verdicts_json(conn, path: Path | None = None) -> int:
     except (OSError, ValueError):
         return 0
     n = 0
+    # A retried migration finds earlier imports; a vote cast twice is two. #496.
+    seen: dict[tuple, int] = {}
     for r in rows if isinstance(rows, list) else []:
         if not isinstance(r, dict) or not r.get("lane") or not r.get("case"):
             continue
         lo, hi = sorted((r.get("left") or "", r.get("right") or ""))
+        vote = (r["lane"], r["case"], lo, hi, r.get("winner") or "",
+                r.get("shown_first") or "")
+        seen[vote] = seen.get(vote, 0) + 1
+        if conn.execute(
+                "SELECT COUNT(*) FROM human_votes WHERE lane = ? AND case_id = ? "
+                "AND left_candidate = ? AND right_candidate = ? AND winner = ? "
+                "AND shown_first = ? AND run = '' AND voter = ''",
+                vote).fetchone()[0] >= seen[vote]:
+            continue
         # The file kept no run, voter, machine or time; mtime bounds the time.
         conn.execute(
             "INSERT INTO human_votes (lane, run, case_id, left_candidate, "

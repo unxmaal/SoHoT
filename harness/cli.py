@@ -1221,6 +1221,20 @@ def cmd_jobs(a) -> int:
     return 0
 
 
+def cmd_store(a) -> int:
+    """Migrate a copy of a store with this checkout and check it. #478."""
+    import sqlite3
+
+    from harness import migration_check as mc
+    try:
+        got = mc.dry_run(Path(a.path) if a.path else None, keep=a.keep)
+    except (OSError, sqlite3.Error) as exc:
+        return err(f"dry run failed: {exc}")
+    note(mc.report_text(got))
+    emit(ok=got["ok"], **{k: v for k, v in got.items() if k != "ok"})
+    return 0 if got["ok"] else 1
+
+
 def cmd_memory(a) -> int:
     """How far this machine's memory goes before macOS pushes back. #299."""
     from harness import memory_store as ms, ramp
@@ -3162,6 +3176,14 @@ def build_parser() -> argparse.ArgumentParser:
     mem.add_argument("--cap-gb", type=float, default=None,
                      help="never allocate more than this; default RAM - 4 GB")
     mem.set_defaults(func=cmd_memory)
+    sto = sub.add_parser("store", help="dry-run: migrate a copy of a store "
+                         "with this checkout and check it, before a deploy")
+    sto.add_argument("action", choices=("dry-run",))
+    sto.add_argument("path", nargs="?", default="",
+                     help="the store to copy (default: this home's discovery.db)")
+    sto.add_argument("--keep", action="store_true",
+                     help="keep the migrated copy and say where")
+    sto.set_defaults(func=cmd_store)
     jobs = sub.add_parser("jobs", help="the work queue: runs in order while "
                           "nobody is using this machine")
     jobs.add_argument("action", choices=("add", "list", "pause", "resume",

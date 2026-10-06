@@ -1,0 +1,18 @@
+{
+ "id": "0001",
+ "title": "soh discover",
+ "kind": "command",
+ "output": "",
+ "priority": 0,
+ "argv": [
+  "soh",
+  "discover"
+ ],
+ "cwd": "/REPO",
+ "state": "done",
+ "added": "2026-09-19T09:00:00",
+ "started": "2026-09-19T09:00:05",
+ "finished": "2026-09-19T09:10:00",
+ "rc": 0,
+ "log": "/LOGS/0001.log"
+}

@@ -1,0 +1,10 @@
+{
+ "Mac14,12/macOS-26.0-arm64-arm-64bit/arm64": [
+  {
+   "measured_at": "2026-09-20T10:00:00",
+   "margin_gb": 6.5,
+   "last_normal_gb": 25.5,
+   "stopped": "floor"
+  }
+ ]
+}

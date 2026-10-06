@@ -1,0 +1,63 @@
+{
+ "environment": {
+  "arch": "arm64",
+  "hw_model": "Mac14,12",
+  "os": ""
+ },
+ "generated": "2026-09-11T11:20:00",
+ "receipt": {
+  "cases_digest": "digest-1",
+  "modality": "image",
+  "tier": "screen"
+ },
+ "rows": [
+  {
+   "artifact": "/RUNS/0002-image/image-gen-cat.png",
+   "candidate": "image-gen",
+   "case_id": "cat",
+   "detail": "",
+   "metrics": {},
+   "passed": true,
+   "peak_kb": 524288,
+   "seconds": 2.5,
+   "warnings": []
+  },
+  {
+   "artifact": "/RUNS/0002-image/image-gen-dog.png",
+   "candidate": "image-gen",
+   "case_id": "dog",
+   "detail": "",
+   "metrics": {},
+   "passed": true,
+   "peak_kb": 524288,
+   "seconds": 2.5,
+   "warnings": []
+  },
+  {
+   "artifact": "",
+   "candidate": "screen-broke",
+   "case_id": "cat",
+   "detail": "failed: wrong answer",
+   "metrics": {},
+   "passed": false,
+   "peak_kb": 524288,
+   "seconds": 2.5,
+   "warnings": []
+  },
+  {
+   "artifact": "",
+   "candidate": "screen-broke",
+   "case_id": "dog",
+   "detail": "failed: wrong answer",
+   "metrics": {},
+   "passed": false,
+   "peak_kb": 524288,
+   "seconds": 2.5,
+   "warnings": []
+  }
+ ],
+ "specs": {
+  "image-gen": "mflux:org-m/image-gen",
+  "screen-broke": "diffusers:org-f/screen-broke"
+ }
+}
