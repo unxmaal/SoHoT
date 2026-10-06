@@ -40,6 +40,9 @@ class CompletionRunner(BaseRunner):
         #: Overrides on top of completion.SAMPLING for this run. Empty means
         #: the shipped defaults, which is what the product uses.
         self.sampling = dict(sampling or {})
+        #: Whether this runner has had an answer back since it started. #468.
+        self.answered = False
+        self.last_timing: dict = {}
 
     def warm(self) -> None:
         """One untimed request, so a cold load is not counted against the
@@ -53,32 +56,35 @@ class CompletionRunner(BaseRunner):
             # It loaded and answered; a budget this small is not the case's.
             if exc.failure_class in (reasons.TOKEN_BUDGET_EXHAUSTED,
                                      reasons.CONTENT_FAILED):
+                self.answered = True
                 return
             if exc.failure_class == reasons.TIMEOUT:
                 exc.limit = ("load_timeout_s", LOAD_TIMEOUT_S)
             raise _runner_error(exc, "warm-up: ") from exc
+        self.answered = True
 
     def _ask(self, case: Case, template: dict | None = None):
-        if case.modality == "decide":
-            return self._decide(case, template)
-        return completion.complete_with_usage(
+        cold = not self.answered
+        got = completion.complete_full(
             case.prompt, model=self.model, gateway=self.gateway,
             modality=case.modality, context=case.context,
             timeout=self.timeout, sampling=self.sampling or None,
-            template=template)
+            template=template, stream=True,
+            top_logprobs=completion.TOP_LOGPROBS if case.modality == "decide" else 0)
+        self.answered = True
+        self.last_timing = {**got.timing, "cold": cold}
+        if case.modality == "decide":
+            return self._decide(case, got)
+        return got.text, got.usage
 
-    def _decide(self, case: Case, template: dict | None = None):
+    def _decide(self, case: Case, got: completion.Completion):
         """Answer letters plus their token probabilities where the server
         returns logprobs; the bare answer otherwise, scored one-hot. #423."""
         import json
 
         from harness.checks import decide
 
-        text, usage, tokens = completion.complete_with_logprobs(
-            case.prompt, model=self.model, gateway=self.gateway,
-            modality=case.modality, context=case.context,
-            timeout=self.timeout, sampling=self.sampling or None,
-            template=template, top_logprobs=completion.TOP_LOGPROBS)
+        text, usage, tokens = got.text, got.usage, got.tokens
         if not tokens:
             return text, usage
         got = decide.from_logprobs(text, tokens, case.params["schema"])
@@ -93,6 +99,7 @@ class CompletionRunner(BaseRunner):
         # divided into token counts, so its resolution is the measurement.
         started = time.perf_counter()
         self.last_metrics = {}
+        self.last_timing = {}
         try:
             try:
                 text, usage = self._ask(case)

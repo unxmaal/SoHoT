@@ -1035,7 +1035,8 @@ def test_the_temperature_in_the_receipt_is_the_one_the_request_sends(monkeypatch
         sent.update(json or {})
         return Reply()
 
-    monkeypatch.setattr(httpx, "post", post)
+    # The runner streams (#468); _post is the one place either kind is sent.
+    monkeypatch.setattr(completion, "_post", lambda g, payload, t: post(g, json=payload))
 
     for asked in (0.0, 0.2, 0.7):
         spec = f"local-mid,temperature={asked}"
@@ -1063,8 +1064,8 @@ def test_a_bare_alias_sends_the_shipped_default(monkeypatch, tmp_path):
             lambda: {"choices": [{"message": {"content": "x = 1"}}], "usage": {}})
         raise_for_status = staticmethod(lambda: None)
 
-    monkeypatch.setattr(httpx, "post",
-                        lambda url, json=None, **kw: (sent.update(json or {}), Reply())[1])
+    monkeypatch.setattr(completion, "_post",
+                        lambda g, payload, t: (sent.update(payload), Reply())[1])
     build_runner("local-mid", "http://gw", tmp_path).generate(
         Case(id="c", modality="code", prompt="p"))
     assert sent["temperature"] == completion.DEFAULT_TEMPERATURE
@@ -1085,8 +1086,10 @@ def test_a_lane_with_its_own_sampling_is_unchanged_by_a_bare_alias(monkeypatch, 
             lambda: {"choices": [{"message": {"content": "<svg/>"}}], "usage": {}})
         raise_for_status = staticmethod(lambda: None)
 
-    monkeypatch.setattr(httpx, "post",
-                        lambda url, json=None, **kw: (sent.update(json or {}), Reply())[1])
+    from harness import completion
+
+    monkeypatch.setattr(completion, "_post",
+                        lambda g, payload, t: (sent.update(payload), Reply())[1])
     build_runner("local-mid", "http://gw", tmp_path).generate(
         Case(id="c", modality="svg", prompt="p"))
     assert sent["temperature"] == 0.4

@@ -265,8 +265,9 @@ def test_the_fake_server_can_make_the_real_checker_fail_and_pass(monkeypatch):
     good = ("import re\ndef slugify(text):\n"
             "    return re.sub(r'[^a-z0-9]+', '-', text.lower()).strip('-')\n")
     fake = fakes.Completions({"good": good, "bad": "def slugify(t):\n    return t\n"})
-    monkeypatch.setattr(completion, "complete_with_usage",
-                        lambda prompt, model, **kw: (fake(model, prompt), {}))
+    monkeypatch.setattr(completion, "complete_full",
+                        lambda prompt, model, **kw: completion.Completion(
+                            fake(model, prompt)))
     assert not CompletionRunner("http://fake", "bad").run(case).passed
     assert CompletionRunner("http://fake", "good").run(case).passed
     assert [m for m, _ in fake.asked] == ["bad", "good"]

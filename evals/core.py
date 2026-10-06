@@ -444,6 +444,13 @@ class Result:
     limit: str = ""
     #: The candidates row it ran as, set where the run is stored. #429.
     candidate_id: int | None = None
+    #: Seconds from request to first content / reasoning token; None if unseen. #468.
+    ttft_s: float | None = None
+    first_reasoning_s: float | None = None
+    #: The server's own prompt processing time, where it reports one. #468.
+    prefill_s: float | None = None
+    #: First request after a load with no warm-up; None where unknown. #468.
+    cold: bool | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -865,8 +872,38 @@ def summarize(results: list[Result]) -> dict:
             # run can get different sets -- a case may be unfair to a method,
             # or to a language -- and then their pass rates are not comparable.
             "case_ids": sorted({r.case_id.split("#")[0] for r in rows}),
+            **first_token(rows),
         }
     return out
+
+
+def p95(values: list[float]) -> float | None:
+    """Nearest-rank 95th percentile, as throughput.sweep takes it."""
+    v = sorted(values)
+    return v[min(len(v) - 1, int(len(v) * 0.95))] if v else None
+
+
+def first_token(rows) -> dict:
+    """TTFT over warm rows only: a cold one carries the load. #468.
+
+    Reported beside latency, never ranked on: no lane decides by it.
+    """
+    def warm(name):
+        return [float(getattr(r, name)) for r in rows
+                if getattr(r, name, None) is not None and not getattr(r, "cold", None)]
+
+    def med(v):
+        return round(statistics.median(v), 3) if v else None
+    ttft = warm("ttft_s")
+    cold = [float(r.ttft_s) for r in rows
+            if getattr(r, "cold", None) and r.ttft_s is not None]
+    top = p95(ttft)
+    return {"ttft_median_s": med(ttft),
+            "ttft_p95_s": None if top is None else round(top, 3),
+            "ttft_n": len(ttft),
+            "ttft_cold_s": round(cold[0], 3) if cold else None,
+            "first_reasoning_median_s": med(warm("first_reasoning_s")),
+            "prefill_median_s": med(warm("prefill_s"))}
 
 
 def _decisions(rows: list[Result]) -> list:

@@ -677,7 +677,9 @@ def _execute(args) -> int:
             mark = "pass" if r.passed else "FAIL"
             note = "" if r.passed else f"  {r.detail}"
             warn = f"  ({len(r.warnings)} warn)" if r.warnings else ""
-            print(f"  {mark}  {r.seconds:6.2f}s  {case.id}{warn}{note}",
+            first = ("" if r.ttft_s is None else
+                     f"  ttft {r.ttft_s:.2f}s{' cold' if r.cold else ''}")
+            print(f"  {mark}  {r.seconds:6.2f}s  {case.id}{warn}{first}{note}",
                   flush=True)
             if outdir and r.output:
                 f = outdir / runner.artifact(
@@ -1101,7 +1103,7 @@ def report(summary: dict) -> None:
     arrows = {n: {"lower": "v", "higher": "^"}.get(direction_of(n), "-")
               for n in metric_names}
     header = (f"{'candidate':30} {'pass':>7} {'rate':>6} {'median':>8} "
-              f"{'first':>8} {'peak':>9}")
+              f"{'ttft':>8} {'first':>8} {'peak':>9}")
     for name in metric_names:
         header += f" {name + ' ' + arrows[name]:>9} {name + '.worst':>13}"
     print("\n" + "=" * len(header))
@@ -1114,9 +1116,11 @@ def report(summary: dict) -> None:
         # historical result is not.
         peak_kb = s.get("peak_kb") or 0
         peak = f"{peak_kb / 1024 / 1024:.1f}GiB" if peak_kb else "-"
+        ttft = s.get("ttft_median_s")
+        ttft = f"{ttft:>7.2f}s" if ttft is not None else f"{'-':>8}"
         line = (f"{name:30} {s.get('passed', 0):>3}/{s.get('total', 0):<3} "
                 f"{s.get('pass_rate', 0):>6.0%} "
-                f"{s.get('median_s', 0):>7.2f}s "
+                f"{s.get('median_s', 0):>7.2f}s {ttft} "
                 f"{s.get('first_s', 0):>7.2f}s {peak:>9}")
         for metric in metric_names:
             value = (s.get("metrics") or {}).get(metric)

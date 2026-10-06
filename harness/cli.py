@@ -1118,6 +1118,11 @@ def _evalset(name: str) -> Path:
     return p if p.is_dir() else paths.home() / "evalsets" / name
 
 
+def _ttft_pair(p50, p95) -> str:
+    from harness.report import ttft_text
+    return ttft_text(p50, p95)
+
+
 def cmd_throughput(a) -> int:
     """How much faster an alias goes with several requests in flight. #310."""
     import json as _json
@@ -1139,7 +1144,9 @@ def cmd_throughput(a) -> int:
     for r in got:
         note(f"  {r['concurrency']:2d} in flight  {r['per_hour']:7.1f}/h  "
              f"x{r['per_hour'] / base:.2f}  p50 {r['p50_s']:6.2f}s  "
-             f"p95 {r['p95_s']:6.2f}s  errors {r['errors']}  "
+             f"p95 {r['p95_s']:6.2f}s  "
+             f"ttft {_ttft_pair(r.get('ttft_p50_s'), r.get('ttft_p95_s'))}  "
+             f"errors {r['errors']}  "
              f"tokens {r['completion_tokens']}", flush=True)
     emit(model=a.model, max_tokens=a.max_tokens, levels=got)
     return 0

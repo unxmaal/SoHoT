@@ -20,7 +20,7 @@ from pathlib import Path
 
 from harness import paths, store
 
-SCHEMA_VERSION = 41
+SCHEMA_VERSION = 42
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
 VERDICTS = ("measured", "declined", "broken", "queued", "ignored", "screened")
@@ -279,7 +279,14 @@ CREATE TABLE IF NOT EXISTS results (
     -- Why it failed, set by the runner where it failed (reasons.py). #408.
     failure_class TEXT NOT NULL DEFAULT '',
     -- The harness limit it hit, as a `limit:` predicate body. #406.
-    hit_limit    TEXT NOT NULL DEFAULT ''
+    hit_limit    TEXT NOT NULL DEFAULT '',
+    -- Request to first content / reasoning token; NULL where not streamed. #468.
+    ttft_s       REAL,
+    first_reasoning_s REAL,
+    -- llama-server's own prompt processing time. #468.
+    prefill_s    REAL,
+    -- 1 for the first request after a load (no warm-up); NULL if the runner cannot say.
+    cold         INTEGER
 );
 
 -- What a lane serves from now: one row per adoption, never parsed from detail. #412.
@@ -877,6 +884,7 @@ def _migrate(conn: sqlite3.Connection) -> None:
     _add_retest(conn)
     _add_reasons(conn)
     _add_result_split(conn)
+    _add_first_token(conn)
     if "size_bytes" not in _columns(conn, "proposals"):
         conn.execute("ALTER TABLE proposals "
                      "ADD COLUMN size_bytes INTEGER NOT NULL DEFAULT 0")
@@ -1279,6 +1287,14 @@ def strip_machine_from_fetch_details(conn) -> int:
                          (new, v["id"]))
             n += 1
     return n
+
+
+def _add_first_token(conn) -> None:
+    """The results' first-token timing columns, on an older store. #468."""
+    for col, ddl in (("ttft_s", "REAL"), ("first_reasoning_s", "REAL"),
+                     ("prefill_s", "REAL"), ("cold", "INTEGER")):
+        if col not in _columns(conn, "results"):
+            conn.execute(f"ALTER TABLE results ADD COLUMN {col} {ddl}")
 
 
 def _add_reasons(conn) -> None:
