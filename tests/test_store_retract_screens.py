@@ -71,6 +71,7 @@ def test_a_candidate_screened_since_is_not_reopened(store, tmp_path):
     seed(store, "org/moved-on")
     ms.decide(store, "org/moved-on", "broken", tier=ms.SCREEN,
               detail="it ran and passed nothing")
+    ms.retract(store, "org/moved-on", "a harness refusal", tier=ms.SCREEN)
     ms.decide(store, "org/moved-on", "screened", tier=ms.SCREEN,
               detail="1 case(s) passed a screen")
     rewind(store)

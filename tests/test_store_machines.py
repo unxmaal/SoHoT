@@ -39,13 +39,13 @@ def store(tmp_path):
     conn.close()
 
 
-def _decide_as(conn, facts, outcome, detail, until=""):
-    """A verdict written as if `facts` were the machine."""
+def _decide_as(conn, facts, outcome, detail, until="", retract=""):
+    """A verdict written as if `facts` were the machine, through the state."""
     mid = ms.remember_machine(conn, facts)
-    conn.execute(
-        "INSERT INTO verdicts (proposal_id, outcome, tier, detail, "
-        "decided_at, machine_id, until) VALUES (1,?,'fetch',?,0,?,?)",
-        (outcome, detail, mid, until))
+    ms._write(conn, 1, "org/c", {"outcome": outcome, "tier": "fetch",
+                                 "detail": detail, "decided_at": 0,
+                                 "machine_id": mid, "until": until},
+              reopen=ms.RETRACTION if retract else "", reason=retract)
     conn.commit()
 
 
@@ -133,7 +133,8 @@ def test_only_the_latest_verdict_can_be_revisited(store):
     """A condition already retracted must not resurrect. Schema 7 exists so a
     verdict can be undone by appending, and this read has to honour that."""
     _decide_as(store, MAC, "declined", "needs-cuda", until="runtime:cuda")
-    _decide_as(store, MAC, "queued", "retracted: worth another look")
+    _decide_as(store, MAC, "queued", "retracted: worth another look",
+               retract="worth another look")
     assert not ms.revisitable(store, BOX)
 
 
@@ -588,7 +589,8 @@ def test_a_lane_independent_verdict_survives_every_retraction(tmp_path, fn, tier
             conn.execute("INSERT INTO verdicts (proposal_id, outcome, tier, "
                          "detail, decided_at) SELECT id, ?, ?, ?, 0 "
                          "FROM proposals", (outcome, t, d))
-        conn.commit()
+        # Old rows, so the state is the newest one, as the backfill sets it.
+        ms._backfill_state(conn)
         getattr(ms, fn)(conn)
         last = conn.execute("SELECT outcome, tier FROM verdicts "
                             "ORDER BY id DESC LIMIT 1").fetchone()

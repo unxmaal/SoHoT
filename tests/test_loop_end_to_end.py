@@ -172,8 +172,8 @@ def test_a_retraction_puts_a_candidate_back(store):
     ms.decide(store, "org/retracted", "broken", tier="screen",
               detail="it ran and passed nothing")
     assert "org/retracted" not in [r["name"] for r in _queueable(store, "code")[0]]
-    ms.decide(store, "org/retracted", "queued", tier="screen",
-              detail="retracted: that was a fact about this harness")
+    ms.retract(store, "org/retracted", "that was a fact about this harness",
+               tier="screen")
     assert "org/retracted" in [r["name"] for r in _queueable(store, "code")[0]]
 
 

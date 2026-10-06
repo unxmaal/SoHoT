@@ -196,8 +196,7 @@ def test_a_retracted_refusal_is_pending_again(tmp_path):
     ms.decide(db, "org/g", "declined", tier="inspect",
               detail="needs-llamacpp: GGUF")
     assert "org/g" not in ms.pending(db)
-    ms.decide(db, "org/g", "queued", tier="inspect",
-              detail="retracted: runtime:llamacpp is met here")
+    ms.retract(db, "org/g", "runtime:llamacpp is met here")
     assert "org/g" in ms.pending(db)
     db.close()
 

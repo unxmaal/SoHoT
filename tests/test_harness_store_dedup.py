@@ -39,7 +39,7 @@ def test_a_repeat_after_an_intervening_verdict_is_a_new_fact(store):
     """The case that bit. Without this a retraction can never be undone."""
     ms.decide(store, "org/x", "screened", tier=ms.SCREEN, detail="1 passed")
     ms.decide(store, "org/x", "declined", tier="adopt", detail="lost")
-    ms.decide(store, "org/x", "queued", tier=ms.SCREEN, detail="retracted")
+    ms.retract(store, "org/x", "retracted", tier=ms.SCREEN)
     ms.decide(store, "org/x", "screened", tier=ms.SCREEN, detail="1 passed")
     assert [r["outcome"] for r in _rows(store)] == [
         "screened", "declined", "queued", "screened"]

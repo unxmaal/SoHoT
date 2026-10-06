@@ -840,8 +840,11 @@ def _report_inspect(a) -> int:
                     registry, card = resolve_registry(repo, client)
                 except ins.Gone as exc:
                     err(f"{repo}: {exc}")
-                    ms.decide(store, repo, "broken", tier=ms.INSPECT,
-                              detail=str(exc)[:200])
+                    try:
+                        ms.decide(store, repo, "broken", tier=ms.INSPECT,
+                                  detail=str(exc)[:200])
+                    except ms.IllegalTransition:
+                        pass   # a later tier already answered it
                     continue
                 if not registry:
                     err(f"{repo}: neither registry could be reached, so it "
@@ -860,6 +863,8 @@ def _report_inspect(a) -> int:
                                   detail=str(exc)[:200])
                     except KeyError:
                         pass   # named on the command line, never proposed
+                    except ms.IllegalTransition:
+                        pass   # a later tier already answered it
                     continue
                 except ins.InspectError as exc:
                     err(f"{repo}: {exc}")
@@ -900,11 +905,14 @@ def _report_inspect(a) -> int:
                 # commits at all. #270.
                 until = (f"commit_after:{fit.last_commit}"
                          if fit.verdict == "dead" and fit.last_commit else "")
-                ms.decide(store, repo, outcome, tier=ms.INSPECT,
-                          size_bytes=fit.largest if fit.verdict == "fits" else 0,
-                          upstream_idle_days=fit.upstream_idle_days,
-                          until=until,
-                          detail=f"{fit.verdict}: {fit.why}"[:200])
+                try:
+                    ms.decide(store, repo, outcome, tier=ms.INSPECT,
+                              size_bytes=fit.largest if fit.verdict == "fits" else 0,
+                              upstream_idle_days=fit.upstream_idle_days,
+                              until=until,
+                              detail=f"{fit.verdict}: {fit.why}"[:200])
+                except ms.IllegalTransition as exc:
+                    print(f"    kept its state: {exc}")
             # The WEIGHTS are what a download queue can act on. The repo is
             # something to install and screen, and the two are not the same
             # queue: queueing the repo sent GitHub names to snapshot_download,
@@ -943,15 +951,14 @@ def _report_inspect(a) -> int:
                     print(f"    lane corrected from the card: {model_id} "
                           f"-> {fit.lanes[model_id]}")
                 ms.link(store, repo, model_id, "needs")
-                # A sighting is not a reason to reopen a decided name. #399.
-                last = ms.latest(store, model_id)
-                if last and (last["outcome"] in ms.TERMINAL
-                             or last["outcome"] == "screened"):
+                # A sighting never reopens a decided name; decide() refuses. #399.
+                try:
+                    ms.decide(store, model_id, "queued", tier=ms.INSPECT,
+                              size_bytes=size,
+                              detail=f"bytes={size} lane={fit.lanes.get(model_id) or '-'} "
+                                     f"named by {repo}")
+                except ms.IllegalTransition:
                     continue
-                ms.decide(store, model_id, "queued", tier=ms.INSPECT,
-                          size_bytes=size,
-                          detail=f"bytes={size} lane={fit.lanes.get(model_id) or '-'} "
-                                 f"named by {repo}")
     finally:
         store.close()
     if getattr(a, "judge", False):
@@ -1364,9 +1371,12 @@ def cmd_judge(a) -> int:
                 if incumbent not in (challenger, spec):
                     # Decided on the names the pairs carry, recorded as the
                     # spec, which is what a lane can run. #337.
-                    adopt.record(store, dataclasses.replace(
-                        adopt.decide_by_hand(lane_, incumbent, challenger,
-                                             pairs_), challenger=spec))
+                    try:
+                        adopt.record(store, dataclasses.replace(
+                            adopt.decide_by_hand(lane_, incumbent, challenger,
+                                                 pairs_), challenger=spec))
+                    except ms.IllegalTransition as exc:
+                        note(f"  skipped {exc}")
             store.commit()
         finally:
             store.close()
@@ -1529,7 +1539,7 @@ def _judge_fits(fits, store_path=None) -> int:
                 ms.decide(store, f.repo, "queued", tier=ms.JUDGE, score=score,
                           rubric=rubric.stamp, judge=rubric.model,
                           detail=why[:200])
-            except KeyError:
+            except (KeyError, ms.IllegalTransition):
                 pass
     finally:
         store.close()
@@ -1753,9 +1763,9 @@ def _report_screen(a) -> int:
             room, why_not = memory.check_model(r["name"], spec=r["candidate"])
             if not room:
                 print(f"   QUEUED: {why_not}")
-                ms.decide(store, r["name"], "queued", tier=ms.SCREEN,
-                          detail=f"not screened: {why_not}"[:600],
-                          until=f"memory_gb:>{memory.available_gb():.1f}")
+                ms.decide_or_skip(store, r["name"], "queued", tier=ms.SCREEN,
+                                  detail=f"not screened: {why_not}"[:600],
+                                  until=f"memory_gb:>{memory.available_gb():.1f}")
                 continue
             # Its own receipt directory, not the newest for the modality. #282.
             outdir = paths.runs() / f"screen-{int(time.time())}-{r['modality']}"
@@ -1764,9 +1774,9 @@ def _report_screen(a) -> int:
                                       capture_output=True, text=True)
             except OSError as exc:
                 print(f"   QUEUED: the screen could not start: {exc}")
-                ms.decide(store, r["name"], "queued", tier=ms.SCREEN,
-                          detail=f"not screened: the screen could not start: "
-                                 f"{exc}"[:600])
+                ms.decide_or_skip(store, r["name"], "queued", tier=ms.SCREEN,
+                                  detail=f"not screened: the screen could not start: "
+                                         f"{exc}"[:600])
                 continue
             # The RUN's own summary, read from what it wrote rather than parsed
             # out of its chatter: a tier that infers an outcome from stdout is
@@ -1793,10 +1803,10 @@ def _report_screen(a) -> int:
             # A terminal verdict whose evidence is gone cannot be re-judged.
             evidence = " ".join((proc.stderr or "").split())[-300:]
             detail = f"{why} || {evidence}" if evidence else why
-            ms.decide(store, r["name"], got, tier=ms.SCREEN,
-                      detail=detail[:600],
-                      run_path=str(outdir) if outdir.exists() else "",
-                      until=screen.load_until(r["candidate"])
+            ms.decide_or_skip(store, r["name"], got, tier=ms.SCREEN,
+                              detail=detail[:600],
+                              run_path=str(outdir) if outdir.exists() else "",
+                              until=screen.load_until(r["candidate"])
                       if got == "declined" else "", candidate_id=cid)
             if any(d in detail.lower() for d in screen.SERVER_DEAD):
                 print("   the model server has died; stopping the screen so "
@@ -1894,9 +1904,12 @@ def _report_judge_store(a) -> int:
                 err(f"{row['name']}: {exc}")
                 continue
             print(f"  {score:2d}/10  {row['name']:40.40s} {why[:48]}")
-            ms.decide(store, row["name"], "queued", tier=ms.JUDGE, score=score,
-                      rubric=rubric.stamp, judge=rubric.model,
-                      detail=why[:200])
+            try:
+                ms.decide(store, row["name"], "queued", tier=ms.JUDGE,
+                          score=score, rubric=rubric.stamp, judge=rubric.model,
+                          detail=why[:200])
+            except ms.IllegalTransition:
+                continue   # answered by a later tier while this one scored
             scored += 1
     finally:
         store.close()
@@ -2014,7 +2027,7 @@ def _judge_neighbors(found, store):
             ms.decide(store, n.repo, "queued", tier=ms.JUDGE, score=score,
                       rubric=rubric.stamp, judge=rubric.model,
                       detail=reason[:200])
-        except KeyError:
+        except (KeyError, ms.IllegalTransition):
             pass
     return 0
 
@@ -2409,7 +2422,7 @@ def _measure_and_adopt(a, row: dict) -> int:
         try:
             ms.decide(store, name, "queued", tier=ms.SCREEN,
                       detail=f"not measured: {refused}")
-        except KeyError:
+        except (KeyError, ms.IllegalTransition):
             pass      # measured by hand, never proposed; the report still stands
         finally:
             store.close()
@@ -2423,6 +2436,8 @@ def _measure_and_adopt(a, row: dict) -> int:
     try:
         # On the proposal the candidate maps to, so it leaves survivors. #393.
         adopt.record(store, verdict, spec=spec)
+    except ms.IllegalTransition as exc:
+        print(f"  skipped {exc}", flush=True)
     finally:
         store.close()
     return 0
@@ -2433,7 +2448,7 @@ def _settle(name: str, outcome: str, detail: str) -> None:
     store = ms.connect()
     try:
         ms.decide(store, name, outcome, tier=ms.MEASURE, detail=detail[:200])
-    except KeyError:
+    except (KeyError, ms.IllegalTransition):
         pass
     finally:
         store.close()
@@ -2615,7 +2630,7 @@ def _judge_proposals(found, store):
         try:
             ms.decide(store, c.name, "queued", tier="judge", score=score,
                       rubric=rubric.stamp, judge=rubric.model, detail=why[:200])
-        except KeyError:
+        except (KeyError, ms.IllegalTransition):
             pass
     found.sort(key=lambda c: -getattr(c, "relevance", 0))
     return found

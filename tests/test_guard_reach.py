@@ -55,7 +55,7 @@ def test_the_screen_records_the_receipt_it_produced():
     """#281. 27 of 27 terminal verdicts had no run_path, so the evidence behind
     them was a stderr tail."""
     src = reads("harness/cli.py")
-    block = src[src.index("ms.decide(store, r[\"name\"], got"):][:400]
+    block = src[src.index("ms.decide_or_skip(store, r[\"name\"], got"):][:400]
     assert "run_path=" in block, block
 
 
