@@ -490,6 +490,88 @@ def test_schema_19_keeps_an_svg_model_in_the_svg_lane(tmp_path):
         again.close()
 
 
+def _at_schema_39(tmp_path, name, lane, task, tags, verdicts):
+    import json
+    conn = ms.connect(tmp_path / "s.db")
+    ms.record(conn, ms.Seen(name=name, source="t", kind="weights",
+                            lane=lane, why="seeded"))
+    conn.execute("UPDATE proposals SET hf_task = ?, card_tags = ?, "
+                 "lane_source = 'card'", (task, json.dumps(tags)))
+    for tier, outcome, detail in verdicts:
+        conn.execute("INSERT INTO verdicts (proposal_id, outcome, tier, "
+                     "detail, decided_at) SELECT id, ?, ?, ?, 0 FROM proposals",
+                     (outcome, tier, detail))
+    ms._backfill_state(conn)
+    conn.execute("INSERT OR REPLACE INTO meta VALUES ('schema', '39')")
+    conn.commit()
+    conn.close()
+    return ms.connect(tmp_path / "s.db")
+
+
+def _lane_and_last(conn):
+    lane = conn.execute("SELECT lane FROM proposals").fetchone()[0]
+    last = conn.execute("SELECT outcome FROM verdicts ORDER BY id DESC"
+                        ).fetchone()[0]
+    return lane, last
+
+
+@pytest.mark.parametrize("name,lane,task,tags,want", [
+    ("m-a-p/YuE2-3B", "tts", "text-to-audio", ["music-generation"], "music"),
+    ("OpenMOSS-Team/MOSS-SoundEffect-v2.0", "tts", "text-to-audio",
+     ["sound-effects"], ""),
+    ("PaddlePaddle/PaddleOCR-VL-1.6", "code", "image-text-to-text",
+     ["PaddleOCR", "ocr"], ""),
+    ("JustANormalTinkerer/hayai-ocr-v2", "code", "image-to-text", ["ocr"], ""),
+    ("Boogu/Boogu-Image-0.1-Edit", "image", "image-to-image",
+     ["image-to-image"], ""),
+    ("oumoumad/ltx-2.3-dearchive-lora", "video", "video-to-video", [], ""),
+])
+def test_schema_40_moves_a_settled_task_and_reopens_its_screen(
+        tmp_path, name, lane, task, tags, want):
+    """#387: a screen in a lane whose cases the task cannot take is no verdict."""
+    again = _at_schema_39(tmp_path, name, lane, task, tags,
+                          [("screen", "broken", "it ran and passed nothing")])
+    try:
+        assert _lane_and_last(again) == (want, "queued")
+    finally:
+        again.close()
+
+
+@pytest.mark.parametrize("name,lane,task,tags", [
+    ("Marvis-AI/marvis-tts-250m-v0.2-MLX-8bit", "tts", "text-to-audio",
+     ["mlx-audio"]),
+    ("black-forest-labs/FLUX.2-klein-9B", "image", "image-to-image",
+     ["image-editing", "image-generation"]),
+    ("Qwen/Qwen3.5-4B", "code", "image-text-to-text", ["vision-language"]),
+    ("OmniSVG/OmniSVG1.1_8B", "svg", "image-text-to-text", ["svg", "process-ocr"]),
+    ("a/text-to-image", "image", "text-to-image", ["ocr"]),
+])
+def test_schema_40_leaves_a_row_its_card_agrees_with(tmp_path, name, lane, task, tags):
+    """Negative control for #387."""
+    again = _at_schema_39(tmp_path, name, lane, task, tags,
+                          [("screen", "broken", "it ran and passed nothing")])
+    try:
+        assert _lane_and_last(again) == (lane, "broken")
+    finally:
+        again.close()
+
+
+@pytest.mark.parametrize("tier,detail", [
+    ("inspect", "too-big: weights 129.5 GiB over the 22 GiB ceiling"),
+    ("fetch", "lora in its own card: this attaches to a model rather than "
+              "being one")])
+def test_schema_40_keeps_a_verdict_no_lane_reached(tmp_path, tier, detail):
+    """#387 under #383's scope: moved, and a lane-free verdict stays."""
+    again = _at_schema_39(tmp_path, "drbaph/Viggle-Animate-ComfyUI", "video",
+                          "video-to-video", ["video-generation"],
+                          [("screen", "broken", "it ran and passed nothing"),
+                           (tier, "declined", detail)])
+    try:
+        assert _lane_and_last(again) == ("", "declined")
+    finally:
+        again.close()
+
+
 # --- #383 class 4: a retraction keyed on one fact leaves the others alone ---
 
 RETRACTIONS = sorted(n for n in dir(ms)

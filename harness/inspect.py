@@ -104,7 +104,7 @@ def verdicts() -> tuple[str, ...]:
 #: MossFormer2 are both good and neither can be scored by anything here.
 PIPELINE_LANES = {
     "automatic-speech-recognition": "stt", "text-to-speech": "tts",
-    "text-to-audio": "tts", "text-to-image": "image",
+    "text-to-image": "image",
     "text-to-video": "video", "image-to-video": "video",
     "text-generation": "code",
     # A label from text is a typed decision. A fixed-head classifier that
@@ -146,8 +146,51 @@ def _lane_from_output(tag: str, from_tags: set) -> str:
     return lane
 
 
+#: Tasks whose input no lane's cases supply: every case is a text prompt. #387.
+NEEDS_AN_INPUT = ("image-to-text", "table-to-text", "tabular-to-text",
+                  "image-to-image", "image-text-to-image", "video-to-video")
+#: An image task whose card also says it generates from text alone. #387.
+TEXT_TO_IMAGE_TAGS = {"text-to-image", "image-generation"}
+#: text-to-audio covers speech and music; the card's tags say which. #387.
+AUDIO_TAGS = {"music": "music", "text-to-music": "music",
+              "music-generation": "music", "musicgen": "music",
+              "tts": "tts", "text-to-speech": "tts",
+              "speech-synthesis": "tts"}
+AUDIO_TASK = "text-to-audio"
+#: The settled tasks, for the relane that moves rows filed before. #387.
+SETTLED_TASKS = (AUDIO_TASK, *NEEDS_AN_INPUT)
+
+
+def is_ocr(tags) -> bool:
+    """Does a card tag name OCR (ocr, manga-ocr, unlimited-ocr)? #387."""
+    return any("ocr" in re.split(r"[-_\s:]+", str(t).strip().lower())
+               for t in tags or ())
+
+
+def _settled_lane(task: str, tags: set, name: str) -> tuple[str, str] | None:
+    """The #387 answer for a settled task, or None for any other task."""
+    if task in ("image-to-image", "image-text-to-image"):
+        return ("image", "tag") if tags & TEXT_TO_IMAGE_TAGS else ("", "")
+    if task in NEEDS_AN_INPUT:
+        return "", ""
+    # A card naming a lane by tag (svg) outranks its OCR tag.
+    if task == "image-text-to-text" and is_ocr(tags) \
+            and not tags & set(TAG_LANES):
+        return "", ""
+    if task != AUDIO_TASK:
+        return None
+    named = {AUDIO_TAGS[t] for t in tags if t in AUDIO_TAGS}
+    if len(named) == 1:
+        return named.pop(), "tag"
+    # Tie-break: neither or both tag sets, so the repo name decides, else none.
+    lane = lanes.from_prose(name.replace("/", " ")) if not named else ""
+    return (lane, "prose") if lane in ("music", "tts") else ("", "")
+
+
 def card_lane(task: str) -> str:
     """The lane a card's own task names, listed or derived from its output."""
+    if task in SETTLED_TASKS:
+        return ""
     return PIPELINE_LANES.get(task) or _lane_from_output(task, set())
 
 
@@ -174,9 +217,12 @@ def lane_and_source(meta: dict, prose: str = "") -> tuple[str, str]:
     where both speak, they agree 34 times. #207.
     """
     tag = (meta.get("pipeline_tag") or "").strip().lower()
-    from_tags = {TAG_LANES[t] for t in
-                 (str(x).strip().lower() for x in (meta.get("tags") or []))
-                 if t in TAG_LANES}
+    card_tags = {str(x).strip().lower() for x in (meta.get("tags") or [])}
+    from_tags = {TAG_LANES[t] for t in card_tags if t in TAG_LANES}
+    settled = _settled_lane(tag, card_tags,
+                            str(meta.get("id") or meta.get("modelId") or ""))
+    if settled is not None:
+        return settled
     if tag in PIPELINE_LANES:
         lane = PIPELINE_LANES[tag]
         # REGISTRY OVER REGISTRY, BEFORE REGISTRY OVER PROSE. `text-generation`
