@@ -2,7 +2,7 @@
 import argparse
 import subprocess
 
-from harness import cli, memory, screen
+from harness import cli, memory, reasons, screen
 from harness import memory_store as ms
 
 
@@ -34,8 +34,7 @@ def _setup(monkeypatch, tmp_path, outcome):
 
 
 def test_a_dead_server_stops_the_screen(monkeypatch, tmp_path):
-    dead = ("queued", "not screened: generation thread died. The harness could "
-                      "not deliver the request")
+    dead = screen.decide_class(reasons.SERVER_DEAD)
     ran = _setup(monkeypatch, tmp_path, dead)
     rc = cli._report_screen(argparse.Namespace(lane="", top=5, limit=5, run=True,
                                                json=False))
@@ -50,11 +49,14 @@ def test_a_dead_server_stops_the_screen(monkeypatch, tmp_path):
 
 def test_an_ordinary_failure_does_not_stop_the_screen(monkeypatch, tmp_path):
     """Negative control."""
-    ran = _setup(monkeypatch, tmp_path, ("broken", "it ran and passed nothing"))
+    ran = _setup(monkeypatch, tmp_path,
+                 screen.decide_class(reasons.CONTENT_FAILED))
     cli._report_screen(argparse.Namespace(lane="", top=5, limit=5, run=True,
                                           json=False))
     assert ran == ["org/first", "org/second"]
 
 
 def test_generation_thread_died_is_the_harnesss_fault():
-    assert screen.refused_by_harness('HTTP 404: {"error": "generation thread died"}')
+    cls = reasons.classify('HTTP 404: {"error": "generation thread died"}')
+    assert cls == reasons.SERVER_DEAD and cls in reasons.STOPS
+    assert screen.decide_class(cls).reason == "harness"

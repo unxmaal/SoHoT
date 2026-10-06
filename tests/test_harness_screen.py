@@ -3,7 +3,12 @@ import json
 
 import pytest
 
-from harness import screen
+from harness import reasons, screen
+
+
+def _stderr(text):
+    """The run's stderr, classed once as cli._report_screen does. #408."""
+    return reasons.classify(text, reasons.STDERR)
 from harness import memory_store as ms
 from harness.memory_store import Seen
 
@@ -72,7 +77,7 @@ def test_the_command_is_one_case_one_repeat_and_no_metrics():
 # --- turning a run into a verdict ----------------------------------------
 
 def test_a_screen_that_did_not_run_is_broken_and_terminal():
-    got, why = screen.outcome(1, None)
+    got, why, *_ = screen.outcome(1, None)
     assert got == "broken"
     assert got in ms.TERMINAL, "a thing that does not run is answered"
 
@@ -84,7 +89,7 @@ def test_a_screen_that_ran_and_passed_nothing_is_broken():
 
 
 def test_a_screen_that_passed_is_screened_and_not_terminal():
-    got, _ = screen.outcome(0, {"c": {"total": 2, "passed": 2}})
+    got, *_ = screen.outcome(0, {"c": {"total": 2, "passed": 2}})
     assert got == "screened"
     assert got not in ms.TERMINAL, "it ran; every measurement is still ahead"
 
@@ -194,7 +199,7 @@ def test_a_passing_screen_is_screened_not_broken():
     """The summary spells it `passed`. outcome() read `pass`, so every run
     scored 0 and a candidate that passed every case was recorded `broken` --
     which is TERMINAL. The tier reported the opposite of what it measured."""
-    got, why = screen.outcome(0, {"m": {"total": 1, "passed": 1,
+    got, why, *_ = screen.outcome(0, {"m": {"total": 1, "passed": 1,
                                         "pass_rate": 1.0}})
     assert got == "screened"
     assert "1 case" in why
@@ -208,8 +213,8 @@ def test_a_failing_screen_is_still_broken():
 def test_a_refused_request_is_not_the_candidates_failure():
     """An HTTP 400 from the gateway's alias table stopped Qwen3-8B-4bit before
     a token was generated, and it was recorded `broken`, which is terminal."""
-    got, why = screen.outcome(1, None,
-                              "gateway returned HTTP 400: Invalid model name")
+    got, why, *_ = screen.outcome(1, None, stderr_class=_stderr(
+                              "gateway returned HTTP 400: Invalid model name"))
     assert got == "queued", "not terminal: the candidate never ran"
     assert "says nothing about the candidate" in why
 
@@ -217,7 +222,7 @@ def test_a_refused_request_is_not_the_candidates_failure():
 def test_a_real_failure_is_not_excused_as_a_refusal():
     """The other half. Treating every non-zero exit as a harness problem would
     mean nothing is ever screened out."""
-    assert screen.outcome(1, None, "Traceback: ValueError")[0] == "broken"
+    assert screen.outcome(1, None, stderr_class=_stderr("Traceback: ValueError"))[0] == "broken"
 
 
 def test_an_alias_goes_through_the_gateway(tmp_path):

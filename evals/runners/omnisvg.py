@@ -22,7 +22,7 @@ import subprocess
 import tempfile
 from pathlib import Path
 
-from harness import proc
+from harness import proc, reasons
 
 from evals.core import Case
 from evals.runners.base import BaseRunner, RunnerError
@@ -96,7 +96,7 @@ class OmniSVGRunner(BaseRunner):
         if missing:
             raise RunnerError(
                 f"weights not cached: {', '.join(missing)}. "
-                f"Run scripts/setup-omnisvg.sh")
+                f"Run scripts/setup-omnisvg.sh", failure_class=reasons.HARNESS_ERROR)
         return qwen, omni
 
     def generate(self, case: Case):
@@ -104,11 +104,13 @@ class OmniSVGRunner(BaseRunner):
         if not script.exists():
             raise RunnerError(
                 f"no OmniSVG checkout at {self.root}. "
-                f"Run scripts/setup-omnisvg.sh, or set OMNISVG_HOME")
+                f"Run scripts/setup-omnisvg.sh, or set OMNISVG_HOME",
+                failure_class=reasons.HARNESS_ERROR)
         python = interpreter(self.root)
         if not python.exists():
             raise RunnerError(
-                f"no interpreter at {python}. Run scripts/setup-omnisvg.sh")
+                f"no interpreter at {python}. Run scripts/setup-omnisvg.sh",
+                failure_class=reasons.HARNESS_ERROR)
         qwen, omni = self._paths()
 
         # Its own output directory per case: upstream names the file from the
@@ -132,11 +134,14 @@ class OmniSVGRunner(BaseRunner):
                 r = proc.run(argv, timeout=self.timeout, cwd=str(self.root))
             except subprocess.TimeoutExpired as exc:
                 raise RunnerError(
-                    f"omnisvg exceeded {self.timeout:.0f}s") from exc
+                    f"omnisvg exceeded {self.timeout:.0f}s",
+                    failure_class=reasons.TIMEOUT) from exc
             except FileNotFoundError as exc:
-                raise RunnerError(f"{exc} is not installed") from exc
+                raise RunnerError(f"{exc} is not installed",
+                                  failure_class=reasons.HARNESS_ERROR) from exc
             except OSError as exc:
-                raise RunnerError(f"could not launch omnisvg: {exc}") from exc
+                raise RunnerError(f"could not launch omnisvg: {exc}",
+                                  failure_class=reasons.HARNESS_ERROR) from exc
 
             if not r.ok:
                 raise RunnerError(
@@ -150,5 +155,5 @@ class OmniSVGRunner(BaseRunner):
                 raise RunnerError(
                     "omnisvg exited 0 but produced no SVG "
                     "(every sampled candidate rendered empty)",
-                    peak_kb=r.peak_kb)
+                    peak_kb=r.peak_kb, failure_class=reasons.CONTENT_FAILED)
             return svgs[0].read_text(encoding="utf-8"), r.peak_kb

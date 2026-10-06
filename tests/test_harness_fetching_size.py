@@ -50,21 +50,23 @@ def test_a_row_with_no_size_anywhere_is_still_zero():
 # --- a refusal about this harness is not a verdict about the candidate -----
 
 def test_our_own_gap_is_named_as_ours():
-    assert fetching.refused_by_harness("no measured size; inspect it first")
+    assert fetching.plan("org/x", 0).reason == "harness"
 
 
-def test_a_real_refusal_is_the_candidates():
-    """The negative control, and the one that matters: a genuinely oversized
-    model must still be settled, or every sweep re-offers it."""
-    for why in ("64.6 GiB is over the 60 GiB cap",
-                "49.3 GiB would leave under the 50 GiB floor (60 GiB free)"):
-        assert not fetching.refused_by_harness(why)
+def test_a_real_refusal_is_not_ours():
+    """The negative control: an oversized model must still be settled, or
+    every sweep re-offers it. The cap is a limit we chose, so it says so. #406."""
+    over = fetching.plan("org/x", int(64.6 * fetching.GIB), cap=60 * fetching.GIB)
+    assert (over.reason, over.until) == ("limit", "limit:download_gib>60")
+    full = fetching.plan("org/x", int(49.3 * fetching.GIB), free=60 * fetching.GIB,
+                         floor=50 * fetching.GIB)
+    assert full.reason == "machine"
 
 
 def test_the_plan_for_an_unsized_repo_still_refuses():
     """The refusal is right. Only the VERDICT it produced was wrong."""
     p = fetching.plan("org/x", 0)
-    assert not p.ok and fetching.refused_by_harness(p.why)
+    assert not p.ok and p.reason == "harness"
 
 
 # --- the scoped loop must scope the step that spends the disk ---------------

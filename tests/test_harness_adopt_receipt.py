@@ -113,15 +113,15 @@ def test_the_measure_routes_a_repo_id_the_way_the_screen_does(monkeypatch,
 
 
 def test_rows_that_are_all_harness_refusals_are_named_as_such():
-    rows = [{"candidate": "org/x", "detail": REFUSED} for _ in range(9)]
+    rows = [{"candidate": "org/x", "detail": REFUSED, "failure_class": "refused_by_gateway"} for _ in range(9)]
     assert cli._all_refused(rows, "org/x")
 
 
 def test_one_row_that_reached_a_model_makes_it_the_candidates_result():
     """The negative control. A candidate that genuinely scores badly must
     still be measured, or nothing is ever declined."""
-    rows = ([{"candidate": "org/x", "detail": REFUSED}]
-            + [{"candidate": "org/x", "detail": "the output closed no tag"}])
+    rows = ([{"candidate": "org/x", "detail": REFUSED, "failure_class": "refused_by_gateway"}]
+            + [{"candidate": "org/x", "detail": "the output closed no tag", "failure_class": "content_failed"}])
     assert not cli._all_refused(rows, "org/x")
 
 
@@ -143,7 +143,7 @@ def test_a_wholly_refused_challenger_is_requeued_not_declined(monkeypatch,
                     "org/challenger": {"passed": 0, "total": 27,
                                        "pass_rate": 0.0, "median_s": 0.011,
                                        "metrics": {}}},
-        "rows": [{"candidate": "org/challenger", "detail": REFUSED}
+        "rows": [{"candidate": "org/challenger", "detail": REFUSED, "failure_class": "refused_by_gateway"}
                  for _ in range(27)]})
     real = ms.connect
     monkeypatch.setattr(ms, "connect", lambda *a, **k: real(tmp_path / "d.db"))
@@ -303,15 +303,15 @@ def test_a_key_that_matches_no_row_is_reported_not_silently_ok():
     "every case reached a model" -- so the guard would be skipped without a
     word. A safety check whose lookup miss looks like a pass is worse than no
     check at all."""
-    rows = [{"candidate": "mflux/org/x-q8", "detail": REFUSED}
+    rows = [{"candidate": "mflux/org/x-q8", "detail": REFUSED, "failure_class": "refused_by_gateway"}
             for _ in range(9)]
     assert cli._all_refused(rows, "org/x") == cli.NO_ROWS_FOR_CANDIDATE
 
 
 def test_the_right_key_still_answers_the_real_question():
-    rows = [{"candidate": "mflux/org/x-q8", "detail": REFUSED}
+    rows = [{"candidate": "mflux/org/x-q8", "detail": REFUSED, "failure_class": "refused_by_gateway"}
             for _ in range(9)]
-    assert cli._all_refused(rows, "mflux/org/x-q8") == "invalid model name"
+    assert cli._all_refused(rows, "mflux/org/x-q8") == "refused_by_gateway"
 
 
 def test_an_empty_receipt_is_not_a_key_mismatch():

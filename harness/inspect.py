@@ -280,6 +280,8 @@ class Fit:
     entry_points: list[str] = field(default_factory=list)
     last_commit: str = ""
     source_kb: int = 0
+    #: The runtimes it offers, as decide() resolved them. #408.
+    offered: list[str] = field(default_factory=list)
     #: GitHub's own one-line description, carried so the judge can be shown the
     #: prose AND the source facts in one place.
     description: str = ""
@@ -732,6 +734,7 @@ def decide(fit: Fit, ceiling: int | None = None, dead_days: int = UPSTREAM_DEAD_
     # import beside a CUDA pin is a project with two paths, and each machine
     # has one of them; refusing it on either was the old rule's mistake in the
     # one case it got right for the wrong reason.
+    fit.offered = list(offered)
     if offered and all(machine.refuses(r) for r in offered):
         # A repo offering SEVERAL runtimes, on a machine with none of them, has
         # no single missing runtime to name. Reporting the first one in the
@@ -799,6 +802,28 @@ def decide(fit: Fit, ceiling: int | None = None, dead_days: int = UPSTREAM_DEAD_
     fit.verdict = "fits"
     fit.why = f"{'MLX-native, ' if fit.mlx else ''}{size}"
     return fit
+
+
+def reason_of(fit: Fit) -> str:
+    """verdicts.reason for this Fit's verdict. #408."""
+    from harness import reasons
+    if fit.verdict == "dead":
+        return reasons.UPSTREAM
+    if fit.verdict == "too-big" or fit.verdict.startswith("needs-"):
+        return reasons.MACHINE
+    return reasons.CANDIDATE
+
+
+def until_of(fit: Fit) -> str:
+    """What would end this Fit's refusal, as a predicate, or "". #333, #408."""
+    if fit.verdict.startswith("needs-"):
+        return "runtime:" + ("|".join(fit.offered)
+                             or fit.verdict.removeprefix("needs-"))
+    if fit.verdict == "too-big" and fit.smallest > 0:
+        return f"ceiling_gb:>{fit.smallest / GIB:.1f}"
+    if fit.verdict == "dead" and fit.last_commit:
+        return f"commit_after:{fit.last_commit}"
+    return ""
 
 
 def _takes_cache(fn) -> bool:

@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from harness import proc, vector
+from harness import proc, reasons, vector
 from harness.engines import Engine
 
 from evals.core import Case
@@ -56,21 +56,24 @@ class TraceRunner(BaseRunner):
         try:
             argv = self.engine.argv(f"{case.prompt}, {TRACE_STYLE}", png, params)
         except ValueError as exc:
-            raise RunnerError(str(exc)) from exc
+            raise RunnerError(str(exc), failure_class=reasons.HARNESS_ERROR) from exc
 
         try:
             r = proc.run(argv, timeout=self.engine.timeout,
                          stream=self.engine.stream, cwd=self.engine.cwd)
         except FileNotFoundError as exc:
-            raise RunnerError(f"{exc} is not installed") from exc
+            raise RunnerError(f"{exc} is not installed",
+                              failure_class=reasons.HARNESS_ERROR) from exc
         except OSError as exc:
-            raise RunnerError(f"could not launch {self.engine.name}: {exc}") from exc
+            raise RunnerError(f"could not launch {self.engine.name}: {exc}",
+                              failure_class=reasons.HARNESS_ERROR) from exc
         if not r.ok:
             raise RunnerError(
                 f"{self.engine.name} exited {r.returncode}: "
                 f"{r.stderr.strip()[-200:]}")
         if not png.exists():
-            raise RunnerError(f"{self.engine.name} exited 0 but left no output")
+            raise RunnerError(f"{self.engine.name} exited 0 but left no output",
+                              failure_class=reasons.CONTENT_FAILED)
 
         try:
             svg = vector.trace(png, preset=self.preset)

@@ -13,7 +13,7 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 
-from harness import proc
+from harness import proc, reasons
 from harness.engines import Engine
 
 from evals.core import Case
@@ -49,17 +49,20 @@ class ProcessRunner(BaseRunner):
         try:
             argv = self.engine.argv(case.prompt, out, case.params)
         except ValueError as exc:
-            raise RunnerError(str(exc)) from exc
+            raise RunnerError(str(exc), failure_class=reasons.HARNESS_ERROR) from exc
 
         try:
             r = proc.run(argv, timeout=self.timeout, stream=self.engine.stream,
                          cwd=self.engine.cwd)
         except subprocess.TimeoutExpired as exc:
-            raise RunnerError(f"timed out after {self.timeout}s") from exc
+            raise RunnerError(f"timed out after {self.timeout}s",
+                              failure_class=reasons.TIMEOUT) from exc
         except FileNotFoundError as exc:
-            raise RunnerError(f"{argv[0]} not installed or not on PATH") from exc
+            raise RunnerError(f"{argv[0]} not installed or not on PATH",
+                              failure_class=reasons.HARNESS_ERROR) from exc
         except OSError as exc:
-            raise RunnerError(f"could not launch: {exc}") from exc
+            raise RunnerError(f"could not launch: {exc}",
+                              failure_class=reasons.HARNESS_ERROR) from exc
 
         if not r.ok:
             detail = f"exit {r.returncode}"

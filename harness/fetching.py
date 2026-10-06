@@ -25,7 +25,7 @@ from pathlib import Path
 
 from harness import memory_store as ms
 from harness import rank
-from harness import lanes, screen
+from harness import lanes, reasons, screen
 
 GIB = 1024 ** 3
 #: Never fill the volume. A download that leaves no room is a download that
@@ -45,6 +45,9 @@ class Plan:
     size: int
     ok: bool
     why: str
+    #: verdicts.reason for a refusal, and what would end it. #408.
+    reason: str = ""
+    until: str = ""
 
 
 def free_bytes(path: str | Path | None = None) -> int:
@@ -65,15 +68,18 @@ def plan(repo: str, size: int, *, free: int | None = None,
     fetching is not to find out how big something is by downloading it.
     """
     if size <= 0:
-        return Plan(repo, size, False, "no measured size; inspect it first")
+        return Plan(repo, size, False, "no measured size; inspect it first",
+                    reasons.HARNESS)
     if size > cap:
         return Plan(repo, size, False,
-                    f"{size / GIB:.1f} GiB is over the {cap / GIB:.0f} GiB cap")
+                    f"{size / GIB:.1f} GiB is over the {cap / GIB:.0f} GiB cap",
+                    reasons.LIMIT, f"limit:download_gib>{cap / GIB:g}")
     have = free_bytes() if free is None else free
     if have - size < floor:
         return Plan(repo, size, False,
                     f"{size / GIB:.1f} GiB would leave under the "
-                    f"{floor / GIB:.0f} GiB floor ({have / GIB:.0f} GiB free)")
+                    f"{floor / GIB:.0f} GiB floor ({have / GIB:.0f} GiB free)",
+                    reasons.MACHINE)
     return Plan(repo, size, True, f"{size / GIB:.1f} GiB, {have / GIB:.0f} GiB free")
 
 
@@ -364,13 +370,6 @@ def download(repo: str, snapshot=None, listing=None, hf_download=None,
             os.environ["HF_HUB_OFFLINE"] = was
 
 
-#: Reasons a fetch did not start that are about THIS HARNESS rather than about
-#: the candidate. Recording one as a verdict settles a real model permanently
-#: on the strength of our own gap. screen.NOT_THE_CANDIDATE is the same list
-#: one tier along.
-NOT_THE_CANDIDATE = ("no measured size",)
-
-
 def _gguf_pick(repo: str, listing, snapshot):
     """(file, bytes) for a GGUF-only repo, () if none fits, None otherwise."""
     from harness import gguf
@@ -386,15 +385,6 @@ def _gguf_pick(repo: str, listing, snapshot):
     if not gguf.only(siblings):
         return None
     return gguf.choose(siblings, ins.ceiling_bytes()) or ()
-
-
-def refused_by_harness(why: str) -> str:
-    """The phrase saying this refusal is ours, or "" when it is the model's."""
-    text = (why or "").lower()
-    for phrase in NOT_THE_CANDIDATE:
-        if phrase in text:
-            return phrase
-    return ""
 
 
 def machine_id() -> str:
@@ -465,6 +455,7 @@ def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=N
             # here and runnable on the box with the card, and nothing could
             # find them. Issue #266.
             ms.decide_or_skip(conn, row["name"], "declined", tier="fetch", detail=why,
+                              reason=reasons.MACHINE,
                               until=f"runtime:{needs.removeprefix('needs-')}")
             done.append({"repo": row["name"], "ok": False, "why": why})
             continue
@@ -480,7 +471,8 @@ def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=N
             row.get("lane") or "", row["name"], row.get("description") or ""))
         if gap:
             why = f"{gap}: no runner in the {row['lane']} lane can load it"
-            ms.decide_or_skip(conn, row["name"], "queued", tier="fetch", detail=why)
+            ms.decide_or_skip(conn, row["name"], "queued", tier="fetch", detail=why,
+                              reason=reasons.HARNESS)
             done.append({"repo": row["name"], "ok": False, "why": why})
             continue
         attachment = screen.is_attachment(row.get("description") or "")
@@ -488,7 +480,7 @@ def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=N
             why = (f"{attachment} in its own card: this attaches to a model "
                    f"rather than being one, and no lane can run it alone")
             ms.decide_or_skip(conn, row["name"], "declined", tier="fetch", detail=why,
-                              attaches_to=attachment)
+                              attaches_to=attachment, reason=reasons.CANDIDATE)
             done.append({"repo": row["name"], "ok": False, "why": why})
             continue
         # `limit` bounds DOWNLOADS, not decisions. Counting refusals against it
@@ -504,13 +496,16 @@ def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=N
             why = (f"{size / GIB:.1f} GiB would take this run past its "
                    f"{budget / GIB:.0f} GiB budget ({spent / GIB:.1f} GiB "
                    f"already fetched)")
-            ms.decide_or_skip(conn, row["name"], "queued", tier="fetch", detail=why)
+            ms.decide_or_skip(conn, row["name"], "queued", tier="fetch", detail=why,
+                              reason=reasons.LIMIT)
             done.append({"repo": name, "ok": False, "why": why})
             continue
         p = plan(name, size, free=free)
         if not p.ok:
-            outcome = "queued" if refused_by_harness(p.why) else "declined"
-            ms.decide_or_skip(conn, row["name"], outcome, tier="fetch", detail=p.why)
+            # Our own gap is not an answer about the candidate. #211, #408.
+            outcome = "queued" if p.reason == reasons.HARNESS else "declined"
+            ms.decide_or_skip(conn, row["name"], outcome, tier="fetch", detail=p.why,
+                              reason=p.reason, until=p.until)
             done.append({"repo": name, "ok": False, "why": p.why})
             continue
         try:
@@ -541,6 +536,7 @@ def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=N
                 done.append({"repo": dep, "ok": False,
                              "why": f"needed by {name}: {exc}"})
         ms.decide_or_skip(conn, row["name"], "queued", tier="fetch",
-                          detail=f"downloaded to {where}", run_path=where)
+                          detail=f"downloaded to {where}", run_path=where,
+                          reason=reasons.CANDIDATE)
         done.append({"repo": name, "ok": True, "why": where})
     return done

@@ -11,7 +11,23 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import pytest  # noqa: E402
 
-from harness import engines, screen  # noqa: E402
+from evals.core import Case, Result, summarize  # noqa: E402
+from evals.runners.base import BaseRunner, RunnerError  # noqa: E402
+from harness import engines, reasons, screen  # noqa: E402
+
+
+def ran(spec, key, failure, checker=False):
+    """A one-case summary built the way evals.run builds it: a runner's error
+    read once at BaseRunner.failed, or a checker's own verdict. #408."""
+    case_id, _, detail = failure.partition(": ")
+    if checker:
+        row = Result(case_id, key, False, 0.0, 0, detail,
+                     failure_class=reasons.CONTENT_FAILED)
+    else:
+        runner = BaseRunner()
+        runner.candidate, runner.spec = key, spec
+        row = runner.failed(Case(case_id, "image", "p"), RunnerError(detail))
+    return summarize([row])
 
 #: THE SPEC AND THE RECEIPT KEY ARE DIFFERENT SPELLINGS. These pairs are taken
 #: from real receipts under $LOCALHARNESS_HOME/runs, not invented: an equality
@@ -32,7 +48,7 @@ SOMEBODY_ELSE = {"mflux/Z-Image-Turbo-mflux-4bit": {"total": 1, "passed": 1,
 # --- #281: the reason is in the receipt, one key away -----------------------
 
 def test_a_failing_screen_records_the_checkers_reason():
-    got, why = screen.outcome(0, FAILED, candidate=SPEC)
+    got, why, *_ = screen.outcome(0, FAILED, candidate=SPEC)
     assert got == "broken"
     assert "model_index.json" in why, why
 
@@ -40,7 +56,7 @@ def test_a_failing_screen_records_the_checkers_reason():
 def test_a_failing_screen_with_no_stated_reason_still_says_it_ran():
     """The old sentence is the fallback, not the only answer."""
     bare = {"c": {"total": 1, "passed": 0, "failures": []}}
-    got, why = screen.outcome(0, bare, candidate="c")
+    got, why, *_ = screen.outcome(0, bare, candidate="c")
     assert got == "broken"
     assert why == "it ran and passed nothing"
 
@@ -48,7 +64,7 @@ def test_a_failing_screen_with_no_stated_reason_still_says_it_ran():
 def test_the_reason_is_bounded():
     """A verdict detail is capped at 600 chars and the stderr tail shares it."""
     noisy = {"c": {"total": 1, "passed": 0, "failures": ["x" * 5000]}}
-    _, why = screen.outcome(0, noisy, candidate="c")
+    _, why, *_ = screen.outcome(0, noisy, candidate="c")
     assert len(why) < 400, len(why)
 
 
@@ -58,7 +74,7 @@ def test_a_receipt_naming_another_candidate_is_not_this_runs_verdict():
     """THE DEFECT. A candidate that wrote no receipt read the newest one for
     its modality. The image lane screens the same incumbent on every sweep, so
     a fresh PASSING receipt was almost always on disk."""
-    got, why = screen.outcome(0, SOMEBODY_ELSE,
+    got, why, *_ = screen.outcome(0, SOMEBODY_ELSE,
                               candidate=SPEC)
     assert got == "queued", f"a foreign receipt settled a candidate: {why}"
     assert "rather than" in why
@@ -67,7 +83,7 @@ def test_a_receipt_naming_another_candidate_is_not_this_runs_verdict():
 def test_a_foreign_receipt_does_not_become_a_terminal_verdict():
     """`broken` is terminal, so guessing from somebody else's run declines a
     real model forever."""
-    got, _ = screen.outcome(1, SOMEBODY_ELSE, candidate=SPEC)
+    got, *_ = screen.outcome(1, SOMEBODY_ELSE, candidate=SPEC)
     assert got not in screen.TERMINAL if hasattr(screen, "TERMINAL") else True
     assert got == "queued"
 
@@ -76,14 +92,14 @@ def test_the_candidates_own_receipt_is_accepted():
     """THE NEGATIVE CONTROL, and the half that decides whether this can ship.
     A mismatch check that fires on every run empties the queue and reads
     exactly like a queue that ran out."""
-    got, why = screen.outcome(0, PASSED, candidate=SPEC)
+    got, why, *_ = screen.outcome(0, PASSED, candidate=SPEC)
     assert got == "screened", why
 
 
 def test_no_receipt_at_all_is_still_broken_rather_than_queued():
     """A run that produced nothing is a fact about the candidate. Only a
     receipt belonging to SOMEBODY ELSE is the harness's fault."""
-    got, _ = screen.outcome(0, None, candidate=SPEC)
+    got, *_ = screen.outcome(0, None, candidate=SPEC)
     assert got == "broken"
 
 
@@ -93,13 +109,16 @@ def test_wrong_run_is_silent_without_a_candidate_to_check():
     assert screen.wrong_run(None, "anything") == ""
 
 
-def test_a_harness_refusal_still_outranks_the_mismatch_check():
-    """A refused request says nothing about the candidate, and that reading is
-    older and more specific than 'this receipt is not yours'."""
-    got, why = screen.outcome(1, SOMEBODY_ELSE, detail="connection refused",
-                              candidate=SPEC)
-    assert got == "queued"
-    assert "connection refused" in why
+def test_a_refusal_in_stderr_counts_only_when_the_run_wrote_no_receipt():
+    """#408: stderr is read once by the caller and only stands in for a
+    receipt that does not exist. ERROR #130: the same phrase in an engine's
+    streamed stderr is the snapshot's, so a receipt always wins."""
+    cls = reasons.classify("connection refused", reasons.STDERR)
+    v = screen.outcome(1, None, candidate=SPEC, stderr_class=cls)
+    assert (v.outcome, v.reason, v.failure_class) == (
+        "queued", "harness", reasons.REFUSED_BY_GATEWAY)
+    v = screen.outcome(0, SOMEBODY_ELSE, candidate=SPEC, stderr_class=cls)
+    assert v.outcome == "queued" and "rather than" in v.detail
 
 
 # --- argv carries the outdir, which is what makes the above reachable -------
@@ -145,15 +164,17 @@ def test_a_genuinely_foreign_receipt_is_still_caught():
 
 # --- #293: a model the installed runtime cannot load is not broken ---------
 
-LOAD_FAILED = {"incoai/Qwen3.8-27B-DFlash2": {"total": 1, "passed": 0, "failures": [
-    "chunk-bytes: gateway returned HTTP 404: {\"error\": \"ModelArgs.__init__() "
-    "missing 1 required positional argument: 'rope_theta'\"}"]}}
-WRONG_ANSWER = {"incoai/Qwen3.8-27B-DFlash2": {"total": 1, "passed": 0, "failures": [
-    "chunk-bytes: expected 3 chunks, got 2"]}}
+DFLASH = "incoai/Qwen3.8-27B-DFlash2"
+LOAD_FAILED = ran(DFLASH, DFLASH,
+                  "chunk-bytes: gateway returned HTTP 404: {\"error\": "
+                  "\"ModelArgs.__init__() missing 1 required positional "
+                  "argument: 'rope_theta'\"}")
+WRONG_ANSWER = ran(DFLASH, DFLASH, "chunk-bytes: expected 3 chunks, got 2",
+                   checker=True)
 
 
 def test_a_load_failure_waits_for_a_newer_runtime_instead_of_breaking():
-    got, why = screen.outcome(0, LOAD_FAILED, candidate="incoai/Qwen3.8-27B-DFlash2")
+    got, why, *_ = screen.outcome(0, LOAD_FAILED, candidate="incoai/Qwen3.8-27B-DFlash2")
     assert got == "declined", why
     assert "rope_theta" in why
 
@@ -161,7 +182,7 @@ def test_a_load_failure_waits_for_a_newer_runtime_instead_of_breaking():
 def test_a_wrong_answer_is_still_broken():
     """THE NEGATIVE CONTROL. A model that loaded and answered badly has been
     measured, and that verdict stays terminal."""
-    got, _ = screen.outcome(0, WRONG_ANSWER, candidate="incoai/Qwen3.8-27B-DFlash2")
+    got, *_ = screen.outcome(0, WRONG_ANSWER, candidate="incoai/Qwen3.8-27B-DFlash2")
     assert got == "broken"
 
 
@@ -172,11 +193,12 @@ def test_the_load_failure_names_the_runtime_that_would_end_the_wait():
 
 def test_a_missing_file_behind_a_404_is_not_a_runtime_gap():
     """A newer runtime cannot supply a file the snapshot lacks."""
-    missing = {"org/x": {"total": 1, "passed": 0, "failures": [
-        "chunk-bytes: gateway returned HTTP 404: {\"error\": \"[Errno 2] No such "
-        "file or directory: 'tokenizer.json'\"}"]}}
-    got, _ = screen.outcome(0, missing, candidate="org/x")
-    assert got == "broken"
+    missing = ran("org/x", "org/x",
+                  "chunk-bytes: gateway returned HTTP 404: {\"error\": \"[Errno 2] "
+                  "No such file or directory: 'tokenizer.json'\"}")
+    v = screen.outcome(0, missing, candidate="org/x")
+    assert (v.outcome, v.failure_class) == ("broken",
+                                            reasons.MISSING_FILE_IN_SNAPSHOT)
 
 
 def test_every_architecture_gap_spelling_in_the_store_is_recognised():
@@ -184,8 +206,8 @@ def test_every_architecture_gap_spelling_in_the_store_is_recognised():
     for err in ("Model type gpt_x not supported.",
                 "ModelArgs.__init__() missing 1 required positional argument: 'rope_theta'",
                 "Received 58 parameters not in model"):
-        s = {"org/x": {"total": 1, "passed": 0, "failures": [
-            f"chunk-bytes: gateway returned HTTP 404: {{\"error\": \"{err}\"}}"]}}
+        s = ran("org/x", "org/x",
+                f"chunk-bytes: gateway returned HTTP 404: {{\"error\": \"{err}\"}}")
         assert screen.outcome(0, s, candidate="org/x")[0] == "declined", err
 
 
@@ -203,17 +225,18 @@ def test_an_mflux_receipt_is_this_runs():
     "fox-snow: exit 1: ValueError: AutoPipeline can't find a pipeline linked to PRXPixelPipeline for None",
     "fox-snow: exit 1: ValueError: Pipeline <class 'ZImagePipeline'> expected ['vae'], but only set() were passed.",
 ])
-def test_a_layout_stock_diffusers_cannot_assemble_is_not_broken(why, monkeypatch):
+def test_a_layout_stock_diffusers_cannot_assemble_is_not_broken(why):
     """#381: the loader failed, not the model, and broken is terminal."""
-    monkeypatch.setattr(screen, "why_nothing_passed", lambda s, c, key="": why)
-    got, reason = screen.outcome(0, {"diffusers/x": {"passed": 0}}, candidate="diffusers:o/x")
-    assert got == "declined" and "own runner" in reason
+    v = screen.outcome(0, ran("diffusers:o/x", "diffusers/x", why),
+                       candidate="diffusers:o/x")
+    assert v.outcome == "declined" and "own runner" in v.detail
+    assert v.reason == "runtime" and v.until.startswith("version:diffusers>")
 
 
-def test_a_model_that_ran_and_failed_is_still_broken(monkeypatch):
+def test_a_model_that_ran_and_failed_is_still_broken():
     """Negative control for #381."""
-    monkeypatch.setattr(screen, "why_nothing_passed", lambda s, c, key="": "fox-snow: no fox in image")
-    assert screen.outcome(0, {"diffusers/x": {"passed": 0}}, candidate="diffusers:o/x")[0] == "broken"
+    s = ran("diffusers:o/x", "diffusers/x", "fox-snow: no fox in image", checker=True)
+    assert screen.outcome(0, s, candidate="diffusers:o/x")[0] == "broken"
 
 
 # --- #383 class 1: every consumer reads the key the engine wrote ------------
@@ -326,33 +349,38 @@ def test_without_the_stored_row_the_mapping_is_not_guessed():
 
 #: How each loader's failure reaches the summary: a process engine's last stderr
 #: line, and mlx_lm.server's 404 for an architecture it cannot build.
+#: Every upstream text the adapter knows as not the candidate's, as each
+#: loader reports it: a process engine's last stderr line, mlx_lm.server's 404.
+NOT_THE_CANDIDATE = (reasons._SERVER_DEAD + reasons._GATEWAY + reasons._HARNESS)
 LOADER_FAILURES = (
     [("diffusers:o/x", "diffusers/x", f"fox-snow: exit 1: ValueError: {p}")
-     for p in screen.DIFFUSERS_LAYOUT_GAPS]
-    + [(c, k, f"fox-snow: exit 1: {p}") for p in screen.NOT_THE_CANDIDATE
-       if p not in screen.ABOUT_THE_SNAPSHOT for c, k in (("diffusers:o/x", "diffusers/x"), ("o/x", "o/x"))]
+     for p in reasons._DIFFUSERS_LAYOUT_GAPS]
+    + [(c, k, f"fox-snow: exit 1: {p}") for p in NOT_THE_CANDIDATE
+       for c, k in (("diffusers:o/x", "diffusers/x"), ("o/x", "o/x"))]
     + [("diffusers:o/x", "diffusers/x", f"fox-snow: exit 1: ValueError: {p}")
-       for p in screen.ARCHITECTURE_GAPS]
+       for p in reasons._ARCHITECTURE_GAPS]
     + [("o/x", "o/x", f"chunk-bytes: gateway returned HTTP 404: {{\"error\": \"{p}\"}}")
-       for p in screen.ARCHITECTURE_GAPS])
+       for p in reasons._ARCHITECTURE_GAPS])
 
 
 @pytest.mark.parametrize("cand,key,failure", LOADER_FAILURES)
 def test_no_loader_failure_is_recorded_broken(cand, key, failure):
-    summary = {key: {"total": 1, "passed": 0, "failures": [failure]}}
+    summary = ran(cand, key, failure)
     assert screen.outcome(0, summary, candidate=cand)[0] != "broken", failure
 
 
-@pytest.mark.parametrize("cand,key,failure", [
-    ("diffusers:o/x", "diffusers/x", "fox-snow: no fox in the image (clip 0.12)"),
-    ("o/x", "o/x", "fox-snow: no fox in the image (clip 0.12)"),
+@pytest.mark.parametrize("cand,key,failure,checker", [
+    ("diffusers:o/x", "diffusers/x", "fox-snow: no fox in the image (clip 0.12)", True),
+    ("o/x", "o/x", "fox-snow: no fox in the image (clip 0.12)", True),
     ("diffusers:o/x", "diffusers/x",
-     "fox-snow: exit 1: OSError: [Errno 2] No such file or directory: 'vae/config.json'"),
+     "fox-snow: exit 1: OSError: [Errno 2] No such file or directory: 'vae/config.json'",
+     False),
 ])
-def test_a_content_or_snapshot_failure_is_still_broken(cand, key, failure):
+def test_a_content_or_snapshot_failure_is_still_broken(cand, key, failure, checker):
     """Negative control: the output was wrong, or the snapshot lacks a file."""
-    summary = {key: {"total": 1, "passed": 0, "failures": [failure]}}
-    assert screen.outcome(0, summary, candidate=cand)[0] == "broken"
+    summary = ran(cand, key, failure, checker)
+    v = screen.outcome(0, summary, candidate=cand)
+    assert (v.outcome, v.reason) == ("broken", "candidate")
 
 
 def test_a_process_engine_decline_waits_on_its_own_runtime():

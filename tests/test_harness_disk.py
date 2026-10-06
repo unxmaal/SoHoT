@@ -53,7 +53,7 @@ def world(tmp_path, monkeypatch):
 
 def verdict(conn, name, outcome, tier="screen", at=NOW - 2 * DAY, retract=""):
     ms.record(conn, ms.Seen(name=name, source="t"))
-    ms.decide(conn, name, outcome, tier=tier, at=at, reason=retract,
+    ms.decide(conn, name, outcome, tier=tier, at=at, reopen_why=retract,
               reopen=ms.RETRACTION if retract else "")
 
 

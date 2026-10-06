@@ -11,6 +11,8 @@ import time
 from contextlib import contextmanager
 from pathlib import Path
 
+from harness import reasons
+
 #: What a stored run is when its receipt does not say.
 MEASURE, SCREEN = "measure", "screen"
 
@@ -146,16 +148,23 @@ def record(conn, path, data: dict, *, at: float | None = None) -> int | None:
         if name not in ids:
             ids[name] = _candidate(conn, name, specs.get(name, ""), lane)
         repeat = _split_case(str(r.get("case_id") or ""))[1]
+        cls = r.get("failure_class")
+        if cls is None and not r.get("passed"):
+            # A receipt from before runners set a class: read once, here. #408.
+            cls = reasons.legacy_class(str(r.get("detail") or ""),
+                                       specs.get(name, ""))
         conn.execute(
             "INSERT INTO results (run_id, seq, candidate_id, candidate, "
             "case_id, repeat_index, passed, seconds, peak_kb, detail, metrics, "
-            "warnings, artifact) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            "warnings, artifact, failure_class, hit_limit) "
+            "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             (run_id, seq, ids[name], name, str(r.get("case_id") or ""), repeat,
              1 if r.get("passed") else 0, float(r.get("seconds") or 0.0),
              int(r.get("peak_kb") or 0), str(r.get("detail") or ""),
              json.dumps(r.get("metrics") or {}),
              json.dumps(r.get("warnings") or []),
-             None if r.get("artifact") is None else str(r["artifact"])))
+             None if r.get("artifact") is None else str(r["artifact"]),
+             cls or "", str(r.get("limit") or "")))
     conn.commit()
     return run_id
 
@@ -187,6 +196,7 @@ def rows(conn, run_id: int, candidate_id: int | None = None) -> list[dict]:
                     "artifact": r["artifact"],
                     "warnings": json.loads(r["warnings"] or "[]"),
                     "metrics": json.loads(r["metrics"] or "{}"),
+                    "failure_class": r["failure_class"], "limit": r["hit_limit"],
                     "candidate_id": r["candidate_id"]})
     return out
 
@@ -198,7 +208,9 @@ def summarize(result_rows: list[dict]) -> dict:
                            passed=r["passed"], seconds=r["seconds"],
                            peak_kb=r["peak_kb"], detail=r["detail"],
                            artifact=r["artifact"], warnings=r["warnings"],
-                           metrics=r["metrics"]) for r in result_rows])
+                           metrics=r["metrics"],
+                           failure_class=r.get("failure_class") or "",
+                           limit=r.get("limit") or "") for r in result_rows])
 
 
 def receipt(conn, run) -> dict | None:

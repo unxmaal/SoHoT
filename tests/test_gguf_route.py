@@ -206,10 +206,10 @@ def test_requeue_retracts_every_revisitable_verdict(tmp_path):
     for name in ("org/a", "org/b"):
         ms.record(db, ms.Seen(name=name, source="t", resolved=name,
                               kind="weights", lane="code"))
-    ms.decide(db, "org/a", "declined", tier="inspect",
-              detail="needs-llamacpp: GGUF")
-    ms.decide(db, "org/b", "declined", tier="inspect",
-              detail="needs-cuda: torch")
+    ms.decide(db, "org/a", "declined", tier="inspect", reason="machine",
+              detail="needs-llamacpp: GGUF", until="runtime:llamacpp")
+    ms.decide(db, "org/b", "declined", tier="inspect", reason="machine",
+              detail="needs-cuda: torch", until="runtime:cuda")
     facts = {"fingerprint": "here", "runtimes": "cpu,llamacpp,mlx"}
     assert ms.requeue_revisitable(db, facts) == ["org/a"]
     assert ms.revisitable(db, facts) == []

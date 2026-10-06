@@ -11,14 +11,27 @@ ship.
 """
 from __future__ import annotations
 
-from harness import completion
+from harness import completion, reasons
 
 from evals.core import Case
 from evals.runners.base import BaseRunner, RunnerError
 
 
+#: How long a screen's untimed warm-up may spend loading weights. #406.
+LOAD_TIMEOUT_S = completion.LOAD_TIMEOUT_S
+#: What a hybrid thinking model is asked with on the screen's one retry. #406.
+NO_THINKING = {"enable_thinking": False}
+
+
+def _runner_error(exc: completion.CompletionError, prefix: str = "") -> RunnerError:
+    limit = f"{exc.limit[0]}>{exc.limit[1]:g}" if exc.limit else ""
+    return RunnerError(f"{prefix}{exc}", failure_class=exc.failure_class,
+                       limit=limit)
+
+
 class CompletionRunner(BaseRunner):
-    def __init__(self, gateway: str, candidate: str, timeout: float = 180.0,
+    def __init__(self, gateway: str, candidate: str,
+                 timeout: float = completion.TIMEOUT_S,
                  sampling: dict | None = None, model: str = ""):
         self.gateway = gateway.rstrip("/")
         self.candidate = candidate
@@ -28,6 +41,30 @@ class CompletionRunner(BaseRunner):
         #: the shipped defaults, which is what the product uses.
         self.sampling = dict(sampling or {})
 
+    def warm(self) -> None:
+        """One untimed request, so a cold load is not counted against the
+        case's timeout, as throughput.sweep does. #406."""
+        try:
+            completion.complete_with_usage(
+                "Reply with the word ok.", model=self.model,
+                gateway=self.gateway, timeout=LOAD_TIMEOUT_S, max_tokens=8,
+                sampling=self.sampling or None)
+        except completion.CompletionError as exc:
+            # It loaded and answered; a budget this small is not the case's.
+            if exc.failure_class in (reasons.TOKEN_BUDGET_EXHAUSTED,
+                                     reasons.CONTENT_FAILED):
+                return
+            if exc.failure_class == reasons.TIMEOUT:
+                exc.limit = ("load_timeout_s", LOAD_TIMEOUT_S)
+            raise _runner_error(exc, "warm-up: ") from exc
+
+    def _ask(self, case: Case, template: dict | None = None):
+        return completion.complete_with_usage(
+            case.prompt, model=self.model, gateway=self.gateway,
+            modality=case.modality, context=case.context,
+            timeout=self.timeout, sampling=self.sampling or None,
+            template=template)
+
     def generate(self, case: Case):
         import time
 
@@ -36,14 +73,22 @@ class CompletionRunner(BaseRunner):
         # 0.14 in 75 of 200 tries. This number is reported as a result and
         # divided into token counts, so its resolution is the measurement.
         started = time.perf_counter()
+        self.last_metrics = {}
         try:
-            text, usage = completion.complete_with_usage(
-                case.prompt, model=self.model, gateway=self.gateway,
-                modality=case.modality, context=case.context,
-                timeout=self.timeout, sampling=self.sampling or None)
+            try:
+                text, usage = self._ask(case)
+            except completion.CompletionError as exc:
+                # A screen asks whether it runs: a hybrid thinking model gets
+                # one retry with thinking off rather than a verdict on our
+                # budget. RULE #194, #406.
+                if not (self.screening and exc.failure_class
+                        == reasons.TOKEN_BUDGET_EXHAUSTED):
+                    raise
+                self.last_metrics = {"thinking_disabled": 1}
+                text, usage = self._ask(case, template=NO_THINKING)
         except completion.CompletionError as exc:
             # One dud must never abort a fifty-case run: every failure is a row.
-            raise RunnerError(str(exc)) from exc
+            raise _runner_error(exc) from exc
         # THROUGHPUT, not just latency. Two candidates can share a median while
         # one of them wrote three times as much, and a median alone cannot tell
         # a terse model from a fast one. Absent when the server reports no
@@ -51,9 +96,9 @@ class CompletionRunner(BaseRunner):
         # slowest candidate rather than as an unknown.
         elapsed = time.perf_counter() - started
         out = int(usage.get("completion_tokens") or 0)
-        self.last_metrics = {}
         if out and elapsed > 0:
             self.last_metrics = {
+                **self.last_metrics,
                 "completion_tokens": out,
                 "tokens_per_s": round(out / elapsed, 1),
             }

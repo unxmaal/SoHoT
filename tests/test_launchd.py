@@ -183,6 +183,17 @@ def test_probe_is_available_without_installing_anything():
     assert "ok" in proc.stdout.lower() or "denied" in (proc.stdout + proc.stderr).lower()
 
 
+def test_the_probe_agent_label_is_per_run():
+    """Two suites probing at once shared one launchd label in gui/$UID: one
+    booted out the other's probe, which then read "unknown" and failed. Same
+    class as #426's fixed ports."""
+    import re
+    gen = GEN.read_text(encoding="utf-8")
+    body = gen[gen.index("preflight() {"):gen.index("MSG\n    exit 1")]
+    label = re.search(r'local label="([^"]+)"', body).group(1)
+    assert "$$" in label, label
+
+
 def test_install_waits_for_a_teardown_before_loading_again():
     """`install` claims in its own comment to be re-runnable and was not.
 

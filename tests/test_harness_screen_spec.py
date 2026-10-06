@@ -8,7 +8,12 @@ alone, and the loop printed the pairing it intended above a one-sided receipt.
 """
 import pytest
 
-from harness import screen
+from harness import reasons, screen
+
+
+def _stderr(text):
+    """The run's stderr, classed once as cli._report_screen does. #408."""
+    return reasons.classify(text, reasons.STDERR)
 
 
 @pytest.mark.parametrize("lane,model,want", [
@@ -110,7 +115,7 @@ def test_a_screen_that_could_not_start_is_requeued_not_broken(detail):
     something they never did.
     """
     from harness import screen
-    got, why = screen.outcome(1, None, detail=detail)
+    got, why, *_ = screen.outcome(1, None, stderr_class=_stderr(detail))
     assert got == "queued", why
     assert "says nothing about the candidate" in why
 
@@ -119,8 +124,9 @@ def test_a_candidate_that_genuinely_failed_is_still_broken():
     """THE NEGATIVE CONTROL. A guard that requeues every failure means no
     candidate is ever answered and the queue never shrinks."""
     from harness import screen
-    got, _ = screen.outcome(
-        1, None, detail="generated 0 of 3 cases; the model returned empty output")
+    got, *_ = screen.outcome(
+        1, None, stderr_class=_stderr(
+            "generated 0 of 3 cases; the model returned empty output"))
     assert got == "broken"
 
 

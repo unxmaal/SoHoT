@@ -15,6 +15,7 @@ from __future__ import annotations
 import time
 
 from evals.core import Case, Result, score
+from harness import reasons
 
 
 class RunnerError(RuntimeError):
@@ -25,11 +26,15 @@ class RunnerError(RuntimeError):
     candidate's fault.
     """
 
-    def __init__(self, detail: str, peak_kb: int = 0):
+    def __init__(self, detail: str, peak_kb: int = 0, failure_class: str = "",
+                 limit: str = ""):
         super().__init__(detail)
         self.detail = detail
         # A crash after the model loaded is exactly when peak memory matters.
         self.peak_kb = peak_kb
+        # Set where the cause is known; "" is read once by reasons.classify.
+        self.failure_class = failure_class
+        self.limit = limit
 
 
 class BaseRunner:
@@ -40,6 +45,21 @@ class BaseRunner:
 
     #: Name this runner reports in every row. Set by the subclass.
     candidate: str = ""
+    #: The spec it was built from, which the error adapter reads. #408.
+    spec: str = ""
+    #: A screen asks whether it runs at all, so a runner may warm and retry. #406.
+    screening: bool = False
+
+    def warm(self) -> None:
+        """Load the model untimed, so no timed case pays for it. #406."""
+
+    def failed(self, case: Case, exc: RunnerError, seconds: float = 0.0) -> Result:
+        """The row for a failure, classed at the one place errors are caught."""
+        cls = exc.failure_class or reasons.classify(
+            exc.detail, reasons.RUNNER, self.spec or self.candidate)
+        return Result(case.id, self.candidate, False, round(seconds, 3),
+                      exc.peak_kb, exc.detail, failure_class=cls,
+                      limit=exc.limit)
 
     def generate(self, case: Case):
         """Return (artifact, peak_kb). Raise RunnerError on a real failure.
@@ -68,13 +88,13 @@ class BaseRunner:
         try:
             artifact, peak_kb = self.generate(case)
         except RunnerError as exc:
-            return Result(case.id, self.candidate, False,
-                          round(time.perf_counter() - started, 3),
-                          exc.peak_kb, exc.detail)
+            return self.failed(case, exc, time.perf_counter() - started)
         elapsed = time.perf_counter() - started
 
         row = score(case, artifact, **self.score_kwargs())
         row.candidate = self.candidate
+        if not row.passed:
+            row.failure_class = reasons.CONTENT_FAILED
         row.seconds = round(elapsed, 3)
         # A runner may have measured something the checker cannot see,
         # such as tokens/sec from the server's usage block.
