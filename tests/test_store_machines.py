@@ -9,6 +9,7 @@ about the model, and could not be found again when the machine changed.
 56 rows in the real store carried the machine as prose inside `detail`, and
 the only identifier in it was `arm64`.
 """
+import re
 import sqlite3
 
 import pytest
@@ -550,3 +551,47 @@ def test_schema_19_keeps_an_svg_model_in_the_svg_lane(tmp_path):
         assert again.execute("SELECT lane FROM proposals").fetchone()[0] == "svg"
     finally:
         again.close()
+
+
+# --- #383 class 4: a retraction keyed on one fact leaves the others alone ---
+
+RETRACTIONS = sorted(n for n in dir(ms)
+                     if re.match(r"_(retract|relane|reopen|requeue)_", n))
+
+#: Older rows a retraction looks for, under a latest verdict no lane can change.
+_BAIT = [("screen", "broken", "it ran and passed nothing: ValueError: "
+          "expected ['vae'], but only set() were passed."),
+         ("screen", "broken", "the screen exited 1"),
+         ("screen", "broken", "it ran and passed nothing: gateway returned "
+          "HTTP 404: Model type gpt_x not supported."),
+         ("adopt", "declined", "does not beat the incumbent")]
+LANE_FREE = [("inspect", "too-big: weights 1453.8 GiB over the 22 GiB ceiling"),
+             ("fetch", "lora in its own card: this attaches to a model "
+                       "rather than being one")]
+
+
+def test_the_retraction_census_is_not_empty():
+    assert {"_relane_from_the_card", "_requeue_diffusers_layout_gaps",
+            "_retract_harness_refusals"} <= set(RETRACTIONS)
+
+
+@pytest.mark.parametrize("tier,detail", LANE_FREE)
+@pytest.mark.parametrize("fn", RETRACTIONS)
+def test_a_lane_independent_verdict_survives_every_retraction(tmp_path, fn, tier, detail):
+    conn = ms.connect(tmp_path / "s.db")
+    try:
+        # A card that contradicts the lane, so a relane moves the row.
+        ms.record(conn, ms.Seen(name="LiquidAI/LFM2.5-350M", source="t",
+                                kind="weights", lane="image", why="seeded"))
+        conn.execute("UPDATE proposals SET description = 'task text-to-video'")
+        for t, outcome, d in _BAIT + [(tier, "declined", detail)]:
+            conn.execute("INSERT INTO verdicts (proposal_id, outcome, tier, "
+                         "detail, decided_at) SELECT id, ?, ?, ?, 0 "
+                         "FROM proposals", (outcome, t, d))
+        conn.commit()
+        getattr(ms, fn)(conn)
+        last = conn.execute("SELECT outcome, tier FROM verdicts "
+                            "ORDER BY id DESC LIMIT 1").fetchone()
+        assert tuple(last) == ("declined", tier), fn
+    finally:
+        conn.close()

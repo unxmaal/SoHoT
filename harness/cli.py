@@ -2142,11 +2142,9 @@ def _loop_spend(a, rc: int) -> int:
     print(f"\n=== measure and adopt ===")
     store = ms.connect()
     try:
-        fresh = ms.survivors(store, limit=top)
+        fresh = measurable(store, top, want)
     finally:
         store.close()
-    if want:
-        fresh = [r for r in fresh if lanes.serves(r.get("lane"), want)]
     if not fresh:
         print("  nothing survived the screen, so there is nothing to measure. "
               "A screen that rejects everything is the tier doing its job.")
@@ -2154,6 +2152,15 @@ def _loop_spend(a, rc: int) -> int:
     for row in fresh:
         rc = _measure_and_adopt(a, row) or rc
     return rc
+
+
+def measurable(store, top: int, want: str = "") -> list[dict]:
+    """Survivors in the scoped lane, filtered before the limit. #386."""
+    from harness import memory_store as ms
+    rows = ms.survivors(store, limit=1_000_000)
+    if want:
+        rows = [r for r in rows if lanes.serves(r.get("lane"), want)]
+    return rows[:top]
 
 
 def _measure_and_adopt(a, row: dict) -> int:
@@ -2319,8 +2326,12 @@ def _summary_row(summary: dict, wanted: str, lane: str) -> dict | None:
     for a TYPED DEFAULT it is a finding; for the two sides of one paired run it
     is the normal case.
     """
-    from harness import winners
+    from harness import screen, winners
 
+    # The engine's own key first: diffusers drops the owner, options add @k=v. #384.
+    named = screen.receipt_key(wanted)
+    if named and named in summary:
+        return {**(summary[named] or {}), "candidate": named}
     # THE LANE IS REQUIRED, not defaulted. The receipt shape differs by family
     # and a default would silently pick one, which is how this got written the
     # wrong way round in the first place.
