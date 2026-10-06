@@ -117,10 +117,22 @@ def decide(lane: str, incumbent: dict, challenger: dict,
                    f"against {cell.lost} lost, p={cell.p:.2f}")
 
 
+#: Candidates that exist to measure local models against. #374.
+REFERENCE_PREFIXES = ("claude-code:", "cloud-")
+
+
+def is_reference(candidate: str) -> bool:
+    return (candidate or "").startswith(REFERENCE_PREFIXES)
+
+
 def record(conn, verdict: Verdict) -> None:
     """Write an adoption, or the loss, so neither is rediscovered."""
     from harness import memory_store as ms
 
+    if is_reference(verdict.challenger):
+        verdict = Verdict(verdict.lane, verdict.incumbent, verdict.challenger,
+                          False, f"reference model; never a lane default "
+                          f"({verdict.why})")
     outcome = "measured" if verdict.adopt else "declined"
     detail = f"{verdict.lane}: {verdict.why}"
     try:

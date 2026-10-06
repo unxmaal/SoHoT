@@ -69,3 +69,28 @@ def test_a_run_writes_its_specs(tmp_path, monkeypatch):
     from evals import run as er
     src = Path(er.__file__).read_text(encoding="utf-8")
     assert '"specs": specs' in src and "specs[runner.candidate] = candidate" in src
+
+
+def test_a_reference_model_is_never_adopted():
+    """#374: preferring Opus on a judged lane must not make it the default."""
+    conn = ms.connect()
+    try:
+        adopt.record(conn, adopt.Verdict("svg", "local-large",
+                                         "claude-code:claude-opus-5-5", True,
+                                         "preferred by hand: 3-0"))
+        conn.commit()
+        assert adopt.adopted(conn).get("svg") is None
+    finally:
+        conn.close()
+
+
+def test_a_local_challenger_preferred_by_hand_is_still_adopted():
+    """Negative control."""
+    conn = ms.connect()
+    try:
+        adopt.record(conn, adopt.Verdict("svg", "local-large", "q3-30b", True,
+                                         "preferred by hand: 3-0"))
+        conn.commit()
+        assert adopt.adopted(conn).get("svg") == "q3-30b"
+    finally:
+        conn.close()
