@@ -19,7 +19,7 @@ from pathlib import Path
 
 from harness import paths, store
 
-SCHEMA_VERSION = 20
+SCHEMA_VERSION = 21
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
 VERDICTS = ("measured", "declined", "broken", "queued", "ignored", "screened")
@@ -648,6 +648,10 @@ def _migrate(conn: sqlite3.Connection) -> None:
         _requeue_diffusers_layout_gaps(conn)
     if have and have < 20:
         _requeue_screens_of_missing_weights(conn)
+    if have and have < 21:
+        # Only the new phrase: rerunning the whole list reopens what earlier
+        # schemas deliberately left. #401.
+        _requeue_broken_matching(conn)
     conn.execute("INSERT OR REPLACE INTO meta VALUES ('schema', ?)",
                  (str(SCHEMA_VERSION),))
     conn.commit()
@@ -877,6 +881,24 @@ def _relane_from_the_card(conn) -> None:
              f"retracted: settled in the {was or 'unknown'} lane, which came "
              f"from the source rather than from {name}'s own card ({card})",
              now))
+
+
+def _requeue_broken_matching(conn, phrases: tuple = ("guidance_scale has to be",)) -> None:
+    rows = conn.execute(
+        "SELECT p.id, p.name, v.detail FROM proposals p "
+        "JOIN verdicts v ON v.proposal_id = p.id "
+        "WHERE v.id = (SELECT v2.id FROM verdicts v2 "
+        "               WHERE v2.proposal_id = p.id ORDER BY v2.id DESC LIMIT 1) "
+        "  AND v.outcome = 'broken'").fetchall()
+    now = time.time()
+    for pid, name, detail in rows:
+        hit = next((p for p in phrases if p in (detail or "").lower()), "")
+        if hit:
+            conn.execute(
+                "INSERT INTO verdicts (proposal_id, tier, outcome, detail, "
+                "decided_at) VALUES (?, ?, 'queued', ?, ?)",
+                (pid, SCREEN, f"retracted: {hit!r} was a setting this harness "
+                              f"chose, not a verdict on {name}", now))
 
 
 def _requeue_screens_of_missing_weights(conn) -> None:

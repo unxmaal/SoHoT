@@ -32,11 +32,23 @@ from harness.torch_device import HALF, accelerator
 
 #: Steps a turbo model wants. SDXL-Turbo is trained for 1 to 4 and produces
 #: mush at 30, which is the opposite of the usual more-is-better assumption.
-DEFAULT_STEPS = 4
+TURBO_STEPS = 4
 DEFAULT_SIZE = 512
 #: Turbo models are distilled to run without classifier-free guidance, and a
 #: guidance above 1.0 makes them worse rather than more faithful.
-DEFAULT_GUIDANCE = 0.0
+TURBO_GUIDANCE = 0.0
+
+
+def sampling(model: str, steps: int | None, guidance: float | None) -> dict:
+    """What to pass the pipeline: the caller's values, turbo settings for a
+    turbo model, else nothing so the pipeline uses its own defaults. #401."""
+    turbo = "turbo" in model.lower()
+    out = {}
+    if steps is not None or turbo:
+        out["num_inference_steps"] = TURBO_STEPS if steps is None else steps
+    if guidance is not None or turbo:
+        out["guidance_scale"] = TURBO_GUIDANCE if guidance is None else guidance
+    return out
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -45,10 +57,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
                    help="a diffusers repo id, e.g. stabilityai/sdxl-turbo")
     p.add_argument("--prompt", required=True)
     p.add_argument("--output", required=True)
-    p.add_argument("--steps", type=int, default=DEFAULT_STEPS)
+    p.add_argument("--steps", type=int, default=None)
     p.add_argument("--width", type=int, default=DEFAULT_SIZE)
     p.add_argument("--height", type=int, default=DEFAULT_SIZE)
-    p.add_argument("--guidance", type=float, default=DEFAULT_GUIDANCE)
+    p.add_argument("--guidance", type=float, default=None)
     p.add_argument("--seed", type=int, default=None)
     p.add_argument("--allow-cpu", action="store_true",
                    help="generate without a card, which takes minutes")
@@ -106,9 +118,9 @@ def main(argv: list[str] | None = None) -> int:
         generator = torch.Generator(device=device).manual_seed(args.seed)
 
     pipe = _pipeline(args.model, device)
-    image = pipe(prompt=args.prompt, num_inference_steps=args.steps,
-                 guidance_scale=args.guidance, width=args.width,
-                 height=args.height, generator=generator).images[0]
+    image = pipe(prompt=args.prompt, width=args.width, height=args.height,
+                 generator=generator,
+                 **sampling(args.model, args.steps, args.guidance)).images[0]
     image.save(out)
 
     out.with_suffix(".json").write_text(json.dumps({
