@@ -335,23 +335,28 @@ def test_the_engine_argv_is_what_the_nimble_script_parses(tmp_path):
 
 
 def test_a_nimble_run_through_the_process_runner_is_scored(monkeypatch, tmp_path):
-    """A fake scorer binary stands in for nimble; the row is scored like any other."""
-    import stat
+    """A fake scorer stands in for nimble; the row is scored like any other.
+
+    Run as [sys.executable, script, <the engine's own args>]: Windows cannot
+    exec a #! script (WinError 193), and the args are still the engine's.
+    """
+    import dataclasses
     import sys
 
     from evals.runners.process import ProcessRunner
-    fake = tmp_path / "fake-nimble"
+    fake = tmp_path / "fake_nimble.py"
     fake.write_text(
-        f"#!{sys.executable}\nimport json, sys\na = sys.argv\n"
+        "import json, sys\na = sys.argv\n"
         "out = a[a.index('--out') + 1]\n"
         "json.dump({'answers': {'route': 'tech', 'urgent': False}, 'probabilities': "
         "{'route': {'billing': 0.1, 'tech': 0.9}, 'urgent': {'false': 0.8, 'true': 0.2}}},"
-        " open(out, 'w'))\n", encoding="utf-8")
-    fake.chmod(fake.stat().st_mode | stat.S_IEXEC)
-    monkeypatch.setenv("NIMBLE_BIN", str(fake))
+        " open(out, 'w', encoding='utf-8'))\n", encoding="utf-8")
+    real = engines.resolve(f"nimble:{NIMBLE}")
+    eng = dataclasses.replace(real, argv=lambda p, o, params: [
+        sys.executable, str(fake), *real.argv(p, o, params)[1:]])
     c = Case(id="d", modality="decide", prompt="p", context="ctx", params={"schema": SPEC},
              assertions={"answers": {"route": "tech", "urgent": False}})
-    r = ProcessRunner(engines.resolve(f"nimble:{NIMBLE}"), tmp_path / "out").run(c)
+    r = ProcessRunner(eng, tmp_path / "out").run(c)
     assert r.passed, r.detail
     assert r.metrics["calibrated"] == 1.0
     assert r.metrics["decide_brier_sum"] == pytest.approx(0.02 + 0.08)
