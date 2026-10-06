@@ -19,7 +19,7 @@ from pathlib import Path
 
 from harness import paths, store
 
-SCHEMA_VERSION = 38
+SCHEMA_VERSION = 39
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
 VERDICTS = ("measured", "declined", "broken", "queued", "ignored", "screened")
@@ -987,6 +987,11 @@ def _migrate(conn: sqlite3.Connection) -> None:
         resolve_identity_leftovers(conn)
     if have and have < 38:
         attribute_sightings(conn)
+    if have and have < 39:
+        # text-classification and structured-prediction file under decide;
+        # a code row whose card says so moves too. #423.
+        _relane_the_laneless_from_the_card(conn)
+        _relane_from_the_card(conn)
     conn.execute("CREATE INDEX IF NOT EXISTS ix_verdict_cand "
                  "ON verdicts(candidate_id)")
     conn.execute("CREATE INDEX IF NOT EXISTS ix_prop_state ON proposals(state)")
@@ -1853,6 +1858,31 @@ def _relane_from_the_card(conn) -> None:
                      f"retracted: settled in the {was or 'unknown'} lane, which "
                      f"came from the source rather than from {name}'s own card "
                      f"({card})")
+
+
+def _relane_the_laneless_from_the_card(conn) -> None:
+    """Give a laneless row the lane its stored card now names. #423.
+
+    text-classification and structured-prediction file under decide, so the
+    Bespoke-Nimble adapters queued with no lane get one without a re-inspect.
+    Only empty lanes are filled; a lane already there is _relane_from_the_card's.
+    """
+    import json
+
+    from harness import inspect as ins
+    rows = conn.execute(
+        "SELECT id, hf_task, card_tags FROM proposals WHERE lane = '' "
+        "AND (hf_task <> '' OR card_tags NOT IN ('', '[]'))").fetchall()
+    for row in rows:
+        try:
+            tags = json.loads(row["card_tags"] or "[]")
+        except ValueError:
+            tags = []
+        lane, source = ins.lane_and_source({"pipeline_tag": row["hf_task"],
+                                            "tags": tags})
+        if lane:
+            conn.execute("UPDATE proposals SET lane = ?, lane_source = ? "
+                         "WHERE id = ?", (lane, source, row["id"]))
 
 
 def _requeue_broken_matching(conn, phrases: tuple = ("guidance_scale has to be",)) -> None:

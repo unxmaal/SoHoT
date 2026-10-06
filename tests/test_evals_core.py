@@ -240,7 +240,7 @@ def test_the_cases_that_ship_with_the_suite_actually_load():
         raise
     assert len(cases) >= 8
     committed = {"svg", "web", "image", "tts", "video", "code", "extract",
-                 "music"}
+                 "music", "decide"}
     present = {c.modality for c in cases}
     assert committed <= present, f"missing lanes: {committed - present}"
     # stt cases are generated per machine and gitignored (the audio lives on a

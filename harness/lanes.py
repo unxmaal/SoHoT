@@ -26,7 +26,9 @@ from __future__ import annotations
 #: explicitly; music was asked for later and has never been ranked against
 #: them, so it is wanted and it is wanted last until somebody says otherwise.
 #: Issue #237.
-WANTED = ("image", "code", "web", "svg", "video", "music")
+#: `decide` is appended the same way: asked for 2026-10-06 to measure
+#: Bespoke-Nimble-9B against its baselines, never ranked against the rest. #423.
+WANTED = ("image", "code", "web", "svg", "video", "music", "decide")
 
 #: Measured here, and not on the wanted list. `extract` has more cases than any
 #: lane but stt and is a text job; stt and tts have the most measurement
@@ -128,6 +130,10 @@ _PROSE = {
     # models into the music lane.
     "music": r"\b(music|songs?|instrumentals?|text[- ]to[- ]music|"
              r"music generation|lyrics)\b",
+    # A typed decision over a schema. Not bare "classification": image and
+    # audio classifiers say that too.
+    "decide": r"\b(typed decisions?|decision models?|structured[- ]prediction|"
+              r"text[- ]classif\w+)\b",
 }
 
 

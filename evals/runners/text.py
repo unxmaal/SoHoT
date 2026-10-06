@@ -59,11 +59,30 @@ class CompletionRunner(BaseRunner):
             raise _runner_error(exc, "warm-up: ") from exc
 
     def _ask(self, case: Case, template: dict | None = None):
+        if case.modality == "decide":
+            return self._decide(case, template)
         return completion.complete_with_usage(
             case.prompt, model=self.model, gateway=self.gateway,
             modality=case.modality, context=case.context,
             timeout=self.timeout, sampling=self.sampling or None,
             template=template)
+
+    def _decide(self, case: Case, template: dict | None = None):
+        """Answer letters plus their token probabilities where the server
+        returns logprobs; the bare answer otherwise, scored one-hot. #423."""
+        import json
+
+        from harness.checks import decide
+
+        text, usage, tokens = completion.complete_with_logprobs(
+            case.prompt, model=self.model, gateway=self.gateway,
+            modality=case.modality, context=case.context,
+            timeout=self.timeout, sampling=self.sampling or None,
+            template=template, top_logprobs=completion.TOP_LOGPROBS)
+        if not tokens:
+            return text, usage
+        got = decide.from_logprobs(text, tokens, case.params["schema"])
+        return json.dumps({**got, "raw": text}), usage
 
     def generate(self, case: Case):
         import time

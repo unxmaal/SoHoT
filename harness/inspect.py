@@ -107,6 +107,9 @@ PIPELINE_LANES = {
     "text-to-audio": "tts", "text-to-image": "image",
     "text-to-video": "video", "image-to-video": "video",
     "text-generation": "code",
+    # A label from text is a typed decision. A fixed-head classifier that
+    # cannot take a schema fails the decide screen, which says so. #423.
+    "text-classification": "decide",
 }
 TAG_LANES = {"asr": "stt", "speech-recognition": "stt", "stt": "stt",
              "tts": "tts", "text-to-speech": "tts",
@@ -114,7 +117,8 @@ TAG_LANES = {"asr": "stt", "speech-recognition": "stt", "stt": "stt",
              # A text-to-SVG model IS a text-generation model, so its
              # pipeline_tag is honest and useless for routing. #246.
              "svg": "svg", "text-to-svg": "svg", "image-to-svg": "svg",
-             "text-to-music": "music", "music": "music"}
+             "text-to-music": "music", "music": "music",
+             "structured-prediction": "decide"}
 
 #: The one pipeline_tag that is a SUPERTYPE of other lanes, so a more specific
 #: tag on the same card may overrule it.

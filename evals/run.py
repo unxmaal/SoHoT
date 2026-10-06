@@ -43,7 +43,7 @@ from evals.runners.text import CompletionRunner
 from evals.runners.transcription import TranscriptionRunner
 
 ROOT = Path(__file__).resolve().parent
-TEXT_MODALITIES = {"svg", "web", "code", "extract"}
+TEXT_MODALITIES = {"svg", "web", "code", "extract", "decide"}
 ALL_MODALITIES = sorted(MODALITIES)
 
 
@@ -692,7 +692,8 @@ def _execute(args) -> int:
             print(f"  {mark}  {r.seconds:6.2f}s  {case.id}{warn}{note}",
                   flush=True)
             if outdir and r.artifact and case.modality in TEXT_MODALITIES:
-                ext = {"svg": "svg", "web": "html", "code": "py"}.get(
+                ext = {"svg": "svg", "web": "html", "code": "py",
+                       "decide": "json"}.get(
                     case.modality, "txt")
                 (outdir / runner.artifact(case, f".{ext}")).write_text(r.artifact, encoding="utf-8")
 

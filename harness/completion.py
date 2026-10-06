@@ -41,6 +41,11 @@ SYSTEM = {
                 "prose around the answer. If the answer is a number, a "
                 "filename or a line, give exactly that. If the material does "
                 "not contain the answer, reply: NOT FOUND"),
+    # A typed decision: one letter per field, as JSON, so the letter tokens
+    # carry the probabilities. #423.
+    "decide": ("You answer with a single JSON object and nothing else. No "
+               "prose, no markdown fences, no explanation. Each key is a field "
+               "name and each value is the letter of one allowed choice."),
 }
 NEUTRAL_SYSTEM = "Answer directly and concisely."
 
@@ -69,7 +74,12 @@ DEFAULT_TEMPERATURE = 0.2
 SAMPLING = {
     "svg": {"temperature": 0.4, "repetition_penalty": 1.1},
     "web": {"temperature": 0.4, "repetition_penalty": 1.1},
+    # The answer is the argmax; the distribution comes from the logprobs.
+    "decide": {"temperature": 0.0},
 }
+
+#: OpenAI's ceiling is 20 and mlx_lm.server's is 11. #423.
+TOP_LOGPROBS = 10
 
 # Root tags worth recovering, per modality.
 ROOT_TAGS = {"svg": ("svg",), "web": ("html", "!doctype"), "code": ()}
@@ -124,6 +134,23 @@ def complete_with_usage(prompt: str, model: str, gateway: str = DEFAULT_GATEWAY,
     share a median while one of them wrote three times as much. Absent usage is
     an empty dict, never an error: mlx_lm.server has answered without the block.
     """
+    text, usage, _ = complete_with_logprobs(
+        prompt, model, gateway, modality=modality, context=context,
+        timeout=timeout, temperature=temperature, max_tokens=max_tokens,
+        sampling=sampling, template=template)
+    return text, usage
+
+
+def complete_with_logprobs(prompt: str, model: str,
+                           gateway: str = DEFAULT_GATEWAY, modality: str = "",
+                           context: str = "", timeout: float = TIMEOUT_S,
+                           temperature: float | None = None,
+                           max_tokens: int = MAX_TOKENS,
+                           sampling: dict | None = None,
+                           template: dict | None = None,
+                           top_logprobs: int = 0) -> tuple[str, dict, list]:
+    """As complete_with_usage, plus the per-token logprobs when asked for and
+    the server returns them (OpenAI shape: content[i].top_logprobs); else []."""
     knobs = dict(SAMPLING.get(modality, {}))
     if temperature is not None:
         knobs["temperature"] = temperature
@@ -144,6 +171,9 @@ def complete_with_usage(prompt: str, model: str, gateway: str = DEFAULT_GATEWAY,
     }
     if template:
         payload["chat_template_kwargs"] = dict(template)
+    if top_logprobs:
+        payload["logprobs"] = True
+        payload["top_logprobs"] = int(top_logprobs)
     try:
         r = _post(gateway, payload, timeout)
         if (400 <= getattr(r, "status_code", 200) < 500
@@ -159,6 +189,8 @@ def complete_with_usage(prompt: str, model: str, gateway: str = DEFAULT_GATEWAY,
         message = choices[0]["message"]
         text = message.get("content")
         usage = body.get("usage") or {}
+        tokens = ((choices[0].get("logprobs") or {}).get("content") or []) \
+            if top_logprobs else []
     except httpx.TimeoutException as exc:
         raise CompletionError(f"timed out after {timeout}s", reasons.TIMEOUT,
                               ("timeout_s", timeout)) from exc
@@ -190,7 +222,7 @@ def complete_with_usage(prompt: str, model: str, gateway: str = DEFAULT_GATEWAY,
                 f"raise max_tokens.", reasons.TOKEN_BUDGET_EXHAUSTED,
                 ("max_tokens", max_tokens))
         raise CompletionError("empty completion", reasons.CONTENT_FAILED)
-    return text, usage
+    return text, usage, list(tokens) if isinstance(tokens, list) else []
 
 
 

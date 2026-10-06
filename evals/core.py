@@ -21,6 +21,7 @@ import yaml
 
 from harness.checks import adherence as adherence_check
 from harness.checks import code as code_check
+from harness.checks import decide as decide_check
 from harness.checks import html as html_check
 from harness.checks import image as image_check
 from harness.checks import music as music_check
@@ -263,7 +264,18 @@ def _check_web(artifact, case: Case) -> CheckResult:
     return out
 
 
+def _check_decide(artifact, case: Case) -> CheckResult:
+    if isinstance(artifact, Path):
+        # A process engine wrote the canonical JSON to a file.
+        if not artifact.exists():
+            return CheckResult(False, f"engine left no output at {artifact.name}")
+        artifact = artifact.read_text(encoding="utf-8")
+    return decide_check.check(artifact, case.params["schema"],
+                              case.assertions["answers"])
+
+
 CHECKERS = {
+    "decide": lambda a, c, **kw: _check_decide(a, c),
     "svg": lambda a, c, **kw: _check_svg(a, c),
     "music": _check_music,
     "web": lambda a, c, **kw: _check_web(a, c),
@@ -318,6 +330,12 @@ METRIC_DIRECTION = {
     # NEUTRAL: a traced illustration is legitimately large and a UI glyph is
     # legitimately small, so ranking on it would crown the blank document.
     "svg_bytes": "neutral",
+    # decide (#423): pooled over fields; Brier and ECE score the probabilities.
+    "decide_accuracy": "higher",
+    "decide_brier": "lower",
+    "decide_ece": "lower",
+    # NEUTRAL: 1 when every field came with probabilities, 0 when one-hot.
+    "calibrated": "neutral",
 }
 
 
@@ -348,7 +366,9 @@ PARAM_KEYS = {"width", "height", "steps", "seed", "guidance", "frames",
               # `cover_strength` says how much of it to keep. The reference
               # belongs to the CASE rather than the engine spec because it is
               # what the case is asking about. #275.
-              "task", "ref", "cover_strength"}
+              "task", "ref", "cover_strength",
+              # decide: the flat schema of enum and boolean fields. #423.
+              "schema"}
 # Assertions that need text to search. Declaring one on an image case can only
 # pass vacuously until the suite can OCR, so it is rejected rather than ignored.
 TEXT_ASSERTIONS = {"min_shapes", "must_contain", "must_not_contain"}
@@ -384,7 +404,8 @@ ASSERTION_KEYS = {"svg": TEXT_ASSERTIONS, "web": TEXT_ASSERTIONS,
                   # `expect_vocals: false` inverts the question from "were the
                   # right words sung" to "was anything sung at all", which is
                   # both a capability check and the lane's own ceiling control.
-                  "music": {"max_wer", "expect_vocals", "duration_s"}}
+                  "music": {"max_wer", "expect_vocals", "duration_s"},
+                  "decide": {"answers"}}
 
 
 @dataclass
@@ -653,7 +674,15 @@ def load_cases(directory: str | Path) -> list[Case]:
         _reject_unknown(path, modality, "params", set(params), PARAM_KEYS)
         _reject_unknown(path, modality, "assert", set(assertions),
                         ASSERTION_KEYS.get(modality, set()))
-        cases.append(Case(id=raw["id"], modality=modality, prompt=raw["prompt"],
+        prompt = raw["prompt"]
+        if modality == "decide":
+            try:
+                decide_check.validate(params.get("schema"), assertions.get("answers"))
+            except decide_check.SchemaError as exc:
+                raise ValueError(f"{path.name}: {exc}") from exc
+            # Every text runner then asks the same question; nimble reads the schema.
+            prompt = f"{prompt.rstrip()}\n\n{decide_check.render(params['schema'])}"
+        cases.append(Case(id=raw["id"], modality=modality, prompt=prompt,
                           context=context, audio=audio, params=params,
                           assertions=assertions, source=path,
                           language=raw.get("language") or "en",
@@ -773,6 +802,7 @@ def summarize(results: list[Result]) -> dict:
     out: dict[str, dict] = {}
     for candidate, rows in by.items():
         times = [r.seconds for r in rows]
+        pooled = _decide_calibration(rows)
         out[candidate] = {
             "total": len(rows),
             "passed": sum(1 for r in rows if r.passed),
@@ -794,7 +824,7 @@ def summarize(results: list[Result]) -> dict:
             "total_s": round(sum(times), 1),
             "peak_kb": max((r.peak_kb for r in rows), default=0),
             "warnings": sum(len(r.warnings) for r in rows),
-            "metrics": _mean_metrics(rows),
+            "metrics": {**_mean_metrics(rows), **pooled},
             # Kept alongside the mean because an average of mostly-zeros hides
             # the one case that fell over, which is usually the interesting one.
             "metrics_worst": _worst_metrics(rows),
@@ -813,13 +843,30 @@ def summarize(results: list[Result]) -> dict:
                            if not r.passed and failure_kind(r.detail) == "error"),
             # How many rows each metric was actually computed over. A mean over
             # 2 of 9 cases printed beside a mean over 9 is not a comparison.
-            "metric_n": {k: len(v) for k, v in _gather_metrics(rows).items()},
+            "metric_n": {**{k: len(v) for k, v in _gather_metrics(rows).items()},
+                         **({"decide_ece": _decision_count(rows)} if pooled else {})},
             # WHICH cases this candidate actually sat. Two candidates in one
             # run can get different sets -- a case may be unfair to a method,
             # or to a language -- and then their pass rates are not comparable.
             "case_ids": sorted({r.case_id.split("#")[0] for r in rows}),
         }
     return out
+
+
+def _decisions(rows: list[Result]) -> list:
+    return [pair for r in rows for pair in (r.metrics or {}).get("decisions") or []]
+
+
+def _decision_count(rows: list[Result]) -> int:
+    return len(_decisions(rows))
+
+
+def _decide_calibration(rows: list[Result]) -> dict:
+    """Pooled ECE over every field decision, once there are enough to bin."""
+    pairs = _decisions(rows)
+    if len(pairs) < decide_check.MIN_ECE_N:
+        return {}
+    return {"decide_ece": round(decide_check.ece(pairs), 4)}
 
 
 def _count(items) -> dict[str, int]:
@@ -842,7 +889,9 @@ def _gather_metrics(rows: list[Result]) -> dict[str, list[float]]:
 #: of. Aggregating these as a mean of per-case rates lets a two-word utterance
 #: weigh as much as a forty-word one; the correct total is sum(errors) over
 #: sum(words), which is what every ASR benchmark means by "WER".
-RATIO_METRICS = {"wer": ("wer_errors", "wer_words")}
+RATIO_METRICS = {"wer": ("wer_errors", "wer_words"),
+                 "decide_accuracy": ("decide_correct", "decide_fields"),
+                 "decide_brier": ("decide_brier_sum", "decide_fields")}
 #: Bookkeeping that should not appear as a column of its own.
 _COMPANIONS = {name for pair in RATIO_METRICS.values() for name in pair}
 

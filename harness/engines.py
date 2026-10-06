@@ -26,7 +26,7 @@ from harness import env
 Argv = Callable[[str, Path, dict], list[str]]
 
 GRAMMAR = ("engine:model[,key=value,...]  "
-           "(engines: mflux, h3, diffusers, diffusers-video, acestep)")
+           "(engines: mflux, h3, diffusers, diffusers-video, acestep, nimble)")
 
 
 def spec_error(spec: str) -> str:
@@ -535,10 +535,60 @@ def _acestep(spec: str, model: str, options: dict) -> Engine:
                   timeout=1800.0, stream=True)
 
 
+# ---- nimble (the decide lane) -------------------------------------------
+
+_NIMBLE_OPTIONS = {"revision", "temperature"}
+
+NIMBLE_DEFAULT_BIN = str(
+    Path(__file__).resolve().parent.parent / "scripts" / "nimble-score.sh")
+
+#: Engines that load a peft adapter onto the base it names, so an adapter can
+#: be a candidate in their lane rather than being dropped from the ladder. #423.
+ADAPTER_ENGINES = frozenset({"nimble"})
+
+
+def loads_adapters(spec: str) -> bool:
+    return spec.partition(",")[0].partition(":")[0].strip() in ADAPTER_ENGINES
+
+
+def _nimble(spec: str, model: str, options: dict) -> Engine:
+    """Typed decisions through nimble's own ParallelScorer, in nimble's venv.
+
+    `model` is an HF repo id: a peft adapter is merged onto the base its
+    schema_config.json pins on first use. The case's context and schema go
+    through argv; the scorer writes the canonical decide artifact. #423.
+    """
+    if not model:
+        raise ValueError(
+            f"{spec_error(spec)}: nimble needs a model, e.g. "
+            f"nimble:bespokelabs/Bespoke-Nimble-9B")
+    _check_options(options, _NIMBLE_OPTIONS, spec)
+    defaults = dict(options)
+
+    def argv(prompt: str, out: Path, params: dict) -> list[str]:
+        import json
+        p = {**defaults, **{k: v for k, v in params.items() if v is not None}}
+        if not p.get("schema"):
+            raise ValueError("nimble scores a decide case; this one has no schema")
+        cmd = [os.environ.get("NIMBLE_BIN", NIMBLE_DEFAULT_BIN),
+               "--model", model, "--out", str(out),
+               "--context", str(p.get("context") or prompt),
+               "--schema", json.dumps(p["schema"])]
+        _flag(cmd, "--revision", p.get("revision"))
+        _flag(cmd, "--temperature", p.get("temperature"))
+        return cmd
+
+    return Engine(name=f"nimble/{model.rsplit('/', 1)[-1]}{distinguish(options)}",
+                  spec=spec, argv=argv, modality="decide", output_suffix=".json",
+                  # The first case may download the base and merge the adapter.
+                  timeout=3600.0)
+
+
 _BUILDERS: dict[str, Callable[[str, str, dict], Engine]] = {
     "mflux": _mflux,
     "h3": _h3,
     "diffusers": _diffusers,
     "diffusers-video": _diffusers_video,
     "acestep": _acestep,
+    "nimble": _nimble,
 }

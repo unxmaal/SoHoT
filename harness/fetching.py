@@ -120,7 +120,15 @@ def requires(model_id: str, conn=None) -> list[str]:
     repo is whole and names `text_tokenizer: Marvis-AI/marvis-tts-250m-v0.2`,
     a different repo. Issue #196.
     """
-    return downloads.requires(model_id, conn)
+    with downloads.store(conn) as c:
+        got = set(downloads.requires(model_id, c))
+        # An adapter needs its base before its own download names it. #423.
+        try:
+            parents = ms.parents_of(c, [model_id]).get(model_id, [])
+        except Exception:  # noqa: BLE001
+            parents = []
+        got.update(p for p, kind in parents if kind == "adapter" and p != model_id)
+    return sorted(got)
 
 
 def missing(model_id: str, conn=None) -> list[str]:
@@ -362,7 +370,7 @@ def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=N
                               reason=reasons.HARNESS)
             done.append({"repo": row["name"], "ok": False, "why": why})
             continue
-        if attachment:
+        if attachment and not screen.takes_attachment(row.get("lane") or "", attachment):
             why = (f"{attachment} in its own card: this attaches to a model "
                    f"rather than being one, and no lane can run it alone")
             ms.decide_or_skip(conn, row["name"], "declined", tier="fetch", detail=why,

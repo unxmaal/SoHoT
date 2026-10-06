@@ -251,6 +251,8 @@ SAMPLES = {
                         "diffusers-video:org/v,frames=9"],
     "acestep": ["acestep:acestep-v15-turbo,steps=8",
                 "acestep:ACE-Step/acestep-v15-xl"],
+    "nimble": ["nimble:bespokelabs/Bespoke-Nimble-9B",
+               "nimble:bespokelabs/Bespoke-Nimble-9B,revision=abc"],
 }
 SAMPLE_SPECS = [s for specs in SAMPLES.values() for s in specs]
 LANE_OF = {"image": "image", "video": "video", "music": "music"}

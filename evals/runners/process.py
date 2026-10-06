@@ -44,7 +44,10 @@ class ProcessRunner(BaseRunner):
             out.unlink()
 
         try:
-            argv = self.engine.argv(case.prompt, out, case.params)
+            # The material a decide engine scores travels with the params. #423.
+            params = ({**case.params, "context": case.context} if case.context
+                      else case.params)
+            argv = self.engine.argv(case.prompt, out, params)
         except ValueError as exc:
             raise RunnerError(str(exc), failure_class=reasons.HARNESS_ERROR) from exc
 

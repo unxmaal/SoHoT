@@ -22,13 +22,16 @@ FETCH, LINK, SCRIPT, SCAN, BACKFILL, PARTIAL = (
 
 #: A snapshot with only a card is not a download: Marlin-2B had LICENSE and
 #: README and was screened as if present. #399.
-LOADABLE = ("config.json", "model_index.json")
+#: adapter_config.json: a peft adapter is loadable onto the base it names. #423.
+LOADABLE = ("config.json", "model_index.json", "adapter_config.json")
 WEIGHT_SUFFIXES = (".safetensors", ".bin", ".gguf", ".npz", ".pt", ".pth",
                    ".ckpt", ".onnx")
 
 #: Config keys whose value names a repo you must ALSO have on disk. #196.
 REQUIRES_KEYS = ("text_tokenizer", "tokenizer_name", "audio_tokenizer",
-                 "codec_model", "vocoder", "base_model")
+                 "codec_model", "vocoder", "base_model",
+                 # A peft adapter's base, from adapter_config.json. #423.
+                 "base_model_name_or_path")
 #: Repo-shaped and NOT a requirement: where the config came from.
 PROVENANCE_KEYS = {
     "_name_or_path": "where the config came from, not what it needs",
@@ -112,12 +115,16 @@ def _measure(kind: str, path) -> tuple[int, int]:
 
 
 def config_of(path) -> dict:
-    for cfg in sorted(Path(path).glob("snapshots/*/config.json")):
-        try:
-            return json.loads(cfg.read_text(encoding="utf-8"))
-        except (OSError, ValueError):
-            return {}
-    return {}
+    out: dict = {}
+    for name in ("adapter_config.json", "config.json"):
+        for cfg in sorted(Path(path).glob(f"snapshots/*/{name}")):
+            try:
+                got = json.loads(cfg.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                got = {}
+            out.update(got if isinstance(got, dict) else {})
+            break
+    return out
 
 
 def requires_in(config: dict, repo: str) -> list[str]:

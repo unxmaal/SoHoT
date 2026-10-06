@@ -60,3 +60,13 @@ TRANSFORMERS_PIN="transformers==5.17.0"
 ACCELERATE_PIN="accelerate==1.15.0"
 SAFETENSORS_PIN="safetensors==0.8.0"
 PILLOW_PIN="pillow==12.3.0"
+
+# The decide lane's nimble engine (#423), built by scripts/nimble-venv.sh. The
+# checkout is pinned by commit; its requirements/mlx.txt and training.txt pins
+# are repeated here so a rebuild cannot drift.
+NIMBLE_REPO_URL="https://github.com/bespokelabsai/nimble.git"
+NIMBLE_REV="dcfdbd9a64f0d869f658d7a72f1beaee32737773"
+NIMBLE_MLX_PIN="mlx==0.32.2"
+NIMBLE_MLX_LM_PIN="mlx-lm==0.31.3"
+NIMBLE_TORCH_PIN="torch==2.8.0"
+PEFT_PIN="peft==0.21.0"

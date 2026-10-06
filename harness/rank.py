@@ -188,7 +188,9 @@ def rank(rows, *, serving=(), measured_lanes=(), ceiling_gib: float | None = Non
             continue
         # The card's word, stored by inspect; and the NAME, which carries it
         # as often: `...-lora-I2V` and `...-ComfyUI` say what they are. #414.
-        if row.get("attaches_to") or screen.is_attachment(row.get("name")):
+        # Unless the lane has an engine that loads it onto its base. #423.
+        kind = row.get("attaches_to") or screen.is_attachment(row.get("name"))
+        if kind and not screen.takes_attachment(lane_of(row), kind):
             continue
         if unrunnable(row):
             continue
