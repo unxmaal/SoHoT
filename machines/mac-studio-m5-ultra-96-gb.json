@@ -30,12 +30,12 @@
   }
  ],
  "export_version": 1,
- "generated_at": "2026-10-06T20:29:59Z",
+ "generated_at": "2026-10-06T20:45:38Z",
  "lanes": [
   {
    "adopted": true,
    "adopted_how": "by-hand",
-   "age_days": 0.24,
+   "age_days": 0.25,
    "comparison": [
     {
      "candidate": "mflux/flux2-klein-4b-q8",
@@ -82,7 +82,7 @@
   {
    "adopted": true,
    "adopted_how": "measured",
-   "age_days": 0.07,
+   "age_days": 0.08,
    "comparison": [
     {
      "candidate": "llamacpp:Ornith-1.5-35B-Q4_K_M",
@@ -135,7 +135,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 0.86,
+   "age_days": 0.87,
    "comparison": [
     {
      "candidate": "q3-4b",
@@ -218,7 +218,7 @@
   {
    "adopted": true,
    "adopted_how": "measured",
-   "age_days": 0.02,
+   "age_days": 0.03,
    "comparison": [
     {
      "candidate": "q3-30b",
@@ -274,7 +274,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 0.93,
+   "age_days": 0.95,
    "comparison": [
     {
      "candidate": "h3/minimax-h3@ssd_streaming=false",
@@ -308,7 +308,7 @@
   {
    "adopted": true,
    "adopted_how": "by-hand",
-   "age_days": 1.0,
+   "age_days": 1.01,
    "comparison": [
     {
      "candidate": "acestep/acestep-v15-turbo@steps=8",
@@ -364,7 +364,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 0.83,
+   "age_days": 0.84,
    "comparison": [
     {
      "candidate": "claude-code:claude-opus-5-5",
@@ -442,7 +442,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 1.01,
+   "age_days": 1.02,
    "comparison": [
     {
      "candidate": "parakeet-tdt-0.6b-v2",
@@ -476,7 +476,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 0.31,
+   "age_days": 0.33,
    "comparison": [
     {
      "candidate": "Kokoro-82M-bf16/bm_george",
@@ -528,7 +528,7 @@
   "first_seen": "2026-10-05T19:28:52Z",
   "hw_model": "Mac17,15",
   "label": "Mac Studio M5 Ultra 96 GB",
-  "last_seen": "2026-10-06T20:29:59Z",
+  "last_seen": "2026-10-06T20:45:38Z",
   "memory_gb": 96.0,
   "os": "macOS 27.0.1",
   "runtimes": [
