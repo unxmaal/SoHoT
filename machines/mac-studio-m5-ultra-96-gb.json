@@ -20,15 +20,22 @@
    "how": "by-hand",
    "incumbent": "mflux:flux2-klein-4b",
    "lane": "image"
+  },
+  {
+   "adopted_at": "2026-10-06T19:57:01Z",
+   "candidate": "q3-30b",
+   "how": "measured",
+   "incumbent": "local-large",
+   "lane": "svg"
   }
  ],
  "export_version": 1,
- "generated_at": "2026-10-06T19:49:55Z",
+ "generated_at": "2026-10-06T20:29:59Z",
  "lanes": [
   {
    "adopted": true,
    "adopted_how": "by-hand",
-   "age_days": 0.21,
+   "age_days": 0.24,
    "comparison": [
     {
      "candidate": "mflux/flux2-klein-4b-q8",
@@ -75,7 +82,7 @@
   {
    "adopted": true,
    "adopted_how": "measured",
-   "age_days": 0.05,
+   "age_days": 0.07,
    "comparison": [
     {
      "candidate": "llamacpp:Ornith-1.5-35B-Q4_K_M",
@@ -128,7 +135,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 0.83,
+   "age_days": 0.86,
    "comparison": [
     {
      "candidate": "q3-4b",
@@ -209,57 +216,57 @@
    "wanted": true
   },
   {
-   "adopted": false,
-   "adopted_how": "",
-   "age_days": 0.01,
+   "adopted": true,
+   "adopted_how": "measured",
+   "age_days": 0.02,
    "comparison": [
     {
      "candidate": "q3-30b",
-     "first_s": 53.881,
-     "median_s": 1.562,
+     "first_s": 5.167,
+     "median_s": 1.893,
      "metrics": {
-      "completion_tokens": 286.7778,
-      "ink": 0.2078,
-      "svg_bytes": 640.5556,
-      "tokens_per_s": 110.9889
+      "completion_tokens": 292.8333,
+      "ink": 0.1868,
+      "svg_bytes": 659.875,
+      "tokens_per_s": 110.4167
      },
      "pass_rate": 1.0,
-     "passed": 9,
+     "passed": 24,
      "peak_gb": 0.0,
      "reference": false,
-     "total": 9
+     "total": 24
     },
     {
      "candidate": "local-large",
-     "first_s": 15.251,
-     "median_s": 2.088,
+     "first_s": 2.542,
+     "median_s": 1.569,
      "metrics": {
-      "completion_tokens": 197.1111,
-      "ink": 0.113,
-      "svg_bytes": 520.6,
-      "tokens_per_s": 80.5889
+      "completion_tokens": 207.75,
+      "ink": 0.1711,
+      "svg_bytes": 496.9375,
+      "tokens_per_s": 117.7917
      },
-     "pass_rate": 0.556,
-     "passed": 5,
+     "pass_rate": 0.667,
+     "passed": 16,
      "peak_gb": 0.0,
      "reference": false,
-     "total": 9
+     "total": 24
     }
    ],
    "lane": "svg",
-   "last_run_at": "2026-10-06T19:38:22Z",
-   "measured_at": "2026-10-06T19:38:22Z",
-   "median_s": 2.088,
+   "last_run_at": "2026-10-06T19:57:01Z",
+   "measured_at": "2026-10-06T19:57:01Z",
+   "median_s": 1.893,
    "metrics": {
-    "completion_tokens": 197.1111,
-    "ink": 0.113,
-    "svg_bytes": 520.6,
-    "tokens_per_s": 80.5889
+    "completion_tokens": 292.8333,
+    "ink": 0.1868,
+    "svg_bytes": 659.875,
+    "tokens_per_s": 110.4167
    },
    "parked": "",
    "parked_until": "",
-   "pass_rate": 0.556,
-   "serves": "local-large",
+   "pass_rate": 1.0,
+   "serves": "q3-30b",
    "stale": false,
    "unverified": false,
    "wanted": true
@@ -267,7 +274,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 0.91,
+   "age_days": 0.93,
    "comparison": [
     {
      "candidate": "h3/minimax-h3@ssd_streaming=false",
@@ -301,7 +308,7 @@
   {
    "adopted": true,
    "adopted_how": "by-hand",
-   "age_days": 0.97,
+   "age_days": 1.0,
    "comparison": [
     {
      "candidate": "acestep/acestep-v15-turbo@steps=8",
@@ -357,7 +364,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 0.8,
+   "age_days": 0.83,
    "comparison": [
     {
      "candidate": "claude-code:claude-opus-5-5",
@@ -435,7 +442,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 0.98,
+   "age_days": 1.01,
    "comparison": [
     {
      "candidate": "parakeet-tdt-0.6b-v2",
@@ -469,7 +476,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 0.29,
+   "age_days": 0.31,
    "comparison": [
     {
      "candidate": "Kokoro-82M-bf16/bm_george",
@@ -521,7 +528,7 @@
   "first_seen": "2026-10-05T19:28:52Z",
   "hw_model": "Mac17,15",
   "label": "Mac Studio M5 Ultra 96 GB",
-  "last_seen": "2026-10-06T19:49:55Z",
+  "last_seen": "2026-10-06T20:29:59Z",
   "memory_gb": 96.0,
   "os": "macOS 27.0.1",
   "runtimes": [
@@ -544,5 +551,5 @@
    "transformers": "5.16.1"
   }
  },
- "schema": 40
+ "schema": 41
 }
