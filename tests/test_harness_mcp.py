@@ -186,15 +186,43 @@ def test_speech_is_not_exposed():
 
 # ---- reachable from the LAN, and only from it ------------------------------
 
-def test_the_lan_hostname_is_allowed_or_the_other_machine_gets_a_rejection():
+def test_the_lan_hostname_is_allowed_or_the_other_machine_gets_a_rejection(monkeypatch):
     """MCP 2.x turns DNS-rebinding protection ON by default with an EMPTY
     allowlist, so a request carrying this host's own `.local` name is refused
     before it reaches a tool. Binding 0.0.0.0 is not enough on its own."""
+    # privacy-ok: a fabricated name; pinned so the runner's own hostname is not the input
+    monkeypatch.setattr(mcp_server, "_local_hostname", lambda: "studio.local")
     s = mcp_server.transport_security(host="0.0.0.0", port=8899)
     assert s.enable_dns_rebinding_protection
-    joined = " ".join(s.allowed_hosts)
-    assert ".local:8899" in joined
-    assert "127.0.0.1:8899" in joined
+    # privacy-ok: same fabricated name
+    assert {"studio.local:8899", "studio.local", "127.0.0.1:8899",
+            "localhost:8899"} <= set(s.allowed_hosts)
+
+
+class _Ran:
+    def __init__(self, stdout):
+        self.stdout = stdout
+
+
+def test_the_mdns_name_is_the_bonjour_name_plus_local(monkeypatch):
+    import socket
+    import subprocess
+    monkeypatch.setattr(subprocess, "run", lambda *a, **k: _Ran("Studio\n"))
+    monkeypatch.setattr(socket, "gethostname", lambda: "elsewhere")
+    assert mcp_server._local_hostname() == "Studio.local"
+
+
+def test_without_scutil_the_plain_hostname_is_allowed(monkeypatch):
+    """Linux and Windows have no scutil; the OS hostname is what a client there uses."""
+    import socket
+    import subprocess
+
+    def missing(*a, **k):
+        raise FileNotFoundError("scutil")
+    monkeypatch.setattr(subprocess, "run", missing)
+    monkeypatch.setattr(socket, "gethostname", lambda: "box")
+    assert mcp_server._local_hostname() == "box"
+    assert "box:8899" in mcp_server.transport_security("0.0.0.0", 8899).allowed_hosts
 
 
 def test_protection_stays_on_because_the_lan_rule_does_not_cover_it():
