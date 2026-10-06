@@ -1,6 +1,6 @@
 # SoHoT
 
-[![check](https://github.com/unxmaal/localharness/actions/workflows/ci.yml/badge.svg)](https://github.com/unxmaal/localharness/actions/workflows/ci.yml)
+[![check](https://github.com/unxmaal/SoHoT/actions/workflows/ci.yml/badge.svg)](https://github.com/unxmaal/SoHoT/actions/workflows/ci.yml)
 
 **Make pictures, video, speech and code on your own machine. Nothing leaves it.**
 
@@ -691,8 +691,8 @@ isolated profile, for a machine that has opinions about both.
 ### 4. The repo, uv, then soh
 
 ```bash
-git clone https://github.com/unxmaal/localharness.git
-cd localharness
+git clone https://github.com/unxmaal/SoHoT.git
+cd SoHoT
 curl -LsSf https://astral.sh/uv/install.sh | sh
 uv tool install --python 3.12 --editable .
 export PATH="$HOME/.local/bin:$PATH"
@@ -1391,8 +1391,8 @@ Every safety check here has been broken on purpose to confirm its test then
 fails. A test that passes against known-broken code is testing nothing, and the
 only way to know the difference is to try it.
 
-Work is tracked in [issues](https://github.com/unxmaal/localharness/issues);
-[#16](https://github.com/unxmaal/localharness/issues/16) is the roadmap.
+Work is tracked in [issues](https://github.com/unxmaal/SoHoT/issues);
+[#16](https://github.com/unxmaal/SoHoT/issues/16) is the roadmap.
 `PLAN.md` holds the reasoning, the issues hold the state, and the issues win when
 they disagree. `docs/validation-log.md` holds the evidence behind every claim,
 including conclusions that turned out wrong and how they were caught.
