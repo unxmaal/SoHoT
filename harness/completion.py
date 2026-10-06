@@ -170,6 +170,8 @@ class Completion:
     tokens: list = field(default_factory=list)
     #: ttft_s, first_reasoning_s, prefill_s; None where not observed. #468.
     timing: dict = field(default_factory=dict)
+    #: The model the server says answered, which an alias hides; "" if unsaid.
+    model: str = ""
 
 
 def complete_full(prompt: str, model: str, gateway: str = DEFAULT_GATEWAY,
@@ -178,7 +180,7 @@ def complete_full(prompt: str, model: str, gateway: str = DEFAULT_GATEWAY,
                   temperature: float | None = None,
                   max_tokens: int = MAX_TOKENS, sampling: dict | None = None,
                   template: dict | None = None, top_logprobs: int = 0,
-                  stream: bool = False) -> Completion:
+                  stream: bool = False, system: str | None = None) -> Completion:
     """One completion with its timing. `stream` asks for SSE so the first
     content token can be timed; a server that answers whole leaves ttft_s None."""
     knobs = dict(SAMPLING.get(modality, {}))
@@ -188,7 +190,7 @@ def complete_full(prompt: str, model: str, gateway: str = DEFAULT_GATEWAY,
         knobs.update(sampling)
     knobs.setdefault("temperature", DEFAULT_TEMPERATURE)
 
-    system = SYSTEM.get(modality, NEUTRAL_SYSTEM)
+    system = system or SYSTEM.get(modality, NEUTRAL_SYSTEM)
     user = user_message(prompt, context)
     payload = {
         "model": model,
@@ -229,6 +231,7 @@ def complete_full(prompt: str, model: str, gateway: str = DEFAULT_GATEWAY,
         body = r.json()
         choices = body.get("choices") or []
         message = choices[0]["message"]
+        served = str(body.get("model") or "")
         text = message.get("content")
         usage = body.get("usage") or {}
         tokens = ((choices[0].get("logprobs") or {}).get("content") or []) \
@@ -268,7 +271,8 @@ def complete_full(prompt: str, model: str, gateway: str = DEFAULT_GATEWAY,
                 ("max_tokens", max_tokens))
         raise CompletionError("empty completion", reasons.CONTENT_FAILED)
     return Completion(text, usage,
-                      list(tokens) if isinstance(tokens, list) else [], timing)
+                      list(tokens) if isinstance(tokens, list) else [], timing,
+                      served)
 
 
 def prefill_s(timings) -> float | None:
@@ -325,7 +329,7 @@ class Streamed:
 def assemble(lines, started: float, timeout: float = TIMEOUT_S):
     """(body, timing) from OpenAI-style SSE lines; offsets from `started`."""
     content, reasoning, tokens = [], [], []
-    usage, timings, finish = {}, None, None
+    usage, timings, finish, model = {}, None, None, None
     first: dict = {"ttft_s": None, "first_reasoning_s": None}
     for line in lines:
         now = time.perf_counter() - started
@@ -342,6 +346,7 @@ def assemble(lines, started: float, timeout: float = TIMEOUT_S):
             raise CompletionError(
                 f"server error mid-stream: {str(chunk['error'])[:400]}")
         usage = chunk.get("usage") or usage
+        model = chunk.get("model") or model
         timings = chunk.get("timings") or timings
         for ch in chunk.get("choices") or []:
             delta = ch.get("delta") or {}
@@ -361,7 +366,7 @@ def assemble(lines, started: float, timeout: float = TIMEOUT_S):
                "reasoning_content": "".join(reasoning) if reasoning else None}
     body = {"choices": [{"message": message, "finish_reason": finish,
                          "logprobs": {"content": tokens} if tokens else None}],
-            "usage": usage, "timings": timings}
+            "usage": usage, "timings": timings, "model": model}
     return body, first
 
 

@@ -218,6 +218,7 @@ def test_mcp_text_tools_leave_the_model_to_the_lane(monkeypatch):
     mcp_server = pytest.importorskip("harness.mcp_server")
     argvs = []
     monkeypatch.setattr(mcp_server, "run_lh", lambda argv, timeout=0: argvs.append(argv))
-    with pytest.raises(RuntimeError):
+    from mcp.server.mcpserver.exceptions import ToolError
+    with pytest.raises(ToolError):
         mcp_server.code("x")
     assert "-m" not in argvs[-1][argvs[-1].index("code"):]

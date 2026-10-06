@@ -519,7 +519,7 @@ claude mcp add --transport http soh http://<host>.local:8899/mcp
 > machine's GPU. That is a deliberate choice for a home network. On any network
 > you do not control, bind to localhost instead: `MCP_HOST=127.0.0.1`.
 
-That exposes `svg`, `web`, `code`, `image` and `video` to the assistant. Every tool shells
+That exposes `svg`, `web`, `code`, `image` and `video` to the assistant. Each of those shells
 out to `soh`, so the CLI, the eval suite and the MCP server run identical
 commands, and what gets measured is what ships.
 
@@ -527,6 +527,37 @@ commands, and what gets measured is what ships.
 job id, `job_status` carries the position and what it is waiting for, and
 `job_result` returns the file. Copies stay here, in `~/localharness/out/mcp/`.
 Speech is not exposed over MCP; that was ruled out.
+
+Two more tools let the assistant hand a text subtask to the model a lane has
+adopted here, through the same route `soh code` uses:
+
+- `local_complete(prompt, lane="code", system=None, max_tokens=2048, temperature=None)`
+  returns `text`, the `model` that answered, `ttft_s`, `seconds` and token counts.
+  Lanes: code, web, svg, extract, decide. `system` replaces the lane's own system prompt.
+- `local_decide(question, schema, context="")` is `soh decide`: the same flat
+  schema, answers plus a probability per choice, from the decide lane's model.
+  It is not streamed, so `ttft_s` is empty: through the gateway a streamed
+  reply loses the logprobs the probabilities come from.
+
+Both answer directly rather than queueing. Prompts are capped at 100,000
+characters and calls time out after 300 s. When something holds the machine lock
+(an eval, a ramp, an image or video generation) they refuse at once and name the
+holder rather than wait: a run holds it for hours, and loading a lane's model
+beside it risks the swap that took a 32 GB machine down, and skews the run's
+timings.
+
+A snippet to paste into a project's CLAUDE.md:
+
+```markdown
+## Local model (SoHoT MCP)
+Delegate to `local_complete` / `local_decide` when the work is cheap and checkable:
+boilerplate, test scaffolding, docstrings, summaries of material you pass in,
+bulk rewrites, and classifying many items against a fixed schema.
+Do it yourself when it needs judgment, touches security-sensitive code (auth,
+crypto, input handling, secrets), or needs repo-wide context you cannot pass in
+the prompt. Review what comes back before using it; the local model sees only
+the prompt. If the tool says the machine is busy, do the work yourself.
+```
 
 DNS-rebinding protection stays on, with an allowlist in `MCP_ALLOW`. It guards a
 different thing than the missing authentication does: rebinding needs only that

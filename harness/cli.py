@@ -173,15 +173,15 @@ def default_output(kind: str, suffix: str) -> Path:
 
 def lane_model(lane: str, chosen: str | None = None) -> str:
     """-m when given, else the lane's adopted model here, else its typed constant. #297."""
-    from harness import adopt, winners
-    return chosen or adopt.default_for(lane, winners.typed().get(lane, ""))
+    from harness import delegate
+    return delegate.lane_model(lane, chosen)
 
 
 def _text_route(a, lane: str):
     """(spec, serving.Route) for a text lane command; raises ValueError. #297."""
-    from harness import serving
-    spec = lane_model(lane, getattr(a, "model", None))
-    return spec, serving.route(spec, getattr(a, "gateway", None) or "")
+    from harness import delegate
+    return delegate.route(lane, getattr(a, "model", None),
+                          getattr(a, "gateway", None) or "")
 
 
 def _generate(spec: str, prompt: str, out: Path, params: dict) -> int:
@@ -437,38 +437,21 @@ def cmd_extract(a) -> int:
 
 def cmd_decide(a) -> int:
     """Answer a flat schema's fields with a probability per choice. #297, #423."""
-    from harness.checks import decide as decide_check
+    from harness import delegate
     raw = a.schema
     try:
         if not raw.lstrip().startswith("{"):
             raw = Path(raw).read_text(encoding="utf-8")
-        schema = json.loads(raw)
-        if not isinstance(schema, dict) or not schema:
-            raise ValueError("the schema must map field names to fields")
-        for name, spec in schema.items():
-            decide_check.choices(spec)
-            if not str(spec.get("description") or "").strip():
-                raise ValueError(f"field {name!r} needs a description")
+        schema = delegate.check_schema(json.loads(raw))
         context = ""
         if a.file:
             context = Path(a.file).read_text(encoding="utf-8")
         elif not sys.stdin.isatty():
             context = sys.stdin.read()
         _, where = _text_route(a, "decide")
-        prompt = f"{a.prompt.rstrip()}\n\n{decide_check.render(schema)}"
-        text, _, tokens = completion.complete_with_logprobs(
-            prompt, model=where.model, gateway=where.base, modality="decide",
-            context=context, sampling=where.sampling or None,
-            top_logprobs=completion.TOP_LOGPROBS)
+        body, _ = delegate.ask(a.prompt, schema, where, context=context)
     except (OSError, ValueError, completion.CompletionError) as exc:
         return err(str(exc))
-    parsed = decide_check.parse(decide_check.from_logprobs(text, tokens, schema), schema)
-    missing = [n for n, f in parsed.items() if f["answer"] is None]
-    if missing:
-        return err(f"no usable answer for {', '.join(missing)}: {text.strip()[:200]}")
-    body = {"answers": {n: f["answer"] for n, f in parsed.items()},
-            "probabilities": {n: f["probs"] or {f["answer"]: 1.0}
-                              for n, f in parsed.items()}}
     return say(body=body, human=json.dumps(body))
 
 
