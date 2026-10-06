@@ -152,7 +152,7 @@ def test_the_migration_folds_duplicates_and_repoints_every_machine_id(tmp_path, 
         [(old["studio_b"], old["studio_a"])]
     assert merges[0]["from_fingerprint"] == f"Mac17,15/{UV_PY}/arm64"
     assert json.loads(merges[0]["repointed"]) == {
-        **dict.fromkeys(FK_TABLES, 1), "memory_limits": 0}
+        **dict.fromkeys(FK_TABLES, 1), "memory_limits": 0, "jobs": 0}
     conn.close()
 
 

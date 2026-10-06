@@ -77,7 +77,7 @@ def run_queue(fail=False):
     """The worker, with `lh` faked: write the artifact the job names."""
     from harness import workqueue as wq
 
-    def popen(argv, cwd=None, stdout=None, stderr=None):
+    def popen(argv, cwd=None, stdout=None, stderr=None, env=None):
         if fail:
             stdout.write("mflux exited 3: out of memory\n")
             return type("R", (), {"returncode": 3})()

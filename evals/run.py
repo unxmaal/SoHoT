@@ -733,10 +733,12 @@ def _execute(args) -> int:
 def store_run(outdir, payload: dict, at: float) -> int | None:
     """The run and its rows into the store; results.json is the export. #410."""
     from harness import memory_store as ms
-    from harness import runs
+    from harness import runs, workqueue
     conn = ms.connect()
     try:
-        return runs.record(conn, outdir, payload, at=at)
+        run_id = runs.record(conn, outdir, payload, at=at)
+        workqueue.link_run(conn, run_id)
+        return run_id
     finally:
         conn.close()
 
