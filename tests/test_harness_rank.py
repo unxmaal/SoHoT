@@ -38,10 +38,21 @@ def test_a_requant_of_something_already_served_ranks_below_it():
     """Screening a 4-bit copy of the model already running here teaches
     nothing that is not already known."""
     copy = row("someone/qwen-copy", lane="code",
-               description="built from Qwen/Qwen2.5-7B; 4.0 GiB of weights")
+               parents=[("Qwen/Qwen2.5-7B", "quantized")],
+               description="4.0 GiB of weights")
     fresh = row("someone/new-thing", lane="code",
-                description="built from nobody/unheard-of; 4.0 GiB of weights")
+                parents=[("nobody/unheard-of", "finetune")],
+                description="4.0 GiB of weights")
     assert value(copy) < value(fresh)
+
+
+def test_lineage_is_read_from_the_lineage_rows_not_the_prose():
+    """#414. The description still says `built from` for the judge; a reader
+    parsing it again would mark this a requant with no lineage row at all."""
+    prose_only = row("someone/qwen-copy", lane="code",
+                     description="built from Qwen/Qwen2.5-7B")
+    fresh = row("someone/new-thing", lane="code")
+    assert value(prose_only) == value(fresh)
 
 
 def test_a_candidate_no_lane_can_measure_ranks_last():
@@ -143,7 +154,7 @@ def test_priority_never_outranks_teaching_nothing():
     # The claim under test is about PRIORITY against lineage, so the fixture
     # needs a low-priority lane that is still live.
     rows = [{"name": "org/requant", "lane": "image", "times": 1, "bytes": 0,
-             "description": "built from org/served"},
+             "parents": [("org/served", "quantized")]},
             {"name": "org/fresh", "lane": "svg", "times": 1, "bytes": 0,
              "description": ""}]
     got = rank.rank(rows, serving={"org/served"}, measured_lanes=())
@@ -158,9 +169,34 @@ def test_the_reason_names_the_lane():
     assert "wanted lane" in got[0]["value_why"]
 
 
-def test_rank_reads_the_lineage_inspect_writes_for_an_adapter_and_a_finetune():
-    """#420: inspect writes 'adapter of' and rank looked only for 'built from'."""
+def test_rank_reads_the_lineage_inspect_writes_for_every_kind(tmp_path):
+    """#420, then #414: a card's parent reaches rank for every relation kind,
+    through the store (inspect -> set_card -> judgeable -> rank), with the kind
+    kept. #420 was the adapter's parent going missing between the two."""
     from harness import inspect as ins
-    for kind in ("adapter", "finetune"):
-        desc = ins.card_description({"tags": [f"base_model:{kind}:Org/Base"]})
-        assert rank._parents(desc) == {"org/base"}, desc
+    from harness import memory_store as ms
+    conn = ms.connect(tmp_path / "s.db")
+    try:
+        for kind in ("adapter", "finetune", "quantized", "merge", ""):
+            name = f"org/child-{kind or 'plain'}"
+            tag = f"base_model:{kind}:Org/Base" if kind else "base_model:Org/Base"
+            ms.record(conn, ms.Seen(name=name, source="t", lane="code",
+                                    registry=ms.HUGGINGFACE))
+            ms.decide(conn, name, "queued", tier=ms.INSPECT, detail="fits")
+            assert ms.set_card(conn, name, ins.card_facts({"tags": [tag]}))
+        rows = {r["name"]: r for r in ms.judgeable(conn, limit=100)}
+        for kind in ("adapter", "finetune", "quantized", "merge", ""):
+            r = rows[f"org/child-{kind or 'plain'}"]
+            assert r["parents"] == [("Org/Base", kind)], r
+            assert rank.parents(r) == {"org/base"}
+            _, why = rank.value(r, serving={"org/base"})
+            assert any("already served" in w for w in why), (kind, why)
+        assert rows["org/child-adapter"]["attaches_to"] == "adapter"
+        assert rows["org/child-finetune"]["attaches_to"] == ""
+    finally:
+        conn.close()
+
+
+def test_rank_has_no_description_parser():
+    """#414: the regex that read lineage out of the description is gone."""
+    assert not hasattr(rank, "_LINEAGE") and not hasattr(rank, "_parents")
