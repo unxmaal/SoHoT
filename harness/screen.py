@@ -387,6 +387,15 @@ def row_for(summary: dict | None, candidate: str) -> dict | None:
     want = model_tail(candidate)
     if not summary or not want:
         return None
+    # The engine that ran it names the key: mflux appends -q8, which no tail
+    # match can see. #378.
+    try:
+        from harness import engines
+        named = engines.resolve(candidate).name
+    except Exception:
+        named = ""
+    if named in summary:
+        return summary[named] or {}
     for key, row in summary.items():
         if model_tail(str(key)) == want or any(
                 part.strip().lower() == want for part in str(key).split("/")):
@@ -411,6 +420,9 @@ ARCHITECTURE_GAPS = ("model type", "modelargs", "parameters not in model",
 #: llama-server's router reports only this; the reason is in its own log. #305.
 LLAMACPP_LOAD_FAILED = ("http 500", "failed to load")
 LOAD_RUNTIME = "mlx-lm"
+#: Stock diffusers could not assemble the pipeline from the repo's layout: the
+#: repo needs its own loader, which says nothing about its output. #381.
+DIFFUSERS_LAYOUT_GAPS = ("can't find a pipeline linked to", "were passed")
 
 
 def is_architecture_gap(text: str) -> bool:
@@ -478,6 +490,9 @@ def outcome(returncode: int, summary: dict | None,
         if failed:
             return "declined", f"the installed runtime could not load it: {failed}"
         why = why_nothing_passed(summary, candidate) if candidate else ""
+        if any(g in why.lower() for g in DIFFUSERS_LAYOUT_GAPS):
+            return "declined", (f"needs its own runner: stock diffusers could "
+                                f"not assemble it: {why}")
         return "broken", (f"it ran and passed nothing: {why}" if why
                           else "it ran and passed nothing")
     return "screened", f"{rows} case(s) passed a screen"

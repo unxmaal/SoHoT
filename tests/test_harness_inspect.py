@@ -638,3 +638,24 @@ def test_a_nonzero_exit_is_still_an_inspect_error(monkeypatch):
     with pytest.raises(ins.InspectError) as exc:
         ins._run(["git", "clone", "x"])
     assert "repository not found" in str(exc.value)
+
+
+@pytest.mark.parametrize("tag,tags,lane", [
+    # Qwen-Image-Bench: a VLM judge tagged text-to-image, screened as an image
+    # generator. What it produces is text.
+    ("image-text-to-text", ["text-to-image"], "code"),
+    ("image-text-to-text", [], "code"),
+    ("image-text-to-image", [], "image"),
+    ("image-text-to-video", ["text-to-image"], "video"),
+    ("image-to-3d", ["diffusion"], ""),
+    ("text-classification", [], ""),
+    ("any-to-any", ["text-to-image"], "image"),
+])
+def test_an_unlisted_task_is_filed_by_what_it_produces(tag, tags, lane):
+    """#379."""
+    assert ins.lane_for({"pipeline_tag": tag, "tags": tags}) == lane
+
+
+def test_tags_still_decide_when_the_publisher_named_no_task():
+    """Negative control for #379."""
+    assert ins.lane_for({"pipeline_tag": "", "tags": ["text-to-image"]}) == "image"

@@ -468,3 +468,85 @@ def test_schema_18_backfills_refusals_written_after_266(tmp_path):
             "runtime:llamacpp")
     finally:
         again.close()
+
+
+def _at_schema_18(tmp_path, name, lane, description, outcome, detail):
+    conn = ms.connect(tmp_path / "s.db")
+    ms.record(conn, ms.Seen(name=name, source="t", kind="weights",
+                            lane=lane, why="seeded"))
+    conn.execute("UPDATE proposals SET description = ?", (description,))
+    conn.execute("INSERT INTO verdicts (proposal_id, outcome, tier, detail, "
+                 "decided_at) SELECT id, ?, 'screen', ?, 0 FROM proposals",
+                 (outcome, detail))
+    conn.execute("INSERT OR REPLACE INTO meta VALUES ('schema', '18')")
+    conn.commit()
+    conn.close()
+    return ms.connect(tmp_path / "s.db")
+
+
+def test_schema_19_refiles_a_vlm_judge_out_of_the_image_lane(tmp_path):
+    """#379: Qwen-Image-Bench, image-text-to-text, sat in the image lane."""
+    again = _at_schema_18(tmp_path, "Qwen/Qwen-Image-Bench", "image",
+                          "task image-text-to-text; tagged text-to-image",
+                          "broken", "it ran and passed nothing")
+    try:
+        assert again.execute("SELECT lane FROM proposals").fetchone()[0] == "code"
+        assert again.execute("SELECT outcome FROM verdicts ORDER BY id DESC"
+                             ).fetchone()[0] == "queued"
+    finally:
+        again.close()
+
+
+def test_schema_19_requeues_a_layout_diffusers_could_not_assemble(tmp_path):
+    """#381."""
+    again = _at_schema_18(tmp_path, "tokenaii/Horus-Lens-1.0", "image", "",
+                          "broken", "it ran and passed nothing: ValueError: "
+                          "expected ['vae'], but only set() were passed.")
+    try:
+        assert again.execute("SELECT outcome FROM verdicts ORDER BY id DESC"
+                             ).fetchone()[0] == "queued"
+    finally:
+        again.close()
+
+
+def test_schema_19_leaves_a_model_that_genuinely_failed(tmp_path):
+    """Negative control."""
+    again = _at_schema_18(tmp_path, "org/bad", "image", "task text-to-image",
+                          "broken", "it ran and passed nothing: no fox")
+    try:
+        assert again.execute("SELECT outcome FROM verdicts ORDER BY id DESC"
+                             ).fetchone()[0] == "broken"
+    finally:
+        again.close()
+
+
+def test_schema_19_does_not_reopen_a_verdict_the_lane_never_touched(tmp_path):
+    """#379: relaning reopened inspect's too-big verdicts on 1.4 TB models."""
+    conn = ms.connect(tmp_path / "s.db")
+    ms.record(conn, ms.Seen(name="moonshotai/Kimi-K3", source="t",
+                            kind="weights", lane="", why="seeded"))
+    conn.execute("UPDATE proposals SET description = 'task image-text-to-text'")
+    conn.execute("INSERT INTO verdicts (proposal_id, outcome, tier, detail, "
+                 "decided_at) SELECT id, 'declined', 'inspect', "
+                 "'too-big: 1453.8 GiB', 0 FROM proposals")
+    conn.execute("INSERT OR REPLACE INTO meta VALUES ('schema', '18')")
+    conn.commit()
+    conn.close()
+    again = ms.connect(tmp_path / "s.db")
+    try:
+        assert again.execute("SELECT lane FROM proposals").fetchone()[0] == "code"
+        assert again.execute("SELECT outcome FROM verdicts ORDER BY id DESC"
+                             ).fetchone()[0] == "declined"
+    finally:
+        again.close()
+
+
+def test_schema_19_keeps_an_svg_model_in_the_svg_lane(tmp_path):
+    """OmniSVG is image-text-to-text: a text task, not a reason to leave svg."""
+    again = _at_schema_18(tmp_path, "OmniSVG/OmniSVG1.1_8B", "svg",
+                          "task image-text-to-text; tagged svg",
+                          "screened", "1 case(s) passed a screen")
+    try:
+        assert again.execute("SELECT lane FROM proposals").fetchone()[0] == "svg"
+    finally:
+        again.close()

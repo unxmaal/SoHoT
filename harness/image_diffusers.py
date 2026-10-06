@@ -56,8 +56,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 
 def _pipeline(model: str, device: str):
+    import diffusers
     import torch
-    from diffusers import AutoPipelineForText2Image
 
     # HALF PRECISION ON BOTH ACCELERATORS. Metal supports float16 and the
     # weights are published in it; loading fp32 on a 32 GB unified machine
@@ -65,12 +65,22 @@ def _pipeline(model: str, device: str):
     # separate set of files that many repos do not publish, so it stays cuda-
     # only rather than becoming a download that 404s.
     half = device in HALF
-    pipe = AutoPipelineForText2Image.from_pretrained(
-        model,
-        torch_dtype=torch.float16 if half else torch.float32,
-        variant="fp16" if device == "cuda" else None,
-        safety_checker=None)
+    pipe = load(diffusers, model,
+                torch_dtype=torch.float16 if half else torch.float32,
+                variant="fp16" if device == "cuda" else None,
+                safety_checker=None)
     return pipe.to(device)
+
+
+def load(diffusers, model: str, **kw):
+    """AutoPipeline's table lags the library: PRXPixelPipeline ships in 0.40
+    and is not in it. model_index.json names the class either way. #380."""
+    try:
+        return diffusers.AutoPipelineForText2Image.from_pretrained(model, **kw)
+    except ValueError as exc:
+        if "can't find a pipeline" not in str(exc):
+            raise
+        return diffusers.DiffusionPipeline.from_pretrained(model, **kw)
 
 
 def main(argv: list[str] | None = None) -> int:
