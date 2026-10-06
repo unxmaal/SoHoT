@@ -311,11 +311,10 @@ def until_met(until: str, facts: dict | None = None) -> bool:
             from harness import serving
             have = serving.llamacpp_build() or None
         else:
-            from importlib import metadata
-            try:
-                have = metadata.version(pkg)
-            except metadata.PackageNotFoundError:
-                have = None
+            # The same source load_until wrote the floor from: diffusers and
+            # mflux live in their own venvs, which importlib cannot see. #389.
+            from harness import feeds
+            have = feeds.installed_version(pkg) or None
         a, b = _version_tuple(have), _version_tuple(floor)
         return a is not None and b is not None and a > b
     if key == "commit_after":

@@ -1105,3 +1105,12 @@ def test_two_options_on_one_candidate_both_apply(tmp_path):
     r = build_runner("local-mid,temperature=0.7,top_p=0.9", "http://gw", tmp_path)
     assert r.candidate == "local-mid"
     assert r.sampling == {"temperature": 0.7, "top_p": 0.9}
+
+
+def test_a_candidate_list_keeps_each_specs_options_attached():
+    """#390: specs carry options after a comma, and the list is comma-joined."""
+    from evals.run import split_candidates
+    assert split_candidates("mflux:z-image-turbo,quantize=4,local-mid") == [
+        "mflux:z-image-turbo,quantize=4", "local-mid"]
+    assert split_candidates("tts:m,voice=am_adam,speed=1.1, llamacpp:x") == [
+        "tts:m,voice=am_adam,speed=1.1", "llamacpp:x"]

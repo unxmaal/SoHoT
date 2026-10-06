@@ -595,3 +595,14 @@ def test_a_lane_independent_verdict_survives_every_retraction(tmp_path, fn, tier
         assert tuple(last) == ("declined", tier), fn
     finally:
         conn.close()
+
+
+def test_a_version_predicate_reads_the_same_source_load_until_wrote_from(monkeypatch):
+    """#389: diffusers lives in its own venv; importlib never saw it, so a
+    `version:diffusers>0.40.0` decline could never reopen."""
+    from harness import feeds
+    monkeypatch.setattr(feeds, "installed_version",
+                        lambda pkg: {"diffusers": "0.41.0"}.get(pkg, ""))
+    assert ms.until_met("version:diffusers>0.40.0", {})
+    assert not ms.until_met("version:diffusers>0.41.0", {})
+    assert not ms.until_met("version:ace-step>1.0", {})
