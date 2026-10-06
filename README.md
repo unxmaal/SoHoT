@@ -1088,8 +1088,10 @@ lh jobs cancel 0003
 lh jobs priority 0005 10   # higher runs first; ties run in the order added
 ```
 
-The `worker` service runs them in order, each under the machine lock below,
-but starts the next one only while the queue is not paused and nobody is using
+The `worker` service runs them in order, one at a time. It does not hold the
+machine lock below for a whole job: each command takes it for the part that
+loads a model, so a job that is downloading does not block a GPU run. It starts
+the next one only while the queue is not paused and nobody is using
 this machine: the screen is locked, or there has been no keyboard or mouse
 input for `LH_IDLE_MINUTES` (10). Jobs are files under
 `~/localharness/queue/jobs/`, so they survive a restart, and output goes to

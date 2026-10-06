@@ -148,7 +148,9 @@ def run_one(job: dict, popen=subprocess.run) -> dict:
     log = log_dir() / f"{job['id']}.log"
     job.update(state=RUNNING, started=time.strftime("%Y-%m-%dT%H:%M:%S"), log=str(log))
     _write(job)
-    with exclusive.held("external"), open(log, "w", encoding="utf-8") as out:
+    # No machine lock here: each command takes it for the part that loads a
+    # model, so a job that is downloading does not block a GPU run. #371.
+    with open(log, "w", encoding="utf-8") as out:
         try:
             rc = popen(job["argv"], cwd=job["cwd"], stdout=out,
                        stderr=subprocess.STDOUT).returncode

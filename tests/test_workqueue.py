@@ -44,10 +44,18 @@ def test_a_failed_job_is_recorded_and_the_rest_still_run(tmp_path):
     assert out.exists()
 
 
-def test_each_job_holds_the_machine_lock_and_children_know_it(tmp_path):
-    wq.add(py(f"import os; print(os.environ.get({exclusive.HELD_ENV!r}))"))
+def test_a_job_does_not_hold_the_machine_lock_for_its_whole_run(tmp_path):
+    """#371: a queued discovery download blocked a GPU eval for its whole
+    duration. Commands that load models take the lock themselves."""
+    probe = ("import os, sys; sys.path.insert(0, %r); "
+             "from harness import exclusive as e; "
+             "fd = os.open(e.lock_path(), os.O_RDWR | os.O_CREAT); "
+             "print('free' if e._take(fd) else 'held', os.environ.get(%r))"
+             % (str(__import__('pathlib').Path(__file__).resolve().parents[1]),
+                exclusive.HELD_ENV))
+    wq.add(py(probe))
     job = wq.run_pending()[0]
-    assert open(job["log"], encoding="utf-8").read().strip() == "1"
+    assert open(job["log"], encoding="utf-8").read().strip() == "free None"
 
 
 def test_only_one_runner_works_the_queue():
