@@ -87,7 +87,7 @@ testpaths = ["tests"]
 # `slow` is deselected by default: these load a 4GB model and take minutes,
 # which is not what `make check` is for. `make check-slow` runs them.
 # -rs: a silently skipped test reports green for something it never checked.
-addopts = "-q --strict-markers -rs -m 'not slow and not network and not postgres'"
+addopts = "-q --strict-markers -rs -m 'not slow and not network and not postgres and not litellm'"
 markers = [
     "slow: needs the optional `metrics` group and loads a multi-GB model",
     # Kept apart from `slow` deliberately. They are excluded for opposite
@@ -98,6 +98,7 @@ markers = [
     # Needs a database, not a third party. Kept apart from `network` because
     # they fail for different reasons and are fixed in different places.
     "postgres: needs a live Postgres; `make test-postgres` starts one",
+    "litellm: runs a real LiteLLM proxy against a fake upstream; `make test-litellm`",
 ]
 # The repo root, so `from evals...` resolves without a sys.path hack in every
 # test module.

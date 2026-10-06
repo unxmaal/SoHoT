@@ -21,7 +21,7 @@ from pathlib import Path
 
 from harness import paths, store
 
-SCHEMA_VERSION = 43
+SCHEMA_VERSION = 44
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
 VERDICTS = ("measured", "declined", "broken", "queued", "ignored", "screened")
@@ -317,6 +317,41 @@ CREATE TABLE IF NOT EXISTS gateway_switches (
     switched_at  REAL NOT NULL,
     -- Requests in flight at the restart; NULL when the gateway would not say.
     in_flight    INTEGER
+);
+
+-- One request through the gateway, with no prompt or completion text. #481.
+CREATE TABLE IF NOT EXISTS gateway_requests (
+    id                INTEGER PRIMARY KEY,
+    at                REAL NOT NULL,
+    -- The alias asked for, and the lane when it is sohot-<lane>.
+    alias             TEXT NOT NULL DEFAULT '',
+    lane              TEXT NOT NULL DEFAULT '',
+    -- The upstream model LiteLLM called, and the adoption the alias served.
+    served            TEXT NOT NULL DEFAULT '',
+    spec              TEXT NOT NULL DEFAULT '',
+    -- The key alias, else the user agent's first product token.
+    client            TEXT NOT NULL DEFAULT '',
+    call_type         TEXT NOT NULL DEFAULT '',
+    stream            INTEGER NOT NULL DEFAULT 0,
+    prompt_tokens     INTEGER,
+    completion_tokens INTEGER,
+    -- Streamed requests only; NULL is not measured.
+    ttft_s            REAL,
+    total_s           REAL,
+    tool_calls        INTEGER NOT NULL DEFAULT 0,
+    -- Calls whose arguments parse to an object and that name an offered tool.
+    tool_calls_valid  INTEGER NOT NULL DEFAULT 0,
+    finish_reason     TEXT NOT NULL DEFAULT '',
+    -- '' on success.
+    error_class       TEXT NOT NULL DEFAULT '',
+    error_code        TEXT NOT NULL DEFAULT ''
+);
+
+-- Text of a request, only while the usage_text setting is on, newest kept. #481.
+CREATE TABLE IF NOT EXISTS gateway_samples (
+    request_id  INTEGER PRIMARY KEY REFERENCES gateway_requests(id) ON DELETE CASCADE,
+    prompt      TEXT NOT NULL DEFAULT '',
+    completion  TEXT NOT NULL DEFAULT ''
 );
 
 -- Weights on disk, one row per fetched or found path on one machine. #411.
@@ -1108,6 +1143,7 @@ def _migrate_steps(conn: sqlite3.Connection) -> None:
                  "ON verdicts(candidate_id)")
     conn.execute("CREATE INDEX IF NOT EXISTS ix_prop_state ON proposals(state)")
     conn.execute("CREATE INDEX IF NOT EXISTS ix_runs_job ON runs(job_id)")
+    conn.execute("CREATE INDEX IF NOT EXISTS ix_greq_at ON gateway_requests(at)")
     conn.execute("INSERT OR REPLACE INTO meta VALUES ('schema', ?)",
                  (str(SCHEMA_VERSION),))
     conn.commit()

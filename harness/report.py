@@ -177,10 +177,54 @@ def state(conn=None) -> dict:
             "lanes": lanes_state(conn),
             "queue": queue_state(conn),
             "sources": feeds.staleness(store=conn),
+            **_usage(conn),
         }
     finally:
         if close:
             conn.close()
+
+
+def _usage(conn) -> dict:
+    """Real use per lane alias over the last week, and any switch it regressed after. #481."""
+    from harness import usage
+    try:
+        return {"real_use": usage.real_use(conn),
+                "usage_warnings": usage.regressions(usage.around_switches(conn))}
+    except Exception:  # noqa: BLE001
+        return {"real_use": {}, "usage_warnings": []}
+
+
+def real_use_rows(real: dict) -> str:
+    """One table row per lane alias: requests, tokens, TTFT, errors, bad tool calls."""
+    def rate(x):
+        return "--" if x is None else f"{x:.1%}"
+    return "\n".join(
+        f'<tr><td>sohot-{_esc(lane)}</td><td class="num">{s["requests"]}</td>'
+        f'<td class="num">{s["prompt_tokens"]} / {s["completion_tokens"]}</td>'
+        f'<td class="num">{ttft_text(s["ttft_p50"], s["ttft_p95"])}</td>'
+        f'<td class="num">{rate(s["error_rate"])}</td>'
+        f'<td class="num">{rate(s["invalid_rate"])}</td></tr>'
+        for lane, s in sorted((real or {}).items()))
+
+
+REAL_USE_HEAD = ("<table><tr><th>alias</th><th>requests</th><th>tokens in / out</th>"
+                 "<th>TTFT p50 / p95</th><th>errors</th><th>bad tool calls</th></tr>")
+
+
+def _real_use_section(now: dict) -> str:
+    real = now.get("real_use") or {}
+    warns = "".join(f'<p><span class="tag bad">regressed</span> {_esc(w)}</p>'
+                    for w in now.get("usage_warnings") or [])
+    body = (f"{REAL_USE_HEAD}\n{real_use_rows(real)}\n</table>" if real else
+            '<p class="note">No requests through the gateway in the last 7 days.</p>')
+    return f"""
+<h2>Real use</h2>
+{body}
+{warns}
+<p class="note">Requests through the gateway's sohot-&lt;lane&gt; aliases in the last
+7 days, from the gateway's own log. No prompt or completion text is kept.
+`soh usage` has the per-model and before/after-switch figures.</p>
+"""
 
 
 def changes(now: dict, before: dict) -> dict:
@@ -346,6 +390,7 @@ CLI start and the network.</p>
 quiet machine, and never across accelerators or serving engines. A lane with
 no receipt here is unverified rather than stale: there is no age to quote.</p>
 
+{_real_use_section(now)}
 <h2>The ladder</h2>
 <table><tr><th>tier</th><th>candidates</th><th>verdicts</th></tr>
 {_funnel_rows(now['funnel'])}

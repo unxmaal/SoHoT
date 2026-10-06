@@ -222,6 +222,15 @@ def _adoptions(conn, mid: int) -> list[dict]:
              "adopted_at": _iso(r["adopted_at"])} for r in rows]
 
 
+def _real_use(conn, now: float) -> dict:
+    """Aggregate real use per lane alias; no client, text or time of any request. #481."""
+    from harness import usage
+    try:
+        return usage.real_use(conn, now=now)
+    except Exception:  # noqa: BLE001
+        return {}
+
+
 def export(conn=None, machine_id: int | None = None,
            now: float | None = None) -> dict:
     """One machine's report as plain, scrubbed data. This machine by default."""
@@ -242,6 +251,7 @@ def export(conn=None, machine_id: int | None = None,
             from harness import memory
             acc = memory.detect().name if row["accelerator"].startswith("discrete") else ""
         label = machine_label(row, acc)
+        real = _real_use(c, now)
         held = adopt.current(c, mid)
         typed = winners.typed()
         try:
@@ -263,8 +273,8 @@ def export(conn=None, machine_id: int | None = None,
                 "first_seen": _iso(row["first_seen"]),
                 "last_seen": _iso(row["last_seen"]),
             },
-            "lanes": [_lane(c, mid, lane, held.get(lane) or {}, typed, now)
-                      for lane in L.ALL],
+            "lanes": [{**_lane(c, mid, lane, held.get(lane) or {}, typed, now),
+                       "real_use": real.get(lane)} for lane in L.ALL],
             "adoptions": _adoptions(c, mid),
         }
     return scrub(doc)
@@ -467,7 +477,7 @@ def _metric_text(m: dict) -> str:
 
 
 def _section(doc: dict) -> str:
-    from harness.report import _esc
+    from harness.report import REAL_USE_HEAD, _esc, real_use_rows
     m = doc["machine"]
     rows = []
     for lane in doc.get("lanes") or []:
@@ -512,6 +522,9 @@ def _section(doc: dict) -> str:
             '<th>median s</th><th>TTFT med / p95</th><th>peak GB</th>'
             '<th>metric</th></tr>'
             f'{body}</table>')
+    real = {l["lane"]: l["real_use"] for l in doc.get("lanes") or [] if l.get("real_use")}
+    real_html = (f'<h3>Real use <span class="dim">last 7 days through the gateway</span></h3>'
+                 f'{REAL_USE_HEAD}{real_use_rows(real)}</table>' if real else "")
     adopts = "".join(
         f'<tr><td>{_esc(a["lane"])}</td><td>{_esc(a["candidate"])}</td>'
         f'<td>{_esc(a.get("incumbent")) or "--"}</td><td>{_esc(a["how"])}</td>'
@@ -528,6 +541,7 @@ def _section(doc: dict) -> str:
 {''.join(rows)}
 </table>
 {''.join(comps)}
+{real_html}
 <h3>Adoptions</h3>
 {f'<table><tr><th>lane</th><th>adopted</th><th>replaced</th><th>how</th><th>when</th></tr>{adopts}</table>' if adopts else '<p class="note">Nothing adopted on this machine.</p>'}
 </section>"""
