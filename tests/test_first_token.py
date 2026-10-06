@@ -318,3 +318,25 @@ def test_stream_run_times_out(tmp_path):
     with pytest.raises(subprocess.TimeoutExpired):
         CC.stream_run([sys.executable, "-c", "import time; time.sleep(30)"],
                       cwd=str(tmp_path), input="", timeout=0.5)
+
+
+def test_a_logprobs_request_is_never_streamed(monkeypatch):
+    """LiteLLM drops logprobs from a streamed reply, so decide scored one-hot
+    (RULE #426): the decide lane's text runner asked for both."""
+    from harness import completion
+    sent = []
+
+    class R:
+        status_code = 200
+
+        def json(self):
+            return {"choices": [{"message": {"content": "A"}, "logprobs": {"content": []}}],
+                    "usage": {}}
+
+    monkeypatch.setattr(completion, "_post", lambda gw, payload, timeout: (sent.append(payload), R())[1])
+    try:
+        completion.complete_full("q", model="m", gateway="http://x", modality="decide",
+                                 top_logprobs=5, stream=True)
+    except Exception:  # noqa: BLE001
+        pass
+    assert sent and "stream" not in sent[0] and sent[0].get("logprobs") is True
