@@ -44,8 +44,17 @@ def tree(tmp_path, gateway: str) -> Path:
 #: a temporary tree reads the real one on :4000 and reports it up. That is the
 #: check working; it is also a test whose answer depends on what the developer
 #: happens to be running.
-TEST_PORTS = {"GATEWAY_PORT": "49221", "LLAMACPP_PORT": "49222",
-              "AUDIO_PORT": "49223"}
+#: Chosen free per test process: fixed ports collided when two suites ran at
+#: once (worktrees), and a fixture that cannot bind reads as down. #426.
+def _free_port() -> str:
+    import socket
+    with socket.socket() as s:
+        s.bind(("127.0.0.1", 0))
+        return str(s.getsockname()[1])
+
+
+TEST_PORTS = {"GATEWAY_PORT": _free_port(), "LLAMACPP_PORT": _free_port(),
+              "AUDIO_PORT": _free_port()}
 
 
 def run(script: Path, *args, **overrides) -> subprocess.CompletedProcess:
@@ -262,7 +271,7 @@ def test_a_service_this_script_did_not_start_is_still_reported_up(tmp_path):
 
 def test_the_port_is_named_so_a_reader_can_check_it_themselves(tmp_path):
     got = run(tree(tmp_path, "exit 0\n"), "status")
-    assert ":49221" in got.stdout and ":49222" in got.stdout
+    assert f":{TEST_PORTS['GATEWAY_PORT']}" in got.stdout and f":{TEST_PORTS['LLAMACPP_PORT']}" in got.stdout
 
 
 # --- a bound port is not a working service (#255) -------------------------
