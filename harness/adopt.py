@@ -28,6 +28,12 @@ from dataclasses import dataclass
 #: The tier that records an adoption. See memory_store.TIERS.
 TIER = "adopt"
 
+#: How an adoption was decided. A MEASURED win is a fact about the hardware
+#: that ran it and serves only there; a person's preference for a config is
+#: not, and serves on every machine. #412.
+MEASURED, BY_HAND = "measured", "by-hand"
+HOW = (MEASURED, BY_HAND)
+
 #: Below this the difference is not established and the incumbent stays. The
 #: exact McNemar test on discordant cells; see harness/paired.py.
 ALPHA = 0.05
@@ -40,6 +46,7 @@ class Verdict:
     challenger: str
     adopt: bool
     why: str
+    how: str = MEASURED
 
 
 def better(incumbent: dict, challenger: dict) -> bool:
@@ -74,14 +81,16 @@ def decide_by_hand(lane: str, incumbent: str, challenger: str,
 
     won, why = human.lane_verdict(lane, pairs)
     if won is None:
-        return Verdict(lane, incumbent, challenger, False, f"not judged: {why}")
+        return Verdict(lane, incumbent, challenger, False, f"not judged: {why}",
+                       BY_HAND)
     if not won:
         return Verdict(lane, incumbent, challenger, False,
-                       f"the incumbent stays: {why}")
+                       f"the incumbent stays: {why}", BY_HAND)
     if won != challenger:
         return Verdict(lane, incumbent, challenger, False,
-                       f"the incumbent was preferred: {why}")
-    return Verdict(lane, incumbent, challenger, True, f"preferred by hand: {why}")
+                       f"the incumbent was preferred: {why}", BY_HAND)
+    return Verdict(lane, incumbent, challenger, True,
+                   f"preferred by hand: {why}", BY_HAND)
 
 
 def decide(lane: str, incumbent: dict, challenger: dict,
@@ -127,19 +136,20 @@ def is_reference(candidate: str) -> bool:
 
 def record(conn, verdict: Verdict, spec: str = "",
            run_id: int | None = None) -> int:
-    """Write an adoption, or the loss, on the candidate that ran. #407.
+    """Write an adoption, or the loss, on the candidate that ran. #407, #412.
 
     `spec` is what ran; `verdict.challenger` is used when it is one. The
     verdict lands on the candidate's proposal, or on the candidate alone for
-    a typed default or a command-line spec, and never creates a proposal.
+    a typed default or a command-line spec, and never creates a proposal. An
+    adoption is also an `adoptions` row, which is what every reader asks.
     """
     from harness import candidates
     from harness import memory_store as ms
 
-    if is_reference(verdict.challenger):
+    if is_reference(verdict.challenger) or is_reference(spec):
         verdict = Verdict(verdict.lane, verdict.incumbent, verdict.challenger,
                           False, f"reference model; never a lane default "
-                          f"({verdict.why})")
+                          f"({verdict.why})", verdict.how)
     outcome = "measured" if verdict.adopt else "declined"
     detail = f"{verdict.lane}: {verdict.why}"
     spec = spec or verdict.challenger
@@ -149,26 +159,126 @@ def record(conn, verdict: Verdict, spec: str = "",
         raise ValueError(f"{spec!r} is not a spec any runner takes, so an "
                          f"adoption of it could never be served")
     row = candidates.get(conn, spec)
-    return ms.decide(conn, row["proposal"] or "", outcome, tier=TIER,
-                     detail=detail[:200], candidate_id=cid, run_id=run_id)
+    vid = ms.decide(conn, row["proposal"] or "", outcome, tier=TIER,
+                    detail=detail[:200], candidate_id=cid, run_id=run_id)
+    if verdict.adopt:
+        if verdict.how not in HOW:
+            raise ValueError(f"unknown adoption kind {verdict.how!r}")
+        mid = conn.execute("SELECT machine_id FROM verdicts WHERE id = ?",
+                           (vid,)).fetchone()
+        conn.execute(
+            "INSERT OR IGNORE INTO adoptions (lane, candidate_id, incumbent_id, "
+            "run_id, verdict_id, machine_id, how, adopted_at) "
+            "VALUES (?,?,?,?,?,?,?,?)",
+            (verdict.lane.strip().lower(), cid,
+             _incumbent_id(conn, verdict.lane, verdict.incumbent), run_id, vid,
+             mid["machine_id"] if mid else None, verdict.how, _now()))
+        conn.commit()
+    return vid
 
 
-def adopted(conn) -> dict[str, str]:
-    """The lane -> spec the loop has adopted, newest per lane."""
+def _now() -> float:
+    import time
+    return time.time()
+
+
+def _incumbent_id(conn, lane: str, name: str) -> int | None:
+    """The candidates row of what the lane served before, if it can be named."""
+    from harness import candidates
+    if not name:
+        return None
+    got = candidates.get(conn, name)
+    if got:
+        return got["id"]
+    try:
+        from harness import screen
+        return candidates.ensure(
+            conn, screen.candidate_for(lane, name, adopt=False) or name,
+            lane=lane)
+    except Exception:  # noqa: BLE001
+        return None
+
+
+#: Read the adoptions this machine serves; see here().
+HERE = object()
+
+
+def here(conn) -> tuple[int, ...]:
+    """This machine's ids: every machines row sharing its hw_model. #356."""
+    from harness import runs
+    try:
+        return tuple(runs.here(conn))
+    except Exception:  # noqa: BLE001
+        return ()
+
+
+def current(conn, machine=HERE) -> dict[str, dict]:
+    """lane -> the adoption row a machine serves, with its spec.
+
+    The newest adoption for the lane that was measured on that machine or
+    decided by hand anywhere. One no machine is recorded for serves
+    everywhere, as every adoption did before #412. `machine` is HERE, a machine id, or a tuple of
+    ids. A reference model is never a lane default. #374, #412.
+    """
+    ids = here(conn) if machine is HERE else (
+        tuple(machine) if isinstance(machine, (tuple, list, set))
+        else (() if machine is None else (machine,)))
+    marks = ",".join("?" * len(ids)) or "NULL"
     rows = conn.execute(
-        "SELECT c.spec, v.detail, v.id FROM verdicts v "
-        "JOIN candidates c ON c.id = v.candidate_id "
-        "WHERE v.tier = ? AND v.outcome = 'measured' ORDER BY v.id",
-        (TIER,)).fetchall()
-    out = {}
+        "SELECT a.*, c.spec FROM adoptions a "
+        "JOIN candidates c ON c.id = a.candidate_id "
+        f"WHERE a.how = ? OR a.machine_id IS NULL "
+        f"OR a.machine_id IN ({marks}) "
+        "ORDER BY a.adopted_at, a.id", (BY_HAND, *ids)).fetchall()
+    out: dict[str, dict] = {}
     for row in rows:
-        lane = str(row["detail"]).split(":", 1)[0].strip()
-        if lane:
-            out[lane] = row["spec"]
+        if not is_reference(row["spec"]):
+            out[row["lane"]] = dict(row)
     return out
 
 
-def default_for(lane: str, fallback: str, conn=None) -> str:
+def everywhere(conn) -> dict[str, set[str]]:
+    """lane -> every spec some machine in the store serves by adoption."""
+    out: dict[str, set[str]] = {}
+    mids = [r["machine_id"] for r in conn.execute(
+        "SELECT DISTINCT machine_id FROM adoptions").fetchall()]
+    for mid in mids:
+        for lane, row in current(conn, mid).items():
+            out.setdefault(lane, set()).add(row["spec"])
+    return out
+
+
+def adopted(conn, machine=HERE) -> dict[str, str]:
+    """The lane -> spec this machine serves by adoption."""
+    return {lane: row["spec"] for lane, row in current(conn, machine).items()}
+
+
+def lane_defaults(conn=None, machine=HERE, typed=None) -> dict[str, str]:
+    """What every lane serves now: its adoption here, else the typed default.
+
+    Never raises: a missing, locked or older store leaves the typed defaults.
+    """
+    if typed is None:
+        from harness import winners
+        typed = winners.typed()
+    close = conn is None
+    try:
+        if conn is None:
+            from harness import memory_store as ms
+            conn = ms.connect()
+        got = adopted(conn, machine)
+    except Exception:  # noqa: BLE001
+        got = {}
+    finally:
+        if close and conn is not None:
+            try:
+                conn.close()
+            except Exception:  # noqa: BLE001
+                pass
+    return {**dict(typed), **got}
+
+
+def default_for(lane: str, fallback: str, conn=None, machine=HERE) -> str:
     """What this lane serves right now: the adopted winner, else the constant.
 
     RESOLVED AT CALL TIME. `DEFAULT_TTS_MODEL` reaches its callers as a default
@@ -183,18 +293,6 @@ def default_for(lane: str, fallback: str, conn=None) -> str:
     """
     if not lane:
         return fallback
-    close = conn is None
-    try:
-        if conn is None:
-            from harness import memory_store as ms
-            conn = ms.connect()
-        got = adopted(conn).get(lane.strip().lower())
-    except Exception:  # noqa: BLE001
-        return fallback
-    finally:
-        if close and conn is not None:
-            try:
-                conn.close()
-            except Exception:  # noqa: BLE001
-                pass
-    return got or fallback
+    key = lane.strip().lower()
+    return lane_defaults(conn, machine, typed={key: fallback}).get(key) \
+        or fallback

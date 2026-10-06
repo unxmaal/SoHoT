@@ -19,7 +19,7 @@ from pathlib import Path
 
 from harness import paths, store
 
-SCHEMA_VERSION = 27
+SCHEMA_VERSION = 28
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
 VERDICTS = ("measured", "declined", "broken", "queued", "ignored", "screened")
@@ -217,6 +217,21 @@ CREATE TABLE IF NOT EXISTS results (
     artifact     TEXT
 );
 
+-- What a lane serves from now: one row per adoption, never parsed from detail. #412.
+CREATE TABLE IF NOT EXISTS adoptions (
+    id           INTEGER PRIMARY KEY,
+    lane         TEXT NOT NULL,
+    candidate_id INTEGER NOT NULL REFERENCES candidates(id),
+    incumbent_id INTEGER REFERENCES candidates(id),
+    run_id       INTEGER REFERENCES runs(id),
+    verdict_id   INTEGER UNIQUE REFERENCES verdicts(id),
+    -- Where it was decided; a measured adoption serves only there. #412.
+    machine_id   INTEGER REFERENCES machines(id),
+    -- 'measured' by the paired gates, or 'by-hand' from a person's verdicts.
+    how          TEXT NOT NULL,
+    adopted_at   REAL NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS edges (
     id          INTEGER PRIMARY KEY,
     src         INTEGER NOT NULL REFERENCES proposals(id) ON DELETE CASCADE,
@@ -262,6 +277,7 @@ CREATE INDEX IF NOT EXISTS ix_cand_key ON candidates(receipt_key);
 CREATE INDEX IF NOT EXISTS ix_runs_lane ON runs(lane, generated_at);
 CREATE INDEX IF NOT EXISTS ix_results_run ON results(run_id);
 CREATE INDEX IF NOT EXISTS ix_results_cand ON results(candidate_id);
+CREATE INDEX IF NOT EXISTS ix_adoptions_lane ON adoptions(lane, adopted_at);
 CREATE INDEX IF NOT EXISTS ix_edges_src ON edges(src);
 CREATE INDEX IF NOT EXISTS ix_edges_dst ON edges(dst);
 """
@@ -758,6 +774,8 @@ def _migrate(conn: sqlite3.Connection) -> None:
         backfill_candidates(conn)
     if have and have < 26:
         backfill_retests(conn)
+    if have and have < 28:
+        backfill_adoptions(conn)
     conn.execute("CREATE INDEX IF NOT EXISTS ix_verdict_cand "
                  "ON verdicts(candidate_id)")
     conn.execute("CREATE INDEX IF NOT EXISTS ix_prop_state ON proposals(state)")
@@ -783,6 +801,37 @@ def _add_retest(conn) -> None:
                      ("next_retest_at", "REAL")):
         if col not in _columns(conn, "proposals"):
             conn.execute(f"ALTER TABLE proposals ADD COLUMN {col} {ddl}")
+
+
+def backfill_adoptions(conn) -> int:
+    """One adoptions row per adopt-tier `measured` verdict. #412.
+
+    The lane is read from the detail prefix here, once; nothing reads it there
+    again.
+    """
+    from harness import adopt, lanes
+    n = 0
+    for r in conn.execute(
+            "SELECT v.id, v.detail, v.run_id, v.machine_id, v.decided_at, "
+            "COALESCE(v.candidate_id, (SELECT MAX(c.id) FROM candidates c "
+            "WHERE c.proposal_id = v.proposal_id)) AS cid FROM verdicts v "
+            "WHERE v.tier = ? AND v.outcome = 'measured' AND v.id NOT IN "
+            "(SELECT verdict_id FROM adoptions WHERE verdict_id IS NOT NULL) "
+            "ORDER BY v.id", (ADOPT,)).fetchall():
+        lane = lanes.canonical(str(r["detail"]).partition(":")[0])
+        spec = conn.execute("SELECT spec FROM candidates WHERE id = ?",
+                            (r["cid"],)).fetchone() if r["cid"] else None
+        if not lane or not spec or adopt.is_reference(spec["spec"]):
+            continue
+        how = (adopt.BY_HAND if "preferred by hand" in str(r["detail"])
+               else adopt.MEASURED)
+        conn.execute(
+            "INSERT INTO adoptions (lane, candidate_id, run_id, verdict_id, "
+            "machine_id, how, adopted_at) VALUES (?,?,?,?,?,?,?)",
+            (lane, r["cid"], r["run_id"], r["id"], r["machine_id"], how,
+             float(r["decided_at"])))
+        n += 1
+    return n
 
 
 def backfill_retests(conn) -> int:
