@@ -47,7 +47,13 @@ PAGE = """<!doctype html><meta charset=utf-8>
 """
 
 DONE = """<div class=done><p>Nothing left to judge in this run.</p>
-<p>Answers are in <code>{store}</code>.</p></div>"""
+<p>Answers are in the human_votes table of <code>{store}</code>.</p></div>"""
+
+
+def _store_path():
+    from harness import memory_store as ms
+
+    return ms.db_path()
 
 
 def _media(path: Path) -> str:
@@ -61,6 +67,7 @@ def _media(path: Path) -> str:
 
 class Judge(BaseHTTPRequestHandler):
     lane = ""
+    run = ""
     pairs: list[dict] = []
     files: list[str] = []
     #: Called after every answer. The verdict is written when the last vote
@@ -102,7 +109,7 @@ class Judge(BaseHTTPRequestHandler):
         if not todo:
             return self._send(
                 PAGE.format(lane=self.lane, case="", progress="",
-                            body=DONE.format(store=human._file())
+                            body=DONE.format(store=html.escape(str(_store_path())))
                             ).encode("utf-8"))
         p = todo[0]
         left, right = Path(p["left_file"]), Path(p["right_file"])
@@ -137,7 +144,8 @@ class Judge(BaseHTTPRequestHandler):
         # only place that knows.
         answer = ("tie" if pick == "tie"
                   else ("a" if (pick == "left") == (first == a) else "b"))
-        human.record(self.lane, get("case"), a, b, answer, shown_first=first)
+        human.record(self.lane, get("case"), a, b, answer, shown_first=first,
+                     run=self.run)
         try:
             self.on_answer(self.lane, self.pairs)
         except Exception as exc:            # noqa: BLE001
@@ -150,8 +158,9 @@ class Judge(BaseHTTPRequestHandler):
 
 
 def serve(lane: str, receipt: dict, port: int = 8765, open_browser=True,
-          on_answer=None) -> None:
+          on_answer=None, run: str = "") -> None:
     Judge.lane = lane
+    Judge.run = run
     Judge.pairs = human.pairings(receipt)
     Judge.files = []
     Judge.on_answer = staticmethod(on_answer or (lambda lane, pairs: None))

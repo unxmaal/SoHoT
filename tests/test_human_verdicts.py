@@ -13,12 +13,19 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from harness import human, lanes  # noqa: E402
+from harness import memory_store as ms  # noqa: E402
+from harness import paths  # noqa: E402
+
+FAKE_MACHINE = {"fingerprint": "test/rig", "hw_model": "", "os": "",
+                "arch": "", "memory_gb": 0.0, "accelerator": "",
+                "runtimes": "", "ceiling_gb": 0.0}
 
 
 @pytest.fixture(autouse=True)
 def store(tmp_path, monkeypatch):
     """Never write the developer's real answers. RULE #249: pin the ambient."""
-    monkeypatch.setattr(human.paths, "home", lambda: tmp_path)
+    monkeypatch.setenv(paths.ENV_VAR, str(tmp_path))
+    monkeypatch.setattr(ms, "_THIS_MACHINE", FAKE_MACHINE)
     return tmp_path
 
 
@@ -70,8 +77,10 @@ def test_a_failed_run_is_not_offered_for_comparison():
 def test_asking_b_against_a_is_the_same_question_as_a_against_b():
     """Otherwise the sides randomising per showing would split one pairing's
     answers into two piles that never reach ENOUGH."""
-    assert (human.key("music", "c", "alpha", "beta")
-            == human.key("music", "c", "beta", "alpha"))
+    human.record("music", "c", "alpha", "beta", "a")
+    human.record("music", "c", "beta", "alpha", "a")
+    assert human.tally("music", "c", "alpha", "beta") == {"alpha": 1,
+                                                          "beta": 1}
 
 
 def test_a_verdict_needs_enough_answers():
@@ -115,21 +124,91 @@ def test_an_unknown_answer_is_refused():
         human.record("music", "c", "alpha", "beta", "maybe")
 
 
-# --- it has to survive being closed ---------------------------------------
+# --- it lives in the store -------------------------------------------------
 
-def test_answers_survive_a_restart(store):
-    human.record("music", "c", "alpha", "beta", "a")
-    assert json.loads((store / "human-verdicts.json")
-                      .read_text(encoding="utf-8"))
+def _votes():
+    conn = ms.connect()
+    try:
+        return [dict(r) for r in conn.execute(
+            "SELECT * FROM human_votes ORDER BY id")]
+    finally:
+        conn.close()
+
+
+def test_a_vote_is_a_store_row_with_run_voter_machine_and_time(store):
+    """#417: the JSON carried none of these, so a vote could not be traced."""
+    human.record("music", "c", "beta", "alpha", "b", shown_first="beta",
+                 run="20261005-000000-music", voter="eric")
+    (row,) = _votes()
+    assert (row["lane"], row["case_id"], row["left_candidate"],
+            row["right_candidate"], row["winner"], row["shown_first"],
+            row["run"], row["voter"]) == ("music", "c", "alpha", "beta",
+                                          "alpha", "beta",
+                                          "20261005-000000-music", "eric")
+    assert row["machine_id"] and row["at"] > 0
+    assert not (store / "human-verdicts.json").exists()
     assert human.tally("music", "c", "alpha", "beta")["alpha"] == 1
 
 
-def test_a_corrupt_store_does_not_take_the_command_down(store):
-    """It is a JSON file on a laptop. Losing answers is bad; refusing to run
-    because of a half-written file is worse."""
-    (store / "human-verdicts.json").write_text("{not json",
-                                                 encoding="utf-8")
+def test_readers_do_not_touch_the_retired_json_file(store):
+    """A JSON file appearing after the store exists is not a source of votes."""
+    ms.connect().close()
+    (store / "human-verdicts.json").write_text(json.dumps([
+        {"lane": "music", "case": "c", "left": "alpha", "right": "beta",
+         "winner": "alpha", "shown_first": "alpha"}] * 3), encoding="utf-8")
     assert human.tally("music", "c", "alpha", "beta") == {}
+    assert human.decided("music", "c", "alpha", "beta") is None
+
+
+def _vote_many(home, n, who):
+    import os
+    os.environ[paths.ENV_VAR] = home
+    ms._THIS_MACHINE = FAKE_MACHINE
+    for _ in range(n):
+        human.record("music", "c", "alpha", "beta", "a", voter=who)
+
+
+def test_two_judges_voting_at_once_both_land(store):
+    """Three judge servers ran at once against one read-modify-write file."""
+    import multiprocessing
+
+    ms.connect().close()
+    ctx = multiprocessing.get_context("spawn")
+    procs = [ctx.Process(target=_vote_many, args=(str(store), 25, w))
+             for w in ("left", "right")]
+    for p in procs:
+        p.start()
+    for p in procs:
+        p.join(60)
+        assert p.exitcode == 0
+    assert human.tally("music", "c", "alpha", "beta")["alpha"] == 50
+
+
+def test_the_migration_backfills_the_retired_json(store):
+    """A schema-22 store beside a human-verdicts.json gets its votes."""
+    rows = [{"key": "x", "lane": "music", "case": "cover",
+             "left": "acestep@steps=16", "right": "acestep@steps=8",
+             "winner": "acestep@steps=8", "shown_first": "acestep@steps=8"},
+            {"key": "x", "lane": "music", "case": "cover",
+             "left": "acestep@steps=16", "right": "acestep@steps=8",
+             "winner": "", "shown_first": "acestep@steps=16"}]
+    conn = ms.connect()
+    conn.execute("DROP TABLE human_votes")
+    conn.execute("UPDATE meta SET value='22' WHERE key='schema'")
+    conn.commit()
+    conn.close()
+    (store / "human-verdicts.json").write_text(json.dumps(rows),
+                                               encoding="utf-8")
+
+    got = _votes()
+    assert [(v["case_id"], v["winner"], v["shown_first"]) for v in got] == [
+        ("cover", "acestep@steps=8", "acestep@steps=8"),
+        ("cover", "", "acestep@steps=16")]
+    assert human.tally("music", "cover", "acestep@steps=8",
+                       "acestep@steps=16") == {"acestep@steps=8": 1, "": 1}
+    assert len(_votes()) == 2      # reconnecting does not import again
+    assert json.loads((store / "human-verdicts.json").read_text(
+        encoding="utf-8")) == rows
 
 
 # --- which lanes need a person --------------------------------------------

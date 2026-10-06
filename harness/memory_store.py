@@ -19,7 +19,7 @@ from pathlib import Path
 
 from harness import paths, store
 
-SCHEMA_VERSION = 22
+SCHEMA_VERSION = 23
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
 VERDICTS = ("measured", "declined", "broken", "queued", "ignored", "screened")
@@ -172,6 +172,23 @@ CREATE TABLE IF NOT EXISTS extractions (
     UNIQUE (name, source, reason)
 );
 
+-- One answer from a person on the judge page. #417.
+CREATE TABLE IF NOT EXISTS human_votes (
+    id              INTEGER PRIMARY KEY,
+    lane            TEXT NOT NULL,
+    run             TEXT NOT NULL DEFAULT '',
+    case_id         TEXT NOT NULL,
+    left_candidate  TEXT NOT NULL,
+    right_candidate TEXT NOT NULL,
+    winner          TEXT NOT NULL DEFAULT '',
+    shown_first     TEXT NOT NULL DEFAULT '',
+    voter           TEXT NOT NULL DEFAULT '',
+    machine_id      INTEGER REFERENCES machines(id),
+    at              REAL NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS ix_human_votes_pair
+    ON human_votes(lane, case_id, left_candidate, right_candidate);
 CREATE INDEX IF NOT EXISTS ix_sight_prop ON sightings(proposal_id);
 CREATE INDEX IF NOT EXISTS ix_verdict_prop ON verdicts(proposal_id);
 CREATE INDEX IF NOT EXISTS ix_edges_src ON edges(src);
@@ -654,9 +671,35 @@ def _migrate(conn: sqlite3.Connection) -> None:
         _requeue_broken_matching(conn)
     if have and have < 22:
         _requeue_broken_matching(conn, ("generation thread died",))
+    if have < 23:
+        import_human_verdicts_json(conn)
     conn.execute("INSERT OR REPLACE INTO meta VALUES ('schema', ?)",
                  (str(SCHEMA_VERSION),))
     conn.commit()
+
+
+def import_human_verdicts_json(conn, path: Path | None = None) -> int:
+    """Backfill human_votes from the retired human-verdicts.json. Read-only."""
+    path = Path(path) if path is not None else paths.home() / "human-verdicts.json"
+    try:
+        rows = json.loads(path.read_text(encoding="utf-8"))
+        at = path.stat().st_mtime
+    except (OSError, ValueError):
+        return 0
+    n = 0
+    for r in rows if isinstance(rows, list) else []:
+        if not isinstance(r, dict) or not r.get("lane") or not r.get("case"):
+            continue
+        lo, hi = sorted((r.get("left") or "", r.get("right") or ""))
+        # The file kept no run, voter, machine or time; mtime bounds the time.
+        conn.execute(
+            "INSERT INTO human_votes (lane, run, case_id, left_candidate, "
+            "right_candidate, winner, shown_first, voter, machine_id, at) "
+            "VALUES (?,?,?,?,?,?,?,?,?,?)",
+            (r["lane"], "", r["case"], lo, hi, r.get("winner") or "",
+             r.get("shown_first") or "", "", None, at))
+        n += 1
+    return n
 
 
 def _retract_screens_with_no_evidence(conn) -> None:
@@ -1187,23 +1230,20 @@ def remember_machine(conn: sqlite3.Connection, facts: dict | None = None) -> int
     """The id of the row for this machine, inserting or refreshing it."""
     facts = dict(facts or this_machine())
     now = time.time()
-    row = conn.execute("SELECT id FROM machines WHERE fingerprint = ?",
-                       (facts["fingerprint"],)).fetchone()
-    if row:
-        conn.execute(
-            "UPDATE machines SET last_seen = ?, runtimes = ?, ceiling_gb = ?, "
-            "memory_gb = ?, accelerator = ? WHERE id = ?",
-            (now, facts["runtimes"], facts["ceiling_gb"], facts["memory_gb"],
-             facts["accelerator"], row["id"]))
-        return int(row["id"])
-    cur = conn.execute(
+    # One statement: a SELECT-then-INSERT let two first writers collide. #422.
+    conn.execute(
         "INSERT INTO machines (fingerprint, hw_model, os, arch, memory_gb, "
         "accelerator, runtimes, ceiling_gb, first_seen, last_seen) "
-        "VALUES (?,?,?,?,?,?,?,?,?,?)",
+        "VALUES (?,?,?,?,?,?,?,?,?,?) ON CONFLICT (fingerprint) DO UPDATE SET "
+        "last_seen = excluded.last_seen, runtimes = excluded.runtimes, "
+        "ceiling_gb = excluded.ceiling_gb, memory_gb = excluded.memory_gb, "
+        "accelerator = excluded.accelerator",
         (facts["fingerprint"], facts["hw_model"], facts["os"], facts["arch"],
          facts["memory_gb"], facts["accelerator"], facts["runtimes"],
          facts["ceiling_gb"], now, now))
-    return int(cur.lastrowid)
+    row = conn.execute("SELECT id FROM machines WHERE fingerprint = ?",
+                       (facts["fingerprint"],)).fetchone()
+    return int(row["id"])
 
 
 def decide(conn: sqlite3.Connection, name: str, outcome: str, *, tier: str = "",
@@ -1703,5 +1743,6 @@ def types(conn: sqlite3.Connection, name: str, consumes: str = "",
 def export(conn: sqlite3.Connection) -> str:
     """The whole store as JSON, for a human or another tool."""
     out = {t: [dict(r) for r in conn.execute(f"SELECT * FROM {t}")]
-           for t in ("proposals", "sightings", "verdicts", "edges")}
+           for t in ("proposals", "sightings", "verdicts", "edges",
+                     "human_votes")}
     return json.dumps(out, indent=2)
