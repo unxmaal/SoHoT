@@ -298,3 +298,17 @@ def test_the_default_deploy_checkout_is_not_the_working_one(plists):
     for unit in plists.values():
         assert not unit["ProgramArguments"][1].startswith(f"{REPO}/"), (
             "an agent runs the working checkout, so branch work goes live")
+
+
+@pytest.mark.parametrize("service", PERIODIC)
+def test_installing_does_not_start_a_periodic_job(plists, service):
+    """Every install started a sweep that hit HuggingFace and took the
+    machine lock (#328). An install is not a schedule tick."""
+    unit = next(v for k, v in plists.items() if service in k)
+    assert unit.get("RunAtLoad") is not True
+
+
+@pytest.mark.parametrize("service", SERVERS)
+def test_a_server_still_starts_when_loaded(plists, service):
+    unit = next(v for k, v in plists.items() if service in k)
+    assert unit.get("RunAtLoad") is True
