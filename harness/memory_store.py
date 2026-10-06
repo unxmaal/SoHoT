@@ -19,7 +19,7 @@ from pathlib import Path
 
 from harness import paths, store
 
-SCHEMA_VERSION = 29
+SCHEMA_VERSION = 30
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
 VERDICTS = ("measured", "declined", "broken", "queued", "ignored", "screened")
@@ -80,7 +80,9 @@ CREATE TABLE IF NOT EXISTS proposals (
     -- Retests spent on a screen/measure rejection and when the next is due;
     -- NULL beside a rejection means none is left. #431.
     retest_count INTEGER NOT NULL DEFAULT 0,
-    next_retest_at REAL
+    next_retest_at REAL,
+    -- Bytes a download of this candidate costs, as inspect measured it; 0 is unmeasured. #413.
+    size_bytes  INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS sightings (
@@ -126,13 +128,7 @@ CREATE TABLE IF NOT EXISTS verdicts (
     -- Windows -- two rigs this project's own comparable() already refuses to
     -- pool. Issue #266.
     machine_id  INTEGER REFERENCES machines(id),
-    -- THE MEASURED SIZE, WHICH CODE READS BACK. It lived in `detail` as
-    -- `bytes=N`, then as `weights from 5.5 to 8.9 GiB` when the tier was
-    -- reworded -- and fetching.size_of() parses BOTH with regexes because the
-    -- rewording silently broke the numeric read. Every candidate came back
-    -- unsized and was declined TERMINALLY for a size sitting in the row
-    -- above (#211). A text column any code parses is a schema whose format
-    -- nobody wrote down. 0 means not measured. Issue #266.
+    -- The size this verdict measured; proposals.size_bytes is what readers read. #266, #413.
     size_bytes  INTEGER NOT NULL DEFAULT 0,
     -- THE WORD THAT MADE THIS AN ATTACHMENT, not a sentence containing it.
     -- `lora`, `comfyui`, `browser`. "" means this is not an attachment, which
@@ -619,22 +615,72 @@ def _lift_kind_and_age_out_of_prose(conn: sqlite3.Connection) -> None:
 
 
 def _lift_sizes_out_of_prose(conn: sqlite3.Connection) -> None:
-    """Move 728 measured sizes from `detail` into a column.
-
-    READ WITH THE SAME CODE THE TIER READS WITH. Writing a second parser here
-    would give the migration its own idea of what the prose meant, and the
-    whole defect is that the prose had two meanings already. fetching.size_of
-    is the authority and knows about both spellings and which to prefer.
-    """
-    from harness import fetching
-
+    """Move measured sizes from `detail` into verdicts.size_bytes. Schema 13."""
     for vid, detail in conn.execute(
             "SELECT id, detail FROM verdicts WHERE size_bytes = 0 "
             "AND (detail LIKE '%bytes=%' OR detail LIKE '%GiB%')").fetchall():
-        size = fetching.size_of({"detail": detail or ""})
+        size = size_from_prose(detail)
         if size > 0:
             conn.execute("UPDATE verdicts SET size_bytes = ? WHERE id = ?",
                          (size, vid))
+
+
+#: The two spellings inspect used for a size before it was a column. Backfill only. #211.
+_PROSE_BYTES = re.compile(r"bytes=(\d+)")
+_PROSE_GIB = re.compile(r"([\d.]+)\s*GiB")
+#: The card total card_description() composes. Backfill only. #413.
+_CARD_GIB = re.compile(r"([\d.]+) GiB of weights")
+
+GIB = 1024 ** 3
+
+
+def size_from_prose(detail: str) -> int:
+    """A size an old verdict wrote as a sentence: `bytes=N`, else the largest GiB figure."""
+    detail = detail or ""
+    m = _PROSE_BYTES.search(detail)
+    if m:
+        return int(m.group(1))
+    found = [float(g) for g in _PROSE_GIB.findall(detail)]
+    return int(max(found) * GIB) if found else 0
+
+
+def size_from_card(description: str) -> int:
+    """The `N GiB of weights` an old card description carries. Backfill only."""
+    m = _CARD_GIB.search(description or "")
+    return int(float(m.group(1)) * GIB) if m else 0
+
+
+def size_sources(conn) -> dict[int, dict]:
+    """Each proposal's size by source: inspect's column, inspect's prose, the card. #413."""
+    out: dict[int, dict] = {}
+    for r in conn.execute(
+            "SELECT p.id, p.description, "
+            "(SELECT v.size_bytes FROM verdicts v WHERE v.proposal_id = p.id "
+            "  AND v.tier = ? AND v.size_bytes > 0 "
+            "  ORDER BY v.id DESC LIMIT 1) AS col "
+            "FROM proposals p", (INSPECT,)).fetchall():
+        out[r["id"]] = {"column": int(r["col"] or 0), "prose": 0,
+                        "card": size_from_card(r["description"])}
+    for r in conn.execute(
+            "SELECT proposal_id, detail FROM verdicts WHERE tier = ? "
+            "AND (detail LIKE '%bytes=%' OR detail LIKE '%GiB%') "
+            "ORDER BY id", (INSPECT,)).fetchall():
+        size = size_from_prose(r["detail"])
+        if size > 0 and r["proposal_id"] in out:
+            out[r["proposal_id"]]["prose"] = size
+    return out
+
+
+def backfill_sizes(conn) -> int:
+    """Fill proposals.size_bytes once: inspect's column, then its prose, then the card. #413."""
+    n = 0
+    for pid, src in size_sources(conn).items():
+        size = src["column"] or src["prose"] or src["card"]
+        if size > 0:
+            n += conn.execute(
+                "UPDATE proposals SET size_bytes = ? "
+                "WHERE id = ? AND size_bytes = 0", (size, pid)).rowcount
+    return n
 
 
 def _attribute_old_verdicts(conn: sqlite3.Connection) -> None:
@@ -684,6 +730,9 @@ def _migrate(conn: sqlite3.Connection) -> None:
     _add_state(conn)
     _add_retest(conn)
     _add_reasons(conn)
+    if "size_bytes" not in _columns(conn, "proposals"):
+        conn.execute("ALTER TABLE proposals "
+                     "ADD COLUMN size_bytes INTEGER NOT NULL DEFAULT 0")
     if have and have < 25:
         _backfill_state(conn)
     # The DDL above is CREATE IF NOT EXISTS, so v0 -> v1 and v1 -> v2 (which
@@ -799,6 +848,8 @@ def _migrate(conn: sqlite3.Connection) -> None:
         backfill_result_classes(conn)
         backfill_reasons(conn)
         _reopen_terminal_harness_and_limit_facts(conn)
+    if have and have < 30:
+        backfill_sizes(conn)
     conn.execute("CREATE INDEX IF NOT EXISTS ix_verdict_cand "
                  "ON verdicts(candidate_id)")
     conn.execute("CREATE INDEX IF NOT EXISTS ix_prop_state ON proposals(state)")
@@ -1908,6 +1959,16 @@ def decide(conn: sqlite3.Connection, name: str, outcome: str, *, tier: str = "",
     return vid
 
 
+def set_size(conn: sqlite3.Connection, name: str, size_bytes: int) -> bool:
+    """Record what inspect measured a candidate's weights at. 0 leaves a known size alone. #413."""
+    if not size_bytes or int(size_bytes) <= 0:
+        return False
+    cur = conn.execute("UPDATE proposals SET size_bytes = ? WHERE name = ?",
+                       (int(size_bytes), name))
+    conn.commit()
+    return cur.rowcount > 0
+
+
 def link(conn: sqlite3.Connection, src: str, dst: str, relation: str,
          note: str = "") -> None:
     """An edge between two proposals. Both must already exist."""
@@ -2045,6 +2106,7 @@ def judgeable(conn, limit: int = 50) -> list[dict]:
     """
     q = f"""
         SELECT p.name, p.lane, p.registry, p.kind, p.description,
+               p.size_bytes,
                COUNT(s.id) AS times, MAX(s.relevance) AS relevance,
                MAX(s.seen_at) AS last_seen,
                MIN(s.source) AS source, MIN(s.why) AS why,

@@ -368,8 +368,8 @@ def test_a_refused_fetch_write_does_not_stop_the_next(store, monkeypatch, capsys
     monkeypatch.setattr("harness.rank.lanes_with_receipts", lambda *a, **k: set())
     for name in ("org/a", "org/b"):
         _see(store, name)
-        ms.decide(store, name, "queued", tier=ms.INSPECT,
-                  detail=f"bytes={fetching.GIB}")
+        ms.set_size(store, name, fetching.GIB)
+        ms.decide(store, name, "queued", tier=ms.INSPECT, detail="fits")
     fired = _race(monkeypatch, "org/a")
     got = fetching.run(store, {"org/a": fetching.GIB, "org/b": fetching.GIB},
                        limit=5, free=500 * fetching.GIB)

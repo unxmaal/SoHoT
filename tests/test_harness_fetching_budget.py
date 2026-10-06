@@ -25,8 +25,8 @@ def _seed(conn, name, gib, lane="code"):
     ms.record(conn, ms.Seen(name=name, source="test", url="", why="",
                             relevance=0, kind="candidate",
                             registry=ms.HUGGINGFACE, lane=lane, resolved=name))
-    ms.decide(conn, name, "queued", tier="inspect",
-              detail=f"bytes={int(gib * GIB)}")
+    ms.set_size(conn, name, int(gib * GIB))
+    ms.decide(conn, name, "queued", tier="inspect", detail="fits")
 
 
 @pytest.fixture
@@ -43,7 +43,7 @@ def store(tmp_path, monkeypatch):
 
 
 def _sizes(conn):
-    return {r["resolved"] or r["name"]: fetching.size_of(r)
+    return {r["resolved"] or r["name"]: r["size_bytes"]
             for r in fetching.queued(conn)}
 
 
@@ -112,8 +112,9 @@ def test_an_adapter_is_declined_rather_than_downloaded(tmp_path):
             registry="huggingface", resolved="org/style-lora",
             description="tagged lora, anime; adapter of org/base; "
                         "0.2 GiB of weights"))
+        ms.set_size(conn, "org/style-lora", 209715200)
         ms.decide(conn, "org/style-lora", "queued", tier="inspect",
-                  detail="bytes=209715200 fits")
+                  detail="fits")
         got = fetching.run(conn, {"org/style-lora": 200 * 1024 ** 2}, limit=1,
                            snapshot=lambda *a, **k: pytest.fail(
                                "an adapter must never be downloaded"))
@@ -143,8 +144,9 @@ def test_an_ordinary_model_is_not_refused_as_an_attachment(tmp_path):
             registry="huggingface", resolved="org/z-image-turbo-4bit",
             description="task text-to-image; served by mflux; "
                         "built from org/base; 4.0 GiB of weights"))
+        ms.set_size(conn, "org/z-image-turbo-4bit", 4294967296)
         ms.decide(conn, "org/z-image-turbo-4bit", "queued", tier="inspect",
-                  detail="bytes=4294967296 fits")
+                  detail="fits")
         got = fetching.run(conn, {"org/z-image-turbo-4bit": 4 * 1024 ** 3}, limit=1,
                            snapshot=lambda *a, **k: (seen.append(1),
                                                      str(tmp_path))[1])

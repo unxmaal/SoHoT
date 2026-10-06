@@ -1,50 +1,10 @@
-"""The fetch tier must find a size the inspect tier already measured. #211.
+"""What the fetch tier refuses, and which lane it spends on. #211.
 
-`queued()` returns the LATEST verdict, and the latest verdict format dropped
-the `bytes=` field that `size_of` read, so every candidate came back unsized
-and was declined -- terminally -- for a number sitting in the row above.
+The size itself is proposals.size_bytes; tests/test_store_size.py. #413.
 """
 import pytest
 
 from harness import fetching
-
-GIB = fetching.GIB
-
-
-def test_the_exact_byte_count_is_read_where_it_exists():
-    row = {"detail": "bytes=5911138787 lane=image named by mflux"}
-    assert fetching.size_of(row) == 5911138787
-
-
-def test_the_later_human_range_is_read_when_no_byte_count_survives():
-    """`fits: weights from 5.5 to 5.5 GiB` replaced `bytes=` and nothing read
-    it. The upper bound is taken: over-estimating refuses a fetch, under-
-    estimating fills the disk."""
-    row = {"detail": "fits: weights from 5.5 to 8.9 GiB"}
-    assert fetching.size_of(row) == pytest.approx(8.9 * GIB, rel=1e-6)
-
-
-def test_a_size_in_an_older_row_beats_a_newer_row_with_none():
-    """The case that bit: the newest verdict is the refusal, which has no size
-    in it at all, so reading only `detail` loses a fact the store holds."""
-    row = {"detail": "no measured size; inspect it first",
-           "sized": "bytes=5911138787 named by mflux"}
-    assert fetching.size_of(row) == 5911138787
-
-
-def test_the_exact_count_is_preferred_over_the_range():
-    """bytes= is the SUM of the weights, which is what a download costs; the
-    range is smallest-to-largest of individual files."""
-    row = {"detail": "fits: weights from 5.5 to 5.5 GiB",
-           "sized": "bytes=5911138787 named by mflux"}
-    assert fetching.size_of(row) == 5911138787
-
-
-def test_a_row_with_no_size_anywhere_is_still_zero():
-    """The negative control. An unsized repo must not acquire a size."""
-    assert fetching.size_of({"detail": "named by mflux-community/mflux"}) == 0
-    assert fetching.size_of({}) == 0
-    assert fetching.size_of({"detail": "", "sized": ""}) == 0
 
 
 # --- a refusal about this harness is not a verdict about the candidate -----
@@ -83,7 +43,8 @@ def _seed(conn, name, lane, registry=ms.HUGGINGFACE, kind="candidate"):
     ms.record(conn, ms.Seen(name=name, source="test", url="", why="",
                             relevance=0, kind=kind, registry=registry,
                             lane=lane, resolved=name))
-    ms.decide(conn, name, "queued", tier="inspect", detail="bytes=104857600")
+    ms.set_size(conn, name, 104857600)
+    ms.decide(conn, name, "queued", tier="inspect", detail="fits")
 
 
 @pytest.fixture

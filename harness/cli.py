@@ -891,6 +891,7 @@ def _report_inspect(a) -> int:
                 # WHAT IT IS, beside what the verdict said about it. The judge
                 # reads this; with only a name it cannot rank at all (#175).
                 description=fit.description))
+            ms.set_size(store, repo, fit.largest)
             if ms.set_lane(store, repo, fit.lanes.get(repo, "")):
                 print(f"    lane corrected from the card: {repo} "
                       f"-> {fit.lanes[repo]}")
@@ -939,6 +940,7 @@ def _report_inspect(a) -> int:
                     url=f"https://huggingface.co/{model_id}",
                     resolved=model_id, lane=fit.lanes.get(model_id, ""),
                     why=f"named by {repo}"))
+                ms.set_size(store, model_id, size)
                 # THE CARD OVERWRITES A GUESS. record() keeps the first
                 # non-empty lane; this one was read off the publisher's own
                 # task, so it outranks whatever the sweep inferred. #227.
@@ -950,7 +952,7 @@ def _report_inspect(a) -> int:
                 try:
                     ms.decide(store, model_id, "queued", tier=ms.INSPECT,
                               size_bytes=size, reason=reasons.CANDIDATE,
-                              detail=f"bytes={size} lane={fit.lanes.get(model_id) or '-'} "
+                              detail=f"lane={fit.lanes.get(model_id) or '-'} "
                                      f"named by {repo}")
                 except ms.IllegalTransition:
                     continue
@@ -1451,7 +1453,7 @@ def cmd_fetch(a) -> int:
                  f"--run to start, one at a time. The score is the judged "
                  f"score of the repo that named the weight.")
             for r in testable[:20]:
-                size = fetching.size_of(r)
+                size = int(r.get("size_bytes") or 0)
                 gib = f"{size / fetching.GIB:5.1f} GiB" if size else "  no size"
                 note(f"  {r['score'] or 0:>4.0f}  {gib}  {r['lane']:6s} "
                      f"{r['resolved'] or r['name']}")
@@ -1464,7 +1466,7 @@ def cmd_fetch(a) -> int:
                     note(f"        {r['resolved'] or r['name']}")
             emit(free_bytes=fetching.free_bytes(),
                  queued=[{"repo": r["resolved"] or r["name"], "lane": r["lane"],
-                          "score": r["score"], "size": fetching.size_of(r)}
+                          "score": r["score"], "size": int(r.get("size_bytes") or 0)}
                          for r in testable],
                  orphans=[r["resolved"] or r["name"] for r in orphans])
             return 0

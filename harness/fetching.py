@@ -202,19 +202,8 @@ def queued(conn, tiers=FETCHABLE_TIERS, kind: str = FETCHABLE_KIND,
                p.description,
                -- The state and the verdict that set it. #409.
                p.state AS outcome, st.tier AS tier, st.detail AS detail,
-               -- The newest verdict that CARRIES a size, which is not always
-               -- the newest verdict: a later row saying why a fetch was
-               -- refused has no size in it, and neither does the newest
-               -- inspect format. Issue #211.
-               (SELECT v.detail FROM verdicts v WHERE v.proposal_id = p.id
-                 AND (v.detail LIKE '%bytes=%' OR v.detail LIKE '%GiB%')
-                 ORDER BY v.id DESC LIMIT 1) AS sized,
-               -- Same question asked of the COLUMN, which is the authority
-               -- since schema 13. Same shape as `sized` above: the newest row
-               -- that HAS one, because a later refusal carries no size.
-               (SELECT v.size_bytes FROM verdicts v WHERE v.proposal_id = p.id
-                 AND v.size_bytes > 0
-                 ORDER BY v.id DESC LIMIT 1) AS size_bytes,
+               -- The candidate's measured size, whatever verdict is newest. #211, #413.
+               p.size_bytes,
                -- The judge scores REPOS; the queue holds WEIGHTS, and a weight
                -- is never judged (judging a model id in isolation is the
                -- copywriting problem the rubric exists to avoid). So a weight
@@ -285,49 +274,6 @@ def in_rank_order(rows: list[dict], conn=None) -> list[dict]:
     # here would read as an empty queue.
     return sorted(rows, key=lambda r: (order.get(r["name"], len(order)),
                                        r["name"]))
-
-
-#: The two spellings the inspect tier has used for a measured size. `bytes=` is
-#: exact and machine-readable; the later `fits: weights from 5.5 to 8.9 GiB` is
-#: a range for humans, and it REPLACED the first without anything reading it.
-_BYTES = re.compile(r"bytes=(\d+)")
-_GIB = re.compile(r"([\d.]+)\s*GiB")
-
-
-def size_of(row: dict) -> int:
-    """The size the inspect tier measured, carried on the verdict.
-
-    Read from the store rather than asked for again: the registry rate-limits,
-    and a size already measured is a fact.
-
-    BOTH SPELLINGS, AND THE NEWEST ROW THAT HAS ONE. queued() returns the
-    latest verdict, and the latest verdict format dropped `bytes=`, so the one
-    row this read was the one that does not carry the number. Every candidate
-    came back unsized and was declined -- terminally -- for a size sitting in
-    the row above. Issue #211.
-
-    `bytes=` is preferred where it exists because it is the SUM of the repo's
-    weights, which is what a download costs. The GiB range is smallest-to-
-    largest of the individual files, so the upper bound is taken: over-
-    estimating a budget refuses a fetch, and under-estimating fills a disk.
-    """
-    # THE COLUMN FIRST. Since schema 13 the tier writes the number into
-    # `size_bytes` and the prose is a note again. The two parsers below stay
-    # because a row whose wording the migration could not read still has its
-    # size in the sentence, and dropping them would re-lose exactly the rows
-    # this function was written for. #266.
-    sized = int(row.get("size_bytes") or 0)
-    if sized > 0:
-        return sized
-    for detail in (row.get("sized") or "", row.get("detail") or ""):
-        m = _BYTES.search(detail)
-        if m:
-            return int(m.group(1))
-    for detail in (row.get("sized") or "", row.get("detail") or ""):
-        found = [float(g) for g in _GIB.findall(detail)]
-        if found:
-            return int(max(found) * GIB)
-    return 0
 
 
 def download(repo: str, snapshot=None, listing=None, hf_download=None,
@@ -491,7 +437,7 @@ def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=N
         name = row["resolved"] or row["name"]
         # Each row's own measured size; an override map covering only the
         # first `limit` rows left the rest at 0 for 22 sweeps. #292.
-        size = (sizes or {}).get(name) or size_of(row)
+        size = (sizes or {}).get(name) or int(row.get("size_bytes") or 0)
         if budget is not None and size > 0 and spent + size > budget:
             why = (f"{size / GIB:.1f} GiB would take this run past its "
                    f"{budget / GIB:.0f} GiB budget ({spent / GIB:.1f} GiB "

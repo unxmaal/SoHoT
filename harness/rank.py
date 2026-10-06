@@ -59,7 +59,6 @@ CHEAP = 1.0
 #: A card says what it was built from as `base_model:...`, sometimes several
 #: times and with a role in between (`base_model:quantized:org/name`).
 _LINEAGE = re.compile(rf"(?:{ins.LINEAGE_BUILT}|{ins.LINEAGE_ADAPTER}) ([^;]+)")
-_SIZE = re.compile(r"([\d.]+) GiB of weights")
 
 
 def _parents(description: str) -> set[str]:
@@ -67,11 +66,6 @@ def _parents(description: str) -> set[str]:
     if not m:
         return set()
     return {p.strip().lower() for p in m.group(1).split(",") if p.strip()}
-
-
-def size_gib(description: str) -> float:
-    m = _SIZE.search(description or "")
-    return float(m.group(1)) if m else 0.0
 
 
 def value(row: dict, *, serving: set[str] = frozenset(),
@@ -131,7 +125,8 @@ def value(row: dict, *, serving: set[str] = frozenset(),
         score += KNOWN_LINEAGE
         why.append(f"a requant of {', '.join(sorted(known))}, already served")
 
-    gib = size_gib(row.get("description") or "")
+    # The measured column, never the card prose. #413.
+    gib = int(row.get("size_bytes") or 0) / GIB
     if 0 < gib <= ceiling_gib / 4:
         score += CHEAP
         why.append(f"{gib:.1f} GiB, cheap to screen")
