@@ -19,7 +19,7 @@ from pathlib import Path
 
 from harness import paths, store
 
-SCHEMA_VERSION = 37
+SCHEMA_VERSION = 38
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
 VERDICTS = ("measured", "declined", "broken", "queued", "ignored", "screened")
@@ -110,6 +110,8 @@ CREATE TABLE IF NOT EXISTS sightings (
     why         TEXT NOT NULL DEFAULT '',
     relevance   INTEGER NOT NULL DEFAULT 0,
     seen_at     REAL NOT NULL,
+    -- The machine that recorded it, whose runtimes scored relevance; NULL is unknown. #450.
+    machine_id  INTEGER REFERENCES machines(id),
     UNIQUE (proposal_id, source, url)
 );
 
@@ -837,6 +839,7 @@ def _migrate(conn: sqlite3.Connection) -> None:
                      "ADD COLUMN size_bytes INTEGER NOT NULL DEFAULT 0")
     _add_card_facts(conn)
     _add_machine_versions(conn)
+    _add_sighting_machine(conn)
     if "job_id" not in _columns(conn, "runs"):
         conn.execute("ALTER TABLE runs ADD COLUMN job_id "
                      "INTEGER REFERENCES jobs(id) ON DELETE SET NULL")
@@ -982,6 +985,8 @@ def _migrate(conn: sqlite3.Connection) -> None:
         drop_dead_columns(conn)
     if have and have < 37:
         resolve_identity_leftovers(conn)
+    if have and have < 38:
+        attribute_sightings(conn)
     conn.execute("CREATE INDEX IF NOT EXISTS ix_verdict_cand "
                  "ON verdicts(candidate_id)")
     conn.execute("CREATE INDEX IF NOT EXISTS ix_prop_state ON proposals(state)")
@@ -1036,6 +1041,43 @@ def drop_dead_columns(conn) -> dict:
             got["dropped"].append(f"{table}.{col}")
         conn.execute("RELEASE drop_dead")
     return got
+
+
+def _add_sighting_machine(conn) -> None:
+    if "machine_id" not in _columns(conn, "sightings"):
+        conn.execute("ALTER TABLE sightings ADD COLUMN machine_id "
+                     "INTEGER REFERENCES machines(id)")
+
+
+def attribute_sightings(conn) -> dict:
+    """Schema 38: give a legacy sighting the one machine the store shows could
+    have recorded it, else leave it unknown. #450.
+
+    Evidence of a machine is a run its receipt names or its machines row; a
+    machine whose earliest evidence is later than the sighting did not sweep
+    it. Runs with no machine name nobody and count for nobody.
+    """
+    first: dict[int, float] = {}
+    for sql in ("SELECT machine_id AS m, MIN(generated_at) AS t FROM runs "
+                "WHERE machine_id IS NOT NULL AND generated_at IS NOT NULL "
+                "GROUP BY machine_id",
+                "SELECT id AS m, first_seen AS t FROM machines"):
+        for r in conn.execute(sql).fetchall():
+            if r["t"] is not None:
+                first[r["m"]] = min(first.get(r["m"], r["t"]), r["t"])
+    counts = {"assigned": 0, "unknown": 0, "by_machine": {}}
+    for s in conn.execute("SELECT id, seen_at FROM sightings "
+                          "WHERE machine_id IS NULL").fetchall():
+        could = [m for m, t in first.items() if t <= s["seen_at"]]
+        if len(could) != 1:
+            counts["unknown"] += 1
+            continue
+        conn.execute("UPDATE sightings SET machine_id = ? WHERE id = ?",
+                     (could[0], s["id"]))
+        counts["assigned"] += 1
+        counts["by_machine"][could[0]] = counts["by_machine"].get(could[0], 0) + 1
+    conn.commit()
+    return counts
 
 
 def _add_machine_versions(conn) -> None:
@@ -2185,8 +2227,9 @@ def record(conn: sqlite3.Connection, seen: Seen, at: float | None = None) -> int
                      (pid, seen.name.lower()))
     conn.execute(
         "INSERT OR IGNORE INTO sightings (proposal_id, source, url, why, "
-        "relevance, seen_at) VALUES (?,?,?,?,?,?)",
-        (pid, seen.source, seen.url, seen.why, seen.relevance, now))
+        "relevance, seen_at, machine_id) VALUES (?,?,?,?,?,?,?)",
+        (pid, seen.source, seen.url, seen.why, seen.relevance, now,
+         remember_machine(conn)))
     conn.commit()
     return pid
 
@@ -2780,7 +2823,8 @@ def judgeable(conn, limit: int = 50) -> list[dict]:
         SELECT p.name, p.lane, p.registry, p.kind, p.description,
                p.size_bytes,
                p.hf_task, p.library, p.attaches_to, p.runtime_needed,
-               COUNT(s.id) AS times, MAX(s.relevance) AS relevance,
+               COUNT(s.id) AS times,
+               MAX(CASE WHEN s.machine_id = ? THEN s.relevance END) AS relevance,
                MAX(s.seen_at) AS last_seen,
                MIN(s.source) AS source, MIN(s.why) AS why,
                (SELECT v.detail FROM verdicts v
@@ -2807,7 +2851,8 @@ def judgeable(conn, limit: int = 50) -> list[dict]:
         LIMIT ?
     """
     return with_lineage(conn, [dict(r) for r in conn.execute(
-        q, (INSPECT, INSPECT, JUDGE, *TERMINAL, "screened", limit))])
+        q, (machine_row(conn), INSPECT, INSPECT, JUDGE, *TERMINAL,
+            "screened", limit))])
 
 
 def judgeable_total(conn) -> int:

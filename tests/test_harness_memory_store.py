@@ -162,6 +162,69 @@ def test_the_judge_reads_the_strongest_relevance_a_sweep_recorded(db):
     assert got == {"org/mlx-thing": 2, "org/plain": 0}
 
 
+def _other_machine(db, name="Card,1", first_seen=0.0):
+    return db.execute(
+        "INSERT INTO machines (fingerprint, hw_model, runtimes, first_seen, "
+        "last_seen) VALUES (?, ?, 'cuda', ?, ?)",
+        (name, name, first_seen, first_seen)).lastrowid
+
+
+def test_a_sighting_records_the_machine_whose_runtimes_scored_it(db):
+    """#450: relevance is scored against the sweeping machine."""
+    see(db, "org/x", url="https://a", relevance=2)
+    got = db.execute("SELECT machine_id FROM sightings").fetchone()[0]
+    assert got is not None and got == ms.machine_row(db)
+
+
+def test_the_judge_reads_only_this_machines_relevance(db):
+    """#450: a CUDA box's +4 does not tell this machine's judge it runs here,
+    and a sighting whose machine is unknown says nothing either way."""
+    see(db, "org/cuda-thing", url="https://mine", relevance=-1)
+    pid = db.execute("SELECT id FROM proposals WHERE name = 'org/cuda-thing'"
+                     ).fetchone()[0]
+    card = _other_machine(db)
+    db.execute("INSERT INTO sightings (proposal_id, source, url, relevance, "
+               "seen_at, machine_id) VALUES (?, 'r', 'https://card', 4, 0, ?)",
+               (pid, card))
+    see(db, "org/legacy", url="https://old", relevance=3)
+    db.execute("UPDATE sightings SET machine_id = NULL WHERE url = 'https://old'")
+    db.commit()
+    for n in ("org/cuda-thing", "org/legacy"):
+        ms.decide(db, n, "queued", tier=ms.INSPECT, detail="fits")
+    got = {r["name"]: r["relevance"] for r in ms.judgeable(db, limit=10)}
+    assert got == {"org/cuda-thing": -1, "org/legacy": None}
+
+
+def test_schema_38_names_the_machine_only_where_the_store_proves_it(tmp_path):
+    """#450: the only machine with evidence by a sighting's time swept it;
+    two candidates, or none, leave it unknown."""
+    path = tmp_path / "d.db"
+    db = ms.connect(path)
+    first = _other_machine(db, "Old,1", first_seen=100.0)
+    later = _other_machine(db, "New,1", first_seen=500.0)
+    see(db, "org/a", url="https://before-any", relevance=1, at=50.0)
+    see(db, "org/a", url="https://only-old", relevance=2, at=200.0)
+    see(db, "org/a", url="https://both", relevance=3, at=600.0)
+    see(db, "org/a", url="https://old-and-a-run", relevance=4, at=400.0)
+    runner = _other_machine(db, "Runner,1", first_seen=900.0)
+    db.execute("INSERT INTO runs (path, machine_id, generated_at, recorded_at) "
+               "VALUES ('r', ?, 300.0, 0)", (runner,))
+    db.execute("UPDATE sightings SET machine_id = NULL")
+    db.execute("UPDATE machines SET first_seen = 900.0 WHERE id NOT IN (?, ?)",
+               (first, later))
+    db.execute("UPDATE meta SET value = '37' WHERE key = 'schema'")
+    db.commit()
+    db.close()
+    db = ms.connect(path)
+    try:
+        got = {r["url"]: r["machine_id"] for r in db.execute(
+            "SELECT url, machine_id FROM sightings")}
+    finally:
+        db.close()
+    assert got == {"https://before-any": None, "https://only-old": first,
+                   "https://both": None, "https://old-and-a-run": None}
+
+
 def test_an_edge_to_an_unknown_proposal_is_refused(db):
     see(db, "a")
     with pytest.raises(KeyError):
