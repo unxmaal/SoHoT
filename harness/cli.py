@@ -810,11 +810,13 @@ def _report_inspect(a) -> int:
             # from GitHub. Issue #167.
             limit = getattr(a, "top", 10) * 5
             work_items = [(n, r) for r in ms.REGISTRIES
-                          for n in ms.pending(store, limit=limit, registry=r)]
+                          for n in ms.pending(store, limit=limit, registry=r,
+                                              screened=False)]
             # And the ones the store cannot route, which it resolves rather
             # than guesses at. See resolve_registry().
             work_items += [(n, "") for n in
-                           ms.pending(store, limit=limit, registry="")]
+                           ms.pending(store, limit=limit, registry="",
+                                      screened=False)]
             # CONSUME IN THE CONSUMER'S ORDER. `pending` sorts by corroboration
             # and recency; the fetch tier reads the same queue in rank order,
             # by the value of the information a screen would buy. Two tiers
@@ -2195,6 +2197,12 @@ def _measure_and_adopt(a, row: dict) -> int:
               f"is nothing to compare against. Measure it on its own first.")
         return 0
     inc_spec = screen.candidate_for(lane, incumbent) or incumbent
+    if spec == inc_spec:
+        # An adopted winner is the incumbent; measuring it against itself
+        # wrote `declined` for the lane's own default. #393.
+        print(f"  {name}: already the {lane} lane's default ({spec})")
+        _settle(name, "measured", f"{lane}: already the lane's default")
+        return 0
     # THE PAIR MUST REACH THE SAME SERVER. One --gateway serves the whole run,
     # so when the challenger's repo id sends it to mlx_lm.server the incumbent
     # cannot travel as a LiteLLM alias: :8081 has never heard of `q3-4b`, the
@@ -2301,7 +2309,23 @@ def _measure_and_adopt(a, row: dict) -> int:
         adopt.record(store, verdict)
     finally:
         store.close()
+    # The verdict above is keyed on the spec; the proposal must leave the
+    # survivors list too, or the loop measures it again every run. #393.
+    if name != verdict.challenger:
+        _settle(name, "measured" if verdict.adopt else "declined",
+                f"{lane}: {verdict.why}")
     return 0
+
+
+def _settle(name: str, outcome: str, detail: str) -> None:
+    from harness import memory_store as ms
+    store = ms.connect()
+    try:
+        ms.decide(store, name, outcome, tier=ms.MEASURE, detail=detail[:200])
+    except KeyError:
+        pass
+    finally:
+        store.close()
 
 
 def _summary_row(summary: dict, wanted: str, lane: str) -> dict | None:

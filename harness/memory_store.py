@@ -1259,7 +1259,8 @@ def settled(conn: sqlite3.Connection) -> set[str]:
     return {r["name"] for r in conn.execute(q, TERMINAL)}
 
 
-def pending(conn, limit: int = 50, registry: str | None = None) -> list[str]:
+def pending(conn, limit: int = 50, registry: str | None = None,
+            screened: bool = True) -> list[str]:
     """Proposals nothing has answered yet, most-corroborated first.
 
     THE MISSING RUNG. The sweep writes proposals and every later tier read a
@@ -1286,14 +1287,17 @@ def pending(conn, limit: int = 50, registry: str | None = None) -> list[str]:
     question rather than work nobody can do.
     """
     where = "" if registry is None else "AND p.registry = ?"
-    args = (() if registry is None else (registry,)) + TERMINAL + (limit,)
+    # Inspect must not re-answer a screened candidate: its `queued` sent it
+    # back through the screen every loop. #393.
+    stop = TERMINAL + (() if screened else ("screened",))
+    args = (() if registry is None else (registry,)) + stop + (limit,)
     q = f"""
         SELECT p.name, COUNT(s.id) AS times, MAX(s.seen_at) AS last_seen
         FROM proposals p JOIN sightings s ON s.proposal_id = p.id
         WHERE p.resolved <> '' {where} AND COALESCE((
             SELECT v.outcome FROM verdicts v WHERE v.proposal_id = p.id
              ORDER BY v.id DESC LIMIT 1
-        ), '') NOT IN ({','.join('?' * len(TERMINAL))})
+        ), '') NOT IN ({','.join('?' * len(stop))})
         GROUP BY p.id
         ORDER BY times DESC, last_seen DESC
         LIMIT ?
