@@ -1,0 +1,573 @@
+{
+ "adoptions": [
+  {
+   "adopted_at": "2026-09-23T00:05:10Z",
+   "candidate": "acestep:acestep-v15-turbo,steps=8",
+   "how": "by-hand",
+   "incumbent": "",
+   "lane": "music"
+  },
+  {
+   "adopted_at": "2026-10-06T01:35:47Z",
+   "candidate": "llamacpp:Ornith-1.5-35B-Q4_K_M",
+   "how": "measured",
+   "incumbent": "",
+   "lane": "code"
+  }
+ ],
+ "export_version": 1,
+ "generated_at": "2026-10-06T19:05:30Z",
+ "lanes": [
+  {
+   "adopted": false,
+   "adopted_how": "",
+   "age_days": 0.18,
+   "comparison": [
+    {
+     "candidate": "mflux/flux2-klein-4b-q8",
+     "first_s": 43.551,
+     "median_s": 27.285,
+     "metrics": {
+      "cer": 0.0
+     },
+     "pass_rate": 1.0,
+     "passed": 9,
+     "peak_gb": 14.99,
+     "reference": false,
+     "total": 9
+    },
+    {
+     "candidate": "mflux/Tongyi-MAI/Z-Image-q8",
+     "first_s": 74.701,
+     "median_s": 16.908,
+     "metrics": {
+      "cer": 0.6667
+     },
+     "pass_rate": 0.778,
+     "passed": 7,
+     "peak_gb": 17.85,
+     "reference": false,
+     "total": 9
+    }
+   ],
+   "lane": "image",
+   "last_run_at": "2026-10-06T14:44:38Z",
+   "measured_at": "2026-10-06T14:44:38Z",
+   "median_s": 27.285,
+   "metrics": {
+    "cer": 0.0
+   },
+   "parked": "",
+   "parked_until": "",
+   "pass_rate": 1.0,
+   "serves": "mflux:flux2-klein-4b",
+   "stale": false,
+   "unverified": false,
+   "wanted": true
+  },
+  {
+   "adopted": true,
+   "adopted_how": "measured",
+   "age_days": 0.01,
+   "comparison": [
+    {
+     "candidate": "llamacpp:Ornith-1.5-35B-Q4_K_M",
+     "first_s": 80.173,
+     "median_s": 2.789,
+     "metrics": {
+      "code_pass": 0.9249,
+      "completion_tokens": 779.6585,
+      "tokens_per_s": 135.9537
+     },
+     "pass_rate": 0.833,
+     "passed": 35,
+     "peak_gb": 0.0,
+     "reference": false,
+     "total": 42
+    },
+    {
+     "candidate": "llamacpp:Qwen3.8-27B-GSQ-RCO-IQ3_S-mtp",
+     "first_s": 12.674,
+     "median_s": 47.759,
+     "metrics": {
+      "code_pass": 0.9643,
+      "completion_tokens": 1618.8571,
+      "tokens_per_s": 48.0821
+     },
+     "pass_rate": 0.643,
+     "passed": 27,
+     "peak_gb": 0.0,
+     "reference": false,
+     "total": 42
+    }
+   ],
+   "lane": "code",
+   "last_run_at": "2026-10-06T18:44:18Z",
+   "measured_at": "2026-10-06T18:44:18Z",
+   "median_s": 2.789,
+   "metrics": {
+    "code_pass": 0.9249,
+    "completion_tokens": 779.6585,
+    "tokens_per_s": 135.9537
+   },
+   "parked": "",
+   "parked_until": "",
+   "pass_rate": 0.833,
+   "serves": "llamacpp:Ornith-1.5-35B-Q4_K_M",
+   "stale": false,
+   "unverified": false,
+   "wanted": true
+  },
+  {
+   "adopted": false,
+   "adopted_how": "",
+   "age_days": 0.8,
+   "comparison": [
+    {
+     "candidate": "q3-4b",
+     "first_s": 15.458,
+     "median_s": 7.299,
+     "metrics": {
+      "completion_tokens": 1308.1333,
+      "ink": 0.4501,
+      "tokens_per_s": 163.6667
+     },
+     "pass_rate": 1.0,
+     "passed": 15,
+     "peak_gb": 0.0,
+     "reference": false,
+     "total": 15
+    },
+    {
+     "candidate": "claude-code:claude-opus-5-5",
+     "first_s": 22.569,
+     "median_s": 17.835,
+     "metrics": {
+      "completion_tokens": 2805.8571,
+      "ink": 0.6232,
+      "tokens_per_s": 126.15
+     },
+     "pass_rate": 0.933,
+     "passed": 14,
+     "peak_gb": 0.0,
+     "reference": true,
+     "total": 15
+    },
+    {
+     "candidate": "q3-30b",
+     "first_s": 10.117,
+     "median_s": 7.314,
+     "metrics": {
+      "completion_tokens": 1056.6667,
+      "ink": 0.5815,
+      "tokens_per_s": 118.2667
+     },
+     "pass_rate": 0.8,
+     "passed": 12,
+     "peak_gb": 0.0,
+     "reference": false,
+     "total": 15
+    },
+    {
+     "candidate": "q3-coder",
+     "first_s": 11.441,
+     "median_s": 7.769,
+     "metrics": {
+      "completion_tokens": 1028.8,
+      "ink": 0.4554,
+      "tokens_per_s": 118.9067
+     },
+     "pass_rate": 0.8,
+     "passed": 12,
+     "peak_gb": 0.0,
+     "reference": false,
+     "total": 15
+    }
+   ],
+   "lane": "web",
+   "last_run_at": "2026-10-05T23:48:31Z",
+   "measured_at": "2026-10-05T23:48:31Z",
+   "median_s": 7.299,
+   "metrics": {
+    "completion_tokens": 1308.1333,
+    "ink": 0.4501,
+    "tokens_per_s": 163.6667
+   },
+   "parked": "",
+   "parked_until": "",
+   "pass_rate": 1.0,
+   "serves": "q3-4b",
+   "stale": false,
+   "unverified": false,
+   "wanted": true
+  },
+  {
+   "adopted": false,
+   "adopted_how": "",
+   "age_days": 0.8,
+   "comparison": [
+    {
+     "candidate": "q3-30b",
+     "first_s": 14.802,
+     "median_s": 1.336,
+     "metrics": {
+      "completion_tokens": 263.5556,
+      "ink": 0.1817,
+      "svg_bytes": 589.1111,
+      "tokens_per_s": 114.0556
+     },
+     "pass_rate": 1.0,
+     "passed": 9,
+     "peak_gb": 0.0,
+     "reference": false,
+     "total": 9
+    },
+    {
+     "candidate": "claude-code:claude-opus-5-5",
+     "first_s": 5.991,
+     "median_s": 9.719,
+     "metrics": {
+      "completion_tokens": 1192.3333,
+      "ink": 0.3124,
+      "svg_bytes": 659.6667,
+      "tokens_per_s": 97.0889
+     },
+     "pass_rate": 1.0,
+     "passed": 9,
+     "peak_gb": 0.0,
+     "reference": true,
+     "total": 9
+    },
+    {
+     "candidate": "q3-coder",
+     "first_s": 4.47,
+     "median_s": 2.422,
+     "metrics": {
+      "completion_tokens": 679.8889,
+      "ink": 0.193,
+      "svg_bytes": 428.8,
+      "tokens_per_s": 117.2889
+     },
+     "pass_rate": 0.556,
+     "passed": 5,
+     "peak_gb": 0.0,
+     "reference": false,
+     "total": 9
+    },
+    {
+     "candidate": "local-large",
+     "first_s": 15.863,
+     "median_s": 0.955,
+     "metrics": {
+      "completion_tokens": 214.8889,
+      "ink": 0.0604,
+      "svg_bytes": 637.75,
+      "tokens_per_s": 129.3444
+     },
+     "pass_rate": 0.444,
+     "passed": 4,
+     "peak_gb": 0.0,
+     "reference": false,
+     "total": 9
+    }
+   ],
+   "lane": "svg",
+   "last_run_at": "2026-10-05T23:53:03Z",
+   "measured_at": "2026-10-05T23:53:03Z",
+   "median_s": 0.955,
+   "metrics": {
+    "completion_tokens": 214.8889,
+    "ink": 0.0604,
+    "svg_bytes": 637.75,
+    "tokens_per_s": 129.3444
+   },
+   "parked": "",
+   "parked_until": "",
+   "pass_rate": 0.444,
+   "serves": "local-large",
+   "stale": false,
+   "unverified": false,
+   "wanted": true
+  },
+  {
+   "adopted": false,
+   "adopted_how": "",
+   "age_days": 0.88,
+   "comparison": [
+    {
+     "candidate": "h3/minimax-h3@ssd_streaming=false",
+     "first_s": 28.726,
+     "median_s": 28.726,
+     "metrics": {
+      "motion": 0.034
+     },
+     "pass_rate": 1.0,
+     "passed": 1,
+     "peak_gb": 18.43,
+     "reference": false,
+     "total": 1
+    }
+   ],
+   "lane": "video",
+   "last_run_at": "2026-10-05T22:04:41Z",
+   "measured_at": "2026-10-05T21:48:59Z",
+   "median_s": 26.518,
+   "metrics": {
+    "motion": 0.0418
+   },
+   "parked": "",
+   "parked_until": "",
+   "pass_rate": 1.0,
+   "serves": "h3",
+   "stale": false,
+   "unverified": false,
+   "wanted": true
+  },
+  {
+   "adopted": true,
+   "adopted_how": "by-hand",
+   "age_days": 0.94,
+   "comparison": [
+    {
+     "candidate": "acestep/acestep-v15-turbo@steps=8",
+     "first_s": 38.967,
+     "median_s": 53.045,
+     "metrics": {
+      "duration_error_s": 0.0,
+      "seconds": 30.0,
+      "wer": 0.6147
+     },
+     "pass_rate": 0.75,
+     "passed": 3,
+     "peak_gb": 46.01,
+     "reference": false,
+     "total": 4
+    }
+   ],
+   "lane": "music",
+   "last_run_at": "2026-10-05T20:29:28Z",
+   "measured_at": "2026-10-05T20:29:28Z",
+   "median_s": 53.045,
+   "metrics": {
+    "duration_error_s": 0.0,
+    "seconds": 30.0,
+    "wer": 0.6147
+   },
+   "parked": "",
+   "parked_until": "",
+   "pass_rate": 0.75,
+   "serves": "acestep:acestep-v15-turbo,steps=8",
+   "stale": false,
+   "unverified": false,
+   "wanted": true
+  },
+  {
+   "adopted": false,
+   "adopted_how": "",
+   "age_days": null,
+   "comparison": [],
+   "lane": "decide",
+   "last_run_at": "",
+   "measured_at": "",
+   "median_s": null,
+   "metrics": {},
+   "parked": "",
+   "parked_until": "",
+   "pass_rate": null,
+   "serves": "q3-4b",
+   "stale": false,
+   "unverified": true,
+   "wanted": true
+  },
+  {
+   "adopted": false,
+   "adopted_how": "",
+   "age_days": 0.77,
+   "comparison": [
+    {
+     "candidate": "claude-code:claude-opus-5-5",
+     "first_s": 4.045,
+     "median_s": 2.119,
+     "metrics": {
+      "completion_tokens": 22.8,
+      "tokens_per_s": 7.02
+     },
+     "pass_rate": 1.0,
+     "passed": 10,
+     "peak_gb": 0.0,
+     "reference": true,
+     "total": 10
+    },
+    {
+     "candidate": "local-large",
+     "first_s": 13.585,
+     "median_s": 0.136,
+     "metrics": {
+      "completion_tokens": 9.1,
+      "tokens_per_s": 59.16
+     },
+     "pass_rate": 0.8,
+     "passed": 8,
+     "peak_gb": 0.0,
+     "reference": false,
+     "total": 10
+    },
+    {
+     "candidate": "q3-30b",
+     "first_s": 47.768,
+     "median_s": 0.158,
+     "metrics": {
+      "completion_tokens": 9.8,
+      "tokens_per_s": 50.08
+     },
+     "pass_rate": 0.8,
+     "passed": 8,
+     "peak_gb": 0.0,
+     "reference": false,
+     "total": 10
+    },
+    {
+     "candidate": "q3-coder",
+     "first_s": 51.284,
+     "median_s": 0.17,
+     "metrics": {
+      "completion_tokens": 9.8,
+      "tokens_per_s": 50.11
+     },
+     "pass_rate": 0.8,
+     "passed": 8,
+     "peak_gb": 0.0,
+     "reference": false,
+     "total": 10
+    }
+   ],
+   "lane": "extract",
+   "last_run_at": "2026-10-06T00:40:18Z",
+   "measured_at": "2026-10-06T00:40:18Z",
+   "median_s": 0.136,
+   "metrics": {
+    "completion_tokens": 9.1,
+    "tokens_per_s": 59.16
+   },
+   "parked": "",
+   "parked_until": "",
+   "pass_rate": 0.8,
+   "serves": "local-large",
+   "stale": false,
+   "unverified": false,
+   "wanted": false
+  },
+  {
+   "adopted": false,
+   "adopted_how": "",
+   "age_days": 0.95,
+   "comparison": [
+    {
+     "candidate": "parakeet-tdt-0.6b-v2",
+     "first_s": 0.139,
+     "median_s": 0.075,
+     "metrics": {
+      "wer": 0.0162
+     },
+     "pass_rate": 1.0,
+     "passed": 300,
+     "peak_gb": 0.0,
+     "reference": false,
+     "total": 300
+    }
+   ],
+   "lane": "stt",
+   "last_run_at": "2026-10-05T20:15:57Z",
+   "measured_at": "2026-10-05T20:15:57Z",
+   "median_s": 0.075,
+   "metrics": {
+    "wer": 0.0162
+   },
+   "parked": "",
+   "parked_until": "",
+   "pass_rate": 1.0,
+   "serves": "mlx-community/parakeet-tdt-0.6b-v2",
+   "stale": false,
+   "unverified": false,
+   "wanted": false
+  },
+  {
+   "adopted": false,
+   "adopted_how": "",
+   "age_days": 0.26,
+   "comparison": [
+    {
+     "candidate": "Kokoro-82M-bf16/bm_george",
+     "first_s": 2.789,
+     "median_s": 0.133,
+     "metrics": {
+      "wer": 0.0
+     },
+     "pass_rate": 1.0,
+     "passed": 5,
+     "peak_gb": 0.0,
+     "reference": false,
+     "total": 5
+    },
+    {
+     "candidate": "Breeze-TTS-2",
+     "first_s": 16.507,
+     "median_s": 9.76,
+     "metrics": {
+      "wer": 0.0
+     },
+     "pass_rate": 1.0,
+     "passed": 5,
+     "peak_gb": 0.0,
+     "reference": false,
+     "total": 5
+    }
+   ],
+   "lane": "tts",
+   "last_run_at": "2026-10-06T12:57:15Z",
+   "measured_at": "2026-10-06T12:57:15Z",
+   "median_s": 0.133,
+   "metrics": {
+    "wer": 0.0
+   },
+   "parked": "",
+   "parked_until": "",
+   "pass_rate": 1.0,
+   "serves": "mlx-community/Kokoro-82M-bf16",
+   "stale": false,
+   "unverified": false,
+   "wanted": false
+  }
+ ],
+ "machine": {
+  "accelerator": "unified 96GB",
+  "accelerator_name": "",
+  "arch": "arm64",
+  "first_seen": "2026-10-05T19:28:52Z",
+  "hw_model": "Mac17,15",
+  "label": "Mac Studio M5 Ultra 96 GB",
+  "last_seen": "2026-10-06T19:04:27Z",
+  "memory_gb": 96.0,
+  "os": "macOS 27.0.1",
+  "runtimes": [
+   "cpu",
+   "llamacpp",
+   "mlx"
+  ],
+  "slug": "mac-studio-m5-ultra-96-gb",
+  "versions": {
+   "ace-step": "1.5.0",
+   "diffusers": "0.40.0",
+   "litellm": "1.100.0",
+   "llama.cpp": "11146",
+   "mflux": "0.19.1",
+   "mlx": "0.32.2",
+   "mlx-audio": "0.5.3",
+   "mlx-lm": "0.32.0",
+   "python": "3.12.15",
+   "torch": "2.14.0",
+   "transformers": "5.16.1"
+  }
+ },
+ "schema": 39
+}
