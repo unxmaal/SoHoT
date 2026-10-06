@@ -840,8 +840,11 @@ def _report_inspect(a) -> int:
                     registry, card = resolve_registry(repo, client)
                 except ins.Gone as exc:
                     err(f"{repo}: {exc}")
-                    ms.decide(store, repo, "broken", tier=ms.INSPECT,
-                              detail=str(exc)[:200])
+                    try:
+                        ms.decide(store, repo, "broken", tier=ms.INSPECT,
+                                  detail=str(exc)[:200])
+                    except ms.IllegalTransition:
+                        pass   # a later tier already answered it
                     continue
                 if not registry:
                     err(f"{repo}: neither registry could be reached, so it "
@@ -860,6 +863,8 @@ def _report_inspect(a) -> int:
                                   detail=str(exc)[:200])
                     except KeyError:
                         pass   # named on the command line, never proposed
+                    except ms.IllegalTransition:
+                        pass   # a later tier already answered it
                     continue
                 except ins.InspectError as exc:
                     err(f"{repo}: {exc}")
@@ -900,11 +905,14 @@ def _report_inspect(a) -> int:
                 # commits at all. #270.
                 until = (f"commit_after:{fit.last_commit}"
                          if fit.verdict == "dead" and fit.last_commit else "")
-                ms.decide(store, repo, outcome, tier=ms.INSPECT,
-                          size_bytes=fit.largest if fit.verdict == "fits" else 0,
-                          upstream_idle_days=fit.upstream_idle_days,
-                          until=until,
-                          detail=f"{fit.verdict}: {fit.why}"[:200])
+                try:
+                    ms.decide(store, repo, outcome, tier=ms.INSPECT,
+                              size_bytes=fit.largest if fit.verdict == "fits" else 0,
+                              upstream_idle_days=fit.upstream_idle_days,
+                              until=until,
+                              detail=f"{fit.verdict}: {fit.why}"[:200])
+                except ms.IllegalTransition as exc:
+                    print(f"    kept its state: {exc}")
             # The WEIGHTS are what a download queue can act on. The repo is
             # something to install and screen, and the two are not the same
             # queue: queueing the repo sent GitHub names to snapshot_download,
@@ -943,15 +951,14 @@ def _report_inspect(a) -> int:
                     print(f"    lane corrected from the card: {model_id} "
                           f"-> {fit.lanes[model_id]}")
                 ms.link(store, repo, model_id, "needs")
-                # A sighting is not a reason to reopen a decided name. #399.
-                last = ms.latest(store, model_id)
-                if last and (last["outcome"] in ms.TERMINAL
-                             or last["outcome"] == "screened"):
+                # A sighting never reopens a decided name; decide() refuses. #399.
+                try:
+                    ms.decide(store, model_id, "queued", tier=ms.INSPECT,
+                              size_bytes=size,
+                              detail=f"bytes={size} lane={fit.lanes.get(model_id) or '-'} "
+                                     f"named by {repo}")
+                except ms.IllegalTransition:
                     continue
-                ms.decide(store, model_id, "queued", tier=ms.INSPECT,
-                          size_bytes=size,
-                          detail=f"bytes={size} lane={fit.lanes.get(model_id) or '-'} "
-                                 f"named by {repo}")
     finally:
         store.close()
     if getattr(a, "judge", False):
@@ -1529,7 +1536,7 @@ def _judge_fits(fits, store_path=None) -> int:
                 ms.decide(store, f.repo, "queued", tier=ms.JUDGE, score=score,
                           rubric=rubric.stamp, judge=rubric.model,
                           detail=why[:200])
-            except KeyError:
+            except (KeyError, ms.IllegalTransition):
                 pass
     finally:
         store.close()
@@ -1894,9 +1901,12 @@ def _report_judge_store(a) -> int:
                 err(f"{row['name']}: {exc}")
                 continue
             print(f"  {score:2d}/10  {row['name']:40.40s} {why[:48]}")
-            ms.decide(store, row["name"], "queued", tier=ms.JUDGE, score=score,
-                      rubric=rubric.stamp, judge=rubric.model,
-                      detail=why[:200])
+            try:
+                ms.decide(store, row["name"], "queued", tier=ms.JUDGE,
+                          score=score, rubric=rubric.stamp, judge=rubric.model,
+                          detail=why[:200])
+            except ms.IllegalTransition:
+                continue   # answered by a later tier while this one scored
             scored += 1
     finally:
         store.close()
@@ -2014,7 +2024,7 @@ def _judge_neighbors(found, store):
             ms.decide(store, n.repo, "queued", tier=ms.JUDGE, score=score,
                       rubric=rubric.stamp, judge=rubric.model,
                       detail=reason[:200])
-        except KeyError:
+        except (KeyError, ms.IllegalTransition):
             pass
     return 0
 
@@ -2409,7 +2419,7 @@ def _measure_and_adopt(a, row: dict) -> int:
         try:
             ms.decide(store, name, "queued", tier=ms.SCREEN,
                       detail=f"not measured: {refused}")
-        except KeyError:
+        except (KeyError, ms.IllegalTransition):
             pass      # measured by hand, never proposed; the report still stands
         finally:
             store.close()
@@ -2433,7 +2443,7 @@ def _settle(name: str, outcome: str, detail: str) -> None:
     store = ms.connect()
     try:
         ms.decide(store, name, outcome, tier=ms.MEASURE, detail=detail[:200])
-    except KeyError:
+    except (KeyError, ms.IllegalTransition):
         pass
     finally:
         store.close()
@@ -2615,7 +2625,7 @@ def _judge_proposals(found, store):
         try:
             ms.decide(store, c.name, "queued", tier="judge", score=score,
                       rubric=rubric.stamp, judge=rubric.model, detail=why[:200])
-        except KeyError:
+        except (KeyError, ms.IllegalTransition):
             pass
     found.sort(key=lambda c: -getattr(c, "relevance", 0))
     return found

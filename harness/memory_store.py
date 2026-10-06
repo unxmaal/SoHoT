@@ -19,11 +19,13 @@ from pathlib import Path
 
 from harness import paths, store
 
-SCHEMA_VERSION = 24
+SCHEMA_VERSION = 25
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
 VERDICTS = ("measured", "declined", "broken", "queued", "ignored", "screened")
 TERMINAL = ("measured", "declined", "broken", "ignored")
+#: Outcomes that are not answers. One never replaces a TERMINAL state. #409.
+WAYPOINTS = ("queued", "screened")
 
 #: Where a name can be resolved. A proposal is `org/name` in both registries
 #: and the two namespaces overlap, so the string alone cannot say which one
@@ -46,6 +48,9 @@ INSPECT, JUDGE, SCREEN, MEASURE = "inspect", "judge", "screen", "measure"
 #: harness/adopt.py.
 ADOPT = "adopt"
 TIERS = (INSPECT, JUDGE, SCREEN, MEASURE, ADOPT)
+FETCH = "fetch"
+#: Ladder order: an earlier tier never replaces a later tier's state. #409.
+LADDER = {INSPECT: 0, JUDGE: 1, FETCH: 2, SCREEN: 3, MEASURE: 4, ADOPT: 5}
 
 _DDL = """
 CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT);
@@ -68,7 +73,10 @@ CREATE TABLE IF NOT EXISTS proposals (
     consumes    TEXT NOT NULL DEFAULT '',
     produces    TEXT NOT NULL DEFAULT '',
     first_seen  REAL NOT NULL,
-    last_seen   REAL NOT NULL
+    last_seen   REAL NOT NULL,
+    -- Written only by decide(); see transition_refused(). #409.
+    state       TEXT NOT NULL DEFAULT '',
+    state_verdict_id INTEGER
 );
 
 CREATE TABLE IF NOT EXISTS sightings (
@@ -140,7 +148,10 @@ CREATE TABLE IF NOT EXISTS verdicts (
     -- lanes.PARKED, which carries (why, until) for a lane and was the only
     -- place in the project that said out loud what it was waiting for.
     until       TEXT NOT NULL DEFAULT '',
-    candidate_id INTEGER REFERENCES candidates(id)
+    candidate_id INTEGER REFERENCES candidates(id),
+    -- A named reopen: the state verdict it overrode, and which kind. #409.
+    reopens     INTEGER REFERENCES verdicts(id),
+    reopen_kind TEXT NOT NULL DEFAULT ''
 );
 
 CREATE TABLE IF NOT EXISTS machines (
@@ -375,19 +386,17 @@ def revisitable(conn: sqlite3.Connection, facts: dict | None = None) -> list:
     with no cuda is not declined on the box with the card, and until now
     nothing could find those rows: the reason was a sentence.
 
-    Only the LATEST verdict per proposal counts, so a condition that was
+    Only the verdict holding the state counts, so a condition that was
     already retracted does not resurrect.
     """
     facts = facts if facts is not None else this_machine()
     rows = conn.execute("""
         SELECT p.name, p.lane, v.outcome, v.detail, v.until, v.tier,
                m.fingerprint AS decided_on
-          FROM verdicts v
-          JOIN proposals p ON p.id = v.proposal_id
+          FROM proposals p
+          JOIN verdicts v ON v.id = p.state_verdict_id
           LEFT JOIN machines m ON m.id = v.machine_id
-         WHERE v.id = (SELECT id FROM verdicts w
-                        WHERE w.proposal_id = p.id ORDER BY w.id DESC LIMIT 1)
-           AND v.until != ''
+         WHERE v.until != ''
     """).fetchall()
     # Wherever it was decided: a refusal is written because its condition is
     # unmet, so meeting it later means the machine changed. #295.
@@ -399,8 +408,7 @@ def requeue_revisitable(conn, facts: dict | None = None) -> list[str]:
     """Retract every revisitable verdict back to the inspect tier. #295."""
     names = []
     for r in revisitable(conn, facts):
-        decide(conn, r["name"], "queued", tier=INSPECT,
-               detail=f"retracted: {r['until']} is met here")
+        retract(conn, r["name"], f"{r['until']} is met here")
         names.append(r["name"])
     conn.commit()
     return names
@@ -593,6 +601,10 @@ def _migrate(conn: sqlite3.Connection) -> None:
         raise RuntimeError(
             f"discovery.db is schema {have}, this code speaks {SCHEMA_VERSION}. "
             f"Refusing to touch a newer store.")
+    # First, so every retraction below moves the state it reads. #409.
+    _add_state(conn)
+    if have and have < 25:
+        _backfill_state(conn)
     # The DDL above is CREATE IF NOT EXISTS, so v0 -> v1 and v1 -> v2 (which
     # only adds the extractions table) need nothing beyond the stamp. v3 adds
     # a column to a table that already exists, which CREATE IF NOT EXISTS
@@ -693,8 +705,31 @@ def _migrate(conn: sqlite3.Connection) -> None:
         backfill_candidates(conn)
     conn.execute("CREATE INDEX IF NOT EXISTS ix_verdict_cand "
                  "ON verdicts(candidate_id)")
+    conn.execute("CREATE INDEX IF NOT EXISTS ix_prop_state ON proposals(state)")
     conn.execute("INSERT OR REPLACE INTO meta VALUES ('schema', ?)",
                  (str(SCHEMA_VERSION),))
+    conn.commit()
+
+
+def _add_state(conn) -> None:
+    """The state columns, on a store older than the DDL. #409."""
+    for table, col, ddl in (
+            ("proposals", "state", "TEXT NOT NULL DEFAULT ''"),
+            ("proposals", "state_verdict_id", "INTEGER"),
+            ("verdicts", "reopens", "INTEGER REFERENCES verdicts(id)"),
+            ("verdicts", "reopen_kind", "TEXT NOT NULL DEFAULT ''")):
+        if col not in _columns(conn, table):
+            conn.execute(f"ALTER TABLE {table} ADD COLUMN {col} {ddl}")
+
+
+def _backfill_state(conn) -> None:
+    """Each proposal's state from its newest verdict, as every reader had it."""
+    conn.execute(
+        "UPDATE proposals SET state_verdict_id = (SELECT MAX(v.id) "
+        "FROM verdicts v WHERE v.proposal_id = proposals.id)")
+    conn.execute(
+        "UPDATE proposals SET state = COALESCE((SELECT v.outcome FROM verdicts v "
+        "WHERE v.id = proposals.state_verdict_id), '')")
     conn.commit()
 
 
@@ -724,31 +759,25 @@ def import_human_verdicts_json(conn, path: Path | None = None) -> int:
 
 def _retract_screens_with_no_evidence(conn) -> None:
     """Reopen screen verdicts that are terminal on no evidence. #281."""
-    rows = conn.execute(
-        "SELECT v.id, v.proposal_id, p.name FROM verdicts v "
-        "JOIN proposals p ON p.id = v.proposal_id "
-        "WHERE v.tier = ? AND v.outcome = 'broken' AND v.run_path = '' "
-        "AND v.detail LIKE 'it ran and passed nothing%'", (SCREEN,)).fetchall()
-    seen = set()
-    for _, pid, name in rows:
-        if pid in seen:
-            continue
-        seen.add(pid)
-        # Only where it is still the latest word.
-        latest = conn.execute(
-            "SELECT outcome, run_path, detail FROM verdicts "
-            "WHERE proposal_id = ? ORDER BY id DESC LIMIT 1", (pid,)).fetchone()
-        if not latest or latest[0] != "broken" or latest[1] != "":
-            continue
-        if not str(latest[2] or "").startswith("it ran and passed nothing"):
-            continue
-        conn.execute(
-            "INSERT INTO verdicts (proposal_id, outcome, tier, detail, "
-            "decided_at) VALUES (?, 'queued', ?, ?, ?)",
-            (pid, SCREEN,
-             "retracted: the screen stored no run_path, so the reason it "
-             "passed nothing is unrecoverable and the verdict cannot be "
-             "re-judged. Issue #281.", time.time()))
+    # Only where it is still the state.
+    for r in _stated(
+            conn, "p.state = 'broken' AND v.run_path = '' "
+            "AND v.detail LIKE 'it ran and passed nothing%' AND EXISTS "
+            "(SELECT 1 FROM verdicts w WHERE w.proposal_id = p.id "
+            " AND w.tier = ? AND w.outcome = 'broken' AND w.run_path = '' "
+            " AND w.detail LIKE 'it ran and passed nothing%')", (SCREEN,)):
+        _migration_retraction(conn, r["id"], r["name"], "queued", SCREEN,
+                     "retracted: the screen stored no run_path, so the reason "
+                     "it passed nothing is unrecoverable and the verdict "
+                     "cannot be re-judged. Issue #281.")
+
+
+def _stated(conn, where: str = "", args=()) -> list:
+    """Each proposal beside the verdict holding its state. #409."""
+    return conn.execute(
+        "SELECT p.id, p.name, p.state AS outcome, v.tier, v.detail, v.run_path "
+        "FROM proposals p JOIN verdicts v ON v.id = p.state_verdict_id"
+        + (f" WHERE {where}" if where else ""), args).fetchall()
 
 
 def _reopen_architecture_gaps(conn) -> None:
@@ -756,17 +785,11 @@ def _reopen_architecture_gaps(conn) -> None:
     candidate: declined until a newer one is installed. #293."""
     from harness import screen
     until = screen.load_until()
-    rows = conn.execute(
-        "SELECT v.proposal_id, v.detail FROM verdicts v WHERE v.id IN "
-        "(SELECT MAX(id) FROM verdicts GROUP BY proposal_id) "
-        "AND v.tier = ? AND v.outcome = 'broken'", (SCREEN,)).fetchall()
-    for pid, detail in rows:
-        if screen.is_architecture_gap(detail):
-            conn.execute(
-                "INSERT INTO verdicts (proposal_id, outcome, tier, detail, "
-                "until, decided_at) VALUES (?, 'declined', ?, ?, ?, ?)",
-                (pid, SCREEN, "the installed runtime could not load it: "
-                 + str(detail)[:500], until, time.time()))
+    for r in _stated(conn, "p.state = 'broken' AND v.tier = ?", (SCREEN,)):
+        if screen.is_architecture_gap(r["detail"]):
+            _migration_retraction(conn, r["id"], r["name"], "declined", SCREEN,
+                         "the installed runtime could not load it: "
+                         + str(r["detail"])[:500], until=until)
 
 
 def _canonical_lanes(conn) -> None:
@@ -828,19 +851,12 @@ def _retract_harness_refusals(conn) -> None:
 
     A verdict is not deleted -- it is a record of what happened, and losing it
     would lose the evidence that this went wrong. A fresh `queued` row is
-    appended saying why, and the latest verdict is what every tier reads.
-    Issues #211, #206.
+    appended saying why, and it moves the proposal's state. Issues #211, #206.
     """
     from harness import fetching, screen
-    rows = conn.execute(
-        "SELECT p.id, p.name, v.detail, v.tier FROM proposals p "
-        "JOIN verdicts v ON v.proposal_id = p.id "
-        "WHERE v.id = (SELECT v2.id FROM verdicts v2 "
-        "               WHERE v2.proposal_id = p.id ORDER BY v2.id DESC LIMIT 1) "
-        "  AND v.outcome IN ('declined', 'broken')").fetchall()
-    now = time.time()
-    for row in rows:
-        pid, name, detail, tier = row[0], row[1], row[2] or "", row[3] or ""
+    for row in _stated(conn, "p.state IN ('declined', 'broken')"):
+        pid, name = row["id"], row["name"]
+        detail, tier = row["detail"] or "", row["tier"] or ""
         phrase = (fetching.refused_by_harness(detail)
                   or screen.refused_by_harness(detail))
         # A TERMINAL VERDICT WITH NO EVIDENCE CANNOT BE RE-JUDGED. The screen
@@ -853,11 +869,9 @@ def _retract_harness_refusals(conn) -> None:
             phrase = "an exit code with no evidence recorded"
         if not phrase:
             continue
-        conn.execute(
-            "INSERT INTO verdicts (proposal_id, tier, outcome, detail, "
-            "decided_at) VALUES (?, ?, 'queued', ?, ?)",
-            (pid, tier, f"retracted: {phrase!r} was a fact about this "
-                        f"harness, not a verdict on {name}", now))
+        _migration_retraction(conn, pid, name, "queued", tier,
+                     f"retracted: {phrase!r} was a fact about this "
+                     f"harness, not a verdict on {name}")
 
 
 def _retract_verdicts_with_no_control(conn) -> None:
@@ -873,22 +887,13 @@ def _retract_verdicts_with_no_control(conn) -> None:
     is named, because naming it is honest and a pattern match would catch
     legitimate declines too. Issue #223.
     """
-    rows = conn.execute(
-        "SELECT p.id, p.name FROM proposals p JOIN verdicts v "
-        "ON v.proposal_id = p.id "
-        "WHERE v.id = (SELECT v2.id FROM verdicts v2 "
-        "               WHERE v2.proposal_id = p.id ORDER BY v2.id DESC LIMIT 1) "
-        "  AND v.tier = 'adopt' AND v.outcome = 'declined' "
-        "  AND v.detail LIKE '%does not beat the incumbent%' "
-        "  AND p.name = 'LiquidAI/LFM2.5-350M'").fetchall()
-    now = time.time()
-    for row in rows:
-        conn.execute(
-            "INSERT INTO verdicts (proposal_id, tier, outcome, detail, "
-            "decided_at) VALUES (?, ?, 'queued', ?, ?)",
-            (row[0], SCREEN,
-             "retracted: measured against a control that passed 0 of 27, so "
-             "the verdict described a run in which nothing ran", now))
+    for row in _stated(
+            conn, "v.tier = 'adopt' AND p.state = 'declined' "
+            "AND v.detail LIKE '%does not beat the incumbent%' "
+            "AND p.name = 'LiquidAI/LFM2.5-350M'"):
+        _migration_retraction(conn, row["id"], row["name"], "queued", SCREEN,
+                     "retracted: measured against a control that passed 0 of "
+                     "27, so the verdict described a run in which nothing ran")
 
 
 #: How the inspect tier spells the registry's own task inside a description.
@@ -929,80 +934,48 @@ def _relane_from_the_card(conn) -> None:
     # A terminal verdict reached in the WRONG LANE says nothing about the
     # candidate: the screen built its spec from the lane and handed it cases
     # from a modality it does not serve. Re-queued, not deleted.
-    now = time.time()
     for pid, name, was, card in moved:
-        last = conn.execute(
-            "SELECT outcome, tier FROM verdicts WHERE proposal_id = ? "
-            "ORDER BY id DESC LIMIT 1", (pid,)).fetchone()
+        last = _stated(conn, "p.id = ?", (pid,))
         # Only a tier that ran lane cases depends on the lane: "too big" and
         # "a LoRA" are true in any lane. #379.
-        if not last or last["outcome"] not in TERMINAL \
-                or last["tier"] not in (SCREEN, MEASURE):
+        if not last or last[0]["outcome"] not in TERMINAL \
+                or last[0]["tier"] not in (SCREEN, MEASURE):
             continue
-        conn.execute(
-            "INSERT INTO verdicts (proposal_id, tier, outcome, detail, "
-            "decided_at) VALUES (?, ?, 'queued', ?, ?)",
-            (pid, SCREEN,
-             f"retracted: settled in the {was or 'unknown'} lane, which came "
-             f"from the source rather than from {name}'s own card ({card})",
-             now))
+        _migration_retraction(conn, pid, name, "queued", SCREEN,
+                     f"retracted: settled in the {was or 'unknown'} lane, which "
+                     f"came from the source rather than from {name}'s own card "
+                     f"({card})")
 
 
 def _requeue_broken_matching(conn, phrases: tuple = ("guidance_scale has to be",)) -> None:
-    rows = conn.execute(
-        "SELECT p.id, p.name, v.detail FROM proposals p "
-        "JOIN verdicts v ON v.proposal_id = p.id "
-        "WHERE v.id = (SELECT v2.id FROM verdicts v2 "
-        "               WHERE v2.proposal_id = p.id ORDER BY v2.id DESC LIMIT 1) "
-        "  AND v.outcome = 'broken'").fetchall()
-    now = time.time()
-    for pid, name, detail in rows:
-        hit = next((p for p in phrases if p in (detail or "").lower()), "")
+    for r in _stated(conn, "p.state = 'broken'"):
+        hit = next((p for p in phrases if p in (r["detail"] or "").lower()), "")
         if hit:
-            conn.execute(
-                "INSERT INTO verdicts (proposal_id, tier, outcome, detail, "
-                "decided_at) VALUES (?, ?, 'queued', ?, ?)",
-                (pid, SCREEN, f"retracted: {hit!r} was a setting this harness "
-                              f"chose, not a verdict on {name}", now))
+            _migration_retraction(conn, r["id"], r["name"], "queued", SCREEN,
+                         f"retracted: {hit!r} was a setting this harness "
+                         f"chose, not a verdict on {r['name']}")
 
 
 def _requeue_screens_of_missing_weights(conn) -> None:
     """A screen that found no file in a snapshot holding no weights screened
     our missing download, not the candidate. #399."""
     from harness import fetching
-    rows = conn.execute(
-        "SELECT p.id, p.name, v.detail FROM proposals p "
-        "JOIN verdicts v ON v.proposal_id = p.id "
-        "WHERE v.id = (SELECT v2.id FROM verdicts v2 "
-        "               WHERE v2.proposal_id = p.id ORDER BY v2.id DESC LIMIT 1) "
-        "  AND v.outcome = 'broken'").fetchall()
-    now = time.time()
-    for pid, name, detail in rows:
-        if "no such file or directory" in (detail or "").lower() \
-                and not fetching.have(name):
-            conn.execute(
-                "INSERT INTO verdicts (proposal_id, tier, outcome, detail, "
-                "decided_at) VALUES (?, ?, 'queued', ?, ?)",
-                (pid, SCREEN, f"retracted: {name}'s weights were never "
-                              f"downloaded, so the screen ran on nothing", now))
+    for r in _stated(conn, "p.state = 'broken'"):
+        if "no such file or directory" in (r["detail"] or "").lower() \
+                and not fetching.have(r["name"]):
+            _migration_retraction(conn, r["id"], r["name"], "queued", SCREEN,
+                         f"retracted: {r['name']}'s weights were never "
+                         f"downloaded, so the screen ran on nothing")
 
 
 def _requeue_diffusers_layout_gaps(conn) -> None:
     from harness import screen
-    rows = conn.execute(
-        "SELECT p.id, p.name, v.detail FROM proposals p "
-        "JOIN verdicts v ON v.proposal_id = p.id "
-        "WHERE v.id = (SELECT v2.id FROM verdicts v2 "
-        "               WHERE v2.proposal_id = p.id ORDER BY v2.id DESC LIMIT 1) "
-        "  AND v.outcome = 'broken'").fetchall()
-    now = time.time()
-    for pid, name, detail in rows:
-        if any(g in (detail or "").lower() for g in screen.DIFFUSERS_LAYOUT_GAPS):
-            conn.execute(
-                "INSERT INTO verdicts (proposal_id, tier, outcome, detail, "
-                "decided_at) VALUES (?, ?, 'queued', ?, ?)",
-                (pid, SCREEN, f"retracted: the diffusers loader, not {name}, "
-                              f"failed to assemble the pipeline", now))
+    for r in _stated(conn, "p.state = 'broken'"):
+        if any(g in (r["detail"] or "").lower()
+               for g in screen.DIFFUSERS_LAYOUT_GAPS):
+            _migration_retraction(conn, r["id"], r["name"], "queued", SCREEN,
+                         f"retracted: the diffusers loader, not {r['name']}, "
+                         f"failed to assemble the pipeline")
 
 
 def _retract_verdicts_from_runs_that_never_ran(conn) -> None:
@@ -1043,27 +1016,16 @@ def _retract_verdicts_from_runs_that_never_ran(conn) -> None:
             if why and why != cli.NO_ROWS_FOR_CANDIDATE:
                 never_ran.add((key, why))
 
-    now = time.time()
     for key, why in sorted(never_ran):
         # The key's proposal comes from the candidates table, not the string. #407.
-        rows = conn.execute(
-            "SELECT p.id, p.name FROM proposals p JOIN verdicts v "
-            "ON v.proposal_id = p.id "
-            "WHERE v.id = (SELECT v2.id FROM verdicts v2 "
-            "               WHERE v2.proposal_id = p.id "
-            "               ORDER BY v2.id DESC LIMIT 1) "
-            "  AND v.tier = 'adopt' AND v.outcome IN ('declined', 'broken') "
-            "  AND (p.name = ? OR p.id IN (SELECT proposal_id FROM candidates "
-            "                              WHERE receipt_key = ?))",
-            (key, key)).fetchall()
-        for row in rows:
-            conn.execute(
-                "INSERT INTO verdicts (proposal_id, tier, outcome, detail, "
-                "decided_at) VALUES (?, ?, 'queued', ?, ?)",
-                (row[0], SCREEN,
-                 f"retracted: every case was refused before it reached a "
-                 f"model ({why}), so the verdict described a run in which "
-                 f"nothing ran", now))
+        for row in _stated(
+                conn, "v.tier = 'adopt' AND p.state IN ('declined', 'broken') "
+                "AND (p.name = ? OR p.id IN (SELECT proposal_id FROM candidates "
+                "WHERE receipt_key = ?))", (key, key)):
+            _migration_retraction(conn, row["id"], row["name"], "queued", SCREEN,
+                         f"retracted: every case was refused before it reached "
+                         f"a model ({why}), so the verdict described a run in "
+                         f"which nothing ran")
 
 
 def _verdicts_name_a_candidate(conn) -> None:
@@ -1079,7 +1041,9 @@ def _verdicts_name_a_candidate(conn) -> None:
                     _DDL, re.S).group(0)
     have = [r["name"] for r in conn.execute("PRAGMA table_info(verdicts)")]
     conn.commit()
-    conn.execute(ddl.replace("IF NOT EXISTS verdicts", "verdicts_new"))
+    # A rebuild drops the table `reopens` points at. #409.
+    conn.execute("PRAGMA foreign_keys = OFF")
+    conn.execute(ddl.replace("IF NOT EXISTS verdicts (", "verdicts_new ("))
     cols = ", ".join(c for c in have)
     conn.execute(f"INSERT INTO verdicts_new ({cols}) SELECT {cols} FROM verdicts")
     conn.execute("DROP TABLE verdicts")
@@ -1087,6 +1051,7 @@ def _verdicts_name_a_candidate(conn) -> None:
     conn.execute("CREATE INDEX IF NOT EXISTS ix_verdict_prop "
                  "ON verdicts(proposal_id)")
     conn.commit()
+    conn.execute("PRAGMA foreign_keys = ON")
 
 
 #: The shape `lh judge` stored before receipts carried specs: Engine.name. #337.
@@ -1192,7 +1157,7 @@ def backfill_candidates(conn, runs=None) -> dict:
             continue
         target = got["proposal_id"] if got["proposal_id"] != pid else None
         newest = conn.execute(
-            "SELECT MAX(id) FROM verdicts WHERE proposal_id = ?",
+            "SELECT state_verdict_id FROM proposals WHERE id = ?",
             (target,)).fetchone()[0] if target else None
         moved = conn.execute("SELECT id FROM verdicts WHERE proposal_id = ?",
                              (pid,)).fetchall()
@@ -1411,39 +1376,163 @@ def remember_machine(conn: sqlite3.Connection, facts: dict | None = None) -> int
     return int(row["id"])
 
 
+class IllegalTransition(ValueError):
+    """A write the state machine refuses. A named reopen is the way back. #409."""
+
+
+#: Named reopens: kind -> the states it may reopen, None meaning any. Only
+#: these move a terminal state back to a waypoint, and each records why.
+RETRACTION = "retraction"
+REOPENS: dict = {RETRACTION: None}
+
+
+def transition_refused(state: str, held_tier: str, outcome: str,
+                       tier: str, reopen: str = "") -> str:
+    """Why `tier` may not move `state` to `outcome`, or '' if it may. #409."""
+    if reopen:
+        if reopen not in REOPENS:
+            return f"{reopen!r} is not a reopen; known: {', '.join(REOPENS)}"
+        allowed = REOPENS[reopen]
+        if allowed is not None and state not in allowed:
+            return f"a {reopen} cannot reopen {state or 'nothing'}"
+        return ""
+    if not state or state == "queued":
+        return ""
+    if state in TERMINAL and outcome in WAYPOINTS:
+        return (f"{outcome} at {tier or '-'} would reopen {state} at "
+                f"{held_tier or '-'}; only a named reopen does that")
+    if LADDER.get(tier, 0) < LADDER.get(held_tier, 0):
+        return (f"{tier or '-'} comes before {held_tier} on the ladder, so its "
+                f"{outcome} cannot replace {state}")
+    return ""
+
+
+def fold(events) -> tuple[str, str]:
+    """(state, tier) after (outcome, tier, reopen) events, refused ones skipped."""
+    state, held = "", ""
+    for outcome, tier, reopen in events:
+        if not transition_refused(state, held, outcome, tier, reopen):
+            state, held = outcome, tier
+    return state, held
+
+
+def _held(conn, pid: int):
+    return conn.execute(
+        "SELECT p.state, p.state_verdict_id AS id, v.tier, v.outcome, v.detail, "
+        "v.score, v.run_path FROM proposals p LEFT JOIN verdicts v "
+        "ON v.id = p.state_verdict_id WHERE p.id = ?", (pid,)).fetchone()
+
+
+def _write(conn, pid: int, name: str, row: dict, reopen: str = "",
+           reason: str = "") -> int:
+    """Insert one verdict and move the proposal's state, or refuse. #409."""
+    if reopen and not reason.strip():
+        raise IllegalTransition(f"{name}: a {reopen} must say why")
+    for _ in range(8):
+        held = _held(conn, pid)
+        # A deterministic tier restating its state is not a second fact (#184);
+        # compared with the state row, so a retraction is never undone (#225).
+        if (held["id"] and not reopen and row.get("score") is None
+                and not row.get("run_path")
+                and held["tier"] == row["tier"]
+                and held["outcome"] == row["outcome"]
+                and held["detail"] == row["detail"] and held["score"] is None
+                and not held["run_path"]):
+            return held["id"]
+        why = transition_refused(held["state"], held["tier"] or "",
+                                 row["outcome"], row["tier"], reopen)
+        if why:
+            raise IllegalTransition(f"{name}: {why}")
+        cols = {**row, "proposal_id": pid}
+        if reopen:
+            cols.update(reopens=held["id"], reopen_kind=reopen)
+        vid = conn.execute(
+            f"INSERT INTO verdicts ({', '.join(cols)}) "
+            f"VALUES ({', '.join('?' * len(cols))})",
+            tuple(cols.values())).lastrowid
+        moved = conn.execute(
+            "UPDATE proposals SET state = ?, state_verdict_id = ? "
+            "WHERE id = ? AND COALESCE(state_verdict_id, 0) = ?",
+            (row["outcome"], vid, pid, held["id"] or 0)).rowcount
+        if moved == 1:
+            return vid
+        # Another writer moved the state first; re-check against theirs.
+        conn.execute("DELETE FROM verdicts WHERE id = ?", (vid,))
+    raise RuntimeError(f"{name}: the state kept moving under this write")
+
+
+def _migration_retraction(conn, pid: int, name: str, outcome: str, tier: str,
+                          detail: str, until: str = "") -> int:
+    """A migration's retraction, in whatever columns this schema has yet."""
+    row = {"outcome": outcome, "tier": tier, "detail": detail,
+           "decided_at": time.time()}
+    if "machine_id" in _columns(conn, "verdicts"):
+        row["machine_id"] = remember_machine(conn)
+    if until:
+        row["until"] = until
+    return _write(conn, pid, name, row, reopen=RETRACTION, reason=detail)
+
+
+def retract(conn, name: str, why: str, *, outcome: str = "queued",
+            tier: str = INSPECT, until: str = "") -> int:
+    """Reopen or reclassify a decided name, saying why. #409."""
+    detail = why if why.startswith("retracted:") else f"retracted: {why}"
+    return decide(conn, name, outcome, tier=tier, until=until, detail=detail,
+                  reopen=RETRACTION, reason=why)
+
+
+def state_audit(conn) -> dict:
+    """Proposals whose history the transition table would fold differently,
+    and those once terminal and now open, for a person to decide. #409."""
+    events: dict = {}
+    once_terminal = set()
+    for r in conn.execute(
+            "SELECT proposal_id, outcome, tier, reopen_kind, detail "
+            "FROM verdicts WHERE proposal_id IS NOT NULL ORDER BY id"):
+        # Before #409 a retraction was only its prose.
+        kind = r["reopen_kind"] or (
+            RETRACTION if str(r["detail"] or "").startswith("retracted:") else "")
+        events.setdefault(r["proposal_id"], []).append(
+            (r["outcome"], r["tier"] or "", kind))
+        if r["outcome"] in TERMINAL:
+            once_terminal.add(r["proposal_id"])
+    differs, reopened = [], []
+    for p in conn.execute("SELECT id, name, state FROM proposals ORDER BY id"):
+        folded, _ = fold(events.get(p["id"], []))
+        if folded != p["state"]:
+            differs.append({"name": p["name"], "state": p["state"],
+                            "folded": folded})
+        if p["id"] in once_terminal and p["state"] not in TERMINAL:
+            reopened.append({"name": p["name"], "state": p["state"]})
+    return {"folds_differently": differs, "terminal_then_open": reopened}
+
+
 def decide(conn: sqlite3.Connection, name: str, outcome: str, *, tier: str = "",
            detail: str = "", issue: int | None = None, run_path: str = "",
            score: float | None = None, rubric: str = "", judge: str = "",
            at: float | None = None, until: str = "",
            size_bytes: int = 0, attaches_to: str = "",
            upstream_idle_days: float = 0.0,
-           candidate_id: int | None = None) -> int:
-    """Record what happened to a proposal.
+           candidate_id: int | None = None, reopen: str = "",
+           reason: str = "") -> int:
+    """Record what happened to a proposal, and move its state.
 
-    Verdicts accumulate rather than replace: a screen verdict and a later
-    measurement are two facts, and which tier produced a row is part of whether
-    two rows may be compared.
+    The single write path for a verdict and for proposals.state. A move
+    transition_refused() names raises IllegalTransition; a named `reopen`
+    (a kind in REOPENS) with its `reason` is the only way back from a
+    terminal state. #409.
 
-    THE MACHINE IS RECORDED HERE AND NOWHERE ELSE. This is the single write
-    path for a verdict, so no caller has to remember -- and 56 rows in the
-    real store prove that asking callers to remember yields the fact as prose
-    inside `detail` when it is remembered at all. Issue #266.
+    THE MACHINE IS RECORDED HERE AND NOWHERE ELSE. Issue #266.
 
     `until` is what would make this verdict worth asking again, as a
-    PREDICATE rather than a sentence: `runtime:cuda`, `memory_gb:>22`. The
-    first draft of this stored "a machine with cuda" and re-created the exact
-    defect being fixed one level up -- a fact about a machine that only a
-    human can evaluate. See until_met().
+    PREDICATE rather than a sentence. See until_met().
     """
     if outcome not in VERDICTS:
         raise ValueError(f"unknown outcome {outcome!r}; "
                          f"known: {', '.join(VERDICTS)}")
     if not until and outcome in TERMINAL:
         until = until_for(detail)
-    # A RUN PATH THAT IS NOT A PATH IS NOT EVIDENCE. One row in the real store
-    # holds `ok`, because a snapshot stand-in returned that string and the
-    # column took it. A verdict claiming evidence it cannot produce is worse
-    # than one claiming none, so this refuses rather than storing it. #266.
+    # A RUN PATH THAT IS NOT A PATH IS NOT EVIDENCE. #266.
     if run_path and not (Path(run_path).is_absolute() or "/" in run_path
                          or "\\" in run_path):
         raise ValueError(
@@ -1455,37 +1544,33 @@ def decide(conn: sqlite3.Connection, name: str, outcome: str, *, tier: str = "",
     if not row and not (candidate_id and not name):
         raise KeyError(f"no proposal named {name!r}")
     pid = row["id"] if row else None
-    # A DETERMINISTIC TIER RESTATING ITSELF IS NOT A SECOND FACT. A judge
-    # re-scoring is a new draw and a run is a new run, so the skip is narrow:
-    # no score, no run path, and the LATEST row said exactly this. Issue #184.
-    #
-    # LATEST, not any earlier row of the tier. Matching any of them made every
-    # retraction permanent: a re-queued candidate re-screened green, decide()
-    # found the old `screened` row three verdicts back, wrote nothing, and the
-    # retraction stayed the latest verdict forever. Issue #225.
-    if score is None and not run_path:
+    if pid is None and score is None and not run_path:
+        # A candidate no proposal names has no state to compare with. #184.
         same = conn.execute(
             "SELECT id, tier, outcome, detail, score, run_path FROM verdicts "
-            + ("WHERE proposal_id = ? " if pid else "WHERE candidate_id = ? ")
-            + "ORDER BY id DESC LIMIT 1",
-            (pid or candidate_id,)).fetchone()
+            "WHERE candidate_id = ? ORDER BY id DESC LIMIT 1",
+            (candidate_id,)).fetchone()
         if (same and same["tier"] == tier and same["outcome"] == outcome
                 and same["detail"] == detail and same["score"] is None
                 and not same["run_path"]):
             return same["id"]
-    # A MACHINE THAT CANNOT BE IDENTIFIED IS RECORDED AS UNKNOWN, never
-    # omitted: a NULL here would be read as "some machine" and quietly pooled
-    # with rows that do know.
-    machine_id = remember_machine(conn)
-    vid = conn.execute(
-        "INSERT INTO verdicts (proposal_id, outcome, tier, detail, issue, "
-        "run_path, score, rubric, judge, decided_at, machine_id, until, "
-        "size_bytes, attaches_to, upstream_idle_days, candidate_id) "
-        "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-        (pid, outcome, tier, detail, issue, run_path, score, rubric,
-         judge, time.time() if at is None else at, machine_id, until,
-         int(size_bytes or 0), attaches_to,
-         float(upstream_idle_days or 0.0), candidate_id)).lastrowid
+    fields = {"outcome": outcome, "tier": tier, "detail": detail,
+              "issue": issue, "run_path": run_path, "score": score,
+              "rubric": rubric, "judge": judge,
+              "decided_at": time.time() if at is None else at,
+              # Unknown is recorded as unknown, never omitted. #266.
+              "machine_id": remember_machine(conn), "until": until,
+              "size_bytes": int(size_bytes or 0), "attaches_to": attaches_to,
+              "upstream_idle_days": float(upstream_idle_days or 0.0),
+              "candidate_id": candidate_id}
+    if pid is None:
+        cols = {**fields, "proposal_id": None}
+        vid = conn.execute(
+            f"INSERT INTO verdicts ({', '.join(cols)}) "
+            f"VALUES ({', '.join('?' * len(cols))})",
+            tuple(cols.values())).lastrowid
+    else:
+        vid = _write(conn, pid, name, fields, reopen=reopen, reason=reason)
     conn.commit()
     return vid
 
@@ -1506,9 +1591,8 @@ def link(conn: sqlite3.Connection, src: str, dst: str, relation: str,
 
 
 def settled(conn: sqlite3.Connection) -> set[str]:
-    """Names with a terminal verdict, which must not be proposed again."""
-    q = ("SELECT DISTINCT p.name FROM proposals p JOIN verdicts v "
-         f"ON v.proposal_id = p.id WHERE v.outcome IN "
+    """Names in a terminal state, which must not be proposed again. #409."""
+    q = (f"SELECT name FROM proposals WHERE state IN "
          f"({','.join('?' * len(TERMINAL))})")
     return {r["name"] for r in conn.execute(q, TERMINAL)}
 
@@ -1548,10 +1632,8 @@ def pending(conn, limit: int = 50, registry: str | None = None,
     q = f"""
         SELECT p.name, COUNT(s.id) AS times, MAX(s.seen_at) AS last_seen
         FROM proposals p JOIN sightings s ON s.proposal_id = p.id
-        WHERE p.resolved <> '' {where} AND COALESCE((
-            SELECT v.outcome FROM verdicts v WHERE v.proposal_id = p.id
-             ORDER BY v.id DESC LIMIT 1
-        ), '') NOT IN ({','.join('?' * len(stop))})
+        WHERE p.resolved <> '' {where}
+          AND p.state NOT IN ({','.join('?' * len(stop))})
         GROUP BY p.id
         ORDER BY times DESC, last_seen DESC
         LIMIT ?
@@ -1560,11 +1642,10 @@ def pending(conn, limit: int = 50, registry: str | None = None,
 
 
 def latest(conn, name: str) -> dict | None:
-    """The newest verdict for a name, or None."""
+    """A name's state and the tier that set it, or None. #409."""
     row = conn.execute(
-        "SELECT v.outcome, v.tier FROM verdicts v JOIN proposals p "
-        "ON p.id = v.proposal_id WHERE p.name = ? ORDER BY v.id DESC LIMIT 1",
-        (name,)).fetchone()
+        "SELECT p.state AS outcome, v.tier FROM proposals p JOIN verdicts v "
+        "ON v.id = p.state_verdict_id WHERE p.name = ?", (name,)).fetchone()
     return dict(row) if row else None
 
 
@@ -1593,10 +1674,8 @@ def survivors(conn, limit: int = 10) -> list[dict]:
     """
     rows = conn.execute("""
         SELECT p.name, p.lane, v.detail
-        FROM proposals p JOIN verdicts v ON v.proposal_id = p.id
-        WHERE v.id = (SELECT v2.id FROM verdicts v2
-                      WHERE v2.proposal_id = p.id ORDER BY v2.id DESC LIMIT 1)
-          AND v.tier = ? AND v.outcome = 'screened'
+        FROM proposals p JOIN verdicts v ON v.id = p.state_verdict_id
+        WHERE p.state = 'screened' AND v.tier = ?
         ORDER BY v.id DESC LIMIT ?
     """, (SCREEN, limit)).fetchall()
     return [dict(r) for r in rows]
@@ -1610,9 +1689,8 @@ def by_registry(conn) -> dict[str, int]:
     out = {}
     for r in conn.execute(
             "SELECT p.registry AS registry, COUNT(*) AS n FROM proposals p "
-            "WHERE p.resolved <> '' AND p.id NOT IN "
-            f"(SELECT proposal_id FROM verdicts WHERE outcome IN "
-            f"({','.join('?' * len(TERMINAL))})) GROUP BY p.registry", TERMINAL):
+            "WHERE p.resolved <> '' AND p.state NOT IN "
+            f"({','.join('?' * len(TERMINAL))}) GROUP BY p.registry", TERMINAL):
         out[r["registry"]] = r["n"]
     return out
 
@@ -1632,7 +1710,7 @@ def judgeable(conn, limit: int = 50) -> list[dict]:
     judge model are recorded beside the score, so a run under a NEW rubric is
     told apart by that rather than by scoring everything again.
     """
-    q = """
+    q = f"""
         SELECT p.name, p.lane, p.registry, p.kind, p.description,
                COUNT(s.id) AS times, MAX(s.relevance) AS relevance,
                MAX(s.seen_at) AS last_seen,
@@ -1653,21 +1731,15 @@ def judgeable(conn, limit: int = 50) -> list[dict]:
         -- three of the four adopt verdicts in the real store are one model
         -- measured, declined, and measured again. #253.
         --
-        -- The LATEST verdict decides, not any verdict, because a retraction
-        -- is an appended `queued` row over the top of a terminal one. Reading
-        -- "has ever been terminal" would make every retraction permanent,
-        -- which is the defect schema 7 exists to undo.
-        AND COALESCE((
-            SELECT v.outcome FROM verdicts v
-             WHERE v.proposal_id = p.id ORDER BY v.id DESC LIMIT 1
-        ), '') NOT IN (SELECT value FROM json_each(?))
+        -- The STATE decides, which a retraction reopens; a screened name is
+        -- past the judge, which may not move it back. #409.
+        AND p.state NOT IN ({','.join('?' * (len(TERMINAL) + 1))})
         GROUP BY p.id
         ORDER BY times DESC, last_seen DESC
         LIMIT ?
     """
-    import json as _json
     return [dict(r) for r in conn.execute(
-        q, (INSPECT, INSPECT, JUDGE, _json.dumps(list(TERMINAL)), limit))]
+        q, (INSPECT, INSPECT, JUDGE, *TERMINAL, "screened", limit))]
 
 
 def judgeable_total(conn) -> int:
@@ -1807,10 +1879,9 @@ def retire_unlisted(conn: sqlite3.Connection, name: str, keep,
         other = row["name"]
         if other in keep:
             continue
-        cur = conn.execute(
-            "SELECT outcome FROM verdicts v JOIN proposals p ON p.id = v.proposal_id "
-            "WHERE p.name = ? ORDER BY v.id DESC LIMIT 1", (other,)).fetchone()
-        if not cur or cur["outcome"] != "queued":
+        cur = conn.execute("SELECT state FROM proposals WHERE name = ?",
+                           (other,)).fetchone()
+        if not cur or cur["state"] != "queued":
             continue
         if any(p != name for p in parents(conn, other, relation)):
             continue      # another repo still names it; not ours to retire
@@ -1830,7 +1901,7 @@ def by_source(conn: sqlite3.Connection) -> list[dict]:
         SELECT s.source AS source,
                COUNT(DISTINCT s.proposal_id) AS proposals,
                COUNT(DISTINCT CASE WHEN p.resolved <> '' THEN p.id END) AS resolved,
-               COUNT(DISTINCT CASE WHEN v.outcome IN ('measured','declined',
+               COUNT(DISTINCT CASE WHEN p.state IN ('measured','declined',
                      'broken','ignored') THEN p.id END) AS settled,
                COUNT(DISTINCT CASE WHEN v.outcome = 'measured' THEN p.id END)
                      AS measured

@@ -376,8 +376,8 @@ def test_a_changed_detail_is_a_new_verdict(tmp_path):
     conn = _store(tmp_path)
     ms.decide(conn, "org/thing", "declined", tier=ms.INSPECT,
               detail="too-big: 51.8 GiB over the 22 GiB ceiling")
-    ms.decide(conn, "org/thing", "queued", tier=ms.INSPECT,
-              detail="fits: weights from 17.0 to 17.0 GiB")
+    ms.decide(conn, "org/thing", "declined", tier=ms.INSPECT,
+              detail="too-big: 51.8 GiB over the 48 GiB ceiling")
     n = conn.execute("SELECT COUNT(*) c FROM verdicts").fetchone()["c"]
     assert n == 2
 

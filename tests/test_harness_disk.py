@@ -51,9 +51,10 @@ def world(tmp_path, monkeypatch):
     conn.close()
 
 
-def verdict(conn, name, outcome, tier="screen", at=NOW - 2 * DAY):
+def verdict(conn, name, outcome, tier="screen", at=NOW - 2 * DAY, retract=""):
     ms.record(conn, ms.Seen(name=name, source="t"))
-    ms.decide(conn, name, outcome, tier=tier, at=at)
+    ms.decide(conn, name, outcome, tier=tier, at=at, reason=retract,
+              reopen=ms.RETRACTION if retract else "")
 
 
 def inv(w, typed=None, adopted=None):
@@ -134,7 +135,7 @@ def test_a_queued_candidate_is_kept(world):
     d = make_repo(world.hub, "org/next")
     verdict(world.conn, "org/next", "broken", at=NOW - 30 * DAY)
     verdict(world.conn, "org/next", "queued", tier="screen",
-            at=NOW - 29 * DAY)
+            at=NOW - 29 * DAY, retract="harness refusal")
     i = inv(world)
     assert entry(i, "org/next").group == disk.QUEUED
     for wanted in (disk.REJECTED, disk.UNKNOWN):
@@ -145,7 +146,8 @@ def test_a_queued_candidate_is_kept(world):
 def test_retracted_then_rejected_is_rejected(world):
     make_repo(world.hub, "org/again")
     verdict(world.conn, "org/again", "broken", at=NOW - 30 * DAY)
-    verdict(world.conn, "org/again", "queued", at=NOW - 20 * DAY)
+    verdict(world.conn, "org/again", "queued", at=NOW - 20 * DAY,
+            retract="harness refusal")
     verdict(world.conn, "org/again", "broken", at=NOW - 3 * DAY)
     assert entry(inv(world), "org/again").group == disk.REJECTED
 

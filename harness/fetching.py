@@ -194,12 +194,8 @@ def queued(conn, tiers=FETCHABLE_TIERS, kind: str = FETCHABLE_KIND,
                -- before spending gigabytes on it. It was absent, so the check
                -- read None and never fired.
                p.description,
-               (SELECT v.outcome FROM verdicts v WHERE v.proposal_id = p.id
-                 ORDER BY v.id DESC LIMIT 1) AS outcome,
-               (SELECT v.tier FROM verdicts v WHERE v.proposal_id = p.id
-                 ORDER BY v.id DESC LIMIT 1) AS tier,
-               (SELECT v.detail FROM verdicts v WHERE v.proposal_id = p.id
-                 ORDER BY v.id DESC LIMIT 1) AS detail,
+               -- The state and the verdict that set it. #409.
+               p.state AS outcome, st.tier AS tier, st.detail AS detail,
                -- The newest verdict that CARRIES a size, which is not always
                -- the newest verdict: a later row saying why a fetch was
                -- refused has no size in it, and neither does the newest
@@ -224,7 +220,8 @@ def queued(conn, tiers=FETCHABLE_TIERS, kind: str = FETCHABLE_KIND,
                           WHERE e.dst = p.id AND e.relation = 'needs'
                             AND v2.score IS NOT NULL
                           ORDER BY v2.id DESC LIMIT 1), 0) AS score
-        FROM proposals p""").fetchall()
+        FROM proposals p LEFT JOIN verdicts st ON st.id = p.state_verdict_id
+        WHERE p.state = 'queued'""").fetchall()
     def downloadable(r) -> bool:
         """snapshot_download wants a HuggingFace id. The registry says so
         outright; `kind` only has to answer for rows older than that column."""

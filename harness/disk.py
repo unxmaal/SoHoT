@@ -193,9 +193,11 @@ def keepers(conn=None, gateway_files=None, typed=None, adopted=None) -> Keepers:
 
 
 def latest_verdicts(conn) -> dict:
+    """Each proposal's state and the verdict that set it. #409."""
     rows = conn.execute(
-        "SELECT p.name, v.id, v.outcome, v.tier, v.decided_at FROM verdicts v "
-        "JOIN proposals p ON p.id = v.proposal_id ORDER BY v.id").fetchall()
+        "SELECT p.name, v.id, p.state AS outcome, v.tier, v.decided_at "
+        "FROM proposals p JOIN verdicts v ON v.id = p.state_verdict_id "
+        "ORDER BY v.id").fetchall()
     return {str(r["name"]).lower(): dict(r) for r in rows}
 
 
