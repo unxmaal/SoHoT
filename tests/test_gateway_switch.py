@@ -82,7 +82,6 @@ def config(tmp_path, monkeypatch):
     path.write_text(yaml.safe_dump(CONFIG), encoding="utf-8")
     monkeypatch.setenv(gateway.ENV_VAR, str(path))
     monkeypatch.delenv("LLAMACPP_PORT", raising=False)
-    monkeypatch.delenv(gs.KEY_ENV, raising=False)
     return path
 
 
@@ -116,11 +115,20 @@ def test_a_gateway_that_will_not_say_is_unobservable():
 
 
 def test_the_probe_sends_the_gateway_key_when_one_is_set(gw, monkeypatch):
+    from harness import gateway_key
     gs.in_flight(gw.base)
     assert "Authorization" not in gw.calls[-1][1]
-    monkeypatch.setenv(gs.KEY_ENV, "sk-test")
+    monkeypatch.setenv(gateway_key.ENV_VAR, "sk-test")
     gs.in_flight(gw.base)
     assert gw.calls[-1][1]["Authorization"] == "Bearer sk-test"
+
+
+def test_the_probe_sends_the_machines_stored_key(gw):
+    """One source of truth with every other client (#482): no env needed."""
+    from harness import gateway_key
+    stored = gateway_key.ensure()
+    gs.in_flight(gw.base)
+    assert gw.calls[-1][1]["Authorization"] == f"Bearer {stored}"
 
 
 # ---- waiting for quiet -----------------------------------------------------------

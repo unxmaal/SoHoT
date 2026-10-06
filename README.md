@@ -636,7 +636,7 @@ key serves anyone who can reach port 4000, which now includes tool calling.
   `general_settings.master_key`. With no key it refuses to start rather than
   serve unauthenticated.
 - **In-repo clients** (`soh` lane commands, the MCP tools, the eval runners,
-  throughput, rubric evals, `scripts/smoke.sh`) send it as
+  throughput, rubric evals, the alias switch's backlog probe, `scripts/smoke.sh`) send it as
   `Authorization: Bearer`. `SOHOT_GATEWAY_KEY` overrides the stored key: set it
   to the serving machine's key when using another machine's gateway. A refused
   request says to run `soh gateway key`.
