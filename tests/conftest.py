@@ -37,6 +37,15 @@ def _no_real_services(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def _free_disk_is_pinned(monkeypatch):
+    """No test reads the runner's free disk: the tmp HF_HOME sits on whatever
+    drive CI gives it (31 GiB on Windows), under the fetch floor. #411."""
+    from harness import fetching
+    monkeypatch.setattr(fetching, "free_bytes",
+                        lambda path=None: 900 * fetching.GIB)
+
+
+@pytest.fixture(autouse=True)
 def _no_real_disk_sweep(monkeypatch):
     """No test deletes from the real weights cache. #373."""
     from harness import disk
