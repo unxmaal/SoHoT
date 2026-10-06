@@ -150,7 +150,7 @@ generate() {
 # to find out about a permission. So probe from inside launchd first.
 preflight() {
   local probe="/tmp/localharness-preflight.$$"
-  local label="$PREFIX.preflight"
+  local label="$PREFIX.preflight.$$"   # per run: parallel suites share gui/$UID
   local root="${HF_ROOT:-$PWD/hf_root}"
   cat > "$probe.sh" <<PROBE
 #!/bin/bash

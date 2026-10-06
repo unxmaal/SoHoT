@@ -21,6 +21,7 @@ from harness import completion
 
 from evals.core import Case, score
 from evals.runners.base import BaseRunner, RunnerError
+from evals.runners.text import _runner_error
 
 #: How the complaint is handed back. Deliberately blunt: a small model given a
 #: polite hint tends to produce another polite variation of the same mistake.
@@ -68,7 +69,7 @@ class RepairRunner(BaseRunner):
                     context=case.context if attempt == 1 else "",
                     timeout=self.timeout)
             except completion.CompletionError as exc:
-                raise RunnerError(str(exc)) from exc
+                raise _runner_error(exc) from exc
 
             # ACROSS ALL ATTEMPTS. What the workflow cost, not what the last
             # attempt cost -- otherwise a three-attempt repair reports the same

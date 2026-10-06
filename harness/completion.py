@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import httpx
 
+from harness import reasons
 from harness.checks.base import extract
 
 DEFAULT_GATEWAY = "http://127.0.0.1:4000"
@@ -76,8 +77,21 @@ ROOT_TAGS = {"svg": ("svg",), "web": ("html", "!doctype"), "code": ()}
 _START_HINT = "is the gateway up? ./scripts/serve-gateway.sh"
 
 
+#: The token budget and request timeout this harness chooses. #406.
+MAX_TOKENS = 4000
+TIMEOUT_S = 180.0
+LOAD_TIMEOUT_S = 1800.0
+
+
 class CompletionError(RuntimeError):
     """The gateway did not return usable text."""
+
+    def __init__(self, detail: str, failure_class: str = "",
+                 limit: tuple = ()):
+        super().__init__(detail)
+        # Set where the cause is known; "" leaves it to reasons.classify. #408.
+        self.failure_class = failure_class
+        self.limit = limit
 
 
 def user_message(prompt: str, context: str = "") -> str:
@@ -99,9 +113,10 @@ def complete(prompt: str, model: str, gateway: str = DEFAULT_GATEWAY,
 
 
 def complete_with_usage(prompt: str, model: str, gateway: str = DEFAULT_GATEWAY,
-             modality: str = "", context: str = "", timeout: float = 180.0,
-             temperature: float | None = None, max_tokens: int = 4000,
-             sampling: dict | None = None) -> tuple[str, dict]:
+             modality: str = "", context: str = "", timeout: float = TIMEOUT_S,
+             temperature: float | None = None, max_tokens: int = MAX_TOKENS,
+             sampling: dict | None = None,
+             template: dict | None = None) -> tuple[str, dict]:
     """As `complete()`, but also returns the server's token `usage`.
 
     The gateway reports usage on every completion and this was thrown away, so
@@ -127,6 +142,8 @@ def complete_with_usage(prompt: str, model: str, gateway: str = DEFAULT_GATEWAY,
         ],
         **knobs,
     }
+    if template:
+        payload["chat_template_kwargs"] = dict(template)
     try:
         r = _post(gateway, payload, timeout)
         if (400 <= getattr(r, "status_code", 200) < 500
@@ -143,7 +160,8 @@ def complete_with_usage(prompt: str, model: str, gateway: str = DEFAULT_GATEWAY,
         text = message.get("content")
         usage = body.get("usage") or {}
     except httpx.TimeoutException as exc:
-        raise CompletionError(f"timed out after {timeout}s") from exc
+        raise CompletionError(f"timed out after {timeout}s", reasons.TIMEOUT,
+                              ("timeout_s", timeout)) from exc
     except httpx.HTTPStatusError as exc:
         # LiteLLM explains itself in the body, not the status line.
         raise CompletionError(
@@ -151,9 +169,10 @@ def complete_with_usage(prompt: str, model: str, gateway: str = DEFAULT_GATEWAY,
             f"{exc.response.text[:400]}") from exc
     except httpx.HTTPError as exc:
         raise CompletionError(
-            f"gateway unreachable at {gateway}: {exc} ({_START_HINT})") from exc
+            f"gateway unreachable at {gateway}: {exc} ({_START_HINT})",
+            reasons.REFUSED_BY_GATEWAY) from exc
     except (KeyError, IndexError, TypeError, ValueError) as exc:
-        raise CompletionError(f"malformed response: {exc}") from exc
+        raise CompletionError(f"malformed response: {exc}", reasons.CRASHED) from exc
 
     if text is None or not text.strip():
         # A THINKING MODEL that spent its whole budget reasoning returns null
@@ -168,8 +187,9 @@ def complete_with_usage(prompt: str, model: str, gateway: str = DEFAULT_GATEWAY,
                 f"{max_tokens}-token budget on reasoning "
                 f"({len(reasoning)} characters of it). This is a hybrid "
                 f"thinking model; use a non-thinking one for this lane, or "
-                f"raise max_tokens.")
-        raise CompletionError("empty completion")
+                f"raise max_tokens.", reasons.TOKEN_BUDGET_EXHAUSTED,
+                ("max_tokens", max_tokens))
+        raise CompletionError("empty completion", reasons.CONTENT_FAILED)
     return text, usage
 
 

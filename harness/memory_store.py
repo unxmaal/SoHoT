@@ -19,7 +19,7 @@ from pathlib import Path
 
 from harness import paths, store
 
-SCHEMA_VERSION = 28
+SCHEMA_VERSION = 29
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
 VERDICTS = ("measured", "declined", "broken", "queued", "ignored", "screened")
@@ -157,7 +157,9 @@ CREATE TABLE IF NOT EXISTS verdicts (
     reopens     INTEGER REFERENCES verdicts(id),
     reopen_kind TEXT NOT NULL DEFAULT '',
     -- The stored run this verdict was read from. run_path is a download dir. #410.
-    run_id      INTEGER REFERENCES runs(id)
+    run_id      INTEGER REFERENCES runs(id),
+    -- WHY, from reasons.REASONS, written by the tier that knows. #408.
+    reason      TEXT NOT NULL DEFAULT ''
 );
 
 CREATE TABLE IF NOT EXISTS machines (
@@ -214,7 +216,11 @@ CREATE TABLE IF NOT EXISTS results (
     detail       TEXT NOT NULL DEFAULT '',
     metrics      TEXT NOT NULL DEFAULT '{}',
     warnings     TEXT NOT NULL DEFAULT '[]',
-    artifact     TEXT
+    artifact     TEXT,
+    -- Why it failed, set by the runner where it failed (reasons.py). #408.
+    failure_class TEXT NOT NULL DEFAULT '',
+    -- The harness limit it hit, as a `limit:` predicate body. #406.
+    hit_limit    TEXT NOT NULL DEFAULT ''
 );
 
 -- What a lane serves from now: one row per adoption, never parsed from detail. #412.
@@ -421,6 +427,18 @@ def until_met(until: str, facts: dict | None = None) -> bool:
             have = feeds.installed_version(pkg) or None
         a, b = _version_tuple(have), _version_tuple(floor)
         return a is not None and b is not None and a > b
+    if key == "limit" and ">" in want:
+        # A limit this harness chose; met once the harness chooses more. #406.
+        name, _, floor = want.partition(">")
+        if "limits" in facts:
+            have = (facts.get("limits") or {}).get(name)
+        else:
+            from harness import reasons
+            have = reasons.limits().get(name)
+        try:
+            return have is not None and float(have) > float(floor)
+        except ValueError:
+            return False
     if key == "commit_after":
         seen = (facts.get("last_commit") or "").strip()
         # STRING COMPARISON IS CORRECT FOR ISO-8601 AND ONLY FOR IT, so both
@@ -665,6 +683,7 @@ def _migrate(conn: sqlite3.Connection) -> None:
     # First, so every retraction below moves the state it reads. #409.
     _add_state(conn)
     _add_retest(conn)
+    _add_reasons(conn)
     if have and have < 25:
         _backfill_state(conn)
     # The DDL above is CREATE IF NOT EXISTS, so v0 -> v1 and v1 -> v2 (which
@@ -776,12 +795,119 @@ def _migrate(conn: sqlite3.Connection) -> None:
         backfill_retests(conn)
     if have and have < 28:
         backfill_adoptions(conn)
+    if have and have < 29:
+        backfill_result_classes(conn)
+        backfill_reasons(conn)
+        _reopen_terminal_harness_and_limit_facts(conn)
     conn.execute("CREATE INDEX IF NOT EXISTS ix_verdict_cand "
                  "ON verdicts(candidate_id)")
     conn.execute("CREATE INDEX IF NOT EXISTS ix_prop_state ON proposals(state)")
     conn.execute("INSERT OR REPLACE INTO meta VALUES ('schema', ?)",
                  (str(SCHEMA_VERSION),))
     conn.commit()
+
+
+def _add_reasons(conn) -> None:
+    """verdicts.reason and the results' failure class, on an older store. #408."""
+    for table, col in (("verdicts", "reason"), ("results", "failure_class"),
+                       ("results", "hit_limit")):
+        if col not in _columns(conn, table):
+            conn.execute(f"ALTER TABLE {table} ADD COLUMN {col} "
+                         f"TEXT NOT NULL DEFAULT ''")
+
+
+def backfill_result_classes(conn) -> int:
+    """A failure class for result rows stored before runners set one, read
+    once from their detail. #408."""
+    from harness import reasons
+    n = 0
+    for r in conn.execute(
+            "SELECT r.id, r.detail, c.spec FROM results r LEFT JOIN candidates c "
+            "ON c.id = r.candidate_id WHERE r.passed = 0 "
+            "AND r.failure_class = ''").fetchall():
+        cls = reasons.legacy_class(r["detail"] or "", r["spec"] or "")
+        if cls:
+            conn.execute("UPDATE results SET failure_class = ? WHERE id = ?",
+                         (cls, r["id"]))
+            n += 1
+    conn.commit()
+    return n
+
+
+#: Old prose for the two limits whose predicate a migration can recover. #406.
+_BUDGET = re.compile(r"(\d+)-token budget")
+_CAP = re.compile(r"over the ([\d.]+) GiB cap")
+
+
+def _reopen_terminal_harness_and_limit_facts(conn) -> list:
+    """A terminal state held by a harness fact or a harness limit is not a
+    verdict on the candidate. Only rows backfill_reasons labelled harness or
+    limit; returns (name, what was done). #406, #408."""
+    from harness import reasons
+    done = []
+    for r in conn.execute(
+            "SELECT p.id, p.name, v.id AS vid, v.tier, v.detail, v.reason, "
+            "v.until FROM proposals p JOIN verdicts v "
+            "ON v.id = p.state_verdict_id WHERE p.state IN "
+            f"({', '.join('?' * len(TERMINAL))}) AND v.reason IN (?, ?)",
+            (*TERMINAL, reasons.HARNESS, reasons.LIMIT)).fetchall():
+        detail = r["detail"] or ""
+        budget, cap = _BUDGET.search(detail), _CAP.search(detail)
+        if r["reason"] == reasons.HARNESS:
+            cls = reasons.legacy_class(detail.split(":", 1)[-1]) or "harness"
+            why = (f"retracted: {cls} was a fact about this harness, not a "
+                   f"verdict on {r['name']}")
+        elif "timed out after" in detail:
+            why = ("retracted: screen now warms the model; the 180 s timeout "
+                   "counted a cold load")
+        elif budget or cap:
+            until = (f"limit:max_tokens>{budget.group(1)}" if budget
+                     else f"limit:download_gib>{float(cap.group(1)):g}")
+            if not r["until"]:
+                conn.execute("UPDATE verdicts SET until = ? WHERE id = ?",
+                             (until, r["vid"]))
+                done.append((r["name"], f"until {until}"))
+            continue
+        else:
+            continue
+        _migration_retraction(conn, r["id"], r["name"], "queued",
+                              r["tier"] or SCREEN, why)
+        done.append((r["name"], why))
+    conn.commit()
+    return done
+
+
+def backfill_reasons(conn) -> int:
+    """verdicts.reason for rows written before #408, read once from their
+    prose. Classifies only: no outcome or state changes. RULE #292."""
+    from harness import reasons
+    n = 0
+    for r in conn.execute(
+            "SELECT id, outcome, tier, detail, reopen_kind FROM verdicts "
+            "WHERE reason = ''").fetchall():
+        why = reasons.legacy_reason(r["outcome"], r["tier"] or "",
+                                    r["detail"] or "", r["reopen_kind"] or "")
+        if why:
+            conn.execute("UPDATE verdicts SET reason = ? WHERE id = ?",
+                         (why, r["id"]))
+            n += 1
+    conn.commit()
+    return n
+
+
+def reason_audit(conn) -> dict:
+    """The reason distribution, over every verdict and over held states. #408."""
+    every = {r[0]: r[1] for r in conn.execute(
+        "SELECT reason, COUNT(*) FROM verdicts GROUP BY reason")}
+    held = {}
+    for r in conn.execute(
+            "SELECT p.state, v.reason, COUNT(*) AS n FROM proposals p "
+            "JOIN verdicts v ON v.id = p.state_verdict_id "
+            "GROUP BY p.state, v.reason"):
+        held.setdefault(r["state"], {})[r["reason"]] = r["n"]
+    ours = sum(n for state, by in held.items() if state in TERMINAL
+               for why, n in by.items() if why in ("harness", "limit"))
+    return {"verdicts": every, "held": held, "terminal_harness_or_limit": ours}
 
 
 def _add_state(conn) -> None:
@@ -909,10 +1035,10 @@ def _stated(conn, where: str = "", args=()) -> list:
 def _reopen_architecture_gaps(conn) -> None:
     """A runtime that could not build the architecture is not a verdict on the
     candidate: declined until a newer one is installed. #293."""
-    from harness import screen
+    from harness import reasons, screen
     until = screen.load_until()
     for r in _stated(conn, "p.state = 'broken' AND v.tier = ?", (SCREEN,)):
-        if screen.is_architecture_gap(r["detail"]):
+        if reasons.legacy_architecture_gap(r["detail"]):
             _migration_retraction(conn, r["id"], r["name"], "declined", SCREEN,
                          "the installed runtime could not load it: "
                          + str(r["detail"])[:500], until=until)
@@ -979,12 +1105,11 @@ def _retract_harness_refusals(conn) -> None:
     would lose the evidence that this went wrong. A fresh `queued` row is
     appended saying why, and it moves the proposal's state. Issues #211, #206.
     """
-    from harness import fetching, screen
+    from harness import reasons
     for row in _stated(conn, "p.state IN ('declined', 'broken')"):
         pid, name = row["id"], row["name"]
         detail, tier = row["detail"] or "", row["tier"] or ""
-        phrase = (fetching.refused_by_harness(detail)
-                  or screen.refused_by_harness(detail))
+        phrase = reasons.legacy_refused(detail)
         # A TERMINAL VERDICT WITH NO EVIDENCE CANNOT BE RE-JUDGED. The screen
         # stored only its own prose, so rows reading exactly "the screen
         # exited N" discarded the stderr that says whose fault the exit was.
@@ -1095,10 +1220,9 @@ def _requeue_screens_of_missing_weights(conn) -> None:
 
 
 def _requeue_diffusers_layout_gaps(conn) -> None:
-    from harness import screen
+    from harness import reasons
     for r in _stated(conn, "p.state = 'broken'"):
-        if any(g in (r["detail"] or "").lower()
-               for g in screen.DIFFUSERS_LAYOUT_GAPS):
+        if reasons.legacy_layout_gap(r["detail"]):
             _migration_retraction(conn, r["id"], r["name"], "queued", SCREEN,
                          f"retracted: the diffusers loader, not {r['name']}, "
                          f"failed to assemble the pipeline")
@@ -1545,7 +1669,7 @@ def reopen_due_retests(conn, now: float | None = None) -> list[str]:
     for r in due_retests(conn, now):
         why = f"retest {r['retest_count'] + 1}/{RETESTS}: {r['state']} at {r['tier']}"
         if decide_or_skip(conn, r["name"], "queued", tier=INSPECT, at=now,
-                          detail=why, reopen=RETEST, reason=why) is not None:
+                          detail=why, reopen=RETEST, reopen_why=why) is not None:
             names.append(r["name"])
     return names
 
@@ -1614,9 +1738,9 @@ def _held(conn, pid: int):
 
 
 def _write(conn, pid: int, name: str, row: dict, reopen: str = "",
-           reason: str = "") -> int:
+           why: str = "") -> int:
     """Insert one verdict and move the proposal's state, or refuse. #409."""
-    if reopen and not reason.strip():
+    if reopen and not why.strip():
         raise IllegalTransition(f"{name}: a {reopen} must say why")
     for _ in range(8):
         held = _held(conn, pid)
@@ -1661,7 +1785,9 @@ def _migration_retraction(conn, pid: int, name: str, outcome: str, tier: str,
         row["machine_id"] = remember_machine(conn)
     if until:
         row["until"] = until
-    return _write(conn, pid, name, row, reopen=RETRACTION, reason=detail)
+    if "reason" in _columns(conn, "verdicts"):
+        row["reason"] = "reopened"
+    return _write(conn, pid, name, row, reopen=RETRACTION, why=detail)
 
 
 def retract(conn, name: str, why: str, *, outcome: str = "queued",
@@ -1669,7 +1795,7 @@ def retract(conn, name: str, why: str, *, outcome: str = "queued",
     """Reopen or reclassify a decided name, saying why. #409."""
     detail = why if why.startswith("retracted:") else f"retracted: {why}"
     return decide(conn, name, outcome, tier=tier, until=until, detail=detail,
-                  reopen=RETRACTION, reason=why)
+                  reopen=RETRACTION, reopen_why=why)
 
 
 def decide_or_skip(conn, name: str, outcome: str, **kw) -> int | None:
@@ -1714,7 +1840,8 @@ def decide(conn: sqlite3.Connection, name: str, outcome: str, *, tier: str = "",
            size_bytes: int = 0, attaches_to: str = "",
            upstream_idle_days: float = 0.0,
            candidate_id: int | None = None, reopen: str = "",
-           reason: str = "", run_id: int | None = None) -> int:
+           reopen_why: str = "", reason: str = "",
+           run_id: int | None = None) -> int:
     """Record what happened to a proposal, and move its state.
 
     The single write path for a verdict and for proposals.state. A move
@@ -1725,13 +1852,18 @@ def decide(conn: sqlite3.Connection, name: str, outcome: str, *, tier: str = "",
     THE MACHINE IS RECORDED HERE AND NOWHERE ELSE. Issue #266.
 
     `until` is what would make this verdict worth asking again, as a
-    PREDICATE rather than a sentence. See until_met().
+    PREDICATE rather than a sentence, written by the caller. See until_met().
+    `reason` is why, from reasons.REASONS; a named reopen is `reopened`. #408.
     """
+    from harness import reasons
     if outcome not in VERDICTS:
         raise ValueError(f"unknown outcome {outcome!r}; "
                          f"known: {', '.join(VERDICTS)}")
-    if not until and outcome in TERMINAL:
-        until = until_for(detail)
+    if reopen:
+        reason = reasons.REOPENED
+    if reason and reason not in reasons.REASONS:
+        raise ValueError(f"unknown reason {reason!r}; "
+                         f"known: {', '.join(reasons.REASONS)}")
     # A RUN PATH THAT IS NOT A PATH IS NOT EVIDENCE. #266.
     if run_path and not (Path(run_path).is_absolute() or "/" in run_path
                          or "\\" in run_path):
@@ -1762,7 +1894,8 @@ def decide(conn: sqlite3.Connection, name: str, outcome: str, *, tier: str = "",
               "machine_id": remember_machine(conn), "until": until,
               "size_bytes": int(size_bytes or 0), "attaches_to": attaches_to,
               "upstream_idle_days": float(upstream_idle_days or 0.0),
-              "candidate_id": candidate_id, "run_id": run_id}
+              "candidate_id": candidate_id, "run_id": run_id,
+              "reason": reason}
     if pid is None:
         cols = {**fields, "proposal_id": None}
         vid = conn.execute(
@@ -1770,7 +1903,7 @@ def decide(conn: sqlite3.Connection, name: str, outcome: str, *, tier: str = "",
             f"VALUES ({', '.join('?' * len(cols))})",
             tuple(cols.values())).lastrowid
     else:
-        vid = _write(conn, pid, name, fields, reopen=reopen, reason=reason)
+        vid = _write(conn, pid, name, fields, reopen=reopen, why=reopen_why)
     conn.commit()
     return vid
 
@@ -2058,7 +2191,7 @@ def parents(conn: sqlite3.Connection, name: str,
 
 
 def retire_unlisted(conn: sqlite3.Connection, name: str, keep,
-                    relation: str = "needs", reason: str = "",
+                    relation: str = "needs", why: str = "",
                     outcome: str = "ignored") -> list[str]:
     """Retire things `name` queued that it no longer ranks.
 
@@ -2087,7 +2220,7 @@ def retire_unlisted(conn: sqlite3.Connection, name: str, keep,
             continue      # another repo still names it; not ours to retire
         # The state can move between the read above and this write.
         if decide_or_skip(conn, other, outcome, tier="inspect",
-                          detail=reason[:200]) is not None:
+                          detail=why[:200], reason="candidate") is not None:
             retired.append(other)
     return retired
 

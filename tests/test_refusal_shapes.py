@@ -6,9 +6,11 @@ import httpx
 import pytest
 import respx
 
+from evals.core import Case, summarize
+from evals.runners.base import BaseRunner, RunnerError
 from harness import completion as comp
 from harness import memory_store as ms
-from harness import screen
+from harness import reasons, screen
 
 GW = "http://127.0.0.1:4000"
 URL = f"{GW}/v1/chat/completions"
@@ -47,14 +49,21 @@ def test_any_other_refusal_is_not_retried():
 # --- what counts as an architecture gap --------------------------------------
 
 def test_a_chat_template_refusal_is_not_an_architecture_gap():
-    assert not screen.is_architecture_gap(
-        'gateway returned HTTP 404: {"error": "System role not supported"}')
-    assert screen.is_architecture_gap(
-        'gateway returned HTTP 404: {"error": "Model type gpt_x not supported."}')
+    assert reasons.classify(
+        'gateway returned HTTP 404: {"error": "System role not supported"}') \
+        != reasons.LOAD_FAILED_RUNTIME
+    assert reasons.classify(
+        'gateway returned HTTP 404: {"error": "Model type gpt_x not supported."}') \
+        == reasons.LOAD_FAILED_RUNTIME
 
 
 def _summary(cand, failure):
-    return {cand: {"passed": 0, "failures": [failure]}}
+    """Built through the runner boundary, as evals.run builds it. #408."""
+    runner = BaseRunner()
+    runner.candidate = runner.spec = cand
+    case_id, _, detail = failure.partition(": ")
+    return summarize([runner.failed(Case(case_id, "code", "p"),
+                                    RunnerError(detail))])
 
 
 def test_llama_server_failing_to_load_waits_on_a_newer_build(monkeypatch):
@@ -62,7 +71,7 @@ def test_llama_server_failing_to_load_waits_on_a_newer_build(monkeypatch):
     cand = "llamacpp:K2-Horizon-7B-Q4_K_M"
     fail = ('chunk-bytes: gateway returned HTTP 500: {"error":{"code":500,'
             '"message":"model name=K2-Horizon-7B-Q4_K_M failed to load"}}')
-    got, why = screen.outcome(0, _summary(cand, fail), candidate=cand)
+    got, why, *_ = screen.outcome(0, _summary(cand, fail), candidate=cand)
     assert got == "declined", why
     assert screen.load_until(cand) == "version:llama.cpp>10809"
 

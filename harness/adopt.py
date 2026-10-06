@@ -160,7 +160,8 @@ def record(conn, verdict: Verdict, spec: str = "",
                          f"adoption of it could never be served")
     row = candidates.get(conn, spec)
     vid = ms.decide(conn, row["proposal"] or "", outcome, tier=TIER,
-                    detail=detail[:200], candidate_id=cid, run_id=run_id)
+                    detail=detail[:200], candidate_id=cid, run_id=run_id,
+                    reason="candidate")
     if verdict.adopt:
         if verdict.how not in HOW:
             raise ValueError(f"unknown adoption kind {verdict.how!r}")

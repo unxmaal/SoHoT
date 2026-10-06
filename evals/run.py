@@ -32,6 +32,7 @@ from dataclasses import replace
 from evals.core import (MODALITIES, Case, Receipt, cases_digest, comparable,
                         direction_of, load_cases, summarize)
 from evals.environment import capture
+from evals.runners.base import RunnerError
 from evals.runners.process import ProcessRunner
 from evals.runners.chain import ChainRunner
 from evals.runners.repair import RepairRunner
@@ -306,6 +307,13 @@ def effective_sampling(modality: str, candidates: list[str]) -> dict:
 
 def build_runner(candidate: str, gateway: str, outdir: Path | None,
                  adherence: str | None = None):
+    runner = _build_runner(candidate, gateway, outdir, adherence)
+    runner.spec = candidate
+    return runner
+
+
+def _build_runner(candidate: str, gateway: str, outdir: Path | None,
+                  adherence: str | None = None):
     kind = kind_of(candidate)
     if kind in ("gateway", LLAMACPP_KIND):
         # A gateway alias may carry sampling overrides, so a sweep is a command
@@ -659,10 +667,18 @@ def _execute(args) -> int:
             continue
         runner = build_runner(candidate, args.gateway, outdir,
                               adherence=args.adherence)
+        runner.screening = bool(args.screen)
         specs[runner.candidate] = candidate
         print(f"\n── {runner.candidate}", flush=True)
+        # A cold load is not the case's to pay for; a failed one is every case's. #406.
+        cold = None
+        if args.screen:
+            try:
+                runner.warm()
+            except RunnerError as exc:
+                cold = exc
         for case in mine:
-            r = runner.run(case)
+            r = runner.failed(case, cold) if cold else runner.run(case)
             results.append(r)
             mark = "pass" if r.passed else "FAIL"
             note = "" if r.passed else f"  {r.detail}"

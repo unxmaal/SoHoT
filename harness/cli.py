@@ -32,7 +32,7 @@ from pathlib import Path
 
 from harness.checks import code as code_check
 from harness import (audio, completion, discover as discovery, env, exclusive,
-                     lanes, memory, paths, proc, vector)
+                     lanes, memory, paths, proc, reasons, vector)
 from harness.checks import html as html_check
 from harness.checks import image as image_check
 from harness.checks import svg as svg_check
@@ -842,7 +842,7 @@ def _report_inspect(a) -> int:
                     err(f"{repo}: {exc}")
                     try:
                         ms.decide(store, repo, "broken", tier=ms.INSPECT,
-                                  detail=str(exc)[:200])
+                                  detail=str(exc)[:200], reason=reasons.UPSTREAM)
                     except ms.IllegalTransition:
                         pass   # a later tier already answered it
                     continue
@@ -860,7 +860,7 @@ def _report_inspect(a) -> int:
                     err(f"{repo}: {exc}")
                     try:
                         ms.decide(store, repo, "broken", tier=ms.INSPECT,
-                                  detail=str(exc)[:200])
+                                  detail=str(exc)[:200], reason=reasons.UPSTREAM)
                     except KeyError:
                         pass   # named on the command line, never proposed
                     except ms.IllegalTransition:
@@ -898,18 +898,13 @@ def _report_inspect(a) -> int:
             # never proposed again. "unknown" settles nothing, deliberately.
             outcome = {"fits": "queued", "unknown": ""}.get(fit.verdict, "declined")
             if outcome:
-                # A `dead` refusal WAITS ON SOMEBODY ELSE'S REPOSITORY, and
-                # is recorded `declined`, which is terminal. Without the
-                # condition a candidate stays refused even after its upstream
-                # ships -- and a requantisation repo has no reason to receive
-                # commits at all. #270.
-                until = (f"commit_after:{fit.last_commit}"
-                         if fit.verdict == "dead" and fit.last_commit else "")
+                # The tier that read the repo writes why and what would end
+                # the wait; nothing re-reads its sentence. #270, #333, #408.
                 try:
                     ms.decide(store, repo, outcome, tier=ms.INSPECT,
                               size_bytes=fit.largest if fit.verdict == "fits" else 0,
                               upstream_idle_days=fit.upstream_idle_days,
-                              until=until,
+                              reason=ins.reason_of(fit), until=ins.until_of(fit),
                               detail=f"{fit.verdict}: {fit.why}"[:200])
                 except ms.IllegalTransition as exc:
                     print(f"    kept its state: {exc}")
@@ -932,7 +927,7 @@ def _report_inspect(a) -> int:
             # weights this repo queued under an older ranking, and no longer
             # ranks, are retired. Issue #73.
             ms.retire_unlisted(
-                store, repo, keep=ranked, reason=(
+                store, repo, keep=ranked, why=(
                     "no longer among this repo's top-ranked weights"))
             for model_id in ranked:
                 size = fit.weights[model_id]
@@ -954,7 +949,7 @@ def _report_inspect(a) -> int:
                 # A sighting never reopens a decided name; decide() refuses. #399.
                 try:
                     ms.decide(store, model_id, "queued", tier=ms.INSPECT,
-                              size_bytes=size,
+                              size_bytes=size, reason=reasons.CANDIDATE,
                               detail=f"bytes={size} lane={fit.lanes.get(model_id) or '-'} "
                                      f"named by {repo}")
                 except ms.IllegalTransition:
@@ -1521,6 +1516,7 @@ def _judge_fits(fits, store_path=None) -> int:
             print(f"    {score:2d}/10  {f.repo:36.36s} {why[:56]}")
             try:
                 ms.decide(store, f.repo, "queued", tier=ms.JUDGE, score=score,
+                          reason=reasons.CANDIDATE,
                           rubric=rubric.stamp, judge=rubric.model,
                           detail=why[:200])
             except (KeyError, ms.IllegalTransition):
@@ -1756,6 +1752,7 @@ def _report_screen(a) -> int:
                 print(f"   QUEUED: {why_not}")
                 ms.decide_or_skip(store, r["name"], "queued", tier=ms.SCREEN,
                                   detail=f"not screened: {why_not}"[:600],
+                                  reason=reasons.MEMORY,
                                   until=f"memory_gb:>{memory.available_gb():.1f}")
                 continue
             # Its own receipt directory, not the newest for the modality. #282.
@@ -1767,7 +1764,7 @@ def _report_screen(a) -> int:
                 print(f"   QUEUED: the screen could not start: {exc}")
                 ms.decide_or_skip(store, r["name"], "queued", tier=ms.SCREEN,
                                   detail=f"not screened: the screen could not start: "
-                                         f"{exc}"[:600])
+                                         f"{exc}"[:600], reason=reasons.HARNESS)
                 continue
             # The RUN's own summary, read from what it wrote rather than parsed
             # out of its chatter: a tier that infers an outcome from stdout is
@@ -1780,29 +1777,30 @@ def _report_screen(a) -> int:
             cid = candidates.ensure(store, r["candidate"], proposal=r["name"],
                                     lane=r["modality"])
             key = candidates.key_for(store, r["candidate"])
-            # The run's own stderr is where a refused request says so, and a
-            # refusal is a fact about the harness rather than the candidate.
-            got, why = screen.outcome(proc.returncode, summary,
-                                      detail=(proc.stderr or "")[-2000:],
-                                      candidate=r["candidate"], key=key)
+            # Read once, here, and only when the run wrote no receipt. #408.
+            stderr_class = "" if summary is not None else reasons.classify(
+                (proc.stderr or "")[-2000:], reasons.STDERR, r["candidate"])
+            verdict = screen.outcome(proc.returncode, summary,
+                                     candidate=r["candidate"], key=key,
+                                     stderr_class=stderr_class,
+                                     facts=ms.this_machine())
+            got, why = verdict.outcome, verdict.detail
             print(f"   {got.upper()}: {why}")
             if proc.returncode != 0:
                 err(proc.stderr.strip()[-400:] or "no stderr")
-            # THE VERDICT CARRIES ITS EVIDENCE. Storing only `why` threw the
-            # stderr away, so "the screen exited 1" was all a later reader
-            # had -- and when NOT_THE_CANDIDATE grew a phrase, the retraction
-            # that derives from it could not tell whose fault the exit was.
-            # A terminal verdict whose evidence is gone cannot be re-judged.
+            # The stderr tail stays as evidence for a person; the reason and
+            # the class are the columns code reads. #281, #408.
             evidence = " ".join((proc.stderr or "").split())[-300:]
             detail = f"{why} || {evidence}" if evidence else why
             ms.decide_or_skip(store, r["name"], got, tier=ms.SCREEN,
                               detail=detail[:600],
                               run_id=(stored or {}).get("run_id"),
-                              until=screen.load_until(r["candidate"])
-                              if got == "declined" else "", candidate_id=cid)
-            if any(d in detail.lower() for d in screen.SERVER_DEAD):
-                print("   the model server has died; stopping the screen so "
-                      "the rest are not spent on it (#404)")
+                              reason=verdict.reason, until=verdict.until,
+                              candidate_id=cid)
+            if verdict.failure_class in reasons.STOPS:
+                print(f"   {verdict.failure_class}: the model server or GPU is "
+                      f"suspect; stopping the screen so the rest are not "
+                      f"spent on it (#404)")
                 return 1
     finally:
         store.close()
@@ -1890,7 +1888,7 @@ def _report_judge_store(a) -> int:
             try:
                 ms.decide(store, row["name"], "queued", tier=ms.JUDGE,
                           score=score, rubric=rubric.stamp, judge=rubric.model,
-                          detail=why[:200])
+                          detail=why[:200], reason=reasons.CANDIDATE)
             except ms.IllegalTransition:
                 continue   # answered by a later tier while this one scored
             scored += 1
@@ -2008,6 +2006,7 @@ def _judge_neighbors(found, store):
         print(f"    {score:2d}/10  {n.repo:38.38s} {reason[:60]}")
         try:
             ms.decide(store, n.repo, "queued", tier=ms.JUDGE, score=score,
+                      reason=reasons.CANDIDATE,
                       rubric=rubric.stamp, judge=rubric.model,
                       detail=reason[:200])
         except (KeyError, ms.IllegalTransition):
@@ -2404,11 +2403,11 @@ def _measure_and_adopt(a, row: dict) -> int:
     # A CANDIDATE THAT NEVER RAN IS NOT A CANDIDATE THAT LOST. Every row a
     # harness refusal means the request never reached a model, and handing
     # that to adopt.decide dresses a routing failure as a quality result.
-    # screen.NOT_THE_CANDIDATE already enumerates these. #223.
+    # The rows carry the runner's failure class. #223, #408.
     # THE CONTROL MUST HAVE RUN. This is the general form of the refusal check
     # below, and it catches every variant of "the request never reached a
-    # model" without anyone having to enumerate the phrase first: a 404 from a
-    # doubled /v1 got past NOT_THE_CANDIDATE, both candidates scored 0/27, and
+    # model" without anyone having to classify it first: a 404 from a
+    # doubled /v1 got past the phrase list, both candidates scored 0/27, and
     # the loop reported "does not beat the incumbent on the lane's metric".
     # A candidate measured beside a control that passed nothing says nothing
     # about the candidate. #223, and the lesson the tts lane paid for in #194.
@@ -2423,7 +2422,7 @@ def _measure_and_adopt(a, row: dict) -> int:
         try:
             ms.decide(store, name, "queued", tier=ms.SCREEN,
                       detail=f"not measured: {refused}",
-                      run_id=data.get("run_id"))
+                      run_id=data.get("run_id"), reason=reasons.HARNESS)
         except (KeyError, ms.IllegalTransition):
             pass      # measured by hand, never proposed; the report still stands
         finally:
@@ -2449,7 +2448,8 @@ def _settle(name: str, outcome: str, detail: str) -> None:
     from harness import memory_store as ms
     store = ms.connect()
     try:
-        ms.decide(store, name, outcome, tier=ms.MEASURE, detail=detail[:200])
+        ms.decide(store, name, outcome, tier=ms.MEASURE, detail=detail[:200],
+                  reason=reasons.CANDIDATE)
     except (KeyError, ms.IllegalTransition):
         pass
     finally:
@@ -2470,7 +2470,7 @@ NO_ROWS_FOR_CANDIDATE = "no rows under that name in the receipt"
 
 
 def _all_refused(rows, candidate: str) -> str:
-    """The refusal phrase, when EVERY row for `candidate` is one of ours.
+    """The failure class, when EVERY row for `candidate` never reached a model.
 
     Empty when any row actually reached a model, because then the candidate
     really was measured and a low score is its own.
@@ -2481,15 +2481,13 @@ def _all_refused(rows, candidate: str) -> str:
     mis-keyed lookup silently disabled the guard instead of failing. A safety
     check whose lookup miss looks like a pass is worse than no check.
     """
-    from harness import screen
-
     mine = [r for r in rows or [] if r.get("candidate") == candidate]
     if not mine:
         # No rows at all is a different fact and the caller handles it; no
         # rows for THIS candidate when others have some is a key mismatch.
         return "" if not rows else NO_ROWS_FOR_CANDIDATE
-    seen = {screen.refused_by_harness(str(r.get("detail") or "")) for r in mine}
-    return "" if "" in seen else sorted(seen)[0]
+    seen = {r.get("failure_class") or "" for r in mine}
+    return sorted(seen)[0] if seen <= set(reasons.NEVER_RAN) else ""
 
 
 def _receipt_at(out, conn=None) -> dict | None:
@@ -2597,7 +2595,8 @@ def _judge_proposals(found, store):
         c.note = f"[{score}/10] {why[:90]} | {c.note}"
         try:
             ms.decide(store, c.name, "queued", tier="judge", score=score,
-                      rubric=rubric.stamp, judge=rubric.model, detail=why[:200])
+                      rubric=rubric.stamp, judge=rubric.model, detail=why[:200],
+                      reason=reasons.CANDIDATE)
         except (KeyError, ms.IllegalTransition):
             pass
     found.sort(key=lambda c: -getattr(c, "relevance", 0))

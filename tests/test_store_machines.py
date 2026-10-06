@@ -45,7 +45,7 @@ def _decide_as(conn, facts, outcome, detail, until="", retract=""):
     ms._write(conn, 1, "org/c", {"outcome": outcome, "tier": "fetch",
                                  "detail": detail, "decided_at": 0,
                                  "machine_id": mid, "until": until},
-              reopen=ms.RETRACTION if retract else "", reason=retract)
+              reopen=ms.RETRACTION if retract else "", why=retract)
     conn.commit()
 
 
@@ -442,16 +442,29 @@ def test_the_condition_is_read_from_the_refusal(detail, until):
     assert ms.until_for(detail) == until
 
 
-def test_decide_records_the_condition_the_refusal_names(store):
-    """Since #266 only the migration filled these in, so every refusal the
-    inspect tier wrote afterwards could never reopen."""
+def test_the_inspect_tier_writes_the_condition_its_refusal_names():
+    """#333: the writer supplies the predicate. #408: from the Fit, not its
+    sentence."""
+    from harness import inspect as ins
+    fit = ins.Fit(repo="org/g", verdict="needs-llamacpp", offered=["llamacpp"])
+    assert ins.until_of(fit) == "runtime:llamacpp"
+    assert ins.reason_of(fit) == "machine"
+    big = ins.Fit(repo="org/b", verdict="too-big", smallest=int(59.9 * 1024 ** 3))
+    assert ins.until_of(big) == "ceiling_gb:>59.9"
+    dead = ins.Fit(repo="org/d", verdict="dead", last_commit="2023-01-01")
+    assert (ins.until_of(dead), ins.reason_of(dead)) == (
+        "commit_after:2023-01-01", "upstream")
+
+
+def test_decide_no_longer_reads_a_condition_out_of_the_detail(store):
+    """Negative control for #408: the sentence is prose, never parsed live."""
     ms.record(store, ms.Seen(name="org/g", source="t", kind="weights",
                              lane="code", why="seeded"))
-    ms.decide(store, "org/g", "declined", tier=ms.INSPECT,
+    ms.decide(store, "org/g", "declined", tier=ms.INSPECT, reason="machine",
               detail="needs-llamacpp: depends on GGUF weights")
-    got = store.execute("SELECT until FROM verdicts ORDER BY id DESC LIMIT 1"
-                        ).fetchone()[0]
-    assert got == "runtime:llamacpp"
+    got = store.execute("SELECT until, reason FROM verdicts ORDER BY id DESC "
+                        "LIMIT 1").fetchone()
+    assert tuple(got) == ("", "machine")
 
 
 def test_schema_18_backfills_refusals_written_after_266(tmp_path):

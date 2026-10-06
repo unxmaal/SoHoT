@@ -401,6 +401,10 @@ class Result:
     #: A pass rate separates working from broken; these are what put two
     #: working candidates in an order.
     metrics: dict = field(default_factory=dict)
+    #: Why it failed, set by the runner where it failed: a reasons class. #408.
+    failure_class: str = ""
+    #: The harness limit it hit, as a `limit:` predicate body. #406.
+    limit: str = ""
 
 
 # ---------------------------------------------------------------------------
@@ -794,6 +798,10 @@ def summarize(results: list[Result]) -> dict:
             "metrics_worst": _worst_metrics(rows),
             "failures": [f"{r.case_id}: {r.detail}" for r in rows
                          if not r.passed],
+            # The classes the runners set, which a tier decides from. #408.
+            "failure_classes": _count(r.failure_class for r in rows
+                                      if not r.passed and r.failure_class),
+            "limits": sorted({r.limit for r in rows if not r.passed and r.limit}),
             # HOW they failed, not just how many. See failure_kind().
             "wrong": sum(1 for r in rows
                          if not r.passed and failure_kind(r.detail) == "wrong"),
@@ -809,6 +817,13 @@ def summarize(results: list[Result]) -> dict:
             # or to a language -- and then their pass rates are not comparable.
             "case_ids": sorted({r.case_id.split("#")[0] for r in rows}),
         }
+    return out
+
+
+def _count(items) -> dict[str, int]:
+    out: dict[str, int] = {}
+    for item in items:
+        out[item] = out.get(item, 0) + 1
     return out
 
 

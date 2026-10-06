@@ -245,7 +245,7 @@ def test_state_is_the_fold_of_the_accepted_transitions(tmp_path, seed):
             retract = ms.RETRACTION if rng.random() < 0.15 else ""
             try:
                 ms.decide(conn, "org/p", outcome, tier=tier, detail=f"d{i % 3}",
-                          reopen=retract, reason="because" if retract else "")
+                          reopen=retract, reopen_why="because" if retract else "")
                 accepted = True
             except ms.IllegalTransition:
                 accepted = False
@@ -313,7 +313,7 @@ def test_a_reopen_must_say_why(store):
     ms.decide(store, "org/w", "broken", tier=ms.SCREEN, detail="0 of 3")
     with pytest.raises(ms.IllegalTransition):
         ms.decide(store, "org/w", "queued", tier=ms.SCREEN,
-                  reopen=ms.RETRACTION, reason=" ")
+                  reopen=ms.RETRACTION, reopen_why=" ")
     assert _state(store, "org/w") == ("broken", ms.SCREEN)
 
 
@@ -322,7 +322,7 @@ def test_an_unknown_reopen_is_refused(store):
     ms.decide(store, "org/w", "broken", tier=ms.SCREEN, detail="0 of 3")
     with pytest.raises(ms.IllegalTransition):
         ms.decide(store, "org/w", "queued", tier=ms.SCREEN,
-                  reopen="whim", reason="felt like it")
+                  reopen="whim", reopen_why="felt like it")
 
 
 def test_a_reopen_kind_can_be_limited_to_some_states(store, monkeypatch):
@@ -332,11 +332,11 @@ def test_a_reopen_kind_can_be_limited_to_some_states(store, monkeypatch):
     ms.decide(store, "org/w", "measured", tier=ms.ADOPT, detail="won")
     with pytest.raises(ms.IllegalTransition):
         ms.decide(store, "org/w", "queued", tier=ms.SCREEN,
-                  reopen="retest", reason="7 days on")
+                  reopen="retest", reopen_why="7 days on")
     _see(store, "org/x")
     ms.decide(store, "org/x", "broken", tier=ms.SCREEN, detail="0 of 3")
     vid = ms.decide(store, "org/x", "queued", tier=ms.SCREEN,
-                    reopen="retest", reason="7 days on")
+                    reopen="retest", reopen_why="7 days on")
     assert store.execute("SELECT reopen_kind FROM verdicts WHERE id = ?",
                          (vid,)).fetchone()[0] == "retest"
     assert _state(store, "org/x") == ("queued", ms.SCREEN)
@@ -408,8 +408,8 @@ def test_a_refused_screen_write_does_not_stop_the_next(monkeypatch, tmp_path,
         argv[0] == "screen" and ran.append(argv[-1])) or _Done())
     monkeypatch.setattr(cli, "_receipt_at",
                         lambda out: {"summary": {"x": {"passed": 0}}})
-    monkeypatch.setattr(screen, "outcome",
-                        lambda *a, **k: ("broken", "it ran and passed nothing"))
+    monkeypatch.setattr(screen, "outcome", lambda *a, **k: screen.Verdict(
+        "broken", "it ran and passed nothing", "candidate"))
     fired = _race(monkeypatch, "org/first")
     cli._report_screen(argparse.Namespace(lane="", top=5, limit=5, run=True,
                                           json=False))

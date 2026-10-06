@@ -256,7 +256,7 @@ def test_a_repo_retires_the_weights_it_no_longer_ranks(db):
     _queued_weight(db, "org/tool", "org/stale")
     _queued_weight(db, "org/tool", "org/current")
     got = ms.retire_unlisted(db, "org/tool", keep=["org/current"],
-                             reason="superseded")
+                             why="superseded")
     assert got == ["org/stale"]
     assert "org/stale" in ms.settled(db)
     assert "org/current" not in ms.settled(db)

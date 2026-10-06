@@ -19,7 +19,7 @@ from __future__ import annotations
 import shutil
 from pathlib import Path
 
-from harness import memory, proc
+from harness import memory, proc, reasons
 from harness.engines import Engine
 from harness.stages import stage_unavailable
 
@@ -157,7 +157,7 @@ class ChainRunner(BaseRunner):
         # lets it be tried again rather than hiding the fix.
         broken = stage_unavailable(self.stage)
         if broken:
-            raise RunnerError(broken)
+            raise RunnerError(broken, failure_class=reasons.LOAD_FAILED_RUNTIME)
 
         # BEFORE stage one, not between the stages: fifty seconds of
         # diffusion followed by a refusal is fifty seconds thrown away.
@@ -167,7 +167,8 @@ class ChainRunner(BaseRunner):
             ok, why = memory.check_model(repo, quantize=bits)
             if not ok:
                 raise RunnerError(
-                    f"{self.stage} would load {repo} and it does not fit: {why}")
+                    f"{self.stage} would load {repo} and it does not fit: {why}",
+                    failure_class=reasons.HARNESS_ERROR)
 
         params = {"width": case.params.get("width"),
                   "height": case.params.get("height"),
@@ -175,17 +176,19 @@ class ChainRunner(BaseRunner):
         try:
             argv = self.engine.argv(case.prompt, mid, params)
         except ValueError as exc:
-            raise RunnerError(str(exc)) from exc
+            raise RunnerError(str(exc), failure_class=reasons.HARNESS_ERROR) from exc
 
         first = self._run(argv, f"{self.engine.name} (stage 1)")
         if not mid.exists():
-            raise RunnerError(f"{self.engine.name} exited 0 but wrote no image")
+            raise RunnerError(f"{self.engine.name} exited 0 but wrote no image",
+                              failure_class=reasons.CONTENT_FAILED)
         self.last_metrics = {"stages": 1}
 
         second = self._run(STAGES[self.stage](mid, out, params, case.prompt),
                            f"{self.stage} (stage 2)")
         if not out.exists():
-            raise RunnerError(f"{self.stage} exited 0 but wrote no image")
+            raise RunnerError(f"{self.stage} exited 0 but wrote no image",
+                              failure_class=reasons.CONTENT_FAILED)
         self.last_metrics = {"stages": 2}
         # The peak of the WHOLE workflow, which is the number that decides
         # whether it fits on this machine.
@@ -195,9 +198,11 @@ class ChainRunner(BaseRunner):
         try:
             r = proc.run(argv, timeout=self.timeout, cwd=self.engine.cwd)
         except FileNotFoundError as exc:
-            raise RunnerError(f"{what}: {exc} is not installed") from exc
+            raise RunnerError(f"{what}: {exc} is not installed",
+                              failure_class=reasons.HARNESS_ERROR) from exc
         except OSError as exc:
-            raise RunnerError(f"{what}: could not launch: {exc}") from exc
+            raise RunnerError(f"{what}: could not launch: {exc}",
+                              failure_class=reasons.HARNESS_ERROR) from exc
         if not r.ok:
             raise RunnerError(
                 f"{what} exited {r.returncode}: {r.stderr.strip()[-200:]}")

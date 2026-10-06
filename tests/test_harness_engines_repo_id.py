@@ -9,7 +9,7 @@ could screen its own typed defaults and nothing the loop found. Issue #213.
 """
 import pytest
 
-from harness import engines, screen
+from harness import engines, reasons, screen
 
 
 @pytest.mark.parametrize("model,binary", [
@@ -65,7 +65,7 @@ def test_the_candidate_now_reaches_the_image_cases():
 def test_the_runner_having_no_spec_is_our_gap_not_the_candidates():
     for why in ("mflux:org/x: no cases of a modality it can run, skipped",
                 "nothing ran: no candidate matched any case"):
-        assert screen.refused_by_harness(why)
+        assert reasons.classify(why, reasons.STDERR) == reasons.HARNESS_ERROR
 
 
 def test_a_real_failure_is_still_the_candidates():
@@ -74,4 +74,4 @@ def test_a_real_failure_is_still_the_candidates():
     for why in ("mflux exited 1: out of memory",
                 "the image was a blank canvas",
                 "0 of 3 case(s) passed"):
-        assert not screen.refused_by_harness(why)
+        assert reasons.CLASSES[reasons.classify(why)][1] == reasons.CANDIDATE

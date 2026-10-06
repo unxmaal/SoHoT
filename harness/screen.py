@@ -21,8 +21,9 @@ absent is reported as waiting on a fetch, not screened and not failed.
 from __future__ import annotations
 
 import sys
+from typing import NamedTuple
 
-from harness import lanes
+from harness import lanes, reasons
 
 #: lane -> how to spell a candidate of that lane for evals.run, given a model
 #: id. Empty means this harness has no way to invoke an arbitrary model in that
@@ -319,63 +320,15 @@ def argv(row: dict, outdir=None) -> list[str]:
     return out
 
 
-#: Things a run says when the HARNESS could not deliver the request, as opposed
-#: to the candidate failing it. `broken` is terminal, so recording one of these
-#: against a candidate declines it forever for something it never did.
-NOT_THE_CANDIDATE = (
-    "invalid model name",
-    "gateway returned http 400",
-    "is the gateway up",
-    "connection refused",
-    # THIRD OCCURRENCE OF THE CLASS. The runner could not build a spec for this
-    # candidate, which is a gap in this harness, and it was recorded as BROKEN,
-    # which is terminal. ERROR #22 and #60 are this same message from the stt
-    # and tts lanes, so it has been settling real candidates falsely across
-    # three lanes. #213, after #206 and #211.
-    "no cases of a modality it can run",
-    "no candidate matched any case",
-    # SEVENTH OCCURRENCE, and this one never reached a model at all. A loop
-    # run screened four freshly fetched candidates as BROKEN on:
-    #
-    #   ~/projects/.venv/bin/python: Error while finding module
-    #   specification for 'evals.run' (ModuleNotFoundError: No module named
-    #   'evals')
-    #
-    # The screen subprocess resolved the virtualenv of a PARENT directory --
-    # uv walks up to the nearest pyproject -- so our own eval package was
-    # absent. A screen that cannot import the suite has learned nothing about
-    # the candidate, and `broken` is terminal.
-    "no module named",
-    "error while finding module specification",
-    "command not found",
-    "no such file or directory",
-    # A sampling setting the runner chose and the pipeline refused. #401.
-    "guidance_scale has to be",
-    # mlx_lm.server after a Metal fault: every later request gets this. #404.
-    "generation thread died",
-)
-
-#: The model server is gone; screening on would spend every candidate on it. #404.
-SERVER_DEAD = ("generation thread died",)
 
 
-#: In stderr this is our missing script; inside a loader's error it is a file
-#: the candidate's snapshot lacks, which is the candidate's.
-ABOUT_THE_SNAPSHOT = ("no such file or directory",)
-
-
-def refused_by_harness(detail: str) -> str:
-    """The phrase saying this never reached the candidate, or "".
-
-    A gateway that declines to route a name is a fact about the gateway's alias
-    table. Qwen3-8B-4bit was recorded `broken -- it ran and passed nothing`
-    after an HTTP 400 stopped it before a single token.
-    """
-    text = (detail or "").lower()
-    for phrase in NOT_THE_CANDIDATE:
-        if phrase in text:
-            return phrase
-    return ""
+class Verdict(NamedTuple):
+    """A screen's verdict, with why as a column rather than a sentence. #408."""
+    outcome: str
+    detail: str
+    reason: str
+    until: str = ""
+    failure_class: str = ""
 
 
 def wrong_run(summary: dict | None, candidate: str, key: str = "") -> str:
@@ -407,41 +360,12 @@ def why_nothing_passed(summary: dict | None, candidate: str,
     return "; ".join(failures)[:300]
 
 
-#: mlx_lm.server answers 404 when it cannot construct the model at all, which
-#: is a fact about the installed runtime rather than the candidate. #293.
-LOAD_FAILED = "gateway returned http 404"
-#: Architecture gaps a newer runtime can close. A missing file or a weight
-#: format it cannot read is not one, and stays broken.
-ARCHITECTURE_GAPS = ("model type", "modelargs", "parameters not in model",
-                     "required positional argument")
-#: llama-server's router reports only this; the reason is in its own log. #305.
-LLAMACPP_LOAD_FAILED = ("http 500", "failed to load")
-LOAD_RUNTIME = "mlx-lm"
-#: Stock diffusers could not assemble the pipeline from the repo's layout: the
-#: repo needs its own loader, which says nothing about its output. #381.
-DIFFUSERS_LAYOUT_GAPS = ("can't find a pipeline linked to", "were passed")
-
-
-def is_architecture_gap(text: str) -> bool:
-    low = (text or "").lower()
-    return LOAD_FAILED in low and any(g in low for g in ARCHITECTURE_GAPS)
-
-
-def load_failure(summary: dict | None, candidate: str, key: str = "") -> str:
-    """The server's error if this runtime could not build the architecture."""
-    why = why_nothing_passed(summary, candidate, key)
-    low = why.lower()
-    if candidate.startswith(LLAMACPP_PREFIX):
-        return why if all(p in low for p in LLAMACPP_LOAD_FAILED) else ""
-    # A process engine's loader reports through `exit N:`, not a gateway. #385.
-    if engine_runtime(candidate) and any(g in low for g in ARCHITECTURE_GAPS):
-        return why
-    return why if is_architecture_gap(why) else ""
-
-
 #: The package whose version decides what a process engine can load. #385.
 ENGINE_RUNTIMES = {"mflux": "mflux", "diffusers": "diffusers",
-                   "diffusers-video": "diffusers", "acestep": "ace-step"}
+                   "diffusers-video": "diffusers", "acestep": "ace-step",
+                   # The audio server's runtime, as scripts/versions.sh pins it. #408.
+                   "tts": "mlx-audio", "stt": "mlx-audio"}
+LOAD_RUNTIME = "mlx-lm"
 
 
 def engine_runtime(candidate: str) -> str:
@@ -470,50 +394,69 @@ def load_until(candidate: str = "") -> str:
     return f"version:{LOAD_RUNTIME}>{have}"
 
 
-def outcome(returncode: int, summary: dict | None,
-            detail: str = "", candidate: str = "",
-            key: str = "") -> tuple[str, str]:
-    """A store verdict from one screen run.
+def _sentence(cls: str, why: str, limit: str) -> str:
+    tail = f": {why}" if why else ""
+    if cls == reasons.LOAD_FAILED_RUNTIME:
+        return f"the installed runtime could not load it{tail}"
+    if cls == reasons.LOAD_FAILED_LAYOUT:
+        return f"needs its own runner: stock diffusers could not assemble it{tail}"
+    if cls == reasons.GPU_FAULT:
+        return f"the GPU faulted running it on this machine{tail}"
+    if reasons.CLASSES[cls][1] == reasons.LIMIT:
+        return (f"stopped at a limit this harness chose"
+                f"{f' ({limit})' if limit else ''}{tail}")
+    if reasons.CLASSES[cls][1] == reasons.HARNESS:
+        return (f"not screened: {cls}. The harness could not deliver the "
+                f"request, which says nothing about the candidate{tail}")
+    return f"it ran and passed nothing{tail}"
 
-    `broken` is TERMINAL and `screened` is not, which is the right way round: a
-    thing that does not run is answered, and a thing that runs still has every
-    measurement ahead of it.
 
-    A request the harness could not deliver is NEITHER. It is recorded as
-    `queued`, which is not terminal, so the candidate is asked again once the
-    harness can route it.
+def decide_class(cls: str, why: str = "", candidate: str = "",
+                 limits=(), facts: dict | None = None) -> Verdict:
+    """The verdict a failure class means, with its reason and until. #408."""
+    got, reason = reasons.CLASSES[cls]
+    limit = sorted(limits)[0] if limits else ""
+    until = ""
+    if reason == reasons.RUNTIME:
+        until = load_until(candidate)
+    elif reason == reasons.LIMIT and limit:
+        until = f"limit:{limit}"
+    elif cls == reasons.GPU_FAULT and (facts or {}).get("memory_gb"):
+        until = f"memory_gb:>{float(facts['memory_gb']):.0f}"
+    return Verdict(got, _sentence(cls, why, limit), reason, until, cls)
+
+
+def outcome(returncode: int, summary: dict | None, candidate: str = "",
+            key: str = "", stderr_class: str = "",
+            facts: dict | None = None) -> Verdict:
+    """A store verdict from one screen run, decided from failure classes.
+
+    `broken` is TERMINAL and `screened` is not. A request the harness could
+    not deliver is `queued`; a limit the harness chose, a runtime gap and a
+    GPU fault are `declined` with an `until` that reopens them.
+    `stderr_class` is the run's own stderr, classed once by the caller, and
+    only counts when the run wrote no receipt.
     """
-    refused = refused_by_harness(detail)
-    if refused:
-        return "queued", (f"not screened: {refused}. The harness could not "
-                          f"deliver the request, which says nothing about the "
-                          f"candidate")
+    if summary is None and stderr_class:
+        return decide_class(stderr_class, candidate=candidate, facts=facts)
     mismatch = wrong_run(summary, candidate, key) if candidate else ""
     if mismatch:
-        return "queued", f"not screened: {mismatch}"
+        return Verdict("queued", f"not screened: {mismatch}", reasons.HARNESS)
     if returncode != 0:
-        return "broken", f"the screen exited {returncode}"
-    # THE SUMMARY SPELLS IT `passed`. Reading `pass` returned 0 for every run,
-    # so a candidate that passed every case was recorded `broken`, which is
-    # TERMINAL. The screen tier reported the opposite of what it measured.
-    rows = sum(int(v.get("passed", 0)) for v in (summary or {}).values()) \
-        if summary else 0
+        return Verdict("broken", f"the screen exited {returncode}",
+                       reasons.CANDIDATE, failure_class=reasons.CRASHED)
     if not summary:
-        return "broken", "the screen produced no rows"
-    if rows == 0:
-        failed = load_failure(summary, candidate, key) if candidate else ""
-        if failed:
-            return "declined", f"the installed runtime could not load it: {failed}"
-        why = why_nothing_passed(summary, candidate, key) if candidate else ""
-        # The same phrases as stderr: a loader failure lands in the summary. #385.
-        refused = refused_by_harness(why)
-        if refused and refused not in ABOUT_THE_SNAPSHOT:
-            return "queued", (f"not screened: {refused}. The harness could not "
-                              f"deliver the request, which says nothing about "
-                              f"the candidate: {why}")
-        if any(g in why.lower() for g in DIFFUSERS_LAYOUT_GAPS):
-            return "declined", (f"needs its own runner: stock diffusers could "
-                                f"not assemble it: {why}")
-        return "broken", (f"it ran and passed nothing: {why}" if why
-                          else "it ran and passed nothing")
-    return "screened", f"{rows} case(s) passed a screen"
+        return Verdict("broken", "the screen produced no rows",
+                       reasons.CANDIDATE, failure_class=reasons.CRASHED)
+    # THE SUMMARY SPELLS IT `passed`; reading `pass` recorded every pass broken.
+    rows = sum(int(v.get("passed", 0)) for v in summary.values())
+    if rows:
+        return Verdict("screened", f"{rows} case(s) passed a screen",
+                       reasons.CANDIDATE)
+    mine = ([row_for(summary, candidate, key) or {}] if candidate
+            else list(summary.values()))
+    cls = reasons.first(c for r in mine for c in (r.get("failure_classes") or {}))
+    why = why_nothing_passed(summary, candidate, key) if candidate else ""
+    limits = [lim for r in mine for lim in (r.get("limits") or [])]
+    return decide_class(cls or reasons.CONTENT_FAILED, why, candidate,
+                        limits, facts)

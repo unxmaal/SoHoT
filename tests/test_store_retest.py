@@ -29,9 +29,11 @@ def _row(conn, name):
         "ON v.id = p.state_verdict_id WHERE p.name = ?", (name,)).fetchone())
 
 
-def _reject(conn, name, outcome="broken", tier=ms.SCREEN, at=T, detail="x"):
+def _reject(conn, name, outcome="broken", tier=ms.SCREEN, at=T, detail="x",
+            until=""):
     _see(conn, name)
-    return ms.decide(conn, name, outcome, tier=tier, at=at, detail=detail)
+    return ms.decide(conn, name, outcome, tier=tier, at=at, detail=detail,
+                     until=until)
 
 
 # --- who is eligible -------------------------------------------------------
@@ -56,7 +58,9 @@ def test_a_screen_or_measure_rejection_is_scheduled(store, outcome, tier):
     ("ignored", ms.SCREEN, "by hand")])
 def test_fact_based_and_non_rejections_are_never_scheduled(store, outcome, tier,
                                                            detail):
-    _reject(store, "org/m", outcome, tier, detail=detail)
+    # The writer names the condition; decide() no longer reads it. #408.
+    until = "runtime:cuda" if detail == "needs-cuda" else ""
+    _reject(store, "org/m", outcome, tier, detail=detail, until=until)
     assert _row(store, "org/m")["next_retest_at"] is None
     assert ms.due_retests(store, T + 100 * WEEK) == []
     assert ms.reopen_due_retests(store, T + 100 * WEEK) == []
@@ -90,7 +94,7 @@ def test_a_waypoint_still_cannot_reopen_a_rejection_without_the_kind(store):
         ms.decide(store, "org/m", "queued", tier=ms.INSPECT, detail="again")
     with pytest.raises(ms.IllegalTransition):
         ms.decide(store, "org/m", "queued", tier=ms.INSPECT, detail="again",
-                  reopen=ms.RETEST, reason="")
+                  reopen=ms.RETEST, reopen_why="")
     assert _row(store, "org/m")["state"] == "broken"
 
 
@@ -98,7 +102,7 @@ def test_a_retest_cannot_reopen_a_success(store):
     _reject(store, "org/m", "measured", ms.ADOPT)
     with pytest.raises(ms.IllegalTransition):
         ms.decide(store, "org/m", "queued", tier=ms.INSPECT, detail="r",
-                  reopen=ms.RETEST, reason="r")
+                  reopen=ms.RETEST, reopen_why="r")
 
 
 def test_three_retests_then_the_rejection_is_final(store):
