@@ -67,3 +67,5 @@ litellm_settings:
 # The key itself is never here: serve-gateway.sh exports it from the Keychain or a 0600 file. #482.
 general_settings:
   master_key: os.environ/LITELLM_MASTER_KEY
+  # A missing or wrong key gets 401 naming `soh gateway key`, not LiteLLM's 500 or 400 'No connected db'. #501.
+  custom_auth: key_auth.user_api_key_auth

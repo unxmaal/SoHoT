@@ -647,6 +647,8 @@ key serves anyone who can reach port 4000, which now includes tool calling.
 - **The engines** (`mlx_lm.server` and llama-server, `:8081` and `:8082`) take
   no key, so they bind `127.0.0.1` and other machines reach them through the
   gateway. `MLX_HOST` and `LLAMACPP_HOST` override.
+- **The error.** A missing or wrong key gets HTTP 401 naming `soh gateway key`
+  (`gateway/key_auth.py`, #501), not LiteLLM's own 500 or 400 "No connected db".
 - **The cluster judge** reads it from the Secret `localharness-gateway`, key
   `key`: `soh gateway key | tr -d '\n' | kubectl create secret generic
   localharness-gateway -n lh --from-file=key=/dev/stdin`.
