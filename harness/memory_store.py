@@ -19,7 +19,7 @@ from pathlib import Path
 
 from harness import paths, store
 
-SCHEMA_VERSION = 35
+SCHEMA_VERSION = 36
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
 VERDICTS = ("measured", "declined", "broken", "queued", "ignored", "screened")
@@ -68,10 +68,6 @@ CREATE TABLE IF NOT EXISTS proposals (
     description TEXT NOT NULL DEFAULT '',
     lane        TEXT NOT NULL DEFAULT '',
     resolved    TEXT NOT NULL DEFAULT '',
-    -- What it consumes and produces, so valid compositions can be found
-    -- without trying every pair. Empty means unknown.
-    consumes    TEXT NOT NULL DEFAULT '',
-    produces    TEXT NOT NULL DEFAULT '',
     first_seen  REAL NOT NULL,
     last_seen   REAL NOT NULL,
     -- Written only by decide(); see transition_refused(). #409.
@@ -135,7 +131,6 @@ CREATE TABLE IF NOT EXISTS verdicts (
     outcome     TEXT NOT NULL,
     tier        TEXT NOT NULL DEFAULT '',
     detail      TEXT NOT NULL DEFAULT '',
-    issue       INTEGER,
     run_path    TEXT NOT NULL DEFAULT '',
     score       REAL,
     rubric      TEXT NOT NULL DEFAULT '',
@@ -151,11 +146,6 @@ CREATE TABLE IF NOT EXISTS verdicts (
     machine_id  INTEGER REFERENCES machines(id),
     -- The size this verdict measured; proposals.size_bytes is what readers read. #266, #413.
     size_bytes  INTEGER NOT NULL DEFAULT 0,
-    -- THE WORD THAT MADE THIS AN ATTACHMENT, not a sentence containing it.
-    -- `lora`, `comfyui`, `browser`. "" means this is not an attachment, which
-    -- is the answer for almost every row and must stay distinguishable from
-    -- "nobody asked". Issue #268.
-    attaches_to TEXT NOT NULL DEFAULT '',
     -- DAYS SINCE THE CANDIDATE'S UPSTREAM LAST COMMITTED, at decision time.
     -- Named `stale_days` first, which says nothing about WHOSE staleness and
     -- was read as the age of our own row -- this project is days old and the
@@ -988,6 +978,8 @@ def _migrate(conn: sqlite3.Connection) -> None:
         # After the runs backfill, so an old job's log can name its run. #418.
         from harness import workqueue
         workqueue.import_json(conn)
+    if have and have < 36:
+        drop_dead_columns(conn)
     conn.execute("CREATE INDEX IF NOT EXISTS ix_verdict_cand "
                  "ON verdicts(candidate_id)")
     conn.execute("CREATE INDEX IF NOT EXISTS ix_prop_state ON proposals(state)")
@@ -995,6 +987,53 @@ def _migrate(conn: sqlite3.Connection) -> None:
     conn.execute("INSERT OR REPLACE INTO meta VALUES ('schema', ?)",
                  (str(SCHEMA_VERSION),))
     conn.commit()
+
+
+#: Columns nothing reads: (table, column). #419.
+DEAD_COLUMNS = (("proposals", "consumes"), ("proposals", "produces"),
+                ("verdicts", "issue"), ("verdicts", "attaches_to"))
+
+
+def drop_dead_columns(conn) -> dict:
+    """Keep what the dead columns held, then drop them. #419.
+
+    verdicts.issue folds into detail; verdicts.attaches_to fills an empty
+    proposals.attaches_to. A store whose SQLite cannot drop a column keeps it.
+    """
+    got = {"issue_folded": 0, "attaches_lifted": 0, "dropped": [], "kept": []}
+    if "issue" in _columns(conn, "verdicts"):
+        for r in conn.execute("SELECT id, detail, issue FROM verdicts "
+                              "WHERE issue IS NOT NULL").fetchall():
+            tag = f"#{r['issue']}"
+            if tag not in (r["detail"] or ""):
+                detail = f"{r['detail']} ({tag})" if r["detail"] else tag
+                conn.execute("UPDATE verdicts SET detail = ? WHERE id = ?",
+                             (detail, r["id"]))
+            got["issue_folded"] += 1
+    if "attaches_to" in _columns(conn, "verdicts"):
+        got["attaches_lifted"] = conn.execute(
+            "UPDATE proposals SET attaches_to = (SELECT v.attaches_to FROM "
+            "verdicts v WHERE v.proposal_id = proposals.id AND v.attaches_to <> '' "
+            "ORDER BY v.id DESC LIMIT 1) WHERE attaches_to = '' AND id IN "
+            "(SELECT proposal_id FROM verdicts WHERE attaches_to <> '')").rowcount
+    sqlite_ok = (store.backend() == store.POSTGRES
+                 or sqlite3.sqlite_version_info >= (3, 35, 0))
+    for table, col in DEAD_COLUMNS:
+        if col not in _columns(conn, table):
+            continue
+        if not sqlite_ok:
+            got["kept"].append(f"{table}.{col}")
+            continue
+        conn.execute("SAVEPOINT drop_dead")
+        try:
+            conn.execute(f"ALTER TABLE {table} DROP COLUMN {col}")
+        except Exception:  # noqa: BLE001 - an older SQLite that cannot: keep it
+            conn.execute("ROLLBACK TO drop_dead")
+            got["kept"].append(f"{table}.{col}")
+        else:
+            got["dropped"].append(f"{table}.{col}")
+        conn.execute("RELEASE drop_dead")
+    return got
 
 
 def _add_machine_versions(conn) -> None:
@@ -1855,6 +1894,10 @@ def _verdicts_name_a_candidate(conn) -> None:
     # A rebuild drops the table `reopens` points at. #409.
     conn.execute("PRAGMA foreign_keys = OFF")
     conn.execute(ddl.replace("IF NOT EXISTS verdicts (", "verdicts_new ("))
+    # Columns since retired ride along until drop_dead_columns keeps their data. #419.
+    for r in conn.execute("PRAGMA table_info(verdicts)").fetchall():
+        if r["name"] not in _columns(conn, "verdicts_new"):
+            conn.execute(f"ALTER TABLE verdicts_new ADD COLUMN {r['name']} {r['type']}")
     cols = ", ".join(c for c in have)
     conn.execute(f"INSERT INTO verdicts_new ({cols}) SELECT {cols} FROM verdicts")
     conn.execute("DROP TABLE verdicts")
@@ -2453,11 +2496,10 @@ def state_audit(conn) -> dict:
 
 
 def decide(conn: sqlite3.Connection, name: str, outcome: str, *, tier: str = "",
-           detail: str = "", issue: int | None = None, run_path: str = "",
+           detail: str = "", run_path: str = "",
            score: float | None = None, rubric: str = "", judge: str = "",
            at: float | None = None, until: str = "",
-           size_bytes: int = 0, attaches_to: str = "",
-           upstream_idle_days: float = 0.0,
+           size_bytes: int = 0, upstream_idle_days: float = 0.0,
            candidate_id: int | None = None, reopen: str = "",
            reopen_why: str = "", reason: str = "",
            run_id: int | None = None) -> int:
@@ -2506,12 +2548,12 @@ def decide(conn: sqlite3.Connection, name: str, outcome: str, *, tier: str = "",
                 and not same["run_path"] and not same["run_id"]):
             return same["id"]
     fields = {"outcome": outcome, "tier": tier, "detail": detail,
-              "issue": issue, "run_path": run_path, "score": score,
+              "run_path": run_path, "score": score,
               "rubric": rubric, "judge": judge,
               "decided_at": time.time() if at is None else at,
               # Unknown is recorded as unknown, never omitted. #266.
               "machine_id": remember_machine(conn), "until": until,
-              "size_bytes": int(size_bytes or 0), "attaches_to": attaches_to,
+              "size_bytes": int(size_bytes or 0),
               "upstream_idle_days": float(upstream_idle_days or 0.0),
               "candidate_id": candidate_id, "run_id": run_id,
               "reason": reason}
@@ -2927,34 +2969,6 @@ def traverse(conn: sqlite3.Connection, name: str, depth: int = 2,
         ORDER BY w.depth, p.name
     """
     return [dict(r) for r in conn.execute(q, (row["id"], depth))]
-
-
-def composable(conn: sqlite3.Connection) -> list[tuple[str, str]]:
-    """Pairs whose types line up: a produces what b consumes.
-
-    This is the pruning that makes pair search affordable. 47 proposals is 1,081
-    blind pairs; most are nonsense on their face, because speech does not compose
-    with an image upscaler.
-    """
-    q = """
-        SELECT a.name AS a, b.name AS b
-        FROM proposals a JOIN proposals b
-          ON a.produces <> '' AND b.consumes <> ''
-         AND a.produces = b.consumes AND a.id <> b.id
-        ORDER BY a.name, b.name
-    """
-    return [(r["a"], r["b"]) for r in conn.execute(q)]
-
-
-def types(conn: sqlite3.Connection, name: str, consumes: str = "",
-          produces: str = "") -> None:
-    """Declare what a proposal consumes and produces."""
-    conn.execute("UPDATE proposals SET "
-                 "consumes = CASE WHEN ?<>'' THEN ? ELSE consumes END, "
-                 "produces = CASE WHEN ?<>'' THEN ? ELSE produces END "
-                 "WHERE name = ?",
-                 (consumes, consumes, produces, produces, name))
-    conn.commit()
 
 
 def export(conn: sqlite3.Connection) -> str:
