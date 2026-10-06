@@ -1663,6 +1663,31 @@ def _report_winners(a) -> int:
     return 0
 
 
+def _screen_plan(want: str) -> list[dict]:
+    from harness import rank, screen
+    from harness import memory_store as ms
+    store = ms.connect()
+    try:
+        # THE SAME DEFECT AS _report_queue, at the tier that actually runs the
+        # model. `--top 2` sampled 8 rows of 114 and filtered those, so the
+        # loop fetched two image models and then said "nothing queued to
+        # screen". Issue #209.
+        rows, _ = _queueable(store, want)
+    finally:
+        store.close()
+    ranked = rank.rank(rows, serving=rank.serving(),
+                       measured_lanes=rank.lanes_with_receipts())
+    return screen.plan(ranked)
+
+
+def screenable_backlog(want: str = "", plan=None, room=None) -> list[str]:
+    """On disk, runnable, and fitting in memory now: what a fetch would queue behind. #396."""
+    from harness import screen
+    plan = _screen_plan(want) if plan is None else plan
+    room = room or (lambda r: memory.check_model(r["name"], spec=r["candidate"])[0])
+    return [r["name"] for r in plan if r["state"] == screen.READY and room(r)]
+
+
 def _report_screen(a) -> int:
     """Run the cheapest real thing, and record whether it ran at all. #53.
 
@@ -1677,18 +1702,7 @@ def _report_screen(a) -> int:
     from harness import memory_store as ms
 
     want = (getattr(a, "lane", "") or "").strip().lower()
-    store = ms.connect()
-    try:
-        # THE SAME DEFECT AS _report_queue, at the tier that actually runs the
-        # model. `--top 2` sampled 8 rows of 114 and filtered those, so the
-        # loop fetched two image models and then said "nothing queued to
-        # screen". Issue #209.
-        rows, _ = _queueable(store, want)
-    finally:
-        store.close()
-    ranked = rank.rank(rows, serving=rank.serving(),
-                       measured_lanes=rank.lanes_with_receipts())
-    full = screen.plan(ranked)
+    full = _screen_plan(want)
     if not full:
         print("nothing queued to screen")
         return 0
@@ -2190,9 +2204,14 @@ def _loop_spend(a, rc: int) -> int:
     if want:
         print(f"\n(spending only on the {want} lane)")
     print(f"\n=== fetch (up to {top}, budget {budget:g} GiB) ===")
-    sub = _ap.Namespace(**{**vars(a), "loop": False, "run": True,
-                           "limit": top, "json": False})
-    rc = cmd_fetch(sub) or rc
+    backlog = screenable_backlog(want)
+    if len(backlog) >= top:
+        print(f"  skipped: {len(backlog)} candidate(s) already on disk wait "
+              f"for a screen, and this run screens {top}")
+    else:
+        sub = _ap.Namespace(**{**vars(a), "loop": False, "run": True,
+                               "limit": top, "json": False})
+        rc = cmd_fetch(sub) or rc
 
     print(f"\n=== screen ===")
     sub = _ap.Namespace(**{**vars(a), "loop": False, "screen": True,
