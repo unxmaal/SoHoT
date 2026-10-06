@@ -146,6 +146,16 @@ def box(tmp_path):
     b.cleanup()
 
 
+#: A real system library per platform, loaded by name so no helper spawns a process.
+LIBRARY = {"win32": "kernel32", "darwin": "/usr/lib/libSystem.B.dylib"}.get(
+    sys.platform, "libc.so.6")
+
+def test_the_escape_library_loads_outside_the_sandbox():
+    """Without the hook the load succeeds, so a refusal inside is the hook's."""
+    import ctypes
+    assert ctypes.CDLL(LIBRARY)
+
+
 ESCAPES = ["../outside.txt", "a/../../outside.txt", "/etc/passwd", "~/x",
            "C:\\Windows\\x", "\\\\server\\share\\x", "mod.py\x00.txt", "..", "a\\..\\..\\x"]
 
@@ -245,10 +255,10 @@ def test_model_written_code_cannot_escape_when_the_tests_run(box, tmp_path):
                 with self.assertRaises(PermissionError):
                     socket.create_connection(("127.0.0.1", 9))
             def test_ctypes(self):
-                with self.assertRaises(PermissionError):
-                    ctypes.CDLL(None)
+                with self.assertRaisesRegex(PermissionError, "sandbox: ctypes"):
+                    ctypes.CDLL({LIBRARY!r})
             def test_pythonapi(self):
-                with self.assertRaises(PermissionError):
+                with self.assertRaisesRegex(PermissionError, "sandbox: ctypes"):
                     ctypes.pythonapi.Py_GetVersion
             def test_rmtree_out(self):
                 with self.assertRaises(PermissionError):
@@ -286,7 +296,8 @@ def test_importing_ctypes_works_under_every_interpreter_here(tmp_path, version):
         "import ctypes, unittest\nclass T(unittest.TestCase):\n"
         "    def test_ok(self):\n        self.assertTrue(ctypes.sizeof(ctypes.c_int))\n"
         "    def test_load(self):\n"
-        "        with self.assertRaises(PermissionError):\n            ctypes.CDLL(None)\n",
+        "        with self.assertRaisesRegex(PermissionError, 'sandbox: ctypes'):\n"
+        f"            ctypes.CDLL({LIBRARY!r})\n",
         encoding="utf-8")
     out = subprocess.run([exe, "-I", "-X", "utf8", "-c", sandbox.BOOTSTRAP, str(tmp_path),
                           "discover", "-s", "tests"], capture_output=True, text=True,
