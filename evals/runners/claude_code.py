@@ -29,10 +29,9 @@ class ClaudeCodeRunner(BaseRunner):
 
     def argv(self, case: Case) -> list[str]:
         system = completion.SYSTEM.get(case.modality, completion.NEUTRAL_SYSTEM)
-        user = completion.user_message(case.prompt, case.context)
-        # --tools takes a list, so it goes last or it swallows the prompt.
-        # --bare cannot be used: it skips the subscription login.
-        return [self.binary, "-p", user, "--model", self.model,
+        # The prompt goes on stdin: in argv, a case starting with "-" (a diff)
+        # is parsed as options. #368. --bare skips the subscription login.
+        return [self.binary, "-p", "--model", self.model,
                 "--output-format", "json", "--no-session-persistence",
                 "--strict-mcp-config", "--setting-sources", "",
                 "--system-prompt", system, "--tools", ""]
@@ -49,8 +48,11 @@ class ClaudeCodeRunner(BaseRunner):
         started = time.perf_counter()
         with tempfile.TemporaryDirectory(prefix="lh-claude-code-") as cwd:
             try:
-                proc = self.execute(self.argv(case), cwd=cwd, capture_output=True,
-                                text=True, timeout=self.timeout)
+                proc = self.execute(
+                    self.argv(case), cwd=cwd, capture_output=True, text=True,
+                    encoding="utf-8",
+                    timeout=self.timeout,
+                    input=completion.user_message(case.prompt, case.context))
             except subprocess.TimeoutExpired as exc:
                 raise RunnerError(f"claude -p timed out after {self.timeout}s") from exc
             except OSError as exc:

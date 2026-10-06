@@ -92,3 +92,22 @@ def test_empty_twice_is_the_models_answer():
     r = ClaudeCodeRunner("m", execute=fake({"result": ""}))
     with pytest.raises(RunnerError, match="twice"):
         r.generate(case())
+
+
+def test_case_text_never_reaches_the_argument_parser():
+    """#368: an extract case starting with a diff ('--- a/...') was parsed as
+    an option, and another became --resume."""
+    seen = {}
+    c = Case(id="d", modality="extract", prompt="--- a/x\n+++ b/x\n--resume me")
+    ClaudeCodeRunner("m", execute=fake({"result": "ok"}, seen=seen)).generate(c)
+    assert not any("--- a/x" in a or "--resume me" in a for a in seen["argv"])
+    assert "--- a/x" in seen["kw"]["input"]
+
+
+def test_the_pipe_is_utf8_whatever_the_locale():
+    """text=True alone decodes with the locale codepage (cp1252 on Windows),
+    and case text carries non-ASCII."""
+    seen = {}
+    c = Case(id="u", modality="extract", prompt="café → über")
+    ClaudeCodeRunner("m", execute=fake({"result": "ok"}, seen=seen)).generate(c)
+    assert seen["kw"]["encoding"] == "utf-8"
