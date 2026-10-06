@@ -20,7 +20,7 @@ from pathlib import Path
 
 from harness import paths, store
 
-SCHEMA_VERSION = 42
+SCHEMA_VERSION = 43
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
 VERDICTS = ("measured", "declined", "broken", "queued", "ignored", "screened")
@@ -302,6 +302,20 @@ CREATE TABLE IF NOT EXISTS adoptions (
     -- 'measured' by the paired gates, or 'by-hand' from a person's verdicts.
     how          TEXT NOT NULL,
     adopted_at   REAL NOT NULL
+);
+
+-- Each time the gateway's sohot-<lane> alias moved to a new adoption. #483.
+CREATE TABLE IF NOT EXISTS gateway_switches (
+    id           INTEGER PRIMARY KEY,
+    lane         TEXT NOT NULL,
+    old_spec     TEXT NOT NULL,
+    new_spec     TEXT NOT NULL,
+    -- 'idle' after a quiet window, or 'forced' at the max wait.
+    how          TEXT NOT NULL,
+    requested_at REAL NOT NULL,
+    switched_at  REAL NOT NULL,
+    -- Requests in flight at the restart; NULL when the gateway would not say.
+    in_flight    INTEGER
 );
 
 -- Weights on disk, one row per fetched or found path on one machine. #411.

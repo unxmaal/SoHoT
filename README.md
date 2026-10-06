@@ -548,9 +548,25 @@ For other programs the gateway serves one stable alias per text lane:
 `sohot-code`, `sohot-web`, `sohot-svg`, `sohot-extract` and `sohot-decide`.
 `scripts/serve-gateway.sh` writes `gateway/config.served.yaml` at start (the
 base config plus those aliases, from the adoptions table), and an adoption in a
-text lane restarts the gateway service, so the alias follows the winner without
-anyone editing `gateway/config.yaml`. An adopted GGUF is also served under its
-own stem. llama-server runs with `--jinja`, so tool calls pass through.
+text lane switches the alias to the winner without anyone editing
+`gateway/config.yaml`. An adopted GGUF is also served under its own stem.
+llama-server runs with `--jinja`, so tool calls pass through.
+
+An alias switch does not drop a session. LiteLLM 1.100.0 can add or change a
+model on a running gateway only with a Postgres database behind it
+(`/model/new` and `/model/update` refuse without one), so the switch is a
+restart, deferred: after any run holding the machine lock finishes, a detached
+waiter polls the gateway's `/health/backlog` in-flight counter and restarts only
+once nothing has been in flight for 60 s, which covers a streamed reply until
+its last byte. If the gateway is never quiet for 20 minutes it restarts anyway
+and logs that to `logs/gateway-switch.log`. A client sees at most a refused
+connection between turns, which opencode and Claude Code retry. Each switch is
+a `gateway_switches` row: lane, old spec, new spec, `idle` or `forced`, when it
+was asked for and when it happened, so a client log can be lined up with it:
+
+```bash
+sqlite3 "$LOCALHARNESS_HOME/discovery.db" 'SELECT * FROM gateway_switches'
+```
 
 opencode, as an OpenAI-compatible provider (`opencode.json`):
 

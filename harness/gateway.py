@@ -67,15 +67,9 @@ LANE_ALIAS = "sohot-{}"
 
 
 def refresh_gateway() -> None:
-    """Restart the gateway service so its lane aliases follow a new adoption. #297."""
-    import subprocess
-    import sys
-    if sys.platform != "darwin":
-        return
-    # Detached: launchd.sh waits for the machine lock, which a run may hold for hours.
-    subprocess.Popen([str(REPO / "scripts" / "launchd.sh"), "restart", "gateway"],
-                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-                     start_new_session=True)
+    """Re-point the lane aliases to a new adoption once no request is in flight. #297, #483."""
+    from harness import gateway_switch
+    gateway_switch.spawn()
 
 
 def served_path(config=None) -> Path:
