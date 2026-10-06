@@ -98,7 +98,7 @@ class BaseRunner:
 
         row = score(case, artifact, **self.score_kwargs())
         row.candidate = self.candidate
-        if not row.passed:
+        if not row.passed and not row.failure_class:
             row.failure_class = reasons.CONTENT_FAILED
         row.seconds = round(elapsed, 3)
         # A runner may have measured something the checker cannot see,

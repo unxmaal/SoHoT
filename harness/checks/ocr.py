@@ -43,6 +43,8 @@ loss would blame the generator for a missing dependency.
 from __future__ import annotations
 
 import importlib
+import json
+import subprocess
 import sys
 from dataclasses import dataclass, field
 from functools import lru_cache
@@ -50,6 +52,8 @@ import re
 from pathlib import Path
 
 import jiwer
+
+from harness import reasons
 
 # Punctuation and whitespace at the EDGES of a recognized string. A shop sign
 # reading "OPEN." with a period is a perfectly good sign, and quotes around a
@@ -68,6 +72,14 @@ class OcrUnavailable(RuntimeError):
     """Nothing on this machine can read text out of an image."""
 
 
+class OcrTransient(RuntimeError):
+    """The engine failed in a way that says nothing about the image. #505."""
+
+
+#: Vision's Espresso/ANE runtime failing to build its compute stream.
+_TRANSIENT = ("e5rterror",)
+
+
 @dataclass
 class OcrResult:
     ok: bool
@@ -79,6 +91,8 @@ class OcrResult:
     #: a cer of 1 as a total failure; neither happened, so the table gets
     #: neither number.
     measured: bool = True
+    #: A reasons class when the grader, not the image, is why it failed.
+    failure_class: str = ""
 
     @property
     def metrics(self) -> dict:
@@ -96,7 +110,7 @@ def _read_vision(path: Path) -> list[str]:
     request.setRecognitionLevel_(Vision.VNRequestTextRecognitionLevelAccurate)
     ok, err = handler.performRequests_error_([request], None)
     if not ok:
-        raise RuntimeError(f"Vision failed on {path}: {err}")
+        raise _vision_error(path, err)
 
     out = []
     for observation in request.results() or []:
@@ -104,6 +118,14 @@ def _read_vision(path: Path) -> list[str]:
         if candidates:
             out.append(str(candidates[0].string()))
     return out
+
+
+def _vision_error(path: Path, err) -> RuntimeError:
+    """The exception for a failed Vision request: transient or not."""
+    detail = f"Vision failed on {path}: {err}"
+    if any(t in str(err).lower() for t in _TRANSIENT):
+        return OcrTransient(detail)
+    return RuntimeError(detail)
 
 
 def _read_windows(path: Path) -> list[str]:
@@ -204,7 +226,28 @@ def read(path: str | Path, backend: str = "auto") -> list[str]:
     if name not in BACKENDS:
         raise ValueError(f"unknown ocr backend {name!r}; "
                          f"known: {', '.join(BACKENDS)}")
-    return BACKENDS[name][2](path)
+    try:
+        return BACKENDS[name][2](path)
+    except OcrTransient:
+        # The failed process keeps a stale ANE model handle, so retry in a new one.
+        return _fresh_read(name, path)
+
+
+def _fresh_read(name: str, path: Path) -> list[str]:
+    """One read in a new process; OcrTransient if it fails transiently again."""
+    try:
+        done = subprocess.run(
+            [sys.executable, "-m", "harness.checks.ocr", name, str(path)],
+            capture_output=True, text=True, encoding="utf-8", timeout=120,
+            cwd=Path(__file__).resolve().parents[2])
+    except subprocess.TimeoutExpired as exc:
+        raise OcrTransient(f"OCR retry timed out on {path}") from exc
+    if done.returncode == 0:
+        return json.loads(done.stdout)
+    detail = done.stderr.strip().splitlines()[-1] if done.stderr.strip() else ""
+    if any(t in detail.lower() for t in _TRANSIENT):
+        raise OcrTransient(detail)
+    raise RuntimeError(f"OCR retry failed on {path}: {detail}")
 
 
 def normalize(text: str) -> str:
@@ -236,6 +279,9 @@ def check(path: str | Path, expect: str, max_cer: float = DEFAULT_MAX_CER) -> Oc
         # Not a failed render. See the module docstring.
         return OcrResult(True, "", [f"text not measured: {exc}"],
                          measured=False)
+    except OcrTransient as exc:
+        return OcrResult(False, f"OCR failed twice, not scored: {exc}",
+                         measured=False, failure_class=reasons.HARNESS_ERROR)
 
     if not regions:
         return OcrResult(False, f"no text found in the image; expected {expect!r}",
@@ -253,3 +299,7 @@ def check(path: str | Path, expect: str, max_cer: float = DEFAULT_MAX_CER) -> Oc
             f"(character error rate {rate:.2f} over {max_cer})",
             cer=rate, text=regions)
     return OcrResult(True, "", cer=rate, text=regions)
+
+
+if __name__ == "__main__":
+    print(json.dumps(BACKENDS[sys.argv[1]][2](Path(sys.argv[2]))))

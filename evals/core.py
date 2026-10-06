@@ -104,7 +104,8 @@ def _check_image(artifact, case: Case, adherence: str | None = None,
     o = ocr_check.check(artifact, expect=expect_text,
                         max_cer=case.assertions.get("max_cer",
                                                     ocr_check.DEFAULT_MAX_CER))
-    out = CheckResult(o.ok, o.reason, warnings_out + o.warnings)
+    out = CheckResult(o.ok, o.reason, warnings_out + o.warnings,
+                      failure_class=o.failure_class)
     metrics.update(o.metrics)
     out.metrics = metrics
     return out
@@ -779,7 +780,8 @@ def score(case: Case, artifact, **checker_kwargs) -> Result:
     metrics = getattr(r, "metrics_extra", None) or getattr(r, "metrics", {})
     if not r.ok:
         return Result(case.id, "", False, 0.0, 0, r.reason,
-                      warnings=r.warnings, metrics=metrics)
+                      warnings=r.warnings, metrics=metrics,
+                      failure_class=getattr(r, "failure_class", ""))
 
     a = case.assertions
     if not a:

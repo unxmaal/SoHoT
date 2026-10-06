@@ -205,3 +205,118 @@ def test_tesseract_is_not_a_backend():
     RapidOCR 18/18, tesseract 6/18, tesseract with preprocessing 0/18. It would
     have reported twelve good renders as total failures."""
     assert "tesseract" not in ocr.BACKENDS
+
+
+# ---- a Vision transient is the harness's failure, not the model's. #505 ----
+
+E5RT = ('Error Domain=TextRecognition Code=0 "TextRecognition.CRImageReaderError.'
+        'e5rtError(\\"e5rt_execution_stream_operation_create_precompiled_compute_'
+        'operation_with_options ...\\", 13)"')
+
+
+def _fake_vision(monkeypatch, outcomes):
+    """Swap the Vision call for one that plays `outcomes` in order."""
+    calls = []
+
+    def reader(path, where="in-process"):
+        calls.append(where)
+        out = outcomes[min(len(calls), len(outcomes)) - 1]
+        if isinstance(out, Exception):
+            raise out
+        return out
+
+    monkeypatch.setattr(ocr, "available_backend", lambda: "vision")
+    monkeypatch.setitem(ocr.BACKENDS, "vision",
+                        ("darwin", lambda: True, reader))
+    monkeypatch.setattr(ocr, "_fresh_read",
+                        lambda name, path: reader(path, "fresh"))
+    return calls
+
+
+def _noise(path, size=64):
+    import random
+    from PIL import Image
+    im = Image.new("RGB", (size, size))
+    im.putdata([(random.randint(0, 255),) * 3 for _ in range(size * size)])
+    im.save(path)
+    return path
+
+
+def test_an_e5rt_error_is_a_vision_transient_and_others_are_not(tmp_path):
+    assert isinstance(ocr._vision_error(tmp_path / "a.png", E5RT),
+                      ocr.OcrTransient)
+    other = ocr._vision_error(tmp_path / "a.png", "Error Domain=Other Code=1")
+    assert isinstance(other, RuntimeError)
+    assert not isinstance(other, ocr.OcrTransient)
+
+
+def test_a_vision_transient_is_retried_once_in_a_fresh_process(
+        tmp_path, monkeypatch):
+    """aned loses the process's cached model and that process stays broken."""
+    calls = _fake_vision(monkeypatch, [ocr.OcrTransient(E5RT), ["OPEN"]])
+    r = ocr.check(_noise(tmp_path / "a.png"), expect="OPEN")
+    assert calls == ["in-process", "fresh"]
+    assert r.ok and r.cer == 0.0 and r.failure_class == ""
+
+
+def test_the_fresh_process_read_matches_the_in_process_one(tmp_path):
+    name = ocr.available_backend()
+    if name is None:
+        pytest.skip("no OCR backend on this machine")
+    path = render(tmp_path / "a.png", "OPEN")
+    assert ocr._fresh_read(name, path) == ocr.read(path)
+
+
+def test_a_fresh_read_that_fails_transiently_again_says_so(tmp_path, monkeypatch):
+    import subprocess
+    monkeypatch.setattr(ocr.subprocess, "run", lambda *a, **k:
+                        subprocess.CompletedProcess(a, 1, "", "Traceback\n" + E5RT))
+    with pytest.raises(ocr.OcrTransient):
+        ocr._fresh_read("vision", tmp_path / "a.png")
+
+
+def test_a_fresh_read_that_fails_otherwise_is_not_transient(tmp_path):
+    with pytest.raises(RuntimeError) as err:
+        ocr._fresh_read("no-such-backend", _noise(tmp_path / "a.png"))
+    assert not isinstance(err.value, ocr.OcrTransient)
+
+
+def test_a_vision_transient_twice_is_a_harness_error_not_a_failed_render(
+        tmp_path, monkeypatch):
+    from harness import reasons
+    calls = _fake_vision(monkeypatch, [ocr.OcrTransient(E5RT)])
+    r = ocr.check(_noise(tmp_path / "a.png"), expect="OPEN")
+    assert calls == ["in-process", "fresh"]
+    assert not r.ok
+    assert r.failure_class == reasons.HARNESS_ERROR
+    assert "e5rt" in r.reason
+    assert "cer" not in r.metrics
+
+
+def test_any_other_vision_error_is_not_retried(tmp_path, monkeypatch):
+    calls = _fake_vision(monkeypatch, [RuntimeError("Vision failed: other")])
+    with pytest.raises(RuntimeError):
+        ocr.check(_noise(tmp_path / "a.png"), expect="OPEN")
+    assert calls == ["in-process"]
+
+
+def test_a_vision_transient_reaches_the_row_as_a_harness_error(
+        tmp_path, monkeypatch):
+    """The runner marks every failed check content_failed; this one must not be."""
+    from evals.core import Case
+    from evals.runners.base import BaseRunner
+    from harness import reasons
+    _fake_vision(monkeypatch, [ocr.OcrTransient(E5RT)])
+    path = _noise(tmp_path / "a.png")
+
+    class Runner(BaseRunner):
+        candidate = "fake"
+
+        def generate(self, case):
+            return str(path), 0
+
+    case = Case(id="sign", modality="image", prompt="a sign reading OPEN",
+                params={"width": 64, "height": 64}, assertions={"text": "OPEN"})
+    row = Runner().run(case)
+    assert not row.passed
+    assert row.failure_class == reasons.HARNESS_ERROR
