@@ -36,6 +36,7 @@ from __future__ import annotations
 
 import re
 
+from harness import inspect as ins
 from harness import lanes
 
 GIB = 1024 ** 3
@@ -57,7 +58,7 @@ CHEAP = 1.0
 
 #: A card says what it was built from as `base_model:...`, sometimes several
 #: times and with a role in between (`base_model:quantized:org/name`).
-_LINEAGE = re.compile(r"built from ([^;]+)")
+_LINEAGE = re.compile(rf"(?:{ins.LINEAGE_BUILT}|{ins.LINEAGE_ADAPTER}) ([^;]+)")
 _SIZE = re.compile(r"([\d.]+) GiB of weights")
 
 
