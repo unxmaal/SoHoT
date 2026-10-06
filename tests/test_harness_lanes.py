@@ -205,9 +205,14 @@ def _mac():
 
 # --- what the queue must not spend its first page on -----------------------
 
-def _row(name, lane="video", description="", times=2):
+def _row(name, lane="video", description="", times=2, card=None):
+    """A queue row; `card` is a registry card read the way inspect reads it."""
+    from harness import inspect as ins
+    facts = ins.card_facts(card or {})
     return {"name": name, "lane": lane, "description": description,
-            "times": times, "registry": "huggingface"}
+            "times": times, "registry": "huggingface",
+            "attaches_to": facts.attaches_to,
+            "runtime_needed": facts.runtime_needed, "parents": facts.parents}
 
 
 def test_an_adapter_never_reaches_the_queue():
@@ -221,13 +226,21 @@ def test_an_adapter_never_reaches_the_queue():
 
 
 def test_an_adapter_is_caught_by_its_card_as_well_as_its_name():
-    rows = [_row("org/innocuous-name", description="a style LoRA for FLUX")]
+    rows = [_row("org/innocuous-name", card={"tags": ["LoRA", "flux"]})]
     assert rank.rank(rows, serving=(), measured_lanes=()) == []
+
+
+def test_an_adapter_in_the_prose_alone_is_not_parsed_back():
+    """#414: the description is for the judge. A reader that parses it again
+    fails here, with no attaches_to on the row."""
+    rows = [_row("org/innocuous-name", description="a style LoRA for FLUX")]
+    assert [r["name"] for r in rank.rank(rows, serving=(), measured_lanes=())
+            ] == ["org/innocuous-name"]
 
 
 def test_a_real_model_whose_card_says_lora_ready_is_kept():
     """The one enumerated exception, so the refusal cannot creep."""
-    rows = [_row("org/base", description="lora-ready base checkpoint")]
+    rows = [_row("org/base", card={"tags": ["lora-ready", "base"]})]
     assert [r["name"] for r in rank.rank(rows, serving=(), measured_lanes=())
             ] == ["org/base"]
 

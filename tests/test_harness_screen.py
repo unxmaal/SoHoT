@@ -152,8 +152,7 @@ def test_a_lora_is_refused_before_anything_downloads():
     downloads gigabytes and then fails, recording a verdict that says nothing
     about the thing."""
     assert screen.is_attachment("text-to-image; diffusers; tagged lora") == "lora"
-    assert screen.candidate_for("image", "org/style",
-                                "tagged text-to-image, lora") == ""
+    assert screen.candidate_for("image", "org/style", "lora") == ""
 
 
 def test_a_comfyui_node_pack_is_refused():
@@ -166,8 +165,7 @@ def test_a_real_model_is_still_a_candidate():
                                 "tagged mlx, mflux, text-to-image") == ""
     # The ENGINE is not the assertion. The image lane holds two, and which one
     # spells a given model is settled by which one can run it.
-    assert screen.candidate_for("image", "org/base",
-                                "tagged mlx, mflux").endswith(":org/base")
+    assert screen.candidate_for("image", "org/base", "").endswith(":org/base")
 
 
 def test_a_candidate_with_no_description_is_not_assumed_to_be_an_adapter():
@@ -187,10 +185,19 @@ def test_the_state_says_why_rather_than_no_runner():
     """`no runner for the image lane` is false and sends the reader looking for
     a missing runner. The lane has one; this is not a model."""
     got = screen.plan([{"name": "org/style", "lane": "image",
-                        "description": "tagged lora"}],
+                        "attaches_to": "lora"}],
                       missing=lambda n: [])[0]
     assert got["state"] == screen.NO_RUNNER
     assert "attaches to a model" in got["why_not"]
+
+
+def test_the_plan_does_not_parse_the_description():
+    """#414: a row whose prose says lora and whose card column says nothing
+    is planned like any model; the column is the only reading."""
+    got = screen.plan([{"name": "org/style", "lane": "image",
+                        "description": "tagged lora"}],
+                      missing=lambda n: [])[0]
+    assert "attaches to a model" not in got["why_not"]
 
 
 # ---- the screen must report what it measured (2026-09-18) -----------------

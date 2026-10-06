@@ -139,6 +139,16 @@ class Completions:
         return self.answers.get(model, self.default)
 
 
+def carded(conn, name: str, data: dict) -> None:
+    """Write a card into the store the way the inspect tier does: prose for
+    the judge, and the facts as columns and lineage rows. #414."""
+    from harness import inspect as ins
+    from harness import memory_store as ms
+    conn.execute("UPDATE proposals SET description = ? WHERE name = ?",
+                 (ins.card_description(data), name))
+    assert ms.set_card(conn, name, ins.card_facts(data)), name
+
+
 def seeded_store(conn, rows):
     """Proposals with an inspect verdict queuing them, as a sweep leaves them.
 

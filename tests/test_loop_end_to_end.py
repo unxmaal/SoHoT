@@ -181,12 +181,9 @@ def test_a_candidate_this_machine_cannot_run_is_answered(store, tmp_path):
     """#254. Tagged gemlite and cuda. rank.unrunnable drops it from the
     ordering so it never reached a fetch and never got a verdict, and every
     sweep re-ranked it forever."""
-    from harness import inspect as ins
-
     name = "prism-ml/bonsai-image-binary-4B-gemlite-1bit"
     fakes.seeded_store(store, [(name, "image", 3.8, 2)])
-    store.execute("UPDATE proposals SET description = ? WHERE name = ?",
-                  (ins.card_description(fakes.card(name)), name))
+    fakes.carded(store, name, fakes.card(name))
 
     downloads = fakes.Downloads(tmp_path / "hub")
     got = fetching.run(store, {name: int(3.8 * 1024 ** 3)}, limit=1,

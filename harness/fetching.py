@@ -141,10 +141,9 @@ def queued(conn, tiers=FETCHABLE_TIERS, kind: str = FETCHABLE_KIND,
     """
     rows = conn.execute("""
         SELECT p.name, p.resolved, p.kind, p.lane, p.registry,
-               -- The registry's own card, so this tier can refuse an adapter
-               -- before spending gigabytes on it. It was absent, so the check
-               -- read None and never fired.
-               p.description,
+               -- The card's facts, so this tier can refuse an adapter or a
+               -- foreign runtime before spending gigabytes on it. #414.
+               p.attaches_to, p.runtime_needed,
                -- The state and the verdict that set it. #409.
                p.state AS outcome, st.tier AS tier, st.detail AS detail,
                -- The candidate's measured size, whatever verdict is newest. #211, #413.
@@ -201,7 +200,7 @@ def in_rank_order(rows: list[dict], conn=None) -> list[dict]:
     from harness import rank
 
     # RANK THE STORE'S ROWS, NOT THESE. A fetch row carries name, lane, kind
-    # and size; rank.value reads recurrence, lineage and the card description,
+    # and size; rank.value reads recurrence, lineage rows and the card columns,
     # which live on the judgeable row. Ranking these scored every one of them
     # identically and fell back to the alphabet, which is the ordering this
     # was replacing.
@@ -369,15 +368,15 @@ def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=N
         # back on the next sweep and would have forever. `queued`, not
         # `declined`: the candidate did nothing wrong and an engine entry
         # would make it runnable, so it is reported to a person instead.
+        attachment = row.get("attaches_to") or ""
         gap = screen.no_runner(screen.candidate_for(
-            row.get("lane") or "", row["name"], row.get("description") or ""))
+            row.get("lane") or "", row["name"], attachment))
         if gap:
             why = f"{gap}: no runner in the {row['lane']} lane can load it"
             ms.decide_or_skip(conn, row["name"], "queued", tier="fetch", detail=why,
                               reason=reasons.HARNESS)
             done.append({"repo": row["name"], "ok": False, "why": why})
             continue
-        attachment = screen.is_attachment(row.get("description") or "")
         if attachment:
             why = (f"{attachment} in its own card: this attaches to a model "
                    f"rather than being one, and no lane can run it alone")

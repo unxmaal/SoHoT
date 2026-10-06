@@ -19,7 +19,7 @@ from pathlib import Path
 
 from harness import paths, store
 
-SCHEMA_VERSION = 31
+SCHEMA_VERSION = 32
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
 VERDICTS = ("measured", "declined", "broken", "queued", "ignored", "screened")
@@ -82,7 +82,28 @@ CREATE TABLE IF NOT EXISTS proposals (
     retest_count INTEGER NOT NULL DEFAULT 0,
     next_retest_at REAL,
     -- Bytes a download of this candidate costs, as inspect measured it; 0 is unmeasured. #413.
-    size_bytes  INTEGER NOT NULL DEFAULT 0
+    size_bytes  INTEGER NOT NULL DEFAULT 0,
+    -- Card facts, written by inspect from the registry's fields. #414.
+    hf_task     TEXT NOT NULL DEFAULT '',
+    library     TEXT NOT NULL DEFAULT '',
+    card_tags   TEXT NOT NULL DEFAULT '[]',
+    attaches_to TEXT NOT NULL DEFAULT '',
+    runtime_needed TEXT NOT NULL DEFAULT '',
+    -- card, tag or prose: what named the lane; '' is not recorded.
+    lane_source TEXT NOT NULL DEFAULT '',
+    -- 'card' read from the registry; 'description' recovered from the
+    -- 300-character description by the schema 32 backfill; '' never read.
+    card_read   TEXT NOT NULL DEFAULT ''
+);
+
+-- A card's base_model parents. The parent is rarely a proposal, so this is
+-- not an edges row. kind: adapter, finetune, quantized, merge or ''. #414.
+CREATE TABLE IF NOT EXISTS lineage (
+    id          INTEGER PRIMARY KEY,
+    proposal_id INTEGER NOT NULL REFERENCES proposals(id) ON DELETE CASCADE,
+    parent      TEXT NOT NULL,
+    kind        TEXT NOT NULL DEFAULT '',
+    UNIQUE (proposal_id, parent, kind)
 );
 
 CREATE TABLE IF NOT EXISTS sightings (
@@ -762,6 +783,7 @@ def _migrate(conn: sqlite3.Connection) -> None:
     if "size_bytes" not in _columns(conn, "proposals"):
         conn.execute("ALTER TABLE proposals "
                      "ADD COLUMN size_bytes INTEGER NOT NULL DEFAULT 0")
+    _add_card_facts(conn)
     if have and have < 25:
         _backfill_state(conn)
     # The DDL above is CREATE IF NOT EXISTS, so v0 -> v1 and v1 -> v2 (which
@@ -787,6 +809,9 @@ def _migrate(conn: sqlite3.Connection) -> None:
     if have and have < 4 and "description" not in _columns(conn, "proposals"):
         conn.execute("ALTER TABLE proposals "
                      "ADD COLUMN description TEXT NOT NULL DEFAULT ''")
+    if have and have < 32:
+        # Before the relane steps, which read hf_task. #414.
+        backfill_card_facts(conn)
     if have and have < 5:
         _canonical_lanes(conn)
         _backfill_lanes(conn)
@@ -1013,6 +1038,162 @@ def _add_retest(conn) -> None:
             conn.execute(f"ALTER TABLE proposals ADD COLUMN {col} {ddl}")
 
 
+#: The card-fact columns, on a store older than the DDL. #414.
+CARD_COLUMNS = ("hf_task", "library", "card_tags", "attaches_to",
+                "runtime_needed", "lane_source", "card_read")
+
+
+def _add_card_facts(conn) -> None:
+    for col in CARD_COLUMNS:
+        if col not in _columns(conn, "proposals"):
+            default = "'[]'" if col == "card_tags" else "''"
+            conn.execute(f"ALTER TABLE proposals ADD COLUMN {col} "
+                         f"TEXT NOT NULL DEFAULT {default}")
+
+
+def set_card(conn, name: str, card, read: str = "card") -> bool:
+    """Write a card's facts and its lineage rows; False if no such proposal.
+
+    The writer is the inspect tier, from the registry's own fields. Lineage is
+    replaced, not merged: a card that dropped a parent no longer has it. #414.
+    """
+    from harness import lanes
+    row = conn.execute("SELECT id, lane FROM proposals WHERE name = ?",
+                       (name,)).fetchone()
+    if not row:
+        return False
+    same = bool(card.lane) and lanes.canonical(row["lane"]) == \
+        lanes.canonical(card.lane)
+    conn.execute(
+        "UPDATE proposals SET hf_task = ?, library = ?, card_tags = ?, "
+        "attaches_to = ?, runtime_needed = ?, card_read = ?, "
+        "lane_source = CASE WHEN ? THEN ? ELSE lane_source END WHERE id = ?",
+        (card.task, card.library, json.dumps(list(card.tags)),
+         card.attaches_to, card.runtime_needed, read,
+         1 if same else 0, card.lane_source, row["id"]))
+    conn.execute("DELETE FROM lineage WHERE proposal_id = ?", (row["id"],))
+    for parent, kind in card.parents:
+        conn.execute("INSERT OR IGNORE INTO lineage (proposal_id, parent, kind) "
+                     "VALUES (?,?,?)", (row["id"], parent, kind))
+    conn.commit()
+    return True
+
+
+def parents_of(conn, names) -> dict[str, list[tuple[str, str]]]:
+    """name -> [(parent, kind)] from the lineage table. #414."""
+    names = list(dict.fromkeys(names))
+    out: dict = {n: [] for n in names}
+    for i in range(0, len(names), 500):
+        chunk = names[i:i + 500]
+        for r in conn.execute(
+                "SELECT p.name, l.parent, l.kind FROM lineage l "
+                "JOIN proposals p ON p.id = l.proposal_id "
+                f"WHERE p.name IN ({','.join('?' * len(chunk))}) "
+                "ORDER BY l.id", chunk):
+            out[r["name"]].append((r["parent"], r["kind"]))
+    return out
+
+
+def with_lineage(conn, rows: list[dict]) -> list[dict]:
+    """Each row with `parents`: its [(parent, kind)] lineage. #414."""
+    got = parents_of(conn, [r["name"] for r in rows])
+    for r in rows:
+        r["parents"] = got.get(r["name"], [])
+    return rows
+
+
+#: THE ONLY READER OF inspect.card_description()'s grammar, and only to
+#: backfill the columns once. What the 300-character string lost is lost. #414.
+_DESC_TASK = re.compile(r"(?:^|; )task ([a-z0-9-]+)")
+_DESC_SERVED = re.compile(r"(?:^|; )served by (\w[\w.-]*)")
+_DESC_TAGS = re.compile(r"(?:^|; )tagged ([^;]*)")
+_DESC_LINEAGE = re.compile(r"(?:^|; )(built from|adapter of) ([^;]+)")
+#: The pre-#414 runtime reading, over the whole string as rank ran it.
+_DESC_NEEDS_CUDA = re.compile(
+    r"\b(cuda|tensorrt|gemlite|nvfp4|modelopt|marlin|exllama|bitsandbytes)\b",
+    re.I)
+_DESC_CARD = re.compile(r"^(task |served by |tagged |built from |adapter of "
+                        r"|[\d.]+ GiB of weights)")
+
+
+def card_from_description(description: str, card_shaped: bool):
+    """The card facts a stored description still holds, and what it lost.
+
+    Attachment and runtime are read over the whole string, exactly as the
+    readers this replaces did. Task, library, tags and lineage only from a
+    string inspect composed from a card. Lost: tags past the first six
+    non-decisive ones, parents past three, the kind of any `built from`
+    parent, and anything cut at 300 characters.
+    """
+    from harness import inspect as ins
+    from harness import screen
+    text = description or ""
+    card = ins.Card(attaches_to=screen.is_attachment(text))
+    m = _DESC_NEEDS_CUDA.search(text)
+    lost = []
+    if card_shaped and _DESC_CARD.match(text):
+        if (t := _DESC_TASK.search(text.lower())):
+            card.task = t.group(1)
+        if (s := _DESC_SERVED.search(text)):
+            card.library = s.group(1)
+        if (g := _DESC_TAGS.search(text)):
+            card.tags = [x.strip() for x in g.group(1).split(",") if x.strip()]
+        if (ln := _DESC_LINEAGE.search(text)):
+            kind = "adapter" if ln.group(1) == "adapter of" else ""
+            card.parents = [(p.strip(), kind) for p in ln.group(2).split(",")
+                            if p.strip()]
+            if not kind:
+                lost.append("lineage kind")
+        if len(text) >= 300:
+            lost.append("truncated")
+    if m:
+        card.runtime_needed = "cuda"
+    elif card.library:
+        card.runtime_needed = ins.runtime_needed(card.library)
+    return card, lost
+
+
+def backfill_card_facts(conn) -> dict:
+    """Fill the card columns and lineage from each stored description. #414.
+
+    One pass, schema 32. Rows are marked card_read='description' so a reader
+    can tell a recovered fact from one read off the card; the next inspect of
+    the row overwrites it with the card's own fields.
+    """
+    from harness import inspect as ins
+    from harness import lanes
+    counts = {"rows": 0, "card_shaped": 0, "task": 0, "library": 0,
+              "lineage_rows": 0, "parents": 0, "adapters": 0,
+              "attaches_to": 0, "runtime_needed": 0, "lane_source_card": 0,
+              "lost_lineage_kind": 0, "truncated": 0}
+    rows = conn.execute(
+        "SELECT id, name, registry, lane, description FROM proposals "
+        "WHERE description <> '' AND card_read = ''").fetchall()
+    for r in rows:
+        shaped = r["registry"] in (HUGGINGFACE, "")
+        card, lost = card_from_description(r["description"], shaped)
+        counts["rows"] += 1
+        counts["card_shaped"] += bool(card.task or card.library or card.tags
+                                      or card.parents)
+        counts["task"] += bool(card.task)
+        counts["library"] += bool(card.library)
+        counts["parents"] += bool(card.parents)
+        counts["lineage_rows"] += len(card.parents)
+        counts["adapters"] += any(k == "adapter" for _, k in card.parents)
+        counts["attaches_to"] += bool(card.attaches_to)
+        counts["runtime_needed"] += bool(card.runtime_needed)
+        counts["lost_lineage_kind"] += "lineage kind" in lost
+        counts["truncated"] += "truncated" in lost
+        if card.task:
+            card.lane = ins.card_lane(card.task)
+            card.lane_source = "card"
+            counts["lane_source_card"] += bool(card.lane) and \
+                lanes.canonical(r["lane"]) == lanes.canonical(card.lane)
+        set_card(conn, r["name"], card, read="description")
+    conn.commit()
+    return counts
+
+
 def backfill_adoptions(conn) -> int:
     """One adoptions row per adopt-tier `measured` verdict. #412.
 
@@ -1231,10 +1412,6 @@ def _retract_verdicts_with_no_control(conn) -> None:
                      "27, so the verdict described a run in which nothing ran")
 
 
-#: How the inspect tier spells the registry's own task inside a description.
-_CARD_TASK = re.compile(r"task ([a-z0-9-]+)")
-
-
 def _relane_from_the_card(conn) -> None:
     """Correct a lane the SOURCE supplied, using the candidate's own card.
 
@@ -1251,13 +1428,13 @@ def _relane_from_the_card(conn) -> None:
     from harness import inspect as ins
     from harness import lanes
 
+    # The stored task column, which the schema 32 backfill fills first. #414.
     rows = conn.execute(
-        "SELECT id, name, lane, description FROM proposals "
-        "WHERE description <> ''").fetchall()
+        "SELECT id, name, lane, hf_task FROM proposals "
+        "WHERE hf_task <> ''").fetchall()
     moved = []
     for row in rows:
-        m = _CARD_TASK.search((row["description"] or "").lower())
-        card = ins.card_lane(m.group(1)) if m else None
+        card = ins.card_lane(row["hf_task"].lower())
         was = lanes.canonical(row["lane"])
         # A text task cannot say WHICH text lane: OmniSVG is image-text-to-text.
         if not card or was == card or (card == "code" and was in lanes.TEXT_SERVED):
@@ -1423,7 +1600,7 @@ def backfill_candidates(conn, runs=None) -> dict:
                 counts["gguf"] += 1
     own = {}
     rows = conn.execute(
-        "SELECT DISTINCT p.id, p.name, p.lane, p.description FROM proposals p "
+        "SELECT DISTINCT p.id, p.name, p.lane, p.attaches_to FROM proposals p "
         "JOIN verdicts v ON v.proposal_id = p.id "
         "WHERE v.tier IN (?, ?, ?)", (SCREEN, MEASURE, ADOPT)).fetchall()
     for r in rows:
@@ -1431,7 +1608,7 @@ def backfill_candidates(conn, runs=None) -> dict:
             continue
         try:
             spec = screen.candidate_for(r["lane"], r["name"],
-                                        r["description"] or "", conn=conn)
+                                        r["attaches_to"] or "", conn=conn)
         except Exception:  # noqa: BLE001
             spec = ""
         cid = C.ensure(conn, spec, proposal=r["name"], lane=r["lane"]) \
@@ -1561,8 +1738,11 @@ class Seen:
     #: One of REGISTRIES, or empty when the caller genuinely cannot say.
     registry: str = ""
     #: What the registry says this IS, as opposed to what one source said
-    #: about it. Only filled by a tier that read the registry.
+    #: about it. Only filled by a tier that read the registry. Prose for the
+    #: judge; the facts in it are columns written by set_card(). #414.
     description: str = ""
+    #: What named `lane`: card, tag or prose. #414.
+    lane_source: str = ""
 
 
 def record(conn: sqlite3.Connection, seen: Seen, at: float | None = None) -> int:
@@ -1580,18 +1760,23 @@ def record(conn: sqlite3.Connection, seen: Seen, at: float | None = None) -> int
         conn.execute(
             "UPDATE proposals SET last_seen = ?, "
             "  resolved = CASE WHEN ?<>'' THEN ? ELSE resolved END, "
+            "  lane_source = CASE WHEN lane='' AND ?<>'' THEN ? "
+            "                ELSE lane_source END, "
             "  lane = CASE WHEN lane='' THEN ? ELSE lane END, "
             "  registry = CASE WHEN registry='' THEN ? ELSE registry END, "
             "  description = CASE WHEN ?<>'' THEN ? ELSE description END "
             "WHERE id = ?",
-            (now, seen.resolved, seen.resolved, seen.lane, seen.registry,
+            (now, seen.resolved, seen.resolved, seen.lane, seen.lane_source,
+             seen.lane, seen.registry,
              seen.description, seen.description, pid))
     else:
         pid = conn.execute(
             "INSERT INTO proposals (name, kind, registry, lane, resolved, "
-            "description, first_seen, last_seen) VALUES (?,?,?,?,?,?,?,?)",
+            "description, lane_source, first_seen, last_seen) "
+            "VALUES (?,?,?,?,?,?,?,?,?)",
             (seen.name, seen.kind, seen.registry, seen.lane, seen.resolved,
-             seen.description, now, now)).lastrowid
+             seen.description, seen.lane_source if seen.lane else "",
+             now, now)).lastrowid
     conn.execute(
         "INSERT OR IGNORE INTO sightings (proposal_id, source, url, why, "
         "relevance, seen_at) VALUES (?,?,?,?,?,?)",
@@ -1600,7 +1785,7 @@ def record(conn: sqlite3.Connection, seen: Seen, at: float | None = None) -> int
     return pid
 
 
-def set_lane(conn, name: str, lane: str) -> bool:
+def set_lane(conn, name: str, lane: str, source: str = "") -> bool:
     """Record a lane READ FROM THE REGISTRY, overwriting a guess.
 
     `record()` keeps the first non-empty lane, which is right for a value
@@ -1620,7 +1805,8 @@ def set_lane(conn, name: str, lane: str) -> bool:
                        (name,)).fetchone()
     if not row or lanes.canonical(row["lane"]) == want:
         return False
-    conn.execute("UPDATE proposals SET lane = ? WHERE id = ?", (want, row["id"]))
+    conn.execute("UPDATE proposals SET lane = ?, lane_source = ? WHERE id = ?",
+                 (want, source, row["id"]))
     return True
 
 
@@ -2103,7 +2289,7 @@ def survivors(conn, limit: int = 10) -> list[dict]:
     again every time the loop runs.
     """
     rows = conn.execute("""
-        SELECT p.name, p.lane, v.detail
+        SELECT p.name, p.lane, p.attaches_to, v.detail
         FROM proposals p JOIN verdicts v ON v.id = p.state_verdict_id
         WHERE p.state = 'screened' AND v.tier = ?
         ORDER BY v.id DESC LIMIT ?
@@ -2143,6 +2329,7 @@ def judgeable(conn, limit: int = 50) -> list[dict]:
     q = f"""
         SELECT p.name, p.lane, p.registry, p.kind, p.description,
                p.size_bytes,
+               p.hf_task, p.library, p.attaches_to, p.runtime_needed,
                COUNT(s.id) AS times, MAX(s.relevance) AS relevance,
                MAX(s.seen_at) AS last_seen,
                MIN(s.source) AS source, MIN(s.why) AS why,
@@ -2169,8 +2356,8 @@ def judgeable(conn, limit: int = 50) -> list[dict]:
         ORDER BY times DESC, last_seen DESC
         LIMIT ?
     """
-    return [dict(r) for r in conn.execute(
-        q, (INSPECT, INSPECT, JUDGE, *TERMINAL, "screened", limit))]
+    return with_lineage(conn, [dict(r) for r in conn.execute(
+        q, (INSPECT, INSPECT, JUDGE, *TERMINAL, "screened", limit))])
 
 
 def judgeable_total(conn) -> int:

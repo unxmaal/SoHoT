@@ -107,12 +107,13 @@ def test_an_adapter_is_declined_rather_than_downloaded(tmp_path):
 
     conn = ms.connect(tmp_path / "s.db")
     try:
+        import fakes
         ms.record(conn, ms.Seen(
             name="org/style-lora", source="test", lane="image",
-            registry="huggingface", resolved="org/style-lora",
-            description="tagged lora, anime; adapter of org/base; "
-                        "0.2 GiB of weights"))
+            registry="huggingface", resolved="org/style-lora"))
         ms.set_size(conn, "org/style-lora", 209715200)
+        fakes.carded(conn, "org/style-lora", {
+            "tags": ["lora", "anime", "base_model:adapter:org/base"]})
         ms.decide(conn, "org/style-lora", "queued", tier="inspect",
                   detail="fits")
         got = fetching.run(conn, {"org/style-lora": 200 * 1024 ** 2}, limit=1,

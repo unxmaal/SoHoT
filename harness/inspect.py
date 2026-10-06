@@ -147,12 +147,18 @@ def card_lane(task: str) -> str:
     return PIPELINE_LANES.get(task) or _lane_from_output(task, set())
 
 
-#: The words describe() writes before a card's parents; rank reads these. #420.
+#: The words card_description() writes before a card's parents, for the judge.
 LINEAGE_BUILT, LINEAGE_ADAPTER = "built from", "adapter of"
 
 
 def lane_for(meta: dict, prose: str = "") -> str:
-    """Which lane could measure this, or "" when nothing here can.
+    """Which lane could measure this, or "" when nothing here can. See
+    lane_and_source()."""
+    return lane_and_source(meta, prose)[0]
+
+
+def lane_and_source(meta: dict, prose: str = "") -> tuple[str, str]:
+    """The lane and what named it: card, tag or prose ("" when nothing did).
 
     Empty is not a rejection. It means the eval suite has no case, no runner
     and no metric for this kind of model, which is a gap in the harness and
@@ -180,15 +186,19 @@ def lane_for(meta: dict, prose: str = "") -> str:
         # the publisher's own answer is a better fallback than a coin flip.
         specific = from_tags - {lane}
         if tag == GENERIC_PIPELINE and len(specific) == 1:
-            return specific.pop()
-        return lane
+            return specific.pop(), "tag"
+        return lane, "card"
     if tag:
-        return _lane_from_output(tag, from_tags)
+        lane = _lane_from_output(tag, from_tags)
+        if not lane:
+            return "", ""
+        return lane, ("tag" if tag.endswith("-to-any") else "card")
     if len(from_tags) == 1:
-        return from_tags.pop()
+        return from_tags.pop(), "tag"
     if from_tags:
-        return ""      # several lanes named and none of them the publisher's
-    return lanes.from_prose(prose)
+        return "", ""     # several lanes named and none of them the publisher's
+    lane = lanes.from_prose(prose)
+    return lane, ("prose" if lane else "")
 
 #: Imports and pins that mean it will not run on this machine at all.
 #: NOT awq, gptq or vllm: awq is a QUANTISATION FORMAT that mlx-lm implements
@@ -285,6 +295,8 @@ class Fit:
     #: GitHub's own one-line description, carried so the judge can be shown the
     #: prose AND the source facts in one place.
     description: str = ""
+    #: The card's facts as fields, which the store keeps as columns. #414.
+    card: "Card" = field(default_factory=lambda: Card())
 
     @property
     def largest_gib(self) -> float:
@@ -553,36 +565,90 @@ _NEEDS_CUDA = re.compile(
     r"\b(cuda|tensorrt|gemlite|nvfp4|modelopt|marlin|exllama|bitsandbytes)\b",
     re.I)
 
-#: The card's own `library_name`, which describes what SERVES the weights
-#: rather than what they are. `served by vllm` needs a vLLM server; that is a
-#: runtime a machine either has or does not, exactly like llamacpp.
-_SERVED_BY = re.compile(r"served by (\w[\w.-]*)", re.I)
-
 #: library_name -> the runtime this project probes for. Only the ones where
 #: the serving framework IS the runtime; `transformers` is absent because
 #: torch runs everywhere and the question it raises -- what conversion costs
-#: on this machine -- is a different one (#245).
+#: on this machine -- is a different one (#245). `library_name` describes what
+#: SERVES the weights: vllm needs a vLLM server, a runtime a machine has or not.
 _SERVED_RUNTIME = {"vllm": "vllm"}
 
 
-def runtime_needed(description: str) -> str:
-    """The runtime this card says its weights need, or "".
+def runtime_needed(library: str = "", tags=()) -> str:
+    """The runtime a card's own fields say its weights need, or "".
 
-    READ FROM THE REGISTRY'S OWN TAGS, the same source screen.is_attachment
-    uses to answer "is this a model at all". This answers the next question:
-    is it a model THIS machine can run.
+    Read once from the registry's structured fields by the inspect tier and
+    stored as proposals.runtime_needed; nothing re-reads a description. #414.
 
     Returns a runtime name for machine.refuses() rather than a verdict, so the
     answer stays a fact about the machine asking. The same gemlite weights are
     perfectly runnable on a box with a card.
     """
-    text = description or ""
-    if _NEEDS_CUDA.search(text):
+    if any(_NEEDS_CUDA.search(str(t)) for t in (library, *tags)):
         return "cuda"
-    served = _SERVED_BY.search(text)
-    if served:
-        return _SERVED_RUNTIME.get(served.group(1).lower(), "")
-    return ""
+    return _SERVED_RUNTIME.get((library or "").strip().lower(), "")
+
+
+#: How a card types its parent: base_model:<kind>:<id>. #414.
+LINEAGE_KINDS = ("adapter", "finetune", "quantized", "merge")
+
+
+@dataclass
+class Card:
+    """What a model card says, as fields. inspect writes these to the store;
+    nothing parses them back out of the description. #414."""
+    task: str = ""
+    library: str = ""
+    #: Every tag except the lineage ones, in the card's order.
+    tags: list[str] = field(default_factory=list)
+    #: (parent id, kind); kind is one of LINEAGE_KINDS, or "" when untyped.
+    parents: list[tuple[str, str]] = field(default_factory=list)
+    attaches_to: str = ""
+    runtime_needed: str = ""
+    lane: str = ""
+    #: card, tag or prose: which reading named the lane.
+    lane_source: str = ""
+
+
+def lineage(tags) -> list[tuple[str, str]]:
+    """A card's `base_model:` tags as (parent, kind) pairs."""
+    out = []
+    for t in tags:
+        parts = str(t).strip().split(":")
+        if len(parts) < 2 or parts[0].lower() != "base_model" or not parts[-1]:
+            continue
+        kind = parts[1].lower() if len(parts) >= 3 else ""
+        pair = (parts[-1], kind if kind in LINEAGE_KINDS else "")
+        if pair not in out:
+            out.append(pair)
+    return out
+
+
+def card_facts(data: dict) -> Card:
+    """A HuggingFace card's facts, read from its JSON fields. #414."""
+    from harness import screen
+    tags = [str(t).strip() for t in (data.get("tags") or []) if str(t).strip()]
+    plain = [t for t in tags if not t.lower().startswith("base_model")]
+    parents = lineage(tags)
+    task = (data.get("pipeline_tag") or "").strip()
+    library = (data.get("library_name") or "").strip()
+    adapter = any(k == "adapter" for _, k in parents)
+    words = " ".join([task, library, *plain, "adapter" if adapter else ""])
+    lane, source = lane_and_source(data)
+    return Card(task=task, library=library, tags=plain, parents=parents,
+                attaches_to=screen.is_attachment(words),
+                runtime_needed=runtime_needed(library, plain),
+                lane=lane, lane_source=source)
+
+
+def repo_facts(meta: dict, lane: str = "") -> Card:
+    """A GitHub repo's facts: its topics, and the attachment word its own
+    description and topics name. Its runtimes are decide()'s, from source."""
+    from harness import screen
+    topics = [str(t).strip() for t in (meta.get("topics") or [])
+              if str(t).strip()]
+    words = " ".join([meta.get("description") or "", *topics])
+    return Card(tags=topics, attaches_to=screen.is_attachment(words),
+                lane=lane, lane_source="prose" if lane else "")
 
 
 def screen_words(tag: str) -> bool:
@@ -611,11 +677,14 @@ def card_description(data: dict) -> str:
     what it was built from, and how big it is. `base_model:` lineage in
     particular separates a genuine model from a requantised copy of one, which
     is most of what a sweep finds.
+
+    PROSE FOR THE JUDGE ONLY. Every fact in it is also a column or a lineage
+    row written from card_facts(); no code reads this string back. #414.
     """
     tags = [str(t).strip() for t in (data.get("tags") or []) if str(t).strip()]
-    lineage = [t for t in tags if t.lower().startswith("base_model")]
-    plain = [t for t in tags
-             if not _NOISE_TAGS.match(t.lower()) and t not in lineage]
+    parents = lineage(tags)
+    plain = [t for t in tags if not _NOISE_TAGS.match(t.lower())
+             and not t.lower().startswith("base_model")]
     bits = []
     if data.get("pipeline_tag"):
         bits.append(f"task {data['pipeline_tag']}")
@@ -631,16 +700,12 @@ def card_description(data: dict) -> str:
         decisive = [t for t in plain if screen_words(t)]
         rest = [t for t in plain if t not in decisive]
         bits.append("tagged " + ", ".join(decisive + rest[:6]))
-    if lineage:
-        # THE RELATION TYPE IS THE DISCRIMINATOR, so it travels with the id.
-        # HF types these -- base_model:adapter:X, :finetune:X, :quantized:X --
-        # and stripping the prefix threw away the one field that separates a
-        # thing that runs from a thing that attaches to something that runs.
-        parents = sorted({t.split(":")[-1] for t in lineage})
-        kinds = {t.lower().split(":")[1] for t in lineage
-                 if t.lower().count(":") >= 2}
-        how = LINEAGE_ADAPTER if "adapter" in kinds else LINEAGE_BUILT
-        bits.append(f"{how} " + ", ".join(parents[:3]))
+    if parents:
+        # The relation type travels with the id, for the reader: an adapter
+        # attaches to something that runs. The store keeps it as lineage.kind.
+        how = (LINEAGE_ADAPTER if any(k == "adapter" for _, k in parents)
+               else LINEAGE_BUILT)
+        bits.append(f"{how} " + ", ".join(sorted({p for p, _ in parents})[:3]))
     total = sum(s.get("size") or 0 for s in (data.get("siblings") or []))
     if total > 0:
         bits.append(f"{total / GIB:.1f} GiB of weights")
@@ -688,6 +753,7 @@ def inspect_model(model_id: str, *, data: dict | None = None, fetch=None,
     fit.gguf = is_gguf(model_id, data)
     fit.last_commit = (data.get("lastModified") or "").strip()
     fit.description = card_description(data)
+    fit.card = card_facts(data)
     return decide(fit, ceiling=ceiling, dead_days=dead_days, machine=machine)
 
 
@@ -847,7 +913,8 @@ def inspect(repo: str, workdir: Path, *, meta: dict | None = None,
                  else sizer(model_id))
             return {"size": int(n), "lane": ""}
     fit = Fit(repo=repo, source_kb=int((meta or {}).get("size") or 0),
-              description=((meta or {}).get("description") or "")[:200])
+              description=((meta or {}).get("description") or "")[:200],
+              card=repo_facts(meta or {}))
     if fit.source_kb and fit.source_kb > kb_cap:
         fit.verdict = "too-big"
         fit.why = (f"source tree is {fit.source_kb / 1000:.0f} MB, which is "

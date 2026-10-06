@@ -888,13 +888,18 @@ def _report_inspect(a) -> int:
                      if registry == ms.HUGGINGFACE
                      else f"https://github.com/{repo}"),
                 resolved=repo, lane=fit.lanes.get(repo, ""), why=fit.why,
+                lane_source=fit.card.lane_source,
                 # WHAT IT IS, beside what the verdict said about it. The judge
                 # reads this; with only a name it cannot rank at all (#175).
                 description=fit.description))
             ms.set_size(store, repo, fit.largest)
-            if ms.set_lane(store, repo, fit.lanes.get(repo, "")):
+            if ms.set_lane(store, repo, fit.lanes.get(repo, ""),
+                           source=fit.card.lane_source):
                 print(f"    lane corrected from the card: {repo} "
                       f"-> {fit.lanes[repo]}")
+            # The card's facts as columns and lineage rows; readers ask
+            # these, never the description. #414.
+            ms.set_card(store, repo, fit.card)
             # A thing that cannot run here is ANSWERED, so it is terminal and
             # never proposed again. "unknown" settles nothing, deliberately.
             outcome = {"fits": "queued", "unknown": ""}.get(fit.verdict, "declined")
@@ -2319,7 +2324,7 @@ def _measure_and_adopt(a, row: dict) -> int:
     store = ms.connect()
     try:
         spec = candidates.for_proposal(store, lane, name,
-                                       row.get("description") or "")
+                                       row.get("attaches_to") or "")
     finally:
         store.close()
     if not spec:

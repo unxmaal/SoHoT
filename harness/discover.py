@@ -788,7 +788,7 @@ def from_feeds(sources=None, reader=None, verify=True,
                     # The candidate's own prose answers instead, and the
                     # registry's own task overwrites that later via set_lane.
                     lane=lanes.from_prose(f"{repo} {p.why}"),
-                    resolved=repo))
+                    lane_source="prose", resolved=repo))
             if repo in settled:
                 suppressed += 1
                 drop("settled", repo)

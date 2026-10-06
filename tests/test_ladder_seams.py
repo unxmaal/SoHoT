@@ -57,9 +57,9 @@ def test_an_adapter_is_caught_through_the_real_card(store):
     """#241. `lora` is the seventh tag on this card and card_description kept
     six, so the word that decides whether a runner can load it never reached
     screen.is_attachment. It ranked TOP of the queue at +5.3."""
-    desc = ins.card_description(fakes.card(
-        "Xanthius/Ace-Step-1.5-XL-Concept-Sliders"))
-    assert screen.is_attachment(desc), desc
+    c = fakes.card("Xanthius/Ace-Step-1.5-XL-Concept-Sliders")
+    assert screen.is_attachment(ins.card_description(c)), "the judge's prose"
+    assert ins.card_facts(c).attaches_to, "the column the readers ask"
 
 
 def test_a_supertype_pipeline_tag_yields_to_the_specific_one():
@@ -71,10 +71,10 @@ def test_a_supertype_pipeline_tag_yields_to_the_specific_one():
 def test_a_foreign_runtime_is_refused_before_a_download():
     """#245. Tagged gemlite and cuda. It ranked, and would have been fetched
     and handed to a runner that cannot load it."""
-    desc = ins.card_description(fakes.card(
-        "prism-ml/bonsai-image-binary-4B-gemlite-1bit"))
+    c = fakes.card("prism-ml/bonsai-image-binary-4B-gemlite-1bit")
     row = {"name": "prism-ml/bonsai-image-binary-4B-gemlite-1bit",
-           "lane": "image", "description": desc}
+           "lane": "image", "description": ins.card_description(c),
+           "runtime_needed": ins.card_facts(c).runtime_needed}
     assert rank.unrunnable(row, mac()) == "needs-cuda"
 
 
@@ -83,12 +83,12 @@ def test_an_ordinary_card_survives_all_three():
     ship. Three filters that fire on an ordinary model empty the queue and
     read exactly like a queue that ran out."""
     c = fakes.card("openbmb/MiniCPM5-1B")
-    desc = ins.card_description(c)
-    assert not screen.is_attachment(desc), desc
+    facts = ins.card_facts(c)
+    assert not facts.attaches_to, facts
     assert ins.lane_for(c) == "code"
     assert not rank.unrunnable(
-        {"name": "openbmb/MiniCPM5-1B", "lane": "code", "description": desc},
-        mac())
+        {"name": "openbmb/MiniCPM5-1B", "lane": "code",
+         "runtime_needed": facts.runtime_needed}, mac())
 
 
 # --- one tier's output is the next tier's input ---------------------------
@@ -126,10 +126,8 @@ def test_an_adapter_never_reaches_a_download(store, tmp_path):
     """#249 again, one tier along: rank drops attachments, but rank is an
     ORDERING and fetch is a SPEND."""
     name = "Xanthius/Ace-Step-1.5-XL-Concept-Sliders"
-    desc = ins.card_description(fakes.card(name))
     fakes.seeded_store(store, [(name, "music", 0.7, 2)])
-    store.execute("UPDATE proposals SET description = ? WHERE name = ?",
-                  (desc, name))
+    fakes.carded(store, name, fakes.card(name))
     downloads = fakes.Downloads(tmp_path / "hub")
     got = fetching.run(store, {name: int(0.7 * 1024 ** 3)}, limit=1,
                        snapshot=downloads)

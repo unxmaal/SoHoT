@@ -34,9 +34,6 @@ a sampling language model whose control had to be run three times to be believed
 """
 from __future__ import annotations
 
-import re
-
-from harness import inspect as ins
 from harness import lanes
 
 GIB = 1024 ** 3
@@ -56,16 +53,10 @@ NO_LANE = -6.0
 PARKED_LANE = -8.0
 CHEAP = 1.0
 
-#: A card says what it was built from as `base_model:...`, sometimes several
-#: times and with a role in between (`base_model:quantized:org/name`).
-_LINEAGE = re.compile(rf"(?:{ins.LINEAGE_BUILT}|{ins.LINEAGE_ADAPTER}) ([^;]+)")
-
-
-def _parents(description: str) -> set[str]:
-    m = _LINEAGE.search(description or "")
-    if not m:
-        return set()
-    return {p.strip().lower() for p in m.group(1).split(",") if p.strip()}
+def parents(row) -> set[str]:
+    """The row's base_model parents, from the lineage rows inspect wrote. #414."""
+    return {str(p[0] if isinstance(p, (tuple, list)) else p).strip().lower()
+            for p in (row.get("parents") or []) if p}
 
 
 def value(row: dict, *, serving: set[str] = frozenset(),
@@ -118,8 +109,7 @@ def value(row: dict, *, serving: set[str] = frozenset(),
         score += RECURRENCE * (1.0 - 1.0 / times)
         why.append(f"seen {times} times")
 
-    parents = _parents(row.get("description") or "")
-    known = {p for p in parents
+    known = {p for p in parents(row)
              if any(p == s or p in s or s in p for s in serving)}
     if known:
         score += KNOWN_LINEAGE
@@ -192,10 +182,9 @@ def rank(rows, *, serving=(), measured_lanes=(), ceiling_gib: float = 22.0,
     for row in rows:
         if not keep_laneless and not lane_of(row):
             continue
-        # The NAME carries it as often as the card does: `...-lora-I2V` and
-        # `...-ComfyUI` say what they are and have no description at all.
-        if screen.is_attachment(f"{row.get('name') or ''} "
-                                f"{row.get('description') or ''}"):
+        # The card's word, stored by inspect; and the NAME, which carries it
+        # as often: `...-lora-I2V` and `...-ComfyUI` say what they are. #414.
+        if row.get("attaches_to") or screen.is_attachment(row.get("name")):
             continue
         if unrunnable(row):
             continue
@@ -242,7 +231,7 @@ def unrunnable(row: dict, machine=None) -> str:
     # have been fetched and handed to a runner that cannot load them -- with
     # the screen recording a verdict about the CANDIDATE. The same class as
     # #228, whose fix was written for exactly one format.
-    needs = ins.runtime_needed(row.get("description") or "")
+    needs = row.get("runtime_needed") or ""
     if needs:
         return machine.refuses(needs) or ""
     return ""
@@ -278,7 +267,7 @@ def runnerless(rows) -> list[dict]:
         if not lane:
             continue
         gap = screen.no_runner(screen.candidate_for(
-            lane, row["name"], row.get("description") or ""))
+            lane, row["name"], row.get("attaches_to") or ""))
         if gap:
             out.append({**row, "why_not": gap})
     return sorted(out, key=lambda r: (r.get("lane") or "", r["name"]))

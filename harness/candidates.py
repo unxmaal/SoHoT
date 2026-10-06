@@ -59,10 +59,10 @@ def ensure(conn, spec: str, *, proposal: str = "", lane: str = "",
                         (spec,)).fetchone()["id"]
 
 
-def for_proposal(conn, lane: str, name: str, description: str = "") -> str:
+def for_proposal(conn, lane: str, name: str, attaches_to: str = "") -> str:
     """Build the spec for a proposal once and store it; "" when none exists."""
     from harness import screen
-    spec = screen.candidate_for(lane, name, description)
+    spec = screen.candidate_for(lane, name, attaches_to)
     if spec:
         ensure(conn, spec, proposal=name, lane=lane)
     return spec

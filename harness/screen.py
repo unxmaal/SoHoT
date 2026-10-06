@@ -107,7 +107,7 @@ def is_attachment(description: str) -> str:
 from harness.serving import LLAMACPP_PREFIX  # noqa: E402
 
 
-def candidate_for(lane: str, model: str, description: str = "",
+def candidate_for(lane: str, model: str, attaches_to: str = "",
                   conn=None) -> str:
     """The best spelling of `model` for this lane, or "" when it has none.
 
@@ -129,8 +129,10 @@ def candidate_for(lane: str, model: str, description: str = "",
     the run printed the pairing it intended above a receipt with one candidate
     in it. A candidate measured beside a control that did not run says nothing
     about the candidate. Issue #214.
+
+    `attaches_to` is the stored word (proposals.attaches_to), never prose. #414.
     """
-    if is_attachment(description):
+    if attaches_to:
         return ""
     specs = LANE_CANDIDATES.get(lanes.canonical(lane), ())
     if not specs:
@@ -211,9 +213,9 @@ def plan(rows, *, missing=None) -> list[dict]:
     for row in rows:
         name = row["name"]
         lane = (row.get("lane") or "").strip().lower()
-        spec = candidate_for(lane, name, row.get("description") or "")
+        attached = row.get("attaches_to") or ""
+        spec = candidate_for(lane, name, attached)
         absent = [] if not spec else missing(name)
-        attached = is_attachment(row.get("description") or "")
         gap = "" if not spec else no_runner(spec)
         if not spec or gap:
             state, why = NO_RUNNER, (
