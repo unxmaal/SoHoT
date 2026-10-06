@@ -75,12 +75,13 @@ _schedule() {
   local service="$1" p
   for p in "${PERIODIC[@]}"; do
     if [ "$p" = "$service" ]; then
+      # No RunAtLoad: an install is not a schedule tick (#328).
       printf '  <key>StartInterval</key><integer>%s</integer>\n' \
         "$DISCOVER_INTERVAL"
       return
     fi
   done
-  printf '  <key>KeepAlive</key><true/>\n'
+  printf '  <key>RunAtLoad</key><true/>\n  <key>KeepAlive</key><true/>\n'
 }
 
 write_plist() {
@@ -97,7 +98,6 @@ write_plist() {
     <string>/bin/bash</string>
     <string>$DEPLOY/scripts/serve-$service.sh</string>
   </array>
-  <key>RunAtLoad</key><true/>
 $(_schedule "$service")
   <key>WorkingDirectory</key><string>$DEPLOY</string>
   <key>StandardOutPath</key><string>$LH_LOGS/$service.log</string>

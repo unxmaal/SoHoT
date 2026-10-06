@@ -1869,8 +1869,10 @@ def _report_screen(a) -> int:
               "way")
         return 0
     if not ready:
-        return err("nothing is ready to screen: fetch weights first, and note "
-                   "that a screen never downloads")
+        # An empty screen is a result, not a failure (#328).
+        print("nothing is ready to screen: fetch weights first, and note "
+              "that a screen never downloads")
+        return 0
 
     store = ms.connect()
     try:

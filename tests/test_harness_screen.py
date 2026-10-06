@@ -270,3 +270,16 @@ def test_the_fixture_key_is_the_one_the_run_writes():
     got = summarize([Result("case", "cand", True, 1.0, 0, "")])
     assert "passed" in got["cand"], "outcome() reads this key"
     assert "pass" not in got["cand"], "and there is no bare `pass` to read"
+
+
+def test_an_empty_screen_is_a_result_not_a_failure(monkeypatch, capsys):
+    """#328: nothing ready to screen exited 1, so launchd logged a normal
+    sweep as a failure and a crash looked the same."""
+    import argparse
+    from harness import cli
+    monkeypatch.setattr(cli, "_screen_plan", lambda want: [
+        {"name": "org/x", "state": screen.WAITING, "why_not": "not fetched",
+         "candidate": "x", "modality": "code"}])
+    rc = cli._report_screen(argparse.Namespace(lane="", top=3, limit=3, run=True, json=False))
+    assert rc == 0
+    assert "nothing is ready to screen" in capsys.readouterr().out
