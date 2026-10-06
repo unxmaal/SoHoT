@@ -48,9 +48,16 @@ def _verdict(conn, pid, tier, outcome, detail=""):
         "VALUES (?, ?, ?, ?, 0)", (pid, outcome, tier, detail)).lastrowid
 
 
-@pytest.fixture
-def old_store(tmp_path, monkeypatch):
+@pytest.fixture(params=["gguf-on-disk", "gguf-absent"])
+def old_store(tmp_path, monkeypatch, request):
     monkeypatch.setattr("harness.paths.home", lambda: tmp_path)
+    # The GGUF's presence is a fact about the machine; pin both states.
+    models = tmp_path / "gguf"
+    models.mkdir()
+    monkeypatch.setenv("LLAMACPP_MODELS_DIR", str(models))
+    monkeypatch.setenv("HF_HOME", str(tmp_path / "hf"))
+    if request.param == "gguf-on-disk":
+        (models / "Ornith-1.5-35B-Q4_K_M.gguf").write_bytes(b"")
     (tmp_path / "gguf-sources.json").write_text(
         json.dumps({REPO: "Ornith-1.5-35B-Q4_K_M.gguf"}), encoding="utf-8")
     path = tmp_path / "d.db"
@@ -82,7 +89,10 @@ def test_the_migration_merges_spec_named_proposals_into_the_table(old_store):
     try:
         names = {r["name"] for r in conn.execute("SELECT name FROM proposals")}
         assert names == {REPO}, names
-        assert candidates.get(conn, REPO)["spec"] == SPEC
+        mine = {r[0] for r in conn.execute(
+            "SELECT c.spec FROM candidates c JOIN proposals p "
+            "ON p.id = c.proposal_id WHERE p.name = ?", (REPO,))}
+        assert SPEC in mine, mine
         assert adopt.adopted(conn) == {
             "code": SPEC, "music": "acestep:acestep-v15-turbo,steps=8"}
         assert _latest(conn)[REPO] == before[REPO]
