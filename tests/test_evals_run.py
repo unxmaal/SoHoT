@@ -879,29 +879,23 @@ def test_swap_that_cannot_be_read_is_zero_rather_than_an_exception(monkeypatch):
 
 # ---- the run reads its winner from the receipts (#148 phase 5) -----------
 
-def test_from_winners_refuses_when_nothing_measured_the_lane(tmp_path):
+def test_from_winners_refuses_when_nothing_measured_the_lane():
     """THE REFUSAL IS THE POINT. A lane pod that silently falls back to a typed
     constant when it finds no receipt is the constant again, with a flag on it
     that makes the claim look checked."""
     import pytest
     from evals.run import winner_for
     with pytest.raises(SystemExit) as caught:
-        winner_for("video", runs=tmp_path)
-    assert "no run receipt" in str(caught.value)
+        winner_for("video")
+    assert "no stored run" in str(caught.value)
     assert "--candidates" in str(caught.value), "say the way out"
 
 
-def test_from_winners_names_the_candidate_the_receipts_chose(tmp_path):
-    import json
+def test_from_winners_names_the_candidate_the_stored_runs_chose(store_run):
     from evals.run import winner_for
-    d = tmp_path / "run"
-    d.mkdir()
-    (d / "results.json").write_text(json.dumps({
-        "receipt": {"modality": "image", "tier": "measure"},
-        "summary": {"mflux/flux2-klein-4b-q8": {"pass_rate": 1.0,
-                                                "median_s": 19.4}}}),
-        encoding="utf-8")
-    assert winner_for("image", runs=tmp_path) == "mflux/flux2-klein-4b-q8"
+    store_run("run", "image", {"mflux/flux2-klein-4b-q8": {"pass_rate": 1.0,
+                                                           "median_s": 19.4}})
+    assert winner_for("image") == "mflux/flux2-klein-4b-q8"
 
 
 def test_a_kokoro_candidate_without_a_voice_gets_a_cached_one(tmp_path):

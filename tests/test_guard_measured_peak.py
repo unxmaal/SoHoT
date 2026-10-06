@@ -1,36 +1,36 @@
 """The guard uses a measured peak when one exists. #322."""
-import json
-
 from harness import memory
 
 GIB_KB = 1024 ** 2
 
 
-def receipt(root, name, summary):
-    d = root / name
-    d.mkdir(parents=True)
-    (d / "results.json").write_text(json.dumps({"summary": summary}),
-                                    encoding="utf-8")
-
-
-def test_a_measured_peak_is_found_by_spec(tmp_path):
-    receipt(tmp_path, "svg-three-way", {"omnisvg:4B": {"peak_kb": 23361307},
-                                        "local-large": {"peak_kb": 0}})
-    got = memory.measured_peak_gb("omnisvg:4B", runs=tmp_path)
+def test_a_measured_peak_is_found_by_spec(store_run):
+    store_run("svg-three-way", "svg", {"omnisvg:4B": {"peak_kb": 23361307},
+                                       "local-large": {"peak_kb": 0}})
+    got = memory.measured_peak_gb("omnisvg:4B")
     assert round(got, 1) == 22.3
 
 
-def test_the_largest_of_several_receipts_wins(tmp_path):
-    receipt(tmp_path, "a", {"omnisvg:4B": {"peak_kb": 10 * GIB_KB}})
-    receipt(tmp_path, "b", {"omnisvg:4B": {"peak_kb": 20 * GIB_KB}})
-    assert memory.measured_peak_gb("omnisvg:4B", runs=tmp_path) == 20.0
+def test_the_largest_of_several_runs_wins(store_run):
+    store_run("a", "svg", {"omnisvg:4B": {"peak_kb": 10 * GIB_KB}})
+    store_run("b", "svg", {"omnisvg:4B": {"peak_kb": 20 * GIB_KB}})
+    assert memory.measured_peak_gb("omnisvg:4B") == 20.0
 
 
-def test_a_server_side_model_has_no_measured_peak(tmp_path):
+def test_another_machines_peak_is_not_this_machines(store_run):
+    """#322: the peak was pooled across machines; a 96 GB box's number is not
+    this one's."""
+    store_run("a", "svg", {"omnisvg:4B": {"peak_kb": 10 * GIB_KB}})
+    store_run("b", "svg", {"omnisvg:4B": {"peak_kb": 40 * GIB_KB}},
+              hw_model="Another,1")
+    assert memory.measured_peak_gb("omnisvg:4B") == 10.0
+
+
+def test_a_server_side_model_has_no_measured_peak(store_run):
     """Negative control: peak_kb 0 is 'not measured here', not 'free'."""
-    receipt(tmp_path, "a", {"local-large": {"peak_kb": 0}})
-    assert memory.measured_peak_gb("local-large", runs=tmp_path) is None
-    assert memory.measured_peak_gb("never-run", runs=tmp_path) is None
+    store_run("a", "svg", {"local-large": {"peak_kb": 0}})
+    assert memory.measured_peak_gb("local-large") is None
+    assert memory.measured_peak_gb("never-run") is None
 
 
 def test_the_guard_refuses_on_the_measured_peak_not_the_disk_size(monkeypatch):

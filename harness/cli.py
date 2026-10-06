@@ -1021,9 +1021,12 @@ def cmd_verify(a) -> int:
     rc = 0
     results = []
     for t in runnable:
-        note(f"\n=== {t.lane} ===\n    {' '.join(t.argv)}", flush=True)
-        proc = subprocess.run(t.argv, capture_output=True, text=True)
-        data = report._load_state(_newest_receipt_for(t.lane))
+        # Its own directory, read back from the store by that name. #410.
+        out = paths.new_run(t.lane)
+        argv = t.argv + ["--out", str(out)]
+        note(f"\n=== {t.lane} ===\n    {' '.join(argv)}", flush=True)
+        proc = subprocess.run(argv, capture_output=True, text=True)
+        data = _receipt_at(out) or {}
         got = verify.verdict(data) if proc.returncode == 0 else "broken"
         line = (verify.summarise(t.lane, data) if proc.returncode == 0
                 else (proc.stderr.strip().splitlines() or ["no stderr"])[-1])
@@ -1043,24 +1046,6 @@ def cmd_verify(a) -> int:
 def _task_row(t) -> dict:
     return {"lane": t.lane, "candidate": t.candidate, "cost_s": t.cost_s,
             "skip": t.skip, "why": t.why}
-
-
-def _newest_receipt_for(lane: str):
-    """The directory the run just wrote. Newest by MTIME, not by name.
-
-    A name is a timestamp by convention and `legacy-ev-small-code` outranks
-    every real one alphabetically, which is #222. mtime is the filesystem's
-    own answer and needs no convention.
-    """
-    from harness import paths
-
-    root = paths.home() / "runs"
-    got = [d for d in root.iterdir()
-           if d.is_dir() and d.name.endswith(f"-{lane}")
-           and (d / "results.json").exists()] if root.is_dir() else []
-    if not got:
-        return root / "absent" / "results.json"
-    return max(got, key=lambda d: d.stat().st_mtime) / "results.json"
 
 
 def _evalset(name: str) -> Path:
@@ -1335,10 +1320,9 @@ def cmd_judge(a) -> int:
     run = Path(a.run).expanduser()
     if not run.is_absolute():
         run = paths.home() / "runs" / run
-    results = run / "results.json"
-    if not results.is_file():
-        return err(f"no results.json in {run}")
-    receipt = json.loads(results.read_text(encoding="utf-8"))
+    receipt = _receipt_at(run)
+    if not receipt:
+        return err(f"no stored run for {run}")
     lane = (a.lane or receipt.get("receipt", {}).get("modality") or "").strip()
     if not lane:
         return err("that receipt does not name its modality; pass --lane")
@@ -1650,21 +1634,26 @@ def _report_winners(a) -> int:
     """What the receipts say won each lane, against what this file has typed in.
 
     The four DEFAULT_*_MODEL constants above are a hand copy of a measurement
-    that lives in the run receipts. Both are worth having -- a default that
+    that lives in the stored runs. Both are worth having -- a default that
     moved because somebody ran an eval last night is a CLI two machines
     disagree about -- but a hand copy with nothing watching it is this
     project's most-bitten failure class.
     """
     from harness import winners
 
-    best = winners.beaten_in()
-    rows = winners.disagreements()
+    from harness import memory_store as ms
+    store = ms.connect()
+    try:
+        best = winners.beaten_in(store)
+        rows = winners.disagreements(store)
+    finally:
+        store.close()
     if a.json:
         print(json.dumps({"typed": winners.typed(), "measured": best,
                           "disagreements": rows}, indent=2))
         return 0
     #: exact agreement needs no mark; the other two each say which they are.
-    MARK = {"exact": " ", "quantised": "~", "": "*"}
+    MARK = {"exact": " ", "": "*"}
     print(f"\n  {'lane':9} {'typed':34} {'measured here':30} run")
     for lane, name in sorted(winners.typed().items()):
         got = best.get(lane)
@@ -1675,23 +1664,13 @@ def _report_winners(a) -> int:
             print(f" {mark}{lane:9} {name:34} "
                   f"{got['candidate'] + ' ' + str(got['pass_rate']):30} "
                   f"{got['run']}")
-    print("\n  * beaten in a run it was in   ~ only a quantisation of it ran")
+    print("\n  * beaten in a run it was in")
     beaten = [r for r in rows if r["state"] == "beaten"]
-    quantised = [r for r in rows if r["state"] == "under-specified"]
     unmeasured = [r for r in rows if r["state"] == "unmeasured"]
     if beaten:
         print(f"\n  {len(beaten)} default(s) lost a comparison they were in:")
         for r in beaten:
             print(f"    {r['modality']}: {r['measured']} beat {r['typed']} "
-                  f"in {r['run']}")
-    if quantised:
-        # NOT a disagreement about which is better. The constant names an
-        # artifact no run here has produced, because the engine quantises and
-        # the candidate name does not say so.
-        print(f"\n  {len(quantised)} default(s) name something only a "
-              f"quantisation of which has run here:")
-        for r in quantised:
-            print(f"    {r['modality']}: {r['typed']} -> {r['measured']} "
                   f"in {r['run']}")
     if unmeasured:
         # NOT a disagreement. A default that appears in no receipt was never in
@@ -1792,8 +1771,9 @@ def _report_screen(a) -> int:
             # The RUN's own summary, read from what it wrote rather than parsed
             # out of its chatter: a tier that infers an outcome from stdout is
             # a tier that reports success when the format changes.
-            summary = _summary_at(outdir)
-            ran = (_receipt_at(outdir) or {}).get("specs") or {}
+            stored = _receipt_at(outdir)
+            summary = stored.get("summary") if stored else None
+            ran = (stored or {}).get("specs") or {}
             candidates.from_receipt(store, ran, lane=r["modality"],
                                     proposals={s: r["name"] for s in ran.values()})
             cid = candidates.ensure(store, r["candidate"], proposal=r["name"],
@@ -1816,9 +1796,9 @@ def _report_screen(a) -> int:
             detail = f"{why} || {evidence}" if evidence else why
             ms.decide_or_skip(store, r["name"], got, tier=ms.SCREEN,
                               detail=detail[:600],
-                              run_path=str(outdir) if outdir.exists() else "",
+                              run_id=(stored or {}).get("run_id"),
                               until=screen.load_until(r["candidate"])
-                      if got == "declined" else "", candidate_id=cid)
+                              if got == "declined" else "", candidate_id=cid)
             if any(d in detail.lower() for d in screen.SERVER_DEAD):
                 print("   the model server has died; stopping the screen so "
                       "the rest are not spent on it (#404)")
@@ -1826,15 +1806,6 @@ def _report_screen(a) -> int:
     finally:
         store.close()
     return 0
-
-
-def _summary_at(outdir) -> dict | None:
-    """The summary this run wrote, or None if it wrote none. #282."""
-    try:
-        data = json.loads((outdir / "results.json").read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return None
-    return data.get("summary")
 
 
 def _report_judge_store(a) -> int:
@@ -2366,7 +2337,7 @@ def _measure_and_adopt(a, row: dict) -> int:
         upstream = screen.upstream_of(incumbent)
         if upstream:
             inc_spec = screen.candidate_for(lane, upstream) or upstream
-    # NAME THE DIRECTORY, DO NOT GUESS AT IT AFTERWARDS. _latest_receipt read
+    # NAME THE DIRECTORY, DO NOT GUESS AT IT AFTERWARDS. A newest-receipt read
     # whichever directory sorted highest, and `legacy-ev-small-code` outranks
     # every timestamp because `l` sorts above `2`. The loop measured two
     # candidates and then read a receipt from a different experiment. #222.
@@ -2393,7 +2364,7 @@ def _measure_and_adopt(a, row: dict) -> int:
         return 1
     data = _receipt_at(out)
     if not data:
-        return err(f"{name}: the run wrote no receipt at {out}, so nothing "
+        return err(f"{name}: the run stored no receipt for {out}, so nothing "
                    f"can be adopted from it")
     summary = data.get("summary") or {}
     rows = data.get("rows") or []
@@ -2450,7 +2421,8 @@ def _measure_and_adopt(a, row: dict) -> int:
         store = ms.connect()
         try:
             ms.decide(store, name, "queued", tier=ms.SCREEN,
-                      detail=f"not measured: {refused}")
+                      detail=f"not measured: {refused}",
+                      run_id=data.get("run_id"))
         except (KeyError, ms.IllegalTransition):
             pass      # measured by hand, never proposed; the report still stands
         finally:
@@ -2464,7 +2436,7 @@ def _measure_and_adopt(a, row: dict) -> int:
     store = ms.connect()
     try:
         # On the proposal the candidate maps to, so it leaves survivors. #393.
-        adopt.record(store, verdict, spec=spec)
+        adopt.record(store, verdict, spec=spec, run_id=data.get("run_id"))
     except ms.IllegalTransition as exc:
         print(f"  skipped {exc}", flush=True)
     finally:
@@ -2519,48 +2491,14 @@ def _all_refused(rows, candidate: str) -> str:
     return "" if "" in seen else sorted(seen)[0]
 
 
-def _receipt_at(out) -> dict | None:
-    """The receipt this invocation asked for, read from the path it named.
+def _receipt_at(out, conn=None) -> dict | None:
+    """The stored run for the directory this invocation named. #222, #410.
 
-    THE ONLY WAY TO KNOW WHICH RUN A RECEIPT DESCRIBES IS TO HAVE NAMED IT.
-    Asking the directory listing which is newest cannot distinguish a run from
-    a run that merely sorts well. Issue #222.
+    The only way to know which run a receipt describes is to have named it.
     """
-    import json
-
-    f = Path(out) / "results.json"
-    if not f.exists():
-        return None
-    try:
-        return json.loads(f.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return None
-
-
-def _latest_receipt(modality: str) -> dict | None:
-    """The newest run receipt for this modality, whole.
-
-    NOT FOR DECIDING ANYTHING. Reporting only. "Newest" here is "sorts highest
-    by directory name", and a directory that does not follow the timestamp
-    convention wins permanently -- `legacy-ev-small-code` has been the code
-    lane's answer since it was created. Anything that draws a conclusion must
-    name its own output directory and read that. #222.
-    """
-    import json
-
-    root = paths.home() / "runs"
-    if not root.exists():
-        return None
-    for d in sorted(root.iterdir(), reverse=True):
-        if not d.name.endswith(f"-{modality}"):
-            continue
-        f = d / "results.json"
-        if f.exists():
-            try:
-                return json.loads(f.read_text(encoding="utf-8"))
-            except (OSError, ValueError):
-                return None
-    return None
+    from harness import runs
+    with runs.store(conn) as c:
+        return runs.receipt_at(c, out)
 
 
 def _report_sweep(a) -> int:
@@ -2920,7 +2858,7 @@ def build_parser() -> argparse.ArgumentParser:
                         "source ever surfaced. Precision measures what is "
                         "caught; this measures reach")
     d.add_argument("--winners", action="store_true",
-                   help="what the run receipts say won each lane, against the "
+                   help="what the stored runs say won each lane, against the "
                         "defaults this CLI has typed in")
     d.add_argument("--screen", action="store_true",
                    help="run the cheapest real thing on the top of the queue "
@@ -3030,7 +2968,7 @@ def build_parser() -> argparse.ArgumentParser:
     jud = sub.add_parser(
         "judge",
         help="decide a human-judged lane by looking and listening. Issue #273")
-    # THE RUN DIRECTORY IS REQUIRED AND IS NOT _latest_receipt. That helper
+    # THE RUN DIRECTORY IS REQUIRED, never a newest receipt. That helper
     # says so itself: "NOT FOR DECIDING ANYTHING. Reporting only", because
     # newest means sorts-highest-by-name and one badly named directory wins
     # forever (#222). A human verdict decides something.

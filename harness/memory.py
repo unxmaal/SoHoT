@@ -276,23 +276,15 @@ def measured_reserve_gb() -> float:
     return max(max(margins), MIN_RESERVE_GB) if margins else DEFAULT_RESERVE_GB
 
 
-def measured_peak_gb(spec: str, runs=None) -> float | None:
-    """The largest peak any receipt measured for `spec`, or None. #322.
+def measured_peak_gb(spec: str, conn=None) -> float | None:
+    """The largest peak a stored run on THIS machine measured for `spec`. #322.
 
-    0 means the work happened in a server process, so it is skipped.
+    0 means the work happened in a server process, so it is None.
     """
-    import json
-    from harness import paths, screen
-    best = 0
-    for f in Path(runs or paths.runs()).rglob("results.json"):
-        try:
-            summary = json.loads(f.read_text(encoding="utf-8")).get("summary")
-        except (OSError, ValueError, AttributeError):
-            continue
-        row = screen.row_for(summary if isinstance(summary, dict) else None,
-                             spec)
-        if row:
-            best = max(best, int(row.get("peak_kb") or 0))
+    from harness import candidates, runs
+    with runs.store(conn) as c:
+        key = candidates.key_for(c, spec)
+        best = runs.peak_kb(c, key, runs.here(c)) if key else 0
     return best / 1024 ** 2 if best else None
 
 

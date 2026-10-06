@@ -1,5 +1,4 @@
 """A hand adoption stores something the lane can run. #337."""
-import json
 from pathlib import Path
 
 from harness import adopt, cli, engines, human, judge_server
@@ -11,13 +10,18 @@ CHALLENGER = "acestep:ACE-Step/acestep-v15-xl-turbo,steps=8"
 
 def _judged_run(tmp_path, monkeypatch, specs):
     names = [engines.resolve(s).name for s in (INCUMBENT, CHALLENGER)]
+    from harness import runs
     run = tmp_path / "20261005-000000-music"
     run.mkdir()
-    body = {"receipt": {"modality": "music"}, "summary": {}, "rows": []}
+    body = {"receipt": {"modality": "music"},
+            "rows": [{"case_id": "c", "candidate": n, "passed": True,
+                      "artifact": f"{n}.wav"} for n in names]}
     if specs:
         body["specs"] = {engines.resolve(s).name: s
                          for s in (INCUMBENT, CHALLENGER)}
-    (run / "results.json").write_text(json.dumps(body), encoding="utf-8")
+    conn = ms.connect()
+    runs.record(conn, run, body)
+    conn.close()
     pairs = [{"case": "c", "a": names[0], "b": names[1]}]
     monkeypatch.setattr(human, "pairings", lambda receipt: pairs)
     monkeypatch.setattr(human, "decided", lambda *a: names[1])

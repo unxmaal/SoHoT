@@ -574,7 +574,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--candidates", required=False,
                     help="comma-separated gateway aliases and/or engine specs")
     ap.add_argument("--from-winners", action="store_true",
-                    help="take the candidate from what the run receipts say "
+                    help="take the candidate from what the stored runs say "
                          "won this lane, rather than from a constant. A "
                          "deployment built around 'the current winner' must "
                          "read it rather than be told it")
@@ -697,17 +697,32 @@ def _execute(args) -> int:
             swap_used_mb=swap_used_mb(),
             pressure=pressed.as_dict(),
             cases_digest=cases_digest(cases))
-        (outdir / "results.json").write_text(json.dumps(
-            {"generated": time.strftime("%Y-%m-%dT%H:%M:%S"),
-             "environment": capture(),
-             "receipt": receipt.as_dict(),
-             # A name is a label and can drop the repo org; the spec runs. #337.
-             "specs": specs,
-             "summary": summarize(results),
-             "rows": [vars(r) for r in results]}, indent=2),
-            encoding="utf-8")
-        print(f"\nartifacts + results.json in {outdir}")
+        now = time.time()
+        payload = {"generated": time.strftime("%Y-%m-%dT%H:%M:%S",
+                                              time.localtime(now)),
+                   "environment": capture(),
+                   "receipt": receipt.as_dict(),
+                   # A name is a label and can drop the repo org; the spec
+                   # runs. #337.
+                   "specs": specs,
+                   "summary": summarize(results),
+                   "rows": [vars(r) for r in results]}
+        (outdir / "results.json").write_text(json.dumps(payload, indent=2),
+                                             encoding="utf-8")
+        run_id = store_run(outdir, payload, now)
+        print(f"\nartifacts + results.json in {outdir}; stored as run {run_id}")
     return 0
+
+
+def store_run(outdir, payload: dict, at: float) -> int | None:
+    """The run and its rows into the store; results.json is the export. #410."""
+    from harness import memory_store as ms
+    from harness import runs
+    conn = ms.connect()
+    try:
+        return runs.record(conn, outdir, payload, at=at)
+    finally:
+        conn.close()
 
 
 def engines(candidates) -> dict:
@@ -759,23 +774,25 @@ def swap_used_mb() -> int:
         return 0
 
 
-def winner_for(modality: str, runs=None) -> str:
-    """The candidate the receipts say won this lane. #148 phase 5.
+def winner_for(modality: str, conn=None) -> str:
+    """The candidate the stored runs say won this lane. #148 phase 5.
 
-    RAISES WHEN NOTHING MEASURED IT, and that refusal is the point. A lane pod
-    is supposed to be built around the current winner; one that silently falls
-    back to a typed constant when it cannot find a receipt is the constant
-    again, with a flag on it that makes the claim look checked.
-
-    Resolved where the RUN happens rather than templated into a chart, because
-    a value baked into a deployment is a third copy of the same answer.
+    RAISES WHEN NOTHING MEASURED IT: a lane built around the current winner
+    that falls back to a typed constant is the constant again.
     """
+    from harness import memory_store as ms
     from harness import winners
-    best = winners.beaten_in(runs) or winners.from_receipts(runs)
+    close = conn is None
+    conn = conn or ms.connect()
+    try:
+        best = winners.beaten_in(conn) or winners.from_receipts(conn)
+    finally:
+        if close:
+            conn.close()
     got = best.get((modality or "").strip().lower())
     if not got:
         raise SystemExit(
-            f"--from-winners: no run receipt names a winner for {modality!r} "
+            f"--from-winners: no stored run names a winner for {modality!r} "
             f"on this machine, so there is nothing to build a run around. "
             f"Measure the lane first, or pass --candidates explicitly.")
     return got["candidate"]
@@ -874,8 +891,9 @@ def compare_runs(files: list[str], across: str = "") -> int:
 
     loaded = []
     for f in files:
+        data = stored_receipt(f)
         try:
-            data = json.loads(Path(f).read_text(encoding="utf-8"))
+            data = data or json.loads(Path(f).read_text(encoding="utf-8"))
         except (OSError, ValueError) as exc:
             print(f"cannot read {f}: {exc}")
             return 1
@@ -921,6 +939,19 @@ def compare_runs(files: list[str], across: str = "") -> int:
             merged[key] = row
     report(merged)
     return 0
+
+
+def stored_receipt(f) -> dict | None:
+    """The stored run a path names (its dir or its results.json), or None."""
+    from harness import memory_store as ms
+    from harness import runs
+    p = Path(f)
+    where = p.parent if p.name == "results.json" else p
+    conn = ms.connect()
+    try:
+        return runs.receipt_at(conn, where)
+    finally:
+        conn.close()
 
 
 def resolve_outdir(out: str | None, modality: str) -> Path:

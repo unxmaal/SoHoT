@@ -283,32 +283,11 @@ def capabilities() -> list[Capability]:
             + not_adopted())
 
 
-def measured() -> set[str]:
-    """Candidate names that appear in any run's results.json.
-
-    Read from the receipts the runs already write, so this cannot drift from
-    what was actually evaluated.
-    """
-    names: set[str] = set()
-    try:
-        # RECURSIVE. Runs nest -- an archived batch sits at
-        # runs/legacy-logs/ev-extract/results.json, three levels down -- and
-        # iterating only the top level found 12 names where 31 receipts
-        # existed. Under-reporting sends someone to re-run finished work,
-        # which is the dangerous direction for this tool to be wrong in.
-        receipts = sorted(paths.runs().rglob("results.json"))
-    except OSError:
-        return names
-    for f in receipts:
-        if not f.is_file():
-            continue
-        try:
-            data = json.loads(f.read_text(encoding="utf-8"))
-        except (OSError, ValueError):
-            # A corrupt or half-written run must not stop discovery.
-            continue
-        names.update((data.get("summary") or {}).keys())
-    return names
+def measured(conn=None) -> set[str]:
+    """Every receipt key a stored run measured. #410."""
+    from harness import runs
+    with runs.store(conn) as c:
+        return runs.keys(c)
 
 
 def _segments(name: str) -> set[str]:

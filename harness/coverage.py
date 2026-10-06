@@ -14,7 +14,7 @@ WHAT COUNTS AS ADOPTED is read from three places that cannot drift from the
 truth, because each is what the thing itself says:
 
     served      the gateway config's upstream ids -- what this machine runs
-    measured    candidate names in run receipts -- what was evaluated
+    measured    receipt keys in stored runs -- what was evaluated
     default     the typed lane defaults -- what a bare command reaches for
 
 A THING FOUND ONLY AFTER IT WAS ADOPTED DID NOT LEAD US TO IT. The store's
@@ -24,7 +24,6 @@ difference between a source that works and a source that eventually agrees.
 """
 from __future__ import annotations
 
-import json
 
 #: Sources that are not discovery: they record what a later tier did with a
 #: name, so crediting them with finding it would be circular. `inspect` writes
@@ -95,7 +94,7 @@ def model_of(candidate: str, speech: bool = False) -> str:
     return "/".join(parts)
 
 
-def adopted(runs=None, config=None, orgs=()) -> dict[str, set[str]]:
+def adopted(conn, config=None, orgs=()) -> dict[str, set[str]]:
     """name -> how this project came to own it: served, measured, default.
 
     Aliases are resolved to what they serve, so the question asked of each
@@ -117,7 +116,7 @@ def adopted(runs=None, config=None, orgs=()) -> dict[str, set[str]]:
 
     for name in rank.serving():
         note(name, "served")
-    for name in _first_receipt(runs):
+    for name in _first_receipt(conn):
         note(name, "measured")
     for name in winners.typed().values():
         note(name, "default")
@@ -158,29 +157,18 @@ def _collapse_variants(names: dict[str, set[str]],
 SPEECH_LANES = {"tts", "stt"}
 
 
-def _first_receipt(runs=None) -> dict[str, float]:
-    """Earliest time each MODEL appears in a run receipt.
+def _first_receipt(conn) -> dict[str, float]:
+    """Earliest time each MODEL appears in a stored run, by the receipt's time.
 
     Keyed by the model rather than the receipt key, so a tts model measured
     across five voices is one adopted thing rather than five.
     """
-    from harness import paths
+    from harness import runs
     seen: dict[str, float] = {}
-    try:
-        receipts = sorted((runs or paths.runs()).rglob("results.json"))
-    except OSError:
-        return seen
-    for f in receipts:
-        try:
-            data = json.loads(f.read_text(encoding="utf-8"))
-            when = f.stat().st_mtime
-        except (OSError, ValueError):
-            continue
-        modality = ((data.get("receipt") or {}).get("modality") or "").lower()
-        for candidate in (data.get("summary") or {}):
-            name = model_of(candidate, speech=modality in SPEECH_LANES)
-            if name not in seen or when < seen[name]:
-                seen[name] = when
+    for r in runs.first_seen(conn):
+        name = model_of(r["candidate"], speech=r["lane"] in SPEECH_LANES)
+        if name not in seen or r["at"] < seen[name]:
+            seen[name] = r["at"]
     return seen
 
 
@@ -246,12 +234,12 @@ def _known(name: str, rows: dict, orgs: set[str]) -> dict | None:
     return None
 
 
-def report(conn, runs=None) -> dict:
+def report(conn) -> dict:
     """Which sources found what this project adopted, and what none of them did."""
     rows = {r["name"]: r for r in sightings(conn)}
-    first_run = _first_receipt(runs)
+    first_run = _first_receipt(conn)
     orgs = common_segments(rows)
-    mine = adopted(runs, orgs=orgs)
+    mine = adopted(conn, orgs=orgs)
     found, holes, late = [], [], []
     for name, how in sorted(mine.items()):
         row = _known(name, rows, orgs)

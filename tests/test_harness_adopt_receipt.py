@@ -1,9 +1,8 @@
 """The loop must read the receipt it asked for, not the one that sorts best.
 
-`_latest_receipt` called itself "the newest run receipt" and implemented newest
-as "sorts highest by directory name". Names are timestamps by CONVENTION, and
-`legacy-ev-small-code` does not follow it: `l` sorts above `2`, so it has been
-the code lane's answer since it was created. Issue #222.
+A newest-receipt helper sorted directory names, and `legacy-ev-small-code`
+outranked every timestamp. Issue #222. The run is now read from the store by
+the path the caller named. #410.
 """
 import argparse
 import json
@@ -20,32 +19,31 @@ class _Done:
     stderr = ""
 
 
-def _write(d, summary):
-    d.mkdir(parents=True, exist_ok=True)
-    (d / "results.json").write_text(json.dumps({"summary": summary, "rows": []}),
-                                    encoding="utf-8")
+def test_the_receipt_is_read_from_the_store_by_the_path_that_was_named(
+        store_run):
+    from harness import paths
+    store_run("legacy-ev-small-code", "code", {"wrong": {"pass_rate": 1.0}},
+              generated="2026-12-01T00:00:00")
+    store_run("mine", "code", {"a": {"pass_rate": 1.0}, "b": {"pass_rate": 0.5}})
+    got = cli._receipt_at(paths.runs() / "mine")
+    assert sorted(got["summary"]) == ["a", "b"] and got["run_id"]
 
 
-def test_a_directory_outside_the_timestamp_convention_sorts_to_the_top(tmp_path,
-                                                                       monkeypatch):
-    """The defect, pinned. This is why sorting by name cannot be the answer."""
-    runs = tmp_path / "runs"
-    _write(runs / "20260919-165029-311-0000-code", {"right": {}})
-    _write(runs / "legacy-ev-small-code", {"wrong": {}})
-    monkeypatch.setattr("harness.paths.home", lambda: tmp_path)
-    got = cli._latest_receipt("code")
-    assert sorted(got["summary"]) == ["wrong"], (
-        "if this passes, a legacy name still outranks every timestamp, which "
-        "is exactly why nothing that decides may use _latest_receipt")
+def test_a_path_with_no_stored_run_is_none_rather_than_someone_elses(
+        store_run):
+    from harness import paths
+    store_run("other", "code", {"a": {"pass_rate": 1.0}})
+    assert cli._receipt_at(paths.runs() / "mine") is None
 
 
-def test_the_receipt_is_read_from_the_path_that_was_named(tmp_path):
-    _write(tmp_path / "mine", {"a": {}, "b": {}})
-    assert sorted(cli._receipt_at(tmp_path / "mine")["summary"]) == ["a", "b"]
-
-
-def test_a_path_with_no_receipt_is_none_rather_than_someone_elses(tmp_path):
-    _write(tmp_path / "other", {"a": {}})
+def test_a_results_json_on_disk_is_not_a_stored_run(tmp_path):
+    """Pins the conversion: reading the file back would find this. #410."""
+    ms.connect().close()
+    (tmp_path / "mine").mkdir()
+    (tmp_path / "mine" / "results.json").write_text(json.dumps({
+        "receipt": {"modality": "code"},
+        "rows": [{"case_id": "c", "candidate": "a", "passed": True}]}),
+        encoding="utf-8")
     assert cli._receipt_at(tmp_path / "mine") is None
 
 

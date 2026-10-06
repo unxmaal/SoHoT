@@ -125,7 +125,8 @@ def is_reference(candidate: str) -> bool:
     return (candidate or "").startswith(REFERENCE_PREFIXES)
 
 
-def record(conn, verdict: Verdict, spec: str = "") -> int:
+def record(conn, verdict: Verdict, spec: str = "",
+           run_id: int | None = None) -> int:
     """Write an adoption, or the loss, on the candidate that ran. #407.
 
     `spec` is what ran; `verdict.challenger` is used when it is one. The
@@ -149,7 +150,7 @@ def record(conn, verdict: Verdict, spec: str = "") -> int:
                          f"adoption of it could never be served")
     row = candidates.get(conn, spec)
     return ms.decide(conn, row["proposal"] or "", outcome, tier=TIER,
-                     detail=detail[:200], candidate_id=cid)
+                     detail=detail[:200], candidate_id=cid, run_id=run_id)
 
 
 def adopted(conn) -> dict[str, str]:

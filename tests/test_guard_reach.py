@@ -53,10 +53,10 @@ def test_the_guard_is_asked_before_the_subprocess_starts():
 
 def test_the_screen_records_the_receipt_it_produced():
     """#281. 27 of 27 terminal verdicts had no run_path, so the evidence behind
-    them was a stderr tail."""
+    them was a stderr tail. The verdict now names its stored run. #410."""
     src = reads("harness/cli.py")
     block = src[src.index("ms.decide_or_skip(store, r[\"name\"], got"):][:400]
-    assert "run_path=" in block, block
+    assert "run_id=" in block, block
 
 
 def test_the_static_ceiling_is_still_only_a_prefilter():

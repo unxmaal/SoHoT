@@ -3,7 +3,7 @@
 Precision measures the quality of what is caught. Nothing measured reach, and
 those are different numbers.
 """
-import json
+import time
 
 import pytest
 
@@ -24,19 +24,6 @@ def seen(db, name, source="reddit-sd-week", at=None):
                        resolved=name), at=at)
 
 
-def runs(tmp_path, name, modality, summary, when=None):
-    import os
-    d = tmp_path / name
-    d.mkdir(parents=True, exist_ok=True)
-    f = d / "results.json"
-    f.write_text(json.dumps({"receipt": {"modality": modality,
-                                         "tier": "measure"},
-                             "summary": summary}), encoding="utf-8")
-    if when:
-        os.utime(f, (when, when))
-    return tmp_path
-
-
 # --- what counts as a find -----------------------------------------------
 
 def test_a_source_that_surfaced_something_we_run_is_credited(db, tmp_path,
@@ -44,7 +31,7 @@ def test_a_source_that_surfaced_something_we_run_is_credited(db, tmp_path,
     monkeypatch.setattr(coverage, "adopted",
                         lambda *a, **kw: {"org/thing": {"measured"}})
     seen(db, "org/thing", source="reddit-sd-week")
-    got = coverage.report(db, tmp_path)
+    got = coverage.report(db)
     assert [e["name"] for e in got["found"]] == ["org/thing"]
     assert got["by_source"] == {"reddit-sd-week": 1}
 
@@ -54,7 +41,7 @@ def test_a_thing_no_source_ever_produced_is_a_hole_with_a_name(db, tmp_path,
     monkeypatch.setattr(coverage, "adopted",
                         lambda *a, **kw: {"org/unseen": {"served"}})
     seen(db, "somebody/else")
-    got = coverage.report(db, tmp_path)
+    got = coverage.report(db)
     assert [h["name"] for h in got["holes"]] == ["org/unseen"]
     assert got["found"] == []
 
@@ -66,22 +53,23 @@ def test_our_own_tiers_are_not_credited_with_finding_anything(db, tmp_path,
     monkeypatch.setattr(coverage, "adopted",
                         lambda *a, **kw: {"org/thing": {"served"}})
     seen(db, "org/thing", source="inspect")
-    got = coverage.report(db, tmp_path)
+    got = coverage.report(db)
     assert got["found"] == []
     assert got["holes"][0]["why"].startswith("only recorded by a tier")
 
 
-def test_a_source_that_agreed_afterwards_did_not_lead_us_to_it(db, tmp_path,
+def test_a_source_that_agreed_afterwards_did_not_lead_us_to_it(db, store_run,
                                                                monkeypatch):
     """A thing found a month after it was already running did not lead us to
     it. That is the difference between a source that works and one that
     eventually agrees."""
     monkeypatch.setattr(coverage, "adopted",
                         lambda *a, **kw: {"org/thing": {"measured"}})
-    runs(tmp_path, "r", "image", {"org/thing": {"pass_rate": 1.0}},
-         when=1_000_000.0)
+    store_run("r", "image", {"org/thing": {"pass_rate": 1.0}}, conn=db,
+              generated=time.strftime("%Y-%m-%dT%H:%M:%S",
+                                      time.localtime(1_000_000.0)))
     seen(db, "org/thing", source="reddit-sd-week", at=2_000_000.0)
-    got = coverage.report(db, tmp_path)
+    got = coverage.report(db)
     assert got["found"] == []
     assert [e["name"] for e in got["late"]] == ["org/thing"]
     assert got["late"][0]["days_late"] > 10
@@ -94,7 +82,7 @@ def test_a_receipt_key_and_a_registry_id_are_the_same_thing(db, tmp_path,
     monkeypatch.setattr(coverage, "adopted",
                         lambda *a, **kw: {"parakeet-tdt-0.6b-v2": {"measured"}})
     seen(db, "mlx-community/parakeet-tdt-0.6b-v2", source="reddit-localllama-week")
-    assert len(coverage.report(db, tmp_path)["found"]) == 1
+    assert len(coverage.report(db)["found"]) == 1
 
 
 def test_a_publisher_is_not_a_model(db, tmp_path, monkeypatch):
@@ -104,7 +92,7 @@ def test_a_publisher_is_not_a_model(db, tmp_path, monkeypatch):
                         lambda *a, **kw: {"mlx-community/some-model": {"served"}})
     for other in ("mlx-community/a", "mlx-community/b", "mlx-community/c"):
         seen(db, other)
-    got = coverage.report(db, tmp_path)
+    got = coverage.report(db)
     assert [h["name"] for h in got["holes"]] == ["mlx-community/some-model"]
 
 
@@ -116,7 +104,7 @@ def test_a_base_model_is_not_the_requantisation_we_run(db, tmp_path,
     monkeypatch.setattr(coverage, "adopted", lambda *a, **kw: {
         "mlx-community/qwen2.5-7b-instruct-4bit": {"served"}})
     seen(db, "Qwen/Qwen2.5-7B")
-    assert coverage.report(db, tmp_path)["found"] == []
+    assert coverage.report(db)["found"] == []
 
 
 # --- the unit is the model, not the key ----------------------------------
@@ -167,6 +155,6 @@ def test_a_source_producing_plenty_nobody_ran_is_not_a_source_producing_nothing(
                         lambda *a, **kw: {"org/unseen": {"served"}})
     for i in range(4):
         seen(db, f"someone/proposal-{i}", source="reddit-sd-recap")
-    got = coverage.report(db, tmp_path)
+    got = coverage.report(db)
     assert got["proposed"] == {"reddit-sd-recap": 4}
     assert got["by_source"] == {}

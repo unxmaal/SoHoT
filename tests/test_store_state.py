@@ -406,7 +406,8 @@ def test_a_refused_screen_write_does_not_stop_the_next(monkeypatch, tmp_path,
     ran = []
     monkeypatch.setattr(subprocess, "run", lambda argv, **kw: (
         argv[0] == "screen" and ran.append(argv[-1])) or _Done())
-    monkeypatch.setattr(cli, "_summary_at", lambda out: {"x": {"passed": 0}})
+    monkeypatch.setattr(cli, "_receipt_at",
+                        lambda out: {"summary": {"x": {"passed": 0}}})
     monkeypatch.setattr(screen, "outcome",
                         lambda *a, **k: ("broken", "it ran and passed nothing"))
     fired = _race(monkeypatch, "org/first")

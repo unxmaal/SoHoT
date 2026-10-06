@@ -33,6 +33,11 @@ RATIOS = {"wer": ("wer_errors", "wer_words")}
 
 
 def load(run: str | Path) -> dict:
+    """The stored run a path names; a results.json from elsewhere otherwise."""
+    from evals.run import stored_receipt
+    got = stored_receipt(run)
+    if got:
+        return got
     path = Path(run)
     if path.is_dir():
         path = path / "results.json"
