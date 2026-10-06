@@ -242,6 +242,38 @@ cloned from a reference clip by Chatterbox; Kokoro, which serves the card, has
 a fixed table of 54 and no cloning, so a request carrying a reference is
 refused rather than answered in a substitute voice.
 
+### Every machine's report on one public page
+
+Each machine keeps its own receipts, so a GitHub runner has nothing to measure.
+Instead each machine publishes its own slice and a workflow renders the set at
+https://unxmaal.github.io/sohot/: a section per machine, a lane table across
+machines, and when each machine last published, so a quiet machine reads as
+stale rather than current.
+
+```bash
+soh report --export              # $LOCALHARNESS_HOME/reports/<machine>.json, checked
+soh report --publish             # write it to the reports branch and rebuild the page
+soh report --auto-publish on     # publish at the end of every discovery loop here
+soh report --auto-publish off
+```
+
+The JSON is keyed by a hardware label such as `Mac Studio M5 Ultra 96 GB` or
+`RTX 4070 (Windows)`, never a hostname. It carries what each lane serves, that
+candidate's pass rate, median and metrics, the latest run's full comparison
+table per lane, adoptions, the schema and when it was generated. Paths are cut
+to their last component, receipts' environment, artifacts and failure detail
+are not exported, and the result goes through `harness/privacy.py` with this
+machine's username and hostname added; any finding refuses the export.
+
+Publishing writes `machines/<slug>.json` on the `reports` branch through the
+GitHub contents API (one file per machine, never a force-push) using `gh`, then
+dispatches `.github/workflows/pages.yml` on main. The workflow renders the page,
+fails if the privacy scanner matches anything in it, and deploys to Pages.
+
+Two one-time steps: in the repository's Settings, Pages, set Source to "GitHub
+Actions"; then on each machine that should appear, run `soh report
+--auto-publish on` (it is off on a fresh machine).
+
 ---
 
 # Using it

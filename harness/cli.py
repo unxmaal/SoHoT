@@ -1433,6 +1433,14 @@ def cmd_report(a) -> int:
     if getattr(a, "json", False):
         print(json.dumps(report.state(), indent=1, default=str))
         return 0
+    if getattr(a, "auto_publish", ""):
+        from harness import publish
+        on = a.auto_publish == "on"
+        print(f"{publish.set_enabled(on)}: publishing after each discovery "
+              f"loop is {'on' if on else 'off'}")
+        return 0
+    if getattr(a, "export", False) or getattr(a, "publish", False):
+        return _report_export(a)
     out = report.write(getattr(a, "out", "") or None)
     state = report._load_state(out.with_suffix(".json"))
     lanes = state.get("lanes") or []
@@ -1451,6 +1459,23 @@ def cmd_report(a) -> int:
     if stale:
         print(f"  {len(stale)} lane(s) not measured in "
               f"{report.STALE_LANE_DAYS:.0f} days: {', '.join(stale)}")
+    return 0
+
+
+def _report_export(a) -> int:
+    """This machine's report as public JSON, written locally or published. #432."""
+    from harness import publish
+    try:
+        if a.publish:
+            print(f"wrote {publish.publish_here()} on the {publish.BRANCH} branch")
+        else:
+            print(publish.write_export(getattr(a, "out", "") or None))
+    except publish.ExportRefused as exc:
+        print(exc, file=sys.stderr)
+        return 1
+    except publish.GhError as exc:
+        print(f"publish failed: {exc}", file=sys.stderr)
+        return 1
     return 0
 
 
@@ -2240,9 +2265,26 @@ def _spend_and_settle(a, rc: int) -> int:
     """_loop_spend, then leave only lane defaults resident in the router. #444."""
     from harness import router
     try:
-        return _loop_spend(a, rc)
+        rc = _loop_spend(a, rc)
     finally:
         router.settle("the discovery loop is done")
+    _publish_if_enabled()
+    return rc
+
+
+def _publish_if_enabled() -> str:
+    """Publish this machine's report when its publish switch is on. #432."""
+    from harness import publish
+    if not publish.enabled():
+        return ""
+    print("\n=== publish ===")
+    try:
+        path = publish.publish_here()
+    except Exception as exc:  # noqa: BLE001
+        print(f"  not published: {exc}")
+        return ""
+    print(f"  wrote {path} on the {publish.BRANCH} branch")
+    return path
 
 
 def _loop_spend(a, rc: int) -> int:
@@ -2964,6 +3006,15 @@ def build_parser() -> argparse.ArgumentParser:
         help="one self-contained HTML page showing where the harness stands")
     rep.add_argument("--out", default="",
                      help="where to write it (default: $LOCALHARNESS_HOME/report.html)")
+    rep.add_argument("--export", action="store_true",
+                     help="write this machine's report as privacy-checked JSON "
+                          "(default: $LOCALHARNESS_HOME/reports/<machine>.json)")
+    rep.add_argument("--publish", action="store_true",
+                     help="publish that JSON to the reports branch and rebuild "
+                          "the GitHub Pages site")
+    rep.add_argument("--auto-publish", choices=["on", "off"], default="",
+                     help="publish at the end of every discovery loop on this "
+                          "machine; off until turned on")
     rep.set_defaults(func=cmd_report)
 
     rub = sub.add_parser(
