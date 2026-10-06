@@ -30,9 +30,10 @@ def _no_real_services(monkeypatch):
     """No test restarts a launchd service. One did on 2026-10-04: a fetch test
     called the real refresh_router, the temporary home gave it a different
     lock, and it restarted the eval server under a live measurement. #319."""
-    from harness import gguf
+    from harness import gateway, gguf
     restarts = []
     monkeypatch.setattr(gguf, "refresh_router", lambda: restarts.append(True))
+    monkeypatch.setattr(gateway, "refresh_gateway", lambda: restarts.append("gateway"))
     return restarts
 
 

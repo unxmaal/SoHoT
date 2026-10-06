@@ -39,6 +39,7 @@ ALLOW = re.compile(r"\*|<|\$|\{")
 #: a typo in any ignored path, which is most of what a build produces.
 BUILT_BY_A_DOCUMENTED_STEP = {
     "tools/h3probe": "built by the h3probe step in PLAN.md; gitignored binary",
+    "gateway/config.served.yaml": "written by scripts/serve-gateway.sh at start; gitignored",
 }
 
 

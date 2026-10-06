@@ -21,3 +21,6 @@ hf_root/
 coverage.json
 .cache/
 refs/
+
+# Generated at serve time from gateway config + adoptions (#297).
+gateway/*.served.yaml

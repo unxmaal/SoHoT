@@ -9,6 +9,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from harness import gateway, serving  # noqa: E402
 
 CONFIG = Path(__file__).resolve().parent / "config.yaml"
+# The served config adds sohot-<lane> aliases; prefer it when serve-gateway.sh wrote it. #297.
+if gateway.served_path(CONFIG).exists():
+    CONFIG = gateway.served_path(CONFIG)
 ENFORCED = ("json_schema", "json_object")
 
 try:

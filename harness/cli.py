@@ -94,6 +94,11 @@ DEFAULT_EXTRACT_MODEL = "local-large"
 # Typed by hand, not measured: the code lane's default as the decide baseline. #423.
 DEFAULT_DECIDE_MODEL = "q3-4b"
 
+TEXT_MODEL_HELP = ("gateway alias, mlx repo id or llamacpp:<stem> "
+                   "(default: the lane's adopted model, else {})")
+GATEWAY_HELP = ("send the request here verbatim; by default the model's own "
+                "server is chosen (gateway, mlx_lm.server or llama-server)")
+
 # Named per engine family because the fix differs, and because `uv tool install
 # mflux` on its own silently picks Python 3.9, where every mflux entry point
 # dies on `int | None`. The tell is 2 executables installed instead of 37.
@@ -166,6 +171,19 @@ def default_output(kind: str, suffix: str) -> Path:
     return paths.artifact(kind, suffix)
 
 
+def lane_model(lane: str, chosen: str | None = None) -> str:
+    """-m when given, else the lane's adopted model here, else its typed constant. #297."""
+    from harness import adopt, winners
+    return chosen or adopt.default_for(lane, winners.typed().get(lane, ""))
+
+
+def _text_route(a, lane: str):
+    """(spec, serving.Route) for a text lane command; raises ValueError. #297."""
+    from harness import serving
+    spec = lane_model(lane, getattr(a, "model", None))
+    return spec, serving.route(spec, getattr(a, "gateway", None) or "")
+
+
 def _generate(spec: str, prompt: str, out: Path, params: dict) -> int:
     """Shared body of `image` and `video`: build, run, check, report."""
     try:
@@ -229,7 +247,7 @@ def _generate(spec: str, prompt: str, out: Path, params: dict) -> int:
 
 def cmd_image(a) -> int:
     params = {k: getattr(a, k) for k in ("width", "height", "steps", "seed")}
-    return _generate(a.model, a.prompt, a.output, params)
+    return _generate(lane_model("image", a.model), a.prompt, a.output, params)
 
 
 def cmd_prompt(a) -> int:
@@ -258,31 +276,35 @@ def cmd_prompt(a) -> int:
            f"{a.about}\n\n"
            f"Reply with the prompt and nothing else.")
     try:
-        got = completion.complete(ask, model=a.model, gateway=a.gateway,
-                                  modality="extract")
+        spec, where = _text_route(a, "extract")
+        got = completion.complete(ask, model=where.model, gateway=where.base,
+                                  modality="extract",
+                                  sampling=where.sampling or None)
     except Exception as exc:  # noqa: BLE001
         return err(f"{exc}")
     note(got.strip())
     if not a.quiet:
         # The provenance goes to stderr so the prompt itself can be piped.
-        print(f"[{engine.name}, guide {guide['identity']}, written by {a.model}]",
+        print(f"[{engine.name}, guide {guide['identity']}, written by {spec}]",
               file=sys.stderr)
     emit(prompt=got.strip(), lane=a.lane, engine=engine.name,
-         guide=guide["identity"], model=a.model)
+         guide=guide["identity"], model=spec)
     return 0
 
 
 def cmd_video(a) -> int:
     params = {k: getattr(a, k) for k in
               ("width", "height", "frames", "seconds", "steps", "seed")}
-    return _generate(a.model, a.prompt, a.output, params)
+    return _generate(lane_model("video", a.model), a.prompt, a.output, params)
 
 
 def _text(a, modality: str, suffix: str, checker) -> int:
     try:
-        raw = completion.complete(a.prompt, model=a.model, gateway=a.gateway,
-                                  modality=modality)
-    except completion.CompletionError as exc:
+        _, where = _text_route(a, modality)
+        raw = completion.complete(a.prompt, model=where.model, gateway=where.base,
+                                  modality=modality,
+                                  sampling=where.sampling or None)
+    except (ValueError, completion.CompletionError) as exc:
         return err(str(exc))
 
     body = completion.artifact(raw, modality)
@@ -327,7 +349,7 @@ def _svg_by_tracing(a, preset: str = "illustration") -> int:
     # The raster is KEPT. When the SVG is wrong the first question is always
     # whether the raster was wrong too, and deleting it throws away the only
     # way to answer.
-    rc = _generate(a.engine, f"{a.prompt}, {TRACE_STYLE}", png,
+    rc = _generate(lane_model("image", a.engine), f"{a.prompt}, {TRACE_STYLE}", png,
                    {"width": a.width, "height": a.height,
                     "steps": None, "seed": a.seed})
     if rc != 0:
@@ -360,9 +382,11 @@ def _answer(a, modality: str, context: str = "") -> int:
     would be a worse place to leave it than the terminal.
     """
     try:
-        raw = completion.complete(a.prompt, model=a.model, gateway=a.gateway,
-                                  modality=modality, context=context)
-    except completion.CompletionError as exc:
+        _, where = _text_route(a, modality)
+        raw = completion.complete(a.prompt, model=where.model, gateway=where.base,
+                                  modality=modality, context=context,
+                                  sampling=where.sampling or None)
+    except (ValueError, completion.CompletionError) as exc:
         return err(str(exc))
 
     body = completion.artifact(raw, modality)
@@ -411,6 +435,43 @@ def cmd_extract(a) -> int:
     return _answer(a, "extract", context=context)
 
 
+def cmd_decide(a) -> int:
+    """Answer a flat schema's fields with a probability per choice. #297, #423."""
+    from harness.checks import decide as decide_check
+    raw = a.schema
+    try:
+        if not raw.lstrip().startswith("{"):
+            raw = Path(raw).read_text(encoding="utf-8")
+        schema = json.loads(raw)
+        if not isinstance(schema, dict) or not schema:
+            raise ValueError("the schema must map field names to fields")
+        for name, spec in schema.items():
+            decide_check.choices(spec)
+            if not str(spec.get("description") or "").strip():
+                raise ValueError(f"field {name!r} needs a description")
+        context = ""
+        if a.file:
+            context = Path(a.file).read_text(encoding="utf-8")
+        elif not sys.stdin.isatty():
+            context = sys.stdin.read()
+        _, where = _text_route(a, "decide")
+        prompt = f"{a.prompt.rstrip()}\n\n{decide_check.render(schema)}"
+        text, _, tokens = completion.complete_with_logprobs(
+            prompt, model=where.model, gateway=where.base, modality="decide",
+            context=context, sampling=where.sampling or None,
+            top_logprobs=completion.TOP_LOGPROBS)
+    except (OSError, ValueError, completion.CompletionError) as exc:
+        return err(str(exc))
+    parsed = decide_check.parse(decide_check.from_logprobs(text, tokens, schema), schema)
+    missing = [n for n, f in parsed.items() if f["answer"] is None]
+    if missing:
+        return err(f"no usable answer for {', '.join(missing)}: {text.strip()[:200]}")
+    body = {"answers": {n: f["answer"] for n, f in parsed.items()},
+            "probabilities": {n: f["probs"] or {f["answer"]: 1.0}
+                              for n, f in parsed.items()}}
+    return say(body=body, human=json.dumps(body))
+
+
 def cmd_say(a) -> int:
     text = sys.stdin.read() if a.text == "-" else a.text
     if not text.strip():
@@ -421,7 +482,7 @@ def cmd_say(a) -> int:
         # A cloned voice is three coupled settings, and getting one wrong fails
         # by naming another.
         audio.speak_as(a.voice, text, out=out, speed=a.speed,
-                       base_url=a.base_url)
+                       base_url=a.base_url, model=getattr(a, "model", None) or "")
     except ValueError as exc:
         return err(str(exc))
     except audio.AudioError as exc:
@@ -2783,7 +2844,8 @@ def cmd_hear(a) -> int:
             return err(f"recording failed (exit {r.returncode})\n{r.stderr.strip()}")
 
     try:
-        text = audio.transcribe(clip, base_url=a.base_url)
+        text = audio.transcribe(clip, base_url=a.base_url,
+                                model=getattr(a, "model", None) or "")
     except audio.AudioError as exc:
         return err(str(exc))
     return say(path=clip, body=text, human=text)
@@ -2797,8 +2859,9 @@ def build_parser() -> argparse.ArgumentParser:
         p = sub.add_parser(name, help=help_)
         p.add_argument("prompt")
         p.add_argument("-o", "--output")
-        p.add_argument("-m", "--model", default=engine_default,
-                       help="engine spec, e.g. mflux:z-image-turbo,quantize=4")
+        p.add_argument("-m", "--model", default=None,
+                       help="engine spec, e.g. mflux:z-image-turbo,quantize=4 "
+                            f"(default: the lane's adopted model, else {engine_default})")
         p.add_argument("--width", type=int, default=DEFAULT_RESOLUTION)
         p.add_argument("--height", type=int, default=DEFAULT_RESOLUTION)
         p.add_argument("--steps", type=int)
@@ -2816,11 +2879,10 @@ def build_parser() -> argparse.ArgumentParser:
         p = sub.add_parser(name, help=help_)
         p.add_argument("prompt")
         p.add_argument("-o", "--output")
-        p.add_argument("-m", "--model",
-                       default=DEFAULT_SVG_MODEL if name == "svg"
-                       else DEFAULT_WEB_MODEL,
-                       help="gateway alias")
-        p.add_argument("--gateway", default=completion.DEFAULT_GATEWAY)
+        p.add_argument("-m", "--model", default=None,
+                       help=TEXT_MODEL_HELP.format(DEFAULT_SVG_MODEL if name == "svg"
+                                                   else DEFAULT_WEB_MODEL))
+        p.add_argument("--gateway", default=None, help=GATEWAY_HELP)
         p.set_defaults(func=func)
         if name == "svg":
             # `llm` is still the default because it is seconds against a
@@ -2831,8 +2893,10 @@ def build_parser() -> argparse.ArgumentParser:
                            help="llm: a language model writes the paths. "
                                 "trace: generate an image and vectorize it. "
                                 "icon: the same, tuned for a small file")
-            p.add_argument("--engine", default=DEFAULT_IMAGE_ENGINE,
-                           help="image engine used by --method trace")
+            p.add_argument("--engine", default=None,
+                           help="image engine used by --method trace (default: "
+                                "the image lane's adopted model, else "
+                                f"{DEFAULT_IMAGE_ENGINE})")
             p.add_argument("--width", type=int, default=512)
             p.add_argument("--height", type=int, default=512)
             p.add_argument("--seed", type=int)
@@ -2844,9 +2908,11 @@ def build_parser() -> argparse.ArgumentParser:
                     help="which generating lane the prompt is for")
     pr.add_argument("about", nargs="?", default="",
                     help="what the caller wants. Without it, print the guide")
-    pr.add_argument("-m", "--model", default=DEFAULT_EXTRACT_MODEL,
-                    help="gateway alias that writes the prompt")
-    pr.add_argument("--gateway", default=completion.DEFAULT_GATEWAY)
+    pr.add_argument("-m", "--model", default=None,
+                    help="the model that writes the prompt (default: the "
+                         "extract lane's adopted model, else "
+                         f"{DEFAULT_EXTRACT_MODEL})")
+    pr.add_argument("--gateway", default=None, help=GATEWAY_HELP)
     pr.add_argument("--quiet", action="store_true",
                     help="omit the engine and guide line from stderr")
     pr.set_defaults(func=cmd_prompt)
@@ -2854,9 +2920,9 @@ def build_parser() -> argparse.ArgumentParser:
     c = sub.add_parser("code", help="generate code")
     c.add_argument("prompt")
     c.add_argument("-o", "--output", help="write to a file instead of stdout")
-    c.add_argument("-m", "--model", default=DEFAULT_CODE_MODEL,
-                   help="gateway alias")
-    c.add_argument("--gateway", default=completion.DEFAULT_GATEWAY)
+    c.add_argument("-m", "--model", default=None,
+                   help=TEXT_MODEL_HELP.format(DEFAULT_CODE_MODEL))
+    c.add_argument("--gateway", default=None, help=GATEWAY_HELP)
     c.set_defaults(func=cmd_code)
 
     x = sub.add_parser("extract",
@@ -2864,10 +2930,22 @@ def build_parser() -> argparse.ArgumentParser:
     x.add_argument("prompt", help="the question")
     x.add_argument("-f", "--file", help="the material; omit to read stdin")
     x.add_argument("-o", "--output", help="write to a file instead of stdout")
-    x.add_argument("-m", "--model", default=DEFAULT_EXTRACT_MODEL,
-                   help="gateway alias")
-    x.add_argument("--gateway", default=completion.DEFAULT_GATEWAY)
+    x.add_argument("-m", "--model", default=None,
+                   help=TEXT_MODEL_HELP.format(DEFAULT_EXTRACT_MODEL))
+    x.add_argument("--gateway", default=None, help=GATEWAY_HELP)
     x.set_defaults(func=cmd_extract)
+
+    dc = sub.add_parser("decide", help="answer a schema's fields, with a "
+                        "probability per choice")
+    dc.add_argument("prompt", help="the question")
+    dc.add_argument("--schema", required=True,
+                    help="a JSON file or inline JSON: {field: {type: enum|boolean, "
+                         "description, choices}}")
+    dc.add_argument("-f", "--file", help="the material; omit to read stdin")
+    dc.add_argument("-m", "--model", default=None,
+                    help=TEXT_MODEL_HELP.format(DEFAULT_DECIDE_MODEL))
+    dc.add_argument("--gateway", default=None, help=GATEWAY_HELP)
+    dc.set_defaults(func=cmd_decide)
 
     s = sub.add_parser("say", help="speak text aloud")
     s.add_argument("text", help="the text, or - to read stdin")
@@ -2875,6 +2953,10 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--voice", default=audio.DEFAULT_VOICE,
                    help="a cloned preset or a kokoro voice; see `soh voices`")
     s.add_argument("--speed", type=float, default=1.0)
+    s.add_argument("-m", "--model", default=None,
+                   help="tts model, overriding the voice's (a kokoro voice uses "
+                        "the lane's adopted model, else "
+                        f"{audio.DEFAULT_TTS_MODEL})")
     s.add_argument("--base-url", default=audio.DEFAULT_BASE_URL)
     s.add_argument("--no-play", dest="play", action="store_false", default=True)
     s.set_defaults(func=cmd_say)
@@ -3129,6 +3211,9 @@ def build_parser() -> argparse.ArgumentParser:
     h.add_argument("file", nargs="?", help="an existing audio file")
     h.add_argument("-o", "--output", help="where to save a new recording")
     h.add_argument("--seconds", type=float, default=5.0)
+    h.add_argument("-m", "--model", default=None,
+                   help="stt model (default: the lane's adopted model, else "
+                        f"{audio.DEFAULT_STT_MODEL})")
     h.add_argument("--base-url", default=audio.DEFAULT_BASE_URL)
     h.set_defaults(func=cmd_hear)
 
