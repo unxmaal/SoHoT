@@ -96,3 +96,25 @@ def test_the_screen_tier_scopes_before_limiting_too(monkeypatch, capsys):
     out = capsys.readouterr().out
     assert "nothing queued to screen" not in out, out
     assert "org/theimage" in out, out
+
+
+def test_a_fetched_candidate_below_the_rank_head_is_still_screened(monkeypatch, capsys):
+    """#376: the loop fetched six models and screened none of them, because the
+    top N of the plan were rows the fetch had skipped for budget."""
+    rows = [{"name": "org/x", "lane": "image", "description": "", "times": 1,
+             "registry": "huggingface"}]
+    waiting = [{"name": f"org/big{i}", "state": "waiting-on-fetch",
+                "why_not": "weights are not on disk"} for i in range(3)]
+    fetched = {"name": "org/fetched", "state": "ready", "why_not": "",
+               "modality": "image", "candidate": "x"}
+    monkeypatch.setattr("harness.memory_store.judgeable",
+                        lambda conn, limit=50: rows)
+    monkeypatch.setattr("harness.memory_store.connect",
+                        lambda *a, **k: _Store(rows))
+    monkeypatch.setattr("harness.rank.serving", lambda *a, **k: set())
+    monkeypatch.setattr("harness.rank.lanes_with_receipts", lambda *a, **k: set())
+    monkeypatch.setattr("harness.screen.plan", lambda ranked, **k: waiting + [fetched])
+    monkeypatch.setattr("harness.screen.argv", lambda r, **k: ["screen", r["name"]])
+    cli._report_screen(argparse.Namespace(lane="", top=2, run=False, json=False))
+    out = capsys.readouterr().out
+    assert "1 ready to screen" in out and "org/fetched" in out, out
