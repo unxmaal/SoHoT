@@ -30,12 +30,12 @@
   }
  ],
  "export_version": 1,
- "generated_at": "2026-10-06T20:45:38Z",
+ "generated_at": "2026-10-06T21:05:50Z",
  "lanes": [
   {
    "adopted": true,
    "adopted_how": "by-hand",
-   "age_days": 0.25,
+   "age_days": 0.26,
    "comparison": [
     {
      "candidate": "mflux/flux2-klein-4b-q8",
@@ -48,7 +48,9 @@
      "passed": 9,
      "peak_gb": 14.99,
      "reference": false,
-     "total": 9
+     "total": 9,
+     "ttft_median_s": null,
+     "ttft_p95_s": null
     },
     {
      "candidate": "mflux/Tongyi-MAI/Z-Image-q8",
@@ -61,7 +63,9 @@
      "passed": 7,
      "peak_gb": 17.85,
      "reference": false,
-     "total": 9
+     "total": 9,
+     "ttft_median_s": null,
+     "ttft_p95_s": null
     }
    ],
    "lane": "image",
@@ -76,13 +80,15 @@
    "pass_rate": 1.0,
    "serves": "mflux:dev",
    "stale": false,
+   "ttft_median_s": null,
+   "ttft_p95_s": null,
    "unverified": false,
    "wanted": true
   },
   {
    "adopted": true,
    "adopted_how": "measured",
-   "age_days": 0.08,
+   "age_days": 0.1,
    "comparison": [
     {
      "candidate": "llamacpp:Ornith-1.5-35B-Q4_K_M",
@@ -97,7 +103,9 @@
      "passed": 35,
      "peak_gb": 0.0,
      "reference": false,
-     "total": 42
+     "total": 42,
+     "ttft_median_s": null,
+     "ttft_p95_s": null
     },
     {
      "candidate": "llamacpp:Qwen3.8-27B-GSQ-RCO-IQ3_S-mtp",
@@ -112,7 +120,9 @@
      "passed": 27,
      "peak_gb": 0.0,
      "reference": false,
-     "total": 42
+     "total": 42,
+     "ttft_median_s": null,
+     "ttft_p95_s": null
     }
    ],
    "lane": "code",
@@ -129,13 +139,15 @@
    "pass_rate": 0.833,
    "serves": "llamacpp:Ornith-1.5-35B-Q4_K_M",
    "stale": false,
+   "ttft_median_s": null,
+   "ttft_p95_s": null,
    "unverified": false,
    "wanted": true
   },
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 0.87,
+   "age_days": 0.89,
    "comparison": [
     {
      "candidate": "q3-4b",
@@ -150,7 +162,9 @@
      "passed": 15,
      "peak_gb": 0.0,
      "reference": false,
-     "total": 15
+     "total": 15,
+     "ttft_median_s": null,
+     "ttft_p95_s": null
     },
     {
      "candidate": "claude-code:claude-opus-5-5",
@@ -165,7 +179,9 @@
      "passed": 14,
      "peak_gb": 0.0,
      "reference": true,
-     "total": 15
+     "total": 15,
+     "ttft_median_s": null,
+     "ttft_p95_s": null
     },
     {
      "candidate": "q3-30b",
@@ -180,7 +196,9 @@
      "passed": 12,
      "peak_gb": 0.0,
      "reference": false,
-     "total": 15
+     "total": 15,
+     "ttft_median_s": null,
+     "ttft_p95_s": null
     },
     {
      "candidate": "q3-coder",
@@ -195,7 +213,9 @@
      "passed": 12,
      "peak_gb": 0.0,
      "reference": false,
-     "total": 15
+     "total": 15,
+     "ttft_median_s": null,
+     "ttft_p95_s": null
     }
    ],
    "lane": "web",
@@ -212,13 +232,15 @@
    "pass_rate": 1.0,
    "serves": "q3-4b",
    "stale": false,
+   "ttft_median_s": null,
+   "ttft_p95_s": null,
    "unverified": false,
    "wanted": true
   },
   {
    "adopted": true,
    "adopted_how": "measured",
-   "age_days": 0.03,
+   "age_days": 0.05,
    "comparison": [
     {
      "candidate": "q3-30b",
@@ -234,7 +256,9 @@
      "passed": 24,
      "peak_gb": 0.0,
      "reference": false,
-     "total": 24
+     "total": 24,
+     "ttft_median_s": null,
+     "ttft_p95_s": null
     },
     {
      "candidate": "local-large",
@@ -250,7 +274,9 @@
      "passed": 16,
      "peak_gb": 0.0,
      "reference": false,
-     "total": 24
+     "total": 24,
+     "ttft_median_s": null,
+     "ttft_p95_s": null
     }
    ],
    "lane": "svg",
@@ -268,13 +294,15 @@
    "pass_rate": 1.0,
    "serves": "q3-30b",
    "stale": false,
+   "ttft_median_s": null,
+   "ttft_p95_s": null,
    "unverified": false,
    "wanted": true
   },
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 0.95,
+   "age_days": 0.96,
    "comparison": [
     {
      "candidate": "h3/minimax-h3@ssd_streaming=false",
@@ -287,7 +315,9 @@
      "passed": 1,
      "peak_gb": 18.43,
      "reference": false,
-     "total": 1
+     "total": 1,
+     "ttft_median_s": null,
+     "ttft_p95_s": null
     }
    ],
    "lane": "video",
@@ -302,13 +332,15 @@
    "pass_rate": 1.0,
    "serves": "h3",
    "stale": false,
+   "ttft_median_s": null,
+   "ttft_p95_s": null,
    "unverified": false,
    "wanted": true
   },
   {
    "adopted": true,
    "adopted_how": "by-hand",
-   "age_days": 1.01,
+   "age_days": 1.03,
    "comparison": [
     {
      "candidate": "acestep/acestep-v15-turbo@steps=8",
@@ -323,7 +355,9 @@
      "passed": 3,
      "peak_gb": 46.01,
      "reference": false,
-     "total": 4
+     "total": 4,
+     "ttft_median_s": null,
+     "ttft_p95_s": null
     }
    ],
    "lane": "music",
@@ -340,6 +374,8 @@
    "pass_rate": 0.75,
    "serves": "acestep:acestep-v15-turbo,steps=8",
    "stale": false,
+   "ttft_median_s": null,
+   "ttft_p95_s": null,
    "unverified": false,
    "wanted": true
   },
@@ -358,13 +394,15 @@
    "pass_rate": null,
    "serves": "q3-4b",
    "stale": false,
+   "ttft_median_s": null,
+   "ttft_p95_s": null,
    "unverified": true,
    "wanted": true
   },
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 0.84,
+   "age_days": 0.85,
    "comparison": [
     {
      "candidate": "claude-code:claude-opus-5-5",
@@ -378,7 +416,9 @@
      "passed": 10,
      "peak_gb": 0.0,
      "reference": true,
-     "total": 10
+     "total": 10,
+     "ttft_median_s": null,
+     "ttft_p95_s": null
     },
     {
      "candidate": "local-large",
@@ -392,7 +432,9 @@
      "passed": 8,
      "peak_gb": 0.0,
      "reference": false,
-     "total": 10
+     "total": 10,
+     "ttft_median_s": null,
+     "ttft_p95_s": null
     },
     {
      "candidate": "q3-30b",
@@ -406,7 +448,9 @@
      "passed": 8,
      "peak_gb": 0.0,
      "reference": false,
-     "total": 10
+     "total": 10,
+     "ttft_median_s": null,
+     "ttft_p95_s": null
     },
     {
      "candidate": "q3-coder",
@@ -420,7 +464,9 @@
      "passed": 8,
      "peak_gb": 0.0,
      "reference": false,
-     "total": 10
+     "total": 10,
+     "ttft_median_s": null,
+     "ttft_p95_s": null
     }
    ],
    "lane": "extract",
@@ -436,13 +482,15 @@
    "pass_rate": 0.8,
    "serves": "local-large",
    "stale": false,
+   "ttft_median_s": null,
+   "ttft_p95_s": null,
    "unverified": false,
    "wanted": false
   },
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 1.02,
+   "age_days": 1.03,
    "comparison": [
     {
      "candidate": "parakeet-tdt-0.6b-v2",
@@ -455,7 +503,9 @@
      "passed": 300,
      "peak_gb": 0.0,
      "reference": false,
-     "total": 300
+     "total": 300,
+     "ttft_median_s": null,
+     "ttft_p95_s": null
     }
    ],
    "lane": "stt",
@@ -470,13 +520,15 @@
    "pass_rate": 1.0,
    "serves": "mlx-community/parakeet-tdt-0.6b-v2",
    "stale": false,
+   "ttft_median_s": null,
+   "ttft_p95_s": null,
    "unverified": false,
    "wanted": false
   },
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 0.33,
+   "age_days": 0.34,
    "comparison": [
     {
      "candidate": "Kokoro-82M-bf16/bm_george",
@@ -489,7 +541,9 @@
      "passed": 5,
      "peak_gb": 0.0,
      "reference": false,
-     "total": 5
+     "total": 5,
+     "ttft_median_s": null,
+     "ttft_p95_s": null
     },
     {
      "candidate": "Breeze-TTS-2",
@@ -502,7 +556,9 @@
      "passed": 5,
      "peak_gb": 0.0,
      "reference": false,
-     "total": 5
+     "total": 5,
+     "ttft_median_s": null,
+     "ttft_p95_s": null
     }
    ],
    "lane": "tts",
@@ -517,6 +573,8 @@
    "pass_rate": 1.0,
    "serves": "mlx-community/Kokoro-82M-bf16",
    "stale": false,
+   "ttft_median_s": null,
+   "ttft_p95_s": null,
    "unverified": false,
    "wanted": false
   }
@@ -528,7 +586,7 @@
   "first_seen": "2026-10-05T19:28:52Z",
   "hw_model": "Mac17,15",
   "label": "Mac Studio M5 Ultra 96 GB",
-  "last_seen": "2026-10-06T20:45:38Z",
+  "last_seen": "2026-10-06T21:05:50Z",
   "memory_gb": 96.0,
   "os": "macOS 27.0.1",
   "runtimes": [
@@ -551,5 +609,5 @@
    "transformers": "5.16.1"
   }
  },
- "schema": 41
+ "schema": 42
 }
