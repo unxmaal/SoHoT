@@ -116,3 +116,17 @@ def test_the_report_text_names_every_check(old_home):
     for name in mc.INVARIANTS:
         assert name in text
     assert "schema 18 -> " in text
+
+
+def test_without_symlink_rights_the_receipts_are_copied(old_home, monkeypatch):
+    db, home = old_home
+    (home / "runs" / gb.RUNS[0][0] / "big.png").write_bytes(b"x")
+
+    def refuse(self, *a, **k):
+        raise OSError("symlink not permitted")
+    monkeypatch.setattr(Path, "symlink_to", refuse)
+    got = mc.dry_run(db, keep=True)
+    runs = Path(got["copy"]).parent / "runs"
+    assert got["ok"] and got["counts_after"]["runs"] == len(gb.RUNS)
+    assert (runs / gb.RUNS[0][0] / "results.json").is_file()
+    assert not (runs / gb.RUNS[0][0] / "big.png").exists()

@@ -201,8 +201,13 @@ def _copy_home(src_home: Path, home: Path) -> None:
         shutil.copytree(src_home / "queue" / "jobs", home / "queue" / "jobs")
     # Receipts are read, never written, by the steps that import them.
     if (src_home / "runs").is_dir():
-        (home / "runs").symlink_to((src_home / "runs").resolve(),
-                                   target_is_directory=True)
+        try:
+            (home / "runs").symlink_to((src_home / "runs").resolve(),
+                                       target_is_directory=True)
+        except OSError:
+            # Windows without symlink rights: the receipts alone, not the artifacts.
+            shutil.copytree(src_home / "runs", home / "runs", ignore=lambda d, names: [
+                n for n in names if n != "results.json" and not (Path(d) / n).is_dir()])
 
 
 @contextmanager
