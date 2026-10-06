@@ -411,6 +411,16 @@ def build_runner(candidate: str, gateway: str, outdir: Path | None,
     return ProcessRunner(engine, outdir, adherence=adherence)
 
 
+def receipt_key(candidate: str) -> str:
+    """The summary key a run of `candidate` writes, or "" if it cannot run. #407."""
+    import tempfile
+    try:
+        with tempfile.TemporaryDirectory() as scratch:
+            return build_runner(candidate, "", Path(scratch)).candidate
+    except (SystemExit, Exception):  # noqa: BLE001
+        return ""
+
+
 def method_of(candidate: str) -> str:
     """Which METHOD this candidate is, for cases that declare what they can
     fairly test.

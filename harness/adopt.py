@@ -125,8 +125,14 @@ def is_reference(candidate: str) -> bool:
     return (candidate or "").startswith(REFERENCE_PREFIXES)
 
 
-def record(conn, verdict: Verdict) -> None:
-    """Write an adoption, or the loss, so neither is rediscovered."""
+def record(conn, verdict: Verdict, spec: str = "") -> int:
+    """Write an adoption, or the loss, on the candidate that ran. #407.
+
+    `spec` is what ran; `verdict.challenger` is used when it is one. The
+    verdict lands on the candidate's proposal, or on the candidate alone for
+    a typed default or a command-line spec, and never creates a proposal.
+    """
+    from harness import candidates
     from harness import memory_store as ms
 
     if is_reference(verdict.challenger):
@@ -135,44 +141,29 @@ def record(conn, verdict: Verdict) -> None:
                           f"({verdict.why})")
     outcome = "measured" if verdict.adopt else "declined"
     detail = f"{verdict.lane}: {verdict.why}"
-    try:
-        ms.decide(conn, verdict.challenger, outcome, tier=TIER,
-                  detail=detail[:200])
-        return
-    except KeyError:
-        pass
-
-    # NO PROPOSAL ROW, AND THE DECISION STILL HAS TO SURVIVE. This used to
-    # swallow the KeyError with a note saying the decision had happened
-    # anyway. It had not: `adopted()` reads verdict rows, so an adoption whose
-    # winner arrived any way other than through a sweep was discarded on the
-    # spot and the lane went on serving the incumbent. A candidate named on a
-    # command line, or reached through `lh verify`, could beat the incumbent on
-    # the metric AND the paired test and change nothing.
-    #
-    # AN ADOPTION IS A FACT ABOUT THE LANE, not about a proposal, so the row
-    # exists to carry it rather than the other way round. `source` says where
-    # it came from, so a later sweep seeing the same name adds a sighting to
-    # this row instead of starting a second one.
-    ms.record(conn, ms.Seen(name=verdict.challenger, source=TIER, url="",
-                            why=f"named in a {verdict.lane} comparison",
-                            lane=verdict.lane, resolved=verdict.challenger))
-    ms.decide(conn, verdict.challenger, outcome, tier=TIER,
-              detail=detail[:200])
+    spec = spec or verdict.challenger
+    # A text-lane spec is the proposal's own name; anything else maps by row.
+    cid = candidates.ensure(conn, spec, proposal=spec, lane=verdict.lane)
+    if cid is None:
+        raise ValueError(f"{spec!r} is not a spec any runner takes, so an "
+                         f"adoption of it could never be served")
+    row = candidates.get(conn, spec)
+    return ms.decide(conn, row["proposal"] or "", outcome, tier=TIER,
+                     detail=detail[:200], candidate_id=cid)
 
 
 def adopted(conn) -> dict[str, str]:
-    """The lane -> candidate the loop has adopted, newest per lane."""
+    """The lane -> spec the loop has adopted, newest per lane."""
     rows = conn.execute(
-        "SELECT p.name, v.detail, v.id FROM verdicts v "
-        "JOIN proposals p ON p.id = v.proposal_id "
+        "SELECT c.spec, v.detail, v.id FROM verdicts v "
+        "JOIN candidates c ON c.id = v.candidate_id "
         "WHERE v.tier = ? AND v.outcome = 'measured' ORDER BY v.id",
         (TIER,)).fetchall()
     out = {}
     for row in rows:
         lane = str(row["detail"]).split(":", 1)[0].strip()
         if lane:
-            out[lane] = row["name"]
+            out[lane] = row["spec"]
     return out
 
 

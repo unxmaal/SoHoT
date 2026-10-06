@@ -106,7 +106,8 @@ def is_attachment(description: str) -> str:
 from harness.serving import LLAMACPP_PREFIX  # noqa: E402
 
 
-def candidate_for(lane: str, model: str, description: str = "") -> str:
+def candidate_for(lane: str, model: str, description: str = "",
+                  adopt: bool = True) -> str:
     """The best spelling of `model` for this lane, or "" when it has none.
 
     THE FIRST ENGINE THAT CAN ACTUALLY RUN IT WINS, not simply the first one
@@ -141,7 +142,7 @@ def candidate_for(lane: str, model: str, description: str = "") -> str:
                 return f"omnisvg:{size}"
     if lanes.canonical(lane) in lanes.TEXT_SERVED:
         from harness import gguf
-        stem = gguf.fetched(model, adopt=True)
+        stem = gguf.fetched(model, adopt=adopt)
         if stem:
             return f"{LLAMACPP_PREFIX}{stem}"
     for spec in specs:
@@ -377,54 +378,31 @@ def refused_by_harness(detail: str) -> str:
     return ""
 
 
-def model_tail(spec: str) -> str:
-    """The model portion of a spec, as it appears in a receipt key."""
-    _, _, rest = spec.partition(":")
-    model = (rest or spec).partition(",")[0]
-    return model.rstrip("/").rpartition("/")[2].strip().lower()
-
-
-def receipt_key(spec: str) -> str:
-    """The summary key the engine writes for `spec`, or "" if it is not one."""
-    try:
-        from harness import engines
-        return engines.resolve(spec).name
-    except Exception:  # noqa: BLE001
-        return ""
-
-
-def wrong_run(summary: dict | None, candidate: str) -> str:
+def wrong_run(summary: dict | None, candidate: str, key: str = "") -> str:
     """Why this receipt is another candidate's, or "". #282."""
     if not summary or not candidate:
         return ""
-    if row_for(summary, candidate) is not None:
+    if row_for(summary, candidate, key) is not None:
         return ""
     return (f"the receipt names {', '.join(sorted(summary))} rather than "
             f"{candidate}, so it is not this run's")
 
 
-def row_for(summary: dict | None, candidate: str) -> dict | None:
-    """This candidate's summary row, matched on the model portion. #282."""
+def row_for(summary: dict | None, candidate: str,
+            key: str = "") -> dict | None:
+    """This candidate's summary row, under the key its runner wrote. #407."""
     if not summary:
         return None
-    # The engine that ran it names the key: mflux appends -q8, which no tail
-    # match can see. #378.
-    named = receipt_key(candidate)
-    if named and named in summary:
-        return summary[named] or {}
-    want = model_tail(candidate)
-    if not want:
-        return None
-    for key, row in summary.items():
-        if model_tail(str(key)) == want or any(
-                part.strip().lower() == want for part in str(key).split("/")):
-            return row or {}
-    return None
+    if not key:
+        from harness import candidates
+        key = candidates.key_of(candidate)
+    return (summary[key] or {}) if key and key in summary else None
 
 
-def why_nothing_passed(summary: dict | None, candidate: str) -> str:
+def why_nothing_passed(summary: dict | None, candidate: str,
+                       key: str = "") -> str:
     """The checker's own reason for failing, or "". #281."""
-    rows = row_for(summary, candidate) or {}
+    rows = row_for(summary, candidate, key) or {}
     failures = [str(f) for f in (rows.get("failures") or []) if f]
     return "; ".join(failures)[:300]
 
@@ -449,9 +427,9 @@ def is_architecture_gap(text: str) -> bool:
     return LOAD_FAILED in low and any(g in low for g in ARCHITECTURE_GAPS)
 
 
-def load_failure(summary: dict | None, candidate: str) -> str:
+def load_failure(summary: dict | None, candidate: str, key: str = "") -> str:
     """The server's error if this runtime could not build the architecture."""
-    why = why_nothing_passed(summary, candidate)
+    why = why_nothing_passed(summary, candidate, key)
     low = why.lower()
     if candidate.startswith(LLAMACPP_PREFIX):
         return why if all(p in low for p in LLAMACPP_LOAD_FAILED) else ""
@@ -493,7 +471,8 @@ def load_until(candidate: str = "") -> str:
 
 
 def outcome(returncode: int, summary: dict | None,
-            detail: str = "", candidate: str = "") -> tuple[str, str]:
+            detail: str = "", candidate: str = "",
+            key: str = "") -> tuple[str, str]:
     """A store verdict from one screen run.
 
     `broken` is TERMINAL and `screened` is not, which is the right way round: a
@@ -509,7 +488,7 @@ def outcome(returncode: int, summary: dict | None,
         return "queued", (f"not screened: {refused}. The harness could not "
                           f"deliver the request, which says nothing about the "
                           f"candidate")
-    mismatch = wrong_run(summary, candidate) if candidate else ""
+    mismatch = wrong_run(summary, candidate, key) if candidate else ""
     if mismatch:
         return "queued", f"not screened: {mismatch}"
     if returncode != 0:
@@ -522,10 +501,10 @@ def outcome(returncode: int, summary: dict | None,
     if not summary:
         return "broken", "the screen produced no rows"
     if rows == 0:
-        failed = load_failure(summary, candidate) if candidate else ""
+        failed = load_failure(summary, candidate, key) if candidate else ""
         if failed:
             return "declined", f"the installed runtime could not load it: {failed}"
-        why = why_nothing_passed(summary, candidate) if candidate else ""
+        why = why_nothing_passed(summary, candidate, key) if candidate else ""
         # The same phrases as stderr: a loader failure lands in the summary. #385.
         refused = refused_by_harness(why)
         if refused and refused not in ABOUT_THE_SNAPSHOT:

@@ -312,40 +312,56 @@ def measured() -> set[str]:
 
 
 def _segments(name: str) -> set[str]:
-    """The parts of a candidate name that could identify a capability.
+    """The path segments of a receipt key, for components that are not models.
 
-    A results row is `trace/mflux/flux2-klein-4b-q8` or
-    `Kokoro-82M-bf16/ff_siwis`, so the identifying part is a SEGMENT rather
-    than the whole string.
+    An engine, method or tool is not a candidate; `trace/mflux/...-q8` names
+    the trace method and the mflux engine as parts of one.
     """
     return {p for p in name.split("/") if p}
 
 
-def _was_measured(name: str, done: set[str]) -> bool:
-    """Exact segment match, never a substring.
-
-    Substring matching marked a capability called `X` as measured because
-    "X" appears inside "Chatterbox-Multilingual-MLX-v2-Q8". Wrongly marking
-    something DONE hides work, which is worse than wrongly offering it twice.
-    """
-    tail = name.split("/")[-1]
-    # Each engine's own key for it: mflux keeps the owner and appends -q8. #384.
-    from harness import engines, screen
-    if any(screen.receipt_key(f"{e}:{name}") in done for e in engines.names()):
-        return True
-    for m in done:
-        segs = _segments(m)
-        if name in segs or tail in segs:
-            return True
-    return False
+def _component_measured(name: str, done: set[str]) -> bool:
+    """Exact segment match, never a substring."""
+    return any(name in _segments(m) for m in done)
 
 
-def annotate(caps: list[Capability] | None = None) -> list[Capability]:
+def _was_measured(name: str, done: set[str], lane: str = "",
+                  conn=None) -> bool:
+    """A receipt key stored for this name, or the one its spec writes. #407."""
+    from harness import candidates, screen
+    keys = {name}
+    if conn is not None:
+        keys |= candidates.keys(conn, name)
+    if lane and lane != "text":
+        spec = screen.candidate_for(lane, name, adopt=False)
+        if spec:
+            keys.add(candidates.key_of(spec))
+    return bool(keys & done)
+
+
+def _store():
+    from harness import memory_store as ms
+    try:
+        return ms.connect()
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def annotate(caps: list[Capability] | None = None,
+             conn=None) -> list[Capability]:
     """Mark each capability with whether anything has measured it."""
     caps = capabilities() if caps is None else caps
     done = measured()
-    for c in caps:
-        c.measured = _was_measured(c.name, done)
+    own = conn is None
+    conn = _store() if own else conn
+    try:
+        for c in caps:
+            c.measured = (_was_measured(c.name, done, c.lane, conn)
+                          if c.kind == "model" else
+                          _component_measured(c.name, done))
+    finally:
+        if own and conn is not None:
+            conn.close()
     return caps
 
 
@@ -587,13 +603,14 @@ def external(lane: str, limit: int = 8) -> list[Capability]:
     done = measured()
     seen: set[str] = set()
     out: list[Capability] = []
+    conn = _store()
     for query in queries:
         # Ask past what is already measured, or a measured head empties it. #386.
         for m in _hf_models(query, limit + len(done)):
             repo = m.get("id") or ""
             if not repo or repo in seen:
                 continue
-            if _was_measured(repo, done):
+            if _was_measured(repo, done, lane, conn):
                 continue          # already measured here
             seen.add(repo)
             when = (m.get("lastModified") or m.get("createdAt") or "")[:10]
@@ -603,6 +620,8 @@ def external(lane: str, limit: int = 8) -> list[Capability]:
                 how_to_measure(lane).format(id=repo),
                 note=f"registry last modified {when or 'unknown'}; "
                      f"{m.get('downloads', 0):,} downloads"))
+    if conn is not None:
+        conn.close()
     return out[:limit]
 
 
@@ -756,7 +775,7 @@ def from_feeds(sources=None, reader=None, verify=True,
             if repo.lower() in seen:
                 drop("duplicate", repo)
                 continue
-            if _was_measured(repo, done):
+            if _was_measured(repo, done, src.lane, store):
                 drop("already-measured", repo)
                 continue
             seen.add(repo.lower())

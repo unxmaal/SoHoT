@@ -53,49 +53,44 @@ SPEECH_SUMMARY = {
 }
 
 
-def test_an_engine_receipt_names_the_engine_first():
-    """`mflux:flux2-klein-4b` -> `mflux/flux2-klein-4b-q8`. The old matcher
-    compared `mflux` against `mflux:flux2-klein-4b` and reported the image
-    lane's own control absent from a receipt it is named in. Issue #219."""
-    from harness import cli
+def _row(summary, spec):
+    """The measure tier's lookup: the stored key, then the summary. #407."""
+    from harness import candidates, cli
+    from harness import memory_store as ms
+    conn = ms.connect()
+    try:
+        return cli._summary_row(summary, candidates.key_for(conn, spec))
+    finally:
+        conn.close()
 
-    got = cli._summary_row(ENGINE_SUMMARY, "mflux:flux2-klein-4b", "image")
+
+def test_an_engine_receipt_names_the_engine_first():
+    """`mflux:flux2-klein-4b` -> `mflux/flux2-klein-4b-q8`. Issue #219."""
+    got = _row(ENGINE_SUMMARY, "mflux:flux2-klein-4b")
     assert got and got["candidate"] == "mflux/flux2-klein-4b-q8"
 
 
 def test_a_discovered_engine_candidate_matches_through_its_spec():
-    from harness import cli
-
-    got = cli._summary_row(
-        ENGINE_SUMMARY, "mflux:filipstrand/Z-Image-Turbo-mflux-4bit", "image")
+    got = _row(ENGINE_SUMMARY, "mflux:filipstrand/Z-Image-Turbo-mflux-4bit")
     assert got
     assert got["candidate"] == "mflux/filipstrand/Z-Image-Turbo-mflux-4bit-q8"
 
 
 def test_a_speech_receipt_names_the_model_first_and_still_matches():
-    """The shape the old matcher WAS written for must keep working."""
-    from harness import cli
-
-    got = cli._summary_row(
-        SPEECH_SUMMARY, "tts:mlx-community/Kokoro-82M-bf16", "tts")
+    got = _row(SPEECH_SUMMARY,
+               "tts:mlx-community/Kokoro-82M-bf16,voice=bm_george")
     assert got and got["candidate"] == "Kokoro-82M-bf16/bm_george"
 
 
 def test_the_two_candidates_do_not_match_each_other():
-    """The negative control. A matcher loose enough to pair the incumbent with
-    the challenger would adopt a model against itself."""
-    from harness import cli
-
-    inc = cli._summary_row(ENGINE_SUMMARY, "mflux:flux2-klein-4b", "image")
-    ch = cli._summary_row(
-        ENGINE_SUMMARY, "mflux:filipstrand/Z-Image-Turbo-mflux-4bit", "image")
+    """The negative control: the pair must not collapse to one row."""
+    inc = _row(ENGINE_SUMMARY, "mflux:flux2-klein-4b")
+    ch = _row(ENGINE_SUMMARY, "mflux:filipstrand/Z-Image-Turbo-mflux-4bit")
     assert inc["candidate"] != ch["candidate"]
 
 
 def test_a_candidate_genuinely_absent_is_still_absent():
-    from harness import cli
-
-    assert cli._summary_row(ENGINE_SUMMARY, "mflux:qwen-image", "image") is None
+    assert _row(ENGINE_SUMMARY, "mflux:qwen-image") is None
 
 
 # --- a screen that never started says nothing about the candidate (#201) ---

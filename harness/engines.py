@@ -489,11 +489,6 @@ def _acestep(spec: str, model: str, options: dict) -> Engine:
         raise ValueError(
             f"{spec_error(spec)}: acestep needs a model, e.g. "
             f"acestep:acestep-v15-turbo")
-    if model.startswith(ACESTEP_NAME_PREFIX):
-        # Our own display name read back, as a hand adoption stored it before
-        # receipts carried specs: `acestep/<config>@k=v`. #337.
-        model, _, shown = model[len(ACESTEP_NAME_PREFIX):].partition("@")
-        options = {**parse_options(shown, spec), **options}
     _check_options(options, _ACESTEP_OPTIONS, spec)
     defaults = dict(options)
 
