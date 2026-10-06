@@ -50,9 +50,10 @@ def _no_real_services(monkeypatch):
 @pytest.fixture(autouse=True)
 def _no_real_router(monkeypatch):
     """No test asks or unloads the real llama-server router. #444."""
-    from harness import router
+    from harness import context, router
     posts = []
     monkeypatch.setattr(router, "_get", lambda path: {"data": []})
+    monkeypatch.setattr(context, "_get_json", lambda url: {"data": []})
     monkeypatch.setattr(router, "_post",
                         lambda path, body: posts.append((path, body)) or {})
     return posts

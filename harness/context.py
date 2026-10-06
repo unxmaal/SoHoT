@@ -180,6 +180,54 @@ def served(conn, stem: str) -> dict | None:
     return None
 
 
+def _get_json(url: str) -> dict:
+    import json
+    import urllib.request
+    with urllib.request.urlopen(url, timeout=5.0) as r:
+        return json.loads(r.read() or b"{}")
+
+
+def _upstream(spec: str, config=None) -> tuple[str, str] | None:
+    """(router base URL, stem) a text spec reaches llama-server through, else None."""
+    from harness import gateway, router
+    from harness.serving import LLAMACPP_PREFIX
+    name = (spec or "").partition(",")[0].strip()
+    if name.startswith(LLAMACPP_PREFIX):
+        return router.url(), name[len(LLAMACPP_PREFIX):].strip()
+    if not name or ":" in name:
+        return None
+    served = gateway.served_path(config)
+    for entry in gateway.load(served if served.exists() else config).get("model_list") or []:
+        if str(entry.get("model_name", "")).lower() == name.lower():
+            params = entry.get("litellm_params") or {}
+            base = str(params.get("api_base", "")).rstrip("/").removesuffix("/v1")
+            return (base, gateway.strip_provider(str(params.get("model", "")))) if base else None
+    return None
+
+
+def served_ctx(spec: str, config=None, get=None, conn=None) -> int | None:
+    """The per-slot context llama-server serves this spec at: the router's own launch args,
+    else the stored choice; None when neither says (another engine, or unknown)."""
+    where = _upstream(spec, config)
+    if where is None:
+        return None
+    base, stem = where
+    try:
+        for m in (get or _get_json)(base + "/models").get("data") or []:
+            args = (m.get("status") or {}).get("args") or [] if isinstance(m, dict) else []
+            if m.get("id") == stem and "--ctx-size" in args:
+                return int(args[args.index("--ctx-size") + 1])
+    except Exception:  # noqa: BLE001
+        pass
+    from harness import downloads
+    try:
+        with downloads.store(conn) as c:
+            row = served(c, stem)
+    except Exception:  # noqa: BLE001
+        return None
+    return int(row["ctx"]) if row and row["ctx"] else None
+
+
 def refusal(stem: str, conn=None) -> str:
     """Why this stem is not served, or "" when it is or nothing is recorded."""
     from harness import downloads

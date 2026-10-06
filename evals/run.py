@@ -334,8 +334,10 @@ def _agent_runner(candidate: str, gateway: str):
         where = serving.route(candidate, gateway)
     except ValueError as exc:
         raise SystemExit(str(exc)) from None
+    from harness import context
     return AgentRunner(where.base, candidate.partition(",")[0].strip(),
-                       model=where.model, sampling=where.sampling or None)
+                       model=where.model, sampling=where.sampling or None,
+                       served_ctx=context.served_ctx(candidate))
 
 
 def _build_runner(candidate: str, gateway: str, outdir: Path | None,
@@ -1156,6 +1158,13 @@ def report(summary: dict) -> None:
             line += (f" {value:>9.3f}" if value is not None else f" {'-':>9}")
             line += (f" {worst:>13.3f}" if worst is not None else f" {'-':>13}")
         print(line)
+
+    agents = {n: (s2.get("agent") or {}).get("ctx") for n, s2 in summary.items()
+              if "agent" in s2}
+    if agents:
+        print("\nserved context (tokens per slot; a long case past it fails on step 1):")
+        for n, ctx in agents.items():
+            print(f"  {n}: {ctx or 'unknown'}")
 
     cold = [n for n, s2 in summary.items() if s2.get("first_is_cold")]
     if cold:

@@ -362,6 +362,8 @@ METRIC_DIRECTION = {
     "agent_tool_s": "neutral",
     "agent_wall_s": "neutral",
     "agent_no_tool_steps": "neutral",
+    # The per-slot context the candidate was served at. #498.
+    "agent_ctx": "neutral",
     "prompt_tokens": "neutral",
 }
 
@@ -940,8 +942,9 @@ def summarize(results: list[Result]) -> dict:
 def agent_summary(rows) -> dict:
     """The agent lane's per-candidate roll-up, beside completion; {} elsewhere. #474."""
     got = [r.metrics for r in rows if "agent_steps" in (r.metrics or {})]
+    ctx = max((r.metrics or {}).get("agent_ctx") or 0 for r in rows) if rows else 0
     if not got:
-        return {}
+        return {"agent": {"ctx": ctx}} if ctx else {}
     calls = sum(m.get("agent_tool_calls", 0) for m in got)
     return {"agent": {
         "completed": sum(1 for r in rows if r.passed and "agent_steps" in (r.metrics or {})),
@@ -951,7 +954,8 @@ def agent_summary(rows) -> dict:
         "steps_median": statistics.median(m["agent_steps"] for m in got),
         "total_s": round(sum(m.get("agent_wall_s", 0) for m in got), 1),
         "ttft_sum_s": round(sum(m.get("agent_ttft_sum_s", 0) for m in got), 1),
-        "model_s": round(sum(m.get("agent_model_s", 0) for m in got), 1)}}
+        "model_s": round(sum(m.get("agent_model_s", 0) for m in got), 1),
+        **({"ctx": ctx} if ctx else {})}}
 
 
 def p95(values: list[float]) -> float | None:

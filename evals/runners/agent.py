@@ -95,7 +95,8 @@ def step_timing(steps: list) -> dict:
 class AgentRunner(BaseRunner):
     def __init__(self, gateway: str, candidate: str, model: str = "",
                  sampling: dict | None = None, chat=completion.chat,
-                 step_timeout: float = STEP_TIMEOUT_S):
+                 step_timeout: float = STEP_TIMEOUT_S, served_ctx: int | None = None):
+        self.served_ctx = served_ctx
         self.gateway = gateway.rstrip("/")
         self.candidate = candidate
         self.model = model or candidate
@@ -149,6 +150,14 @@ class AgentRunner(BaseRunner):
         self.last_timing = {**step_timing(steps), "cold": cold}
         return finish(case, box, steps, final, stopped, started), 0
 
+    def extra_metrics(self) -> dict:
+        return {"agent_ctx": self.served_ctx} if self.served_ctx else {}
+
+    def failed(self, case: Case, exc: RunnerError, seconds: float = 0.0):
+        row = super().failed(case, exc, seconds)
+        row.metrics = {**(row.metrics or {}), **self.extra_metrics()}
+        return row
+
     def _step(self, n: int, messages: list, tools: list) -> tuple[dict, dict]:
         t0 = time.perf_counter()
         got = self.chat(messages, model=self.model, gateway=self.gateway,
@@ -185,6 +194,3 @@ class AgentRunner(BaseRunner):
             messages.append({"role": "tool", "tool_call_id": call["id"],
                              "content": result})
         rec["tool_s"] = round(time.perf_counter() - t0, 4)
-
-    def extra_metrics(self) -> dict:
-        return {}
