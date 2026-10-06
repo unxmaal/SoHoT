@@ -15,16 +15,15 @@ import os
 import sys
 import time
 
-KEY_ENV = "LITELLM_MASTER_KEY"
 IDLE_S = 60.0
 MAX_WAIT_S = 20 * 60.0
 POLL_S = 2.0
 
 
 def headers() -> dict:
-    """The gateway key for a management call; the one place it is sent from."""
-    key = os.environ.get(KEY_ENV, "").strip()
-    return {"Authorization": f"Bearer {key}"} if key else {}
+    """The gateway key for a management call, from the one key source (#482)."""
+    from harness import gateway_key
+    return gateway_key.headers()
 
 
 def in_flight(base: str) -> int | None:

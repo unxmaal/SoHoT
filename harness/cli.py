@@ -1106,6 +1106,18 @@ def _ttft_pair(p50, p95) -> str:
     return ttft_text(p50, p95)
 
 
+def cmd_gateway(a) -> int:
+    """`soh gateway key`: this machine's gateway key, created on first ask. #482."""
+    from harness import gateway_key
+    if a.rotate:
+        k = gateway_key.rotate()
+        print("rotated; restart the gateway to use it, and update every "
+              "client that has the old one", file=sys.stderr)
+    else:
+        k = gateway_key.ensure()
+    return say(body=k, human=k)
+
+
 def cmd_throughput(a) -> int:
     """How much faster an alias goes with several requests in flight. #310."""
     import json as _json
@@ -3124,6 +3136,11 @@ def build_parser() -> argparse.ArgumentParser:
     thr.add_argument("--max-tokens", type=int, default=300)
     thr.add_argument("--gateway", default="http://127.0.0.1:4000")
     thr.set_defaults(func=cmd_throughput)
+    gw = sub.add_parser("gateway", help="the gateway's key (#482)")
+    gw.add_argument("action", choices=("key",))
+    gw.add_argument("--rotate", action="store_true",
+                    help="replace the key; the gateway must restart")
+    gw.set_defaults(func=cmd_gateway)
     dsk = sub.add_parser("disk", help="what the weights cache holds, what "
                          "uses it, and what is safe to delete")
     dsk.add_argument("--delete", choices=("rejected", "unknown"), default="",

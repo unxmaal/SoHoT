@@ -1,14 +1,9 @@
 """Which address the services listen on.
 
-Every service binds 0.0.0.0 by default, on purpose. This is a trusted LAN, the
-models are local, and the point of the machine is that other machines on it can
-use the GPU -- which is also the shape the M5 Studio will need, with the Studio
-serving and the Apple Silicon machine as a client.
-
-There is no authentication and that is a deliberate, stated choice rather than
-an oversight. What matters is that the address is a PARAMETER: one variable per
-service, so a laptop on a cafe wifi can be locked down with an environment
-variable rather than an edit.
+The LAN-facing services bind 0.0.0.0 by default, on purpose: the point of the
+machine is that other machines on it can use the GPU. The gateway demands a key
+for that; the text engines behind it take none, so they listen on loopback
+(#482). Either way the address is a PARAMETER: one variable per service.
 """
 import re
 from pathlib import Path
@@ -39,7 +34,12 @@ def test_the_listening_address_is_a_variable(script, var):
         f"{script} still hardcodes 127.0.0.1")
 
 
-@pytest.mark.parametrize("script,var", SERVICES.items())
+#: Behind the gateway, keyless, loopback by default. #482.
+BEHIND_GATEWAY = {"scripts/serve-mlx.sh", "scripts/serve-llamacpp.sh"}
+
+
+@pytest.mark.parametrize("script,var", [(s, v) for s, v in SERVICES.items()
+                                        if s not in BEHIND_GATEWAY])
 def test_the_default_is_every_interface(script, var):
     text = (REPO / script).read_text(encoding="utf-8")
     assert re.search(rf'\$\{{{var}:-0\.0\.0\.0\}}', text), (
@@ -48,10 +48,11 @@ def test_the_default_is_every_interface(script, var):
 
 @pytest.mark.parametrize("script", SERVICES)
 def test_the_choice_is_argued_for_where_it_is_made(script):
-    """A service on every interface with no auth must not look accidental to
-    whoever reads this next. It was 0.0.0.0 by accident once already."""
+    """The binding must not look accidental to whoever reads this next. It was
+    0.0.0.0 by accident once already."""
     text = (REPO / script).read_text(encoding="utf-8").lower()
-    assert "lan" in text or "no auth" in text or "every interface" in text, (
+    assert ("lan" in text or "no auth" in text or "every interface" in text
+            or "loopback" in text), (
         f"{script} binds every interface without saying why")
 
 

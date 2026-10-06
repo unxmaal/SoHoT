@@ -104,3 +104,7 @@ litellm_settings:
   # Without this, LiteLLM routes /v1/messages through its Responses adapter
   # and every Anthropic-shaped request 404s upstream.
   use_chat_completions_url_for_anthropic_messages: true
+
+# The key itself is never here: serve-gateway.sh exports it from the Keychain or a 0600 file. #482.
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY

@@ -49,6 +49,13 @@ spec:
               taking credit for somebody else's arithmetic.
             */}}
             {{- include "localharness.whereEnv" (list . "host") | nindent 12 }}
+            # The gateway's master key (#482): `soh gateway key` on the serving machine.
+            - name: SOHOT_GATEWAY_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.judge.gatewayKeySecret | quote }}
+                  key: key
+                  optional: true
           resources:
             {{- toYaml .Values.resources.cheap | nindent 12 }}
 {{- end }}

@@ -106,7 +106,7 @@ answering() {
 # probe keyed on `mlx` silently covered nothing. #255.
 probe_for() {
   case "$1" in
-    gateway)  printf '/v1/models' ;;
+    gateway)  printf '/health/liveliness' ;;
     llamacpp) printf '/v1/models' ;;
     audio)    printf '/v1/models' ;;
     *)        printf '' ;;
