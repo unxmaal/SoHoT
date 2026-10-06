@@ -362,8 +362,8 @@ def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=N
         # `declined`: the candidate did nothing wrong and an engine entry
         # would make it runnable, so it is reported to a person instead.
         attachment = row.get("attaches_to") or ""
-        gap = screen.no_runner(screen.candidate_for(
-            row.get("lane") or "", row["name"], attachment))
+        gap = screen.runner_gap(row.get("lane") or "", row["name"], attachment,
+                                conn=conn)
         if gap:
             why = f"{gap}: no runner in the {row['lane']} lane can load it"
             ms.decide_or_skip(conn, row["name"], "queued", tier="fetch", detail=why,

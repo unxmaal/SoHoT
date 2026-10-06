@@ -57,9 +57,9 @@ LANE_CANDIDATES = {
     # h3 is the lane's incumbent, spelled `h3` with nothing after it.
     "video": ("diffusers-video:{model}",),
     "music": ("acestep:{model}",),
-    # A full model is a text candidate; a peft adapter goes to nimble, which
-    # merges it onto its base (engines.ADAPTER_ENGINES). #423.
-    "decide": ("{model}", "nimble:{model}"),
+    # A full model is a text candidate; a peft adapter goes to the engine its
+    # card names (engines.adapter_engine): nimble or decider. #423, #467.
+    "decide": ("{model}", "nimble:{model}", "decider:{model}"),
     "stt": ("stt:{model}",),
     "tts": ("tts:{model}",),
     **{lane: ("{model}",) for lane in lanes.TEXT_SERVED},
@@ -126,7 +126,7 @@ from harness.serving import LLAMACPP_PREFIX  # noqa: E402
 
 
 def candidate_for(lane: str, model: str, attaches_to: str = "",
-                  conn=None) -> str:
+                  conn=None, card=None) -> str:
     """The best spelling of `model` for this lane, or "" when it has none.
 
     THE FIRST ENGINE THAT CAN ACTUALLY RUN IT WINS, not simply the first one
@@ -149,13 +149,20 @@ def candidate_for(lane: str, model: str, attaches_to: str = "",
     about the candidate. Issue #214.
 
     `attaches_to` is the stored word (proposals.attaches_to), never prose. #414.
+    An adapter goes to the one engine its card (`card`, else the store's row
+    via `conn`) identifies, and to none when nothing identifies it. #467.
     """
     specs = LANE_CANDIDATES.get(lanes.canonical(lane), ())
     if attaches_to:
         if not takes_attachment(lane, attaches_to):
             return ""
         from harness import engines
-        specs = tuple(s for s in specs if engines.loads_adapters(s))
+        if card is None and conn is not None:
+            from harness import memory_store as ms
+            card = ms.card_of(conn, model)
+        owner = engines.adapter_engine(model, card)
+        specs = tuple(s for s in specs if engines.loads_adapters(s)
+                      and s.partition(":")[0] == owner)
     if not specs:
         return ""
     if lanes.canonical(lane) == "svg":
@@ -217,6 +224,21 @@ def no_runner(spec: str) -> str:
     return ""
 
 
+def runner_gap(lane: str, model: str, attaches_to: str = "",
+               conn=None, card=None) -> str:
+    """Why no runner here takes this candidate, or "". `no_runner` asks of a
+    spec; this also answers for an adapter no engine is known to load. #467."""
+    spec = candidate_for(lane, model, attaches_to, conn=conn, card=card)
+    if spec:
+        return no_runner(spec)
+    if attaches_to and takes_attachment(lane, attaches_to):
+        from harness import engines
+        return (f"no {lanes.canonical(lane)} engine is known to load this "
+                f"{attaches_to}: its name, base model, library and tags name "
+                f"none of {', '.join(sorted(engines.ADAPTER_ENGINES))}")
+    return ""
+
+
 def plan(rows, *, missing=None) -> list[dict]:
     """What a screen would do to each row, and what stands in the way.
 
@@ -235,14 +257,14 @@ def plan(rows, *, missing=None) -> list[dict]:
         name = row["name"]
         lane = (row.get("lane") or "").strip().lower()
         attached = row.get("attaches_to") or ""
-        spec = candidate_for(lane, name, attached)
+        spec = candidate_for(lane, name, attached, card=row)
         absent = [] if not spec else missing(name)
-        gap = "" if not spec else no_runner(spec)
+        gap = runner_gap(lane, name, attached, card=row)
         if not spec or gap:
             state, why = NO_RUNNER, (
-                f"a {attached}: it attaches to a model rather than being one, "
+                gap if gap
+                else f"a {attached}: it attaches to a model rather than being one, "
                 f"so no runner takes it as a candidate" if attached
-                else gap if gap
                 else f"no runner for the {lane} lane" if lane
                 else "no lane, so no case and no metric")
         elif absent == [name]:

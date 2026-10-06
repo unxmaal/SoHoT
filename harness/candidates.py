@@ -87,7 +87,7 @@ def link_variants(conn, base: str | None = None) -> int:
 def for_proposal(conn, lane: str, name: str, attaches_to: str = "") -> str:
     """Build the spec for a proposal once and store it; "" when none exists."""
     from harness import screen
-    spec = screen.candidate_for(lane, name, attaches_to)
+    spec = screen.candidate_for(lane, name, attaches_to, conn=conn)
     if spec:
         ensure(conn, spec, proposal=name, lane=lane)
     return spec

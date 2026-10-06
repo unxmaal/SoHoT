@@ -1115,8 +1115,23 @@ about 18 GB in bf16) and merges the adapter once on the CPU into
 `~/localharness/nimble/models`; that needs the disk for both and well over
 18 GB of free memory. Apple Silicon only.
 
+`decider:<repo>` runs a strands-decider checkpoint such as
+StrandsAgents/strands-decider-2B-hobson-v21. `scripts/decider-venv.sh` clones
+strands-decider at its pinned commit into `~/localharness/decider/checkout` and
+installs it into a Python 3.12 venv beside it, with the `mlx` extra on Apple
+Silicon (`device=mlx`, the default there; `device=cuda|mps|cpu` elsewhere). An
+enum field is asked as a choice question over its choices, a boolean as a
+yes/no (`noul`) question whose P(true) is the field's probability. The first
+case downloads the checkpoint and its base (Qwen/Qwen3.5-2B-Base, about 4.5 GB),
+so run it once with `HF_HUB_OFFLINE=0`.
+
+Which engine an adapter in the queue is spelled for comes from its card, not
+its lane: a repo id, base model, library or tag naming `strands-decider` goes
+to `decider:`, one naming `nimble` to `nimble:`. An adapter naming neither is
+reported under runners wanted rather than guessed at.
+
     uv run python -m evals.run --modality decide --candidates \
-      q3-4b,claude-code:claude-opus-5-5,nimble:bespokelabs/Bespoke-Nimble-9B
+      q3-4b,claude-code:claude-opus-5-5,nimble:bespokelabs/Bespoke-Nimble-9B,decider:StrandsAgents/strands-decider-2B-hobson-v21
 
 `repair` costs nothing extra, so it is the one to understand. Everything already
 checks its own output. It runs the code it wrote, draws the SVG to see whether

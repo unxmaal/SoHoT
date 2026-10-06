@@ -272,8 +272,8 @@ def runnerless(rows) -> list[dict]:
         lane = lane_of(row)
         if not lane:
             continue
-        gap = screen.no_runner(screen.candidate_for(
-            lane, row["name"], row.get("attaches_to") or ""))
+        gap = screen.runner_gap(lane, row["name"], row.get("attaches_to") or "",
+                                card=row)
         if gap:
             out.append({**row, "why_not": gap})
     return sorted(out, key=lambda r: (r.get("lane") or "", r["name"]))
