@@ -19,6 +19,8 @@ import httpx
 import jsonschema
 import yaml
 
+from harness import gateway_key
+
 CANT_TELL = "cant-tell"
 TEMPERATURE = 0
 #: Bump when the labelling page changes what a person sees. RULE #309.
@@ -164,7 +166,7 @@ def evaluate(rubric: Rubric, text: str, model: str, gateway: str,
     try:
         r = post(f"{gateway.rstrip('/')}/v1/chat/completions",
                  json=request(rubric, text, model), timeout=timeout,
-                 headers={"Authorization": "Bearer sk-local"})
+                 headers=gateway_key.headers())
         r.raise_for_status()
         raw = r.json()["choices"][0]["message"].get("content") or ""
         value = json.loads(raw)

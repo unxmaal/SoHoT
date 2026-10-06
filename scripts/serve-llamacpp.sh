@@ -46,10 +46,8 @@ if [ ! -d "$MODELS" ]; then
   exit 1
 fi
 
-# Binds every interface by default. Deliberate, and the same reasoning as the
-# other services: this is a trusted LAN, the models are local, and the point of
-# this machine is that the Apple Silicon machine can use its GPU. There is NO AUTHENTICATION --
-# set LLAMACPP_HOST=127.0.0.1 on an untrusted network.
+# Loopback only: it takes no key, so another machine uses this GPU through the
+# gateway on this one, which does (#482). LLAMACPP_HOST overrides.
 #
 # Port 8081 is mlx_lm.server's, on purpose. Only one of the two runs on any one
 # machine, and sharing the port means gateway/config.cuda.yaml differs from the
@@ -69,5 +67,5 @@ exec "$BIN" \
   --models-max "${LLAMACPP_MAX_MODELS:-1}" \
   --n-gpu-layers "${LLAMACPP_GPU_LAYERS:-999}" \
   --ctx-size "${LLAMACPP_CTX:-16384}" \
-  --host "${LLAMACPP_HOST:-0.0.0.0}" \
+  --host "${LLAMACPP_HOST:-127.0.0.1}" \
   --port "${LLAMACPP_PORT:-8081}"

@@ -536,6 +536,19 @@ def test_the_judge_never_asks_for_a_card():
     assert "nvidia.com/gpu" not in limits
 
 
+@_HELM_MISSING
+def test_the_judge_sends_the_gateway_key_from_a_secret():
+    """The gateway demands its master key (#482); the pod reads it from a
+    Secret, never from a value baked into the chart."""
+    out = _render(*JUDGE)
+    _, pod = _judge_pod([d for d in yaml.safe_load_all(out.stdout) if d])
+    env = {e["name"]: e for e in pod["containers"][0]["env"]}
+    ref = env["SOHOT_GATEWAY_KEY"]["valueFrom"]["secretKeyRef"]
+    assert ref["name"] == "localharness-gateway" and ref["key"] == "key"
+    # A missing Secret leaves the key empty and the 401 names `soh gateway key`.
+    assert ref["optional"] is True
+
+
 # ---- a tier Job is a run, not a deployment -------------------------------
 
 def test_every_tier_job_is_named_per_release_revision():

@@ -26,6 +26,16 @@ def _home(tmp_path_factory, monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def _no_real_gateway_key(monkeypatch, _home):
+    """No test reads or writes the real Keychain, or sends this machine's key. #482."""
+    from harness import gateway_key
+    monkeypatch.delenv(gateway_key.ENV_VAR, raising=False)
+    monkeypatch.setattr(gateway_key, "default_store",
+                        lambda: gateway_key.FileStore(_home / gateway_key.FILE_NAME))
+    monkeypatch.setattr(gateway_key, "_cache", {})
+
+
+@pytest.fixture(autouse=True)
 def _no_real_services(monkeypatch):
     """No test restarts a launchd service. One did on 2026-10-04: a fetch test
     called the real refresh_router, the temporary home gave it a different

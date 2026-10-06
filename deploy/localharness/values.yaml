@@ -68,6 +68,8 @@ judge:
   # REQUIRED when enabled, and the chart refuses to render without it: a pod
   # pointing at its own localhost finds no gateway there.
   gateway: ""   # http://host.docker.internal:4000 on Docker Desktop
+  # The Secret holding the gateway's key under `key`. #482.
+  gatewayKeySecret: localharness-gateway
   backoffLimit: 2
   # How many candidates one run scores. The judge is a queue of one, so this is
   # a wall-clock budget rather than a capacity.

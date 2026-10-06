@@ -243,6 +243,11 @@ def complete_full(prompt: str, model: str, gateway: str = DEFAULT_GATEWAY,
         raise CompletionError(f"timed out after {timeout}s", reasons.TIMEOUT,
                               ("timeout_s", timeout)) from exc
     except httpx.HTTPStatusError as exc:
+        if exc.response.status_code == 401:
+            from harness import gateway_key
+            raise CompletionError(
+                f"gateway at {gateway} refused the key (HTTP 401): "
+                f"{gateway_key.HINT}", reasons.HARNESS_ERROR) from exc
         # LiteLLM explains itself in the body, not the status line.
         raise CompletionError(
             f"gateway returned HTTP {exc.response.status_code}: "
@@ -297,7 +302,8 @@ def _refuses_system_role(body: str) -> bool:
 
 def _post(gateway: str, payload: dict, timeout: float):
     url = f"{gateway.rstrip('/')}/v1/chat/completions"
-    headers = {"Authorization": "Bearer sk-local"}
+    from harness import gateway_key
+    headers = gateway_key.headers()
     if not payload.get("stream"):
         return httpx.post(url, json=payload, timeout=timeout, headers=headers)
     started = time.perf_counter()

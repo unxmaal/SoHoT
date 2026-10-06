@@ -8,6 +8,12 @@ H="${SMOKE_HOST:-127.0.0.1}"
 G="http://$H:${GATEWAY_PORT:-4000}"
 E="http://$H:${MLX_PORT:-8081}"
 FAIL=0
+# The gateway demands its master key (#482). From another machine, set SOHOT_GATEWAY_KEY.
+KEY="${SOHOT_GATEWAY_KEY:-$(uv run python -m harness.gateway_key show 2>/dev/null || true)}"
+if [ -z "$KEY" ]; then
+  echo "FAIL  no gateway key: run \`soh gateway key\` on the gateway's machine and set SOHOT_GATEWAY_KEY"
+  exit 1
+fi
 ok(){ printf 'PASS  %s\n' "$1"; }
 no(){ printf 'FAIL  %s\n' "$1"; FAIL=1; }
 
@@ -23,7 +29,7 @@ printf 'wait  gateway accepting real requests'
 ready=0
 for i in $(seq 1 "$READY_TIMEOUT"); do
   if curl -sf --max-time 10 "$G/v1/chat/completions" -H 'Content-Type: application/json' \
-       -H 'Authorization: Bearer sk-x' \
+       -H "Authorization: Bearer $KEY" \
        -d '{"model":"local-small","messages":[{"role":"user","content":"hi"}],"max_tokens":2}' \
        2>/dev/null | grep -q '"content"'; then
     printf ' ready after ~%ss\n' "$i"; ready=1; break
@@ -36,31 +42,38 @@ if [ "$ready" -ne 1 ]; then
   exit 1
 fi
 
-grep -q . <<<"$(curl -sf "$E/v1/models")" && ok "engine /v1/models" || no "engine /v1/models"
+# The engine binds 127.0.0.1 behind the gateway (#482), so only a local run can ask it.
+LOCAL=0
+case "$H" in 127.0.0.1|localhost) LOCAL=1 ;; esac
+if [ "$LOCAL" -eq 1 ]; then
+  grep -q . <<<"$(curl -sf "$E/v1/models")" && ok "engine /v1/models" || no "engine /v1/models"
+else
+  printf 'SKIP  engine checks: the engine listens on the serving machine only\n'
+fi
 
 curl -sf "$G/v1/chat/completions" -H 'Content-Type: application/json' \
-  -H 'Authorization: Bearer sk-x' \
+  -H "Authorization: Bearer $KEY" \
   -d '{"model":"local-small","messages":[{"role":"user","content":"Reply with exactly: OK"}],"max_tokens":10}' \
   | grep -q '"content"' && ok "gateway openai chat" || no "gateway openai chat"
 
 curl -sfN "$G/v1/chat/completions" -H 'Content-Type: application/json' \
-  -H 'Authorization: Bearer sk-x' \
+  -H "Authorization: Bearer $KEY" \
   -d '{"model":"local-small","messages":[{"role":"user","content":"count 1 2 3"}],"max_tokens":20,"stream":true}' \
   | grep -q 'data: \[DONE\]' && ok "gateway sse streaming" || no "gateway sse streaming"
 
 # The regression this exists to catch.
 curl -sf "$G/v1/messages" -H 'Content-Type: application/json' \
-  -H 'x-api-key: sk-x' -H 'anthropic-version: 2023-06-01' \
+  -H "x-api-key: $KEY" -H 'anthropic-version: 2023-06-01' \
   -d '{"model":"local-small","max_tokens":20,"messages":[{"role":"user","content":"Reply with exactly: OK"}]}' \
   | grep -q '"type":"message"' && ok "gateway anthropic /v1/messages" || no "gateway anthropic /v1/messages"
 
 curl -sf "$G/v1/chat/completions" -H 'Content-Type: application/json' \
-  -H 'Authorization: Bearer sk-x' \
+  -H "Authorization: Bearer $KEY" \
   -d '{"model":"local-mid","messages":[{"role":"user","content":"Weather in Paris? Use the tool."}],"tools":[{"type":"function","function":{"name":"get_weather","parameters":{"type":"object","properties":{"city":{"type":"string"}},"required":["city"]}}}],"max_tokens":80}' \
   | grep -q '"tool_calls"' && ok "openai tool calling" || no "openai tool calling"
 
 curl -sf "$G/v1/messages" -H 'Content-Type: application/json' \
-  -H 'x-api-key: sk-x' -H 'anthropic-version: 2023-06-01' \
+  -H "x-api-key: $KEY" -H 'anthropic-version: 2023-06-01' \
   -d '{"model":"local-mid","max_tokens":80,"messages":[{"role":"user","content":"Weather in Paris? Use the tool."}],"tools":[{"name":"get_weather","input_schema":{"type":"object","properties":{"city":{"type":"string"}},"required":["city"]}}]}' \
   | grep -q '"type": *"tool_use"' && ok "anthropic tool calling" || no "anthropic tool calling"
 
@@ -70,11 +83,13 @@ curl -sf "$G/v1/messages" -H 'Content-Type: application/json' \
 # candidate's name and report the two as a tie, with nothing saying so.
 # llama-server answers 400 "model not found"; mlx_lm.server cannot fetch an
 # unknown repo under HF_HUB_OFFLINE and fails as well.
-missing="$(curl -s --max-time 30 "$E/v1/chat/completions"   -H 'Content-Type: application/json'   -d '{"model":"localharness-no-such-model","messages":[{"role":"user","content":"hi"}],"max_tokens":2}' 2>/dev/null)"
-if printf '%s' "$missing" | grep -q '"content"'; then
-  no "engine answered for a model that does not exist"
-else
-  ok "an unknown model is refused rather than served"
+if [ "$LOCAL" -eq 1 ]; then
+  missing="$(curl -s --max-time 30 "$E/v1/chat/completions"   -H 'Content-Type: application/json'   -d '{"model":"localharness-no-such-model","messages":[{"role":"user","content":"hi"}],"max_tokens":2}' 2>/dev/null)"
+  if printf '%s' "$missing" | grep -q '"content"'; then
+    no "engine answered for a model that does not exist"
+  else
+    ok "an unknown model is refused rather than served"
+  fi
 fi
 
 # ---- audio ------------------------------------------------------------------

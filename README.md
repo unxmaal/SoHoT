@@ -606,7 +606,7 @@ opencode, as an OpenAI-compatible provider (`opencode.json`):
   "provider": {
     "sohot": {
       "npm": "@ai-sdk/openai-compatible",
-      "options": { "baseURL": "http://<host>:4000/v1", "apiKey": "sk-local" },
+      "options": { "baseURL": "http://<host>:4000/v1", "apiKey": "{env:SOHOT_GATEWAY_KEY}" },
       "models": { "sohot-code": {} }
     }
   }
@@ -616,9 +616,43 @@ opencode, as an OpenAI-compatible provider (`opencode.json`):
 Claude Code, through the gateway's Anthropic `/v1/messages` route:
 
 ```bash
-ANTHROPIC_BASE_URL=http://<host>:4000 ANTHROPIC_AUTH_TOKEN=sk-local \
+ANTHROPIC_BASE_URL=http://<host>:4000 ANTHROPIC_AUTH_TOKEN="$SOHOT_GATEWAY_KEY" \
   claude --model sohot-code
 ```
+
+## Gateway auth
+
+The gateway listens on every interface so other machines on the LAN can use
+this one, and it demands a key for every request (#482). LiteLLM with no master
+key serves anyone who can reach port 4000, which now includes tool calling.
+
+- **The key.** One per machine, generated on first use and never in the repo:
+  the login Keychain on the Mac (service `localharness-gateway`), a 0600 file at
+  `$LOCALHARNESS_HOME/gateway.key` elsewhere. `soh gateway key` prints it,
+  creating it if missing; `soh gateway key --rotate` replaces it, after which
+  the gateway must restart and every client needs the new one.
+- **The gateway.** `scripts/serve-gateway.sh` exports it as
+  `LITELLM_MASTER_KEY`, which the configs read as
+  `general_settings.master_key`. With no key it refuses to start rather than
+  serve unauthenticated.
+- **In-repo clients** (`soh` lane commands, the MCP tools, the eval runners,
+  throughput, rubric evals, `scripts/smoke.sh`) send it as
+  `Authorization: Bearer`. `SOHOT_GATEWAY_KEY` overrides the stored key: set it
+  to the serving machine's key when using another machine's gateway. A refused
+  request says to run `soh gateway key`.
+- **External clients.** `export SOHOT_GATEWAY_KEY="$(soh gateway key)"` and use
+  the opencode and Claude Code settings above. LiteLLM takes the key as
+  `Authorization: Bearer` (Claude Code's `ANTHROPIC_AUTH_TOKEN`, opencode's
+  `apiKey`) or as `x-api-key` (`ANTHROPIC_API_KEY`).
+- **The engines** (`mlx_lm.server` and llama-server, `:8081` and `:8082`) take
+  no key, so they bind `127.0.0.1` and other machines reach them through the
+  gateway. `MLX_HOST` and `LLAMACPP_HOST` override.
+- **The cluster judge** reads it from the Secret `localharness-gateway`, key
+  `key`: `soh gateway key | tr -d '\n' | kubectl create secret generic
+  localharness-gateway -n lh --from-file=key=/dev/stdin`.
+
+`scripts/services.sh status` probes the gateway at `/health/liveliness`, which
+LiteLLM serves without a key.
 
 ---
 

@@ -28,11 +28,20 @@ if [ -z "${ANTHROPIC_API_KEY:-}" ] && command -v security >/dev/null 2>&1; then
   export ANTHROPIC_API_KEY
 fi
 
-# Binds every interface by default. Deliberate: this is a trusted LAN, the models
-# are local, and the point of the machine is that other machines on it can use
-# the GPU. It is also the shape the M5 Studio needs, with the Studio serving and
-# the Apple Silicon machine as a client. There is NO AUTHENTICATION -- set GATEWAY_HOST=127.0.0.1 on an
-# untrusted network.
+# The master key (#482): created on first start, from the Keychain on the Mac
+# and a 0600 file elsewhere. Without one LiteLLM serves everyone, so refuse.
+LITELLM_MASTER_KEY="$(uv run python -m harness.gateway_key ensure)" || LITELLM_MASTER_KEY=""
+if [ -z "$LITELLM_MASTER_KEY" ]; then
+  echo "FATAL: no gateway key, and the gateway will not listen without one." >&2
+  echo "       Create it with: soh gateway key" >&2
+  exit 1
+fi
+export LITELLM_MASTER_KEY
+
+# Binds every interface by default. Deliberate: the point of the machine is that
+# other machines on the LAN can use the GPU, with the Studio serving and the
+# Apple Silicon machine as a client. Every request needs the key above; the
+# engines behind it listen on loopback only. GATEWAY_HOST=127.0.0.1 keeps it local.
 #
 # --host is passed explicitly regardless. LiteLLM's own default is 0.0.0.0, so
 # omitting the flag would make the binding invisible: every doc in this repo
