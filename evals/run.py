@@ -29,7 +29,8 @@ from harness.engines import Engine, names as engine_names, parse_options, resolv
 
 from dataclasses import replace
 
-from evals.core import (MODALITIES, TEXT_MODALITIES, TEXT_SUFFIX, Case,
+from evals.core import (AGENT_MODALITIES, MODALITIES, TEXT_MODALITIES,
+                        TEXT_SUFFIX, Case,
                         Receipt, cases_digest, comparable, direction_of,
                         load_cases, summarize)
 from evals.environment import capture
@@ -306,10 +307,35 @@ def effective_sampling(modality: str, candidates: list[str]) -> dict:
 
 
 def build_runner(candidate: str, gateway: str, outdir: Path | None,
-                 adherence: str | None = None):
-    runner = _build_runner(candidate, gateway, outdir, adherence)
+                 adherence: str | None = None, modality: str = ""):
+    if modality in AGENT_MODALITIES:
+        runner = _agent_runner(candidate, gateway)
+    else:
+        runner = _build_runner(candidate, gateway, outdir, adherence)
     runner.spec = candidate
     return runner
+
+
+def _agent_runner(candidate: str, gateway: str):
+    """A tool loop for a text candidate, or claude -p on the same sandbox. #474."""
+    kind = kind_of(candidate)
+    if kind == CLAUDE_CODE_PREFIX:
+        from evals.runners.claude_agent import ClaudeAgentRunner
+        model = candidate.partition(":")[2].strip()
+        if not model:
+            raise SystemExit("claude-code needs a model, e.g. claude-code:claude-opus-5-5")
+        return ClaudeAgentRunner(model)
+    if kind not in ("gateway", LLAMACPP_KIND):
+        raise SystemExit(f"{candidate} cannot drive a tool loop; the agent lane "
+                         f"takes a text candidate or claude-code:<model>")
+    from evals.runners.agent import AgentRunner
+    from harness import serving
+    try:
+        where = serving.route(candidate, gateway)
+    except ValueError as exc:
+        raise SystemExit(str(exc)) from None
+    return AgentRunner(where.base, candidate.partition(",")[0].strip(),
+                       model=where.model, sampling=where.sampling or None)
 
 
 def _build_runner(candidate: str, gateway: str, outdir: Path | None,
@@ -441,7 +467,8 @@ def cases_for(candidate: str, cases: list[Case]) -> list[Case]:
     """The cases this candidate can actually run."""
     modality = modality_of(candidate)
     if modality is None:
-        return [c for c in cases if c.modality in TEXT_MODALITIES]
+        return [c for c in cases
+                if c.modality in TEXT_MODALITIES | AGENT_MODALITIES]
     picked = [c for c in cases if c.modality == modality]
     # A case may declare which methods it can fairly test. See Case.methods.
     picked = [c for c in picked
@@ -464,7 +491,7 @@ def cases_for(candidate: str, cases: list[Case]) -> list[Case]:
 # because ACE-Step's 5Hz chain-of-thought samples at its own temperature and
 # `seed` only reaches the diffusion below it (RULE #280). Omitting it made
 # --repeat a silent no-op for the one lane that needs it most.
-STOCHASTIC_MODALITIES = {"image", "video", "svg", "web", "code", "music"}
+STOCHASTIC_MODALITIES = {"image", "video", "svg", "web", "code", "music", "agent"}
 
 
 #: Screen settings: the smallest thing that still proves the pipeline ran.
@@ -548,8 +575,9 @@ def select_cases(cases: list[Case], modality: str) -> list[Case]:
     if modality != "all" and modality not in MODALITIES:
         raise SystemExit(f"unknown modality '{modality}'; known: "
                          f"{', '.join(ALL_MODALITIES)}")
-    chosen = cases if modality == "all" else [c for c in cases
-                                              if c.modality == modality]
+    # The agent lane drives a tool loop for minutes per case, so `all` leaves it out. #474.
+    chosen = ([c for c in cases if c.modality not in AGENT_MODALITIES]
+              if modality == "all" else [c for c in cases if c.modality == modality])
     if not chosen:
         raise SystemExit(f"no cases for modality '{modality}'")
     return chosen
@@ -654,7 +682,7 @@ def _execute(args) -> int:
                   file=sys.stderr)
             continue
         runner = build_runner(candidate, args.gateway, outdir,
-                              adherence=args.adherence)
+                              adherence=args.adherence, modality=args.modality)
         if runner.candidate in specs:
             # One key, one row set and one artifact name: the second would overwrite the first. #429.
             raise SystemExit(f"{specs[runner.candidate]} and {candidate} both "

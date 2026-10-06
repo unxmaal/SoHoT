@@ -112,7 +112,7 @@ def test_a_speech_default_is_found_through_its_candidate_row(store_run, conn,
 def test_every_typed_default_declares_which_family_it_belongs_to():
     assert set(winners.typed()) <= set(winners.FAMILIES)
     assert set(winners.typed()) == {"svg", "web", "code", "extract", "image",
-                                    "video", "music", "tts", "stt", "decide"}
+                                    "video", "music", "tts", "stt", "decide", "agent"}
 
 
 # --- the lane's own metric decides, not a statistic blind to it -----------

@@ -1,0 +1,14 @@
+id: agent-read-count-routes
+modality: agent
+prompt: How many HTTP routes does app/routes.py currently register? Count only active registrations
+  and answer with the number.
+params:
+  repo: repos/route-count
+  tools:
+  - read_file
+  - list_dir
+  max_steps: 8
+assert:
+  answer:
+  - - '5'
+    - five

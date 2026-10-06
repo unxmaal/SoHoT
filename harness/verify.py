@@ -29,6 +29,8 @@ COST_S = {
     "music": 220,
     # Estimated, not measured: 24 one-answer cases on a 4B text model. #423.
     "decide": 60,
+    # Estimated: 14 tool loops of up to 20 steps each. #474.
+    "agent": 900,
 }
 
 #: A lane nobody should start without meaning to. Video is ~40 minutes for ONE

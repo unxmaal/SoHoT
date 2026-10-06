@@ -31,7 +31,7 @@ def is_plain_model(candidate: str) -> bool:
 #: Which lanes a default is an engine spec for, so a composite key can win.
 FAMILIES = {
     "svg": "alias", "web": "alias", "code": "alias", "extract": "alias",
-    "decide": "alias",
+    "decide": "alias", "agent": "alias",
     "image": "engine", "video": "engine", "music": "engine",
     "tts": "speech", "stt": "speech",
 }
@@ -106,6 +106,7 @@ def typed() -> dict[str, str]:
             "code": cli.DEFAULT_CODE_MODEL,
             "extract": cli.DEFAULT_EXTRACT_MODEL,
             "decide": cli.DEFAULT_DECIDE_MODEL,
+            "agent": cli.DEFAULT_AGENT_MODEL,
             "image": cli.DEFAULT_IMAGE_ENGINE,
             "video": cli.DEFAULT_VIDEO_ENGINE,
             "music": cli.DEFAULT_MUSIC_ENGINE,

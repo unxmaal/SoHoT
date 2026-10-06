@@ -1,0 +1,13 @@
+id: agent-read-find-function
+modality: agent
+prompt: Which file defines the function normalize_sku? Answer with its path relative to the
+  repository root.
+params:
+  repo: repos/sku-lookup
+  tools:
+  - read_file
+  - list_dir
+  max_steps: 8
+assert:
+  answer:
+  - inventory/sku.py

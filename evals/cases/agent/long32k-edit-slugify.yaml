@@ -1,0 +1,14 @@
+id: agent-long32k-edit-slugify
+modality: agent
+prompt: Implement slugify in text_utils.py as its docstring describes, then run the tests.
+params:
+  repo: repos/slugify
+  tools:
+  - read_file
+  - write_file
+  - list_dir
+  - run_tests
+  max_steps: 12
+  pad_tokens: 32000
+assert:
+  hidden: true

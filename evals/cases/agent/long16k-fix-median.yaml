@@ -1,0 +1,15 @@
+id: agent-long16k-fix-median
+modality: agent
+prompt: A test in tests/test_stats.py fails. Find the bug and fix it in the code, not in the
+  test.
+params:
+  repo: repos/fix-median
+  tools:
+  - read_file
+  - write_file
+  - list_dir
+  - run_tests
+  max_steps: 12
+  pad_tokens: 16000
+assert:
+  hidden: true

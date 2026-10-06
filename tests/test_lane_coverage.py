@@ -149,7 +149,7 @@ def test_every_lane_is_covered_by_a_recorded_card_or_is_served_by_one():
         f"what it proves.")
 
 
-@pytest.mark.parametrize("lane", ["web", "extract"])
+@pytest.mark.parametrize("lane", ["web", "extract", "agent"])
 def test_a_served_lane_is_reachable_even_though_no_card_names_it(lane):
     """The other half of the pair above. These are covered by being spellable
     and runnable, not by a sighting -- so assert that, rather than letting

@@ -576,7 +576,7 @@ soh code "..." -m q3-4b                     # a specific one
 ```
 
 For other programs the gateway serves one stable alias per text lane:
-`sohot-code`, `sohot-web`, `sohot-svg`, `sohot-extract` and `sohot-decide`.
+`sohot-code`, `sohot-web`, `sohot-svg`, `sohot-extract`, `sohot-decide`, `sohot-agent`.
 `scripts/serve-gateway.sh` writes `gateway/config.served.yaml` at start (the
 base config plus those aliases, from the adoptions table), and an adoption in a
 text lane switches the alias to the winner without anyone editing
@@ -1257,6 +1257,40 @@ reported under runners wanted rather than guessed at.
 
     uv run python -m evals.run --modality decide --candidates \
       q3-4b,claude-code:claude-opus-5-5,nimble:bespokelabs/Bespoke-Nimble-9B,decider:StrandsAgents/strands-decider-2B-hobson-v21
+
+The agent lane measures a model the way opencode and Claude Code use it: a
+tool loop over a small repo. Each case under `evals/cases/agent/` names a bundle
+(`repos/<name>/repo`, a `hidden/` test the model never sees, and a reference
+`solution/` the tests apply to prove the hidden test is satisfiable), a goal,
+and the tools it pins: `read_file`, `write_file`, `list_dir`, `run_tests`. The
+categories are reading a repo to answer a question, a single-file edit, a
+multi-file refactor, a bug fix guided by a failing test, and edit and fix cases
+with 16k and 32k tokens of generated repo pasted into the first message.
+
+The runner speaks OpenAI tool calls, streaming, to the route the candidate's
+spec resolves to (a gateway alias such as `sohot-agent`, or llama-server for a
+`llamacpp:` stem). Each case runs in a tmp copy of its repo: a path that is
+absolute, contains `..` or passes through a symlink is refused, `run_tests`
+builds its argv from an allowlist with no shell, and the test process installs
+an audit hook first that refuses writes outside the copy, process spawns,
+sockets and ctypes. A case passes when its hidden test passes (or its final
+answer matches) and the model made at least one valid tool call. Per step it
+records time to first token (content or tool call), step seconds, tokens and
+whether each call parsed, fit its schema and named a real tool. Completion
+decides adoption, paired like the other lanes; valid-call rate, steps, model
+seconds and summed TTFT are reported beside it. `--modality all` leaves the
+lane out.
+
+`claude-code:<model>` is the Opus baseline. There is no API key, so it runs
+`claude -p` with every built-in tool disabled and one stdio MCP server
+(`evals/agent_mcp.py`) serving the same four tools over the same sandbox. Its
+steps and first tokens come from stream-json and include the CLI's start and
+the network; Claude Code validates a call before the sandbox sees it, so a
+malformed call counts as invalid only when it shows up as a tool_use that
+never reached the server.
+
+    uv run python -m evals.run --modality agent --candidates \
+      sohot-code,q3-coder,claude-code:claude-opus-5-5
 
 `repair` costs nothing extra, so it is the one to understand. Everything already
 checks its own output. It runs the code it wrote, draws the SVG to see whether

@@ -93,6 +93,8 @@ DEFAULT_CODE_MODEL = "q3-4b"
 DEFAULT_EXTRACT_MODEL = "local-large"
 # Typed by hand, not measured: the code lane's default as the decide baseline. #423.
 DEFAULT_DECIDE_MODEL = "q3-4b"
+#: The agent lane starts on the code lane's typed default until it adopts. #474.
+DEFAULT_AGENT_MODEL = DEFAULT_CODE_MODEL
 
 TEXT_MODEL_HELP = ("gateway alias, mlx repo id or llamacpp:<stem> "
                    "(default: the lane's adopted model, else {})")
