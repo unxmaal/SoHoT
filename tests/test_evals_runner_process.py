@@ -48,7 +48,7 @@ def test_successful_generation_passes(tmp_path):
     assert r.passed, r.detail
     assert r.candidate == "fake"
     assert r.seconds > 0
-    assert r.artifact and Path(r.artifact).exists()
+    assert r.artifact_path and Path(r.artifact_path).exists() and r.output is None
 
 
 def test_peak_memory_is_recorded(tmp_path):
@@ -116,8 +116,8 @@ def test_artifacts_are_named_per_case_so_runs_do_not_collide(tmp_path):
     runner = ProcessRunner(fake_engine(WRITE_GOOD), tmp_path)
     a = runner.run(case(id="one"))
     b = runner.run(case(id="two"))
-    assert Path(a.artifact).name != Path(b.artifact).name
-    assert Path(a.artifact).exists() and Path(b.artifact).exists()
+    assert Path(a.artifact_path).name != Path(b.artifact_path).name
+    assert Path(a.artifact_path).exists() and Path(b.artifact_path).exists()
 
 
 def test_a_slash_in_the_candidate_name_does_not_become_a_directory(tmp_path):
@@ -126,7 +126,7 @@ def test_a_slash_in_the_candidate_name_does_not_become_a_directory(tmp_path):
                            tmp_path)
     r = runner.run(case())
     assert r.passed, r.detail
-    assert Path(r.artifact).parent == tmp_path
+    assert Path(r.artifact_path).parent == tmp_path
 
 
 def test_the_runner_passes_its_adherence_backend_to_the_checker(tmp_path):

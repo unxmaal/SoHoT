@@ -45,7 +45,7 @@ def _receipt(lane, rows, when, specs=None, env=None):
 def _rows(cand, passed, seconds, art=f"{HOME}/localharness/outputs/a.png"):  # privacy-ok
     return [{"case_id": f"c{i}", "candidate": cand, "passed": p, "seconds": s,
              "peak_kb": 2 * 1024 ** 2, "metrics": {"code_pass": 1.0 if p else 0.0},
-             "artifact": art, "detail": f"wrote {VOLUME}/x for {USER}"}  # privacy-ok
+             "artifact_path": art, "output": "<svg>out</svg>", "detail": f"wrote {VOLUME}/x for {USER}"}  # privacy-ok
             for i, (p, s) in enumerate(zip(passed, seconds))]
 
 
@@ -102,7 +102,7 @@ def test_the_export_keeps_the_hardware_and_the_results(store):
 def test_no_receipt_environment_artifact_or_detail_is_exported(store):
     doc = publish.export(store, machine_id=_mid(store), now=1.79e9)
     text = json.dumps(doc)
-    for key in ('"environment"', '"artifact"', '"detail"', '"receipt"',
+    for key in ('"environment"', '"artifact"', '"artifact_path"', '"output"', '"<svg>', '"detail"', '"receipt"',
                 '"hostname"', '"cwd"', '"HF_HOME"', '"git_sha"', '"path"'):
         assert key not in text, key
 

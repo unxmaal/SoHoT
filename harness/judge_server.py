@@ -172,10 +172,10 @@ class Judge(BaseHTTPRequestHandler):
 
 
 def serve(lane: str, receipt: dict, port: int = 8765, open_browser=True,
-          on_answer=None, run: str = "", run_dir: Path | None = None) -> None:
+          on_answer=None, run: str = "") -> None:
     Judge.lane = lane
     Judge.run = run
-    Judge.pairs = human.pairings(receipt, run_dir)
+    Judge.pairs = human.pairings(receipt)
     Judge.files = []
     Judge.on_answer = staticmethod(on_answer or (lambda lane, pairs: None))
     if not Judge.pairs:

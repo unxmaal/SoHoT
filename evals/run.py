@@ -29,8 +29,9 @@ from harness.engines import Engine, names as engine_names, parse_options, resolv
 
 from dataclasses import replace
 
-from evals.core import (MODALITIES, Case, Receipt, cases_digest, comparable,
-                        direction_of, load_cases, summarize)
+from evals.core import (MODALITIES, TEXT_MODALITIES, TEXT_SUFFIX, Case,
+                        Receipt, cases_digest, comparable, direction_of,
+                        load_cases, summarize)
 from evals.environment import capture
 from evals.runners.base import RunnerError
 from evals.runners.process import ProcessRunner
@@ -43,7 +44,6 @@ from evals.runners.text import CompletionRunner
 from evals.runners.transcription import TranscriptionRunner
 
 ROOT = Path(__file__).resolve().parent
-TEXT_MODALITIES = {"svg", "web", "code", "extract", "decide"}
 ALL_MODALITIES = sorted(MODALITIES)
 
 
@@ -691,11 +691,11 @@ def _execute(args) -> int:
             warn = f"  ({len(r.warnings)} warn)" if r.warnings else ""
             print(f"  {mark}  {r.seconds:6.2f}s  {case.id}{warn}{note}",
                   flush=True)
-            if outdir and r.artifact and case.modality in TEXT_MODALITIES:
-                ext = {"svg": "svg", "web": "html", "code": "py",
-                       "decide": "json"}.get(
-                    case.modality, "txt")
-                (outdir / runner.artifact(case, f".{ext}")).write_text(r.artifact, encoding="utf-8")
+            if outdir and r.output:
+                f = outdir / runner.artifact(
+                    case, TEXT_SUFFIX.get(case.modality, ".txt"))
+                f.write_text(r.output, encoding="utf-8")
+                r.artifact_path = str(f.resolve())
 
     if not results:
         raise SystemExit("nothing ran: no candidate matched any case")
@@ -731,12 +731,18 @@ def _execute(args) -> int:
                    # runs. #337.
                    "specs": specs,
                    "summary": summarize(results),
-                   "rows": [vars(r) for r in results]}
+                   "rows": [export_row(r) for r in results]}
         (outdir / "results.json").write_text(json.dumps(payload, indent=2),
                                              encoding="utf-8")
         run_id = store_run(outdir, payload, now)
         print(f"\nartifacts + results.json in {outdir}; stored as run {run_id}")
     return 0
+
+
+def export_row(r) -> dict:
+    """A results.json row; `artifact` is the deprecated pre-#463 field."""
+    return {**vars(r), "artifact": r.output if r.output is not None
+            else r.artifact_path}
 
 
 def candidate_ids(specs: dict, lane: str) -> dict:

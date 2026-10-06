@@ -1046,6 +1046,8 @@ runs/<stamp>-<modality>/    one eval run: artifacts and a results.json export;
 logs/                       service stdout and stderr
 ```
 
+Each results.json row carries `output` (the text a text lane returned) and `artifact_path` (the file written for it); the old `artifact` key is deprecated and will be removed in the next release.
+
 There were four places before this, and one was relative. `soh` runs from
 anywhere, so a relative `out/` scattered artifacts into whatever directory the
 caller was standing in, and a generation you cannot find is a generation you did

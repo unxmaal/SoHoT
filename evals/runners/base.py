@@ -13,8 +13,9 @@ assertion for image cases.
 from __future__ import annotations
 
 import time
+from pathlib import Path
 
-from evals.core import Case, Result, score
+from evals.core import Case, Result, artifact_name, score
 from harness import reasons
 
 
@@ -52,7 +53,7 @@ class BaseRunner:
 
     def artifact(self, case: Case, suffix: str) -> str:
         """The one file name every runner writes a case's artifact under. #429."""
-        return f"{self.candidate.replace('/', '_')}--{case.id}{suffix}"
+        return artifact_name(self.candidate, case.id, suffix)
 
     def warm(self) -> None:
         """Load the model untimed, so no timed case pays for it. #406."""
@@ -104,5 +105,8 @@ class BaseRunner:
         # such as tokens/sec from the server's usage block.
         row.metrics = {**row.metrics, **self.extra_metrics()}
         row.peak_kb = peak_kb
-        row.artifact = artifact if isinstance(artifact, str) else str(artifact)
+        if isinstance(artifact, str):
+            row.output = artifact
+        elif Path(artifact).is_file():
+            row.artifact_path = str(artifact)
         return row

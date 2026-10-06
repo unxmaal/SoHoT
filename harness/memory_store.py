@@ -20,7 +20,7 @@ from pathlib import Path
 
 from harness import paths, store
 
-SCHEMA_VERSION = 40
+SCHEMA_VERSION = 41
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
 VERDICTS = ("measured", "declined", "broken", "queued", "ignored", "screened")
@@ -272,7 +272,10 @@ CREATE TABLE IF NOT EXISTS results (
     detail       TEXT NOT NULL DEFAULT '',
     metrics      TEXT NOT NULL DEFAULT '{}',
     warnings     TEXT NOT NULL DEFAULT '[]',
-    artifact     TEXT,
+    -- The text a text runner returned; NULL when the runner made a file. #463.
+    output       TEXT,
+    -- The file written for the row under artifact_name; NULL if none. #463.
+    artifact_path TEXT,
     -- Why it failed, set by the runner where it failed (reasons.py). #408.
     failure_class TEXT NOT NULL DEFAULT '',
     -- The harness limit it hit, as a `limit:` predicate body. #406.
@@ -873,6 +876,7 @@ def _migrate(conn: sqlite3.Connection) -> None:
     _add_state(conn)
     _add_retest(conn)
     _add_reasons(conn)
+    _add_result_split(conn)
     if "size_bytes" not in _columns(conn, "proposals"):
         conn.execute("ALTER TABLE proposals "
                      "ADD COLUMN size_bytes INTEGER NOT NULL DEFAULT 0")
@@ -1033,6 +1037,8 @@ def _migrate(conn: sqlite3.Connection) -> None:
         _relane_from_the_card(conn)
     if have and have < 40:
         _relane_the_settled_tasks(conn)
+    if have and have < 41:
+        split_result_artifacts(conn)
     conn.execute("CREATE INDEX IF NOT EXISTS ix_verdict_cand "
                  "ON verdicts(candidate_id)")
     conn.execute("CREATE INDEX IF NOT EXISTS ix_prop_state ON proposals(state)")
@@ -1069,24 +1075,47 @@ def drop_dead_columns(conn) -> dict:
             "verdicts v WHERE v.proposal_id = proposals.id AND v.attaches_to <> '' "
             "ORDER BY v.id DESC LIMIT 1) WHERE attaches_to = '' AND id IN "
             "(SELECT proposal_id FROM verdicts WHERE attaches_to <> '')").rowcount
-    sqlite_ok = (store.backend() == store.POSTGRES
-                 or sqlite3.sqlite_version_info >= (3, 35, 0))
     for table, col in DEAD_COLUMNS:
-        if col not in _columns(conn, table):
-            continue
-        if not sqlite_ok:
-            got["kept"].append(f"{table}.{col}")
-            continue
-        conn.execute("SAVEPOINT drop_dead")
-        try:
-            conn.execute(f"ALTER TABLE {table} DROP COLUMN {col}")
-        except Exception:  # noqa: BLE001 - an older SQLite that cannot: keep it
-            conn.execute("ROLLBACK TO drop_dead")
-            got["kept"].append(f"{table}.{col}")
-        else:
-            got["dropped"].append(f"{table}.{col}")
-        conn.execute("RELEASE drop_dead")
+        dropped = _drop_column(conn, table, col)
+        if dropped is not None:
+            got["dropped" if dropped else "kept"].append(f"{table}.{col}")
     return got
+
+
+def _drop_column(conn, table: str, col: str) -> bool | None:
+    """Drop one column; None if absent, False if this SQLite cannot drop it."""
+    if col not in _columns(conn, table):
+        return None
+    if store.backend() != store.POSTGRES and \
+            sqlite3.sqlite_version_info < (3, 35, 0):
+        return False
+    conn.execute("SAVEPOINT drop_dead")
+    try:
+        conn.execute(f"ALTER TABLE {table} DROP COLUMN {col}")
+    except Exception:  # noqa: BLE001 - an older SQLite that cannot: keep it
+        conn.execute("ROLLBACK TO drop_dead")
+        ok = False
+    else:
+        ok = True
+    conn.execute("RELEASE drop_dead")
+    return ok
+
+
+def _add_result_split(conn) -> None:
+    """results.output and results.artifact_path, on an older store. #463."""
+    for col in ("output", "artifact_path"):
+        if col not in _columns(conn, "results"):
+            conn.execute(f"ALTER TABLE results ADD COLUMN {col} TEXT")
+
+
+def split_result_artifacts(conn) -> dict:
+    """Split results.artifact into output and artifact_path, then drop it. #463."""
+    from harness import runs
+    counts = runs.split_artifacts(conn)
+    conn.execute("INSERT OR REPLACE INTO meta VALUES ('artifact_split', ?)",
+                 (json.dumps(counts, sort_keys=True),))
+    _drop_column(conn, "results", "artifact")
+    return counts
 
 
 def _add_sighting_machine(conn) -> None:

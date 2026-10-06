@@ -35,7 +35,7 @@ def test_runs_a_case_and_scores_it():
     assert r.candidate == "local-mid"
     assert r.case_id == "circle"
     assert r.seconds >= 0
-    assert r.artifact == SVG
+    assert r.output == SVG and r.artifact_path is None
 
 
 @respx.mock
