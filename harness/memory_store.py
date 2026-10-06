@@ -19,7 +19,7 @@ from pathlib import Path
 
 from harness import paths, store
 
-SCHEMA_VERSION = 18
+SCHEMA_VERSION = 19
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
 VERDICTS = ("measured", "declined", "broken", "queued", "ignored", "screened")
@@ -642,6 +642,11 @@ def _migrate(conn: sqlite3.Connection) -> None:
         _reopen_architecture_gaps(conn)
     if have and have < 18:
         _backfill_until(conn)
+    if have and have < 19:
+        # Unlisted card tasks now file by what they produce, and a layout stock
+        # diffusers cannot assemble is not the candidate's fault. #379, #381.
+        _relane_from_the_card(conn)
+        _requeue_diffusers_layout_gaps(conn)
     conn.execute("INSERT OR REPLACE INTO meta VALUES ('schema', ?)",
                  (str(SCHEMA_VERSION),))
     conn.commit()
@@ -842,8 +847,10 @@ def _relane_from_the_card(conn) -> None:
     moved = []
     for row in rows:
         m = _CARD_TASK.search((row["description"] or "").lower())
-        card = ins.PIPELINE_LANES.get(m.group(1)) if m else None
-        if not card or lanes.canonical(row["lane"]) == card:
+        card = ins.card_lane(m.group(1)) if m else None
+        was = lanes.canonical(row["lane"])
+        # A text task cannot say WHICH text lane: OmniSVG is image-text-to-text.
+        if not card or was == card or (card == "code" and was in lanes.TEXT_SERVED):
             continue
         conn.execute("UPDATE proposals SET lane = ? WHERE id = ?",
                      (card, row["id"]))
@@ -855,9 +862,12 @@ def _relane_from_the_card(conn) -> None:
     now = time.time()
     for pid, name, was, card in moved:
         last = conn.execute(
-            "SELECT outcome FROM verdicts WHERE proposal_id = ? "
+            "SELECT outcome, tier FROM verdicts WHERE proposal_id = ? "
             "ORDER BY id DESC LIMIT 1", (pid,)).fetchone()
-        if not last or last["outcome"] not in TERMINAL:
+        # Only a tier that ran lane cases depends on the lane: "too big" and
+        # "a LoRA" are true in any lane. #379.
+        if not last or last["outcome"] not in TERMINAL \
+                or last["tier"] not in (SCREEN, MEASURE):
             continue
         conn.execute(
             "INSERT INTO verdicts (proposal_id, tier, outcome, detail, "
@@ -866,6 +876,24 @@ def _relane_from_the_card(conn) -> None:
              f"retracted: settled in the {was or 'unknown'} lane, which came "
              f"from the source rather than from {name}'s own card ({card})",
              now))
+
+
+def _requeue_diffusers_layout_gaps(conn) -> None:
+    from harness import screen
+    rows = conn.execute(
+        "SELECT p.id, p.name, v.detail FROM proposals p "
+        "JOIN verdicts v ON v.proposal_id = p.id "
+        "WHERE v.id = (SELECT v2.id FROM verdicts v2 "
+        "               WHERE v2.proposal_id = p.id ORDER BY v2.id DESC LIMIT 1) "
+        "  AND v.outcome = 'broken'").fetchall()
+    now = time.time()
+    for pid, name, detail in rows:
+        if any(g in (detail or "").lower() for g in screen.DIFFUSERS_LAYOUT_GAPS):
+            conn.execute(
+                "INSERT INTO verdicts (proposal_id, tier, outcome, detail, "
+                "decided_at) VALUES (?, ?, 'queued', ?, ?)",
+                (pid, SCREEN, f"retracted: the diffusers loader, not {name}, "
+                              f"failed to assemble the pipeline", now))
 
 
 def _retract_verdicts_from_runs_that_never_ran(conn) -> None:

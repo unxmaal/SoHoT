@@ -9,7 +9,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from harness import screen  # noqa: E402
+import pytest  # noqa: E402
+
+from harness import engines, screen  # noqa: E402
 
 #: THE SPEC AND THE RECEIPT KEY ARE DIFFERENT SPELLINGS. These pairs are taken
 #: from real receipts under $LOCALHARNESS_HOME/runs, not invented: an equality
@@ -192,3 +194,30 @@ def test_every_architecture_gap_spelling_in_the_store_is_recognised():
         s = {"mlx/x": {"total": 1, "passed": 0, "failures": [
             f"chunk-bytes: gateway returned HTTP 404: {{\"error\": \"{err}\"}}"]}}
         assert screen.outcome(0, s, candidate="org/x")[0] == "declined", err
+
+
+def test_an_mflux_receipt_is_this_runs():
+    """#378: mflux names the run with its quantisation, so the repo tail never
+    matched and every mflux candidate requeued forever."""
+    spec = "mflux:Qwen/Qwen-Image-Bench"
+    key = engines.resolve(spec).name
+    assert key.endswith("-q8"), key
+    assert screen.wrong_run({key: {}}, spec) == ""
+    assert screen.wrong_run({"mflux/Other/thing-q8": {}}, spec) != ""
+
+
+@pytest.mark.parametrize("why", [
+    "fox-snow: exit 1: ValueError: AutoPipeline can't find a pipeline linked to PRXPixelPipeline for None",
+    "fox-snow: exit 1: ValueError: Pipeline <class 'ZImagePipeline'> expected ['vae'], but only set() were passed.",
+])
+def test_a_layout_stock_diffusers_cannot_assemble_is_not_broken(why, monkeypatch):
+    """#381: the loader failed, not the model, and broken is terminal."""
+    monkeypatch.setattr(screen, "why_nothing_passed", lambda s, c: why)
+    got, reason = screen.outcome(0, {"diffusers/x": {"passed": 0}}, candidate="diffusers:o/x")
+    assert got == "declined" and "own runner" in reason
+
+
+def test_a_model_that_ran_and_failed_is_still_broken(monkeypatch):
+    """Negative control for #381."""
+    monkeypatch.setattr(screen, "why_nothing_passed", lambda s, c: "fox-snow: no fox in image")
+    assert screen.outcome(0, {"diffusers/x": {"passed": 0}}, candidate="diffusers:o/x")[0] == "broken"

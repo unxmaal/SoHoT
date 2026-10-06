@@ -126,6 +126,27 @@ TAG_LANES = {"asr": "stt", "speech-recognition": "stt", "stt": "stt",
 GENERIC_PIPELINE = "text-generation"
 
 
+#: What a task produces decides the lane when the task itself is not in
+#: PIPELINE_LANES: Qwen3.5 is image-text-to-text and a text model. #379.
+OUTPUT_LANES = {"text": "code", "image": "image", "video": "video"}
+
+
+def _lane_from_output(tag: str, from_tags: set) -> str:
+    _, sep, out = tag.rpartition("-to-")
+    if sep and out == "any":
+        return from_tags.pop() if len(from_tags) == 1 else ""
+    lane = OUTPUT_LANES.get(out, "") if sep else ""
+    # An SVG model is a text model; that is the one override a text task takes.
+    if lane == "code" and from_tags == {"svg"}:
+        return "svg"
+    return lane
+
+
+def card_lane(task: str) -> str:
+    """The lane a card's own task names, listed or derived from its output."""
+    return PIPELINE_LANES.get(task) or _lane_from_output(task, set())
+
+
 def lane_for(meta: dict, prose: str = "") -> str:
     """Which lane could measure this, or "" when nothing here can.
 
@@ -157,6 +178,8 @@ def lane_for(meta: dict, prose: str = "") -> str:
         if tag == GENERIC_PIPELINE and len(specific) == 1:
             return specific.pop()
         return lane
+    if tag:
+        return _lane_from_output(tag, from_tags)
     if len(from_tags) == 1:
         return from_tags.pop()
     if from_tags:
