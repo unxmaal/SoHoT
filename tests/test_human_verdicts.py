@@ -31,15 +31,15 @@ def store(tmp_path, monkeypatch):
 
 RECEIPT = {"rows": [
     {"case_id": "fox#1", "candidate": "alpha", "passed": True,
-     "artifact": "/runs/a-fox.png"},
+     "artifact_path": "/runs/a-fox.png"},
     {"case_id": "fox#2", "candidate": "alpha", "passed": True,
-     "artifact": "/runs/a-fox2.png"},
+     "artifact_path": "/runs/a-fox2.png"},
     {"case_id": "fox#1", "candidate": "beta", "passed": True,
-     "artifact": "/runs/b-fox.png"},
+     "artifact_path": "/runs/b-fox.png"},
     {"case_id": "sign#1", "candidate": "alpha", "passed": True,
-     "artifact": "/runs/a-sign.png"},
+     "artifact_path": "/runs/a-sign.png"},
     {"case_id": "sign#1", "candidate": "beta", "passed": True,
-     "artifact": "/runs/b-sign.png"},
+     "artifact_path": "/runs/b-sign.png"},
 ]}
 
 
@@ -66,9 +66,9 @@ def test_a_failed_run_is_not_offered_for_comparison():
     already caught by the programmatic checks."""
     receipt = {"rows": [
         {"case_id": "fox#1", "candidate": "alpha", "passed": True,
-         "artifact": "/a.png"},
+         "artifact_path": "/a.png"},
         {"case_id": "fox#1", "candidate": "beta", "passed": False,
-         "artifact": "/b.png"}]}
+         "artifact_path": "/b.png"}]}
     assert human.pairings(receipt) == []
 
 

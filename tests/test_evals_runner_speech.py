@@ -74,7 +74,7 @@ def test_the_audio_is_kept_so_you_can_listen_to_a_failure(tmp_path):
     respx.post(f"{BASE}/audio/transcriptions").mock(
         return_value=httpx.Response(200, json={"text": "nonsense"}))
     r = runner(tmp_path).run(case())
-    assert r.artifact and Path(r.artifact).exists()
+    assert r.artifact_path and Path(r.artifact_path).exists() and r.output is None
 
 
 @respx.mock

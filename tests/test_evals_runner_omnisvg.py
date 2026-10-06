@@ -94,7 +94,7 @@ def test_the_svg_it_wrote_is_the_artifact(tmp_path, cached):
     root = checkout(tmp_path, WRITES_SVG)
     r = OmniSVGRunner("4B", root=root).run(case())
     assert r.passed, r.detail
-    assert r.artifact == SVG
+    assert r.output == SVG and r.artifact_path is None
     assert r.candidate == "omnisvg:4B"
 
 

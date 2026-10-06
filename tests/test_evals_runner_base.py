@@ -96,7 +96,7 @@ def test_an_unexpected_exception_is_not_swallowed():
 
 
 def test_the_artifact_is_recorded_on_the_row():
-    assert Stub().run(svg_case()).artifact == GOOD_SVG
+    assert Stub().run(svg_case()).output == GOOD_SVG
 
 
 def test_generate_must_be_implemented():

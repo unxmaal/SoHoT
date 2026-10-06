@@ -15,7 +15,7 @@ def _judged_run(tmp_path, monkeypatch, specs):
     run.mkdir()
     body = {"receipt": {"modality": "music"},
             "rows": [{"case_id": "c", "candidate": n, "passed": True,
-                      "artifact": f"{n}.wav"} for n in names]}
+                      "artifact_path": f"{n}.wav"} for n in names]}
     if specs:
         body["specs"] = {engines.resolve(s).name: s
                          for s in (INCUMBENT, CHALLENGER)}

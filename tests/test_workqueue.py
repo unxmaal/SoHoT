@@ -296,7 +296,7 @@ STORE_A_RUN = """
 import sys
 from evals.run import store_run
 row = {"case_id": "c1", "candidate": "local-mid", "passed": True, "seconds": 1.0,
-       "peak_kb": 0, "detail": "", "artifact": None, "warnings": [], "metrics": {}}
+       "peak_kb": 0, "detail": "", "output": None, "artifact_path": None, "warnings": [], "metrics": {}}
 print(store_run(sys.argv[1], {"generated": "2026-10-06T12:00:00",
                               "environment": {}, "receipt": {"modality": "code"},
                               "specs": {}, "rows": [row]}, 0.0))

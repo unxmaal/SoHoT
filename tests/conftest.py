@@ -78,7 +78,7 @@ def _rows_from(summary: dict) -> list[dict]:
                          "seconds": float(s.get("median_s") or 1.0),
                          "peak_kb": int(s.get("peak_kb") or 0),
                          "detail": "" if i < passed else "failed",
-                         "artifact": None, "warnings": [],
+                         "output": None, "artifact_path": None, "warnings": [],
                          "metrics": dict(s.get("metrics") or {})})
     return rows
 

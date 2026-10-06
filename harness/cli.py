@@ -1359,7 +1359,7 @@ def cmd_judge(a) -> int:
         note(f"note: the {lane} lane has programmatic checks and is not in "
              f"lanes.HUMAN_JUDGED, so this verdict is extra rather than the "
              f"deciding one.")
-    pairs = human.pairings(receipt, run)
+    pairs = human.pairings(receipt)
     if not pairs:
         return err("no two candidates in that run share a case, so there is "
                    "nothing to compare")
@@ -1404,7 +1404,7 @@ def cmd_judge(a) -> int:
     try:
         judge_server.serve(lane, receipt, port=a.port,
                            open_browser=not a.no_browser, on_answer=_record,
-                           run=_run_name(run), run_dir=run)
+                           run=_run_name(run))
     except OSError as exc:
         return err(f"could not serve on port {a.port}: {exc}")
     settled = [p for p in pairs

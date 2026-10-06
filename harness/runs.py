@@ -6,6 +6,7 @@ the runs directory by name, mtime or "newest receipt".
 """
 from __future__ import annotations
 
+import glob
 import json
 import time
 from contextlib import contextmanager
@@ -123,6 +124,75 @@ def _stamped(conn, cid, key: str) -> int | None:
     return int(cid) if got and got["receipt_key"] == key else None
 
 
+def run_dir(key: str) -> Path:
+    """The directory a stored run's path names."""
+    from harness import paths
+    p = Path(key)
+    return p if p.is_absolute() else paths.runs() / p
+
+
+#: Suffixes a lane-less legacy row's value is a media file by.
+_MEDIA_SUFFIXES = {".png", ".jpg", ".jpeg", ".webp", ".wav", ".mp3", ".flac",
+                   ".mp4", ".mov", ".webm"}
+
+
+def _is_file(v: str) -> bool:
+    """An absolute path to a file; a relative answer is text, not cwd. #463."""
+    try:
+        return Path(v).is_absolute() and Path(v).is_file()
+    except (OSError, ValueError):
+        return False
+
+
+def split_legacy(value, lane: str, where: Path | None, candidate: str,
+                 case_id: str) -> tuple[str | None, str | None, str]:
+    """(output, artifact_path, kind) for a pre-#463 `artifact` value.
+
+    The only place a path is told from text; kind is path, text or none.
+    """
+    from evals.core import MEDIA_MODALITIES, MODALITIES, artifact_name
+    if value is None or value == "":
+        return None, None, "none"
+    v = str(value)
+    stem = artifact_name(candidate, case_id, "")
+    if "\n" not in v and len(v) < 1024 and (
+            lane in MEDIA_MODALITIES or _is_file(v)
+            or Path(v).name.startswith(stem + ".")
+            or (lane not in MODALITIES
+                and Path(v).suffix.lower() in _MEDIA_SUFFIXES)):
+        return None, v, "path"
+    hits = (sorted(where.glob(glob.escape(stem) + ".*"))
+            if where is not None and where.is_dir() else [])
+    return v, (str(hits[0]) if hits else None), "text"
+
+
+def split_artifacts(conn) -> dict:
+    """Fill results.output and artifact_path from the old artifact column. #463.
+
+    Counts per lane: path, text, none, and text rows whose file was found in
+    the run dir (resolved) or not (missing).
+    """
+    from harness import memory_store as ms
+    counts: dict[str, dict] = {}
+    if "artifact" not in ms._columns(conn, "results"):
+        return counts
+    dirs: dict[str, Path] = {}
+    for r in conn.execute(
+            "SELECT x.id, x.candidate, x.case_id, x.artifact, r.lane, r.path "
+            "FROM results x JOIN runs r ON r.id = x.run_id").fetchall():
+        where = dirs.setdefault(r["path"], run_dir(r["path"]))
+        output, art, kind = split_legacy(r["artifact"], r["lane"] or "", where,
+                                         r["candidate"], r["case_id"])
+        c = counts.setdefault(r["lane"] or "", {"path": 0, "text": 0, "none": 0,
+                                                "resolved": 0, "missing": 0})
+        c[kind] += 1
+        if kind == "text":
+            c["resolved" if art else "missing"] += 1
+        conn.execute("UPDATE results SET output = ?, artifact_path = ? "
+                     "WHERE id = ?", (output, art, r["id"]))
+    return counts
+
+
 def record(conn, path, data: dict, *, at: float | None = None) -> int | None:
     """Store one receipt (the results.json shape) as a run and its rows.
 
@@ -168,18 +238,24 @@ def record(conn, path, data: dict, *, at: float | None = None) -> int | None:
             # A receipt from before runners set a class: read once, here. #408.
             cls = reasons.legacy_class(str(r.get("detail") or ""),
                                        specs.get(name, ""))
+        if "output" in r or "artifact_path" in r:
+            output, art = r.get("output"), r.get("artifact_path")
+        else:
+            output, art, _ = split_legacy(r.get("artifact"), lane, run_dir(key),
+                                          name, str(r.get("case_id") or ""))
         conn.execute(
             "INSERT INTO results (run_id, seq, candidate_id, candidate, "
             "case_id, repeat_index, passed, seconds, peak_kb, detail, metrics, "
-            "warnings, artifact, failure_class, hit_limit) "
-            "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            "warnings, output, artifact_path, failure_class, hit_limit) "
+            "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             (run_id, seq, cid if cid is not None else ids[name], name,
              str(r.get("case_id") or ""), repeat,
              1 if r.get("passed") else 0, float(r.get("seconds") or 0.0),
              int(r.get("peak_kb") or 0), str(r.get("detail") or ""),
              json.dumps(r.get("metrics") or {}),
              json.dumps(r.get("warnings") or []),
-             None if r.get("artifact") is None else str(r["artifact"]),
+             None if output is None else str(output),
+             None if art is None else str(art),
              cls or "", str(r.get("limit") or "")))
     conn.commit()
     return run_id
@@ -209,7 +285,7 @@ def rows(conn, run_id: int, candidate_id: int | None = None) -> list[dict]:
         out.append({"case_id": r["case_id"], "candidate": r["candidate"],
                     "passed": bool(r["passed"]), "seconds": r["seconds"],
                     "peak_kb": r["peak_kb"], "detail": r["detail"],
-                    "artifact": r["artifact"],
+                    "output": r["output"], "artifact_path": r["artifact_path"],
                     "warnings": json.loads(r["warnings"] or "[]"),
                     "metrics": json.loads(r["metrics"] or "{}"),
                     "failure_class": r["failure_class"], "limit": r["hit_limit"],
@@ -223,7 +299,9 @@ def summarize(result_rows: list[dict]) -> dict:
     return roll_up([Result(case_id=r["case_id"], candidate=r["candidate"],
                            passed=r["passed"], seconds=r["seconds"],
                            peak_kb=r["peak_kb"], detail=r["detail"],
-                           artifact=r["artifact"], warnings=r["warnings"],
+                           output=r.get("output"),
+                           artifact_path=r.get("artifact_path"),
+                           warnings=r["warnings"],
                            metrics=r["metrics"],
                            failure_class=r.get("failure_class") or "",
                            limit=r.get("limit") or "") for r in result_rows])

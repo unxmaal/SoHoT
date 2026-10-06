@@ -5,33 +5,48 @@ from http.server import HTTPServer
 
 import pytest
 
-from harness import human, judge_server
+from harness import human, judge_server, paths
 
 SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><rect width="5" height="5"/></svg>'
 
 
-def _receipt(text_a, text_b):
-    return {"rows": [
-        {"case_id": "icon#1", "candidate": "org/a", "passed": True, "artifact": text_a},
-        {"case_id": "icon#1", "candidate": "local-large", "passed": True, "artifact": text_b}]}
+def _receipt(text_a, text_b, run_dir=None, suffix=".svg"):
+    def row(cand, text):
+        f = run_dir / f"{cand.replace('/', '_')}--icon#1{suffix}" if run_dir else None
+        return {"case_id": "icon#1", "candidate": cand, "passed": True, "output": text,
+                "artifact_path": str(f) if f and f.exists() else None}
+    return {"rows": [row("org/a", text_a), row("local-large", text_b)]}
 
 
-def test_a_text_lane_artifact_resolves_to_the_file_the_runner_wrote(tmp_path):
-    """svg and web rows keep the output itself in `artifact`; the file is in
-    the run dir under BaseRunner.artifact's name."""
+def test_a_text_lane_row_shows_the_file_its_artifact_path_names(tmp_path):
+    """results.artifact_path is the file; output is the text. #463."""
     (tmp_path / "org_a--icon#1.svg").write_text(SVG, encoding="utf-8")
     (tmp_path / "local-large--icon#1.svg").write_text(SVG, encoding="utf-8")
-    p = human.pairings(_receipt(SVG, SVG), tmp_path)[0]
+    p = human.pairings(_receipt(SVG, SVG, tmp_path))[0]
     assert p["a_file"].endswith(".svg") and p["b_file"].endswith(".svg")
+    assert p["a_text"] == SVG
 
 
 def test_output_text_is_never_taken_for_a_path(tmp_path):
-    assert human.artifact_file({"artifact": SVG, "candidate": "x", "case_id": "c"}, None) == ""
+    """Even output that names a real file is text; only artifact_path is a file."""
+    real = tmp_path / "real.svg"
+    real.write_text(SVG, encoding="utf-8")
+    p = human.pairings(_receipt(str(real), str(real)))[0]
+    assert p["a_file"] == "" and p["a_text"] == str(real)
 
 
-def _serve(lane, receipt, run_dir):
+def test_a_file_is_not_found_by_name_when_artifact_path_is_empty():
+    """No run-dir glob: a file the row does not name is not its artifact. #463."""
+    run = paths.runs() / "20261006-000000-svg"
+    run.mkdir(parents=True)
+    (run / "org_a--icon#1.svg").write_text(SVG, encoding="utf-8")
+    p = human.pairings(_receipt(SVG, SVG))[0]
+    assert p["a_file"] == "" and p["b_file"] == ""
+
+
+def _serve(lane, receipt):
     judge_server.Judge.lane = lane
-    judge_server.Judge.pairs = human.pairings(receipt, run_dir)
+    judge_server.Judge.pairs = human.pairings(receipt)
     judge_server.Judge.files = []
     srv = HTTPServer(("127.0.0.1", 0), judge_server.Judge)
     threading.Thread(target=srv.serve_forever, daemon=True).start()
@@ -51,7 +66,7 @@ def test_svg_and_web_render_inline_and_their_files_are_served(tmp_path, lane, su
     body = SVG if lane == "svg" else "<!doctype html><p>hi</p>"
     for stem in ("org_a--icon#1", "local-large--icon#1"):
         (tmp_path / f"{stem}{suffix}").write_text(body, encoding="utf-8")
-    srv, base = _serve(lane, _receipt(body, body), tmp_path)
+    srv, base = _serve(lane, _receipt(body, body, tmp_path, suffix))
     try:
         _, page = _get(base + "/")
         assert page.decode().count(tag) == 2 and "open artifact" not in page.decode()
@@ -62,7 +77,7 @@ def test_svg_and_web_render_inline_and_their_files_are_served(tmp_path, lane, su
 
 
 def test_raw_output_is_served_when_no_file_was_written(tmp_path):
-    srv, base = _serve("svg", _receipt(SVG, SVG), tmp_path)
+    srv, base = _serve("svg", _receipt(SVG, SVG))
     try:
         _get(base + "/")
         ctype, data = _get(base + "/file?i=0")

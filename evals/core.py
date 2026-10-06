@@ -408,6 +408,19 @@ ASSERTION_KEYS = {"svg": TEXT_ASSERTIONS, "web": TEXT_ASSERTIONS,
                   "decide": {"answers"}}
 
 
+#: Lanes whose runner returns text rather than a file.
+TEXT_MODALITIES = {"svg", "web", "code", "extract", "decide"}
+#: Lanes whose runner returns the path of a file it made.
+MEDIA_MODALITIES = {"image", "video", "tts", "music"}
+#: The suffix a text lane's output is written to the run dir under.
+TEXT_SUFFIX = {"svg": ".svg", "web": ".html", "code": ".py", "decide": ".json"}
+
+
+def artifact_name(candidate: str, case_id: str, suffix: str) -> str:
+    """The one file name a case's artifact is written under. #429."""
+    return f"{candidate.replace('/', '_')}--{case_id}{suffix}"
+
+
 @dataclass
 class Result:
     case_id: str
@@ -416,7 +429,10 @@ class Result:
     seconds: float
     peak_kb: int
     detail: str
-    artifact: str | None = None
+    #: The text a text runner returned; None when the runner made a file. #463.
+    output: str | None = None
+    #: The file written for this row under artifact_name; None if none was. #463.
+    artifact_path: str | None = None
     warnings: list[str] = field(default_factory=list)
     #: Numbers a checker produced alongside its verdict (wer, ocr score...).
     #: A pass rate separates working from broken; these are what put two
