@@ -4,10 +4,14 @@ on:
   push:
     branches: [main]
   pull_request:
+    types: [opened, synchronize, reopened, labeled]
+  schedule:
+    # 06:00 UTC: Linux and Windows run on main overnight, after the day's merges.
+    - cron: "0 6 * * *"
   workflow_dispatch:
 
 concurrency:
-  group: check-${{ github.ref }}
+  group: check-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -63,6 +67,12 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
   check-linux:
+    # Deferred to the nightly run; a PR labelled full-ci runs it now.
+    if: >-
+      github.event_name == 'schedule' ||
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' &&
+       contains(github.event.pull_request.labels.*.name, 'full-ci'))
     # Pinned to 24.04, the release the Linux machines here run, so a failure
     # is a failure on a real box rather than on a runner nobody owns.
     # `ubuntu-latest` moves to 26 on 2026-10-19 (#339); the step below checks
@@ -204,6 +214,12 @@ jobs:
           } | tee -a "$GITHUB_STEP_SUMMARY"
 
   check-windows:
+    # Deferred to the nightly run; a PR labelled full-ci runs it now.
+    if: >-
+      github.event_name == 'schedule' ||
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' &&
+       contains(github.event.pull_request.labels.*.name, 'full-ci'))
     # The second measurement machine. Nothing here is Apple Silicon, so the MLX
     # lanes skip and the "What did not run" step below prints which ones.
     runs-on: windows-latest
@@ -271,3 +287,25 @@ jobs:
             grep -E '^SKIPPED' /tmp/check.log || echo 'nothing skipped'
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
+
+  report-nightly:
+    needs: [check-macos, check-linux, check-windows]
+    if: failure() && github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          RESULTS: "macos=${{ needs.check-macos.result }} linux=${{ needs.check-linux.result }} windows=${{ needs.check-windows.result }}"
+        run: |
+          title="Nightly CI is failing on main"
+          body="$RESULTS at ${GITHUB_SHA::7}: $RUN"
+          open="$(gh issue list --state open --search "\"$title\" in:title" --json number -q '.[0].number')"
+          if [ -n "$open" ]; then
+            gh issue comment "$open" --body "$body"
+          else
+            gh issue create --title "$title" --body "$body"
+          fi

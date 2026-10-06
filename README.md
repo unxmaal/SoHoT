@@ -1600,8 +1600,11 @@ make test      # unit tests only
 make smoke     # end-to-end, REQUIRES the services running
 ```
 
-CI runs `make check` on an Apple Silicon runner AND a Windows one for every
-push and pull request, and each reports which tests it skipped and why. A
+CI runs `make check` on an Apple Silicon runner for every push and pull
+request. Linux and Windows run nightly on main (06:00 UTC), from the Actions
+tab on demand, or on a pull request labelled `full-ci`; a failing night opens
+or updates the issue "Nightly CI is failing on main". Each runner reports
+which tests it skipped and why. A
 skipped test otherwise reports green for something it never checked -- and
 that is not hypothetical here: 29 tests skipped on both runners for a week
 because they needed a volume only one machine has, while ten of them were
