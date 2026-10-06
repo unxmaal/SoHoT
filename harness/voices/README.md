@@ -1,6 +1,6 @@
 # Reference clips for voice cloning
 
-Two clips, shipped with the package so `lh say --voice fr-male` works without a
+Two clips, shipped with the package so `soh say --voice fr-male` works without a
 mounted volume. 626KB and 672KB, which is the price of the feature existing.
 
 ## Provenance and licence

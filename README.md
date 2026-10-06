@@ -1,19 +1,28 @@
-# localharness
+# SoHoT
 
 [![check](https://github.com/unxmaal/localharness/actions/workflows/ci.yml/badge.svg)](https://github.com/unxmaal/localharness/actions/workflows/ci.yml)
 
 **Make pictures, video, speech and code on your own machine. Nothing leaves it.**
 
-One command, `lh`, generates an image, a short video, an SVG icon, a web page,
+One command, `soh`, generates an image, a short video, an SVG icon, a web page,
 some code, or speech in a voice you chose. It also transcribes what you say.
 No account, no API key, no per-token bill, no rate limit, and no model quietly
 retired out from under you.
+
+SoHoT is the Self-optimizing Harness of Theseus. Like the ship, every plank,
+engine and model in it gets replaced over time while the harness stays itself,
+and it does the replacing on its own: the discovery loop finds a challenger,
+measures it paired against the incumbent, and adopts it only on a significant
+win.
+
+`lh` still runs the same command as `soh` and is deprecated; it will be removed
+after a transition period.
 
 The part that makes it more than a pile of scripts: **it goes looking for better
 ways to do its own job, and then proves whether they are better.**
 
 This field moves weekly. A model or a technique that was best when this was
-written is probably not best now. So `lh discover` reads the model registries,
+written is probably not best now. So `soh discover` reads the model registries,
 the places practitioners talk, and what the people who build your tools are
 starring on GitHub. It sorts what it finds cheapest-check-first, throws out
 what cannot run on your machine before downloading anything, and hands you the
@@ -30,23 +39,23 @@ than the one it would have replaced.
 
 | | |
 |---|---|
-| `lh image "a red fox in falling snow"` | an image, tens of seconds |
-| `lh video "a fox running" --seconds 2` | a video with sound, ~40 min |
-| `lh svg "a settings gear icon"` | a real vector icon |
-| `lh web "a landing page for a coffee roaster"` | a self-contained HTML page |
+| `soh image "a red fox in falling snow"` | an image, tens of seconds |
+| `soh video "a fox running" --seconds 2` | a video with sound, ~40 min |
+| `soh svg "a settings gear icon"` | a real vector icon |
+| `soh web "a landing page for a coffee roaster"` | a self-contained HTML page |
 
 Every timing in this file was taken on an M2 Pro with 32 GB unless it says
 otherwise, and image and video default to 512x512. Trust your own machine
 instead: each generation prints its wall time, its peak memory and the
 resolution that produced them, because a number without its configuration
 compares to nothing.
-| `lh code "parse an ISO timestamp"` | code, to stdout |
-| `lh extract --file build.log "which tests failed?"` | ask a question about a file |
-| `lh say "the tests all passed"` | speak it aloud |
-| `lh hear --seconds 5` | record and transcribe |
-| `lh discover` | what this machine can do that nobody has measured |
-| `lh discover --neighbors` | what the people who build your tools are starring |
-| `lh fetch` | what is queued for download, and nothing more until you say so |
+| `soh code "parse an ISO timestamp"` | code, to stdout |
+| `soh extract --file build.log "which tests failed?"` | ask a question about a file |
+| `soh say "the tests all passed"` | speak it aloud |
+| `soh hear --seconds 5` | record and transcribe |
+| `soh discover` | what this machine can do that nobody has measured |
+| `soh discover --neighbors` | what the people who build your tools are starring |
+| `soh fetch` | what is queued for download, and nothing more until you say so |
 
 Everything lands in `~/localharness/out/`.
 
@@ -103,12 +112,12 @@ On a machine with an NVIDIA card, one command starts all three:
 Either way:
 
 ```bash
-lh svg "a settings gear icon"
+soh svg "a settings gear icon"
 ```
 
 That prints a path. Open it. For speech on Apple Silicon, also start
 `./scripts/serve-tts.sh`; with an NVIDIA card it is already up. Then
-`lh say "hello"`.
+`soh say "hello"`.
 
 ## What it is not
 
@@ -239,7 +248,7 @@ refused rather than answered in a substitute voice.
 
 ## Voices
 
-`lh voices` lists them. The default is **`fr-male`**, a French-accented English
+`soh voices` lists them. The default is **`fr-male`**, a French-accented English
 voice, cloned from a reference clip rather than picked from a table.
 
 That works because Chatterbox clones *across* languages: the reference clip
@@ -252,8 +261,8 @@ speech, twenty-eight took 11.3s for 6.2s. Measured 2026-09-12 on an M2 Pro that
 was already swapping, so read them as an upper bound.
 
 ```bash
-lh say "the tests all passed"                     # cloned, 4.4s
-lh say "the tests all passed" --voice bm_george   # Kokoro, 3.5s
+soh say "the tests all passed"                     # cloned, 4.4s
+soh say "the tests all passed" --voice bm_george   # Kokoro, 3.5s
 ```
 
 Use `bm_george` when a line needs to come back immediately.
@@ -264,7 +273,7 @@ Use `bm_george` when a line needs to come back immediately.
 open them in a viewer. `extract` reads stdin when given no `--file`:
 
 ```bash
-make test 2>&1 | lh extract "which test failed, and why?"
+make test 2>&1 | soh extract "which test failed, and why?"
 ```
 
 That is the lane for handing a cheap question to a small model instead of
@@ -280,13 +289,13 @@ add-on file that makes a 20 GB model five times faster, a trick for running
 something that should not fit in memory. Left alone, you keep using
 whatever was good the week you set it up and never find out.
 
-So `lh` looks, on your behalf.
+So `soh` looks, on your behalf.
 
 **1. It works out what you have and what you have never tried.**
 
 ```bash
-lh discover           # everything available here, and whether it has been tested
-lh discover --gap     # just the untested things
+soh discover           # everything available here, and whether it has been tested
+soh discover --gap     # just the untested things
 ```
 
 It reads your installed tools, your downloaded models and the results of every
@@ -296,10 +305,10 @@ ask rather than as of whenever someone last updated a list.
 **2. It goes out and finds what exists now.**
 
 ```bash
-lh discover --external --lane image   # ask the model registries
-lh discover --sweep                   # every source family below, in one pass
-lh discover --feeds                   # read where practitioners talk
-lh discover --neighbors               # read what the people who build your tools star
+soh discover --external --lane image   # ask the model registries
+soh discover --sweep                   # every source family below, in one pass
+soh discover --feeds                   # read where practitioners talk
+soh discover --neighbors               # read what the people who build your tools star
 ```
 
 Use `--sweep` rather than `--feeds` unless you mean only the feeds. `--feeds`
@@ -317,7 +326,7 @@ generation five times faster. That is what it found on its first real run: a
 
 `--neighbors` is the newest and the highest signal. People who maintain the
 tools you already run follow and star each other, and what they star is a
-curated list rather than a popularity poll. `lh` starts from whoever contributes
+curated list rather than a popularity poll. `soh` starts from whoever contributes
 to the tools installed here, follows their network outward, and ranks what that
 crowd stars by how *concentrated* it is in them:
 
@@ -346,8 +355,8 @@ four tools across four lanes and says which is best at what. Reddit serves a
 thread's comments as a feed, so the same reader handles them:
 
 ```bash
-lh discover --feeds --comments 5            # replies on the 5 newest posts
-lh discover --feeds --comments 5 --judge    # and read names out of the prose
+soh discover --feeds --comments 5            # replies on the 5 newest posts
+soh discover --feeds --comments 5 --judge    # and read names out of the prose
 ```
 
 The judge is what reads the prose, because the linked repos are the easy half:
@@ -373,11 +382,11 @@ tiers that produce quality, so it is asked to know what does not exist yet.
 What it can order is the value of the information a screen would buy.
 
 ```bash
-lh discover --sweep               # read every source family, not only the feeds
-lh discover --inspect             # clone the source and check it fits
-lh discover --queue               # what a screen would teach, best first
-lh fetch                          # what is queued for download
-lh fetch --run                    # download it, one at a time
+soh discover --sweep               # read every source family, not only the feeds
+soh discover --inspect             # clone the source and check it fits
+soh discover --queue               # what a screen would teach, best first
+soh fetch                          # what is queued for download
+soh fetch --run                    # download it, one at a time
 ```
 
 **Inspect** is the one that saves the most. It clones a candidate's source,
@@ -400,7 +409,7 @@ dependency disqualifies.
 
 Anything that cannot run here is recorded as answered, permanently, and never
 proposed again -- here meaning this machine, so the two keep different books.
-Anything that can is queued for download, and `lh fetch --run` takes them one
+Anything that can is queued for download, and `soh fetch --run` takes them one
 at a time with a disk floor, because either machine holds one working set.
 
 **A weight is only queued if something here can measure it.** A model needs a
@@ -440,22 +449,22 @@ in three places over two months is ranked above a thing mentioned once, and
 "we tried this and it lost" survives long enough to be worth something.
 
 ```bash
-lh discover --recurrence     # what keeps coming back, and how each source is doing
+soh discover --recurrence     # what keeps coming back, and how each source is doing
 ```
 
-Discovery goes stale, which defeats the point, so `lh` tracks when it last
-looked and tells you in ordinary `lh discover` output when it has been too long.
+Discovery goes stale, which defeats the point, so `soh` tracks when it last
+looked and tells you in ordinary `soh discover` output when it has been too long.
 Default is 7 days, set `$LOCALHARNESS_DISCOVERY_DAYS` to change it. Each kind
 of answer is cached for less time than that, or a more frequent sweep would
 just re-read what it read last time and report success.
 
 ```bash
-lh discover --sources        # which places it reads, and when it last looked
+soh discover --sources        # which places it reads, and when it last looked
 ```
 
 It also watches for **new places to read**, since the site everyone uses
 in a year may not be the one they use now. When a feed keeps pointing somewhere
-`lh` does not read, it probes whether that address actually serves a feed and
+`soh` does not read, it probes whether that address actually serves a feed and
 tells you. Never automatic: a web address suggested by a stranger should need a
 human to agree before this thing starts fetching it on a timer. Places it reads
 live in `~/localharness/discovery-sources.json`; edit that file freely.
@@ -470,7 +479,7 @@ tools.
 
 ```bash
 ./scripts/serve-mcp.sh      # listen on 0.0.0.0:8899
-claude mcp add --transport http localharness http://<host>.local:8899/mcp
+claude mcp add --transport http soh http://<host>.local:8899/mcp
 ```
 
 > **There is no authentication.** Anyone who can reach port 8899 can use this
@@ -478,7 +487,7 @@ claude mcp add --transport http localharness http://<host>.local:8899/mcp
 > you do not control, bind to localhost instead: `MCP_HOST=127.0.0.1`.
 
 That exposes `svg`, `web`, `code`, `image` and `video` to the assistant. Every tool shells
-out to `lh`, so the CLI, the eval suite and the MCP server run identical
+out to `soh`, so the CLI, the eval suite and the MCP server run identical
 commands, and what gets measured is what ships.
 
 `image` and `video` go on the work queue (see "The work queue"): they return a
@@ -500,7 +509,7 @@ someone here opens a web page, not that the port is reachable from outside.
 uv tool install --python 3.12 --editable .
 ```
 
-`lh` lands on PATH via `~/.local/bin`, in its own venv. It never touches the
+`soh` lands on PATH via `~/.local/bin`, in its own venv. It never touches the
 system Python.
 
 **`--python 3.12` is not optional.** `uv tool install` picks an interpreter
@@ -523,7 +532,7 @@ chosen quietly, and the old list -- `/Volumes/FAST/hf`, `/Volumes/PORTABLE/hf`,
 `~/.cache/huggingface` -- was one machine written into the repo, forked once for
 Windows and again in shell.
 
-Both `lh` and the service scripts resolve it the same way. `lh` has to do it
+Both `soh` and the service scripts resolve it the same way. `soh` has to do it
 itself: on PATH it runs with nothing sourced, and an unset `HF_HOME` sends
 huggingface_hub off to re-download what is already on the drive.
 
@@ -549,19 +558,19 @@ The fetch tier and `scripts/fetch-gguf.sh` write it; `have()`, the screen's
 readiness check, the memory guard and the GGUF route read it, never the hub
 directory names.
 
-`lh disk` lists every hub repo and GGUF file with its size, grouped as
+`soh disk` lists every hub repo and GGUF file with its size, grouped as
 `keep` (a gateway alias, a lane default, an adopted winner, a measured verdict,
 or the tooling list in `harness/disk.py`), `queued` (discovery still wants it),
 `rejected` (latest verdict broken or declined after a fetch) and `unknown`.
 It also reports drift: rows whose path is gone, and paths no row explains.
-A path with no row is never deleted; `lh disk --record` gives each one a row
+A path with no row is never deleted; `soh disk --record` gives each one a row
 and stamps gone rows removed.
-`lh disk --delete rejected` or `--delete unknown` removes only what the shared
+`soh disk --delete rejected` or `--delete unknown` removes only what the shared
 `safe_to_delete` rule allows, asks first, and needs `--yes` under `--json`.
 Each removal stamps `removed_at` on the path's download row.
 
 Rejected weights stay for 24 hours, so a rejection that turns out to be a
-harness fault can be re-screened without a download. `lh discover --loop --run`
+harness fault can be re-screened without a download. `soh discover --loop --run`
 then removes them itself at the start of each run, along with partial
 downloads (`*.incomplete`) of a recorded download no fetch is still writing. Nothing outside the hub and
 GGUF directories is ever deleted, and if any keeper cannot be read, nothing is.
@@ -573,7 +582,7 @@ before the disk cleanup, each due retest is reopened to `queued` as a named
 `retest` and goes through fetch and screen again, within the same budget and
 backpressure. A rejection waiting on a stated condition (too big, needs a
 runtime, dead upstream) is not retested; it reopens when that condition is
-met. `lh discover --queue` prints how many retests are due, scheduled and
+met. `soh discover --queue` prints how many retests are due, scheduled and
 final, and how many retests then passed (recovered false negatives).
 
 The install carries no torch on Apple Silicon. `mlx-whisper` needs it
@@ -626,7 +635,7 @@ reports no memory at all; `fonts-dejavu-core` because the OCR fixture renders
 real type and PIL's bitmap fallback would measure the fixture; `zsh` because the
 `env.sh` tests run in three shells and a missing one is a silent skip; `make`
 because step 7 runs `make check`; `sox` for `rec`, which the stt lane records
-with and `lh discover` reports missing without.
+with and `soh discover` reports missing without.
 
 ### 3. A browser, and specifically Chrome
 
@@ -647,7 +656,7 @@ timeout on its first render.
 `LH_CHROME` names a browser explicitly and `LH_CHROME_PROFILE=0` drops the
 isolated profile, for a machine that has opinions about both.
 
-### 4. The repo, uv, then lh
+### 4. The repo, uv, then soh
 
 ```bash
 git clone https://github.com/unxmaal/localharness.git
@@ -711,7 +720,7 @@ GATEWAY_CONFIG=gateway/config.cuda.yaml ./scripts/services.sh start
 ./scripts/services.sh status        # what is up, and what the card holds
 ./scripts/smoke.sh                  # the seams, not the models
 uv sync && make check               # the suite
-lh discover                         # what this machine can do
+soh discover                         # what this machine can do
 ```
 
 `services.sh` registers nothing with Linux, exactly as it registers nothing with
@@ -724,7 +733,7 @@ harness will fight you.
 
 ### What is different here, and worth knowing before it surprises you
 
-`lh say --play` uses `paplay`, `aplay` or `ffplay`, whichever is present. Text in
+`soh say --play` uses `paplay`, `aplay` or `ffplay`, whichever is present. Text in
 a generated image is read by RapidOCR rather than by an engine the operating
 system ships, so it installs with the project through a `sys_platform` marker.
 Peak memory is `ru_maxrss` rather than a footprint, which means it cannot see
@@ -804,7 +813,7 @@ Git Bash reports `/d/a/...` where native Python needs `D:\a\...`, and
 sweep as a CronJob, inspect as an Indexed Job whose workers each take a slice
 of the candidates, and a measure Job that asks for a card. The store becomes
 Postgres, because several pods write to it and SQLite's locking is only as good
-as the filesystem under it. `lh` on a laptop keeps its SQLite file and needs no
+as the filesystem under it. `soh` on a laptop keeps its SQLite file and needs no
 cluster at all.
 
 ```bash
@@ -839,7 +848,7 @@ those run in the cluster today:
 A lane's winner is read rather than typed:
 
 ```bash
-lh discover --winners                     # the receipts against the constants
+soh discover --winners                     # the receipts against the constants
 python -m evals.run --modality image --from-winners
 ```
 
@@ -860,7 +869,7 @@ one of them, because the rubric rewards a measured claim and a registry card
 has never carried one. So the queue is ordered by arithmetic instead:
 
 ```bash
-lh discover --queue        # what a screen would teach us, best first
+soh discover --queue        # what a screen would teach us, best first
 ```
 
 It ranks by the value of what a screen would find out, not by a guess at which
@@ -871,8 +880,8 @@ try cheaply. Which candidate is better is what the tiers below it are for.
 The screen is the tier that answers it:
 
 ```bash
-lh discover --screen         # what it would run, and what is in the way
-lh discover --screen --run   # actually run one
+soh discover --screen         # what it would run, and what is in the way
+soh discover --screen --run   # actually run one
 ```
 
 It asks one question -- did it run, did it emit anything -- and writes the
@@ -888,7 +897,7 @@ Extraction precision measures the quality of what gets caught. Reach is a
 different number and nothing measured it:
 
 ```bash
-lh discover --coverage
+soh discover --coverage
 ```
 
 It takes what this machine actually runs -- the gateway's upstream ids, the
@@ -905,8 +914,8 @@ does not pass one, it is read from the refusal's own `needs-*` or `too-big`
 wording.
 
 ```bash
-lh discover --revisit             # refusals this machine now satisfies
-lh discover --revisit --requeue   # send them back to inspect
+soh discover --revisit             # refusals this machine now satisfies
+soh discover --revisit --requeue   # send them back to inspect
 ```
 
 A screen runs one case once, so text candidates are screened at
@@ -960,8 +969,8 @@ lane command does not use one until the gateway has an alias for it.
 ### Writing a prompt for whatever is installed
 
 ```bash
-lh prompt image "a fox in falling snow"   # writes one
-lh prompt video                            # or just shows the engine's guide
+soh prompt image "a fox in falling snow"   # writes one
+soh prompt video                            # or just shows the engine's guide
 ```
 
 A caller should not have to know which engine serves a lane. This asks the same
@@ -984,7 +993,7 @@ Not a GPU toggle, because there are three answers rather than two:
 The third is not an exotic case. Metal is a macOS userspace API and MLX links
 against it directly, so every MLX lane belongs there: the Linux VM behind
 Docker Desktop has no `/dev/dri` and no nvidia device, and there is no flag
-that adds one. A pod can still hold such a lane's identity and ask `lh` on the
+that adds one. A pod can still hold such a lane's identity and ask `soh` on the
 host to do the work, which is how the judge tier already reaches the gateway.
 
 It reaches the receipt as `LOCALHARNESS_WHERE` and `evals.core.comparable()`
@@ -1005,7 +1014,7 @@ runs/<stamp>-<modality>/    one eval run: artifacts and a results.json export;
 logs/                       service stdout and stderr
 ```
 
-There were four places before this, and one was relative. `lh` runs from
+There were four places before this, and one was relative. `soh` runs from
 anywhere, so a relative `out/` scattered artifacts into whatever directory the
 caller was standing in, and a generation you cannot find is a generation you did
 not make.
@@ -1019,7 +1028,7 @@ Three words show up throughout:
 - a **candidate** is one contender in a lane: usually a model, sometimes a
   *method*. Candidates in a lane compete on identical cases.
 - **measured** means a candidate has been run here and has a score.
-  Untested is the default, which is what `lh discover` exists to make visible
+  Untested is the default, which is what `soh discover` exists to make visible
   rather than letting it be assumed.
 
 To run two candidates against each other:
@@ -1056,7 +1065,7 @@ own venv and 16 GiB of weights.
 The music lane (`acestep:`) runs an ACE-Step checkout through that checkout's
 own `.venv`. It looks at `$ACESTEP_ROOT`, then at `~/localharness/acestep`, so
 a checkout kept elsewhere needs only a symlink there for the services and
-`lh verify` to find it.
+`soh verify` to find it.
 
 The decide lane asks for typed decisions: a context plus a flat schema of
 enum and boolean fields, scored on accuracy per field and on the calibration
@@ -1106,13 +1115,13 @@ source of variance: every speech model here shares the same worst clip. An
 interval spanning zero prints `not separable` instead of a ranking.
 
 **Is that constant doing anything?** Fourteen numbers decide what gets
-proposed, screened and fetched. `lh sensitivity` varies each one against cached
+proposed, screened and fetched. `soh sensitivity` varies each one against cached
 data and says whether the output moved at all -- inert, inside a band, or on an
 edge where the value next door behaves differently.
 
 ```bash
-lh sensitivity                 # all eleven probes, about four minutes, no network
-lh sensitivity --list          # and the constants nothing covers, with reasons
+soh sensitivity                 # all eleven probes, about four minutes, no network
+soh sensitivity --list          # and the constants nothing covers, with reasons
 ```
 
 It compares rankings position by position rather than by pass rate, because a
@@ -1135,12 +1144,12 @@ Long jobs from anyone go on one queue: an agent on another machine calling the
 MCP `image` or `video` tool, or someone here typing
 
 ```bash
-lh jobs add --title "30B coder on code" -- uv run python -m evals.run --modality code --candidates q3-coder,q3-4b
-lh jobs list      # each job's state, and whether the next one may start
-lh jobs pause     # hold everything; a running job still finishes
-lh jobs resume
-lh jobs cancel 0003
-lh jobs priority 0005 10   # higher runs first; ties run in the order added
+soh jobs add --title "30B coder on code" -- uv run python -m evals.run --modality code --candidates q3-coder,q3-4b
+soh jobs list      # each job's state, and whether the next one may start
+soh jobs pause     # hold everything; a running job still finishes
+soh jobs resume
+soh jobs cancel 0003
+soh jobs priority 0005 10   # higher runs first; ties run in the order added
 ```
 
 The `worker` service runs them in order, one at a time. It does not hold the
@@ -1162,8 +1171,8 @@ another machine gets the picture rather than a path it cannot open.
 
 ### One model-loading run at a time
 
-Image and video generation, eval runs (screen, measure, `lh rubric run`) and
-`lh memory ramp` hold one machine-wide lock,
+Image and video generation, eval runs (screen, measure, `soh rubric run`) and
+`soh memory ramp` hold one machine-wide lock,
 `$LOCALHARNESS_HOME/queue/generation.lock`. A second run waits and says what
 it is waiting behind. Text lane prompts do not take it, because each server
 already queues its own requests.
@@ -1179,7 +1188,7 @@ macOS's own `lockf -k ~/localharness/queue/generation.lock <command>` takes
 the same lock. Checked both ways on 2026-10-04: each refuses while the other
 holds it. The helper adds two things: it records who is holding the lock, so a
 waiter can say what it is waiting behind, and it marks nested runs so they
-don't deadlock. It sets `LH_GPU_LOCK_HELD=1` for the command, so an `lh` run inside
+don't deadlock. It sets `LH_GPU_LOCK_HELD=1` for the command, so a `soh` run inside
 it does not wait on its own parent. `scripts/launchd.sh install` runs under
 the lock too: restarting mlx_lm.server in the middle of another project's run
 killed 32 of its 50 requests on 2026-10-04.
@@ -1187,7 +1196,7 @@ killed 32 of its 50 requests on 2026-10-04.
 ### How many requests a server can take at once
 
 ```bash
-lh throughput --model eval-7b --texts convos.jsonl --levels 1,2,4
+soh throughput --model eval-7b --texts convos.jsonl --levels 1,2,4
 ```
 
 The command sends every line's `text` to a gateway alias with 1, 2 and 4
@@ -1225,8 +1234,8 @@ flight nothing is gained, because the server has four slots.
 ### How much memory a run can take
 
 ```bash
-lh memory ramp    # allocate 1 GB at a time on the GPU until macOS first warns
-lh memory show    # what was measured, per machine
+soh memory ramp    # allocate 1 GB at a time on the GPU until macOS first warns
+soh memory show    # what was measured, per machine
 ```
 
 The ramp fills memory with random data, so the compressor cannot shrink it.
@@ -1285,9 +1294,9 @@ out of the repo because the items are usually other people's words:
 | `labels.jsonl` | the labelling page only | append-only answers, each with the rubric stamp and the page's interface version |
 
 ```bash
-lh rubric label <name>                     # a page, one item at a time
-lh rubric status <name>                    # how many are labelled, and your repeat agreement
-lh rubric run <name> --candidates eval-4b  # score models against your labels
+soh rubric label <name>                     # a page, one item at a time
+soh rubric status <name>                    # how many are labelled, and your repeat agreement
+soh rubric run <name> --candidates eval-4b  # score models against your labels
 ```
 
 About one item in five is shown again, looking like any other, so your

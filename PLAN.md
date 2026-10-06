@@ -1,4 +1,4 @@
-# localharness
+# SoHoT
 
 A discovery engine. It looks for better ways to do its own job, measures whether
 they are actually better, and remembers the answer. The first domain it does
@@ -100,23 +100,23 @@ combination space deliberately.
 
 ### The product it happens to be
 
-`lh` is how a person or an agent uses the current answers:
+`soh` is how a person or an agent uses the current answers:
 
-    lh image "a red fox in falling snow" --width 768
-    lh video "a fox running" --seconds 2
-    lh svg   "a settings gear icon"
-    lh web   "a landing page for a coffee roaster"
-    lh code  "a python function that parses an ISO timestamp"
-    lh extract --file build.log "how many tests failed?"
-    lh say   "the tests all passed"          # cloned, French accent
-    lh discover --feeds                      # what is new and worth testing
-    lh hear  --seconds 5
+    soh image "a red fox in falling snow" --width 768
+    soh video "a fox running" --seconds 2
+    soh svg   "a settings gear icon"
+    soh web   "a landing page for a coffee roaster"
+    soh code  "a python function that parses an ISO timestamp"
+    soh extract --file build.log "how many tests failed?"
+    soh say   "the tests all passed"          # cloned, French accent
+    soh discover --feeds                      # what is new and worth testing
+    soh hear  --seconds 5
 
-Installed with `uv tool install --python 3.12 --editable .`, which puts `lh` on
+Installed with `uv tool install --python 3.12 --editable .`, which puts `soh` on
 PATH in its own venv and touches nothing the system Python can see.
 
 **The primary caller is an agent, not a person.** You ask Claude Code for an
-SVG; Claude Code runs `lh`. That is not a fallback for the CLI, it is the point
+SVG; Claude Code runs `soh`. That is not a fallback for the CLI, it is the point
 of it, and it is why the verbs print paths and exit non-zero on a bad artifact
 rather than being chatty. A second machine's agent reaches the same commands
 over MCP (section 3).
@@ -173,10 +173,10 @@ reason that actually matters, and it will not refuse the Studio's.
 ## 3. Architecture
 
 ```
-   lh (harness/cli.py)      evals/run.py      harness/mcp_server.py :8899
+   soh (harness/cli.py)      evals/run.py      harness/mcp_server.py :8899
           |                       |                    |
           +-----------+-----------+--------------------+
-                      |                          (shells out to `lh`)
+                      |                          (shells out to `soh`)
                    harness/
   engines.py  proc.py  completion.py  audio.py  checks/  jobs.py  memory.py  env.py
        |         |           |            |                 |        |         |
@@ -206,10 +206,10 @@ change, and that it speaks both `/v1/chat/completions` and Anthropic's
 
 `scripts/serve-mcp.sh` exposes `svg`, `web`, `code` and `image` over MCP on
 `0.0.0.0:8899`, so another person's Claude Code on another machine can use this
-one's GPU. `claude mcp add --transport http localharness http://<host>.local:8899/mcp`
+one's GPU. `claude mcp add --transport http soh http://<host>.local:8899/mcp`
 is the whole client setup.
 
-Every tool SHELLS OUT TO `lh`. The CLI, the eval suite and the MCP server run
+Every tool SHELLS OUT TO `soh`. The CLI, the eval suite and the MCP server run
 identical commands, which is the same rule as everywhere else in this repo and
 the reason a third caller cannot quietly drift from the product.
 
@@ -280,7 +280,7 @@ mlx-lm 0.31.3, mflux 0.19.1, mcp 2.1.1.
 
 ### The SVG lane is the wrong tool, and this is settled
 
-`lh svg` asks a general chat model to write bezier coordinates it cannot see.
+`soh svg` asks a general chat model to write bezier coordinates it cannot see.
 Asked for "a cartoon frog holding a coffee mug", Qwen2.5-7B emitted eighty
 near-identical `<path>` elements and hit the token ceiling mid-attribute; with
 sampling fixed it produced a complete, valid document of coloured blobs. Asked
@@ -288,12 +288,12 @@ for two concentric gears it drew two offset squares. The default at the time,
 Qwen2.5-1.5B, produced valid SVG in which every path was `M256 256 L256 256` --
 a zero-length line, `ink=0.0000`, structurally perfect and visually empty.
 
-**Generate a raster and vectorize it instead.** `lh image` produces a good
+**Generate a raster and vectorize it instead.** `soh image` produces a good
 cartoon frog in 54s; `vtracer` turns it into real vector paths in **0.05s**,
 `ink=0.2605`. That is a complete answer to a question an LLM cannot do at any
 size available here, and no amount of a better chat model changes it.
 
-Not yet wired into `lh` as a pipeline. When it is, the dedicated text-to-SVG
+Not yet wired into `soh` as a pipeline. When it is, the dedicated text-to-SVG
 models (OmniSVG, StarVector) are the other candidate worth measuring against
 it; both are torch on MPS rather than MLX.
 
@@ -352,7 +352,7 @@ They are hybrid THINKING models, and Qwen3-4B-Instruct-2507 is not. Asked to
 puts the reasoning in a separate `reasoning_content` field so nothing leaks into
 the artifact -- which is why it is easy to miss -- and what it does instead is
 eat the token budget. On an SVG the whole 4000 goes to reasoning and `content`
-returns NULL. `lh svg` timed out twice at 180s before anyone looked at the
+returns NULL. `soh svg` timed out twice at 180s before anyone looked at the
 response shape, and q3-8b scored 0/9 on svg, every run a timeout.
 
 **A pass rate says how often something fails, never how.** q3-14b's svg row read
@@ -463,7 +463,7 @@ one of them, natively in MLX:
     generate-qwen-edit    generate-flux2-edit   upscale-seedvr2
     upscale-controlnet    concept-from-image    lora-library / train
 
-**Nineteen workflow primitives.** `lh discover --lane image` prints them and
+**Nineteen workflow primitives.** `soh discover --lane image` prints them and
 says which have a runner. As of 2026-09-07 three do: `controlnet`,
 `upscale-controlnet` and `upscale-seedvr2`, all via `ChainRunner` (#24). One of
 them is measured, and the measurement is that it does not work: `upscale-seedvr2`
@@ -489,7 +489,7 @@ would take installing torch and ComfyUI to settle. And the memory figure that
 rules ComfyUI out for video (~40 GB resident) was measured by someone else on
 an M4 Pro with 64 GB, not here. Both are cited rather than owned.
 
-The decision is also recorded in `lh discover`, which prints ComfyUI as
+The decision is also recorded in `soh discover`, which prints ComfyUI as
 `declined` with this reasoning and the issue number, so the question is not
 rediscovered from scratch by whoever next wonders about it.
 
@@ -614,11 +614,11 @@ of those.
    when any candidate's metric is partial.
 
 3. **DONE 2026-09-07. Give the svg lane its second method.** Wire image-then-vectorize into
-   `lh svg` and measure it against the LLM path on the same cases. Proven at
+   `soh svg` and measure it against the LLM path on the same cases. Proven at
    0.05s producing a recognisable frog, where five language models produced
    coloured blobs.
 
-   Shipped as `lh svg --method trace` and the eval candidate
+   Shipped as `soh svg --method trace` and the eval candidate
    `trace:mflux:flux2-klein-4b`, scored by the same checker on the same cases.
    MEASURED, two cases at --repeat 2:
 
@@ -678,7 +678,7 @@ of those.
    dictation, GPLv3) runs the same two model families on entirely different
    stacks:
 
-   | family | EnviousWispr | localharness |
+   | family | EnviousWispr | SoHoT |
    |---|---|---|
    | Whisper | **WhisperKit** (CoreML) | mlx-whisper (MLX) |
    | Parakeet | **FluidAudio** (Swift) | mlx_audio (MLX) |
@@ -751,9 +751,9 @@ of those.
 7. **DONE 2026-09-07. `--json` on every verb.** The primary caller is an agent
    parsing stdout, not a person reading it.
 
-       $ lh extract "how many tests passed?" -f run.log --json
+       $ soh extract "how many tests passed?" -f run.log --json
        {"ok": true, "verb": "extract", "body": "671"}
-       $ lh extract "how many?" -f missing.log --json          # exit 1
+       $ soh extract "how many?" -f missing.log --json          # exit 1
        {"ok": false, "verb": "extract", "error": "no such file: missing.log"}
 
    FAILURES ARE DATA TOO, on stdout, not a line on stderr. An agent that has to
@@ -815,7 +815,7 @@ of those.
    FIRST FINDING, a human's: outputs had FOUR homes and one was relative --
    `out/` (relative to the caller's cwd), `~/localharness-out/` (MCP),
    `.logs/` (eval runs mixed with service logs) and `/tmp/` (whatever I was
-   doing). `lh` installs onto PATH, so the relative one scattered artifacts
+   doing). `soh` installs onto PATH, so the relative one scattered artifacts
    into every directory anyone happened to be standing in.
 
    Fixed: `harness/paths.py` is the single authority, everything resolves
@@ -892,7 +892,7 @@ the hours. Revisit every one on the Studio.
   isolation was assumed.
 - **An abandoned request stays queued.** A readiness loop that fires every
   second and gives up after N seconds does not retry, it enqueues. 120 of them
-  once wedged all three services. Two of them were enough to make `lh svg` look
+  once wedged all three services. Two of them were enough to make `soh svg` look
   like a broken model when the server was simply working through my own
   timeouts. After any tool timeout, check for survivors before concluding
   anything: `lsof -nP -iTCP:8081 | grep -c ESTABLISHED`.
@@ -940,7 +940,7 @@ the hours. Revisit every one on the Studio.
   module about `code` cases loaded the whole case tree and the generated `stt`
   cases reference audio on the volume. Scope a test's data load to its own lane.
 - **An eval median is a WARM number.** The suite sequences by candidate so the
-  model load amortises across cases; a one-shot `lh` command pays a cold load
+  model load amortises across cases; a one-shot `soh` command pays a cold load
   every time the resident model differs. Do not quote one as CLI latency.
 - **MCP SDK 2.x moved everything.** `FastMCP` is `MCPServer`, host and port are
   `run()` kwargs rather than settings, the client names went snake_case, and

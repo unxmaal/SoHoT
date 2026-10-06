@@ -35,7 +35,7 @@ _ESSENTIAL = ("bash", "sh", "dirname", "uname", "grep", "find", "head",
 
 #: Everything preflight looks for that a stub can stand in for.
 _CHECKED = ("git", "curl", "make", "shellcheck", "ffmpeg", "rsvg-convert",
-            "zsh", "sox", "uv", "lh", "google-chrome", "aplay")
+            "zsh", "sox", "uv", "soh", "google-chrome", "aplay")
 
 pytestmark = pytest.mark.skipif(
     sys.platform == "win32", reason="preflight.sh is for the unix machines"
@@ -176,10 +176,10 @@ def test_no_llama_server_is_a_note_not_a_failure(tmp_path):
     assert code == 0, out
 
 
-def test_lh_absent_is_a_failure(tmp_path):
-    present = [t for t in _CHECKED if t != "lh"]
+def test_soh_absent_is_a_failure(tmp_path):
+    present = [t for t in _CHECKED if t != "soh"]
     code, out = run_preflight(tmp_path, _bin(tmp_path, present))
-    assert "MISSING  lh on PATH" in out, out
+    assert "MISSING  soh on PATH" in out, out
     assert code == 1
 
 

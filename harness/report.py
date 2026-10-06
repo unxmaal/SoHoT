@@ -316,9 +316,9 @@ def render(now: dict, before: dict | None = None) -> str:
     return f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>localharness</title><style>{CSS}</style></head>
+<title>SoHoT</title><style>{CSS}</style></head>
 <body><main>
-<h1>localharness</h1>
+<h1>SoHoT</h1>
 <p class="sub">{_esc(when)} &middot; {_esc(', '.join(m['runtimes']))}
  &middot; {_esc(m['kind'])} {m['total_gb']:.0f} GB</p>
 

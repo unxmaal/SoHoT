@@ -1,4 +1,4 @@
-"""localharness over MCP: the same `lh`, reachable from the LAN.
+"""SoHoT over MCP: the same `soh`, reachable from the LAN.
 
 A second agent on another machine (its own Claude Code, its own context) asks
 this one to draw something. What crosses the network is a tool call; what runs
@@ -64,7 +64,7 @@ LH = [sys.executable, "-m", "harness.cli"]
 DEFAULT_TIMEOUT = 300.0
 
 SERVER = MCPServer(
-    name="localharness",
+    name="SoHoT",
     instructions=(
         "Local media generation on Apple Silicon. svg, web and code answer in "
         "a few seconds. image and video go on this machine's work queue and "
@@ -116,7 +116,7 @@ def _text_tool(verb: str, prompt: str, model: str = "") -> str:
         argv += ["-m", model]
     run_lh(argv)
     if not out.exists():
-        raise RuntimeError(f"lh {verb} exited 0 but wrote nothing to {out}")
+        raise RuntimeError(f"soh {verb} exited 0 but wrote nothing to {out}")
     return out.read_text(encoding="utf-8")
 
 
@@ -309,7 +309,7 @@ def _local_hostname() -> str:
 
 def main() -> None:
     import argparse
-    ap = argparse.ArgumentParser(prog="lh-mcp")
+    ap = argparse.ArgumentParser(prog="soh-mcp")
     ap.add_argument("--host", default="0.0.0.0")
     ap.add_argument("--port", type=int, default=8899)
     ap.add_argument("--allow", action="append", default=[],

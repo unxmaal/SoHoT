@@ -246,13 +246,13 @@ def plan(rows, *, missing=None) -> list[dict]:
                 else f"no runner for the {lane} lane" if lane
                 else "no lane, so no case and no metric")
         elif absent == [name]:
-            state, why = WAITING, "weights are not on disk; lh fetch --run"
+            state, why = WAITING, "weights are not on disk; soh fetch --run"
         elif absent:
             # NAME WHAT IS MISSING. "not ready" without the id sends whoever
             # reads it back to the server log to find out what to fetch.
             state, why = WAITING, (
                 f"needs {', '.join(absent)}, which its config names and "
-                f"nothing has fetched; lh fetch --run")
+                f"nothing has fetched; soh fetch --run")
         else:
             state, why = READY, f"evals.run --modality {lane} --screen"
         out.append({**row, "state": state, "why_not": why, "candidate": spec,

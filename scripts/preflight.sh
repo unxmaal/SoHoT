@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # What a machine needs before it has any lanes at all.
 #
-# This runs BEFORE uv and lh exist, which is why it is shell and not an lh
-# subcommand: half its job is telling you that uv is missing. `lh discover`
+# This runs BEFORE uv and soh exist, which is why it is shell and not a soh
+# subcommand: half its job is telling you that uv is missing. `soh discover`
 # covers the lane-level question once the project is installed; this covers the
 # host-level preconditions the setup docs state in prose.
 #
@@ -107,10 +107,10 @@ fi
 
 section "the project itself"
 need uv "curl -LsSf https://astral.sh/uv/install.sh | sh"
-if have lh; then
-  ok "lh on PATH"
+if have soh; then
+  ok "soh on PATH"
 else
-  bad "lh on PATH" 'uv tool install --python 3.12 --editable . && export PATH="$HOME/.local/bin:$PATH"'
+  bad "soh on PATH" 'uv tool install --python 3.12 --editable . && export PATH="$HOME/.local/bin:$PATH"'
 fi
 
 section "weights root"
@@ -173,7 +173,7 @@ done
 if [ -n "$player" ]; then
   ok "$player"
 else
-  note "no audio player" "lh say --play needs one of: $players"
+  note "no audio player" "soh say --play needs one of: $players"
 fi
 
 printf '\n'

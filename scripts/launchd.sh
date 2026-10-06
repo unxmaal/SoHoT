@@ -35,9 +35,9 @@ DISCOVER_INTERVAL="${DISCOVER_INTERVAL:-21600}"   # six hours
 # uv, ffmpeg, rsvg-convert and rec all live in /opt/homebrew/bin, so without
 # this every service dies on "command not found" -- the same trap a GUI-spawned
 # wezterm set for the voice scripts, and it is just as invisible here.
-# $HOME/.local/bin is where uv puts `lh`, and serve-mcp.sh shells out to it for
+# $HOME/.local/bin is where uv puts `soh`, and serve-mcp.sh shells out to it for
 # every tool call. Without it that unit loads, listens, and fails each call with
-# "lh: command not found".
+# "soh: command not found".
 JOB_PATH="$HOME/.local/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 
 # AND PATH IS NOT THE ONLY THING launchd DROPS. env.sh resolves the weights

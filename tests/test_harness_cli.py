@@ -929,3 +929,27 @@ def test_an_unguarded_entry_point_really_does_leave_hf_home_unset(module,
     except SystemExit:
         pass
     assert os.environ.get("HF_HOME"), f"{module} left HF_HOME unset"
+
+
+# ---- #193: soh is the command, lh the deprecated alias ----------------------
+
+def test_soh_and_lh_are_the_same_entry_point():
+    import tomllib
+    pyproject = Path(__file__).resolve().parents[1] / "pyproject.toml"
+    scripts = tomllib.loads(pyproject.read_text(encoding="utf-8"))["project"]["scripts"]
+    assert scripts["soh"] == scripts["lh"] == "harness.cli:main"
+
+
+def test_the_installed_soh_and_lh_resolve_to_the_same_function():
+    from importlib.metadata import entry_points
+    eps = {e.name: e for e in entry_points(group="console_scripts")
+           if e.name in ("soh", "lh")}
+    if set(eps) != {"soh", "lh"}:
+        pytest.skip("the project is not installed with both scripts")
+    assert eps["soh"].load() is eps["lh"].load() is cli.main
+
+
+def test_help_names_the_product_and_the_command():
+    ap = cli.build_parser()
+    assert ap.prog == "soh"
+    assert ap.description.startswith("SoHoT")
