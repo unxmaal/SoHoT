@@ -94,11 +94,6 @@ def test_the_order_is_stable_when_two_rows_tie():
 
 # --- reading the facts out of a description ------------------------------
 
-def test_a_size_is_read_from_the_card_text():
-    assert rank.size_gib("task x; 2.3 GiB of weights") == pytest.approx(2.3)
-    assert rank.size_gib("nothing here") == 0.0
-
-
 def test_serving_is_read_from_the_gateway_config_not_a_list():
     """A hand-kept list of what we run, beside the thing that runs it, drifts
     within a week."""

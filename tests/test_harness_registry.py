@@ -221,7 +221,8 @@ def test_the_download_queue_refuses_a_github_name(db):
                            ("org/tool", ms.GITHUB)):
         see(db, name, registry=registry, kind="weights", resolved=name,
             lane="image")
-        ms.decide(db, name, "queued", tier="inspect", detail="bytes=10")
+        ms.set_size(db, name, 10)
+        ms.decide(db, name, "queued", tier="inspect", detail="fits")
     got = [r["name"] for r in fetching.queued(db, needs_lane=False)]
     assert got == ["org/model"]
 

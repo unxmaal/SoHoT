@@ -96,6 +96,7 @@ def test_fetch_downloads_one_gguf_file_and_records_it(home, monkeypatch):
     ms.record(db, ms.Seen(name="org/Model-4B-GGUF", source="t",
                           resolved="org/Model-4B-GGUF", kind="weights",
                           lane="code"))
+    ms.set_size(db, "org/Model-4B-GGUF", int(2.5 * GIB))
     ms.decide(db, "org/Model-4B-GGUF", "queued", tier="inspect",
               size_bytes=int(2.5 * GIB))
     monkeypatch.setattr(fetching.rank, "unrunnable", lambda row, m=None: "")

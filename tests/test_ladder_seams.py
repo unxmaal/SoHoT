@@ -191,12 +191,13 @@ def test_a_candidate_past_the_limit_keeps_its_measured_size(store, tmp_path):
 
 
 def test_the_size_column_alone_is_enough_to_fetch(store, tmp_path):
-    """The inspect tier now writes `size_bytes` and prose without `bytes=`."""
+    """The inspect tier writes proposals.size_bytes and prose without `bytes=`."""
     from harness import memory_store as ms
     ms.record(store, ms.Seen(name="org/col", source="s", url="", why="",
                              relevance=0, kind="candidate",
                              registry=ms.HUGGINGFACE, lane="code",
                              resolved="org/col", description="weights"))
+    ms.set_size(store, "org/col", int(0.1 * 1024 ** 3))
     ms.decide(store, "org/col", "queued", tier="inspect",
               detail="fits: weights from 0.1 to 0.1 GiB",
               size_bytes=int(0.1 * 1024 ** 3))

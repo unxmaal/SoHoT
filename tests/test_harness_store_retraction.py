@@ -37,7 +37,7 @@ def _seed(conn, name, outcome, detail):
                             relevance=0, kind="candidate",
                             registry=ms.HUGGINGFACE, lane="code",
                             resolved=name))
-    ms.decide(conn, name, "queued", tier=ms.INSPECT, detail="bytes=1")
+    ms.decide(conn, name, "queued", tier=ms.INSPECT, detail="fits")
     ms.decide(conn, name, outcome, tier="adopt", detail=detail)
 
 

@@ -23,8 +23,8 @@ def _seed(conn, rows):
                                     why="", relevance=0, kind=kind,
                                     registry=registry, lane=lane,
                                     resolved=name))
-        ms.decide(conn, name, "queued", tier="inspect",
-                  detail="bytes=1073741824 fits")
+        ms.set_size(conn, name, 1073741824)
+        ms.decide(conn, name, "queued", tier="inspect", detail="fits")
 
 
 @pytest.fixture

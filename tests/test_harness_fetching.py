@@ -139,11 +139,12 @@ def test_something_already_in_the_cache_is_not_queued(db, tmp_path, monkeypatch)
     assert [r["name"] for r in f.queued(db)] == ["org/want"]
 
 
-def test_the_size_is_read_from_the_store_not_asked_for_again():
+def test_the_size_is_read_from_the_store_not_asked_for_again(db):
     """The registry rate-limits, and a size already measured is a fact."""
-    assert f.size_of({"detail": "fits: bytes=1234 MLX-native"}) == 1234
-    assert f.size_of({"detail": "no size here"}) == 0
-    assert f.size_of({}) == 0
+    seen(db, "org/sized")
+    ms.set_size(db, "org/sized", 1234)
+    ms.decide(db, "org/sized", "queued", tier="inspect")
+    assert [r["size_bytes"] for r in f.queued(db)] == [1234]
 
 
 def test_fetching_lifts_the_offline_guard_and_puts_it_back(monkeypatch):
@@ -169,8 +170,9 @@ def test_a_refusal_does_not_consume_the_download_budget(db):
     calls = []
     for name, score in [("org/unsized", 9), ("org/real", 5)]:
         seen(db, name)
-        ms.decide(db, name, "queued", tier="inspect", score=score,
-                  detail="" if name == "org/unsized" else "bytes=2000000000")
+        if name != "org/unsized":
+            ms.set_size(db, name, 2000000000)
+        ms.decide(db, name, "queued", tier="inspect", score=score)
     f.run(db, {"org/real": 2 * f.GIB}, limit=1,
           snapshot=lambda repo_id: calls.append(repo_id) or "/tmp/x",
           free=900 * f.GIB)

@@ -142,7 +142,7 @@ class Completions:
 def seeded_store(conn, rows):
     """Proposals with an inspect verdict queuing them, as a sweep leaves them.
 
-    `rows` are (name, lane, gib, times). Sizes are written in the format the
+    `rows` are (name, lane, gib, times). Sizes are written to the column the
     fetch tier reads, because a size sitting in a verdict row the reader did
     not look at settled 16 real candidates permanently (#211).
     """
@@ -155,6 +155,6 @@ def seeded_store(conn, rows):
                                     registry=ms.HUGGINGFACE, lane=lane,
                                     resolved=name,
                                     description=f"{gib:.1f} GiB of weights"))
-        ms.decide(conn, name, "queued", tier="inspect",
-                  detail=f"bytes={int(gib * 1024 ** 3)} fits")
+        ms.set_size(conn, name, int(gib * 1024 ** 3))
+        ms.decide(conn, name, "queued", tier="inspect", detail="fits")
     return conn
