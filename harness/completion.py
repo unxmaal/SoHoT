@@ -245,10 +245,11 @@ def complete_full(prompt: str, model: str, gateway: str = DEFAULT_GATEWAY,
         raise CompletionError(f"timed out after {timeout}s", reasons.TIMEOUT,
                               ("timeout_s", timeout)) from exc
     except httpx.HTTPStatusError as exc:
-        if exc.response.status_code == 401:
-            from harness import gateway_key
+        from harness import gateway_key
+        status = exc.response.status_code
+        if gateway_key.refused(status, exc.response.text, gateway_key.key()):
             raise CompletionError(
-                f"gateway at {gateway} refused the key (HTTP 401): "
+                f"gateway at {gateway} refused the key (HTTP {status}): "
                 f"{gateway_key.HINT}", reasons.HARNESS_ERROR) from exc
         # LiteLLM explains itself in the body, not the status line.
         raise CompletionError(

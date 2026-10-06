@@ -303,3 +303,85 @@ def test_smoke_without_a_key_says_where_to_get_one(tmp_path):
     r = _smoke({"GATEWAY_PORT": "9"}, tmp_path)
     assert r.returncode != 0
     assert "soh gateway key" in r.stdout + r.stderr
+
+
+#: What LiteLLM 1.100.0 sent before #501: 500 to no key, 400 to a key it took for a virtual one.
+OLD_REFUSALS = [(500, '{"error":{"message":"Internal server error"}}', ""),
+                (400, '{"error":{"message":"No connected db.","type":"no_db_connection"}}', "sk-x"),
+                (401, '{"error":{"message":"Authentication Error"}}', "sk-x"),
+                (403, '{"error":{"message":"forbidden"}}', "sk-x")]
+
+
+@pytest.mark.parametrize("status,body,sent", OLD_REFUSALS,
+                         ids=["500-no-key", "400-no-db", "401", "403"])
+def test_every_shape_of_refusal_is_a_refusal(status, body, sent):
+    assert gk.refused(status, body, sent)
+
+
+@pytest.mark.parametrize("status,body,sent", [
+    (500, '{"error":{"message":"upstream crashed"}}', "sk-x"),
+    (400, '{"error":{"message":"bad request"}}', "sk-x"),
+    (404, "not found", ""), (200, "", "")], ids=["500-with-key", "400", "404", "200"])
+def test_other_errors_are_not_refusals(status, body, sent):
+    assert not gk.refused(status, body, sent)
+
+
+class Refusing(ThreadingHTTPServer):
+    """A gateway that refuses every request one fixed way."""
+
+    def __init__(self, status: int, body: str):
+        payload = body.encode()
+
+        class Handler(BaseHTTPRequestHandler):
+            def log_message(self, *a):
+                pass
+
+            def do_POST(self):
+                self.rfile.read(int(self.headers.get("Content-Length") or 0))
+                self.send_response(status)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(payload)))
+                self.end_headers()
+                self.wfile.write(payload)
+
+        super().__init__(("127.0.0.1", 0), Handler)
+        threading.Thread(target=self.serve_forever, daemon=True).start()
+        self.url = f"http://127.0.0.1:{self.server_address[1]}"
+
+
+@pytest.mark.parametrize("status,body,sent", OLD_REFUSALS[:2], ids=["500-no-key", "400-no-db"])
+def test_a_completion_names_the_command_whatever_status_refuses_it(monkeypatch, status, body,
+                                                                   sent):
+    from harness import completion, reasons
+    if sent:
+        monkeypatch.setenv("SOHOT_GATEWAY_KEY", sent)
+    g = Refusing(status, body)
+    try:
+        with pytest.raises(completion.CompletionError) as e:
+            completion.complete("hi", model="m", gateway=g.url)
+    finally:
+        g.shutdown()
+    assert "soh gateway key" in str(e.value)
+    assert e.value.failure_class == reasons.HARNESS_ERROR
+
+
+def test_a_refused_rubric_eval_names_the_command(monkeypatch):
+    from harness import rubric_eval
+    monkeypatch.setenv("SOHOT_GATEWAY_KEY", "sk-wrong")
+    g = Refusing(*OLD_REFUSALS[1][:2])
+    rubric = type("R", (), {"instructions": "", "name": "n", "schema": {}, "label": "l"})()
+    try:
+        v = rubric_eval.evaluate(rubric, "text", "m", g.url)
+    finally:
+        g.shutdown()
+    assert not v.ok and "soh gateway key" in v.error
+
+
+@pytest.mark.parametrize("path", ["gateway/config.yaml", "gateway/config.cuda.yaml"])
+def test_both_configs_answer_a_bad_key_with_401(path):
+    """Through the hook beside the config, never by letting the request through."""
+    import yaml
+    body = yaml.safe_load((REPO / path).read_text(encoding="utf-8"))
+    hook = body["general_settings"]["custom_auth"]
+    assert (REPO / "gateway" / (hook.rsplit(".", 1)[0] + ".py")).exists()
+    assert "allow_requests_on_db_unavailable" not in str(body)

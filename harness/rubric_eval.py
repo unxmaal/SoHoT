@@ -173,6 +173,11 @@ def evaluate(rubric: Rubric, text: str, model: str, gateway: str,
         jsonschema.validate(value, rubric.schema)
         return Verdict(True, value[rubric.label], raw, "",
                        time.monotonic() - t0)
+    except httpx.HTTPStatusError as exc:
+        why = f"{type(exc).__name__}: {exc}"[:300]
+        if gateway_key.refused(exc.response.status_code, exc.response.text, gateway_key.key()):
+            why = f"gateway refused the key: {gateway_key.HINT}"
+        return Verdict(False, None, raw, why, time.monotonic() - t0)
     except (ValueError, KeyError, IndexError, TypeError,
             jsonschema.ValidationError, httpx.HTTPError) as exc:
         return Verdict(False, None, raw, f"{type(exc).__name__}: {exc}"[:300],

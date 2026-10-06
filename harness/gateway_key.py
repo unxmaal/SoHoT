@@ -102,6 +102,15 @@ def headers(environ=None, store=None) -> dict:
     return {"Authorization": f"Bearer {k}"} if k else {}
 
 
+def refused(status: int, body: str = "", sent: str = "") -> bool:
+    """Whether a gateway reply is a key refusal: 401 since #501, 400/500 from LiteLLM before it."""
+    if status in (401, 403):
+        return True
+    if status == 400 and "no_db_connection" in (body or ""):
+        return True
+    return status == 500 and not sent
+
+
 def generate() -> str:
     return "sk-" + secrets.token_urlsafe(32)
 
