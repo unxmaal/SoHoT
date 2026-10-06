@@ -10,7 +10,6 @@ about the model, and could not be found again when the machine changed.
 the only identifier in it was `arm64`.
 """
 import re
-import sqlite3
 
 import pytest
 
@@ -140,35 +139,32 @@ def test_only_the_latest_verdict_can_be_revisited(store):
 
 # --- the migration --------------------------------------------------------
 
-def test_an_old_store_is_attributed_and_says_it_was_inferred(tmp_path):
+SCHEMA_11 = """
+    CREATE TABLE proposals (id INTEGER PRIMARY KEY, name TEXT,
+        kind TEXT DEFAULT '', lane TEXT DEFAULT '',
+        resolved TEXT DEFAULT '', consumes TEXT DEFAULT '',
+        produces TEXT DEFAULT '', first_seen REAL DEFAULT 0,
+        last_seen REAL DEFAULT 0, registry TEXT DEFAULT '',
+        description TEXT DEFAULT '');
+    CREATE TABLE verdicts (id INTEGER PRIMARY KEY, proposal_id INTEGER,
+        outcome TEXT, tier TEXT DEFAULT '', detail TEXT DEFAULT '',
+        issue INTEGER, run_path TEXT DEFAULT '', score REAL,
+        rubric TEXT DEFAULT '', judge TEXT DEFAULT '', decided_at REAL);
+"""
+
+
+def test_an_old_store_is_attributed_and_says_it_was_inferred(old_store):
     """1767 rows predate the column. Only this Mac has ever written to the
     real store, so attributing them to the migrating machine is right HERE
     and would be wrong on a store that had genuinely been shared -- the
     fingerprint is recorded so a reader can see what was assumed."""
-    path = tmp_path / "old.db"
-    old = sqlite3.connect(path)
-    old.executescript("""
-        CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT);
-        INSERT INTO meta VALUES ('schema','11');
-        CREATE TABLE proposals (id INTEGER PRIMARY KEY, name TEXT,
-            kind TEXT DEFAULT '', lane TEXT DEFAULT '',
-            resolved TEXT DEFAULT '', consumes TEXT DEFAULT '',
-            produces TEXT DEFAULT '', first_seen REAL DEFAULT 0,
-            last_seen REAL DEFAULT 0, registry TEXT DEFAULT '',
-            description TEXT DEFAULT '');
-        CREATE TABLE verdicts (id INTEGER PRIMARY KEY, proposal_id INTEGER,
-            outcome TEXT, tier TEXT DEFAULT '', detail TEXT DEFAULT '',
-            issue INTEGER, run_path TEXT DEFAULT '', score REAL,
-            rubric TEXT DEFAULT '', judge TEXT DEFAULT '', decided_at REAL);
+    path = old_store(11, """
         INSERT INTO proposals (id,name) VALUES (1,'org/a'),(2,'org/b');
         INSERT INTO verdicts (proposal_id,outcome,detail,decided_at)
           VALUES (1,'declined','needs-cuda on arm64: no runtime',0),
                  (2,'declined','too-big: smallest weight it names is 52.7 GiB,
                                 over the 22 GiB ceiling',0);
-    """)
-    old.commit()
-    old.close()
-
+    """, ddl=SCHEMA_11)
     conn = ms.connect(path)
     try:
         rows = {r["detail"][:8]: r["until"] for r in
@@ -255,7 +251,7 @@ def test_the_upstream_idle_time_is_a_number_not_one_decimal_of_years(store):
     assert row["upstream_idle_days"] == pytest.approx(1058.5)
 
 
-def test_a_judge_using_the_word_workflow_is_not_a_verdict_about_one(tmp_path):
+def test_a_judge_using_the_word_workflow_is_not_a_verdict_about_one(old_store):
     """THE MIGRATION'S OWN NEAR-MISS, and the reason it recovers rather than
     recomputes.
 
@@ -266,28 +262,7 @@ def test_a_judge_using_the_word_workflow_is_not_a_verdict_about_one(tmp_path):
     judge explaining a score, not a declaration that a candidate is an adapter.
     Shipping it would have taught the fetch tier to refuse 57 real candidates.
     """
-    path = tmp_path / "old.db"
-    old = sqlite3.connect(path)
-    old.executescript("""
-        CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT);
-        INSERT INTO meta VALUES ('schema','13');
-        CREATE TABLE proposals (id INTEGER PRIMARY KEY, name TEXT,
-            kind TEXT DEFAULT '', lane TEXT DEFAULT '',
-            resolved TEXT DEFAULT '', consumes TEXT DEFAULT '',
-            produces TEXT DEFAULT '', first_seen REAL DEFAULT 0,
-            last_seen REAL DEFAULT 0, registry TEXT DEFAULT '',
-            description TEXT DEFAULT '');
-        CREATE TABLE verdicts (id INTEGER PRIMARY KEY, proposal_id INTEGER,
-            outcome TEXT, tier TEXT DEFAULT '', detail TEXT DEFAULT '',
-            issue INTEGER, run_path TEXT DEFAULT '', score REAL,
-            rubric TEXT DEFAULT '', judge TEXT DEFAULT '', decided_at REAL,
-            machine_id INTEGER, until TEXT DEFAULT '',
-            size_bytes INTEGER DEFAULT 0);
-        CREATE TABLE machines (id INTEGER PRIMARY KEY, fingerprint TEXT UNIQUE,
-            hw_model TEXT DEFAULT '', os TEXT DEFAULT '', arch TEXT DEFAULT '',
-            memory_gb REAL DEFAULT 0, accelerator TEXT DEFAULT '',
-            runtimes TEXT DEFAULT '', ceiling_gb REAL DEFAULT 0,
-            first_seen REAL DEFAULT 0, last_seen REAL DEFAULT 0);
+    path = old_store(13, """
         INSERT INTO proposals (id,name) VALUES (1,'org/judged'),(2,'org/lora'),
                                                (3,'org/old');
         INSERT INTO verdicts (proposal_id,outcome,tier,detail,decided_at)
@@ -297,9 +272,6 @@ def test_a_judge_using_the_word_workflow_is_not_a_verdict_about_one(tmp_path):
                   'lora in its own card: this attaches to a model rather than being one, and no lane can run it alone',0),
                  (3,'declined','inspect','dead: last commit 2.9 years ago',0);
     """)
-    old.commit()
-    old.close()
-
     conn = ms.connect(path)
     try:
         got = {r["proposal_id"]: (r["attaches_to"], r["upstream_idle_days"])

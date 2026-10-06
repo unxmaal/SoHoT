@@ -158,18 +158,21 @@ def test_counts_due_and_scheduled(store):
 
 # --- the migration ---------------------------------------------------------
 
-def test_backfill_schedules_existing_rejections_from_their_decision(tmp_path):
-    path = tmp_path / "old.db"
-    conn = ms.connect(path)
-    _reject(conn, "org/screened-out", at=T - 30 * 86400)
-    _reject(conn, "org/fresh", "declined", ms.ADOPT, at=T)
-    _reject(conn, "org/too-big", "declined", ms.INSPECT,
-            detail="too-big: weights from 40.0 to 60.0 GiB", at=T - 30 * 86400)
-    for col in ("retest_count", "next_retest_at"):
-        conn.execute(f"ALTER TABLE proposals DROP COLUMN {col}")
-    conn.execute("UPDATE meta SET value = '25' WHERE key = 'schema'")
-    conn.commit()
-    conn.close()
+def test_backfill_schedules_existing_rejections_from_their_decision(old_store):
+    old = T - 30 * 86400
+    path = old_store(25, f"""
+        INSERT INTO proposals (id, name, state, state_verdict_id) VALUES
+            (1, 'org/screened-out', 'broken', 1),
+            (2, 'org/fresh', 'declined', 2),
+            (3, 'org/too-big', 'declined', 3);
+        INSERT INTO verdicts (id, proposal_id, outcome, tier, detail, decided_at)
+          VALUES (1, 1, 'broken', 'screen', 'x', {old}),
+                 (2, 2, 'declined', 'adopt', 'x', {T}),
+                 (3, 3, 'declined', 'inspect',
+                  'too-big: weights from 40.0 to 60.0 GiB', {old});
+    """, proposals=", state TEXT DEFAULT '', state_verdict_id INTEGER",
+        verdicts=", candidate_id INTEGER, reopens INTEGER, "
+                 "reopen_kind TEXT DEFAULT ''")
     conn = ms.connect(path)
     try:
         got = {r["name"]: (r["retest_count"], r["next_retest_at"])

@@ -6,8 +6,6 @@ size sitting in the row above. The fix then was a second regex. These tests
 pin the column as the only thing the readers consult, so a format change in
 prose cannot move a number again.
 """
-import sqlite3
-
 import pytest
 
 from harness import fetching, rank
@@ -185,31 +183,9 @@ def test_backfill_keeps_a_size_already_written(store):
     assert _size(store, "a/x") == 3 * GIB
 
 
-def test_an_older_store_is_backfilled_on_connect(tmp_path):
-    """A hand-written schema 13 store, migrated by the real chain. No DROP
-    COLUMN: CI's SQLite rejects it on the current proposals table."""
-    path = tmp_path / "old.db"
-    old = sqlite3.connect(path)
-    old.executescript("""
-        CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT);
-        INSERT INTO meta VALUES ('schema','13');
-        CREATE TABLE proposals (id INTEGER PRIMARY KEY, name TEXT,
-            kind TEXT DEFAULT '', lane TEXT DEFAULT '',
-            resolved TEXT DEFAULT '', consumes TEXT DEFAULT '',
-            produces TEXT DEFAULT '', first_seen REAL DEFAULT 0,
-            last_seen REAL DEFAULT 0, registry TEXT DEFAULT '',
-            description TEXT DEFAULT '');
-        CREATE TABLE verdicts (id INTEGER PRIMARY KEY, proposal_id INTEGER,
-            outcome TEXT, tier TEXT DEFAULT '', detail TEXT DEFAULT '',
-            issue INTEGER, run_path TEXT DEFAULT '', score REAL,
-            rubric TEXT DEFAULT '', judge TEXT DEFAULT '', decided_at REAL,
-            machine_id INTEGER, until TEXT DEFAULT '',
-            size_bytes INTEGER DEFAULT 0);
-        CREATE TABLE machines (id INTEGER PRIMARY KEY, fingerprint TEXT UNIQUE,
-            hw_model TEXT DEFAULT '', os TEXT DEFAULT '', arch TEXT DEFAULT '',
-            memory_gb REAL DEFAULT 0, accelerator TEXT DEFAULT '',
-            runtimes TEXT DEFAULT '', ceiling_gb REAL DEFAULT 0,
-            first_seen REAL DEFAULT 0, last_seen REAL DEFAULT 0);
+def test_an_older_store_is_backfilled_on_connect(old_store):
+    """A schema 13 store from explicit DDL, migrated by the real chain. #442."""
+    path = old_store(13, """
         INSERT INTO proposals (id, name, description) VALUES
             (1, 'org/prose', '9.0 GiB of weights'),
             (2, 'org/card', 'task x; 4.0 GiB of weights'),
@@ -219,8 +195,6 @@ def test_an_older_store_is_backfilled_on_connect(tmp_path):
                  (3, 'queued', 'fetch',
                   '5.0 GiB would take this run past its 6 GiB budget', 0);
     """)
-    old.commit()
-    old.close()
     conn = ms.connect(path)
     try:
         assert {r["name"]: r["size_bytes"] for r in conn.execute(
