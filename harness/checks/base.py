@@ -15,6 +15,8 @@ class CheckResult:
     #: Numbers this check produced alongside its verdict. A pass rate separates
     #: working from broken; these are what put two working candidates in order.
     metrics: dict = field(default_factory=dict)
+    #: A reasons class when the checker itself failed, not the artifact. #505.
+    failure_class: str = ""
 
 
 _FENCE = re.compile(r"```[a-zA-Z]*\s*\n(.*?)```", re.S)
