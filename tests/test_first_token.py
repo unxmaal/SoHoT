@@ -299,7 +299,10 @@ def test_claude_code_asks_for_partial_messages():
 
 
 def test_stream_run_times_each_line_as_it_arrives(tmp_path):
+    # The child speaks UTF-8 as claude does, not the Windows locale.
     script = ("import sys, time\n"
+              "sys.stdin.reconfigure(encoding='utf-8')\n"
+              "sys.stdout.reconfigure(encoding='utf-8')\n"
               "sys.stdout.write(sys.stdin.read().upper() + '\\n'); sys.stdout.flush()\n"
               "time.sleep(0.4)\n"
               "print('late', flush=True)\n")
