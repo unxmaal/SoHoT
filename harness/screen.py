@@ -350,7 +350,12 @@ NOT_THE_CANDIDATE = (
     "no such file or directory",
     # A sampling setting the runner chose and the pipeline refused. #401.
     "guidance_scale has to be",
+    # mlx_lm.server after a Metal fault: every later request gets this. #404.
+    "generation thread died",
 )
+
+#: The model server is gone; screening on would spend every candidate on it. #404.
+SERVER_DEAD = ("generation thread died",)
 
 
 #: In stderr this is our missing script; inside a loader's error it is a file

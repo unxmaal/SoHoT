@@ -648,3 +648,15 @@ def test_schema_21_requeues_a_sampling_setting_the_pipeline_refused(tmp_path):
                              ).fetchone()[0] == "queued"
     finally:
         again.close()
+
+
+def test_schema_22_requeues_screens_of_a_dead_server(tmp_path):
+    """#404: six candidates were recorded broken against a crashed mlx_lm.server."""
+    again = _at_schema_18(tmp_path, "Qwen/Qwen3-0.6B", "code", "", "broken",
+                          'it ran and passed nothing: chunk-bytes: gateway returned '
+                          'HTTP 404: {"error": "generation thread died"}')
+    try:
+        assert again.execute("SELECT outcome FROM verdicts ORDER BY id DESC"
+                             ).fetchone()[0] == "queued"
+    finally:
+        again.close()

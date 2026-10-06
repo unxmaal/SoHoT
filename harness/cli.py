@@ -1777,6 +1777,10 @@ def _report_screen(a) -> int:
                       run_path=str(outdir) if outdir.exists() else "",
                       until=screen.load_until(r["candidate"])
                       if got == "declined" else "")
+            if any(d in detail.lower() for d in screen.SERVER_DEAD):
+                print("   the model server has died; stopping the screen so "
+                      "the rest are not spent on it (#404)")
+                return 1
     finally:
         store.close()
     return 0
