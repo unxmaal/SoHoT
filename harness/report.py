@@ -80,7 +80,8 @@ def lanes_state(conn) -> list[dict]:
         serves = adopted.get(lane) or typed.get(lane, "")
         # THE NUMBERS ARE THIS MACHINE'S. The winner may be another machine's
         # receipt, and a median is a fact about the machine that ran it. #341.
-        here = _row_for(newest, lane, serves) if newest else {}
+        here = _row_for(newest, _key_of_default(conn, lane, serves)) \
+            if newest else {}
         out.append({
             "lane": lane,
             "wanted": lane in L.WANTED,
@@ -138,21 +139,24 @@ def _newest_run_for(lane: str) -> str:
     return ""
 
 
-def _row_for(run: str, lane: str, serves: str) -> dict:
-    """The lane default's summary row in one run, or {}."""
-    from harness import paths, winners
+def _key_of_default(conn, lane: str, serves: str) -> str:
+    """The receipt key of what a lane serves, through the candidates table."""
+    from harness import candidates, screen
+    if not serves:
+        return ""
+    spec = screen.candidate_for(lane, serves, adopt=False) or serves
+    return candidates.key_for(conn, spec)
+
+
+def _row_for(run: str, key: str) -> dict:
+    """The summary row under `key` in one run, or {}."""
+    from harness import paths
     try:
         got = json.loads((paths.home() / "runs" / run / "results.json"
                           ).read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return {}
-    summary = got.get("summary") or {}
-    family = winners.FAMILIES.get(lane, "alias")
-    for candidate, row in summary.items():
-        if serves and (candidate == serves
-                       or winners.matches(serves, candidate, family)):
-            return row
-    return next(iter(summary.values())) if len(summary) == 1 else {}
+    return (got.get("summary") or {}).get(key) or {} if key else {}
 
 
 def _hw_model() -> str:

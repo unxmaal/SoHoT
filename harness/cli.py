@@ -1322,7 +1322,7 @@ def cmd_judge(a) -> int:
     music generation. This project hit that wall three times and answered by
     not building the capability. Issue #273.
     """
-    from harness import adopt, human, judge_server, lanes, winners
+    from harness import adopt, candidates, human, judge_server, lanes, winners
     from harness import memory_store as ms
 
     run = Path(a.run).expanduser()
@@ -1354,8 +1354,13 @@ def cmd_judge(a) -> int:
         names = sorted({p["a"] for p in pairs_} | {p["b"] for p in pairs_})
         store = ms.connect()
         try:
+            candidates.from_receipt(store, specs, lane=lane_)
             for challenger in names:
-                spec = specs.get(challenger, challenger)
+                spec = (candidates.get(store, challenger) or {}).get("spec")
+                if not spec:
+                    note(f"  not recorded: no stored candidate maps "
+                         f"{challenger} to a spec a lane can run")
+                    continue
                 if incumbent not in (challenger, spec):
                     # Decided on the names the pairs carry, recorded as the
                     # spec, which is what a lane can run. #337.
@@ -1713,7 +1718,7 @@ def _report_screen(a) -> int:
     """
     import subprocess
 
-    from harness import rank, screen
+    from harness import candidates, rank, screen
     from harness import memory_store as ms
 
     want = (getattr(a, "lane", "") or "").strip().lower()
@@ -1767,11 +1772,17 @@ def _report_screen(a) -> int:
             # out of its chatter: a tier that infers an outcome from stdout is
             # a tier that reports success when the format changes.
             summary = _summary_at(outdir)
+            ran = (_receipt_at(outdir) or {}).get("specs") or {}
+            candidates.from_receipt(store, ran, lane=r["modality"],
+                                    proposals={s: r["name"] for s in ran.values()})
+            cid = candidates.ensure(store, r["candidate"], proposal=r["name"],
+                                    lane=r["modality"])
+            key = candidates.key_for(store, r["candidate"])
             # The run's own stderr is where a refused request says so, and a
             # refusal is a fact about the harness rather than the candidate.
             got, why = screen.outcome(proc.returncode, summary,
                                       detail=(proc.stderr or "")[-2000:],
-                                      candidate=r["candidate"])
+                                      candidate=r["candidate"], key=key)
             print(f"   {got.upper()}: {why}")
             if proc.returncode != 0:
                 err(proc.stderr.strip()[-400:] or "no stderr")
@@ -1786,7 +1797,7 @@ def _report_screen(a) -> int:
                       detail=detail[:600],
                       run_path=str(outdir) if outdir.exists() else "",
                       until=screen.load_until(r["candidate"])
-                      if got == "declined" else "")
+                      if got == "declined" else "", candidate_id=cid)
             if any(d in detail.lower() for d in screen.SERVER_DEAD):
                 print("   the model server has died; stopping the screen so "
                       "the rest are not spent on it (#404)")
@@ -2271,7 +2282,7 @@ def _measure_and_adopt(a, row: dict) -> int:
     """
     import subprocess
 
-    from harness import adopt, screen, winners
+    from harness import adopt, candidates, screen, winners
     from harness import memory_store as ms
 
     name = row["name"]
@@ -2283,7 +2294,12 @@ def _measure_and_adopt(a, row: dict) -> int:
     want = (getattr(a, "lane", "") or "").strip().lower()
     lane = (want if want and lanes.serves(row.get("lane"), want)
             else lanes.canonical(row.get("lane")))
-    spec = screen.candidate_for(lane, name)
+    store = ms.connect()
+    try:
+        spec = candidates.for_proposal(store, lane, name,
+                                       row.get("description") or "")
+    finally:
+        store.close()
     if not spec:
         return err(f"{name}: screened in the {lane} lane and no candidate "
                    f"spec can be built for it")
@@ -2339,19 +2355,22 @@ def _measure_and_adopt(a, row: dict) -> int:
                    f"can be adopted from it")
     summary = data.get("summary") or {}
     rows = data.get("rows") or []
-    # MATCH ON THE SPEC, not the bare name: an engine receipt key carries the
-    # engine as its head, so `filipstrand/Z-Image-Turbo-mflux-4bit` has to be
-    # asked about as `mflux:filipstrand/...` for the two sides to line up.
-    inc_row = _summary_row(summary, inc_spec, lane)
-    ch_row = _summary_row(summary, spec, lane)
+    # The run's own specs map is the mapping; store it, then read keys back.
+    store = ms.connect()
+    try:
+        candidates.from_receipt(store, data.get("specs") or {}, lane=lane,
+                                proposals={spec: name})
+        inc_key = candidates.key_for(store, inc_spec)
+        ch_key = candidates.key_for(store, spec)
+    finally:
+        store.close()
+    inc_row = _summary_row(summary, inc_key)
+    ch_row = _summary_row(summary, ch_key)
     # ASSERT THE RUN IS THE ONE THAT WAS ASKED FOR. Naming the directory stops
     # the loop reading a stranger's receipt; this stops it reading a receipt
     # that is its own and yet describes a different exam, which a crashed or
     # partially-skipped candidate produces. #222.
-    named = {inc_spec, spec}
-    if not named & set(summary) and len(summary) and not (
-            _summary_row(summary, inc_spec, lane)
-            or _summary_row(summary, spec, lane)):
+    if len(summary) and not (inc_row or ch_row):
         return err(f"{name}: the receipt at {out} names {sorted(summary)!r} "
                    f"and neither candidate this run asked for, so it does not "
                    f"describe the run that was just made")
@@ -2402,14 +2421,10 @@ def _measure_and_adopt(a, row: dict) -> int:
           f"{verdict.why}")
     store = ms.connect()
     try:
-        adopt.record(store, verdict)
+        # On the proposal the candidate maps to, so it leaves survivors. #393.
+        adopt.record(store, verdict, spec=spec)
     finally:
         store.close()
-    # The verdict above is keyed on the spec; the proposal must leave the
-    # survivors list too, or the loop measures it again every run. #393.
-    if name != verdict.challenger:
-        _settle(name, "measured" if verdict.adopt else "declined",
-                f"{lane}: {verdict.why}")
     return 0
 
 
@@ -2424,42 +2439,11 @@ def _settle(name: str, outcome: str, detail: str) -> None:
         store.close()
 
 
-def _summary_row(summary: dict, wanted: str, lane: str) -> dict | None:
-    """The summary entry for a candidate, matched on the name the run used.
-
-    ASKS winners.matches RATHER THAN GUESSING. The three receipt spellings are
-    enumerated and argued there, and the shape differs by FAMILY in a way that
-    the local version got backwards for two of the three:
-
-        speech   mlx-community/Kokoro-82M-bf16  ->  Kokoro-82M-bf16/af_sky
-                 model is the HEAD, voice the tail
-        engine   mflux:flux2-klein-4b           ->  mflux/flux2-klein-4b-q8
-                 engine is the HEAD, model the tail
-
-    Written for the first, it matched `mflux` against `mflux:flux2-klein-4b`
-    and reported that the image lane's own control had contributed no rows to a
-    receipt it is plainly named in. Issue #219.
-
-    `quantised` counts as a match here. mflux hardcodes quantize=8, so every
-    image receipt names a -q8 artifact and refusing it would mean no image
-    candidate could ever be adopted. winners reports the distinction because
-    for a TYPED DEFAULT it is a finding; for the two sides of one paired run it
-    is the normal case.
-    """
-    from harness import screen, winners
-
-    # The engine's own key first: diffusers drops the owner, options add @k=v. #384.
-    named = screen.receipt_key(wanted)
-    if named and named in summary:
-        return {**(summary[named] or {}), "candidate": named}
-    # THE LANE IS REQUIRED, not defaulted. The receipt shape differs by family
-    # and a default would silently pick one, which is how this got written the
-    # wrong way round in the first place.
-    family = winners.FAMILIES.get(lanes.canonical(lane), "alias")
-    for key, row in summary.items():
-        if winners.matches(wanted, key, family):
-            return {**row, "candidate": key}
-    return None
+def _summary_row(summary: dict, key: str) -> dict | None:
+    """The summary entry under the receipt key the candidates table holds. #407."""
+    if not key or key not in summary:
+        return None
+    return {**(summary[key] or {}), "candidate": key}
 
 
 #: `_all_refused` found no rows under the key it was given while the receipt

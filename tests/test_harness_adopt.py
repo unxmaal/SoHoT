@@ -161,6 +161,8 @@ def test_the_incumbent_and_challenger_run_in_one_paired_invocation(monkeypatch, 
     # Patched at _receipt_at, because the loop now NAMES the directory it reads
     # rather than asking which one sorts highest. Issue #222.
     monkeypatch.setattr(cli, "_receipt_at", lambda out: {
+        "specs": {"Kokoro-82M-bf16": "tts:org/Kokoro-82M-bf16",
+                  "better-tts": "tts:org/better-tts"},
         # `passed` is load-bearing now: a control that passed NOTHING blocks
         # any verdict, because a candidate measured beside a dead control says
         # nothing about the candidate. #223.
@@ -204,21 +206,19 @@ def test_a_lane_with_no_incumbent_measures_nothing(monkeypatch, capsys):
     assert "no incumbent" in capsys.readouterr().out
 
 
-def test_a_summary_key_is_matched_on_its_stem():
-    """A run reports `Kokoro-82M-bf16/bm_george` for a candidate named
-    `mlx-community/Kokoro-82M-bf16`. Demanding the caller's exact string would
-    make every tts comparison unmatchable."""
+def test_a_summary_row_is_read_under_its_stored_key():
     from harness import cli
 
     got = cli._summary_row({"Kokoro-82M-bf16/bm_george": {"pass_rate": 1.0}},
-                           "mlx-community/Kokoro-82M-bf16", "tts")
+                           "Kokoro-82M-bf16/bm_george")
     assert got and got["candidate"] == "Kokoro-82M-bf16/bm_george"
 
 
 def test_an_unmatched_candidate_is_an_error_not_a_silent_skip():
     from harness import cli
 
-    assert cli._summary_row({"something-else": {}}, "org/wanted", "tts") is None
+    assert cli._summary_row({"something-else": {}}, "org/wanted") is None
+    assert cli._summary_row({"something-else": {}}, "") is None
 
 
 def test_only_the_latest_verdict_counts_as_a_survivor(tmp_path):

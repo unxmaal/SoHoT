@@ -343,12 +343,12 @@ def test_a_measured_proposal_leaves_the_survivors_list(monkeypatch, tmp_path):
     monkeypatch.setattr(adopt, "default_for",
                         lambda lane, fallback, conn=None: "q3-4b")
     monkeypatch.setattr("harness.screen.candidate_for",
-                        lambda lane, name: "llamacpp:chal" if name == "org/challenger" else name)
+                        lambda lane, name, *a, **k: "llamacpp:chal" if name == "org/challenger" else name)
     row = {"passed": 9, "total": 9}
     monkeypatch.setattr(cli, "_receipt_at", lambda out: {
         "summary": {"q3-4b": row, "llamacpp:chal": row}, "rows": []})
     monkeypatch.setattr(cli, "_summary_row",
-                        lambda summary, wanted, lane: {**row, "candidate": wanted})
+                        lambda summary, key: {**row, "candidate": key})
     monkeypatch.setattr(cli, "_all_refused", lambda rows, name: "")
     cli._measure_and_adopt(argparse.Namespace(repeat=3),
                            {"name": "org/challenger", "lane": "code"})
@@ -372,7 +372,7 @@ def test_the_incumbent_is_not_measured_against_itself(monkeypatch, tmp_path,
     monkeypatch.setattr(adopt, "default_for",
                         lambda lane, fallback, conn=None: "llamacpp:win")
     monkeypatch.setattr("harness.screen.candidate_for",
-                        lambda lane, name: "llamacpp:win")
+                        lambda lane, name, *a, **k: "llamacpp:win")
     assert cli._measure_and_adopt(argparse.Namespace(repeat=3),
                                   {"name": "org/winner", "lane": "code"}) == 0
     assert ran == []

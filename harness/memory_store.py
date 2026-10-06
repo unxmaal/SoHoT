@@ -19,7 +19,7 @@ from pathlib import Path
 
 from harness import paths, store
 
-SCHEMA_VERSION = 23
+SCHEMA_VERSION = 24
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
 VERDICTS = ("measured", "declined", "broken", "queued", "ignored", "screened")
@@ -82,9 +82,21 @@ CREATE TABLE IF NOT EXISTS sightings (
     UNIQUE (proposal_id, source, url)
 );
 
+-- Proposal <-> spec <-> receipt key, written once by whoever resolves it. #407.
+CREATE TABLE IF NOT EXISTS candidates (
+    id          INTEGER PRIMARY KEY,
+    -- NULL for a typed default or a command-line candidate.
+    proposal_id INTEGER REFERENCES proposals(id) ON DELETE SET NULL,
+    spec        TEXT NOT NULL UNIQUE,
+    receipt_key TEXT NOT NULL,
+    lane        TEXT NOT NULL DEFAULT '',
+    created_at  REAL NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS verdicts (
     id          INTEGER PRIMARY KEY,
-    proposal_id INTEGER NOT NULL REFERENCES proposals(id) ON DELETE CASCADE,
+    -- NULL only for a verdict about a candidate no proposal names. #407.
+    proposal_id INTEGER REFERENCES proposals(id) ON DELETE CASCADE,
     outcome     TEXT NOT NULL,
     tier        TEXT NOT NULL DEFAULT '',
     detail      TEXT NOT NULL DEFAULT '',
@@ -127,7 +139,8 @@ CREATE TABLE IF NOT EXISTS verdicts (
     -- nothing could find those rows: the reason was prose. Same shape as
     -- lanes.PARKED, which carries (why, until) for a lane and was the only
     -- place in the project that said out loud what it was waiting for.
-    until       TEXT NOT NULL DEFAULT ''
+    until       TEXT NOT NULL DEFAULT '',
+    candidate_id INTEGER REFERENCES candidates(id)
 );
 
 CREATE TABLE IF NOT EXISTS machines (
@@ -191,6 +204,8 @@ CREATE INDEX IF NOT EXISTS ix_human_votes_pair
     ON human_votes(lane, case_id, left_candidate, right_candidate);
 CREATE INDEX IF NOT EXISTS ix_sight_prop ON sightings(proposal_id);
 CREATE INDEX IF NOT EXISTS ix_verdict_prop ON verdicts(proposal_id);
+CREATE INDEX IF NOT EXISTS ix_cand_prop ON candidates(proposal_id);
+CREATE INDEX IF NOT EXISTS ix_cand_key ON candidates(receipt_key);
 CREATE INDEX IF NOT EXISTS ix_edges_src ON edges(src);
 CREATE INDEX IF NOT EXISTS ix_edges_dst ON edges(dst);
 """
@@ -673,6 +688,11 @@ def _migrate(conn: sqlite3.Connection) -> None:
         _requeue_broken_matching(conn, ("generation thread died",))
     if have < 23:
         import_human_verdicts_json(conn)
+    if have and have < 24:
+        _verdicts_name_a_candidate(conn)
+        backfill_candidates(conn)
+    conn.execute("CREATE INDEX IF NOT EXISTS ix_verdict_cand "
+                 "ON verdicts(candidate_id)")
     conn.execute("INSERT OR REPLACE INTO meta VALUES ('schema', ?)",
                  (str(SCHEMA_VERSION),))
     conn.commit()
@@ -1025,11 +1045,7 @@ def _retract_verdicts_from_runs_that_never_ran(conn) -> None:
 
     now = time.time()
     for key, why in sorted(never_ran):
-        # AN ENGINE RECEIPT KEY WRAPS THE PROPOSAL NAME: `org/pic` is measured
-        # as `mflux/org/pic-q8`, so the name is the MIDDLE, neither the head
-        # nor the tail. Matching either end finds nothing for the image lane.
-        # Containment is guarded by requiring the name to carry a `/`, so a
-        # one-word proposal cannot match every key that happens to spell it.
+        # The key's proposal comes from the candidates table, not the string. #407.
         rows = conn.execute(
             "SELECT p.id, p.name FROM proposals p JOIN verdicts v "
             "ON v.proposal_id = p.id "
@@ -1037,8 +1053,8 @@ def _retract_verdicts_from_runs_that_never_ran(conn) -> None:
             "               WHERE v2.proposal_id = p.id "
             "               ORDER BY v2.id DESC LIMIT 1) "
             "  AND v.tier = 'adopt' AND v.outcome IN ('declined', 'broken') "
-            "  AND (p.name = ? "
-            "       OR (instr(p.name, '/') > 0 AND instr(?, p.name) > 0))",
+            "  AND (p.name = ? OR p.id IN (SELECT proposal_id FROM candidates "
+            "                              WHERE receipt_key = ?))",
             (key, key)).fetchall()
         for row in rows:
             conn.execute(
@@ -1048,6 +1064,155 @@ def _retract_verdicts_from_runs_that_never_ran(conn) -> None:
                  f"retracted: every case was refused before it reached a "
                  f"model ({why}), so the verdict described a run in which "
                  f"nothing ran", now))
+
+
+def _verdicts_name_a_candidate(conn) -> None:
+    """proposal_id becomes nullable and verdicts gain candidate_id. #407."""
+    if store.backend() == store.POSTGRES:
+        conn.execute("ALTER TABLE verdicts ALTER COLUMN proposal_id "
+                     "DROP NOT NULL")
+        if "candidate_id" not in _columns(conn, "verdicts"):
+            conn.execute("ALTER TABLE verdicts ADD COLUMN candidate_id "
+                         "INTEGER REFERENCES candidates(id)")
+        return
+    ddl = re.search(r"CREATE TABLE IF NOT EXISTS verdicts \(.*?\n\);",
+                    _DDL, re.S).group(0)
+    have = [r["name"] for r in conn.execute("PRAGMA table_info(verdicts)")]
+    conn.commit()
+    conn.execute(ddl.replace("IF NOT EXISTS verdicts", "verdicts_new"))
+    cols = ", ".join(c for c in have)
+    conn.execute(f"INSERT INTO verdicts_new ({cols}) SELECT {cols} FROM verdicts")
+    conn.execute("DROP TABLE verdicts")
+    conn.execute("ALTER TABLE verdicts_new RENAME TO verdicts")
+    conn.execute("CREATE INDEX IF NOT EXISTS ix_verdict_prop "
+                 "ON verdicts(proposal_id)")
+    conn.commit()
+
+
+#: The shape `lh judge` stored before receipts carried specs: Engine.name. #337.
+_ACESTEP_LABEL = re.compile(r"^(?:acestep:)?acestep/([^@,]+)(?:@(.*))?$")
+
+
+def _legacy_spec(label: str) -> str:
+    """A spec for a label an old writer stored in place of one; else as given."""
+    m = _ACESTEP_LABEL.match(label or "")
+    if not m:
+        return label
+    return f"acestep:{m.group(1)}" + (f",{m.group(2)}" if m.group(2) else "")
+
+
+def _adopted_by_name(conn) -> list:
+    """Proposals adopt.record created from a spec or a receipt key."""
+    return conn.execute(
+        "SELECT p.id, p.name, p.lane FROM proposals p WHERE EXISTS "
+        "(SELECT 1 FROM sightings s WHERE s.proposal_id = p.id) AND NOT EXISTS "
+        "(SELECT 1 FROM sightings s WHERE s.proposal_id = p.id "
+        " AND s.source != 'adopt')").fetchall()
+
+
+def backfill_candidates(conn, runs=None) -> dict:
+    """Fill `candidates` from what the store and receipts already hold. #407.
+
+    Never decides anything: verdict outcomes are untouched, and a verdict moved
+    off a spec-named proposal never becomes its new proposal's latest row.
+    """
+    import json
+    from harness import candidates as C, gguf, screen
+    from harness.serving import LLAMACPP_PREFIX
+
+    counts = {"gguf": 0, "proposals": 0, "receipt_specs": 0,
+              "receipt_keys": 0, "run_path_confirmed": 0, "fakes": 0,
+              "fakes_to_proposal": 0, "fakes_unresolved": 0,
+              "verdicts_linked": 0}
+    fakes = {r["id"]: dict(r) for r in _adopted_by_name(conn)}
+    lane_of = {r["name"]: r["lane"] for r in conn.execute(
+        "SELECT name, lane FROM proposals")}
+    for repo, filename in sorted(gguf._load().items()):
+        if repo in lane_of and str(filename).endswith(".gguf"):
+            if C.ensure(conn, f"{LLAMACPP_PREFIX}{filename[:-len('.gguf')]}",
+                        proposal=repo, lane=lane_of[repo]):
+                counts["gguf"] += 1
+    own = {}
+    rows = conn.execute(
+        "SELECT DISTINCT p.id, p.name, p.lane, p.description FROM proposals p "
+        "JOIN verdicts v ON v.proposal_id = p.id "
+        "WHERE v.tier IN (?, ?, ?)", (SCREEN, MEASURE, ADOPT)).fetchall()
+    for r in rows:
+        if r["id"] in fakes or not r["lane"]:
+            continue
+        try:
+            spec = screen.candidate_for(r["lane"], r["name"],
+                                        r["description"] or "", adopt=False)
+        except Exception:  # noqa: BLE001
+            spec = ""
+        cid = C.ensure(conn, spec, proposal=r["name"], lane=r["lane"]) \
+            if spec else None
+        if cid:
+            own[r["id"]] = cid
+            counts["proposals"] += 1
+    root = runs or (paths.home() / "runs")
+    for f in sorted(root.rglob("results.json")) if root.is_dir() else []:
+        try:
+            data = json.loads(f.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        lane = str((data.get("receipt") or {}).get("modality") or "")
+        specs = {k: _legacy_spec(v) for k, v in (data.get("specs") or {}).items()}
+        for key, spec in specs.items():
+            if C.key_of(spec) == key and C.ensure(conn, spec, key=key, lane=lane):
+                counts["receipt_specs"] += 1
+        for key in (data.get("summary") or {}):
+            if key not in specs and ":" in key and C.key_of(key) == key \
+                    and C.ensure(conn, key, lane=lane):
+                counts["receipt_keys"] += 1
+    for r in conn.execute(
+            "SELECT DISTINCT v.proposal_id, v.run_path FROM verdicts v "
+            "WHERE v.run_path != '' AND v.tier IN (?, ?)", (SCREEN, MEASURE)):
+        cid = own.get(r["proposal_id"])
+        f = Path(r["run_path"]) / "results.json"
+        if not cid or not f.is_file():
+            continue
+        try:
+            summary = json.loads(f.read_text(encoding="utf-8")).get("summary")
+        except (OSError, ValueError):
+            continue
+        key = conn.execute("SELECT receipt_key FROM candidates WHERE id = ?",
+                           (cid,)).fetchone()[0]
+        if key in (summary or {}):
+            counts["run_path_confirmed"] += 1
+    for pid, fake in fakes.items():
+        counts["fakes"] += 1
+        label = _legacy_spec(fake["name"])
+        got = C.get(conn, label)
+        if got is None and ":" in label:
+            C.ensure(conn, label, lane=fake["lane"])
+            got = C.get(conn, label)
+        if got is None:
+            counts["fakes_unresolved"] += 1
+            continue
+        target = got["proposal_id"] if got["proposal_id"] != pid else None
+        newest = conn.execute(
+            "SELECT MAX(id) FROM verdicts WHERE proposal_id = ?",
+            (target,)).fetchone()[0] if target else None
+        moved = conn.execute("SELECT id FROM verdicts WHERE proposal_id = ?",
+                             (pid,)).fetchall()
+        for v in moved:
+            keep = target if newest is not None and v["id"] < newest else None
+            conn.execute("UPDATE verdicts SET proposal_id = ?, candidate_id = ? "
+                         "WHERE id = ?", (keep, got["id"], v["id"]))
+        if target:
+            counts["fakes_to_proposal"] += 1
+        conn.execute("UPDATE candidates SET proposal_id = NULL "
+                     "WHERE proposal_id = ?", (pid,))
+        conn.execute("DELETE FROM proposals WHERE id = ?", (pid,))
+    for pid, cid in own.items():
+        cur = conn.execute(
+            "UPDATE verdicts SET candidate_id = ? WHERE proposal_id = ? "
+            "AND candidate_id IS NULL AND tier IN (?, ?, ?)",
+            (cid, pid, SCREEN, MEASURE, ADOPT))
+        counts["verdicts_linked"] += cur.rowcount or 0
+    conn.commit()
+    return counts
 
 
 def _columns(conn, table: str) -> set[str]:
@@ -1251,7 +1416,8 @@ def decide(conn: sqlite3.Connection, name: str, outcome: str, *, tier: str = "",
            score: float | None = None, rubric: str = "", judge: str = "",
            at: float | None = None, until: str = "",
            size_bytes: int = 0, attaches_to: str = "",
-           upstream_idle_days: float = 0.0) -> int:
+           upstream_idle_days: float = 0.0,
+           candidate_id: int | None = None) -> int:
     """Record what happened to a proposal.
 
     Verdicts accumulate rather than replace: a screen verdict and a later
@@ -1286,8 +1452,9 @@ def decide(conn: sqlite3.Connection, name: str, outcome: str, *, tier: str = "",
             f"be found again cannot be re-judged.")
     row = conn.execute("SELECT id FROM proposals WHERE name = ?",
                        (name,)).fetchone()
-    if not row:
+    if not row and not (candidate_id and not name):
         raise KeyError(f"no proposal named {name!r}")
+    pid = row["id"] if row else None
     # A DETERMINISTIC TIER RESTATING ITSELF IS NOT A SECOND FACT. A judge
     # re-scoring is a new draw and a run is a new run, so the skip is narrow:
     # no score, no run path, and the LATEST row said exactly this. Issue #184.
@@ -1299,8 +1466,9 @@ def decide(conn: sqlite3.Connection, name: str, outcome: str, *, tier: str = "",
     if score is None and not run_path:
         same = conn.execute(
             "SELECT id, tier, outcome, detail, score, run_path FROM verdicts "
-            "WHERE proposal_id = ? ORDER BY id DESC LIMIT 1",
-            (row["id"],)).fetchone()
+            + ("WHERE proposal_id = ? " if pid else "WHERE candidate_id = ? ")
+            + "ORDER BY id DESC LIMIT 1",
+            (pid or candidate_id,)).fetchone()
         if (same and same["tier"] == tier and same["outcome"] == outcome
                 and same["detail"] == detail and same["score"] is None
                 and not same["run_path"]):
@@ -1312,12 +1480,12 @@ def decide(conn: sqlite3.Connection, name: str, outcome: str, *, tier: str = "",
     vid = conn.execute(
         "INSERT INTO verdicts (proposal_id, outcome, tier, detail, issue, "
         "run_path, score, rubric, judge, decided_at, machine_id, until, "
-        "size_bytes, attaches_to, upstream_idle_days) "
-        "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-        (row["id"], outcome, tier, detail, issue, run_path, score, rubric,
+        "size_bytes, attaches_to, upstream_idle_days, candidate_id) "
+        "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        (pid, outcome, tier, detail, issue, run_path, score, rubric,
          judge, time.time() if at is None else at, machine_id, until,
          int(size_bytes or 0), attaches_to,
-         float(upstream_idle_days or 0.0))).lastrowid
+         float(upstream_idle_days or 0.0), candidate_id)).lastrowid
     conn.commit()
     return vid
 

@@ -106,10 +106,13 @@ def test_one_row_that_reached_a_model_makes_the_zero_the_candidates_own(home):
 
 
 def test_an_engine_receipt_key_still_finds_its_proposal(home):
-    """The receipt key is `mflux/<id>-q8` and the proposal is the bare id.
-    Matching on equality alone would retract nothing for the image lane."""
+    """The receipt key is `mflux/<id>-q8` and the proposal is the bare id:
+    the candidates table maps one to the other. #407."""
+    from harness import candidates
     conn = ms.connect(home / "d.db")
     _seed(conn, "org/pic", "declined", "does not beat the incumbent")
+    candidates.ensure(conn, "mflux:org/pic", proposal="org/pic",
+                      key="mflux/org/pic-q8")
     conn.close()
     _receipt(home / "runs", "r1",
              {"mflux/org/pic-q8": {"passed": 0, "total": 9}},
