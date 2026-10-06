@@ -1633,11 +1633,15 @@ def _report_screen(a) -> int:
         store.close()
     ranked = rank.rank(rows, serving=rank.serving(),
                        measured_lanes=rank.lanes_with_receipts())
-    planned = screen.plan(ranked)[:getattr(a, "top", 5)]
-    if not planned:
+    full = screen.plan(ranked)
+    if not full:
         print("nothing queued to screen")
         return 0
-    ready = [r for r in planned if r["state"] == screen.READY]
+    # Ready rows come from the whole plan: the rank head is often rows the
+    # fetch skipped for budget, which crowded out what it fetched. #376.
+    ready = [r for r in full if r["state"] == screen.READY]
+    planned = full[:getattr(a, "top", 5)]
+    planned += [r for r in ready if r not in planned]
     if not getattr(a, "run", False):
         print(f"\n{len(planned)} candidate(s), {len(ready)} ready to screen:")
         for r in planned:
