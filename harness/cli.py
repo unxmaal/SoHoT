@@ -1,14 +1,14 @@
-"""localharness: generate media and talk to the machine, all locally.
+"""SoHoT: generate media and talk to the machine, all locally.
 
-    lh image "a red fox in snow" --width 768
-    lh video "a fox running" --seconds 2
-    lh svg   "a settings gear icon"
-    lh web   "a landing page for a coffee roaster"
-    lh code  "a python function that parses an ISO timestamp"
-    lh extract --file build.log "how many tests failed?"
-    lh say   "bonjour" --voice fr-male
-    lh voices
-    lh hear  --seconds 5
+    soh image "a red fox in snow" --width 768
+    soh video "a fox running" --seconds 2
+    soh svg   "a settings gear icon"
+    soh web   "a landing page for a coffee roaster"
+    soh code  "a python function that parses an ISO timestamp"
+    soh extract --file build.log "how many tests failed?"
+    soh say   "bonjour" --voice fr-male
+    soh voices
+    soh hear  --seconds 5
 
 Every command is blocking, because on this hardware everything except video
 finishes in around a second: images take about a minute, speech is sub-second.
@@ -561,8 +561,8 @@ def _warn_stale_sources() -> None:
     names = ", ".join(r["name"] for r in stale[:4])
     print(f"\n{len(stale)} discovery source(s) not read in "
           f"{feeds.interval_days()} days: {names}")
-    print("  lh discover --feeds     read them now")
-    print("  lh discover --sources   when each was last read")
+    print("  soh discover --feeds     read them now")
+    print("  soh discover --sources   when each was last read")
 
 
 def _report_control(a) -> int:
@@ -693,7 +693,7 @@ def _report_recurrence(a) -> int:
                           "extraction": extract}, indent=2))
         return 0
     if not rows:
-        print("nothing seen more than once yet. Run `lh discover --feeds`.")
+        print("nothing seen more than once yet. Run `soh discover --feeds`.")
     else:
         print("\nseen more than once (recurrence beats a single mention):")
         for r in rows:
@@ -1119,7 +1119,7 @@ def cmd_jobs(a) -> int:
             return 0
         if a.action == "priority":
             if len(rest) != 2:
-                return err("priority needs a job id and a number: lh jobs priority 0005 10")
+                return err("priority needs a job id and a number: soh jobs priority 0005 10")
             try:
                 job = wq.set_priority(rest[0], int(rest[1]))
             except ValueError as exc:
@@ -1172,7 +1172,7 @@ def cmd_memory(a) -> int:
         finally:
             store.close()
         if not limits:
-            return err("nothing measured yet: lh memory ramp records one")
+            return err("nothing measured yet: soh memory ramp records one")
         note(json.dumps(limits, indent=1, sort_keys=True))
         emit(limits=limits)
         return 0
@@ -1465,8 +1465,8 @@ def cmd_fetch(a) -> int:
         rows = fetching.queued(store, lane=want)
         if not rows:
             note(f"nothing queued in the {want} lane. "
-                 f"`lh discover --inspect` fills the queue." if want else
-                 "nothing queued. `lh discover --inspect` fills the queue.")
+                 f"`soh discover --inspect` fills the queue." if want else
+                 "nothing queued. `soh discover --inspect` fills the queue.")
             emit(queued=[], orphans=[])
             return 0
         if not a.run:
@@ -2740,7 +2740,7 @@ def cmd_hear(a) -> int:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    ap = argparse.ArgumentParser(prog="lh", description=__doc__.split("\n")[0])
+    ap = argparse.ArgumentParser(prog="soh", description=__doc__.split("\n")[0])
     sub = ap.add_subparsers(dest="command")
 
     def media(name, help_, engine_default, func):
@@ -2823,7 +2823,7 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("text", help="the text, or - to read stdin")
     s.add_argument("-o", "--output")
     s.add_argument("--voice", default=audio.DEFAULT_VOICE,
-                   help="a cloned preset or a kokoro voice; see `lh voices`")
+                   help="a cloned preset or a kokoro voice; see `soh voices`")
     s.add_argument("--speed", type=float, default=1.0)
     s.add_argument("--base-url", default=audio.DEFAULT_BASE_URL)
     s.add_argument("--no-play", dest="play", action="store_false", default=True)

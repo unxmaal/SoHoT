@@ -24,6 +24,7 @@ dependencies = [
 ]
 
 [project.scripts]
+soh = "harness.cli:main"
 lh = "harness.cli:main"
 
 [build-system]

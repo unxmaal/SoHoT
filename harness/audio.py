@@ -284,7 +284,7 @@ def record_argv(out: str | Path, seconds: float) -> list[str]:
         # from another operating system.
         raise AudioError(
             "recording needs sox's `rec` on PATH and this machine has none. "
-            "`lh hear --file CLIP` transcribes audio that already exists.")
+            "`soh hear --file CLIP` transcribes audio that already exists.")
     return [rec, "-q", "-r", "16000", "-c", "1", "-b", "16",
             str(out), "trim", "0", str(seconds)]
 

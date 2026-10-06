@@ -81,7 +81,7 @@ def HERE():
 
 def test_pause_closes_the_gate_and_resume_opens_it():
     wq.pause()
-    assert wq.gate(away=AWAY) == (False, "paused (lh jobs resume)")
+    assert wq.gate(away=AWAY) == (False, "paused (soh jobs resume)")
     wq.resume()
     assert wq.gate(away=AWAY)[0]
 

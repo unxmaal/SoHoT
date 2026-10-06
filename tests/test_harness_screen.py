@@ -29,7 +29,7 @@ def test_a_candidate_whose_weights_are_absent_is_waiting_not_failed():
     got = screen.plan(rows(("org/z-image-turbo-4bit", "image")),
                       missing=lambda n: [n])[0]
     assert got["state"] == screen.WAITING
-    assert "lh fetch" in got["why_not"]
+    assert "soh fetch" in got["why_not"]
 
 
 def test_a_lane_with_no_runner_is_named_rather_than_dropped(monkeypatch):
@@ -122,7 +122,7 @@ def test_a_model_missing_only_itself_reads_as_a_plain_fetch():
     waiting-on-fetch row starts shouting about dependencies."""
     got = screen.plan(rows(("org/m", "tts")), missing=lambda n: [n])[0]
     assert got["state"] == screen.WAITING
-    assert got["why_not"] == "weights are not on disk; lh fetch --run"
+    assert got["why_not"] == "weights are not on disk; soh fetch --run"
 
 
 def test_a_model_with_everything_present_is_ready():

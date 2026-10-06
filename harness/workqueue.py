@@ -105,7 +105,7 @@ def add(argv: list[str], title: str = "", cwd: str = "", kind: str = "command",
     first = str(argv[0])
     if first.startswith("-"):
         raise ValueError(f"the command starts with {first!r}: an option this "
-                         f"lh did not recognise was taken as the command")
+                         f"soh did not recognise was taken as the command")
     if any(c.isspace() for c in first) and not os.path.exists(first):
         raise ValueError(f"{first!r} is a whole command line in one argument; "
                          f"split it into words (zsh does not word-split $VAR). #363")
@@ -211,7 +211,7 @@ def gate(away=None) -> tuple[bool, str]:
     """(open, why): may the next job start now? A running job always finishes."""
     from harness import presence
     if paused():
-        return False, "paused (lh jobs resume)"
+        return False, "paused (soh jobs resume)"
     gone, why = (away or presence.away)()
     return (True, why) if gone else (False, f"owner present: {why}")
 

@@ -815,7 +815,7 @@ def from_feeds(sources=None, reader=None, verify=True,
     if suppressed:
         out.append(Capability(
             "note", f"{suppressed} already answered", "all", "discovery.db",
-            "lh discover --recurrence to see what is known",
+            "soh discover --recurrence to see what is known",
             note=f"{suppressed} proposal(s) suppressed: already measured, "
                  f"declined or broken"))
     return out

@@ -26,5 +26,5 @@ BUDGET="${DISCOVER_BUDGET_GIB:-12}"
 REPEAT="${DISCOVER_REPEAT:-3}"
 
 echo "=== sweep $(date -u +%Y-%m-%dT%H:%M:%SZ) top=$TOP budget=${BUDGET}GiB ==="
-exec uv run lh discover --loop --run \
+exec uv run soh discover --loop --run \
   --top "$TOP" --budget-gib "$BUDGET" --repeat "$REPEAT"

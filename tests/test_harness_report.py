@@ -333,3 +333,11 @@ def test_video_shows_the_h3_run_not_the_newer_resident_variant(
     assert (video["measured"], video["pass_rate"]) == (key, 1.0)
     assert video["run"] == "20261005-174829-658-0000-video"
     assert video["last_run"] == "20261005-180410-072-0000-video"
+
+
+def test_the_page_carries_the_product_name():
+    """#193: the page #432 publishes is titled SoHoT, not the repo name."""
+    page = report.render(_state(), before={})
+    assert re.search(r"<title>SoHoT</title>", page)
+    assert "<h1>SoHoT</h1>" in page
+    assert "localharness" not in page
