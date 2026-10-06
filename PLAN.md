@@ -12,7 +12,7 @@ conclusions that were wrong and how they were caught.
 
 ## THIS FILE IS NOT THE AUTHORITY ON WHAT IS BEING DONE
 
-Work lives in GitHub issues: <https://github.com/unxmaal/localharness/issues>,
+Work lives in GitHub issues: <https://github.com/unxmaal/SoHoT/issues>,
 indexed by the roadmap issue #16.
 
 | | authority on | |
