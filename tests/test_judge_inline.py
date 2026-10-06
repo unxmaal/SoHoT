@@ -5,7 +5,7 @@ from http.server import HTTPServer
 
 import pytest
 
-from harness import human, judge_server
+from harness import human, judge_server, paths
 
 SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><rect width="5" height="5"/></svg>'
 
@@ -35,9 +35,11 @@ def test_output_text_is_never_taken_for_a_path(tmp_path):
     assert p["a_file"] == "" and p["a_text"] == str(real)
 
 
-def test_a_file_is_not_found_by_name_when_artifact_path_is_empty(tmp_path):
+def test_a_file_is_not_found_by_name_when_artifact_path_is_empty():
     """No run-dir glob: a file the row does not name is not its artifact. #463."""
-    (tmp_path / "org_a--icon#1.svg").write_text(SVG, encoding="utf-8")
+    run = paths.runs() / "20261006-000000-svg"
+    run.mkdir(parents=True)
+    (run / "org_a--icon#1.svg").write_text(SVG, encoding="utf-8")
     p = human.pairings(_receipt(SVG, SVG))[0]
     assert p["a_file"] == "" and p["b_file"] == ""
 

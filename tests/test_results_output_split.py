@@ -132,6 +132,12 @@ def test_a_legacy_media_row_is_a_path_even_when_the_file_is_gone():
     ("line one\nline two", "image", "text"),
     ("/elsewhere/n--a#1.json", "decide", "path"),
     ("/elsewhere/other.json", "decide", "text"),
+    # An extract answer naming a repo file is text, whatever the cwd holds.
+    ("harness/runs.py", "extract", "text"),
+    ("harness/runs.py", "", "text"),
+    # A lane-less legacy receipt's media file, under an older naming.
+    (".logs/img/mflux/z--fox.png", "", "path"),
+    ("logo.png", "extract", "text"),
     (None, "svg", "none"),
     ("", "svg", "none"),
 ])
@@ -197,3 +203,24 @@ def test_the_migration_splits_artifact_into_output_and_artifact_path(old_store, 
     assert {"output", "artifact_path"} <= cols
     if sqlite3.sqlite_version_info >= (3, 35, 0):
         assert "artifact" not in cols
+
+
+def test_only_the_legacy_split_reads_the_old_artifact_field():
+    """Every other reader asks output or artifact_path. #463."""
+    import re
+    root = Path(__file__).resolve().parents[1]
+    pattern = re.compile(r'\["artifact"\]|get\("artifact"\)|x\.artifact\b|\.artifact\b(?!\()')
+    hits = []
+    for path in sorted(root.glob("harness/**/*.py")) + sorted(root.glob("evals/**/*.py")):
+        for n, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+            if pattern.search(line) and "def artifact" not in line:
+                hits.append(f"{path.relative_to(root).as_posix()}:{n}")
+    assert [h.rsplit(":", 1)[0] for h in hits] == ["harness/runs.py"] * 3, hits
+
+
+def test_the_scan_sees_a_reader():
+    """Negative control for the scan above."""
+    import re
+    pattern = re.compile(r'\["artifact"\]|get\("artifact"\)|x\.artifact\b|\.artifact\b(?!\()')
+    assert pattern.search('row["artifact"]') and pattern.search("r.artifact or x")
+    assert not pattern.search("runner.artifact(case, '.svg')")

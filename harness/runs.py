@@ -131,9 +131,15 @@ def run_dir(key: str) -> Path:
     return p if p.is_absolute() else paths.runs() / p
 
 
+#: Suffixes a lane-less legacy row's value is a media file by.
+_MEDIA_SUFFIXES = {".png", ".jpg", ".jpeg", ".webp", ".wav", ".mp3", ".flac",
+                   ".mp4", ".mov", ".webm"}
+
+
 def _is_file(v: str) -> bool:
+    """An absolute path to a file; a relative answer is text, not cwd. #463."""
     try:
-        return Path(v).is_file()
+        return Path(v).is_absolute() and Path(v).is_file()
     except (OSError, ValueError):
         return False
 
@@ -144,14 +150,16 @@ def split_legacy(value, lane: str, where: Path | None, candidate: str,
 
     The only place a path is told from text; kind is path, text or none.
     """
-    from evals.core import MEDIA_MODALITIES, artifact_name
+    from evals.core import MEDIA_MODALITIES, MODALITIES, artifact_name
     if value is None or value == "":
         return None, None, "none"
     v = str(value)
     stem = artifact_name(candidate, case_id, "")
     if "\n" not in v and len(v) < 1024 and (
             lane in MEDIA_MODALITIES or _is_file(v)
-            or Path(v).name.startswith(stem + ".")):
+            or Path(v).name.startswith(stem + ".")
+            or (lane not in MODALITIES
+                and Path(v).suffix.lower() in _MEDIA_SUFFIXES)):
         return None, v, "path"
     hits = (sorted(where.glob(glob.escape(stem) + ".*"))
             if where is not None and where.is_dir() else [])

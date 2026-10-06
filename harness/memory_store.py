@@ -1109,7 +1109,7 @@ def _add_result_split(conn) -> None:
 
 
 def split_result_artifacts(conn) -> dict:
-    """Split results.artifact into output and artifact_path, then drop it. #463."""
+    """Split the old artifact column into output and artifact_path, then drop it. #463."""
     from harness import runs
     counts = runs.split_artifacts(conn)
     conn.execute("INSERT OR REPLACE INTO meta VALUES ('artifact_split', ?)",
