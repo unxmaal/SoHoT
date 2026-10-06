@@ -10,6 +10,10 @@ not ship.
 """
 from __future__ import annotations
 
+import json
+import time
+from dataclasses import dataclass, field
+
 import httpx
 
 from harness import reasons
@@ -151,6 +155,32 @@ def complete_with_logprobs(prompt: str, model: str,
                            top_logprobs: int = 0) -> tuple[str, dict, list]:
     """As complete_with_usage, plus the per-token logprobs when asked for and
     the server returns them (OpenAI shape: content[i].top_logprobs); else []."""
+    got = complete_full(prompt, model, gateway, modality=modality,
+                        context=context, timeout=timeout,
+                        temperature=temperature, max_tokens=max_tokens,
+                        sampling=sampling, template=template,
+                        top_logprobs=top_logprobs)
+    return got.text, got.usage, got.tokens
+
+
+@dataclass
+class Completion:
+    text: str
+    usage: dict = field(default_factory=dict)
+    tokens: list = field(default_factory=list)
+    #: ttft_s, first_reasoning_s, prefill_s; None where not observed. #468.
+    timing: dict = field(default_factory=dict)
+
+
+def complete_full(prompt: str, model: str, gateway: str = DEFAULT_GATEWAY,
+                  modality: str = "", context: str = "",
+                  timeout: float = TIMEOUT_S,
+                  temperature: float | None = None,
+                  max_tokens: int = MAX_TOKENS, sampling: dict | None = None,
+                  template: dict | None = None, top_logprobs: int = 0,
+                  stream: bool = False) -> Completion:
+    """One completion with its timing. `stream` asks for SSE so the first
+    content token can be timed; a server that answers whole leaves ttft_s None."""
     knobs = dict(SAMPLING.get(modality, {}))
     if temperature is not None:
         knobs["temperature"] = temperature
@@ -174,6 +204,9 @@ def complete_with_logprobs(prompt: str, model: str,
     if top_logprobs:
         payload["logprobs"] = True
         payload["top_logprobs"] = int(top_logprobs)
+    if stream:
+        payload["stream"] = True
+        payload["stream_options"] = {"include_usage": True}
     try:
         r = _post(gateway, payload, timeout)
         if (400 <= getattr(r, "status_code", 200) < 500
@@ -183,6 +216,13 @@ def complete_with_logprobs(prompt: str, model: str,
             payload["messages"] = [{"role": "user",
                                     "content": f"{system}\n\n{user}"}]
             r = _post(gateway, payload, timeout)
+        for drop in ("stream_options", "stream"):
+            # A server that refuses a streaming knob is asked again without it.
+            if (drop in payload and 400 <= getattr(r, "status_code", 200) < 500
+                    and "stream" in (getattr(r, "text", "") or "").lower()):
+                payload.pop(drop)
+                payload.pop("stream_options", None)
+                r = _post(gateway, payload, timeout)
         r.raise_for_status()
         body = r.json()
         choices = body.get("choices") or []
@@ -191,6 +231,9 @@ def complete_with_logprobs(prompt: str, model: str,
         usage = body.get("usage") or {}
         tokens = ((choices[0].get("logprobs") or {}).get("content") or []) \
             if top_logprobs else []
+        timing = {"ttft_s": None, "first_reasoning_s": None,
+                  **(getattr(r, "timing", None) or {}),
+                  "prefill_s": prefill_s(body.get("timings"))}
     except httpx.TimeoutException as exc:
         raise CompletionError(f"timed out after {timeout}s", reasons.TIMEOUT,
                               ("timeout_s", timeout)) from exc
@@ -222,7 +265,17 @@ def complete_with_logprobs(prompt: str, model: str,
                 f"raise max_tokens.", reasons.TOKEN_BUDGET_EXHAUSTED,
                 ("max_tokens", max_tokens))
         raise CompletionError("empty completion", reasons.CONTENT_FAILED)
-    return text, usage, list(tokens) if isinstance(tokens, list) else []
+    return Completion(text, usage,
+                      list(tokens) if isinstance(tokens, list) else [], timing)
+
+
+def prefill_s(timings) -> float | None:
+    """llama-server's own prompt-processing time, in seconds; None elsewhere."""
+    try:
+        ms = (timings or {}).get("prompt_ms")
+        return None if ms is None else round(float(ms) / 1000.0, 4)
+    except (AttributeError, TypeError, ValueError):
+        return None
 
 
 
@@ -237,9 +290,77 @@ def _refuses_system_role(body: str) -> bool:
 
 
 def _post(gateway: str, payload: dict, timeout: float):
-    return httpx.post(f"{gateway.rstrip('/')}/v1/chat/completions",
-                      json=payload, timeout=timeout,
-                      headers={"Authorization": "Bearer sk-local"})
+    url = f"{gateway.rstrip('/')}/v1/chat/completions"
+    headers = {"Authorization": "Bearer sk-local"}
+    if not payload.get("stream"):
+        return httpx.post(url, json=payload, timeout=timeout, headers=headers)
+    started = time.perf_counter()
+    with httpx.stream("POST", url, json=payload, timeout=timeout,
+                      headers=headers) as r:
+        if (r.status_code >= 400 or "text/event-stream"
+                not in r.headers.get("content-type", "")):
+            r.read()
+            return r
+        body, timing = assemble(r.iter_lines(), started, timeout)
+    return Streamed(body, timing)
+
+
+class Streamed:
+    """An SSE reply assembled into the body a non-streaming request returns."""
+    status_code = 200
+    text = ""
+
+    def __init__(self, body: dict, timing: dict):
+        self.body, self.timing = body, timing
+
+    def raise_for_status(self) -> None:
+        pass
+
+    def json(self) -> dict:
+        return self.body
+
+
+def assemble(lines, started: float, timeout: float = TIMEOUT_S):
+    """(body, timing) from OpenAI-style SSE lines; offsets from `started`."""
+    content, reasoning, tokens = [], [], []
+    usage, timings, finish = {}, None, None
+    first: dict = {"ttft_s": None, "first_reasoning_s": None}
+    for line in lines:
+        now = time.perf_counter() - started
+        if now > timeout:
+            # The non-streaming limit, kept as a total so a slow writer still times out.
+            raise httpx.ReadTimeout(f"stream ran past {timeout}s")
+        if not line.startswith("data:"):
+            continue
+        data = line[5:].strip()
+        if data == "[DONE]":
+            break
+        chunk = json.loads(data)
+        if chunk.get("error"):
+            raise CompletionError(
+                f"server error mid-stream: {str(chunk['error'])[:400]}")
+        usage = chunk.get("usage") or usage
+        timings = chunk.get("timings") or timings
+        for ch in chunk.get("choices") or []:
+            delta = ch.get("delta") or {}
+            if delta.get("content"):
+                content.append(delta["content"])
+                if first["ttft_s"] is None:
+                    first["ttft_s"] = round(now, 4)
+            think = delta.get("reasoning_content") or delta.get("reasoning")
+            if think:
+                reasoning.append(think)
+                if first["first_reasoning_s"] is None:
+                    first["first_reasoning_s"] = round(now, 4)
+            tokens.extend((ch.get("logprobs") or {}).get("content") or [])
+            finish = ch.get("finish_reason") or finish
+    message = {"role": "assistant",
+               "content": "".join(content) if content else None,
+               "reasoning_content": "".join(reasoning) if reasoning else None}
+    body = {"choices": [{"message": message, "finish_reason": finish,
+                         "logprobs": {"content": tokens} if tokens else None}],
+            "usage": usage, "timings": timings}
+    return body, first
 
 
 def artifact(text: str, modality: str) -> str:

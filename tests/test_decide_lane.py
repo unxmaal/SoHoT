@@ -268,12 +268,13 @@ def test_the_text_runner_writes_probabilities_when_the_server_has_them(monkeypat
     text = '{"route": "B", "urgent": "A"}'
     tokens = [_tok("{", 0), _tok("B", math.log(0.8), [("B", math.log(0.8)), ("A", math.log(0.2))]),
               _tok("A", math.log(0.6), [("A", math.log(0.6)), ("B", math.log(0.4))])]
-    monkeypatch.setattr(completion, "complete_with_logprobs",
-                        lambda *a, **k: (text, {}, tokens))
+    monkeypatch.setattr(completion, "complete_full",
+                        lambda *a, **k: completion.Completion(text, {}, tokens))
     r = CompletionRunner("http://gw", "q3-4b").run(c)
     assert r.passed and r.metrics["calibrated"] == 1.0
     assert r.metrics["decide_brier_sum"] == pytest.approx(2 * 0.2 ** 2 + 2 * 0.4 ** 2)
-    monkeypatch.setattr(completion, "complete_with_logprobs", lambda *a, **k: (text, {}, []))
+    monkeypatch.setattr(completion, "complete_full",
+                        lambda *a, **k: completion.Completion(text, {}, []))
     r = CompletionRunner("http://gw", "q3-4b").run(c)
     assert r.passed and r.metrics["calibrated"] == 0.0
 

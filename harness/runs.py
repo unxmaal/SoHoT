@@ -193,6 +193,17 @@ def split_artifacts(conn) -> dict:
     return counts
 
 
+#: The first-token timings a row may carry, all seconds or None. #468.
+FIRST_TOKEN = ("ttft_s", "first_reasoning_s", "prefill_s")
+
+
+def _seconds(value) -> float | None:
+    try:
+        return None if value is None else float(value)
+    except (TypeError, ValueError):
+        return None
+
+
 def record(conn, path, data: dict, *, at: float | None = None) -> int | None:
     """Store one receipt (the results.json shape) as a run and its rows.
 
@@ -246,8 +257,9 @@ def record(conn, path, data: dict, *, at: float | None = None) -> int | None:
         conn.execute(
             "INSERT INTO results (run_id, seq, candidate_id, candidate, "
             "case_id, repeat_index, passed, seconds, peak_kb, detail, metrics, "
-            "warnings, output, artifact_path, failure_class, hit_limit) "
-            "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            "warnings, output, artifact_path, failure_class, hit_limit, "
+            "ttft_s, first_reasoning_s, prefill_s, cold) "
+            "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             (run_id, seq, cid if cid is not None else ids[name], name,
              str(r.get("case_id") or ""), repeat,
              1 if r.get("passed") else 0, float(r.get("seconds") or 0.0),
@@ -256,7 +268,9 @@ def record(conn, path, data: dict, *, at: float | None = None) -> int | None:
              json.dumps(r.get("warnings") or []),
              None if output is None else str(output),
              None if art is None else str(art),
-             cls or "", str(r.get("limit") or "")))
+             cls or "", str(r.get("limit") or ""),
+             *(_seconds(r.get(k)) for k in FIRST_TOKEN),
+             None if r.get("cold") is None else int(bool(r["cold"]))))
     conn.commit()
     return run_id
 
@@ -289,7 +303,9 @@ def rows(conn, run_id: int, candidate_id: int | None = None) -> list[dict]:
                     "warnings": json.loads(r["warnings"] or "[]"),
                     "metrics": json.loads(r["metrics"] or "{}"),
                     "failure_class": r["failure_class"], "limit": r["hit_limit"],
-                    "candidate_id": r["candidate_id"]})
+                    "candidate_id": r["candidate_id"],
+                    **{k: r[k] for k in FIRST_TOKEN},
+                    "cold": None if r["cold"] is None else bool(r["cold"])})
     return out
 
 
@@ -304,7 +320,9 @@ def summarize(result_rows: list[dict]) -> dict:
                            warnings=r["warnings"],
                            metrics=r["metrics"],
                            failure_class=r.get("failure_class") or "",
-                           limit=r.get("limit") or "") for r in result_rows])
+                           limit=r.get("limit") or "",
+                           **{k: r.get(k) for k in (*FIRST_TOKEN, "cold")})
+                    for r in result_rows])
 
 
 def receipt(conn, run) -> dict | None:

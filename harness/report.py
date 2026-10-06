@@ -93,6 +93,8 @@ def lanes_state(conn) -> list[dict]:
             "measured": here.get("candidate") or "",
             "pass_rate": here.get("pass_rate"),
             "median_s": here.get("median_s"),
+            "ttft_median_s": here.get("ttft_median_s"),
+            "ttft_p95_s": here.get("ttft_p95_s"),
             "metrics": here.get("metrics") or {},
             "run": ran["path"] if ran else "",
             "best": got.get("candidate", ""),
@@ -248,6 +250,13 @@ def _days(n) -> str:
     return f"{n:.1f}d" if n < 10 else f"{n:.0f}d"
 
 
+def ttft_text(median, p95) -> str:
+    """Warm time to first token as `median / p95`, or -- where unmeasured. #468."""
+    if median is None:
+        return "--"
+    return f"{median:.2f}s / {p95:.2f}s" if p95 is not None else f"{median:.2f}s"
+
+
 def _lane_rows(lanes, changed) -> str:
     out = []
     for l in lanes:
@@ -265,12 +274,14 @@ def _lane_rows(lanes, changed) -> str:
         rate = ("--" if l["pass_rate"] is None
                 else f"{l['pass_rate']:.2f}")
         med = "--" if l["median_s"] is None else f"{l['median_s']:.2f}s"
+        ttft = ttft_text(l.get("ttft_median_s"), l.get("ttft_p95_s"))
         out.append(
             f'<tr class="{"changed" if why else ""}">'
             f'<td>{_esc(l["lane"])}'
             f'{"" if l["wanted"] else " <span class=dim>(not on the wanted list)</span>"}</td>'
             f'<td>{_esc(l["serves"]) or "<span class=dim>--</span>"}</td>'
             f'<td class="num">{rate}</td><td class="num">{med}</td>'
+            f'<td class="num">{ttft}</td>'
             f'<td class="dim">{_esc(metric)}</td>'
             f'<td>{" ".join(tags)}{" " if tags and why else ""}'
             f'{f"<span class=tag good>{_esc(why)}</span>" if why else ""}</td>'
@@ -324,10 +335,13 @@ def render(now: dict, before: dict | None = None) -> str:
 
 <h2>Lanes</h2>
 <table><tr><th>lane</th><th>serves</th><th>pass</th><th>median</th>
-<th>metric</th><th></th></tr>
+<th>TTFT med / p95</th><th>metric</th><th></th></tr>
 {_lane_rows(now['lanes'], changed)}
 </table>
 {first_run}
+<p class="note">TTFT is request to first answer token on warm rows only, a
+fact beside latency that no lane adopts on. Through claude -p it includes the
+CLI start and the network.</p>
 <p class="note">Wall-clock is only comparable with runs taken on an equally
 quiet machine, and never across accelerators or serving engines. A lane with
 no receipt here is unverified rather than stale: there is no age to quote.</p>

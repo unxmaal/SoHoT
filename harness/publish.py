@@ -132,6 +132,16 @@ def _metrics(m: dict) -> dict:
     return out
 
 
+def _ttft(s: dict) -> dict:
+    """Warm TTFT median and p95 as plain numbers, None where unmeasured. #468."""
+    out = {}
+    for k in ("ttft_median_s", "ttft_p95_s"):
+        v = s.get(k)
+        out[k] = (round(float(v), 3) if isinstance(v, (int, float))
+                  and not isinstance(v, bool) else None)
+    return out
+
+
 def _row(key: str, s: dict) -> dict:
     from harness import adopt
     return {"candidate": key,
@@ -139,6 +149,7 @@ def _row(key: str, s: dict) -> dict:
             "passed": s.get("passed"), "total": s.get("total"),
             "pass_rate": s.get("pass_rate"), "median_s": s.get("median_s"),
             "first_s": s.get("first_s"),
+            **_ttft(s),
             "peak_gb": round((s.get("peak_kb") or 0) / 1024 ** 2, 2),
             "metrics": _metrics(s.get("metrics") or {})}
 
@@ -187,6 +198,7 @@ def _lane(conn, mid: int, lane: str, held: dict, typed: dict, now: float) -> dic
         "serves": serves, "adopted": bool(held),
         "adopted_how": held.get("how", ""),
         "pass_rate": here.get("pass_rate"), "median_s": here.get("median_s"),
+        **_ttft(here),
         "metrics": _metrics(here.get("metrics") or {}),
         "measured_at": _iso(ran["generated_at"]) if ran else "",
         "last_run_at": _iso(newest["generated_at"]) if newest else "",
@@ -443,6 +455,13 @@ def _cell(lane: dict | None) -> str:
             f'{_date(lane.get("measured_at"))}</span>{stale}</td>')
 
 
+def _ttft_cell(row: dict) -> str:
+    from harness.report import ttft_text
+    num = (lambda v: v if isinstance(v, (int, float)) and not isinstance(v, bool)
+           else None)
+    return ttft_text(num(row.get("ttft_median_s")), num(row.get("ttft_p95_s")))
+
+
 def _metric_text(m: dict) -> str:
     return " ".join(f"{k} {v:.3f}" for k, v in sorted((m or {}).items()))[:60]
 
@@ -466,6 +485,7 @@ def _section(doc: dict) -> str:
             f'<td>{_esc(lane.get("serves")) or "--"}</td>'
             f'<td class="num">{_num(lane.get("pass_rate"))}</td>'
             f'<td class="num">{_num(lane.get("median_s"))}</td>'
+            f'<td class="num">{_ttft_cell(lane)}</td>'
             f'<td class="dim">{_esc(_metric_text(lane.get("metrics")))}</td>'
             f'<td>{_date(lane.get("measured_at"))}</td>'
             f'<td>{" ".join(tags)}</td></tr>')
@@ -481,6 +501,7 @@ def _section(doc: dict) -> str:
             f'<td class="num">{r.get("passed")}/{r.get("total")}</td>'
             f'<td class="num">{_num(r.get("pass_rate"))}</td>'
             f'<td class="num">{_num(r.get("median_s"))}</td>'
+            f'<td class="num">{_ttft_cell(r)}</td>'
             f'<td class="num">{_num(r.get("peak_gb"), "{:.1f}")}</td>'
             f'<td class="dim">{_esc(_metric_text(r.get("metrics")))}</td></tr>'
             for r in table)
@@ -488,7 +509,8 @@ def _section(doc: dict) -> str:
             f'<h3>{_esc(lane["lane"])} <span class="dim">latest run '
             f'{_date(lane.get("last_run_at"))}</span></h3>'
             '<table><tr><th>candidate</th><th>passed</th><th>pass</th>'
-            '<th>median s</th><th>peak GB</th><th>metric</th></tr>'
+            '<th>median s</th><th>TTFT med / p95</th><th>peak GB</th>'
+            '<th>metric</th></tr>'
             f'{body}</table>')
     adopts = "".join(
         f'<tr><td>{_esc(a["lane"])}</td><td>{_esc(a["candidate"])}</td>'
@@ -502,7 +524,7 @@ def _section(doc: dict) -> str:
 {_esc(', '.join(m.get('runtimes') or []))} &middot; published {_esc(doc.get('generated_at'))}
 &middot; schema {_esc(doc.get('schema'))}</p>
 <table><tr><th>lane</th><th>serves</th><th>pass</th><th>median s</th>
-<th>metric</th><th>measured</th><th></th></tr>
+<th>TTFT med / p95</th><th>metric</th><th>measured</th><th></th></tr>
 {''.join(rows)}
 </table>
 {''.join(comps)}

@@ -109,4 +109,13 @@ class BaseRunner:
             row.output = artifact
         elif Path(artifact).is_file():
             row.artifact_path = str(artifact)
+        t = self.timing()
+        row.ttft_s = t.get("ttft_s")
+        row.first_reasoning_s = t.get("first_reasoning_s")
+        row.prefill_s = t.get("prefill_s")
+        row.cold = t.get("cold")
         return row
+
+    def timing(self) -> dict:
+        """First-token timings of the last generate(); {} where unmeasured. #468."""
+        return getattr(self, "last_timing", None) or {}
