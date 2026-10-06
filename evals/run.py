@@ -320,25 +320,13 @@ def _build_runner(candidate: str, gateway: str, outdir: Path | None,
         # rather than an edit to a constant. `temperature` is the one that had
         # never been varied: completion.SAMPLING pins svg and web at 0.4 and
         # everything else falls through to DEFAULT_TEMPERATURE. Issue #90.
-        alias, _, optstr = candidate.partition(",")
-        options = parse_options(optstr, candidate) if optstr else {}
-        over = {}
-        for key in ("temperature", "top_p", "repetition_penalty"):
-            if key in options:
-                try:
-                    over[key] = float(options.pop(key))
-                except ValueError:
-                    raise SystemExit(
-                        f"{candidate}: {key} must be a number") from None
-        if options:
-            raise SystemExit(f"{candidate}: unknown option(s) "
-                             f"{', '.join(sorted(options))}")
-        if kind == LLAMACPP_KIND:
-            from harness import serving
-            return CompletionRunner(serving.LLAMACPP_URL, alias.strip(),
-                                    sampling=over or None,
-                                    model=alias.partition(":")[2].strip())
-        return CompletionRunner(gateway, alias.strip(), sampling=over or None)
+        from harness import serving
+        try:
+            where = serving.route(candidate, gateway)
+        except ValueError as exc:
+            raise SystemExit(str(exc)) from None
+        return CompletionRunner(where.base, candidate.partition(",")[0].strip(),
+                                sampling=where.sampling or None, model=where.model)
     if kind == "tts":
         return _speech_runner(candidate, outdir)
     if kind == "stt":

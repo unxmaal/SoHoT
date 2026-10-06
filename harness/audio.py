@@ -115,7 +115,8 @@ def resolve_voice(name: str) -> Voice:
                      ref_audio=str(VOICES_DIR / preset["clip"]),
                      lang_code=preset["lang_code"])
     if name in KNOWN_VOICES:
-        return Voice(model=DEFAULT_TTS_MODEL, voice=name)
+        from harness import adopt
+        return Voice(model=adopt.default_for("tts", DEFAULT_TTS_MODEL), voice=name)
     raise ValueError(
         f"unknown voice {name!r}; cloned: {', '.join(sorted(VOICE_PRESETS))}; "
         f"kokoro: {', '.join(KNOWN_VOICES)}")
@@ -226,18 +227,21 @@ def speak(text: str, out: str | Path, voice: str = DEFAULT_KOKORO_VOICE,
 
 
 def speak_as(voice_name: str, text: str, out: str | Path, speed: float = 1.0,
-             base_url: str = DEFAULT_BASE_URL, timeout: float = 120.0) -> Path:
+             base_url: str = DEFAULT_BASE_URL, timeout: float = 120.0,
+             model: str = "") -> Path:
     """speak(), but the voice name carries its model and reference clip."""
     v = resolve_voice(voice_name)
-    return speak(text, out=out, voice=v.voice, speed=speed, model=v.model,
+    return speak(text, out=out, voice=v.voice, speed=speed, model=model or v.model,
                  base_url=base_url, timeout=timeout,
                  ref_audio=v.ref_audio, lang_code=v.lang_code)
 
 
-def transcribe(path: str | Path, model: str = DEFAULT_STT_MODEL,
+def transcribe(path: str | Path, model: str = "",
                base_url: str = DEFAULT_BASE_URL,
                timeout: float = 120.0) -> str:
     """Transcribe an audio file. Returns the text, stripped."""
+    from harness import adopt
+    model = model or adopt.default_for("stt", DEFAULT_STT_MODEL)
     path = Path(path)
     if not path.exists():
         raise AudioError(f"no audio file at {path}")

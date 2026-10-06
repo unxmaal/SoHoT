@@ -175,6 +175,12 @@ def record(conn, verdict: Verdict, spec: str = "",
              _incumbent_id(conn, verdict.lane, verdict.incumbent), run_id, vid,
              mid["machine_id"] if mid else None, verdict.how, _now()))
         conn.commit()
+        from harness import gateway
+        if verdict.lane.strip().lower() in gateway.TEXT_LANES:
+            try:
+                gateway.refresh_gateway()
+            except OSError:
+                pass
     return vid
 
 

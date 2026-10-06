@@ -46,6 +46,10 @@ fi
 export PYTHONUTF8=1
 export PYTHONIOENCODING=utf-8
 
+# The base config plus sohot-<lane> aliases for what each text lane has adopted. #297.
+CONFIG="${GATEWAY_CONFIG:-gateway/config.yaml}"
+SERVED="$(uv run python -m harness.gateway "$CONFIG")" || SERVED="$CONFIG"
+
 exec uv run --python 3.12 --with "$LITELLM_PIN" \
-  litellm --config "${GATEWAY_CONFIG:-gateway/config.yaml}" \
+  litellm --config "$SERVED" \
   --host "${GATEWAY_HOST:-0.0.0.0}" --port "${GATEWAY_PORT:-4000}"

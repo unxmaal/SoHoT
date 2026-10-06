@@ -462,7 +462,7 @@ def test_the_extract_default_model_is_the_one_that_actually_answers():
     """The lane is for delegating cheap work, but the eval ranked local-small
     at 40% and local-large at 90%. 0.79s is still cheap; being wrong is not."""
     a = cli.build_parser().parse_args(["extract", "q"])
-    assert a.model == "local-large"
+    assert cli.lane_model("extract", a.model) == "local-large"
 
 
 # ---- cloned voices from the CLI --------------------------------------------
@@ -562,8 +562,8 @@ def test_svg_and_web_have_their_own_defaults():
     cases q3-4b wins 5/5 to 3/5 while svg still goes the other way. One
     'DEFAULT_TEXT_MODEL' could only ever be wrong for one of them."""
     p = cli.build_parser()
-    assert p.parse_args(["svg", "x"]).model == cli.DEFAULT_SVG_MODEL
-    assert p.parse_args(["web", "x"]).model == cli.DEFAULT_WEB_MODEL
+    assert cli.lane_model("svg", p.parse_args(["svg", "x"]).model) == cli.DEFAULT_SVG_MODEL
+    assert cli.lane_model("web", p.parse_args(["web", "x"]).model) == cli.DEFAULT_WEB_MODEL
     assert cli.DEFAULT_SVG_MODEL != cli.DEFAULT_WEB_MODEL
 
 

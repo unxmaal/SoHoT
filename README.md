@@ -49,8 +49,9 @@ otherwise, and image and video default to 512x512. Trust your own machine
 instead: each generation prints its wall time, its peak memory and the
 resolution that produced them, because a number without its configuration
 compares to nothing.
-| `soh code "parse an ISO timestamp"` | code, to stdout |
+| `soh code "parse an ISO timestamp"` | code, to stdout, from the code lane's adopted model |
 | `soh extract --file build.log "which tests failed?"` | ask a question about a file |
+| `soh decide "is this urgent?" --schema schema.json -f ticket.txt` | answers with a probability per choice |
 | `soh say "the tests all passed"` | speak it aloud |
 | `soh hear --seconds 5` | record and transcribe |
 | `soh discover` | what this machine can do that nobody has measured |
@@ -530,6 +531,47 @@ Speech is not exposed over MCP; that was ruled out.
 DNS-rebinding protection stays on, with an allowlist in `MCP_ALLOW`. It guards a
 different thing than the missing authentication does: rebinding needs only that
 someone here opens a web page, not that the port is reachable from outside.
+
+## Use the adopted models from opencode / Claude Code
+
+Every lane command uses what its lane has adopted on this machine, else the
+typed default, and sends it to the server that serves it: a gateway alias to
+the gateway, an MLX repo id to mlx_lm.server, `llamacpp:<stem>` to llama-server.
+`-m` overrides; `--gateway` sends the request somewhere verbatim.
+
+```bash
+soh code "Write is_palindrome(s)."          # the code lane's adopted model
+soh code "..." -m q3-4b                     # a specific one
+```
+
+For other programs the gateway serves one stable alias per text lane:
+`sohot-code`, `sohot-web`, `sohot-svg`, `sohot-extract` and `sohot-decide`.
+`scripts/serve-gateway.sh` writes `gateway/config.served.yaml` at start (the
+base config plus those aliases, from the adoptions table), and an adoption in a
+text lane restarts the gateway service, so the alias follows the winner without
+anyone editing `gateway/config.yaml`. An adopted GGUF is also served under its
+own stem. llama-server runs with `--jinja`, so tool calls pass through.
+
+opencode, as an OpenAI-compatible provider (`opencode.json`):
+
+```json
+{
+  "provider": {
+    "sohot": {
+      "npm": "@ai-sdk/openai-compatible",
+      "options": { "baseURL": "http://<host>:4000/v1", "apiKey": "sk-local" },
+      "models": { "sohot-code": {} }
+    }
+  }
+}
+```
+
+Claude Code, through the gateway's Anthropic `/v1/messages` route:
+
+```bash
+ANTHROPIC_BASE_URL=http://<host>:4000 ANTHROPIC_AUTH_TOKEN=sk-local \
+  claude --model sohot-code
+```
 
 ---
 
