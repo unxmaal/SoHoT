@@ -1646,6 +1646,10 @@ def _report_coverage(a) -> int:
         print(f"\n  {len(holes)} no configured source ever produced:")
         for h in holes[:20]:
             print(f"    {h['name']:44} {'/'.join(h['how'])}")
+    if got["unlinked"]:
+        print(f"\n  {len(got['unlinked'])} receipt key(s) on "
+              f"{sum(got['unlinked'].values())} result rows name no candidate "
+              f"and are not counted")
     return 0
 
 

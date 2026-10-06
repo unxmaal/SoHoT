@@ -36,13 +36,10 @@ class ProcessRunner(BaseRunner):
         return {"adherence": self.adherence} if self.adherence else {}
 
     def generate(self, case: Case):
-        # `/` in a model name would otherwise open a directory that does not
-        # exist: mflux/z-image-turbo-q8 is one candidate, not a path.
-        stem = self.candidate.replace("/", "_")
         # Absolute: an engine with its own working directory would otherwise
         # write a relative path inside that directory rather than here.
-        out = (self.outdir / f"{stem}--{case.id}"
-               f"{self.engine.output_suffix}").resolve()
+        out = (self.outdir / self.artifact(
+            case, self.engine.output_suffix)).resolve()
         if out.exists():
             out.unlink()
 

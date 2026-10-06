@@ -34,6 +34,12 @@ def ensure(conn, spec: str, *, proposal: str = "", lane: str = "",
     if not spec:
         return None
     pid = _proposal_id(conn, proposal)
+    base = spec.split(",", 1)[0]
+    if pid is None and base != spec:
+        # A run-option variant is the same proposal as its bare spec. #429.
+        got = conn.execute("SELECT proposal_id FROM candidates WHERE spec = ?",
+                           (base,)).fetchone()
+        pid = got["proposal_id"] if got else None
     row = conn.execute("SELECT receipt_key FROM candidates WHERE spec = ?",
                        (spec,)).fetchone()
     key = key or (row["receipt_key"] if row else key_of(spec))
@@ -49,6 +55,8 @@ def ensure(conn, spec: str, *, proposal: str = "", lane: str = "",
         "receipt_key = ?, lane = CASE WHEN lane = '' THEN ? ELSE lane END "
         "WHERE spec = ?", (pid, key, lane or "", spec))
     if "," not in spec:
+        if pid is not None:
+            link_variants(conn, spec)
         # Rows a run stored before this candidate had a row. #410.
         conn.execute(
             "UPDATE results SET candidate_id = (SELECT id FROM candidates "
@@ -57,6 +65,23 @@ def ensure(conn, spec: str, *, proposal: str = "", lane: str = "",
     conn.commit()
     return conn.execute("SELECT id FROM candidates WHERE spec = ?",
                         (spec,)).fetchone()["id"]
+
+
+def link_variants(conn, base: str | None = None) -> int:
+    """Give each `spec,options` row its bare spec's proposal. #429."""
+    owner = {r["spec"]: r["proposal_id"] for r in conn.execute(
+        "SELECT spec, proposal_id FROM candidates "
+        "WHERE proposal_id IS NOT NULL").fetchall()}
+    n = 0
+    for r in conn.execute("SELECT id, spec FROM candidates "
+                          "WHERE proposal_id IS NULL").fetchall():
+        head = r["spec"].split(",", 1)[0]
+        if head == r["spec"] or head not in owner or base not in (None, head):
+            continue
+        conn.execute("UPDATE candidates SET proposal_id = ? WHERE id = ?",
+                     (owner[head], r["id"]))
+        n += 1
+    return n
 
 
 def for_proposal(conn, lane: str, name: str, attaches_to: str = "") -> str:

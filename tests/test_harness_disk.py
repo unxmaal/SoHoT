@@ -6,7 +6,7 @@ import time
 
 import pytest
 
-from harness import cli, disk, downloads
+from harness import candidates, cli, disk, downloads
 from harness import memory_store as ms
 
 NOW = 2_000_000_000.0
@@ -121,10 +121,31 @@ def test_an_adopted_winner_and_an_engine_default_are_kept(world):
     make_repo(world.hub, "org/winner")
     for name in ("ACE-Step/Ace-Step1.5", "org/winner"):
         verdict(world.conn, name, "broken", at=NOW - 30 * DAY)
+    candidates.ensure(world.conn, "mflux:org/winner", proposal="org/winner",
+                      key="mflux/org/winner-q8")
     i = inv(world, typed={"music": "acestep:acestep-v15-turbo"},
             adopted={"image": "mflux:org/winner"})
     assert entry(i, "ACE-Step/Ace-Step1.5").group == disk.KEEP
     assert entry(i, "org/winner").group == disk.KEEP
+
+
+def test_a_keeper_spec_no_candidate_row_names_refuses_every_delete(world):
+    """#429: no spelling rule guesses the repo; an unnamed keeper fails closed."""
+    d = make_repo(world.hub, "org/winner")
+    verdict(world.conn, "org/winner", "broken", at=NOW - 30 * DAY)
+    i = inv(world, adopted={"image": "mflux:org/winner"})
+    assert any("mflux:org/winner" in p for p in i.problems)
+    with pytest.raises(RuntimeError):
+        disk.delete(i, NOW, disk.REJECTED, world.conn)
+    assert d.exists()
+
+
+def test_weights_fetched_before_their_proposal_existed_become_its(world):
+    """#429: the proposal's creation links the row; the inventory joins no names."""
+    make_repo(world.hub, "org/late")
+    assert entry(inv(world), "org/late").group == disk.UNKNOWN
+    verdict(world.conn, "org/late", "broken", at=NOW - 30 * DAY)
+    assert entry(inv(world), "org/late").group == disk.REJECTED
 
 
 def test_tooling_with_no_verdict_is_keep_not_unknown(world):

@@ -50,6 +50,10 @@ class BaseRunner:
     #: A screen asks whether it runs at all, so a runner may warm and retry. #406.
     screening: bool = False
 
+    def artifact(self, case: Case, suffix: str) -> str:
+        """The one file name every runner writes a case's artifact under. #429."""
+        return f"{self.candidate.replace('/', '_')}--{case.id}{suffix}"
+
     def warm(self) -> None:
         """Load the model untimed, so no timed case pays for it. #406."""
 

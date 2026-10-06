@@ -405,6 +405,8 @@ class Result:
     failure_class: str = ""
     #: The harness limit it hit, as a `limit:` predicate body. #406.
     limit: str = ""
+    #: The candidates row it ran as, set where the run is stored. #429.
+    candidate_id: int | None = None
 
 
 # ---------------------------------------------------------------------------

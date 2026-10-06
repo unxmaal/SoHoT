@@ -114,6 +114,15 @@ def _candidate(conn, key: str, spec: str, lane: str) -> int | None:
     return best["id"]
 
 
+def _stamped(conn, cid, key: str) -> int | None:
+    """The candidate a row says it ran as, if this store's row agrees. #429."""
+    if cid is None:
+        return None
+    got = conn.execute("SELECT receipt_key FROM candidates WHERE id = ?",
+                       (int(cid),)).fetchone()
+    return int(cid) if got and got["receipt_key"] == key else None
+
+
 def record(conn, path, data: dict, *, at: float | None = None) -> int | None:
     """Store one receipt (the results.json shape) as a run and its rows.
 
@@ -150,7 +159,8 @@ def record(conn, path, data: dict, *, at: float | None = None) -> int | None:
     ids: dict[str, int | None] = {}
     for seq, r in enumerate(rows):
         name = str(r.get("candidate") or "")
-        if name not in ids:
+        cid = _stamped(conn, r.get("candidate_id"), name)
+        if cid is None and name not in ids:
             ids[name] = _candidate(conn, name, specs.get(name, ""), lane)
         repeat = _split_case(str(r.get("case_id") or ""))[1]
         cls = r.get("failure_class")
@@ -163,7 +173,8 @@ def record(conn, path, data: dict, *, at: float | None = None) -> int | None:
             "case_id, repeat_index, passed, seconds, peak_kb, detail, metrics, "
             "warnings, artifact, failure_class, hit_limit) "
             "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-            (run_id, seq, ids[name], name, str(r.get("case_id") or ""), repeat,
+            (run_id, seq, cid if cid is not None else ids[name], name,
+             str(r.get("case_id") or ""), repeat,
              1 if r.get("passed") else 0, float(r.get("seconds") or 0.0),
              int(r.get("peak_kb") or 0), str(r.get("detail") or ""),
              json.dumps(r.get("metrics") or {}),

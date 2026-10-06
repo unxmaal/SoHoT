@@ -65,7 +65,7 @@ class SpeechRunner(BaseRunner):
         self.outdir.mkdir(parents=True, exist_ok=True)
 
     def generate(self, case: Case):
-        out = self.outdir / f"{self.candidate.replace('/', '_')}--{case.id}.wav"
+        out = self.outdir / self.artifact(case, ".wav")
         try:
             audio.speak(case.prompt, out=out, voice=self.voice,
                         speed=float(case.params.get("speed", 1.0)),

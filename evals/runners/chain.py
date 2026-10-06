@@ -136,12 +136,11 @@ class ChainRunner(BaseRunner):
         self.expect_size: tuple | None = None
 
     def generate(self, case: Case):
-        stem = self.candidate.replace("/", "_")
         # KEPT, not cleaned up: when the final image is wrong the first
         # question is whether stage one was already wrong, and deleting the
         # intermediate throws away the only way to answer.
-        mid = (self.outdir / f"{stem}--{case.id}--stage1.png").resolve()
-        out = (self.outdir / f"{stem}--{case.id}.png").resolve()
+        mid = (self.outdir / self.artifact(case, "--stage1.png")).resolve()
+        out = (self.outdir / self.artifact(case, ".png")).resolve()
         for p in (mid, out):
             if p.exists():
                 p.unlink()

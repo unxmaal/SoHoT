@@ -101,15 +101,6 @@ def _stem(filename: str) -> str:
     return name[:-len(".gguf")] if name.endswith(".gguf") else name
 
 
-def repo_of(spec: str) -> str:
-    """`mflux:org/name@steps=8,q=4` -> `org/name`; "" if not repo-shaped."""
-    s = (spec or "").strip()
-    s = s.split(",", 1)[0].split("@", 1)[0]
-    s = s.rpartition(":")[2]
-    parts = [p for p in s.split("/") if p]
-    return "/".join(parts[:2]) if len(parts) >= 2 else ""
-
-
 def _gateway_files() -> list[Path]:
     from harness import gateway
     found = sorted((gateway.REPO / "gateway").glob("config*.yaml"))
@@ -151,14 +142,22 @@ def _aliases(files, sources: dict | None = None) -> tuple[dict, list]:
     return out, problems
 
 
-def _stored_repo(conn, spec: str) -> str:
-    """The proposal a stored candidate row names for `spec`, if any. #407."""
+def _stored(conn, spec: str) -> tuple[set, set]:
+    """The repos and GGUF stems the candidate row for `spec` owns. #407, #429."""
     if conn is None or not spec:
-        return ""
-    row = conn.execute(
-        "SELECT p.name FROM candidates c JOIN proposals p "
-        "ON p.id = c.proposal_id WHERE c.spec = ?", (spec,)).fetchone()
-    return row["name"] if row else ""
+        return set(), set()
+    repos, stems = set(), set()
+    for r in conn.execute(
+            "SELECT p.name, d.repo, d.kind, d.file FROM candidates c "
+            "JOIN proposals p ON p.id = c.proposal_id "
+            "LEFT JOIN downloads d ON d.proposal_id = p.id "
+            "AND d.removed_at IS NULL WHERE c.spec = ?", (spec,)).fetchall():
+        repos.add(r["name"])
+        if r["repo"]:
+            repos.add(r["repo"])
+        if r["kind"] == downloads.GGUF and r["file"]:
+            stems.add(_stem(r["file"]))
+    return repos, stems
 
 
 def _resolve(spec: str, aliases: dict, conn=None) -> tuple[set, set]:
@@ -173,9 +172,11 @@ def _resolve(spec: str, aliases: dict, conn=None) -> tuple[set, set]:
     for key in (bare, head):
         if key in ENGINE_REPOS:
             return set(ENGINE_REPOS[key]), set()
-    # Both the stored row and the spelling: a keeper is never narrowed.
-    repos = {r for r in (_stored_repo(conn, s), repo_of(s)) if r}
-    return repos, set()
+    repos, stems = _stored(conn, s)
+    if ":" not in s and "," not in s and "/" in s:
+        # A typed default with no engine is the repo id itself.
+        repos.add(s)
+    return repos, stems
 
 
 def keepers(conn=None, gateway_files=None, typed=None, adopted=None) -> Keepers:
@@ -298,25 +299,9 @@ def _scan(hub: Path, ggufs: Path, rows: dict) -> tuple[list, list]:
     return entries, incomplete
 
 
-def _proposal_ids(conn, e: Entry) -> set:
-    """The proposals this entry's rows name, and the GGUF stems' candidates."""
-    ids = set(e.proposal_ids)
-    if conn is None:
-        return ids
-    if e.repo:
-        for r in conn.execute("SELECT id FROM proposals WHERE lower(name) = ?",
-                              (e.repo.lower(),)):
-            ids.add(r["id"])
-    from harness.serving import LLAMACPP_PREFIX
-    for stem in _stems(e):
-        spec = f"{LLAMACPP_PREFIX}{stem}"
-        for r in conn.execute(
-                "SELECT c.proposal_id AS id FROM candidates c "
-                "WHERE lower(c.spec) = ? AND c.proposal_id IS NOT NULL "
-                "UNION SELECT id FROM proposals WHERE lower(name) = ?",
-                (spec, spec)):
-            ids.add(r["id"])
-    return ids
+def _proposal_ids(e: Entry) -> set:
+    """The proposals this entry's download rows name. #411, #429."""
+    return set(e.proposal_ids)
 
 
 def _stems(e: Entry) -> list[str]:
@@ -328,7 +313,7 @@ def _stems(e: Entry) -> list[str]:
 
 def _classify(e: Entry, k: Keepers, verdicts: dict, conn=None) -> None:
     by_pid = {r["pid"]: r for r in verdicts.values()}
-    seen = [by_pid[i] for i in _proposal_ids(conn, e) if i in by_pid]
+    seen = [by_pid[i] for i in _proposal_ids(e) if i in by_pid]
     last = max(seen, key=lambda r: r["id"]) if seen else None
     if last:
         e.outcome, e.tier = last["outcome"], last["tier"]
