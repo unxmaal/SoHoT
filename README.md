@@ -1164,8 +1164,11 @@ download, since their runners load the repo:
 
 Each GGUF gets its own context (#498). At startup `scripts/serve-llamacpp.sh`
 reads every recorded GGUF's header and serves it at the smaller of its trained
-context and the most whose f16 KV cache fits beside the weights under the
-machine's ceiling less its measured reserve, in steps of 1024. KV bytes per
+context and the most whose f16 KV cache fits beside the weights, in steps of
+1024. The KV room is the machine's ceiling less its measured reserve, the
+weights and the largest text model mlx_lm.server serves beside it, and never
+more than `LLAMACPP_KV_MAX_GIB` (8), because llama-server allocates the whole
+cache at load. KV bytes per
 token come from the header (KV heads, key and value widths, and only the
 attention layers of a hybrid; sliding-window layers are costed as full). A
 model under 8192 tokens is refused, and `serving.route` says why. The result

@@ -46,6 +46,8 @@ def _value(fh, kind: int):
 #: Below this a served model fails ordinary agent work; refuse rather than serve it.
 FLOOR = 8192
 STEP = 1024
+#: Default ceiling on one model's KV cache, which llama-server allocates whole at load.
+KV_MAX_GIB = 8
 #: Bytes per cached element for each llama-server cache type, as (numerator, denominator).
 CACHE_BYTES = {"f32": (4, 1), "f16": (2, 1), "bf16": (2, 1), "q8_0": (34, 32),
                "q5_1": (24, 32), "q5_0": (22, 32), "q4_1": (20, 32),
@@ -97,22 +99,26 @@ def kv_bytes_per_token(meta: dict, cache_type: str = "f16") -> int:
 
 
 def choose(meta: dict, weights: int, budget: int, slots: int = 1,
-           cache_type: str = "f16", floor: int = FLOOR) -> Choice:
-    """min(trained, what fits beside the weights), per slot, in steps of 1024; 0 below `floor`."""
+           cache_type: str = "f16", floor: int = FLOOR,
+           kv_cap: int | None = None) -> Choice:
+    """min(trained, what fits beside the weights and under kv_cap), per slot, in steps of 1024; 0 below `floor`."""
     full = trained(meta)
     per = kv_bytes_per_token(meta, cache_type)
     if not full or not per:
         return Choice(0, full, per, "refused: the GGUF header gives no trained context "
                       "or KV shape to size a cache from")
-    fits = max(budget - weights, 0) // per // max(slots, 1) // STEP * STEP
+    room = max(budget - weights, 0)
+    room = min(room, kv_cap) if kv_cap is not None else room
+    fits = room // per // max(slots, 1) // STEP * STEP
     ctx = min(full // STEP * STEP or full, fits)
     if ctx < floor:
         limit = (f"trained for {full}" if full < floor else
-                 f"{(budget - weights) / 1024 ** 3:.1f} GiB left after the weights "
+                 f"{room / 1024 ** 3:.1f} GiB of KV room "
                  f"holds {fits} tokens at {per} B/token")
         return Choice(0, full, per, f"refused: {limit}, under the {floor}-token floor")
     if ctx < full:
-        return Choice(ctx, full, per, f"memory: {fits} tokens fit at {per} B/token "
+        return Choice(ctx, full, per, f"memory: {fits} tokens fit in "
+                      f"{room / 1024 ** 3:.1f} GiB of KV at {per} B/token "
                       f"(trained {full})")
     return Choice(ctx, full, per, f"trained: {full} tokens, {per * ctx / 1024 ** 3:.1f} "
                   "GiB of KV fits")
@@ -145,26 +151,68 @@ def budget_bytes(conn=None) -> int:
     return int((memory.ceiling_gb() - memory.measured_reserve_gb(conn)) * 1024 ** 3)
 
 
+def kv_cap_bytes() -> int:
+    """The most KV cache one model may allocate: LLAMACPP_KV_MAX_GIB, default 8."""
+    import os
+    return int(float(os.environ.get("LLAMACPP_KV_MAX_GIB") or KV_MAX_GIB) * 1024 ** 3)
+
+
+def coresident_bytes(conn, defaults=None, config=None, size_of=None) -> int:
+    """The largest text model this machine serves on mlx_lm.server, which stays resident beside the router."""
+    from harness import downloads, gateway, lanes, memory, serving
+    if defaults is None:
+        from harness import adopt
+        defaults = adopt.lane_defaults(conn)
+    if size_of is None:
+        def size_of(repo):
+            path = downloads.path_of(repo, conn, kind=downloads.HUB)
+            got = memory.size_gb(str(path)) if path else None
+            return int(got * 1024 ** 3) if got else 0
+    text = set(lanes.TEXT_SERVED) | set(gateway.TEXT_LANES)
+    entries = {str(e.get("model_name", "")).lower(): e
+               for e in gateway.load(config).get("model_list") or []}
+    best = 0
+    for lane, spec in defaults.items():
+        name = (spec or "").partition(",")[0].strip()
+        if lane not in text or not name or ":" in name:
+            continue
+        if serving.engine_for(name, config=config) == serving.LLAMACPP:
+            continue
+        entry = entries.get(name.lower())
+        repo = (gateway.strip_provider(str((entry.get("litellm_params") or {}).get("model", "")))
+                if entry else name)
+        if "/" in repo:
+            best = max(best, int(size_of(repo) or 0))
+    return best
+
+
 def plan(conn, budget: int | None = None, slots: int = 1,
-         cache_type: str = "f16") -> list[dict]:
+         cache_type: str = "f16", kv_cap: int | None = None) -> list[dict]:
     """Choose and record the context of every live GGUF row on this machine."""
     import time
 
     from harness import downloads
     budget = budget_bytes(conn) if budget is None else budget
+    kv_cap = kv_cap_bytes() if kv_cap is None else kv_cap
+    try:
+        beside = coresident_bytes(conn)
+    except Exception:  # noqa: BLE001
+        beside = 0
     out = []
     for row in downloads.live(conn, kind=downloads.GGUF):
         path = Path(row["path"])
         if not path.exists():
             continue
         try:
-            got = choose(read_meta(path), _weights(path), budget, slots, cache_type)
+            got = choose(read_meta(path), _weights(path), budget - beside, slots,
+                         cache_type, kv_cap=kv_cap)
         except (OSError, ValueError, KeyError, struct.error) as exc:
             got = Choice(0, 0, 0, f"refused: unreadable GGUF header ({exc})")
         conn.execute("UPDATE downloads SET ctx = ?, ctx_trained = ?, kv_bytes_token = ?, "
-                     "ctx_slots = ?, ctx_why = ?, ctx_at = ? WHERE id = ?",
+                     "ctx_slots = ?, ctx_why = ?, ctx_at = ?, kv_cap_bytes = ?, "
+                     "coresident_bytes = ? WHERE id = ?",
                      (got.ctx, got.trained, got.kv_per_token, slots, got.why,
-                      time.time(), row["id"]))
+                      time.time(), kv_cap, beside, row["id"]))
         out.append({"stem": path.name[:-len(".gguf")], "path": str(path),
                     "ctx": got.ctx, "why": got.why})
     conn.commit()

@@ -385,7 +385,10 @@ CREATE TABLE IF NOT EXISTS downloads (
     kv_bytes_token INTEGER NOT NULL DEFAULT 0,
     ctx_slots    INTEGER NOT NULL DEFAULT 0,
     ctx_why      TEXT NOT NULL DEFAULT '',
-    ctx_at       REAL
+    ctx_at       REAL,
+    -- The KV cap and the co-resident MLX model the choice was made under. #498.
+    kv_cap_bytes INTEGER NOT NULL DEFAULT 0,
+    coresident_bytes INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS edges (
@@ -1407,7 +1410,9 @@ def _add_served_context(conn) -> None:
                      ("ctx_trained", "INTEGER NOT NULL DEFAULT 0"),
                      ("kv_bytes_token", "INTEGER NOT NULL DEFAULT 0"),
                      ("ctx_slots", "INTEGER NOT NULL DEFAULT 0"),
-                     ("ctx_why", "TEXT NOT NULL DEFAULT ''"), ("ctx_at", "REAL")):
+                     ("ctx_why", "TEXT NOT NULL DEFAULT ''"), ("ctx_at", "REAL"),
+                     ("kv_cap_bytes", "INTEGER NOT NULL DEFAULT 0"),
+                     ("coresident_bytes", "INTEGER NOT NULL DEFAULT 0")):
         if col not in _columns(conn, "downloads"):
             conn.execute(f"ALTER TABLE downloads ADD COLUMN {col} {ddl}")
 

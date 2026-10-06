@@ -50,6 +50,55 @@ def test_plan_records_each_gguf_row_and_its_reason(conn, models):
     assert context.served(conn, "Tiny")["ctx"] == 0
 
 
+def test_a_dense_model_beside_a_resident_mlx_model_keeps_its_kv_under_the_cap(
+        conn, models, monkeypatch):
+    monkeypatch.delenv("LLAMACPP_KV_MAX_GIB", raising=False)
+    _gguf(conn, models, "Dense", QWEN3_4B)
+    monkeypatch.setattr(context, "_weights", lambda path: int(2.3 * GIB))
+    monkeypatch.setattr(context, "coresident_bytes", lambda conn: 17 * GIB,
+                        raising=False)
+    budget = 54 * GIB
+    got = context.plan(conn, budget=budget)[0]
+    kv = got["ctx"] * 147456
+    assert 8192 <= got["ctx"] and kv <= 8 * GIB
+    assert int(2.3 * GIB) + kv + 17 * GIB <= budget
+    row = context.served(conn, "Dense")
+    assert row["kv_cap_bytes"] == 8 * GIB and row["coresident_bytes"] == 17 * GIB
+
+
+def test_a_hybrid_keeps_its_trained_context_under_the_cap(conn, models, monkeypatch):
+    monkeypatch.setattr(context, "coresident_bytes", lambda conn: 17 * GIB,
+                        raising=False)
+    _gguf(conn, models, "Ornith", ORNITH)
+    assert context.plan(conn, budget=54 * GIB)[0]["ctx"] == 262144
+
+
+def test_the_kv_cap_is_configurable(conn, models, monkeypatch):
+    monkeypatch.setenv("LLAMACPP_KV_MAX_GIB", "2")
+    monkeypatch.setattr(context, "coresident_bytes", lambda conn: 0, raising=False)
+    _gguf(conn, models, "Dense", QWEN3_4B)
+    got = context.plan(conn, budget=54 * GIB)[0]
+    assert got["ctx"] == 2 * GIB // 147456 // 1024 * 1024
+
+
+def test_the_coresident_model_is_the_largest_adopted_mlx_text_model(conn, tmp_path):
+    cfg = tmp_path / "gw.yaml"
+    cfg.write_text("model_list:\n"
+                   "  - model_name: q3-30b\n    litellm_params:\n"
+                   "      model: openai/mlx-community/Qwen3-30B-4bit\n"
+                   "      api_base: http://127.0.0.1:8081/v1\n"
+                   "  - model_name: q3-4b\n    litellm_params:\n"
+                   "      model: openai/mlx-community/Qwen3-4B-4bit\n"
+                   "      api_base: http://127.0.0.1:8081/v1\n", encoding="utf-8")
+    sizes = {"mlx-community/Qwen3-30B-4bit": 17 * GIB,
+             "mlx-community/Qwen3-4B-4bit": 2 * GIB}
+    got = context.coresident_bytes(
+        conn, defaults={"svg": "q3-30b", "code": "llamacpp:Ornith", "web": "q3-4b",
+                        "image": "mflux:z-image-turbo"},
+        config=cfg, size_of=sizes.get)
+    assert got == 17 * GIB
+
+
 def test_the_weights_come_off_the_budget(conn, models, monkeypatch):
     p = _gguf(conn, models, "Q", QWEN3_4B)
     monkeypatch.setattr(context, "_weights", lambda path: 10 * GIB)
