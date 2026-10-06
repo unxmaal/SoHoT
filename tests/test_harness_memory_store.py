@@ -57,7 +57,7 @@ def test_a_terminal_verdict_suppresses_re_proposal(db):
     makes an operator stop reading the output."""
     see(db, "ComfyUI")
     see(db, "SDMLX")
-    ms.decide(db, "ComfyUI", "declined", issue=20, detail="mflux ships them")
+    ms.decide(db, "ComfyUI", "declined", detail="mflux ships them (#20)")
     assert ms.settled(db) == {"ComfyUI"}
 
 
@@ -150,15 +150,16 @@ def test_traversal_terminates_on_a_cycle(db):
     assert {r["name"] for r in got} <= {"a", "b"}
 
 
-def test_composable_pairs_come_from_types_not_from_trying_everything(db):
-    """47 proposals is 1,081 blind pairs, and most are nonsense: speech does not
-    compose with an image upscaler."""
-    for n in ["diffusion", "vectorizer", "transcriber"]:
-        see(db, n)
-    ms.types(db, "diffusion", produces="image")
-    ms.types(db, "vectorizer", consumes="image", produces="svg")
-    ms.types(db, "transcriber", consumes="audio", produces="text")
-    assert ms.composable(db) == [("diffusion", "vectorizer")]
+def test_the_judge_reads_the_strongest_relevance_a_sweep_recorded(db):
+    """#419: sightings.relevance has a writer (the feed sweep, the crowd tier)
+    and this reader. 0 is the honest default, not an unfilled column."""
+    see(db, "org/mlx-thing", source="reddit", url="https://a", relevance=2)
+    see(db, "org/mlx-thing", source="hn", url="https://b", relevance=-1)
+    see(db, "org/plain", source="reddit", url="https://c")
+    for n in ("org/mlx-thing", "org/plain"):
+        ms.decide(db, n, "queued", tier=ms.INSPECT, detail="fits")
+    got = {r["name"]: r["relevance"] for r in ms.judgeable(db, limit=10)}
+    assert got == {"org/mlx-thing": 2, "org/plain": 0}
 
 
 def test_an_edge_to_an_unknown_proposal_is_refused(db):

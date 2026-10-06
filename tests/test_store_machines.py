@@ -219,24 +219,12 @@ def test_a_run_path_that_is_not_a_path_is_refused(store):
 
 # --- the attachment kind and the source's age -----------------------------
 
-def test_the_attachment_kind_is_a_column(store):
-    """It was `lora in its own card: this attaches to a model...`. The word
-    that decided it is the fact; the sentence is the explanation."""
-    ms.decide(store, "org/c", "declined", tier="fetch", attaches_to="lora",
-              detail="lora in its own card: this attaches to a model rather "
-                     "than being one, and no lane can run it alone")
-    row = store.execute(
-        "SELECT attaches_to FROM verdicts ORDER BY id DESC LIMIT 1").fetchone()
-    assert row["attaches_to"] == "lora"
-
-
-def test_not_an_attachment_is_distinguishable_from_nobody_asking(store):
-    """"" is the answer for almost every row, and it has to mean "asked, and
-    no" rather than being indistinguishable from an unfilled column."""
-    ms.decide(store, "org/c", "queued", tier="inspect", detail="fits")
-    row = store.execute(
-        "SELECT attaches_to FROM verdicts ORDER BY id DESC LIMIT 1").fetchone()
-    assert row["attaches_to"] == ""
+def test_the_attachment_kind_is_the_proposals_card_fact_not_a_verdict_column(store):
+    """#268 put the word on the verdict; #414 made it a card fact inspect writes,
+    and nothing read the verdict's copy. #419 dropped it."""
+    assert "attaches_to" not in ms._columns(store, "verdicts")
+    with pytest.raises(TypeError):
+        ms.decide(store, "org/c", "declined", tier="fetch", attaches_to="lora")
 
 
 def test_the_upstream_idle_time_is_a_number_not_one_decimal_of_years(store):
@@ -302,10 +290,11 @@ def test_a_judge_using_the_word_workflow_is_not_a_verdict_about_one(tmp_path):
 
     conn = ms.connect(path)
     try:
+        # The kind lands on the proposal when #419 drops the verdict column.
         got = {r["proposal_id"]: (r["attaches_to"], r["upstream_idle_days"])
                for r in conn.execute(
-                   "SELECT proposal_id, attaches_to, upstream_idle_days "
-                   "FROM verdicts")}
+                   "SELECT v.proposal_id, p.attaches_to, v.upstream_idle_days "
+                   "FROM verdicts v JOIN proposals p ON p.id = v.proposal_id")}
         assert got[1] == ("", 0.0), (
             f"a judge's prose was read as a verdict about an attachment: "
             f"{got[1]}")

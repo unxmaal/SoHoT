@@ -366,7 +366,7 @@ def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=N
             why = (f"{attachment} in its own card: this attaches to a model "
                    f"rather than being one, and no lane can run it alone")
             ms.decide_or_skip(conn, row["name"], "declined", tier="fetch", detail=why,
-                              attaches_to=attachment, reason=reasons.CANDIDATE)
+                              reason=reasons.CANDIDATE)
             done.append({"repo": row["name"], "ok": False, "why": why})
             continue
         # `limit` bounds DOWNLOADS, not decisions. Counting refusals against it
