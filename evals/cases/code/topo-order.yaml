@@ -1,0 +1,21 @@
+# Harder tier: three constraints at once. Ties must break by name, a node that
+# appears only as a dependency still counts, and a cycle is an error.
+id: topo-order
+modality: code
+prompt: |
+  Write a Python function `topo_order(deps)` where `deps` maps each node name
+  (a string) to a list of node names it depends on. Return a list of every node
+  such that each node comes after all of its dependencies. Nodes that appear
+  only as dependencies are included. Whenever several nodes are ready at once,
+  take the alphabetically smallest first. If there is a cycle, raise
+  ValueError. Return only the function.
+assert:
+  checks:
+    - "topo_order({'b': ['a'], 'a': []}) == ['a', 'b']"
+    - "topo_order({'c': [], 'b': [], 'a': []}) == ['a', 'b', 'c']"
+    - "topo_order({'app': ['lib', 'util'], 'lib': ['util']}) == ['util', 'lib', 'app']"
+    - "topo_order({'z': ['y'], 'b': ['a']}) == ['a', 'b', 'y', 'z']"
+    - "topo_order({'d': ['b', 'c'], 'c': ['a'], 'b': ['a']}) == ['a', 'b', 'c', 'd']"
+    - "raises(topo_order, {'a': ['b'], 'b': ['a']}, exc=ValueError)"
+    - "raises(topo_order, {'a': ['a']}, exc=ValueError)"
+    - "topo_order({}) == []"

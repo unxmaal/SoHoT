@@ -45,3 +45,71 @@ def test_the_reference_solution_passes_every_check(case):
 def test_the_case_has_enough_checks_to_be_discriminating(case):
     """One assertion cannot tell a correct answer from a lucky one."""
     assert len(case.assertions["checks"]) >= 3, case.id
+
+
+#: The answer a capable-but-careless model writes. The harder tier exists to
+#: separate models that all pass the rest, so each must fail its case.
+PLAUSIBLY_WRONG = {
+    "topo-order": '''
+def topo_order(deps):
+    out, seen = [], set()
+    def visit(n):
+        if n in seen:
+            return
+        seen.add(n)
+        for d in sorted(deps.get(n, [])):
+            visit(d)
+        out.append(n)
+    for n in sorted(deps):
+        visit(n)
+    return out
+''',
+    "evaluate-expr": '''
+def evaluate(s):
+    return float(eval(s, {"__builtins__": {}}, {})) if s.strip() else 0.0
+''',
+    "semver-compare": '''
+def compare(a, b):
+    def key(v):
+        v = v.split("+")[0]
+        core, _, pre = v.partition("-")
+        return tuple(int(x) for x in core.split(".")), pre or "~"
+    ka, kb = key(a), key(b)
+    return (ka > kb) - (ka < kb)
+''',
+    "roman-strict": '''
+def to_roman(n):
+    if not 1 <= n <= 3999:
+        raise ValueError(n)
+    vals = [(1000,"M"),(900,"CM"),(500,"D"),(400,"CD"),(100,"C"),(90,"XC"),
+            (50,"L"),(40,"XL"),(10,"X"),(9,"IX"),(5,"V"),(4,"IV"),(1,"I")]
+    out = ""
+    for v, g in vals:
+        while n >= v:
+            out, n = out + g, n - v
+    return out
+
+def from_roman(s):
+    m = {"I":1,"V":5,"X":10,"L":50,"C":100,"D":500,"M":1000}
+    if not s:
+        raise ValueError(s)
+    total = 0
+    for i, c in enumerate(s):
+        v = m[c]
+        total += -v if i + 1 < len(s) and m[s[i+1]] > v else v
+    return total
+''',
+    "glob-match": '''
+import fnmatch
+
+def match(pattern, s):
+    return fnmatch.fnmatchcase(s, pattern)
+''',
+}
+
+
+@pytest.mark.parametrize("case_id", sorted(PLAUSIBLY_WRONG))
+def test_a_plausible_wrong_answer_fails_the_harder_tier(case_id):
+    case = next(c for c in code_cases if c.id == case_id)
+    r = code.check(PLAUSIBLY_WRONG[case_id], case.assertions["checks"])
+    assert not r.ok, f"{case_id} does not separate a careless answer"

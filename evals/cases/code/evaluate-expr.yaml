@@ -1,0 +1,25 @@
+# Harder tier: precedence, left associativity and unary minus, with eval() ruled
+# out by a check rather than by the prompt: an eval-based answer returns
+# something for `__import__('os')` instead of raising.
+id: evaluate-expr
+modality: code
+prompt: |
+  Write a Python function `evaluate(s)` that evaluates an arithmetic expression
+  string containing non-negative integers, + - * /, parentheses, unary minus,
+  and spaces. Use normal precedence, and evaluate operators of equal precedence
+  left to right. `/` is true division. Return a float. Raise ValueError for
+  anything malformed or containing any other character. Do not use eval or
+  exec. Return only the function.
+assert:
+  checks:
+    - "evaluate('1 + 2 * 3') == 7.0"
+    - "evaluate('2 - 3 - 4') == -5.0"
+    - "evaluate('8 / 4 / 2') == 1.0"
+    - "evaluate('-(2 + 3) * 2') == -10.0"
+    - "evaluate('2 * -3') == -6.0"
+    - "evaluate('((7))') == 7.0"
+    - "evaluate('10 / 4') == 2.5"
+    - "raises(evaluate, '2 +', exc=ValueError)"
+    - "raises(evaluate, '(1 + 2', exc=ValueError)"
+    - "raises(evaluate, '2 ** 3', exc=ValueError)"
+    - "raises(evaluate, \"__import__('os')\", exc=ValueError)"
