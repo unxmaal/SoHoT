@@ -321,3 +321,75 @@ def test_an_empty_receipt_is_not_a_key_mismatch():
     the caller, and must not be reported as a naming problem."""
     assert cli._all_refused([], "org/x") == ""
     assert cli._all_refused(None, "org/x") == ""
+
+
+# --- the proposal must leave the survivors list (#393) ----------------------
+
+def _seed_screened(conn, name):
+    ms.record(conn, ms.Seen(name=name, source="t", kind="weights", lane="code",
+                            why="seeded"))
+    ms.decide(conn, name, "screened", tier=ms.SCREEN, detail="1 case passed")
+
+
+def test_a_measured_proposal_leaves_the_survivors_list(monkeypatch, tmp_path):
+    """Loop 3 re-measured Tiel and Ornith because the verdict was keyed on
+    the spec and the proposal stayed `screened`."""
+    real = ms.connect
+    monkeypatch.setattr(ms, "connect", lambda *a, **k: real(tmp_path / "d.db"))
+    conn = ms.connect()
+    _seed_screened(conn, "org/challenger")
+    conn.close()
+    monkeypatch.setattr(subprocess, "run", lambda argv, **kw: _Done())
+    monkeypatch.setattr(adopt, "default_for",
+                        lambda lane, fallback, conn=None: "q3-4b")
+    monkeypatch.setattr("harness.screen.candidate_for",
+                        lambda lane, name: "llamacpp:chal" if name == "org/challenger" else name)
+    row = {"passed": 9, "total": 9}
+    monkeypatch.setattr(cli, "_receipt_at", lambda out: {
+        "summary": {"q3-4b": row, "llamacpp:chal": row}, "rows": []})
+    monkeypatch.setattr(cli, "_summary_row",
+                        lambda summary, wanted, lane: {**row, "candidate": wanted})
+    monkeypatch.setattr(cli, "_all_refused", lambda rows, name: "")
+    cli._measure_and_adopt(argparse.Namespace(repeat=3),
+                           {"name": "org/challenger", "lane": "code"})
+    conn = ms.connect()
+    try:
+        assert [r["name"] for r in ms.survivors(conn)] == []
+    finally:
+        conn.close()
+
+
+def test_the_incumbent_is_not_measured_against_itself(monkeypatch, tmp_path,
+                                                      capsys):
+    """Loop 3 ran Ornith vs Ornith and wrote `declined` for the lane default."""
+    real = ms.connect
+    monkeypatch.setattr(ms, "connect", lambda *a, **k: real(tmp_path / "d.db"))
+    conn = ms.connect()
+    _seed_screened(conn, "org/winner")
+    conn.close()
+    ran = []
+    monkeypatch.setattr(subprocess, "run", lambda argv, **kw: ran.append(argv))
+    monkeypatch.setattr(adopt, "default_for",
+                        lambda lane, fallback, conn=None: "llamacpp:win")
+    monkeypatch.setattr("harness.screen.candidate_for",
+                        lambda lane, name: "llamacpp:win")
+    assert cli._measure_and_adopt(argparse.Namespace(repeat=3),
+                                  {"name": "org/winner", "lane": "code"}) == 0
+    assert ran == []
+    assert "already the code lane's default" in capsys.readouterr().out
+    conn = ms.connect()
+    try:
+        assert ms.survivors(conn) == []
+    finally:
+        conn.close()
+
+
+def test_inspect_does_not_reanswer_a_screened_candidate(tmp_path):
+    conn = ms.connect(tmp_path / "d.db")
+    try:
+        _seed_screened(conn, "org/screened")
+        conn.execute("UPDATE proposals SET resolved = 'org/screened'")
+        assert "org/screened" in ms.pending(conn)
+        assert "org/screened" not in ms.pending(conn, screened=False)
+    finally:
+        conn.close()
