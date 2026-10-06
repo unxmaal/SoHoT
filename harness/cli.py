@@ -91,6 +91,8 @@ DEFAULT_SVG_MODEL = "local-large"
 DEFAULT_WEB_MODEL = "q3-4b"
 DEFAULT_CODE_MODEL = "q3-4b"
 DEFAULT_EXTRACT_MODEL = "local-large"
+# Typed by hand, not measured: the code lane's default as the decide baseline. #423.
+DEFAULT_DECIDE_MODEL = "q3-4b"
 
 # Named per engine family because the fix differs, and because `uv tool install
 # mflux` on its own silently picks Python 3.9, where every mflux entry point

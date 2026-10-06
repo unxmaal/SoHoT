@@ -114,10 +114,10 @@ def test_the_wanted_order_is_the_one_that_was_asked_for():
     `music` is LAST and appended rather than inserted (#237): the five before
     it were ranked explicitly and music was asked for afterwards, so it has
     never been ranked against them. Moving it up is a decision somebody makes
-    out loud, not a tidy-up.
+    out loud, not a tidy-up. `decide` was appended after it the same way (#423).
     """
     assert rank.LANE_PRIORITY == ("image", "code", "web", "svg", "video",
-                                  "music")
+                                  "music", "decide")
     assert not {"tts", "stt"} & set(rank.LANE_PRIORITY)
 
 

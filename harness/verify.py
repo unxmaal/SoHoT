@@ -27,6 +27,8 @@ COST_S = {
     # fourth and is CHEAPER than the others -- it skips the LM entirely and
     # goes straight to the DiT -- measured at ~40s on 2026-09-22 (#275).
     "music": 220,
+    # Estimated, not measured: 24 one-answer cases on a 4B text model. #423.
+    "decide": 60,
 }
 
 #: A lane nobody should start without meaning to. Video is ~40 minutes for ONE

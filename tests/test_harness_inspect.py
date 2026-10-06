@@ -648,7 +648,7 @@ def test_a_nonzero_exit_is_still_an_inspect_error(monkeypatch):
     ("image-text-to-image", [], "image"),
     ("image-text-to-video", ["text-to-image"], "video"),
     ("image-to-3d", ["diffusion"], ""),
-    ("text-classification", [], ""),
+    ("token-classification", [], ""),
     ("any-to-any", ["text-to-image"], "image"),
 ])
 def test_an_unlisted_task_is_filed_by_what_it_produces(tag, tags, lane):
@@ -688,8 +688,11 @@ TASK_LANES = {
     "text-to-image": "image", "text-to-video": "video",
     "image-to-video": "video", "image-text-to-video": "video",
     "text-to-speech": "tts", "automatic-speech-recognition": "stt",
+    # A label from text is a typed decision; a fixed-head classifier that
+    # cannot take a schema fails the decide screen and says so. #423.
+    "text-classification": "decide",
     **{t: "" for t in (
-        "text-classification", "token-classification",
+        "token-classification",
         "table-question-answering", "question-answering",
         "zero-shot-classification", "translation", "summarization",
         "feature-extraction", "fill-mask", "sentence-similarity",

@@ -421,6 +421,8 @@ _LANE_QUERIES_ANY = {
     # find the thing that beats it, which is why the losing svg models are
     # still in the row above.
     "music": ["ACE-Step", "YuE", "DiffRhythm", "musicgen", "stable-audio"],
+    # Typed-decision models: Jev-class 4B-9B decoders and their adapters. #423.
+    "decide": ["Bespoke-Nimble", "OpenJev", "jev", "structured-prediction"],
 }
 
 #: Every lane discovery can search, whichever machine is asking. `code`, `web`,
@@ -472,6 +474,7 @@ _HOW = {
     "image": "--modality image --candidates <needs an engine>",
     "video": "--modality video --candidates <needs a runner>",
     "music": "--modality music --candidates acestep:{id}",
+    "decide": "--modality decide --candidates {id}",
 }
 
 #: runtime -> the lanes whose engine that runtime provides. Overrides _HOW for

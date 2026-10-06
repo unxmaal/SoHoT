@@ -57,6 +57,9 @@ WHY = {
     "nvidia/parakeet-tdt-0.6b-v2":
         "the stt lane's own incumbent, so a filter that refuses it is "
         "refusing the thing this machine already runs (#264)",
+    "bespokelabs/Bespoke-Nimble-9B":
+        "a peft LoRA filed text-classification: the decide lane's adapter, "
+        "which rank dropped until an engine that loads adapters existed (#423)",
     "hexgrad/Kokoro-82M":
         "the tts lane's incumbent, and the upstream of the repo the lane "
         "actually serves, so the card is a requant's parent (#264)",

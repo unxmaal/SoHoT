@@ -1058,6 +1058,25 @@ own `.venv`. It looks at `$ACESTEP_ROOT`, then at `~/localharness/acestep`, so
 a checkout kept elsewhere needs only a symlink there for the services and
 `lh verify` to find it.
 
+The decide lane asks for typed decisions: a context plus a flat schema of
+enum and boolean fields, scored on accuracy per field and on the calibration
+of the probabilities (Brier, and ECE once there are 100 decisions to bin).
+Its 24 cases are generated from human-labelled public data by
+`uv run python -m evals.decide_corpus`; each names its dataset and license.
+A text model is asked for one letter per field, with the answer tokens'
+logprobs where the server returns them; `claude-code:` gives answers only and
+is scored one-hot, as uncalibrated. `nimble:<repo>` runs Bespoke-Nimble-9B
+through nimble's own MLX ParallelScorer. On first use `scripts/nimble-venv.sh`
+clones nimble at its pinned commit into `~/localharness/nimble/checkout` and
+builds a Python 3.12 venv beside it (mlx, mlx-lm, transformers, torch, peft).
+The first case then downloads the base its adapter pins (Qwen/Qwen3.5-9B,
+about 18 GB in bf16) and merges the adapter once on the CPU into
+`~/localharness/nimble/models`; that needs the disk for both and well over
+18 GB of free memory. Apple Silicon only.
+
+    uv run python -m evals.run --modality decide --candidates \
+      q3-4b,claude-code:claude-opus-5-5,nimble:bespokelabs/Bespoke-Nimble-9B
+
 `repair` costs nothing extra, so it is the one to understand. Everything already
 checks its own output. It runs the code it wrote, draws the SVG to see whether
 anything is visible, opens the web page in a browser. All of that was

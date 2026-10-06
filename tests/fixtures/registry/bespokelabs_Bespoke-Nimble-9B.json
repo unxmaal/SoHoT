@@ -1,0 +1,119 @@
+{
+ "id": "bespokelabs/Bespoke-Nimble-9B",
+ "pipeline_tag": "text-classification",
+ "tags": [
+  "peft",
+  "safetensors",
+  "lora",
+  "qwen3.5",
+  "text-classification",
+  "structured-prediction",
+  "evidence-grounding",
+  "en",
+  "base_model:Qwen/Qwen3.5-9B",
+  "base_model:adapter:Qwen/Qwen3.5-9B",
+  "license:apache-2.0",
+  "region:us"
+ ],
+ "library_name": "peft",
+ "cardData": {
+  "license": "apache-2.0",
+  "library_name": "peft",
+  "base_model": "Qwen/Qwen3.5-9B",
+  "base_model_relation": "adapter",
+  "language": [
+   "en"
+  ],
+  "tags": [
+   "lora",
+   "qwen3.5",
+   "text-classification",
+   "structured-prediction",
+   "evidence-grounding"
+  ]
+ },
+ "siblings": [
+  {
+   "rfilename": ".gitattributes",
+   "size": 1570
+  },
+  {
+   "rfilename": "Bespoke-Labs-Logo.png",
+   "size": 19721
+  },
+  {
+   "rfilename": "LICENSE",
+   "size": 11544
+  },
+  {
+   "rfilename": "README.md",
+   "size": 3131
+  },
+  {
+   "rfilename": "SHA256SUMS",
+   "size": 1428
+  },
+  {
+   "rfilename": "adapter_config.json",
+   "size": 1296
+  },
+  {
+   "rfilename": "adapter_model.safetensors",
+   "size": 173188512
+  },
+  {
+   "rfilename": "candidate_schema.py",
+   "size": 3170
+  },
+  {
+   "rfilename": "chat_template.jinja",
+   "size": 7756
+  },
+  {
+   "rfilename": "extended_schema.py",
+   "size": 8381
+  },
+  {
+   "rfilename": "inference.py",
+   "size": 8029
+  },
+  {
+   "rfilename": "parallel_schema.py",
+   "size": 6628
+  },
+  {
+   "rfilename": "provenance.json",
+   "size": 458
+  },
+  {
+   "rfilename": "requirements.txt",
+   "size": 111
+  },
+  {
+   "rfilename": "schema_config.json",
+   "size": 22468
+  },
+  {
+   "rfilename": "serving_config.json",
+   "size": 5536
+  },
+  {
+   "rfilename": "serving_schema.py",
+   "size": 1031
+  },
+  {
+   "rfilename": "temperature_config.json",
+   "size": 294
+  },
+  {
+   "rfilename": "tokenizer.json",
+   "size": 19989325
+  },
+  {
+   "rfilename": "tokenizer_config.json",
+   "size": 1125
+  }
+ ],
+ "lastModified": "2026-09-24T06:05:07.000Z",
+ "downloads": 5888
+}

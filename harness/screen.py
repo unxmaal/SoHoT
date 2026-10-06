@@ -57,6 +57,9 @@ LANE_CANDIDATES = {
     # h3 is the lane's incumbent, spelled `h3` with nothing after it.
     "video": ("diffusers-video:{model}",),
     "music": ("acestep:{model}",),
+    # A full model is a text candidate; a peft adapter goes to nimble, which
+    # merges it onto its base (engines.ADAPTER_ENGINES). #423.
+    "decide": ("{model}", "nimble:{model}"),
     "stt": ("stt:{model}",),
     "tts": ("tts:{model}",),
     **{lane: ("{model}",) for lane in lanes.TEXT_SERVED},
@@ -103,6 +106,21 @@ def is_attachment(description: str) -> str:
     return ""
 
 
+#: Attachment kinds that are weights an adapter-loading engine can apply. A
+#: ComfyUI pack or a browser tool is not, whatever lane it carries. #423.
+ADAPTER_KINDS = ("lora", "adapter")
+
+
+def takes_attachment(lane: str, kind: str) -> bool:
+    """Whether some engine of `lane` loads an attachment of this kind onto
+    its base, so it can be screened rather than dropped. #423."""
+    if (kind or "").strip().lower() not in ADAPTER_KINDS:
+        return False
+    from harness import engines
+    return any(engines.loads_adapters(s)
+               for s in LANE_CANDIDATES.get(lanes.canonical(lane), ()))
+
+
 #: A GGUF file served by llama-server's router, named by its stem. #295.
 from harness.serving import LLAMACPP_PREFIX  # noqa: E402
 
@@ -132,9 +150,12 @@ def candidate_for(lane: str, model: str, attaches_to: str = "",
 
     `attaches_to` is the stored word (proposals.attaches_to), never prose. #414.
     """
-    if attaches_to:
-        return ""
     specs = LANE_CANDIDATES.get(lanes.canonical(lane), ())
+    if attaches_to:
+        if not takes_attachment(lane, attaches_to):
+            return ""
+        from harness import engines
+        specs = tuple(s for s in specs if engines.loads_adapters(s))
     if not specs:
         return ""
     if lanes.canonical(lane) == "svg":
