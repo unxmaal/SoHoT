@@ -269,6 +269,8 @@ def build_parser() -> argparse.ArgumentParser:
                         "graph unread")
     d.add_argument("--benchmarks", action="store_true",
                    help="sweep the registries for benchmark sources per lane (#491)")
+    d.add_argument("--papers", action="store_true",
+                   help="read HuggingFace daily papers; each is a technique for a lane (#576)")
     d.add_argument("--feeds", action="store_true",
                    help="read the community aggregation feeds for candidates")
     d.add_argument("--sources", action="store_true",

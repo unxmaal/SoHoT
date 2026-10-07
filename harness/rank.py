@@ -194,6 +194,8 @@ def rank(rows, *, serving=(), measured_lanes=(), ceiling_gib: float | None = Non
             continue
         if unrunnable(row):
             continue
+        if is_technique(row):
+            continue
         got, why = value(row, serving=serving, measured_lanes=measured,
                          ceiling_gib=ceiling_gib)
         out.append({**row, "value": got, "value_why": "; ".join(why)})
@@ -251,7 +253,7 @@ def wanted(rows, minimum: int = 2) -> list[dict]:
     would be the harness deciding what it is for. So they are reported, and
     somebody chooses. Issue #201.
     """
-    out = [r for r in _laneless(rows, minimum) if not is_tool(r)]
+    out = [r for r in _laneless(rows, minimum) if not is_tool(r) and not is_technique(r)]
     return sorted(out, key=lambda r: (-int(r.get("times") or 0), r["name"]))
 
 
@@ -264,9 +266,41 @@ def _laneless(rows, minimum: int) -> list[dict]:
 
 
 def is_tool(row) -> bool:
-    """A GitHub repo with no model task: an engine or tool, not a model. #556."""
+    """A GitHub repo with no model task: an engine or tool, not a model. #556.
+    A repo that implements a paper is a technique instead. #576."""
     from harness.memory_store.schema import GITHUB
-    return row.get("registry") == GITHUB and not (row.get("hf_task") or "").strip()
+    return (row.get("registry") == GITHUB and not (row.get("hf_task") or "").strip()
+            and not is_technique(row))
+
+
+def is_technique(row) -> bool:
+    """A method for a lane, from a paper or a repo implementing one: never a model to screen. #576."""
+    from harness.memory_store.schema import TECHNIQUE
+    return (row.get("category") or "") == TECHNIQUE
+
+
+def techniques_wanted(rows, want: str = "") -> list[dict]:
+    """Laned techniques grouped by lane, most-seen first. Evidence only: a method is
+    implemented by a person or an agent, never guessed. #576."""
+    groups: dict[str, list[dict]] = {}
+    for r in rows:
+        lane = lane_of(r)
+        if not lane or (want and not lanes.serves(lane, want)):
+            continue
+        groups.setdefault(lane, []).append(r)
+    out = []
+    for lane, members in groups.items():
+        members = sorted(members, key=lambda r: (-int(r.get("times") or 0),
+                                                 -float(r.get("last_seen") or 0.0),
+                                                 r["name"]))
+        out.append({"lane": lane, "techniques": members,
+                    "sightings": sum(int(m.get("times") or 0) for m in members)})
+    return sorted(out, key=lambda g: (-len(g["techniques"]), -g["sightings"], g["lane"]))
+
+
+def techniques_laneless(rows) -> int:
+    """How many techniques the prose routed to no lane. #576."""
+    return sum(1 for r in rows if not lane_of(r))
 
 
 def tools_wanted(rows, minimum: int = 2) -> list[dict]:

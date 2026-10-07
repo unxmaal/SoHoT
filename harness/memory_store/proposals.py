@@ -35,6 +35,8 @@ class Seen:
     description: str = ""
     #: What named `lane`: card, tag or prose. #414.
     lane_source: str = ""
+    #: One of CATEGORIES, or "" when the caller cannot say. #576.
+    category: str = ""
 
 
 def record(conn: sqlite3.Connection, seen: Seen, at: float | None = None) -> int:
@@ -56,19 +58,20 @@ def record(conn: sqlite3.Connection, seen: Seen, at: float | None = None) -> int
             "                ELSE lane_source END, "
             "  lane = CASE WHEN lane='' THEN ? ELSE lane END, "
             "  registry = CASE WHEN registry='' THEN ? ELSE registry END, "
-            "  description = CASE WHEN ?<>'' THEN ? ELSE description END "
+            "  description = CASE WHEN ?<>'' THEN ? ELSE description END, "
+            "  category = CASE WHEN category='' THEN ? ELSE category END "
             "WHERE id = ?",
             (now, seen.resolved, seen.resolved, seen.lane, seen.lane_source,
              seen.lane, seen.registry,
-             seen.description, seen.description, pid))
+             seen.description, seen.description, seen.category, pid))
     else:
         pid = conn.execute(
             "INSERT INTO proposals (name, kind, registry, lane, resolved, "
-            "description, lane_source, first_seen, last_seen) "
-            "VALUES (?,?,?,?,?,?,?,?,?)",
+            "description, lane_source, category, first_seen, last_seen) "
+            "VALUES (?,?,?,?,?,?,?,?,?,?)",
             (seen.name, seen.kind, seen.registry, seen.lane, seen.resolved,
              seen.description, seen.lane_source if seen.lane else "",
-             now, now)).lastrowid
+             seen.category, now, now)).lastrowid
         # Weights downloaded before this proposal existed are now its. #429.
         conn.execute("UPDATE downloads SET proposal_id = ? WHERE "
                      "proposal_id IS NULL AND lower(repo) = ?",
@@ -266,7 +269,7 @@ def judgeable(conn, limit: int = 50) -> list[dict]:
     """
     q = f"""
         SELECT p.name, p.lane, p.registry, p.kind, p.description,
-               p.size_bytes,
+               p.size_bytes, p.category,
                p.hf_task, p.library, p.card_tags, p.attaches_to, p.runtime_needed,
                COUNT(s.id) AS times,
                MAX(CASE WHEN s.machine_id = ? THEN s.relevance END) AS relevance,
@@ -305,6 +308,34 @@ def judgeable_total(conn) -> int:
     that takes the top 25 of a backlog and says nothing about the rest reads as
     finished."""
     return len(ms.judgeable(conn, limit=1_000_000))
+
+
+def techniques(conn) -> list[dict]:
+    """Every technique proposal not settled, with its evidence: title, link, sightings. #576."""
+    from harness import papers
+    from harness.memory_store.schema import TECHNIQUE
+    # The paper's own sighting names it best; otherwise the newest that says anything.
+    q = f"""
+        SELECT p.name, p.lane, p.description,
+               COUNT(s.id) AS times, MAX(s.seen_at) AS last_seen,
+               (SELECT s2.why FROM sightings s2 WHERE s2.proposal_id = p.id
+                 AND s2.why <> '' ORDER BY (s2.source = ?) DESC, s2.seen_at DESC,
+                 s2.id DESC LIMIT 1) AS title,
+               (SELECT s3.url FROM sightings s3 WHERE s3.proposal_id = p.id
+                 AND s3.url <> '' ORDER BY (s3.source = ?) DESC, s3.seen_at DESC,
+                 s3.id DESC LIMIT 1) AS url
+        FROM proposals p JOIN sightings s ON s.proposal_id = p.id
+        WHERE p.category = ? AND p.state NOT IN ({','.join('?' * len(TERMINAL))})
+        GROUP BY p.id
+        ORDER BY times DESC, last_seen DESC, p.name
+    """
+    out = []
+    for r in conn.execute(q, (papers.SOURCE, papers.SOURCE, TECHNIQUE, *TERMINAL)):
+        row = dict(r)
+        row["title"] = row["title"] or row["description"][:160] or row["name"]
+        row["url"] = row["url"] or ""
+        out.append(row)
+    return out
 
 
 def ranked(conn, limit: int = 50) -> list[dict]:

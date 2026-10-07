@@ -746,6 +746,8 @@ class Card:
     lane: str = ""
     #: card, tag or prose: which reading named the lane.
     lane_source: str = ""
+    #: model, tool or technique (memory_store CATEGORIES); "" when unread. #576.
+    category: str = ""
 
 
 def lineage(tags) -> list[tuple[str, str]]:
@@ -776,7 +778,7 @@ def card_facts(data: dict) -> Card:
     return Card(task=task, library=library, tags=plain, parents=parents,
                 attaches_to=screen.is_attachment(words),
                 runtime_needed=runtime_needed(library, plain),
-                lane=lane, lane_source=source)
+                lane=lane, lane_source=source, category="model")
 
 
 def repo_facts(meta: dict, lane: str = "") -> Card:
@@ -787,7 +789,21 @@ def repo_facts(meta: dict, lane: str = "") -> Card:
               if str(t).strip()]
     words = " ".join([meta.get("description") or "", *topics])
     return Card(tags=topics, attaches_to=screen.is_attachment(words),
-                lane=lane, lane_source="prose" if lane else "")
+                lane=lane, lane_source="prose" if lane else "",
+                category="technique" if names_a_paper(meta.get("description"), topics)
+                else "tool")
+
+
+#: A repo that says it implements a paper is a technique; any other repo is a tool. #576.
+PAPER_WORDS = re.compile(
+    r"\b(arxiv|paper|official (?:\w+ )?implementation|neurips|iclr|icml|cvpr|iccv|"
+    r"eccv|acl|emnlp|naacl|aaai)\b|arxiv\.org", re.I)
+
+
+def names_a_paper(description, topics=()) -> bool:
+    """Whether a repo's own description or topics name a paper it implements. #576."""
+    text = " ".join([str(description or ""), *[str(t) for t in topics or ()]])
+    return bool(PAPER_WORDS.search(text))
 
 
 def screen_words(tag: str) -> bool:

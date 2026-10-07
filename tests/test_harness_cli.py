@@ -754,6 +754,8 @@ def test_a_sweep_reads_every_source_family(monkeypatch):
                         lambda a: read.append("neighbors") or 0)
     monkeypatch.setattr(discover_cmd, "_report_benchmarks",
                         lambda a: read.append("benchmarks") or 0)
+    monkeypatch.setattr(discover_cmd, "_report_papers",
+                        lambda a: read.append("papers") or 0)
     rc = cli.cmd_discover(argparse.Namespace(sweep=True, json=False))
     assert rc == 0
     assert read == list(cli.SOURCE_TIERS)

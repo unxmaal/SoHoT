@@ -91,6 +91,31 @@ def _lanes_wanted_lines(rows, ceiling_gib: float, top: int = 10) -> list[str]:
     return out
 
 
+def _techniques_wanted_lines(rows, want: str = "", per_lane: int = 5) -> list[str]:
+    """The `techniques wanted` section: per lane, the papers and repos naming a method. #576."""
+    from harness import rank
+    groups = rank.techniques_wanted(rows, want)
+    laneless = 0 if want else rank.techniques_laneless(rows)
+    if not groups and not laneless:
+        return []
+    n = sum(len(g["techniques"]) for g in groups)
+    out = ["\n=== techniques wanted ===",
+           f"{n} technique(s) in {len(groups)} lane(s). Implementing a method is a "
+           f"job for a person or an agent; this lists the evidence and decides nothing."]
+    for g in groups:
+        out.append(f"  {g['lane']}  {len(g['techniques'])} technique(s), "
+                   f"{g['sightings']} sighting(s)")
+        for t in g["techniques"][:per_lane]:
+            out.append(f"    {int(t.get('times') or 0)}x  {t.get('title') or t['name']}")
+            if t.get("url"):
+                out.append(f"        {t['url']}")
+        if len(g["techniques"]) > per_lane:
+            out.append(f"    ... and {len(g['techniques']) - per_lane} more")
+    if laneless:
+        out.append(f"  {laneless} technique(s) name no lane the prose routing knows")
+    return out
+
+
 def _report_loop(a) -> int:
     """Every step from a sweep to an adopted winner. Issue #201.
 
@@ -140,6 +165,8 @@ def _report_loop(a) -> int:
                   f"engine entry is a decision for a person, not a lane:")
             for row in tools[:10]:
                 print(f"  {row.get('times', 0)}x  {row['name']}")
+        for line in _techniques_wanted_lines(ms.techniques(store), want):
+            print(line)
         stuck = rank.runnerless(rows)
         if stuck:
             print(f"\n=== runners wanted ===")

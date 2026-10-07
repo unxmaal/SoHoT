@@ -29,6 +29,9 @@ def set_card(conn, name: str, card, read: str = "card") -> bool:
         (card.task, card.library, json.dumps(list(card.tags)),
          card.attaches_to, card.runtime_needed, read,
          1 if same else 0, card.lane_source, row["id"]))
+    if getattr(card, "category", ""):
+        conn.execute("UPDATE proposals SET category = ? WHERE id = ?",
+                     (card.category, row["id"]))
     conn.execute("DELETE FROM lineage WHERE proposal_id = ?", (row["id"],))
     for parent, kind in card.parents:
         conn.execute("INSERT OR IGNORE INTO lineage (proposal_id, parent, kind) "
