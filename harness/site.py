@@ -429,9 +429,11 @@ def _bench_table(lane: dict) -> str:
         if r.get("reference"):
             tags.append('<span class="tag">reference</span>')
         passed = (f'{r.get("passed")}/{r.get("total")} ' if r.get("total") else "")
+        score = (publish.not_run_text(r) if r.get("not_run")
+                 else f'{passed}{_num(r.get("pass_rate"))}')
         rows.append(
             f'<tr><td>{_esc(r.get("candidate"))} {" ".join(tags)}</td>'
-            f'<td class="num">{_esc(passed)}{_num(r.get("pass_rate"))}</td>'
+            f'<td class="num">{_esc(score)}</td>'
             f'<td class="num">{_num(r.get("median_s"))}</td>'
             f'<td class="num">{_num(r.get("first_s"))}</td>'
             f'<td class="num">{_num(r.get("peak_gb"), "{:.1f}")}</td>'

@@ -108,6 +108,65 @@ def test_no_receipt_environment_artifact_or_detail_is_exported(store):
         assert key not in text, key
 
 
+REFUSED = "crh225/plumb-4b-GGUF"
+
+
+def _refused_run(store, cls="refused_by_gateway"):
+    rows = _rows(REFUSED, [0, 0, 0], [0.07, 0.07, 0.07])
+    for r in rows:
+        r.update(failure_class=cls, detail="gateway returned HTTP 400")
+    runs.record(store, "runs/r4",
+                _receipt("decide", _rows("eval-imajev-4b", [1, 0, 1], [0.5, 0.5, 0.5])
+                         + rows, "2026-10-07T09:37:05"))
+    store.commit()
+    doc = publish.export(store, machine_id=_mid(store), now=1.79e9)
+    lane = next(l for l in doc["lanes"] if l["lane"] == "decide")
+    return doc, {r["candidate"]: r for r in lane["comparison"]}
+
+
+def test_a_candidate_the_harness_refused_on_every_case_is_exported_as_not_run(store):
+    """#583: four GGUF repos refused by the gateway read as 0/36 on the public page."""
+    _, rows = _refused_run(store)
+    got = rows[REFUSED]
+    assert got["not_run"] == "refused_by_gateway"
+    assert got["passed"] is None and got["pass_rate"] is None
+    assert rows["eval-imajev-4b"]["not_run"] == ""
+    assert rows["eval-imajev-4b"]["passed"] == 2
+
+
+def test_a_candidate_that_ran_and_failed_every_case_is_still_scored(store):
+    """Negative control: a model's own failure is a result, not a refusal."""
+    _, rows = _refused_run(store, cls="content_failed")
+    assert rows[REFUSED]["not_run"] == ""
+    assert rows[REFUSED]["passed"] == 0 and rows[REFUSED]["pass_rate"] == 0.0
+
+
+def test_a_not_run_candidate_is_rendered_as_not_run_never_as_zero_of_n(store):
+    from harness import site
+    doc, _ = _refused_run(store)
+    for html in (publish.render_site([doc], now=1.79e9), site.benchmarks([doc], now=1.79e9)):
+        row = next(line for line in html.split("<tr") if REFUSED in line)
+        assert "not run" in row and "refused_by_gateway" in row, row
+        assert "0/3" not in row and "0.00" not in row, row
+
+
+def test_a_lane_whose_serving_model_was_refused_has_no_headline_score(store):
+    rows = _rows("eval-imajev-4b", [0, 0], [0.07, 0.07])
+    for r in rows:
+        r.update(failure_class="refused_by_gateway")
+    runs.record(store, "runs/r5", _receipt("decide", rows, "2026-10-07T10:00:00",
+                                           specs={"eval-imajev-4b": "eval-imajev-4b"}))
+    store.commit()
+    doc = publish.export(store, machine_id=_mid(store), now=1.79e9)
+    lane = next(l for l in doc["lanes"] if l["lane"] == "decide")
+    assert lane["serves"] == "eval-imajev-4b"
+    assert lane["not_run"] == "refused_by_gateway"
+    assert lane["pass_rate"] is None and lane["median_s"] is None
+    row = next(line for line in publish.render_site([doc], now=1.79e9).split("<tr")
+               if line.startswith("><td>decide</td>"))
+    assert "not run" in row and "0.00" not in row, row
+
+
 def test_a_name_the_scrub_cannot_remove_refuses_the_export(store):
     runs.record(store, "runs/r3",
                 _receipt("web", _rows(f"{USER}-finetune", [1], [1.0]),

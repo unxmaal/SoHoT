@@ -259,7 +259,9 @@ https://unxmaal.github.io/SoHoT/ as three pages:
   current;
 - `benchmarks/`: every lane's latest comparison table on each machine that
   published one (candidate, pass, median, first, peak, metrics), each table
-  labelled with its machine and run date.
+  labelled with its machine and run date. A candidate whose every case was
+  refused by the harness or the gateway (a failure class whose reason is
+  `harness`) shows as `not run (<class>)` with no score, never as 0/N.
 
 The pages are self-contained HTML and CSS with fonts from Google Fonts, work at
 phone width and in dark mode, and switch their animation off under
@@ -1317,8 +1319,11 @@ download, since their runners load the repo:
   `$HF_HOME/gguf`) and records it as a `downloads` row. A GGUF-only repo
   already in `$HF_HOME/hub` from an older whole-repo fetch is not downloaded
   again. The fetch tier symlinks its chosen file into the router's directory
-  and records the link, for text-lane repos only. Other lanes never trigger
-  this, because their runners load the repo.
+  and records the link, for text-lane and decide-lane repos only. Other lanes
+  never trigger this, because their runners load the repo. Until it is linked,
+  a GGUF-only repo id still routes to llama-server by the stem it would be
+  linked under, never to mlx_lm.server, which cannot load a GGUF or enforce
+  the decide lane's schema.
 - **Screen and measure** spell it `llamacpp:<file stem>`, and the run sends it
   straight to the eval server at `127.0.0.1:8082` (`scripts/serve-eval.sh`).
   LiteLLM would refuse a name it has no alias for. A measure pits it against

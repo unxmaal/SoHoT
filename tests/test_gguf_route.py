@@ -429,3 +429,78 @@ def test_the_router_restart_reaches_the_service_on_every_platform(platform, want
     argv = gguf.router_restart_argv(platform)
     names = [Path(a).name for a in argv]
     assert [n for n in names if n in want] == want, argv
+
+
+# --- #583: a GGUF-only repo id never reaches mlx_lm.server ---------------------
+
+PLUMB = "crh225/plumb-4b-GGUF"
+
+
+@pytest.fixture
+def plumb(home, monkeypatch):
+    monkeypatch.delenv("GATEWAY_CONFIG", raising=False)
+    monkeypatch.delenv(serving.ENV_VAR, raising=False)
+    monkeypatch.delenv("LLAMACPP_PORT", raising=False)
+    conn = _hub(home, monkeypatch, PLUMB, {"plumb-4b-v5-Q8_0.gguf": 64}, "decide")
+    yield conn
+    conn.close()
+
+
+def test_a_gguf_only_hub_repo_routes_to_llama_server_not_mlx(plumb):
+    from harness import router
+    where = serving.route(PLUMB)
+    assert where.base == router.url()
+    assert where.model == "plumb-4b-v5-Q8_0"
+    assert screen.routed_gateway(PLUMB) == ""
+
+
+def test_the_route_and_the_schema_check_agree_on_a_gguf_only_repo(plumb):
+    from harness import router
+    assert serving.enforces_schema(PLUMB)
+    assert serving.route(PLUMB).base == router.url()
+
+
+def test_routing_a_gguf_only_repo_links_nothing(plumb, home):
+    """RULE #334: the route is a read."""
+    serving.route(PLUMB)
+    serving.enforces_schema(PLUMB)
+    screen.routed_gateway(PLUMB)
+    assert not (home / "gguf" / "plumb-4b-v5-Q8_0.gguf").exists()
+    assert gguf.fetched(PLUMB) is None
+
+
+def test_a_hub_repo_with_safetensors_still_routes_away_from_the_router(home, monkeypatch):
+    from harness import router
+    monkeypatch.delenv("GATEWAY_CONFIG", raising=False)
+    conn = _hub(home, monkeypatch, "org/Both", {"b.gguf": 64, "model.safetensors": 64},
+                "decide")
+    assert serving.route("org/Both").base != router.url()
+    conn.close()
+
+
+def test_the_fetch_tier_adopts_a_decide_lane_gguf_repo(plumb, home):
+    assert gguf.adopt_pending(plumb) == [PLUMB]
+    assert (home / "gguf" / "plumb-4b-v5-Q8_0.gguf").is_symlink()
+    assert gguf.fetched(PLUMB) == "plumb-4b-v5-Q8_0"
+
+
+def test_a_decide_eval_of_a_gguf_repo_id_sends_the_schema_to_llama_server(plumb, monkeypatch):
+    from evals import run
+    from evals.core import Case
+    from harness import completion, router
+    sent = []
+
+    def answer(prompt, **kw):
+        sent.append(kw)
+        return completion.Completion('{"urgent": "A"}', {}, [])
+
+    monkeypatch.setattr(completion, "complete_full", answer)
+    runner = run._build_runner(PLUMB, "", None)
+    case = Case(id="d", modality="decide", prompt="p", params={"schema": {
+        "urgent": {"type": "boolean", "description": "d"}}},
+        assertions={"answers": {"urgent": True}})
+    got = runner.run(case)
+    assert sent, got.detail
+    assert sent[0]["response_format"]
+    assert sent[0]["gateway"] == router.url()
+    assert sent[0]["model"] == "plumb-4b-v5-Q8_0"

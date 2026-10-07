@@ -403,7 +403,7 @@ def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=N
             done.append({"repo": name, "ok": False, "why": p.why})
             continue
         try:
-            text = lanes.canonical(row.get("lane") or "") in lanes.TEXT_SERVED
+            text = lanes.canonical(row.get("lane") or "") in lanes.GGUF_SERVED
             if listing is not None or hf_download is not None or not text:
                 where = download(name, snapshot=snapshot, listing=listing,
                                  hf_download=hf_download, text=text, conn=conn)

@@ -83,16 +83,13 @@ def fetched(repo: str, conn=None) -> str | None:
     return path.name[:-len(".gguf")] if path else None
 
 
-def adopt(conn, repo: str) -> str:
-    """Link a whole GGUF-only hub download into the router's dir. #301.
-
-    A write the fetch tier makes for text-lane repos only (#303, RULE #334).
-    """
+def _hub_pick(repo: str, conn=None):
+    """(hub row, snapshot dir, file name) adopt() would link for `repo`, or None. A read."""
     from harness import downloads
     from harness import inspect as ins
-    if path_of(repo, conn):
-        return ""
-    for row in downloads.live(conn, repo=repo, kind=downloads.HUB):
+    with downloads.store(conn) as c:
+        rows = downloads.live(c, repo=repo, kind=downloads.HUB)
+    for row in rows:
         snaps = Path(row["path"]) / "snapshots"
         if not row["complete"] or not snaps.is_dir():
             continue
@@ -100,18 +97,37 @@ def adopt(conn, repo: str) -> str:
             files = [{"rfilename": f.name, "size": f.stat().st_size}
                      for f in snap.iterdir() if f.is_file()]
             pick = choose(files, ins.ceiling_bytes()) if only(files) else None
-            if not pick:
-                continue
-            models_dir().mkdir(parents=True, exist_ok=True)
-            link = models_dir() / pick[0]
-            target = (snap / pick[0]).resolve()
-            if not link.exists():
-                link.symlink_to(target)
-            downloads.record(conn, row["repo"], downloads.GGUF, link,
-                             file=pick[0], origin=downloads.LINK,
-                             source=str(target))
-            return pick[0]
-    return ""
+            if pick:
+                return row, snap, pick[0]
+    return None
+
+
+def hub_stem(repo: str, conn=None) -> str | None:
+    """The stem a GGUF-only hub download of `repo` is served under once adopted. #583."""
+    got = _hub_pick(repo, conn)
+    return got[2][:-len(".gguf")] if got else None
+
+
+def adopt(conn, repo: str) -> str:
+    """Link a whole GGUF-only hub download into the router's dir. #301.
+
+    A write the fetch tier makes for text-lane repos only (#303, RULE #334).
+    """
+    from harness import downloads
+    if path_of(repo, conn):
+        return ""
+    got = _hub_pick(repo, conn)
+    if not got:
+        return ""
+    row, snap, name = got
+    models_dir().mkdir(parents=True, exist_ok=True)
+    link = models_dir() / name
+    target = (snap / name).resolve()
+    if not link.exists():
+        link.symlink_to(target)
+    downloads.record(conn, row["repo"], downloads.GGUF, link,
+                     file=name, origin=downloads.LINK, source=str(target))
+    return name
 
 
 def adopt_pending(conn) -> list[str]:
@@ -122,7 +138,7 @@ def adopt_pending(conn) -> list[str]:
         got = conn.execute(
             "SELECT lane FROM proposals WHERE id = ? OR lower(name) = ?",
             (row["proposal_id"], row["repo"].lower())).fetchone()
-        if got and lanes.canonical(got["lane"] or "") in lanes.TEXT_SERVED \
+        if got and lanes.canonical(got["lane"] or "") in lanes.GGUF_SERVED \
                 and adopt(conn, row["repo"]):
             out.append(row["repo"])
     return out
