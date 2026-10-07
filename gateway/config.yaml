@@ -74,6 +74,14 @@ model_list:
       model: openai/Qwen3-4B-Instruct-2507-Q4_K_M
       api_base: http://127.0.0.1:8082/v1
       api_key: not-needed
+  # The decide lane's default: best measured on the lane (#311), and its schema is enforced. #572.
+  - model_name: eval-imajev-4b
+    source_repo: mindchain/imajev-4b-GGUF
+    source_file: imajev-4b-Q8_0.gguf
+    litellm_params:
+      model: openai/imajev-4b-Q8_0
+      api_base: http://127.0.0.1:8082/v1
+      api_key: not-needed
   - model_name: eval-7b
     source_repo: bartowski/Qwen2.5-7B-Instruct-GGUF
     source_file: Qwen2.5-7B-Instruct-Q4_K_M.gguf

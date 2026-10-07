@@ -1408,7 +1408,14 @@ Its 24 cases are generated from human-labelled public data by
 `uv run python -m evals.decide_corpus`; each names its dataset and license.
 A text model is asked for one letter per field, with the answer tokens'
 logprobs where the server returns them; `claude-code:` gives answers only and
-is scored one-hot, as uncalibrated. `nimble:<repo>` runs Bespoke-Nimble-9B
+is scored one-hot, as uncalibrated. Every decide request carries the reply as
+`response_format` json_schema, which only llama-server enforces, so the lane's
+default is `eval-imajev-4b` (mindchain/imajev-4b-GGUF, Q8_0, best measured on the
+lane in #311) on llama-server, never an mlx_lm.server alias, which the gateway
+refuses for a schema. Its GGUF must be in the router's models dir
+(`scripts/fetch-gguf.sh mindchain/imajev-4b-GGUF imajev-4b-Q8_0.gguf`), and
+`scripts/smoke.sh` asks `sohot-decide` for an answer under a schema.
+`nimble:<repo>` runs Bespoke-Nimble-9B
 through nimble's own MLX ParallelScorer. On first use `scripts/nimble-venv.sh`
 clones nimble at its pinned commit into `~/localharness/nimble/checkout` and
 builds a Python 3.12 venv beside it (mlx, mlx-lm, transformers, torch, peft).
