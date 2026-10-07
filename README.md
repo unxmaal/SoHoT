@@ -1629,9 +1629,9 @@ soh jobs priority 0005 10   # higher runs first; ties run in the order added
 The `worker` service runs them in order, one at a time. It does not hold the
 machine lock below for a whole job: each command takes it for the part that
 loads a model, so a job that is downloading does not block a GPU run. It starts
-the next one only while the queue is not paused and nobody is using
-this machine: the screen is locked, or there has been no keyboard or mouse
-input for `LH_IDLE_MINUTES` (10). Jobs are rows in the
+the next one whenever the queue is not paused and macOS memory pressure is
+normal, whether or not someone is at the machine; under pressure it waits,
+and an unreadable pressure level does not block it. Jobs are rows in the
 store's `jobs` table, so they survive a restart, and output goes to
 `~/localharness/logs/jobs/<id>.log`. A failed job is recorded and the next
 starts. A job cut off by a reboot is marked failed rather than rerun. An eval

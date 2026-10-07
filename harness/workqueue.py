@@ -1,4 +1,4 @@
-"""Jobs from any caller, run in order under the machine lock while the owner is away. #353.
+"""Jobs from any caller, run in order under the machine lock while memory pressure is normal. #353, #573.
 
 Jobs are rows in the store's `jobs` table (#418). The runner flock and the
 paused flag stay files: a kernel lock and an operator switch.
@@ -207,13 +207,15 @@ def resume() -> None:
     _pause_flag().unlink(missing_ok=True)
 
 
-def gate(away=None) -> tuple[bool, str]:
-    """(open, why): may the next job start now? A running job always finishes."""
-    from harness import presence
+def gate(sample=None) -> tuple[bool, str]:
+    """(open, why): may the next job start now? A running job always finishes. #573."""
+    from harness import pressure
     if paused():
         return False, "paused (soh jobs resume)"
-    gone, why = (away or presence.away)()
-    return (True, why) if gone else (False, f"owner present: {why}")
+    now = (sample or pressure.sample)()
+    if now.alarming:
+        return False, f"memory pressure level {now.level}"
+    return True, "memory pressure normal" if now.level is not None else "memory pressure unknown"
 
 
 def _runner_lock():
