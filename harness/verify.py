@@ -31,6 +31,8 @@ COST_S = {
     "decide": 60,
     # Estimated: 14 tool loops of up to 20 steps each. #474.
     "agent": 900,
+    # Estimated: eight single images through the OS reader, seconds each. #562.
+    "ocr": 30,
 }
 
 #: A lane nobody should start without meaning to. Video is ~40 minutes for ONE

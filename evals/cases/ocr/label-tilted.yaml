@@ -1,0 +1,7 @@
+id: ocr-label-tilted
+modality: ocr
+prompt: Transcribe all of the text in this image exactly, line by line.
+input_file: images/label-tilted.png
+assert:
+  text: Keep refrigerated after opening
+  max_cer: 0.1

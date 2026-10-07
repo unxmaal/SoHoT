@@ -758,14 +758,14 @@ def test_video_to_video_has_no_lane_whatever_its_tags():
 
 
 @pytest.mark.parametrize("tags,lane", [
-    (["vision-language", "ocr"], ""),
-    (["unlimited-ocr"], ""),
-    (["PaddleOCR", "ocr"], ""),
+    (["vision-language", "ocr"], "ocr"),
+    (["unlimited-ocr"], "ocr"),
+    (["PaddleOCR", "ocr"], "ocr"),
     (["vision-language", "qwen3_5"], "code"),
     (["svg"], "svg"),
 ])
 def test_an_ocr_card_is_not_filed_under_code(tags, lane):
-    """#387: PaddleOCR-VL and hayai-ocr were fetched as code and declined."""
+    """#387: PaddleOCR-VL and hayai-ocr were fetched as code and declined; #562 gave them a lane."""
     assert ins.lane_for({"pipeline_tag": "image-text-to-text",
                          "tags": tags}) == lane
 

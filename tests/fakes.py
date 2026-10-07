@@ -60,6 +60,17 @@ WHY = {
     "bespokelabs/Bespoke-Nimble-9B":
         "a peft LoRA filed text-classification: the decide lane's adapter, "
         "which rank dropped until an engine that loads adapters existed (#423)",
+    "PaddlePaddle/PaddleOCR-VL-1.6":
+        "image-text-to-text tagged ocr: filed under code until #387, laneless "
+        "until the ocr lane, and a recurring candidate it was built for (#562)",
+    "baidu/Unlimited-OCR":
+        "an ocr card that ships its own modelling code, which hf-task refuses "
+        "to execute, so it is a runner wanted rather than a broken model (#562)",
+    "JustANormalTinkerer/hayai-ocr-v2":
+        "image-to-text with only a compound manga-ocr tag beside ocr (#562)",
+    "Salesforce/blip-image-captioning-base":
+        "image-to-text with no ocr tag: a captioner, the ocr lane's negative "
+        "control, which must stay laneless (#562)",
     "hexgrad/Kokoro-82M":
         "the tts lane's incumbent, and the upstream of the repo the lane "
         "actually serves, so the card is a requant's parent (#264)",

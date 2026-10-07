@@ -73,7 +73,7 @@ table meta [('key', 'TEXT', 0, None, 1), ('value', 'TEXT', 0, None, 0)]
   index sqlite_autoindex_meta_1 unique=1 ['key']
   ('artifact_split', '{}')
   ('candidate_guesses', '[{"proposal": "org-k/harness-broke", "spec": "org-k/harness-broke", "tier": "screen", "verdict": 17}, {"proposal": "org-l/svg-thing", "spec": "org-l/svg-thing", "tier": "adopt", "verdict": 20}, {"proposal": "org-k/harness-broke", "spec": "org-k/harness-broke", "tier": "screen", "verdict": 21}, {"adoption": 2, "from": "the adopt verdict/'s machine; no vote or judged run names one", "lane": "svg", "machine": 4, "proposal": "org-l/svg-thing", "spec": "org-l/svg-thing"}]')
-  ('schema', '52')
+  ('schema', '53')
 table proposals [('id', 'INTEGER', 0, None, 1), ('name', 'TEXT', 1, None, 0), ('kind', 'TEXT', 1, "'candidate'", 0), ('registry', 'TEXT', 1, "''", 0), ('description', 'TEXT', 1, "''", 0), ('lane', 'TEXT', 1, "''", 0), ('resolved', 'TEXT', 1, "''", 0), ('first_seen', 'REAL', 1, None, 0), ('last_seen', 'REAL', 1, None, 0), ('state', 'TEXT', 1, "''", 0), ('state_verdict_id', 'INTEGER', 0, None, 0), ('retest_count', 'INTEGER', 1, '0', 0), ('next_retest_at', 'REAL', 0, None, 0), ('size_bytes', 'INTEGER', 1, '0', 0), ('hf_task', 'TEXT', 1, "''", 0), ('library', 'TEXT', 1, "''", 0), ('card_tags', 'TEXT', 1, "'[]'", 0), ('attaches_to', 'TEXT', 1, "''", 0), ('runtime_needed', 'TEXT', 1, "''", 0), ('lane_source', 'TEXT', 1, "''", 0), ('card_read', 'TEXT', 1, "''", 0)]
   index ix_prop_state unique=0 ['state']
   index sqlite_autoindex_proposals_1 unique=1 ['name']

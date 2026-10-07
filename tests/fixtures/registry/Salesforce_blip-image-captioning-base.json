@@ -1,0 +1,72 @@
+{
+ "id": "Salesforce/blip-image-captioning-base",
+ "pipeline_tag": "image-to-text",
+ "tags": [
+  "transformers",
+  "pytorch",
+  "tf",
+  "blip",
+  "image-text-to-text",
+  "image-captioning",
+  "image-to-text",
+  "arxiv:2201.12086",
+  "license:bsd-3-clause",
+  "endpoints_compatible",
+  "region:us"
+ ],
+ "library_name": "transformers",
+ "cardData": {
+  "pipeline_tag": "image-to-text",
+  "tags": [
+   "image-captioning"
+  ],
+  "languages": [
+   "en"
+  ],
+  "license": "bsd-3-clause"
+ },
+ "siblings": [
+  {
+   "rfilename": ".gitattributes",
+   "size": 1477
+  },
+  {
+   "rfilename": "README.md",
+   "size": 6359
+  },
+  {
+   "rfilename": "config.json",
+   "size": 4563
+  },
+  {
+   "rfilename": "preprocessor_config.json",
+   "size": 287
+  },
+  {
+   "rfilename": "pytorch_model.bin",
+   "size": 989820849
+  },
+  {
+   "rfilename": "special_tokens_map.json",
+   "size": 125
+  },
+  {
+   "rfilename": "tf_model.h5",
+   "size": 990275136
+  },
+  {
+   "rfilename": "tokenizer.json",
+   "size": 711396
+  },
+  {
+   "rfilename": "tokenizer_config.json",
+   "size": 506
+  },
+  {
+   "rfilename": "vocab.txt",
+   "size": 231508
+  }
+ ],
+ "lastModified": "2025-02-03T06:45:16.000Z",
+ "downloads": 1426651
+}

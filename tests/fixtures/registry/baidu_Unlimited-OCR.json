@@ -1,0 +1,120 @@
+{
+ "id": "baidu/Unlimited-OCR",
+ "pipeline_tag": "image-text-to-text",
+ "tags": [
+  "transformers",
+  "safetensors",
+  "unlimited-ocr",
+  "feature-extraction",
+  "baidu",
+  "vision-language",
+  "ocr",
+  "custom_code",
+  "image-text-to-text",
+  "multilingual",
+  "arxiv:2606.23050",
+  "license:mit",
+  "eval-results",
+  "deploy:sagemaker",
+  "region:us"
+ ],
+ "library_name": "transformers",
+ "cardData": {
+  "pipeline_tag": "image-text-to-text",
+  "language": [
+   "multilingual"
+  ],
+  "tags": [
+   "baidu",
+   "vision-language",
+   "ocr",
+   "custom_code"
+  ],
+  "license": "mit",
+  "library_name": "transformers"
+ },
+ "siblings": [
+  {
+   "rfilename": ".gitattributes",
+   "size": 302
+  },
+  {
+   "rfilename": "LICENSE",
+   "size": 1061
+  },
+  {
+   "rfilename": "README.md",
+   "size": 11108
+  },
+  {
+   "rfilename": "Unlimited-OCR.pdf",
+   "size": 460324
+  },
+  {
+   "rfilename": "assets/Unlimited-OCR.png",
+   "size": 106286
+  },
+  {
+   "rfilename": "assets/baidu.png",
+   "size": 11109
+  },
+  {
+   "rfilename": "assets/long-horizon-ocr.gif",
+   "size": 82173303
+  },
+  {
+   "rfilename": "config.json",
+   "size": 2881
+  },
+  {
+   "rfilename": "configuration_deepseek_v2.py",
+   "size": 10720
+  },
+  {
+   "rfilename": "conversation.py",
+   "size": 9253
+  },
+  {
+   "rfilename": "deepencoder.py",
+   "size": 38008
+  },
+  {
+   "rfilename": "model-00001-of-000001.safetensors",
+   "size": 6672547120
+  },
+  {
+   "rfilename": "model.safetensors.index.json",
+   "size": 257611
+  },
+  {
+   "rfilename": "modeling_deepseekv2.py",
+   "size": 90162
+  },
+  {
+   "rfilename": "modeling_unlimitedocr.py",
+   "size": 53431
+  },
+  {
+   "rfilename": "processor_config.json",
+   "size": 466
+  },
+  {
+   "rfilename": "special_tokens_map.json",
+   "size": 801
+  },
+  {
+   "rfilename": "tokenizer.json",
+   "size": 9979544
+  },
+  {
+   "rfilename": "tokenizer_config.json",
+   "size": 165938
+  },
+  {
+   "rfilename": "wheel/sglang-0.0.0.dev11416+g92e8bb79e-py3-none-any.whl",
+   "size": 12450224
+  }
+ ],
+ "lastModified": "2026-07-29T04:34:16.000Z",
+ "downloads": 1328970
+}

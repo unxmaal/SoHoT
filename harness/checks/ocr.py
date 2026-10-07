@@ -269,6 +269,18 @@ def cer(expected: str, got: str) -> float:
     return min(1.0, jiwer.cer(expected, got))
 
 
+def text_cer(expected: str, got: str) -> tuple[int, int]:
+    """(character errors, reference characters), case-sensitive, layout whitespace ignored. #562."""
+    ref = " ".join(str(expected).split())
+    hyp = " ".join(str(got).split())
+    if not ref:
+        raise ValueError("cannot score against empty expected text")
+    if not hyp:
+        return len(ref), len(ref)
+    out = jiwer.process_characters(ref, hyp)
+    return out.substitutions + out.deletions + out.insertions, len(ref)
+
+
 def check(path: str | Path, expect: str, max_cer: float = DEFAULT_MAX_CER) -> OcrResult:
     """Is `expect` legibly rendered in the image at `path`?"""
     try:
@@ -302,4 +314,9 @@ def check(path: str | Path, expect: str, max_cer: float = DEFAULT_MAX_CER) -> Oc
 
 
 if __name__ == "__main__":
-    print(json.dumps(BACKENDS[sys.argv[1]][2](Path(sys.argv[2]))))
+    if len(sys.argv) > 3:
+        # The ocr lane's osocr engine: every region, one per line, into a file. #562.
+        Path(sys.argv[3]).write_text("\n".join(read(sys.argv[2], sys.argv[1])),
+                                     encoding="utf-8")
+    else:
+        print(json.dumps(BACKENDS[sys.argv[1]][2](Path(sys.argv[2]))))

@@ -26,7 +26,8 @@ from harness import env
 Argv = Callable[[str, Path, dict], list[str]]
 
 GRAMMAR = ("engine:model[,key=value,...]  "
-           "(engines: mflux, h3, diffusers, diffusers-video, acestep, nimble, decider)")
+           "(engines: mflux, h3, diffusers, diffusers-video, acestep, nimble, decider, "
+           "osocr, hf-ocr)")
 
 
 def spec_error(spec: str) -> str:
@@ -657,6 +658,63 @@ def _decider(spec: str, model: str, options: dict) -> Engine:
                   timeout=3600.0)
 
 
+# ---- the ocr lane: the OS reader and transformers models (#562) -----------
+
+#: The reader the image lane's text check uses, run as a candidate in its own right.
+OSOCR_BACKENDS = ("auto", "vision", "windows", "rapidocr")
+
+HF_TASK_DEFAULT_BIN = str(
+    Path(__file__).resolve().parent.parent / "scripts" / "hf-task.sh")
+_HF_OCR_OPTIONS = {"revision", "prompt", "max_new_tokens", "device"}
+
+
+def _input_of(params: dict, what: str) -> str:
+    got = (params or {}).get("input")
+    if not got:
+        raise ValueError(f"this case has no input {what}; the ocr lane reads one")
+    return str(got)
+
+
+def _osocr(spec: str, model: str, options: dict) -> Engine:
+    """Apple Vision, Windows.Media.Ocr or RapidOCR through harness.checks.ocr."""
+    backend = model or "auto"
+    if backend not in OSOCR_BACKENDS:
+        raise ValueError(f"{spec_error(spec)}: unknown osocr backend {backend!r}; "
+                         f"known: {', '.join(OSOCR_BACKENDS)}")
+    _check_options(options, set(), spec)
+
+    def argv(prompt: str, out: Path, params: dict) -> list[str]:
+        import sys
+        return [sys.executable, "-m", "harness.checks.ocr", backend,
+                _input_of(params, "image"), str(out)]
+
+    return Engine(name=f"osocr/{backend}", spec=spec, argv=argv, modality="ocr",
+                  output_suffix=".txt", timeout=300.0,
+                  cwd=str(Path(__file__).resolve().parent.parent))
+
+
+def _hf_ocr(spec: str, model: str, options: dict) -> Engine:
+    """An image-to-text model through transformers, in the hf-task venv. Never remote code."""
+    if not model:
+        raise ValueError(f"{spec_error(spec)}: hf-ocr needs a model, e.g. "
+                         f"hf-ocr:PaddlePaddle/PaddleOCR-VL-1.6")
+    _check_options(options, _HF_OCR_OPTIONS, spec)
+    defaults = dict(options)
+
+    def argv(prompt: str, out: Path, params: dict) -> list[str]:
+        cmd = [os.environ.get("HF_TASK_BIN", HF_TASK_DEFAULT_BIN), "ocr",
+               "--model", model, "--image", _input_of(params, "image"),
+               "--prompt", str(defaults.get("prompt") or prompt), "--out", str(out)]
+        for key in ("revision", "max_new_tokens", "device"):
+            _flag(cmd, f"--{key.replace('_', '-')}", defaults.get(key))
+        return cmd
+
+    return Engine(name=f"hf-ocr/{model.rsplit('/', 1)[-1]}{distinguish(options)}",
+                  spec=spec, argv=argv, modality="ocr", output_suffix=".txt",
+                  # The first case may build the venv and download the weights.
+                  timeout=3600.0)
+
+
 _BUILDERS: dict[str, Callable[[str, str, dict], Engine]] = {
     "mflux": _mflux,
     "h3": _h3,
@@ -665,4 +723,6 @@ _BUILDERS: dict[str, Callable[[str, str, dict], Engine]] = {
     "acestep": _acestep,
     "nimble": _nimble,
     "decider": _decider,
+    "osocr": _osocr,
+    "hf-ocr": _hf_ocr,
 }

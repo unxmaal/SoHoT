@@ -423,6 +423,8 @@ _LANE_QUERIES_ANY = {
     # Typed-decision models: Jev-class 4B-9B decoders and their adapters. #423, #311.
     "decide": ["Bespoke-Nimble", "OpenJev", "jev", "structured-prediction",
                "plumb", "decider", "imajev"],
+    # Substring-on-id (RULE #462): PaddleOCR-VL, Unlimited-OCR, hayai-ocr all hold "ocr". #562.
+    "ocr": ["ocr"],
 }
 
 #: Every lane discovery can search, whichever machine is asking. `code`, `web`,
@@ -476,6 +478,7 @@ _HOW = {
     "music": "--modality music --candidates acestep:{id}",
     "decide": "--modality decide --candidates {id}",
     "agent": "--modality agent --candidates {id}",
+    "ocr": "--modality ocr --candidates hf-ocr:{id}",
 }
 
 #: runtime -> the lanes whose engine that runtime provides. Overrides _HOW for
