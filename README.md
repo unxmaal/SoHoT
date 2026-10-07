@@ -1897,6 +1897,13 @@ soh jobs cancel 0003
 soh jobs priority 0005 10   # higher runs first; ties run in the order added
 ```
 
+While `soh discover --loop` runs it writes a heartbeat to
+`$LOCALHARNESS_HOME/loop-heartbeat.json`: its lane, current tier, candidate,
+step N of M, start time and last progress time, marked finished (with the exit
+code, or the error) however the loop ends. `soh jobs list`, `soh report` and the
+local report page print it. A heartbeat with no progress for three hours, or
+whose process is gone, reads as stalled rather than running.
+
 The `worker` service runs them in order, one at a time. It does not hold the
 machine lock below for a whole job: each command takes it for the part that
 loads a model, so a job that is downloading does not block a GPU run. It starts

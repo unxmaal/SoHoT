@@ -48,6 +48,16 @@ LOOP_STEPS = (("sweep", "sweep", False),
 #: fetch tier refuses every one of them. Inspection downloads nothing.
 LOOP_INSPECT = 50
 
+#: The spend's steps, after LOOP_STEPS, for the heartbeat's step N of M. #251.
+SPEND_STEPS = ("retests", "reverify", "disk", "fetch", "screen", "measure")
+LOOP_TOTAL = len(LOOP_STEPS) + len(SPEND_STEPS)
+
+
+def _beat(tier: str, **kw) -> None:
+    from harness import heartbeat
+    names = [label for label, _, _ in LOOP_STEPS] + list(SPEND_STEPS)
+    heartbeat.beat(tier, step=names.index(tier) + 1, **kw)
+
 
 def _in_fetch_order(store, work_items):
     """Reorder inspect's work to match the order the fetch tier will read.
@@ -117,6 +127,21 @@ def _techniques_wanted_lines(rows, want: str = "", per_lane: int = 5) -> list[st
 
 
 def _report_loop(a) -> int:
+    """The loop under a heartbeat that says where it is, finished however it ends. #251."""
+    from harness import heartbeat
+    run = bool(getattr(a, "run", False))
+    heartbeat.start(lane=(getattr(a, "lane", "") or "").strip().lower(),
+                    total=LOOP_TOTAL if run else len(LOOP_STEPS))
+    try:
+        rc = _run_loop(a)
+    except BaseException as exc:
+        heartbeat.finish(None, error=f"{type(exc).__name__}: {exc}")
+        raise
+    heartbeat.finish(rc)
+    return rc
+
+
+def _run_loop(a) -> int:
     """Every step from a sweep to an adopted winner. Issue #201.
 
     SAYS WHAT IT WOULD DO AND STOPS unless --run. Fetching weights and running
@@ -137,6 +162,7 @@ def _report_loop(a) -> int:
             print(f"\n=== {label} (skipped; --run) ===")
             continue
         print(f"\n=== {label} ===")
+        _beat(label)
         flags = {f: f == attr for _, f, _ in LOOP_STEPS}
         extra = {}
         if attr == "inspect":
@@ -256,13 +282,16 @@ def _loop_spend(a, rc: int, failed: list | None = None) -> int:
     failed = failed if failed is not None else []
 
     print("\n=== retests ===")
+    _beat("retests")
     _reopen_retests()
 
     print("\n=== reverify ===")
+    _beat("reverify")
     _reverify()
 
     # After the retests, so a reopened candidate's weights are queued, not swept.
     print("\n=== disk ===")
+    _beat("disk")
     disk.sweep()
 
     top = int(getattr(a, "top", 3) or 3)
@@ -272,6 +301,7 @@ def _loop_spend(a, rc: int, failed: list | None = None) -> int:
     if want:
         print(f"\n(spending only on the {want} lane)")
     print(f"\n=== fetch (up to {top}, budget {budget:g} GiB) ===")
+    _beat("fetch")
     backlog = screen_cmd.screenable_backlog(want)
     if len(backlog) >= top:
         print(f"  skipped: {len(backlog)} candidate(s) already on disk wait "
@@ -282,11 +312,13 @@ def _loop_spend(a, rc: int, failed: list | None = None) -> int:
         rc = _step("fetch", screen_cmd.cmd_fetch(sub), failed) or rc
 
     print(f"\n=== screen ===")
+    _beat("screen")
     sub = _ap.Namespace(**{**vars(a), "loop": False, "screen": True,
                            "run": True, "limit": top, "json": False})
     rc = _step("screen", discover_cmd.cmd_discover(sub), failed) or rc
 
     print(f"\n=== measure and adopt ===")
+    _beat("measure")
     store = ms.connect()
     try:
         fresh = measure_cmd.measurable(store, top, want)
@@ -296,7 +328,8 @@ def _loop_spend(a, rc: int, failed: list | None = None) -> int:
         print("  nothing survived the screen, so there is nothing to measure. "
               "A screen that rejects everything is the tier doing its job.")
         return rc
-    for row in fresh:
+    for i, row in enumerate(fresh, 1):
+        _beat("measure", candidate=row.get("name", ""), item=i, items=len(fresh))
         rc = _step(f"measure {row.get('name', '')}".strip(),
                    measure_cmd._measure_and_adopt(a, row), failed) or rc
     return rc

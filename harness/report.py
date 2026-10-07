@@ -199,11 +199,27 @@ def state(conn=None) -> dict:
             "lanes": lanes_state(conn),
             "queue": queue_state(conn),
             "sources": feeds.staleness(store=conn),
+            "loop": _loop(),
             **_usage(conn),
         }
     finally:
         if close:
             conn.close()
+
+
+def _loop() -> dict | None:
+    """The discovery loop's heartbeat as of now. #251."""
+    from harness import heartbeat
+    return heartbeat.summary()
+
+
+def loop_section(now: dict) -> str:
+    """The heartbeat line, tagged stalled when it is. #251."""
+    got = now.get("loop")
+    if not got:
+        return ""
+    tag = '<span class="tag bad">stalled</span> ' if got.get("status") == "stalled" else ""
+    return f'<p class="sub">{tag}{_esc(got.get("line", ""))}</p>\n'
 
 
 def _usage(conn) -> dict:
@@ -412,7 +428,7 @@ def render(now: dict, before: dict | None = None) -> str:
 <h1>SoHoT</h1>
 <p class="sub">{_esc(when)} &middot; {_esc(', '.join(m['runtimes']))}
  &middot; {_esc(m['kind'])} {m['total_gb']:.0f} GB</p>
-
+{loop_section(now)}
 <h2>Lanes</h2>
 <table><tr><th>lane</th><th>serves</th><th>pass</th><th>median</th>
 <th>TTFT med / p95</th><th>metric</th><th></th></tr>

@@ -28,6 +28,8 @@ def cmd_report(a) -> int:
     unverified = [l["lane"] for l in lanes if l.get("unverified")]
     stale = [l["lane"] for l in lanes if l.get("stale")]
     print(f"\n{out}")
+    if state.get("loop"):
+        print(f"  {state['loop']['line']}")
     for l in lanes:
         if l.get("adoption"):
             print(f"  {l['lane']}: {l['serves']} adopted {l['adoption']}")
