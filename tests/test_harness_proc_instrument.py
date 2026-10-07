@@ -53,15 +53,67 @@ def both(code: str) -> tuple[int, int]:
     return int(rss.group(1)), int(foot.group(1))
 
 
+WANT = SIZE_MIB * 1024 ** 2
+TRIES = 3
+#: kern.memorystatus_vm_pressure_level: 1 normal, 2 warning, 4 critical.
+NORMAL = 1
+
+
+def pressure_level() -> int:
+    out = subprocess.run(["sysctl", "-n", "kern.memorystatus_vm_pressure_level"],
+                         capture_output=True, text=True).stdout.strip()
+    return int(out) if out.isdigit() else 0
+
+
+def plain_memory_control(measure, pressure=pressure_level, tries: int = TRIES):
+    """('ok'|'loaded'|'failed', best (rss, footprint)); pressure can page out rss, never footprint. #537."""
+    best = (0, 0)
+    for _ in range(tries):
+        rss, foot = measure()
+        assert foot > WANT * 0.9, f"footprint {foot} did not see a {SIZE_MIB} MiB array"
+        best = max(best, (rss, foot))
+        if rss > WANT * 0.9:
+            return "ok", best
+    return ("failed" if pressure() == NORMAL else "loaded"), best
+
+
+def _fake(*pairs):
+    runs = iter(pairs)
+    return lambda: next(runs)
+
+
+def test_one_run_paged_out_under_load_does_not_fail_the_control():
+    """#537: maxrss read 0.89 of the array once under parallel suites; the next run read 1.0."""
+    verdict, (rss, _) = plain_memory_control(
+        _fake((int(WANT * 0.888), WANT), (WANT, WANT)), lambda: 1)
+    assert verdict == "ok" and rss == WANT
+
+
+def test_a_machine_under_pressure_every_try_is_a_skip_not_a_pass():
+    verdict, _ = plain_memory_control(_fake(*[(int(WANT * 0.5), WANT)] * 3), lambda: 2)
+    assert verdict == "loaded"
+
+
+def test_a_quiet_machine_that_never_sees_the_array_still_fails():
+    verdict, _ = plain_memory_control(_fake(*[(int(WANT * 0.5), WANT)] * 3), lambda: 1)
+    assert verdict == "failed"
+
+
+def test_the_footprint_missing_the_array_fails_whatever_the_load():
+    with pytest.raises(AssertionError):
+        plain_memory_control(_fake((WANT, int(WANT * 0.5))), lambda: 4)
+
+
 def test_the_two_instruments_agree_where_the_truth_is_known():
     """THE POSITIVE CONTROL. Plain anonymous memory is resident and is in the
     footprint, so a disagreement here would mean the parse is wrong rather
     than that the instruments measure different things."""
-    rss, foot = both(f"x=bytearray({SIZE_MIB}*1024**2); "
-                     f"x[::4096]=b'\\1'*len(x[::4096])")
-    want = SIZE_MIB * 1024 ** 2
-    assert rss > want * 0.9, f"maxrss {rss} did not see a {SIZE_MIB} MiB array"
-    assert foot > want * 0.9, f"footprint {foot} did not see it either"
+    verdict, (rss, foot) = plain_memory_control(lambda: both(
+        f"x=bytearray({SIZE_MIB}*1024**2); x[::4096]=b'\\1'*len(x[::4096])"))
+    if verdict == "loaded":
+        pytest.skip(f"memory pressure level {pressure_level()} paged the array out "
+                    f"in {TRIES} tries (best maxrss {rss}); the control needs a quieter machine")
+    assert verdict == "ok", f"maxrss {rss} did not see a {SIZE_MIB} MiB array on a quiet machine"
     assert 0.8 < foot / rss < 1.25, (
         f"footprint {foot} and maxrss {rss} disagree on plain memory, where "
         f"they must not; the parse or the platform has changed")
