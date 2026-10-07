@@ -272,6 +272,11 @@ def gh_merged_pr_bodies():
 
 
 def git_messages(repo, ref="origin/main"):
+    # None when this clone lacks `ref`: a CI checkout is one commit with no origin/main.
+    have = subprocess.run(["git", "rev-parse", "--verify", "--quiet", f"{ref}^{{commit}}"], cwd=repo,
+                          capture_output=True, text=True, encoding="utf-8")
+    if have.returncode != 0:
+        return None
     proc = subprocess.run(["git", "log", ref, "--format=%B%x00"], cwd=repo, capture_output=True,
                           text=True, encoding="utf-8", check=True)
     return [m for m in proc.stdout.split("\x00") if m.strip()]

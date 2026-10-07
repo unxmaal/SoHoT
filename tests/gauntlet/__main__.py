@@ -12,15 +12,18 @@ REPO = core.HERE.parent.parent
 
 def cmd_audit(a):
     snapshot, defects = core.load_snapshot(), core.load_defects()
+    history = core.git_messages(REPO, a.ref)
     if a.offline:
-        labelled, messages = sorted(defects), core.git_messages(REPO, a.ref)
+        labelled, messages = sorted(defects), history or []
     else:
         labelled = sorted(core.gh_defects())
-        messages = core.git_messages(REPO, a.ref) + core.gh_merged_pr_bodies()
+        messages = (history or []) + core.gh_merged_pr_bodies()
     closures = core.unbound_closures(messages, set(labelled) | set(defects), classes.INDEX,
                                      classes.PENDING, classes.UNCLASSIFIED)
     print(core.report(labelled, set(defects), closures, classes.INDEX, classes.PENDING,
                       classes.UNCLASSIFIED, snapshot, defects))
+    if history is None:
+        print(f"commit messages not read: {a.ref} is not in this clone")
     gaps = core.unattributed(labelled, classes.INDEX, classes.PENDING, classes.UNCLASSIFIED)
     return 1 if gaps or closures else 0
 

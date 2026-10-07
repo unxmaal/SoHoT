@@ -135,3 +135,8 @@ def test_the_commits_here_close_no_unbound_defect():
     defects = core.load_defects()
     assert core.unbound_closures(messages, set(defects), classes.INDEX, classes.PENDING,
                                  classes.UNCLASSIFIED) == []
+
+
+def test_the_history_of_a_ref_this_clone_lacks_is_none_not_an_error(tmp_path):
+    subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
+    assert core.git_messages(tmp_path, "origin/main") is None
