@@ -57,7 +57,7 @@ h1, h2, h3, .menubar, .btn, .num, .chip, .ticker { font-family:"Silkscreen",ui-m
 .menubar .brand { margin-right:auto }
 .ticker { overflow:hidden; border-bottom:2px solid var(--line); background:var(--butter);
           color:var(--on); font-size:.8rem; white-space:nowrap }
-.ticker .tape { display:inline-block; padding:.4rem 0 }
+.ticker .tape { display:inline-block; padding:.4rem 0; white-space:nowrap }
 .ticker span { padding:0 1.4rem }
 .ticker span + span::before { content:"*"; margin-right:1.4rem; color:var(--hot) }
 main { max-width:64rem; margin:0 auto; padding:2rem 16px 3rem }
@@ -169,7 +169,7 @@ footer { text-align:center; color:#fff4da; font-size:.85rem; padding:0 16px 2.5r
   @keyframes wiggle { 25% { transform:rotate(-3deg) } 75% { transform:rotate(3deg) } }
 }
 @media (prefers-reduced-motion: reduce) {
-  .ticker { white-space:normal }
+  .ticker .tape { padding-left:16px }
 }
 """ + FLOW_CSS
 

@@ -186,3 +186,17 @@ def test_all_motion_is_off_for_people_who_ask_for_less():
     rest = _outside_motion_query(site.CSS)
     assert "@media (prefers-reduced-motion: no-preference)" in site.CSS
     assert "animation" not in rest and "@keyframes" not in rest
+
+
+def _rules(css: str, selector: str) -> list[str]:
+    return [m.group(1) for m in re.finditer(rf"(?:^|[}}\s]){re.escape(selector)}\s*\{{([^}}]*)\}}", css)]
+
+
+def test_the_ticker_is_one_line_with_or_without_motion():
+    css = site.CSS
+    reduce = css[css.index("@media (prefers-reduced-motion: reduce)"):]
+    assert not re.search(r"white-space\s*:\s*normal", reduce), "reduced motion wraps the ticker"
+    track = " ".join(_rules(css, ".ticker .tape"))
+    assert re.search(r"white-space\s*:\s*nowrap", track), "the ticker track can wrap"
+    ticker = " ".join(_rules(css, ".ticker"))
+    assert re.search(r"overflow\s*:\s*hidden", ticker), "a static ticker is not clipped"
