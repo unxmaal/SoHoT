@@ -589,6 +589,9 @@ class Receipt:
     #: machinery built to refuse it. Empty for runs written before this
     #: existed.
     cases_digest: str = ""
+    #: Which side of the holdout split ran, and the assignment version. #479.
+    split: str = ""
+    split_version: str = ""
 
     def as_dict(self) -> dict:
         return {"modality": self.modality, "case_ids": list(self.case_ids),
@@ -600,7 +603,8 @@ class Receipt:
                 "where": self.where,
                 "swap_used_mb": self.swap_used_mb,
                 "pressure": dict(self.pressure),
-                "cases_digest": self.cases_digest}
+                "cases_digest": self.cases_digest,
+                "split": self.split, "split_version": self.split_version}
 
 
 def cases_digest(cases) -> str:
@@ -615,13 +619,23 @@ def cases_digest(cases) -> str:
     """
     h = hashlib.sha256()
     for c in sorted(cases, key=lambda c: c.id):
-        for part in (c.id, c.prompt, getattr(c, "context", ""),
-                     json.dumps(dict(c.params), sort_keys=True, default=str),
-                     json.dumps(dict(c.assertions), sort_keys=True,
-                                default=str)):
-            h.update(str(part).encode("utf-8"))
-            h.update(b"\x00")
+        _digest_parts(h, c)
     return h.hexdigest()[:16]
+
+
+def _digest_parts(h, c) -> None:
+    for part in (c.id, c.prompt, getattr(c, "context", ""),
+                 json.dumps(dict(c.params), sort_keys=True, default=str),
+                 json.dumps(dict(c.assertions), sort_keys=True, default=str)):
+        h.update(str(part).encode("utf-8"))
+        h.update(b"\x00")
+
+
+def case_digest(case) -> str:
+    """One case's content identity, over the same parts as cases_digest. #479."""
+    h = hashlib.sha256()
+    _digest_parts(h, case)
+    return h.hexdigest()
 
 
 def comparable(a: Receipt, b: Receipt) -> tuple[bool, str]:
@@ -670,6 +684,9 @@ def comparable(a: Receipt, b: Receipt) -> tuple[bool, str]:
         return False, (f"same case ids, different cases: {a.cases_digest} vs "
                        f"{b.cases_digest}. A prompt, a param or an assertion "
                        f"was edited in place")
+    if a.split and b.split and (a.split, a.split_version) != (b.split, b.split_version):
+        return False, (f"different split: {a.split} v{a.split_version} vs "
+                       f"{b.split} v{b.split_version}")
     if a.repeat != b.repeat:
         return False, f"different repeat: {a.repeat} vs {b.repeat}"
     if dict(a.sampling) != dict(b.sampling):

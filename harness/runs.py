@@ -225,16 +225,19 @@ def record(conn, path, data: dict, *, at: float | None = None) -> int | None:
     values = (lane, str(receipt.get("tier") or MEASURE),
               machine_for(conn, env), when, int(receipt.get("repeat") or 1),
               str(receipt.get("cases_digest") or ""), json.dumps(receipt),
-              json.dumps(env), json.dumps(specs))
+              json.dumps(env), json.dumps(specs),
+              str(receipt.get("split") or ""),
+              str(receipt.get("split_version") or ""))
     conn.execute(
         "INSERT OR IGNORE INTO runs (path, lane, tier, machine_id, "
         "generated_at, repeat_count, cases_digest, receipt, environment, "
-        "specs, recorded_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+        "specs, split, split_version, recorded_at) "
+        "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
         (key, *values, time.time()))
     conn.execute(
         "UPDATE runs SET lane = ?, tier = ?, machine_id = ?, generated_at = ?, "
         "repeat_count = ?, cases_digest = ?, receipt = ?, environment = ?, "
-        "specs = ? WHERE path = ?", (*values, key))
+        "specs = ?, split = ?, split_version = ? WHERE path = ?", (*values, key))
     run_id = conn.execute("SELECT id FROM runs WHERE path = ?",
                           (key,)).fetchone()["id"]
     conn.execute("DELETE FROM results WHERE run_id = ?", (run_id,))

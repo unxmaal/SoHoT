@@ -501,6 +501,15 @@ SCREEN_PARAMS = {"width": 256, "height": 256, "steps": 2, "seconds": None,
                  "frames": None}
 
 
+def screen_pool(cases: list[Case]) -> list[Case]:
+    """The dev cases, plus any (modality, language) only holdout covers. #479."""
+    from harness import holdout
+    dev = holdout.only(cases, "dev")
+    have = {(c.modality, c.language) for c in dev}
+    return dev + [c for c in cases if c not in dev
+                  and (c.modality, c.language) not in have]
+
+
 def screen_cases(cases: list[Case]) -> list[Case]:
     """One case per modality AND LANGUAGE, shrunk. Cheap enough to be wrong about.
 
@@ -623,6 +632,9 @@ def main(argv: list[str] | None = None) -> int:
                     help="samples per case, each with a different seed. One "
                          "sample per prompt ranks noise; 3 is the usual "
                          "minimum for an image comparison you would act on")
+    ap.add_argument("--split", choices=("all", "dev", "holdout"), default="all",
+                    help="which side of the per-lane holdout split to run; the "
+                         "screen always runs dev (#479)")
     args = ap.parse_args(argv)
     # SAME GUARD AS `lh`, and this is the entry point that actually downloads:
     # `lh discover --screen` prints this very command for a user to copy, so
@@ -651,8 +663,11 @@ def _execute(args) -> int:
         # failed: seedvr2 crashed 0/3, local-small never closed a tag 0/9.
         args.repeat = 1
         args.adherence = ""
-    cases = expand_cases(select_cases(load_cases(args.cases), args.modality),
-                         args.repeat)
+    from harness import holdout
+    side = "dev" if args.screen else (getattr(args, "split", "") or "all")
+    chosen = select_cases(load_cases(args.cases), args.modality)
+    cases = expand_cases(screen_pool(chosen) if args.screen
+                         else holdout.only(chosen, side), args.repeat)
     if args.screen:
         cases = screen_cases(cases)
     # An engine spec contains commas, which are also the candidate separator.
@@ -738,7 +753,8 @@ def _execute(args) -> int:
             where=where_id(),
             swap_used_mb=swap_used_mb(),
             pressure=pressed.as_dict(),
-            cases_digest=cases_digest(cases))
+            cases_digest=cases_digest(cases),
+            split=side, split_version=holdout.VERSION)
         now = time.time()
         ids = candidate_ids(specs, args.modality)
         for r in results:
@@ -981,7 +997,9 @@ def compare_runs(files: list[str], across: str = "") -> int:
                                   swap_used_mb=raw.get("swap_used_mb", 0),
                                   pressure=raw.get("pressure") or {},
                                   engines=raw.get("engines") or {},
-                                  cases_digest=raw.get("cases_digest", "")),
+                                  cases_digest=raw.get("cases_digest", ""),
+                                  split=raw.get("split", ""),
+                                  split_version=raw.get("split_version", "")),
                        data.get("summary") or {},
                        data.get("rows") or []))
 

@@ -23,7 +23,7 @@ it does today.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 #: The tier that records an adoption. See memory_store.TIERS.
 TIER = "adopt"
@@ -47,6 +47,10 @@ class Verdict:
     adopt: bool
     why: str
     how: str = MEASURED
+    #: reasons.UNDERPOWERED when the gate could not have seen the effect. #479.
+    failure_class: str = ""
+    #: The split, the power plan and the dev comparison it rests on. #479.
+    evidence: dict = field(default_factory=dict)
 
 
 def better(incumbent: dict, challenger: dict) -> bool:
@@ -94,17 +98,71 @@ def decide_by_hand(lane: str, incumbent: str, challenger: str,
 
 
 def decide(lane: str, incumbent: dict, challenger: dict,
-           rows: list[dict] | None = None) -> Verdict:
+           rows: list[dict] | None = None, split=None, plan=None) -> Verdict:
     """Whether this challenger replaces this incumbent.
 
     Two gates, both required. The metric gate answers "better on what this lane
     is about". The paired gate answers "by more than the noise". A challenger
     that passes one and not the other is a loss.
-    """
-    from harness import paired
 
+    With a `split` both gates read holdout rows only and dev is reported beside
+    them; with a `plan` whose power is short a null is underpowered. #479.
+    """
     name_i = incumbent.get("candidate", "")
     name_c = challenger.get("candidate", "")
+    evidence: dict = {}
+    notes = []
+    if split is not None:
+        from harness import holdout
+        evidence["split"] = split.as_dict()
+        if rows:
+            dev = holdout.rows_on(rows, split, "dev")
+            rows = holdout.rows_on(rows, split, "holdout")
+            incumbent = _summary(rows, name_i) or incumbent
+            challenger = _summary(rows, name_c) or challenger
+            if dev:
+                from harness import paired
+                d = paired.head_to_head(dev, name_i, name_c)
+                evidence["dev"] = {"gained": d.gained, "lost": d.lost, "p": d.p}
+                notes.append(f"dev: {d.gained} gained, {d.lost} lost, "
+                             f"p={d.p:.2f}")
+        if split.too_small:
+            notes.append(split.caveat)
+    if plan is not None:
+        evidence["power"] = plan.as_dict()
+    got = _gates(lane, name_i, name_c, incumbent, challenger, rows)
+    if not got.adopt and plan is not None and not plan.enough and rows:
+        from harness import reasons
+        got = Verdict(lane, name_i, name_c, False,
+                      f"underpowered: power {plan.power:.2f} < {plan.target} to "
+                      f"detect +{plan.effect:.2f} per cell at alpha "
+                      f"{plan.alpha} over {plan.cells} cells, so this null is "
+                      f"not evidence of no difference ({got.why})",
+                      failure_class=reasons.UNDERPOWERED)
+    why = "; ".join([got.why, *notes])
+    return Verdict(lane, name_i, name_c, got.adopt, why, got.how,
+                   got.failure_class, evidence)
+
+
+def _summary(rows: list[dict], name: str) -> dict | None:
+    """One candidate's summary row over just these rows."""
+    from evals.core import Result, summarize
+    mine = [Result(case_id=str(r.get("case_id")), candidate=name,
+                   passed=bool(r.get("passed")),
+                   seconds=float(r.get("seconds") or 0.0),
+                   peak_kb=int(r.get("peak_kb") or 0),
+                   detail=str(r.get("detail") or ""),
+                   metrics=dict(r.get("metrics") or {}),
+                   warnings=list(r.get("warnings") or []))
+            for r in rows if r.get("candidate") == name]
+    if not mine:
+        return None
+    return {**summarize(mine)[name], "candidate": name}
+
+
+def _gates(lane, name_i, name_c, incumbent, challenger, rows) -> Verdict:
+    from harness import paired
+
     if not better(incumbent, challenger):
         return Verdict(lane, name_i, name_c, False,
                        "does not beat the incumbent on the lane's metric")
@@ -159,9 +217,21 @@ def record(conn, verdict: Verdict, spec: str = "",
         raise ValueError(f"{spec!r} is not a spec any runner takes, so an "
                          f"adoption of it could never be served")
     row = candidates.get(conn, spec)
+    from harness import reasons
     vid = ms.decide(conn, row["proposal"] or "", outcome, tier=TIER,
                     detail=detail[:200], candidate_id=cid, run_id=run_id,
-                    reason="candidate")
+                    reason=(reasons.LIMIT if verdict.failure_class
+                            == reasons.UNDERPOWERED else reasons.CANDIDATE))
+    if verdict.failure_class or verdict.evidence:
+        import json
+        conn.execute(
+            "UPDATE verdicts SET failure_class = ?, split_version = ?, "
+            "power = ? WHERE id = ?",
+            (verdict.failure_class,
+             (verdict.evidence.get("split") or {}).get("version", ""),
+             json.dumps({**(verdict.evidence.get("power") or {}),
+                         "dev": verdict.evidence.get("dev")}), vid))
+        conn.commit()
     if verdict.adopt:
         if verdict.how not in HOW:
             raise ValueError(f"unknown adoption kind {verdict.how!r}")

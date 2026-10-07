@@ -244,9 +244,12 @@ def build_parser() -> argparse.ArgumentParser:
     d.add_argument("--budget-gib", type=float, default=20.0, dest="budget_gib",
                    help="with --loop --run, the ceiling on what this "
                         "invocation will download")
-    d.add_argument("--repeat", type=int, default=3,
+    d.add_argument("--repeat", type=int, default=None,
                    help="with --loop --run, repetitions per case when "
-                        "measuring a challenger against the incumbent")
+                        "measuring a challenger against the incumbent; "
+                        "default: what the power calculation needs (#479)")
+    d.add_argument("--effect", type=float, default=None,
+                   help="the smallest per-cell pass-rate gain worth adopting for")
     d.add_argument("--loop", action="store_true",
                    help="every step from a sweep to an adopted winner. Says "
                         "what it would do; --run spends the disk and minutes")
@@ -472,7 +475,11 @@ def build_parser() -> argparse.ArgumentParser:
     ado.add_argument("--lane", required=True)
     ado.add_argument("--challenger", required=True,
                      help="a spec or gateway alias, e.g. q3-30b")
-    ado.add_argument("--repeat", type=int, default=3)
+    ado.add_argument("--repeat", type=int, default=None,
+                     help="default: the smallest repeat with enough power to "
+                          "detect --effect on the holdout, capped (#479)")
+    ado.add_argument("--effect", type=float, default=None,
+                     help="the smallest per-cell pass-rate gain worth adopting for")
     ado.set_defaults(func=adopt_cmd.cmd_adopt)
 
     ver = sub.add_parser(

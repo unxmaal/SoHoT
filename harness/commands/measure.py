@@ -179,8 +179,9 @@ def _measure(a, row: dict, loaded: list) -> int:
     # candidates and then read a receipt from a different experiment. #222.
     out = (paths.home() / "runs"
            / f"{time.strftime('%Y%m%d-%H%M%S')}-adopt-{lane}")
+    split, plan = _plan(a, lane, inc_spec)
     argv = ["uv", "run", "python", "-m", "evals.run", "--modality", lane,
-            "--repeat", str(int(getattr(a, "repeat", 3) or 3)),
+            "--repeat", str(plan.repeat),
             "--out", str(out),
             "--candidates", f"{inc_spec},{spec}"]
     # ROUTE IT THE WAY THE SCREEN DOES. LiteLLM validates `model` against its
@@ -267,7 +268,7 @@ def _measure(a, row: dict, loaded: list) -> int:
         return err(f"{name}: every case was refused before it reached a model "
                    f"({refused}). The incumbent passed, so this says nothing "
                    f"about the candidate and it stays queued.")
-    verdict = adopt.decide(lane, inc_row, ch_row, rows)
+    verdict = adopt.decide(lane, inc_row, ch_row, rows, split=split, plan=plan)
     print(f"    {'ADOPTED' if verdict.adopt else 'kept the incumbent'}: "
           f"{verdict.why}")
     store = ms.connect()
@@ -279,6 +280,30 @@ def _measure(a, row: dict, loaded: list) -> int:
     finally:
         store.close()
     return 0
+
+
+def _plan(a, lane: str, inc_spec: str):
+    """The lane's split and the repeat the paired gate needs on its holdout. #479."""
+    from evals.run import STOCHASTIC_MODALITIES
+    from harness import candidates, holdout, power
+    from harness import memory_store as ms
+
+    split = holdout.for_lane(lane)
+    store = ms.connect()
+    try:
+        rates, seen = power.incumbent_rates(
+            store, lane, candidates.key_of(inc_spec) or inc_spec, split.holdout)
+    finally:
+        store.close()
+    effect = getattr(a, "effect", None) or power.effect_for(lane)
+    plan = power.plan([rates[c] for c in split.holdout], effect,
+                      stochastic=lane in STOCHASTIC_MODALITIES,
+                      repeat=getattr(a, "repeat", None), observed=seen)
+    print(f"    power: repeat {plan.repeat} over {len(split.holdout)} holdout "
+          f"case(s) gives {plan.power:.2f} to detect +{plan.effect:.2f} at "
+          f"alpha {plan.alpha}{'; ' + plan.why if plan.why else ''}"
+          f"{'; ' + split.caveat if split.caveat else ''}", flush=True)
+    return split, plan
 
 
 def _settle(name: str, outcome: str, detail: str) -> None:

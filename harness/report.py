@@ -64,7 +64,7 @@ def lanes_state(conn) -> list[dict]:
     newest stored measure run on this machine that ran it (#410, #341). What
     won is beaten_in(), reported beside it, never in its place.
     """
-    from harness import adopt, lanes as L, runs, winners
+    from harness import adopt, holdout, lanes as L, runs, winners
 
     typed = winners.typed()
     measured = winners.beaten_in(conn)
@@ -82,6 +82,7 @@ def lanes_state(conn) -> list[dict]:
         ran = runs.newest(conn, lane=lane, machines=mine,
                           tier=runs.MEASURE, candidate_id=cid) if cid else None
         here = runs.row_for(conn, ran["id"], cid) if ran else {}
+        held_rate = _holdout_rate(conn, lane, ran["id"], cid) if ran else None
         age = runs.age_days(newest, now)
         out.append({
             "lane": lane,
@@ -109,8 +110,19 @@ def lanes_state(conn) -> list[dict]:
             "parked_until": L.parked(lane)[1],
             "stale": bool(age is not None and age > STALE_LANE_DAYS
                           and not L.parked(lane)[0]),
+            # Its cases can no longer separate candidates; feeds #491. #479.
+            "holdout_pass_rate": held_rate,
+            "saturated": holdout.saturated(held_rate),
         })
     return out
+
+
+def _holdout_rate(conn, lane: str, run_id: int, cid) -> float | None:
+    """The served candidate's pass rate over the lane's holdout in one run."""
+    from harness import holdout, runs
+    split = holdout.for_lane(lane)
+    mine = holdout.rows_on(runs.rows(conn, run_id, cid), split, "holdout")
+    return round(sum(r["passed"] for r in mine) / len(mine), 3) if mine else None
 
 
 def _candidate_of(conn, lane: str, serves: str) -> int | None:
@@ -308,6 +320,8 @@ def _lane_rows(lanes, changed) -> str:
         tags = []
         if l["adopted"]:
             tags.append('<span class="tag good">adopted</span>')
+        if l.get("saturated"):
+            tags.append('<span class="tag warn">saturated</span>')
         if l["unverified"]:
             tags.append('<span class="tag bad">no receipt here</span>')
         elif l["stale"]:
