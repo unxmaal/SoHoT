@@ -112,6 +112,14 @@ def _add_served_context(conn) -> None:
             conn.execute(f"ALTER TABLE downloads ADD COLUMN {col} {ddl}")
 
 
+def _add_switch_outcome(conn) -> None:
+    """gateway_switches.outcome and reason, on an older store. #522."""
+    for col, ddl in (("outcome", "TEXT NOT NULL DEFAULT 'switched'"),
+                     ("reason", "TEXT NOT NULL DEFAULT ''")):
+        if col not in _columns(conn, "gateway_switches"):
+            conn.execute(f"ALTER TABLE gateway_switches ADD COLUMN {col} {ddl}")
+
+
 def _add_reasons(conn) -> None:
     """verdicts.reason and the results' failure class, on an older store. #408."""
     for table, col in (("verdicts", "reason"), ("results", "failure_class"),

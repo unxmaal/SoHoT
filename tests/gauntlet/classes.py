@@ -110,7 +110,7 @@ INDEX = {
         "instances": _i(477, 501),
         "scanners": ["tests/test_gauntlet_scanners.py::test_swallowed_errors_are_an_inventory_that_only_shrinks"]},
     "success-assumed-exit-status-unchecked": {
-        "instances": _i(328),
+        "instances": _i(328, 522),
         "scanners": ["tests/test_gauntlet_scanners.py::test_no_shell_script_ignores_a_failure_it_could_see"]},
     "partial-failure-leaves-inconsistent-state": {
         "review": r"executemany\(|\.rename\(|os\.replace\(|shutil\.move\(",
@@ -187,7 +187,7 @@ INDEX = {
             "harness/reverify.py:judge":
                 "the run a queued job stored; a retried job's newest run is its latest attempt (#526)",
         },
-        "instances": _i(225, 253, 254, 393, 399, rules=(382, 389)), "scanners": []},
+        "instances": _i(225, 253, 254, 393, 399, 522, rules=(382, 389)), "scanners": []},
     "a-proxy-checked-in-place-of-the-property": {
         "review": r"\.exists\(\)|\.is_dir\(\)|returncode == 0|status_code == 200|\.st_size\b",
         "instances": _i(68, 101, 173, 196, 283, 322, 365), "scanners": []},

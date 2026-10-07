@@ -47,6 +47,9 @@ def cmd_report(a) -> int:
         print(f"  {len(saturated)} lane(s) saturated: the incumbent passes "
               f">= 95% of holdout, so its cases cannot separate candidates: "
               f"{', '.join(saturated)}")
+    for f in state.get("failed_switches") or []:
+        print(f"  sohot-{f['lane']} did not switch to {f['new_spec']} after "
+              f"{f['attempts']} attempt(s): {f['reason']}")
     if stale:
         print(f"  {len(stale)} lane(s) not measured within their re-verify "
               f"threshold: {', '.join(stale)}")
