@@ -271,6 +271,7 @@ def judgeable(conn, limit: int = 50) -> list[dict]:
         SELECT p.name, p.lane, p.registry, p.kind, p.description,
                p.size_bytes, p.category,
                p.hf_task, p.library, p.card_tags, p.attaches_to, p.runtime_needed,
+               p.model_type, p.remote_code,
                COUNT(s.id) AS times,
                MAX(CASE WHEN s.machine_id = ? THEN s.relevance END) AS relevance,
                MAX(s.seen_at) AS last_seen,

@@ -116,5 +116,15 @@
   }
  ],
  "lastModified": "2026-07-29T04:34:16.000Z",
- "downloads": 1328970
+ "downloads": 1328970,
+ "config": {
+  "architectures": [
+   "UnlimitedOCRForCausalLM"
+  ],
+  "model_type": "unlimited-ocr",
+  "auto_map": {
+   "AutoConfig": "modeling_unlimitedocr.UnlimitedOCRConfig",
+   "AutoModel": "modeling_unlimitedocr.UnlimitedOCRForCausalLM"
+  }
+ }
 }

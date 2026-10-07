@@ -4,7 +4,7 @@ from __future__ import annotations
 from harness import store
 
 
-SCHEMA_VERSION = 56
+SCHEMA_VERSION = 57
 
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
@@ -101,7 +101,10 @@ CREATE TABLE IF NOT EXISTS proposals (
     -- 300-character description by the schema 32 backfill; '' never read.
     card_read   TEXT NOT NULL DEFAULT '',
     -- One of CATEGORIES, or '' when nothing has said. #576.
-    category    TEXT NOT NULL DEFAULT ''
+    category    TEXT NOT NULL DEFAULT '',
+    -- config.json's model_type, and the own modelling code its auto_map names. #567.
+    model_type  TEXT NOT NULL DEFAULT '',
+    remote_code TEXT NOT NULL DEFAULT ''
 );
 
 -- A card's base_model parents. The parent is rarely a proposal, so this is

@@ -538,5 +538,11 @@
   }
  ],
  "lastModified": "2026-05-19T14:00:04.000Z",
- "downloads": 1124
+ "downloads": 1124,
+ "config": {
+  "architectures": [
+   "ModernBertModel"
+  ],
+  "model_type": "modernbert"
+ }
 }

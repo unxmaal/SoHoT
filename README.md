@@ -1579,8 +1579,14 @@ transformers image-text-to-text or image-to-text model through
 `~/localharness/venvs/hf-task` (torch, transformers, accelerate, safetensors,
 pillow at the pins in `scripts/versions.sh`) on first use and rebuilds it when
 a pin moves. It never passes `trust_remote_code`: a repo that ships its own
-modelling code, such as baidu/Unlimited-OCR or hayai-ocr-v2, fails the screen
-as needing its own runner and is reported under runners wanted.
+modelling code, such as baidu/Unlimited-OCR or hayai-ocr-v2, is reported under
+runners wanted before anything is downloaded, for every hf-task engine
+(hf-ocr, rerank, embed, hf-pii). Inspect keeps the card's `config.model_type`
+and the code files its `config.auto_map` names; the gap holds when the auto_map
+is present and the model type is not in `harness/transformers_model_types.txt`,
+the types the pinned transformers ships. A custom_code tag or a `.py` file
+alone decides nothing. After `TRANSFORMERS_PIN` moves, run
+`scripts/transformers-types.sh` to rewrite that list; a test fails until it is.
 PaddleOCR-VL loads through transformers' own class and wants `prompt=OCR:`.
 Discovery files a card under ocr when its task is image-to-text or
 image-text-to-text and a tag names OCR; a captioner without that tag stays

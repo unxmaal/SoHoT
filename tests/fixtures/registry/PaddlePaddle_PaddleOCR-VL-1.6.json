@@ -135,5 +135,16 @@
   }
  ],
  "lastModified": "2026-08-08T14:32:21.000Z",
- "downloads": 47082
+ "downloads": 47082,
+ "config": {
+  "architectures": [
+   "PaddleOCRVLForConditionalGeneration"
+  ],
+  "model_type": "paddleocr_vl",
+  "auto_map": {
+   "AutoConfig": "configuration_paddleocr_vl.PaddleOCRVLConfig",
+   "AutoModel": "modeling_paddleocr_vl.PaddleOCRVLForConditionalGeneration",
+   "AutoModelForCausalLM": "modeling_paddleocr_vl.PaddleOCRVLForConditionalGeneration"
+  }
+ }
 }
