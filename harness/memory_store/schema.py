@@ -4,7 +4,7 @@ from __future__ import annotations
 from harness import store
 
 
-SCHEMA_VERSION = 50
+SCHEMA_VERSION = 51
 
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
@@ -333,7 +333,10 @@ CREATE TABLE IF NOT EXISTS gateway_switches (
     requested_at REAL NOT NULL,
     switched_at  REAL NOT NULL,
     -- Requests in flight at the restart; NULL when the gateway would not say.
-    in_flight    INTEGER
+    in_flight    INTEGER,
+    -- 'switched' once the gateway serves the new alias, else 'failed' with its reason. #522.
+    outcome      TEXT NOT NULL DEFAULT 'switched',
+    reason       TEXT NOT NULL DEFAULT ''
 );
 
 -- One request through the gateway, with no prompt or completion text. #481.

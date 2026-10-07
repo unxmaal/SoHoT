@@ -39,7 +39,7 @@ table extractions [('id', 'INTEGER', 0, None, 1), ('name', 'TEXT', 1, None, 0), 
 table gateway_requests [('id', 'INTEGER', 0, None, 1), ('at', 'REAL', 1, None, 0), ('alias', 'TEXT', 1, "''", 0), ('lane', 'TEXT', 1, "''", 0), ('served', 'TEXT', 1, "''", 0), ('spec', 'TEXT', 1, "''", 0), ('client', 'TEXT', 1, "''", 0), ('call_type', 'TEXT', 1, "''", 0), ('stream', 'INTEGER', 1, '0', 0), ('prompt_tokens', 'INTEGER', 0, None, 0), ('completion_tokens', 'INTEGER', 0, None, 0), ('ttft_s', 'REAL', 0, None, 0), ('total_s', 'REAL', 0, None, 0), ('tool_calls', 'INTEGER', 1, '0', 0), ('tool_calls_valid', 'INTEGER', 1, '0', 0), ('finish_reason', 'TEXT', 1, "''", 0), ('error_class', 'TEXT', 1, "''", 0), ('error_code', 'TEXT', 1, "''", 0)]
   index ix_greq_at unique=0 ['at']
 table gateway_samples [('request_id', 'INTEGER', 0, None, 1), ('prompt', 'TEXT', 1, "''", 0), ('completion', 'TEXT', 1, "''", 0)]
-table gateway_switches [('id', 'INTEGER', 0, None, 1), ('lane', 'TEXT', 1, None, 0), ('old_spec', 'TEXT', 1, None, 0), ('new_spec', 'TEXT', 1, None, 0), ('how', 'TEXT', 1, None, 0), ('requested_at', 'REAL', 1, None, 0), ('switched_at', 'REAL', 1, None, 0), ('in_flight', 'INTEGER', 0, None, 0)]
+table gateway_switches [('id', 'INTEGER', 0, None, 1), ('lane', 'TEXT', 1, None, 0), ('old_spec', 'TEXT', 1, None, 0), ('new_spec', 'TEXT', 1, None, 0), ('how', 'TEXT', 1, None, 0), ('requested_at', 'REAL', 1, None, 0), ('switched_at', 'REAL', 1, None, 0), ('in_flight', 'INTEGER', 0, None, 0), ('outcome', 'TEXT', 1, "'switched'", 0), ('reason', 'TEXT', 1, "''", 0)]
 table human_votes [('id', 'INTEGER', 0, None, 1), ('lane', 'TEXT', 1, None, 0), ('run', 'TEXT', 1, "''", 0), ('case_id', 'TEXT', 1, None, 0), ('left_candidate', 'TEXT', 1, None, 0), ('right_candidate', 'TEXT', 1, None, 0), ('winner', 'TEXT', 1, "''", 0), ('shown_first', 'TEXT', 1, "''", 0), ('voter', 'TEXT', 1, "''", 0), ('machine_id', 'INTEGER', 0, None, 0), ('at', 'REAL', 1, None, 0)]
   index ix_human_votes_pair unique=0 ['lane', 'case_id', 'left_candidate', 'right_candidate']
   (1, 'svg', '', 'icon-1', 'local-large', 'svg-thing', 'svg-thing', 'left', '', None, 1789788000.0)
@@ -71,7 +71,7 @@ table meta [('key', 'TEXT', 0, None, 1), ('value', 'TEXT', 0, None, 0)]
   index sqlite_autoindex_meta_1 unique=1 ['key']
   ('artifact_split', '{}')
   ('candidate_guesses', '[{"adoption": 2, "from": "the adopt verdict/'s machine; no vote or judged run names one", "lane": "svg", "machine": 4, "proposal": "org-l/svg-thing", "spec": "mlx:org-l/svg-thing"}]')
-  ('schema', '50')
+  ('schema', '51')
 table proposals [('id', 'INTEGER', 0, None, 1), ('name', 'TEXT', 1, None, 0), ('kind', 'TEXT', 1, "'candidate'", 0), ('registry', 'TEXT', 1, "''", 0), ('description', 'TEXT', 1, "''", 0), ('lane', 'TEXT', 1, "''", 0), ('resolved', 'TEXT', 1, "''", 0), ('first_seen', 'REAL', 1, None, 0), ('last_seen', 'REAL', 1, None, 0), ('state', 'TEXT', 1, "''", 0), ('state_verdict_id', 'INTEGER', 0, None, 0), ('retest_count', 'INTEGER', 1, '0', 0), ('next_retest_at', 'REAL', 0, None, 0), ('size_bytes', 'INTEGER', 1, '0', 0), ('hf_task', 'TEXT', 1, "''", 0), ('library', 'TEXT', 1, "''", 0), ('card_tags', 'TEXT', 1, "'[]'", 0), ('attaches_to', 'TEXT', 1, "''", 0), ('runtime_needed', 'TEXT', 1, "''", 0), ('lane_source', 'TEXT', 1, "''", 0), ('card_read', 'TEXT', 1, "''", 0)]
   index ix_prop_state unique=0 ['state']
   index sqlite_autoindex_proposals_1 unique=1 ['name']
