@@ -1,6 +1,7 @@
 """The split of cli.py and memory_store.py keeps every import, every patch and every migration. #484."""
 import importlib
 import os
+import re
 import time
 from pathlib import Path
 
@@ -100,6 +101,10 @@ def test_the_budget_sees_a_long_module(tmp_path):
 # The migration chain: every golden store migrates to exactly what it did before the split.
 
 MIGRATED = ls.REPO / "tests" / "golden" / "migrated"
+#: The speech defaults winners.typed() reads per platform, pinned to the Mac's the recording used.
+MAC_SPEECH = {"DEFAULT_TTS_MODEL": "mlx-community/Kokoro-82M-bf16",
+              "DEFAULT_STT_MODEL": "mlx-community/parakeet-tdt-0.6b-v2"}
+_DRIVE = re.compile(r"(?<![A-Za-z0-9_])[A-Za-z]:/")
 
 
 def dump(conn, started: float) -> str:
@@ -119,12 +124,15 @@ def dump(conn, started: float) -> str:
     return "\n".join(out)
 
 
-def migrated_dump(version: int, tmp_path: Path, monkeypatch) -> str:
+def migrated_dump(version: int, tmp_path: Path, monkeypatch, speech=MAC_SPEECH) -> str:
     """The golden at `version` migrated to head, with this run's clock, paths and zone masked."""
     import test_golden_stores as tg
     if not hasattr(time, "tzset") and time.localtime(0).tm_gmtoff:
         pytest.skip("legacy JSON stamps are local time, and this platform cannot pin the zone")
     db, home = tg.open_golden(version, tmp_path, monkeypatch)
+    from harness import audio
+    for name, value in speech.items():
+        monkeypatch.setattr(audio, name, value)
     started = time.time() - 1
     from harness import memory_store as ms
     zone = os.environ.get("TZ")
@@ -146,7 +154,7 @@ def migrated_dump(version: int, tmp_path: Path, monkeypatch) -> str:
     for path, mask in ((os.environ["HF_HOME"], "<hf>"), (tmp_path, "<tmp>")):
         for form in (Path(path).resolve(), path):
             text = text.replace(str(form).replace("\\", "/"), mask)
-    return text
+    return _DRIVE.sub("/", text)
 
 
 def golden_eras():
@@ -163,6 +171,16 @@ def test_each_golden_migrates_to_the_recorded_content(version, tmp_path, monkeyp
         want.parent.mkdir(parents=True, exist_ok=True)
         want.write_text(got + "\n", encoding="utf-8")
     assert got + "\n" == want.read_text(encoding="utf-8")
+
+
+def test_the_speech_pin_is_what_the_migration_reads(tmp_path, monkeypatch):
+    """Red-proof: the Windows speech defaults change the dump, so pinning them is not a no-op."""
+    version = golden_eras()[0]
+    windows = {"DEFAULT_TTS_MODEL": "kokoro-onnx/Kokoro-82M",
+               "DEFAULT_STT_MODEL": "Systran/faster-whisper-base.en"}
+    got = migrated_dump(version, tmp_path, monkeypatch, speech=windows)
+    assert "faster-whisper-base.en" in got
+    assert got + "\n" != (MIGRATED / f"v{version}.sql").read_text(encoding="utf-8")
 
 
 def test_the_dump_sees_one_changed_row(tmp_path, monkeypatch):
