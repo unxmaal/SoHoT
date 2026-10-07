@@ -101,6 +101,20 @@ def test_the_report_names_the_gap_and_the_numbers():
     assert "tier 1 with no scanner yet: one-question-two-answers" in text
 
 
+def test_a_bite_count_that_lags_this_repo_is_reported():
+    snapshot = [dict(c) for c in SNAPSHOT]
+    snapshot[0]["bitten"] = 6
+    snapshot[1]["bitten"] = 1
+    assert core.bite_drift(INDEX, snapshot) == [("one-question-two-answers", 6, 2)]
+    text = core.report(labelled=[10], snapshot_numbers=set(DEFECTS), closures=[], index=INDEX,
+                       pending=PENDING, unclassified=UNCLASSIFIED, snapshot=snapshot, defects=DEFECTS)
+    assert "skill says bitten 6, this repo has 2: one-question-two-answers" in text
+
+
+def test_a_class_with_no_bite_count_is_not_reported_as_drift():
+    assert core.bite_drift(INDEX, SNAPSHOT) == []
+
+
 def test_gh_is_asked_for_closed_defects(monkeypatch):
     seen = []
 

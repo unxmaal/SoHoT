@@ -87,6 +87,21 @@ def test_only_headings_with_a_tier_are_classes():
     assert snap[2]["source"] == "general-corpus.md"
 
 
+def test_the_skill_s_bite_count_is_read_as_an_integer():
+    text = "# The corpus\n\n## A class\n\n**Bitten:** 10+ in two days.\n\n**Tier:** 2.\n\n## Another\n\n**Tier:** 1.\n"
+    snap = core.parse_skill(text, "SKILL.md")
+    assert [c["bitten"] for c in snap] == [10, None]
+
+
+def test_505_is_bound_to_the_shared_resource_class_not_unclassified():
+    assert 505 not in classes.UNCLASSIFIED
+    assert {"issue": 505} in classes.INDEX["a-shared-fixed-resource-in-tests"]["instances"]
+
+
+def test_pending_is_empty_once_the_skill_defines_every_proposed_class():
+    assert classes.PENDING == {}
+
+
 def test_the_fixture_registry_is_clean():
     assert check(*fixture_registry()) == []
 

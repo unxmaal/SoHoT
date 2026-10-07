@@ -28,8 +28,10 @@ def parse_skill(text, source):
         if heading is None:
             return
         m = re.search(r"\*\*Tier:\*\*\D*?(\d)", "\n".join(body))
+        b = re.search(r"\*\*Bitten:\*\*\D*?(\d+)", "\n".join(body))
         if m:
-            found.append({"id": slug(heading), "heading": heading, "source": source, "tier": int(m.group(1))})
+            found.append({"id": slug(heading), "heading": heading, "source": source, "tier": int(m.group(1)),
+                          "bitten": int(b.group(1)) if b else None})
 
     for line in text.splitlines():
         if line.startswith("## ") or line.startswith("# "):
@@ -141,6 +143,17 @@ def unscanned(index, snapshot):
     return sorted(cid for cid, e in index.items() if tiers.get(cid) == 1 and not e.get("scanners"))
 
 
+def bite_drift(index, snapshot):
+    out = []
+    for c in snapshot:
+        if c.get("bitten") is None or c["id"] not in index:
+            continue
+        here = len(_issues(index[c["id"]]))
+        if here != c["bitten"]:
+            out.append((c["id"], c["bitten"], here))
+    return out
+
+
 def closing_refs(text):
     return {int(n) for n in _CLOSING.findall(text)}
 
@@ -194,6 +207,7 @@ def report(labelled, snapshot_numbers, closures, index, pending, unclassified, s
     lines.append("classes per tier: " + ", ".join(
         f"tier {t}: {n}" for t, n in sorted(s["classes_per_tier"].items(), key=lambda kv: (kv[0] is None, kv[0]))))
     lines += [f"tier 1 with no scanner yet: {cid}" for cid in unscanned(index, snapshot)]
+    lines += [f"skill says bitten {b}, this repo has {h}: {cid}" for cid, b, h in bite_drift(index, snapshot)]
     lines.append(f"pending classes awaiting a skill entry: {len(pending)}")
     lines.append("instances per class (issues / rules / after the first):")
     for cid in sorted(s["instances"], key=lambda c: (-s["instances"][c], c)):

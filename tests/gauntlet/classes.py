@@ -64,7 +64,7 @@ INDEX = {
         "instances": _i(227, 461, 463, 471, rules=(277,)),
         "scanners": []},
     "a-shared-fixed-resource-in-tests": {
-        "instances": _i(426, rules=(384,)),
+        "instances": _i(426, 505, rules=(384, 441)),
         "scanners": []},
     "a-fake-that-does-not-model-the-real-process-s-environment": {
         "instances": _i(399),
@@ -88,31 +88,31 @@ INDEX = {
     "assuming-a-single-result": {"instances": _i(438), "scanners": []},
     "cwd-or-script-location-path-assumption": {"instances": _i(108, 151), "scanners": []},
     "cleanup-missing-on-failure": {"instances": _i(373), "scanners": []},
+    "a-guard-built-and-tested-that-nothing-invokes": {
+        "instances": _i(1, 137, 143, 172, 182, 191, 279, 284, rules=(251,)), "scanners": []},
+    "an-input-accepted-and-silently-ignored": {
+        "instances": _i(60, 103, 215, 315, 329, rules=(355,)),
+        "scanners": ["tests/test_json_everywhere.py::test_no_verb_ignores_json"]},
+    "a-fact-recorded-without-its-context": {
+        "instances": _i(266, 270, 281, 331, 341, 450, rules=(293, 356)), "scanners": []},
+    "a-non-production-run-writes-live-state": {
+        "instances": _i(29, 188, 290, 455, rules=(414,)), "scanners": []},
+    "a-closed-table-fronting-an-open-set": {
+        "instances": _i(213, 228, 245, 263, 298, 318, 379, 380, 387, rules=(379, 419)), "scanners": []},
+    "state-is-whichever-row-came-last": {
+        "instances": _i(225, 253, 254, 393, 399, rules=(382, 389)), "scanners": []},
+    "a-proxy-checked-in-place-of-the-property": {
+        "instances": _i(68, 101, 173, 196, 283, 322, 365), "scanners": []},
+    "a-rule-change-leaves-old-decisions-standing": {
+        "instances": _i(73, 230, 295, 301, rules=(333,)), "scanners": []},
+    "one-default-tuned-for-one-member-applied-to-all": {
+        "instances": _i(355, 401, 498), "scanners": []},
+    "history-reconstructed-from-present-state": {
+        "instances": _i(506, rules=(292,)), "scanners": []},
 }
 
 # Proposed classes with no skill entry yet; add the entry to SKILL.md, regenerate the snapshot, move here into INDEX.
-PENDING = {
-    "guard-built-never-invoked": {
-        "tier": 2, "instances": _i(1, 137, 143, 172, 182, 191, 279, 284, rules=(251,))},
-    "input-accepted-and-ignored": {
-        "tier": 2, "instances": _i(60, 103, 215, 315, 329, rules=(355,))},
-    "fact-recorded-without-its-context": {
-        "tier": 2, "instances": _i(266, 270, 281, 331, 341, 450, rules=(293, 356))},
-    "non-production-run-writes-live-state": {
-        "tier": 2, "instances": _i(29, 188, 290, 455, rules=(414,))},
-    "closed-table-fronting-an-open-set": {
-        "tier": 2, "instances": _i(213, 228, 245, 263, 298, 318, 379, 380, 387, rules=(379, 419))},
-    "state-is-whichever-row-came-last": {
-        "tier": 2, "instances": _i(225, 253, 254, 393, 399, rules=(382, 389))},
-    "proxy-checked-in-place-of-the-property": {
-        "tier": 2, "instances": _i(68, 101, 173, 196, 283, 322, 365)},
-    "rule-change-leaves-old-decisions-standing": {
-        "tier": 2, "instances": _i(73, 230, 295, 301, rules=(333,))},
-    "one-default-tuned-for-one-member-applied-to-all": {
-        "tier": 2, "instances": _i(355, 401, 498)},
-    "history-reconstructed-from-present-state": {
-        "tier": 2, "instances": _i(506, rules=(292,))},
-}
+PENDING = {}
 
 UNCLASSIFIED = {
     6: "upstream model behaviour (Chatterbox runs past its input), no failing in this repo's logic",
@@ -121,5 +121,4 @@ UNCLASSIFIED = {
     371: "a lock held wider than the resource it guards; one instance, no class yet",
     374: "a policy (reference models are never defaults) that was never written down; one instance",
     396: "producer outruns consumer with no backpressure; one instance, no class yet",
-    505: "cause not yet established; classify once it is produced rather than reasoned",
 }
