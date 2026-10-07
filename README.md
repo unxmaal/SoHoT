@@ -818,6 +818,25 @@ its reason and failure class and flagged in `soh report`. The served model is
 never swapped; that is left to a person. `soh reverify --dry-run` says what
 would be queued.
 
+**Lanes wanted.** `soh discover --loop` ends with the candidates no lane can
+test, because adding a lane is a decision for a person. Adapters are left out,
+as the ranking leaves them out, and a GitHub repo with no model task is listed
+separately under `engines/tools wanted`. The rest are grouped by task (the
+card's task, an OCR tag, or a task named in the card's tags), and each group
+shows its distinct models, distinct publishers, total sightings, whether any
+model fits this machine's memory ceiling (`unknown` when none has a measured
+size), and whether the task has a reference-based metric (translation, OCR and
+image-to-text, text ranking and retrieval, token classification; `unknown` for
+anything else). Whether anything here would use the answer cannot be computed,
+so each group ends with that as a question. The report decides nothing.
+
+A candidate with no task on its card that was built from a known text model
+(Qwen, Llama, Mistral, Phi, Gemma, DeepSeek, not their vision, speech or
+embedding variants) is filed under code; an any-to-any card whose tags name
+exactly one narrower task takes that task's lane; a text-to-audio card whose
+tags mention music goes to music. Schema 52 applies these to stored rows that
+have no lane, and only those; it records no verdict.
+
 The install carries no torch on Apple Silicon. `mlx-whisper` needs it
 unconditionally, so the multilingual ear lives in the `whisper` dependency
 group: 370MB installed rather than 1.1GB. Dependencies are marked by platform

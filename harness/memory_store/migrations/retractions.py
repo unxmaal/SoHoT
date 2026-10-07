@@ -266,6 +266,32 @@ def _relane_the_laneless_from_the_card(conn) -> None:
                          "WHERE id = ?", (lane, source, row["id"]))
 
 
+def _relane_the_laneless_from_lineage(conn) -> None:
+    """Fill an empty lane from the stored task, tags, name and lineage. #557.
+    Only empty lanes; no verdict is written, so nothing is decided twice."""
+    import json
+
+    from harness import inspect as ins
+    rows = conn.execute("SELECT id, name, hf_task, card_tags FROM proposals "
+                        "WHERE lane = ''").fetchall()
+    parents: dict = {}
+    for r in conn.execute("SELECT proposal_id, parent, kind FROM lineage ORDER BY id"):
+        parents.setdefault(r["proposal_id"], []).append(
+            f"base_model:{r['kind']}:{r['parent']}" if r["kind"]
+            else f"base_model:{r['parent']}")
+    for row in rows:
+        try:
+            tags = json.loads(row["card_tags"] or "[]")
+        except ValueError:
+            tags = []
+        lane, source = ins.lane_and_source(
+            {"pipeline_tag": row["hf_task"], "id": row["name"],
+             "tags": [*tags, *parents.get(row["id"], [])]})
+        if lane:
+            conn.execute("UPDATE proposals SET lane = ?, lane_source = ? "
+                         "WHERE id = ?", (lane, source, row["id"]))
+
+
 def _requeue_broken_matching(conn, phrases: tuple = ("guidance_scale has to be",)) -> None:
     for r in _stated(conn, "p.state = 'broken'"):
         hit = next((p for p in phrases if p in (r["detail"] or "").lower()), "")

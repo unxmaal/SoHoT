@@ -4,7 +4,7 @@ from __future__ import annotations
 from harness import store
 
 
-SCHEMA_VERSION = 51
+SCHEMA_VERSION = 52
 
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.

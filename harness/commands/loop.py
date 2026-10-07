@@ -67,6 +67,30 @@ def _in_fetch_order(store, work_items):
     return sorted(work_items, key=lambda it: place.get(it[0], len(place)))
 
 
+def _lanes_wanted_lines(rows, ceiling_gib: float, top: int = 10) -> list[str]:
+    """The `lanes wanted` section: laneless models by task, evidence only. #558."""
+    from harness import rank
+    groups = rank.wanted_groups(rows, ceiling_gib=ceiling_gib)
+    if not groups:
+        return []
+    n = sum(len(g["models"]) for g in groups)
+    out = ["\n=== lanes wanted ===",
+           f"{n} laneless model(s) in {len(groups)} task group(s). A lane is a "
+           f"decision for a person; this orders the evidence and decides nothing.",
+           f"  {'task':28} {'models':>6} {'publishers':>10} {'sightings':>9}  "
+           f"{'fits':7} measurable"]
+    for g in groups[:top]:
+        metric = f"yes ({g['metric']})" if g["metric"] else "unknown"
+        out.append(f"  {g['task']:28} {len(g['models']):>6} {len(g['publishers']):>10} "
+                   f"{g['sightings']:>9}  {g['fits']:7} {metric}")
+        out.append(f"      e.g. {', '.join(g['models'][:3])}")
+        out.append(f"      used here? would anything on this machine act on "
+                   f"a {g['task']} answer?")
+    if len(groups) > top:
+        out.append(f"  ... and {len(groups) - top} more group(s)")
+    return out
+
+
 def _report_loop(a) -> int:
     """Every step from a sweep to an adopted winner. Issue #201.
 
@@ -107,13 +131,14 @@ def _report_loop(a) -> int:
         rows, _ = _queueable(store, want)
         if want:
             print(f"\n(scoped to the {want} lane: {len(rows)} candidate(s))")
-        short = rank.wanted(rows)
-        if short:
-            print(f"\n=== lanes wanted ===")
-            print(f"{len(short)} candidate(s) recur and no lane can test them. "
-                  f"A lane is a decision for a person, so they are reported "
-                  f"rather than ranked or invented:")
-            for row in short[:10]:
+        for line in _lanes_wanted_lines(rows, ms.this_machine()["ceiling_gb"]):
+            print(line)
+        tools = rank.tools_wanted(rows)
+        if tools:
+            print(f"\n=== engines/tools wanted ===")
+            print(f"{len(tools)} tooling repo(s) recur with no model task. An "
+                  f"engine entry is a decision for a person, not a lane:")
+            for row in tools[:10]:
                 print(f"  {row.get('times', 0)}x  {row['name']}")
         stuck = rank.runnerless(rows)
         if stuck:

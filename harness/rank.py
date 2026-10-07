@@ -251,9 +251,93 @@ def wanted(rows, minimum: int = 2) -> list[dict]:
     would be the harness deciding what it is for. So they are reported, and
     somebody chooses. Issue #201.
     """
-    out = [r for r in rows
-           if not lane_of(r) and int(r.get("times") or 0) >= minimum]
+    out = [r for r in _laneless(rows, minimum) if not is_tool(r)]
     return sorted(out, key=lambda r: (-int(r.get("times") or 0), r["name"]))
+
+
+def _laneless(rows, minimum: int) -> list[dict]:
+    """Recurring laneless rows that are not attachments, as rank() drops them. #556."""
+    from harness import screen
+    return [r for r in rows
+            if not lane_of(r) and int(r.get("times") or 0) >= minimum
+            and not (r.get("attaches_to") or screen.is_attachment(r.get("name")))]
+
+
+def is_tool(row) -> bool:
+    """A GitHub repo with no model task: an engine or tool, not a model. #556."""
+    from harness.memory_store.schema import GITHUB
+    return row.get("registry") == GITHUB and not (row.get("hf_task") or "").strip()
+
+
+def tools_wanted(rows, minimum: int = 2) -> list[dict]:
+    """Recurring tooling repos: an engine entry is the decision, not a lane. #556."""
+    out = [r for r in _laneless(rows, minimum) if is_tool(r)]
+    return sorted(out, key=lambda r: (-int(r.get("times") or 0), r["name"]))
+
+
+#: Tasks with an objective reference-based metric, so a negative control can
+#: exist. Anything unlisted is unknown, not unmeasurable. #558.
+MEASURABLE = {"translation": "chrF", "ocr": "CER", "image-to-text": "CER",
+              "text-ranking": "recall@k", "text-retrieval": "recall@k",
+              "retrieval": "recall@k", "token-classification": "F1"}
+
+#: The group for a card that names no task anywhere. #558.
+NO_TASK = "(no task on the card)"
+
+_TASK_SUFFIXES = ("-classification", "-ranking", "-retrieval", "-detection",
+                  "-segmentation", "-extraction", "-similarity", "-answering",
+                  "-generation", "-estimation", "-forecasting")
+
+
+def metric_for(task: str) -> str:
+    return MEASURABLE.get(task, "")
+
+
+def _tags(row) -> list[str]:
+    import json
+    got = row.get("card_tags") or []
+    if isinstance(got, str):
+        try:
+            got = json.loads(got or "[]")
+        except ValueError:
+            got = []
+    return [str(t).strip().lower() for t in got if str(t).strip()]
+
+
+def task_of(row) -> str:
+    """The task a laneless row is about: OCR, its hf_task, else a task tag. #558."""
+    from harness import inspect as ins
+    tags = _tags(row)
+    if ins.is_ocr(tags):
+        return "ocr"
+    task = (row.get("hf_task") or "").strip().lower()
+    if task:
+        return task
+    for t in tags:
+        if t in MEASURABLE or "-to-" in t or t.endswith(_TASK_SUFFIXES) \
+                or t in ("translation", "summarization", "fill-mask"):
+            return t
+    return NO_TASK
+
+
+def wanted_groups(rows, *, ceiling_gib: float, minimum: int = 1) -> list[dict]:
+    """Laneless models grouped by task with the evidence for a lane. Decides
+    nothing: a lane is a person's decision. #558."""
+    groups: dict[str, list[dict]] = {}
+    for r in wanted(rows, minimum=minimum):
+        groups.setdefault(task_of(r), []).append(r)
+    out = []
+    for task, members in groups.items():
+        sizes = [int(m.get("size_bytes") or 0) / GIB for m in members]
+        sized = [s for s in sizes if s > 0]
+        fits = ("unknown" if not sized
+                else "yes" if any(s <= ceiling_gib for s in sized) else "no")
+        out.append({"task": task, "models": sorted(m["name"] for m in members),
+                    "publishers": sorted({m["name"].split("/")[0].lower()
+                                          for m in members}),
+                    "sightings": sum(int(m.get("times") or 0) for m in members),
+                    "fits": fits, "metric": metric_for(task)})
+    return sorted(out, key=lambda g: (-len(g["models"]), -g["sightings"], g["task"]))
 
 
 def runnerless(rows) -> list[dict]:
