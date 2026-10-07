@@ -860,6 +860,11 @@
   "created": "2026-10-07T02:55:16Z"
  },
  {
+  "number": 536,
+  "title": "The test suite runs the real llama-server --version on the machine it runs on",
+  "created": "2026-10-07T03:37:58Z"
+ },
+ {
   "number": 537,
   "title": "Flaky: proc instrument positive control fails when memory pressure pages out part of its 512 MiB array",
   "created": "2026-10-07T03:55:44Z"

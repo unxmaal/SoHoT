@@ -99,6 +99,7 @@ markers = [
     # they fail for different reasons and are fixed in different places.
     "postgres: needs a live Postgres; `make test-postgres` starts one",
     "litellm: runs a real LiteLLM proxy against a fake upstream; `make test-litellm`",
+    "real_runtime: may execute a real runtime binary (llama-server, mlx_lm.server, mflux, needle) (#536)",
 ]
 # The repo root, so `from evals...` resolves without a sys.path hack in every
 # test module.

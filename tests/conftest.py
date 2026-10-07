@@ -87,6 +87,56 @@ def _no_real_disk_sweep(monkeypatch):
     return calls
 
 
+#: Runtime binaries the suite must never execute on the machine it runs on. #536.
+RUNTIME_BINARIES = ("llama-server", "llama-cli", "mlx_lm.server", "needle")
+RUNTIME_PREFIXES = ("mflux-generate", "needle-")
+
+
+def runtime_binary(args) -> str:
+    """The runtime binary this argv would execute, or ""."""
+    import os
+    import shlex
+    if isinstance(args, (str, bytes)):
+        try:
+            args = shlex.split(os.fsdecode(args))
+        except ValueError:
+            args = os.fsdecode(args).split()
+    for word in list(args or [])[:4]:
+        name = os.path.basename(os.fsdecode(word))
+        if name in RUNTIME_BINARIES or name.startswith(RUNTIME_PREFIXES):
+            return name
+    return ""
+
+
+@pytest.fixture(autouse=True)
+def _no_real_runtime_probe(monkeypatch):
+    """machine.versions is cached per process, so whichever test calls it first ran the real probes. #536."""
+    from harness import machine, serving
+    monkeypatch.setattr(serving, "llamacpp_build", lambda binary="": "")
+    monkeypatch.setattr(machine, "_mflux_cli", lambda: "")
+
+
+@pytest.fixture(autouse=True)
+def _no_real_runtime(request, monkeypatch):
+    """No test executes a real runtime binary: it answers as absent and fails the test. #536."""
+    import subprocess
+    calls = []
+    real = subprocess.Popen
+
+    class Guarded(real):
+        def __init__(self, args, *a, **k):
+            name = runtime_binary(args)
+            if name:
+                calls.append(list(args) if not isinstance(args, (str, bytes)) else [args])
+                raise FileNotFoundError(2, "runtime binary refused under test", name)
+            super().__init__(args, *a, **k)
+
+    monkeypatch.setattr(subprocess, "Popen", Guarded)
+    yield calls
+    if calls and request.node.get_closest_marker("real_runtime") is None:
+        pytest.fail(f"executed a real runtime binary: {calls}", pytrace=False)
+
+
 def _rows_from(summary: dict) -> list[dict]:
     """Result rows whose summary is `summary`: n rows, constant time and metric."""
     rows = []
