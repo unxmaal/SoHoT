@@ -1,8 +1,8 @@
-table adoptions [('id', 'INTEGER', 0, None, 1), ('lane', 'TEXT', 1, None, 0), ('candidate_id', 'INTEGER', 1, None, 0), ('incumbent_id', 'INTEGER', 0, None, 0), ('run_id', 'INTEGER', 0, None, 0), ('verdict_id', 'INTEGER', 0, None, 0), ('machine_id', 'INTEGER', 0, None, 0), ('how', 'TEXT', 1, None, 0), ('adopted_at', 'REAL', 1, None, 0)]
+table adoptions [('id', 'INTEGER', 0, None, 1), ('lane', 'TEXT', 1, None, 0), ('candidate_id', 'INTEGER', 1, None, 0), ('incumbent_id', 'INTEGER', 0, None, 0), ('run_id', 'INTEGER', 0, None, 0), ('verdict_id', 'INTEGER', 0, None, 0), ('machine_id', 'INTEGER', 0, None, 0), ('how', 'TEXT', 1, None, 0), ('adopted_at', 'REAL', 1, None, 0), ('all_machines', 'INTEGER', 1, '0', 0), ('votes', 'INTEGER', 0, None, 0), ('agreement', 'REAL', 0, None, 0), ('forced', 'INTEGER', 1, '0', 0), ('cost', 'TEXT', 1, "'{}'", 0)]
   index ix_adoptions_lane unique=0 ['lane', 'adopted_at']
   index sqlite_autoindex_adoptions_1 unique=1 ['verdict_id']
-  (1, 'code', 1, None, 1, 14, 1, 'measured', 1789039200.0)
-  (2, 'svg', 11, None, None, 20, 4, 'by-hand', 1789824000.0)
+  (1, 'code', 1, None, 1, 14, 1, 'measured', 1789039200.0, 0, None, None, 0, '{}')
+  (2, 'svg', 11, None, None, 20, 4, 'by-hand', 1789824000.0, 0, None, None, 0, '{}')
 table benchmarks [('id', 'INTEGER', 0, None, 1), ('name', 'TEXT', 1, None, 0), ('lane', 'TEXT', 1, None, 0), ('registry', 'TEXT', 1, "''", 0), ('url', 'TEXT', 1, "''", 0), ('license', 'TEXT', 1, "''", 0), ('gated', 'TEXT', 1, "''", 0), ('created', 'TEXT', 1, "''", 0), ('updated', 'TEXT', 1, "''", 0), ('size', 'TEXT', 1, "''", 0), ('rows', 'INTEGER', 1, '0', 0), ('task_format', 'TEXT', 1, "''", 0), ('revision', 'TEXT', 1, "''", 0), ('likes', 'INTEGER', 1, '0', 0), ('downloads', 'INTEGER', 1, '0', 0), ('description', 'TEXT', 1, "''", 0), ('first_seen', 'REAL', 1, None, 0), ('last_seen', 'REAL', 1, None, 0)]
   index sqlite_autoindex_benchmarks_1 unique=1 ['name', 'lane']
 table candidate_training [('id', 'INTEGER', 0, None, 1), ('candidate', 'TEXT', 1, None, 0), ('alias', 'TEXT', 1, "''", 0), ('lane', 'TEXT', 1, "''", 0), ('cutoff', 'TEXT', 1, "''", 0), ('cutoff_source', 'TEXT', 1, "''", 0), ('datasets', 'TEXT', 1, "'[]'", 0), ('read_at', 'REAL', 1, None, 0)]
@@ -71,9 +71,9 @@ table memory_limits [('id', 'INTEGER', 0, None, 1), ('machine_id', 'INTEGER', 1,
   (1, 1, 1789898400.0, 6.5, 25.5, 'floor', '{"last_normal_gb": 25.5, "margin_gb": 6.5, "measured_at": "2026-09-20T10:00:00", "stopped": "floor"}')
 table meta [('key', 'TEXT', 0, None, 1), ('value', 'TEXT', 0, None, 0)]
   index sqlite_autoindex_meta_1 unique=1 ['key']
-  ('candidate_guesses', '[{"proposal": "org-k/harness-broke", "spec": "org-k/harness-broke", "tier": "screen", "verdict": 17}, {"proposal": "org-l/svg-thing", "spec": "org-l/svg-thing", "tier": "adopt", "verdict": 20}, {"proposal": "org-k/harness-broke", "spec": "org-k/harness-broke", "tier": "screen", "verdict": 21}]')
   ('artifact_split', '{}')
-  ('schema', '48')
+  ('candidate_guesses', '[{"proposal": "org-k/harness-broke", "spec": "org-k/harness-broke", "tier": "screen", "verdict": 17}, {"proposal": "org-l/svg-thing", "spec": "org-l/svg-thing", "tier": "adopt", "verdict": 20}, {"proposal": "org-k/harness-broke", "spec": "org-k/harness-broke", "tier": "screen", "verdict": 21}, {"adoption": 2, "from": "the adopt verdict/'s machine; no vote or judged run names one", "lane": "svg", "machine": 4, "proposal": "org-l/svg-thing", "spec": "org-l/svg-thing"}]')
+  ('schema', '49')
 table proposals [('id', 'INTEGER', 0, None, 1), ('name', 'TEXT', 1, None, 0), ('kind', 'TEXT', 1, "'candidate'", 0), ('registry', 'TEXT', 1, "''", 0), ('description', 'TEXT', 1, "''", 0), ('lane', 'TEXT', 1, "''", 0), ('resolved', 'TEXT', 1, "''", 0), ('first_seen', 'REAL', 1, None, 0), ('last_seen', 'REAL', 1, None, 0), ('state', 'TEXT', 1, "''", 0), ('state_verdict_id', 'INTEGER', 0, None, 0), ('retest_count', 'INTEGER', 1, '0', 0), ('next_retest_at', 'REAL', 0, None, 0), ('size_bytes', 'INTEGER', 1, '0', 0), ('hf_task', 'TEXT', 1, "''", 0), ('library', 'TEXT', 1, "''", 0), ('card_tags', 'TEXT', 1, "'[]'", 0), ('attaches_to', 'TEXT', 1, "''", 0), ('runtime_needed', 'TEXT', 1, "''", 0), ('lane_source', 'TEXT', 1, "''", 0), ('card_read', 'TEXT', 1, "''", 0)]
   index ix_prop_state unique=0 ['state']
   index sqlite_autoindex_proposals_1 unique=1 ['name']

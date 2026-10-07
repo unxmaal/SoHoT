@@ -211,14 +211,16 @@ def _lane(conn, mid: int, lane: str, held: dict, typed: dict, now: float) -> dic
 
 
 def _adoptions(conn, mid: int) -> list[dict]:
+    from harness import adopt
     rows = conn.execute(
-        "SELECT a.lane, a.how, a.adopted_at, c.spec, i.spec AS incumbent "
+        "SELECT a.*, c.spec, i.spec AS incumbent "
         "FROM adoptions a JOIN candidates c ON c.id = a.candidate_id "
         "LEFT JOIN candidates i ON i.id = a.incumbent_id "
-        "WHERE a.machine_id = ? OR a.how = 'by-hand' OR a.machine_id IS NULL "
+        "WHERE a.machine_id = ? OR a.all_machines = 1 OR a.machine_id IS NULL "
         "ORDER BY a.adopted_at, a.id", (mid,)).fetchall()
     return [{"lane": r["lane"], "candidate": r["spec"],
              "incumbent": r["incumbent"] or "", "how": r["how"],
+             "scope": adopt.describe(dict(r), mid),
              "adopted_at": _iso(r["adopted_at"])} for r in rows]
 
 

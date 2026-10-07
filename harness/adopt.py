@@ -23,16 +23,24 @@ it does today.
 """
 from __future__ import annotations
 
+import json
+import statistics
 from dataclasses import dataclass, field
 
 #: The tier that records an adoption. See memory_store.TIERS.
 TIER = "adopt"
 
-#: How an adoption was decided. A MEASURED win is a fact about the hardware
-#: that ran it and serves only there; a person's preference for a config is
-#: not, and serves on every machine. #412.
+#: How an adoption was decided. Either kind serves the machine it was made on;
+#: a by-hand one serves every machine only when adopted with --all-machines. #412, #485.
 MEASURED, BY_HAND = "measured", "by-hand"
 HOW = (MEASURED, BY_HAND)
+
+#: Fewer answers than this and a by-hand adoption needs --force. #485.
+MIN_VOTES = 10
+
+
+class Held(Exception):
+    """An adoption that was not written: too few votes, or it cannot fit here. Not a loss."""
 
 #: Below this the difference is not established and the incumbent stays. The
 #: exact McNemar test on discordant cells; see harness/paired.py.
@@ -51,6 +59,11 @@ class Verdict:
     failure_class: str = ""
     #: The split, the power plan and the dev comparison it rests on. #479.
     evidence: dict = field(default_factory=dict)
+    votes: int | None = None
+    agreement: float | None = None
+    forced: bool = False
+    all_machines: bool = False
+    held: str = ""
 
 
 def better(incumbent: dict, challenger: dict) -> bool:
@@ -65,7 +78,9 @@ def better(incumbent: dict, challenger: dict) -> bool:
 
 
 def decide_by_hand(lane: str, incumbent: str, challenger: str,
-                   pairs: list[dict]) -> Verdict:
+                   pairs: list[dict], *, force: bool = False,
+                   all_machines: bool = False, min_votes: int = MIN_VOTES,
+                   conn=None) -> Verdict:
     """The same closing step for a lane no program can score. Issue #279.
 
     The two statistical gates are replaced by ONE question a person already
@@ -83,7 +98,7 @@ def decide_by_hand(lane: str, incumbent: str, challenger: str,
     """
     from harness import human
 
-    won, why = human.lane_verdict(lane, pairs)
+    won, why = human.lane_verdict(lane, pairs, conn=conn)
     if won is None:
         return Verdict(lane, incumbent, challenger, False, f"not judged: {why}",
                        BY_HAND)
@@ -93,8 +108,16 @@ def decide_by_hand(lane: str, incumbent: str, challenger: str,
     if won != challenger:
         return Verdict(lane, incumbent, challenger, False,
                        f"the incumbent was preferred: {why}", BY_HAND)
+    votes, agree = human.vote_stats(lane, pairs, conn=conn)
+    short = votes < min_votes
+    if short and not force:
+        return Verdict(lane, incumbent, challenger, False, why, BY_HAND,
+                       votes=votes, agreement=agree, held=(
+                           f"held: {votes} votes, fewer than {min_votes}; "
+                           f"pass --force to adopt on them anyway"))
     return Verdict(lane, incumbent, challenger, True,
-                   f"preferred by hand: {why}", BY_HAND)
+                   f"preferred by hand: {why}", BY_HAND, votes=votes, agreement=agree,
+                   forced=short, all_machines=all_machines)
 
 
 def decide(lane: str, incumbent: dict, challenger: dict,
@@ -204,6 +227,8 @@ def record(conn, verdict: Verdict, spec: str = "",
     from harness import candidates
     from harness import memory_store as ms
 
+    if verdict.held:
+        raise Held(verdict.held)
     if is_reference(verdict.challenger) or is_reference(spec):
         verdict = Verdict(verdict.lane, verdict.incumbent, verdict.challenger,
                           False, f"reference model; never a lane default "
@@ -218,12 +243,15 @@ def record(conn, verdict: Verdict, spec: str = "",
                          f"adoption of it could never be served")
     row = candidates.get(conn, spec)
     from harness import reasons
+    if verdict.adopt and verdict.how == BY_HAND:
+        ok, why = fit(conn, cid, ms.remember_machine(conn))
+        if not ok:
+            raise Held(f"refused on this machine: {spec} {why}")
     vid = ms.decide(conn, row["proposal"] or "", outcome, tier=TIER,
                     detail=detail[:200], candidate_id=cid, run_id=run_id,
                     reason=(reasons.LIMIT if verdict.failure_class
                             == reasons.UNDERPOWERED else reasons.CANDIDATE))
     if verdict.failure_class or verdict.evidence:
-        import json
         conn.execute(
             "UPDATE verdicts SET failure_class = ?, split_version = ?, "
             "power = ? WHERE id = ?",
@@ -237,13 +265,16 @@ def record(conn, verdict: Verdict, spec: str = "",
             raise ValueError(f"unknown adoption kind {verdict.how!r}")
         mid = conn.execute("SELECT machine_id FROM verdicts WHERE id = ?",
                            (vid,)).fetchone()
+        mid = mid["machine_id"] if mid else None
+        inc = _incumbent_id(conn, verdict.lane, verdict.incumbent)
         conn.execute(
             "INSERT OR IGNORE INTO adoptions (lane, candidate_id, incumbent_id, "
-            "run_id, verdict_id, machine_id, how, adopted_at) "
-            "VALUES (?,?,?,?,?,?,?,?)",
-            (verdict.lane.strip().lower(), cid,
-             _incumbent_id(conn, verdict.lane, verdict.incumbent), run_id, vid,
-             mid["machine_id"] if mid else None, verdict.how, _now()))
+            "run_id, verdict_id, machine_id, how, adopted_at, all_machines, "
+            "votes, agreement, forced, cost) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            (verdict.lane.strip().lower(), cid, inc, run_id, vid, mid,
+             verdict.how, _now(), int(verdict.all_machines), verdict.votes,
+             verdict.agreement, int(verdict.forced),
+             json.dumps(cost(conn, cid, inc, mid), sort_keys=True)))
         conn.commit()
         from harness import gateway
         if verdict.lane.strip().lower() in gateway.TEXT_LANES:
@@ -289,28 +320,164 @@ def here(conn) -> tuple[int, ...]:
         return ()
 
 
-def current(conn, machine=HERE) -> dict[str, dict]:
-    """lane -> the adoption row a machine serves, with its spec.
+def _ids(conn, machine) -> tuple:
+    if machine is HERE:
+        return here(conn)
+    if isinstance(machine, (tuple, list, set)):
+        return tuple(machine)
+    return () if machine is None else (machine,)
 
-    The newest adoption for the lane that was measured on that machine or
-    decided by hand anywhere. One no machine is recorded for serves
-    everywhere, as every adoption did before #412. `machine` is HERE, a machine id, or a tuple of
-    ids. A reference model is never a lane default. #374, #412.
-    """
-    ids = here(conn) if machine is HERE else (
-        tuple(machine) if isinstance(machine, (tuple, list, set))
-        else (() if machine is None else (machine,)))
+
+def _resolve(conn, machine) -> tuple[dict[str, dict], dict[str, dict]]:
+    """(lane -> served row, lane -> newer by-hand row refused for not fitting)."""
+    ids = _ids(conn, machine)
     marks = ",".join("?" * len(ids)) or "NULL"
     rows = conn.execute(
         "SELECT a.*, c.spec FROM adoptions a "
         "JOIN candidates c ON c.id = a.candidate_id "
-        f"WHERE a.how = ? OR a.machine_id IS NULL "
+        "WHERE a.all_machines = 1 OR a.machine_id IS NULL "
         f"OR a.machine_id IN ({marks}) "
-        "ORDER BY a.adopted_at, a.id", (BY_HAND, *ids)).fetchall()
+        "ORDER BY a.adopted_at, a.id", ids).fetchall()
     out: dict[str, dict] = {}
+    refused: dict[str, dict] = {}
     for row in rows:
-        if not is_reference(row["spec"]):
-            out[row["lane"]] = dict(row)
+        if is_reference(row["spec"]):
+            continue
+        if row["how"] == BY_HAND:
+            ok, why = fit(conn, row["candidate_id"], ids[0] if ids else None)
+            if not ok:
+                refused[row["lane"]] = {**dict(row), "why": why}
+                continue
+        out[row["lane"]] = dict(row)
+        refused.pop(row["lane"], None)
+    return out, refused
+
+
+def current(conn, machine=HERE) -> dict[str, dict]:
+    """lane -> the adoption row a machine serves, with its spec.
+
+    The newest adoption for the lane made on that machine, or made with
+    --all-machines and fitting there. One no machine is recorded for serves
+    everywhere, as every adoption did before #412. `machine` is HERE, a machine
+    id, or a tuple of ids. A reference model is never a lane default. #374, #412, #485.
+    """
+    return _resolve(conn, machine)[0]
+
+
+def refused(conn, machine=HERE) -> list[dict]:
+    """By-hand adoptions this machine would serve but cannot fit, newest per lane. #485."""
+    return sorted(_resolve(conn, machine)[1].values(), key=lambda r: r["lane"])
+
+
+def _ceiling_gb(conn, machine_id) -> float:
+    if machine_id is not None:
+        row = conn.execute("SELECT ceiling_gb FROM machines WHERE id = ?",
+                           (machine_id,)).fetchone()
+        if row:
+            return float(row["ceiling_gb"] or 0)
+    from harness import memory_store as ms
+    return float(ms.this_machine().get("ceiling_gb") or 0)
+
+
+_GIB_KB = 1024 ** 2
+
+
+def fit(conn, candidate_id: int, machine_id) -> tuple[bool, str]:
+    """Whether a candidate fits a machine's memory ceiling, and the evidence. #485.
+
+    A passing stored run on the machine is proof it ran there, whatever its peak.
+    Else the largest measured peak anywhere, else the stored size; neither is
+    served but said.
+    """
+    ran = conn.execute(
+        "SELECT COUNT(*) AS n, MAX(x.peak_kb) AS p FROM results x "
+        "JOIN runs r ON r.id = x.run_id WHERE x.candidate_id = ? "
+        "AND r.machine_id = ? AND x.passed = 1",
+        (candidate_id, machine_id)).fetchone()
+    if ran["n"]:
+        return True, (f"ran here: {ran['n']} passing row(s), peak "
+                      f"{(ran['p'] or 0) / _GIB_KB:.1f} GiB")
+    peak = conn.execute(
+        "SELECT x.peak_kb AS p, r.machine_id AS m FROM results x "
+        "JOIN runs r ON r.id = x.run_id WHERE x.candidate_id = ? "
+        "AND x.peak_kb > 0 ORDER BY x.peak_kb DESC LIMIT 1",
+        (candidate_id,)).fetchone()
+    size = conn.execute(
+        "SELECT p.size_bytes AS b FROM candidates c JOIN proposals p "
+        "ON p.id = c.proposal_id WHERE c.id = ?", (candidate_id,)).fetchone()
+    if peak:
+        need = peak["p"] / _GIB_KB
+        source = f"measured peak {need:.1f} GiB (machine {peak['m']})"
+    elif size and size["b"]:
+        need = size["b"] / 1024 ** 3
+        source = f"stored size {need:.1f} GiB"
+    else:
+        return True, "size unknown: no stored size or measured peak, so not checked"
+    ceiling = _ceiling_gb(conn, machine_id)
+    if not ceiling:
+        return True, f"{source}; no memory ceiling recorded for this machine"
+    ok = need <= ceiling
+    return ok, (f"{source} {'fits' if ok else 'is over'} the "
+                f"{ceiling:.1f} GiB ceiling")
+
+
+def _measured(conn, candidate_id, machine_id) -> dict:
+    """Median seconds and peak GiB over a candidate's passing rows on one machine, and the row counts."""
+    if candidate_id is None:
+        return {"median_s": None, "peak_gb": None, "rows": 0, "passed": 0}
+    rows = conn.execute(
+        "SELECT x.seconds AS s, x.peak_kb AS p, x.passed AS ok FROM results x "
+        "JOIN runs r ON r.id = x.run_id WHERE x.candidate_id = ? "
+        "AND r.machine_id = ?", (candidate_id, machine_id)).fetchall()
+    ok = [r for r in rows if r["ok"]]
+    peak = max((r["p"] or 0 for r in ok), default=0) / _GIB_KB
+    return {"median_s": round(statistics.median(r["s"] for r in ok), 3) if ok else None,
+            "peak_gb": round(peak, 3) if peak else None,
+            "rows": len(rows), "passed": len(ok)}
+
+
+def cost(conn, candidate_id, incumbent_id, machine_id) -> dict:
+    """The new model's median latency and peak against the previous one's, on one machine."""
+    new = _measured(conn, candidate_id, machine_id)
+    old = _measured(conn, incumbent_id, machine_id)
+    return {"machine_id": machine_id, **new,
+            **{f"incumbent_{k}": v for k, v in old.items()}}
+
+
+def cost_text(cost: dict) -> str:
+    """One line for a cost dict, saying what is missing rather than guessing it."""
+    med, imed = cost.get("median_s"), cost.get("incumbent_median_s")
+    if med is None:
+        return "cost: no stored run of the new model on this machine"
+    out = f"cost: median {med:.1f}s"
+    out += (f" against {imed:.1f}s ({med / imed:.1f}x)" if imed
+            else " (no stored run of the previous model here)")
+    peak, ipeak = cost.get("peak_gb"), cost.get("incumbent_peak_gb")
+    if peak:
+        out += f", peak {peak:.1f} GiB" + (f" against {ipeak:.1f} GiB"
+                                           if ipeak else "")
+    if cost.get("rows"):
+        out += f"; {cost.get('passed', 0)} of {cost['rows']} rows passed here"
+    return out
+
+
+def describe(row: dict, machine_id=None) -> str:
+    """How an adoption was made and where it serves, for report and judge. #485."""
+    if row.get("all_machines"):
+        scope = "all machines"
+    elif row.get("machine_id") is None:
+        scope = "every machine (recorded before scoping)"
+    elif row["machine_id"] == machine_id:
+        scope = "this machine only"
+    else:
+        scope = f"machine {row['machine_id']} only"
+    out = f"{row.get('how') or MEASURED}, {scope}"
+    if row.get("votes") is not None:
+        out += f", {row['votes']} votes"
+        if row.get("agreement") is not None:
+            out += f", agreement {row['agreement']:.2f}"
+    if row.get("forced"):
+        out += ", forced"
     return out
 
 

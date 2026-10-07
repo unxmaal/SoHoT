@@ -26,7 +26,8 @@ def _judged_run(tmp_path, monkeypatch, specs):
     monkeypatch.setattr(human, "pairings", lambda receipt, *a, **k: pairs)
     monkeypatch.setattr(human, "decided", lambda *a: names[1])
     monkeypatch.setattr(human, "lane_verdict",
-                        lambda lane, p: (names[1], "preferred 1-0"))
+                        lambda lane, p, **k: (names[1], "preferred 1-0"))
+    monkeypatch.setattr(human, "vote_stats", lambda *a, **k: (12, 1.0))
     monkeypatch.setattr(judge_server, "serve", lambda *a, **kw: None)
     monkeypatch.setattr(adopt, "default_for", lambda lane, fb, conn=None:
                         INCUMBENT)

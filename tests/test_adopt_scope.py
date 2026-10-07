@@ -86,20 +86,20 @@ def test_a_global_adoption_that_cannot_fit_a_machine_is_refused_there(conn, on):
 def test_a_refused_global_adoption_falls_back_to_the_previous_one(conn, on):
     _run(conn, STUDIO, "mflux:dev", 15.0, 30.0)
     on(M2)
-    adopt.record(conn, adopt.Verdict("image", "typed", "mflux:klein", True, "won"))
+    adopt.record(conn, adopt.Verdict("image", "typed", "mflux:flux2-klein-4b", True, "won"))
     on(STUDIO)
     _by_hand(conn, "image", "mflux:dev", all_machines=True)
     on(M2)
-    assert adopt.adopted(conn) == {"image": "mflux:klein"}
+    assert adopt.adopted(conn) == {"image": "mflux:flux2-klein-4b"}
 
 
 def test_a_stored_size_over_the_ceiling_is_refused(conn, on):
     conn.execute("INSERT INTO proposals (name, lane, first_seen, last_seen) "
                  "VALUES ('org/huge', 'image', 1.0, 1.0)")
-    candidates.ensure(conn, "mflux:org/huge", proposal="org/huge", lane="image")
+    candidates.ensure(conn, "diffusers:org/huge", proposal="org/huge", lane="image")
     conn.execute("UPDATE proposals SET size_bytes = ? WHERE name = 'org/huge'",
                  (40 * 1024 ** 3,))
-    _by_hand(conn, "image", "mflux:org/huge", all_machines=True)
+    _by_hand(conn, "image", "diffusers:org/huge", all_machines=True)
     on(M2)
     ms.remember_machine(conn)
     assert adopt.adopted(conn) == {}
@@ -123,13 +123,13 @@ def test_a_model_that_cannot_fit_here_is_never_adopted_here(conn, on):
 
 
 def test_an_unknown_size_is_served_but_said(conn, on):
-    _by_hand(conn, "image", "mflux:mystery", all_machines=True)
+    _by_hand(conn, "image", "diffusers:org/mystery", all_machines=True)
     on(M2)
     ms.remember_machine(conn)
-    ok, why = adopt.fit(conn, candidates.get(conn, "mflux:mystery")["id"],
+    ok, why = adopt.fit(conn, candidates.get(conn, "diffusers:org/mystery")["id"],
                         ms.machine_row(conn))
     assert ok and "unknown" in why
-    assert adopt.adopted(conn) == {"image": "mflux:mystery"}
+    assert adopt.adopted(conn) == {"image": "diffusers:org/mystery"}
 
 
 def _pairs(conn, lane, a, b, cases, answers):
@@ -182,9 +182,9 @@ def test_the_minimum_is_a_parameter(conn):
 
 
 def test_the_cost_delta_against_the_previous_adoption_is_recorded(conn):
-    _run(conn, STUDIO, "mflux:klein", 3.0, 15.0)
+    _run(conn, STUDIO, "mflux:flux2-klein-4b", 3.0, 15.0)
     _run(conn, STUDIO, "mflux:dev", 15.0, 20.5)
-    _by_hand(conn, "image", "mflux:dev", incumbent="mflux:klein")
+    _by_hand(conn, "image", "mflux:dev", incumbent="mflux:flux2-klein-4b")
     row = conn.execute("SELECT cost FROM adoptions").fetchone()
     cost = json.loads(row["cost"])
     assert cost["median_s"] == 15.0 and cost["incumbent_median_s"] == 3.0
@@ -194,9 +194,24 @@ def test_the_cost_delta_against_the_previous_adoption_is_recorded(conn):
     assert "5.0x" in text and "20.5 GiB" in text
 
 
+def test_the_cost_says_how_many_passing_rows_each_median_rests_on(conn):
+    _run(conn, STUDIO, "mflux:flux2-klein-4b", 3.0, 15.0)
+    _run(conn, STUDIO, "mflux:dev", 15.0, 20.5)
+    _run(conn, STUDIO, "mflux:dev", 99.0, 20.5, passed=False)
+    _by_hand(conn, "image", "mflux:dev", incumbent="mflux:flux2-klein-4b")
+    cost = json.loads(conn.execute("SELECT cost FROM adoptions").fetchone()[0])
+    assert (cost["rows"], cost["passed"]) == (2, 1)
+    assert (cost["incumbent_rows"], cost["incumbent_passed"]) == (1, 1)
+    assert "1 of 2 rows passed" in adopt.cost_text(cost)
+
+
+def test_no_votes_is_zero_with_no_agreement(conn):
+    assert human.vote_stats("image", [], conn=conn) == (0, None)
+
+
 def test_the_cost_reads_only_this_machines_runs(conn, on):
     _run(conn, M2, "mflux:dev", 99.0, 20.0)
-    _by_hand(conn, "image", "mflux:dev", incumbent="mflux:klein")
+    _by_hand(conn, "image", "mflux:dev", incumbent="mflux:flux2-klein-4b")
     cost = json.loads(conn.execute("SELECT cost FROM adoptions").fetchone()[0])
     assert cost.get("median_s") is None
     assert "no stored run" in adopt.cost_text(cost)
@@ -218,14 +233,14 @@ def test_a_measured_adoption_is_not_gated_on_votes(conn):
 
 
 def _legacy_store(path, on):
-    """A store about to be stamped back to schema 45."""
+    """A store about to be stamped back to schema 48."""
     on(M2)
     c = ms.connect(path)
     return c, ms.remember_machine(c, M2), ms.remember_machine(c, STUDIO)
 
 
-def _to_45(c):
-    c.execute("UPDATE meta SET value = '45' WHERE key = 'schema'")
+def _to_48(c):
+    c.execute("UPDATE meta SET value = '48' WHERE key = 'schema'")
     c.commit()
     c.close()
 
@@ -257,7 +272,7 @@ def test_the_migration_scopes_a_by_hand_adoption_to_the_machine_that_voted(
     key = _legacy_adoption(c, "image", "mflux:dev", machine=m2)
     for case in ("c1", "c2", "c3"):
         _vote(c, "image", "r1", key, "mflux/klein", studio, case=case)
-    _to_45(c)
+    _to_48(c)
     c = ms.connect(path)
     row = dict(c.execute("SELECT * FROM adoptions").fetchone())
     assert row["machine_id"] == studio and row["all_machines"] == 0
@@ -278,7 +293,7 @@ def test_the_migration_falls_back_to_the_judged_runs_machine(tmp_path, on):
     c.execute("INSERT INTO runs (path, lane, machine_id, recorded_at) "
               "VALUES ('r1', 'image', ?, 1.0)", (studio,))
     _vote(c, "image", "r1", key, "mflux/klein", None)
-    _to_45(c)
+    _to_48(c)
     c = ms.connect(path)
     assert c.execute("SELECT machine_id FROM adoptions").fetchone()[0] == studio
     c.close()
@@ -292,7 +307,7 @@ def test_the_migration_records_a_guess_when_nothing_names_the_machine(
               (json.dumps([{"verdict": 1}]),))
     key = _legacy_adoption(c, "music", "acestep:steps8", machine=m2)
     _vote(c, "music", "", key, "acestep:steps16", None, n=12)
-    _to_45(c)
+    _to_48(c)
     c = ms.connect(path)
     assert c.execute("SELECT machine_id FROM adoptions").fetchone()[0] == m2
     guesses = json.loads(c.execute("SELECT value FROM meta WHERE key = "
@@ -300,7 +315,7 @@ def test_the_migration_records_a_guess_when_nothing_names_the_machine(
     assert guesses[0] == {"verdict": 1}
     assert guesses[1]["adoption"] == 1 and guesses[1]["machine"] == m2
     assert guesses[1]["lane"] == "music"
-    c.execute("UPDATE meta SET value = '45' WHERE key = 'schema'")
+    c.execute("UPDATE meta SET value = '48' WHERE key = 'schema'")
     c.commit()
     c.close()
     c = ms.connect(path)
@@ -316,7 +331,7 @@ def test_the_migration_leaves_measured_adoptions_alone(tmp_path, on):
     cid = candidates.ensure(c, "llamacpp:x", lane="code")
     c.execute("INSERT INTO adoptions (lane, candidate_id, machine_id, how, "
               "adopted_at) VALUES ('code', ?, ?, 'measured', 1.0)", (cid, studio))
-    _to_45(c)
+    _to_48(c)
     c = ms.connect(path)
     row = c.execute("SELECT machine_id, votes FROM adoptions").fetchone()
     assert (row["machine_id"], row["votes"]) == (studio, None)
