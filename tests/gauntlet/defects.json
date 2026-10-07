@@ -833,5 +833,20 @@
   "number": 516,
   "title": "runs.backfill (schema 27) seeds candidates from today's platform defaults, not from the runs it imports",
   "created": "2026-10-07T01:28:24Z"
+ },
+ {
+  "number": 517,
+  "title": "Tests patch evals.run.capture, but memory_store.this_machine() calls evals.environment.capture, so 'this machine' is still the real one",
+  "created": "2026-10-07T01:46:19Z"
+ },
+ {
+  "number": 518,
+  "title": "Patching evals.runners.base.score misses evals.core.score and evals.runners.repair.score",
+  "created": "2026-10-07T01:46:20Z"
+ },
+ {
+  "number": 519,
+  "title": "Patching evals.runners.chain.stage_unavailable misses harness.discover's own binding",
+  "created": "2026-10-07T01:46:21Z"
  }
 ]

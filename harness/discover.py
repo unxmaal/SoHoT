@@ -41,9 +41,8 @@ from dataclasses import dataclass, field
 
 from pathlib import Path
 
-from harness import lanes, paths
-from harness.stages import (ENTRY_POINT_STAGES, STAGE_ENTRY_POINTS,
-                            stage_unavailable)
+from harness import lanes, paths, stages
+from harness.stages import ENTRY_POINT_STAGES, STAGE_ENTRY_POINTS
 
 REPO = Path(__file__).resolve().parent.parent
 
@@ -130,7 +129,7 @@ def image_engines(bindir: Path | None = None) -> list[Capability]:
             # Three of these have a runner; the rest are still gaps.
             stage = ENTRY_POINT_STAGES.get(n)
             if stage:
-                broken = stage_unavailable(stage)
+                broken = stages.stage_unavailable(stage)
                 out.append(Capability(
                     "workflow", n, "image", str(bindir),
                     f"uv run python -m evals.run --modality image "
@@ -244,7 +243,7 @@ def methods() -> list[Capability]:
                    note="svg 6/9 -> 9/9 at --repeat 3, mean ~1.4 attempts"),
     ]
     for stage in sorted(STAGE_ENTRY_POINTS):
-        broken = stage_unavailable(stage)
+        broken = stages.stage_unavailable(stage)
         out.append(Capability(
             "method", stage, "image", "evals/runners/chain.py",
             f"--candidates {stage}:mflux:flux2-klein-4b --modality image",

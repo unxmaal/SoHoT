@@ -33,7 +33,7 @@ from evals.core import (AGENT_MODALITIES, MODALITIES, TEXT_MODALITIES,
                         TEXT_SUFFIX, Case,
                         Receipt, cases_digest, comparable, direction_of,
                         load_cases, summarize)
-from evals.environment import capture
+from evals import environment
 from evals.runners.base import RunnerError
 from evals.runners.process import ProcessRunner
 from evals.runners.chain import ChainRunner
@@ -745,7 +745,7 @@ def _execute(args) -> int:
             r.candidate_id = ids.get(r.candidate)
         payload = {"generated": time.strftime("%Y-%m-%dT%H:%M:%S",
                                               time.localtime(now)),
-                   "environment": capture(),
+                   "environment": environment.capture(),
                    "receipt": receipt.as_dict(),
                    # A name is a label and can drop the repo org; the spec
                    # runs. #337.
@@ -833,8 +833,7 @@ FREE_PCT_WARN = 25
 def swap_used_mb() -> int:
     """Swap in use, or 0 if it cannot be told. Descriptive only. #283."""
     try:
-        from evals.environment import capture
-        return int(capture().get("swap_used_mb") or 0)
+        return int(environment.capture().get("swap_used_mb") or 0)
     except Exception:  # noqa: BLE001 - a receipt must not fail a finished run
         return 0
 

@@ -10,8 +10,8 @@ import pytest
 import layout_scan as ls
 
 WATCHED = ("harness.cli", "harness.memory_store")
-#: Patches on these must reach every reader, since their code moves between modules.
-STRICT = ("harness.cli", "harness.memory_store", "harness.commands")
+#: A patch on any of these must reach every reader of the name, not one of its copies. #517-#519.
+STRICT = ("harness", "evals", "gateway")
 BUDGET = 1500
 #: Modules allowed over BUDGET, each with the reason it is not split yet.
 OVER_BUDGET: dict = {}
