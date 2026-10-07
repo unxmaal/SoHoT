@@ -1193,7 +1193,8 @@ the home. It exits 1 and names every process that still has a file open there,
 so do not eject until it says it is safe. `start` refuses while the volume is
 not mounted, loads exactly what `stop` stopped, and resumes the queue only if
 it was running before. Both default to the volume holding `HF_HOME`; `--path`
-names another.
+names another. `soh volume` is macOS only, because it drives launchd and
+`lsof`, and refuses on Linux and Windows; `soh disk speed` runs everywhere.
 
 `soh disk speed [path]` writes a scratch file on the volume and reads it back
 sequentially with the page cache off (`F_NOCACHE` on macOS), so no `purge` or
