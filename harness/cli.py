@@ -463,6 +463,11 @@ def build_parser() -> argparse.ArgumentParser:
     bch.add_argument("--limit", type=int, default=0, help="with --probe, at most this many cases")
     bch.add_argument("--gateway", default=completion.DEFAULT_GATEWAY)
     bch.set_defaults(func=benchmarks_cmd.cmd_benchmarks)
+    aud = sub.add_parser("audit", help="check the live store and what the gateway serves, "
+                         "read-only; run after every deploy and nightly. #492")
+    aud.add_argument("path", nargs="?", default="",
+                     help="the store to audit (default: this home's discovery.db)")
+    aud.set_defaults(func=store_cmd.cmd_audit)
     jobs = sub.add_parser("jobs", help="the work queue: runs in order while "
                           "nobody is using this machine")
     jobs.add_argument("action", choices=("add", "list", "pause", "resume",

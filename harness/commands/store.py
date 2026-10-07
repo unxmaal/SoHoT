@@ -22,6 +22,20 @@ def cmd_store(a) -> int:
     return 0 if got["ok"] else 1
 
 
+def cmd_audit(a) -> int:
+    """The store's invariants and what the gateway serves, on the live store, read-only. #492."""
+    import sqlite3
+
+    from harness import live_audit
+    try:
+        got = live_audit.audit(Path(a.path) if a.path else None)
+    except (OSError, sqlite3.Error, RuntimeError) as exc:
+        return err(f"audit failed: {exc}")
+    note(live_audit.report_text(got))
+    emit(ok=got["ok"], **{k: v for k, v in got.items() if k != "ok"})
+    return 0 if got["ok"] else 1
+
+
 def cmd_memory(a) -> int:
     """How far this machine's memory goes before macOS pushes back. #299."""
     from harness import memory_store as ms, ramp

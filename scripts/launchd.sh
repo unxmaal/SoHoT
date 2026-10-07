@@ -23,13 +23,14 @@ SRC="${LH_REPO:-$REPO}"
 DEPLOY="${LH_DEPLOY:-$LH_HOME/deploy}"
 # `discover` is not a server. It is the scheduled sweep, and it is in this
 # list because the thing that must survive a reboot is the SCHEDULE. #261.
-SERVICES="gateway mlx eval tts mcp discover worker"
+SERVICES="gateway mlx eval tts mcp discover worker audit"
 
 #: Services that RUN AND EXIT rather than serve, with how often to run them.
 #: KeepAlive on one of these restarts a finished sweep at once and the machine
 #: discovers in a tight loop; StartInterval is the right key.
-declare -a PERIODIC=(discover)
+declare -a PERIODIC=(discover audit)
 DISCOVER_INTERVAL="${DISCOVER_INTERVAL:-21600}"   # six hours
+AUDIT_INTERVAL="${AUDIT_INTERVAL:-86400}"         # nightly, #492
 
 # launchd starts jobs with PATH=/usr/bin:/bin:/usr/sbin:/sbin and NOTHING else.
 # uv, ffmpeg, rsvg-convert and rec all live in /opt/homebrew/bin, so without
@@ -76,8 +77,9 @@ _schedule() {
   for p in "${PERIODIC[@]}"; do
     if [ "$p" = "$service" ]; then
       # No RunAtLoad: an install is not a schedule tick (#328).
-      printf '  <key>StartInterval</key><integer>%s</integer>\n' \
-        "$DISCOVER_INTERVAL"
+      local every="$DISCOVER_INTERVAL"
+      [ "$service" = audit ] && every="$AUDIT_INTERVAL"
+      printf '  <key>StartInterval</key><integer>%s</integer>\n' "$every"
       return
     fi
   done
@@ -236,6 +238,11 @@ install_units() {
     echo >&2
     echo "not loaded:$failed -- the rest are running, so this machine is" >&2
     echo "part old and part new. Re-run install." >&2
+    return 1
+  fi
+  # The deploy is not done until the store it now serves passes the audit. #492.
+  if ! /bin/bash "$DEPLOY/scripts/serve-audit.sh"; then
+    echo "the deployed units are loaded but the live store FAILS its audit; see above" >&2
     return 1
   fi
   echo

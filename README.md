@@ -1003,6 +1003,15 @@ It migrates a read-only copy of that machine's store with this checkout's code,
 checks the invariants CI checks on the golden stores in `tests/golden/`, and
 exits 1 if any fails; the live store is never opened for writing.
 
+After a deploy, `install` runs `soh audit` from the deploy checkout, and the
+`audit` agent runs it again every night. It opens the live store read-only
+(SQLite `mode=ro`, so it can neither migrate nor write), runs the same
+invariants, and adds four about serving: every adoption has a passing run on
+this machine, no lane serves a reference model, each `sohot-<lane>` alias in
+the served config is the adoption, and no alias's requests through the gateway
+fail more than the threshold in `harness/live_audit.py`. A failure exits 1 and
+names the rows.
+
 **Run `probe` first, always.** macOS TCC denies `/Volumes` to launchd jobs, and
 the failure is horrible unprepared: the volume stats fine, reports free space and
 appears in `/Volumes`, so nothing looks wrong until mlx_lm hangs forever inside

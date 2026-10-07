@@ -1,7 +1,9 @@
 """Opening the store: the path, the pragmas, the live-store guard (#455), then the migration chain."""
 from __future__ import annotations
 
+from contextlib import contextmanager
 from pathlib import Path
+from threading import local as _thread_local
 import os
 import sqlite3
 
@@ -16,6 +18,30 @@ from harness.memory_store.schema import SCHEMA_VERSION, _DDL
 BUSY_TIMEOUT_SECONDS = 30.0
 
 
+#: A read-only connection lent to this thread; while one is, nothing here may migrate. #492.
+_LENT = _thread_local()
+
+
+class ReadOnlyStore(RuntimeError):
+    """A migrating connect() was asked for while a read-only connection is lent."""
+
+
+def lent():
+    """The read-only connection lent to this thread, or None."""
+    return getattr(_LENT, "conn", None)
+
+
+@contextmanager
+def lend(conn):
+    """Every reader that would open the store uses `conn` instead, and connect() refuses."""
+    was = lent()
+    _LENT.conn = conn
+    try:
+        yield conn
+    finally:
+        _LENT.conn = was
+
+
 def db_path() -> Path:
     return paths.home() / "discovery.db"
 
@@ -27,6 +53,9 @@ def connect(path: Path | None = None):
     must keep working with no cluster at all -- a discovery engine that only
     runs in Kubernetes is a worse tool than the one that already exists.
     """
+    if lent() is not None:
+        raise ReadOnlyStore("a read-only connection is lent to this thread; opening the store "
+                            "here would migrate it, so the reader must take the lent one")
     if store.backend() == store.POSTGRES:
         _refuse_reentry(None)
         conn = store.postgres_connect()
