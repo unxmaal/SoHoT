@@ -1,0 +1,284 @@
+[
+ {
+  "id": "a-fact-about-the-harness-recorded-as-a-verdict-on-the-subject",
+  "heading": "A fact about the harness recorded as a verdict on the subject",
+  "source": "SKILL.md",
+  "tier": 2
+ },
+ {
+  "id": "one-question-two-answers",
+  "heading": "One question, two answers",
+  "source": "SKILL.md",
+  "tier": 1
+ },
+ {
+  "id": "a-platform-primitive-assumed-universal",
+  "heading": "A platform primitive assumed universal",
+  "source": "SKILL.md",
+  "tier": 1
+ },
+ {
+  "id": "each-half-verified-against-its-own-spec-the-seam-against-nothing",
+  "heading": "Each half verified against its own spec, the seam against nothing",
+  "source": "SKILL.md",
+  "tier": 2
+ },
+ {
+  "id": "a-metric-quoted-without-a-negative-control",
+  "heading": "A metric quoted without a negative control",
+  "source": "SKILL.md",
+  "tier": 2
+ },
+ {
+  "id": "a-number-without-its-configuration",
+  "heading": "A number without its configuration",
+  "source": "SKILL.md",
+  "tier": 1
+ },
+ {
+  "id": "a-part-s-cost-reported-as-the-whole-s",
+  "heading": "A part's cost reported as the whole's",
+  "source": "SKILL.md",
+  "tier": 1
+ },
+ {
+  "id": "a-check-whose-input-differs-between-the-desk-and-ci",
+  "heading": "A check whose input differs between the desk and CI",
+  "source": "SKILL.md",
+  "tier": 1
+ },
+ {
+  "id": "a-format-assumed-to-generalise",
+  "heading": "A format assumed to generalise",
+  "source": "SKILL.md",
+  "tier": 3
+ },
+ {
+  "id": "a-confounded-experiment-the-label-is-not-the-run",
+  "heading": "A confounded experiment: the label is not the run",
+  "source": "SKILL.md",
+  "tier": 2
+ },
+ {
+  "id": "external-state-with-no-assertion-on-it",
+  "heading": "External state with no assertion on it",
+  "source": "SKILL.md",
+  "tier": 1
+ },
+ {
+  "id": "a-statistic-blind-to-the-effect-under-test",
+  "heading": "A statistic blind to the effect under test",
+  "source": "SKILL.md",
+  "tier": 3
+ },
+ {
+  "id": "identity-by-name-not-by-content",
+  "heading": "Identity by name, not by content",
+  "source": "SKILL.md",
+  "tier": 2
+ },
+ {
+  "id": "a-failure-mode-inferred-not-observed",
+  "heading": "A failure mode inferred, not observed",
+  "source": "SKILL.md",
+  "tier": 2
+ },
+ {
+  "id": "a-reference-that-no-longer-resolves",
+  "heading": "A reference that no longer resolves",
+  "source": "SKILL.md",
+  "tier": 1
+ },
+ {
+  "id": "silent-truncation-or-a-partial-read-assumed-complete",
+  "heading": "Silent truncation, or a partial read assumed complete",
+  "source": "SKILL.md",
+  "tier": 2
+ },
+ {
+  "id": "a-consumer-limits-before-it-filters-for-what-it-can-act-on",
+  "heading": "A consumer limits before it filters for what it can act on",
+  "source": "SKILL.md",
+  "tier": 2
+ },
+ {
+  "id": "one-column-two-meanings",
+  "heading": "One column, two meanings",
+  "source": "SKILL.md",
+  "tier": 2
+ },
+ {
+  "id": "a-shared-fixed-resource-in-tests",
+  "heading": "A shared fixed resource in tests",
+  "source": "SKILL.md",
+  "tier": 1
+ },
+ {
+  "id": "a-fake-that-does-not-model-the-real-process-s-environment",
+  "heading": "A fake that does not model the real process's environment",
+  "source": "SKILL.md",
+  "tier": 1
+ },
+ {
+  "id": "a-transport-change-that-silently-changes-the-payload",
+  "heading": "A transport change that silently changes the payload",
+  "source": "SKILL.md",
+  "tier": 2
+ },
+ {
+  "id": "boundary-and-fencepost",
+  "heading": "1. Boundary and fencepost",
+  "source": "general-corpus.md",
+  "tier": 2
+ },
+ {
+  "id": "the-empty-collection",
+  "heading": "2. The empty collection",
+  "source": "general-corpus.md",
+  "tier": 2
+ },
+ {
+  "id": "an-error-swallowed",
+  "heading": "3. An error swallowed",
+  "source": "general-corpus.md",
+  "tier": 1
+ },
+ {
+  "id": "success-assumed-exit-status-unchecked",
+  "heading": "4. Success assumed: exit status unchecked",
+  "source": "general-corpus.md",
+  "tier": 1
+ },
+ {
+  "id": "partial-failure-leaves-inconsistent-state",
+  "heading": "5. Partial failure leaves inconsistent state",
+  "source": "general-corpus.md",
+  "tier": 2
+ },
+ {
+  "id": "float-equality-and-money-in-floats",
+  "heading": "6. Float equality and money in floats",
+  "source": "general-corpus.md",
+  "tier": 1
+ },
+ {
+  "id": "integer-division-and-silent-truncation",
+  "heading": "7. Integer division and silent truncation",
+  "source": "general-corpus.md",
+  "tier": 2
+ },
+ {
+  "id": "order-assumed-on-unordered-data",
+  "heading": "8. Order assumed on unordered data",
+  "source": "general-corpus.md",
+  "tier": 2
+ },
+ {
+  "id": "timezone-naive-or-dst-blind-datetime",
+  "heading": "9. Timezone-naive or DST-blind datetime",
+  "source": "general-corpus.md",
+  "tier": 2
+ },
+ {
+  "id": "encoding-assumed",
+  "heading": "10. Encoding assumed",
+  "source": "general-corpus.md",
+  "tier": 1
+ },
+ {
+  "id": "word-splitting-and-unquoted-expansion",
+  "heading": "11. Word-splitting and unquoted expansion",
+  "source": "general-corpus.md",
+  "tier": 1
+ },
+ {
+  "id": "external-input-trusted",
+  "heading": "12. External input trusted",
+  "source": "general-corpus.md",
+  "tier": 2
+ },
+ {
+  "id": "toctou-check-then-act",
+  "heading": "13. TOCTOU: check then act",
+  "source": "general-corpus.md",
+  "tier": 2
+ },
+ {
+  "id": "non-idempotent-retry",
+  "heading": "14. Non-idempotent retry",
+  "source": "general-corpus.md",
+  "tier": 2
+ },
+ {
+  "id": "resource-leak-on-the-error-path",
+  "heading": "15. Resource leak on the error path",
+  "source": "general-corpus.md",
+  "tier": 2
+ },
+ {
+  "id": "mutable-shared-or-default-state",
+  "heading": "16. Mutable shared or default state",
+  "source": "general-corpus.md",
+  "tier": 1
+ },
+ {
+  "id": "empty-versus-absent-conflated",
+  "heading": "17. Empty versus absent conflated",
+  "source": "general-corpus.md",
+  "tier": 2
+ },
+ {
+  "id": "comparison-on-the-wrong-type",
+  "heading": "18. Comparison on the wrong type",
+  "source": "general-corpus.md",
+  "tier": 2
+ },
+ {
+  "id": "regex-over-or-under-matching",
+  "heading": "19. Regex over- or under-matching",
+  "source": "general-corpus.md",
+  "tier": 2
+ },
+ {
+  "id": "rounding-direction-and-parts-of-a-whole",
+  "heading": "20. Rounding direction and parts of a whole",
+  "source": "general-corpus.md",
+  "tier": 2
+ },
+ {
+  "id": "non-atomic-read-modify-write",
+  "heading": "21. Non-atomic read-modify-write",
+  "source": "general-corpus.md",
+  "tier": 2
+ },
+ {
+  "id": "flaky-by-time-or-randomness",
+  "heading": "22. Flaky by time or randomness",
+  "source": "general-corpus.md",
+  "tier": 2
+ },
+ {
+  "id": "assuming-a-single-result",
+  "heading": "23. Assuming a single result",
+  "source": "general-corpus.md",
+  "tier": 2
+ },
+ {
+  "id": "cwd-or-script-location-path-assumption",
+  "heading": "24. CWD or script-location path assumption",
+  "source": "general-corpus.md",
+  "tier": 2
+ },
+ {
+  "id": "cleanup-missing-on-failure",
+  "heading": "25. Cleanup missing on failure",
+  "source": "general-corpus.md",
+  "tier": 2
+ },
+ {
+  "id": "boolean-config-and-env-parsing",
+  "heading": "26. Boolean config and env parsing",
+  "source": "general-corpus.md",
+  "tier": 2
+ }
+]
