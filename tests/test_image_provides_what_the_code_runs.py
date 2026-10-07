@@ -28,7 +28,8 @@ DOCKERFILE = REPO / "Dockerfile"
 #: image, so scanning every module would make this an inventory rather than a
 #: gate. These are the modules the chart's workloads actually execute.
 SCANNED = ("harness/github.py", "harness/inspect.py", "harness/feeds.py",
-           "harness/fetching.py", "harness/memory_store.py", "harness/store.py")
+           "harness/fetching.py", "harness/store.py") + tuple(
+    p.relative_to(REPO).as_posix() for p in sorted((REPO / "harness" / "memory_store").rglob("*.py")))
 
 #: Present in any POSIX image; asserting them would be noise.
 ASSUMED = {"sh", "env", "python", "python3"}

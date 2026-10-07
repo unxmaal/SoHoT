@@ -89,7 +89,7 @@ def test_no_check_uses_the_unmaintained_swaps_counter():
     """`/usr/bin/time -l` prints `swaps` and macOS never sets it, so a guard
     built on it fires never. #283."""
     offenders = []
-    for path in sorted(ROOT.glob("harness/*.py")) + sorted(ROOT.glob("evals/*.py")):
+    for path in sorted(ROOT.glob("harness/**/*.py")) + sorted(ROOT.glob("evals/*.py")):
         text = path.read_text(encoding="utf-8")
         for line in text.splitlines():
             if re.search(r'"swaps"|\bswaps\b\s*[><=]', line) and \

@@ -27,7 +27,7 @@ def facts(hw="Mac17,15", os_=UV_PY, arch="arm64", **kw):
 @pytest.fixture
 def on(monkeypatch):
     def be(f):
-        monkeypatch.setattr(ms, "_THIS_MACHINE", dict(f))
+        monkeypatch.setattr(ms.machines, "_THIS_MACHINE", dict(f))
     be(facts())
     return be
 

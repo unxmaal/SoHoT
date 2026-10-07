@@ -5,7 +5,7 @@ The discovery store is SQLite on a laptop and Postgres in a cluster, decided
 depends on the filesystem honouring it, which is exactly what a ReadWriteMany
 claim does not promise.
 
-WHAT THIS IS NOT: a second copy of the SQL. `harness/memory_store.py` holds 33
+WHAT THIS IS NOT: a second copy of the SQL. `harness/memory_store/` holds 33
 statements and they stay there, in one dialect. This module translates that
 dialect and derives the Postgres schema from the SQLite one, so the two
 backends cannot drift apart in the way two hand-written schemas always do.
@@ -150,7 +150,7 @@ _PLAIN_INSERT = re.compile(r"^\s*INSERT\s+INTO\b", re.I)
 
 
 class Cursor:
-    """The half of a sqlite3.Cursor that harness/memory_store.py uses."""
+    """The half of a sqlite3.Cursor that harness/memory_store/ uses."""
 
     def __init__(self, cur, lastrowid=None):
         self._cur = cur

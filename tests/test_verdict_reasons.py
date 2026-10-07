@@ -156,7 +156,7 @@ def test_upstream_text_is_classified_at_the_runner_boundary_and_one_stderr_read(
 
 
 def test_decide_never_reads_its_condition_out_of_the_detail():
-    tree = ast.parse((ROOT / "harness/memory_store.py").read_text(encoding="utf-8"))
+    tree = ast.parse((ROOT / "harness/memory_store/transitions.py").read_text(encoding="utf-8"))
     fn = next(n for n in tree.body
               if isinstance(n, ast.FunctionDef) and n.name == "decide")
     called = {getattr(c.func, "id", getattr(c.func, "attr", ""))
@@ -172,7 +172,7 @@ def store_writes(path):
             owner = getattr(getattr(call.func, "value", None), "id", "")
             if isinstance(call.func, ast.Attribute) and owner != "ms":
                 continue
-            if isinstance(call.func, ast.Name) and path != "harness/memory_store.py":
+            if isinstance(call.func, ast.Name) and not path.startswith("harness/memory_store/"):
                 continue
             kws = {k.arg for k in call.keywords}
             if None in kws or "reopen" in kws:
@@ -181,7 +181,7 @@ def store_writes(path):
 
 
 @pytest.mark.parametrize("path", sorted(
-    str(p.relative_to(ROOT)) for p in (ROOT / "harness").glob("*.py")))
+    p.relative_to(ROOT).as_posix() for p in (ROOT / "harness").rglob("*.py")))
 def test_every_production_verdict_says_why(path):
     for call, kws in store_writes(path):
         assert "reason" in kws, f"{path}:{call.lineno} without reason="

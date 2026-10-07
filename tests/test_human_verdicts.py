@@ -25,7 +25,7 @@ FAKE_MACHINE = {"fingerprint": "test/rig", "hw_model": "", "os": "",
 def store(tmp_path, monkeypatch):
     """Never write the developer's real answers. RULE #249: pin the ambient."""
     monkeypatch.setenv(paths.ENV_VAR, str(tmp_path))
-    monkeypatch.setattr(ms, "_THIS_MACHINE", FAKE_MACHINE)
+    monkeypatch.setattr(ms.machines, "_THIS_MACHINE", FAKE_MACHINE)
     return tmp_path
 
 
@@ -163,7 +163,7 @@ def test_readers_do_not_touch_the_retired_json_file(store):
 def _vote_many(home, n, who):
     import os
     os.environ[paths.ENV_VAR] = home
-    ms._THIS_MACHINE = FAKE_MACHINE
+    ms.machines._THIS_MACHINE = FAKE_MACHINE
     for _ in range(n):
         human.record("music", "c", "alpha", "beta", "a", voter=who)
 

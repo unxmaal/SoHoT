@@ -90,7 +90,7 @@ STUDIO = {"fingerprint": "Mac17,15/macOS/arm64", "hw_model": "Mac17,15",
 def store(monkeypatch):
     """A store whose `this machine` is MAC; no test reads the real one. #415."""
     from harness import memory_store as ms
-    monkeypatch.setattr(ms, "_THIS_MACHINE", dict(MAC))
+    monkeypatch.setattr(ms.machines, "_THIS_MACHINE", dict(MAC))
     conn = ms.connect()
     yield conn
     conn.close()

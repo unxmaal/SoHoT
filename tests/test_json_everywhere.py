@@ -70,7 +70,7 @@ def test_voices_is_one_object(capsys):
 
 def test_memory_ramp_is_one_object(capsys, monkeypatch):
     from harness import memory_store as ms, ramp
-    monkeypatch.setattr(ms, "_THIS_MACHINE", {
+    monkeypatch.setattr(ms.machines, "_THIS_MACHINE", {
         "hw_model": "Mac14,12", "os": "macOS-26", "arch": "arm64",
         "fingerprint": "Mac14,12/macOS/arm64"})
     report = {"steps": [{"gb": 1.0, "level": 1, "free_pct": 90,
@@ -86,7 +86,7 @@ def test_memory_ramp_is_one_object(capsys, monkeypatch):
 
 def test_memory_show_is_one_object(capsys, monkeypatch):
     from harness import memory_store as ms, ramp
-    monkeypatch.setattr(ms, "_THIS_MACHINE", {
+    monkeypatch.setattr(ms.machines, "_THIS_MACHINE", {
         "hw_model": "Mac14,12", "os": "macOS-26", "arch": "arm64",
         "fingerprint": "Mac14,12/macOS/arm64"})
     monkeypatch.setattr(ramp, "run", lambda **kw: {

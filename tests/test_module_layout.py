@@ -16,7 +16,6 @@ BUDGET = 1500
 #: Modules allowed over BUDGET, each with the reason it is not split yet.
 OVER_BUDGET = {
     "harness/cli.py": "split in #484",
-    "harness/memory_store.py": "split in #484",
 }
 
 
@@ -97,7 +96,7 @@ def test_no_harness_module_is_over_budget():
 
 def test_the_budget_sees_a_long_module(tmp_path):
     (tmp_path / "harness").mkdir()
-    (tmp_path / "harness" / "big.py").write_text("x = 1\n" * 12)
+    (tmp_path / "harness" / "big.py").write_text("x = 1\n" * 12, encoding="utf-8")
     assert over_budget(tmp_path, budget=10) == {"harness/big.py": 12}
 
 
@@ -154,3 +153,44 @@ def test_the_dump_sees_one_changed_row(tmp_path, monkeypatch):
         return conn
     monkeypatch.setattr(ms, "connect", connect_then_touch)
     assert migrated_dump(version, tmp_path / "b", monkeypatch) != clean
+
+
+def chain_faults(steps, head: int) -> list[str]:
+    from harness.memory_store import migrations
+    faults = []
+    versions = [s.VERSION for s in steps]
+    if versions != list(range(1, head + 1)):
+        faults.append(f"steps {versions} are not 1..{head}")
+    for s in steps:
+        name = s.__name__.rsplit(".", 1)[-1]
+        if name != f"v{s.VERSION:02d}":
+            faults.append(f"{name} says VERSION {s.VERSION}")
+        stray = {n for n, v in vars(s).items() if callable(v) and not n.startswith("_")
+                 and getattr(v, "__module__", "") == s.__name__} - set(migrations.PHASES)
+        if stray:
+            faults.append(f"{name} defines {sorted(stray)}, which no phase runs")
+    return faults
+
+
+def test_the_chain_has_one_step_per_schema_version():
+    from harness import memory_store as ms
+    assert chain_faults(ms.migrations.steps(), ms.SCHEMA_VERSION) == []
+
+
+def test_the_chain_check_sees_a_gap_a_misnamed_step_and_a_stray_phase():
+    import types
+    from harness import memory_store as ms
+    steps = ms.migrations.steps()
+    stray = types.ModuleType(f"{ms.migrations.__name__}.v03")
+    stray.VERSION = 3
+
+    def date(conn):
+        return None
+    date.__module__ = stray.__name__
+    stray.date = date
+    got = chain_faults(steps[:2] + [stray] + steps[4:], ms.SCHEMA_VERSION)
+    assert got[0].startswith("steps [1, 2, 3, 5,")
+    assert got[1:] == ["v03 defines ['date'], which no phase runs"]
+    misnamed = types.ModuleType(f"{ms.migrations.__name__}.v07")
+    misnamed.VERSION = 8
+    assert "v07 says VERSION 8" in chain_faults([misnamed], 1)

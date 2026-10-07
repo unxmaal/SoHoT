@@ -1,4 +1,5 @@
 """A proposal's state is a column one transition table writes. #409."""
+import inspect
 import random
 import re
 import sqlite3
@@ -121,7 +122,7 @@ def test_a_writer_that_read_a_stale_state_is_checked_again(store, monkeypatch):
             row.update(state="queued", id=None)
         return row
 
-    monkeypatch.setattr(ms, "_held", stale)
+    monkeypatch.setattr(ms.transitions, "_held", stale)
     n = _count(store)
     with pytest.raises(ms.IllegalTransition):
         ms.decide(store, "org/w", "queued", tier=ms.INSPECT, detail="named")
@@ -132,11 +133,10 @@ def test_a_writer_that_read_a_stale_state_is_checked_again(store, monkeypatch):
 
 def test_every_retraction_migration_writes_through_the_state(store):
     """A migration that inserted a row directly would leave state behind."""
-    src = open(ms.__file__, encoding="utf-8").read()
-    for fn in sorted(n for n in dir(ms)
-                     if re.match(r"_(retract|relane|reopen|requeue)_", n)):
-        body = re.search(rf"\ndef {fn}\(.*?(?=\n(?:def |#: |class ))", src,
-                         re.S).group(0)
+    fns = sorted(n for n in dir(ms) if re.match(r"_(retract|relane|reopen|requeue)_", n))
+    assert len(fns) > 10, fns
+    for fn in fns:
+        body = inspect.getsource(getattr(ms, fn))
         assert "INSERT INTO verdicts" not in body, fn
 
 

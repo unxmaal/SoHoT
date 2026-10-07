@@ -365,7 +365,7 @@ def test_only_a_uv_with_service_pin_counts_as_installed(tmp_path):
 
 def test_installed_version_reads_the_recorded_versions(monkeypatch):
     from harness import memory_store as ms
-    monkeypatch.setattr(ms, "_THIS_MACHINE", {"versions": {"mlx": "0.31.2"}})
+    monkeypatch.setattr(ms.machines, "_THIS_MACHINE", {"versions": {"mlx": "0.31.2"}})
     assert feeds.installed_version("mlx") == "0.31.2"
     assert feeds.installed_version("diffusers") == ""
 

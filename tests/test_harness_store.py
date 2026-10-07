@@ -1,6 +1,6 @@
 """The SQLite dialect, as Postgres would have it.
 
-`harness/memory_store.py` holds 33 statements in one dialect and they stay
+`harness/memory_store/` holds 33 statements in one dialect and they stay
 there. This translates. The alternative -- a second hand-written schema and a
 second set of queries -- is the *one question, two answers* failure, and the
 divergence always shows up as a column that exists on one backend only.
