@@ -37,7 +37,7 @@ INDEX = {
                 "a person's override of the fetched needle weights; nothing in this repo sets it (#534)",
         },
         "instances": _i(72, 77, 81, 167, 183, 214, 219, 240, 297, 335, 343, 378, 384, 389, 420, 424, 521,
-                        rules=(247, 379)),
+                        542, rules=(247, 379, 474)),
         "scanners": []},
     "a-metric-quoted-without-a-negative-control": {
         "review": r"\b(?:auc|brier|ece|accuracy|precision|recall|win_rate|p_value|significan\w*|kendall\w*|spearman\w*)\b",

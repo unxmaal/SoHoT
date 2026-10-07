@@ -883,5 +883,10 @@
   "number": 537,
   "title": "Flaky: proc instrument positive control fails when memory pressure pages out part of its 512 MiB array",
   "created": "2026-10-07T03:55:44Z"
+ },
+ {
+  "number": 542,
+  "title": "mlx_lm.server resets connections beyond 5 pending: concurrent gateway clients lose requests",
+  "created": "2026-10-07T04:49:32Z"
  }
 ]
