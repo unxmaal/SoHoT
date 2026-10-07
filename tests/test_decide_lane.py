@@ -39,7 +39,7 @@ def test_every_case_names_its_source_license_and_pinned_selection():
     allowed = {s["license"] for s in dc.SOURCES.values()}
     known = set(bi.IMPORTERS) | {importers.module(s.name).SOURCE for s in importers.REGISTRY}
     for c in CASES:
-        raw = yaml.safe_load(c.source.read_text(encoding="utf-8"))
+        raw = yaml.load(c.source.read_text(encoding="utf-8"), Loader=core._LOADER)
         a = raw["attribution"]
         assert a["url"].startswith("https://")
         if a.get("source"):

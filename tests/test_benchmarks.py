@@ -392,6 +392,14 @@ def test_provenance_counts_imports_and_reads_the_older_attribution(tmp_path):
     assert shipped["hf:rajpurkar/squad_v2"]["decide"] >= 6
 
 
+def test_counting_the_shipped_cases_parses_with_libyaml(monkeypatch):
+    """The pure-Python loader took most of a minute over ~3,500 cases on a CI runner (#623)."""
+    def refuse(*_a, **_kw):
+        raise AssertionError("pure-Python yaml.safe_load over every case")
+    monkeypatch.setattr(yaml, "safe_load", refuse)
+    assert bi.imported()["hf:google/civil_comments"]["decide"] >= 6
+
+
 # ---- the contamination probe -------------------------------------------------------
 
 WORDS = " ".join(f"w{i}" for i in range(60))

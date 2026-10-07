@@ -226,7 +226,8 @@ jobs:
     # The second measurement machine. Nothing here is Apple Silicon, so the MLX
     # lanes skip and the "What did not run" step below prints which ones.
     runs-on: windows-latest
-    timeout-minutes: 30
+    # Measured on #624: make check 26m47s, job 28m58s, so 30 left one minute (#623).
+    timeout-minutes: 40
     defaults:
       run:
         # Git Bash. scripts/env.sh is sourced by the tests, and the Makefile

@@ -1,4 +1,5 @@
 """Generated cases for the ocr, pii and tts lanes: deterministic, attributed, controlled. #603."""
+import functools
 import importlib
 import json
 import re
@@ -145,9 +146,14 @@ def test_the_generated_text_passes_the_privacy_scanner(committed):
             assert not found, found
 
 
-def _prov(c):
+@functools.lru_cache(maxsize=None)
+def _attribution(source):
     import yaml
-    return yaml.safe_load(c.source.read_text(encoding="utf-8"))["attribution"]
+    return yaml.load(source.read_text(encoding="utf-8"), Loader=core._LOADER)["attribution"]
+
+
+def _prov(c):
+    return _attribution(c.source)
 
 
 # --- ocr -------------------------------------------------------------------
