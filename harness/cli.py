@@ -397,7 +397,7 @@ def build_parser() -> argparse.ArgumentParser:
     rub.set_defaults(func=judge_cmd.cmd_rubric)
 
     thr = sub.add_parser("throughput", help="requests per hour at several "
-                         "in-flight levels against one gateway alias")
+                         "in-flight levels against one text spec")
     thr.add_argument("--model", required=True)
     thr.add_argument("--texts", required=True,
                      help="JSONL file; each line's --field is one request")
@@ -406,6 +406,10 @@ def build_parser() -> argparse.ArgumentParser:
     thr.add_argument("--levels", default="1,2,4")
     thr.add_argument("--max-tokens", type=int, default=300)
     thr.add_argument("--gateway", default="http://127.0.0.1:4000")
+    thr.add_argument("--serve", choices=("vllm-mlx", "vllm-metal"),
+                     help="start this engine for a vllm: --model, sweep, then stop it")
+    thr.add_argument("--server-pid", type=int,
+                     help="sample this server's peak memory (with its children)")
     thr.set_defaults(func=measure_cmd.cmd_throughput)
     gw = sub.add_parser("gateway", help="the gateway's key (#482)")
     gw.add_argument("action", choices=("key",))

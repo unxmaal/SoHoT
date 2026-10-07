@@ -199,7 +199,8 @@ def fingerprint(hw_model: str, os_string: str, arch: str) -> str:
 
 #: Packages whose installed version a verdict or receipt may need. #389, #415.
 WATCHED = ("mlx", "mlx-lm", "mlx-vlm", "mlx-audio", "mflux", "diffusers",
-           "torch", "transformers", "litellm", "ace-step")
+           "torch", "transformers", "litellm", "ace-step",
+           "vllm-mlx", "vllm-metal", "vllm")
 
 #: Services `uv run --with` the exact pin at every launch, so the pin is installed.
 UV_WITH = ("mlx-audio", "litellm")
@@ -238,6 +239,8 @@ def _other_venvs() -> list[Path]:
     root = engines.acestep_root()
     if root:
         out.append(Path(root) / ".venv")
+    from harness import vllm
+    out += [vllm.venv_for(e) for e in vllm.ENGINES]
     return out
 
 
