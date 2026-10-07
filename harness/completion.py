@@ -277,10 +277,12 @@ def complete_full(prompt: str, model: str, gateway: str = DEFAULT_GATEWAY,
         # that in fact produced 4000 tokens of thought.
         reasoning = message.get("reasoning_content") or ""
         if reasoning:
+            spent = reasoning_tokens(usage)
             raise CompletionError(
                 f"{model} returned no answer: it spent the whole "
-                f"{max_tokens}-token budget on reasoning "
-                f"({len(reasoning)} characters of it). This is a hybrid "
+                f"{max_tokens}-token budget on reasoning ("
+                + (f"{spent} tokens of reasoning, " if spent else "")
+                + f"{len(reasoning)} characters). This is a hybrid "
                 f"thinking model; use a non-thinking one for this lane, or "
                 f"raise max_tokens.", reasons.TOKEN_BUDGET_EXHAUSTED,
                 ("max_tokens", max_tokens))
@@ -288,6 +290,14 @@ def complete_full(prompt: str, model: str, gateway: str = DEFAULT_GATEWAY,
     return Completion(text, usage,
                       list(tokens) if isinstance(tokens, list) else [], timing,
                       served)
+
+
+def reasoning_tokens(usage) -> int | None:
+    """Tokens the server says went to reasoning; all completion tokens when it gave no split."""
+    usage = usage or {}
+    details = usage.get("completion_tokens_details") or {}
+    got = details.get("reasoning_tokens") or usage.get("completion_tokens")
+    return int(got) if got else None
 
 
 def prefill_s(timings) -> float | None:
