@@ -95,6 +95,10 @@ def cmd_power(a) -> int:
             plan = power.plan([rates[c] for c in split.holdout], effect,
                               stochastic=lane in STOCHASTIC_MODALITIES,
                               observed=seen, rho=rho)
+            missing = set(power.unmeasured(draws, split.holdout))
+            measured = [rates[c] for c in split.holdout if c not in missing]
+            alone = (power.power(measured, effect, plan.repeat, rho=plan.rho)
+                     if measured else None)
             cases_run = len(set(split.dev) | set(split.holdout))
             projected = power.projected_seconds(cases_run, plan.repeat, median)
             rows.append({
@@ -103,6 +107,9 @@ def cmd_power(a) -> int:
                 "stochastic": plan.stochastic, "observed": seen,
                 "rho": plan.rho, "rho_measured": plan.rho_measured,
                 "repeat": plan.repeat, "power": round(plan.power, 4),
+                "effect": effect, "measured": len(measured),
+                "unmeasured": len(missing),
+                "power_measured": None if alone is None else round(alone, 4),
                 "enough": plan.enough, "effective_cells": plan.cells,
                 "cases_needed": plan.cases_needed,
                 "more_holdout": (max(0, plan.cases_needed - len(split.holdout))
@@ -131,6 +138,11 @@ def cmd_power(a) -> int:
         note(f"  {r['lane']:8} holdout {r['holdout']}/{r['cases']}  {rho}  {head}  "
              f"{need}  {cost}  [{r['incumbent'] or 'no incumbent'}, "
              f"{r['observed']} rows]")
+        if r["unmeasured"]:
+            alone = ("nothing measured" if r["power_measured"] is None else
+                     f"power {r['power_measured']:.2f} over the {r['measured']} measured")
+            note(f"           projected: {r['unmeasured']} of {r['holdout']} holdout "
+                 f"unmeasured, drawn from the measured per-case rates; {alone}")
     emit(effect=effect, target=power.TARGET, cap=power.CAP,
          budget_s=budget, lanes=rows)
     return 0

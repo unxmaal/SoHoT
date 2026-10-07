@@ -535,6 +535,17 @@ detect `--effect` at alpha 0.05, the holdout size needed when no repeat up to
 wall time from the incumbent's median seconds per case over every lane case,
 both candidates, at that repeat. `--lane` narrows it; `--receipt
 <results.json>` (repeatable) reads the draws from receipts instead of the store.
+A holdout case the incumbent has never run takes a rate drawn from the
+incumbent's measured per-case rates (a deterministic stratified draw over every
+measured case in the lane), not their pooled mean: measured rates are bimodal,
+and a pooled 0.77 gave every new case room to gain that a case at 1.0 does not
+have (#608). A lane measured only at 1.0 therefore projects no power at all.
+Whenever any holdout case is unmeasured the line says how many, and gives the
+power over the measured cases alone beside the projection (`unmeasured`,
+`measured` and `power_measured` under `--json`). Over the three 2026-10-07
+adopt-code receipts, with 119 of 136 code holdout cases unmeasured, the
+projection is power 0.80 at repeat 3 (it was 1.00 at repeat 1 with the pooled
+rate) and the 17 measured cases alone give 0.00.
 The measure tier spends the powered repeat when its projected time fits
 `--power-budget-min` (default 120, on `soh adopt` and `soh discover --loop`);
 otherwise it runs repeat 3, or less if that does not fit either, records the

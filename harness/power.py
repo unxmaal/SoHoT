@@ -376,20 +376,36 @@ def control_of(receipts, prefer=()) -> str:
     return max(sorted(seen), key=lambda n: tuple(seen[n]), default="")
 
 
+def stratified(values: list[float], n: int) -> list[float]:
+    """n deterministic draws following the empirical distribution of `values`."""
+    if n == 0:
+        return []
+    ordered = sorted(values)
+    return [ordered[int((j + 0.5) * len(ordered) / n)] for j in range(n)]
+
+
+def unmeasured(draws: dict, case_ids) -> list:
+    """The cases with no draws: their rates in rates_from are projected, not measured. #608."""
+    return [c for c in case_ids if not draws.get(c)]
+
+
 def rates_from(draws: dict, case_ids) -> tuple[dict, int]:
-    """case -> pass rate, a case with no draws taking the pooled rate, else UNSEEN."""
-    every = [v for vs in draws.values() for v in vs]
-    pooled = sum(every) / len(every) if every else UNSEEN
-    out = {}
-    for cid in case_ids:
-        got = draws.get(cid)
-        out[cid] = sum(got) / len(got) if got else pooled
-    return out, sum(len(draws.get(c) or ()) for c in case_ids)
+    """case -> pass rate; unseen cases drawn from the measured per-case rates (#608), else UNSEEN.
+
+    A pooled rate would give every unseen case room to gain, but measured rates
+    are bimodal: a case at 1.0 has none.
+    """
+    measured = [sum(v) / len(v) for v in draws.values() if v]
+    out = {cid: sum(draws[cid]) / len(draws[cid]) for cid in case_ids if draws.get(cid)}
+    missing = sorted(unmeasured(draws, case_ids))
+    fill = stratified(measured, len(missing)) if measured else [UNSEEN] * len(missing)
+    out.update(zip(missing, fill))
+    return {cid: out[cid] for cid in case_ids}, sum(len(draws.get(c) or ()) for c in case_ids)
 
 
 def incumbent_rates(conn, lane: str, key: str, case_ids) -> tuple[dict, int]:
     """case -> the incumbent's stored pass rate, and how many rows it rests on.
 
-    A case with no rows takes the incumbent's pooled rate, else UNSEEN.
+    A case with no rows is drawn from its measured per-case rates, else UNSEEN.
     """
     return rates_from(incumbent_profile(conn, lane, key)[0], case_ids)
