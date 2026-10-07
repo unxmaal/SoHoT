@@ -1345,8 +1345,9 @@ negative control over every case it wrote. An importer is a module
 - `LANE`, `SOURCE` (`hf:<id>`), `DATASET`, `URL`, `LICENSE` (one of
   `ALLOWED_LICENSES`) and `REVISION`, the pinned 40-hex dataset revision;
 - `fetch()`, the rows at `REVISION`, read over the network only here;
-- `convert(row)`, an `Imported(case, reference)` or `None` to skip the row,
-  with `case["attribution"] = provenance(module, item, transform, date)`;
+- `convert(row)`, an `Imported(case, reference, files)` or `None` to skip the
+  row, with `case["attribution"] = provenance(module, item, transform, date)`;
+  `files` are (path, bytes) written beside the case, such as an ocr image;
 - `RESPONDERS` (name to a function from a loaded case to an answer) and
   `passes(case, answer)`, the negative control: `reference` must pass, a
   constant must not.
@@ -1761,6 +1762,32 @@ lineage files it under code, and its vllm library is not one hf-pii loads.
 
     uv run python -m evals.run --modality pii --candidates \
       pii-regex,hf-pii:openai/privacy-filter,hf-pii:LH-Tech-AI/Shield-82M
+
+The ocr, pii and tts lanes also carry generated cases, so no candidate can
+have trained on them: the sources `ocr_synth`, `pii_synth` and `tts_synth`
+write `evals/cases/<lane>/<source>/` through the same importer framework.
+`fetch(seed, count)` draws the rows and `convert` renders each one, so the
+same seed gives the same bytes. With no upstream commit, `SOURCE` names the
+generator version and seed, `REVISION` is the SHA-1 of `SOURCE`, the license
+is `generated`, and the attribution adds version and seed. There
+are 440 ocr, 540 pii and 420 tts cases, giving the lanes 140, 166 and 133
+holdout cases. The
+ocr images use only Pillow's bundled font, since no other renders alike on
+every platform, and vary size, weight, slant, width, contrast and noise; most
+also get one degradation (low resolution, blur, faded ink, speckle or a steep
+rotation), because the clean ones were read by the OS reader 436 times in 440,
+which leaves the adopt gate nothing to detect. With the degradations it reads
+315 of 440. The pii sentences fill templates with fake values only (example.com
+addresses, 555-01xx numbers, published example IBANs and test card numbers,
+TEST-NET addresses, `sk-test-` keys), and about one in five has no personal
+data; `pii-regex` passes 74% of the holdout. The tts sentences keep numbers
+between 2 and 99, because the scorer spells digits with num2words ("one
+hundred and five") where a voice says "one hundred five" (#606). Kokoro passes
+all 131 English holdout cases at a corpus WER of 0.013, so the tts holdout is
+saturated: the cases are enough, the metric has no room above the incumbent.
+`soh cases control <source>` runs the negative controls that
+`tests/test_generated_cases.py` pins: another case's text on ocr, marking
+nothing or everything on pii, silence or one fixed sentence on tts.
 
 `repair` costs nothing extra, so it is the one to understand. Everything already
 checks its own output. It runs the code it wrote, draws the SVG to see whether

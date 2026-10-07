@@ -28,6 +28,9 @@ class Source:
 #: One line per importer; keep it a flat list so parallel additions merge cleanly.
 REGISTRY = [
     Source("leetcode", "code"),
+    Source("ocr_synth", "ocr"),
+    Source("pii_synth", "pii"),
+    Source("tts_synth", "tts"),
 ]
 
 
@@ -35,6 +38,8 @@ REGISTRY = [
 class Imported:
     case: dict
     reference: str | None = None
+    #: (path relative to the case, bytes) written beside it, such as an ocr image.
+    files: tuple = ()
 
 
 def module(name: str):
@@ -73,6 +78,12 @@ def write(mod, name: str, made: list[Imported], root: Path = CASES) -> list[Path
             (out / "reference" / f"{one.case['id']}.py").write_text(
                 f"# {MARK} from {mod.SOURCE}@{mod.REVISION}.\n" + one.reference,
                 encoding="utf-8")
+        for rel, data in one.files:
+            target = (out / rel).resolve()
+            if out.resolve() not in target.parents:
+                raise ValueError(f"{one.case['id']}: {rel!r} is outside {out}")
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(data)
         written.append(path)
     return written
 

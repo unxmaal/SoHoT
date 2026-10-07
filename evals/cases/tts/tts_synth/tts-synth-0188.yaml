@@ -1,0 +1,20 @@
+# SoHoT generated tts cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/tts_synth.py).
+# Imported by evals/importers from generated:evals.importers.tts_synth v1 seed 603@fe74a5a0b165c7d94dccff746520bd0092ef0ed5; re-import, do not edit.
+id: tts-synth-0188
+modality: tts
+language: en
+prompt: 'Alright Peter, report back: 63 files saved, and 34 still pending?'
+assert:
+  max_wer: 0.2
+attribution:
+  dataset: SoHoT generated tts cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/tts_synth.py
+  license: generated
+  source: generated:evals.importers.tts_synth v1 seed 603
+  revision: fe74a5a0b165c7d94dccff746520bd0092ef0ed5
+  item: '188'
+  date: ''
+  transform: a template filled with a name, a city and two numbers
+  importer: evals.importers.tts_synth
+  version: '1'
+  seed: 603
