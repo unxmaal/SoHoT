@@ -142,6 +142,23 @@ def pending(conn=None) -> list[dict]:
         return order(_select(c, f"WHERE state = ? AND {where}", (PENDING, *args)))
 
 
+def current(conn=None) -> dict | None:
+    """The job this machine's worker is running, or None. #588."""
+    with _store(conn) as c:
+        where, args = _here(c)
+        got = _select(c, f"WHERE state = ? AND {where}", (RUNNING, *args))
+    return got[-1] if got else None
+
+
+def durations(title: str, conn=None) -> list[float]:
+    """Seconds each finished, successful job with this title took. #588."""
+    with _store(conn) as c:
+        rows = c.execute("SELECT started_at, finished_at FROM jobs WHERE state = ? "
+                         "AND title = ? AND started_at IS NOT NULL "
+                         "AND finished_at IS NOT NULL", (DONE, title)).fetchall()
+    return [float(r[1]) - float(r[0]) for r in rows if r[1] >= r[0]]
+
+
 def get(job_id, conn=None) -> dict | None:
     key = _key(job_id)
     if key is None:

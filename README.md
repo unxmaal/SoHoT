@@ -590,10 +590,16 @@ adopted here, through the same route `soh code` uses:
 
 Both answer directly rather than queueing. Prompts are capped at 100,000
 characters and calls time out after 300 s. When something holds the machine lock
-(an eval, a ramp, an image or video generation) they refuse at once and name the
-holder rather than wait: a run holds it for hours, and loading a lane's model
-beside it risks the swap that took a 32 GB machine down, and skews the run's
-timings.
+(an eval, a ramp, an image or video generation) they still answer if the lane's
+model is already loaded and memory pressure is normal, since that loads nothing.
+Otherwise they refuse at once rather than wait, naming the holder, the queued job
+running and how long earlier runs of that job took: a run holds the lock for
+hours, and loading a lane's model beside it risks the swap that took a 32 GB
+machine down, and skews the run's timings. Loaded means the llama-server router
+reports the model's status as `loaded` (not `sleeping`) on `GET /models`, the
+mlx_lm.server wrapper names it on `GET /sohot/loaded`, or a vLLM server lists it
+on `GET /v1/models`; a gateway alias is followed to its upstream first, and a
+server that cannot say counts as not loaded.
 
 A snippet to paste into a project's CLAUDE.md:
 
