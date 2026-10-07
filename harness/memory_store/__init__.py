@@ -68,4 +68,4 @@ from harness.memory_store.migrations.legacy import (LEGACY_FILES, _machine_fk_ta
 from harness.memory_store.migrations import (MigrationReentered, _migrate,
     _migrate_steps, _refuse_reentry, _store_file, migrating)  # noqa: F401
 from harness.memory_store.connection import (BUSY_TIMEOUT_SECONDS, LiveStoreRefused,
-    _guard_live, _stored_schema, connect, db_path)  # noqa: F401
+    ReadOnlyStore, _guard_live, _stored_schema, connect, db_path, lend, lent)  # noqa: F401

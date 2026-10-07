@@ -31,6 +31,7 @@ from harness.commands import benchmarks as benchmarks_cmd
 from harness.commands import common
 from harness.commands import discover as discover_cmd
 from harness.commands import gateway as gateway_cmd
+from harness.commands import gauntlet as gauntlet_cmd
 from harness.commands import jobs as jobs_cmd
 from harness.commands import judge as judge_cmd
 from harness.commands import lanes as lanes_cmd
@@ -397,7 +398,7 @@ def build_parser() -> argparse.ArgumentParser:
     rub.set_defaults(func=judge_cmd.cmd_rubric)
 
     thr = sub.add_parser("throughput", help="requests per hour at several "
-                         "in-flight levels against one gateway alias")
+                         "in-flight levels against one text spec")
     thr.add_argument("--model", required=True)
     thr.add_argument("--texts", required=True,
                      help="JSONL file; each line's --field is one request")
@@ -406,6 +407,10 @@ def build_parser() -> argparse.ArgumentParser:
     thr.add_argument("--levels", default="1,2,4")
     thr.add_argument("--max-tokens", type=int, default=300)
     thr.add_argument("--gateway", default="http://127.0.0.1:4000")
+    thr.add_argument("--serve", choices=("vllm-mlx", "vllm-metal"),
+                     help="start this engine for a vllm: --model, sweep, then stop it")
+    thr.add_argument("--server-pid", type=int,
+                     help="sample this server's peak memory (with its children)")
     thr.set_defaults(func=measure_cmd.cmd_throughput)
     gw = sub.add_parser("gateway", help="the gateway's key (#482)")
     gw.add_argument("action", choices=("key",))
@@ -463,6 +468,11 @@ def build_parser() -> argparse.ArgumentParser:
     bch.add_argument("--limit", type=int, default=0, help="with --probe, at most this many cases")
     bch.add_argument("--gateway", default=completion.DEFAULT_GATEWAY)
     bch.set_defaults(func=benchmarks_cmd.cmd_benchmarks)
+    aud = sub.add_parser("audit", help="check the live store and what the gateway serves, "
+                         "read-only; run after every deploy and nightly. #492")
+    aud.add_argument("path", nargs="?", default="",
+                     help="the store to audit (default: this home's discovery.db)")
+    aud.set_defaults(func=store_cmd.cmd_audit)
     jobs = sub.add_parser("jobs", help="the work queue: runs in order while "
                           "nobody is using this machine")
     jobs.add_argument("action", choices=("add", "list", "pause", "resume",
@@ -539,6 +549,17 @@ def build_parser() -> argparse.ArgumentParser:
     sens.add_argument("--list", action="store_true",
                       help="name the probes and the constants nothing covers")
     sens.set_defaults(func=lanes_cmd.cmd_sensitivity)
+
+    gnt = sub.add_parser("gauntlet", help="closed defects with no class, and the "
+                         "review questions a diff raises. Issue #492")
+    gnt.add_argument("action", choices=("audit", "review"))
+    gnt.add_argument("range", nargs="?", default="",
+                     help="review: the git range to read (default: origin/main...HEAD)")
+    gnt.add_argument("--ref", default="",
+                     help="audit: the history whose commits are read (default: origin/main)")
+    gnt.add_argument("--offline", action="store_true",
+                     help="audit: the committed defect snapshot, no gh")
+    gnt.set_defaults(func=gauntlet_cmd.cmd_gauntlet)
 
     h = sub.add_parser("hear", help="transcribe a clip, or record and transcribe")
     h.add_argument("file", nargs="?", help="an existing audio file")

@@ -22,7 +22,7 @@ MEASURE, SCREEN = "measure", "screen"
 def store(conn=None):
     """`conn`, or a connection opened and closed around the block."""
     from harness import memory_store as ms
-    conn = conn if conn is not None else ms.migrating()
+    conn = conn if conn is not None else (ms.migrating() or ms.lent())
     if conn is not None:
         yield conn
         return

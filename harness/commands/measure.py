@@ -73,31 +73,56 @@ def _ttft_pair(p50, p95) -> str:
 
 
 def cmd_throughput(a) -> int:
-    """How much faster an alias goes with several requests in flight. #310."""
+    """How much faster a text spec goes with several requests in flight. #310."""
+    import contextlib
     import json as _json
-    from harness import throughput
+    from harness import exclusive, serving, throughput, vllm
     try:
         rows = [_json.loads(l) for l in open(a.texts, encoding="utf-8") if l.strip()]
     except (OSError, ValueError) as exc:
         return err(f"cannot read {a.texts}: {exc}")
     texts = [str(r.get(a.field) or "") for r in rows][: a.n]
     levels = tuple(int(x) for x in a.levels.split(",") if x.strip())
-    note(f"{a.model}: {len(texts)} texts at {levels} in flight, "
+    serve = getattr(a, "serve", None)
+    try:
+        where = serving.route(a.model, a.gateway)
+        engine = serve or serving.engine_for(a.model)
+    except ValueError as exc:
+        return err(str(exc))
+    if serve and not a.model.startswith(serving.VLLM_PREFIX):
+        return err(f"--serve starts a vLLM server; --model must be "
+                   f"{serving.VLLM_PREFIX}<repo id>, not {a.model}")
+    note(f"{a.model} on {engine}: {len(texts)} texts at {levels} in flight, "
          f"max_tokens {a.max_tokens}", flush=True)
-    got = throughput.sweep(a.model, texts, levels=levels,
-                           max_tokens=a.max_tokens, gateway=a.gateway)
+    pid = getattr(a, "server_pid", None)
+    with exclusive.held("eval"), contextlib.ExitStack() as stack:
+        if serve:
+            port = int(where.base.rsplit(":", 1)[1])
+            note(f"  starting {serve} on port {port}", flush=True)
+            srv = stack.enter_context(vllm.served(
+                vllm.argv(serve, where.model, port), port,
+                log=paths.home() / "logs" / f"{serve}-{port}.log"))
+            pid = srv.proc.pid
+        got = throughput.sweep(
+            where.model, texts, levels=levels, max_tokens=a.max_tokens,
+            gateway=where.base,
+            footprint=(lambda: throughput.footprint_tree(pid)) if pid else None)
     if got and "warmup_s" in got[0]:
         note(f"  warm-up {got[0]['warmup_s']:.2f}s, not counted"
              f"{'' if got[0]['warmup_ok'] else ' (FAILED)'}", flush=True)
     base = got[0]["per_hour"] or 1
     for r in got:
+        peak = r.get("peak_bytes")
         note(f"  {r['concurrency']:2d} in flight  {r['per_hour']:7.1f}/h  "
-             f"x{r['per_hour'] / base:.2f}  p50 {r['p50_s']:6.2f}s  "
-             f"p95 {r['p95_s']:6.2f}s  "
+             f"x{r['per_hour'] / base:.2f}  {r.get('tokens_per_s', 0):7.1f} tok/s  "
+             f"p50 {r['p50_s']:6.2f}s  p95 {r['p95_s']:6.2f}s  "
              f"ttft {_ttft_pair(r.get('ttft_p50_s'), r.get('ttft_p95_s'))}  "
+             f"peak {'-' if peak is None else f'{peak / 1024 ** 3:.1f} GiB'}  "
              f"errors {r['errors']}  "
              f"tokens {r['completion_tokens']}", flush=True)
-    emit(model=a.model, max_tokens=a.max_tokens, levels=got)
+        for why, n in (r.get("error_kinds") or {}).items():
+            note(f"      {n} x {why}", flush=True)
+    emit(model=a.model, engines={a.model: engine}, max_tokens=a.max_tokens, levels=got)
     return 0
 
 

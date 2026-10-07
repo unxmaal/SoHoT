@@ -579,7 +579,8 @@ someone here opens a web page, not that the port is reachable from outside.
 
 Every lane command uses what its lane has adopted on this machine, else the
 typed default, and sends it to the server that serves it: a gateway alias to
-the gateway, an MLX repo id to mlx_lm.server, `llamacpp:<stem>` to llama-server.
+the gateway, an MLX repo id to mlx_lm.server, `llamacpp:<stem>` to llama-server,
+`vllm:<repo id>` to the vLLM server on `VLLM_PORT`.
 `-m` overrides; `--gateway` sends the request somewhere verbatim.
 
 An adoption serves the machine it was made on, whether measured (`soh adopt`)
@@ -1002,6 +1003,15 @@ edits made inside the deploy worktree.
 It migrates a read-only copy of that machine's store with this checkout's code,
 checks the invariants CI checks on the golden stores in `tests/golden/`, and
 exits 1 if any fails; the live store is never opened for writing.
+
+After a deploy, `install` runs `soh audit` from the deploy checkout, and the
+`audit` agent runs it again every night. It opens the live store read-only
+(SQLite `mode=ro`, so it can neither migrate nor write), runs the same
+invariants, and adds four about serving: every adoption has a passing run on
+this machine, no lane serves a reference model, each `sohot-<lane>` alias in
+the served config is the adoption, and no alias's requests through the gateway
+fail more than the threshold in `harness/live_audit.py`. A failure exits 1 and
+names the rows.
 
 **Run `probe` first, always.** macOS TCC denies `/Volumes` to launchd jobs, and
 the failure is horrible unprepared: the volume stats fine, reports free space and
@@ -1556,6 +1566,33 @@ One request at a time is 7.8x faster than the M2 Pro, and concurrency buys
 less: a single request already keeps more of this GPU busy. Past four in
 flight nothing is gained, because the server has four slots.
 
+`--model` takes any text spec, so `llamacpp:<stem>` and `vllm:<repo id>` go
+straight to their server. `--server-pid` samples that server's peak memory
+(phys_footprint of it and its children) during each level, and every level
+reports total tokens per second and why any request failed. `--serve
+vllm-mlx` or `--serve vllm-metal` starts that engine from
+`$LOCALHARNESS_HOME/venvs/<engine>` on `VLLM_PORT` (default 8086), sweeps, and
+stops it. vllm-metal always gets `--gpu-memory-utilization 0.2 --max-model-len
+16384`: without them, on the M5 Ultra on 2026-10-06, it reserved 68 GiB of KV
+for a 4B model. A `vllm:` spec
+works anywhere a text spec does (evals, lane commands, an adoption the
+generated gateway config fronts); `VLLM_ENGINE` names which implementation it
+is on the receipt's `engines` map.
+
+Measured 2026-10-07 on the M5 Ultra, Qwen3-4B-Instruct-2507 (MLX 4-bit; Q4_K_M
+GGUF for llama-server with 16 slots), 32 texts, 300-token budget, total tokens
+per second (#310):
+
+| in flight | mlx_lm.server 0.32.0 | vllm-mlx 0.5.0 | vllm-metal 0.30.0 | llama-server b11146 |
+|---|---|---|---|---|
+| 1 | 194 | 234 | 172 | 185 |
+| 4 | 418 | 533 | 487 | 325 |
+| 16 | 746 | 829 | 929 | 387 |
+
+mlx_lm.server batches by default since 0.32.0, but its HTTP server's listen
+backlog is 5, so at 16 in flight some connections are reset. The code lane
+scores the four alike (20 to 22 of 42 at repeat 3).
+
 ### How much memory a run can take
 
 ```bash
@@ -1747,6 +1784,19 @@ uv run python -m tests.gauntlet audit              # gaps, classes per tier, kil
 `audit` lists closed defects no class names and closing references to them in
 `main`'s history and merged PR bodies; `--offline` uses the committed
 snapshot. CI checks the registry against the snapshot without network.
+
+Tier-2 classes with an honest trigger detector (`tests/gauntlet/detectors.py`,
+named by the `detector` field in `INDEX`) find the sites where the trigger
+fires, such as a fixed table looked up with a fallback or an environment
+variable read with no test of who sets it. Every hit needs a test bound to it
+with `@pytest.mark.gauntlet("<class id>", site="<site the detector names>")`,
+or a waiver in the class's `waivers` with a one-line reason, so new code that
+trips a detector fails CI until it gets its own test. The hits that predate the
+detectors sit in `tests/gauntlet/backlog.json`, which may only shrink. The
+classes no detector can find carry a `review` regex instead, and
+`soh gauntlet review [range]` (default `origin/main...HEAD`) prints each one
+whose heuristic fires on the added lines, as its trigger question and test
+shape from the skill; `soh gauntlet audit` is the audit above.
 
 ## Two traps this repo exists to remember
 

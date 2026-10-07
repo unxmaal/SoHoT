@@ -14,6 +14,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 from harness import downloads
+from harness.memory_store.schema import WAYPOINTS
 
 KEEP, QUEUED, REJECTED, UNKNOWN = "keep", "queued", "rejected", "unknown"
 GROUPS = (KEEP, QUEUED, REJECTED, UNKNOWN)
@@ -24,7 +25,7 @@ GRACE_SECONDS = 24 * 3600
 REJECTIONS = ("broken", "declined")
 #: Tiers that run after weights are fetched; an inspect refusal never downloaded anything.
 FETCHED_TIERS = ("fetch", "screen", "measure", "adopt")
-WAITING = ("queued", "screened")
+WAITING = WAYPOINTS
 
 #: Weights no alias names and the harness still loads. One list; grep before editing.
 TOOLING = {
