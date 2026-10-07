@@ -1,0 +1,463 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "How SoHoT works",
+    "output": "how-it-works.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/unxmaal/SoHoT",
+      "provider": "github",
+      "link_mode": "web",
+      "revision": "b4520f15858e1effe374da02aa28f64d045d96d7"
+    }
+  },
+  "lanes": [
+    {
+      "id": "find",
+      "label": "Find challengers"
+    },
+    {
+      "id": "narrow",
+      "label": "Narrow them down"
+    },
+    {
+      "id": "prove",
+      "label": "Prove it, then publish"
+    },
+    {
+      "id": "serve",
+      "label": "Serve the winner"
+    }
+  ],
+  "semanticChecks": {
+    "requiredPaths": [
+      {
+        "from": "feeds",
+        "to": "tools"
+      },
+      {
+        "from": "papers",
+        "to": "site"
+      },
+      {
+        "from": "gateway",
+        "to": "sweep"
+      }
+    ]
+  },
+  "nodes": [
+    {
+      "id": "feeds",
+      "lane": "find",
+      "col": 0,
+      "type": "external",
+      "label": "News and releases",
+      "sublabel": "Reddit, GitHub and HF feeds",
+      "sources": [
+        {
+          "path": "harness/feeds.py",
+          "line": 81,
+          "end_line": 143,
+          "label": "the feed list"
+        }
+      ],
+      "width": 150
+    },
+    {
+      "id": "stars",
+      "lane": "find",
+      "col": 1,
+      "type": "external",
+      "label": "Star graph",
+      "sublabel": "what tool builders star",
+      "sources": [
+        {
+          "path": "harness/neighbors.py",
+          "line": 65,
+          "end_line": 88,
+          "label": "enrichment score"
+        },
+        {
+          "path": "harness/neighbors.py",
+          "line": 221,
+          "end_line": 257,
+          "label": "neighbors"
+        }
+      ],
+      "width": 150
+    },
+    {
+      "id": "papers",
+      "lane": "find",
+      "col": 2,
+      "type": "external",
+      "label": "Papers, benchmarks",
+      "sublabel": "daily papers, eval sets",
+      "sources": [
+        {
+          "path": "harness/papers.py",
+          "line": 62,
+          "end_line": 85,
+          "label": "daily papers"
+        },
+        {
+          "path": "harness/benchmarks.py",
+          "line": 192,
+          "end_line": 214,
+          "label": "benchmark sweep"
+        }
+      ],
+      "width": 150
+    },
+    {
+      "id": "sweep",
+      "lane": "narrow",
+      "col": 0,
+      "type": "backend",
+      "label": "Sweep",
+      "sublabel": "read every source, on a timer",
+      "sources": [
+        {
+          "path": "harness/commands/discover.py",
+          "line": 765,
+          "end_line": 783,
+          "label": "the sweep"
+        },
+        {
+          "path": "scripts/serve-discover.sh",
+          "line": 1,
+          "end_line": 30,
+          "label": "on a schedule"
+        }
+      ],
+      "width": 150
+    },
+    {
+      "id": "inspect",
+      "lane": "narrow",
+      "col": 1,
+      "type": "backend",
+      "label": "Inspect",
+      "sublabel": "read the card, download nothing",
+      "sources": [
+        {
+          "path": "harness/commands/discover.py",
+          "line": 370,
+          "end_line": 567,
+          "label": "inspect tier"
+        }
+      ],
+      "width": 150
+    },
+    {
+      "id": "rank",
+      "lane": "narrow",
+      "col": 2,
+      "type": "backend",
+      "label": "Rank",
+      "sublabel": "most to learn per GB first",
+      "sources": [
+        {
+          "path": "harness/rank.py",
+          "line": 62,
+          "end_line": 123,
+          "label": "value"
+        },
+        {
+          "path": "harness/rank.py",
+          "line": 161,
+          "end_line": 213,
+          "label": "rank"
+        }
+      ],
+      "width": 150
+    },
+    {
+      "id": "fetch",
+      "lane": "narrow",
+      "col": 3,
+      "type": "backend",
+      "label": "Fetch",
+      "sublabel": "download inside a disk budget",
+      "sources": [
+        {
+          "path": "harness/commands/screen.py",
+          "line": 12,
+          "end_line": 62,
+          "label": "fetch tier"
+        }
+      ],
+      "width": 150
+    },
+    {
+      "id": "screen",
+      "lane": "narrow",
+      "col": 4,
+      "type": "backend",
+      "label": "Screen",
+      "sublabel": "one quick run: does it work?",
+      "sources": [
+        {
+          "path": "harness/screen.py",
+          "line": 284,
+          "end_line": 330,
+          "label": "screen plan"
+        },
+        {
+          "path": "harness/commands/screen.py",
+          "line": 148,
+          "end_line": 246,
+          "label": "screen tier"
+        }
+      ],
+      "width": 150
+    },
+    {
+      "id": "queue",
+      "lane": "prove",
+      "col": 4,
+      "type": "messagebus",
+      "label": "Job queue",
+      "sublabel": "one heavy job at a time",
+      "sources": [
+        {
+          "path": "harness/workqueue.py",
+          "line": 279,
+          "end_line": 294,
+          "label": "run the queue"
+        },
+        {
+          "path": "harness/exclusive.py",
+          "line": 128,
+          "end_line": 165,
+          "label": "machine lock"
+        }
+      ],
+      "width": 150
+    },
+    {
+      "id": "measure",
+      "lane": "prove",
+      "col": 3,
+      "type": "backend",
+      "label": "Measure",
+      "sublabel": "same tests as the current model",
+      "sources": [
+        {
+          "path": "harness/commands/measure.py",
+          "line": 149,
+          "end_line": 307,
+          "label": "measure"
+        },
+        {
+          "path": "harness/paired.py",
+          "line": 102,
+          "end_line": 121,
+          "label": "head to head"
+        }
+      ],
+      "width": 150
+    },
+    {
+      "id": "adopt",
+      "lane": "prove",
+      "col": 2,
+      "type": "security",
+      "label": "Adopt gate",
+      "sublabel": "swap only on a real win",
+      "sources": [
+        {
+          "path": "harness/adopt.py",
+          "line": 123,
+          "end_line": 173,
+          "label": "decide"
+        },
+        {
+          "path": "harness/adopt.py",
+          "line": 224,
+          "end_line": 302,
+          "label": "record"
+        }
+      ],
+      "width": 150
+    },
+    {
+      "id": "report",
+      "lane": "prove",
+      "col": 1,
+      "type": "database",
+      "label": "Machine report",
+      "sublabel": "results, privacy-scanned",
+      "sources": [
+        {
+          "path": "harness/publish.py",
+          "line": 236,
+          "end_line": 282,
+          "label": "export"
+        },
+        {
+          "path": "harness/publish.py",
+          "line": 358,
+          "end_line": 397,
+          "label": "publish"
+        }
+      ],
+      "width": 150
+    },
+    {
+      "id": "site",
+      "lane": "prove",
+      "col": 0,
+      "type": "frontend",
+      "label": "This site",
+      "sublabel": "built from every report",
+      "sources": [
+        {
+          "path": "harness/site.py",
+          "line": 481,
+          "end_line": 486,
+          "label": "render"
+        },
+        {
+          "path": ".github/workflows/pages.yml",
+          "line": 1,
+          "end_line": 61,
+          "label": "pages workflow"
+        }
+      ],
+      "width": 150
+    },
+    {
+      "id": "gateway",
+      "lane": "serve",
+      "col": 2,
+      "type": "cloud",
+      "label": "Gateway",
+      "sublabel": "one stable name per job",
+      "sources": [
+        {
+          "path": "harness/gateway.py",
+          "line": 65,
+          "end_line": 74,
+          "label": "lane aliases"
+        },
+        {
+          "path": "harness/gateway.py",
+          "line": 83,
+          "end_line": 113,
+          "label": "served config"
+        }
+      ],
+      "width": 150
+    },
+    {
+      "id": "tools",
+      "lane": "serve",
+      "col": 3,
+      "type": "frontend",
+      "label": "Your tools",
+      "sublabel": "soh commands, MCP, Claude Code",
+      "sources": [
+        {
+          "path": "harness/mcp_server.py",
+          "line": 152,
+          "end_line": 168,
+          "label": "MCP tools"
+        },
+        {
+          "path": "harness/cli.py",
+          "line": 198,
+          "end_line": 204,
+          "label": "soh code"
+        }
+      ],
+      "width": 150
+    }
+  ],
+  "edges": [
+    {
+      "id": "feeds-sweep",
+      "from": "feeds",
+      "to": "sweep"
+    },
+    {
+      "id": "stars-sweep",
+      "from": "stars",
+      "to": "sweep"
+    },
+    {
+      "id": "papers-sweep",
+      "from": "papers",
+      "to": "sweep"
+    },
+    {
+      "id": "sweep-inspect",
+      "from": "sweep",
+      "to": "inspect"
+    },
+    {
+      "id": "inspect-rank",
+      "from": "inspect",
+      "to": "rank"
+    },
+    {
+      "id": "rank-fetch",
+      "from": "rank",
+      "to": "fetch"
+    },
+    {
+      "id": "fetch-screen",
+      "from": "fetch",
+      "to": "screen"
+    },
+    {
+      "id": "screen-queue",
+      "from": "screen",
+      "to": "queue",
+      "label": "survivors"
+    },
+    {
+      "id": "queue-measure",
+      "from": "queue",
+      "to": "measure"
+    },
+    {
+      "id": "measure-adopt",
+      "from": "measure",
+      "to": "adopt"
+    },
+    {
+      "id": "adopt-report",
+      "from": "adopt",
+      "to": "report",
+      "role": "branch"
+    },
+    {
+      "id": "report-site",
+      "from": "report",
+      "to": "site",
+      "role": "branch"
+    },
+    {
+      "id": "adopt-gateway",
+      "from": "adopt",
+      "to": "gateway",
+      "label": "winner",
+      "variant": "emphasis"
+    },
+    {
+      "id": "gateway-tools",
+      "from": "gateway",
+      "to": "tools"
+    },
+    {
+      "id": "gateway-sweep",
+      "from": "gateway",
+      "to": "sweep",
+      "role": "return",
+      "variant": "dashed",
+      "label": "the winner is the new one to beat"
+    }
+  ]
+}

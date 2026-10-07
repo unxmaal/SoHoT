@@ -6,7 +6,7 @@ IMAGE_TAG ?= 0.1.0
 NAMESPACE ?= lh
 
 # Entry points. `make check` is what CI would run and what to run before a commit.
-.PHONY: check test test-slow test-network test-postgres test-litellm coverage mutation image secret-gh metrics lint smoke services clean
+.PHONY: check test test-slow test-network test-postgres test-litellm coverage mutation diagram image secret-gh metrics lint smoke services clean
 
 check: lint test          ## static checks + unit tests (no services needed)
 
@@ -26,6 +26,11 @@ coverage:                 ## REPORT coverage, never gate on it; then the diff fi
 	uv run pytest tests/ -q --cov=harness --cov=evals \
 	  --cov-report=term:skip-covered --cov-report=json
 	@uv run python -m harness.covdiff || true
+
+diagram:                  ## check the front page diagram's model against the repo (ARCHIFY=<clone>)
+	@test -n "$(ARCHIFY)" || { echo "set ARCHIFY to a clone of github.com/tt-a1i/archify"; exit 2; }
+	ARCHIFY_UPDATE_CHECK_DISABLED=1 node "$(ARCHIFY)/archify/bin/archify.mjs" validate workflow \
+	  harness/how-it-works.workflow.json --repo-root . --quality showcase
 
 mutation:                 ## NIGHTLY: mutate the core modules, ratchet survivors against the pin
 	@mkdir -p .logs
