@@ -1,41 +1,45 @@
 {
  "adoptions": [
   {
-   "adopted_at": "2026-09-23T00:05:10Z",
-   "candidate": "acestep:acestep-v15-turbo,steps=8",
-   "how": "by-hand",
-   "incumbent": "",
-   "lane": "music"
-  },
-  {
    "adopted_at": "2026-10-06T01:35:47Z",
    "candidate": "llamacpp:Ornith-1.5-35B-Q4_K_M",
    "how": "measured",
    "incumbent": "",
-   "lane": "code"
+   "lane": "code",
+   "scope": "measured, this machine only"
   },
   {
    "adopted_at": "2026-10-06T19:21:16Z",
    "candidate": "mflux:dev",
    "how": "by-hand",
    "incumbent": "mflux:flux2-klein-4b",
-   "lane": "image"
+   "lane": "image",
+   "scope": "by-hand, this machine only, 9 votes, agreement 1.00"
   },
   {
    "adopted_at": "2026-10-06T19:57:01Z",
    "candidate": "q3-30b",
    "how": "measured",
    "incumbent": "local-large",
-   "lane": "svg"
+   "lane": "svg",
+   "scope": "measured, this machine only"
+  },
+  {
+   "adopted_at": "2026-10-07T02:18:41Z",
+   "candidate": "llamacpp:Ornith-1.5-35B-Q4_K_M",
+   "how": "measured",
+   "incumbent": "q3-4b",
+   "lane": "agent",
+   "scope": "measured, this machine only"
   }
  ],
  "export_version": 1,
- "generated_at": "2026-10-06T21:05:50Z",
+ "generated_at": "2026-10-07T11:22:01Z",
  "lanes": [
   {
    "adopted": true,
    "adopted_how": "by-hand",
-   "age_days": 0.26,
+   "age_days": 0.86,
    "comparison": [
     {
      "candidate": "mflux/flux2-klein-4b-q8",
@@ -78,6 +82,7 @@
    "parked": "",
    "parked_until": "",
    "pass_rate": 1.0,
+   "real_use": null,
    "serves": "mflux:dev",
    "stale": false,
    "ttft_median_s": null,
@@ -88,66 +93,78 @@
   {
    "adopted": true,
    "adopted_how": "measured",
-   "age_days": 0.1,
+   "age_days": 0.0,
    "comparison": [
     {
      "candidate": "llamacpp:Ornith-1.5-35B-Q4_K_M",
-     "first_s": 80.173,
-     "median_s": 2.789,
+     "first_s": 0.899,
+     "median_s": 2.496,
      "metrics": {
-      "code_pass": 0.9249,
-      "completion_tokens": 779.6585,
-      "tokens_per_s": 135.9537
+      "code_pass": 0.8353,
+      "completion_tokens": 657.2986,
+      "tokens_per_s": 135.6083
      },
-     "pass_rate": 0.833,
-     "passed": 35,
+     "pass_rate": 0.773,
+     "passed": 116,
      "peak_gb": 0.0,
      "reference": false,
-     "total": 42,
-     "ttft_median_s": null,
-     "ttft_p95_s": null
+     "total": 150,
+     "ttft_median_s": 1.103,
+     "ttft_p95_s": 15.842
     },
     {
-     "candidate": "llamacpp:Qwen3.8-27B-GSQ-RCO-IQ3_S-mtp",
-     "first_s": 12.674,
-     "median_s": 47.759,
+     "candidate": "ibm-granite/granite-4.1-8b",
+     "first_s": 49.72,
+     "median_s": 1.959,
      "metrics": {
-      "code_pass": 0.9643,
-      "completion_tokens": 1618.8571,
-      "tokens_per_s": 48.0821
+      "code_pass": 0.8083,
+      "completion_tokens": 141.72,
+      "tokens_per_s": 51.1893
      },
-     "pass_rate": 0.643,
-     "passed": 27,
+     "pass_rate": 0.693,
+     "passed": 104,
      "peak_gb": 0.0,
      "reference": false,
-     "total": 42,
-     "ttft_median_s": null,
-     "ttft_p95_s": null
+     "total": 150,
+     "ttft_median_s": 0.055,
+     "ttft_p95_s": 0.117
     }
    ],
    "lane": "code",
-   "last_run_at": "2026-10-06T18:44:18Z",
-   "measured_at": "2026-10-06T18:44:18Z",
-   "median_s": 2.789,
+   "last_run_at": "2026-10-07T11:22:01Z",
+   "measured_at": "2026-10-07T11:22:01Z",
+   "median_s": 2.496,
    "metrics": {
-    "code_pass": 0.9249,
-    "completion_tokens": 779.6585,
-    "tokens_per_s": 135.9537
+    "code_pass": 0.8353,
+    "completion_tokens": 657.2986,
+    "tokens_per_s": 135.6083
    },
    "parked": "",
    "parked_until": "",
-   "pass_rate": 0.833,
+   "pass_rate": 0.773,
+   "real_use": {
+    "completion_tokens": 12481,
+    "error_rate": 0.0,
+    "errors": 0,
+    "invalid_calls": 0,
+    "invalid_rate": 0.0,
+    "prompt_tokens": 481158,
+    "requests": 88,
+    "tool_calls": 94,
+    "ttft_p50": 0.12477779388427734,
+    "ttft_p95": 0.4040029048919678
+   },
    "serves": "llamacpp:Ornith-1.5-35B-Q4_K_M",
    "stale": false,
-   "ttft_median_s": null,
-   "ttft_p95_s": null,
+   "ttft_median_s": 1.103,
+   "ttft_p95_s": 15.842,
    "unverified": false,
    "wanted": true
   },
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 0.89,
+   "age_days": 1.48,
    "comparison": [
     {
      "candidate": "q3-4b",
@@ -230,6 +247,7 @@
    "parked": "",
    "parked_until": "",
    "pass_rate": 1.0,
+   "real_use": null,
    "serves": "q3-4b",
    "stale": false,
    "ttft_median_s": null,
@@ -240,7 +258,7 @@
   {
    "adopted": true,
    "adopted_how": "measured",
-   "age_days": 0.05,
+   "age_days": 0.64,
    "comparison": [
     {
      "candidate": "q3-30b",
@@ -292,6 +310,18 @@
    "parked": "",
    "parked_until": "",
    "pass_rate": 1.0,
+   "real_use": {
+    "completion_tokens": 2,
+    "error_rate": 0.0,
+    "errors": 0,
+    "invalid_calls": 0,
+    "invalid_rate": null,
+    "prompt_tokens": 10,
+    "requests": 1,
+    "tool_calls": 0,
+    "ttft_p50": null,
+    "ttft_p95": null
+   },
    "serves": "q3-30b",
    "stale": false,
    "ttft_median_s": null,
@@ -302,7 +332,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 0.96,
+   "age_days": 1.55,
    "comparison": [
     {
      "candidate": "h3/minimax-h3@ssd_streaming=false",
@@ -330,6 +360,7 @@
    "parked": "",
    "parked_until": "",
    "pass_rate": 1.0,
+   "real_use": null,
    "serves": "h3",
    "stale": false,
    "ttft_median_s": null,
@@ -338,9 +369,9 @@
    "wanted": true
   },
   {
-   "adopted": true,
-   "adopted_how": "by-hand",
-   "age_days": 1.03,
+   "adopted": false,
+   "adopted_how": "",
+   "age_days": 1.62,
    "comparison": [
     {
      "candidate": "acestep/acestep-v15-turbo@steps=8",
@@ -362,17 +393,14 @@
    ],
    "lane": "music",
    "last_run_at": "2026-10-05T20:29:28Z",
-   "measured_at": "2026-10-05T20:29:28Z",
-   "median_s": 53.045,
-   "metrics": {
-    "duration_error_s": 0.0,
-    "seconds": 30.0,
-    "wer": 0.6147
-   },
+   "measured_at": "",
+   "median_s": null,
+   "metrics": {},
    "parked": "",
    "parked_until": "",
-   "pass_rate": 0.75,
-   "serves": "acestep:acestep-v15-turbo,steps=8",
+   "pass_rate": null,
+   "real_use": null,
+   "serves": "acestep:acestep-v15-turbo",
    "stale": false,
    "ttft_median_s": null,
    "ttft_p95_s": null,
@@ -392,6 +420,18 @@
    "parked": "",
    "parked_until": "",
    "pass_rate": null,
+   "real_use": {
+    "completion_tokens": 10,
+    "error_rate": 0.0,
+    "errors": 0,
+    "invalid_calls": 0,
+    "invalid_rate": null,
+    "prompt_tokens": 20,
+    "requests": 2,
+    "tool_calls": 0,
+    "ttft_p50": null,
+    "ttft_p95": null
+   },
    "serves": "q3-4b",
    "stale": false,
    "ttft_median_s": null,
@@ -400,9 +440,100 @@
    "wanted": true
   },
   {
+   "adopted": true,
+   "adopted_how": "measured",
+   "age_days": 0.38,
+   "comparison": [
+    {
+     "candidate": "llamacpp:Ornith-1.5-35B-Q4_K_M",
+     "first_s": 87.92,
+     "median_s": 8.211,
+     "metrics": {
+      "agent_ctx": 262144.0,
+      "agent_model_s": 10.7488,
+      "agent_no_tool_steps": 0.0,
+      "agent_steps": 5.7143,
+      "agent_tool_s": 0.1025,
+      "agent_ttft_sum_s": 7.4884,
+      "agent_valid_call_rate": 1.0,
+      "agent_wall_s": 10.9017,
+      "completion_tokens": 751.3333,
+      "prompt_tokens": 35016.3571
+     },
+     "pass_rate": 1.0,
+     "passed": 42,
+     "peak_gb": 0.0,
+     "reference": false,
+     "total": 42,
+     "ttft_median_s": 0.283,
+     "ttft_p95_s": 0.668
+    },
+    {
+     "candidate": "q3-4b",
+     "first_s": 9.987,
+     "median_s": 4.311,
+     "metrics": {
+      "agent_model_s": 6.0956,
+      "agent_no_tool_steps": 0.0714,
+      "agent_steps": 3.9762,
+      "agent_tool_s": 0.0076,
+      "agent_ttft_sum_s": 3.4043,
+      "agent_valid_call_rate": 1.0,
+      "agent_wall_s": 6.1562,
+      "completion_tokens": 377.3333,
+      "prompt_tokens": 14492.0952
+     },
+     "pass_rate": 0.333,
+     "passed": 14,
+     "peak_gb": 0.0,
+     "reference": false,
+     "total": 42,
+     "ttft_median_s": 0.257,
+     "ttft_p95_s": 10.517
+    }
+   ],
+   "lane": "agent",
+   "last_run_at": "2026-10-07T02:18:41Z",
+   "measured_at": "2026-10-07T02:18:41Z",
+   "median_s": 8.211,
+   "metrics": {
+    "agent_ctx": 262144.0,
+    "agent_model_s": 10.7488,
+    "agent_no_tool_steps": 0.0,
+    "agent_steps": 5.7143,
+    "agent_tool_s": 0.1025,
+    "agent_ttft_sum_s": 7.4884,
+    "agent_valid_call_rate": 1.0,
+    "agent_wall_s": 10.9017,
+    "completion_tokens": 751.3333,
+    "prompt_tokens": 35016.3571
+   },
+   "parked": "",
+   "parked_until": "",
+   "pass_rate": 1.0,
+   "real_use": {
+    "completion_tokens": 20,
+    "error_rate": 0.0,
+    "errors": 0,
+    "invalid_calls": 0,
+    "invalid_rate": null,
+    "prompt_tokens": 48,
+    "requests": 4,
+    "tool_calls": 0,
+    "ttft_p50": null,
+    "ttft_p95": null
+   },
+   "serves": "llamacpp:Ornith-1.5-35B-Q4_K_M",
+   "stale": false,
+   "ttft_median_s": 0.283,
+   "ttft_p95_s": 0.668,
+   "unverified": false,
+   "wanted": true
+  },
+  {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 0.85,
+   "age_days": 1.45,
    "comparison": [
     {
      "candidate": "claude-code:claude-opus-5-5",
@@ -480,6 +611,7 @@
    "parked": "",
    "parked_until": "",
    "pass_rate": 0.8,
+   "real_use": null,
    "serves": "local-large",
    "stale": false,
    "ttft_median_s": null,
@@ -490,7 +622,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 1.03,
+   "age_days": 1.63,
    "comparison": [
     {
      "candidate": "parakeet-tdt-0.6b-v2",
@@ -518,6 +650,7 @@
    "parked": "",
    "parked_until": "",
    "pass_rate": 1.0,
+   "real_use": null,
    "serves": "mlx-community/parakeet-tdt-0.6b-v2",
    "stale": false,
    "ttft_median_s": null,
@@ -528,7 +661,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 0.34,
+   "age_days": 0.93,
    "comparison": [
     {
      "candidate": "Kokoro-82M-bf16/bm_george",
@@ -571,6 +704,7 @@
    "parked": "",
    "parked_until": "",
    "pass_rate": 1.0,
+   "real_use": null,
    "serves": "mlx-community/Kokoro-82M-bf16",
    "stale": false,
    "ttft_median_s": null,
@@ -586,7 +720,7 @@
   "first_seen": "2026-10-05T19:28:52Z",
   "hw_model": "Mac17,15",
   "label": "Mac Studio M5 Ultra 96 GB",
-  "last_seen": "2026-10-06T21:05:50Z",
+  "last_seen": "2026-10-07T11:22:01Z",
   "memory_gb": 96.0,
   "os": "macOS 27.0.1",
   "runtimes": [
@@ -609,5 +743,5 @@
    "transformers": "5.16.1"
   }
  },
- "schema": 42
+ "schema": 51
 }
