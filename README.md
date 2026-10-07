@@ -793,6 +793,20 @@ runtime, dead upstream) is not retested; it reopens when that condition is
 met. `soh discover --queue` prints how many retests are due, scheduled and
 final, and how many retests then passed (recovered false negatives).
 
+**Re-verification.** A served model is measured once, when it is adopted, so
+each `--loop --run` (after the retests) also re-checks every wanted lane's
+served model. It queues a low-priority job, never an inline run, when a runtime
+that lane uses (mlx-lm, llama.cpp, mflux, LiteLLM, macOS and so on) has a
+different version than the model's last passing run recorded, when the lane
+has no passing run here within its threshold (7 days by default; `soh reverify
+--lane code --days 3` changes it), or when `soh usage` saw real use regress
+after the lane's alias last moved. A lane gets one queued re-run at a time. The
+next check reads the run that job stored: no passes, or more cases lost than
+gained against the last pass at the adopt tier's significance, is recorded with
+its reason and failure class and flagged in `soh report`. The served model is
+never swapped; that is left to a person. `soh reverify --dry-run` says what
+would be queued.
+
 The install carries no torch on Apple Silicon. `mlx-whisper` needs it
 unconditionally, so the multilingual ear lives in the `whisper` dependency
 group: 370MB installed rather than 1.1GB. Dependencies are marked by platform
