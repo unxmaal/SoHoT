@@ -34,12 +34,12 @@
   }
  ],
  "export_version": 1,
- "generated_at": "2026-10-07T15:16:37Z",
+ "generated_at": "2026-10-07T15:20:53Z",
  "lanes": [
   {
    "adopted": true,
    "adopted_how": "by-hand",
-   "age_days": 1.02,
+   "age_days": 1.03,
    "comparison": [
     {
      "candidate": "mflux/flux2-klein-4b-q8",
@@ -96,7 +96,7 @@
   {
    "adopted": true,
    "adopted_how": "measured",
-   "age_days": 0.16,
+   "age_days": 0.17,
    "comparison": [
     {
      "candidate": "llamacpp:Ornith-1.5-35B-Q4_K_M",
@@ -170,7 +170,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 1.64,
+   "age_days": 1.65,
    "comparison": [
     {
      "candidate": "q3-4b",
@@ -432,7 +432,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 0.03,
+   "age_days": 0.04,
    "comparison": [
     {
      "candidate": "nimble/Bespoke-Nimble-9B",
@@ -732,23 +732,61 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": null,
-   "comparison": [],
+   "age_days": 0.0,
+   "comparison": [
+    {
+     "candidate": "rerank/ettin-reranker-1b-v1",
+     "first_s": 3.782,
+     "median_s": 3.243,
+     "metrics": {
+      "retrieval_ndcg": 0.9455,
+      "retrieval_recall": 0.9643
+     },
+     "not_run": "",
+     "pass_rate": 0.929,
+     "passed": 13,
+     "peak_gb": 5.64,
+     "reference": false,
+     "total": 14,
+     "ttft_median_s": null,
+     "ttft_p95_s": null
+    },
+    {
+     "candidate": "bm25/okapi",
+     "first_s": 0.032,
+     "median_s": 0.03,
+     "metrics": {
+      "retrieval_ndcg": 0.662,
+      "retrieval_recall": 0.7857
+     },
+     "not_run": "",
+     "pass_rate": 0.714,
+     "passed": 10,
+     "peak_gb": 0.01,
+     "reference": false,
+     "total": 14,
+     "ttft_median_s": null,
+     "ttft_p95_s": null
+    }
+   ],
    "lane": "retrieval",
-   "last_run_at": "",
-   "measured_at": "",
-   "median_s": null,
-   "metrics": {},
+   "last_run_at": "2026-10-07T15:20:53Z",
+   "measured_at": "2026-10-07T15:20:53Z",
+   "median_s": 0.03,
+   "metrics": {
+    "retrieval_ndcg": 0.662,
+    "retrieval_recall": 0.7857
+   },
    "not_run": "",
    "parked": "",
    "parked_until": "",
-   "pass_rate": null,
+   "pass_rate": 0.714,
    "real_use": null,
    "serves": "bm25",
    "stale": false,
    "ttft_median_s": null,
    "ttft_p95_s": null,
-   "unverified": true,
+   "unverified": false,
    "wanted": true
   },
   {
@@ -870,7 +908,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 1.79,
+   "age_days": 1.8,
    "comparison": [
     {
      "candidate": "parakeet-tdt-0.6b-v2",
@@ -973,7 +1011,7 @@
   "first_seen": "2026-10-05T19:28:52Z",
   "hw_model": "Mac17,15",
   "label": "Mac Studio M5 Ultra 96 GB",
-  "last_seen": "2026-10-07T15:16:37Z",
+  "last_seen": "2026-10-07T15:20:53Z",
   "memory_gb": 96.0,
   "os": "macOS 27.0.1",
   "runtimes": [
