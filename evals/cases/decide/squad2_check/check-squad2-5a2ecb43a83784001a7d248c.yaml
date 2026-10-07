@@ -1,0 +1,60 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5a2ecb43a83784001a7d248c
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: The study also found that there were two previously unknown but related clades (genetic branches)
+  of the Y. pestis genome associated with medieval mass graves. These clades (which are thought to be
+  extinct) were found to be ancestral to modern isolates of the modern Y. pestis strains Y. p. orientalis
+  and Y. p. medievalis, suggesting the plague may have entered Europe in two waves. Surveys of plague
+  pit remains in France and England indicate the first variant entered Europe through the port of Marseille
+  around November 1347 and spread through France over the next two years, eventually reaching England
+  in the spring of 1349, where it spread through the country in three epidemics. Surveys of plague pit
+  remains from the Dutch town of Bergen op Zoom showed the Y. pestis genotype responsible for the pandemic
+  that spread through the Low Countries from 1350 differed from that found in Britain and France, implying
+  Bergen op Zoom (and possibly other parts of the southern Netherlands) was not directly infected from
+  England or France in 1349 and suggesting a second wave of plague, different from those in Britain and
+  France, may have been carried to the Low Countries from Norway, the Hanseatic cities or another site.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: In what year did the second
+        wave of the plague hit the Netherlands?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What strains of y. pestis
+        were found in the mass graves?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What do the strains of y.
+        pestis suggest abut the plague?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: In what year was Marseille
+        founded?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: In what country did the Y.
+        p. orientalis genome originate?'
+assert:
+  answers:
+    q1: false
+    q2: true
+    q3: true
+    q4: false
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5a2ecb43a83784001a7d248c, squad2-57264f18f1498d1400e8dbaf, squad2-57264f18f1498d1400e8dbb0,
+    squad2-5a2ecb43a83784001a7d248b, squad2-5a2ecb43a83784001a7d248f
+  date: ''
+  transform: paragraph Black_Death#11; first 5 questions of a paragraph in sha256(id) order, kept only
+    when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

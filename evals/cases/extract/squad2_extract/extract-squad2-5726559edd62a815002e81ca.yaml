@@ -1,0 +1,33 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-5726559edd62a815002e81ca
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: How many people died in the outbreak of 1471?'
+context: In England, in the absence of census figures, historians propose a range of preincident population
+  figures from as high as 7 million to as low as 4 million in 1300, and a postincident population figure
+  as low as 2 million. By the end of 1350, the Black Death subsided, but it never really died out in England.
+  Over the next few hundred years, further outbreaks occurred in 1361–62, 1369, 1379–83, 1389–93, and
+  throughout the first half of the 15th century. An outbreak in 1471 took as much as 10–15% of the population,
+  while the death rate of the plague of 1479–80 could have been as high as 20%. The most general outbreaks
+  in Tudor and Stuart England seem to have begun in 1498, 1535, 1543, 1563, 1589, 1603, 1625, and 1636,
+  and ended with the Great Plague of London in 1665.
+assert:
+  equals:
+  - 10–15% of the population
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5726559edd62a815002e81ca
+  date: ''
+  transform: paragraph Black_Death#19; first answerable question in sha256(id) order whose every human
+    answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

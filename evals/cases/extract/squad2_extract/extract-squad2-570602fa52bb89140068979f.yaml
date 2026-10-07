@@ -1,0 +1,30 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-570602fa52bb89140068979f
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: Outside of national recognition, what other kind of recognition do some of the cities get?'
+context: Southern California is divided culturally, politically, and economically into distinctive regions,
+  each containing its own culture and atmosphere, anchored usually by a city with both national and sometimes
+  global recognition, which are often the hub of economic activity for its respective region and being
+  home to many tourist destinations. Each region is further divided into many culturally distinct areas
+  but as a whole combine to create the southern California atmosphere.
+assert:
+  equals:
+  - global
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-570602fa52bb89140068979f
+  date: ''
+  transform: paragraph Southern_California#20; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

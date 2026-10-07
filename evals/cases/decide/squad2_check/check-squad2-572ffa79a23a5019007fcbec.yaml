@@ -1,0 +1,57 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-572ffa79a23a5019007fcbec
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: 'In southern Europe, the stage was set in the Triassic Period of the Mesozoic Era, with the opening
+  of the Tethys Ocean, between the Eurasian and African tectonic plates, between about 240 MBP and 220
+  MBP (million years before present). The present Mediterranean Sea descends from this somewhat larger
+  Tethys sea. At about 180 MBP, in the Jurassic Period, the two plates reversed direction and began to
+  compress the Tethys floor, causing it to be subducted under Eurasia and pushing up the edge of the latter
+  plate in the Alpine Orogeny of the Oligocene and Miocene Periods. Several microplates were caught in
+  the squeeze and rotated or were pushed laterally, generating the individual features of Mediterranean
+  geography: Iberia pushed up the Pyrenees; Italy, the Alps, and Anatolia, moving west, the mountains
+  of Greece and the islands. The compression and orogeny continue today, as shown by the ongoing raising
+  of the mountains a small amount each year and the active volcanoes.'
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Microplates squeezing and
+        rotating created the features of what?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: The present Mediterranean
+        Sea descends from what sea?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What pushed up the Pyrenees?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What period opened the Tethys
+        Ocean?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Between which years did the
+        Mediterranean Sea flow into the Tethys sea?'
+assert:
+  answers:
+    q1: true
+    q2: true
+    q3: true
+    q4: true
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572ffa79a23a5019007fcbec, squad2-572ffa79a23a5019007fcbe9, squad2-572ffa79a23a5019007fcbed,
+    squad2-572ffa79a23a5019007fcbea, squad2-5ad295d4d7d075001a429afe
+  date: ''
+  transform: paragraph Rhine#24; first 5 questions of a paragraph in sha256(id) order, kept only when
+    they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

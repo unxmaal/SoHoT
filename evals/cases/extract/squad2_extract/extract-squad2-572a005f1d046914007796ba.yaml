@@ -1,0 +1,32 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-572a005f1d046914007796ba
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: How much higher was the rate of deforestation in 2000, to 2005 compared to 1995 to 2000?'
+context: The needs of soy farmers have been used to justify many of the controversial transportation projects
+  that are currently developing in the Amazon. The first two highways successfully opened up the rainforest
+  and led to increased settlement and deforestation. The mean annual deforestation rate from 2000 to 2005
+  (22,392 km2 or 8,646 sq mi per year) was 18% higher than in the previous five years (19,018 km2 or 7,343
+  sq mi per year). Although deforestation has declined significantly in the Brazilian Amazon between 2004
+  and 2014, there has been an increase to the present day.
+assert:
+  equals:
+  - 18% higher
+  - 18%
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572a005f1d046914007796ba
+  date: ''
+  transform: paragraph Amazon_rainforest#13; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

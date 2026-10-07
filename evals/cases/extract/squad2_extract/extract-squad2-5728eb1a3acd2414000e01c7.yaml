@@ -1,0 +1,36 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-5728eb1a3acd2414000e01c7
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What do some people protest against?'
+context: Some civil disobedients feel it is incumbent upon them to accept punishment because of their
+  belief in the validity of the social contract, which is held to bind all to obey the laws that a government
+  meeting certain standards of legitimacy has established, or else suffer the penalties set out in the
+  law. Other civil disobedients who favor the existence of government still don't believe in the legitimacy
+  of their particular government, or don't believe in the legitimacy of a particular law it has enacted.
+  And still other civil disobedients, being anarchists, don't believe in the legitimacy of any government,
+  and therefore see no need to accept punishment for a violation of criminal law that does not infringe
+  the rights of others.
+assert:
+  equals:
+  - legitimacy of a particular law
+  - law
+  - laws
+  - the legitimacy of any government
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5728eb1a3acd2414000e01c7
+  date: ''
+  transform: paragraph Civil_disobedience#16; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

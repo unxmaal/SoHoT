@@ -1,0 +1,54 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5729fe5c3f37b31900478632
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: Overactive immune responses comprise the other end of immune dysfunction, particularly the autoimmune
+  disorders. Here, the immune system fails to properly distinguish between self and non-self, and attacks
+  part of the body. Under normal circumstances, many T cells and antibodies react with "self" peptides.
+  One of the functions of specialized cells (located in the thymus and bone marrow) is to present young
+  lymphocytes with self antigens produced throughout the body and to eliminate those cells that recognize
+  self-antigens, preventing autoimmunity.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Under normal conditions, T
+        cells and antibodies produce what kind of peptides?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What disorder causes the immune
+        system to distinguish between self and non-self?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What cells are not eliminated
+        by the immune system?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Where are the specialized
+        cells that eliminate cells that recognize self-antigens located?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is the function of specialize
+        cells located in the brain?'
+assert:
+  answers:
+    q1: true
+    q2: false
+    q3: false
+    q4: true
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5729fe5c3f37b31900478632, squad2-5ad4db615b96ef001a10a434, squad2-5ad4db615b96ef001a10a437,
+    squad2-5729fe5c3f37b31900478631, squad2-5ad4db615b96ef001a10a436
+  date: ''
+  transform: paragraph Immune_system#28; first 5 questions of a paragraph in sha256(id) order, kept only
+    when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

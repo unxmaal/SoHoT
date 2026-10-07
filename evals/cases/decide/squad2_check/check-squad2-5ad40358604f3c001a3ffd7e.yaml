@@ -1,0 +1,52 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5ad40358604f3c001a3ffd7e
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: 'The customary law of Normandy was developed between the 10th and 13th centuries and survives
+  today through the legal systems of Jersey and Guernsey in the Channel Islands. Norman customary law
+  was transcribed in two customaries in Latin by two judges for use by them and their colleagues: These
+  are the Très ancien coutumier (Very ancient customary), authored between 1200 and 1245; and the Grand
+  coutumier de Normandie (Great customary of Normandy, originally Summa de legibus Normanniae in curia
+  laïcali), authored between 1235 and 1245.'
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What law has 3 customeries?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What Norman law wasdeveloped
+        between 1000 and 1300?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Where are Jersey and Guernsey'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How many customaries does
+        Norman customary law have?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What was authored in the 12th
+        century?'
+assert:
+  answers:
+    q1: false
+    q2: false
+    q3: true
+    q4: true
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5ad40358604f3c001a3ffd7e, squad2-5ad40358604f3c001a3ffd7d, squad2-56de4a474396321400ee2786,
+    squad2-56de4a474396321400ee2787, squad2-5ad40358604f3c001a3ffd7f
+  date: ''
+  transform: paragraph Normans#30; first 5 questions of a paragraph in sha256(id) order, kept only when
+    they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

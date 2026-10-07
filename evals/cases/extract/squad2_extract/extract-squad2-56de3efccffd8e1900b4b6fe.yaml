@@ -1,0 +1,29 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-56de3efccffd8e1900b4b6fe
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: How long did Western Europe control Cyprus?'
+context: The conquest of Cyprus by the Anglo-Norman forces of the Third Crusade opened a new chapter in
+  the history of the island, which would be under Western European domination for the following 380 years.
+  Although not part of a planned operation, the conquest had much more permanent results than initially
+  expected.
+assert:
+  equals:
+  - 380 years
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-56de3efccffd8e1900b4b6fe
+  date: ''
+  transform: paragraph Normans#25; first answerable question in sha256(id) order whose every human answer
+    is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

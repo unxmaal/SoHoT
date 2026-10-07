@@ -1,0 +1,54 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5ad3d689604f3c001a3ff30e
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: The heat required for boiling the water and supplying the steam can be derived from various sources,
+  most commonly from burning combustible materials with an appropriate supply of air in a closed space
+  (called variously combustion chamber, firebox). In some cases the heat source is a nuclear reactor,
+  geothermal energy, solar energy or waste heat from an internal combustion engine or industrial process.
+  In the case of model or toy steam engines, the heat source can be an electric heating element.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What, aside from firebox,
+        is another name for the space in which combustible material is burned in the electric heating
+        element?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What type of heating element
+        is often used in closed space engines?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is the usual source of
+        heat for boiling water in the industrial process?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Aside from firebox, what is
+        another name for the space in which combustible material is burned in the engine?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is the usual source of
+        heat for boiling water in the steam engine?'
+assert:
+  answers:
+    q1: false
+    q2: false
+    q3: false
+    q4: true
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5ad3d689604f3c001a3ff30e, squad2-5ad3d689604f3c001a3ff311, squad2-5ad3d689604f3c001a3ff30d,
+    squad2-571144d1a58dae1900cd6d6f, squad2-571144d1a58dae1900cd6d6e
+  date: ''
+  transform: paragraph Steam_engine#11; first 5 questions of a paragraph in sha256(id) order, kept only
+    when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

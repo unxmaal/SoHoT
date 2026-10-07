@@ -1,0 +1,52 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-56de17f9cffd8e1900b4b5e0
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: One of the claimants of the English throne opposing William the Conqueror, Edgar Atheling, eventually
+  fled to Scotland. King Malcolm III of Scotland married Edgar's sister Margaret, and came into opposition
+  to William who had already disputed Scotland's southern borders. William invaded Scotland in 1072, riding
+  as far as Abernethy where he met up with his fleet of ships. Malcolm submitted, paid homage to William
+  and surrendered his son Duncan as a hostage, beginning a series of arguments as to whether the Scottish
+  Crown owed allegiance to the King of England.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who was Margaret''s brother?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who was Margaret''s husband?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: When was Scotland invaded
+        by William?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who did the Scotish king take
+        hostage?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who invaded Scotland in the
+        10th century?'
+assert:
+  answers:
+    q1: true
+    q2: true
+    q3: true
+    q4: false
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-56de17f9cffd8e1900b4b5e0, squad2-56de17f9cffd8e1900b4b5e1, squad2-56de17f9cffd8e1900b4b5e2,
+    squad2-5ad3f7ac604f3c001a3ffa3d, squad2-5ad3f7ac604f3c001a3ffa3c
+  date: ''
+  transform: paragraph Normans#19; first 5 questions of a paragraph in sha256(id) order, kept only when
+    they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

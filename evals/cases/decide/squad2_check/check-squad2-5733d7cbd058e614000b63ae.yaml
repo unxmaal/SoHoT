@@ -1,0 +1,55 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5733d7cbd058e614000b63ae
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: In between the French and the British, large areas were dominated by native tribes. To the north,
+  the Mi'kmaq and the Abenaki were engaged in Father Le Loutre's War and still held sway in parts of Nova
+  Scotia, Acadia, and the eastern portions of the province of Canada, as well as much of present-day Maine.
+  The Iroquois Confederation dominated much of present-day Upstate New York and the Ohio Country, although
+  the latter also included Algonquian-speaking populations of Delaware and Shawnee, as well as Iroquoian-speaking
+  Mingo. These tribes were formally under Iroquois rule, and were limited by them in authority to make
+  agreements.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What rule did some native
+        live under?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What tribes weren''t in Father
+        Le Loutre''s War?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What tribes were in Father
+        Le Loutre''s War?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: In between French and British,
+        what groups controlled land?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Where didn''t Iroquois Confederation
+        control?'
+assert:
+  answers:
+    q1: true
+    q2: false
+    q3: true
+    q4: true
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5733d7cbd058e614000b63ae, squad2-5ad3a3fc604f3c001a3fea79, squad2-5733d7cbd058e614000b63ac,
+    squad2-5733d7cbd058e614000b63ab, squad2-5ad3a3fc604f3c001a3fea7a
+  date: ''
+  transform: paragraph French_and_Indian_War#9; first 5 questions of a paragraph in sha256(id) order,
+    kept only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

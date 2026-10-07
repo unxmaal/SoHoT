@@ -1,0 +1,35 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-57266193dd62a815002e832d
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: In the layered model of the Earth there are seismic discontinuities in which layer?'
+context: Seismologists can use the arrival times of seismic waves in reverse to image the interior of
+  the Earth. Early advances in this field showed the existence of a liquid outer core (where shear waves
+  were not able to propagate) and a dense solid inner core. These advances led to the development of a
+  layered model of the Earth, with a crust and lithosphere on top, the mantle below (separated within
+  itself by seismic discontinuities at 410 and 660 kilometers), and the outer core and inner core below
+  that. More recently, seismologists have been able to create detailed images of wave speeds inside the
+  earth in the same way a doctor images a body in a CT scan. These images have led to a much more detailed
+  view of the interior of the Earth, and have replaced the simplified layered model with a much more dynamic
+  model.
+assert:
+  equals:
+  - the mantle
+  - mantle
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-57266193dd62a815002e832d
+  date: ''
+  transform: paragraph Geology#3; first answerable question in sha256(id) order whose every human answer
+    is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

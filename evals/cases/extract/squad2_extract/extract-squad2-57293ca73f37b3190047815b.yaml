@@ -1,0 +1,32 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-57293ca73f37b3190047815b
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: When was the IPCC Trust Fund founded?'
+context: The IPCC receives funding through the IPCC Trust Fund, established in 1989 by the United Nations
+  Environment Programme (UNEP) and the World Meteorological Organization (WMO), Costs of the Secretary
+  and of housing the secretariat are provided by the WMO, while UNEP meets the cost of the Depute Secretary.
+  Annual cash contributions to the Trust Fund are made by the WMO, by UNEP, and by IPCC Members; the scale
+  of payments is determined by the IPCC Panel, which is also responsible for considering and adopting
+  by consensus the annual budget. The organisation is required to comply with the Financial Regulations
+  and Rules of the WMO.
+assert:
+  equals:
+  - '1989'
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-57293ca73f37b3190047815b
+  date: ''
+  transform: paragraph Intergovernmental_Panel_on_Climate_Change#3; first answerable question in sha256(id)
+    order whose every human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

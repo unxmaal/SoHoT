@@ -1,0 +1,56 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5ad0297e77cf76001a686c3b
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: '"Southern California" is not a formal geographic designation, and definitions of what constitutes
+  southern California vary. Geographically, California''s north-south midway point lies at exactly 37°
+  9'' 58.23" latitude, around 11 miles (18 km) south of San Jose; however, this does not coincide with
+  popular use of the term. When the state is divided into two areas (northern and southern California),
+  the term "southern California" usually refers to the ten southern-most counties of the state. This definition
+  coincides neatly with the county lines at 35° 47′ 28″ north latitude, which form the northern borders
+  of San Luis Obispo, Kern, and San Bernardino counties. Another definition for southern California uses
+  Point Conception and the Tehachapi Mountains as the northern boundary.'
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is around 18 miles south
+        of San Jose?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: The term "southern" California
+        usually refers to how many of the southern-most counties of the state?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Geographically speaking, where
+        is California''s north - south midway point in terms of latitude?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Point Conception is an example
+        of a landmark among what boundary of southern California?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How many miles south of San
+        Jose is the north - south midway point located?'
+assert:
+  answers:
+    q1: false
+    q2: true
+    q3: true
+    q4: true
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5ad0297e77cf76001a686c3b, squad2-5705edcd52bb8914006896cc, squad2-5705edcd52bb8914006896ca,
+    squad2-5705edcd52bb8914006896ce, squad2-5705edcd52bb8914006896cb
+  date: ''
+  transform: paragraph Southern_California#9; first 5 questions of a paragraph in sha256(id) order, kept
+    only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

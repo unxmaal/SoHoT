@@ -1,0 +1,31 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-5728223cff5b5019007d9dc7
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: Aside from being located on the coast, what contributes to Jacksonville''s lack of cold weather?'
+context: Like much of the south Atlantic region of the United States, Jacksonville has a humid subtropical
+  climate (Köppen Cfa), with mild weather during winters and hot and humid weather during summers. Seasonal
+  rainfall is concentrated in the warmest months from May through September, while the driest months are
+  from November through April. Due to Jacksonville's low latitude and coastal location, the city sees
+  very little cold weather, and winters are typically mild and sunny. Summers can be hot and wet, and
+  summer thunderstorms with torrential but brief downpours are common.
+assert:
+  equals:
+  - low latitude
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5728223cff5b5019007d9dc7
+  date: ''
+  transform: paragraph Jacksonville,_Florida#16; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

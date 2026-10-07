@@ -1,0 +1,32 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-570953a7efce8f15003a7dfe
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What year did BSkyB and Virgin Media have a dispute over the carriage of Sky Channels on cable
+  TV?'
+context: In 2007, BSkyB and Virgin Media became involved in a dispute over the carriage of Sky channels
+  on cable TV. The failure to renew the existing carriage agreements negotiated with NTL and Telewest
+  resulted in Virgin Media removing the basic channels from the network on 1 March 2007. Virgin Media
+  claimed that BSkyB had substantially increased the asking price for the channels, a claim which BSkyB
+  denied, on the basis that their new deal offered "substantially more value" by including HD channels
+  and Video On Demand content which was not previously carried by cable.
+assert:
+  equals:
+  - '2007'
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-570953a7efce8f15003a7dfe
+  date: ''
+  transform: paragraph Sky_(United_Kingdom)#5; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

@@ -1,0 +1,32 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-57264865dd62a815002e8064
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: How similar was the Lisbon Treaty to the constitutional treaty?'
+context: Following the Nice Treaty, there was an attempt to reform the constitutional law of the European
+  Union and make it more transparent; this would have also produced a single constitutional document.
+  However, as a result of the referendum in France and the referendum in the Netherlands, the 2004 Treaty
+  establishing a Constitution for Europe never came into force. Instead, the Lisbon Treaty was enacted.
+  Its substance was very similar to the proposed constitutional treaty, but it was formally an amending
+  treaty, and – though it significantly altered the existing treaties – it did not completely replace
+  them.
+assert:
+  equals:
+  - very similar
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-57264865dd62a815002e8064
+  date: ''
+  transform: paragraph European_Union_law#5; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

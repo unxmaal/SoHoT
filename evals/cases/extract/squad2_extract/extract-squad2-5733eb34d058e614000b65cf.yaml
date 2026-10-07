@@ -1,0 +1,35 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-5733eb34d058e614000b65cf
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: Who was the speaker of the tribal council?'
+context: The Iroquois sent runners to the manor of William Johnson in upstate New York. The British Superintendent
+  for Indian Affairs in the New York region and beyond, Johnson was known to the Iroquois as Warraghiggey,
+  meaning "He who does great things." He spoke their languages and had become a respected honorary member
+  of the Iroquois Confederacy in the area. In 1746, Johnson was made a colonel of the Iroquois. Later
+  he was commissioned as a colonel of the Western New York Militia. They met at Albany, New York with
+  Governor Clinton and officials from some of the other American colonies. Mohawk Chief Hendrick, Speaker
+  of their tribal council, insisted that the British abide by their obligations and block French expansion.
+  When Clinton did not respond to his satisfaction, Chief Hendrick said that the "Covenant Chain", a long-standing
+  friendly relationship between the Iroquois Confederacy and the British Crown, was broken.
+assert:
+  equals:
+  - Mohawk Chief Hendrick
+  - Chief Hendrick
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5733eb34d058e614000b65cf
+  date: ''
+  transform: paragraph French_and_Indian_War#19; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

@@ -1,0 +1,53 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5ad502385b96ef001a10a957
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: 'As interesting examples of expositions the most notable are: the world''s first Museum of Posters
+  boasting one of the largest collections of art posters in the world, Museum of Hunting and Riding and
+  the Railway Museum. From among Warsaw''s 60 museums, the most prestigious ones are National Museum with
+  a collection of works whose origin ranges in time from antiquity till the present epoch as well as one
+  of the best collections of paintings in the country including some paintings from Adolf Hitler''s private
+  collection, and Museum of the Polish Army whose set portrays the history of arms.'
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What does the Riding Museum
+        boast having from Adolf Hitler''s private collection?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What does the National Museum
+        boast having from Adolf Hitler''s private collection?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How many posters are in Warsaw?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What does the world''s first
+        Museum of Riding have one of the largest collections of in the world?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What does the Museum of the
+        Riding Army portray the history of?'
+assert:
+  answers:
+    q1: false
+    q2: true
+    q3: false
+    q4: false
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5ad502385b96ef001a10a957, squad2-57339eb9d058e614000b5ef9, squad2-5ad502385b96ef001a10a954,
+    squad2-5ad502385b96ef001a10a955, squad2-5ad502385b96ef001a10a958
+  date: ''
+  transform: paragraph Warsaw#41; first 5 questions of a paragraph in sha256(id) order, kept only when
+    they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

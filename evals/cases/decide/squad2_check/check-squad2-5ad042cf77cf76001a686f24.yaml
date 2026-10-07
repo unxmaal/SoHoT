@@ -1,0 +1,56 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5ad042cf77cf76001a686f24
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: Southern California consists of one Combined Statistical Area, eight Metropolitan Statistical
+  Areas, one international metropolitan area, and multiple metropolitan divisions. The region is home
+  to two extended metropolitan areas that exceed five million in population. These are the Greater Los
+  Angeles Area at 17,786,419, and San Diego–Tijuana at 5,105,768. Of these metropolitan areas, the Los
+  Angeles-Long Beach-Santa Ana metropolitan area, Riverside-San Bernardino-Ontario metropolitan area,
+  and Oxnard-Thousand Oaks-Ventura metropolitan area form Greater Los Angeles; while the El Centro metropolitan
+  area and San Diego-Carlsbad-San Marcos metropolitan area form the Southern Border Region. North of Greater
+  Los Angeles are the Santa Barbara, San Luis Obispo, and Bakersfield metropolitan areas.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What consists of one Metropolitan
+        Statistical Area?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How many extended metropolitan
+        areas are there?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What areas are north of Greater
+        Santa Barbara?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is the name associated
+        with the eight areas that make up a part of southern California?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What area has a population
+        of 5,105,786?'
+assert:
+  answers:
+    q1: false
+    q2: true
+    q3: false
+    q4: true
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5ad042cf77cf76001a686f24, squad2-5706074552bb8914006897d5, squad2-5ad042cf77cf76001a686f28,
+    squad2-5706074552bb8914006897d4, squad2-5ad042cf77cf76001a686f27
+  date: ''
+  transform: paragraph Southern_California#22; first 5 questions of a paragraph in sha256(id) order, kept
+    only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

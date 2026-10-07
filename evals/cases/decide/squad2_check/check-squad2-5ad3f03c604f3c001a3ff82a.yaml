@@ -1,0 +1,54 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5ad3f03c604f3c001a3ff82a
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: In most reciprocating piston engines, the steam reverses its direction of flow at each stroke
+  (counterflow), entering and exhausting from the cylinder by the same port. The complete engine cycle
+  occupies one rotation of the crank and two piston strokes; the cycle also comprises four events – admission,
+  expansion, exhaust, compression. These events are controlled by valves often working inside a steam
+  chest adjacent to the cylinder; the valves distribute the steam by opening and closing steam ports communicating
+  with the cylinder end(s) and are driven by valve gear, of which there are many types.[citation needed]
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How many piston strokes occur
+        in an exhaust cycle?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How many crank rotations are
+        there in an engine cycle?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How many piston strokes occur
+        in an engine cycle?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How many events occur in a
+        steam cycle?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Along with admission, exhaust
+        and compression, what is an event in the engine cycle?'
+assert:
+  answers:
+    q1: false
+    q2: true
+    q3: true
+    q4: false
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5ad3f03c604f3c001a3ff82a, squad2-5711488ab654c5140001fc3f, squad2-5711488ab654c5140001fc3e,
+    squad2-5ad3f03c604f3c001a3ff82c, squad2-5711488ab654c5140001fc41
+  date: ''
+  transform: paragraph Steam_engine#14; first 5 questions of a paragraph in sha256(id) order, kept only
+    when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

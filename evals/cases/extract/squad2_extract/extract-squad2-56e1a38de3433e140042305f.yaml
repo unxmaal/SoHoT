@@ -1,0 +1,33 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-56e1a38de3433e140042305f
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: In what unit is the size of the input measured?'
+context: To measure the difficulty of solving a computational problem, one may wish to see how much time
+  the best algorithm requires to solve the problem. However, the running time may, in general, depend
+  on the instance. In particular, larger instances will require more time to solve. Thus the time required
+  to solve a problem (or the space required, or any measure of complexity) is calculated as a function
+  of the size of the instance. This is usually taken to be the size of the input in bits. Complexity theory
+  is interested in how algorithms scale with an increase in the input size. For instance, in the problem
+  of finding whether a graph is connected, how much more time does it take to solve a problem for a graph
+  with 2n vertices compared to the time taken for a graph with n vertices?
+assert:
+  equals:
+  - bits
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-56e1a38de3433e140042305f
+  date: ''
+  transform: paragraph Computational_complexity_theory#10; first answerable question in sha256(id) order
+    whose every human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

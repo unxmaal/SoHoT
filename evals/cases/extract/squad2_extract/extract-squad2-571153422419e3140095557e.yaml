@@ -1,0 +1,32 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-571153422419e3140095557e
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: Who designed Salamanca?'
+context: Trevithick continued his own experiments using a trio of locomotives, concluding with the Catch
+  Me Who Can in 1808. Only four years later, the successful twin-cylinder locomotive Salamanca by Matthew
+  Murray was used by the edge railed rack and pinion Middleton Railway. In 1825 George Stephenson built
+  the Locomotion for the Stockton and Darlington Railway. This was the first public steam railway in the
+  world and then in 1829, he built The Rocket which was entered in and won the Rainhill Trials. The Liverpool
+  and Manchester Railway opened in 1830 making exclusive use of steam power for both passenger and freight
+  trains.
+assert:
+  equals:
+  - Matthew Murray
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-571153422419e3140095557e
+  date: ''
+  transform: paragraph Steam_engine#20; first answerable question in sha256(id) order whose every human
+    answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

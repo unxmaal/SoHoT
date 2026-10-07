@@ -1,0 +1,59 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5ad265efd7d075001a4291d2
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: 'Breathing pure O
+
+  2 in space applications, such as in some modern space suits, or in early spacecraft such as Apollo,
+  causes no damage due to the low total pressures used. In the case of spacesuits, the O
+
+  2 partial pressure in the breathing gas is, in general, about 30 kPa (1.4 times normal), and the resulting
+  O
+
+  2 partial pressure in the astronaut''s arterial blood is only marginally more than normal sea-level
+  O
+
+  2 partial pressure (for more information on this, see space suit and arterial blood gas).'
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What measures at 1.4 kPa?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What si the comparison to
+        sea level with the oxygen level in space suits?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is the partial pressure
+        of O in breathing gas?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Why is breathing oxygen in
+        space craft not dangerous to health?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Why was no damage caused by
+        breathing pure O in space applications?'
+assert:
+  answers:
+    q1: false
+    q2: true
+    q3: false
+    q4: true
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5ad265efd7d075001a4291d2, squad2-571ce5055efbb31900334e2d, squad2-5ad265efd7d075001a4291d3,
+    squad2-571ce5055efbb31900334e2a, squad2-5ad265efd7d075001a4291d1
+  date: ''
+  transform: paragraph Oxygen#41; first 5 questions of a paragraph in sha256(id) order, kept only when
+    they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

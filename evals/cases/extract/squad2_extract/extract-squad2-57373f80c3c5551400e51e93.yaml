@@ -1,0 +1,33 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-57373f80c3c5551400e51e93
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What force acted on bodies to retard their velocity?'
+context: The shortcomings of Aristotelian physics would not be fully corrected until the 17th century
+  work of Galileo Galilei, who was influenced by the late Medieval idea that objects in forced motion
+  carried an innate force of impetus. Galileo constructed an experiment in which stones and cannonballs
+  were both rolled down an incline to disprove the Aristotelian theory of motion early in the 17th century.
+  He showed that the bodies were accelerated by gravity to an extent that was independent of their mass
+  and argued that objects retain their velocity unless acted on by a force, for example friction.
+assert:
+  equals:
+  - friction
+  - gravity
+  - force
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-57373f80c3c5551400e51e93
+  date: ''
+  transform: paragraph Force#3; first answerable question in sha256(id) order whose every human answer
+    is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

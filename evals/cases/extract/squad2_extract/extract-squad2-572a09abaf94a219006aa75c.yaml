@@ -1,0 +1,33 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-572a09abaf94a219006aa75c
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: The classification of aspects of the Amazon forest is important for mapping what type of emission?'
+context: 'To accurately map the Amazon''s biomass and subsequent carbon related emissions, the classification
+  of tree growth stages within different parts of the forest is crucial. In 2006 Tatiana Kuplich organized
+  the trees of the Amazon into four categories: (1) mature forest, (2) regenerating forest [less than
+  three years], (3) regenerating forest [between three and five years of regrowth], and (4) regenerating
+  forest [eleven to eighteen years of continued development]. The researcher used a combination of Synthetic
+  aperture radar (SAR) and Thematic Mapper (TM) to accurately place the different portions of the Amazon
+  into one of the four classifications.'
+assert:
+  equals:
+  - carbon related emissions
+  - carbon related
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572a09abaf94a219006aa75c
+  date: ''
+  transform: paragraph Amazon_rainforest#18; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

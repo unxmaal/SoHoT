@@ -1,0 +1,54 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-572989846aef051400154fc3
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: 'The zeta function is closely related to prime numbers. For example, the aforementioned fact
+  that there are infinitely many primes can also be seen using the zeta function: if there were only finitely
+  many primes then ζ(1) would have a finite value. However, the harmonic series 1 + 1/2 + 1/3 + 1/4 +
+  ... diverges (i.e., exceeds any given number), so there must be infinitely many primes. Another example
+  of the richness of the zeta function and a glimpse of modern algebraic number theory is the following
+  identity (Basel problem), due to Euler,'
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What does it mean when a harmonic
+        series diverges?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What property of the harmonic
+        series 1 + 1/2 + 1/3 +1/4 ... shows that there is an infinite number of Basels?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What type of value would the
+        zeta function have if there were finite primes?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Of what mathematical nature
+        is the prime problem?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What function is related to
+        Basel numbers?'
+assert:
+  answers:
+    q1: true
+    q2: false
+    q3: true
+    q4: false
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572989846aef051400154fc3, squad2-5a8937553b2508001a72a52c, squad2-572989846aef051400154fc1,
+    squad2-5a8937553b2508001a72a52e, squad2-5a8937553b2508001a72a52a
+  date: ''
+  transform: paragraph Prime_number#16; first 5 questions of a paragraph in sha256(id) order, kept only
+    when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

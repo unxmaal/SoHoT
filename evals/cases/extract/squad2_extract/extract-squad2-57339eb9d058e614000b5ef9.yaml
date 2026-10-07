@@ -1,0 +1,32 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-57339eb9d058e614000b5ef9
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What does the National Museum boast having from Adolf Hitler''s private collection?'
+context: 'As interesting examples of expositions the most notable are: the world''s first Museum of Posters
+  boasting one of the largest collections of art posters in the world, Museum of Hunting and Riding and
+  the Railway Museum. From among Warsaw''s 60 museums, the most prestigious ones are National Museum with
+  a collection of works whose origin ranges in time from antiquity till the present epoch as well as one
+  of the best collections of paintings in the country including some paintings from Adolf Hitler''s private
+  collection, and Museum of the Polish Army whose set portrays the history of arms.'
+assert:
+  equals:
+  - some paintings
+  - paintings
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-57339eb9d058e614000b5ef9
+  date: ''
+  transform: paragraph Warsaw#41; first answerable question in sha256(id) order whose every human answer
+    is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

@@ -1,0 +1,33 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-57337ea24776f41900660bd1
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What was there a significant minority of in Warsaw?'
+context: Demographically, it was the most diverse city in Poland, with significant numbers of foreign-born
+  inhabitants. In addition to the Polish majority, there was a significant Jewish minority in Warsaw.
+  According to Russian census of 1897, out of the total population of 638,000, Jews constituted 219,000
+  (around 34% percent). Warsaw's prewar Jewish population of more than 350,000 constituted about 30 percent
+  of the city's total population. In 1933, out of 1,178,914 inhabitants 833,500 were of Polish mother
+  tongue. World War II changed the demographics of the city, and to this day there is much less ethnic
+  diversity than in the previous 300 years of Warsaw's history. Most of the modern day population growth
+  is based on internal migration and urbanisation.
+assert:
+  equals:
+  - Jewish
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-57337ea24776f41900660bd1
+  date: ''
+  transform: paragraph Warsaw#25; first answerable question in sha256(id) order whose every human answer
+    is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

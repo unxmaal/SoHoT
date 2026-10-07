@@ -1,0 +1,57 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-571090abb654c5140001f997
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: Other evidence of the Walloons and Huguenots in Canterbury includes a block of houses in Turnagain
+  Lane, where weavers' windows survive on the top floor, as many Huguenots worked as weavers. The Weavers,
+  a half-timbered house by the river, was the site of a weaving school from the late 16th century to about
+  1830. (It has been adapted as a restaurant—see illustration above. The house derives its name from a
+  weaving school which was moved there in the last years of the 19th century, reviving an earlier use.)
+  Others refugees practised the variety of occupations necessary to sustain the community as distinct
+  from the indigenous population. Such economic separation was the condition of the refugees' initial
+  acceptance in the City. They also settled elsewhere in Kent, particularly Sandwich, Faversham and Maidstone—towns
+  in which there used to be refugee churches.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What social construct did
+        Huguenot refugees in Canterbury practice?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: In which English town did
+        the most Huguenots live?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What other English towns were
+        sites of Huguenot settlement?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is located on the site
+        of The Weaving House currently?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: When was the The Weavers converted
+        into a restaurant?'
+assert:
+  answers:
+    q1: true
+    q2: false
+    q3: true
+    q4: true
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-571090abb654c5140001f997, squad2-5ad26c87d7d075001a429399, squad2-571090abb654c5140001f998,
+    squad2-571090abb654c5140001f999, squad2-5ad26c87d7d075001a429398
+  date: ''
+  transform: paragraph Huguenot#15; first 5 questions of a paragraph in sha256(id) order, kept only when
+    they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

@@ -1,0 +1,55 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-57261dab38643c19005ad03b
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: Some of the income was dispensed in the form of aid to other underdeveloped nations whose economies
+  had been caught between higher oil prices and lower prices for their own export commodities, amid shrinking
+  Western demand. Much went for arms purchases that exacerbated political tensions, particularly in the
+  Middle East. Saudi Arabia spent over 100 billion dollars in the ensuing decades for helping spread its
+  fundamentalist interpretation of Islam, known as Wahhabism, throughout the world, via religious charities
+  such al-Haramain Foundation, which often also distributed funds to violent Sunni extremist groups such
+  as Al-Qaeda and the Taliban.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is a fundamentalist interpretation
+        of Islam called?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is a fundamentalist interpretation
+        of al-Haramain called?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How much did Saudi Arabia
+        spend on Western demand for oil?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Some of the income went to
+        the purchase of arms which exacerbated political tension especially in which area?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Which group benefited from
+        the funds distributed by the religious charity, al-Haramain Foundation?'
+assert:
+  answers:
+    q1: true
+    q2: false
+    q3: false
+    q4: true
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-57261dab38643c19005ad03b, squad2-5a38b468a4b263001a8c18b4, squad2-5a38b468a4b263001a8c18b1,
+    squad2-57261dab38643c19005ad039, squad2-57261dab38643c19005ad038
+  date: ''
+  transform: paragraph 1973_oil_crisis#6; first 5 questions of a paragraph in sha256(id) order, kept only
+    when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

@@ -1,0 +1,33 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-57096b66200fba1400367faa
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What were NTL''s services rebranded as?'
+context: On 8 February 2007, BSkyB announced its intention to replace its three free-to-air digital terrestrial
+  channels with four subscription channels. It was proposed that these channels would offer a range of
+  content from the BSkyB portfolio including sport (including English Premier League Football), films,
+  entertainment and news. The announcement came a day after Setanta Sports confirmed that it would launch
+  in March as a subscription service on the digital terrestrial platform, and on the same day that NTL's
+  services re-branded as Virgin Media. However, industry sources believe BSkyB will be forced to shelve
+  plans to withdraw its channels from Freeview and replace them with subscription channels, due to possible
+  lost advertising revenue.
+assert:
+  equals:
+  - Virgin Media
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-57096b66200fba1400367faa
+  date: ''
+  transform: paragraph Sky_(United_Kingdom)#13; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

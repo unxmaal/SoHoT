@@ -1,0 +1,53 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-570d391fb3d812140066d576
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: 'The Victorian Alps in the northeast are the coldest part of Victoria. The Alps are part of the
+  Great Dividing Range mountain system extending east-west through the centre of Victoria. Average temperatures
+  are less than 9 °C (48 °F) in winter and below 0 °C (32 °F) in the highest parts of the ranges. The
+  state''s lowest minimum temperature of −11.7 °C (10.9 °F) was recorded at Omeo on 13 June 1965, and
+  again at Falls Creek on 3 July 1970. Temperature extremes for the state are listed in the table below:'
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Of what mountain system are
+        the Victorian Alps a part?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is the temperature in
+        the valley of the mountain range in winter?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is the lowest recorded
+        temperature in Victoria?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is the lowest recorded
+        wind chill in Victoria?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Where is the highest section
+        of Victoria?'
+assert:
+  answers:
+    q1: true
+    q2: false
+    q3: true
+    q4: false
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-570d391fb3d812140066d576, squad2-5a63969068151a001a9223ad, squad2-570d391fb3d812140066d579,
+    squad2-5a63969068151a001a9223ae, squad2-5a63969068151a001a9223aa
+  date: ''
+  transform: paragraph Victoria_(Australia)#13; first 5 questions of a paragraph in sha256(id) order,
+    kept only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

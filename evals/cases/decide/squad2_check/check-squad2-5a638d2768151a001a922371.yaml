@@ -1,0 +1,55 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5a638d2768151a001a922371
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: More than 26,000 square kilometres (10,000 sq mi) of Victorian farmland are sown for grain, mostly
+  in the state's west. More than 50% of this area is sown for wheat, 33% for barley and 7% for oats. A
+  further 6,000 square kilometres (2,300 sq mi) is sown for hay. In 2003–04, Victorian farmers produced
+  more than 3 million tonnes of wheat and 2 million tonnes of barley. Victorian farms produce nearly 90%
+  of Australian pears and third of apples. It is also a leader in stone fruit production. The main vegetable
+  crops include asparagus, broccoli, carrots, potatoes and tomatoes. Last year, 121,200 tonnes of pears
+  and 270,000 tonnes of tomatoes were produced.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How much of Victoria produced
+        Australian peaches?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What percentage of farmland
+        grows wheat?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How much Victorian farmland
+        is farmed in grains?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How many tonnes of potatoes
+        does Victoria produce?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How much does Victoria produce
+        in Australian pears?'
+assert:
+  answers:
+    q1: false
+    q2: true
+    q3: true
+    q4: false
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5a638d2768151a001a922371, squad2-570d2d68fed7b91900d45cbc, squad2-570d2d68fed7b91900d45cbb,
+    squad2-5a638d2768151a001a922372, squad2-570d2d68fed7b91900d45cbe
+  date: ''
+  transform: paragraph Victoria_(Australia)#7; first 5 questions of a paragraph in sha256(id) order, kept
+    only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

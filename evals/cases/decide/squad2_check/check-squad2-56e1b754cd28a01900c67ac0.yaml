@@ -1,0 +1,52 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-56e1b754cd28a01900c67ac0
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: Analogous definitions can be made for space requirements. Although time and space are the most
+  well-known complexity resources, any complexity measure can be viewed as a computational resource. Complexity
+  measures are very generally defined by the Blum complexity axioms. Other complexity measures used in
+  complexity theory include communication complexity, circuit complexity, and decision tree complexity.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Decision tree is an example
+        of what type of measure?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What are the least well known
+        complexity resources?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is typically used to
+        broadly define complexity measures?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Time and space are both examples
+        of what type of resource?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How are complexity measures
+        generally not defined?'
+assert:
+  answers:
+    q1: true
+    q2: false
+    q3: true
+    q4: true
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-56e1b754cd28a01900c67ac0, squad2-5ad54b035b96ef001a10ac53, squad2-56e1b754cd28a01900c67abe,
+    squad2-56e1b754cd28a01900c67abc, squad2-5ad54b035b96ef001a10ac54
+  date: ''
+  transform: paragraph Computational_complexity_theory#18; first 5 questions of a paragraph in sha256(id)
+    order, kept only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

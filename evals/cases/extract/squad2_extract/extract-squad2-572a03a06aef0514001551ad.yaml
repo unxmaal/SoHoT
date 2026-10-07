@@ -1,0 +1,31 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-572a03a06aef0514001551ad
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: How long may the Amazon rainforest be threatened, according to some computer models?'
+context: One computer model of future climate change caused by greenhouse gas emissions shows that the
+  Amazon rainforest could become unsustainable under conditions of severely reduced rainfall and increased
+  temperatures, leading to an almost complete loss of rainforest cover in the basin by 2100. However,
+  simulations of Amazon basin climate change across many different models are not consistent in their
+  estimation of any rainfall response, ranging from weak increases to strong decreases. The result indicates
+  that the rainforest could be threatened though the 21st century by climate change in addition to deforestation.
+assert:
+  equals:
+  - though the 21st century
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572a03a06aef0514001551ad
+  date: ''
+  transform: paragraph Amazon_rainforest#15; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

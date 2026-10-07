@@ -1,0 +1,56 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5a89320b3b2508001a72a510
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: The following table gives the largest known primes of the mentioned types. Some of these primes
+  have been found using distributed computing. In 2009, the Great Internet Mersenne Prime Search project
+  was awarded a US$100,000 prize for first discovering a prime with at least 10 million digits. The Electronic
+  Frontier Foundation also offers $150,000 and $250,000 for primes with at least 100 million digits and
+  1 billion digits, respectively. Some of the largest primes not known to have any particular form (that
+  is, no simple formula such as that of Mersenne primes) have been found by taking a piece of semi-random
+  binary data, converting it to a number n, multiplying it by 256k for some positive integer k, and searching
+  for possible primes within the interval [256kn + 1, 256k(n + 1) − 1].[citation needed]
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: In what interval are some
+        of the greatest primes without a distinct digit discovered in?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is the name of one type
+        of computing method that is used to find prime numbers?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: In what interval are some
+        of the greatest primes without a distinct form discovered in?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What organization offers monetary
+        awards for identifying primes with at least 150,000 digits?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: In the Great Internet Mersenne
+        Prime Search hat was the prize for finding a prime with at least 150,000 digits?'
+assert:
+  answers:
+    q1: false
+    q2: true
+    q3: true
+    q4: false
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5a89320b3b2508001a72a510, squad2-572982e66aef051400154f92, squad2-572982e76aef051400154f96,
+    squad2-5a89320b3b2508001a72a50f, squad2-5a89320b3b2508001a72a50e
+  date: ''
+  transform: paragraph Prime_number#13; first 5 questions of a paragraph in sha256(id) order, kept only
+    when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

@@ -1,0 +1,54 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-572fadcbb2c2fd140056832c
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: Under the terms of the Scotland Act 1978, an elected assembly would be set up in Edinburgh provided
+  that the majority of the Scottish electorate voted for it in a referendum to be held on 1 March 1979
+  that represented at least 40% of the total electorate. The 1979 Scottish devolution referendum to establish
+  a devolved Scottish Assembly failed. Although the vote was 51.6% in favour of a Scottish Assembly, this
+  figure did not equal the 40% of the total electorate threshold deemed necessary to pass the measure,
+  as 32.9% of the eligible voting population did not, or had been unable to, vote.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What percentage of the vote
+        for a Scottish Assembly in favor of it?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Under the Scotland Act of
+        1988, what would be set up in Edinburgh?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What percentage of Scotland''s
+        voting population failed to actually vote?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How many of the Scottish electorate
+        would need to for it on the referendum?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Where was an elected assembly
+        to be set up, under the terms of the Scotland Act of 1978?'
+assert:
+  answers:
+    q1: true
+    q2: false
+    q3: true
+    q4: true
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572fadcbb2c2fd140056832c, squad2-5ad025df77cf76001a686ba3, squad2-572fadcbb2c2fd140056832d,
+    squad2-572fadcbb2c2fd140056832a, squad2-572fadcbb2c2fd1400568329
+  date: ''
+  transform: paragraph Scottish_Parliament#3; first 5 questions of a paragraph in sha256(id) order, kept
+    only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

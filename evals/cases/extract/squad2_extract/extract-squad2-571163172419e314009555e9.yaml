@@ -1,0 +1,37 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-571163172419e314009555e9
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What was developed from Watt''s measurements on a model steam engine?'
+context: The steam engine contributed much to the development of thermodynamic theory; however, the only
+  applications of scientific theory that influenced the steam engine were the original concepts of harnessing
+  the power of steam and atmospheric pressure and knowledge of properties of heat and steam. The experimental
+  measurements made by Watt on a model steam engine led to the development of the separate condenser.
+  Watt independently discovered latent heat, which was confirmed by the original discoverer Joseph Black,
+  who also advised Watt on experimental procedures. Watt was also aware of the change in the boiling point
+  of water with pressure. Otherwise, the improvements to the engine itself were more mechanical in nature.
+  The thermodynamic concepts of the Rankine cycle did give engineers the understanding needed to calculate
+  efficiency which aided the development of modern high-pressure and -temperature boilers and the steam
+  turbine.
+assert:
+  equals:
+  - condenser
+  - separate condenser
+  - the separate condenser
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-571163172419e314009555e9
+  date: ''
+  transform: paragraph Steam_engine#40; first answerable question in sha256(id) order whose every human
+    answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

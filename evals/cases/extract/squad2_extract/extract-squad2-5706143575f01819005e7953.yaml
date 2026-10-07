@@ -1,0 +1,28 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-5706143575f01819005e7953
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the other NHL team aside from the Anaheim Ducks to reside in Southern California?'
+context: Professional sports teams in Southern California include teams from the NFL (Los Angeles Rams,
+  San Diego Chargers); NBA (Los Angeles Lakers, Los Angeles Clippers); MLB (Los Angeles Dodgers, Los Angeles
+  Angels of Anaheim, San Diego Padres); NHL (Los Angeles Kings, Anaheim Ducks); and MLS (LA Galaxy).
+assert:
+  equals:
+  - Los Angeles Kings
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5706143575f01819005e7953
+  date: ''
+  transform: paragraph Southern_California#35; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

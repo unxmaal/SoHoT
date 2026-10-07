@@ -1,0 +1,55 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5ad03a8a77cf76001a686e84
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: 'One key figure in the plans for what would come to be known as American Empire, was a geographer
+  named Isiah Bowman. Bowman was the director of the American Geographical Society in 1914. Three years
+  later in 1917, he was appointed to then President Woodrow Wilson''s inquiry in 1917. The inquiry was
+  the idea of President Wilson and the American delegation from the Paris Peace Conference. The point
+  of this inquiry was to build a premise that would allow for U.S authorship of a ''new world'' which
+  was to be characterized by geographical order. As a result of his role in the inquiry, Isiah Bowman
+  would come to be known as Wilson''s geographer. '
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who besides Woodrow Wilson
+        himself did not have the idea for the inquiry?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What was the premise of Woodrow
+        Wilson''s inquiry?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who was the director of the
+        American Geographical Society in 1914?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: When was Isiah Bowman not
+        appointed to President Wilson''s Inquiry?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who besides Woodrow Wilson
+        himself had the idea for the inquiry?'
+assert:
+  answers:
+    q1: false
+    q2: true
+    q3: true
+    q4: false
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5ad03a8a77cf76001a686e84, squad2-5730b8ca8ab72b1400f9c707, squad2-5730b8ca8ab72b1400f9c704,
+    squad2-5ad03a8a77cf76001a686e83, squad2-5730b8ca8ab72b1400f9c706
+  date: ''
+  transform: paragraph Imperialism#35; first 5 questions of a paragraph in sha256(id) order, kept only
+    when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

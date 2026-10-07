@@ -1,0 +1,33 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-57111429b654c5140001fb03
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: Reports document that how many Parisien Protestants were killed by September 17?'
+context: In what became known as the St. Bartholomew's Day Massacre of 24 August – 3 October 1572, Catholics
+  killed thousands of Huguenots in Paris. Similar massacres took place in other towns in the weeks following.
+  The main provincial towns and cities experiencing the Massacre were Aix, Bordeaux, Bourges, Lyons, Meaux,
+  Orleans, Rouen, Toulouse, and Troyes. Nearly 3,000 Protestants were slaughtered in Toulouse alone. The
+  exact number of fatalities throughout the country is not known. On 23–24 August, between about 2,000
+  and 3,000 Protestants were killed in Paris and between 3,000 and 7,000 more in the French provinces.
+  By 17 September, almost 25,000 Protestants had been massacred in Paris alone. Beyond Paris, the killings
+  continued until 3 October. An amnesty granted in 1573 pardoned the perpetrators.[citation needed]
+assert:
+  equals:
+  - almost 25,000
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-57111429b654c5140001fb03
+  date: ''
+  transform: paragraph Huguenot#36; first answerable question in sha256(id) order whose every human answer
+    is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

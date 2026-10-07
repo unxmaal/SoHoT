@@ -1,0 +1,32 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-5728eef92ca10214002daab3
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What type of plea is sometimes taken as an act of disobedience?'
+context: Sometimes the prosecution proposes a plea bargain to civil disobedients, as in the case of the
+  Camden 28, in which the defendants were offered an opportunity to plead guilty to one misdemeanor count
+  and receive no jail time. In some mass arrest situations, the activists decide to use solidarity tactics
+  to secure the same plea bargain for everyone. But some activists have opted to enter a blind plea, pleading
+  guilty without any plea agreement in place. Mohandas Gandhi pleaded guilty and told the court, "I am
+  here to . . . submit cheerfully to the highest penalty that can be inflicted upon me for what in law
+  is a deliberate crime and what appears to me to be the highest duty of a citizen."
+assert:
+  equals:
+  - blind plea
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5728eef92ca10214002daab3
+  date: ''
+  transform: paragraph Civil_disobedience#20; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

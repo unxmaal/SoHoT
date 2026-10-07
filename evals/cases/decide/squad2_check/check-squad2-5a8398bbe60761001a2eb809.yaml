@@ -1,0 +1,60 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5a8398bbe60761001a2eb809
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: On the other hand, in the late 1980s the Western Atlantic ctenophore Mnemiopsis leidyi was accidentally
+  introduced into the Black Sea and Sea of Azov via the ballast tanks of ships, and has been blamed for
+  causing sharp drops in fish catches by eating both fish larvae and small crustaceans that would otherwise
+  feed the adult fish. Mnemiopsis is well equipped to invade new territories (although this was not predicted
+  until after it so successfully colonized the Black Sea), as it can breed very rapidly and tolerate a
+  wide range of water temperatures and salinities. The impact was increased by chronic overfishing, and
+  by eutrophication that gave the entire ecosystem a short-term boost, causing the Mnemiopsis population
+  to increase even faster than normal – and above all by the absence of efficient predators on these introduced
+  ctenophores. Mnemiopsis populations in those areas were eventually brought under control by the accidental
+  introduction of the Mnemiopsis-eating North American ctenophore Beroe ovata, and by a cooling of the
+  local climate from 1991 to 1993, which significantly slowed the animal's metabolism. However the abundance
+  of plankton in the area seems unlikely to be restored to pre-Mnemiopsis levels.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How quickly can fish larvae
+        grow?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is blamed for causing
+        the sharp drop in fish catches in the Black Sea and the Sea of Azov?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: When were fish larvae introduced
+        into the Black Sea accidentally?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What has the fish larvae caused
+        a sharp drop in?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How was the population of
+        mnemiopsis in The black Sea and the Sea of Azov brought under control?'
+assert:
+  answers:
+    q1: false
+    q2: true
+    q3: false
+    q4: false
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5a8398bbe60761001a2eb809, squad2-57268c01dd62a815002e8912, squad2-5a8398bbe60761001a2eb805,
+    squad2-5a8398bbe60761001a2eb808, squad2-57268c01dd62a815002e8915
+  date: ''
+  transform: paragraph Ctenophora#26; first 5 questions of a paragraph in sha256(id) order, kept only
+    when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

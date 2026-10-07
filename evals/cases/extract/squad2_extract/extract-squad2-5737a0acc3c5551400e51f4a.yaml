@@ -1,0 +1,33 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-5737a0acc3c5551400e51f4a
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What may a force on one part of an object affect?'
+context: 'Newton''s laws and Newtonian mechanics in general were first developed to describe how forces
+  affect idealized point particles rather than three-dimensional objects. However, in real life, matter
+  has extended structure and forces that act on one part of an object might affect other parts of an object.
+  For situations where lattice holding together the atoms in an object is able to flow, contract, expand,
+  or otherwise change shape, the theories of continuum mechanics describe the way forces affect the material.
+  For example, in extended fluids, differences in pressure result in forces being directed along the pressure
+  gradients as follows:'
+assert:
+  equals:
+  - other parts
+  - other parts of an object
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5737a0acc3c5551400e51f4a
+  date: ''
+  transform: paragraph Force#36; first answerable question in sha256(id) order whose every human answer
+    is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

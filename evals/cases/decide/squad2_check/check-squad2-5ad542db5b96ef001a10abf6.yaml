@@ -1,0 +1,55 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5ad542db5b96ef001a10abf6
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: If the input size is n, the time taken can be expressed as a function of n. Since the time taken
+  on different inputs of the same size can be different, the worst-case time complexity T(n) is defined
+  to be the maximum time taken over all inputs of size n. If T(n) is a polynomial in n, then the algorithm
+  is said to be a polynomial time algorithm. Cobham's thesis says that a problem can be solved with a
+  feasible amount of resources if it admits a polynomial time algorithm.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What term corresponds to the
+        minimum measurement of the time across all functions of n?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Whose thesis states that the
+        solution to a problem is solvable with reasonable resources assuming it allows for a polynomial
+        time algorithm?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Whose hypothesis states the
+        the solution to a problem is solvable with reasonable resources assuming it allows for monoinomial
+        time algorithm?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Assuming that T represents
+        a polynomial in T(n), what is the term given to the corresponding algorithm?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How is worst-case time complexity
+        written as an expression?'
+assert:
+  answers:
+    q1: false
+    q2: true
+    q3: false
+    q4: true
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5ad542db5b96ef001a10abf6, squad2-56e1a564cd28a01900c67a48, squad2-5ad542db5b96ef001a10abf5,
+    squad2-56e1a564cd28a01900c67a4c, squad2-56e1a564cd28a01900c67a4b
+  date: ''
+  transform: paragraph Computational_complexity_theory#11; first 5 questions of a paragraph in sha256(id)
+    order, kept only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

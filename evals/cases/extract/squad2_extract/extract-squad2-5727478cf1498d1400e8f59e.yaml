@@ -1,0 +1,35 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-5727478cf1498d1400e8f59e
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: Who receives higher salaries at private schools that charge higher tuition?'
+context: The secondary level includes schools offering years 7 through 12 (year twelve is known as lower
+  sixth) and year 13 (upper sixth). This category includes university-preparatory schools or "prep schools",
+  boarding schools and day schools. Tuition at private secondary schools varies from school to school
+  and depends on many factors, including the location of the school, the willingness of parents to pay,
+  peer tuitions and the school's financial endowment. High tuition, schools claim, is used to pay higher
+  salaries for the best teachers and also used to provide enriched learning environments, including a
+  low student to teacher ratio, small class sizes and services, such as libraries, science laboratories
+  and computers. Some private schools are boarding schools and many military academies are privately owned
+  or operated as well.
+assert:
+  equals:
+  - teachers
+  - best teachers
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5727478cf1498d1400e8f59e
+  date: ''
+  transform: paragraph Private_school#2; first answerable question in sha256(id) order whose every human
+    answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

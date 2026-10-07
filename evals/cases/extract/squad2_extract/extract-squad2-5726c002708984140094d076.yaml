@@ -1,0 +1,49 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-5726c002708984140094d076
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: Which TFEU article states that states are exempt from infringing on rights of establishment
+  when they exercise official authority?'
+context: As well as creating rights for "workers" who generally lack bargaining power in the market, the
+  Treaty on the Functioning of the European Union also protects the "freedom of establishment" in article
+  49, and "freedom to provide services" in article 56. In Gebhard v Consiglio dell’Ordine degli Avvocati
+  e Procuratori di Milano the Court of Justice held that to be "established" means to participate in economic
+  life "on a stable and continuous basis", while providing "services" meant pursuing activity more "on
+  a temporary basis". This meant that a lawyer from Stuttgart, who had set up chambers in Milan and was
+  censured by the Milan Bar Council for not having registered, was entitled to bring a claim under for
+  establishment freedom, rather than service freedom. However, the requirements to be registered in Milan
+  before being able to practice would be allowed if they were non-discriminatory, "justified by imperative
+  requirements in the general interest" and proportionately applied. All people or entities that engage
+  in economic activity, particularly the self-employed, or "undertakings" such as companies or firms,
+  have a right to set up an enterprise without unjustified restrictions. The Court of Justice has held
+  that both a member state government and a private party can hinder freedom of establishment, so article
+  49 has both "vertical" and "horizontal" direct effect. In Reyners v Belgium the Court of Justice held
+  that a refusal to admit a lawyer to the Belgian bar because he lacked Belgian nationality was unjustified.
+  TFEU article 49 says states are exempt from infringing others' freedom of establishment when they exercise
+  "official authority", but this did an advocate's work (as opposed to a court's) was not official. By
+  contrast in Commission v Italy the Court of Justice held that a requirement for lawyers in Italy to
+  comply with maximum tariffs unless there was an agreement with a client was not a restriction. The Grand
+  Chamber of the Court of Justice held the Commission had not proven that this had any object or effect
+  of limiting practitioners from entering the market. Therefore, there was no prima facie infringement
+  freedom of establishment that needed to be justified.
+assert:
+  equals:
+  - article 49
+  - TFEU article 49
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5726c002708984140094d076
+  date: ''
+  transform: paragraph European_Union_law#36; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

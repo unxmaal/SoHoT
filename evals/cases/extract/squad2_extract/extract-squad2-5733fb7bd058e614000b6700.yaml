@@ -1,0 +1,33 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-5733fb7bd058e614000b6700
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: Who led New France reinforcements in 1756?'
+context: Newcastle replaced him in January 1756 with Lord Loudoun, with Major General James Abercrombie
+  as his second in command. Neither of these men had as much campaign experience as the trio of officers
+  France sent to North America. French regular army reinforcements arrived in New France in May 1756,
+  led by Major General Louis-Joseph de Montcalm and seconded by the Chevalier de Lévis and Colonel François-Charles
+  de Bourlamaque, all experienced veterans from the War of the Austrian Succession. During that time in
+  Europe, on May 18, 1756, England formally declared war on France, which expanded the war into Europe,
+  which was later to be known as the Seven Years' War.
+assert:
+  equals:
+  - Major General Louis-Joseph de Montcalm
+  - Lord Loudoun
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5733fb7bd058e614000b6700
+  date: ''
+  transform: paragraph French_and_Indian_War#31; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

@@ -1,0 +1,37 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-572647935951b619008f6eca
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: How old are the gravestones that reference the plague?'
+context: The plague disease, caused by Yersinia pestis, is enzootic (commonly present) in populations
+  of fleas carried by ground rodents, including marmots, in various areas including Central Asia, Kurdistan,
+  Western Asia, Northern India and Uganda. Nestorian graves dating to 1338–39 near Lake Issyk Kul in Kyrgyzstan
+  have inscriptions referring to plague and are thought by many epidemiologists to mark the outbreak of
+  the epidemic, from which it could easily have spread to China and India. In October 2010, medical geneticists
+  suggested that all three of the great waves of the plague originated in China. In China, the 13th century
+  Mongol conquest caused a decline in farming and trading. However, economic recovery had been observed
+  at the beginning of the 14th century. In the 1330s a large number of natural disasters and plagues led
+  to widespread famine, starting in 1331, with a deadly plague arriving soon after. Epidemics that may
+  have included plague killed an estimated 25 million Chinese and other Asians during the 15 years before
+  it reached Constantinople in 1347.
+assert:
+  equals:
+  - dating to 1338–39
+  - 1338–39
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572647935951b619008f6eca
+  date: ''
+  transform: paragraph Black_Death#1; first answerable question in sha256(id) order whose every human
+    answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

@@ -1,0 +1,54 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5ad26a5fd7d075001a429318
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: Pushing against an object on a frictional surface can result in a situation where the object
+  does not move because the applied force is opposed by static friction, generated between the object
+  and the table surface. For a situation with no movement, the static friction force exactly balances
+  the applied force resulting in no acceleration. The static friction increases or decreases in response
+  to the applied force up to an upper limit determined by the characteristics of the contact between the
+  surface and the object.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Pulling on an object on a
+        frictional surface can result in what?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What makes static friction
+        go up or down in responce to contact characteristics between an object and the surface it is on?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Static friction balances what
+        force when there is no movement of an object on a surface?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is generated between
+        a surface and an object that is being pushed?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What increases or decreases
+        in response to static friction?'
+assert:
+  answers:
+    q1: false
+    q2: true
+    q3: true
+    q4: true
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5ad26a5fd7d075001a429318, squad2-57376df3c3c5551400e51eda, squad2-57376df3c3c5551400e51ed9,
+    squad2-57376df3c3c5551400e51ed8, squad2-5ad26a5fd7d075001a42931b
+  date: ''
+  transform: paragraph Force#14; first 5 questions of a paragraph in sha256(id) order, kept only when
+    they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

@@ -1,0 +1,54 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5a823a7731013a001a33530d
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: The Harvard Crimson competes in 42 intercollegiate sports in the NCAA Division I Ivy League.
+  Harvard has an intense athletic rivalry with Yale University culminating in The Game, although the Harvard–Yale
+  Regatta predates the football game. This rivalry, though, is put aside every two years when the Harvard
+  and Yale Track and Field teams come together to compete against a combined Oxford University and Cambridge
+  University team, a competition that is the oldest continuous international amateur competition in the
+  world.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How old is the NCAA Division
+        I Ivy League competition?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: At what time is the Harvard-Yale
+        rivalry set aside?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is Harvard''s most intense
+        rival?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How many intercollegiate sports
+        does Harvard compete in NCAA division I'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What kind of rivalry do Oxford
+        and Cambridge have?'
+assert:
+  answers:
+    q1: false
+    q2: true
+    q3: true
+    q4: true
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5a823a7731013a001a33530d, squad2-5727da564b864d1900163e90, squad2-5727da564b864d1900163e8f,
+    squad2-5727da564b864d1900163e8e, squad2-5a823a7731013a001a33530a
+  date: ''
+  transform: paragraph Harvard_University#23; first 5 questions of a paragraph in sha256(id) order, kept
+    only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

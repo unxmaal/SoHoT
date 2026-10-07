@@ -1,0 +1,32 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-570d2f5bfed7b91900d45cd2
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What are the exceptions in the constitution  that require special considerations to amend?'
+context: Victoria has a written constitution enacted in 1975, but based on the 1855 colonial constitution,
+  passed by the United Kingdom Parliament as the Victoria Constitution Act 1855, which establishes the
+  Parliament as the state's law-making body for matters coming under state responsibility. The Victorian
+  Constitution can be amended by the Parliament of Victoria, except for certain "entrenched" provisions
+  that require either an absolute majority in both houses, a three-fifths majority in both houses, or
+  the approval of the Victorian people in a referendum, depending on the provision.
+assert:
+  equals:
+  - '"entrenched" provisions'
+  - certain "entrenched" provisions
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-570d2f5bfed7b91900d45cd2
+  date: ''
+  transform: paragraph Victoria_(Australia)#8; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

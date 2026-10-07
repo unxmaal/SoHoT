@@ -1,0 +1,36 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-572943ab1d0469140077921c
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: Who was chairman of the House Science Committee?'
+context: On 23 June 2005, Rep. Joe Barton, chairman of the House Committee on Energy and Commerce wrote
+  joint letters with Ed Whitfield, Chairman of the Subcommittee on Oversight and Investigations demanding
+  full records on climate research, as well as personal information about their finances and careers,
+  from Mann, Bradley and Hughes. Sherwood Boehlert, chairman of the House Science Committee, said this
+  was a "misguided and illegitimate investigation" apparently aimed at intimidating scientists, and at
+  his request the U.S. National Academy of Sciences arranged for its National Research Council to set
+  up a special investigation. The National Research Council's report agreed that there were some statistical
+  failings, but these had little effect on the graph, which was generally correct. In a 2006 letter to
+  Nature, Mann, Bradley, and Hughes pointed out that their original article had said that "more widespread
+  high-resolution data are needed before more confident conclusions can be reached" and that the uncertainties
+  were "the point of the article".
+assert:
+  equals:
+  - Sherwood Boehlert
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572943ab1d0469140077921c
+  date: ''
+  transform: paragraph Intergovernmental_Panel_on_Climate_Change#15; first answerable question in sha256(id)
+    order whose every human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

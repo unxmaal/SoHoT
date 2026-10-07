@@ -1,0 +1,59 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5ad0388377cf76001a686e43
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: During the First Sino-Japanese War in 1894, Japan absorbed Taiwan. As a result of the Russo-Japanese
+  War in 1905, Japan took part of Sakhalin Island from Russia. Korea was annexed in 1910. During World
+  War I, Japan took German-leased territories in China’s Shandong Province, as well as the Mariana, Caroline,
+  and Marshall Islands. In 1918, Japan occupied parts of far eastern Russia and parts of eastern Siberia
+  as a participant in the Siberian Intervention. In 1931 Japan conquered Manchuria from China. During
+  the Second Sino-Japanese War in 1937, Japan's military invaded central China and by the end of the Pacific
+  War, Japan had conquered much of the Far East, including Hong Kong, Vietnam, Cambodia, Myanmar, the
+  Philippines, Indonesia, part of New Guinea and some islands of the Pacific Ocean. Japan also invaded
+  Thailand, pressuring the country into a Thai/Japanese alliance. Its colonial ambitions were ended by
+  the victory of the United States in the Second World War and the following treaties which remanded those
+  territories to American administration or their original owners.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Which country did Japan not
+        force into an alliance?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What happened as a result
+        of the Russo-Japanese War?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What didn''t happen as a result
+        of the Russo-Japanese War?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Which area of China did Japan
+        conquer in 1931?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Which area of China did Japan
+        conquer in 1935?'
+assert:
+  answers:
+    q1: false
+    q2: true
+    q3: false
+    q4: true
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5ad0388377cf76001a686e43, squad2-5730b1022461fd1900a9cfa4, squad2-5ad0388377cf76001a686e41,
+    squad2-5730b1022461fd1900a9cfa5, squad2-5ad0388377cf76001a686e42
+  date: ''
+  transform: paragraph Imperialism#29; first 5 questions of a paragraph in sha256(id) order, kept only
+    when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

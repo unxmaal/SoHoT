@@ -1,0 +1,34 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-57332442d058e614000b5721
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What does Warszawa mean in Polish?'
+context: 'Warsaw''s name in the Polish language is Warszawa, approximately /vɑːrˈʃɑːvə/ (also formerly
+  spelled Warszewa and Warszowa), meaning "belonging to Warsz", Warsz being a shortened form of the masculine
+  name of Slavic origin Warcisław; see also etymology of Wrocław. Folk etymology attributes the city name
+  to a fisherman, Wars, and his wife, Sawa. According to legend, Sawa was a mermaid living in the Vistula
+  River with whom Wars fell in love. In actuality, Warsz was a 12th/13th-century nobleman who owned a
+  village located at the modern-day site of Mariensztat neighbourhood. See also the Vršovci family which
+  had escaped to Poland. The official city name in full is miasto stołeczne Warszawa (English: "The Capital
+  City of Warsaw"). A native or resident of Warsaw is known as a Varsovian – in Polish warszawiak (male),
+  warszawianka (female), warszawiacy (plural).'
+assert:
+  equals:
+  - belonging to Warsz
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-57332442d058e614000b5721
+  date: ''
+  transform: paragraph Warsaw#4; first answerable question in sha256(id) order whose every human answer
+    is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

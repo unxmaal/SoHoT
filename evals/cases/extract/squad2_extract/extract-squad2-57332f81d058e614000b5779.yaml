@@ -1,0 +1,32 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-57332f81d058e614000b5779
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What building was a gift from the Soviet Union?'
+context: After World War II, under a Communist regime set up by the conquering Soviets, the "Bricks for
+  Warsaw" campaign was initiated, and large prefabricated housing projects were erected in Warsaw to address
+  the housing shortage, along with other typical buildings of an Eastern Bloc city, such as the Palace
+  of Culture and Science, a gift from the Soviet Union. The city resumed its role as the capital of Poland
+  and the country's centre of political and economic life. Many of the historic streets, buildings, and
+  churches were restored to their original form. In 1980, Warsaw's historic Old Town was inscribed onto
+  UNESCO's World Heritage list.
+assert:
+  equals:
+  - Palace of Culture and Science
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-57332f81d058e614000b5779
+  date: ''
+  transform: paragraph Warsaw#11; first answerable question in sha256(id) order whose every human answer
+    is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

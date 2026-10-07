@@ -1,0 +1,55 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-572659535951b619008f703f
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: Some buyers lamented the small size of the first Japanese compacts, and both Toyota and Nissan
+  (then known as Datsun) introduced larger cars such as the Toyota Corona Mark II, the Toyota Cressida,
+  the Mazda 616 and Datsun 810, which added passenger space and amenities such as air conditioning, power
+  steering, AM-FM radios, and even power windows and central locking without increasing the price of the
+  vehicle. A decade after the 1973 oil crisis, Honda, Toyota and Nissan, affected by the 1981 voluntary
+  export restraints, opened US assembly plants and established their luxury divisions (Acura, Lexus and
+  Infiniti, respectively) to distinguish themselves from their mass-market brands.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: When did Honda, Toyota and
+        Nissan open US assembly plants?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: In 1973 what did Mazda open
+        in the US?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What did some buyers not like
+        about Acuras?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What did Mazda want to distinguish
+        itself from by opening assembly plants in 1973?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Name a luxury division of
+        Toyota.'
+assert:
+  answers:
+    q1: true
+    q2: false
+    q3: false
+    q4: false
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572659535951b619008f703f, squad2-5a38ceaaa4b263001a8c1933, squad2-5a38ceaaa4b263001a8c1936,
+    squad2-5a38ceaaa4b263001a8c1935, squad2-572659535951b619008f7042
+  date: ''
+  transform: paragraph 1973_oil_crisis#19; first 5 questions of a paragraph in sha256(id) order, kept
+    only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

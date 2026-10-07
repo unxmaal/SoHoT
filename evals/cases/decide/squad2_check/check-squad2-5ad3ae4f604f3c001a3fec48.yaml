@@ -1,0 +1,57 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5ad3ae4f604f3c001a3fec48
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: The Iroquois sent runners to the manor of William Johnson in upstate New York. The British Superintendent
+  for Indian Affairs in the New York region and beyond, Johnson was known to the Iroquois as Warraghiggey,
+  meaning "He who does great things." He spoke their languages and had become a respected honorary member
+  of the Iroquois Confederacy in the area. In 1746, Johnson was made a colonel of the Iroquois. Later
+  he was commissioned as a colonel of the Western New York Militia. They met at Albany, New York with
+  Governor Clinton and officials from some of the other American colonies. Mohawk Chief Hendrick, Speaker
+  of their tribal council, insisted that the British abide by their obligations and block French expansion.
+  When Clinton did not respond to his satisfaction, Chief Hendrick said that the "Covenant Chain", a long-standing
+  friendly relationship between the Iroquois Confederacy and the British Crown, was broken.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What was William Johnson''s
+        role in French military?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What was William Johnson''s
+        role in British military?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What wasn''t William Johnson''s
+        role in British military?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who was the speaker of the
+        tribal council?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What was William Johnson''s
+        Iroquois name?'
+assert:
+  answers:
+    q1: false
+    q2: true
+    q3: false
+    q4: true
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5ad3ae4f604f3c001a3fec48, squad2-5733eb34d058e614000b65cc, squad2-5ad3ae4f604f3c001a3fec47,
+    squad2-5733eb34d058e614000b65cf, squad2-5733eb34d058e614000b65cd
+  date: ''
+  transform: paragraph French_and_Indian_War#19; first 5 questions of a paragraph in sha256(id) order,
+    kept only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

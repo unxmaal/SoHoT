@@ -1,0 +1,33 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-5727aeac3acd2414000de98a
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: How many US presidents are alumni of the school?'
+context: Harvard is a large, highly residential research university. The nominal cost of attendance is
+  high, but the University's large endowment allows it to offer generous financial aid packages. It operates
+  several arts, cultural, and scientific museums, alongside the Harvard Library, which is the world's
+  largest academic and private library system, comprising 79 individual libraries with over 18 million
+  volumes. Harvard's alumni include eight U.S. presidents, several foreign heads of state, 62 living billionaires,
+  335 Rhodes Scholars, and 242 Marshall Scholars. To date, some 150 Nobel laureates, 18 Fields Medalists
+  and 13 Turing Award winners have been affiliated as students, faculty, or staff.
+assert:
+  equals:
+  - eight U.S. presidents
+  - eight
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5727aeac3acd2414000de98a
+  date: ''
+  transform: paragraph Harvard_University#1; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

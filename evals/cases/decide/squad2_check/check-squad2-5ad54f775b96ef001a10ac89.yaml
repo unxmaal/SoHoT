@@ -1,0 +1,51 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5ad54f775b96ef001a10ac89
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: Upper and lower bounds are usually stated using the big O notation, which hides constant factors
+  and smaller terms. This makes the bounds independent of the specific details of the computational model
+  used. For instance, if T(n) = 7n2 + 15n + 40, in big O notation one would write T(n) = O(n2).
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What does not hide constant
+        factors or smaller terms?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What makes the bounds dependent
+        of the specific details of the computational model?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Big O notation provides autonomy
+        to upper and lower bounds with relationship to what?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What does a big O notation
+        hide?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What expression is generally
+        used to convey upper or lower bounds?'
+assert:
+  answers:
+    q1: false
+    q2: false
+    q3: true
+    q4: true
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5ad54f775b96ef001a10ac89, squad2-5ad54f775b96ef001a10ac8a, squad2-56e1bd4acd28a01900c67aff,
+    squad2-56e1bd4acd28a01900c67afd, squad2-56e1bd4acd28a01900c67afc
+  date: ''
+  transform: paragraph Computational_complexity_theory#22; first 5 questions of a paragraph in sha256(id)
+    order, kept only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

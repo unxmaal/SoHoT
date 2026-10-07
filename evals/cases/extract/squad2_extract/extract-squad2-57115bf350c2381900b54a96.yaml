@@ -1,0 +1,31 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-57115bf350c2381900b54a96
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: How many pounds of steam per kilowatt hour does the Energiprojekt AB engine use?'
+context: Although the reciprocating steam engine is no longer in widespread commercial use, various companies
+  are exploring or exploiting the potential of the engine as an alternative to internal combustion engines.
+  The company Energiprojekt AB in Sweden has made progress in using modern materials for harnessing the
+  power of steam. The efficiency of Energiprojekt's steam engine reaches some 27-30% on high-pressure
+  engines. It is a single-step, 5-cylinder engine (no compound) with superheated steam and consumes approx.
+  4 kg (8.8 lb) of steam per kWh.[not in citation given]
+assert:
+  equals:
+  - '8.8'
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-57115bf350c2381900b54a96
+  date: ''
+  transform: paragraph Steam_engine#28; first answerable question in sha256(id) order whose every human
+    answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

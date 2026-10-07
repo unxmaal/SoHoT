@@ -1,0 +1,38 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-571cc8815efbb31900334def
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: At what temperatures is O2 more soluble?'
+context: 'Free oxygen also occurs in solution in the world''s water bodies. The increased solubility of
+  O
+
+  2 at lower temperatures (see Physical properties) has important implications for ocean life, as polar
+  oceans support a much higher density of life due to their higher oxygen content. Water polluted with
+  plant nutrients such as nitrates or phosphates may stimulate growth of algae by a process called eutrophication
+  and the decay of these organisms and other biomaterials may reduce amounts of O
+
+  2 in eutrophic water bodies. Scientists assess this aspect of water quality by measuring the water''s
+  biochemical oxygen demand, or the amount of O
+
+  2 needed to restore it to a normal concentration.'
+assert:
+  equals:
+  - lower
+  - lower temperatures
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-571cc8815efbb31900334def
+  date: ''
+  transform: paragraph Oxygen#27; first answerable question in sha256(id) order whose every human answer
+    is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

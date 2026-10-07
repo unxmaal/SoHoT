@@ -1,0 +1,55 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5737a0acc3c5551400e51f4a
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: 'Newton''s laws and Newtonian mechanics in general were first developed to describe how forces
+  affect idealized point particles rather than three-dimensional objects. However, in real life, matter
+  has extended structure and forces that act on one part of an object might affect other parts of an object.
+  For situations where lattice holding together the atoms in an object is able to flow, contract, expand,
+  or otherwise change shape, the theories of continuum mechanics describe the way forces affect the material.
+  For example, in extended fluids, differences in pressure result in forces being directed along the pressure
+  gradients as follows:'
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What may a force on one part
+        of an object affect?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Forces that act on one part
+        of an object do not act on what?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What does matter actually
+        have that Newtonian mechanics doesn''t address?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Whose mechanics affected three
+        dimensional objects?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What didn''t Newton''s mechanics
+        affext?'
+assert:
+  answers:
+    q1: true
+    q2: false
+    q3: true
+    q4: false
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5737a0acc3c5551400e51f4a, squad2-5ad286fdd7d075001a429901, squad2-5737a0acc3c5551400e51f4b,
+    squad2-5ad286fdd7d075001a429903, squad2-5737a0acc3c5551400e51f48
+  date: ''
+  transform: paragraph Force#36; first 5 questions of a paragraph in sha256(id) order, kept only when
+    they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

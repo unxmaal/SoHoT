@@ -1,0 +1,52 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5ad56c6b5b96ef001a10ae6c
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: Along the same lines, co-NP is the class containing the complement problems (i.e. problems with
+  the yes/no answers reversed) of NP problems. It is believed that NP is not equal to co-NP; however,
+  it has not yet been proven. It has been shown that if these two complexity classes are not equal then
+  P is not equal to NP.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What complexity class do incompatible
+        problems of NP problems exist?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: In what complexity class do
+        complement problems of NP problems exist?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How do the yes/no answers
+        of an incompatible problem of of APPEAR?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is not commonly believed
+        to be the value relationship between P and co-NP?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What implication can be derived
+        for P and NP if P and co-NP are established to be unequal?'
+assert:
+  answers:
+    q1: false
+    q2: true
+    q3: false
+    q4: false
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5ad56c6b5b96ef001a10ae6c, squad2-56e1efa0e3433e140042321a, squad2-5ad56c6b5b96ef001a10ae6d,
+    squad2-5ad56c6b5b96ef001a10ae6e, squad2-56e1efa0e3433e140042321d
+  date: ''
+  transform: paragraph Computational_complexity_theory#39; first 5 questions of a paragraph in sha256(id)
+    order, kept only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

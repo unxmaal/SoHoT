@@ -1,0 +1,55 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-571cda1bdd7acb1400e4c19a
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: Oxygen storage methods include high pressure oxygen tanks, cryogenics and chemical compounds.
+  For reasons of economy, oxygen is often transported in bulk as a liquid in specially insulated tankers,
+  since one liter of liquefied oxygen is equivalent to 840 liters of gaseous oxygen at atmospheric pressure
+  and 20 °C (68 °F). Such tankers are used to refill bulk liquid oxygen storage containers, which stand
+  outside hospitals and other institutions with a need for large volumes of pure oxygen gas. Liquid oxygen
+  is passed through heat exchangers, which convert the cryogenic liquid into gas before it enters the
+  building. Oxygen is also stored and shipped in smaller cylinders containing the compressed gas; a form
+  that is useful in certain portable medical applications and oxy-fuel welding and cutting.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What type of organization
+        would need large quantities of pure oxygen?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is equivalent to 804
+        liters of gaseous oxygen?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What must be at 28°C?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: In what state is oxygen shipped
+        in bulk?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is the cryogenic and
+        chemical compound storage method?'
+assert:
+  answers:
+    q1: true
+    q2: false
+    q3: false
+    q4: true
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-571cda1bdd7acb1400e4c19a, squad2-5ad25dd3d7d075001a428f02, squad2-5ad25dd3d7d075001a428f03,
+    squad2-571cda1bdd7acb1400e4c197, squad2-5ad25dd3d7d075001a428f00
+  date: ''
+  transform: paragraph Oxygen#37; first 5 questions of a paragraph in sha256(id) order, kept only when
+    they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

@@ -1,0 +1,55 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-572755b7708984140094dc4f
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: In the United States, the industry in 2014 has around $960 billion in annual revenue according
+  to statistics tracked by the Census Bureau, of which $680 billion is private (split evenly between residential
+  and nonresidential) and the remainder is government. As of 2005, there were about 667,000 firms employing
+  1 million contractors (200,000 general contractors, 38,000 heavy, and 432,000 specialty); the average
+  contractor employed fewer than 10 employees. As a whole, the industry employed an estimated 5.8 million
+  as of April 2013, with a 13.2% unemployment rate. In the United States, approximately 828,000 women
+  were employed in the construction industry as of 2011.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How many firms were existing
+        in 2005?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: In the US how many contractors
+        were employed in construction as of 2011?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What was the unemployment
+        rate as of 2011?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: In 2005 how many employees
+        were employed by the government?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How many women were employed
+        in construction in 2011?'
+assert:
+  answers:
+    q1: true
+    q2: false
+    q3: false
+    q4: false
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572755b7708984140094dc4f, squad2-5a25f38dc93d92001a40035f, squad2-5a25f38dc93d92001a40035b,
+    squad2-5a25f38dc93d92001a40035d, squad2-572755b7708984140094dc51
+  date: ''
+  transform: paragraph Construction#19; first 5 questions of a paragraph in sha256(id) order, kept only
+    when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

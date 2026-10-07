@@ -1,0 +1,55 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5ad403df604f3c001a3ffd9b
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: During the Southern Song dynasty the descendant of Confucius at Qufu, the Duke Yansheng Kong
+  Duanyou fled south with the Song Emperor to Quzhou, while the newly established Jin dynasty (1115–1234)
+  in the north appointed Kong Duanyou's brother Kong Duancao who remained in Qufu as Duke Yansheng. From
+  that time up until the Yuan dynasty, there were two Duke Yanshengs, once in the north in Qufu and the
+  other in the south at Quzhou. During the Yuan dynasty, the Emperor Kublai Khan invited the southern
+  Duke Yansheng Kong Zhu to return to Qufu. Kong Zhu refused, and gave up the title, so the northern branch
+  of the family kept the title of Duke Yansheng. The southern branch still remained in Quzhou where they
+  lived to this day. Confucius's descendants in Quzhou alone number 30,000. During the Yuan dynasty, one
+  of Confucius' descendants moved from China to Goryeo era Korea and established a branch of the family
+  there after marrying a Korean woman.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who did Duke Yansheng Kong
+        Duanyou stay with?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: When did the Jip dynasty end?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: When did the Jin dynasty end?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who was rejected as the replacement
+        for Duke Yansheng Kong Duanyou?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: When did the Jin dynasty begin?'
+assert:
+  answers:
+    q1: false
+    q2: false
+    q3: true
+    q4: false
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5ad403df604f3c001a3ffd9b, squad2-5ad403df604f3c001a3ffd9d, squad2-57286c8cff5b5019007da21a,
+    squad2-5ad403df604f3c001a3ffd9e, squad2-57286c8cff5b5019007da219
+  date: ''
+  transform: paragraph Yuan_dynasty#11; first 5 questions of a paragraph in sha256(id) order, kept only
+    when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

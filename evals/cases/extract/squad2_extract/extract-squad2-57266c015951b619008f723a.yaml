@@ -1,0 +1,34 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-57266c015951b619008f723a
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: Previous to isotopic dating sections of rocks had to be dated using fossils and stratigraphic
+  correlation relative to what?'
+context: At the beginning of the 20th century, important advancement in geological science was facilitated
+  by the ability to obtain accurate absolute dates to geologic events using radioactive isotopes and other
+  methods. This changed the understanding of geologic time. Previously, geologists could only use fossils
+  and stratigraphic correlation to date sections of rock relative to one another. With isotopic dates
+  it became possible to assign absolute ages to rock units, and these absolute dates could be applied
+  to fossil sequences in which there was datable material, converting the old relative ages into new absolute
+  ages.
+assert:
+  equals:
+  - to one another
+  - one another
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-57266c015951b619008f723a
+  date: ''
+  transform: paragraph Geology#8; first answerable question in sha256(id) order whose every human answer
+    is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

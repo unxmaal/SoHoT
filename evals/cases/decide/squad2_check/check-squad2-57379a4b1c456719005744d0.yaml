@@ -1,0 +1,54 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-57379a4b1c456719005744d0
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: The normal force is due to repulsive forces of interaction between atoms at close contact. When
+  their electron clouds overlap, Pauli repulsion (due to fermionic nature of electrons) follows resulting
+  in the force that acts in a direction normal to the surface interface between two objects.:93 The normal
+  force, for example, is responsible for the structural integrity of tables and floors as well as being
+  the force that responds whenever an external force pushes on a solid object. An example of the normal
+  force in action is the impact force on an object crashing into an immobile surface.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is the force that causes
+        rigid strength in structures?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: The abnormal force is responsible
+        for the structural integrity of what?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is the repulsive force
+        of close range atom interaction?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What force is due to attractive
+        forces of interaction?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What occurs when electron
+        clouds overlap from different atoms?'
+assert:
+  answers:
+    q1: true
+    q2: false
+    q3: true
+    q4: false
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-57379a4b1c456719005744d0, squad2-5ad28614d7d075001a4298c3, squad2-57379a4b1c456719005744cd,
+    squad2-5ad28614d7d075001a4298c0, squad2-57379a4b1c456719005744ce
+  date: ''
+  transform: paragraph Force#34; first 5 questions of a paragraph in sha256(id) order, kept only when
+    they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

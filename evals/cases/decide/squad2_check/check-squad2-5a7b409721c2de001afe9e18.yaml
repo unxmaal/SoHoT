@@ -1,0 +1,54 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5a7b409721c2de001afe9e18
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: To avoid interference with existing VHF television stations in the San Francisco Bay Area and
+  those planned for Chico, Sacramento, Salinas, and Stockton, the Federal Communications Commission decided
+  that Fresno would only have UHF television stations. The very first Fresno television station to begin
+  broadcasting was KMJ-TV, which debuted on June 1, 1953. KMJ is now known as NBC affiliate KSEE. Other
+  Fresno stations include ABC O&O KFSN, CBS affiliate KGPE, CW affiliate KFRE, FOX affiliate KMPH, MNTV
+  affiliate KAIL, PBS affiliate KVPT, Telemundo O&O KNSO, Univision O&O KFTV, and MundoFox and Azteca
+  affiliate KGMC-DT.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: When did the FCC decide Fresno
+        could only have UHF stations?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is KMJ now referred to?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What was KMJ originally known
+        as?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is the FOX affiliate
+        in Salinas?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is the name of the CBS
+        affiliate in Fresno?'
+assert:
+  answers:
+    q1: false
+    q2: true
+    q3: false
+    q4: false
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5a7b409721c2de001afe9e18, squad2-5725fb8138643c19005acf42, squad2-5a7b409721c2de001afe9e19,
+    squad2-5a7b409721c2de001afe9e1a, squad2-5725fb8138643c19005acf43
+  date: ''
+  transform: paragraph Fresno,_California#24; first 5 questions of a paragraph in sha256(id) order, kept
+    only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

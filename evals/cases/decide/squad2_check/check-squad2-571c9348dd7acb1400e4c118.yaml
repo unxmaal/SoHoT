@@ -1,0 +1,56 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-571c9348dd7acb1400e4c118
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: 'In 1891 Scottish chemist James Dewar was able to produce enough liquid oxygen to study. The
+  first commercially viable process for producing liquid oxygen was independently developed in 1895 by
+  German engineer Carl von Linde and British engineer William Hampson. Both men lowered the temperature
+  of air until it liquefied and then distilled the component gases by boiling them off one at a time and
+  capturing them. Later, in 1901, oxyacetylene welding was demonstrated for the first time by burning
+  a mixture of acetylene and compressed O
+
+  2. This method of welding and cutting metal later became common.'
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What welding process was demonstrated
+        in 1901?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What was developed by Carl
+        von Hampson and William Linde?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who produced enough oxygen
+        to study in 1819?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: When was liquid oxygen developed
+        for commercial use?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What chemist managed to make
+        enough liquid oxygen to use for study?'
+assert:
+  answers:
+    q1: true
+    q2: false
+    q3: false
+    q4: true
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-571c9348dd7acb1400e4c118, squad2-5ad23f8fd7d075001a4288ee, squad2-5ad23f8fd7d075001a4288ec,
+    squad2-571c9348dd7acb1400e4c116, squad2-571c9348dd7acb1400e4c114
+  date: ''
+  transform: paragraph Oxygen#16; first 5 questions of a paragraph in sha256(id) order, kept only when
+    they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

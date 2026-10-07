@@ -1,0 +1,55 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5725f6e138643c19005acf1a
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: The official record high temperature for Fresno is 115 °F (46.1 °C), set on July 8, 1905, while
+  the official record low is 17 °F (−8 °C), set on January 6, 1913. The average windows for 100 °F (37.8
+  °C)+, 90 °F (32.2 °C)+, and freezing temperatures are June 1 thru September 13, April 26 thru October
+  9, and December 10 thru January 28, respectively, and no freeze occurred between in the 1983/1984 season.
+  Annual rainfall has ranged from 23.57 inches (598.7 mm) in the “rain year” from July 1982 to June 1983
+  down to 4.43 inches (112.5 mm) from July 1933 to June 1934. The most rainfall in one month was 9.54
+  inches (242.3 mm) in November 1885 and the most rainfall in 24 hours 3.55 inches (90.2 mm) on November
+  18, 1885. Measurable precipitation falls on an average of 48 days annually. Snow is a rarity; the heaviest
+  snowfall at the airport was 2.2 inches (0.06 m) on January 21, 1962.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: On what date was the record
+        low temperature in Fresno?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is the record low for
+        July?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How much did it rain in 1962?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How much did it snow in 1885?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is the hottest temperature
+        record for Fresno?'
+assert:
+  answers:
+    q1: true
+    q2: false
+    q3: false
+    q4: false
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5725f6e138643c19005acf1a, squad2-5a7b3b3121c2de001afe9dee, squad2-5a7b3b3121c2de001afe9df2,
+    squad2-5a7b3b3121c2de001afe9df1, squad2-5725f6e138643c19005acf19
+  date: ''
+  transform: paragraph Fresno,_California#20; first 5 questions of a paragraph in sha256(id) order, kept
+    only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

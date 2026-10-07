@@ -1,0 +1,58 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5ad0331877cf76001a686e17
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: Traveling south on Interstate 5, the main gap to continued urbanization is Camp Pendleton. The
+  cities and communities along Interstate 15 and Interstate 215 are so inter-related that Temecula and
+  Murrieta have as much connection with the San Diego metropolitan area as they do with the Inland Empire.
+  To the east, the United States Census Bureau considers the San Bernardino and Riverside County areas,
+  Riverside-San Bernardino area as a separate metropolitan area from Los Angeles County. While many commute
+  to L.A. and Orange Counties, there are some differences in development, as most of San Bernardino and
+  Riverside Counties (the non-desert portions) were developed in the 1980s and 1990s. Newly developed
+  exurbs formed in the Antelope Valley north of Los Angeles, the Victor Valley and the Coachella Valley
+  with the Imperial Valley. Also, population growth was high in the Bakersfield-Kern County, Santa Maria
+  and San Luis Obispo areas.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What counties to most people
+        commute to?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is the main gap to continued
+        urbanization?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who considers Los Angeles
+        County to be a separate metropolitan area?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What formed in the Coachella
+        Valley north of Orange County?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Other than the 1980s, in which
+        decade did most of San Bernardino and Riverside Counties develop?'
+assert:
+  answers:
+    q1: false
+    q2: true
+    q3: true
+    q4: false
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5ad0331877cf76001a686e17, squad2-5705fb7f52bb891400689750, squad2-5705fb7f52bb891400689752,
+    squad2-5ad0331877cf76001a686e18, squad2-5705fb7f52bb891400689754
+  date: ''
+  transform: paragraph Southern_California#15; first 5 questions of a paragraph in sha256(id) order, kept
+    only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

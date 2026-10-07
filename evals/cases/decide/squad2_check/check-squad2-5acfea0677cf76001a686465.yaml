@@ -1,0 +1,53 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5acfea0677cf76001a686465
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: Some elements of the Brotherhood, though perhaps against orders, did engage in violence against
+  the government, and its founder Al-Banna was assassinated in 1949 in retaliation for the assassination
+  of Egypt's premier Mahmud Fami Naqrashi three months earlier. The Brotherhood has suffered periodic
+  repression in Egypt and has been banned several times, in 1948 and several years later following confrontations
+  with Egyptian president Gamal Abdul Nasser, who jailed thousands of members for several years.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: When was the Brotherhood first
+        accepted in Egypt?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What Egyptian president jailed
+        thousands of members of the Brotherhood?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What Egyptian president jailed
+        hundreds of members of the Brotherhood?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who was Al-Banna''s assassination
+        a retaliation for the prior assassination of?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Some elements of the Brotherhood
+        did not direct what action against the government?'
+assert:
+  answers:
+    q1: false
+    q2: true
+    q3: false
+    q4: true
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5acfea0677cf76001a686465, squad2-5730040f947a6a140053cf50, squad2-5acfea0677cf76001a686466,
+    squad2-5730040f947a6a140053cf4e, squad2-5acfea0677cf76001a686462
+  date: ''
+  transform: paragraph Islamism#14; first 5 questions of a paragraph in sha256(id) order, kept only when
+    they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

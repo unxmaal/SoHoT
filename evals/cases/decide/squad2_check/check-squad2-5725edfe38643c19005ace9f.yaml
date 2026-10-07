@@ -1,0 +1,53 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5725edfe38643c19005ace9f
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: The "West Side" of Fresno, also often called "Southwest Fresno", is one of the oldest neighborhoods
+  in the city. The neighborhood lies southwest of the 99 freeway (which divides it from Downtown Fresno),
+  west of the 41 freeway and south of Nielsen Ave (or the newly constructed 180 Freeway), and extends
+  to the city limits to the west and south. The neighborhood is traditionally considered to be the center
+  of Fresno's African-American community. It is culturally diverse and also includes significant Mexican-American
+  and Asian-American (principally Hmong or Laotian) populations.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is another name for the
+        west side of Fresno?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What specific groups are found
+        within the Mexican-American population?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What divides Downtown Fresno?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Which neighborhood lies west
+        of the 41 freeway?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: In which direction does the
+        west side of Fresno neighborhood lie to the 99 freeway?'
+assert:
+  answers:
+    q1: true
+    q2: false
+    q3: false
+    q4: true
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5725edfe38643c19005ace9f, squad2-5a7b325021c2de001afe9dab, squad2-5a7b325021c2de001afe9da9,
+    squad2-5725edfe38643c19005acea3, squad2-5725edfe38643c19005acea0
+  date: ''
+  transform: paragraph Fresno,_California#14; first 5 questions of a paragraph in sha256(id) order, kept
+    only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

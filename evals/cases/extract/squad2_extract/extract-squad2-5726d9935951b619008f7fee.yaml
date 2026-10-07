@@ -1,0 +1,32 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-5726d9935951b619008f7fee
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What types of health outcomes do pharmacists aim for with their patients?'
+context: Pharmacists are healthcare professionals with specialised education and training who perform
+  various roles to ensure optimal health outcomes for their patients through the quality use of medicines.
+  Pharmacists may also be small-business proprietors, owning the pharmacy in which they practice. Since
+  pharmacists know about the mode of action of a particular drug, and its metabolism and physiological
+  effects on the human body in great detail, they play an important role in optimisation of a drug treatment
+  for an individual.
+assert:
+  equals:
+  - optimal health outcomes
+  - optimal
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5726d9935951b619008f7fee
+  date: ''
+  transform: paragraph Pharmacy#1; first answerable question in sha256(id) order whose every human answer
+    is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

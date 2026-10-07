@@ -1,0 +1,52 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5ad0421177cf76001a686f17
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: As of the 2010 United States Census, southern California has a population of 22,680,010. Despite
+  a reputation for high growth rates, southern California's rate grew less than the state average of 10.0%
+  in the 2000s as California's growth became concentrated in the northern part of the state due to a stronger,
+  tech-oriented economy in the Bay Area and an emerging Greater Sacramento region.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What city is in the Greater
+        Bay Region?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What does southern California
+        have a reputation for?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Southern California had a
+        population of 22,680,010 according to the census from which year?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is the state average
+        growth rate?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How much did southern California
+        grow in the year 2000?'
+assert:
+  answers:
+    q1: false
+    q2: true
+    q3: true
+    q4: true
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5ad0421177cf76001a686f17, squad2-570603c475f01819005e7883, squad2-570603c475f01819005e7882,
+    squad2-570603c475f01819005e7884, squad2-5ad0421177cf76001a686f15
+  date: ''
+  transform: paragraph Southern_California#21; first 5 questions of a paragraph in sha256(id) order, kept
+    only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

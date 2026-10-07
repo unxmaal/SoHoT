@@ -1,0 +1,34 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-5727f05b4b864d1900164069
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What do people with lower income have less access to?'
+context: An important factor in the creation of inequality is variation in individuals' access to education.
+  Education, especially in an area where there is a high demand for workers, creates high wages for those
+  with this education, however, increases in education first increase and then decrease growth as well
+  as income inequality. As a result, those who are unable to afford an education, or choose not to pursue
+  optional education, generally receive much lower wages. The justification for this is that a lack of
+  education leads directly to lower incomes, and thus lower aggregate savings and investment. Conversely,
+  education raises incomes and promotes growth because it helps to unleash the productive potential of
+  the poor.
+assert:
+  equals:
+  - optional education
+  - education
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5727f05b4b864d1900164069
+  date: ''
+  transform: paragraph Economic_inequality#8; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

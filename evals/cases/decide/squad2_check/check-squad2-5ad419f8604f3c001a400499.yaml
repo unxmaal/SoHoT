@@ -1,0 +1,55 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5ad419f8604f3c001a400499
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: One of the principal advantages the Rankine cycle holds over others is that during the compression
+  stage relatively little work is required to drive the pump, the working fluid being in its liquid phase
+  at this point. By condensing the fluid, the work required by the pump consumes only 1% to 3% of the
+  turbine power and contributes to a much higher efficiency for a real cycle. The benefit of this is lost
+  somewhat due to the lower heat addition temperature. Gas turbines, for instance, have turbine entry
+  temperatures approaching 1500 °C. Nonetheless, the efficiencies of actual large steam cycles and large
+  modern gas turbines are fairly well matched.[citation needed]
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is a main advantage of
+        the efficiency cycle?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is the approximate turbine
+        entry temperature of a gas turbine?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How much turbine power is
+        consumed by the pump while the work fluid is condensed?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is a main advantage of
+        the Rankine cycle?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: During the compression stage
+        of the Rankine cycle, what state is the working fluid in?'
+assert:
+  answers:
+    q1: false
+    q2: true
+    q3: true
+    q4: true
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5ad419f8604f3c001a400499, squad2-5711648850c2381900b54ac6, squad2-5711648850c2381900b54ac5,
+    squad2-5711648850c2381900b54ac3, squad2-5711648850c2381900b54ac4
+  date: ''
+  transform: paragraph Steam_engine#41; first 5 questions of a paragraph in sha256(id) order, kept only
+    when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

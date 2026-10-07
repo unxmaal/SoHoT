@@ -1,0 +1,38 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-57284d484b864d1900164900
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: During what decade did the campus start to look more modern?'
+context: After the 1940s, the Gothic style on campus began to give way to modern styles. In 1955, Eero
+  Saarinen was contracted to develop a second master plan, which led to the construction of buildings
+  both north and south of the Midway, including the Laird Bell Law Quadrangle (a complex designed by Saarinen);
+  a series of arts buildings; a building designed by Ludwig Mies van der Rohe for the university's School
+  of Social Service Administration;, a building which is to become the home of the Harris School of Public
+  Policy Studies by Edward Durrell Stone, and the Regenstein Library, the largest building on campus,
+  a brutalist structure designed by Walter Netsch of the Chicago firm Skidmore, Owings & Merrill. Another
+  master plan, designed in 1999 and updated in 2004, produced the Gerald Ratner Athletics Center (2003),
+  the Max Palevsky Residential Commons (2001), South Campus Residence Hall and dining commons (2009),
+  a new children's hospital, and other construction, expansions, and restorations. In 2011, the university
+  completed the glass dome-shaped Joe and Rika Mansueto Library, which provides a grand reading room for
+  the university library and prevents the need for an off-campus book depository.
+assert:
+  equals:
+  - the 1940s
+  - After the 1940s
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-57284d484b864d1900164900
+  date: ''
+  transform: paragraph University_of_Chicago#10; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

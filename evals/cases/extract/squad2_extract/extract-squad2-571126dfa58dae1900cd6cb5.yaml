@@ -1,0 +1,33 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-571126dfa58dae1900cd6cb5
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What was invented by Savery?'
+context: The first commercially successful true engine, in that it could generate power and transmit it
+  to a machine, was the atmospheric engine, invented by Thomas Newcomen around 1712. It was an improvement
+  over Savery's steam pump, using a piston as proposed by Papin. Newcomen's engine was relatively inefficient,
+  and in most cases was used for pumping water. It worked by creating a partial vacuum by condensing steam
+  under a piston within a cylinder. It was employed for draining mine workings at depths hitherto impossible,
+  and also for providing a reusable water supply for driving waterwheels at factories sited away from
+  a suitable "head". Water that had passed over the wheel was pumped back up into a storage reservoir
+  above the wheel.
+assert:
+  equals:
+  - steam pump
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-571126dfa58dae1900cd6cb5
+  date: ''
+  transform: paragraph Steam_engine#1; first answerable question in sha256(id) order whose every human
+    answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

@@ -1,0 +1,34 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-57094a79efce8f15003a7dc7
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: How much did Sky bid to win the 4 broadcast pacakges they bought?'
+context: Following a lengthy legal battle with the European Commission, which deemed the exclusivity of
+  the rights to be against the interests of competition and the consumer, BSkyB's monopoly came to an
+  end from the 2007–08 season. In May 2006, the Irish broadcaster Setanta Sports was awarded two of the
+  six Premier League packages that the English FA offered to broadcasters. Sky picked up the remaining
+  four for £1.3bn. In February 2015, Sky bid £4.2bn for a package of 120 premier league games across the
+  three seasons from 2016. This represented an increase of 70% on the previous contract and was said to
+  be £1bn more than the company had expected to pay. The move has been followed by staff cuts, increased
+  subscription prices (including 9% in Sky's family package) and the dropping of the 3D channel.
+assert:
+  equals:
+  - £1.3bn
+  - £4.2bn
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-57094a79efce8f15003a7dc7
+  date: ''
+  transform: paragraph Sky_(United_Kingdom)#1; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

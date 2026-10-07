@@ -1,0 +1,60 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-571c97e2dd7acb1400e4c11e
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: 'Oxygen is the most abundant chemical element by mass in the Earth''s biosphere, air, sea and
+  land. Oxygen is the third most abundant chemical element in the universe, after hydrogen and helium.
+  About 0.9% of the Sun''s mass is oxygen. Oxygen constitutes 49.2% of the Earth''s crust by mass and
+  is the major component of the world''s oceans (88.8% by mass). Oxygen gas is the second most common
+  component of the Earth''s atmosphere, taking up 20.8% of its volume and 23.1% of its mass (some 1015
+  tonnes).[d] Earth is unusual among the planets of the Solar System in having such a high concentration
+  of oxygen gas in its atmosphere: Mars (with 0.1% O
+
+  2 by volume) and Venus have far lower concentrations. The O
+
+  2 surrounding these other planets is produced solely by ultraviolet radiation impacting oxygen-containing
+  molecules such as carbon dioxide.'
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Where does oxygen rank by
+        mass in the planet''s biosphere?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What makes up 49.2% of the
+        sun''s mass?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What takes up 23.1% of the
+        Earth''s mass?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Where  by mass is oxygen a
+        major part?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What makes up 0.9% of the
+        Earth''s crust by mass?'
+assert:
+  answers:
+    q1: true
+    q2: false
+    q3: false
+    q4: true
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-571c97e2dd7acb1400e4c11e, squad2-5ad24ff3d7d075001a428ca6, squad2-5ad24ff3d7d075001a428ca8,
+    squad2-571c97e2dd7acb1400e4c121, squad2-5ad24ff3d7d075001a428ca7
+  date: ''
+  transform: paragraph Oxygen#18; first 5 questions of a paragraph in sha256(id) order, kept only when
+    they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

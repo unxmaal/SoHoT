@@ -1,0 +1,34 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-572a0b101d046914007796ed
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What might the Amazon forest become if it passes the tipping point and starts to die?'
+context: In 2005, parts of the Amazon basin experienced the worst drought in one hundred years, and there
+  were indications that 2006 could have been a second successive year of drought. A July 23, 2006 article
+  in the UK newspaper The Independent reported Woods Hole Research Center results showing that the forest
+  in its present form could survive only three years of drought. Scientists at the Brazilian National
+  Institute of Amazonian Research argue in the article that this drought response, coupled with the effects
+  of deforestation on regional climate, are pushing the rainforest towards a "tipping point" where it
+  would irreversibly start to die. It concludes that the forest is on the brink of being turned into savanna
+  or desert, with catastrophic consequences for the world's climate.
+assert:
+  equals:
+  - savanna or desert
+  - desert
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572a0b101d046914007796ed
+  date: ''
+  transform: paragraph Amazon_rainforest#19; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

@@ -1,0 +1,31 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-572a13841d0469140077973e
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What''s Thomas Piketty''s job?'
+context: Studies on income inequality and growth have sometimes found evidence confirming the Kuznets
+  curve hypothesis, which states that with economic development, inequality first increases, then decreases.
+  Economist Thomas Piketty challenges this notion, claiming that from 1914 to 1945 wars and "violent economic
+  and political shocks" reduced inequality. Moreover, Piketty argues that the "magical" Kuznets curve
+  hypothesis, with its emphasis on the balancing of economic growth in the long run, cannot account for
+  the significant increase in economic inequality throughout the developed world since the 1970s.
+assert:
+  equals:
+  - Economist
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572a13841d0469140077973e
+  date: ''
+  transform: paragraph Economic_inequality#33; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

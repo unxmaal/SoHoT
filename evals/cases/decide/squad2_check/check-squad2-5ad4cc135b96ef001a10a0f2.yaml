@@ -1,0 +1,58 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5ad4cc135b96ef001a10a0f2
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: By July 1944, the Red Army was deep into Polish territory and pursuing the Germans toward Warsaw.
+  Knowing that Stalin was hostile to the idea of an independent Poland, the Polish government-in-exile
+  in London gave orders to the underground Home Army (AK) to try to seize control of Warsaw from the Germans
+  before the Red Army arrived. Thus, on 1 August 1944, as the Red Army was nearing the city, the Warsaw
+  Uprising began. The armed struggle, planned to last 48 hours, was partially successful, however it went
+  on for 63 days. Eventually the Home Army fighters and civilians assisting them were forced to capitulate.
+  They were transported to PoW camps in Germany, while the entire civilian population was expelled. Polish
+  civilian deaths are estimated at between 150,000 and 200,000.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What army was pushing deep
+        into Polish territory to pursue The Home Army fighters in 1944?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Why did the exiled Polish
+        government in London order the underground Home Army to seize control of Stalin prior to the arrival
+        or the Red Army?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: When did the Red Army Uprising
+        begin?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Why did the exiled Polish
+        government in London order the underground Home Army to seize control of Warsaw prior to the arrival
+        of the Red Army?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How many days did the Warsaw
+        Uprising last?'
+assert:
+  answers:
+    q1: false
+    q2: false
+    q3: false
+    q4: true
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5ad4cc135b96ef001a10a0f2, squad2-5ad4cc135b96ef001a10a0f3, squad2-5ad4cc135b96ef001a10a0f4,
+    squad2-57332e48d058e614000b5763, squad2-57332e48d058e614000b5765
+  date: ''
+  transform: paragraph Warsaw#10; first 5 questions of a paragraph in sha256(id) order, kept only when
+    they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

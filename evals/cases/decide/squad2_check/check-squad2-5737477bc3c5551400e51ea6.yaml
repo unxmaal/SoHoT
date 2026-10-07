@@ -1,0 +1,60 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5737477bc3c5551400e51ea6
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: 'For instance, while traveling in a moving vehicle at a constant velocity, the laws of physics
+  do not change from being at rest. A person can throw a ball straight up in the air and catch it as it
+  falls down without worrying about applying a force in the direction the vehicle is moving. This is true
+  even though another person who is observing the moving vehicle pass by also observes the ball follow
+  a curving parabolic path in the same direction as the motion of the vehicle. It is the inertia of the
+  ball associated with its constant velocity in the direction of the vehicle''s motion that ensures the
+  ball continues to move forward even as it is thrown up and falls back down. From the perspective of
+  the person in the car, the vehicle and everything inside of it is at rest: It is the outside world that
+  is moving with a constant speed in the opposite direction. Since there is no experiment that can distinguish
+  whether it is the vehicle that is at rest or the outside world that is at rest, the two situations are
+  considered to be physically indistinguishable. Inertia therefore applies equally well to constant velocity
+  motion as it does to rest.'
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What applies to equally to
+        constant velocity motion as it does to rest.'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What path does a ball thrown
+        up and down in a moving vehicle take when seen by an outside observer?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: There are plenty of experiments
+        that can distinguish whether it is the vehicle that s at rest or what?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What doesn''t change from
+        being at rest to movement at a constant velocity?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What sate are things inside
+        of a moving vehicle as seen by a  person inside the vehicle?'
+assert:
+  answers:
+    q1: true
+    q2: true
+    q3: false
+    q4: true
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5737477bc3c5551400e51ea6, squad2-5737477bc3c5551400e51ea4, squad2-5ad26257d7d075001a42909e,
+    squad2-5737477bc3c5551400e51ea3, squad2-5737477bc3c5551400e51ea5
+  date: ''
+  transform: paragraph Force#5; first 5 questions of a paragraph in sha256(id) order, kept only when they
+    mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

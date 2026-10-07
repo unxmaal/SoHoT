@@ -1,0 +1,31 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-5725d662ec44d21400f3d689
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: Which park is home to the Kearney Mansion?'
+context: Fresno has three large public parks, two in the city limits and one in county land to the southwest.
+  Woodward Park, which features the Shinzen Japanese Gardens, numerous picnic areas and several miles
+  of trails, is in North Fresno and is adjacent to the San Joaquin River Parkway. Roeding Park, near Downtown
+  Fresno, is home to the Fresno Chaffee Zoo, and Rotary Storyland and Playland. Kearney Park is the largest
+  of the Fresno region's park system and is home to historic Kearney Mansion and plays host to the annual
+  Civil War Revisited, the largest reenactment of the Civil War in the west coast of the U.S.
+assert:
+  equals:
+  - Kearney Park
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5725d662ec44d21400f3d689
+  date: ''
+  transform: paragraph Fresno,_California#5; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

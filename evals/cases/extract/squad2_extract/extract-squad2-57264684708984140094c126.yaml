@@ -1,0 +1,33 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-57264684708984140094c126
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: When did the world''s population finally recover from the black death?'
+context: The Black Death is thought to have originated in the arid plains of Central Asia, where it then
+  travelled along the Silk Road, reaching Crimea by 1343. From there, it was most likely carried by Oriental
+  rat fleas living on the black rats that were regular passengers on merchant ships. Spreading throughout
+  the Mediterranean and Europe, the Black Death is estimated to have killed 30–60% of Europe's total population.
+  In total, the plague reduced the world population from an estimated 450 million down to 350–375 million
+  in the 14th century. The world population as a whole did not recover to pre-plague levels until the
+  17th century. The plague recurred occasionally in Europe until the 19th century.
+assert:
+  equals:
+  - the 17th century
+  - 17th century
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-57264684708984140094c126
+  date: ''
+  transform: paragraph Black_Death#0; first answerable question in sha256(id) order whose every human
+    answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

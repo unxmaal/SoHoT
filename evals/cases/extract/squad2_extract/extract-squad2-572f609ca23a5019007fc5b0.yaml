@@ -1,0 +1,33 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-572f609ca23a5019007fc5b0
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the major tributary of the Rhine?'
+context: The Rhine emerges from Lake Constance, flows generally westward, as the Hochrhein, passes the
+  Rhine Falls, and is joined by its major tributary, the river Aare. The Aare more than doubles the Rhine's
+  water discharge, to an average of nearly 1,000 m3/s (35,000 cu ft/s), and provides more than a fifth
+  of the discharge at the Dutch border. The Aare also contains the waters from the 4,274 m (14,022 ft)
+  summit of Finsteraarhorn, the highest point of the Rhine basin. The Rhine roughly forms the German-Swiss
+  border from Lake Constance with the exceptions of the canton of Schaffhausen and parts of the cantons
+  of Zürich and Basel-Stadt, until it turns north at the so-called Rhine knee at Basel, leaving Switzerland.
+assert:
+  equals:
+  - river Aare
+  - Aare
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572f609ca23a5019007fc5b0
+  date: ''
+  transform: paragraph Rhine#8; first answerable question in sha256(id) order whose every human answer
+    is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

@@ -1,0 +1,55 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5ad14468645df0001a2d148b
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: 'The principles of European Union law are rules of law which have been developed by the European
+  Court of Justice that constitute unwritten rules which are not expressly provided for in the treaties
+  but which affect how European Union law is interpreted and applies. In formulating these principles,
+  the courts have drawn on a variety of sources, including: public international law and legal doctrines
+  and principles present in the legal systems of European Union member states and in the jurisprudence
+  of the European Court of Human Rights. Accepted general principles of European Union Law include fundamental
+  rights (see human rights), proportionality, legal certainty, equality before the law and subsidiarity.'
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What sources did the EU courts
+        not drawn on?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Which entity did not develop
+        the principles of European Union law?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Which entity developed the
+        principles of European Union Law?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What are some of the accepted
+        general principles of European Union law?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What type of rules are expressly
+        provided for in treaties?'
+assert:
+  answers:
+    q1: false
+    q2: false
+    q3: true
+    q4: true
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5ad14468645df0001a2d148b, squad2-5ad14468645df0001a2d148a, squad2-5726a00cf1498d1400e8e550,
+    squad2-5726a00cf1498d1400e8e551, squad2-5ad14468645df0001a2d148d
+  date: ''
+  transform: paragraph European_Union_law#18; first 5 questions of a paragraph in sha256(id) order, kept
+    only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

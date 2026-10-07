@@ -1,0 +1,31 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-570d4e6cb3d812140066d671
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: How are Victorian cabinet members chosen?'
+context: The Premier of Victoria is the leader of the political party or coalition with the most seats
+  in the Legislative Assembly. The Premier is the public face of government and, with cabinet, sets the
+  legislative and political agenda. Cabinet consists of representatives elected to either house of parliament.
+  It is responsible for managing areas of government that are not exclusively the Commonwealth's, by the
+  Australian Constitution, such as education, health and law enforcement. The current Premier of Victoria
+  is Daniel Andrews.
+assert:
+  equals:
+  - elected
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-570d4e6cb3d812140066d671
+  date: ''
+  transform: paragraph Victoria_(Australia)#22; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

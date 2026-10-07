@@ -1,0 +1,35 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-573784fa1c45671900574486
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: Where was the measurment for the standard gravity on Earth taken?'
+context: 'What we now call gravity was not identified as a universal force until the work of Isaac Newton.
+  Before Newton, the tendency for objects to fall towards the Earth was not understood to be related to
+  the motions of celestial objects. Galileo was instrumental in describing the characteristics of falling
+  objects by determining that the acceleration of every object in free-fall was constant and independent
+  of the mass of the object. Today, this acceleration due to gravity towards the surface of the Earth
+  is usually designated as  and has a magnitude of about 9.81 meters per second squared (this measurement
+  is taken from sea level and may vary depending on location), and points toward the center of the Earth.
+  This observation means that the force of gravity on an object at the Earth''s surface is directly proportional
+  to the object''s mass. Thus an object that has a mass of  will experience a force:'
+assert:
+  equals:
+  - sea level
+  - from sea level
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-573784fa1c45671900574486
+  date: ''
+  transform: paragraph Force#23; first answerable question in sha256(id) order whose every human answer
+    is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

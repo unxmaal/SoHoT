@@ -1,0 +1,54 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5727515f708984140094dc14
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: 'Some of the oldest schools in South Africa are private church schools that were established
+  by missionaries in the early nineteenth century. The private sector has grown ever since. After the
+  abolition of apartheid, the laws governing private education in South Africa changed significantly.
+  The South African Schools Act of 1996 recognises two categories of schools: "public" (state-controlled)
+  and "independent" (which includes traditional private schools and schools which are privately governed[clarification
+  needed].)'
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: In South Africa, along with
+        privately governed schools, what schools are classified as independent?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How did Africa becoming independent
+        change the laws about missionaries coming to Africa?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: In what century was apartheid
+        abolished?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: In what year was the South
+        African Schools Act passed?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What did missionaries cause
+        to become law in 1996?'
+assert:
+  answers:
+    q1: true
+    q2: false
+    q3: false
+    q4: true
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5727515f708984140094dc14, squad2-5a67aa48f038b7001ab0c400, squad2-5a67aa48f038b7001ab0c3fe,
+    squad2-5727515f708984140094dc12, squad2-5a67aa48f038b7001ab0c3ff
+  date: ''
+  transform: paragraph Private_school#18; first 5 questions of a paragraph in sha256(id) order, kept only
+    when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

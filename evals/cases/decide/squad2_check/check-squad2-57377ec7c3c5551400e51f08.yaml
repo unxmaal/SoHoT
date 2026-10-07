@@ -1,0 +1,67 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-57377ec7c3c5551400e51f08
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: In modern particle physics, forces and the acceleration of particles are explained as a mathematical
+  by-product of exchange of momentum-carrying gauge bosons. With the development of quantum field theory
+  and general relativity, it was realized that force is a redundant concept arising from conservation
+  of momentum (4-momentum in relativity and momentum of virtual particles in quantum electrodynamics).
+  The conservation of momentum can be directly derived from the homogeneity or symmetry of space and so
+  is usually considered more fundamental than the concept of a force. Thus the currently known fundamental
+  forces are considered more accurately to be "fundamental interactions".:199–128 When particle A emits
+  (creates) or absorbs (annihilates) virtual particle B, a momentum conservation results in recoil of
+  particle A making impression of repulsion or attraction between particles A A' exchanging by B. This
+  description applies to all forces arising from fundamental interactions. While sophisticated mathematical
+  descriptions are needed to predict, in full detail, the accurate result of such interactions, there
+  is a conceptually simple way to describe such interactions through the use of Feynman diagrams. In a
+  Feynman diagram, each matter particle is represented as a straight line (see world line) traveling through
+  time, which normally increases up or to the right in the diagram. Matter and anti-matter particles are
+  identical except for their direction of propagation through the Feynman diagram. World lines of particles
+  intersect at interaction vertices, and the Feynman diagram represents any force arising from an interaction
+  as occurring at the vertex with an associated instantaneous change in the direction of the particle
+  world lines. Gauge bosons are emitted away from the vertex as wavy lines and, in the case of virtual
+  particle exchange, are absorbed at an adjacent vertex.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What diagrams are used to
+        simplify particle interactions on a fundamental level?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How are the particle forces
+        and accelerations explained as by gauge bosons exchange?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Matter particles are shown
+        as what kind of lines in a Feynman diagram?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: In whose diagram is each matter
+        particle represented as a curved line?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is considered less fundamental
+        than the concept of force?'
+assert:
+  answers:
+    q1: true
+    q2: true
+    q3: true
+    q4: false
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-57377ec7c3c5551400e51f08, squad2-57377ec7c3c5551400e51f05, squad2-57377ec7c3c5551400e51f09,
+    squad2-5ad278c3d7d075001a42957f, squad2-5ad278c3d7d075001a42957d
+  date: ''
+  transform: paragraph Force#20; first 5 questions of a paragraph in sha256(id) order, kept only when
+    they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

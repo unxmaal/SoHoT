@@ -1,0 +1,56 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-57296d571d04691400779413
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: 'A prime number (or a prime) is a natural number greater than 1 that has no positive divisors
+  other than 1 and itself. A natural number greater than 1 that is not a prime number is called a composite
+  number. For example, 5 is prime because 1 and 5 are its only positive integer factors, whereas 6 is
+  composite because it has the divisors 2 and 3 in addition to 1 and 6. The fundamental theorem of arithmetic
+  establishes the central role of primes in number theory: any integer greater than 1 can be expressed
+  as a product of primes that is unique up to ordering. The uniqueness in this theorem requires excluding
+  1 as a prime because one can include arbitrarily many instances of 1 in any factorization, e.g., 3,
+  1 · 3, 1 · 1 · 3, etc. are all valid factorizations of 3.'
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is the only divisor besides
+        1 that a prime number can have?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is the only divisor besides
+        1 that a product can have?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Why must one be excluded in
+        order to preserve the uniqueness of the fundamental theorem?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What theorem defines the main
+        role of primes in number theory?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: A number larger than -3 can
+        be represented as a product of what?'
+assert:
+  answers:
+    q1: true
+    q2: false
+    q3: true
+    q4: true
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-57296d571d04691400779413, squad2-5a89117e19b91f001a626f2d, squad2-57296d571d04691400779417,
+    squad2-57296d571d04691400779415, squad2-5a89117e19b91f001a626f30
+  date: ''
+  transform: paragraph Prime_number#0; first 5 questions of a paragraph in sha256(id) order, kept only
+    when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

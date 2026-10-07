@@ -1,0 +1,53 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5a6395e668151a001a9223a4
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: The Mallee and upper Wimmera are Victoria's warmest regions with hot winds blowing from nearby
+  semi-deserts. Average temperatures exceed 32 °C (90 °F) during summer and 15 °C (59 °F) in winter. Except
+  at cool mountain elevations, the inland monthly temperatures are 2–7 °C (4–13 °F) warmer than around
+  Melbourne (see chart). Victoria's highest maximum temperature since World War II, of 48.8 °C (119.8
+  °F) was recorded in Hopetoun on 7 February 2009, during the 2009 southeastern Australia heat wave.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: When was the heatwave in which
+        Wimmera recorded its highest temperature?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is the median temperature
+        in the summer?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is the weather type of
+        Mallee and upper Wimmera?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is the median temperature
+        in the winter?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: When was the heatwave in which
+        Hopetoun recorded its highest temperature?'
+assert:
+  answers:
+    q1: false
+    q2: false
+    q3: true
+    q4: false
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5a6395e668151a001a9223a4, squad2-5a6395e668151a001a9223a2, squad2-570d30fdfed7b91900d45ce3,
+    squad2-5a6395e668151a001a9223a1, squad2-570d30fdfed7b91900d45ce7
+  date: ''
+  transform: paragraph Victoria_(Australia)#9; first 5 questions of a paragraph in sha256(id) order, kept
+    only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

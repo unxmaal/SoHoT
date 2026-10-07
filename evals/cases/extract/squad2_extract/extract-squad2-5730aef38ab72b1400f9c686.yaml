@@ -1,0 +1,31 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-5730aef38ab72b1400f9c686
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: Who influenced Bismark besides his neighbors?'
+context: However, in 1883–84 Germany began to build a colonial empire in Africa and the South Pacific,
+  before losing interest in imperialism. Historians have debated exactly why Germany made this sudden
+  and short-lived move.[verification needed] Bismarck was aware that public opinion had started to demand
+  colonies for reasons of German prestige. He was influenced by Hamburg merchants and traders, his neighbors
+  at Friedrichsruh. The establishment of the German colonial empire proceeded smoothly, starting with
+  German New Guinea in 1884.
+assert:
+  equals:
+  - Hamburg merchants and traders
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5730aef38ab72b1400f9c686
+  date: ''
+  transform: paragraph Imperialism#28; first answerable question in sha256(id) order whose every human
+    answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

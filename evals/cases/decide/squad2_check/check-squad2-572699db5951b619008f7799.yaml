@@ -1,0 +1,69 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-572699db5951b619008f7799
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: Generally speaking, while all member states recognise that EU law takes primacy over national
+  law where this agreed in the Treaties, they do not accept that the Court of Justice has the final say
+  on foundational constitutional questions affecting democracy and human rights. In the United Kingdom,
+  the basic principle is that Parliament, as the sovereign expression of democratic legitimacy, can decide
+  whether it wishes to expressly legislate against EU law. This, however, would only happen in the case
+  of an express wish of the people to withdraw from the EU. It was held in R (Factortame Ltd) v Secretary
+  of State for Transport that "whatever limitation of its sovereignty Parliament accepted when it enacted
+  the European Communities Act 1972 was entirely voluntary" and so "it has always been clear" that UK
+  courts have a duty "to override any rule of national law found to be in conflict with any directly enforceable
+  rule of Community law." More recently the UK Supreme Court noted that in R (HS2 Action Alliance Ltd)
+  v Secretary of State for Transport, although the UK constitution is uncodified, there could be "fundamental
+  principles" of common law, and Parliament "did not either contemplate or authorise the abrogation" of
+  those principles when it enacted the European Communities Act 1972. The view of the German Constitutional
+  Court from the Solange I and Solange II decisions is that if the EU does not comply with its basic constitutional
+  rights and principles (particularly democracy, the rule of law and the social state principles) then
+  it cannot override German law. However, as the nicknames of the judgments go, "so long as" the EU works
+  towards the democratisation of its institutions, and has a framework that protects fundamental human
+  rights, it would not review EU legislation for compatibility with German constitutional principles.
+  Most other member states have expressed similar reservations. This suggests the EU's legitimacy rests
+  on the ultimate authority of member states, its factual commitment to human rights, and the democratic
+  will of the people.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What do all member states
+        agree takes precedence over national law?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: When was the European Communities
+        Act denied acceptance?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: When was the European Communities
+        Act created?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What was not the view of the
+        German Constitutional Court from Solange I and Solange II?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is the basic principle
+        of the Canadian Parliament?'
+assert:
+  answers:
+    q1: true
+    q2: false
+    q3: true
+    q4: false
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572699db5951b619008f7799, squad2-5ad13dbb645df0001a2d136a, squad2-572699db5951b619008f779b,
+    squad2-5ad13dbb645df0001a2d136b, squad2-5ad13dbb645df0001a2d1369
+  date: ''
+  transform: paragraph European_Union_law#12; first 5 questions of a paragraph in sha256(id) order, kept
+    only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

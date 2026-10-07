@@ -1,0 +1,65 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-57265526708984140094c2be
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: The USSR's invasion of Afghanistan was only one sign of insecurity in the region, also marked
+  by increased American weapons sales, technology, and outright military presence. Saudi Arabia and Iran
+  became increasingly dependent on American security assurances to manage both external and internal threats,
+  including increased military competition between them over increased oil revenues. Both states were
+  competing for preeminence in the Persian Gulf and using increased revenues to fund expanded militaries.
+  By 1979, Saudi arms purchases from the US exceeded five times Israel's. Another motive for the large
+  scale purchase of arms from the US by Saudi Arabia was the failure of the Shah during January 1979 to
+  maintain control of Iran, a non-Arabic but largely Shiite Muslim nation, which fell to a theocratic
+  Islamist government under the Ayatollah Ruhollah Khomeini in the wake of the 1979 Iranian Revolution.
+  Saudi Arabia, on the other hand, is an Arab, largely Sunni Muslim nation headed by a near absolutist
+  monarchy. In the wake of the Iranian revolution the Saudis were forced to deal with the prospect of
+  internal destabilization via the radicalism of Islamism, a reality which would quickly be revealed in
+  the seizure of the Grand Mosque in Mecca by Wahhabi extremists during November 1979 and a Shiite revolt
+  in the oil rich Al-Hasa region of Saudi Arabia in December of the same year. In November 2010, Wikileaks
+  leaked confidential diplomatic cables pertaining to the United States and its allies which revealed
+  that the late Saudi King Abdullah urged the United States to attack Iran in order to destroy its potential
+  nuclear weapons program, describing Iran as "a snake whose head should be cut off without any procrastination."
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Which countries became dependent
+        on US''s security assurance to threats?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: When did the Shah kingdom
+        start to collapse?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: When did the Wahhabi seized
+        the Grand Mosque in Mecca?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is another reason that
+        Al-Hasa was buying weapons from Russia?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Which country''s arms purchase
+        from the US became 5 times more than Israel?'
+assert:
+  answers:
+    q1: true
+    q2: true
+    q3: true
+    q4: false
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-57265526708984140094c2be, squad2-57265526708984140094c2c0, squad2-57265526708984140094c2c1,
+    squad2-5a38c911a4b263001a8c1922, squad2-57265526708984140094c2bf
+  date: ''
+  transform: paragraph 1973_oil_crisis#17; first 5 questions of a paragraph in sha256(id) order, kept
+    only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

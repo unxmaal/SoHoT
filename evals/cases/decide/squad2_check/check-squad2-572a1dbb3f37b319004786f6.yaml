@@ -1,0 +1,55 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-572a1dbb3f37b319004786f6
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: Firstly, certain costs are difficult to avoid and are shared by everyone, such as the costs of
+  housing, pensions, education and health care. If the state does not provide these services, then for
+  those on lower incomes, the costs must be borrowed and often those on lower incomes are those who are
+  worse equipped to manage their finances. Secondly, aspirational consumption describes the process of
+  middle income earners aspiring to achieve the standards of living enjoyed by their wealthier counterparts
+  and one method of achieving this aspiration is by taking on debt. The result leads to even greater inequality
+  and potential economic instability.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What are those with lower
+        incomes often unable to manage?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is one method of achieving
+        perspirational consumption?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How are the certain costs
+        which are easy to avoid shared?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is the term when top
+        income earners aspire to obtain the same standards of living as people wealthier than themselves?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What are those with higher
+        incomes often unable to manage?'
+assert:
+  answers:
+    q1: true
+    q2: false
+    q3: false
+    q4: false
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572a1dbb3f37b319004786f6, squad2-5ad2676ed7d075001a429213, squad2-5ad2676ed7d075001a429210,
+    squad2-5ad2676ed7d075001a429212, squad2-5ad2676ed7d075001a429211
+  date: ''
+  transform: paragraph Economic_inequality#38; first 5 questions of a paragraph in sha256(id) order, kept
+    only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

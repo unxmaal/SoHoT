@@ -1,0 +1,54 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5729ef266aef05140015511f
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: Terra preta (black earth), which is distributed over large areas in the Amazon forest, is now
+  widely accepted as a product of indigenous soil management. The development of this fertile soil allowed
+  agriculture and silviculture in the previously hostile environment; meaning that large portions of the
+  Amazon rainforest are probably the result of centuries of human management, rather than naturally occurring
+  as has previously been supposed. In the region of the Xingu tribe, remains of some of these large settlements
+  in the middle of the Amazon forest were found in 2003 by Michael Heckenberger and colleagues of the
+  University of Florida. Among those were evidence of roads, bridges and large plazas.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who is credited with finding
+        evidence of large settlements in the Amazon forest?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What type of soil is considered
+        a product of soil management by indigenous peoples in the Amazon Forest?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is terra preta called?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Terra preta is distributor
+        over a small area of what?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Evidence for what types of
+        structures were found in 2003?'
+assert:
+  answers:
+    q1: true
+    q2: true
+    q3: true
+    q4: false
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5729ef266aef05140015511f, squad2-5729ef266aef05140015511c, squad2-5725cf3238643c19005acd61,
+    squad2-5a0c7cb3f5590b0018dab428, squad2-5729ef266aef051400155120
+  date: ''
+  transform: paragraph Amazon_rainforest#7; first 5 questions of a paragraph in sha256(id) order, kept
+    only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

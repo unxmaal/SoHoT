@@ -1,0 +1,32 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-5733a560d058e614000b5f79
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: Where did one of Triton''s daughters decide she wanted to hang out and stay?'
+context: The origin of the legendary figure is not fully known. The best-known legend, by Artur Oppman,
+  is that long ago two of Triton's daughters set out on a journey through the depths of the oceans and
+  seas. One of them decided to stay on the coast of Denmark and can be seen sitting at the entrance to
+  the port of Copenhagen. The second mermaid reached the mouth of the Vistula River and plunged into its
+  waters. She stopped to rest on a sandy beach by the village of Warszowa, where fishermen came to admire
+  her beauty and listen to her beautiful voice. A greedy merchant also heard her songs; he followed the
+  fishermen and captured the mermaid.
+assert:
+  equals:
+  - coast of Denmark
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5733a560d058e614000b5f79
+  date: ''
+  transform: paragraph Warsaw#46; first answerable question in sha256(id) order whose every human answer
+    is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

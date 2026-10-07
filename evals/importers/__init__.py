@@ -31,6 +31,10 @@ REGISTRY = [
     Source("ocr_synth", "ocr"),
     Source("pii_synth", "pii"),
     Source("tts_synth", "tts"),
+    Source("squad2_check", "decide"),
+    Source("squad2_extract", "extract"),
+    Source("squad2_retrieval", "retrieval"),
+    Source("librispeech", "stt"),
 ]
 
 
@@ -69,7 +73,7 @@ def write(mod, name: str, made: list[Imported], root: Path = CASES) -> list[Path
     if out.exists():
         shutil.rmtree(out)
     out.mkdir(parents=True)
-    written = []
+    written, held = [], {}
     for one in sorted(made, key=lambda m: m.case["id"]):
         path = out / f"{one.case['id']}.yaml"
         path.write_text(_dump(mod, one.case), encoding="utf-8")
@@ -82,6 +86,9 @@ def write(mod, name: str, made: list[Imported], root: Path = CASES) -> list[Path
             target = (out / rel).resolve()
             if out.resolve() not in target.parents:
                 raise ValueError(f"{one.case['id']}: {rel!r} is outside {out}")
+            # Cases may share a file, such as one retrieval corpus, only with the same bytes.
+            if held.setdefault(target, data) != data:
+                raise ValueError(f"{one.case['id']}: {rel!r} differs from another case's copy")
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(data)
         written.append(path)

@@ -1,0 +1,55 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5ad568175b96ef001a10ae14
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: The question of whether P equals NP is one of the most important open questions in theoretical
+  computer science because of the wide implications of a solution. If the answer is yes, many important
+  problems can be shown to have more efficient solutions. These include various types of integer programming
+  problems in operations research, many problems in logistics, protein structure prediction in biology,
+  and the ability to find formal proofs of pure mathematics theorems. The P versus NP problem is one of
+  the Millennium Prize Problems proposed by the Clay Mathematics Institute. There is a US$1,000,000 prize
+  for resolving the problem.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What was the prize for finding
+        a solution to P=NP at the the Alpha Prize Problems?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is a particular problem
+        in chemistry that would benefit from determining that P = NP?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is the prize offered
+        for finding a solution to P=NP?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is one of the least important
+        open questions in theoretical computer science?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What effect would happen if
+        P is ultimately proven to not equal NP ?'
+assert:
+  answers:
+    q1: false
+    q2: false
+    q3: true
+    q4: false
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5ad568175b96ef001a10ae14, squad2-5ad568175b96ef001a10ae12, squad2-56e1ddfce3433e14004231d8,
+    squad2-5ad568175b96ef001a10ae10, squad2-5ad568175b96ef001a10ae11
+  date: ''
+  transform: paragraph Computational_complexity_theory#34; first 5 questions of a paragraph in sha256(id)
+    order, kept only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

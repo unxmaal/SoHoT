@@ -1,0 +1,35 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-5726ef73f1498d1400e8f062
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is an example of a controlled substance?'
+context: Of particular concern with Internet pharmacies is the ease with which people, youth in particular,
+  can obtain controlled substances (e.g., Vicodin, generically known as hydrocodone) via the Internet
+  without a prescription issued by a doctor/practitioner who has an established doctor-patient relationship.
+  There are many instances where a practitioner issues a prescription, brokered by an Internet server,
+  for a controlled substance to a "patient" s/he has never met.[citation needed] In the United States,
+  in order for a prescription for a controlled substance to be valid, it must be issued for a legitimate
+  medical purpose by a licensed practitioner acting in the course of legitimate doctor-patient relationship.
+  The filling pharmacy has a corresponding responsibility to ensure that the prescription is valid. Often,
+  individual state laws outline what defines a valid patient-doctor relationship.
+assert:
+  equals:
+  - Vicodin, generically known as hydrocodone
+  - Vicodin
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5726ef73f1498d1400e8f062
+  date: ''
+  transform: paragraph Pharmacy#16; first answerable question in sha256(id) order whose every human answer
+    is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

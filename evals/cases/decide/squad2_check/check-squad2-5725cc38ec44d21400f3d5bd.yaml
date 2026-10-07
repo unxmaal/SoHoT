@@ -1,0 +1,61 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5725cc38ec44d21400f3d5bd
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: 'The principal Treaties that form the European Union began with common rules for coal and steel,
+  and then atomic energy, but more complete and formal institutions were established through the Treaty
+  of Rome 1957 and the Maastricht Treaty 1992 (now: TFEU). Minor amendments were made during the 1960s
+  and 1970s. Major amending treaties were signed to complete the development of a single, internal market
+  in the Single European Act 1986, to further the development of a more social Europe in the Treaty of
+  Amsterdam 1997, and to make minor amendments to the relative power of member states in the EU institutions
+  in the Treaty of Nice 2001 and the Treaty of Lisbon 2007. Since its establishment, more member states
+  have joined through a series of accession treaties, from the UK, Ireland, Denmark and Norway in 1972
+  (though Norway did not end up joining), Greece in 1979, Spain and Portugal 1985, Austria, Finland, Norway
+  and Sweden in 1994 (though again Norway failed to join, because of lack of support in the referendum),
+  the Czech Republic, Cyprus, Estonia, Hungary, Latvia, Lithuania, Malta, Poland, Slovakia and Slovenia
+  in 2004, Romania and Bulgaria in 2007 and Croatia in 2013. Greenland signed a Treaty in 1985 giving
+  it a special status.'
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: In what years did Spain and
+        Portugal join the European Union?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Which two treaties provided
+        more formal institutions of the European Union?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What major adjust was made
+        to the treaties in 1960?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Which country in 1985 signed
+        a treaty to give it special status?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Which two treaties provide
+        more formal institutions of the Canadian Union?'
+assert:
+  answers:
+    q1: true
+    q2: true
+    q3: false
+    q4: true
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5725cc38ec44d21400f3d5bd, squad2-5725cc38ec44d21400f3d5bc, squad2-5ad11097645df0001a2d0be2,
+    squad2-5725cc38ec44d21400f3d5bf, squad2-5ad11097645df0001a2d0be1
+  date: ''
+  transform: paragraph European_Union_law#4; first 5 questions of a paragraph in sha256(id) order, kept
+    only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

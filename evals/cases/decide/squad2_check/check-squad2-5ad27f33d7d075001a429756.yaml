@@ -1,0 +1,57 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5ad27f33d7d075001a429756
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: Until the early 1980s, industry was a major source of water pollution. Although many plants and
+  factories can be found along the Rhine up into Switzerland, it is along the Lower Rhine that the bulk
+  of them are concentrated, as the river passes the major cities of Cologne, Düsseldorf and Duisburg.
+  Duisburg is the home of Europe's largest inland port and functions as a hub to the sea ports of Rotterdam,
+  Antwerp and Amsterdam. The Ruhr, which joins the Rhine in Duisburg, is nowadays a clean river, thanks
+  to a combination of stricter environmental controls, a transition from heavy industry to light industry
+  and cleanup measures, such as the reforestation of Slag and brownfields. The Ruhr currently provides
+  the region with drinking water. It contributes 70 m3/s (2,500 cu ft/s) to the Rhine. Other rivers in
+  the Ruhr Area, above all, the Emscher, still carry a considerable degree of pollution.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What river is considered to
+        be not so clean nowadays?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What was a major source of
+        water pollution after the early 1980s?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What city has the largest
+        inland port in Europe?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Which river joins the Rhine
+        in Duisburg?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is Europe''s smallest
+        inland port?'
+assert:
+  answers:
+    q1: false
+    q2: false
+    q3: true
+    q4: true
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5ad27f33d7d075001a429756, squad2-5ad27f33d7d075001a429752, squad2-572ff293947a6a140053ce55,
+    squad2-572ff293947a6a140053ce56, squad2-5ad27f33d7d075001a429754
+  date: ''
+  transform: paragraph Rhine#13; first 5 questions of a paragraph in sha256(id) order, kept only when
+    they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

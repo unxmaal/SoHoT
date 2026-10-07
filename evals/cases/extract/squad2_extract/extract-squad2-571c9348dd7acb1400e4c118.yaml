@@ -1,0 +1,34 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-571c9348dd7acb1400e4c118
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What welding process was demonstrated in 1901?'
+context: 'In 1891 Scottish chemist James Dewar was able to produce enough liquid oxygen to study. The
+  first commercially viable process for producing liquid oxygen was independently developed in 1895 by
+  German engineer Carl von Linde and British engineer William Hampson. Both men lowered the temperature
+  of air until it liquefied and then distilled the component gases by boiling them off one at a time and
+  capturing them. Later, in 1901, oxyacetylene welding was demonstrated for the first time by burning
+  a mixture of acetylene and compressed O
+
+  2. This method of welding and cutting metal later became common.'
+assert:
+  equals:
+  - oxyacetylene
+  - oxyacetylene welding
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-571c9348dd7acb1400e4c118
+  date: ''
+  transform: paragraph Oxygen#16; first answerable question in sha256(id) order whose every human answer
+    is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

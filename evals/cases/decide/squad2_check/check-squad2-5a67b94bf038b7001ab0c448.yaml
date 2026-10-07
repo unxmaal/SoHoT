@@ -1,0 +1,54 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5a67b94bf038b7001ab0c448
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: In Sweden, pupils are free to choose a private school and the private school gets paid the same
+  amount as municipal schools. Over 10% of Swedish pupils were enrolled in private schools in 2008. Sweden
+  is internationally known for this innovative school voucher model that provides Swedish pupils with
+  the opportunity to choose the school they prefer. For instance, the biggest school chain, Kunskapsskolan
+  (“The Knowledge School”), offers 30 schools and a web-based environment, has 700 employees and teaches
+  nearly 10,000 pupils. The Swedish system has been recommended to Barack Obama.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How many school vouchers were
+        issued by Sweden in 2008?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How many Swedish students
+        were enrolled in public school in 2008?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is the English translation
+        of Kunskapsskolan?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is the Swedish word for
+        school voucher?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What school model is Sweden
+        notable for?'
+assert:
+  answers:
+    q1: false
+    q2: false
+    q3: true
+    q4: false
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5a67b94bf038b7001ab0c448, squad2-5a67b94bf038b7001ab0c444, squad2-572754dd708984140094dc3e,
+    squad2-5a67b94bf038b7001ab0c446, squad2-572754dd708984140094dc3f
+  date: ''
+  transform: paragraph Private_school#20; first 5 questions of a paragraph in sha256(id) order, kept only
+    when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

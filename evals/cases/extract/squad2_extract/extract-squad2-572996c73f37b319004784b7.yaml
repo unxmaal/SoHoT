@@ -1,0 +1,33 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-572996c73f37b319004784b7
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: How many bits are typically used in the primes for the Diffie–Hellman key exchange?'
+context: Several public-key cryptography algorithms, such as RSA and the Diffie–Hellman key exchange,
+  are based on large prime numbers (for example, 512-bit primes are frequently used for RSA and 1024-bit
+  primes are typical for Diffie–Hellman.). RSA relies on the assumption that it is much easier (i.e.,
+  more efficient) to perform the multiplication of two (large) numbers x and y than to calculate x and
+  y (assumed coprime) if only the product xy is known. The Diffie–Hellman key exchange relies on the fact
+  that there are efficient algorithms for modular exponentiation, while the reverse operation the discrete
+  logarithm is thought to be a hard problem.
+assert:
+  equals:
+  - 1024-bit
+  - '1024'
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572996c73f37b319004784b7
+  date: ''
+  transform: paragraph Prime_number#22; first answerable question in sha256(id) order whose every human
+    answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

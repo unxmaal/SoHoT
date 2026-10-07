@@ -1,0 +1,56 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5a8919843b2508001a72a4c0
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: Most early Greeks did not even consider 1 to be a number, so they could not consider it to be
+  a prime. By the Middle Ages and Renaissance many mathematicians included 1 as the first prime number.
+  In the mid-18th century Christian Goldbach listed 1 as the first prime in his famous correspondence
+  with Leonhard Euler -- who did not agree. In the 19th century many mathematicians still considered the
+  number 1 to be a prime. For example, Derrick Norman Lehmer's list of primes up to 10,006,721, reprinted
+  as late as 1956, started with 1 as its first prime. Henri Lebesgue is said to be the last professional
+  mathematician to call 1 prime. By the early 20th century, mathematicians began to accept that 1 is not
+  a prime number, but rather forms its own special category as a "unit".
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What type of number did the
+        early Greeks consider 1 to be?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who included 1 as the first
+        prime number in the mid 18th century?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: In the mid 20th century, who
+        did not concur that 1 should be the first prime number?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What number did Henri Lebesgue
+        not regard as a true number?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: In the mid 18th century, who
+        did not concur that 1 should be the first prime number?'
+assert:
+  answers:
+    q1: false
+    q2: true
+    q3: false
+    q4: false
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5a8919843b2508001a72a4c0, squad2-57297547af94a219006aa45c, squad2-5a8919843b2508001a72a4be,
+    squad2-5a8919843b2508001a72a4bc, squad2-57297547af94a219006aa45d
+  date: ''
+  transform: paragraph Prime_number#5; first 5 questions of a paragraph in sha256(id) order, kept only
+    when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

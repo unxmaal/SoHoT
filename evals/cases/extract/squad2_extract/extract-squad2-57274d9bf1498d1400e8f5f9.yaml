@@ -1,0 +1,33 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-57274d9bf1498d1400e8f5f9
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the name of the post-independence government school system in Malaysia?'
+context: After Malaysia's independence in 1957, the government instructed all schools to surrender their
+  properties and be assimilated into the National School system. This caused an uproar among the Chinese
+  and a compromise was achieved in that the schools would instead become "National Type" schools. Under
+  such a system, the government is only in charge of the school curriculum and teaching personnel while
+  the lands still belonged to the schools. While Chinese primary schools were allowed to retain Chinese
+  as the medium of instruction, Chinese secondary schools are required to change into English-medium schools.
+  Over 60 schools converted to become National Type schools.
+assert:
+  equals:
+  - National School
+  - National Type
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-57274d9bf1498d1400e8f5f9
+  date: ''
+  transform: paragraph Private_school#12; first answerable question in sha256(id) order whose every human
+    answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

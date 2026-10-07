@@ -1,0 +1,54 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5ad261bad7d075001a429051
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: 'Due to its electronegativity, oxygen forms chemical bonds with almost all other elements to
+  give corresponding oxides. The surface of most metals, such as aluminium and titanium, are oxidized
+  in the presence of air and become coated with a thin film of oxide that passivates the metal and slows
+  further corrosion. Many oxides of the transition metals are non-stoichiometric compounds, with slightly
+  less metal than the chemical formula would show. For example, the mineral FeO (wüstite) is written as
+  Fe
+
+  1 − xO, where x is usually around 0.05.'
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Why does oxygen form bonds
+        with all other types of elements?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What does oxygen cause to
+        form on metals?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is X in Fe1 - oX?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is the mineral wustite?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is usual form of oxygen
+        bound compounds?'
+assert:
+  answers:
+    q1: false
+    q2: true
+    q3: false
+    q4: true
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5ad261bad7d075001a429051, squad2-571cd703dd7acb1400e4c185, squad2-5ad261bad7d075001a429053,
+    squad2-571cd703dd7acb1400e4c184, squad2-571cd703dd7acb1400e4c183
+  date: ''
+  transform: paragraph Oxygen#35; first 5 questions of a paragraph in sha256(id) order, kept only when
+    they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

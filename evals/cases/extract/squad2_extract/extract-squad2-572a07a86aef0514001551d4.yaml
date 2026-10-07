@@ -1,0 +1,32 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-572a07a86aef0514001551d4
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: How many factors of health and social problems did Wilkinson and PIckett identify?'
+context: In recent years the characteristic that has strongly correlated with health in developed countries
+  is income inequality. Creating an index of "Health and Social Problems" from nine factors, authors Richard
+  Wilkinson and Kate Pickett found health and social problems "more common in countries with bigger income
+  inequalities", and more common among states in the US with larger income inequalities. Other studies
+  have confirmed this relationship. The UNICEF index of "child well-being in rich countries", studying
+  40 indicators in 22 countries, correlates with greater equality but not per capita income.
+assert:
+  equals:
+  - nine
+  - nine factors
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572a07a86aef0514001551d4
+  date: ''
+  transform: paragraph Economic_inequality#23; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

@@ -1,0 +1,34 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-5733fe73d058e614000b673e
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What was the purpose of Loudoun''s troops at Fort Henry?'
+context: 'Loudoun, a capable administrator but a cautious field commander, planned one major operation
+  for 1757: an attack on New France''s capital, Quebec. Leaving a sizable force at Fort William Henry
+  to distract Montcalm, he began organizing for the expedition to Quebec. He was then ordered by William
+  Pitt, the Secretary of State responsible for the colonies, to attack Louisbourg first. Beset by delays
+  of all kinds, the expedition was finally ready to sail from Halifax, Nova Scotia in early August. In
+  the meantime French ships had escaped the British blockade of the French coast, and a fleet outnumbering
+  the British one awaited Loudoun at Louisbourg. Faced with this strength, Loudoun returned to New York
+  amid news that a massacre had occurred at Fort William Henry.'
+assert:
+  equals:
+  - to distract Montcalm
+  - distract Montcalm
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5733fe73d058e614000b673e
+  date: ''
+  transform: paragraph French_and_Indian_War#34; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

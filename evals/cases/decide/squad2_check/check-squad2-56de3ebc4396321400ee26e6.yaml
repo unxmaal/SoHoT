@@ -1,0 +1,54 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-56de3ebc4396321400ee26e6
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: In 1096, Crusaders passing by the siege of Amalfi were joined by Bohemond of Taranto and his
+  nephew Tancred with an army of Italo-Normans. Bohemond was the de facto leader of the Crusade during
+  its passage through Asia Minor. After the successful Siege of Antioch in 1097, Bohemond began carving
+  out an independent principality around that city. Tancred was instrumental in the conquest of Jerusalem
+  and he worked for the expansion of the Crusader kingdom in Transjordan and the region of Galilee.[citation
+  needed]
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: When did the Siege of Antioch
+        take place?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What was the name of Tancred''s
+        nephew?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What was the name of Bohemond''s
+        nephew?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What major conquest did Tancred
+        play a roll in?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: When did Tancred lay siege
+        to Antioch?'
+assert:
+  answers:
+    q1: true
+    q2: false
+    q3: true
+    q4: true
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-56de3ebc4396321400ee26e6, squad2-5ad4017a604f3c001a3ffd20, squad2-56de3ebc4396321400ee26e7,
+    squad2-56de3ebc4396321400ee26e8, squad2-5ad4017a604f3c001a3ffd1f
+  date: ''
+  transform: paragraph Normans#24; first 5 questions of a paragraph in sha256(id) order, kept only when
+    they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

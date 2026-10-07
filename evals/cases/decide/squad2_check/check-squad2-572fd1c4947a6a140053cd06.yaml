@@ -1,0 +1,54 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-572fd1c4947a6a140053cd06
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: 'Stage 3 is the final stage of the bill and is considered at a meeting of the whole Parliament.
+  This stage comprises two parts: consideration of amendments to the bill as a general debate, and a final
+  vote on the bill. Opposition members can table "wrecking amendments" to the bill, designed to thwart
+  further progress and take up parliamentary time, to cause the bill to fall without a final vote being
+  taken. After a general debate on the final form of the bill, members proceed to vote at Decision Time
+  on whether they agree to the general principles of the final bill.'
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: When do members proceed to
+        vote on whether they agree to the principles of the final bill?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Stage 4 is the final stage
+        of what?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What type of amendments might
+        members opposed to a bill put on the table?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: When do members vote of the
+        beginning form of the bill?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is the final stage of
+        a bill in the Scottish Parliament?'
+assert:
+  answers:
+    q1: true
+    q2: false
+    q3: true
+    q4: false
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572fd1c4947a6a140053cd06, squad2-5ad03f8077cf76001a686ee4, squad2-572fd1c4947a6a140053cd05,
+    squad2-5ad03f8077cf76001a686ee6, squad2-572fd1c4947a6a140053cd02
+  date: ''
+  transform: paragraph Scottish_Parliament#27; first 5 questions of a paragraph in sha256(id) order, kept
+    only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

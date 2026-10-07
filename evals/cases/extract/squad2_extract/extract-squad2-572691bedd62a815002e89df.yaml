@@ -1,0 +1,41 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-572691bedd62a815002e89df
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: Who did a morphologically analysis in 1985 that concluded cydippids are not monophyletic?'
+context: Since all modern ctenophores except the beroids have cydippid-like larvae, it has widely been
+  assumed that their last common ancestor also resembled cydippids, having an egg-shaped body and a pair
+  of retractable tentacles. Richard Harbison's purely morphological analysis in 1985 concluded that the
+  cydippids are not monophyletic, in other words do not contain all and only the descendants of a single
+  common ancestor that was itself a cydippid. Instead he found that various cydippid families were more
+  similar to members of other ctenophore orders than to other cydippids. He also suggested that the last
+  common ancestor of modern ctenophores was either cydippid-like or beroid-like. A molecular phylogeny
+  analysis in 2001, using 26 species, including 4 recently discovered ones, confirmed that the cydippids
+  are not monophyletic and concluded that the last common ancestor of modern ctenophores was cydippid-like.
+  It also found that the genetic differences between these species were very small – so small that the
+  relationships between the Lobata, Cestida and Thalassocalycida remained uncertain. This suggests that
+  the last common ancestor of modern ctenophores was relatively recent, and perhaps was lucky enough to
+  survive the Cretaceous–Paleogene extinction event 65.5 million years ago while other lineages perished.
+  When the analysis was broadened to include representatives of other phyla, it concluded that cnidarians
+  are probably more closely related to bilaterians than either group is to ctenophores but that this diagnosis
+  is uncertain.
+assert:
+  equals:
+  - Richard Harbison
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572691bedd62a815002e89df
+  date: ''
+  transform: paragraph Ctenophora#30; first answerable question in sha256(id) order whose every human
+    answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

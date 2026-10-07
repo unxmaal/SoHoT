@@ -1,0 +1,59 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-570961aa200fba1400367f16
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: The service started on 1 September 1993 based on the idea from the then chief executive officer,
+  Sam Chisholm and Rupert Murdoch, of converting the company business strategy to an entirely fee-based
+  concept. The new package included four channels formerly available free-to-air, broadcasting on Astra's
+  satellites, as well as introducing new channels. The service continued until the closure of BSkyB's
+  analogue service on 27 September 2001, due to the launch and expansion of the Sky Digital platform.
+  Some of the channels did broadcast either in the clear or soft encrypted (whereby a Videocrypt decoder
+  was required to decode, without a subscription card) prior to their addition to the Sky Multichannels
+  package. Within two months of the launch, BSkyB gained 400,000 new subscribers, with the majority taking
+  at least one premium channel as well, which helped BSkyB reach 3.5 million households by mid-1994. Michael
+  Grade criticized the operations in front of the Select Committee on National Heritage, mainly for the
+  lack of original programming on many of the new channels.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who''s satellites would the
+        new free-to-air channels be broadcast from?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who was the chief executive
+        officer when the service began?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Whose satellites were never
+        broadcast as free-to-air?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What platform caused BSkyB
+        to end their analogue service?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: When did BSkyB end their analogue
+        service?'
+assert:
+  answers:
+    q1: true
+    q2: true
+    q3: false
+    q4: true
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-570961aa200fba1400367f16, squad2-570961aa200fba1400367f15, squad2-5a2c0e0dbfd06b001a5ae9b0,
+    squad2-570961aa200fba1400367f18, squad2-570961aa200fba1400367f17
+  date: ''
+  transform: paragraph Sky_(United_Kingdom)#7; first 5 questions of a paragraph in sha256(id) order, kept
+    only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

@@ -1,0 +1,41 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-5726887e708984140094c918
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: Haeckelia prey mostly on what animal?'
+context: 'Almost all ctenophores are predators – there are no vegetarians and only one genus that is partly
+  parasitic. If food is plentiful, they can eat 10 times their own weight per day. While Beroe preys mainly
+  on other ctenophores, other surface-water species prey on zooplankton (planktonic animals) ranging in
+  size from the microscopic, including mollusc and fish larvae, to small adult crustaceans such as copepods,
+  amphipods, and even krill. Members of the genus Haeckelia prey on jellyfish and incorporate their prey''s
+  nematocysts (stinging cells) into their own tentacles instead of colloblasts. Ctenophores have been
+  compared to spiders in their wide range of techniques from capturing prey – some hang motionless in
+  the water using their tentacles as "webs", some are ambush predators like Salticid jumping spiders,
+  and some dangle a sticky droplet at the end of a fine thread, as bolas spiders do. This variety explains
+  the wide range of body forms in a phylum with rather few species. The two-tentacled "cydippid" Lampea
+  feeds exclusively on salps, close relatives of sea-squirts that form large chain-like floating colonies,
+  and juveniles of Lampea attach themselves like parasites to salps that are too large for them to swallow.
+  Members of the cydippid genus Pleurobrachia and the lobate Bolinopsis often reach high population densities
+  at the same place and time because they specialize in different types of prey: Pleurobrachia''s long
+  tentacles mainly capture relatively strong swimmers such as adult copepods, while Bolinopsis generally
+  feeds on smaller, weaker swimmers such as rotifers and mollusc and crustacean larvae.'
+assert:
+  equals:
+  - jellyfish
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5726887e708984140094c918
+  date: ''
+  transform: paragraph Ctenophora#24; first answerable question in sha256(id) order whose every human
+    answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

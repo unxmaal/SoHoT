@@ -1,0 +1,60 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5ad252e6d7d075001a428d0c
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: 'Free oxygen also occurs in solution in the world''s water bodies. The increased solubility of
+  O
+
+  2 at lower temperatures (see Physical properties) has important implications for ocean life, as polar
+  oceans support a much higher density of life due to their higher oxygen content. Water polluted with
+  plant nutrients such as nitrates or phosphates may stimulate growth of algae by a process called eutrophication
+  and the decay of these organisms and other biomaterials may reduce amounts of O
+
+  2 in eutrophic water bodies. Scientists assess this aspect of water quality by measuring the water''s
+  biochemical oxygen demand, or the amount of O
+
+  2 needed to restore it to a normal concentration.'
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Why do polar oceans support
+        reduced amounts of life?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: At what temperatures is O2
+        more soluble?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Where on Earth is free oxygen
+        found?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What do phosphates do to the
+        growth of nitrates?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What measurement do scientists
+        used to determine the quality of water?'
+assert:
+  answers:
+    q1: false
+    q2: true
+    q3: true
+    q4: false
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5ad252e6d7d075001a428d0c, squad2-571cc8815efbb31900334def, squad2-571cc8815efbb31900334dee,
+    squad2-5ad252e6d7d075001a428d0f, squad2-571cc8815efbb31900334df1
+  date: ''
+  transform: paragraph Oxygen#27; first 5 questions of a paragraph in sha256(id) order, kept only when
+    they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

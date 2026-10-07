@@ -1,0 +1,55 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5733a560d058e614000b5f79
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: The origin of the legendary figure is not fully known. The best-known legend, by Artur Oppman,
+  is that long ago two of Triton's daughters set out on a journey through the depths of the oceans and
+  seas. One of them decided to stay on the coast of Denmark and can be seen sitting at the entrance to
+  the port of Copenhagen. The second mermaid reached the mouth of the Vistula River and plunged into its
+  waters. She stopped to rest on a sandy beach by the village of Warszowa, where fishermen came to admire
+  her beauty and listen to her beautiful voice. A greedy merchant also heard her songs; he followed the
+  fishermen and captured the mermaid.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Where did one of Triton''s
+        daughters decide she wanted to hang out and stay?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: At what village did a Triton
+        stop to rest on a sandy beach'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Where did one of Oppman''s
+        daughters decide she wanted to hang out and stay?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Where did two of Oppman''s
+        daughters set out on a journey through?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What did Artur Oppman give
+        to the world?'
+assert:
+  answers:
+    q1: true
+    q2: false
+    q3: false
+    q4: false
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5733a560d058e614000b5f79, squad2-5ad507d25b96ef001a10aa4f, squad2-5ad507d25b96ef001a10aa4e,
+    squad2-5ad507d25b96ef001a10aa4d, squad2-5733a560d058e614000b5f77
+  date: ''
+  transform: paragraph Warsaw#46; first 5 questions of a paragraph in sha256(id) order, kept only when
+    they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

@@ -1,0 +1,55 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-573004bf947a6a140053cf57
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: Despite periodic repression, the Brotherhood has become one of the most influential movements
+  in the Islamic world, particularly in the Arab world. For many years it was described as "semi-legal"
+  and was the only opposition group in Egypt able to field candidates during elections. In the Egyptian
+  parliamentary election, 2011–2012, the political parties identified as "Islamist" (the Brotherhood's
+  Freedom and Justice Party, Salafi Al-Nour Party and liberal Islamist Al-Wasat Party) won 75% of the
+  total seats. Mohamed Morsi, an Islamist democrat of Muslim Brotherhood, was the first democratically
+  elected president of Egypt. He was deposed during the 2013 Egyptian coup d'état.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: For many years, what was the
+        Brotherhood described as?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What percentage of seats did
+        political parties identifying as Islamist win in the Egyptian parliamentary election of 2012-2013?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What status has the Brotherhood
+        obtained in the Islamic world?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who was the first democratically
+        elected president of Egypt?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What status has the Brotherhood
+        obtained in the non-Islamic world?'
+assert:
+  answers:
+    q1: true
+    q2: false
+    q3: true
+    q4: true
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-573004bf947a6a140053cf57, squad2-5acfea4977cf76001a686479, squad2-573004bf947a6a140053cf56,
+    squad2-573004bf947a6a140053cf5a, squad2-5acfea4977cf76001a686476
+  date: ''
+  transform: paragraph Islamism#15; first 5 questions of a paragraph in sha256(id) order, kept only when
+    they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

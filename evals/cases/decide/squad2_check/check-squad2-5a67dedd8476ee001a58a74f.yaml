@@ -1,0 +1,55 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5a67dedd8476ee001a58a74f
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: Funding for private schools is generally provided through student tuition, endowments, scholarship/voucher
+  funds, and donations and grants from religious organizations or private individuals. Government funding
+  for religious schools is either subject to restrictions or possibly forbidden, according to the courts'
+  interpretation of the Establishment Clause of the First Amendment or individual state Blaine Amendments.
+  Non-religious private schools theoretically could qualify for such funding without hassle, preferring
+  the advantages of independent control of their student admissions and course content instead of the
+  public funding they could get with charter status.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What can be interpreted by
+        individuals to determine if funding for course content is forbidden?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What amendment to the United
+        States Constitution governs government funding of religious schools?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Granting what status would
+        allow private non-religious schools in the US to receive public funds?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is course content funding
+        subject to?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How is course content provided
+        to a private school?'
+assert:
+  answers:
+    q1: false
+    q2: true
+    q3: true
+    q4: false
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5a67dedd8476ee001a58a74f, squad2-572758e0f1498d1400e8f6af, squad2-572758e0f1498d1400e8f6b1,
+    squad2-5a67dedd8476ee001a58a74d, squad2-5a67dedd8476ee001a58a750
+  date: ''
+  transform: paragraph Private_school#23; first 5 questions of a paragraph in sha256(id) order, kept only
+    when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

@@ -1,0 +1,32 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-5728284e3acd2414000df5ce
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What did Joseph Haas say in his email?'
+context: In cases where the criminalized behavior is pure speech, civil disobedience can consist simply
+  of engaging in the forbidden speech. An example would be WBAI's broadcasting the track "Filthy Words"
+  from a George Carlin comedy album, which eventually led to the 1978 Supreme Court case of FCC v. Pacifica
+  Foundation. Threatening government officials is another classic way of expressing defiance toward the
+  government and unwillingness to stand for its policies. For example, Joseph Haas was arrested for allegedly
+  sending an email to the Lebanon, New Hampshire city councilors stating, "Wise up or die."
+assert:
+  equals:
+  - '"Wise up or die."'
+  - Wise up or die
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5728284e3acd2414000df5ce
+  date: ''
+  transform: paragraph Civil_disobedience#13; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

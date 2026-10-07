@@ -1,0 +1,56 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-57337ea24776f41900660bd1
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: Demographically, it was the most diverse city in Poland, with significant numbers of foreign-born
+  inhabitants. In addition to the Polish majority, there was a significant Jewish minority in Warsaw.
+  According to Russian census of 1897, out of the total population of 638,000, Jews constituted 219,000
+  (around 34% percent). Warsaw's prewar Jewish population of more than 350,000 constituted about 30 percent
+  of the city's total population. In 1933, out of 1,178,914 inhabitants 833,500 were of Polish mother
+  tongue. World War II changed the demographics of the city, and to this day there is much less ethnic
+  diversity than in the previous 300 years of Warsaw's history. Most of the modern day population growth
+  is based on internal migration and urbanisation.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What was there a significant
+        minority of in Warsaw?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What was Warsaw the most diverse
+        of in Poland?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What percentage of the population
+        of Poland was Jewish in 1897?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is most of Warsaw''s
+        modern growth based on?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How many of Warsaw''s inhabitants
+        spoke Polish in 1933?'
+assert:
+  answers:
+    q1: true
+    q2: true
+    q3: false
+    q4: true
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-57337ea24776f41900660bd1, squad2-57337ea24776f41900660bd0, squad2-5ad4f1365b96ef001a10a710,
+    squad2-57337ea24776f41900660bd4, squad2-57337ea24776f41900660bd3
+  date: ''
+  transform: paragraph Warsaw#25; first 5 questions of a paragraph in sha256(id) order, kept only when
+    they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

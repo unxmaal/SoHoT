@@ -1,0 +1,59 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5ad0220a77cf76001a686b2b
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: Southern California is also home to a large home grown surf and skateboard culture. Companies
+  such as Volcom, Quiksilver, No Fear, RVCA, and Body Glove are all headquartered here. Professional skateboarder
+  Tony Hawk, professional surfers Rob Machado, Tim Curran, Bobby Martinez, Pat O'Connell, Dane Reynolds,
+  and Chris Ward, and professional snowboarder Shaun White live in southern California. Some of the world's
+  legendary surf spots are in southern California as well, including Trestles, Rincon, The Wedge, Huntington
+  Beach, and Malibu, and it is second only to the island of Oahu in terms of famous surf breaks. Some
+  of the world's biggest extreme sports events, including the X Games, Boost Mobile Pro, and the U.S.
+  Open of Surfing are all in southern California. Southern California is also important to the world of
+  yachting. The annual Transpacific Yacht Race, or Transpac, from Los Angeles to Hawaii, is one of yachting's
+  premier events. The San Diego Yacht Club held the America's Cup, the most prestigious prize in yachting,
+  from 1988 to 1995 and hosted three America's Cup races during that time.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who are Rob Curran and Tim
+        Machado?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What famous snowbaorder lives
+        in southern California?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Where are No Fear and RCVA
+        headquartered?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Southern California is second
+        to which island in terms of famous serf breaks?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Other than surf, what other
+        culture is southern California home to?'
+assert:
+  answers:
+    q1: false
+    q2: true
+    q3: false
+    q4: true
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5ad0220a77cf76001a686b2b, squad2-5705ec1675f01819005e7770, squad2-5ad0220a77cf76001a686b2a,
+    squad2-5705ec1675f01819005e7771, squad2-5705ec1675f01819005e776e
+  date: ''
+  transform: paragraph Southern_California#7; first 5 questions of a paragraph in sha256(id) order, kept
+    only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

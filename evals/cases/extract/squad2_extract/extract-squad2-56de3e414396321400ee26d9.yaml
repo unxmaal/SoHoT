@@ -1,0 +1,30 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-56de3e414396321400ee26d9
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: Who was in charge of the papal army in the War of Barbastro?'
+context: The legendary religious zeal of the Normans was exercised in religious wars long before the First
+  Crusade carved out a Norman principality in Antioch. They were major foreign participants in the Reconquista
+  in Iberia. In 1018, Roger de Tosny travelled to the Iberian Peninsula to carve out a state for himself
+  from Moorish lands, but failed. In 1064, during the War of Barbastro, William of Montreuil led the papal
+  army and took a huge booty.
+assert:
+  equals:
+  - William of Montreuil
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-56de3e414396321400ee26d9
+  date: ''
+  transform: paragraph Normans#23; first answerable question in sha256(id) order whose every human answer
+    is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

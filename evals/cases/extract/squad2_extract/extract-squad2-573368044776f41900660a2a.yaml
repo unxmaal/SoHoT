@@ -1,0 +1,34 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-573368044776f41900660a2a
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: Where is a palm house with subtropic plants from all over the world on display?'
+context: 'Other green spaces in the city include the Botanic Garden and the University Library garden.
+  They have extensive botanical collection of rare domestic and foreign plants, while a palm house in
+  the New Orangery displays plants of subtropics from all over the world. Besides, within the city borders,
+  there are also: Pole Mokotowskie (a big park in the northern Mokotów, where was the first horse racetrack
+  and then the airport), Park Ujazdowski (close to the Sejm and John Lennon street), Park of Culture and
+  Rest in Powsin, by the southern city border, Park Skaryszewski by the right Vistula bank, in Praga.
+  The oldest park in Praga, the Praga Park, was established in 1865–1871 and designed by Jan Dobrowolski.
+  In 1927 a zoological garden (Ogród Zoologiczny) was established on the park grounds, and in 1952 a bear
+  run, still open today.'
+assert:
+  equals:
+  - New Orangery
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-573368044776f41900660a2a
+  date: ''
+  transform: paragraph Warsaw#22; first answerable question in sha256(id) order whose every human answer
+    is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

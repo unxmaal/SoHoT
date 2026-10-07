@@ -1,0 +1,33 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-5726a00cf1498d1400e8e550
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: Which entity developed the principles of European Union Law?'
+context: 'The principles of European Union law are rules of law which have been developed by the European
+  Court of Justice that constitute unwritten rules which are not expressly provided for in the treaties
+  but which affect how European Union law is interpreted and applies. In formulating these principles,
+  the courts have drawn on a variety of sources, including: public international law and legal doctrines
+  and principles present in the legal systems of European Union member states and in the jurisprudence
+  of the European Court of Human Rights. Accepted general principles of European Union Law include fundamental
+  rights (see human rights), proportionality, legal certainty, equality before the law and subsidiarity.'
+assert:
+  equals:
+  - the European Court of Justice
+  - the European Court
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5726a00cf1498d1400e8e550
+  date: ''
+  transform: paragraph European_Union_law#18; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

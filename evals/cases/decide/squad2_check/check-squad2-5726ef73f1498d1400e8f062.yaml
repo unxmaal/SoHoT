@@ -1,0 +1,57 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5726ef73f1498d1400e8f062
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: Of particular concern with Internet pharmacies is the ease with which people, youth in particular,
+  can obtain controlled substances (e.g., Vicodin, generically known as hydrocodone) via the Internet
+  without a prescription issued by a doctor/practitioner who has an established doctor-patient relationship.
+  There are many instances where a practitioner issues a prescription, brokered by an Internet server,
+  for a controlled substance to a "patient" s/he has never met.[citation needed] In the United States,
+  in order for a prescription for a controlled substance to be valid, it must be issued for a legitimate
+  medical purpose by a licensed practitioner acting in the course of legitimate doctor-patient relationship.
+  The filling pharmacy has a corresponding responsibility to ensure that the prescription is valid. Often,
+  individual state laws outline what defines a valid patient-doctor relationship.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is an example of a controlled
+        substance?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What conditions must be met
+        to prescribe a controlled substance?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is not a problem with
+        internet pharmacies?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is not an example of
+        a controlled substance?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What conditions can''t be
+        met to prescribe a controlled substance?'
+assert:
+  answers:
+    q1: true
+    q2: true
+    q3: false
+    q4: false
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5726ef73f1498d1400e8f062, squad2-5726ef73f1498d1400e8f05f, squad2-5a6ce8ea4eec6b001a80a6b6,
+    squad2-5a6ce8ea4eec6b001a80a6b8, squad2-5a6ce8ea4eec6b001a80a6b9
+  date: ''
+  transform: paragraph Pharmacy#16; first 5 questions of a paragraph in sha256(id) order, kept only when
+    they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

@@ -1,0 +1,54 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5ad27294d7d075001a42949d
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: 'In Berlin, the Huguenots created two new neighbourhoods: Dorotheenstadt and Friedrichstadt.
+  By 1700, one-fifth of the city''s population was French speaking. The Berlin Huguenots preserved the
+  French language in their church services for nearly a century. They ultimately decided to switch to
+  German in protest against the occupation of Prussia by Napoleon in 1806-07. Many of their descendents
+  rose to positions of prominence. Several congregations were founded, such as those of Fredericia (Denmark),
+  Berlin, Stockholm, Hamburg, Frankfurt, Helsinki, and Emden.'
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: When did Huguenots first arrive
+        in Helsinki?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How much of Helsinki''s population
+        spoke French as of 1700?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Why did Berlin Huguenots switch
+        to German from French in their services?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What other Northern European
+        cities had Huguenot congregations?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What years did this occupation
+        take place?'
+assert:
+  answers:
+    q1: false
+    q2: false
+    q3: true
+    q4: true
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5ad27294d7d075001a42949d, squad2-5ad27294d7d075001a42949e, squad2-571099b2b654c5140001f9b5,
+    squad2-571099b2b654c5140001f9b7, squad2-571099b2b654c5140001f9b6
+  date: ''
+  transform: paragraph Huguenot#24; first 5 questions of a paragraph in sha256(id) order, kept only when
+    they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

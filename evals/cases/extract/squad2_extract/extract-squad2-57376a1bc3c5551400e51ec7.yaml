@@ -1,0 +1,35 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-57376a1bc3c5551400e51ec7
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What geometric shape is used in equations to determine net force?'
+context: 'Historically, forces were first quantitatively investigated in conditions of static equilibrium
+  where several forces canceled each other out. Such experiments demonstrate the crucial properties that
+  forces are additive vector quantities: they have magnitude and direction. When two forces act on a point
+  particle, the resulting force, the resultant (also called the net force), can be determined by following
+  the parallelogram rule of vector addition: the addition of two vectors represented by sides of a parallelogram,
+  gives an equivalent resultant vector that is equal in magnitude and direction to the transversal of
+  the parallelogram. The magnitude of the resultant varies from the difference of the magnitudes of the
+  two forces to their sum, depending on the angle between their lines of action. However, if the forces
+  are acting on an extended body, their respective lines of application must also be specified in order
+  to account for their effects on the motion of the body.'
+assert:
+  equals:
+  - parallelogram
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-57376a1bc3c5551400e51ec7
+  date: ''
+  transform: paragraph Force#12; first answerable question in sha256(id) order whose every human answer
+    is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

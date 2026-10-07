@@ -1,0 +1,58 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-572fe288a23a5019007fcad9
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: The variant forms of the name of the Rhine in modern languages are all derived from the Gaulish
+  name Rēnos, which was adapted in Roman-era geography (1st century BC) as Greek Ῥῆνος (Rhēnos), Latin
+  Rhenus.[note 3] The spelling with Rh- in English Rhine as well as in German Rhein and French Rhin is
+  due to the influence of Greek orthography, while the vocalisation -i- is due to the Proto-Germanic adoption
+  of the Gaulish name as *Rīnaz, via Old Frankish giving Old English Rín, Old High German Rīn, Dutch Rijn
+  (formerly also spelled Rhijn)). The diphthong in modern German Rhein (also adopted in Romansh Rein,
+  Rain) is a Central German development of the early modern period, the Alemannic name Rī(n) retaining
+  the older vocalism,[note 4] as does Ripuarian Rhing, while Palatine has diphthongized Rhei, Rhoi. Spanish
+  is with French in adopting the Germanic vocalism Rin-, while Italian, Occitan and Portuguese retain
+  the Latin Ren-.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is the Proto-Germanic
+        adoption of the Gaulish name of the Rhine?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is the Rhine called in
+        French?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What does the name The Rhine
+        come from?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What century did the name
+        of the Rhine come from?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Where are the variant forms
+        of the name of the Rhine in ancient languages derived from?'
+assert:
+  answers:
+    q1: true
+    q2: true
+    q3: true
+    q4: true
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572fe288a23a5019007fcad9, squad2-572fe288a23a5019007fcad8, squad2-572fe288a23a5019007fcad7,
+    squad2-572f55e8a23a5019007fc56e, squad2-5ad262fbd7d075001a4290dc
+  date: ''
+  transform: paragraph Rhine#1; first 5 questions of a paragraph in sha256(id) order, kept only when they
+    mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

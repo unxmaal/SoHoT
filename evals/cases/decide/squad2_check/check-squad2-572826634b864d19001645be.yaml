@@ -1,0 +1,54 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-572826634b864d19001645be
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: Jacksonville is the most populous city in Florida, and the twelfth most populous city in the
+  United States. As of 2010[update], there were 821,784 people and 366,273 households in the city. Jacksonville
+  has the country's tenth-largest Arab population, with a total population of 5,751 according to the 2000
+  United States Census. Jacksonville has Florida's largest Filipino American community, with 25,033 in
+  the metropolitan area as of the 2010 Census. Much of Jacksonville's Filipino community served in or
+  has ties to the United States Navy.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What ethnic group located
+        in Jacksonville is ranked tenth largest?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: In what year were there 366,233
+        people in Jacksonville?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: In what year were there 5751
+        Filipinos in Jacksonville'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Compared to the rest of Florida,
+        how does Jacksonville''s Filipino population rank?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How many residents were recorded
+        in the 2010 census of Jacksonville?'
+assert:
+  answers:
+    q1: true
+    q2: false
+    q3: false
+    q4: true
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572826634b864d19001645be, squad2-5a1c8ea7b4fb5d00187146cf, squad2-5a1c8ea7b4fb5d00187146d1,
+    squad2-572826634b864d19001645c0, squad2-572826634b864d19001645bf
+  date: ''
+  transform: paragraph Jacksonville,_Florida#19; first 5 questions of a paragraph in sha256(id) order,
+    kept only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

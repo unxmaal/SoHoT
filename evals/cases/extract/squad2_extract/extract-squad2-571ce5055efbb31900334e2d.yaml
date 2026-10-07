@@ -1,0 +1,39 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-571ce5055efbb31900334e2d
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What si the comparison to sea level with the oxygen level in space suits?'
+context: 'Breathing pure O
+
+  2 in space applications, such as in some modern space suits, or in early spacecraft such as Apollo,
+  causes no damage due to the low total pressures used. In the case of spacesuits, the O
+
+  2 partial pressure in the breathing gas is, in general, about 30 kPa (1.4 times normal), and the resulting
+  O
+
+  2 partial pressure in the astronaut''s arterial blood is only marginally more than normal sea-level
+  O
+
+  2 partial pressure (for more information on this, see space suit and arterial blood gas).'
+assert:
+  equals:
+  - only marginally more
+  - marginally more than normal
+  - marginally more
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-571ce5055efbb31900334e2d
+  date: ''
+  transform: paragraph Oxygen#41; first answerable question in sha256(id) order whose every human answer
+    is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

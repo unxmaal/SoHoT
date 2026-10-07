@@ -1,0 +1,58 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5a25c41def59cd001a623cdb
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: The modern trend in design is toward integration of previously separated specialties, especially
+  among large firms. In the past, architects, interior designers, engineers, developers, construction
+  managers, and general contractors were more likely to be entirely separate companies, even in the larger
+  firms. Presently, a firm that is nominally an "architecture" or "construction management" firm may have
+  experts from all related fields as employees, or to have an associated company that provides each necessary
+  skill. Thus, each such firm may offer itself as "one-stop shopping" for a construction project, from
+  beginning to end. This is designated as a "design build" contract where the contractor is given a performance
+  specification and must undertake the project from design to construction, while adhering to the performance
+  specifications.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is a description of an
+        associated company contract?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What kind of contract is given
+        when the contractor is given a performance specification and must undertake the project from design
+        to construction, while adhering to the performance specifications?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is the trend in skills
+        among architects?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What do engineers offer themselves
+        as for a project?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: The modern trend in design
+        is toward integration of what?'
+assert:
+  answers:
+    q1: false
+    q2: true
+    q3: false
+    q4: false
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5a25c41def59cd001a623cdb, squad2-57274e0d708984140094dbe8, squad2-5a25c41def59cd001a623cd8,
+    squad2-5a25c41def59cd001a623cda, squad2-57274e0d708984140094dbe5
+  date: ''
+  transform: paragraph Construction#9; first 5 questions of a paragraph in sha256(id) order, kept only
+    when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

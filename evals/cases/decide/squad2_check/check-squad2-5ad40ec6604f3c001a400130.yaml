@@ -1,0 +1,54 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5ad40ec6604f3c001a400130
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: Lead fusible plugs may be present in the crown of the boiler's firebox. If the water level drops,
+  such that the temperature of the firebox crown increases significantly, the lead melts and the steam
+  escapes, warning the operators, who may then manually suppress the fire. Except in the smallest of boilers
+  the steam escape has little effect on dampening the fire. The plugs are also too small in area to lower
+  steam pressure significantly, depressurizing the boiler. If they were any larger, the volume of escaping
+  steam would itself endanger the crew.[citation needed]
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What happens to the lead fusible
+        plugs if the water level of the fire drops?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is the escape of the
+        firebox unlikely to accomplish in all but the smallest boilers?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What are sometimes present
+        in the boiler''s firebox crown?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: After the operators are warned
+        by the escape of the firebox, what may they then do?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: After the operators are warned
+        by the escape of the steam, what may they then do?'
+assert:
+  answers:
+    q1: false
+    q2: false
+    q3: true
+    q4: false
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5ad40ec6604f3c001a400130, squad2-5ad40ec6604f3c001a400133, squad2-57113ba6b654c5140001fc1f,
+    squad2-5ad40ec6604f3c001a400132, squad2-57113ba6b654c5140001fc22
+  date: ''
+  transform: paragraph Steam_engine#6; first 5 questions of a paragraph in sha256(id) order, kept only
+    when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

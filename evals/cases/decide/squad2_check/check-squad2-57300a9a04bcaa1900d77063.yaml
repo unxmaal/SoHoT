@@ -1,0 +1,55 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-57300a9a04bcaa1900d77063
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: At the end of World War I, the Rhineland was subject to the Treaty of Versailles. This decreed
+  that it would be occupied by the allies, until 1935 and after that, it would be a demilitarised zone,
+  with the German army forbidden to enter. The Treaty of Versailles and this particular provision, in
+  general, caused much resentment in Germany and is often cited as helping Adolf Hitler's rise to power.
+  The allies left the Rhineland, in 1930 and the German army re-occupied it in 1936, which was enormously
+  popular in Germany. Although the allies could probably have prevented the re-occupation, Britain and
+  France were not inclined to do so, a feature of their policy of appeasement to Hitler.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: When was Rhineland subject
+        to the Treaty of Versailles?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: After 1935, who would be forbidden
+        to enter Rhineland?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: When did the Germany army
+        enter Rhineland?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: When would the occupation
+        of allies leave Rhineland?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: When did the German army reoccupy
+        Rhineland?'
+assert:
+  answers:
+    q1: true
+    q2: true
+    q3: false
+    q4: true
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-57300a9a04bcaa1900d77063, squad2-57300a9a04bcaa1900d77065, squad2-5ad2ba09d7d075001a42a065,
+    squad2-57300a9a04bcaa1900d77064, squad2-57300a9a04bcaa1900d77067
+  date: ''
+  transform: paragraph Rhine#41; first 5 questions of a paragraph in sha256(id) order, kept only when
+    they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

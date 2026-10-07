@@ -1,0 +1,54 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-570967c4ed30961900e840ba
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: When Sky Digital was launched in 1998 the new service used the Astra 2A satellite which was located
+  at the 28.5°E orbital position, unlike the analogue service which was broadcast from 19.2°E. This was
+  subsequently followed by more Astra satellites as well as Eutelsat's Eurobird 1 (now Eutelsat 33C) at
+  28.5°E), enabled the company to launch a new all-digital service, Sky, with the potential to carry hundreds
+  of television and radio channels. The old position was shared with broadcasters from several European
+  countries, while the new position at 28.5°E came to be used almost exclusively for channels that broadcast
+  to the United Kingdom.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: When was Sky Digital launched?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What service used Astra 2A
+        in 1995?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is the position of the
+        satellite that allowed sky to broadcast channels almost elclusively for the United Kingdom?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What satellite made it impossible
+        for Sky Digital to launch an all new digital service?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How many television and radio
+        channels could the new digital service carry?'
+assert:
+  answers:
+    q1: true
+    q2: false
+    q3: true
+    q4: false
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-570967c4ed30961900e840ba, squad2-5a2c3595bfd06b001a5aea5f, squad2-570967c4ed30961900e840be,
+    squad2-5a2c3595bfd06b001a5aea60, squad2-570967c4ed30961900e840bd
+  date: ''
+  transform: paragraph Sky_(United_Kingdom)#11; first 5 questions of a paragraph in sha256(id) order,
+    kept only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

@@ -1,0 +1,54 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5ad40bd9604f3c001a400037
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: One of the more notable applications of printing technology was the chao, the paper money of
+  the Yuan. Chao were made from the bark of mulberry trees. The Yuan government used woodblocks to print
+  paper money, but switched to bronze plates in 1275. The Mongols experimented with establishing the Chinese-style
+  paper monetary system in Mongol-controlled territories outside of China. The Yuan minister Bolad was
+  sent to Iran, where he explained Yuan paper money to the Il-khanate court of Gaykhatu. The Il-khanate
+  government issued paper money in 1294, but public distrust of the exotic new currency doomed the experiment.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: When did the Yuan begin using
+        gold printing plates for its money?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: When did the Il-khanate experiment
+        with paper money?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What had the Yuan used to
+        print its money before bronze plates?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What had the Yuan used to
+        print its money before plastic plates?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: When did the Yuan begin using
+        bronze printing plates for its money?'
+assert:
+  answers:
+    q1: false
+    q2: true
+    q3: true
+    q4: false
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5ad40bd9604f3c001a400037, squad2-5728827b2ca10214002da42e, squad2-5728827b2ca10214002da42d,
+    squad2-5ad40bd9604f3c001a400038, squad2-5728827b2ca10214002da42c
+  date: ''
+  transform: paragraph Yuan_dynasty#39; first 5 questions of a paragraph in sha256(id) order, kept only
+    when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

@@ -1,0 +1,58 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5ad24de6d7d075001a428c34
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: 'Oxygen is more soluble in water than nitrogen is. Water in equilibrium with air contains approximately
+  1 molecule of dissolved O
+
+  2 for every 2 molecules of N
+
+  2, compared to an atmospheric ratio of approximately 1:4. The solubility of oxygen in water is temperature-dependent,
+  and about twice as much (14.6 mg·L−1) dissolves at 0 °C than at 20 °C (7.6 mg·L−1). At 25 °C and 1 standard
+  atmosphere (101.3 kPa) of air, freshwater contains about 6.04 milliliters (mL) of oxygen per liter,
+  whereas seawater contains about 4.95 mL per liter. At 5 °C the solubility increases to 9.0 mL (50% more
+  than at 25 °C) per liter for water and 7.2 mL (45% more) per liter for sea water.'
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is the solubility water
+        in oxygen dependent on?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What component of water is
+        more soluble than nitrogen?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is nitrogen more water
+        soluble than?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What does air in equilibrium
+        with water contain?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How much oxygen is found is
+        a liter of fresh water under normal conditions?'
+assert:
+  answers:
+    q1: false
+    q2: true
+    q3: false
+    q4: false
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5ad24de6d7d075001a428c34, squad2-571c96095efbb31900334dbc, squad2-5ad24de6d7d075001a428c32,
+    squad2-5ad24de6d7d075001a428c33, squad2-571c96095efbb31900334dbe
+  date: ''
+  transform: paragraph Oxygen#17; first 5 questions of a paragraph in sha256(id) order, kept only when
+    they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

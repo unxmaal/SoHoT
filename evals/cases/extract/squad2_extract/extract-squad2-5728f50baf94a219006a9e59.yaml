@@ -1,0 +1,35 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-5728f50baf94a219006a9e59
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What type of treatment do civil disobedients usually receive?'
+context: Some civil disobedience defendants choose to make a defiant speech, or a speech explaining their
+  actions, in allocution. In U.S. v. Burgos-Andujar, a defendant who was involved in a movement to stop
+  military exercises by trespassing on U.S. Navy property argued to the court in allocution that "the
+  ones who are violating the greater law are the members of the Navy". As a result, the judge increased
+  her sentence from 40 to 60 days. This action was upheld because, according to the U.S. Court of Appeals
+  for the First Circuit, her statement suggested a lack of remorse, an attempt to avoid responsibility
+  for her actions, and even a likelihood of repeating her illegal actions. Some of the other allocution
+  speeches given by the protesters complained about mistreatment from government officials.
+assert:
+  equals:
+  - mistreatment from government officials
+  - mistreatment
+  - sentence
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5728f50baf94a219006a9e59
+  date: ''
+  transform: paragraph Civil_disobedience#21; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

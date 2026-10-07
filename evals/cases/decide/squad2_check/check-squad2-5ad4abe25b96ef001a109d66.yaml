@@ -1,0 +1,56 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5ad4abe25b96ef001a109d66
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: Several barriers protect organisms from infection, including mechanical, chemical, and biological
+  barriers. The waxy cuticle of many leaves, the exoskeleton of insects, the shells and membranes of externally
+  deposited eggs, and skin are examples of mechanical barriers that are the first line of defense against
+  infection. However, as organisms cannot be completely sealed from their environments, other systems
+  act to protect body openings such as the lungs, intestines, and the genitourinary tract. In the lungs,
+  coughing and sneezing mechanically eject pathogens and other irritants from the respiratory tract. The
+  flushing action of tears and urine also mechanically expels pathogens, while mucus secreted by the respiratory
+  and gastrointestinal tract serves to trap and entangle microorganisms.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is the last line of defense
+        against infection?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is an example of a mechanical
+        barrier on leaves?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What ejects pathogens from
+        the gastrointestinal tract?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: The flushing action of what
+        expels pathogens from the eyes?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is a mechanical barrier
+        in insects that protects the insect?'
+assert:
+  answers:
+    q1: false
+    q2: true
+    q3: false
+    q4: true
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5ad4abe25b96ef001a109d66, squad2-5728fb002ca10214002dab6b, squad2-5ad4abe25b96ef001a109d67,
+    squad2-5728fb002ca10214002dab6e, squad2-5728fb002ca10214002dab6a
+  date: ''
+  transform: paragraph Immune_system#6; first 5 questions of a paragraph in sha256(id) order, kept only
+    when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

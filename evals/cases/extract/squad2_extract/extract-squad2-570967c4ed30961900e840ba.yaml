@@ -1,0 +1,32 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-570967c4ed30961900e840ba
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: When was Sky Digital launched?'
+context: When Sky Digital was launched in 1998 the new service used the Astra 2A satellite which was located
+  at the 28.5°E orbital position, unlike the analogue service which was broadcast from 19.2°E. This was
+  subsequently followed by more Astra satellites as well as Eutelsat's Eurobird 1 (now Eutelsat 33C) at
+  28.5°E), enabled the company to launch a new all-digital service, Sky, with the potential to carry hundreds
+  of television and radio channels. The old position was shared with broadcasters from several European
+  countries, while the new position at 28.5°E came to be used almost exclusively for channels that broadcast
+  to the United Kingdom.
+assert:
+  equals:
+  - '1998'
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-570967c4ed30961900e840ba
+  date: ''
+  transform: paragraph Sky_(United_Kingdom)#11; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

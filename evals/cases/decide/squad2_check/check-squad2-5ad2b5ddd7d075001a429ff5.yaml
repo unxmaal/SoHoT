@@ -1,0 +1,53 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5ad2b5ddd7d075001a429ff5
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: Germanic tribes crossed the Rhine in the Migration period, by the 5th century establishing the
+  kingdoms of Francia on the Lower Rhine, Burgundy on the Upper Rhine and Alemannia on the High Rhine.
+  This "Germanic Heroic Age" is reflected in medieval legend, such as the Nibelungenlied which tells of
+  the hero Siegfried killing a dragon on the Drachenfels (Siebengebirge) ("dragons rock"), near Bonn at
+  the Rhine and of the Burgundians and their court at Worms, at the Rhine and Kriemhild's golden treasure,
+  which was thrown into the Rhine by Hagen.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Where did the hero Siegfried
+        discover the rock?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who threw Hagen into the river?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who threw gold into the Rhine,
+        according to legend?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: When did Germanic tribes cross
+        the Rhine to migrate?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What did Hagen find after
+        he was thrown into the river?'
+assert:
+  answers:
+    q1: false
+    q2: false
+    q3: true
+    q4: true
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5ad2b5ddd7d075001a429ff5, squad2-5ad2b5ddd7d075001a429ff6, squad2-57300911947a6a140053cfba,
+    squad2-57300911947a6a140053cfb6, squad2-5ad2b5ddd7d075001a429ff3
+  date: ''
+  transform: paragraph Rhine#38; first 5 questions of a paragraph in sha256(id) order, kept only when
+    they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

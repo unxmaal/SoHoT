@@ -1,0 +1,35 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-5729ef266aef05140015511c
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What type of soil is considered a product of soil management by indigenous peoples in the
+  Amazon Forest?'
+context: Terra preta (black earth), which is distributed over large areas in the Amazon forest, is now
+  widely accepted as a product of indigenous soil management. The development of this fertile soil allowed
+  agriculture and silviculture in the previously hostile environment; meaning that large portions of the
+  Amazon rainforest are probably the result of centuries of human management, rather than naturally occurring
+  as has previously been supposed. In the region of the Xingu tribe, remains of some of these large settlements
+  in the middle of the Amazon forest were found in 2003 by Michael Heckenberger and colleagues of the
+  University of Florida. Among those were evidence of roads, bridges and large plazas.
+assert:
+  equals:
+  - Terra preta (black earth)
+  - Terra preta
+  - black earth
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5729ef266aef05140015511c
+  date: ''
+  transform: paragraph Amazon_rainforest#7; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

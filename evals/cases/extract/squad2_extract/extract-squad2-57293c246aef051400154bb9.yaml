@@ -1,0 +1,33 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-57293c246aef051400154bb9
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: How many people attended the 2003 IPCC meeting?'
+context: The IPCC Panel is composed of representatives appointed by governments and organizations. Participation
+  of delegates with appropriate expertise is encouraged. Plenary sessions of the IPCC and IPCC Working
+  groups are held at the level of government representatives. Non Governmental and Intergovernmental Organizations
+  may be allowed to attend as observers. Sessions of the IPCC Bureau, workshops, expert and lead authors
+  meetings are by invitation only. Attendance at the 2003 meeting included 350 government officials and
+  climate change experts. After the opening ceremonies, closed plenary sessions were held. The meeting
+  report states there were 322 persons in attendance at Sessions with about seven-eighths of participants
+  being from governmental organizations.
+assert:
+  equals:
+  - '350'
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-57293c246aef051400154bb9
+  date: ''
+  transform: paragraph Intergovernmental_Panel_on_Climate_Change#2; first answerable question in sha256(id)
+    order whose every human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

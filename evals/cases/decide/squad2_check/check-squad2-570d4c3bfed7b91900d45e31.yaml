@@ -1,0 +1,54 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-570d4c3bfed7b91900d45e31
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: In 1854 at Ballarat there was an armed rebellion against the government of Victoria by miners
+  protesting against mining taxes (the "Eureka Stockade"). This was crushed by British troops, but the
+  discontents prompted colonial authorities to reform the administration (particularly reducing the hated
+  mining licence fees) and extend the franchise. Within a short time, the Imperial Parliament granted
+  Victoria responsible government with the passage of the Colony of Victoria Act 1855. Some of the leaders
+  of the Eureka rebellion went on to become members of the Victorian Parliament.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: When was there a armed protest
+        at Ballarat about mining taxes?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: The passage of what act gave
+        Victoria its own government?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What was the incident over
+        taxes at Ballarat called?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What armed group stopped the
+        uprising at Ballarat?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: When was there a armed protest
+        at Eureka Stockade about mining taxes?'
+assert:
+  answers:
+    q1: true
+    q2: true
+    q3: true
+    q4: true
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-570d4c3bfed7b91900d45e31, squad2-570d4c3bfed7b91900d45e35, squad2-570d4c3bfed7b91900d45e32,
+    squad2-570d4c3bfed7b91900d45e33, squad2-5a637c6268151a001a92230e
+  date: ''
+  transform: paragraph Victoria_(Australia)#21; first 5 questions of a paragraph in sha256(id) order,
+    kept only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

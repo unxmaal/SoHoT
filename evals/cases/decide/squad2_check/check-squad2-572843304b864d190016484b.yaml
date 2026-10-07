@@ -1,0 +1,66 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-572843304b864d190016484b
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: 'In the 1890s, the University of Chicago, fearful that its vast resources would injure smaller
+  schools by drawing away good students, affiliated with several regional colleges and universities: Des
+  Moines College, Kalamazoo College, Butler University, and Stetson University. In 1896, the university
+  affiliated with Shimer College in Mount Carroll, Illinois. Under the terms of the affiliation, the schools
+  were required to have courses of study comparable to those at the university, to notify the university
+  early of any contemplated faculty appointments or dismissals, to make no faculty appointment without
+  the university''s approval, and to send copies of examinations for suggestions. The University of Chicago
+  agreed to confer a degree on any graduating senior from an affiliated school who made a grade of A for
+  all four years, and on any other graduate who took twelve weeks additional study at the University of
+  Chicago. A student or faculty member of an affiliated school was entitled to free tuition at the University
+  of Chicago, and Chicago students were eligible to attend an affiliated school on the same terms and
+  receive credit for their work. The University of Chicago also agreed to provide affiliated schools with
+  books and scientific apparatus and supplies at cost; special instructors and lecturers without cost
+  except travel expenses; and a copy of every book and journal published by the University of Chicago
+  Press at no cost. The agreement provided that either party could terminate the affiliation on proper
+  notice. Several University of Chicago professors disliked the program, as it involved uncompensated
+  additional labor on their part, and they believed it cheapened the academic reputation of the university.
+  The program passed into history by 1910.'
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who disliked the affiliate
+        program?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: To what schools did the U
+        of C agree to provide books and supplies free of charge?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: In what year did the U of
+        C associate with Kalamazoo College, located in Mount Carroll?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: The university agreed to grant
+        a degree to any graduate of affiliate schoos that did what?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: In 1890, who did the university
+        decide to team up with?'
+assert:
+  answers:
+    q1: true
+    q2: false
+    q3: false
+    q4: true
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572843304b864d190016484b, squad2-5acf7fdf77cf76001a684fd6, squad2-5acf7fdf77cf76001a684fd7,
+    squad2-572843304b864d190016484a, squad2-572843304b864d1900164848
+  date: ''
+  transform: paragraph University_of_Chicago#4; first 5 questions of a paragraph in sha256(id) order,
+    kept only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

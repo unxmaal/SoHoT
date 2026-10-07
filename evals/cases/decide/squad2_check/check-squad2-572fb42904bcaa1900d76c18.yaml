@@ -1,0 +1,57 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-572fb42904bcaa1900d76c18
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: After each election to the Scottish Parliament, at the beginning of each parliamentary session,
+  Parliament elects one MSP to serve as Presiding Officer, the equivalent of the speaker (currently Tricia
+  Marwick), and two MSPs to serve as deputies (currently Elaine Smith and John Scott). The Presiding Officer
+  and deputies are elected by a secret ballot of the 129 MSPs, which is the only secret ballot conducted
+  in the Scottish Parliament. Principally, the role of the Presiding Officer is to chair chamber proceedings
+  and the Scottish Parliamentary Corporate Body. When chairing meetings of the Parliament, the Presiding
+  Officer and his/her deputies must be politically impartial. During debates, the Presiding Officer (or
+  the deputy) is assisted by the parliamentary clerks, who give advice on how to interpret the standing
+  orders that govern the proceedings of meetings. A vote clerk sits in front of the Presiding Officer
+  and operates the electronic voting equipment and chamber clocks.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How many MSPs are there?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: The former speaker of Parliament
+        is whom?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Parliament elects two MSPs
+        to serve as what officers?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What type of clerk sits behind
+        the Presiding Officer?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who is elected to serve as
+        the Presiding Officer at the beginning of each parliamentary session?'
+assert:
+  answers:
+    q1: true
+    q2: false
+    q3: false
+    q4: false
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572fb42904bcaa1900d76c18, squad2-5ad02a9777cf76001a686c61, squad2-5ad02a9777cf76001a686c5e,
+    squad2-5ad02a9777cf76001a686c60, squad2-572fb42904bcaa1900d76c15
+  date: ''
+  transform: paragraph Scottish_Parliament#8; first 5 questions of a paragraph in sha256(id) order, kept
+    only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

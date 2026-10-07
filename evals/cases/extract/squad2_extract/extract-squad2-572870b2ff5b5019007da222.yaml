@@ -1,0 +1,33 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-572870b2ff5b5019007da222
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What Nobel Memorial Prize in Economic Sciences winner is also a university alumni member?'
+context: In economics, notable Nobel Memorial Prize in Economic Sciences winners Milton Friedman, a major
+  advisor to Republican U.S. President Ronald Reagan and Conservative British Prime Minister Margaret
+  Thatcher, George Stigler, Nobel laureate and proponent of regulatory capture theory, Gary Becker, an
+  important contributor to the family economics branch of economics, Herbert A. Simon, responsible for
+  the modern interpretation of the concept of organizational decision-making, Paul Samuelson, the first
+  American to win the Nobel Memorial Prize in Economic Sciences, and Eugene Fama, known for his work on
+  portfolio theory, asset pricing and stock market behaviour, are all graduates. American economist, social
+  theorist, political philosopher, and author Thomas Sowell is also an alumnus.
+assert:
+  equals:
+  - Milton Friedman
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572870b2ff5b5019007da222
+  date: ''
+  transform: paragraph University_of_Chicago#32; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

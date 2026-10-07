@@ -1,0 +1,33 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-572a1dbb3f37b319004786f6
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What are those with lower incomes often unable to manage?'
+context: Firstly, certain costs are difficult to avoid and are shared by everyone, such as the costs of
+  housing, pensions, education and health care. If the state does not provide these services, then for
+  those on lower incomes, the costs must be borrowed and often those on lower incomes are those who are
+  worse equipped to manage their finances. Secondly, aspirational consumption describes the process of
+  middle income earners aspiring to achieve the standards of living enjoyed by their wealthier counterparts
+  and one method of achieving this aspiration is by taking on debt. The result leads to even greater inequality
+  and potential economic instability.
+assert:
+  equals:
+  - their finances
+  - finances
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572a1dbb3f37b319004786f6
+  date: ''
+  transform: paragraph Economic_inequality#38; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

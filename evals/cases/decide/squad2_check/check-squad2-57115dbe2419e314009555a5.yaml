@@ -1,0 +1,56 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-57115dbe2419e314009555a5
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: The centrifugal governor was adopted by James Watt for use on a steam engine in 1788 after Watt’s
+  partner Boulton saw one at a flour mill Boulton & Watt were building. The governor could not actually
+  hold a set speed, because it would assume a new constant speed in response to load changes. The governor
+  was able to handle smaller variations such as those caused by fluctuating heat load to the boiler. Also,
+  there was a tendency for oscillation whenever there was a speed change. As a consequence, engines equipped
+  only with this governor were not suitable for operations requiring constant speed, such as cotton spinning.
+  The governor was improved over time and coupled with variable steam cut off, good speed control in response
+  to changes in load was attainable near the end of the 19th century.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What did Watt add to the steam
+        engine in 1788?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What was the name of Watt''s
+        partner?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Where was the centrifugal
+        governor first observed by Boulton?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Where was the centrifugal
+        governor first observed by Watt?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What did Watt add to the steam
+        engine in 19th century?'
+assert:
+  answers:
+    q1: true
+    q2: true
+    q3: true
+    q4: false
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-57115dbe2419e314009555a5, squad2-57115dbe2419e314009555a6, squad2-57115dbe2419e314009555a7,
+    squad2-5ad3ea77604f3c001a3ff6e1, squad2-5ad3ea77604f3c001a3ff6df
+  date: ''
+  transform: paragraph Steam_engine#30; first 5 questions of a paragraph in sha256(id) order, kept only
+    when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

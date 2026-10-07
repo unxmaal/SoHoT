@@ -1,0 +1,53 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5726f7715951b619008f838f
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: The reason for the majority rule is the high risk of a conflict of interest and/or the avoidance
+  of absolute powers. Otherwise, the physician has a financial self-interest in "diagnosing" as many conditions
+  as possible, and in exaggerating their seriousness, because he or she can then sell more medications
+  to the patient. Such self-interest directly conflicts with the patient's interest in obtaining cost-effective
+  medication and avoiding the unnecessary use of medication that may have side-effects. This system reflects
+  much similarity to the checks and balances system of the U.S. and many other governments.[citation needed]
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What do rules about conflict
+        of interest involving doctors diagnosing patients resemble?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Why is majority rule used?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Why might a physician diagnose
+        a large number of conditions?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How else might a physician
+        take advantage of self-interest?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What do rules about conflict
+        of interest involving doctors diagnosing patients not resemble?'
+assert:
+  answers:
+    q1: true
+    q2: true
+    q3: true
+    q4: true
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5726f7715951b619008f838f, squad2-5726f7715951b619008f838d, squad2-5726f7715951b619008f838e,
+    squad2-5726f7715951b619008f8391, squad2-5a6cee244eec6b001a80a6ea
+  date: ''
+  transform: paragraph Pharmacy#22; first 5 questions of a paragraph in sha256(id) order, kept only when
+    they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

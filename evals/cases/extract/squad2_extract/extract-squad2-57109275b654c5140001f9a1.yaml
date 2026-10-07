@@ -1,0 +1,32 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-57109275b654c5140001f9a1
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What persons were not allowed to settle in New France?'
+context: The exodus of Huguenots from France created a brain drain, as many Huguenots had occupied important
+  places in society. The kingdom did not fully recover for years. The French crown's refusal to allow
+  non-Catholics to settle in New France may help to explain that colony's slow rate of population growth
+  compared to that of the neighbouring British colonies, which opened settlement to religious dissenters.
+  By the time of the French and Indian War (the North American front of the Seven Years' War), a sizeable
+  population of Huguenot descent lived in the British colonies, and many participated in the British defeat
+  of New France in 1759-60.
+assert:
+  equals:
+  - non-Catholics
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-57109275b654c5140001f9a1
+  date: ''
+  transform: paragraph Huguenot#17; first answerable question in sha256(id) order whose every human answer
+    is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

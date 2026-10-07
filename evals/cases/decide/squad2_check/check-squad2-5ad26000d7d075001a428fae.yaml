@@ -1,0 +1,58 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5ad26000d7d075001a428fae
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: 'People who climb mountains or fly in non-pressurized fixed-wing aircraft sometimes have supplemental
+  O
+
+  2 supplies.[h] Passengers traveling in (pressurized) commercial airplanes have an emergency supply of
+  O
+
+  2 automatically supplied to them in case of cabin depressurization. Sudden cabin pressure loss activates
+  chemical oxygen generators above each seat, causing oxygen masks to drop. Pulling on the masks "to start
+  the flow of oxygen" as cabin safety instructions dictate, forces iron filings into the sodium chlorate
+  inside the canister. A steady stream of oxygen gas is then produced by the exothermic reaction.'
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who sometimes have supplemental
+        O supplies?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who has an emergency supply
+        of O?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: In case of cabin pressurization,
+        what is available to passengers?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What event would necessitate
+        airline passengers to need a supplemental supply of oxygen?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What gas does the airline
+        exothermic reaction produce?'
+assert:
+  answers:
+    q1: false
+    q2: false
+    q3: false
+    q4: true
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5ad26000d7d075001a428fae, squad2-5ad26000d7d075001a428faf, squad2-5ad26000d7d075001a428fb0,
+    squad2-571cd88ddd7acb1400e4c18d, squad2-571cd88ddd7acb1400e4c190
+  date: ''
+  transform: paragraph Oxygen#36; first 5 questions of a paragraph in sha256(id) order, kept only when
+    they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

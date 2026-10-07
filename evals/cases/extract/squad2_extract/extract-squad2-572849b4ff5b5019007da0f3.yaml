@@ -1,0 +1,38 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-572849b4ff5b5019007da0f3
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What institute did the university announced to everyone in 2008?'
+context: From the mid-2000s, the university began a number of multimillion-dollar expansion projects.
+  In 2008, the University of Chicago announced plans to establish the Milton Friedman Institute which
+  attracted both support and controversy from faculty members and students. The institute will cost around
+  $200 million and occupy the buildings of the Chicago Theological Seminary. During the same year, investor
+  David G. Booth donated $300 million to the university's Booth School of Business, which is the largest
+  gift in the university's history and the largest gift ever to any business school. In 2009, planning
+  or construction on several new buildings, half of which cost $100 million or more, was underway. Since
+  2011, major construction projects have included the Jules and Gwen Knapp Center for Biomedical Discovery,
+  a ten-story medical research center, and further additions to the medical campus of the University of
+  Chicago Medical Center. In 2014 the University launched the public phase of a $4.5 billion fundraising
+  campaign. In September 2015, the University received $100 million from The Pearson Family Foundation
+  to establish The Pearson Institute for the Study and Resolution of Global Conflicts and The Pearson
+  Global Forum at the Harris School of Public Policy Studies.
+assert:
+  equals:
+  - Milton Friedman Institute
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572849b4ff5b5019007da0f3
+  date: ''
+  transform: paragraph University_of_Chicago#8; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

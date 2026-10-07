@@ -1,0 +1,53 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5a7b086921c2de001afe9d02
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: Fresno has three large public parks, two in the city limits and one in county land to the southwest.
+  Woodward Park, which features the Shinzen Japanese Gardens, numerous picnic areas and several miles
+  of trails, is in North Fresno and is adjacent to the San Joaquin River Parkway. Roeding Park, near Downtown
+  Fresno, is home to the Fresno Chaffee Zoo, and Rotary Storyland and Playland. Kearney Park is the largest
+  of the Fresno region's park system and is home to historic Kearney Mansion and plays host to the annual
+  Civil War Revisited, the largest reenactment of the Civil War in the west coast of the U.S.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is the largest Mansion
+        in the west coast?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: The two city limits parks
+        are located in which direction?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Which park is the smallest?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Which park is home to the
+        Kearney Mansion?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How many large public parks
+        does Fresno have?'
+assert:
+  answers:
+    q1: false
+    q2: false
+    q3: false
+    q4: true
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5a7b086921c2de001afe9d02, squad2-5a7b086921c2de001afe9d04, squad2-5a7b086921c2de001afe9d01,
+    squad2-5725d662ec44d21400f3d689, squad2-5725d662ec44d21400f3d687
+  date: ''
+  transform: paragraph Fresno,_California#5; first 5 questions of a paragraph in sha256(id) order, kept
+    only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

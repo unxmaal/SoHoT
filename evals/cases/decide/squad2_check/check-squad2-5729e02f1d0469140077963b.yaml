@@ -1,0 +1,56 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5729e02f1d0469140077963b
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: Another cause is the rate at which income is taxed coupled with the progressivity of the tax
+  system. A progressive tax is a tax by which the tax rate increases as the taxable base amount increases.
+  In a progressive tax system, the level of the top tax rate will often have a direct impact on the level
+  of inequality within a society, either increasing it or decreasing it, provided that income does not
+  change as a result of the change in tax regime. Additionally, steeper tax progressivity applied to social
+  spending can result in a more equal distribution of income across the board. The difference between
+  the Gini index for an income distribution before taxation and the Gini index after taxation is an indicator
+  for the effects of such taxation.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What can result in more equal
+        distribution of income?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What index is an indicator
+        of the effects of taxes applied to social spending?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What can''t work to even the
+        distribution of wealth?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What system has no impact
+        on income inequality?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What can work to even the
+        distribution of wealth?'
+assert:
+  answers:
+    q1: true
+    q2: true
+    q3: false
+    q4: false
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5729e02f1d0469140077963b, squad2-5729e02f1d0469140077963c, squad2-5ad247b0d7d075001a428b44,
+    squad2-5ad247b0d7d075001a428b45, squad2-5727ef664b864d1900164062
+  date: ''
+  transform: paragraph Economic_inequality#7; first 5 questions of a paragraph in sha256(id) order, kept
+    only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

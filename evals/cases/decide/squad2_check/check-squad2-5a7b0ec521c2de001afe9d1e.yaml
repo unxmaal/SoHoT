@@ -1,0 +1,53 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5a7b0ec521c2de001afe9d1e
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: The neighborhood of Sunnyside is on Fresno's far southeast side, bounded by Chestnut Avenue to
+  the West. Its major thoroughfares are Kings Canyon Avenue and Clovis Avenue. Although parts of Sunnyside
+  are within the City of Fresno, much of the neighborhood is a "county island" within Fresno County. Largely
+  developed in the 1950s through the 1970s, it has recently experienced a surge in new home construction.
+  It is also the home of the Sunnyside Country Club, which maintains a golf course designed by William
+  P. Bell.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who designed Sunnyside?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who designed the golf course
+        located at the Sunnyside Country Club?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Where is the home of the Sunnyside
+        Country Club?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: When was most of Sunnside
+        developed?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Chestnut Avenue goes through
+        what?'
+assert:
+  answers:
+    q1: false
+    q2: true
+    q3: true
+    q4: true
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5a7b0ec521c2de001afe9d1e, squad2-5725db98ec44d21400f3d6c9, squad2-5725db98ec44d21400f3d6c8,
+    squad2-5725db98ec44d21400f3d6c7, squad2-5a7b0ec521c2de001afe9d22
+  date: ''
+  transform: paragraph Fresno,_California#8; first 5 questions of a paragraph in sha256(id) order, kept
+    only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

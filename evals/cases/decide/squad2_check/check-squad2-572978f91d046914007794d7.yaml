@@ -1,0 +1,56 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-572978f91d046914007794d7
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: 'There are hints in the surviving records of the ancient Egyptians that they had some knowledge
+  of prime numbers: the Egyptian fraction expansions in the Rhind papyrus, for instance, have quite different
+  forms for primes and for composites. However, the earliest surviving records of the explicit study of
+  prime numbers come from the Ancient Greeks. Euclid''s Elements (circa 300 BC) contain important theorems
+  about primes, including the infinitude of primes and the fundamental theorem of arithmetic. Euclid also
+  showed how to construct a perfect number from a Mersenne prime. The Sieve of Eratosthenes, attributed
+  to Eratosthenes, is a simple method to compute primes, although the large primes found today with computers
+  are not generated this way.'
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What does the Sieve of Eratosthenes
+        do?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who demonstrated how to create
+        an infinite number from a Mersenne prime?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who demonstrated how to create
+        a perfect number from a Mersenne prime?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What work from around 300
+        BC has significant theorems about prime numbers?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What work from around 3000BC
+        has significant theorems about infinite numbers?'
+assert:
+  answers:
+    q1: true
+    q2: false
+    q3: true
+    q4: true
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572978f91d046914007794d7, squad2-5a8925e53b2508001a72a4d3, squad2-572978f91d046914007794d6,
+    squad2-572978f91d046914007794d5, squad2-5a8925e53b2508001a72a4d2
+  date: ''
+  transform: paragraph Prime_number#7; first 5 questions of a paragraph in sha256(id) order, kept only
+    when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

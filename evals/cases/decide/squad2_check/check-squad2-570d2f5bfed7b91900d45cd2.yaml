@@ -1,0 +1,54 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-570d2f5bfed7b91900d45cd2
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: Victoria has a written constitution enacted in 1975, but based on the 1855 colonial constitution,
+  passed by the United Kingdom Parliament as the Victoria Constitution Act 1855, which establishes the
+  Parliament as the state's law-making body for matters coming under state responsibility. The Victorian
+  Constitution can be amended by the Parliament of Victoria, except for certain "entrenched" provisions
+  that require either an absolute majority in both houses, a three-fifths majority in both houses, or
+  the approval of the Victorian people in a referendum, depending on the provision.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What are the exceptions in
+        the constitution  that require special considerations to amend?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What document formed the Parliament
+        of Victoria?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What group can amend the Victorian
+        constitution?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: On what is the Parliament
+        of Victoria based?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: When did Victoria approve
+        a referendum?'
+assert:
+  answers:
+    q1: true
+    q2: true
+    q3: true
+    q4: false
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-570d2f5bfed7b91900d45cd2, squad2-570d2f5bfed7b91900d45cd3, squad2-570d2f5bfed7b91900d45cd1,
+    squad2-5a63835a68151a001a92232d, squad2-5a63835a68151a001a92232c
+  date: ''
+  transform: paragraph Victoria_(Australia)#8; first 5 questions of a paragraph in sha256(id) order, kept
+    only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

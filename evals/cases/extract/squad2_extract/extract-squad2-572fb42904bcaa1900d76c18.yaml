@@ -1,0 +1,35 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-572fb42904bcaa1900d76c18
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: How many MSPs are there?'
+context: After each election to the Scottish Parliament, at the beginning of each parliamentary session,
+  Parliament elects one MSP to serve as Presiding Officer, the equivalent of the speaker (currently Tricia
+  Marwick), and two MSPs to serve as deputies (currently Elaine Smith and John Scott). The Presiding Officer
+  and deputies are elected by a secret ballot of the 129 MSPs, which is the only secret ballot conducted
+  in the Scottish Parliament. Principally, the role of the Presiding Officer is to chair chamber proceedings
+  and the Scottish Parliamentary Corporate Body. When chairing meetings of the Parliament, the Presiding
+  Officer and his/her deputies must be politically impartial. During debates, the Presiding Officer (or
+  the deputy) is assisted by the parliamentary clerks, who give advice on how to interpret the standing
+  orders that govern the proceedings of meetings. A vote clerk sits in front of the Presiding Officer
+  and operates the electronic voting equipment and chamber clocks.
+assert:
+  equals:
+  - '129'
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572fb42904bcaa1900d76c18
+  date: ''
+  transform: paragraph Scottish_Parliament#8; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

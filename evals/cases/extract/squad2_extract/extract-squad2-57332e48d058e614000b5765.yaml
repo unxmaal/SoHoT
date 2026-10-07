@@ -1,0 +1,34 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-57332e48d058e614000b5765
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: How many days did the Warsaw Uprising last?'
+context: By July 1944, the Red Army was deep into Polish territory and pursuing the Germans toward Warsaw.
+  Knowing that Stalin was hostile to the idea of an independent Poland, the Polish government-in-exile
+  in London gave orders to the underground Home Army (AK) to try to seize control of Warsaw from the Germans
+  before the Red Army arrived. Thus, on 1 August 1944, as the Red Army was nearing the city, the Warsaw
+  Uprising began. The armed struggle, planned to last 48 hours, was partially successful, however it went
+  on for 63 days. Eventually the Home Army fighters and civilians assisting them were forced to capitulate.
+  They were transported to PoW camps in Germany, while the entire civilian population was expelled. Polish
+  civilian deaths are estimated at between 150,000 and 200,000.
+assert:
+  equals:
+  - 63 days
+  - '63'
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-57332e48d058e614000b5765
+  date: ''
+  transform: paragraph Warsaw#10; first answerable question in sha256(id) order whose every human answer
+    is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

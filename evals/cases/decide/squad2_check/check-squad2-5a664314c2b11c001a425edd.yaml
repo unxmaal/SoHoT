@@ -1,0 +1,53 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5a664314c2b11c001a425edd
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: One of the oldest depictions of civil disobedience is in Sophocles' play Antigone, in which Antigone,
+  one of the daughters of former King of Thebes, Oedipus, defies Creon, the current King of Thebes, who
+  is trying to stop her from giving her brother Polynices a proper burial. She gives a stirring speech
+  in which she tells him that she must obey her conscience rather than human law. She is not at all afraid
+  of the death he threatens her with (and eventually carries out), but she is afraid of how her conscience
+  will smite her if she does not do this.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What must Sophocles do instead
+        of following the king''s will?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Sophocles demonstrated civil
+        disobedience in a play that was called?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What play showed an early
+        depiction of civil disobedience?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who does Sophocles defy?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What play by Oedipus, demonstrates
+        civil disobedience?'
+assert:
+  answers:
+    q1: false
+    q2: true
+    q3: true
+    q4: false
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5a664314c2b11c001a425edd, squad2-57271f125951b619008f8635, squad2-5728d5793acd2414000dffb3,
+    squad2-5a664314c2b11c001a425edb, squad2-5a664314c2b11c001a425ed9
+  date: ''
+  transform: paragraph Civil_disobedience#1; first 5 questions of a paragraph in sha256(id) order, kept
+    only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

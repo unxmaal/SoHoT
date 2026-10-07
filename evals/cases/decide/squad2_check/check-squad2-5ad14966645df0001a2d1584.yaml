@@ -1,0 +1,61 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5ad14966645df0001a2d1584
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: None of the original treaties establishing the European Union mention protection for fundamental
+  rights. It was not envisaged for European Union measures, that is legislative and administrative actions
+  by European Union institutions, to be subject to human rights. At the time the only concern was that
+  member states should be prevented from violating human rights, hence the establishment of the European
+  Convention on Human Rights in 1950 and the establishment of the European Court of Human Rights. The
+  European Court of Justice recognised fundamental rights as general principle of European Union law as
+  the need to ensure that European Union measures are compatible with the human rights enshrined in member
+  states' constitution became ever more apparent. In 1999 the European Council set up a body tasked with
+  drafting a European Charter of Human Rights, which could form the constitutional basis for the European
+  Union and as such tailored specifically to apply to the European Union and its institutions. The Charter
+  of Fundamental Rights of the European Union draws a list of fundamental rights from the European Convention
+  on Human Rights and Fundamental Freedoms, the Declaration on Fundamental Rights produced by the European
+  Parliament in 1989 and European Union Treaties.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What did the European Court
+        of Justice not recognize?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Which entities were not originally
+        concerned with preventing violation of human rights?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What other entity was established
+        at the same time as the European Convention on Human Rights?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How many original treaties
+        establishing the EU did not protect fundamental rights/'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Which entities were originally
+        concerned with preventing violation of human rights?'
+assert:
+  answers:
+    q1: false
+    q2: false
+    q3: true
+    q4: false
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5ad14966645df0001a2d1584, squad2-5ad14966645df0001a2d1581, squad2-5726a299dd62a815002e8ba1,
+    squad2-5ad14966645df0001a2d1580, squad2-5726a299dd62a815002e8b9f
+  date: ''
+  transform: paragraph European_Union_law#22; first 5 questions of a paragraph in sha256(id) order, kept
+    only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

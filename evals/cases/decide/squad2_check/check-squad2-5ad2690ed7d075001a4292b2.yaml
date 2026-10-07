@@ -1,0 +1,54 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5ad2690ed7d075001a4292b2
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: The capabilities approach – sometimes called the human development approach – looks at income
+  inequality and poverty as form of “capability deprivation”. Unlike neoliberalism, which “defines well-being
+  as utility maximization”, economic growth and income are considered a means to an end rather than the
+  end itself. Its goal is to “wid[en] people’s choices and the level of their achieved well-being” through
+  increasing functionings (the things a person values doing), capabilities (the freedom to enjoy functionings)
+  and agency (the ability to pursue valued goals).
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is the goal of the incapabilities
+        approach?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How would the capabilities
+        approach achieve it''s goal?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is the definition of
+        agency as it relates to capabilities?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How wouldn''t the capabilities
+        approach achieve it''s goal?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: In the capabilities approach,
+        grow and income are considered a means to an end rather than what?'
+assert:
+  answers:
+    q1: false
+    q2: true
+    q3: true
+    q4: false
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5ad2690ed7d075001a4292b2, squad2-572a213e6aef0514001552f1, squad2-572a213e6aef0514001552f2,
+    squad2-5ad2690ed7d075001a4292b3, squad2-572a213e6aef0514001552ef
+  date: ''
+  transform: paragraph Economic_inequality#42; first 5 questions of a paragraph in sha256(id) order, kept
+    only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

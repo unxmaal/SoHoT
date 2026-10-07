@@ -1,0 +1,36 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-57286ead2ca10214002da34a
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: When did Temur rule?'
+context: Following the conquest of Dali in 1253, the former ruling Duan dynasty were appointed as governors-general,
+  recognized as imperial officials by the Yuan, Ming, and Qing-era governments, principally in the province
+  of Yunnan. Succession for the Yuan dynasty, however, was an intractable problem, later causing much
+  strife and internal struggle. This emerged as early as the end of Kublai's reign. Kublai originally
+  named his eldest son, Zhenjin, as the Crown Prince, but he died before Kublai in 1285. Thus, Zhenjin's
+  third son, with the support of his mother Kökejin and the minister Bayan, succeeded the throne and ruled
+  as Temür Khan, or Emperor Chengzong, from 1294 to 1307. Temür Khan decided to maintain and continue
+  much of the work begun by his grandfather. He also made peace with the western Mongol khanates as well
+  as neighboring countries such as Vietnam, which recognized his nominal suzerainty and paid tributes
+  for a few decades. However, the corruption in the Yuan dynasty began during the reign of Temür Khan.
+assert:
+  equals:
+  - 1294 to 1307
+  - from 1294 to 1307
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-57286ead2ca10214002da34a
+  date: ''
+  transform: paragraph Yuan_dynasty#14; first answerable question in sha256(id) order whose every human
+    answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

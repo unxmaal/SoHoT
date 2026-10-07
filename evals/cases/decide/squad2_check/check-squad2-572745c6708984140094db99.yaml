@@ -1,0 +1,59 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-572745c6708984140094db99
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: In the modern industrialized world, construction usually involves the translation of designs
+  into reality. A formal design team may be assembled to plan the physical proceedings, and to integrate
+  those proceedings with the other parts. The design usually consists of drawings and specifications,
+  usually prepared by a design team including Architect, civil engineers, mechanical engineers, electrical
+  engineers, structural engineers, fire protection engineers, planning consultants, architectural consultants,
+  and archaeological consultants. The design team is most commonly employed by (i.e. in contract with)
+  the property owner. Under this system, once the design is completed by the design team, a number of
+  construction companies or construction management companies may then be asked to make a bid for the
+  work, either based directly on the design, or on the basis of drawings and a bill of quantities provided
+  by a quantity surveyor. Following evaluation of bids, the owner typically awards a contract to the most
+  cost efficient bidder.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Construction involves the
+        translation of what?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What group prepares the bid
+        for work?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What  are construction companies
+        asked to plan?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: The owner typically awards
+        a contract to who?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who does the owner award  a
+        bill of quantities to?'
+assert:
+  answers:
+    q1: true
+    q2: false
+    q3: false
+    q4: true
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572745c6708984140094db99, squad2-5a25c087ef59cd001a623ccf, squad2-5a25c087ef59cd001a623cd2,
+    squad2-572745c6708984140094db9d, squad2-5a25c087ef59cd001a623cd1
+  date: ''
+  transform: paragraph Construction#8; first 5 questions of a paragraph in sha256(id) order, kept only
+    when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

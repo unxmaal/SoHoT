@@ -1,0 +1,53 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5a7b10e021c2de001afe9d3c
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: The neighborhood features restaurants, live theater and nightclubs, as well as several independent
+  shops and bookstores, currently operating on or near Olive Avenue, and all within a few hundred feet
+  of each other. Since renewal, the Tower District has become an attractive area for restaurant and other
+  local businesses. Today, the Tower District is also known as the center of Fresno's LGBT and hipster
+  Communities.; Additionally, Tower District is also known as the center of Fresno's local punk/goth/deathrock
+  and heavy metal community.[citation needed]
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How long is Olive Avenue?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Which district in Fresno is
+        known as the center for the heavy metal community?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What communities avoid Tower
+        District?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Which Fresno district is the
+        center for the LGBT community?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What was Tower District known
+        for before the renewal?'
+assert:
+  answers:
+    q1: false
+    q2: true
+    q3: false
+    q4: true
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5a7b10e021c2de001afe9d3c, squad2-5725e45689a1e219009ac04c, squad2-5a7b10e021c2de001afe9d3f,
+    squad2-5725e45689a1e219009ac04b, squad2-5a7b10e021c2de001afe9d3e
+  date: ''
+  transform: paragraph Fresno,_California#11; first 5 questions of a paragraph in sha256(id) order, kept
+    only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

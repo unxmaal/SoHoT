@@ -1,0 +1,56 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5a3e2dc0378766001a0024c7
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: The IPCC Panel is composed of representatives appointed by governments and organizations. Participation
+  of delegates with appropriate expertise is encouraged. Plenary sessions of the IPCC and IPCC Working
+  groups are held at the level of government representatives. Non Governmental and Intergovernmental Organizations
+  may be allowed to attend as observers. Sessions of the IPCC Bureau, workshops, expert and lead authors
+  meetings are by invitation only. Attendance at the 2003 meeting included 350 government officials and
+  climate change experts. After the opening ceremonies, closed plenary sessions were held. The meeting
+  report states there were 322 persons in attendance at Sessions with about seven-eighths of participants
+  being from governmental organizations.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What session did the IPCC
+        panel attend before the opening ceremonies?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How many people attended the
+        2003 IPCC meeting?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Which IPCC sessions are open
+        to everyone?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What kind of people attend
+        the IPCC meetings?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What year did more than 375
+        officials attend the IPCC Bureau session?'
+assert:
+  answers:
+    q1: false
+    q2: true
+    q3: false
+    q4: true
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5a3e2dc0378766001a0024c7, squad2-57293c246aef051400154bb9, squad2-5a3e2dc0378766001a0024c4,
+    squad2-57293c246aef051400154bba, squad2-5a3e2dc0378766001a0024c5
+  date: ''
+  transform: paragraph Intergovernmental_Panel_on_Climate_Change#2; first 5 questions of a paragraph in
+    sha256(id) order, kept only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

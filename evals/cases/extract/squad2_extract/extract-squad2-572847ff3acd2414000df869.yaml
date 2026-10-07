@@ -1,0 +1,33 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-572847ff3acd2414000df869
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: In what year did student decide to occupy the president''s office?'
+context: The university experienced its share of student unrest during the 1960s, beginning in 1962, when
+  students occupied President George Beadle's office in a protest over the university's off-campus rental
+  policies. After continued turmoil, a university committee in 1967 issued what became known as the Kalven
+  Report. The report, a two-page statement of the university's policy in "social and political action,"
+  declared that "To perform its mission in the society, a university must sustain an extraordinary environment
+  of freedom of inquiry and maintain an independence from political fashions, passions, and pressures."
+  The report has since been used to justify decisions such as the university's refusal to divest from
+  South Africa in the 1980s and Darfur in the late 2000s.
+assert:
+  equals:
+  - '1962'
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572847ff3acd2414000df869
+  date: ''
+  transform: paragraph University_of_Chicago#7; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

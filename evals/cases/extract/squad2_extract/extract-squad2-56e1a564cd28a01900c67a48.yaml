@@ -1,0 +1,33 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-56e1a564cd28a01900c67a48
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: Whose thesis states that the solution to a problem is solvable with reasonable resources assuming
+  it allows for a polynomial time algorithm?'
+context: If the input size is n, the time taken can be expressed as a function of n. Since the time taken
+  on different inputs of the same size can be different, the worst-case time complexity T(n) is defined
+  to be the maximum time taken over all inputs of size n. If T(n) is a polynomial in n, then the algorithm
+  is said to be a polynomial time algorithm. Cobham's thesis says that a problem can be solved with a
+  feasible amount of resources if it admits a polynomial time algorithm.
+assert:
+  equals:
+  - Cobham's thesis
+  - Cobham's
+  - Cobham
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-56e1a564cd28a01900c67a48
+  date: ''
+  transform: paragraph Computational_complexity_theory#11; first answerable question in sha256(id) order
+    whose every human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

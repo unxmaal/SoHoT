@@ -1,0 +1,58 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-57337f6ad058e614000b5bcd
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: 'In 1939, c. 1,300,000 people lived in Warsaw, but in 1945 – only 420,000. During the first years
+  after the war, the population growth was c. 6%, so shortly the city started to suffer from the lack
+  of flats and of areas for new houses. The first remedial measure was the Warsaw area enlargement (1951)
+  – but the city authorities were still forced to introduce residency registration limitations: only the
+  spouses and children of the permanent residents as well as some persons of public importance (like renowned
+  specialists) were allowed to get the registration, hence halving the population growth in the following
+  years. It also bolstered some kind of conviction among Poles that Varsovians thought of themselves as
+  better only because they lived in the capital. Unfortunately this belief still lives on in Poland (although
+  not as much as it used to be) – even though since 1990 there are no limitations to residency registration
+  anymore.'
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: When did the Warsaw area enlargement
+        take place?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What had the number of people
+        living in Warsaw declined to by 1945?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How many people lived in Poland
+        in 1939?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What are there no longer limitations
+        on since 1990?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What conviction did many Poles
+        have regarding how the Varsovians thought of themselves?'
+assert:
+  answers:
+    q1: true
+    q2: true
+    q3: false
+    q4: true
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-57337f6ad058e614000b5bcd, squad2-57337f6ad058e614000b5bcc, squad2-5ad4f1c95b96ef001a10a726,
+    squad2-57337f6ad058e614000b5bcf, squad2-57337f6ad058e614000b5bce
+  date: ''
+  transform: paragraph Warsaw#26; first 5 questions of a paragraph in sha256(id) order, kept only when
+    they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

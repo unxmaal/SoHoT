@@ -1,0 +1,59 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5728facd4b864d1900165174
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: Steven Barkan writes that if defendants plead not guilty, "they must decide whether their primary
+  goal will be to win an acquittal and avoid imprisonment or a fine, or to use the proceedings as a forum
+  to inform the jury and the public of the political circumstances surrounding the case and their reasons
+  for breaking the law via civil disobedience." A technical defense may enhance the chances for acquittal
+  but make for more boring proceedings and reduced press coverage. During the Vietnam War era, the Chicago
+  Eight used a political defense, while Benjamin Spock used a technical defense. In countries such as
+  the United States whose laws guarantee the right to a jury trial but do not excuse lawbreaking for political
+  purposes, some civil disobedients seek jury nullification. Over the years, this has been made more difficult
+  by court decisions such as Sparf v. United States, which held that the judge need not inform jurors
+  of their nullification prerogative, and United States v. Dougherty, which held that the judge need not
+  allow defendants to openly seek jury nullification.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What can sympathetic Jurors
+        in cases with civil disobedients?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is a secondary goal of
+        pleading not guilty?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What US war has a large amount
+        of Civil Disobedients?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What defense was used by Steven
+        Barkan?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is the main goal of trying
+        to get jury nullification during trial?'
+assert:
+  answers:
+    q1: true
+    q2: true
+    q3: true
+    q4: false
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5728facd4b864d1900165174, squad2-5728facd4b864d1900165171, squad2-5728facd4b864d1900165173,
+    squad2-5a66978af038b7001ab0c028, squad2-5a66978af038b7001ab0c02a
+  date: ''
+  transform: paragraph Civil_disobedience#22; first 5 questions of a paragraph in sha256(id) order, kept
+    only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

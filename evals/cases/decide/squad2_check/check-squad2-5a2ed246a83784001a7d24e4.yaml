@@ -1,0 +1,56 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5a2ed246a83784001a7d24e4
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: In England, in the absence of census figures, historians propose a range of preincident population
+  figures from as high as 7 million to as low as 4 million in 1300, and a postincident population figure
+  as low as 2 million. By the end of 1350, the Black Death subsided, but it never really died out in England.
+  Over the next few hundred years, further outbreaks occurred in 1361–62, 1369, 1379–83, 1389–93, and
+  throughout the first half of the 15th century. An outbreak in 1471 took as much as 10–15% of the population,
+  while the death rate of the plague of 1479–80 could have been as high as 20%. The most general outbreaks
+  in Tudor and Stuart England seem to have begun in 1498, 1535, 1543, 1563, 1589, 1603, 1625, and 1636,
+  and ended with the Great Plague of London in 1665.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What percentage of people
+        died during the Great Plague of London in 1665?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How many people died in the
+        outbreak of 1471?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What percentage of the population
+        died in the 1625 outbreak of the Black Death?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: In what year did the Tudor
+        era begin in England?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What did historians do in
+        the absence of census figures?'
+assert:
+  answers:
+    q1: false
+    q2: true
+    q3: false
+    q4: false
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5a2ed246a83784001a7d24e4, squad2-5726559edd62a815002e81ca, squad2-5a2ed246a83784001a7d24e7,
+    squad2-5a2ed246a83784001a7d24e5, squad2-5726559edd62a815002e81c8
+  date: ''
+  transform: paragraph Black_Death#19; first 5 questions of a paragraph in sha256(id) order, kept only
+    when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

@@ -1,0 +1,31 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-5729e1e36aef0514001550be
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What does wealth disparity make the economy more prone to?'
+context: In 2014, economists with the Standard & Poor's rating agency concluded that the widening disparity
+  between the U.S.'s wealthiest citizens and the rest of the nation had slowed its recovery from the 2008-2009
+  recession and made it more prone to boom-and-bust cycles. To partially remedy the wealth gap and the
+  resulting slow growth, S&P recommended increasing access to education. It estimated that if the average
+  United States worker had completed just one more year of school, it would add an additional $105 billion
+  in growth to the country's economy over five years.
+assert:
+  equals:
+  - boom-and-bust cycles
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5729e1e36aef0514001550be
+  date: ''
+  transform: paragraph Economic_inequality#9; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

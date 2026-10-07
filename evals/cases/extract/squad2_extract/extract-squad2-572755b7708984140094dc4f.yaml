@@ -1,0 +1,32 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-572755b7708984140094dc4f
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: How many firms were existing in 2005?'
+context: In the United States, the industry in 2014 has around $960 billion in annual revenue according
+  to statistics tracked by the Census Bureau, of which $680 billion is private (split evenly between residential
+  and nonresidential) and the remainder is government. As of 2005, there were about 667,000 firms employing
+  1 million contractors (200,000 general contractors, 38,000 heavy, and 432,000 specialty); the average
+  contractor employed fewer than 10 employees. As a whole, the industry employed an estimated 5.8 million
+  as of April 2013, with a 13.2% unemployment rate. In the United States, approximately 828,000 women
+  were employed in the construction industry as of 2011.
+assert:
+  equals:
+  - 667,000 firms
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572755b7708984140094dc4f
+  date: ''
+  transform: paragraph Construction#19; first answerable question in sha256(id) order whose every human
+    answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

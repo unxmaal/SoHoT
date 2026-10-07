@@ -1,0 +1,32 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-5733a6ac4776f41900660f5b
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What profession was Nathan Alterman?'
+context: 'Tamara de Lempicka was a famous artist born in Warsaw. She was born Maria Górska in Warsaw to
+  wealthy parents and in 1916 married a Polish lawyer Tadeusz Łempicki. Better than anyone else she represented
+  the Art Deco style in painting and art. Nathan Alterman, the Israeli poet, was born in Warsaw, as was
+  Moshe Vilenski, the Israeli composer, lyricist, and pianist, who studied music at the Warsaw Conservatory.
+  Warsaw was the beloved city of Isaac Bashevis Singer, which he described in many of his novels: Warsaw
+  has just now been destroyed. No one will ever see the Warsaw I knew. Let me just write about it. Let
+  this Warsaw not disappear forever, he commented.'
+assert:
+  equals:
+  - poet
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5733a6ac4776f41900660f5b
+  date: ''
+  transform: paragraph Warsaw#48; first answerable question in sha256(id) order whose every human answer
+    is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

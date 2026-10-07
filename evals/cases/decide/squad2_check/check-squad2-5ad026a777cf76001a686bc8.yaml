@@ -1,0 +1,55 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5ad026a777cf76001a686bc8
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: Throughout the 1980s and 1990s, demand for a Scottish Parliament grew, in part because the government
+  of the United Kingdom was controlled by the Conservative Party, while Scotland itself elected relatively
+  few Conservative MPs. In the aftermath of the 1979 referendum defeat, the Campaign for a Scottish Assembly
+  was initiated as a pressure group, leading to the 1989 Scottish Constitutional Convention with various
+  organisations such as Scottish churches, political parties and representatives of industry taking part.
+  Publishing its blueprint for devolution in 1995, the Convention provided much of the basis for the structure
+  of the Parliament.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Demand for a Scottish Parliament
+        declined in what year?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What provided much of the
+        basis for the structure of the Parliament in 1995?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: In the range between 1980
+        and 1990, what did demand for grow?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: When was the Scottish Constitutional
+        Convention held?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Whose control of the UK''s
+        government helped fuel a desire for a Scottish Parliament?'
+assert:
+  answers:
+    q1: false
+    q2: true
+    q3: true
+    q4: true
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5ad026a777cf76001a686bc8, squad2-572fae4b04bcaa1900d76be2, squad2-572fae4b04bcaa1900d76bdf,
+    squad2-572fae4b04bcaa1900d76be1, squad2-572fae4b04bcaa1900d76be0
+  date: ''
+  transform: paragraph Scottish_Parliament#4; first 5 questions of a paragraph in sha256(id) order, kept
+    only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

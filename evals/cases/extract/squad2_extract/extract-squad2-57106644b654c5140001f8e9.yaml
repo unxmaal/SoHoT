@@ -1,0 +1,30 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-57106644b654c5140001f8e9
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: Jean De Rely''s illustrated French-language scriptures were first published in what city?'
+context: The availability of the Bible in vernacular languages was important to the spread of the Protestant
+  movement and development of the Reformed church in France. The country had a long history of struggles
+  with the papacy by the time the Protestant Reformation finally arrived. Around 1294, a French version
+  of the Scriptures was prepared by the Roman Catholic priest, Guyard de Moulin. A two-volume illustrated
+  folio paraphrase version based on his manuscript, by Jean de Rély, was printed in Paris in 1487.
+assert:
+  equals:
+  - Paris
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-57106644b654c5140001f8e9
+  date: ''
+  transform: paragraph Huguenot#2; first answerable question in sha256(id) order whose every human answer
+    is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

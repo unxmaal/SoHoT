@@ -1,0 +1,55 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5730a314069b5314008321ef
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: 'According to geographic scholars under colonizing empires, the world could be split into climatic
+  zones. These scholars believed that Northern Europe and the Mid-Atlantic temperate climate produced
+  a hard-working, moral, and upstanding human being. Alternatively, tropical climates yielded lazy attitudes,
+  sexual promiscuity, exotic culture, and moral degeneracy. The people of these climates were believed
+  to be in need of guidance and intervention from the European empire to aid in the governing of a more
+  evolved social structure; they were seen as incapable of such a feat. Similarly, orientalism is a view
+  of a people based on their geographical location. '
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who did the geographic scholars
+        work for?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What did the the Europeans
+        not think the peoples in the tropics were in need of?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What was a similar view about
+        the Asian continent called?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who did the geographic scholars
+        not work for?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who thought the world could
+        be split into climatic zones?'
+assert:
+  answers:
+    q1: true
+    q2: false
+    q3: true
+    q4: false
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5730a314069b5314008321ef, squad2-5ad0312677cf76001a686dca, squad2-5730a314069b5314008321ee,
+    squad2-5ad0312677cf76001a686dcc, squad2-5730a314069b5314008321eb
+  date: ''
+  transform: paragraph Imperialism#21; first 5 questions of a paragraph in sha256(id) order, kept only
+    when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

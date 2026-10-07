@@ -1,0 +1,57 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-572fbb04a23a5019007fc8f8
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: As a member of the Scottish Parliamentary Corporate Body, the Presiding Officer is responsible
+  for ensuring that the Parliament functions effectively and has the staff, property and resources it
+  requires to operate. Convening the Parliamentary Bureau, which allocates time and sets the work agenda
+  in the chamber, is another of the roles of the Presiding Officer. Under the Standing Orders of the Parliament
+  the Bureau consists of the Presiding Officer and one representative from each political parties with
+  five or more seats in the Parliament. Amongst the duties of the Bureau are to agree the timetable of
+  business in the chamber, establish the number, remit and membership of parliamentary committees and
+  regulate the passage of legislation (bills) through the Parliament. The Presiding Officer also represents
+  the Scottish Parliament at home and abroad in an official capacity.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who sets the work agenda and
+        allocates time in the chamber?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How many seats must a political
+        party have to be represented on the Parliamentary Bureau?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Which group sets the time
+        agenda?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Which officer represents the
+        Scottish Police Force at home and abroad?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who disagrees with the timetable
+        of business in the chamber?'
+assert:
+  answers:
+    q1: true
+    q2: true
+    q3: false
+    q4: false
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572fbb04a23a5019007fc8f8, squad2-572fbb04a23a5019007fc8f9, squad2-5ad02bef77cf76001a686ca2,
+    squad2-5ad02bef77cf76001a686ca5, squad2-5ad02bef77cf76001a686ca4
+  date: ''
+  transform: paragraph Scottish_Parliament#9; first 5 questions of a paragraph in sha256(id) order, kept
+    only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

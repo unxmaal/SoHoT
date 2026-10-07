@@ -1,0 +1,36 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-57274e0d708984140094dbe8
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What kind of contract is given when the contractor is given a performance specification and
+  must undertake the project from design to construction, while adhering to the performance specifications?'
+context: The modern trend in design is toward integration of previously separated specialties, especially
+  among large firms. In the past, architects, interior designers, engineers, developers, construction
+  managers, and general contractors were more likely to be entirely separate companies, even in the larger
+  firms. Presently, a firm that is nominally an "architecture" or "construction management" firm may have
+  experts from all related fields as employees, or to have an associated company that provides each necessary
+  skill. Thus, each such firm may offer itself as "one-stop shopping" for a construction project, from
+  beginning to end. This is designated as a "design build" contract where the contractor is given a performance
+  specification and must undertake the project from design to construction, while adhering to the performance
+  specifications.
+assert:
+  equals:
+  - '"design build" contract'
+  - design build
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-57274e0d708984140094dbe8
+  date: ''
+  transform: paragraph Construction#9; first answerable question in sha256(id) order whose every human
+    answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

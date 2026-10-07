@@ -1,0 +1,56 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-57283c464b864d19001647ca
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: The University of Chicago (UChicago, Chicago, or U of C) is a private research university in
+  Chicago. The university, established in 1890, consists of The College, various graduate programs, interdisciplinary
+  committees organized into four academic research divisions and seven professional schools. Beyond the
+  arts and sciences, Chicago is also well known for its professional schools, which include the Pritzker
+  School of Medicine, the University of Chicago Booth School of Business, the Law School, the School of
+  Social Service Administration, the Harris School of Public Policy Studies, the Graham School of Continuing
+  Liberal and Professional Studies and the Divinity School. The university currently enrolls approximately
+  5,000 students in the College and around 15,000 students overall.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How many professional schools
+        does the University of Chicago have?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How many students does the
+        University of Chicago have enlisted?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Nearly 7,000 students are
+        enrolled where?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What types of other schools
+        is the city of Harris well known for?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: When was the University of
+        Chicago established?'
+assert:
+  answers:
+    q1: true
+    q2: true
+    q3: false
+    q4: false
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-57283c464b864d19001647ca, squad2-57283c464b864d19001647cc, squad2-5acf774877cf76001a684e97,
+    squad2-5acf774877cf76001a684e9a, squad2-57283c464b864d19001647c9
+  date: ''
+  transform: paragraph University_of_Chicago#0; first 5 questions of a paragraph in sha256(id) order,
+    kept only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

@@ -1,0 +1,55 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-572750e8dd62a815002e9af3
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: The project must adhere to zoning and building code requirements. Constructing a project that
+  fails to adhere to codes does not benefit the owner. Some legal requirements come from malum in se considerations,
+  or the desire to prevent things that are indisputably bad – bridge collapses or explosions. Other legal
+  requirements come from malum prohibitum considerations, or things that are a matter of custom or expectation,
+  such as isolating businesses to a business district and residences to a residential district. An attorney
+  may seek changes or exemptions in the law that governs the land where the building will be built, either
+  by arguing that a rule is inapplicable (the bridge design will not cause a collapse), or that the custom
+  is no longer needed (acceptance of live-work spaces has grown in the community).
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What are malum prohibitum
+        considerations?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who doesn''t benefit when
+        a project doesn''t follow a residential district?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is malum in se considerations?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who may seek changes or exemptions
+        in the law that governs the land where the building will be built?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What must a project adhere
+        to?'
+assert:
+  answers:
+    q1: true
+    q2: false
+    q3: true
+    q4: true
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572750e8dd62a815002e9af3, squad2-5a25e0a9ef59cd001a623d01, squad2-572750e8dd62a815002e9af2,
+    squad2-572750e8dd62a815002e9af4, squad2-572750e8dd62a815002e9af0
+  date: ''
+  transform: paragraph Construction#13; first 5 questions of a paragraph in sha256(id) order, kept only
+    when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

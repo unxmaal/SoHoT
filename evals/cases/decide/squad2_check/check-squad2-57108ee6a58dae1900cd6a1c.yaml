@@ -1,0 +1,56 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-57108ee6a58dae1900cd6a1c
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: 'In this last connection, the name could suggest the derogatory inference of superstitious worship;
+  popular fancy held that Huguon, the gate of King Hugo, was haunted by the ghost of le roi Huguet (regarded
+  by Roman Catholics as an infamous scoundrel) and other spirits, who instead of being in Purgatory came
+  back to harm the living at night. It was in this place in Tours that the prétendus réformés ("these
+  supposedly ''reformed''") habitually gathered at night, both for political purposes, and for prayer
+  and singing psalms. Such explanations have been traced to the contemporary, Reguier de la Plancha (d.
+  1560), who in De l''Estat de France offered the following account as to the origin of the name, as cited
+  by The Cape Monthly:'
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who allegedly haunted the
+        gate?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: In what year was Reguier de
+        la Plancha born?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Where was the Gate of King
+        Hugo?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: In what year was The Cape
+        Monthly first published?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: In what year did le roi Huguet
+        die?'
+assert:
+  answers:
+    q1: true
+    q2: false
+    q3: true
+    q4: false
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-57108ee6a58dae1900cd6a1c, squad2-5ad24319d7d075001a4289cf, squad2-57108ee6a58dae1900cd6a1a,
+    squad2-5ad24319d7d075001a4289d0, squad2-5ad24319d7d075001a4289ce
+  date: ''
+  transform: paragraph Huguenot#14; first 5 questions of a paragraph in sha256(id) order, kept only when
+    they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

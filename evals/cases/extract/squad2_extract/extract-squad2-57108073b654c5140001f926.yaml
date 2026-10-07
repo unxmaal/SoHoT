@@ -1,0 +1,35 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-57108073b654c5140001f926
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: Where did these uprisings take place?'
+context: By 1620 the Huguenots were on the defensive, and the government increasingly applied pressure.
+  A series of three small civil wars known as the Huguenot rebellions broke out, mainly in southwestern
+  France, between 1621 and 1629. revolted against royal authority. The uprising occurred a decade following
+  the death of Henry IV, a Huguenot before converting to Catholicism, who had protected Protestants through
+  the Edict of Nantes. His successor Louis XIII, under the regency of his Italian Catholic mother Marie
+  de' Medici, became more intolerant of Protestantism. The Huguenots respond by establishing independent
+  political and military structures, establishing diplomatic contacts with foreign powers, and openly
+  revolting against central power. The rebellions were implacably suppressed by the French Crown.[citation
+  needed]
+assert:
+  equals:
+  - southwestern France
+  - mainly in southwestern France
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-57108073b654c5140001f926
+  date: ''
+  transform: paragraph Huguenot#10; first answerable question in sha256(id) order whose every human answer
+    is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

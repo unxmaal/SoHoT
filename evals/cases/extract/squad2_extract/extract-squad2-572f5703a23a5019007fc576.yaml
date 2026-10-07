@@ -1,0 +1,33 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-572f5703a23a5019007fc576
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the natural dam that the Rhine flows through?'
+context: 'Near Tamins-Reichenau the Anterior Rhine and the Posterior Rhine join and form the Rhine. The
+  river makes a distinctive turn to the north near Chur. This section is nearly 86 km long, and descends
+  from a height of 599 m to 396 m. It flows through a wide glacial alpine valley known as the Rhine Valley
+  (German: Rheintal). Near Sargans a natural dam, only a few metres high, prevents it from flowing into
+  the open Seeztal valley and then through Lake Walen and Lake Zurich into the river Aare. The Alpine
+  Rhine begins in the most western part of the Swiss canton of Graubünden, and later forms the border
+  between Switzerland to the West and Liechtenstein and later Austria to the East.'
+assert:
+  equals:
+  - Sargans
+  - Near Sargans
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572f5703a23a5019007fc576
+  date: ''
+  transform: paragraph Rhine#3; first answerable question in sha256(id) order whose every human answer
+    is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

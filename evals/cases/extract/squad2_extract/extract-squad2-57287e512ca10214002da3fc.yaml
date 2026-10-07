@@ -1,0 +1,35 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-57287e512ca10214002da3fc
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What was Tugh''s Chinese-style name?'
+context: Since its invention in 1269, the 'Phags-pa script, a unified script for spelling Mongolian, Tibetan,
+  and Chinese languages, was preserved in the court until the end of the dynasty. Most of the Emperors
+  could not master written Chinese, but they could generally converse well in the language. The Mongol
+  custom of long standing quda/marriage alliance with Mongol clans, the Onggirat, and the Ikeres, kept
+  the imperial blood purely Mongol until the reign of Tugh Temur, whose mother was a Tangut concubine.
+  The Mongol Emperors had built large palaces and pavilions, but some still continued to live as nomads
+  at times. Nevertheless, a few other Yuan emperors actively sponsored cultural activities; an example
+  is Tugh Temur (Emperor Wenzong), who wrote poetry, painted, read Chinese classical texts, and ordered
+  the compilation of books.
+assert:
+  equals:
+  - Emperor Wenzong
+  - Wenzong
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-57287e512ca10214002da3fc
+  date: ''
+  transform: paragraph Yuan_dynasty#29; first answerable question in sha256(id) order whose every human
+    answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

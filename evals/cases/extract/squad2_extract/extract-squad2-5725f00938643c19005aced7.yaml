@@ -1,0 +1,34 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-5725f00938643c19005aced7
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: Who is Kearney Boulevard named after?'
+context: The neighborhood includes Kearney Boulevard, named after early 20th century entrepreneur and
+  millionaire M. Theo Kearney, which extends from Fresno Street in Southwest Fresno about 20 mi (32 km)
+  west to Kerman, California. A small, two-lane rural road for most of its length, Kearney Boulevard is
+  lined with tall palm trees. The roughly half-mile stretch of Kearney Boulevard between Fresno Street
+  and Thorne Ave was at one time the preferred neighborhood for Fresno's elite African-American families.
+  Another section, Brookhaven, on the southern edge of the West Side south of Jensen and west of Elm,
+  was given the name by the Fresno City Council in an effort to revitalize the neighborhood's image. The
+  isolated subdivision was for years known as the "Dogg Pound" in reference to a local gang, and as of
+  late 2008 was still known for high levels of violent crime.
+assert:
+  equals:
+  - M. Theo Kearney
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5725f00938643c19005aced7
+  date: ''
+  transform: paragraph Fresno,_California#15; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

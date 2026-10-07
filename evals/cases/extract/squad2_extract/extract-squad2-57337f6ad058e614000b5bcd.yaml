@@ -1,0 +1,35 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-57337f6ad058e614000b5bcd
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: When did the Warsaw area enlargement take place?'
+context: 'In 1939, c. 1,300,000 people lived in Warsaw, but in 1945 – only 420,000. During the first years
+  after the war, the population growth was c. 6%, so shortly the city started to suffer from the lack
+  of flats and of areas for new houses. The first remedial measure was the Warsaw area enlargement (1951)
+  – but the city authorities were still forced to introduce residency registration limitations: only the
+  spouses and children of the permanent residents as well as some persons of public importance (like renowned
+  specialists) were allowed to get the registration, hence halving the population growth in the following
+  years. It also bolstered some kind of conviction among Poles that Varsovians thought of themselves as
+  better only because they lived in the capital. Unfortunately this belief still lives on in Poland (although
+  not as much as it used to be) – even though since 1990 there are no limitations to residency registration
+  anymore.'
+assert:
+  equals:
+  - '1951'
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-57337f6ad058e614000b5bcd
+  date: ''
+  transform: paragraph Warsaw#26; first answerable question in sha256(id) order whose every human answer
+    is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

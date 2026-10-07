@@ -1,0 +1,54 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5728284e3acd2414000df5ce
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: In cases where the criminalized behavior is pure speech, civil disobedience can consist simply
+  of engaging in the forbidden speech. An example would be WBAI's broadcasting the track "Filthy Words"
+  from a George Carlin comedy album, which eventually led to the 1978 Supreme Court case of FCC v. Pacifica
+  Foundation. Threatening government officials is another classic way of expressing defiance toward the
+  government and unwillingness to stand for its policies. For example, Joseph Haas was arrested for allegedly
+  sending an email to the Lebanon, New Hampshire city councilors stating, "Wise up or die."
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What did Joseph Haas say in
+        his email?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Civil disobedience can occur
+        when people speak about a certain topic that is deemed as?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: WBAI''s broadcasting Some
+        of George Carlin''s comedy eventually led to what?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What court case was eventually
+        the result of Joseph Haas sending and e-mail to the New Hampshire city council?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How can you protest against
+        the government in an individual way?'
+assert:
+  answers:
+    q1: true
+    q2: true
+    q3: true
+    q4: false
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5728284e3acd2414000df5ce, squad2-5728284e3acd2414000df5cf, squad2-5728284e3acd2414000df5d0,
+    squad2-5a666b43846392001a1e1c12, squad2-5728e5f43acd2414000e0173
+  date: ''
+  transform: paragraph Civil_disobedience#13; first 5 questions of a paragraph in sha256(id) order, kept
+    only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

@@ -1,0 +1,57 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-57281ab63acd2414000df495
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: Jacksonville, like most large cities in the United States, suffered from negative effects of
+  rapid urban sprawl after World War II. The construction of highways led residents to move to newer housing
+  in the suburbs. After World War II, the government of the city of Jacksonville began to increase spending
+  to fund new public building projects in the boom that occurred after the war. Mayor W. Haydon Burns'
+  Jacksonville Story resulted in the construction of a new city hall, civic auditorium, public library
+  and other projects that created a dynamic sense of civic pride. However, the development of suburbs
+  and a subsequent wave of middle class "white flight" left Jacksonville with a much poorer population
+  than before. The city's most populous ethnic group, non-Hispanic white, declined from 75.8% in 1970
+  to 55.1% by 2010.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What term referred to middle
+        class citizens leaving the suburbs?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What began to decline after
+        World War I?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What was it called when Jacksonville''s
+        white population moved to the city?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What drove residents to quieter
+        suburban housing?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Construction of what led residents
+        to move from the suburbs?'
+assert:
+  answers:
+    q1: true
+    q2: false
+    q3: false
+    q4: true
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-57281ab63acd2414000df495, squad2-5a1c883cb4fb5d0018714673, squad2-5a1c883cb4fb5d0018714674,
+    squad2-57281ab63acd2414000df493, squad2-5a1c883cb4fb5d0018714671
+  date: ''
+  transform: paragraph Jacksonville,_Florida#10; first 5 questions of a paragraph in sha256(id) order,
+    kept only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

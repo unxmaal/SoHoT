@@ -1,0 +1,54 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-572fda6fb2c2fd140056850b
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: The total number of seats in the Parliament are allocated to parties proportionally to the number
+  of votes received in the second vote of the ballot using the d'Hondt method. For example, to determine
+  who is awarded the first list seat, the number of list votes cast for each party is divided by one plus
+  the number of seats the party won in the region (at this point just constituency seats). The party with
+  the highest quotient is awarded the seat, which is then added to its constituency seats in allocating
+  the second seat. This is repeated iteratively until all available list seats are allocated.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How are the total numbers
+        of seats allocated to parties?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is subtracted to its
+        constituency seats?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What method is used for tallying
+        votes in the second vote of the ballot?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: The party with the lowest
+        quotient is awarded what?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: The party awarded a seat is
+        the one with the highest what?'
+assert:
+  answers:
+    q1: true
+    q2: false
+    q3: true
+    q4: false
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572fda6fb2c2fd140056850b, squad2-5ad043a977cf76001a686f37, squad2-572fda6fb2c2fd140056850c,
+    squad2-5ad043a977cf76001a686f36, squad2-572fda6fb2c2fd140056850d
+  date: ''
+  transform: paragraph Scottish_Parliament#34; first 5 questions of a paragraph in sha256(id) order, kept
+    only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

@@ -1,0 +1,60 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5ad266f8d7d075001a42920a
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: Some Huguenots fought in the Low Countries alongside the Dutch against Spain during the first
+  years of the Dutch Revolt (1568–1609). The Dutch Republic rapidly became a destination for Huguenot
+  exiles. Early ties were already visible in the "Apologie" of William the Silent, condemning the Spanish
+  Inquisition, which was written by his court minister, the Huguenot Pierre L'Oyseleur, lord of Villiers.
+  Louise de Coligny, daughter of the murdered Huguenot leader Gaspard de Coligny, married William the
+  Silent, leader of the Dutch (Calvinist) revolt against Spanish (Catholic) rule. As both spoke French
+  in daily life, their court church in the Prinsenhof in Delft held services in French. The practice has
+  continued to the present day. The Prinsenhof is one of the 14 active Walloon churches of the Dutch Reformed
+  Church. The ties between Huguenots and the Dutch Republic's military and political leadership, the House
+  of Orange-Nassau, which existed since the early days of the Dutch Revolt, helped support the many early
+  settlements of Huguenots in the Dutch Republic's colonies. They settled at the Cape of Good Hope in
+  South Africa and New Netherland in North America.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who was William the Silent''s
+        father?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: In what year did Huguenots
+        begin to settle in South Africa?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who did the Dutch fight in
+        the Dutch Revolt?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: In what colony was the town
+        of Delft?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What was the Dutch leader''s
+        religious affiliation?'
+assert:
+  answers:
+    q1: false
+    q2: false
+    q3: true
+    q4: false
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5ad266f8d7d075001a42920a, squad2-5ad266f8d7d075001a429209, squad2-5710ed7bb654c5140001fa2c,
+    squad2-5ad266f8d7d075001a429208, squad2-5710ed7bb654c5140001fa2f
+  date: ''
+  transform: paragraph Huguenot#29; first 5 questions of a paragraph in sha256(id) order, kept only when
+    they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

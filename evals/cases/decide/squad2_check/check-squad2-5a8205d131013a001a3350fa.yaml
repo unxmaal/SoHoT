@@ -1,0 +1,54 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5a8205d131013a001a3350fa
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: Charles W. Eliot, president 1869–1909, eliminated the favored position of Christianity from the
+  curriculum while opening it to student self-direction. While Eliot was the most crucial figure in the
+  secularization of American higher education, he was motivated not by a desire to secularize education,
+  but by Transcendentalist Unitarian convictions. Derived from William Ellery Channing and Ralph Waldo
+  Emerson, these convictions were focused on the dignity and worth of human nature, the right and ability
+  of each person to perceive truth, and the indwelling God in each person.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What ideas motivated Channing
+        to remove Christianity as dominant in college curriculum?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What conviction motivated
+        Eliot to move towards secularization?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What did Christianity in US
+        curriculum focus on before it was changed?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: When Channing eliminated Christianity
+        from its former position in the curriculum what was allowed instead?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: From whom were the movement
+        that Eliot followed derived?'
+assert:
+  answers:
+    q1: false
+    q2: true
+    q3: false
+    q4: false
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5a8205d131013a001a3350fa, squad2-5727c3b02ca10214002d95bb, squad2-5a8205d131013a001a3350fb,
+    squad2-5a8205d131013a001a3350f8, squad2-5727c3b02ca10214002d95bc
+  date: ''
+  transform: paragraph Harvard_University#7; first 5 questions of a paragraph in sha256(id) order, kept
+    only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

@@ -1,0 +1,57 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5acf9d3477cf76001a685514
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: In the fall quarter of 2014, the University of Chicago enrolled 5,792 students in the College,
+  3,468 students in its four graduate divisions, 5,984 students in its professional schools, and 15,244
+  students overall. In the 2012 Spring Quarter, international students comprised almost 19% of the overall
+  study body, over 26% of students were domestic ethnic minorities, and about 44% of enrolled students
+  were female. Admissions to the University of Chicago is highly selective. The middle 50% band of SAT
+  scores for the undergraduate class of 2015, excluding the writing section, was 1420–1530, the average
+  MCAT score for entering students in the Pritzker School of Medicine in 2011 was 36, and the median LSAT
+  score for entering students in the Law School in 2011 was 171. In 2015, the College of the University
+  of Chicago had an acceptance rate of 7.8% for the Class of 2019, the lowest in the college's history.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How many students did the
+        University enroll in its five graduate divisions in 2014?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: In the fall quarter of 2014,
+        how many students signed up for the university''s professional schools?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: In the fall quarter of 2014,
+        how many students signed up for the university''s four graduate divisions?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: In the fall quarter of 2014,
+        how many students signed up for the college?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What year did the College
+        have the highest acceptance rate in its history?'
+assert:
+  answers:
+    q1: false
+    q2: true
+    q3: true
+    q4: true
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5acf9d3477cf76001a685514, squad2-572863363acd2414000df987, squad2-572863363acd2414000df986,
+    squad2-572863363acd2414000df985, squad2-5acf9d3477cf76001a685516
+  date: ''
+  transform: paragraph University_of_Chicago#21; first 5 questions of a paragraph in sha256(id) order,
+    kept only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

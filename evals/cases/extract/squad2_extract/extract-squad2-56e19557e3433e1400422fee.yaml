@@ -1,0 +1,30 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-56e19557e3433e1400422fee
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What kind of graph is an example of an input used in a decision problem?'
+context: An example of a decision problem is the following. The input is an arbitrary graph. The problem
+  consists in deciding whether the given graph is connected, or not. The formal language associated with
+  this decision problem is then the set of all connected graphs—of course, to obtain a precise definition
+  of this language, one has to decide how graphs are encoded as binary strings.
+assert:
+  equals:
+  - arbitrary graph
+  - arbitrary
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-56e19557e3433e1400422fee
+  date: ''
+  transform: paragraph Computational_complexity_theory#7; first answerable question in sha256(id) order
+    whose every human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

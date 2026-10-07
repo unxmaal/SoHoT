@@ -1,0 +1,35 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-5705fb7f52bb891400689750
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the main gap to continued urbanization?'
+context: Traveling south on Interstate 5, the main gap to continued urbanization is Camp Pendleton. The
+  cities and communities along Interstate 15 and Interstate 215 are so inter-related that Temecula and
+  Murrieta have as much connection with the San Diego metropolitan area as they do with the Inland Empire.
+  To the east, the United States Census Bureau considers the San Bernardino and Riverside County areas,
+  Riverside-San Bernardino area as a separate metropolitan area from Los Angeles County. While many commute
+  to L.A. and Orange Counties, there are some differences in development, as most of San Bernardino and
+  Riverside Counties (the non-desert portions) were developed in the 1980s and 1990s. Newly developed
+  exurbs formed in the Antelope Valley north of Los Angeles, the Victor Valley and the Coachella Valley
+  with the Imperial Valley. Also, population growth was high in the Bakersfield-Kern County, Santa Maria
+  and San Luis Obispo areas.
+assert:
+  equals:
+  - Camp Pendleton
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5705fb7f52bb891400689750
+  date: ''
+  transform: paragraph Southern_California#15; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

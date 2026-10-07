@@ -1,0 +1,53 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-572659ea5951b619008f7051
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: There are eight rows of combs that run from near the mouth to the opposite end, and are spaced
+  evenly round the body. The "combs" beat in a metachronal rhythm rather like that of a Mexican wave.
+  From each balancer in the statocyst a ciliary groove runs out under the dome and then splits to connect
+  with two adjacent comb rows, and in some species runs all the way along the comb rows. This forms a
+  mechanical system for transmitting the beat rhythm from the combs to the balancers, via water disturbances
+  created by the cilia.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How many rows of combs are
+        there?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What are the statocysts alligned
+        in when being evenly spaced?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What kind of rhythm do the
+        statocysts have?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How are the combs spaced?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What does the statocyst split
+        to connect with?'
+assert:
+  answers:
+    q1: true
+    q2: false
+    q3: false
+    q4: true
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572659ea5951b619008f7051, squad2-5a838553e60761001a2eb75c, squad2-5a838553e60761001a2eb75a,
+    squad2-572659ea5951b619008f7053, squad2-5a838553e60761001a2eb75d
+  date: ''
+  transform: paragraph Ctenophora#15; first 5 questions of a paragraph in sha256(id) order, kept only
+    when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

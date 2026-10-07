@@ -1,0 +1,35 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-5711623e50c2381900b54aba
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is restrained with a lever in the top of a boiler?'
+context: Steam engines frequently possess two independent mechanisms for ensuring that the pressure in
+  the boiler does not go too high; one may be adjusted by the user, the second is typically designed as
+  an ultimate fail-safe. Such safety valves traditionally used a simple lever to restrain a plug valve
+  in the top of a boiler. One end of the lever carried a weight or spring that restrained the valve against
+  steam pressure. Early valves could be adjusted by engine drivers, leading to many accidents when a driver
+  fastened the valve down to allow greater steam pressure and more power from the engine. The more recent
+  type of safety valve uses an adjustable spring-loaded valve, which is locked such that operators may
+  not tamper with its adjustment unless a seal illegally is broken. This arrangement is considerably safer.[citation
+  needed]
+assert:
+  equals:
+  - plug valve
+  - a plug valve
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5711623e50c2381900b54aba
+  date: ''
+  transform: paragraph Steam_engine#38; first answerable question in sha256(id) order whose every human
+    answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []
