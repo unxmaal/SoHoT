@@ -34,7 +34,7 @@
   }
  ],
  "export_version": 1,
- "generated_at": "2026-10-07T15:20:53Z",
+ "generated_at": "2026-10-07T15:27:44Z",
  "lanes": [
   {
    "adopted": true,
@@ -387,7 +387,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 0.16,
+   "age_days": 0.17,
    "comparison": [
     {
      "candidate": "acestep/acestep-v15-turbo",
@@ -616,7 +616,7 @@
   {
    "adopted": true,
    "adopted_how": "measured",
-   "age_days": 0.54,
+   "age_days": 0.55,
    "comparison": [
     {
      "candidate": "llamacpp:Ornith-1.5-35B-Q4_K_M",
@@ -792,29 +792,70 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": null,
-   "comparison": [],
+   "age_days": 0.0,
+   "comparison": [
+    {
+     "candidate": "hf-pii/privacy-filter",
+     "first_s": 4.058,
+     "median_s": 4.181,
+     "metrics": {
+      "pii_f1": 0.9771,
+      "pii_precision": 0.9552,
+      "pii_recall": 1.0
+     },
+     "not_run": "",
+     "pass_rate": 1.0,
+     "passed": 16,
+     "peak_gb": 3.95,
+     "reference": false,
+     "total": 16,
+     "ttft_median_s": null,
+     "ttft_p95_s": null
+    },
+    {
+     "candidate": "pii-regex/patterns",
+     "first_s": 0.03,
+     "median_s": 0.027,
+     "metrics": {
+      "pii_f1": 0.7451,
+      "pii_precision": 1.0,
+      "pii_recall": 0.5938
+     },
+     "not_run": "",
+     "pass_rate": 0.688,
+     "passed": 11,
+     "peak_gb": 0.01,
+     "reference": false,
+     "total": 16,
+     "ttft_median_s": null,
+     "ttft_p95_s": null
+    }
+   ],
    "lane": "pii",
-   "last_run_at": "",
-   "measured_at": "",
-   "median_s": null,
-   "metrics": {},
+   "last_run_at": "2026-10-07T15:27:44Z",
+   "measured_at": "2026-10-07T15:27:44Z",
+   "median_s": 0.027,
+   "metrics": {
+    "pii_f1": 0.7451,
+    "pii_precision": 1.0,
+    "pii_recall": 0.5938
+   },
    "not_run": "",
    "parked": "",
    "parked_until": "",
-   "pass_rate": null,
+   "pass_rate": 0.688,
    "real_use": null,
    "serves": "pii-regex",
    "stale": false,
    "ttft_median_s": null,
    "ttft_p95_s": null,
-   "unverified": true,
+   "unverified": false,
    "wanted": true
   },
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 1.61,
+   "age_days": 1.62,
    "comparison": [
     {
      "candidate": "claude-code:claude-opus-5-5",
@@ -1011,7 +1052,7 @@
   "first_seen": "2026-10-05T19:28:52Z",
   "hw_model": "Mac17,15",
   "label": "Mac Studio M5 Ultra 96 GB",
-  "last_seen": "2026-10-07T15:20:53Z",
+  "last_seen": "2026-10-07T15:27:44Z",
   "memory_gb": 96.0,
   "os": "macOS 27.0.1",
   "runtimes": [
