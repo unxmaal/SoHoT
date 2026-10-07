@@ -51,6 +51,8 @@ def cmd_discover(a) -> int:
         return _report_feeds(a)
     if getattr(a, "benchmarks", False):
         return _report_benchmarks(a)
+    if getattr(a, "papers", False):
+        return _report_papers(a)
     if a.external:
         if not a.lane:
             return err("--external needs a --lane: the registries are asked "
@@ -520,7 +522,7 @@ def _report_inspect(a) -> int:
                     continue
                 ms.record(store, ms.Seen(
                     name=model_id, source="inspect", kind="weights",
-                    registry=ms.HUGGINGFACE,
+                    registry=ms.HUGGINGFACE, category=ms.MODEL,
                     url=f"https://huggingface.co/{model_id}",
                     resolved=model_id, lane=fit.lanes.get(model_id, ""),
                     why=f"named by {repo}"))
@@ -732,13 +734,32 @@ def _report_sources(a) -> int:
 #: Every source family, in the order a sweep reads them. Each entry is the
 #: attribute cmd_discover dispatches on, so adding a source family here is the
 #: only edit needed to put it in the sweep.
-SOURCE_TIERS = ("feeds", "neighbors", "benchmarks")
+SOURCE_TIERS = ("feeds", "neighbors", "benchmarks", "papers")
 
 
 def _report_benchmarks(a) -> int:
     """The benchmark tier of a sweep: registries per lane, once per interval. #491."""
     from harness.commands import benchmarks as benchmarks_cmd
     return benchmarks_cmd.sweep_report(a)
+
+
+def _report_papers(a) -> int:
+    """The technique tier of a sweep: HuggingFace daily papers, each a technique. #576."""
+    from harness import papers
+    from harness import memory_store as ms
+    conn = ms.connect()
+    try:
+        found = papers.sweep(conn, force=bool(getattr(a, "force", False)))
+        row = ms.source_row(conn, papers.SOURCE) or {}
+    finally:
+        conn.close()
+    if row.get("last_status") == "failed":
+        err(f"{papers.SOURCE}: {row.get('last_error') or 'failed'}")
+        return 1
+    laned = sum(1 for s in found if s.lane)
+    print(f"  {len(found)} paper(s) read, {laned} with a lane"
+          if found else "  no day of papers was due")
+    return 0
 
 
 def _report_sweep(a) -> int:

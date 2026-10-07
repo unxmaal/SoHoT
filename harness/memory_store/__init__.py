@@ -18,9 +18,9 @@ import time  # noqa: F401
 
 from harness import paths, store  # noqa: F401
 
-from harness.memory_store.schema import (ADOPT, FETCH, GIB, GITHUB, HUGGINGFACE,
-    INSPECT, JUDGE, LADDER, MEASURE, REGISTRIES, SCHEMA_VERSION, SCREEN, TERMINAL,
-    TIERS, VERDICTS, WAYPOINTS, _DDL, _columns)  # noqa: F401
+from harness.memory_store.schema import (ADOPT, CATEGORIES, FETCH, GIB, GITHUB, HUGGINGFACE,
+    INSPECT, JUDGE, LADDER, MEASURE, MODEL, REGISTRIES, SCHEMA_VERSION, SCREEN, TERMINAL,
+    TECHNIQUE, TIERS, TOOL, VERDICTS, WAYPOINTS, _DDL, _columns)  # noqa: F401
 from harness.memory_store.machines import (machine_row, recorded_facts,
     remember_machine, this_machine)  # noqa: F401
 from harness.memory_store.cards import (CARD_COLUMNS, card_of, parents_of, set_card,
@@ -39,9 +39,9 @@ from harness.memory_store.revisit import (_version_tuple, dangling_receipts,
 from harness.memory_store.proposals import (REJECTIONS, Seen, by_registry, by_source,
     export, extraction, judgeable, judgeable_total, latest, link, parents, pending,
     precision, ranked, record, recurrence, reject, retire_unlisted, set_lane,
-    set_registry, set_size, settled, survivors, traverse)  # noqa: F401
+    set_registry, set_size, settled, survivors, techniques, traverse)  # noqa: F401
 from harness.memory_store.migrations.columns import (DEAD_COLUMNS, _add_card_facts,
-    _add_edge_scores, _add_first_token, _add_machine_versions, _add_reasons,
+    _add_category, _add_edge_scores, _add_first_token, _add_machine_versions, _add_reasons,
     _add_result_split, _add_retest, _add_served_context, _add_sighting_machine,
     _add_state, _drop_column, drop_dead_columns, split_result_artifacts)  # noqa: F401
 from harness.memory_store.migrations.prose import (_attribute_old_verdicts,
@@ -52,7 +52,7 @@ from harness.memory_store.migrations.prose import (_attribute_old_verdicts,
     reason_audit, size_from_card, size_from_prose, size_sources,
     strip_machine_from_fetch_details)  # noqa: F401
 from harness.memory_store.migrations.retractions import (_backfill_lanes,
-    _canonical_lanes, _relane_from_the_card, _relane_the_laneless_from_lineage,
+    _canonical_lanes, _fill_categories, _relane_from_the_card, _relane_the_laneless_from_lineage,
     _relane_the_laneless_from_the_card,
     _relane_the_settled_tasks, _reopen_architecture_gaps, _requeue_broken_matching,
     _requeue_diffusers_layout_gaps, _requeue_screens_of_missing_weights,

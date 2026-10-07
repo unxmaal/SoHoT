@@ -1221,6 +1221,25 @@ a model through the gateway to continue each case's source text from a
 prefix and records how much it reproduced verbatim. A miss is not proof the
 model never saw the text.
 
+### Technique discovery
+
+A lane can be beaten by a new method as well as by new weights: svg's
+`trace:` (draw a raster, then vectorize it) is one. Every proposal carries a
+`category`: `model` (a registry card or its weights), `tool` (a GitHub repo
+with no model task) or `technique` (a paper, or a repo whose description or
+topics say it implements one). Inspect sets it from the card or repo; schema
+56 fills stored rows from what the store already holds and leaves the rest
+unknown. `soh discover --papers` (and so `--sweep` and the loop) reads
+HuggingFace daily papers, one request per day not yet read, at most seven, and
+records each paper as a technique `arxiv:<id>` with its title, abstract and
+link, recorded in the `sources` table like the feeds. A paper is laned by the
+same prose routing as a model, title first and then title and abstract
+together; one that names no lane, or several, stays laneless. A technique is
+never queued for fetch, screen or measure: `soh discover --loop` lists them
+under `techniques wanted`, per lane, with title, link and sightings.
+Implementing a method is a job for a person or an agent, so the report decides
+nothing.
+
 ### Refusals that stop being true
 
 A refusal records the condition that would end it, as a predicate rather than

@@ -76,6 +76,9 @@ def _no_real_registry(monkeypatch):
     def refuse(url, params=None):
         raise RuntimeError(f"a test asked a real registry: {url}")
     monkeypatch.setattr(benchmarks, "_get_json", refuse)
+    # Nor the papers API: a recorded fixture is passed instead. #576.
+    from harness import papers
+    monkeypatch.setattr(papers, "_get_json", refuse)
 
 
 @pytest.fixture(autouse=True)

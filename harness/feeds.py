@@ -131,6 +131,11 @@ DEFAULT_SOURCES = [
     # card, and `video` had no source of any kind before this. Drift is
     # computable here: DIFFUSERS_PIN is in scripts/versions.sh, so
     # installed_version answers 0.40.0 against the feed's 0.40.0. #240.
+    # Not a feed: a JSON API read by harness/papers.py. Each paper is a TECHNIQUE
+    # proposal, never a model candidate. #576.
+    Source("hf-daily-papers", kind="papers",
+           url="https://huggingface.co/api/daily_papers", lane="all",
+           note="papers: new methods for a lane, not new weights"),
     Source("diffusers-releases", kind="releases",
            url="https://github.com/huggingface/diffusers/releases.atom",
            lane="video", reaches=("video", "image"),

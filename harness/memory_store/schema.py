@@ -4,7 +4,7 @@ from __future__ import annotations
 from harness import store
 
 
-SCHEMA_VERSION = 55
+SCHEMA_VERSION = 56
 
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
@@ -28,6 +28,13 @@ GITHUB, HUGGINGFACE = "github", "huggingface"
 
 
 REGISTRIES = (GITHUB, HUGGINGFACE)
+
+
+#: What a proposal IS, as opposed to how it was sighted (`kind`). '' is unknown. #576.
+MODEL, TOOL, TECHNIQUE = "model", "tool", "technique"
+
+
+CATEGORIES = (MODEL, TOOL, TECHNIQUE)
 
 
 #: WHICH TIER ANSWERED. Named here because these strings are a vocabulary
@@ -92,7 +99,9 @@ CREATE TABLE IF NOT EXISTS proposals (
     lane_source TEXT NOT NULL DEFAULT '',
     -- 'card' read from the registry; 'description' recovered from the
     -- 300-character description by the schema 32 backfill; '' never read.
-    card_read   TEXT NOT NULL DEFAULT ''
+    card_read   TEXT NOT NULL DEFAULT '',
+    -- One of CATEGORIES, or '' when nothing has said. #576.
+    category    TEXT NOT NULL DEFAULT ''
 );
 
 -- A card's base_model parents. The parent is rarely a proposal, so this is

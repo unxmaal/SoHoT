@@ -120,6 +120,12 @@ def _add_switch_outcome(conn) -> None:
             conn.execute(f"ALTER TABLE gateway_switches ADD COLUMN {col} {ddl}")
 
 
+def _add_category(conn) -> None:
+    """proposals.category, on an older store. #576."""
+    if "category" not in _columns(conn, "proposals"):
+        conn.execute("ALTER TABLE proposals ADD COLUMN category TEXT NOT NULL DEFAULT ''")
+
+
 def _add_reasons(conn) -> None:
     """verdicts.reason and the results' failure class, on an older store. #408."""
     for table, col in (("verdicts", "reason"), ("results", "failure_class"),

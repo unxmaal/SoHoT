@@ -779,7 +779,7 @@ def from_feeds(sources=None, reader=None, verify=True,
                     # _hf_exists. `kind` cannot say so -- the crowd tier writes
                     # kind='repo' for a GitHub repo -- and the tier that read
                     # this asked GitHub about all of them. Issue #167.
-                    registry=ms.HUGGINGFACE,
+                    registry=ms.HUGGINGFACE, category=ms.MODEL,
                     # `repo` is the linked id, or the id a prose name resolved
                     # to. Either way it is the verified thing, so keep it.
                     #

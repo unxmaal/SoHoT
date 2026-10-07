@@ -292,6 +292,35 @@ def _relane_the_laneless_from_lineage(conn) -> None:
                          "WHERE id = ?", (lane, source, row["id"]))
 
 
+def _fill_categories(conn) -> None:
+    """An unknown category from what the store already holds: a paper sighting, the registry,
+    the weights kind, a GitHub repo with no task. Anything else stays unknown. #576."""
+    import json
+
+    from harness import inspect as ins
+    from harness import papers
+    from harness.memory_store.schema import GITHUB, HUGGINGFACE, MODEL, TECHNIQUE, TOOL
+    rows = conn.execute(
+        "SELECT p.id, p.registry, p.kind, p.hf_task, p.description, p.card_tags, "
+        "EXISTS (SELECT 1 FROM sightings s WHERE s.proposal_id = p.id "
+        "AND s.source = ?) AS paper FROM proposals p WHERE p.category = ''",
+        (papers.SOURCE,)).fetchall()
+    for r in rows:
+        if r["paper"]:
+            got = TECHNIQUE
+        elif r["registry"] == HUGGINGFACE or r["kind"] == "weights":
+            got = MODEL
+        elif r["registry"] == GITHUB and not (r["hf_task"] or "").strip():
+            try:
+                tags = json.loads(r["card_tags"] or "[]")
+            except ValueError:
+                tags = []
+            got = TECHNIQUE if ins.names_a_paper(r["description"], tags) else TOOL
+        else:
+            continue
+        conn.execute("UPDATE proposals SET category = ? WHERE id = ?", (got, r["id"]))
+
+
 def _release_retrievers_marked_embeddings(conn) -> None:
     """Re-read `embedding` attachments from the stored card: an inference-server tag is not one. #563.
     Only attaches_to moves; no verdict is written."""
