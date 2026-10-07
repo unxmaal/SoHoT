@@ -48,7 +48,7 @@ launcher_for() {
 ALL=(gateway llamacpp audio)
 
 usage() {
-  echo "usage: $0 {start|stop|status} [${ALL[*]}]" >&2
+  echo "usage: $0 {start|stop|restart|status} [${ALL[*]}]" >&2
   exit 2
 }
 
@@ -279,6 +279,8 @@ targets=("$@")
 case "$verb" in
   start)  for s in "${targets[@]}"; do start_one "$s"; done ;;
   stop)   for s in "${targets[@]}"; do stop_one "$s"; done ;;
+  # The router reads its models dir at startup only, so a fetched GGUF needs one (#327).
+  restart) for s in "${targets[@]}"; do stop_one "$s"; start_one "$s"; done ;;
   status) status ;;
   *)      usage ;;
 esac

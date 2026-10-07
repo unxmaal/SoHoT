@@ -230,6 +230,7 @@ how it is asked whether it is alive, and how its tree is ended.
 ./scripts/services.sh start      # gateway, text, audio
 ./scripts/services.sh stop       # and the card is free
 ./scripts/services.sh status     # what is up, and what the card holds
+./scripts/services.sh restart llamacpp  # the router sees a newly fetched GGUF; a fetch does this itself
 ```
 
 The text server also gives the card back on its own after
