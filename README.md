@@ -1670,6 +1670,7 @@ either field above.
 make check     # shellcheck + bash -n + unit tests, no services needed
 make test      # unit tests only
 make smoke     # end-to-end, REQUIRES the services running
+make mutation  # nightly mutation testing of the core modules, minutes per module
 ```
 
 CI runs `make check` on an Apple Silicon runner for every push and pull

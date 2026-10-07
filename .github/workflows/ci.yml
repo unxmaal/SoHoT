@@ -288,8 +288,38 @@ jobs:
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
+  mutation:
+    # Nightly or on demand, never on a pull request, labelled or not (#492 F3).
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: macos-latest
+    timeout-minutes: 120
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - run: uv sync --python 3.12
+
+      - name: make mutation
+        # Fails on a new surviving mutant, or on a pinned one that is now killed and still listed.
+        run: make mutation
+
+      - name: Mutation summary
+        if: always()
+        run: |
+          {
+            echo "### Mutation testing"
+            echo
+            echo '```'
+            tail -n 60 .logs/mutation.log 2>/dev/null || echo 'no log'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
   report-nightly:
-    needs: [check-macos, check-linux, check-windows]
+    needs: [check-macos, check-linux, check-windows, mutation]
     if: failure() && github.event_name == 'schedule'
     runs-on: ubuntu-latest
     permissions:
@@ -299,7 +329,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          RESULTS: "macos=${{ needs.check-macos.result }} linux=${{ needs.check-linux.result }} windows=${{ needs.check-windows.result }}"
+          RESULTS: "macos=${{ needs.check-macos.result }} linux=${{ needs.check-linux.result }} windows=${{ needs.check-windows.result }} mutation=${{ needs.mutation.result }}"
         run: |
           title="Nightly CI is failing on main"
           body="$RESULTS at ${GITHUB_SHA::7}: $RUN"
