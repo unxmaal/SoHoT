@@ -155,10 +155,10 @@ def _state(conn, name: str) -> str:
 
 
 def _last_verdict(conn, name: str, tier: str):
+    # The verdict that holds the proposal's state (#409), not the newest row: a later waypoint must not hide a settle.
     return conn.execute(
-        "SELECT v.outcome, v.reason, v.detail FROM verdicts v JOIN proposals p "
-        "ON p.id = v.proposal_id WHERE p.name = ? AND v.tier = ? "
-        "ORDER BY v.id DESC LIMIT 1", (name, tier)).fetchone()
+        "SELECT v.outcome, v.reason, v.detail, p.state FROM proposals p JOIN verdicts v "
+        "ON v.id = p.state_verdict_id WHERE p.name = ? AND v.tier = ?", (name, tier)).fetchone()
 
 
 # --- scenario 1: a model server killed mid-screen ----------------------------
@@ -355,7 +355,7 @@ def _disk_fill(ctx: Context, m: DiskFill) -> tuple[bool, str]:
             f"reason={v['reason'] if v else '-'} outcome={v['outcome'] if v else '-'}; "
             f"downloads={downloads}; filler removed={not filler.exists()}")
     ok = (bool(first) and not first.get("ok") and v is not None
-          and v["reason"] not in ("", reasons.CANDIDATE)
+          and v["reason"] not in ("", reasons.CANDIDATE) and v["state"] not in ms.TERMINAL
           and downloads == 0 and not filler.exists())
     return ok, said
 
