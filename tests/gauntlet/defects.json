@@ -860,6 +860,11 @@
   "created": "2026-10-07T01:54:52Z"
  },
  {
+  "number": 528,
+  "title": "A disk below the fetch free-space floor settles the candidate as declined, permanently",
+  "created": "2026-10-07T02:38:16Z"
+ },
+ {
   "number": 529,
   "title": "main is red: the patch-target guard (#524) flags tests patching evals.run.load_cases that harness.holdout (#525) reads as evals.core.load_cases",
   "created": "2026-10-07T02:54:02Z"

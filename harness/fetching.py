@@ -313,7 +313,7 @@ def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=N
     THIS HARNESS: "no measured size" says the store could not answer a question
     about itself, and writing that down as declined settled 16 real candidates
     permanently, including the only upgrade the image lane had. Issue #211,
-    the same class as #206 a day earlier.
+    the same class as #206 a day earlier. Nor is a disk below the floor. #528.
     """
     done = []
     fetched = 0
@@ -396,8 +396,8 @@ def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=N
             continue
         p = plan(name, size, free=free)
         if not p.ok:
-            # Our own gap is not an answer about the candidate. #211, #408.
-            outcome = "queued" if p.reason == reasons.HARNESS else "declined"
+            # Our own gap, or a disk that will be freed, is not an answer about the candidate. #211, #408, #528.
+            outcome = "queued" if p.reason in (reasons.HARNESS, reasons.MACHINE) else "declined"
             ms.decide_or_skip(conn, row["name"], outcome, tier="fetch", detail=p.why,
                               reason=p.reason, until=p.until)
             done.append({"repo": name, "ok": False, "why": p.why})

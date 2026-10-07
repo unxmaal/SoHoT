@@ -155,3 +155,55 @@ def test_an_ordinary_model_is_not_refused_as_an_attachment(tmp_path):
         assert got and got[0]["ok"], got
     finally:
         conn.close()
+
+
+def test_a_disk_below_the_floor_requeues_rather_than_settling(store):
+    """A full disk is a fact about this machine today, not about the candidate. #528."""
+    _seed(store, "org/fine", 5.0)
+    got = fetching.run(store, _sizes(store), limit=5, free=fetching.DISK_FLOOR + 1 * GIB)
+    assert [g["repo"] for g in got if not g["ok"]] == ["org/fine"]
+    row = store.execute(
+        "SELECT v.outcome, v.reason, p.state FROM verdicts v JOIN proposals p "
+        "ON p.id = v.proposal_id WHERE p.name = 'org/fine' AND v.tier = 'fetch' "
+        "ORDER BY v.id DESC LIMIT 1").fetchone()
+    assert row["outcome"] == "queued" and row["outcome"] not in ms.TERMINAL, dict(row)
+    assert row["reason"] != "candidate" and row["state"] == "queued"
+    assert "org/fine" in [r["name"] for r in fetching.queued(store)]
+
+
+def test_a_candidate_already_settled_by_a_full_disk_is_requeued_by_the_migration(tmp_path):
+    """The fix governs new refusals; the ones made under the old rule are reopened once. #528."""
+    path = tmp_path / "old.db"
+    conn = ms.connect(path)
+    _seed(conn, "org/settled", 5.0)
+    _seed(conn, "org/too-big", 900.0)
+    ms.decide(conn, "org/settled", "declined", tier="fetch", reason="machine",
+              detail="5.0 GiB would leave 40 GiB free, under the 50 GiB floor")
+    ms.decide(conn, "org/too-big", "declined", tier="fetch", reason="limit",
+              detail="over the download cap", until="limit:download_gib>100")
+    conn.execute("UPDATE meta SET value = '49' WHERE key = 'schema'")
+    conn.commit()
+    conn.close()
+    conn = ms.connect(path)
+    try:
+        state = dict(conn.execute("SELECT name, state FROM proposals").fetchall())
+    finally:
+        conn.close()
+    assert state["org/settled"] == "queued"
+    assert state["org/too-big"] == "declined"
+
+
+def test_a_runtime_refusal_at_fetch_is_not_mistaken_for_a_full_disk(tmp_path):
+    path = tmp_path / "old.db"
+    conn = ms.connect(path)
+    _seed(conn, "org/vllm-only", 5.0)
+    ms.decide(conn, "org/vllm-only", "declined", tier="fetch", reason="machine",
+              detail="needs-vllm: no vllm on this machine", until="runtime:vllm")
+    conn.execute("UPDATE meta SET value = '49' WHERE key = 'schema'")
+    conn.commit()
+    conn.close()
+    conn = ms.connect(path)
+    try:
+        assert conn.execute("SELECT state FROM proposals WHERE name = 'org/vllm-only'").fetchone()[0] == "declined"
+    finally:
+        conn.close()

@@ -124,6 +124,17 @@ def _retract_harness_refusals(conn) -> None:
                      f"harness, not a verdict on {name}")
 
 
+def _requeue_disk_floor_declines(conn) -> None:
+    """A fetch that refused for a full disk settled the candidate; reopen each one. #528."""
+    for row in conn.execute(
+            "SELECT p.id, p.name FROM proposals p JOIN verdicts v ON v.id = p.state_verdict_id "
+            "WHERE p.state = 'declined' AND v.tier = 'fetch' AND v.reason = 'machine' "
+            "AND COALESCE(v.until, '') = '' AND v.detail LIKE '%floor%'").fetchall():
+        _migration_retraction(conn, row["id"], row["name"], "queued", "fetch",
+                              f"retracted: a disk below the floor was a fact about this machine, "
+                              f"not a verdict on {row['name']}")
+
+
 def _retract_verdicts_with_no_control(conn) -> None:
     """Undo an adoption verdict drawn from a run where the CONTROL scored zero.
 

@@ -14,7 +14,7 @@ INDEX = {
             "harness/commands/measure.py:cmd_verify":
                 "soh verify reports on the harness's own lane default and writes nothing to the store",
         },
-        "instances": _i(211, 223, 230, 293, 305, 366, 378, 380, 381, 385, 399, 401, 404, 406,
+        "instances": _i(211, 223, 230, 293, 305, 366, 378, 380, 381, 385, 399, 401, 404, 406, 528,
                         rules=(270, 282, 298, 331, 378, 385, 393)),
         "scanners": []},
     "one-question-two-answers": {
