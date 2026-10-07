@@ -1,0 +1,299 @@
+{
+ "adoptions": [
+  {
+   "adopted_at": "2026-09-23T00:05:10Z",
+   "candidate": "acestep:acestep-v15-turbo,steps=8",
+   "how": "by-hand",
+   "incumbent": "",
+   "lane": "music"
+  },
+  {
+   "adopted_at": "2026-10-06T01:35:47Z",
+   "candidate": "llamacpp:Ornith-1.5-35B-Q4_K_M",
+   "how": "measured",
+   "incumbent": "",
+   "lane": "code"
+  },
+  {
+   "adopted_at": "2026-10-06T19:21:16Z",
+   "candidate": "mflux:dev",
+   "how": "by-hand",
+   "incumbent": "mflux:flux2-klein-4b",
+   "lane": "image"
+  },
+  {
+   "adopted_at": "2026-10-06T19:57:01Z",
+   "candidate": "q3-30b",
+   "how": "measured",
+   "incumbent": "local-large",
+   "lane": "svg"
+  }
+ ],
+ "export_version": 1,
+ "generated_at": "2026-10-06T21:05:50Z",
+ "lanes": [
+  {
+   "adopted": true,
+   "adopted_how": "by-hand",
+   "age_days": 0.26,
+   "comparison": [
+    {
+     "candidate": "mflux/flux2-klein-4b-q8",
+     "first_s": 43.551,
+     "median_s": 27.285,
+     "metrics": {
+      "cer": 0.0
+     },
+     "pass_rate": 1.0,
+     "passed": 9,
+     "peak_gb": 14.99,
+     "reference": false,
+     "total": 9,
+     "ttft_median_s": null,
+     "ttft_p95_s": null
+    },
+    {
+     "candidate": "mflux/Tongyi-MAI/Z-Image-q8",
+     "first_s": 74.701,
+     "median_s": 16.908,
+     "metrics": {
+      "cer": 0.6667
+     },
+     "pass_rate": 0.778,
+     "passed": 7,
+     "peak_gb": 17.85,
+     "reference": false,
+     "total": 9,
+     "ttft_median_s": null,
+     "ttft_p95_s": null
+    }
+   ],
+   "lane": "image",
+   "last_run_at": "2026-10-06T14:44:38Z",
+   "measured_at": "2026-10-05T23:58:34Z",
+   "median_s": 14.146,
+   "metrics": {
+    "cer": 0.0
+   },
+   "parked": "",
+   "parked_until": "",
+   "pass_rate": 1.0,
+   "real_use": null,
+   "serves": "mflux:dev",
+   "stale": false,
+   "ttft_median_s": null,
+   "ttft_p95_s": null,
+   "unverified": false,
+   "wanted": true
+  },
+  {
+   "adopted": true,
+   "adopted_how": "measured",
+   "age_days": 0.1,
+   "comparison": [
+    {
+     "candidate": "llamacpp:Ornith-1.5-35B-Q4_K_M",
+     "first_s": 80.173,
+     "median_s": 2.789,
+     "metrics": {
+      "code_pass": 0.9249,
+      "completion_tokens": 779.6585,
+      "tokens_per_s": 135.9537
+     },
+     "pass_rate": 0.833,
+     "passed": 35,
+     "peak_gb": 0.0,
+     "reference": false,
+     "total": 42,
+     "ttft_median_s": null,
+     "ttft_p95_s": null
+    },
+    {
+     "candidate": "llamacpp:Qwen3.8-27B-GSQ-RCO-IQ3_S-mtp",
+     "first_s": 12.674,
+     "median_s": 47.759,
+     "metrics": {
+      "code_pass": 0.9643,
+      "completion_tokens": 1618.8571,
+      "tokens_per_s": 48.0821
+     },
+     "pass_rate": 0.643,
+     "passed": 27,
+     "peak_gb": 0.0,
+     "reference": false,
+     "total": 42,
+     "ttft_median_s": null,
+     "ttft_p95_s": null
+    }
+   ],
+   "lane": "code",
+   "last_run_at": "2026-10-06T18:44:18Z",
+   "measured_at": "2026-10-06T18:44:18Z",
+   "median_s": 2.789,
+   "metrics": {
+    "code_pass": 0.9249,
+    "completion_tokens": 779.6585,
+    "tokens_per_s": 135.9537
+   },
+   "parked": "",
+   "parked_until": "",
+   "pass_rate": 0.833,
+   "real_use": null,
+   "serves": "llamacpp:Ornith-1.5-35B-Q4_K_M",
+   "stale": false,
+   "ttft_median_s": null,
+   "ttft_p95_s": null,
+   "unverified": false,
+   "wanted": true
+  },
+  {
+   "adopted": true,
+   "adopted_how": "measured",
+   "age_days": 0.05,
+   "comparison": [
+    {
+     "candidate": "q3-30b",
+     "first_s": 5.167,
+     "median_s": 1.893,
+     "metrics": {
+      "completion_tokens": 292.8333,
+      "ink": 0.1868,
+      "svg_bytes": 659.875,
+      "tokens_per_s": 110.4167
+     },
+     "pass_rate": 1.0,
+     "passed": 24,
+     "peak_gb": 0.0,
+     "reference": false,
+     "total": 24,
+     "ttft_median_s": null,
+     "ttft_p95_s": null
+    },
+    {
+     "candidate": "local-large",
+     "first_s": 2.542,
+     "median_s": 1.569,
+     "metrics": {
+      "completion_tokens": 207.75,
+      "ink": 0.1711,
+      "svg_bytes": 496.9375,
+      "tokens_per_s": 117.7917
+     },
+     "pass_rate": 0.667,
+     "passed": 16,
+     "peak_gb": 0.0,
+     "reference": false,
+     "total": 24,
+     "ttft_median_s": null,
+     "ttft_p95_s": null
+    }
+   ],
+   "lane": "svg",
+   "last_run_at": "2026-10-06T19:57:01Z",
+   "measured_at": "2026-10-06T19:57:01Z",
+   "median_s": 1.893,
+   "metrics": {
+    "completion_tokens": 292.8333,
+    "ink": 0.1868,
+    "svg_bytes": 659.875,
+    "tokens_per_s": 110.4167
+   },
+   "parked": "",
+   "parked_until": "",
+   "pass_rate": 1.0,
+   "real_use": null,
+   "serves": "q3-30b",
+   "stale": false,
+   "ttft_median_s": null,
+   "ttft_p95_s": null,
+   "unverified": false,
+   "wanted": true
+  },
+  {
+   "adopted": true,
+   "adopted_how": "by-hand",
+   "age_days": 1.03,
+   "comparison": [
+    {
+     "candidate": "acestep/acestep-v15-turbo@steps=8",
+     "first_s": 38.967,
+     "median_s": 53.045,
+     "metrics": {
+      "duration_error_s": 0.0,
+      "seconds": 30.0,
+      "wer": 0.6147
+     },
+     "pass_rate": 0.75,
+     "passed": 3,
+     "peak_gb": 46.01,
+     "reference": false,
+     "total": 4,
+     "ttft_median_s": null,
+     "ttft_p95_s": null
+    }
+   ],
+   "lane": "music",
+   "last_run_at": "2026-10-05T20:29:28Z",
+   "measured_at": "2026-10-05T20:29:28Z",
+   "median_s": 53.045,
+   "metrics": {
+    "duration_error_s": 0.0,
+    "seconds": 30.0,
+    "wer": 0.6147
+   },
+   "parked": "",
+   "parked_until": "",
+   "pass_rate": 0.75,
+   "real_use": null,
+   "serves": "acestep:acestep-v15-turbo,steps=8",
+   "stale": false,
+   "ttft_median_s": null,
+   "ttft_p95_s": null,
+   "unverified": false,
+   "wanted": true
+  },
+  {
+   "adopted": false,
+   "adopted_how": "",
+   "age_days": null,
+   "comparison": [],
+   "lane": "decide",
+   "last_run_at": "",
+   "measured_at": "",
+   "median_s": null,
+   "metrics": {},
+   "parked": "",
+   "parked_until": "",
+   "pass_rate": null,
+   "real_use": null,
+   "serves": "q3-4b",
+   "stale": false,
+   "ttft_median_s": null,
+   "ttft_p95_s": null,
+   "unverified": true,
+   "wanted": true
+  }
+ ],
+ "machine": {
+  "accelerator": "unified 96GB",
+  "accelerator_name": "",
+  "arch": "arm64",
+  "first_seen": "2026-10-05T19:28:52Z",
+  "hw_model": "Mac17,15",
+  "label": "Mac Studio M5 Ultra 96 GB",
+  "last_seen": "2026-10-06T21:05:50Z",
+  "memory_gb": 96.0,
+  "os": "macOS 27.0.1",
+  "runtimes": [
+   "cpu",
+   "llamacpp",
+   "mlx"
+  ],
+  "slug": "mac-studio-m5-ultra-96-gb",
+  "versions": {
+   "mlx": "0.32.2",
+   "python": "3.12.15"
+  }
+ },
+ "schema": 42
+}

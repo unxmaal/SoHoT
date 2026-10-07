@@ -39,10 +39,10 @@ jobs:
           ls -la data/machines 2>/dev/null || mkdir -p data/machines
 
       - name: Render
-        run: python -m harness.publish render --data data/machines --out site/index.html
+        run: python -m harness.publish render --data data/machines --out site
 
-      - name: Privacy scan of the page
-        run: python -m harness.privacy --files site/index.html
+      - name: Privacy scan of every file under site
+        run: python -m harness.privacy --files site
 
       - uses: actions/configure-pages@v5
 

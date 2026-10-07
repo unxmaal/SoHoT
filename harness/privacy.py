@@ -174,6 +174,23 @@ def scan_github(limit: int = 300,
     return out
 
 
+def expand(items) -> list[Path]:
+    """Each file as given, and every file under each directory, whatever its suffix."""
+    out: list[Path] = []
+    for item in items:
+        p = Path(item)
+        if p.is_dir():
+            found = sorted(f for f in p.rglob("*") if f.is_file())
+            if not found:
+                raise FileNotFoundError(f"privacy scan: {p} holds no files to scan")
+            out.extend(found)
+        elif p.exists():
+            out.append(p)
+        else:
+            raise FileNotFoundError(f"privacy scan: {p} does not exist")
+    return out
+
+
 def main(argv: list[str] | None = None) -> int:
     import argparse
 
@@ -182,13 +199,13 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--github", action="store_true",
                     help="also scan every issue and PR body")
     ap.add_argument("--files", nargs="+", default=None,
-                    help="scan only these files, e.g. a generated page")
+                    help="scan only these files; a directory means every file under it")
     a = ap.parse_args(argv)
 
     root = Path(__file__).resolve().parent.parent
     if a.files:
-        found = [f for p in a.files for f in scan(
-            Path(p).read_text(encoding="utf-8", errors="replace"), p,
+        found = [f for p in expand(a.files) for f in scan(
+            p.read_text(encoding="utf-8", errors="replace"), str(p),
             name_pattern(root))]
     else:
         found = scan_paths(root)
