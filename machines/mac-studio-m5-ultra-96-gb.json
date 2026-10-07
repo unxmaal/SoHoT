@@ -33,13 +33,13 @@
    "scope": "measured, this machine only"
   }
  ],
- "export_version": 1,
- "generated_at": "2026-10-07T17:32:17Z",
+ "export_version": 2,
+ "generated_at": "2026-10-07T21:10:38Z",
  "lanes": [
   {
    "adopted": true,
    "adopted_how": "by-hand",
-   "age_days": 1.12,
+   "age_days": 1.27,
    "comparison": [
     {
      "candidate": "mflux/flux2-klein-4b-q8",
@@ -74,6 +74,111 @@
      "ttft_p95_s": null
     }
    ],
+   "exams": [
+    {
+     "cases": 3,
+     "first_run_at": "2026-10-05T23:58:34Z",
+     "repeat": 3,
+     "rows": [
+      {
+       "candidate": "mflux/filipstrand/Z-Image-Turbo-mflux-4bit-q8",
+       "first_s": 25.141,
+       "median_s": 8.3,
+       "metrics": {
+        "cer": 0.0
+       },
+       "not_run": "",
+       "pass_rate": 1.0,
+       "passed": 9,
+       "peak_gb": 10.05,
+       "reference": false,
+       "run_at": "2026-10-06T05:24:19Z",
+       "total": 9,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      },
+      {
+       "candidate": "mflux/dev-q8",
+       "first_s": 106.028,
+       "median_s": 14.146,
+       "metrics": {
+        "cer": 0.0
+       },
+       "not_run": "",
+       "pass_rate": 1.0,
+       "passed": 9,
+       "peak_gb": 20.53,
+       "reference": false,
+       "run_at": "2026-10-05T23:58:34Z",
+       "total": 9,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      },
+      {
+       "candidate": "mflux/flux2-klein-4b-q8",
+       "first_s": 43.551,
+       "median_s": 27.285,
+       "metrics": {
+        "cer": 0.0
+       },
+       "not_run": "",
+       "pass_rate": 1.0,
+       "passed": 9,
+       "peak_gb": 14.99,
+       "reference": false,
+       "run_at": "2026-10-06T14:44:38Z",
+       "total": 9,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      },
+      {
+       "candidate": "mflux/Tongyi-MAI/Z-Image-q8",
+       "first_s": 74.701,
+       "median_s": 16.908,
+       "metrics": {
+        "cer": 0.6667
+       },
+       "not_run": "",
+       "pass_rate": 0.778,
+       "passed": 7,
+       "peak_gb": 17.85,
+       "reference": false,
+       "run_at": "2026-10-06T14:44:38Z",
+       "total": 9,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      }
+     ],
+     "run_at": "2026-10-06T14:44:38Z",
+     "runs": 3
+    },
+    {
+     "cases": 3,
+     "first_run_at": "2026-10-05T20:16:48Z",
+     "repeat": 1,
+     "rows": [
+      {
+       "candidate": "mflux/flux2-klein-4b-q8",
+       "first_s": 42.385,
+       "median_s": 2.922,
+       "metrics": {
+        "cer": 0.0
+       },
+       "not_run": "",
+       "pass_rate": 1.0,
+       "passed": 3,
+       "peak_gb": 14.98,
+       "reference": false,
+       "run_at": "2026-10-05T20:16:48Z",
+       "total": 3,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      }
+     ],
+     "run_at": "2026-10-05T20:16:48Z",
+     "runs": 1
+    }
+   ],
    "lane": "image",
    "last_run_at": "2026-10-06T14:44:38Z",
    "measured_at": "2026-10-05T23:58:34Z",
@@ -96,7 +201,7 @@
   {
    "adopted": true,
    "adopted_how": "measured",
-   "age_days": 0.26,
+   "age_days": 0.41,
    "comparison": [
     {
      "candidate": "llamacpp:Ornith-1.5-35B-Q4_K_M",
@@ -135,6 +240,671 @@
      "ttft_p95_s": 0.117
     }
    ],
+   "exams": [
+    {
+     "cases": 50,
+     "first_run_at": "2026-10-07T10:43:27Z",
+     "repeat": 3,
+     "rows": [
+      {
+       "candidate": "llamacpp:Ornith-1.5-35B-Q4_K_M",
+       "first_s": 0.899,
+       "median_s": 2.496,
+       "metrics": {
+        "code_pass": 0.8353,
+        "completion_tokens": 657.2986,
+        "tokens_per_s": 135.6083
+       },
+       "not_run": "",
+       "pass_rate": 0.773,
+       "passed": 116,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-10-07T11:22:01Z",
+       "total": 150,
+       "ttft_median_s": 1.103,
+       "ttft_p95_s": 15.842
+      },
+      {
+       "candidate": "ibm-granite/granite-4.1-8b",
+       "first_s": 49.72,
+       "median_s": 1.959,
+       "metrics": {
+        "code_pass": 0.8083,
+        "completion_tokens": 141.72,
+        "tokens_per_s": 51.1893
+       },
+       "not_run": "",
+       "pass_rate": 0.693,
+       "passed": 104,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-10-07T11:22:01Z",
+       "total": 150,
+       "ttft_median_s": 0.055,
+       "ttft_p95_s": 0.117
+      },
+      {
+       "candidate": "zhengmh/OmniVTG-7B",
+       "first_s": 0.93,
+       "median_s": 1.061,
+       "metrics": {
+        "code_pass": 0.2915,
+        "completion_tokens": 99.5333,
+        "tokens_per_s": 62.414
+       },
+       "not_run": "",
+       "pass_rate": 0.167,
+       "passed": 25,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-10-07T10:43:27Z",
+       "total": 150,
+       "ttft_median_s": 0.045,
+       "ttft_p95_s": 0.094
+      },
+      {
+       "candidate": "LiquidAI/LFM2.5-350M",
+       "first_s": 2.631,
+       "median_s": 0.281,
+       "metrics": {
+        "code_pass": 0.1252,
+        "completion_tokens": 83.9267,
+        "tokens_per_s": 235.9427
+       },
+       "not_run": "",
+       "pass_rate": 0.04,
+       "passed": 6,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-10-07T10:59:38Z",
+       "total": 150,
+       "ttft_median_s": 0.022,
+       "ttft_p95_s": 0.042
+      }
+     ],
+     "run_at": "2026-10-07T11:22:01Z",
+     "runs": 3
+    },
+    {
+     "cases": 14,
+     "first_run_at": "2026-10-06T02:58:36Z",
+     "repeat": 3,
+     "rows": [
+      {
+       "candidate": "llamacpp:ornith15-trained-head",
+       "first_s": 3.563,
+       "median_s": 4.012,
+       "metrics": {
+        "code_pass": 0.9556,
+        "completion_tokens": 901.8571,
+        "tokens_per_s": 134.3952
+       },
+       "not_run": "",
+       "pass_rate": 0.905,
+       "passed": 38,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-10-06T04:15:54Z",
+       "total": 42,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      },
+      {
+       "candidate": "llamacpp:Tiel-Coder-35B-A3B-UD-Q4_K_S",
+       "first_s": 78.231,
+       "median_s": 5.227,
+       "metrics": {
+        "code_pass": 0.9747,
+        "completion_tokens": 897.25,
+        "tokens_per_s": 122.8875
+       },
+       "not_run": "",
+       "pass_rate": 0.881,
+       "passed": 37,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-10-06T04:36:01Z",
+       "total": 42,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      },
+      {
+       "candidate": "llamacpp:Ornith-1.5-35B-Q4_K_M",
+       "first_s": 80.173,
+       "median_s": 2.789,
+       "metrics": {
+        "code_pass": 0.9249,
+        "completion_tokens": 779.6585,
+        "tokens_per_s": 135.9537
+       },
+       "not_run": "",
+       "pass_rate": 0.833,
+       "passed": 35,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-10-06T18:44:18Z",
+       "total": 42,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      },
+      {
+       "candidate": "llamacpp:Swift-Qwen3.8-27B-Q4_K_M",
+       "first_s": 12.381,
+       "median_s": 19.898,
+       "metrics": {
+        "code_pass": 0.9781,
+        "completion_tokens": 1063.3143,
+        "tokens_per_s": 44.5057
+       },
+       "not_run": "",
+       "pass_rate": 0.786,
+       "passed": 33,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-10-06T05:21:15Z",
+       "total": 42,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      },
+      {
+       "candidate": "q3-coder",
+       "first_s": 51.744,
+       "median_s": 1.098,
+       "metrics": {
+        "code_pass": 0.9015,
+        "completion_tokens": 211.8333,
+        "tokens_per_s": 120.9214
+       },
+       "not_run": "",
+       "pass_rate": 0.762,
+       "passed": 32,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-10-06T04:36:01Z",
+       "total": 42,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      },
+      {
+       "candidate": "q3-30b",
+       "first_s": 49.993,
+       "median_s": 0.862,
+       "metrics": {
+        "code_pass": 0.8589,
+        "completion_tokens": 214.381,
+        "tokens_per_s": 120.5167
+       },
+       "not_run": "",
+       "pass_rate": 0.714,
+       "passed": 30,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-10-06T04:36:01Z",
+       "total": 42,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      },
+      {
+       "candidate": "llamacpp:command-a-plus-05-2026-IQ1_S",
+       "first_s": 36.206,
+       "median_s": 36.971,
+       "metrics": {
+        "code_pass": 0.9929,
+        "completion_tokens": 1386.3214,
+        "tokens_per_s": 56.45
+       },
+       "not_run": "",
+       "pass_rate": 0.643,
+       "passed": 27,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-10-06T14:36:35Z",
+       "total": 42,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      },
+      {
+       "candidate": "llamacpp:Qwen3.8-27B-GSQ-RCO-IQ3_S-mtp",
+       "first_s": 12.674,
+       "median_s": 47.759,
+       "metrics": {
+        "code_pass": 0.9643,
+        "completion_tokens": 1618.8571,
+        "tokens_per_s": 48.0821
+       },
+       "not_run": "",
+       "pass_rate": 0.643,
+       "passed": 27,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-10-06T18:44:18Z",
+       "total": 42,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      },
+      {
+       "candidate": "llamacpp:Nemotron3-Nano-4B-Uncensored-HauhauCS-Aggressive-Q4_K_M",
+       "first_s": 1.609,
+       "median_s": 2.266,
+       "metrics": {
+        "code_pass": 0.7737,
+        "completion_tokens": 678.7436,
+        "tokens_per_s": 162.5231
+       },
+       "not_run": "",
+       "pass_rate": 0.476,
+       "passed": 20,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-10-06T05:40:33Z",
+       "total": 42,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      },
+      {
+       "candidate": "Qwen/Qwen3-8B",
+       "first_s": 15.333,
+       "median_s": 67.597,
+       "metrics": {
+        "code_pass": 0.9643,
+        "completion_tokens": 1613.381,
+        "tokens_per_s": 58.0524
+       },
+       "not_run": "",
+       "pass_rate": 0.452,
+       "passed": 19,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-10-06T13:37:11Z",
+       "total": 42,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      },
+      {
+       "candidate": "mlx-community/Qwen3-8B-4bit",
+       "first_s": 11.874,
+       "median_s": 28.55,
+       "metrics": {
+        "code_pass": 0.9792,
+        "completion_tokens": 1990.8889,
+        "tokens_per_s": 140.7833
+       },
+       "not_run": "",
+       "pass_rate": 0.405,
+       "passed": 17,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-10-06T12:31:05Z",
+       "total": 42,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      },
+      {
+       "candidate": "llamacpp:Qwen3.5-9B-DeepSeek-V4-Flash-Q4_K_M",
+       "first_s": 4.789,
+       "median_s": 31.487,
+       "metrics": {
+        "code_pass": 1.0,
+        "completion_tokens": 914.2353,
+        "tokens_per_s": 124.3706
+       },
+       "not_run": "",
+       "pass_rate": 0.405,
+       "passed": 17,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-10-06T05:59:58Z",
+       "total": 42,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      },
+      {
+       "candidate": "LiquidAI/LFM2.5-1.2B-Instruct",
+       "first_s": 1.022,
+       "median_s": 0.386,
+       "metrics": {
+        "code_pass": 0.5662,
+        "completion_tokens": 157.2857,
+        "tokens_per_s": 283.0976
+       },
+       "not_run": "",
+       "pass_rate": 0.357,
+       "passed": 15,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-10-06T11:40:32Z",
+       "total": 42,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      },
+      {
+       "candidate": "mlx-community/gemma-2-2b-it-4bit",
+       "first_s": 1.079,
+       "median_s": 0.923,
+       "metrics": {
+        "code_pass": 0.5781,
+        "completion_tokens": 211.2619,
+        "tokens_per_s": 113.5238
+       },
+       "not_run": "",
+       "pass_rate": 0.262,
+       "passed": 11,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-10-06T11:46:04Z",
+       "total": 42,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      },
+      {
+       "candidate": "llamacpp:supergemma4-26b-uncensored-fast-v2-Q4_K_M",
+       "first_s": 30.877,
+       "median_s": 28.845,
+       "metrics": {
+        "code_pass": 1.0,
+        "completion_tokens": 2070.375,
+        "tokens_per_s": 139.5
+       },
+       "not_run": "",
+       "pass_rate": 0.19,
+       "passed": 8,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-10-06T06:28:23Z",
+       "total": 42,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      },
+      {
+       "candidate": "mlx-community/Qwen2-VL-2B-Instruct-4bit",
+       "first_s": 3.327,
+       "median_s": 0.431,
+       "metrics": {
+        "code_pass": 0.4078,
+        "completion_tokens": 258.881,
+        "tokens_per_s": 136.5524
+       },
+       "not_run": "",
+       "pass_rate": 0.143,
+       "passed": 6,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-10-06T12:11:03Z",
+       "total": 42,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      },
+      {
+       "candidate": "Qwen/Qwen3-0.6B",
+       "first_s": 4.994,
+       "median_s": 14.903,
+       "metrics": {
+        "code_pass": 0.6211,
+        "completion_tokens": 1517.9412,
+        "tokens_per_s": 220.2765
+       },
+       "not_run": "",
+       "pass_rate": 0.143,
+       "passed": 6,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-10-06T12:05:15Z",
+       "total": 42,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      },
+      {
+       "candidate": "Qwen/Qwen3.5-0.8B",
+       "first_s": 1.803,
+       "median_s": 14.895,
+       "metrics": {
+        "code_pass": 0.5963,
+        "completion_tokens": 714.25,
+        "tokens_per_s": 140.6375
+       },
+       "not_run": "",
+       "pass_rate": 0.071,
+       "passed": 3,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-10-06T03:33:22Z",
+       "total": 42,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      },
+      {
+       "candidate": "claude-code:claude-opus-5-5",
+       "first_s": 4.592,
+       "median_s": 2.88,
+       "metrics": {
+        "code_pass": 1.0,
+        "completion_tokens": 309.8095,
+        "tokens_per_s": 64.1619
+       },
+       "not_run": "",
+       "pass_rate": 1.0,
+       "passed": 42,
+       "peak_gb": 0.0,
+       "reference": true,
+       "run_at": "2026-10-06T04:36:01Z",
+       "total": 42,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      }
+     ],
+     "run_at": "2026-10-06T18:44:18Z",
+     "runs": 17
+    },
+    {
+     "cases": 9,
+     "first_run_at": "2026-10-05T23:35:57Z",
+     "repeat": 3,
+     "rows": [
+      {
+       "candidate": "llamacpp:Ornith-1.5-35B-Q4_K_M",
+       "first_s": 2.804,
+       "median_s": 2.346,
+       "metrics": {
+        "code_pass": 1.0,
+        "completion_tokens": 296.7407,
+        "tokens_per_s": 134.1593
+       },
+       "not_run": "",
+       "pass_rate": 1.0,
+       "passed": 27,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-10-06T02:18:07Z",
+       "total": 27,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      },
+      {
+       "candidate": "llamacpp:Tiel-Coder-35B-A3B-UD-Q4_K_S",
+       "first_s": 55.459,
+       "median_s": 2.327,
+       "metrics": {
+        "code_pass": 0.9815,
+        "completion_tokens": 376.7778,
+        "tokens_per_s": 122.1148
+       },
+       "not_run": "",
+       "pass_rate": 0.963,
+       "passed": 26,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-10-06T02:02:58Z",
+       "total": 27,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      },
+      {
+       "candidate": "llamacpp:ornith15-trained-head",
+       "first_s": 2.398,
+       "median_s": 2.484,
+       "metrics": {
+        "code_pass": 0.9691,
+        "completion_tokens": 526.5926,
+        "tokens_per_s": 133.6481
+       },
+       "not_run": "",
+       "pass_rate": 0.926,
+       "passed": 25,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-10-06T01:57:51Z",
+       "total": 27,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      },
+      {
+       "candidate": "q3-coder",
+       "first_s": 51.377,
+       "median_s": 0.559,
+       "metrics": {
+        "code_pass": 0.9815,
+        "completion_tokens": 82.1852,
+        "tokens_per_s": 110.7963
+       },
+       "not_run": "",
+       "pass_rate": 0.889,
+       "passed": 24,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-10-05T23:35:57Z",
+       "total": 27,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      },
+      {
+       "candidate": "q3-30b",
+       "first_s": 47.876,
+       "median_s": 0.597,
+       "metrics": {
+        "code_pass": 0.9259,
+        "completion_tokens": 80.8148,
+        "tokens_per_s": 111.9778
+       },
+       "not_run": "",
+       "pass_rate": 0.889,
+       "passed": 24,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-10-05T23:35:57Z",
+       "total": 27,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      },
+      {
+       "candidate": "q3-4b",
+       "first_s": 7.803,
+       "median_s": 0.73,
+       "metrics": {
+        "code_pass": 0.8864,
+        "completion_tokens": 96.5556,
+        "tokens_per_s": 100.6296
+       },
+       "not_run": "",
+       "pass_rate": 0.704,
+       "passed": 19,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-10-06T01:35:46Z",
+       "total": 27,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      },
+      {
+       "candidate": "Qwen/Qwen3.5-0.8B",
+       "first_s": 15.644,
+       "median_s": 8.091,
+       "metrics": {
+        "code_pass": 0.6722,
+        "completion_tokens": 881.5556,
+        "tokens_per_s": 121.4333
+       },
+       "not_run": "",
+       "pass_rate": 0.259,
+       "passed": 7,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-10-06T02:18:07Z",
+       "total": 27,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      },
+      {
+       "candidate": "claude-code:claude-opus-5-5",
+       "first_s": 2.579,
+       "median_s": 2.579,
+       "metrics": {
+        "code_pass": 1.0,
+        "completion_tokens": 149.7407,
+        "tokens_per_s": 49.3333
+       },
+       "not_run": "",
+       "pass_rate": 1.0,
+       "passed": 27,
+       "peak_gb": 0.0,
+       "reference": true,
+       "run_at": "2026-10-05T23:35:57Z",
+       "total": 27,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      }
+     ],
+     "run_at": "2026-10-06T02:18:07Z",
+     "runs": 7
+    },
+    {
+     "cases": 9,
+     "first_run_at": "2026-10-05T20:14:24Z",
+     "repeat": 1,
+     "rows": [
+      {
+       "candidate": "q3-4b",
+       "first_s": 7.627,
+       "median_s": 0.726,
+       "metrics": {
+        "code_pass": 0.9111,
+        "completion_tokens": 97.4444,
+        "tokens_per_s": 132.9
+       },
+       "not_run": "",
+       "pass_rate": 0.778,
+       "passed": 7,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-10-05T20:14:24Z",
+       "total": 9,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      },
+      {
+       "candidate": "claude-code:claude-opus-5-5",
+       "first_s": 5.709,
+       "median_s": 5.734,
+       "metrics": {
+        "code_pass": 1.0,
+        "completion_tokens": 144.5556,
+        "tokens_per_s": 24.3333
+       },
+       "not_run": "",
+       "pass_rate": 1.0,
+       "passed": 9,
+       "peak_gb": 0.0,
+       "reference": true,
+       "run_at": "2026-10-05T23:01:24Z",
+       "total": 9,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      }
+     ],
+     "run_at": "2026-10-05T23:01:24Z",
+     "runs": 2
+    }
+   ],
    "lane": "code",
    "last_run_at": "2026-10-07T11:22:01Z",
    "measured_at": "2026-10-07T11:22:01Z",
@@ -149,13 +919,13 @@
    "parked_until": "",
    "pass_rate": 0.773,
    "real_use": {
-    "completion_tokens": 12529,
+    "completion_tokens": 12549,
     "error_rate": 0.0,
     "errors": 0,
     "invalid_calls": 0,
     "invalid_rate": 0.0,
-    "prompt_tokens": 481290,
-    "requests": 100,
+    "prompt_tokens": 481345,
+    "requests": 105,
     "tool_calls": 94,
     "ttft_p50": 0.12477779388427734,
     "ttft_p95": 0.4040029048919678
@@ -170,7 +940,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 1.74,
+   "age_days": 1.89,
    "comparison": [
     {
      "candidate": "q3-4b",
@@ -245,6 +1015,121 @@
      "ttft_p95_s": null
     }
    ],
+   "exams": [
+    {
+     "cases": 5,
+     "first_run_at": "2026-10-05T23:48:31Z",
+     "repeat": 3,
+     "rows": [
+      {
+       "candidate": "q3-4b",
+       "first_s": 15.458,
+       "median_s": 7.299,
+       "metrics": {
+        "completion_tokens": 1308.1333,
+        "ink": 0.4501,
+        "tokens_per_s": 163.6667
+       },
+       "not_run": "",
+       "pass_rate": 1.0,
+       "passed": 15,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-10-05T23:48:31Z",
+       "total": 15,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      },
+      {
+       "candidate": "q3-30b",
+       "first_s": 10.117,
+       "median_s": 7.314,
+       "metrics": {
+        "completion_tokens": 1056.6667,
+        "ink": 0.5815,
+        "tokens_per_s": 118.2667
+       },
+       "not_run": "",
+       "pass_rate": 0.8,
+       "passed": 12,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-10-05T23:48:31Z",
+       "total": 15,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      },
+      {
+       "candidate": "q3-coder",
+       "first_s": 11.441,
+       "median_s": 7.769,
+       "metrics": {
+        "completion_tokens": 1028.8,
+        "ink": 0.4554,
+        "tokens_per_s": 118.9067
+       },
+       "not_run": "",
+       "pass_rate": 0.8,
+       "passed": 12,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-10-05T23:48:31Z",
+       "total": 15,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      },
+      {
+       "candidate": "claude-code:claude-opus-5-5",
+       "first_s": 22.569,
+       "median_s": 17.835,
+       "metrics": {
+        "completion_tokens": 2805.8571,
+        "ink": 0.6232,
+        "tokens_per_s": 126.15
+       },
+       "not_run": "",
+       "pass_rate": 0.933,
+       "passed": 14,
+       "peak_gb": 0.0,
+       "reference": true,
+       "run_at": "2026-10-05T23:48:31Z",
+       "total": 15,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      }
+     ],
+     "run_at": "2026-10-05T23:48:31Z",
+     "runs": 1
+    },
+    {
+     "cases": 5,
+     "first_run_at": "2026-10-05T20:15:31Z",
+     "repeat": 1,
+     "rows": [
+      {
+       "candidate": "q3-4b",
+       "first_s": 8.255,
+       "median_s": 11.075,
+       "metrics": {
+        "completion_tokens": 1311.2,
+        "ink": 0.3986,
+        "tokens_per_s": 129.84
+       },
+       "not_run": "",
+       "pass_rate": 1.0,
+       "passed": 5,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-10-05T20:15:31Z",
+       "total": 5,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      }
+     ],
+     "run_at": "2026-10-05T20:15:31Z",
+     "runs": 1
+    }
+   ],
    "lane": "web",
    "last_run_at": "2026-10-05T23:48:31Z",
    "measured_at": "2026-10-05T23:48:31Z",
@@ -269,7 +1154,7 @@
   {
    "adopted": true,
    "adopted_how": "measured",
-   "age_days": 0.9,
+   "age_days": 1.05,
    "comparison": [
     {
      "candidate": "q3-30b",
@@ -310,6 +1195,175 @@
      "ttft_p95_s": null
     }
    ],
+   "exams": [
+    {
+     "cases": 3,
+     "first_run_at": "2026-10-06T19:57:01Z",
+     "repeat": 8,
+     "rows": [
+      {
+       "candidate": "q3-30b",
+       "first_s": 5.167,
+       "median_s": 1.893,
+       "metrics": {
+        "completion_tokens": 292.8333,
+        "ink": 0.1868,
+        "svg_bytes": 659.875,
+        "tokens_per_s": 110.4167
+       },
+       "not_run": "",
+       "pass_rate": 1.0,
+       "passed": 24,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-10-06T19:57:01Z",
+       "total": 24,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      },
+      {
+       "candidate": "local-large",
+       "first_s": 2.542,
+       "median_s": 1.569,
+       "metrics": {
+        "completion_tokens": 207.75,
+        "ink": 0.1711,
+        "svg_bytes": 496.9375,
+        "tokens_per_s": 117.7917
+       },
+       "not_run": "",
+       "pass_rate": 0.667,
+       "passed": 16,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-10-06T19:57:01Z",
+       "total": 24,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      }
+     ],
+     "run_at": "2026-10-06T19:57:01Z",
+     "runs": 1
+    },
+    {
+     "cases": 3,
+     "first_run_at": "2026-10-05T23:53:03Z",
+     "repeat": 3,
+     "rows": [
+      {
+       "candidate": "q3-30b",
+       "first_s": 53.881,
+       "median_s": 1.562,
+       "metrics": {
+        "completion_tokens": 286.7778,
+        "ink": 0.2078,
+        "svg_bytes": 640.5556,
+        "tokens_per_s": 110.9889
+       },
+       "not_run": "",
+       "pass_rate": 1.0,
+       "passed": 9,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-10-06T19:38:22Z",
+       "total": 9,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      },
+      {
+       "candidate": "local-large",
+       "first_s": 15.251,
+       "median_s": 2.088,
+       "metrics": {
+        "completion_tokens": 197.1111,
+        "ink": 0.113,
+        "svg_bytes": 520.6,
+        "tokens_per_s": 80.5889
+       },
+       "not_run": "",
+       "pass_rate": 0.556,
+       "passed": 5,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-10-06T19:38:22Z",
+       "total": 9,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      },
+      {
+       "candidate": "q3-coder",
+       "first_s": 4.47,
+       "median_s": 2.422,
+       "metrics": {
+        "completion_tokens": 679.8889,
+        "ink": 0.193,
+        "svg_bytes": 428.8,
+        "tokens_per_s": 117.2889
+       },
+       "not_run": "",
+       "pass_rate": 0.556,
+       "passed": 5,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-10-05T23:53:03Z",
+       "total": 9,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      },
+      {
+       "candidate": "claude-code:claude-opus-5-5",
+       "first_s": 5.991,
+       "median_s": 9.719,
+       "metrics": {
+        "completion_tokens": 1192.3333,
+        "ink": 0.3124,
+        "svg_bytes": 659.6667,
+        "tokens_per_s": 97.0889
+       },
+       "not_run": "",
+       "pass_rate": 1.0,
+       "passed": 9,
+       "peak_gb": 0.0,
+       "reference": true,
+       "run_at": "2026-10-05T23:53:03Z",
+       "total": 9,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      }
+     ],
+     "run_at": "2026-10-06T19:38:22Z",
+     "runs": 2
+    },
+    {
+     "cases": 3,
+     "first_run_at": "2026-10-05T20:13:35Z",
+     "repeat": 1,
+     "rows": [
+      {
+       "candidate": "local-large",
+       "first_s": 2.945,
+       "median_s": 1.365,
+       "metrics": {
+        "completion_tokens": 241.3333,
+        "ink": 0.3418,
+        "svg_bytes": 629.5,
+        "tokens_per_s": 143.3
+       },
+       "not_run": "",
+       "pass_rate": 0.667,
+       "passed": 2,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-10-05T20:13:35Z",
+       "total": 3,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      }
+     ],
+     "run_at": "2026-10-05T20:13:35Z",
+     "runs": 1
+    }
+   ],
    "lane": "svg",
    "last_run_at": "2026-10-06T19:57:01Z",
    "measured_at": "2026-10-06T19:57:01Z",
@@ -325,13 +1379,13 @@
    "parked_until": "",
    "pass_rate": 1.0,
    "real_use": {
-    "completion_tokens": 50,
+    "completion_tokens": 70,
     "error_rate": 0.0,
     "errors": 0,
     "invalid_calls": 0,
     "invalid_rate": null,
-    "prompt_tokens": 118,
-    "requests": 13,
+    "prompt_tokens": 163,
+    "requests": 18,
     "tool_calls": 0,
     "ttft_p50": null,
     "ttft_p95": null
@@ -346,7 +1400,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 1.81,
+   "age_days": 1.96,
    "comparison": [
     {
      "candidate": "h3/minimax-h3@ssd_streaming=false",
@@ -363,6 +1417,66 @@
      "total": 1,
      "ttft_median_s": null,
      "ttft_p95_s": null
+    }
+   ],
+   "exams": [
+    {
+     "cases": 1,
+     "first_run_at": "2026-10-05T20:57:38Z",
+     "repeat": 1,
+     "rows": [
+      {
+       "candidate": "h3/minimax-h3",
+       "first_s": 26.518,
+       "median_s": 26.518,
+       "metrics": {
+        "motion": 0.0418
+       },
+       "not_run": "",
+       "pass_rate": 1.0,
+       "passed": 1,
+       "peak_gb": 6.13,
+       "reference": false,
+       "run_at": "2026-10-05T21:48:59Z",
+       "total": 1,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      },
+      {
+       "candidate": "h3/minimax-h3@ssd_streaming=false",
+       "first_s": 28.726,
+       "median_s": 28.726,
+       "metrics": {
+        "motion": 0.034
+       },
+       "not_run": "",
+       "pass_rate": 1.0,
+       "passed": 1,
+       "peak_gb": 18.43,
+       "reference": false,
+       "run_at": "2026-10-05T22:04:41Z",
+       "total": 1,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      },
+      {
+       "candidate": "diffusers-video/h3",
+       "first_s": 7.291,
+       "median_s": 7.291,
+       "metrics": {},
+       "not_run": "",
+       "pass_rate": 0.0,
+       "passed": 0,
+       "peak_gb": 0.29,
+       "reference": false,
+       "run_at": "2026-10-05T20:57:38Z",
+       "total": 1,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      }
+     ],
+     "run_at": "2026-10-05T22:04:41Z",
+     "runs": 5
     }
    ],
    "lane": "video",
@@ -387,7 +1501,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 0.25,
+   "age_days": 0.41,
    "comparison": [
     {
      "candidate": "acestep/acestep-v15-turbo",
@@ -406,6 +1520,55 @@
      "total": 4,
      "ttft_median_s": null,
      "ttft_p95_s": null
+    }
+   ],
+   "exams": [
+    {
+     "cases": 4,
+     "first_run_at": "2026-10-05T20:16:51Z",
+     "repeat": 1,
+     "rows": [
+      {
+       "candidate": "acestep/acestep-v15-turbo",
+       "first_s": 62.938,
+       "median_s": 57.014,
+       "metrics": {
+        "duration_error_s": 0.0,
+        "seconds": 30.0,
+        "wer": 0.3394
+       },
+       "not_run": "",
+       "pass_rate": 1.0,
+       "passed": 4,
+       "peak_gb": 45.93,
+       "reference": false,
+       "run_at": "2026-10-07T11:26:06Z",
+       "total": 4,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      },
+      {
+       "candidate": "acestep/acestep-v15-turbo@steps=8",
+       "first_s": 38.967,
+       "median_s": 53.045,
+       "metrics": {
+        "duration_error_s": 0.0,
+        "seconds": 30.0,
+        "wer": 0.6147
+       },
+       "not_run": "",
+       "pass_rate": 0.75,
+       "passed": 3,
+       "peak_gb": 46.01,
+       "reference": false,
+       "run_at": "2026-10-05T20:29:28Z",
+       "total": 4,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      }
+     ],
+     "run_at": "2026-10-07T11:26:06Z",
+     "runs": 4
     }
    ],
    "lane": "music",
@@ -432,7 +1595,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 0.13,
+   "age_days": 0.28,
    "comparison": [
     {
      "candidate": "nimble/Bespoke-Nimble-9B",
@@ -578,6 +1741,242 @@
      "ttft_p95_s": null
     }
    ],
+   "exams": [
+    {
+     "cases": 36,
+     "first_run_at": "2026-10-07T11:26:46Z",
+     "repeat": 1,
+     "rows": [
+      {
+       "candidate": "nimble/Bespoke-Nimble-9B",
+       "first_s": 5.31,
+       "median_s": 3.314,
+       "metrics": {
+        "calibrated": 1.0,
+        "decide_accuracy": 0.756,
+        "decide_brier": 0.382,
+        "decide_ece": 0.1059
+       },
+       "not_run": "",
+       "pass_rate": 0.306,
+       "passed": 11,
+       "peak_gb": 20.06,
+       "reference": false,
+       "run_at": "2026-10-07T14:28:10Z",
+       "total": 36,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      },
+      {
+       "candidate": "llamacpp:APUS-OpenJev-v1-4B-Q8_0",
+       "first_s": 16.493,
+       "median_s": 0.509,
+       "metrics": {
+        "calibrated": 1.0,
+        "completion_tokens": 38.7222,
+        "decide_accuracy": 0.7262,
+        "decide_brier": 0.4473,
+        "decide_ece": 0.1878,
+        "tokens_per_s": 76.6667
+       },
+       "not_run": "",
+       "pass_rate": 0.25,
+       "passed": 9,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-10-07T14:28:10Z",
+       "total": 36,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      },
+      {
+       "candidate": "decider/strands-decider-2B-hobson-v21",
+       "first_s": 14.977,
+       "median_s": 2.534,
+       "metrics": {
+        "calibrated": 1.0,
+        "decide_accuracy": 0.7143,
+        "decide_brier": 0.3911,
+        "decide_ece": 0.0872
+       },
+       "not_run": "",
+       "pass_rate": 0.25,
+       "passed": 9,
+       "peak_gb": 5.78,
+       "reference": false,
+       "run_at": "2026-10-07T14:28:10Z",
+       "total": 36,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      },
+      {
+       "candidate": "eval-imajev-4b",
+       "first_s": 0.572,
+       "median_s": 0.394,
+       "metrics": {
+        "calibrated": 1.0,
+        "completion_tokens": 37.5278,
+        "decide_accuracy": 0.7619,
+        "decide_brier": 0.3592,
+        "decide_ece": 0.1396,
+        "tokens_per_s": 90.7167
+       },
+       "not_run": "",
+       "pass_rate": 0.222,
+       "passed": 8,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-10-07T14:28:10Z",
+       "total": 36,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      },
+      {
+       "candidate": "llamacpp:plumb-4b-v5-Q8_0",
+       "first_s": 17.875,
+       "median_s": 0.451,
+       "metrics": {
+        "calibrated": 1.0,
+        "completion_tokens": 33.1667,
+        "decide_accuracy": 0.744,
+        "decide_brier": 0.4151,
+        "decide_ece": 0.1594,
+        "tokens_per_s": 74.3806
+       },
+       "not_run": "",
+       "pass_rate": 0.222,
+       "passed": 8,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-10-07T14:28:10Z",
+       "total": 36,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      },
+      {
+       "candidate": "llamacpp:decider-4b.v2-Q4_K_M",
+       "first_s": 11.171,
+       "median_s": 0.519,
+       "metrics": {
+        "calibrated": 1.0,
+        "completion_tokens": 36.8889,
+        "decide_accuracy": 0.6548,
+        "decide_brier": 0.5032,
+        "decide_ece": 0.2146,
+        "tokens_per_s": 72.0861
+       },
+       "not_run": "",
+       "pass_rate": 0.167,
+       "passed": 6,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-10-07T14:28:10Z",
+       "total": 36,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      },
+      {
+       "candidate": "llamacpp:decider-4b-v2.1-Q8_0",
+       "first_s": 17.054,
+       "median_s": 0.557,
+       "metrics": {
+        "calibrated": 1.0,
+        "completion_tokens": 37.6111,
+        "decide_accuracy": 0.7024,
+        "decide_brier": 0.479,
+        "decide_ece": 0.1782,
+        "tokens_per_s": 66.4
+       },
+       "not_run": "",
+       "pass_rate": 0.139,
+       "passed": 5,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-10-07T14:28:10Z",
+       "total": 36,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      },
+      {
+       "candidate": "apus-ailab/APUS-OpenJev-v1-4B-GGUF",
+       "first_s": null,
+       "median_s": null,
+       "metrics": {},
+       "not_run": "refused_by_gateway",
+       "pass_rate": null,
+       "passed": null,
+       "peak_gb": null,
+       "reference": false,
+       "run_at": "2026-10-07T14:20:52Z",
+       "total": 36,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      },
+      {
+       "candidate": "crh225/plumb-4b-GGUF",
+       "first_s": null,
+       "median_s": null,
+       "metrics": {},
+       "not_run": "refused_by_gateway",
+       "pass_rate": null,
+       "passed": null,
+       "peak_gb": null,
+       "reference": false,
+       "run_at": "2026-10-07T14:20:52Z",
+       "total": 36,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      },
+      {
+       "candidate": "Mapika/decider-4b-GGUF",
+       "first_s": null,
+       "median_s": null,
+       "metrics": {},
+       "not_run": "refused_by_gateway",
+       "pass_rate": null,
+       "passed": null,
+       "peak_gb": null,
+       "reference": false,
+       "run_at": "2026-10-07T14:20:52Z",
+       "total": 36,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      },
+      {
+       "candidate": "mindchain/decider-4b-v2-GGUF",
+       "first_s": null,
+       "median_s": null,
+       "metrics": {},
+       "not_run": "refused_by_gateway",
+       "pass_rate": null,
+       "passed": null,
+       "peak_gb": null,
+       "reference": false,
+       "run_at": "2026-10-07T14:20:52Z",
+       "total": 36,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      },
+      {
+       "candidate": "q3-4b",
+       "first_s": null,
+       "median_s": null,
+       "metrics": {},
+       "not_run": "refused_by_gateway",
+       "pass_rate": null,
+       "passed": null,
+       "peak_gb": null,
+       "reference": false,
+       "run_at": "2026-10-07T11:26:46Z",
+       "total": 36,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      }
+     ],
+     "run_at": "2026-10-07T14:28:10Z",
+     "runs": 4
+    }
+   ],
    "lane": "decide",
    "last_run_at": "2026-10-07T14:28:10Z",
    "measured_at": "2026-10-07T14:28:10Z",
@@ -595,13 +1994,13 @@
    "parked_until": "",
    "pass_rate": 0.222,
    "real_use": {
-    "completion_tokens": 70,
+    "completion_tokens": 90,
     "error_rate": 0.0,
     "errors": 0,
     "invalid_calls": 0,
     "invalid_rate": null,
-    "prompt_tokens": 179,
-    "requests": 15,
+    "prompt_tokens": 234,
+    "requests": 20,
     "tool_calls": 0,
     "ttft_p50": null,
     "ttft_p95": null
@@ -616,7 +2015,7 @@
   {
    "adopted": true,
    "adopted_how": "measured",
-   "age_days": 0.63,
+   "age_days": 0.79,
    "comparison": [
     {
      "candidate": "llamacpp:Ornith-1.5-35B-Q4_K_M",
@@ -668,6 +2067,103 @@
      "ttft_p95_s": 10.517
     }
    ],
+   "exams": [
+    {
+     "cases": 14,
+     "first_run_at": "2026-10-07T02:18:41Z",
+     "repeat": 3,
+     "rows": [
+      {
+       "candidate": "llamacpp:Ornith-1.5-35B-Q4_K_M",
+       "first_s": 87.92,
+       "median_s": 8.211,
+       "metrics": {
+        "agent_ctx": 262144.0,
+        "agent_model_s": 10.7488,
+        "agent_no_tool_steps": 0.0,
+        "agent_steps": 5.7143,
+        "agent_tool_s": 0.1025,
+        "agent_ttft_sum_s": 7.4884,
+        "agent_valid_call_rate": 1.0,
+        "agent_wall_s": 10.9017,
+        "completion_tokens": 751.3333,
+        "prompt_tokens": 35016.3571
+       },
+       "not_run": "",
+       "pass_rate": 1.0,
+       "passed": 42,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-10-07T02:18:41Z",
+       "total": 42,
+       "ttft_median_s": 0.283,
+       "ttft_p95_s": 0.668
+      },
+      {
+       "candidate": "q3-4b",
+       "first_s": 9.987,
+       "median_s": 4.311,
+       "metrics": {
+        "agent_model_s": 6.0956,
+        "agent_no_tool_steps": 0.0714,
+        "agent_steps": 3.9762,
+        "agent_tool_s": 0.0076,
+        "agent_ttft_sum_s": 3.4043,
+        "agent_valid_call_rate": 1.0,
+        "agent_wall_s": 6.1562,
+        "completion_tokens": 377.3333,
+        "prompt_tokens": 14492.0952
+       },
+       "not_run": "",
+       "pass_rate": 0.333,
+       "passed": 14,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-10-07T02:18:41Z",
+       "total": 42,
+       "ttft_median_s": 0.257,
+       "ttft_p95_s": 10.517
+      }
+     ],
+     "run_at": "2026-10-07T02:18:41Z",
+     "runs": 1
+    },
+    {
+     "cases": 14,
+     "first_run_at": "2026-10-06T23:52:57Z",
+     "repeat": 1,
+     "rows": [
+      {
+       "candidate": "sohot-code",
+       "first_s": 7.456,
+       "median_s": 9.185,
+       "metrics": {
+        "agent_ctx": 262144.0,
+        "agent_model_s": 10.1131,
+        "agent_no_tool_steps": 0.0,
+        "agent_steps": 5.7857,
+        "agent_tool_s": 0.0992,
+        "agent_ttft_sum_s": 6.4927,
+        "agent_valid_call_rate": 1.0,
+        "agent_wall_s": 10.2685,
+        "completion_tokens": 889.0,
+        "prompt_tokens": 34362.4286
+       },
+       "not_run": "",
+       "pass_rate": 1.0,
+       "passed": 14,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-10-06T23:52:57Z",
+       "total": 14,
+       "ttft_median_s": 0.324,
+       "ttft_p95_s": 0.872
+      }
+     ],
+     "run_at": "2026-10-06T23:52:57Z",
+     "runs": 1
+    }
+   ],
    "lane": "agent",
    "last_run_at": "2026-10-07T02:18:41Z",
    "measured_at": "2026-10-07T02:18:41Z",
@@ -689,13 +2185,13 @@
    "parked_until": "",
    "pass_rate": 1.0,
    "real_use": {
-    "completion_tokens": 68,
+    "completion_tokens": 88,
     "error_rate": 0.0,
     "errors": 0,
     "invalid_calls": 0,
     "invalid_rate": null,
-    "prompt_tokens": 180,
-    "requests": 16,
+    "prompt_tokens": 235,
+    "requests": 21,
     "tool_calls": 0,
     "ttft_p50": null,
     "ttft_p95": null
@@ -710,7 +2206,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 0.0,
+   "age_days": 0.15,
    "comparison": [
     {
      "candidate": "osocr/auto",
@@ -745,6 +2241,51 @@
      "ttft_p95_s": null
     }
    ],
+   "exams": [
+    {
+     "cases": 8,
+     "first_run_at": "2026-10-07T15:31:00Z",
+     "repeat": 1,
+     "rows": [
+      {
+       "candidate": "osocr/auto",
+       "first_s": 23.052,
+       "median_s": 0.33,
+       "metrics": {
+        "cer": 0.0044
+       },
+       "not_run": "",
+       "pass_rate": 1.0,
+       "passed": 8,
+       "peak_gb": 0.27,
+       "reference": false,
+       "run_at": "2026-10-07T17:32:13Z",
+       "total": 8,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      },
+      {
+       "candidate": "hf-ocr/PaddleOCR-VL-1.6",
+       "first_s": 7.94,
+       "median_s": 8.822,
+       "metrics": {
+        "cer": 0.0
+       },
+       "not_run": "",
+       "pass_rate": 1.0,
+       "passed": 8,
+       "peak_gb": 0.01,
+       "reference": false,
+       "run_at": "2026-10-07T17:32:13Z",
+       "total": 8,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      }
+     ],
+     "run_at": "2026-10-07T17:32:13Z",
+     "runs": 2
+    }
+   ],
    "lane": "ocr",
    "last_run_at": "2026-10-07T17:32:13Z",
    "measured_at": "2026-10-07T17:32:13Z",
@@ -767,7 +2308,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 0.08,
+   "age_days": 0.24,
    "comparison": [
     {
      "candidate": "bm25/okapi",
@@ -785,6 +2326,53 @@
      "total": 14,
      "ttft_median_s": null,
      "ttft_p95_s": null
+    }
+   ],
+   "exams": [
+    {
+     "cases": 14,
+     "first_run_at": "2026-10-07T15:20:53Z",
+     "repeat": 1,
+     "rows": [
+      {
+       "candidate": "rerank/ettin-reranker-1b-v1",
+       "first_s": 3.782,
+       "median_s": 3.243,
+       "metrics": {
+        "retrieval_ndcg": 0.9455,
+        "retrieval_recall": 0.9643
+       },
+       "not_run": "",
+       "pass_rate": 0.929,
+       "passed": 13,
+       "peak_gb": 5.64,
+       "reference": false,
+       "run_at": "2026-10-07T15:20:53Z",
+       "total": 14,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      },
+      {
+       "candidate": "bm25/okapi",
+       "first_s": 0.031,
+       "median_s": 0.025,
+       "metrics": {
+        "retrieval_ndcg": 0.662,
+        "retrieval_recall": 0.7857
+       },
+       "not_run": "",
+       "pass_rate": 0.714,
+       "passed": 10,
+       "peak_gb": 0.01,
+       "reference": false,
+       "run_at": "2026-10-07T15:31:01Z",
+       "total": 14,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      }
+     ],
+     "run_at": "2026-10-07T15:31:01Z",
+     "runs": 2
     }
    ],
    "lane": "retrieval",
@@ -810,7 +2398,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 0.08,
+   "age_days": 0.24,
    "comparison": [
     {
      "candidate": "pii-regex/patterns",
@@ -829,6 +2417,55 @@
      "total": 16,
      "ttft_median_s": null,
      "ttft_p95_s": null
+    }
+   ],
+   "exams": [
+    {
+     "cases": 16,
+     "first_run_at": "2026-10-07T15:27:44Z",
+     "repeat": 1,
+     "rows": [
+      {
+       "candidate": "hf-pii/privacy-filter",
+       "first_s": 4.058,
+       "median_s": 4.181,
+       "metrics": {
+        "pii_f1": 0.9771,
+        "pii_precision": 0.9552,
+        "pii_recall": 1.0
+       },
+       "not_run": "",
+       "pass_rate": 1.0,
+       "passed": 16,
+       "peak_gb": 3.95,
+       "reference": false,
+       "run_at": "2026-10-07T15:27:44Z",
+       "total": 16,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      },
+      {
+       "candidate": "pii-regex/patterns",
+       "first_s": 0.026,
+       "median_s": 0.025,
+       "metrics": {
+        "pii_f1": 0.7451,
+        "pii_precision": 1.0,
+        "pii_recall": 0.5938
+       },
+       "not_run": "",
+       "pass_rate": 0.688,
+       "passed": 11,
+       "peak_gb": 0.01,
+       "reference": false,
+       "run_at": "2026-10-07T15:31:02Z",
+       "total": 16,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      }
+     ],
+     "run_at": "2026-10-07T15:31:02Z",
+     "runs": 2
     }
    ],
    "lane": "pii",
@@ -855,7 +2492,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 1.7,
+   "age_days": 1.85,
    "comparison": [
     {
      "candidate": "claude-code:claude-opus-5-5",
@@ -926,6 +2563,170 @@
      "ttft_p95_s": null
     }
    ],
+   "exams": [
+    {
+     "cases": 10,
+     "first_run_at": "2026-10-05T20:13:28Z",
+     "repeat": 1,
+     "rows": [
+      {
+       "candidate": "local-large",
+       "first_s": 13.585,
+       "median_s": 0.136,
+       "metrics": {
+        "completion_tokens": 9.1,
+        "tokens_per_s": 59.16
+       },
+       "not_run": "",
+       "pass_rate": 0.8,
+       "passed": 8,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-10-06T00:40:18Z",
+       "total": 10,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      },
+      {
+       "candidate": "q3-30b",
+       "first_s": 47.768,
+       "median_s": 0.158,
+       "metrics": {
+        "completion_tokens": 9.8,
+        "tokens_per_s": 50.08
+       },
+       "not_run": "",
+       "pass_rate": 0.8,
+       "passed": 8,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-10-06T00:40:18Z",
+       "total": 10,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      },
+      {
+       "candidate": "q3-coder",
+       "first_s": 51.284,
+       "median_s": 0.17,
+       "metrics": {
+        "completion_tokens": 9.8,
+        "tokens_per_s": 50.11
+       },
+       "not_run": "",
+       "pass_rate": 0.8,
+       "passed": 8,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-10-06T00:40:18Z",
+       "total": 10,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      },
+      {
+       "candidate": "claude-code:claude-opus-5-5",
+       "first_s": 4.045,
+       "median_s": 2.119,
+       "metrics": {
+        "completion_tokens": 22.8,
+        "tokens_per_s": 7.02
+       },
+       "not_run": "",
+       "pass_rate": 1.0,
+       "passed": 10,
+       "peak_gb": 0.0,
+       "reference": true,
+       "run_at": "2026-10-06T00:40:18Z",
+       "total": 10,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      }
+     ],
+     "run_at": "2026-10-06T00:40:18Z",
+     "runs": 2
+    },
+    {
+     "cases": 10,
+     "first_run_at": "2026-10-05T23:49:23Z",
+     "repeat": 1,
+     "rows": [
+      {
+       "candidate": "local-large",
+       "first_s": 13.505,
+       "median_s": 0.128,
+       "metrics": {
+        "completion_tokens": 9.1,
+        "tokens_per_s": 61.55
+       },
+       "not_run": "",
+       "pass_rate": 0.8,
+       "passed": 8,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-10-05T23:49:23Z",
+       "total": 10,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      },
+      {
+       "candidate": "q3-30b",
+       "first_s": 1.167,
+       "median_s": 0.162,
+       "metrics": {
+        "completion_tokens": 9.8,
+        "tokens_per_s": 49.11
+       },
+       "not_run": "",
+       "pass_rate": 0.8,
+       "passed": 8,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-10-05T23:49:23Z",
+       "total": 10,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      },
+      {
+       "candidate": "q3-coder",
+       "first_s": 12.539,
+       "median_s": 0.172,
+       "metrics": {
+        "completion_tokens": 9.6,
+        "tokens_per_s": 51.05
+       },
+       "not_run": "",
+       "pass_rate": 0.8,
+       "passed": 8,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-10-05T23:49:23Z",
+       "total": 10,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      },
+      {
+       "candidate": "claude-code:claude-opus-5-5",
+       "first_s": 0.663,
+       "median_s": 1.942,
+       "metrics": {
+        "completion_tokens": 14.5,
+        "tokens_per_s": 6.4875
+       },
+       "not_run": "",
+       "pass_rate": 0.8,
+       "passed": 8,
+       "peak_gb": 0.0,
+       "reference": true,
+       "run_at": "2026-10-05T23:49:23Z",
+       "total": 10,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      }
+     ],
+     "run_at": "2026-10-05T23:49:23Z",
+     "runs": 1
+    }
+   ],
    "lane": "extract",
    "last_run_at": "2026-10-06T00:40:18Z",
    "measured_at": "2026-10-06T00:40:18Z",
@@ -949,7 +2750,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 1.89,
+   "age_days": 2.04,
    "comparison": [
     {
      "candidate": "parakeet-tdt-0.6b-v2",
@@ -966,6 +2767,34 @@
      "total": 300,
      "ttft_median_s": null,
      "ttft_p95_s": null
+    }
+   ],
+   "exams": [
+    {
+     "cases": 300,
+     "first_run_at": "2026-10-05T20:15:57Z",
+     "repeat": 1,
+     "rows": [
+      {
+       "candidate": "parakeet-tdt-0.6b-v2",
+       "first_s": 0.139,
+       "median_s": 0.075,
+       "metrics": {
+        "wer": 0.0162
+       },
+       "not_run": "",
+       "pass_rate": 1.0,
+       "passed": 300,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-10-05T20:15:57Z",
+       "total": 300,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      }
+     ],
+     "run_at": "2026-10-05T20:15:57Z",
+     "runs": 1
     }
    ],
    "lane": "stt",
@@ -990,7 +2819,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 1.19,
+   "age_days": 1.34,
    "comparison": [
     {
      "candidate": "Kokoro-82M-bf16/bm_george",
@@ -1025,6 +2854,77 @@
      "ttft_p95_s": null
     }
    ],
+   "exams": [
+    {
+     "cases": 10,
+     "first_run_at": "2026-10-06T12:57:15Z",
+     "repeat": 1,
+     "rows": [
+      {
+       "candidate": "Kokoro-82M-bf16/bm_george",
+       "first_s": 2.789,
+       "median_s": 0.133,
+       "metrics": {
+        "wer": 0.0
+       },
+       "not_run": "",
+       "pass_rate": 1.0,
+       "passed": 5,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-10-06T12:57:15Z",
+       "total": 5,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      },
+      {
+       "candidate": "Breeze-TTS-2",
+       "first_s": 16.507,
+       "median_s": 9.76,
+       "metrics": {
+        "wer": 0.0
+       },
+       "not_run": "",
+       "pass_rate": 1.0,
+       "passed": 5,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-10-06T12:57:15Z",
+       "total": 5,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      }
+     ],
+     "run_at": "2026-10-06T12:57:15Z",
+     "runs": 1
+    },
+    {
+     "cases": 10,
+     "first_run_at": "2026-10-05T20:14:08Z",
+     "repeat": 1,
+     "rows": [
+      {
+       "candidate": "Kokoro-82M-bf16/bm_george",
+       "first_s": 15.481,
+       "median_s": 0.207,
+       "metrics": {
+        "wer": 0.0
+       },
+       "not_run": "",
+       "pass_rate": 1.0,
+       "passed": 5,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-10-05T20:14:08Z",
+       "total": 5,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      }
+     ],
+     "run_at": "2026-10-05T20:14:08Z",
+     "runs": 1
+    }
+   ],
    "lane": "tts",
    "last_run_at": "2026-10-06T12:57:15Z",
    "measured_at": "2026-10-06T12:57:15Z",
@@ -1052,11 +2952,12 @@
   "first_seen": "2026-10-05T19:28:52Z",
   "hw_model": "Mac17,15",
   "label": "Mac Studio M5 Ultra 96 GB",
-  "last_seen": "2026-10-07T17:32:13Z",
+  "last_seen": "2026-10-07T21:09:24Z",
   "memory_gb": 96.0,
   "os": "macOS 27.0.1",
   "runtimes": [
    "cpu",
+   "ds4",
    "llamacpp",
    "mlx"
   ],
@@ -1064,6 +2965,7 @@
   "versions": {
    "ace-step": "1.5.0",
    "diffusers": "0.40.0",
+   "ds4": "2026.09.20",
    "litellm": "1.100.0",
    "llama.cpp": "11146",
    "mflux": "0.19.1",
