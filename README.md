@@ -1146,6 +1146,30 @@ Or run them by hand, from a terminal that already has the access:
 ./scripts/smoke.sh           # check the whole chain still works end to end
 ```
 
+### Swapping the disk the weights live on
+
+```bash
+soh volume status        # mounted?, which services and processes hold files there
+soh volume stop          # then eject, swap, remount
+soh volume start
+soh disk speed           # before and after, on the same volume
+```
+
+`stop` pauses the queue and waits for a running job, boots out the model
+servers, the discover agent and any other agent with a file open on the volume
+(found with `lsof`), and records what it stopped in `volume-stopped.json` under
+the home. It exits 1 and names every process that still has a file open there,
+so do not eject until it says it is safe. `start` refuses while the volume is
+not mounted, loads exactly what `stop` stopped, and resumes the queue only if
+it was running before. Both default to the volume holding `HF_HOME`; `--path`
+names another.
+
+`soh disk speed [path]` writes a scratch file on the volume and reads it back
+sequentially with the page cache off (`F_NOCACHE` on macOS), so no `purge` or
+remount is needed. Each run appends one row to `disk-speed.jsonl` under the
+home: volume, device and bus, bytes, block size, method, read and write rates.
+`--mib` sets the size.
+
 ### On a machine with an NVIDIA card
 
 ```bash
