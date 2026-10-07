@@ -1,0 +1,86 @@
+{
+ "id": "JustANormalTinkerer/hayai-ocr-v2",
+ "pipeline_tag": "image-to-text",
+ "tags": [
+  "transformers",
+  "safetensors",
+  "hayai",
+  "feature-extraction",
+  "ocr",
+  "vision-language",
+  "vlm",
+  "manga-ocr",
+  "cjk",
+  "image-to-text",
+  "custom_code",
+  "en",
+  "ja",
+  "zh",
+  "ko",
+  "dataset:JustANormalTinkerer/hayai-finetuning-dataset-with-korean",
+  "dataset:globis-university/aozorabunko-clean",
+  "dataset:hal-utokyo/Manga109-s",
+  "license:apache-2.0",
+  "region:us"
+ ],
+ "library_name": "transformers",
+ "cardData": {
+  "license": "apache-2.0",
+  "language": [
+   "en",
+   "ja",
+   "zh",
+   "ko"
+  ],
+  "pipeline_tag": "image-to-text",
+  "tags": [
+   "ocr",
+   "vision-language",
+   "vlm",
+   "manga-ocr",
+   "cjk"
+  ],
+  "library_name": "transformers",
+  "datasets": [
+   "JustANormalTinkerer/hayai-finetuning-dataset-with-korean",
+   "globis-university/aozorabunko-clean",
+   "hal-utokyo/Manga109-s"
+  ]
+ },
+ "siblings": [
+  {
+   "rfilename": ".gitattributes",
+   "size": 1519
+  },
+  {
+   "rfilename": "README.md",
+   "size": 9001
+  },
+  {
+   "rfilename": "config.json",
+   "size": 342
+  },
+  {
+   "rfilename": "configuration_hayai.py",
+   "size": 401
+  },
+  {
+   "rfilename": "model.safetensors",
+   "size": 622502784
+  },
+  {
+   "rfilename": "modeling_hayai.py",
+   "size": 29975
+  },
+  {
+   "rfilename": "tokenizer.json",
+   "size": 1247253
+  },
+  {
+   "rfilename": "tokenizer_config.json",
+   "size": 244
+  }
+ ],
+ "lastModified": "2026-09-20T11:34:50.000Z",
+ "downloads": 5248
+}

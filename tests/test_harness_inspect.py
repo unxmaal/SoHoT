@@ -711,12 +711,15 @@ TASK_LANES = {
         "image-segmentation", "unconditional-image-generation",
         "video-classification", "reinforcement-learning", "robotics",
         "tabular-classification", "tabular-regression", "multiple-choice",
-        "text-ranking", "text-retrieval", "time-series-forecasting",
+        "time-series-forecasting",
         "visual-question-answering", "document-question-answering",
         "zero-shot-image-classification", "graph-ml", "mask-generation",
         "zero-shot-object-detection", "text-to-3d", "image-to-3d",
         "image-feature-extraction", "keypoint-detection",
-        "visual-document-retrieval", "any-to-any", "other")},
+        "any-to-any", "other")},
+    # A query and documents in, a ranking out. #563.
+    "text-ranking": "retrieval", "text-retrieval": "retrieval",
+    "visual-document-retrieval": "retrieval",
 }
 
 
@@ -758,14 +761,14 @@ def test_video_to_video_has_no_lane_whatever_its_tags():
 
 
 @pytest.mark.parametrize("tags,lane", [
-    (["vision-language", "ocr"], ""),
-    (["unlimited-ocr"], ""),
-    (["PaddleOCR", "ocr"], ""),
+    (["vision-language", "ocr"], "ocr"),
+    (["unlimited-ocr"], "ocr"),
+    (["PaddleOCR", "ocr"], "ocr"),
     (["vision-language", "qwen3_5"], "code"),
     (["svg"], "svg"),
 ])
 def test_an_ocr_card_is_not_filed_under_code(tags, lane):
-    """#387: PaddleOCR-VL and hayai-ocr were fetched as code and declined."""
+    """#387: PaddleOCR-VL and hayai-ocr were fetched as code and declined; #562 gave them a lane."""
     assert ins.lane_for({"pipeline_tag": "image-text-to-text",
                          "tags": tags}) == lane
 

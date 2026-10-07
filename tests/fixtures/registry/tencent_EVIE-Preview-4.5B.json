@@ -1,0 +1,166 @@
+{
+ "id": "tencent/EVIE-Preview-4.5B",
+ "pipeline_tag": "visual-document-retrieval",
+ "tags": [
+  "colpali-engine",
+  "safetensors",
+  "qwen3_5",
+  "visual-document-retrieval",
+  "vision-language",
+  "colpali",
+  "colbert",
+  "late-interaction",
+  "multi-vector",
+  "vidore",
+  "document-retrieval",
+  "multimodal",
+  "state-of-the-art",
+  "sentence-transformers",
+  "en",
+  "fr",
+  "de",
+  "it",
+  "es",
+  "pt",
+  "zh",
+  "ja",
+  "multilingual",
+  "dataset:vidore/vidore_benchmark",
+  "dataset:vidore/vidore_benchmark_v2",
+  "base_model:Qwen/Qwen3.5-4B",
+  "base_model:finetune:Qwen/Qwen3.5-4B",
+  "license:apache-2.0",
+  "region:us"
+ ],
+ "library_name": "colpali-engine",
+ "cardData": {
+  "language": [
+   "en",
+   "fr",
+   "de",
+   "it",
+   "es",
+   "pt",
+   "zh",
+   "ja",
+   "multilingual"
+  ],
+  "license": "apache-2.0",
+  "library_name": "colpali-engine",
+  "pipeline_tag": "visual-document-retrieval",
+  "tags": [
+   "visual-document-retrieval",
+   "vision-language",
+   "colpali",
+   "colbert",
+   "late-interaction",
+   "multi-vector",
+   "qwen3_5",
+   "vidore",
+   "document-retrieval",
+   "multimodal",
+   "state-of-the-art",
+   "sentence-transformers"
+  ],
+  "base_model": [
+   "Qwen/Qwen3.5-4B"
+  ],
+  "datasets": [
+   "vidore/vidore_benchmark",
+   "vidore/vidore_benchmark_v2"
+  ],
+  "inference": false
+ },
+ "siblings": [
+  {
+   "rfilename": ".gitattributes",
+   "size": 50
+  },
+  {
+   "rfilename": "1_Dense/config.json",
+   "size": 225
+  },
+  {
+   "rfilename": "1_Dense/model.safetensors",
+   "size": 1311392
+  },
+  {
+   "rfilename": "2_Normalize/config.json",
+   "size": 94
+  },
+  {
+   "rfilename": "3_MultiVectorMask/config.json",
+   "size": 29
+  },
+  {
+   "rfilename": "LICENSE.txt",
+   "size": 24460
+  },
+  {
+   "rfilename": "README.md",
+   "size": 19248
+  },
+  {
+   "rfilename": "bidirectional.py",
+   "size": 1205
+  },
+  {
+   "rfilename": "chat_template.jinja",
+   "size": 656
+  },
+  {
+   "rfilename": "config.json",
+   "size": 2840
+  },
+  {
+   "rfilename": "config_sentence_transformers.json",
+   "size": 200
+  },
+  {
+   "rfilename": "download_data.py",
+   "size": 1059
+  },
+  {
+   "rfilename": "infer.py",
+   "size": 1692
+  },
+  {
+   "rfilename": "model.safetensors",
+   "size": 9079271992
+  },
+  {
+   "rfilename": "modules.json",
+   "size": 580
+  },
+  {
+   "rfilename": "processor_config.json",
+   "size": 1189
+  },
+  {
+   "rfilename": "reproduce.py",
+   "size": 12286
+  },
+  {
+   "rfilename": "reproduce.sh",
+   "size": 917
+  },
+  {
+   "rfilename": "requirements.txt",
+   "size": 57
+  },
+  {
+   "rfilename": "sentence_bert_config.json",
+   "size": 637
+  },
+  {
+   "rfilename": "tokenizer.json",
+   "size": 19989325
+  },
+  {
+   "rfilename": "tokenizer_config.json",
+   "size": 1174
+  }
+ ],
+ "lastModified": "2026-09-07T10:41:14.000Z",
+ "downloads": 986
+}

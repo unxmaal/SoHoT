@@ -31,6 +31,12 @@ COST_S = {
     "decide": 60,
     # Estimated: 14 tool loops of up to 20 steps each. #474.
     "agent": 900,
+    # Estimated: eight single images through the OS reader, seconds each. #562.
+    "ocr": 30,
+    # Estimated: fourteen queries over thirty documents, one model load each. #563.
+    "retrieval": 120,
+    # Estimated: sixteen sentences, one model load each. #564.
+    "pii": 120,
 }
 
 #: A lane nobody should start without meaning to. Video is ~40 minutes for ONE

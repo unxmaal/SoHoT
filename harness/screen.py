@@ -62,6 +62,12 @@ LANE_CANDIDATES = {
     # A full model is a text candidate; a peft adapter goes to the engine its
     # card names (engines.adapter_engine): nimble or decider. #423, #467.
     "decide": ("{model}", "nimble:{model}", "decider:{model}"),
+    # The OS reader is the incumbent, spelled `osocr:auto`; a discovered model is transformers. #562.
+    "ocr": ("hf-ocr:{model}",),
+    # bm25 is the incumbent; a cross-encoder first, an embedder when its card says so. #563.
+    "retrieval": ("rerank:{model}", "embed:{model}"),
+    # pii-regex is the incumbent; a discovered model is a transformers token tagger. #564.
+    "pii": ("hf-pii:{model}",),
     "stt": ("stt:{model}",),
     "tts": ("tts:{model}",),
     **{lane: ("{model}",) for lane in lanes.TEXT_SERVED},
@@ -90,7 +96,9 @@ NOT_A_MODEL = ("lora", "comfyui", "workflow", "adapter", "controlnet",
 
 #: The one substring that is a model in its own right despite matching above.
 #: Kept as an enumerated exception so the list can be read rather than guessed.
-NOT_A_MODEL_EXCEPTIONS = ("lora-ready",)
+NOT_A_MODEL_EXCEPTIONS = ("lora-ready",
+                          # A serving-compatibility tag on rerankers and embedders. #563.
+                          "text-embeddings-inference")
 
 
 def is_attachment(description: str) -> str:
@@ -167,6 +175,12 @@ def candidate_for(lane: str, model: str, attaches_to: str = "",
                       and s.partition(":")[0] == owner)
     if not specs:
         return ""
+    if not attaches_to and len(specs) > 1:
+        from harness import engines
+        if card is None and conn is not None:
+            from harness import memory_store as ms
+            card = ms.card_of(conn, model)
+        specs = engines.by_card(specs, card)
     if lanes.canonical(lane) == "svg":
         # OmniSVG runs only through its own runner, not a text server. #318.
         from evals.runners.omnisvg import MODELS
@@ -254,7 +268,11 @@ def runner_gap(lane: str, model: str, attaches_to: str = "",
     spec; this also answers for an adapter no engine is known to load. #467."""
     spec = candidate_for(lane, model, attaches_to, conn=conn, card=card)
     if spec:
-        return no_runner(spec) or case_gap(lane, spec)
+        from harness import engines
+        if card is None and conn is not None:
+            from harness import memory_store as ms
+            card = ms.card_of(conn, model)
+        return no_runner(spec) or case_gap(lane, spec) or engines.card_gap(spec, card)
     if attaches_to and takes_attachment(lane, attaches_to):
         from harness import engines
         return (f"no {lanes.canonical(lane)} engine is known to load this "
@@ -433,7 +451,9 @@ def why_nothing_passed(summary: dict | None, candidate: str,
 ENGINE_RUNTIMES = {"mflux": "mflux", "diffusers": "diffusers",
                    "diffusers-video": "diffusers", "acestep": "ace-step",
                    # The audio server's runtime, as scripts/versions.sh pins it. #408.
-                   "tts": "mlx-audio", "stt": "mlx-audio"}
+                   "tts": "mlx-audio", "stt": "mlx-audio",
+                   "hf-ocr": "transformers", "rerank": "sentence-transformers",
+                   "embed": "sentence-transformers", "hf-pii": "transformers"}
 LOAD_RUNTIME = "mlx-lm"
 
 
@@ -463,7 +483,7 @@ def _sentence(cls: str, why: str, limit: str) -> str:
     if cls == reasons.LOAD_FAILED_RUNTIME:
         return f"the installed runtime could not load it{tail}"
     if cls == reasons.LOAD_FAILED_LAYOUT:
-        return f"needs its own runner: stock diffusers could not assemble it{tail}"
+        return f"needs its own runner: the stock loader could not assemble it{tail}"
     if cls == reasons.GPU_FAULT:
         return f"the GPU faulted running it on this machine{tail}"
     if reasons.CLASSES[cls][1] == reasons.LIMIT:

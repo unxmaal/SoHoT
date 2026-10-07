@@ -1,0 +1,7 @@
+id: pii-street-address
+modality: pii
+prompt: The replacement drive ships to 742 Evergreen Terrace, Springfield, OR 97477
+  tomorrow.
+assert:
+  pii:
+  - 742 Evergreen Terrace, Springfield, OR 97477

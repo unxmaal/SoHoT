@@ -1,0 +1,7 @@
+id: ocr-code-line
+modality: ocr
+prompt: Transcribe all of the text in this image exactly, line by line.
+input_file: images/code-line.png
+assert:
+  text: 'def total(items): return sum(items)'
+  max_cer: 0.1

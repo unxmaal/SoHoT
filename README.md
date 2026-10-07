@@ -1471,6 +1471,95 @@ never reached the server.
     uv run python -m evals.run --modality agent --candidates \
       sohot-code,q3-coder,claude-code:claude-opus-5-5
 
+The ocr lane reads text out of an image. Its eight cases under
+`evals/cases/ocr/` are PNGs rendered by `uv run python -m evals.ocr_corpus`
+(Pillow's bundled font, fixed sizes, one seeded noisy background, one tilted
+label), each with the exact text it was drawn from. A case scores the
+character error rate of the transcription against that text, case-sensitive,
+with line breaks and runs of spaces counted as one space; the lane's figure is
+errors over reference characters across all cases, so a short sign weighs less
+than a long line. A case passes at a CER of 0.1 or less. The negative control
+is pinned in `tests/test_ocr_lane.py`: a reader handed each case's neighbour's
+text fails every case at a CER over 0.5, and the OS reader reads the committed
+images under 0.1, so a miss is the candidate's and not the fixture's.
+
+`osocr:auto` is the incumbent: the reader the image lane's text check already
+uses (Apple Vision here, Windows.Media.Ocr or RapidOCR elsewhere).
+`hf-ocr:<repo>[,prompt=...,max_new_tokens=...,device=...]` runs a
+transformers image-text-to-text or image-to-text model through
+`scripts/hf-task.sh`, which builds its own venv under
+`~/localharness/venvs/hf-task` (torch, transformers, accelerate, safetensors,
+pillow at the pins in `scripts/versions.sh`) on first use and rebuilds it when
+a pin moves. It never passes `trust_remote_code`: a repo that ships its own
+modelling code, such as baidu/Unlimited-OCR or hayai-ocr-v2, fails the screen
+as needing its own runner and is reported under runners wanted.
+PaddleOCR-VL loads through transformers' own class and wants `prompt=OCR:`.
+Discovery files a card under ocr when its task is image-to-text or
+image-text-to-text and a tag names OCR; a captioner without that tag stays
+laneless.
+
+    uv run python -m evals.run --modality ocr --candidates \
+      osocr:auto,hf-ocr:PaddlePaddle/PaddleOCR-VL-1.6,prompt=OCR:
+
+The retrieval lane ranks a corpus for a query. `evals/cases/retrieval/` holds
+one corpus of thirty short operations notes (`corpus.jsonl`) and fourteen
+queries, each labelled with the one or two documents that answer it; most
+queries are paraphrased so that word overlap alone does not find the answer.
+A case passes when every labelled document is in the top five (recall@5 of
+1). The lane reports recall@5 and binary-gain nDCG@10, each a mean over
+queries. The negative controls in `tests/test_retrieval_lane.py`: a ranker
+that puts the labelled documents last scores recall 0 and passes nothing, a
+seeded shuffle stays under 0.5, and BM25 has to land between chance and
+perfect.
+
+`bm25` is the incumbent: Okapi BM25 in this checkout's own interpreter, with no
+weights. `rerank:<repo>` scores every (query, document) pair with a
+sentence-transformers CrossEncoder; `embed:<repo>` ranks by the cosine of
+normalised SentenceTransformer embeddings, using the model's own query and
+document prompts when it names them. Both run in the hf-task venv and take
+`revision=` and `device=`. Discovery files text-ranking, text-retrieval and
+visual-document-retrieval cards under retrieval, and a sentence-similarity or
+feature-extraction card only when a tag names retrieval or reranking; a
+general embedder stays laneless and a text-classification reranker stays in
+decide. The ladder spells a card's model `embed:` when its task is
+sentence-similarity or feature-extraction and `rerank:` otherwise. A card whose
+library is not sentence-transformers or transformers (Contrastive-LM's own
+`contrastive-lm`, the colpali-engine EVIE models), or whose task is
+visual-document-retrieval (it embeds page images, and these cases are text),
+is reported under runners wanted before anything is downloaded.
+
+    uv run python -m evals.run --modality retrieval --candidates \
+      bm25,embed:BAAI/bge-small-en-v1.5,rerank:cross-encoder/ettin-reranker-1b-v1
+
+The pii lane marks the personal data in a sentence. Its sixteen cases under
+`evals/cases/pii/` are sentences with the exact strings that are personal
+(names, emails, phone numbers, a street address, an SSN, a card number, an
+IBAN, an IP address, an API key, a date of birth, a passport number, a
+private URL), plus four with none. A label must occur exactly once in its
+sentence, or the case fails to load. Scoring is per token, a token being a
+run of letters and digits: a token is personal when it overlaps a labelled
+string and marked when it overlaps a predicted span. Label names are ignored,
+because every model names its classes differently. The lane's `pii_f1` is
+pooled over all tokens, with `pii_precision` and `pii_recall` beside it. A
+case passes at a token F1 of 0.8, and a sentence with nothing personal passes
+only when nothing is marked. The negative controls in `tests/test_pii_lane.py`:
+marking nothing scores 0, marking every token passes no case and stays under
+0.6, and the pattern baseline lands between them.
+
+`pii-regex` is the incumbent: patterns for things with a shape (emails, URLs,
+IPv4, IBANs, card numbers, SSNs, phone numbers, API keys), with no weights. It
+cannot see a name. `hf-pii:<repo>[,revision=,device=]` runs a transformers
+token-classification model in the hf-task venv and counts every entity group
+it returns as personal. Discovery files a token-classification card under pii
+only when a tag names personal data (`pii`, `privacy`, `anonymization`,
+`deidentification`, `redaction`, read word by word, so
+`openai_privacy_filter` counts). A general named-entity tagger stays laneless.
+mistralai/Shieldstral-1.0-3B is a generative guard with no task on its card:
+lineage files it under code, and its vllm library is not one hf-pii loads.
+
+    uv run python -m evals.run --modality pii --candidates \
+      pii-regex,hf-pii:openai/privacy-filter,hf-pii:LH-Tech-AI/Shield-82M
+
 `repair` costs nothing extra, so it is the one to understand. Everything already
 checks its own output. It runs the code it wrote, draws the SVG to see whether
 anything is visible, opens the web page in a browser. All of that was

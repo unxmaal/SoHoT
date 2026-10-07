@@ -1,0 +1,7 @@
+id: ocr-invoice-line
+modality: ocr
+prompt: Transcribe all of the text in this image exactly, line by line.
+input_file: images/invoice-line.png
+assert:
+  text: 'Invoice #4471 due 2026-11-30'
+  max_cer: 0.1

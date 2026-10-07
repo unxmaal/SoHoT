@@ -1,0 +1,6 @@
+id: pii-card-number
+modality: pii
+prompt: The order was charged to card 4111 1111 1111 1111 expiring 09/29.
+assert:
+  pii:
+  - 4111 1111 1111 1111

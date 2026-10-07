@@ -60,6 +60,10 @@ TRANSFORMERS_PIN="transformers==5.17.0"
 ACCELERATE_PIN="accelerate==1.15.0"
 SAFETENSORS_PIN="safetensors==0.8.0"
 PILLOW_PIN="pillow==12.3.0"
+# The hf-task engines: OCR tokenizers ship slow sentencepiece models (trocr). #562.
+SENTENCEPIECE_PIN="sentencepiece==0.2.2"
+# The retrieval lane's rerank: and embed: engines (CrossEncoder, SentenceTransformer). #563.
+SENTENCE_TRANSFORMERS_PIN="sentence-transformers==6.1.0"
 
 # The decide lane's nimble engine (#423), built by scripts/nimble-venv.sh. The
 # checkout is pinned by commit; its requirements/mlx.txt and training.txt pins

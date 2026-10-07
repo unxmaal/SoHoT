@@ -255,6 +255,15 @@ SAMPLES = {
                "nimble:bespokelabs/Bespoke-Nimble-9B,revision=abc"],
     "decider": ["decider:StrandsAgents/strands-decider-2B-hobson-v21",
                 "decider:StrandsAgents/strands-decider-2B-hobson-v21,device=cpu"],
+    "osocr": ["osocr:auto", "osocr:vision"],
+    "hf-ocr": ["hf-ocr:PaddlePaddle/PaddleOCR-VL-1.6",
+               "hf-ocr:PaddlePaddle/PaddleOCR-VL-1.6,prompt=OCR:"],
+    "bm25": ["bm25"],
+    "rerank": ["rerank:cross-encoder/ettin-reranker-1b-v1",
+               "rerank:cross-encoder/ettin-reranker-1b-v1,device=cpu"],
+    "embed": ["embed:BAAI/bge-small-en-v1.5", "embed:BAAI/bge-small-en-v1.5,revision=abc"],
+    "pii-regex": ["pii-regex"],
+    "hf-pii": ["hf-pii:openai/privacy-filter", "hf-pii:openai/privacy-filter,device=cpu"],
 }
 SAMPLE_SPECS = [s for specs in SAMPLES.values() for s in specs]
 LANE_OF = {"image": "image", "video": "video", "music": "music"}

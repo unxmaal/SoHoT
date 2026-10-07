@@ -26,7 +26,9 @@ from harness.checks import html as html_check
 from harness.checks import image as image_check
 from harness.checks import music as music_check
 from harness.checks import ocr as ocr_check
+from harness.checks import pii as pii_check
 from harness.checks import render as render_check
+from harness.checks import retrieval as retrieval_check
 from harness.checks import video as video_check
 from harness.checks import speech as speech_check
 from harness.checks import svg as svg_check
@@ -60,6 +62,8 @@ class Case:
     #: Checks applied to whatever came back.
     assertions: dict = field(default_factory=dict)
     source: Path | None = None
+    #: A file the candidate reads, resolved beside the case: the ocr lane's image. #562.
+    input_file: Path | None = None
 
 
 def _check_image(artifact, case: Case, adherence: str | None = None,
@@ -275,6 +279,42 @@ def _check_decide(artifact, case: Case) -> CheckResult:
                               case.assertions["answers"])
 
 
+def _check_pii(artifact, case: Case) -> CheckResult:
+    """Token F1 of the marked spans against the labelled ones. #564."""
+    if isinstance(artifact, Path):
+        if not artifact.exists():
+            return CheckResult(False, f"engine left no output at {artifact.name}")
+        artifact = artifact.read_text(encoding="utf-8")
+    return pii_check.check(str(artifact or ""), case.prompt, case.params["spans"])
+
+
+def _check_retrieval(artifact, case: Case) -> CheckResult:
+    """Recall@k decides; nDCG@10 orders. #563."""
+    if isinstance(artifact, Path):
+        if not artifact.exists():
+            return CheckResult(False, f"engine left no output at {artifact.name}")
+        artifact = artifact.read_text(encoding="utf-8")
+    return retrieval_check.check(str(artifact or ""), case.assertions["relevant"],
+                                 int(case.assertions.get("k", retrieval_check.DEFAULT_K)))
+
+
+def _check_ocr(artifact, case: Case) -> CheckResult:
+    """Character error rate of the transcription against the reference. #562."""
+    if isinstance(artifact, Path):
+        if not artifact.exists():
+            return CheckResult(False, f"engine left no output at {artifact.name}")
+        artifact = artifact.read_text(encoding="utf-8")
+    errors, chars = ocr_check.text_cer(case.assertions["text"], str(artifact or ""))
+    rate = min(1.0, errors / chars) if chars else 1.0
+    limit = case.assertions.get("max_cer", ocr_check.DEFAULT_MAX_CER)
+    out = CheckResult(rate <= limit, "")
+    out.metrics = {"cer": round(rate, 4), "cer_errors": errors, "cer_chars": chars}
+    if not out.ok:
+        out.reason = (f"character error rate {rate:.2f} over the limit of {limit}; "
+                      f"read {str(artifact).strip()[:80]!r}")
+    return out
+
+
 def _check_agent(artifact, case: Case) -> CheckResult:
     """The runner graded the sandbox before deleting it; this reads its verdict. #474."""
     try:
@@ -293,6 +333,9 @@ def _check_agent(artifact, case: Case) -> CheckResult:
 CHECKERS = {
     "agent": lambda a, c, **kw: _check_agent(a, c),
     "decide": lambda a, c, **kw: _check_decide(a, c),
+    "ocr": lambda a, c, **kw: _check_ocr(a, c),
+    "retrieval": lambda a, c, **kw: _check_retrieval(a, c),
+    "pii": lambda a, c, **kw: _check_pii(a, c),
     "svg": lambda a, c, **kw: _check_svg(a, c),
     "music": _check_music,
     "web": lambda a, c, **kw: _check_web(a, c),
@@ -371,6 +414,13 @@ METRIC_DIRECTION = {
     # The per-slot context the candidate was served at. #498.
     "agent_ctx": "neutral",
     "prompt_tokens": "neutral",
+    # retrieval (#563): every relevant document in the top k, and how high.
+    "retrieval_recall": "higher",
+    "retrieval_ndcg": "higher",
+    # pii (#564): token F1 over marked spans, with its two halves beside it.
+    "pii_f1": "higher",
+    "pii_precision": "higher",
+    "pii_recall": "higher",
 }
 
 
@@ -443,7 +493,10 @@ ASSERTION_KEYS = {"svg": TEXT_ASSERTIONS, "web": TEXT_ASSERTIONS,
                   # both a capability check and the lane's own ceiling control.
                   "music": {"max_wer", "expect_vocals", "duration_s"},
                   "decide": {"answers"},
-                  "agent": {"answer", "hidden"}}
+                  "agent": {"answer", "hidden"},
+                  "ocr": {"text", "max_cer"},
+                  "retrieval": {"relevant", "k"},
+                  "pii": {"pii"}}
 
 
 #: Lanes whose runner returns text rather than a file.
@@ -453,6 +506,8 @@ MEDIA_MODALITIES = {"image", "video", "tts", "music"}
 #: The suffix a text lane's output is written to the run dir under.
 TEXT_SUFFIX = {"svg": ".svg", "web": ".html", "code": ".py", "decide": ".json",
                "agent": ".json"}
+#: Lanes whose case hands the candidate a file to read through input_file. #562.
+INPUT_MODALITIES = {"ocr", "retrieval"}
 #: Lanes whose runner drives a tool loop over a sandboxed repo. #474.
 AGENT_MODALITIES = {"agent"}
 
@@ -634,6 +689,10 @@ def _digest_parts(h, c) -> None:
                  json.dumps(dict(c.assertions), sort_keys=True, default=str)):
         h.update(str(part).encode("utf-8"))
         h.update(b"\x00")
+    # The input's bytes, not its path: a moved image asks the same question. #562.
+    source = getattr(c, "input_file", None)
+    if source is not None and Path(source).is_file():
+        h.update(hashlib.sha256(Path(source).read_bytes()).digest())
 
 
 def case_digest(case) -> str:
@@ -746,6 +805,7 @@ def load_cases(directory: str | Path) -> list[Case]:
                 f"(known: {', '.join(sorted(MODALITIES))})")
         context = _load_context(path, raw)
         audio = _load_audio(path, raw, modality)
+        input_file = _load_input(path, raw, modality)
         params = raw.get("params") or {}
         assertions = raw.get("assert") or {}
         if modality == "code" and not assertions.get("checks"):
@@ -765,9 +825,15 @@ def load_cases(directory: str | Path) -> list[Case]:
             prompt = f"{prompt.rstrip()}\n\n{decide_check.render(params['schema'])}"
         if modality == "agent":
             params = {**params, **_agent_params(path, params, assertions)}
+        if modality == "ocr" and not str(assertions.get("text") or "").strip():
+            raise ValueError(f"{path.name}: an ocr case needs assert.text, the reference")
+        if modality == "retrieval":
+            _check_relevant(path, input_file, assertions.get("relevant"))
+        if modality == "pii":
+            params = {**params, "spans": _pii_spans(path, prompt, assertions.get("pii"))}
         cases.append(Case(id=raw["id"], modality=modality, prompt=prompt,
                           context=context, audio=audio, params=params,
-                          assertions=assertions, source=path,
+                          assertions=assertions, source=path, input_file=input_file,
                           language=raw.get("language") or "en",
                           methods=tuple(raw.get("methods") or ())))
     return cases
@@ -828,6 +894,45 @@ def _load_audio(path: Path, raw: dict, modality: str) -> Path | None:
         source = path.parent / filename
     if not source.exists():
         raise ValueError(f"{path.name}: audio_file '{filename}' not found")
+    return source
+
+
+def _pii_spans(path: Path, text: str, labels) -> list[list[int]]:
+    """Each labelled string's [start, end] in the sentence; it must occur exactly once. #564."""
+    if not isinstance(labels, list):
+        raise ValueError(f"{path.name}: a pii case needs assert.pii, a list (empty for none)")
+    spans = []
+    for label in map(str, labels):
+        at = text.find(label)
+        if at < 0:
+            raise ValueError(f"{path.name}: {label!r} is not in the sentence")
+        if text.find(label, at + 1) >= 0:
+            raise ValueError(f"{path.name}: {label!r} occurs more than once; label a longer string")
+        spans.append([at, at + len(label)])
+    return spans
+
+
+def _check_relevant(path: Path, corpus: Path, relevant) -> None:
+    """A retrieval case's labels name documents its corpus holds. #563."""
+    if not relevant or not isinstance(relevant, list):
+        raise ValueError(f"{path.name}: a retrieval case needs assert.relevant, a list of ids")
+    ids = {json.loads(line)["id"] for line in corpus.read_text(encoding="utf-8").splitlines()
+           if line.strip()}
+    missing = sorted(set(map(str, relevant)) - ids)
+    if missing:
+        raise ValueError(f"{path.name}: relevant ids {missing} are not in {corpus.name}")
+
+
+def _load_input(path: Path, raw: dict, modality: str) -> Path | None:
+    """`input_file:`, resolved beside the case; required where the lane reads one. #562."""
+    filename = raw.get("input_file")
+    if not filename:
+        if modality in INPUT_MODALITIES:
+            raise ValueError(f"{path.name}: an {modality} case needs input_file")
+        return None
+    source = path.parent / filename
+    if not source.is_file():
+        raise ValueError(f"{path.name}: input_file '{filename}' not found beside the case")
     return source
 
 
@@ -1050,7 +1155,11 @@ def _gather_metrics(rows: list[Result]) -> dict[str, list[float]]:
 RATIO_METRICS = {"wer": ("wer_errors", "wer_words"),
                  "agent_valid_call_rate": ("agent_valid_calls", "agent_tool_calls"),
                  "decide_accuracy": ("decide_correct", "decide_fields"),
-                 "decide_brier": ("decide_brier_sum", "decide_fields")}
+                 "decide_brier": ("decide_brier_sum", "decide_fields"),
+                 "cer": ("cer_errors", "cer_chars"),
+                 "pii_f1": ("pii_2tp", "pii_f1_den"),
+                 "pii_precision": ("pii_tp", "pii_pred"),
+                 "pii_recall": ("pii_tp", "pii_gold")}
 #: Bookkeeping that should not appear as a column of its own.
 _COMPANIONS = {name for pair in RATIO_METRICS.values() for name in pair}
 

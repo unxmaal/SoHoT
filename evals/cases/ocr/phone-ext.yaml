@@ -1,0 +1,7 @@
+id: ocr-phone-ext
+modality: ocr
+prompt: Transcribe all of the text in this image exactly, line by line.
+input_file: images/phone-ext.png
+assert:
+  text: Call +1 (555) 013-2297 ext. 42
+  max_cer: 0.1

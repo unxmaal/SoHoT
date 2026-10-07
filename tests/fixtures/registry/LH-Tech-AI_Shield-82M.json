@@ -1,0 +1,88 @@
+{
+ "id": "LH-Tech-AI/Shield-82M",
+ "pipeline_tag": "token-classification",
+ "tags": [
+  "safetensors",
+  "roberta",
+  "distil",
+  "pii",
+  "security",
+  "shield",
+  "small",
+  "cpu",
+  "fast",
+  "open",
+  "open-source",
+  "lh-tech",
+  "bert",
+  "token-classification",
+  "dataset:ai4privacy/pii-masking-200k",
+  "base_model:distilbert/distilroberta-base",
+  "base_model:finetune:distilbert/distilroberta-base",
+  "region:us"
+ ],
+ "library_name": null,
+ "cardData": {
+  "datasets": [
+   "ai4privacy/pii-masking-200k"
+  ],
+  "base_model": [
+   "distilbert/distilroberta-base"
+  ],
+  "pipeline_tag": "token-classification",
+  "tags": [
+   "distil",
+   "pii",
+   "security",
+   "shield",
+   "small",
+   "cpu",
+   "fast",
+   "open",
+   "open-source",
+   "lh-tech",
+   "bert",
+   "roberta"
+  ]
+ },
+ "siblings": [
+  {
+   "rfilename": ".gitattributes",
+   "size": 1519
+  },
+  {
+   "rfilename": "README.md",
+   "size": 3538
+  },
+  {
+   "rfilename": "config.json",
+   "size": 3134
+  },
+  {
+   "rfilename": "model.safetensors",
+   "size": 326298868
+  },
+  {
+   "rfilename": "shield-82m.ipynb",
+   "size": 13259
+  },
+  {
+   "rfilename": "tokenizer.json",
+   "size": 3558738
+  },
+  {
+   "rfilename": "tokenizer_config.json",
+   "size": 358
+  },
+  {
+   "rfilename": "training_args.bin",
+   "size": 5137
+  },
+  {
+   "rfilename": "use.py",
+   "size": 3033
+  }
+ ],
+ "lastModified": "2026-04-25T10:16:56.000Z",
+ "downloads": 71
+}

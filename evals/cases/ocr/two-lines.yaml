@@ -1,0 +1,9 @@
+id: ocr-two-lines
+modality: ocr
+prompt: Transcribe all of the text in this image exactly, line by line.
+input_file: images/two-lines.png
+assert:
+  text: 'The quick brown fox
+
+    jumps over the lazy dog.'
+  max_cer: 0.1

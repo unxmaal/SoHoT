@@ -1,0 +1,7 @@
+id: pii-phone-callback
+modality: pii
+prompt: Call me back on +1 (555) 013-2297 after six, this is Dev Patel.
+assert:
+  pii:
+  - +1 (555) 013-2297
+  - Dev Patel

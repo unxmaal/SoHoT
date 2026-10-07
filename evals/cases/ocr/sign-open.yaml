@@ -1,0 +1,7 @@
+id: ocr-sign-open
+modality: ocr
+prompt: Transcribe all of the text in this image exactly, line by line.
+input_file: images/sign-open.png
+assert:
+  text: OPEN 24 HOURS
+  max_cer: 0.1

@@ -1,0 +1,9 @@
+id: retrieval-decision-calibration
+modality: retrieval
+prompt: how is the calibration of the decision model measured
+input_file: corpus.jsonl
+assert:
+  relevant:
+  - d20
+  - d21
+  k: 5

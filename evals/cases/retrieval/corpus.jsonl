@@ -1,0 +1,30 @@
+{"id": "d01", "text": "To rotate the gateway API key, generate a new key with `soh key new`, update the client config, then restart the gateway service."}
+{"id": "d02", "text": "The gateway listens on port 4000 on the loopback interface only; LAN clients need the key and the --lan flag."}
+{"id": "d03", "text": "Model weights live under the HF cache on the fast external volume; set HF_HOME to move them."}
+{"id": "d04", "text": "If the external volume is unmounted, downloads fail with a disk floor error rather than filling the internal drive."}
+{"id": "d05", "text": "The image lane renders a sign and reads the text back with OCR to score character error rate."}
+{"id": "d06", "text": "Speech is scored by transcribing the generated audio and computing the word error rate against the script."}
+{"id": "d07", "text": "A screen run uses one small case per lane to prove the pipeline loads before any full measurement."}
+{"id": "d08", "text": "Adoption requires the challenger to beat the incumbent on the lane metric and a paired sign test at alpha 0.05."}
+{"id": "d09", "text": "The nightly sweep reads release feeds and the model registry to propose new candidates."}
+{"id": "d10", "text": "Candidates that need CUDA are declined on Apple Silicon and reopened when a machine with a card reports in."}
+{"id": "d11", "text": "To free disk space, delete rejected weights with `soh disk --delete rejected`; adopted models are never removed."}
+{"id": "d12", "text": "The worker runs queued jobs one at a time so two models never load into memory together."}
+{"id": "d13", "text": "Memory pressure above the ceiling pauses the queue until the machine has enough free unified memory."}
+{"id": "d14", "text": "The privacy scanner refuses a commit that contains a home directory path or a private hostname."}
+{"id": "d15", "text": "Reports are published to a public page from the reports branch after a privacy scan."}
+{"id": "d16", "text": "The music lane generates a song from lyrics and transcribes the vocals to measure sung word error rate."}
+{"id": "d17", "text": "Video generation on the Studio takes about seven minutes for a short clip, so the lane runs only when named."}
+{"id": "d18", "text": "The agent lane copies a small repository into a sandbox and runs a hidden test after the model edits it."}
+{"id": "d19", "text": "Tool calls in the agent lane are refused if a path escapes the sandbox or passes through a symlink."}
+{"id": "d20", "text": "The decide lane asks for typed decisions and scores accuracy, Brier score and calibration error."}
+{"id": "d21", "text": "Calibration is measured with expected calibration error once at least one hundred decisions are pooled."}
+{"id": "d22", "text": "llama-server loads GGUF files by stem and serves them through the router on its own port."}
+{"id": "d23", "text": "mlx_lm.server swaps to whatever repository the request names, so evaluating two models alternately reloads each time."}
+{"id": "d24", "text": "A text model's context window is planned from free memory, including the key-value cache at the chosen precision."}
+{"id": "d25", "text": "Holdout cases are chosen by a hash of the case content so that editing one case leaves the others on their side."}
+{"id": "d26", "text": "Discovery searches the registry by substring of the repository id, so a query must appear inside the name."}
+{"id": "d27", "text": "A retest reopens a rejected candidate up to three times over three weeks to catch false negatives."}
+{"id": "d28", "text": "The launchd agents restart services after a reboot; discovery can be disabled without touching the others."}
+{"id": "d29", "text": "Windows machines run the same harness with a job object to measure peak memory instead of /usr/bin/time."}
+{"id": "d30", "text": "The OCR check on Linux uses RapidOCR because tesseract misread most generated signs."}

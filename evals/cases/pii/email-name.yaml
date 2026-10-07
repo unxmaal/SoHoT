@@ -1,0 +1,8 @@
+id: pii-email-name
+modality: pii
+prompt: Please forward the invoice to Maria Gonzalez at maria.gonzalez@example.com
+  before Friday.
+assert:
+  pii:
+  - Maria Gonzalez
+  - maria.gonzalez@example.com

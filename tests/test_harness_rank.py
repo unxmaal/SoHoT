@@ -124,10 +124,10 @@ def test_the_priority_order_is_the_one_that_was_asked_for():
 
     `music` is last and appended, never inserted: it was asked for after the
     other five were ranked and has never been ranked against them (#237).
-    `decide` and `agent` are appended the same way (#423, #474).
+    `decide`, `agent`, `ocr`, `retrieval` and `pii` are appended the same way (#423, #474, #562-#564).
     """
     assert rank.LANE_PRIORITY == ("image", "code", "web", "svg", "video",
-                                  "music", "decide", "agent")
+                                  "music", "decide", "agent", "ocr", "retrieval", "pii")
     got = [rank.priority_of(l) for l in rank.LANE_PRIORITY]
     assert got == sorted(got, reverse=True), "priority must fall down the list"
 

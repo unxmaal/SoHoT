@@ -1,0 +1,8 @@
+id: retrieval-reclaim-storage
+modality: retrieval
+prompt: how do I reclaim storage taken by models that lost
+input_file: corpus.jsonl
+assert:
+  relevant:
+  - d11
+  k: 5

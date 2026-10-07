@@ -1,0 +1,7 @@
+id: pii-ssn-form
+modality: pii
+prompt: Applicant Jordan Lee listed SSN 078-05-1120 on the rental form.
+assert:
+  pii:
+  - Jordan Lee
+  - 078-05-1120

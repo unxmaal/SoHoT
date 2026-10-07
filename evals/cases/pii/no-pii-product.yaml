@@ -1,0 +1,5 @@
+id: pii-no-pii-product
+modality: pii
+prompt: Apple released macOS with a new Metal backend for machine learning workloads.
+assert:
+  pii: []

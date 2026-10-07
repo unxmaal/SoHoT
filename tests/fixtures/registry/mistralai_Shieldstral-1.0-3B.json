@@ -1,0 +1,106 @@
+{
+ "id": "mistralai/Shieldstral-1.0-3B",
+ "pipeline_tag": null,
+ "tags": [
+  "vllm",
+  "safetensors",
+  "mistral3",
+  "mistral-common",
+  "en",
+  "fr",
+  "es",
+  "de",
+  "it",
+  "pt",
+  "nl",
+  "zh",
+  "ja",
+  "ko",
+  "ar",
+  "ru",
+  "arxiv:2607.25857",
+  "base_model:mistralai/Ministral-3-3B-Base-2512",
+  "base_model:finetune:mistralai/Ministral-3-3B-Base-2512",
+  "license:apache-2.0",
+  "region:us"
+ ],
+ "library_name": "vllm",
+ "cardData": {
+  "library_name": "vllm",
+  "language": [
+   "en",
+   "fr",
+   "es",
+   "de",
+   "it",
+   "pt",
+   "nl",
+   "zh",
+   "ja",
+   "ko",
+   "ar",
+   "ru"
+  ],
+  "license": "apache-2.0",
+  "inference": false,
+  "base_model": [
+   "mistralai/Ministral-3-3B-Base-2512"
+  ],
+  "extra_gated_description": "If you want to learn more about how we process your personal data, please read our <a href=\"https://mistral.ai/terms/\">Privacy Policy</a>.",
+  "tags": [
+   "mistral-common"
+  ]
+ },
+ "siblings": [
+  {
+   "rfilename": ".gitattributes",
+   "size": 1618
+  },
+  {
+   "rfilename": "README.md",
+   "size": 23152
+  },
+  {
+   "rfilename": "chat_template.jinja",
+   "size": 7095
+  },
+  {
+   "rfilename": "config.json",
+   "size": 1654
+  },
+  {
+   "rfilename": "consolidated.safetensors",
+   "size": 7698234952
+  },
+  {
+   "rfilename": "generation_config.json",
+   "size": 126
+  },
+  {
+   "rfilename": "model.safetensors",
+   "size": 7698241104
+  },
+  {
+   "rfilename": "params.json",
+   "size": 1208
+  },
+  {
+   "rfilename": "processor_config.json",
+   "size": 660
+  },
+  {
+   "rfilename": "tekken.json",
+   "size": 16275088
+  },
+  {
+   "rfilename": "tokenizer.json",
+   "size": 17077322
+  },
+  {
+   "rfilename": "tokenizer_config.json",
+   "size": 261
+  }
+ ],
+ "lastModified": "2026-08-05T10:06:52.000Z",
+ "downloads": 38037
+}

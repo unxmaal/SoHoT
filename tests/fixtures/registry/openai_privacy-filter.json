@@ -1,0 +1,129 @@
+{
+ "id": "openai/privacy-filter",
+ "pipeline_tag": "token-classification",
+ "tags": [
+  "transformers",
+  "onnx",
+  "safetensors",
+  "openai_privacy_filter",
+  "token-classification",
+  "transformers.js",
+  "license:apache-2.0",
+  "endpoints_compatible",
+  "deploy:sagemaker",
+  "region:us"
+ ],
+ "library_name": "transformers",
+ "cardData": {
+  "license": "apache-2.0",
+  "pipeline_tag": "token-classification",
+  "library_name": "transformers",
+  "tags": [
+   "transformers.js"
+  ]
+ },
+ "siblings": [
+  {
+   "rfilename": ".gitattributes",
+   "size": 2061
+  },
+  {
+   "rfilename": "README.md",
+   "size": 11057
+  },
+  {
+   "rfilename": "config.json",
+   "size": 3039
+  },
+  {
+   "rfilename": "model.safetensors",
+   "size": 2798989498
+  },
+  {
+   "rfilename": "model.sig",
+   "size": 8685
+  },
+  {
+   "rfilename": "onnx/model.onnx",
+   "size": 137674
+  },
+  {
+   "rfilename": "onnx/model.onnx_data",
+   "size": 1822721024
+  },
+  {
+   "rfilename": "onnx/model.onnx_data_1",
+   "size": 1907131392
+  },
+  {
+   "rfilename": "onnx/model.onnx_data_2",
+   "size": 1901636608
+  },
+  {
+   "rfilename": "onnx/model_fp16.onnx",
+   "size": 142860
+  },
+  {
+   "rfilename": "onnx/model_fp16.onnx_data",
+   "size": 2075624448
+  },
+  {
+   "rfilename": "onnx/model_fp16.onnx_data_1",
+   "size": 741430784
+  },
+  {
+   "rfilename": "onnx/model_q4.onnx",
+   "size": 160219
+  },
+  {
+   "rfilename": "onnx/model_q4.onnx_data",
+   "size": 917120144
+  },
+  {
+   "rfilename": "onnx/model_q4f16.onnx",
+   "size": 165744
+  },
+  {
+   "rfilename": "onnx/model_q4f16.onnx_data",
+   "size": 809061992
+  },
+  {
+   "rfilename": "onnx/model_quantized.onnx",
+   "size": 162239
+  },
+  {
+   "rfilename": "onnx/model_quantized.onnx_data",
+   "size": 1618042064
+  },
+  {
+   "rfilename": "original/config.json",
+   "size": 707
+  },
+  {
+   "rfilename": "original/dtypes.json",
+   "size": 4108
+  },
+  {
+   "rfilename": "original/model.safetensors",
+   "size": 2798984088
+  },
+  {
+   "rfilename": "original/viterbi_calibration.json",
+   "size": 372
+  },
+  {
+   "rfilename": "tokenizer.json",
+   "size": 27868174
+  },
+  {
+   "rfilename": "tokenizer_config.json",
+   "size": 234
+  },
+  {
+   "rfilename": "viterbi_calibration.json",
+   "size": 372
+  }
+ ],
+ "lastModified": "2026-04-22T16:50:17.000Z",
+ "downloads": 345678
+}

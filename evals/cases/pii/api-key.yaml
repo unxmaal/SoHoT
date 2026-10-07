@@ -1,0 +1,6 @@
+id: pii-api-key
+modality: pii
+prompt: Rotate the leaked token sk-live-4f9a7c2e81b34d0a9e6f before the audit.
+assert:
+  pii:
+  - sk-live-4f9a7c2e81b34d0a9e6f

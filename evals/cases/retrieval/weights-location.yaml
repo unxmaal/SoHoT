@@ -1,0 +1,8 @@
+id: retrieval-weights-location
+modality: retrieval
+prompt: where are downloaded model files kept and how can I relocate them
+input_file: corpus.jsonl
+assert:
+  relevant:
+  - d03
+  k: 5

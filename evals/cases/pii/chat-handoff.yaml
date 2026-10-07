@@ -1,0 +1,7 @@
+id: pii-chat-handoff
+modality: pii
+prompt: Hi, it's Tomoko Sato again, my number changed to 090-1234-5678.
+assert:
+  pii:
+  - Tomoko Sato
+  - 090-1234-5678

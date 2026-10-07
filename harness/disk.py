@@ -44,6 +44,9 @@ ENGINE_REPOS = {
     "acestep": ("ACE-Step/Ace-Step1.5", "ACE-Step/acestep-5Hz-lm-0.6B"),
 }
 
+#: Engines that load nothing from the hub, so their spec keeps nothing. #562.
+WEIGHTLESS = ("osocr", "bm25", "pii-regex")
+
 #: mflux preset name -> the repo it loads, as mflux's ModelConfig names it. #554.
 MFLUX_REPOS = {
     "dev": "black-forest-labs/FLUX.1-dev",
@@ -226,7 +229,7 @@ def keepers(conn=None, gateway_files=None, typed=None, adopted=None) -> Keepers:
             k.repos.setdefault(r.lower(), why)
         for s in stems:
             k.stems.setdefault(s, why)
-        if repos or stems:
+        if repos or stems or spec.partition(":")[0].strip() in WEIGHTLESS:
             return
         if lane:
             k.lanes.setdefault(lanes.canonical(lane), (

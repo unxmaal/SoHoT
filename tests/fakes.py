@@ -60,6 +60,43 @@ WHY = {
     "bespokelabs/Bespoke-Nimble-9B":
         "a peft LoRA filed text-classification: the decide lane's adapter, "
         "which rank dropped until an engine that loads adapters existed (#423)",
+    "PaddlePaddle/PaddleOCR-VL-1.6":
+        "image-text-to-text tagged ocr: filed under code until #387, laneless "
+        "until the ocr lane, and a recurring candidate it was built for (#562)",
+    "baidu/Unlimited-OCR":
+        "an ocr card that ships its own modelling code, which hf-task refuses "
+        "to execute, so it is a runner wanted rather than a broken model (#562)",
+    "JustANormalTinkerer/hayai-ocr-v2":
+        "image-to-text with only a compound manga-ocr tag beside ocr (#562)",
+    "Salesforce/blip-image-captioning-base":
+        "image-to-text with no ocr tag: a captioner, the ocr lane's negative "
+        "control, which must stay laneless (#562)",
+    "cross-encoder/ettin-reranker-1b-v1":
+        "a text-ranking cross-encoder tagged text-embeddings-inference, whose "
+        "`embedding` substring once made it an attachment (#563)",
+    "Contrastive-LM/CLM-v0.1-8B":
+        "a text-ranking card whose library is its own (contrastive-lm), so the "
+        "lane names it a runner wanted instead of loading it (#563)",
+    "tencent/EVIE-Preview-4.5B":
+        "visual-document-retrieval: a retriever over page images, which no "
+        "text retrieval case can feed (#563)",
+    "sentence-transformers/all-MiniLM-L6-v2":
+        "a general sentence embedder with no retrieval tag: the retrieval "
+        "lane's negative control, which must stay laneless (#563)",
+    "BAAI/bge-reranker-base":
+        "a reranker filed text-classification: it stays in decide, so the "
+        "retrieval lane steals nothing from it (#563)",
+    "openai/privacy-filter":
+        "token-classification whose only privacy word is inside the tag "
+        "openai_privacy_filter, so the tag must be read by word (#564)",
+    "LH-Tech-AI/Shield-82M":
+        "token-classification tagged pii with no library on its card (#564)",
+    "mistralai/Shieldstral-1.0-3B":
+        "a generative guard with no task and a vllm library: lineage files it "
+        "under code, and the pii lane cannot load it (#564)",
+    "dslim/bert-base-NER":
+        "a general named-entity tagger: the pii lane's negative control, which "
+        "must stay laneless (#564)",
     "hexgrad/Kokoro-82M":
         "the tts lane's incumbent, and the upstream of the repo the lane "
         "actually serves, so the card is a requant's parent (#264)",
