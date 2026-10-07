@@ -1,0 +1,39 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-5725f190ec44d21400f3d76f
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: When were the public housing developments built in the neighborhood?'
+context: While many homes in the neighborhood date back to the 1930s or before, the neighborhood is also
+  home to several public housing developments built between the 1960s and 1990s by the Fresno Housing
+  Authority. The US Department of Housing and Urban Development has also built small subdivisions of single-family
+  homes in the area for purchase by low-income working families. There have been numerous attempts to
+  revitalize the neighborhood, including the construction of a modern shopping center on the corner of
+  Fresno and B streets, an aborted attempt to build luxury homes and a golf course on the western edge
+  of the neighborhood, and some new section 8 apartments have been built along Church Ave west of Elm
+  St. Cargill Meat Solutions and Foster Farms both have large processing facilities in the neighborhood,
+  and the stench from these (and other small industrial facilities) has long plagued area residents. The
+  Fresno Chandler Executive Airport is also on the West Side. Due to its position on the edge of the city
+  and years of neglect by developers, is not a true "inner-city" neighborhood, and there are many vacant
+  lots, strawberry fields and vineyards throughout the neighborhood. The neighborhood has very little
+  retail activity, aside from the area near Fresno Street and State Route 99 Freeway (Kearney Palm Shopping
+  Center, built in the late 1990s) and small corner markets scattered throughout.
+assert:
+  equals:
+  - between the 1960s and 1990s
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5725f190ec44d21400f3d76f
+  date: ''
+  transform: paragraph Fresno,_California#16; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

@@ -1018,7 +1018,10 @@ def score(case: Case, artifact, **checker_kwargs) -> Result:
                           warnings=r.warnings)
 
     exact = a.get("equals")
-    if exact is not None and str(artifact).strip().lower() != str(exact).strip().lower():
+    # A list is alternatives, any one exact match passes. #603.
+    options = exact if isinstance(exact, list) else [exact]
+    if exact is not None and str(artifact).strip().lower() not in {
+            str(o).strip().lower() for o in options}:
         return Result(case.id, "", False, 0.0, 0,
                       f"expected exactly {exact!r}, got {str(artifact).strip()!r}",
                       warnings=r.warnings, metrics=metrics)

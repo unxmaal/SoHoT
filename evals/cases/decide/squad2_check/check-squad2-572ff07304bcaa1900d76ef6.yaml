@@ -1,0 +1,54 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-572ff07304bcaa1900d76ef6
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: The Rhine is the longest river in Germany. It is here that the Rhine encounters some more of
+  its main tributaries, such as the Neckar, the Main and, later, the Moselle, which contributes an average
+  discharge of more than 300 m3/s (11,000 cu ft/s). Northeastern France drains to the Rhine via the Moselle;
+  smaller rivers drain the Vosges and Jura Mountains uplands. Most of Luxembourg and a very small part
+  of Belgium also drain to the Rhine via the Moselle. As it approaches the Dutch border, the Rhine has
+  an annual mean discharge of 2,290 m3/s (81,000 cu ft/s) and an average width of 400 m (1,300 ft).
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Which country does the Rhine
+        encounter it''s main tributaries?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is the average discharge
+        of the Moselle to the Rhine?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: The Rhine is the longest river
+        in what country?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How much does the Rhine discharge
+        at the Dutch border?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is the shortest river
+        in Germany?'
+assert:
+  answers:
+    q1: true
+    q2: true
+    q3: true
+    q4: true
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572ff07304bcaa1900d76ef6, squad2-572f65e9b2c2fd14005680cd, squad2-572ff07304bcaa1900d76ef5,
+    squad2-572ff07304bcaa1900d76ef9, squad2-5ad27abcd7d075001a42962a
+  date: ''
+  transform: paragraph Rhine#11; first 5 questions of a paragraph in sha256(id) order, kept only when
+    they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

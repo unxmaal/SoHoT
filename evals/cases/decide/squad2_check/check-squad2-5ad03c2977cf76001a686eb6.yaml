@@ -1,0 +1,56 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5ad03c2977cf76001a686eb6
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: The specific devolved matters are all subjects which are not explicitly stated in Schedule 5
+  to the Scotland Act as reserved matters. All matters that are not specifically reserved are automatically
+  devolved to the Scottish Parliament. Most importantly, this includes agriculture, fisheries and forestry,
+  economic development, education, environment, food standards, health, home affairs, Scots law – courts,
+  police and fire services, local government, sport and the arts, transport, training, tourism, research
+  and statistics and social work. The Scottish Parliament has the ability to alter income tax in Scotland
+  by up to 3 pence in the pound. The 2012 Act conferred further fiscal devolution including borrowing
+  powers and some other unconnected matters such as setting speed limits and control of air guns.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who has the ability to alter
+        income tax in Scotland by up to 33 pence?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What includes all subjects
+        which are not stated in Schedule 6 to the Scotland Act?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: The 2002 Act granted further
+        fiscal devolution including what?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How much can the SP alter
+        income tax in Scotland?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Setting speed limits was one
+        of the further devolutions which was conferred by what act?'
+assert:
+  answers:
+    q1: false
+    q2: false
+    q3: false
+    q4: true
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5ad03c2977cf76001a686eb6, squad2-5ad03c2977cf76001a686eb4, squad2-5ad03c2977cf76001a686eb7,
+    squad2-572fcb6da23a5019007fc9f4, squad2-572fcb6da23a5019007fc9f5
+  date: ''
+  transform: paragraph Scottish_Parliament#23; first 5 questions of a paragraph in sha256(id) order, kept
+    only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

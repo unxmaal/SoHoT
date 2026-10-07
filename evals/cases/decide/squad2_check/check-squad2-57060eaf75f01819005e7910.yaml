@@ -1,0 +1,52 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-57060eaf75f01819005e7910
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: Orange County is a rapidly developing business center that includes Downtown Santa Ana, the South
+  Coast Metro and Newport Center districts; as well as the Irvine business centers of The Irvine Spectrum,
+  West Irvine, and international corporations headquartered at the University of California, Irvine. West
+  Irvine includes the Irvine Tech Center and Jamboree Business Parks.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Which county is developing
+        its business center?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What districts does downtown
+        Santa Ana include?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What locations are headquartered
+        at the California University at Irvine?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What other business district
+        does Orange County envelop outside of Downtown Santa Ana and Newport Center?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What county does the rapidly
+        developing downtown Santa Ana include?'
+assert:
+  answers:
+    q1: true
+    q2: false
+    q3: false
+    q4: true
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-57060eaf75f01819005e7910, squad2-5ad0483977cf76001a686f8b, squad2-5ad0483977cf76001a686f8c,
+    squad2-57060eaf75f01819005e7913, squad2-5ad0483977cf76001a686f8a
+  date: ''
+  transform: paragraph Southern_California#29; first 5 questions of a paragraph in sha256(id) order, kept
+    only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

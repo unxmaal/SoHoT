@@ -1,0 +1,55 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-572815d9ff5b5019007d9cbf
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: During Reconstruction and the Gilded Age, Jacksonville and nearby St. Augustine became popular
+  winter resorts for the rich and famous. Visitors arrived by steamboat and later by railroad. President
+  Grover Cleveland attended the Sub-Tropical Exposition in the city on February 22, 1888 during his trip
+  to Florida. This highlighted the visibility of the state as a worthy place for tourism. The city's tourism,
+  however, was dealt major blows in the late 19th century by yellow fever outbreaks. In addition, extension
+  of the Florida East Coast Railway further south drew visitors to other areas. From 1893 to 1938 Jacksonville
+  was the site of the Florida Old Confederate Soldiers and Sailors Home with a nearby cemetery.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What drew would-be Jacksonville
+        tourists to other Florida destinations?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: During which period did Jacksonville
+        become a popular destination for the rich?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Other than the steamboat,
+        what modern form of travel brought visitors to Florida?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What caused Jacksonville tourism
+        to be less desirable during the 1900s?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: During what age was Jacksonville
+        no longer a popular destination for the rich?'
+assert:
+  answers:
+    q1: true
+    q2: true
+    q3: true
+    q4: false
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572815d9ff5b5019007d9cbf, squad2-572815d9ff5b5019007d9cbc, squad2-572815d9ff5b5019007d9cc0,
+    squad2-5a1c850fb4fb5d001871464c, squad2-5a1c850fb4fb5d001871464a
+  date: ''
+  transform: paragraph Jacksonville,_Florida#7; first 5 questions of a paragraph in sha256(id) order,
+    kept only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

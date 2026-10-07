@@ -1,0 +1,52 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-572f7b33947a6a140053c9a5
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: The other third of the water flows through the Pannerdens Kanaal and redistributes in the IJssel
+  and Nederrijn. The IJssel branch carries one ninth of the water flow of the Rhine north into the IJsselmeer
+  (a former bay), while the Nederrijn carries approximately two ninths of the flow west along a route
+  parallel to the Waal. However, at Wijk bij Duurstede, the Nederrijn changes its name and becomes the
+  Lek. It flows farther west, to rejoin the Noord River into the Nieuwe Maas and to the North Sea.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Where does the Lek join?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How much of the Noord River
+        flows into the North Sea?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Where does the Nederrijn change
+        it''s name?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What does the Nederrikn''s
+        name change into?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Other than the Ijssel, where
+        does the water from the Pannerdens Kanaal redsitrubute?'
+assert:
+  answers:
+    q1: true
+    q2: false
+    q3: true
+    q4: true
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572f7b33947a6a140053c9a5, squad2-5ad286b4d7d075001a4298f9, squad2-572ff56304bcaa1900d76f31,
+    squad2-572f7b33947a6a140053c9a4, squad2-572ff56304bcaa1900d76f2e
+  date: ''
+  transform: paragraph Rhine#17; first 5 questions of a paragraph in sha256(id) order, kept only when
+    they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

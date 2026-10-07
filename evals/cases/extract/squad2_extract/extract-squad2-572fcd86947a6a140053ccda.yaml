@@ -1,0 +1,31 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-572fcd86947a6a140053ccda
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What may be presented to Parliament in various ways?'
+context: 'Bills can be introduced to Parliament in a number of ways; the Scottish Government can introduce
+  new laws or amendments to existing laws as a bill; a committee of the Parliament can present a bill
+  in one of the areas under its remit; a member of the Scottish Parliament can introduce a bill as a private
+  member; or a private bill can be submitted to Parliament by an outside proposer. Most draft laws are
+  government bills introduced by ministers in the governing party. Bills pass through Parliament in a
+  number of stages:'
+assert:
+  equals:
+  - Bills
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572fcd86947a6a140053ccda
+  date: ''
+  transform: paragraph Scottish_Parliament#25; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

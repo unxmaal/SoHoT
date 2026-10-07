@@ -1,0 +1,32 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-57300c67947a6a140053cff0
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What was the accepted length of the Rhine prior to 1932?'
+context: Until 1932 the generally accepted length of the Rhine was 1,230 kilometres (764 miles). In 1932
+  the German encyclopedia Knaurs Lexikon stated the length as 1,320 kilometres (820 miles), presumably
+  a typographical error. After this number was placed into the authoritative Brockhaus Enzyklopädie, it
+  became generally accepted and found its way into numerous textbooks and official publications. The error
+  was discovered in 2010, and the Dutch Rijkswaterstaat confirms the length at 1,232 kilometres (766 miles).[note
+  1]
+assert:
+  equals:
+  - 1,230 kilometres (764 miles)
+  - 1,230 kilometres
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-57300c67947a6a140053cff0
+  date: ''
+  transform: paragraph Rhine#43; first answerable question in sha256(id) order whose every human answer
+    is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

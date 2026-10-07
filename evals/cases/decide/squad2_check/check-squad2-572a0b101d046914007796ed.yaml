@@ -1,0 +1,56 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-572a0b101d046914007796ed
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: In 2005, parts of the Amazon basin experienced the worst drought in one hundred years, and there
+  were indications that 2006 could have been a second successive year of drought. A July 23, 2006 article
+  in the UK newspaper The Independent reported Woods Hole Research Center results showing that the forest
+  in its present form could survive only three years of drought. Scientists at the Brazilian National
+  Institute of Amazonian Research argue in the article that this drought response, coupled with the effects
+  of deforestation on regional climate, are pushing the rainforest towards a "tipping point" where it
+  would irreversibly start to die. It concludes that the forest is on the brink of being turned into savanna
+  or desert, with catastrophic consequences for the world's climate.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What might the Amazon forest
+        become if it passes the tipping point and starts to die?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: In what year did the Amazon
+        basin experience is worst drought in 1000 years?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What organization predicted
+        that the Amazon force could survive more than three years of drought'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: The rain forest died there
+        would be little effect on what?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Along with drought, what is
+        one other factor that is pushing the Amazon rainforest towards a tipping point?'
+assert:
+  answers:
+    q1: true
+    q2: false
+    q3: false
+    q4: false
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572a0b101d046914007796ed, squad2-5a0c98fef5590b0018dab49a, squad2-5a0c98fef5590b0018dab49b,
+    squad2-5a0c98fef5590b0018dab49d, squad2-572a0b101d046914007796ec
+  date: ''
+  transform: paragraph Amazon_rainforest#19; first 5 questions of a paragraph in sha256(id) order, kept
+    only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

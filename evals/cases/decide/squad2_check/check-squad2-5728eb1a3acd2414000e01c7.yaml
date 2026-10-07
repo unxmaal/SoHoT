@@ -1,0 +1,56 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5728eb1a3acd2414000e01c7
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: Some civil disobedients feel it is incumbent upon them to accept punishment because of their
+  belief in the validity of the social contract, which is held to bind all to obey the laws that a government
+  meeting certain standards of legitimacy has established, or else suffer the penalties set out in the
+  law. Other civil disobedients who favor the existence of government still don't believe in the legitimacy
+  of their particular government, or don't believe in the legitimacy of a particular law it has enacted.
+  And still other civil disobedients, being anarchists, don't believe in the legitimacy of any government,
+  and therefore see no need to accept punishment for a violation of criminal law that does not infringe
+  the rights of others.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What do some people protest
+        against?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Why is the need for acceptance
+        of punishment needed?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What do some civil disobedient
+        people feel the need to acknowledge.'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Why does government exist
+        according to anarchists?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What do anarchists feel they
+        must accept as a consequence of their actions in breaking the law?'
+assert:
+  answers:
+    q1: true
+    q2: true
+    q3: true
+    q4: false
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5728eb1a3acd2414000e01c7, squad2-5728eb1a3acd2414000e01c6, squad2-5728eb1a3acd2414000e01c5,
+    squad2-5a668632f038b7001ab0bf48, squad2-5a668632f038b7001ab0bf47
+  date: ''
+  transform: paragraph Civil_disobedience#16; first 5 questions of a paragraph in sha256(id) order, kept
+    only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

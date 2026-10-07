@@ -1,0 +1,54 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5ad5489b5b96ef001a10ac2e
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: However, some computational problems are easier to analyze in terms of more unusual resources.
+  For example, a non-deterministic Turing machine is a computational model that is allowed to branch out
+  to check many different possibilities at once. The non-deterministic Turing machine has very little
+  to do with how we physically want to compute algorithms, but its branching exactly captures many of
+  the mathematical models we want to analyze, so that non-deterministic time is a very important resource
+  in analyzing computational problems.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is the least critical
+        resource in the analysis of computational problems associated with non-deterministic Turing machines?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What often affects or facilitates
+        ease of analysis in computational problems?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What machine''s branching
+        does not exactly capture many of the mathematical models we want to analyze?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What type of Turing machine
+        can be characterized by checking multiple possibilities at the same time?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is harder to analyze
+        in terms of more unusual resources?'
+assert:
+  answers:
+    q1: false
+    q2: true
+    q3: false
+    q4: true
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5ad5489b5b96ef001a10ac2e, squad2-56e1b355e3433e14004230b1, squad2-5ad5489b5b96ef001a10ac2d,
+    squad2-56e1b355e3433e14004230b0, squad2-5ad5489b5b96ef001a10ac2a
+  date: ''
+  transform: paragraph Computational_complexity_theory#16; first 5 questions of a paragraph in sha256(id)
+    order, kept only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

@@ -1,0 +1,56 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-572869b84b864d19001649b1
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: Kublai's government after 1262 was a compromise between preserving Mongol interests in China
+  and satisfying the demands of his Chinese subjects. He instituted the reforms proposed by his Chinese
+  advisers by centralizing the bureaucracy, expanding the circulation of paper money, and maintaining
+  the traditional monopolies on salt and iron. He restored the Imperial Secretariat and left the local
+  administrative structure of past Chinese dynasties unchanged. However, Kublai rejected plans to revive
+  the Confucian imperial examinations and divided Yuan society into three, later four, classes with the
+  Han Chinese occupying the lowest rank. Kublai's Chinese advisers still wielded significant power in
+  the government, but their official rank was nebulous.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How many societal class divisions
+        were in the plan Kublai rejected?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What natural resources did
+        the Chinese government have a monopoly on?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What did Kublai''s government
+        have to balance between?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What did Kublai''s government
+        not balance between?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How many societal class divisions
+        were in the plan Kublai approved?'
+assert:
+  answers:
+    q1: true
+    q2: true
+    q3: true
+    q4: false
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572869b84b864d19001649b1, squad2-572869b84b864d19001649af, squad2-572869b84b864d19001649ae,
+    squad2-5ad402f1604f3c001a3ffd69, squad2-5ad402f1604f3c001a3ffd6c
+  date: ''
+  transform: paragraph Yuan_dynasty#8; first 5 questions of a paragraph in sha256(id) order, kept only
+    when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

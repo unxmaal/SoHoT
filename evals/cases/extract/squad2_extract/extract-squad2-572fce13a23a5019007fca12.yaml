@@ -1,0 +1,35 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-572fce13a23a5019007fca12
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What are presented to parliament in addition to the bill itself?'
+context: Stage 1 is the first, or introductory stage of the bill, where the minister or member in charge
+  of the bill will formally introduce it to Parliament together with its accompanying documents – Explanatory
+  Notes, a Policy Memorandum setting out the policy underlying the bill, and a Financial Memorandum setting
+  out the costs and savings associated with it. Statements from the Presiding Officer and the member in
+  charge of the bill are also lodged indicating whether the bill is within the legislative competence
+  of the Parliament. Stage 1 usually takes place, initially, in the relevant committee or committees and
+  is then submitted to the whole Parliament for a full debate in the chamber on the general principles
+  of the bill. If the whole Parliament agrees in a vote to the general principles of the bill, it then
+  proceeds to Stage 2.
+assert:
+  equals:
+  - accompanying documents
+  - accompanying documents – Explanatory Notes
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572fce13a23a5019007fca12
+  date: ''
+  transform: paragraph Scottish_Parliament#26; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

@@ -1,0 +1,54 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5ad2647bd7d075001a429158
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: Studies on income inequality and growth have sometimes found evidence confirming the Kuznets
+  curve hypothesis, which states that with economic development, inequality first increases, then decreases.
+  Economist Thomas Piketty challenges this notion, claiming that from 1914 to 1945 wars and "violent economic
+  and political shocks" reduced inequality. Moreover, Piketty argues that the "magical" Kuznets curve
+  hypothesis, with its emphasis on the balancing of economic growth in the long run, cannot account for
+  the significant increase in economic inequality throughout the developed world since the 1970s.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who accepts the notion of
+        the Kuznets curve hypothesis?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What''s Thomas Piketty''s
+        job?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What isn''t Thomas Piketty''s
+        job?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What does Piketty feel was
+        the biggest factors in reducing inequality between 1914 to 1945?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What does Piketty feel was
+        the biggest factors in reducing inequality between 1941 to 1945?'
+assert:
+  answers:
+    q1: false
+    q2: true
+    q3: false
+    q4: true
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5ad2647bd7d075001a429158, squad2-572a13841d0469140077973e, squad2-5ad2647bd7d075001a429159,
+    squad2-572a13841d0469140077973f, squad2-5ad2647bd7d075001a42915a
+  date: ''
+  transform: paragraph Economic_inequality#33; first 5 questions of a paragraph in sha256(id) order, kept
+    only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

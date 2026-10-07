@@ -1,0 +1,35 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-572869b84b864d19001649b1
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: How many societal class divisions were in the plan Kublai rejected?'
+context: Kublai's government after 1262 was a compromise between preserving Mongol interests in China
+  and satisfying the demands of his Chinese subjects. He instituted the reforms proposed by his Chinese
+  advisers by centralizing the bureaucracy, expanding the circulation of paper money, and maintaining
+  the traditional monopolies on salt and iron. He restored the Imperial Secretariat and left the local
+  administrative structure of past Chinese dynasties unchanged. However, Kublai rejected plans to revive
+  the Confucian imperial examinations and divided Yuan society into three, later four, classes with the
+  Han Chinese occupying the lowest rank. Kublai's Chinese advisers still wielded significant power in
+  the government, but their official rank was nebulous.
+assert:
+  equals:
+  - three, later four
+  - four
+  - three
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572869b84b864d19001649b1
+  date: ''
+  transform: paragraph Yuan_dynasty#8; first answerable question in sha256(id) order whose every human
+    answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

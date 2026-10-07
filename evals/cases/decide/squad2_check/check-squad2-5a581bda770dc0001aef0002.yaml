@@ -1,0 +1,52 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5a581bda770dc0001aef0002
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: James Hutton is often viewed as the first modern geologist. In 1785 he presented a paper entitled
+  Theory of the Earth to the Royal Society of Edinburgh. In his paper, he explained his theory that the
+  Earth must be much older than had previously been supposed in order to allow enough time for mountains
+  to be eroded and for sediments to form new rocks at the bottom of the sea, which in turn were raised
+  up to become dry land. Hutton published a two-volume version of his ideas in 1795 (Vol. 1, Vol. 2).
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What did the Royal Society
+        of Edinburgh present in 1785?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Why did the Royal Society
+        think the Earth was older than previously thought?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: James Hutton published a 2
+        volume version of his theories in what year?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who was the first geologist?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: When was the Royal Society
+        of Edinburgh founded?'
+assert:
+  answers:
+    q1: false
+    q2: false
+    q3: true
+    q4: false
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5a581bda770dc0001aef0002, squad2-5a581bda770dc0001aef0004, squad2-57268527708984140094c8c1,
+    squad2-5a592d703e1742001a15cfed, squad2-5a581bda770dc0001aef0001
+  date: ''
+  transform: paragraph Geology#22; first 5 questions of a paragraph in sha256(id) order, kept only when
+    they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

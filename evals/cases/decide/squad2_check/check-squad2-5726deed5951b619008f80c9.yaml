@@ -1,0 +1,54 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5726deed5951b619008f80c9
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: In Europe there are old pharmacies still operating in Dubrovnik, Croatia, located inside the
+  Franciscan monastery, opened in 1317; and in the Town Hall Square of Tallinn, Estonia, dating from at
+  least 1422. The oldest is claimed to have been set up in 1221 in the Church of Santa Maria Novella in
+  Florence, Italy, which now houses a perfume museum. The medieval Esteve Pharmacy, located in Llívia,
+  a Catalan enclave close to Puigcerdà, also now a museum, dates back to the 15th century, keeping albarellos
+  from the 16th and 17th centuries, old prescription books and antique drugs.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: In what year is the oldest
+        pharmacy said to have been established?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What year is the oldest pharmacy
+        said to have been lost?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Where is the newest pharmacy
+        stated to be located?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Where is the oldest pharmacy
+        stated to be located?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What sorts of items are never
+        displayed in the Esteve Pharmacy museum?'
+assert:
+  answers:
+    q1: true
+    q2: false
+    q3: false
+    q4: true
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5726deed5951b619008f80c9, squad2-5a6cdddf4eec6b001a80a65d, squad2-5a6cdddf4eec6b001a80a65c,
+    squad2-5726deed5951b619008f80c6, squad2-5a6cdddf4eec6b001a80a65f
+  date: ''
+  transform: paragraph Pharmacy#6; first 5 questions of a paragraph in sha256(id) order, kept only when
+    they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

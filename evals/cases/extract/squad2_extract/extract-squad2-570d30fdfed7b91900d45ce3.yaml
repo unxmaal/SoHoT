@@ -1,0 +1,31 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-570d30fdfed7b91900d45ce3
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the weather type of Mallee and upper Wimmera?'
+context: The Mallee and upper Wimmera are Victoria's warmest regions with hot winds blowing from nearby
+  semi-deserts. Average temperatures exceed 32 °C (90 °F) during summer and 15 °C (59 °F) in winter. Except
+  at cool mountain elevations, the inland monthly temperatures are 2–7 °C (4–13 °F) warmer than around
+  Melbourne (see chart). Victoria's highest maximum temperature since World War II, of 48.8 °C (119.8
+  °F) was recorded in Hopetoun on 7 February 2009, during the 2009 southeastern Australia heat wave.
+assert:
+  equals:
+  - warmest regions
+  - semi-deserts
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-570d30fdfed7b91900d45ce3
+  date: ''
+  transform: paragraph Victoria_(Australia)#9; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

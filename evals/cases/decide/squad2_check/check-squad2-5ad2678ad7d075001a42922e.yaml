@@ -1,0 +1,53 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5ad2678ad7d075001a42922e
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: Highly concentrated sources of oxygen promote rapid combustion. Fire and explosion hazards exist
+  when concentrated oxidants and fuels are brought into close proximity; an ignition event, such as heat
+  or a spark, is needed to trigger combustion. Oxygen is the oxidant, not the fuel, but nevertheless the
+  source of most of the chemical energy released in combustion. Combustion hazards also apply to compounds
+  of oxygen with a high oxidative potential, such as peroxides, chlorates, nitrates, perchlorates, and
+  dichromates because they can donate oxygen to a fire.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is fuel the source of?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What can concentrated oxygen
+        produce?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What type of hazard is oxygen
+        considered?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Peroxides, nitrates and dichromates
+        are examples of what type of compounds?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Although not a fuel  ___ is
+        the chemical compound the generates the most occurrence of explosions.'
+assert:
+  answers:
+    q1: false
+    q2: true
+    q3: false
+    q4: true
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5ad2678ad7d075001a42922e, squad2-571cebc05efbb31900334e48, squad2-5ad2678ad7d075001a42922f,
+    squad2-571a50df4faf5e1900b8a962, squad2-571a50df4faf5e1900b8a963
+  date: ''
+  transform: paragraph Oxygen#5; first 5 questions of a paragraph in sha256(id) order, kept only when
+    they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

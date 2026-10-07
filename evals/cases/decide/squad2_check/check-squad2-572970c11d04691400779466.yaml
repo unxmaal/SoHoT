@@ -1,0 +1,53 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-572970c11d04691400779466
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: There are infinitely many primes, as demonstrated by Euclid around 300 BC. There is no known
+  simple formula that separates prime numbers from composite numbers. However, the distribution of primes,
+  that is to say, the statistical behaviour of primes in the large, can be modelled. The first result
+  in that direction is the prime number theorem, proven at the end of the 19th century, which says that
+  the probability that a given, randomly chosen number n is prime is inversely proportional to its number
+  of digits, or to the logarithm of n.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What theorem states that the
+        probability that a number n is prime is inversely proportional to its logarithm?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What theorem states that the
+        probability that a number n is prime is inversely proportional to its direction?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who established the amount
+        of chosen numbers in existence?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How many prime numbers exist?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: When was the random number
+        theorem proven?'
+assert:
+  answers:
+    q1: true
+    q2: false
+    q3: false
+    q4: true
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572970c11d04691400779466, squad2-5a8913713b2508001a72a4a1, squad2-5a8913713b2508001a72a49f,
+    squad2-572970c11d04691400779463, squad2-5a8913713b2508001a72a4a2
+  date: ''
+  transform: paragraph Prime_number#2; first 5 questions of a paragraph in sha256(id) order, kept only
+    when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

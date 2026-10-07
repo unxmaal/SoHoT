@@ -1,0 +1,33 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-572faec7b2c2fd1400568335
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What nationality is the architect Enric Miralles?'
+context: Since September 2004, the official home of the Scottish Parliament has been a new Scottish Parliament
+  Building, in the Holyrood area of Edinburgh. The Scottish Parliament building was designed by Spanish
+  architect Enric Miralles in partnership with local Edinburgh Architecture firm RMJM which was led by
+  Design Principal Tony Kettle. Some of the principal features of the complex include leaf-shaped buildings,
+  a grass-roofed branch merging into adjacent parkland and gabion walls formed from the stones of previous
+  buildings. Throughout the building there are many repeated motifs, such as shapes based on Raeburn's
+  Skating Minister. Crow-stepped gables and the upturned boat skylights of the Garden Lobby, complete
+  the unique architecture. Queen Elizabeth II opened the new building on 9 October 2004.
+assert:
+  equals:
+  - Spanish
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572faec7b2c2fd1400568335
+  date: ''
+  transform: paragraph Scottish_Parliament#5; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

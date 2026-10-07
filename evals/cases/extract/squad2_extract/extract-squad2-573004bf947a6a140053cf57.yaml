@@ -1,0 +1,33 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-573004bf947a6a140053cf57
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: For many years, what was the Brotherhood described as?'
+context: Despite periodic repression, the Brotherhood has become one of the most influential movements
+  in the Islamic world, particularly in the Arab world. For many years it was described as "semi-legal"
+  and was the only opposition group in Egypt able to field candidates during elections. In the Egyptian
+  parliamentary election, 2011–2012, the political parties identified as "Islamist" (the Brotherhood's
+  Freedom and Justice Party, Salafi Al-Nour Party and liberal Islamist Al-Wasat Party) won 75% of the
+  total seats. Mohamed Morsi, an Islamist democrat of Muslim Brotherhood, was the first democratically
+  elected president of Egypt. He was deposed during the 2013 Egyptian coup d'état.
+assert:
+  equals:
+  - '"semi-legal"'
+  - semi-legal
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-573004bf947a6a140053cf57
+  date: ''
+  transform: paragraph Islamism#15; first answerable question in sha256(id) order whose every human answer
+    is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

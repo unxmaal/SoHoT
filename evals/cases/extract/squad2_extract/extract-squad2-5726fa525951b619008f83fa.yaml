@@ -1,0 +1,33 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-5726fa525951b619008f83fa
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What countries use a red stylized A to signify pharmacy?'
+context: 'The two symbols most commonly associated with pharmacy in English-speaking countries are the
+  mortar and pestle and the ℞ (recipere) character, which is often written as "Rx" in typed text. The
+  show globe was also used until the early 20th century. Pharmacy organizations often use other symbols,
+  such as the Bowl of Hygieia which is often used in the Netherlands, conical measures, and caduceuses
+  in their logos. Other symbols are common in different countries: the green Greek cross in France, Argentina,
+  the United Kingdom, Belgium, Ireland, Italy, Spain, and India, the increasingly rare Gaper in the Netherlands,
+  and a red stylized letter A in Germany and Austria (from Apotheke, the German word for pharmacy, from
+  the same Greek root as the English word ''apothecary'').'
+assert:
+  equals:
+  - Germany and Austria
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5726fa525951b619008f83fa
+  date: ''
+  transform: paragraph Pharmacy#25; first answerable question in sha256(id) order whose every human answer
+    is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

@@ -1,0 +1,29 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-56e1efa0e3433e140042321a
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: In what complexity class do complement problems of NP problems exist?'
+context: Along the same lines, co-NP is the class containing the complement problems (i.e. problems with
+  the yes/no answers reversed) of NP problems. It is believed that NP is not equal to co-NP; however,
+  it has not yet been proven. It has been shown that if these two complexity classes are not equal then
+  P is not equal to NP.
+assert:
+  equals:
+  - co-NP
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-56e1efa0e3433e140042321a
+  date: ''
+  transform: paragraph Computational_complexity_theory#39; first answerable question in sha256(id) order
+    whose every human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

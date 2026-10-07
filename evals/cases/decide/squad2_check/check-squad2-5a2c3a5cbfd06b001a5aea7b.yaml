@@ -1,0 +1,53 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5a2c3a5cbfd06b001a5aea7b
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: BSkyB utilises the VideoGuard pay-TV scrambling system owned by NDS, a Cisco Systems company.
+  There are tight controls over use of VideoGuard decoders; they are not available as stand-alone DVB
+  CAMs (conditional-access modules). BSkyB has design authority over all digital satellite receivers capable
+  of receiving their service. The receivers, though designed and built by different manufacturers, must
+  conform to the same user interface look-and-feel as all the others. This extends to the Personal video
+  recorder (PVR) offering (branded Sky+).
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is available as stand-alone
+        DVB CAMs?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What company was never involved
+        with NDS?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who is VideoGuard owned by?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who is the parent company
+        of NDS?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is the name of the TV
+        scrambling system BSkyB couldn''t use?'
+assert:
+  answers:
+    q1: false
+    q2: false
+    q3: true
+    q4: true
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5a2c3a5cbfd06b001a5aea7b, squad2-5a2c3a5cbfd06b001a5aea7c, squad2-57094d489928a8140047150b,
+    squad2-57094d489928a8140047150c, squad2-5a2c3a5cbfd06b001a5aea79
+  date: ''
+  transform: paragraph Sky_(United_Kingdom)#4; first 5 questions of a paragraph in sha256(id) order, kept
+    only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

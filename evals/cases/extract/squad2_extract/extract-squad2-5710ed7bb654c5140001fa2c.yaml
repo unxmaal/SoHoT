@@ -1,0 +1,37 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-5710ed7bb654c5140001fa2c
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: Who did the Dutch fight in the Dutch Revolt?'
+context: Some Huguenots fought in the Low Countries alongside the Dutch against Spain during the first
+  years of the Dutch Revolt (1568–1609). The Dutch Republic rapidly became a destination for Huguenot
+  exiles. Early ties were already visible in the "Apologie" of William the Silent, condemning the Spanish
+  Inquisition, which was written by his court minister, the Huguenot Pierre L'Oyseleur, lord of Villiers.
+  Louise de Coligny, daughter of the murdered Huguenot leader Gaspard de Coligny, married William the
+  Silent, leader of the Dutch (Calvinist) revolt against Spanish (Catholic) rule. As both spoke French
+  in daily life, their court church in the Prinsenhof in Delft held services in French. The practice has
+  continued to the present day. The Prinsenhof is one of the 14 active Walloon churches of the Dutch Reformed
+  Church. The ties between Huguenots and the Dutch Republic's military and political leadership, the House
+  of Orange-Nassau, which existed since the early days of the Dutch Revolt, helped support the many early
+  settlements of Huguenots in the Dutch Republic's colonies. They settled at the Cape of Good Hope in
+  South Africa and New Netherland in North America.
+assert:
+  equals:
+  - Spain
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5710ed7bb654c5140001fa2c
+  date: ''
+  transform: paragraph Huguenot#29; first answerable question in sha256(id) order whose every human answer
+    is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

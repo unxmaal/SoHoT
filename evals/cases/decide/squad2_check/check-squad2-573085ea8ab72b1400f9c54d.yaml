@@ -1,0 +1,62 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-573085ea8ab72b1400f9c54d
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: Imperialism and colonialism both dictate the political and economic advantage over a land and
+  the indigenous populations they control, yet scholars sometimes find it difficult to illustrate the
+  difference between the two. Although imperialism and colonialism focus on the suppression of an other,
+  if colonialism refers to the process of a country taking physical control of another, imperialism refers
+  to the political and monetary dominance, either formally or informally. Colonialism is seen to be the
+  architect deciding how to start dominating areas and then imperialism can be seen as creating the idea
+  behind conquest cooperating with colonialism. Colonialism is when the imperial nation begins a conquest
+  over an area and then eventually is able to rule over the areas the previous nation had controlled.
+  Colonialism's core meaning is the exploitation of the valuable assets and supplies of the nation that
+  was conquered and the conquering nation then gaining the benefits from the spoils of the war. The meaning
+  of imperialism is to create an empire, by conquering the other state's lands and therefore increasing
+  its own dominance. Colonialism is the builder and preserver of the colonial possessions in an area by
+  a population coming from a foreign region. Colonialism can completely change the existing social structure,
+  physical structure and economics of an area; it is not unusual that the characteristics of the conquering
+  peoples are inherited by the conquered indigenous populations.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Colonialism often means a
+        country doing what?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is colonialism''s antithesis?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How would one create an empire
+        by means of non-Imperialism?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Political disadvantage is
+        an attribute of which state policies?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: what do conquering people
+        take away from native populations?'
+assert:
+  answers:
+    q1: true
+    q2: false
+    q3: false
+    q4: false
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-573085ea8ab72b1400f9c54d, squad2-5acff63377cf76001a68665e, squad2-5acff63377cf76001a68665c,
+    squad2-5acff63377cf76001a68665a, squad2-5acff63377cf76001a68665d
+  date: ''
+  transform: paragraph Imperialism#5; first 5 questions of a paragraph in sha256(id) order, kept only
+    when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

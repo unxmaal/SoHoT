@@ -1,0 +1,54 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5acff3b377cf76001a6865fb
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: Imperialism is defined as "A policy of extending a country’s power and influence through diplomacy
+  or military force." Imperialism is particularly focused on the control that one group, often a state
+  power, has on another group of people. This is often through various forms of "othering" (see other)
+  based on racial, religious, or cultural stereotypes. There are "formal" or "informal" imperialisms.
+  "Formal imperialism" is defined as "physical control or full-fledged colonial rule". "Informal imperialism"
+  is less direct; however, it is still a powerful form of dominance.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: imperialism often unites countries
+        by using which technique?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Imperialism does not extend
+        a country''s power and what?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: imperialism often divides
+        countries by using which technique?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: colonial rule would be considered
+        what type of imperialism?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Informal imperialism is still
+        dominant; however, less what?'
+assert:
+  answers:
+    q1: false
+    q2: false
+    q3: true
+    q4: true
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5acff3b377cf76001a6865fb, squad2-5acff3b377cf76001a6865f8, squad2-573062662461fd1900a9cdfa,
+    squad2-573062662461fd1900a9cdf8, squad2-573062662461fd1900a9cdfb
+  date: ''
+  transform: paragraph Imperialism#1; first 5 questions of a paragraph in sha256(id) order, kept only
+    when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

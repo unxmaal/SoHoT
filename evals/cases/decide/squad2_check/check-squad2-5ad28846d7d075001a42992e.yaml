@@ -1,0 +1,54 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5ad28846d7d075001a42992e
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: 'Torque is the rotation equivalent of force in the same way that angle is the rotational equivalent
+  for position, angular velocity for velocity, and angular momentum for momentum. As a consequence of
+  Newton''s First Law of Motion, there exists rotational inertia that ensures that all bodies maintain
+  their angular momentum unless acted upon by an unbalanced torque. Likewise, Newton''s Second Law of
+  Motion can be used to derive an analogous equation for the instantaneous angular acceleration of the
+  rigid body:'
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What inertia exists because
+        of Newton''s Fourth Law of Motion?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Which of Newton''s Laws described
+        a rotational inertia equation?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is the rotational equivalent
+        of velocity?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What would change the rotational
+        inertia of a body under Newton''s First Law of Motion?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What equation is torque like
+        regarding velocity?'
+assert:
+  answers:
+    q1: false
+    q2: false
+    q3: false
+    q4: true
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5ad28846d7d075001a42992e, squad2-5ad28846d7d075001a429931, squad2-5ad28846d7d075001a429930,
+    squad2-5737a4511c456719005744e0, squad2-5ad28846d7d075001a42992f
+  date: ''
+  transform: paragraph Force#38; first 5 questions of a paragraph in sha256(id) order, kept only when
+    they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

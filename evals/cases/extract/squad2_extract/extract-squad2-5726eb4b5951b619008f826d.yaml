@@ -1,0 +1,33 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-5726eb4b5951b619008f826d
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What are internet pharmacies also called?'
+context: Since about the year 2000, a growing number of Internet pharmacies have been established worldwide.
+  Many of these pharmacies are similar to community pharmacies, and in fact, many of them are actually
+  operated by brick-and-mortar community pharmacies that serve consumers online and those that walk in
+  their door. The primary difference is the method by which the medications are requested and received.
+  Some customers consider this to be more convenient and private method rather than traveling to a community
+  drugstore where another customer might overhear about the drugs that they take. Internet pharmacies
+  (also known as online pharmacies) are also recommended to some patients by their physicians if they
+  are homebound.
+assert:
+  equals:
+  - online pharmacies
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5726eb4b5951b619008f826d
+  date: ''
+  transform: paragraph Pharmacy#14; first answerable question in sha256(id) order whose every human answer
+    is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

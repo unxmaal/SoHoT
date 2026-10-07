@@ -1,0 +1,32 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-573407d7d058e614000b6813
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: In Sept 1760 who negotiated a capitulation from Montreal?'
+context: In September 1760, and before any hostilities erupted, Governor Vaudreuil negotiated from Montreal
+  a capitulation with General Amherst. Amherst granted Vaudreuil's request that any French residents who
+  chose to remain in the colony would be given freedom to continue worshiping in their Roman Catholic
+  tradition, continued ownership of their property, and the right to remain undisturbed in their homes.
+  The British provided medical treatment for the sick and wounded French soldiers and French regular troops
+  were returned to France aboard British ships with an agreement that they were not to serve again in
+  the present war.
+assert:
+  equals:
+  - Governor Vaudreuil
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-573407d7d058e614000b6813
+  date: ''
+  transform: paragraph French_and_Indian_War#41; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

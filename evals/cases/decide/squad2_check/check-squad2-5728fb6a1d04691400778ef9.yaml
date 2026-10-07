@@ -1,0 +1,57 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5728fb6a1d04691400778ef9
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: One theory is that, while disobedience may be helpful, any great amount of it would undermine
+  the law by encouraging general disobedience which is neither conscientious nor of social benefit. Therefore,
+  conscientious lawbreakers must be punished. Michael Bayles argues that if a person violates a law in
+  order to create a test case as to the constitutionality of a law, and then wins his case, then that
+  act did not constitute civil disobedience. It has also been argued that breaking the law for self-gratification,
+  as in the case of a homosexual or cannabis user who does not direct his act at securing the repeal of
+  amendment of the law, is not civil disobedience. Likewise, a protestor who attempts to escape punishment
+  by committing the crime covertly and avoiding attribution, or by denying having committed the crime,
+  or by fleeing the jurisdiction, is generally viewed as not being a civil disobedient.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: For what reason would someone
+        avoid crimes while protesting?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Why should someone not commit
+        a crime when they are protesting?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What does a great amount of
+        self-gratification undermine?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What should happen if you
+        focus only on self-gratification?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is one main reason that
+        civil disobedience is not recognized?'
+assert:
+  answers:
+    q1: true
+    q2: true
+    q3: false
+    q4: false
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5728fb6a1d04691400778ef9, squad2-5728fb6a1d04691400778ef8, squad2-5a669ee5f038b7001ab0c068,
+    squad2-5a669ee5f038b7001ab0c069, squad2-5728fb6a1d04691400778ef7
+  date: ''
+  transform: paragraph Civil_disobedience#23; first 5 questions of a paragraph in sha256(id) order, kept
+    only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

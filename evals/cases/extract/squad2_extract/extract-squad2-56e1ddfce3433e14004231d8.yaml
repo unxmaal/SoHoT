@@ -1,0 +1,33 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-56e1ddfce3433e14004231d8
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the prize offered for finding a solution to P=NP?'
+context: The question of whether P equals NP is one of the most important open questions in theoretical
+  computer science because of the wide implications of a solution. If the answer is yes, many important
+  problems can be shown to have more efficient solutions. These include various types of integer programming
+  problems in operations research, many problems in logistics, protein structure prediction in biology,
+  and the ability to find formal proofs of pure mathematics theorems. The P versus NP problem is one of
+  the Millennium Prize Problems proposed by the Clay Mathematics Institute. There is a US$1,000,000 prize
+  for resolving the problem.
+assert:
+  equals:
+  - $1,000,000
+  - US$1,000,000
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-56e1ddfce3433e14004231d8
+  date: ''
+  transform: paragraph Computational_complexity_theory#34; first answerable question in sha256(id) order
+    whose every human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

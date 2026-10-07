@@ -1,0 +1,54 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-57281bb84b864d190016449a
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: Much of the city's tax base dissipated, leading to problems with funding education, sanitation,
+  and traffic control within the city limits. In addition, residents in unincorporated suburbs had difficulty
+  obtaining municipal services, such as sewage and building code enforcement. In 1958, a study recommended
+  that the city of Jacksonville begin annexing outlying communities in order to create the needed tax
+  base to improve services throughout the county. Voters outside the city limits rejected annexation plans
+  in six referendums between 1960 and 1965.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What was the cause for the
+        issues with city funding?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What was the proposed solution
+        to Jacksonville''s tax issues?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who voted against Jacksonville''s
+        annexation?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What cause city funding to
+        increase?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Where were most municipal
+        services concentrated at?'
+assert:
+  answers:
+    q1: true
+    q2: true
+    q3: true
+    q4: false
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-57281bb84b864d190016449a, squad2-57281bb84b864d190016449c, squad2-57281bb84b864d190016449d,
+    squad2-5a1c88d2b4fb5d001871467a, squad2-5a1c88d2b4fb5d001871467b
+  date: ''
+  transform: paragraph Jacksonville,_Florida#11; first 5 questions of a paragraph in sha256(id) order,
+    kept only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

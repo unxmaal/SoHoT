@@ -1,0 +1,33 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-572758e0f1498d1400e8f6af
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What amendment to the United States Constitution governs government funding of religious schools?'
+context: Funding for private schools is generally provided through student tuition, endowments, scholarship/voucher
+  funds, and donations and grants from religious organizations or private individuals. Government funding
+  for religious schools is either subject to restrictions or possibly forbidden, according to the courts'
+  interpretation of the Establishment Clause of the First Amendment or individual state Blaine Amendments.
+  Non-religious private schools theoretically could qualify for such funding without hassle, preferring
+  the advantages of independent control of their student admissions and course content instead of the
+  public funding they could get with charter status.
+assert:
+  equals:
+  - First
+  - First Amendment
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572758e0f1498d1400e8f6af
+  date: ''
+  transform: paragraph Private_school#23; first answerable question in sha256(id) order whose every human
+    answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

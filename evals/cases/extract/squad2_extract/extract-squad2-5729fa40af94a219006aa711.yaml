@@ -1,0 +1,32 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-5729fa40af94a219006aa711
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What kind of deprivation results in diminished immune response and lower antibody production?'
+context: When suffering from sleep deprivation, active immunizations may have a diminished effect and
+  may result in lower antibody production, and a lower immune response, than would be noted in a well-rested
+  individual. Additionally, proteins such as NFIL3, which have been shown to be closely intertwined with
+  both T-cell differentiation and our circadian rhythms, can be affected through the disturbance of natural
+  light and dark cycles through instances of sleep deprivation, shift work, etc. As a result, these disruptions
+  can lead to an increase in chronic conditions such as heart disease, chronic pain, and asthma.
+assert:
+  equals:
+  - sleep deprivation
+  - sleep
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5729fa40af94a219006aa711
+  date: ''
+  transform: paragraph Immune_system#24; first answerable question in sha256(id) order whose every human
+    answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

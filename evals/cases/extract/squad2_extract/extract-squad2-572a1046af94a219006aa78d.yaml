@@ -1,0 +1,34 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-572a1046af94a219006aa78d
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What did Stiglitz present in 2009 regarding global inequality?'
+context: Economist Joseph Stiglitz presented evidence in 2009 that both global inequality and inequality
+  within countries prevent growth by limiting aggregate demand. Economist Branko Milanovic, wrote in 2001
+  that, "The view that income inequality harms growth – or that improved equality can help sustain growth
+  – has become more widely held in recent years. ... The main reason for this shift is the increasing
+  importance of human capital in development. When physical capital mattered most, savings and investments
+  were key. Then it was important to have a large contingent of rich people who could save a greater proportion
+  of their income than the poor and invest it in physical capital. But now that human capital is scarcer
+  than machines, widespread education has become the secret to growth."
+assert:
+  equals:
+  - evidence
+  - prevent growth
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572a1046af94a219006aa78d
+  date: ''
+  transform: paragraph Economic_inequality#30; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

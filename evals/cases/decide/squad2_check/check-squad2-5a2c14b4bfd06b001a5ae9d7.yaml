@@ -1,0 +1,53 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5a2c14b4bfd06b001a5ae9d7
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: 'While BSkyB had been excluded from being a part of the ONdigital consortium, thereby making
+  them a competitor by default, BSkyB was able to join ITV Digital''s free-to-air replacement, Freeview,
+  in which it holds an equal stake with the BBC, ITV, Channel 4 and National Grid Wireless. Prior to October
+  2005, three BSkyB channels were available on this platform: Sky News, Sky Three, and Sky Sports News.
+  Initially BSkyB provided Sky Travel to the service. However, this was replaced by Sky Three on 31 October
+  2005, which was itself later re-branded as ''Pick TV'' in 2011.'
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What channel was never rebranded?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who did BSkyB team up with
+        because it was not part of the consortium?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What channel replaced Sky
+        Travel?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What consortium was BSkyB
+        excluded from?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who did BSkyB team up with
+        because it was part of the consortium?'
+assert:
+  answers:
+    q1: false
+    q2: true
+    q3: true
+    q4: true
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5a2c14b4bfd06b001a5ae9d7, squad2-57094b4f9928a814004714f7, squad2-57094b4f9928a814004714f9,
+    squad2-57094b4f9928a814004714f6, squad2-5a2c14b4bfd06b001a5ae9d6
+  date: ''
+  transform: paragraph Sky_(United_Kingdom)#2; first 5 questions of a paragraph in sha256(id) order, kept
+    only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

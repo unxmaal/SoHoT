@@ -1,0 +1,32 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-571099b2b654c5140001f9b6
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What years did this occupation take place?'
+context: 'In Berlin, the Huguenots created two new neighbourhoods: Dorotheenstadt and Friedrichstadt.
+  By 1700, one-fifth of the city''s population was French speaking. The Berlin Huguenots preserved the
+  French language in their church services for nearly a century. They ultimately decided to switch to
+  German in protest against the occupation of Prussia by Napoleon in 1806-07. Many of their descendents
+  rose to positions of prominence. Several congregations were founded, such as those of Fredericia (Denmark),
+  Berlin, Stockholm, Hamburg, Frankfurt, Helsinki, and Emden.'
+assert:
+  equals:
+  - 1806-07
+  - 1806-07.
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-571099b2b654c5140001f9b6
+  date: ''
+  transform: paragraph Huguenot#24; first answerable question in sha256(id) order whose every human answer
+    is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

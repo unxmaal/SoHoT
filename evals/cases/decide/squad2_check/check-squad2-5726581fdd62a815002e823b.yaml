@@ -1,0 +1,54 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5726581fdd62a815002e823b
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: The crisis reduced the demand for large cars. Japanese imports, primarily the Toyota Corona,
+  the Toyota Corolla, the Datsun B210, the Datsun 510, the Honda Civic, the Mitsubishi Galant (a captive
+  import from Chrysler sold as the Dodge Colt), the Subaru DL, and later the Honda Accord all had four
+  cylinder engines that were more fuel efficient than the typical American V8 and six cylinder engines.
+  Japanese imports became mass-market leaders with unibody construction and front-wheel drive, which became
+  de facto standards.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Which country''s cars became
+        more highly sought after as they were more fuel efficient?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Which country''s imports became
+        the de facto mass market leaders?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What type of engines does
+        the American car typically have?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What increased demand for
+        cars with six cylinder engines?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What are two cars with V8
+        engines that were more fuel efficient?'
+assert:
+  answers:
+    q1: true
+    q2: true
+    q3: true
+    q4: false
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5726581fdd62a815002e823b, squad2-5726581fdd62a815002e823d, squad2-5726581fdd62a815002e823c,
+    squad2-5a38cd93a4b263001a8c192d, squad2-5a38cd93a4b263001a8c192a
+  date: ''
+  transform: paragraph 1973_oil_crisis#18; first 5 questions of a paragraph in sha256(id) order, kept
+    only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

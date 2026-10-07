@@ -1,0 +1,56 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5725bad5271a42140099d0c0
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: 'On October 6, 1973, Syria and Egypt, with support from other Arab nations, launched a surprise
+  attack on Israel, on Yom Kippur. This renewal of hostilities in the Arab–Israeli conflict released the
+  underlying economic pressure on oil prices. At the time, Iran was the world''s second-largest oil exporter
+  and a close US ally. Weeks later, the Shah of Iran said in an interview: "Of course [the price of oil]
+  is going to rise... Certainly! And how!... You''ve [Western nations] increased the price of the wheat
+  you sell us by 300 percent, and the same for sugar and cement... You buy our crude oil and sell it back
+  to us, refined as petrochemicals, at a hundred times the price you''ve paid us... It''s only fair that,
+  from now on, you should pay more for oil. Let''s say ten times more."'
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Which oil producer is a close
+        ally of the United States?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What was Iran''s relationship
+        with the US at this time?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What happened on October 6,
+        1973 with Syria and Egypt?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What did Iran do on Yom Kippur
+        on October 6, 1973?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What does Syria sell refined
+        oil for to the middle east?'
+assert:
+  answers:
+    q1: true
+    q2: false
+    q3: false
+    q4: false
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5725bad5271a42140099d0c0, squad2-5a75066297ca42001a521dec, squad2-5a75066297ca42001a521de9,
+    squad2-5a38b07ca4b263001a8c189d, squad2-5a38b07ca4b263001a8c18a1
+  date: ''
+  transform: paragraph 1973_oil_crisis#4; first 5 questions of a paragraph in sha256(id) order, kept only
+    when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

@@ -1,0 +1,31 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-572821274b864d1900164511
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: The Bank of America Tower was previously known as what?'
+context: The tallest building in Downtown Jacksonville's skyline is the Bank of America Tower, constructed
+  in 1990 as the Barnett Center. It has a height of 617 ft (188 m) and includes 42 floors. Other notable
+  structures include the 37-story Wells Fargo Center (with its distinctive flared base making it the defining
+  building in the Jacksonville skyline), originally built in 1972-74 by the Independent Life and Accident
+  Insurance Company, and the 28 floor Riverplace Tower which, when completed in 1967, was the tallest
+  precast, post-tensioned concrete structure in the world.
+assert:
+  equals:
+  - Barnett Center
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572821274b864d1900164511
+  date: ''
+  transform: paragraph Jacksonville,_Florida#15; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

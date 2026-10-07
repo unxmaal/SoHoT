@@ -1,0 +1,55 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5a38d93da4b263001a8c195e
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: OPEC soon lost its preeminent position, and in 1981, its production was surpassed by that of
+  other countries. Additionally, its own member nations were divided. Saudi Arabia, trying to recover
+  market share, increased production, pushing prices down, shrinking or eliminating profits for high-cost
+  producers. The world price, which had peaked during the 1979 energy crisis at nearly $40 per barrel,
+  decreased during the 1980s to less than $10 per barrel. Adjusted for inflation, oil briefly fell back
+  to pre-1973 levels. This "sale" price was a windfall for oil-importing nations, both developing and
+  developed.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What did the world price of
+        oil peak at in 1973?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Why did Saudi Arabia try to
+        increase production, and reduce profits for high cost producers?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: In what year was other countries
+        oil production surpassed by Saudi Arabia?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Which year did the price of
+        oil drop to $10 per barrel?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: In 1979, during the oil crisis,
+        what was the highest price of oil?'
+assert:
+  answers:
+    q1: false
+    q2: true
+    q3: false
+    q4: true
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5a38d93da4b263001a8c195e, squad2-57265e11708984140094c3bd, squad2-5a38d93da4b263001a8c195b,
+    squad2-57265e11708984140094c3bc, squad2-57265e11708984140094c3be
+  date: ''
+  transform: paragraph 1973_oil_crisis#23; first 5 questions of a paragraph in sha256(id) order, kept
+    only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

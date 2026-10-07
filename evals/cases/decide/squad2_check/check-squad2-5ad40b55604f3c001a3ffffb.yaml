@@ -1,0 +1,53 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5ad40b55604f3c001a3ffffb
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: Western medicine was also practiced in China by the Nestorian Christians of the Yuan court, where
+  it was sometimes labeled as huihui or Muslim medicine. The Nestorian physician Jesus the Interpreter
+  founded the Office of Western Medicine in 1263 during the reign of Kublai. Huihui doctors staffed at
+  two imperial hospitals were responsible for treating the imperial family and members of the court. Chinese
+  physicians opposed Western medicine because its humoral system contradicted the yin-yang and wuxing
+  philosophy underlying traditional Chinese medicine. No Chinese translation of Western medical works
+  is known, but it is possible that the Chinese had access to Avicenna's The Canon of Medicine.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What was hoho?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who founded the Office of
+        eastern Medicine?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What aspect of Western medicine
+        did the Chinese like?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What was huihui?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who founded the Office of
+        Western Medicine?'
+assert:
+  answers:
+    q1: false
+    q2: false
+    q3: false
+    q4: true
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5ad40b55604f3c001a3ffffb, squad2-5ad40b55604f3c001a3ffffc, squad2-5ad40b55604f3c001a3ffffe,
+    squad2-572881d34b864d1900164a5a, squad2-572881d34b864d1900164a5b
+  date: ''
+  transform: paragraph Yuan_dynasty#37; first 5 questions of a paragraph in sha256(id) order, kept only
+    when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

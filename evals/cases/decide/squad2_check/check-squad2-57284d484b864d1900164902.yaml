@@ -1,0 +1,60 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-57284d484b864d1900164902
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: After the 1940s, the Gothic style on campus began to give way to modern styles. In 1955, Eero
+  Saarinen was contracted to develop a second master plan, which led to the construction of buildings
+  both north and south of the Midway, including the Laird Bell Law Quadrangle (a complex designed by Saarinen);
+  a series of arts buildings; a building designed by Ludwig Mies van der Rohe for the university's School
+  of Social Service Administration;, a building which is to become the home of the Harris School of Public
+  Policy Studies by Edward Durrell Stone, and the Regenstein Library, the largest building on campus,
+  a brutalist structure designed by Walter Netsch of the Chicago firm Skidmore, Owings & Merrill. Another
+  master plan, designed in 1999 and updated in 2004, produced the Gerald Ratner Athletics Center (2003),
+  the Max Palevsky Residential Commons (2001), South Campus Residence Hall and dining commons (2009),
+  a new children's hospital, and other construction, expansions, and restorations. In 2011, the university
+  completed the glass dome-shaped Joe and Rika Mansueto Library, which provides a grand reading room for
+  the university library and prevents the need for an off-campus book depository.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What administration did Ludwig
+        Mies van der Rohe designa buiding?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: During what decade did the
+        campus start to look more modern?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: After which decade did modern
+        styles give way to Gothic styles on campus?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: In what year was Owings contracted
+        to develop a second master plan?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What public policy school
+        found it''s home in the building that Ludwig Mies van der Rohe designed?'
+assert:
+  answers:
+    q1: true
+    q2: true
+    q3: false
+    q4: false
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-57284d484b864d1900164902, squad2-57284d484b864d1900164900, squad2-5acf8bbd77cf76001a6851b2,
+    squad2-5acf8bbd77cf76001a6851b3, squad2-57284d484b864d1900164903
+  date: ''
+  transform: paragraph University_of_Chicago#10; first 5 questions of a paragraph in sha256(id) order,
+    kept only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

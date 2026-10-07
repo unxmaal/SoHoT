@@ -1,0 +1,32 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-56de3f784396321400ee26fc
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What year did the storm hit Richard''s fleet?'
+context: In April 1191 Richard the Lion-hearted left Messina with a large fleet in order to reach Acre.
+  But a storm dispersed the fleet. After some searching, it was discovered that the boat carrying his
+  sister and his fiancée Berengaria was anchored on the south coast of Cyprus, together with the wrecks
+  of several other ships, including the treasure ship. Survivors of the wrecks had been taken prisoner
+  by the island's despot Isaac Komnenos. On 1 May 1191, Richard's fleet arrived in the port of Limassol
+  on Cyprus. He ordered Isaac to release the prisoners and the treasure. Isaac refused, so Richard landed
+  his troops and took Limassol.
+assert:
+  equals:
+  - '1191'
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-56de3f784396321400ee26fc
+  date: ''
+  transform: paragraph Normans#26; first answerable question in sha256(id) order whose every human answer
+    is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

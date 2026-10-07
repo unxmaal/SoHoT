@@ -1,0 +1,33 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-57337ddc4776f41900660bbb
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: How far from Warsaw does the Vistula river''s environment change noticeably?'
+context: There are 13 natural reserves in Warsaw – among others, Bielany Forest, Kabaty Woods, Czerniaków
+  Lake. About 15 kilometres (9 miles) from Warsaw, the Vistula river's environment changes strikingly
+  and features a perfectly preserved ecosystem, with a habitat of animals that includes the otter, beaver
+  and hundreds of bird species. There are also several lakes in Warsaw – mainly the oxbow lakes, like
+  Czerniaków Lake, the lakes in the Łazienki or Wilanów Parks, Kamionek Lake. There are lot of small lakes
+  in the parks, but only a few are permanent – the majority are emptied before winter to clean them of
+  plants and sediments.
+assert:
+  equals:
+  - 15 kilometres
+  - About 15 kilometres
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-57337ddc4776f41900660bbb
+  date: ''
+  transform: paragraph Warsaw#24; first answerable question in sha256(id) order whose every human answer
+    is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

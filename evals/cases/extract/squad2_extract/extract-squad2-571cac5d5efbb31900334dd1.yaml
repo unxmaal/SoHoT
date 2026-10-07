@@ -1,0 +1,32 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-571cac5d5efbb31900334dd1
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What molecule does the Sun have in higher proportion than Earth?'
+context: Planetary geologists have measured different abundances of oxygen isotopes in samples from the
+  Earth, the Moon, Mars, and meteorites, but were long unable to obtain reference values for the isotope
+  ratios in the Sun, believed to be the same as those of the primordial solar nebula. Analysis of a silicon
+  wafer exposed to the solar wind in space and returned by the crashed Genesis spacecraft has shown that
+  the Sun has a higher proportion of oxygen-16 than does the Earth. The measurement implies that an unknown
+  process depleted oxygen-16 from the Sun's disk of protoplanetary material prior to the coalescence of
+  dust grains that formed the Earth.
+assert:
+  equals:
+  - oxygen-16
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-571cac5d5efbb31900334dd1
+  date: ''
+  transform: paragraph Oxygen#20; first answerable question in sha256(id) order whose every human answer
+    is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

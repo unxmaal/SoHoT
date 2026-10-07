@@ -1,0 +1,34 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-57267947f1498d1400e8e0ec
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What do petrologists use electron microprobes in the laboratory for?'
+context: In addition to identifying rocks in the field, petrologists identify rock samples in the laboratory.
+  Two of the primary methods for identifying rocks in the laboratory are through optical microscopy and
+  by using an electron microprobe. In an optical mineralogy analysis, thin sections of rock samples are
+  analyzed through a petrographic microscope, where the minerals can be identified through their different
+  properties in plane-polarized and cross-polarized light, including their birefringence, pleochroism,
+  twinning, and interference properties with a conoscopic lens. In the electron microprobe, individual
+  locations are analyzed for their exact chemical compositions and variation in composition within individual
+  crystals. Stable and radioactive isotope studies provide insight into the geochemical evolution of rock
+  units.
+assert:
+  equals:
+  - identifying rocks
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-57267947f1498d1400e8e0ec
+  date: ''
+  transform: paragraph Geology#15; first answerable question in sha256(id) order whose every human answer
+    is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

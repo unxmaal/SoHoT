@@ -1,0 +1,55 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-57286ead2ca10214002da34a
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: Following the conquest of Dali in 1253, the former ruling Duan dynasty were appointed as governors-general,
+  recognized as imperial officials by the Yuan, Ming, and Qing-era governments, principally in the province
+  of Yunnan. Succession for the Yuan dynasty, however, was an intractable problem, later causing much
+  strife and internal struggle. This emerged as early as the end of Kublai's reign. Kublai originally
+  named his eldest son, Zhenjin, as the Crown Prince, but he died before Kublai in 1285. Thus, Zhenjin's
+  third son, with the support of his mother Kökejin and the minister Bayan, succeeded the throne and ruled
+  as Temür Khan, or Emperor Chengzong, from 1294 to 1307. Temür Khan decided to maintain and continue
+  much of the work begun by his grandfather. He also made peace with the western Mongol khanates as well
+  as neighboring countries such as Vietnam, which recognized his nominal suzerainty and paid tributes
+  for a few decades. However, the corruption in the Yuan dynasty began during the reign of Temür Khan.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: When did Temur rule?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: When did Zhenjin die?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: When did Zhenjin have a son?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: When was Dali defended by
+        the Yuan?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who had Kublai wanted to succeed
+        him?'
+assert:
+  answers:
+    q1: true
+    q2: true
+    q3: false
+    q4: false
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-57286ead2ca10214002da34a, squad2-57286ead2ca10214002da348, squad2-5ad404d4604f3c001a3ffde9,
+    squad2-5ad404d4604f3c001a3ffde7, squad2-57286ead2ca10214002da347
+  date: ''
+  transform: paragraph Yuan_dynasty#14; first 5 questions of a paragraph in sha256(id) order, kept only
+    when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

@@ -1,0 +1,57 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5729081d3f37b31900477fab
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: Neutrophils and macrophages are phagocytes that travel throughout the body in pursuit of invading
+  pathogens. Neutrophils are normally found in the bloodstream and are the most abundant type of phagocyte,
+  normally representing 50% to 60% of the total circulating leukocytes. During the acute phase of inflammation,
+  particularly as a result of bacterial infection, neutrophils migrate toward the site of inflammation
+  in a process called chemotaxis, and are usually the first cells to arrive at the scene of infection.
+  Macrophages are versatile cells that reside within tissues and produce a wide array of chemicals including
+  enzymes, complement proteins, and regulatory factors such as interleukin 1. Macrophages also act as
+  scavengers, ridding the body of worn-out cells and other debris, and as antigen-presenting cells that
+  activate the adaptive immune system.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What are two types of phagocytes
+        that travel through the body to find invading pathogens?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Where are neutrophils rarely
+        found?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What percentage of leukocytes
+        do neutrophils represent?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is the least abundant
+        type of phagocyte?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What cell is unable to act
+        as a scavenger?'
+assert:
+  answers:
+    q1: true
+    q2: false
+    q3: true
+    q4: false
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5729081d3f37b31900477fab, squad2-5ad4cb055b96ef001a10a0df, squad2-5729081d3f37b31900477fad,
+    squad2-5ad4cb055b96ef001a10a0e0, squad2-5ad4cb055b96ef001a10a0e2
+  date: ''
+  transform: paragraph Immune_system#11; first 5 questions of a paragraph in sha256(id) order, kept only
+    when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

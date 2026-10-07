@@ -1,0 +1,56 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5727cb4b2ca10214002d9677
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: Jacksonville is in the First Coast region of northeast Florida and is centered on the banks of
+  the St. Johns River, about 25 miles (40 km) south of the Georgia state line and about 340 miles (550
+  km) north of Miami. The Jacksonville Beaches communities are along the adjacent Atlantic coast. The
+  area was originally inhabited by the Timucua people, and in 1564 was the site of the French colony of
+  Fort Caroline, one of the earliest European settlements in what is now the continental United States.
+  Under British rule, settlement grew at the narrow point in the river where cattle crossed, known as
+  Wacca Pilatka to the Seminole and the Cow Ford to the British. A platted town was established there
+  in 1822, a year after the United States gained Florida from Spain; it was named after Andrew Jackson,
+  the first military governor of the Florida Territory and seventh President of the United States.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How far is Jacksonville from
+        Miami?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What river runs alongside
+        Jacksonville?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is the name of the French
+        colony established in 1564?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What historical figure was
+        Jacksonville named after?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What cities 340 km from Jacksonville?'
+assert:
+  answers:
+    q1: true
+    q2: true
+    q3: true
+    q4: true
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5727cb4b2ca10214002d9677, squad2-5727cb4b2ca10214002d9676, squad2-5727cb4b2ca10214002d9678,
+    squad2-5727cb4b2ca10214002d967a, squad2-5a1c55b4b4fb5d0018714605
+  date: ''
+  transform: paragraph Jacksonville,_Florida#1; first 5 questions of a paragraph in sha256(id) order,
+    kept only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

@@ -1,0 +1,31 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-573003dd947a6a140053cf42
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: When did tides and currents similar to our current system begin?'
+context: Since 7500 yr ago, a situation with tides and currents, very similar to present has existed.
+  Rates of sea-level rise had dropped so far, that natural sedimentation by the Rhine and coastal processes
+  together, could compensate the transgression by the sea; in the last 7000 years, the coast line was
+  roughly at the same location. In the southern North Sea, due to ongoing tectonic subsidence, the sea
+  level is still rising, at the rate of about 1–3 cm (0.39–1.18 in) per century (1 metre or 39 inches
+  in last 3000 years).
+assert:
+  equals:
+  - 7500 yr ago
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-573003dd947a6a140053cf42
+  date: ''
+  transform: paragraph Rhine#31; first answerable question in sha256(id) order whose every human answer
+    is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

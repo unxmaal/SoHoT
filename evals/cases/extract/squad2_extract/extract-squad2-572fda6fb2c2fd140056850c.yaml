@@ -1,0 +1,32 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-572fda6fb2c2fd140056850c
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What method is used for tallying votes in the second vote of the ballot?'
+context: The total number of seats in the Parliament are allocated to parties proportionally to the number
+  of votes received in the second vote of the ballot using the d'Hondt method. For example, to determine
+  who is awarded the first list seat, the number of list votes cast for each party is divided by one plus
+  the number of seats the party won in the region (at this point just constituency seats). The party with
+  the highest quotient is awarded the seat, which is then added to its constituency seats in allocating
+  the second seat. This is repeated iteratively until all available list seats are allocated.
+assert:
+  equals:
+  - the d'Hondt method
+  - d'Hondt
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572fda6fb2c2fd140056850c
+  date: ''
+  transform: paragraph Scottish_Parliament#34; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

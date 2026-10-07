@@ -1,0 +1,32 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-57308ddc396df919000961a6
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What were the native inhabitants of Australia called?'
+context: The principles of imperialism are often generalizable to the policies and practices of the British
+  Empire "during the last generation, and proceeds rather by diagnosis than by historical description".
+  British imperialism often used the concept of Terra nullius (Latin expression which stems from Roman
+  law meaning 'empty land'). The country of Australia serves as a case study in relation to British settlement
+  and colonial rule of the continent in the eighteenth century, as it was premised on terra nullius, and
+  its settlers considered it unused by its sparse Aboriginal inhabitants.
+assert:
+  equals:
+  - Aboriginal
+  - Aboriginal inhabitants
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-57308ddc396df919000961a6
+  date: ''
+  transform: paragraph Imperialism#9; first answerable question in sha256(id) order whose every human
+    answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

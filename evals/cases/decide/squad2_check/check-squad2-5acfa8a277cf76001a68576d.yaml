@@ -1,0 +1,56 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5acfa8a277cf76001a68576d
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: In economics, notable Nobel Memorial Prize in Economic Sciences winners Milton Friedman, a major
+  advisor to Republican U.S. President Ronald Reagan and Conservative British Prime Minister Margaret
+  Thatcher, George Stigler, Nobel laureate and proponent of regulatory capture theory, Gary Becker, an
+  important contributor to the family economics branch of economics, Herbert A. Simon, responsible for
+  the modern interpretation of the concept of organizational decision-making, Paul Samuelson, the first
+  American to win the Nobel Memorial Prize in Economic Sciences, and Eugene Fama, known for his work on
+  portfolio theory, asset pricing and stock market behaviour, are all graduates. American economist, social
+  theorist, political philosopher, and author Thomas Sowell is also an alumnus.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What US Prime Minister is
+        an alumni?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What Nobel Memorial Prize
+        in Economic Sciences winner is also a university alumni member?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who was responsible for the
+        ancient interpretation of organizational decision making?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What British Prime minister
+        advisor is also a university alumni member?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Which Nobel Memorial Prize
+        in British Sciences is an alumni?'
+assert:
+  answers:
+    q1: false
+    q2: true
+    q3: false
+    q4: true
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5acfa8a277cf76001a68576d, squad2-572870b2ff5b5019007da222, squad2-5acfa8a277cf76001a685770,
+    squad2-572870b2ff5b5019007da223, squad2-5acfa8a277cf76001a68576c
+  date: ''
+  transform: paragraph University_of_Chicago#32; first 5 questions of a paragraph in sha256(id) order,
+    kept only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

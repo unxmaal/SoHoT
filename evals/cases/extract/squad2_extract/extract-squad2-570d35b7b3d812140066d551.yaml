@@ -1,0 +1,35 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-570d35b7b3d812140066d551
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the Victoria state bird?'
+context: 'Victoria contains many topographically, geologically and climatically diverse areas, ranging
+  from the wet, temperate climate of Gippsland in the southeast to the snow-covered Victorian alpine areas
+  which rise to almost 2,000 m (6,600 ft), with Mount Bogong the highest peak at 1,986 m (6,516 ft). There
+  are extensive semi-arid plains to the west and northwest. There is an extensive series of river systems
+  in Victoria. Most notable is the Murray River system. Other rivers include: Ovens River, Goulburn River,
+  Patterson River, King River, Campaspe River, Loddon River, Wimmera River, Elgin River, Barwon River,
+  Thomson River, Snowy River, Latrobe River, Yarra River, Maribyrnong River, Mitta River, Hopkins River,
+  Merri River and Kiewa River. The state symbols include the pink heath (state flower), Leadbeater''s
+  possum (state animal) and the helmeted honeyeater (state bird).'
+assert:
+  equals:
+  - helmeted honeyeater
+  - the helmeted honeyeater
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-570d35b7b3d812140066d551
+  date: ''
+  transform: paragraph Victoria_(Australia)#12; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

@@ -1,0 +1,59 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5acff69e77cf76001a686665
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: 'A controversial aspect of imperialism is the defense and justification of empire-building based
+  on seemingly rational grounds. J. A. Hobson identifies this justification on general grounds as: "It
+  is desirable that the earth should be peopled, governed, and developed, as far as possible, by the races
+  which can do this work best, i.e. by the races of highest ''social efficiency''". Many others argued
+  that imperialism is justified for several different reasons. Friedrich Ratzel believed that in order
+  for a state to survive, imperialism was needed. Halford Mackinder felt that Great Britain needed to
+  be one of the greatest imperialists and therefore justified imperialism. The purportedly scientific
+  nature of "Social Darwinism" and a theory of races formed a supposedly rational justification for imperialism.
+  The rhetoric of colonizers being racially superior appears to have achieved its purpose, for example
+  throughout Latin America "whiteness" is still prized today and various forms of blanqueamiento (whitening)
+  are common.'
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: J. A. Hobson didn''t want
+        which races to develop the world?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Which theory does not justify
+        imperialism in part?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: what is the most controversial
+        aspect of imperialism?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: In America what is the most
+        revered skin color?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Friedrich Ratzel thought what
+        was not needed for a state to survive?'
+assert:
+  answers:
+    q1: false
+    q2: false
+    q3: true
+    q4: false
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5acff69e77cf76001a686665, squad2-5acff69e77cf76001a686667, squad2-5730876a396df9190009617a,
+    squad2-5acff69e77cf76001a686668, squad2-5acff69e77cf76001a686666
+  date: ''
+  transform: paragraph Imperialism#6; first 5 questions of a paragraph in sha256(id) order, kept only
+    when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

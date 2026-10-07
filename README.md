@@ -1370,6 +1370,24 @@ items whose checks all expect one value (a constant could pass) are skipped,
 as is any row whose reference fails its own checks. Each case records its
 item date, so a receipt can be read against a candidate's cutoff.
 
+`squad2_check` (decide), `squad2_extract` and `squad2_retrieval` read SQuAD 2.0
+dev (CC BY-SA 4.0) at a pinned commit of rajpurkar/SQuAD-explorer, checked by
+sha256. Decide asks five questions per paragraph, mixed answerable and not;
+extract wants one human answer exactly (`equals` takes a list of
+alternatives); retrieval ranks one article's paragraphs, a corpus every case
+of that article carries in `Imported.files` (cases may share a path only with
+the same bytes), and passes only when the gold one is
+first (`k: 1`, because bm25 passes 96% at recall@5 and the holdout would be
+saturated). `librispeech` (stt, CC BY 4.0) keeps a committed manifest of 480
+test-clean clips pinned by sha256 and fetches the audio (42 MB measured on
+2026-10-07) into `corpora/librispeech-rows` beside the weights root, or
+`$LIBRISPEECH_CACHE`; its cases are gitignored like `evals.corpora`'s, pass
+only on every word right (`max_wer: 0`), and replace a generated case for the
+same clip. `python -m evals.importers.librispeech` rebuilds the manifest.
+Neither source has per-item dates, so these cases carry a `date_note` bound
+instead; `trained_on` names the measured candidates whose cards list the
+source (the parakeet cards list LibriSpeech's train splits).
+
 ### Technique discovery
 
 A lane can be beaten by a new method as well as by new weights: svg's

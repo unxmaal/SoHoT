@@ -1,0 +1,54 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5a678908f038b7001ab0c297
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: In the United Kingdom and several other Commonwealth countries including Australia and Canada,
+  the use of the term is generally restricted to primary and secondary educational levels; it is almost
+  never used of universities and other tertiary institutions. Private education in North America covers
+  the whole gamut of educational activity, ranging from pre-school to tertiary level institutions. Annual
+  tuition fees at K-12 schools range from nothing at so called 'tuition-free' schools to more than $45,000
+  at several New England preparatory schools.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is the term private school
+        restricted to in the US?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is the yearly cost of
+        some notable prep schools in New England?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What region does use the term
+        ''private schools'' to refer to universities?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Along with Canada and the
+        United Kingdom, what country generally doesn''t refer to universities as private schools?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What are schools called that
+        don''t charge tuition in Austraila?'
+assert:
+  answers:
+    q1: false
+    q2: true
+    q3: true
+    q4: true
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5a678908f038b7001ab0c297, squad2-57274712708984140094dbad, squad2-57274712708984140094dbb0,
+    squad2-57274712708984140094dbaf, squad2-5a678908f038b7001ab0c299
+  date: ''
+  transform: paragraph Private_school#1; first 5 questions of a paragraph in sha256(id) order, kept only
+    when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

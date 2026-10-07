@@ -35,14 +35,16 @@ def test_every_case_names_its_source_license_and_pinned_selection():
     import yaml
     from evals import benchmark_import as bi
     from evals import decide_corpus as dc
+    from evals import importers
     allowed = {s["license"] for s in dc.SOURCES.values()}
+    known = set(bi.IMPORTERS) | {importers.module(s.name).SOURCE for s in importers.REGISTRY}
     for c in CASES:
         raw = yaml.safe_load(c.source.read_text(encoding="utf-8"))
         a = raw["attribution"]
         assert a["url"].startswith("https://")
         if a.get("source"):
             # Imported by evals/benchmark_import.py (#491): the item and revision pin it.
-            assert a["license"] in bi.ALLOWED_LICENSES and a["source"] in bi.IMPORTERS
+            assert a["license"] in bi.ALLOWED_LICENSES and a["source"] in known
             assert a["item"] and a["revision"]
         else:
             assert a["license"] in allowed and f"@{dc.NIMBLE_REV}:" in a["selected_from"]

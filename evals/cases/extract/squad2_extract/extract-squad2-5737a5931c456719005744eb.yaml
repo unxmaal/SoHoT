@@ -1,0 +1,34 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-5737a5931c456719005744eb
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is resposible for speeding up or slowing down an object?'
+context: where  is the mass of the object,  is the velocity of the object and  is the distance to the
+  center of the circular path and  is the unit vector pointing in the radial direction outwards from the
+  center. This means that the unbalanced centripetal force felt by any object is always directed toward
+  the center of the curving path. Such forces act perpendicular to the velocity vector associated with
+  the motion of an object, and therefore do not change the speed of the object (magnitude of the velocity),
+  but only the direction of the velocity vector. The unbalanced force that accelerates an object can be
+  resolved into a component that is perpendicular to the path, and one that is tangential to the path.
+  This yields both the tangential force, which accelerates the object by either slowing it down or speeding
+  it up, and the radial (centripetal) force, which changes its direction.
+assert:
+  equals:
+  - tangential force
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5737a5931c456719005744eb
+  date: ''
+  transform: paragraph Force#39; first answerable question in sha256(id) order whose every human answer
+    is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

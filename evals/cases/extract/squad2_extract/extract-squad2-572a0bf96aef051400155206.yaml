@@ -1,0 +1,38 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-572a0bf96aef051400155206
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What type of hypersensitivity is associated with allergies?'
+context: Hypersensitivity is an immune response that damages the body's own tissues. They are divided
+  into four classes (Type I – IV) based on the mechanisms involved and the time course of the hypersensitive
+  reaction. Type I hypersensitivity is an immediate or anaphylactic reaction, often associated with allergy.
+  Symptoms can range from mild discomfort to death. Type I hypersensitivity is mediated by IgE, which
+  triggers degranulation of mast cells and basophils when cross-linked by antigen. Type II hypersensitivity
+  occurs when antibodies bind to antigens on the patient's own cells, marking them for destruction. This
+  is also called antibody-dependent (or cytotoxic) hypersensitivity, and is mediated by IgG and IgM antibodies.
+  Immune complexes (aggregations of antigens, complement proteins, and IgG and IgM antibodies) deposited
+  in various tissues trigger Type III hypersensitivity reactions. Type IV hypersensitivity (also known
+  as cell-mediated or delayed type hypersensitivity) usually takes between two and three days to develop.
+  Type IV reactions are involved in many autoimmune and infectious diseases, but may also involve contact
+  dermatitis (poison ivy). These reactions are mediated by T cells, monocytes, and macrophages.
+assert:
+  equals:
+  - Type I
+  - Type I hypersensitivity
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572a0bf96aef051400155206
+  date: ''
+  transform: paragraph Immune_system#41; first answerable question in sha256(id) order whose every human
+    answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

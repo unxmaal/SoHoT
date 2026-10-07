@@ -1,0 +1,54 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5728d9403acd2414000e001d
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: Civil disobedience is usually defined as pertaining to a citizen's relation to the state and
+  its laws, as distinguished from a constitutional impasse in which two public agencies, especially two
+  equally sovereign branches of government, conflict. For instance, if the head of government of a country
+  were to refuse to enforce a decision of that country's highest court, it would not be civil disobedience,
+  since the head of government would be acting in her or his capacity as public official rather than private
+  citizen.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What type of person can not
+        be attributed civil disobedience?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What two public agencies conflict
+        under the defnintion of civil disobedience?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How many citizens conflict
+        in a constitutional impasse?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What does not constitute as
+        civil disobedience?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Constitutional impasse is
+        different from civil disobedience because does not include what type of person?'
+assert:
+  answers:
+    q1: true
+    q2: false
+    q3: false
+    q4: true
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5728d9403acd2414000e001d, squad2-5a665002846392001a1e1ab3, squad2-5a665002846392001a1e1ab5,
+    squad2-5728d9403acd2414000e001c, squad2-57280f974b864d1900164371
+  date: ''
+  transform: paragraph Civil_disobedience#5; first 5 questions of a paragraph in sha256(id) order, kept
+    only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

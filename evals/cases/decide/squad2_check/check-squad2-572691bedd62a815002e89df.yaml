@@ -1,0 +1,64 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-572691bedd62a815002e89df
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: Since all modern ctenophores except the beroids have cydippid-like larvae, it has widely been
+  assumed that their last common ancestor also resembled cydippids, having an egg-shaped body and a pair
+  of retractable tentacles. Richard Harbison's purely morphological analysis in 1985 concluded that the
+  cydippids are not monophyletic, in other words do not contain all and only the descendants of a single
+  common ancestor that was itself a cydippid. Instead he found that various cydippid families were more
+  similar to members of other ctenophore orders than to other cydippids. He also suggested that the last
+  common ancestor of modern ctenophores was either cydippid-like or beroid-like. A molecular phylogeny
+  analysis in 2001, using 26 species, including 4 recently discovered ones, confirmed that the cydippids
+  are not monophyletic and concluded that the last common ancestor of modern ctenophores was cydippid-like.
+  It also found that the genetic differences between these species were very small – so small that the
+  relationships between the Lobata, Cestida and Thalassocalycida remained uncertain. This suggests that
+  the last common ancestor of modern ctenophores was relatively recent, and perhaps was lucky enough to
+  survive the Cretaceous–Paleogene extinction event 65.5 million years ago while other lineages perished.
+  When the analysis was broadened to include representatives of other phyla, it concluded that cnidarians
+  are probably more closely related to bilaterians than either group is to ctenophores but that this diagnosis
+  is uncertain.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who did a morphologically
+        analysis in 1985 that concluded cydippids are not monophyletic?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: In what time period did the
+        Lobata, Cestida and Thalassocalycida become extinct?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What are beroids more similar
+        to than other bilaterians?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What kind of analysis did
+        Harbison conclude in 2001 about the Lobata?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What was concluded by Richard
+        Harbison in 2001 about beroids?'
+assert:
+  answers:
+    q1: true
+    q2: false
+    q3: false
+    q4: false
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572691bedd62a815002e89df, squad2-5a83acb4e60761001a2eb861, squad2-5a83acb4e60761001a2eb860,
+    squad2-5a83acb4e60761001a2eb862, squad2-5a83acb4e60761001a2eb85f
+  date: ''
+  transform: paragraph Ctenophora#30; first 5 questions of a paragraph in sha256(id) order, kept only
+    when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

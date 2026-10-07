@@ -1,0 +1,39 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-5727ec062ca10214002d99b8
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What happens when business underpays their workers?'
+context: In a purely capitalist mode of production (i.e. where professional and labor organizations cannot
+  limit the number of workers) the workers wages will not be controlled by these organizations, or by
+  the employer, but rather by the market. Wages work in the same way as prices for any other good. Thus,
+  wages can be considered as a function of market price of skill. And therefore, inequality is driven
+  by this price. Under the law of supply and demand, the price of skill is determined by a race between
+  the demand for the skilled worker and the supply of the skilled worker. "On the other hand, markets
+  can also concentrate wealth, pass environmental costs on to society, and abuse workers and consumers."
+  "Markets, by themselves, even when they are stable, often lead to high levels of inequality, outcomes
+  that are widely viewed as unfair." Employers who offer a below market wage will find that their business
+  is chronically understaffed. Their competitors will take advantage of the situation by offering a higher
+  wage the best of their labor. For a businessman who has the profit motive as the prime interest, it
+  is a losing proposition to offer below or above market wages to workers.
+assert:
+  equals:
+  - business is chronically understaffed
+  - their business is chronically understaffed
+  - chronically understaffed
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5727ec062ca10214002d99b8
+  date: ''
+  transform: paragraph Economic_inequality#4; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

@@ -1,0 +1,31 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-57265746dd62a815002e8218
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the common coastal pleurobrachia called?'
+context: Cydippid ctenophores have bodies that are more or less rounded, sometimes nearly spherical and
+  other times more cylindrical or egg-shaped; the common coastal "sea gooseberry," Pleurobrachia, sometimes
+  has an egg-shaped body with the mouth at the narrow end, although some individuals are more uniformly
+  round. From opposite sides of the body extends a pair of long, slender tentacles, each housed in a sheath
+  into which it can be withdrawn. Some species of cydippids have bodies that are flattened to various
+  extents, so that they are wider in the plane of the tentacles.
+assert:
+  equals:
+  - sea gooseberry
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-57265746dd62a815002e8218
+  date: ''
+  transform: paragraph Ctenophora#13; first answerable question in sha256(id) order whose every human
+    answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

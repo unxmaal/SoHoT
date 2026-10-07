@@ -1,0 +1,33 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-57115dbe2419e314009555a5
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What did Watt add to the steam engine in 1788?'
+context: The centrifugal governor was adopted by James Watt for use on a steam engine in 1788 after Watt’s
+  partner Boulton saw one at a flour mill Boulton & Watt were building. The governor could not actually
+  hold a set speed, because it would assume a new constant speed in response to load changes. The governor
+  was able to handle smaller variations such as those caused by fluctuating heat load to the boiler. Also,
+  there was a tendency for oscillation whenever there was a speed change. As a consequence, engines equipped
+  only with this governor were not suitable for operations requiring constant speed, such as cotton spinning.
+  The governor was improved over time and coupled with variable steam cut off, good speed control in response
+  to changes in load was attainable near the end of the 19th century.
+assert:
+  equals:
+  - centrifugal governor
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-57115dbe2419e314009555a5
+  date: ''
+  transform: paragraph Steam_engine#30; first answerable question in sha256(id) order whose every human
+    answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

@@ -1,0 +1,58 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5ad02fdf77cf76001a686d98
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: The Presiding Officer (or Deputy Presiding Officer) decides who speaks in chamber debates and
+  the amount of time for which they are allowed to speak. Normally, the Presiding Officer tries to achieve
+  a balance between different viewpoints and political parties when selecting members to speak. Typically,
+  ministers or party leaders open debates, with opening speakers given between 5 and 20 minutes, and succeeding
+  speakers allocated less time. The Presiding Officer can reduce speaking time if a large number of members
+  wish to participate in the debate. Debate is more informal than in some parliamentary systems. Members
+  may call each other directly by name, rather than by constituency or cabinet position, and hand clapping
+  is allowed. Speeches to the chamber are normally delivered in English, but members may use Scots, Gaelic,
+  or any other language with the agreement of the Presiding Officer. The Scottish Parliament has conducted
+  debates in the Gaelic language.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: The Presiding Officer tries
+        the achieve a balance between similar viewpoints and whom?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: The Presiding Officer can
+        increase speaking time if what?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Succeeding speakers are usually
+        allotted more what?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is also decided by the
+        Presiding Officer?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Closing speakers are given
+        between 5 and how many minutes?'
+assert:
+  answers:
+    q1: false
+    q2: false
+    q3: false
+    q4: true
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5ad02fdf77cf76001a686d98, squad2-5ad02fdf77cf76001a686d9c, squad2-5ad02fdf77cf76001a686d9b,
+    squad2-572fc41f947a6a140053cc81, squad2-5ad02fdf77cf76001a686d9a
+  date: ''
+  transform: paragraph Scottish_Parliament#14; first 5 questions of a paragraph in sha256(id) order, kept
+    only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

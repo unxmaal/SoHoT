@@ -1,0 +1,54 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-57265746dd62a815002e8218
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: Cydippid ctenophores have bodies that are more or less rounded, sometimes nearly spherical and
+  other times more cylindrical or egg-shaped; the common coastal "sea gooseberry," Pleurobrachia, sometimes
+  has an egg-shaped body with the mouth at the narrow end, although some individuals are more uniformly
+  round. From opposite sides of the body extends a pair of long, slender tentacles, each housed in a sheath
+  into which it can be withdrawn. Some species of cydippids have bodies that are flattened to various
+  extents, so that they are wider in the plane of the tentacles.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is the common coastal
+        pleurobrachia called?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What does the pleurobrachia
+        have on opposite sides of its body?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Where is the mouth located
+        on the pleuobrachia located?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Cydippid are typically what
+        shape?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What can the pleuobrachia
+        do with its mouth when its in the way?'
+assert:
+  answers:
+    q1: true
+    q2: true
+    q3: true
+    q4: true
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-57265746dd62a815002e8218, squad2-57265746dd62a815002e8219, squad2-57265746dd62a815002e821c,
+    squad2-57265746dd62a815002e821a, squad2-5a8373a7e60761001a2eb730
+  date: ''
+  transform: paragraph Ctenophora#13; first 5 questions of a paragraph in sha256(id) order, kept only
+    when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

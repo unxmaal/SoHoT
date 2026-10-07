@@ -1,0 +1,58 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-56e1aba0e3433e1400423097
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: A Turing machine is a mathematical model of a general computing machine. It is a theoretical
+  device that manipulates symbols contained on a strip of tape. Turing machines are not intended as a
+  practical computing technology, but rather as a thought experiment representing a computing machine—anything
+  from an advanced supercomputer to a mathematician with a pencil and paper. It is believed that if a
+  problem can be solved by an algorithm, there exists a Turing machine that solves the problem. Indeed,
+  this is the statement of the Church–Turing thesis. Furthermore, it is known that everything that can
+  be computed on other models of computation known to us today, such as a RAM machine, Conway's Game of
+  Life, cellular automata or any programming language can be computed on a Turing machine. Since Turing
+  machines are easy to analyze mathematically, and are believed to be as powerful as any other model of
+  computation, the Turing machine is the most commonly used model in complexity theory.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is the most commonplace
+        model utilized in complexity theory?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is a scientific device
+        that manipulates symbols contained on a strip of tape?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What a scientific model of
+        a general computing machine?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: It is generally assumed that
+        a Turing machine can solve anything capable of also being solved using what?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What does a Turing machine
+        handle on a strip of tape?'
+assert:
+  answers:
+    q1: true
+    q2: false
+    q3: false
+    q4: true
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-56e1aba0e3433e1400423097, squad2-5ad543c05b96ef001a10abff, squad2-5ad543c05b96ef001a10abfe,
+    squad2-56e1aba0e3433e1400423095, squad2-56e1aba0e3433e1400423098
+  date: ''
+  transform: paragraph Computational_complexity_theory#12; first 5 questions of a paragraph in sha256(id)
+    order, kept only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

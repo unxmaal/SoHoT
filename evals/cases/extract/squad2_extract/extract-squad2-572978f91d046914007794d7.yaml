@@ -1,0 +1,33 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-572978f91d046914007794d7
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What does the Sieve of Eratosthenes do?'
+context: 'There are hints in the surviving records of the ancient Egyptians that they had some knowledge
+  of prime numbers: the Egyptian fraction expansions in the Rhind papyrus, for instance, have quite different
+  forms for primes and for composites. However, the earliest surviving records of the explicit study of
+  prime numbers come from the Ancient Greeks. Euclid''s Elements (circa 300 BC) contain important theorems
+  about primes, including the infinitude of primes and the fundamental theorem of arithmetic. Euclid also
+  showed how to construct a perfect number from a Mersenne prime. The Sieve of Eratosthenes, attributed
+  to Eratosthenes, is a simple method to compute primes, although the large primes found today with computers
+  are not generated this way.'
+assert:
+  equals:
+  - compute primes
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572978f91d046914007794d7
+  date: ''
+  transform: paragraph Prime_number#7; first answerable question in sha256(id) order whose every human
+    answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

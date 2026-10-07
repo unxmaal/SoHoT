@@ -1,0 +1,32 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-572881d34b864d1900164a5a
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What was huihui?'
+context: Western medicine was also practiced in China by the Nestorian Christians of the Yuan court, where
+  it was sometimes labeled as huihui or Muslim medicine. The Nestorian physician Jesus the Interpreter
+  founded the Office of Western Medicine in 1263 during the reign of Kublai. Huihui doctors staffed at
+  two imperial hospitals were responsible for treating the imperial family and members of the court. Chinese
+  physicians opposed Western medicine because its humoral system contradicted the yin-yang and wuxing
+  philosophy underlying traditional Chinese medicine. No Chinese translation of Western medical works
+  is known, but it is possible that the Chinese had access to Avicenna's The Canon of Medicine.
+assert:
+  equals:
+  - Muslim medicine
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572881d34b864d1900164a5a
+  date: ''
+  transform: paragraph Yuan_dynasty#37; first answerable question in sha256(id) order whose every human
+    answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

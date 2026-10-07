@@ -1,0 +1,54 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5ad40280604f3c001a3ffd57
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: In April 1191 Richard the Lion-hearted left Messina with a large fleet in order to reach Acre.
+  But a storm dispersed the fleet. After some searching, it was discovered that the boat carrying his
+  sister and his fiancée Berengaria was anchored on the south coast of Cyprus, together with the wrecks
+  of several other ships, including the treasure ship. Survivors of the wrecks had been taken prisoner
+  by the island's despot Isaac Komnenos. On 1 May 1191, Richard's fleet arrived in the port of Limassol
+  on Cyprus. He ordered Isaac to release the prisoners and the treasure. Isaac refused, so Richard landed
+  his troops and took Limassol.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who left Messina in the 11th
+        century?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What year did the storm hit
+        Richard''s fleet?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What year did Richards fleet
+        avoid a storm?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who ruled Cyprus in the 11th
+        century?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who was Richard''s fiancee?'
+assert:
+  answers:
+    q1: false
+    q2: true
+    q3: false
+    q4: false
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5ad40280604f3c001a3ffd57, squad2-56de3f784396321400ee26fc, squad2-5ad40280604f3c001a3ffd58,
+    squad2-5ad40280604f3c001a3ffd59, squad2-56de3f784396321400ee26fb
+  date: ''
+  transform: paragraph Normans#26; first 5 questions of a paragraph in sha256(id) order, kept only when
+    they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

@@ -1,0 +1,36 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-5727cd0f4b864d1900163d72
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: How much more land does the school own in Allston than Cambridge?'
+context: Harvard has purchased tracts of land in Allston, a walk across the Charles River from Cambridge,
+  with the intent of major expansion southward. The university now owns approximately fifty percent more
+  land in Allston than in Cambridge. Proposals to connect the Cambridge campus with the new Allston campus
+  include new and enlarged bridges, a shuttle service and/or a tram. Plans also call for sinking part
+  of Storrow Drive (at Harvard's expense) for replacement with park land and pedestrian access to the
+  Charles River, as well as the construction of bike paths, and buildings throughout the Allston campus.
+  The institution asserts that such expansion will benefit not only the school, but surrounding community,
+  pointing to such features as the enhanced transit infrastructure, possible shuttles open to the public,
+  and park space which will also be publicly accessible.
+assert:
+  equals:
+  - approximately fifty percent
+  - fifty percent
+  - fifty percent more
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5727cd0f4b864d1900163d72
+  date: ''
+  transform: paragraph Harvard_University#12; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

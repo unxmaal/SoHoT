@@ -1,0 +1,31 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-572871bc4b864d1900164a05
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What chess grandmaster is also a university alumni?'
+context: Other prominent alumni include anthropologists David Graeber and Donald Johanson, who is best
+  known for discovering the fossil of a female hominid australopithecine known as "Lucy" in the Afar Triangle
+  region, psychologist John B. Watson, American psychologist who established the psychological school
+  of behaviorism, communication theorist Harold Innis, chess grandmaster Samuel Reshevsky, and conservative
+  international relations scholar and White House Coordinator of Security Planning for the National Security
+  Council Samuel P. Huntington.
+assert:
+  equals:
+  - Samuel Reshevsky
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572871bc4b864d1900164a05
+  date: ''
+  transform: paragraph University_of_Chicago#33; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

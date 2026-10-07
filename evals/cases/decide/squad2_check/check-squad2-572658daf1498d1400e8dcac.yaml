@@ -1,0 +1,66 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-572658daf1498d1400e8dcac
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: 'The tentacles of cydippid ctenophores are typically fringed with tentilla ("little tentacles"),
+  although a few genera have simple tentacles without these sidebranches. The tentacles and tentilla are
+  densely covered with microscopic colloblasts that capture prey by sticking to it. Colloblasts are specialized
+  mushroom-shaped cells in the outer layer of the epidermis, and have three main components: a domed head
+  with vesicles (chambers) that contain adhesive; a stalk that anchors the cell in the lower layer of
+  the epidermis or in the mesoglea; and a spiral thread that coils round the stalk and is attached to
+  the head and to the root of the stalk. The function of the spiral thread is uncertain, but it may absorb
+  stress when prey tries to escape, and thus prevent the collobast from being torn apart. In addition
+  to colloblasts, members of the genus Haeckelia, which feed mainly on jellyfish, incorporate their victims''
+  stinging nematocytes into their own tentacles – some cnidaria-eating nudibranchs similarly incorporate
+  nematocytes into their bodies for defense. The tentilla of Euplokamis differ significantly from those
+  of other cydippids: they contain striated muscle, a cell type otherwise unknown in the phylum Ctenophora;
+  and they are coiled when relaxed, while the tentilla of all other known ctenophores elongate when relaxed.
+  Euplokamis'' tentilla have three types of movement that are used in capturing prey: they may flick out
+  very quickly (in 40 to 60 milliseconds); they can wriggle, which may lure prey by behaving like small
+  planktonic worms; and they coil round prey. The unique flicking is an uncoiling movement powered by
+  contraction of the striated muscle. The wriggling motion is produced by smooth muscles, but of a highly
+  specialized type. Coiling around prey is accomplished largely by the return of the tentilla to their
+  inactive state, but the coils may be tightened by smooth muscle.'
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What are the tentacles of
+        cydipped ctenophores are usually fringed with?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What does the domed head of
+        the tentilla have?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What shape are tentilla typically?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How many types of movements
+        do euplokamis tentilla have?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What makes the tentilla of
+        euplokamis different from other cysippids?'
+assert:
+  answers:
+    q1: true
+    q2: false
+    q3: false
+    q4: true
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572658daf1498d1400e8dcac, squad2-5a837549e60761001a2eb73c, squad2-5a837549e60761001a2eb73a,
+    squad2-572658daf1498d1400e8dcaf, squad2-572658daf1498d1400e8dcae
+  date: ''
+  transform: paragraph Ctenophora#14; first 5 questions of a paragraph in sha256(id) order, kept only
+    when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

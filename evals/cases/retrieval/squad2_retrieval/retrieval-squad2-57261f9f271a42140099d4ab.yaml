@@ -1,0 +1,25 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: retrieval-squad2-57261f9f271a42140099d4ab
+modality: retrieval
+prompt: Scholars stated that there was already an existing settlement between 2 parties prior to which
+  date?
+input_file: 1973-oil-crisis.jsonl
+assert:
+  relevant:
+  - 1973-oil-crisis-07
+  k: 1
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-57261f9f271a42140099d4ab
+  date: ''
+  transform: question of paragraph 1973_oil_crisis#7; first answerable question of the paragraph in sha256(id)
+    order; corpus is every paragraph of its article; relevant is the paragraph the question was written
+    for
+  importer: evals.importers.squad2_retrieval
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

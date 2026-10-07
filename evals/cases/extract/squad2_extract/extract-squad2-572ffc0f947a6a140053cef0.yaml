@@ -1,0 +1,32 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-572ffc0f947a6a140053cef0
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: How did the Rhine extend watershed southward?'
+context: Through stream capture, the Rhine extended its watershed southward. By the Pliocene period, the
+  Rhine had captured streams down to the Vosges Mountains, including the Mosel, the Main and the Neckar.
+  The northern Alps were then drained by the Rhone. By the early Pleistocene period, the Rhine had captured
+  most of its current Alpine watershed from the Rhône, including the Aar. Since that time, the Rhine has
+  added the watershed above Lake Constance (Vorderrhein, Hinterrhein, Alpenrhein; captured from the Rhône),
+  the upper reaches of the Main, beyond Schweinfurt and the Vosges Mountains, captured from the Meuse,
+  to its watershed.
+assert:
+  equals:
+  - stream capture
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572ffc0f947a6a140053cef0
+  date: ''
+  transform: paragraph Rhine#26; first answerable question in sha256(id) order whose every human answer
+    is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

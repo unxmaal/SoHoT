@@ -1,0 +1,57 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5a580ab1770dc0001aeeff7c
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: In addition to identifying rocks in the field, petrologists identify rock samples in the laboratory.
+  Two of the primary methods for identifying rocks in the laboratory are through optical microscopy and
+  by using an electron microprobe. In an optical mineralogy analysis, thin sections of rock samples are
+  analyzed through a petrographic microscope, where the minerals can be identified through their different
+  properties in plane-polarized and cross-polarized light, including their birefringence, pleochroism,
+  twinning, and interference properties with a conoscopic lens. In the electron microprobe, individual
+  locations are analyzed for their exact chemical compositions and variation in composition within individual
+  crystals. Stable and radioactive isotope studies provide insight into the geochemical evolution of rock
+  units.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is used to view the properties
+        of crystals?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What properties are analyzed
+        with a conoscopic lens by petrologists?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Stable and radioactive isotope
+        studies provide insight into what?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What do unstable isotope studies
+        indicate?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What properties are there
+        in crystals?'
+assert:
+  answers:
+    q1: false
+    q2: true
+    q3: true
+    q4: false
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5a580ab1770dc0001aeeff7c, squad2-57267947f1498d1400e8e0ed, squad2-57267947f1498d1400e8e0ee,
+    squad2-5a5918ff3e1742001a15cf7e, squad2-5a580ab1770dc0001aeeff7b
+  date: ''
+  transform: paragraph Geology#15; first 5 questions of a paragraph in sha256(id) order, kept only when
+    they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

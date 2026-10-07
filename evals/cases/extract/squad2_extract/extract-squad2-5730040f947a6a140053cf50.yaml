@@ -1,0 +1,30 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-5730040f947a6a140053cf50
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What Egyptian president jailed thousands of members of the Brotherhood?'
+context: Some elements of the Brotherhood, though perhaps against orders, did engage in violence against
+  the government, and its founder Al-Banna was assassinated in 1949 in retaliation for the assassination
+  of Egypt's premier Mahmud Fami Naqrashi three months earlier. The Brotherhood has suffered periodic
+  repression in Egypt and has been banned several times, in 1948 and several years later following confrontations
+  with Egyptian president Gamal Abdul Nasser, who jailed thousands of members for several years.
+assert:
+  equals:
+  - Gamal Abdul Nasser
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5730040f947a6a140053cf50
+  date: ''
+  transform: paragraph Islamism#14; first answerable question in sha256(id) order whose every human answer
+    is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

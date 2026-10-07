@@ -1,0 +1,55 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-57096f37200fba1400367fe9
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: BSkyB has no veto over the presence of channels on their EPG, with open access being an enforced
+  part of their operating licence from Ofcom. Any channel which can get carriage on a suitable beam of
+  a satellite at 28° East is entitled to access to BSkyB's EPG for a fee, ranging from £15–100,000. Third-party
+  channels which opt for encryption receive discounts ranging from reduced price to free EPG entries,
+  free carriage on a BSkyB leased transponder, or actual payment for being carried. However, even in this
+  case, BSkyB does not carry any control over the channel's content or carriage issues such as picture
+  quality.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Does BSkyB carry any control
+        over the picture quality of a channel?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who does BSkyB have an operating
+        license from?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What can BSkyB veto the presence
+        of channels on?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: what is the fee range for
+        accessing BSkyB''s EPG?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Can BSkyB veto the presence
+        of channels on their EPG?'
+assert:
+  answers:
+    q1: true
+    q2: true
+    q3: false
+    q4: true
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-57096f37200fba1400367fe9, squad2-57096f37200fba1400367fe5, squad2-5a2c3ca9bfd06b001a5aea85,
+    squad2-57096f37200fba1400367fe6, squad2-57096f37200fba1400367fe7
+  date: ''
+  transform: paragraph Sky_(United_Kingdom)#16; first 5 questions of a paragraph in sha256(id) order,
+    kept only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

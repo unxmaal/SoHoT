@@ -1,0 +1,55 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-57266193dd62a815002e832c
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: Seismologists can use the arrival times of seismic waves in reverse to image the interior of
+  the Earth. Early advances in this field showed the existence of a liquid outer core (where shear waves
+  were not able to propagate) and a dense solid inner core. These advances led to the development of a
+  layered model of the Earth, with a crust and lithosphere on top, the mantle below (separated within
+  itself by seismic discontinuities at 410 and 660 kilometers), and the outer core and inner core below
+  that. More recently, seismologists have been able to create detailed images of wave speeds inside the
+  earth in the same way a doctor images a body in a CT scan. These images have led to a much more detailed
+  view of the interior of the Earth, and have replaced the simplified layered model with a much more dynamic
+  model.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: In the layered model of the
+        Earth, the mantle has two layers below it. What are they?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: In the layered Earth model,
+        what is the inner core separated by?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: By how many kilometers are
+        shear waves separated when measuring the crust?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is the outer core called?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is the size of the mantle?'
+assert:
+  answers:
+    q1: true
+    q2: false
+    q3: false
+    q4: false
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-57266193dd62a815002e832c, squad2-5a57cf7a770dc0001aeefda6, squad2-5a57cf7a770dc0001aeefda4,
+    squad2-5a58dd513e1742001a15ce61, squad2-5a58dd513e1742001a15ce62
+  date: ''
+  transform: paragraph Geology#3; first 5 questions of a paragraph in sha256(id) order, kept only when
+    they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

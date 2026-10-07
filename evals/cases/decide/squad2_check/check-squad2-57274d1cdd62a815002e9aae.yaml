@@ -1,0 +1,58 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-57274d1cdd62a815002e9aae
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: 'In Ireland, private schools (Irish: scoil phríobháideach) are unusual because a certain number
+  of teacher''s salaries are paid by the State. If the school wishes to employ extra teachers they are
+  paid for with school fees, which tend to be relatively low in Ireland compared to the rest of the world.
+  There is, however, a limited element of state assessment of private schools, because of the requirement
+  that the state ensure that children receive a certain minimum education; Irish private schools must
+  still work towards the Junior Certificate and the Leaving Certificate, for example. Many private schools
+  in Ireland also double as boarding schools. The average fee is around €5,000 annually for most schools,
+  but some of these schools also provide boarding and the fees may then rise up to €25,000 per year. The
+  fee-paying schools are usually run by a religious order, i.e., the Society of Jesus or Congregation
+  of Christian Brothers, etc.'
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is the Irish term for
+        private schools?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How do private schools in
+        Ireland differ from most?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How do private schools in
+        the rest of the world differ from Ireland?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What might the fees to attend
+        an Irish boarding school rise to?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How are school fees in the
+        rest of the world compared to Ireland?'
+assert:
+  answers:
+    q1: true
+    q2: true
+    q3: false
+    q4: true
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-57274d1cdd62a815002e9aae, squad2-57274d1cdd62a815002e9aaf, squad2-5a679db8f038b7001ab0c34f,
+    squad2-57274d1cdd62a815002e9ab2, squad2-5a679db8f038b7001ab0c350
+  date: ''
+  transform: paragraph Private_school#11; first 5 questions of a paragraph in sha256(id) order, kept only
+    when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

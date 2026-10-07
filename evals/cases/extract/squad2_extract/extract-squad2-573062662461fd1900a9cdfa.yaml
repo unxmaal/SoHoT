@@ -1,0 +1,31 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-573062662461fd1900a9cdfa
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: imperialism often divides countries by using which technique?'
+context: Imperialism is defined as "A policy of extending a country’s power and influence through diplomacy
+  or military force." Imperialism is particularly focused on the control that one group, often a state
+  power, has on another group of people. This is often through various forms of "othering" (see other)
+  based on racial, religious, or cultural stereotypes. There are "formal" or "informal" imperialisms.
+  "Formal imperialism" is defined as "physical control or full-fledged colonial rule". "Informal imperialism"
+  is less direct; however, it is still a powerful form of dominance.
+assert:
+  equals:
+  - othering
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-573062662461fd1900a9cdfa
+  date: ''
+  transform: paragraph Imperialism#1; first answerable question in sha256(id) order whose every human
+    answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

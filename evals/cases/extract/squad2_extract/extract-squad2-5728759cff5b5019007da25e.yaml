@@ -1,0 +1,33 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-5728759cff5b5019007da25e
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What paleontologists are currently on the university''s faculty?'
+context: Current faculty include the anthropologist Marshall Sahlins, historian Dipesh Chakrabarty, paleontologists
+  Neil Shubin and Paul Sereno, evolutionary biologist Jerry Coyne, Nobel prize winning physicist Yoichiro
+  Nambu, Nobel prize winning physicist James Cronin, Nobel Prize winning economists Eugene Fama, James
+  Heckman, Lars Peter Hansen, Roger Myerson and Robert Lucas, Jr., Freakonomics author and noted economist
+  Steven Levitt, current governor of India's central bank Raghuram Rajan, the 74th United States Secretary
+  of the Treasury and former Goldman Sachs Chairman and CEO Hank Paulson, former Chairman of President
+  Barack Obama's Council of Economic Advisors Austan Goolsbee, Shakespeare scholar David Bevington, and
+  renowned political scientists John Mearsheimer and Robert Pape.
+assert:
+  equals:
+  - Neil Shubin and Paul Sereno
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5728759cff5b5019007da25e
+  date: ''
+  transform: paragraph University_of_Chicago#36; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

@@ -1,0 +1,31 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-572ff07304bcaa1900d76ef6
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: Which country does the Rhine encounter it''s main tributaries?'
+context: The Rhine is the longest river in Germany. It is here that the Rhine encounters some more of
+  its main tributaries, such as the Neckar, the Main and, later, the Moselle, which contributes an average
+  discharge of more than 300 m3/s (11,000 cu ft/s). Northeastern France drains to the Rhine via the Moselle;
+  smaller rivers drain the Vosges and Jura Mountains uplands. Most of Luxembourg and a very small part
+  of Belgium also drain to the Rhine via the Moselle. As it approaches the Dutch border, the Rhine has
+  an annual mean discharge of 2,290 m3/s (81,000 cu ft/s) and an average width of 400 m (1,300 ft).
+assert:
+  equals:
+  - Germany
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572ff07304bcaa1900d76ef6
+  date: ''
+  transform: paragraph Rhine#11; first answerable question in sha256(id) order whose every human answer
+    is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

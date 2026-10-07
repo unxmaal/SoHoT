@@ -1,0 +1,34 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-5728ec6a4b864d19001650ad
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: How did their lawyer suggest they would plea?'
+context: When the Committee for Non-Violent Action sponsored a protest in August 1957, at the Camp Mercury
+  nuclear test site near Las Vegas, Nevada, 13 of the protesters attempted to enter the test site knowing
+  that they faced arrest. At a pre-arranged announced time, one at a time they stepped across the "line"
+  and were immediately arrested. They were put on a bus and taken to the Nye County seat of Tonopah, Nevada,
+  and arraigned for trial before the local Justice of the Peace, that afternoon. A well known civil rights
+  attorney, Francis Heisler, had volunteered to defend the arrested persons, advising them to plead "nolo
+  contendere", as an alternative to pleading either guilty or not-guilty. The arrested persons were found
+  "guilty," nevertheless, and given suspended sentences, conditional on their not reentering the test
+  site grounds.[citation needed]
+assert:
+  equals:
+  - nolo contendere
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5728ec6a4b864d19001650ad
+  date: ''
+  transform: paragraph Civil_disobedience#18; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

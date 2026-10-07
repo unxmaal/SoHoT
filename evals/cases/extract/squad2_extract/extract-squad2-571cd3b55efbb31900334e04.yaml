@@ -1,0 +1,38 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-571cd3b55efbb31900334e04
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What does increased oxygen concentrations in the patient''s lungs displace?'
+context: 'Hyperbaric (high-pressure) medicine uses special oxygen chambers to increase the partial pressure
+  of O
+
+  2 around the patient and, when needed, the medical staff. Carbon monoxide poisoning, gas gangrene, and
+  decompression sickness (the ''bends'') are sometimes treated using these devices. Increased O
+
+  2 concentration in the lungs helps to displace carbon monoxide from the heme group of hemoglobin. Oxygen
+  gas is poisonous to the anaerobic bacteria that cause gas gangrene, so increasing its partial pressure
+  helps kill them. Decompression sickness occurs in divers who decompress too quickly after a dive, resulting
+  in bubbles of inert gas, mostly nitrogen and helium, forming in their blood. Increasing the pressure
+  of O
+
+  2 as soon as possible is part of the treatment.'
+assert:
+  equals:
+  - carbon monoxide
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-571cd3b55efbb31900334e04
+  date: ''
+  transform: paragraph Oxygen#33; first answerable question in sha256(id) order whose every human answer
+    is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

@@ -1,0 +1,54 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5a81f84e31013a001a33500a
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: Harvard was formed in 1636 by vote of the Great and General Court of the Massachusetts Bay Colony.
+  It was initially called "New College" or "the college at New Towne". In 1638, the college became home
+  for North America's first known printing press, carried by the ship John of London. In 1639, the college
+  was renamed Harvard College after deceased clergyman John Harvard, who was an alumnus of the University
+  of Cambridge. He had left the school £779 and his library of some 400 books. The charter creating the
+  Harvard Corporation was granted in 1650.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: When did John of London come
+        to live in Cambridge?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What organization arranged
+        to founding of school?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What year was North America''s
+        first printing press started?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What did the Court of the
+        Massachusetts Bay Colony vote for John Harvard to have in 1650?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: In what year was the charter
+        granted for Harvard Corporation?'
+assert:
+  answers:
+    q1: false
+    q2: true
+    q3: true
+    q4: false
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5a81f84e31013a001a33500a, squad2-5727afa82ca10214002d93c3, squad2-5727afa82ca10214002d93c4,
+    squad2-5a81f84e31013a001a335008, squad2-5727afa82ca10214002d93c6
+  date: ''
+  transform: paragraph Harvard_University#3; first 5 questions of a paragraph in sha256(id) order, kept
+    only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

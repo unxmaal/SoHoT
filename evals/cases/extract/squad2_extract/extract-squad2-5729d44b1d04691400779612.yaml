@@ -1,0 +1,30 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-5729d44b1d04691400779612
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: Who owns more wealth than the bottom 90 percent of people in the U.S.?'
+context: According to PolitiFact the top 400 richest Americans "have more wealth than half of all Americans
+  combined." According to the New York Times on July 22, 2014, the "richest 1 percent in the United States
+  now own more wealth than the bottom 90 percent". Inherited wealth may help explain why many Americans
+  who have become rich may have had a "substantial head start". In September 2012, according to the Institute
+  for Policy Studies, "over 60 percent" of the Forbes richest 400 Americans "grew up in substantial privilege".
+assert:
+  equals:
+  - richest 1 percent
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5729d44b1d04691400779612
+  date: ''
+  transform: paragraph Economic_inequality#1; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

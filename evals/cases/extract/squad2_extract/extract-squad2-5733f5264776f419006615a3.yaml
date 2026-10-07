@@ -1,0 +1,33 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-5733f5264776f419006615a3
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What political response was convening in June/July 1754?'
+context: An early important political response to the opening of hostilities was the convening of the
+  Albany Congress in June and July, 1754. The goal of the congress was to formalize a unified front in
+  trade and negotiations with various Indians, since allegiance of the various tribes and nations was
+  seen to be pivotal in the success in the war that was unfolding. The plan that the delegates agreed
+  to was never ratified by the colonial legislatures nor approved of by the crown. Nevertheless, the format
+  of the congress and many specifics of the plan became the prototype for confederation during the War
+  of Independence.
+assert:
+  equals:
+  - Albany Congress
+  - the opening of hostilities
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5733f5264776f419006615a3
+  date: ''
+  transform: paragraph French_and_Indian_War#25; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

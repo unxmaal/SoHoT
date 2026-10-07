@@ -1,0 +1,37 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-5737477bc3c5551400e51ea6
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What applies to equally to constant velocity motion as it does to rest.'
+context: 'For instance, while traveling in a moving vehicle at a constant velocity, the laws of physics
+  do not change from being at rest. A person can throw a ball straight up in the air and catch it as it
+  falls down without worrying about applying a force in the direction the vehicle is moving. This is true
+  even though another person who is observing the moving vehicle pass by also observes the ball follow
+  a curving parabolic path in the same direction as the motion of the vehicle. It is the inertia of the
+  ball associated with its constant velocity in the direction of the vehicle''s motion that ensures the
+  ball continues to move forward even as it is thrown up and falls back down. From the perspective of
+  the person in the car, the vehicle and everything inside of it is at rest: It is the outside world that
+  is moving with a constant speed in the opposite direction. Since there is no experiment that can distinguish
+  whether it is the vehicle that is at rest or the outside world that is at rest, the two situations are
+  considered to be physically indistinguishable. Inertia therefore applies equally well to constant velocity
+  motion as it does to rest.'
+assert:
+  equals:
+  - Inertia
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5737477bc3c5551400e51ea6
+  date: ''
+  transform: paragraph Force#5; first answerable question in sha256(id) order whose every human answer
+    is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

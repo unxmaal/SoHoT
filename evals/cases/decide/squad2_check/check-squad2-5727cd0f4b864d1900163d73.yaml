@@ -1,0 +1,57 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5727cd0f4b864d1900163d73
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: Harvard has purchased tracts of land in Allston, a walk across the Charles River from Cambridge,
+  with the intent of major expansion southward. The university now owns approximately fifty percent more
+  land in Allston than in Cambridge. Proposals to connect the Cambridge campus with the new Allston campus
+  include new and enlarged bridges, a shuttle service and/or a tram. Plans also call for sinking part
+  of Storrow Drive (at Harvard's expense) for replacement with park land and pedestrian access to the
+  Charles River, as well as the construction of bike paths, and buildings throughout the Allston campus.
+  The institution asserts that such expansion will benefit not only the school, but surrounding community,
+  pointing to such features as the enhanced transit infrastructure, possible shuttles open to the public,
+  and park space which will also be publicly accessible.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What are some proposals to
+        connect campuses?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How much land does Cambridge
+        own in Allston?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who does Cambridge say the
+        expansion will benefit?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Why has Cambridge purchased
+        land in Allston?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What has Cambridge purchased
+        in Allston?'
+assert:
+  answers:
+    q1: true
+    q2: false
+    q3: false
+    q4: false
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5727cd0f4b864d1900163d73, squad2-5a8221dc31013a001a335231, squad2-5a8221dc31013a001a335232,
+    squad2-5a8221dc31013a001a335230, squad2-5a8221dc31013a001a33522f
+  date: ''
+  transform: paragraph Harvard_University#12; first 5 questions of a paragraph in sha256(id) order, kept
+    only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

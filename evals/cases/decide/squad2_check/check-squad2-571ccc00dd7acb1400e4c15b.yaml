@@ -1,0 +1,55 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-571ccc00dd7acb1400e4c15b
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: 'The unusually high concentration of oxygen gas on Earth is the result of the oxygen cycle. This
+  biogeochemical cycle describes the movement of oxygen within and between its three main reservoirs on
+  Earth: the atmosphere, the biosphere, and the lithosphere. The main driving factor of the oxygen cycle
+  is photosynthesis, which is responsible for modern Earth''s atmosphere. Photosynthesis releases oxygen
+  into the atmosphere, while respiration and decay remove it from the atmosphere. In the present equilibrium,
+  production and consumption occur at the same rate of roughly 1/2000th of the entire atmospheric oxygen
+  per year.'
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What type of process is the
+        oxygen cycle?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What does respiration release
+        into the atmosphere?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What produces the high levels
+        of oxygen on Earth?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What process is responsible
+        for the planet''s oxygen content?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What occurs at the same rate
+        of 1/200th of the entire atmospheric oxygen per year?'
+assert:
+  answers:
+    q1: true
+    q2: false
+    q3: true
+    q4: true
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-571ccc00dd7acb1400e4c15b, squad2-5ad251d6d7d075001a428ce8, squad2-571ccc00dd7acb1400e4c15a,
+    squad2-571ccc00dd7acb1400e4c15d, squad2-5ad251d6d7d075001a428cea
+  date: ''
+  transform: paragraph Oxygen#29; first 5 questions of a paragraph in sha256(id) order, kept only when
+    they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

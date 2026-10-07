@@ -1,0 +1,31 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-572fd73e947a6a140053cd32
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What enables the Scottish Parliament to scrutinize the government?'
+context: Several procedures enable the Scottish Parliament to scrutinise the Government. The First Minister
+  or members of the cabinet can deliver statements to Parliament upon which MSPs are invited to question.
+  For example, at the beginning of each parliamentary year, the First Minister delivers a statement to
+  the chamber setting out the Government's legislative programme for the forthcoming year. After the statement
+  has been delivered, the leaders of the opposition parties and other MSPs question the First Minister
+  on issues related to the substance of the statement.
+assert:
+  equals:
+  - Several procedures
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572fd73e947a6a140053cd32
+  date: ''
+  transform: paragraph Scottish_Parliament#31; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

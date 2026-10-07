@@ -1,0 +1,31 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-56e1ba41cd28a01900c67ae1
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: When extensive time is required to sort integers, this represents what case complexity?'
+context: For example, consider the deterministic sorting algorithm quicksort. This solves the problem
+  of sorting a list of integers that is given as the input. The worst-case is when the input is sorted
+  or sorted in reverse order, and the algorithm takes time O(n2) for this case. If we assume that all
+  possible permutations of the input list are equally likely, the average time taken for sorting is O(n
+  log n). The best case occurs when each pivoting divides the list in half, also needing O(n log n) time.
+assert:
+  equals:
+  - worst-case
+  - worst
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-56e1ba41cd28a01900c67ae1
+  date: ''
+  transform: paragraph Computational_complexity_theory#20; first answerable question in sha256(id) order
+    whose every human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

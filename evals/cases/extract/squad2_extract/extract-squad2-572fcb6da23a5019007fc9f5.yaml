@@ -1,0 +1,34 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-572fcb6da23a5019007fc9f5
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: Setting speed limits was one of the further devolutions which was conferred by what act?'
+context: The specific devolved matters are all subjects which are not explicitly stated in Schedule 5
+  to the Scotland Act as reserved matters. All matters that are not specifically reserved are automatically
+  devolved to the Scottish Parliament. Most importantly, this includes agriculture, fisheries and forestry,
+  economic development, education, environment, food standards, health, home affairs, Scots law – courts,
+  police and fire services, local government, sport and the arts, transport, training, tourism, research
+  and statistics and social work. The Scottish Parliament has the ability to alter income tax in Scotland
+  by up to 3 pence in the pound. The 2012 Act conferred further fiscal devolution including borrowing
+  powers and some other unconnected matters such as setting speed limits and control of air guns.
+assert:
+  equals:
+  - 2012 Act
+  - The 2012 Act
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572fcb6da23a5019007fc9f5
+  date: ''
+  transform: paragraph Scottish_Parliament#23; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

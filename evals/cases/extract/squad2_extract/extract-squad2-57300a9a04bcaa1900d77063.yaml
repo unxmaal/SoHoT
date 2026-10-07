@@ -1,0 +1,32 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-57300a9a04bcaa1900d77063
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: When was Rhineland subject to the Treaty of Versailles?'
+context: At the end of World War I, the Rhineland was subject to the Treaty of Versailles. This decreed
+  that it would be occupied by the allies, until 1935 and after that, it would be a demilitarised zone,
+  with the German army forbidden to enter. The Treaty of Versailles and this particular provision, in
+  general, caused much resentment in Germany and is often cited as helping Adolf Hitler's rise to power.
+  The allies left the Rhineland, in 1930 and the German army re-occupied it in 1936, which was enormously
+  popular in Germany. Although the allies could probably have prevented the re-occupation, Britain and
+  France were not inclined to do so, a feature of their policy of appeasement to Hitler.
+assert:
+  equals:
+  - end of World War I
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-57300a9a04bcaa1900d77063
+  date: ''
+  transform: paragraph Rhine#41; first answerable question in sha256(id) order whose every human answer
+    is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

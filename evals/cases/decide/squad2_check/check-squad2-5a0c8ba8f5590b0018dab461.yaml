@@ -1,0 +1,54 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5a0c8ba8f5590b0018dab461
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: The needs of soy farmers have been used to justify many of the controversial transportation projects
+  that are currently developing in the Amazon. The first two highways successfully opened up the rainforest
+  and led to increased settlement and deforestation. The mean annual deforestation rate from 2000 to 2005
+  (22,392 km2 or 8,646 sq mi per year) was 18% higher than in the previous five years (19,018 km2 or 7,343
+  sq mi per year). Although deforestation has declined significantly in the Brazilian Amazon between 2004
+  and 2014, there has been an increase to the present day.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What was unsuccessful in opening
+        the rain forced Emily to decrease settlement?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How much higher was the rate
+        of deforestation in 2000, to 2005 compared to 1995 to 2000?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: deforestation increased in
+        Brazil during what years?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Highways built in the Amazon
+        rainforest were built primarily for what kind of farmers?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What did creating highways
+        in the Amazon rainforest lead to?'
+assert:
+  answers:
+    q1: false
+    q2: true
+    q3: false
+    q4: true
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5a0c8ba8f5590b0018dab461, squad2-572a005f1d046914007796ba, squad2-5a0c8ba8f5590b0018dab463,
+    squad2-572a005f1d046914007796b7, squad2-572a005f1d046914007796b8
+  date: ''
+  transform: paragraph Amazon_rainforest#13; first 5 questions of a paragraph in sha256(id) order, kept
+    only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

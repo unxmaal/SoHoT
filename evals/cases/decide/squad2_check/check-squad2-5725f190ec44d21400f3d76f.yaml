@@ -1,0 +1,61 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5725f190ec44d21400f3d76f
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: While many homes in the neighborhood date back to the 1930s or before, the neighborhood is also
+  home to several public housing developments built between the 1960s and 1990s by the Fresno Housing
+  Authority. The US Department of Housing and Urban Development has also built small subdivisions of single-family
+  homes in the area for purchase by low-income working families. There have been numerous attempts to
+  revitalize the neighborhood, including the construction of a modern shopping center on the corner of
+  Fresno and B streets, an aborted attempt to build luxury homes and a golf course on the western edge
+  of the neighborhood, and some new section 8 apartments have been built along Church Ave west of Elm
+  St. Cargill Meat Solutions and Foster Farms both have large processing facilities in the neighborhood,
+  and the stench from these (and other small industrial facilities) has long plagued area residents. The
+  Fresno Chandler Executive Airport is also on the West Side. Due to its position on the edge of the city
+  and years of neglect by developers, is not a true "inner-city" neighborhood, and there are many vacant
+  lots, strawberry fields and vineyards throughout the neighborhood. The neighborhood has very little
+  retail activity, aside from the area near Fresno Street and State Route 99 Freeway (Kearney Palm Shopping
+  Center, built in the late 1990s) and small corner markets scattered throughout.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: When were the public housing
+        developments built in the neighborhood?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What problem from the Fresno
+        Chandler Airport has plagued residents?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What organization built homes
+        in the neighborhood in the 1930s?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Where is the airport located?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: When was State Route 99 Freeway
+        built?'
+assert:
+  answers:
+    q1: true
+    q2: false
+    q3: false
+    q4: true
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5725f190ec44d21400f3d76f, squad2-5a7b33b821c2de001afe9dbf, squad2-5a7b33b821c2de001afe9dbc,
+    squad2-5725f190ec44d21400f3d772, squad2-5a7b33b821c2de001afe9dc0
+  date: ''
+  transform: paragraph Fresno,_California#16; first 5 questions of a paragraph in sha256(id) order, kept
+    only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

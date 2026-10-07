@@ -1,0 +1,58 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-572a0f073f37b31900478682
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: Another important role of the immune system is to identify and eliminate tumors. This is called
+  immune surveillance. The transformed cells of tumors express antigens that are not found on normal cells.
+  To the immune system, these antigens appear foreign, and their presence causes immune cells to attack
+  the transformed tumor cells. The antigens expressed by tumors have several sources; some are derived
+  from oncogenic viruses like human papillomavirus, which causes cervical cancer, while others are the
+  organism's own proteins that occur at low levels in normal cells but reach high levels in tumor cells.
+  One example is an enzyme called tyrosinase that, when expressed at high levels, transforms certain skin
+  cells (e.g. melanocytes) into tumors called melanomas. A third possible source of tumor antigens are
+  proteins normally important for regulating cell growth and survival, that commonly mutate into cancer
+  inducing molecules called oncogenes.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What are cancerous tumors
+        of the skin known as?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is the process by which
+        the immune system identifies tumors called?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is the virus in humans
+        that causes cervical cancer?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is not a cause of tumor
+        antigens?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What do tumors express that
+        are also found on normal cells?'
+assert:
+  answers:
+    q1: true
+    q2: true
+    q3: true
+    q4: false
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572a0f073f37b31900478682, squad2-572a0f073f37b3190047867f, squad2-572a0f073f37b31900478680,
+    squad2-5ad4e4425b96ef001a10a574, squad2-5ad4e4425b96ef001a10a573
+  date: ''
+  transform: paragraph Immune_system#44; first 5 questions of a paragraph in sha256(id) order, kept only
+    when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

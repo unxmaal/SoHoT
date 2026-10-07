@@ -1,0 +1,54 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5ad3f350604f3c001a3ff8f0
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: When finally Edward the Confessor returned from his father's refuge in 1041, at the invitation
+  of his half-brother Harthacnut, he brought with him a Norman-educated mind. He also brought many Norman
+  counsellors and fighters, some of whom established an English cavalry force. This concept never really
+  took root, but it is a typical example of the attitudes of Edward. He appointed Robert of Jumièges archbishop
+  of Canterbury and made Ralph the Timid earl of Hereford. He invited his brother-in-law Eustace II, Count
+  of Boulogne to his court in 1051, an event which resulted in the greatest of early conflicts between
+  Saxon and Norman and ultimately resulted in the exile of Earl Godwin of Wessex.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What kind of force did Harthacnut
+        establish?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: When did Edward return?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who made Robert of Jumieges
+        earl of Hereford?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: When did Edward the Confessor''s
+        son return from his fathers refuge?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who did Edward make archbishop
+        of Canterbury?'
+assert:
+  answers:
+    q1: false
+    q2: true
+    q3: false
+    q4: false
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5ad3f350604f3c001a3ff8f0, squad2-56de1645cffd8e1900b4b5d1, squad2-5ad3f350604f3c001a3ff8f1,
+    squad2-5ad3f350604f3c001a3ff8ef, squad2-56de1645cffd8e1900b4b5d2
+  date: ''
+  transform: paragraph Normans#15; first 5 questions of a paragraph in sha256(id) order, kept only when
+    they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

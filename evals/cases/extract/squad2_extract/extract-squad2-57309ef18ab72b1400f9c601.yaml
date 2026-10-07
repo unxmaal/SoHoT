@@ -1,0 +1,36 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-57309ef18ab72b1400f9c601
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: When were Joseph Schumpeter and Norman Angell at their most prolific writing period?'
+context: The correlation between capitalism, aristocracy, and imperialism has long been debated among
+  historians and political theorists. Much of the debate was pioneered by such theorists as J. A. Hobson
+  (1858–1940), Joseph Schumpeter (1883–1950), Thorstein Veblen (1857–1929), and Norman Angell (1872–1967).
+  While these non-Marxist writers were at their most prolific before World War I, they remained active
+  in the interwar years. Their combined work informed the study of imperialism and it's impact on Europe,
+  as well as contributed to reflections on the rise of the military-political complex in the United States
+  from the 1950s. Hobson argued that domestic social reforms could cure the international disease of imperialism
+  by removing its economic foundation. Hobson theorized that state intervention through taxation could
+  boost broader consumption, create wealth, and encourage a peaceful, tolerant, multipolar world order.
+assert:
+  equals:
+  - before World War I
+  - World War I
+  - before World War I,
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-57309ef18ab72b1400f9c601
+  date: ''
+  transform: paragraph Imperialism#19; first answerable question in sha256(id) order whose every human
+    answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

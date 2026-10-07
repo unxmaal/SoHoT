@@ -19,8 +19,10 @@ RECURRING = ("Contrastive-LM/CLM-v0.1-8B", "cross-encoder/ettin-reranker-1b-v1",
 
 
 def _load():
+    lane = ROOT / "evals" / "cases" / "retrieval"
     try:
-        return load_cases(ROOT / "evals" / "cases" / "retrieval")
+        # The hand-written cases over corpus.jsonl; imported sources live in subdirectories. #603.
+        return [c for c in load_cases(lane) if c.source.parent == lane]
     except ValueError:
         return []
 

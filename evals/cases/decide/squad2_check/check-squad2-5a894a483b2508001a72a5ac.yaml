@@ -1,0 +1,55 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5a894a483b2508001a72a5ac
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: In particular, this norm gets smaller when a number is multiplied by p, in sharp contrast to
+  the usual absolute value (also referred to as the infinite prime). While completing Q (roughly, filling
+  the gaps) with respect to the absolute value yields the field of real numbers, completing with respect
+  to the p-adic norm |−|p yields the field of p-adic numbers. These are essentially all possible ways
+  to complete Q, by Ostrowski's theorem. Certain arithmetic questions related to Q or more general global
+  fields may be transferred back and forth to the completed (or local) fields. This local-global principle
+  again underlines the importance of primes to number theory.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What happens to the norm when
+        a number is multiplied by Q?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What principle highlights
+        the significance of real numbers?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What gets smaller when a number
+        is prime?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What happens to the norm when
+        a number is multiplied by p?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What principle highlights
+        the significance of primes in number theory'
+assert:
+  answers:
+    q1: false
+    q2: false
+    q3: false
+    q4: true
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5a894a483b2508001a72a5ac, squad2-5a894a483b2508001a72a5af, squad2-5a894a483b2508001a72a5b0,
+    squad2-5729a26d6aef05140015505a, squad2-5729a26d6aef05140015505d
+  date: ''
+  transform: paragraph Prime_number#29; first 5 questions of a paragraph in sha256(id) order, kept only
+    when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

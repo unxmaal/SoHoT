@@ -1,0 +1,55 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-57114667a58dae1900cd6d84
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: The most useful instrument for analyzing the performance of steam engines is the steam engine
+  indicator. Early versions were in use by 1851, but the most successful indicator was developed for the
+  high speed engine inventor and manufacturer Charles Porter by Charles Richard and exhibited at London
+  Exhibition in 1862. The steam engine indicator traces on paper the pressure in the cylinder throughout
+  the cycle, which can be used to spot various problems and calculate developed horsepower. It was routinely
+  used by engineers, mechanics and insurance inspectors. The engine indicator can also be used on internal
+  combustion engines. See image of indicator diagram below (in Types of motor units section).
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Where was the Charles Porter
+        steam engine indicator shown?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What instrument is used to
+        examine diagram performance?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What year saw the earliest
+        recorded use of the steam engine indicator?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who developed a successful
+        steam engine indicator for Charles Porter?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What company developed the
+        most successful steam engine indicator?'
+assert:
+  answers:
+    q1: true
+    q2: false
+    q3: true
+    q4: true
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-57114667a58dae1900cd6d84, squad2-5ad3e8f6604f3c001a3ff66b, squad2-57114667a58dae1900cd6d81,
+    squad2-57114667a58dae1900cd6d83, squad2-57114667a58dae1900cd6d82
+  date: ''
+  transform: paragraph Steam_engine#12; first 5 questions of a paragraph in sha256(id) order, kept only
+    when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

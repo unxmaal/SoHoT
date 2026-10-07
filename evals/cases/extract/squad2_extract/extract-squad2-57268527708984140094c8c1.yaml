@@ -1,0 +1,30 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-57268527708984140094c8c1
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: James Hutton published a 2 volume version of his theories in what year?'
+context: James Hutton is often viewed as the first modern geologist. In 1785 he presented a paper entitled
+  Theory of the Earth to the Royal Society of Edinburgh. In his paper, he explained his theory that the
+  Earth must be much older than had previously been supposed in order to allow enough time for mountains
+  to be eroded and for sediments to form new rocks at the bottom of the sea, which in turn were raised
+  up to become dry land. Hutton published a two-volume version of his ideas in 1795 (Vol. 1, Vol. 2).
+assert:
+  equals:
+  - '1795'
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-57268527708984140094c8c1
+  date: ''
+  transform: paragraph Geology#22; first answerable question in sha256(id) order whose every human answer
+    is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

@@ -1,0 +1,36 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-572fc41f947a6a140053cc80
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: Who decides who gets to speak in the chamber debates?'
+context: The Presiding Officer (or Deputy Presiding Officer) decides who speaks in chamber debates and
+  the amount of time for which they are allowed to speak. Normally, the Presiding Officer tries to achieve
+  a balance between different viewpoints and political parties when selecting members to speak. Typically,
+  ministers or party leaders open debates, with opening speakers given between 5 and 20 minutes, and succeeding
+  speakers allocated less time. The Presiding Officer can reduce speaking time if a large number of members
+  wish to participate in the debate. Debate is more informal than in some parliamentary systems. Members
+  may call each other directly by name, rather than by constituency or cabinet position, and hand clapping
+  is allowed. Speeches to the chamber are normally delivered in English, but members may use Scots, Gaelic,
+  or any other language with the agreement of the Presiding Officer. The Scottish Parliament has conducted
+  debates in the Gaelic language.
+assert:
+  equals:
+  - The Presiding Officer
+  - Presiding Officer
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572fc41f947a6a140053cc80
+  date: ''
+  transform: paragraph Scottish_Parliament#14; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

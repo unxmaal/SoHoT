@@ -1,0 +1,58 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5ad3a8fe604f3c001a3feb09
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: In 1749 the British government gave land to the Ohio Company of Virginia for the purpose of developing
+  trade and settlements in the Ohio Country. The grant required that it settle 100 families in the territory,
+  and construct a fort for their protection. But, as the territory was also claimed by Pennsylvania, both
+  colonies began pushing for action to improve their respective claims. In 1750 Christopher Gist, acting
+  on behalf of both Virginia and the company, explored the Ohio territory and opened negotiations with
+  the Indian tribes at Logstown. He completed the 1752 Treaty of Logstown in which the local Indians,
+  through their "Half-King" Tanacharison and an Iroquois representative, agreed to terms that included
+  permission to build a "strong house" at the mouth of the Monongahela River (the site of present-day
+  Pittsburgh, Pennsylvania). By the late 17th century, the Iroquois had pushed many tribes out of the
+  Ohio Valley, and kept it as hunting ground by right of conquest.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: According to disagreement
+        between Iroquois and British, where was a strong house to be built?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: When did British government
+        give land for development of Ohio Country?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: According to agreement between
+        Iroquois and British, where was a strong house to be built?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who explored Ohio territory
+        in 1750?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: When did British government
+        take land for development of Ohio Country?'
+assert:
+  answers:
+    q1: false
+    q2: true
+    q3: true
+    q4: true
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5ad3a8fe604f3c001a3feb09, squad2-5733e5a14776f4190066145b, squad2-5733e5a14776f4190066145f,
+    squad2-5733e5a14776f4190066145d, squad2-5ad3a8fe604f3c001a3feb05
+  date: ''
+  transform: paragraph French_and_Indian_War#15; first 5 questions of a paragraph in sha256(id) order,
+    kept only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

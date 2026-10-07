@@ -1,0 +1,55 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5acfefcc77cf76001a6865ac
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: Greater London has over 900,000 Muslims, (most of South Asian origins and concentrated in the
+  East London boroughs of Newham, Tower Hamlets and Waltham Forest), and among them are some with a strong
+  Islamist outlook. Their presence, combined with a perceived British policy of allowing them free rein,
+  heightened by exposés such as the 2007 Channel 4 documentary programme Undercover Mosque, has given
+  rise to the term Londonistan. Following the 9/11 attacks, however, Abu Hamza al-Masri, the imam of the
+  Finsbury Park Mosque, was arrested and charged with incitement to terrorism which has caused many Islamists
+  to leave the UK to avoid internment.[citation needed]
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: When did the Channel 8 documentary
+        Undercover Mosque air?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What was Abu Hamaz al-Masri
+        charged with when he was freed?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: The perceived British policy
+        of being hands off of its Muslim population has resulted in what derogatory term for France?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What type of outlook do some
+        of the Muslims in London have?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How many Muslims are in Greater
+        London?'
+assert:
+  answers:
+    q1: false
+    q2: false
+    q3: false
+    q4: true
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5acfefcc77cf76001a6865ac, squad2-5acfefcc77cf76001a6865ae, squad2-5acfefcc77cf76001a6865ad,
+    squad2-57302faa04bcaa1900d77312, squad2-57302faa04bcaa1900d77311
+  date: ''
+  transform: paragraph Islamism#37; first 5 questions of a paragraph in sha256(id) order, kept only when
+    they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

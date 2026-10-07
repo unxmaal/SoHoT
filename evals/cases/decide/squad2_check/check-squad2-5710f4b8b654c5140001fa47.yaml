@@ -1,0 +1,56 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5710f4b8b654c5140001fa47
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: Prince Louis de Condé, along with his sons Daniel and Osias,[citation needed] arranged with Count
+  Ludwig von Nassau-Saarbrücken to establish a Huguenot community in present-day Saarland in 1604. The
+  Count supported mercantilism and welcomed technically skilled immigrants into his lands, regardless
+  of their religion. The Condés established a thriving glass-making works, which provided wealth to the
+  principality for many years. Other founding families created enterprises based on textiles and such
+  traditional Huguenot occupations in France. The community and its congregation remain active to this
+  day, with descendants of many of the founding families still living in the region. Some members of this
+  community emigrated to the United States in the 1890s.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What industry did the nobleman
+        establish with this settlement?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: In what year did Huguenots
+        first move to present-day Saarland?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: In what year was the agreement
+        to allow the Saarland settlement reached?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: In what year was Prince Louis
+        de Conde born?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who was Count Ludwig von Nassau-Saarbucken''s
+        father?'
+assert:
+  answers:
+    q1: true
+    q2: false
+    q3: true
+    q4: false
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5710f4b8b654c5140001fa47, squad2-5ad273b5d7d075001a4294bb, squad2-5710f4b8b654c5140001fa49,
+    squad2-5ad273b5d7d075001a4294b8, squad2-5ad273b5d7d075001a4294ba
+  date: ''
+  transform: paragraph Huguenot#32; first 5 questions of a paragraph in sha256(id) order, kept only when
+    they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

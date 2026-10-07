@@ -1,0 +1,34 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-571cc3dedd7acb1400e4c149
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What kind of field is necessary to produce a magnet effect in oxygen molecules?'
+context: 'In the triplet form, O
+
+  2 molecules are paramagnetic. That is, they impart magnetic character to oxygen when it is in the presence
+  of a magnetic field, because of the spin magnetic moments of the unpaired electrons in the molecule,
+  and the negative exchange energy between neighboring O
+
+  2 molecules. Liquid oxygen is attracted to a magnet to a sufficient extent that, in laboratory demonstrations,
+  a bridge of liquid oxygen may be supported against its own weight between the poles of a powerful magnet.[c]'
+assert:
+  equals:
+  - magnetic field
+  - magnetic
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-571cc3dedd7acb1400e4c149
+  date: ''
+  transform: paragraph Oxygen#24; first answerable question in sha256(id) order whose every human answer
+    is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

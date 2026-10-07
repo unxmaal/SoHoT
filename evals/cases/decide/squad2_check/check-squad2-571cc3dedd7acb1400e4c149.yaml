@@ -1,0 +1,56 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-571cc3dedd7acb1400e4c149
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: 'In the triplet form, O
+
+  2 molecules are paramagnetic. That is, they impart magnetic character to oxygen when it is in the presence
+  of a magnetic field, because of the spin magnetic moments of the unpaired electrons in the molecule,
+  and the negative exchange energy between neighboring O
+
+  2 molecules. Liquid oxygen is attracted to a magnet to a sufficient extent that, in laboratory demonstrations,
+  a bridge of liquid oxygen may be supported against its own weight between the poles of a powerful magnet.[c]'
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What kind of field is necessary
+        to produce a magnet effect in oxygen molecules?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: The spin of what can produce
+        a magnetic effect to oxygen molecules?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is attracted to the poles
+        of a powerful magnet?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: In experiments, a bridge of
+        what element can be built between poles of a magnet?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What magnetic character do
+        triplet O2 have?'
+assert:
+  answers:
+    q1: true
+    q2: true
+    q3: false
+    q4: true
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-571cc3dedd7acb1400e4c149, squad2-571cc3dedd7acb1400e4c148, squad2-5ad2456dd7d075001a428aa4,
+    squad2-571cc3dedd7acb1400e4c147, squad2-571cc3dedd7acb1400e4c146
+  date: ''
+  transform: paragraph Oxygen#24; first 5 questions of a paragraph in sha256(id) order, kept only when
+    they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

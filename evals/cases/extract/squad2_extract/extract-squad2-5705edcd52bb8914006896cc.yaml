@@ -1,0 +1,34 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-5705edcd52bb8914006896cc
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: The term "southern" California usually refers to how many of the southern-most counties of
+  the state?'
+context: '"Southern California" is not a formal geographic designation, and definitions of what constitutes
+  southern California vary. Geographically, California''s north-south midway point lies at exactly 37°
+  9'' 58.23" latitude, around 11 miles (18 km) south of San Jose; however, this does not coincide with
+  popular use of the term. When the state is divided into two areas (northern and southern California),
+  the term "southern California" usually refers to the ten southern-most counties of the state. This definition
+  coincides neatly with the county lines at 35° 47′ 28″ north latitude, which form the northern borders
+  of San Luis Obispo, Kern, and San Bernardino counties. Another definition for southern California uses
+  Point Conception and the Tehachapi Mountains as the northern boundary.'
+assert:
+  equals:
+  - ten
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5705edcd52bb8914006896cc
+  date: ''
+  transform: paragraph Southern_California#9; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

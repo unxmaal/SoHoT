@@ -1,0 +1,33 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-5726581fdd62a815002e823b
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: Which country''s cars became more highly sought after as they were more fuel efficient?'
+context: The crisis reduced the demand for large cars. Japanese imports, primarily the Toyota Corona,
+  the Toyota Corolla, the Datsun B210, the Datsun 510, the Honda Civic, the Mitsubishi Galant (a captive
+  import from Chrysler sold as the Dodge Colt), the Subaru DL, and later the Honda Accord all had four
+  cylinder engines that were more fuel efficient than the typical American V8 and six cylinder engines.
+  Japanese imports became mass-market leaders with unibody construction and front-wheel drive, which became
+  de facto standards.
+assert:
+  equals:
+  - Japanese imports
+  - Japan
+  - Japanese
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5726581fdd62a815002e823b
+  date: ''
+  transform: paragraph 1973_oil_crisis#18; first answerable question in sha256(id) order whose every human
+    answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

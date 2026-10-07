@@ -1,0 +1,57 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-571c91c8dd7acb1400e4c10a
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: 'The common allotrope of elemental oxygen on Earth is called dioxygen, O
+
+  2. It is the form that is a major part of the Earth''s atmosphere (see Occurrence). O2 has a bond length
+  of 121 pm and a bond energy of 498 kJ·mol−1, which is smaller than the energy of other double bonds
+  or pairs of single bonds in the biosphere and responsible for the exothermic reaction of O2 with any
+  organic molecule. Due to its energy content, O2 is used by complex forms of life, such as animals, in
+  cellular respiration (see Biological role). Other aspects of O
+
+  2 are covered in the remainder of this article.'
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is the most common form
+        of oxygen on the planet?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What part the composition
+        of the Earth''s atmosphere is comprised of oxygen?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What has a bond energy of
+        121 pm?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What has a bond length of
+        498 kJ·mol−1?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is oxygen on Earth, O,
+        referred to as?'
+assert:
+  answers:
+    q1: true
+    q2: true
+    q3: false
+    q4: false
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-571c91c8dd7acb1400e4c10a, squad2-571c91c8dd7acb1400e4c10c, squad2-5ad24b13d7d075001a428bcd,
+    squad2-5ad24b13d7d075001a428bce, squad2-5ad24b13d7d075001a428bcc
+  date: ''
+  transform: paragraph Oxygen#15; first 5 questions of a paragraph in sha256(id) order, kept only when
+    they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

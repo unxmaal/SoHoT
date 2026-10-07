@@ -1,0 +1,34 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-572970c11d04691400779466
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What theorem states that the probability that a number n is prime is inversely proportional
+  to its logarithm?'
+context: There are infinitely many primes, as demonstrated by Euclid around 300 BC. There is no known
+  simple formula that separates prime numbers from composite numbers. However, the distribution of primes,
+  that is to say, the statistical behaviour of primes in the large, can be modelled. The first result
+  in that direction is the prime number theorem, proven at the end of the 19th century, which says that
+  the probability that a given, randomly chosen number n is prime is inversely proportional to its number
+  of digits, or to the logarithm of n.
+assert:
+  equals:
+  - the prime number theorem
+  - prime number theorem
+  - prime number
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572970c11d04691400779466
+  date: ''
+  transform: paragraph Prime_number#2; first answerable question in sha256(id) order whose every human
+    answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

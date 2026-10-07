@@ -1,0 +1,34 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-57373a9fc3c5551400e51e7d
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the strongest main interaction?'
+context: 'With modern insights into quantum mechanics and technology that can accelerate particles close
+  to the speed of light, particle physics has devised a Standard Model to describe forces between particles
+  smaller than atoms. The Standard Model predicts that exchanged particles called gauge bosons are the
+  fundamental means by which forces are emitted and absorbed. Only four main interactions are known: in
+  order of decreasing strength, they are: strong, electromagnetic, weak, and gravitational.:2–10:79 High-energy
+  particle physics observations made during the 1970s and 1980s confirmed that the weak and electromagnetic
+  forces are expressions of a more fundamental electroweak interaction.'
+assert:
+  equals:
+  - strong
+  - strong,
+  - strong, electromagnetic
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-57373a9fc3c5551400e51e7d
+  date: ''
+  transform: paragraph Force#1; first answerable question in sha256(id) order whose every human answer
+    is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

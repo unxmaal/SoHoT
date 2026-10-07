@@ -1,0 +1,56 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5acfe95877cf76001a686444
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: Sayyid Abul Ala Maududi was an important early twentieth-century figure in the Islamic revival
+  in India, and then after independence from Britain, in Pakistan. Trained as a lawyer he chose the profession
+  of journalism, and wrote about contemporary issues and most importantly about Islam and Islamic law.
+  Maududi founded the Jamaat-e-Islami party in 1941 and remained its leader until 1972. However, Maududi
+  had much more impact through his writing than through his political organising. His extremely influential
+  books (translated into many languages) placed Islam in a modern context, and influenced not only conservative
+  ulema but liberal modernizer Islamists such as al-Faruqi, whose "Islamization of Knowledge" carried
+  forward some of Maududi's key principles.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Where did Maududi''s books
+        not place Islam?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Maududi was trained as a lawyer,
+        but chose what religion for himself instead?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: When did Maududi leave the
+        Jamaat-e-Islami party?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Where did Maududi exert the
+        most impact?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who was not an important figure
+        in the twentieth-century Islamic revival in India?'
+assert:
+  answers:
+    q1: false
+    q2: false
+    q3: false
+    q4: true
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5acfe95877cf76001a686444, squad2-5acfe95877cf76001a686441, squad2-5acfe95877cf76001a686442,
+    squad2-57300137b2c2fd140056871a, squad2-5acfe95877cf76001a686440
+  date: ''
+  transform: paragraph Islamism#11; first 5 questions of a paragraph in sha256(id) order, kept only when
+    they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

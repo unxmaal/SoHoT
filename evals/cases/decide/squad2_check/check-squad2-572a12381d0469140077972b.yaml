@@ -1,0 +1,55 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-572a12381d0469140077972b
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: Research by Harvard economist Robert Barro, found that there is "little overall relation between
+  income inequality and rates of growth and investment". According to work by Barro in 1999 and 2000,
+  high levels of inequality reduce growth in relatively poor countries but encourage growth in richer
+  countries. A study of Swedish counties between 1960 and 2000 found a positive impact of inequality on
+  growth with lead times of five years or less, but no correlation after ten years. Studies of larger
+  data sets have found no correlations for any fixed lead time, and a negative impact on the duration
+  of growth.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What institution does Robert
+        Barro hail from?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: When wasn''t a study conducted
+        of Swedish counties?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What does high levels of inequality
+        do for economic growth in richer countries?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: When was a study conducted
+        of Swedish counties?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Barro found there is little
+        relation between income inequality and rates of what?'
+assert:
+  answers:
+    q1: true
+    q2: false
+    q3: true
+    q4: true
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572a12381d0469140077972b, squad2-5ad26420d7d075001a429138, squad2-572a12381d0469140077972e,
+    squad2-572a12381d0469140077972f, squad2-572a12381d0469140077972c
+  date: ''
+  transform: paragraph Economic_inequality#32; first 5 questions of a paragraph in sha256(id) order, kept
+    only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

@@ -1,0 +1,55 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-572757bef1498d1400e8f691
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: In many parts of the United States, after the 1954 decision in the landmark court case Brown
+  v. Board of Education of Topeka that demanded United States schools desegregate "with all deliberate
+  speed", local families organized a wave of private "Christian academies". In much of the U.S. South,
+  many white students migrated to the academies, while public schools became in turn more heavily concentrated
+  with African-American students (see List of private schools in Mississippi). The academic content of
+  the academies was usually College Preparatory. Since the 1970s, many of these "segregation academies"
+  have shut down, although some continue to operate.[citation needed]
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is a derogatory term
+        for the Christian academies that arose in the wake of school desegregation?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: In what part of the United
+        States did many students migrate to Christian academies during the desegregation period?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What court case desegregated
+        schools in the United States?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What kind of curriculum did
+        public schools focus on for white students?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: School desegregation in the
+        United States led to an increased number of students of what ethnicity in public schools?'
+assert:
+  answers:
+    q1: true
+    q2: true
+    q3: true
+    q4: false
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572757bef1498d1400e8f691, squad2-572757bef1498d1400e8f692, squad2-572757bef1498d1400e8f690,
+    squad2-5a67dae18476ee001a58a73b, squad2-572757bef1498d1400e8f694
+  date: ''
+  transform: paragraph Private_school#22; first 5 questions of a paragraph in sha256(id) order, kept only
+    when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

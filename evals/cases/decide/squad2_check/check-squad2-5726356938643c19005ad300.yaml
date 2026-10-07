@@ -1,0 +1,53 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5726356938643c19005ad300
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: Packet mode communication may be implemented with or without intermediate forwarding nodes (packet
+  switches or routers). Packets are normally forwarded by intermediate network nodes asynchronously using
+  first-in, first-out buffering, but may be forwarded according to some scheduling discipline for fair
+  queuing, traffic shaping, or for differentiated or guaranteed quality of service, such as weighted fair
+  queuing or leaky bucket. In case of a shared physical medium (such as radio or 10BASE5), the packets
+  may be delivered according to a multiple access scheme.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How are packets normally forwarded'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: In cases of shared physical
+        medium how are they delivered'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How are packet mode communications
+        dissolved?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What are intermediate forwarding
+        nodes?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What exactly is a "leaky bucket"
+        in terms of this matter?'
+assert:
+  answers:
+    q1: true
+    q2: true
+    q3: false
+    q4: false
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5726356938643c19005ad300, squad2-5726219489a1e219009ac2d0, squad2-5a564b1e6349e2001acdcd14,
+    squad2-5a5507df134fea001a0e1821, squad2-5a6057f0eae51e001ab14d20
+  date: ''
+  transform: paragraph Packet_switching#2; first 5 questions of a paragraph in sha256(id) order, kept
+    only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

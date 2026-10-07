@@ -1,0 +1,56 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5a6ce6b54eec6b001a80a6a8
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: Since about the year 2000, a growing number of Internet pharmacies have been established worldwide.
+  Many of these pharmacies are similar to community pharmacies, and in fact, many of them are actually
+  operated by brick-and-mortar community pharmacies that serve consumers online and those that walk in
+  their door. The primary difference is the method by which the medications are requested and received.
+  Some customers consider this to be more convenient and private method rather than traveling to a community
+  drugstore where another customer might overhear about the drugs that they take. Internet pharmacies
+  (also known as online pharmacies) are also recommended to some patients by their physicians if they
+  are homebound.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is no different between
+        online pharmacies and community pharmacies?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What are internet pharmacies
+        also called?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: When did internet pharmacies
+        begin to come into being?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is one reason a patient
+        might choose an internet pharmacy?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is the main difference
+        between online pharmacies and community pharmacies?'
+assert:
+  answers:
+    q1: false
+    q2: true
+    q3: true
+    q4: true
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5a6ce6b54eec6b001a80a6a8, squad2-5726eb4b5951b619008f826d, squad2-5726eb4b5951b619008f826b,
+    squad2-5726eb4b5951b619008f826e, squad2-5726eb4b5951b619008f826f
+  date: ''
+  transform: paragraph Pharmacy#14; first 5 questions of a paragraph in sha256(id) order, kept only when
+    they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

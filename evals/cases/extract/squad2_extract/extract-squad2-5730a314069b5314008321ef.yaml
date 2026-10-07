@@ -1,0 +1,32 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-5730a314069b5314008321ef
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: Who did the geographic scholars work for?'
+context: 'According to geographic scholars under colonizing empires, the world could be split into climatic
+  zones. These scholars believed that Northern Europe and the Mid-Atlantic temperate climate produced
+  a hard-working, moral, and upstanding human being. Alternatively, tropical climates yielded lazy attitudes,
+  sexual promiscuity, exotic culture, and moral degeneracy. The people of these climates were believed
+  to be in need of guidance and intervention from the European empire to aid in the governing of a more
+  evolved social structure; they were seen as incapable of such a feat. Similarly, orientalism is a view
+  of a people based on their geographical location. '
+assert:
+  equals:
+  - colonizing empires
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5730a314069b5314008321ef
+  date: ''
+  transform: paragraph Imperialism#21; first answerable question in sha256(id) order whose every human
+    answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

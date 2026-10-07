@@ -1,0 +1,32 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-572fd1c4947a6a140053cd05
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What type of amendments might members opposed to a bill put on the table?'
+context: 'Stage 3 is the final stage of the bill and is considered at a meeting of the whole Parliament.
+  This stage comprises two parts: consideration of amendments to the bill as a general debate, and a final
+  vote on the bill. Opposition members can table "wrecking amendments" to the bill, designed to thwart
+  further progress and take up parliamentary time, to cause the bill to fall without a final vote being
+  taken. After a general debate on the final form of the bill, members proceed to vote at Decision Time
+  on whether they agree to the general principles of the final bill.'
+assert:
+  equals:
+  - wrecking
+  - '"wrecking amendments"'
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572fd1c4947a6a140053cd05
+  date: ''
+  transform: paragraph Scottish_Parliament#27; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

@@ -1,0 +1,32 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-56dde1d966d3e219004dad8d
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: Who upon arriving gave the original viking settlers a common identity?'
+context: Before Rollo's arrival, its populations did not differ from Picardy or the Île-de-France, which
+  were considered "Frankish". Earlier Viking settlers had begun arriving in the 880s, but were divided
+  between colonies in the east (Roumois and Pays de Caux) around the low Seine valley and in the west
+  in the Cotentin Peninsula, and were separated by traditional pagii, where the population remained about
+  the same with almost no foreign settlers. Rollo's contingents who raided and ultimately settled Normandy
+  and parts of the Atlantic coast included Danes, Norwegians, Norse–Gaels, Orkney Vikings, possibly Swedes,
+  and Anglo-Danes from the English Danelaw under Norse control.
+assert:
+  equals:
+  - Rollo
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-56dde1d966d3e219004dad8d
+  date: ''
+  transform: paragraph Normans#4; first answerable question in sha256(id) order whose every human answer
+    is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

@@ -1,0 +1,33 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-5728f2e26aef051400154897
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is the term for a hyperactive immune system that attacks normal tissues?'
+context: Disorders of the immune system can result in autoimmune diseases, inflammatory diseases and cancer.
+  Immunodeficiency occurs when the immune system is less active than normal, resulting in recurring and
+  life-threatening infections. In humans, immunodeficiency can either be the result of a genetic disease
+  such as severe combined immunodeficiency, acquired conditions such as HIV/AIDS, or the use of immunosuppressive
+  medication. In contrast, autoimmunity results from a hyperactive immune system attacking normal tissues
+  as if they were foreign organisms. Common autoimmune diseases include Hashimoto's thyroiditis, rheumatoid
+  arthritis, diabetes mellitus type 1, and systemic lupus erythematosus. Immunology covers the study of
+  all aspects of the immune system.
+assert:
+  equals:
+  - autoimmunity
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5728f2e26aef051400154897
+  date: ''
+  transform: paragraph Immune_system#1; first answerable question in sha256(id) order whose every human
+    answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

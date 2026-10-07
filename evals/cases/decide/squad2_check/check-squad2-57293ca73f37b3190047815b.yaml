@@ -1,0 +1,55 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-57293ca73f37b3190047815b
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: The IPCC receives funding through the IPCC Trust Fund, established in 1989 by the United Nations
+  Environment Programme (UNEP) and the World Meteorological Organization (WMO), Costs of the Secretary
+  and of housing the secretariat are provided by the WMO, while UNEP meets the cost of the Depute Secretary.
+  Annual cash contributions to the Trust Fund are made by the WMO, by UNEP, and by IPCC Members; the scale
+  of payments is determined by the IPCC Panel, which is also responsible for considering and adopting
+  by consensus the annual budget. The organisation is required to comply with the Financial Regulations
+  and Rules of the WMO.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: When was the IPCC Trust Fund
+        founded?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What rules does the IPCC have
+        to follow?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: To what trust does the IPCC
+        give funding?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who is not required to follow
+        financial rules and regulations?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who started the IPCC Trust
+        Fund?'
+assert:
+  answers:
+    q1: true
+    q2: true
+    q3: false
+    q4: false
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-57293ca73f37b3190047815b, squad2-57293ca73f37b3190047815f, squad2-5a3e2f07378766001a0024cd,
+    squad2-5a3e2f07378766001a0024d1, squad2-57293ca73f37b3190047815c
+  date: ''
+  transform: paragraph Intergovernmental_Panel_on_Climate_Change#3; first 5 questions of a paragraph in
+    sha256(id) order, kept only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

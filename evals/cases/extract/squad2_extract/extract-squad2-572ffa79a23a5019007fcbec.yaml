@@ -1,0 +1,35 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-572ffa79a23a5019007fcbec
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: Microplates squeezing and rotating created the features of what?'
+context: 'In southern Europe, the stage was set in the Triassic Period of the Mesozoic Era, with the opening
+  of the Tethys Ocean, between the Eurasian and African tectonic plates, between about 240 MBP and 220
+  MBP (million years before present). The present Mediterranean Sea descends from this somewhat larger
+  Tethys sea. At about 180 MBP, in the Jurassic Period, the two plates reversed direction and began to
+  compress the Tethys floor, causing it to be subducted under Eurasia and pushing up the edge of the latter
+  plate in the Alpine Orogeny of the Oligocene and Miocene Periods. Several microplates were caught in
+  the squeeze and rotated or were pushed laterally, generating the individual features of Mediterranean
+  geography: Iberia pushed up the Pyrenees; Italy, the Alps, and Anatolia, moving west, the mountains
+  of Greece and the islands. The compression and orogeny continue today, as shown by the ongoing raising
+  of the mountains a small amount each year and the active volcanoes.'
+assert:
+  equals:
+  - Mediterranean geography
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572ffa79a23a5019007fcbec
+  date: ''
+  transform: paragraph Rhine#24; first answerable question in sha256(id) order whose every human answer
+    is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

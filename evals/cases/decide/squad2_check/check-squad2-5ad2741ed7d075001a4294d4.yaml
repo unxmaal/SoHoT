@@ -1,0 +1,55 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5ad2741ed7d075001a4294d4
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: The Rhine emerges from Lake Constance, flows generally westward, as the Hochrhein, passes the
+  Rhine Falls, and is joined by its major tributary, the river Aare. The Aare more than doubles the Rhine's
+  water discharge, to an average of nearly 1,000 m3/s (35,000 cu ft/s), and provides more than a fifth
+  of the discharge at the Dutch border. The Aare also contains the waters from the 4,274 m (14,022 ft)
+  summit of Finsteraarhorn, the highest point of the Rhine basin. The Rhine roughly forms the German-Swiss
+  border from Lake Constance with the exceptions of the canton of Schaffhausen and parts of the cantons
+  of Zürich and Basel-Stadt, until it turns north at the so-called Rhine knee at Basel, leaving Switzerland.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is the major tributary
+        of Lake Constance?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What lake contains part of
+        the Rhine Falls?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: The Hochrhein more than doubles
+        the Rhine''s water discharge to what amount?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is the lowest point of
+        the Rhine basin called?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is the major tributary
+        of the Rhine?'
+assert:
+  answers:
+    q1: false
+    q2: false
+    q3: false
+    q4: false
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5ad2741ed7d075001a4294d4, squad2-5ad2741ed7d075001a4294d7, squad2-5ad2741ed7d075001a4294d5,
+    squad2-5ad2741ed7d075001a4294d8, squad2-572f609ca23a5019007fc5b0
+  date: ''
+  transform: paragraph Rhine#8; first 5 questions of a paragraph in sha256(id) order, kept only when they
+    mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

@@ -1,0 +1,34 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-5733d3cb4776f419006612ea
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: When was King George''s war?'
+context: The conflict is known by multiple names. In British America, wars were often named after the
+  sitting British monarch, such as King William's War or Queen Anne's War. As there had already been a
+  King George's War in the 1740s, British colonists named the second war in King George's reign after
+  their opponents, and it became known as the French and Indian War. This traditional name continues as
+  the standard in the United States, but it obscures the fact that Indians fought on both sides of the
+  conflict, and that this was part of the Seven Years' War, a much larger conflict between France and
+  Great Britain. American historians generally use the traditional name or sometimes the Seven Years'
+  War. Other, less frequently used names for the war include the Fourth Intercolonial War and the Great
+  War for the Empire.
+assert:
+  equals:
+  - 1740s
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5733d3cb4776f419006612ea
+  date: ''
+  transform: paragraph French_and_Indian_War#5; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

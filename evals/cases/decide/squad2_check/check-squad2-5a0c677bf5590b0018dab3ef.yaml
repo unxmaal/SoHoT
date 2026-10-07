@@ -1,0 +1,55 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5a0c677bf5590b0018dab3ef
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: Following the Cretaceous–Paleogene extinction event, the extinction of the dinosaurs and the
+  wetter climate may have allowed the tropical rainforest to spread out across the continent. From 66–34
+  Mya, the rainforest extended as far south as 45°. Climate fluctuations during the last 34 million years
+  have allowed savanna regions to expand into the tropics. During the Oligocene, for example, the rainforest
+  spanned a relatively narrow band. It expanded again during the Middle Miocene, then retracted to a mostly
+  inland formation at the last glacial maximum. However, the rainforest still managed to thrive during
+  these glacial periods, allowing for the survival and evolution of a broad diversity of species.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: The extinction of what led
+        to the decline of rainforests?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What extinction event might
+        have created some conditions allowing the expansion of the amazon rainforest?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: The amazon rainforest became
+        a mostly inland forest around which global event?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How many degrees south did
+        the Amazon rainforest reach from 66-34 Mya?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What has caused savanna regions
+        to grow into the South American tropics in the last 34 million years?'
+assert:
+  answers:
+    q1: false
+    q2: true
+    q3: true
+    q4: true
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5a0c677bf5590b0018dab3ef, squad2-5729e500af94a219006aa6b5, squad2-5729e500af94a219006aa6b8,
+    squad2-57283adcff5b5019007d9f95, squad2-57283adcff5b5019007d9f96
+  date: ''
+  transform: paragraph Amazon_rainforest#1; first 5 questions of a paragraph in sha256(id) order, kept
+    only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

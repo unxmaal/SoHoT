@@ -1,0 +1,55 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5ad2442bd7d075001a428a40
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: In Marxian analysis, capitalist firms increasingly substitute capital equipment for labor inputs
+  (workers) under competitive pressure to reduce costs and maximize profits. Over the long-term, this
+  trend increases the organic composition of capital, meaning that less workers are required in proportion
+  to capital inputs, increasing unemployment (the "reserve army of labour"). This process exerts a downward
+  pressure on wages. The substitution of capital equipment for labor (mechanization and automation) raises
+  the productivity of each worker, resulting in a situation of relatively stagnant wages for the working
+  class amidst rising levels of property income for the capitalist class.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What don''t capitalist firms
+        substitute equipment for in a Marxian analysis?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: When less workers are required,
+        what happens to the job market?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: When more workers are required,
+        what happens to the job market?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What does the substitution
+        of equipment for labor raise for workers?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What impact does higher worker
+        productivity and leveled pay have on higher earners?'
+assert:
+  answers:
+    q1: false
+    q2: true
+    q3: false
+    q4: true
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5ad2442bd7d075001a428a40, squad2-5727ea45ff5b5019007d9870, squad2-5ad2442bd7d075001a428a3e,
+    squad2-5729d609af94a219006aa664, squad2-5727ea45ff5b5019007d9871
+  date: ''
+  transform: paragraph Economic_inequality#3; first 5 questions of a paragraph in sha256(id) order, kept
+    only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

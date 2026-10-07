@@ -1,0 +1,38 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-5726a299dd62a815002e8ba0
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: When was the European Convention on Human Rights established?'
+context: None of the original treaties establishing the European Union mention protection for fundamental
+  rights. It was not envisaged for European Union measures, that is legislative and administrative actions
+  by European Union institutions, to be subject to human rights. At the time the only concern was that
+  member states should be prevented from violating human rights, hence the establishment of the European
+  Convention on Human Rights in 1950 and the establishment of the European Court of Human Rights. The
+  European Court of Justice recognised fundamental rights as general principle of European Union law as
+  the need to ensure that European Union measures are compatible with the human rights enshrined in member
+  states' constitution became ever more apparent. In 1999 the European Council set up a body tasked with
+  drafting a European Charter of Human Rights, which could form the constitutional basis for the European
+  Union and as such tailored specifically to apply to the European Union and its institutions. The Charter
+  of Fundamental Rights of the European Union draws a list of fundamental rights from the European Convention
+  on Human Rights and Fundamental Freedoms, the Declaration on Fundamental Rights produced by the European
+  Parliament in 1989 and European Union Treaties.
+assert:
+  equals:
+  - '1950'
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5726a299dd62a815002e8ba0
+  date: ''
+  transform: paragraph European_Union_law#22; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

@@ -1,0 +1,53 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-571c3e8cdd7acb1400e4c0a7
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: In the late 17th century, Robert Boyle proved that air is necessary for combustion. English chemist
+  John Mayow (1641–1679) refined this work by showing that fire requires only a part of air that he called
+  spiritus nitroaereus or just nitroaereus. In one experiment he found that placing either a mouse or
+  a lit candle in a closed container over water caused the water to rise and replace one-fourteenth of
+  the air's volume before extinguishing the subjects. From this he surmised that nitroaereus is consumed
+  in both respiration and combustion.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What did John Mayow  name
+        the part of air that caused combustion?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who refined Robert Mayow''s
+        work?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: John Mayow died in what year?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What was the profession of
+        John Boyle?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What researcher showed that
+        air is a necessity for combustion?'
+assert:
+  answers:
+    q1: true
+    q2: false
+    q3: true
+    q4: false
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-571c3e8cdd7acb1400e4c0a7, squad2-5ad22a96d7d075001a4285dd, squad2-571a4b0f10f8ca1400304fd8,
+    squad2-5ad22a96d7d075001a4285de, squad2-571c3e8cdd7acb1400e4c0a6
+  date: ''
+  transform: paragraph Oxygen#2; first 5 questions of a paragraph in sha256(id) order, kept only when
+    they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

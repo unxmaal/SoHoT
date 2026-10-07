@@ -1,0 +1,55 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-57264865dd62a815002e8064
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: Following the Nice Treaty, there was an attempt to reform the constitutional law of the European
+  Union and make it more transparent; this would have also produced a single constitutional document.
+  However, as a result of the referendum in France and the referendum in the Netherlands, the 2004 Treaty
+  establishing a Constitution for Europe never came into force. Instead, the Lisbon Treaty was enacted.
+  Its substance was very similar to the proposed constitutional treaty, but it was formally an amending
+  treaty, and – though it significantly altered the existing treaties – it did not completely replace
+  them.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How similar was the Lisbon
+        Treaty to the constitutional treaty?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Which caused the reform to
+        never come into force?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: When was the constitution
+        for Europe put into place?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What reform was attempted
+        following the Nice Treaty?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What type of treaty was the
+        Lisbon Treaty?'
+assert:
+  answers:
+    q1: true
+    q2: true
+    q3: false
+    q4: true
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-57264865dd62a815002e8064, squad2-57268f2bf1498d1400e8e3c6, squad2-5ad11186645df0001a2d0bff,
+    squad2-57268f2bf1498d1400e8e3c4, squad2-57264865dd62a815002e8065
+  date: ''
+  transform: paragraph European_Union_law#5; first 5 questions of a paragraph in sha256(id) order, kept
+    only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

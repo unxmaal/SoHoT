@@ -1,0 +1,55 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5a66a55af038b7001ab0c080
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: Along with giving the offender his "just deserts", achieving crime control via incapacitation
+  and deterrence is a major goal of criminal punishment. Brownlee argues, "Bringing in deterrence at the
+  level of justification detracts from the law’s engagement in a moral dialogue with the offender as a
+  rational person because it focuses attention on the threat of punishment and not the moral reasons to
+  follow this law." Leonard Hubert Hoffmann writes, "In deciding whether or not to impose punishment,
+  the most important consideration would be whether it would do more harm than good. This means that the
+  objector has no right not to be punished. It is a matter for the state (including the judges) to decide
+  on utilitarian grounds whether to do so or not."
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: On what grounds is a law judged
+        to be moral?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is the main goal of criminal
+        punishment of civil disobedients?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is a major reason judges
+        use morality against crime?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What does focusing on morality
+        help a judge to achieve?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who decides if a law is moral?'
+assert:
+  answers:
+    q1: false
+    q2: true
+    q3: false
+    q4: false
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5a66a55af038b7001ab0c080, squad2-5728fd3c3f37b31900477f2b, squad2-5a66a55af038b7001ab0c07c,
+    squad2-5a66a55af038b7001ab0c07d, squad2-5a66a55af038b7001ab0c07e
+  date: ''
+  transform: paragraph Civil_disobedience#25; first 5 questions of a paragraph in sha256(id) order, kept
+    only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

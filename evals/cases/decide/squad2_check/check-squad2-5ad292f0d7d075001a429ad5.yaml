@@ -1,0 +1,54 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5ad292f0d7d075001a429ad5
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: The Rhine-Meuse Delta is a tidal delta, shaped not only by the sedimentation of the rivers, but
+  also by tidal currents. This meant that high tide formed a serious risk because strong tidal currents
+  could tear huge areas of land into the sea. Before the construction of the Delta Works, tidal influence
+  was palpable up to Nijmegen, and even today, after the regulatory action of the Delta Works, the tide
+  acts far inland. At the Waal, for example, the most landward tidal influence can be detected between
+  Brakel and Zaltbommel.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What area was the Delta Works
+        constructed between?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What produces a lot of sedimentation
+        that flows into the surrounding rivers?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What can weak tidal currents
+        do?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What type of Delta is the
+        Rhine-Meuse?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Between Brakel and what other
+        city can the most landward tidal influence be detected?'
+assert:
+  answers:
+    q1: false
+    q2: false
+    q3: false
+    q4: true
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5ad292f0d7d075001a429ad5, squad2-5ad292f0d7d075001a429ad7, squad2-5ad292f0d7d075001a429ad6,
+    squad2-572ff935b2c2fd140056869b, squad2-572ff935b2c2fd140056869e
+  date: ''
+  transform: paragraph Rhine#23; first 5 questions of a paragraph in sha256(id) order, kept only when
+    they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

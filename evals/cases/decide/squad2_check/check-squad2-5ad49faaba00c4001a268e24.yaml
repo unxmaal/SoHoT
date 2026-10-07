@@ -1,0 +1,56 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5ad49faaba00c4001a268e24
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: Disorders of the immune system can result in autoimmune diseases, inflammatory diseases and cancer.
+  Immunodeficiency occurs when the immune system is less active than normal, resulting in recurring and
+  life-threatening infections. In humans, immunodeficiency can either be the result of a genetic disease
+  such as severe combined immunodeficiency, acquired conditions such as HIV/AIDS, or the use of immunosuppressive
+  medication. In contrast, autoimmunity results from a hyperactive immune system attacking normal tissues
+  as if they were foreign organisms. Common autoimmune diseases include Hashimoto's thyroiditis, rheumatoid
+  arthritis, diabetes mellitus type 1, and systemic lupus erythematosus. Immunology covers the study of
+  all aspects of the immune system.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is not caused by disorders
+        of the immune system?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is the term for a hyperactive
+        immune system that attacks normal tissues?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What kind of medicine can
+        cause autoimmunity?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What field involves the study
+        of the immune system?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What acquired condition results
+        in immunodeficiency in humans?'
+assert:
+  answers:
+    q1: false
+    q2: true
+    q3: false
+    q4: true
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5ad49faaba00c4001a268e24, squad2-5728f2e26aef051400154897, squad2-5ad49faaba00c4001a268e25,
+    squad2-5728f2e26aef051400154898, squad2-5728f2e26aef051400154899
+  date: ''
+  transform: paragraph Immune_system#1; first 5 questions of a paragraph in sha256(id) order, kept only
+    when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

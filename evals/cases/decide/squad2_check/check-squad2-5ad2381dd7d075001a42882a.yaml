@@ -1,0 +1,56 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5ad2381dd7d075001a42882a
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: In one experiment, Lavoisier observed that there was no overall increase in weight when tin and
+  air were heated in a closed container. He noted that air rushed in when he opened the container, which
+  indicated that part of the trapped air had been consumed. He also noted that the tin had increased in
+  weight and that increase was the same as the weight of the air that rushed back in. This and other experiments
+  on combustion were documented in his book Sur la combustion en général, which was published in 1777.
+  In that work, he proved that air is a mixture of two gases; 'vital air', which is essential to combustion
+  and respiration, and azote (Gk. ἄζωτον "lifeless"), which did not support either. Azote later became
+  nitrogen in English, although it has kept the name in French and several other European languages.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is another term for vital
+        air?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: In what year did Lavoisier
+        publish his work on combustion?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What second part of air was
+        deemed lifeless by Lavoisier?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is the English word for
+        nitrogen?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What did Lavoisier perceive
+        the air had lost as much as the tin had gained'
+assert:
+  answers:
+    q1: false
+    q2: true
+    q3: true
+    q4: false
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5ad2381dd7d075001a42882a, squad2-571c8eb9dd7acb1400e4c0f9, squad2-571c8eb9dd7acb1400e4c0fa,
+    squad2-5ad2381dd7d075001a42882b, squad2-571c8eb9dd7acb1400e4c0f8
+  date: ''
+  transform: paragraph Oxygen#13; first 5 questions of a paragraph in sha256(id) order, kept only when
+    they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

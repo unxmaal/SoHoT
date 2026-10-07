@@ -1,0 +1,24 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: retrieval-squad2-5725e45689a1e219009ac04c
+modality: retrieval
+prompt: Which district in Fresno is known as the center for the heavy metal community?
+input_file: fresno-california.jsonl
+assert:
+  relevant:
+  - fresno-california-11
+  k: 1
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5725e45689a1e219009ac04c
+  date: ''
+  transform: question of paragraph Fresno,_California#11; first answerable question of the paragraph in
+    sha256(id) order; corpus is every paragraph of its article; relevant is the paragraph the question
+    was written for
+  importer: evals.importers.squad2_retrieval
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

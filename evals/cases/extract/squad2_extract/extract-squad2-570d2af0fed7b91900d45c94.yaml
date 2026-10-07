@@ -1,0 +1,33 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-570d2af0fed7b91900d45c94
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: How does Victoria rank as to population density?'
+context: Victoria (abbreviated as Vic) is a state in the south-east of Australia. Victoria is Australia's
+  most densely populated state and its second-most populous state overall. Most of its population is concentrated
+  in the area surrounding Port Phillip Bay, which includes the metropolitan area of its capital and largest
+  city, Melbourne, which is Australia's second-largest city. Geographically the smallest state on the
+  Australian mainland, Victoria is bordered by Bass Strait and Tasmania to the south,[note 1] New South
+  Wales to the north, the Tasman Sea to the east, and South Australia to the west.
+assert:
+  equals:
+  - most densely populated
+  - most
+  - most densely populated state
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-570d2af0fed7b91900d45c94
+  date: ''
+  transform: paragraph Victoria_(Australia)#5; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

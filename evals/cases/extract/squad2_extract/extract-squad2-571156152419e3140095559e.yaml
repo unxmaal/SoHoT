@@ -1,0 +1,32 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-571156152419e3140095559e
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What was the ideal duty of a Newcomen engine?'
+context: The historical measure of a steam engine's energy efficiency was its "duty". The concept of duty
+  was first introduced by Watt in order to illustrate how much more efficient his engines were over the
+  earlier Newcomen designs. Duty is the number of foot-pounds of work delivered by burning one bushel
+  (94 pounds) of coal. The best examples of Newcomen designs had a duty of about 7 million, but most were
+  closer to 5 million. Watt's original low-pressure designs were able to deliver duty as high as 25 million,
+  but averaged about 17. This was a three-fold improvement over the average Newcomen design. Early Watt
+  engines equipped with high-pressure steam improved this to 65 million.
+assert:
+  equals:
+  - 7 million
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-571156152419e3140095559e
+  date: ''
+  transform: paragraph Steam_engine#24; first answerable question in sha256(id) order whose every human
+    answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

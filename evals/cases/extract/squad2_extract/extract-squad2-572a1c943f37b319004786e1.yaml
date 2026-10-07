@@ -1,0 +1,34 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-572a1c943f37b319004786e1
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What do a number of researchers think a shortage of is caused in part by income inequality?'
+context: A number of researchers (David Rodda, Jacob Vigdor, and Janna Matlack), argue that a shortage
+  of affordable housing – at least in the US – is caused in part by income inequality. David Rodda noted
+  that from 1984 and 1991, the number of quality rental units decreased as the demand for higher quality
+  housing increased (Rhoda 1994:148). Through gentrification of older neighbourhoods, for example, in
+  East New York, rental prices increased rapidly as landlords found new residents willing to pay higher
+  market rate for housing and left lower income families without rental units. The ad valorem property
+  tax policy combined with rising prices made it difficult or impossible for low income residents to keep
+  pace.
+assert:
+  equals:
+  - a shortage of affordable housing
+  - affordable housing
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572a1c943f37b319004786e1
+  date: ''
+  transform: paragraph Economic_inequality#37; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

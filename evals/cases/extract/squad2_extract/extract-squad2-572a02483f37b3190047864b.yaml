@@ -1,0 +1,32 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-572a02483f37b3190047864b
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: Who formulated the idea of clonal selection theory of immunity?'
+context: 'In the mid-1950s, Frank Burnet, inspired by a suggestion made by Niels Jerne, formulated the
+  clonal selection theory (CST) of immunity. On the basis of CST, Burnet developed a theory of how an
+  immune response is triggered according to the self/nonself distinction: "self" constituents (constituents
+  of the body) do not trigger destructive immune responses, while "nonself" entities (pathogens, an allograft)
+  trigger a destructive immune response. The theory was later modified to reflect new discoveries regarding
+  histocompatibility or the complex "two-signal" activation of T cells. The self/nonself theory of immunity
+  and the self/nonself vocabulary have been criticized, but remain very influential.'
+assert:
+  equals:
+  - Frank Burnet
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572a02483f37b3190047864b
+  date: ''
+  transform: paragraph Immune_system#32; first answerable question in sha256(id) order whose every human
+    answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

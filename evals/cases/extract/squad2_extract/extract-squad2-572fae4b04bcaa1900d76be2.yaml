@@ -1,0 +1,33 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-572fae4b04bcaa1900d76be2
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What provided much of the basis for the structure of the Parliament in 1995?'
+context: Throughout the 1980s and 1990s, demand for a Scottish Parliament grew, in part because the government
+  of the United Kingdom was controlled by the Conservative Party, while Scotland itself elected relatively
+  few Conservative MPs. In the aftermath of the 1979 referendum defeat, the Campaign for a Scottish Assembly
+  was initiated as a pressure group, leading to the 1989 Scottish Constitutional Convention with various
+  organisations such as Scottish churches, political parties and representatives of industry taking part.
+  Publishing its blueprint for devolution in 1995, the Convention provided much of the basis for the structure
+  of the Parliament.
+assert:
+  equals:
+  - blueprint
+  - the Convention
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572fae4b04bcaa1900d76be2
+  date: ''
+  transform: paragraph Scottish_Parliament#4; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

@@ -1,0 +1,57 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5ad50f1c5b96ef001a10ab31
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: Gothic architecture is represented in the majestic churches but also at the burgher houses and
+  fortifications. The most significant buildings are St. John's Cathedral (14th century), the temple is
+  a typical example of the so-called Masovian gothic style, St. Mary's Church (1411), a town house of
+  Burbach family (14th century), Gunpowder Tower (after 1379) and the Royal Castle Curia Maior (1407–1410).
+  The most notable examples of Renaissance architecture in the city are the house of Baryczko merchant
+  family (1562), building called "The Negro" (early 17th century) and Salwator tenement (1632). The most
+  interesting examples of mannerist architecture are the Royal Castle (1596–1619) and the Jesuit Church
+  (1609–1626) at Old Town. Among the first structures of the early baroque the most important are St.
+  Hyacinth's Church (1603–1639) and Sigismund's Column (1644).
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What type of architecture
+        is represented in the St. John''s Tower?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What type of architecture
+        is represented in the majestic churches?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: When was St. John''s Cathedral
+        constructed?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is St. John''s Castle
+        the most interesting example of?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is St. John''s Cathedral
+        an example of, stylistically?'
+assert:
+  answers:
+    q1: false
+    q2: true
+    q3: true
+    q4: false
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5ad50f1c5b96ef001a10ab31, squad2-573361404776f4190066093c, squad2-573361404776f4190066093d,
+    squad2-5ad50f1c5b96ef001a10ab32, squad2-573361404776f4190066093e
+  date: ''
+  transform: paragraph Warsaw#17; first 5 questions of a paragraph in sha256(id) order, kept only when
+    they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

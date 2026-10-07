@@ -1,0 +1,34 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-572881704b864d1900164a51
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: How did the Yuan come to have the 4 schools of medicine?'
+context: The Chinese medical tradition of the Yuan had "Four Great Schools" that the Yuan inherited from
+  the Jin dynasty. All four schools were based on the same intellectual foundation, but advocated different
+  theoretical approaches toward medicine. Under the Mongols, the practice of Chinese medicine spread to
+  other parts of the empire. Chinese physicians were brought along military campaigns by the Mongols as
+  they expanded towards the west. Chinese medical techniques such as acupuncture, moxibustion, pulse diagnosis,
+  and various herbal drugs and elixirs were transmitted westward to the Middle East and the rest of the
+  empire. Several medical advances were made in the Yuan period. The physician Wei Yilin (1277–1347) invented
+  a suspension method for reducing dislocated joints, which he performed using anesthetics. The Mongol
+  physician Hu Sihui described the importance of a healthy diet in a 1330 medical treatise.
+assert:
+  equals:
+  - inherited from the Jin dynasty
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572881704b864d1900164a51
+  date: ''
+  transform: paragraph Yuan_dynasty#36; first answerable question in sha256(id) order whose every human
+    answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

@@ -1,0 +1,32 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-5725edfe38643c19005ace9f
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What is another name for the west side of Fresno?'
+context: The "West Side" of Fresno, also often called "Southwest Fresno", is one of the oldest neighborhoods
+  in the city. The neighborhood lies southwest of the 99 freeway (which divides it from Downtown Fresno),
+  west of the 41 freeway and south of Nielsen Ave (or the newly constructed 180 Freeway), and extends
+  to the city limits to the west and south. The neighborhood is traditionally considered to be the center
+  of Fresno's African-American community. It is culturally diverse and also includes significant Mexican-American
+  and Asian-American (principally Hmong or Laotian) populations.
+assert:
+  equals:
+  - '"Southwest Fresno"'
+  - Southwest Fresno
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5725edfe38643c19005ace9f
+  date: ''
+  transform: paragraph Fresno,_California#14; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

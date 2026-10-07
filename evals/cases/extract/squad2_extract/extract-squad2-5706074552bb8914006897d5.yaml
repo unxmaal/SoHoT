@@ -1,0 +1,33 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-5706074552bb8914006897d5
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: How many extended metropolitan areas are there?'
+context: Southern California consists of one Combined Statistical Area, eight Metropolitan Statistical
+  Areas, one international metropolitan area, and multiple metropolitan divisions. The region is home
+  to two extended metropolitan areas that exceed five million in population. These are the Greater Los
+  Angeles Area at 17,786,419, and San Diego–Tijuana at 5,105,768. Of these metropolitan areas, the Los
+  Angeles-Long Beach-Santa Ana metropolitan area, Riverside-San Bernardino-Ontario metropolitan area,
+  and Oxnard-Thousand Oaks-Ventura metropolitan area form Greater Los Angeles; while the El Centro metropolitan
+  area and San Diego-Carlsbad-San Marcos metropolitan area form the Southern Border Region. North of Greater
+  Los Angeles are the Santa Barbara, San Luis Obispo, and Bakersfield metropolitan areas.
+assert:
+  equals:
+  - two
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5706074552bb8914006897d5
+  date: ''
+  transform: paragraph Southern_California#22; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

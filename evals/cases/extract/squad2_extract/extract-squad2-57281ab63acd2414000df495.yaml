@@ -1,0 +1,35 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-57281ab63acd2414000df495
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What term referred to middle class citizens leaving the suburbs?'
+context: Jacksonville, like most large cities in the United States, suffered from negative effects of
+  rapid urban sprawl after World War II. The construction of highways led residents to move to newer housing
+  in the suburbs. After World War II, the government of the city of Jacksonville began to increase spending
+  to fund new public building projects in the boom that occurred after the war. Mayor W. Haydon Burns'
+  Jacksonville Story resulted in the construction of a new city hall, civic auditorium, public library
+  and other projects that created a dynamic sense of civic pride. However, the development of suburbs
+  and a subsequent wave of middle class "white flight" left Jacksonville with a much poorer population
+  than before. The city's most populous ethnic group, non-Hispanic white, declined from 75.8% in 1970
+  to 55.1% by 2010.
+assert:
+  equals:
+  - '"white flight"'
+  - white flight
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-57281ab63acd2414000df495
+  date: ''
+  transform: paragraph Jacksonville,_Florida#10; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

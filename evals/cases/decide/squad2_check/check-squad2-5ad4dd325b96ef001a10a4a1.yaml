@@ -1,0 +1,55 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5ad4dd325b96ef001a10a4a1
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: There are 13 natural reserves in Warsaw – among others, Bielany Forest, Kabaty Woods, Czerniaków
+  Lake. About 15 kilometres (9 miles) from Warsaw, the Vistula river's environment changes strikingly
+  and features a perfectly preserved ecosystem, with a habitat of animals that includes the otter, beaver
+  and hundreds of bird species. There are also several lakes in Warsaw – mainly the oxbow lakes, like
+  Czerniaków Lake, the lakes in the Łazienki or Wilanów Parks, Kamionek Lake. There are lot of small lakes
+  in the parks, but only a few are permanent – the majority are emptied before winter to clean them of
+  plants and sediments.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How many lakes are there in
+        Czerniakow?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What animals does the Czerniakow
+        river''s ecosystem include?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Why are the small lakes in
+        the parks emptied before winter?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How far from Czerniakow does
+        the Vistula river''s environment change noticeably?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Why are the small lakes in
+        Czerniakow emptied before winter?'
+assert:
+  answers:
+    q1: false
+    q2: false
+    q3: true
+    q4: false
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5ad4dd325b96ef001a10a4a1, squad2-5ad4dd325b96ef001a10a4a0, squad2-57337ddc4776f41900660bbe,
+    squad2-5ad4dd325b96ef001a10a49f, squad2-5ad4dd325b96ef001a10a4a2
+  date: ''
+  transform: paragraph Warsaw#24; first 5 questions of a paragraph in sha256(id) order, kept only when
+    they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

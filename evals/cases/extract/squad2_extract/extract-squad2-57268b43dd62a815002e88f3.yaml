@@ -1,0 +1,32 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-57268b43dd62a815002e88f3
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: How many sources of European Union law are there?'
+context: European Union law is a body of treaties and legislation, such as Regulations and Directives,
+  which have direct effect or indirect effect on the laws of European Union member states. The three sources
+  of European Union law are primary law, secondary law and supplementary law. The main sources of primary
+  law are the Treaties establishing the European Union. Secondary sources include regulations and directives
+  which are based on the Treaties. The legislature of the European Union is principally composed of the
+  European Parliament and the Council of the European Union, which under the Treaties may establish secondary
+  law to pursue the objective set out in the Treaties.
+assert:
+  equals:
+  - three
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-57268b43dd62a815002e88f3
+  date: ''
+  transform: paragraph European_Union_law#0; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

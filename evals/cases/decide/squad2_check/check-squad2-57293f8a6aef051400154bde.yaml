@@ -1,0 +1,55 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-57293f8a6aef051400154bde
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: In addition to climate assessment reports, the IPCC is publishing Special Reports on specific
+  topics. The preparation and approval process for all IPCC Special Reports follows the same procedures
+  as for IPCC Assessment Reports. In the year 2011 two IPCC Special Report were finalized, the Special
+  Report on Renewable Energy Sources and Climate Change Mitigation (SRREN) and the Special Report on Managing
+  Risks of Extreme Events and Disasters to Advance Climate Change Adaptation (SREX). Both Special Reports
+  were requested by governments.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How does the IPCC prepare
+        Special Reports?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Which organization only has
+        the responsibility for writing climate assessment reports?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Which reports follow a different
+        procedure than the assessment reports?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: When was the Special Report
+        on Managing Risks of Extreme Events and Disasters to Advance Climate Change Adaptation (SREX)
+        issued?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: When was the Special Report
+        on Renewable Energy Sources and Climate Change Mitigation (SRREN) issued?'
+assert:
+  answers:
+    q1: true
+    q2: false
+    q3: false
+    q4: true
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-57293f8a6aef051400154bde, squad2-5a3e3907378766001a0024ff, squad2-5a3e3907378766001a002500,
+    squad2-57293f8a6aef051400154be0, squad2-57293f8a6aef051400154bdf
+  date: ''
+  transform: paragraph Intergovernmental_Panel_on_Climate_Change#9; first 5 questions of a paragraph in
+    sha256(id) order, kept only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

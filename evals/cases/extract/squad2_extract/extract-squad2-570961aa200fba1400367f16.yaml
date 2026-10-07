@@ -1,0 +1,38 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-570961aa200fba1400367f16
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: Who''s satellites would the new free-to-air channels be broadcast from?'
+context: The service started on 1 September 1993 based on the idea from the then chief executive officer,
+  Sam Chisholm and Rupert Murdoch, of converting the company business strategy to an entirely fee-based
+  concept. The new package included four channels formerly available free-to-air, broadcasting on Astra's
+  satellites, as well as introducing new channels. The service continued until the closure of BSkyB's
+  analogue service on 27 September 2001, due to the launch and expansion of the Sky Digital platform.
+  Some of the channels did broadcast either in the clear or soft encrypted (whereby a Videocrypt decoder
+  was required to decode, without a subscription card) prior to their addition to the Sky Multichannels
+  package. Within two months of the launch, BSkyB gained 400,000 new subscribers, with the majority taking
+  at least one premium channel as well, which helped BSkyB reach 3.5 million households by mid-1994. Michael
+  Grade criticized the operations in front of the Select Committee on National Heritage, mainly for the
+  lack of original programming on many of the new channels.
+assert:
+  equals:
+  - Astra
+  - Astra's
+  - Astra's satellites
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-570961aa200fba1400367f16
+  date: ''
+  transform: paragraph Sky_(United_Kingdom)#7; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

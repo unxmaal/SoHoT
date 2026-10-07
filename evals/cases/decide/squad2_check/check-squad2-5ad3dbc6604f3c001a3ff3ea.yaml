@@ -1,0 +1,55 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5ad3dbc6604f3c001a3ff3ea
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: Soon after the Normans began to enter Italy, they entered the Byzantine Empire and then Armenia,
+  fighting against the Pechenegs, the Bulgars, and especially the Seljuk Turks. Norman mercenaries were
+  first encouraged to come to the south by the Lombards to act against the Byzantines, but they soon fought
+  in Byzantine service in Sicily. They were prominent alongside Varangian and Lombard contingents in the
+  Sicilian campaign of George Maniaces in 1038–40. There is debate whether the Normans in Greek service
+  actually were from Norman Italy, and it now seems likely only a few came from there. It is also unknown
+  how many of the "Franks", as the Byzantines called them, were Normans and not other Frenchmen.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who did the Normans fight
+        in Italy?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who did the Normans encourage
+        to come to the south?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: During what campaign did the
+        Vargian and Lombard fight?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who entered Italy soon after
+        the Byzantine Empire?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who was the Normans'' main
+        enemy in Italy, the Byzantine Empire and Armenia?'
+assert:
+  answers:
+    q1: false
+    q2: false
+    q3: false
+    q4: false
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5ad3dbc6604f3c001a3ff3ea, squad2-5ad3dbc6604f3c001a3ff3eb, squad2-5ad3dbc6604f3c001a3ff3ec,
+    squad2-5ad3dbc6604f3c001a3ff3e9, squad2-56de0f6a4396321400ee257f
+  date: ''
+  transform: paragraph Normans#7; first 5 questions of a paragraph in sha256(id) order, kept only when
+    they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

@@ -1,0 +1,55 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5acfab5077cf76001a6857d2
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: Past faculty have also included Egyptologist James Henry Breasted, mathematician Alberto Calderón,
+  Nobel prize winning economist and classical liberalism defender Friedrich Hayek, meteorologist Ted Fujita,
+  chemists Glenn T. Seaborg, the developer of the actinide concept and Nobel Prize winner Yuan T. Lee,
+  Nobel Prize winning novelist Saul Bellow, political philosopher and author Allan Bloom, cancer researchers
+  Charles Brenton Huggins and Janet Rowley, astronomer Gerard Kuiper, one of the most important figures
+  in the early development of the discipline of linguistics Edward Sapir, and the founder of McKinsey
+  & Co., James O. McKinsey.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who is the developer of the
+        McKinsey concept?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What Egyptologist was also
+        apart of the university''s faculty?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What cancer researchers were
+        also apart of the university''s faculty?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What mathematician was also
+        apart of the university''s faculty?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What Nobel Prize researchers
+        are former faculty members?'
+assert:
+  answers:
+    q1: false
+    q2: true
+    q3: true
+    q4: true
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5acfab5077cf76001a6857d2, squad2-5728742cff5b5019007da246, squad2-5728742cff5b5019007da24a,
+    squad2-5728742cff5b5019007da247, squad2-5acfab5077cf76001a6857d3
+  date: ''
+  transform: paragraph University_of_Chicago#35; first 5 questions of a paragraph in sha256(id) order,
+    kept only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

@@ -1,0 +1,32 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-57108c95b654c5140001f979
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What city north of New York was settled by Huguenots?'
+context: Huguenot immigrants did not disperse or settle in different parts of the country, but rather,
+  formed three societies or congregations; one in the city of New York, another 21 miles north of New
+  York in a town which they named New Rochelle, and a third further upstate in New Paltz. The "Huguenot
+  Street Historic District" in New Paltz has been designated a National Historic Landmark site and contains
+  the oldest street in the United States of America. A small group of Huguenots also settled on the south
+  shore of Staten Island along the New York Harbor, for which the current neighborhood of Huguenot was
+  named.
+assert:
+  equals:
+  - New Rochelle
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-57108c95b654c5140001f979
+  date: ''
+  transform: paragraph Huguenot#12; first answerable question in sha256(id) order whose every human answer
+    is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

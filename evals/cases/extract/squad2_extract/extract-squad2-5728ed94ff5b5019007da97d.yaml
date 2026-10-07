@@ -1,0 +1,32 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-5728ed94ff5b5019007da97d
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: Going to jail accomplished what goal of civil disobedience?'
+context: Howard Zinn writes, "There may be many times when protesters choose to go to jail, as a way of
+  continuing their protest, as a way of reminding their countrymen of injustice. But that is different
+  than the notion that they must go to jail as part of a rule connected with civil disobedience. The key
+  point is that the spirit of protest should be maintained all the way, whether it is done by remaining
+  in jail, or by evading it. To accept jail penitently as an accession to 'the rules' is to switch suddenly
+  to a spirit of subservience, to demean the seriousness of the protest...In particular, the neo-conservative
+  insistence on a guilty plea should be eliminated."
+assert:
+  equals:
+  - reminding their countrymen of injustice
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5728ed94ff5b5019007da97d
+  date: ''
+  transform: paragraph Civil_disobedience#19; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

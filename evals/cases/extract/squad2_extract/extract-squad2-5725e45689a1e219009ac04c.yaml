@@ -1,0 +1,31 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-5725e45689a1e219009ac04c
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: Which district in Fresno is known as the center for the heavy metal community?'
+context: The neighborhood features restaurants, live theater and nightclubs, as well as several independent
+  shops and bookstores, currently operating on or near Olive Avenue, and all within a few hundred feet
+  of each other. Since renewal, the Tower District has become an attractive area for restaurant and other
+  local businesses. Today, the Tower District is also known as the center of Fresno's LGBT and hipster
+  Communities.; Additionally, Tower District is also known as the center of Fresno's local punk/goth/deathrock
+  and heavy metal community.[citation needed]
+assert:
+  equals:
+  - Tower District
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5725e45689a1e219009ac04c
+  date: ''
+  transform: paragraph Fresno,_California#11; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

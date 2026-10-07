@@ -1,0 +1,54 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-57268f05dd62a815002e8992
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: The early Cambrian sessile frond-like fossil Stromatoveris, from China's Chengjiang lagerstätte
+  and dated to about 515 million years ago, is very similar to Vendobionta of the preceding Ediacaran
+  period. De-Gan Shu, Simon Conway Morris et al. found on its branches what they considered rows of cilia,
+  used for filter feeding. They suggested that Stromatoveris was an evolutionary "aunt" of ctenophores,
+  and that ctenophores originated from sessile animals whose descendants became swimmers and changed the
+  cilia from a feeding mechanism to a propulsion system.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Which genus is considered
+        the "aunt" of ctenophores?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What did Vendobionta''s descendants
+        become?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What period did the emergence
+        of feeding mechanisms come from?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What type of fossils were
+        found in China?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What genus is considered the
+        aunt of Vendobionta?'
+assert:
+  answers:
+    q1: true
+    q2: false
+    q3: false
+    q4: true
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-57268f05dd62a815002e8992, squad2-5a83a59be60761001a2eb84e, squad2-5a83a59be60761001a2eb84c,
+    squad2-57268f05dd62a815002e8991, squad2-5a83a59be60761001a2eb84b
+  date: ''
+  transform: paragraph Ctenophora#28; first 5 questions of a paragraph in sha256(id) order, kept only
+    when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

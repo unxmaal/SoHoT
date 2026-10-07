@@ -1,0 +1,54 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5a63866968151a001a922339
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: The centre-left Australian Labor Party (ALP), the centre-right Liberal Party of Australia, the
+  rural-based National Party of Australia, and the environmentalist Australian Greens are Victoria's main
+  political parties. Traditionally, Labor is strongest in Melbourne's working class western and northern
+  suburbs, and the regional cities of Ballarat, Bendigo and Geelong. The Liberals' main support lies in
+  Melbourne's more affluent eastern and outer suburbs, and some rural and regional centres. The Nationals
+  are strongest in Victoria's North Western and Eastern rural regional areas. The Greens, who won their
+  first lower house seats in 2014, are strongest in inner Melbourne.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What party formed in 2014?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Which party is strongest in
+        Victoria''s northwestern and eastern regions?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What party is strongest in
+        Melbourne''s affluent areas?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What political party is strongest
+        in Melbourne''s working class suburbs?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What party is favored in Bedigo
+        and Geelong?'
+assert:
+  answers:
+    q1: false
+    q2: true
+    q3: true
+    q4: true
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5a63866968151a001a922339, squad2-570d28bdb3d812140066d4a5, squad2-570d28bdb3d812140066d4a4,
+    squad2-570d28bdb3d812140066d4a3, squad2-570d28bdb3d812140066d4a7
+  date: ''
+  transform: paragraph Victoria_(Australia)#3; first 5 questions of a paragraph in sha256(id) order, kept
+    only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

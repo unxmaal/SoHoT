@@ -1,0 +1,56 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5a6cefd64eec6b001a80a707
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: 'The two symbols most commonly associated with pharmacy in English-speaking countries are the
+  mortar and pestle and the ℞ (recipere) character, which is often written as "Rx" in typed text. The
+  show globe was also used until the early 20th century. Pharmacy organizations often use other symbols,
+  such as the Bowl of Hygieia which is often used in the Netherlands, conical measures, and caduceuses
+  in their logos. Other symbols are common in different countries: the green Greek cross in France, Argentina,
+  the United Kingdom, Belgium, Ireland, Italy, Spain, and India, the increasingly rare Gaper in the Netherlands,
+  and a red stylized letter A in Germany and Austria (from Apotheke, the German word for pharmacy, from
+  the same Greek root as the English word ''apothecary'').'
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What symbol was employed until
+        early in the 19th century?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What countries use a red stylized
+        A to signify pharmacy?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Which countries use the red
+        Greek cross as a symbol of pharmacy?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What are the two symbols that
+        signify pharmacy in English-speaking countries?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What country no longer uses
+        the Bowl of Hygieia as a symbol of pharmacy?'
+assert:
+  answers:
+    q1: false
+    q2: true
+    q3: false
+    q4: true
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5a6cefd64eec6b001a80a707, squad2-5726fa525951b619008f83fa, squad2-5a6cefd64eec6b001a80a70a,
+    squad2-5726fa525951b619008f83f7, squad2-5a6cefd64eec6b001a80a708
+  date: ''
+  transform: paragraph Pharmacy#25; first 5 questions of a paragraph in sha256(id) order, kept only when
+    they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

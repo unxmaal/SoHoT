@@ -1,0 +1,57 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5729f69caf94a219006aa6f9
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: A B cell identifies pathogens when antibodies on its surface bind to a specific foreign antigen.
+  This antigen/antibody complex is taken up by the B cell and processed by proteolysis into peptides.
+  The B cell then displays these antigenic peptides on its surface MHC class II molecules. This combination
+  of MHC and antigen attracts a matching helper T cell, which releases lymphokines and activates the B
+  cell. As the activated B cell then begins to divide, its offspring (plasma cells) secrete millions of
+  copies of the antibody that recognizes this antigen. These antibodies circulate in blood plasma and
+  lymph, bind to pathogens expressing the antigen and mark them for destruction by complement activation
+  or for uptake and destruction by phagocytes. Antibodies can also neutralize challenges directly, by
+  binding to bacterial toxins or by interfering with the receptors that viruses and bacteria use to infect
+  cells.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What kind of cell identifies
+        pathogens when the antibodies on its surface complex with a specific foreign antigen?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What can antibodies not neutralize?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: When does a T cell identify
+        pathogens?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What are peptides processed
+        into?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: When do antibodies not circulate
+        in?'
+assert:
+  answers:
+    q1: true
+    q2: false
+    q3: false
+    q4: false
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5729f69caf94a219006aa6f9, squad2-5ad4d52a5b96ef001a10a264, squad2-5ad4d52a5b96ef001a10a260,
+    squad2-5ad4d52a5b96ef001a10a261, squad2-5ad4d52a5b96ef001a10a263
+  date: ''
+  transform: paragraph Immune_system#20; first 5 questions of a paragraph in sha256(id) order, kept only
+    when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

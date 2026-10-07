@@ -1,0 +1,35 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-5726431d271a42140099d7f9
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: What was done to counteract the overpopulation of mnemiopsis in The Black Sea?'
+context: Ctenophores may be abundant during the summer months in some coastal locations, but in other
+  places they are uncommon and difficult to find. In bays where they occur in very high numbers, predation
+  by ctenophores may control the populations of small zooplanktonic organisms such as copepods, which
+  might otherwise wipe out the phytoplankton (planktonic plants), which are a vital part of marine food
+  chains. One ctenophore, Mnemiopsis, has accidentally been introduced into the Black Sea, where it is
+  blamed for causing fish stocks to collapse by eating both fish larvae and organisms that would otherwise
+  have fed the fish. The situation was aggravated by other factors, such as over-fishing and long-term
+  environmental changes that promoted the growth of the Mnemiopsis population. The later accidental introduction
+  of Beroe helped to mitigate the problem, as Beroe preys on other ctenophores.
+assert:
+  equals:
+  - introduction of Beroe
+  - accidental introduction of Beroe
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5726431d271a42140099d7f9
+  date: ''
+  transform: paragraph Ctenophora#3; first answerable question in sha256(id) order whose every human answer
+    is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

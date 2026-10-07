@@ -1,0 +1,31 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-571144d1a58dae1900cd6d6f
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: Aside from firebox, what is another name for the space in which combustible material is burned
+  in the engine?'
+context: The heat required for boiling the water and supplying the steam can be derived from various sources,
+  most commonly from burning combustible materials with an appropriate supply of air in a closed space
+  (called variously combustion chamber, firebox). In some cases the heat source is a nuclear reactor,
+  geothermal energy, solar energy or waste heat from an internal combustion engine or industrial process.
+  In the case of model or toy steam engines, the heat source can be an electric heating element.
+assert:
+  equals:
+  - combustion chamber
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-571144d1a58dae1900cd6d6f
+  date: ''
+  transform: paragraph Steam_engine#11; first answerable question in sha256(id) order whose every human
+    answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

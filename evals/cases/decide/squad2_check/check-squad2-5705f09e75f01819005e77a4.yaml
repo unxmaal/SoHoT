@@ -1,0 +1,58 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5705f09e75f01819005e77a4
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: Subsequently, Californios (dissatisfied with inequitable taxes and land laws) and pro-slavery
+  southerners in the lightly populated "Cow Counties" of southern California attempted three times in
+  the 1850s to achieve a separate statehood or territorial status separate from Northern California. The
+  last attempt, the Pico Act of 1859, was passed by the California State Legislature and signed by the
+  State governor John B. Weller. It was approved overwhelmingly by nearly 75% of voters in the proposed
+  Territory of Colorado. This territory was to include all the counties up to the then much larger Tulare
+  County (that included what is now Kings, most of Kern, and part of Inyo counties) and San Luis Obispo
+  County. The proposal was sent to Washington, D.C. with a strong advocate in Senator Milton Latham. However,
+  the secession crisis following the election of Abraham Lincoln in 1860 led to the proposal never coming
+  to a vote.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Other than land laws, what
+        else were the Californios dissatisfied with?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What was the percentage of
+        people that voted in favor of the Pico Act of 1859?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who attempted to achieve a
+        separate statehood in 1805?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Which Senator was a strong
+        advocate for the Pico Act?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What was the name given to
+        the regions in which the pro - slavery southerners lived?'
+assert:
+  answers:
+    q1: true
+    q2: true
+    q3: false
+    q4: true
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5705f09e75f01819005e77a4, squad2-5705f09e75f01819005e77a7, squad2-5ad02e5d77cf76001a686d3a,
+    squad2-5705f09e75f01819005e77a8, squad2-5705f09e75f01819005e77a5
+  date: ''
+  transform: paragraph Southern_California#11; first 5 questions of a paragraph in sha256(id) order, kept
+    only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

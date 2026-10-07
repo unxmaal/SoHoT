@@ -1,0 +1,61 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-57113639a58dae1900cd6d1b
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: It is a logical extension of the compound engine (described above) to split the expansion into
+  yet more stages to increase efficiency. The result is the multiple expansion engine. Such engines use
+  either three or four expansion stages and are known as triple and quadruple expansion engines respectively.
+  These engines use a series of cylinders of progressively increasing diameter. These cylinders are designed
+  to divide the work into equal shares for each expansion stage. As with the double expansion engine,
+  if space is at a premium, then two smaller cylinders may be used for the low-pressure stage. Multiple
+  expansion engines typically had the cylinders arranged inline, but various other formations were used.
+  In the late 19th century, the Yarrow-Schlick-Tweedy balancing 'system' was used on some marine triple
+  expansion engines. Y-S-T engines divided the low-pressure expansion stages between two cylinders, one
+  at each end of the engine. This allowed the crankshaft to be better balanced, resulting in a smoother,
+  faster-responding engine which ran with less vibration. This made the 4-cylinder triple-expansion engine
+  popular with large passenger liners (such as the Olympic class), but this was ultimately replaced by
+  the virtually vibration-free turbine engine.[citation needed]
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What sort of engines utilized
+        the Yarrow-Schlick-Tweedy balancing system?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What class of ships is an
+        example of large passenger liners?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: In what century was the Olympic
+        balancing system used?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What are engines using four
+        expansion stages known as?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What are engines using four
+        expansion cylinders known as?'
+assert:
+  answers:
+    q1: true
+    q2: true
+    q3: false
+    q4: true
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-57113639a58dae1900cd6d1b, squad2-57113639a58dae1900cd6d1c, squad2-5ad41b12604f3c001a4004fd,
+    squad2-57113639a58dae1900cd6d19, squad2-5ad41b12604f3c001a4004fc
+  date: ''
+  transform: paragraph Steam_engine#4; first 5 questions of a paragraph in sha256(id) order, kept only
+    when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

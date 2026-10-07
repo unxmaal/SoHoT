@@ -1,0 +1,59 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-572943ab1d0469140077921c
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: On 23 June 2005, Rep. Joe Barton, chairman of the House Committee on Energy and Commerce wrote
+  joint letters with Ed Whitfield, Chairman of the Subcommittee on Oversight and Investigations demanding
+  full records on climate research, as well as personal information about their finances and careers,
+  from Mann, Bradley and Hughes. Sherwood Boehlert, chairman of the House Science Committee, said this
+  was a "misguided and illegitimate investigation" apparently aimed at intimidating scientists, and at
+  his request the U.S. National Academy of Sciences arranged for its National Research Council to set
+  up a special investigation. The National Research Council's report agreed that there were some statistical
+  failings, but these had little effect on the graph, which was generally correct. In a 2006 letter to
+  Nature, Mann, Bradley, and Hughes pointed out that their original article had said that "more widespread
+  high-resolution data are needed before more confident conclusions can be reached" and that the uncertainties
+  were "the point of the article".
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who was chairman of the House
+        Science Committee?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who was the chairman of the
+        House Committee on Energy and Commerce?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who kept the full records
+        on climate research?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: To whom did Rep. Joe Barton
+        write a letter?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who suggested that the investigation
+        was legitimate?'
+assert:
+  answers:
+    q1: true
+    q2: true
+    q3: false
+    q4: false
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572943ab1d0469140077921c, squad2-572943ab1d04691400779219, squad2-5a3e44ea378766001a002532,
+    squad2-5a3e44ea378766001a002531, squad2-5a3e44ea378766001a002533
+  date: ''
+  transform: paragraph Intergovernmental_Panel_on_Climate_Change#15; first 5 questions of a paragraph
+    in sha256(id) order, kept only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

@@ -1,0 +1,58 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5728659f4b864d190016498c
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: Students at the University of Chicago run over 400 clubs and organizations known as Recognized
+  Student Organizations (RSOs). These include cultural and religious groups, academic clubs and teams,
+  and common-interest organizations. Notable extracurricular groups include the University of Chicago
+  College Bowl Team, which has won 118 tournaments and 15 national championships, leading both categories
+  internationally. The university's competitive Model United Nations team was the top ranked team in North
+  America in 2013-14 and 2014-2015. Among notable RSOs are the nation's longest continuously running student
+  film society Doc Films, organizing committee for the University of Chicago Scavenger Hunt, the twice-weekly
+  student newspaper The Chicago Maroon, the alternative weekly student newspaper South Side Weekly, the
+  nation's second oldest continuously running student improvisational theater troupe Off-Off Campus, and
+  the university-owned radio station WHPK.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What club won 118 tournaments
+        and 15 national championships?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What is the name of the country''s
+        longest continuously running student film society?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What are the over 118 clubs
+        run by students at the U of C called collectively?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How many clubs do the students
+        at the University of Model United Nations run?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Roughly how many clubs are
+        ran at the university?'
+assert:
+  answers:
+    q1: true
+    q2: true
+    q3: false
+    q4: false
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5728659f4b864d190016498c, squad2-5728659f4b864d190016498d, squad2-5acf9e9377cf76001a685583,
+    squad2-5acf9e9377cf76001a685582, squad2-5728659f4b864d190016498a
+  date: ''
+  transform: paragraph University_of_Chicago#23; first 5 questions of a paragraph in sha256(id) order,
+    kept only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

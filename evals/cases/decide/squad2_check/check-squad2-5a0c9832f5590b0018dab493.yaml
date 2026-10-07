@@ -1,0 +1,55 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5a0c9832f5590b0018dab493
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: 'To accurately map the Amazon''s biomass and subsequent carbon related emissions, the classification
+  of tree growth stages within different parts of the forest is crucial. In 2006 Tatiana Kuplich organized
+  the trees of the Amazon into four categories: (1) mature forest, (2) regenerating forest [less than
+  three years], (3) regenerating forest [between three and five years of regrowth], and (4) regenerating
+  forest [eleven to eighteen years of continued development]. The researcher used a combination of Synthetic
+  aperture radar (SAR) and Thematic Mapper (TM) to accurately place the different portions of the Amazon
+  into one of the four classifications.'
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What was used to classify
+        the Amazon population into four categories'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What type of radar was used
+        to classify the forest by plant type?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: The classification of tree
+        decay is important to what?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: The classification of aspects
+        of the Amazon forest is important for mapping what type of emission?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Classifying the stages of
+        what is important to mapping aspects of the Amazon?'
+assert:
+  answers:
+    q1: false
+    q2: false
+    q3: false
+    q4: true
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5a0c9832f5590b0018dab493, squad2-5a0c9832f5590b0018dab492, squad2-5a0c9832f5590b0018dab490,
+    squad2-572a09abaf94a219006aa75c, squad2-572a09abaf94a219006aa75b
+  date: ''
+  transform: paragraph Amazon_rainforest#18; first 5 questions of a paragraph in sha256(id) order, kept
+    only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

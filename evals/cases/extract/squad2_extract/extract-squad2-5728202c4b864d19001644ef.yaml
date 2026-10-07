@@ -1,0 +1,37 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-5728202c4b864d19001644ef
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: Revolutionary civil disobedience towards culture is highlighted by example of who?'
+context: 'Non-revolutionary civil disobedience is a simple disobedience of laws on the grounds that they
+  are judged "wrong" by an individual conscience, or as part of an effort to render certain laws ineffective,
+  to cause their repeal, or to exert pressure to get one''s political wishes on some other issue. Revolutionary
+  civil disobedience is more of an active attempt to overthrow a government (or to change cultural traditions,
+  social customs, religious beliefs, etc...revolution doesn''t have to be political, i.e. "cultural revolution",
+  it simply implies sweeping and widespread change to a section of the social fabric). Gandhi''s acts
+  have been described as revolutionary civil disobedience. It has been claimed that the Hungarians under
+  Ferenc Deák directed revolutionary civil disobedience against the Austrian government. Thoreau also
+  wrote of civil disobedience accomplishing "peaceable revolution." Howard Zinn, Harvey Wheeler, and others
+  have identified the right espoused in The Declaration of Independence to "alter or abolish" an unjust
+  government to be a principle of civil disobedience. '
+assert:
+  equals:
+  - Gandhi's
+  - Gandhi
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5728202c4b864d19001644ef
+  date: ''
+  transform: paragraph Civil_disobedience#10; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

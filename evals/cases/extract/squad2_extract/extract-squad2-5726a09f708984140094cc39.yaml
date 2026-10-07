@@ -1,0 +1,32 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-5726a09f708984140094cc39
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: How long has Proportionality been recognized as one of the general principles of EU law?'
+context: Proportionality is recognised one of the general principles of European Union law by the European
+  Court of Justice since the 1950s. According to the general principle of proportionality the lawfulness
+  of an action depends on whether it was appropriate and necessary to achieve the objectives legitimately
+  pursued. When there is a choice between several appropriate measures the least onerous must be adopted,
+  and any disadvantage caused must not be disproportionate to the aims pursued. The principle of proportionality
+  is also recognised in Article 5 of the EC Treaty, stating that "any action by the Community shall not
+  go beyond what is necessary to achieve the objectives of this Treaty".
+assert:
+  equals:
+  - since the 1950s
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5726a09f708984140094cc39
+  date: ''
+  transform: paragraph European_Union_law#19; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

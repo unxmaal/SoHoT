@@ -1,0 +1,33 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-572853e8ff5b5019007da18a
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: UChicago claims to have what kind of learning experience compared to other universities?'
+context: Undergraduate students are required to take a distribution of courses to satisfy the university's
+  core curriculum known as the Common Core. In 2012-2013, the Core classes at Chicago were limited to
+  17 students, and are generally led by a full-time professor (as opposed to a teaching assistant). As
+  of the 2013–2014 school year, 15 courses and demonstrated proficiency in a foreign language are required
+  under the Core. Undergraduate courses at the University of Chicago are known for their demanding standards,
+  heavy workload and academic difficulty; according to Uni in the USA, "Among the academic cream of American
+  universities – Harvard, Yale, Princeton, MIT, and the University of Chicago – it is UChicago that can
+  most convincingly claim to provide the most rigorous, intense learning experience."
+assert:
+  equals:
+  - the most rigorous, intense
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572853e8ff5b5019007da18a
+  date: ''
+  transform: paragraph University_of_Chicago#15; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

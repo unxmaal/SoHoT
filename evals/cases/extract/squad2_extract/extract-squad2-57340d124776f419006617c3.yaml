@@ -1,0 +1,37 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-57340d124776f419006617c3
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: Where did many Spanish Catholic move after British takeover in Florida?'
+context: For many native populations, the elimination of French power in North America meant the disappearance
+  of a strong ally and counterweight to British expansion, leading to their ultimate dispossession. The
+  Ohio Country was particularly vulnerable to legal and illegal settlement due to the construction of
+  military roads to the area by Braddock and Forbes. Although the Spanish takeover of the Louisiana territory
+  (which was not completed until 1769) had modest repercussions, the British takeover of Spanish Florida
+  resulted in the westward migration of tribes that did not want to do business with the British, and
+  a rise in tensions between the Choctaw and the Creek, historic enemies whose divisions the British at
+  times exploited. The change of control in Florida also prompted most of its Spanish Catholic population
+  to leave. Most went to Cuba, including the entire governmental records from St. Augustine, although
+  some Christianized Yamasee were resettled to the coast of Mexico.
+assert:
+  equals:
+  - Most went to Cuba,
+  - Most went to Cuba
+  - Cuba
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-57340d124776f419006617c3
+  date: ''
+  transform: paragraph French_and_Indian_War#45; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

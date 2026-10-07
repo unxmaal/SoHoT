@@ -1,0 +1,32 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-56de0ffd4396321400ee258e
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: When did Robert Crispin go up against the Turks?'
+context: One of the first Norman mercenaries to serve as a Byzantine general was Hervé in the 1050s. By
+  then however, there were already Norman mercenaries serving as far away as Trebizond and Georgia. They
+  were based at Malatya and Edessa, under the Byzantine duke of Antioch, Isaac Komnenos. In the 1060s,
+  Robert Crispin led the Normans of Edessa against the Turks. Roussel de Bailleul even tried to carve
+  out an independent state in Asia Minor with support from the local population, but he was stopped by
+  the Byzantine general Alexius Komnenos.
+assert:
+  equals:
+  - 1060s
+  - In the 1060s
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-56de0ffd4396321400ee258e
+  date: ''
+  transform: paragraph Normans#8; first answerable question in sha256(id) order whose every human answer
+    is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

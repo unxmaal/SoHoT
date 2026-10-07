@@ -1,0 +1,53 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-56e1ba41cd28a01900c67ae1
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: For example, consider the deterministic sorting algorithm quicksort. This solves the problem
+  of sorting a list of integers that is given as the input. The worst-case is when the input is sorted
+  or sorted in reverse order, and the algorithm takes time O(n2) for this case. If we assume that all
+  possible permutations of the input list are equally likely, the average time taken for sorting is O(n
+  log n). The best case occurs when each pivoting divides the list in half, also needing O(n log n) time.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: When extensive time is required
+        to sort integers, this represents what case complexity?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What case complexity is represented
+        when each pivoting divides the list in thirds, also needing O(n log n) time?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What does not solve the problem
+        of sorting a list of integers that is given as the input?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What does the deterministic
+        parting algorithm quicksort do?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What provides a solution to
+        a list of integers provided as input that ned to be sorted?'
+assert:
+  answers:
+    q1: true
+    q2: false
+    q3: false
+    q4: false
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-56e1ba41cd28a01900c67ae1, squad2-5ad54d625b96ef001a10ac68, squad2-5ad54d625b96ef001a10ac64,
+    squad2-5ad54d625b96ef001a10ac65, squad2-56e1ba41cd28a01900c67ae0
+  date: ''
+  transform: paragraph Computational_complexity_theory#20; first 5 questions of a paragraph in sha256(id)
+    order, kept only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

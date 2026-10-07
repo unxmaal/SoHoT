@@ -1,0 +1,54 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-57274e975951b619008f87fa
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: Several project structures can assist the owner in this integration, including design-build,
+  partnering and construction management. In general, each of these project structures allows the owner
+  to integrate the services of architects, interior designers, engineers and constructors throughout design
+  and construction. In response, many companies are growing beyond traditional offerings of design or
+  construction services alone and are placing more emphasis on establishing relationships with other necessary
+  participants through the design-build process.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: These project structures allow
+        the owner to integrate the services of who throughout the design and construction?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What helps the owner in design
+        and construction?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Many construction companies
+        are now placing more emphasis on what?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who''s services do construction
+        services integrate through design and construction?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What project structures assist
+        the owner in integration?'
+assert:
+  answers:
+    q1: true
+    q2: false
+    q3: true
+    q4: false
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-57274e975951b619008f87fa, squad2-5a25d23bef59cd001a623ce3, squad2-57274e975951b619008f87fb,
+    squad2-5a25d23bef59cd001a623ce4, squad2-57274e975951b619008f87f9
+  date: ''
+  transform: paragraph Construction#10; first 5 questions of a paragraph in sha256(id) order, kept only
+    when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

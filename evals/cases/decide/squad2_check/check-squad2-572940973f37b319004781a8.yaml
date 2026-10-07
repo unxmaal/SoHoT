@@ -1,0 +1,54 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-572940973f37b319004781a8
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: This projection was not included in the final summary for policymakers. The IPCC has since acknowledged
+  that the date is incorrect, while reaffirming that the conclusion in the final summary was robust. They
+  expressed regret for "the poor application of well-established IPCC procedures in this instance". The
+  date of 2035 has been correctly quoted by the IPCC from the WWF report, which has misquoted its own
+  source, an ICSI report "Variations of Snow and Ice in the past and at present on a Global and Regional
+  Scale".
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What report had the correct
+        date?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Who was given a projection
+        included in the final summary?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Which date was affirmed by
+        the IPCC?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What was the name of the WWF
+        report?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What did the IPCC say was
+        mistaken?'
+assert:
+  answers:
+    q1: true
+    q2: false
+    q3: false
+    q4: false
+    q5: true
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572940973f37b319004781a8, squad2-5a3e495c378766001a002548, squad2-5a3e495c378766001a002545,
+    squad2-5a3e495c378766001a002549, squad2-572940973f37b319004781a5
+  date: ''
+  transform: paragraph Intergovernmental_Panel_on_Climate_Change#11; first 5 questions of a paragraph
+    in sha256(id) order, kept only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

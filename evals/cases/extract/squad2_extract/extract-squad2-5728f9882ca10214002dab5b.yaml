@@ -1,0 +1,33 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-5728f9882ca10214002dab5b
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: For most organisms, what is the dominant system of defense?'
+context: Microorganisms or toxins that successfully enter an organism encounter the cells and mechanisms
+  of the innate immune system. The innate response is usually triggered when microbes are identified by
+  pattern recognition receptors, which recognize components that are conserved among broad groups of microorganisms,
+  or when damaged, injured or stressed cells send out alarm signals, many of which (but not all) are recognized
+  by the same receptors as those that recognize pathogens. Innate immune defenses are non-specific, meaning
+  these systems respond to pathogens in a generic way. This system does not confer long-lasting immunity
+  against a pathogen. The innate immune system is the dominant system of host defense in most organisms.
+assert:
+  equals:
+  - innate immune system
+  - The innate immune
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5728f9882ca10214002dab5b
+  date: ''
+  transform: paragraph Immune_system#5; first answerable question in sha256(id) order whose every human
+    answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

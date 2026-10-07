@@ -1,0 +1,33 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-572a0ecb1d0469140077971b
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: Policies which try to control unemployment support economic growth because they reduce what?'
+context: According to economists David Castells-Quintana and Vicente Royuela, increasing inequality harms
+  economic growth. High and persistent unemployment, in which inequality increases, has a negative effect
+  on subsequent long-run economic growth. Unemployment can harm growth not only because it is a waste
+  of resources, but also because it generates redistributive pressures and subsequent distortions, drives
+  people to poverty, constrains liquidity limiting labor mobility, and erodes self-esteem promoting social
+  dislocation, unrest and conflict. Policies aiming at controlling unemployment and in particular at reducing
+  its inequality-associated effects support economic growth.
+assert:
+  equals:
+  - inequality-associated effects
+  - inequality
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-572a0ecb1d0469140077971b
+  date: ''
+  transform: paragraph Economic_inequality#29; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

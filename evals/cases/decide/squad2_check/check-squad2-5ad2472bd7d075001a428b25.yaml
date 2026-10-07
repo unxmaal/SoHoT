@@ -1,0 +1,56 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5ad2472bd7d075001a428b25
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: On the other hand, higher economic inequality tends to increase entrepreneurship rates at the
+  individual level (self-employment). However, most of it is often based on necessity rather than opportunity.
+  Necessity-based entrepreneurship is motivated by survival needs such as income for food and shelter
+  ("push" motivations), whereas opportunity-based entrepreneurship is driven by achievement-oriented motivations
+  ("pull") such as vocation and more likely to involve the pursue of new products, services, or underserved
+  market needs. The economic impact of the former type of entrepreneurialism tends to be redistributive
+  while the latter is expected to foster technological progress and thus have a more positive impact on
+  economic growth.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What type of motivators are
+        achievement and outside determination considered?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What type of motivators are
+        food and shelter considered?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Survival needs such as income
+        for food and shelter motivates what type of entrepreneurship?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What type of entrepreneurship
+        leads to advancements in technology?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What type of motivators aren''t
+        food and shelter considered?'
+assert:
+  answers:
+    q1: false
+    q2: true
+    q3: true
+    q4: true
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5ad2472bd7d075001a428b25, squad2-5727ee372ca10214002d99ee, squad2-5729de24af94a219006aa68b,
+    squad2-5727ee372ca10214002d99f0, squad2-5ad2472bd7d075001a428b24
+  date: ''
+  transform: paragraph Economic_inequality#6; first 5 questions of a paragraph in sha256(id) order, kept
+    only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

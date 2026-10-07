@@ -1,0 +1,59 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-5a7b0fae21c2de001afe9d29
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: The popular neighborhood known as the Tower District is centered around the historic Tower Theatre,
+  which is included on the National List of Historic Places. The theater was built in 1939 and is at Olive
+  and Wishon Avenues in the heart of the Tower District. (The name of the theater refers to a well-known
+  landmark water tower, which is actually in another nearby area). The Tower District neighborhood is
+  just north of downtown Fresno proper, and one-half mile south of Fresno City College. Although the neighborhood
+  was known as a residential area prior, the early commercial establishments of the Tower District began
+  with small shops and services that flocked to the area shortly after World War II. The character of
+  small local businesses largely remains today. To some extent, the businesses of the Tower District were
+  developed due to the proximity of the original Fresno Normal School, (later renamed California State
+  University at Fresno). In 1916 the college moved to what is now the site of Fresno City College one-half
+  mile north of the Tower District.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: Fresno City College is located
+        at what two avenues?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What was the California State
+        University renamed as?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: From what landmark within
+        Fresno does the Tower Theatre get its name?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: When was the Tower Theatre
+        built?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How many miles north of downtown
+        Fresno is the Tower District neighborhood?'
+assert:
+  answers:
+    q1: false
+    q2: false
+    q3: true
+    q4: true
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5a7b0fae21c2de001afe9d29, squad2-5a7b0fae21c2de001afe9d2c, squad2-5725dd7d89a1e219009abfec,
+    squad2-5725dd7d89a1e219009abfeb, squad2-5a7b0fae21c2de001afe9d2a
+  date: ''
+  transform: paragraph Fresno,_California#9; first 5 questions of a paragraph in sha256(id) order, kept
+    only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

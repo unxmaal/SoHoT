@@ -1,0 +1,32 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-5730bc308ab72b1400f9c73d
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: Who reigned over the Ottoman empire when it was at its most powerful.'
+context: The Ottoman Empire was an imperial state that lasted from 1299 to 1923. During the 16th and 17th
+  centuries, in particular at the height of its power under the reign of Suleiman the Magnificent, the
+  Ottoman Empire was a powerful multinational, multilingual empire controlling much of Southeast Europe,
+  Western Asia, the Caucasus, North Africa, and the Horn of Africa. At the beginning of the 17th century
+  the empire contained 32 provinces and numerous vassal states. Some of these were later absorbed into
+  the empire, while others were granted various types of autonomy during the course of centuries.
+assert:
+  equals:
+  - Suleiman the Magnificent
+  - Suleiman the Magnificent,
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5730bc308ab72b1400f9c73d
+  date: ''
+  transform: paragraph Imperialism#37; first answerable question in sha256(id) order whose every human
+    answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

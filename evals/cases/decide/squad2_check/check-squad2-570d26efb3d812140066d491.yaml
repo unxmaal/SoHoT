@@ -1,0 +1,55 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: check-squad2-570d26efb3d812140066d491
+modality: decide
+prompt: Check which of these questions the paragraph answers.
+context: In November 2006, the Victorian Legislative Council elections were held under a new multi-member
+  proportional representation system. The State of Victoria was divided into eight electorates with each
+  electorate represented by five representatives elected by Single Transferable Vote. The total number
+  of upper house members was reduced from 44 to 40 and their term of office is now the same as the lower
+  house members—four years. Elections for the Victorian Parliament are now fixed and occur in November
+  every four years. Prior to the 2006 election, the Legislative Council consisted of 44 members elected
+  to eight-year terms from 22 two-member electorates.
+params:
+  schema:
+    q1:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How many representatives does
+        each electorate have?'
+    q2:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How many representatives does
+        each state have?'
+    q3:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: What kind of representational
+        system does the Victorian Legislative Council have?'
+    q4:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How often are elections held
+        for the Victorian Parliament?'
+    q5:
+      type: boolean
+      description: 'True only if the paragraph itself states the answer to: How many electorates does
+        the Legislative Council have?'
+assert:
+  answers:
+    q1: true
+    q2: false
+    q3: true
+    q4: true
+    q5: false
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-570d26efb3d812140066d491, squad2-5a637f8768151a001a922319, squad2-570d26efb3d812140066d48f,
+    squad2-570d26efb3d812140066d493, squad2-5a637f8768151a001a922318
+  date: ''
+  transform: paragraph Victoria_(Australia)#2; first 5 questions of a paragraph in sha256(id) order, kept
+    only when they mix both answers; true when the human answer list is non-empty
+  importer: evals.importers.squad2_check
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

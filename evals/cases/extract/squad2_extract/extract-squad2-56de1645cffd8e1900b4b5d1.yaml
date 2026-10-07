@@ -1,0 +1,33 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-56de1645cffd8e1900b4b5d1
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: When did Edward return?'
+context: When finally Edward the Confessor returned from his father's refuge in 1041, at the invitation
+  of his half-brother Harthacnut, he brought with him a Norman-educated mind. He also brought many Norman
+  counsellors and fighters, some of whom established an English cavalry force. This concept never really
+  took root, but it is a typical example of the attitudes of Edward. He appointed Robert of Jumièges archbishop
+  of Canterbury and made Ralph the Timid earl of Hereford. He invited his brother-in-law Eustace II, Count
+  of Boulogne to his court in 1051, an event which resulted in the greatest of early conflicts between
+  Saxon and Norman and ultimately resulted in the exile of Earl Godwin of Wessex.
+assert:
+  equals:
+  - '1041'
+  - in 1041
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-56de1645cffd8e1900b4b5d1
+  date: ''
+  transform: paragraph Normans#15; first answerable question in sha256(id) order whose every human answer
+    is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []

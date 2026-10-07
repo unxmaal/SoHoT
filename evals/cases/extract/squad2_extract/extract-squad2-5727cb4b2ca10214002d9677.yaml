@@ -1,0 +1,34 @@
+# SQuAD 2.0, dev (Rajpurkar et al. 2018), CC BY-SA 4.0 (https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json).
+# Imported by evals/importers from github:rajpurkar/SQuAD-explorer@240e165ab706d95bd4323653bb92421f446208cf; re-import, do not edit.
+id: extract-squad2-5727cb4b2ca10214002d9677
+modality: extract
+prompt: 'Answer the question from the text. Reply with only the answer, copied exactly as it appears in
+  the text, nothing else.
+
+
+  Question: How far is Jacksonville from Miami?'
+context: Jacksonville is in the First Coast region of northeast Florida and is centered on the banks of
+  the St. Johns River, about 25 miles (40 km) south of the Georgia state line and about 340 miles (550
+  km) north of Miami. The Jacksonville Beaches communities are along the adjacent Atlantic coast. The
+  area was originally inhabited by the Timucua people, and in 1564 was the site of the French colony of
+  Fort Caroline, one of the earliest European settlements in what is now the continental United States.
+  Under British rule, settlement grew at the narrow point in the river where cattle crossed, known as
+  Wacca Pilatka to the Seminole and the Cow Ford to the British. A platted town was established there
+  in 1822, a year after the United States gained Florida from Spain; it was named after Andrew Jackson,
+  the first military governor of the Florida Territory and seventh President of the United States.
+assert:
+  equals:
+  - 340 miles
+attribution:
+  dataset: SQuAD 2.0, dev (Rajpurkar et al. 2018)
+  url: https://raw.githubusercontent.com/rajpurkar/SQuAD-explorer/240e165ab706d95bd4323653bb92421f446208cf/dataset/dev-v2.0.json
+  license: CC BY-SA 4.0
+  source: github:rajpurkar/SQuAD-explorer
+  revision: 240e165ab706d95bd4323653bb92421f446208cf
+  item: squad2-5727cb4b2ca10214002d9677
+  date: ''
+  transform: paragraph Jacksonville,_Florida#1; first answerable question in sha256(id) order whose every
+    human answer is at most 5 words; any human answer, exactly, passes
+  importer: evals.importers.squad2_extract
+  date_note: 'before 2018-06: SQuAD 2.0 release, paragraphs from 2016 Wikipedia'
+  trained_on: []
