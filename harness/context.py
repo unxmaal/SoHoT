@@ -287,10 +287,12 @@ def refusal(stem: str, conn=None) -> str:
     return row["ctx_why"] if row and not row["ctx"] else ""
 
 
-def preset_text(plans: list[dict], default_ctx: int, slots: int) -> str:
+def preset_text(plans: list[dict], default_ctx: int, slots: int, cache_type: str = "f16") -> str:
     """llama-server's --models-preset INI: [*] for unrecorded files, one section per servable stem."""
     def args(ctx: int) -> list[str]:
-        out = [f"c = {ctx}", f"parallel = {slots}"]
+        # The KV type the plan priced, so the server allocates what was budgeted. #521.
+        out = [f"c = {ctx}", f"parallel = {slots}", f"cache-type-k = {cache_type}",
+               f"cache-type-v = {cache_type}"]
         return out + ["kv-unified = true"] if slots > 1 else out
     lines = ["version = 1", "", "[*]", *args(default_ctx), ""]
     for p in sorted(plans, key=lambda p: p["stem"]):
@@ -321,7 +323,7 @@ def main(argv=None) -> int:
         conn.close()
     for p in plans:
         print(f"context: {p['stem']}: {p['ctx'] or 'refused'} ({p['why']})", file=sys.stderr)
-    Path(argv[0]).write_text(preset_text(plans, default, slots), encoding="utf-8")
+    Path(argv[0]).write_text(preset_text(plans, default, slots, cache), encoding="utf-8")
     print(argv[0])
     return 0
 

@@ -100,6 +100,7 @@ markers = [
     "postgres: needs a live Postgres; `make test-postgres` starts one",
     "litellm: runs a real LiteLLM proxy against a fake upstream; `make test-litellm`",
     "real_runtime: may execute a real runtime binary (llama-server, mlx_lm.server, mflux, needle) (#536)",
+    "gauntlet(class_id, site): binds a test to a gauntlet class at a detector's site (#492)",
 ]
 # The repo root, so `from evals...` resolves without a sys.path hack in every
 # test module.

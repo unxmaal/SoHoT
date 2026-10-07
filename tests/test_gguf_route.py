@@ -199,6 +199,8 @@ def test_a_mixed_run_names_both_engines():
         "q3-4b": "mlx_lm.server", "llamacpp:M": "llama-server"}
 
 
+@pytest.mark.gauntlet("each-half-verified-against-its-own-spec-the-seam-against-nothing",
+                       site="env:LLAMACPP_PORT")
 def test_the_llama_server_url_is_the_one_serve_eval_starts():
     """Gauntlet #2: the port lives in the launcher and here."""
     text = (REPO / "scripts" / "serve-eval.sh").read_text(encoding="utf-8")
@@ -235,6 +237,8 @@ def test_requeue_retracts_every_revisitable_verdict(tmp_path):
     db.close()
 
 
+@pytest.mark.gauntlet("each-half-verified-against-its-own-spec-the-seam-against-nothing",
+                       site="env:LLAMACPP_MODELS_DIR")
 def test_the_models_dir_is_the_one_the_router_reads(monkeypatch):
     text = (REPO / "scripts" / "serve-llamacpp.sh").read_text(encoding="utf-8")
     assert 'MODELS="${LLAMACPP_MODELS_DIR:-$HF_HOME/gguf}"' in text

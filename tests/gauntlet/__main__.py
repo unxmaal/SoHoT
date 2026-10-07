@@ -1,11 +1,11 @@
-"""python -m tests.gauntlet {audit,snapshot-skill,snapshot-defects} (#492)."""
+"""python -m tests.gauntlet {audit,review,snapshot-skill,snapshot-defects} (#492)."""
 
 import argparse
 import json
 import sys
 from pathlib import Path
 
-from tests.gauntlet import classes, core
+from tests.gauntlet import classes, core, review
 
 REPO = core.HERE.parent.parent
 
@@ -23,6 +23,12 @@ def cmd_audit(a):
                       classes.UNCLASSIFIED, snapshot, defects))
     gaps = core.unattributed(labelled, classes.INDEX, classes.PENDING, classes.UNCLASSIFIED)
     return 1 if gaps or closures else 0
+
+
+def cmd_review(a):
+    fired = review.fire(review.changed(REPO, a.range), classes.INDEX, core.load_snapshot())
+    print(review.render(fired))
+    return 0
 
 
 def cmd_snapshot_skill(a):
@@ -46,6 +52,9 @@ def main(argv=None):
     au.add_argument("--offline", action="store_true", help="use the committed snapshot, no gh")
     au.add_argument("--ref", default="origin/main", help="history whose commit messages are read")
     au.set_defaults(fn=cmd_audit)
+    rv = sub.add_parser("review", help="the review questions a diff raises, for classes no detector finds")
+    rv.add_argument("range", nargs="?", default=review.DEFAULT_RANGE, help="a git range (default: %(default)s)")
+    rv.set_defaults(fn=cmd_review)
     sk = sub.add_parser("snapshot-skill", help="regenerate skill_classes.json from the gauntlet skill")
     sk.add_argument("--skill-dir", help="default: $GAUNTLET_SKILL_DIR, else the user's skill directory")
     sk.set_defaults(fn=cmd_snapshot_skill)
@@ -55,6 +64,5 @@ def main(argv=None):
     return a.fn(a)
 
 
-# TODO(#492): wire as `soh gauntlet audit` once harness/cli.py is split (#484).
 if __name__ == "__main__":
     sys.exit(main())
