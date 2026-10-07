@@ -554,3 +554,76 @@ def test_how_long_a_launch_may_take_follows_the_models_own_size(tmp_path, monkey
     assert deepseek > qwen
     cached = ds4.start_timeout(f"ds4:{DSV4_Q2},ssd_streaming=on,expert_cache=32GB")
     assert cached == pytest.approx(ds4.START_FLOOR_S + ds4.START_S_PER_GIB * 32)
+
+
+# ---- each fact reaches the ds4 spelling and route (#596) -------------------------
+
+def test_a_card_tag_makes_an_unlisted_repo_ds4s_and_its_siblings_pick_the_file(monkeypatch):
+    monkeypatch.setattr(ins, "ceiling_bytes", lambda: 200 * GIB)
+    repo = "someone/qwen38-ds4-mirror"
+    assert screen.candidate_for("code", repo, card=QWEN_CARD) == "ds4:Qwen3.8-Flash-Next-Q4"
+
+
+def test_the_store_given_is_the_one_whose_fetched_file_is_spelled(models, tmp_path, monkeypatch):
+    monkeypatch.setattr(ins, "ceiling_bytes", lambda: 200 * GIB)
+    conn = ms.connect(tmp_path / "other.db")
+    try:
+        downloads.record(conn, QWEN, downloads.GGUF, models / f"{QWEN_Q2}.gguf",
+                         file=f"{QWEN_Q2}.gguf")
+        assert screen.candidate_for("code", QWEN, conn=conn) == f"ds4:{QWEN_Q2}"
+    finally:
+        conn.close()
+
+
+def test_a_ds4_spec_that_does_not_parse_is_its_own_runner_gap():
+    spec = f"ds4:{QWEN_Q2},ctx=abc"
+    assert screen.runner_gap("code", spec) == f"{spec}: ctx must be a positive token count"
+
+
+def test_a_ds4_spec_with_no_case_for_its_method_names_the_gap(tmp_path, monkeypatch):
+    import yaml
+    d = tmp_path / "cases" / "svg"
+    d.mkdir(parents=True)
+    (d / "a.yaml").write_text(yaml.safe_dump({"id": "a", "modality": "svg", "prompt": "p",
+                                              "methods": ["omnisvg"]}), encoding="utf-8")
+    monkeypatch.setattr(screen, "CASES", tmp_path / "cases")
+    assert screen.runner_gap("svg", f"ds4:{QWEN_Q2}") == (
+        "no svg case fits the llm method (a takes omnisvg)")
+
+
+def test_an_alias_never_routes_to_ds4_even_when_a_ds4_file_is_fetched(monkeypatch):
+    from harness.completion import DEFAULT_GATEWAY
+    monkeypatch.setattr(gguf, "fetched", lambda *a, **k: QWEN_Q2)
+    assert serving.route("q3-4b").base == DEFAULT_GATEWAY
+    assert serving.route(QWEN) == serving.Route(ds4.url(), QWEN_Q2, {})
+
+
+def test_a_ds4_repo_the_gateway_lists_as_an_alias_stays_on_the_gateway(tmp_path, monkeypatch):
+    from harness.completion import DEFAULT_GATEWAY
+    monkeypatch.setattr(gguf, "fetched", lambda *a, **k: QWEN_Q2)
+    cfg = tmp_path / "config.yaml"
+    cfg.write_text(textwrap.dedent(f"""\
+        model_list:
+          - model_name: {QWEN}
+            litellm_params:
+              model: openai/{QWEN_Q2}
+              api_base: http://127.0.0.1:8081/v1
+        """), encoding="utf-8")
+    assert serving.route(QWEN, config=cfg).base == DEFAULT_GATEWAY
+
+
+def test_a_ds4_repo_whose_fetched_file_ds4_does_not_list_is_not_routed_to_ds4(monkeypatch):
+    monkeypatch.setattr(gguf, "fetched", lambda *a, **k: "Qwen3.8-Flash-Next-Q3_K_M")
+    assert serving.route(QWEN).base != ds4.url()
+
+
+def test_an_alias_fronting_ds4_on_its_own_port_names_ds4(tmp_path):
+    cfg = tmp_path / "config.yaml"
+    cfg.write_text(textwrap.dedent(f"""\
+        model_list:
+          - model_name: flash
+            litellm_params:
+              model: openai/{QWEN_Q2}
+              api_base: http://127.0.0.1:9011/v1
+        """), encoding="utf-8")
+    assert serving.engine_for("flash", environ={ds4.PORT_VAR: "9011"}, config=cfg) == "ds4-server"

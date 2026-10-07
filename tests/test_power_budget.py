@@ -403,3 +403,81 @@ def test_adopt_power_with_every_holdout_case_measured_says_nothing_is_projected(
     row = json.loads(capsys.readouterr().out)["lanes"][0]
     assert row["unmeasured"] == 0
     assert row["power_measured"] == pytest.approx(row["power"])
+
+
+# --- the shrunk paired cell, spelled out (#596) ----------------------------
+
+def test_one_draw_per_case_is_never_shrunk():
+    cell, p, note = adopt.paired_p(_rows({f"g{i}": [(False, True)] for i in range(6)}), "inc", "ch")
+    assert (note, p) == ("", cell.p)
+
+
+def test_deterministic_repeats_count_each_case_once():
+    from harness import paired
+    rows = _rows({**{f"g{i}": [(False, True)] * 2 for i in range(5)}, "l0": [(True, False)] * 2})
+    cell, p, note = adopt.paired_p(rows, "inc", "ch")
+    assert (cell.gained, cell.lost, p) == (10, 2, paired.sign_test(1, 6))
+    assert note == ("5 gained against 1 lost once correlated repeats are counted as cases "
+                    "(rho 1.00, repeat 2.0)")
+
+
+def test_a_measured_partial_correlation_shrinks_by_its_own_rho():
+    rows = _rows({"a": [(True, False)] * 2, "b": [(False, True)] * 2,
+                  "c": [(True, True), (False, False)]})
+    assert adopt.paired_p(rows, "inc", "ch")[2] == (
+        "1 gained against 2 lost once correlated repeats are counted as cases (rho 0.50, repeat 2.0)")
+
+
+def test_an_unknown_correlation_is_assumed_and_says_so():
+    rows = _rows({"a": [(True, False)] * 2, "b": [(True, False)] * 2})
+    assert adopt.paired_p(rows, "inc", "ch")[2] == (
+        "0 gained against 2 lost once correlated repeats are counted as cases "
+        "(rho 1.00 assumed, repeat 2.0)")
+
+
+def _note(rows):
+    return f" ({adopt.paired_p(rows, 'inc', 'ch')[2]})"
+
+
+def test_the_gate_and_the_loss_name_the_shrink_only_when_there_was_one():
+    won = _rows({f"g{i}": [(False, True)] * 2 for i in range(8)})
+    got = adopt.decide("code", _summary("inc", won), _summary("ch", won), won)
+    assert got.adopt and got.why.endswith(_note(won))
+    lost = _rows({f"g{i}": [(True, False)] * 2 for i in range(8)})
+    got = adopt.decide("code", _summary("inc", lost), _summary("ch", lost), lost)
+    assert "significantly worse" in got.why and got.why.endswith(_note(lost))
+    once = _rows({f"g{i}": [(False, True)] for i in range(8)})
+    assert adopt.decide("code", _summary("inc", once), _summary("ch", once), once).why == (
+        "beats inc on the lane's metric, 8 gained against 0 lost, p=0.01")
+    once = _rows({f"g{i}": [(True, False)] for i in range(8)})
+    assert adopt.decide("code", _summary("inc", once), _summary("ch", once), once).why.endswith(
+        "significantly worse: 8 lost against 0 gained, p=0.01")
+
+
+def test_dev_is_reported_beside_the_holdout_verdict():
+    from harness import holdout, paired
+    hold = tuple(f"h{i}" for i in range(8))
+    split = holdout.Split("code", dev=("d1", "d2", "d3"), holdout=hold, too_small=False)
+    rows = _rows({**{h: [(False, True)] for h in hold}, "d1": [(False, True)],
+                  "d2": [(False, True)], "d3": [(True, True)]})
+    got = adopt.decide("code", _summary("inc", rows), _summary("ch", rows), rows, split=split)
+    assert got.evidence["dev"] == {"gained": 2, "lost": 0, "p": paired.sign_test(0, 2)}
+    assert got.why == ("beats inc on the lane's metric, 8 gained against 0 lost, p=0.01; "
+                       "dev: 2 gained, 0 lost, p=0.50")
+
+
+def test_an_underpowered_null_is_a_loss_and_adds_no_empty_reason():
+    import dataclasses
+    from harness import holdout
+    split = holdout.Split("code", dev=("d1", "d2", "d3"), holdout=("h1", "h2", "h3"),
+                          too_small=False)
+    rows = _rows({h: [(True, True)] * 3 for h in split.holdout})
+    weak = dataclasses.replace(power.plan([1.0, 1.0, 0.0], 0.2, rho=1.0), why="")
+    got = adopt.decide("code", _summary("inc", rows), _summary("ch", rows), rows,
+                       split=split, plan=weak)
+    assert got.adopt is False and got.why.startswith("underpowered")
+    assert got.why.endswith("(does not beat the incumbent on the lane's metric)")
+    why = dataclasses.replace(weak, why="needs more holdout cases")
+    got = adopt.decide("code", _summary("inc", rows), _summary("ch", rows), rows,
+                       split=split, plan=why)
+    assert got.why.endswith("metric); needs more holdout cases")

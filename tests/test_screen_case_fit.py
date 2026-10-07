@@ -95,3 +95,57 @@ def test_a_lane_with_a_fitting_case_has_no_gap(tmp_path, monkeypatch):
     from evals.runners.omnisvg import MODELS
     assert screen.runner_gap("svg", MODELS["8B"][1]) == ""
     assert screen.runner_gap("svg", "org/some-svg-llm") == ""
+
+
+def test_the_gap_names_every_case_and_the_methods_it_takes(tmp_path, monkeypatch):
+    monkeypatch.setattr(screen, "CASES", _cases(tmp_path / "cases", {
+        "a": {"methods": ["llm"]}, "b": {"methods": ["llm", "agent"]}}), raising=False)
+    assert screen.case_gap("svg", "omnisvg:8B") == (
+        "no svg case fits the omnisvg method (a takes llm, b takes llm/agent)")
+
+
+# ---- the store's card picks the engine and names the gap (#563, #601, #596) ----
+
+def _carded(tmp_path, name, lane, **cols):
+    conn = ms.connect(tmp_path / "s.db")
+    ms.record(conn, ms.Seen(name=name, source="t", lane=lane, registry=ms.HUGGINGFACE,
+                            resolved=name))
+    conn.execute(f"UPDATE proposals SET {', '.join(f'{k} = ?' for k in cols)} WHERE name = ?",
+                 (*cols.values(), name))
+    conn.commit()
+    return conn
+
+
+def test_a_stored_card_picks_the_engine_its_task_names(tmp_path):
+    conn = _carded(tmp_path, "org/emb", "retrieval", hf_task="feature-extraction")
+    try:
+        assert screen.candidate_for("retrieval", "org/emb", conn=conn) == "embed:org/emb"
+        assert screen.candidate_for("retrieval", "org/emb") == "rerank:org/emb"
+    finally:
+        conn.close()
+
+
+def test_a_stored_card_tagged_mlx_is_a_runner_gap(tmp_path):
+    conn = _carded(tmp_path, "org/ocr-mlx", "ocr", card_tags='["mlx"]')
+    try:
+        assert screen.runner_gap("ocr", "org/ocr-mlx", conn=conn).startswith(
+            "needs its own runner: its card is tagged mlx")
+    finally:
+        conn.close()
+
+
+def test_the_first_engine_that_takes_the_model_wins():
+    assert screen.no_runner("mflux:org/some-model")
+    assert screen.candidate_for("image", "org/some-model") == "diffusers:org/some-model"
+
+
+def test_a_method_or_a_gguf_stem_on_the_config_stays_off_the_upstream(tmp_path, monkeypatch):
+    from harness import gguf
+    cfg = tmp_path / "gateway.yaml"
+    cfg.write_text(yaml.safe_dump({"model_list": [{"model_name": "org/listed", "litellm_params": {
+        "model": "openai/x", "api_base": "http://127.0.0.1:8081/v1"}}]}), encoding="utf-8")
+    monkeypatch.setattr(gguf, "fetched", lambda model, *a: None)
+    monkeypatch.setattr(gguf, "hub_stem", lambda model: "stem" if model == "org/g" else None)
+    assert screen.routed_gateway("best-of:3:org/listed", cfg) == ""
+    assert screen.routed_gateway("org/g", cfg) == ""
+    assert screen.routed_gateway("org/x", cfg) == "http://127.0.0.1:8081"

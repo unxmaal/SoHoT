@@ -2223,6 +2223,12 @@ because they needed a volume only one machine has, while ten of them were
 failing on that machine. The first run that could execute them found a bug in
 the product, not the tests.
 
+`make mutation` runs only the test files `tests/gauntlet/mutation.py` lists for
+each module. A change to a mutated module re-pins its survivors with
+`make mutation MUTATION_ARGS="--module harness/adopt.py --pin"`, and a new test
+file for that module goes into its list first, or the nightly reports code it
+tests as surviving.
+
 Every safety check here has been broken on purpose to confirm its test then
 fails. A test that passes against known-broken code is testing nothing, and the
 only way to know the difference is to try it.

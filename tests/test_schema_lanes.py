@@ -106,6 +106,19 @@ def test_a_lane_without_a_schema_still_adopts_an_mlx_model(tmp_path, mac):
     assert adopt.adopted(conn) == {"code": spec}
 
 
+def test_a_refused_schema_win_keeps_every_field_of_the_verdict_it_refuses(monkeypatch):
+    from harness import adopt, reasons
+    monkeypatch.setattr(serving, "enforces_schema", lambda spec: False)
+    lane = sorted(gateway.SCHEMA_LANES)[0]
+    won = adopt.Verdict(lane, "inc", "ch", True, "won", adopt.BY_HAND, "", {"power": {"n": 3}})
+    got = adopt._schema_guard(won, "org/mlx-model")
+    assert (got.lane, got.incumbent, got.challenger, got.how, got.evidence) == (
+        lane, "inc", "ch", adopt.BY_HAND, {"power": {"n": 3}})
+    assert got.adopt is False and got.failure_class == reasons.REFUSED_BY_GATEWAY
+    assert got.why == (f"not adopted: org/mlx-model is not served by llama-server, so the {lane} "
+                       f"lane's response_format would be refused or silently dropped (won)")
+
+
 # --- the eval ------------------------------------------------------------------
 
 def _decide_case():
