@@ -119,7 +119,7 @@ INDEX = {
     "one-default-tuned-for-one-member-applied-to-all": {
         "instances": _i(355, 401, 498), "scanners": []},
     "history-reconstructed-from-present-state": {
-        "instances": _i(506, rules=(292,)), "scanners": []},
+        "instances": _i(506, 516, rules=(292,)), "scanners": []},
 }
 
 # Proposed classes with no skill entry yet; add the entry to SKILL.md, regenerate the snapshot, move here into INDEX.

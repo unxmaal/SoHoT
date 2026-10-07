@@ -828,5 +828,10 @@
   "number": 513,
   "title": "The OmniSVG runner derives its home from ~/localharness and ignores LOCALHARNESS_HOME",
   "created": "2026-10-07T00:34:45Z"
+ },
+ {
+  "number": 516,
+  "title": "runs.backfill (schema 27) seeds candidates from today's platform defaults, not from the runs it imports",
+  "created": "2026-10-07T01:28:24Z"
  }
 ]

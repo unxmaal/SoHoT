@@ -207,7 +207,7 @@ def _candidate_from_receipt(conn, verdict, disk_cid) -> tuple:
         aliases, _ = screen.gateway_routes()
     except Exception:  # noqa: BLE001
         aliases = set()
-    typed = set(winners.typed().values())
+    typed = {n for names in winners.typed_anywhere().values() for n in names}
     pool = []
     for key, spec in specs.items():
         name = spec.split(",", 1)[0]

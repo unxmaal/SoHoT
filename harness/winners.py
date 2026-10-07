@@ -113,6 +113,16 @@ def typed() -> dict[str, str]:
             "tts": audio.DEFAULT_TTS_MODEL, "stt": audio.DEFAULT_STT_MODEL}
 
 
+def typed_anywhere() -> dict[str, tuple[str, ...]]:
+    """lane -> every value typed() returns on any platform, here first. #516."""
+    from harness import audio
+    out = {}
+    for lane, name in typed().items():
+        others = sorted(set(audio.SPEECH_DEFAULTS.get(lane, {}).values()) - {name})
+        out[lane] = (name, *others)
+    return out
+
+
 def served_ids(conn) -> dict[str, int]:
     """lane -> the candidates row of what it serves: adopted here, else typed.
 
