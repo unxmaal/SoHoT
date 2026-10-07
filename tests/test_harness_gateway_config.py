@@ -46,6 +46,8 @@ def test_the_converted_modules_stay_converted():
     assert "screen.py" not in _own_resolvers()
 
 
+@pytest.mark.gauntlet("each-half-verified-against-its-own-spec-the-seam-against-nothing",
+                       site="env:GATEWAY_CONFIG")
 def test_every_copy_resolves_to_the_same_path():
     """The reason the copies were tolerable, asserted rather than assumed."""
     pattern = re.compile(r'"gateway"\s*/\s*"config\.yaml"')

@@ -193,6 +193,7 @@ def test_real_use_within_noise_is_not_a_trigger(conn):
     assert queued(conn) == []
 
 
+@pytest.mark.gauntlet("state-is-whichever-row-came-last", site="harness/reverify.py:_latest")
 def test_a_usage_regression_already_reverified_since_the_switch_does_not_requeue(conn):
     record_run(conn, "code", cases("q3-4b", 10), at=NOW - 2 * DAY)
     _switch_with_errors(conn)

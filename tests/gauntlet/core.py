@@ -21,6 +21,20 @@ def slug(heading):
     return re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")
 
 
+def _field(body, label):
+    # The paragraph that opens with **Label:**, joined onto one line.
+    lead = f"**{label}:**"
+    for i, line in enumerate(body):
+        if line.startswith(lead):
+            para = [line[len(lead):]]
+            for nxt in body[i + 1:]:
+                if not nxt.strip():
+                    break
+                para.append(nxt)
+            return " ".join(" ".join(para).split())
+    return ""
+
+
 def parse_skill(text, source):
     found, heading, body = [], None, []
 
@@ -31,7 +45,8 @@ def parse_skill(text, source):
         b = re.search(r"\*\*Bitten:\*\*\D*?(\d+)", "\n".join(body))
         if m:
             found.append({"id": slug(heading), "heading": heading, "source": source, "tier": int(m.group(1)),
-                          "bitten": int(b.group(1)) if b else None})
+                          "bitten": int(b.group(1)) if b else None,
+                          "trigger": _field(body, "Trigger"), "test_shape": _field(body, "Test shape")})
 
     for line in text.splitlines():
         if line.startswith("## ") or line.startswith("# "):
@@ -101,6 +116,19 @@ def _instance_problems(cid, entry, defects):
     return out
 
 
+def _binding_field_problems(cid, entry):
+    out = []
+    for site, why in entry.get("waivers", {}).items():
+        if not str(why).strip():
+            out.append(f"{cid}: waiver {site} has no reason")
+    if "review" in entry:
+        try:
+            re.compile(entry["review"])
+        except (re.error, TypeError) as e:
+            out.append(f"{cid}: review heuristic does not compile: {e}")
+    return out
+
+
 def _tier(cid, entry, tiers):
     return entry.get("tier", tiers.get(cid))
 
@@ -119,6 +147,7 @@ def problems(index, pending, unclassified, snapshot, defects, repo):
         if missing:
             continue
         out += _instance_problems(cid, entry, defects)
+        out += _binding_field_problems(cid, entry)
         for ref in entry["scanners"]:
             if not _scanner_exists(repo, ref):
                 out.append(f"{cid}: scanner {ref} does not exist")
@@ -243,6 +272,11 @@ def gh_merged_pr_bodies():
 
 
 def git_messages(repo, ref="origin/main"):
+    # None when this clone lacks `ref`: a CI checkout is one commit with no origin/main.
+    have = subprocess.run(["git", "rev-parse", "--verify", "--quiet", f"{ref}^{{commit}}"], cwd=repo,
+                          capture_output=True, text=True, encoding="utf-8")
+    if have.returncode != 0:
+        return None
     proc = subprocess.run(["git", "log", ref, "--format=%B%x00"], cwd=repo, capture_output=True,
                           text=True, encoding="utf-8", check=True)
     return [m for m in proc.stdout.split("\x00") if m.strip()]

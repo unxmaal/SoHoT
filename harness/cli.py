@@ -31,6 +31,7 @@ from harness.commands import benchmarks as benchmarks_cmd
 from harness.commands import common
 from harness.commands import discover as discover_cmd
 from harness.commands import gateway as gateway_cmd
+from harness.commands import gauntlet as gauntlet_cmd
 from harness.commands import jobs as jobs_cmd
 from harness.commands import judge as judge_cmd
 from harness.commands import lanes as lanes_cmd
@@ -544,6 +545,17 @@ def build_parser() -> argparse.ArgumentParser:
     sens.add_argument("--list", action="store_true",
                       help="name the probes and the constants nothing covers")
     sens.set_defaults(func=lanes_cmd.cmd_sensitivity)
+
+    gnt = sub.add_parser("gauntlet", help="closed defects with no class, and the "
+                         "review questions a diff raises. Issue #492")
+    gnt.add_argument("action", choices=("audit", "review"))
+    gnt.add_argument("range", nargs="?", default="",
+                     help="review: the git range to read (default: origin/main...HEAD)")
+    gnt.add_argument("--ref", default="",
+                     help="audit: the history whose commits are read (default: origin/main)")
+    gnt.add_argument("--offline", action="store_true",
+                     help="audit: the committed defect snapshot, no gh")
+    gnt.set_defaults(func=gauntlet_cmd.cmd_gauntlet)
 
     h = sub.add_parser("hear", help="transcribe a clip, or record and transcribe")
     h.add_argument("file", nargs="?", help="an existing audio file")

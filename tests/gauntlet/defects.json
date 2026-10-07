@@ -850,6 +850,16 @@
   "created": "2026-10-07T01:46:21Z"
  },
  {
+  "number": 520,
+  "title": "disk.WAITING is a second copy of schema.WAYPOINTS",
+  "created": "2026-10-07T01:54:47Z"
+ },
+ {
+  "number": 521,
+  "title": "LLAMACPP_CACHE_TYPE sizes the KV plan for a cache type llama-server is never given",
+  "created": "2026-10-07T01:54:52Z"
+ },
+ {
   "number": 529,
   "title": "main is red: the patch-target guard (#524) flags tests patching evals.run.load_cases that harness.holdout (#525) reads as evals.core.load_cases",
   "created": "2026-10-07T02:54:02Z"

@@ -1756,6 +1756,19 @@ uv run python -m tests.gauntlet audit              # gaps, classes per tier, kil
 `main`'s history and merged PR bodies; `--offline` uses the committed
 snapshot. CI checks the registry against the snapshot without network.
 
+Tier-2 classes with an honest trigger detector (`tests/gauntlet/detectors.py`,
+named by the `detector` field in `INDEX`) find the sites where the trigger
+fires, such as a fixed table looked up with a fallback or an environment
+variable read with no test of who sets it. Every hit needs a test bound to it
+with `@pytest.mark.gauntlet("<class id>", site="<site the detector names>")`,
+or a waiver in the class's `waivers` with a one-line reason, so new code that
+trips a detector fails CI until it gets its own test. The hits that predate the
+detectors sit in `tests/gauntlet/backlog.json`, which may only shrink. The
+classes no detector can find carry a `review` regex instead, and
+`soh gauntlet review [range]` (default `origin/main...HEAD`) prints each one
+whose heuristic fires on the added lines, as its trigger question and test
+shape from the skill; `soh gauntlet audit` is the audit above.
+
 ## Two traps this repo exists to remember
 
 `mlx_lm.server` has no `/v1/responses`, and LiteLLM routes `/v1/messages` there
