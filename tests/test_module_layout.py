@@ -1,0 +1,156 @@
+"""The split of cli.py and memory_store.py keeps every import, every patch and every migration. #484."""
+import importlib
+import os
+import re
+import time
+from pathlib import Path
+
+import pytest
+
+import layout_scan as ls
+
+WATCHED = ("harness.cli", "harness.memory_store")
+#: Patches on these must reach every reader, since their code moves between modules.
+STRICT = ("harness.cli", "harness.memory_store", "harness.commands")
+BUDGET = 1500
+#: Modules allowed over BUDGET, each with the reason it is not split yet.
+OVER_BUDGET = {
+    "harness/cli.py": "split in #484",
+    "harness/memory_store.py": "split in #484",
+}
+
+
+def unresolved(refs) -> list:
+    bad = []
+    for mod, name in sorted(refs):
+        m = importlib.import_module(mod)
+        if not hasattr(m, name):
+            bad.append(f"{mod}.{name}")
+    return bad
+
+
+def test_every_name_taken_from_cli_and_the_store_resolves():
+    refs = ls.references(WATCHED)
+    assert len(refs) > 100, "the scan found too little to be a scan"
+    assert unresolved(refs) == []
+
+
+def test_the_surface_scan_sees_a_name_that_is_gone():
+    src = ("from harness.cli import main, no_such_verb\n"
+           "from harness import memory_store as ms\n"
+           "ms.connect; ms.no_such_reader\n")
+    f = ls.facts("t", src, set(ls.code_modules()))
+    refs = {(m, n) for m, n, _ in f.imported} | {(m, n) for m, n, c, _ in f.attrs}
+    assert unresolved(refs) == ["harness.cli.no_such_verb",
+                                "harness.memory_store.no_such_reader"]
+
+
+def test_every_patch_reaches_the_code_that_reads_it():
+    graph = ls.Graph(ls.code_modules())
+    found = ls.patches(ls.py_files(["tests"]))
+    assert len(found) > 300, "the scan found too few patches to be a scan"
+    assert ls.ineffective(graph, found, STRICT) == []
+
+
+SYNTHETIC = {
+    "pkg": "from pkg.a import f\nfrom pkg import a\n",
+    "pkg.a": "def f():\n    return 1\n\ndef g():\n    return f()\n",
+    "pkg.b": "from pkg import a\n\ndef h():\n    return a.f()\n",
+}
+
+
+@pytest.mark.parametrize("target,caught", [
+    (("pkg", "f"), "which nothing reads"),
+    (("pkg.a", "f"), None),
+])
+def test_a_patch_of_a_re_export_is_caught(target, caught):
+    graph = ls.Graph(SYNTHETIC, pkgs={"pkg"})
+    got = ls.ineffective(graph, [("t.py", 1, *target)], strict=("pkg",))
+    if caught is None:
+        assert got == []
+    else:
+        assert len(got) == 1 and caught in got[0]
+
+
+def test_a_patch_that_misses_one_reader_of_a_moved_name_is_caught():
+    sources = dict(SYNTHETIC, **{"pkg.c": "from pkg.a import f\n\ndef k():\n    return f()\n"})
+    graph = ls.Graph(sources, pkgs={"pkg"})
+    got = ls.ineffective(graph, [("t.py", 1, "pkg.a", "f")], strict=("pkg",))
+    assert got == ["t.py:1 patches pkg.a.f but pkg.c read it as pkg.c.f"]
+    assert ls.ineffective(graph, [("t.py", 1, "pkg.a", "f")], strict=()) == []
+
+
+def over_budget(root: Path = ls.REPO, budget: int = BUDGET) -> dict:
+    got = {}
+    for p in sorted((root / "harness").rglob("*.py")):
+        n = len(p.read_text(encoding="utf-8").splitlines())
+        if n > budget:
+            got[p.relative_to(root).as_posix()] = n
+    return got
+
+
+def test_no_harness_module_is_over_budget():
+    got = over_budget()
+    assert {k: v for k, v in got.items() if k not in OVER_BUDGET} == {}
+    assert [k for k in OVER_BUDGET if k not in got] == [], "a stale exception"
+
+
+def test_the_budget_sees_a_long_module(tmp_path):
+    (tmp_path / "harness").mkdir()
+    (tmp_path / "harness" / "big.py").write_text("x = 1\n" * 12)
+    assert over_budget(tmp_path, budget=10) == {"harness/big.py": 12}
+
+
+# The migration chain: every golden store migrates to exactly what it did before the split.
+
+MIGRATED = ls.REPO / "tests" / "golden" / "migrated"
+_FLOAT = re.compile(r"(?<![\w.])\d{9,}\.\d+|(?<![\w.])\d{10}(?![\w.])")
+
+
+def migrated_dump(version: int, tmp_path: Path, monkeypatch) -> str:
+    """The golden at `version` migrated to head, as SQL with this run's clock and paths masked."""
+    import test_golden_stores as tg
+    db, home = tg.open_golden(version, tmp_path, monkeypatch)
+    started = time.time() - 1
+    from harness import memory_store as ms
+    conn = ms.connect(db)
+    try:
+        text = "\n".join(conn.iterdump())
+    finally:
+        conn.close()
+    text = _FLOAT.sub(lambda m: "<now>" if float(m.group()) >= started else m.group(), text)
+    text = text.replace("\\\\", "/").replace("\\", "/")
+    for path, mask in ((os.environ["HF_HOME"], "<hf>"), (tmp_path, "<tmp>")):
+        for form in (Path(path).resolve(), path):
+            text = text.replace(str(form).replace("\\", "/"), mask)
+    return text
+
+
+def golden_eras():
+    import test_golden_stores as tg
+    return tg.ERAS
+
+
+@pytest.mark.parametrize("version", golden_eras())
+def test_each_golden_migrates_to_the_recorded_content(version, tmp_path, monkeypatch):
+    """Regenerate after an intended change: LH_RECORD_MIGRATED=1 uv run pytest tests/test_module_layout.py."""
+    got = migrated_dump(version, tmp_path, monkeypatch)
+    want = MIGRATED / f"v{version}.sql"
+    if os.environ.get("LH_RECORD_MIGRATED") == "1":
+        want.parent.mkdir(parents=True, exist_ok=True)
+        want.write_text(got + "\n", encoding="utf-8")
+    assert got + "\n" == want.read_text(encoding="utf-8")
+
+
+def test_the_dump_sees_one_changed_row(tmp_path, monkeypatch):
+    version = golden_eras()[-1]
+    clean = migrated_dump(version, tmp_path / "a", monkeypatch)
+    from harness import memory_store as ms
+    real = ms.connect
+
+    def connect_then_touch(path=None):
+        conn = real(path)
+        conn.execute("UPDATE proposals SET description = 'changed' WHERE id = 1")
+        return conn
+    monkeypatch.setattr(ms, "connect", connect_then_touch)
+    assert migrated_dump(version, tmp_path / "b", monkeypatch) != clean
