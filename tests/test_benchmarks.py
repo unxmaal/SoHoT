@@ -357,6 +357,20 @@ def test_only_a_known_converter_with_an_allowed_license_imports(tmp_path):
         assert imp.license in bi.ALLOWED_LICENSES
 
 
+def test_imported_items_are_third_party_data_not_prose_the_claims_scan_reads(tmp_path):
+    """A dataset's own text is not a claim this project makes."""
+    from harness import assertions
+    written = bi.import_benchmark("hf:CodeEval-Pro/mbpp-pro", 2, tmp_path,
+                                  rows=rows_source("rows_mbpp-pro.json", 6))
+    ref = tmp_path / "code" / "reference" / f"{written[0].stem}.py"
+    assert bi.MARK in ref.read_text(encoding="utf-8")
+    assert code.check(ref.read_text(encoding="utf-8"),
+                      load_cases(tmp_path / "code")[0].assertions["checks"]).ok
+    for p in (written[0], ref):
+        assert assertions.is_imported(p.read_text(encoding="utf-8"))
+    assert not assertions.is_imported("# a hand-written note: 48 hours\n")
+
+
 def test_a_decide_corpus_rewrite_keeps_cases_it_did_not_generate(tmp_path):
     from evals import decide_corpus
     mine = tmp_path / "guard-browsesafe-40.yaml"

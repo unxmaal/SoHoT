@@ -1,3 +1,4 @@
+# Imported by evals/benchmark_import.py from hf:CodeEval-Pro/mbpp-pro@50f18448e09a8383226e1a5cd3654d2a454fe333, item 13.
 # Write a function to find whether a given array of integers contains any duplicate element.
 def test_duplicate(arraynums):
     return len(arraynums) != len(set(arraynums))

@@ -238,7 +238,9 @@ def import_benchmark(source: str, n: int, cases_root: Path = CASES, rows=None,
         path.write_text(_dump(case, imp, revision), encoding="utf-8")
         if reference is not None:
             (lane_dir / "reference").mkdir(exist_ok=True)
-            (lane_dir / "reference" / f"{case['id']}.py").write_text(reference, encoding="utf-8")
+            head = f"# {MARK} from {imp.source}@{revision or 'unpinned'}, item {case['attribution']['item']}.\n"
+            (lane_dir / "reference" / f"{case['id']}.py").write_text(head + reference,
+                                                                     encoding="utf-8")
         written.append(path)
     return written
 

@@ -1,3 +1,4 @@
+# Imported by evals/benchmark_import.py from hf:CodeEval-Pro/mbpp-pro@50f18448e09a8383226e1a5cd3654d2a454fe333, item 18.
 # Write a function to find the nth octagonal number.
 def is_octagonal(n):
     return 3 * n * n - 2 * n

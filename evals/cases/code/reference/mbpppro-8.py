@@ -1,3 +1,4 @@
+# Imported by evals/benchmark_import.py from hf:CodeEval-Pro/mbpp-pro@50f18448e09a8383226e1a5cd3654d2a454fe333, item 8.
 # Write a function to sort a given matrix in ascending order according to the sum of its rows.
 def sort_matrix(M):
     result = sorted(M, key=sum)

@@ -1,3 +1,4 @@
+# Imported by evals/benchmark_import.py from hf:CodeEval-Pro/mbpp-pro@50f18448e09a8383226e1a5cd3654d2a454fe333, item 5.
 # Write a function to find squares of individual elements in a list.
 def square_nums(nums):
  return [i**2 for i in nums]

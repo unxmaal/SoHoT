@@ -1,3 +1,4 @@
+# Imported by evals/benchmark_import.py from hf:CodeEval-Pro/mbpp-pro@50f18448e09a8383226e1a5cd3654d2a454fe333, item 0.
 # Write a function to find the shared elements from the given two lists.
 def similar_elements(test_tup1, test_tup2):
   return tuple(set(test_tup1) & set(test_tup2))

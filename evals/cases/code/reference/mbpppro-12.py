@@ -1,3 +1,4 @@
+# Imported by evals/benchmark_import.py from hf:CodeEval-Pro/mbpp-pro@50f18448e09a8383226e1a5cd3654d2a454fe333, item 12.
 # Write a function to remove characters from the first string which are present in the second string.
 def remove_dirty_chars(string, second_string):
     for char in second_string:

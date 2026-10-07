@@ -1,3 +1,4 @@
+# Imported by evals/benchmark_import.py from hf:CodeEval-Pro/mbpp-pro@50f18448e09a8383226e1a5cd3654d2a454fe333, item 21.
 # Write a function to find the maximum difference between available pairs in the given tuple list.
 def max_difference(test_list):
   return max(abs(a - b) for a, b in test_list)

@@ -1,3 +1,4 @@
+# Imported by evals/benchmark_import.py from hf:CodeEval-Pro/mbpp-pro@50f18448e09a8383226e1a5cd3654d2a454fe333, item 23.
 # Write a function to flatten a list and sum all of its elements.
 def recursive_list_sum(data_list):
     total = 0

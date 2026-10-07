@@ -1,3 +1,4 @@
+# Imported by evals/benchmark_import.py from hf:CodeEval-Pro/mbpp-pro@50f18448e09a8383226e1a5cd3654d2a454fe333, item 2.
 # Write a function to find the n largest integers from a given list of numbers, returned in descending order.
 import heapq as hq
 def heap_queue_largest(nums: list,n: int) -> list:

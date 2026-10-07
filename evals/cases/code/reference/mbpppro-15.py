@@ -1,3 +1,4 @@
+# Imported by evals/benchmark_import.py from hf:CodeEval-Pro/mbpp-pro@50f18448e09a8383226e1a5cd3654d2a454fe333, item 15.
 # Write a python function to check if a given number is one less than twice its reverse.
 def check(n):
     return n == 2 * int(str(n)[::-1]) - 1

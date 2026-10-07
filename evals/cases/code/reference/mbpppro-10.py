@@ -1,3 +1,4 @@
+# Imported by evals/benchmark_import.py from hf:CodeEval-Pro/mbpp-pro@50f18448e09a8383226e1a5cd3654d2a454fe333, item 10.
 # Write a function to that returns true if the input string contains sequences of lowercase letters joined with an underscore and false otherwise.
 import re
 def text_lowercase_underscore(text):
