@@ -67,8 +67,12 @@ def cmd_jobs(a) -> int:
         note(f"{a.action}d; next job {'may start' if ok else 'waits'}: {why}")
         emit(paused=wq.paused(), gate_open=ok, why=why)
         return 0
+    from harness import heartbeat
     got = wq.jobs()
     ok, why = wq.gate()
+    loop = heartbeat.summary()
+    if loop:
+        note(loop["line"])
     note(f"{'a job is running' if wq.running() else 'nothing running'}; "
          f"{sum(j['state'] == wq.PENDING for j in got)} pending; next job "
          f"{'may start' if ok else 'waits'}: {why}")
@@ -79,5 +83,5 @@ def cmd_jobs(a) -> int:
         rc = "" if j["rc"] is None else f" rc={j['rc']}"
         pri = int(j.get("priority") or 0)
         note(f"  {j['id']}  {j['state']:8}{rc:7}  p{pri:<3} {j['title']}")
-    emit(running=wq.running(), gate_open=ok, why=why, jobs=got)
+    emit(running=wq.running(), gate_open=ok, why=why, jobs=got, loop=loop)
     return 0
