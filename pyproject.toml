@@ -21,6 +21,8 @@ dependencies = [
     "rapidocr-onnxruntime>=1.4.4; sys_platform == 'linux'",
     "vtracer>=0.6.15",
     "jsonschema>=4",
+    # Fetching weights, on every machine; mlx-lm brought it in on macOS only (#551).
+    "huggingface_hub>=1.0",
 ]
 
 [project.scripts]

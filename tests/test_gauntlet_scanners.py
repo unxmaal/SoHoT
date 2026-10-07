@@ -114,6 +114,34 @@ def test_a_live_home_asked_of_paths_is_left_alone():
     _quiet_then_fires(scanners.live_home_shell, sh, "cp x ~/localharness/\n", "s.sh")
 
 
+def test_a_posix_only_primitive_is_found():
+    src = "import os, signal\nimport fcntl\ndef stop(p):\n    os.killpg(p.pid, signal.SIGKILL)\n"
+    assert [f.split(":")[1] for f in scanners.posix_primitives(src, "m.py")] == ["2", "4", "4"]
+
+
+def test_a_posix_primitive_behind_a_platform_guard_is_left_alone():
+    innocent = ("import os, signal, sys\n"
+                "def take(fd):\n    if sys.platform == \"win32\":\n        import msvcrt\n"
+                "        try:\n            return msvcrt.locking(fd, 1, 1)\n        except OSError:\n"
+                "            return False\n    import fcntl\n    return fcntl.flock(fd, 1)\n"
+                "def stop(p):\n    if hasattr(os, \"killpg\"):\n        os.killpg(p.pid, signal.SIGTERM)\n"
+                "    else:\n        p.terminate()\n"
+                "try:\n    import pwd\nexcept ImportError:\n    pwd = None\n"
+                "SIG = signal.SIGKILL if os.name == \"posix\" else signal.SIGTERM\n")
+    _quiet_then_fires(scanners.posix_primitives, innocent, "os.killpg(1, signal.SIGTERM)\n", "m.py")
+
+
+def test_an_unguarded_import_is_found_and_a_guarded_one_is_not():
+    src = ("import yaml\ntry:\n    import torch\nexcept ImportError:\n    torch = None\n"
+           "def f():\n    from huggingface_hub import snapshot_download\n    from . import local\n")
+    assert scanners.unguarded_imports(src, "m.py") == [(1, "yaml"), (7, "huggingface_hub")]
+
+
+def test_a_module_level_importorskip_is_read_as_a_skip():
+    src = "import pytest\ntorch = pytest.importorskip(\"torch.nn\", reason=\"x\")\ndef t():\n    pytest.importorskip(\"mlx\")\n"
+    assert scanners.module_skips(src, "t.py") == {"torch"}
+
+
 def test_an_inventory_at_its_pin_is_quiet_and_below_it_asks_for_a_lower_pin():
     assert scanners.ratchet(["a", "b"], 2, "x") is None
     msg = scanners.ratchet(["a"], 2, "x")
