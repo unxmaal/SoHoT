@@ -176,3 +176,9 @@ def test_the_interpreter_can_be_overridden(tmp_path, monkeypatch):
 def test_home_follows_the_environment(tmp_path, monkeypatch):
     monkeypatch.setenv("OMNISVG_HOME", str(tmp_path / "elsewhere"))
     assert omnisvg.home() == tmp_path / "elsewhere"
+
+
+def test_home_defaults_under_the_localharness_home_as_setup_installs_it(monkeypatch):
+    from harness import paths
+    monkeypatch.delenv("OMNISVG_HOME", raising=False)
+    assert omnisvg.home() == paths.home() / "omnisvg"

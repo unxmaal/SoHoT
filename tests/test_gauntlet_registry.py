@@ -175,6 +175,17 @@ def test_a_tier_1_class_with_no_scanner_yet_is_a_listed_gap_not_a_failure():
     assert core.unscanned(index, fixture_snapshot()) == []
 
 
+def test_a_tier_1_class_judged_unscannable_here_is_rebound_to_tier_2_with_a_reason():
+    index, pending, unc = fixture_registry()
+    index["a-platform-primitive-assumed-universal"]["scanners"] = []
+    index["a-platform-primitive-assumed-universal"]["tier"] = 2
+    assert any("tier_reason" in p for p in check(index, pending, unc))
+    index["a-platform-primitive-assumed-universal"]["tier_reason"] = "only a proxy is scannable"
+    assert check(index, pending, unc) == []
+    assert core.unscanned(index, fixture_snapshot()) == []
+    assert core.stats(index, pending, fixture_snapshot(), fixture_defects())["classes_per_tier"] == {2: 3}
+
+
 def test_the_registry_is_clean():
     snapshot = core.load_snapshot()
     defects = core.load_defects()

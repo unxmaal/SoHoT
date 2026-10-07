@@ -9,7 +9,7 @@ import pytest
 from harness import memory_store as ms
 from harness import paths
 
-REAL_LIVE = Path.home() / "localharness" / "discovery.db"
+REAL_LIVE = paths.DEFAULT_HOME / "discovery.db"
 launchd_only = pytest.mark.skipif(
     sys.platform == "win32", reason="the deploy checkout is a launchd.sh concept")
 
