@@ -1,0 +1,26 @@
+# MBPP Pro (CodeEval-Pro, Yu et al. 2024), MIT (https://huggingface.co/datasets/CodeEval-Pro/mbpp-pro).
+# Imported by evals/benchmark_import.py from hf:CodeEval-Pro/mbpp-pro@50f18448e09a8383226e1a5cd3654d2a454fe333; re-import, do not edit.
+id: mbpppro-1
+modality: code
+prompt: "Write a Python function `first_n_non_primes(start, end, N)`. Write a Python function to identify\
+  \ the first N non-prime numbers in a given range [start, end]. If the count of non-prime numbers in\
+  \ the range is less than N, return all non-prime numbers found.\n\nBuild it on this helper, and include\
+  \ the helper unchanged in your answer:\n\n```python\n# Write a python function to identify non-prime\
+  \ numbers.\nimport math\ndef is_not_prime(n):\n    if n == 1:\n        return True\n    for i in range(2,\
+  \ int(math.sqrt(n))+1):\n        if n % i == 0:\n            return True\n    return False\n```\n\n\
+  Return only the code."
+assert:
+  checks:
+  - first_n_non_primes(1, 10, 3) == [1, 4, 6]
+  - first_n_non_primes(10, 20, 5) == [10, 12, 14, 15, 16]
+  - first_n_non_primes(20, 30, 10) == [20, 21, 22, 24, 25, 26, 27, 28, 30]
+  - first_n_non_primes(1, 5, 10) == [1, 4]
+attribution:
+  dataset: MBPP Pro (CodeEval-Pro, Yu et al. 2024)
+  url: https://huggingface.co/datasets/CodeEval-Pro/mbpp-pro
+  license: MIT
+  source: hf:CodeEval-Pro/mbpp-pro
+  split: train
+  item: '1'
+  revision: 50f18448e09a8383226e1a5cd3654d2a454fe333
+  label: the dataset's own assert tests, run as checks

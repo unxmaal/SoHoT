@@ -1,0 +1,104 @@
+{
+ "items": [
+  {
+   "created_at": "2026-09-28T11:55:43Z",
+   "description": "Comparison of free AI models available in OpenCode, including benchmarks, capabilities, limits, and real-world performance.",
+   "full_name": "KurniawanSatria/opencode-free-models-comparison",
+   "html_url": "https://github.com/KurniawanSatria/opencode-free-models-comparison",
+   "license": null,
+   "pushed_at": "2026-10-06T23:00:33Z",
+   "size": 175,
+   "stargazers_count": 2,
+   "topics": [
+    "ai-models",
+    "automation",
+    "benchmark",
+    "cloudflare-workers",
+    "data-visualization",
+    "free-models",
+    "huggingface",
+    "leaderboard",
+    "llm",
+    "llm-benchmark",
+    "llm-comparison",
+    "model-comparison",
+    "open-weights",
+    "opencode",
+    "opencode-zen",
+    "svg"
+   ],
+   "updated_at": "2026-10-06T23:00:37Z"
+  },
+  {
+   "created_at": "2026-02-17T04:41:58Z",
+   "description": "Pelican riding bicycle SVG - LLM Benchmark",
+   "full_name": "sebseb7/pelicanTest",
+   "html_url": "https://github.com/sebseb7/pelicanTest",
+   "license": null,
+   "pushed_at": "2026-10-01T16:10:22Z",
+   "size": 9415,
+   "stargazers_count": 0,
+   "topics": [],
+   "updated_at": "2026-10-01T16:10:26Z"
+  },
+  {
+   "created_at": "2026-09-30T09:02:03Z",
+   "description": "\u9e48\u9e55\u9a91\u81ea\u884c\u8f66 SVG \u52a8\u753b\u5bf9\u6bd4\uff1a\u76f8\u540c\u63d0\u793a\u8bcd\uff0c\u4e0d\u540c\u6a21\u578b\u3001\u4e2a\u4eba\u52a9\u624b\u3001Harness \u4e0e\u670d\u52a1\u5e73\u53f0\u3002",
+   "full_name": "isayrhythm/pelican-benchmark",
+   "html_url": "https://github.com/isayrhythm/pelican-benchmark",
+   "license": {
+    "key": "mit",
+    "name": "MIT License",
+    "node_id": "MDc6TGljZW5zZTEz",
+    "spdx_id": "MIT",
+    "url": "https://api.github.com/licenses/mit"
+   },
+   "pushed_at": "2026-09-30T14:06:47Z",
+   "size": 211,
+   "stargazers_count": 0,
+   "topics": [
+    "agent-harness",
+    "ai",
+    "animation",
+    "benchmark",
+    "generative-ai",
+    "llm",
+    "pelican",
+    "svg"
+   ],
+   "updated_at": "2026-09-30T14:08:20Z"
+  },
+  {
+   "created_at": "2026-09-13T15:13:08Z",
+   "description": "Repeatable pelican-on-a-bicycle SVG evals for model quality, stability, token usage, and optional proxy integrity checks. Zero dependencies.",
+   "full_name": "ManagerZhang10/pelican-bicycle-eval",
+   "html_url": "https://github.com/ManagerZhang10/pelican-bicycle-eval",
+   "license": {
+    "key": "mit",
+    "name": "MIT License",
+    "node_id": "MDc6TGljZW5zZTEz",
+    "spdx_id": "MIT",
+    "url": "https://api.github.com/licenses/mit"
+   },
+   "pushed_at": "2026-09-15T06:56:36Z",
+   "size": 1418,
+   "stargazers_count": 0,
+   "topics": [
+    "anthropic-api",
+    "api-proxy",
+    "benchmark",
+    "codex",
+    "llm",
+    "llm-evaluation",
+    "model-comparison",
+    "observability",
+    "openai-api",
+    "pelican-bicycle",
+    "reasoning-models",
+    "svg"
+   ],
+   "updated_at": "2026-09-15T06:59:21Z"
+  }
+ ],
+ "total_count": 24
+}

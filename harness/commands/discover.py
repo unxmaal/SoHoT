@@ -49,6 +49,8 @@ def cmd_discover(a) -> int:
         return _report_sources(a)
     if getattr(a, "feeds", False):
         return _report_feeds(a)
+    if getattr(a, "benchmarks", False):
+        return _report_benchmarks(a)
     if a.external:
         if not a.lane:
             return err("--external needs a --lane: the registries are asked "
@@ -730,7 +732,13 @@ def _report_sources(a) -> int:
 #: Every source family, in the order a sweep reads them. Each entry is the
 #: attribute cmd_discover dispatches on, so adding a source family here is the
 #: only edit needed to put it in the sweep.
-SOURCE_TIERS = ("feeds", "neighbors")
+SOURCE_TIERS = ("feeds", "neighbors", "benchmarks")
+
+
+def _report_benchmarks(a) -> int:
+    """The benchmark tier of a sweep: registries per lane, once per interval. #491."""
+    from harness.commands import benchmarks as benchmarks_cmd
+    return benchmarks_cmd.sweep_report(a)
 
 
 def _report_sweep(a) -> int:

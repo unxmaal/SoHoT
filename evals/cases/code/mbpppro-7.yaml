@@ -1,0 +1,25 @@
+# MBPP Pro (CodeEval-Pro, Yu et al. 2024), MIT (https://huggingface.co/datasets/CodeEval-Pro/mbpp-pro).
+# Imported by evals/benchmark_import.py from hf:CodeEval-Pro/mbpp-pro@50f18448e09a8383226e1a5cd3654d2a454fe333; re-import, do not edit.
+id: mbpppro-7
+modality: code
+prompt: "Write a Python function `remove_all_occurrences(lst, ch)`. Write a Python function to remove\
+  \ all occurrences of a given character from a list of strings. The function should return a new list\
+  \ with all the strings modified according to the removal of the specified character.\n\nBuild it on\
+  \ this helper, and include the helper unchanged in your answer:\n\n```python\n# Write a python function\
+  \ to remove first and last occurrence of a given character from the string.\ndef remove_Occ(s,ch):\n\
+  \    s = s.replace(ch, '', 1)\n    s = s[::-1].replace(ch, '', 1)[::-1]\n    return s\n```\n\nReturn\
+  \ only the code."
+assert:
+  checks:
+  - remove_all_occurrences(['apple', 'banana', 'cherry'], 'a') == ['pple', 'bnan', 'cherry']
+  - remove_all_occurrences(['hello', 'world'], 'l') == ['heo', 'word']
+  - remove_all_occurrences(['python', 'programming'], 'g') == ['python', 'prorammin']
+attribution:
+  dataset: MBPP Pro (CodeEval-Pro, Yu et al. 2024)
+  url: https://huggingface.co/datasets/CodeEval-Pro/mbpp-pro
+  license: MIT
+  source: hf:CodeEval-Pro/mbpp-pro
+  split: train
+  item: '7'
+  revision: 50f18448e09a8383226e1a5cd3654d2a454fe333
+  label: the dataset's own assert tests, run as checks

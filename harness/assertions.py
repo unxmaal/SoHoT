@@ -186,6 +186,14 @@ def tracked(root: Path) -> list[Path]:
     return repo.publishable(root)
 
 
+#: Header of a file evals/benchmark_import.py wrote: a dataset's text, not this project's prose.
+IMPORTED = "Imported by evals/benchmark_import.py"
+
+
+def is_imported(text: str) -> bool:
+    return IMPORTED in "\n".join(text.splitlines()[:3])
+
+
 def collect(root: Path, include_archives: bool = False) -> list[Claim]:
     out: list[Claim] = []
     for p in tracked(root):
@@ -196,7 +204,10 @@ def collect(root: Path, include_archives: bool = False) -> list[Claim]:
             continue
         if p.name == Path(__file__).name:
             continue
-        out.extend(scan(p.read_text(encoding="utf-8", errors="replace"), p, rel))
+        text = p.read_text(encoding="utf-8", errors="replace")
+        if is_imported(text):
+            continue
+        out.extend(scan(text, p, rel))
     return out
 
 

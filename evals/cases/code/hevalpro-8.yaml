@@ -1,0 +1,29 @@
+# HumanEval Pro (CodeEval-Pro, Yu et al. 2024), MIT (https://huggingface.co/datasets/CodeEval-Pro/humaneval-pro).
+# Imported by evals/benchmark_import.py from hf:CodeEval-Pro/humaneval-pro@cd078f93d57d1902b5c3e4ae330166b2ca0e0e80; re-import, do not edit.
+id: hevalpro-8
+modality: code
+prompt: "Write a Python function `sum_product_of_lists(lists: List[List[int]])`. Given a list of lists\
+  \ of integers, return a list of tuples where each tuple consists of the sum and product of the integers\
+  \ in the corresponding sublist. Additionally, calculate the total sum and total product of all integers\
+  \ across all sublists.\n\nBuild it on this helper, and include the helper unchanged in your answer:\n\
+  \n```python\nfrom typing import List, Tuple\n\n\ndef sum_product(numbers: List[int]) -> Tuple[int, int]:\n\
+  \    \"\"\" For a given list of integers, return a tuple consisting of a sum and a product of all the\
+  \ integers in a list.\n    Empty sum should be equal to 0 and empty product should be equal to 1.\n\
+  \    >>> sum_product([])\n    (0, 1)\n    >>> sum_product([1, 2, 3, 4])\n    (10, 24)\n    \"\"\"\n\
+  \    sum_value = 0\n    prod_value = 1\n\n    for n in numbers:\n        sum_value += n\n        prod_value\
+  \ *= n\n    return sum_value, prod_value\n```\n\nReturn only the code."
+assert:
+  checks:
+  - sum_product_of_lists([[1, 2], [3, 4]]) == ([(3, 2), (7, 12)], 10, 24)
+  - sum_product_of_lists([[0], [1], [2]]) == ([(0, 0), (1, 1), (2, 2)], 3, 0)
+  - sum_product_of_lists([[], [1, 2, 3], [4, 5]]) == ([(0, 1), (6, 6), (9, 20)], 15, 120)
+  - sum_product_of_lists([[1], [1, 1], [1, 1, 1]]) == ([(1, 1), (2, 1), (3, 1)], 6, 1)
+attribution:
+  dataset: HumanEval Pro (CodeEval-Pro, Yu et al. 2024)
+  url: https://huggingface.co/datasets/CodeEval-Pro/humaneval-pro
+  license: MIT
+  source: hf:CodeEval-Pro/humaneval-pro
+  split: train
+  item: '8'
+  revision: cd078f93d57d1902b5c3e4ae330166b2ca0e0e80
+  label: the dataset's own assert tests, run as checks

@@ -27,6 +27,7 @@ import sys
 
 from harness import audio, completion, env, proc, vector  # noqa: F401
 from harness.commands import adopt as adopt_cmd
+from harness.commands import benchmarks as benchmarks_cmd
 from harness.commands import common
 from harness.commands import discover as discover_cmd
 from harness.commands import gateway as gateway_cmd
@@ -258,6 +259,8 @@ def build_parser() -> argparse.ArgumentParser:
                    help="read every source family, then report. What running "
                         "a discovery means: --feeds alone leaves the star "
                         "graph unread")
+    d.add_argument("--benchmarks", action="store_true",
+                   help="sweep the registries for benchmark sources per lane (#491)")
     d.add_argument("--feeds", action="store_true",
                    help="read the community aggregation feeds for candidates")
     d.add_argument("--sources", action="store_true",
@@ -445,6 +448,21 @@ def build_parser() -> argparse.ArgumentParser:
     sto.add_argument("--keep", action="store_true",
                      help="keep the migrated copy and say where")
     sto.set_defaults(func=store_cmd.cmd_store)
+    bch = sub.add_parser("benchmarks", help="benchmark sources found per lane, their "
+                         "contamination status, and what was imported (#491)")
+    bch.add_argument("--lane", default="", help="only this lane")
+    bch.add_argument("--sweep", action="store_true", help="read the registries now")
+    bch.add_argument("--force", action="store_true", help="with --sweep, ignore the interval")
+    bch.add_argument("--training", nargs="+", metavar="REPO[=ALIAS]",
+                     help="read these candidates' cutoffs and declared datasets from their cards")
+    bch.add_argument("--import", dest="import_source", default="", metavar="SOURCE",
+                     help="import cases from a source with a converter, e.g. hf:CodeEval-Pro/mbpp-pro")
+    bch.add_argument("--n", type=int, default=0, help="with --import, how many cases")
+    bch.add_argument("--probe", nargs="+", metavar="MODEL",
+                     help="prefix-completion contamination probe of the lane's cases (default decide)")
+    bch.add_argument("--limit", type=int, default=0, help="with --probe, at most this many cases")
+    bch.add_argument("--gateway", default=completion.DEFAULT_GATEWAY)
+    bch.set_defaults(func=benchmarks_cmd.cmd_benchmarks)
     jobs = sub.add_parser("jobs", help="the work queue: runs in order while "
                           "nobody is using this machine")
     jobs.add_argument("action", choices=("add", "list", "pause", "resume",

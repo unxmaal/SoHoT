@@ -1,0 +1,24 @@
+# MBPP Pro (CodeEval-Pro, Yu et al. 2024), MIT (https://huggingface.co/datasets/CodeEval-Pro/mbpp-pro).
+# Imported by evals/benchmark_import.py from hf:CodeEval-Pro/mbpp-pro@50f18448e09a8383226e1a5cd3654d2a454fe333; re-import, do not edit.
+id: mbpppro-21
+modality: code
+prompt: "Write a Python function `max_sum_of_differences(tuple_list)`. Given a list of tuples, each containing\
+  \ two integers, write a function to find the maximum sum of differences between all possible pairs of\
+  \ tuples. Each tuple in the list should be compared with every other tuple exactly once.\n\nBuild it\
+  \ on this helper, and include the helper unchanged in your answer:\n\n```python\n# Write a function\
+  \ to find the maximum difference between available pairs in the given tuple list.\ndef max_difference(test_list):\n\
+  \  return max(abs(a - b) for a, b in test_list)\n```\n\nReturn only the code."
+assert:
+  checks:
+  - max_sum_of_differences([(1, 2), (3, 4), (5, 6)]) == 3
+  - max_sum_of_differences([(10, 20), (30, 40), (50, 60)]) == 30
+  - max_sum_of_differences([(1, 1), (2, 2), (3, 3)]) == 0
+attribution:
+  dataset: MBPP Pro (CodeEval-Pro, Yu et al. 2024)
+  url: https://huggingface.co/datasets/CodeEval-Pro/mbpp-pro
+  license: MIT
+  source: hf:CodeEval-Pro/mbpp-pro
+  split: train
+  item: '21'
+  revision: 50f18448e09a8383226e1a5cd3654d2a454fe333
+  label: the dataset's own assert tests, run as checks

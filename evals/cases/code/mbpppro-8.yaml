@@ -1,0 +1,25 @@
+# MBPP Pro (CodeEval-Pro, Yu et al. 2024), MIT (https://huggingface.co/datasets/CodeEval-Pro/mbpp-pro).
+# Imported by evals/benchmark_import.py from hf:CodeEval-Pro/mbpp-pro@50f18448e09a8383226e1a5cd3654d2a454fe333; re-import, do not edit.
+id: mbpppro-8
+modality: code
+prompt: "Write a Python function `sort_matrices(matrices)`. Given a list of matrices, write a function\
+  \ to sort each matrix in ascending order according to the sum of its rows, and then return a list of\
+  \ the sorted matrices. If two matrices have the same sum, they should remain in the order they were\
+  \ provided.\n\nBuild it on this helper, and include the helper unchanged in your answer:\n\n```python\n\
+  # Write a function to sort a given matrix in ascending order according to the sum of its rows.\ndef\
+  \ sort_matrix(M):\n    result = sorted(M, key=sum)\n    return result\n```\n\nReturn only the code."
+assert:
+  checks:
+  - sort_matrices([[[3, 2, 1], [6, 5, 4]], [[1, 2, 3], [4, 5, 6]]]) == [[[3, 2, 1], [6, 5, 4]], [[1, 2,
+    3], [4, 5, 6]]]
+  - sort_matrices([[[1, 2], [3, 4]], [[5, 6], [7, 8]]]) == [[[1, 2], [3, 4]], [[5, 6], [7, 8]]]
+  - sort_matrices([[[9, 8], [7, 6]], [[5, 4], [3, 2]]]) == [[[3, 2], [5, 4]], [[7, 6], [9, 8]]]
+attribution:
+  dataset: MBPP Pro (CodeEval-Pro, Yu et al. 2024)
+  url: https://huggingface.co/datasets/CodeEval-Pro/mbpp-pro
+  license: MIT
+  source: hf:CodeEval-Pro/mbpp-pro
+  split: train
+  item: '8'
+  revision: 50f18448e09a8383226e1a5cd3654d2a454fe333
+  label: the dataset's own assert tests, run as checks

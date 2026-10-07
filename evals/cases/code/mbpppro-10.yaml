@@ -1,0 +1,28 @@
+# MBPP Pro (CodeEval-Pro, Yu et al. 2024), MIT (https://huggingface.co/datasets/CodeEval-Pro/mbpp-pro).
+# Imported by evals/benchmark_import.py from hf:CodeEval-Pro/mbpp-pro@50f18448e09a8383226e1a5cd3654d2a454fe333; re-import, do not edit.
+id: mbpppro-10
+modality: code
+prompt: "Write a Python function `filter_lowercase_underscore_strings(strings)`. Given a list of strings,\
+  \ write a function that returns a list of strings which contain sequences of lowercase letters joined\
+  \ with an underscore. The function should filter out any strings that do not meet this criteria.\n\n\
+  Build it on this helper, and include the helper unchanged in your answer:\n\n```python\n# Write a function\
+  \ to that returns true if the input string contains sequences of lowercase letters joined with an underscore\
+  \ and false otherwise.\nimport re\ndef text_lowercase_underscore(text):\n        return bool(re.match('^[a-z]+(_[a-z]+)*$',\
+  \ text))\n```\n\nReturn only the code."
+assert:
+  checks:
+  - filter_lowercase_underscore_strings(['abc_def', 'ghi_jkl', 'mno_pqr_stu', 'vwx_yz', 'ABC_DEF']) ==
+    ['abc_def', 'ghi_jkl', 'mno_pqr_stu', 'vwx_yz']
+  - filter_lowercase_underscore_strings(['123_456', 'abc_def_123', 'ghi_jkl_', '_mno_pqr']) == []
+  - filter_lowercase_underscore_strings([]) == []
+  - filter_lowercase_underscore_strings(['abc_def', 'ghi_jkl', 'mno_pqr_stu', 'vwx_yz', 'abc_def_ghi'])
+    == ['abc_def', 'ghi_jkl', 'mno_pqr_stu', 'vwx_yz', 'abc_def_ghi']
+attribution:
+  dataset: MBPP Pro (CodeEval-Pro, Yu et al. 2024)
+  url: https://huggingface.co/datasets/CodeEval-Pro/mbpp-pro
+  license: MIT
+  source: hf:CodeEval-Pro/mbpp-pro
+  split: train
+  item: '10'
+  revision: 50f18448e09a8383226e1a5cd3654d2a454fe333
+  label: the dataset's own assert tests, run as checks

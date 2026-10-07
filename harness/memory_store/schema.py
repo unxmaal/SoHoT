@@ -4,7 +4,7 @@ from __future__ import annotations
 from harness import store
 
 
-SCHEMA_VERSION = 47
+SCHEMA_VERSION = 48
 
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
@@ -467,6 +467,62 @@ CREATE TABLE IF NOT EXISTS extractions (
     UNIQUE (name, source, reason)
 );
 
+-- One benchmark a sweep found, with the facts that decide whether to use it. #491.
+CREATE TABLE IF NOT EXISTS benchmarks (
+    id          INTEGER PRIMARY KEY,
+    -- hf:<org/name> or gh:<org/name>.
+    name        TEXT NOT NULL,
+    lane        TEXT NOT NULL,
+    registry    TEXT NOT NULL DEFAULT '',
+    url         TEXT NOT NULL DEFAULT '',
+    license     TEXT NOT NULL DEFAULT '',
+    -- '' open; 'auto' or 'manual' when the registry gates it.
+    gated       TEXT NOT NULL DEFAULT '',
+    created     TEXT NOT NULL DEFAULT '',
+    updated     TEXT NOT NULL DEFAULT '',
+    size        TEXT NOT NULL DEFAULT '',
+    rows        INTEGER NOT NULL DEFAULT 0,
+    task_format TEXT NOT NULL DEFAULT '',
+    revision    TEXT NOT NULL DEFAULT '',
+    likes       INTEGER NOT NULL DEFAULT 0,
+    downloads   INTEGER NOT NULL DEFAULT 0,
+    description TEXT NOT NULL DEFAULT '',
+    first_seen  REAL NOT NULL,
+    last_seen   REAL NOT NULL,
+    UNIQUE (name, lane)
+);
+
+-- A candidate's training cutoff and the datasets its card says it trained on. #470.
+CREATE TABLE IF NOT EXISTS candidate_training (
+    id            INTEGER PRIMARY KEY,
+    -- The registry repo the facts were read from.
+    candidate     TEXT NOT NULL UNIQUE,
+    -- The receipt key or gateway alias results carry for it.
+    alias         TEXT NOT NULL DEFAULT '',
+    -- The lane it is a candidate in; '' dates every lane.
+    lane          TEXT NOT NULL DEFAULT '',
+    -- YYYY-MM or YYYY-MM-DD; '' is unknown.
+    cutoff        TEXT NOT NULL DEFAULT '',
+    -- 'card' stated on the card, 'release' the registry's creation date.
+    cutoff_source TEXT NOT NULL DEFAULT '',
+    datasets      TEXT NOT NULL DEFAULT '[]',
+    read_at       REAL NOT NULL
+);
+
+-- One prefix-completion probe of one case against one model. A miss is not absence. #470.
+CREATE TABLE IF NOT EXISTS contamination_probes (
+    id          INTEGER PRIMARY KEY,
+    model       TEXT NOT NULL,
+    lane        TEXT NOT NULL DEFAULT '',
+    case_id     TEXT NOT NULL,
+    family      TEXT NOT NULL DEFAULT '',
+    -- 'hit', 'miss', 'skipped' or 'error'.
+    outcome     TEXT NOT NULL,
+    overlap     REAL,
+    detail      TEXT NOT NULL DEFAULT '',
+    at          REAL NOT NULL
+);
+
 -- One answer from a person on the judge page. #417.
 CREATE TABLE IF NOT EXISTS human_votes (
     id              INTEGER PRIMARY KEY,
@@ -497,6 +553,7 @@ CREATE INDEX IF NOT EXISTS ix_downloads_repo ON downloads(repo);
 CREATE INDEX IF NOT EXISTS ix_downloads_path ON downloads(path);
 CREATE INDEX IF NOT EXISTS ix_edges_dst ON edges(dst);
 CREATE INDEX IF NOT EXISTS ix_jobs_state ON jobs(state, priority);
+CREATE INDEX IF NOT EXISTS ix_probes_model ON contamination_probes(model, lane);
 """
 
 

@@ -1133,6 +1133,25 @@ candidates in run receipts, the typed lane defaults -- and asks which
 configured source ever surfaced each. Anything adopted that no source produced
 is a coverage hole with a name, and the names are the useful part.
 
+### Benchmark discovery
+
+Lanes saturate and leak into training data, so the yardsticks get discovered
+too. `soh discover --sweep` (and so the loop) reads HuggingFace datasets and
+GitHub per lane once per discovery interval, newest and most liked, into a
+`benchmarks` table: license, gating, dates, size and task format.
+`soh benchmarks --training REPO=ALIAS --lane L` reads a candidate's cutoff
+(stated on its card, else its release date, a quantization's parent's) and the
+datasets its card declares. `soh benchmarks [--lane L]` then marks each source
+`declared` (a candidate trained on it), `predates` (older than the newest
+cutoff, or a copy of something that is), `after-cutoff` or `unknown`, shows
+how many cases came from it, and shows each candidate's lane score with and
+without the cases it trained on. `soh benchmarks --import SOURCE --n N` writes
+cases with provenance (source, item, revision, license) through a converter
+for that task format; the #479 digest split places them. `--probe MODEL` asks
+a model through the gateway to continue each case's source text from a
+prefix and records how much it reproduced verbatim. A miss is not proof the
+model never saw the text.
+
 ### Refusals that stop being true
 
 A refusal records the condition that would end it, as a predicate rather than

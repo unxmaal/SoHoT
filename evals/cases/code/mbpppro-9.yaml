@@ -1,0 +1,23 @@
+# MBPP Pro (CodeEval-Pro, Yu et al. 2024), MIT (https://huggingface.co/datasets/CodeEval-Pro/mbpp-pro).
+# Imported by evals/benchmark_import.py from hf:CodeEval-Pro/mbpp-pro@50f18448e09a8383226e1a5cd3654d2a454fe333; re-import, do not edit.
+id: mbpppro-9
+modality: code
+prompt: "Write a Python function `total_Volume(prisms)`. Write a Python function to calculate the total\
+  \ volume of multiple triangular prisms given their dimensions in a list of tuples. Each tuple contains\
+  \ the length, base, and height of a triangular prism.\n\nBuild it on this helper, and include the helper\
+  \ unchanged in your answer:\n\n```python\n# Write a python function to find the volume of a triangular\
+  \ prism.\ndef find_Volume(l,b,h):\n    return ((l * b * h) / 2)\n```\n\nReturn only the code."
+assert:
+  checks:
+  - total_Volume([(2, 3, 4), (5, 6, 7)]) == 117.0
+  - total_Volume([(1, 1, 1), (2, 2, 2)]) == 4.5
+  - total_Volume([]) == 0.0
+attribution:
+  dataset: MBPP Pro (CodeEval-Pro, Yu et al. 2024)
+  url: https://huggingface.co/datasets/CodeEval-Pro/mbpp-pro
+  license: MIT
+  source: hf:CodeEval-Pro/mbpp-pro
+  split: train
+  item: '9'
+  revision: 50f18448e09a8383226e1a5cd3654d2a454fe333
+  label: the dataset's own assert tests, run as checks

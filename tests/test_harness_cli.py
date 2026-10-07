@@ -752,6 +752,8 @@ def test_a_sweep_reads_every_source_family(monkeypatch):
     monkeypatch.setattr(discover_cmd, "_report_feeds", lambda a: read.append("feeds") or 0)
     monkeypatch.setattr(discover_cmd, "_report_neighbors",
                         lambda a: read.append("neighbors") or 0)
+    monkeypatch.setattr(discover_cmd, "_report_benchmarks",
+                        lambda a: read.append("benchmarks") or 0)
     rc = cli.cmd_discover(argparse.Namespace(sweep=True, json=False))
     assert rc == 0
     assert read == list(cli.SOURCE_TIERS)
@@ -767,8 +769,10 @@ def test_a_sweep_dispatches_one_tier_at_a_time(monkeypatch):
                         lambda a: seen.append((a.feeds, a.neighbors)) or 0)
     monkeypatch.setattr(discover_cmd, "_report_neighbors",
                         lambda a: seen.append((a.feeds, a.neighbors)) or 0)
+    monkeypatch.setattr(discover_cmd, "_report_benchmarks",
+                        lambda a: seen.append((a.feeds, a.neighbors)) or 0)
     cli.cmd_discover(argparse.Namespace(sweep=True, json=False))
-    assert seen == [(True, False), (False, True)]
+    assert seen == [(True, False), (False, True), (False, False)]
 
 
 def test_a_sweep_does_not_recurse(monkeypatch):
@@ -779,6 +783,7 @@ def test_a_sweep_does_not_recurse(monkeypatch):
     monkeypatch.setattr(discover_cmd, "_report_feeds",
                         lambda a: depth.append(a.sweep) or 0)
     monkeypatch.setattr(discover_cmd, "_report_neighbors", lambda a: 0)
+    monkeypatch.setattr(discover_cmd, "_report_benchmarks", lambda a: 0)
     cli.cmd_discover(argparse.Namespace(sweep=True, json=False))
     assert depth == [False]
 
@@ -790,6 +795,7 @@ def test_a_failing_tier_does_not_hide_behind_a_passing_one(monkeypatch):
 
     monkeypatch.setattr(discover_cmd, "_report_feeds", lambda a: 1)
     monkeypatch.setattr(discover_cmd, "_report_neighbors", lambda a: 0)
+    monkeypatch.setattr(discover_cmd, "_report_benchmarks", lambda a: 0)
     assert cli.cmd_discover(argparse.Namespace(sweep=True, json=False)) == 1
 
 

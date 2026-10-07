@@ -1,0 +1,24 @@
+# MBPP Pro (CodeEval-Pro, Yu et al. 2024), MIT (https://huggingface.co/datasets/CodeEval-Pro/mbpp-pro).
+# Imported by evals/benchmark_import.py from hf:CodeEval-Pro/mbpp-pro@50f18448e09a8383226e1a5cd3654d2a454fe333; re-import, do not edit.
+id: mbpppro-17
+modality: code
+prompt: "Write a Python function `count_Opposite_Signs(tuples_list)`. Given a list of tuples, where each\
+  \ tuple contains two integers, write a Python function to count the number of tuples where the integers\
+  \ have opposite signs.\n\nBuild it on this helper, and include the helper unchanged in your answer:\n\
+  \n```python\n# Write a python function to check whether the given two integers have opposite sign or\
+  \ not.\ndef opposite_Signs(x,y):\n    return ((x ^ y) < 0)\n```\n\nReturn only the code."
+assert:
+  checks:
+  - count_Opposite_Signs([(1, -1), (-2, 2), (3, 4), (-5, -6)]) == 2
+  - count_Opposite_Signs([(7, 7), (-8, 8), (9, -9), (10, 10)]) == 2
+  - count_Opposite_Signs([(-11, 11), (12, -12), (13, 13), (-14, 14)]) == 3
+  - count_Opposite_Signs([(15, 15), (16, 16), (17, 17), (18, 18)]) == 0
+attribution:
+  dataset: MBPP Pro (CodeEval-Pro, Yu et al. 2024)
+  url: https://huggingface.co/datasets/CodeEval-Pro/mbpp-pro
+  license: MIT
+  source: hf:CodeEval-Pro/mbpp-pro
+  split: train
+  item: '17'
+  revision: 50f18448e09a8383226e1a5cd3654d2a454fe333
+  label: the dataset's own assert tests, run as checks

@@ -1,0 +1,33 @@
+# HumanEval Pro (CodeEval-Pro, Yu et al. 2024), MIT (https://huggingface.co/datasets/CodeEval-Pro/humaneval-pro).
+# Imported by evals/benchmark_import.py from hf:CodeEval-Pro/humaneval-pro@cd078f93d57d1902b5c3e4ae330166b2ca0e0e80; re-import, do not edit.
+id: hevalpro-6
+modality: code
+prompt: "Write a Python function `sum_deepest_nesting(strings: List[str])`. Given a list of strings, each\
+  \ representing multiple groups of nested parentheses separated by spaces, return the sum of the deepest\
+  \ levels of nesting for each group in each string. For example, if a string contains '(()()) ((()))\
+  \ () ((())()())', the sum of the deepest levels of nesting is 2 + 3 + 1 + 3 = 9.\n\nBuild it on this\
+  \ helper, and include the helper unchanged in your answer:\n\n```python\nfrom typing import List\n\n\
+  \ndef parse_nested_parens(paren_string: str) -> List[int]:\n    \"\"\" Input to this function is a string\
+  \ represented multiple groups for nested parentheses separated by spaces.\n    For each of the group,\
+  \ output the deepest level of nesting of parentheses.\n    E.g. (()()) has maximum two levels of nesting\
+  \ while ((())) has three.\n\n    >>> parse_nested_parens('(()()) ((())) () ((())()())')\n    [2, 3,\
+  \ 1, 3]\n    \"\"\"\n    def parse_paren_group(s):\n        depth = 0\n        max_depth = 0\n     \
+  \   for c in s:\n            if c == '(':\n                depth += 1\n                max_depth = max(depth,\
+  \ max_depth)\n            else:\n                depth -= 1\n\n        return max_depth\n\n    return\
+  \ [parse_paren_group(x) for x in paren_string.split(' ') if x]\n```\n\nReturn only the code."
+assert:
+  checks:
+  - sum_deepest_nesting(['(()()) ((())) () ((())()())']) == [9]
+  - sum_deepest_nesting(['() (())', '((()))']) == [3, 3]
+  - sum_deepest_nesting(['(()(()))', '()']) == [3, 1]
+  - sum_deepest_nesting(['']) == [0]
+  - sum_deepest_nesting(['(((())))', '(()())']) == [4, 2]
+attribution:
+  dataset: HumanEval Pro (CodeEval-Pro, Yu et al. 2024)
+  url: https://huggingface.co/datasets/CodeEval-Pro/humaneval-pro
+  license: MIT
+  source: hf:CodeEval-Pro/humaneval-pro
+  split: train
+  item: '6'
+  revision: cd078f93d57d1902b5c3e4ae330166b2ca0e0e80
+  label: the dataset's own assert tests, run as checks

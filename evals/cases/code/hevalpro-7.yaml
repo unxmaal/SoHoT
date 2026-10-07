@@ -1,0 +1,29 @@
+# HumanEval Pro (CodeEval-Pro, Yu et al. 2024), MIT (https://huggingface.co/datasets/CodeEval-Pro/humaneval-pro).
+# Imported by evals/benchmark_import.py from hf:CodeEval-Pro/humaneval-pro@cd078f93d57d1902b5c3e4ae330166b2ca0e0e80; re-import, do not edit.
+id: hevalpro-7
+modality: code
+prompt: "Write a Python function `filter_by_multiple_substrings(strings: List[str], substrings: List[str])`.\
+  \ Given a list of strings and a list of substrings, return a set of strings that contain at least one\
+  \ of the given substrings. If a string contains multiple substrings, it should only appear once in the\
+  \ result.\n\nBuild it on this helper, and include the helper unchanged in your answer:\n\n```python\n\
+  from typing import List\n\n\ndef filter_by_substring(strings: List[str], substring: str) -> List[str]:\n\
+  \    \"\"\" Filter an input list of strings only for ones that contain given substring\n    >>> filter_by_substring([],\
+  \ 'a')\n    []\n    >>> filter_by_substring(['abc', 'bacd', 'cde', 'array'], 'a')\n    ['abc', 'bacd',\
+  \ 'array']\n    \"\"\"\n    return [x for x in strings if substring in x]\n```\n\nReturn only the code."
+assert:
+  checks:
+  - filter_by_multiple_substrings([], ['a']) == set([])
+  - filter_by_multiple_substrings(['abc', 'bacd', 'cde', 'array'], ['a', 'd']) == set(['abc', 'bacd',
+    'cde', 'array'])
+  - filter_by_multiple_substrings(['hello', 'world', 'python', 'programming'], ['o', 'n']) == set(['hello',
+    'world', 'python', 'programming'])
+  - filter_by_multiple_substrings(['apple', 'banana', 'cherry'], ['p', 'a']) == set(['apple', 'banana'])
+attribution:
+  dataset: HumanEval Pro (CodeEval-Pro, Yu et al. 2024)
+  url: https://huggingface.co/datasets/CodeEval-Pro/humaneval-pro
+  license: MIT
+  source: hf:CodeEval-Pro/humaneval-pro
+  split: train
+  item: '7'
+  revision: cd078f93d57d1902b5c3e4ae330166b2ca0e0e80
+  label: the dataset's own assert tests, run as checks

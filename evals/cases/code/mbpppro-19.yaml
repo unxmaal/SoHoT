@@ -1,0 +1,29 @@
+# MBPP Pro (CodeEval-Pro, Yu et al. 2024), MIT (https://huggingface.co/datasets/CodeEval-Pro/mbpp-pro).
+# Imported by evals/benchmark_import.py from hf:CodeEval-Pro/mbpp-pro@50f18448e09a8383226e1a5cd3654d2a454fe333; re-import, do not edit.
+id: mbpppro-19
+modality: code
+prompt: "Write a Python function `count_Substrings(s)`. Given a list of strings, write a Python function\
+  \ to count the total number of substrings across all strings where the sum of the digits of the substring\
+  \ equals the length of the substring. The function should return the total count of such substrings.\n\
+  \nBuild it on this helper, and include the helper unchanged in your answer:\n\n```python\n# Write a\
+  \ python function to count the number of substrings with the sum of digits equal to their length.\n\
+  from collections import defaultdict\ndef count_Substrings(s):\n    n, count, sum = len(s), 0, 0\n  \
+  \  mp = defaultdict(lambda : 0)\n    mp[0] += 1\n    for i in range(n):\n        sum += ord(s[i]) -\
+  \ ord('0')\n        count += mp[sum - i - 1]\n        mp[sum - i - 1] += 1\n    return count\n```\n\n\
+  Return only the code."
+assert:
+  checks:
+  - total_count_Substrings(['123', '456']) == 1
+  - total_count_Substrings(['111', '222']) == 6
+  - total_count_Substrings(['1234', '5678']) == 1
+  - total_count_Substrings(['1', '2']) == 1
+  - total_count_Substrings(['12345', '67890']) == 1
+attribution:
+  dataset: MBPP Pro (CodeEval-Pro, Yu et al. 2024)
+  url: https://huggingface.co/datasets/CodeEval-Pro/mbpp-pro
+  license: MIT
+  source: hf:CodeEval-Pro/mbpp-pro
+  split: train
+  item: '19'
+  revision: 50f18448e09a8383226e1a5cd3654d2a454fe333
+  label: the dataset's own assert tests, run as checks

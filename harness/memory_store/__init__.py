@@ -26,6 +26,8 @@ from harness.memory_store.machines import (machine_row, recorded_facts,
 from harness.memory_store.cards import (CARD_COLUMNS, card_of, parents_of, set_card,
     with_lineage)  # noqa: F401
 from harness.memory_store.sources import (record_source, source_row)  # noqa: F401
+from harness.memory_store.benchmarks import (benchmarks, probe_summary,
+    record_benchmark, record_probe, set_training, training)  # noqa: F401
 from harness.memory_store.transitions import (IllegalTransition, REOPENS, RETEST,
     RETESTS, RETEST_AFTER_SECONDS, RETEST_TIERS, RETRACTION, _held,
     _migration_retraction, _schedule_retest, _write, decide, decide_or_skip, fold,

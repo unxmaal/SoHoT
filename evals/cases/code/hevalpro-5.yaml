@@ -1,0 +1,30 @@
+# HumanEval Pro (CodeEval-Pro, Yu et al. 2024), MIT (https://huggingface.co/datasets/CodeEval-Pro/humaneval-pro).
+# Imported by evals/benchmark_import.py from hf:CodeEval-Pro/humaneval-pro@cd078f93d57d1902b5c3e4ae330166b2ca0e0e80; re-import, do not edit.
+id: hevalpro-5
+modality: code
+prompt: "Write a Python function `intersperse(numbers: List[int], delimeter: int)`. Given a list of integers,\
+  \ intersperse a specified delimiter between every two consecutive elements of the list. Then, repeat\
+  \ this process with a different delimiter for the resulting list. Finally, return the list after both\
+  \ interspersing operations.\n\nBuild it on this helper, and include the helper unchanged in your answer:\n\
+  \n```python\nfrom typing import List\n\n\ndef intersperse(numbers: List[int], delimeter: int) -> List[int]:\n\
+  \    \"\"\" Insert a number 'delimeter' between every two consecutive elements of input list `numbers'\n\
+  \    >>> intersperse([], 4)\n    []\n    >>> intersperse([1, 2, 3], 4)\n    [1, 4, 2, 4, 3]\n    \"\"\
+  \"\n    if not numbers:\n        return []\n\n    result = []\n\n    for n in numbers[:-1]:\n      \
+  \  result.append(n)\n        result.append(delimeter)\n\n    result.append(numbers[-1])\n\n    return\
+  \ result\n```\n\nReturn only the code."
+assert:
+  checks:
+  - double_intersperse([], 4, 5) == []
+  - double_intersperse([1, 2, 3], 4, 5) == [1, 5, 4, 5, 2, 5, 4, 5, 3]
+  - double_intersperse([1, 1, 1], 2, 3) == [1, 3, 2, 3, 1, 3, 2, 3, 1]
+  - double_intersperse([1], 4, 5) == [1]
+  - double_intersperse([1, 2], 4, 5) == [1, 5, 4, 5, 2]
+attribution:
+  dataset: HumanEval Pro (CodeEval-Pro, Yu et al. 2024)
+  url: https://huggingface.co/datasets/CodeEval-Pro/humaneval-pro
+  license: MIT
+  source: hf:CodeEval-Pro/humaneval-pro
+  split: train
+  item: '5'
+  revision: cd078f93d57d1902b5c3e4ae330166b2ca0e0e80
+  label: the dataset's own assert tests, run as checks

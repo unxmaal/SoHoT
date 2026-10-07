@@ -1,0 +1,34 @@
+# HumanEval Pro (CodeEval-Pro, Yu et al. 2024), MIT (https://huggingface.co/datasets/CodeEval-Pro/humaneval-pro).
+# Imported by evals/benchmark_import.py from hf:CodeEval-Pro/humaneval-pro@cd078f93d57d1902b5c3e4ae330166b2ca0e0e80; re-import, do not edit.
+id: hevalpro-1
+modality: code
+prompt: "Write a Python function `count_balanced_paren_groups(paren_string: str)`. Given a string containing\
+  \ multiple groups of nested parentheses, your goal is to count the number of balanced groups and return\
+  \ the total count. Each group is balanced (each open brace is properly closed) and not nested within\
+  \ each other. Ignore any spaces in the input string.\n\nBuild it on this helper, and include the helper\
+  \ unchanged in your answer:\n\n```python\nfrom typing import List\n\n\ndef separate_paren_groups(paren_string:\
+  \ str) -> List[str]:\n    \"\"\" Input to this function is a string containing multiple groups of nested\
+  \ parentheses. Your goal is to\n    separate those group into separate strings and return the list of\
+  \ those.\n    Separate groups are balanced (each open brace is properly closed) and not nested within\
+  \ each other\n    Ignore any spaces in the input string.\n    >>> separate_paren_groups('( ) (( )) ((\
+  \ )( ))')\n    ['()', '(())', '(()())']\n    \"\"\"\n    result = []\n    current_string = []\n    current_depth\
+  \ = 0\n\n    for c in paren_string:\n        if c == '(':\n            current_depth += 1\n        \
+  \    current_string.append(c)\n        elif c == ')':\n            current_depth -= 1\n            current_string.append(c)\n\
+  \n            if current_depth == 0:\n                result.append(''.join(current_string))\n     \
+  \           current_string.clear()\n\n    return result\n```\n\nReturn only the code."
+assert:
+  checks:
+  - count_balanced_paren_groups('( ) (( )) (( )( ))') == 3
+  - count_balanced_paren_groups('((())) (()) (()(()))') == 3
+  - count_balanced_paren_groups('()()()') == 3
+  - count_balanced_paren_groups('') == 0
+  - count_balanced_paren_groups('(()) ((()))') == 2
+attribution:
+  dataset: HumanEval Pro (CodeEval-Pro, Yu et al. 2024)
+  url: https://huggingface.co/datasets/CodeEval-Pro/humaneval-pro
+  license: MIT
+  source: hf:CodeEval-Pro/humaneval-pro
+  split: train
+  item: '1'
+  revision: cd078f93d57d1902b5c3e4ae330166b2ca0e0e80
+  label: the dataset's own assert tests, run as checks

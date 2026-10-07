@@ -1,0 +1,26 @@
+# MBPP Pro (CodeEval-Pro, Yu et al. 2024), MIT (https://huggingface.co/datasets/CodeEval-Pro/mbpp-pro).
+# Imported by evals/benchmark_import.py from hf:CodeEval-Pro/mbpp-pro@50f18448e09a8383226e1a5cd3654d2a454fe333; re-import, do not edit.
+id: mbpppro-6
+modality: code
+prompt: "Write a Python function `find_Rotations_for_list(strings)`. Given a list of strings, write a\
+  \ Python function to find the minimum number of rotations required to get the same string for each string\
+  \ in the list. The function should return a list of integers where each integer represents the minimum\
+  \ number of rotations required for the corresponding string in the input list.\n\nBuild it on this helper,\
+  \ and include the helper unchanged in your answer:\n\n```python\n# Write a python function to find the\
+  \ minimum number of rotations (greater than 0) required to get the same string.\ndef find_Rotations(s):\n\
+  \    n = len(s)\n    s += s\n    for i in range(1, n + 1):\n        if s[i: i + n] == s[0: n]:\n   \
+  \         return i\n    return n\n```\n\nReturn only the code."
+assert:
+  checks:
+  - find_Rotations_for_list(['abc', 'aaaa', 'abcabc']) == [3, 1, 3]
+  - find_Rotations_for_list(['', 'a', 'abab']) == [0, 1, 2]
+  - find_Rotations_for_list(['rotation', 'python', 'programming']) == [8, 6, 11]
+attribution:
+  dataset: MBPP Pro (CodeEval-Pro, Yu et al. 2024)
+  url: https://huggingface.co/datasets/CodeEval-Pro/mbpp-pro
+  license: MIT
+  source: hf:CodeEval-Pro/mbpp-pro
+  split: train
+  item: '6'
+  revision: 50f18448e09a8383226e1a5cd3654d2a454fe333
+  label: the dataset's own assert tests, run as checks
