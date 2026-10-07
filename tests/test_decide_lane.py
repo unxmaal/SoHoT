@@ -422,6 +422,16 @@ def test_decide_is_a_named_lane_in_every_table():
     assert "decide" in core.CHECKERS
 
 
+@pytest.mark.parametrize("repo", [
+    "crh225/plumb-4b-GGUF", "mindchain/imajev-4b-GGUF",
+    "apus-ailab/APUS-OpenJev-v1-4B-GGUF", "Mapika/decider-4b-GGUF"])
+def test_a_jev_class_model_is_reachable_by_a_decide_query(repo):
+    from harness import discover
+    # HF search matches a substring of the repo id, so one query must be in it (#311).
+    queries = [q.lower() for q in discover.lane_queries("decide")]
+    assert any(q in repo.lower() for q in queries), queries
+
+
 def test_an_adapter_is_spelled_for_the_engine_that_loads_it():
     assert screen.candidate_for("decide", NIMBLE, "lora") == f"nimble:{NIMBLE}"
     assert screen.candidate_for("decide", "org/full-model") == "org/full-model"
