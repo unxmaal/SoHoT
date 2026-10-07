@@ -36,6 +36,9 @@ MISSING_FILE_IN_SNAPSHOT = "missing_file_in_snapshot"
 CRASHED = "crashed"
 CONTENT_FAILED = "content_failed"
 
+#: A verdict's class, not a row's: the adopt gate lacked the power to see the effect. #479.
+UNDERPOWERED = "underpowered"
+
 #: class -> (screen outcome, reason), in precedence order when rows disagree.
 CLASSES = {
     SERVER_DEAD: ("queued", HARNESS),

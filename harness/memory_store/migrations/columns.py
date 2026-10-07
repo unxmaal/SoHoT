@@ -154,3 +154,14 @@ def _add_edge_scores(conn) -> None:
                      ("score", "REAL")):
         if col not in _columns(conn, "edges"):
             conn.execute(f"ALTER TABLE edges ADD COLUMN {col} {ddl}")
+
+
+def _add_holdout_power(conn) -> None:
+    """The holdout split and power columns on runs and verdicts, on an older store. #479."""
+    for table, col, ddl in (("verdicts", "failure_class", "TEXT NOT NULL DEFAULT ''"),
+                            ("verdicts", "split_version", "TEXT NOT NULL DEFAULT ''"),
+                            ("verdicts", "power", "TEXT NOT NULL DEFAULT '{}'"),
+                            ("runs", "split", "TEXT NOT NULL DEFAULT ''"),
+                            ("runs", "split_version", "TEXT NOT NULL DEFAULT ''")):
+        if col not in _columns(conn, table):
+            conn.execute(f"ALTER TABLE {table} ADD COLUMN {col} {ddl}")

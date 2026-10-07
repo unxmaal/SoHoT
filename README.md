@@ -467,6 +467,18 @@ Run that, and it competes against what you already use on identical cases. That
 is the whole loop: **it looks, it proposes with evidence, you measure, the
 numbers decide.**
 
+**Dev, holdout and power.** Each lane's cases are split by content digest into
+`dev` (about 70%) and `holdout` (about 30%, at least 3). Anything that adapts to
+failures, the screen included, runs on dev only (`evals.run --split dev`); `soh
+adopt` and the discover loop decide on holdout and print dev beside it. A lane
+with fewer than 6 cases is too small to split, decides on all of them, and the
+verdict says so. Before measuring, `soh adopt` works out the repeat count the
+paired test needs to see a gain of `--effect` (default 0.2 per case) from the
+incumbent's stored pass rates, capped at 16. A loss with too little power is
+recorded as `underpowered`, not as "no better". `soh report` marks a lane
+`saturated` when its incumbent passes at least 95% of holdout: those cases can
+no longer separate candidates.
+
 It has already returned a result nobody asked for. `parakeet-tdt-0.6b-v3`, the
 newer version of the speech model in use, is measurably *worse* than the v2 it
 would have replaced. A version number is a hypothesis, not an upgrade.

@@ -37,6 +37,11 @@ def cmd_report(a) -> int:
         if l.get("parked"):
             print(f"  {l['lane']} is parked: {l['parked']}; "
                   f"revisit when {l['parked_until']}")
+    saturated = [l["lane"] for l in lanes if l.get("saturated")]
+    if saturated:
+        print(f"  {len(saturated)} lane(s) saturated: the incumbent passes "
+              f">= 95% of holdout, so its cases cannot separate candidates: "
+              f"{', '.join(saturated)}")
     if stale:
         print(f"  {len(stale)} lane(s) not measured in "
               f"{report.STALE_LANE_DAYS:.0f} days: {', '.join(stale)}")

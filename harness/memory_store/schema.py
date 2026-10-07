@@ -4,7 +4,7 @@ from __future__ import annotations
 from harness import store
 
 
-SCHEMA_VERSION = 45
+SCHEMA_VERSION = 46
 
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
@@ -171,7 +171,12 @@ CREATE TABLE IF NOT EXISTS verdicts (
     -- The stored run this verdict was read from. run_path is a download dir. #410.
     run_id      INTEGER REFERENCES runs(id),
     -- WHY, from reasons.REASONS, written by the tier that knows. #408.
-    reason      TEXT NOT NULL DEFAULT ''
+    reason      TEXT NOT NULL DEFAULT '',
+    -- reasons.UNDERPOWERED when the adopt gate could not have seen the effect. #479.
+    failure_class TEXT NOT NULL DEFAULT '',
+    -- The holdout assignment version and the power plan an adopt verdict used. #479.
+    split_version TEXT NOT NULL DEFAULT '',
+    power       TEXT NOT NULL DEFAULT '{}'
 );
 
 CREATE TABLE IF NOT EXISTS machines (
@@ -256,7 +261,10 @@ CREATE TABLE IF NOT EXISTS runs (
     specs        TEXT NOT NULL DEFAULT '{}',
     recorded_at  REAL NOT NULL,
     -- The queued job that ran evals.run, if one did. #418.
-    job_id       INTEGER REFERENCES jobs(id) ON DELETE SET NULL
+    job_id       INTEGER REFERENCES jobs(id) ON DELETE SET NULL,
+    -- Which side of the holdout split ran (all, dev, holdout), and its version. #479.
+    split        TEXT NOT NULL DEFAULT '',
+    split_version TEXT NOT NULL DEFAULT ''
 );
 
 CREATE TABLE IF NOT EXISTS results (
