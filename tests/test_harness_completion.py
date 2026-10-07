@@ -249,6 +249,21 @@ def test_a_null_content_is_a_clear_error_not_a_typeerror(tmp_path):
 
 
 @respx.mock
+@pytest.mark.parametrize("usage, count", [
+    ({"completion_tokens": 4000,
+      "completion_tokens_details": {"reasoning_tokens": 3990}}, "3990 tokens"),
+    ({"completion_tokens": 4000}, "4000 tokens"),
+])
+def test_an_exhausted_budget_counts_the_reasoning_tokens(usage, count):
+    respx.post(f"{GW}/v1/chat/completions").mock(return_value=httpx.Response(
+        200, json={"usage": usage, "choices": [{"message": {
+            "content": None, "reasoning_content": "Let me think..."}}]}))
+    with pytest.raises(comp.CompletionError) as e:
+        comp.complete("a gear", model="q3-14b", gateway=GW, modality="svg")
+    assert f"{count} of reasoning" in str(e.value)
+
+
+@respx.mock
 def test_an_ordinary_empty_completion_still_reads_as_empty(tmp_path):
     respx.post(f"{GW}/v1/chat/completions").mock(return_value=httpx.Response(
         200, json={"choices": [{"message": {"content": "   "}}]}))

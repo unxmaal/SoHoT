@@ -207,12 +207,16 @@ def _delegated(call, *args, **kw) -> dict:
     "boilerplate, test scaffolding, summaries and bulk rewriting; it sees only "
     "the prompt you pass. `system` replaces the lane's own system prompt. "
     "While a batch run holds the machine it answers only if the model is "
-    "already loaded; otherwise it refuses rather than waits."))
+    "already loaded; otherwise it refuses rather than waits. `thinking` false "
+    "turns a hybrid thinking model's reasoning off; left out, the lane is "
+    "served as it was measured. max_tokens may go up to the model's served "
+    "context less the prompt (8192 when that context is unknown)."))
 def local_complete(prompt: str, lane: str = "code", system: str | None = None,
-                   max_tokens: int = 2048,
-                   temperature: float | None = None) -> LocalCompletion:
+                   max_tokens: int = 2048, temperature: float | None = None,
+                   thinking: bool | None = None) -> LocalCompletion:
     got = _delegated(delegate.complete, lane, prompt, system=system,
-                     max_tokens=max_tokens, temperature=temperature)
+                     max_tokens=max_tokens, temperature=temperature,
+                     thinking=thinking)
     return LocalCompletion(**{k: got[k] for k in LocalCompletion.model_fields})
 
 

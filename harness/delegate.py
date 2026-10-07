@@ -13,12 +13,15 @@ import statistics
 import time
 import urllib.request
 
-from harness import completion, exclusive, gateway, serving
+from harness import completion, context, exclusive, gateway, reasons, serving
 
 #: Lanes a delegated completion may name: the ones the gateway aliases as sohot-<lane>.
 LANES = gateway.TEXT_LANES
 MAX_PROMPT_CHARS = 100_000
+#: The max_tokens cap when the served context is unknown.
 MAX_TOKENS = 8192
+#: A rough floor on characters per prompt token, so the estimate errs high.
+CHARS_PER_TOKEN = 3
 TIMEOUT_S = 300.0
 #: Seconds to ask a server what it holds; an answer that late counts as not resident.
 RESIDENCY_TIMEOUT_S = 2.0
@@ -67,8 +70,33 @@ def _preflight(*texts: str, max_tokens: int = 1) -> None:
     if size > MAX_PROMPT_CHARS:
         raise Refused(f"prompt is {size} characters, over the {MAX_PROMPT_CHARS} "
                       f"cap; pass less material or summarise it first")
-    if not 1 <= int(max_tokens) <= MAX_TOKENS:
-        raise Refused(f"max_tokens must be 1..{MAX_TOKENS}, not {max_tokens}")
+    if int(max_tokens) < 1:
+        raise Refused(f"max_tokens must be at least 1, not {max_tokens}")
+
+
+def cap(ctx: int | None, *texts: str) -> int:
+    """The largest max_tokens a request may ask for: the served context less the prompt. #590."""
+    if ctx is None:
+        return MAX_TOKENS
+    chars = sum(len(t or "") for t in texts)
+    return max(0, ctx - -(-chars // CHARS_PER_TOKEN))
+
+
+def _budget(spec: str, max_tokens: int, *texts: str) -> None:
+    ctx = context.served_ctx(spec)
+    most = cap(ctx, *texts)
+    if int(max_tokens) > most:
+        where = (f"the {ctx}-token context {spec} is served at, less the prompt"
+                 if ctx else f"the cap while {spec}'s served context is unknown")
+        raise Refused(f"max_tokens must be 1..{most} ({where}), not {max_tokens}")
+
+
+def template(lane: str, thinking: bool | None) -> dict | None:
+    """The lane's chat-template kwargs, with enable_thinking set when the caller says. #590."""
+    kwargs = dict(completion.TEMPLATE.get(lane) or {})
+    if thinking is not None:
+        kwargs["enable_thinking"] = bool(thinking)
+    return kwargs or None
 
 
 def admit(holder: str, resident: bool, level: int | None) -> tuple[bool, str]:
@@ -179,20 +207,31 @@ def _timing(got: completion.Completion, started: float) -> dict:
 
 def complete(lane: str, prompt: str, system: str | None = None,
              max_tokens: int = 2048, temperature: float | None = None,
-             timeout: float | None = None) -> dict:
-    """One completion on the lane's adopted model, timed. Raises Refused or CompletionError."""
+             timeout: float | None = None, thinking: bool | None = None) -> dict:
+    """One completion on the lane's adopted model, timed. Raises Refused or CompletionError.
+
+    `thinking` None serves the lane as it was measured; False sends enable_thinking false.
+    """
     lane = check_lane(lane)
     if not (prompt or "").strip():
         raise Refused("empty prompt")
     _preflight(prompt, system or "", max_tokens=max_tokens)
     spec, where = route(lane)
+    _budget(spec, max_tokens, prompt, system or completion.SYSTEM.get(lane, ""))
     _gate(where)
     started = time.perf_counter()
-    got = completion.complete_full(
-        prompt, model=where.model, gateway=where.base, modality=lane,
-        timeout=timeout or TIMEOUT_S, temperature=temperature,
-        max_tokens=int(max_tokens), sampling=where.sampling or None,
-        stream=True, system=system)
+    try:
+        got = completion.complete_full(
+            prompt, model=where.model, gateway=where.base, modality=lane,
+            timeout=timeout or TIMEOUT_S, temperature=temperature,
+            max_tokens=int(max_tokens), sampling=where.sampling or None,
+            stream=True, system=system, template=template(lane, thinking))
+    except completion.CompletionError as exc:
+        if exc.failure_class != reasons.TOKEN_BUDGET_EXHAUSTED or thinking is False:
+            raise
+        raise completion.CompletionError(
+            f"{exc} Or pass thinking=false to answer without reasoning.",
+            exc.failure_class, exc.limit) from exc
     return {"text": got.text, "lane": lane, "spec": spec,
             "model": got.model or where.model, **_timing(got, started)}
 

@@ -580,9 +580,16 @@ Speech is not exposed over MCP; that was ruled out.
 Two more tools let the assistant hand a text subtask to the model a lane has
 adopted here, through the same route `soh code` uses:
 
-- `local_complete(prompt, lane="code", system=None, max_tokens=2048, temperature=None)`
+- `local_complete(prompt, lane="code", system=None, max_tokens=2048, temperature=None, thinking=None)`
   returns `text`, the `model` that answered, `ttft_s`, `seconds` and token counts.
   Lanes: code, web, svg, extract, decide. `system` replaces the lane's own system prompt.
+  `thinking=false` sends `chat_template_kwargs: {enable_thinking: false}`, so a
+  hybrid thinking model answers without reasoning first; left out, the lane is
+  served as it was measured. `max_tokens` may go up to the context the model is
+  served at less the prompt (estimated at 3 characters a token), read from the
+  llama-server router's launch args or the stored context; when that is unknown
+  the cap is 8192. A reply that spends the whole budget reasoning is an error
+  that says how many tokens went to reasoning and suggests `thinking=false`.
 - `local_decide(question, schema, context="")` is `soh decide`: the same flat
   schema, answers plus a probability per choice, from the decide lane's model.
   It is not streamed, so `ttft_s` is empty: through the gateway a streamed

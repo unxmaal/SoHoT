@@ -8,7 +8,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import pytest
 
-from harness import completion, delegate, exclusive, serving
+from harness import completion, context, delegate, exclusive, serving
 
 ANSWER_AT = 0.3
 SERVED = "upstream/Real-Model-4bit"
@@ -22,6 +22,8 @@ class Fake(ThreadingHTTPServer):
     stall_s = 0.0
     #: What LiteLLM in front of mlx_lm.server did, measured 2026-10-06.
     drop_streamed_logprobs = True
+    #: A thinking model that spends the whole budget before answering. #590.
+    reasoning_only = False
 
     def __init__(self):
         super().__init__(("127.0.0.1", 0), Handler)
@@ -61,13 +63,18 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         time.sleep(ANSWER_AT)
         choice = {"index": 0, "delta": {"content": s.reply}}
+        usage = {"prompt_tokens": 9, "completion_tokens": 7}
+        if s.reasoning_only:
+            choice = {"index": 0, "delta": {"reasoning_content": "Let me think. " * 50}}
+            usage = {"prompt_tokens": 9, "completion_tokens": s.seen[-1]["max_tokens"],
+                     "completion_tokens_details": {
+                         "reasoning_tokens": s.seen[-1]["max_tokens"]}}
         if s.logprobs:
             choice["logprobs"] = {"content": s.logprobs}
         for chunk in ({"model": SERVED, "choices": [choice]},
                       {"model": SERVED, "choices": [{"index": 0, "delta": {},
                                                      "finish_reason": "stop"}]},
-                      {"choices": [], "usage": {"prompt_tokens": 9,
-                                                "completion_tokens": 7}}):
+                      {"choices": [], "usage": usage}):
             self.wfile.write(f"data: {json.dumps(chunk)}\n\n".encode())
             self.wfile.flush()
         self.wfile.write(b"data: [DONE]\n\n")
@@ -83,6 +90,7 @@ def fake(monkeypatch):
         routed.append(lane)
         return f"sohot-{lane}", serving.Route(srv.url, f"sohot-{lane}", {})
     monkeypatch.setattr(delegate, "route", route)
+    monkeypatch.setattr(context, "served_ctx", lambda spec: None)
     srv.routed = routed
     yield srv
     srv.shutdown()
@@ -137,6 +145,44 @@ def test_a_prompt_over_the_cap_is_refused_before_anything_is_sent(fake, monkeypa
     with pytest.raises(delegate.Refused, match="max_tokens"):
         delegate.complete("code", "x", max_tokens=delegate.MAX_TOKENS + 1)
     assert fake.seen == []
+
+
+def test_thinking_false_turns_reasoning_off_through_the_chat_template(fake):
+    delegate.complete("code", "x", thinking=False)
+    assert fake.seen[-1]["chat_template_kwargs"] == {"enable_thinking": False}
+
+
+def test_thinking_left_unsaid_serves_the_lane_as_it_was_measured(fake):
+    delegate.complete("code", "x")
+    assert "chat_template_kwargs" not in fake.seen[-1]
+    delegate.complete("decide", "x")
+    assert fake.seen[-1]["chat_template_kwargs"] == completion.TEMPLATE["decide"]
+    delegate.complete("decide", "x", thinking=True)
+    assert fake.seen[-1]["chat_template_kwargs"] == {"enable_thinking": True}
+
+
+def test_max_tokens_may_rise_to_what_the_served_context_leaves(fake, monkeypatch):
+    monkeypatch.setattr(context, "served_ctx", lambda spec: 262144)
+    delegate.complete("code", "x", max_tokens=20000)
+    assert fake.seen[-1]["max_tokens"] == 20000
+    with pytest.raises(delegate.Refused, match="262144"):
+        delegate.complete("code", "x" * 3000, max_tokens=262144 - 500)
+    assert len(fake.seen) == 1
+
+
+def test_an_unknown_served_context_keeps_the_fixed_cap(fake):
+    with pytest.raises(delegate.Refused, match=str(delegate.MAX_TOKENS)):
+        delegate.complete("code", "x", max_tokens=delegate.MAX_TOKENS + 1)
+    assert fake.seen == []
+
+
+def test_a_budget_spent_on_reasoning_says_how_much_and_offers_thinking_off(fake):
+    fake.reasoning_only = True
+    with pytest.raises(completion.CompletionError) as e:
+        delegate.complete("code", "x", max_tokens=300)
+    msg = str(e.value)
+    assert "300 tokens" in msg and "reasoning" in msg and "thinking=false" in msg
+    assert e.value.failure_class == "token_budget_exhausted"
 
 
 def test_a_stalled_server_times_out_rather_than_hanging(fake):
@@ -227,10 +273,19 @@ def _call(server, name, **args):
 def test_both_tools_are_registered_with_their_signatures(mcp_server):
     tools = {t.name: t for t in mcp_server.SERVER._tool_manager.list_tools()}
     props = tools["local_complete"].parameters["properties"]
-    assert set(props) == {"lane", "prompt", "system", "max_tokens", "temperature"}
+    assert set(props) == {"lane", "prompt", "system", "max_tokens", "temperature",
+                          "thinking"}
+    assert props["thinking"]["default"] is None
     assert props["lane"]["default"] == "code" and props["max_tokens"]["default"] == 2048
     assert set(tools["local_decide"].parameters["properties"]) == {
         "question", "schema", "context"}
+
+
+def test_the_tool_passes_thinking_and_a_large_budget_through(fake, mcp_server, monkeypatch):
+    monkeypatch.setattr(context, "served_ctx", lambda spec: 262144)
+    mcp_server.local_complete(prompt="x", thinking=False, max_tokens=20000)
+    assert fake.seen[-1]["chat_template_kwargs"] == {"enable_thinking": False}
+    assert fake.seen[-1]["max_tokens"] == 20000
 
 
 def test_the_tool_returns_fields_not_json_in_a_string(fake, mcp_server):
