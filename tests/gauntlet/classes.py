@@ -30,6 +30,12 @@ INDEX = {
             "tests/test_no_drop_column.py::test_no_test_drops_a_column"]},
     "each-half-verified-against-its-own-spec-the-seam-against-nothing": {
         "detector": "env_seams",
+        "waivers": {
+            "env:NEEDLE_BIN":
+                "a person's override of the fetched needle binary; nothing in this repo sets it (#534)",
+            "env:NEEDLE_MODEL":
+                "a person's override of the fetched needle weights; nothing in this repo sets it (#534)",
+        },
         "instances": _i(72, 77, 81, 167, 183, 214, 219, 240, 297, 335, 343, 378, 384, 389, 420, 424, 521,
                         rules=(247, 379)),
         "scanners": []},
@@ -168,6 +174,10 @@ INDEX = {
     "state-is-whichever-row-came-last": {
         "detector": "latest_row_state",
         "waivers": {
+            "harness/adopt.py:fit":
+                "ORDER BY peak_kb DESC is the largest measured peak, not the newest row (#533)",
+            "harness/commands/judge.py:_say_adopted":
+                "prints the adoption this command just wrote; display only (#533)",
             "harness/memory_store/transitions.py:decide":
                 "dedupes an exact repeat for a candidate no proposal names; state lives in proposals.state (#409)",
             "harness/memory_store/migrations/columns.py:drop_dead_columns":
@@ -186,6 +196,10 @@ INDEX = {
         "instances": _i(73, 230, 295, 301, rules=(333,)), "scanners": []},
     "one-default-tuned-for-one-member-applied-to-all": {
         "detector": "member_defaults",
+        "waivers": {
+            "harness/contamination.py:gateway_ask(max_tokens)":
+                "a contamination probe's reply budget, the same question to every model by design (#531)",
+        },
         "instances": _i(355, 401, 498), "scanners": []},
     "history-reconstructed-from-present-state": {
         "review": r"(?i)\bbackfill\w*|\bUPDATE\s+\w+\s+SET\b",
