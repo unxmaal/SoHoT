@@ -6,7 +6,7 @@ IMAGE_TAG ?= 0.1.0
 NAMESPACE ?= lh
 
 # Entry points. `make check` is what CI would run and what to run before a commit.
-.PHONY: check test test-slow test-network test-postgres test-litellm coverage image secret-gh metrics lint smoke services clean
+.PHONY: check test test-slow test-network test-postgres test-litellm coverage mutation image secret-gh metrics lint smoke services clean
 
 check: lint test          ## static checks + unit tests (no services needed)
 
@@ -26,6 +26,11 @@ coverage:                 ## REPORT coverage, never gate on it; then the diff fi
 	uv run pytest tests/ -q --cov=harness --cov=evals \
 	  --cov-report=term:skip-covered --cov-report=json
 	@uv run python -m harness.covdiff || true
+
+mutation:                 ## NIGHTLY: mutate the core modules, ratchet survivors against the pin
+	@mkdir -p .logs
+	uv run --group mutation --group mcp python -m tests.gauntlet.mutation run $(MUTATION_ARGS) \
+	  > .logs/mutation.log 2>&1; status=$$?; tail -n 40 .logs/mutation.log; exit $$status
 
 secret-gh:                ## put a GitHub token in the cluster, with no trailing newline
 	@# `gh auth token` ends in a newline and `--from-file` keeps it, so the

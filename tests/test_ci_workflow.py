@@ -60,3 +60,19 @@ def test_a_nightly_failure_opens_an_issue():
     run = "\n".join(s.get("run", "") for s in job["steps"])
     assert "gh issue create" in run and "gh issue comment" in run, (
         "a second failing night comments on the open issue instead of filing another")
+
+
+def test_mutation_testing_runs_nightly_and_never_on_a_pull_request():
+    """Mutating six modules costs minutes per module; #492 F3 keeps it off the PR path."""
+    doc, _ = _ci()
+    job = doc["jobs"]["mutation"]
+    assert "schedule" in job["if"] and "pull_request" not in job["if"], job["if"]
+    run = "\n".join(s.get("run", "") for s in job["steps"])
+    assert "make mutation" in run
+    assert "mutation" in doc["jobs"]["report-nightly"]["needs"]
+
+
+def test_make_mutation_redirects_its_output():
+    make = (Path(__file__).resolve().parents[1] / "Makefile").read_text(encoding="utf-8")
+    recipe = make.split("\nmutation:", 1)[1].split("\n\n", 1)[0]
+    assert "tests.gauntlet.mutation run" in recipe and "> " in recipe

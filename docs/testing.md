@@ -63,5 +63,12 @@ makes a caller wait forever on a download that already died.
 
 ## Running the mutation checks
 
-They are not automated: each is a one-line edit, a `pytest` run, and a restore.
-The table above is the record. Re-run them when a guard changes.
+The hand-run ones above are not automated: each is a one-line edit, a `pytest`
+run, and a restore. The table above is the record. Re-run them when a guard changes.
+
+The core modules (transitions, screen, adopt, reasons, serving, router) are
+mutated nightly by mutmut through `make mutation`, each against only its own
+tests. Surviving mutants are pinned per module in
+`tests/gauntlet/mutation_survivors.json` by stable key, and the nightly job fails
+when a new one appears or a pinned one is killed and not removed.
+`make mutation MUTATION_ARGS="--module harness/reasons.py --pin"` rewrites a pin.
