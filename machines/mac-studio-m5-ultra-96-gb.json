@@ -34,12 +34,12 @@
   }
  ],
  "export_version": 1,
- "generated_at": "2026-10-07T13:41:14Z",
+ "generated_at": "2026-10-07T14:20:52Z",
  "lanes": [
   {
    "adopted": true,
    "adopted_how": "by-hand",
-   "age_days": 0.96,
+   "age_days": 0.98,
    "comparison": [
     {
      "candidate": "mflux/flux2-klein-4b-q8",
@@ -48,6 +48,7 @@
      "metrics": {
       "cer": 0.0
      },
+     "not_run": "",
      "pass_rate": 1.0,
      "passed": 9,
      "peak_gb": 14.99,
@@ -63,6 +64,7 @@
      "metrics": {
       "cer": 0.6667
      },
+     "not_run": "",
      "pass_rate": 0.778,
      "passed": 7,
      "peak_gb": 17.85,
@@ -79,6 +81,7 @@
    "metrics": {
     "cer": 0.0
    },
+   "not_run": "",
    "parked": "",
    "parked_until": "",
    "pass_rate": 1.0,
@@ -93,7 +96,7 @@
   {
    "adopted": true,
    "adopted_how": "measured",
-   "age_days": 0.1,
+   "age_days": 0.12,
    "comparison": [
     {
      "candidate": "llamacpp:Ornith-1.5-35B-Q4_K_M",
@@ -104,6 +107,7 @@
       "completion_tokens": 657.2986,
       "tokens_per_s": 135.6083
      },
+     "not_run": "",
      "pass_rate": 0.773,
      "passed": 116,
      "peak_gb": 0.0,
@@ -121,6 +125,7 @@
       "completion_tokens": 141.72,
       "tokens_per_s": 51.1893
      },
+     "not_run": "",
      "pass_rate": 0.693,
      "passed": 104,
      "peak_gb": 0.0,
@@ -139,17 +144,18 @@
     "completion_tokens": 657.2986,
     "tokens_per_s": 135.6083
    },
+   "not_run": "",
    "parked": "",
    "parked_until": "",
    "pass_rate": 0.773,
    "real_use": {
-    "completion_tokens": 12501,
+    "completion_tokens": 12505,
     "error_rate": 0.0,
     "errors": 0,
     "invalid_calls": 0,
     "invalid_rate": 0.0,
-    "prompt_tokens": 481213,
-    "requests": 93,
+    "prompt_tokens": 481224,
+    "requests": 94,
     "tool_calls": 94,
     "ttft_p50": 0.12477779388427734,
     "ttft_p95": 0.4040029048919678
@@ -164,7 +170,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 1.58,
+   "age_days": 1.61,
    "comparison": [
     {
      "candidate": "q3-4b",
@@ -175,6 +181,7 @@
       "ink": 0.4501,
       "tokens_per_s": 163.6667
      },
+     "not_run": "",
      "pass_rate": 1.0,
      "passed": 15,
      "peak_gb": 0.0,
@@ -192,6 +199,7 @@
       "ink": 0.6232,
       "tokens_per_s": 126.15
      },
+     "not_run": "",
      "pass_rate": 0.933,
      "passed": 14,
      "peak_gb": 0.0,
@@ -209,6 +217,7 @@
       "ink": 0.5815,
       "tokens_per_s": 118.2667
      },
+     "not_run": "",
      "pass_rate": 0.8,
      "passed": 12,
      "peak_gb": 0.0,
@@ -226,6 +235,7 @@
       "ink": 0.4554,
       "tokens_per_s": 118.9067
      },
+     "not_run": "",
      "pass_rate": 0.8,
      "passed": 12,
      "peak_gb": 0.0,
@@ -244,6 +254,7 @@
     "ink": 0.4501,
     "tokens_per_s": 163.6667
    },
+   "not_run": "",
    "parked": "",
    "parked_until": "",
    "pass_rate": 1.0,
@@ -258,7 +269,7 @@
   {
    "adopted": true,
    "adopted_how": "measured",
-   "age_days": 0.74,
+   "age_days": 0.77,
    "comparison": [
     {
      "candidate": "q3-30b",
@@ -270,6 +281,7 @@
       "svg_bytes": 659.875,
       "tokens_per_s": 110.4167
      },
+     "not_run": "",
      "pass_rate": 1.0,
      "passed": 24,
      "peak_gb": 0.0,
@@ -288,6 +300,7 @@
       "svg_bytes": 496.9375,
       "tokens_per_s": 117.7917
      },
+     "not_run": "",
      "pass_rate": 0.667,
      "passed": 16,
      "peak_gb": 0.0,
@@ -307,17 +320,18 @@
     "svg_bytes": 659.875,
     "tokens_per_s": 110.4167
    },
+   "not_run": "",
    "parked": "",
    "parked_until": "",
    "pass_rate": 1.0,
    "real_use": {
-    "completion_tokens": 22,
+    "completion_tokens": 26,
     "error_rate": 0.0,
     "errors": 0,
     "invalid_calls": 0,
     "invalid_rate": null,
-    "prompt_tokens": 55,
-    "requests": 6,
+    "prompt_tokens": 64,
+    "requests": 7,
     "tool_calls": 0,
     "ttft_p50": null,
     "ttft_p95": null
@@ -332,7 +346,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 1.65,
+   "age_days": 1.68,
    "comparison": [
     {
      "candidate": "h3/minimax-h3@ssd_streaming=false",
@@ -341,6 +355,7 @@
      "metrics": {
       "motion": 0.034
      },
+     "not_run": "",
      "pass_rate": 1.0,
      "passed": 1,
      "peak_gb": 18.43,
@@ -357,6 +372,7 @@
    "metrics": {
     "motion": 0.0418
    },
+   "not_run": "",
    "parked": "",
    "parked_until": "",
    "pass_rate": 1.0,
@@ -371,7 +387,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 0.09,
+   "age_days": 0.12,
    "comparison": [
     {
      "candidate": "acestep/acestep-v15-turbo",
@@ -382,6 +398,7 @@
       "seconds": 30.0,
       "wer": 0.3394
      },
+     "not_run": "",
      "pass_rate": 1.0,
      "passed": 4,
      "peak_gb": 45.93,
@@ -400,6 +417,7 @@
     "seconds": 30.0,
     "wer": 0.3394
    },
+   "not_run": "",
    "parked": "",
    "parked_until": "",
    "pass_rate": 1.0,
@@ -418,14 +436,15 @@
    "comparison": [
     {
      "candidate": "nimble/Bespoke-Nimble-9B",
-     "first_s": 5.031,
-     "median_s": 3.136,
+     "first_s": 4.71,
+     "median_s": 3.075,
      "metrics": {
       "calibrated": 1.0,
       "decide_accuracy": 0.756,
       "decide_brier": 0.382,
       "decide_ece": 0.1059
      },
+     "not_run": "",
      "pass_rate": 0.306,
      "passed": 11,
      "peak_gb": 20.06,
@@ -436,14 +455,15 @@
     },
     {
      "candidate": "decider/strands-decider-2B-hobson-v21",
-     "first_s": 14.866,
-     "median_s": 2.502,
+     "first_s": 14.765,
+     "median_s": 2.492,
      "metrics": {
       "calibrated": 1.0,
       "decide_accuracy": 0.7143,
       "decide_brier": 0.3911,
       "decide_ece": 0.0872
      },
+     "not_run": "",
      "pass_rate": 0.25,
      "passed": 9,
      "peak_gb": 5.78,
@@ -454,16 +474,17 @@
     },
     {
      "candidate": "eval-imajev-4b",
-     "first_s": 0.673,
-     "median_s": 0.518,
+     "first_s": 0.588,
+     "median_s": 0.522,
      "metrics": {
       "calibrated": 1.0,
       "completion_tokens": 37.5278,
       "decide_accuracy": 0.7619,
       "decide_brier": 0.3592,
       "decide_ece": 0.1396,
-      "tokens_per_s": 72.15
+      "tokens_per_s": 72.1278
      },
+     "not_run": "",
      "pass_rate": 0.222,
      "passed": 8,
      "peak_gb": 0.0,
@@ -473,13 +494,28 @@
      "ttft_p95_s": null
     },
     {
-     "candidate": "crh225/plumb-4b-GGUF",
-     "first_s": 0.067,
-     "median_s": 0.066,
+     "candidate": "apus-ailab/APUS-OpenJev-v1-4B-GGUF",
+     "first_s": null,
+     "median_s": null,
      "metrics": {},
-     "pass_rate": 0.0,
-     "passed": 0,
-     "peak_gb": 0.0,
+     "not_run": "refused_by_gateway",
+     "pass_rate": null,
+     "passed": null,
+     "peak_gb": null,
+     "reference": false,
+     "total": 36,
+     "ttft_median_s": null,
+     "ttft_p95_s": null
+    },
+    {
+     "candidate": "crh225/plumb-4b-GGUF",
+     "first_s": null,
+     "median_s": null,
+     "metrics": {},
+     "not_run": "refused_by_gateway",
+     "pass_rate": null,
+     "passed": null,
+     "peak_gb": null,
      "reference": false,
      "total": 36,
      "ttft_median_s": null,
@@ -487,25 +523,13 @@
     },
     {
      "candidate": "Mapika/decider-4b-GGUF",
-     "first_s": 0.067,
-     "median_s": 0.066,
+     "first_s": null,
+     "median_s": null,
      "metrics": {},
-     "pass_rate": 0.0,
-     "passed": 0,
-     "peak_gb": 0.0,
-     "reference": false,
-     "total": 36,
-     "ttft_median_s": null,
-     "ttft_p95_s": null
-    },
-    {
-     "candidate": "apus-ailab/APUS-OpenJev-v1-4B-GGUF",
-     "first_s": 0.103,
-     "median_s": 0.067,
-     "metrics": {},
-     "pass_rate": 0.0,
-     "passed": 0,
-     "peak_gb": 0.0,
+     "not_run": "refused_by_gateway",
+     "pass_rate": null,
+     "passed": null,
+     "peak_gb": null,
      "reference": false,
      "total": 36,
      "ttft_median_s": null,
@@ -513,12 +537,13 @@
     },
     {
      "candidate": "mindchain/decider-4b-v2-GGUF",
-     "first_s": 0.066,
-     "median_s": 0.067,
+     "first_s": null,
+     "median_s": null,
      "metrics": {},
-     "pass_rate": 0.0,
-     "passed": 0,
-     "peak_gb": 0.0,
+     "not_run": "refused_by_gateway",
+     "pass_rate": null,
+     "passed": null,
+     "peak_gb": null,
      "reference": false,
      "total": 36,
      "ttft_median_s": null,
@@ -526,28 +551,29 @@
     }
    ],
    "lane": "decide",
-   "last_run_at": "2026-10-07T13:41:14Z",
-   "measured_at": "2026-10-07T13:41:14Z",
-   "median_s": 0.518,
+   "last_run_at": "2026-10-07T14:20:52Z",
+   "measured_at": "2026-10-07T14:20:52Z",
+   "median_s": 0.522,
    "metrics": {
     "calibrated": 1.0,
     "completion_tokens": 37.5278,
     "decide_accuracy": 0.7619,
     "decide_brier": 0.3592,
     "decide_ece": 0.1396,
-    "tokens_per_s": 72.15
+    "tokens_per_s": 72.1278
    },
+   "not_run": "",
    "parked": "",
    "parked_until": "",
    "pass_rate": 0.222,
    "real_use": {
-    "completion_tokens": 42,
+    "completion_tokens": 46,
     "error_rate": 0.0,
     "errors": 0,
     "invalid_calls": 0,
     "invalid_rate": null,
-    "prompt_tokens": 102,
-    "requests": 8,
+    "prompt_tokens": 113,
+    "requests": 9,
     "tool_calls": 0,
     "ttft_p50": null,
     "ttft_p95": null
@@ -562,7 +588,7 @@
   {
    "adopted": true,
    "adopted_how": "measured",
-   "age_days": 0.47,
+   "age_days": 0.5,
    "comparison": [
     {
      "candidate": "llamacpp:Ornith-1.5-35B-Q4_K_M",
@@ -580,6 +606,7 @@
       "completion_tokens": 751.3333,
       "prompt_tokens": 35016.3571
      },
+     "not_run": "",
      "pass_rate": 1.0,
      "passed": 42,
      "peak_gb": 0.0,
@@ -603,6 +630,7 @@
       "completion_tokens": 377.3333,
       "prompt_tokens": 14492.0952
      },
+     "not_run": "",
      "pass_rate": 0.333,
      "passed": 14,
      "peak_gb": 0.0,
@@ -628,17 +656,18 @@
     "completion_tokens": 751.3333,
     "prompt_tokens": 35016.3571
    },
+   "not_run": "",
    "parked": "",
    "parked_until": "",
    "pass_rate": 1.0,
    "real_use": {
-    "completion_tokens": 40,
+    "completion_tokens": 44,
     "error_rate": 0.0,
     "errors": 0,
     "invalid_calls": 0,
     "invalid_rate": null,
-    "prompt_tokens": 103,
-    "requests": 9,
+    "prompt_tokens": 114,
+    "requests": 10,
     "tool_calls": 0,
     "ttft_p50": null,
     "ttft_p95": null
@@ -660,6 +689,7 @@
    "measured_at": "",
    "median_s": null,
    "metrics": {},
+   "not_run": "",
    "parked": "",
    "parked_until": "",
    "pass_rate": null,
@@ -681,6 +711,7 @@
    "measured_at": "",
    "median_s": null,
    "metrics": {},
+   "not_run": "",
    "parked": "",
    "parked_until": "",
    "pass_rate": null,
@@ -702,6 +733,7 @@
    "measured_at": "",
    "median_s": null,
    "metrics": {},
+   "not_run": "",
    "parked": "",
    "parked_until": "",
    "pass_rate": null,
@@ -716,7 +748,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 1.54,
+   "age_days": 1.57,
    "comparison": [
     {
      "candidate": "claude-code:claude-opus-5-5",
@@ -726,6 +758,7 @@
       "completion_tokens": 22.8,
       "tokens_per_s": 7.02
      },
+     "not_run": "",
      "pass_rate": 1.0,
      "passed": 10,
      "peak_gb": 0.0,
@@ -742,6 +775,7 @@
       "completion_tokens": 9.1,
       "tokens_per_s": 59.16
      },
+     "not_run": "",
      "pass_rate": 0.8,
      "passed": 8,
      "peak_gb": 0.0,
@@ -758,6 +792,7 @@
       "completion_tokens": 9.8,
       "tokens_per_s": 50.08
      },
+     "not_run": "",
      "pass_rate": 0.8,
      "passed": 8,
      "peak_gb": 0.0,
@@ -774,6 +809,7 @@
       "completion_tokens": 9.8,
       "tokens_per_s": 50.11
      },
+     "not_run": "",
      "pass_rate": 0.8,
      "passed": 8,
      "peak_gb": 0.0,
@@ -791,6 +827,7 @@
     "completion_tokens": 9.1,
     "tokens_per_s": 59.16
    },
+   "not_run": "",
    "parked": "",
    "parked_until": "",
    "pass_rate": 0.8,
@@ -805,7 +842,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 1.73,
+   "age_days": 1.75,
    "comparison": [
     {
      "candidate": "parakeet-tdt-0.6b-v2",
@@ -814,6 +851,7 @@
      "metrics": {
       "wer": 0.0162
      },
+     "not_run": "",
      "pass_rate": 1.0,
      "passed": 300,
      "peak_gb": 0.0,
@@ -830,6 +868,7 @@
    "metrics": {
     "wer": 0.0162
    },
+   "not_run": "",
    "parked": "",
    "parked_until": "",
    "pass_rate": 1.0,
@@ -844,7 +883,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 1.03,
+   "age_days": 1.06,
    "comparison": [
     {
      "candidate": "Kokoro-82M-bf16/bm_george",
@@ -853,6 +892,7 @@
      "metrics": {
       "wer": 0.0
      },
+     "not_run": "",
      "pass_rate": 1.0,
      "passed": 5,
      "peak_gb": 0.0,
@@ -868,6 +908,7 @@
      "metrics": {
       "wer": 0.0
      },
+     "not_run": "",
      "pass_rate": 1.0,
      "passed": 5,
      "peak_gb": 0.0,
@@ -884,6 +925,7 @@
    "metrics": {
     "wer": 0.0
    },
+   "not_run": "",
    "parked": "",
    "parked_until": "",
    "pass_rate": 1.0,
@@ -903,7 +945,7 @@
   "first_seen": "2026-10-05T19:28:52Z",
   "hw_model": "Mac17,15",
   "label": "Mac Studio M5 Ultra 96 GB",
-  "last_seen": "2026-10-07T13:37:05Z",
+  "last_seen": "2026-10-07T14:16:33Z",
   "memory_gb": 96.0,
   "os": "macOS 27.0.1",
   "runtimes": [
