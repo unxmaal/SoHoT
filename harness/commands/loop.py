@@ -187,6 +187,9 @@ def _loop_spend(a, rc: int) -> int:
     print("\n=== retests ===")
     _reopen_retests()
 
+    print("\n=== reverify ===")
+    _reverify()
+
     # After the retests, so a reopened candidate's weights are queued, not swept.
     print("\n=== disk ===")
     disk.sweep()
@@ -225,6 +228,20 @@ def _loop_spend(a, rc: int) -> int:
     for row in fresh:
         rc = measure_cmd._measure_and_adopt(a, row) or rc
     return rc
+
+
+def _reverify() -> dict:
+    """Queue re-runs of served models whose triggers fired; never runs one inline. #480."""
+    from harness import reverify
+    from harness import memory_store as ms
+    from harness.commands import reverify as reverify_cmd
+    store = ms.connect()
+    try:
+        got = reverify.check(store)
+    finally:
+        store.close()
+    reverify_cmd.report(got)
+    return got
 
 
 def _reopen_retests(now: float | None = None) -> list[str]:

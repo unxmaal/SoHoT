@@ -4,7 +4,7 @@ from __future__ import annotations
 from harness import store
 
 
-SCHEMA_VERSION = 46
+SCHEMA_VERSION = 47
 
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
@@ -361,6 +361,31 @@ CREATE TABLE IF NOT EXISTS gateway_samples (
     request_id  INTEGER PRIMARY KEY REFERENCES gateway_requests(id) ON DELETE CASCADE,
     prompt      TEXT NOT NULL DEFAULT '',
     completion  TEXT NOT NULL DEFAULT ''
+);
+
+-- One queued re-run of a lane's served model and what it found; never swaps a model. #480.
+CREATE TABLE IF NOT EXISTS reverifications (
+    id              INTEGER PRIMARY KEY,
+    lane            TEXT NOT NULL,
+    candidate_id    INTEGER REFERENCES candidates(id),
+    spec            TEXT NOT NULL,
+    -- The incumbent re-run beside it, '' when there is none.
+    incumbent       TEXT NOT NULL DEFAULT '',
+    -- JSON [[kind, why], ...]: versions, age or usage.
+    triggers        TEXT NOT NULL DEFAULT '[]',
+    job_id          INTEGER REFERENCES jobs(id) ON DELETE SET NULL,
+    -- The last passing run it is compared against; NULL when it never passed here.
+    baseline_run_id INTEGER REFERENCES runs(id),
+    run_id          INTEGER REFERENCES runs(id),
+    machine_id      INTEGER REFERENCES machines(id),
+    queued_at       REAL NOT NULL,
+    settled_at      REAL,
+    -- '' until settled, then passed, failed, regressed or cancelled.
+    outcome         TEXT NOT NULL DEFAULT '',
+    -- From reasons.REASONS and reasons.CLASSES. #408.
+    reason          TEXT NOT NULL DEFAULT '',
+    failure_class   TEXT NOT NULL DEFAULT '',
+    detail          TEXT NOT NULL DEFAULT ''
 );
 
 -- Weights on disk, one row per fetched or found path on one machine. #411.

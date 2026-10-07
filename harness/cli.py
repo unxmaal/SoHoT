@@ -35,6 +35,7 @@ from harness.commands import judge as judge_cmd
 from harness.commands import lanes as lanes_cmd
 from harness.commands import measure as measure_cmd
 from harness.commands import report as report_cmd
+from harness.commands import reverify as reverify_cmd
 from harness.commands import screen as screen_cmd
 from harness.commands import store as store_cmd
 from harness.commands import usage as usage_cmd
@@ -491,6 +492,17 @@ def build_parser() -> argparse.ArgumentParser:
     ver.add_argument("--all", action="store_true",
                      help="every lane, not only the unverified and stale ones")
     ver.set_defaults(func=measure_cmd.cmd_verify)
+    rev = sub.add_parser(
+        "reverify",
+        help="queue a re-run of each wanted lane's served model when its runtime "
+             "moved, it aged, or real use regressed; flag what failed")
+    rev.add_argument("--lane", default="", help="only this lane")
+    rev.add_argument("--dry-run", action="store_true",
+                     help="say what would be queued and settled; write nothing")
+    rev.add_argument("--days", type=float, default=None,
+                     help="with --lane: days without a passing run before it is due "
+                          "(default 7)")
+    rev.set_defaults(func=reverify_cmd.cmd_reverify)
 
     sens = sub.add_parser(
         "sensitivity",

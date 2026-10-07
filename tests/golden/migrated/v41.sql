@@ -60,7 +60,7 @@ table memory_limits [('id', 'INTEGER', 0, None, 1), ('machine_id', 'INTEGER', 1,
   (1, 1, 1789788000.0, 6.5, 25.5, 'floor', '{"last_normal_gb": 25.5, "margin_gb": 6.5, "measured_at": "2026-09-20T10:00:00", "stopped": "floor"}')
 table meta [('key', 'TEXT', 0, None, 1), ('value', 'TEXT', 0, None, 0)]
   index sqlite_autoindex_meta_1 unique=1 ['key']
-  ('schema', '46')
+  ('schema', '47')
 table proposals [('id', 'INTEGER', 0, None, 1), ('name', 'TEXT', 1, None, 0), ('kind', 'TEXT', 1, "'candidate'", 0), ('registry', 'TEXT', 1, "''", 0), ('description', 'TEXT', 1, "''", 0), ('lane', 'TEXT', 1, "''", 0), ('resolved', 'TEXT', 1, "''", 0), ('first_seen', 'REAL', 1, None, 0), ('last_seen', 'REAL', 1, None, 0), ('state', 'TEXT', 1, "''", 0), ('state_verdict_id', 'INTEGER', 0, None, 0), ('retest_count', 'INTEGER', 1, '0', 0), ('next_retest_at', 'REAL', 0, None, 0), ('size_bytes', 'INTEGER', 1, '0', 0), ('hf_task', 'TEXT', 1, "''", 0), ('library', 'TEXT', 1, "''", 0), ('card_tags', 'TEXT', 1, "'[]'", 0), ('attaches_to', 'TEXT', 1, "''", 0), ('runtime_needed', 'TEXT', 1, "''", 0), ('lane_source', 'TEXT', 1, "''", 0), ('card_read', 'TEXT', 1, "''", 0)]
   index ix_prop_state unique=0 ['state']
   index sqlite_autoindex_proposals_1 unique=1 ['name']
@@ -94,6 +94,8 @@ table results [('id', 'INTEGER', 0, None, 1), ('run_id', 'INTEGER', 1, None, 0),
   (12, 3, 1, 5, 'tts-model', 'hello#2', 2, 0, 2.5, 524288, 'failed: wrong answer', '{}', '[]', None, '/RUNS/0003-tts/tts-model-hello-2.wav', 'content_failed', '', None, None, None, None)
   (13, 3, 2, 6, 'kokoro', 'hello#1', 1, 1, 2.5, 524288, '', '{}', '[]', None, '/RUNS/0003-tts/kokoro-hello.wav', '', '', None, None, None, None)
   (14, 3, 3, 6, 'kokoro', 'hello#2', 2, 1, 2.5, 524288, '', '{}', '[]', None, '/RUNS/0003-tts/kokoro-hello-2.wav', '', '', None, None, None, None)
+table reverifications [('id', 'INTEGER', 0, None, 1), ('lane', 'TEXT', 1, None, 0), ('candidate_id', 'INTEGER', 0, None, 0), ('spec', 'TEXT', 1, None, 0), ('incumbent', 'TEXT', 1, "''", 0), ('triggers', 'TEXT', 1, "'[]'", 0), ('job_id', 'INTEGER', 0, None, 0), ('baseline_run_id', 'INTEGER', 0, None, 0), ('run_id', 'INTEGER', 0, None, 0), ('machine_id', 'INTEGER', 0, None, 0), ('queued_at', 'REAL', 1, None, 0), ('settled_at', 'REAL', 0, None, 0), ('outcome', 'TEXT', 1, "''", 0), ('reason', 'TEXT', 1, "''", 0), ('failure_class', 'TEXT', 1, "''", 0), ('detail', 'TEXT', 1, "''", 0)]
+  index ix_reverify_lane unique=0 ['lane', 'candidate_id']
 table runs [('id', 'INTEGER', 0, None, 1), ('path', 'TEXT', 1, None, 0), ('lane', 'TEXT', 1, "''", 0), ('tier', 'TEXT', 1, "'measure'", 0), ('machine_id', 'INTEGER', 0, None, 0), ('generated_at', 'REAL', 0, None, 0), ('repeat_count', 'INTEGER', 1, '1', 0), ('cases_digest', 'TEXT', 1, "''", 0), ('receipt', 'TEXT', 1, "'{}'", 0), ('environment', 'TEXT', 1, "'{}'", 0), ('specs', 'TEXT', 1, "'{}'", 0), ('recorded_at', 'REAL', 1, None, 0), ('job_id', 'INTEGER', 0, None, 0), ('split', 'TEXT', 1, "''", 0), ('split_version', 'TEXT', 1, "''", 0)]
   index ix_runs_job unique=0 ['job_id']
   index ix_runs_lane unique=0 ['lane', 'generated_at']

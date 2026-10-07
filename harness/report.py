@@ -57,20 +57,21 @@ def funnel(conn) -> list[dict]:
     return sorted(out, key=lambda r: order.get(r["tier"], 99))
 
 
-def lanes_state(conn) -> list[dict]:
+def lanes_state(conn, now: float | None = None) -> list[dict]:
     """Per lane: what it serves, its own stored row, and what won.
 
     The numbers are the SERVED candidate's row, by candidate id, from the
     newest stored measure run on this machine that ran it (#410, #341). What
     won is beaten_in(), reported beside it, never in its place.
     """
-    from harness import adopt, holdout, lanes as L, runs, winners
+    from harness import adopt, holdout, lanes as L, reverify, runs, winners
 
     typed = winners.typed()
     measured = winners.beaten_in(conn)
     adopted = adopt.current(conn)
     mine = runs.here(conn)
-    now = time.time()
+    now = time.time() if now is None else now
+    flagged = reverify.flags(conn)
     out = []
     for lane in L.ALL:
         got = measured.get(lane) or {}
@@ -84,6 +85,7 @@ def lanes_state(conn) -> list[dict]:
         here = runs.row_for(conn, ran["id"], cid) if ran else {}
         held_rate = _holdout_rate(conn, lane, ran["id"], cid) if ran else None
         age = runs.age_days(newest, now)
+        last = reverify._latest(conn, lane, cid, settled=True) if cid else None
         out.append({
             "lane": lane,
             "wanted": lane in L.WANTED,
@@ -108,11 +110,13 @@ def lanes_state(conn) -> list[dict]:
             "unverified": not newest and not L.parked(lane)[0],
             "parked": L.parked(lane)[0],
             "parked_until": L.parked(lane)[1],
-            "stale": bool(age is not None and age > STALE_LANE_DAYS
+            "stale": bool(age is not None and age > reverify.days_for(conn, lane)
                           and not L.parked(lane)[0]),
             # Its cases can no longer separate candidates; feeds #491. #479.
             "holdout_pass_rate": held_rate,
             "saturated": holdout.saturated(held_rate),
+            "reverify": last or {},
+            "flagged": lane in flagged,
         })
     return out
 
@@ -322,6 +326,10 @@ def _lane_rows(lanes, changed) -> str:
             tags.append('<span class="tag good">adopted</span>')
         if l.get("saturated"):
             tags.append('<span class="tag warn">saturated</span>')
+        if l.get("flagged"):
+            rv = l.get("reverify") or {}
+            tags.append(f'<span class="tag bad" title="{_esc(rv.get("detail", ""))}">'
+                        f're-verify {_esc(rv.get("outcome", ""))}</span>')
         if l["unverified"]:
             tags.append('<span class="tag bad">no receipt here</span>')
         elif l["stale"]:

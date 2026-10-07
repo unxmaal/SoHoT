@@ -48,11 +48,11 @@ table lineage [('id', 'INTEGER', 0, None, 1), ('proposal_id', 'INTEGER', 1, None
   index sqlite_autoindex_lineage_1 unique=1 ['proposal_id', 'parent', 'kind']
   (1, 4, 'org-z/base-xl', 'adapter')
 table machine_merges [('id', 'INTEGER', 0, None, 1), ('from_id', 'INTEGER', 1, None, 0), ('from_fingerprint', 'TEXT', 1, None, 0), ('into_id', 'INTEGER', 1, None, 0), ('repointed', 'TEXT', 1, "'{}'", 0), ('merged_at', 'REAL', 1, None, 0)]
-  (1, 2, 'Mac14,12/macOS-26.0-arm64-arm-64bit-Mach-O/arm64', 1, '{"adoptions": 0, "downloads": 0, "human_votes": 0, "jobs": 0, "memory_limits": 0, "runs": 0, "sightings": 0, "verdicts": 0}', '<now>')
-  (2, 3, 'Mac14,12//arm64', 1, '{"adoptions": 0, "downloads": 0, "human_votes": 0, "jobs": 0, "memory_limits": 0, "runs": 0, "sightings": 0, "verdicts": 0}', '<now>')
-  (3, 7, 'Mac14,12/macOS/arm64', 1, '{"adoptions": 0, "downloads": 4, "human_votes": 0, "jobs": 0, "memory_limits": 0, "runs": 1, "sightings": 0, "verdicts": 0}', '<now>')
-  (4, 8, 'Mac14,12/arm64', 1, '{"adoptions": 0, "downloads": 0, "human_votes": 0, "jobs": 0, "memory_limits": 0, "runs": 1, "sightings": 0, "verdicts": 0}', '<now>')
-  (5, 9, 'Mac17,15/macOS/arm64', 4, '{"adoptions": 0, "downloads": 0, "human_votes": 0, "jobs": 0, "memory_limits": 0, "runs": 1, "sightings": 0, "verdicts": 0}', '<now>')
+  (1, 2, 'Mac14,12/macOS-26.0-arm64-arm-64bit-Mach-O/arm64', 1, '{"adoptions": 0, "downloads": 0, "human_votes": 0, "jobs": 0, "memory_limits": 0, "reverifications": 0, "runs": 0, "sightings": 0, "verdicts": 0}', '<now>')
+  (2, 3, 'Mac14,12//arm64', 1, '{"adoptions": 0, "downloads": 0, "human_votes": 0, "jobs": 0, "memory_limits": 0, "reverifications": 0, "runs": 0, "sightings": 0, "verdicts": 0}', '<now>')
+  (3, 7, 'Mac14,12/macOS/arm64', 1, '{"adoptions": 0, "downloads": 4, "human_votes": 0, "jobs": 0, "memory_limits": 0, "reverifications": 0, "runs": 1, "sightings": 0, "verdicts": 0}', '<now>')
+  (4, 8, 'Mac14,12/arm64', 1, '{"adoptions": 0, "downloads": 0, "human_votes": 0, "jobs": 0, "memory_limits": 0, "reverifications": 0, "runs": 1, "sightings": 0, "verdicts": 0}', '<now>')
+  (5, 9, 'Mac17,15/macOS/arm64', 4, '{"adoptions": 0, "downloads": 0, "human_votes": 0, "jobs": 0, "memory_limits": 0, "reverifications": 0, "runs": 1, "sightings": 0, "verdicts": 0}', '<now>')
 table machines [('id', 'INTEGER', 0, None, 1), ('fingerprint', 'TEXT', 1, None, 0), ('hw_model', 'TEXT', 1, "''", 0), ('os', 'TEXT', 1, "''", 0), ('arch', 'TEXT', 1, "''", 0), ('memory_gb', 'REAL', 1, '0', 0), ('accelerator', 'TEXT', 1, "''", 0), ('runtimes', 'TEXT', 1, "''", 0), ('ceiling_gb', 'REAL', 1, '0', 0), ('first_seen', 'REAL', 1, None, 0), ('last_seen', 'REAL', 1, None, 0), ('versions', 'TEXT', 1, "'{}'", 0)]
   index sqlite_autoindex_machines_1 unique=1 ['fingerprint']
   (1, 'Mac14,12/macOS/arm64', 'Mac14,12', 'macOS-26.0-arm64-arm-64bit-Mach-O', 'arm64', 32.0, 'metal 32GB', 'llamacpp,mlx', 23.0, 1788600000.0, '<now>', '{}')
@@ -64,7 +64,7 @@ table memory_limits [('id', 'INTEGER', 0, None, 1), ('machine_id', 'INTEGER', 1,
 table meta [('key', 'TEXT', 0, None, 1), ('value', 'TEXT', 0, None, 0)]
   index sqlite_autoindex_meta_1 unique=1 ['key']
   ('artifact_split', '{}')
-  ('schema', '46')
+  ('schema', '47')
 table proposals [('id', 'INTEGER', 0, None, 1), ('name', 'TEXT', 1, None, 0), ('kind', 'TEXT', 1, "'candidate'", 0), ('registry', 'TEXT', 1, "''", 0), ('description', 'TEXT', 1, "''", 0), ('lane', 'TEXT', 1, "''", 0), ('resolved', 'TEXT', 1, "''", 0), ('first_seen', 'REAL', 1, None, 0), ('last_seen', 'REAL', 1, None, 0), ('state', 'TEXT', 1, "''", 0), ('state_verdict_id', 'INTEGER', 0, None, 0), ('retest_count', 'INTEGER', 1, '0', 0), ('next_retest_at', 'REAL', 0, None, 0), ('size_bytes', 'INTEGER', 1, '0', 0), ('hf_task', 'TEXT', 1, "''", 0), ('library', 'TEXT', 1, "''", 0), ('card_tags', 'TEXT', 1, "'[]'", 0), ('attaches_to', 'TEXT', 1, "''", 0), ('runtime_needed', 'TEXT', 1, "''", 0), ('lane_source', 'TEXT', 1, "''", 0), ('card_read', 'TEXT', 1, "''", 0)]
   index ix_prop_state unique=0 ['state']
   index sqlite_autoindex_proposals_1 unique=1 ['name']
@@ -98,6 +98,8 @@ table results [('id', 'INTEGER', 0, None, 1), ('run_id', 'INTEGER', 1, None, 0),
   (12, 3, 1, 5, 'tts-model', 'hello#2', 2, 0, 2.5, 524288, 'failed: wrong answer', '{}', '[]', None, '/RUNS/0003-tts/tts-model-hello-2.wav', 'crashed', '', None, None, None, None)
   (13, 3, 2, 6, 'kokoro', 'hello#1', 1, 1, 2.5, 524288, '', '{}', '[]', None, '/RUNS/0003-tts/kokoro-hello.wav', '', '', None, None, None, None)
   (14, 3, 3, 6, 'kokoro', 'hello#2', 2, 1, 2.5, 524288, '', '{}', '[]', None, '/RUNS/0003-tts/kokoro-hello-2.wav', '', '', None, None, None, None)
+table reverifications [('id', 'INTEGER', 0, None, 1), ('lane', 'TEXT', 1, None, 0), ('candidate_id', 'INTEGER', 0, None, 0), ('spec', 'TEXT', 1, None, 0), ('incumbent', 'TEXT', 1, "''", 0), ('triggers', 'TEXT', 1, "'[]'", 0), ('job_id', 'INTEGER', 0, None, 0), ('baseline_run_id', 'INTEGER', 0, None, 0), ('run_id', 'INTEGER', 0, None, 0), ('machine_id', 'INTEGER', 0, None, 0), ('queued_at', 'REAL', 1, None, 0), ('settled_at', 'REAL', 0, None, 0), ('outcome', 'TEXT', 1, "''", 0), ('reason', 'TEXT', 1, "''", 0), ('failure_class', 'TEXT', 1, "''", 0), ('detail', 'TEXT', 1, "''", 0)]
+  index ix_reverify_lane unique=0 ['lane', 'candidate_id']
 table runs [('id', 'INTEGER', 0, None, 1), ('path', 'TEXT', 1, None, 0), ('lane', 'TEXT', 1, "''", 0), ('tier', 'TEXT', 1, "'measure'", 0), ('machine_id', 'INTEGER', 0, None, 0), ('generated_at', 'REAL', 0, None, 0), ('repeat_count', 'INTEGER', 1, '1', 0), ('cases_digest', 'TEXT', 1, "''", 0), ('receipt', 'TEXT', 1, "'{}'", 0), ('environment', 'TEXT', 1, "'{}'", 0), ('specs', 'TEXT', 1, "'{}'", 0), ('recorded_at', 'REAL', 1, None, 0), ('job_id', 'INTEGER', 0, None, 0), ('split', 'TEXT', 1, "''", 0), ('split_version', 'TEXT', 1, "''", 0)]
   index ix_runs_job unique=0 ['job_id']
   index ix_runs_lane unique=0 ['lane', 'generated_at']

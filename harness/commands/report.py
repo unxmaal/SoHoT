@@ -43,8 +43,14 @@ def cmd_report(a) -> int:
               f">= 95% of holdout, so its cases cannot separate candidates: "
               f"{', '.join(saturated)}")
     if stale:
-        print(f"  {len(stale)} lane(s) not measured in "
-              f"{report.STALE_LANE_DAYS:.0f} days: {', '.join(stale)}")
+        print(f"  {len(stale)} lane(s) not measured within their re-verify "
+              f"threshold: {', '.join(stale)}")
+    for l in lanes:
+        if l.get("flagged"):
+            rv = l.get("reverify") or {}
+            print(f"  re-verify flagged {l['lane']} ({l.get('serves', '')}): "
+                  f"{rv.get('outcome', '')}: {rv.get('detail', '')}; the served "
+                  f"model was not changed")
     return 0
 
 
