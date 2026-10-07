@@ -46,6 +46,8 @@ class Method:
     crosses: bool = True
     #: vector.TRACE_PRESETS key, for a trace method.
     preset: str = ""
+    #: (parsed, lane, prompt, ask) -> (text, cost): how a lane command serves it; None for trace.
+    serve: Callable | None = None
     extra: dict = field(default_factory=dict)
 
     def compose(self, base: str, *args) -> str:
@@ -132,9 +134,81 @@ def weights_of(spec: str) -> str:
     return model if "/" in model and ":" not in model else ""
 
 
-def servable(spec: str) -> bool:
-    """Whether a lane command can serve this spec once adopted. No method is yet."""
-    return not is_method(spec)
+#: The first call of plan: a plan, and no answer yet.
+PLAN_PROMPT = """Before answering, write a short numbered plan for the task below.
+Do not write the answer itself.
+
+TASK:
+{task}"""
+
+#: The second call of plan: the task again, with the plan to follow.
+ANSWER_PROMPT = """{task}
+
+Follow this plan:
+{plan}"""
+
+
+def run(spec: str, lane: str, prompt: str, ask) -> tuple[str, dict]:
+    """(text, cost) for `prompt` served by `spec`, where ask(prompt, modality) -> text is one call
+    on its base's route. A plain model is one ask and {}. ValueError for a method no text call serves. #581."""
+    parsed = parse(spec)
+    if parsed is None:
+        return ask(prompt, lane), {}
+    if parsed.method.serve is None:
+        raise ValueError(f"{spec} draws with an image engine rather than answering in text; "
+                         f"run `soh svg` for it")
+    return parsed.method.serve(parsed, lane, prompt, ask)
+
+
+def text_method(spec: str) -> bool:
+    """Whether `spec` is a method a text call serves (best-of, plan)."""
+    try:
+        parsed = parse(spec)
+    except ValueError:
+        return False
+    return parsed is not None and parsed.method.serve is not None
+
+
+def _rank(lane: str, text: str) -> tuple:
+    """The lane command's own check of a reply as a key: passing first, then fewer warnings."""
+    from harness import completion
+    from harness.checks import code as code_check, html as html_check, svg as svg_check
+    body = completion.artifact(text, lane)
+    if lane == "code":
+        broken = code_check.syntax_error(body) if body.strip() else "empty"
+        missing = [] if broken else code_check.unresolvable_imports(body)
+        return (not broken, -len(missing))
+    checker = {"svg": svg_check.check, "web": html_check.check}.get(lane)
+    if checker is None:
+        return (bool(body.strip()), 0)
+    got = checker(text)
+    return (bool(got.ok), -len(got.warnings))
+
+
+def _serve_plan(parsed: Parsed, lane: str, prompt: str, ask) -> tuple[str, dict]:
+    plan = ask(PLAN_PROMPT.format(task=prompt), "")
+    answer = ask(ANSWER_PROMPT.format(task=prompt, plan=plan.strip()), lane)
+    return answer, {"method": parsed.method.name, "base": parsed.base, "calls": 2}
+
+
+def _serve_best_of(parsed: Parsed, lane: str, prompt: str, ask) -> tuple[str, dict]:
+    from harness import completion
+    n = parsed.args[0]
+    best = best_key = failed = None
+    chosen = 0
+    for i in range(1, n + 1):
+        try:
+            text = ask(prompt, lane)
+        except completion.CompletionError as exc:
+            failed = exc
+            continue
+        key = _rank(lane, text)
+        if best_key is None or key > best_key:
+            best, best_key, chosen = text, key, i
+    if best is None:
+        raise failed or completion.CompletionError("no sample came back")
+    return best, {"method": parsed.method.name, "base": parsed.base, "calls": n,
+                  "samples": n, "chosen": chosen}
 
 
 def cost(incumbent: dict, challenger: dict, spec: str) -> dict:
@@ -204,9 +278,10 @@ REGISTRY: dict[str, Method] = {m.name: m for m in (
            modality="svg", base_lane="image", preset="icon", crosses=False),
     Method("best-of", "best-of:<n>:<base>", SAMPLED_TEXT_LANES, "",
            "sample n at the lane's temperature, keep what the lane's checks score highest",
-           _best_of, arity=1, defaults=(3,), minimum=2),
+           _best_of, arity=1, defaults=(3,), minimum=2, serve=_serve_best_of),
     Method("plan", "plan:<base>", TEXT_LANES, "",
-           "ask for a plan, then answer with it: two calls", _plan),
+           "ask for a plan, then answer with it: two calls", _plan,
+           serve=_serve_plan),
 )}
 
 

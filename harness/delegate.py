@@ -38,9 +38,29 @@ def lane_model(lane: str, chosen: str | None = None) -> str:
 
 
 def route(lane: str, chosen: str | None = None, via: str = "") -> tuple[str, serving.Route]:
-    """(spec, Route) for a text lane, as every lane command resolves it."""
+    """(spec, Route) for a text lane, as every lane command resolves it; a method routes as its base. #581."""
+    from harness import methods
     spec = lane_model(lane, chosen)
-    return spec, serving.route(spec, via)
+    if methods.is_method(spec) and not methods.text_method(spec):
+        raise Refused(f"the {lane} lane serves {spec}, which draws with an image engine "
+                      f"rather than answering in text; run `soh svg` for it")
+    return spec, serving.route(methods.base_of(spec) or spec, via)
+
+
+def generate(spec: str, where: serving.Route, lane: str, prompt: str,
+             call) -> tuple[str, dict, list]:
+    """(text, cost, replies): `spec` served over `where`, each call made by
+    call(prompt, model=, gateway=, modality=, sampling=) -> Completion. #581."""
+    from harness import methods
+    replies: list = []
+
+    def ask(text: str, modality: str) -> str:
+        got = call(text, model=where.model, gateway=where.base, modality=modality,
+                   sampling=where.sampling or None)
+        replies.append(got)
+        return got.text
+    text, cost = methods.run(spec, lane, prompt, ask)
+    return text, cost, replies
 
 
 def check_lane(lane: str) -> str:
@@ -89,6 +109,22 @@ def _budget(spec: str, max_tokens: int, *texts: str) -> None:
         where = (f"the {ctx}-token context {spec} is served at, less the prompt"
                  if ctx else f"the cap while {spec}'s served context is unknown")
         raise Refused(f"max_tokens must be 1..{most} ({where}), not {max_tokens}")
+
+
+def _call_label(spec: str, n: int, modality: str) -> str:
+    """Which call of a method this is, e.g. "call 2 of plan:q3-4b (the answer)"; "" for a plain model."""
+    from harness import methods
+    try:
+        parsed = methods.parse(spec)
+    except ValueError:
+        parsed = None
+    if parsed is None:
+        return ""
+    if parsed.method.name == "plan":
+        what = "the answer" if modality else "the plan"
+    else:
+        what = f"sample {n}"
+    return f"call {n} of {spec} ({what})"
 
 
 def template(lane: str, thinking: bool | None) -> dict | None:
@@ -197,18 +233,23 @@ def _gate(where: serving.Route) -> None:
         raise Refused(why)
 
 
-def _timing(got: completion.Completion, started: float) -> dict:
-    usage = got.usage or {}
-    return {"ttft_s": (got.timing or {}).get("ttft_s"),
+def _timing(got: completion.Completion, started: float, replies=()) -> dict:
+    """Timing of `got`; token counts summed over every reply a method made."""
+    replies = list(replies) or [got]
+
+    def total(key):
+        counts = [(r.usage or {}).get(key) for r in replies]
+        return sum(counts) if all(c is not None for c in counts) else counts[-1]
+    return {"ttft_s": (replies[0].timing or {}).get("ttft_s"),
             "seconds": round(time.perf_counter() - started, 4),
-            "prompt_tokens": usage.get("prompt_tokens"),
-            "completion_tokens": usage.get("completion_tokens")}
+            "prompt_tokens": total("prompt_tokens"),
+            "completion_tokens": total("completion_tokens")}
 
 
 def complete(lane: str, prompt: str, system: str | None = None,
              max_tokens: int = 2048, temperature: float | None = None,
              timeout: float | None = None, thinking: bool | None = None) -> dict:
-    """One completion on the lane's adopted model, timed. Raises Refused or CompletionError.
+    """The lane's adopted model or method, timed; `method` is a method's cost. Raises Refused or CompletionError.
 
     `thinking` None serves the lane as it was measured; False sends enable_thinking false.
     """
@@ -217,23 +258,39 @@ def complete(lane: str, prompt: str, system: str | None = None,
         raise Refused("empty prompt")
     _preflight(prompt, system or "", max_tokens=max_tokens)
     spec, where = route(lane)
-    _budget(spec, max_tokens, prompt, system or completion.SYSTEM.get(lane, ""))
+    from harness import methods
+    base = methods.base_of(spec) or spec
+    _budget(base, max_tokens, prompt, system or completion.SYSTEM.get(lane, ""))
     _gate(where)
     started = time.perf_counter()
-    try:
-        got = completion.complete_full(
-            prompt, model=where.model, gateway=where.base, modality=lane,
-            timeout=timeout or TIMEOUT_S, temperature=temperature,
-            max_tokens=int(max_tokens), sampling=where.sampling or None,
-            stream=True, system=system, template=template(lane, thinking))
-    except completion.CompletionError as exc:
-        if exc.failure_class != reasons.TOKEN_BUDGET_EXHAUSTED or thinking is False:
-            raise
-        raise completion.CompletionError(
-            f"{exc} Or pass thinking=false to answer without reasoning.",
-            exc.failure_class, exc.limit) from exc
-    return {"text": got.text, "lane": lane, "spec": spec,
-            "model": got.model or where.model, **_timing(got, started)}
+    made = []
+
+    def call(text, modality="", **kw):
+        made.append(modality)
+        mine = system if modality else None
+        label = _call_label(spec, len(made), modality)
+        try:
+            # Each call of a method gets the whole cap and the thinking switch. #581.
+            if label:
+                _budget(base, max_tokens, text, mine or completion.SYSTEM.get(modality, ""))
+            return completion.complete_full(
+                text, modality=modality, timeout=timeout or TIMEOUT_S,
+                temperature=temperature, max_tokens=int(max_tokens), stream=True,
+                system=mine, template=template(modality, thinking), **kw)
+        except Refused as exc:
+            raise Refused(f"{label}: {exc}") from exc
+        except completion.CompletionError as exc:
+            if exc.failure_class != reasons.TOKEN_BUDGET_EXHAUSTED:
+                raise
+            hint = "" if thinking is False else " Or pass thinking=false to answer without reasoning."
+            raise completion.CompletionError(
+                f"{label + ': ' if label else ''}{exc}{hint}",
+                exc.failure_class, exc.limit) from exc
+    text, cost, replies = generate(spec, where, lane, prompt, call)
+    got = replies[-1]
+    return {"text": text, "lane": lane, "spec": spec,
+            "model": got.model or where.model, "method": cost or None,
+            **_timing(got, started, replies)}
 
 
 def check_schema(schema) -> dict:

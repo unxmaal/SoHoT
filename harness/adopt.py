@@ -282,12 +282,8 @@ def record(conn, verdict: Verdict, spec: str = "",
         else reasons.CANDIDATE))
     if verdict.adopt:
         outcome = "measured"
-    # A method that wins is measured; no lane command runs one yet, so nothing serves it. #576.
-    from harness import methods
-    serve = verdict.adopt and methods.servable(spec)
-    detail = f"{verdict.lane}: {verdict.why}" if serve or not verdict.adopt else (
-        f"{verdict.lane}: won, not served: a lane command cannot run a method yet; "
-        f"{verdict.why}")
+    serve = verdict.adopt
+    detail = f"{verdict.lane}: {verdict.why}"
     # A text-lane spec is the proposal's own name; anything else maps by row.
     cid = candidates.ensure(conn, spec, proposal=spec, lane=verdict.lane)
     if cid is None:

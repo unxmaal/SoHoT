@@ -180,6 +180,8 @@ class LocalCompletion(BaseModel):
     seconds: float
     prompt_tokens: int | None = None
     completion_tokens: int | None = None
+    #: An adopted method's cost: method, base, calls, and for best-of samples and chosen. #581.
+    method: dict | None = None
 
 
 class LocalDecision(BaseModel):

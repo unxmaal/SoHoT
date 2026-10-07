@@ -8,6 +8,7 @@ from __future__ import annotations
 from dataclasses import replace
 
 from harness import completion
+from harness.methods import ANSWER_PROMPT, PLAN_PROMPT
 
 from evals import core
 from evals.core import Case
@@ -58,19 +59,6 @@ class BestOfRunner(BaseRunner):
     def extra_metrics(self) -> dict:
         return dict(self.last_metrics)
 
-
-#: The first call: a plan, and no answer yet.
-PLAN_PROMPT = """Before answering, write a short numbered plan for the task below.
-Do not write the answer itself.
-
-TASK:
-{task}"""
-
-#: The second call: the task again, with the plan to follow.
-ANSWER_PROMPT = """{task}
-
-Follow this plan:
-{plan}"""
 
 
 class PlanRunner(BaseRunner):

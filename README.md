@@ -1284,10 +1284,30 @@ base, and the adopt verdict stores the cost beside the incumbent's (calls,
 median latency and their ratio). `soh discover --loop` crosses each method with
 each lane's incumbent (trace with the image lane's) and queues the combination
 under `methods`, so a newly registered method is measured without anyone
-typing a spec. A crossing downloads nothing, so it never holds back a fetch. A
-method that wins is recorded as measured and not served: no lane command runs
-a method yet. In the tests, a method that returns its base unchanged measures
-as a tie and one that corrupts the output loses.
+typing a spec. A crossing downloads nothing, so it never holds back a fetch. In
+the tests, a method that returns its base unchanged measures as a tie and one
+that corrupts the output loses.
+
+A method that wins is adopted like a model, with an adoptions row, and served
+over its base's route:
+
+- `soh code`, `soh web`, `soh svg`, `soh extract` and `soh prompt` run the
+  adopted method (plan's two calls, best-of's n samples kept by the lane
+  command's own check, since a one-off prompt has no case assertions). An svg
+  lane that adopted `trace:<engine>` draws with that engine. `--json` adds
+  `method` (method, base, calls, and for best-of samples and chosen); without
+  it the same line goes to stderr.
+- `local_complete` (and `delegate.complete`) run it too and return the same
+  `method` field, with tokens summed over every call. `thinking` and the
+  context-sized `max_tokens` cap apply to each call a method makes, and a
+  budget refused or spent on reasoning names the call (`call 2 of
+  plan:q3-4b (the answer)`). A lane serving a trace
+  method refuses delegation and says to run `soh svg`.
+- The gateway's `sohot-<lane>` alias keeps serving the method's base model. A
+  LiteLLM alias is a routing entry and cannot run Python, so a LAN client that
+  asks the gateway directly gets one call to the base; only the lane commands
+  and the MCP run the method. A trace method's base is an image engine, so the
+  svg alias is absent while one is adopted.
 
 ### Benchmark discovery
 

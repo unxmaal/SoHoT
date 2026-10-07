@@ -35,6 +35,18 @@ def _text_route(a, lane: str):
                           getattr(a, "gateway", None) or "")
 
 
+def _complete(a, lane: str, prompt: str, context: str = "") -> tuple[str, str, dict]:
+    """(spec, raw text, method cost) for a text lane command: the adopted model, or method over its base. #581."""
+    from harness import delegate
+    spec, where = _text_route(a, lane)
+
+    def call(text, modality="", **kw):
+        return completion.Completion(completion.complete(text, modality=modality,
+                                                         context=context, **kw))
+    raw, cost, _ = delegate.generate(spec, where, lane, prompt, call)
+    return spec, raw, cost
+
+
 def _generate(spec: str, prompt: str, out: Path, params: dict) -> int:
     """Shared body of `image` and `video`: build, run, check, report."""
     try:
@@ -127,10 +139,7 @@ def cmd_prompt(a) -> int:
            f"{a.about}\n\n"
            f"Reply with the prompt and nothing else.")
     try:
-        spec, where = _text_route(a, "extract")
-        got = completion.complete(ask, model=where.model, gateway=where.base,
-                                  modality="extract",
-                                  sampling=where.sampling or None)
+        spec, got, _ = _complete(a, "extract", ask)
     except Exception as exc:  # noqa: BLE001
         return err(f"{exc}")
     note(got.strip())
@@ -151,10 +160,7 @@ def cmd_video(a) -> int:
 
 def _text(a, modality: str, suffix: str, checker) -> int:
     try:
-        _, where = _text_route(a, modality)
-        raw = completion.complete(a.prompt, model=where.model, gateway=where.base,
-                                  modality=modality,
-                                  sampling=where.sampling or None)
+        _, raw, cost = _complete(a, modality, a.prompt)
     except (ValueError, completion.CompletionError) as exc:
         return err(str(exc))
 
@@ -169,7 +175,7 @@ def _text(a, modality: str, suffix: str, checker) -> int:
     if not checked.ok:
         # Written anyway: you cannot debug what was deleted.
         return err(f"wrote {out}, but it does not check out: {checked.reason}")
-    return say(path=out, body=body, human=str(out))
+    return say(path=out, body=body, human=str(out), method=cost)
 
 
 #: The prompt an image model needs to produce something a tracer can use. A
@@ -184,10 +190,20 @@ def cmd_svg(a) -> int:
     if method in ("trace", "icon"):
         return _svg_by_tracing(a, preset="illustration" if method == "trace"
                                           else "icon")
+    from harness import methods
+    try:
+        adopted = methods.parse(lane_model("svg", getattr(a, "model", None)))
+    except ValueError as exc:
+        return err(str(exc))
+    if adopted is not None and adopted.method.preset:
+        # The lane adopted a trace method: draw with its engine. #581.
+        a.engine = a.engine or adopted.base
+        return _svg_by_tracing(a, preset=adopted.method.preset, method={
+            "method": adopted.method.name, "base": adopted.base, "calls": 1})
     return _text(a, "svg", ".svg", svg_check.check)
 
 
-def _svg_by_tracing(a, preset: str = "illustration") -> int:
+def _svg_by_tracing(a, preset: str = "illustration", method: dict | None = None) -> int:
     """Draw it, then vectorize it.
 
     The measured answer for this lane. Five language models were compared on
@@ -217,7 +233,7 @@ def _svg_by_tracing(a, preset: str = "illustration") -> int:
         print(f"warning: {w}", file=sys.stderr)
     if not checked.ok:
         return err(f"wrote {out}, but it does not check out: {checked.reason}")
-    return say(path=out, body=svg, human=str(out))
+    return say(path=out, body=svg, human=str(out), method=method)
 
 
 def cmd_web(a) -> int:
@@ -233,10 +249,7 @@ def _answer(a, modality: str, context: str = "") -> int:
     would be a worse place to leave it than the terminal.
     """
     try:
-        _, where = _text_route(a, modality)
-        raw = completion.complete(a.prompt, model=where.model, gateway=where.base,
-                                  modality=modality, context=context,
-                                  sampling=where.sampling or None)
+        _, raw, cost = _complete(a, modality, a.prompt, context=context)
     except (ValueError, completion.CompletionError) as exc:
         return err(str(exc))
 
@@ -261,8 +274,8 @@ def _answer(a, modality: str, context: str = "") -> int:
         out = Path(a.output)
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(body if body.endswith("\n") else body + "\n", encoding="utf-8")
-        return say(path=out, body=body, human=str(out))
-    return say(body=body, human=body)
+        return say(path=out, body=body, human=str(out), method=cost)
+    return say(body=body, human=body, method=cost)
 
 
 def cmd_code(a) -> int:
