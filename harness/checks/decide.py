@@ -67,6 +67,19 @@ def code_map(spec: dict) -> dict[str, str]:
     return {CODES[i]: key(c) for i, c in enumerate(choices(spec))}
 
 
+def json_schema(schema: dict) -> dict:
+    """The reply render() asks for, as a JSON schema a constraining server enforces. #311."""
+    return {"type": "object",
+            "properties": {n: {"type": "string", "enum": list(code_map(spec))}
+                           for n, spec in schema.items()},
+            "required": list(schema), "additionalProperties": False}
+
+
+def response_format(schema: dict) -> dict:
+    return {"type": "json_schema",
+            "json_schema": {"name": "decide", "strict": True, "schema": json_schema(schema)}}
+
+
 def render(schema: dict) -> str:
     """The schema as the text models read: one block per field, lettered choices."""
     lines = []

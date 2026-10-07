@@ -282,6 +282,53 @@ def test_a_decide_request_turns_thinking_off(monkeypatch):
     assert seen[-1]["chat_template_kwargs"] == {"k": 1}
 
 
+def test_the_reply_shape_is_a_json_schema_of_letters():
+    got = decide.json_schema(SPEC)
+    assert got["required"] == ["route", "urgent"] and got["additionalProperties"] is False
+    assert got["properties"]["route"] == {"type": "string", "enum": ["A", "B"]}
+    assert list(got["properties"]) == list(SPEC)
+
+
+def test_every_decide_request_carries_the_reply_schema(monkeypatch):
+    from evals.runners.text import CompletionRunner
+    from harness import delegate, serving
+    seen = []
+
+    def full(*a, **k):
+        seen.append(k)
+        return completion.Completion('{"route": "B", "urgent": "A"}', {}, [])
+
+    monkeypatch.setattr(completion, "complete_full", full)
+    # Decision models ignore a prose format request; llama-server enforces this one (#311).
+    c = Case(id="d", modality="decide", prompt="p", params={"schema": SPEC},
+             assertions={"answers": {"route": "tech", "urgent": False}})
+    CompletionRunner("http://gw", "q3-4b").run(c)
+    delegate.ask("q", SPEC, serving.Route("http://gw", "m", {}))
+    want = {"type": "json_schema",
+            "json_schema": {"name": "decide", "strict": True, "schema": decide.json_schema(SPEC)}}
+    assert [k.get("response_format") for k in seen] == [want, want]
+
+
+def test_the_reply_schema_reaches_the_payload(monkeypatch):
+    seen = []
+
+    class R:
+        status_code = 200
+        text = ""
+
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {"choices": [{"message": {"content": "{}"}}]}
+
+    monkeypatch.setattr(completion, "_post", lambda g, p, t: seen.append(p) or R())
+    completion.complete_full("x", "m", modality="decide", response_format={"type": "x"})
+    assert seen[-1]["response_format"] == {"type": "x"}
+    completion.complete_full("x", "m", modality="decide")
+    assert "response_format" not in seen[-1]
+
+
 def test_the_text_runner_writes_probabilities_when_the_server_has_them(monkeypatch):
     import math
 
