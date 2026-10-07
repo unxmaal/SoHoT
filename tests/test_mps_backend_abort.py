@@ -61,6 +61,24 @@ def test_an_abort_that_does_not_name_the_mps_backend_is_not_one(text):
     assert reasons.classify(text, candidate=SPEC) != reasons.BACKEND_FAULT
 
 
+def test_an_llvm_abort_on_an_mps_kernel_name_without_an_mps_op_is_one():
+    assert reasons.mps_abort("LLVM ERROR: Failed to infer result type(s): mps_matmul")
+
+
+def test_the_abort_line_is_the_llvm_line_joined_to_the_op_after_it():
+    assert reasons.backend_abort(ABORT_TAIL) == (
+        "LLVM ERROR: Failed to infer result type(s): " + ABORT_TAIL[4])
+
+
+def test_an_mpsgraph_assertion_line_alone_is_the_abort_line():
+    assert reasons.backend_abort(["loading", f"  {MPSGRAPH_ASSERT}  ", "warnings.warn"]) == MPSGRAPH_ASSERT
+
+
+def test_a_row_written_before_the_reason_column_reads_an_mps_abort_as_the_runtime():
+    detail = "The MPS backend aborted running it: LLVM ERROR"
+    assert reasons.legacy_reason("broken", "screen", detail) == reasons.RUNTIME
+
+
 def test_the_screen_declines_a_backend_fault_with_an_until_instead_of_breaking_it():
     summary = {"hf-ocr/PaddleOCR-VL-1.6": {"total": 1, "passed": 0,
                                            "failure_classes": {reasons.BACKEND_FAULT: 1},

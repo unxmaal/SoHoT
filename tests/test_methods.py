@@ -385,6 +385,26 @@ def test_a_winning_method_is_adopted(tmp_path):
         conn.close()
 
 
+def test_a_methods_cost_and_its_run_reach_the_stored_verdict(tmp_path):
+    from harness import runs
+    conn = ms.connect(tmp_path / "d.db")
+    try:
+        run = tmp_path / "20261007-000000-r1"
+        run.mkdir()
+        rid = runs.record(conn, run, {
+            "receipt": {"modality": "code"}, "environment": ms.this_machine(),
+            "specs": {"best-of:3:q3-4b": "best-of:3:q3-4b"},
+            "rows": [{"case_id": "c1", "candidate": "best-of:3:q3-4b", "passed": False}]})
+        cost = {"method": "best-of", "calls": 3.0}
+        v = adopt.Verdict("code", "q3-4b", "best-of-3/q3-4b", False, "lost", evidence={"cost": cost})
+        vid = adopt.record(conn, v, spec="best-of:3:q3-4b", run_id=rid)
+        row = conn.execute("SELECT run_id, power FROM verdicts WHERE id = ?", (vid,)).fetchone()
+        assert row["run_id"] == rid
+        assert json.loads(row["power"])["cost"] == cost
+    finally:
+        conn.close()
+
+
 # ---- the loop crosses each method with each lane's incumbent --------------------
 
 def _lane_defaults(monkeypatch, defaults):

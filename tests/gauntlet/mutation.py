@@ -32,18 +32,22 @@ MODULES = {
     "harness/reasons.py": [
         "tests/test_verdict_reasons.py", "tests/test_refusal_shapes.py",
         "tests/test_screen_server_death.py", "tests/test_screen_evidence.py",
-        "tests/test_harness_engines_repo_id.py"],
+        "tests/test_harness_engines_repo_id.py", "tests/test_mps_backend_abort.py"],
     "harness/screen.py": [
         "tests/test_harness_screen.py", "tests/test_harness_screen_spec.py",
         "tests/test_screen_evidence.py", "tests/test_screen_server_death.py",
         "tests/test_decide_lane.py", "tests/test_refusal_shapes.py",
-        "tests/test_verdict_reasons.py"],
+        "tests/test_verdict_reasons.py", "tests/test_screen_case_fit.py", "tests/test_methods.py",
+        "tests/test_ds4.py"],
     "harness/adopt.py": [
         "tests/test_harness_adopt.py", "tests/test_harness_adopt_receipt.py",
         "tests/test_adopt_by_spec.py", "tests/test_adoptions.py", "tests/test_adopt_cmd.py",
-        "tests/test_human_verdicts.py"],
+        "tests/test_human_verdicts.py", "tests/test_schema_lanes.py", "tests/test_holdout_power.py",
+        "tests/test_power_budget.py", "tests/test_methods.py", "tests/test_adopt_scope.py",
+        "tests/test_method_serving.py"],
     "harness/serving.py": [
-        "tests/test_harness_serving.py", "tests/test_lane_routes.py", "tests/test_gguf_route.py"],
+        "tests/test_harness_serving.py", "tests/test_lane_routes.py", "tests/test_gguf_route.py",
+        "tests/test_schema_lanes.py", "tests/test_ds4.py"],
     "harness/router.py": ["tests/test_router_unload.py", "tests/test_lane_routes.py"],
 }
 

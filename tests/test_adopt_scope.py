@@ -367,3 +367,10 @@ def test_judge_takes_force_all_machines_and_min_votes():
     assert a.force and a.all_machines and a.min_votes == 4
     a = cli.build_parser().parse_args(["judge", "r"])
     assert not a.force and not a.all_machines and a.min_votes == adopt.MIN_VOTES
+
+
+def test_a_machine_that_cannot_say_its_ceiling_has_none(conn, on):
+    on({**STUDIO, "ceiling_gb": None})
+    assert adopt._ceiling_gb(conn, None) == 0.0
+    on(STUDIO)
+    assert adopt._ceiling_gb(conn, None) == 66.0
