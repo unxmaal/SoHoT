@@ -1,6 +1,7 @@
 """A `vllm:` text engine behind serving.route, and a sweep that labels and sizes it. #310."""
 import json
 import os
+import signal
 import socket
 import subprocess
 import sys
@@ -222,6 +223,19 @@ def test_served_starts_the_child_waits_for_it_and_stops_it(tmp_path):
         assert srv.proc.poll() is None
     assert srv.proc.poll() is not None
     assert "serving ✓" in log.read_text(encoding="utf-8")
+
+
+def test_served_stops_its_child_where_the_os_has_no_process_groups(tmp_path, monkeypatch):
+    """#552: Windows has no os.killpg; the stop path raised AttributeError and left the child running."""
+    monkeypatch.delattr(os, "killpg", raising=False)
+    monkeypatch.delattr(signal, "SIGKILL", raising=False)
+    child = tmp_path / "child.py"
+    child.write_text(FAKE_CHILD, encoding="utf-8")
+    port = _free_port()
+    with vllm.served([sys.executable, str(child), str(port)], port, log=tmp_path / "s.log",
+                     env=_utf8_env(), timeout=20, grace=5) as srv:
+        assert srv.proc.poll() is None
+    assert srv.proc.poll() is not None
 
 
 def test_the_fake_child_serves_when_reverse_dns_hangs(tmp_path):

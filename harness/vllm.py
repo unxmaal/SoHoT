@@ -71,16 +71,25 @@ def _tail(log: Path, n: int = 2000) -> str:
         return ""
 
 
+def _signal(proc: subprocess.Popen, hard: bool) -> None:
+    """The child's whole session where the OS has process groups, the child alone where it does not."""
+    with contextlib.suppress(ProcessLookupError):
+        if hasattr(os, "killpg") and hasattr(signal, "SIGKILL"):
+            os.killpg(proc.pid, signal.SIGKILL if hard else signal.SIGTERM)
+        elif hard:
+            proc.kill()
+        else:
+            proc.terminate()
+
+
 def _stop(proc: subprocess.Popen, grace: float) -> None:
     if proc.poll() is not None:
         return
-    with contextlib.suppress(ProcessLookupError):
-        os.killpg(proc.pid, signal.SIGTERM)
+    _signal(proc, hard=False)
     try:
         proc.wait(timeout=grace)
     except subprocess.TimeoutExpired:
-        with contextlib.suppress(ProcessLookupError):
-            os.killpg(proc.pid, signal.SIGKILL)
+        _signal(proc, hard=True)
         proc.wait()
 
 

@@ -155,6 +155,128 @@ def fixed_resources(text, rel):
     return out + [f"{rel}:{line}: {why}" for line, why in sorted(found)]
 
 
+# Names Windows's os and signal modules do not have, and modules it does not ship.
+POSIX_ONLY = {
+    "os": {"killpg", "getpgid", "setpgid", "setpgrp", "setsid", "getsid", "fork", "forkpty", "getuid",
+           "geteuid", "getgid", "getegid", "chown", "lchown", "fchown", "uname", "getloadavg", "wait3",
+           "wait4", "WNOHANG", "nice", "mkfifo", "statvfs", "sysconf", "openpty", "pipe2"},
+    "signal": {"SIGKILL", "SIGHUP", "SIGUSR1", "SIGUSR2", "SIGCHLD", "SIGALRM", "SIGQUIT", "SIGPIPE",
+               "SIGTSTP", "SIGCONT", "SIGSTOP", "alarm", "setitimer", "getitimer", "pause", "siginterrupt",
+               "pthread_kill"},
+}
+POSIX_MODULES = {"fcntl", "pwd", "grp", "resource", "termios", "pty", "tty", "posix"}
+_PLATFORM_NAME = re.compile(r"(?i)windows|posix|win32|darwin|linux|platform")
+_GUARD_ERRORS = {"AttributeError", "ImportError", "ModuleNotFoundError", "Exception", "BaseException"}
+
+
+def _is_platform_test(node):
+    for n in ast.walk(node):
+        if isinstance(n, ast.Attribute) and n.attr in ("platform", "name", "system") \
+                and isinstance(n.value, ast.Name) and n.value.id in ("sys", "os", "platform"):
+            return True
+        if isinstance(n, ast.Call) and _call_name(n) == "hasattr":
+            return True
+        if isinstance(n, ast.Name) and _PLATFORM_NAME.search(n.id):
+            return True
+    return False
+
+
+def _exits(body):
+    last = body[-1] if body else None
+    if isinstance(last, ast.Try):
+        return _exits(last.body + last.orelse) and all(_exits(h.body) for h in last.handlers)
+    if isinstance(last, ast.If):
+        return _exits(last.body) and _exits(last.orelse)
+    return isinstance(last, (ast.Return, ast.Raise, ast.Continue, ast.Break)) or (
+        isinstance(last, ast.Expr) and isinstance(last.value, ast.Call) and _call_name(last.value) == "skip")
+
+
+def _catches(handler, names):
+    t = handler.type
+    elts = t.elts if isinstance(t, ast.Tuple) else [t] if t is not None else []
+    return t is None or any(isinstance(e, ast.Name) and e.id in names for e in elts)
+
+
+def _guarded(node, parents):
+    child, cur = node, parents.get(node)
+    while cur is not None:
+        if isinstance(cur, (ast.If, ast.IfExp, ast.While)) and child is not cur.test and _is_platform_test(cur.test):
+            return True
+        if isinstance(cur, ast.Try) and child in cur.body and any(_catches(h, _GUARD_ERRORS) for h in cur.handlers):
+            return True
+        if isinstance(cur, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)) \
+                and any(_is_platform_test(d) for d in cur.decorator_list):
+            return True
+        for field in ("body", "orelse", "finalbody"):
+            stmts = getattr(cur, field, None)
+            if isinstance(stmts, list) and child in stmts:
+                for prev in stmts[:stmts.index(child)]:
+                    if isinstance(prev, ast.If) and _is_platform_test(prev.test) and _exits(prev.body):
+                        return True
+                    if isinstance(prev, ast.Assign) and any(isinstance(t, ast.Name) and t.id == "pytestmark"
+                                                            for t in prev.targets) and _is_platform_test(prev.value):
+                        return True
+        child, cur = cur, parents.get(cur)
+    return False
+
+
+def posix_primitives(text, rel):
+    tree, out = _parse(text, rel)
+    if tree is None:
+        return out
+    parents = {c: p for p in ast.walk(tree) for c in ast.iter_child_nodes(p)}
+    found = []
+    for n in ast.walk(tree):
+        if isinstance(n, ast.Attribute) and isinstance(n.value, ast.Name) \
+                and n.attr in POSIX_ONLY.get(n.value.id, ()) and not _guarded(n, parents):
+            found.append((n.lineno, f"{n.value.id}.{n.attr} does not exist on Windows; guard it by platform"))
+        elif isinstance(n, (ast.Import, ast.ImportFrom)) and not _guarded(n, parents):
+            names = [a.name for a in n.names] if isinstance(n, ast.Import) else [n.module or ""]
+            for m in names:
+                if m.split(".")[0] in POSIX_MODULES and not (isinstance(n, ast.ImportFrom) and n.level):
+                    found.append((n.lineno, f"imports {m}, which Windows does not ship; guard it by platform"))
+    return out + [f"{rel}:{line}: {why}" for line, why in sorted(found)]
+
+
+def unguarded_imports(text, rel):
+    """(line, top-level module) for each absolute import no ImportError handler covers."""
+    tree, _ = _parse(text, rel)
+    if tree is None:
+        return []
+    parents = {c: p for p in ast.walk(tree) for c in ast.iter_child_nodes(p)}
+    found = []
+    for n in ast.walk(tree):
+        if isinstance(n, ast.Import):
+            names = [a.name for a in n.names]
+        elif isinstance(n, ast.ImportFrom) and not n.level and n.module:
+            names = [n.module]
+        else:
+            continue
+        child, cur, covered = n, parents.get(n), False
+        while cur is not None and not covered:
+            covered = isinstance(cur, ast.Try) and child in cur.body and any(
+                _catches(h, {"ImportError", "ModuleNotFoundError", "Exception", "BaseException"})
+                for h in cur.handlers)
+            child, cur = cur, parents.get(cur)
+        if not covered:
+            found += [(n.lineno, m.split(".")[0]) for m in names]
+    return found
+
+
+def module_skips(text, rel):
+    """Top-level modules a module-level pytest.importorskip makes the whole file skip without."""
+    tree, _ = _parse(text, rel)
+    if tree is None:
+        return set()
+    out = set()
+    for stmt in tree.body:
+        value = getattr(stmt, "value", None)
+        if isinstance(value, ast.Call) and _call_name(value) == "importorskip" and value.args \
+                and isinstance(value.args[0], ast.Constant) and isinstance(value.args[0].value, str):
+            out.add(value.args[0].value.split(".")[0])
+    return out
+
+
 # The one place the live home may be derived; everything else asks it, so conftest's redirect reaches it.
 LIVE_HOME_OWNER = "harness/paths.py"
 _LIVE_DIR = "localharness"
