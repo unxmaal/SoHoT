@@ -28,6 +28,11 @@ def cmd_report(a) -> int:
     unverified = [l["lane"] for l in lanes if l.get("unverified")]
     stale = [l["lane"] for l in lanes if l.get("stale")]
     print(f"\n{out}")
+    for l in lanes:
+        if l.get("adoption"):
+            print(f"  {l['lane']}: {l['serves']} adopted {l['adoption']}")
+        if l.get("refused"):
+            print(f"  {l['lane']}: {l['refused']}")
     if unverified:
         print(f"  {len(unverified)} lane(s) with no receipt on this machine: "
               f"{', '.join(unverified)}")

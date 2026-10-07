@@ -116,15 +116,20 @@ def test_the_same_machine_under_another_python_is_one_row(conn, on):
     assert adopt.adopted(conn) == {"code": "org/mine"}
 
 
-def test_a_by_hand_adoption_serves_every_machine(conn, on):
-    """A person's preference for a config is not a fact about hardware."""
+def test_a_by_hand_adoption_serves_only_its_machine_unless_all_machines(conn, on):
+    """#485: a preference from a few votes is not a fact about every machine's memory."""
     _adopt(conn, "music", "org/steps8", how=adopt.BY_HAND)
     on(STUDIO)
-    assert adopt.adopted(conn) == {"music": "org/steps8"}
+    assert adopt.adopted(conn) == {}
+    adopt.record(conn, adopt.Verdict("music", "old", "org/steps4", True, "won",
+                                     adopt.BY_HAND, all_machines=True))
+    on(M2)
+    assert adopt.adopted(conn) == {"music": "org/steps4"}
 
 
 def test_a_local_measurement_beats_an_older_remote_preference(conn, on):
-    _adopt(conn, "music", "org/by-hand", how=adopt.BY_HAND)
+    adopt.record(conn, adopt.Verdict("music", "old", "org/by-hand", True, "won",
+                                     adopt.BY_HAND, all_machines=True))
     on(STUDIO)
     _adopt(conn, "music", "org/measured")
     assert adopt.adopted(conn) == {"music": "org/measured"}
@@ -134,7 +139,8 @@ def test_a_local_measurement_beats_an_older_remote_preference(conn, on):
 
 def test_decide_by_hand_records_by_hand(monkeypatch):
     from harness import human
-    monkeypatch.setattr(human, "lane_verdict", lambda lane, pairs: ("b", "2-0"))
+    monkeypatch.setattr(human, "lane_verdict", lambda lane, pairs, **k: ("b", "2-0"))
+    monkeypatch.setattr(human, "vote_stats", lambda *a, **k: (12, 1.0))
     assert adopt.decide_by_hand("music", "a", "b", []).how == adopt.BY_HAND
 
 
@@ -182,5 +188,6 @@ def test_the_migration_backfills_adopt_verdicts(tmp_path, on):
     assert rows["music"]["how"] == adopt.BY_HAND
     assert adopt.adopted(c) == {"music": "org/b"}
     on(STUDIO)
-    assert adopt.adopted(c) == {"code": "org/a", "music": "org/b"}
+    # The by-hand music row was decided on the M2 and is scoped there since #485.
+    assert adopt.adopted(c) == {"code": "org/a"}
     c.close()

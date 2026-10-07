@@ -582,6 +582,15 @@ typed default, and sends it to the server that serves it: a gateway alias to
 the gateway, an MLX repo id to mlx_lm.server, `llamacpp:<stem>` to llama-server.
 `-m` overrides; `--gateway` sends the request somewhere verbatim.
 
+An adoption serves the machine it was made on, whether measured (`soh adopt`)
+or by hand (`soh judge`). `soh judge --all-machines` serves the winner on every
+machine instead, and each machine still refuses it if its stored size or
+measured peak is over that machine's memory ceiling. A by-hand adoption needs
+10 votes (`--min-votes`) or `--force`, and records the votes, how far they
+agreed, whether it was forced, and its median latency and peak against the
+previous adoption on that machine. `soh report` prints each lane's adoption
+with its scope and how it was made, and any adoption refused here.
+
 ```bash
 soh code "Write is_palindrome(s)."          # the code lane's adopted model
 soh code "..." -m q3-4b                     # a specific one
