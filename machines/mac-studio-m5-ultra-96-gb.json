@@ -34,12 +34,12 @@
   }
  ],
  "export_version": 1,
- "generated_at": "2026-10-07T14:28:11Z",
+ "generated_at": "2026-10-07T15:16:37Z",
  "lanes": [
   {
    "adopted": true,
    "adopted_how": "by-hand",
-   "age_days": 0.99,
+   "age_days": 1.02,
    "comparison": [
     {
      "candidate": "mflux/flux2-klein-4b-q8",
@@ -96,7 +96,7 @@
   {
    "adopted": true,
    "adopted_how": "measured",
-   "age_days": 0.13,
+   "age_days": 0.16,
    "comparison": [
     {
      "candidate": "llamacpp:Ornith-1.5-35B-Q4_K_M",
@@ -149,13 +149,13 @@
    "parked_until": "",
    "pass_rate": 0.773,
    "real_use": {
-    "completion_tokens": 12505,
+    "completion_tokens": 12513,
     "error_rate": 0.0,
     "errors": 0,
     "invalid_calls": 0,
     "invalid_rate": 0.0,
-    "prompt_tokens": 481224,
-    "requests": 94,
+    "prompt_tokens": 481246,
+    "requests": 96,
     "tool_calls": 94,
     "ttft_p50": 0.12477779388427734,
     "ttft_p95": 0.4040029048919678
@@ -170,7 +170,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 1.61,
+   "age_days": 1.64,
    "comparison": [
     {
      "candidate": "q3-4b",
@@ -269,7 +269,7 @@
   {
    "adopted": true,
    "adopted_how": "measured",
-   "age_days": 0.77,
+   "age_days": 0.81,
    "comparison": [
     {
      "candidate": "q3-30b",
@@ -325,13 +325,13 @@
    "parked_until": "",
    "pass_rate": 1.0,
    "real_use": {
-    "completion_tokens": 26,
+    "completion_tokens": 34,
     "error_rate": 0.0,
     "errors": 0,
     "invalid_calls": 0,
     "invalid_rate": null,
-    "prompt_tokens": 64,
-    "requests": 7,
+    "prompt_tokens": 82,
+    "requests": 9,
     "tool_calls": 0,
     "ttft_p50": null,
     "ttft_p95": null
@@ -346,7 +346,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 1.68,
+   "age_days": 1.72,
    "comparison": [
     {
      "candidate": "h3/minimax-h3@ssd_streaming=false",
@@ -387,7 +387,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 0.13,
+   "age_days": 0.16,
    "comparison": [
     {
      "candidate": "acestep/acestep-v15-turbo",
@@ -432,7 +432,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 0.0,
+   "age_days": 0.03,
    "comparison": [
     {
      "candidate": "nimble/Bespoke-Nimble-9B",
@@ -595,13 +595,13 @@
    "parked_until": "",
    "pass_rate": 0.222,
    "real_use": {
-    "completion_tokens": 46,
+    "completion_tokens": 54,
     "error_rate": 0.0,
     "errors": 0,
     "invalid_calls": 0,
     "invalid_rate": null,
-    "prompt_tokens": 113,
-    "requests": 9,
+    "prompt_tokens": 135,
+    "requests": 11,
     "tool_calls": 0,
     "ttft_p50": null,
     "ttft_p95": null
@@ -616,7 +616,7 @@
   {
    "adopted": true,
    "adopted_how": "measured",
-   "age_days": 0.51,
+   "age_days": 0.54,
    "comparison": [
     {
      "candidate": "llamacpp:Ornith-1.5-35B-Q4_K_M",
@@ -689,13 +689,13 @@
    "parked_until": "",
    "pass_rate": 1.0,
    "real_use": {
-    "completion_tokens": 44,
+    "completion_tokens": 52,
     "error_rate": 0.0,
     "errors": 0,
     "invalid_calls": 0,
     "invalid_rate": null,
-    "prompt_tokens": 114,
-    "requests": 10,
+    "prompt_tokens": 136,
+    "requests": 12,
     "tool_calls": 0,
     "ttft_p50": null,
     "ttft_p95": null
@@ -776,7 +776,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 1.57,
+   "age_days": 1.61,
    "comparison": [
     {
      "candidate": "claude-code:claude-opus-5-5",
@@ -870,7 +870,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 1.76,
+   "age_days": 1.79,
    "comparison": [
     {
      "candidate": "parakeet-tdt-0.6b-v2",
@@ -911,7 +911,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 1.06,
+   "age_days": 1.1,
    "comparison": [
     {
      "candidate": "Kokoro-82M-bf16/bm_george",
@@ -973,7 +973,7 @@
   "first_seen": "2026-10-05T19:28:52Z",
   "hw_model": "Mac17,15",
   "label": "Mac Studio M5 Ultra 96 GB",
-  "last_seen": "2026-10-07T14:21:55Z",
+  "last_seen": "2026-10-07T15:16:37Z",
   "memory_gb": 96.0,
   "os": "macOS 27.0.1",
   "runtimes": [
