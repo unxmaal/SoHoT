@@ -185,8 +185,9 @@ def aliases(cfg) -> dict:
 
 def test_a_lane_alias_points_at_the_typed_default_with_no_adoption(config):
     got = aliases(gateway.served(config))
-    assert got["sohot-code"] == aliases(CONFIG)[cli.DEFAULT_CODE_MODEL]
-    assert got["sohot-extract"] == aliases(CONFIG)["local-large"]
+    assert got["sohot-code"] == got[cli.DEFAULT_CODE_MODEL]
+    assert got["sohot-extract"] == got["local-large"]
+    assert got["local-large"]["model"] == aliases(CONFIG)["local-large"]["model"]
 
 
 def test_an_adoption_change_repoints_the_lane_alias(config):

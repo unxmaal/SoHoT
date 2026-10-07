@@ -29,6 +29,12 @@ ENV_VAR = "TEXT_ENGINE"
 DEFAULT = "mlx_lm.server"
 
 
+#: mlx_lm.server (scripts/serve-mlx.sh).
+MLX_URL = "http://127.0.0.1:8081"
+#: More queue in the gateway: at 32 a 4B model's footprint reached 49-57 GiB on the M5 Ultra. #542.
+MLX_MAX_PARALLEL = 16
+
+
 #: llama-server for structured output and GGUF candidates (scripts/serve-eval.sh).
 LLAMACPP_URL = "http://127.0.0.1:8082"
 LLAMACPP = "llama-server"
