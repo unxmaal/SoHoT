@@ -17,7 +17,7 @@ import time
 from pathlib import Path
 
 #: Bumped when the JSON's shape changes in a way the renderer must know about.
-EXPORT_VERSION = 1
+EXPORT_VERSION = 2
 BRANCH = "reports"
 WORKFLOW = "pages.yml"
 #: Per-machine switch for publishing at the end of a discovery loop; absent is off.
@@ -204,6 +204,76 @@ def _candidate_id(conn, lane: str, spec: str) -> int | None:
     return None
 
 
+def mutual_groups(items: list, same) -> list[list]:
+    """Newest-first items into groups whose members are all `same` as each other."""
+    groups: list[list] = []
+    for item in items:
+        for group in groups:
+            if all(same(item, member) for member in group):
+                group.append(item)
+                break
+        else:
+            groups.append([item])
+    return groups
+
+
+def exam_receipt(conn, run: dict):
+    """A stored run's receipt for comparable(), minus `serving` (the union of its candidates' engines) and other lanes' sampling."""
+    from evals.core import Receipt
+    try:
+        raw = json.loads(run.get("receipt") or "{}")
+    except ValueError:
+        raw = {}
+    lane = str(raw.get("modality") or run.get("lane") or "")
+    ids = raw.get("case_ids") or [r["case_id"] for r in conn.execute(
+        "SELECT DISTINCT case_id FROM results WHERE run_id = ? ORDER BY case_id",
+        (run["id"],)).fetchall()]
+    sampling = raw.get("sampling") or {}
+    if lane in sampling:
+        sampling = {lane: sampling[lane]}
+    instruments = {k: v for k, v in (raw.get("instruments") or {}).items()
+                   if k != "serving"}
+    return Receipt(modality=lane, case_ids=tuple(ids),
+                   repeat=int(raw.get("repeat") or run.get("repeat_count") or 1),
+                   sampling=sampling, gateway="", adherence=raw.get("adherence", ""),
+                   tier=raw.get("tier") or run.get("tier") or "measure",
+                   accelerator=raw.get("accelerator", ""), instruments=instruments,
+                   where=raw.get("where", ""), cases_digest=raw.get("cases_digest", ""),
+                   split=raw.get("split", ""), split_version=raw.get("split_version", ""),
+                   devices=raw.get("devices") or {}, launch=raw.get("launch") or {})
+
+
+def _rank(r: dict) -> tuple:
+    return (bool(r["reference"]), bool(r["not_run"]), -(r["pass_rate"] or 0),
+            r["median_s"] or 0)
+
+
+def exams(conn, mid: int, lane: str) -> list[dict]:
+    """Every candidate's latest row per comparable exam on one machine, newest exam first. #621."""
+    from evals.core import comparable
+    from harness import runs
+    found = [(run, exam_receipt(conn, run)) for run in
+             runs.find(conn, lane=lane, machines=[mid], tier=runs.MEASURE)]
+    same = (lambda a, b: a[0]["machine_id"] == b[0]["machine_id"]
+            and comparable(a[1], b[1])[0])
+    out = []
+    for group in mutual_groups(found, same):
+        rows: dict[str, dict] = {}
+        for run, _ in group:
+            for key, s in runs.summarize(runs.rows(conn, run["id"])).items():
+                if key not in rows:
+                    rows[key] = {**_row(key, s), "run_at": _iso(run["generated_at"])}
+        ids = group[0][1].case_ids
+        cases = len({c.partition("#")[0] for c in ids})
+        # Repeats as the case ids carry them: a lane that does not repeat ignores --repeat.
+        out.append({"cases": cases, "repeat": max(1, round(len(ids) / max(cases, 1))),
+                    "runs": len(group),
+                    "run_at": _iso(group[0][0]["generated_at"]),
+                    "first_run_at": _iso(group[-1][0]["generated_at"]),
+                    "rows": sorted(rows.values(), key=_rank)})
+    return out
+
+
 def _lane(conn, mid: int, lane: str, held: dict, typed: dict, now: float) -> dict:
     from harness import lanes as L, runs
     serves = held.get("spec") or typed.get(lane, "")
@@ -239,6 +309,7 @@ def _lane(conn, mid: int, lane: str, held: dict, typed: dict, now: float) -> dic
         "unverified": not newest and not parked[0],
         "stale": bool(age is not None and age > STALE_DAYS and not parked[0]),
         "comparison": table,
+        "exams": exams(conn, mid, lane),
     }
 
 

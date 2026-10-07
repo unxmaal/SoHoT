@@ -149,7 +149,7 @@ td.num { display:table-cell; font-family:inherit; font-size:inherit; color:inher
 .warn { background:var(--warnbg); color:var(--warn) }
 .bad { background:var(--badbg); color:var(--bad) }
 .good { background:var(--goodbg); color:var(--good) }
-tr.changed td { background:var(--goodbg) }
+tr.changed td, tr.serving td { background:var(--goodbg) }
 footer { text-align:center; color:#fff4da; font-size:.85rem; padding:0 16px 2.5rem }
 .calm footer { color:var(--dim) }
 @media (prefers-reduced-motion: no-preference) {
@@ -425,28 +425,59 @@ def _num(x, fmt="{:.2f}") -> str:
     return "--" if x is None else fmt.format(x)
 
 
-def _bench_table(lane: dict) -> str:
+SERVING_ROW = ' class="serving"'
+
+
+def _bench_table(lane: dict, table: list[dict] | None = None, dated: bool = False) -> str:
     from harness import publish
     rows = []
-    for r in lane.get("comparison") or []:
+    for r in lane.get("comparison") or [] if table is None else table:
         tags = []
-        if r.get("candidate") == lane.get("serves"):
+        serving = not r.get("reference") and r.get("candidate") == lane.get("serves")
+        if serving:
             tags.append('<span class="tag good">serving</span>')
         if r.get("reference"):
-            tags.append('<span class="tag">reference</span>')
+            tags.append('<span class="tag">reference, not adoptable</span>')
         passed = (f'{r.get("passed")}/{r.get("total")} ' if r.get("total") else "")
         score = (publish.not_run_text(r) if r.get("not_run")
                  else f'{passed}{_num(r.get("pass_rate"))}')
         rows.append(
-            f'<tr><td>{_esc(r.get("candidate"))} {" ".join(tags)}</td>'
+            f'<tr{SERVING_ROW if serving else ""}>'
+            f'<td>{_esc(r.get("candidate"))} {" ".join(tags)}</td>'
             f'<td class="num">{_esc(score)}</td>'
             f'<td class="num">{_num(r.get("median_s"))}</td>'
             f'<td class="num">{_num(r.get("first_s"))}</td>'
             f'<td class="num">{_num(r.get("peak_gb"), "{:.1f}")}</td>'
-            f'<td>{_esc(publish._metric_text(r.get("metrics")))}</td></tr>')
+            f'<td>{_esc(publish._metric_text(r.get("metrics")))}</td>'
+            + (f'<td>{_date(r.get("run_at"))}</td>' if dated else "") + '</tr>')
     return ('<div class="wide"><table><tr><th>candidate</th><th>pass</th><th>median s</th>'
-            '<th>first s</th><th>peak GB</th><th>metrics</th></tr>'
-            f'{"".join(rows)}</table></div>')
+            '<th>first s</th><th>peak GB</th><th>metrics</th>'
+            + ("<th>run</th>" if dated else "") +
+            f'</tr>{"".join(rows)}</table></div>')
+
+
+def _exam_caption(label: str, exam: dict) -> str:
+    n = exam.get("runs") or 1
+    when = (f'{n} runs, latest {_date(exam.get("run_at"))}' if n > 1
+            else f'1 run, {_date(exam.get("run_at"))}')
+    reps = exam.get("repeat") or 1
+    n_cases = exam.get("cases")
+    cases = (f'{n_cases} case{"" if n_cases == 1 else "s"}'
+             + (f" x {reps} repeats" if reps > 1 else ""))
+    return f'<h3>{_esc(label)} &middot; {cases} &middot; {when}</h3>'
+
+
+def _lane_tables(label: str, lane: dict) -> str:
+    """One table per comparable exam, newest first; an export from before #621 has only its latest run."""
+    if "exams" not in lane:
+        return (f'<h3>{_esc(label)} &middot; run {_date(lane.get("last_run_at"))}</h3>'
+                f'{_bench_table(lane)}')
+    return "".join(_exam_caption(label, e) + _bench_table(lane, e.get("rows") or [], True)
+                   for e in lane["exams"])
+
+
+def _has_tables(lane: dict | None) -> bool:
+    return bool(lane and (lane.get("exams") or lane.get("comparison")))
 
 
 def benchmarks(machines: list[dict], now: float | None = None) -> str:
@@ -454,14 +485,15 @@ def benchmarks(machines: list[dict], now: float | None = None) -> str:
     by = [{l["lane"]: l for l in d.get("lanes") or [] if l.get("lane")} for d in machines]
     measured, waiting = [], []
     for n in lane_names(machines):
-        (measured if any((b.get(n) or {}).get("comparison") for b in by) else waiting).append(n)
+        (measured if any(_has_tables(b.get(n)) for b in by) else waiting).append(n)
     index = "".join(f'<li class="chip"><a href="#lane-{_esc(n)}">{_esc(n)}</a></li>'
                     for n in measured)
     intro = window("Benchmarks", (
-        "<p>Every lane's latest measure run, from each machine that published one. Each "
-        "table is one run on one machine: the candidates in it ran the same cases under "
-        "the same conditions. Wall-clock compares only within one machine; across "
-        "machines, compare pass rates.</p>"
+        "<p>Each table is one exam on one machine: every run in it asked the same cases "
+        "under the same conditions, and each candidate shows its latest result there. "
+        "A changed case set starts a new table, newest first. Reference rows are a "
+        "hosted model run as a ceiling and are never adopted. Wall-clock compares only "
+        "within one machine; across machines, compare pass rates.</p>"
         + (f'<ul class="chips">{index}</ul>' if index else
            '<p class="note">No machine has published a measure run yet.</p>')), "sky")
     wins = []
@@ -469,11 +501,10 @@ def benchmarks(machines: list[dict], now: float | None = None) -> str:
         parts = []
         for d, b in zip(machines, by):
             lane = b.get(n)
-            if not lane or not lane.get("comparison"):
+            if not _has_tables(lane):
                 continue
             how = f" (adopted {_esc(lane.get('adopted_how'))})" if lane.get("adopted") else ""
-            parts.append(f'<h3>{_esc(d["machine"].get("label"))} &middot; run '
-                         f'{_date(lane.get("last_run_at"))}</h3>{_bench_table(lane)}'
+            parts.append(f'{_lane_tables(d["machine"].get("label"), lane)}'
                          f'<p class="note">Serving here: {_esc(lane.get("serves")) or "--"}'
                          f'{how}</p>')
         wins.append(window(_esc(n), "".join(parts), tints[i % len(tints)],

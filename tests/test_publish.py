@@ -361,3 +361,148 @@ def test_a_factory_hostname_is_the_product_not_a_person(monkeypatch):
     assert not any(n.lower().startswith("mac-studio") for n in LOCAL_NAMES())
     monkeypatch.setattr(socket, "gethostname", lambda: f"{HOST}.local")  # privacy-ok
     assert HOST in LOCAL_NAMES()
+
+
+# --- the benchmarks: every comparable run, merged per exam (#621) ----------
+
+OPUS = "claude-code:claude-opus-5-5"
+ORNITH = "llamacpp:Ornith-1.5-35B-Q4_K_M"
+
+
+def _exam(lane, cands, when, digest="d-150", n=3, serving="llama-server",
+          sampling=None, env=None):
+    """A measure run whose receipt carries the axes comparable() reads."""
+    rows = []
+    for name, passed in cands.items():
+        rows += _rows(name, [i < passed for i in range(n)], [1.0] * n)
+    data = _receipt(lane, rows, when, env=env)
+    data["receipt"].update(case_ids=[f"c{i}" for i in range(n)], repeat=1,
+                           cases_digest=digest, accelerator="unified:arm64",
+                           where="host", sampling=sampling or {lane: {"temperature": 0.2}},
+                           instruments={"peak": "phys_footprint", "serving": serving})
+    return data
+
+
+def _exams(store, lane="code"):
+    doc = publish.export(store, machine_id=_mid(store), now=1.79e9)
+    return doc, next(l for l in doc["lanes"] if l["lane"] == lane)["exams"]
+
+
+def _broad_then_adopt(store):
+    runs.record(store, "runs/broad", _exam("code", {OPUS: 3, ORNITH: 3, "q3-coder": 2,
+                                                    "q3-30b": 1}, "2026-10-06T04:36:01",
+                                           serving="llama-server+mlx_lm.server"))
+    runs.record(store, "runs/adopt", _exam("code", {ORNITH: 2, "granite-4.1-8b": 1},
+                                           "2026-10-07T11:22:01"))
+    store.commit()
+
+
+def test_a_two_candidate_adopt_run_after_a_broad_run_still_shows_every_candidate(store):
+    _broad_then_adopt(store)
+    _, exams = _exams(store)
+    newest = exams[0]
+    got = {r["candidate"]: r for r in newest["rows"]}
+    assert set(got) == {OPUS, ORNITH, "q3-coder", "q3-30b", "granite-4.1-8b"}
+    assert got[ORNITH]["passed"] == 2, "the latest result for a candidate wins"
+    assert got[ORNITH]["run_at"].startswith("2026-10-07")
+    assert got["q3-coder"]["run_at"].startswith("2026-10-06")
+    assert newest["cases"] == 3 and newest["runs"] == 2
+    assert newest["run_at"].startswith("2026-10-07")
+    assert newest["first_run_at"].startswith("2026-10-06")
+
+
+def test_a_run_on_a_different_case_set_is_its_own_table_newest_first(store):
+    _broad_then_adopt(store)
+    runs.record(store, "runs/old27", _exam("code", {OPUS: 2, "q3-4b": 1}, "2026-10-05T12:00:00",
+                                           digest="d-27", n=2))
+    store.commit()
+    _, exams = _exams(store)
+    assert [e["cases"] for e in exams[:2]] == [3, 2]
+    assert {r["candidate"] for r in exams[1]["rows"]} == {OPUS, "q3-4b"}
+    assert "q3-4b" not in {r["candidate"] for r in exams[0]["rows"]}
+    assert exams[1]["run_at"].startswith("2026-10-05")
+
+
+def test_a_different_sampling_for_the_lane_is_another_exam_but_another_lanes_is_not(store):
+    _broad_then_adopt(store)
+    runs.record(store, "runs/hot", _exam("code", {"q3-hot": 1}, "2026-10-07T12:00:00",
+                                         sampling={"code": {"temperature": 0.7}}))
+    runs.record(store, "runs/svg", _exam("code", {"q3-svg": 1}, "2026-10-07T13:00:00",
+                                         sampling={"code": {"temperature": 0.2},
+                                                   "svg": {"temperature": 0.4}}))
+    store.commit()
+    _, exams = _exams(store)
+    tables = [{r["candidate"] for r in e["rows"]} for e in exams]
+    merged = next(t for t in tables if "q3-svg" in t)
+    assert {"q3-coder", OPUS, "granite-4.1-8b"} <= merged
+    assert "q3-hot" not in merged
+    assert {"q3-hot"} in tables
+
+
+def test_another_machines_run_is_never_merged_into_this_machines_table(store):
+    _broad_then_adopt(store)
+    linux = dict(ENV, hw_model="MS-7D25", os="Linux-6.8.0-x86_64", memory_gb=64)
+    runs.record(store, "runs/linux", _exam("code", {"q3-linux": 3}, "2026-10-07T14:00:00",
+                                           env=linux))
+    store.commit()
+    _, exams = _exams(store)
+    assert all("q3-linux" not in {r["candidate"] for r in e["rows"]} for e in exams)
+
+
+def test_a_reference_row_is_marked_and_never_presented_as_adoptable(store):
+    from harness import site
+    _broad_then_adopt(store)
+    doc, exams = _exams(store)
+    rows = exams[0]["rows"]
+    assert rows[-1]["reference"] is True, "references sort after candidates"
+    assert next(r for r in rows if r["candidate"] == OPUS)["reference"] is True
+    code = next(l for l in doc["lanes"] if l["lane"] == "code")
+    code["serves"] = OPUS
+    html = site.benchmarks([doc], now=1.79e9)
+    row = next(line for line in html.split("<tr") if OPUS in line and "<td>" in line)
+    assert "reference, not adoptable" in row, row
+    assert "serving" not in row, row
+
+
+def test_the_serving_candidate_is_highlighted_in_its_exam(store):
+    from harness import site
+    _broad_then_adopt(store)
+    doc, _ = _exams(store)
+    code = next(l for l in doc["lanes"] if l["lane"] == "code")
+    code["serves"] = ORNITH
+    html = site.benchmarks([doc], now=1.79e9)
+    row = next(line for line in html.split("<tr") if ORNITH in line and "<td>" in line)
+    assert row.startswith(' class="serving"'), row
+    assert '<span class="tag good">serving</span>' in row
+
+
+def test_each_exam_is_captioned_with_its_case_count_and_date(store):
+    from harness import site
+    _broad_then_adopt(store)
+    runs.record(store, "runs/old27", _exam("code", {"q3-4b": 1}, "2026-10-05T12:00:00",
+                                           digest="d-27", n=2))
+    store.commit()
+    doc, _ = _exams(store)
+    html = site.benchmarks([doc], now=1.79e9)
+    new = html.index("3 cases &middot; 2 runs, latest 2026-10-07")
+    old = html.index("2 cases &middot; 1 run, 2026-10-05")
+    assert new < old
+
+
+def test_the_export_version_says_the_shape_changed(store):
+    assert publish.EXPORT_VERSION >= 2
+    doc, exams = _exams(store)
+    assert doc["export_version"] == publish.EXPORT_VERSION
+    assert exams and exams[0]["rows"]
+
+
+def test_an_older_export_without_exams_still_renders_its_latest_run(store):
+    from harness import site
+    _broad_then_adopt(store)
+    doc = publish.export(store, machine_id=_mid(store), now=1.79e9)
+    doc["export_version"] = 1
+    for lane in doc["lanes"]:
+        lane.pop("exams", None)
+    html = site.benchmarks([doc], now=1.79e9)
+    assert "Mac Studio M5 Ultra 96 GB &middot; run 2026-10-07" in html
+    assert "granite-4.1-8b" in html and ORNITH in html
