@@ -32,8 +32,8 @@ from dataclasses import replace
 from evals.core import (AGENT_MODALITIES, MODALITIES, TEXT_MODALITIES,
                         TEXT_SUFFIX, Case,
                         Receipt, cases_digest, comparable, direction_of,
-                        load_cases, summarize)
-from evals import environment
+                        summarize)
+from evals import core, environment
 from evals.runners.base import RunnerError
 from evals.runners.process import ProcessRunner
 from evals.runners.chain import ChainRunner
@@ -665,7 +665,7 @@ def _execute(args) -> int:
         args.adherence = ""
     from harness import holdout
     side = "dev" if args.screen else (getattr(args, "split", "") or "all")
-    chosen = select_cases(load_cases(args.cases), args.modality)
+    chosen = select_cases(core.load_cases(args.cases), args.modality)
     cases = expand_cases(screen_pool(chosen) if args.screen
                          else holdout.only(chosen, side), args.repeat)
     if args.screen:

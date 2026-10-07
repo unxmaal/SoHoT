@@ -39,7 +39,7 @@ class _File(BaseRunner):
 def _execute(monkeypatch, tmp_path, lane, make):
     out = tmp_path / "out"
     out.mkdir()
-    monkeypatch.setattr(er, "load_cases",
+    monkeypatch.setattr(core, "load_cases",
                         lambda path: [Case(id="a", modality=lane, prompt="p")])
     monkeypatch.setattr(er, "build_runner", lambda *a, **k: make(out))
     monkeypatch.setattr(er, "warn_if_pressed",

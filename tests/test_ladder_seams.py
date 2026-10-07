@@ -260,7 +260,7 @@ def test_the_fake_server_can_make_the_real_checker_fail_and_pass(monkeypatch):
     from evals import run as er
     from evals.runners.text import CompletionRunner
     from harness import completion
-    case = next(c for c in er.select_cases(er.load_cases(er.ROOT / "cases"), "code")
+    case = next(c for c in er.select_cases(er.core.load_cases(er.ROOT / "cases"), "code")
                 if c.id == "slugify")
     good = ("import re\ndef slugify(text):\n"
             "    return re.sub(r'[^a-z0-9]+', '-', text.lower()).strip('-')\n")
