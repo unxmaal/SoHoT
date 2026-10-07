@@ -15,7 +15,8 @@ from __future__ import annotations
 import time
 from pathlib import Path
 
-from evals.core import Case, Result, artifact_name, score
+from evals import core
+from evals.core import Case, Result, artifact_name
 from harness import reasons
 
 
@@ -96,7 +97,7 @@ class BaseRunner:
             return self.failed(case, exc, time.perf_counter() - started)
         elapsed = time.perf_counter() - started
 
-        row = score(case, artifact, **self.score_kwargs())
+        row = core.score(case, artifact, **self.score_kwargs())
         row.candidate = self.candidate
         if not row.passed and not row.failure_class:
             row.failure_class = reasons.CONTENT_FAILED

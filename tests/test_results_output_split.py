@@ -6,9 +6,9 @@ from pathlib import Path
 
 import pytest
 
+from evals import core, environment
 from evals import run as er
 from evals.core import Case, Result
-from evals.runners import base
 from evals.runners.base import BaseRunner
 from harness import memory_store as ms, paths, runs
 
@@ -44,9 +44,10 @@ def _execute(monkeypatch, tmp_path, lane, make):
     monkeypatch.setattr(er, "build_runner", lambda *a, **k: make(out))
     monkeypatch.setattr(er, "warn_if_pressed",
                         lambda: argparse.Namespace(as_dict=lambda: {}))
-    monkeypatch.setattr(er, "capture", lambda: {"hw_model": "Test,1",
+    monkeypatch.setattr(ms.machines, "_THIS_MACHINE", None)
+    monkeypatch.setattr(environment, "capture", lambda: {"hw_model": "Test,1",
                                                 "os": "t", "arch": "a"})
-    monkeypatch.setattr(base, "score", lambda case, art, **k: Result(
+    monkeypatch.setattr(core, "score", lambda case, art, **k: Result(
         case.id, "", True, 0.0, 0, ""))
     args = argparse.Namespace(
         modality=lane, candidates="fake:spec", cases="x", out=str(out),

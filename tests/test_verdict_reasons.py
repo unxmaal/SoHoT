@@ -12,6 +12,7 @@ import httpx
 import pytest
 import respx
 
+from evals import environment
 from evals import run as R
 from evals.core import Case, Result, summarize
 from evals.runners.base import BaseRunner, RunnerError
@@ -379,7 +380,8 @@ def quiet_receipt(monkeypatch):
     for name, value in (("accelerator_id", "unified:test"), ("where_id", "test"),
                         ("swap_used_mb", 0), ("instruments", {}), ("engines", {})):
         monkeypatch.setattr(R, name, lambda *a, _v=value, **k: _v)
-    monkeypatch.setattr(R, "capture", lambda: {})
+    monkeypatch.setattr(ms.machines, "_THIS_MACHINE", None)
+    monkeypatch.setattr(environment, "capture", lambda: {})
     monkeypatch.setattr(R, "warn_if_pressed", lambda *a, **k: SimpleNamespace(
         as_dict=lambda: {}))
 

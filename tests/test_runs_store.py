@@ -8,6 +8,7 @@ import json
 
 import pytest
 
+from evals import environment
 from evals import run as er
 from evals.core import Case, Result
 from harness import candidates, memory_store as ms, paths, runs
@@ -54,7 +55,8 @@ def test_evals_run_writes_the_run_and_its_rows(monkeypatch, tmp_path):
     monkeypatch.setattr(er, "build_runner", lambda *a, **k: _Runner())
     monkeypatch.setattr(er, "warn_if_pressed",
                         lambda: argparse.Namespace(as_dict=lambda: {}))
-    monkeypatch.setattr(er, "capture", lambda: {"hw_model": "Test,1",
+    monkeypatch.setattr(ms.machines, "_THIS_MACHINE", None)
+    monkeypatch.setattr(environment, "capture", lambda: {"hw_model": "Test,1",
                                                 "os": "t", "arch": "a"})
     out = tmp_path / "out"
     args = argparse.Namespace(
@@ -78,6 +80,8 @@ def test_evals_run_writes_the_run_and_its_rows(monkeypatch, tmp_path):
             "svg", "measure", 2)
         assert row["cases_digest"] and row["generated_at"]
         assert got["summary"]["fake/key"]["passed"] == 2
+        # The faked machine is "here" too, so a run made here reads back as made here. #517.
+        assert runs.here(c) == [row["machine_id"]]
     finally:
         c.close()
     on_disk = json.loads((out / "results.json").read_text(encoding="utf-8"))
@@ -292,7 +296,8 @@ def _execute(monkeypatch, tmp_path, specs: str, runner=None):
     monkeypatch.setattr(er, "build_runner", lambda *a, **k: runner or _Runner())
     monkeypatch.setattr(er, "warn_if_pressed",
                         lambda: argparse.Namespace(as_dict=lambda: {}))
-    monkeypatch.setattr(er, "capture", lambda: {"hw_model": "Test,1",
+    monkeypatch.setattr(ms.machines, "_THIS_MACHINE", None)
+    monkeypatch.setattr(environment, "capture", lambda: {"hw_model": "Test,1",
                                                 "os": "t", "arch": "a"})
     out = tmp_path / "out"
     args = argparse.Namespace(

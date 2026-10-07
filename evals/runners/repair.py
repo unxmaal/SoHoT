@@ -19,7 +19,8 @@ from __future__ import annotations
 
 from harness import completion
 
-from evals.core import Case, score
+from evals import core
+from evals.core import Case
 from evals.runners.base import BaseRunner, RunnerError
 from evals.runners.text import _runner_error
 
@@ -79,7 +80,7 @@ class RepairRunner(BaseRunner):
             self.last_metrics = self._metrics(attempt, spent, started)
             # Score with the SAME checker the eval will use, so the loop is
             # repairing against the real verdict and not a proxy for it.
-            verdict = score(case, artifact)
+            verdict = core.score(case, artifact)
             if verdict.passed:
                 return artifact, 0
             reason = verdict.detail or "it did not meet the requirements"

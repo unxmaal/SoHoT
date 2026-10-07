@@ -100,6 +100,9 @@ INDEX = {
     "cleanup-missing-on-failure": {"instances": _i(373), "scanners": []},
     "a-guard-built-and-tested-that-nothing-invokes": {
         "instances": _i(1, 137, 143, 172, 182, 191, 279, 284, rules=(251,)), "scanners": []},
+    "a-test-double-that-never-reaches-the-code-under-test": {
+        "instances": _i(517, 518, 519, rules=(445,)),
+        "scanners": ["tests/test_module_layout.py::test_every_patch_reaches_the_code_that_reads_it"]},
     "an-input-accepted-and-silently-ignored": {
         "instances": _i(60, 103, 215, 315, 329, rules=(355,)),
         "scanners": ["tests/test_json_everywhere.py::test_no_verb_ignores_json"]},

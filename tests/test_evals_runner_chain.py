@@ -16,6 +16,7 @@ import pytest
 from evals.core import Case
 from evals.runners import chain
 from evals.runners.chain import STAGE_SCALE, STAGES, ChainRunner
+from harness import stages
 from harness.engines import Engine
 
 
@@ -236,7 +237,7 @@ def test_a_broken_stage_refuses_before_the_base_engine_runs(tmp_path,
         return ["true"]
 
     r = ChainRunner(fake_engine(argv=argv), "upscale-seedvr2", tmp_path)
-    monkeypatch.setattr(chain, "stage_unavailable",
+    monkeypatch.setattr(stages, "stage_unavailable",
                         lambda s: "broken: see issue #27" if s == "upscale-seedvr2" else "")
     with pytest.raises(Exception) as exc:
         r.generate(case())

@@ -21,7 +21,7 @@ from pathlib import Path
 
 from harness import memory, proc, reasons
 from harness.engines import Engine
-from harness.stages import stage_unavailable
+from harness import stages
 
 from evals.core import Case
 from evals.runners.base import BaseRunner, RunnerError
@@ -154,7 +154,7 @@ class ChainRunner(BaseRunner):
         # for every case purely to hand it to something that cannot run. The
         # refusal is version-pinned (harness/stages.py), so an mflux upgrade
         # lets it be tried again rather than hiding the fix.
-        broken = stage_unavailable(self.stage)
+        broken = stages.stage_unavailable(self.stage)
         if broken:
             raise RunnerError(broken, failure_class=reasons.LOAD_FAILED_RUNTIME)
 
