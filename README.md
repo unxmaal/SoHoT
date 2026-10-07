@@ -264,9 +264,21 @@ https://unxmaal.github.io/SoHoT/ as three pages:
 - `reports/`: a section per machine, a lane table across machines, and when
   each machine last published, so a quiet machine reads as stale rather than
   current;
-- `benchmarks/`: every lane's latest comparison table on each machine that
-  published one (candidate, pass, median, first, peak, metrics), each table
-  labelled with its machine and run date. A candidate whose every case was
+- `benchmarks/`: one table per exam per lane on each machine that published
+  one (candidate, pass, median, first, peak, metrics, run date). An exam is
+  every measure run on that machine that `evals.core.comparable()` accepts
+  as the same: case ids and digest, repeat, split, this lane's sampling,
+  accelerator, place, devices, launch and instruments. Each candidate shows its
+  latest result across those runs, so a two-candidate adopt run adds its two
+  rows to the wider comparison instead of replacing it. The `serving`
+  instrument is left out of that check because it is the union of the
+  candidates' own engines, and a row always comes whole from one run. A changed
+  case set starts a new table; tables run newest first, each labelled with its
+  case count, repeats, how many runs it merges and its newest date. Reference
+  rows (`claude-code:*`) sort last, are tagged `reference, not adoptable`, and
+  are never highlighted as serving; the serving candidate's row is. Exports
+  are `export_version` 2; the page still renders a version 1 export as its
+  latest run's table. A candidate whose every case was
   refused by the harness or the gateway (a failure class whose reason is
   `harness`) shows as `not run (<class>)` with no score, never as 0/N.
 
