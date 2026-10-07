@@ -34,12 +34,12 @@
   }
  ],
  "export_version": 1,
- "generated_at": "2026-10-07T14:20:52Z",
+ "generated_at": "2026-10-07T14:28:11Z",
  "lanes": [
   {
    "adopted": true,
    "adopted_how": "by-hand",
-   "age_days": 0.98,
+   "age_days": 0.99,
    "comparison": [
     {
      "candidate": "mflux/flux2-klein-4b-q8",
@@ -96,7 +96,7 @@
   {
    "adopted": true,
    "adopted_how": "measured",
-   "age_days": 0.12,
+   "age_days": 0.13,
    "comparison": [
     {
      "candidate": "llamacpp:Ornith-1.5-35B-Q4_K_M",
@@ -387,7 +387,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 0.12,
+   "age_days": 0.13,
    "comparison": [
     {
      "candidate": "acestep/acestep-v15-turbo",
@@ -436,8 +436,8 @@
    "comparison": [
     {
      "candidate": "nimble/Bespoke-Nimble-9B",
-     "first_s": 4.71,
-     "median_s": 3.075,
+     "first_s": 5.31,
+     "median_s": 3.314,
      "metrics": {
       "calibrated": 1.0,
       "decide_accuracy": 0.756,
@@ -454,9 +454,30 @@
      "ttft_p95_s": null
     },
     {
+     "candidate": "llamacpp:APUS-OpenJev-v1-4B-Q8_0",
+     "first_s": 16.493,
+     "median_s": 0.509,
+     "metrics": {
+      "calibrated": 1.0,
+      "completion_tokens": 38.7222,
+      "decide_accuracy": 0.7262,
+      "decide_brier": 0.4473,
+      "decide_ece": 0.1878,
+      "tokens_per_s": 76.6667
+     },
+     "not_run": "",
+     "pass_rate": 0.25,
+     "passed": 9,
+     "peak_gb": 0.0,
+     "reference": false,
+     "total": 36,
+     "ttft_median_s": null,
+     "ttft_p95_s": null
+    },
+    {
      "candidate": "decider/strands-decider-2B-hobson-v21",
-     "first_s": 14.765,
-     "median_s": 2.492,
+     "first_s": 14.977,
+     "median_s": 2.534,
      "metrics": {
       "calibrated": 1.0,
       "decide_accuracy": 0.7143,
@@ -474,15 +495,15 @@
     },
     {
      "candidate": "eval-imajev-4b",
-     "first_s": 0.588,
-     "median_s": 0.522,
+     "first_s": 0.572,
+     "median_s": 0.394,
      "metrics": {
       "calibrated": 1.0,
       "completion_tokens": 37.5278,
       "decide_accuracy": 0.7619,
       "decide_brier": 0.3592,
       "decide_ece": 0.1396,
-      "tokens_per_s": 72.1278
+      "tokens_per_s": 90.7167
      },
      "not_run": "",
      "pass_rate": 0.222,
@@ -494,56 +515,63 @@
      "ttft_p95_s": null
     },
     {
-     "candidate": "apus-ailab/APUS-OpenJev-v1-4B-GGUF",
-     "first_s": null,
-     "median_s": null,
-     "metrics": {},
-     "not_run": "refused_by_gateway",
-     "pass_rate": null,
-     "passed": null,
-     "peak_gb": null,
+     "candidate": "llamacpp:plumb-4b-v5-Q8_0",
+     "first_s": 17.875,
+     "median_s": 0.451,
+     "metrics": {
+      "calibrated": 1.0,
+      "completion_tokens": 33.1667,
+      "decide_accuracy": 0.744,
+      "decide_brier": 0.4151,
+      "decide_ece": 0.1594,
+      "tokens_per_s": 74.3806
+     },
+     "not_run": "",
+     "pass_rate": 0.222,
+     "passed": 8,
+     "peak_gb": 0.0,
      "reference": false,
      "total": 36,
      "ttft_median_s": null,
      "ttft_p95_s": null
     },
     {
-     "candidate": "crh225/plumb-4b-GGUF",
-     "first_s": null,
-     "median_s": null,
-     "metrics": {},
-     "not_run": "refused_by_gateway",
-     "pass_rate": null,
-     "passed": null,
-     "peak_gb": null,
+     "candidate": "llamacpp:decider-4b.v2-Q4_K_M",
+     "first_s": 11.171,
+     "median_s": 0.519,
+     "metrics": {
+      "calibrated": 1.0,
+      "completion_tokens": 36.8889,
+      "decide_accuracy": 0.6548,
+      "decide_brier": 0.5032,
+      "decide_ece": 0.2146,
+      "tokens_per_s": 72.0861
+     },
+     "not_run": "",
+     "pass_rate": 0.167,
+     "passed": 6,
+     "peak_gb": 0.0,
      "reference": false,
      "total": 36,
      "ttft_median_s": null,
      "ttft_p95_s": null
     },
     {
-     "candidate": "Mapika/decider-4b-GGUF",
-     "first_s": null,
-     "median_s": null,
-     "metrics": {},
-     "not_run": "refused_by_gateway",
-     "pass_rate": null,
-     "passed": null,
-     "peak_gb": null,
-     "reference": false,
-     "total": 36,
-     "ttft_median_s": null,
-     "ttft_p95_s": null
-    },
-    {
-     "candidate": "mindchain/decider-4b-v2-GGUF",
-     "first_s": null,
-     "median_s": null,
-     "metrics": {},
-     "not_run": "refused_by_gateway",
-     "pass_rate": null,
-     "passed": null,
-     "peak_gb": null,
+     "candidate": "llamacpp:decider-4b-v2.1-Q8_0",
+     "first_s": 17.054,
+     "median_s": 0.557,
+     "metrics": {
+      "calibrated": 1.0,
+      "completion_tokens": 37.6111,
+      "decide_accuracy": 0.7024,
+      "decide_brier": 0.479,
+      "decide_ece": 0.1782,
+      "tokens_per_s": 66.4
+     },
+     "not_run": "",
+     "pass_rate": 0.139,
+     "passed": 5,
+     "peak_gb": 0.0,
      "reference": false,
      "total": 36,
      "ttft_median_s": null,
@@ -551,16 +579,16 @@
     }
    ],
    "lane": "decide",
-   "last_run_at": "2026-10-07T14:20:52Z",
-   "measured_at": "2026-10-07T14:20:52Z",
-   "median_s": 0.522,
+   "last_run_at": "2026-10-07T14:28:10Z",
+   "measured_at": "2026-10-07T14:28:10Z",
+   "median_s": 0.394,
    "metrics": {
     "calibrated": 1.0,
     "completion_tokens": 37.5278,
     "decide_accuracy": 0.7619,
     "decide_brier": 0.3592,
     "decide_ece": 0.1396,
-    "tokens_per_s": 72.1278
+    "tokens_per_s": 90.7167
    },
    "not_run": "",
    "parked": "",
@@ -588,7 +616,7 @@
   {
    "adopted": true,
    "adopted_how": "measured",
-   "age_days": 0.5,
+   "age_days": 0.51,
    "comparison": [
     {
      "candidate": "llamacpp:Ornith-1.5-35B-Q4_K_M",
@@ -842,7 +870,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 1.75,
+   "age_days": 1.76,
    "comparison": [
     {
      "candidate": "parakeet-tdt-0.6b-v2",
@@ -945,7 +973,7 @@
   "first_seen": "2026-10-05T19:28:52Z",
   "hw_model": "Mac17,15",
   "label": "Mac Studio M5 Ultra 96 GB",
-  "last_seen": "2026-10-07T14:16:33Z",
+  "last_seen": "2026-10-07T14:21:55Z",
   "memory_gb": 96.0,
   "os": "macOS 27.0.1",
   "runtimes": [
