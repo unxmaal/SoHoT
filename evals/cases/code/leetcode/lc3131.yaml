@@ -1,0 +1,39 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3131
+modality: code
+prompt: "You are given two arrays of equal length, nums1 and nums2.\nEach element in nums1 has been increased\
+  \ (or decreased in the case of negative) by an integer, represented by the variable x.\nAs a result,\
+  \ nums1 becomes equal to nums2. Two arrays are considered equal when they contain the same integers\
+  \ with the same frequencies.\nReturn the integer x.\n \nExample 1:\n\nInput: nums1 = [2,6,4], nums2\
+  \ = [9,7,5]\nOutput: 3\nExplanation:\nThe integer added to each element of nums1 is 3.\n\nExample 2:\n\
+  \nInput: nums1 = [10], nums2 = [5]\nOutput: -5\nExplanation:\nThe integer added to each element of nums1\
+  \ is -5.\n\nExample 3:\n\nInput: nums1 = [1,1,1,1], nums2 = [1,1,1,1]\nOutput: 0\nExplanation:\nThe\
+  \ integer added to each element of nums1 is 0.\n\n \nConstraints:\n\n1 <= nums1.length == nums2.length\
+  \ <= 100\n0 <= nums1[i], nums2[i] <= 1000\nThe test cases are generated in a way that there is an integer\
+  \ x such that nums1 can become equal to nums2 by adding x to each element of nums1.\n\nWrite the solution\
+  \ in Python as this class, with any imports it needs:\n\n```python\nclass Solution:\n    def addedInteger(self,\
+  \ nums1: List[int], nums2: List[int]) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().addedInteger(nums1=[10], nums2=[5]) == -5
+  - Solution().addedInteger(nums1=[100, 200, 300], nums2=[150, 250, 350]) == 50
+  - Solution().addedInteger(nums1=[1, 2, 3, 4, 5], nums2=[6, 7, 8, 9, 10]) == 5
+  - Solution().addedInteger(nums1=[7, 7, 7], nums2=[10, 10, 10]) == 3
+  - Solution().addedInteger(nums1=[50, 50, 50, 50], nums2=[55, 55, 55, 55]) == 5
+  - Solution().addedInteger(nums1=[1000, 0, 500], nums2=[900, 1000, 400]) == 400
+  - Solution().addedInteger(nums1=[500, 500, 500], nums2=[500, 500, 500]) == 0
+  - Solution().addedInteger(nums1=[5, 10, 15], nums2=[8, 13, 18]) == 3
+  - Solution().addedInteger(nums1=[0, 0, 0], nums2=[3, 3, 3]) == 3
+  - Solution().addedInteger(nums1=[2, 6, 4], nums2=[9, 7, 5]) == 3
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3131'
+  date: '2024-04-28'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

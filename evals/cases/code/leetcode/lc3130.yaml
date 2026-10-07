@@ -1,0 +1,40 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3130
+modality: code
+prompt: "You are given 3 positive integers zero, one, and limit.\nA binary array arr is called stable\
+  \ if:\n\nThe number of occurrences of 0 in arr is exactly zero.\nThe number of occurrences of 1 in arr\
+  \ is exactly one.\nEach subarray of arr with a size greater than limit must contain both 0 and 1.\n\n\
+  Return the total number of stable binary arrays.\nSince the answer may be very large, return it modulo\
+  \ 109 + 7.\n \nExample 1:\n\nInput: zero = 1, one = 1, limit = 2\nOutput: 2\nExplanation:\nThe two possible\
+  \ stable binary arrays are [1,0] and [0,1].\n\nExample 2:\n\nInput: zero = 1, one = 2, limit = 1\nOutput:\
+  \ 1\nExplanation:\nThe only possible stable binary array is [1,0,1].\n\nExample 3:\n\nInput: zero =\
+  \ 3, one = 3, limit = 2\nOutput: 14\nExplanation:\nAll the possible stable binary arrays are [0,0,1,0,1,1],\
+  \ [0,0,1,1,0,1], [0,1,0,0,1,1], [0,1,0,1,0,1], [0,1,0,1,1,0], [0,1,1,0,0,1], [0,1,1,0,1,0], [1,0,0,1,0,1],\
+  \ [1,0,0,1,1,0], [1,0,1,0,0,1], [1,0,1,0,1,0], [1,0,1,1,0,0], [1,1,0,0,1,0], and [1,1,0,1,0,0].\n\n\
+   \nConstraints:\n\n1 <= zero, one, limit <= 1000\n\nWrite the solution in Python as this class, with\
+  \ any imports it needs:\n\n```python\nclass Solution:\n    def numberOfStableArrays(self, zero: int,\
+  \ one: int, limit: int) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().numberOfStableArrays(zero=5, one=5, limit=4) == 242
+  - Solution().numberOfStableArrays(zero=100, one=100, limit=50) == 375840050
+  - Solution().numberOfStableArrays(zero=5, one=5, limit=2) == 84
+  - Solution().numberOfStableArrays(zero=4, one=4, limit=3) == 62
+  - Solution().numberOfStableArrays(zero=2, one=2, limit=3) == 6
+  - Solution().numberOfStableArrays(zero=3, one=2, limit=1) == 1
+  - Solution().numberOfStableArrays(zero=5, one=4, limit=2) == 45
+  - Solution().numberOfStableArrays(zero=4, one=4, limit=4) == 70
+  - Solution().numberOfStableArrays(zero=10, one=10, limit=5) == 165114
+  - Solution().numberOfStableArrays(zero=1, one=1, limit=2) == 2
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3130'
+  date: '2024-04-21'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

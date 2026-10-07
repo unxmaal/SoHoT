@@ -1,0 +1,40 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3114
+modality: code
+prompt: "You are given a string s representing a 12-hour format time where some of the digits (possibly\
+  \ none) are replaced with a \"?\".\n12-hour times are formatted as \"HH:MM\", where HH is between 00\
+  \ and 11, and MM is between 00 and 59. The earliest 12-hour time is 00:00, and the latest is 11:59.\n\
+  You have to replace all the \"?\" characters in s with digits such that the time we obtain by the resulting\
+  \ string is a valid 12-hour format time and is the latest possible.\nReturn the resulting string.\n\
+   \nExample 1:\n\nInput: s = \"1?:?4\"\nOutput: \"11:54\"\nExplanation: The latest 12-hour format time\
+  \ we can achieve by replacing \"?\" characters is \"11:54\".\n\nExample 2:\n\nInput: s = \"0?:5?\"\n\
+  Output: \"09:59\"\nExplanation: The latest 12-hour format time we can achieve by replacing \"?\" characters\
+  \ is \"09:59\".\n\n \nConstraints:\n\ns.length == 5\ns[2] is equal to the character \":\".\nAll characters\
+  \ except s[2] are digits or \"?\" characters.\nThe input is generated such that there is at least one\
+  \ time between \"00:00\" and \"11:59\" that you can obtain after replacing the \"?\" characters.\n\n\
+  Write the solution in Python as this class, with any imports it needs:\n\n```python\nclass Solution:\n\
+  \    def findLatestTime(self, s: str) -> str:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().findLatestTime(s='10:?5') == '10:55'
+  - Solution().findLatestTime(s='??:??:') == '11:59'
+  - Solution().findLatestTime(s='??:5?') == '11:59'
+  - Solution().findLatestTime(s='1?:4?') == '11:49'
+  - Solution().findLatestTime(s='1?:?4') == '11:54'
+  - Solution().findLatestTime(s='11:?9') == '11:59'
+  - Solution().findLatestTime(s='?1:59') == '11:59'
+  - Solution().findLatestTime(s='1?:30') == '11:30'
+  - Solution().findLatestTime(s='0?:5?') == '09:59'
+  - Solution().findLatestTime(s='0?:??') == '09:59'
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3114'
+  date: '2024-04-14'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

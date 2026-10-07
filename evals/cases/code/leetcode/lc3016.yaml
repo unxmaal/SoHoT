@@ -1,0 +1,54 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3016
+modality: code
+prompt: "You are given a string word containing lowercase English letters.\nTelephone keypads have keys\
+  \ mapped with distinct collections of lowercase English letters, which can be used to form words by\
+  \ pushing them. For example, the key 2 is mapped with [\"a\",\"b\",\"c\"], we need to push the key one\
+  \ time to type \"a\", two times to type \"b\", and three times to type \"c\" .\nIt is allowed to remap\
+  \ the keys numbered 2 to 9 to distinct collections of letters. The keys can be remapped to any amount\
+  \ of letters, but each letter must be mapped to exactly one key. You need to find the minimum number\
+  \ of times the keys will be pushed to type the string word.\nReturn the minimum number of pushes needed\
+  \ to type word after remapping the keys.\nAn example mapping of letters to keys on a telephone keypad\
+  \ is given below. Note that 1, *, #, and 0 do not map to any letters.\n\n \nExample 1:\n\n\nInput: word\
+  \ = \"abcde\"\nOutput: 5\nExplanation: The remapped keypad given in the image provides the minimum cost.\n\
+  \"a\" -> one push on key 2\n\"b\" -> one push on key 3\n\"c\" -> one push on key 4\n\"d\" -> one push\
+  \ on key 5\n\"e\" -> one push on key 6\nTotal cost is 1 + 1 + 1 + 1 + 1 = 5.\nIt can be shown that no\
+  \ other mapping can provide a lower cost.\n\nExample 2:\n\n\nInput: word = \"xyzxyzxyzxyz\"\nOutput:\
+  \ 12\nExplanation: The remapped keypad given in the image provides the minimum cost.\n\"x\" -> one push\
+  \ on key 2\n\"y\" -> one push on key 3\n\"z\" -> one push on key 4\nTotal cost is 1 * 4 + 1 * 4 + 1\
+  \ * 4 = 12\nIt can be shown that no other mapping can provide a lower cost.\nNote that the key 9 is\
+  \ not mapped to any letter: it is not necessary to map letters to every key, but to map all the letters.\n\
+  \nExample 3:\n\n\nInput: word = \"aabbccddeeffgghhiiiiii\"\nOutput: 24\nExplanation: The remapped keypad\
+  \ given in the image provides the minimum cost.\n\"a\" -> one push on key 2\n\"b\" -> one push on key\
+  \ 3\n\"c\" -> one push on key 4\n\"d\" -> one push on key 5\n\"e\" -> one push on key 6\n\"f\" -> one\
+  \ push on key 7\n\"g\" -> one push on key 8\n\"h\" -> two pushes on key 9\n\"i\" -> one push on key\
+  \ 9\nTotal cost is 1 * 2 + 1 * 2 + 1 * 2 + 1 * 2 + 1 * 2 + 1 * 2 + 1 * 2 + 2 * 2 + 6 * 1 = 24.\nIt can\
+  \ be shown that no other mapping can provide a lower cost.\n\n \nConstraints:\n\n1 <= word.length <=\
+  \ 105\nword consists of lowercase English letters.\n\nWrite the solution in Python as this class, with\
+  \ any imports it needs:\n\n```python\nclass Solution:\n    def minimumPushes(self, word: str) -> int:\n\
+  ```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().minimumPushes(word='zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz') == 52
+  - Solution().minimumPushes(word='abcde') == 5
+  - Solution().minimumPushes(word='zyxwvutsrqponmlkjihgfedcba') == 56
+  - Solution().minimumPushes(word='mississippi') == 11
+  - Solution().minimumPushes(word='qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq') == 52
+  - Solution().minimumPushes(word='hellohellohellohellohellohellohellohellohellohello') == 50
+  - Solution().minimumPushes(word='abacabadabacabadabacabadabacabadabacabadabacabadabacabadabacabadabacabadabacabadabacabad')
+    == 88
+  - Solution().minimumPushes(word='xyzxyzxyzxyz') == 12
+  - Solution().minimumPushes(word='abcdefghijklmnopqrstuvwxyz') == 56
+  - Solution().minimumPushes(word='a') == 1
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3016'
+  date: '2024-01-21'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

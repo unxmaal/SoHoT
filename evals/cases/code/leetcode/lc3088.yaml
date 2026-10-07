@@ -1,0 +1,41 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3088
+modality: code
+prompt: "We call a string s of even length n an anti-palindrome if for each index 0 <= i < n, s[i] !=\
+  \ s[n - i - 1].\nGiven a string s, your task is to make s an anti-palindrome by doing any number of\
+  \ operations (including zero).\nIn one operation, you can select two characters from s and swap them.\n\
+  Return the resulting string. If multiple strings meet the conditions, return the lexicographically smallest\
+  \ one. If it can't be made into an anti-palindrome, return \"-1\".\n \nExample 1:\n\nInput: s = \"abca\"\
+  \nOutput: \"aabc\"\nExplanation:\n\"aabc\" is an anti-palindrome string since s[0] != s[3] and s[1]\
+  \ != s[2]. Also, it is a rearrangement of \"abca\".\n\nExample 2:\n\nInput: s = \"abba\"\nOutput: \"\
+  aabb\"\nExplanation:\n\"aabb\" is an anti-palindrome string since s[0] != s[3] and s[1] != s[2]. Also,\
+  \ it is a rearrangement of \"abba\".\n\nExample 3:\n\nInput: s = \"cccd\"\nOutput: \"-1\"\nExplanation:\n\
+  You can see that no matter how you rearrange the characters of \"cccd\", either s[0] == s[3] or s[1]\
+  \ == s[2]. So it can not form an anti-palindrome string.\n\n \nConstraints:\n\n2 <= s.length <= 105\n\
+  s.length % 2 == 0\ns consists only of lowercase English letters.\n\nWrite the solution in Python as\
+  \ this class, with any imports it needs:\n\n```python\nclass Solution:\n    def makeAntiPalindrome(self,\
+  \ s: str) -> str:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().makeAntiPalindrome(s='aaabbbccc') == 'aaabccbbc'
+  - Solution().makeAntiPalindrome(s='cccd') == '-1'
+  - Solution().makeAntiPalindrome(s='aabbaa') == '-1'
+  - Solution().makeAntiPalindrome(s='abcdef') == 'abcdef'
+  - Solution().makeAntiPalindrome(s='abcdcba') == 'aabccbd'
+  - Solution().makeAntiPalindrome(s='abcdefgihj') == 'abcdefghij'
+  - Solution().makeAntiPalindrome(s='abcdefgihjklmnopqrstuvwxyz') == 'abcdefghijklmnopqrstuvwxyz'
+  - Solution().makeAntiPalindrome(s='mnopqr') == 'mnopqr'
+  - Solution().makeAntiPalindrome(s='zzzzzzzzzzzzzzzzzzzz') == '-1'
+  - Solution().makeAntiPalindrome(s='abcddcba') == 'aabbccdd'
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3088'
+  date: '2024-03-17'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

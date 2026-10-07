@@ -1,0 +1,52 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3466
+modality: code
+prompt: "Mario drives on a two-lane freeway with coins every mile. You are given two integer arrays, lane1\
+  \ and lane2, where the value at the ith index represents the number of coins he gains or loses in the\
+  \ ith mile in that lane.\n\nIf Mario is in lane 1 at mile i and lane1[i] > 0, Mario gains lane1[i] coins.\n\
+  If Mario is in lane 1 at mile i and lane1[i] < 0, Mario pays a toll and loses abs(lane1[i]) coins.\n\
+  The same rules apply for lane2.\n\nMario can enter the freeway anywhere and exit anytime after traveling\
+  \ at least one mile. Mario always enters the freeway on lane 1 but can switch lanes at most 2 times.\n\
+  A lane switch is when Mario goes from lane 1 to lane 2 or vice versa.\nReturn the maximum number of\
+  \ coins Mario can earn after performing at most 2 lane switches.\nNote: Mario can switch lanes immediately\
+  \ upon entering or just before exiting the freeway.\n \nExample 1:\n\nInput: lane1 = [1,-2,-10,3], lane2\
+  \ = [-5,10,0,1]\nOutput: 14\nExplanation:\n\nMario drives the first mile on lane 1.\nHe then changes\
+  \ to lane 2 and drives for two miles.\nHe changes back to lane 1 for the last mile.\n\nMario collects\
+  \ 1 + 10 + 0 + 3 = 14 coins.\n\nExample 2:\n\nInput: lane1 = [1,-1,-1,-1], lane2 = [0,3,4,-5]\nOutput:\
+  \ 8\nExplanation:\n\nMario starts at mile 0 in lane 1 and drives one mile.\nHe then changes to lane\
+  \ 2 and drives for two more miles. He exits the freeway before mile 3.\n\nHe collects 1 + 3 + 4 = 8\
+  \ coins.\n\nExample 3:\n\nInput: lane1 = [-5,-4,-3], lane2 = [-1,2,3]\nOutput: 5\nExplanation:\n\nMario\
+  \ enters at mile 1 and immediately switches to lane 2. He stays here the entire way.\n\nHe collects\
+  \ a total of 2 + 3 = 5 coins.\n\nExample 4:\n\nInput: lane1 = [-3,-3,-3], lane2 = [9,-2,4]\nOutput:\
+  \ 11\nExplanation:\n\nMario starts at the beginning of the freeway and immediately switches to lane\
+  \ 2. He stays here the whole way.\n\nHe collects a total of 9 + (-2) + 4 = 11 coins.\n\nExample 5:\n\
+  \nInput: lane1 = [-10], lane2 = [-2]\nOutput: -2\nExplanation:\n\nSince Mario must ride on the freeway\
+  \ for at least one mile, he rides just one mile in lane 2.\n\nHe collects a total of -2 coins.\n\n \n\
+  Constraints:\n\n1 <= lane1.length == lane2.length <= 105\n-109 <= lane1[i], lane2[i] <= 109\n\nWrite\
+  \ the solution in Python as this class, with any imports it needs:\n\n```python\nclass Solution:\n \
+  \   def maxCoins(self, lane1: List[int], lane2: List[int]) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().maxCoins(lane1=[-1, 1, -1, 1, -1], lane2=[1, -1, 1, -1, 1]) == 3
+  - Solution().maxCoins(lane1=[1, 2, 3, 4, 5], lane2=[5, 4, 3, 2, 1]) == 21
+  - Solution().maxCoins(lane1=[5], lane2=[-5]) == 5
+  - Solution().maxCoins(lane1=[1, -1, -1, -1], lane2=[0, 3, 4, -5]) == 8
+  - Solution().maxCoins(lane1=[1, -2, -10, 3], lane2=[-5, 10, 0, 1]) == 14
+  - Solution().maxCoins(lane1=[-5, -4, -3], lane2=[-1, 2, 3]) == 5
+  - Solution().maxCoins(lane1=[-3, -3, -3], lane2=[9, -2, 4]) == 11
+  - Solution().maxCoins(lane1=[1000000000, -1000000000, 1000000000], lane2=[-1000000000, 1000000000, -1000000000])
+    == 3000000000
+  - Solution().maxCoins(lane1=[-10], lane2=[-2]) == -2
+  - Solution().maxCoins(lane1=[0, 0, 0, 0, 0], lane2=[0, 0, 0, 0, 0]) == 0
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3466'
+  date: '2025-02-23'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

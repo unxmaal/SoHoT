@@ -1,0 +1,65 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3372
+modality: code
+prompt: "There exist two undirected trees with n and m nodes, with distinct labels in ranges [0, n - 1]\
+  \ and [0, m - 1], respectively.\nYou are given two 2D integer arrays edges1 and edges2 of lengths n\
+  \ - 1 and m - 1, respectively, where edges1[i] = [ai, bi] indicates that there is an edge between nodes\
+  \ ai and bi in the first tree and edges2[i] = [ui, vi] indicates that there is an edge between nodes\
+  \ ui and vi in the second tree. You are also given an integer k.\nNode u is target to node v if the\
+  \ number of edges on the path from u to v is less than or equal to k. Note that a node is always target\
+  \ to itself.\nReturn an array of n integers answer, where answer[i] is the maximum possible number of\
+  \ nodes target to node i of the first tree if you have to connect one node from the first tree to another\
+  \ node in the second tree.\nNote that queries are independent from each other. That is, for every query\
+  \ you will remove the added edge before proceeding to the next query.\n \nExample 1:\n\nInput: edges1\
+  \ = [[0,1],[0,2],[2,3],[2,4]], edges2 = [[0,1],[0,2],[0,3],[2,7],[1,4],[4,5],[4,6]], k = 2\nOutput:\
+  \ [9,7,9,8,8]\nExplanation:\n\nFor i = 0, connect node 0 from the first tree to node 0 from the second\
+  \ tree.\nFor i = 1, connect node 1 from the first tree to node 0 from the second tree.\nFor i = 2, connect\
+  \ node 2 from the first tree to node 4 from the second tree.\nFor i = 3, connect node 3 from the first\
+  \ tree to node 4 from the second tree.\nFor i = 4, connect node 4 from the first tree to node 4 from\
+  \ the second tree.\n\n\nExample 2:\n\nInput: edges1 = [[0,1],[0,2],[0,3],[0,4]], edges2 = [[0,1],[1,2],[2,3]],\
+  \ k = 1\nOutput: [6,3,3,3,3]\nExplanation:\nFor every i, connect node i of the first tree with any node\
+  \ of the second tree.\n\n \nConstraints:\n\n2 <= n, m <= 1000\nedges1.length == n - 1\nedges2.length\
+  \ == m - 1\nedges1[i].length == edges2[i].length == 2\nedges1[i] = [ai, bi]\n0 <= ai, bi < n\nedges2[i]\
+  \ = [ui, vi]\n0 <= ui, vi < m\nThe input is generated such that edges1 and edges2 represent valid trees.\n\
+  0 <= k <= 1000\n\nWrite the solution in Python as this class, with any imports it needs:\n\n```python\n\
+  class Solution:\n    def maxTargetNodes(self, edges1: List[List[int]], edges2: List[List[int]], k: int)\
+  \ -> List[int]:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().maxTargetNodes(edges1=[[0, 1], [0, 2], [0, 3], [0, 4]], edges2=[[0, 1], [1, 2], [2, 3]],
+    k=1) == [6, 3, 3, 3, 3]
+  - Solution().maxTargetNodes(edges1=[[0, 1], [0, 2], [2, 3], [2, 4]], edges2=[[0, 1], [0, 2], [0, 3],
+    [2, 7], [1, 4], [4, 5], [4, 6]], k=2) == [9, 7, 9, 8, 8]
+  - Solution().maxTargetNodes(edges1=[[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 7], [7, 8],
+    [8, 9]], edges2=[[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 7], [7, 8], [8, 9], [0, 10],
+    [10, 11], [11, 12], [12, 13], [13, 14], [14, 15]], k=5) == [15, 16, 17, 18, 19, 19, 18, 17, 16, 15]
+  - Solution().maxTargetNodes(edges1=[[0, 1], [0, 2], [0, 3], [1, 4], [1, 5], [2, 6], [2, 7], [3, 8],
+    [3, 9]], edges2=[[0, 1], [0, 2], [0, 3], [1, 4], [1, 5], [2, 6], [2, 7], [3, 8], [3, 9], [4, 10],
+    [5, 11], [6, 12], [7, 13], [8, 14], [9, 15]], k=4) == [26, 26, 26, 26, 26, 26, 26, 26, 26, 26]
+  - Solution().maxTargetNodes(edges1=[[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6]], edges2=[[0, 1],
+    [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 7], [7, 8], [8, 9]], k=3) == [9, 10, 11, 12, 11, 10, 9]
+  - Solution().maxTargetNodes(edges1=[[0, 1], [1, 2], [2, 3], [3, 4], [4, 5]], edges2=[[0, 1], [1, 2],
+    [2, 3], [3, 4], [4, 5], [5, 6], [6, 7], [7, 8], [8, 9]], k=3) == [9, 10, 11, 11, 10, 9]
+  - Solution().maxTargetNodes(edges1=[[0, 1], [0, 2], [1, 3], [1, 4], [2, 5], [2, 6]], edges2=[[0, 1],
+    [1, 2], [1, 3], [2, 4], [2, 5], [3, 6], [3, 7]], k=3) == [15, 15, 15, 13, 13, 13, 13]
+  - Solution().maxTargetNodes(edges1=[[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 7], [7, 8],
+    [8, 9], [9, 10], [10, 11], [11, 12], [12, 13], [13, 14]], edges2=[[0, 1], [1, 2], [2, 3], [3, 4],
+    [4, 5], [5, 6], [6, 7], [7, 8], [8, 9], [9, 10]], k=2) == [6, 7, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+    7, 6]
+  - Solution().maxTargetNodes(edges1=[[0, 1], [0, 2], [1, 3], [2, 4], [2, 5], [3, 6], [3, 7]], edges2=[[0,
+    1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 7]], k=3) == [13, 13, 11, 11, 10, 10, 10, 10]
+  - Solution().maxTargetNodes(edges1=[[0, 1], [0, 2], [1, 3], [1, 4], [2, 5], [2, 6], [5, 7], [5, 8],
+    [6, 9]], edges2=[[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 7], [7, 8], [8, 9], [9, 10]],
+    k=4) == [17, 17, 17, 14, 14, 17, 17, 15, 15, 15]
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3372'
+  date: '2024-12-01'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

@@ -28,6 +28,7 @@ import sys
 from harness import adopt, audio, completion, env, power, proc, vector  # noqa: F401
 from harness.commands import adopt as adopt_cmd
 from harness.commands import benchmarks as benchmarks_cmd
+from harness.commands import cases as cases_cmd
 from harness.commands import chaos as chaos_cmd
 from harness.commands import common
 from harness.commands import discover as discover_cmd
@@ -480,6 +481,11 @@ def build_parser() -> argparse.ArgumentParser:
     bch.add_argument("--limit", type=int, default=0, help="with --probe, at most this many cases")
     bch.add_argument("--gateway", default=completion.DEFAULT_GATEWAY)
     bch.set_defaults(func=benchmarks_cmd.cmd_benchmarks)
+    cas = sub.add_parser("cases", help="re-run a case importer, or its negative control (#603)")
+    cas.add_argument("action", choices=("import", "control"))
+    cas.add_argument("source", help="an importer in evals/importers, e.g. leetcode")
+    cas.add_argument("--out", default="", help="cases root (default: evals/cases)")
+    cas.set_defaults(func=cases_cmd.cmd_cases)
     aud = sub.add_parser("audit", help="check the live store and what the gateway serves, "
                          "read-only; run after every deploy and nightly. #492")
     aud.add_argument("path", nargs="?", default="",

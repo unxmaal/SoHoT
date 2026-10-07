@@ -1,0 +1,50 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3207
+modality: code
+prompt: "You are given an integer array enemyEnergies denoting the energy values of various enemies.\n\
+  You are also given an integer currentEnergy denoting the amount of energy you have initially.\nYou start\
+  \ with 0 points, and all the enemies are unmarked initially.\nYou can perform either of the following\
+  \ operations zero or multiple times to gain points:\n\nChoose an unmarked enemy, i, such that currentEnergy\
+  \ >= enemyEnergies[i]. By choosing this option:\n\n\t\nYou gain 1 point.\nYour energy is reduced by\
+  \ the enemy's energy, i.e. currentEnergy = currentEnergy - enemyEnergies[i].\n\n\nIf you have at least\
+  \ 1 point, you can choose an unmarked enemy, i. By choosing this option:\n\t\nYour energy increases\
+  \ by the enemy's energy, i.e. currentEnergy = currentEnergy + enemyEnergies[i].\nThe enemy i is marked.\n\
+  \n\n\nReturn an integer denoting the maximum points you can get in the end by optimally performing operations.\n\
+   \nExample 1:\n\nInput: enemyEnergies = [3,2,2], currentEnergy = 2\nOutput: 3\nExplanation:\nThe following\
+  \ operations can be performed to get 3 points, which is the maximum:\n\nFirst operation on enemy 1:\
+  \ points increases by 1, and currentEnergy decreases by 2. So, points = 1, and currentEnergy = 0.\n\
+  Second operation on enemy 0: currentEnergy increases by 3, and enemy 0 is marked. So, points = 1, currentEnergy\
+  \ = 3, and marked enemies = [0].\nFirst operation on enemy 2: points increases by 1, and currentEnergy\
+  \ decreases by 2. So, points = 2, currentEnergy = 1, and marked enemies = [0].\nSecond operation on\
+  \ enemy 2: currentEnergy increases by 2, and enemy 2 is marked. So, points = 2, currentEnergy = 3, and\
+  \ marked enemies = [0, 2].\nFirst operation on enemy 1: points increases by 1, and currentEnergy decreases\
+  \ by 2. So, points = 3, currentEnergy = 1, and marked enemies = [0, 2].\n\n\nExample 2:\n\nInput: enemyEnergies\
+  \ = [2], currentEnergy = 10\nOutput: 5\nExplanation: \nPerforming the first operation 5 times on enemy\
+  \ 0 results in the maximum number of points.\n\n \nConstraints:\n\n1 <= enemyEnergies.length <= 105\n\
+  1 <= enemyEnergies[i] <= 109\n0 <= currentEnergy <= 109\n\nWrite the solution in Python as this class,\
+  \ with any imports it needs:\n\n```python\nclass Solution:\n    def maximumPoints(self, enemyEnergies:\
+  \ List[int], currentEnergy: int) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().maximumPoints(enemyEnergies=[1, 1, 1, 1, 1], currentEnergy=1) == 5
+  - Solution().maximumPoints(enemyEnergies=[1, 1000000000, 1], currentEnergy=1000000001) == 2000000002
+  - Solution().maximumPoints(enemyEnergies=[5, 5, 5, 5, 5], currentEnergy=15) == 7
+  - Solution().maximumPoints(enemyEnergies=[2], currentEnergy=10) == 5
+  - Solution().maximumPoints(enemyEnergies=[1], currentEnergy=0) == 0
+  - Solution().maximumPoints(enemyEnergies=[5, 5, 5, 5, 5, 5, 5, 5, 5, 5], currentEnergy=25) == 14
+  - Solution().maximumPoints(enemyEnergies=[10, 9, 8, 7, 6, 5, 4, 3, 2, 1], currentEnergy=55) == 109
+  - Solution().maximumPoints(enemyEnergies=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10], currentEnergy=55) == 109
+  - Solution().maximumPoints(enemyEnergies=[1, 2, 3, 4, 5], currentEnergy=15) == 29
+  - Solution().maximumPoints(enemyEnergies=[3, 2, 2], currentEnergy=2) == 3
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3207'
+  date: '2024-06-30'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

@@ -1,0 +1,53 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3383
+modality: code
+prompt: "Alice has just graduated from wizard school, and wishes to cast a magic spell to celebrate. The\
+  \ magic spell contains certain focus points where magic needs to be concentrated, and some of these\
+  \ focus points contain magic crystals which serve as the spell's energy source. Focus points can be\
+  \ linked through directed runes, which channel magic flow from one focus point to another.\nYou are\
+  \ given a integer n denoting the number of focus points and an array of integers crystals where crystals[i]\
+  \ indicates a focus point which holds a magic crystal. You are also given two integer arrays flowFrom\
+  \ and flowTo, which represent the existing directed runes. The ith rune allows magic to freely flow\
+  \ from focus point flowFrom[i] to focus point flowTo[i].\nYou need to find the number of directed runes\
+  \ Alice must add to her spell, such that each focus point either:\n\nContains a magic crystal.\nReceives\
+  \ magic flow from another focus point.\n\nReturn the minimum number of directed runes that she should\
+  \ add.\n \nExample 1:\n\nInput: n = 6, crystals = [0], flowFrom = [0,1,2,3], flowTo = [1,2,3,0]\nOutput:\
+  \ 2\nExplanation: \n\nAdd two directed runes:\n\nFrom focus point 0 to focus point 4.\nFrom focus point\
+  \ 0 to focus point 5.\n\n\nExample 2:\n\nInput: n = 7, crystals = [3,5], flowFrom = [0,1,2,3,5], flowTo\
+  \ = [1,2,0,4,6]\nOutput: 1\nExplanation: \n\nAdd a directed rune from focus point 4 to focus point 2.\n\
+  \n \nConstraints:\n\n2 <= n <= 105\n1 <= crystals.length <= n\n0 <= crystals[i] <= n - 1\n1 <= flowFrom.length\
+  \ == flowTo.length <= min(2 * 105, (n * (n - 1)) / 2)\n0 <= flowFrom[i], flowTo[i] <= n - 1\nflowFrom[i]\
+  \ != flowTo[i]\nAll pre-existing directed runes are distinct.\n\nWrite the solution in Python as this\
+  \ class, with any imports it needs:\n\n```python\nclass Solution:\n    def minRunesToAdd(self, n: int,\
+  \ crystals: List[int], flowFrom: List[int], flowTo: List[int]) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().minRunesToAdd(n=4, crystals=[2], flowFrom=[1, 3], flowTo=[2, 0]) == 2
+  - Solution().minRunesToAdd(n=5, crystals=[1, 4], flowFrom=[0, 2], flowTo=[1, 3]) == 2
+  - Solution().minRunesToAdd(n=3, crystals=[0, 2], flowFrom=[], flowTo=[]) == 1
+  - Solution().minRunesToAdd(n=7, crystals=[3, 5], flowFrom=[0, 1, 2, 3, 5], flowTo=[1, 2, 0, 4, 6]) ==
+    1
+  - Solution().minRunesToAdd(n=6, crystals=[0], flowFrom=[0, 1, 2, 3], flowTo=[1, 2, 3, 0]) == 2
+  - Solution().minRunesToAdd(n=15, crystals=[7, 12], flowFrom=[0, 1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 13,
+    14], flowTo=[1, 2, 3, 4, 5, 6, 7, 9, 10, 11, 12, 14, 0]) == 2
+  - Solution().minRunesToAdd(n=20, crystals=[5, 15], flowFrom=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
+    13, 14, 15, 16, 17, 18, 19], flowTo=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18,
+    19, 0]) == 0
+  - Solution().minRunesToAdd(n=11, crystals=[2, 8], flowFrom=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], flowTo=[1,
+    2, 3, 4, 5, 6, 7, 8, 9, 10, 0]) == 0
+  - Solution().minRunesToAdd(n=12, crystals=[5, 9], flowFrom=[0, 1, 2, 3, 4, 6, 7, 8, 10, 11], flowTo=[1,
+    2, 3, 4, 5, 7, 8, 9, 11, 5]) == 3
+  - Solution().minRunesToAdd(n=10, crystals=[0, 8], flowFrom=[1, 2, 3, 4, 5, 6, 7, 9], flowTo=[2, 3, 4,
+    5, 6, 7, 8, 0]) == 2
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3383'
+  date: '2024-12-08'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

@@ -1,0 +1,52 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3123
+modality: code
+prompt: "You are given an undirected weighted graph of n nodes numbered from 0 to n - 1. The graph consists\
+  \ of m edges represented by a 2D array edges, where edges[i] = [ai, bi, wi] indicates that there is\
+  \ an edge between nodes ai and bi with weight wi.\nConsider all the shortest paths from node 0 to node\
+  \ n - 1 in the graph. You need to find a boolean array answer where answer[i] is true if the edge edges[i]\
+  \ is part of at least one shortest path. Otherwise, answer[i] is false.\nReturn the array answer.\n\
+  Note that the graph may not be connected.\n \nExample 1:\n\n\nInput: n = 6, edges = [[0,1,4],[0,2,1],[1,3,2],[1,4,3],[1,5,1],[2,3,1],[3,5,3],[4,5,2]]\n\
+  Output: [true,true,true,false,true,true,true,false]\nExplanation:\nThe following are all the shortest\
+  \ paths between nodes 0 and 5:\n\nThe path 0 -> 1 -> 5: The sum of weights is 4 + 1 = 5.\nThe path 0\
+  \ -> 2 -> 3 -> 5: The sum of weights is 1 + 1 + 3 = 5.\nThe path 0 -> 2 -> 3 -> 1 -> 5: The sum of weights\
+  \ is 1 + 1 + 2 + 1 = 5.\n\n\nExample 2:\n\n\nInput: n = 4, edges = [[2,0,1],[0,1,1],[0,3,4],[3,2,2]]\n\
+  Output: [true,false,false,true]\nExplanation:\nThere is one shortest path between nodes 0 and 3, which\
+  \ is the path 0 -> 2 -> 3 with the sum of weights 1 + 2 = 3.\n\n \nConstraints:\n\n2 <= n <= 5 * 104\n\
+  m == edges.length\n1 <= m <= min(5 * 104, n * (n - 1) / 2)\n0 <= ai, bi < n\nai != bi\n1 <= wi <= 105\n\
+  There are no repeated edges.\n\nWrite the solution in Python as this class, with any imports it needs:\n\
+  \n```python\nclass Solution:\n    def findAnswer(self, n: int, edges: List[List[int]]) -> List[bool]:\n\
+  ```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().findAnswer(n=5, edges=[[0, 1, 2], [0, 2, 2], [1, 2, 3], [1, 3, 2], [2, 3, 1], [2, 4, 4],
+    [3, 4, 2]]) == [False, True, False, False, True, False, True]
+  - Solution().findAnswer(n=7, edges=[[0, 1, 2], [0, 2, 5], [1, 2, 1], [1, 3, 4], [2, 3, 2], [3, 4, 1],
+    [4, 5, 3], [5, 6, 2]]) == [True, False, True, False, True, True, True, True]
+  - Solution().findAnswer(n=5, edges=[[0, 1, 2], [0, 2, 3], [1, 2, 1], [1, 3, 4], [2, 3, 2], [3, 4, 1]])
+    == [True, True, True, False, True, True]
+  - Solution().findAnswer(n=10, edges=[[0, 1, 1], [0, 2, 1], [0, 3, 1], [1, 4, 1], [1, 5, 1], [2, 6, 1],
+    [2, 7, 1], [3, 8, 1], [3, 9, 1], [4, 5, 1], [6, 7, 1], [8, 9, 1]]) == [False, False, True, False,
+    False, False, False, False, True, False, False, False]
+  - Solution().findAnswer(n=7, edges=[[0, 1, 3], [1, 2, 2], [2, 3, 1], [3, 4, 1], [4, 5, 2], [5, 6, 3]])
+    == [True, True, True, True, True, True]
+  - Solution().findAnswer(n=5, edges=[[0, 1, 1], [1, 2, 2], [2, 3, 3], [3, 4, 4], [0, 4, 10]]) == [True,
+    True, True, True, True]
+  - Solution().findAnswer(n=3, edges=[[0, 1, 1], [0, 2, 5], [1, 2, 2]]) == [True, False, True]
+  - Solution().findAnswer(n=4, edges=[[2, 0, 1], [0, 1, 1], [0, 3, 4], [3, 2, 2]]) == [True, False, False,
+    True]
+  - Solution().findAnswer(n=6, edges=[[0, 1, 4], [0, 2, 1], [1, 3, 2], [1, 4, 3], [1, 5, 1], [2, 3, 1],
+    [3, 5, 3], [4, 5, 2]]) == [True, True, True, False, True, True, True, False]
+  - Solution().findAnswer(n=3, edges=[[0, 1, 1], [1, 2, 1], [0, 2, 4]]) == [True, True, False]
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3123'
+  date: '2024-04-21'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

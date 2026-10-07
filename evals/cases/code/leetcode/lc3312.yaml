@@ -1,0 +1,45 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3312
+modality: code
+prompt: "You are given an integer array nums of length n and an integer array queries.\nLet gcdPairs denote\
+  \ an array obtained by calculating the GCD of all possible pairs (nums[i], nums[j]), where 0 <= i <\
+  \ j < n, and then sorting these values in ascending order.\nFor each query queries[i], you need to find\
+  \ the element at index queries[i] in gcdPairs.\nReturn an integer array answer, where answer[i] is the\
+  \ value at gcdPairs[queries[i]] for each query.\nThe term gcd(a, b) denotes the greatest common divisor\
+  \ of a and b.\n \nExample 1:\n\nInput: nums = [2,3,4], queries = [0,2,2]\nOutput: [1,2,2]\nExplanation:\n\
+  gcdPairs = [gcd(nums[0], nums[1]), gcd(nums[0], nums[2]), gcd(nums[1], nums[2])] = [1, 2, 1].\nAfter\
+  \ sorting in ascending order, gcdPairs = [1, 1, 2].\nSo, the answer is [gcdPairs[queries[0]], gcdPairs[queries[1]],\
+  \ gcdPairs[queries[2]]] = [1, 2, 2].\n\nExample 2:\n\nInput: nums = [4,4,2,1], queries = [5,3,1,0]\n\
+  Output: [4,2,1,1]\nExplanation:\ngcdPairs sorted in ascending order is [1, 1, 1, 2, 2, 4].\n\nExample\
+  \ 3:\n\nInput: nums = [2,2], queries = [0,0]\nOutput: [2,2]\nExplanation:\ngcdPairs = [2].\n\n \nConstraints:\n\
+  \n2 <= n == nums.length <= 105\n1 <= nums[i] <= 5 * 104\n1 <= queries.length <= 105\n0 <= queries[i]\
+  \ < n * (n - 1) / 2\n\nWrite the solution in Python as this class, with any imports it needs:\n\n```python\n\
+  class Solution:\n    def gcdValues(self, nums: List[int], queries: List[int]) -> List[int]:\n```\n\n\
+  Return only the code."
+assert:
+  checks:
+  - Solution().gcdValues(nums=[5, 10, 15, 20], queries=[0, 1, 2, 3, 4, 5, 6, 8]) == [5, 5, 5, 5, 5, 10,
+    21, 21]
+  - Solution().gcdValues(nums=[7, 14, 28, 35], queries=[0, 3, 5, 10]) == [7, 7, 14, 36]
+  - Solution().gcdValues(nums=[7, 14, 21, 28, 35], queries=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) == [7,
+    7, 7, 7, 7, 7, 7, 7, 7, 14, 36]
+  - Solution().gcdValues(nums=[4, 4, 2, 1], queries=[5, 3, 1, 0]) == [4, 2, 1, 1]
+  - Solution().gcdValues(nums=[5, 10, 15], queries=[0, 1, 2]) == [5, 5, 5]
+  - Solution().gcdValues(nums=[1, 2, 3, 4, 5], queries=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]) == [1, 1, 1, 1,
+    1, 1, 1, 1, 1, 2]
+  - Solution().gcdValues(nums=[3, 6, 9, 12], queries=[0, 1, 2, 3, 4, 5]) == [3, 3, 3, 3, 3, 6]
+  - Solution().gcdValues(nums=[5, 10, 15, 20, 25], queries=[0, 6, 9, 10]) == [5, 5, 10, 26]
+  - Solution().gcdValues(nums=[2, 3, 4], queries=[0, 2, 2]) == [1, 2, 2]
+  - Solution().gcdValues(nums=[10, 20, 30, 40], queries=[0, 1, 2, 3, 4, 5]) == [10, 10, 10, 10, 10, 20]
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3312'
+  date: '2024-10-06'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

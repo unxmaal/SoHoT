@@ -1,0 +1,38 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3330
+modality: code
+prompt: "Alice is attempting to type a specific string on her computer. However, she tends to be clumsy\
+  \ and may press a key for too long, resulting in a character being typed multiple times.\nAlthough Alice\
+  \ tried to focus on her typing, she is aware that she may still have done this at most once.\nYou are\
+  \ given a string word, which represents the final output displayed on Alice's screen.\nReturn the total\
+  \ number of possible original strings that Alice might have intended to type.\n \nExample 1:\n\nInput:\
+  \ word = \"abbcccc\"\nOutput: 5\nExplanation:\nThe possible strings are: \"abbcccc\", \"abbccc\", \"\
+  abbcc\", \"abbc\", and \"abcccc\".\n\nExample 2:\n\nInput: word = \"abcd\"\nOutput: 1\nExplanation:\n\
+  The only possible string is \"abcd\".\n\nExample 3:\n\nInput: word = \"aaaa\"\nOutput: 4\n\n \nConstraints:\n\
+  \n1 <= word.length <= 100\nword consists only of lowercase English letters.\n\nWrite the solution in\
+  \ Python as this class, with any imports it needs:\n\n```python\nclass Solution:\n    def possibleStringCount(self,\
+  \ word: str) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().possibleStringCount(word='aaabbbccc') == 7
+  - Solution().possibleStringCount(word='abbcccc') == 5
+  - Solution().possibleStringCount(word='mississippi') == 4
+  - Solution().possibleStringCount(word='zzzzzzz') == 7
+  - Solution().possibleStringCount(word='zzzzzzzzzz') == 10
+  - Solution().possibleStringCount(word='aabbccdd') == 5
+  - Solution().possibleStringCount(word='aabbbaaccc') == 7
+  - Solution().possibleStringCount(word='banana') == 1
+  - Solution().possibleStringCount(word='aabbccddeeff') == 7
+  - Solution().possibleStringCount(word='zzzzzzzzz') == 9
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3330'
+  date: '2024-10-20'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

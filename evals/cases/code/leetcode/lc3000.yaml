@@ -1,0 +1,40 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3000
+modality: code
+prompt: "You are given a 2D 0-indexed integer array dimensions.\nFor all indices i, 0 <= i < dimensions.length,\
+  \ dimensions[i][0] represents the length and dimensions[i][1] represents the width of the rectangle\
+  \ i.\nReturn the area of the rectangle having the longest diagonal. If there are multiple rectangles\
+  \ with the longest diagonal, return the area of the rectangle having the maximum area.\n \nExample 1:\n\
+  \nInput: dimensions = [[9,3],[8,6]]\nOutput: 48\nExplanation: \nFor index = 0, length = 9 and width\
+  \ = 3. Diagonal length = sqrt(9 * 9 + 3 * 3) = sqrt(90) ≈ 9.487.\nFor index = 1, length = 8 and width\
+  \ = 6. Diagonal length = sqrt(8 * 8 + 6 * 6) = sqrt(100) = 10.\nSo, the rectangle at index 1 has a greater\
+  \ diagonal length therefore we return area = 8 * 6 = 48.\n\nExample 2:\n\nInput: dimensions = [[3,4],[4,3]]\n\
+  Output: 12\nExplanation: Length of diagonal is the same for both which is 5, so maximum area = 12.\n\
+  \n \nConstraints:\n\n1 <= dimensions.length <= 100\ndimensions[i].length == 2\n1 <= dimensions[i][0],\
+  \ dimensions[i][1] <= 100\n\nWrite the solution in Python as this class, with any imports it needs:\n\
+  \n```python\nclass Solution:\n    def areaOfMaxDiagonal(self, dimensions: List[List[int]]) -> int:\n\
+  ```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().areaOfMaxDiagonal(dimensions=[[5, 12], [13, 88], [20, 21]]) == 1144
+  - Solution().areaOfMaxDiagonal(dimensions=[[6, 8], [8, 6], [10, 24]]) == 240
+  - Solution().areaOfMaxDiagonal(dimensions=[[9, 3], [8, 6]]) == 48
+  - Solution().areaOfMaxDiagonal(dimensions=[[7, 24], [24, 7], [10, 10]]) == 168
+  - Solution().areaOfMaxDiagonal(dimensions=[[1, 1], [1, 1], [1, 1]]) == 1
+  - Solution().areaOfMaxDiagonal(dimensions=[[100, 1], [1, 100]]) == 100
+  - Solution().areaOfMaxDiagonal(dimensions=[[1, 2], [2, 1], [3, 4], [4, 3]]) == 12
+  - Solution().areaOfMaxDiagonal(dimensions=[[5, 12], [12, 5], [8, 8]]) == 60
+  - Solution().areaOfMaxDiagonal(dimensions=[[10, 10], [15, 15], [20, 20]]) == 400
+  - Solution().areaOfMaxDiagonal(dimensions=[[10, 24], [24, 10], [15, 20]]) == 240
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3000'
+  date: '2024-01-07'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

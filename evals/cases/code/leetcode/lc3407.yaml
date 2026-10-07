@@ -1,0 +1,38 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3407
+modality: code
+prompt: "You are given a string s and a pattern string p, where p contains exactly one '*' character.\n\
+  The '*' in p can be replaced with any sequence of zero or more characters.\nReturn true if p can be\
+  \ made a substring of s, and false otherwise.\n \nExample 1:\n\nInput: s = \"leetcode\", p = \"ee*e\"\
+  \nOutput: true\nExplanation:\nBy replacing the '*' with \"tcod\", the substring \"eetcode\" matches\
+  \ the pattern.\n\nExample 2:\n\nInput: s = \"car\", p = \"c*v\"\nOutput: false\nExplanation:\nThere\
+  \ is no substring matching the pattern.\n\nExample 3:\n\nInput: s = \"luck\", p = \"u*\"\nOutput: true\n\
+  Explanation:\nThe substrings \"u\", \"uc\", and \"uck\" match the pattern.\n\n \nConstraints:\n\n1 <=\
+  \ s.length <= 50\n1 <= p.length <= 50 \ns contains only lowercase English letters.\np contains only\
+  \ lowercase English letters and exactly one '*'\n\nWrite the solution in Python as this class, with\
+  \ any imports it needs:\n\n```python\nclass Solution:\n    def hasMatch(self, s: str, p: str) -> bool:\n\
+  ```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().hasMatch(s='abcdefg', p='a*d*g') == True
+  - Solution().hasMatch(s='mississippi', p='m*ss*') == True
+  - Solution().hasMatch(s='luck', p='u*') == True
+  - Solution().hasMatch(s='xy', p='*') == True
+  - Solution().hasMatch(s='leetcode', p='ee*e') == True
+  - Solution().hasMatch(s='testcase', p='te*se') == True
+  - Solution().hasMatch(s='car', p='c*v') == False
+  - Solution().hasMatch(s='hello', p='he*o') == True
+  - Solution().hasMatch(s='a', p='*a') == True
+  - Solution().hasMatch(s='pattern', p='p*ern') == True
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3407'
+  date: '2024-12-29'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

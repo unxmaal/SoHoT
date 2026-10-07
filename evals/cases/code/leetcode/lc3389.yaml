@@ -1,0 +1,40 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3389
+modality: code
+prompt: "You are given a string s.\nA string t is called good if all characters of t occur the same number\
+  \ of times.\nYou can perform the following operations any number of times:\n\nDelete a character from\
+  \ s.\nInsert a character in s.\nChange a character in s to its next letter in the alphabet.\n\nNote\
+  \ that you cannot change 'z' to 'a' using the third operation.\nReturn the minimum number of operations\
+  \ required to make s good.\n \nExample 1:\n\nInput: s = \"acab\"\nOutput: 1\nExplanation:\nWe can make\
+  \ s good by deleting one occurrence of character 'a'.\n\nExample 2:\n\nInput: s = \"wddw\"\nOutput:\
+  \ 0\nExplanation:\nWe do not need to perform any operations since s is initially good.\n\nExample 3:\n\
+  \nInput: s = \"aaabc\"\nOutput: 2\nExplanation:\nWe can make s good by applying these operations:\n\n\
+  Change one occurrence of 'a' to 'b'\nInsert one occurrence of 'c' into s\n\n\n \nConstraints:\n\n3 <=\
+  \ s.length <= 2 * 104\ns contains only lowercase English letters.\n\nWrite the solution in Python as\
+  \ this class, with any imports it needs:\n\n```python\nclass Solution:\n    def makeStringGood(self,\
+  \ s: str) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().makeStringGood(s='acab') == 1
+  - Solution().makeStringGood(s='aaabc') == 2
+  - Solution().makeStringGood(s='aabbbccc') == 1
+  - Solution().makeStringGood(s='zzzz') == 0
+  - Solution().makeStringGood(s='aabbcc') == 0
+  - Solution().makeStringGood(s='abcdefghijklmnopqrstuvwxyz') == 0
+  - Solution().makeStringGood(s='aabbccddeeffgghhiijjkkllmmnnooppqqrrssttuuvvwwxxyyzz') == 0
+  - Solution().makeStringGood(s='abc') == 0
+  - Solution().makeStringGood(s='zyxwvutsrqponmlkjihgfedcba') == 0
+  - Solution().makeStringGood(s='aabbccddeeffgghhiijjkkllmmnnooppqqrrssttuuvvwwxxyyzzaabbccddeeffgghhiijjkkllmmnnooppqqrrssttuuvvwwxxyyzzaabbccddeeffgghhiijjkkllmmnnooppqqrrssttuuvvwwxxyyzz')
+    == 0
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3389'
+  date: '2024-12-15'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

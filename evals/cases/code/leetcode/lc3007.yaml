@@ -1,0 +1,43 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3007
+modality: code
+prompt: "You are given an integer k and an integer x. The price of a number num is calculated by the count\
+  \ of set bits at positions x, 2x, 3x, etc., in its binary representation, starting from the least significant\
+  \ bit. The following table contains examples of how price is calculated.\n\n\n\nx\nnum\nBinary Representation\n\
+  Price\n\n\n1\n13\n000001101\n3\n\n\n2\n13\n000001101\n1\n\n\n2\n233\n011101001\n3\n\n\n3\n13\n000001101\n\
+  1\n\n\n3\n362\n101101010\n2\n\n\n\nThe accumulated price of num is the total price of numbers from 1\
+  \ to num. num is considered cheap if its accumulated price is less than or equal to k.\nReturn the greatest cheap\
+  \ number.\n \nExample 1:\n\nInput: k = 9, x = 1\nOutput: 6\nExplanation:\nAs shown in the table below,\
+  \ 6 is the greatest cheap number.\n\n\n\nx\nnum\nBinary Representation\nPrice\nAccumulated Price\n\n\
+  \n1\n1\n001\n1\n1\n\n\n1\n2\n010\n1\n2\n\n\n1\n3\n011\n2\n4\n\n\n1\n4\n100\n1\n5\n\n\n1\n5\n101\n2\n\
+  7\n\n\n1\n6\n110\n2\n9\n\n\n1\n7\n111\n3\n12\n\n\n\n\nExample 2:\n\nInput: k = 7, x = 2\nOutput: 9\n\
+  Explanation:\nAs shown in the table below, 9 is the greatest cheap number.\n\n\n\nx\nnum\nBinary Representation\n\
+  Price\nAccumulated Price\n\n\n2\n1\n0001\n0\n0\n\n\n2\n2\n0010\n1\n1\n\n\n2\n3\n0011\n1\n2\n\n\n2\n\
+  4\n0100\n0\n2\n\n\n2\n5\n0101\n0\n2\n\n\n2\n6\n0110\n1\n3\n\n\n2\n7\n0111\n1\n4\n\n\n2\n8\n1000\n1\n\
+  5\n\n\n2\n9\n1001\n1\n6\n\n\n2\n10\n1010\n2\n8\n\n\n\n\n \nConstraints:\n\n1 <= k <= 1015\n1 <= x <=\
+  \ 8\n\nWrite the solution in Python as this class, with any imports it needs:\n\n```python\nclass Solution:\n\
+  \    def findMaximumNumber(self, k: int, x: int) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().findMaximumNumber(k=15, x=1) == 9
+  - Solution().findMaximumNumber(k=5, x=2) == 8
+  - Solution().findMaximumNumber(k=100000000000000, x=8) == 40104798005951
+  - Solution().findMaximumNumber(k=500, x=6) == 1011
+  - Solution().findMaximumNumber(k=20, x=2) == 23
+  - Solution().findMaximumNumber(k=5, x=1) == 4
+  - Solution().findMaximumNumber(k=15, x=4) == 30
+  - Solution().findMaximumNumber(k=7, x=2) == 9
+  - Solution().findMaximumNumber(k=100, x=4) == 153
+  - Solution().findMaximumNumber(k=15, x=3) == 30
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3007'
+  date: '2024-01-14'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

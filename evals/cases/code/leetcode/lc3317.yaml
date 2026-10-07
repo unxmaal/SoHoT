@@ -1,0 +1,41 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3317
+modality: code
+prompt: "You are given three integers n, x, and y.\nAn event is being held for n performers. When a performer\
+  \ arrives, they are assigned to one of the x stages. All performers assigned to the same stage will\
+  \ perform together as a band, though some stages might remain empty.\nAfter all performances are completed,\
+  \ the jury will award each band a score in the range [1, y].\nReturn the total number of possible ways\
+  \ the event can take place.\nSince the answer may be very large, return it modulo 109 + 7.\nNote that\
+  \ two events are considered to have been held differently if either of the following conditions is satisfied:\n\
+  \nAny performer is assigned a different stage.\nAny band is awarded a different score.\n\n \nExample\
+  \ 1:\n\nInput: n = 1, x = 2, y = 3\nOutput: 6\nExplanation:\n\nThere are 2 ways to assign a stage to\
+  \ the performer.\nThe jury can award a score of either 1, 2, or 3 to the only band.\n\n\nExample 2:\n\
+  \nInput: n = 5, x = 2, y = 1\nOutput: 32\nExplanation:\n\nEach performer will be assigned either stage\
+  \ 1 or stage 2.\nAll bands will be awarded a score of 1.\n\n\nExample 3:\n\nInput: n = 3, x = 3, y =\
+  \ 4\nOutput: 684\n\n \nConstraints:\n\n1 <= n, x, y <= 1000\n\nWrite the solution in Python as this\
+  \ class, with any imports it needs:\n\n```python\nclass Solution:\n    def numberOfWays(self, n: int,\
+  \ x: int, y: int) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().numberOfWays(n=500, x=250, y=250) == 604049962
+  - Solution().numberOfWays(n=6, x=6, y=6) == 150265836
+  - Solution().numberOfWays(n=4, x=2, y=4) == 232
+  - Solution().numberOfWays(n=500, x=5, y=20) == 955685646
+  - Solution().numberOfWays(n=100, x=10, y=10) == 757713628
+  - Solution().numberOfWays(n=1, x=2, y=3) == 6
+  - Solution().numberOfWays(n=1000, x=1000, y=1000) == 295964505
+  - Solution().numberOfWays(n=5, x=2, y=1) == 32
+  - Solution().numberOfWays(n=1, x=1, y=1) == 1
+  - Solution().numberOfWays(n=7, x=4, y=3) == 882264
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3317'
+  date: '2024-10-06'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

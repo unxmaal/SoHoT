@@ -1,0 +1,43 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3431
+modality: code
+prompt: "You are given an array nums consisting of integers between 1 and 3, and a binary array locked\
+  \ of the same size.\nWe consider nums sortable if it can be sorted using adjacent swaps, where a swap\
+  \ between two indices i and i + 1 is allowed if nums[i] - nums[i + 1] == 1 and locked[i] == 0.\nIn one\
+  \ operation, you can unlock any index i by setting locked[i] to 0.\nReturn the minimum number of operations\
+  \ needed to make nums sortable. If it is not possible to make nums sortable, return -1.\n \nExample\
+  \ 1:\n\nInput: nums = [1,2,1,2,3,2], locked = [1,0,1,1,0,1]\nOutput: 0\nExplanation:\nWe can sort nums\
+  \ using the following swaps:\n\nswap indices 1 with 2\nswap indices 4 with 5\n\nSo, there is no need\
+  \ to unlock any index.\n\nExample 2:\n\nInput: nums = [1,2,1,1,3,2,2], locked = [1,0,1,1,0,1,0]\nOutput:\
+  \ 2\nExplanation:\nIf we unlock indices 2 and 5, we can sort nums using the following swaps:\n\nswap\
+  \ indices 1 with 2\nswap indices 2 with 3\nswap indices 4 with 5\nswap indices 5 with 6\n\n\nExample\
+  \ 3:\n\nInput: nums = [1,2,1,2,3,2,1], locked = [0,0,0,0,0,0,0]\nOutput: -1\nExplanation:\nEven if all\
+  \ indices are unlocked, it can be shown that nums is not sortable.\n\n \nConstraints:\n\n1 <= nums.length\
+  \ <= 105\n1 <= nums[i] <= 3\nlocked.length == nums.length\n0 <= locked[i] <= 1\n\nWrite the solution\
+  \ in Python as this class, with any imports it needs:\n\n```python\nclass Solution:\n    def minUnlockedIndices(self,\
+  \ nums: List[int], locked: List[int]) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().minUnlockedIndices(nums=[1, 2, 3, 3, 2, 1], locked=[0, 1, 0, 1, 0, 1]) == -1
+  - Solution().minUnlockedIndices(nums=[3, 2, 1, 1, 2, 1], locked=[1, 1, 1, 0, 0, 0]) == -1
+  - Solution().minUnlockedIndices(nums=[2, 1, 2, 1, 3, 1], locked=[0, 0, 0, 0, 0, 0]) == -1
+  - Solution().minUnlockedIndices(nums=[1, 1, 1, 2, 2, 2, 3, 3, 3], locked=[1, 1, 1, 1, 1, 1, 1, 1, 1])
+    == 0
+  - Solution().minUnlockedIndices(nums=[2, 1, 1, 2, 3, 3], locked=[1, 0, 1, 0, 1, 0]) == 1
+  - Solution().minUnlockedIndices(nums=[1, 2, 1, 2, 3, 2, 1], locked=[0, 0, 0, 0, 0, 0, 0]) == -1
+  - Solution().minUnlockedIndices(nums=[1, 3, 2, 1, 3, 2], locked=[0, 0, 0, 0, 0, 0]) == -1
+  - Solution().minUnlockedIndices(nums=[3, 3, 3, 3, 3, 3], locked=[0, 0, 0, 0, 0, 0]) == 0
+  - Solution().minUnlockedIndices(nums=[2, 2, 2, 2, 2, 2], locked=[1, 1, 1, 1, 1, 1]) == 0
+  - Solution().minUnlockedIndices(nums=[1, 1, 2, 2, 3, 3], locked=[1, 1, 1, 1, 1, 1]) == 0
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3431'
+  date: '2025-01-19'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

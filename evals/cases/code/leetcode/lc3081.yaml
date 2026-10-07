@@ -1,0 +1,45 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3081
+modality: code
+prompt: "You are given a string s. s[i] is either a lowercase English letter or '?'.\nFor a string t having\
+  \ length m containing only lowercase English letters, we define the function cost(i) for an index i as\
+  \ the number of characters equal to t[i] that appeared before it, i.e. in the range [0, i - 1].\nThe\
+  \ value of t is the sum of cost(i) for all indices i.\nFor example, for the string t = \"aab\":\n\n\
+  cost(0) = 0\ncost(1) = 1\ncost(2) = 0\nHence, the value of \"aab\" is 0 + 1 + 0 = 1.\n\nYour task is\
+  \ to replace all occurrences of '?' in s with any lowercase English letter so that the value of s is\
+  \ minimized.\nReturn a string denoting the modified string with replaced occurrences of '?'. If there\
+  \ are multiple strings resulting in the minimum value, return the lexicographically smallest one.\n\
+   \nExample 1:\n\nInput:   s = \"???\" \nOutput:   \"abc\" \nExplanation:  In this example, we can replace\
+  \ the occurrences of '?' to make s equal to \"abc\".\nFor \"abc\", cost(0) = 0, cost(1) = 0, and cost(2)\
+  \ = 0.\nThe value of \"abc\" is 0.\nSome other modifications of s that have a value of 0 are \"cba\"\
+  , \"abz\", and, \"hey\".\nAmong all of them, we choose the lexicographically smallest.\n\nExample 2:\n\
+  \nInput:  s = \"a?a?\"\nOutput:  \"abac\"\nExplanation:  In this example, the occurrences of '?' can\
+  \ be replaced to make s equal to \"abac\".\nFor \"abac\", cost(0) = 0, cost(1) = 0, cost(2) = 1, and\
+  \ cost(3) = 0.\nThe value of \"abac\" is 1.\n\n \nConstraints:\n\n1 <= s.length <= 105\ns[i] is either\
+  \ a lowercase English letter or '?'.\n\nWrite the solution in Python as this class, with any imports\
+  \ it needs:\n\n```python\nclass Solution:\n    def minimizeStringValue(self, s: str) -> str:\n```\n\n\
+  Return only the code."
+assert:
+  checks:
+  - Solution().minimizeStringValue(s='aabbcc??') == 'aabbccde'
+  - Solution().minimizeStringValue(s='abcabcabc???') == 'abcabcabcdef'
+  - Solution().minimizeStringValue(s='a????b') == 'acdefb'
+  - Solution().minimizeStringValue(s='a') == 'a'
+  - Solution().minimizeStringValue(s='????????') == 'abcdefgh'
+  - Solution().minimizeStringValue(s='abacabadabacaba') == 'abacabadabacaba'
+  - Solution().minimizeStringValue(s='abcdefghijklmnopqrstuvwxyz?') == 'abcdefghijklmnopqrstuvwxyza'
+  - Solution().minimizeStringValue(s='abc?de?') == 'abcfdeg'
+  - Solution().minimizeStringValue(s='zzzz????') == 'zzzzabcd'
+  - Solution().minimizeStringValue(s='a?????') == 'abcdef'
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3081'
+  date: '2024-03-10'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

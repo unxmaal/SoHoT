@@ -1,0 +1,50 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3154
+modality: code
+prompt: "You are given a non-negative integer k. There exists a staircase with an infinite number of stairs,\
+  \ with the lowest stair numbered 0.\nAlice has an integer jump, with an initial value of 0. She starts\
+  \ on stair 1 and wants to reach stair k using any number of operations. If she is on stair i, in one\
+  \ operation she can:\n\nGo down to stair i - 1. This operation cannot be used consecutively or on stair\
+  \ 0.\nGo up to stair i + 2jump. And then, jump becomes jump + 1.\n\nReturn the total number of ways\
+  \ Alice can reach stair k.\nNote that it is possible that Alice reaches the stair k, and performs some\
+  \ operations to reach the stair k again.\n \nExample 1:\n\nInput: k = 0\nOutput: 2\nExplanation:\nThe\
+  \ 2 possible ways of reaching stair 0 are:\n\nAlice starts at stair 1.\n\t\nUsing an operation of the\
+  \ first type, she goes down 1 stair to reach stair 0.\n\n\nAlice starts at stair 1.\n\t\nUsing an operation\
+  \ of the first type, she goes down 1 stair to reach stair 0.\nUsing an operation of the second type,\
+  \ she goes up 20 stairs to reach stair 1.\nUsing an operation of the first type, she goes down 1 stair\
+  \ to reach stair 0.\n\n\n\n\nExample 2:\n\nInput: k = 1\nOutput: 4\nExplanation:\nThe 4 possible ways\
+  \ of reaching stair 1 are:\n\nAlice starts at stair 1. Alice is at stair 1.\nAlice starts at stair 1.\n\
+  \t\nUsing an operation of the first type, she goes down 1 stair to reach stair 0.\nUsing an operation\
+  \ of the second type, she goes up 20 stairs to reach stair 1.\n\n\nAlice starts at stair 1.\n\t\nUsing\
+  \ an operation of the second type, she goes up 20 stairs to reach stair 2.\nUsing an operation of the\
+  \ first type, she goes down 1 stair to reach stair 1.\n\n\nAlice starts at stair 1.\n\t\nUsing an operation\
+  \ of the first type, she goes down 1 stair to reach stair 0.\nUsing an operation of the second type,\
+  \ she goes up 20 stairs to reach stair 1.\nUsing an operation of the first type, she goes down 1 stair\
+  \ to reach stair 0.\nUsing an operation of the second type, she goes up 21 stairs to reach stair 2.\n\
+  Using an operation of the first type, she goes down 1 stair to reach stair 1.\n\n\n\n\n \nConstraints:\n\
+  \n0 <= k <= 109\n\nWrite the solution in Python as this class, with any imports it needs:\n\n```python\n\
+  class Solution:\n    def waysToReachStair(self, k: int) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().waysToReachStair(k=1000) == 0
+  - Solution().waysToReachStair(k=100) == 0
+  - Solution().waysToReachStair(k=20) == 0
+  - Solution().waysToReachStair(k=1000000000) == 0
+  - Solution().waysToReachStair(k=1) == 4
+  - Solution().waysToReachStair(k=10) == 0
+  - Solution().waysToReachStair(k=10000) == 0
+  - Solution().waysToReachStair(k=500) == 0
+  - Solution().waysToReachStair(k=1000000) == 0
+  - Solution().waysToReachStair(k=10000000) == 0
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3154'
+  date: '2024-05-19'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

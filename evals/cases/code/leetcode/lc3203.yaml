@@ -1,0 +1,55 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3203
+modality: code
+prompt: "There exist two undirected trees with n and m nodes, numbered from 0 to n - 1 and from 0 to m\
+  \ - 1, respectively. You are given two 2D integer arrays edges1 and edges2 of lengths n - 1 and m -\
+  \ 1, respectively, where edges1[i] = [ai, bi] indicates that there is an edge between nodes ai and bi\
+  \ in the first tree and edges2[i] = [ui, vi] indicates that there is an edge between nodes ui and vi\
+  \ in the second tree.\nYou must connect one node from the first tree with another node from the second\
+  \ tree with an edge.\nReturn the minimum possible diameter of the resulting tree.\nThe diameter of a\
+  \ tree is the length of the longest path between any two nodes in the tree.\n \nExample 1:\n\nInput:\
+  \ edges1 = [[0,1],[0,2],[0,3]], edges2 = [[0,1]]\nOutput: 3\nExplanation:\nWe can obtain a tree of diameter\
+  \ 3 by connecting node 0 from the first tree with any node from the second tree.\n\nExample 2:\n\n\n\
+  Input: edges1 = [[0,1],[0,2],[0,3],[2,4],[2,5],[3,6],[2,7]], edges2 = [[0,1],[0,2],[0,3],[2,4],[2,5],[3,6],[2,7]]\n\
+  Output: 5\nExplanation:\nWe can obtain a tree of diameter 5 by connecting node 0 from the first tree\
+  \ with node 0 from the second tree.\n\n \nConstraints:\n\n1 <= n, m <= 105\nedges1.length == n - 1\n\
+  edges2.length == m - 1\nedges1[i].length == edges2[i].length == 2\nedges1[i] = [ai, bi]\n0 <= ai, bi\
+  \ < n\nedges2[i] = [ui, vi]\n0 <= ui, vi < m\nThe input is generated such that edges1 and edges2 represent\
+  \ valid trees.\n\nWrite the solution in Python as this class, with any imports it needs:\n\n```python\n\
+  class Solution:\n    def minimumDiameterAfterMerge(self, edges1: List[List[int]], edges2: List[List[int]])\
+  \ -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().minimumDiameterAfterMerge(edges1=[[0, 1], [1, 2], [2, 3], [3, 4]], edges2=[[0, 1], [1,
+    2], [2, 3], [3, 4], [4, 5]]) == 6
+  - Solution().minimumDiameterAfterMerge(edges1=[[0, 1], [0, 2], [0, 3]], edges2=[[0, 1]]) == 3
+  - Solution().minimumDiameterAfterMerge(edges1=[[0, 1], [0, 2], [0, 3], [2, 4], [2, 5], [3, 6], [2, 7]],
+    edges2=[[0, 1], [0, 2], [0, 3], [2, 4], [2, 5], [3, 6], [2, 7]]) == 5
+  - Solution().minimumDiameterAfterMerge(edges1=[[0, 1]], edges2=[[0, 1]]) == 3
+  - Solution().minimumDiameterAfterMerge(edges1=[[0, 1], [0, 2], [1, 3], [1, 4]], edges2=[[0, 1], [0,
+    2], [1, 3], [2, 4]]) == 5
+  - Solution().minimumDiameterAfterMerge(edges1=[[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 7],
+    [7, 8], [8, 9]], edges2=[[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 7], [7, 8], [8, 9], [9,
+    10]]) == 11
+  - Solution().minimumDiameterAfterMerge(edges1=[[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6]], edges2=[[0,
+    1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 7]]) == 8
+  - Solution().minimumDiameterAfterMerge(edges1=[[0, 1], [0, 2], [0, 3], [1, 4], [1, 5], [2, 6], [2, 7],
+    [3, 8], [3, 9]], edges2=[[0, 1], [0, 2], [1, 3], [1, 4], [2, 5], [2, 6], [3, 7], [3, 8], [4, 9], [5,
+    10]]) == 6
+  - Solution().minimumDiameterAfterMerge(edges1=[[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 7],
+    [7, 8], [8, 9]], edges2=[[0, 1], [1, 2], [2, 3], [3, 4], [4, 5]]) == 9
+  - Solution().minimumDiameterAfterMerge(edges1=[[0, 1], [0, 2], [1, 3], [1, 4], [2, 5], [2, 6], [3, 7],
+    [4, 8], [5, 9], [6, 10]], edges2=[[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 7], [7, 8],
+    [8, 9], [9, 10]]) == 10
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3203'
+  date: '2024-06-30'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

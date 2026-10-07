@@ -1,0 +1,40 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3400
+modality: code
+prompt: "You are given two integer arrays, nums1 and nums2, of the same length.\nAn index i is considered\
+  \ matching if nums1[i] == nums2[i].\nReturn the maximum number of matching indices after performing\
+  \ any number of right shifts on nums1.\nA right shift is defined as shifting the element at index i\
+  \ to index (i + 1) % n, for all indices.\n \nExample 1:\n\nInput: nums1 = [3,1,2,3,1,2], nums2 = [1,2,3,1,2,3]\n\
+  Output: 6\nExplanation:\nIf we right shift nums1 2 times, it becomes [1, 2, 3, 1, 2, 3]. Every index\
+  \ matches, so the output is 6.\n\nExample 2:\n\nInput: nums1 = [1,4,2,5,3,1], nums2 = [2,3,1,2,4,6]\n\
+  Output: 3\nExplanation:\nIf we right shift nums1 3 times, it becomes [5, 3, 1, 1, 4, 2]. Indices 1,\
+  \ 2, and 4 match, so the output is 3.\n\n \nConstraints:\n\nnums1.length == nums2.length\n1 <= nums1.length,\
+  \ nums2.length <= 3000\n1 <= nums1[i], nums2[i] <= 109\n\nWrite the solution in Python as this class,\
+  \ with any imports it needs:\n\n```python\nclass Solution:\n    def maximumMatchingIndices(self, nums1:\
+  \ List[int], nums2: List[int]) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().maximumMatchingIndices(nums1=[10, 20, 30, 40, 50], nums2=[50, 10, 20, 30, 40]) == 5
+  - Solution().maximumMatchingIndices(nums1=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10], nums2=[10, 1, 2, 3, 4, 5,
+    6, 7, 8, 9]) == 10
+  - Solution().maximumMatchingIndices(nums1=[1, 3, 5, 7, 9], nums2=[2, 4, 6, 8, 0]) == 0
+  - Solution().maximumMatchingIndices(nums1=[10, 20, 30, 40, 50], nums2=[15, 25, 35, 45, 55]) == 0
+  - Solution().maximumMatchingIndices(nums1=[1, 4, 2, 5, 3, 1], nums2=[2, 3, 1, 2, 4, 6]) == 3
+  - Solution().maximumMatchingIndices(nums1=[1, 2, 3, 4, 5], nums2=[5, 1, 2, 3, 4]) == 5
+  - Solution().maximumMatchingIndices(nums1=[1, 1, 1, 1], nums2=[1, 1, 1, 1]) == 4
+  - Solution().maximumMatchingIndices(nums1=[7, 8, 9, 7, 8, 9], nums2=[8, 9, 7, 8, 9, 7]) == 6
+  - Solution().maximumMatchingIndices(nums1=[100, 200, 300, 400, 500], nums2=[100, 200, 300, 400, 500])
+    == 5
+  - Solution().maximumMatchingIndices(nums1=[1, 2, 3], nums2=[3, 2, 1]) == 1
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3400'
+  date: '2024-12-22'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

@@ -1,0 +1,42 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3271
+modality: code
+prompt: "You are given a string s of length n and an integer k, where n is a multiple of k. Your task\
+  \ is to hash the string s into a new string called result, which has a length of n / k.\nFirst, divide\
+  \ s into n / k substrings, each with a length of k. Then, initialize result as an empty string.\nFor\
+  \ each substring in order from the beginning:\n\nThe hash value of a character is the index of that\
+  \ character in the English alphabet (e.g., 'a' → 0, 'b' → 1, ..., 'z' → 25).\nCalculate the sum of all\
+  \ the hash values of the characters in the substring.\nFind the remainder of this sum when divided by\
+  \ 26, which is called hashedChar.\nIdentify the character in the English lowercase alphabet that corresponds\
+  \ to hashedChar.\nAppend that character to the end of result.\n\nReturn result.\n \nExample 1:\n\nInput:\
+  \ s = \"abcd\", k = 2\nOutput: \"bf\"\nExplanation:\nFirst substring: \"ab\", 0 + 1 = 1, 1 % 26 = 1,\
+  \ result[0] = 'b'.\nSecond substring: \"cd\", 2 + 3 = 5, 5 % 26 = 5, result[1] = 'f'.\n\nExample 2:\n\
+  \nInput: s = \"mxz\", k = 3\nOutput: \"i\"\nExplanation:\nThe only substring: \"mxz\", 12 + 23 + 25\
+  \ = 60, 60 % 26 = 8, result[0] = 'i'.\n\n \nConstraints:\n\n1 <= k <= 100\nk <= s.length <= 1000\ns.length\
+  \ is divisible by k.\ns consists only of lowercase English letters.\n\nWrite the solution in Python\
+  \ as this class, with any imports it needs:\n\n```python\nclass Solution:\n    def stringHash(self,\
+  \ s: str, k: int) -> str:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().stringHash(s='aaaa', k=2) == 'aa'
+  - Solution().stringHash(s='mnopqr', k=3) == 'nw'
+  - Solution().stringHash(s='hellohellohellohello', k=5) == 'vvvv'
+  - Solution().stringHash(s='ababababab', k=2) == 'bbbbb'
+  - Solution().stringHash(s='zzzz', k=4) == 'w'
+  - Solution().stringHash(s='abcd', k=2) == 'bf'
+  - Solution().stringHash(s='mxz', k=3) == 'i'
+  - Solution().stringHash(s='zzzz', k=2) == 'yy'
+  - Solution().stringHash(s='aaaabbbbcccc', k=4) == 'aei'
+  - Solution().stringHash(s='abcdefghijklmnopqrstuvwxyz', k=26) == 'n'
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3271'
+  date: '2024-08-25'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

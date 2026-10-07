@@ -1,0 +1,36 @@
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08.
+import random
+import functools
+import collections
+import string
+import math
+import datetime
+
+from typing import *
+from functools import *
+from collections import *
+from itertools import *
+from heapq import *
+from bisect import *
+from string import *
+from operator import *
+from math import *
+
+inf = float('inf')
+
+class Solution:
+  def minZeroArray(self, nums: list[int], queries: list[list[int]]) -> int:
+    if all(num == 0 for num in nums):
+      return 0
+
+    n = len(nums)
+    subsetSums = [{0} for _ in range(n)]
+
+    for k, (l, r, val) in enumerate(queries):
+      for i in range(l, r + 1):
+        newSums = {subsetSum + val for subsetSum in subsetSums[i]}
+        subsetSums[i].update(newSums)
+      if all(nums[i] in subsetSums[i] for i in range(n)):
+        return k + 1
+
+    return -1

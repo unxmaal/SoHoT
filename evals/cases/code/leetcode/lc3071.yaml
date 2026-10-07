@@ -1,0 +1,47 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3071
+modality: code
+prompt: "You are given a 0-indexed n x n grid where n is odd, and grid[r][c] is 0, 1, or 2.\nWe say that\
+  \ a cell belongs to the Letter Y if it belongs to one of the following:\n\nThe diagonal starting at\
+  \ the top-left cell and ending at the center cell of the grid.\nThe diagonal starting at the top-right\
+  \ cell and ending at the center cell of the grid.\nThe vertical line starting at the center cell and\
+  \ ending at the bottom border of the grid.\n\nThe Letter Y is written on the grid if and only if:\n\n\
+  All values at cells belonging to the Y are equal.\nAll values at cells not belonging to the Y are equal.\n\
+  The values at cells belonging to the Y are different from the values at cells not belonging to the Y.\n\
+  \nReturn the minimum number of operations needed to write the letter Y on the grid given that in one\
+  \ operation you can change the value at any cell to 0, 1, or 2.\n \nExample 1:\n\n\nInput: grid = [[1,2,2],[1,1,0],[0,1,0]]\n\
+  Output: 3\nExplanation: We can write Y on the grid by applying the changes highlighted in blue in the\
+  \ image above. After the operations, all cells that belong to Y, denoted in bold, have the same value\
+  \ of 1 while those that do not belong to Y are equal to 0.\nIt can be shown that 3 is the minimum number\
+  \ of operations needed to write Y on the grid.\n\nExample 2:\n\n\nInput: grid = [[0,1,0,1,0],[2,1,0,1,2],[2,2,2,0,1],[2,2,2,2,2],[2,1,2,2,2]]\n\
+  Output: 12\nExplanation: We can write Y on the grid by applying the changes highlighted in blue in the\
+  \ image above. After the operations, all cells that belong to Y, denoted in bold, have the same value\
+  \ of 0 while those that do not belong to Y are equal to 2. \nIt can be shown that 12 is the minimum\
+  \ number of operations needed to write Y on the grid.\n \nConstraints:\n\n3 <= n <= 49 \nn == grid.length\
+  \ == grid[i].length\n0 <= grid[i][j] <= 2\nn is odd.\n\nWrite the solution in Python as this class,\
+  \ with any imports it needs:\n\n```python\nclass Solution:\n    def minimumOperationsToWriteY(self,\
+  \ grid: List[List[int]]) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().minimumOperationsToWriteY(grid=[[1, 1, 1], [1, 1, 1], [1, 1, 1]]) == 4
+  - Solution().minimumOperationsToWriteY(grid=[[1, 0, 2], [0, 1, 0], [2, 0, 1]]) == 4
+  - Solution().minimumOperationsToWriteY(grid=[[0, 0, 0], [0, 1, 0], [0, 0, 0]]) == 3
+  - Solution().minimumOperationsToWriteY(grid=[[1, 0, 1], [0, 0, 0], [1, 0, 1]]) == 4
+  - Solution().minimumOperationsToWriteY(grid=[[1, 2, 2], [1, 1, 0], [0, 1, 0]]) == 3
+  - Solution().minimumOperationsToWriteY(grid=[[2, 1, 0], [1, 2, 1], [0, 1, 2]]) == 4
+  - Solution().minimumOperationsToWriteY(grid=[[0, 1, 2], [1, 1, 2], [2, 1, 0]]) == 5
+  - Solution().minimumOperationsToWriteY(grid=[[0, 0, 0], [0, 0, 0], [0, 0, 0]]) == 4
+  - Solution().minimumOperationsToWriteY(grid=[[0, 1, 2], [1, 0, 1], [2, 1, 0]]) == 4
+  - Solution().minimumOperationsToWriteY(grid=[[2, 2, 2], [2, 2, 2], [2, 2, 2]]) == 4
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3071'
+  date: '2024-03-03'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

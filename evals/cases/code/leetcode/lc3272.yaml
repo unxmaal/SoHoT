@@ -1,0 +1,39 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3272
+modality: code
+prompt: "You are given two positive integers n and k.\nAn integer x is called k-palindromic if:\n\nx is\
+  \ a palindrome.\nx is divisible by k.\n\nAn integer is called good if its digits can be rearranged to\
+  \ form a k-palindromic integer. For example, for k = 2, 2020 can be rearranged to form the k-palindromic\
+  \ integer 2002, whereas 1010 cannot be rearranged to form a k-palindromic integer.\nReturn the count\
+  \ of good integers containing n digits.\nNote that any integer must not have leading zeros, neither\
+  \ before nor after rearrangement. For example, 1010 cannot be rearranged to form 101.\n \nExample 1:\n\
+  \nInput: n = 3, k = 5\nOutput: 27\nExplanation:\nSome of the good integers are:\n\n551 because it can\
+  \ be rearranged to form 515.\n525 because it is already k-palindromic.\n\n\nExample 2:\n\nInput: n =\
+  \ 1, k = 4\nOutput: 2\nExplanation:\nThe two good integers are 4 and 8.\n\nExample 3:\n\nInput: n =\
+  \ 5, k = 6\nOutput: 2468\n\n \nConstraints:\n\n1 <= n <= 10\n1 <= k <= 9\n\nWrite the solution in Python\
+  \ as this class, with any imports it needs:\n\n```python\nclass Solution:\n    def countGoodIntegers(self,\
+  \ n: int, k: int) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().countGoodIntegers(n=6, k=8) == 5221
+  - Solution().countGoodIntegers(n=10, k=9) == 4610368
+  - Solution().countGoodIntegers(n=1, k=4) == 2
+  - Solution().countGoodIntegers(n=6, k=9) == 1248
+  - Solution().countGoodIntegers(n=9, k=1) == 41457015
+  - Solution().countGoodIntegers(n=8, k=2) == 563392
+  - Solution().countGoodIntegers(n=10, k=5) == 19284856
+  - Solution().countGoodIntegers(n=3, k=5) == 27
+  - Solution().countGoodIntegers(n=8, k=5) == 237112
+  - Solution().countGoodIntegers(n=9, k=2) == 37728000
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3272'
+  date: '2024-08-25'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

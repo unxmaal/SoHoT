@@ -1,0 +1,37 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3097
+modality: code
+prompt: "You are given an array nums of non-negative integers and an integer k.\nAn array is called special\
+  \ if the bitwise OR of all of its elements is at least k.\nReturn the length of the shortest special\
+  \ non-empty subarray of nums, or return -1 if no special subarray exists.\n \nExample 1:\n\nInput: nums\
+  \ = [1,2,3], k = 2\nOutput: 1\nExplanation:\nThe subarray [3] has OR value of 3. Hence, we return 1.\n\
+  \nExample 2:\n\nInput: nums = [2,1,8], k = 10\nOutput: 3\nExplanation:\nThe subarray [2,1,8] has OR\
+  \ value of 11. Hence, we return 3.\n\nExample 3:\n\nInput: nums = [1,2], k = 0\nOutput: 1\nExplanation:\n\
+  The subarray [1] has OR value of 1. Hence, we return 1.\n\n \nConstraints:\n\n1 <= nums.length <= 2\
+  \ * 105\n0 <= nums[i] <= 109\n0 <= k <= 109\n\nWrite the solution in Python as this class, with any\
+  \ imports it needs:\n\n```python\nclass Solution:\n    def minimumSubarrayLength(self, nums: List[int],\
+  \ k: int) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().minimumSubarrayLength(nums=[5, 5, 5, 5, 5], k=5) == 1
+  - Solution().minimumSubarrayLength(nums=[0, 0, 0], k=1) == -1
+  - Solution().minimumSubarrayLength(nums=[3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5], k=10) == 2
+  - Solution().minimumSubarrayLength(nums=[5, 5, 5, 5], k=5) == 1
+  - Solution().minimumSubarrayLength(nums=[5, 3, 1, 1, 1], k=8) == -1
+  - Solution().minimumSubarrayLength(nums=[1, 2], k=0) == 1
+  - Solution().minimumSubarrayLength(nums=[1, 2, 3], k=2) == 1
+  - Solution().minimumSubarrayLength(nums=[3, 5, 7, 9], k=15) == 2
+  - Solution().minimumSubarrayLength(nums=[1, 0, 1, 0, 1], k=1) == 1
+  - Solution().minimumSubarrayLength(nums=[1000000000, 500000000, 250000000], k=1500000000) == -1
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3097'
+  date: '2024-03-24'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

@@ -1,0 +1,37 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3226
+modality: code
+prompt: "You are given two positive integers n and k.\nYou can choose any bit in the binary representation\
+  \ of n that is equal to 1 and change it to 0.\nReturn the number of changes needed to make n equal to\
+  \ k. If it is impossible, return -1.\n \nExample 1:\n\nInput: n = 13, k = 4\nOutput: 2\nExplanation:\n\
+  Initially, the binary representations of n and k are n = (1101)2 and k = (0100)2.\nWe can change the\
+  \ first and fourth bits of n. The resulting integer is n = (0100)2 = k.\n\nExample 2:\n\nInput: n =\
+  \ 21, k = 21\nOutput: 0\nExplanation:\nn and k are already equal, so no changes are needed.\n\nExample\
+  \ 3:\n\nInput: n = 14, k = 13\nOutput: -1\nExplanation:\nIt is not possible to make n equal to k.\n\n\
+   \nConstraints:\n\n1 <= n, k <= 106\n\nWrite the solution in Python as this class, with any imports\
+  \ it needs:\n\n```python\nclass Solution:\n    def minChanges(self, n: int, k: int) -> int:\n```\n\n\
+  Return only the code."
+assert:
+  checks:
+  - Solution().minChanges(n=1, k=2) == -1
+  - Solution().minChanges(n=31, k=1) == 4
+  - Solution().minChanges(n=15, k=9) == 2
+  - Solution().minChanges(n=8, k=8) == 0
+  - Solution().minChanges(n=1000000, k=999999) == -1
+  - Solution().minChanges(n=7, k=11) == -1
+  - Solution().minChanges(n=7, k=3) == 1
+  - Solution().minChanges(n=5, k=3) == -1
+  - Solution().minChanges(n=9, k=8) == 1
+  - Solution().minChanges(n=6, k=5) == -1
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3226'
+  date: '2024-07-21'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

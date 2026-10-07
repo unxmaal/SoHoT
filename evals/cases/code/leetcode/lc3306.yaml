@@ -1,0 +1,38 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3306
+modality: code
+prompt: "You are given a string word and a non-negative integer k.\nReturn the total number of substrings\
+  \ of word that contain every vowel ('a', 'e', 'i', 'o', and 'u') at least once and exactly k consonants.\n\
+   \nExample 1:\n\nInput: word = \"aeioqq\", k = 1\nOutput: 0\nExplanation:\nThere is no substring with\
+  \ every vowel.\n\nExample 2:\n\nInput: word = \"aeiou\", k = 0\nOutput: 1\nExplanation:\nThe only substring\
+  \ with every vowel and zero consonants is word[0..4], which is \"aeiou\".\n\nExample 3:\n\nInput: word\
+  \ = \"ieaouqqieaouqq\", k = 1\nOutput: 3\nExplanation:\nThe substrings with every vowel and one consonant\
+  \ are:\n\nword[0..5], which is \"ieaouq\".\nword[6..11], which is \"qieaou\".\nword[7..12], which is\
+  \ \"ieaouq\".\n\n\n \nConstraints:\n\n5 <= word.length <= 2 * 105\nword consists only of lowercase English\
+  \ letters.\n0 <= k <= word.length - 5\n\nWrite the solution in Python as this class, with any imports\
+  \ it needs:\n\n```python\nclass Solution:\n    def countOfSubstrings(self, word: str, k: int) -> int:\n\
+  ```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().countOfSubstrings(word='qwertyuiopasdfghjklzxcvbnmaeiou', k=10) == 4
+  - Solution().countOfSubstrings(word='uoieaouoieaouoieaouoieaoiueaouieaouieaouieao', k=4) == 0
+  - Solution().countOfSubstrings(word='aeiouzzzzz', k=5) == 1
+  - Solution().countOfSubstrings(word='aeioqq', k=1) == 0
+  - Solution().countOfSubstrings(word='abcdefghijklmnopqrstuvwxyz', k=5) == 0
+  - Solution().countOfSubstrings(word='aaaaaeeeeiiioooouuuu', k=0) == 20
+  - Solution().countOfSubstrings(word='aeiou', k=0) == 1
+  - Solution().countOfSubstrings(word='abcdefghijklmnopqrstuvwxyz', k=2) == 0
+  - Solution().countOfSubstrings(word='uuuuuaeiouuuuuu', k=3) == 0
+  - Solution().countOfSubstrings(word='abcdefghijklmnopqrstuvwxyz', k=3) == 0
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3306'
+  date: '2024-09-29'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

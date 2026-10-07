@@ -1,0 +1,39 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3191
+modality: code
+prompt: "You are given a binary array nums.\nYou can do the following operation on the array any number\
+  \ of times (possibly zero):\n\nChoose any 3 consecutive elements from the array and flip all of them.\n\
+  \nFlipping an element means changing its value from 0 to 1, and from 1 to 0.\nReturn the minimum number\
+  \ of operations required to make all elements in nums equal to 1. If it is impossible, return -1.\n\
+   \nExample 1:\n\nInput: nums = [0,1,1,1,0,0]\nOutput: 3\nExplanation:\nWe can do the following operations:\n\
+  \nChoose the elements at indices 0, 1 and 2. The resulting array is nums = [1,0,0,1,0,0].\nChoose the\
+  \ elements at indices 1, 2 and 3. The resulting array is nums = [1,1,1,0,0,0].\nChoose the elements\
+  \ at indices 3, 4 and 5. The resulting array is nums = [1,1,1,1,1,1].\n\n\nExample 2:\n\nInput: nums\
+  \ = [0,1,1,1]\nOutput: -1\nExplanation:\nIt is impossible to make all elements equal to 1.\n\n \nConstraints:\n\
+  \n3 <= nums.length <= 105\n0 <= nums[i] <= 1\n\nWrite the solution in Python as this class, with any\
+  \ imports it needs:\n\n```python\nclass Solution:\n    def minOperations(self, nums: List[int]) -> int:\n\
+  ```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().minOperations(nums=[0, 1, 0, 1, 0, 1]) == 3
+  - Solution().minOperations(nums=[0, 0, 1, 1, 1, 0, 0]) == -1
+  - Solution().minOperations(nums=[0, 0, 1, 0, 0, 1, 0, 1, 1, 0]) == 4
+  - Solution().minOperations(nums=[1, 0, 1, 0, 1, 0, 1, 0, 1]) == -1
+  - Solution().minOperations(nums=[0, 0, 0, 1, 1, 1, 0, 0, 0]) == 2
+  - Solution().minOperations(nums=[1, 1, 1, 1, 1, 1, 1]) == 0
+  - Solution().minOperations(nums=[1, 0, 0, 1, 0, 0]) == 2
+  - Solution().minOperations(nums=[0, 1, 1, 1]) == -1
+  - Solution().minOperations(nums=[0, 0, 0]) == 1
+  - Solution().minOperations(nums=[1, 0, 1, 0, 1, 0]) == 3
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3191'
+  date: '2024-06-16'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

@@ -1,0 +1,52 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3004
+modality: code
+prompt: "You are given a 2D integer array edges representing a tree with n nodes, numbered from 0 to n\
+  \ - 1, rooted at node 0, where edges[i] = [ui, vi] means there is an edge between the nodes vi and ui.\n\
+  You are also given a 0-indexed integer array colors of size n, where colors[i] is the color assigned\
+  \ to node i.\nWe want to find a node v such that every node in the subtree of v has the same color.\n\
+  Return the size of such subtree with the maximum number of nodes possible.\n \n\nExample 1:\n\nInput:\
+  \ edges = [[0,1],[0,2],[0,3]], colors = [1,1,2,3]\nOutput: 1\nExplanation: Each color is represented\
+  \ as: 1 -> Red, 2 -> Green, 3 -> Blue. We can see that the subtree rooted at node 0 has children with\
+  \ different colors. Any other subtree is of the same color and has a size of 1. Hence, we return 1.\n\
+  \nExample 2:\n\nInput: edges = [[0,1],[0,2],[0,3]], colors = [1,1,1,1]\nOutput: 4\nExplanation: The\
+  \ whole tree has the same color, and the subtree rooted at node 0 has the most number of nodes which\
+  \ is 4. Hence, we return 4.\n\n\nExample 3:\n\nInput: edges = [[0,1],[0,2],[2,3],[2,4]], colors = [1,2,3,3,3]\n\
+  Output: 3\nExplanation: Each color is represented as: 1 -> Red, 2 -> Green, 3 -> Blue. We can see that\
+  \ the subtree rooted at node 0 has children with different colors. Any other subtree is of the same\
+  \ color, but the subtree rooted at node 2 has a size of 3 which is the maximum. Hence, we return 3.\n\
+  \n \nConstraints:\n\nn == edges.length + 1\n1 <= n <= 5 * 104\nedges[i] == [ui, vi]\n0 <= ui, vi < n\n\
+  colors.length == n\n1 <= colors[i] <= 105\nThe input is generated such that the graph represented by\
+  \ edges is a tree.\n\nWrite the solution in Python as this class, with any imports it needs:\n\n```python\n\
+  class Solution:\n    def maximumSubtreeSize(self, edges: List[List[int]], colors: List[int]) -> int:\n\
+  ```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().maximumSubtreeSize(edges=[[0, 1], [1, 2], [1, 3], [2, 4]], colors=[1, 1, 1, 1, 1]) == 5
+  - Solution().maximumSubtreeSize(edges=[[0, 1], [0, 2], [1, 3], [1, 4], [2, 5]], colors=[1, 2, 3, 2,
+    3, 3]) == 2
+  - Solution().maximumSubtreeSize(edges=[[0, 1], [1, 2], [1, 3], [2, 4], [2, 5]], colors=[1, 1, 1, 1,
+    1, 1]) == 6
+  - Solution().maximumSubtreeSize(edges=[[0, 1], [0, 2], [0, 3]], colors=[1, 1, 1, 1]) == 4
+  - Solution().maximumSubtreeSize(edges=[[0, 1], [1, 2], [1, 3], [3, 4], [3, 5]], colors=[1, 1, 1, 1,
+    1, 1]) == 6
+  - Solution().maximumSubtreeSize(edges=[[0, 1], [0, 2], [1, 3], [1, 4], [2, 5], [2, 6]], colors=[1, 1,
+    2, 1, 1, 2, 2]) == 3
+  - Solution().maximumSubtreeSize(edges=[[0, 1], [0, 2], [2, 3], [2, 4], [4, 5]], colors=[1, 2, 3, 3,
+    3, 3]) == 4
+  - Solution().maximumSubtreeSize(edges=[[0, 1], [0, 2], [2, 3], [2, 4]], colors=[1, 2, 3, 3, 3]) == 3
+  - Solution().maximumSubtreeSize(edges=[[0, 1], [0, 2], [0, 3]], colors=[1, 1, 2, 3]) == 1
+  - Solution().maximumSubtreeSize(edges=[[0, 1], [0, 2], [2, 3], [2, 4], [4, 5]], colors=[1, 2, 2, 3,
+    3, 3]) == 2
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3004'
+  date: '2024-01-07'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

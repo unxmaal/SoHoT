@@ -1,0 +1,40 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3269
+modality: code
+prompt: "Given 2 integer arrays nums1 and nums2 consisting only of 0 and 1, your task is to calculate\
+  \ the minimum possible largest number in arrays nums1 and nums2, after doing the following.\nReplace\
+  \ every 0 with an even positive integer and every 1 with an odd positive integer. After replacement,\
+  \ both arrays should be increasing and each integer should be used at most once.\nReturn the minimum\
+  \ possible largest number after applying the changes.\n \nExample 1:\n\nInput: nums1 = [], nums2 = [1,0,1,1]\n\
+  Output: 5\nExplanation:\nAfter replacing, nums1 = [], and nums2 = [1, 2, 3, 5].\n\nExample 2:\n\nInput:\
+  \ nums1 = [0,1,0,1], nums2 = [1,0,0,1]\nOutput: 9\nExplanation:\nOne way to replace, having 9 as the\
+  \ largest element is nums1 = [2, 3, 8, 9], and nums2 = [1, 4, 6, 7].\n\nExample 3:\n\nInput: nums1 =\
+  \ [0,1,0,0,1], nums2 = [0,0,0,1]\nOutput: 13\nExplanation:\nOne way to replace, having 13 as the largest\
+  \ element is nums1 = [2, 3, 4, 6, 7], and nums2 = [8, 10, 12, 13].\n\n \nConstraints:\n\n0 <= nums1.length\
+  \ <= 1000\n1 <= nums2.length <= 1000\nnums1 and nums2 consist only of 0 and 1.\n\nWrite the solution\
+  \ in Python as this class, with any imports it needs:\n\n```python\nclass Solution:\n    def minLargest(self,\
+  \ nums1: List[int], nums2: List[int]) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().minLargest(nums1=[0, 0, 0, 0], nums2=[1, 1, 1, 1]) == 8
+  - Solution().minLargest(nums1=[1], nums2=[0]) == 2
+  - Solution().minLargest(nums1=[], nums2=[0, 0, 0, 0]) == 8
+  - Solution().minLargest(nums1=[1, 0, 1, 0], nums2=[0, 1, 0, 1]) == 8
+  - Solution().minLargest(nums1=[1, 1], nums2=[1, 1]) == 7
+  - Solution().minLargest(nums1=[1, 0], nums2=[0, 1]) == 4
+  - Solution().minLargest(nums1=[0, 0], nums2=[1, 1]) == 4
+  - Solution().minLargest(nums1=[0, 0], nums2=[0, 0]) == 8
+  - Solution().minLargest(nums1=[0, 0, 1, 1], nums2=[1, 1, 0, 0]) == 8
+  - Solution().minLargest(nums1=[], nums2=[]) == 0
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3269'
+  date: '2024-08-25'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

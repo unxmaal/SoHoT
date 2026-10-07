@@ -1,0 +1,45 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3449
+modality: code
+prompt: "You are given an array points of size n and an integer m. There is another array gameScore of\
+  \ size n, where gameScore[i] represents the score achieved at the ith game. Initially, gameScore[i]\
+  \ == 0 for all i.\nYou start at index -1, which is outside the array (before the first position at index\
+  \ 0). You can make at most m moves. In each move, you can either:\n\nIncrease the index by 1 and add\
+  \ points[i] to gameScore[i].\nDecrease the index by 1 and add points[i] to gameScore[i].\n\nNote that\
+  \ the index must always remain within the bounds of the array after the first move.\nReturn the maximum\
+  \ possible minimum value in gameScore after at most m moves.\n \nExample 1:\n\nInput: points = [2,4],\
+  \ m = 3\nOutput: 4\nExplanation:\nInitially, index i = -1 and gameScore = [0, 0].\n\n\n\nMove\nIndex\n\
+  gameScore\n\n\n\n\nIncrease i\n0\n[2, 0]\n\n\nIncrease i\n1\n[2, 4]\n\n\nDecrease i\n0\n[4, 4]\n\n\n\
+  \nThe minimum value in gameScore is 4, and this is the maximum possible minimum among all configurations.\
+  \ Hence, 4 is the output.\n\nExample 2:\n\nInput: points = [1,2,3], m = 5\nOutput: 2\nExplanation:\n\
+  Initially, index i = -1 and gameScore = [0, 0, 0].\n\n\n\nMove\nIndex\ngameScore\n\n\n\n\nIncrease i\n\
+  0\n[1, 0, 0]\n\n\nIncrease i\n1\n[1, 2, 0]\n\n\nDecrease i\n0\n[2, 2, 0]\n\n\nIncrease i\n1\n[2, 4,\
+  \ 0]\n\n\nIncrease i\n2\n[2, 4, 3]\n\n\n\nThe minimum value in gameScore is 2, and this is the maximum\
+  \ possible minimum among all configurations. Hence, 2 is the output.\n\n \nConstraints:\n\n2 <= n ==\
+  \ points.length <= 5 * 104\n1 <= points[i] <= 106\n1 <= m <= 109\n\nWrite the solution in Python as\
+  \ this class, with any imports it needs:\n\n```python\nclass Solution:\n    def maxScore(self, points:\
+  \ List[int], m: int) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().maxScore(points=[5, 3, 8, 2, 6], m=10) == 6
+  - Solution().maxScore(points=[5, 9, 3, 7], m=7) == 6
+  - Solution().maxScore(points=[1, 1, 1, 1, 1], m=5) == 1
+  - Solution().maxScore(points=[1, 1, 1, 1, 1, 1, 1, 1, 1, 1], m=20) == 2
+  - Solution().maxScore(points=[2, 4], m=3) == 4
+  - Solution().maxScore(points=[1, 1, 1, 1, 1], m=10) == 1
+  - Solution().maxScore(points=[100000, 100000, 100000, 100000, 100000], m=1000000) == 16666600000
+  - Solution().maxScore(points=[5, 9, 3, 7], m=6) == 5
+  - Solution().maxScore(points=[5, 9, 3, 7], m=10) == 9
+  - Solution().maxScore(points=[10, 10, 10, 10, 10], m=10) == 10
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3449'
+  date: '2025-02-09'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

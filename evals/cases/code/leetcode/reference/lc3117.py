@@ -1,0 +1,39 @@
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08.
+import random
+import functools
+import collections
+import string
+import math
+import datetime
+
+from typing import *
+from functools import *
+from collections import *
+from itertools import *
+from heapq import *
+from bisect import *
+from string import *
+from operator import *
+from math import *
+
+inf = float('inf')
+
+class Solution:
+    def minimumValueSum(self, nums: List[int], andValues: List[int]) -> int:
+        @cache
+        def dfs(i: int, j: int, a: int) -> int:
+            if n - i < m - j:
+                return inf
+            if j == m:
+                return 0 if i == n else inf
+            a &= nums[i]
+            if a < andValues[j]:
+                return inf
+            ans = dfs(i + 1, j, a)
+            if a == andValues[j]:
+                ans = min(ans, dfs(i + 1, j + 1, -1) + nums[i])
+            return ans
+
+        n, m = len(nums), len(andValues)
+        ans = dfs(0, 0, -1)
+        return ans if ans < inf else -1

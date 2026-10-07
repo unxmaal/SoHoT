@@ -1,0 +1,66 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3387
+modality: code
+prompt: "You are given a string initialCurrency, and you start with 1.0 of initialCurrency.\nYou are also\
+  \ given four arrays with currency pairs (strings) and rates (real numbers):\n\npairs1[i] = [startCurrencyi,\
+  \ targetCurrencyi] denotes that you can convert from startCurrencyi to targetCurrencyi at a rate of\
+  \ rates1[i] on day 1.\npairs2[i] = [startCurrencyi, targetCurrencyi] denotes that you can convert from\
+  \ startCurrencyi to targetCurrencyi at a rate of rates2[i] on day 2.\nAlso, each targetCurrency can\
+  \ be converted back to its corresponding startCurrency at a rate of 1 / rate.\n\nYou can perform any\
+  \ number of conversions, including zero, using rates1 on day 1, followed by any number of additional\
+  \ conversions, including zero, using rates2 on day 2.\nReturn the maximum amount of initialCurrency\
+  \ you can have after performing any number of conversions on both days in order.\nNote: Conversion rates\
+  \ are valid, and there will be no contradictions in the rates for either day. The rates for the days\
+  \ are independent of each other.\n \nExample 1:\n\nInput: initialCurrency = \"EUR\", pairs1 = [[\"EUR\"\
+  ,\"USD\"],[\"USD\",\"JPY\"]], rates1 = [2.0,3.0], pairs2 = [[\"JPY\",\"USD\"],[\"USD\",\"CHF\"],[\"\
+  CHF\",\"EUR\"]], rates2 = [4.0,5.0,6.0]\nOutput: 720.00000\nExplanation:\nTo get the maximum amount\
+  \ of EUR, starting with 1.0 EUR:\n\nOn Day 1:\n\t\nConvert EUR to USD to get 2.0 USD.\nConvert USD to\
+  \ JPY to get 6.0 JPY.\n\n\nOn Day 2:\n\t\nConvert JPY to USD to get 24.0 USD.\nConvert USD to CHF to\
+  \ get 120.0 CHF.\nFinally, convert CHF to EUR to get 720.0 EUR.\n\n\n\n\nExample 2:\n\nInput: initialCurrency\
+  \ = \"NGN\", pairs1 = [[\"NGN\",\"EUR\"]], rates1 = [9.0], pairs2 = [[\"NGN\",\"EUR\"]], rates2 = [6.0]\n\
+  Output: 1.50000\nExplanation:\nConverting NGN to EUR on day 1 and EUR to NGN using the inverse rate\
+  \ on day 2 gives the maximum amount.\n\nExample 3:\n\nInput: initialCurrency = \"USD\", pairs1 = [[\"\
+  USD\",\"EUR\"]], rates1 = [1.0], pairs2 = [[\"EUR\",\"JPY\"]], rates2 = [10.0]\nOutput: 1.00000\nExplanation:\n\
+  In this example, there is no need to make any conversions on either day.\n\n \nConstraints:\n\n1 <=\
+  \ initialCurrency.length <= 3\ninitialCurrency consists only of uppercase English letters.\n1 <= n ==\
+  \ pairs1.length <= 10\n1 <= m == pairs2.length <= 10\npairs1[i] == [startCurrencyi, targetCurrencyi]\n\
+  pairs2[i] == [startCurrencyi, targetCurrencyi]\n1 <= startCurrencyi.length, targetCurrencyi.length <=\
+  \ 3\nstartCurrencyi and targetCurrencyi consist only of uppercase English letters.\nrates1.length ==\
+  \ n\nrates2.length == m\n1.0 <= rates1[i], rates2[i] <= 10.0\nThe input is generated such that there\
+  \ are no contradictions or cycles in the conversion graphs for either day.\nThe input is generated such\
+  \ that the output is at most 5 * 1010.\n\nWrite the solution in Python as this class, with any imports\
+  \ it needs:\n\n```python\nclass Solution:\n    def maxAmount(self, initialCurrency: str, pairs1: List[List[str]],\
+  \ rates1: List[float], pairs2: List[List[str]], rates2: List[float]) -> float:\n```\n\nReturn only the\
+  \ code."
+assert:
+  checks:
+  - Solution().maxAmount(initialCurrency='AUD', pairs1=[['AUD', 'USD'], ['USD', 'AUD']], rates1=[0.7,
+    1.4], pairs2=[['AUD', 'EUR'], ['EUR', 'AUD']], rates2=[0.6, 1.666]) == 1.0
+  - Solution().maxAmount(initialCurrency='GBP', pairs1=[['GBP', 'USD'], ['USD', 'EUR']], rates1=[1.3,
+    1.2], pairs2=[['EUR', 'GBP']], rates2=[0.85]) == 1.326
+  - Solution().maxAmount(initialCurrency='GBP', pairs1=[['GBP', 'USD'], ['USD', 'GBP']], rates1=[1.2,
+    0.8], pairs2=[['GBP', 'EUR'], ['EUR', 'GBP']], rates2=[1.5, 0.666]) == 1.0
+  - Solution().maxAmount(initialCurrency='EUR', pairs1=[['EUR', 'USD'], ['USD', 'JPY']], rates1=[2.0,
+    3.0], pairs2=[['JPY', 'USD'], ['USD', 'CHF'], ['CHF', 'EUR']], rates2=[4.0, 5.0, 6.0]) == 720.0
+  - Solution().maxAmount(initialCurrency='JPY', pairs1=[['JPY', 'USD']], rates1=[0.009], pairs2=[['USD',
+    'EUR'], ['EUR', 'JPY']], rates2=[1.1, 110.0]) == 1.0890000000000002
+  - Solution().maxAmount(initialCurrency='GBP', pairs1=[['GBP', 'USD'], ['USD', 'CAD']], rates1=[1.2,
+    1.3], pairs2=[['CAD', 'EUR'], ['EUR', 'GBP']], rates2=[0.9, 0.8]) == 1.1232
+  - Solution().maxAmount(initialCurrency='USD', pairs1=[['USD', 'EUR']], rates1=[1.0], pairs2=[['EUR',
+    'JPY']], rates2=[10.0]) == 1.0
+  - Solution().maxAmount(initialCurrency='NGN', pairs1=[['NGN', 'EUR']], rates1=[9.0], pairs2=[['NGN',
+    'EUR']], rates2=[6.0]) == 1.5
+  - Solution().maxAmount(initialCurrency='JPY', pairs1=[['JPY', 'USD']], rates1=[0.01], pairs2=[['USD',
+    'EUR']], rates2=[0.85]) == 1.0
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3387'
+  date: '2024-12-15'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

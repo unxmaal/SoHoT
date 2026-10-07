@@ -1,0 +1,71 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3433
+modality: code
+prompt: "You are given an integer numberOfUsers representing the total number of users and an array events\
+  \ of size n x 3.\nEach events[i] can be either of the following two types:\n\nMessage Event: [\"MESSAGE\"\
+  , \"timestampi\", \"mentions_stringi\"]\n\nThis event indicates that a set of users was mentioned in\
+  \ a message at timestampi.\nThe mentions_stringi string can contain one of the following tokens:\n\t\
+  \t\nid: where  is an integer in range [0,numberOfUsers - 1]. There can be multiple ids separated by\
+  \ a single whitespace and may contain duplicates. This can mention even the offline users.\nALL: mentions\
+  \ all users.\nHERE: mentions all online users.\n\n\n\n\nOffline Event: [\"OFFLINE\", \"timestampi\"\
+  , \"idi\"]\n\nThis event indicates that the user idi had become offline at timestampi for 60 time units.\
+  \ The user will automatically be online again at time timestampi + 60.\n\n\n\nReturn an array mentions\
+  \ where mentions[i] represents the number of mentions the user with id i has across all MESSAGE events.\n\
+  All users are initially online, and if a user goes offline or comes back online, their status change\
+  \ is processed before handling any message event that occurs at the same timestamp.\nNote that a user\
+  \ can be mentioned multiple times in a single message event, and each mention should be counted separately.\n\
+   \nExample 1:\n\nInput: numberOfUsers = 2, events = [[\"MESSAGE\",\"10\",\"id1 id0\"],[\"OFFLINE\",\"\
+  11\",\"0\"],[\"MESSAGE\",\"71\",\"HERE\"]]\nOutput: [2,2]\nExplanation:\nInitially, all users are online.\n\
+  At timestamp 10, id1 and id0 are mentioned. mentions = [1,1]\nAt timestamp 11, id0 goes offline.\nAt\
+  \ timestamp 71, id0 comes back online and \"HERE\" is mentioned. mentions = [2,2]\n\nExample 2:\n\n\
+  Input: numberOfUsers = 2, events = [[\"MESSAGE\",\"10\",\"id1 id0\"],[\"OFFLINE\",\"11\",\"0\"],[\"\
+  MESSAGE\",\"12\",\"ALL\"]]\nOutput: [2,2]\nExplanation:\nInitially, all users are online.\nAt timestamp\
+  \ 10, id1 and id0 are mentioned. mentions = [1,1]\nAt timestamp 11, id0 goes offline.\nAt timestamp\
+  \ 12, \"ALL\" is mentioned. This includes offline users, so both id0 and id1 are mentioned. mentions\
+  \ = [2,2]\n\nExample 3:\n\nInput: numberOfUsers = 2, events = [[\"OFFLINE\",\"10\",\"0\"],[\"MESSAGE\"\
+  ,\"12\",\"HERE\"]]\nOutput: [0,1]\nExplanation:\nInitially, all users are online.\nAt timestamp 10,\
+  \ id0 goes offline.\nAt timestamp 12, \"HERE\" is mentioned. Because id0 is still offline, they will\
+  \ not be mentioned. mentions = [0,1]\n\n \nConstraints:\n\n1 <= numberOfUsers <= 100\n1 <= events.length\
+  \ <= 100\nevents[i].length == 3\nevents[i][0] will be one of MESSAGE or OFFLINE.\n1 <= int(events[i][1])\
+  \ <= 105\nThe number of id mentions in any \"MESSAGE\" event is between 1 and 100.\n0 <=  <= numberOfUsers\
+  \ - 1\nIt is guaranteed that the user id referenced in the OFFLINE event is online at the time the event\
+  \ occurs.\n\nWrite the solution in Python as this class, with any imports it needs:\n\n```python\nclass\
+  \ Solution:\n    def countMentions(self, numberOfUsers: int, events: List[List[str]]) -> List[int]:\n\
+  ```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().countMentions(numberOfUsers=1, events=[['MESSAGE', '1', 'id0'], ['MESSAGE', '1', 'HERE'],
+    ['MESSAGE', '1', 'ALL']]) == [3]
+  - Solution().countMentions(numberOfUsers=2, events=[['OFFLINE', '10', '0'], ['MESSAGE', '12', 'HERE']])
+    == [0, 1]
+  - Solution().countMentions(numberOfUsers=3, events=[['MESSAGE', '5', 'id0 id1 id2'], ['OFFLINE', '10',
+    '1'], ['MESSAGE', '20', 'HERE'], ['MESSAGE', '60', 'ALL']]) == [3, 2, 3]
+  - Solution().countMentions(numberOfUsers=5, events=[['MESSAGE', '1', 'id0 id1 id2 id3 id4'], ['OFFLINE',
+    '2', '0'], ['OFFLINE', '3', '1'], ['MESSAGE', '4', 'HERE'], ['MESSAGE', '65', 'id0 id1'], ['OFFLINE',
+    '70', '2'], ['MESSAGE', '75', 'ALL']]) == [3, 3, 3, 3, 3]
+  - Solution().countMentions(numberOfUsers=1, events=[['MESSAGE', '5', 'ALL'], ['OFFLINE', '10', '0'],
+    ['MESSAGE', '20', 'HERE']]) == [1]
+  - Solution().countMentions(numberOfUsers=4, events=[['OFFLINE', '5', '0'], ['OFFLINE', '10', '1'], ['MESSAGE',
+    '15', 'HERE'], ['MESSAGE', '20', 'ALL'], ['MESSAGE', '25', 'id0 id2']]) == [2, 1, 3, 2]
+  - Solution().countMentions(numberOfUsers=2, events=[['MESSAGE', '10', 'id1 id0'], ['OFFLINE', '11',
+    '0'], ['MESSAGE', '12', 'ALL']]) == [2, 2]
+  - Solution().countMentions(numberOfUsers=5, events=[['MESSAGE', '5', 'id0 id1 id2 id3 id4'], ['OFFLINE',
+    '10', '0'], ['OFFLINE', '10', '1'], ['MESSAGE', '15', 'HERE'], ['MESSAGE', '20', 'id2 id3 id4'], ['MESSAGE',
+    '25', 'ALL']]) == [2, 2, 4, 4, 4]
+  - Solution().countMentions(numberOfUsers=4, events=[['MESSAGE', '1', 'id0 id1'], ['OFFLINE', '2', '0'],
+    ['MESSAGE', '3', 'HERE'], ['MESSAGE', '65', 'id0'], ['OFFLINE', '70', '1'], ['MESSAGE', '75', 'ALL']])
+    == [3, 3, 2, 2]
+  - Solution().countMentions(numberOfUsers=3, events=[['OFFLINE', '5', '0'], ['OFFLINE', '10', '1'], ['MESSAGE',
+    '15', 'id0 id1 id2'], ['MESSAGE', '20', 'HERE'], ['MESSAGE', '25', 'ALL']]) == [2, 2, 3]
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3433'
+  date: '2025-01-26'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

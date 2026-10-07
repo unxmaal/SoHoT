@@ -1,0 +1,32 @@
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08.
+import random
+import functools
+import collections
+import string
+import math
+import datetime
+
+from typing import *
+from functools import *
+from collections import *
+from itertools import *
+from heapq import *
+from bisect import *
+from string import *
+from operator import *
+from math import *
+
+inf = float('inf')
+
+class Solution:
+    def canMakeSquare(self, grid: List[List[str]]) -> bool:
+        for i in range(0, 2):
+            for j in range(0, 2):
+                cnt1 = cnt2 = 0
+                for a, b in pairwise((0, 0, 1, 1, 0)):
+                    x, y = i + a, j + b
+                    cnt1 += grid[x][y] == "W"
+                    cnt2 += grid[x][y] == "B"
+                if cnt1 != cnt2:
+                    return True
+        return False

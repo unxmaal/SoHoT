@@ -1,0 +1,37 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3070
+modality: code
+prompt: "You are given a 0-indexed integer matrix grid and an integer k.\nReturn the number of submatrices\
+  \ that contain the top-left element of the grid, and have a sum less than or equal to k.\n \nExample\
+  \ 1:\n\n\nInput: grid = [[7,6,3],[6,6,1]], k = 18\nOutput: 4\nExplanation: There are only 4 submatrices,\
+  \ shown in the image above, that contain the top-left element of grid, and have a sum less than or equal\
+  \ to 18.\nExample 2:\n\n\nInput: grid = [[7,2,9],[1,5,0],[2,6,6]], k = 20\nOutput: 6\nExplanation: There\
+  \ are only 6 submatrices, shown in the image above, that contain the top-left element of grid, and have\
+  \ a sum less than or equal to 20.\n\n \nConstraints:\n\nm == grid.length \nn == grid[i].length\n1 <=\
+  \ n, m <= 1000 \n0 <= grid[i][j] <= 1000\n1 <= k <= 109\n\nWrite the solution in Python as this class,\
+  \ with any imports it needs:\n\n```python\nclass Solution:\n    def countSubmatrices(self, grid: List[List[int]],\
+  \ k: int) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().countSubmatrices(grid=[[5, 5, 5], [5, 5, 5], [5, 5, 5]], k=15) == 5
+  - Solution().countSubmatrices(grid=[[1, 2], [3, 4]], k=10) == 4
+  - Solution().countSubmatrices(grid=[[1, 0, 1], [0, 1, 0], [1, 0, 1]], k=2) == 6
+  - Solution().countSubmatrices(grid=[[1, 1, 1], [1, 1, 1], [1, 1, 1]], k=5) == 6
+  - Solution().countSubmatrices(grid=[[1, 2, 3], [4, 5, 6]], k=15) == 5
+  - Solution().countSubmatrices(grid=[[1]], k=1) == 1
+  - Solution().countSubmatrices(grid=[[7, 2, 9], [1, 5, 0], [2, 6, 6]], k=20) == 6
+  - Solution().countSubmatrices(grid=[[7, 6, 3], [6, 6, 1]], k=18) == 4
+  - Solution().countSubmatrices(grid=[[1, 2, 3], [4, 5, 6], [7, 8, 9]], k=15) == 6
+  - Solution().countSubmatrices(grid=[[0, 0, 0], [0, 0, 0], [0, 0, 0]], k=1) == 9
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3070'
+  date: '2024-03-03'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

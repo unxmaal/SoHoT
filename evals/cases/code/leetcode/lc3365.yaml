@@ -1,0 +1,47 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3365
+modality: code
+prompt: "You are given two strings s and t, both of which are anagrams of each other, and an integer k.\n\
+  Your task is to determine whether it is possible to split the string s into k equal-sized substrings,\
+  \ rearrange the substrings, and concatenate them in any order to create a new string that matches the\
+  \ given string t.\nReturn true if this is possible, otherwise, return false.\nAn anagram is a word or\
+  \ phrase formed by rearranging the letters of a different word or phrase, using all the original letters\
+  \ exactly once.\nA substring is a contiguous non-empty sequence of characters within a string.\n \n\
+  Example 1:\n\nInput: s = \"abcd\", t = \"cdab\", k = 2\nOutput: true\nExplanation:\n\nSplit s into 2\
+  \ substrings of length 2: [\"ab\", \"cd\"].\nRearranging these substrings as [\"cd\", \"ab\"], and then\
+  \ concatenating them results in \"cdab\", which matches t.\n\n\nExample 2:\n\nInput: s = \"aabbcc\"\
+  , t = \"bbaacc\", k = 3\nOutput: true\nExplanation:\n\nSplit s into 3 substrings of length 2: [\"aa\"\
+  , \"bb\", \"cc\"].\nRearranging these substrings as [\"bb\", \"aa\", \"cc\"], and then concatenating\
+  \ them results in \"bbaacc\", which matches t.\n\n\nExample 3:\n\nInput: s = \"aabbcc\", t = \"bbaacc\"\
+  , k = 2\nOutput: false\nExplanation:\n\nSplit s into 2 substrings of length 3: [\"aab\", \"bcc\"].\n\
+  These substrings cannot be rearranged to form t = \"bbaacc\", so the output is false.\n\n\n \nConstraints:\n\
+  \n1 <= s.length == t.length <= 2 * 105\n1 <= k <= s.length\ns.length is divisible by k.\ns and t consist\
+  \ only of lowercase English letters.\nThe input is generated such that s and t are anagrams of each\
+  \ other.\n\nWrite the solution in Python as this class, with any imports it needs:\n\n```python\nclass\
+  \ Solution:\n    def isPossibleToRearrange(self, s: str, t: str, k: int) -> bool:\n```\n\nReturn only\
+  \ the code."
+assert:
+  checks:
+  - Solution().isPossibleToRearrange(s='abcd', t='cdab', k=2) == True
+  - Solution().isPossibleToRearrange(s='abcdefg', t='gfedcba', k=1) == False
+  - Solution().isPossibleToRearrange(s='abcdefg', t='gfedcba', k=7) == True
+  - Solution().isPossibleToRearrange(s='aabbcc', t='bbaacc', k=3) == True
+  - Solution().isPossibleToRearrange(s='abcabcabc', t='bcbcbcbca', k=3) == False
+  - Solution().isPossibleToRearrange(s='aabbcc', t='bbaacc', k=2) == False
+  - Solution().isPossibleToRearrange(s='abacabad', t='dcabcdab', k=2) == False
+  - Solution().isPossibleToRearrange(s='abcdefghijabcdefghijabcdefghij', t='fedcbafedcbafedcba', k=3)
+    == False
+  - Solution().isPossibleToRearrange(s='xyzxyzxyzxyz', t='zyxzyxzyxzyx', k=4) == False
+  - Solution().isPossibleToRearrange(s='xyzyxzyzyzxzyzyz', t='zyzyzyzyzyzyzyzx', k=7) == False
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3365'
+  date: '2024-11-24'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

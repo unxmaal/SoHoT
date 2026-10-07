@@ -1,0 +1,37 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3083
+modality: code
+prompt: "Given a string s, find any substring of length 2 which is also present in the reverse of s.\n\
+  Return true if such a substring exists, and false otherwise.\n \nExample 1:\n\nInput: s = \"leetcode\"\
+  \nOutput: true\nExplanation: Substring \"ee\" is of length 2 which is also present in reverse(s) ==\
+  \ \"edocteel\".\n\nExample 2:\n\nInput: s = \"abcba\"\nOutput: true\nExplanation: All of the substrings\
+  \ of length 2 \"ab\", \"bc\", \"cb\", \"ba\" are also present in reverse(s) == \"abcba\".\n\nExample\
+  \ 3:\n\nInput: s = \"abcd\"\nOutput: false\nExplanation: There is no substring of length 2 in s, which\
+  \ is also present in the reverse of s.\n\n \nConstraints:\n\n1 <= s.length <= 100\ns consists only of\
+  \ lowercase English letters.\n\nWrite the solution in Python as this class, with any imports it needs:\n\
+  \n```python\nclass Solution:\n    def isSubstringPresent(self, s: str) -> bool:\n```\n\nReturn only\
+  \ the code."
+assert:
+  checks:
+  - Solution().isSubstringPresent(s='abcba') == True
+  - Solution().isSubstringPresent(s='deified') == True
+  - Solution().isSubstringPresent(s='abab') == True
+  - Solution().isSubstringPresent(s='ab') == False
+  - Solution().isSubstringPresent(s='mnopqr') == False
+  - Solution().isSubstringPresent(s='aa') == True
+  - Solution().isSubstringPresent(s='rotor') == True
+  - Solution().isSubstringPresent(s='zzz') == True
+  - Solution().isSubstringPresent(s='leetcode') == True
+  - Solution().isSubstringPresent(s='racecar') == True
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3083'
+  date: '2024-03-17'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

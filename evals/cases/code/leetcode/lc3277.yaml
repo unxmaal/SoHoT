@@ -1,0 +1,59 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3277
+modality: code
+prompt: "You are given an array nums of n integers, and a 2D integer array queries of size q, where queries[i]\
+  \ = [li, ri].\nFor each query, you must find the maximum XOR score of any subarray of nums[li..ri].\n\
+  The XOR score of an array a is found by repeatedly applying the following operations on a so that only\
+  \ one element remains, that is the score:\n\nSimultaneously replace a[i] with a[i] XOR a[i + 1] for\
+  \ all indices i except the last one.\nRemove the last element of a.\n\nReturn an array answer of size\
+  \ q where answer[i] is the answer to query i.\n \nExample 1:\n\nInput: nums = [2,8,4,32,16,1], queries\
+  \ = [[0,2],[1,4],[0,5]]\nOutput: [12,60,60]\nExplanation:\nIn the first query, nums[0..2] has 6 subarrays\
+  \ [2], [8], [4], [2, 8], [8, 4], and [2, 8, 4] each with a respective XOR score of 2, 8, 4, 10, 12,\
+  \ and 6. The answer for the query is 12, the largest of all XOR scores.\nIn the second query, the subarray\
+  \ of nums[1..4] with the largest XOR score is nums[1..4] with a score of 60.\nIn the third query, the\
+  \ subarray of nums[0..5] with the largest XOR score is nums[1..4] with a score of 60.\n\nExample 2:\n\
+  \nInput: nums = [0,7,3,2,8,5,1], queries = [[0,3],[1,5],[2,4],[2,6],[5,6]]\nOutput: [7,14,11,14,5]\n\
+  Explanation:\n\n\n\nIndex\nnums[li..ri]\nMaximum XOR Score Subarray\nMaximum Subarray XOR Score\n\n\n\
+  \n\n0\n[0, 7, 3, 2]\n[7]\n7\n\n\n1\n[7, 3, 2, 8, 5]\n[7, 3, 2, 8]\n14\n\n\n2\n[3, 2, 8]\n[3, 2, 8]\n\
+  11\n\n\n3\n[3, 2, 8, 5, 1]\n[2, 8, 5, 1]\n14\n\n\n4\n[5, 1]\n[5]\n5\n\n\n\n\n \nConstraints:\n\n1 <=\
+  \ n == nums.length <= 2000\n0 <= nums[i] <= 231 - 1\n1 <= q == queries.length <= 105\nqueries[i].length\
+  \ == 2 \nqueries[i] = [li, ri]\n0 <= li <= ri <= n - 1\n\nWrite the solution in Python as this class,\
+  \ with any imports it needs:\n\n```python\nclass Solution:\n    def maximumSubarrayXor(self, nums: List[int],\
+  \ queries: List[List[int]]) -> List[int]:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().maximumSubarrayXor(nums=[0, 7, 3, 2, 8, 5, 1], queries=[[0, 3], [1, 5], [2, 4], [2, 6],
+    [5, 6]]) == [7, 14, 11, 14, 5]
+  - Solution().maximumSubarrayXor(nums=[2, 8, 4, 32, 16, 1], queries=[[0, 2], [1, 4], [0, 5]]) == [12,
+    60, 60]
+  - Solution().maximumSubarrayXor(nums=[100, 200, 300, 400, 500, 600, 700, 800, 900, 1000], queries=[[0,
+    9], [1, 8], [2, 7], [3, 6], [4, 5], [0, 0], [9, 9]]) == [1000, 968, 968, 968, 940, 100, 1000]
+  - Solution().maximumSubarrayXor(nums=[15, 3, 11, 29, 5, 7, 22], queries=[[0, 6], [1, 4], [2, 5], [3,
+    6], [0, 3], [4, 6]]) == [30, 30, 29, 29, 30, 22]
+  - Solution().maximumSubarrayXor(nums=[1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192,
+    16384, 32768, 65536], queries=[[0, 16], [1, 15], [2, 14], [3, 13], [4, 12], [5, 11], [6, 10], [7,
+    9], [8, 8]]) == [131070, 65280, 32640, 16320, 8160, 3840, 1920, 768, 256]
+  - Solution().maximumSubarrayXor(nums=[1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024], queries=[[0, 10],
+    [1, 9], [2, 8], [3, 7], [4, 6], [5, 5], [0, 0], [10, 10]]) == [2040, 1020, 480, 240, 96, 32, 1, 1024]
+  - Solution().maximumSubarrayXor(nums=[10, 15, 20, 25, 30, 35, 40, 45, 50], queries=[[0, 8], [1, 7],
+    [2, 6], [3, 5], [4, 4], [0, 0], [8, 8]]) == [61, 61, 61, 61, 30, 10, 50]
+  - Solution().maximumSubarrayXor(nums=[31, 29, 27, 25, 23, 21, 19, 17, 15, 13, 11, 9, 7, 5, 3, 1], queries=[[0,
+    15], [4, 11], [7, 12], [1, 10], [3, 8]]) == [31, 30, 30, 30, 30]
+  - Solution().maximumSubarrayXor(nums=[123, 456, 789, 234, 567, 890, 123, 456, 789, 234, 567, 890, 123,
+    456, 789, 234], queries=[[0, 4], [5, 9], [10, 14], [0, 15], [3, 7], [1, 13], [6, 11], [8, 12], [0,
+    6]]) == [1023, 1023, 890, 1023, 912, 1023, 1023, 1023, 1023]
+  - Solution().maximumSubarrayXor(nums=[1048576, 524288, 262144, 131072, 65536, 32768, 16384, 8192, 4096,
+    2048, 1024, 512, 256, 128, 64, 32, 16, 8, 4, 2, 1], queries=[[0, 5], [2, 10], [5, 15], [10, 19], [0,
+    19]]) == [1966080, 522240, 65280, 2040, 2097120]
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3277'
+  date: '2024-09-01'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

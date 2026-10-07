@@ -1,0 +1,43 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3001
+modality: code
+prompt: "There is a 1-indexed 8 x 8 chessboard containing 3 pieces.\nYou are given 6 integers a, b, c,\
+  \ d, e, and f where:\n\n(a, b) denotes the position of the white rook.\n(c, d) denotes the position\
+  \ of the white bishop.\n(e, f) denotes the position of the black queen.\n\nGiven that you can only move\
+  \ the white pieces, return the minimum number of moves required to capture the black queen.\nNote that:\n\
+  \nRooks can move any number of squares either vertically or horizontally, but cannot jump over other\
+  \ pieces.\nBishops can move any number of squares diagonally, but cannot jump over other pieces.\nA\
+  \ rook or a bishop can capture the queen if it is located in a square that they can move to.\nThe queen\
+  \ does not move.\n\n \nExample 1:\n\n\nInput: a = 1, b = 1, c = 8, d = 8, e = 2, f = 3\nOutput: 2\n\
+  Explanation: We can capture the black queen in two moves by moving the white rook to (1, 3) then to\
+  \ (2, 3).\nIt is impossible to capture the black queen in less than two moves since it is not being\
+  \ attacked by any of the pieces at the beginning.\n\nExample 2:\n\n\nInput: a = 5, b = 3, c = 3, d =\
+  \ 4, e = 5, f = 2\nOutput: 1\nExplanation: We can capture the black queen in a single move by doing\
+  \ one of the following: \n- Move the white rook to (5, 2).\n- Move the white bishop to (5, 2).\n\n \n\
+  Constraints:\n\n1 <= a, b, c, d, e, f <= 8\nNo two pieces are on the same square.\n\nWrite the solution\
+  \ in Python as this class, with any imports it needs:\n\n```python\nclass Solution:\n    def minMovesToCaptureTheQueen(self,\
+  \ a: int, b: int, c: int, d: int, e: int, f: int) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().minMovesToCaptureTheQueen(a=4, b=4, c=7, d=7, e=3, f=3) == 2
+  - Solution().minMovesToCaptureTheQueen(a=3, b=3, c=6, d=6, e=7, f=7) == 1
+  - Solution().minMovesToCaptureTheQueen(a=7, b=2, c=2, d=7, e=4, f=4) == 2
+  - Solution().minMovesToCaptureTheQueen(a=1, b=8, c=2, d=7, e=3, f=6) == 1
+  - Solution().minMovesToCaptureTheQueen(a=8, b=8, c=1, d=1, e=3, f=3) == 1
+  - Solution().minMovesToCaptureTheQueen(a=8, b=8, c=1, d=1, e=4, f=4) == 1
+  - Solution().minMovesToCaptureTheQueen(a=8, b=1, c=5, d=4, e=7, f=7) == 2
+  - Solution().minMovesToCaptureTheQueen(a=4, b=4, c=7, d=7, e=6, f=6) == 1
+  - Solution().minMovesToCaptureTheQueen(a=5, b=3, c=3, d=4, e=5, f=2) == 1
+  - Solution().minMovesToCaptureTheQueen(a=1, b=1, c=8, d=8, e=2, f=3) == 2
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3001'
+  date: '2024-01-07'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

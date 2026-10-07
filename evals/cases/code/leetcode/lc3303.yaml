@@ -1,0 +1,40 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3303
+modality: code
+prompt: "You are given two strings s and pattern.\nA string x is called almost equal to y if you can change\
+  \ at most one character in x to make it identical to y.\nReturn the smallest starting index of a substring\
+  \ in s that is almost equal to pattern. If no such index exists, return -1.\nA substring is a contiguous\
+  \ non-empty sequence of characters within a string.\n \nExample 1:\n\nInput: s = \"abcdefg\", pattern\
+  \ = \"bcdffg\"\nOutput: 1\nExplanation:\nThe substring s[1..6] == \"bcdefg\" can be converted to \"\
+  bcdffg\" by changing s[4] to \"f\".\n\nExample 2:\n\nInput: s = \"ababbababa\", pattern = \"bacaba\"\
+  \nOutput: 4\nExplanation:\nThe substring s[4..9] == \"bababa\" can be converted to \"bacaba\" by changing\
+  \ s[6] to \"c\".\n\nExample 3:\n\nInput: s = \"abcd\", pattern = \"dba\"\nOutput: -1\n\nExample 4:\n\
+  \nInput: s = \"dde\", pattern = \"d\"\nOutput: 0\n\n \nConstraints:\n\n1 <= pattern.length < s.length\
+  \ <= 105\ns and pattern consist only of lowercase English letters.\n\n \nFollow-up: Could you solve\
+  \ the problem if at most k consecutive characters can be changed?\n\nWrite the solution in Python as\
+  \ this class, with any imports it needs:\n\n```python\nclass Solution:\n    def minStartingIndex(self,\
+  \ s: str, pattern: str) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().minStartingIndex(s='mississippi', pattern='missiippi') == -1
+  - Solution().minStartingIndex(s='abcd', pattern='dba') == -1
+  - Solution().minStartingIndex(s='abcdefghij', pattern='abcdefghii') == 0
+  - Solution().minStartingIndex(s='abcdefghij', pattern='abcdefghij') == 0
+  - Solution().minStartingIndex(s='aaa', pattern='aba') == 0
+  - Solution().minStartingIndex(s='abcdefg', pattern='bcdffg') == 1
+  - Solution().minStartingIndex(s='mississippi', pattern='misosippi') == -1
+  - Solution().minStartingIndex(s='aabbccdd', pattern='aabbccde') == 0
+  - Solution().minStartingIndex(s='xyz', pattern='xya') == 0
+  - Solution().minStartingIndex(s='ababbababa', pattern='bacaba') == 4
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3303'
+  date: '2024-09-22'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

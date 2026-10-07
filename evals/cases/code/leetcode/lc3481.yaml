@@ -1,0 +1,57 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3481
+modality: code
+prompt: "You are given a replacements mapping and a text string that may contain placeholders formatted\
+  \ as %var%, where each var corresponds to a key in the replacements mapping. Each replacement value\
+  \ may itself contain one or more such placeholders. Each placeholder is replaced by the value associated\
+  \ with its corresponding replacement key.\nReturn the fully substituted text string which does not contain\
+  \ any placeholders.\n \nExample 1:\n\nInput: replacements = [[\"A\",\"abc\"],[\"B\",\"def\"]], text\
+  \ = \"%A%_%B%\"\nOutput: \"abc_def\"\nExplanation:\n\nThe mapping associates \"A\" with \"abc\" and\
+  \ \"B\" with \"def\".\nReplace %A% with \"abc\" and %B% with \"def\" in the text.\nThe final text becomes\
+  \ \"abc_def\".\n\n\nExample 2:\n\nInput: replacements = [[\"A\",\"bce\"],[\"B\",\"ace\"],[\"C\",\"abc%B%\"\
+  ]], text = \"%A%_%B%_%C%\"\nOutput: \"bce_ace_abcace\"\nExplanation:\n\nThe mapping associates \"A\"\
+  \ with \"bce\", \"B\" with \"ace\", and \"C\" with \"abc%B%\".\nReplace %A% with \"bce\" and %B% with\
+  \ \"ace\" in the text.\nThen, for %C%, substitute %B% in \"abc%B%\" with \"ace\" to obtain \"abcace\"\
+  .\nThe final text becomes \"bce_ace_abcace\".\n\n\n \nConstraints:\n\n1 <= replacements.length <= 10\n\
+  Each element of replacements is a two-element list [key, value], where:\n\t\nkey is a single uppercase\
+  \ English letter.\nvalue is a non-empty string of at most 8 characters that may contain zero or more\
+  \ placeholders formatted as %%.\n\n\nAll replacement keys are unique.\nThe text string is formed by\
+  \ concatenating all key placeholders (formatted as %%) randomly from the replacements mapping, separated\
+  \ by underscores.\ntext.length == 4 * replacements.length - 1\nEvery placeholder in the text or in any\
+  \ replacement value corresponds to a key in the replacements mapping.\nThere are no cyclic dependencies\
+  \ between replacement keys.\n\nWrite the solution in Python as this class, with any imports it needs:\n\
+  \n```python\nclass Solution:\n    def applySubstitutions(self, replacements: List[List[str]], text:\
+  \ str) -> str:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().applySubstitutions(replacements=[['W', 'wxy'], ['X', 'xyz'], ['Y', '%W%_%X%'], ['Z', 'uvw']],
+    text='%Y%_%Z%') == 'wxy_xyz_uvw'
+  - Solution().applySubstitutions(replacements=[['M', 'mno'], ['N', 'pqr'], ['O', 'stu'], ['P', '%M%%N%']],
+    text='%M%_%N%_%O%_%P%') == 'mno_pqr_stu_mnopqr'
+  - Solution().applySubstitutions(replacements=[['X', 'xyz'], ['Y', 'uvw'], ['Z', '%X%%Y%']], text='%X%_%Y%_%Z%')
+    == 'xyz_uvw_xyzuvw'
+  - Solution().applySubstitutions(replacements=[['M', 'mno'], ['N', 'pqr'], ['O', 'stu'], ['P', 'vwx']],
+    text='%M%_%N%_%O%_%P%') == 'mno_pqr_stu_vwx'
+  - Solution().applySubstitutions(replacements=[['A', 'abc'], ['B', 'def']], text='%A%_%B%') == 'abc_def'
+  - Solution().applySubstitutions(replacements=[['Q', 'qwe'], ['R', 'rty'], ['S', '%Q%%R%'], ['T', '%R%%S%']],
+    text='%Q%_%R%_%S%_%T%') == 'qwe_rty_qwerty_rtyqwerty'
+  - Solution().applySubstitutions(replacements=[['X', 'xyz'], ['Y', 'uvw'], ['Z', '%X%_%Y%']], text='%X%_%Y%_%Z%')
+    == 'xyz_uvw_xyz_uvw'
+  - Solution().applySubstitutions(replacements=[['Q', 'qwe'], ['R', 'rty'], ['S', 'uiop'], ['T', 'asdf'],
+    ['U', '%Q%%R%']], text='%Q%_%R%_%S%_%T%_%U%') == 'qwe_rty_uiop_asdf_qwerty'
+  - Solution().applySubstitutions(replacements=[['A', 'bce'], ['B', 'ace'], ['C', 'abc%B%']], text='%A%_%B%_%C%')
+    == 'bce_ace_abcace'
+  - Solution().applySubstitutions(replacements=[['X', 'mno'], ['Y', 'pqr'], ['Z', '%X%%Y%'], ['A', 'stu'],
+    ['B', '%Z%%A%'], ['C', 'vwx%B%']], text='%C%') == 'vwxmnopqrstu'
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3481'
+  date: '2025-03-09'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

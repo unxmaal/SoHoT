@@ -1,0 +1,40 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3234
+modality: code
+prompt: "You are given a binary string s.\nReturn the number of substrings with dominant ones.\nA string\
+  \ has dominant ones if the number of ones in the string is greater than or equal to the square of the\
+  \ number of zeros in the string.\n \nExample 1:\n\nInput: s = \"00011\"\nOutput: 5\nExplanation:\nThe\
+  \ substrings with dominant ones are shown in the table below.\n\n\n\n\ni\nj\ns[i..j]\nNumber of Zeros\n\
+  Number of Ones\n\n\n\n\n3\n3\n1\n0\n1\n\n\n4\n4\n1\n0\n1\n\n\n2\n3\n01\n1\n1\n\n\n3\n4\n11\n0\n2\n\n\
+  \n2\n4\n011\n1\n2\n\n\n\nExample 2:\n\nInput: s = \"101101\"\nOutput: 16\nExplanation:\nThe substrings\
+  \ with non-dominant ones are shown in the table below.\nSince there are 21 substrings total and 5 of\
+  \ them have non-dominant ones, it follows that there are 16 substrings with dominant ones.\n\n\n\n\n\
+  i\nj\ns[i..j]\nNumber of Zeros\nNumber of Ones\n\n\n\n\n1\n1\n0\n1\n0\n\n\n4\n4\n0\n1\n0\n\n\n1\n4\n\
+  0110\n2\n2\n\n\n0\n4\n10110\n2\n3\n\n\n1\n5\n01101\n2\n3\n\n\n\n \nConstraints:\n\n1 <= s.length <=\
+  \ 4 * 104\ns consists only of characters '0' and '1'.\n\nWrite the solution in Python as this class,\
+  \ with any imports it needs:\n\n```python\nclass Solution:\n    def numberOfSubstrings(self, s: str)\
+  \ -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().numberOfSubstrings(s='1111') == 10
+  - Solution().numberOfSubstrings(s='100100100') == 8
+  - Solution().numberOfSubstrings(s='1111010101') == 33
+  - Solution().numberOfSubstrings(s='000111000') == 12
+  - Solution().numberOfSubstrings(s='11110000') == 15
+  - Solution().numberOfSubstrings(s='0000') == 0
+  - Solution().numberOfSubstrings(s='111000') == 9
+  - Solution().numberOfSubstrings(s='01010101111') == 34
+  - Solution().numberOfSubstrings(s='0011110011') == 31
+  - Solution().numberOfSubstrings(s='0000101010') == 11
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3234'
+  date: '2024-07-28'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

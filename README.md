@@ -1333,6 +1333,42 @@ a model through the gateway to continue each case's source text from a
 prefix and records how much it reproduced verbatim. A miss is not proof the
 model never saw the text.
 
+### Importing cases
+
+The adopt gate counts cases, not repeats, so a lane needs about 130 holdout
+cases to decide (#595, #603). Those come from importers, never by hand.
+`soh cases import SOURCE` re-runs one and `soh cases control SOURCE` runs its
+negative control over every case it wrote. An importer is a module
+`evals/importers/<source>.py`, listed by one line in `REGISTRY` in
+`evals/importers/__init__.py`, that defines:
+
+- `LANE`, `SOURCE` (`hf:<id>`), `DATASET`, `URL`, `LICENSE` (one of
+  `ALLOWED_LICENSES`) and `REVISION`, the pinned 40-hex dataset revision;
+- `fetch()`, the rows at `REVISION`, read over the network only here;
+- `convert(row)`, an `Imported(case, reference)` or `None` to skip the row,
+  with `case["attribution"] = provenance(module, item, transform, date)`;
+- `RESPONDERS` (name to a function from a loaded case to an answer) and
+  `passes(case, answer)`, the negative control: `reference` must pass, a
+  constant must not.
+
+`importers.run(name, rows=...)` converts and writes through `write()`, which
+replaces `evals/cases/<lane>/<source>/` in id order, references in its
+`reference/`, so the same rows give the same files and case digests. Every
+file starts with an `Imported by evals/importers` header, which keeps the
+prose scanners off dataset text. Tests feed a recorded slice from
+`tests/fixtures/importers/` and run a slice of the shipped cases; the full set
+is `soh cases control`.
+
+`leetcode` (code lane) imports LeetCodeDataset (Apache-2.0) at a pinned
+revision: its whole temporal test split, items dated 2024-08 to 2025-03, plus
+train items dated 2024 or later, read from the file's tail by a byte range.
+Each case is the problem text and `class Solution` starter, the first ten
+short `check(candidate)` asserts as checks, and the dataset's completion as
+reference. Rows needing `ListNode` or `TreeNode`, checks naming a helper, and
+items whose checks all expect one value (a constant could pass) are skipped,
+as is any row whose reference fails its own checks. Each case records its
+item date, so a receipt can be read against a candidate's cutoff.
+
 ### Technique discovery
 
 A lane can be beaten by a new method as well as by new weights: svg's

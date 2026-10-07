@@ -1,0 +1,39 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3228
+modality: code
+prompt: "You are given a binary string s.\nYou can perform the following operation on the string any number\
+  \ of times:\n\nChoose any index i from the string where i + 1 < s.length such that s[i] == '1' and s[i\
+  \ + 1] == '0'.\nMove the character s[i] to the right until it reaches the end of the string or another\
+  \ '1'. For example, for s = \"010010\", if we choose i = 1, the resulting string will be s = \"000110\"\
+  .\n\nReturn the maximum number of operations that you can perform.\n \nExample 1:\n\nInput: s = \"1001101\"\
+  \nOutput: 4\nExplanation:\nWe can perform the following operations:\n\nChoose index i = 0. The resulting\
+  \ string is s = \"0011101\".\nChoose index i = 4. The resulting string is s = \"0011011\".\nChoose index\
+  \ i = 3. The resulting string is s = \"0010111\".\nChoose index i = 2. The resulting string is s = \"\
+  0001111\".\n\n\nExample 2:\n\nInput: s = \"00111\"\nOutput: 0\n\n \nConstraints:\n\n1 <= s.length <=\
+  \ 105\ns[i] is either '0' or '1'.\n\nWrite the solution in Python as this class, with any imports it\
+  \ needs:\n\n```python\nclass Solution:\n    def maxOperations(self, s: str) -> int:\n```\n\nReturn only\
+  \ the code."
+assert:
+  checks:
+  - Solution().maxOperations(s='00111') == 0
+  - Solution().maxOperations(s='101100110') == 9
+  - Solution().maxOperations(s='000111000') == 3
+  - Solution().maxOperations(s='11110000') == 4
+  - Solution().maxOperations(s='010101010') == 10
+  - Solution().maxOperations(s='1001001001001') == 10
+  - Solution().maxOperations(s='100001110') == 5
+  - Solution().maxOperations(s='1111111111') == 0
+  - Solution().maxOperations(s='1010101') == 6
+  - Solution().maxOperations(s='1000000000') == 1
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3228'
+  date: '2024-07-21'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

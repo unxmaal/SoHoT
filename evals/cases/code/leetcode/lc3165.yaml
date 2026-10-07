@@ -1,0 +1,46 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3165
+modality: code
+prompt: "You are given an array nums consisting of integers. You are also given a 2D array queries, where\
+  \ queries[i] = [posi, xi].\nFor query i, we first set nums[posi] equal to xi, then we calculate the\
+  \ answer to query i which is the maximum sum of a subsequence of nums where no two adjacent elements\
+  \ are selected.\nReturn the sum of the answers to all queries.\nSince the final answer may be very large,\
+  \ return it modulo 109 + 7.\nA subsequence is an array that can be derived from another array by deleting\
+  \ some or no elements without changing the order of the remaining elements.\n \nExample 1:\n\nInput:\
+  \ nums = [3,5,9], queries = [[1,-2],[0,-3]]\nOutput: 21\nExplanation:\nAfter the 1st query, nums = [3,-2,9]\
+  \ and the maximum sum of a subsequence with non-adjacent elements is 3 + 9 = 12.\nAfter the 2nd query,\
+  \ nums = [-3,-2,9] and the maximum sum of a subsequence with non-adjacent elements is 9.\n\nExample\
+  \ 2:\n\nInput: nums = [0,-1], queries = [[0,-5]]\nOutput: 0\nExplanation:\nAfter the 1st query, nums\
+  \ = [-5,-1] and the maximum sum of a subsequence with non-adjacent elements is 0 (choosing an empty\
+  \ subsequence).\n\n \nConstraints:\n\n1 <= nums.length <= 5 * 104\n-105 <= nums[i] <= 105\n1 <= queries.length\
+  \ <= 5 * 104\nqueries[i] == [posi, xi]\n0 <= posi <= nums.length - 1\n-105 <= xi <= 105\n\nWrite the\
+  \ solution in Python as this class, with any imports it needs:\n\n```python\nclass Solution:\n    def\
+  \ maximumSumSubsequence(self, nums: List[int], queries: List[List[int]]) -> int:\n```\n\nReturn only\
+  \ the code."
+assert:
+  checks:
+  - Solution().maximumSumSubsequence(nums=[100, 200, 300, 400, 500], queries=[[0, -100], [2, -200], [4,
+    -300]]) == 2100
+  - Solution().maximumSumSubsequence(nums=[1, 2, 3, 4, 5], queries=[[0, 10], [4, -10], [2, 0]]) == 46
+  - Solution().maximumSumSubsequence(nums=[-1, -2, -3, -4, -5], queries=[[1, 2], [3, 4], [4, 5]]) == 15
+  - Solution().maximumSumSubsequence(nums=[3, 5, 9], queries=[[1, -2], [0, -3]]) == 21
+  - Solution().maximumSumSubsequence(nums=[0, -1], queries=[[0, -5]]) == 0
+  - Solution().maximumSumSubsequence(nums=[100000, -100000, 100000, -100000, 100000], queries=[[0, -100000],
+    [2, -100000], [4, -100000]]) == 300000
+  - Solution().maximumSumSubsequence(nums=[1, 2, 3, 4, 5], queries=[[0, 5], [2, 1], [4, -1]]) == 33
+  - Solution().maximumSumSubsequence(nums=[100000, -100000, 50000, -50000], queries=[[0, 50000], [1, -50000],
+    [2, 100000], [3, -100000]]) == 500000
+  - Solution().maximumSumSubsequence(nums=[1, 2, 3, 4, 5], queries=[[0, 5], [2, -1], [4, 10]]) == 38
+  - Solution().maximumSumSubsequence(nums=[-10, -20, -30, -40], queries=[[1, 10], [3, 20]]) == 40
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3165'
+  date: '2024-05-26'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

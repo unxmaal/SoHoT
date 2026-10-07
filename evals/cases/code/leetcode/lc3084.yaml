@@ -1,0 +1,35 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3084
+modality: code
+prompt: "You are given a string s and a character c. Return the total number of substrings of s that start\
+  \ and end with c.\n \nExample 1:\n\nInput: s = \"abada\", c = \"a\"\nOutput: 6\nExplanation: Substrings\
+  \ starting and ending with \"a\" are: \"abada\", \"abada\", \"abada\", \"abada\", \"abada\", \"abada\"\
+  .\n\nExample 2:\n\nInput: s = \"zzz\", c = \"z\"\nOutput: 6\nExplanation: There are a total of 6 substrings\
+  \ in s and all start and end with \"z\".\n\n \nConstraints:\n\n1 <= s.length <= 105\ns and c consist only\
+  \ of lowercase English letters.\n\nWrite the solution in Python as this class, with any imports it needs:\n\
+  \n```python\nclass Solution:\n    def countSubstrings(self, s: str, c: str) -> int:\n```\n\nReturn only\
+  \ the code."
+assert:
+  checks:
+  - Solution().countSubstrings(s='zzz', c='z') == 6
+  - Solution().countSubstrings(s='abcabcabc', c='b') == 6
+  - Solution().countSubstrings(s='abcdefg', c='f') == 1
+  - Solution().countSubstrings(s='', c='a') == 0
+  - Solution().countSubstrings(s='abcabcabc', c='a') == 6
+  - Solution().countSubstrings(s='hello', c='l') == 3
+  - Solution().countSubstrings(s='xyz', c='a') == 0
+  - Solution().countSubstrings(s='aaaaa', c='a') == 15
+  - Solution().countSubstrings(s='abc', c='a') == 1
+  - Solution().countSubstrings(s='abcabcabc', c='c') == 6
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3084'
+  date: '2024-03-17'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

@@ -1,0 +1,76 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3501
+modality: code
+prompt: "You are given a binary string s of length n, where:\n\n'1' represents an active section.\n'0'\
+  \ represents an inactive section.\n\nYou can perform at most one trade to maximize the number of active\
+  \ sections in s. In a trade, you:\n\nConvert a contiguous block of '1's that is surrounded by '0's to\
+  \ all '0's.\nAfterward, convert a contiguous block of '0's that is surrounded by '1's to all '1's.\n\
+  \nAdditionally, you are given a 2D array queries, where queries[i] = [li, ri] represents a substring\
+  \ s[li...ri].\nFor each query, determine the maximum possible number of active sections in s after making\
+  \ the optimal trade on the substring s[li...ri].\nReturn an array answer, where answer[i] is the result\
+  \ for queries[i].\nNote\n\nFor each query, treat s[li...ri] as if it is augmented with a '1' at both\
+  \ ends, forming t = '1' + s[li...ri] + '1'. The augmented '1's do not contribute to the final count.\n\
+  The queries are independent of each other.\n\n \nExample 1:\n\nInput: s = \"01\", queries = [[0,1]]\n\
+  Output: [1]\nExplanation:\nBecause there is no block of '1's surrounded by '0's, no valid trade is possible.\
+  \ The maximum number of active sections is 1.\n\nExample 2:\n\nInput: s = \"0100\", queries = [[0,3],[0,2],[1,3],[2,3]]\n\
+  Output: [4,3,1,1]\nExplanation:\n\n\nQuery [0, 3] → Substring \"0100\" → Augmented to \"101001\"\n\t\
+  Choose \"0100\", convert \"0100\" → \"0000\" → \"1111\".\n\tThe final string without augmentation is\
+  \ \"1111\". The maximum number of active sections is 4.\n\n\nQuery [0, 2] → Substring \"010\" → Augmented\
+  \ to \"10101\"\n\tChoose \"010\", convert \"010\" → \"000\" → \"111\".\n\tThe final string without augmentation\
+  \ is \"1110\". The maximum number of active sections is 3.\n\n\nQuery [1, 3] → Substring \"100\" → Augmented\
+  \ to \"11001\"\n\tBecause there is no block of '1's surrounded by '0's, no valid trade is possible.\
+  \ The maximum number of active sections is 1.\n\n\nQuery [2, 3] → Substring \"00\" → Augmented to \"\
+  1001\"\n\tBecause there is no block of '1's surrounded by '0's, no valid trade is possible. The maximum\
+  \ number of active sections is 1.\n\n\n\nExample 3:\n\nInput: s = \"1000100\", queries = [[1,5],[0,6],[0,4]]\n\
+  Output: [6,7,2]\nExplanation:\n\n\nQuery [1, 5] → Substring \"00010\" → Augmented to \"1000101\"\n\t\
+  Choose \"00010\", convert \"00010\" → \"00000\" → \"11111\".\n\tThe final string without augmentation\
+  \ is \"1111110\". The maximum number of active sections is 6.\n\n\nQuery [0, 6] → Substring \"1000100\"\
+  \ → Augmented to \"110001001\"\n\tChoose \"000100\", convert \"000100\" → \"000000\" → \"111111\".\n\
+  \tThe final string without augmentation is \"1111111\". The maximum number of active sections is 7.\n\
+  \n\nQuery [0, 4] → Substring \"10001\" → Augmented to \"1100011\"\n\tBecause there is no block of '1's\
+  \ surrounded by '0's, no valid trade is possible. The maximum number of active sections is 2.\n\n\n\n\
+  Example 4:\n\nInput: s = \"01010\", queries = [[0,3],[1,4],[1,3]]\nOutput: [4,4,2]\nExplanation:\n\n\
+  \nQuery [0, 3] → Substring \"0101\" → Augmented to \"101011\"\n\tChoose \"010\", convert \"010\" → \"\
+  000\" → \"111\".\n\tThe final string without augmentation is \"11110\". The maximum number of active\
+  \ sections is 4.\n\n\nQuery [1, 4] → Substring \"1010\" → Augmented to \"110101\"\n\tChoose \"010\"\
+  , convert \"010\" → \"000\" → \"111\".\n\tThe final string without augmentation is \"01111\". The maximum\
+  \ number of active sections is 4.\n\n\nQuery [1, 3] → Substring \"101\" → Augmented to \"11011\"\n\t\
+  Because there is no block of '1's surrounded by '0's, no valid trade is possible. The maximum number\
+  \ of active sections is 2.\n\n\n\n \nConstraints:\n\n1 <= n == s.length <= 105\n1 <= queries.length\
+  \ <= 105\ns[i] is either '0' or '1'.\nqueries[i] = [li, ri]\n0 <= li <= ri < n\n\nWrite the solution\
+  \ in Python as this class, with any imports it needs:\n\n```python\nclass Solution:\n    def maxActiveSectionsAfterTrade(self,\
+  \ s: str, queries: List[List[int]]) -> List[int]:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().maxActiveSectionsAfterTrade(s='0100', queries=[[0, 3], [0, 2], [1, 3], [2, 3]]) == [4,
+    3, 1, 1]
+  - Solution().maxActiveSectionsAfterTrade(s='01', queries=[[0, 1]]) == [1]
+  - Solution().maxActiveSectionsAfterTrade(s='01010', queries=[[0, 3], [1, 4], [1, 3]]) == [4, 4, 2]
+  - Solution().maxActiveSectionsAfterTrade(s='1000100', queries=[[1, 5], [0, 6], [0, 4]]) == [6, 7, 2]
+  - Solution().maxActiveSectionsAfterTrade(s='111111111111111111111111111111111111111111111111', queries=[[0,
+    39], [1, 38], [2, 37], [3, 36], [4, 35], [5, 34], [6, 33], [7, 32], [8, 31], [9, 30]]) == [48, 48,
+    48, 48, 48, 48, 48, 48, 48, 48]
+  - Solution().maxActiveSectionsAfterTrade(s='11111111111111111', queries=[[0, 16], [1, 15], [2, 14],
+    [5, 11], [3, 12]]) == [17, 17, 17, 17, 17]
+  - Solution().maxActiveSectionsAfterTrade(s='10000000010000000001000000001', queries=[[0, 20], [5, 15],
+    [10, 19]]) == [21, 14, 4]
+  - Solution().maxActiveSectionsAfterTrade(s='000000000000000000000000000000000000000000000000', queries=[[0,
+    39], [1, 38], [2, 37], [3, 36], [4, 35], [5, 34], [6, 33], [7, 32], [8, 31], [9, 30]]) == [0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0]
+  - Solution().maxActiveSectionsAfterTrade(s='11001100110011001100110011', queries=[[0, 20], [5, 15],
+    [0, 9], [10, 19], [15, 25]]) == [18, 18, 18, 18, 18]
+  - Solution().maxActiveSectionsAfterTrade(s='111100001111000011110000', queries=[[0, 23], [4, 19], [5,
+    18], [6, 17], [7, 16], [8, 15], [9, 14], [10, 13], [11, 12]]) == [20, 20, 19, 18, 17, 12, 12, 12,
+    12]
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3501'
+  date: '2025-03-23'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

@@ -1,0 +1,39 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3344
+modality: code
+prompt: "Given a positive integer s, let A be a 3D array of dimensions n × n × n, where each element A[i][j][k]\
+  \ is defined as:\n\nA[i][j][k] = i * (j OR k), where 0 <= i, j, k < n.\n\nReturn the maximum possible\
+  \ value of n such that the sum of all elements in array A does not exceed s.\n \nExample 1:\n\nInput:\
+  \ s = 10\nOutput: 2\nExplanation:\n\nElements of the array A for n = 2:\n\nA[0][0][0] = 0 * (0 OR 0)\
+  \ = 0\nA[0][0][1] = 0 * (0 OR 1) = 0\nA[0][1][0] = 0 * (1 OR 0) = 0\nA[0][1][1] = 0 * (1 OR 1) = 0\n\
+  A[1][0][0] = 1 * (0 OR 0) = 0\nA[1][0][1] = 1 * (0 OR 1) = 1\nA[1][1][0] = 1 * (1 OR 0) = 1\nA[1][1][1]\
+  \ = 1 * (1 OR 1) = 1\n\n\nThe total sum of the elements in array A is 3, which does not exceed 10, so\
+  \ the maximum possible value of n is 2.\n\n\nExample 2:\n\nInput: s = 0\nOutput: 1\nExplanation:\n\n\
+  Elements of the array A for n = 1:\n\n\t\nA[0][0][0] = 0 * (0 OR 0) = 0\n\n\nThe total sum of the elements\
+  \ in array A is 0, which does not exceed 0, so the maximum possible value of n is 1.\n\n\n \nConstraints:\n\
+  \n0 <= s <= 1015\n\nWrite the solution in Python as this class, with any imports it needs:\n\n```python\n\
+  class Solution:\n    def maxSizedArray(self, s: int) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().maxSizedArray(s=100000000000000) == 756
+  - Solution().maxSizedArray(s=10) == 2
+  - Solution().maxSizedArray(s=27) == 2
+  - Solution().maxSizedArray(s=1000) == 5
+  - Solution().maxSizedArray(s=1000000000000000) == 1196
+  - Solution().maxSizedArray(s=123456789) == 50
+  - Solution().maxSizedArray(s=50) == 3
+  - Solution().maxSizedArray(s=1000000000000) == 300
+  - Solution().maxSizedArray(s=1) == 1
+  - Solution().maxSizedArray(s=64) == 3
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3344'
+  date: '2024-11-03'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

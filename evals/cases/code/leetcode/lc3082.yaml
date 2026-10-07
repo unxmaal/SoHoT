@@ -1,0 +1,44 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3082
+modality: code
+prompt: "You are given an integer array nums of length n and a positive integer k.\nThe power of an array\
+  \ of integers is defined as the number of subsequences with their sum equal to k.\nReturn the sum of\
+  \ power of all subsequences of nums.\nSince the answer may be very large, return it modulo 109 + 7.\n\
+   \nExample 1:\n\nInput:   nums = [1,2,3], k = 3 \nOutput:   6 \nExplanation:\nThere are 5 subsequences\
+  \ of nums with non-zero power:\n\nThe subsequence [1,2,3] has 2 subsequences with sum == 3: [1,2,3]\
+  \ and [1,2,3].\nThe subsequence [1,2,3] has 1 subsequence with sum == 3: [1,2,3].\nThe subsequence [1,2,3]\
+  \ has 1 subsequence with sum == 3: [1,2,3].\nThe subsequence [1,2,3] has 1 subsequence with sum == 3:\
+  \ [1,2,3].\nThe subsequence [1,2,3] has 1 subsequence with sum == 3: [1,2,3].\n\nHence the answer is\
+  \ 2 + 1 + 1 + 1 + 1 = 6.\n\nExample 2:\n\nInput:   nums = [2,3,3], k = 5 \nOutput:   4 \nExplanation:\n\
+  There are 3 subsequences of nums with non-zero power:\n\nThe subsequence [2,3,3] has 2 subsequences\
+  \ with sum == 5: [2,3,3] and [2,3,3].\nThe subsequence [2,3,3] has 1 subsequence with sum == 5: [2,3,3].\n\
+  The subsequence [2,3,3] has 1 subsequence with sum == 5: [2,3,3].\n\nHence the answer is 2 + 1 + 1 =\
+  \ 4.\n\nExample 3:\n\nInput:   nums = [1,2,3], k = 7 \nOutput:   0 \nExplanation: There exists no subsequence\
+  \ with sum 7. Hence all subsequences of nums have power = 0.\n\n \nConstraints:\n\n1 <= n <= 100\n1\
+  \ <= nums[i] <= 104\n1 <= k <= 100\n\nWrite the solution in Python as this class, with any imports it\
+  \ needs:\n\n```python\nclass Solution:\n    def sumOfPower(self, nums: List[int], k: int) -> int:\n\
+  ```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().sumOfPower(nums=[1, 1, 1, 1, 1], k=3) == 40
+  - Solution().sumOfPower(nums=[3, 3, 3, 3, 3, 3, 3, 3, 3, 3], k=15) == 8064
+  - Solution().sumOfPower(nums=[1, 2, 4, 8, 16], k=31) == 1
+  - Solution().sumOfPower(nums=[10, 20, 30], k=60) == 1
+  - Solution().sumOfPower(nums=[10, 20, 30, 40, 50], k=90) == 16
+  - Solution().sumOfPower(nums=[100, 200, 300], k=100) == 4
+  - Solution().sumOfPower(nums=[10, 20, 30, 40], k=50) == 8
+  - Solution().sumOfPower(nums=[9, 8, 7, 6, 5, 4, 3, 2, 1], k=10) == 800
+  - Solution().sumOfPower(nums=[100, 200, 300], k=600) == 1
+  - Solution().sumOfPower(nums=[1, 1, 1, 1, 1, 1, 1, 1, 1, 1], k=5) == 8064
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3082'
+  date: '2024-03-10'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

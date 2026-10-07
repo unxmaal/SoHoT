@@ -1,0 +1,37 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3216
+modality: code
+prompt: "Given a string s containing only digits, return the lexicographically smallest string that can\
+  \ be obtained after swapping adjacent digits in s with the same parity at most once.\nDigits have the\
+  \ same parity if both are odd or both are even. For example, 5 and 9, as well as 2 and 4, have the same\
+  \ parity, while 6 and 9 do not.\n \nExample 1:\n\nInput: s = \"45320\"\nOutput: \"43520\"\nExplanation:\
+  \ \ns[1] == '5' and s[2] == '3' both have the same parity, and swapping them results in the lexicographically\
+  \ smallest string.\n\nExample 2:\n\nInput: s = \"001\"\nOutput: \"001\"\nExplanation:\nThere is no need\
+  \ to perform a swap because s is already the lexicographically smallest.\n\n \nConstraints:\n\n2 <=\
+  \ s.length <= 100\ns consists only of digits.\n\nWrite the solution in Python as this class, with any\
+  \ imports it needs:\n\n```python\nclass Solution:\n    def getSmallestString(self, s: str) -> str:\n\
+  ```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().getSmallestString(s='9876543210') == '9876543210'
+  - Solution().getSmallestString(s='1324') == '1324'
+  - Solution().getSmallestString(s='111222333') == '111222333'
+  - Solution().getSmallestString(s='1352468709') == '1352468709'
+  - Solution().getSmallestString(s='2121212121') == '2121212121'
+  - Solution().getSmallestString(s='1234567890') == '1234567890'
+  - Solution().getSmallestString(s='9753186420') == '7953186420'
+  - Solution().getSmallestString(s='22222') == '22222'
+  - Solution().getSmallestString(s='97531') == '79531'
+  - Solution().getSmallestString(s='111222') == '111222'
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3216'
+  date: '2024-07-14'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

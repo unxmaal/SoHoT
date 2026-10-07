@@ -1,0 +1,47 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3076
+modality: code
+prompt: "You are given an array arr of size n consisting of non-empty strings.\nFind a string array answer\
+  \ of size n such that:\n\nanswer[i] is the shortest substring of arr[i] that does not occur as a substring\
+  \ in any other string in arr. If multiple such substrings exist, answer[i] should be the lexicographically\
+  \ smallest. And if no such substring exists, answer[i] should be an empty string.\n\nReturn the array\
+  \ answer.\n \nExample 1:\n\nInput: arr = [\"cab\",\"ad\",\"bad\",\"c\"]\nOutput: [\"ab\",\"\",\"ba\"\
+  ,\"\"]\nExplanation: We have the following:\n- For the string \"cab\", the shortest substring that does\
+  \ not occur in any other string is either \"ca\" or \"ab\", we choose the lexicographically smaller\
+  \ substring, which is \"ab\".\n- For the string \"ad\", there is no substring that does not occur in\
+  \ any other string.\n- For the string \"bad\", the shortest substring that does not occur in any other\
+  \ string is \"ba\".\n- For the string \"c\", there is no substring that does not occur in any other\
+  \ string.\n\nExample 2:\n\nInput: arr = [\"abc\",\"bcd\",\"abcd\"]\nOutput: [\"\",\"\",\"abcd\"]\nExplanation:\
+  \ We have the following:\n- For the string \"abc\", there is no substring that does not occur in any\
+  \ other string.\n- For the string \"bcd\", there is no substring that does not occur in any other string.\n\
+  - For the string \"abcd\", the shortest substring that does not occur in any other string is \"abcd\"\
+  .\n\n \nConstraints:\n\nn == arr.length\n2 <= n <= 100\n1 <= arr[i].length <= 20\narr[i] consists only\
+  \ of lowercase English letters.\n\nWrite the solution in Python as this class, with any imports it needs:\n\
+  \n```python\nclass Solution:\n    def shortestSubstrings(self, arr: List[str]) -> List[str]:\n```\n\n\
+  Return only the code."
+assert:
+  checks:
+  - Solution().shortestSubstrings(arr=['abcabc', 'bcabc', 'cabc', 'abcd']) == ['abca', '', '', 'd']
+  - Solution().shortestSubstrings(arr=['aaa', 'aab', 'aba', 'abb']) == ['aaa', 'aab', 'ba', 'bb']
+  - Solution().shortestSubstrings(arr=['abc', 'bcd', 'abcd']) == ['', '', 'abcd']
+  - Solution().shortestSubstrings(arr=['abcd', 'bcde', 'cdef', 'defg']) == ['a', 'bcde', 'cdef', 'g']
+  - Solution().shortestSubstrings(arr=['hello', 'world', 'hel', 'wor', 'ld']) == ['ll', 'rl', '', '',
+    '']
+  - Solution().shortestSubstrings(arr=['unique', 'strings', 'array', 'test']) == ['q', 'g', 'a', 'es']
+  - Solution().shortestSubstrings(arr=['cab', 'ad', 'bad', 'c']) == ['ab', '', 'ba', '']
+  - Solution().shortestSubstrings(arr=['aaaa', 'aaab', 'aabb', 'abbb']) == ['aaaa', 'aaab', 'aabb', 'bbb']
+  - Solution().shortestSubstrings(arr=['xyz', 'zyx', 'yzx']) == ['xy', 'yx', 'zx']
+  - Solution().shortestSubstrings(arr=['abcde', 'bcdef', 'cdefg', 'defgh']) == ['a', 'bcdef', 'cdefg',
+    'h']
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3076'
+  date: '2024-03-10'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

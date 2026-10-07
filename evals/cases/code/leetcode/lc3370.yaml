@@ -1,0 +1,34 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3370
+modality: code
+prompt: "You are given a positive number n.\nReturn the smallest number x greater than or equal to n,\
+  \ such that the binary representation of x contains only set bits\n \nExample 1:\n\nInput: n = 5\nOutput:\
+  \ 7\nExplanation:\nThe binary representation of 7 is \"111\".\n\nExample 2:\n\nInput: n = 10\nOutput:\
+  \ 15\nExplanation:\nThe binary representation of 15 is \"1111\".\n\nExample 3:\n\nInput: n = 3\nOutput:\
+  \ 3\nExplanation:\nThe binary representation of 3 is \"11\".\n\n \nConstraints:\n\n1 <= n <= 1000\n\n\
+  Write the solution in Python as this class, with any imports it needs:\n\n```python\nclass Solution:\n\
+  \    def smallestNumber(self, n: int) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().smallestNumber(n=3) == 3
+  - Solution().smallestNumber(n=12) == 15
+  - Solution().smallestNumber(n=100) == 127
+  - Solution().smallestNumber(n=1000) == 1023
+  - Solution().smallestNumber(n=5) == 7
+  - Solution().smallestNumber(n=64) == 127
+  - Solution().smallestNumber(n=16) == 31
+  - Solution().smallestNumber(n=2) == 3
+  - Solution().smallestNumber(n=1024) == 2047
+  - Solution().smallestNumber(n=8) == 15
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3370'
+  date: '2024-12-01'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

@@ -1,0 +1,38 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3212
+modality: code
+prompt: "Given a 2D character matrix grid, where grid[i][j] is either 'X', 'Y', or '.', return the number\
+  \ of submatrices that contain:\n\ngrid[0][0]\nan equal frequency of 'X' and 'Y'.\nat least one 'X'.\n\
+  \n \nExample 1:\n\nInput: grid = [[\"X\",\"Y\",\".\"],[\"Y\",\".\",\".\"]]\nOutput: 3\nExplanation:\n\
+  \n\nExample 2:\n\nInput: grid = [[\"X\",\"X\"],[\"X\",\"Y\"]]\nOutput: 0\nExplanation:\nNo submatrix\
+  \ has an equal frequency of 'X' and 'Y'.\n\nExample 3:\n\nInput: grid = [[\".\",\".\"],[\".\",\".\"\
+  ]]\nOutput: 0\nExplanation:\nNo submatrix has at least one 'X'.\n\n \nConstraints:\n\n1 <= grid.length,\
+  \ grid[i].length <= 1000\ngrid[i][j] is either 'X', 'Y', or '.'.\n\nWrite the solution in Python as\
+  \ this class, with any imports it needs:\n\n```python\nclass Solution:\n    def numberOfSubmatrices(self,\
+  \ grid: List[List[str]]) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().numberOfSubmatrices(grid=[['X', 'Y', 'X'], ['Y', 'X', 'Y'], ['X', 'Y', 'X']]) == 5
+  - Solution().numberOfSubmatrices(grid=[['.', '.'], ['.', '.']]) == 0
+  - Solution().numberOfSubmatrices(grid=[['X', 'X'], ['X', 'Y']]) == 0
+  - Solution().numberOfSubmatrices(grid=[['X', 'X', 'Y', 'Y'], ['Y', 'Y', 'X', 'X']]) == 5
+  - Solution().numberOfSubmatrices(grid=[['X', 'X', 'X', 'X'], ['X', 'Y', 'Y', 'X'], ['X', 'Y', 'Y', 'X'],
+    ['X', 'X', 'X', 'X']]) == 0
+  - Solution().numberOfSubmatrices(grid=[['X', 'Y', 'X', 'Y'], ['Y', 'X', 'Y', 'X'], ['X', 'Y', 'X', 'Y']])
+    == 8
+  - Solution().numberOfSubmatrices(grid=[['X', '.', 'Y'], ['.', 'X', 'Y'], ['Y', '.', 'X']]) == 4
+  - Solution().numberOfSubmatrices(grid=[['X'], ['Y'], ['X']]) == 1
+  - Solution().numberOfSubmatrices(grid=[['X', 'Y', '.'], ['Y', '.', '.']]) == 3
+  - Solution().numberOfSubmatrices(grid=[['X', 'Y'], ['X', 'Y'], ['X', 'Y']]) == 3
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3212'
+  date: '2024-07-07'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

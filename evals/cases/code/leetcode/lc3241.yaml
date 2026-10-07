@@ -1,0 +1,46 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3241
+modality: code
+prompt: "There exists an undirected tree with n nodes numbered 0 to n - 1. You are given a 2D integer\
+  \ array edges of length n - 1, where edges[i] = [ui, vi] indicates that there is an edge between nodes\
+  \ ui and vi in the tree.\nInitially, all nodes are unmarked. For each node i:\n\nIf i is odd, the node\
+  \ will get marked at time x if there is at least one node adjacent to it which was marked at time x\
+  \ - 1.\nIf i is even, the node will get marked at time x if there is at least one node adjacent to it\
+  \ which was marked at time x - 2.\n\nReturn an array times where times[i] is the time when all nodes\
+  \ get marked in the tree, if you mark node i at time t = 0.\nNote that the answer for each times[i]\
+  \ is independent, i.e. when you mark node i all other nodes are unmarked.\n \nExample 1:\n\nInput: edges\
+  \ = [[0,1],[0,2]]\nOutput: [2,4,3]\nExplanation:\n\n\nFor i = 0:\n\n\t\nNode 1 is marked at t = 1, and\
+  \ Node 2 at t = 2.\n\n\nFor i = 1:\n\t\nNode 0 is marked at t = 2, and Node 2 at t = 4.\n\n\nFor i =\
+  \ 2:\n\t\nNode 0 is marked at t = 2, and Node 1 at t = 3.\n\n\n\n\nExample 2:\n\nInput: edges = [[0,1]]\n\
+  Output: [1,2]\nExplanation:\n\n\nFor i = 0:\n\n\t\nNode 1 is marked at t = 1.\n\n\nFor i = 1:\n\t\n\
+  Node 0 is marked at t = 2.\n\n\n\n\nExample 3:\n\nInput: edges = [[2,4],[0,1],[2,3],[0,2]]\nOutput:\
+  \ [4,6,3,5,5]\nExplanation:\n\n\n \nConstraints:\n\n2 <= n <= 105\nedges.length == n - 1\nedges[i].length\
+  \ == 2\n0 <= edges[i][0], edges[i][1] <= n - 1\nThe input is generated such that edges represents a\
+  \ valid tree.\n\nWrite the solution in Python as this class, with any imports it needs:\n\n```python\n\
+  class Solution:\n    def timeTaken(self, edges: List[List[int]]) -> List[int]:\n```\n\nReturn only the\
+  \ code."
+assert:
+  checks:
+  - Solution().timeTaken(edges=[[0, 1], [0, 2]]) == [2, 4, 3]
+  - Solution().timeTaken(edges=[[3, 1], [3, 0], [1, 2]]) == [4, 3, 4, 3]
+  - Solution().timeTaken(edges=[[1, 0], [2, 0], [3, 0], [4, 1], [5, 2]]) == [3, 5, 5, 5, 6, 7]
+  - Solution().timeTaken(edges=[[0, 3], [1, 2], [2, 3], [3, 4]]) == [4, 5, 3, 3, 4]
+  - Solution().timeTaken(edges=[[3, 1], [3, 0], [3, 2], [5, 3], [4, 3]]) == [3, 3, 3, 2, 3, 3]
+  - Solution().timeTaken(edges=[[0, 3], [1, 2], [1, 3], [4, 3]]) == [4, 3, 4, 3, 4]
+  - Solution().timeTaken(edges=[[3, 1], [3, 2], [3, 0]]) == [3, 3, 3, 2]
+  - Solution().timeTaken(edges=[[2, 4], [0, 1], [2, 3], [0, 2]]) == [4, 6, 3, 5, 5]
+  - Solution().timeTaken(edges=[[0, 1]]) == [1, 2]
+  - Solution().timeTaken(edges=[[0, 1], [0, 2], [1, 3], [1, 4], [2, 5], [2, 6], [3, 7], [3, 8], [4, 9],
+    [4, 10]]) == [5, 6, 7, 7, 7, 9, 9, 8, 8, 9, 9]
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3241'
+  date: '2024-07-28'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

@@ -29,15 +29,23 @@ REAL_RUN = subprocess.run
 CASES = Path(__file__).resolve().parents[1] / "evals" / "cases"
 
 
+def _hand_written(cases):
+    """Imported cases (#603) are data the importer tests cover; the circuit runs the hand-written lane."""
+    from evals import importers
+    names = {s.name for s in importers.REGISTRY}
+    return [c for c in cases if c.source is None or c.source.parent.name not in names]
+
+
 @functools.lru_cache(maxsize=None)
 def _cases(lane):
     from evals.core import load_cases
     from evals.run import select_cases
-    return select_cases(load_cases(CASES), lane)
+    return select_cases(_hand_written(load_cases(CASES)), lane)
 
 
 def _reference(case_id):
-    return (CASES / "code" / "reference" / f"{case_id}.py").read_text(encoding="utf-8")
+    case = next(c for c in _cases("code") if c.id == case_id)
+    return (case.source.parent / "reference" / f"{case_id}.py").read_text(encoding="utf-8")
 
 
 class World:
@@ -52,7 +60,7 @@ class World:
         self.unexpected, self.evals, self.real, self.checked = [], [], [], {}
         from harness import holdout
         split = holdout.for_lane("code")
-        self.prompts = {c.id: c.prompt.strip()[:80] for c in _cases("code")}
+        self.prompts = {c.id: c.prompt.strip() for c in _cases("code")}
         # The control passes one holdout case and two dev cases; the challenger passes them all.
         self.incumbent_passes = {split.holdout[0], *split.dev[:2]}
 
@@ -148,6 +156,11 @@ def mac():
 
 @pytest.fixture
 def world(monkeypatch, tmp_path, _home):
+    from evals import core
+    from harness import holdout
+    real_load = core.load_cases
+    monkeypatch.setattr(core, "load_cases", lambda d: _hand_written(real_load(d)))
+    holdout._splits.cache_clear()
     w = World()
     (Path(_home) / "discovery-sources.json").write_text(json.dumps({"sources": [
         {"name": "fake-feed", "url": FEED, "kind": "atom", "lane": "all"}]}),
@@ -189,7 +202,8 @@ def world(monkeypatch, tmp_path, _home):
         base=SERVER, restart=restart, idle_s=0, max_wait_s=0, poll_s=0)))
     w.switched = switched
     w.config = config
-    return w
+    yield w
+    holdout._splits.cache_clear()
 
 
 def latest(name):

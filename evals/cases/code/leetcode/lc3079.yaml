@@ -1,0 +1,36 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3079
+modality: code
+prompt: "You are given an integer array nums containing positive integers. We define a function encrypt\
+  \ such that encrypt(x) replaces every digit in x with the largest digit in x. For example, encrypt(523)\
+  \ = 555 and encrypt(213) = 333.\nReturn the sum of encrypted elements.\n \nExample 1:\n\nInput: nums\
+  \ = [1,2,3]\nOutput: 6\nExplanation: The encrypted elements are [1,2,3]. The sum of encrypted elements\
+  \ is 1 + 2 + 3 == 6.\n\nExample 2:\n\nInput: nums = [10,21,31]\nOutput: 66\nExplanation: The encrypted\
+  \ elements are [11,22,33]. The sum of encrypted elements is 11 + 22 + 33 == 66.\n\n \nConstraints:\n\
+  \n1 <= nums.length <= 50\n1 <= nums[i] <= 1000\n\nWrite the solution in Python as this class, with any\
+  \ imports it needs:\n\n```python\nclass Solution:\n    def sumOfEncryptedInt(self, nums: List[int])\
+  \ -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().sumOfEncryptedInt(nums=[523, 213, 111]) == 999
+  - Solution().sumOfEncryptedInt(nums=[523, 213, 111]) == 999
+  - Solution().sumOfEncryptedInt(nums=[1, 10, 100, 1000]) == 1234
+  - Solution().sumOfEncryptedInt(nums=[999, 100, 101]) == 1221
+  - Solution().sumOfEncryptedInt(nums=[9, 8, 7, 6, 5, 4, 3, 2, 1]) == 45
+  - Solution().sumOfEncryptedInt(nums=[456, 789, 321]) == 1998
+  - Solution().sumOfEncryptedInt(nums=[1111, 2222, 3333, 4444, 5555]) == 16665
+  - Solution().sumOfEncryptedInt(nums=[987, 654, 321]) == 1998
+  - Solution().sumOfEncryptedInt(nums=[5, 15, 25, 35]) == 170
+  - Solution().sumOfEncryptedInt(nums=[100, 200, 300]) == 666
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3079'
+  date: '2024-03-10'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

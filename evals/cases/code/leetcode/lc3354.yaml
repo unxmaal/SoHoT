@@ -1,0 +1,47 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3354
+modality: code
+prompt: "You are given an integer array nums.\nStart by selecting a starting position curr such that nums[curr]\
+  \ == 0, and choose a movement direction of either left or right.\nAfter that, you repeat the following\
+  \ process:\n\nIf curr is out of the range [0, n - 1], this process ends.\nIf nums[curr] == 0, move in\
+  \ the current direction by incrementing curr if you are moving right, or decrementing curr if you are\
+  \ moving left.\nElse if nums[curr] > 0:\n\t\nDecrement nums[curr] by 1.\nReverse your movement direction\
+  \ (left becomes right and vice versa).\nTake a step in your new direction.\n\n\n\nA selection of the\
+  \ initial position curr and movement direction is considered valid if every element in nums becomes\
+  \ 0 by the end of the process.\nReturn the number of possible valid selections.\n \nExample 1:\n\nInput:\
+  \ nums = [1,0,2,0,3]\nOutput: 2\nExplanation:\nThe only possible valid selections are the following:\n\
+  \nChoose curr = 3, and a movement direction to the left.\n\n\t\n[1,0,2,0,3] -> [1,0,2,0,3] -> [1,0,1,0,3]\
+  \ -> [1,0,1,0,3] -> [1,0,1,0,2] -> [1,0,1,0,2] -> [1,0,0,0,2] -> [1,0,0,0,2] -> [1,0,0,0,1] -> [1,0,0,0,1]\
+  \ -> [1,0,0,0,1] -> [1,0,0,0,1] -> [0,0,0,0,1] -> [0,0,0,0,1] -> [0,0,0,0,1] -> [0,0,0,0,1] -> [0,0,0,0,0].\n\
+  \n\nChoose curr = 3, and a movement direction to the right.\n\t\n[1,0,2,0,3] -> [1,0,2,0,3] -> [1,0,2,0,2]\
+  \ -> [1,0,2,0,2] -> [1,0,1,0,2] -> [1,0,1,0,2] -> [1,0,1,0,1] -> [1,0,1,0,1] -> [1,0,0,0,1] -> [1,0,0,0,1]\
+  \ -> [1,0,0,0,0] -> [1,0,0,0,0] -> [1,0,0,0,0] -> [1,0,0,0,0] -> [0,0,0,0,0].\n\n\n\n\nExample 2:\n\n\
+  Input: nums = [2,3,4,0,4,1,0]\nOutput: 0\nExplanation:\nThere are no possible valid selections.\n\n\
+   \nConstraints:\n\n1 <= nums.length <= 100\n0 <= nums[i] <= 100\nThere is at least one element i where\
+  \ nums[i] == 0.\n\nWrite the solution in Python as this class, with any imports it needs:\n\n```python\n\
+  class Solution:\n    def countValidSelections(self, nums: List[int]) -> int:\n```\n\nReturn only the\
+  \ code."
+assert:
+  checks:
+  - Solution().countValidSelections(nums=[1, 2, 3, 4, 0]) == 0
+  - Solution().countValidSelections(nums=[1, 0, 1, 0, 1, 0, 1, 0]) == 2
+  - Solution().countValidSelections(nums=[1, 0, 0, 2, 0, 3, 0, 0, 4]) == 0
+  - Solution().countValidSelections(nums=[0, 1, 0, 1, 0]) == 2
+  - Solution().countValidSelections(nums=[2, 0, 2, 0, 2, 0]) == 0
+  - Solution().countValidSelections(nums=[0, 1, 1, 0]) == 0
+  - Solution().countValidSelections(nums=[0, 2, 1, 0, 3, 0, 1]) == 1
+  - Solution().countValidSelections(nums=[0, 0, 0, 0, 0]) == 10
+  - Solution().countValidSelections(nums=[3, 0, 0, 0, 3]) == 6
+  - Solution().countValidSelections(nums=[0, 1, 2, 3, 4]) == 0
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3354'
+  date: '2024-11-17'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

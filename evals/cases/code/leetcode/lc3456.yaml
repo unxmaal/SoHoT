@@ -1,0 +1,40 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3456
+modality: code
+prompt: "You are given a string s and an integer k.\nDetermine if there exists a substring of length exactly\
+  \ k in s that satisfies the following conditions:\n\nThe substring consists of only one distinct character\
+  \ (e.g., \"aaa\" or \"bbb\").\nIf there is a character immediately before the substring, it must be\
+  \ different from the character in the substring.\nIf there is a character immediately after the substring,\
+  \ it must also be different from the character in the substring.\n\nReturn true if such a substring\
+  \ exists. Otherwise, return false.\n \nExample 1:\n\nInput: s = \"aaabaaa\", k = 3\nOutput: true\nExplanation:\n\
+  The substring s[4..6] == \"aaa\" satisfies the conditions.\n\nIt has a length of 3.\nAll characters\
+  \ are the same.\nThe character before \"aaa\" is 'b', which is different from 'a'.\nThere is no character\
+  \ after \"aaa\".\n\n\nExample 2:\n\nInput: s = \"abc\", k = 2\nOutput: false\nExplanation:\nThere is\
+  \ no substring of length 2 that consists of one distinct character and satisfies the conditions.\n\n\
+   \nConstraints:\n\n1 <= k <= s.length <= 100\ns consists of lowercase English letters only.\n\nWrite\
+  \ the solution in Python as this class, with any imports it needs:\n\n```python\nclass Solution:\n \
+  \   def hasSpecialSubstring(self, s: str, k: int) -> bool:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().hasSpecialSubstring(s='abc', k=2) == False
+  - Solution().hasSpecialSubstring(s='aabbccddeeff', k=2) == True
+  - Solution().hasSpecialSubstring(s='abcde', k=1) == True
+  - Solution().hasSpecialSubstring(s='zzzz', k=4) == True
+  - Solution().hasSpecialSubstring(s='xyzxyz', k=1) == True
+  - Solution().hasSpecialSubstring(s='abcdabcd', k=2) == False
+  - Solution().hasSpecialSubstring(s='aaaaa', k=3) == False
+  - Solution().hasSpecialSubstring(s='zzzzz', k=5) == True
+  - Solution().hasSpecialSubstring(s='aabbcc', k=2) == True
+  - Solution().hasSpecialSubstring(s='aaabaaa', k=3) == True
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3456'
+  date: '2025-02-16'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

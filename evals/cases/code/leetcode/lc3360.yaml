@@ -1,0 +1,37 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3360
+modality: code
+prompt: "Alice and Bob are playing a game where they take turns removing stones from a pile, with Alice\
+  \ going first.\n\nAlice starts by removing exactly 10 stones on her first turn.\nFor each subsequent\
+  \ turn, each player removes exactly 1 fewer stone than the previous opponent.\n\nThe player who cannot\
+  \ make a move loses the game.\nGiven a positive integer n, return true if Alice wins the game and false\
+  \ otherwise.\n \nExample 1:\n\nInput: n = 12\nOutput: true\nExplanation:\n\nAlice removes 10 stones\
+  \ on her first turn, leaving 2 stones for Bob.\nBob cannot remove 9 stones, so Alice wins.\n\n\nExample\
+  \ 2:\n\nInput: n = 1\nOutput: false\nExplanation:\n\nAlice cannot remove 10 stones, so Alice loses.\n\
+  \n\n \nConstraints:\n\n1 <= n <= 50\n\nWrite the solution in Python as this class, with any imports\
+  \ it needs:\n\n```python\nclass Solution:\n    def canAliceWin(self, n: int) -> bool:\n```\n\nReturn\
+  \ only the code."
+assert:
+  checks:
+  - Solution().canAliceWin(n=8) == False
+  - Solution().canAliceWin(n=30) == True
+  - Solution().canAliceWin(n=15) == True
+  - Solution().canAliceWin(n=40) == True
+  - Solution().canAliceWin(n=12) == True
+  - Solution().canAliceWin(n=35) == False
+  - Solution().canAliceWin(n=20) == False
+  - Solution().canAliceWin(n=1) == False
+  - Solution().canAliceWin(n=50) == True
+  - Solution().canAliceWin(n=10) == True
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3360'
+  date: '2024-11-17'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

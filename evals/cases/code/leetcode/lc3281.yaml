@@ -1,0 +1,39 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3281
+modality: code
+prompt: "You are given an array of integers start and an integer d, representing n intervals [start[i],\
+  \ start[i] + d].\nYou are asked to choose n integers where the ith integer must belong to the ith interval.\
+  \ The score of the chosen integers is defined as the minimum absolute difference between any two integers\
+  \ that have been chosen.\nReturn the maximum possible score of the chosen integers.\n \nExample 1:\n\
+  \nInput: start = [6,0,3], d = 2\nOutput: 4\nExplanation:\nThe maximum possible score can be obtained\
+  \ by choosing integers: 8, 0, and 4. The score of these chosen integers is min(|8 - 0|, |8 - 4|, |0\
+  \ - 4|) which equals 4.\n\nExample 2:\n\nInput: start = [2,6,13,13], d = 5\nOutput: 5\nExplanation:\n\
+  The maximum possible score can be obtained by choosing integers: 2, 7, 13, and 18. The score of these\
+  \ chosen integers is min(|2 - 7|, |2 - 13|, |2 - 18|, |7 - 13|, |7 - 18|, |13 - 18|) which equals 5.\n\
+  \n \nConstraints:\n\n2 <= start.length <= 105\n0 <= start[i] <= 109\n0 <= d <= 109\n\nWrite the solution\
+  \ in Python as this class, with any imports it needs:\n\n```python\nclass Solution:\n    def maxPossibleScore(self,\
+  \ start: List[int], d: int) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().maxPossibleScore(start=[5, 10, 15, 20, 25], d=4) == 6
+  - Solution().maxPossibleScore(start=[1, 10, 20, 30], d=9) == 12
+  - Solution().maxPossibleScore(start=[10, 20, 30, 40, 50], d=15) == 13
+  - Solution().maxPossibleScore(start=[100, 200, 300, 400, 500], d=50) == 112
+  - Solution().maxPossibleScore(start=[2, 6, 13, 13], d=5) == 5
+  - Solution().maxPossibleScore(start=[1, 1, 1, 1], d=10) == 3
+  - Solution().maxPossibleScore(start=[5, 5, 5, 5, 5], d=0) == 0
+  - Solution().maxPossibleScore(start=[10, 20, 30, 40, 50, 60], d=15) == 13
+  - Solution().maxPossibleScore(start=[1, 2, 3, 4, 5], d=1) == 1
+  - Solution().maxPossibleScore(start=[1, 5, 9, 14], d=3) == 5
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3281'
+  date: '2024-09-08'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

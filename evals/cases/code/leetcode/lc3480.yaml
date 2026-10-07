@@ -1,0 +1,47 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3480
+modality: code
+prompt: "You are given an integer n which represents an array nums containing the numbers from 1 to n\
+  \ in order. Additionally, you are given a 2D array conflictingPairs, where conflictingPairs[i] = [a,\
+  \ b] indicates that a and b form a conflicting pair.\nRemove exactly one element from conflictingPairs.\
+  \ Afterward, count the number of non-empty subarrays of nums which do not contain both a and b for any\
+  \ remaining conflicting pair [a, b].\nReturn the maximum number of subarrays possible after removing\
+  \ exactly one conflicting pair.\n \nExample 1:\n\nInput: n = 4, conflictingPairs = [[2,3],[1,4]]\nOutput:\
+  \ 9\nExplanation:\n\nRemove [2, 3] from conflictingPairs. Now, conflictingPairs = [[1, 4]].\nThere are\
+  \ 9 subarrays in nums where [1, 4] do not appear together. They are [1], [2], [3], [4], [1, 2], [2,\
+  \ 3], [3, 4], [1, 2, 3] and [2, 3, 4].\nThe maximum number of subarrays we can achieve after removing\
+  \ one element from conflictingPairs is 9.\n\n\nExample 2:\n\nInput: n = 5, conflictingPairs = [[1,2],[2,5],[3,5]]\n\
+  Output: 12\nExplanation:\n\nRemove [1, 2] from conflictingPairs. Now, conflictingPairs = [[2, 5], [3,\
+  \ 5]].\nThere are 12 subarrays in nums where [2, 5] and [3, 5] do not appear together.\nThe maximum\
+  \ number of subarrays we can achieve after removing one element from conflictingPairs is 12.\n\n\n \n\
+  Constraints:\n\n2 <= n <= 105\n1 <= conflictingPairs.length <= 2 * n\nconflictingPairs[i].length ==\
+  \ 2\n1 <= conflictingPairs[i][j] <= n\nconflictingPairs[i][0] != conflictingPairs[i][1]\n\nWrite the\
+  \ solution in Python as this class, with any imports it needs:\n\n```python\nclass Solution:\n    def\
+  \ maxSubarrays(self, n: int, conflictingPairs: List[List[int]]) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().maxSubarrays(n=7, conflictingPairs=[[1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 7]]) ==
+    8
+  - Solution().maxSubarrays(n=6, conflictingPairs=[[1, 3], [2, 4], [3, 5], [4, 6]]) == 12
+  - Solution().maxSubarrays(n=6, conflictingPairs=[[1, 3], [3, 5], [2, 4], [4, 6]]) == 12
+  - Solution().maxSubarrays(n=10, conflictingPairs=[[1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 7], [7,
+    8], [8, 9], [9, 10]]) == 11
+  - Solution().maxSubarrays(n=10, conflictingPairs=[[1, 10], [2, 9], [3, 8], [4, 7], [5, 6]]) == 39
+  - Solution().maxSubarrays(n=10, conflictingPairs=[[1, 5], [2, 6], [3, 7], [4, 8], [5, 9], [6, 10]])
+    == 35
+  - Solution().maxSubarrays(n=6, conflictingPairs=[[1, 2], [3, 4], [5, 6]]) == 12
+  - Solution().maxSubarrays(n=5, conflictingPairs=[[1, 2], [2, 5], [3, 5]]) == 12
+  - Solution().maxSubarrays(n=4, conflictingPairs=[[2, 3], [1, 4]]) == 9
+  - Solution().maxSubarrays(n=6, conflictingPairs=[[1, 2], [2, 3], [3, 4], [4, 5], [5, 6]]) == 7
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3480'
+  date: '2025-03-09'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

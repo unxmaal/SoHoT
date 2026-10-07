@@ -1,0 +1,42 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3039
+modality: code
+prompt: "You are given a string s.\nConsider performing the following operation until s becomes empty:\n\
+  \nFor every alphabet character from 'a' to 'z', remove the first occurrence of that character in s (if\
+  \ it exists).\n\nFor example, let initially s = \"aabcbbca\". We do the following operations:\n\nRemove\
+  \ the underlined characters s = \"aabcbbca\". The resulting string is s = \"abbca\".\nRemove the underlined\
+  \ characters s = \"abbca\". The resulting string is s = \"ba\".\nRemove the underlined characters s\
+  \ = \"ba\". The resulting string is s = \"\".\n\nReturn the value of the string s right before applying\
+  \ the last operation. In the example above, answer is \"ba\".\n \nExample 1:\n\nInput: s = \"aabcbbca\"\
+  \nOutput: \"ba\"\nExplanation: Explained in the statement.\n\nExample 2:\n\nInput: s = \"abcd\"\nOutput:\
+  \ \"abcd\"\nExplanation: We do the following operation:\n- Remove the underlined characters s = \"abcd\"\
+  . The resulting string is s = \"\".\nThe string just before the last operation is \"abcd\".\n\n \nConstraints:\n\
+  \n1 <= s.length <= 5 * 105\ns consists only of lowercase English letters.\n\nWrite the solution in Python\
+  \ as this class, with any imports it needs:\n\n```python\nclass Solution:\n    def lastNonEmptyString(self,\
+  \ s: str) -> str:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().lastNonEmptyString(s='zzzzzzzzzz') == 'z'
+  - Solution().lastNonEmptyString(s='aabbccddeeaabbccddeeaabbccddeeaabbccddeeaabbccddeeaabbccddeeaabbccddeeaabbccddeeaabbccddeeaabbccddeeaabbccdd')
+    == 'abcd'
+  - Solution().lastNonEmptyString(s='abcabcabcabcabcabcabcabcabcabc') == 'abc'
+  - Solution().lastNonEmptyString(s='ababababababababababababababababababababababababab') == 'ab'
+  - Solution().lastNonEmptyString(s='abcdefghijklmnopqrstuvwxyz') == 'abcdefghijklmnopqrstuvwxyz'
+  - Solution().lastNonEmptyString(s='aaabbbcccdddeeefffggghhhiiiijjjkkklllmmmnnnooopppqqqrrrssstttuuuvvvwwwxxxyyyyzzzz')
+    == 'iyz'
+  - Solution().lastNonEmptyString(s='aabbccddeeffgghhiijjkkllmmnnooppqqrrssttuuvvwwxxyyzz') == 'abcdefghijklmnopqrstuvwxyz'
+  - Solution().lastNonEmptyString(s='abcabcabcabcabc') == 'abc'
+  - Solution().lastNonEmptyString(s='aabcbbca') == 'ba'
+  - Solution().lastNonEmptyString(s='zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz') == 'z'
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3039'
+  date: '2024-02-11'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

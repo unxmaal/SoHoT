@@ -1,0 +1,37 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3210
+modality: code
+prompt: "You are given a string s and an integer k. Encrypt the string using the following algorithm:\n\
+  \nFor each character c in s, replace c with the kth character after c in the string (in a cyclic manner).\n\
+  \nReturn the encrypted string.\n \nExample 1:\n\nInput: s = \"dart\", k = 3\nOutput: \"tdar\"\nExplanation:\n\
+  \nFor i = 0, the 3rd character after 'd' is 't'.\nFor i = 1, the 3rd character after 'a' is 'd'.\nFor\
+  \ i = 2, the 3rd character after 'r' is 'a'.\nFor i = 3, the 3rd character after 't' is 'r'.\n\n\nExample\
+  \ 2:\n\nInput: s = \"aaa\", k = 1\nOutput: \"aaa\"\nExplanation:\nAs all the characters are the same,\
+  \ the encrypted string will also be the same.\n\n \nConstraints:\n\n1 <= s.length <= 100\n1 <= k <=\
+  \ 104\ns consists only of lowercase English letters.\n\nWrite the solution in Python as this class,\
+  \ with any imports it needs:\n\n```python\nclass Solution:\n    def getEncryptedString(self, s: str,\
+  \ k: int) -> str:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().getEncryptedString(s='hello', k=10) == 'hello'
+  - Solution().getEncryptedString(s='abc', k=2) == 'cab'
+  - Solution().getEncryptedString(s='hello', k=7) == 'llohe'
+  - Solution().getEncryptedString(s='abcdef', k=2) == 'cdefab'
+  - Solution().getEncryptedString(s='world', k=5) == 'world'
+  - Solution().getEncryptedString(s='dart', k=3) == 'tdar'
+  - Solution().getEncryptedString(s='aaa', k=1) == 'aaa'
+  - Solution().getEncryptedString(s='abcxyz', k=10) == 'yzabcx'
+  - Solution().getEncryptedString(s='xyz', k=5) == 'zxy'
+  - Solution().getEncryptedString(s='hello', k=2) == 'llohe'
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3210'
+  date: '2024-07-07'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

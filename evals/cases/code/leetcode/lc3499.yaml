@@ -1,0 +1,46 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3499
+modality: code
+prompt: "You are given a binary string s of length n, where:\n\n'1' represents an active section.\n'0'\
+  \ represents an inactive section.\n\nYou can perform at most one trade to maximize the number of active\
+  \ sections in s. In a trade, you:\n\nConvert a contiguous block of '1's that is surrounded by '0's to\
+  \ all '0's.\nAfterward, convert a contiguous block of '0's that is surrounded by '1's to all '1's.\n\
+  \nReturn the maximum number of active sections in s after making the optimal trade.\nNote: Treat s as\
+  \ if it is augmented with a '1' at both ends, forming t = '1' + s + '1'. The augmented '1's do not contribute\
+  \ to the final count.\n \nExample 1:\n\nInput: s = \"01\"\nOutput: 1\nExplanation:\nBecause there is\
+  \ no block of '1's surrounded by '0's, no valid trade is possible. The maximum number of active sections\
+  \ is 1.\n\nExample 2:\n\nInput: s = \"0100\"\nOutput: 4\nExplanation:\n\nString \"0100\" → Augmented\
+  \ to \"101001\".\nChoose \"0100\", convert \"101001\" → \"100001\" → \"111111\".\nThe final string without\
+  \ augmentation is \"1111\". The maximum number of active sections is 4.\n\n\nExample 3:\n\nInput: s\
+  \ = \"1000100\"\nOutput: 7\nExplanation:\n\nString \"1000100\" → Augmented to \"110001001\".\nChoose\
+  \ \"000100\", convert \"110001001\" → \"110000001\" → \"111111111\".\nThe final string without augmentation\
+  \ is \"1111111\". The maximum number of active sections is 7.\n\n\nExample 4:\n\nInput: s = \"01010\"\
+  \nOutput: 4\nExplanation:\n\nString \"01010\" → Augmented to \"1010101\".\nChoose \"010\", convert \"\
+  1010101\" → \"1000101\" → \"1111101\".\nThe final string without augmentation is \"11110\". The maximum\
+  \ number of active sections is 4.\n\n\n \nConstraints:\n\n1 <= n == s.length <= 105\ns[i] is either\
+  \ '0' or '1'\n\nWrite the solution in Python as this class, with any imports it needs:\n\n```python\n\
+  class Solution:\n    def maxActiveSectionsAfterTrade(self, s: str) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().maxActiveSectionsAfterTrade(s='01010') == 4
+  - Solution().maxActiveSectionsAfterTrade(s='1000100') == 7
+  - Solution().maxActiveSectionsAfterTrade(s='010101010') == 6
+  - Solution().maxActiveSectionsAfterTrade(s='1001001001') == 8
+  - Solution().maxActiveSectionsAfterTrade(s='11111') == 5
+  - Solution().maxActiveSectionsAfterTrade(s='0011001100') == 8
+  - Solution().maxActiveSectionsAfterTrade(s='1100110011') == 10
+  - Solution().maxActiveSectionsAfterTrade(s='000') == 0
+  - Solution().maxActiveSectionsAfterTrade(s='0101010101') == 7
+  - Solution().maxActiveSectionsAfterTrade(s='01') == 1
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3499'
+  date: '2025-03-23'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

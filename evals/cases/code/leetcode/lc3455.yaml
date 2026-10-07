@@ -1,0 +1,40 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3455
+modality: code
+prompt: "You are given a string s and a pattern string p, where p contains exactly two '*' characters.\n\
+  The '*' in p matches any sequence of zero or more characters.\nReturn the length of the shortest substring\
+  \ in s that matches p. If there is no such substring, return -1.\nNote: The empty substring is considered\
+  \ valid.\n \nExample 1:\n\nInput: s = \"abaacbaecebce\", p = \"ba*c*ce\"\nOutput: 8\nExplanation:\n\
+  The shortest matching substring of p in s is \"baecebce\".\n\nExample 2:\n\nInput: s = \"baccbaadbc\"\
+  , p = \"cc*baa*adb\"\nOutput: -1\nExplanation:\nThere is no matching substring in s.\n\nExample 3:\n\
+  \nInput: s = \"a\", p = \"**\"\nOutput: 0\nExplanation:\nThe empty substring is the shortest matching\
+  \ substring.\n\nExample 4:\n\nInput: s = \"madlogic\", p = \"*adlogi*\"\nOutput: 6\nExplanation:\nThe\
+  \ shortest matching substring of p in s is \"adlogi\".\n\n \nConstraints:\n\n1 <= s.length <= 105\n\
+  2 <= p.length <= 105\ns contains only lowercase English letters.\np contains only lowercase English\
+  \ letters and exactly two '*'.\n\nWrite the solution in Python as this class, with any imports it needs:\n\
+  \n```python\nclass Solution:\n    def shortestMatchingSubstring(self, s: str, p: str) -> int:\n```\n\
+  \nReturn only the code."
+assert:
+  checks:
+  - Solution().shortestMatchingSubstring(s='abcdefg', p='*bcd*fg') == 6
+  - Solution().shortestMatchingSubstring(s='abcabcabc', p='*bc*bc') == 5
+  - Solution().shortestMatchingSubstring(s='mississippi', p='mis*si*') == 5
+  - Solution().shortestMatchingSubstring(s='baccbaadbc', p='cc*baa*adb') == -1
+  - Solution().shortestMatchingSubstring(s='aaaaa', p='*aaa*') == 3
+  - Solution().shortestMatchingSubstring(s='xyz', p='*x*z') == -1
+  - Solution().shortestMatchingSubstring(s='xyxyxyxy', p='xy*xy*') == 4
+  - Solution().shortestMatchingSubstring(s='abaacbaecebce', p='ba*c*ce') == 8
+  - Solution().shortestMatchingSubstring(s='aaaaaa', p='a*a*a') == 3
+  - Solution().shortestMatchingSubstring(s='hellothere', p='he*lo*re') == 10
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3455'
+  date: '2025-02-09'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

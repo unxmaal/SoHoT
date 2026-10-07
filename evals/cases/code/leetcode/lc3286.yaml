@@ -1,0 +1,48 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3286
+modality: code
+prompt: "You are given an m x n binary matrix grid and an integer health.\nYou start on the upper-left\
+  \ corner (0, 0) and would like to get to the lower-right corner (m - 1, n - 1).\nYou can move up, down,\
+  \ left, or right from one cell to another adjacent cell as long as your health remains positive.\nCells\
+  \ (i, j) with grid[i][j] = 1 are considered unsafe and reduce your health by 1.\nReturn true if you\
+  \ can reach the final cell with a health value of 1 or more, and false otherwise.\n \nExample 1:\n\n\
+  Input: grid = [[0,1,0,0,0],[0,1,0,1,0],[0,0,0,1,0]], health = 1\nOutput: true\nExplanation:\nThe final\
+  \ cell can be reached safely by walking along the gray cells below.\n\nExample 2:\n\nInput: grid = [[0,1,1,0,0,0],[1,0,1,0,0,0],[0,1,1,1,0,1],[0,0,1,0,1,0]],\
+  \ health = 3\nOutput: false\nExplanation:\nA minimum of 4 health points is needed to reach the final\
+  \ cell safely.\n\nExample 3:\n\nInput: grid = [[1,1,1],[1,0,1],[1,1,1]], health = 5\nOutput: true\n\
+  Explanation:\nThe final cell can be reached safely by walking along the gray cells below.\n\nAny path\
+  \ that does not go through the cell (1, 1) is unsafe since your health will drop to 0 when reaching\
+  \ the final cell.\n\n \nConstraints:\n\nm == grid.length\nn == grid[i].length\n1 <= m, n <= 50\n2 <=\
+  \ m * n\n1 <= health <= m + n\ngrid[i][j] is either 0 or 1.\n\nWrite the solution in Python as this\
+  \ class, with any imports it needs:\n\n```python\nclass Solution:\n    def findSafeWalk(self, grid:\
+  \ List[List[int]], health: int) -> bool:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().findSafeWalk(grid=[[0, 1, 0, 0, 0], [0, 1, 0, 1, 0], [0, 0, 0, 1, 0]], health=1) == True
+  - Solution().findSafeWalk(grid=[[0, 0, 0], [0, 0, 0], [0, 0, 0]], health=1) == True
+  - Solution().findSafeWalk(grid=[[1, 1, 1], [1, 0, 1], [1, 1, 1]], health=5) == True
+  - Solution().findSafeWalk(grid=[[1, 1, 1], [1, 1, 1], [1, 1, 1]], health=8) == True
+  - Solution().findSafeWalk(grid=[[0, 1, 1, 0, 0, 0], [1, 0, 1, 0, 0, 0], [0, 1, 1, 1, 0, 1], [0, 0, 1,
+    0, 1, 0]], health=3) == False
+  - Solution().findSafeWalk(grid=[[1, 1], [1, 1]], health=10) == True
+  - Solution().findSafeWalk(grid=[[0, 1, 1, 0, 0, 0, 1, 0], [1, 0, 1, 0, 1, 0, 1, 0], [0, 1, 1, 0, 1,
+    0, 1, 0], [0, 1, 0, 0, 1, 0, 1, 0], [0, 1, 0, 1, 1, 0, 1, 0], [0, 0, 0, 0, 1, 0, 1, 0]], health=5)
+    == True
+  - Solution().findSafeWalk(grid=[[0, 0, 0, 0, 0], [0, 1, 1, 1, 0], [0, 1, 0, 1, 0], [0, 1, 1, 1, 0],
+    [0, 0, 0, 0, 0]], health=3) == True
+  - Solution().findSafeWalk(grid=[[1, 0, 1, 0, 1, 0, 1], [0, 1, 0, 1, 0, 1, 0], [1, 0, 1, 0, 1, 0, 1],
+    [0, 1, 0, 1, 0, 1, 0], [1, 0, 1, 0, 1, 0, 1]], health=8) == True
+  - Solution().findSafeWalk(grid=[[0, 0, 0, 0, 0, 1], [0, 1, 1, 1, 1, 0], [0, 1, 0, 0, 1, 0], [0, 1, 0,
+    1, 0, 0], [0, 1, 0, 0, 0, 0], [0, 0, 0, 1, 1, 0]], health=8) == True
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3286'
+  date: '2024-09-08'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

@@ -1,0 +1,37 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3174
+modality: code
+prompt: "You are given a string s.\nYour task is to remove all digits by doing this operation repeatedly:\n\
+  \nDelete the first digit and the closest non-digit character to its left.\n\nReturn the resulting string\
+  \ after removing all digits.\nNote that the operation cannot be performed on a digit that does not have\
+  \ any non-digit character to its left.\n \nExample 1:\n\nInput: s = \"abc\"\nOutput: \"abc\"\nExplanation:\n\
+  There is no digit in the string.\n\nExample 2:\n\nInput: s = \"cb34\"\nOutput: \"\"\nExplanation:\n\
+  First, we apply the operation on s[2], and s becomes \"c4\".\nThen we apply the operation on s[1], and\
+  \ s becomes \"\".\n\n \nConstraints:\n\n1 <= s.length <= 100\ns consists only of lowercase English letters\
+  \ and digits.\nThe input is generated such that it is possible to delete all digits.\n\nWrite the solution\
+  \ in Python as this class, with any imports it needs:\n\n```python\nclass Solution:\n    def clearDigits(self,\
+  \ s: str) -> str:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().clearDigits(s='abcdef') == 'abcdef'
+  - Solution().clearDigits(s='a1b2c3d4e5') == ''
+  - Solution().clearDigits(s='a1b2c3d4e5f6g7h8i9j0') == ''
+  - Solution().clearDigits(s='a1b2c3d4e5f6') == ''
+  - Solution().clearDigits(s='a1b2c3') == ''
+  - Solution().clearDigits(s='abcd1234') == ''
+  - Solution().clearDigits(s='abcd1') == 'abc'
+  - Solution().clearDigits(s='cb34') == ''
+  - Solution().clearDigits(s='a1b1c1') == ''
+  - Solution().clearDigits(s='a1b2c3d4') == ''
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3174'
+  date: '2024-06-02'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

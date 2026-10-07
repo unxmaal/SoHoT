@@ -1,0 +1,46 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3446
+modality: code
+prompt: "You are given an n x n square matrix of integers grid. Return the matrix such that:\n\nThe diagonals\
+  \ in the bottom-left triangle (including the middle diagonal) are sorted in non-increasing order.\n\
+  The diagonals in the top-right triangle are sorted in non-decreasing order.\n\n \nExample 1:\n\nInput:\
+  \ grid = [[1,7,3],[9,8,2],[4,5,6]]\nOutput: [[8,2,3],[9,6,7],[4,5,1]]\nExplanation:\n\nThe diagonals\
+  \ with a black arrow (bottom-left triangle) should be sorted in non-increasing order:\n\n[1, 8, 6] becomes\
+  \ [8, 6, 1].\n[9, 5] and [4] remain unchanged.\n\nThe diagonals with a blue arrow (top-right triangle)\
+  \ should be sorted in non-decreasing order:\n\n[7, 2] becomes [2, 7].\n[3] remains unchanged.\n\n\n\
+  Example 2:\n\nInput: grid = [[0,1],[1,2]]\nOutput: [[2,1],[1,0]]\nExplanation:\n\nThe diagonals with\
+  \ a black arrow must be non-increasing, so [0, 2] is changed to [2, 0]. The other diagonals are already\
+  \ in the correct order.\n\nExample 3:\n\nInput: grid = [[1]]\nOutput: [[1]]\nExplanation:\nDiagonals\
+  \ with exactly one element are already in order, so no changes are needed.\n\n \nConstraints:\n\ngrid.length\
+  \ == grid[i].length == n\n1 <= n <= 10\n-105 <= grid[i][j] <= 105\n\nWrite the solution in Python as\
+  \ this class, with any imports it needs:\n\n```python\nclass Solution:\n    def sortMatrix(self, grid:\
+  \ List[List[int]]) -> List[List[int]]:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().sortMatrix(grid=[[5, 2, 9], [8, 3, 6], [1, 4, 7]]) == [[7, 2, 9], [8, 5, 6], [1, 4, 3]]
+  - Solution().sortMatrix(grid=[[0, 1], [1, 2]]) == [[2, 1], [1, 0]]
+  - Solution().sortMatrix(grid=[[9, 8, 7], [6, 5, 4], [3, 2, 1]]) == [[9, 4, 7], [6, 5, 8], [3, 2, 1]]
+  - Solution().sortMatrix(grid=[[-10, -20, -30], [-40, -50, -60], [-70, -80, -90]]) == [[-10, -60, -30],
+    [-40, -50, -20], [-70, -80, -90]]
+  - Solution().sortMatrix(grid=[[10, -5, 3], [2, 8, 0], [-3, 4, 6]]) == [[10, -5, 3], [4, 8, 0], [-3,
+    2, 6]]
+  - Solution().sortMatrix(grid=[[1]]) == [[1]]
+  - Solution().sortMatrix(grid=[[1, 7, 3], [9, 8, 2], [4, 5, 6]]) == [[8, 2, 3], [9, 6, 7], [4, 5, 1]]
+  - Solution().sortMatrix(grid=[[9, 3, 5], [6, 2, 8], [7, 4, 1]]) == [[9, 3, 5], [6, 2, 8], [7, 4, 1]]
+  - Solution().sortMatrix(grid=[[5, 4, 3, 2, 1], [10, 9, 8, 7, 6], [15, 14, 13, 12, 11], [20, 19, 18,
+    17, 16], [25, 24, 23, 22, 21]]) == [[21, 4, 3, 2, 1], [22, 17, 8, 7, 6], [23, 18, 13, 12, 11], [24,
+    19, 14, 9, 16], [25, 20, 15, 10, 5]]
+  - Solution().sortMatrix(grid=[[-1, -2, -3], [-4, -5, -6], [-7, -8, -9]]) == [[-1, -6, -3], [-4, -5,
+    -2], [-7, -8, -9]]
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3446'
+  date: '2025-02-09'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

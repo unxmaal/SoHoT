@@ -1,0 +1,44 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3279
+modality: code
+prompt: "There are several pistons in an old car engine, and we want to calculate the maximum possible\
+  \ area under the pistons.\nYou are given:\n\nAn integer height, representing the maximum height a piston\
+  \ can reach.\nAn integer array positions, where positions[i] is the current position of piston i, which\
+  \ is equal to the current area under it.\nA string directions, where directions[i] is the current moving\
+  \ direction of piston i, 'U' for up, and 'D' for down.\n\nEach second:\n\nEvery piston moves in its\
+  \ current direction 1 unit. e.g., if the direction is up, positions[i] is incremented by 1.\nIf a piston\
+  \ has reached one of the ends, i.e., positions[i] == 0 or positions[i] == height, its direction will\
+  \ change.\n\nReturn the maximum possible area under all the pistons.\n \nExample 1:\n\nInput: height\
+  \ = 5, positions = [2,5], directions = \"UD\"\nOutput: 7\nExplanation:\nThe current position of the\
+  \ pistons has the maximum possible area under it.\n\nExample 2:\n\nInput: height = 6, positions = [0,0,6,3],\
+  \ directions = \"UUDU\"\nOutput: 15\nExplanation:\nAfter 3 seconds, the pistons will be in positions\
+  \ [3, 3, 3, 6], which has the maximum possible area under it.\n\n \nConstraints:\n\n1 <= height <= 106\n\
+  1 <= positions.length == directions.length <= 105\n0 <= positions[i] <= height\ndirections[i] is either\
+  \ 'U' or 'D'.\n\nWrite the solution in Python as this class, with any imports it needs:\n\n```python\n\
+  class Solution:\n    def maxArea(self, height: int, positions: List[int], directions: str) -> int:\n\
+  ```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().maxArea(height=10, positions=[0, 1, 5, 10], directions='UUDD') == 24
+  - Solution().maxArea(height=100000, positions=[0, 0, 0, 0, 0], directions='UUUUU') == 500000
+  - Solution().maxArea(height=20, positions=[10, 10, 10, 10, 10, 10, 10, 10, 10, 10], directions='UUUUUUUUUUUUUUUUUUUU')
+    == 200
+  - Solution().maxArea(height=100, positions=[0, 100, 50, 25, 75], directions='UDUDU') == 300
+  - Solution().maxArea(height=10, positions=[5, 5, 5, 5], directions='UUDD') == 20
+  - Solution().maxArea(height=5, positions=[2, 5], directions='UD') == 7
+  - Solution().maxArea(height=1000, positions=[500, 500, 500, 500], directions='UUUU') == 4000
+  - Solution().maxArea(height=1, positions=[0, 1], directions='UD') == 1
+  - Solution().maxArea(height=100, positions=[50, 50, 50, 50, 50], directions='UUUUU') == 500
+  - Solution().maxArea(height=6, positions=[0, 0, 6, 3], directions='UUDU') == 15
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3279'
+  date: '2024-09-01'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

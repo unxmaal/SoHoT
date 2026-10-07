@@ -1,0 +1,36 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3325
+modality: code
+prompt: "Given a string s and an integer k, return the total number of substrings of s where at least\
+  \ one character appears at least k times.\n \nExample 1:\n\nInput: s = \"abacb\", k = 2\nOutput: 4\n\
+  Explanation:\nThe valid substrings are:\n\n\"aba\" (character 'a' appears 2 times).\n\"abac\" (character\
+  \ 'a' appears 2 times).\n\"abacb\" (character 'a' appears 2 times).\n\"bacb\" (character 'b' appears\
+  \ 2 times).\n\n\nExample 2:\n\nInput: s = \"abcde\", k = 1\nOutput: 15\nExplanation:\nAll substrings\
+  \ are valid because every character appears at least once.\n\n \nConstraints:\n\n1 <= s.length <= 3000\n\
+  1 <= k <= s.length\ns consists only of lowercase English letters.\n\nWrite the solution in Python as\
+  \ this class, with any imports it needs:\n\n```python\nclass Solution:\n    def numberOfSubstrings(self,\
+  \ s: str, k: int) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().numberOfSubstrings(s='pqr', k=1) == 6
+  - Solution().numberOfSubstrings(s='aabbccc', k=3) == 5
+  - Solution().numberOfSubstrings(s='aaabb', k=3) == 3
+  - Solution().numberOfSubstrings(s='zzzzzz', k=4) == 6
+  - Solution().numberOfSubstrings(s='abcde', k=1) == 15
+  - Solution().numberOfSubstrings(s='abcdabc', k=2) == 6
+  - Solution().numberOfSubstrings(s='abcdabcd', k=1) == 36
+  - Solution().numberOfSubstrings(s='xyz', k=1) == 6
+  - Solution().numberOfSubstrings(s='abcdefg', k=2) == 0
+  - Solution().numberOfSubstrings(s='zzzz', k=2) == 6
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3325'
+  date: '2024-10-20'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

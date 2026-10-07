@@ -1,0 +1,48 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3014
+modality: code
+prompt: "You are given a string word containing distinct lowercase English letters.\nTelephone keypads\
+  \ have keys mapped with distinct collections of lowercase English letters, which can be used to form\
+  \ words by pushing them. For example, the key 2 is mapped with [\"a\",\"b\",\"c\"], we need to push\
+  \ the key one time to type \"a\", two times to type \"b\", and three times to type \"c\" .\nIt is allowed\
+  \ to remap the keys numbered 2 to 9 to distinct collections of letters. The keys can be remapped to\
+  \ any amount of letters, but each letter must be mapped to exactly one key. You need to find the minimum\
+  \ number of times the keys will be pushed to type the string word.\nReturn the minimum number of pushes\
+  \ needed to type word after remapping the keys.\nAn example mapping of letters to keys on a telephone\
+  \ keypad is given below. Note that 1, *, #, and 0 do not map to any letters.\n\n \nExample 1:\n\n\n\
+  Input: word = \"abcde\"\nOutput: 5\nExplanation: The remapped keypad given in the image provides the\
+  \ minimum cost.\n\"a\" -> one push on key 2\n\"b\" -> one push on key 3\n\"c\" -> one push on key 4\n\
+  \"d\" -> one push on key 5\n\"e\" -> one push on key 6\nTotal cost is 1 + 1 + 1 + 1 + 1 = 5.\nIt can\
+  \ be shown that no other mapping can provide a lower cost.\n\nExample 2:\n\n\nInput: word = \"xycdefghij\"\
+  \nOutput: 12\nExplanation: The remapped keypad given in the image provides the minimum cost.\n\"x\"\
+  \ -> one push on key 2\n\"y\" -> two pushes on key 2\n\"c\" -> one push on key 3\n\"d\" -> two pushes\
+  \ on key 3\n\"e\" -> one push on key 4\n\"f\" -> one push on key 5\n\"g\" -> one push on key 6\n\"h\"\
+  \ -> one push on key 7\n\"i\" -> one push on key 8\n\"j\" -> one push on key 9\nTotal cost is 1 + 2\
+  \ + 1 + 2 + 1 + 1 + 1 + 1 + 1 + 1 = 12.\nIt can be shown that no other mapping can provide a lower cost.\n\
+  \n \nConstraints:\n\n1 <= word.length <= 26\nword consists of lowercase English letters.\nAll letters\
+  \ in word are distinct.\n\nWrite the solution in Python as this class, with any imports it needs:\n\n\
+  ```python\nclass Solution:\n    def minimumPushes(self, word: str) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().minimumPushes(word='ghijkl') == 6
+  - Solution().minimumPushes(word='npqrstvwxy') == 12
+  - Solution().minimumPushes(word='abcdefghi') == 10
+  - Solution().minimumPushes(word='vwxyz') == 5
+  - Solution().minimumPushes(word='abcdefghijklmnopq') == 27
+  - Solution().minimumPushes(word='abcdefghijklmnopqrs') == 33
+  - Solution().minimumPushes(word='abcdefghijklmnopqrstu') == 39
+  - Solution().minimumPushes(word='pqrstu') == 6
+  - Solution().minimumPushes(word='abcdefghijkl') == 16
+  - Solution().minimumPushes(word='abcdefghijk') == 14
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3014'
+  date: '2024-01-21'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

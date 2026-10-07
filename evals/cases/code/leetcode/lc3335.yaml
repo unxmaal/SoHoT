@@ -1,0 +1,44 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3335
+modality: code
+prompt: "You are given a string s and an integer t, representing the number of transformations to perform.\
+  \ In one transformation, every character in s is replaced according to the following rules:\n\nIf the\
+  \ character is 'z', replace it with the string \"ab\".\nOtherwise, replace it with the next character\
+  \ in the alphabet. For example, 'a' is replaced with 'b', 'b' is replaced with 'c', and so on.\n\nReturn\
+  \ the length of the resulting string after exactly t transformations.\nSince the answer may be very\
+  \ large, return it modulo 109 + 7.\n \nExample 1:\n\nInput: s = \"abcyy\", t = 2\nOutput: 7\nExplanation:\n\
+  \nFirst Transformation (t = 1):\n\n\t\n'a' becomes 'b'\n'b' becomes 'c'\n'c' becomes 'd'\n'y' becomes\
+  \ 'z'\n'y' becomes 'z'\nString after the first transformation: \"bcdzz\"\n\n\nSecond Transformation\
+  \ (t = 2):\n\t\n'b' becomes 'c'\n'c' becomes 'd'\n'd' becomes 'e'\n'z' becomes \"ab\"\n'z' becomes \"\
+  ab\"\nString after the second transformation: \"cdeabab\"\n\n\nFinal Length of the string: The string\
+  \ is \"cdeabab\", which has 7 characters.\n\n\nExample 2:\n\nInput: s = \"azbk\", t = 1\nOutput: 5\n\
+  Explanation:\n\nFirst Transformation (t = 1):\n\n\t\n'a' becomes 'b'\n'z' becomes \"ab\"\n'b' becomes\
+  \ 'c'\n'k' becomes 'l'\nString after the first transformation: \"babcl\"\n\n\nFinal Length of the string:\
+  \ The string is \"babcl\", which has 5 characters.\n\n\n \nConstraints:\n\n1 <= s.length <= 105\ns consists\
+  \ only of lowercase English letters.\n1 <= t <= 105\n\nWrite the solution in Python as this class, with\
+  \ any imports it needs:\n\n```python\nclass Solution:\n    def lengthAfterTransformations(self, s: str,\
+  \ t: int) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().lengthAfterTransformations(s='abcd', t=5) == 4
+  - Solution().lengthAfterTransformations(s='abcdefghijklmnopqrstuvwxyz', t=5) == 31
+  - Solution().lengthAfterTransformations(s='azbk', t=1) == 5
+  - Solution().lengthAfterTransformations(s='abcdef', t=5) == 6
+  - Solution().lengthAfterTransformations(s='abcdefg', t=5) == 7
+  - Solution().lengthAfterTransformations(s='abcyy', t=2) == 7
+  - Solution().lengthAfterTransformations(s='a', t=100000) == 413966020
+  - Solution().lengthAfterTransformations(s='zzzz', t=3) == 8
+  - Solution().lengthAfterTransformations(s='zzz', t=3) == 6
+  - Solution().lengthAfterTransformations(s='yzxyzz', t=5) == 12
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3335'
+  date: '2024-10-27'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

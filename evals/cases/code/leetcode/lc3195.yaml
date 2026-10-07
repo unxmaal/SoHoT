@@ -1,0 +1,37 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3195
+modality: code
+prompt: "You are given a 2D binary array grid. Find a rectangle with horizontal and vertical sides with\
+  \ the smallest area, such that all the 1's in grid lie inside this rectangle.\nReturn the minimum possible\
+  \ area of the rectangle.\n \nExample 1:\n\nInput: grid = [[0,1,0],[1,0,1]]\nOutput: 6\nExplanation:\n\
+  \nThe smallest rectangle has a height of 2 and a width of 3, so it has an area of 2 * 3 = 6.\n\nExample\
+  \ 2:\n\nInput: grid = [[1,0],[0,0]]\nOutput: 1\nExplanation:\n\nThe smallest rectangle has both height\
+  \ and width 1, so its area is 1 * 1 = 1.\n\n \nConstraints:\n\n1 <= grid.length, grid[i].length <= 1000\n\
+  grid[i][j] is either 0 or 1.\nThe input is generated such that there is at least one 1 in grid.\n\n\
+  Write the solution in Python as this class, with any imports it needs:\n\n```python\nclass Solution:\n\
+  \    def minimumArea(self, grid: List[List[int]]) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().minimumArea(grid=[[0, 0, 0], [0, 1, 0], [0, 0, 0]]) == 1
+  - Solution().minimumArea(grid=[[0, 0, 0], [0, 0, 0], [1, 0, 0]]) == 1
+  - Solution().minimumArea(grid=[[1, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 1]])
+    == 20
+  - Solution().minimumArea(grid=[[0, 0, 0, 1], [0, 1, 0, 0], [1, 0, 0, 0]]) == 12
+  - Solution().minimumArea(grid=[[1, 0], [0, 0]]) == 1
+  - Solution().minimumArea(grid=[[1, 1, 1], [1, 1, 1], [1, 1, 1]]) == 9
+  - Solution().minimumArea(grid=[[1, 0, 1, 0, 1]]) == 5
+  - Solution().minimumArea(grid=[[1], [0], [1], [0], [1]]) == 5
+  - Solution().minimumArea(grid=[[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]]) == 16
+  - Solution().minimumArea(grid=[[0, 1, 0, 1], [1, 1, 1, 1], [0, 1, 0, 1]]) == 12
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3195'
+  date: '2024-06-23'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

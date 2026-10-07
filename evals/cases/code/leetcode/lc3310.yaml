@@ -1,0 +1,50 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3310
+modality: code
+prompt: "You are maintaining a project that has n methods numbered from 0 to n - 1.\nYou are given two\
+  \ integers n and k, and a 2D integer array invocations, where invocations[i] = [ai, bi] indicates that\
+  \ method ai invokes method bi.\nThere is a known bug in method k. Method k, along with any method invoked\
+  \ by it, either directly or indirectly, are considered suspicious and we aim to remove them.\nA group\
+  \ of methods can only be removed if no method outside the group invokes any methods within it.\nReturn\
+  \ an array containing all the remaining methods after removing all the suspicious methods. You may return\
+  \ the answer in any order. If it is not possible to remove all the suspicious methods, none should be\
+  \ removed.\n \nExample 1:\n\nInput: n = 4, k = 1, invocations = [[1,2],[0,1],[3,2]]\nOutput: [0,1,2,3]\n\
+  Explanation:\n\nMethod 2 and method 1 are suspicious, but they are directly invoked by methods 3 and\
+  \ 0, which are not suspicious. We return all elements without removing anything.\n\nExample 2:\n\nInput:\
+  \ n = 5, k = 0, invocations = [[1,2],[0,2],[0,1],[3,4]]\nOutput: [3,4]\nExplanation:\n\nMethods 0, 1,\
+  \ and 2 are suspicious and they are not directly invoked by any other method. We can remove them.\n\n\
+  Example 3:\n\nInput: n = 3, k = 2, invocations = [[1,2],[0,1],[2,0]]\nOutput: []\nExplanation:\n\nAll\
+  \ methods are suspicious. We can remove them.\n\n \nConstraints:\n\n1 <= n <= 105\n0 <= k <= n - 1\n\
+  0 <= invocations.length <= 2 * 105\ninvocations[i] == [ai, bi]\n0 <= ai, bi <= n - 1\nai != bi\ninvocations[i]\
+  \ != invocations[j]\n\nWrite the solution in Python as this class, with any imports it needs:\n\n```python\n\
+  class Solution:\n    def remainingMethods(self, n: int, k: int, invocations: List[List[int]]) -> List[int]:\n\
+  ```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().remainingMethods(n=1, k=0, invocations=[]) == []
+  - Solution().remainingMethods(n=6, k=2, invocations=[[0, 1], [1, 2], [2, 3], [3, 4], [4, 5]]) == [0,
+    1, 2, 3, 4, 5]
+  - Solution().remainingMethods(n=4, k=1, invocations=[[1, 2], [0, 1], [3, 2]]) == [0, 1, 2, 3]
+  - Solution().remainingMethods(n=3, k=2, invocations=[[1, 2], [0, 1], [2, 0]]) == []
+  - Solution().remainingMethods(n=5, k=0, invocations=[[1, 2], [0, 2], [0, 1], [3, 4]]) == [3, 4]
+  - Solution().remainingMethods(n=6, k=2, invocations=[[0, 2], [1, 2], [3, 4], [4, 5]]) == [0, 1, 2, 3,
+    4, 5]
+  - Solution().remainingMethods(n=3, k=0, invocations=[]) == [1, 2]
+  - Solution().remainingMethods(n=2, k=0, invocations=[[0, 1]]) == []
+  - Solution().remainingMethods(n=7, k=3, invocations=[[0, 1], [0, 2], [1, 3], [2, 4], [3, 5], [4, 6]])
+    == [0, 1, 2, 3, 4, 5, 6]
+  - Solution().remainingMethods(n=12, k=6, invocations=[[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6],
+    [6, 7], [7, 8], [8, 9], [9, 10], [10, 11], [0, 6], [1, 7], [2, 8], [3, 9], [4, 10], [5, 11]]) == [0,
+    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3310'
+  date: '2024-10-06'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

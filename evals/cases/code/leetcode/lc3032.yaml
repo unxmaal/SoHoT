@@ -1,0 +1,35 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3032
+modality: code
+prompt: "Given two positive integers a and b, return the count of numbers having unique digits in the\
+  \ range [a, b] (inclusive).\n \nExample 1:\n\nInput: a = 1, b = 20\nOutput: 19\nExplanation: All the\
+  \ numbers in the range [1, 20] have unique digits except 11. Hence, the answer is 19.\n\nExample 2:\n\
+  \nInput: a = 9, b = 19\nOutput: 10\nExplanation: All the numbers in the range [9, 19] have unique digits\
+  \ except 11. Hence, the answer is 10. \n\nExample 3:\n\nInput: a = 80, b = 120\nOutput: 27\nExplanation:\
+  \ There are 41 numbers in the range [80, 120], 27 of which have unique digits.\n\n \nConstraints:\n\n\
+  1 <= a <= b <= 1000\n\nWrite the solution in Python as this class, with any imports it needs:\n\n```python\n\
+  class Solution:\n    def numberCount(self, a: int, b: int) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().numberCount(a=789, b=890) == 74
+  - Solution().numberCount(a=300, b=400) == 72
+  - Solution().numberCount(a=100, b=150) == 33
+  - Solution().numberCount(a=100, b=200) == 72
+  - Solution().numberCount(a=50, b=59) == 9
+  - Solution().numberCount(a=9, b=19) == 10
+  - Solution().numberCount(a=750, b=780) == 17
+  - Solution().numberCount(a=1, b=20) == 19
+  - Solution().numberCount(a=333, b=444) == 80
+  - Solution().numberCount(a=100, b=300) == 144
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3032'
+  date: '2024-02-04'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

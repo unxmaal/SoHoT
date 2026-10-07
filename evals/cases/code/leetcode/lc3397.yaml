@@ -1,0 +1,36 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3397
+modality: code
+prompt: "You are given an integer array nums and an integer k.\nYou are allowed to perform the following\
+  \ operation on each element of the array at most once:\n\nAdd an integer in the range [-k, k] to the\
+  \ element.\n\nReturn the maximum possible number of distinct elements in nums after performing the operations.\n\
+   \nExample 1:\n\nInput: nums = [1,2,2,3,3,4], k = 2\nOutput: 6\nExplanation:\nnums changes to [-1, 0,\
+  \ 1, 2, 3, 4] after performing operations on the first four elements.\n\nExample 2:\n\nInput: nums =\
+  \ [4,4,4,4], k = 1\nOutput: 3\nExplanation:\nBy adding -1 to nums[0] and 1 to nums[1], nums changes\
+  \ to [3, 5, 4, 4].\n\n \nConstraints:\n\n1 <= nums.length <= 105\n1 <= nums[i] <= 109\n0 <= k <= 109\n\
+  \nWrite the solution in Python as this class, with any imports it needs:\n\n```python\nclass Solution:\n\
+  \    def maxDistinctElements(self, nums: List[int], k: int) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().maxDistinctElements(nums=[1, 1000000000, 1, 1000000000], k=1000000000) == 4
+  - Solution().maxDistinctElements(nums=[1, 2, 3, 4, 5], k=3) == 5
+  - Solution().maxDistinctElements(nums=[10, 10, 10, 10, 10], k=5) == 5
+  - Solution().maxDistinctElements(nums=[1, 1, 1, 1, 1], k=0) == 1
+  - Solution().maxDistinctElements(nums=[4, 4, 4, 4], k=1) == 3
+  - Solution().maxDistinctElements(nums=[1, 1, 1, 1, 1], k=2) == 5
+  - Solution().maxDistinctElements(nums=[10, 20, 30, 40, 50], k=5) == 5
+  - Solution().maxDistinctElements(nums=[5, 5, 5, 5, 5, 5, 5, 5, 5, 5], k=2) == 5
+  - Solution().maxDistinctElements(nums=[1, 2, 3, 4, 5], k=0) == 5
+  - Solution().maxDistinctElements(nums=[1, 1, 1, 1, 1, 1, 1, 1, 1, 1], k=1) == 3
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3397'
+  date: '2024-12-22'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

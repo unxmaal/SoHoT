@@ -1,0 +1,42 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3147
+modality: code
+prompt: "In a mystic dungeon, n magicians are standing in a line. Each magician has an attribute that\
+  \ gives you energy. Some magicians can give you negative energy, which means taking energy from you.\n\
+  You have been cursed in such a way that after absorbing energy from magician i, you will be instantly\
+  \ transported to magician (i + k). This process will be repeated until you reach the magician where\
+  \ (i + k) does not exist.\nIn other words, you will choose a starting point and then teleport with k\
+  \ jumps until you reach the end of the magicians' sequence, absorbing all the energy during the journey.\n\
+  You are given an array energy and an integer k. Return the maximum possible energy you can gain.\nNote\
+  \ that when you are reach a magician, you must take energy from them, whether it is negative or positive\
+  \ energy.\n \nExample 1:\n\nInput:  energy = [5,2,-10,-5,1], k = 3\nOutput: 3\nExplanation: We can gain\
+  \ a total energy of 3 by starting from magician 1 absorbing 2 + 1 = 3.\n\nExample 2:\n\nInput: energy\
+  \ = [-2,-3,-1], k = 2\nOutput: -1\nExplanation: We can gain a total energy of -1 by starting from magician\
+  \ 2.\n\n \nConstraints:\n\n1 <= energy.length <= 105\n-1000 <= energy[i] <= 1000\n1 <= k <= energy.length\
+  \ - 1\n\n \n​​​​​​\n\nWrite the solution in Python as this class, with any imports it needs:\n\n```python\n\
+  class Solution:\n    def maximumEnergy(self, energy: List[int], k: int) -> int:\n```\n\nReturn only\
+  \ the code."
+assert:
+  checks:
+  - Solution().maximumEnergy(energy=[100, -100, 100, -100, 100, 100], k=2) == 300
+  - Solution().maximumEnergy(energy=[-1, -2, -3, -4, -5], k=3) == -3
+  - Solution().maximumEnergy(energy=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10], k=2) == 30
+  - Solution().maximumEnergy(energy=[1, 2, 3, 4, 5], k=1) == 15
+  - Solution().maximumEnergy(energy=[100, -100, 100, -100, 100], k=1) == 100
+  - Solution().maximumEnergy(energy=[1, 2, 3, 4, 5, 6], k=2) == 12
+  - Solution().maximumEnergy(energy=[-1, -2, -3, -4, -5], k=2) == -4
+  - Solution().maximumEnergy(energy=[-1, -2, -3, -4, -5, -6, -7, -8, -9, -10], k=4) == -7
+  - Solution().maximumEnergy(energy=[-2, -3, -1], k=2) == -1
+  - Solution().maximumEnergy(energy=[100, -100, 50, -50, 25, -25, 10, -10, 5, -5], k=2) == 190
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3147'
+  date: '2024-05-12'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

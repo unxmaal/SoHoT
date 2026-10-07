@@ -1,0 +1,41 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3292
+modality: code
+prompt: "You are given an array of strings words and a string target.\nA string x is called valid if x\
+  \ is a prefix of any string in words.\nReturn the minimum number of valid strings that can be concatenated\
+  \ to form target. If it is not possible to form target, return -1.\n \nExample 1:\n\nInput: words =\
+  \ [\"abc\",\"aaaaa\",\"bcdef\"], target = \"aabcdabc\"\nOutput: 3\nExplanation:\nThe target string can\
+  \ be formed by concatenating:\n\nPrefix of length 2 of words[1], i.e. \"aa\".\nPrefix of length 3 of\
+  \ words[2], i.e. \"bcd\".\nPrefix of length 3 of words[0], i.e. \"abc\".\n\n\nExample 2:\n\nInput: words\
+  \ = [\"abababab\",\"ab\"], target = \"ababaababa\"\nOutput: 2\nExplanation:\nThe target string can be\
+  \ formed by concatenating:\n\nPrefix of length 5 of words[0], i.e. \"ababa\".\nPrefix of length 5 of\
+  \ words[0], i.e. \"ababa\".\n\n\nExample 3:\n\nInput: words = [\"abcdef\"], target = \"xyz\"\nOutput:\
+  \ -1\n\n \nConstraints:\n\n1 <= words.length <= 100\n1 <= words[i].length <= 5 * 104\nThe input is generated\
+  \ such that sum(words[i].length) <= 105.\nwords[i] consists only of lowercase English letters.\n1 <=\
+  \ target.length <= 5 * 104\ntarget consists only of lowercase English letters.\n\nWrite the solution\
+  \ in Python as this class, with any imports it needs:\n\n```python\nclass Solution:\n    def minValidStrings(self,\
+  \ words: List[str], target: str) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().minValidStrings(words=['abc'], target='abcabc') == 2
+  - Solution().minValidStrings(words=['a'], target='a') == 1
+  - Solution().minValidStrings(words=['a', 'aa', 'aaa'], target='aaaaaaaa') == 3
+  - Solution().minValidStrings(words=['xyz'], target='xyz') == 1
+  - Solution().minValidStrings(words=['a', 'aa', 'aaa'], target='aaaaaaaaa') == 3
+  - Solution().minValidStrings(words=['a'], target='aaaaaaaaaa') == 10
+  - Solution().minValidStrings(words=['abababab', 'ab'], target='ababaababa') == 2
+  - Solution().minValidStrings(words=['abcde'], target='abcde') == 1
+  - Solution().minValidStrings(words=['abc', 'aaaaa', 'bcdef'], target='aabcdabc') == 3
+  - Solution().minValidStrings(words=['hello', 'world'], target='hello') == 1
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3292'
+  date: '2024-09-15'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

@@ -1,0 +1,36 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3392
+modality: code
+prompt: "Given an integer array nums, return the number of subarrays of length 3 such that the sum of\
+  \ the first and third numbers equals exactly half of the second number.\n \nExample 1:\n\nInput: nums\
+  \ = [1,2,1,4,1]\nOutput: 1\nExplanation:\nOnly the subarray [1,4,1] contains exactly 3 elements where\
+  \ the sum of the first and third numbers equals half the middle number.\n\nExample 2:\n\nInput: nums\
+  \ = [1,1,1]\nOutput: 0\nExplanation:\n[1,1,1] is the only subarray of length 3. However, its first and\
+  \ third numbers do not add to half the middle number.\n\n \nConstraints:\n\n3 <= nums.length <= 100\n\
+  -100 <= nums[i] <= 100\n\nWrite the solution in Python as this class, with any imports it needs:\n\n\
+  ```python\nclass Solution:\n    def countSubarrays(self, nums: List[int]) -> int:\n```\n\nReturn only\
+  \ the code."
+assert:
+  checks:
+  - Solution().countSubarrays(nums=[5, 10, 5, 15, 5]) == 0
+  - Solution().countSubarrays(nums=[1, 1, 1]) == 0
+  - Solution().countSubarrays(nums=[1, -1, 1, -1, 1]) == 0
+  - Solution().countSubarrays(nums=[100, -50, -50, 100, 100, -100, -100, 100]) == 1
+  - Solution().countSubarrays(nums=[33, 66, 33, 99, 33]) == 0
+  - Solution().countSubarrays(nums=[100, -50, 50]) == 0
+  - Solution().countSubarrays(nums=[3, 6, 3, 1, 2, 3, 6, 3]) == 0
+  - Solution().countSubarrays(nums=[1, 2, 1, 4, 1]) == 1
+  - Solution().countSubarrays(nums=[-2, 4, -2, 8, -2]) == 0
+  - Solution().countSubarrays(nums=[-1, 2, -1, 4, -1]) == 0
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3392'
+  date: '2024-12-15'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

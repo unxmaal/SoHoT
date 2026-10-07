@@ -1,0 +1,40 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3091
+modality: code
+prompt: "You are given a positive integer k. Initially, you have an array nums = [1].\nYou can perform\
+  \ any of the following operations on the array any number of times (possibly zero):\n\nChoose any element\
+  \ in the array and increase its value by 1.\nDuplicate any element in the array and add it to the end\
+  \ of the array.\n\nReturn the minimum number of operations required to make the sum of elements of the\
+  \ final array greater than or equal to k.\n \nExample 1:\n\nInput: k = 11\nOutput: 5\nExplanation:\n\
+  We can do the following operations on the array nums = [1]:\n\nIncrease the element by 1 three times.\
+  \ The resulting array is nums = [4].\nDuplicate the element two times. The resulting array is nums =\
+  \ [4,4,4].\n\nThe sum of the final array is 4 + 4 + 4 = 12 which is greater than or equal to k = 11.\n\
+  The total number of operations performed is 3 + 2 = 5.\n\nExample 2:\n\nInput: k = 1\nOutput: 0\nExplanation:\n\
+  The sum of the original array is already greater than or equal to 1, so no operations are needed.\n\n\
+   \nConstraints:\n\n1 <= k <= 105\n\nWrite the solution in Python as this class, with any imports it\
+  \ needs:\n\n```python\nclass Solution:\n    def minOperations(self, k: int) -> int:\n```\n\nReturn only\
+  \ the code."
+assert:
+  checks:
+  - Solution().minOperations(k=100) == 18
+  - Solution().minOperations(k=20) == 7
+  - Solution().minOperations(k=1) == 0
+  - Solution().minOperations(k=15) == 6
+  - Solution().minOperations(k=11) == 5
+  - Solution().minOperations(k=3) == 2
+  - Solution().minOperations(k=100000) == 631
+  - Solution().minOperations(k=5) == 3
+  - Solution().minOperations(k=10) == 5
+  - Solution().minOperations(k=29) == 9
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3091'
+  date: '2024-03-24'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

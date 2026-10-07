@@ -1,0 +1,47 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3302
+modality: code
+prompt: "You are given two strings word1 and word2.\nA string x is called almost equal to y if you can\
+  \ change at most one character in x to make it identical to y.\nA sequence of indices seq is called\
+  \ valid if:\n\nThe indices are sorted in ascending order.\nConcatenating the characters at these indices\
+  \ in word1 in the same order results in a string that is almost equal to word2.\n\nReturn an array of\
+  \ size word2.length representing the lexicographically smallest valid sequence of indices. If no such\
+  \ sequence of indices exists, return an empty array.\nNote that the answer must represent the lexicographically\
+  \ smallest array, not the corresponding string formed by those indices.\n \nExample 1:\n\nInput: word1\
+  \ = \"vbcca\", word2 = \"abc\"\nOutput: [0,1,2]\nExplanation:\nThe lexicographically smallest valid\
+  \ sequence of indices is [0, 1, 2]:\n\nChange word1[0] to 'a'.\nword1[1] is already 'b'.\nword1[2] is\
+  \ already 'c'.\n\n\nExample 2:\n\nInput: word1 = \"bacdc\", word2 = \"abc\"\nOutput: [1,2,4]\nExplanation:\n\
+  The lexicographically smallest valid sequence of indices is [1, 2, 4]:\n\nword1[1] is already 'a'.\n\
+  Change word1[2] to 'b'.\nword1[4] is already 'c'.\n\n\nExample 3:\n\nInput: word1 = \"aaaaaa\", word2\
+  \ = \"aaabc\"\nOutput: []\nExplanation:\nThere is no valid sequence of indices.\n\nExample 4:\n\nInput:\
+  \ word1 = \"abc\", word2 = \"ab\"\nOutput: [0,1]\n\n \nConstraints:\n\n1 <= word2.length < word1.length\
+  \ <= 3 * 105\nword1 and word2 consist only of lowercase English letters.\n\nWrite the solution in Python\
+  \ as this class, with any imports it needs:\n\n```python\nclass Solution:\n    def validSequence(self,\
+  \ word1: str, word2: str) -> List[int]:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().validSequence(word1='hello', word2='heo') == [0, 1, 2]
+  - Solution().validSequence(word1='abcdefghijklmnopqrstuvwxyz', word2='abcdefghijklmnopqrstuvwxyz') ==
+    [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25]
+  - Solution().validSequence(word1='zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz', word2='abc')
+    == []
+  - Solution().validSequence(word1='abcde', word2='edcba') == []
+  - Solution().validSequence(word1='abcdefg', word2='bdf') == [0, 3, 5]
+  - Solution().validSequence(word1='mississippi', word2='issi') == [0, 2, 3, 4]
+  - Solution().validSequence(word1='vbcca', word2='abc') == [0, 1, 2]
+  - Solution().validSequence(word1='leetcode', word2='code') == [0, 5, 6, 7]
+  - Solution().validSequence(word1='bacdc', word2='abc') == [1, 2, 4]
+  - Solution().validSequence(word1='zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz', word2='aaa')
+    == []
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3302'
+  date: '2024-09-22'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

@@ -1,0 +1,38 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3200
+modality: code
+prompt: "You are given two integers red and blue representing the count of red and blue colored balls.\
+  \ You have to arrange these balls to form a triangle such that the 1st row will have 1 ball, the 2nd\
+  \ row will have 2 balls, the 3rd row will have 3 balls, and so on.\nAll the balls in a particular row\
+  \ should be the same color, and adjacent rows should have different colors.\nReturn the maximum height\
+  \ of the triangle that can be achieved.\n \nExample 1:\n\nInput: red = 2, blue = 4\nOutput: 3\nExplanation:\n\
+  \nThe only possible arrangement is shown above.\n\nExample 2:\n\nInput: red = 2, blue = 1\nOutput: 2\n\
+  Explanation:\n\nThe only possible arrangement is shown above.\n\nExample 3:\n\nInput: red = 1, blue\
+  \ = 1\nOutput: 1\n\nExample 4:\n\nInput: red = 10, blue = 1\nOutput: 2\nExplanation:\n\nThe only possible\
+  \ arrangement is shown above.\n\n \nConstraints:\n\n1 <= red, blue <= 100\n\nWrite the solution in Python\
+  \ as this class, with any imports it needs:\n\n```python\nclass Solution:\n    def maxHeightOfTriangle(self,\
+  \ red: int, blue: int) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().maxHeightOfTriangle(red=100, blue=1) == 2
+  - Solution().maxHeightOfTriangle(red=3, blue=7) == 3
+  - Solution().maxHeightOfTriangle(red=50, blue=50) == 13
+  - Solution().maxHeightOfTriangle(red=5, blue=5) == 3
+  - Solution().maxHeightOfTriangle(red=1, blue=1) == 1
+  - Solution().maxHeightOfTriangle(red=10, blue=1) == 2
+  - Solution().maxHeightOfTriangle(red=1, blue=100) == 2
+  - Solution().maxHeightOfTriangle(red=2, blue=1) == 2
+  - Solution().maxHeightOfTriangle(red=2, blue=4) == 3
+  - Solution().maxHeightOfTriangle(red=100, blue=100) == 19
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3200'
+  date: '2024-06-30'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

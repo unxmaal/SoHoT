@@ -1,0 +1,40 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3458
+modality: code
+prompt: "Given a string s of length n and an integer k, determine whether it is possible to select k disjoint\
+  \ special substrings.\nA special substring is a substring where:\n\nAny character present inside the\
+  \ substring should not appear outside it in the string.\nThe substring is not the entire string s.\n\
+  \nNote that all k substrings must be disjoint, meaning they cannot overlap.\nReturn true if it is possible\
+  \ to select k such disjoint special substrings; otherwise, return false.\n \nExample 1:\n\nInput: s\
+  \ = \"abcdbaefab\", k = 2\nOutput: true\nExplanation:\n\nWe can select two disjoint special substrings:\
+  \ \"cd\" and \"ef\".\n\"cd\" contains the characters 'c' and 'd', which do not appear elsewhere in s.\n\
+  \"ef\" contains the characters 'e' and 'f', which do not appear elsewhere in s.\n\n\nExample 2:\n\n\
+  Input: s = \"cdefdc\", k = 3\nOutput: false\nExplanation:\nThere can be at most 2 disjoint special substrings:\
+  \ \"e\" and \"f\". Since k = 3, the output is false.\n\nExample 3:\n\nInput: s = \"abeabe\", k = 0\n\
+  Output: true\n\n \nConstraints:\n\n2 <= n == s.length <= 5 * 104\n0 <= k <= 26\ns consists only of lowercase\
+  \ English letters.\n\nWrite the solution in Python as this class, with any imports it needs:\n\n```python\n\
+  class Solution:\n    def maxSubstringLength(self, s: str, k: int) -> bool:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().maxSubstringLength(s='single', k=0) == True
+  - Solution().maxSubstringLength(s='abeabe', k=0) == True
+  - Solution().maxSubstringLength(s='cdefdc', k=3) == False
+  - Solution().maxSubstringLength(s='abacabadabacaba', k=3) == False
+  - Solution().maxSubstringLength(s='aabbccddeeffgghhiijjkkllmmnnooppqqrrssttuuvvwwxxyyzz', k=2) == True
+  - Solution().maxSubstringLength(s='abcdbaefab', k=2) == True
+  - Solution().maxSubstringLength(s='unique', k=6) == False
+  - Solution().maxSubstringLength(s='xyzzxyzz', k=1) == False
+  - Solution().maxSubstringLength(s='abcdefghijklmnopqrstuvwxyz', k=26) == True
+  - Solution().maxSubstringLength(s='repeatedletters', k=3) == True
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3458'
+  date: '2025-02-16'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

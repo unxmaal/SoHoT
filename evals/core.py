@@ -794,12 +794,16 @@ def comparable(a: Receipt, b: Receipt) -> tuple[bool, str]:
     return True, "same exam"
 
 
+#: libyaml when the wheel has it: several hundred imported cases load per test run. #603.
+_LOADER = getattr(yaml, "CSafeLoader", yaml.SafeLoader)
+
+
 def load_cases(directory: str | Path) -> list[Case]:
     """Load every *.yaml under `directory`, sorted by id for stable runs."""
     directory = Path(directory)
     cases: list[Case] = []
     for path in sorted(directory.rglob("*.yaml")):
-        raw = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+        raw = yaml.load(path.read_text(encoding="utf-8"), Loader=_LOADER) or {}
         # Name the file in every error: a broken case in a 50-case run must not
         # fail anonymously.
         for required in ("id", "modality", "prompt"):

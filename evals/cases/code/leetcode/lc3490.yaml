@@ -1,0 +1,34 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3490
+modality: code
+prompt: "You are given two positive integers, l and r. A positive integer is called beautiful if the product\
+  \ of its digits is divisible by the sum of its digits.\nReturn the count of beautiful numbers between\
+  \ l and r, inclusive.\n \nExample 1:\n\nInput: l = 10, r = 20\nOutput: 2\nExplanation:\nThe beautiful\
+  \ numbers in the range are 10 and 20.\n\nExample 2:\n\nInput: l = 1, r = 15\nOutput: 10\nExplanation:\n\
+  The beautiful numbers in the range are 1, 2, 3, 4, 5, 6, 7, 8, 9, and 10.\n\n \nConstraints:\n\n1 <=\
+  \ l <= r < 109\n\nWrite the solution in Python as this class, with any imports it needs:\n\n```python\n\
+  class Solution:\n    def beautifulNumbers(self, l: int, r: int) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().beautifulNumbers(l=999, r=999) == 1
+  - Solution().beautifulNumbers(l=1, r=9) == 9
+  - Solution().beautifulNumbers(l=900, r=1000) == 35
+  - Solution().beautifulNumbers(l=789, r=890) == 35
+  - Solution().beautifulNumbers(l=500, r=5000) == 1800
+  - Solution().beautifulNumbers(l=5, r=50) == 13
+  - Solution().beautifulNumbers(l=100, r=200) == 32
+  - Solution().beautifulNumbers(l=50, r=100) == 9
+  - Solution().beautifulNumbers(l=10, r=20) == 2
+  - Solution().beautifulNumbers(l=999, r=1001) == 3
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3490'
+  date: '2025-03-16'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

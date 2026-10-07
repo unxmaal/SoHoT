@@ -1,0 +1,40 @@
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08.
+import random
+import functools
+import collections
+import string
+import math
+import datetime
+
+from typing import *
+from functools import *
+from collections import *
+from itertools import *
+from heapq import *
+from bisect import *
+from string import *
+from operator import *
+from math import *
+
+inf = float('inf')
+
+class Solution:
+    def numberOfPermutations(self, n: int, requirements: List[List[int]]) -> int:
+        req = [-1] * n
+        for end, cnt in requirements:
+            req[end] = cnt
+        if req[0] > 0:
+            return 0
+        req[0] = 0
+        mod = 10**9 + 7
+        m = max(req)
+        f = [[0] * (m + 1) for _ in range(n)]
+        f[0][0] = 1
+        for i in range(1, n):
+            l, r = 0, m
+            if req[i] >= 0:
+                l = r = req[i]
+            for j in range(l, r + 1):
+                for k in range(min(i, j) + 1):
+                    f[i][j] = (f[i][j] + f[i - 1][j - k]) % mod
+        return f[n - 1][req[n - 1]]

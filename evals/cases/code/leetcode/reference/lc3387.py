@@ -1,0 +1,49 @@
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08.
+import random
+import functools
+import collections
+import string
+import math
+import datetime
+
+from typing import *
+from functools import *
+from collections import *
+from itertools import *
+from heapq import *
+from bisect import *
+from string import *
+from operator import *
+from math import *
+
+inf = float('inf')
+
+class Solution:
+    def maxAmount(
+        self,
+        initialCurrency: str,
+        pairs1: List[List[str]],
+        rates1: List[float],
+        pairs2: List[List[str]],
+        rates2: List[float],
+    ) -> float:
+        d1 = self.build(pairs1, rates1, initialCurrency)
+        d2 = self.build(pairs2, rates2, initialCurrency)
+        return max(d1.get(a, 0) / r2 for a, r2 in d2.items())
+
+    def build(
+        self, pairs: List[List[str]], rates: List[float], init: str
+    ) -> Dict[str, float]:
+        def dfs(a: str, v: float):
+            d[a] = v
+            for b, r in g[a]:
+                if b not in d:
+                    dfs(b, v * r)
+
+        g = defaultdict(list)
+        for (a, b), r in zip(pairs, rates):
+            g[a].append((b, r))
+            g[b].append((a, 1 / r))
+        d = {}
+        dfs(init, 1)
+        return d

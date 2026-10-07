@@ -1,0 +1,40 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3132
+modality: code
+prompt: "You are given two integer arrays nums1 and nums2.\nFrom nums1 two elements have been removed,\
+  \ and all other elements have been increased (or decreased in the case of negative) by an integer, represented\
+  \ by the variable x.\nAs a result, nums1 becomes equal to nums2. Two arrays are considered equal when\
+  \ they contain the same integers with the same frequencies.\nReturn the minimum possible integer x that\
+  \ achieves this equivalence.\n \nExample 1:\n\nInput: nums1 = [4,20,16,12,8], nums2 = [14,18,10]\nOutput:\
+  \ -2\nExplanation:\nAfter removing elements at indices [0,4] and adding -2, nums1 becomes [18,14,10].\n\
+  \nExample 2:\n\nInput: nums1 = [3,5,5,3], nums2 = [7,7]\nOutput: 2\nExplanation:\nAfter removing elements\
+  \ at indices [0,3] and adding 2, nums1 becomes [7,7].\n\n \nConstraints:\n\n3 <= nums1.length <= 200\n\
+  nums2.length == nums1.length - 2\n0 <= nums1[i], nums2[i] <= 1000\nThe test cases are generated in a\
+  \ way that there is an integer x such that nums1 can become equal to nums2 by removing two elements\
+  \ and adding x to each element of nums1.\n\nWrite the solution in Python as this class, with any imports\
+  \ it needs:\n\n```python\nclass Solution:\n    def minimumAddedInteger(self, nums1: List[int], nums2:\
+  \ List[int]) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().minimumAddedInteger(nums1=[10, 20, 30, 40, 50], nums2=[20, 30, 40]) == -10
+  - Solution().minimumAddedInteger(nums1=[1, 1, 1, 1, 1, 1], nums2=[2, 2]) == 1
+  - Solution().minimumAddedInteger(nums1=[10, 20, 30, 40, 50], nums2=[12, 22, 32]) == -18
+  - Solution().minimumAddedInteger(nums1=[5, 5, 5, 5, 5], nums2=[7, 7]) == 2
+  - Solution().minimumAddedInteger(nums1=[10, 10, 20, 20, 30], nums2=[15, 25]) == 5
+  - Solution().minimumAddedInteger(nums1=[1, 2, 3, 4, 5, 6], nums2=[3, 4, 5]) == 0
+  - Solution().minimumAddedInteger(nums1=[4, 20, 16, 12, 8], nums2=[14, 18, 10]) == -2
+  - Solution().minimumAddedInteger(nums1=[8, 16, 24, 32, 40], nums2=[10, 18]) == -14
+  - Solution().minimumAddedInteger(nums1=[0, 0, 0, 0, 0], nums2=[1, 1]) == 1
+  - Solution().minimumAddedInteger(nums1=[5, 15, 25, 35, 45], nums2=[10, 20]) == -15
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3132'
+  date: '2024-04-28'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

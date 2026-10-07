@@ -1,0 +1,47 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3248
+modality: code
+prompt: "There is a snake in an n x n matrix grid and can move in four possible directions. Each cell\
+  \ in the grid is identified by the position: grid[i][j] = (i * n) + j.\nThe snake starts at cell 0 and\
+  \ follows a sequence of commands.\nYou are given an integer n representing the size of the grid and\
+  \ an array of strings commands where each command[i] is either \"UP\", \"RIGHT\", \"DOWN\", and \"LEFT\"\
+  . It's guaranteed that the snake will remain within the grid boundaries throughout its movement.\nReturn\
+  \ the position of the final cell where the snake ends up after executing commands.\n \nExample 1:\n\n\
+  Input: n = 2, commands = [\"RIGHT\",\"DOWN\"]\nOutput: 3\nExplanation:\n\n\n\n\n0\n1\n\n\n2\n3\n\n\n\
+  \n\n\n\n0\n1\n\n\n2\n3\n\n\n\n\n\n\n0\n1\n\n\n2\n3\n\n\n\n\n\nExample 2:\n\nInput: n = 3, commands =\
+  \ [\"DOWN\",\"RIGHT\",\"UP\"]\nOutput: 1\nExplanation:\n\n\n\n\n0\n1\n2\n\n\n3\n4\n5\n\n\n6\n7\n8\n\n\
+  \n\n\n\n\n0\n1\n2\n\n\n3\n4\n5\n\n\n6\n7\n8\n\n\n\n\n\n\n0\n1\n2\n\n\n3\n4\n5\n\n\n6\n7\n8\n\n\n\n\n\
+  \n\n0\n1\n2\n\n\n3\n4\n5\n\n\n6\n7\n8\n\n\n\n\n\n \nConstraints:\n\n2 <= n <= 10\n1 <= commands.length\
+  \ <= 100\ncommands consists only of \"UP\", \"RIGHT\", \"DOWN\", and \"LEFT\".\nThe input is generated\
+  \ such the snake will not move outside of the boundaries.\n\nWrite the solution in Python as this class,\
+  \ with any imports it needs:\n\n```python\nclass Solution:\n    def finalPositionOfSnake(self, n: int,\
+  \ commands: List[str]) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().finalPositionOfSnake(n=2, commands=['RIGHT', 'DOWN']) == 3
+  - Solution().finalPositionOfSnake(n=5, commands=['RIGHT', 'DOWN', 'RIGHT', 'DOWN', 'RIGHT', 'DOWN'])
+    == 18
+  - Solution().finalPositionOfSnake(n=10, commands=['UP', 'LEFT', 'DOWN', 'RIGHT', 'UP', 'LEFT', 'DOWN',
+    'RIGHT']) == 0
+  - Solution().finalPositionOfSnake(n=2, commands=['RIGHT', 'DOWN']) == 3
+  - Solution().finalPositionOfSnake(n=4, commands=['RIGHT', 'RIGHT', 'DOWN', 'DOWN', 'LEFT', 'UP']) ==
+    5
+  - Solution().finalPositionOfSnake(n=3, commands=['DOWN', 'RIGHT', 'UP']) == 1
+  - Solution().finalPositionOfSnake(n=6, commands=['DOWN', 'DOWN', 'RIGHT', 'RIGHT', 'UP', 'UP', 'LEFT',
+    'LEFT']) == 0
+  - Solution().finalPositionOfSnake(n=10, commands=['RIGHT', 'DOWN', 'LEFT', 'UP', 'RIGHT', 'DOWN', 'LEFT',
+    'UP']) == 0
+  - Solution().finalPositionOfSnake(n=5, commands=['UP', 'LEFT', 'DOWN', 'RIGHT']) == 0
+  - Solution().finalPositionOfSnake(n=4, commands=['LEFT', 'DOWN', 'LEFT', 'UP']) == -2
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3248'
+  date: '2024-08-11'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

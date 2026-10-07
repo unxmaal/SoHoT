@@ -1,0 +1,37 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3411
+modality: code
+prompt: "You are given an array of positive integers nums.\nAn array arr is called product equivalent\
+  \ if prod(arr) == lcm(arr) * gcd(arr), where:\n\nprod(arr) is the product of all elements of arr.\n\
+  gcd(arr) is the GCD of all elements of arr.\nlcm(arr) is the LCM of all elements of arr.\n\nReturn the\
+  \ length of the longest product equivalent subarray of nums.\n \nExample 1:\n\nInput: nums = [1,2,1,2,1,1,1]\n\
+  Output: 5\nExplanation: \nThe longest product equivalent subarray is [1, 2, 1, 1, 1], where prod([1,\
+  \ 2, 1, 1, 1]) = 2, gcd([1, 2, 1, 1, 1]) = 1, and lcm([1, 2, 1, 1, 1]) = 2.\n\nExample 2:\n\nInput:\
+  \ nums = [2,3,4,5,6]\nOutput: 3\nExplanation: \nThe longest product equivalent subarray is [3, 4, 5].\n\
+  \nExample 3:\n\nInput: nums = [1,2,3,1,4,5,1]\nOutput: 5\n\n \nConstraints:\n\n2 <= nums.length <= 100\n\
+  1 <= nums[i] <= 10\n\nWrite the solution in Python as this class, with any imports it needs:\n\n```python\n\
+  class Solution:\n    def maxLength(self, nums: List[int]) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().maxLength(nums=[3, 6, 9, 12, 15, 18, 21, 24, 27, 30]) == 2
+  - Solution().maxLength(nums=[5, 5, 5, 5, 5, 5, 5, 5]) == 2
+  - Solution().maxLength(nums=[6, 3, 2, 1, 5, 4]) == 4
+  - Solution().maxLength(nums=[10, 9, 8, 7, 6, 5, 4, 3, 2, 1]) == 3
+  - Solution().maxLength(nums=[8, 9, 10, 11, 12]) == 3
+  - Solution().maxLength(nums=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) == 3
+  - Solution().maxLength(nums=[2, 3, 5, 7, 11, 13, 17]) == 7
+  - Solution().maxLength(nums=[7, 7, 7, 7, 7, 7, 7]) == 2
+  - Solution().maxLength(nums=[2, 3, 4, 5, 6]) == 3
+  - Solution().maxLength(nums=[10, 5, 2, 1, 10, 5, 2]) == 3
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3411'
+  date: '2025-01-05'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

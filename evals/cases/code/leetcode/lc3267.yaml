@@ -1,0 +1,45 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3267
+modality: code
+prompt: "Attention: In this version, the number of operations that can be performed, has been increased\
+  \ to twice.\nYou are given an array nums consisting of positive integers.\nWe call two integers x and\
+  \ y almost equal if both integers can become equal after performing the following operation at most\
+  \ twice:\n\nChoose either x or y and swap any two digits within the chosen number.\n\nReturn the number\
+  \ of indices i and j in nums where i < j such that nums[i] and nums[j] are almost equal.\nNote that\
+  \ it is allowed for an integer to have leading zeros after performing an operation.\n \nExample 1:\n\
+  \nInput: nums = [1023,2310,2130,213]\nOutput: 4\nExplanation:\nThe almost equal pairs of elements are:\n\
+  \n1023 and 2310. By swapping the digits 1 and 2, and then the digits 0 and 3 in 1023, you get 2310.\n\
+  1023 and 213. By swapping the digits 1 and 0, and then the digits 1 and 2 in 1023, you get 0213, which\
+  \ is 213.\n2310 and 213. By swapping the digits 2 and 0, and then the digits 3 and 2 in 2310, you get\
+  \ 0213, which is 213.\n2310 and 2130. By swapping the digits 3 and 1 in 2310, you get 2130.\n\n\nExample\
+  \ 2:\n\nInput: nums = [1,10,100]\nOutput: 3\nExplanation:\nThe almost equal pairs of elements are:\n\
+  \n1 and 10. By swapping the digits 1 and 0 in 10, you get 01 which is 1.\n1 and 100. By swapping the\
+  \ second 0 with the digit 1 in 100, you get 001, which is 1.\n10 and 100. By swapping the first 0 with\
+  \ the digit 1 in 100, you get 010, which is 10.\n\n\n \nConstraints:\n\n2 <= nums.length <= 5000\n1\
+  \ <= nums[i] < 107\n\nWrite the solution in Python as this class, with any imports it needs:\n\n```python\n\
+  class Solution:\n    def countPairs(self, nums: List[int]) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().countPairs(nums=[123, 321, 213, 132]) == 6
+  - Solution().countPairs(nums=[1111, 2222, 3333, 4444]) == 0
+  - Solution().countPairs(nums=[12, 21, 13, 31, 23, 32]) == 3
+  - Solution().countPairs(nums=[111, 222, 333, 444, 555]) == 0
+  - Solution().countPairs(nums=[123456, 654321, 12345, 54321, 1234, 4321, 123, 321, 12, 21, 1]) == 4
+  - Solution().countPairs(nums=[9876543, 3456789, 987654, 456789, 876543, 345678]) == 0
+  - Solution().countPairs(nums=[11, 22, 33, 44, 55, 66, 77, 88, 99, 101, 202, 303, 404, 505, 606, 707,
+    808, 909]) == 9
+  - Solution().countPairs(nums=[9999, 9998, 9989, 9899]) == 3
+  - Solution().countPairs(nums=[1000, 1001, 1010, 1100, 1, 10, 100]) == 9
+  - Solution().countPairs(nums=[1234, 4321, 2134, 1432]) == 4
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3267'
+  date: '2024-08-25'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

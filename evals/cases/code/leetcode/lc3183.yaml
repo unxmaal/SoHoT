@@ -1,0 +1,37 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3183
+modality: code
+prompt: "You have an infinite number of coins with values 1, 2, and 6, and only 2 coins with value 4.\n\
+  Given an integer n, return the number of ways to make the sum of n with the coins you have.\nSince the\
+  \ answer may be very large, return it modulo 109 + 7.\nNote that the order of the coins doesn't matter\
+  \ and [2, 2, 3] is the same as [2, 3, 2].\n \nExample 1:\n\nInput: n = 4\nOutput: 4\nExplanation:\n\
+  Here are the four combinations: [1, 1, 1, 1], [1, 1, 2], [2, 2], [4].\n\nExample 2:\n\nInput: n = 12\n\
+  Output: 22\nExplanation:\nNote that [4, 4, 4] is not a valid combination since we cannot use 4 three\
+  \ times.\n\nExample 3:\n\nInput: n = 5\nOutput: 4\nExplanation:\nHere are the four combinations: [1,\
+  \ 1, 1, 1, 1], [1, 1, 1, 2], [1, 2, 2], [1, 4].\n\n \nConstraints:\n\n1 <= n <= 105\n\nWrite the solution\
+  \ in Python as this class, with any imports it needs:\n\n```python\nclass Solution:\n    def numberOfWays(self,\
+  \ n: int) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().numberOfWays(n=3) == 2
+  - Solution().numberOfWays(n=100000) == 250024994
+  - Solution().numberOfWays(n=100) == 1276
+  - Solution().numberOfWays(n=30) == 121
+  - Solution().numberOfWays(n=4) == 4
+  - Solution().numberOfWays(n=12) == 22
+  - Solution().numberOfWays(n=10000) == 12502501
+  - Solution().numberOfWays(n=6) == 7
+  - Solution().numberOfWays(n=20) == 56
+  - Solution().numberOfWays(n=2) == 2
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3183'
+  date: '2024-06-09'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

@@ -1,0 +1,36 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3233
+modality: code
+prompt: "You are given 2 positive integers l and r. For any number x, all positive divisors of x except\
+  \ x are called the proper divisors of x.\nA number is called special if it has exactly 2 proper divisors.\
+  \ For example:\n\nThe number 4 is special because it has proper divisors 1 and 2.\nThe number 6 is not\
+  \ special because it has proper divisors 1, 2, and 3.\n\nReturn the count of numbers in the range [l,\
+  \ r] that are not special.\n \nExample 1:\n\nInput: l = 5, r = 7\nOutput: 3\nExplanation:\nThere are\
+  \ no special numbers in the range [5, 7].\n\nExample 2:\n\nInput: l = 4, r = 16\nOutput: 11\nExplanation:\n\
+  The special numbers in the range [4, 16] are 4 and 9.\n\n \nConstraints:\n\n1 <= l <= r <= 109\n\nWrite\
+  \ the solution in Python as this class, with any imports it needs:\n\n```python\nclass Solution:\n \
+  \   def nonSpecialCount(self, l: int, r: int) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().nonSpecialCount(l=100, r=200) == 99
+  - Solution().nonSpecialCount(l=5, r=7) == 3
+  - Solution().nonSpecialCount(l=20, r=50) == 29
+  - Solution().nonSpecialCount(l=1, r=10) == 8
+  - Solution().nonSpecialCount(l=100, r=150) == 50
+  - Solution().nonSpecialCount(l=4, r=16) == 11
+  - Solution().nonSpecialCount(l=10, r=20) == 11
+  - Solution().nonSpecialCount(l=1000, r=10000) == 8987
+  - Solution().nonSpecialCount(l=25, r=25) == 0
+  - Solution().nonSpecialCount(l=100000, r=200000) == 99980
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3233'
+  date: '2024-07-28'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

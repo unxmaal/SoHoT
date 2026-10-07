@@ -1,0 +1,37 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3334
+modality: code
+prompt: "You are given an integer array nums.\nThe factor score of an array is defined as the product\
+  \ of the LCM and GCD of all elements of that array.\nReturn the maximum factor score of nums after removing\
+  \ at most one element from it.\nNote that both the LCM and GCD of a single number are the number itself,\
+  \ and the factor score of an empty array is 0.\n \nExample 1:\n\nInput: nums = [2,4,8,16]\nOutput: 64\n\
+  Explanation:\nOn removing 2, the GCD of the rest of the elements is 4 while the LCM is 16, which gives\
+  \ a maximum factor score of 4 * 16 = 64.\n\nExample 2:\n\nInput: nums = [1,2,3,4,5]\nOutput: 60\nExplanation:\n\
+  The maximum factor score of 60 can be obtained without removing any elements.\n\nExample 3:\n\nInput:\
+  \ nums = [3]\nOutput: 9\n\n \nConstraints:\n\n1 <= nums.length <= 100\n1 <= nums[i] <= 30\n\nWrite the\
+  \ solution in Python as this class, with any imports it needs:\n\n```python\nclass Solution:\n    def\
+  \ maxScore(self, nums: List[int]) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().maxScore(nums=[10, 20, 30]) == 600
+  - Solution().maxScore(nums=[100, 200, 300, 400]) == 120000
+  - Solution().maxScore(nums=[2, 3, 5, 7, 11, 13]) == 30030
+  - Solution().maxScore(nums=[1, 1, 1, 1]) == 1
+  - Solution().maxScore(nums=[2, 3, 5, 7, 11]) == 2310
+  - Solution().maxScore(nums=[12, 15, 18, 21]) == 3780
+  - Solution().maxScore(nums=[25, 50, 75, 100]) == 7500
+  - Solution().maxScore(nums=[30, 15, 10, 5]) == 150
+  - Solution().maxScore(nums=[25, 10, 5, 1]) == 250
+  - Solution().maxScore(nums=[11, 22, 33, 44]) == 1452
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3334'
+  date: '2024-10-27'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

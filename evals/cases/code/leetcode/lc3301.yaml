@@ -1,0 +1,40 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3301
+modality: code
+prompt: "You are given an array maximumHeight, where maximumHeight[i] denotes the maximum height the ith\
+  \ tower can be assigned.\nYour task is to assign a height to each tower so that:\n\nThe height of the\
+  \ ith tower is a positive integer and does not exceed maximumHeight[i].\nNo two towers have the same\
+  \ height.\n\nReturn the maximum possible total sum of the tower heights. If it's not possible to assign\
+  \ heights, return -1.\n \nExample 1:\n\nInput: maximumHeight = [2,3,4,3]\nOutput: 10\nExplanation:\n\
+  We can assign heights in the following way: [1, 2, 4, 3].\n\nExample 2:\n\nInput: maximumHeight = [15,10]\n\
+  Output: 25\nExplanation:\nWe can assign heights in the following way: [15, 10].\n\nExample 3:\n\nInput:\
+  \ maximumHeight = [2,2,1]\nOutput: -1\nExplanation:\nIt's impossible to assign positive heights to each\
+  \ index so that no two towers have the same height.\n\n \nConstraints:\n\n1 <= maximumHeight.length <=\
+  \ 105\n1 <= maximumHeight[i] <= 109\n\nWrite the solution in Python as this class, with any imports\
+  \ it needs:\n\n```python\nclass Solution:\n    def maximumTotalSum(self, maximumHeight: List[int]) ->\
+  \ int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().maximumTotalSum(maximumHeight=[2, 3, 4, 3]) == 10
+  - Solution().maximumTotalSum(maximumHeight=[5, 5, 5, 5, 5]) == 15
+  - Solution().maximumTotalSum(maximumHeight=[1, 2, 3, 4, 5]) == 15
+  - Solution().maximumTotalSum(maximumHeight=[1000000000, 999999999, 999999998, 999999997, 999999996])
+    == 4999999990
+  - Solution().maximumTotalSum(maximumHeight=[1]) == 1
+  - Solution().maximumTotalSum(maximumHeight=[1000000000, 1000000000, 1000000000]) == 2999999997
+  - Solution().maximumTotalSum(maximumHeight=[10, 9, 8, 7, 6, 5, 4, 3, 2, 1]) == 55
+  - Solution().maximumTotalSum(maximumHeight=[2, 2, 1]) == -1
+  - Solution().maximumTotalSum(maximumHeight=[1, 1, 1, 1, 1, 1, 1, 1, 1, 1]) == -1
+  - Solution().maximumTotalSum(maximumHeight=[15, 10]) == 25
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3301'
+  date: '2024-09-22'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

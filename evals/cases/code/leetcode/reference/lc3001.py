@@ -1,0 +1,33 @@
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08.
+import random
+import functools
+import collections
+import string
+import math
+import datetime
+
+from typing import *
+from functools import *
+from collections import *
+from itertools import *
+from heapq import *
+from bisect import *
+from string import *
+from operator import *
+from math import *
+
+inf = float('inf')
+
+class Solution:
+    def minMovesToCaptureTheQueen(
+        self, a: int, b: int, c: int, d: int, e: int, f: int
+    ) -> int:
+        if a == e and (c != a or (d - b) * (d - f) > 0):
+            return 1
+        if b == f and (d != b or (c - a) * (c - e) > 0):
+            return 1
+        if c - e == d - f and (a - e != b - f or (a - c) * (a - e) > 0):
+            return 1
+        if c - e == f - d and (a - e != f - b or (a - c) * (a - e) > 0):
+            return 1
+        return 2

@@ -1,0 +1,37 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3151
+modality: code
+prompt: "An array is considered special if the parity of every pair of adjacent elements is different.\
+  \ In other words, one element in each pair must be even, and the other must be odd.\nYou are given an\
+  \ array of integers nums. Return true if nums is a special array, otherwise, return false.\n \nExample\
+  \ 1:\n\nInput: nums = [1]\nOutput: true\nExplanation:\nThere is only one element. So the answer is true.\n\
+  \nExample 2:\n\nInput: nums = [2,1,4]\nOutput: true\nExplanation:\nThere is only two pairs: (2,1) and\
+  \ (1,4), and both of them contain numbers with different parity. So the answer is true.\n\nExample 3:\n\
+  \nInput: nums = [4,3,1,6]\nOutput: false\nExplanation:\nnums[1] and nums[2] are both odd. So the answer\
+  \ is false.\n\n \nConstraints:\n\n1 <= nums.length <= 100\n1 <= nums[i] <= 100\n\nWrite the solution\
+  \ in Python as this class, with any imports it needs:\n\n```python\nclass Solution:\n    def isArraySpecial(self,\
+  \ nums: List[int]) -> bool:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().isArraySpecial(nums=[100, 99, 100]) == True
+  - Solution().isArraySpecial(nums=[5, 2, 7, 8]) == True
+  - Solution().isArraySpecial(nums=[20, 30, 40, 50, 60]) == False
+  - Solution().isArraySpecial(nums=[3, 8, 3, 8, 3, 8]) == True
+  - Solution().isArraySpecial(nums=[2, 3, 4, 5]) == True
+  - Solution().isArraySpecial(nums=[10, 11, 12, 13]) == True
+  - Solution().isArraySpecial(nums=[3, 6, 3, 6]) == True
+  - Solution().isArraySpecial(nums=[2, 4, 6, 8, 10]) == False
+  - Solution().isArraySpecial(nums=[1, 3, 5, 7, 9]) == False
+  - Solution().isArraySpecial(nums=[1]) == True
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3151'
+  date: '2024-05-19'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

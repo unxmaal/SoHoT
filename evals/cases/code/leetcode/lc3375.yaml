@@ -1,0 +1,41 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3375
+modality: code
+prompt: "You are given an integer array nums and an integer k.\nAn integer h is called valid if all values\
+  \ in the array that are strictly greater than h are identical.\nFor example, if nums = [10, 8, 10, 8],\
+  \ a valid integer is h = 9 because all nums[i] > 9 are equal to 10, but 5 is not a valid integer.\n\
+  You are allowed to perform the following operation on nums:\n\nSelect an integer h that is valid for\
+  \ the current values in nums.\nFor each index i where nums[i] > h, set nums[i] to h.\n\nReturn the minimum\
+  \ number of operations required to make every element in nums equal to k. If it is impossible to make\
+  \ all elements equal to k, return -1.\n \nExample 1:\n\nInput: nums = [5,2,5,4,5], k = 2\nOutput: 2\n\
+  Explanation:\nThe operations can be performed in order using valid integers 4 and then 2.\n\nExample\
+  \ 2:\n\nInput: nums = [2,1,2], k = 2\nOutput: -1\nExplanation:\nIt is impossible to make all the values\
+  \ equal to 2.\n\nExample 3:\n\nInput: nums = [9,7,5,3], k = 1\nOutput: 4\nExplanation:\nThe operations\
+  \ can be performed using valid integers in the order 7, 5, 3, and 1.\n\n \nConstraints:\n\n1 <= nums.length\
+  \ <= 100 \n1 <= nums[i] <= 100\n1 <= k <= 100\n\nWrite the solution in Python as this class, with any\
+  \ imports it needs:\n\n```python\nclass Solution:\n    def minOperations(self, nums: List[int], k: int)\
+  \ -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().minOperations(nums=[5, 5, 5, 5, 5], k=5) == 0
+  - Solution().minOperations(nums=[5, 5, 5, 5, 5, 5], k=5) == 0
+  - Solution().minOperations(nums=[50, 40, 30, 20, 10], k=10) == 4
+  - Solution().minOperations(nums=[1, 2, 3, 4, 5], k=5) == -1
+  - Solution().minOperations(nums=[100, 100, 100], k=100) == 0
+  - Solution().minOperations(nums=[1, 1, 1, 1, 1], k=2) == -1
+  - Solution().minOperations(nums=[10, 20, 30, 40, 50], k=25) == -1
+  - Solution().minOperations(nums=[5, 4, 3, 2, 1], k=1) == 4
+  - Solution().minOperations(nums=[1, 1, 1, 1], k=1) == 0
+  - Solution().minOperations(nums=[3, 3, 2, 2, 1], k=1) == 2
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3375'
+  date: '2024-12-01'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

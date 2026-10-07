@@ -1,0 +1,32 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3136
+modality: code
+prompt: "A word is considered valid if:\n\nIt contains a minimum of 3 characters.\nIt contains only digits\
+  \ (0-9), and English letters (uppercase and lowercase).\nIt includes at least one vowel.\nIt includes\
+  \ at least one consonant.\n\nYou are given a string word.\nReturn true if word is valid, otherwise,\
+  \ return false.\nNotes:\n\n'a', 'e', 'i', 'o', 'u', and their uppercases are vowels.\nA consonant is\
+  \ an English letter that is not a vowel.\n\n \nExample 1:\n\nInput: word = \"234Adas\"\nOutput: true\n\
+  Explanation:\nThis word satisfies the conditions.\n\nExample 2:\n\nInput: word = \"b3\"\nOutput: false\n\
+  Explanation:\nThe length of this word is fewer than 3, and does not have a vowel.\n\nExample 3:\n\n\
+  Input: word = \"a3$e\"\nOutput: false\nExplanation:\nThis word contains a '$' character and does not\
+  \ have a consonant.\n\n \nConstraints:\n\n1 <= word.length <= 20\nword consists of English uppercase\
+  \ and lowercase letters, digits, '@', '#', and '$'.\n\nWrite the solution in Python as this class, with\
+  \ any imports it needs:\n\n```python\nclass Solution:\n    def isValid(self, word: str) -> bool:\n```\n\
+  \nReturn only the code."
+assert:
+  checks:
+  - Solution().isValid(word='234Adas') == True
+  - Solution().isValid(word='b3') == False
+  - Solution().isValid(word='a3$e') == False
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3136'
+  date: '2024-05-05'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

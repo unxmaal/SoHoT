@@ -1,0 +1,43 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3443
+modality: code
+prompt: "You are given a string s consisting of the characters 'N', 'S', 'E', and 'W', where s[i] indicates\
+  \ movements in an infinite grid:\n\n'N' : Move north by 1 unit.\n'S' : Move south by 1 unit.\n'E' :\
+  \ Move east by 1 unit.\n'W' : Move west by 1 unit.\n\nInitially, you are at the origin (0, 0). You can\
+  \ change at most k characters to any of the four directions.\nFind the maximum Manhattan distance from\
+  \ the origin that can be achieved at any time while performing the movements in order.\nThe Manhattan\
+  \ Distance between two cells (xi, yi) and (xj, yj) is |xi - xj| + |yi - yj|.\n \nExample 1:\n\nInput:\
+  \ s = \"NWSE\", k = 1\nOutput: 3\nExplanation:\nChange s[2] from 'S' to 'N'. The string s becomes \"\
+  NWNE\".\n\n\n\nMovement\nPosition (x, y)\nManhattan Distance\nMaximum\n\n\n\n\ns[0] == 'N'\n(0, 1)\n\
+  0 + 1 = 1\n1\n\n\ns[1] == 'W'\n(-1, 1)\n1 + 1 = 2\n2\n\n\ns[2] == 'N'\n(-1, 2)\n1 + 2 = 3\n3\n\n\ns[3]\
+  \ == 'E'\n(0, 2)\n0 + 2 = 2\n3\n\n\n\nThe maximum Manhattan distance from the origin that can be achieved\
+  \ is 3. Hence, 3 is the output.\n\nExample 2:\n\nInput: s = \"NSWWEW\", k = 3\nOutput: 6\nExplanation:\n\
+  Change s[1] from 'S' to 'N', and s[4] from 'E' to 'W'. The string s becomes \"NNWWWW\".\nThe maximum\
+  \ Manhattan distance from the origin that can be achieved is 6. Hence, 6 is the output.\n\n \nConstraints:\n\
+  \n1 <= s.length <= 105\n0 <= k <= s.length\ns consists of only 'N', 'S', 'E', and 'W'.\n\nWrite the\
+  \ solution in Python as this class, with any imports it needs:\n\n```python\nclass Solution:\n    def\
+  \ maxDistance(self, s: str, k: int) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().maxDistance(s='NSWWEW', k=3) == 6
+  - Solution().maxDistance(s='EEEEEE', k=0) == 6
+  - Solution().maxDistance(s='NNN', k=0) == 3
+  - Solution().maxDistance(s='NWSE', k=1) == 3
+  - Solution().maxDistance(s='EEEE', k=4) == 4
+  - Solution().maxDistance(s='NNNN', k=0) == 4
+  - Solution().maxDistance(s='SSSSS', k=5) == 5
+  - Solution().maxDistance(s='NNNSSS', k=3) == 6
+  - Solution().maxDistance(s='WEWEWEW', k=1) == 3
+  - Solution().maxDistance(s='NSEW', k=4) == 4
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3443'
+  date: '2025-02-02'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

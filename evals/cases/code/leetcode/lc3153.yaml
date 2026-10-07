@@ -1,0 +1,39 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3153
+modality: code
+prompt: "You are given an array nums consisting of positive integers where all integers have the same\
+  \ number of digits.\nThe digit difference between two integers is the count of different digits that\
+  \ are in the same position in the two integers.\nReturn the sum of the digit differences between all\
+  \ pairs of integers in nums.\n \nExample 1:\n\nInput: nums = [13,23,12]\nOutput: 4\nExplanation:\nWe\
+  \ have the following:\n- The digit difference between 13 and 23 is 1.\n- The digit difference between\
+  \ 13 and 12 is 1.\n- The digit difference between 23 and 12 is 2.\nSo the total sum of digit differences\
+  \ between all pairs of integers is 1 + 1 + 2 = 4.\n\nExample 2:\n\nInput: nums = [10,10,10,10]\nOutput:\
+  \ 0\nExplanation:\nAll the integers in the array are the same. So the total sum of digit differences\
+  \ between all pairs of integers will be 0.\n\n \nConstraints:\n\n2 <= nums.length <= 105\n1 <= nums[i]\
+  \ < 109\nAll integers in nums have the same number of digits.\n\nWrite the solution in Python as this\
+  \ class, with any imports it needs:\n\n```python\nclass Solution:\n    def sumDigitDifferences(self,\
+  \ nums: List[int]) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().sumDigitDifferences(nums=[12345, 54321, 13245]) == 11
+  - Solution().sumDigitDifferences(nums=[10, 10, 10, 10]) == 0
+  - Solution().sumDigitDifferences(nums=[123, 234, 345]) == 9
+  - Solution().sumDigitDifferences(nums=[123, 456, 789]) == 9
+  - Solution().sumDigitDifferences(nums=[987, 876, 765, 654]) == 18
+  - Solution().sumDigitDifferences(nums=[99999, 99999, 99999]) == 0
+  - Solution().sumDigitDifferences(nums=[13, 23, 12]) == 4
+  - Solution().sumDigitDifferences(nums=[123, 321, 213]) == 7
+  - Solution().sumDigitDifferences(nums=[987, 876, 765, 654, 543]) == 30
+  - Solution().sumDigitDifferences(nums=[111, 222, 333, 444]) == 18
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3153'
+  date: '2024-05-19'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

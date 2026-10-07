@@ -1,0 +1,49 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3117
+modality: code
+prompt: "You are given two arrays nums and andValues of length n and m respectively.\nThe value of an\
+  \ array is equal to the last element of that array.\nYou have to divide nums into m disjoint contiguous\
+  \ subarrays such that for the ith subarray [li, ri], the bitwise AND of the subarray elements is equal\
+  \ to andValues[i], in other words, nums[li] & nums[li + 1] & ... & nums[ri] == andValues[i] for all\
+  \ 1 <= i <= m, where & represents the bitwise AND operator.\nReturn the minimum possible sum of the\
+  \ values of the m subarrays nums is divided into. If it is not possible to divide nums into m subarrays\
+  \ satisfying these conditions, return -1.\n \nExample 1:\n\nInput: nums = [1,4,3,3,2], andValues = [0,3,3,2]\n\
+  Output: 12\nExplanation:\nThe only possible way to divide nums is:\n\n[1,4] as 1 & 4 == 0.\n[3] as the\
+  \ bitwise AND of a single element subarray is that element itself.\n[3] as the bitwise AND of a single\
+  \ element subarray is that element itself.\n[2] as the bitwise AND of a single element subarray is that\
+  \ element itself.\n\nThe sum of the values for these subarrays is 4 + 3 + 3 + 2 = 12.\n\nExample 2:\n\
+  \nInput: nums = [2,3,5,7,7,7,5], andValues = [0,7,5]\nOutput: 17\nExplanation:\nThere are three ways\
+  \ to divide nums:\n\n[[2,3,5],[7,7,7],[5]] with the sum of the values 5 + 7 + 5 == 17.\n[[2,3,5,7],[7,7],[5]]\
+  \ with the sum of the values 7 + 7 + 5 == 19.\n[[2,3,5,7,7],[7],[5]] with the sum of the values 7 +\
+  \ 7 + 5 == 19.\n\nThe minimum possible sum of the values is 17.\n\nExample 3:\n\nInput: nums = [1,2,3,4],\
+  \ andValues = [2]\nOutput: -1\nExplanation:\nThe bitwise AND of the entire array nums is 0. As there\
+  \ is no possible way to divide nums into a single subarray to have the bitwise AND of elements 2, return\
+  \ -1.\n\n \nConstraints:\n\n1 <= n == nums.length <= 104\n1 <= m == andValues.length <= min(n, 10)\n\
+  1 <= nums[i] < 105\n0 <= andValues[j] < 105\n\nWrite the solution in Python as this class, with any\
+  \ imports it needs:\n\n```python\nclass Solution:\n    def minimumValueSum(self, nums: List[int], andValues:\
+  \ List[int]) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().minimumValueSum(nums=[5, 5, 5, 5], andValues=[5, 5]) == 10
+  - Solution().minimumValueSum(nums=[2, 4, 6, 8, 10, 12, 14, 16], andValues=[0, 0, 0]) == 28
+  - Solution().minimumValueSum(nums=[8, 12, 10, 14], andValues=[8, 14]) == 24
+  - Solution().minimumValueSum(nums=[10, 10, 10, 10, 10, 10, 10, 10, 10, 10], andValues=[10, 10, 10, 10])
+    == 40
+  - Solution().minimumValueSum(nums=[15, 11, 13, 14, 12], andValues=[15, 11, 12]) == 38
+  - Solution().minimumValueSum(nums=[10, 20, 30, 40, 50], andValues=[10, 20, 30]) == -1
+  - Solution().minimumValueSum(nums=[9, 18, 27, 36], andValues=[9, 18, 27]) == -1
+  - Solution().minimumValueSum(nums=[1, 2, 3, 4], andValues=[2]) == -1
+  - Solution().minimumValueSum(nums=[1, 1, 1, 1, 1, 1, 1, 1, 1, 1], andValues=[1]) == 1
+  - Solution().minimumValueSum(nums=[1, 2, 4, 8, 16], andValues=[0, 0, 0, 0, 0]) == -1
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3117'
+  date: '2024-04-14'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

@@ -1,0 +1,35 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3099
+modality: code
+prompt: "An integer divisible by the sum of its digits is said to be a Harshad number. You are given an\
+  \ integer x. Return the sum of the digits of x if x is a Harshad number, otherwise, return -1.\n \n\
+  Example 1:\n\nInput: x = 18\nOutput: 9\nExplanation:\nThe sum of digits of x is 9. 18 is divisible by\
+  \ 9. So 18 is a Harshad number and the answer is 9.\n\nExample 2:\n\nInput: x = 23\nOutput: -1\nExplanation:\n\
+  The sum of digits of x is 5. 23 is not divisible by 5. So 23 is not a Harshad number and the answer\
+  \ is -1.\n\n \nConstraints:\n\n1 <= x <= 100\n\nWrite the solution in Python as this class, with any\
+  \ imports it needs:\n\n```python\nclass Solution:\n    def sumOfTheDigitsOfHarshadNumber(self, x: int)\
+  \ -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().sumOfTheDigitsOfHarshadNumber(x=50) == 5
+  - Solution().sumOfTheDigitsOfHarshadNumber(x=23) == -1
+  - Solution().sumOfTheDigitsOfHarshadNumber(x=10) == 1
+  - Solution().sumOfTheDigitsOfHarshadNumber(x=18) == 9
+  - Solution().sumOfTheDigitsOfHarshadNumber(x=1) == 1
+  - Solution().sumOfTheDigitsOfHarshadNumber(x=90) == 9
+  - Solution().sumOfTheDigitsOfHarshadNumber(x=57) == -1
+  - Solution().sumOfTheDigitsOfHarshadNumber(x=99) == -1
+  - Solution().sumOfTheDigitsOfHarshadNumber(x=81) == 9
+  - Solution().sumOfTheDigitsOfHarshadNumber(x=45) == 9
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3099'
+  date: '2024-03-31'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

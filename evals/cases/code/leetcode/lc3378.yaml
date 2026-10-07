@@ -1,0 +1,40 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3378
+modality: code
+prompt: "You are given an array of integers nums of size n and a positive integer threshold.\nThere is\
+  \ a graph consisting of n nodes with the ith node having a value of nums[i]. Two nodes i and j in the\
+  \ graph are connected via an undirected edge if lcm(nums[i], nums[j]) <= threshold.\nReturn the number\
+  \ of connected components in this graph.\nA connected component is a subgraph of a graph in which there\
+  \ exists a path between any two vertices, and no vertex of the subgraph shares an edge with a vertex\
+  \ outside of the subgraph.\nThe term lcm(a, b) denotes the least common multiple of a and b.\n \nExample\
+  \ 1:\n\nInput: nums = [2,4,8,3,9], threshold = 5\nOutput: 4\nExplanation: \n\n \nThe four connected\
+  \ components are (2, 4), (3), (8), (9).\n\nExample 2:\n\nInput: nums = [2,4,8,3,9,12], threshold = 10\n\
+  Output: 2\nExplanation: \n\nThe two connected components are (2, 3, 4, 8, 9), and (12).\n\n \nConstraints:\n\
+  \n1 <= nums.length <= 105\n1 <= nums[i] <= 109\nAll elements of nums are unique.\n1 <= threshold <=\
+  \ 2 * 105\n\nWrite the solution in Python as this class, with any imports it needs:\n\n```python\nclass\
+  \ Solution:\n    def countComponents(self, nums: List[int], threshold: int) -> int:\n```\n\nReturn only\
+  \ the code."
+assert:
+  checks:
+  - Solution().countComponents(nums=[1, 2, 3, 4, 5], threshold=4) == 2
+  - Solution().countComponents(nums=[1, 2, 3, 4, 5], threshold=3) == 3
+  - Solution().countComponents(nums=[6, 12, 18, 24, 30], threshold=30) == 1
+  - Solution().countComponents(nums=[100, 200, 300, 400, 500], threshold=250) == 4
+  - Solution().countComponents(nums=[2, 4, 8, 3, 9, 12], threshold=10) == 2
+  - Solution().countComponents(nums=[2, 3, 5, 7, 11, 13, 17, 19, 23, 29], threshold=30) == 5
+  - Solution().countComponents(nums=[6, 12, 18, 24, 30], threshold=15) == 4
+  - Solution().countComponents(nums=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10], threshold=15) == 1
+  - Solution().countComponents(nums=[30, 25, 20, 15, 10, 5], threshold=30) == 1
+  - Solution().countComponents(nums=[1, 2, 3, 4, 5], threshold=1) == 5
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3378'
+  date: '2024-12-01'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

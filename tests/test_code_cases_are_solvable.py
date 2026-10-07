@@ -17,7 +17,6 @@ from evals.core import load_cases
 from harness.checks import code
 
 CASES = Path(__file__).resolve().parents[1] / "evals" / "cases"
-REFERENCE = CASES / "code" / "reference"
 
 # Load ONLY the code cases, not the whole tree. Loading everything made this
 # module hostage to every other lane: the generated stt cases point at audio on
@@ -25,18 +24,24 @@ REFERENCE = CASES / "code" / "reference"
 # `load_cases` raised during COLLECTION and took all 600+ tests with it. A test
 # about code cases should not be able to fail because a disk is unplugged.
 code_cases = [c for c in load_cases(CASES / "code") if c.modality == "code"]
+#: evals/importers cases run their reference over a slice in test_importers and in full under `soh cases control`.
+own_cases = [c for c in code_cases if c.source.parent == CASES / "code"]
+
+
+def _reference(case) -> Path:
+    return case.source.parent / "reference" / f"{case.id}.py"
 
 
 @pytest.mark.parametrize("case", code_cases, ids=lambda c: c.id)
 def test_a_reference_solution_exists(case):
-    assert (REFERENCE / f"{case.id}.py").exists(), (
+    assert _reference(case).exists(), (
         f"no reference solution for {case.id}; a case nobody has solved is a "
         f"case nobody has checked")
 
 
-@pytest.mark.parametrize("case", code_cases, ids=lambda c: c.id)
+@pytest.mark.parametrize("case", own_cases, ids=lambda c: c.id)
 def test_the_reference_solution_passes_every_check(case):
-    source = (REFERENCE / f"{case.id}.py").read_text(encoding="utf-8")
+    source = _reference(case).read_text(encoding="utf-8")
     r = code.check(source, case.assertions["checks"])
     assert r.ok, f"{case.id}: {r.reason}"
 

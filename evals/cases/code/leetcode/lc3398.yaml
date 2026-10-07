@@ -1,0 +1,38 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3398
+modality: code
+prompt: "You are given a binary string s of length n and an integer numOps.\nYou are allowed to perform\
+  \ the following operation on s at most numOps times:\n\nSelect any index i (where 0 <= i < n) and flip\
+  \ s[i]. If s[i] == '1', change s[i] to '0' and vice versa.\n\nYou need to minimize the length of the\
+  \ longest substring of s such that all the characters in the substring are identical.\nReturn the minimum\
+  \ length after the operations.\n \nExample 1:\n\nInput: s = \"000001\", numOps = 1\nOutput: 2\nExplanation: \n\
+  By changing s[2] to '1', s becomes \"001001\". The longest substrings with identical characters are\
+  \ s[0..1] and s[3..4].\n\nExample 2:\n\nInput: s = \"0000\", numOps = 2\nOutput: 1\nExplanation: \n\
+  By changing s[0] and s[2] to '1', s becomes \"1010\".\n\nExample 3:\n\nInput: s = \"0101\", numOps =\
+  \ 0\nOutput: 1\n\n \nConstraints:\n\n1 <= n == s.length <= 1000\ns consists only of '0' and '1'.\n0\
+  \ <= numOps <= n\n\nWrite the solution in Python as this class, with any imports it needs:\n\n```python\n\
+  class Solution:\n    def minLength(self, s: str, numOps: int) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().minLength(s='111000', numOps=1) == 3
+  - Solution().minLength(s='11111', numOps=2) == 1
+  - Solution().minLength(s='101010', numOps=3) == 1
+  - Solution().minLength(s='1100110011', numOps=3) == 2
+  - Solution().minLength(s='001100', numOps=2) == 2
+  - Solution().minLength(s='111000111', numOps=3) == 1
+  - Solution().minLength(s='111111', numOps=3) == 1
+  - Solution().minLength(s='000001', numOps=1) == 2
+  - Solution().minLength(s='11001100', numOps=4) == 1
+  - Solution().minLength(s='1111', numOps=1) == 2
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3398'
+  date: '2024-12-22'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

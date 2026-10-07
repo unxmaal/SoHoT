@@ -1,0 +1,46 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3462
+modality: code
+prompt: "You are given a 2D integer matrix grid of size n x m, an integer array limits of length n, and\
+  \ an integer k. The task is to find the maximum sum of at most k elements from the matrix grid such\
+  \ that:\n\n\nThe number of elements taken from the ith row of grid does not exceed limits[i].\n\n\n\
+  Return the maximum sum.\n \nExample 1:\n\nInput: grid = [[1,2],[3,4]], limits = [1,2], k = 2\nOutput:\
+  \ 7\nExplanation:\n\nFrom the second row, we can take at most 2 elements. The elements taken are 4 and\
+  \ 3.\nThe maximum possible sum of at most 2 selected elements is 4 + 3 = 7.\n\n\nExample 2:\n\nInput:\
+  \ grid = [[5,3,7],[8,2,6]], limits = [2,2], k = 3\nOutput: 21\nExplanation:\n\nFrom the first row, we\
+  \ can take at most 2 elements. The element taken is 7.\nFrom the second row, we can take at most 2 elements.\
+  \ The elements taken are 8 and 6.\nThe maximum possible sum of at most 3 selected elements is 7 + 8\
+  \ + 6 = 21.\n\n\n \nConstraints:\n\nn == grid.length == limits.length\nm == grid[i].length\n1 <= n,\
+  \ m <= 500\n0 <= grid[i][j] <= 105\n0 <= limits[i] <= m\n0 <= k <= min(n * m, sum(limits))\n\nWrite\
+  \ the solution in Python as this class, with any imports it needs:\n\n```python\nclass Solution:\n \
+  \   def maxSum(self, grid: List[List[int]], limits: List[int], k: int) -> int:\n```\n\nReturn only the\
+  \ code."
+assert:
+  checks:
+  - Solution().maxSum(grid=[[10, 20, 30], [5, 15, 25], [1, 9, 18]], limits=[2, 1, 2], k=5) == 102
+  - Solution().maxSum(grid=[[5, 3, 7], [8, 2, 6]], limits=[2, 2], k=3) == 21
+  - Solution().maxSum(grid=[[1, 2], [3, 4]], limits=[1, 2], k=2) == 7
+  - Solution().maxSum(grid=[[0, 0, 0], [0, 0, 0]], limits=[1, 2], k=1) == 0
+  - Solution().maxSum(grid=[[1, 2, 3], [4, 5, 6], [7, 8, 9]], limits=[3, 3, 3], k=6) == 39
+  - Solution().maxSum(grid=[[1, 1, 1, 1, 1, 1, 1, 1, 1, 1], [2, 2, 2, 2, 2, 2, 2, 2, 2, 2], [3, 3, 3,
+    3, 3, 3, 3, 3, 3, 3]], limits=[5, 5, 5], k=12) == 27
+  - Solution().maxSum(grid=[[1000, 900, 800, 700, 600], [500, 400, 300, 200, 100]], limits=[3, 4], k=6)
+    == 3900
+  - Solution().maxSum(grid=[[9, 8, 7, 6, 5], [4, 3, 2, 1, 0], [99, 88, 77, 66, 55]], limits=[3, 2, 4],
+    k=12) == 361
+  - Solution().maxSum(grid=[[0, 0, 0, 0], [1, 1, 1, 1], [2, 2, 2, 2], [3, 3, 3, 3]], limits=[0, 2, 2,
+    2], k=5) == 11
+  - Solution().maxSum(grid=[[1, 1, 1, 1, 1], [2, 2, 2, 2, 2], [3, 3, 3, 3, 3]], limits=[1, 2, 3], k=6)
+    == 14
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3462'
+  date: '2025-02-23'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

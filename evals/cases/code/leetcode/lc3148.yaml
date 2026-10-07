@@ -1,0 +1,40 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3148
+modality: code
+prompt: "You are given an m x n matrix grid consisting of positive integers. You can move from a cell\
+  \ in the matrix to any other cell that is either to the bottom or to the right (not necessarily adjacent).\
+  \ The score of a move from a cell with the value c1 to a cell with the value c2 is c2 - c1.\nYou can\
+  \ start at any cell, and you have to make at least one move.\nReturn the maximum total score you can\
+  \ achieve.\n \nExample 1:\n\n\nInput: grid = [[9,5,7,3],[8,9,6,1],[6,7,14,3],[2,5,3,1]]\nOutput: 9\n\
+  Explanation: We start at the cell (0, 1), and we perform the following moves:\n- Move from the cell\
+  \ (0, 1) to (2, 1) with a score of 7 - 5 = 2.\n- Move from the cell (2, 1) to (2, 2) with a score of\
+  \ 14 - 7 = 7.\nThe total score is 2 + 7 = 9.\n\nExample 2:\n\n\nInput: grid = [[4,3,2],[3,2,1]]\nOutput:\
+  \ -1\nExplanation: We start at the cell (0, 0), and we perform one move: (0, 0) to (0, 1). The score\
+  \ is 3 - 4 = -1.\n\n \nConstraints:\n\nm == grid.length\nn == grid[i].length\n2 <= m, n <= 1000\n4 <=\
+  \ m * n <= 105\n1 <= grid[i][j] <= 105\n\nWrite the solution in Python as this class, with any imports\
+  \ it needs:\n\n```python\nclass Solution:\n    def maxScore(self, grid: List[List[int]]) -> int:\n```\n\
+  \nReturn only the code."
+assert:
+  checks:
+  - Solution().maxScore(grid=[[1, 2, 3, 4], [2, 3, 4, 5], [3, 4, 5, 6], [4, 5, 6, 7]]) == 6
+  - Solution().maxScore(grid=[[4, 3, 2], [3, 2, 1]]) == -1
+  - Solution().maxScore(grid=[[100, 90, 80], [70, 60, 50], [40, 30, 20]]) == -10
+  - Solution().maxScore(grid=[[9, 5, 7, 3], [8, 9, 6, 1], [6, 7, 14, 3], [2, 5, 3, 1]]) == 9
+  - Solution().maxScore(grid=[[5, 1, 3], [4, 1, 5], [7, 9, 3]]) == 8
+  - Solution().maxScore(grid=[[1, 2, 3, 4, 5], [10, 9, 8, 7, 6], [11, 12, 13, 14, 15]]) == 14
+  - Solution().maxScore(grid=[[10, 15, 20], [5, 9, 12], [3, 6, 8]]) == 10
+  - Solution().maxScore(grid=[[10, 20, 30], [40, 50, 60], [70, 80, 90]]) == 80
+  - Solution().maxScore(grid=[[5, 3, 6, 2], [9, 1, 8, 4], [7, 10, 11, 5]]) == 10
+  - Solution().maxScore(grid=[[1, 10, 3, 8], [12, 2, 9, 6], [5, 7, 1, 11], [3, 4, 13, 4]]) == 12
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3148'
+  date: '2024-05-12'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

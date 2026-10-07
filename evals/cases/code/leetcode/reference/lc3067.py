@@ -1,0 +1,44 @@
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08.
+import random
+import functools
+import collections
+import string
+import math
+import datetime
+
+from typing import *
+from functools import *
+from collections import *
+from itertools import *
+from heapq import *
+from bisect import *
+from string import *
+from operator import *
+from math import *
+
+inf = float('inf')
+
+class Solution:
+    def countPairsOfConnectableServers(
+        self, edges: List[List[int]], signalSpeed: int
+    ) -> List[int]:
+        def dfs(a: int, fa: int, ws: int) -> int:
+            cnt = 0 if ws % signalSpeed else 1
+            for b, w in g[a]:
+                if b != fa:
+                    cnt += dfs(b, a, ws + w)
+            return cnt
+
+        n = len(edges) + 1
+        g = [[] for _ in range(n)]
+        for a, b, w in edges:
+            g[a].append((b, w))
+            g[b].append((a, w))
+        ans = [0] * n
+        for a in range(n):
+            s = 0
+            for b, w in g[a]:
+                t = dfs(b, a, w)
+                ans[a] += s * t
+                s += t
+        return ans

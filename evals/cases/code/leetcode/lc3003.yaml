@@ -1,0 +1,48 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3003
+modality: code
+prompt: "You are given a string s and an integer k.\nFirst, you are allowed to change at most one index\
+  \ in s to another lowercase English letter.\nAfter that, do the following partitioning operation until\
+  \ s is empty:\n\nChoose the longest prefix of s containing at most k distinct characters.\nDelete the\
+  \ prefix from s and increase the number of partitions by one. The remaining characters (if any) in s\
+  \ maintain their initial order.\n\nReturn an integer denoting the maximum number of resulting partitions\
+  \ after the operations by optimally choosing at most one index to change.\n \nExample 1:\n\nInput: s\
+  \ = \"accca\", k = 2\nOutput: 3\nExplanation:\nThe optimal way is to change s[2] to something other\
+  \ than a and c, for example, b. then it becomes \"acbca\".\nThen we perform the operations:\n\nThe longest\
+  \ prefix containing at most 2 distinct characters is \"ac\", we remove it and s becomes \"bca\".\nNow\
+  \ The longest prefix containing at most 2 distinct characters is \"bc\", so we remove it and s becomes\
+  \ \"a\".\nFinally, we remove \"a\" and s becomes empty, so the procedure ends.\n\nDoing the operations,\
+  \ the string is divided into 3 partitions, so the answer is 3.\n\nExample 2:\n\nInput: s = \"aabaab\"\
+  , k = 3\nOutput: 1\nExplanation:\nInitially s contains 2 distinct characters, so whichever character\
+  \ we change, it will contain at most 3 distinct characters, so the longest prefix with at most 3 distinct\
+  \ characters would always be all of it, therefore the answer is 1.\n\nExample 3:\n\nInput: s = \"xxyz\"\
+  , k = 1\nOutput: 4\nExplanation:\nThe optimal way is to change s[0] or s[1] to something other than\
+  \ characters in s, for example, to change s[0] to w.\nThen s becomes \"wxyz\", which consists of 4 distinct\
+  \ characters, so as k is 1, it will divide into 4 partitions.\n\n \nConstraints:\n\n1 <= s.length <=\
+  \ 104\ns consists only of lowercase English letters.\n1 <= k <= 26\n\nWrite the solution in Python as\
+  \ this class, with any imports it needs:\n\n```python\nclass Solution:\n    def maxPartitionsAfterOperations(self,\
+  \ s: str, k: int) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().maxPartitionsAfterOperations(s='zzzzzzz', k=1) == 3
+  - Solution().maxPartitionsAfterOperations(s='abcdef', k=6) == 1
+  - Solution().maxPartitionsAfterOperations(s='aaaaaaa', k=1) == 3
+  - Solution().maxPartitionsAfterOperations(s='abcdefghijklmnop', k=5) == 4
+  - Solution().maxPartitionsAfterOperations(s='aabacbebebe', k=3) == 2
+  - Solution().maxPartitionsAfterOperations(s='aaaabbbbcccc', k=3) == 2
+  - Solution().maxPartitionsAfterOperations(s='zzzzzzzzzz', k=1) == 3
+  - Solution().maxPartitionsAfterOperations(s='abcd', k=2) == 2
+  - Solution().maxPartitionsAfterOperations(s='abacabadabacaba', k=3) == 4
+  - Solution().maxPartitionsAfterOperations(s='aabaab', k=3) == 1
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3003'
+  date: '2024-01-07'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

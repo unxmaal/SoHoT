@@ -1,0 +1,35 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3090
+modality: code
+prompt: "Given a string s, return the maximum length of a substring such that it contains at most two\
+  \ occurrences of each character.\n \nExample 1:\n\nInput: s = \"bcbbbcba\"\nOutput: 4\nExplanation:\n\
+  The following substring has a length of 4 and contains at most two occurrences of each character: \"\
+  bcbbbcba\".\nExample 2:\n\nInput: s = \"aaaa\"\nOutput: 2\nExplanation:\nThe following substring has\
+  \ a length of 2 and contains at most two occurrences of each character: \"aaaa\".\n \nConstraints:\n\
+  \n2 <= s.length <= 100\ns consists only of lowercase English letters.\n\nWrite the solution in Python\
+  \ as this class, with any imports it needs:\n\n```python\nclass Solution:\n    def maximumLengthSubstring(self,\
+  \ s: str) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().maximumLengthSubstring(s='zzzzzzzzz') == 2
+  - Solution().maximumLengthSubstring(s='aaabbbccc') == 4
+  - Solution().maximumLengthSubstring(s='aabbaa') == 4
+  - Solution().maximumLengthSubstring(s='abababab') == 4
+  - Solution().maximumLengthSubstring(s='aabacbebebe') == 6
+  - Solution().maximumLengthSubstring(s='abacabadabacaba') == 5
+  - Solution().maximumLengthSubstring(s='abab') == 4
+  - Solution().maximumLengthSubstring(s='abcabcabc') == 6
+  - Solution().maximumLengthSubstring(s='aabbc') == 5
+  - Solution().maximumLengthSubstring(s='aabacbacbac') == 6
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3090'
+  date: '2024-03-24'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

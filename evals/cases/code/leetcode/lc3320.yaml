@@ -1,0 +1,54 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3320
+modality: code
+prompt: "Alice and Bob are playing a fantasy battle game consisting of n rounds where they summon one\
+  \ of three magical creatures each round: a Fire Dragon, a Water Serpent, or an Earth Golem. In each\
+  \ round, players simultaneously summon their creature and are awarded points as follows:\n\nIf one player\
+  \ summons a Fire Dragon and the other summons an Earth Golem, the player who summoned the Fire Dragon\
+  \ is awarded a point.\nIf one player summons a Water Serpent and the other summons a Fire Dragon, the\
+  \ player who summoned the Water Serpent is awarded a point.\nIf one player summons an Earth Golem and\
+  \ the other summons a Water Serpent, the player who summoned the Earth Golem is awarded a point.\nIf\
+  \ both players summon the same creature, no player is awarded a point.\n\nYou are given a string s consisting\
+  \ of n characters 'F', 'W', and 'E', representing the sequence of creatures Alice will summon in each\
+  \ round:\n\nIf s[i] == 'F', Alice summons a Fire Dragon.\nIf s[i] == 'W', Alice summons a Water Serpent.\n\
+  If s[i] == 'E', Alice summons an Earth Golem.\n\nBob’s sequence of moves is unknown, but it is guaranteed\
+  \ that Bob will never summon the same creature in two consecutive rounds. Bob beats Alice if the total\
+  \ number of points awarded to Bob after n rounds is strictly greater than the points awarded to Alice.\n\
+  Return the number of distinct sequences Bob can use to beat Alice.\nSince the answer may be very large,\
+  \ return it modulo 109 + 7.\n \nExample 1:\n\nInput: s = \"FFF\"\nOutput: 3\nExplanation:\nBob can beat\
+  \ Alice by making one of the following sequences of moves: \"WFW\", \"FWF\", or \"WEW\". Note that other\
+  \ winning sequences like \"WWE\" or \"EWW\" are invalid since Bob cannot make the same move twice in\
+  \ a row.\n\nExample 2:\n\nInput: s = \"FWEFW\"\nOutput: 18\nExplanation:\nBob can beat Alice by making\
+  \ one of the following sequences of moves: \"FWFWF\", \"FWFWE\", \"FWEFE\", \"FWEWE\", \"FEFWF\", \"\
+  FEFWE\", \"FEFEW\", \"FEWFE\", \"WFEFE\", \"WFEWE\", \"WEFWF\", \"WEFWE\", \"WEFEF\", \"WEFEW\", \"\
+  WEWFW\", \"WEWFE\", \"EWFWE\", or \"EWEWE\".\n\n \nConstraints:\n\n1 <= s.length <= 1000\ns[i] is one\
+  \ of 'F', 'W', or 'E'.\n\nWrite the solution in Python as this class, with any imports it needs:\n\n\
+  ```python\nclass Solution:\n    def countWinningSequences(self, s: str) -> int:\n```\n\nReturn only\
+  \ the code."
+assert:
+  checks:
+  - Solution().countWinningSequences(s='WFWFWFWFWFWFWFWFWFWF') == 730500
+  - Solution().countWinningSequences(s='WFW') == 6
+  - Solution().countWinningSequences(s='FWEFWEFW') == 157
+  - Solution().countWinningSequences(s='FWFWFWFWFWFWFWFWFWFW') == 730500
+  - Solution().countWinningSequences(s='EWE') == 6
+  - Solution().countWinningSequences(s='WFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF')
+    == 377759202
+  - Solution().countWinningSequences(s='EEEEEEEEEEEE') == 2364
+  - Solution().countWinningSequences(s='FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFWE')
+    == 697784136
+  - Solution().countWinningSequences(s='FWEFWFWFEF') == 671
+  - Solution().countWinningSequences(s='EFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF')
+    == 942021245
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3320'
+  date: '2024-10-13'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

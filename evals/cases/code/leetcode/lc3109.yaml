@@ -1,0 +1,37 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3109
+modality: code
+prompt: "Given an array perm of length n which is a permutation of [1, 2, ..., n], return the index of\
+  \ perm in the lexicographically sorted array of all of the permutations of [1, 2, ..., n].\nSince the\
+  \ answer may be very large, return it modulo 109 + 7.\n \nExample 1:\n\nInput: perm = [1,2]\nOutput:\
+  \ 0\nExplanation:\nThere are only two permutations in the following order:\n[1,2], [2,1]\n\nAnd [1,2]\
+  \ is at index 0.\n\nExample 2:\n\nInput: perm = [3,1,2]\nOutput: 4\nExplanation:\nThere are only six\
+  \ permutations in the following order:\n[1,2,3], [1,3,2], [2,1,3], [2,3,1], [3,1,2], [3,2,1]\n\nAnd\
+  \ [3,1,2] is at index 4.\n\n \nConstraints:\n\n1 <= n == perm.length <= 105\nperm is a permutation of\
+  \ [1, 2, ..., n].\n\nWrite the solution in Python as this class, with any imports it needs:\n\n```python\n\
+  class Solution:\n    def getPermutationIndex(self, perm: List[int]) -> int:\n```\n\nReturn only the\
+  \ code."
+assert:
+  checks:
+  - Solution().getPermutationIndex(perm=[3, 1, 2]) == 4
+  - Solution().getPermutationIndex(perm=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) == 0
+  - Solution().getPermutationIndex(perm=[4, 3, 2, 1]) == 23
+  - Solution().getPermutationIndex(perm=[5, 3, 1, 2, 4]) == 108
+  - Solution().getPermutationIndex(perm=[4, 1, 3, 2, 5]) == 74
+  - Solution().getPermutationIndex(perm=[1, 2, 3, 4, 5]) == 0
+  - Solution().getPermutationIndex(perm=[1, 3, 2]) == 1
+  - Solution().getPermutationIndex(perm=[5, 4, 3, 2, 1]) == 119
+  - Solution().getPermutationIndex(perm=[1, 2]) == 0
+  - Solution().getPermutationIndex(perm=[10, 9, 8, 7, 6, 5, 4, 3, 2, 1]) == 3628799
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3109'
+  date: '2024-04-07'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode
