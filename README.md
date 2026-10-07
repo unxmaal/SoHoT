@@ -54,6 +54,8 @@ compares to nothing.
 | `soh decide "is this urgent?" --schema schema.json -f ticket.txt` | answers with a probability per choice |
 | `soh say "the tests all passed"` | speak it aloud |
 | `soh hear --seconds 5` | record and transcribe |
+| `soh hear --worst stt -n 10` | the stored clips with the highest WER (stt: median across candidates; tts: per clip), with reference, hypothesis and a play command; read-only |
+| `soh hear --rates` | seconds per word of every stored tts clip, passing and failing, against the runaway ceiling; read-only |
 | `soh discover` | what this machine can do that nobody has measured |
 | `soh discover --neighbors` | what the people who build your tools are starring |
 | `soh fetch` | what is queued for download, and nothing more until you say so |

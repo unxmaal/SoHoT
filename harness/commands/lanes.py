@@ -406,7 +406,28 @@ def cmd_sensitivity(a) -> int:
     return 0
 
 
+def _stored_clips(a) -> int:
+    """`soh hear --worst LANE` and `soh hear --rates`: stored results only, read-only."""
+    import sqlite3
+
+    from harness import clips
+    try:
+        if a.worst:
+            got = clips.worst(a.worst, n=a.n, store=a.store or None, cases_dir=a.cases or None)
+            note(clips.worst_text(a.worst, got))
+            emit(clips=got)
+            return 0
+        got = clips.rates(store=a.store or None, cases_dir=a.cases or None)
+        note(clips.rates_text(got))
+        emit(**got)
+        return 0
+    except (OSError, sqlite3.Error) as exc:
+        return err(f"could not read stored clips: {exc}")
+
+
 def cmd_hear(a) -> int:
+    if getattr(a, "worst", "") or getattr(a, "rates", False):
+        return _stored_clips(a)
     clip = Path(a.file) if a.file else Path(a.output or
                                             default_output("clip", ".wav"))
     if not a.file:
