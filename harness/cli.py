@@ -28,6 +28,7 @@ import sys
 from harness import adopt, audio, completion, env, proc, vector  # noqa: F401
 from harness.commands import adopt as adopt_cmd
 from harness.commands import benchmarks as benchmarks_cmd
+from harness.commands import chaos as chaos_cmd
 from harness.commands import common
 from harness.commands import discover as discover_cmd
 from harness.commands import gateway as gateway_cmd
@@ -560,6 +561,14 @@ def build_parser() -> argparse.ArgumentParser:
     gnt.add_argument("--offline", action="store_true",
                      help="audit: the committed defect snapshot, no gh")
     gnt.set_defaults(func=gauntlet_cmd.cmd_gauntlet)
+    cha = sub.add_parser("chaos", help="break things on purpose on a scratch home and "
+                         "check the harness recovers; never scheduled")
+    cha.add_argument("--yes-break-things", action="store_true",
+                     help="required: kills a scratch server, fills a scratch disk, "
+                          "drops the HF client's network")
+    cha.add_argument("--only", action="append", default=[],
+                     help="run only this scenario (repeatable)")
+    cha.set_defaults(func=chaos_cmd.cmd_chaos)
 
     h = sub.add_parser("hear", help="transcribe a clip, or record and transcribe")
     h.add_argument("file", nargs="?", help="an existing audio file")
