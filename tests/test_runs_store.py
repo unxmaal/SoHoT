@@ -8,7 +8,7 @@ import json
 
 import pytest
 
-from evals import environment
+from evals import core, environment
 from evals import run as er
 from evals.core import Case, Result
 from harness import candidates, memory_store as ms, paths, runs
@@ -51,7 +51,7 @@ class _Runner:
 def test_evals_run_writes_the_run_and_its_rows(monkeypatch, tmp_path):
     cases = [Case(id="a", modality="svg", prompt="p"),
              Case(id="b", modality="svg", prompt="q")]
-    monkeypatch.setattr(er, "load_cases", lambda path: cases)
+    monkeypatch.setattr(core, "load_cases", lambda path: cases)
     monkeypatch.setattr(er, "build_runner", lambda *a, **k: _Runner())
     monkeypatch.setattr(er, "warn_if_pressed",
                         lambda: argparse.Namespace(as_dict=lambda: {}))
@@ -292,7 +292,7 @@ def test_the_screen_verdict_names_its_stored_run(conn, store_run):
 
 def _execute(monkeypatch, tmp_path, specs: str, runner=None):
     cases = [Case(id="a", modality="svg", prompt="p")]
-    monkeypatch.setattr(er, "load_cases", lambda path: cases)
+    monkeypatch.setattr(core, "load_cases", lambda path: cases)
     monkeypatch.setattr(er, "build_runner", lambda *a, **k: runner or _Runner())
     monkeypatch.setattr(er, "warn_if_pressed",
                         lambda: argparse.Namespace(as_dict=lambda: {}))
