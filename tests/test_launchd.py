@@ -335,3 +335,12 @@ def test_install_audits_what_it_just_deployed():
 def test_the_audit_script_runs_soh_audit_from_its_checkout():
     text = (REPO / "scripts" / "serve-audit.sh").read_text(encoding="utf-8")
     assert "set -euo pipefail" in text and "uv run soh audit" in text
+
+
+def test_install_lets_a_running_job_finish_before_reloading_the_worker():
+    """#577: a reload under a running job killed it and recorded it as failed."""
+    body = GEN.read_text(encoding="utf-8").split("install_units() {", 1)[1].split("\n}\n", 1)[0]
+    assert "harness.workqueue quiesce" in body
+    assert body.index("harness.workqueue quiesce") < body.index("launchctl bootout")
+    assert "was-running" in body and "jobs resume" in body, (
+        "the queue is resumed after the reload only if the owner had not paused it")

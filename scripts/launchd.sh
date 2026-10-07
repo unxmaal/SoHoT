@@ -219,7 +219,16 @@ install_units() {
   mkdir -p "$AGENTS"
   generate "$AGENTS" >/dev/null
   local failed=""
+  local was=""
   for service in $SERVICES; do
+    if [ "$service" = worker ]; then
+      # Reloading the worker kills its running job, so let that job finish first. #577.
+      echo "waiting for any running queued job to finish before reloading the worker"
+      if ! was=$(cd "$DEPLOY" && uv run python -m harness.workqueue quiesce); then
+        echo "could not quiesce the queue; reloading the worker anyway" >&2
+        was=""
+      fi
+    fi
     # bootout first so `install` is re-runnable: bootstrap on an already-loaded
     # label fails, and "already loaded" is the normal state when reinstalling.
     launchctl bootout "gui/$UID/$PREFIX.$service" 2>/dev/null || true
@@ -229,6 +238,9 @@ install_units() {
     # than either all-old or all-new because nothing on it is a known state.
     if launchctl bootstrap "gui/$UID" "$AGENTS/$PREFIX.$service.plist"; then
       echo "loaded $PREFIX.$service"
+      if [ "$service" = worker ] && [ "$was" = was-running ]; then
+        (cd "$DEPLOY" && uv run soh jobs resume >/dev/null)
+      fi
     else
       failed="$failed $service"
       echo "FAILED to load $PREFIX.$service" >&2
