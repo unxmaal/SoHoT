@@ -297,7 +297,7 @@ def _gguf_pick(repo: str, listing, snapshot):
 def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=None,
         free: int | None = None, lane: str = "",
         budget: int | None = None, listing=None,
-        hf_download=None) -> list[dict]:
+        hf_download=None, floor: int = DISK_FLOOR) -> list[dict]:
     """Fetch up to `limit` queued candidates, recording what happened.
 
     `budget` caps what ONE INVOCATION downloads in total, which is the job
@@ -394,7 +394,7 @@ def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=N
                               reason=reasons.LIMIT)
             done.append({"repo": name, "ok": False, "why": why})
             continue
-        p = plan(name, size, free=free)
+        p = plan(name, size, free=free, floor=floor)
         if not p.ok:
             # Our own gap, or a disk that will be freed, is not an answer about the candidate. #211, #408, #528.
             outcome = "queued" if p.reason in (reasons.HARNESS, reasons.MACHINE) else "declined"
