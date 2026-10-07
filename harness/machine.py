@@ -293,4 +293,8 @@ def versions() -> dict[str, str]:
     build = serving.llamacpp_build()
     if build:
         got["llama.cpp"] = build
+    from harness import needle
+    runtime = needle.installed_version()
+    if runtime:
+        got["needle"] = runtime
     return got

@@ -288,4 +288,8 @@ def check(artifact, schema: dict, gold: dict) -> CheckResult:
         "calibrated": 1.0 if all(r["calibrated"] for r in rows) else 0.0,
         "decisions": [[round(r["confidence"], 6), int(r["correct"])] for r in rows],
     }
+    body = artifact if isinstance(artifact, dict) else _json_object(str(artifact or "")) or {}
+    if body.get("per_option") is False:
+        # One score per call spread over the choices, not a distribution. #312.
+        out.metrics["per_option"] = 0.0
     return out

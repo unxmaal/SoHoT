@@ -110,7 +110,8 @@ class Outcome:
 
 
 def run(argv: list[str], timeout: float | None = None,
-        stream: bool = False, cwd: str | Path | None = None) -> Outcome:
+        stream: bool = False, cwd: str | Path | None = None,
+        env: dict | None = None) -> Outcome:
     """Run argv to completion, returning its exit status, wall time and peak.
 
     `stream=True` lets the child's output reach the terminal live, which is not
@@ -139,7 +140,7 @@ def run(argv: list[str], timeout: float | None = None,
     # quantises to 15.6ms, which is coarse enough to report a 0.15s run short.
     started = time.perf_counter()
     if sys.platform == "win32":
-        return _run_windows(argv, timeout, stream, cwd, started)
+        return _run_windows(argv, timeout, stream, cwd, started, env)
     if not Path(TIME_BIN).exists():
         # A missing instrument is not a reason to report a zero. On Ubuntu this
         # is `sudo apt-get install time`; everywhere else it is already here.
@@ -152,7 +153,8 @@ def run(argv: list[str], timeout: float | None = None,
         wrapped = [TIME_BIN, TIME_FLAG, "/bin/sh", "-c",
                    'exec "$@" 2>&1', "sh", *argv]
         proc = subprocess.run(wrapped, stderr=subprocess.PIPE, text=True,
-                              timeout=timeout, cwd=cwd)
+                              timeout=timeout, cwd=cwd,
+                              env={**_env(), **env} if env else None)
         return Outcome(proc.returncode, round(time.perf_counter() - started, 3),
                        _peak_kb(proc.stderr), "", "")
 
@@ -161,7 +163,7 @@ def run(argv: list[str], timeout: float | None = None,
                    'exec "$@" 2>"$_H_ERR"', "sh", *argv]
         proc = subprocess.run(wrapped, capture_output=True, text=True,
                               timeout=timeout, cwd=cwd,
-                              env={**_env(), "_H_ERR": errf.name})
+                              env={**_env(), **(env or {}), "_H_ERR": errf.name})
         errf.seek(0)
         child_stderr = errf.read()
 
@@ -226,7 +228,8 @@ def _job_structs():
 
 
 def _run_windows(argv: list[str], timeout: float | None, stream: bool,
-                 cwd: str | Path | None, started: float) -> Outcome:
+                 cwd: str | Path | None, started: float,
+                 env: dict | None = None) -> Outcome:
     """Run argv under a fresh job object and read the job's peak afterwards.
 
     The child is assigned to the job immediately after it is created. That is
@@ -240,7 +243,8 @@ def _run_windows(argv: list[str], timeout: float | None, stream: bool,
     kernel32, Extended = _job_structs()
     job = kernel32.CreateJobObjectW(None, None)
     pipe = None if stream else subprocess.PIPE
-    proc = subprocess.Popen(argv, stdout=pipe, stderr=pipe, text=True, cwd=cwd)
+    proc = subprocess.Popen(argv, stdout=pipe, stderr=pipe, text=True, cwd=cwd,
+                            env={**_env(), **env} if env else None)
     try:
         if job:
             kernel32.AssignProcessToJobObject(job, int(proc._handle))
