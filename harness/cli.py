@@ -481,7 +481,7 @@ def build_parser() -> argparse.ArgumentParser:
                      help="the store to audit (default: this home's discovery.db)")
     aud.set_defaults(func=store_cmd.cmd_audit)
     jobs = sub.add_parser("jobs", help="the work queue: runs in order while "
-                          "nobody is using this machine")
+                          "memory pressure is normal")
     jobs.add_argument("action", choices=("add", "list", "pause", "resume",
                                          "cancel", "priority"))
     jobs.add_argument("rest", nargs=argparse.REMAINDER,

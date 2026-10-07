@@ -71,42 +71,45 @@ def test_only_one_runner_works_the_queue():
     assert not wq.running()
 
 
-def AWAY():
-    return True, "idle 30 min"
+from harness import pressure  # noqa: E402
 
-
-def HERE():
-    return False, "in use"
+CALM = pressure.Pressure(level=pressure.NORMAL)
+BUSY = pressure.Pressure(level=pressure.WARN)
+UNKNOWN = pressure.Pressure()
 
 
 def test_pause_closes_the_gate_and_resume_opens_it():
     wq.pause()
-    assert wq.gate(away=AWAY) == (False, "paused (soh jobs resume)")
+    assert wq.gate(sample=lambda: CALM) == (False, "paused (soh jobs resume)")
     wq.resume()
-    assert wq.gate(away=AWAY)[0]
+    assert wq.gate(sample=lambda: CALM)[0]
 
 
-def test_the_owner_at_the_machine_closes_the_gate():
-    assert not wq.gate(away=HERE)[0]
-    assert "owner present" in wq.gate(away=HERE)[1]
+def test_memory_pressure_closes_the_gate_and_says_so():
+    ok, why = wq.gate(sample=lambda: BUSY)
+    assert not ok and "memory pressure" in why
 
 
-def test_the_worker_runs_nothing_while_the_owner_is_here(tmp_path):
+def test_unknown_pressure_does_not_block():
+    assert wq.gate(sample=lambda: UNKNOWN)[0]
+
+
+def test_the_worker_runs_nothing_under_memory_pressure(tmp_path):
     flag = tmp_path / "ran"
     wq.add(py(f"open({str(flag)!r}, 'w')"))
-    wq.serve(gate_fn=lambda: wq.gate(away=HERE), forever=False)
+    wq.serve(gate_fn=lambda: wq.gate(sample=lambda: BUSY), forever=False)
     assert not flag.exists()
     assert wq.jobs()[0]["state"] == wq.PENDING
 
 
-def test_the_worker_runs_the_queue_when_the_owner_leaves(tmp_path):
+def test_the_worker_runs_the_queue_when_memory_is_calm(tmp_path):
     flag = tmp_path / "ran"
     wq.add(py(f"open({str(flag)!r}, 'w')"))
-    wq.serve(gate_fn=lambda: wq.gate(away=AWAY), forever=False)
+    wq.serve(gate_fn=lambda: wq.gate(sample=lambda: CALM), forever=False)
     assert flag.exists() and wq.jobs()[0]["state"] == wq.DONE
 
 
-def test_a_returning_owner_stops_the_next_job_not_the_running_one(tmp_path):
+def test_a_closing_gate_stops_the_next_job_not_the_running_one(tmp_path):
     """The gate is checked between jobs: work in progress is never thrown away."""
     first, second = tmp_path / "1", tmp_path / "2"
     wq.add(py(f"open({str(first)!r}, 'w')"))

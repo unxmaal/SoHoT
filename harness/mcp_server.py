@@ -17,7 +17,7 @@ the lane commands' route rather than their argv.
 
 svg, web and code answer directly. image and video go on the shared work
 queue (harness/workqueue.py, #353): they return a job id at once, run in order
-while nobody is using this machine, and job_result hands back the file.
+while memory pressure is normal, and job_result hands back the file.
 
     ./scripts/serve-mcp.sh          # 0.0.0.0, no auth, trusted LAN only
 
@@ -74,8 +74,8 @@ SERVER = MCPServer(
     instructions=(
         "Local media generation on Apple Silicon. svg, web and code answer in "
         "a few seconds. image and video go on this machine's work queue and "
-        "return a job id at once: jobs run in order, and only while nobody is "
-        "using the machine, so a job may wait. Poll job_status; when it is "
+        "return a job id at once: jobs run in order, and wait while the "
+        "machine is short of memory. Poll job_status; when it is "
         "done, job_result returns the file itself. local_complete and "
         "local_decide hand a text subtask to this machine's adopted local "
         "model and answer directly."),
