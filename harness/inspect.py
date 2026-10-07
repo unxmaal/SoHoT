@@ -748,6 +748,10 @@ class Card:
     lane_source: str = ""
     #: model, tool or technique (memory_store CATEGORIES); "" when unread. #576.
     category: str = ""
+    #: config.json's model_type, "" when the card carried no config. #567.
+    model_type: str = ""
+    #: The repo's own modelling code its auto_map names, "" for none. #567.
+    remote_code: str = ""
 
 
 def lineage(tags) -> list[tuple[str, str]]:
@@ -775,10 +779,15 @@ def card_facts(data: dict) -> Card:
     adapter = any(k == "adapter" for _, k in parents)
     words = " ".join([task, library, *plain, "adapter" if adapter else ""])
     lane, source = lane_and_source(data)
+    from harness.remote_code import code_evidence
+    config = data.get("config") or {}
+    files = [s.get("rfilename", "") for s in (data.get("siblings") or [])]
     return Card(task=task, library=library, tags=plain, parents=parents,
                 attaches_to=screen.is_attachment(words),
                 runtime_needed=runtime_needed(library, plain),
-                lane=lane, lane_source=source, category="model")
+                lane=lane, lane_source=source, category="model",
+                model_type=str(config.get("model_type") or "").strip(),
+                remote_code=code_evidence(config, files))
 
 
 def repo_facts(meta: dict, lane: str = "") -> Card:

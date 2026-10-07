@@ -7,6 +7,8 @@ import json
 #: The card-fact columns, on a store older than the DDL. #414.
 CARD_COLUMNS = ("hf_task", "library", "card_tags", "attaches_to",
                 "runtime_needed", "lane_source", "card_read")
+#: What says a repo needs trust_remote_code. #567.
+CODE_COLUMNS = ("model_type", "remote_code")
 
 
 def set_card(conn, name: str, card, read: str = "card") -> bool:
@@ -29,6 +31,8 @@ def set_card(conn, name: str, card, read: str = "card") -> bool:
         (card.task, card.library, json.dumps(list(card.tags)),
          card.attaches_to, card.runtime_needed, read,
          1 if same else 0, card.lane_source, row["id"]))
+    conn.execute("UPDATE proposals SET model_type = ?, remote_code = ? WHERE id = ?",
+                 (getattr(card, "model_type", ""), getattr(card, "remote_code", ""), row["id"]))
     if getattr(card, "category", ""):
         conn.execute("UPDATE proposals SET category = ? WHERE id = ?",
                      (card.category, row["id"]))
@@ -57,11 +61,12 @@ def parents_of(conn, names) -> dict[str, list[tuple[str, str]]]:
 
 def card_of(conn, name: str) -> dict | None:
     """The card facts an engine is chosen by: library, tags, parents. #467."""
-    row = conn.execute("SELECT library, card_tags, hf_task FROM proposals WHERE name = ?",
-                       (name,)).fetchone()
+    row = conn.execute("SELECT library, card_tags, hf_task, model_type, remote_code "
+                       "FROM proposals WHERE name = ?", (name,)).fetchone()
     if not row:
         return None
     return {"library": row["library"], "card_tags": row["card_tags"], "hf_task": row["hf_task"],
+            "model_type": row["model_type"], "remote_code": row["remote_code"],
             "parents": parents_of(conn, [name])[name]}
 
 

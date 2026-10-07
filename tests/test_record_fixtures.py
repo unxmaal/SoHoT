@@ -30,3 +30,12 @@ def test_a_card_is_recorded_from_the_url_inspect_reads_with_every_file(
     assert seen == [ins.MODEL_URL.format(model_id="org/m")]
     assert len(got["siblings"]) == 89
     assert all(s["size"] for s in got["siblings"])
+
+
+def test_the_recorder_keeps_the_config_fields_inspect_reads():
+    """inspect reads model_type and auto_map to refuse remote code before a download. #567."""
+    assert "config" in rec.KEEP
+    card = {"config": {"model_type": "x", "auto_map": {"A": "m.B"},
+                       "tokenizer_config": {"chat_template": "..."}}}
+    assert rec.trim(card) == {"config": {"model_type": "x", "auto_map": {"A": "m.B"}}}
+    assert rec.trim({"id": "a"}) == {"id": "a"}

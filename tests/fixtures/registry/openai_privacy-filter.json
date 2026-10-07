@@ -125,5 +125,11 @@
   }
  ],
  "lastModified": "2026-04-22T16:50:17.000Z",
- "downloads": 345678
+ "downloads": 345678,
+ "config": {
+  "architectures": [
+   "OpenAIPrivacyFilterForTokenClassification"
+  ],
+  "model_type": "openai_privacy_filter"
+ }
 }

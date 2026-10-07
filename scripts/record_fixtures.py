@@ -27,7 +27,17 @@ FIXTURES = Path(__file__).resolve().parent.parent / "tests" / "fixtures" / "regi
 #: Only the fields the ladder reads. A whole card is 40 KB of README that no
 #: test looks at and that changes on every push.
 KEEP = ("id", "pipeline_tag", "tags", "library_name", "cardData",
-        "siblings", "lastModified", "downloads")
+        "siblings", "lastModified", "downloads", "config")
+#: Of config, what inspect reads; tokenizer_config alone carries a chat template. #567.
+CONFIG_KEEP = ("architectures", "model_type", "auto_map")
+
+
+def trim(card: dict) -> dict:
+    """`card` with its config cut to CONFIG_KEEP."""
+    config = card.get("config")
+    if not isinstance(config, dict):
+        return card
+    return {**card, "config": {k: config[k] for k in CONFIG_KEEP if k in config}}
 
 
 def record(model_id: str) -> Path:
@@ -36,7 +46,7 @@ def record(model_id: str) -> Path:
         headers={"User-Agent": "localharness-fixtures"})
     with urllib.request.urlopen(req, timeout=30) as r:
         card = json.load(r)
-    out = {k: card.get(k) for k in KEEP}
+    out = trim({k: card.get(k) for k in KEEP})
     if out.get("siblings"):
         out["siblings"] = [{"rfilename": s.get("rfilename"),
                             "size": s.get("size")}

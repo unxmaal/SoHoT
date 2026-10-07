@@ -126,6 +126,14 @@ def _add_category(conn) -> None:
         conn.execute("ALTER TABLE proposals ADD COLUMN category TEXT NOT NULL DEFAULT ''")
 
 
+def _add_code_facts(conn) -> None:
+    """proposals.model_type and remote_code, on an older store. #567."""
+    from harness.memory_store.cards import CODE_COLUMNS
+    for col in CODE_COLUMNS:
+        if col not in _columns(conn, "proposals"):
+            conn.execute(f"ALTER TABLE proposals ADD COLUMN {col} TEXT NOT NULL DEFAULT ''")
+
+
 def _add_reasons(conn) -> None:
     """verdicts.reason and the results' failure class, on an older store. #408."""
     for table, col in (("verdicts", "reason"), ("results", "failure_class"),

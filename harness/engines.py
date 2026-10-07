@@ -744,9 +744,18 @@ def by_card(specs: tuple, card) -> tuple:
     return first + tuple(s for s in specs if s not in first)
 
 
+#: Engines that run in the hf-task venv, which never passes trust_remote_code. #567.
+HF_TASK_ENGINES = frozenset({"hf-ocr", "rerank", "embed", "hf-pii"})
+
+
 def card_gap(spec: str, card) -> str:
     """Why this engine cannot load the model its card describes, or "". #563."""
     head = spec.partition(",")[0].partition(":")[0].strip()
+    if head in HF_TASK_ENGINES:
+        from harness import remote_code
+        code = remote_code.gap(card)
+        if code:
+            return f"needs its own runner: {code}"
     task = _card_task(card)
     if (head, task) in TASK_GAPS:
         return f"needs its own runner: {TASK_GAPS[(head, task)]}"

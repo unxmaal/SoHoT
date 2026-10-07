@@ -82,5 +82,15 @@
   }
  ],
  "lastModified": "2026-09-20T11:34:50.000Z",
- "downloads": 5248
+ "downloads": 5248,
+ "config": {
+  "architectures": [
+   "HayaiModel"
+  ],
+  "model_type": "hayai",
+  "auto_map": {
+   "AutoConfig": "configuration_hayai.HayaiConfig",
+   "AutoModel": "modeling_hayai.HayaiModel"
+  }
+ }
 }
