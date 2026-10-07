@@ -28,6 +28,13 @@ MIN_AUDIO_BYTES = 8000
 
 _PUNCT = re.compile(r"[^\w\s]")
 _DIGITS = re.compile(r"\d+")
+_EN_NUMBER = re.compile(r"(\d+)(?:\.(\d+)|(st|nd|rd|th)\b)?")
+_EN_GROUPING = re.compile(r"(?<=\d),(?=\d{3}\b)")
+_SCALES = {"hundred", "thousand", "million", "billion"}
+_SMALL = {"one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
+          "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen",
+          "seventeen", "eighteen", "nineteen", "twenty", "thirty", "forty", "fifty",
+          "sixty", "seventy", "eighty", "ninety"}
 
 
 @dataclass
@@ -58,6 +65,30 @@ class SpeechResult:
                 "wer_errors": self.errors, "wer_words": self.words}
 
 
+def _en_number(m: re.Match) -> str:
+    whole, frac, suffix = m.groups()
+    if suffix:
+        return num2words(int(whole), lang="en", to="ordinal")
+    words = num2words(int(whole), lang="en")
+    if frac:
+        words += " point " + " ".join(num2words(int(d), lang="en") for d in frac)
+    return words
+
+
+def drop_number_and(words: list[str]) -> list[str]:
+    """One spoken form for English numbers: "hundred and five" and "a hundred" become "hundred five" and "one hundred"."""
+    result = []
+    for i, word in enumerate(words):
+        if (word == "and" and i > 0 and words[i - 1] in _SCALES
+                and i + 1 < len(words) and words[i + 1] in _SMALL):
+            continue
+        if word == "a" and i + 1 < len(words) and words[i + 1] in _SCALES:
+            result.append("one")
+        else:
+            result.append(word)
+    return result
+
+
 def normalize(text: str, language: str = "en") -> str:
     """Strip everything that would measure transcription style, not speech.
 
@@ -70,6 +101,9 @@ def normalize(text: str, language: str = "en") -> str:
     the English table turns a correct reading into four errors and reports it
     as the TTS model failing.
     """
+    if language == "en":
+        text = _EN_NUMBER.sub(_en_number, _EN_GROUPING.sub("", text))
+        return " ".join(drop_number_and(_PUNCT.sub(" ", text.lower()).split()))
     try:
         text = _DIGITS.sub(
             lambda m: num2words(int(m.group()), lang=language), text)

@@ -1,20 +1,20 @@
 # SoHoT generated tts cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/tts_synth.py).
-# Imported by evals/importers from generated:evals.importers.tts_synth v1 seed 603@fe74a5a0b165c7d94dccff746520bd0092ef0ed5; re-import, do not edit.
+# Imported by evals/importers from generated:evals.importers.tts_synth v2 seed 603@641579cfcc88a54adc167fd7f3f2c00a3da97871; re-import, do not edit.
 id: tts-synth-0284
 modality: tts
 language: en
-prompt: If 49 birds flew north, Laura, where did the other 95 stay?
+prompt: 'Wait, Emma: are the 515 apples ripe, or still 294 days away?'
 assert:
   max_wer: 0.2
 attribution:
   dataset: SoHoT generated tts cases
   url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/tts_synth.py
   license: generated
-  source: generated:evals.importers.tts_synth v1 seed 603
-  revision: fe74a5a0b165c7d94dccff746520bd0092ef0ed5
+  source: generated:evals.importers.tts_synth v2 seed 603
+  revision: 641579cfcc88a54adc167fd7f3f2c00a3da97871
   item: '284'
   date: ''
   transform: a template filled with a name, a city and two numbers
   importer: evals.importers.tts_synth
-  version: '1'
+  version: '2'
   seed: 603

@@ -1,7 +1,7 @@
 """Generated tts cases: seeded English sentences, the sentence itself the reference transcript. #603.
 
-Numbers stay between 2 and 99: the scorer spells digits with num2words, which
-says "one hundred and five" where a voice says "one hundred five" (#606).
+Numbers run from 2 to 9999, two, three and four digits equally often; the scorer
+accepts "one hundred five" and "one hundred and five" alike (#606).
 """
 from __future__ import annotations
 
@@ -12,9 +12,9 @@ import sys
 from evals.importers import Imported, provenance
 
 LANE = "tts"
-VERSION = "1"
+VERSION = "2"
 SEED = 603
-COUNT = 420
+COUNT = 460
 SOURCE = f"generated:evals.importers.tts_synth v{VERSION} seed {SEED}"
 DATASET = "SoHoT generated tts cases"
 URL = "https://github.com/unxmaal/SoHoT/blob/main/evals/importers/tts_synth.py"
@@ -23,6 +23,7 @@ LICENSE = "generated"
 REVISION = hashlib.sha1(SOURCE.encode("utf-8")).hexdigest()
 _KEY = "tts-synth"
 MAX_WER = 0.2
+SPANS = [(2, 99), (100, 999), (1000, 9999)]
 
 NAMES = ["Anna", "David", "Maria", "James", "Sarah", "Peter", "Laura", "Daniel",
          "Emma", "Thomas", "Grace", "Henry", "Olivia", "Lucas", "Nina", "Oscar"]
@@ -80,7 +81,9 @@ def fetch(seed: int = SEED, count: int = COUNT) -> list[dict]:
         rng = random.Random(f"{_KEY}:{VERSION}:{seed}:{i}")
         sentence = ""
         while not sentence or sentence in seen:
-            n, m = rng.sample(range(2, 100), 2)
+            n = m = 0
+            while n == m:
+                n, m = (rng.randint(*rng.choice(SPANS)) for _ in range(2))
             sentence = rng.choice(TEMPLATES).format(name=rng.choice(NAMES), n=n, m=m,
                                                      city=rng.choice(CITIES))
         seen.add(sentence)

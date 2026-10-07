@@ -197,3 +197,54 @@ def test_check_passes_the_language_through(tmp_path):
     r = speech.check(clip, reference="92 jetons", language="fr",
                      transcriber=lambda p: "quatre-vingt-douze jetons")
     assert r.ok and r.wer == 0.0
+
+
+# ---- one canonical spoken form for English numbers (#606) -------------------
+# num2words says "one hundred and five"; a voice may say "one hundred five".
+# Both sides are reduced to the same form, so either correct reading scores 0
+# and a wrong number still costs a word.
+
+@pytest.mark.parametrize("reference, heard", [
+    ("He spent 105 nights there.", "he spent one hundred five nights there"),
+    ("He spent 105 nights there.", "he spent one hundred and five nights there"),
+    ("Rhiannon spent 125 nights.", "rhiannon spent one hundred twenty five nights"),
+    ("It cost 2026 dollars.", "it cost two thousand twenty six dollars"),
+    ("We shipped 9999 crates.", "we shipped nine thousand nine hundred ninety nine crates"),
+    ("We shipped 6319 crates.", "we shipped six thousand three hundred nineteen crates"),
+    ("About 1,250 people came.", "about one thousand two hundred fifty people came"),
+    ("About 100 people came.", "about a hundred people came"),
+    ("Take the 21st exit.", "take the twenty first exit"),
+    ("She was 3rd in line.", "she was third in line"),
+    ("It took 3.5 seconds.", "it took three point five seconds"),
+    ("It took 2.05 seconds.", "it took two point zero five seconds"),
+])
+def test_a_correct_english_number_reading_is_not_an_error(reference, heard):
+    assert speech.wer(reference, heard) == 0.0
+
+
+@pytest.mark.parametrize("reference, heard", [
+    ("He spent 105 nights there.", "he spent one hundred fifteen nights there"),
+    ("He spent 105 nights there.", "he spent one hundred and fifteen nights there"),
+    ("We shipped 6319 crates.", "we shipped sixty three nineteen crates"),
+    ("He walked 1019 miles.", "he walked ten nineteen miles"),
+    ("Take the 21st exit.", "take the twenty second exit"),
+    ("It took 3.5 seconds.", "it took thirty five seconds"),
+    ("About 1,250 people came.", "about one thousand two hundred people came"),
+])
+def test_a_wrong_number_is_still_an_error(reference, heard):
+    assert speech.wer(reference, heard) > 0.0
+
+
+def test_an_and_between_words_that_are_not_a_number_still_counts():
+    assert speech.wer("salt and pepper", "salt pepper") > 0.0
+    assert speech.wer("100 apples and 5 pears", "one hundred apples five pears") > 0.0
+
+
+def test_the_canonical_form_drops_the_conjunction_on_both_sides():
+    assert speech.normalize("105") == "one hundred five"
+    assert speech.normalize("one hundred and five") == "one hundred five"
+    assert speech.normalize("2026") == "two thousand twenty six"
+
+
+def test_wer_counts_charge_nothing_for_a_correct_reading_over_99():
+    assert speech.wer_counts("105 nights", "one hundred five nights") == (0, 4)

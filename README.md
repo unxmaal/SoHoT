@@ -1812,7 +1812,7 @@ write `evals/cases/<lane>/<source>/` through the same importer framework.
 same seed gives the same bytes. With no upstream commit, `SOURCE` names the
 generator version and seed, `REVISION` is the SHA-1 of `SOURCE`, the license
 is `generated`, and the attribution adds version and seed. There
-are 440 ocr, 540 pii and 420 tts cases, giving the lanes 140, 166 and 133
+are 440 ocr, 540 pii and 460 tts cases, giving the lanes 140, 166 and 135
 holdout cases. The
 ocr images use only Pillow's bundled font, since no other renders alike on
 every platform, and vary size, weight, slant, width, contrast and noise; most
@@ -1822,11 +1822,19 @@ which leaves the adopt gate nothing to detect. With the degradations it reads
 315 of 440. The pii sentences fill templates with fake values only (example.com
 addresses, 555-01xx numbers, published example IBANs and test card numbers,
 TEST-NET addresses, `sk-test-` keys), and about one in five has no personal
-data; `pii-regex` passes 74% of the holdout. The tts sentences keep numbers
-between 2 and 99, because the scorer spells digits with num2words ("one
-hundred and five") where a voice says "one hundred five" (#606). Kokoro passes
-all 131 English holdout cases at a corpus WER of 0.013, so the tts holdout is
-saturated: the cases are enough, the metric has no room above the incumbent.
+data; `pii-regex` passes 74% of the holdout. The tts sentences draw two-, three- and
+four-digit numbers equally often (2 to 9999, generator v2). The English scorer
+reduces both the reference and the transcript to one spoken form before
+counting: digits become cardinal words with no "and" (105 is "one hundred
+five", and a transcript's "one hundred and five" or "a hundred" reduces the
+same way), "21st" becomes "twenty first", "3.5" becomes "three point five", and
+"1,250" loses its comma (#606). A digit is always read as a count, so "6319
+crates" heard year-style as "sixty three nineteen" is still two errors. With
+v1 (numbers 2 to 99, because the scorer then charged "one hundred five" a
+word) Kokoro passed all 131 English holdout cases at a corpus WER of 0.013,
+which left the metric no room above the incumbent. Receipts: every v2 case is
+new content, so `cases_digest` keeps a v1 tts run from being ranked against a
+v2 one; no hand-written tts or LibriSpeech reference normalizes differently.
 `soh cases control <source>` runs the negative controls that
 `tests/test_generated_cases.py` pins: another case's text on ocr, marking
 nothing or everything on pii, silence or one fixed sentence on tts.

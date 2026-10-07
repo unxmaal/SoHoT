@@ -112,7 +112,7 @@ def test_an_imported_file_is_written_beside_its_case_and_may_not_escape(tmp_path
 @pytest.mark.parametrize("name,want", [
     ("ocr_synth", {"reference": 440, "other-case": 0, "empty": 0}),
     ("pii_synth", {"reference": 540, "nothing": 120, "everything": 0}),
-    ("tts_synth", {"reference": 420, "silence": 0, "fixed": 0}),
+    ("tts_synth", {"reference": 460, "silence": 0, "fixed": 0}),
 ])
 def test_the_registered_negative_control_separates_reference_from_responders(committed, name,
                                                                               want):
@@ -253,11 +253,12 @@ def test_tts_negative_controls_silence_and_a_fixed_sentence(committed, tmp_path)
     assert passed <= 0.02 * len(cases) and rate > 0.6
 
 
-def test_tts_numbers_avoid_the_normalizer_ambiguities(committed):
-    """num2words says 'one hundred and five' where a voice says 'one hundred five'."""
-    for c in committed["tts_synth"]:
-        for n in re.findall(r"\d+", c.prompt):
-            assert 2 <= int(n) <= 99, c.prompt
+def test_tts_numbers_reach_four_digits_now_the_scorer_drops_the_and(committed):
+    """#606: a number over 99 no longer costs a correct reading a word, so the generator draws up to 9999."""
+    numbers = [int(n) for c in committed["tts_synth"] for n in re.findall(r"\d+", c.prompt)]
+    assert all(2 <= n <= 9999 for n in numbers)
+    assert sum(n > 99 for n in numbers) > len(numbers) / 2
+    assert sum(n > 999 for n in numbers) > len(numbers) / 4
 
 
 def test_every_degradation_has_a_strength_and_an_unknown_one_is_refused():
