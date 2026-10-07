@@ -170,6 +170,7 @@ def test_ocr_negative_control_another_cases_text_scores_clearly_worse(committed)
     assert wrong["passed"] == 0 and wrong["metrics"]["cer"] > 0.5
 
 
+@pytest.mark.usefixtures("real_ocr")
 def test_the_os_reader_reads_a_sample_of_the_generated_images(committed):
     """Positive control: a working OCR reads them, so a candidate's miss is its own."""
     from harness.checks import ocr

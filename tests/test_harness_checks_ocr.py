@@ -42,11 +42,13 @@ def render(path, text, size=(480, 200)):
     return path
 
 
+@pytest.mark.usefixtures("real_ocr")
 def test_reads_text_out_of_an_image(tmp_path):
     got = ocr.read(render(tmp_path / "a.png", "OPEN"))
     assert any("OPEN" in s.upper() for s in got), got
 
 
+@pytest.mark.usefixtures("real_ocr")
 def test_an_image_with_no_text_reads_as_nothing(tmp_path):
     from PIL import Image
     import random
@@ -64,12 +66,14 @@ def test_a_missing_file_raises_rather_than_reading_as_empty(tmp_path):
 
 # ---- the check ------------------------------------------------------------
 
+@pytest.mark.usefixtures("real_ocr")
 def test_the_expected_word_rendered_correctly_scores_zero_error(tmp_path):
     r = ocr.check(render(tmp_path / "a.png", "OPEN"), expect="OPEN")
     assert r.ok
     assert r.cer == 0.0
 
 
+@pytest.mark.usefixtures("real_ocr")
 def test_a_near_miss_is_a_graded_score_not_just_a_failure(tmp_path):
     """OPEM for OPEN is one character in four. A pass/fail check throws that
     away; the point of the number is that a model which almost renders text is
@@ -81,6 +85,7 @@ def test_a_near_miss_is_a_graded_score_not_just_a_failure(tmp_path):
     assert "OPEM" in r.reason.upper()
 
 
+@pytest.mark.usefixtures("real_ocr")
 def test_text_that_is_not_there_at_all_is_total_error(tmp_path):
     from PIL import Image
     p = tmp_path / "n.png"
@@ -91,6 +96,7 @@ def test_text_that_is_not_there_at_all_is_total_error(tmp_path):
     assert "no text" in r.reason.lower()
 
 
+@pytest.mark.usefixtures("real_ocr")
 def test_case_and_surrounding_words_do_not_count_against_it(tmp_path):
     """Vision returns each text region separately and models add flourishes.
     The check is whether the requested word is rendered, not whether it is the
@@ -99,12 +105,14 @@ def test_case_and_surrounding_words_do_not_count_against_it(tmp_path):
     assert r.ok and r.cer == 0.0
 
 
+@pytest.mark.usefixtures("real_ocr")
 def test_the_best_matching_region_is_the_one_scored(tmp_path):
     r = ocr.check(render(tmp_path / "a.png", "CAFE\nOPEN", size=(480, 320)),
                   expect="OPEN")
     assert r.ok, r.reason
 
 
+@pytest.mark.usefixtures("real_ocr")
 def test_the_metric_is_published_for_ranking(tmp_path):
     r = ocr.check(render(tmp_path / "a.png", "OPEN"), expect="OPEN")
     assert r.metrics == {"cer": 0.0}
@@ -123,12 +131,14 @@ def test_the_default_tolerance_allows_a_little_ocr_noise(tmp_path):
 # that is one character in four, and it showed up in a summary as the only
 # quality difference between two image models. It was punctuation.
 
+@pytest.mark.usefixtures("real_ocr")
 def test_trailing_punctuation_is_not_a_rendering_error(tmp_path):
     r = ocr.check(render(tmp_path / "a.png", "OPEN."), expect="OPEN")
     assert r.ok
     assert r.cer == 0.0
 
 
+@pytest.mark.usefixtures("real_ocr")
 def test_surrounding_quotes_are_not_a_rendering_error(tmp_path):
     r = ocr.check(render(tmp_path / "a.png", '"OPEN"'), expect="OPEN")
     assert r.ok and r.cer == 0.0
@@ -140,6 +150,7 @@ def test_internal_punctuation_still_counts(tmp_path):
     assert ocr.cer("open", "op-en") > 0
 
 
+@pytest.mark.usefixtures("real_ocr")
 def test_a_genuinely_wrong_word_is_still_wrong(tmp_path):
     r = ocr.check(render(tmp_path / "a.png", "OPEM"), expect="OPEN", max_cer=0.0)
     assert not r.ok
@@ -259,6 +270,7 @@ def test_a_vision_transient_is_retried_once_in_a_fresh_process(
     assert r.ok and r.cer == 0.0 and r.failure_class == ""
 
 
+@pytest.mark.usefixtures("real_ocr")
 def test_the_fresh_process_read_matches_the_in_process_one(tmp_path):
     name = ocr.available_backend()
     if name is None:
