@@ -290,3 +290,25 @@ def test_a_keeper_spec_is_resolved_through_the_stored_candidate(w):
                         typed={"image": "mflux:z-image-turbo"}, adopted={})
     assert keep.repos["org/zimg"] == "image default"
     assert not any("names no weights" in p for p in keep.problems)
+
+
+def test_a_deleted_download_is_no_longer_complete(w):
+    """The loop's cleanup stamped 38 rows removed and left them complete, failing the deploy's dry run."""
+    from harness import migration_check as mc
+    d = snapshot("org/stray")
+    downloads.record_unrecorded(w.conn, w.hub, w.gguf, {})
+    w.conn.execute("UPDATE downloads SET complete = 1")
+    disk.delete(inv(w), NOW, disk.UNKNOWN, w.conn)
+    assert not d.exists()
+    row = w.conn.execute("SELECT * FROM downloads").fetchone()
+    assert row["removed_at"] is not None and not row["complete"]
+    assert mc._downloads(w.conn) == []
+
+
+def test_the_migration_repairs_rows_removed_while_complete(w):
+    w.conn.execute(
+        "INSERT INTO downloads (repo, kind, path, origin, complete, removed_at, removed_by) "
+        "VALUES ('org/gone', 'hub', '/x/models--org--gone', 'fetch', 1, 1.0, 'discover')")
+    from harness.memory_store.migrations import v58
+    v58.data(w.conn)
+    assert w.conn.execute("SELECT complete FROM downloads WHERE repo = 'org/gone'").fetchone()[0] == 0
