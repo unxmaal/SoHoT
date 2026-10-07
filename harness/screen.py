@@ -393,7 +393,7 @@ def routed_gateway(model: str, config=None) -> str:
     if (model or "").strip().lower() in names:
         return ""
     from harness import gguf
-    if gguf.fetched(model or ""):
+    if gguf.fetched(model or "") or gguf.hub_stem(model or ""):
         return ""
     if "/" not in (model or ""):
         return ""

@@ -77,6 +77,9 @@ def parked(lane) -> tuple[str, str]:
 #: is a tool loop rather than one completion, chosen by modality in evals.run. #474.
 TEXT_SERVED = ("code", "web", "svg", "extract", "agent")
 
+#: Lanes whose GGUF-only repo is linked into llama-server's router: decide needs its schema enforced. #583.
+GGUF_SERVED = (*TEXT_SERVED, "decide")
+
 #: Lanes whose winner no program can pick, so a person does. Not a failure to
 #: find the right metric: per the 2026 literature there is no per-clip
 #: style-similarity metric at all, FAD is distributional and cannot score one

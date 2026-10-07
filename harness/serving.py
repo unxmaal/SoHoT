@@ -196,7 +196,7 @@ def route(spec: str, gateway: str = "", config=None) -> Route:
         return Route(DEFAULT_GATEWAY, name, sampling)
     from harness import gguf, router
     try:
-        stem = gguf.fetched(name)
+        stem = gguf.fetched(name) or gguf.hub_stem(name)
     except Exception:  # noqa: BLE001
         stem = None
     if stem:

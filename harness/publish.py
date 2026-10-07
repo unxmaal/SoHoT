@@ -142,16 +142,42 @@ def _ttft(s: dict) -> dict:
     return out
 
 
+def not_run(s: dict, never_ran: tuple[str, ...]) -> str:
+    """The class that kept every case from reaching the candidate, or "" if any ran. #583."""
+    total = s.get("total", 0)
+    passed = s.get("passed", 0)
+    failure_classes = s.get("failure_classes") or {}
+    if total <= 0 or passed != 0:
+        return ""
+    counts = {cls: failure_classes.get(cls, 0) for cls in never_ran}
+    if sum(counts.values()) != total:
+        return ""
+    best = ""
+    best_count = -1
+    for cls in never_ran:
+        if counts[cls] > best_count:
+            best_count = counts[cls]
+            best = cls
+    return best
+
+
+def not_run_text(row: dict) -> str:
+    return f'not run ({row.get("not_run")})'
+
+
 def _row(key: str, s: dict) -> dict:
-    from harness import adopt
+    from harness import adopt, reasons
+    why = not_run(s, reasons.NEVER_RAN)
     return {"candidate": key,
             "reference": adopt.is_reference(key),
-            "passed": s.get("passed"), "total": s.get("total"),
-            "pass_rate": s.get("pass_rate"), "median_s": s.get("median_s"),
-            "first_s": s.get("first_s"),
-            **_ttft(s),
-            "peak_gb": round((s.get("peak_kb") or 0) / 1024 ** 2, 2),
-            "metrics": _metrics(s.get("metrics") or {})}
+            "not_run": why,
+            "passed": None if why else s.get("passed"), "total": s.get("total"),
+            "pass_rate": None if why else s.get("pass_rate"),
+            "median_s": None if why else s.get("median_s"),
+            "first_s": None if why else s.get("first_s"),
+            **_ttft({} if why else s),
+            "peak_gb": None if why else round((s.get("peak_kb") or 0) / 1024 ** 2, 2),
+            "metrics": {} if why else _metrics(s.get("metrics") or {})}
 
 
 def _accelerator_name(conn, mid: int) -> str:
@@ -186,17 +212,23 @@ def _lane(conn, mid: int, lane: str, held: dict, typed: dict, now: float) -> dic
     ran = (runs.newest(conn, lane=lane, machines=[mid], tier=runs.MEASURE,
                        candidate_id=cid) if cid else None)
     here = runs.row_for(conn, ran["id"], cid) if ran else {}
+    from harness import reasons
+    why = not_run(here, reasons.NEVER_RAN) if here else ""
+    if why:
+        here = {}
     parked = L.parked(lane)
     age = runs.age_days(newest, now)
     table = []
     if newest:
         summary = runs.summarize(runs.rows(conn, newest["id"]))
         table = sorted((_row(k, s) for k, s in summary.items()),
-                       key=lambda r: (-(r["pass_rate"] or 0), r["median_s"] or 0))
+                       key=lambda r: (bool(r["not_run"]), -(r["pass_rate"] or 0),
+                                      r["median_s"] or 0))
     return {
         "lane": lane, "wanted": lane in L.WANTED,
         "serves": serves, "adopted": bool(held),
         "adopted_how": held.get("how", ""),
+        "not_run": why,
         "pass_rate": here.get("pass_rate"), "median_s": here.get("median_s"),
         **_ttft(here),
         "metrics": _metrics(here.get("metrics") or {}),
@@ -461,6 +493,9 @@ def _cell(lane: dict | None) -> str:
     if lane.get("unverified"):
         return (f'<td>{_esc(lane.get("serves")) or "--"} '
                 f'<span class="tag bad">no receipt</span></td>')
+    if lane.get("not_run"):
+        return (f'<td>{_esc(lane.get("serves"))} '
+                f'<span class="tag bad">{_esc(not_run_text(lane))}</span></td>')
     stale = ' <span class="tag warn">stale</span>' if lane.get("stale") else ""
     return (f'<td>{_esc(lane.get("serves"))}<br><span class="dim">'
             f'{_num(lane.get("pass_rate"))} pass, {_num(lane.get("median_s"))}s, '
@@ -486,6 +521,8 @@ def _section(doc: dict) -> str:
         tags = []
         if lane.get("adopted"):
             tags.append(f'<span class="tag good">adopted {_esc(lane.get("adopted_how"))}</span>')
+        if lane.get("not_run"):
+            tags.append(f'<span class="tag bad">{_esc(not_run_text(lane))}</span>')
         if lane.get("parked"):
             tags.append(f'<span class="tag warn">parked: {_esc(lane["parked"])}</span>')
         elif lane.get("unverified"):
@@ -510,8 +547,9 @@ def _section(doc: dict) -> str:
             f'<tr{" class=changed" if r["candidate"] == lane.get("serves") else ""}>'
             f'<td>{_esc(r["candidate"])}'
             f'{" <span class=dim>(reference)</span>" if r.get("reference") else ""}</td>'
-            f'<td class="num">{r.get("passed")}/{r.get("total")}</td>'
-            f'<td class="num">{_num(r.get("pass_rate"))}</td>'
+            + (f'<td class="num" colspan="2">{_esc(not_run_text(r))}</td>' if r.get("not_run") else
+               f'<td class="num">{r.get("passed")}/{r.get("total")}</td>'
+               f'<td class="num">{_num(r.get("pass_rate"))}</td>') +
             f'<td class="num">{_num(r.get("median_s"))}</td>'
             f'<td class="num">{_ttft_cell(r)}</td>'
             f'<td class="num">{_num(r.get("peak_gb"), "{:.1f}")}</td>'
