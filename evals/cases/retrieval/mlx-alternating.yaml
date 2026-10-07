@@ -1,0 +1,8 @@
+id: retrieval-mlx-alternating
+modality: retrieval
+prompt: why does switching back and forth between two MLX models slow an evaluation
+input_file: corpus.jsonl
+assert:
+  relevant:
+  - d23
+  k: 5

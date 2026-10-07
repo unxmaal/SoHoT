@@ -27,7 +27,7 @@ Argv = Callable[[str, Path, dict], list[str]]
 
 GRAMMAR = ("engine:model[,key=value,...]  "
            "(engines: mflux, h3, diffusers, diffusers-video, acestep, nimble, decider, "
-           "osocr, hf-ocr)")
+           "osocr, hf-ocr, bm25, rerank, embed)")
 
 
 def spec_error(spec: str) -> str:
@@ -715,6 +715,93 @@ def _hf_ocr(spec: str, model: str, options: dict) -> Engine:
                   timeout=3600.0)
 
 
+# ---- the retrieval lane: BM25 and sentence-transformers (#563) -------------
+
+_RANK_OPTIONS = {"revision", "device"}
+#: The card's task names which spelling of a lane's model loads it.
+TASK_ENGINES = {"sentence-similarity": "embed", "feature-extraction": "embed",
+                "text-ranking": "rerank"}
+#: Libraries a hf-task engine loads; a card naming another needs its own runner.
+HF_LIBRARIES = {"rerank": ("sentence-transformers", "transformers"),
+                "embed": ("sentence-transformers", "transformers")}
+#: Tasks whose inputs no case of the engine's lane supplies, with why.
+TASK_GAPS = {("rerank", "visual-document-retrieval"):
+             "a visual-document retriever embeds page images; the retrieval cases are text",
+             ("embed", "visual-document-retrieval"):
+             "a visual-document retriever embeds page images; the retrieval cases are text"}
+
+
+def _card_task(card) -> str:
+    card = card or {}
+    return str(card.get("hf_task") or card.get("pipeline_tag") or "").strip().lower()
+
+
+def by_card(specs: tuple, card) -> tuple:
+    """`specs` with the engine the card's task names first; unchanged when it names none."""
+    want = TASK_ENGINES.get(_card_task(card), "")
+    first = tuple(s for s in specs if s.partition(":")[0] == want)
+    return first + tuple(s for s in specs if s not in first)
+
+
+def card_gap(spec: str, card) -> str:
+    """Why this engine cannot load the model its card describes, or "". #563."""
+    head = spec.partition(",")[0].partition(":")[0].strip()
+    task = _card_task(card)
+    if (head, task) in TASK_GAPS:
+        return f"needs its own runner: {TASK_GAPS[(head, task)]}"
+    library = str((card or {}).get("library") or (card or {}).get("library_name") or "")
+    loads = HF_LIBRARIES.get(head)
+    if loads and library.strip() and library.strip().lower() not in loads:
+        return (f"needs its own runner: its card names the {library} library, and "
+                f"{head} loads {' or '.join(loads)}")
+    return ""
+
+
+def _corpus_of(params: dict) -> str:
+    got = (params or {}).get("input")
+    if not got:
+        raise ValueError("this case has no input corpus; the retrieval lane ranks one")
+    return str(got)
+
+
+def _bm25(spec: str, model: str, options: dict) -> Engine:
+    """Okapi BM25 over the case's corpus, in this checkout's interpreter. No weights."""
+    if model:
+        raise ValueError(f"{spec_error(spec)}: bm25 takes no model; it is spelled `bm25`")
+    _check_options(options, set(), spec)
+
+    def argv(prompt: str, out: Path, params: dict) -> list[str]:
+        import sys
+        return [sys.executable, "-m", "harness.lexical_rank", "--query", prompt,
+                "--corpus", _corpus_of(params), "--out", str(out)]
+
+    return Engine(name="bm25/okapi", spec=spec, argv=argv, modality="retrieval",
+                  output_suffix=".json", timeout=120.0,
+                  cwd=str(Path(__file__).resolve().parent.parent))
+
+
+def _ranker(mode: str, head: str) -> Callable[[str, str, dict], Engine]:
+    def build(spec: str, model: str, options: dict) -> Engine:
+        if not model:
+            raise ValueError(f"{spec_error(spec)}: {head} needs a model, e.g. "
+                             f"{head}:cross-encoder/ettin-reranker-1b-v1")
+        _check_options(options, _RANK_OPTIONS, spec)
+        defaults = dict(options)
+
+        def argv(prompt: str, out: Path, params: dict) -> list[str]:
+            cmd = [os.environ.get("HF_TASK_BIN", HF_TASK_DEFAULT_BIN), "rank",
+                   "--mode", mode, "--model", model, "--query", prompt,
+                   "--corpus", _corpus_of(params), "--out", str(out)]
+            for key in ("revision", "device"):
+                _flag(cmd, f"--{key}", defaults.get(key))
+            return cmd
+
+        return Engine(name=f"{head}/{model.rsplit('/', 1)[-1]}{distinguish(options)}",
+                      spec=spec, argv=argv, modality="retrieval", output_suffix=".json",
+                      timeout=3600.0)
+    return build
+
+
 _BUILDERS: dict[str, Callable[[str, str, dict], Engine]] = {
     "mflux": _mflux,
     "h3": _h3,
@@ -725,4 +812,7 @@ _BUILDERS: dict[str, Callable[[str, str, dict], Engine]] = {
     "decider": _decider,
     "osocr": _osocr,
     "hf-ocr": _hf_ocr,
+    "bm25": _bm25,
+    "rerank": _ranker("cross", "rerank"),
+    "embed": _ranker("bi", "embed"),
 }

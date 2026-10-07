@@ -1,0 +1,8 @@
+id: retrieval-drive-unplugged
+modality: retrieval
+prompt: what happens to a download when the external drive is disconnected
+input_file: corpus.jsonl
+assert:
+  relevant:
+  - d04
+  k: 5

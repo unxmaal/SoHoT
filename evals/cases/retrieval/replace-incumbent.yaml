@@ -1,0 +1,8 @@
+id: retrieval-replace-incumbent
+modality: retrieval
+prompt: what must a new model show before it replaces the current one
+input_file: corpus.jsonl
+assert:
+  relevant:
+  - d08
+  k: 5

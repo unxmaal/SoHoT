@@ -1,0 +1,63 @@
+{
+ "id": "Contrastive-LM/CLM-v0.1-8B",
+ "pipeline_tag": "text-ranking",
+ "tags": [
+  "contrastive-lm",
+  "clm",
+  "contrastive-learning",
+  "verifier",
+  "reranker",
+  "agents",
+  "text-ranking",
+  "en",
+  "base_model:Qwen/Qwen3-8B",
+  "base_model:finetune:Qwen/Qwen3-8B",
+  "license:apache-2.0",
+  "region:us"
+ ],
+ "library_name": "contrastive-lm",
+ "cardData": {
+  "license": "apache-2.0",
+  "base_model": "Qwen/Qwen3-8B",
+  "pipeline_tag": "text-ranking",
+  "language": [
+   "en"
+  ],
+  "tags": [
+   "contrastive-learning",
+   "verifier",
+   "reranker",
+   "agents",
+   "clm"
+  ],
+  "library_name": "contrastive-lm"
+ },
+ "siblings": [
+  {
+   "rfilename": ".gitattributes",
+   "size": 1577
+  },
+  {
+   "rfilename": "CLM_v0.1-8B.pt",
+   "size": 75557149
+  },
+  {
+   "rfilename": "LICENSE",
+   "size": 11358
+  },
+  {
+   "rfilename": "README.md",
+   "size": 5144
+  },
+  {
+   "rfilename": "assets/playground.png",
+   "size": 258976
+  },
+  {
+   "rfilename": "config.json",
+   "size": 307
+  }
+ ],
+ "lastModified": "2026-09-24T21:37:19.000Z",
+ "downloads": 4041
+}

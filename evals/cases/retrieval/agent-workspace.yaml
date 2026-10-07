@@ -1,0 +1,9 @@
+id: retrieval-agent-workspace
+modality: retrieval
+prompt: how does the coding agent stay inside its workspace
+input_file: corpus.jsonl
+assert:
+  relevant:
+  - d19
+  - d18
+  k: 5

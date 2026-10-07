@@ -711,12 +711,15 @@ TASK_LANES = {
         "image-segmentation", "unconditional-image-generation",
         "video-classification", "reinforcement-learning", "robotics",
         "tabular-classification", "tabular-regression", "multiple-choice",
-        "text-ranking", "text-retrieval", "time-series-forecasting",
+        "time-series-forecasting",
         "visual-question-answering", "document-question-answering",
         "zero-shot-image-classification", "graph-ml", "mask-generation",
         "zero-shot-object-detection", "text-to-3d", "image-to-3d",
         "image-feature-extraction", "keypoint-detection",
-        "visual-document-retrieval", "any-to-any", "other")},
+        "any-to-any", "other")},
+    # A query and documents in, a ranking out. #563.
+    "text-ranking": "retrieval", "text-retrieval": "retrieval",
+    "visual-document-retrieval": "retrieval",
 }
 
 

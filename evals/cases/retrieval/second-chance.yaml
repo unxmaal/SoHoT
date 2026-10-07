@@ -1,0 +1,8 @@
+id: retrieval-second-chance
+modality: retrieval
+prompt: how do rejected candidates get another chance
+input_file: corpus.jsonl
+assert:
+  relevant:
+  - d27
+  k: 5

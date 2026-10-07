@@ -292,6 +292,23 @@ def _relane_the_laneless_from_lineage(conn) -> None:
                          "WHERE id = ?", (lane, source, row["id"]))
 
 
+def _release_retrievers_marked_embeddings(conn) -> None:
+    """Re-read `embedding` attachments from the stored card: an inference-server tag is not one. #563.
+    Only attaches_to moves; no verdict is written."""
+    import json
+
+    from harness import screen
+    for row in conn.execute("SELECT id, hf_task, library, card_tags FROM proposals "
+                            "WHERE attaches_to = 'embedding'").fetchall():
+        try:
+            tags = json.loads(row["card_tags"] or "[]")
+        except ValueError:
+            continue
+        words = " ".join([row["hf_task"] or "", row["library"] or "", *map(str, tags)])
+        if not screen.is_attachment(words):
+            conn.execute("UPDATE proposals SET attaches_to = '' WHERE id = ?", (row["id"],))
+
+
 def _requeue_broken_matching(conn, phrases: tuple = ("guidance_scale has to be",)) -> None:
     for r in _stated(conn, "p.state = 'broken'"):
         hit = next((p for p in phrases if p in (r["detail"] or "").lower()), "")

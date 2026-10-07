@@ -90,7 +90,9 @@ _HARNESS = ("no cases of a modality it can run", "no candidate matched any case"
             "no module named", "error while finding module specification",
             "command not found", "guidance_scale has to be",
             # A package our hf-task venv lacks, not the model. #562.
-            "installed to convert a slow tokenizer")
+            "installed to convert a slow tokenizer",
+            # transformers offline with weights the fetch never finished. #563.
+            "run the library in offline mode")
 #: In stderr this is our missing script; in a loader's error it is the snapshot's.
 _ABOUT_THE_SNAPSHOT = ("no such file or directory",
                        "does not appear to have a file named")
@@ -99,7 +101,8 @@ _ARCHITECTURE_GAPS = ("model type", "modelargs", "parameters not in model",
                       "required positional argument")
 _LLAMACPP_LOAD_FAILED = ("http 500", "failed to load")
 _DIFFUSERS_LAYOUT_GAPS = ("can't find a pipeline linked to", "were passed")
-_ENGINE_HEADS = ("mflux", "diffusers", "diffusers-video", "acestep", "hf-ocr")
+_ENGINE_HEADS = ("mflux", "diffusers", "diffusers-video", "acestep", "hf-ocr",
+                 "rerank", "embed")
 #: A repo whose modelling code is its own: hf-task never executes it. #562.
 _REMOTE_CODE = ("trust_remote_code",)
 #: The audio server (mlx-audio) answers 500 when it cannot build the model.

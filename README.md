@@ -1482,6 +1482,36 @@ laneless.
     uv run python -m evals.run --modality ocr --candidates \
       osocr:auto,hf-ocr:PaddlePaddle/PaddleOCR-VL-1.6,prompt=OCR:
 
+The retrieval lane ranks a corpus for a query. `evals/cases/retrieval/` holds
+one corpus of thirty short operations notes (`corpus.jsonl`) and fourteen
+queries, each labelled with the one or two documents that answer it; most
+queries are paraphrased so that word overlap alone does not find the answer.
+A case passes when every labelled document is in the top five (recall@5 of
+1). The lane reports recall@5 and binary-gain nDCG@10, each a mean over
+queries. The negative controls in `tests/test_retrieval_lane.py`: a ranker
+that puts the labelled documents last scores recall 0 and passes nothing, a
+seeded shuffle stays under 0.5, and BM25 has to land between chance and
+perfect.
+
+`bm25` is the incumbent: Okapi BM25 in this checkout's own interpreter, with no
+weights. `rerank:<repo>` scores every (query, document) pair with a
+sentence-transformers CrossEncoder; `embed:<repo>` ranks by the cosine of
+normalised SentenceTransformer embeddings, using the model's own query and
+document prompts when it names them. Both run in the hf-task venv and take
+`revision=` and `device=`. Discovery files text-ranking, text-retrieval and
+visual-document-retrieval cards under retrieval, and a sentence-similarity or
+feature-extraction card only when a tag names retrieval or reranking; a
+general embedder stays laneless and a text-classification reranker stays in
+decide. The ladder spells a card's model `embed:` when its task is
+sentence-similarity or feature-extraction and `rerank:` otherwise. A card whose
+library is not sentence-transformers or transformers (Contrastive-LM's own
+`contrastive-lm`, the colpali-engine EVIE models), or whose task is
+visual-document-retrieval (it embeds page images, and these cases are text),
+is reported under runners wanted before anything is downloaded.
+
+    uv run python -m evals.run --modality retrieval --candidates \
+      bm25,embed:BAAI/bge-small-en-v1.5,rerank:cross-encoder/ettin-reranker-1b-v1
+
 `repair` costs nothing extra, so it is the one to understand. Everything already
 checks its own output. It runs the code it wrote, draws the SVG to see whether
 anything is visible, opens the web page in a browser. All of that was

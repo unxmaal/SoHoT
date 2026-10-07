@@ -110,6 +110,9 @@ PIPELINE_LANES = {
     # A label from text is a typed decision. A fixed-head classifier that
     # cannot take a schema fails the decide screen, which says so. #423.
     "text-classification": "decide",
+    # A query and documents in, a ranking out. #563.
+    "text-ranking": "retrieval", "text-retrieval": "retrieval",
+    "visual-document-retrieval": "retrieval",
 }
 TAG_LANES = {"asr": "stt", "speech-recognition": "stt", "stt": "stt",
              "tts": "tts", "text-to-speech": "tts",
@@ -195,6 +198,17 @@ SETTLED_TASKS = (AUDIO_TASK, *NEEDS_AN_INPUT)
 OCR_TASKS = ("image-to-text", "image-text-to-text")
 
 
+#: Tasks that embed text: a retriever's when a tag names retrieval or reranking. #563.
+EMBED_TASKS = ("sentence-similarity", "feature-extraction")
+RETRIEVAL_WORDS = {"retrieval", "reranker", "rerank", "reranking", "colbert"}
+
+
+def is_retrieval(tags) -> bool:
+    """Does a card tag name retrieval or reranking (dense-retrieval, reranker)? #563."""
+    return any(RETRIEVAL_WORDS & set(re.split(r"[-_\s:]+", str(t).strip().lower()))
+               for t in tags or ())
+
+
 def is_ocr(tags) -> bool:
     """Does a card tag name OCR (ocr, manga-ocr, unlimited-ocr)? #387."""
     return any("ocr" in re.split(r"[-_\s:]+", str(t).strip().lower())
@@ -208,6 +222,9 @@ def _settled_lane(task: str, tags: set, name: str) -> tuple[str, str] | None:
     # A card naming a lane by tag (svg) outranks its OCR tag. #562.
     if task in OCR_TASKS and is_ocr(tags) and not tags & set(TAG_LANES):
         return "ocr", "tag"
+    # An embedder is a retriever only when a tag says so; a general one is not. #563.
+    if task in EMBED_TASKS and is_retrieval(tags):
+        return "retrieval", "tag"
     if task in NEEDS_AN_INPUT:
         return "", ""
     if task != AUDIO_TASK:
