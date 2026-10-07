@@ -422,7 +422,7 @@ _LANE_QUERIES_ANY = {
     "music": ["ACE-Step", "YuE", "DiffRhythm", "musicgen", "stable-audio"],
     # Typed-decision models: Jev-class 4B-9B decoders and their adapters. #423, #311.
     "decide": ["Bespoke-Nimble", "OpenJev", "jev", "structured-prediction",
-               "plumb", "decider"],
+               "plumb", "decider", "imajev"],
 }
 
 #: Every lane discovery can search, whichever machine is asking. `code`, `web`,
