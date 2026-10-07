@@ -308,7 +308,7 @@ def _measure(a, row: dict, loaded: list) -> int:
 
 
 def _plan(a, lane: str, inc_spec: str):
-    """The lane's split and the repeat the paired gate needs on its holdout. #479."""
+    """The lane's split and the repeat the paired gate needs on its holdout, within the time budget. #479, #591."""
     from evals.run import STOCHASTIC_MODALITIES
     from harness import candidates, holdout, power
     from harness import memory_store as ms
@@ -316,14 +316,22 @@ def _plan(a, lane: str, inc_spec: str):
     split = holdout.for_lane(lane)
     store = ms.connect()
     try:
-        rates, seen = power.incumbent_rates(
-            store, lane, candidates.key_of(inc_spec) or inc_spec, split.holdout)
+        draws, median_s = power.incumbent_profile(
+            store, lane, candidates.key_of(inc_spec) or inc_spec)
     finally:
         store.close()
+    rates, seen = power.rates_from(draws, split.holdout)
     effect = getattr(a, "effect", None) or power.effect_for(lane)
+    explicit = getattr(a, "repeat", None)
     plan = power.plan([rates[c] for c in split.holdout], effect,
                       stochastic=lane in STOCHASTIC_MODALITIES,
-                      repeat=getattr(a, "repeat", None), observed=seen)
+                      repeat=explicit, observed=seen,
+                      rho=power.icc([list(draws.values())]))
+    budget = float(getattr(a, "power_budget_min", None) or power.BUDGET_MIN) * 60
+    plan = power.within_budget(
+        plan, [rates[c] for c in split.holdout],
+        cases_run=len(set(split.dev) | set(split.holdout)), median_s=median_s,
+        budget_s=budget, explicit=bool(explicit))
     print(f"    power: repeat {plan.repeat} over {len(split.holdout)} holdout "
           f"case(s) gives {plan.power:.2f} to detect +{plan.effect:.2f} at "
           f"alpha {plan.alpha}{'; ' + plan.why if plan.why else ''}"

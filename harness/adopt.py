@@ -24,6 +24,7 @@ it does today.
 from __future__ import annotations
 
 import json
+import math
 import statistics
 from dataclasses import dataclass, field
 
@@ -145,23 +146,26 @@ def decide(lane: str, incumbent: dict, challenger: dict,
             incumbent = _summary(rows, name_i) or incumbent
             challenger = _summary(rows, name_c) or challenger
             if dev:
-                from harness import paired
-                d = paired.head_to_head(dev, name_i, name_c)
-                evidence["dev"] = {"gained": d.gained, "lost": d.lost, "p": d.p}
+                d, p, _ = paired_p(dev, name_i, name_c)
+                evidence["dev"] = {"gained": d.gained, "lost": d.lost, "p": p}
                 notes.append(f"dev: {d.gained} gained, {d.lost} lost, "
-                             f"p={d.p:.2f}")
+                             f"p={p:.2f}")
         if split.too_small:
             notes.append(split.caveat)
     if plan is not None:
         evidence["power"] = plan.as_dict()
     got = _gates(lane, name_i, name_c, incumbent, challenger, rows)
-    if not got.adopt and plan is not None and not plan.enough and rows:
+    worse = _worse(rows, name_i, name_c) if rows and not got.adopt else ""
+    if worse:
+        got = Verdict(lane, name_i, name_c, False, f"{got.why}; {worse}")
+    elif not got.adopt and plan is not None and not plan.enough and rows:
         from harness import reasons
         got = Verdict(lane, name_i, name_c, False,
                       f"underpowered: power {plan.power:.2f} < {plan.target} to "
                       f"detect +{plan.effect:.2f} per cell at alpha "
-                      f"{plan.alpha} over {plan.cells} cells, so this null is "
-                      f"not evidence of no difference ({got.why})",
+                      f"{plan.alpha} over {plan.cells} effective cells, so this null is "
+                      f"not evidence of no difference ({got.why})"
+                      f"{'; ' + plan.why if plan.why else ''}",
                       failure_class=reasons.UNDERPOWERED)
     # A method's calls and latency travel with its verdict, won or lost. #576.
     from harness import methods
@@ -189,28 +193,59 @@ def _summary(rows: list[dict], name: str) -> dict | None:
     return {**summarize(mine)[name], "candidate": name}
 
 
-def _gates(lane, name_i, name_c, incumbent, challenger, rows) -> Verdict:
-    from harness import paired
+def paired_p(rows, name_i: str, name_c: str):
+    """The paired cell, its p over independent evidence, and a note when repeats were shrunk.
 
+    Repeats of a case correlate, so gained and lost cells are divided by the
+    design effect 1+(r-1)*rho before the sign test: a near-deterministic case
+    counts once at any repeat. #591.
+    """
+    from harness import paired, power
+    cell = paired.head_to_head(rows, name_i, name_c)
+    rho, repeat = power.rows_icc(rows, (name_i, name_c))
+    used = power.DEFAULT_RHO if rho is None else rho
+    deff = power.design_effect(repeat, used)
+    if deff <= 1.0 + 1e-9:
+        return cell, cell.p, ""
+    gained = int(cell.gained / deff + 1e-9)
+    lost = math.ceil(cell.lost / deff - 1e-9)
+    p = paired.sign_test(min(gained, lost), gained + lost)
+    return cell, p, (f"{gained} gained against {lost} lost once correlated "
+                     f"repeats are counted as cases (rho {used:.2f}"
+                     f"{'' if rho is not None else ' assumed'}, repeat "
+                     f"{repeat:.1f})")
+
+
+def _worse(rows, name_i: str, name_c: str) -> str:
+    """Why the challenger is significantly worse, else "". Power to see a gain does not bear on it. #594."""
+    cell, p, shrunk = paired_p(rows, name_i, name_c)
+    if cell.lost <= cell.gained or p > ALPHA:
+        return ""
+    return (f"significantly worse: {cell.lost} lost against {cell.gained} "
+            f"gained, p={p:.2f}{f' ({shrunk})' if shrunk else ''}")
+
+
+def _gates(lane, name_i, name_c, incumbent, challenger, rows) -> Verdict:
     if not better(incumbent, challenger):
         return Verdict(lane, name_i, name_c, False,
                        "does not beat the incumbent on the lane's metric")
     if not rows:
         return Verdict(lane, name_i, name_c, False,
                        "no paired rows, so the difference is unmeasured")
-    cell = paired.head_to_head(rows, name_i, name_c)
+    cell, p, shrunk = paired_p(rows, name_i, name_c)
+    shrunk = f" ({shrunk})" if shrunk else ""
     if not cell.discordant and not cell.unchanged:
         return Verdict(lane, name_i, name_c, False,
                        f"{name_i} and {name_c} share no case in this run, so "
                        f"there is nothing to compare")
-    if cell.p > ALPHA:
+    if p > ALPHA:
         return Verdict(lane, name_i, name_c, False,
                        f"better on the metric, but {cell.lost} lost against "
-                       f"{cell.gained} gained is p={cell.p:.2f}, so the "
+                       f"{cell.gained} gained is p={p:.2f}{shrunk}, so the "
                        f"difference is not established")
     return Verdict(lane, name_i, name_c, True,
                    f"beats {name_i} on the lane's metric, {cell.gained} gained "
-                   f"against {cell.lost} lost, p={cell.p:.2f}")
+                   f"against {cell.lost} lost, p={p:.2f}{shrunk}")
 
 
 #: Candidates that exist to measure local models against. #374.

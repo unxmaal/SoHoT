@@ -108,12 +108,14 @@ def test_a_win_on_dev_alone_is_not_adopted():
 
 
 def test_a_win_on_holdout_is_adopted_and_dev_is_reported_beside_it():
+    """The incumbent passes half its draws of every case, so repeats are
+    independent evidence; a deterministic three-case win is not (#591)."""
     rows = _rows({**{d: [(True, True)] * 4 for d in _split().dev},
-                  **{h: [(False, True)] * 4 for h in _split().holdout}})
+                  **{h: [(False, True), (True, True)] * 2 for h in _split().holdout}})
     got = adopt.decide("code", _summary("inc", rows), _summary("ch", rows),
                        rows, split=_split())
     assert got.adopt
-    assert "12 gained against 0 lost" in got.why
+    assert "6 gained against 0 lost" in got.why
     assert "dev: 0 gained, 0 lost" in got.why
     assert got.evidence["split"]["version"] == holdout.VERSION
 
@@ -121,7 +123,8 @@ def test_a_win_on_holdout_is_adopted_and_dev_is_reported_beside_it():
 def test_a_lane_too_small_adopts_on_all_cases_with_the_caveat_recorded():
     small = holdout.Split("svg", dev=("a", "b", "c"), holdout=("a", "b", "c"),
                           too_small=True)
-    rows = _rows({c: [(False, True)] * 3 for c in ("a", "b", "c")})
+    rows = _rows({c: [(False, True), (True, True), (False, True)]
+                  for c in ("a", "b", "c")})
     got = adopt.decide("svg", _summary("inc", rows), _summary("ch", rows),
                        rows, split=small)
     assert got.adopt
@@ -163,7 +166,7 @@ def test_lost_cells_count_against_the_challenger():
 
 
 def test_the_plan_takes_the_smallest_repeat_that_reaches_the_target():
-    got = power.plan([5 / 9] * 3, effect=4 / 9, stochastic=True)
+    got = power.plan([5 / 9] * 3, effect=4 / 9, stochastic=True, rho=0.0)
     assert got.repeat > 3
     assert got.power >= power.TARGET
     assert power.power([5 / 9] * 3, 4 / 9, got.repeat - 1) < power.TARGET
@@ -171,7 +174,7 @@ def test_the_plan_takes_the_smallest_repeat_that_reaches_the_target():
 
 
 def test_the_plan_is_capped_and_says_so():
-    got = power.plan([0.97] * 3, effect=0.2, stochastic=True, cap=10)
+    got = power.plan([0.97] * 3, effect=0.2, stochastic=True, cap=10, rho=0.0)
     assert got.capped and got.repeat == 10
     assert got.power < power.TARGET
     assert got.as_dict()["cap"] == 10
