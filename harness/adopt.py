@@ -121,7 +121,8 @@ def decide_by_hand(lane: str, incumbent: str, challenger: str,
 
 
 def decide(lane: str, incumbent: dict, challenger: dict,
-           rows: list[dict] | None = None, split=None, plan=None) -> Verdict:
+           rows: list[dict] | None = None, split=None, plan=None,
+           spec: str = "") -> Verdict:
     """Whether this challenger replaces this incumbent.
 
     Two gates, both required. The metric gate answers "better on what this lane
@@ -162,7 +163,12 @@ def decide(lane: str, incumbent: dict, challenger: dict,
                       f"{plan.alpha} over {plan.cells} cells, so this null is "
                       f"not evidence of no difference ({got.why})",
                       failure_class=reasons.UNDERPOWERED)
-    why = "; ".join([got.why, *notes])
+    # A method's calls and latency travel with its verdict, won or lost. #576.
+    from harness import methods
+    cost = methods.cost_note(incumbent, challenger, spec) if spec else ""
+    if cost:
+        evidence["cost"] = methods.cost(incumbent, challenger, spec)
+    why = "; ".join([got.why, *notes, *([cost] if cost else [])])
     return Verdict(lane, name_i, name_c, got.adopt, why, got.how,
                    got.failure_class, evidence)
 
@@ -241,7 +247,12 @@ def record(conn, verdict: Verdict, spec: str = "",
         else reasons.CANDIDATE))
     if verdict.adopt:
         outcome = "measured"
-    detail = f"{verdict.lane}: {verdict.why}"
+    # A method that wins is measured; no lane command runs one yet, so nothing serves it. #576.
+    from harness import methods
+    serve = verdict.adopt and methods.servable(spec)
+    detail = f"{verdict.lane}: {verdict.why}" if serve or not verdict.adopt else (
+        f"{verdict.lane}: won, not served: a lane command cannot run a method yet; "
+        f"{verdict.why}")
     # A text-lane spec is the proposal's own name; anything else maps by row.
     cid = candidates.ensure(conn, spec, proposal=spec, lane=verdict.lane)
     if cid is None:
@@ -262,9 +273,11 @@ def record(conn, verdict: Verdict, spec: str = "",
             (verdict.failure_class,
              (verdict.evidence.get("split") or {}).get("version", ""),
              json.dumps({**(verdict.evidence.get("power") or {}),
-                         "dev": verdict.evidence.get("dev")}), vid))
+                         "dev": verdict.evidence.get("dev"),
+                         **({"cost": verdict.evidence["cost"]}
+                            if verdict.evidence.get("cost") else {})}), vid))
         conn.commit()
-    if verdict.adopt:
+    if serve:
         if verdict.how not in HOW:
             raise ValueError(f"unknown adoption kind {verdict.how!r}")
         mid = conn.execute("SELECT machine_id FROM verdicts WHERE id = ?",

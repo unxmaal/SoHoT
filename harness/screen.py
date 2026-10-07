@@ -300,7 +300,10 @@ def plan(rows, *, missing=None) -> list[dict]:
         lane = (row.get("lane") or "").strip().lower()
         attached = row.get("attaches_to") or ""
         spec = candidate_for(lane, name, attached, card=row)
-        absent = [] if not spec else missing(name)
+        # A method downloads its base's weights, or none when its runner finds its own. #576.
+        from harness import methods
+        target = methods.weights_of(name) if methods.is_method(name) else name
+        absent = [] if not spec or not target else missing(target)
         gap = runner_gap(lane, name, attached, card=row)
         if not spec or gap:
             state, why = NO_RUNNER, (
@@ -309,6 +312,9 @@ def plan(rows, *, missing=None) -> list[dict]:
                 f"so no runner takes it as a candidate" if attached
                 else f"no runner for the {lane} lane" if lane
                 else "no lane, so no case and no metric")
+        elif absent == [target] and target != name:
+            state, why = WAITING, (f"its base's weights, {target}, are not on disk; "
+                                   f"soh fetch --run")
         elif absent == [name]:
             state, why = WAITING, "weights are not on disk; soh fetch --run"
         elif absent:
@@ -381,6 +387,8 @@ def routed_gateway(model: str, config=None) -> str:
     only one of two callers performs is the same defect as two spellings of a
     name. #223.
     """
+    from harness import methods
+    model = methods.base_of(model) or model
     names, base = gateway_routes(config)
     if (model or "").strip().lower() in names:
         return ""

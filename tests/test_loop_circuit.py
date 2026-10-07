@@ -216,6 +216,11 @@ def adopted():
         conn.close()
 
 
+def challenger_evals(world):
+    """Eval runs that named the challenger; the loop's method crossings run without it. #576."""
+    return [e for e in world.evals if any(CHALLENGER in str(a) for a in e)]
+
+
 def assert_a_harness_fact(row):
     """Not a terminal verdict about the candidate: a waypoint, or a reason that is not the candidate's with a way back."""
     assert row is not None
@@ -245,6 +250,33 @@ def test_the_loop_ends_with_the_lane_alias_serving_the_challenger(world):
 # --- the faults that bit this project: each one a fact about the harness, never a verdict on the model
 
 
+def test_a_method_crossed_with_the_incumbent_climbs_the_same_ladder(world):
+    """Nobody typed `plan:q3-4b`: the loop crossed it, screened it and measured it
+    against the incumbent with the paired gate, and its verdict carries its cost. #576."""
+    loop("--top", "3")
+    assert adopted() == {"code": CHALLENGER}
+    for spec in ("plan:q3-4b", "best-of:3:q3-4b"):
+        conn = ms.connect()
+        try:
+            tiers = [r["tier"] for r in conn.execute(
+                "SELECT v.tier FROM verdicts v JOIN proposals p ON p.id = v.proposal_id "
+                "WHERE p.name = ? ORDER BY v.id", (spec,))]
+            final = latest(spec)
+        finally:
+            conn.close()
+        assert tiers[:2] == ["inspect", "screen"], (spec, tiers)
+        assert final["tier"] == "adopt", (spec, final)
+        conn = ms.connect()
+        try:
+            power = conn.execute(
+                "SELECT v.power FROM verdicts v JOIN proposals p ON p.state_verdict_id = v.id "
+                "WHERE p.name = ?", (spec,)).fetchone()["power"]
+        finally:
+            conn.close()
+        cost = json.loads(power)["cost"]
+        assert cost["base"] == "q3-4b" and cost["calls"] == (2.0 if spec[0] == "p" else 3.0)
+
+
 def test_a_model_server_that_dies_mid_screen_is_the_harnesss_fault(world):
     world.server = "dead"
     assert loop() == 1
@@ -257,7 +289,7 @@ def test_a_model_server_that_dies_mid_screen_is_the_harnesss_fault(world):
 def test_a_rate_limited_registry_at_inspect_settles_nothing(world):
     world.hf_429_after = 0
     loop()
-    assert world.hf_answered == 0 and world.evals == []
+    assert world.hf_answered == 0 and challenger_evals(world) == []
     row = latest(CHALLENGER)
     assert row is None or row["outcome"] not in ms.TERMINAL, row
 
@@ -265,7 +297,7 @@ def test_a_rate_limited_registry_at_inspect_settles_nothing(world):
 def test_a_rate_limited_registry_at_fetch_settles_nothing(world):
     world.hf_429_after = 1
     loop()
-    assert world.hf_answered == 1 and world.evals == []
+    assert world.hf_answered == 1 and challenger_evals(world) == []
     row = latest(CHALLENGER)
     assert row["tier"] == "inspect" and row["outcome"] == "queued", row
 
@@ -274,7 +306,7 @@ def test_a_disk_below_the_floor_at_fetch_settles_nothing(world, monkeypatch):
     from harness import fetching
     monkeypatch.setattr(fetching, "free_bytes", lambda path=None: 10 * fetching.GIB)
     loop()
-    assert world.evals == []
+    assert challenger_evals(world) == []
     row = latest(CHALLENGER)
     assert row["tier"] == "fetch" and "floor" in row["detail"], row
     assert row["outcome"] not in ms.TERMINAL, row
@@ -283,7 +315,7 @@ def test_a_disk_below_the_floor_at_fetch_settles_nothing(world, monkeypatch):
 def test_a_readme_only_snapshot_is_never_screened_or_settled(world):
     world.snapshot_files = {"README.md": "# a card", "LICENSE": "apache-2.0"}
     loop()
-    assert world.evals == []
+    assert challenger_evals(world) == []
     assert latest(CHALLENGER)["outcome"] not in ms.TERMINAL, latest(CHALLENGER)
 
 

@@ -1202,6 +1202,36 @@ candidates in run receipts, the typed lane defaults -- and asks which
 configured source ever surfaced each. Anything adopted that no source produced
 is a coverage hole with a name, and the names are the useful part.
 
+### Methods are candidates
+
+A method is a named transform over a base candidate, registered in
+`harness/methods.py` with its spec grammar, the lanes it applies to and the
+case methods it can take:
+
+```
+trace:<image engine>        svg     draw a raster, then vectorize it
+trace-icon:<image engine>   svg     the same with the icon preset
+best-of:<n>:<base>          code, web, svg      sample n at the lane's temperature,
+                                    keep the one the lane's own checks score highest
+plan:<base>                 code, web, svg, extract   a plan, then the answer: two calls
+```
+
+The base is any spec its runner already takes (`q3-4b`, `llamacpp:<stem>`, a
+repo id, `mflux:flux2-klein-4b`), and the method runs over that runner and its
+route, so it needs no server of its own. A method spec is a candidate
+everywhere: `evals.run --candidates q3-4b,best-of:3:q3-4b`, the screen and the
+paired adopt gate. Its rows carry `method_calls` (and for best-of
+`method_samples` and `method_chosen`), reported in the table and never ranked
+on; its seconds are the whole method. The receipt records each method and its
+base, and the adopt verdict stores the cost beside the incumbent's (calls,
+median latency and their ratio). `soh discover --loop` crosses each method with
+each lane's incumbent (trace with the image lane's) and queues the combination
+under `methods`, so a newly registered method is measured without anyone
+typing a spec. A crossing downloads nothing, so it never holds back a fetch. A
+method that wins is recorded as measured and not served: no lane command runs
+a method yet. In the tests, a method that returns its base unchanged measures
+as a tie and one that corrupts the output loses.
+
 ### Benchmark discovery
 
 Lanes saturate and leak into training data, so the yardsticks get discovered

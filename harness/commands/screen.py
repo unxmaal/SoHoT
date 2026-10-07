@@ -128,8 +128,11 @@ def screenable_backlog(want: str = "", plan=None, room=None) -> list[str]:
     """On disk, runnable, and fitting in memory now: what a fetch would queue behind. #396."""
     from harness import screen
     plan = _screen_plan(want) if plan is None else plan
+    from harness import methods
     room = room or (lambda r: memory.check_model(r["name"], spec=r["candidate"])[0])
-    return [r["name"] for r in plan if r["state"] == screen.READY and room(r)]
+    # A method crossing downloads nothing, so no download waits behind it. #576.
+    return [r["name"] for r in plan if r["state"] == screen.READY
+            and not methods.is_method(r["name"]) and room(r)]
 
 
 def verdict_of_run(returncode: int, stderr: str, summary, candidate: str,
