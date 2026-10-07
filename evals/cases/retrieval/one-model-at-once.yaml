@@ -1,0 +1,9 @@
+id: retrieval-one-model-at-once
+modality: retrieval
+prompt: why are two models never loaded at the same time
+input_file: corpus.jsonl
+assert:
+  relevant:
+  - d12
+  - d13
+  k: 5

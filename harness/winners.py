@@ -33,6 +33,7 @@ FAMILIES = {
     "svg": "alias", "web": "alias", "code": "alias", "extract": "alias",
     "decide": "alias", "agent": "alias",
     "image": "engine", "video": "engine", "music": "engine", "ocr": "engine",
+    "retrieval": "engine",
     "tts": "speech", "stt": "speech",
 }
 
@@ -111,6 +112,7 @@ def typed() -> dict[str, str]:
             "video": cli.DEFAULT_VIDEO_ENGINE,
             "music": cli.DEFAULT_MUSIC_ENGINE,
             "ocr": cli.DEFAULT_OCR_ENGINE,
+            "retrieval": cli.DEFAULT_RETRIEVAL_ENGINE,
             "tts": audio.DEFAULT_TTS_MODEL, "stt": audio.DEFAULT_STT_MODEL}
 
 

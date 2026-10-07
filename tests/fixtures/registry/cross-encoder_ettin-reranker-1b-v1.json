@@ -1,0 +1,542 @@
+{
+ "id": "cross-encoder/ettin-reranker-1b-v1",
+ "pipeline_tag": "text-ranking",
+ "tags": [
+  "sentence-transformers",
+  "safetensors",
+  "modernbert",
+  "cross-encoder",
+  "reranker",
+  "generated_from_trainer",
+  "dataset_size:143393475",
+  "loss:MSELoss",
+  "text-ranking",
+  "en",
+  "arxiv:1908.10084",
+  "base_model:jhu-clsp/ettin-encoder-1b",
+  "base_model:finetune:jhu-clsp/ettin-encoder-1b",
+  "license:apache-2.0",
+  "model-index",
+  "text-embeddings-inference",
+  "endpoints_compatible",
+  "region:us"
+ ],
+ "library_name": "sentence-transformers",
+ "cardData": {
+  "language": [
+   "en"
+  ],
+  "license": "apache-2.0",
+  "tags": [
+   "sentence-transformers",
+   "cross-encoder",
+   "reranker",
+   "generated_from_trainer",
+   "dataset_size:143393475",
+   "loss:MSELoss"
+  ],
+  "base_model": "jhu-clsp/ettin-encoder-1b",
+  "pipeline_tag": "text-ranking",
+  "library_name": "sentence-transformers",
+  "metrics": [
+   "map",
+   "mrr@10",
+   "ndcg@10"
+  ],
+  "model-index": [
+   {
+    "name": "ettin-reranker-1b-v1",
+    "results": [
+     {
+      "task": {
+       "type": "cross-encoder-reranking",
+       "name": "Cross Encoder Reranking"
+      },
+      "dataset": {
+       "name": "NanoMSMARCO R100",
+       "type": "NanoMSMARCO_R100"
+      },
+      "metrics": [
+       {
+        "type": "map",
+        "value": 0.6111,
+        "name": "Map",
+        "verified": false
+       },
+       {
+        "type": "mrr@10",
+        "value": 0.6142,
+        "name": "Mrr@10",
+        "verified": false
+       },
+       {
+        "type": "ndcg@10",
+        "value": 0.6978,
+        "name": "Ndcg@10",
+        "verified": false
+       }
+      ]
+     },
+     {
+      "task": {
+       "type": "cross-encoder-reranking",
+       "name": "Cross Encoder Reranking"
+      },
+      "dataset": {
+       "name": "NanoNFCorpus R100",
+       "type": "NanoNFCorpus_R100"
+      },
+      "metrics": [
+       {
+        "type": "map",
+        "value": 0.3971,
+        "name": "Map",
+        "verified": false
+       },
+       {
+        "type": "mrr@10",
+        "value": 0.6391,
+        "name": "Mrr@10",
+        "verified": false
+       },
+       {
+        "type": "ndcg@10",
+        "value": 0.4485,
+        "name": "Ndcg@10",
+        "verified": false
+       }
+      ]
+     },
+     {
+      "task": {
+       "type": "cross-encoder-reranking",
+       "name": "Cross Encoder Reranking"
+      },
+      "dataset": {
+       "name": "NanoNQ R100",
+       "type": "NanoNQ_R100"
+      },
+      "metrics": [
+       {
+        "type": "map",
+        "value": 0.7361,
+        "name": "Map",
+        "verified": false
+       },
+       {
+        "type": "mrr@10",
+        "value": 0.7547,
+        "name": "Mrr@10",
+        "verified": false
+       },
+       {
+        "type": "ndcg@10",
+        "value": 0.798,
+        "name": "Ndcg@10",
+        "verified": false
+       }
+      ]
+     },
+     {
+      "task": {
+       "type": "cross-encoder-reranking",
+       "name": "Cross Encoder Reranking"
+      },
+      "dataset": {
+       "name": "NanoFiQA2018 R100",
+       "type": "NanoFiQA2018_R100"
+      },
+      "metrics": [
+       {
+        "type": "map",
+        "value": 0.5993,
+        "name": "Map",
+        "verified": false
+       },
+       {
+        "type": "mrr@10",
+        "value": 0.6997,
+        "name": "Mrr@10",
+        "verified": false
+       },
+       {
+        "type": "ndcg@10",
+        "value": 0.6605,
+        "name": "Ndcg@10",
+        "verified": false
+       }
+      ]
+     },
+     {
+      "task": {
+       "type": "cross-encoder-reranking",
+       "name": "Cross Encoder Reranking"
+      },
+      "dataset": {
+       "name": "NanoTouche2020 R100",
+       "type": "NanoTouche2020_R100"
+      },
+      "metrics": [
+       {
+        "type": "map",
+        "value": 0.4946,
+        "name": "Map",
+        "verified": false
+       },
+       {
+        "type": "mrr@10",
+        "value": 0.8275,
+        "name": "Mrr@10",
+        "verified": false
+       },
+       {
+        "type": "ndcg@10",
+        "value": 0.584,
+        "name": "Ndcg@10",
+        "verified": false
+       }
+      ]
+     },
+     {
+      "task": {
+       "type": "cross-encoder-reranking",
+       "name": "Cross Encoder Reranking"
+      },
+      "dataset": {
+       "name": "NanoSciFact R100",
+       "type": "NanoSciFact_R100"
+      },
+      "metrics": [
+       {
+        "type": "map",
+        "value": 0.7337,
+        "name": "Map",
+        "verified": false
+       },
+       {
+        "type": "mrr@10",
+        "value": 0.7406,
+        "name": "Mrr@10",
+        "verified": false
+       },
+       {
+        "type": "ndcg@10",
+        "value": 0.7775,
+        "name": "Ndcg@10",
+        "verified": false
+       }
+      ]
+     },
+     {
+      "task": {
+       "type": "cross-encoder-reranking",
+       "name": "Cross Encoder Reranking"
+      },
+      "dataset": {
+       "name": "NanoHotpotQA R100",
+       "type": "NanoHotpotQA_R100"
+      },
+      "metrics": [
+       {
+        "type": "map",
+        "value": 0.9295,
+        "name": "Map",
+        "verified": false
+       },
+       {
+        "type": "mrr@10",
+        "value": 0.98,
+        "name": "Mrr@10",
+        "verified": false
+       },
+       {
+        "type": "ndcg@10",
+        "value": 0.9515,
+        "name": "Ndcg@10",
+        "verified": false
+       }
+      ]
+     },
+     {
+      "task": {
+       "type": "cross-encoder-reranking",
+       "name": "Cross Encoder Reranking"
+      },
+      "dataset": {
+       "name": "NanoArguAna R100",
+       "type": "NanoArguAna_R100"
+      },
+      "metrics": [
+       {
+        "type": "map",
+        "value": 0.6853,
+        "name": "Map",
+        "verified": false
+       },
+       {
+        "type": "mrr@10",
+        "value": 0.6985,
+        "name": "Mrr@10",
+        "verified": false
+       },
+       {
+        "type": "ndcg@10",
+        "value": 0.7637,
+        "name": "Ndcg@10",
+        "verified": false
+       }
+      ]
+     },
+     {
+      "task": {
+       "type": "cross-encoder-reranking",
+       "name": "Cross Encoder Reranking"
+      },
+      "dataset": {
+       "name": "NanoFEVER R100",
+       "type": "NanoFEVER_R100"
+      },
+      "metrics": [
+       {
+        "type": "map",
+        "value": 0.9432,
+        "name": "Map",
+        "verified": false
+       },
+       {
+        "type": "mrr@10",
+        "value": 0.98,
+        "name": "Mrr@10",
+        "verified": false
+       },
+       {
+        "type": "ndcg@10",
+        "value": 0.9607,
+        "name": "Ndcg@10",
+        "verified": false
+       }
+      ]
+     },
+     {
+      "task": {
+       "type": "cross-encoder-reranking",
+       "name": "Cross Encoder Reranking"
+      },
+      "dataset": {
+       "name": "NanoDBPedia R100",
+       "type": "NanoDBPedia_R100"
+      },
+      "metrics": [
+       {
+        "type": "map",
+        "value": 0.6963,
+        "name": "Map",
+        "verified": false
+       },
+       {
+        "type": "mrr@10",
+        "value": 0.8822,
+        "name": "Mrr@10",
+        "verified": false
+       },
+       {
+        "type": "ndcg@10",
+        "value": 0.7631,
+        "name": "Ndcg@10",
+        "verified": false
+       }
+      ]
+     },
+     {
+      "task": {
+       "type": "cross-encoder-reranking",
+       "name": "Cross Encoder Reranking"
+      },
+      "dataset": {
+       "name": "NanoClimateFEVER R100",
+       "type": "NanoClimateFEVER_R100"
+      },
+      "metrics": [
+       {
+        "type": "map",
+        "value": 0.4873,
+        "name": "Map",
+        "verified": false
+       },
+       {
+        "type": "mrr@10",
+        "value": 0.7342,
+        "name": "Mrr@10",
+        "verified": false
+       },
+       {
+        "type": "ndcg@10",
+        "value": 0.574,
+        "name": "Ndcg@10",
+        "verified": false
+       }
+      ]
+     },
+     {
+      "task": {
+       "type": "cross-encoder-reranking",
+       "name": "Cross Encoder Reranking"
+      },
+      "dataset": {
+       "name": "NanoSCIDOCS R100",
+       "type": "NanoSCIDOCS_R100"
+      },
+      "metrics": [
+       {
+        "type": "map",
+        "value": 0.3412,
+        "name": "Map",
+        "verified": false
+       },
+       {
+        "type": "mrr@10",
+        "value": 0.5922,
+        "name": "Mrr@10",
+        "verified": false
+       },
+       {
+        "type": "ndcg@10",
+        "value": 0.3991,
+        "name": "Ndcg@10",
+        "verified": false
+       }
+      ]
+     },
+     {
+      "task": {
+       "type": "cross-encoder-reranking",
+       "name": "Cross Encoder Reranking"
+      },
+      "dataset": {
+       "name": "NanoQuoraRetrieval R100",
+       "type": "NanoQuoraRetrieval_R100"
+      },
+      "metrics": [
+       {
+        "type": "map",
+        "value": 0.9509,
+        "name": "Map",
+        "verified": false
+       },
+       {
+        "type": "mrr@10",
+        "value": 0.9733,
+        "name": "Mrr@10",
+        "verified": false
+       },
+       {
+        "type": "ndcg@10",
+        "value": 0.9668,
+        "name": "Ndcg@10",
+        "verified": false
+       }
+      ]
+     },
+     {
+      "task": {
+       "type": "cross-encoder-nano-beir",
+       "name": "Cross Encoder Nano BEIR"
+      },
+      "dataset": {
+       "name": "NanoBEIR R100 mean",
+       "type": "NanoBEIR_R100_mean"
+      },
+      "metrics": [
+       {
+        "type": "map",
+        "value": 0.662,
+        "name": "Map",
+        "verified": false
+       },
+       {
+        "type": "mrr@10",
+        "value": 0.7782,
+        "name": "Mrr@10",
+        "verified": false
+       },
+       {
+        "type": "ndcg@10",
+        "value": 0.7189,
+        "name": "Ndcg@10",
+        "verified": false
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ },
+ "siblings": [
+  {
+   "rfilename": ".gitattributes",
+   "size": 1519
+  },
+  {
+   "rfilename": "1_Pooling/config.json",
+   "size": 90
+  },
+  {
+   "rfilename": "2_Dense/config.json",
+   "size": 230
+  },
+  {
+   "rfilename": "2_Dense/model.safetensors",
+   "size": 12845152
+  },
+  {
+   "rfilename": "3_LayerNorm/config.json",
+   "size": 25
+  },
+  {
+   "rfilename": "3_LayerNorm/model.safetensors",
+   "size": 14488
+  },
+  {
+   "rfilename": "4_Dense/config.json",
+   "size": 214
+  },
+  {
+   "rfilename": "4_Dense/model.safetensors",
+   "size": 7324
+  },
+  {
+   "rfilename": "README.md",
+   "size": 60931
+  },
+  {
+   "rfilename": "config.json",
+   "size": 2165
+  },
+  {
+   "rfilename": "config_sentence_transformers.json",
+   "size": 257
+  },
+  {
+   "rfilename": "model.safetensors",
+   "size": 4112219800
+  },
+  {
+   "rfilename": "modules.json",
+   "size": 678
+  },
+  {
+   "rfilename": "sentence_bert_config.json",
+   "size": 241
+  },
+  {
+   "rfilename": "tokenizer.json",
+   "size": 3583327
+  },
+  {
+   "rfilename": "tokenizer_config.json",
+   "size": 488
+  }
+ ],
+ "lastModified": "2026-05-19T14:00:04.000Z",
+ "downloads": 1124
+}

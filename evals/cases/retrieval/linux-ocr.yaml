@@ -1,0 +1,8 @@
+id: retrieval-linux-ocr
+modality: retrieval
+prompt: which OCR engine runs on Linux and why not tesseract
+input_file: corpus.jsonl
+assert:
+  relevant:
+  - d30
+  k: 5

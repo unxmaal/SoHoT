@@ -118,6 +118,8 @@ DEFAULT_DECIDE_MODEL = "q3-4b"
 DEFAULT_AGENT_MODEL = DEFAULT_CODE_MODEL
 #: The ocr lane starts on the reader the image lane's text check already trusts. #562.
 DEFAULT_OCR_ENGINE = "osocr:auto"
+#: The retrieval lane starts on BM25: no weights, and the bar a model must clear. #563.
+DEFAULT_RETRIEVAL_ENGINE = "bm25"
 
 TEXT_MODEL_HELP = ("gateway alias, mlx repo id or llamacpp:<stem> "
                    "(default: the lane's adopted model, else {})")

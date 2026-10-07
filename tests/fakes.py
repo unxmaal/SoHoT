@@ -71,6 +71,21 @@ WHY = {
     "Salesforce/blip-image-captioning-base":
         "image-to-text with no ocr tag: a captioner, the ocr lane's negative "
         "control, which must stay laneless (#562)",
+    "cross-encoder/ettin-reranker-1b-v1":
+        "a text-ranking cross-encoder tagged text-embeddings-inference, whose "
+        "`embedding` substring once made it an attachment (#563)",
+    "Contrastive-LM/CLM-v0.1-8B":
+        "a text-ranking card whose library is its own (contrastive-lm), so the "
+        "lane names it a runner wanted instead of loading it (#563)",
+    "tencent/EVIE-Preview-4.5B":
+        "visual-document-retrieval: a retriever over page images, which no "
+        "text retrieval case can feed (#563)",
+    "sentence-transformers/all-MiniLM-L6-v2":
+        "a general sentence embedder with no retrieval tag: the retrieval "
+        "lane's negative control, which must stay laneless (#563)",
+    "BAAI/bge-reranker-base":
+        "a reranker filed text-classification: it stays in decide, so the "
+        "retrieval lane steals nothing from it (#563)",
     "hexgrad/Kokoro-82M":
         "the tts lane's incumbent, and the upstream of the repo the lane "
         "actually serves, so the card is a requant's parent (#264)",

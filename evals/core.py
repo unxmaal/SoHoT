@@ -27,6 +27,7 @@ from harness.checks import image as image_check
 from harness.checks import music as music_check
 from harness.checks import ocr as ocr_check
 from harness.checks import render as render_check
+from harness.checks import retrieval as retrieval_check
 from harness.checks import video as video_check
 from harness.checks import speech as speech_check
 from harness.checks import svg as svg_check
@@ -277,6 +278,16 @@ def _check_decide(artifact, case: Case) -> CheckResult:
                               case.assertions["answers"])
 
 
+def _check_retrieval(artifact, case: Case) -> CheckResult:
+    """Recall@k decides; nDCG@10 orders. #563."""
+    if isinstance(artifact, Path):
+        if not artifact.exists():
+            return CheckResult(False, f"engine left no output at {artifact.name}")
+        artifact = artifact.read_text(encoding="utf-8")
+    return retrieval_check.check(str(artifact or ""), case.assertions["relevant"],
+                                 int(case.assertions.get("k", retrieval_check.DEFAULT_K)))
+
+
 def _check_ocr(artifact, case: Case) -> CheckResult:
     """Character error rate of the transcription against the reference. #562."""
     if isinstance(artifact, Path):
@@ -313,6 +324,7 @@ CHECKERS = {
     "agent": lambda a, c, **kw: _check_agent(a, c),
     "decide": lambda a, c, **kw: _check_decide(a, c),
     "ocr": lambda a, c, **kw: _check_ocr(a, c),
+    "retrieval": lambda a, c, **kw: _check_retrieval(a, c),
     "svg": lambda a, c, **kw: _check_svg(a, c),
     "music": _check_music,
     "web": lambda a, c, **kw: _check_web(a, c),
@@ -391,6 +403,9 @@ METRIC_DIRECTION = {
     # The per-slot context the candidate was served at. #498.
     "agent_ctx": "neutral",
     "prompt_tokens": "neutral",
+    # retrieval (#563): every relevant document in the top k, and how high.
+    "retrieval_recall": "higher",
+    "retrieval_ndcg": "higher",
 }
 
 
@@ -464,7 +479,8 @@ ASSERTION_KEYS = {"svg": TEXT_ASSERTIONS, "web": TEXT_ASSERTIONS,
                   "music": {"max_wer", "expect_vocals", "duration_s"},
                   "decide": {"answers"},
                   "agent": {"answer", "hidden"},
-                  "ocr": {"text", "max_cer"}}
+                  "ocr": {"text", "max_cer"},
+                  "retrieval": {"relevant", "k"}}
 
 
 #: Lanes whose runner returns text rather than a file.
@@ -475,7 +491,7 @@ MEDIA_MODALITIES = {"image", "video", "tts", "music"}
 TEXT_SUFFIX = {"svg": ".svg", "web": ".html", "code": ".py", "decide": ".json",
                "agent": ".json"}
 #: Lanes whose case hands the candidate a file to read through input_file. #562.
-INPUT_MODALITIES = {"ocr"}
+INPUT_MODALITIES = {"ocr", "retrieval"}
 #: Lanes whose runner drives a tool loop over a sandboxed repo. #474.
 AGENT_MODALITIES = {"agent"}
 
@@ -795,6 +811,8 @@ def load_cases(directory: str | Path) -> list[Case]:
             params = {**params, **_agent_params(path, params, assertions)}
         if modality == "ocr" and not str(assertions.get("text") or "").strip():
             raise ValueError(f"{path.name}: an ocr case needs assert.text, the reference")
+        if modality == "retrieval":
+            _check_relevant(path, input_file, assertions.get("relevant"))
         cases.append(Case(id=raw["id"], modality=modality, prompt=prompt,
                           context=context, audio=audio, params=params,
                           assertions=assertions, source=path, input_file=input_file,
@@ -859,6 +877,17 @@ def _load_audio(path: Path, raw: dict, modality: str) -> Path | None:
     if not source.exists():
         raise ValueError(f"{path.name}: audio_file '{filename}' not found")
     return source
+
+
+def _check_relevant(path: Path, corpus: Path, relevant) -> None:
+    """A retrieval case's labels name documents its corpus holds. #563."""
+    if not relevant or not isinstance(relevant, list):
+        raise ValueError(f"{path.name}: a retrieval case needs assert.relevant, a list of ids")
+    ids = {json.loads(line)["id"] for line in corpus.read_text(encoding="utf-8").splitlines()
+           if line.strip()}
+    missing = sorted(set(map(str, relevant)) - ids)
+    if missing:
+        raise ValueError(f"{path.name}: relevant ids {missing} are not in {corpus.name}")
 
 
 def _load_input(path: Path, raw: dict, modality: str) -> Path | None:

@@ -1,0 +1,216 @@
+{
+ "id": "sentence-transformers/all-MiniLM-L6-v2",
+ "pipeline_tag": "sentence-similarity",
+ "tags": [
+  "sentence-transformers",
+  "pytorch",
+  "tf",
+  "rust",
+  "onnx",
+  "safetensors",
+  "openvino",
+  "bert",
+  "feature-extraction",
+  "sentence-similarity",
+  "transformers",
+  "en",
+  "dataset:s2orc",
+  "dataset:flax-sentence-embeddings/stackexchange_xml",
+  "dataset:ms_marco",
+  "dataset:gooaq",
+  "dataset:yahoo_answers_topics",
+  "dataset:code_search_net",
+  "dataset:search_qa",
+  "dataset:eli5",
+  "dataset:snli",
+  "dataset:multi_nli",
+  "dataset:wikihow",
+  "dataset:natural_questions",
+  "dataset:trivia_qa",
+  "dataset:embedding-data/sentence-compression",
+  "dataset:embedding-data/flickr30k-captions",
+  "dataset:embedding-data/altlex",
+  "dataset:embedding-data/simple-wiki",
+  "dataset:embedding-data/QQP",
+  "dataset:embedding-data/SPECTER",
+  "dataset:embedding-data/PAQ_pairs",
+  "dataset:embedding-data/WikiAnswers",
+  "arxiv:1904.06472",
+  "arxiv:2102.07033",
+  "arxiv:2104.08727",
+  "arxiv:1704.05179",
+  "arxiv:1810.09305",
+  "base_model:nreimers/MiniLM-L6-H384-uncased",
+  "base_model:quantized:nreimers/MiniLM-L6-H384-uncased",
+  "license:apache-2.0",
+  "eval-results",
+  "text-embeddings-inference",
+  "endpoints_compatible",
+  "deploy:sagemaker",
+  "deploy:azure",
+  "region:us"
+ ],
+ "library_name": "sentence-transformers",
+ "cardData": {
+  "base_model": [
+   "nreimers/MiniLM-L6-H384-uncased"
+  ],
+  "language": "en",
+  "license": "apache-2.0",
+  "library_name": "sentence-transformers",
+  "tags": [
+   "sentence-transformers",
+   "feature-extraction",
+   "sentence-similarity",
+   "transformers"
+  ],
+  "datasets": [
+   "s2orc",
+   "flax-sentence-embeddings/stackexchange_xml",
+   "ms_marco",
+   "gooaq",
+   "yahoo_answers_topics",
+   "code_search_net",
+   "search_qa",
+   "eli5",
+   "snli",
+   "multi_nli",
+   "wikihow",
+   "natural_questions",
+   "trivia_qa",
+   "embedding-data/sentence-compression",
+   "embedding-data/flickr30k-captions",
+   "embedding-data/altlex",
+   "embedding-data/simple-wiki",
+   "embedding-data/QQP",
+   "embedding-data/SPECTER",
+   "embedding-data/PAQ_pairs",
+   "embedding-data/WikiAnswers"
+  ],
+  "pipeline_tag": "sentence-similarity"
+ },
+ "siblings": [
+  {
+   "rfilename": ".gitattributes",
+   "size": 1229
+  },
+  {
+   "rfilename": "1_Pooling/config.json",
+   "size": 190
+  },
+  {
+   "rfilename": "README.md",
+   "size": 10502
+  },
+  {
+   "rfilename": "config.json",
+   "size": 612
+  },
+  {
+   "rfilename": "config_sentence_transformers.json",
+   "size": 116
+  },
+  {
+   "rfilename": "data_config.json",
+   "size": 39265
+  },
+  {
+   "rfilename": "model.safetensors",
+   "size": 90868376
+  },
+  {
+   "rfilename": "modules.json",
+   "size": 349
+  },
+  {
+   "rfilename": "onnx/model.onnx",
+   "size": 90405214
+  },
+  {
+   "rfilename": "onnx/model_O1.onnx",
+   "size": 90360328
+  },
+  {
+   "rfilename": "onnx/model_O2.onnx",
+   "size": 90326566
+  },
+  {
+   "rfilename": "onnx/model_O3.onnx",
+   "size": 90326497
+  },
+  {
+   "rfilename": "onnx/model_O4.onnx",
+   "size": 45212349
+  },
+  {
+   "rfilename": "onnx/model_qint8_arm64.onnx",
+   "size": 23026053
+  },
+  {
+   "rfilename": "onnx/model_qint8_avx512.onnx",
+   "size": 23026053
+  },
+  {
+   "rfilename": "onnx/model_qint8_avx512_vnni.onnx",
+   "size": 23026053
+  },
+  {
+   "rfilename": "onnx/model_quint8_avx2.onnx",
+   "size": 23046789
+  },
+  {
+   "rfilename": "openvino/openvino_model.bin",
+   "size": 90265744
+  },
+  {
+   "rfilename": "openvino/openvino_model.xml",
+   "size": 211315
+  },
+  {
+   "rfilename": "openvino/openvino_model_qint8_quantized.bin",
+   "size": 22933664
+  },
+  {
+   "rfilename": "openvino/openvino_model_qint8_quantized.xml",
+   "size": 368006
+  },
+  {
+   "rfilename": "pytorch_model.bin",
+   "size": 90888945
+  },
+  {
+   "rfilename": "rust_model.ot",
+   "size": 90887379
+  },
+  {
+   "rfilename": "sentence_bert_config.json",
+   "size": 53
+  },
+  {
+   "rfilename": "special_tokens_map.json",
+   "size": 112
+  },
+  {
+   "rfilename": "tf_model.h5",
+   "size": 91005696
+  },
+  {
+   "rfilename": "tokenizer.json",
+   "size": 466247
+  },
+  {
+   "rfilename": "tokenizer_config.json",
+   "size": 350
+  },
+  {
+   "rfilename": "train_script.py",
+   "size": 13156
+  },
+  {
+   "rfilename": "vocab.txt",
+   "size": 231508
+  }
+ ],
+ "lastModified": "2026-06-01T06:29:13.000Z",
+ "downloads": 234015516
+}

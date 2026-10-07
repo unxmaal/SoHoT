@@ -1,0 +1,8 @@
+id: retrieval-text-in-pictures
+modality: retrieval
+prompt: how is lettering inside generated pictures checked
+input_file: corpus.jsonl
+assert:
+  relevant:
+  - d05
+  k: 5

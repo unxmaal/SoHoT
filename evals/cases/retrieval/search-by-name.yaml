@@ -1,0 +1,8 @@
+id: retrieval-search-by-name
+modality: retrieval
+prompt: why can a search miss a model whose name lacks the query word
+input_file: corpus.jsonl
+assert:
+  relevant:
+  - d26
+  k: 5

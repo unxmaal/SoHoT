@@ -1,4 +1,4 @@
-"""One case through transformers, in the hf-task venv: the ocr lane's reader. #562.
+"""One case through transformers, in the hf-task venv: ocr (#562) and retrieval (#563).
 
 Run by scripts/hf-task.sh; imports nothing from this package but torch_device.
 A repo that ships its own modelling code is refused, never executed.
@@ -79,7 +79,38 @@ def ocr(model: str, image: str, prompt: str, out, read=read_image) -> None:
     Path(out).write_text(read(model, image, prompt), encoding="utf-8")
 
 
-def main(argv=None, read=None) -> int:
+def score_texts(mode: str, model: str, query: str, texts: list[str],
+                revision: str | None = None, device: str | None = None) -> list[float]:
+    """A relevance score per text: a cross-encoder reads each pair, a bi-encoder compares
+    normalised embeddings. The model's own query/document prompts are used when it names them."""
+    import torch
+    from sentence_transformers import CrossEncoder, SentenceTransformer
+    dev = _device(torch, device)
+    if mode == "cross":
+        net = CrossEncoder(model, revision=revision, device=dev)
+        return [float(s) for s in net.predict([(query, t) for t in texts])]
+    net = SentenceTransformer(model, revision=revision, device=dev)
+    prompts = getattr(net, "prompts", None) or {}
+    q = net.encode([query], normalize_embeddings=True,
+                   **({"prompt_name": "query"} if "query" in prompts else {}))
+    side = next((n for n in ("document", "passage") if n in prompts), None)
+    d = net.encode(texts, normalize_embeddings=True,
+                   **({"prompt_name": side} if side else {}))
+    return [float(x) for x in d @ q[0]]
+
+
+def rank(mode: str, model: str, query: str, corpus, out, score=score_texts) -> None:
+    """Write {"ranking": [ids best first]}; ties keep corpus order."""
+    import json
+    docs = [json.loads(line) for line in Path(corpus).read_text(encoding="utf-8").splitlines()
+            if line.strip()]
+    scores = score(mode, model, query, [d["text"] for d in docs])
+    order = sorted(range(len(docs)), key=lambda i: (-scores[i], i))
+    Path(out).write_text(json.dumps({"ranking": [docs[i]["id"] for i in order]}),
+                         encoding="utf-8")
+
+
+def main(argv=None, read=None, score=None) -> int:
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = p.add_subparsers(dest="task", required=True)
     o = sub.add_parser("ocr")
@@ -90,11 +121,24 @@ def main(argv=None, read=None) -> int:
     o.add_argument("--revision")
     o.add_argument("--max-new-tokens", type=int, default=512)
     o.add_argument("--device")
+    r = sub.add_parser("rank")
+    r.add_argument("--mode", choices=("cross", "bi"), required=True)
+    r.add_argument("--model", required=True)
+    r.add_argument("--query", required=True)
+    r.add_argument("--corpus", required=True)
+    r.add_argument("--out", required=True)
+    r.add_argument("--revision")
+    r.add_argument("--device")
     a = p.parse_args(argv)
-    reader = read or functools.partial(read_image, revision=a.revision,
-                                       max_new_tokens=a.max_new_tokens, device=a.device)
     try:
-        ocr(a.model, a.image, a.prompt, a.out, read=reader)
+        if a.task == "ocr":
+            reader = read or functools.partial(read_image, revision=a.revision,
+                                               max_new_tokens=a.max_new_tokens, device=a.device)
+            ocr(a.model, a.image, a.prompt, a.out, read=reader)
+        else:
+            scorer = score or functools.partial(score_texts, revision=a.revision,
+                                                device=a.device)
+            rank(a.mode, a.model, a.query, a.corpus, a.out, score=scorer)
     except ValueError as exc:
         if "trust_remote_code" not in str(exc):
             raise

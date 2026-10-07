@@ -1,0 +1,9 @@
+id: retrieval-leak-paths
+modality: retrieval
+prompt: how are personal paths kept out of what gets published
+input_file: corpus.jsonl
+assert:
+  relevant:
+  - d14
+  - d15
+  k: 5
