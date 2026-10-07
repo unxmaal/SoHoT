@@ -572,6 +572,57 @@ def test_schema_40_keeps_a_verdict_no_lane_reached(tmp_path, tier, detail):
         again.close()
 
 
+def _at_schema_51(tmp_path, rows):
+    """rows: (name, lane, task, tags, parents, verdict outcome)."""
+    import json
+    conn = ms.connect(tmp_path / "s.db")
+    for name, lane, task, tags, parents, outcome in rows:
+        ms.record(conn, ms.Seen(name=name, source="t", kind="weights",
+                                lane=lane, why="seeded"))
+        conn.execute("UPDATE proposals SET hf_task = ?, card_tags = ? "
+                     "WHERE name = ?", (task, json.dumps(tags), name))
+        for parent in parents:
+            conn.execute("INSERT INTO lineage (proposal_id, parent, kind) "
+                         "SELECT id, ?, 'quantized' FROM proposals WHERE name = ?",
+                         (parent, name))
+        conn.execute("INSERT INTO verdicts (proposal_id, outcome, tier, detail, "
+                     "decided_at) SELECT id, ?, 'inspect', 'seeded', 0 "
+                     "FROM proposals WHERE name = ?", (outcome, name))
+    ms._backfill_state(conn)
+    conn.execute("INSERT OR REPLACE INTO meta VALUES ('schema', '51')")
+    conn.commit()
+    conn.close()
+    return ms.connect(tmp_path / "s.db")
+
+
+_557_ROWS = [
+    ("huytd189/Qwen3.6-27B-pure-GGUF", "", "", ["gguf"], ["Qwen/Qwen3.6-27B"], "queued"),
+    ("google/gemma-4-12B-it", "", "any-to-any", ["image-text-to-text"], [], "declined"),
+    ("google/magenta-realtime-2", "", "text-to-audio", ["realtime-music"], [], "queued"),
+    ("OpenMOSS-Team/MOSS-SoundEffect-v2.0", "", "text-to-audio",
+     ["sound-effects"], [], "queued"),
+    ("org/filed-in-image", "image", "", [], ["Qwen/Qwen3-8B"], "broken"),
+]
+
+
+def test_schema_52_fills_an_empty_lane_from_lineage_and_narrower_tasks(tmp_path):
+    """#557: only empty lanes are filled; no verdict is written or moved."""
+    again = _at_schema_51(tmp_path, _557_ROWS)
+    try:
+        got = {r["name"]: (r["lane"], r["lane_source"], r["state"]) for r in again.execute(
+            "SELECT name, lane, lane_source, state FROM proposals")}
+        assert got == {
+            "huytd189/Qwen3.6-27B-pure-GGUF": ("code", "lineage", "queued"),
+            "google/gemma-4-12B-it": ("code", "tag", "declined"),
+            "google/magenta-realtime-2": ("music", "tag", "queued"),
+            "OpenMOSS-Team/MOSS-SoundEffect-v2.0": ("", "", "queued"),
+            "org/filed-in-image": ("image", "", "broken"),
+        }
+        assert again.execute("SELECT COUNT(*) FROM verdicts").fetchone()[0] == len(_557_ROWS)
+    finally:
+        again.close()
+
+
 # --- #383 class 4: a retraction keyed on one fact leaves the others alone ---
 
 RETRACTIONS = sorted(n for n in dir(ms)

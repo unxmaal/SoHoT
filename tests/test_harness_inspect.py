@@ -779,3 +779,49 @@ def test_card_lane_and_lane_for_agree_on_a_bare_settled_task(task):
 @pytest.mark.parametrize("task", sorted(TASK_LANES))
 def test_each_huggingface_task_lands_where_it_was_decided(task):
     assert ins.lane_for({"pipeline_tag": task, "tags": []}) == TASK_LANES[task]
+
+
+# ---- #557: laneless models an existing lane can test -----------------------
+
+@pytest.mark.parametrize("tags,name", [
+    (["music"], "google/magenta-realtime-2"),
+    (["realtime-music", "audio"], "google/magenta-realtime-2"),
+    (["music-continuation"], "a/b"),
+])
+def test_a_text_to_audio_card_that_names_music_files_under_music(tags, name):
+    assert ins.lane_for({"pipeline_tag": "text-to-audio", "tags": tags,
+                         "id": name}) == "music"
+
+
+@pytest.mark.parametrize("parent", ["Qwen/Qwen3.6-27B", "Qwen/Qwen3.5-9B",
+                                    "meta-llama/Llama-3.1-8B-Instruct"])
+def test_a_card_with_no_task_built_from_a_text_model_files_under_code(parent):
+    card = {"id": "huytd189/Qwen3.6-27B-pure-GGUF",
+            "tags": ["gguf", f"base_model:quantized:{parent}"]}
+    assert ins.lane_and_source(card) == ("code", "lineage")
+
+
+@pytest.mark.parametrize("parent", ["Qwen/Qwen2.5-VL-7B-Instruct",
+                                    "Qwen/Qwen3-TTS-0.6B", "Qwen/Qwen-Image",
+                                    "Qwen/Qwen3-Embedding-4B", "org/unknown-7b"])
+def test_lineage_from_a_parent_not_known_as_a_text_model_names_no_lane(parent):
+    card = {"id": "a/b", "tags": [f"base_model:finetune:{parent}"]}
+    assert ins.lane_for(card) == ""
+
+
+def test_lineage_never_overrides_a_task_the_card_names():
+    card = {"pipeline_tag": "translation",
+            "tags": ["base_model:finetune:Qwen/Qwen3-8B"]}
+    assert ins.lane_for(card) == ""
+
+
+def test_any_to_any_with_one_text_task_in_its_tags_files_under_code():
+    card = {"pipeline_tag": "any-to-any", "id": "google/gemma-4-12B-it",
+            "tags": ["transformers", "image-text-to-text", "gemma4"]}
+    assert ins.lane_for(card) == "code"
+
+
+@pytest.mark.parametrize("tags", [[], ["transformers"],
+                                  ["image-text-to-text", "text-to-image"]])
+def test_any_to_any_with_no_single_narrower_task_stays_laneless(tags):
+    assert ins.lane_for({"pipeline_tag": "any-to-any", "tags": tags}) == ""

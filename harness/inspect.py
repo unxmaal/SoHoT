@@ -135,10 +135,14 @@ GENERIC_PIPELINE = "text-generation"
 OUTPUT_LANES = {"text": "code", "image": "image", "video": "video"}
 
 
-def _lane_from_output(tag: str, from_tags: set) -> str:
+def _lane_from_output(tag: str, from_tags: set, card_tags=()) -> str:
     _, sep, out = tag.rpartition("-to-")
     if sep and out == "any":
-        return from_tags.pop() if len(from_tags) == 1 else ""
+        # any-to-any decomposes into the narrower tasks its tags name. #557.
+        named = set(from_tags) | {_task_lane(t, set(card_tags)) for t in card_tags
+                                  if "-to-" in t and not t.endswith("-to-any")}
+        named.discard("")
+        return named.pop() if len(named) == 1 else ""
     lane = OUTPUT_LANES.get(out, "") if sep else ""
     # An SVG model is a text model; that is the one override a text task takes.
     if lane == "code" and from_tags == {"svg"}:
@@ -157,6 +161,32 @@ AUDIO_TAGS = {"music": "music", "text-to-music": "music",
               "tts": "tts", "text-to-speech": "tts",
               "speech-synthesis": "tts"}
 AUDIO_TASK = "text-to-audio"
+#: A word inside a compound audio tag (realtime-music) that names the lane. #557.
+AUDIO_WORDS = {"music": "music", "musicgen": "music", "song": "music",
+               "songs": "music", "tts": "tts"}
+
+
+def _audio_lane(tag: str) -> str:
+    if tag in AUDIO_TAGS:
+        return AUDIO_TAGS[tag]
+    named = {AUDIO_WORDS[w] for w in re.split(r"[-_\s:]+", tag) if w in AUDIO_WORDS}
+    return named.pop() if len(named) == 1 else ""
+
+
+#: Base-model families that are text models, so a task-less card built from
+#: one inherits code; any marker in NOT_TEXT_PARENT vetoes it. #557.
+TEXT_PARENTS = re.compile(
+    r"^(qwen/qwen\d|meta-llama/(meta-)?llama-\d|mistralai/(mistral|ministral|"
+    r"magistral|devstral)|microsoft/phi-\d|google/gemma-\d|deepseek-ai/deepseek-[vr]\d)",
+    re.I)
+NOT_TEXT_PARENT = {"vl", "omni", "tts", "asr", "audio", "image", "video", "vision",
+                   "embedding", "reranker", "ocr", "guard", "speech"}
+
+
+def text_parent(parent: str) -> bool:
+    """Is this base_model parent a known text model? #557."""
+    words = set(re.split(r"[-_./\s]+", parent.strip().lower()))
+    return bool(TEXT_PARENTS.match(parent.strip())) and not words & NOT_TEXT_PARENT
 #: The settled tasks, for the relane that moves rows filed before. #387.
 SETTLED_TASKS = (AUDIO_TASK, *NEEDS_AN_INPUT)
 
@@ -179,7 +209,7 @@ def _settled_lane(task: str, tags: set, name: str) -> tuple[str, str] | None:
         return "", ""
     if task != AUDIO_TASK:
         return None
-    named = {AUDIO_TAGS[t] for t in tags if t in AUDIO_TAGS}
+    named = {_audio_lane(t) for t in tags} - {""}
     if len(named) == 1:
         return named.pop(), "tag"
     # Tie-break: neither or both tag sets, so the repo name decides, else none.
@@ -192,6 +222,11 @@ def card_lane(task: str) -> str:
     if task in SETTLED_TASKS:
         return ""
     return PIPELINE_LANES.get(task) or _lane_from_output(task, set())
+
+
+def _task_lane(task: str, tags: set) -> str:
+    settled = _settled_lane(task, tags, "")
+    return settled[0] if settled is not None else card_lane(task)
 
 
 #: The words card_description() writes before a card's parents, for the judge.
@@ -239,7 +274,7 @@ def lane_and_source(meta: dict, prose: str = "") -> tuple[str, str]:
             return specific.pop(), "tag"
         return lane, "card"
     if tag:
-        lane = _lane_from_output(tag, from_tags)
+        lane = _lane_from_output(tag, from_tags, card_tags)
         if not lane:
             return "", ""
         return lane, ("tag" if tag.endswith("-to-any") else "card")
@@ -247,6 +282,8 @@ def lane_and_source(meta: dict, prose: str = "") -> tuple[str, str]:
         return from_tags.pop(), "tag"
     if from_tags:
         return "", ""     # several lanes named and none of them the publisher's
+    if any(text_parent(p) for p, _ in lineage(meta.get("tags") or [])):
+        return "code", "lineage"
     lane = lanes.from_prose(prose)
     return lane, ("prose" if lane else "")
 
