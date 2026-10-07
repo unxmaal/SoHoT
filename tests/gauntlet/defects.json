@@ -848,5 +848,10 @@
   "number": 519,
   "title": "Patching evals.runners.chain.stage_unavailable misses harness.discover's own binding",
   "created": "2026-10-07T01:46:21Z"
+ },
+ {
+  "number": 530,
+  "title": "main is red: three tests patch evals.run.load_cases, which harness.holdout does not read",
+  "created": "2026-10-07T02:55:16Z"
  }
 ]
