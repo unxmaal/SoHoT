@@ -1,5 +1,8 @@
 """A GGUF-only text candidate reaches llama-server. #295."""
+import contextlib
+import json
 import re
+import types
 from pathlib import Path
 
 import pytest
@@ -504,3 +507,88 @@ def test_a_decide_eval_of_a_gguf_repo_id_sends_the_schema_to_llama_server(plumb,
     assert sent[0]["response_format"]
     assert sent[0]["gateway"] == router.url()
     assert sent[0]["model"] == "plumb-4b-v5-Q8_0"
+
+
+@contextlib.contextmanager
+def _fake_server(answer):
+    """An OpenAI-style server on a free port that records each request body."""
+    import http.server
+    import socketserver
+    import threading
+
+    bodies = []
+
+    class Server(http.server.ThreadingHTTPServer):
+        def server_bind(self):
+            socketserver.TCPServer.server_bind(self)
+            self.server_name, self.server_port = "127.0.0.1", self.server_address[1]
+
+    class Handler(http.server.BaseHTTPRequestHandler):
+        def do_POST(self):
+            data = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
+            bodies.append(data)
+            status, payload = answer(data)
+            out = json.dumps(payload).encode()
+            self.send_response(status)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(out)))
+            self.end_headers()
+            self.wfile.write(out)
+
+        def log_message(self, *a):
+            pass
+
+    srv = Server(("127.0.0.1", 0), Handler)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    try:
+        yield types.SimpleNamespace(url=f"http://127.0.0.1:{srv.server_port}",
+                                    port=srv.server_port, bodies=bodies)
+    finally:
+        srv.shutdown()
+        srv.server_close()
+
+
+def _reply(text):
+    return {"id": "x", "object": "chat.completion", "model": "m",
+            "choices": [{"index": 0, "finish_reason": "stop",
+                         "message": {"role": "assistant", "content": text}}],
+            "usage": {"prompt_tokens": 1, "completion_tokens": 1, "total_tokens": 2}}
+
+
+def _as_the_gateway(data):
+    """What the real gateway answers: its schema guard over its real config."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("schema_guard",
+                                                  REPO / "gateway" / "schema_guard.py")
+    guard = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(guard)
+    why = guard.refusal(data)
+    return (400, {"error": {"message": why}}) if why else (200, _reply('{"urgent": "A"}'))
+
+
+def test_a_decide_eval_through_the_gateway_still_reaches_llama_server(plumb, monkeypatch):
+    """#583 job 0029: evals.run always passes --gateway, so the repo id went to the gateway verbatim."""
+    from evals import run
+    from evals.core import Case
+    with _fake_server(_as_the_gateway) as gw, \
+            _fake_server(lambda d: (200, _reply('{"urgent": "B"}'))) as llama:
+        monkeypatch.setenv("LLAMACPP_PORT", str(llama.port))
+        runner = run._build_runner(PLUMB, gw.url, None)
+        got = runner.run(Case(id="d", modality="decide", prompt="p", params={"schema": {
+            "urgent": {"type": "boolean", "description": "d"}}},
+            assertions={"answers": {"urgent": True}}))
+    assert not gw.bodies, gw.bodies[0]["model"] if gw.bodies else ""
+    assert [b["model"] for b in llama.bodies] == ["plumb-4b-v5-Q8_0"]
+    assert llama.bodies[0]["response_format"]["type"] == "json_schema"
+    assert got.passed, got.detail
+
+
+def test_an_alias_given_with_a_gateway_still_goes_to_the_gateway(plumb, monkeypatch):
+    """Negative control: only a GGUF repo id leaves the gateway."""
+    from evals import run
+    from evals.core import Case
+    with _fake_server(lambda d: (200, _reply("ok"))) as gw:
+        runner = run._build_runner("eval-imajev-4b", gw.url, None)
+        runner.generate(Case(id="c", modality="code", prompt="p", params={},
+                             assertions={}))
+    assert [b["model"] for b in gw.bodies] == ["eval-imajev-4b"]

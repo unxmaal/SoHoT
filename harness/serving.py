@@ -166,18 +166,19 @@ def _servable(stem: str) -> str:
 def route(spec: str, gateway: str = "", config=None) -> Route:
     """The server that serves a text spec, shared by lane commands and evals.run. #297.
 
-    `llamacpp:<stem>` goes to llama-server's router as <stem>. With an explicit
-    `gateway` everything else goes there verbatim. Otherwise a gateway alias stays
-    on the gateway, a fetched GGUF repo goes to the router by its stem, and an
-    mlx repo id goes to the upstream that hot-swaps to it (screen.routed_gateway).
+    `llamacpp:<stem>` and a GGUF-only repo id (fetched, or whole in the hub cache)
+    go to llama-server's router by stem, whatever `gateway` says (#583). With an
+    explicit `gateway` everything else goes there verbatim. Otherwise a gateway
+    alias stays on the gateway and an mlx repo id goes to the upstream that
+    hot-swaps to it (screen.routed_gateway).
     """
     name, _, optstr = (spec or "").partition(",")
     name = name.strip()
     sampling = _sampling(optstr, spec)
     if not text_spec(name):
         raise ValueError(f"{spec!r} is not served by a text server")
+    from harness import router
     if name.startswith(LLAMACPP_PREFIX):
-        from harness import router
         return Route(router.url(), _servable(name[len(LLAMACPP_PREFIX):].strip()),
                      sampling)
     if name.startswith(VLLM_PREFIX):
@@ -185,20 +186,23 @@ def route(spec: str, gateway: str = "", config=None) -> Route:
         if not model:
             raise ValueError(f"{spec!r} names no model; vllm:<repo id>")
         return Route(vllm_url(), model, sampling)
-    if gateway:
-        return Route(gateway.rstrip("/"), name, sampling)
-    from harness.completion import DEFAULT_GATEWAY
-    if "/" not in name:
-        return Route(DEFAULT_GATEWAY, name, sampling)
     from harness import screen
-    names, _ = screen.gateway_routes(config)
-    if name.lower() in names:
-        return Route(DEFAULT_GATEWAY, name, sampling)
-    from harness import gguf, router
-    try:
-        stem = gguf.fetched(name) or gguf.hub_stem(name)
-    except Exception:  # noqa: BLE001
-        stem = None
+    from harness.completion import DEFAULT_GATEWAY
+    alias = "/" not in name or name.lower() in screen.gateway_routes(config)[0]
+    stem = None if alias else gguf_stem(name)
     if stem:
         return Route(router.url(), _servable(stem), sampling)
+    if gateway:
+        return Route(gateway.rstrip("/"), name, sampling)
+    if alias:
+        return Route(DEFAULT_GATEWAY, name, sampling)
     return Route(screen.routed_gateway(name, config) or DEFAULT_GATEWAY, name, sampling)
+
+
+def gguf_stem(repo: str) -> str | None:
+    """The router stem a GGUF-only repo id is served under, linked or not yet. #583."""
+    from harness import gguf
+    try:
+        return gguf.fetched(repo) or gguf.hub_stem(repo)
+    except Exception:  # noqa: BLE001
+        return None
