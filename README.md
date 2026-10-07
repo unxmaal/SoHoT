@@ -1797,6 +1797,12 @@ classes no detector can find carry a `review` regex instead, and
 `soh gauntlet review [range]` (default `origin/main...HEAD`) prints each one
 whose heuristic fires on the added lines, as its trigger question and test
 shape from the skill; `soh gauntlet audit` is the audit above.
+`soh chaos --yes-break-things` runs three fault scenarios on a real machine
+and reports pass or fail for each: a scratch model server killed mid-screen, a
+scratch directory filled below the fetch floor, and the HF client pointed at a
+socket that resets. Each runs on a scratch `LOCALHARNESS_HOME` it creates and
+removes, under the machine lock. It refuses without the flag, under pytest or
+CI, or while another run holds the lock, and nothing schedules it.
 
 ## Two traps this repo exists to remember
 

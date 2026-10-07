@@ -45,7 +45,7 @@ LOCK = "generation.lock"
 EXCLUSIVE = {"image", "video"}
 #: Batch runs that load models on any engine, and other projects through
 #: scripts/with-gpu-lock. A lane prompt is not one of these. #314.
-BATCH = {"eval", "ramp", "external"}
+BATCH = {"eval", "ramp", "external", "chaos"}
 #: Set while held, so a child that also asks (a helper running `lh ...`)
 #: does not deadlock against its own parent.
 HELD_ENV = "LH_GPU_LOCK_HELD"
@@ -156,6 +156,30 @@ def held(kind: str, announce=None, poll: float = POLL_SECONDS):
         os.environ[HELD_ENV] = "1"
         try:
             yield waited
+        finally:
+            os.environ.pop(HELD_ENV, None)
+            with contextlib.suppress(OSError):
+                holder_path().unlink()
+            _release(fd)
+    finally:
+        os.close(fd)
+
+
+@contextlib.contextmanager
+def try_held(kind: str):
+    """Hold the machine for `kind` only if it is free now; yields whether it is held."""
+    if os.environ.get(HELD_ENV) == "1":
+        yield True
+        return
+    fd = os.open(lock_path(), os.O_RDWR | os.O_CREAT, 0o644)
+    try:
+        if not _take(fd):
+            yield False
+            return
+        _write_holder(kind)
+        os.environ[HELD_ENV] = "1"
+        try:
+            yield True
         finally:
             os.environ.pop(HELD_ENV, None)
             with contextlib.suppress(OSError):

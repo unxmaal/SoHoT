@@ -132,6 +132,16 @@ def screenable_backlog(want: str = "", plan=None, room=None) -> list[str]:
     return [r["name"] for r in plan if r["state"] == screen.READY and room(r)]
 
 
+def verdict_of_run(returncode: int, stderr: str, summary, candidate: str,
+                   key: str = "", facts: dict | None = None):
+    """One finished screen process's verdict; stderr is classed only without a receipt."""
+    from harness import screen
+    stderr_class = "" if summary is not None else reasons.classify(
+        (stderr or "")[-2000:], reasons.STDERR, candidate)
+    return screen.outcome(returncode, summary, candidate=candidate, key=key,
+                          stderr_class=stderr_class, facts=facts)
+
+
 def _report_screen(a) -> int:
     """Run the cheapest real thing, and record whether it ran at all. #53.
 
@@ -207,12 +217,8 @@ def _report_screen(a) -> int:
                                     lane=r["modality"])
             key = candidates.key_for(store, r["candidate"])
             # Read once, here, and only when the run wrote no receipt. #408.
-            stderr_class = "" if summary is not None else reasons.classify(
-                (proc.stderr or "")[-2000:], reasons.STDERR, r["candidate"])
-            verdict = screen.outcome(proc.returncode, summary,
-                                     candidate=r["candidate"], key=key,
-                                     stderr_class=stderr_class,
-                                     facts=ms.this_machine())
+            verdict = verdict_of_run(proc.returncode, proc.stderr, summary,
+                                     r["candidate"], key=key, facts=ms.this_machine())
             got, why = verdict.outcome, verdict.detail
             print(f"   {got.upper()}: {why}")
             if proc.returncode != 0:
