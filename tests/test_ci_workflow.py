@@ -76,3 +76,10 @@ def test_make_mutation_redirects_its_output():
     make = (Path(__file__).resolve().parents[1] / "Makefile").read_text(encoding="utf-8")
     recipe = make.split("\nmutation:", 1)[1].split("\n\n", 1)[0]
     assert "tests.gauntlet.mutation run" in recipe and "> " in recipe
+
+
+def test_a_new_pages_publish_cancels_a_stuck_one():
+    """A deploy stuck waiting on the environment held the group for 16 hours (#570)."""
+    pages = CI.parent / "pages.yml"
+    doc = yaml.safe_load(pages.read_text(encoding="utf-8"))
+    assert doc["concurrency"]["cancel-in-progress"] is True
