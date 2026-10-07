@@ -233,24 +233,28 @@ def record(conn, verdict: Verdict, spec: str = "",
         verdict = Verdict(verdict.lane, verdict.incumbent, verdict.challenger,
                           False, f"reference model; never a lane default "
                           f"({verdict.why})", verdict.how)
-    outcome = "measured" if verdict.adopt else "declined"
-    detail = f"{verdict.lane}: {verdict.why}"
     spec = spec or verdict.challenger
+    verdict = _schema_guard(verdict, spec)
+    from harness import reasons
+    outcome, reason = reasons.CLASSES.get(verdict.failure_class, (
+        "declined", reasons.LIMIT if verdict.failure_class == reasons.UNDERPOWERED
+        else reasons.CANDIDATE))
+    if verdict.adopt:
+        outcome = "measured"
+    detail = f"{verdict.lane}: {verdict.why}"
     # A text-lane spec is the proposal's own name; anything else maps by row.
     cid = candidates.ensure(conn, spec, proposal=spec, lane=verdict.lane)
     if cid is None:
         raise ValueError(f"{spec!r} is not a spec any runner takes, so an "
                          f"adoption of it could never be served")
     row = candidates.get(conn, spec)
-    from harness import reasons
     if verdict.adopt and verdict.how == BY_HAND:
         ok, why = fit(conn, cid, ms.remember_machine(conn))
         if not ok:
             raise Held(f"refused on this machine: {spec} {why}")
     vid = ms.decide(conn, row["proposal"] or "", outcome, tier=TIER,
                     detail=detail[:200], candidate_id=cid, run_id=run_id,
-                    reason=(reasons.LIMIT if verdict.failure_class
-                            == reasons.UNDERPOWERED else reasons.CANDIDATE))
+                    reason=reason)
     if verdict.failure_class or verdict.evidence:
         conn.execute(
             "UPDATE verdicts SET failure_class = ?, split_version = ?, "
@@ -283,6 +287,19 @@ def record(conn, verdict: Verdict, spec: str = "",
             except OSError:
                 pass
     return vid
+
+
+def _schema_guard(verdict: Verdict, spec: str) -> Verdict:
+    """A schema lane's win on an engine that cannot enforce its schema is the harness's gap, not a loss. #572."""
+    from harness import gateway, reasons, serving
+    lane = verdict.lane.strip().lower()
+    if not verdict.adopt or lane not in gateway.SCHEMA_LANES or serving.enforces_schema(spec):
+        return verdict
+    return Verdict(verdict.lane, verdict.incumbent, verdict.challenger, False,
+                   f"not adopted: {spec} is not served by llama-server, so the {lane} "
+                   f"lane's response_format would be refused or silently dropped "
+                   f"({verdict.why})", verdict.how, reasons.REFUSED_BY_GATEWAY,
+                   verdict.evidence)
 
 
 def _now() -> float:

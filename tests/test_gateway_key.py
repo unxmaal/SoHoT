@@ -149,8 +149,9 @@ def test_the_module_prints_and_creates_the_key_for_the_launcher(tmp_path):
 class Gateway(ThreadingHTTPServer):
     """A fake gateway that demands one key, as LiteLLM with a master key does."""
 
-    def __init__(self, want: str):
-        self.want, self.seen, self.anthropic = want, [], []
+    def __init__(self, want: str, refuse_schema: bool = False):
+        self.want, self.seen, self.anthropic, self.bodies = want, [], [], []
+        self.refuse_schema = refuse_schema
         server = self
 
         class Handler(BaseHTTPRequestHandler):
@@ -158,13 +159,25 @@ class Gateway(ThreadingHTTPServer):
                 pass
 
             def do_POST(self):
-                self.rfile.read(int(self.headers.get("Content-Length") or 0))
+                raw = self.rfile.read(int(self.headers.get("Content-Length") or 0))
+                try:
+                    sent = json.loads(raw or b"{}")
+                except ValueError:
+                    sent = {}
+                server.bodies.append(sent)
                 got = self.headers.get("Authorization", "")
                 server.seen.append(got)
                 server.anthropic.append(self.headers.get("x-api-key", ""))
                 if got != f"Bearer {server.want}":
                     body = b'{"error":{"message":"Authentication Error"}}'
                     self.send_response(401)
+                elif server.refuse_schema and sent.get("response_format"):
+                    body = b'{"error":{"message":"served by mlx_lm.server"}}'
+                    self.send_response(400)
+                elif sent.get("response_format"):
+                    body = json.dumps({"choices": [{"message": {
+                        "content": '{"answer": "A"}'}}]}).encode()
+                    self.send_response(200)
                 else:
                     body = json.dumps({"choices": [{"message": {
                         "content": "ok"}}]}).encode()
@@ -297,6 +310,26 @@ def test_smoke_sends_the_key_on_both_routes(gateway, tmp_path):
     assert gateway.seen and set(gateway.seen) <= {"Bearer sk-right", ""}
     assert "Bearer sk-right" in gateway.seen
     assert "sk-right" in gateway.anthropic
+
+
+def test_smoke_asks_the_decide_alias_for_a_schema(gateway, tmp_path):
+    """A decide alias on an engine that ignores response_format must not pass smoke. #572."""
+    r = _smoke({"SOHOT_GATEWAY_KEY": "sk-right",
+                "GATEWAY_PORT": str(gateway.server_address[1])}, tmp_path)
+    decide = [b for b in gateway.bodies if b.get("model") == "sohot-decide"]
+    assert decide and all(b["response_format"]["type"] == "json_schema" for b in decide)
+    assert "PASS  sohot-decide" in r.stdout
+
+
+def test_smoke_fails_when_the_decide_alias_refuses_a_schema(tmp_path):
+    g = Gateway("sk-right", refuse_schema=True)
+    try:
+        r = _smoke({"SOHOT_GATEWAY_KEY": "sk-right",
+                    "GATEWAY_PORT": str(g.server_address[1])}, tmp_path)
+    finally:
+        g.shutdown()
+    assert r.returncode != 0
+    assert "FAIL  sohot-decide" in r.stdout
 
 
 def test_smoke_without_a_key_says_where_to_get_one(tmp_path):

@@ -64,6 +64,13 @@ class CompletionRunner(BaseRunner):
         self.answered = True
 
     def _ask(self, case: Case, template: dict | None = None):
+        from harness import serving
+        if self._reply_shape(case) and serving.drops_schema(self.gateway):
+            raise completion.CompletionError(
+                f"{self.model} is asked on mlx_lm.server, which ignores the "
+                f"{case.modality} lane's response_format, so its reply would be "
+                f"scored on a request the lane never sends. #572",
+                reasons.REFUSED_BY_GATEWAY)
         cold = not self.answered
         got = completion.complete_full(
             case.prompt, model=self.model, gateway=self.gateway,

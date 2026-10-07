@@ -112,8 +112,8 @@ DEFAULT_SVG_MODEL = "local-large"
 DEFAULT_WEB_MODEL = "q3-4b"
 DEFAULT_CODE_MODEL = "q3-4b"
 DEFAULT_EXTRACT_MODEL = "local-large"
-# Typed by hand, not measured: the code lane's default as the decide baseline. #423.
-DEFAULT_DECIDE_MODEL = "q3-4b"
+# Best measured on the decide lane (#311), on llama-server, which enforces the lane's schema. #572.
+DEFAULT_DECIDE_MODEL = "eval-imajev-4b"
 #: The agent lane starts on the code lane's typed default until it adopts. #474.
 DEFAULT_AGENT_MODEL = DEFAULT_CODE_MODEL
 #: The ocr lane starts on the reader the image lane's text check already trusts. #562.
