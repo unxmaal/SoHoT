@@ -92,7 +92,9 @@ _HARNESS = ("no cases of a modality it can run", "no candidate matched any case"
             # A package our hf-task venv lacks, not the model. #562.
             "installed to convert a slow tokenizer",
             # transformers offline with weights the fetch never finished. #563.
-            "run the library in offline mode")
+            "run the library in offline mode",
+            # transformers' requires_backends tail: a backend the venv lacks (torchvision). #601.
+            "restart your runtime after installation", "venv lacks a package")
 #: In stderr this is our missing script; in a loader's error it is the snapshot's.
 _ABOUT_THE_SNAPSHOT = ("no such file or directory",
                        "does not appear to have a file named")

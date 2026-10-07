@@ -1,0 +1,141 @@
+{
+ "id": "mlx-community/PaddleOCR-VL-1.5-bf16",
+ "pipeline_tag": "image-text-to-text",
+ "tags": [
+  "PaddleOCR",
+  "safetensors",
+  "paddleocr_vl",
+  "ERNIE4.5",
+  "PaddlePaddle",
+  "image-to-text",
+  "ocr",
+  "document-parse",
+  "layout",
+  "table",
+  "formula",
+  "chart",
+  "seal",
+  "spotting",
+  "mlx",
+  "image-text-to-text",
+  "conversational",
+  "custom_code",
+  "en",
+  "zh",
+  "multilingual",
+  "base_model:baidu/ERNIE-4.5-0.3B-Paddle",
+  "base_model:finetune:baidu/ERNIE-4.5-0.3B-Paddle",
+  "license:apache-2.0",
+  "region:us"
+ ],
+ "library_name": "PaddleOCR",
+ "cardData": {
+  "license": "apache-2.0",
+  "pipeline_tag": "image-text-to-text",
+  "tags": [
+   "ERNIE4.5",
+   "PaddleOCR",
+   "PaddlePaddle",
+   "image-to-text",
+   "ocr",
+   "document-parse",
+   "layout",
+   "table",
+   "formula",
+   "chart",
+   "seal",
+   "spotting",
+   "mlx"
+  ],
+  "base_model": "baidu/ERNIE-4.5-0.3B-Paddle",
+  "language": [
+   "en",
+   "zh",
+   "multilingual"
+  ],
+  "library_name": "PaddleOCR"
+ },
+ "siblings": [
+  {
+   "rfilename": ".gitattributes",
+   "size": 1570
+  },
+  {
+   "rfilename": "README.md",
+   "size": 802
+  },
+  {
+   "rfilename": "added_tokens.json",
+   "size": 25381
+  },
+  {
+   "rfilename": "chat_template.jinja",
+   "size": 1474
+  },
+  {
+   "rfilename": "config.json",
+   "size": 2278
+  },
+  {
+   "rfilename": "configuration_paddleocr_vl.py",
+   "size": 8104
+  },
+  {
+   "rfilename": "generation_config.json",
+   "size": 133
+  },
+  {
+   "rfilename": "image_processing_paddleocr_vl.py",
+   "size": 24966
+  },
+  {
+   "rfilename": "model.safetensors",
+   "size": 1811260812
+  },
+  {
+   "rfilename": "model.safetensors.index.json",
+   "size": 36584
+  },
+  {
+   "rfilename": "modeling_paddleocr_vl.py",
+   "size": 111490
+  },
+  {
+   "rfilename": "preprocessor_config.json",
+   "size": 641
+  },
+  {
+   "rfilename": "processing_paddleocr_vl.py",
+   "size": 12253
+  },
+  {
+   "rfilename": "processor_config.json",
+   "size": 843
+  },
+  {
+   "rfilename": "special_tokens_map.json",
+   "size": 1151
+  },
+  {
+   "rfilename": "tokenizer.json",
+   "size": 11189060
+  },
+  {
+   "rfilename": "tokenizer_config.json",
+   "size": 876
+  }
+ ],
+ "lastModified": "2026-01-29T17:50:58.000Z",
+ "downloads": 380,
+ "config": {
+  "architectures": [
+   "PaddleOCRVLForConditionalGeneration"
+  ],
+  "model_type": "paddleocr_vl",
+  "auto_map": {
+   "AutoConfig": "configuration_paddleocr_vl.PaddleOCRVLConfig",
+   "AutoModel": "modeling_paddleocr_vl.PaddleOCRVLForConditionalGeneration",
+   "AutoModelForCausalLM": "modeling_paddleocr_vl.PaddleOCRVLForConditionalGeneration"
+  }
+ }
+}

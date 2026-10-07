@@ -325,7 +325,7 @@ def test_the_loop_publishes_only_on_a_machine_that_turned_it_on(monkeypatch):
 
     from harness import cli
     sent = []
-    monkeypatch.setattr(loop_cmd, "_loop_spend", lambda a, rc: rc)
+    monkeypatch.setattr(loop_cmd, "_loop_spend", lambda a, rc, failed=None: rc)
     monkeypatch.setattr(publish, "publish_here", lambda conn=None: sent.append(1) or "p")
     cli._spend_and_settle(argparse.Namespace(), 0)
     assert sent == []
@@ -341,7 +341,7 @@ def test_a_failed_publish_does_not_fail_the_loop(monkeypatch):
 
     def boom(conn=None):
         raise publish.GhError("offline")
-    monkeypatch.setattr(loop_cmd, "_loop_spend", lambda a, rc: 0)
+    monkeypatch.setattr(loop_cmd, "_loop_spend", lambda a, rc, failed=None: 0)
     monkeypatch.setattr(publish, "publish_here", boom)
     publish.set_enabled(True)
     assert cli._spend_and_settle(argparse.Namespace(), 0) == 0

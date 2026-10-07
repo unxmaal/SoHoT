@@ -12,6 +12,8 @@ from pathlib import Path
 
 #: Exit status for "this needs a runner hf-task will not be": its own code.
 NEEDS_OWN_RUNNER = 3
+#: Exit status for "the hf-task venv lacks a package": the harness, never the model. #601.
+MISSING_PACKAGE = 4
 
 
 def _device(torch, device: str | None) -> str:
@@ -166,6 +168,11 @@ def main(argv=None, read=None, score=None, tag=None) -> int:
         else:
             tagger = tag or functools.partial(tag_text, revision=a.revision, device=a.device)
             pii(a.model, a.text, a.out, tag=tagger)
+    except ImportError as exc:
+        print(exc, file=sys.stderr)
+        what = next((ln.strip() for ln in str(exc).splitlines() if ln.strip()), repr(exc))
+        print(f"hf-task venv lacks a package: {what}", file=sys.stderr)
+        return MISSING_PACKAGE
     except ValueError as exc:
         if "trust_remote_code" not in str(exc):
             raise

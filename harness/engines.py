@@ -751,6 +751,10 @@ HF_TASK_ENGINES = frozenset({"hf-ocr", "rerank", "embed", "hf-pii"})
 def card_gap(spec: str, card) -> str:
     """Why this engine cannot load the model its card describes, or "". #563."""
     head = spec.partition(",")[0].partition(":")[0].strip()
+    if head in HF_TASK_ENGINES and "mlx" in _card_words("", card):
+        # mlx-vlm conversions (mlx-community/DeepSeek-OCR-bf16): no hf-task runner loads MLX weights. #601.
+        return (f"needs its own runner: its card is tagged mlx, an MLX conversion, and "
+                f"{head} loads PyTorch weights through transformers")
     if head in HF_TASK_ENGINES:
         from harness import remote_code
         code = remote_code.gap(card)

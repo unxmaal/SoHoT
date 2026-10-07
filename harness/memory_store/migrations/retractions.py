@@ -434,3 +434,13 @@ def _verdicts_name_a_candidate(conn) -> None:
                  "ON verdicts(proposal_id)")
     conn.commit()
     conn.execute("PRAGMA foreign_keys = ON")
+
+
+def _requeue_missing_backends(conn) -> None:
+    """A screen that died on transformers' missing-backend error screened our venv. #601."""
+    phrase = "restart your runtime after installation"
+    for r in _stated(conn, "p.state = 'broken' AND v.tier = ?", (SCREEN,)):
+        if phrase in (r["detail"] or "").lower():
+            _migration_retraction(conn, r["id"], r["name"], "queued", SCREEN,
+                                  f"retracted: the hf-task venv lacked a package "
+                                  f"({phrase!r}), not a verdict on {r['name']}")

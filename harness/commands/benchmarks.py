@@ -9,6 +9,12 @@ def _lanes(a) -> list[str] | None:
     return [lane] if lane else None
 
 
+def _counts(lane: str, scope) -> bool:
+    """A failed source in scope counts; one for a lane with no queries is the #601 KeyError's leftover."""
+    from harness import benchmarks as bm
+    return lane in bm.LANE_QUERIES and (scope is None or lane in scope)
+
+
 def sweep_report(a) -> int:
     """The discover loop's benchmark tier: one sweep per interval, then a count per lane."""
     from harness import benchmarks as bm
@@ -16,8 +22,11 @@ def sweep_report(a) -> int:
     conn = ms.connect()
     try:
         found = bm.sweep(conn, lanes=_lanes(a), force=bool(getattr(a, "force", False)))
-        failed = [r["name"] for r in conn.execute(
-            "SELECT name FROM sources WHERE kind = ? AND last_status = 'failed'", (bm.KIND,))]
+        scope = _lanes(a)
+        failed = [(r["name"], r["last_error"]) for r in conn.execute(
+            "SELECT name, last_error FROM sources WHERE kind = ? AND last_status = 'failed' "
+            "ORDER BY name", (bm.KIND,))
+                  if _counts(r["name"].rpartition(":")[2], scope)]
     finally:
         conn.close()
     by: dict[str, int] = {}
@@ -27,9 +36,11 @@ def sweep_report(a) -> int:
         note(f"  {lane:8} {by[lane]} benchmark sources read")
     if not found:
         note("  no benchmark source was due; the sweep runs once per discovery interval")
-    for name in failed:
-        note(f"  FAILED {name}")
-    emit(not failed, found=by, failed=failed)
+    if scope and scope[0] not in bm.LANE_QUERIES:
+        note(f"  the {scope[0]} lane has no benchmark queries, so there is nothing to read")
+    for name, why in failed:
+        note(f"  FAILED {name}: {why or 'no error recorded'}")
+    emit(not failed, found=by, failed=[name for name, _ in failed])
     return 1 if failed else 0
 
 

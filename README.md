@@ -899,6 +899,11 @@ its reason and failure class and flagged in `soh report`. The served model is
 never swapped; that is left to a person. `soh reverify --dry-run` says what
 would be queued.
 
+**Exit status.** `soh discover --loop` exits nonzero when any step did, and
+its last stderr line names them, for example `loop exit 1: sweep reported a
+failure`. A lane with no benchmark queries (ocr, retrieval, pii and others) has
+no benchmark source to read, which is not a failure.
+
 **Lanes wanted.** `soh discover --loop` ends with the candidates no lane can
 test, because adding a lane is a decision for a person. Adapters are left out,
 as the ranking leaves them out, and a GitHub repo with no model task is listed
@@ -1630,9 +1635,14 @@ uses (Apple Vision here, Windows.Media.Ocr or RapidOCR elsewhere).
 `hf-ocr:<repo>[,prompt=...,max_new_tokens=...,device=...]` runs a
 transformers image-text-to-text or image-to-text model through
 `scripts/hf-task.sh`, which builds its own venv under
-`~/localharness/venvs/hf-task` (torch, transformers, accelerate, safetensors,
-pillow at the pins in `scripts/versions.sh`) on first use and rebuilds it when
-a pin moves. It never passes `trust_remote_code`: a repo that ships its own
+`~/localharness/venvs/hf-task` (torch, torchvision, transformers, accelerate,
+safetensors, pillow, sentencepiece at the pins in `scripts/versions.sh`) on
+first use and rebuilds it when a pin moves. A package that venv lacks exits 4
+with `hf-task venv lacks a package: ...` and is queued as a harness fault,
+never recorded broken; a failed run keeps the last 40 lines of the runner's
+stderr beside its artifact as `<artifact>.stderr.txt`. An MLX conversion
+(card tagged `mlx`, such as mlx-community/DeepSeek-OCR-bf16) has no hf-task
+runner and is refused before download. It never passes `trust_remote_code`: a repo that ships its own
 modelling code, such as baidu/Unlimited-OCR or hayai-ocr-v2, is reported under
 runners wanted before anything is downloaded, for every hf-task engine
 (hf-ocr, rerank, embed, hf-pii). Inspect keeps the card's `config.model_type`
