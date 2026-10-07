@@ -893,5 +893,15 @@
   "number": 542,
   "title": "mlx_lm.server resets connections beyond 5 pending: concurrent gateway clients lose requests",
   "created": "2026-10-07T04:49:32Z"
+ },
+ {
+  "number": 551,
+  "title": "check-linux and check-windows: 8 test_loop_circuit tests error at setup with ModuleNotFoundError: huggingface_hub",
+  "created": "2026-10-07T07:45:47Z"
+ },
+ {
+  "number": 552,
+  "title": "check-windows: vllm.served stops its child with os.killpg, which Windows does not have; 4 test_vllm tests fail",
+  "created": "2026-10-07T07:45:54Z"
  }
 ]

@@ -22,8 +22,9 @@ INDEX = {
         "instances": _i(38, 51, 115, 117, 140, 153, 155, 157, 187, 207, 224, 249, 345, 520, rules=(268,)),
         "scanners": ["tests/test_duplicated_policy.py::test_every_duplicated_policy_still_has_a_guard"]},
     "a-platform-primitive-assumed-universal": {
-        "instances": _i(123, 126, 127, 129, 144, 150, 174, 255, 442, rules=(192,)),
+        "instances": _i(123, 126, 127, 129, 144, 150, 174, 255, 442, 552, rules=(192,)),
         "scanners": [
+            "tests/test_portability.py::test_no_posix_only_primitive_is_used_without_a_platform_guard",
             "tests/test_portability.py::test_no_text_file_is_read_or_written_without_an_explicit_encoding",
             "tests/test_portability.py::test_no_script_uses_a_bsd_only_df_flag",
             "tests/test_script_modes.py::test_a_script_with_a_shebang_is_executable_in_the_index",
@@ -51,8 +52,9 @@ INDEX = {
         "instances": _i(89),
         "scanners": ["tests/test_harness_assertions.py::test_no_unqualified_cost_ships"]},
     "a-check-whose-input-differs-between-the-desk-and-ci": {
-        "instances": _i(109, 458, 537, rules=(231, 273)),
+        "instances": _i(109, 458, 537, 551, rules=(231, 273)),
         "scanners": ["tests/test_harness_repo.py::test_the_scanners_use_it",
+                     "tests/test_portability.py::test_every_module_a_test_imports_is_installed_on_every_platform",
                      "tests/test_harness_proc_instrument.py::test_one_run_paged_out_under_load_does_not_fail_the_control"]},
     "a-format-assumed-to-generalise": {
         "review": r"[\"'][,;|:][\"']\.join\(|\.split\([\"'][,;|][\"']\)|--\w[\w-]*=\{|\bbatch(?:ed|_size)?\b",
