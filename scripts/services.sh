@@ -42,13 +42,16 @@ launcher_for() {
     gateway)  printf '%s\n' "scripts/serve-gateway.sh" ;;
     llamacpp) printf '%s\n' "scripts/serve-llamacpp.sh" ;;
     audio)    printf '%s\n' "scripts/serve-audio-cuda.sh" ;;
+    ds4)      printf '%s\n' "scripts/serve-ds4.sh" ;;
     *)        return 1 ;;
   esac
 }
 ALL=(gateway llamacpp audio)
+# Named, never started by default: one ds4 launch holds tens of GiB. #611.
+OPTIONAL=(ds4)
 
 usage() {
-  echo "usage: $0 {start|stop|restart|status} [${ALL[*]}]" >&2
+  echo "usage: $0 {start|stop|restart|status} [${ALL[*]} ${OPTIONAL[*]}]" >&2
   exit 2
 }
 
@@ -61,6 +64,7 @@ port_for() {
     gateway)  printf '%s\n' "${GATEWAY_PORT:-4000}" ;;
     llamacpp) printf '%s\n' "${LLAMACPP_PORT:-8081}" ;;
     audio)    printf '%s\n' "${AUDIO_PORT:-8890}" ;;
+    ds4)      printf '%s\n' "${DS4_PORT:-8087}" ;;
     *)        return 1 ;;
   esac
 }
@@ -109,6 +113,7 @@ probe_for() {
     gateway)  printf '/health/liveliness' ;;
     llamacpp) printf '/v1/models' ;;
     audio)    printf '/v1/models' ;;
+    ds4)      printf '/v1/models' ;;
     *)        printf '' ;;
   esac
 }

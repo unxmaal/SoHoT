@@ -662,6 +662,8 @@ class Receipt:
     methods: dict = field(default_factory=dict)
     #: receipt key -> "device:attention" an out-of-process engine answered on. An axis. #604.
     devices: dict = field(default_factory=dict)
+    #: receipt key -> how its server was launched (ds4: streaming, expert cache, ctx). An axis. #611.
+    launch: dict = field(default_factory=dict)
 
     def as_dict(self) -> dict:
         return {"modality": self.modality, "case_ids": list(self.case_ids),
@@ -676,7 +678,8 @@ class Receipt:
                 "cases_digest": self.cases_digest,
                 "split": self.split, "split_version": self.split_version,
                 "methods": dict(self.methods),
-                "devices": dict(self.devices)}
+                "devices": dict(self.devices),
+                "launch": dict(self.launch)}
 
 
 def cases_digest(cases) -> str:
@@ -795,6 +798,11 @@ def comparable(a: Receipt, b: Receipt) -> tuple[bool, str]:
         if a.devices[key] != b.devices[key]:
             return False, (f"different device for {key}: {a.devices[key]} vs "
                            f"{b.devices[key]}")
+    # One model served two ways is two exams: SSD streaming changes memory and speed. #611.
+    for key in sorted(set(a.launch) & set(b.launch)):
+        if a.launch[key] != b.launch[key]:
+            return False, (f"different launch for {key}: {a.launch[key]} vs "
+                           f"{b.launch[key]}")
     for name in sorted(set(a.instruments) & set(b.instruments)):
         mine, theirs = a.instruments[name], b.instruments[name]
         if mine and theirs and mine != theirs:

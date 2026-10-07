@@ -48,6 +48,10 @@ VLLM_PORT_VAR = "VLLM_PORT"
 VLLM_ENGINE_VAR = "VLLM_ENGINE"
 VLLM_ENGINES = ("vllm-mlx", "vllm-metal")
 
+#: antirez/ds4's ds4-server, one of its own GGUFs per launch. #611.
+DS4_PREFIX = "ds4:"
+DS4 = "ds4-server"
+
 
 def vllm_url(environ=None) -> str:
     """The vLLM server, on VLLM_PORT when set."""
@@ -86,7 +90,9 @@ def engine_for(candidate: str, environ=None, config=None) -> str:
         return LLAMACPP
     if name.startswith(VLLM_PREFIX):
         return vllm_engine(environ)
-    from harness import gateway
+    if name.startswith(DS4_PREFIX):
+        return DS4
+    from harness import ds4, gateway
     for entry in gateway.load(config).get("model_list") or []:
         if str(entry.get("model_name", "")).lower() == name.lower():
             base = str((entry.get("litellm_params") or {}).get("api_base", ""))
@@ -95,6 +101,8 @@ def engine_for(candidate: str, environ=None, config=None) -> str:
                 return LLAMACPP
             if base == vllm_url(environ):
                 return vllm_engine(environ)
+            if base == ds4.url(environ):
+                return DS4
     return text_engine(environ)
 
 
@@ -134,10 +142,11 @@ class Route(NamedTuple):
 
 
 def text_spec(spec: str) -> bool:
-    """True when a text server can answer this spec: an alias, a repo id, a llamacpp: stem
-    or a vllm: model."""
+    """True when a text server can answer this spec: an alias, a repo id, a llamacpp: stem,
+    a vllm: model or a ds4: file."""
     name = (spec or "").partition(",")[0].strip()
-    return bool(name) and (":" not in name or name.startswith((LLAMACPP_PREFIX, VLLM_PREFIX)))
+    return bool(name) and (":" not in name or name.startswith(
+        (LLAMACPP_PREFIX, VLLM_PREFIX, DS4_PREFIX)))
 
 
 def _sampling(optstr: str, spec: str) -> dict:
@@ -174,6 +183,10 @@ def route(spec: str, gateway: str = "", config=None) -> Route:
     """
     name, _, optstr = (spec or "").partition(",")
     name = name.strip()
+    from harness import ds4
+    if name.startswith(DS4_PREFIX):
+        got = ds4.parse(spec)
+        return Route(ds4.url(), got.stem, got.sampling)
     sampling = _sampling(optstr, spec)
     if not text_spec(name):
         raise ValueError(f"{spec!r} is not served by a text server")
@@ -189,6 +202,12 @@ def route(spec: str, gateway: str = "", config=None) -> Route:
     from harness import screen
     from harness.completion import DEFAULT_GATEWAY
     alias = "/" not in name or name.lower() in screen.gateway_routes(config)[0]
+    if not alias and ds4.recognised(name):
+        # ds4's own GGUFs load nowhere else. #611.
+        from harness import gguf
+        stem = gguf.fetched(name)
+        if stem and ds4.model_of(stem):
+            return Route(ds4.url(), stem, sampling)
     stem = None if alias else gguf_stem(name)
     if stem:
         return Route(router.url(), _servable(stem), sampling)

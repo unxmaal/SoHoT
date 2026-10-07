@@ -26,7 +26,7 @@ import math
 from dataclasses import dataclass
 
 #: Receipt fields a sweep may deliberately vary, one at a time.
-AXES = ("sampling", "repeat", "accelerator", "instruments", "where", "gateway")
+AXES = ("sampling", "repeat", "accelerator", "instruments", "where", "gateway", "launch")
 
 
 @dataclass(frozen=True)

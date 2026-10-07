@@ -366,6 +366,14 @@ def check_model(repo: str, resident_gb: float = 0.0,
     need = size_gb(path) if path else None
     if need is not None and quantize:
         need = need * quantize / _BASE_BITS
+    from harness import ds4
+    if need is not None and spec.startswith(ds4.PREFIX):
+        # ds4 reads its n-gram and Engram tables from disk; streaming holds only the expert cache. #611.
+        resident = ds4.resident_bytes(spec, int(need * 1024 ** 3))
+        if resident is None:
+            return True, (f"{spec}: ds4 sizes its expert cache to the memory it finds; "
+                          f"proceeding unchecked")
+        need = resident / 1024 ** 3
     # A measured peak beats the weights-on-disk proxy. #322.
     peak = measured_peak_gb(spec) if spec else None
     if peak is not None and (need is None or peak > need):

@@ -83,3 +83,8 @@ PEFT_PIN="peft==0.21.0"
 DECIDER_REPO_URL="https://github.com/strands-labs/strands-decider.git"
 DECIDER_REV="3e94e9d84c620ed5a95f1a3310c3decb971e261c"
 DECIDER_MLX_LM_PIN="mlx-lm==0.32.0"
+
+# antirez/ds4 (DwarfStar), built by scripts/ds4-build.sh into the localharness
+# home and served by scripts/serve-ds4.sh. Pinned by commit: it has no releases. #611.
+DS4_REPO_URL="https://github.com/antirez/ds4"
+DS4_REV="0aaea5a238fb41a35106a551e73c8409dfb751ac"

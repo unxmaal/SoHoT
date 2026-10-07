@@ -23,7 +23,7 @@ SRC="${LH_REPO:-$REPO}"
 DEPLOY="${LH_DEPLOY:-$LH_HOME/deploy}"
 # `discover` is not a server. It is the scheduled sweep, and it is in this
 # list because the thing that must survive a reboot is the SCHEDULE. #261.
-SERVICES="gateway mlx eval tts mcp discover worker audit"
+SERVICES="gateway mlx eval tts mcp discover worker audit ds4"
 
 #: Services that RUN AND EXIT rather than serve, with how often to run them.
 #: KeepAlive on one of these restarts a finished sweep at once and the machine
@@ -83,6 +83,11 @@ _schedule() {
       return
     fi
   done
+  if [ "$service" = ds4 ]; then
+    # Restart on a crash, not after a clean "nothing to serve" exit. #611.
+    printf '  <key>RunAtLoad</key><true/>\n  <key>KeepAlive</key>\n  <dict><key>SuccessfulExit</key><false/></dict>\n'
+    return
+  fi
   printf '  <key>RunAtLoad</key><true/>\n  <key>KeepAlive</key><true/>\n'
 }
 

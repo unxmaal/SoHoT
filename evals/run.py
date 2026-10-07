@@ -19,12 +19,13 @@ measures disk speed instead of the model.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import sys
 import time
 from pathlib import Path
 
-from harness import audio, completion, env, paths
+from harness import audio, completion, ds4, env, paths
 from harness.engines import Engine, names as engine_names, parse_options, resolve
 
 from dataclasses import replace
@@ -81,15 +82,17 @@ STT_OPTIONS = {"backend", "language"}
 
 
 #: A GGUF file by stem, sent straight to llama-server. #295.
-from harness.serving import LLAMACPP_PREFIX, VLLM_PREFIX  # noqa: E402
+from harness.serving import DS4_PREFIX, LLAMACPP_PREFIX, VLLM_PREFIX  # noqa: E402
 
 LLAMACPP_KIND = LLAMACPP_PREFIX.rstrip(":")
 #: Cactus-Compute/needle3 through its own CLI; decide and agent lanes. #312.
 from harness.needle import LANES as NEEDLE_LANES, PREFIX as NEEDLE_KIND  # noqa: E402
 #: A model served by vLLM on its own port. #310.
 VLLM_KIND = VLLM_PREFIX.rstrip(":")
+#: One of antirez/ds4's own GGUFs through ds4-server. #611.
+DS4_KIND = DS4_PREFIX.rstrip(":")
 #: Kinds a text server answers through serving.route.
-TEXT_KINDS = ("gateway", LLAMACPP_KIND, VLLM_KIND)
+TEXT_KINDS = ("gateway", LLAMACPP_KIND, VLLM_KIND, DS4_KIND)
 
 
 def kind_of(candidate: str) -> str:
@@ -111,7 +114,7 @@ def kind_of(candidate: str) -> str:
         return CLAUDE_CODE_PREFIX
     if head in CHAIN_STAGES:
         return "chain"
-    if head in (LLAMACPP_KIND, VLLM_KIND, NEEDLE_KIND):
+    if head in (LLAMACPP_KIND, VLLM_KIND, DS4_KIND, NEEDLE_KIND):
         return head
     return "gateway"
 
@@ -321,6 +324,8 @@ def effective_sampling(modality: str, candidates: list[str]) -> dict:
         if not optstr:
             continue
         for key, value in parse_options(optstr, candidate).items():
+            if kind_of(candidate) == DS4_KIND and key in ds4.OPTIONS:
+                continue  # the server's launch, on the receipt as `launch`. #611.
             try:
                 value = float(value)
             except ValueError:
@@ -757,7 +762,7 @@ def _execute(args) -> int:
     if skipped:
         print(f"\nnot run, no candidate for them -- {skipped}", file=sys.stderr)
 
-    results, specs, planned = [], {}, []
+    results, specs, planned, launches = [], {}, [], {}
     for candidate in candidates:
         mine = cases_for(candidate, cases)
         if args.screen:
@@ -773,32 +778,13 @@ def _execute(args) -> int:
             raise SystemExit(f"{specs[runner.candidate]} and {candidate} both "
                              f"run as {runner.candidate}; run them separately")
         specs[runner.candidate] = candidate
+        _servable(candidate)
         planned.append((candidate, runner, mine))
     for candidate, runner, mine in planned:
-        runner.screening = bool(args.screen)
-        print(f"\n── {runner.candidate}", flush=True)
-        # A cold load is not the case's to pay for; a failed one is every case's. #406.
-        cold = None
-        if args.screen:
-            try:
-                runner.warm()
-            except RunnerError as exc:
-                cold = exc
-        for case in mine:
-            r = runner.failed(case, cold) if cold else runner.run(case)
-            results.append(r)
-            mark = "pass" if r.passed else "FAIL"
-            note = "" if r.passed else f"  {r.detail}"
-            warn = f"  ({len(r.warnings)} warn)" if r.warnings else ""
-            first = ("" if r.ttft_s is None else
-                     f"  ttft {r.ttft_s:.2f}s{' cold' if r.cold else ''}")
-            print(f"  {mark}  {r.seconds:6.2f}s  {case.id}{warn}{first}{note}",
-                  flush=True)
-            if outdir and r.output:
-                f = outdir / runner.artifact(
-                    case, TEXT_SUFFIX.get(case.modality, ".txt"))
-                f.write_text(r.output, encoding="utf-8")
-                r.artifact_path = str(f.resolve())
+        with _served(candidate) as launched:
+            if launched:
+                launches[runner.candidate] = ds4.launch_text(launched["launch"])
+            _run_candidate(args, candidate, runner, mine, results, outdir)
 
     if not results:
         raise SystemExit("nothing ran: no candidate matched any case")
@@ -824,7 +810,8 @@ def _execute(args) -> int:
             cases_digest=cases_digest(cases),
             split=side, split_version=holdout.VERSION,
             methods=method_receipts(specs),
-            devices=devices(results))
+            devices=devices(results),
+            launch=launches)
         now = time.time()
         ids = candidate_ids(specs, args.modality)
         for r in results:
@@ -843,6 +830,56 @@ def _execute(args) -> int:
         run_id = store_run(outdir, payload, now)
         print(f"\nartifacts + results.json in {outdir}; stored as run {run_id}")
     return 0
+
+
+def _servable(candidate: str) -> None:
+    """Refuse before anything runs when ds4-server cannot serve this candidate. #611."""
+    if kind_of(candidate) != DS4_KIND:
+        return
+    try:
+        ds4.preflight(candidate)
+    except (ds4.Unservable, ValueError) as exc:
+        raise SystemExit(f"{candidate}: {exc}") from None
+
+
+@contextlib.contextmanager
+def _served(candidate: str):
+    """The ds4-server launch a ds4 candidate runs against, started for it if none is up."""
+    if kind_of(candidate) != DS4_KIND:
+        yield None
+        return
+    try:
+        with ds4.serving(candidate) as state:
+            yield state
+    except ds4.Unservable as exc:
+        raise SystemExit(f"{candidate}: {exc}") from None
+
+
+def _run_candidate(args, candidate, runner, mine, results, outdir) -> None:
+    runner.screening = bool(args.screen)
+    print(f"\n── {runner.candidate}", flush=True)
+    # A cold load is not the case's to pay for; a failed one is every case's. #406.
+    cold = None
+    if args.screen:
+        try:
+            runner.warm()
+        except RunnerError as exc:
+            cold = exc
+    for case in mine:
+        r = runner.failed(case, cold) if cold else runner.run(case)
+        results.append(r)
+        mark = "pass" if r.passed else "FAIL"
+        note = "" if r.passed else f"  {r.detail}"
+        warn = f"  ({len(r.warnings)} warn)" if r.warnings else ""
+        first = ("" if r.ttft_s is None else
+                 f"  ttft {r.ttft_s:.2f}s{' cold' if r.cold else ''}")
+        print(f"  {mark}  {r.seconds:6.2f}s  {case.id}{warn}{first}{note}",
+              flush=True)
+        if outdir and r.output:
+            f = outdir / runner.artifact(
+                case, TEXT_SUFFIX.get(case.modality, ".txt"))
+            f.write_text(r.output, encoding="utf-8")
+            r.artifact_path = str(f.resolve())
 
 
 def export_row(r) -> dict:
@@ -1079,7 +1116,8 @@ def compare_runs(files: list[str], across: str = "") -> int:
                                   cases_digest=raw.get("cases_digest", ""),
                                   split=raw.get("split", ""),
                                   split_version=raw.get("split_version", ""),
-                                  devices=raw.get("devices") or {}),
+                                  devices=raw.get("devices") or {},
+                                  launch=raw.get("launch") or {}),
                        data.get("summary") or {},
                        data.get("rows") or []))
 

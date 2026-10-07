@@ -377,6 +377,17 @@ def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=N
                               reason=reasons.CANDIDATE)
             done.append({"repo": row["name"], "ok": False, "why": why})
             continue
+        from harness import ds4
+        if ds4.recognised(row["name"]):
+            # A ds4 file is one very large download; a person starts it. #611.
+            spec = screen.candidate_for(row.get("lane") or "", row["name"], conn=conn)
+            stem = spec.partition(",")[0].removeprefix(ds4.PREFIX)
+            why = (f"a ds4 model is fetched by hand: uv run python -m harness.ds4 fetch "
+                   f"{row['name']} {stem}.gguf")
+            ms.decide_or_skip(conn, row["name"], "queued", tier="fetch", detail=why,
+                              reason=reasons.LIMIT)
+            done.append({"repo": row["name"], "ok": False, "why": why})
+            continue
         # `limit` bounds DOWNLOADS, not decisions. Counting refusals against it
         # let one unsized entry at the head of the queue consume the whole
         # budget, so nothing was ever fetched.

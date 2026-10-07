@@ -1,0 +1,13 @@
+# What the judge should know when scoring for a machine that has antirez/ds4 built.
+#
+# ds4 is a SERVING RUNTIME for a few large models, and it loads only the GGUFs
+# its own project publishes (qwen4exp and DeepSeek V4 layouts). A general GGUF of
+# the same model is a llama.cpp candidate, not a ds4 one. Issue #611.
+what_scores_high:
+  - A model ds4 publishes its own GGUF for, which this machine can serve
+    through ds4-server, including ones whose resident weights fit only because
+    ds4 reads its n-gram or Engram tables from disk or streams experts off SSD.
+
+what_scores_low:
+  - A general GGUF of a ds4 model presented as a ds4 candidate. ds4 says only
+    its own files work.

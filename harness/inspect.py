@@ -406,6 +406,14 @@ class Fit:
     #: `llamacpp` runtime is required, resolved against the machine in
     #: decide(). Issue #228.
     gguf: bool = False
+    #: One of antirez/ds4's own GGUFs, which only ds4-server loads. #611.
+    ds4: bool = False
+    #: Bytes a ds4 file keeps in memory: the file less the tables it reads from disk.
+    resident: int = 0
+    #: The ds4 file only runs here with SSD expert streaming.
+    streaming: bool = False
+    #: The ds4 file to serve, or "" when ds4 lists none of the repo's files.
+    ds4_file: str = ""
     mps: bool = False
     cuda: list[str] = field(default_factory=list)
     entry_points: list[str] = field(default_factory=list)
@@ -896,7 +904,17 @@ def inspect_model(model_id: str, *, data: dict | None = None, fetch=None,
     total = sum(sizes)
     from harness import gguf, lanes
     text = lanes.canonical(lane_for(data) or "") in ("", *lanes.TEXT_SERVED)
-    if text and gguf.only(siblings):
+    from harness import ds4
+    if ds4.recognised(model_id, data):
+        fit.ds4 = True
+        got = ds4.pick(model_id, siblings, ceiling if ceiling is not None
+                       else ceiling_bytes())
+        if got:
+            model, total, fit.resident, fit.streaming = got
+            fit.ds4_file = model.file
+        else:
+            total = 0
+    elif text and gguf.only(siblings):
         # One file is fetched, not every quant. #295, #298.
         pick = gguf.choose(siblings, ceiling if ceiling is not None
                            else ceiling_bytes())
@@ -914,7 +932,7 @@ def inspect_model(model_id: str, *, data: dict | None = None, fetch=None,
         fit.lanes[model_id] = lane
     tags = [str(t).lower() for t in (data.get("tags") or [])]
     fit.mlx = (data.get("library_name") or "").lower() == "mlx" or "mlx" in tags
-    fit.gguf = is_gguf(model_id, data)
+    fit.gguf = is_gguf(model_id, data) and not fit.ds4
     fit.last_commit = (data.get("lastModified") or "").strip()
     fit.description = card_description(data)
     fit.card = card_facts(data)
@@ -959,6 +977,8 @@ def decide(fit: Fit, ceiling: int | None = None, dead_days: int = UPSTREAM_DEAD_
         offered.append("cuda")
     if fit.gguf:
         offered.append("llamacpp")
+    if fit.ds4:
+        offered.append("ds4")
 
     # A repo offering more than one runs wherever ONE of them lands. An MLX
     # import beside a CUDA pin is a project with two paths, and each machine
@@ -972,7 +992,8 @@ def decide(fit: Fit, ceiling: int | None = None, dead_days: int = UPSTREAM_DEAD_
         # is a verdict recorded as terminal in the store and never revisited.
         fit.verdict = machine.refuses(offered[0])
         named = (", ".join(fit.cuda[:3]) if "cuda" in offered
-                 else "GGUF weights" if offered[0] == "llamacpp" else "mlx")
+                 else "GGUF weights" if offered[0] == "llamacpp"
+                 else "ds4's own GGUF" if offered[0] == "ds4" else "mlx")
         if len(offered) > 1:
             fit.why = (f"depends on {named}, and this machine has none of "
                        f"{', '.join(offered)}")
@@ -994,6 +1015,8 @@ def decide(fit: Fit, ceiling: int | None = None, dead_days: int = UPSTREAM_DEAD_
     # A truncated size scan cannot support "too-big": the smallest of twelve
     # sized ids out of nearly three hundred named is an upper bound on the
     # floor, not the floor. Blaizzy/mlx-video was refused on exactly this.
+    if fit.ds4:
+        return _decide_ds4(fit, ceiling)
     if fit.smallest > ceiling and len(fit.unsized) > len(fit.weights):
         fit.verdict = "unknown"
         fit.why = (f"smallest of {len(fit.weights)} sized weights is "
@@ -1034,6 +1057,27 @@ def decide(fit: Fit, ceiling: int | None = None, dead_days: int = UPSTREAM_DEAD_
     return fit
 
 
+def _decide_ds4(fit: Fit, ceiling: int) -> Fit:
+    """A ds4 file is held against its resident weights; its n-gram or Engram tables stay on disk."""
+    if not fit.ds4_file:
+        fit.verdict = "unknown"
+        fit.why = ("ds4 lists none of this repo's files at the pinned commit, and it "
+                   "loads only its own GGUFs")
+        return fit
+    disk = (fit.largest - fit.resident) / GIB
+    tables = f", {disk:.1f} GiB read from disk" if disk >= 0.05 else ""
+    if fit.resident > ceiling and not fit.streaming:
+        fit.verdict = "too-big"
+        fit.why = (f"{fit.ds4_file}: {fit.resident / GIB:.1f} GiB resident{tables}, over "
+                   f"the {ceiling / GIB:.0f} GiB ceiling")
+        return fit
+    how = ("with ssd streaming, the expert cache sized by ds4" if fit.streaming
+           else f"{fit.resident / GIB:.1f} GiB resident")
+    fit.verdict = "fits"
+    fit.why = f"ds4: {fit.ds4_file}, {how}{tables}"
+    return fit
+
+
 def reason_of(fit: Fit) -> str:
     """verdicts.reason for this Fit's verdict. #408."""
     from harness import reasons
@@ -1049,6 +1093,8 @@ def until_of(fit: Fit) -> str:
     if fit.verdict.startswith("needs-"):
         return "runtime:" + ("|".join(fit.offered)
                              or fit.verdict.removeprefix("needs-"))
+    if fit.verdict == "too-big" and fit.ds4 and fit.resident > 0:
+        return f"ceiling_gb:>{fit.resident / GIB:.1f}"
     if fit.verdict == "too-big" and fit.smallest > 0:
         return f"ceiling_gb:>{fit.smallest / GIB:.1f}"
     if fit.verdict == "dead" and fit.last_commit:

@@ -657,7 +657,8 @@ someone here opens a web page, not that the port is reachable from outside.
 Every lane command uses what its lane has adopted on this machine, else the
 typed default, and sends it to the server that serves it: a gateway alias to
 the gateway, an MLX repo id to mlx_lm.server, `llamacpp:<stem>` to llama-server,
-`vllm:<repo id>` to the vLLM server on `VLLM_PORT`.
+`vllm:<repo id>` to the vLLM server on `VLLM_PORT`, `ds4:<stem>` to ds4-server
+on `DS4_PORT`.
 `-m` overrides; `--gateway` sends the request somewhere verbatim.
 
 An adoption serves the machine it was made on, whether measured (`soh adopt`)
@@ -2002,6 +2003,69 @@ per second (#310):
 mlx_lm.server batches by default since 0.32.0, but its HTTP server's listen
 backlog is 5, so at 16 in flight some connections are reset. The code lane
 scores the four alike (20 to 22 of 42 at repeat 3).
+
+### antirez/ds4 (DwarfStar)
+
+[ds4](https://github.com/antirez/ds4) is a Metal-first engine for a few large
+models (DeepSeek V4 Flash, Qwen3.8 Flash Next, GLM 5.x). It is not a general GGUF
+runner: it loads only the GGUFs its own project publishes. A `ds4:` spec names one
+of those files by stem and the launch that serves it:
+
+    ds4:Qwen3.8-Flash-Next-Q2
+    ds4:DeepSeek-V4-Flash-IQ2XXS-w2Q2K-AProjQ8-SExpQ8-OutQ8-chat-v2-imatrix-0731,ssd_streaming=on,expert_cache=32GB
+
+Options: `ssd_streaming=on|off` (default off), `expert_cache=auto|<slots>|<N>GB`
+(only with streaming), `ctx=<tokens>` (default `ds4.DEFAULT_CTX`), and the usual
+sampling keys. ds4 has SSD expert streaming for DeepSeek and GLM, not for Qwen3.8
+Flash Next at the pinned commit, so `ssd_streaming=on` on a Qwen file is refused.
+ds4-server has no `response_format` and returns no logprobs, so it serves the
+code, agent and other text lanes and not decide. With thinking on (its default)
+ds4-server ignores the client's sampling fields, so a pinned temperature on a
+ds4 receipt is what was asked, not what ran.
+
+**Build.** `scripts/ds4-build.sh` clones `DS4_REPO_URL` at `DS4_REV`
+(`scripts/versions.sh`) into `$LOCALHARNESS_HOME/ds4/checkout` and runs
+`make ds4-server ds4`. The checkout lives under the localharness home, not
+beside the weights, so moving the models volume does not touch it. The build
+makes no network calls; ds4-server makes none either unless started with its
+distributed or tensor-parallel flags. `machine` records the checkout's commit
+date as the `ds4` version, which reverify and `version:ds4>` reopen on.
+
+**Weights.** Never fetched by the loop: the fetch tier leaves a ds4 repo queued
+with the command to run by hand,
+`uv run python -m harness.ds4 fetch <repo> <file>`, which downloads into
+`$DS4_MODELS_DIR` (default `ds4/` beside the HF cache) and records the file in
+the downloads table. ds4's own `download_model.sh` is not used.
+
+**Memory.** Inspect sizes a ds4 file by what it keeps resident: the file less
+the tables ds4 reads from disk on demand. Per ds4's docs/MODELS.md at `DS4_REV`
+(read 2026-10-07), Qwen3.8 Flash Next Q2 is a 137.10 GiB file of which 41.73 GiB
+is main and MTP weights and 95.37 GiB is BF16 n-grams that never load, so on the
+M5 Ultra (96 GB, 66 GiB ceiling) it fits where a file-size check refused it.
+A file whose resident weights
+are over the ceiling and which ds4 can stream fits with `ssd_streaming=on`. The
+screen's memory check uses the same number, and with streaming it counts the
+expert cache budget when one is given; with `expert_cache=auto` ds4 sizes the
+cache itself and the check says so. A general GGUF of the same model (for
+example llama.cpp's own conversion) is still a llama-server candidate.
+
+**Serving.** One ds4-server holds one launch on `DS4_PORT` (default 8087).
+`scripts/serve-ds4.sh` serves `$DS4_SPEC`, else the ds4 spec a text lane has
+adopted here, else exits 0 saying there is nothing to serve; its argv comes from
+`python -m harness.ds4 argv`, the same code a measurement uses. It is the `ds4`
+launchd unit (restarted on a crash, not after a clean exit) and an optional
+`scripts/services.sh start ds4`, never started by `services.sh start` alone.
+After adopting a ds4 spec, `scripts/launchd.sh restart ds4` loads it; the
+generated gateway config then fronts it as `sohot-<lane>`.
+
+An eval run with a `ds4:` candidate reuses the server when it holds exactly
+that launch, starts one for the run and stops it after when the port is free,
+and refuses before measuring when the port holds a different launch or a server
+the harness did not start. The receipt's `launch` map records, per receipt key,
+`ssd_streaming`, `expert_cache`, `ctx` and the ds4 version of the server that
+answered, and `comparable()` refuses two runs whose launch differs for the same
+key. `evals.run --compare a b --across launch` reports streaming on against off
+case by case.
 
 ### How much memory a run can take
 
