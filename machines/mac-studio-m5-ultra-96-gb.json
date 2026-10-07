@@ -34,12 +34,12 @@
   }
  ],
  "export_version": 1,
- "generated_at": "2026-10-07T13:35:49Z",
+ "generated_at": "2026-10-07T13:41:14Z",
  "lanes": [
   {
    "adopted": true,
    "adopted_how": "by-hand",
-   "age_days": 0.95,
+   "age_days": 0.96,
    "comparison": [
     {
      "candidate": "mflux/flux2-klein-4b-q8",
@@ -93,7 +93,7 @@
   {
    "adopted": true,
    "adopted_how": "measured",
-   "age_days": 0.09,
+   "age_days": 0.1,
    "comparison": [
     {
      "candidate": "llamacpp:Ornith-1.5-35B-Q4_K_M",
@@ -164,7 +164,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 1.57,
+   "age_days": 1.58,
    "comparison": [
     {
      "candidate": "q3-4b",
@@ -311,13 +311,13 @@
    "parked_until": "",
    "pass_rate": 1.0,
    "real_use": {
-    "completion_tokens": 18,
+    "completion_tokens": 22,
     "error_rate": 0.0,
     "errors": 0,
     "invalid_calls": 0,
     "invalid_rate": null,
-    "prompt_tokens": 46,
-    "requests": 5,
+    "prompt_tokens": 55,
+    "requests": 6,
     "tool_calls": 0,
     "ttft_p50": null,
     "ttft_p95": null
@@ -414,12 +414,107 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 0.09,
+   "age_days": 0.0,
    "comparison": [
     {
-     "candidate": "q3-4b",
-     "first_s": 0.098,
-     "median_s": 0.064,
+     "candidate": "nimble/Bespoke-Nimble-9B",
+     "first_s": 5.031,
+     "median_s": 3.136,
+     "metrics": {
+      "calibrated": 1.0,
+      "decide_accuracy": 0.756,
+      "decide_brier": 0.382,
+      "decide_ece": 0.1059
+     },
+     "pass_rate": 0.306,
+     "passed": 11,
+     "peak_gb": 20.06,
+     "reference": false,
+     "total": 36,
+     "ttft_median_s": null,
+     "ttft_p95_s": null
+    },
+    {
+     "candidate": "decider/strands-decider-2B-hobson-v21",
+     "first_s": 14.866,
+     "median_s": 2.502,
+     "metrics": {
+      "calibrated": 1.0,
+      "decide_accuracy": 0.7143,
+      "decide_brier": 0.3911,
+      "decide_ece": 0.0872
+     },
+     "pass_rate": 0.25,
+     "passed": 9,
+     "peak_gb": 5.78,
+     "reference": false,
+     "total": 36,
+     "ttft_median_s": null,
+     "ttft_p95_s": null
+    },
+    {
+     "candidate": "eval-imajev-4b",
+     "first_s": 0.673,
+     "median_s": 0.518,
+     "metrics": {
+      "calibrated": 1.0,
+      "completion_tokens": 37.5278,
+      "decide_accuracy": 0.7619,
+      "decide_brier": 0.3592,
+      "decide_ece": 0.1396,
+      "tokens_per_s": 72.15
+     },
+     "pass_rate": 0.222,
+     "passed": 8,
+     "peak_gb": 0.0,
+     "reference": false,
+     "total": 36,
+     "ttft_median_s": null,
+     "ttft_p95_s": null
+    },
+    {
+     "candidate": "crh225/plumb-4b-GGUF",
+     "first_s": 0.067,
+     "median_s": 0.066,
+     "metrics": {},
+     "pass_rate": 0.0,
+     "passed": 0,
+     "peak_gb": 0.0,
+     "reference": false,
+     "total": 36,
+     "ttft_median_s": null,
+     "ttft_p95_s": null
+    },
+    {
+     "candidate": "Mapika/decider-4b-GGUF",
+     "first_s": 0.067,
+     "median_s": 0.066,
+     "metrics": {},
+     "pass_rate": 0.0,
+     "passed": 0,
+     "peak_gb": 0.0,
+     "reference": false,
+     "total": 36,
+     "ttft_median_s": null,
+     "ttft_p95_s": null
+    },
+    {
+     "candidate": "apus-ailab/APUS-OpenJev-v1-4B-GGUF",
+     "first_s": 0.103,
+     "median_s": 0.067,
+     "metrics": {},
+     "pass_rate": 0.0,
+     "passed": 0,
+     "peak_gb": 0.0,
+     "reference": false,
+     "total": 36,
+     "ttft_median_s": null,
+     "ttft_p95_s": null
+    },
+    {
+     "candidate": "mindchain/decider-4b-v2-GGUF",
+     "first_s": 0.066,
+     "median_s": 0.067,
      "metrics": {},
      "pass_rate": 0.0,
      "passed": 0,
@@ -431,13 +526,20 @@
     }
    ],
    "lane": "decide",
-   "last_run_at": "2026-10-07T11:26:46Z",
-   "measured_at": "",
-   "median_s": null,
-   "metrics": {},
+   "last_run_at": "2026-10-07T13:41:14Z",
+   "measured_at": "2026-10-07T13:41:14Z",
+   "median_s": 0.518,
+   "metrics": {
+    "calibrated": 1.0,
+    "completion_tokens": 37.5278,
+    "decide_accuracy": 0.7619,
+    "decide_brier": 0.3592,
+    "decide_ece": 0.1396,
+    "tokens_per_s": 72.15
+   },
    "parked": "",
    "parked_until": "",
-   "pass_rate": null,
+   "pass_rate": 0.222,
    "real_use": {
     "completion_tokens": 42,
     "error_rate": 0.0,
@@ -703,7 +805,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 1.72,
+   "age_days": 1.73,
    "comparison": [
     {
      "candidate": "parakeet-tdt-0.6b-v2",
@@ -801,7 +903,7 @@
   "first_seen": "2026-10-05T19:28:52Z",
   "hw_model": "Mac17,15",
   "label": "Mac Studio M5 Ultra 96 GB",
-  "last_seen": "2026-10-07T13:35:08Z",
+  "last_seen": "2026-10-07T13:37:05Z",
   "memory_gb": 96.0,
   "os": "macOS 27.0.1",
   "runtimes": [
