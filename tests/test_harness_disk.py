@@ -133,14 +133,14 @@ def test_an_adopted_winner_and_an_engine_default_are_kept(world):
     assert entry(i, "org/winner").group == disk.KEEP
 
 
-def test_a_keeper_spec_no_candidate_row_names_refuses_every_delete(world):
-    """#429: no spelling rule guesses the repo; an unnamed keeper fails closed."""
+def test_a_keeper_spec_no_candidate_row_names_keeps_its_lane(world):
+    """#429: no spelling rule guesses the repo. #554: the unnamed keeper's
+    lane, and anything whose lane is unknown, is kept instead of refusing all."""
     d = make_repo(world.hub, "org/winner")
     verdict(world.conn, "org/winner", "broken", at=NOW - 30 * DAY)
     i = inv(world, adopted={"image": "mflux:org/winner"})
-    assert any("mflux:org/winner" in p for p in i.problems)
-    with pytest.raises(RuntimeError):
-        disk.delete(i, NOW, disk.REJECTED, world.conn)
+    assert "mflux:org/winner" in entry(i, "org/winner").why
+    disk.delete(i, NOW, disk.REJECTED, world.conn)
     assert d.exists()
 
 
@@ -300,10 +300,54 @@ def test_unreadable_keepers_refuse_every_deletion(world):
     assert d.exists()
 
 
-def test_a_default_that_names_no_weights_disables_deletion(world):
+def test_a_default_that_names_no_weights_protects_its_lane(world):
     keep = disk.keepers(world.conn, gateway_files=[world.gw],
-                        typed={"image": "mflux:z-image-turbo"}, adopted={})
-    assert any("names no weights" in p for p in keep.problems)
+                        typed={"image": "mflux:not-a-preset"}, adopted={})
+    assert keep.problems == []
+    assert "not-a-preset" in keep.lanes["image"]
+
+
+def _lane_verdict(conn, name, lane, outcome="broken", at=NOW - 25 * 3600):
+    ms.record(conn, ms.Seen(name=name, source="t", lane=lane))
+    ms.decide(conn, name, outcome, tier="screen", at=at)
+
+
+def test_an_mflux_preset_winner_keeps_the_weights_it_loads_and_cleanup_runs(world):
+    """#554: `mflux:dev` refused every delete for days."""
+    flux = make_repo(world.hub, "black-forest-labs/FLUX.1-dev")
+    bad = make_repo(world.hub, "org/bad")
+    verdict(world.conn, "org/bad", "broken", at=NOW - 25 * 3600)
+    i = inv(world, adopted={"image": "mflux:dev"})
+    assert i.complete, i.problems
+    disk.delete(i, NOW, disk.REJECTED, world.conn)
+    assert not bad.exists()
+    assert flux.exists()
+    assert entry(i, "black-forest-labs/FLUX.1-dev").group == disk.KEEP
+
+
+@pytest.mark.parametrize("model", sorted(__import__(
+    "harness.engines", fromlist=["FLUX1_MODELS"]).FLUX1_MODELS))
+def test_every_flux1_preset_resolves_to_a_repo(model):
+    keep = disk.keepers(None, gateway_files=[], typed={},
+                        adopted={"image": f"mflux:{model}"})
+    assert not getattr(keep, "lanes", {})
+    assert any(r.startswith("black-forest-labs/") for r in keep.repos)
+
+
+def test_an_unresolvable_winner_protects_its_lane_and_lets_the_rest_go(world):
+    img = make_repo(world.hub, "org/img-reject")
+    _lane_verdict(world.conn, "org/img-reject", "image")
+    loose = make_repo(world.hub, "org/no-lane")
+    _lane_verdict(world.conn, "org/no-lane", "")
+    txt = make_repo(world.hub, "org/code-reject")
+    _lane_verdict(world.conn, "org/code-reject", "code")
+    i = inv(world, adopted={"image": "mflux:not-a-preset"})
+    assert i.complete, i.problems
+    disk.delete(i, NOW, disk.REJECTED, world.conn)
+    assert not txt.exists()
+    assert img.exists(), "its own lane's weights may be what it loads"
+    assert loose.exists(), "a row with no lane could be any lane's"
+    assert "not-a-preset" in entry(i, "org/img-reject").why
 
 
 def test_every_real_default_resolves_to_weights():

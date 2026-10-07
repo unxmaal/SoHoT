@@ -793,6 +793,11 @@ harness fault can be re-screened without a download. `soh discover --loop --run`
 then removes them itself at the start of each run, along with partial
 downloads (`*.incomplete`) of a recorded download no fetch is still writing. Nothing outside the hub and
 GGUF directories is ever deleted, and if any keeper cannot be read, nothing is.
+An mflux preset such as `mflux:dev` counts as the repo it loads
+(black-forest-labs/FLUX.1-dev), per `MFLUX_REPOS` in `harness/disk.py`. A lane
+default or adopted winner that still names no weights keeps every candidate of
+its lane, and every candidate with no recorded lane, and cleanup goes ahead for
+the rest. A gateway alias that names no weights still stops all deletion.
 
 A candidate rejected at the screen or measure tier is retested up to three
 times, each about a week after its latest rejection, because many rejections
@@ -1138,6 +1143,12 @@ by scoring slightly worse. **It never downloads.** Fetching is its own step with
 its own disk budget, and a tier that pulls gigabytes because something ranked
 well is how a laptop fills up overnight; a candidate whose weights are absent
 is reported as waiting, not screened and not failed.
+
+Each candidate is screened on a case its method can take: a case that declares
+`methods:` is only offered to those methods, so OmniSVG screens `icon-gear`
+rather than `chart-bars`. When no case in the lane fits a candidate's method,
+it is not screened and not recorded as a harness error; it is reported under
+runners wanted, with the cases and the methods they take.
 
 ### What discovery never saw
 
