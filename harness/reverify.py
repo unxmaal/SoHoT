@@ -28,6 +28,7 @@ FLAGGED = (FAILED, REGRESSED, UNRUN)
 
 _TEXT_MLX = ("mlx", "mlx-lm", "litellm")
 _TEXT_LLAMA = ("llama.cpp", "litellm")
+_TEXT_VLLM = ("vllm-mlx", "vllm-metal", "vllm", "litellm")
 #: Runtimes each non-text lane runs through; text lanes ask serving.engine_for.
 _LANE_RUNTIMES = {"video": ("diffusers", "torch"), "music": ("ace-step", "torch"),
                   "tts": ("mlx-audio", "mlx"), "stt": ("mlx-audio", "mlx")}
@@ -67,7 +68,8 @@ def runtimes_for(lane: str, spec: str) -> tuple[str, ...]:
             engine = serving.engine_for(spec)
         except Exception:  # noqa: BLE001
             engine = ""
-        got = _TEXT_LLAMA if engine == serving.LLAMACPP else _TEXT_MLX
+        got = (_TEXT_LLAMA if engine == serving.LLAMACPP else
+               _TEXT_VLLM if engine in serving.VLLM_ENGINES else _TEXT_MLX)
     return (*got, "macos")
 
 

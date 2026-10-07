@@ -80,11 +80,15 @@ STT_OPTIONS = {"backend", "language"}
 
 
 #: A GGUF file by stem, sent straight to llama-server. #295.
-from harness.serving import LLAMACPP_PREFIX  # noqa: E402
+from harness.serving import LLAMACPP_PREFIX, VLLM_PREFIX  # noqa: E402
 
 LLAMACPP_KIND = LLAMACPP_PREFIX.rstrip(":")
 #: Cactus-Compute/needle3 through its own CLI; decide and agent lanes. #312.
 from harness.needle import LANES as NEEDLE_LANES, PREFIX as NEEDLE_KIND  # noqa: E402
+#: A model served by vLLM on its own port. #310.
+VLLM_KIND = VLLM_PREFIX.rstrip(":")
+#: Kinds a text server answers through serving.route.
+TEXT_KINDS = ("gateway", LLAMACPP_KIND, VLLM_KIND)
 
 
 def kind_of(candidate: str) -> str:
@@ -106,10 +110,8 @@ def kind_of(candidate: str) -> str:
         return CLAUDE_CODE_PREFIX
     if head in CHAIN_STAGES:
         return "chain"
-    if head == LLAMACPP_KIND:
-        return LLAMACPP_KIND
-    if head == NEEDLE_KIND:
-        return NEEDLE_KIND
+    if head in (LLAMACPP_KIND, VLLM_KIND, NEEDLE_KIND):
+        return head
     return "gateway"
 
 
@@ -259,7 +261,7 @@ def greedy(candidates: list[str]) -> list[str]:
     """Pin text candidates to temperature 0, so a screen is one fixed draw. #308."""
     out = []
     for c in candidates:
-        if (kind_of(c) in ("gateway", LLAMACPP_KIND)
+        if (kind_of(c) in TEXT_KINDS
                 and "temperature" not in parse_options(c.partition(",")[2], c)):
             c = f"{c},temperature=0"
         out.append(c)
@@ -285,7 +287,7 @@ def effective_sampling(modality: str, candidates: list[str]) -> dict:
             out.setdefault(m, {})
             out[m].setdefault("temperature", completion.DEFAULT_TEMPERATURE)
     for candidate in candidates:
-        if kind_of(candidate) not in ("gateway", LLAMACPP_KIND):
+        if kind_of(candidate) not in TEXT_KINDS:
             continue
         _, _, optstr = candidate.partition(",")
         if not optstr:
@@ -337,7 +339,7 @@ def _agent_runner(candidate: str, gateway: str):
             return needle_agent_runner(candidate)
         except (ValueError, RunnerError) as exc:
             raise SystemExit(f"{candidate}: {exc}") from None
-    if kind not in ("gateway", LLAMACPP_KIND):
+    if kind not in TEXT_KINDS:
         raise SystemExit(f"{candidate} cannot drive a tool loop; the agent lane "
                          f"takes a text candidate or claude-code:<model>")
     from evals.runners.agent import AgentRunner
@@ -355,7 +357,7 @@ def _agent_runner(candidate: str, gateway: str):
 def _build_runner(candidate: str, gateway: str, outdir: Path | None,
                   adherence: str | None = None):
     kind = kind_of(candidate)
-    if kind in ("gateway", LLAMACPP_KIND):
+    if kind in TEXT_KINDS:
         # A gateway alias may carry sampling overrides, so a sweep is a command
         # rather than an edit to a constant. `temperature` is the one that had
         # never been varied: completion.SAMPLING pins svg and web at 0.4 and
@@ -832,7 +834,7 @@ def engines(candidates) -> dict:
     """Which server answered each text candidate. #295."""
     from harness import serving
     return {c: serving.engine_for(c) for c in candidates
-            if kind_of(c) in ("gateway", LLAMACPP_KIND)}
+            if kind_of(c) in TEXT_KINDS}
 
 
 def instruments(candidates=()) -> dict:

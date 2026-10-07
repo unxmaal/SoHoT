@@ -34,6 +34,30 @@ LLAMACPP_URL = "http://127.0.0.1:8082"
 LLAMACPP = "llama-server"
 LLAMACPP_PREFIX = "llamacpp:"
 
+#: vLLM on this Mac, an OpenAI-compatible server on its own port. #310.
+VLLM_PREFIX = "vllm:"
+VLLM_URL = "http://127.0.0.1:8086"
+VLLM_PORT_VAR = "VLLM_PORT"
+#: Which implementation answers `vllm:` specs; the receipt's engines map carries it.
+VLLM_ENGINE_VAR = "VLLM_ENGINE"
+VLLM_ENGINES = ("vllm-mlx", "vllm-metal")
+
+
+def vllm_url(environ=None) -> str:
+    """The vLLM server, on VLLM_PORT when set."""
+    environ = os.environ if environ is None else environ
+    port = (environ.get(VLLM_PORT_VAR) or "").strip()
+    return f"{VLLM_URL.rsplit(':', 1)[0]}:{port}" if port.isdigit() else VLLM_URL
+
+
+def vllm_engine(environ=None) -> str:
+    """The vLLM implementation serving `vllm:` specs here."""
+    environ = os.environ if environ is None else environ
+    got = (environ.get(VLLM_ENGINE_VAR) or "").strip() or VLLM_ENGINES[0]
+    if got not in VLLM_ENGINES:
+        raise ValueError(f"{VLLM_ENGINE_VAR}={got} is not one of {', '.join(VLLM_ENGINES)}")
+    return got
+
 
 def llamacpp_build(binary: str = "") -> str:
     """The installed llama-server's build number, or "" if it cannot say."""
@@ -54,12 +78,17 @@ def engine_for(candidate: str, environ=None, config=None) -> str:
     name = (candidate or "").partition(",")[0].strip()
     if name.startswith(LLAMACPP_PREFIX):
         return LLAMACPP
+    if name.startswith(VLLM_PREFIX):
+        return vllm_engine(environ)
     from harness import gateway
     for entry in gateway.load(config).get("model_list") or []:
         if str(entry.get("model_name", "")).lower() == name.lower():
             base = str((entry.get("litellm_params") or {}).get("api_base", ""))
-            if base.rstrip("/").removesuffix("/v1") == LLAMACPP_URL:
+            base = base.rstrip("/").removesuffix("/v1")
+            if base == LLAMACPP_URL:
                 return LLAMACPP
+            if base == vllm_url(environ):
+                return vllm_engine(environ)
     return text_engine(environ)
 
 
@@ -81,9 +110,10 @@ class Route(NamedTuple):
 
 
 def text_spec(spec: str) -> bool:
-    """True when a text server can answer this spec: an alias, a repo id or a llamacpp: stem."""
+    """True when a text server can answer this spec: an alias, a repo id, a llamacpp: stem
+    or a vllm: model."""
     name = (spec or "").partition(",")[0].strip()
-    return bool(name) and (":" not in name or name.startswith(LLAMACPP_PREFIX))
+    return bool(name) and (":" not in name or name.startswith((LLAMACPP_PREFIX, VLLM_PREFIX)))
 
 
 def _sampling(optstr: str, spec: str) -> dict:
@@ -126,6 +156,11 @@ def route(spec: str, gateway: str = "", config=None) -> Route:
         from harness import router
         return Route(router.url(), _servable(name[len(LLAMACPP_PREFIX):].strip()),
                      sampling)
+    if name.startswith(VLLM_PREFIX):
+        model = name[len(VLLM_PREFIX):].strip()
+        if not model:
+            raise ValueError(f"{spec!r} names no model; vllm:<repo id>")
+        return Route(vllm_url(), model, sampling)
     if gateway:
         return Route(gateway.rstrip("/"), name, sampling)
     from harness.completion import DEFAULT_GATEWAY
