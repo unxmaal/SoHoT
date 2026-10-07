@@ -115,6 +115,7 @@ class BaseRunner:
         row.first_reasoning_s = t.get("first_reasoning_s")
         row.prefill_s = t.get("prefill_s")
         row.cold = t.get("cold")
+        row.runtime = dict(getattr(self, "last_runtime", None) or {})
         return row
 
     def timing(self) -> dict:

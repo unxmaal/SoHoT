@@ -36,6 +36,7 @@ EXPECTED = {
     reasons.TOKEN_BUDGET_EXHAUSTED: ("declined", "limit"),
     reasons.LOAD_FAILED_RUNTIME: ("declined", "runtime"),
     reasons.LOAD_FAILED_LAYOUT: ("declined", "runtime"),
+    reasons.BACKEND_FAULT: ("declined", "runtime"),
     reasons.MISSING_FILE_IN_SNAPSHOT: ("broken", "candidate"),
     reasons.CRASHED: ("broken", "candidate"),
     reasons.CONTENT_FAILED: ("broken", "candidate"),

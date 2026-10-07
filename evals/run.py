@@ -823,7 +823,8 @@ def _execute(args) -> int:
             pressure=pressed.as_dict(),
             cases_digest=cases_digest(cases),
             split=side, split_version=holdout.VERSION,
-            methods=method_receipts(specs))
+            methods=method_receipts(specs),
+            devices=devices(results))
         now = time.time()
         ids = candidate_ids(specs, args.modality)
         for r in results:
@@ -873,6 +874,16 @@ def store_run(outdir, payload: dict, at: float) -> int | None:
         return run_id
     finally:
         conn.close()
+
+
+def devices(results) -> dict:
+    """receipt key -> the "device:attention" pairs its rows answered on, where a runner said. #604."""
+    seen: dict = {}
+    for r in results:
+        rt = getattr(r, "runtime", None) or {}
+        if rt.get("device"):
+            seen.setdefault(r.candidate, set()).add(f"{rt['device']}:{rt.get('attn') or 'default'}")
+    return {k: ",".join(sorted(v)) for k, v in seen.items()}
 
 
 def engines(candidates) -> dict:
@@ -1067,7 +1078,8 @@ def compare_runs(files: list[str], across: str = "") -> int:
                                   engines=raw.get("engines") or {},
                                   cases_digest=raw.get("cases_digest", ""),
                                   split=raw.get("split", ""),
-                                  split_version=raw.get("split_version", "")),
+                                  split_version=raw.get("split_version", ""),
+                                  devices=raw.get("devices") or {}),
                        data.get("summary") or {},
                        data.get("rows") or []))
 
