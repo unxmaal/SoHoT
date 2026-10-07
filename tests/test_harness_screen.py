@@ -218,6 +218,8 @@ def test_a_failing_screen_is_still_broken():
     assert screen.outcome(0, {"m": {"total": 3, "passed": 0}})[0] == "broken"
 
 
+@pytest.mark.gauntlet("a-fact-about-the-harness-recorded-as-a-verdict-on-the-subject",
+                       site="harness/screen.py:outcome")
 def test_a_refused_request_is_not_the_candidates_failure():
     """An HTTP 400 from the gateway's alias table stopped Qwen3-8B-4bit before
     a token was generated, and it was recorded `broken`, which is terminal."""
