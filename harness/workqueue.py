@@ -218,6 +218,16 @@ def gate(sample=None) -> tuple[bool, str]:
     return True, "memory pressure normal" if now.level is not None else "memory pressure unknown"
 
 
+def quiesce(wait=0.5, sleep=time.sleep, is_running=None) -> bool:
+    """Pause the queue and wait until no job is running; return the prior paused state. #577."""
+    was_paused = paused()
+    pause()
+    is_running = is_running or running
+    while is_running():
+        sleep(wait)
+    return was_paused
+
+
 def _runner_lock():
     """An fd holding the one-runner lock, or None if a runner already has it."""
     fd = os.open(root() / "runner.lock", os.O_RDWR | os.O_CREAT, 0o644)
@@ -372,4 +382,8 @@ def serve(poll: float = 30.0, sleep=time.sleep, popen=subprocess.run,
 
 
 if __name__ == "__main__":
+    import sys
+    if sys.argv[1:] == ["quiesce"]:
+        print("was-paused" if quiesce() else "was-running")
+        sys.exit(0)
     serve(poll=float(os.environ.get("LH_QUEUE_POLL", "30")))

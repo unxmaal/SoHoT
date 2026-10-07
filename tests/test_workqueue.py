@@ -382,3 +382,17 @@ def test_the_migration_imports_old_job_files_once_and_links_their_runs(
     finally:
         conn.close()
     assert len(wq.jobs()) == 4
+
+
+def test_quiesce_waits_for_the_running_job_and_reports_it_was_not_paused():
+    """#577: install must not boot out the worker under a running job."""
+    answers = iter([True, True, False])
+    naps = []
+    assert wq.quiesce(sleep=naps.append, is_running=lambda: next(answers)) is False
+    assert len(naps) == 2 and wq.paused()
+
+
+def test_quiesce_keeps_the_owners_pause():
+    wq.pause()
+    assert wq.quiesce(sleep=lambda _: None, is_running=lambda: False) is True
+    assert wq.paused()
