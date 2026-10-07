@@ -229,3 +229,11 @@ def old_store(tmp_path):
             conn.close()
         return path
     return make
+
+
+@pytest.fixture
+def real_ocr(monkeypatch):
+    """A test that runs the real Vision OCR retries its transient a bounded number of times. #600."""
+    from harness.checks import ocr
+    from tests.ocr_retry import retrying
+    monkeypatch.setattr(ocr, "read", retrying(ocr.read))

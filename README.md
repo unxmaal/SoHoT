@@ -170,6 +170,11 @@ memory, which is a job object on Windows, a phys_footprint on macOS and an
 `ru_maxrss` on Linux. The card alone does not identify the instrument: the same
 RTX 4070 under Windows and under Linux is one accelerator and two rigs.
 
+Vision fails with an `e5rtError` when the Neural Engine is busy with another
+client, which the check names `OcrTransient`. A test that reads text with the
+real engine asks for the `real_ocr` fixture, which retries that one class up to
+three times and then fails naming it; any other OCR error fails the test at once.
+
 The generators do too, each through whatever tool suits the machine:
 
 | lane | Apple Silicon | NVIDIA, on Windows or Linux |

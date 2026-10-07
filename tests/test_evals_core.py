@@ -346,6 +346,7 @@ def render_text(path, text):
     return path
 
 
+@pytest.mark.usefixtures("real_ocr")
 def test_an_image_case_can_assert_the_text_it_should_render(tmp_path):
     """Until now the suite could not tell OPEN from OPEM: both decode, both are
     the right size, both have variance."""
@@ -355,6 +356,7 @@ def test_an_image_case_can_assert_the_text_it_should_render(tmp_path):
     assert score(case, render_text(tmp_path / "a.png", "OPEN")).passed
 
 
+@pytest.mark.usefixtures("real_ocr")
 def test_a_misrendered_word_fails_and_reports_what_was_read(tmp_path):
     case = Case(id="sign", modality="image", prompt="a sign reading OPEN",
                 params={"width": 512, "height": 512},
@@ -365,6 +367,7 @@ def test_a_misrendered_word_fails_and_reports_what_was_read(tmp_path):
     assert r.metrics["cer"] > 0
 
 
+@pytest.mark.usefixtures("real_ocr")
 def test_the_character_error_rate_reaches_the_row_for_ranking(tmp_path):
     case = Case(id="sign", modality="image", prompt="a sign reading OPEN",
                 params={"width": 512, "height": 512},
