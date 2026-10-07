@@ -13,7 +13,7 @@ import time
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
-from harness import downloads
+from harness import downloads, lanes
 from harness.memory_store.schema import WAYPOINTS
 
 KEEP, QUEUED, REJECTED, UNKNOWN = "keep", "queued", "rejected", "unknown"
@@ -40,9 +40,37 @@ TOOLING = {
 
 #: Engine specs whose weights are not named by the spec itself.
 ENGINE_REPOS = {
-    "mflux:flux2-klein-4b": ("black-forest-labs/FLUX.2-klein-4B",),
     "h3": ("MiniMaxAI/MiniMax-H3",),
     "acestep": ("ACE-Step/Ace-Step1.5", "ACE-Step/acestep-5Hz-lm-0.6B"),
+}
+
+#: mflux preset name -> the repo it loads, as mflux's ModelConfig names it. #554.
+MFLUX_REPOS = {
+    "dev": "black-forest-labs/FLUX.1-dev",
+    "schnell": "black-forest-labs/FLUX.1-schnell",
+    "krea-dev": "black-forest-labs/FLUX.1-Krea-dev",
+    "dev-kontext": "black-forest-labs/FLUX.1-Kontext-dev",
+    "dev-fill": "black-forest-labs/FLUX.1-Fill-dev",
+    "dev-redux": "black-forest-labs/FLUX.1-Redux-dev",
+    "dev-depth": "black-forest-labs/FLUX.1-Depth-dev",
+    "dev-controlnet-canny": "black-forest-labs/FLUX.1-dev",
+    "schnell-controlnet-canny": "black-forest-labs/FLUX.1-schnell",
+    "dev-controlnet-upscaler": "black-forest-labs/FLUX.1-dev",
+    "dev-fill-catvton": "black-forest-labs/FLUX.1-Fill-dev",
+    "flux2-klein-4b": "black-forest-labs/FLUX.2-klein-4B",
+    "flux2-klein": "black-forest-labs/FLUX.2-klein-4B",
+    "flux2-klein-9b": "black-forest-labs/FLUX.2-klein-9B",
+    "z-image-turbo": "Tongyi-MAI/Z-Image-Turbo",
+    "z-image": "Tongyi-MAI/Z-Image",
+    "qwen-image": "Qwen/Qwen-Image-2512",
+    "fibo": "briaai/FIBO",
+    "krea-2": "krea/Krea-2-Turbo",
+    "krea2": "krea/Krea-2-Turbo",
+    "ernie-image": "baidu/ERNIE-Image",
+    "ernie-image-turbo": "baidu/ERNIE-Image-Turbo",
+    "lens-turbo": "Comfy-Org/Lens",
+    "boogu": "Boogu/Boogu-Image-0.1-Turbo",
+    "ideogram-4": "ideogram-ai/ideogram-4-fp8",
 }
 
 UNRECORDED = "no download row; `lh disk --record` names it"
@@ -73,6 +101,8 @@ class Keepers:
     repos: dict = field(default_factory=dict)
     stems: dict = field(default_factory=dict)
     problems: list = field(default_factory=list)
+    #: lane -> why: a winner there named no weights, so all that lane's are kept. #554.
+    lanes: dict = field(default_factory=dict)
 
 
 @dataclass
@@ -174,6 +204,8 @@ def _resolve(spec: str, aliases: dict, conn=None) -> tuple[set, set]:
         if key in ENGINE_REPOS:
             return set(ENGINE_REPOS[key]), set()
     repos, stems = _stored(conn, s)
+    if head == "mflux" and bare.partition(":")[2] in MFLUX_REPOS:
+        repos.add(MFLUX_REPOS[bare.partition(":")[2]])
     if ":" not in s and "," not in s and "/" in s:
         # A typed default with no engine is the repo id itself.
         repos.add(s)
@@ -188,13 +220,19 @@ def keepers(conn=None, gateway_files=None, typed=None, adopted=None) -> Keepers:
     if not aliases:
         k.problems.append("no gateway aliases could be read")
 
-    def add(spec: str, why: str) -> None:
+    def add(spec: str, why: str, lane: str = "") -> None:
         repos, stems = _resolve(spec, aliases, conn)
         for r in repos:
             k.repos.setdefault(r.lower(), why)
         for s in stems:
             k.stems.setdefault(s, why)
-        if not repos and not stems:
+        if repos or stems:
+            return
+        if lane:
+            k.lanes.setdefault(lanes.canonical(lane), (
+                f"{why}: {spec!r} names no weights, so every {lane} "
+                f"candidate's weights are kept"))
+        else:
             k.problems.append(f"{why}: {spec!r} names no weights")
 
     for name in aliases:
@@ -203,14 +241,14 @@ def keepers(conn=None, gateway_files=None, typed=None, adopted=None) -> Keepers:
         from harness import winners
         typed = winners.typed()
     for lane, spec in typed.items():
-        add(spec, f"{lane} default")
+        add(spec, f"{lane} default", lane)
     if adopted is None and conn is not None:
         from harness import adopt
         # Every machine's, not only this one's: the weights may be shared. #412.
         adopted = adopt.everywhere(conn)
     for lane, specs in (adopted or {}).items():
         for spec in sorted({specs} if isinstance(specs, str) else specs):
-            add(spec, f"{lane} adopted winner")
+            add(spec, f"{lane} adopted winner", lane)
     for repo, why in TOOLING.items():
         k.repos.setdefault(repo.lower(), f"tooling: {why}")
     return k
@@ -219,7 +257,7 @@ def keepers(conn=None, gateway_files=None, typed=None, adopted=None) -> Keepers:
 def latest_verdicts(conn) -> dict:
     """Each proposal's state and the verdict that set it, by name. #409."""
     rows = conn.execute(
-        "SELECT p.name, p.id AS pid, v.id, p.state AS outcome, v.tier, "
+        "SELECT p.name, p.id AS pid, p.lane, v.id, p.state AS outcome, v.tier, "
         "v.decided_at FROM proposals p JOIN verdicts v "
         "ON v.id = p.state_verdict_id ORDER BY v.id").fetchall()
     return {str(r["name"]).lower(): dict(r) for r in rows}
@@ -312,6 +350,21 @@ def _stems(e: Entry) -> list[str]:
     return stems
 
 
+def _lane_kept(e: Entry, k: Keepers, by_pid: dict) -> str | None:
+    """Why a lane fallback keeps this entry; a lane we cannot read counts as every lane."""
+    if not k.lanes:
+        return None
+    seen = {lanes.canonical((by_pid.get(i) or {}).get("lane") or "")
+            for i in _proposal_ids(e)} or {""}
+    hit = next((k.lanes[x] for x in sorted(seen) if x in k.lanes), None)
+    if hit:
+        return hit
+    if "" in seen:
+        return "no lane recorded while " + "; ".join(
+            k.lanes[x] for x in sorted(k.lanes))
+    return None
+
+
 def _classify(e: Entry, k: Keepers, verdicts: dict, conn=None) -> None:
     by_pid = {r["pid"]: r for r in verdicts.values()}
     seen = [by_pid[i] for i in _proposal_ids(e) if i in by_pid]
@@ -320,7 +373,8 @@ def _classify(e: Entry, k: Keepers, verdicts: dict, conn=None) -> None:
         e.outcome, e.tier = last["outcome"], last["tier"]
         e.decided_at, e.verdict_id = float(last["decided_at"]), last["id"]
     why = (k.repos.get(e.repo.lower()) if e.repo else None) \
-        or next((k.stems[s] for s in _stems(e) if s in k.stems), None)
+        or next((k.stems[s] for s in _stems(e) if s in k.stems), None) \
+        or _lane_kept(e, k, by_pid)
     if why:
         e.group, e.why = KEEP, why
     elif e.unrecorded:

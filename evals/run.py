@@ -534,7 +534,15 @@ def screen_pool(cases: list[Case]) -> list[Case]:
                   and (c.modality, c.language) not in have]
 
 
-def screen_cases(cases: list[Case]) -> list[Case]:
+def _first_each(cases: list[Case]) -> list[Case]:
+    """The first case by id for each (modality, language)."""
+    picked: dict[tuple[str, str], Case] = {}
+    for c in sorted(cases, key=lambda c: c.id):
+        picked.setdefault((c.modality, c.language), c)
+    return list(picked.values())
+
+
+def screen_cases(cases: list[Case], candidates=()) -> list[Case]:
     """One case per modality AND LANGUAGE, shrunk. Cheap enough to be wrong about.
 
     Keyed on modality alone this took the alphabetically first id, so the tts
@@ -545,11 +553,16 @@ def screen_cases(cases: list[Case]) -> list[Case]:
 
     Per candidate the cost is unchanged: cases_for still narrows to the one
     case in that candidate's language.
+
+    Given `candidates`, each one's pick comes from the cases its method can
+    take, so omnisvg is not handed chart-bars and left with nothing. #555.
     """
     import dataclasses
-    picked: dict[tuple[str, str], Case] = {}
-    for c in sorted(cases, key=lambda c: c.id):
-        picked.setdefault((c.modality, c.language), c)
+    groups = [cases_for(c, cases) for c in candidates] or [cases]
+    picked: dict[str, Case] = {}
+    for group in groups:
+        for c in _first_each(group):
+            picked.setdefault(c.id, c)
     out = []
     for c in picked.values():
         params = dict(c.params)
@@ -692,8 +705,6 @@ def _execute(args) -> int:
     chosen = select_cases(core.load_cases(args.cases), args.modality)
     cases = expand_cases(screen_pool(chosen) if args.screen
                          else holdout.only(chosen, side), args.repeat)
-    if args.screen:
-        cases = screen_cases(cases)
     # An engine spec contains commas, which are also the candidate separator.
     # Split on commas that start a new candidate, i.e. those followed by a
     # known engine prefix or by something with no '=' in it.
@@ -706,6 +717,7 @@ def _execute(args) -> int:
     candidates = split_candidates(args.candidates)
     if args.screen:
         candidates = greedy(candidates)
+        cases = screen_cases(cases, candidates)
     outdir = resolve_outdir(args.out, args.modality)
     if outdir:
         outdir.mkdir(parents=True, exist_ok=True)
@@ -718,6 +730,8 @@ def _execute(args) -> int:
     results, specs, planned = [], {}, []
     for candidate in candidates:
         mine = cases_for(candidate, cases)
+        if args.screen:
+            mine = _first_each(mine)
         if not mine:
             print(f"\n── {candidate}: no cases of a modality it can run, skipped",
                   file=sys.stderr)

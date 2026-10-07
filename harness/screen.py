@@ -20,7 +20,9 @@ absent is reported as waiting on a fetch, not screened and not failed.
 """
 from __future__ import annotations
 
+import functools
 import sys
+from pathlib import Path
 from typing import NamedTuple
 
 from harness import lanes, reasons
@@ -224,13 +226,35 @@ def no_runner(spec: str) -> str:
     return ""
 
 
+#: The eval cases the screen draws from.
+CASES = Path(__file__).resolve().parent.parent / "evals" / "cases"
+
+
+@functools.lru_cache(maxsize=4)
+def _cases(root: str) -> tuple:
+    from evals.core import load_cases
+    return tuple(load_cases(root))
+
+
+def case_gap(lane: str, spec: str) -> str:
+    """Why no case in `lane` fits this candidate's method, or "". #555, RULE #219."""
+    from evals.run import method_of
+    lane = lanes.canonical(lane)
+    mine = [c for c in _cases(str(CASES)) if c.modality == lane]
+    method = method_of(spec)
+    if not mine or any(not c.methods or method in c.methods for c in mine):
+        return ""
+    wants = ", ".join(f"{c.id} takes {'/'.join(c.methods)}" for c in mine)
+    return f"no {lane} case fits the {method} method ({wants})"
+
+
 def runner_gap(lane: str, model: str, attaches_to: str = "",
                conn=None, card=None) -> str:
     """Why no runner here takes this candidate, or "". `no_runner` asks of a
     spec; this also answers for an adapter no engine is known to load. #467."""
     spec = candidate_for(lane, model, attaches_to, conn=conn, card=card)
     if spec:
-        return no_runner(spec)
+        return no_runner(spec) or case_gap(lane, spec)
     if attaches_to and takes_attachment(lane, attaches_to):
         from harness import engines
         return (f"no {lanes.canonical(lane)} engine is known to load this "
