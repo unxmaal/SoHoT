@@ -35,8 +35,9 @@ INDEX = {
         "instances": _i(89),
         "scanners": ["tests/test_harness_assertions.py::test_no_unqualified_cost_ships"]},
     "a-check-whose-input-differs-between-the-desk-and-ci": {
-        "instances": _i(109, 458, rules=(231, 273)),
-        "scanners": ["tests/test_harness_repo.py::test_the_scanners_use_it"]},
+        "instances": _i(109, 458, 537, rules=(231, 273)),
+        "scanners": ["tests/test_harness_repo.py::test_the_scanners_use_it",
+                     "tests/test_harness_proc_instrument.py::test_one_run_paged_out_under_load_does_not_fail_the_control"]},
     "a-format-assumed-to-generalise": {
         "instances": _i(390),
         "scanners": []},
