@@ -1,16 +1,18 @@
 """Stop and start everything that reads the models volume, and measure a disk's read speed. #612."""
 from __future__ import annotations
 
+import io
 import json
 import mmap
 import os
 import plistlib
+import posixpath
 import shutil
 import subprocess
 import sys
 import time
 from dataclasses import dataclass, field
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Callable
 
 from harness import env, paths
@@ -46,6 +48,11 @@ class Ops:
     sleep: Callable = time.sleep
 
 
+def supported(platform: str = sys.platform) -> bool:
+    """stop, start and status drive launchd and lsof, so only macOS has them."""
+    return platform == "darwin"
+
+
 def default_ops() -> Ops:
     return Ops()
 
@@ -60,9 +67,10 @@ def speed_log() -> Path:
 
 def volume_of(path: str) -> str:
     """/Volumes/<name> for a path under it, mounted or not; else the mount point above it."""
+    pp = PurePosixPath(posixpath.normpath(str(path)))
+    if pp.is_absolute() and len(pp.parts) >= 3 and pp.parts[1] == "Volumes":
+        return str(PurePosixPath(*pp.parts[:3]))
     p = Path(os.path.abspath(path))
-    if len(p.parts) >= 3 and p.parts[1] == "Volumes":
-        return str(Path(*p.parts[:3]))
     p = p.resolve()
     while not os.path.ismount(p) and p != p.parent:
         p = p.parent
@@ -280,8 +288,9 @@ def speed(path: str, size: int = 2560 * 1024 * 1024, block: int = 8 * 1024 * 102
         try:
             _nocache(fd)
             _drop(fd, method)
+            reader = io.FileIO(fd, closefd=False)
             got, t0 = 0, time.perf_counter()
-            while n := os.readv(fd, [buf]):
+            while n := reader.readinto(buf):
                 got += n
             read_s = time.perf_counter() - t0
         finally:

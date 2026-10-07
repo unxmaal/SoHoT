@@ -6,6 +6,8 @@ import json
 import re
 import shlex
 import statistics
+import subprocess
+import sys
 from pathlib import Path
 
 import yaml
@@ -101,11 +103,16 @@ def _row(run, cand, cid, passed, art, output, met, det, where) -> dict:
             "audio": _audio(art, where)}
 
 
+def command_line(argv: list[str], platform: str = sys.platform) -> str:
+    """argv as one line a person can paste into this platform's shell: cmd quoting on win32, POSIX elsewhere."""
+    return subprocess.list2cmdline(argv) if platform == "win32" else shlex.join(argv)
+
+
 def play(path: str) -> str:
     try:
-        return shlex.join(audio.play_argv(path))
+        return command_line(audio.play_argv(path))
     except audio.AudioError:
-        return shlex.join(["ffplay", "-autoexit", path])
+        return command_line(["ffplay", "-autoexit", path])
 
 
 def _digest(path: str) -> str:

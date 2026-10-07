@@ -83,3 +83,12 @@ def test_a_new_pages_publish_cancels_a_stuck_one():
     pages = CI.parent / "pages.yml"
     doc = yaml.safe_load(pages.read_text(encoding="utf-8"))
     assert doc["concurrency"]["cancel-in-progress"] is True
+
+
+def test_linux_runs_the_suite_once_and_coverage_rides_on_it():
+    """A second full pytest pass for coverage put check-linux over its timeout (#623)."""
+    doc, _ = _ci()
+    steps = doc["jobs"]["check-linux"]["steps"]
+    runs = [s for s in steps if "pytest" in s.get("run", "") or "make check" in s.get("run", "")]
+    assert len(runs) == 1 and "make check" in runs[0]["run"], [s.get("name") for s in runs]
+    assert "--cov" in runs[0].get("env", {}).get("PYTEST_ADDOPTS", "")

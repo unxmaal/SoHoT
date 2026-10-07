@@ -51,6 +51,8 @@ jobs:
       - name: make check
         # The same command a person runs locally. CI running something else is
         # how a repo gets a green badge and a broken checkout.
+        env:
+          PYTEST_ADDOPTS: --durations=30
         run: set -o pipefail && make check 2>&1 | tee /tmp/check.log
 
       - name: What did not run
@@ -172,6 +174,9 @@ jobs:
           } | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: make check
+        # Coverage rides on this one pass; a second full run went over the timeout (#623).
+        env:
+          PYTEST_ADDOPTS: --durations=30 --cov=harness --cov=evals --cov-report=term --cov-report=json
         run: set -o pipefail && make check 2>&1 | tee /tmp/check.log
 
       - name: Coverage, reported and never gated
@@ -187,9 +192,7 @@ jobs:
         if: always()
         continue-on-error: true
         run: |
-          uv run pytest tests/ -q --cov=harness --cov=evals \
-            --cov-report=term --cov-report=json > /tmp/cov.log 2>&1 || true
-          total="$(grep -E '^TOTAL' /tmp/cov.log | awk '{print $NF}' || true)"
+          total="$(grep -E '^TOTAL' /tmp/check.log | awk '{print $NF}' || true)"
           {
             echo "### Coverage"
             echo
@@ -275,6 +278,8 @@ jobs:
       - name: make check
         # The same command the macOS job runs, and the same one a person runs
         # locally.
+        env:
+          PYTEST_ADDOPTS: --durations=30
         run: set -o pipefail && make check 2>&1 | tee /tmp/check.log
 
       - name: What did not run

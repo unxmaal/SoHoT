@@ -1,6 +1,9 @@
 """soh volume stop|start|status and soh disk speed, against a fake launchctl, lsof and ps. #612."""
 import json
+import ntpath
+import os
 import subprocess
+from pathlib import Path
 
 import pytest
 
@@ -36,7 +39,7 @@ class Machine:
                 self.files = {p: f for p, f in self.files.items()
                               if p != pid and self.parents.get(p) != pid}
         elif argv[:2] == ["launchctl", "bootstrap"]:
-            label = argv[3].rsplit("/", 1)[1].removesuffix(".plist")
+            label = Path(argv[3]).stem
             self.next_pid += 1
             self.services[label] = self.next_pid
         elif argv[:2] == ["launchctl", "print"]:
@@ -82,6 +85,24 @@ def test_the_volume_is_the_mount_named_under_volumes_even_when_absent():
     assert volume.volume_of(VOL) == VOL
 
 
+def test_a_volume_path_is_read_as_posix_whatever_the_host_spells_paths(monkeypatch):
+    monkeypatch.setattr(os.path, "abspath", ntpath.abspath)
+    assert volume.volume_of(f"{VOL}/hf") == VOL
+    assert volume.volume_of(f"{VOL}/a/../b") == VOL
+
+
+def test_volume_is_macos_only_and_says_so_elsewhere(capsys, monkeypatch):
+    assert volume.supported("darwin") is True
+    assert volume.supported("linux") is False and volume.supported("win32") is False
+    m = live()
+    monkeypatch.setattr(volume, "default_ops", lambda: ops(m, Queue()))
+    monkeypatch.setattr(volume, "supported", lambda: False)
+    for action in ("status", "stop", "start"):
+        assert cli.main(["volume", action, "--path", VOL]) == 1
+        assert "macOS" in capsys.readouterr().err
+    assert m.calls == []
+
+
 def test_parsers_read_lsof_and_ps_fields():
     assert volume.parse_lsof("p5\ncpy\nn/a\nn/a\np6\ncsh\nf3\nn/b\n") == [
         (5, "py", "/a"), (6, "sh", "/b")]
@@ -121,6 +142,7 @@ def test_stop_cli_exits_nonzero_and_names_the_remaining_process(capsys, monkeypa
     m.sticky.add(f"{P}.mlx")
     q = Queue()
     monkeypatch.setattr(volume, "default_ops", lambda: ops(m, q))
+    monkeypatch.setattr(volume, "supported", lambda: True)
     assert cli.main(["volume", "stop", "--path", VOL]) == 1
     text = capsys.readouterr()
     assert "21" in text.err and "model.safetensors" in text.err
@@ -138,7 +160,7 @@ def test_start_restores_only_what_stop_stopped_and_resumes_a_running_queue():
     stopped = set(volume.stop(VOL, ops(m, q))["stopped"])
     m.calls.clear()
     got = volume.start(ops(m, q))
-    booted = {c[3].rsplit("/", 1)[1].removesuffix(".plist")
+    booted = {Path(c[3]).stem
               for c in m.calls if c[:2] == ["launchctl", "bootstrap"]}
     assert booted == stopped == set(got["started"])
     assert f"{P}.discover" not in booted
@@ -179,6 +201,12 @@ def test_disk_speed_records_volume_size_and_method(tmp_path, capsys):
     assert row["read_bytes_per_s"] > 0 and row["path"] == str(tmp_path)
     assert out["measurement"] == row
     assert not [p for p in tmp_path.iterdir()]
+
+
+def test_disk_speed_runs_where_os_has_no_readv(tmp_path, monkeypatch):
+    monkeypatch.delattr(os, "readv", raising=False)
+    row = volume.speed(str(tmp_path), size=4 * 1024 * 1024)
+    assert row["bytes"] == 4 * 1024 * 1024 and row["read_bytes_per_s"] > 0
 
 
 def test_disk_speed_refuses_without_room(tmp_path, monkeypatch):
