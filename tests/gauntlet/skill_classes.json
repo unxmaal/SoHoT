@@ -154,6 +154,13 @@
   "bitten": 3
  },
  {
+  "id": "a-test-double-that-never-reaches-the-code-under-test",
+  "heading": "A test double that never reaches the code under test",
+  "source": "SKILL.md",
+  "tier": 1,
+  "bitten": 3
+ },
+ {
   "id": "a-check-whose-input-differs-between-the-desk-and-ci",
   "heading": "A check whose input differs between the desk and CI",
   "source": "SKILL.md",
