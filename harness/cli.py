@@ -25,7 +25,7 @@ from __future__ import annotations
 import argparse
 import sys
 
-from harness import audio, completion, env, proc, vector  # noqa: F401
+from harness import adopt, audio, completion, env, proc, vector  # noqa: F401
 from harness.commands import adopt as adopt_cmd
 from harness.commands import benchmarks as benchmarks_cmd
 from harness.commands import common
@@ -486,6 +486,14 @@ def build_parser() -> argparse.ArgumentParser:
                           "receipt)")
     jud.add_argument("--port", type=int, default=8765)
     jud.add_argument("--no-browser", action="store_true")
+    jud.add_argument("--all-machines", action="store_true",
+                     help="serve the winner on every machine it fits, not only "
+                          "this one (#485)")
+    jud.add_argument("--force", action="store_true",
+                     help="adopt on fewer than --min-votes answers, recorded "
+                          "as forced")
+    jud.add_argument("--min-votes", type=int, default=adopt.MIN_VOTES,
+                     help="answers a by-hand adoption needs without --force")
     jud.set_defaults(func=judge_cmd.cmd_judge)
     ado = sub.add_parser(
         "adopt",

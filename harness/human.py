@@ -141,6 +141,21 @@ def decided(lane: str, case: str, a: str, b: str, conn=None) -> str | None:
     return top[0][0]
 
 
+def agreement(counts: list[Counter]) -> tuple[int, float | None]:
+    """(votes, share of votes that went with their pairing's plurality). #485."""
+    n = sum(sum(c.values()) for c in counts)
+    top = sum(max(c.values()) for c in counts if c)
+    return n, (top / n if n else None)
+
+
+def vote_stats(lane: str, pairs: list[dict],
+               conn=None) -> tuple[int, float | None]:
+    """How many answers a lane's verdict rests on, and how far they agreed. #485."""
+    with _store(conn) as c:
+        return agreement([tally(lane, p["case"], p["a"], p["b"], c)
+                          for p in pairs])
+
+
 def lane_verdict(lane: str, pairs: list[dict],
                  conn=None) -> tuple[str | None, str]:
     """Who won the LANE, and why, from the per-case answers.

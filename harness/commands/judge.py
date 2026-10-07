@@ -66,6 +66,28 @@ def cmd_rubric(a) -> int:
     return 0
 
 
+def _say_adopted(store, lane: str, verdict) -> None:
+    """Print what a by-hand adoption rests on, what it costs, and where it serves. #485."""
+    import json
+    from harness import adopt
+    if not verdict.adopt:
+        return
+    row = store.execute(
+        "SELECT a.*, c.spec FROM adoptions a JOIN candidates c "
+        "ON c.id = a.candidate_id WHERE a.lane = ? ORDER BY a.id DESC LIMIT 1",
+        (lane,)).fetchone()
+    if not row:
+        return
+    note(f"  adopted {row['spec']} for {lane}: "
+         f"{adopt.describe(dict(row), row['machine_id'])}")
+    note(f"  {adopt.cost_text(json.loads(row['cost'] or '{}'))}")
+    if row["all_machines"]:
+        for m in store.execute("SELECT id, hw_model FROM machines ORDER BY id"):
+            ok, why = adopt.fit(store, row["candidate_id"], m["id"])
+            note(f"  machine {m['id']} ({m['hw_model']}): "
+                 f"{'serves' if ok else 'REFUSED'}, {why}")
+
+
 def cmd_judge(a) -> int:
     """Serve the page a person votes on, for a lane no program can score.
 
@@ -117,12 +139,20 @@ def cmd_judge(a) -> int:
                 if incumbent not in (challenger, spec):
                     # Decided on the names the pairs carry, recorded as the
                     # spec, which is what a lane can run. #337.
+                    verdict = dataclasses.replace(adopt.decide_by_hand(
+                        lane_, incumbent, challenger, pairs_,
+                        force=getattr(a, "force", False),
+                        all_machines=getattr(a, "all_machines", False),
+                        min_votes=getattr(a, "min_votes", adopt.MIN_VOTES),
+                        conn=store), challenger=spec)
                     try:
-                        adopt.record(store, dataclasses.replace(
-                            adopt.decide_by_hand(lane_, incumbent, challenger,
-                                                 pairs_), challenger=spec))
+                        adopt.record(store, verdict)
                     except ms.IllegalTransition as exc:
                         note(f"  skipped {exc}")
+                    except adopt.Held as exc:
+                        note(f"  not adopted: {exc}")
+                    else:
+                        _say_adopted(store, lane_, verdict)
             store.commit()
         finally:
             store.close()

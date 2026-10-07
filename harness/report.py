@@ -69,6 +69,7 @@ def lanes_state(conn, now: float | None = None) -> list[dict]:
     typed = winners.typed()
     measured = winners.beaten_in(conn)
     adopted = adopt.current(conn)
+    refused = {r["lane"]: r for r in adopt.refused(conn)}
     mine = runs.here(conn)
     now = time.time() if now is None else now
     flagged = reverify.flags(conn)
@@ -92,6 +93,11 @@ def lanes_state(conn, now: float | None = None) -> list[dict]:
             "serves": serves,
             "adopted": bool(held),
             "adopted_how": held.get("how", ""),
+            "adoption": adopt.describe(held, mine[0] if mine else None)
+            if held else "",
+            "refused": (f"refused {refused[lane]['spec']} "
+                        f"({adopt.describe(refused[lane])}): "
+                        f"{refused[lane]['why']}") if lane in refused else "",
             "candidate_id": cid,
             "measured": here.get("candidate") or "",
             "pass_rate": here.get("pass_rate"),
@@ -323,7 +329,10 @@ def _lane_rows(lanes, changed) -> str:
         why = changed.get(l["lane"], "")
         tags = []
         if l["adopted"]:
-            tags.append('<span class="tag good">adopted</span>')
+            tags.append(f'<span class="tag good">adopted '
+                        f'{_esc(l.get("adoption", ""))}</span>')
+        if l.get("refused"):
+            tags.append(f'<span class="tag bad">{_esc(l["refused"])}</span>')
         if l.get("saturated"):
             tags.append('<span class="tag warn">saturated</span>')
         if l.get("flagged"):

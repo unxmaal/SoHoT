@@ -304,7 +304,8 @@ def test_the_preferred_candidate_is_adopted_and_the_other_is_not():
     pairs = human.pairings(RECEIPT)
     for case in ("fox", "sign"):
         _settle("image", case, "alpha", "beta", "a")
-    assert adopt.decide_by_hand("image", "beta", "alpha", pairs).adopt
+    assert adopt.decide_by_hand("image", "beta", "alpha", pairs,
+                                min_votes=6).adopt
     loser = adopt.decide_by_hand("image", "alpha", "beta", pairs)
     assert not loser.adopt and "incumbent was preferred" in loser.why
 

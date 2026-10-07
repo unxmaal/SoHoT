@@ -4,7 +4,7 @@ from __future__ import annotations
 from harness import store
 
 
-SCHEMA_VERSION = 48
+SCHEMA_VERSION = 49
 
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
@@ -311,7 +311,15 @@ CREATE TABLE IF NOT EXISTS adoptions (
     machine_id   INTEGER REFERENCES machines(id),
     -- 'measured' by the paired gates, or 'by-hand' from a person's verdicts.
     how          TEXT NOT NULL,
-    adopted_at   REAL NOT NULL
+    adopted_at   REAL NOT NULL,
+    -- 1 when adopted with --all-machines; otherwise it serves machine_id only. #485.
+    all_machines INTEGER NOT NULL DEFAULT 0,
+    -- The person's answers a by-hand adoption rests on; NULL for measured. #485.
+    votes        INTEGER,
+    agreement    REAL,
+    forced       INTEGER NOT NULL DEFAULT 0,
+    -- json median_s/peak_gb against the incumbent's, on machine_id. #485.
+    cost         TEXT NOT NULL DEFAULT '{}'
 );
 
 -- Each time the gateway's sohot-<lane> alias moved to a new adoption. #483.
