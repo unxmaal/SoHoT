@@ -183,7 +183,8 @@ def test_each_engine_is_launched_with_batching_and_a_memory_cap(tmp_path):
 
 FAKE_CHILD = textwrap.dedent("""\
     import json, sys
-    from http.server import BaseHTTPRequestHandler, HTTPServer
+    from http.server import BaseHTTPRequestHandler
+    from socketserver import TCPServer
     port = int(sys.argv[1])
     class H(BaseHTTPRequestHandler):
         def log_message(self, *a):
@@ -194,8 +195,9 @@ FAKE_CHILD = textwrap.dedent("""\
             self.send_header("Content-Length", str(len(body)))
             self.end_headers()
             self.wfile.write(body)
+    srv = TCPServer(("127.0.0.1", port), H)
     print("serving \\u2713 on", port, flush=True)
-    HTTPServer(("127.0.0.1", port), H).serve_forever()
+    srv.serve_forever()
     """)
 
 
@@ -220,6 +222,24 @@ def test_served_starts_the_child_waits_for_it_and_stops_it(tmp_path):
         assert srv.proc.poll() is None
     assert srv.proc.poll() is not None
     assert "serving ✓" in log.read_text(encoding="utf-8")
+
+
+def test_the_fake_child_serves_when_reverse_dns_hangs(tmp_path):
+    """check-macos: http.server.HTTPServer.server_bind calls socket.getfqdn, a reverse
+    lookup that can outlast the wait on a runner; the port is bound and not yet listening."""
+    site = tmp_path / "site"
+    site.mkdir()
+    (site / "sitecustomize.py").write_text(
+        "import socket, time\n"
+        "def _slow(name=''):\n    time.sleep(60)\n    return name\n"
+        "socket.getfqdn = _slow\n", encoding="utf-8")
+    child = tmp_path / "child.py"
+    child.write_text(FAKE_CHILD, encoding="utf-8")
+    port = _free_port()
+    env = {**_utf8_env(), "PYTHONPATH": str(site)}
+    with vllm.served([sys.executable, str(child), str(port)], port, log=tmp_path / "s.log",
+                     env=env, timeout=10) as srv:
+        assert srv.proc.poll() is None
 
 
 def test_the_readiness_probe_never_goes_through_a_proxy(tmp_path, monkeypatch):
