@@ -1,0 +1,5 @@
+id: pii-no-pii-numbers
+modality: pii
+prompt: The run took 41.8 seconds at 512 by 512 and peaked at 11.4 GiB.
+assert:
+  pii: []

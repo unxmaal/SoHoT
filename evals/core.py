@@ -26,6 +26,7 @@ from harness.checks import html as html_check
 from harness.checks import image as image_check
 from harness.checks import music as music_check
 from harness.checks import ocr as ocr_check
+from harness.checks import pii as pii_check
 from harness.checks import render as render_check
 from harness.checks import retrieval as retrieval_check
 from harness.checks import video as video_check
@@ -278,6 +279,15 @@ def _check_decide(artifact, case: Case) -> CheckResult:
                               case.assertions["answers"])
 
 
+def _check_pii(artifact, case: Case) -> CheckResult:
+    """Token F1 of the marked spans against the labelled ones. #564."""
+    if isinstance(artifact, Path):
+        if not artifact.exists():
+            return CheckResult(False, f"engine left no output at {artifact.name}")
+        artifact = artifact.read_text(encoding="utf-8")
+    return pii_check.check(str(artifact or ""), case.prompt, case.params["spans"])
+
+
 def _check_retrieval(artifact, case: Case) -> CheckResult:
     """Recall@k decides; nDCG@10 orders. #563."""
     if isinstance(artifact, Path):
@@ -325,6 +335,7 @@ CHECKERS = {
     "decide": lambda a, c, **kw: _check_decide(a, c),
     "ocr": lambda a, c, **kw: _check_ocr(a, c),
     "retrieval": lambda a, c, **kw: _check_retrieval(a, c),
+    "pii": lambda a, c, **kw: _check_pii(a, c),
     "svg": lambda a, c, **kw: _check_svg(a, c),
     "music": _check_music,
     "web": lambda a, c, **kw: _check_web(a, c),
@@ -406,6 +417,10 @@ METRIC_DIRECTION = {
     # retrieval (#563): every relevant document in the top k, and how high.
     "retrieval_recall": "higher",
     "retrieval_ndcg": "higher",
+    # pii (#564): token F1 over marked spans, with its two halves beside it.
+    "pii_f1": "higher",
+    "pii_precision": "higher",
+    "pii_recall": "higher",
 }
 
 
@@ -480,7 +495,8 @@ ASSERTION_KEYS = {"svg": TEXT_ASSERTIONS, "web": TEXT_ASSERTIONS,
                   "decide": {"answers"},
                   "agent": {"answer", "hidden"},
                   "ocr": {"text", "max_cer"},
-                  "retrieval": {"relevant", "k"}}
+                  "retrieval": {"relevant", "k"},
+                  "pii": {"pii"}}
 
 
 #: Lanes whose runner returns text rather than a file.
@@ -813,6 +829,8 @@ def load_cases(directory: str | Path) -> list[Case]:
             raise ValueError(f"{path.name}: an ocr case needs assert.text, the reference")
         if modality == "retrieval":
             _check_relevant(path, input_file, assertions.get("relevant"))
+        if modality == "pii":
+            params = {**params, "spans": _pii_spans(path, prompt, assertions.get("pii"))}
         cases.append(Case(id=raw["id"], modality=modality, prompt=prompt,
                           context=context, audio=audio, params=params,
                           assertions=assertions, source=path, input_file=input_file,
@@ -877,6 +895,21 @@ def _load_audio(path: Path, raw: dict, modality: str) -> Path | None:
     if not source.exists():
         raise ValueError(f"{path.name}: audio_file '{filename}' not found")
     return source
+
+
+def _pii_spans(path: Path, text: str, labels) -> list[list[int]]:
+    """Each labelled string's [start, end] in the sentence; it must occur exactly once. #564."""
+    if not isinstance(labels, list):
+        raise ValueError(f"{path.name}: a pii case needs assert.pii, a list (empty for none)")
+    spans = []
+    for label in map(str, labels):
+        at = text.find(label)
+        if at < 0:
+            raise ValueError(f"{path.name}: {label!r} is not in the sentence")
+        if text.find(label, at + 1) >= 0:
+            raise ValueError(f"{path.name}: {label!r} occurs more than once; label a longer string")
+        spans.append([at, at + len(label)])
+    return spans
 
 
 def _check_relevant(path: Path, corpus: Path, relevant) -> None:
@@ -1123,7 +1156,10 @@ RATIO_METRICS = {"wer": ("wer_errors", "wer_words"),
                  "agent_valid_call_rate": ("agent_valid_calls", "agent_tool_calls"),
                  "decide_accuracy": ("decide_correct", "decide_fields"),
                  "decide_brier": ("decide_brier_sum", "decide_fields"),
-                 "cer": ("cer_errors", "cer_chars")}
+                 "cer": ("cer_errors", "cer_chars"),
+                 "pii_f1": ("pii_2tp", "pii_f1_den"),
+                 "pii_precision": ("pii_tp", "pii_pred"),
+                 "pii_recall": ("pii_tp", "pii_gold")}
 #: Bookkeeping that should not appear as a column of its own.
 _COMPANIONS = {name for pair in RATIO_METRICS.values() for name in pair}
 

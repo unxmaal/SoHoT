@@ -1,4 +1,4 @@
-"""One case through transformers, in the hf-task venv: ocr (#562) and retrieval (#563).
+"""One case through transformers, in the hf-task venv: ocr (#562), retrieval (#563), pii (#564).
 
 Run by scripts/hf-task.sh; imports nothing from this package but torch_device.
 A repo that ships its own modelling code is refused, never executed.
@@ -110,7 +110,25 @@ def rank(mode: str, model: str, query: str, corpus, out, score=score_texts) -> N
                          encoding="utf-8")
 
 
-def main(argv=None, read=None, score=None) -> int:
+def tag_text(model: str, text: str, revision: str | None = None,
+             device: str | None = None) -> list[dict]:
+    """Entity groups from a token-classification model; every non-O group is a span."""
+    import torch
+    from transformers import pipeline
+    pipe = pipeline("token-classification", model=model, revision=revision,
+                    device=_device(torch, device), aggregation_strategy="simple")
+    return list(pipe(text))
+
+
+def pii(model: str, text: str, out, tag=tag_text) -> None:
+    """Write {"spans": [[start, end, label]]}."""
+    import json
+    spans = [[int(g["start"]), int(g["end"]), str(g.get("entity_group") or g.get("entity") or "")]
+             for g in tag(model, text)]
+    Path(out).write_text(json.dumps({"spans": spans}), encoding="utf-8")
+
+
+def main(argv=None, read=None, score=None, tag=None) -> int:
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = p.add_subparsers(dest="task", required=True)
     o = sub.add_parser("ocr")
@@ -129,16 +147,25 @@ def main(argv=None, read=None, score=None) -> int:
     r.add_argument("--out", required=True)
     r.add_argument("--revision")
     r.add_argument("--device")
+    t = sub.add_parser("pii")
+    t.add_argument("--model", required=True)
+    t.add_argument("--text", required=True)
+    t.add_argument("--out", required=True)
+    t.add_argument("--revision")
+    t.add_argument("--device")
     a = p.parse_args(argv)
     try:
         if a.task == "ocr":
             reader = read or functools.partial(read_image, revision=a.revision,
                                                max_new_tokens=a.max_new_tokens, device=a.device)
             ocr(a.model, a.image, a.prompt, a.out, read=reader)
-        else:
+        elif a.task == "rank":
             scorer = score or functools.partial(score_texts, revision=a.revision,
                                                 device=a.device)
             rank(a.mode, a.model, a.query, a.corpus, a.out, score=scorer)
+        else:
+            tagger = tag or functools.partial(tag_text, revision=a.revision, device=a.device)
+            pii(a.model, a.text, a.out, tag=tagger)
     except ValueError as exc:
         if "trust_remote_code" not in str(exc):
             raise

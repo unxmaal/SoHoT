@@ -1,0 +1,7 @@
+id: pii-ip-and-user
+modality: pii
+prompt: Failed logins came from 203.0.113.42 using the account of Priya Raman.
+assert:
+  pii:
+  - 203.0.113.42
+  - Priya Raman

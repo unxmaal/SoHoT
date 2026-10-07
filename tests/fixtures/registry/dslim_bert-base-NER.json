@@ -1,0 +1,157 @@
+{
+ "id": "dslim/bert-base-NER",
+ "pipeline_tag": "token-classification",
+ "tags": [
+  "transformers",
+  "pytorch",
+  "tf",
+  "jax",
+  "onnx",
+  "safetensors",
+  "bert",
+  "token-classification",
+  "en",
+  "dataset:conll2003",
+  "arxiv:1810.04805",
+  "license:mit",
+  "model-index",
+  "endpoints_compatible",
+  "deploy:azure",
+  "region:us"
+ ],
+ "library_name": "transformers",
+ "cardData": {
+  "language": "en",
+  "datasets": [
+   "conll2003"
+  ],
+  "license": "mit",
+  "model-index": [
+   {
+    "name": "dslim/bert-base-NER",
+    "results": [
+     {
+      "task": {
+       "type": "token-classification",
+       "name": "Token Classification"
+      },
+      "dataset": {
+       "name": "conll2003",
+       "type": "conll2003",
+       "config": "conll2003",
+       "split": "test"
+      },
+      "metrics": [
+       {
+        "name": "Accuracy",
+        "type": "accuracy",
+        "value": 0.9118041001560013,
+        "verified": false
+       },
+       {
+        "name": "Precision",
+        "type": "precision",
+        "value": 0.9211550382257732,
+        "verified": false
+       },
+       {
+        "name": "Recall",
+        "type": "recall",
+        "value": 0.9306415698281261,
+        "verified": false
+       },
+       {
+        "name": "F1",
+        "type": "f1",
+        "value": 0.9258740048459675,
+        "verified": false
+       },
+       {
+        "name": "loss",
+        "type": "loss",
+        "value": 0.48325642943382263,
+        "verified": false
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ },
+ "siblings": [
+  {
+   "rfilename": ".gitattributes",
+   "size": 445
+  },
+  {
+   "rfilename": "README.md",
+   "size": 6558
+  },
+  {
+   "rfilename": "added_tokens.json",
+   "size": 2
+  },
+  {
+   "rfilename": "config.json",
+   "size": 829
+  },
+  {
+   "rfilename": "flax_model.msgpack",
+   "size": 430913546
+  },
+  {
+   "rfilename": "model.safetensors",
+   "size": 433292294
+  },
+  {
+   "rfilename": "onnx/added_tokens.json",
+   "size": 82
+  },
+  {
+   "rfilename": "onnx/config.json",
+   "size": 999
+  },
+  {
+   "rfilename": "onnx/model.onnx",
+   "size": 431172619
+  },
+  {
+   "rfilename": "onnx/special_tokens_map.json",
+   "size": 125
+  },
+  {
+   "rfilename": "onnx/tokenizer.json",
+   "size": 668923
+  },
+  {
+   "rfilename": "onnx/tokenizer_config.json",
+   "size": 1296
+  },
+  {
+   "rfilename": "onnx/vocab.txt",
+   "size": 213450
+  },
+  {
+   "rfilename": "pytorch_model.bin",
+   "size": 433316646
+  },
+  {
+   "rfilename": "special_tokens_map.json",
+   "size": 112
+  },
+  {
+   "rfilename": "tf_model.h5",
+   "size": 433538860
+  },
+  {
+   "rfilename": "tokenizer_config.json",
+   "size": 59
+  },
+  {
+   "rfilename": "vocab.txt",
+   "size": 213450
+  }
+ ],
+ "lastModified": "2024-10-08T07:51:39.000Z",
+ "downloads": 1409624
+}

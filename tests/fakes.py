@@ -86,6 +86,17 @@ WHY = {
     "BAAI/bge-reranker-base":
         "a reranker filed text-classification: it stays in decide, so the "
         "retrieval lane steals nothing from it (#563)",
+    "openai/privacy-filter":
+        "token-classification whose only privacy word is inside the tag "
+        "openai_privacy_filter, so the tag must be read by word (#564)",
+    "LH-Tech-AI/Shield-82M":
+        "token-classification tagged pii with no library on its card (#564)",
+    "mistralai/Shieldstral-1.0-3B":
+        "a generative guard with no task and a vllm library: lineage files it "
+        "under code, and the pii lane cannot load it (#564)",
+    "dslim/bert-base-NER":
+        "a general named-entity tagger: the pii lane's negative control, which "
+        "must stay laneless (#564)",
     "hexgrad/Kokoro-82M":
         "the tts lane's incumbent, and the upstream of the repo the lane "
         "actually serves, so the card is a requant's parent (#264)",

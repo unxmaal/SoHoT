@@ -27,7 +27,7 @@ Argv = Callable[[str, Path, dict], list[str]]
 
 GRAMMAR = ("engine:model[,key=value,...]  "
            "(engines: mflux, h3, diffusers, diffusers-video, acestep, nimble, decider, "
-           "osocr, hf-ocr, bm25, rerank, embed)")
+           "osocr, hf-ocr, bm25, rerank, embed, pii-regex, hf-pii)")
 
 
 def spec_error(spec: str) -> str:
@@ -723,7 +723,8 @@ TASK_ENGINES = {"sentence-similarity": "embed", "feature-extraction": "embed",
                 "text-ranking": "rerank"}
 #: Libraries a hf-task engine loads; a card naming another needs its own runner.
 HF_LIBRARIES = {"rerank": ("sentence-transformers", "transformers"),
-                "embed": ("sentence-transformers", "transformers")}
+                "embed": ("sentence-transformers", "transformers"),
+                "hf-pii": ("transformers",)}
 #: Tasks whose inputs no case of the engine's lane supplies, with why.
 TASK_GAPS = {("rerank", "visual-document-retrieval"):
              "a visual-document retriever embeds page images; the retrieval cases are text",
@@ -802,6 +803,46 @@ def _ranker(mode: str, head: str) -> Callable[[str, str, dict], Engine]:
     return build
 
 
+# ---- the pii lane: patterns and transformers token taggers (#564) ----------
+
+_HF_PII_OPTIONS = {"revision", "device"}
+
+
+def _pii_regex(spec: str, model: str, options: dict) -> Engine:
+    """Patterns for emails, numbers, addresses on the wire and keys. No weights."""
+    if model:
+        raise ValueError(f"{spec_error(spec)}: pii-regex takes no model; it is spelled `pii-regex`")
+    _check_options(options, set(), spec)
+
+    def argv(prompt: str, out: Path, params: dict) -> list[str]:
+        import sys
+        return [sys.executable, "-m", "harness.pattern_pii", "--text", prompt, "--out", str(out)]
+
+    return Engine(name="pii-regex/patterns", spec=spec, argv=argv, modality="pii",
+                  output_suffix=".json", timeout=60.0,
+                  cwd=str(Path(__file__).resolve().parent.parent))
+
+
+def _hf_pii(spec: str, model: str, options: dict) -> Engine:
+    """A token-classification model through transformers, in the hf-task venv."""
+    if not model:
+        raise ValueError(f"{spec_error(spec)}: hf-pii needs a model, e.g. "
+                         f"hf-pii:openai/privacy-filter")
+    _check_options(options, _HF_PII_OPTIONS, spec)
+    defaults = dict(options)
+
+    def argv(prompt: str, out: Path, params: dict) -> list[str]:
+        cmd = [os.environ.get("HF_TASK_BIN", HF_TASK_DEFAULT_BIN), "pii",
+               "--model", model, "--text", prompt, "--out", str(out)]
+        for key in ("revision", "device"):
+            _flag(cmd, f"--{key}", defaults.get(key))
+        return cmd
+
+    return Engine(name=f"hf-pii/{model.rsplit('/', 1)[-1]}{distinguish(options)}",
+                  spec=spec, argv=argv, modality="pii", output_suffix=".json",
+                  timeout=3600.0)
+
+
 _BUILDERS: dict[str, Callable[[str, str, dict], Engine]] = {
     "mflux": _mflux,
     "h3": _h3,
@@ -815,4 +856,6 @@ _BUILDERS: dict[str, Callable[[str, str, dict], Engine]] = {
     "bm25": _bm25,
     "rerank": _ranker("cross", "rerank"),
     "embed": _ranker("bi", "embed"),
+    "pii-regex": _pii_regex,
+    "hf-pii": _hf_pii,
 }

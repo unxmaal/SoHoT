@@ -1,0 +1,5 @@
+id: pii-no-pii-ops
+modality: pii
+prompt: The gateway restarts after the nightly sweep finishes on the build server.
+assert:
+  pii: []

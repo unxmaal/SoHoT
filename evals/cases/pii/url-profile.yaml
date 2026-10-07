@@ -1,0 +1,7 @@
+id: pii-url-profile
+modality: pii
+prompt: Her private calendar link is https://cal.example.com/u/jkowalski/private and
+  nobody else's.
+assert:
+  pii:
+  - https://cal.example.com/u/jkowalski/private

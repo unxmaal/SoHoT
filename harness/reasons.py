@@ -102,7 +102,7 @@ _ARCHITECTURE_GAPS = ("model type", "modelargs", "parameters not in model",
 _LLAMACPP_LOAD_FAILED = ("http 500", "failed to load")
 _DIFFUSERS_LAYOUT_GAPS = ("can't find a pipeline linked to", "were passed")
 _ENGINE_HEADS = ("mflux", "diffusers", "diffusers-video", "acestep", "hf-ocr",
-                 "rerank", "embed")
+                 "rerank", "embed", "hf-pii")
 #: A repo whose modelling code is its own: hf-task never executes it. #562.
 _REMOTE_CODE = ("trust_remote_code",)
 #: The audio server (mlx-audio) answers 500 when it cannot build the model.

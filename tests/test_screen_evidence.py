@@ -262,6 +262,8 @@ SAMPLES = {
     "rerank": ["rerank:cross-encoder/ettin-reranker-1b-v1",
                "rerank:cross-encoder/ettin-reranker-1b-v1,device=cpu"],
     "embed": ["embed:BAAI/bge-small-en-v1.5", "embed:BAAI/bge-small-en-v1.5,revision=abc"],
+    "pii-regex": ["pii-regex"],
+    "hf-pii": ["hf-pii:openai/privacy-filter", "hf-pii:openai/privacy-filter,device=cpu"],
 }
 SAMPLE_SPECS = [s for specs in SAMPLES.values() for s in specs]
 LANE_OF = {"image": "image", "video": "video", "music": "music"}

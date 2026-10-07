@@ -1531,6 +1531,35 @@ is reported under runners wanted before anything is downloaded.
     uv run python -m evals.run --modality retrieval --candidates \
       bm25,embed:BAAI/bge-small-en-v1.5,rerank:cross-encoder/ettin-reranker-1b-v1
 
+The pii lane marks the personal data in a sentence. Its sixteen cases under
+`evals/cases/pii/` are sentences with the exact strings that are personal
+(names, emails, phone numbers, a street address, an SSN, a card number, an
+IBAN, an IP address, an API key, a date of birth, a passport number, a
+private URL), plus four with none. A label must occur exactly once in its
+sentence, or the case fails to load. Scoring is per token, a token being a
+run of letters and digits: a token is personal when it overlaps a labelled
+string and marked when it overlaps a predicted span. Label names are ignored,
+because every model names its classes differently. The lane's `pii_f1` is
+pooled over all tokens, with `pii_precision` and `pii_recall` beside it. A
+case passes at a token F1 of 0.8, and a sentence with nothing personal passes
+only when nothing is marked. The negative controls in `tests/test_pii_lane.py`:
+marking nothing scores 0, marking every token passes no case and stays under
+0.6, and the pattern baseline lands between them.
+
+`pii-regex` is the incumbent: patterns for things with a shape (emails, URLs,
+IPv4, IBANs, card numbers, SSNs, phone numbers, API keys), with no weights. It
+cannot see a name. `hf-pii:<repo>[,revision=,device=]` runs a transformers
+token-classification model in the hf-task venv and counts every entity group
+it returns as personal. Discovery files a token-classification card under pii
+only when a tag names personal data (`pii`, `privacy`, `anonymization`,
+`deidentification`, `redaction`, read word by word, so
+`openai_privacy_filter` counts). A general named-entity tagger stays laneless.
+mistralai/Shieldstral-1.0-3B is a generative guard with no task on its card:
+lineage files it under code, and its vllm library is not one hf-pii loads.
+
+    uv run python -m evals.run --modality pii --candidates \
+      pii-regex,hf-pii:openai/privacy-filter,hf-pii:LH-Tech-AI/Shield-82M
+
 `repair` costs nothing extra, so it is the one to understand. Everything already
 checks its own output. It runs the code it wrote, draws the SVG to see whether
 anything is visible, opens the web page in a browser. All of that was

@@ -45,7 +45,7 @@ ENGINE_REPOS = {
 }
 
 #: Engines that load nothing from the hub, so their spec keeps nothing. #562.
-WEIGHTLESS = ("osocr", "bm25")
+WEIGHTLESS = ("osocr", "bm25", "pii-regex")
 
 #: mflux preset name -> the repo it loads, as mflux's ModelConfig names it. #554.
 MFLUX_REPOS = {

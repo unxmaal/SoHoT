@@ -1,0 +1,7 @@
+id: pii-iban
+modality: pii
+prompt: Refunds go to IBAN DE89 3704 0044 0532 0130 00 held by Lena Fischer.
+assert:
+  pii:
+  - DE89 3704 0044 0532 0130 00
+  - Lena Fischer

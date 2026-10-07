@@ -35,6 +35,8 @@ COST_S = {
     "ocr": 30,
     # Estimated: fourteen queries over thirty documents, one model load each. #563.
     "retrieval": 120,
+    # Estimated: sixteen sentences, one model load each. #564.
+    "pii": 120,
 }
 
 #: A lane nobody should start without meaning to. Video is ~40 minutes for ONE

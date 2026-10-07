@@ -1,0 +1,7 @@
+id: pii-birth-date
+modality: pii
+prompt: Patient Ahmed Karimi, born 14 March 1987, was seen in clinic today.
+assert:
+  pii:
+  - Ahmed Karimi
+  - 14 March 1987

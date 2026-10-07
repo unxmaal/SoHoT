@@ -1,0 +1,7 @@
+id: pii-passport
+modality: pii
+prompt: Traveller Samuel Okafor presented passport number A12345678 at the desk.
+assert:
+  pii:
+  - Samuel Okafor
+  - A12345678

@@ -120,6 +120,8 @@ DEFAULT_AGENT_MODEL = DEFAULT_CODE_MODEL
 DEFAULT_OCR_ENGINE = "osocr:auto"
 #: The retrieval lane starts on BM25: no weights, and the bar a model must clear. #563.
 DEFAULT_RETRIEVAL_ENGINE = "bm25"
+#: The pii lane starts on patterns: no weights, and blind to every name. #564.
+DEFAULT_PII_ENGINE = "pii-regex"
 
 TEXT_MODEL_HELP = ("gateway alias, mlx repo id or llamacpp:<stem> "
                    "(default: the lane's adopted model, else {})")

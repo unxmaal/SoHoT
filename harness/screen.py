@@ -66,6 +66,8 @@ LANE_CANDIDATES = {
     "ocr": ("hf-ocr:{model}",),
     # bm25 is the incumbent; a cross-encoder first, an embedder when its card says so. #563.
     "retrieval": ("rerank:{model}", "embed:{model}"),
+    # pii-regex is the incumbent; a discovered model is a transformers token tagger. #564.
+    "pii": ("hf-pii:{model}",),
     "stt": ("stt:{model}",),
     "tts": ("tts:{model}",),
     **{lane: ("{model}",) for lane in lanes.TEXT_SERVED},
@@ -451,7 +453,7 @@ ENGINE_RUNTIMES = {"mflux": "mflux", "diffusers": "diffusers",
                    # The audio server's runtime, as scripts/versions.sh pins it. #408.
                    "tts": "mlx-audio", "stt": "mlx-audio",
                    "hf-ocr": "transformers", "rerank": "sentence-transformers",
-                   "embed": "sentence-transformers"}
+                   "embed": "sentence-transformers", "hf-pii": "transformers"}
 LOAD_RUNTIME = "mlx-lm"
 
 
