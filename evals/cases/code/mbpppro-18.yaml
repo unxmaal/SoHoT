@@ -1,0 +1,24 @@
+# MBPP Pro (CodeEval-Pro, Yu et al. 2024), MIT (https://huggingface.co/datasets/CodeEval-Pro/mbpp-pro).
+# Imported by evals/benchmark_import.py from hf:CodeEval-Pro/mbpp-pro@50f18448e09a8383226e1a5cd3654d2a454fe333; re-import, do not edit.
+id: mbpppro-18
+modality: code
+prompt: "Write a Python function `sum_of_octagonal_numbers(lst)`. Given a list of integers, determine\
+  \ the sum of the first 10 octagonal numbers for each integer in the list. If an integer is less than\
+  \ 1, return 0 for that integer.\n\nBuild it on this helper, and include the helper unchanged in your\
+  \ answer:\n\n```python\n# Write a function to find the nth octagonal number.\ndef is_octagonal(n):\n\
+  \    return 3 * n * n - 2 * n\n```\n\nReturn only the code."
+assert:
+  checks:
+  - sum_of_octagonal_numbers([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) == [1, 9, 30, 70, 135, 231, 364, 540, 765,
+    1045]
+  - sum_of_octagonal_numbers([-1, 0, 11, 12]) == [0, 0, 1045, 1045]
+  - sum_of_octagonal_numbers([1, 1, 1, 1, 1, 1, 1, 1, 1, 1]) == [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+attribution:
+  dataset: MBPP Pro (CodeEval-Pro, Yu et al. 2024)
+  url: https://huggingface.co/datasets/CodeEval-Pro/mbpp-pro
+  license: MIT
+  source: hf:CodeEval-Pro/mbpp-pro
+  split: train
+  item: '18'
+  revision: 50f18448e09a8383226e1a5cd3654d2a454fe333
+  label: the dataset's own assert tests, run as checks

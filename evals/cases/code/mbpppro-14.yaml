@@ -1,0 +1,27 @@
+# MBPP Pro (CodeEval-Pro, Yu et al. 2024), MIT (https://huggingface.co/datasets/CodeEval-Pro/mbpp-pro).
+# Imported by evals/benchmark_import.py from hf:CodeEval-Pro/mbpp-pro@50f18448e09a8383226e1a5cd3654d2a454fe333; re-import, do not edit.
+id: mbpppro-14
+modality: code
+prompt: "Write a Python function `find_first_10_woodall_numbers(start, end)`. Write a function to find\
+  \ the first 10 woodall numbers in a given range of integers. A woodall number is defined as a number\
+  \ of the form W(n) = n * 2^n - 1. The function should return a list of the first 10 woodall numbers\
+  \ found within the given range, or an empty list if no such numbers exist within the range.\n\nBuild\
+  \ it on this helper, and include the helper unchanged in your answer:\n\n```python\n# Write a function\
+  \ to check if the given number is woodball or not.\ndef is_woodall(x):\n    if not isinstance(x, int):\n\
+  \        return False\n    if x <= 0 or x % 2 == 0:\n        return False\n    if (x == 1): \n     \
+  \   return True\n    x += 1 \n    i = 0\n    while (x % 2 == 0): \n        x /= 2\n        i += 1\n\
+  \        if (i == x): \n            return True\n    return False\n```\n\nReturn only the code."
+assert:
+  checks:
+  - find_first_10_woodall_numbers(1, 1000) == [1, 7, 23, 63, 159, 383, 895]
+  - find_first_10_woodall_numbers(1000, 2000) == []
+  - find_first_10_woodall_numbers(1, 100) == [1, 7, 23, 63]
+attribution:
+  dataset: MBPP Pro (CodeEval-Pro, Yu et al. 2024)
+  url: https://huggingface.co/datasets/CodeEval-Pro/mbpp-pro
+  license: MIT
+  source: hf:CodeEval-Pro/mbpp-pro
+  split: train
+  item: '14'
+  revision: 50f18448e09a8383226e1a5cd3654d2a454fe333
+  label: the dataset's own assert tests, run as checks

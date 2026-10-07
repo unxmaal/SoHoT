@@ -1,0 +1,23 @@
+# MBPP Pro (CodeEval-Pro, Yu et al. 2024), MIT (https://huggingface.co/datasets/CodeEval-Pro/mbpp-pro).
+# Imported by evals/benchmark_import.py from hf:CodeEval-Pro/mbpp-pro@50f18448e09a8383226e1a5cd3654d2a454fe333; re-import, do not edit.
+id: mbpppro-5
+modality: code
+prompt: "Write a Python function `sum_of_squares(list1, list2)`. Given two lists of integers, write a\
+  \ function to find the sum of the squares of the corresponding elements in the two lists. If the lists\
+  \ are of different lengths, raise a ValueError.\n\nBuild it on this helper, and include the helper unchanged\
+  \ in your answer:\n\n```python\n# Write a function to find squares of individual elements in a list.\n\
+  def square_nums(nums):\n return [i**2 for i in nums]\n```\n\nReturn only the code."
+assert:
+  checks:
+  - sum_of_squares([1, 2, 3], [4, 5, 6]) == [17, 29, 45]
+  - sum_of_squares([0, 0, 0], [0, 0, 0]) == [0, 0, 0]
+  - sum_of_squares([-1, -2, -3], [1, 2, 3]) == [2, 8, 18]
+attribution:
+  dataset: MBPP Pro (CodeEval-Pro, Yu et al. 2024)
+  url: https://huggingface.co/datasets/CodeEval-Pro/mbpp-pro
+  license: MIT
+  source: hf:CodeEval-Pro/mbpp-pro
+  split: train
+  item: '5'
+  revision: 50f18448e09a8383226e1a5cd3654d2a454fe333
+  label: the dataset's own assert tests, run as checks

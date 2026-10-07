@@ -1,0 +1,28 @@
+# HumanEval Pro (CodeEval-Pro, Yu et al. 2024), MIT (https://huggingface.co/datasets/CodeEval-Pro/humaneval-pro).
+# Imported by evals/benchmark_import.py from hf:CodeEval-Pro/humaneval-pro@cd078f93d57d1902b5c3e4ae330166b2ca0e0e80; re-import, do not edit.
+id: hevalpro-2
+modality: code
+prompt: "Write a Python function `sum_of_parts(numbers: list)`. Given a list of positive floating point\
+  \ numbers, decompose each number into its integer part and decimal part. Then, calculate the sum of\
+  \ all the integer parts and the sum of all the decimal parts separately. Finally, return the product\
+  \ of these two sums.\n\nBuild it on this helper, and include the helper unchanged in your answer:\n\n\
+  ```python\n\n\ndef truncate_number(number: float) -> float:\n    \"\"\" Given a positive floating point\
+  \ number, it can be decomposed into\n    and integer part (largest integer smaller than given number)\
+  \ and decimals\n    (leftover part always smaller than 1).\n\n    Return the decimal part of the number.\n\
+  \    >>> truncate_number(3.5)\n    0.5\n    \"\"\"\n    return number % 1.0\n```\n\nReturn only the\
+  \ code."
+assert:
+  checks:
+  - math.isclose(sum_of_parts([3.5, 2.7, 1.1]), 7.8)
+  - math.isclose(sum_of_parts([0.5, 1.5, 2.5]), 4.5)
+  - math.isclose(sum_of_parts([10.0, 20.0, 30.0]), 0.0)
+  - math.isclose(sum_of_parts([1.23, 4.56, 7.89]), 20.16)
+attribution:
+  dataset: HumanEval Pro (CodeEval-Pro, Yu et al. 2024)
+  url: https://huggingface.co/datasets/CodeEval-Pro/humaneval-pro
+  license: MIT
+  source: hf:CodeEval-Pro/humaneval-pro
+  split: train
+  item: '2'
+  revision: cd078f93d57d1902b5c3e4ae330166b2ca0e0e80
+  label: the dataset's own assert tests, run as checks

@@ -1,0 +1,25 @@
+# MBPP Pro (CodeEval-Pro, Yu et al. 2024), MIT (https://huggingface.co/datasets/CodeEval-Pro/mbpp-pro).
+# Imported by evals/benchmark_import.py from hf:CodeEval-Pro/mbpp-pro@50f18448e09a8383226e1a5cd3654d2a454fe333; re-import, do not edit.
+id: mbpppro-0
+modality: code
+prompt: "Write a Python function `shared_elements(lists)`. Given a list of lists, write a function to\
+  \ find the shared elements across all the lists.\n\nBuild it on this helper, and include the helper\
+  \ unchanged in your answer:\n\n```python\n# Write a function to find the shared elements from the given\
+  \ two lists.\ndef similar_elements(test_tup1, test_tup2):\n  return tuple(set(test_tup1) & set(test_tup2))\n\
+  ```\n\nReturn only the code."
+assert:
+  checks:
+  - shared_elements([[1, 2, 3], [2, 3, 4], [3, 4, 5]]) == (3,)
+  - shared_elements([[1, 2], [2, 3], [3, 4]]) == ()
+  - shared_elements([[1, 2, 3], [2, 3, 4], [3, 4, 5], [2, 3]]) == (3,)
+  - shared_elements([[1, 2, 3], [1, 2, 3], [1, 2, 3]]) == (1, 2, 3)
+  - shared_elements([]) == ()
+attribution:
+  dataset: MBPP Pro (CodeEval-Pro, Yu et al. 2024)
+  url: https://huggingface.co/datasets/CodeEval-Pro/mbpp-pro
+  license: MIT
+  source: hf:CodeEval-Pro/mbpp-pro
+  split: train
+  item: '0'
+  revision: 50f18448e09a8383226e1a5cd3654d2a454fe333
+  label: the dataset's own assert tests, run as checks

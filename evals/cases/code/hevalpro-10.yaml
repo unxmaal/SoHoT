@@ -1,0 +1,31 @@
+# HumanEval Pro (CodeEval-Pro, Yu et al. 2024), MIT (https://huggingface.co/datasets/CodeEval-Pro/humaneval-pro).
+# Imported by evals/benchmark_import.py from hf:CodeEval-Pro/humaneval-pro@cd078f93d57d1902b5c3e4ae330166b2ca0e0e80; re-import, do not edit.
+id: hevalpro-10
+modality: code
+prompt: "Write a Python function `concatenate_palindromes(strings: list)`. Given a list of strings, find\
+  \ the shortest palindrome for each string and then concatenate all the resulting palindromes into a\
+  \ single string. If the list is empty, return an empty string.\n\nBuild it on this helper, and include\
+  \ the helper unchanged in your answer:\n\n```python\n\n\ndef is_palindrome(string: str) -> bool:\n \
+  \   \"\"\" Test if given string is a palindrome \"\"\"\n    return string == string[::-1]\n\n\ndef make_palindrome(string:\
+  \ str) -> str:\n    \"\"\" Find the shortest palindrome that begins with a supplied string.\n    Algorithm\
+  \ idea is simple:\n    - Find the longest postfix of supplied string that is a palindrome.\n    - Append\
+  \ to the end of the string reverse of a string prefix that comes before the palindromic suffix.\n  \
+  \  >>> make_palindrome('')\n    ''\n    >>> make_palindrome('cat')\n    'catac'\n    >>> make_palindrome('cata')\n\
+  \    'catac'\n    \"\"\"\n    if not string:\n        return ''\n\n    beginning_of_suffix = 0\n\n \
+  \   while not is_palindrome(string[beginning_of_suffix:]):\n        beginning_of_suffix += 1\n\n   \
+  \ return string + string[:beginning_of_suffix][::-1]\n```\n\nReturn only the code."
+assert:
+  checks:
+  - concatenate_palindromes(['cat', 'cata']) == 'cataccatac'
+  - concatenate_palindromes(['']) == ''
+  - concatenate_palindromes([]) == ''
+  - concatenate_palindromes(['a', 'ab', 'abc']) == 'aabaabcba'
+attribution:
+  dataset: HumanEval Pro (CodeEval-Pro, Yu et al. 2024)
+  url: https://huggingface.co/datasets/CodeEval-Pro/humaneval-pro
+  license: MIT
+  source: hf:CodeEval-Pro/humaneval-pro
+  split: train
+  item: '10'
+  revision: cd078f93d57d1902b5c3e4ae330166b2ca0e0e80
+  label: the dataset's own assert tests, run as checks

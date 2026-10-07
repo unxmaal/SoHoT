@@ -1,0 +1,29 @@
+# HumanEval Pro (CodeEval-Pro, Yu et al. 2024), MIT (https://huggingface.co/datasets/CodeEval-Pro/humaneval-pro).
+# Imported by evals/benchmark_import.py from hf:CodeEval-Pro/humaneval-pro@cd078f93d57d1902b5c3e4ae330166b2ca0e0e80; re-import, do not edit.
+id: hevalpro-11
+modality: code
+prompt: "Write a Python function `cumulative_xor(binary_strings: List[str])`. Given a list of binary strings,\
+  \ perform a cumulative XOR operation on them. The cumulative XOR operation means that for each string\
+  \ in the list, XOR it with the result of all previous XOR operations. Return the final result as a string.\n\
+  \nBuild it on this helper, and include the helper unchanged in your answer:\n\n```python\nfrom typing\
+  \ import List\n\n\ndef string_xor(a: str, b: str) -> str:\n    \"\"\" Input are two strings a and b\
+  \ consisting only of 1s and 0s.\n    Perform binary XOR on these inputs and return result also as a\
+  \ string.\n    >>> string_xor('010', '110')\n    '100'\n    \"\"\"\n    def xor(i, j):\n        if i\
+  \ == j:\n            return '0'\n        else:\n            return '1'\n\n    return ''.join(xor(x,\
+  \ y) for x, y in zip(a, b))\n```\n\nReturn only the code."
+assert:
+  checks:
+  - cumulative_xor(['010', '110', '101']) == '001'
+  - cumulative_xor(['111', '111', '111']) == '111'
+  - cumulative_xor(['000', '000', '000']) == '000'
+  - cumulative_xor(['101', '010', '111']) == '000'
+  - cumulative_xor(['110', '011', '100']) == '001'
+attribution:
+  dataset: HumanEval Pro (CodeEval-Pro, Yu et al. 2024)
+  url: https://huggingface.co/datasets/CodeEval-Pro/humaneval-pro
+  license: MIT
+  source: hf:CodeEval-Pro/humaneval-pro
+  split: train
+  item: '11'
+  revision: cd078f93d57d1902b5c3e4ae330166b2ca0e0e80
+  label: the dataset's own assert tests, run as checks

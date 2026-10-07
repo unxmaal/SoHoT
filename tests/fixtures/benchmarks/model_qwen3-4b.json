@@ -1,0 +1,23 @@
+{
+ "cardData": {
+  "license": "apache-2.0"
+ },
+ "createdAt": "2025-08-05T10:58:03.000Z",
+ "id": "Qwen/Qwen3-4B-Instruct-2507",
+ "lastModified": "2025-09-17T06:56:53.000Z",
+ "tags": [
+  "transformers",
+  "safetensors",
+  "qwen3",
+  "text-generation",
+  "conversational",
+  "arxiv:2505.09388",
+  "license:apache-2.0",
+  "eval-results",
+  "text-generation-inference",
+  "endpoints_compatible",
+  "deploy:sagemaker",
+  "deploy:azure",
+  "region:us"
+ ]
+}

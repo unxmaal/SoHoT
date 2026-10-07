@@ -1,0 +1,26 @@
+# MBPP Pro (CodeEval-Pro, Yu et al. 2024), MIT (https://huggingface.co/datasets/CodeEval-Pro/mbpp-pro).
+# Imported by evals/benchmark_import.py from hf:CodeEval-Pro/mbpp-pro@50f18448e09a8383226e1a5cd3654d2a454fe333; re-import, do not edit.
+id: mbpppro-23
+modality: code
+prompt: "Write a Python function `sum_of_flattened_lists(list_of_lists)`. Given a list of lists, where\
+  \ each sublist contains either integers or nested sublists, write a function to flatten each sublist\
+  \ and then sum the elements of all the flattened sublists.\n\nBuild it on this helper, and include the\
+  \ helper unchanged in your answer:\n\n```python\n# Write a function to flatten a list and sum all of\
+  \ its elements.\ndef recursive_list_sum(data_list):\n    total = 0\n    for element in data_list:\n\
+  \        if type(element) == type([]):\n            total = total + recursive_list_sum(element)\n  \
+  \      else:\n            total = total + element\n    return total\n```\n\nReturn only the code."
+assert:
+  checks:
+  - sum_of_flattened_lists([[1, 2], [3, [4, 5]], [6]]) == 21
+  - sum_of_flattened_lists([[], [1, [2, [3]]], [4, 5]]) == 15
+  - sum_of_flattened_lists([[1], [2], [3], [4], [5]]) == 15
+  - sum_of_flattened_lists([[[1]], [[2]], [[3]], [[4]], [[5]]]) == 15
+attribution:
+  dataset: MBPP Pro (CodeEval-Pro, Yu et al. 2024)
+  url: https://huggingface.co/datasets/CodeEval-Pro/mbpp-pro
+  license: MIT
+  source: hf:CodeEval-Pro/mbpp-pro
+  split: train
+  item: '23'
+  revision: 50f18448e09a8383226e1a5cd3654d2a454fe333
+  label: the dataset's own assert tests, run as checks

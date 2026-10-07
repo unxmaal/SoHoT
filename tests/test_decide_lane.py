@@ -28,18 +28,24 @@ def _gold(case):
 def test_the_lane_has_enough_cases_with_several_fields_each():
     assert len(CASES) >= 20
     assert all(len(_schema(c)) >= 4 for c in CASES)
-    assert {c.id.split("-")[0] for c in CASES} == {"route", "check", "policy", "rate"}
+    assert {c.id.split("-")[0] for c in CASES} == {"route", "check", "policy", "rate", "guard"}
 
 
 def test_every_case_names_its_source_license_and_pinned_selection():
     import yaml
+    from evals import benchmark_import as bi
     from evals import decide_corpus as dc
     allowed = {s["license"] for s in dc.SOURCES.values()}
     for c in CASES:
         raw = yaml.safe_load(c.source.read_text(encoding="utf-8"))
         a = raw["attribution"]
-        assert a["license"] in allowed and a["url"].startswith("https://")
-        assert f"@{dc.NIMBLE_REV}:" in a["selected_from"]
+        assert a["url"].startswith("https://")
+        if a.get("source"):
+            # Imported by evals/benchmark_import.py (#491): the item and revision pin it.
+            assert a["license"] in bi.ALLOWED_LICENSES and a["source"] in bi.IMPORTERS
+            assert a["item"] and a["revision"]
+        else:
+            assert a["license"] in allowed and f"@{dc.NIMBLE_REV}:" in a["selected_from"]
 
 
 def test_the_corpus_pin_is_the_engine_pin():

@@ -1,0 +1,47 @@
+{
+ "cardData": {
+  "language": [
+   "en"
+  ],
+  "license": "mit",
+  "size_categories": [
+   "10K<n<100K"
+  ],
+  "tags": [
+   "prompt-injection",
+   "browser-agents",
+   "ai-safety",
+   "security",
+   "html"
+  ],
+  "task_categories": [
+   "text-classification"
+  ]
+ },
+ "createdAt": "2025-11-27T15:30:22.000Z",
+ "downloads": 771,
+ "gated": false,
+ "id": "perplexity-ai/browsesafe-bench",
+ "lastModified": "2025-12-04T23:51:18.000Z",
+ "likes": 29,
+ "sha": "b506fb5bc7fd4472c8738055a67a0ef6406afdc9",
+ "tags": [
+  "task_categories:text-classification",
+  "language:en",
+  "license:mit",
+  "size_categories:10K<n<100K",
+  "format:parquet",
+  "modality:text",
+  "library:datasets",
+  "library:pandas",
+  "library:polars",
+  "library:mlcroissant",
+  "arxiv:2511.20597",
+  "region:us",
+  "prompt-injection",
+  "browser-agents",
+  "ai-safety",
+  "security",
+  "html"
+ ]
+}

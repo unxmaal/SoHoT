@@ -69,6 +69,16 @@ def _free_disk_is_pinned(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def _no_real_registry(monkeypatch):
+    """No test reads a benchmark registry; a fixture fetcher is passed instead. #491."""
+    from harness import benchmarks
+
+    def refuse(url, params=None):
+        raise RuntimeError(f"a test asked a real registry: {url}")
+    monkeypatch.setattr(benchmarks, "_get_json", refuse)
+
+
+@pytest.fixture(autouse=True)
 def _no_real_disk_sweep(monkeypatch):
     """No test deletes from the real weights cache. #373."""
     from harness import disk

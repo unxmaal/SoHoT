@@ -1,0 +1,72 @@
+{
+ "cardData": {
+  "configs": [
+   {
+    "config_name": "default",
+    "data_files": [
+     {
+      "path": "data/train-*",
+      "split": "train"
+     }
+    ]
+   }
+  ],
+  "dataset_info": {
+   "dataset_size": 348381,
+   "download_size": 151814,
+   "features": [
+    {
+     "dtype": "int64",
+     "name": "id"
+    },
+    {
+     "dtype": "string",
+     "name": "raw_solution"
+    },
+    {
+     "dtype": "string",
+     "name": "test_code"
+    },
+    {
+     "dtype": "string",
+     "name": "raw_problem"
+    },
+    {
+     "dtype": "string",
+     "name": "new_solution"
+    },
+    {
+     "dtype": "string",
+     "name": "new_problem"
+    }
+   ],
+   "splits": [
+    {
+     "name": "train",
+     "num_bytes": 348381,
+     "num_examples": 378
+    }
+   ]
+  },
+  "license": "mit"
+ },
+ "createdAt": "2024-12-31T07:41:48.000Z",
+ "downloads": 95,
+ "gated": false,
+ "id": "CodeEval-Pro/mbpp-pro",
+ "lastModified": "2024-12-31T07:49:59.000Z",
+ "likes": 2,
+ "sha": "50f18448e09a8383226e1a5cd3654d2a454fe333",
+ "tags": [
+  "license:mit",
+  "size_categories:n<1K",
+  "format:parquet",
+  "modality:text",
+  "library:datasets",
+  "library:pandas",
+  "library:mlcroissant",
+  "library:polars",
+  "arxiv:2412.21199",
+  "region:us"
+ ]
+}

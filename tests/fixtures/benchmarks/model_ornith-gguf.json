@@ -1,0 +1,17 @@
+{
+ "cardData": {
+  "license": "mit"
+ },
+ "createdAt": "2026-08-18T06:38:41.000Z",
+ "id": "ornith-ai/Ornith-1.5-35B-A3B-GGUF",
+ "lastModified": "2026-08-24T03:43:47.000Z",
+ "tags": [
+  "transformers",
+  "gguf",
+  "text-generation",
+  "license:mit",
+  "endpoints_compatible",
+  "region:us",
+  "conversational"
+ ]
+}

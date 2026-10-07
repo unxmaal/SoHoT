@@ -1,0 +1,32 @@
+# HumanEval Pro (CodeEval-Pro, Yu et al. 2024), MIT (https://huggingface.co/datasets/CodeEval-Pro/humaneval-pro).
+# Imported by evals/benchmark_import.py from hf:CodeEval-Pro/humaneval-pro@cd078f93d57d1902b5c3e4ae330166b2ca0e0e80; re-import, do not edit.
+id: hevalpro-3
+modality: code
+prompt: "Write a Python function `below_zero(operations: List[int])`. You are given a list of transactions\
+  \ where each transaction is a list of deposit and withdrawal operations on multiple bank accounts. Each\
+  \ sublist represents the operations for a single account, and the accounts are processed in the order\
+  \ they appear in the main list. Your task is to determine if any account falls below zero at any point\
+  \ during its operations. If any account falls below zero, the function should return True. Otherwise,\
+  \ it should return False.\n\nBuild it on this helper, and include the helper unchanged in your answer:\n\
+  \n```python\nfrom typing import List\n\n\ndef below_zero(operations: List[int]) -> bool:\n    \"\"\"\
+  \ You're given a list of deposit and withdrawal operations on a bank account that starts with\n    zero\
+  \ balance. Your task is to detect if at any point the balance of account fallls below zero, and\n  \
+  \  at that point function should return True. Otherwise it should return False.\n    >>> below_zero([1,\
+  \ 2, 3])\n    False\n    >>> below_zero([1, 2, -4, 5])\n    True\n    \"\"\"\n    balance = 0\n\n  \
+  \  for op in operations:\n        balance += op\n        if balance < 0:\n            return True\n\n\
+  \    return False\n```\n\nReturn only the code."
+assert:
+  checks:
+  - any_account_below_zero([[1, 2, 3], [4, 5, 6]]) == False
+  - any_account_below_zero([[1, 2, -4, 5], [1, 2, 3]]) == True
+  - any_account_below_zero([[1, 2, 3], [1, -2, 3]]) == True
+  - any_account_below_zero([[1, 2, 3], [1, 2, 3]]) == False
+attribution:
+  dataset: HumanEval Pro (CodeEval-Pro, Yu et al. 2024)
+  url: https://huggingface.co/datasets/CodeEval-Pro/humaneval-pro
+  license: MIT
+  source: hf:CodeEval-Pro/humaneval-pro
+  split: train
+  item: '3'
+  revision: cd078f93d57d1902b5c3e4ae330166b2ca0e0e80
+  label: the dataset's own assert tests, run as checks

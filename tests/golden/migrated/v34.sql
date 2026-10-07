@@ -3,6 +3,10 @@ table adoptions [('id', 'INTEGER', 0, None, 1), ('lane', 'TEXT', 1, None, 0), ('
   index sqlite_autoindex_adoptions_1 unique=1 ['verdict_id']
   (1, 'code', 1, 2, 1, 14, 1, 'measured', 1789039200.0)
   (2, 'svg', 7, None, None, 21, 2, 'by-hand', 1789824000.0)
+table benchmarks [('id', 'INTEGER', 0, None, 1), ('name', 'TEXT', 1, None, 0), ('lane', 'TEXT', 1, None, 0), ('registry', 'TEXT', 1, "''", 0), ('url', 'TEXT', 1, "''", 0), ('license', 'TEXT', 1, "''", 0), ('gated', 'TEXT', 1, "''", 0), ('created', 'TEXT', 1, "''", 0), ('updated', 'TEXT', 1, "''", 0), ('size', 'TEXT', 1, "''", 0), ('rows', 'INTEGER', 1, '0', 0), ('task_format', 'TEXT', 1, "''", 0), ('revision', 'TEXT', 1, "''", 0), ('likes', 'INTEGER', 1, '0', 0), ('downloads', 'INTEGER', 1, '0', 0), ('description', 'TEXT', 1, "''", 0), ('first_seen', 'REAL', 1, None, 0), ('last_seen', 'REAL', 1, None, 0)]
+  index sqlite_autoindex_benchmarks_1 unique=1 ['name', 'lane']
+table candidate_training [('id', 'INTEGER', 0, None, 1), ('candidate', 'TEXT', 1, None, 0), ('alias', 'TEXT', 1, "''", 0), ('lane', 'TEXT', 1, "''", 0), ('cutoff', 'TEXT', 1, "''", 0), ('cutoff_source', 'TEXT', 1, "''", 0), ('datasets', 'TEXT', 1, "'[]'", 0), ('read_at', 'REAL', 1, None, 0)]
+  index sqlite_autoindex_candidate_training_1 unique=1 ['candidate']
 table candidates [('id', 'INTEGER', 0, None, 1), ('proposal_id', 'INTEGER', 0, None, 0), ('spec', 'TEXT', 1, None, 0), ('receipt_key', 'TEXT', 1, None, 0), ('lane', 'TEXT', 1, "''", 0), ('created_at', 'REAL', 1, None, 0)]
   index ix_cand_key unique=0 ['receipt_key']
   index ix_cand_prop unique=0 ['proposal_id']
@@ -15,6 +19,8 @@ table candidates [('id', 'INTEGER', 0, None, 1), ('proposal_id', 'INTEGER', 0, N
   (6, None, 'kokoro', 'kokoro', 'tts', 1788960000.0)
   (7, 12, 'mlx:org-l/svg-thing', 'svg-thing', 'svg', 1788960000.0)
   (8, None, 'local-large', 'local-large', 'svg', 1788960000.0)
+table contamination_probes [('id', 'INTEGER', 0, None, 1), ('model', 'TEXT', 1, None, 0), ('lane', 'TEXT', 1, "''", 0), ('case_id', 'TEXT', 1, None, 0), ('family', 'TEXT', 1, "''", 0), ('outcome', 'TEXT', 1, None, 0), ('overlap', 'REAL', 0, None, 0), ('detail', 'TEXT', 1, "''", 0), ('at', 'REAL', 1, None, 0)]
+  index ix_probes_model unique=0 ['model', 'lane']
 table downloads [('id', 'INTEGER', 0, None, 1), ('proposal_id', 'INTEGER', 0, None, 0), ('repo', 'TEXT', 1, "''", 0), ('kind', 'TEXT', 1, None, 0), ('path', 'TEXT', 1, None, 0), ('file', 'TEXT', 1, "''", 0), ('origin', 'TEXT', 1, "''", 0), ('source', 'TEXT', 1, "''", 0), ('bytes', 'INTEGER', 1, '0', 0), ('files', 'INTEGER', 1, '0', 0), ('complete', 'INTEGER', 1, '0', 0), ('requires', 'TEXT', 1, "'[]'", 0), ('started_at', 'REAL', 0, None, 0), ('finished_at', 'REAL', 0, None, 0), ('removed_at', 'REAL', 0, None, 0), ('removed_by', 'TEXT', 1, "''", 0), ('removal_verdict_id', 'INTEGER', 0, None, 0), ('machine_id', 'INTEGER', 0, None, 0), ('ctx', 'INTEGER', 1, '0', 0), ('ctx_trained', 'INTEGER', 1, '0', 0), ('kv_bytes_token', 'INTEGER', 1, '0', 0), ('ctx_slots', 'INTEGER', 1, '0', 0), ('ctx_why', 'TEXT', 1, "''", 0), ('ctx_at', 'REAL', 0, None, 0), ('kv_cap_bytes', 'INTEGER', 1, '0', 0), ('coresident_bytes', 'INTEGER', 1, '0', 0)]
   index ix_downloads_path unique=0 ['path']
   index ix_downloads_repo unique=0 ['repo']
@@ -61,7 +67,7 @@ table memory_limits [('id', 'INTEGER', 0, None, 1), ('machine_id', 'INTEGER', 1,
 table meta [('key', 'TEXT', 0, None, 1), ('value', 'TEXT', 0, None, 0)]
   index sqlite_autoindex_meta_1 unique=1 ['key']
   ('artifact_split', '{"code": {"missing": 4, "none": 2, "path": 0, "resolved": 0, "text": 4}, "image": {"missing": 0, "none": 2, "path": 2, "resolved": 0, "text": 0}, "tts": {"missing": 0, "none": 0, "path": 4, "resolved": 0, "text": 0}}')
-  ('schema', '47')
+  ('schema', '48')
 table proposals [('id', 'INTEGER', 0, None, 1), ('name', 'TEXT', 1, None, 0), ('kind', 'TEXT', 1, "'candidate'", 0), ('registry', 'TEXT', 1, "''", 0), ('description', 'TEXT', 1, "''", 0), ('lane', 'TEXT', 1, "''", 0), ('resolved', 'TEXT', 1, "''", 0), ('first_seen', 'REAL', 1, None, 0), ('last_seen', 'REAL', 1, None, 0), ('state', 'TEXT', 1, "''", 0), ('state_verdict_id', 'INTEGER', 0, None, 0), ('retest_count', 'INTEGER', 1, '0', 0), ('next_retest_at', 'REAL', 0, None, 0), ('size_bytes', 'INTEGER', 1, '0', 0), ('hf_task', 'TEXT', 1, "''", 0), ('library', 'TEXT', 1, "''", 0), ('card_tags', 'TEXT', 1, "'[]'", 0), ('attaches_to', 'TEXT', 1, "''", 0), ('runtime_needed', 'TEXT', 1, "''", 0), ('lane_source', 'TEXT', 1, "''", 0), ('card_read', 'TEXT', 1, "''", 0)]
   index ix_prop_state unique=0 ['state']
   index sqlite_autoindex_proposals_1 unique=1 ['name']

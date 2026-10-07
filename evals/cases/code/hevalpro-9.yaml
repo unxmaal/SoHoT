@@ -1,0 +1,31 @@
+# HumanEval Pro (CodeEval-Pro, Yu et al. 2024), MIT (https://huggingface.co/datasets/CodeEval-Pro/humaneval-pro).
+# Imported by evals/benchmark_import.py from hf:CodeEval-Pro/humaneval-pro@cd078f93d57d1902b5c3e4ae330166b2ca0e0e80; re-import, do not edit.
+id: hevalpro-9
+modality: code
+prompt: "Write a Python function `rolling_max_across_lists(list_of_lists: List[List[int]])`. Given a list\
+  \ of lists of integers, generate a list of lists where each sublist contains the rolling maximum elements\
+  \ for the corresponding sublist in the input. Additionally, find the maximum element across all sublists\
+  \ at each rolling position and return this as a single list.\n\nBuild it on this helper, and include\
+  \ the helper unchanged in your answer:\n\n```python\nfrom typing import List, Tuple\n\n\ndef rolling_max(numbers:\
+  \ List[int]) -> List[int]:\n    \"\"\" From a given list of integers, generate a list of rolling maximum\
+  \ element found until given moment\n    in the sequence.\n    >>> rolling_max([1, 2, 3, 2, 3, 4, 2])\n\
+  \    [1, 2, 3, 3, 3, 4, 4]\n    \"\"\"\n    running_max = None\n    result = []\n\n    for n in numbers:\n\
+  \        if running_max is None:\n            running_max = n\n        else:\n            running_max\
+  \ = max(running_max, n)\n\n        result.append(running_max)\n\n    return result\n```\n\nReturn only\
+  \ the code."
+assert:
+  checks:
+  - rolling_max_across_lists([[1, 2, 3, 2, 3, 4, 2], [5, 6, 2, 8, 3, 1, 9]]) == ([[1, 2, 3, 3, 3, 4, 4],
+    [5, 6, 6, 8, 8, 8, 9]], [5, 6, 6, 8, 8, 8, 9])
+  - rolling_max_across_lists([[4, 3, 2, 1], [1, 2, 3, 4]]) == ([[4, 4, 4, 4], [1, 2, 3, 4]], [4, 4, 4,
+    4])
+  - rolling_max_across_lists([[1], [1]]) == ([[1], [1]], [1])
+attribution:
+  dataset: HumanEval Pro (CodeEval-Pro, Yu et al. 2024)
+  url: https://huggingface.co/datasets/CodeEval-Pro/humaneval-pro
+  license: MIT
+  source: hf:CodeEval-Pro/humaneval-pro
+  split: train
+  item: '9'
+  revision: cd078f93d57d1902b5c3e4ae330166b2ca0e0e80
+  label: the dataset's own assert tests, run as checks

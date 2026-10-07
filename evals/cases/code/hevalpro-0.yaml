@@ -1,0 +1,29 @@
+# HumanEval Pro (CodeEval-Pro, Yu et al. 2024), MIT (https://huggingface.co/datasets/CodeEval-Pro/humaneval-pro).
+# Imported by evals/benchmark_import.py from hf:CodeEval-Pro/humaneval-pro@cd078f93d57d1902b5c3e4ae330166b2ca0e0e80; re-import, do not edit.
+id: hevalpro-0
+modality: code
+prompt: "Write a Python function `find_close_elements_lists(list_of_lists: List[List[float]], threshold:\
+  \ float)`. Given a list of lists of floats, determine if there exists any list where at least two numbers\
+  \ are closer to each other than a given threshold. If such a list exists, return the indices of the\
+  \ lists where this condition is met. If no such list exists, return an empty list.\n\nBuild it on this\
+  \ helper, and include the helper unchanged in your answer:\n\n```python\nfrom typing import List\n\n\
+  \ndef has_close_elements(numbers: List[float], threshold: float) -> bool:\n    \"\"\" Check if in given\
+  \ list of numbers, are any two numbers closer to each other than\n    given threshold.\n    >>> has_close_elements([1.0,\
+  \ 2.0, 3.0], 0.5)\n    False\n    >>> has_close_elements([1.0, 2.8, 3.0, 4.0, 5.0, 2.0], 0.3)\n    True\n\
+  \    \"\"\"\n    for idx, elem in enumerate(numbers):\n        for idx2, elem2 in enumerate(numbers):\n\
+  \            if idx != idx2:\n                distance = abs(elem - elem2)\n                if distance\
+  \ < threshold:\n                    return True\n\n    return False\n```\n\nReturn only the code."
+assert:
+  checks:
+  - find_close_elements_lists([[1.0, 2.0, 3.0], [1.0, 2.8, 3.0, 4.0, 5.0, 2.0]], 0.5) == [1]
+  - find_close_elements_lists([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], 0.3) == []
+  - find_close_elements_lists([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], 0.5) == []
+attribution:
+  dataset: HumanEval Pro (CodeEval-Pro, Yu et al. 2024)
+  url: https://huggingface.co/datasets/CodeEval-Pro/humaneval-pro
+  license: MIT
+  source: hf:CodeEval-Pro/humaneval-pro
+  split: train
+  item: '0'
+  revision: cd078f93d57d1902b5c3e4ae330166b2ca0e0e80
+  label: the dataset's own assert tests, run as checks

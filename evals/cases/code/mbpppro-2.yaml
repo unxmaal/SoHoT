@@ -1,0 +1,28 @@
+# MBPP Pro (CodeEval-Pro, Yu et al. 2024), MIT (https://huggingface.co/datasets/CodeEval-Pro/mbpp-pro).
+# Imported by evals/benchmark_import.py from hf:CodeEval-Pro/mbpp-pro@50f18448e09a8383226e1a5cd3654d2a454fe333; re-import, do not edit.
+id: mbpppro-2
+modality: code
+prompt: "Write a Python function `find_n_largest_from_lists(lists: list, n: int)`. Given a list of lists,\
+  \ where each sublist contains integers, write a function to find the n largest integers from each sublist\
+  \ and return them in a single list, sorted in descending order.\n\nBuild it on this helper, and include\
+  \ the helper unchanged in your answer:\n\n```python\n# Write a function to find the n largest integers\
+  \ from a given list of numbers, returned in descending order.\nimport heapq as hq\ndef heap_queue_largest(nums:\
+  \ list,n: int) -> list:\n  largest_nums = hq.nlargest(n, nums)\n  return largest_nums\n```\n\nReturn\
+  \ only the code."
+assert:
+  checks:
+  - find_n_largest_from_lists([[4, 5, 1, 3], [13, 27, 18, 26], [32, 35, 37, 39], [1000, 1001, 857, 1]],
+    2) == [1001, 1000, 39, 37, 27, 26, 5, 4]
+  - find_n_largest_from_lists([[4, 5, 1, 3], [13, 27, 18, 26], [32, 35, 37, 39], [1000, 1001, 857, 1]],
+    1) == [1001, 39, 27, 5]
+  - find_n_largest_from_lists([[4, 5, 1, 3], [13, 27, 18, 26], [32, 35, 37, 39], [1000, 1001, 857, 1]],
+    3) == [1001, 1000, 857, 39, 37, 35, 27, 26, 18, 5, 4, 3]
+attribution:
+  dataset: MBPP Pro (CodeEval-Pro, Yu et al. 2024)
+  url: https://huggingface.co/datasets/CodeEval-Pro/mbpp-pro
+  license: MIT
+  source: hf:CodeEval-Pro/mbpp-pro
+  split: train
+  item: '2'
+  revision: 50f18448e09a8383226e1a5cd3654d2a454fe333
+  label: the dataset's own assert tests, run as checks
