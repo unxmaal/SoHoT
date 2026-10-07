@@ -206,7 +206,8 @@ def _delegated(call, *args, **kw) -> dict:
     "that answered, time to first token and total seconds. Good for "
     "boilerplate, test scaffolding, summaries and bulk rewriting; it sees only "
     "the prompt you pass. `system` replaces the lane's own system prompt. "
-    "Refuses rather than waits when the machine is busy with a batch run."))
+    "While a batch run holds the machine it answers only if the model is "
+    "already loaded; otherwise it refuses rather than waits."))
 def local_complete(prompt: str, lane: str = "code", system: str | None = None,
                    max_tokens: int = 2048,
                    temperature: float | None = None) -> LocalCompletion:
