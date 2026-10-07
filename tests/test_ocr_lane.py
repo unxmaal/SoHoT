@@ -17,8 +17,10 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def _load():
+    here = ROOT / "evals" / "cases" / "ocr"
     try:
-        return load_cases(ROOT / "evals" / "cases" / "ocr")
+        # The hand-rendered fixtures; generated sets are tested in test_generated_cases.
+        return [c for c in load_cases(here) if c.source.parent == here]
     except ValueError:
         return []
 

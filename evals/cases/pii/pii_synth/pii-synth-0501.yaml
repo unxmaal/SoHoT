@@ -1,0 +1,22 @@
+# SoHoT generated pii cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/pii_synth.py).
+# Imported by evals/importers from generated:evals.importers.pii_synth v1 seed 603@959cd8e8af9c99a028fe12e3671a33c92426fb67; re-import, do not edit.
+id: pii-synth-0501
+modality: pii
+prompt: Server 203.0.113.144 logged error 3347 during build 2.1.4.
+assert:
+  pii:
+  - 203.0.113.144
+attribution:
+  dataset: SoHoT generated pii cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/pii_synth.py
+  license: generated
+  source: generated:evals.importers.pii_synth v1 seed 603
+  revision: 959cd8e8af9c99a028fe12e3671a33c92426fb67
+  item: '501'
+  date: ''
+  transform: a template filled with fake values, each labelled
+  importer: evals.importers.pii_synth
+  version: '1'
+  seed: 603
+  kinds:
+  - ip

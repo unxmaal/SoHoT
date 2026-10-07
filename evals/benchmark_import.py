@@ -19,8 +19,9 @@ GROUP = 4
 PAGE_CHARS = 1500
 MARK = "Imported by evals/benchmark_import.py"
 #: Licenses that allow use with attribution; anything else is not imported.
+#: "generated" is this project's own seeded output, with no third-party data in it.
 ALLOWED_LICENSES = {"MIT", "Apache-2.0", "CC BY 4.0", "CC BY-SA 4.0", "CC0 1.0",
-                    "BSD-3-Clause"}
+                    "BSD-3-Clause", "generated"}
 
 
 @dataclass(frozen=True)

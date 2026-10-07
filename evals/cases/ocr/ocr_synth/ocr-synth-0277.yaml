@@ -1,0 +1,27 @@
+# SoHoT generated ocr cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/ocr_synth.py).
+# Imported by evals/importers from generated:evals.importers.ocr_synth v1 seed 603@db45e0e8a83be28683d4f039e742c663ce08a97e; re-import, do not edit.
+id: ocr-synth-0277
+modality: ocr
+prompt: Transcribe all of the text in this image exactly, line by line.
+input_file: images/ocr-synth-0277.png
+assert:
+  text: 'Total due: $1415.99
+
+    GATE R07'
+  max_cer: 0.1
+attribution:
+  dataset: SoHoT generated ocr cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/ocr_synth.py
+  license: generated
+  source: generated:evals.importers.ocr_synth v1 seed 603
+  revision: db45e0e8a83be28683d4f039e742c663ce08a97e
+  item: '277'
+  date: ''
+  transform: rendered with Pillow's bundled font, narrow, 28px, degraded skew
+  importer: evals.importers.ocr_synth
+  version: '1'
+  seed: 603
+  kind: invoice
+  style: narrow
+  size: 28
+  degrade: skew
