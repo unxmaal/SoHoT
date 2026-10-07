@@ -2038,7 +2038,7 @@ with the command to run by hand,
 the downloads table. ds4's own `download_model.sh` is not used.
 
 **Memory.** Inspect sizes a ds4 file by what it keeps resident: the file less
-the tables ds4 reads from disk on demand. Per ds4's docs/MODELS.md at `DS4_REV`
+the tables ds4 reads from disk on demand. Per ds4's model guide at `DS4_REV`
 (read 2026-10-07), Qwen3.8 Flash Next Q2 is a 137.10 GiB file of which 41.73 GiB
 is main and MTP weights and 95.37 GiB is BF16 n-grams that never load, so on the
 M5 Ultra (96 GB, 66 GiB ceiling) it fits where a file-size check refused it.
