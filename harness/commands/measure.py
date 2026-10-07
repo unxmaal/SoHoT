@@ -336,6 +336,11 @@ def _plan(a, lane: str, inc_spec: str):
           f"case(s) gives {plan.power:.2f} to detect +{plan.effect:.2f} at "
           f"alpha {plan.alpha}{'; ' + plan.why if plan.why else ''}"
           f"{'; ' + split.caveat if split.caveat else ''}", flush=True)
+    missing = power.unmeasured(draws, split.holdout)
+    if missing:
+        print(f"    projected: {len(missing)} of {len(split.holdout)} holdout "
+              f"unmeasured, drawn from the incumbent's measured per-case rates",
+              flush=True)
     return split, plan
 
 

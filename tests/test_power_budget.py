@@ -317,3 +317,89 @@ def test_adopt_power_reads_receipts_and_speaks_json(tmp_path, capsys, monkeypatc
 def test_adopt_still_needs_a_challenger_without_power(capsys):
     from harness import cli
     assert cli.main(["adopt", "--lane", "code"]) == 1
+
+
+# --- unseen holdout cases are projected from the measured distribution (#608) ---
+
+def test_an_unseen_case_is_drawn_from_the_measured_rates_not_the_pooled_one():
+    """Measured cases sit at 0 and 1; a pooled 0.5 would credit every unseen case with room both ways."""
+    draws = {"a": [1, 1], "b": [0, 0]}
+    rates, seen = power.rates_from(draws, ["a", "b", "c", "d"])
+    assert rates["a"] == 1.0 and rates["b"] == 0.0
+    assert sorted([rates["c"], rates["d"]]) == [0.0, 1.0]
+    assert seen == 4
+
+
+def test_unseen_cases_follow_the_measured_distribution_in_proportion():
+    draws = {f"s{i}": [1] * 3 if i < 6 else [0] * 3 for i in range(8)}
+    unseen = [f"u{i}" for i in range(40)]
+    rates, _ = power.rates_from(draws, unseen)
+    assert sum(rates[u] for u in unseen) == 30
+
+
+def test_a_bimodal_lane_projects_the_power_of_its_measured_cases_not_of_their_mean():
+    draws = {f"s{i}": [1] * 3 if i % 4 else [0] * 3 for i in range(20)}
+    ids = list(draws) + [f"u{i}" for i in range(60)]
+    rates, _ = power.rates_from(draws, ids)
+    projected = power.power([rates[c] for c in ids], 0.2, 3, rho=1.0)
+    pooled = power.power([0.75] * len(ids), 0.2, 3, rho=1.0)
+    same_shape = power.power([1.0] * 60 + [0.0] * 20, 0.2, 3, rho=1.0)
+    assert projected == pytest.approx(same_shape)
+    assert projected < pooled
+
+
+def test_negative_control_a_lane_measured_all_passing_projects_no_power():
+    draws = {f"s{i}": [1, 1, 1] for i in range(10)}
+    ids = list(draws) + [f"u{i}" for i in range(100)]
+    rates, _ = power.rates_from(draws, ids)
+    assert all(rates[c] == 1.0 for c in ids)
+    assert power.power([rates[c] for c in ids], 0.2, 3, rho=0.0) == 0.0
+    assert power.plan([rates[c] for c in ids], 0.2, rho=0.0).cases_needed is None
+
+
+def test_with_nothing_measured_every_case_takes_the_unseen_prior():
+    rates, seen = power.rates_from({}, ["a", "b"])
+    assert rates == {"a": power.UNSEEN, "b": power.UNSEEN} and seen == 0
+
+
+def test_unmeasured_lists_the_cases_with_no_draws():
+    assert power.unmeasured({"a": [1], "b": []}, ["a", "b", "c"]) == ["b", "c"]
+
+
+def test_adopt_power_labels_the_projection_and_reports_the_measured_power(
+        tmp_path, capsys, monkeypatch):
+    from harness import cli, holdout
+    monkeypatch.setattr(adopt, "default_for", lambda lane, fallback, *a, **k: "inc")
+    ids = holdout.for_lane("code").holdout
+    measured = ids[:6]
+    rows = [{"case_id": f"{c}#{k}", "candidate": "inc", "passed": i % 2 == 0,
+             "seconds": 2.0} for i, c in enumerate(measured) for k in (1, 2, 3)]
+    receipt = tmp_path / "results.json"
+    receipt.write_text(json.dumps({"receipt": {"modality": "code"}, "rows": rows}),
+                       encoding="utf-8")
+    assert cli.main(["adopt", "--json", "--power", "--lane", "code",
+                     "--receipt", str(receipt)]) == 0
+    out = capsys.readouterr()
+    row = json.loads(out.out)["lanes"][0]
+    assert row["unmeasured"] == len(ids) - 6
+    assert row["measured"] == 6
+    assert row["power_measured"] == pytest.approx(
+        power.power([1.0, 0.0] * 3, row["effect"], row["repeat"], rho=row["rho"]), abs=1e-4)
+    assert f"{len(ids) - 6} of {len(ids)} holdout unmeasured" in out.err
+
+
+def test_adopt_power_with_every_holdout_case_measured_says_nothing_is_projected(
+        tmp_path, capsys, monkeypatch):
+    from harness import cli, holdout
+    monkeypatch.setattr(adopt, "default_for", lambda lane, fallback, *a, **k: "inc")
+    ids = holdout.for_lane("code").holdout
+    rows = [{"case_id": f"{c}#{k}", "candidate": "inc", "passed": i % 2 == 0,
+             "seconds": 2.0} for i, c in enumerate(ids) for k in (1, 2)]
+    receipt = tmp_path / "results.json"
+    receipt.write_text(json.dumps({"receipt": {"modality": "code"}, "rows": rows}),
+                       encoding="utf-8")
+    assert cli.main(["adopt", "--json", "--power", "--lane", "code",
+                     "--receipt", str(receipt)]) == 0
+    row = json.loads(capsys.readouterr().out)["lanes"][0]
+    assert row["unmeasured"] == 0
+    assert row["power_measured"] == pytest.approx(row["power"])
