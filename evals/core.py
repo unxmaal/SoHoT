@@ -60,6 +60,8 @@ class Case:
     #: Checks applied to whatever came back.
     assertions: dict = field(default_factory=dict)
     source: Path | None = None
+    #: A file the candidate reads, resolved beside the case: the ocr lane's image. #562.
+    input_file: Path | None = None
 
 
 def _check_image(artifact, case: Case, adherence: str | None = None,
@@ -275,6 +277,23 @@ def _check_decide(artifact, case: Case) -> CheckResult:
                               case.assertions["answers"])
 
 
+def _check_ocr(artifact, case: Case) -> CheckResult:
+    """Character error rate of the transcription against the reference. #562."""
+    if isinstance(artifact, Path):
+        if not artifact.exists():
+            return CheckResult(False, f"engine left no output at {artifact.name}")
+        artifact = artifact.read_text(encoding="utf-8")
+    errors, chars = ocr_check.text_cer(case.assertions["text"], str(artifact or ""))
+    rate = min(1.0, errors / chars) if chars else 1.0
+    limit = case.assertions.get("max_cer", ocr_check.DEFAULT_MAX_CER)
+    out = CheckResult(rate <= limit, "")
+    out.metrics = {"cer": round(rate, 4), "cer_errors": errors, "cer_chars": chars}
+    if not out.ok:
+        out.reason = (f"character error rate {rate:.2f} over the limit of {limit}; "
+                      f"read {str(artifact).strip()[:80]!r}")
+    return out
+
+
 def _check_agent(artifact, case: Case) -> CheckResult:
     """The runner graded the sandbox before deleting it; this reads its verdict. #474."""
     try:
@@ -293,6 +312,7 @@ def _check_agent(artifact, case: Case) -> CheckResult:
 CHECKERS = {
     "agent": lambda a, c, **kw: _check_agent(a, c),
     "decide": lambda a, c, **kw: _check_decide(a, c),
+    "ocr": lambda a, c, **kw: _check_ocr(a, c),
     "svg": lambda a, c, **kw: _check_svg(a, c),
     "music": _check_music,
     "web": lambda a, c, **kw: _check_web(a, c),
@@ -443,7 +463,8 @@ ASSERTION_KEYS = {"svg": TEXT_ASSERTIONS, "web": TEXT_ASSERTIONS,
                   # both a capability check and the lane's own ceiling control.
                   "music": {"max_wer", "expect_vocals", "duration_s"},
                   "decide": {"answers"},
-                  "agent": {"answer", "hidden"}}
+                  "agent": {"answer", "hidden"},
+                  "ocr": {"text", "max_cer"}}
 
 
 #: Lanes whose runner returns text rather than a file.
@@ -453,6 +474,8 @@ MEDIA_MODALITIES = {"image", "video", "tts", "music"}
 #: The suffix a text lane's output is written to the run dir under.
 TEXT_SUFFIX = {"svg": ".svg", "web": ".html", "code": ".py", "decide": ".json",
                "agent": ".json"}
+#: Lanes whose case hands the candidate a file to read through input_file. #562.
+INPUT_MODALITIES = {"ocr"}
 #: Lanes whose runner drives a tool loop over a sandboxed repo. #474.
 AGENT_MODALITIES = {"agent"}
 
@@ -634,6 +657,10 @@ def _digest_parts(h, c) -> None:
                  json.dumps(dict(c.assertions), sort_keys=True, default=str)):
         h.update(str(part).encode("utf-8"))
         h.update(b"\x00")
+    # The input's bytes, not its path: a moved image asks the same question. #562.
+    source = getattr(c, "input_file", None)
+    if source is not None and Path(source).is_file():
+        h.update(hashlib.sha256(Path(source).read_bytes()).digest())
 
 
 def case_digest(case) -> str:
@@ -746,6 +773,7 @@ def load_cases(directory: str | Path) -> list[Case]:
                 f"(known: {', '.join(sorted(MODALITIES))})")
         context = _load_context(path, raw)
         audio = _load_audio(path, raw, modality)
+        input_file = _load_input(path, raw, modality)
         params = raw.get("params") or {}
         assertions = raw.get("assert") or {}
         if modality == "code" and not assertions.get("checks"):
@@ -765,9 +793,11 @@ def load_cases(directory: str | Path) -> list[Case]:
             prompt = f"{prompt.rstrip()}\n\n{decide_check.render(params['schema'])}"
         if modality == "agent":
             params = {**params, **_agent_params(path, params, assertions)}
+        if modality == "ocr" and not str(assertions.get("text") or "").strip():
+            raise ValueError(f"{path.name}: an ocr case needs assert.text, the reference")
         cases.append(Case(id=raw["id"], modality=modality, prompt=prompt,
                           context=context, audio=audio, params=params,
-                          assertions=assertions, source=path,
+                          assertions=assertions, source=path, input_file=input_file,
                           language=raw.get("language") or "en",
                           methods=tuple(raw.get("methods") or ())))
     return cases
@@ -828,6 +858,19 @@ def _load_audio(path: Path, raw: dict, modality: str) -> Path | None:
         source = path.parent / filename
     if not source.exists():
         raise ValueError(f"{path.name}: audio_file '{filename}' not found")
+    return source
+
+
+def _load_input(path: Path, raw: dict, modality: str) -> Path | None:
+    """`input_file:`, resolved beside the case; required where the lane reads one. #562."""
+    filename = raw.get("input_file")
+    if not filename:
+        if modality in INPUT_MODALITIES:
+            raise ValueError(f"{path.name}: an {modality} case needs input_file")
+        return None
+    source = path.parent / filename
+    if not source.is_file():
+        raise ValueError(f"{path.name}: input_file '{filename}' not found beside the case")
     return source
 
 
@@ -1050,7 +1093,8 @@ def _gather_metrics(rows: list[Result]) -> dict[str, list[float]]:
 RATIO_METRICS = {"wer": ("wer_errors", "wer_words"),
                  "agent_valid_call_rate": ("agent_valid_calls", "agent_tool_calls"),
                  "decide_accuracy": ("decide_correct", "decide_fields"),
-                 "decide_brier": ("decide_brier_sum", "decide_fields")}
+                 "decide_brier": ("decide_brier_sum", "decide_fields"),
+                 "cer": ("cer_errors", "cer_chars")}
 #: Bookkeeping that should not appear as a column of its own.
 _COMPANIONS = {name for pair in RATIO_METRICS.values() for name in pair}
 

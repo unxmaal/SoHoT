@@ -88,7 +88,9 @@ _GATEWAY = ("invalid model name", "gateway returned http 400",
             "is the gateway up", "connection refused")
 _HARNESS = ("no cases of a modality it can run", "no candidate matched any case",
             "no module named", "error while finding module specification",
-            "command not found", "guidance_scale has to be")
+            "command not found", "guidance_scale has to be",
+            # A package our hf-task venv lacks, not the model. #562.
+            "installed to convert a slow tokenizer")
 #: In stderr this is our missing script; in a loader's error it is the snapshot's.
 _ABOUT_THE_SNAPSHOT = ("no such file or directory",
                        "does not appear to have a file named")
@@ -97,7 +99,9 @@ _ARCHITECTURE_GAPS = ("model type", "modelargs", "parameters not in model",
                       "required positional argument")
 _LLAMACPP_LOAD_FAILED = ("http 500", "failed to load")
 _DIFFUSERS_LAYOUT_GAPS = ("can't find a pipeline linked to", "were passed")
-_ENGINE_HEADS = ("mflux", "diffusers", "diffusers-video", "acestep")
+_ENGINE_HEADS = ("mflux", "diffusers", "diffusers-video", "acestep", "hf-ocr")
+#: A repo whose modelling code is its own: hf-task never executes it. #562.
+_REMOTE_CODE = ("trust_remote_code",)
 #: The audio server (mlx-audio) answers 500 when it cannot build the model.
 _AUDIO_HEADS = ("tts", "stt")
 _AUDIO_LOAD_FAILED = ("failed to load model",)
@@ -130,7 +134,7 @@ def classify(text: str, where: str = RUNNER, candidate: str = "") -> str:
         return HARNESS_ERROR
     if where == STDERR:
         return HARNESS_ERROR if _any(low, _ABOUT_THE_SNAPSHOT) else ""
-    if _any(low, _DIFFUSERS_LAYOUT_GAPS):
+    if _any(low, _DIFFUSERS_LAYOUT_GAPS) or _any(low, _REMOTE_CODE):
         return LOAD_FAILED_LAYOUT
     if _any(low, _ABOUT_THE_SNAPSHOT):
         return MISSING_FILE_IN_SNAPSHOT

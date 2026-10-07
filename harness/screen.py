@@ -62,6 +62,8 @@ LANE_CANDIDATES = {
     # A full model is a text candidate; a peft adapter goes to the engine its
     # card names (engines.adapter_engine): nimble or decider. #423, #467.
     "decide": ("{model}", "nimble:{model}", "decider:{model}"),
+    # The OS reader is the incumbent, spelled `osocr:auto`; a discovered model is transformers. #562.
+    "ocr": ("hf-ocr:{model}",),
     "stt": ("stt:{model}",),
     "tts": ("tts:{model}",),
     **{lane: ("{model}",) for lane in lanes.TEXT_SERVED},
@@ -433,7 +435,8 @@ def why_nothing_passed(summary: dict | None, candidate: str,
 ENGINE_RUNTIMES = {"mflux": "mflux", "diffusers": "diffusers",
                    "diffusers-video": "diffusers", "acestep": "ace-step",
                    # The audio server's runtime, as scripts/versions.sh pins it. #408.
-                   "tts": "mlx-audio", "stt": "mlx-audio"}
+                   "tts": "mlx-audio", "stt": "mlx-audio",
+                   "hf-ocr": "transformers"}
 LOAD_RUNTIME = "mlx-lm"
 
 
@@ -463,7 +466,7 @@ def _sentence(cls: str, why: str, limit: str) -> str:
     if cls == reasons.LOAD_FAILED_RUNTIME:
         return f"the installed runtime could not load it{tail}"
     if cls == reasons.LOAD_FAILED_LAYOUT:
-        return f"needs its own runner: stock diffusers could not assemble it{tail}"
+        return f"needs its own runner: the stock loader could not assemble it{tail}"
     if cls == reasons.GPU_FAULT:
         return f"the GPU faulted running it on this machine{tail}"
     if reasons.CLASSES[cls][1] == reasons.LIMIT:

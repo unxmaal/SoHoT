@@ -519,9 +519,10 @@ def _lane_and_last(conn):
     ("m-a-p/YuE2-3B", "tts", "text-to-audio", ["music-generation"], "music"),
     ("OpenMOSS-Team/MOSS-SoundEffect-v2.0", "tts", "text-to-audio",
      ["sound-effects"], ""),
+    # Emptied by schema 40 (#387), then filed under ocr by schema 53 (#562).
     ("PaddlePaddle/PaddleOCR-VL-1.6", "code", "image-text-to-text",
-     ["PaddleOCR", "ocr"], ""),
-    ("JustANormalTinkerer/hayai-ocr-v2", "code", "image-to-text", ["ocr"], ""),
+     ["PaddleOCR", "ocr"], "ocr"),
+    ("JustANormalTinkerer/hayai-ocr-v2", "code", "image-to-text", ["ocr"], "ocr"),
     ("Boogu/Boogu-Image-0.1-Edit", "image", "image-to-image",
      ["image-to-image"], ""),
     ("oumoumad/ltx-2.3-dearchive-lora", "video", "video-to-video", [], ""),

@@ -30,7 +30,8 @@ from __future__ import annotations
 #: Bespoke-Nimble-9B against its baselines, never ranked against the rest. #423.
 #: `agent` is appended the same way: a model as opencode and Claude Code use it,
 #: tool calls over a repo, asked for 2026-10-06. #474.
-WANTED = ("image", "code", "web", "svg", "video", "music", "decide", "agent")
+#: `ocr` is appended the same way: approved 2026-10-07 once three models recurred. #562.
+WANTED = ("image", "code", "web", "svg", "video", "music", "decide", "agent", "ocr")
 
 #: Measured here, and not on the wanted list. `extract` has more cases than any
 #: lane but stt and is a text job; stt and tts have the most measurement
@@ -138,6 +139,7 @@ _PROSE = {
     # audio classifiers say that too.
     "decide": r"\b(typed decisions?|decision models?|structured[- ]prediction|"
               r"text[- ]classif\w+)\b",
+    "ocr": r"\b(ocr|optical character recognition|text recognition)\b",
 }
 
 

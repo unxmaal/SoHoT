@@ -1,0 +1,7 @@
+id: ocr-serial-small
+modality: ocr
+prompt: Transcribe all of the text in this image exactly, line by line.
+input_file: images/serial-small.png
+assert:
+  text: serial no. KX-88213-B
+  max_cer: 0.1

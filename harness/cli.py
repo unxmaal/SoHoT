@@ -116,6 +116,8 @@ DEFAULT_EXTRACT_MODEL = "local-large"
 DEFAULT_DECIDE_MODEL = "q3-4b"
 #: The agent lane starts on the code lane's typed default until it adopts. #474.
 DEFAULT_AGENT_MODEL = DEFAULT_CODE_MODEL
+#: The ocr lane starts on the reader the image lane's text check already trusts. #562.
+DEFAULT_OCR_ENGINE = "osocr:auto"
 
 TEXT_MODEL_HELP = ("gateway alias, mlx repo id or llamacpp:<stem> "
                    "(default: the lane's adopted model, else {})")

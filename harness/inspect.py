@@ -191,6 +191,10 @@ def text_parent(parent: str) -> bool:
 SETTLED_TASKS = (AUDIO_TASK, *NEEDS_AN_INPUT)
 
 
+#: Tasks that read an image into text: OCR when a card tag says so. #562.
+OCR_TASKS = ("image-to-text", "image-text-to-text")
+
+
 def is_ocr(tags) -> bool:
     """Does a card tag name OCR (ocr, manga-ocr, unlimited-ocr)? #387."""
     return any("ocr" in re.split(r"[-_\s:]+", str(t).strip().lower())
@@ -201,11 +205,10 @@ def _settled_lane(task: str, tags: set, name: str) -> tuple[str, str] | None:
     """The #387 answer for a settled task, or None for any other task."""
     if task in ("image-to-image", "image-text-to-image"):
         return ("image", "tag") if tags & TEXT_TO_IMAGE_TAGS else ("", "")
+    # A card naming a lane by tag (svg) outranks its OCR tag. #562.
+    if task in OCR_TASKS and is_ocr(tags) and not tags & set(TAG_LANES):
+        return "ocr", "tag"
     if task in NEEDS_AN_INPUT:
-        return "", ""
-    # A card naming a lane by tag (svg) outranks its OCR tag.
-    if task == "image-text-to-text" and is_ocr(tags) \
-            and not tags & set(TAG_LANES):
         return "", ""
     if task != AUDIO_TASK:
         return None

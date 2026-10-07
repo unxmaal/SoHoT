@@ -1452,6 +1452,36 @@ never reached the server.
     uv run python -m evals.run --modality agent --candidates \
       sohot-code,q3-coder,claude-code:claude-opus-5-5
 
+The ocr lane reads text out of an image. Its eight cases under
+`evals/cases/ocr/` are PNGs rendered by `uv run python -m evals.ocr_corpus`
+(Pillow's bundled font, fixed sizes, one seeded noisy background, one tilted
+label), each with the exact text it was drawn from. A case scores the
+character error rate of the transcription against that text, case-sensitive,
+with line breaks and runs of spaces counted as one space; the lane's figure is
+errors over reference characters across all cases, so a short sign weighs less
+than a long line. A case passes at a CER of 0.1 or less. The negative control
+is pinned in `tests/test_ocr_lane.py`: a reader handed each case's neighbour's
+text fails every case at a CER over 0.5, and the OS reader reads the committed
+images under 0.1, so a miss is the candidate's and not the fixture's.
+
+`osocr:auto` is the incumbent: the reader the image lane's text check already
+uses (Apple Vision here, Windows.Media.Ocr or RapidOCR elsewhere).
+`hf-ocr:<repo>[,prompt=...,max_new_tokens=...,device=...]` runs a
+transformers image-text-to-text or image-to-text model through
+`scripts/hf-task.sh`, which builds its own venv under
+`~/localharness/venvs/hf-task` (torch, transformers, accelerate, safetensors,
+pillow at the pins in `scripts/versions.sh`) on first use and rebuilds it when
+a pin moves. It never passes `trust_remote_code`: a repo that ships its own
+modelling code, such as baidu/Unlimited-OCR or hayai-ocr-v2, fails the screen
+as needing its own runner and is reported under runners wanted.
+PaddleOCR-VL loads through transformers' own class and wants `prompt=OCR:`.
+Discovery files a card under ocr when its task is image-to-text or
+image-text-to-text and a tag names OCR; a captioner without that tag stays
+laneless.
+
+    uv run python -m evals.run --modality ocr --candidates \
+      osocr:auto,hf-ocr:PaddlePaddle/PaddleOCR-VL-1.6,prompt=OCR:
+
 `repair` costs nothing extra, so it is the one to understand. Everything already
 checks its own output. It runs the code it wrote, draws the SVG to see whether
 anything is visible, opens the web page in a browser. All of that was
