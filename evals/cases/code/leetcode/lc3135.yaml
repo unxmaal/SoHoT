@@ -1,0 +1,40 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3135
+modality: code
+prompt: "Given two strings initial and target, your task is to modify initial by performing a series of\
+  \ operations to make it equal to target.\nIn one operation, you can add or remove one character only\
+  \ at the beginning or the end of the string initial.\nReturn the minimum number of operations required\
+  \ to transform initial into target.\n \nExample 1:\n\nInput: initial = \"abcde\", target = \"cdef\"\n\
+  Output: 3\nExplanation:\nRemove 'a' and 'b' from the beginning of initial, then add 'f' to the end.\n\
+  \nExample 2:\n\nInput: initial = \"axxy\", target = \"yabx\"\nOutput: 6\nExplanation:\n\n\n\nOperation\n\
+  Resulting String\n\n\nAdd 'y' to the beginning\n\"yaxxy\"\n\n\nRemove from end\n\"yaxx\"\n\n\nRemove\
+  \ from end\n\"yax\"\n\n\nRemove from end\n\"ya\"\n\n\nAdd 'b' to the end\n\"yab\"\n\n\nAdd 'x' to the\
+  \ end\n\"yabx\"\n\n\n\n\nExample 3:\n\nInput: initial = \"xyz\", target = \"xyz\"\nOutput: 0\nExplanation:\n\
+  No operations are needed as the strings are already equal.\n\n \nConstraints:\n\n1 <= initial.length,\
+  \ target.length <= 1000\ninitial and target consist only of lowercase English letters.\n\nWrite the\
+  \ solution in Python as this class, with any imports it needs:\n\n```python\nclass Solution:\n    def\
+  \ minOperations(self, initial: str, target: str) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().minOperations(initial='hello', target='billion') == 8
+  - Solution().minOperations(initial='aabbcc', target='abc') == 5
+  - Solution().minOperations(initial='aaa', target='aaa') == 0
+  - Solution().minOperations(initial='a', target='b') == 2
+  - Solution().minOperations(initial='hello', target='world') == 8
+  - Solution().minOperations(initial='abcabc', target='abc') == 3
+  - Solution().minOperations(initial='same', target='same') == 0
+  - Solution().minOperations(initial='hello', target='olelh') == 6
+  - Solution().minOperations(initial='abcd', target='dcb') == 5
+  - Solution().minOperations(initial='abc', target='def') == 6
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3135'
+  date: '2024-04-28'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

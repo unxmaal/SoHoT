@@ -1,0 +1,58 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3067
+modality: code
+prompt: "You are given an unrooted weighted tree with n vertices representing servers numbered from 0\
+  \ to n - 1, an array edges where edges[i] = [ai, bi, weighti] represents a bidirectional edge between\
+  \ vertices ai and bi of weight weighti. You are also given an integer signalSpeed.\nTwo servers a and\
+  \ b are connectable through a server c if:\n\na < b, a != c and b != c.\nThe distance from c to a is\
+  \ divisible by signalSpeed.\nThe distance from c to b is divisible by signalSpeed.\nThe path from c\
+  \ to b and the path from c to a do not share any edges.\n\nReturn an integer array count of length n\
+  \ where count[i] is the number of server pairs that are connectable through the server i.\n \nExample\
+  \ 1:\n\n\nInput: edges = [[0,1,1],[1,2,5],[2,3,13],[3,4,9],[4,5,2]], signalSpeed = 1\nOutput: [0,4,6,6,4,0]\n\
+  Explanation: Since signalSpeed is 1, count[c] is equal to the number of pairs of paths that start at\
+  \ c and do not share any edges.\nIn the case of the given path graph, count[c] is equal to the number\
+  \ of servers to the left of c multiplied by the servers to the right of c.\n\nExample 2:\n\n\nInput:\
+  \ edges = [[0,6,3],[6,5,3],[0,3,1],[3,2,7],[3,1,6],[3,4,2]], signalSpeed = 3\nOutput: [2,0,0,0,0,0,2]\n\
+  Explanation: Through server 0, there are 2 pairs of connectable servers: (4, 5) and (4, 6).\nThrough\
+  \ server 6, there are 2 pairs of connectable servers: (4, 5) and (0, 5).\nIt can be shown that no two\
+  \ servers are connectable through servers other than 0 and 6.\n\n \nConstraints:\n\n2 <= n <= 1000\n\
+  edges.length == n - 1\nedges[i].length == 3\n0 <= ai, bi < n\nedges[i] = [ai, bi, weighti]\n1 <= weighti\
+  \ <= 106\n1 <= signalSpeed <= 106\nThe input is generated such that edges represents a valid tree.\n\
+  \nWrite the solution in Python as this class, with any imports it needs:\n\n```python\nclass Solution:\n\
+  \    def countPairsOfConnectableServers(self, edges: List[List[int]], signalSpeed: int) -> List[int]:\n\
+  ```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().countPairsOfConnectableServers(edges=[[0, 1, 1], [1, 2, 1], [2, 3, 1], [3, 4, 1], [4, 5,
+    1], [5, 6, 1], [6, 7, 1], [7, 8, 1], [8, 9, 1]], signalSpeed=1) == [0, 8, 14, 18, 20, 20, 18, 14,
+    8, 0]
+  - Solution().countPairsOfConnectableServers(edges=[[0, 1, 1], [1, 2, 5], [2, 3, 13], [3, 4, 9], [4,
+    5, 2]], signalSpeed=1) == [0, 4, 6, 6, 4, 0]
+  - Solution().countPairsOfConnectableServers(edges=[[0, 1, 5], [1, 2, 10], [2, 3, 15], [3, 4, 20]], signalSpeed=5)
+    == [0, 3, 4, 3, 0]
+  - Solution().countPairsOfConnectableServers(edges=[[0, 1, 2], [0, 2, 3], [1, 3, 4], [1, 4, 5], [2, 5,
+    6], [2, 6, 7]], signalSpeed=1) == [9, 9, 9, 0, 0, 0, 0]
+  - Solution().countPairsOfConnectableServers(edges=[[0, 1, 10], [0, 2, 10], [1, 3, 10], [1, 4, 10], [2,
+    5, 10], [2, 6, 10]], signalSpeed=5) == [9, 9, 9, 0, 0, 0, 0]
+  - Solution().countPairsOfConnectableServers(edges=[[0, 1, 4], [1, 2, 8], [2, 3, 12], [3, 4, 16]], signalSpeed=4)
+    == [0, 3, 4, 3, 0]
+  - Solution().countPairsOfConnectableServers(edges=[[0, 1, 2], [1, 2, 3], [2, 3, 4], [3, 4, 5], [4, 5,
+    6]], signalSpeed=2) == [0, 2, 0, 0, 2, 0]
+  - Solution().countPairsOfConnectableServers(edges=[[0, 1, 1], [0, 2, 2], [0, 3, 3], [1, 4, 4], [1, 5,
+    5], [2, 6, 6], [3, 7, 7]], signalSpeed=1) == [16, 11, 6, 6, 0, 0, 0, 0]
+  - Solution().countPairsOfConnectableServers(edges=[[0, 1, 2], [1, 2, 4], [2, 3, 6], [3, 4, 8]], signalSpeed=2)
+    == [0, 3, 4, 3, 0]
+  - Solution().countPairsOfConnectableServers(edges=[[0, 1, 3], [1, 2, 6], [2, 3, 9], [3, 4, 12], [4,
+    5, 15]], signalSpeed=3) == [0, 4, 6, 6, 4, 0]
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3067'
+  date: '2024-02-25'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

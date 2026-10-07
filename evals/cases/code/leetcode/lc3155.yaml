@@ -1,0 +1,49 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3155
+modality: code
+prompt: "You have n data centers and need to upgrade their servers.\nYou are given four arrays count,\
+  \ upgrade, sell, and money of length n, which show:\n\nThe number of servers\nThe cost of upgrading\
+  \ a single server\nThe money you get by selling a server\nThe money you initially have\n\nfor each data\
+  \ center respectively.\nReturn an array answer, where for each data center, the corresponding element\
+  \ in answer represents the maximum number of servers that can be upgraded.\nNote that the money from\
+  \ one data center cannot be used for another data center.\n \nExample 1:\n\nInput: count = [4,3], upgrade\
+  \ = [3,5], sell = [4,2], money = [8,9]\nOutput: [3,2]\nExplanation:\nFor the first data center, if we\
+  \ sell one server, we'll have 8 + 4 = 12 units of money and we can upgrade the remaining 3 servers.\n\
+  For the second data center, if we sell one server, we'll have 9 + 2 = 11 units of money and we can upgrade\
+  \ the remaining 2 servers.\n\nExample 2:\n\nInput: count = [1], upgrade = [2], sell = [1], money = [1]\n\
+  Output: [0]\n\n \nConstraints:\n\n1 <= count.length == upgrade.length == sell.length == money.length\
+  \ <= 105\n1 <= count[i], upgrade[i], sell[i], money[i] <= 105\n\nWrite the solution in Python as this\
+  \ class, with any imports it needs:\n\n```python\nclass Solution:\n    def maxUpgrades(self, count:\
+  \ List[int], upgrade: List[int], sell: List[int], money: List[int]) -> List[int]:\n```\n\nReturn only\
+  \ the code."
+assert:
+  checks:
+  - Solution().maxUpgrades(count=[100000], upgrade=[100000], sell=[100000], money=[1000000000]) == [55000]
+  - Solution().maxUpgrades(count=[10, 20, 30], upgrade=[5, 4, 3], sell=[1, 2, 3], money=[50, 100, 150])
+    == [10, 20, 30]
+  - Solution().maxUpgrades(count=[10, 20, 30], upgrade=[1, 2, 3], sell=[4, 5, 6], money=[100, 100, 100])
+    == [10, 20, 30]
+  - Solution().maxUpgrades(count=[4, 3], upgrade=[3, 5], sell=[4, 2], money=[8, 9]) == [3, 2]
+  - Solution().maxUpgrades(count=[5, 5, 5], upgrade=[10, 20, 30], sell=[5, 10, 15], money=[100, 100, 100])
+    == [5, 5, 3]
+  - Solution().maxUpgrades(count=[1], upgrade=[2], sell=[1], money=[1]) == [0]
+  - Solution().maxUpgrades(count=[10, 20, 30], upgrade=[5, 10, 15], sell=[1, 2, 3], money=[100, 200, 300])
+    == [10, 20, 21]
+  - Solution().maxUpgrades(count=[10, 20, 30], upgrade=[1, 2, 3], sell=[4, 5, 6], money=[50, 100, 150])
+    == [10, 20, 30]
+  - Solution().maxUpgrades(count=[5, 5, 5], upgrade=[10, 20, 30], sell=[5, 15, 25], money=[100, 150, 200])
+    == [5, 5, 5]
+  - Solution().maxUpgrades(count=[5, 5, 5], upgrade=[1, 2, 3], sell=[3, 2, 1], money=[10, 10, 10]) ==
+    [5, 5, 3]
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3155'
+  date: '2024-05-19'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

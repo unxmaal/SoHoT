@@ -1,0 +1,53 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3096
+modality: code
+prompt: "You are given a binary array possible of length n.\nAlice and Bob are playing a game that consists\
+  \ of n levels. Some of the levels in the game are impossible to clear while others can always be cleared.\
+  \ In particular, if possible[i] == 0, then the ith level is impossible to clear for both the players.\
+  \ A player gains 1 point on clearing a level and loses 1 point if the player fails to clear it.\nAt\
+  \ the start of the game, Alice will play some levels in the given order starting from the 0th level,\
+  \ after which Bob will play for the rest of the levels.\nAlice wants to know the minimum number of levels\
+  \ she should play to gain more points than Bob, if both players play optimally to maximize their points.\n\
+  Return the minimum number of levels Alice should play to gain more points. If this is not possible,\
+  \ return -1.\nNote that each player must play at least 1 level.\n \nExample 1:\n\nInput: possible =\
+  \ [1,0,1,0]\nOutput: 1\nExplanation:\nLet's look at all the levels that Alice can play up to:\n\nIf\
+  \ Alice plays only level 0 and Bob plays the rest of the levels, Alice has 1 point, while Bob has -1\
+  \ + 1 - 1 = -1 point.\nIf Alice plays till level 1 and Bob plays the rest of the levels, Alice has 1\
+  \ - 1 = 0 points, while Bob has 1 - 1 = 0 points.\nIf Alice plays till level 2 and Bob plays the rest\
+  \ of the levels, Alice has 1 - 1 + 1 = 1 point, while Bob has -1 point.\n\nAlice must play a minimum\
+  \ of 1 level to gain more points.\n\nExample 2:\n\nInput: possible = [1,1,1,1,1]\nOutput: 3\nExplanation:\n\
+  Let's look at all the levels that Alice can play up to:\n\nIf Alice plays only level 0 and Bob plays\
+  \ the rest of the levels, Alice has 1 point, while Bob has 4 points.\nIf Alice plays till level 1 and\
+  \ Bob plays the rest of the levels, Alice has 2 points, while Bob has 3 points.\nIf Alice plays till\
+  \ level 2 and Bob plays the rest of the levels, Alice has 3 points, while Bob has 2 points.\nIf Alice\
+  \ plays till level 3 and Bob plays the rest of the levels, Alice has 4 points, while Bob has 1 point.\n\
+  \nAlice must play a minimum of 3 levels to gain more points.\n\nExample 3:\n\nInput: possible = [0,0]\n\
+  Output: -1\nExplanation:\nThe only possible way is for both players to play 1 level each. Alice plays\
+  \ level 0 and loses 1 point. Bob plays level 1 and loses 1 point. As both players have equal points,\
+  \ Alice can't gain more points than Bob.\n\n \nConstraints:\n\n2 <= n == possible.length <= 105\npossible[i]\
+  \ is either 0 or 1.\n\nWrite the solution in Python as this class, with any imports it needs:\n\n```python\n\
+  class Solution:\n    def minimumLevels(self, possible: List[int]) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().minimumLevels(possible=[0, 0, 0, 0, 0, 0, 0, 0, 0, 0]) == 1
+  - Solution().minimumLevels(possible=[0, 0, 0, 0, 1, 1, 1, 1]) == -1
+  - Solution().minimumLevels(possible=[1, 1, 1, 1, 1, 1, 1, 1]) == 5
+  - Solution().minimumLevels(possible=[0, 0, 0, 0, 0, 0, 0, 0]) == 1
+  - Solution().minimumLevels(possible=[1, 0, 1, 0]) == 1
+  - Solution().minimumLevels(possible=[0, 1, 0, 1, 0, 1]) == -1
+  - Solution().minimumLevels(possible=[0, 0]) == -1
+  - Solution().minimumLevels(possible=[1, 1, 0, 1, 0, 1, 0, 1, 0]) == 1
+  - Solution().minimumLevels(possible=[1, 1, 0, 0, 1, 1]) == 2
+  - Solution().minimumLevels(possible=[1, 0, 0, 0, 0, 0, 1]) == 1
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3096'
+  date: '2024-03-24'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

@@ -1,0 +1,43 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3227
+modality: code
+prompt: "Alice and Bob are playing a game on a string.\nYou are given a string s, Alice and Bob will take\
+  \ turns playing the following game where Alice starts first:\n\nOn Alice's turn, she has to remove any\
+  \ non-empty substring from s that contains an odd number of vowels.\nOn Bob's turn, he has to remove\
+  \ any non-empty substring from s that contains an even number of vowels.\n\nThe first player who cannot\
+  \ make a move on their turn loses the game. We assume that both Alice and Bob play optimally.\nReturn\
+  \ true if Alice wins the game, and false otherwise.\nThe English vowels are: a, e, i, o, and u.\n \n\
+  Example 1:\n\nInput: s = \"leetcoder\"\nOutput: true\nExplanation:\nAlice can win the game as follows:\n\
+  \nAlice plays first, she can delete the underlined substring in s = \"leetcoder\" which contains 3 vowels.\
+  \ The resulting string is s = \"der\".\nBob plays second, he can delete the underlined substring in\
+  \ s = \"der\" which contains 0 vowels. The resulting string is s = \"er\".\nAlice plays third, she can\
+  \ delete the whole string s = \"er\" which contains 1 vowel.\nBob plays fourth, since the string is\
+  \ empty, there is no valid play for Bob. So Alice wins the game.\n\n\nExample 2:\n\nInput: s = \"bbcd\"\
+  \nOutput: false\nExplanation:\nThere is no valid play for Alice in her first turn, so Alice loses the\
+  \ game.\n\n \nConstraints:\n\n1 <= s.length <= 105\ns consists only of lowercase English letters.\n\n\
+  Write the solution in Python as this class, with any imports it needs:\n\n```python\nclass Solution:\n\
+  \    def doesAliceWin(self, s: str) -> bool:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().doesAliceWin(s='b') == False
+  - Solution().doesAliceWin(s='bcbcbc') == False
+  - Solution().doesAliceWin(s='leetcodeisfun') == True
+  - Solution().doesAliceWin(s='abcdefghijklmnopqrstuvwxyz') == True
+  - Solution().doesAliceWin(s='uoiea') == True
+  - Solution().doesAliceWin(s='aeiou') == True
+  - Solution().doesAliceWin(s='a') == True
+  - Solution().doesAliceWin(s='bbaebebebe') == True
+  - Solution().doesAliceWin(s='ae') == True
+  - Solution().doesAliceWin(s='bcdfe') == True
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3227'
+  date: '2024-07-21'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

@@ -1,0 +1,41 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3406
+modality: code
+prompt: "You are given a string word, and an integer numFriends.\nAlice is organizing a game for her numFriends\
+  \ friends. There are multiple rounds in the game, where in each round:\n\nword is split into numFriends\
+  \ non-empty strings, such that no previous round has had the exact same split.\nAll the split words\
+  \ are put into a box.\n\nFind the lexicographically largest string from the box after all the rounds\
+  \ are finished.\nA string a is lexicographically smaller than a string b if in the first position where\
+  \ a and b differ, string a has a letter that appears earlier in the alphabet than the corresponding\
+  \ letter in b.\nIf the first min(a.length, b.length) characters do not differ, then the shorter string\
+  \ is the lexicographically smaller one.\n \nExample 1:\n\nInput: word = \"dbca\", numFriends = 2\nOutput:\
+  \ \"dbc\"\nExplanation:\nAll possible splits are:\n\n\"d\" and \"bca\".\n\"db\" and \"ca\".\n\"dbc\"\
+  \ and \"a\".\n\n\nExample 2:\n\nInput: word = \"gggg\", numFriends = 4\nOutput: \"g\"\nExplanation:\n\
+  The only possible split is: \"g\", \"g\", \"g\", and \"g\".\n\n \nConstraints:\n\n1 <= word.length <=\
+  \ 2 * 105\nword consists only of lowercase English letters.\n1 <= numFriends <= word.length\n\nWrite\
+  \ the solution in Python as this class, with any imports it needs:\n\n```python\nclass Solution:\n \
+  \   def answerString(self, word: str, numFriends: int) -> str:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().answerString(word='aabbcc', numFriends=2) == 'cc'
+  - Solution().answerString(word='aabbccddeeff', numFriends=3) == 'ff'
+  - Solution().answerString(word='zzzzzzzzz', numFriends=5) == 'zzzzz'
+  - Solution().answerString(word='zyxwvutsrqponmlkjihgfedcba', numFriends=5) == 'zyxwvutsrqponmlkjihgfe'
+  - Solution().answerString(word='abcdefg', numFriends=3) == 'g'
+  - Solution().answerString(word='aabbccddeeff', numFriends=6) == 'ff'
+  - Solution().answerString(word='gggg', numFriends=4) == 'g'
+  - Solution().answerString(word='zyxwvutsrqponmlkjihgfedcba', numFriends=26) == 'z'
+  - Solution().answerString(word='aabbccddeeffgghhiijj', numFriends=5) == 'jj'
+  - Solution().answerString(word='abcdef', numFriends=3) == 'f'
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3406'
+  date: '2024-12-29'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

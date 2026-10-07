@@ -186,8 +186,8 @@ def tracked(root: Path) -> list[Path]:
     return repo.publishable(root)
 
 
-#: Header of a file evals/benchmark_import.py wrote: a dataset's text, not this project's prose.
-IMPORTED = "Imported by evals/benchmark_import.py"
+#: Header of a file an evals importer wrote: a dataset's text, not this project's prose.
+IMPORTED = "Imported by evals/"
 
 
 def is_imported(text: str) -> bool:

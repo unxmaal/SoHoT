@@ -1,0 +1,36 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3138
+modality: code
+prompt: "You are given a string s, which is known to be a concatenation of anagrams of some string t.\n\
+  Return the minimum possible length of the string t.\nAn anagram is formed by rearranging the letters\
+  \ of a string. For example, \"aab\", \"aba\", and, \"baa\" are anagrams of \"aab\".\n \nExample 1:\n\
+  \nInput: s = \"abba\"\nOutput: 2\nExplanation:\nOne possible string t could be \"ba\".\n\nExample 2:\n\
+  \nInput: s = \"cdef\"\nOutput: 4\nExplanation:\nOne possible string t could be \"cdef\", notice that\
+  \ t can be equal to s.\n\nExample 2:\n\nInput: s = \"abcbcacabbaccba\"\nOutput: 3\n\n \nConstraints:\n\
+  \n1 <= s.length <= 105\ns consist only of lowercase English letters.\n\nWrite the solution in Python\
+  \ as this class, with any imports it needs:\n\n```python\nclass Solution:\n    def minAnagramLength(self,\
+  \ s: str) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().minAnagramLength(s='zzzzzzzzz') == 1
+  - Solution().minAnagramLength(s='abcdefghijklmnopqrstuvwxyz') == 26
+  - Solution().minAnagramLength(s='zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz') == 1
+  - Solution().minAnagramLength(s='abababab') == 2
+  - Solution().minAnagramLength(s='a') == 1
+  - Solution().minAnagramLength(s='abcabcabcabc') == 3
+  - Solution().minAnagramLength(s='zzzzzzzzzzzzzzzzzzzz') == 1
+  - Solution().minAnagramLength(s='aa') == 1
+  - Solution().minAnagramLength(s='xyzxyzxyz') == 3
+  - Solution().minAnagramLength(s='abba') == 2
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3138'
+  date: '2024-05-05'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

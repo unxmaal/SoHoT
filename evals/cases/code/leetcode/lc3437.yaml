@@ -1,0 +1,32 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3437
+modality: code
+prompt: "Given an integer n, an alternating permutation is a permutation of the first n positive integers\
+  \ such that no two adjacent elements are both odd or both even.\nReturn all such alternating permutations\
+  \ sorted in lexicographical order.\n \nExample 1:\n\nInput: n = 4\nOutput: [[1,2,3,4],[1,4,3,2],[2,1,4,3],[2,3,4,1],[3,2,1,4],[3,4,1,2],[4,1,2,3],[4,3,2,1]]\n\
+  \nExample 2:\n\nInput: n = 2\nOutput: [[1,2],[2,1]]\n\nExample 3:\n\nInput: n = 3\nOutput: [[1,2,3],[3,2,1]]\n\
+  \n \nConstraints:\n\n1 <= n <= 10\n\nWrite the solution in Python as this class, with any imports it\
+  \ needs:\n\n```python\nclass Solution:\n    def permute(self, n: int) -> List[List[int]]:\n```\n\nReturn\
+  \ only the code."
+assert:
+  checks:
+  - Solution().permute(n=3) == [[1, 2, 3], [3, 2, 1]]
+  - Solution().permute(n=4) == [[1, 2, 3, 4], [1, 4, 3, 2], [2, 1, 4, 3], [2, 3, 4, 1], [3, 2, 1, 4],
+    [3, 4, 1, 2], [4, 1, 2, 3], [4, 3, 2, 1]]
+  - Solution().permute(n=2) == [[1, 2], [2, 1]]
+  - Solution().permute(n=1) == [[1]]
+  - Solution().permute(n=5) == [[1, 2, 3, 4, 5], [1, 2, 5, 4, 3], [1, 4, 3, 2, 5], [1, 4, 5, 2, 3], [3,
+    2, 1, 4, 5], [3, 2, 5, 4, 1], [3, 4, 1, 2, 5], [3, 4, 5, 2, 1], [5, 2, 1, 4, 3], [5, 2, 3, 4, 1],
+    [5, 4, 1, 2, 3], [5, 4, 3, 2, 1]]
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3437'
+  date: '2025-01-26'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

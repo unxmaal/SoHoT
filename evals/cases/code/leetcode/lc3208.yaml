@@ -1,0 +1,39 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3208
+modality: code
+prompt: "There is a circle of red and blue tiles. You are given an array of integers colors and an integer\
+  \ k. The color of tile i is represented by colors[i]:\n\ncolors[i] == 0 means that tile i is red.\n\
+  colors[i] == 1 means that tile i is blue.\n\nAn alternating group is every k contiguous tiles in the\
+  \ circle with alternating colors (each tile in the group except the first and last one has a different\
+  \ color from its left and right tiles).\nReturn the number of alternating groups.\nNote that since colors\
+  \ represents a circle, the first and the last tiles are considered to be next to each other.\n \nExample\
+  \ 1:\n\nInput: colors = [0,1,0,1,0], k = 3\nOutput: 3\nExplanation:\n\nAlternating groups:\n\n\nExample\
+  \ 2:\n\nInput: colors = [0,1,0,0,1,0,1], k = 6\nOutput: 2\nExplanation:\n\nAlternating groups:\n\n\n\
+  Example 3:\n\nInput: colors = [1,1,0,1], k = 4\nOutput: 0\nExplanation:\n\n\n \nConstraints:\n\n3 <=\
+  \ colors.length <= 105\n0 <= colors[i] <= 1\n3 <= k <= colors.length\n\nWrite the solution in Python\
+  \ as this class, with any imports it needs:\n\n```python\nclass Solution:\n    def numberOfAlternatingGroups(self,\
+  \ colors: List[int], k: int) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().numberOfAlternatingGroups(colors=[1, 1, 0, 1], k=4) == 0
+  - Solution().numberOfAlternatingGroups(colors=[1, 0, 1, 0, 1, 0, 1, 0], k=3) == 8
+  - Solution().numberOfAlternatingGroups(colors=[0, 1, 0, 0, 1, 0, 1], k=6) == 2
+  - Solution().numberOfAlternatingGroups(colors=[1, 0, 1, 0, 1, 0, 1, 0, 1], k=3) == 7
+  - Solution().numberOfAlternatingGroups(colors=[0, 0, 1, 1, 0, 0, 1, 1, 0, 0], k=4) == 0
+  - Solution().numberOfAlternatingGroups(colors=[0, 0, 1, 1, 0, 0, 1, 1], k=4) == 0
+  - Solution().numberOfAlternatingGroups(colors=[1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0], k=6) == 12
+  - Solution().numberOfAlternatingGroups(colors=[1, 0, 1, 0, 1, 0, 1, 0], k=4) == 8
+  - Solution().numberOfAlternatingGroups(colors=[0, 0, 1, 1, 0, 0, 1, 1], k=5) == 0
+  - Solution().numberOfAlternatingGroups(colors=[0, 1, 0, 1, 0], k=3) == 3
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3208'
+  date: '2024-06-30'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

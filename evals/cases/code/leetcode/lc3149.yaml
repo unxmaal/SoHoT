@@ -1,0 +1,42 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3149
+modality: code
+prompt: "You are given an array nums which is a permutation of [0, 1, 2, ..., n - 1]. The score of any\
+  \ permutation of [0, 1, 2, ..., n - 1] named perm is defined as:\nscore(perm) = |perm[0] - nums[perm[1]]|\
+  \ + |perm[1] - nums[perm[2]]| + ... + |perm[n - 1] - nums[perm[0]]|\nReturn the permutation perm which\
+  \ has the minimum possible score. If multiple permutations exist with this score, return the one that\
+  \ is lexicographically smallest among them.\n \nExample 1:\n\nInput: nums = [1,0,2]\nOutput: [0,1,2]\n\
+  Explanation:\n\nThe lexicographically smallest permutation with minimum cost is [0,1,2]. The cost of\
+  \ this permutation is |0 - 0| + |1 - 2| + |2 - 1| = 2.\n\nExample 2:\n\nInput: nums = [0,2,1]\nOutput:\
+  \ [0,2,1]\nExplanation:\n\nThe lexicographically smallest permutation with minimum cost is [0,2,1].\
+  \ The cost of this permutation is |0 - 1| + |2 - 2| + |1 - 0| = 2.\n\n \nConstraints:\n\n2 <= n == nums.length\
+  \ <= 14\nnums is a permutation of [0, 1, 2, ..., n - 1].\n\nWrite the solution in Python as this class,\
+  \ with any imports it needs:\n\n```python\nclass Solution:\n    def findPermutation(self, nums: List[int])\
+  \ -> List[int]:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().findPermutation(nums=[13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0]) == [0, 7, 6, 8, 5,
+    9, 4, 10, 3, 11, 2, 12, 1, 13]
+  - Solution().findPermutation(nums=[2, 0, 1, 3]) == [0, 1, 2, 3]
+  - Solution().findPermutation(nums=[0, 2, 1]) == [0, 2, 1]
+  - Solution().findPermutation(nums=[1, 2, 0, 3]) == [0, 2, 3, 1]
+  - Solution().findPermutation(nums=[7, 6, 5, 4, 3, 2, 1, 0, 13, 12, 11, 10, 9, 8]) == [0, 4, 3, 5, 2,
+    6, 1, 7, 11, 10, 12, 9, 13, 8]
+  - Solution().findPermutation(nums=[3, 1, 2, 0]) == [0, 1, 2, 3]
+  - Solution().findPermutation(nums=[2, 0, 3, 1]) == [0, 1, 3, 2]
+  - Solution().findPermutation(nums=[1, 0, 2]) == [0, 1, 2]
+  - Solution().findPermutation(nums=[3, 2, 0, 1]) == [0, 2, 1, 3]
+  - Solution().findPermutation(nums=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]) == [0, 1, 2, 3, 4,
+    5, 6, 7, 8, 9, 10, 11, 12, 13]
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3149'
+  date: '2024-05-12'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

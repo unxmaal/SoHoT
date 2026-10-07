@@ -1,0 +1,41 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3127
+modality: code
+prompt: "You are given a 2D matrix grid of size 3 x 3 consisting only of characters 'B' and 'W'. Character\
+  \ 'W' represents the white color, and character 'B' represents the black color.\nYour task is to change\
+  \ the color of at most one cell so that the matrix has a 2 x 2 square where all cells are of the same\
+  \ color.\nReturn true if it is possible to create a 2 x 2 square of the same color, otherwise, return\
+  \ false.\n \n\n\nExample 1:\n\n \n \n \n \n \n \n \n \n \n\n\nInput: grid = [[\"B\",\"W\",\"B\"],[\"\
+  B\",\"W\",\"W\"],[\"B\",\"W\",\"B\"]]\nOutput: true\nExplanation:\nIt can be done by changing the color\
+  \ of the grid[0][2].\n\nExample 2:\n\n \n \n \n \n \n \n \n \n \n\n\nInput: grid = [[\"B\",\"W\",\"\
+  B\"],[\"W\",\"B\",\"W\"],[\"B\",\"W\",\"B\"]]\nOutput: false\nExplanation:\nIt cannot be done by changing\
+  \ at most one cell.\n\nExample 3:\n\n \n \n \n \n \n \n \n \n \n\n\nInput: grid = [[\"B\",\"W\",\"B\"\
+  ],[\"B\",\"W\",\"W\"],[\"B\",\"W\",\"W\"]]\nOutput: true\nExplanation:\nThe grid already contains a\
+  \ 2 x 2 square of the same color.\n\n \nConstraints:\n\ngrid.length == 3\ngrid[i].length == 3\ngrid[i][j]\
+  \ is either 'W' or 'B'.\n\nWrite the solution in Python as this class, with any imports it needs:\n\n\
+  ```python\nclass Solution:\n    def canMakeSquare(self, grid: List[List[str]]) -> bool:\n```\n\nReturn\
+  \ only the code."
+assert:
+  checks:
+  - Solution().canMakeSquare(grid=[['B', 'W', 'B'], ['W', 'B', 'W'], ['B', 'W', 'B']]) == False
+  - Solution().canMakeSquare(grid=[['B', 'B', 'W'], ['B', 'B', 'W'], ['B', 'B', 'W']]) == True
+  - Solution().canMakeSquare(grid=[['B', 'W', 'B'], ['B', 'W', 'W'], ['B', 'W', 'B']]) == True
+  - Solution().canMakeSquare(grid=[['B', 'B', 'B'], ['B', 'W', 'B'], ['B', 'B', 'B']]) == True
+  - Solution().canMakeSquare(grid=[['W', 'W', 'B'], ['W', 'W', 'B'], ['W', 'W', 'B']]) == True
+  - Solution().canMakeSquare(grid=[['W', 'W', 'W'], ['W', 'B', 'W'], ['W', 'W', 'W']]) == True
+  - Solution().canMakeSquare(grid=[['B', 'W', 'W'], ['W', 'W', 'W'], ['W', 'W', 'B']]) == True
+  - Solution().canMakeSquare(grid=[['W', 'B', 'W'], ['B', 'W', 'B'], ['W', 'B', 'W']]) == False
+  - Solution().canMakeSquare(grid=[['B', 'W', 'B'], ['B', 'W', 'W'], ['B', 'W', 'W']]) == True
+  - Solution().canMakeSquare(grid=[['W', 'B', 'B'], ['B', 'B', 'B'], ['B', 'B', 'W']]) == True
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3127'
+  date: '2024-04-21'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

@@ -1,0 +1,35 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3345
+modality: code
+prompt: "You are given two integers n and t. Return the smallest number greater than or equal to n such\
+  \ that the product of its digits is divisible by t.\n \nExample 1:\n\nInput: n = 10, t = 2\nOutput:\
+  \ 10\nExplanation:\nThe digit product of 10 is 0, which is divisible by 2, making it the smallest number\
+  \ greater than or equal to 10 that satisfies the condition.\n\nExample 2:\n\nInput: n = 15, t = 3\n\
+  Output: 16\nExplanation:\nThe digit product of 16 is 6, which is divisible by 3, making it the smallest\
+  \ number greater than or equal to 15 that satisfies the condition.\n\n \nConstraints:\n\n1 <= n <= 100\n\
+  1 <= t <= 10\n\nWrite the solution in Python as this class, with any imports it needs:\n\n```python\n\
+  class Solution:\n    def smallestNumber(self, n: int, t: int) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().smallestNumber(n=30, t=5) == 30
+  - Solution().smallestNumber(n=25, t=7) == 27
+  - Solution().smallestNumber(n=60, t=10) == 60
+  - Solution().smallestNumber(n=30, t=7) == 30
+  - Solution().smallestNumber(n=80, t=10) == 80
+  - Solution().smallestNumber(n=90, t=1) == 90
+  - Solution().smallestNumber(n=75, t=7) == 75
+  - Solution().smallestNumber(n=50, t=6) == 50
+  - Solution().smallestNumber(n=25, t=5) == 25
+  - Solution().smallestNumber(n=70, t=9) == 70
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3345'
+  date: '2024-11-03'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

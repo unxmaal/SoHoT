@@ -1,0 +1,52 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3111
+modality: code
+prompt: "You are given a 2D integer array points, where points[i] = [xi, yi]. You are also given an integer\
+  \ w. Your task is to cover all the given points with rectangles.\nEach rectangle has its lower end at\
+  \ some point (x1, 0) and its upper end at some point (x2, y2), where x1 <= x2, y2 >= 0, and the condition\
+  \ x2 - x1 <= w must be satisfied for each rectangle.\nA point is considered covered by a rectangle if\
+  \ it lies within or on the boundary of the rectangle.\nReturn an integer denoting the minimum number\
+  \ of rectangles needed so that each point is covered by at least one rectangle.\nNote: A point may be\
+  \ covered by more than one rectangle.\n \nExample 1:\n\n\nInput: points = [[2,1],[1,0],[1,4],[1,8],[3,5],[4,6]],\
+  \ w = 1\nOutput: 2\nExplanation: \nThe image above shows one possible placement of rectangles to cover\
+  \ the points:\n\nA rectangle with a lower end at (1, 0) and its upper end at (2, 8)\nA rectangle with\
+  \ a lower end at (3, 0) and its upper end at (4, 8)\n\n\nExample 2:\n\n\nInput: points = [[0,0],[1,1],[2,2],[3,3],[4,4],[5,5],[6,6]],\
+  \ w = 2\nOutput: 3\nExplanation: \nThe image above shows one possible placement of rectangles to cover\
+  \ the points:\n\nA rectangle with a lower end at (0, 0) and its upper end at (2, 2)\nA rectangle with\
+  \ a lower end at (3, 0) and its upper end at (5, 5)\nA rectangle with a lower end at (6, 0) and its\
+  \ upper end at (6, 6)\n\n\nExample 3:\n\n\nInput: points = [[2,3],[1,2]], w = 0\nOutput: 2\nExplanation:\
+  \ \nThe image above shows one possible placement of rectangles to cover the points:\n\nA rectangle with\
+  \ a lower end at (1, 0) and its upper end at (1, 2)\nA rectangle with a lower end at (2, 0) and its\
+  \ upper end at (2, 3)\n\n\n \nConstraints:\n\n1 <= points.length <= 105\npoints[i].length == 2\n0 <=\
+  \ xi == points[i][0] <= 109\n0 <= yi == points[i][1] <= 109\n0 <= w <= 109\nAll pairs (xi, yi) are distinct.\n\
+  \nWrite the solution in Python as this class, with any imports it needs:\n\n```python\nclass Solution:\n\
+  \    def minRectanglesToCoverPoints(self, points: List[List[int]], w: int) -> int:\n```\n\nReturn only\
+  \ the code."
+assert:
+  checks:
+  - Solution().minRectanglesToCoverPoints(points=[[1, 10], [2, 20], [3, 30], [4, 40], [5, 50]], w=1) ==
+    3
+  - Solution().minRectanglesToCoverPoints(points=[[5, 5], [10, 10], [15, 15]], w=5) == 2
+  - Solution().minRectanglesToCoverPoints(points=[[1, 1], [2, 2], [3, 3], [4, 4], [5, 5], [6, 6], [7,
+    7], [8, 8], [9, 9]], w=3) == 3
+  - Solution().minRectanglesToCoverPoints(points=[[2, 3], [1, 2]], w=0) == 2
+  - Solution().minRectanglesToCoverPoints(points=[[5, 5], [6, 6], [7, 7], [8, 8], [9, 9]], w=2) == 2
+  - Solution().minRectanglesToCoverPoints(points=[[0, 0], [1, 1], [2, 2], [3, 3], [4, 4], [5, 5], [6,
+    6]], w=2) == 3
+  - Solution().minRectanglesToCoverPoints(points=[[1, 1], [2, 2], [3, 3], [4, 4], [5, 5]], w=10) == 1
+  - Solution().minRectanglesToCoverPoints(points=[[1, 1], [2, 2], [3, 3], [4, 4], [5, 5]], w=4) == 1
+  - Solution().minRectanglesToCoverPoints(points=[[1, 1], [3, 3], [5, 5], [7, 7], [9, 9]], w=2) == 3
+  - Solution().minRectanglesToCoverPoints(points=[[100, 100], [200, 200], [300, 300], [400, 400], [500,
+    500]], w=150) == 3
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3111'
+  date: '2024-04-07'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

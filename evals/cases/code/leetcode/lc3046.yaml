@@ -1,0 +1,37 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3046
+modality: code
+prompt: "You are given an integer array nums of even length. You have to split the array into two parts\
+  \ nums1 and nums2 such that:\n\nnums1.length == nums2.length == nums.length / 2.\nnums1 should contain\
+  \ distinct elements.\nnums2 should also contain distinct elements.\n\nReturn true if it is possible\
+  \ to split the array, and false otherwise.\n \nExample 1:\n\nInput: nums = [1,1,2,2,3,4]\nOutput: true\n\
+  Explanation: One of the possible ways to split nums is nums1 = [1,2,3] and nums2 = [1,2,4].\n\nExample\
+  \ 2:\n\nInput: nums = [1,1,1,1]\nOutput: false\nExplanation: The only possible way to split nums is\
+  \ nums1 = [1,1] and nums2 = [1,1]. Both nums1 and nums2 do not contain distinct elements. Therefore,\
+  \ we return false.\n\n \nConstraints:\n\n1 <= nums.length <= 100\nnums.length % 2 == 0 \n1 <= nums[i]\
+  \ <= 100\n\nWrite the solution in Python as this class, with any imports it needs:\n\n```python\nclass\
+  \ Solution:\n    def isPossibleToSplit(self, nums: List[int]) -> bool:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().isPossibleToSplit(nums=[2, 2, 3, 3, 4, 4]) == True
+  - Solution().isPossibleToSplit(nums=[1, 1, 2, 2, 3, 3, 4, 4]) == True
+  - Solution().isPossibleToSplit(nums=[1, 1, 1, 1]) == False
+  - Solution().isPossibleToSplit(nums=[50, 50, 50, 50]) == False
+  - Solution().isPossibleToSplit(nums=[1, 1, 2, 2, 3, 4]) == True
+  - Solution().isPossibleToSplit(nums=[1, 2, 2, 3, 4, 4]) == True
+  - Solution().isPossibleToSplit(nums=[1, 2, 2, 3, 3, 4]) == True
+  - Solution().isPossibleToSplit(nums=[5, 5, 6, 6, 7, 7, 8, 8]) == True
+  - Solution().isPossibleToSplit(nums=[1, 1, 2, 3, 4, 5]) == True
+  - Solution().isPossibleToSplit(nums=[1, 2, 3, 4, 5, 5]) == True
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3046'
+  date: '2024-02-25'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

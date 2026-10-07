@@ -1,0 +1,54 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3249
+modality: code
+prompt: "There is an undirected tree with n nodes labeled from 0 to n - 1, and rooted at node 0. You are\
+  \ given a 2D integer array edges of length n - 1, where edges[i] = [ai, bi] indicates that there is\
+  \ an edge between nodes ai and bi in the tree.\nA node is good if all the subtrees rooted at its children\
+  \ have the same size.\nReturn the number of good nodes in the given tree.\nA subtree of treeName is\
+  \ a tree consisting of a node in treeName and all of its descendants.\n \nExample 1:\n\nInput: edges\
+  \ = [[0,1],[0,2],[1,3],[1,4],[2,5],[2,6]]\nOutput: 7\nExplanation:\n\nAll of the nodes of the given\
+  \ tree are good.\n\nExample 2:\n\nInput: edges = [[0,1],[1,2],[2,3],[3,4],[0,5],[1,6],[2,7],[3,8]]\n\
+  Output: 6\nExplanation:\n\nThere are 6 good nodes in the given tree. They are colored in the image above.\n\
+  Example 3:\n\nInput: edges = [[0,1],[1,2],[1,3],[1,4],[0,5],[5,6],[6,7],[7,8],[0,9],[9,10],[9,12],[10,11]]\n\
+  Output: 12\nExplanation:\n\nAll nodes except node 9 are good.\n\n\n \nConstraints:\n\n2 <= n <= 105\n\
+  edges.length == n - 1\nedges[i].length == 2\n0 <= ai, bi < n\nThe input is generated such that edges\
+  \ represents a valid tree.\n\nWrite the solution in Python as this class, with any imports it needs:\n\
+  \n```python\nclass Solution:\n    def countGoodNodes(self, edges: List[List[int]]) -> int:\n```\n\n\
+  Return only the code."
+assert:
+  checks:
+  - Solution().countGoodNodes(edges=[[0, 1], [1, 2], [2, 3], [3, 4], [0, 5], [1, 6], [2, 7], [3, 8]])
+    == 6
+  - Solution().countGoodNodes(edges=[[0, 1], [1, 2], [1, 3], [1, 4], [0, 5], [5, 6], [6, 7], [7, 8], [0,
+    9], [9, 10], [9, 12], [10, 11]]) == 12
+  - Solution().countGoodNodes(edges=[[0, 1], [0, 2], [1, 3], [1, 4], [2, 5], [2, 6]]) == 7
+  - Solution().countGoodNodes(edges=[[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 7], [7, 8], [8,
+    9], [9, 10], [10, 11], [11, 12], [12, 13], [13, 14]]) == 15
+  - Solution().countGoodNodes(edges=[[0, 1], [1, 2], [1, 3], [2, 4], [2, 5], [3, 6], [3, 7], [4, 8], [4,
+    9], [5, 10], [5, 11], [6, 12], [6, 13], [7, 14], [7, 15], [8, 16], [8, 17], [9, 18], [9, 19], [10,
+    20], [10, 21], [11, 22], [11, 23], [12, 24], [12, 25], [13, 26], [13, 27]]) == 26
+  - Solution().countGoodNodes(edges=[[0, 1], [0, 2], [0, 3], [1, 4], [1, 5], [1, 6], [2, 7], [2, 8], [2,
+    9], [3, 10], [3, 11], [3, 12], [4, 13], [4, 14], [5, 15], [5, 16], [6, 17], [6, 18], [7, 19], [7,
+    20], [8, 21], [8, 22], [9, 23], [9, 24]]) == 24
+  - Solution().countGoodNodes(edges=[[0, 1], [1, 2], [1, 3], [2, 4], [2, 5], [3, 6], [3, 7], [4, 8], [4,
+    9], [5, 10], [5, 11], [6, 12], [6, 13], [7, 14], [7, 15], [8, 16], [8, 17], [9, 18], [9, 19], [10,
+    20], [10, 21], [11, 22], [11, 23]]) == 23
+  - Solution().countGoodNodes(edges=[[0, 1], [0, 2], [1, 3], [1, 4], [1, 5], [2, 6], [2, 7], [2, 8], [6,
+    9], [6, 10], [7, 11], [7, 12], [8, 13], [8, 14], [1, 15], [15, 16], [15, 17]]) == 16
+  - Solution().countGoodNodes(edges=[[0, 1], [0, 2], [1, 3], [1, 4], [2, 5], [2, 6], [3, 7], [3, 8], [4,
+    9], [4, 10], [5, 11], [5, 12], [6, 13], [6, 14]]) == 15
+  - Solution().countGoodNodes(edges=[[0, 1], [0, 2], [1, 3], [1, 4], [2, 5], [2, 6], [3, 7], [3, 8], [4,
+    9], [4, 10], [5, 11], [5, 12], [6, 13], [6, 14], [7, 15], [8, 16], [8, 17], [9, 18], [10, 19], [10,
+    20], [11, 21], [11, 22], [12, 23], [12, 24]]) == 21
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3249'
+  date: '2024-08-11'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

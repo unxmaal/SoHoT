@@ -1,0 +1,35 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3491
+modality: code
+prompt: "You are given a string array numbers that represents phone numbers. Return true if no phone number\
+  \ is a prefix of any other phone number; otherwise, return false.\n \nExample 1:\n\nInput: numbers =\
+  \ [\"1\",\"2\",\"4\",\"3\"]\nOutput: true\nExplanation:\nNo number is a prefix of another number, so\
+  \ the output is true.\n\nExample 2:\n\nInput: numbers = [\"001\",\"007\",\"15\",\"00153\"]\nOutput:\
+  \ false\nExplanation:\nThe string \"001\" is a prefix of the string \"00153\". Thus, the output is false.\n\
+  \n \nConstraints:\n\n2 <= numbers.length <= 50\n1 <= numbers[i].length <= 50\nAll numbers contain only\
+  \ digits '0' to '9'.\n\nWrite the solution in Python as this class, with any imports it needs:\n\n```python\n\
+  class Solution:\n    def phonePrefix(self, numbers: List[str]) -> bool:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().phonePrefix(numbers=['123', '456', '789', '101112']) == True
+  - Solution().phonePrefix(numbers=['1111', '1112', '1121', '1211', '2111']) == True
+  - Solution().phonePrefix(numbers=['9876543210', '1234567890', '0987654321', '1112223333']) == True
+  - Solution().phonePrefix(numbers=['9', '99', '999', '9999']) == False
+  - Solution().phonePrefix(numbers=['1', '2', '4', '3']) == True
+  - Solution().phonePrefix(numbers=['0', '10', '100', '1000']) == False
+  - Solution().phonePrefix(numbers=['001', '007', '15', '00153']) == False
+  - Solution().phonePrefix(numbers=['11', '22', '1122', '33']) == False
+  - Solution().phonePrefix(numbers=['111', '222', '1111', '333']) == False
+  - Solution().phonePrefix(numbers=['555', '5555', '55555', '555555']) == False
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3491'
+  date: '2025-03-16'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

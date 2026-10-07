@@ -1,0 +1,53 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3324
+modality: code
+prompt: "You are given a string target.\nAlice is going to type target on her computer using a special\
+  \ keyboard that has only two keys:\n\nKey 1 appends the character \"a\" to the string on the screen.\n\
+  Key 2 changes the last character of the string on the screen to its next character in the English alphabet.\
+  \ For example, \"c\" changes to \"d\" and \"z\" changes to \"a\".\n\nNote that initially there is an\
+  \ empty string \"\" on the screen, so she can only press key 1.\nReturn a list of all strings that appear\
+  \ on the screen as Alice types target, in the order they appear, using the minimum key presses.\n \n\
+  Example 1:\n\nInput: target = \"abc\"\nOutput: [\"a\",\"aa\",\"ab\",\"aba\",\"abb\",\"abc\"]\nExplanation:\n\
+  The sequence of key presses done by Alice are:\n\nPress key 1, and the string on the screen becomes\
+  \ \"a\".\nPress key 1, and the string on the screen becomes \"aa\".\nPress key 2, and the string on\
+  \ the screen becomes \"ab\".\nPress key 1, and the string on the screen becomes \"aba\".\nPress key\
+  \ 2, and the string on the screen becomes \"abb\".\nPress key 2, and the string on the screen becomes\
+  \ \"abc\".\n\n\nExample 2:\n\nInput: target = \"he\"\nOutput: [\"a\",\"b\",\"c\",\"d\",\"e\",\"f\",\"\
+  g\",\"h\",\"ha\",\"hb\",\"hc\",\"hd\",\"he\"]\n\n \nConstraints:\n\n1 <= target.length <= 400\ntarget\
+  \ consists only of lowercase English letters.\n\nWrite the solution in Python as this class, with any\
+  \ imports it needs:\n\n```python\nclass Solution:\n    def stringSequence(self, target: str) -> List[str]:\n\
+  ```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().stringSequence(target='abcdefg') == ['a', 'aa', 'ab', 'aba', 'abb', 'abc', 'abca', 'abcb',
+    'abcc', 'abcd', 'abcda', 'abcdb', 'abcdc', 'abcdd', 'abcde', 'abcdea', 'abcdeb', 'abcdec', 'abcded',
+    'abcdee', 'abcdef', 'abcdefa', 'abcdefb', 'abcdefc', 'abcdefd', 'abcdefe', 'abcdeff', 'abcdefg']
+  - Solution().stringSequence(target='abc') == ['a', 'aa', 'ab', 'aba', 'abb', 'abc']
+  - Solution().stringSequence(target='a') == ['a']
+  - Solution().stringSequence(target='he') == ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'ha', 'hb', 'hc',
+    'hd', 'he']
+  - Solution().stringSequence(target='aaa') == ['a', 'aa', 'aaa']
+  - Solution().stringSequence(target='aabbaacc') == ['a', 'aa', 'aaa', 'aab', 'aaba', 'aabb', 'aabba',
+    'aabbaa', 'aabbaaa', 'aabbaab', 'aabbaac', 'aabbaaca', 'aabbaacb', 'aabbaacc']
+  - Solution().stringSequence(target='abcdabcd') == ['a', 'aa', 'ab', 'aba', 'abb', 'abc', 'abca', 'abcb',
+    'abcc', 'abcd', 'abcda', 'abcdaa', 'abcdab', 'abcdaba', 'abcdabb', 'abcdabc', 'abcdabca', 'abcdabcb',
+    'abcdabcc', 'abcdabcd']
+  - Solution().stringSequence(target='z') == ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l',
+    'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
+  - Solution().stringSequence(target='az') == ['a', 'aa', 'ab', 'ac', 'ad', 'ae', 'af', 'ag', 'ah', 'ai',
+    'aj', 'ak', 'al', 'am', 'an', 'ao', 'ap', 'aq', 'ar', 'as', 'at', 'au', 'av', 'aw', 'ax', 'ay', 'az']
+  - Solution().stringSequence(target='abz') == ['a', 'aa', 'ab', 'aba', 'abb', 'abc', 'abd', 'abe', 'abf',
+    'abg', 'abh', 'abi', 'abj', 'abk', 'abl', 'abm', 'abn', 'abo', 'abp', 'abq', 'abr', 'abs', 'abt',
+    'abu', 'abv', 'abw', 'abx', 'aby', 'abz']
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3324'
+  date: '2024-10-20'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

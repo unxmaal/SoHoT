@@ -1,0 +1,43 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3008
+modality: code
+prompt: "You are given a 0-indexed string s, a string a, a string b, and an integer k.\nAn index i is\
+  \ beautiful if:\n\n0 <= i <= s.length - a.length\ns[i..(i + a.length - 1)] == a\nThere exists an index\
+  \ j such that:\n\t\n0 <= j <= s.length - b.length\ns[j..(j + b.length - 1)] == b\n|j - i| <= k\n\n\n\
+  \nReturn the array that contains beautiful indices in sorted order from smallest to largest.\n \nExample\
+  \ 1:\n\nInput: s = \"isawsquirrelnearmysquirrelhouseohmy\", a = \"my\", b = \"squirrel\", k = 15\nOutput:\
+  \ [16,33]\nExplanation: There are 2 beautiful indices: [16,33].\n- The index 16 is beautiful as s[16..17]\
+  \ == \"my\" and there exists an index 4 with s[4..11] == \"squirrel\" and |16 - 4| <= 15.\n- The index\
+  \ 33 is beautiful as s[33..34] == \"my\" and there exists an index 18 with s[18..25] == \"squirrel\"\
+  \ and |33 - 18| <= 15.\nThus we return [16,33] as the result.\n\nExample 2:\n\nInput: s = \"abcd\",\
+  \ a = \"a\", b = \"a\", k = 4\nOutput: [0]\nExplanation: There is 1 beautiful index: [0].\n- The index\
+  \ 0 is beautiful as s[0..0] == \"a\" and there exists an index 0 with s[0..0] == \"a\" and |0 - 0| <=\
+  \ 4.\nThus we return [0] as the result.\n\n \nConstraints:\n\n1 <= k <= s.length <= 5 * 105\n1 <= a.length,\
+  \ b.length <= 5 * 105\ns, a, and b contain only lowercase English letters.\n\nWrite the solution in\
+  \ Python as this class, with any imports it needs:\n\n```python\nclass Solution:\n    def beautifulIndices(self,\
+  \ s: str, a: str, b: str, k: int) -> List[int]:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().beautifulIndices(s='beautifulbeautifulbeautiful', a='ful', b='uti', k=5) == [6, 15, 24]
+  - Solution().beautifulIndices(s='abcabcabcabcabc', a='abc', b='bca', k=3) == [0, 3, 6, 9, 12]
+  - Solution().beautifulIndices(s='mississippi', a='issi', b='ippi', k=4) == [4]
+  - Solution().beautifulIndices(s='abcabcabc', a='abc', b='cab', k=3) == [0, 3, 6]
+  - Solution().beautifulIndices(s='abcabcabc', a='abc', b='cab', k=2) == [0, 3, 6]
+  - Solution().beautifulIndices(s='aaaaaaa', a='aa', b='aa', k=2) == [0, 1, 2, 3, 4, 5]
+  - Solution().beautifulIndices(s='beautifuldayinbeautifultown', a='day', b='town', k=10) == []
+  - Solution().beautifulIndices(s='hellohellohello', a='he', b='lo', k=2) == [5, 10]
+  - Solution().beautifulIndices(s='abcd', a='a', b='a', k=4) == [0]
+  - Solution().beautifulIndices(s='isawsquirrelnearmysquirrelhouseohmy', a='my', b='squirrel', k=15) ==
+    [16, 33]
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3008'
+  date: '2024-01-14'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

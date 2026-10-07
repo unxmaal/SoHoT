@@ -1,0 +1,44 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3393
+modality: code
+prompt: "You are given a 2D integer array grid with size m x n. You are also given an integer k.\nYour\
+  \ task is to calculate the number of paths you can take from the top-left cell (0, 0) to the bottom-right\
+  \ cell (m - 1, n - 1) satisfying the following constraints:\n\nYou can either move to the right or down.\
+  \ Formally, from the cell (i, j) you may move to the cell (i, j + 1) or to the cell (i + 1, j) if the\
+  \ target cell exists.\nThe XOR of all the numbers on the path must be equal to k.\n\nReturn the total\
+  \ number of such paths.\nSince the answer can be very large, return the result modulo 109 + 7.\n \n\
+  Example 1:\n\nInput: grid = [[2, 1, 5], [7, 10, 0], [12, 6, 4]], k = 11\nOutput: 3\nExplanation: \n\
+  The 3 paths are:\n\n(0, 0) → (1, 0) → (2, 0) → (2, 1) → (2, 2)\n(0, 0) → (1, 0) → (1, 1) → (1, 2) →\
+  \ (2, 2)\n(0, 0) → (0, 1) → (1, 1) → (2, 1) → (2, 2)\n\n\nExample 2:\n\nInput: grid = [[1, 3, 3, 3],\
+  \ [0, 3, 3, 2], [3, 0, 1, 1]], k = 2\nOutput: 5\nExplanation:\nThe 5 paths are:\n\n(0, 0) → (1, 0) →\
+  \ (2, 0) → (2, 1) → (2, 2) → (2, 3)\n(0, 0) → (1, 0) → (1, 1) → (2, 1) → (2, 2) → (2, 3)\n(0, 0) → (1,\
+  \ 0) → (1, 1) → (1, 2) → (1, 3) → (2, 3)\n(0, 0) → (0, 1) → (1, 1) → (1, 2) → (2, 2) → (2, 3)\n(0, 0)\
+  \ → (0, 1) → (0, 2) → (1, 2) → (2, 2) → (2, 3)\n\n\nExample 3:\n\nInput: grid = [[1, 1, 1, 2], [3, 0,\
+  \ 3, 2], [3, 0, 2, 2]], k = 10\nOutput: 0\n\n \nConstraints:\n\n1 <= m == grid.length <= 300\n1 <= n\
+  \ == grid[r].length <= 300\n0 <= grid[r][c] < 16\n0 <= k < 16\n\nWrite the solution in Python as this\
+  \ class, with any imports it needs:\n\n```python\nclass Solution:\n    def countPathsWithXorValue(self,\
+  \ grid: List[List[int]], k: int) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().countPathsWithXorValue(grid=[[1, 3, 3, 3], [0, 3, 3, 2], [3, 0, 1, 1]], k=2) == 5
+  - Solution().countPathsWithXorValue(grid=[[15, 15], [15, 15]], k=14) == 0
+  - Solution().countPathsWithXorValue(grid=[[1], [1], [1]], k=1) == 1
+  - Solution().countPathsWithXorValue(grid=[[1]], k=1) == 1
+  - Solution().countPathsWithXorValue(grid=[[0]], k=0) == 1
+  - Solution().countPathsWithXorValue(grid=[[1, 2, 3], [4, 5, 6], [7, 8, 9]], k=15) == 2
+  - Solution().countPathsWithXorValue(grid=[[0, 0, 0], [0, 0, 0], [0, 0, 0]], k=0) == 6
+  - Solution().countPathsWithXorValue(grid=[[1, 2], [3, 4]], k=7) == 1
+  - Solution().countPathsWithXorValue(grid=[[1, 1, 1], [1, 1, 1], [1, 1, 1]], k=3) == 0
+  - Solution().countPathsWithXorValue(grid=[[1, 1, 1, 2], [3, 0, 3, 2], [3, 0, 2, 2]], k=10) == 0
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3393'
+  date: '2024-12-15'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

@@ -1,0 +1,50 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3113
+modality: code
+prompt: "You are given an array of positive integers nums.\nReturn the number of subarrays of nums, where\
+  \ the first and the last elements of the subarray are equal to the largest element in the subarray.\n\
+   \nExample 1:\n\nInput: nums = [1,4,3,3,2]\nOutput: 6\nExplanation:\nThere are 6 subarrays which have\
+  \ the first and the last elements equal to the largest element of the subarray:\n\nsubarray [1,4,3,3,2],\
+  \ with its largest element 1. The first element is 1 and the last element is also 1.\nsubarray [1,4,3,3,2],\
+  \ with its largest element 4. The first element is 4 and the last element is also 4.\nsubarray [1,4,3,3,2],\
+  \ with its largest element 3. The first element is 3 and the last element is also 3.\nsubarray [1,4,3,3,2],\
+  \ with its largest element 3. The first element is 3 and the last element is also 3.\nsubarray [1,4,3,3,2],\
+  \ with its largest element 2. The first element is 2 and the last element is also 2.\nsubarray [1,4,3,3,2],\
+  \ with its largest element 3. The first element is 3 and the last element is also 3.\n\nHence, we return\
+  \ 6.\n\nExample 2:\n\nInput: nums = [3,3,3]\nOutput: 6\nExplanation:\nThere are 6 subarrays which have\
+  \ the first and the last elements equal to the largest element of the subarray:\n\nsubarray [3,3,3],\
+  \ with its largest element 3. The first element is 3 and the last element is also 3.\nsubarray [3,3,3],\
+  \ with its largest element 3. The first element is 3 and the last element is also 3.\nsubarray [3,3,3],\
+  \ with its largest element 3. The first element is 3 and the last element is also 3.\nsubarray [3,3,3],\
+  \ with its largest element 3. The first element is 3 and the last element is also 3.\nsubarray [3,3,3],\
+  \ with its largest element 3. The first element is 3 and the last element is also 3.\nsubarray [3,3,3],\
+  \ with its largest element 3. The first element is 3 and the last element is also 3.\n\nHence, we return\
+  \ 6.\n\nExample 3:\n\nInput: nums = [1]\nOutput: 1\nExplanation:\nThere is a single subarray of nums\
+  \ which is [1], with its largest element 1. The first element is 1 and the last element is also 1.\n\
+  Hence, we return 1.\n\n \nConstraints:\n\n1 <= nums.length <= 105\n1 <= nums[i] <= 109\n\nWrite the\
+  \ solution in Python as this class, with any imports it needs:\n\n```python\nclass Solution:\n    def\
+  \ numberOfSubarrays(self, nums: List[int]) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().numberOfSubarrays(nums=[5, 4, 5, 4, 5]) == 8
+  - Solution().numberOfSubarrays(nums=[2, 1, 2, 1, 2]) == 8
+  - Solution().numberOfSubarrays(nums=[1, 3, 2, 3, 1, 3]) == 9
+  - Solution().numberOfSubarrays(nums=[1, 2, 2, 1]) == 5
+  - Solution().numberOfSubarrays(nums=[10, 9, 8, 7, 6, 5, 4, 3, 2, 1]) == 10
+  - Solution().numberOfSubarrays(nums=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) == 10
+  - Solution().numberOfSubarrays(nums=[7, 7, 7, 7, 7, 7, 7, 7, 7, 7]) == 55
+  - Solution().numberOfSubarrays(nums=[5, 1, 5, 2, 5, 5]) == 12
+  - Solution().numberOfSubarrays(nums=[1]) == 1
+  - Solution().numberOfSubarrays(nums=[2, 1, 2]) == 4
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3113'
+  date: '2024-04-07'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

@@ -1,0 +1,33 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3211
+modality: code
+prompt: "You are given a positive integer n.\nA binary string x is valid if all substrings of x of length\
+  \ 2 contain at least one \"1\".\nReturn all valid strings with length n, in any order.\n \nExample 1:\n\
+  \nInput: n = 3\nOutput: [\"010\",\"011\",\"101\",\"110\",\"111\"]\nExplanation:\nThe valid strings of\
+  \ length 3 are: \"010\", \"011\", \"101\", \"110\", and \"111\".\n\nExample 2:\n\nInput: n = 1\nOutput:\
+  \ [\"0\",\"1\"]\nExplanation:\nThe valid strings of length 1 are: \"0\" and \"1\".\n\n \nConstraints:\n\
+  \n1 <= n <= 18\n\nWrite the solution in Python as this class, with any imports it needs:\n\n```python\n\
+  class Solution:\n    def validStrings(self, n: int) -> List[str]:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().validStrings(n=3) == ['010', '011', '101', '110', '111']
+  - Solution().validStrings(n=4) == ['0101', '0110', '0111', '1010', '1011', '1101', '1110', '1111']
+  - Solution().validStrings(n=2) == ['01', '10', '11']
+  - Solution().validStrings(n=1) == ['0', '1']
+  - Solution().validStrings(n=5) == ['01010', '01011', '01101', '01110', '01111', '10101', '10110', '10111',
+    '11010', '11011', '11101', '11110', '11111']
+  - Solution().validStrings(n=6) == ['010101', '010110', '010111', '011010', '011011', '011101', '011110',
+    '011111', '101010', '101011', '101101', '101110', '101111', '110101', '110110', '110111', '111010',
+    '111011', '111101', '111110', '111111']
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3211'
+  date: '2024-07-07'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

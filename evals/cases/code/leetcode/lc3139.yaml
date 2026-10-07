@@ -1,0 +1,49 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3139
+modality: code
+prompt: "You are given an integer array nums and two integers cost1 and cost2. You are allowed to perform\
+  \ either of the following operations any number of times:\n\nChoose an index i from nums and increase\
+  \ nums[i] by 1 for a cost of cost1.\nChoose two different indices i, j, from nums and increase nums[i]\
+  \ and nums[j] by 1 for a cost of cost2.\n\nReturn the minimum cost required to make all elements in\
+  \ the array equal. \nSince the answer may be very large, return it modulo 109 + 7.\n \nExample 1:\n\n\
+  Input: nums = [4,1], cost1 = 5, cost2 = 2\nOutput: 15\nExplanation: \nThe following operations can be\
+  \ performed to make the values equal:\n\nIncrease nums[1] by 1 for a cost of 5. nums becomes [4,2].\n\
+  Increase nums[1] by 1 for a cost of 5. nums becomes [4,3].\nIncrease nums[1] by 1 for a cost of 5. nums\
+  \ becomes [4,4].\n\nThe total cost is 15.\n\nExample 2:\n\nInput: nums = [2,3,3,3,5], cost1 = 2, cost2\
+  \ = 1\nOutput: 6\nExplanation: \nThe following operations can be performed to make the values equal:\n\
+  \nIncrease nums[0] and nums[1] by 1 for a cost of 1. nums becomes [3,4,3,3,5].\nIncrease nums[0] and\
+  \ nums[2] by 1 for a cost of 1. nums becomes [4,4,4,3,5].\nIncrease nums[0] and nums[3] by 1 for a cost\
+  \ of 1. nums becomes [5,4,4,4,5].\nIncrease nums[1] and nums[2] by 1 for a cost of 1. nums becomes [5,5,5,4,5].\n\
+  Increase nums[3] by 1 for a cost of 2. nums becomes [5,5,5,5,5].\n\nThe total cost is 6.\n\nExample\
+  \ 3:\n\nInput: nums = [3,5,3], cost1 = 1, cost2 = 3\nOutput: 4\nExplanation:\nThe following operations\
+  \ can be performed to make the values equal:\n\nIncrease nums[0] by 1 for a cost of 1. nums becomes\
+  \ [4,5,3].\nIncrease nums[0] by 1 for a cost of 1. nums becomes [5,5,3].\nIncrease nums[2] by 1 for\
+  \ a cost of 1. nums becomes [5,5,4].\nIncrease nums[2] by 1 for a cost of 1. nums becomes [5,5,5].\n\
+  \nThe total cost is 4.\n\n \nConstraints:\n\n1 <= nums.length <= 105\n1 <= nums[i] <= 106\n1 <= cost1\
+  \ <= 106\n1 <= cost2 <= 106\n\nWrite the solution in Python as this class, with any imports it needs:\n\
+  \n```python\nclass Solution:\n    def minCostToEqualizeArray(self, nums: List[int], cost1: int, cost2:\
+  \ int) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().minCostToEqualizeArray(nums=[4, 1], cost1=5, cost2=2) == 15
+  - Solution().minCostToEqualizeArray(nums=[1, 3, 5, 7, 9], cost1=2, cost2=4) == 40
+  - Solution().minCostToEqualizeArray(nums=[1, 1, 1, 1, 1, 1, 1, 1, 1, 1], cost1=1, cost2=2) == 0
+  - Solution().minCostToEqualizeArray(nums=[10, 10, 10, 10], cost1=100, cost2=50) == 0
+  - Solution().minCostToEqualizeArray(nums=[2, 3, 3, 3, 5], cost1=2, cost2=1) == 6
+  - Solution().minCostToEqualizeArray(nums=[1, 2, 3, 4, 5], cost1=1, cost2=2) == 10
+  - Solution().minCostToEqualizeArray(nums=[5, 5, 5, 5, 5, 5, 5, 5, 5, 5], cost1=7, cost2=3) == 0
+  - Solution().minCostToEqualizeArray(nums=[10, 10, 10, 10, 10], cost1=100, cost2=50) == 0
+  - Solution().minCostToEqualizeArray(nums=[1, 1, 1, 1], cost1=10, cost2=5) == 0
+  - Solution().minCostToEqualizeArray(nums=[1, 2, 2, 3, 3, 3, 4, 4, 4, 4], cost1=3, cost2=2) == 10
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3139'
+  date: '2024-05-05'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

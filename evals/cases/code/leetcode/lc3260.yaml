@@ -1,0 +1,36 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3260
+modality: code
+prompt: "You are given two positive integers n and k.\nAn integer x is called k-palindromic if:\n\nx is\
+  \ a palindrome.\nx is divisible by k.\n\nReturn the largest integer having n digits (as a string) that\
+  \ is k-palindromic.\nNote that the integer must not have leading zeros.\n \nExample 1:\n\nInput: n =\
+  \ 3, k = 5\nOutput: \"595\"\nExplanation:\n595 is the largest k-palindromic integer with 3 digits.\n\
+  \nExample 2:\n\nInput: n = 1, k = 4\nOutput: \"8\"\nExplanation:\n4 and 8 are the only k-palindromic\
+  \ integers with 1 digit.\n\nExample 3:\n\nInput: n = 5, k = 6\nOutput: \"89898\"\n\n \nConstraints:\n\
+  \n1 <= n <= 105\n1 <= k <= 9\n\nWrite the solution in Python as this class, with any imports it needs:\n\
+  \n```python\nclass Solution:\n    def largestPalindrome(self, n: int, k: int) -> str:\n```\n\nReturn\
+  \ only the code."
+assert:
+  checks:
+  - Solution().largestPalindrome(n=1, k=4) == '8'
+  - Solution().largestPalindrome(n=6, k=9) == '999999'
+  - Solution().largestPalindrome(n=6, k=7) == '999999'
+  - Solution().largestPalindrome(n=3, k=5) == '595'
+  - Solution().largestPalindrome(n=5, k=6) == '89898'
+  - Solution().largestPalindrome(n=7, k=2) == '8999998'
+  - Solution().largestPalindrome(n=4, k=7) == '9779'
+  - Solution().largestPalindrome(n=7, k=9) == '9999999'
+  - Solution().largestPalindrome(n=10, k=8) == '8889999888'
+  - Solution().largestPalindrome(n=7, k=1) == '9999999'
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3260'
+  date: '2024-08-18'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

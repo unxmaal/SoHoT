@@ -1,0 +1,49 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3261
+modality: code
+prompt: "You are given a binary string s and an integer k.\nYou are also given a 2D integer array queries,\
+  \ where queries[i] = [li, ri].\nA binary string satisfies the k-constraint if either of the following\
+  \ conditions holds:\n\nThe number of 0's in the string is at most k.\nThe number of 1's in the string\
+  \ is at most k.\n\nReturn an integer array answer, where answer[i] is the number of substrings of s[li..ri]\
+  \ that satisfy the k-constraint.\n \nExample 1:\n\nInput: s = \"0001111\", k = 2, queries = [[0,6]]\n\
+  Output: [26]\nExplanation:\nFor the query [0, 6], all substrings of s[0..6] = \"0001111\" satisfy the\
+  \ k-constraint except for the substrings s[0..5] = \"000111\" and s[0..6] = \"0001111\".\n\nExample\
+  \ 2:\n\nInput: s = \"010101\", k = 1, queries = [[0,5],[1,4],[2,3]]\nOutput: [15,9,3]\nExplanation:\n\
+  The substrings of s with a length greater than 3 do not satisfy the k-constraint.\n\n \nConstraints:\n\
+  \n1 <= s.length <= 105\ns[i] is either '0' or '1'.\n1 <= k <= s.length\n1 <= queries.length <= 105\n\
+  queries[i] == [li, ri]\n0 <= li <= ri < s.length\nAll queries are distinct.\n\nWrite the solution in\
+  \ Python as this class, with any imports it needs:\n\n```python\nclass Solution:\n    def countKConstraintSubstrings(self,\
+  \ s: str, k: int, queries: List[List[int]]) -> List[int]:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().countKConstraintSubstrings(s='010101', k=1, queries=[[0, 5], [1, 4], [2, 3]]) == [15, 9,
+    3]
+  - Solution().countKConstraintSubstrings(s='111111', k=3, queries=[[0, 5], [1, 4], [2, 3]]) == [21, 10,
+    3]
+  - Solution().countKConstraintSubstrings(s='000000', k=3, queries=[[0, 5], [1, 4], [2, 3]]) == [21, 10,
+    3]
+  - Solution().countKConstraintSubstrings(s='0001111', k=2, queries=[[0, 6]]) == [26]
+  - Solution().countKConstraintSubstrings(s='1010101010', k=1, queries=[[0, 9], [1, 8], [2, 7], [3, 6]])
+    == [27, 21, 15, 9]
+  - Solution().countKConstraintSubstrings(s='0101010101', k=1, queries=[[0, 9], [1, 8], [2, 7], [3, 6]])
+    == [27, 21, 15, 9]
+  - Solution().countKConstraintSubstrings(s='1111111111', k=2, queries=[[0, 9], [1, 8], [2, 7], [3, 6]])
+    == [55, 36, 21, 10]
+  - Solution().countKConstraintSubstrings(s='111000', k=2, queries=[[0, 5], [1, 4], [2, 3]]) == [20, 10,
+    3]
+  - Solution().countKConstraintSubstrings(s='0110011001', k=2, queries=[[0, 9], [1, 8], [2, 7], [3, 6]])
+    == [42, 32, 20, 10]
+  - Solution().countKConstraintSubstrings(s='0000000000', k=2, queries=[[0, 9], [1, 8], [2, 7], [3, 6]])
+    == [55, 36, 21, 10]
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3261'
+  date: '2024-08-18'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

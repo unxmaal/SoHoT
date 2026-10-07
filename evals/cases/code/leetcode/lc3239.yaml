@@ -1,0 +1,40 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3239
+modality: code
+prompt: "You are given an m x n binary matrix grid.\nA row or column is considered palindromic if its\
+  \ values read the same forward and backward.\nYou can flip any number of cells in grid from 0 to 1,\
+  \ or from 1 to 0.\nReturn the minimum number of cells that need to be flipped to make either all rows\
+  \ palindromic or all columns palindromic.\n \nExample 1:\n\nInput: grid = [[1,0,0],[0,0,0],[0,0,1]]\n\
+  Output: 2\nExplanation:\n\nFlipping the highlighted cells makes all the rows palindromic.\n\nExample\
+  \ 2:\n\nInput: grid = [[0,1],[0,1],[0,0]]\nOutput: 1\nExplanation:\n\nFlipping the highlighted cell\
+  \ makes all the columns palindromic.\n\nExample 3:\n\nInput: grid = [[1],[0]]\nOutput: 0\nExplanation:\n\
+  All rows are already palindromic.\n\n \nConstraints:\n\nm == grid.length\nn == grid[i].length\n1 <=\
+  \ m * n <= 2 * 105\n0 <= grid[i][j] <= 1\n\nWrite the solution in Python as this class, with any imports\
+  \ it needs:\n\n```python\nclass Solution:\n    def minFlips(self, grid: List[List[int]]) -> int:\n```\n\
+  \nReturn only the code."
+assert:
+  checks:
+  - Solution().minFlips(grid=[[0, 0, 1, 1], [1, 1, 0, 0], [1, 0, 1, 0]]) == 2
+  - Solution().minFlips(grid=[[1], [0]]) == 0
+  - Solution().minFlips(grid=[[0, 1], [0, 1], [0, 0]]) == 1
+  - Solution().minFlips(grid=[[1, 1, 0], [0, 1, 0], [0, 1, 1]]) == 2
+  - Solution().minFlips(grid=[[1, 1, 1], [1, 0, 1], [1, 1, 1]]) == 0
+  - Solution().minFlips(grid=[[1, 0, 1, 0, 1], [0, 1, 0, 1, 0], [1, 0, 1, 0, 1]]) == 0
+  - Solution().minFlips(grid=[[1, 0, 0], [0, 0, 0], [0, 0, 1]]) == 2
+  - Solution().minFlips(grid=[[0, 0, 1, 1], [1, 1, 0, 0], [1, 1, 0, 0]]) == 4
+  - Solution().minFlips(grid=[[0, 0, 1, 0, 0, 0, 1, 0, 0], [0, 1, 0, 1, 0, 1, 0, 1, 0], [1, 0, 1, 0, 1,
+    0, 1, 0, 1]]) == 0
+  - Solution().minFlips(grid=[[0, 1, 1, 0, 0], [1, 1, 1, 1, 1], [0, 0, 0, 1, 1], [1, 0, 1, 0, 0], [0,
+    0, 1, 1, 1]]) == 6
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3239'
+  date: '2024-07-28'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

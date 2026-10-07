@@ -1,0 +1,40 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3122
+modality: code
+prompt: "You are given a 2D matrix grid of size m x n. In one operation, you can change the value of any\
+  \ cell to any non-negative number. You need to perform some operations such that each cell grid[i][j]\
+  \ is:\n\nEqual to the cell below it, i.e. grid[i][j] == grid[i + 1][j] (if it exists).\nDifferent from\
+  \ the cell to its right, i.e. grid[i][j] != grid[i][j + 1] (if it exists).\n\nReturn the minimum number\
+  \ of operations needed.\n \nExample 1:\n\nInput: grid = [[1,0,2],[1,0,2]]\nOutput: 0\nExplanation:\n\
+  \nAll the cells in the matrix already satisfy the properties.\n\nExample 2:\n\nInput: grid = [[1,1,1],[0,0,0]]\n\
+  Output: 3\nExplanation:\n\nThe matrix becomes [[1,0,1],[1,0,1]] which satisfies the properties, by doing\
+  \ these 3 operations:\n\nChange grid[1][0] to 1.\nChange grid[0][1] to 0.\nChange grid[1][2] to 1.\n\
+  \n\nExample 3:\n\nInput: grid = [[1],[2],[3]]\nOutput: 2\nExplanation:\n\nThere is a single column.\
+  \ We can change the value to 1 in each cell using 2 operations.\n\n \nConstraints:\n\n1 <= n, m <= 1000\n\
+  0 <= grid[i][j] <= 9\n\nWrite the solution in Python as this class, with any imports it needs:\n\n```python\n\
+  class Solution:\n    def minimumOperations(self, grid: List[List[int]]) -> int:\n```\n\nReturn only\
+  \ the code."
+assert:
+  checks:
+  - Solution().minimumOperations(grid=[[1], [2], [3]]) == 2
+  - Solution().minimumOperations(grid=[[1, 1, 1], [0, 0, 0]]) == 3
+  - Solution().minimumOperations(grid=[[0, 1, 2], [2, 1, 0], [0, 1, 2]]) == 2
+  - Solution().minimumOperations(grid=[[9, 9], [9, 9], [9, 9]]) == 3
+  - Solution().minimumOperations(grid=[[0, 1, 2, 3], [0, 1, 2, 3], [0, 1, 2, 3]]) == 0
+  - Solution().minimumOperations(grid=[[1, 1], [2, 2], [3, 3]]) == 4
+  - Solution().minimumOperations(grid=[[9, 9, 9], [9, 9, 9], [9, 9, 9]]) == 3
+  - Solution().minimumOperations(grid=[[7, 8, 9], [7, 8, 9], [7, 8, 9], [7, 8, 9]]) == 0
+  - Solution().minimumOperations(grid=[[1, 1, 2, 2], [2, 2, 1, 1], [1, 1, 2, 2]]) == 6
+  - Solution().minimumOperations(grid=[[5, 5, 5, 5], [5, 5, 5, 5], [5, 5, 5, 5]]) == 6
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3122'
+  date: '2024-04-21'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

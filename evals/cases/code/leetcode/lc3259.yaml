@@ -1,0 +1,44 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3259
+modality: code
+prompt: "You are given two integer arrays energyDrinkA and energyDrinkB of the same length n by a futuristic\
+  \ sports scientist. These arrays represent the energy boosts per hour provided by two different energy\
+  \ drinks, A and B, respectively.\nYou want to maximize your total energy boost by drinking one energy\
+  \ drink per hour. However, if you want to switch from consuming one energy drink to the other, you need\
+  \ to wait for one hour to cleanse your system (meaning you won't get any energy boost in that hour).\n\
+  Return the maximum total energy boost you can gain in the next n hours.\nNote that you can start consuming\
+  \ either of the two energy drinks.\n \nExample 1:\n\nInput: energyDrinkA = [1,3,1], energyDrinkB = [3,1,1]\n\
+  Output: 5\nExplanation:\nTo gain an energy boost of 5, drink only the energy drink A (or only B).\n\n\
+  Example 2:\n\nInput: energyDrinkA = [4,1,1], energyDrinkB = [1,1,3]\nOutput: 7\nExplanation:\nTo gain\
+  \ an energy boost of 7:\n\nDrink the energy drink A for the first hour.\nSwitch to the energy drink\
+  \ B and we lose the energy boost of the second hour.\nGain the energy boost of the drink B in the third\
+  \ hour.\n\n\n \nConstraints:\n\nn == energyDrinkA.length == energyDrinkB.length\n3 <= n <= 105\n1 <=\
+  \ energyDrinkA[i], energyDrinkB[i] <= 105\n\nWrite the solution in Python as this class, with any imports\
+  \ it needs:\n\n```python\nclass Solution:\n    def maxEnergyBoost(self, energyDrinkA: List[int], energyDrinkB:\
+  \ List[int]) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().maxEnergyBoost(energyDrinkA=[1, 1, 1, 1, 1, 1], energyDrinkB=[1, 1, 1, 1, 1, 1]) == 6
+  - Solution().maxEnergyBoost(energyDrinkA=[1, 100000, 1], energyDrinkB=[100000, 1, 100000]) == 200001
+  - Solution().maxEnergyBoost(energyDrinkA=[4, 1, 1], energyDrinkB=[1, 1, 3]) == 7
+  - Solution().maxEnergyBoost(energyDrinkA=[5, 5, 5, 5], energyDrinkB=[1, 1, 1, 1]) == 20
+  - Solution().maxEnergyBoost(energyDrinkA=[5, 5, 5], energyDrinkB=[5, 5, 5]) == 15
+  - Solution().maxEnergyBoost(energyDrinkA=[10, 20, 30], energyDrinkB=[30, 20, 10]) == 60
+  - Solution().maxEnergyBoost(energyDrinkA=[100000, 100000, 100000], energyDrinkB=[100000, 100000, 100000])
+    == 300000
+  - Solution().maxEnergyBoost(energyDrinkA=[5, 5, 5, 5], energyDrinkB=[5, 5, 5, 5]) == 20
+  - Solution().maxEnergyBoost(energyDrinkA=[100000, 100000, 100000], energyDrinkB=[1, 1, 1]) == 300000
+  - Solution().maxEnergyBoost(energyDrinkA=[1, 1, 1, 1, 1, 1, 1, 1, 1, 1], energyDrinkB=[2, 2, 2, 2, 2,
+    2, 2, 2, 2, 2]) == 20
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3259'
+  date: '2024-08-18'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

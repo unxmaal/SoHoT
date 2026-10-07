@@ -1,0 +1,35 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3125
+modality: code
+prompt: "Given an integer n, return the maximum integer x such that x <= n, and the bitwise AND of all\
+  \ the numbers in the range [x, n] is 0.\n \nExample 1:\n\nInput: n = 7\nOutput: 3\nExplanation:\nThe\
+  \ bitwise AND of [6, 7] is 6.\nThe bitwise AND of [5, 6, 7] is 4.\nThe bitwise AND of [4, 5, 6, 7] is\
+  \ 4.\nThe bitwise AND of [3, 4, 5, 6, 7] is 0.\n\nExample 2:\n\nInput: n = 9\nOutput: 7\nExplanation:\n\
+  The bitwise AND of [7, 8, 9] is 0.\n\nExample 3:\n\nInput: n = 17\nOutput: 15\nExplanation:\nThe bitwise\
+  \ AND of [15, 16, 17] is 0.\n\n \nConstraints:\n\n1 <= n <= 1015\n\nWrite the solution in Python as\
+  \ this class, with any imports it needs:\n\n```python\nclass Solution:\n    def maxNumber(self, n: int)\
+  \ -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().maxNumber(n=137438953471) == 68719476735
+  - Solution().maxNumber(n=1099511627776) == 1099511627775
+  - Solution().maxNumber(n=2147483647) == 1073741823
+  - Solution().maxNumber(n=262143) == 131071
+  - Solution().maxNumber(n=2047) == 1023
+  - Solution().maxNumber(n=1000000000000) == 549755813887
+  - Solution().maxNumber(n=2048) == 2047
+  - Solution().maxNumber(n=8191) == 4095
+  - Solution().maxNumber(n=1000000000001) == 549755813887
+  - Solution().maxNumber(n=32768) == 32767
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3125'
+  date: '2024-04-21'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

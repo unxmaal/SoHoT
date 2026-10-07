@@ -1,0 +1,56 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3244
+modality: code
+prompt: "You are given an integer n and a 2D integer array queries.\nThere are n cities numbered from\
+  \ 0 to n - 1. Initially, there is a unidirectional road from city i to city i + 1 for all 0 <= i < n\
+  \ - 1.\nqueries[i] = [ui, vi] represents the addition of a new unidirectional road from city ui to city\
+  \ vi. After each query, you need to find the length of the shortest path from city 0 to city n - 1.\n\
+  There are no two queries such that queries[i][0] < queries[j][0] < queries[i][1] < queries[j][1].\n\
+  Return an array answer where for each i in the range [0, queries.length - 1], answer[i] is the length\
+  \ of the shortest path from city 0 to city n - 1 after processing the first i + 1 queries.\n \nExample\
+  \ 1:\n\nInput: n = 5, queries = [[2,4],[0,2],[0,4]]\nOutput: [3,2,1]\nExplanation: \n\nAfter the addition\
+  \ of the road from 2 to 4, the length of the shortest path from 0 to 4 is 3.\n\nAfter the addition of\
+  \ the road from 0 to 2, the length of the shortest path from 0 to 4 is 2.\n\nAfter the addition of the\
+  \ road from 0 to 4, the length of the shortest path from 0 to 4 is 1.\n\nExample 2:\n\nInput: n = 4,\
+  \ queries = [[0,3],[0,2]]\nOutput: [1,1]\nExplanation:\n\nAfter the addition of the road from 0 to 3,\
+  \ the length of the shortest path from 0 to 3 is 1.\n\nAfter the addition of the road from 0 to 2, the\
+  \ length of the shortest path remains 1.\n\n \nConstraints:\n\n3 <= n <= 105\n1 <= queries.length <=\
+  \ 105\nqueries[i].length == 2\n0 <= queries[i][0] < queries[i][1] < n\n1 < queries[i][1] - queries[i][0]\n\
+  There are no repeated roads among the queries.\nThere are no two queries such that i != j and queries[i][0]\
+  \ < queries[j][0] < queries[i][1] < queries[j][1].\n\nWrite the solution in Python as this class, with\
+  \ any imports it needs:\n\n```python\nclass Solution:\n    def shortestDistanceAfterQueries(self, n:\
+  \ int, queries: List[List[int]]) -> List[int]:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().shortestDistanceAfterQueries(n=7, queries=[[3, 6], [1, 3], [0, 1], [0, 6]]) == [4, 3, 3,
+    1]
+  - Solution().shortestDistanceAfterQueries(n=8, queries=[[2, 7], [0, 2], [4, 6], [0, 4]]) == [3, 2, 2,
+    1]
+  - Solution().shortestDistanceAfterQueries(n=5, queries=[[2, 4], [0, 2], [0, 4]]) == [3, 2, 1]
+  - Solution().shortestDistanceAfterQueries(n=4, queries=[[0, 3], [0, 2]]) == [1, 1]
+  - Solution().shortestDistanceAfterQueries(n=50, queries=[[2, 10], [11, 20], [21, 30], [31, 40], [0,
+    2], [4, 12], [5, 15], [17, 27], [0, 31], [11, 41]]) == [42, 34, 26, 18, 17, 17, 17, 17, 11, 11]
+  - Solution().shortestDistanceAfterQueries(n=50000, queries=[[1, 49999], [2, 49999], [3, 49999], [0,
+    2], [0, 1]]) == [2, 2, 2, 1, 1]
+  - Solution().shortestDistanceAfterQueries(n=100, queries=[[10, 90], [20, 80], [30, 70], [40, 60], [50,
+    50], [0, 10], [1, 20], [2, 30], [3, 40], [4, 50]]) == [20, 20, 20, 20, 20, 11, 11, 11, 11, 11]
+  - Solution().shortestDistanceAfterQueries(n=100, queries=[[1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6,
+    7], [7, 8], [8, 9], [9, 10], [0, 1], [0, 2], [0, 3], [0, 4], [0, 5], [0, 6], [0, 7], [0, 8], [0, 9],
+    [0, 10]]) == [99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 98, 97, 96, 95, 94, 93, 92, 91, 90]
+  - Solution().shortestDistanceAfterQueries(n=75000, queries=[[37500, 74999], [18750, 74999], [56250,
+    74999], [9375, 74999], [28125, 74999], [46875, 74999], [65625, 74999]]) == [37501, 18751, 18751, 9376,
+    9376, 9376, 9376]
+  - Solution().shortestDistanceAfterQueries(n=10, queries=[[1, 5], [2, 6], [0, 1], [3, 7], [4, 8], [0,
+    4]]) == [6, 6, 6, 6, 6, 5]
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3244'
+  date: '2024-08-04'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

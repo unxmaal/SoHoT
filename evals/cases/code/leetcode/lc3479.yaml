@@ -1,0 +1,44 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3479
+modality: code
+prompt: "You are given two arrays of integers, fruits and baskets, each of length n, where fruits[i] represents\
+  \ the quantity of the ith type of fruit, and baskets[j] represents the capacity of the jth basket.\n\
+  From left to right, place the fruits according to these rules:\n\nEach fruit type must be placed in\
+  \ the leftmost available basket with a capacity greater than or equal to the quantity of that fruit\
+  \ type.\nEach basket can hold only one type of fruit.\nIf a fruit type cannot be placed in any basket,\
+  \ it remains unplaced.\n\nReturn the number of fruit types that remain unplaced after all possible allocations\
+  \ are made.\n \nExample 1:\n\nInput: fruits = [4,2,5], baskets = [3,5,4]\nOutput: 1\nExplanation:\n\n\
+  fruits[0] = 4 is placed in baskets[1] = 5.\nfruits[1] = 2 is placed in baskets[0] = 3.\nfruits[2] =\
+  \ 5 cannot be placed in baskets[2] = 4.\n\nSince one fruit type remains unplaced, we return 1.\n\nExample\
+  \ 2:\n\nInput: fruits = [3,6,1], baskets = [6,4,7]\nOutput: 0\nExplanation:\n\nfruits[0] = 3 is placed\
+  \ in baskets[0] = 6.\nfruits[1] = 6 cannot be placed in baskets[1] = 4 (insufficient capacity) but can\
+  \ be placed in the next available basket, baskets[2] = 7.\nfruits[2] = 1 is placed in baskets[1] = 4.\n\
+  \nSince all fruits are successfully placed, we return 0.\n\n \nConstraints:\n\nn == fruits.length ==\
+  \ baskets.length\n1 <= n <= 105\n1 <= fruits[i], baskets[i] <= 109\n\nWrite the solution in Python as\
+  \ this class, with any imports it needs:\n\n```python\nclass Solution:\n    def numOfUnplacedFruits(self,\
+  \ fruits: List[int], baskets: List[int]) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().numOfUnplacedFruits(fruits=[5, 5, 5, 5, 5], baskets=[1, 2, 3, 4, 5]) == 4
+  - Solution().numOfUnplacedFruits(fruits=[4, 2, 5], baskets=[3, 5, 4]) == 1
+  - Solution().numOfUnplacedFruits(fruits=[1, 1, 1, 1], baskets=[1, 1, 1, 1]) == 0
+  - Solution().numOfUnplacedFruits(fruits=[1000000000, 1000000000], baskets=[999999999, 1000000000]) ==
+    1
+  - Solution().numOfUnplacedFruits(fruits=[1000000000], baskets=[1000000000]) == 0
+  - Solution().numOfUnplacedFruits(fruits=[1, 2, 3, 4], baskets=[4, 3, 2, 1]) == 2
+  - Solution().numOfUnplacedFruits(fruits=[1, 1, 1, 1, 1], baskets=[1, 1, 1, 1, 1]) == 0
+  - Solution().numOfUnplacedFruits(fruits=[1, 2, 3, 4], baskets=[10, 10, 10, 10]) == 0
+  - Solution().numOfUnplacedFruits(fruits=[10, 9, 8, 7, 6], baskets=[6, 7, 8, 9, 10]) == 0
+  - Solution().numOfUnplacedFruits(fruits=[5, 5, 5, 5], baskets=[5, 5, 5, 5]) == 0
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3479'
+  date: '2025-03-09'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

@@ -1,0 +1,40 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3444
+modality: code
+prompt: "You are given two arrays, nums and target.\nIn a single operation, you may increment any element\
+  \ of nums by 1.\nReturn the minimum number of operations required so that each element in target has\
+  \ at least one multiple in nums.\n \nExample 1:\n\nInput: nums = [1,2,3], target = [4]\nOutput: 1\n\
+  Explanation:\nThe minimum number of operations required to satisfy the condition is 1.\n\nIncrement\
+  \ 3 to 4 with just one operation, making 4 a multiple of itself.\n\n\nExample 2:\n\nInput: nums = [8,4],\
+  \ target = [10,5]\nOutput: 2\nExplanation:\nThe minimum number of operations required to satisfy the\
+  \ condition is 2.\n\nIncrement 8 to 10 with 2 operations, making 10 a multiple of both 5 and 10.\n\n\
+  \nExample 3:\n\nInput: nums = [7,9,10], target = [7]\nOutput: 0\nExplanation:\nTarget 7 already has\
+  \ a multiple in nums, so no additional operations are needed.\n\n \nConstraints:\n\n1 <= nums.length\
+  \ <= 5 * 104\n1 <= target.length <= 4\ntarget.length <= nums.length\n1 <= nums[i], target[i] <= 104\n\
+  \nWrite the solution in Python as this class, with any imports it needs:\n\n```python\nclass Solution:\n\
+  \    def minimumIncrements(self, nums: List[int], target: List[int]) -> int:\n```\n\nReturn only the\
+  \ code."
+assert:
+  checks:
+  - Solution().minimumIncrements(nums=[5, 10, 15], target=[5, 10, 15]) == 0
+  - Solution().minimumIncrements(nums=[5, 10, 15, 20], target=[5, 15]) == 0
+  - Solution().minimumIncrements(nums=[10, 20, 30], target=[5, 15]) == 0
+  - Solution().minimumIncrements(nums=[1, 1, 1], target=[3]) == 2
+  - Solution().minimumIncrements(nums=[10, 20, 30, 40], target=[5, 10, 15]) == 0
+  - Solution().minimumIncrements(nums=[1, 2, 3], target=[4]) == 1
+  - Solution().minimumIncrements(nums=[100, 200, 300], target=[100, 200, 300]) == 0
+  - Solution().minimumIncrements(nums=[100, 200, 300], target=[50, 100]) == 0
+  - Solution().minimumIncrements(nums=[5, 10, 15], target=[5, 10]) == 0
+  - Solution().minimumIncrements(nums=[3, 6, 9, 12], target=[3, 6]) == 0
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3444'
+  date: '2025-02-02'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

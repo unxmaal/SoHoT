@@ -1,0 +1,49 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3273
+modality: code
+prompt: "You are given an integer power and two integer arrays damage and health, both having length n.\n\
+  Bob has n enemies, where enemy i will deal Bob damage[i] points of damage per second while they are\
+  \ alive (i.e. health[i] > 0).\nEvery second, after the enemies deal damage to Bob, he chooses one of\
+  \ the enemies that is still alive and deals power points of damage to them.\nDetermine the minimum total\
+  \ amount of damage points that will be dealt to Bob before all n enemies are dead.\n \nExample 1:\n\n\
+  Input: power = 4, damage = [1,2,3,4], health = [4,5,6,8]\nOutput: 39\nExplanation:\n\nAttack enemy 3\
+  \ in the first two seconds, after which enemy 3 will go down, the number of damage points dealt to Bob\
+  \ is 10 + 10 = 20 points.\nAttack enemy 2 in the next two seconds, after which enemy 2 will go down,\
+  \ the number of damage points dealt to Bob is 6 + 6 = 12 points.\nAttack enemy 0 in the next second,\
+  \ after which enemy 0 will go down, the number of damage points dealt to Bob is 3 points.\nAttack enemy\
+  \ 1 in the next two seconds, after which enemy 1 will go down, the number of damage points dealt to\
+  \ Bob is 2 + 2 = 4 points.\n\n\nExample 2:\n\nInput: power = 1, damage = [1,1,1,1], health = [1,2,3,4]\n\
+  Output: 20\nExplanation:\n\nAttack enemy 0 in the first second, after which enemy 0 will go down, the\
+  \ number of damage points dealt to Bob is 4 points.\nAttack enemy 1 in the next two seconds, after which\
+  \ enemy 1 will go down, the number of damage points dealt to Bob is 3 + 3 = 6 points.\nAttack enemy\
+  \ 2 in the next three seconds, after which enemy 2 will go down, the number of damage points dealt to\
+  \ Bob is 2 + 2 + 2 = 6 points.\nAttack enemy 3 in the next four seconds, after which enemy 3 will go\
+  \ down, the number of damage points dealt to Bob is 1 + 1 + 1 + 1 = 4 points.\n\n\nExample 3:\n\nInput:\
+  \ power = 8, damage = [40], health = [59]\nOutput: 320\n\n \nConstraints:\n\n1 <= power <= 104\n1 <=\
+  \ n == damage.length == health.length <= 105\n1 <= damage[i], health[i] <= 104\n\nWrite the solution\
+  \ in Python as this class, with any imports it needs:\n\n```python\nclass Solution:\n    def minDamage(self,\
+  \ power: int, damage: List[int], health: List[int]) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().minDamage(power=2, damage=[1, 1, 1, 1, 1], health=[1, 2, 3, 4, 5]) == 22
+  - Solution().minDamage(power=100, damage=[10, 20, 30], health=[100, 100, 100]) == 100
+  - Solution().minDamage(power=4, damage=[1, 2, 3, 4], health=[4, 5, 6, 8]) == 39
+  - Solution().minDamage(power=5, damage=[3, 2, 1], health=[10, 15, 20]) == 25
+  - Solution().minDamage(power=100, damage=[50, 50, 50], health=[100, 100, 100]) == 300
+  - Solution().minDamage(power=5, damage=[2, 3, 4], health=[10, 15, 20]) == 55
+  - Solution().minDamage(power=10, damage=[5, 5, 5, 5], health=[5, 5, 5, 5]) == 50
+  - Solution().minDamage(power=10, damage=[1, 1, 1, 1, 1], health=[1, 1, 1, 1, 1]) == 15
+  - Solution().minDamage(power=10, damage=[5, 5, 5, 5], health=[10, 10, 10, 10]) == 50
+  - Solution().minDamage(power=3, damage=[2, 2, 2, 2], health=[3, 3, 3, 3]) == 20
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3273'
+  date: '2024-08-25'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

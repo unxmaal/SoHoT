@@ -1,0 +1,39 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3483
+modality: code
+prompt: "You are given an array of digits called digits. Your task is to determine the number of distinct\
+  \ three-digit even numbers that can be formed using these digits.\nNote: Each copy of a digit can only\
+  \ be used once per number, and there may not be leading zeros.\n \nExample 1:\n\nInput: digits = [1,2,3,4]\n\
+  Output: 12\nExplanation: The 12 distinct 3-digit even numbers that can be formed are 124, 132, 134,\
+  \ 142, 214, 234, 312, 314, 324, 342, 412, and 432. Note that 222 cannot be formed because there is only\
+  \ 1 copy of the digit 2.\n\nExample 2:\n\nInput: digits = [0,2,2]\nOutput: 2\nExplanation: The only\
+  \ 3-digit even numbers that can be formed are 202 and 220. Note that the digit 2 can be used twice because\
+  \ it appears twice in the array.\n\nExample 3:\n\nInput: digits = [6,6,6]\nOutput: 1\nExplanation: Only\
+  \ 666 can be formed.\n\nExample 4:\n\nInput: digits = [1,3,5]\nOutput: 0\nExplanation: No even 3-digit\
+  \ numbers can be formed.\n\n \nConstraints:\n\n3 <= digits.length <= 10\n0 <= digits[i] <= 9\n\nWrite\
+  \ the solution in Python as this class, with any imports it needs:\n\n```python\nclass Solution:\n \
+  \   def totalNumbers(self, digits: List[int]) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().totalNumbers(digits=[1, 1, 1, 1, 1, 1, 1, 1, 1, 1]) == 0
+  - Solution().totalNumbers(digits=[8, 8, 8, 8, 8, 8, 8, 8, 8, 8]) == 1
+  - Solution().totalNumbers(digits=[6, 6, 6]) == 1
+  - Solution().totalNumbers(digits=[1, 3, 5]) == 0
+  - Solution().totalNumbers(digits=[2, 2, 2, 2, 2, 2, 2, 2, 2, 2]) == 1
+  - Solution().totalNumbers(digits=[1, 0, 2, 3, 5, 7, 9]) == 55
+  - Solution().totalNumbers(digits=[9, 9, 9, 9, 9, 9, 9, 9, 9, 9]) == 0
+  - Solution().totalNumbers(digits=[1, 2, 3, 4, 5, 6, 7, 8, 9, 0]) == 328
+  - Solution().totalNumbers(digits=[0, 0, 0]) == 0
+  - Solution().totalNumbers(digits=[2, 0, 0, 2]) == 3
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3483'
+  date: '2025-03-09'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

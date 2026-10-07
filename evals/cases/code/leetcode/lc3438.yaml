@@ -1,0 +1,39 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3438
+modality: code
+prompt: "You are given a string s consisting only of digits. A valid pair is defined as two adjacent digits\
+  \ in s such that:\n\nThe first digit is not equal to the second.\nEach digit in the pair appears in\
+  \ s exactly as many times as its numeric value.\n\nReturn the first valid pair found in the string s\
+  \ when traversing from left to right. If no valid pair exists, return an empty string.\n \nExample 1:\n\
+  \nInput: s = \"2523533\"\nOutput: \"23\"\nExplanation:\nDigit '2' appears 2 times and digit '3' appears\
+  \ 3 times. Each digit in the pair \"23\" appears in s exactly as many times as its numeric value. Hence,\
+  \ the output is \"23\".\n\nExample 2:\n\nInput: s = \"221\"\nOutput: \"21\"\nExplanation:\nDigit '2'\
+  \ appears 2 times and digit '1' appears 1 time. Hence, the output is \"21\".\n\nExample 3:\n\nInput:\
+  \ s = \"22\"\nOutput: \"\"\nExplanation:\nThere are no valid adjacent pairs.\n\n \nConstraints:\n\n\
+  2 <= s.length <= 100\ns only consists of digits from '1' to '9'.\n\nWrite the solution in Python as\
+  \ this class, with any imports it needs:\n\n```python\nclass Solution:\n    def findValidPair(self,\
+  \ s: str) -> str:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().findValidPair(s='213123') == ''
+  - Solution().findValidPair(s='9999999998888888777777666665555444332211') == ''
+  - Solution().findValidPair(s='221') == '21'
+  - Solution().findValidPair(s='22221111') == ''
+  - Solution().findValidPair(s='1222233333444444555555566666667777777788888888999999999') == '89'
+  - Solution().findValidPair(s='999999999888888887777777666665555444332211') == '98'
+  - Solution().findValidPair(s='111223334444555566666777778888889999999') == '23'
+  - Solution().findValidPair(s='2523533') == '23'
+  - Solution().findValidPair(s='5555544443332211') == '54'
+  - Solution().findValidPair(s='11111111122222222233333333444444555556666777889') == ''
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3438'
+  date: '2025-01-26'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

@@ -1,0 +1,40 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3255
+modality: code
+prompt: "You are given an array of integers nums of length n and a positive integer k.\nThe power of an\
+  \ array is defined as:\n\nIts maximum element if all of its elements are consecutive and sorted in ascending\
+  \ order.\n-1 otherwise.\n\nYou need to find the power of all subarrays of nums of size k.\nReturn an\
+  \ integer array results of size n - k + 1, where results[i] is the power of nums[i..(i + k - 1)].\n\
+   \nExample 1:\n\nInput: nums = [1,2,3,4,3,2,5], k = 3\nOutput: [3,4,-1,-1,-1]\nExplanation:\nThere are\
+  \ 5 subarrays of nums of size 3:\n\n[1, 2, 3] with the maximum element 3.\n[2, 3, 4] with the maximum\
+  \ element 4.\n[3, 4, 3] whose elements are not consecutive.\n[4, 3, 2] whose elements are not sorted.\n\
+  [3, 2, 5] whose elements are not consecutive.\n\n\nExample 2:\n\nInput: nums = [2,2,2,2,2], k = 4\n\
+  Output: [-1,-1]\n\nExample 3:\n\nInput: nums = [3,2,3,2,3,2], k = 2\nOutput: [-1,3,-1,3,-1]\n\n \nConstraints:\n\
+  \n1 <= n == nums.length <= 105\n1 <= nums[i] <= 106\n1 <= k <= n\n\nWrite the solution in Python as\
+  \ this class, with any imports it needs:\n\n```python\nclass Solution:\n    def resultsArray(self, nums:\
+  \ List[int], k: int) -> List[int]:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().resultsArray(nums=[100, 101, 102, 103, 104, 105], k=2) == [101, 102, 103, 104, 105]
+  - Solution().resultsArray(nums=[2, 2, 2, 2, 2], k=4) == [-1, -1]
+  - Solution().resultsArray(nums=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10], k=1) == [1, 2, 3, 4, 5, 6, 7, 8, 9,
+    10]
+  - Solution().resultsArray(nums=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10], k=10) == [10]
+  - Solution().resultsArray(nums=[10, 9, 8, 7, 6], k=2) == [-1, -1, -1, -1]
+  - Solution().resultsArray(nums=[1, 2, 3, 4, 3, 2, 5], k=3) == [3, 4, -1, -1, -1]
+  - Solution().resultsArray(nums=[3, 2, 3, 2, 3, 2], k=2) == [-1, 3, -1, 3, -1]
+  - Solution().resultsArray(nums=[1, 2, 3, 5, 6, 7, 8, 9, 10], k=4) == [-1, -1, -1, 8, 9, 10]
+  - Solution().resultsArray(nums=[5, 6, 7, 8, 9, 10, 11, 12, 13], k=5) == [9, 10, 11, 12, 13]
+  - Solution().resultsArray(nums=[1], k=1) == [1]
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3255'
+  date: '2024-08-11'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

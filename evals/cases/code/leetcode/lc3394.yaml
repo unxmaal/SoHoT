@@ -1,0 +1,58 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3394
+modality: code
+prompt: "You are given an integer n representing the dimensions of an n x n grid, with the origin at the\
+  \ bottom-left corner of the grid. You are also given a 2D array of coordinates rectangles, where rectangles[i]\
+  \ is in the form [startx, starty, endx, endy], representing a rectangle on the grid. Each rectangle\
+  \ is defined as follows:\n\n(startx, starty): The bottom-left corner of the rectangle.\n(endx, endy):\
+  \ The top-right corner of the rectangle.\n\nNote that the rectangles do not overlap. Your task is to\
+  \ determine if it is possible to make either two horizontal or two vertical cuts on the grid such that:\n\
+  \nEach of the three resulting sections formed by the cuts contains at least one rectangle.\nEvery rectangle\
+  \ belongs to exactly one section.\n\nReturn true if such cuts can be made; otherwise, return false.\n\
+   \nExample 1:\n\nInput: n = 5, rectangles = [[1,0,5,2],[0,2,2,4],[3,2,5,3],[0,4,4,5]]\nOutput: true\n\
+  Explanation:\n\nThe grid is shown in the diagram. We can make horizontal cuts at y = 2 and y = 4. Hence,\
+  \ output is true.\n\nExample 2:\n\nInput: n = 4, rectangles = [[0,0,1,1],[2,0,3,4],[0,2,2,3],[3,0,4,3]]\n\
+  Output: true\nExplanation:\n\nWe can make vertical cuts at x = 2 and x = 3. Hence, output is true.\n\
+  \nExample 3:\n\nInput: n = 4, rectangles = [[0,2,2,4],[1,0,3,2],[2,2,3,4],[3,0,4,2],[3,2,4,4]]\nOutput:\
+  \ false\nExplanation:\nWe cannot make two horizontal or two vertical cuts that satisfy the conditions.\
+  \ Hence, output is false.\n\n \nConstraints:\n\n3 <= n <= 109\n3 <= rectangles.length <= 105\n0 <= rectangles[i][0]\
+  \ < rectangles[i][2] <= n\n0 <= rectangles[i][1] < rectangles[i][3] <= n\nNo two rectangles overlap.\n\
+  \nWrite the solution in Python as this class, with any imports it needs:\n\n```python\nclass Solution:\n\
+  \    def checkValidCuts(self, n: int, rectangles: List[List[int]]) -> bool:\n```\n\nReturn only the\
+  \ code."
+assert:
+  checks:
+  - Solution().checkValidCuts(n=5, rectangles=[[1, 0, 5, 2], [0, 2, 2, 4], [3, 2, 5, 3], [0, 4, 4, 5]])
+    == True
+  - Solution().checkValidCuts(n=4, rectangles=[[0, 0, 1, 1], [2, 0, 3, 4], [0, 2, 2, 3], [3, 0, 4, 3]])
+    == True
+  - Solution().checkValidCuts(n=4, rectangles=[[0, 2, 2, 4], [1, 0, 3, 2], [2, 2, 3, 4], [3, 0, 4, 2],
+    [3, 2, 4, 4]]) == False
+  - Solution().checkValidCuts(n=10, rectangles=[[0, 0, 3, 3], [3, 0, 6, 3], [6, 0, 9, 3], [0, 3, 3, 6],
+    [3, 3, 6, 6], [6, 3, 9, 6], [0, 6, 3, 9], [3, 6, 6, 9], [6, 6, 9, 9]]) == True
+  - Solution().checkValidCuts(n=14, rectangles=[[1, 1, 5, 5], [6, 1, 10, 5], [11, 1, 14, 5], [1, 6, 5,
+    10], [6, 6, 10, 10], [11, 6, 14, 10], [1, 11, 5, 14], [6, 11, 10, 14], [11, 11, 14, 14]]) == True
+  - Solution().checkValidCuts(n=10, rectangles=[[0, 0, 2, 3], [2, 0, 4, 3], [4, 0, 6, 3], [6, 0, 8, 3],
+    [8, 0, 10, 3], [1, 4, 3, 6], [3, 4, 5, 6], [5, 4, 7, 6], [7, 4, 9, 6], [0, 7, 2, 10], [2, 7, 4, 10],
+    [4, 7, 6, 10], [6, 7, 8, 10], [8, 7, 10, 10]]) == True
+  - Solution().checkValidCuts(n=10, rectangles=[[0, 0, 4, 3], [4, 0, 7, 2], [7, 0, 10, 1], [0, 3, 3, 7],
+    [3, 3, 10, 5], [0, 7, 5, 10], [5, 7, 8, 8], [8, 7, 10, 10]]) == True
+  - Solution().checkValidCuts(n=15, rectangles=[[0, 0, 5, 4], [5, 0, 10, 3], [10, 0, 15, 2], [0, 4, 3,
+    8], [3, 4, 7, 6], [7, 4, 11, 5], [11, 4, 15, 7], [0, 8, 5, 10], [5, 8, 10, 9], [10, 8, 15, 12], [0,
+    10, 7, 12], [7, 10, 11, 11], [11, 10, 15, 15]]) == True
+  - Solution().checkValidCuts(n=8, rectangles=[[0, 0, 3, 2], [3, 0, 5, 3], [5, 0, 8, 2], [0, 2, 3, 6],
+    [3, 3, 5, 6], [5, 2, 8, 6], [0, 6, 3, 8], [3, 6, 5, 8], [5, 6, 8, 8]]) == True
+  - Solution().checkValidCuts(n=10, rectangles=[[0, 0, 3, 3], [3, 0, 6, 6], [6, 0, 10, 10], [0, 3, 3,
+    6], [3, 3, 6, 9], [6, 3, 10, 10], [0, 6, 3, 10], [3, 6, 6, 10], [6, 6, 10, 10]]) == True
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3394'
+  date: '2024-12-15'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

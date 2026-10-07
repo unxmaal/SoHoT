@@ -1,0 +1,41 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3163
+modality: code
+prompt: "Given a string word, compress it using the following algorithm:\n\nBegin with an empty string\
+  \ comp. While word is not empty, use the following operation:\n\n\t\nRemove a maximum length prefix\
+  \ of word made of a single character c repeating at most 9 times.\nAppend the length of the prefix followed\
+  \ by c to comp.\n\n\n\nReturn the string comp.\n \nExample 1:\n\nInput: word = \"abcde\"\nOutput: \"\
+  1a1b1c1d1e\"\nExplanation:\nInitially, comp = \"\". Apply the operation 5 times, choosing \"a\", \"\
+  b\", \"c\", \"d\", and \"e\" as the prefix in each operation.\nFor each prefix, append \"1\" followed\
+  \ by the character to comp.\n\nExample 2:\n\nInput: word = \"aaaaaaaaaaaaaabb\"\nOutput: \"9a5a2b\"\n\
+  Explanation:\nInitially, comp = \"\". Apply the operation 3 times, choosing \"aaaaaaaaa\", \"aaaaa\"\
+  , and \"bb\" as the prefix in each operation.\n\nFor prefix \"aaaaaaaaa\", append \"9\" followed by\
+  \ \"a\" to comp.\nFor prefix \"aaaaa\", append \"5\" followed by \"a\" to comp.\nFor prefix \"bb\",\
+  \ append \"2\" followed by \"b\" to comp.\n\n\n \nConstraints:\n\n1 <= word.length <= 2 * 105\nword\
+  \ consists only of lowercase English letters.\n\nWrite the solution in Python as this class, with any\
+  \ imports it needs:\n\n```python\nclass Solution:\n    def compressedString(self, word: str) -> str:\n\
+  ```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().compressedString(word='pppppppppppppppppppppppppppppppppppppp') == '9p9p9p9p2p'
+  - Solution().compressedString(word='abcde') == '1a1b1c1d1e'
+  - Solution().compressedString(word='aabbcc') == '2a2b2c'
+  - Solution().compressedString(word='aaaaaaaaaaaaaabb') == '9a5a2b'
+  - Solution().compressedString(word='ababababab') == '1a1b1a1b1a1b1a1b1a1b'
+  - Solution().compressedString(word='aaaaaaaaaabbbbbbbbbccccccccddddddddd') == '9a1a9b8c9d'
+  - Solution().compressedString(word='aabcccccaaa') == '2a1b5c3a'
+  - Solution().compressedString(word='aabbccddeeffgghhiijjkkllmmnnooppqqrrssttuuvvwwxxyyzz') == '2a2b2c2d2e2f2g2h2i2j2k2l2m2n2o2p2q2r2s2t2u2v2w2x2y2z'
+  - Solution().compressedString(word='aabbccddeeffgghhiijj') == '2a2b2c2d2e2f2g2h2i2j'
+  - Solution().compressedString(word='zzzzzzzzzz') == '9z1z'
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3163'
+  date: '2024-05-26'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

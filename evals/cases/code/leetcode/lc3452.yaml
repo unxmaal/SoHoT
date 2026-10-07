@@ -1,0 +1,37 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3452
+modality: code
+prompt: "Given an array of integers nums and an integer k, an element nums[i] is considered good if it\
+  \ is strictly greater than the elements at indices i - k and i + k (if those indices exist). If neither\
+  \ of these indices exists, nums[i] is still considered good.\nReturn the sum of all the good elements\
+  \ in the array.\n \nExample 1:\n\nInput: nums = [1,3,2,1,5,4], k = 2\nOutput: 12\nExplanation:\nThe\
+  \ good numbers are nums[1] = 3, nums[4] = 5, and nums[5] = 4 because they are strictly greater than\
+  \ the numbers at indices i - k and i + k.\n\nExample 2:\n\nInput: nums = [2,1], k = 1\nOutput: 2\nExplanation:\n\
+  The only good number is nums[0] = 2 because it is strictly greater than nums[1].\n\n \nConstraints:\n\
+  \n2 <= nums.length <= 100\n1 <= nums[i] <= 1000\n1 <= k <= floor(nums.length / 2)\n\nWrite the solution\
+  \ in Python as this class, with any imports it needs:\n\n```python\nclass Solution:\n    def sumOfGoodNumbers(self,\
+  \ nums: List[int], k: int) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().sumOfGoodNumbers(nums=[2, 1], k=1) == 2
+  - Solution().sumOfGoodNumbers(nums=[3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5], k=2) == 14
+  - Solution().sumOfGoodNumbers(nums=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10], k=3) == 27
+  - Solution().sumOfGoodNumbers(nums=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10], k=1) == 10
+  - Solution().sumOfGoodNumbers(nums=[1, 3, 2, 1, 5, 4], k=2) == 12
+  - Solution().sumOfGoodNumbers(nums=[5, 1, 4, 1, 5, 9, 2, 6], k=2) == 19
+  - Solution().sumOfGoodNumbers(nums=[5, 6, 7, 8, 9, 10, 11, 12], k=3) == 33
+  - Solution().sumOfGoodNumbers(nums=[5, 6, 7, 8, 9, 10], k=3) == 27
+  - Solution().sumOfGoodNumbers(nums=[10, 9, 8, 7, 6, 5, 4, 3, 2, 1], k=2) == 19
+  - Solution().sumOfGoodNumbers(nums=[5, 4, 3, 2, 1], k=1) == 5
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3452'
+  date: '2025-02-09'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

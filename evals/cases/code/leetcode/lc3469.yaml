@@ -1,0 +1,44 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3469
+modality: code
+prompt: "You are given an integer array nums. Your task is to remove all elements from the array by performing\
+  \ one of the following operations at each step until nums is empty:\n\nChoose any two elements from\
+  \ the first three elements of nums and remove them. The cost of this operation is the maximum of the\
+  \ two elements removed.\nIf fewer than three elements remain in nums, remove all the remaining elements\
+  \ in a single operation. The cost of this operation is the maximum of the remaining elements.\n\nReturn\
+  \ the minimum cost required to remove all the elements.\n \nExample 1:\n\nInput: nums = [6,2,8,4]\n\
+  Output: 12\nExplanation:\nInitially, nums = [6, 2, 8, 4].\n\nIn the first operation, remove nums[0]\
+  \ = 6 and nums[2] = 8 with a cost of max(6, 8) = 8. Now, nums = [2, 4].\nIn the second operation, remove\
+  \ the remaining elements with a cost of max(2, 4) = 4.\n\nThe cost to remove all elements is 8 + 4 =\
+  \ 12. This is the minimum cost to remove all elements in nums. Hence, the output is 12.\n\nExample 2:\n\
+  \nInput: nums = [2,1,3,3]\nOutput: 5\nExplanation:\nInitially, nums = [2, 1, 3, 3].\n\nIn the first\
+  \ operation, remove nums[0] = 2 and nums[1] = 1 with a cost of max(2, 1) = 2. Now, nums = [3, 3].\n\
+  In the second operation remove the remaining elements with a cost of max(3, 3) = 3.\n\nThe cost to remove\
+  \ all elements is 2 + 3 = 5. This is the minimum cost to remove all elements in nums. Hence, the output\
+  \ is 5.\n\n \nConstraints:\n\n1 <= nums.length <= 1000\n1 <= nums[i] <= 106\n\nWrite the solution in\
+  \ Python as this class, with any imports it needs:\n\n```python\nclass Solution:\n    def minCost(self,\
+  \ nums: List[int]) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().minCost(nums=[10, 10, 10, 10]) == 20
+  - Solution().minCost(nums=[10, 20, 30]) == 40
+  - Solution().minCost(nums=[999999, 1]) == 999999
+  - Solution().minCost(nums=[5, 3, 7, 9, 1, 4]) == 18
+  - Solution().minCost(nums=[9, 8, 7, 6, 5, 4, 3, 2, 1]) == 25
+  - Solution().minCost(nums=[1]) == 1
+  - Solution().minCost(nums=[3, 1, 2, 4, 5, 6, 7, 8, 9, 10]) == 30
+  - Solution().minCost(nums=[10, 20, 30, 40, 50]) == 90
+  - Solution().minCost(nums=[5, 5, 5, 5, 5]) == 15
+  - Solution().minCost(nums=[1, 2, 3, 4, 5]) == 9
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3469'
+  date: '2025-02-23'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

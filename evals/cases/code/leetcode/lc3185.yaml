@@ -1,0 +1,39 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3185
+modality: code
+prompt: "Given an integer array hours representing times in hours, return an integer denoting the number\
+  \ of pairs i, j where i < j and hours[i] + hours[j] forms a complete day.\nA complete day is defined\
+  \ as a time duration that is an exact multiple of 24 hours.\nFor example, 1 day is 24 hours, 2 days\
+  \ is 48 hours, 3 days is 72 hours, and so on.\n \nExample 1:\n\nInput: hours = [12,12,30,24,24]\nOutput:\
+  \ 2\nExplanation: The pairs of indices that form a complete day are (0, 1) and (3, 4).\n\nExample 2:\n\
+  \nInput: hours = [72,48,24,3]\nOutput: 3\nExplanation: The pairs of indices that form a complete day\
+  \ are (0, 1), (0, 2), and (1, 2).\n\n \nConstraints:\n\n1 <= hours.length <= 5 * 105\n1 <= hours[i]\
+  \ <= 109\n\nWrite the solution in Python as this class, with any imports it needs:\n\n```python\nclass\
+  \ Solution:\n    def countCompleteDayPairs(self, hours: List[int]) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().countCompleteDayPairs(hours=[5, 19, 15, 1, 23, 7, 17, 11, 3, 21, 9, 13, 20, 18, 4, 16,
+    8, 12, 6, 22, 14, 2, 10, 10, 10]) == 13
+  - Solution().countCompleteDayPairs(hours=[24, 48, 72, 96, 120, 144, 168, 192, 216, 240, 264, 288, 312,
+    336, 360, 384, 408, 432, 456, 480, 504, 528, 552, 576, 600]) == 300
+  - Solution().countCompleteDayPairs(hours=[24, 48, 72, 96, 120]) == 10
+  - Solution().countCompleteDayPairs(hours=[1, 2, 3, 23, 47, 71]) == 3
+  - Solution().countCompleteDayPairs(hours=[10, 10, 10, 10, 10, 10, 10, 10, 10, 10]) == 0
+  - Solution().countCompleteDayPairs(hours=[12, 12, 30, 24, 24]) == 2
+  - Solution().countCompleteDayPairs(hours=[1, 23, 2, 22, 3, 21, 4, 20, 5, 19]) == 5
+  - Solution().countCompleteDayPairs(hours=[24]) == 0
+  - Solution().countCompleteDayPairs(hours=[10, 20, 30, 40, 50, 60, 70, 80, 90, 100]) == 4
+  - Solution().countCompleteDayPairs(hours=[5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5])
+    == 0
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3185'
+  date: '2024-06-16'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

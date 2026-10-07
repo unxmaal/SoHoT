@@ -1,0 +1,47 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3193
+modality: code
+prompt: "You are given an integer n and a 2D array requirements, where requirements[i] = [endi, cnti]\
+  \ represents the end index and the inversion count of each requirement.\nA pair of indices (i, j) from\
+  \ an integer array nums is called an inversion if:\n\ni < j and nums[i] > nums[j]\n\nReturn the number\
+  \ of permutations perm of [0, 1, 2, ..., n - 1] such that for all requirements[i], perm[0..endi] has\
+  \ exactly cnti inversions.\nSince the answer may be very large, return it modulo 109 + 7.\n \nExample\
+  \ 1:\n\nInput: n = 3, requirements = [[2,2],[0,0]]\nOutput: 2\nExplanation:\nThe two permutations are:\n\
+  \n[2, 0, 1]\n\nPrefix [2, 0, 1] has inversions (0, 1) and (0, 2).\nPrefix [2] has 0 inversions.\n\n\n\
+  [1, 2, 0]\n\nPrefix [1, 2, 0] has inversions (0, 2) and (1, 2).\nPrefix [1] has 0 inversions.\n\n\n\n\
+  \nExample 2:\n\nInput: n = 3, requirements = [[2,2],[1,1],[0,0]]\nOutput: 1\nExplanation:\nThe only\
+  \ satisfying permutation is [2, 0, 1]:\n\nPrefix [2, 0, 1] has inversions (0, 1) and (0, 2).\nPrefix\
+  \ [2, 0] has an inversion (0, 1).\nPrefix [2] has 0 inversions.\n\n\nExample 3:\n\nInput: n = 2, requirements\
+  \ = [[0,0],[1,0]]\nOutput: 1\nExplanation:\nThe only satisfying permutation is [0, 1]:\n\nPrefix [0]\
+  \ has 0 inversions.\nPrefix [0, 1] has an inversion (0, 1).\n\n\n \nConstraints:\n\n2 <= n <= 300\n\
+  1 <= requirements.length <= n\nrequirements[i] = [endi, cnti]\n0 <= endi <= n - 1\n0 <= cnti <= 400\n\
+  The input is generated such that there is at least one i such that endi == n - 1.\nThe input is generated\
+  \ such that all endi are unique.\n\nWrite the solution in Python as this class, with any imports it\
+  \ needs:\n\n```python\nclass Solution:\n    def numberOfPermutations(self, n: int, requirements: List[List[int]])\
+  \ -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().numberOfPermutations(n=4, requirements=[[3, 3], [1, 1], [2, 2], [0, 0]]) == 1
+  - Solution().numberOfPermutations(n=5, requirements=[[4, 6], [2, 2], [3, 3], [1, 1], [0, 0]]) == 1
+  - Solution().numberOfPermutations(n=2, requirements=[[0, 0], [1, 0]]) == 1
+  - Solution().numberOfPermutations(n=3, requirements=[[2, 2], [0, 0]]) == 2
+  - Solution().numberOfPermutations(n=3, requirements=[[2, 2], [1, 1], [0, 0]]) == 1
+  - Solution().numberOfPermutations(n=5, requirements=[[4, 5], [2, 2], [0, 0]]) == 8
+  - Solution().numberOfPermutations(n=15, requirements=[[14, 50], [10, 25], [6, 15], [4, 10], [2, 5],
+    [0, 0]]) == 0
+  - Solution().numberOfPermutations(n=6, requirements=[[5, 6], [3, 3], [1, 1], [0, 0]]) == 12
+  - Solution().numberOfPermutations(n=7, requirements=[[6, 15], [4, 10], [2, 5], [0, 0]]) == 0
+  - Solution().numberOfPermutations(n=30, requirements=[[29, 150], [24, 75], [19, 40], [15, 20], [11,
+    10], [7, 5], [5, 3], [3, 1], [1, 0], [0, 0]]) == 363866727
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3193'
+  date: '2024-06-16'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

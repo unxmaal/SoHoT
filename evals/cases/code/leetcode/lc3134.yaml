@@ -1,0 +1,44 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3134
+modality: code
+prompt: "You are given an integer array nums. The uniqueness array of nums is the sorted array that contains\
+  \ the number of distinct elements of all the subarrays of nums. In other words, it is a sorted array\
+  \ consisting of distinct(nums[i..j]), for all 0 <= i <= j < nums.length.\nHere, distinct(nums[i..j])\
+  \ denotes the number of distinct elements in the subarray that starts at index i and ends at index j.\n\
+  Return the median of the uniqueness array of nums.\nNote that the median of an array is defined as the\
+  \ middle element of the array when it is sorted in non-decreasing order. If there are two choices for\
+  \ a median, the smaller of the two values is taken.\n \nExample 1:\n\nInput: nums = [1,2,3]\nOutput:\
+  \ 1\nExplanation:\nThe uniqueness array of nums is [distinct(nums[0..0]), distinct(nums[1..1]), distinct(nums[2..2]),\
+  \ distinct(nums[0..1]), distinct(nums[1..2]), distinct(nums[0..2])] which is equal to [1, 1, 1, 2, 2,\
+  \ 3]. The uniqueness array has a median of 1. Therefore, the answer is 1.\n\nExample 2:\n\nInput: nums\
+  \ = [3,4,3,4,5]\nOutput: 2\nExplanation:\nThe uniqueness array of nums is [1, 1, 1, 1, 1, 2, 2, 2, 2,\
+  \ 2, 2, 2, 3, 3, 3]. The uniqueness array has a median of 2. Therefore, the answer is 2.\n\nExample\
+  \ 3:\n\nInput: nums = [4,3,5,4]\nOutput: 2\nExplanation:\nThe uniqueness array of nums is [1, 1, 1,\
+  \ 1, 2, 2, 2, 3, 3, 3]. The uniqueness array has a median of 2. Therefore, the answer is 2.\n\n \nConstraints:\n\
+  \n1 <= nums.length <= 105\n1 <= nums[i] <= 105\n\nWrite the solution in Python as this class, with any\
+  \ imports it needs:\n\n```python\nclass Solution:\n    def medianOfUniquenessArray(self, nums: List[int])\
+  \ -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().medianOfUniquenessArray(nums=[5, 4, 3, 2, 1]) == 2
+  - Solution().medianOfUniquenessArray(nums=[100000, 99999, 99998, 99997, 99996]) == 2
+  - Solution().medianOfUniquenessArray(nums=[1, 2, 2, 3, 3, 3, 4, 4, 4, 4]) == 2
+  - Solution().medianOfUniquenessArray(nums=[1]) == 1
+  - Solution().medianOfUniquenessArray(nums=[1, 1, 1, 1, 1]) == 1
+  - Solution().medianOfUniquenessArray(nums=[1, 2, 2, 3, 3, 4, 4]) == 2
+  - Solution().medianOfUniquenessArray(nums=[1, 2, 3]) == 1
+  - Solution().medianOfUniquenessArray(nums=[1, 1, 2, 2, 3, 3, 4, 4, 5, 5]) == 2
+  - Solution().medianOfUniquenessArray(nums=[1, 2, 3, 2, 1]) == 2
+  - Solution().medianOfUniquenessArray(nums=[10, 20, 30, 40, 50]) == 2
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3134'
+  date: '2024-04-28'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

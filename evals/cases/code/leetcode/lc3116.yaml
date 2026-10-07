@@ -1,0 +1,40 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3116
+modality: code
+prompt: "You are given an integer array coins representing coins of different denominations and an integer\
+  \ k.\nYou have an infinite number of coins of each denomination. However, you are not allowed to combine\
+  \ coins of different denominations.\nReturn the kth smallest amount that can be made using these coins.\n\
+   \nExample 1:\n\nInput: coins = [3,6,9], k = 3\nOutput:  9\nExplanation: The given coins can make the\
+  \ following amounts:\nCoin 3 produces multiples of 3: 3, 6, 9, 12, 15, etc.\nCoin 6 produces multiples\
+  \ of 6: 6, 12, 18, 24, etc.\nCoin 9 produces multiples of 9: 9, 18, 27, 36, etc.\nAll of the coins combined\
+  \ produce: 3, 6, 9, 12, 15, etc.\n\nExample 2:\n\nInput: coins = [5,2], k = 7\nOutput: 12 \nExplanation:\
+  \ The given coins can make the following amounts:\nCoin 5 produces multiples of 5: 5, 10, 15, 20, etc.\n\
+  Coin 2 produces multiples of 2: 2, 4, 6, 8, 10, 12, etc.\nAll of the coins combined produce: 2, 4, 5,\
+  \ 6, 8, 10, 12, 14, 15, etc.\n\n \nConstraints:\n\n1 <= coins.length <= 15\n1 <= coins[i] <= 25\n1 <=\
+  \ k <= 2 * 109\ncoins contains pairwise distinct integers.\n\nWrite the solution in Python as this class,\
+  \ with any imports it needs:\n\n```python\nclass Solution:\n    def findKthSmallest(self, coins: List[int],\
+  \ k: int) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().findKthSmallest(coins=[10, 20, 30], k=5) == 50
+  - Solution().findKthSmallest(coins=[15, 20, 25], k=15) == 125
+  - Solution().findKthSmallest(coins=[15, 25, 35], k=8) == 70
+  - Solution().findKthSmallest(coins=[25, 50, 75], k=20) == 500
+  - Solution().findKthSmallest(coins=[1, 10, 100], k=100) == 100
+  - Solution().findKthSmallest(coins=[4, 8, 12], k=10) == 40
+  - Solution().findKthSmallest(coins=[7, 14, 28], k=5) == 35
+  - Solution().findKthSmallest(coins=[2, 3, 5, 7], k=12) == 15
+  - Solution().findKthSmallest(coins=[10, 20, 30], k=20) == 200
+  - Solution().findKthSmallest(coins=[7, 11, 13], k=15) == 52
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3116'
+  date: '2024-04-14'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

@@ -1,0 +1,40 @@
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08.
+import random
+import functools
+import collections
+import string
+import math
+import datetime
+
+from typing import *
+from functools import *
+from collections import *
+from itertools import *
+from heapq import *
+from bisect import *
+from string import *
+from operator import *
+from math import *
+
+inf = float('inf')
+
+class Solution:
+    def solveQueries(self, nums: List[int], queries: List[int]) -> List[int]:
+        n = len(nums)
+        m = n << 1
+        d = [m] * m
+        left = {}
+        for i in range(m):
+            x = nums[i % n]
+            if x in left:
+                d[i] = min(d[i], i - left[x])
+            left[x] = i
+        right = {}
+        for i in range(m - 1, -1, -1):
+            x = nums[i % n]
+            if x in right:
+                d[i] = min(d[i], right[x] - i)
+            right[x] = i
+        for i in range(n):
+            d[i] = min(d[i], d[i + n])
+        return [-1 if d[i] >= n else d[i] for i in queries]

@@ -1,0 +1,40 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3104
+modality: code
+prompt: "Given a string s, your task is to find the length of the longest self-contained substring of\
+  \ s.\nA substring t of a string s is called self-contained if t != s and for every character in t, it\
+  \ doesn't exist in the rest of s.\nReturn the length of the longest self-contained substring of s if\
+  \ it exists, otherwise, return -1.\n \nExample 1:\n\nInput: s = \"abba\"\nOutput: 2\nExplanation:\n\
+  Let's check the substring \"bb\". You can see that no other \"b\" is outside of this substring. Hence\
+  \ the answer is 2.\n\nExample 2:\n\nInput: s = \"abab\"\nOutput: -1\nExplanation:\nEvery substring we\
+  \ choose does not satisfy the described property (there is some character which is inside and outside\
+  \ of that substring). So the answer would be -1.\n\nExample 3:\n\nInput: s = \"abacd\"\nOutput: 4\n\
+  Explanation:\nLet's check the substring \"abac\". There is only one character outside of this substring\
+  \ and that is \"d\". There is no \"d\" inside the chosen substring, so it satisfies the condition and\
+  \ the answer is 4.\n\n \nConstraints:\n\n2 <= s.length <= 5 * 104\ns consists only of lowercase English\
+  \ letters.\n\nWrite the solution in Python as this class, with any imports it needs:\n\n```python\n\
+  class Solution:\n    def maxSubstringLength(self, s: str) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().maxSubstringLength(s='abcdeabcde') == -1
+  - Solution().maxSubstringLength(s='abba') == 2
+  - Solution().maxSubstringLength(s='zzzzzz') == -1
+  - Solution().maxSubstringLength(s='aabbcc') == 4
+  - Solution().maxSubstringLength(s='abacabadabacaba') == 1
+  - Solution().maxSubstringLength(s='abcabcabcabc') == -1
+  - Solution().maxSubstringLength(s='xyzzyx') == 4
+  - Solution().maxSubstringLength(s='abacd') == 4
+  - Solution().maxSubstringLength(s='abcdef') == 5
+  - Solution().maxSubstringLength(s='aabbccddeeff') == 10
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3104'
+  date: '2024-03-31'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

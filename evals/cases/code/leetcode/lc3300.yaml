@@ -1,0 +1,36 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3300
+modality: code
+prompt: "You are given an integer array nums.\nYou replace each element in nums with the sum of its digits.\n\
+  Return the minimum element in nums after all replacements.\n \nExample 1:\n\nInput: nums = [10,12,13,14]\n\
+  Output: 1\nExplanation:\nnums becomes [1, 3, 4, 5] after all replacements, with minimum element 1.\n\
+  \nExample 2:\n\nInput: nums = [1,2,3,4]\nOutput: 1\nExplanation:\nnums becomes [1, 2, 3, 4] after all\
+  \ replacements, with minimum element 1.\n\nExample 3:\n\nInput: nums = [999,19,199]\nOutput: 10\nExplanation:\n\
+  nums becomes [27, 10, 19] after all replacements, with minimum element 10.\n\n \nConstraints:\n\n1 <=\
+  \ nums.length <= 100\n1 <= nums[i] <= 104\n\nWrite the solution in Python as this class, with any imports\
+  \ it needs:\n\n```python\nclass Solution:\n    def minElement(self, nums: List[int]) -> int:\n```\n\n\
+  Return only the code."
+assert:
+  checks:
+  - Solution().minElement(nums=[9999, 1001, 1111]) == 2
+  - Solution().minElement(nums=[111, 222, 333]) == 3
+  - Solution().minElement(nums=[1234, 4321, 2134, 3412]) == 10
+  - Solution().minElement(nums=[10, 12, 13, 14]) == 1
+  - Solution().minElement(nums=[100, 200, 300, 400]) == 1
+  - Solution().minElement(nums=[1111, 2222, 3333, 4444]) == 4
+  - Solution().minElement(nums=[1, 2, 3, 4]) == 1
+  - Solution().minElement(nums=[9999, 1111, 2222, 3333]) == 4
+  - Solution().minElement(nums=[9, 99, 999, 9999]) == 9
+  - Solution().minElement(nums=[5050, 550, 50, 5]) == 5
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3300'
+  date: '2024-09-22'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

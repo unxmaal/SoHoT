@@ -1,0 +1,38 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3460
+modality: code
+prompt: "You are given two strings s and t.\nReturn the length of the longest common prefix between s\
+  \ and t after removing at most one character from s.\nNote: s can be left without any removal.\n \n\
+  Example 1:\n\nInput: s = \"madxa\", t = \"madam\"\nOutput: 4\nExplanation:\nRemoving s[3] from s results\
+  \ in \"mada\", which has a longest common prefix of length 4 with t.\n\nExample 2:\n\nInput: s = \"\
+  leetcode\", t = \"eetcode\"\nOutput: 7\nExplanation:\nRemoving s[0] from s results in \"eetcode\", which\
+  \ matches t.\n\nExample 3:\n\nInput: s = \"one\", t = \"one\"\nOutput: 3\nExplanation:\nNo removal is\
+  \ needed.\n\nExample 4:\n\nInput: s = \"a\", t = \"b\"\nOutput: 0\nExplanation:\ns and t cannot have\
+  \ a common prefix.\n\n \nConstraints:\n\n1 <= s.length <= 105\n1 <= t.length <= 105\ns and t contain\
+  \ only lowercase English letters.\n\nWrite the solution in Python as this class, with any imports it\
+  \ needs:\n\n```python\nclass Solution:\n    def longestCommonPrefix(self, s: str, t: str) -> int:\n\
+  ```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().longestCommonPrefix(s='one', t='one') == 3
+  - Solution().longestCommonPrefix(s='abcde', t='bcdef') == 4
+  - Solution().longestCommonPrefix(s='abcde', t='fbcde') == 0
+  - Solution().longestCommonPrefix(s='xyz', t='xya') == 2
+  - Solution().longestCommonPrefix(s='ababc', t='abcab') == 2
+  - Solution().longestCommonPrefix(s='abcdef', t='abcdfg') == 5
+  - Solution().longestCommonPrefix(s='pqr', t='pqs') == 2
+  - Solution().longestCommonPrefix(s='abcdef', t='fedcba') == 0
+  - Solution().longestCommonPrefix(s='abcdefg', t='xyzabcdefg') == 0
+  - Solution().longestCommonPrefix(s='abcd', t='abcf') == 3
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3460'
+  date: '2025-02-16'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

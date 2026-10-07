@@ -1,0 +1,38 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3297
+modality: code
+prompt: "You are given two strings word1 and word2.\nA string x is called valid if x can be rearranged\
+  \ to have word2 as a prefix.\nReturn the total number of valid substrings of word1.\n \nExample 1:\n\
+  \nInput: word1 = \"bcca\", word2 = \"abc\"\nOutput: 1\nExplanation:\nThe only valid substring is \"\
+  bcca\" which can be rearranged to \"abcc\" having \"abc\" as a prefix.\n\nExample 2:\n\nInput: word1\
+  \ = \"abcabc\", word2 = \"abc\"\nOutput: 10\nExplanation:\nAll the substrings except substrings of size\
+  \ 1 and size 2 are valid.\n\nExample 3:\n\nInput: word1 = \"abcabc\", word2 = \"aaabc\"\nOutput: 0\n\
+  \n \nConstraints:\n\n1 <= word1.length <= 105\n1 <= word2.length <= 104\nword1 and word2 consist only\
+  \ of lowercase English letters.\n\nWrite the solution in Python as this class, with any imports it needs:\n\
+  \n```python\nclass Solution:\n    def validSubstringCount(self, word1: str, word2: str) -> int:\n```\n\
+  \nReturn only the code."
+assert:
+  checks:
+  - Solution().validSubstringCount(word1='banana', word2='ban') == 4
+  - Solution().validSubstringCount(word1='abc', word2='abcd') == 0
+  - Solution().validSubstringCount(word1='abcdefghijklmnopqrstuvwxyz', word2='zyxwvutsrqponmlkjihgfedcba')
+    == 1
+  - Solution().validSubstringCount(word1='aaaabc', word2='aaa') == 7
+  - Solution().validSubstringCount(word1='mississippi', word2='issi') == 27
+  - Solution().validSubstringCount(word1='abcabc', word2='aaabc') == 0
+  - Solution().validSubstringCount(word1='abababab', word2='aba') == 18
+  - Solution().validSubstringCount(word1='abcabc', word2='abc') == 10
+  - Solution().validSubstringCount(word1='aaaaaaaaaaa', word2='aaaa') == 36
+  - Solution().validSubstringCount(word1='zzzzzzzz', word2='zzz') == 21
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3297'
+  date: '2024-09-22'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

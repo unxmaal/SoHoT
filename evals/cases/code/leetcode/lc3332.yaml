@@ -1,0 +1,55 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3332
+modality: code
+prompt: "You are given two integers, n and k, along with two 2D integer arrays, stayScore and travelScore.\n\
+  A tourist is visiting a country with n cities, where each city is directly connected to every other\
+  \ city. The tourist's journey consists of exactly k 0-indexed days, and they can choose any city as\
+  \ their starting point.\nEach day, the tourist has two choices:\n\nStay in the current city: If the\
+  \ tourist stays in their current city curr during day i, they will earn stayScore[i][curr] points.\n\
+  Move to another city: If the tourist moves from their current city curr to city dest, they will earn\
+  \ travelScore[curr][dest] points.\n\nReturn the maximum possible points the tourist can earn.\n \nExample\
+  \ 1:\n\nInput: n = 2, k = 1, stayScore = [[2,3]], travelScore = [[0,2],[1,0]]\nOutput: 3\nExplanation:\n\
+  The tourist earns the maximum number of points by starting in city 1 and staying in that city.\n\nExample\
+  \ 2:\n\nInput: n = 3, k = 2, stayScore = [[3,4,2],[2,1,2]], travelScore = [[0,2,1],[2,0,4],[3,2,0]]\n\
+  Output: 8\nExplanation:\nThe tourist earns the maximum number of points by starting in city 1, staying\
+  \ in that city on day 0, and traveling to city 2 on day 1.\n\n \nConstraints:\n\n1 <= n <= 200\n1 <=\
+  \ k <= 200\nn == travelScore.length == travelScore[i].length == stayScore[i].length\nk == stayScore.length\n\
+  1 <= stayScore[i][j] <= 100\n0 <= travelScore[i][j] <= 100\ntravelScore[i][i] == 0\n\nWrite the solution\
+  \ in Python as this class, with any imports it needs:\n\n```python\nclass Solution:\n    def maxScore(self,\
+  \ n: int, k: int, stayScore: List[List[int]], travelScore: List[List[int]]) -> int:\n```\n\nReturn only\
+  \ the code."
+assert:
+  checks:
+  - Solution().maxScore(n=5, k=5, stayScore=[[1, 2, 3, 4, 5], [2, 3, 4, 5, 6], [3, 4, 5, 6, 7], [4, 5,
+    6, 7, 8], [5, 6, 7, 8, 9]], travelScore=[[0, 1, 2, 3, 4], [1, 0, 1, 2, 3], [2, 1, 0, 1, 2], [3, 2,
+    1, 0, 1], [4, 3, 2, 1, 0]]) == 35
+  - Solution().maxScore(n=4, k=3, stayScore=[[5, 10, 15, 20], [25, 30, 35, 40], [45, 50, 55, 60], [65,
+    70, 75, 80]], travelScore=[[0, 1, 2, 3], [1, 0, 1, 2], [2, 1, 0, 1], [3, 2, 1, 0]]) == 120
+  - Solution().maxScore(n=3, k=2, stayScore=[[3, 4, 2], [2, 1, 2]], travelScore=[[0, 2, 1], [2, 0, 4],
+    [3, 2, 0]]) == 8
+  - Solution().maxScore(n=4, k=3, stayScore=[[5, 10, 15, 20], [1, 2, 3, 4], [10, 9, 8, 7], [20, 19, 18,
+    17]], travelScore=[[0, 5, 10, 15], [5, 0, 5, 10], [10, 5, 0, 5], [15, 10, 5, 0]]) == 50
+  - Solution().maxScore(n=2, k=1, stayScore=[[2, 3]], travelScore=[[0, 2], [1, 0]]) == 3
+  - Solution().maxScore(n=5, k=1, stayScore=[[10, 20, 30, 40, 50]], travelScore=[[0, 1, 2, 3, 4], [1,
+    0, 1, 2, 3], [2, 1, 0, 1, 2], [3, 2, 1, 0, 1], [4, 3, 2, 1, 0]]) == 50
+  - Solution().maxScore(n=5, k=4, stayScore=[[10, 20, 30, 40, 50], [5, 15, 25, 35, 45], [1, 2, 3, 4, 5],
+    [100, 200, 300, 400, 500], [5, 5, 5, 5, 5]], travelScore=[[0, 1, 2, 3, 4], [1, 0, 1, 2, 3], [2, 1,
+    0, 1, 2], [3, 2, 1, 0, 1], [4, 3, 2, 1, 0]]) == 600
+  - Solution().maxScore(n=4, k=3, stayScore=[[10, 20, 30, 40], [5, 15, 25, 35], [1, 2, 3, 4], [100, 200,
+    300, 400]], travelScore=[[0, 1, 2, 3], [4, 0, 5, 6], [7, 8, 0, 9], [10, 11, 12, 0]]) == 87
+  - Solution().maxScore(n=4, k=3, stayScore=[[5, 7, 8, 6], [6, 5, 4, 5], [7, 8, 9, 6], [5, 6, 7, 8]],
+    travelScore=[[0, 3, 4, 5], [3, 0, 1, 2], [4, 1, 0, 3], [5, 2, 3, 0]]) == 21
+  - Solution().maxScore(n=2, k=3, stayScore=[[1, 2], [2, 3], [3, 4]], travelScore=[[0, 1], [1, 0]]) ==
+    9
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3332'
+  date: '2024-10-20'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

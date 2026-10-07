@@ -1,0 +1,41 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3295
+modality: code
+prompt: "You are given an array of strings message and an array of strings bannedWords.\nAn array of words\
+  \ is considered spam if there are at least two words in it that exactly match any word in bannedWords.\n\
+  Return true if the array message is spam, and false otherwise.\n \nExample 1:\n\nInput: message = [\"\
+  hello\",\"world\",\"leetcode\"], bannedWords = [\"world\",\"hello\"]\nOutput: true\nExplanation:\nThe\
+  \ words \"hello\" and \"world\" from the message array both appear in the bannedWords array.\n\nExample\
+  \ 2:\n\nInput: message = [\"hello\",\"programming\",\"fun\"], bannedWords = [\"world\",\"programming\"\
+  ,\"leetcode\"]\nOutput: false\nExplanation:\nOnly one word from the message array (\"programming\")\
+  \ appears in the bannedWords array.\n\n \nConstraints:\n\n1 <= message.length, bannedWords.length <=\
+  \ 105\n1 <= message[i].length, bannedWords[i].length <= 15\nmessage[i] and bannedWords[i] consist only\
+  \ of lowercase English letters.\n\nWrite the solution in Python as this class, with any imports it needs:\n\
+  \n```python\nclass Solution:\n    def reportSpam(self, message: List[str], bannedWords: List[str]) ->\
+  \ bool:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().reportSpam(message=['spam', 'egg', 'ham'], bannedWords=['spam', 'bacon', 'egg']) == True
+  - Solution().reportSpam(message=['spam', 'eggs', 'spam'], bannedWords=['spam']) == True
+  - Solution().reportSpam(message=['spam', 'spam', 'spam'], bannedWords=['spam']) == True
+  - Solution().reportSpam(message=['spam', 'egg', 'spam'], bannedWords=['spam']) == True
+  - Solution().reportSpam(message=['python', 'java', 'c++'], bannedWords=['ruby', 'swift']) == False
+  - Solution().reportSpam(message=['python', 'java', 'c++'], bannedWords=['java', 'c#', 'ruby']) == False
+  - Solution().reportSpam(message=['hello', 'programming', 'fun'], bannedWords=['world', 'programming',
+    'leetcode']) == False
+  - Solution().reportSpam(message=['a', 'b', 'c', 'd', 'e'], bannedWords=['a', 'b']) == True
+  - Solution().reportSpam(message=['apple', 'banana', 'cherry'], bannedWords=['date', 'fig', 'grape'])
+    == False
+  - Solution().reportSpam(message=['code', 'is', 'fun'], bannedWords=['code', 'cool']) == False
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3295'
+  date: '2024-09-22'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

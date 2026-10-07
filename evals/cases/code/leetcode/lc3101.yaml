@@ -1,0 +1,35 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3101
+modality: code
+prompt: "You are given a binary array nums.\nWe call a subarray alternating if no two adjacent elements\
+  \ in the subarray have the same value.\nReturn the number of alternating subarrays in nums.\n \nExample\
+  \ 1:\n\nInput: nums = [0,1,1,1]\nOutput: 5\nExplanation:\nThe following subarrays are alternating: [0],\
+  \ [1], [1], [1], and [0,1].\n\nExample 2:\n\nInput: nums = [1,0,1,0]\nOutput: 10\nExplanation:\nEvery\
+  \ subarray of the array is alternating. There are 10 possible subarrays that we can choose.\n\n \nConstraints:\n\
+  \n1 <= nums.length <= 105\nnums[i] is either 0 or 1.\n\nWrite the solution in Python as this class,\
+  \ with any imports it needs:\n\n```python\nclass Solution:\n    def countAlternatingSubarrays(self,\
+  \ nums: List[int]) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().countAlternatingSubarrays(nums=[0, 0, 1, 1, 0, 0]) == 8
+  - Solution().countAlternatingSubarrays(nums=[0, 1, 0, 1, 0, 1]) == 21
+  - Solution().countAlternatingSubarrays(nums=[1, 0, 1, 0, 1]) == 15
+  - Solution().countAlternatingSubarrays(nums=[1, 1, 1, 1]) == 4
+  - Solution().countAlternatingSubarrays(nums=[1, 0, 0, 1, 0, 1, 1, 0]) == 16
+  - Solution().countAlternatingSubarrays(nums=[0, 1, 0, 1, 0]) == 15
+  - Solution().countAlternatingSubarrays(nums=[1]) == 1
+  - Solution().countAlternatingSubarrays(nums=[0, 1]) == 3
+  - Solution().countAlternatingSubarrays(nums=[0, 0, 0, 0, 0]) == 5
+  - Solution().countAlternatingSubarrays(nums=[0, 1, 1, 1]) == 5
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3101'
+  date: '2024-03-31'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

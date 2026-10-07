@@ -1,0 +1,40 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3359
+modality: code
+prompt: "You are given a 2D matrix grid of size m x n. You are also given a non-negative integer k.\n\
+  Return the number of submatrices of grid that satisfy the following conditions:\n\nThe maximum element\
+  \ in the submatrix less than or equal to k.\nEach row in the submatrix is sorted in non-increasing order.\n\
+  \nA submatrix (x1, y1, x2, y2) is a matrix that forms by choosing all cells grid[x][y] where x1 <= x\
+  \ <= x2 and y1 <= y <= y2.\n \nExample 1:\n\nInput: grid = [[4,3,2,1],[8,7,6,1]], k = 3\nOutput: 8\n\
+  Explanation:\n\nThe 8 submatrices are:\n\n[[1]]\n[[1]]\n[[2,1]]\n[[3,2,1]]\n[[1],[1]]\n[[2]]\n[[3]]\n\
+  [[3,2]]\n\n\nExample 2:\n\nInput: grid = [[1,1,1],[1,1,1],[1,1,1]], k = 1\nOutput: 36\nExplanation:\n\
+  There are 36 submatrices of grid. All submatrices have their maximum element equal to 1.\n\nExample\
+  \ 3:\n\nInput: grid = [[1]], k = 1\nOutput: 1\n\n \nConstraints:\n\n1 <= m == grid.length <= 103\n1\
+  \ <= n == grid[i].length <= 103\n1 <= grid[i][j] <= 109\n1 <= k <= 109\n\n \n​​​​​​\n\nWrite the solution\
+  \ in Python as this class, with any imports it needs:\n\n```python\nclass Solution:\n    def countSubmatrices(self,\
+  \ grid: List[List[int]], k: int) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().countSubmatrices(grid=[[2, 1, 1], [1, 1, 1], [1, 1, 1]], k=2) == 36
+  - Solution().countSubmatrices(grid=[[4, 3, 2, 1], [8, 7, 6, 1]], k=3) == 8
+  - Solution().countSubmatrices(grid=[[1]], k=1) == 1
+  - Solution().countSubmatrices(grid=[[1, 2, 3], [4, 5, 6], [7, 8, 9]], k=9) == 18
+  - Solution().countSubmatrices(grid=[[10, 9, 8, 7, 6], [5, 4, 3, 2, 1]], k=5) == 15
+  - Solution().countSubmatrices(grid=[[5, 4, 3, 2, 1], [10, 9, 8, 7, 6], [15, 14, 13, 12, 11]], k=5) ==
+    15
+  - Solution().countSubmatrices(grid=[[3, 3, 3, 3], [3, 3, 3, 3], [3, 3, 3, 3]], k=3) == 60
+  - Solution().countSubmatrices(grid=[[5, 5, 5], [5, 5, 5], [5, 5, 5]], k=5) == 36
+  - Solution().countSubmatrices(grid=[[9, 8, 7, 6], [6, 5, 4, 3], [3, 2, 1, 0]], k=5) == 22
+  - Solution().countSubmatrices(grid=[[1, 1, 1], [1, 1, 1], [1, 1, 1]], k=1) == 36
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3359'
+  date: '2024-11-17'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

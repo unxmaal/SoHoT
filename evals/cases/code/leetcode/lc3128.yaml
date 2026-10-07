@@ -1,0 +1,47 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3128
+modality: code
+prompt: "You are given a 2D boolean matrix grid.\nA collection of 3 elements of grid is a right triangle\
+  \ if one of its elements is in the same row with another element and in the same column with the third\
+  \ element. The 3 elements may not be next to each other.\nReturn an integer that is the number of right\
+  \ triangles that can be made with 3 elements of grid such that all of them have a value of 1.\n \nExample\
+  \ 1:\n\n\n\n\n0\n1\n0\n\n\n0\n1\n1\n\n\n0\n1\n0\n\n\n\n\n\n\n0\n1\n0\n\n\n0\n1\n1\n\n\n0\n1\n0\n\n\n\
+  \n\n\n\n0\n1\n0\n\n\n0\n1\n1\n\n\n0\n1\n0\n\n\n\n\n\nInput: grid = [[0,1,0],[0,1,1],[0,1,0]]\nOutput:\
+  \ 2\nExplanation:\nThere are two right triangles with elements of the value 1. Notice that the blue\
+  \ ones do not form a right triangle because the 3 elements are in the same column.\n\nExample 2:\n\n\
+  \n\n\n1\n0\n0\n0\n\n\n0\n1\n0\n1\n\n\n1\n0\n0\n0\n\n\n\n\n\nInput: grid = [[1,0,0,0],[0,1,0,1],[1,0,0,0]]\n\
+  Output: 0\nExplanation:\nThere are no right triangles with elements of the value 1.  Notice that the\
+  \ blue ones do not form a right triangle.\n\nExample 3:\n\n\n\n\n1\n0\n1\n\n\n1\n0\n0\n\n\n1\n0\n0\n\
+  \n\n\n\n\n\n1\n0\n1\n\n\n1\n0\n0\n\n\n1\n0\n0\n\n\n\n\n\nInput: grid = [[1,0,1],[1,0,0],[1,0,0]]\nOutput:\
+  \ 2\nExplanation:\nThere are two right triangles with elements of the value 1.\n\n \nConstraints:\n\n\
+  1 <= grid.length <= 1000\n1 <= grid[i].length <= 1000\n0 <= grid[i][j] <= 1\n\nWrite the solution in\
+  \ Python as this class, with any imports it needs:\n\n```python\nclass Solution:\n    def numberOfRightTriangles(self,\
+  \ grid: List[List[int]]) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().numberOfRightTriangles(grid=[[1, 1, 1], [1, 1, 1], [1, 1, 1]]) == 36
+  - Solution().numberOfRightTriangles(grid=[[0, 1, 0], [0, 1, 1], [0, 1, 0]]) == 2
+  - Solution().numberOfRightTriangles(grid=[[1, 0, 1, 0], [0, 1, 0, 1], [1, 0, 1, 0], [0, 1, 0, 1]]) ==
+    8
+  - Solution().numberOfRightTriangles(grid=[[0, 0, 0], [0, 0, 0], [0, 0, 0]]) == 0
+  - Solution().numberOfRightTriangles(grid=[[1, 0, 0], [0, 1, 0], [0, 0, 1]]) == 0
+  - Solution().numberOfRightTriangles(grid=[[1, 0, 1], [1, 0, 0], [1, 0, 0]]) == 2
+  - Solution().numberOfRightTriangles(grid=[[1, 0, 0, 0], [0, 1, 0, 1], [1, 0, 0, 0]]) == 0
+  - Solution().numberOfRightTriangles(grid=[[1, 0, 0, 0, 1], [0, 1, 0, 1, 0], [0, 0, 1, 0, 0], [0, 1,
+    0, 1, 0], [1, 0, 0, 0, 1]]) == 8
+  - Solution().numberOfRightTriangles(grid=[[0, 1, 1, 0, 1], [1, 0, 0, 1, 0], [1, 0, 1, 0, 0], [0, 1,
+    0, 1, 0], [0, 0, 1, 0, 1]]) == 18
+  - Solution().numberOfRightTriangles(grid=[[1, 0, 0, 0, 0], [0, 1, 0, 1, 0], [0, 0, 1, 0, 0], [0, 1,
+    0, 1, 0], [1, 0, 0, 0, 1]]) == 5
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3128'
+  date: '2024-04-21'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

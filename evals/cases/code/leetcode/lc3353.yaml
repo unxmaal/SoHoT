@@ -1,0 +1,39 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3353
+modality: code
+prompt: "Given an array of integers nums, you can perform any number of operations on this array.\nIn\
+  \ each operation, you can:\n\nChoose a prefix of the array.\nChoose an integer k (which can be negative)\
+  \ and add k to each element in the chosen prefix.\n\nA prefix of an array is a subarray that starts\
+  \ from the beginning of the array and extends to any point within it.\nReturn the minimum number of\
+  \ operations required to make all elements in arr equal.\n \nExample 1:\n\nInput: nums = [1,4,2]\nOutput:\
+  \ 2\nExplanation:\n\nOperation 1: Choose the prefix [1, 4] of length 2 and add -2 to each element of\
+  \ the prefix. The array becomes [-1, 2, 2].\nOperation 2: Choose the prefix [-1] of length 1 and add\
+  \ 3 to it. The array becomes [2, 2, 2].\nThus, the minimum number of required operations is 2.\n\n\n\
+  Example 2:\n\nInput: nums = [10,10,10]\nOutput: 0\nExplanation:\n\nAll elements are already equal, so\
+  \ no operations are needed.\n\n\n \nConstraints:\n\n1 <= nums.length <= 105\n-109 <= nums[i] <= 109\n\
+  \nWrite the solution in Python as this class, with any imports it needs:\n\n```python\nclass Solution:\n\
+  \    def minOperations(self, nums: List[int]) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().minOperations(nums=[0, 0, 0, 0, 0, 0, 0, 0, 0, 0]) == 0
+  - Solution().minOperations(nums=[-1, 2, -3, 4, -5]) == 4
+  - Solution().minOperations(nums=[1, -1, 1, -1, 1]) == 4
+  - Solution().minOperations(nums=[10, 9, 8, 7, 6, 5, 4, 3, 2, 1]) == 9
+  - Solution().minOperations(nums=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) == 9
+  - Solution().minOperations(nums=[1]) == 0
+  - Solution().minOperations(nums=[1000000000, -1000000000, 1000000000, -1000000000, 1000000000]) == 4
+  - Solution().minOperations(nums=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]) == 9
+  - Solution().minOperations(nums=[5, 5, 5, 5, 5]) == 0
+  - Solution().minOperations(nums=[0, 0, 0, 0, 0]) == 0
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3353'
+  date: '2024-11-10'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

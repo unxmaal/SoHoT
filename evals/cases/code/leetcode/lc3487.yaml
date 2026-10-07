@@ -1,0 +1,39 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3487
+modality: code
+prompt: "You are given an integer array nums.\nYou are allowed to delete any number of elements from nums\
+  \ without making it empty. After performing the deletions, select a subarray of nums such that:\n\n\
+  All elements in the subarray are unique.\nThe sum of the elements in the subarray is maximized.\n\n\
+  Return the maximum sum of such a subarray.\n \nExample 1:\n\nInput: nums = [1,2,3,4,5]\nOutput: 15\n\
+  Explanation:\nSelect the entire array without deleting any element to obtain the maximum sum.\n\nExample\
+  \ 2:\n\nInput: nums = [1,1,0,1,1]\nOutput: 1\nExplanation:\nDelete the element nums[0] == 1, nums[1]\
+  \ == 1, nums[2] == 0, and nums[3] == 1. Select the entire array [1] to obtain the maximum sum.\n\nExample\
+  \ 3:\n\nInput: nums = [1,2,-1,-2,1,0,-1]\nOutput: 3\nExplanation:\nDelete the elements nums[2] == -1\
+  \ and nums[3] == -2, and select the subarray [2, 1] from [1, 2, 1, 0, -1] to obtain the maximum sum.\n\
+  \n \nConstraints:\n\n1 <= nums.length <= 100\n-100 <= nums[i] <= 100\n\nWrite the solution in Python\
+  \ as this class, with any imports it needs:\n\n```python\nclass Solution:\n    def maxSum(self, nums:\
+  \ List[int]) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().maxSum(nums=[-1, 2, -3, 4, -5]) == 6
+  - Solution().maxSum(nums=[-10, 1, 20, -30, 40, -50, 60]) == 121
+  - Solution().maxSum(nums=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) == 55
+  - Solution().maxSum(nums=[1, -1, 1, -1, 1, -1]) == 1
+  - Solution().maxSum(nums=[1, -1, 1, -1, 1, -1, 1, -1]) == 1
+  - Solution().maxSum(nums=[100, -100, 50, -50, 25, -25]) == 175
+  - Solution().maxSum(nums=[10, 20, 30, 40, 50]) == 150
+  - Solution().maxSum(nums=[5, 5, 5, 5, 5]) == 5
+  - Solution().maxSum(nums=[-1, -2, -3, -4, -5]) == -1
+  - Solution().maxSum(nums=[0, 0, 0, 0, 0]) == 0
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3487'
+  date: '2025-03-16'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

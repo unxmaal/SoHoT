@@ -1,0 +1,59 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3489
+modality: code
+prompt: "You are given an integer array nums of length n and a 2D array queries, where queries[i] = [li,\
+  \ ri, vali].\nEach queries[i] represents the following action on nums:\n\nSelect a subset of indices\
+  \ in the range [li, ri] from nums.\nDecrement the value at each selected index by exactly vali.\n\n\
+  A Zero Array is an array with all its elements equal to 0.\nReturn the minimum possible non-negative\
+  \ value of k, such that after processing the first k queries in sequence, nums becomes a Zero Array.\
+  \ If no such k exists, return -1.\n \nExample 1:\n\nInput: nums = [2,0,2], queries = [[0,2,1],[0,2,1],[1,1,3]]\n\
+  Output: 2\nExplanation:\n\nFor query 0 (l = 0, r = 2, val = 1):\n\nDecrement the values at indices [0,\
+  \ 2] by 1.\nThe array will become [1, 0, 1].\n\n\nFor query 1 (l = 0, r = 2, val = 1):\n\nDecrement\
+  \ the values at indices [0, 2] by 1.\nThe array will become [0, 0, 0], which is a Zero Array. Therefore,\
+  \ the minimum value of k is 2.\n\n\n\n\nExample 2:\n\nInput: nums = [4,3,2,1], queries = [[1,3,2],[0,2,1]]\n\
+  Output: -1\nExplanation:\nIt is impossible to make nums a Zero Array even after all the queries.\n\n\
+  Example 3:\n\nInput: nums = [1,2,3,2,1], queries = [[0,1,1],[1,2,1],[2,3,2],[3,4,1],[4,4,1]]\nOutput:\
+  \ 4\nExplanation:\n\nFor query 0 (l = 0, r = 1, val = 1):\n\nDecrement the values at indices [0, 1]\
+  \ by 1.\nThe array will become [0, 1, 3, 2, 1].\n\n\nFor query 1 (l = 1, r = 2, val = 1):\n\nDecrement\
+  \ the values at indices [1, 2] by 1.\nThe array will become [0, 0, 2, 2, 1].\n\n\nFor query 2 (l = 2,\
+  \ r = 3, val = 2):\n\nDecrement the values at indices [2, 3] by 2.\nThe array will become [0, 0, 0,\
+  \ 0, 1].\n\n\nFor query 3 (l = 3, r = 4, val = 1):\n\nDecrement the value at index 4 by 1.\nThe array\
+  \ will become [0, 0, 0, 0, 0]. Therefore, the minimum value of k is 4.\n\n\n\n\nExample 4:\n\nInput:\
+  \ nums = [1,2,3,2,6], queries = [[0,1,1],[0,2,1],[1,4,2],[4,4,4],[3,4,1],[4,4,5]]\nOutput: 4\n\n \n\
+  Constraints:\n\n1 <= nums.length <= 10\n0 <= nums[i] <= 1000\n1 <= queries.length <= 1000\nqueries[i]\
+  \ = [li, ri, vali]\n0 <= li <= ri < nums.length\n1 <= vali <= 10\n\nWrite the solution in Python as\
+  \ this class, with any imports it needs:\n\n```python\nclass Solution:\n    def minZeroArray(self, nums:\
+  \ List[int], queries: List[List[int]]) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().minZeroArray(nums=[1, 2, 3, 2, 6], queries=[[0, 1, 1], [0, 2, 1], [1, 4, 2], [4, 4, 4],
+    [3, 4, 1], [4, 4, 5]]) == 4
+  - Solution().minZeroArray(nums=[2, 0, 2], queries=[[0, 2, 1], [0, 2, 1], [1, 1, 3]]) == 2
+  - Solution().minZeroArray(nums=[1, 2, 3, 2, 1], queries=[[0, 1, 1], [1, 2, 1], [2, 3, 2], [3, 4, 1],
+    [4, 4, 1]]) == 4
+  - Solution().minZeroArray(nums=[4, 3, 2, 1], queries=[[1, 3, 2], [0, 2, 1]]) == -1
+  - Solution().minZeroArray(nums=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10], queries=[[0, 9, 1], [0, 9, 2], [0, 9,
+    3], [0, 9, 4], [0, 9, 5], [0, 9, 6], [0, 9, 7], [0, 9, 8], [0, 9, 9], [0, 9, 10]]) == 4
+  - Solution().minZeroArray(nums=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10], queries=[[0, 9, 1], [0, 9, 1], [0, 9,
+    1], [0, 9, 1], [0, 9, 1], [0, 9, 1], [0, 9, 1], [0, 9, 1], [0, 9, 1], [0, 9, 1], [0, 9, 1], [0, 9,
+    1], [0, 9, 1], [0, 9, 1], [0, 9, 1], [0, 9, 1], [0, 9, 1], [0, 9, 1], [0, 9, 1], [0, 9, 1]]) == 10
+  - Solution().minZeroArray(nums=[2, 4, 6, 8, 10, 8, 6, 4, 2, 0], queries=[[0, 4, 2], [1, 5, 3], [2, 6,
+    4], [3, 7, 5], [4, 8, 6]]) == -1
+  - Solution().minZeroArray(nums=[10, 9, 8, 7, 6, 5, 4, 3, 2, 1], queries=[[0, 4, 1], [2, 6, 2], [1, 7,
+    3], [0, 9, 4], [3, 5, 5]]) == -1
+  - Solution().minZeroArray(nums=[1, 1, 1, 1, 1, 1, 1, 1, 1, 1], queries=[[0, 9, 1], [0, 9, 1], [0, 9,
+    1], [0, 9, 1], [0, 9, 1], [0, 9, 1], [0, 9, 1], [0, 9, 1], [0, 9, 1], [0, 9, 1]]) == 1
+  - Solution().minZeroArray(nums=[10, 20, 30, 40, 50, 60, 70, 80, 90, 100], queries=[[0, 4, 10], [5, 9,
+    10], [0, 9, 5]]) == -1
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3489'
+  date: '2025-03-16'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

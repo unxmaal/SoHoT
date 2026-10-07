@@ -1,0 +1,49 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3141
+modality: code
+prompt: "Given an array nums and an integer m, with each element nums[i] satisfying 0 <= nums[i] < 2m,\
+  \ return an array answer. The answer array should be of the same length as nums, where each element\
+  \ answer[i] represents the maximum Hamming distance between nums[i] and any other element nums[j] in\
+  \ the array.\nThe Hamming distance between two binary integers is defined as the number of positions\
+  \ at which the corresponding bits differ (add leading zeroes if needed).\n \nExample 1:\n\nInput: nums\
+  \ = [9,12,9,11], m = 4\nOutput: [2,3,2,3]\nExplanation:\nThe binary representation of nums = [1001,1100,1001,1011].\n\
+  The maximum hamming distances for each index are:\n\nnums[0]: 1001 and 1100 have a distance of 2.\n\
+  nums[1]: 1100 and 1011 have a distance of 3.\nnums[2]: 1001 and 1100 have a distance of 2.\nnums[3]:\
+  \ 1011 and 1100 have a distance of 3.\n\n\nExample 2:\n\nInput: nums = [3,4,6,10], m = 4\nOutput: [3,3,2,3]\n\
+  Explanation:\nThe binary representation of nums = [0011,0100,0110,1010].\nThe maximum hamming distances\
+  \ for each index are:\n\nnums[0]: 0011 and 0100 have a distance of 3.\nnums[1]: 0100 and 0011 have a\
+  \ distance of 3.\nnums[2]: 0110 and 1010 have a distance of 2.\nnums[3]: 1010 and 0100 have a distance\
+  \ of 3.\n\n\n \nConstraints:\n\n1 <= m <= 17\n2 <= nums.length <= 2m\n0 <= nums[i] < 2m\n\nWrite the\
+  \ solution in Python as this class, with any imports it needs:\n\n```python\nclass Solution:\n    def\
+  \ maxHammingDistances(self, nums: List[int], m: int) -> List[int]:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().maxHammingDistances(nums=[15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0], m=4) ==
+    [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4]
+  - Solution().maxHammingDistances(nums=[1, 2, 3, 4, 5, 6, 7, 8], m=4) == [3, 3, 3, 3, 3, 3, 4, 4]
+  - Solution().maxHammingDistances(nums=[15, 14, 13, 12, 11, 10, 9, 8], m=4) == [3, 3, 3, 3, 3, 3, 3,
+    3]
+  - Solution().maxHammingDistances(nums=[0, 1, 3, 7, 15, 31, 63, 127, 255], m=8) == [8, 7, 6, 5, 4, 5,
+    6, 7, 8]
+  - Solution().maxHammingDistances(nums=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], m=4) ==
+    [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4]
+  - Solution().maxHammingDistances(nums=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], m=4) == [4,
+    4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 3]
+  - Solution().maxHammingDistances(nums=[3, 4, 6, 10], m=4) == [3, 3, 2, 3]
+  - Solution().maxHammingDistances(nums=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17,
+    18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31], m=5) == [5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+    5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5]
+  - Solution().maxHammingDistances(nums=[1, 2, 4, 8, 16], m=5) == [2, 2, 2, 2, 2]
+  - Solution().maxHammingDistances(nums=[9, 12, 9, 11], m=4) == [2, 3, 2, 3]
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3141'
+  date: '2024-05-05'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

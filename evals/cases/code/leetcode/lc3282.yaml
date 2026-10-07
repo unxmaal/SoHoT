@@ -1,0 +1,36 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3282
+modality: code
+prompt: "You are given an integer array nums of length n.\nYour goal is to start at index 0 and reach\
+  \ index n - 1. You can only jump to indices greater than your current index.\nThe score for a jump from\
+  \ index i to index j is calculated as (j - i) * nums[i].\nReturn the maximum possible total score by\
+  \ the time you reach the last index.\n \nExample 1:\n\nInput: nums = [1,3,1,5]\nOutput: 7\nExplanation:\n\
+  First, jump to index 1 and then jump to the last index. The final score is 1 * 1 + 2 * 3 = 7.\n\nExample\
+  \ 2:\n\nInput: nums = [4,3,1,3,2]\nOutput: 16\nExplanation:\nJump directly to the last index. The final\
+  \ score is 4 * 4 = 16.\n\n \nConstraints:\n\n1 <= nums.length <= 105\n1 <= nums[i] <= 105\n\nWrite the\
+  \ solution in Python as this class, with any imports it needs:\n\n```python\nclass Solution:\n    def\
+  \ findMaximumScore(self, nums: List[int]) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().findMaximumScore(nums=[2, 3, 5, 6, 7, 8]) == 23
+  - Solution().findMaximumScore(nums=[10, 9, 8, 7, 6, 5, 4, 3, 2, 1]) == 90
+  - Solution().findMaximumScore(nums=[2, 4, 6, 8, 10]) == 20
+  - Solution().findMaximumScore(nums=[4, 3, 1, 3, 2]) == 16
+  - Solution().findMaximumScore(nums=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) == 45
+  - Solution().findMaximumScore(nums=[2, 1, 4, 5, 3]) == 13
+  - Solution().findMaximumScore(nums=[1, 3, 1, 5]) == 7
+  - Solution().findMaximumScore(nums=[10, 20, 30, 40, 50]) == 100
+  - Solution().findMaximumScore(nums=[5, 5, 5, 5, 5]) == 20
+  - Solution().findMaximumScore(nums=[5, 6, 7, 8, 9]) == 26
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3282'
+  date: '2024-09-08'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

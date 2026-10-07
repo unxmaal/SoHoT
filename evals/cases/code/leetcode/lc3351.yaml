@@ -1,0 +1,37 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3351
+modality: code
+prompt: "You are given an integer array nums. A good subsequence is defined as a subsequence of nums where\
+  \ the absolute difference between any two consecutive elements in the subsequence is exactly 1.\nReturn\
+  \ the sum of all possible good subsequences of nums.\nSince the answer may be very large, return it\
+  \ modulo 109 + 7.\nNote that a subsequence of size 1 is considered good by definition.\n \nExample 1:\n\
+  \nInput: nums = [1,2,1]\nOutput: 14\nExplanation:\n\nGood subsequences are: [1], [2], [1], [1,2], [2,1],\
+  \ [1,2,1].\nThe sum of elements in these subsequences is 14.\n\n\nExample 2:\n\nInput: nums = [3,4,5]\n\
+  Output: 40\nExplanation:\n\nGood subsequences are: [3], [4], [5], [3,4], [4,5], [3,4,5].\nThe sum of\
+  \ elements in these subsequences is 40.\n\n\n \nConstraints:\n\n1 <= nums.length <= 105\n0 <= nums[i]\
+  \ <= 105\n\nWrite the solution in Python as this class, with any imports it needs:\n\n```python\nclass\
+  \ Solution:\n    def sumOfGoodSubsequences(self, nums: List[int]) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().sumOfGoodSubsequences(nums=[5, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9]) == 3681
+  - Solution().sumOfGoodSubsequences(nums=[0, 1, 2, 3, 4, 5]) == 140
+  - Solution().sumOfGoodSubsequences(nums=[0, 0, 0, 0, 0, 0, 0, 0, 0, 0]) == 0
+  - Solution().sumOfGoodSubsequences(nums=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) == 1430
+  - Solution().sumOfGoodSubsequences(nums=[2, 2, 2, 2, 2, 2, 2, 2, 2, 2]) == 20
+  - Solution().sumOfGoodSubsequences(nums=[1, 1, 1, 1]) == 4
+  - Solution().sumOfGoodSubsequences(nums=[10, 9, 8, 7, 6, 5, 4, 3, 2, 1]) == 1210
+  - Solution().sumOfGoodSubsequences(nums=[1, 3, 5, 7, 9]) == 25
+  - Solution().sumOfGoodSubsequences(nums=[1, 3, 5, 7, 9, 10, 8, 6, 4, 2]) == 154
+  - Solution().sumOfGoodSubsequences(nums=[3, 4, 5]) == 40
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3351'
+  date: '2024-11-10'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

@@ -1,0 +1,42 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3288
+modality: code
+prompt: "You are given a 2D array of integers coordinates of length n and an integer k, where 0 <= k <\
+  \ n.\ncoordinates[i] = [xi, yi] indicates the point (xi, yi) in a 2D plane.\nAn increasing path of length\
+  \ m is defined as a list of points (x1, y1), (x2, y2), (x3, y3), ..., (xm, ym) such that:\n\nxi < xi\
+  \ + 1 and yi < yi + 1 for all i where 1 <= i < m.\n(xi, yi) is in the given coordinates for all i where\
+  \ 1 <= i <= m.\n\nReturn the maximum length of an increasing path that contains coordinates[k].\n \n\
+  Example 1:\n\nInput: coordinates = [[3,1],[2,2],[4,1],[0,0],[5,3]], k = 1\nOutput: 3\nExplanation:\n\
+  (0, 0), (2, 2), (5, 3) is the longest increasing path that contains (2, 2).\n\nExample 2:\n\nInput:\
+  \ coordinates = [[2,1],[7,0],[5,6]], k = 2\nOutput: 2\nExplanation:\n(2, 1), (5, 6) is the longest increasing\
+  \ path that contains (5, 6).\n\n \nConstraints:\n\n1 <= n == coordinates.length <= 105\ncoordinates[i].length\
+  \ == 2\n0 <= coordinates[i][0], coordinates[i][1] <= 109\nAll elements in coordinates are distinct.\n\
+  0 <= k <= n - 1\n\nWrite the solution in Python as this class, with any imports it needs:\n\n```python\n\
+  class Solution:\n    def maxPathLength(self, coordinates: List[List[int]], k: int) -> int:\n```\n\n\
+  Return only the code."
+assert:
+  checks:
+  - Solution().maxPathLength(coordinates=[[0, 0], [1, 1], [2, 2], [3, 3], [4, 4], [5, 5], [6, 6]], k=4)
+    == 7
+  - Solution().maxPathLength(coordinates=[[10, 1], [9, 2], [8, 3], [7, 4], [6, 5]], k=4) == 1
+  - Solution().maxPathLength(coordinates=[[10, 9], [9, 8], [8, 7], [7, 6]], k=2) == 4
+  - Solution().maxPathLength(coordinates=[[1, 1], [2, 2], [3, 3], [4, 4], [5, 5]], k=2) == 5
+  - Solution().maxPathLength(coordinates=[[0, 0], [1, 1], [2, 2], [3, 3], [4, 4], [5, 5]], k=3) == 6
+  - Solution().maxPathLength(coordinates=[[1, 9], [2, 8], [3, 7], [4, 6], [5, 5], [6, 4], [7, 3], [8,
+    2], [9, 1]], k=4) == 1
+  - Solution().maxPathLength(coordinates=[[5, 5], [6, 6], [7, 7], [8, 8], [9, 9]], k=0) == 5
+  - Solution().maxPathLength(coordinates=[[2, 1], [7, 0], [5, 6]], k=2) == 2
+  - Solution().maxPathLength(coordinates=[[10, 5], [15, 10], [20, 15], [25, 20]], k=2) == 4
+  - Solution().maxPathLength(coordinates=[[10, 5], [20, 10], [30, 15], [40, 20]], k=2) == 4
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3288'
+  date: '2024-09-08'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

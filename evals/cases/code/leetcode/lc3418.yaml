@@ -1,0 +1,48 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3418
+modality: code
+prompt: "You are given an m x n grid. A robot starts at the top-left corner of the grid (0, 0) and wants\
+  \ to reach the bottom-right corner (m - 1, n - 1). The robot can move either right or down at any point\
+  \ in time.\nThe grid contains a value coins[i][j] in each cell:\n\nIf coins[i][j] >= 0, the robot gains\
+  \ that many coins.\nIf coins[i][j] < 0, the robot encounters a robber, and the robber steals the absolute\
+  \ value of coins[i][j] coins.\n\nThe robot has a special ability to neutralize robbers in at most 2\
+  \ cells on its path, preventing them from stealing coins in those cells.\nNote: The robot's total coins\
+  \ can be negative.\nReturn the maximum profit the robot can gain on the route.\n \nExample 1:\n\nInput:\
+  \ coins = [[0,1,-1],[1,-2,3],[2,-3,4]]\nOutput: 8\nExplanation:\nAn optimal path for maximum coins is:\n\
+  \nStart at (0, 0) with 0 coins (total coins = 0).\nMove to (0, 1), gaining 1 coin (total coins = 0 +\
+  \ 1 = 1).\nMove to (1, 1), where there's a robber stealing 2 coins. The robot uses one neutralization\
+  \ here, avoiding the robbery (total coins = 1).\nMove to (1, 2), gaining 3 coins (total coins = 1 +\
+  \ 3 = 4).\nMove to (2, 2), gaining 4 coins (total coins = 4 + 4 = 8).\n\n\nExample 2:\n\nInput: coins\
+  \ = [[10,10,10],[10,10,10]]\nOutput: 40\nExplanation:\nAn optimal path for maximum coins is:\n\nStart\
+  \ at (0, 0) with 10 coins (total coins = 10).\nMove to (0, 1), gaining 10 coins (total coins = 10 +\
+  \ 10 = 20).\nMove to (0, 2), gaining another 10 coins (total coins = 20 + 10 = 30).\nMove to (1, 2),\
+  \ gaining the final 10 coins (total coins = 30 + 10 = 40).\n\n\n \nConstraints:\n\nm == coins.length\n\
+  n == coins[i].length\n1 <= m, n <= 500\n-1000 <= coins[i][j] <= 1000\n\nWrite the solution in Python\
+  \ as this class, with any imports it needs:\n\n```python\nclass Solution:\n    def maximumAmount(self,\
+  \ coins: List[List[int]]) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().maximumAmount(coins=[[0, 1, -1], [1, -2, 3], [2, -3, 4]]) == 8
+  - Solution().maximumAmount(coins=[[1, 2, 3, 4, 5], [5, 4, 3, 2, 1], [1, 3, 5, 7, 9]]) == 34
+  - Solution().maximumAmount(coins=[[1000, -1000, 1000, -1000], [-1000, 1000, -1000, 1000], [1000, -1000,
+    1000, -1000], [-1000, 1000, -1000, 1000]]) == 3000
+  - Solution().maximumAmount(coins=[[10, 10, 10], [10, 10, 10]]) == 40
+  - Solution().maximumAmount(coins=[[1, 2, 3, 4, 5], [5, 4, 3, 2, 1], [1, 3, 5, 7, 9], [9, 7, 5, 3, 1]])
+    == 35
+  - Solution().maximumAmount(coins=[[-1, -2, -3], [-4, -5, -6], [-7, -8, -9]]) == -6
+  - Solution().maximumAmount(coins=[[-1, 0, 1], [-2, 0, 2], [-3, 0, 3]]) == 6
+  - Solution().maximumAmount(coins=[[100, -100, 50], [-50, 200, -300], [400, -500, 600]]) == 1100
+  - Solution().maximumAmount(coins=[[1, -1, 1, -1], [1, -1, 1, -1], [-1, 1, -1, 1]]) == 4
+  - Solution().maximumAmount(coins=[[100, -50, 200], [-300, 400, 50], [-600, 700, -800]]) == 1200
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3418'
+  date: '2025-01-12'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

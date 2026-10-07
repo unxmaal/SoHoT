@@ -1,0 +1,35 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3120
+modality: code
+prompt: "You are given a string word. A letter is called special if it appears both in lowercase and uppercase\
+  \ in word.\nReturn the number of special letters in word.\n \nExample 1:\n\nInput: word = \"aaAbcBC\"\
+  \nOutput: 3\nExplanation:\nThe special characters in word are 'a', 'b', and 'c'.\n\nExample 2:\n\nInput:\
+  \ word = \"abc\"\nOutput: 0\nExplanation:\nNo character in word appears in uppercase.\n\nExample 3:\n\
+  \nInput: word = \"abBCab\"\nOutput: 1\nExplanation:\nThe only special character in word is 'b'.\n\n\
+   \nConstraints:\n\n1 <= word.length <= 50\nword consists of only lowercase and uppercase English letters.\n\
+  \nWrite the solution in Python as this class, with any imports it needs:\n\n```python\nclass Solution:\n\
+  \    def numberOfSpecialChars(self, word: str) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().numberOfSpecialChars(word='abc') == 0
+  - Solution().numberOfSpecialChars(word='xyzXYZ') == 3
+  - Solution().numberOfSpecialChars(word='aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZ') == 26
+  - Solution().numberOfSpecialChars(word='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ') == 26
+  - Solution().numberOfSpecialChars(word='aabbcc') == 0
+  - Solution().numberOfSpecialChars(word='AABBCC') == 0
+  - Solution().numberOfSpecialChars(word='cCcCc') == 1
+  - Solution().numberOfSpecialChars(word='AaBbCc') == 3
+  - Solution().numberOfSpecialChars(word='abBCab') == 1
+  - Solution().numberOfSpecialChars(word='AbCdEfGhIjKlMnOpQrStUvWxYz') == 0
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3120'
+  date: '2024-04-21'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

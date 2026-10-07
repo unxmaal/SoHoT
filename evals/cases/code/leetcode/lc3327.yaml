@@ -1,0 +1,51 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3327
+modality: code
+prompt: "You are given a tree rooted at node 0, consisting of n nodes numbered from 0 to n - 1. The tree\
+  \ is represented by an array parent of size n, where parent[i] is the parent of node i. Since node 0\
+  \ is the root, parent[0] == -1.\nYou are also given a string s of length n, where s[i] is the character\
+  \ assigned to node i.\nConsider an empty string dfsStr, and define a recursive function dfs(int x) that\
+  \ takes a node x as a parameter and performs the following steps in order:\n\nIterate over each child\
+  \ y of x in increasing order of their numbers, and call dfs(y).\nAdd the character s[x] to the end of\
+  \ the string dfsStr.\n\nNote that dfsStr is shared across all recursive calls of dfs.\nYou need to find\
+  \ a boolean array answer of size n, where for each index i from 0 to n - 1, you do the following:\n\n\
+  Empty the string dfsStr and call dfs(i).\nIf the resulting string dfsStr is a palindrome, then set answer[i]\
+  \ to true. Otherwise, set answer[i] to false.\n\nReturn the array answer.\n \nExample 1:\n\n\nInput:\
+  \ parent = [-1,0,0,1,1,2], s = \"aababa\"\nOutput: [true,true,false,true,true,true]\nExplanation:\n\n\
+  Calling dfs(0) results in the string dfsStr = \"abaaba\", which is a palindrome.\nCalling dfs(1) results\
+  \ in the string dfsStr = \"aba\", which is a palindrome.\nCalling dfs(2) results in the string dfsStr\
+  \ = \"ab\", which is not a palindrome.\nCalling dfs(3) results in the string dfsStr = \"a\", which is\
+  \ a palindrome.\nCalling dfs(4) results in the string dfsStr = \"b\", which is a palindrome.\nCalling\
+  \ dfs(5) results in the string dfsStr = \"a\", which is a palindrome.\n\n\nExample 2:\n\n\nInput: parent\
+  \ = [-1,0,0,0,0], s = \"aabcb\"\nOutput: [true,true,true,true,true]\nExplanation:\nEvery call on dfs(x)\
+  \ results in a palindrome string.\n\n \nConstraints:\n\nn == parent.length == s.length\n1 <= n <= 105\n\
+  0 <= parent[i] <= n - 1 for all i >= 1.\nparent[0] == -1\nparent represents a valid tree.\ns consists\
+  \ only of lowercase English letters.\n\nWrite the solution in Python as this class, with any imports\
+  \ it needs:\n\n```python\nclass Solution:\n    def findAnswer(self, parent: List[int], s: str) -> List[bool]:\n\
+  ```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().findAnswer(parent=[-1, 0, 1, 2, 2], s='abcba') == [False, False, False, True, True]
+  - Solution().findAnswer(parent=[-1, 0, 0, 1, 2], s='aaaab') == [True, True, False, True, True]
+  - Solution().findAnswer(parent=[-1, 0, 0, 1, 1, 2, 2], s='aabbcc') == [False, False, False, True, True,
+    True]
+  - Solution().findAnswer(parent=[-1, 0, 0, 1, 2, 2], s='ababa') == [False, True, True, True, True]
+  - Solution().findAnswer(parent=[-1, 0, 0, 0, 0, 0, 0], s='aaaaaaa') == [True, True, True, True, True,
+    True, True]
+  - Solution().findAnswer(parent=[-1, 0, 0, 0, 1, 1], s='abcabc') == [False, True, True, True, True, True]
+  - Solution().findAnswer(parent=[-1, 0, 1, 0, 2], s='abaca') == [False, False, True, True, True]
+  - Solution().findAnswer(parent=[-1, 0, 0, 1, 1, 2], s='aababa') == [True, True, False, True, True, True]
+  - Solution().findAnswer(parent=[-1, 0, 1, 2, 2], s='abcde') == [False, False, False, True, True]
+  - Solution().findAnswer(parent=[-1, 0, 0, 0, 0], s='aabcb') == [True, True, True, True, True]
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3327'
+  date: '2024-10-20'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

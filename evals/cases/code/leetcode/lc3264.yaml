@@ -1,0 +1,40 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3264
+modality: code
+prompt: "You are given an integer array nums, an integer k, and an integer multiplier.\nYou need to perform\
+  \ k operations on nums. In each operation:\n\nFind the minimum value x in nums. If there are multiple\
+  \ occurrences of the minimum value, select the one that appears first.\nReplace the selected minimum\
+  \ value x with x * multiplier.\n\nReturn an integer array denoting the final state of nums after performing\
+  \ all k operations.\n \nExample 1:\n\nInput: nums = [2,1,3,5,6], k = 5, multiplier = 2\nOutput: [8,4,6,5,6]\n\
+  Explanation:\n\n\n\nOperation\nResult\n\n\nAfter operation 1\n[2, 2, 3, 5, 6]\n\n\nAfter operation 2\n\
+  [4, 2, 3, 5, 6]\n\n\nAfter operation 3\n[4, 4, 3, 5, 6]\n\n\nAfter operation 4\n[4, 4, 6, 5, 6]\n\n\n\
+  After operation 5\n[8, 4, 6, 5, 6]\n\n\n\n\nExample 2:\n\nInput: nums = [1,2], k = 3, multiplier = 4\n\
+  Output: [16,8]\nExplanation:\n\n\n\nOperation\nResult\n\n\nAfter operation 1\n[4, 2]\n\n\nAfter operation\
+  \ 2\n[4, 8]\n\n\nAfter operation 3\n[16, 8]\n\n\n\n\n \nConstraints:\n\n1 <= nums.length <= 100\n1 <=\
+  \ nums[i] <= 100\n1 <= k <= 10\n1 <= multiplier <= 5\n\nWrite the solution in Python as this class,\
+  \ with any imports it needs:\n\n```python\nclass Solution:\n    def getFinalState(self, nums: List[int],\
+  \ k: int, multiplier: int) -> List[int]:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().getFinalState(nums=[3], k=1, multiplier=5) == [15]
+  - Solution().getFinalState(nums=[5, 5, 5, 5], k=4, multiplier=2) == [10, 10, 10, 10]
+  - Solution().getFinalState(nums=[10, 9, 8, 7], k=4, multiplier=1) == [10, 9, 8, 7]
+  - Solution().getFinalState(nums=[3, 7, 1, 4], k=1, multiplier=5) == [3, 7, 5, 4]
+  - Solution().getFinalState(nums=[10, 9, 8, 7, 6], k=4, multiplier=2) == [10, 18, 16, 14, 12]
+  - Solution().getFinalState(nums=[1, 1, 1, 1, 1], k=10, multiplier=2) == [4, 4, 4, 4, 4]
+  - Solution().getFinalState(nums=[5, 3, 9, 1, 4], k=2, multiplier=3) == [5, 9, 9, 3, 4]
+  - Solution().getFinalState(nums=[1, 1, 1, 1], k=10, multiplier=2) == [8, 8, 4, 4]
+  - Solution().getFinalState(nums=[1], k=1, multiplier=5) == [5]
+  - Solution().getFinalState(nums=[2, 1, 3, 5, 6], k=5, multiplier=2) == [8, 4, 6, 5, 6]
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3264'
+  date: '2024-08-25'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

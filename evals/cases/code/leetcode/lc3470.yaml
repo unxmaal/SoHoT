@@ -1,0 +1,41 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3470
+modality: code
+prompt: "Given two integers, n and k, an alternating permutation is a permutation of the first n positive\
+  \ integers such that no two adjacent elements are both odd or both even.\nReturn the k-th alternating\
+  \ permutation sorted in lexicographical order. If there are fewer than k valid alternating permutations,\
+  \ return an empty list.\n \nExample 1:\n\nInput: n = 4, k = 6\nOutput: [3,4,1,2]\nExplanation:\nThe\
+  \ lexicographically-sorted alternating permutations of [1, 2, 3, 4] are:\n\n[1, 2, 3, 4]\n[1, 4, 3,\
+  \ 2]\n[2, 1, 4, 3]\n[2, 3, 4, 1]\n[3, 2, 1, 4]\n[3, 4, 1, 2] ← 6th permutation\n[4, 1, 2, 3]\n[4, 3,\
+  \ 2, 1]\n\nSince k = 6, we return [3, 4, 1, 2].\n\nExample 2:\n\nInput: n = 3, k = 2\nOutput: [3,2,1]\n\
+  Explanation:\nThe lexicographically-sorted alternating permutations of [1, 2, 3] are:\n\n[1, 2, 3]\n\
+  [3, 2, 1] ← 2nd permutation\n\nSince k = 2, we return [3, 2, 1].\n\nExample 3:\n\nInput: n = 2, k =\
+  \ 3\nOutput: []\nExplanation:\nThe lexicographically-sorted alternating permutations of [1, 2] are:\n\
+  \n[1, 2]\n[2, 1]\n\nThere are only 2 alternating permutations, but k = 3, which is out of range. Thus,\
+  \ we return an empty list [].\n\n \nConstraints:\n\n1 <= n <= 100\n1 <= k <= 1015\n\nWrite the solution\
+  \ in Python as this class, with any imports it needs:\n\n```python\nclass Solution:\n    def permute(self,\
+  \ n: int, k: int) -> List[int]:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().permute(n=10, k=1000000) == []
+  - Solution().permute(n=3, k=2) == [3, 2, 1]
+  - Solution().permute(n=1, k=1) == [1]
+  - Solution().permute(n=5, k=1) == [1, 2, 3, 4, 5]
+  - Solution().permute(n=10, k=100) == [1, 2, 3, 8, 9, 4, 7, 10, 5, 6]
+  - Solution().permute(n=10, k=1) == [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+  - Solution().permute(n=9, k=5040) == []
+  - Solution().permute(n=5, k=20) == []
+  - Solution().permute(n=6, k=100) == []
+  - Solution().permute(n=8, k=1000) == [7, 8, 5, 2, 3, 6, 1, 4]
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3470'
+  date: '2025-02-23'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

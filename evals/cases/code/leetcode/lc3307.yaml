@@ -1,0 +1,46 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3307
+modality: code
+prompt: "Alice and Bob are playing a game. Initially, Alice has a string word = \"a\".\nYou are given\
+  \ a positive integer k. You are also given an integer array operations, where operations[i] represents\
+  \ the type of the ith operation.\nNow Bob will ask Alice to perform all operations in sequence:\n\n\
+  If operations[i] == 0, append a copy of word to itself.\nIf operations[i] == 1, generate a new string\
+  \ by changing each character in word to its next character in the English alphabet, and append it to\
+  \ the original word. For example, performing the operation on \"c\" generates \"cd\" and performing\
+  \ the operation on \"zb\" generates \"zbac\".\n\nReturn the value of the kth character in word after\
+  \ performing all the operations.\nNote that the character 'z' can be changed to 'a' in the second type\
+  \ of operation.\n \nExample 1:\n\nInput: k = 5, operations = [0,0,0]\nOutput: \"a\"\nExplanation:\n\
+  Initially, word == \"a\". Alice performs the three operations as follows:\n\nAppends \"a\" to \"a\"\
+  , word becomes \"aa\".\nAppends \"aa\" to \"aa\", word becomes \"aaaa\".\nAppends \"aaaa\" to \"aaaa\"\
+  , word becomes \"aaaaaaaa\".\n\n\nExample 2:\n\nInput: k = 10, operations = [0,1,0,1]\nOutput: \"b\"\
+  \nExplanation:\nInitially, word == \"a\". Alice performs the four operations as follows:\n\nAppends\
+  \ \"a\" to \"a\", word becomes \"aa\".\nAppends \"bb\" to \"aa\", word becomes \"aabb\".\nAppends \"\
+  aabb\" to \"aabb\", word becomes \"aabbaabb\".\nAppends \"bbccbbcc\" to \"aabbaabb\", word becomes \"\
+  aabbaabbbbccbbcc\".\n\n\n \nConstraints:\n\n1 <= k <= 1014\n1 <= operations.length <= 100\noperations[i]\
+  \ is either 0 or 1.\nThe input is generated such that word has at least k characters after all operations.\n\
+  \nWrite the solution in Python as this class, with any imports it needs:\n\n```python\nclass Solution:\n\
+  \    def kthCharacter(self, k: int, operations: List[int]) -> str:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().kthCharacter(k=20, operations=[1, 0, 1, 0, 1]) == 'c'
+  - Solution().kthCharacter(k=15, operations=[1, 0, 1, 0]) == 'b'
+  - Solution().kthCharacter(k=10, operations=[0, 1, 0, 1]) == 'b'
+  - Solution().kthCharacter(k=3, operations=[0, 1]) == 'b'
+  - Solution().kthCharacter(k=3, operations=[1, 0]) == 'a'
+  - Solution().kthCharacter(k=5, operations=[0, 0, 0]) == 'a'
+  - Solution().kthCharacter(k=2, operations=[0, 1]) == 'a'
+  - Solution().kthCharacter(k=2, operations=[1, 1]) == 'b'
+  - Solution().kthCharacter(k=1, operations=[]) == 'a'
+  - Solution().kthCharacter(k=15, operations=[0, 1, 1, 0]) == 'c'
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3307'
+  date: '2024-09-29'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

@@ -1,0 +1,38 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3346
+modality: code
+prompt: "You are given an integer array nums and two integers k and numOperations.\nYou must perform an\
+  \ operation numOperations times on nums, where in each operation you:\n\nSelect an index i that was\
+  \ not selected in any previous operations.\nAdd an integer in the range [-k, k] to nums[i].\n\nReturn\
+  \ the maximum possible frequency of any element in nums after performing the operations.\n \nExample\
+  \ 1:\n\nInput: nums = [1,4,5], k = 1, numOperations = 2\nOutput: 2\nExplanation:\nWe can achieve a maximum\
+  \ frequency of two by:\n\nAdding 0 to nums[1]. nums becomes [1, 4, 5].\nAdding -1 to nums[2]. nums becomes\
+  \ [1, 4, 4].\n\n\nExample 2:\n\nInput: nums = [5,11,20,20], k = 5, numOperations = 1\nOutput: 2\nExplanation:\n\
+  We can achieve a maximum frequency of two by:\n\nAdding 0 to nums[1].\n\n\n \nConstraints:\n\n1 <= nums.length\
+  \ <= 105\n1 <= nums[i] <= 105\n0 <= k <= 105\n0 <= numOperations <= nums.length\n\nWrite the solution\
+  \ in Python as this class, with any imports it needs:\n\n```python\nclass Solution:\n    def maxFrequency(self,\
+  \ nums: List[int], k: int, numOperations: int) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().maxFrequency(nums=[1, 100000], k=100000, numOperations=1) == 2
+  - Solution().maxFrequency(nums=[1, 1, 1, 1, 1], k=10, numOperations=0) == 5
+  - Solution().maxFrequency(nums=[1, 100, 1000, 10000], k=5000, numOperations=3) == 3
+  - Solution().maxFrequency(nums=[1, 4, 5], k=1, numOperations=2) == 2
+  - Solution().maxFrequency(nums=[1, 2, 2, 3, 3, 3, 4], k=1, numOperations=4) == 6
+  - Solution().maxFrequency(nums=[10, 20, 30, 40, 50], k=15, numOperations=5) == 4
+  - Solution().maxFrequency(nums=[1, 1, 1, 1], k=10, numOperations=4) == 4
+  - Solution().maxFrequency(nums=[1, 2, 3, 4, 5], k=2, numOperations=5) == 5
+  - Solution().maxFrequency(nums=[1, 2, 3, 4, 5], k=2, numOperations=3) == 4
+  - Solution().maxFrequency(nums=[10, 10, 10], k=0, numOperations=3) == 3
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3346'
+  date: '2024-11-03'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

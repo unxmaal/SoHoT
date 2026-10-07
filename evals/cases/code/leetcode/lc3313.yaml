@@ -1,0 +1,53 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3313
+modality: code
+prompt: "There exists an undirected tree with n nodes numbered 0 to n - 1. You are given a 2D integer\
+  \ array edges of length n - 1, where edges[i] = [ui, vi] indicates that there is an edge between nodes\
+  \ ui and vi in the tree.\nInitially, all nodes are unmarked. After every second, you mark all unmarked\
+  \ nodes which have at least one marked node adjacent to them.\nReturn an array nodes where nodes[i]\
+  \ is the last node to get marked in the tree, if you mark node i at time t = 0. If nodes[i] has multiple\
+  \ answers for any node i, you can choose any one answer.\n \nExample 1:\n\nInput: edges = [[0,1],[0,2]]\n\
+  Output: [2,2,1]\nExplanation:\n\n\nFor i = 0, the nodes are marked in the sequence: [0] -> [0,1,2].\
+  \ Either 1 or 2 can be the answer.\nFor i = 1, the nodes are marked in the sequence: [1] -> [0,1] ->\
+  \ [0,1,2]. Node 2 is marked last.\nFor i = 2, the nodes are marked in the sequence: [2] -> [0,2] ->\
+  \ [0,1,2]. Node 1 is marked last.\n\n\nExample 2:\n\nInput: edges = [[0,1]]\nOutput: [1,0]\nExplanation:\n\
+  \n\nFor i = 0, the nodes are marked in the sequence: [0] -> [0,1].\nFor i = 1, the nodes are marked\
+  \ in the sequence: [1] -> [0,1].\n\n\nExample 3:\n\nInput: edges = [[0,1],[0,2],[2,3],[2,4]]\nOutput:\
+  \ [3,3,1,1,1]\nExplanation:\n\n\nFor i = 0, the nodes are marked in the sequence: [0] -> [0,1,2] ->\
+  \ [0,1,2,3,4].\nFor i = 1, the nodes are marked in the sequence: [1] -> [0,1] -> [0,1,2] -> [0,1,2,3,4].\n\
+  For i = 2, the nodes are marked in the sequence: [2] -> [0,2,3,4] -> [0,1,2,3,4].\nFor i = 3, the nodes\
+  \ are marked in the sequence: [3] -> [2,3] -> [0,2,3,4] -> [0,1,2,3,4].\nFor i = 4, the nodes are marked\
+  \ in the sequence: [4] -> [2,4] -> [0,2,3,4] -> [0,1,2,3,4].\n\n\n \nConstraints:\n\n2 <= n <= 105\n\
+  edges.length == n - 1\nedges[i].length == 2\n0 <= edges[i][0], edges[i][1] <= n - 1\nThe input is generated\
+  \ such that edges represents a valid tree.\n\nWrite the solution in Python as this class, with any imports\
+  \ it needs:\n\n```python\nclass Solution:\n    def lastMarkedNodes(self, edges: List[List[int]]) ->\
+  \ List[int]:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().lastMarkedNodes(edges=[[0, 1], [0, 2]]) == [2, 2, 1]
+  - Solution().lastMarkedNodes(edges=[[0, 1], [0, 2], [2, 3], [2, 4]]) == [3, 3, 1, 1, 1]
+  - Solution().lastMarkedNodes(edges=[[0, 1], [1, 2], [1, 3], [3, 4], [3, 5], [5, 6]]) == [6, 6, 6, 0,
+    0, 0, 0]
+  - Solution().lastMarkedNodes(edges=[[0, 1]]) == [1, 0]
+  - Solution().lastMarkedNodes(edges=[[0, 2], [0, 3], [1, 2]]) == [1, 3, 3, 1]
+  - Solution().lastMarkedNodes(edges=[[0, 1], [0, 2], [2, 3], [2, 4], [2, 5], [5, 6]]) == [6, 6, 1, 1,
+    1, 1, 1]
+  - Solution().lastMarkedNodes(edges=[[0, 1], [1, 2], [2, 3], [3, 4], [2, 5], [5, 6]]) == [4, 4, 0, 0,
+    0, 0, 0]
+  - Solution().lastMarkedNodes(edges=[[0, 1], [0, 2], [1, 3], [1, 4], [2, 5], [2, 6]]) == [5, 5, 3, 5,
+    5, 3, 3]
+  - Solution().lastMarkedNodes(edges=[[0, 1], [0, 2], [0, 3], [1, 4], [1, 5], [2, 6], [2, 7], [3, 8],
+    [3, 9]]) == [6, 6, 4, 6, 6, 6, 4, 4, 6, 6]
+  - Solution().lastMarkedNodes(edges=[[0, 1], [1, 2], [2, 3], [3, 4], [4, 5]]) == [5, 5, 5, 0, 0, 0]
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3313'
+  date: '2024-10-06'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

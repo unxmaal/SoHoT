@@ -1,0 +1,39 @@
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08.
+import random
+import functools
+import collections
+import string
+import math
+import datetime
+
+from typing import *
+from functools import *
+from collections import *
+from itertools import *
+from heapq import *
+from bisect import *
+from string import *
+from operator import *
+from math import *
+
+inf = float('inf')
+
+class Solution:
+    def validSubstringCount(self, word1: str, word2: str) -> int:
+        if len(word1) < len(word2):
+            return 0
+        cnt = Counter(word2)
+        need = len(cnt)
+        ans = l = 0
+        win = Counter()
+        for c in word1:
+            win[c] += 1
+            if win[c] == cnt[c]:
+                need -= 1
+            while need == 0:
+                if win[word1[l]] == cnt[word1[l]]:
+                    need += 1
+                win[word1[l]] -= 1
+                l += 1
+            ans += l
+        return ans

@@ -1,0 +1,38 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3339
+modality: code
+prompt: "You are given three integers n, m, and k.\nAn array arr is called k-even if there are exactly\
+  \ k indices such that, for each of these indices i (0 <= i < n - 1):\n\n(arr[i] * arr[i + 1]) - arr[i]\
+  \ - arr[i + 1] is even.\n\nReturn the number of possible k-even arrays of size n where all elements\
+  \ are in the range [1, m].\nSince the answer may be very large, return it modulo 109 + 7.\n \nExample\
+  \ 1:\n\nInput: n = 3, m = 4, k = 2\nOutput: 8\nExplanation:\nThe 8 possible 2-even arrays are:\n\n[2,\
+  \ 2, 2]\n[2, 2, 4]\n[2, 4, 2]\n[2, 4, 4]\n[4, 2, 2]\n[4, 2, 4]\n[4, 4, 2]\n[4, 4, 4]\n\n\nExample 2:\n\
+  \nInput: n = 5, m = 1, k = 0\nOutput: 1\nExplanation:\nThe only 0-even array is [1, 1, 1, 1, 1].\n\n\
+  Example 3:\n\nInput: n = 7, m = 7, k = 5\nOutput: 5832\n\n \nConstraints:\n\n1 <= n <= 750\n0 <= k <=\
+  \ n - 1\n1 <= m <= 1000\n\nWrite the solution in Python as this class, with any imports it needs:\n\n\
+  ```python\nclass Solution:\n    def countOfArrays(self, n: int, m: int, k: int) -> int:\n```\n\nReturn\
+  \ only the code."
+assert:
+  checks:
+  - Solution().countOfArrays(n=1, m=10, k=0) == 10
+  - Solution().countOfArrays(n=1, m=1000, k=0) == 1000
+  - Solution().countOfArrays(n=50, m=10, k=20) == 554673901
+  - Solution().countOfArrays(n=150, m=3, k=75) == 277195090
+  - Solution().countOfArrays(n=1, m=1, k=0) == 1
+  - Solution().countOfArrays(n=5, m=1, k=0) == 1
+  - Solution().countOfArrays(n=20, m=10, k=5) == 944866948
+  - Solution().countOfArrays(n=3, m=4, k=2) == 8
+  - Solution().countOfArrays(n=10, m=5, k=4) == 513216
+  - Solution().countOfArrays(n=1, m=2, k=0) == 2
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3339'
+  date: '2024-10-27'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

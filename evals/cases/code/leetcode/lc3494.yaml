@@ -1,0 +1,48 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3494
+modality: code
+prompt: "You are given two integer arrays, skill and mana, of length n and m, respectively.\nIn a laboratory,\
+  \ n wizards must brew m potions in order. Each potion has a mana capacity mana[j] and must pass through\
+  \ all the wizards sequentially to be brewed properly. The time taken by the ith wizard on the jth potion\
+  \ is timeij = skill[i] * mana[j].\nSince the brewing process is delicate, a potion must be passed to\
+  \ the next wizard immediately after the current wizard completes their work. This means the timing must\
+  \ be synchronized so that each wizard begins working on a potion exactly when it arrives. ​\nReturn\
+  \ the minimum amount of time required for the potions to be brewed properly.\n \nExample 1:\n\nInput:\
+  \ skill = [1,5,2,4], mana = [5,1,4,2]\nOutput: 110\nExplanation:\n\n\n\nPotion Number\nStart time\n\
+  Wizard 0 done by\nWizard 1 done by\nWizard 2 done by\nWizard 3 done by\n\n\n0\n0\n5\n30\n40\n60\n\n\n\
+  1\n52\n53\n58\n60\n64\n\n\n2\n54\n58\n78\n86\n102\n\n\n3\n86\n88\n98\n102\n110\n\n\n\nAs an example\
+  \ for why wizard 0 cannot start working on the 1st potion before time t = 52, consider the case where\
+  \ the wizards started preparing the 1st potion at time t = 50. At time t = 58, wizard 2 is done with\
+  \ the 1st potion, but wizard 3 will still be working on the 0th potion till time t = 60.\n\nExample\
+  \ 2:\n\nInput: skill = [1,1,1], mana = [1,1,1]\nOutput: 5\nExplanation:\n\nPreparation of the 0th potion\
+  \ begins at time t = 0, and is completed by time t = 3.\nPreparation of the 1st potion begins at time\
+  \ t = 1, and is completed by time t = 4.\nPreparation of the 2nd potion begins at time t = 2, and is\
+  \ completed by time t = 5.\n\n\nExample 3:\n\nInput: skill = [1,2,3,4], mana = [1,2]\nOutput: 21\n\n\
+   \nConstraints:\n\nn == skill.length\nm == mana.length\n1 <= n, m <= 5000\n1 <= mana[i], skill[i] <=\
+  \ 5000\n\nWrite the solution in Python as this class, with any imports it needs:\n\n```python\nclass\
+  \ Solution:\n    def minTime(self, skill: List[int], mana: List[int]) -> int:\n```\n\nReturn only the\
+  \ code."
+assert:
+  checks:
+  - Solution().minTime(skill=[10, 20, 30], mana=[1, 2, 3, 4, 5]) == 490
+  - Solution().minTime(skill=[3, 2, 1], mana=[6, 5, 4]) == 57
+  - Solution().minTime(skill=[1, 1, 1], mana=[1, 1, 1]) == 5
+  - Solution().minTime(skill=[1, 2, 3], mana=[4, 5, 6, 7]) == 78
+  - Solution().minTime(skill=[5000, 5000], mana=[1, 5000]) == 50005000
+  - Solution().minTime(skill=[1, 2, 3], mana=[4, 5, 6, 7, 8]) == 102
+  - Solution().minTime(skill=[1, 5, 2, 4], mana=[5, 1, 4, 2]) == 110
+  - Solution().minTime(skill=[10, 20, 30], mana=[1, 2, 3, 4, 5]) == 490
+  - Solution().minTime(skill=[1, 2, 3, 4], mana=[1, 2]) == 21
+  - Solution().minTime(skill=[5000, 5000, 5000], mana=[5000, 5000, 5000]) == 125000000
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3494'
+  date: '2025-03-23'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

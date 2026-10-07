@@ -1,0 +1,42 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3237
+modality: code
+prompt: "There are n windows open numbered from 1 to n, we want to simulate using alt + tab to navigate\
+  \ between the windows.\nYou are given an array windows which contains the initial order of the windows\
+  \ (the first element is at the top and the last one is at the bottom).\nYou are also given an array\
+  \ queries where for each query, the window queries[i] is brought to the top.\nReturn the final state\
+  \ of the array windows.\n \nExample 1:\n\nInput: windows = [1,2,3], queries = [3,3,2]\nOutput: [2,3,1]\n\
+  Explanation:\nHere is the window array after each query:\n\nInitial order: [1,2,3]\nAfter the first\
+  \ query: [3,1,2]\nAfter the second query: [3,1,2]\nAfter the last query: [2,3,1]\n\n\nExample 2:\n\n\
+  Input: windows = [1,4,2,3], queries = [4,1,3]\nOutput: [3,1,4,2]\nExplanation:\nHere is the window array\
+  \ after each query:\n\nInitial order: [1,4,2,3]\nAfter the first query: [4,1,2,3]\nAfter the second\
+  \ query: [1,4,2,3]\nAfter the last query: [3,1,4,2]\n\n\n \nConstraints:\n\n1 <= n == windows.length\
+  \ <= 105\nwindows is a permutation of [1, n].\n1 <= queries.length <= 105\n1 <= queries[i] <= n\n\n\
+  Write the solution in Python as this class, with any imports it needs:\n\n```python\nclass Solution:\n\
+  \    def simulationResult(self, windows: List[int], queries: List[int]) -> List[int]:\n```\n\nReturn\
+  \ only the code."
+assert:
+  checks:
+  - Solution().simulationResult(windows=[3, 2, 1], queries=[3, 2, 1]) == [1, 2, 3]
+  - Solution().simulationResult(windows=[1, 3, 2, 5, 4], queries=[4, 5, 2, 3, 1]) == [1, 3, 2, 5, 4]
+  - Solution().simulationResult(windows=[10, 9, 8, 7, 6, 5, 4, 3, 2, 1], queries=[1, 2, 3, 4, 5, 6, 7,
+    8, 9, 10]) == [10, 9, 8, 7, 6, 5, 4, 3, 2, 1]
+  - Solution().simulationResult(windows=[1], queries=[1]) == [1]
+  - Solution().simulationResult(windows=[2, 1], queries=[2, 1, 2, 1]) == [1, 2]
+  - Solution().simulationResult(windows=[3, 2, 1], queries=[3, 2, 1, 3, 2, 1]) == [1, 2, 3]
+  - Solution().simulationResult(windows=[5, 2, 1, 4, 3], queries=[1, 5, 2, 4, 3]) == [3, 4, 2, 5, 1]
+  - Solution().simulationResult(windows=[1, 2], queries=[2, 1, 2, 1]) == [1, 2]
+  - Solution().simulationResult(windows=[1, 2, 3], queries=[3, 3, 2]) == [2, 3, 1]
+  - Solution().simulationResult(windows=[5, 3, 2, 1, 4], queries=[2, 5, 4, 1]) == [1, 4, 5, 2, 3]
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3237'
+  date: '2024-07-28'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

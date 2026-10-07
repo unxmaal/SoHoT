@@ -1,0 +1,50 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3275
+modality: code
+prompt: "There is an infinite 2D plane.\nYou are given a positive integer k. You are also given a 2D array\
+  \ queries, which contains the following queries:\n\nqueries[i] = [x, y]: Build an obstacle at coordinate\
+  \ (x, y) in the plane. It is guaranteed that there is no obstacle at this coordinate when this query\
+  \ is made.\n\nAfter each query, you need to find the distance of the kth nearest obstacle from the origin.\n\
+  Return an integer array results where results[i] denotes the kth nearest obstacle after query i, or\
+  \ results[i] == -1 if there are less than k obstacles.\nNote that initially there are no obstacles anywhere.\n\
+  The distance of an obstacle at coordinate (x, y) from the origin is given by |x| + |y|.\n \nExample\
+  \ 1:\n\nInput: queries = [[1,2],[3,4],[2,3],[-3,0]], k = 2\nOutput: [-1,7,5,3]\nExplanation:\n\nInitially,\
+  \ there are 0 obstacles.\nAfter queries[0], there are less than 2 obstacles.\nAfter queries[1], there\
+  \ are obstacles at distances 3 and 7.\nAfter queries[2], there are obstacles at distances 3, 5, and\
+  \ 7.\nAfter queries[3], there are obstacles at distances 3, 3, 5, and 7.\n\n\nExample 2:\n\nInput: queries\
+  \ = [[5,5],[4,4],[3,3]], k = 1\nOutput: [10,8,6]\nExplanation:\n\nAfter queries[0], there is an obstacle\
+  \ at distance 10.\nAfter queries[1], there are obstacles at distances 8 and 10.\nAfter queries[2], there\
+  \ are obstacles at distances 6, 8, and 10.\n\n\n \nConstraints:\n\n1 <= queries.length <= 2 * 105\n\
+  All queries[i] are unique.\n-109 <= queries[i][0], queries[i][1] <= 109\n1 <= k <= 105\n\nWrite the\
+  \ solution in Python as this class, with any imports it needs:\n\n```python\nclass Solution:\n    def\
+  \ resultsArray(self, queries: List[List[int]], k: int) -> List[int]:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().resultsArray(queries=[[5, 5], [4, 4], [3, 3]], k=1) == [10, 8, 6]
+  - Solution().resultsArray(queries=[[-1000000000, 1000000000], [1000000000, -1000000000]], k=1) == [2000000000,
+    2000000000]
+  - Solution().resultsArray(queries=[[-1, 1], [0, 0], [1, -1]], k=3) == [-1, -1, 2]
+  - Solution().resultsArray(queries=[[10, 10], [20, 20], [30, 30], [40, 40]], k=4) == [-1, -1, -1, 80]
+  - Solution().resultsArray(queries=[[1, 2], [3, 4], [2, 3], [-3, 0]], k=2) == [-1, 7, 5, 3]
+  - Solution().resultsArray(queries=[[1, 1], [2, 2], [3, 3], [4, 4], [5, 5], [6, 6], [7, 7], [8, 8], [9,
+    9], [10, 10]], k=5) == [-1, -1, -1, -1, 10, 10, 10, 10, 10, 10]
+  - Solution().resultsArray(queries=[[1, 0], [2, 0], [3, 0], [4, 0], [5, 0], [6, 0], [7, 0], [8, 0], [9,
+    0], [10, 0]], k=1) == [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+  - Solution().resultsArray(queries=[[-1, 0], [0, 1], [1, 0], [0, -1], [-2, 0], [0, -2], [2, 0], [0, 2],
+    [-3, 0], [0, -3], [3, 0], [0, 3]], k=4) == [-1, -1, -1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+  - Solution().resultsArray(queries=[[1000000000, 1000000000], [1000000000, -1000000000], [-1000000000,
+    1000000000], [-1000000000, -1000000000]], k=1) == [2000000000, 2000000000, 2000000000, 2000000000]
+  - Solution().resultsArray(queries=[[-1, -1], [-2, -2], [-3, -3], [-4, -4], [-5, -5], [-6, -6], [-7,
+    -7], [-8, -8], [-9, -9], [-10, -10]], k=1) == [2, 2, 2, 2, 2, 2, 2, 2, 2, 2]
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3275'
+  date: '2024-09-01'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

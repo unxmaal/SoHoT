@@ -1,0 +1,38 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3170
+modality: code
+prompt: "You are given a string s. It may contain any number of '*' characters. Your task is to remove\
+  \ all '*' characters.\nWhile there is a '*', do the following operation:\n\nDelete the leftmost '*'\
+  \ and the smallest non-'*' character to its left. If there are several smallest characters, you can\
+  \ delete any of them.\n\nReturn the lexicographically smallest resulting string after removing all '*'\
+  \ characters.\n \nExample 1:\n\nInput: s = \"aaba*\"\nOutput: \"aab\"\nExplanation:\nWe should delete\
+  \ one of the 'a' characters with '*'. If we choose s[3], s becomes the lexicographically smallest.\n\
+  \nExample 2:\n\nInput: s = \"abc\"\nOutput: \"abc\"\nExplanation:\nThere is no '*' in the string.\n\n\
+   \nConstraints:\n\n1 <= s.length <= 105\ns consists only of lowercase English letters and '*'.\nThe\
+  \ input is generated such that it is possible to delete all '*' characters.\n\nWrite the solution in\
+  \ Python as this class, with any imports it needs:\n\n```python\nclass Solution:\n    def clearStars(self,\
+  \ s: str) -> str:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().clearStars(s='*a*b*c*d*e*f*g*h*i*j*k*l*m*n*o*p*q*r*s*t*u*v*w*x*y*z') == 'z'
+  - Solution().clearStars(s='*a*b*c') == 'c'
+  - Solution().clearStars(s='aaba*') == 'aab'
+  - Solution().clearStars(s='z*z*z*z') == 'z'
+  - Solution().clearStars(s='a*b*c*a*b*c') == 'c'
+  - Solution().clearStars(s='zzzzzzzzz***zzzzz') == 'zzzzzzzzzzz'
+  - Solution().clearStars(s='abc***') == ''
+  - Solution().clearStars(s='a*a*a*a*a*a*a*a*a*a') == 'a'
+  - Solution().clearStars(s='aaabbbccc***') == 'bbbccc'
+  - Solution().clearStars(s='ab*c*d*e') == 'de'
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3170'
+  date: '2024-06-02'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

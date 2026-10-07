@@ -1,0 +1,34 @@
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08.
+import random
+import functools
+import collections
+import string
+import math
+import datetime
+
+from typing import *
+from functools import *
+from collections import *
+from itertools import *
+from heapq import *
+from bisect import *
+from string import *
+from operator import *
+from math import *
+
+inf = float('inf')
+
+class Solution:
+    def findWinningPlayer(self, skills: List[int], k: int) -> int:
+        n = len(skills)
+        k = min(k, n - 1)
+        i = cnt = 0
+        for j in range(1, n):
+            if skills[i] < skills[j]:
+                i = j
+                cnt = 1
+            else:
+                cnt += 1
+            if cnt == k:
+                break
+        return i

@@ -1,0 +1,40 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3304
+modality: code
+prompt: "Alice and Bob are playing a game. Initially, Alice has a string word = \"a\".\nYou are given\
+  \ a positive integer k.\nNow Bob will ask Alice to perform the following operation forever:\n\nGenerate\
+  \ a new string by changing each character in word to its next character in the English alphabet, and\
+  \ append it to the original word.\n\nFor example, performing the operation on \"c\" generates \"cd\"\
+  \ and performing the operation on \"zb\" generates \"zbac\".\nReturn the value of the kth character\
+  \ in word, after enough operations have been done for word to have at least k characters.\nNote that\
+  \ the character 'z' can be changed to 'a' in the operation.\n \nExample 1:\n\nInput: k = 5\nOutput:\
+  \ \"b\"\nExplanation:\nInitially, word = \"a\". We need to do the operation three times:\n\nGenerated\
+  \ string is \"b\", word becomes \"ab\".\nGenerated string is \"bc\", word becomes \"abbc\".\nGenerated\
+  \ string is \"bccd\", word becomes \"abbcbccd\".\n\n\nExample 2:\n\nInput: k = 10\nOutput: \"c\"\n\n\
+   \nConstraints:\n\n1 <= k <= 500\n\nWrite the solution in Python as this class, with any imports it\
+  \ needs:\n\n```python\nclass Solution:\n    def kthCharacter(self, k: int) -> str:\n```\n\nReturn only\
+  \ the code."
+assert:
+  checks:
+  - Solution().kthCharacter(k=27) == 'd'
+  - Solution().kthCharacter(k=1) == 'a'
+  - Solution().kthCharacter(k=7) == 'c'
+  - Solution().kthCharacter(k=500) == 'h'
+  - Solution().kthCharacter(k=26) == 'd'
+  - Solution().kthCharacter(k=5) == 'b'
+  - Solution().kthCharacter(k=10) == 'c'
+  - Solution().kthCharacter(k=175) == 'f'
+  - Solution().kthCharacter(k=400) == 'g'
+  - Solution().kthCharacter(k=20) == 'd'
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3304'
+  date: '2024-09-29'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

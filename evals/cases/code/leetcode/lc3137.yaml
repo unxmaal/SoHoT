@@ -1,0 +1,42 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3137
+modality: code
+prompt: "You are given a string word of size n, and an integer k such that k divides n.\nIn one operation,\
+  \ you can pick any two indices i and j, that are divisible by k, then replace the substring of length\
+  \ k starting at i with the substring of length k starting at j. That is, replace the substring word[i..i\
+  \ + k - 1] with the substring word[j..j + k - 1].\nReturn the minimum number of operations required\
+  \ to make word k-periodic.\nWe say that word is k-periodic if there is some string s of length k such\
+  \ that word can be obtained by concatenating s an arbitrary number of times. For example, if word ==\
+  \ “ababab”, then word is 2-periodic for s = \"ab\".\n \nExample 1:\n\nInput: word = \"leetcodeleet\"\
+  , k = 4\nOutput: 1\nExplanation:\nWe can obtain a 4-periodic string by picking i = 4 and j = 0. After\
+  \ this operation, word becomes equal to \"leetleetleet\".\n\nExample 2:\n\nInput: word = \"leetcoleet\"\
+  , k = 2\nOutput: 3\nExplanation:\nWe can obtain a 2-periodic string by applying the operations in the\
+  \ table below.\n\n\n\ni\nj\nword\n\n\n0\n2\netetcoleet\n\n\n4\n0\netetetleet\n\n\n6\n0\netetetetet\n\
+  \n\n\n\n\n \n\n \nConstraints:\n\n1 <= n == word.length <= 105\n1 <= k <= word.length\nk divides word.length.\n\
+  word consists only of lowercase English letters.\n\nWrite the solution in Python as this class, with\
+  \ any imports it needs:\n\n```python\nclass Solution:\n    def minimumOperationsToMakeKPeriodic(self,\
+  \ word: str, k: int) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().minimumOperationsToMakeKPeriodic(word='xyzxyzxyzxyzxyzxyz', k=3) == 0
+  - Solution().minimumOperationsToMakeKPeriodic(word='xyzxyzxyzxyz', k=3) == 0
+  - Solution().minimumOperationsToMakeKPeriodic(word='abcdefghijabcdefghij', k=5) == 2
+  - Solution().minimumOperationsToMakeKPeriodic(word='abcabcabc', k=3) == 0
+  - Solution().minimumOperationsToMakeKPeriodic(word='aaaaaaa', k=1) == 0
+  - Solution().minimumOperationsToMakeKPeriodic(word='aaaa', k=1) == 0
+  - Solution().minimumOperationsToMakeKPeriodic(word='xyzxyzxyzxyzxyzxyz', k=6) == 0
+  - Solution().minimumOperationsToMakeKPeriodic(word='abcdabcdabcd', k=4) == 0
+  - Solution().minimumOperationsToMakeKPeriodic(word='mnopqrsmnopqrsmnopqrs', k=7) == 0
+  - Solution().minimumOperationsToMakeKPeriodic(word='leetcodeleet', k=4) == 1
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3137'
+  date: '2024-05-05'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

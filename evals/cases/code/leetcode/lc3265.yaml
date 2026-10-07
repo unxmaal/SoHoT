@@ -1,0 +1,39 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3265
+modality: code
+prompt: "You are given an array nums consisting of positive integers.\nWe call two integers x and y in\
+  \ this problem almost equal if both integers can become equal after performing the following operation\
+  \ at most once:\n\nChoose either x or y and swap any two digits within the chosen number.\n\nReturn\
+  \ the number of indices i and j in nums where i < j such that nums[i] and nums[j] are almost equal.\n\
+  Note that it is allowed for an integer to have leading zeros after performing an operation.\n \nExample\
+  \ 1:\n\nInput: nums = [3,12,30,17,21]\nOutput: 2\nExplanation:\nThe almost equal pairs of elements are:\n\
+  \n3 and 30. By swapping 3 and 0 in 30, you get 3.\n12 and 21. By swapping 1 and 2 in 12, you get 21.\n\
+  \n\nExample 2:\n\nInput: nums = [1,1,1,1,1]\nOutput: 10\nExplanation:\nEvery two elements in the array\
+  \ are almost equal.\n\nExample 3:\n\nInput: nums = [123,231]\nOutput: 0\nExplanation:\nWe cannot swap\
+  \ any two digits of 123 or 231 to reach the other.\n\n \nConstraints:\n\n2 <= nums.length <= 100\n1\
+  \ <= nums[i] <= 106\n\nWrite the solution in Python as this class, with any imports it needs:\n\n```python\n\
+  class Solution:\n    def countPairs(self, nums: List[int]) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().countPairs(nums=[111, 222, 333, 444, 555, 666, 777, 888, 999]) == 0
+  - Solution().countPairs(nums=[101, 110, 111, 1001, 1100]) == 5
+  - Solution().countPairs(nums=[12, 21, 13, 31, 14]) == 2
+  - Solution().countPairs(nums=[12, 21, 13, 31, 23, 32, 45, 54]) == 4
+  - Solution().countPairs(nums=[999999, 99999, 9999, 999, 99, 9]) == 0
+  - Solution().countPairs(nums=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) == 1
+  - Solution().countPairs(nums=[123, 321, 213, 231, 312, 132]) == 9
+  - Solution().countPairs(nums=[1234, 4321, 2134, 3412]) == 1
+  - Solution().countPairs(nums=[5, 55, 555, 5555]) == 0
+  - Solution().countPairs(nums=[10, 100, 1000]) == 3
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3265'
+  date: '2024-08-25'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

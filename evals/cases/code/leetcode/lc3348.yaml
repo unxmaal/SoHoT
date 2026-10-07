@@ -1,0 +1,40 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3348
+modality: code
+prompt: "You are given a string num which represents a positive integer, and an integer t.\nA number is\
+  \ called zero-free if none of its digits are 0.\nReturn a string representing the smallest zero-free\
+  \ number greater than or equal to num such that the product of its digits is divisible by t. If no such\
+  \ number exists, return \"-1\".\n \nExample 1:\n\nInput: num = \"1234\", t = 256\nOutput: \"1488\"\n\
+  Explanation:\nThe smallest zero-free number that is greater than 1234 and has the product of its digits\
+  \ divisible by 256 is 1488, with the product of its digits equal to 256.\n\nExample 2:\n\nInput: num\
+  \ = \"12355\", t = 50\nOutput: \"12355\"\nExplanation:\n12355 is already zero-free and has the product\
+  \ of its digits divisible by 50, with the product of its digits equal to 150.\n\nExample 3:\n\nInput:\
+  \ num = \"11111\", t = 26\nOutput: \"-1\"\nExplanation:\nNo number greater than 11111 has the product\
+  \ of its digits divisible by 26.\n\n \nConstraints:\n\n2 <= num.length <= 2 * 105\nnum consists only\
+  \ of digits in the range ['0', '9'].\nnum does not contain leading zeros.\n1 <= t <= 1014\n\nWrite the\
+  \ solution in Python as this class, with any imports it needs:\n\n```python\nclass Solution:\n    def\
+  \ smallestNumber(self, num: str, t: int) -> str:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().smallestNumber(num='99999', t=987654) == '-1'
+  - Solution().smallestNumber(num='1000', t=10) == '1125'
+  - Solution().smallestNumber(num='123456789', t=3628800) == '145578899'
+  - Solution().smallestNumber(num='101010', t=10) == '111125'
+  - Solution().smallestNumber(num='202020', t=20) == '211125'
+  - Solution().smallestNumber(num='1999', t=2000) == '25558'
+  - Solution().smallestNumber(num='2222222222', t=1024) == '2222222222'
+  - Solution().smallestNumber(num='987654321', t=362880) == '987654321'
+  - Solution().smallestNumber(num='1234', t=256) == '1488'
+  - Solution().smallestNumber(num='112233445566778899', t=897654321) == '-1'
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3348'
+  date: '2024-11-03'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

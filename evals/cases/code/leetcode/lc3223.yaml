@@ -1,0 +1,40 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3223
+modality: code
+prompt: "You are given a string s.\nYou can perform the following process on s any number of times:\n\n\
+  Choose an index i in the string such that there is at least one character to the left of index i that\
+  \ is equal to s[i], and at least one character to the right that is also equal to s[i].\nDelete the\
+  \ closest occurrence of s[i] located to the left of i.\nDelete the closest occurrence of s[i] located\
+  \ to the right of i.\n\nReturn the minimum length of the final string s that you can achieve.\n \nExample\
+  \ 1:\n\nInput: s = \"abaacbcbb\"\nOutput: 5\nExplanation:\nWe do the following operations:\n\nChoose\
+  \ index 2, then remove the characters at indices 0 and 3. The resulting string is s = \"bacbcbb\".\n\
+  Choose index 3, then remove the characters at indices 0 and 5. The resulting string is s = \"acbcb\"\
+  .\n\n\nExample 2:\n\nInput: s = \"aa\"\nOutput: 2\nExplanation:\nWe cannot perform any operations, so\
+  \ we return the length of the original string.\n\n \nConstraints:\n\n1 <= s.length <= 2 * 105\ns consists\
+  \ only of lowercase English letters.\n\nWrite the solution in Python as this class, with any imports\
+  \ it needs:\n\n```python\nclass Solution:\n    def minimumLength(self, s: str) -> int:\n```\n\nReturn\
+  \ only the code."
+assert:
+  checks:
+  - Solution().minimumLength(s='zzzzyzyzyyzzyzz') == 3
+  - Solution().minimumLength(s='abcba') == 5
+  - Solution().minimumLength(s='abcdefghijklmnopqrstuvwxyz') == 26
+  - Solution().minimumLength(s='abaacbcbb') == 5
+  - Solution().minimumLength(s='aabbaa') == 4
+  - Solution().minimumLength(s='aabbccddeeeedddccbaa') == 8
+  - Solution().minimumLength(s='abababab') == 4
+  - Solution().minimumLength(s='a') == 1
+  - Solution().minimumLength(s='abacabadabacaba') == 7
+  - Solution().minimumLength(s='abcabcabc') == 3
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3223'
+  date: '2024-07-14'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

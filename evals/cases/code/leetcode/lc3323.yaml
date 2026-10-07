@@ -1,0 +1,44 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3323
+modality: code
+prompt: "You are given a 2D array intervals, where intervals[i] = [starti, endi] represents the start\
+  \ and the end of interval i. You are also given an integer k.\nYou must add exactly one new interval\
+  \ [startnew, endnew] to the array such that:\n\nThe length of the new interval, endnew - startnew, is\
+  \ at most k.\nAfter adding, the number of connected groups in intervals is minimized.\n\nA connected\
+  \ group of intervals is a maximal collection of intervals that, when considered together, cover a continuous\
+  \ range from the smallest point to the largest point with no gaps between them. Here are some examples:\n\
+  \nA group of intervals [[1, 2], [2, 5], [3, 3]] is connected because together they cover the range from\
+  \ 1 to 5 without any gaps.\nHowever, a group of intervals [[1, 2], [3, 4]] is not connected because\
+  \ the segment (2, 3) is not covered.\n\nReturn the minimum number of connected groups after adding exactly\
+  \ one new interval to the array.\n \nExample 1:\n\nInput: intervals = [[1,3],[5,6],[8,10]], k = 3\n\
+  Output: 2\nExplanation:\nAfter adding the interval [3, 5], we have two connected groups: [[1, 3], [3,\
+  \ 5], [5, 6]] and [[8, 10]].\n\nExample 2:\n\nInput: intervals = [[5,10],[1,1],[3,3]], k = 1\nOutput:\
+  \ 3\nExplanation:\nAfter adding the interval [1, 1], we have three connected groups: [[1, 1], [1, 1]],\
+  \ [[3, 3]], and [[5, 10]].\n\n \nConstraints:\n\n1 <= intervals.length <= 105\nintervals[i] == [starti,\
+  \ endi]\n1 <= starti <= endi <= 109\n1 <= k <= 109\n\nWrite the solution in Python as this class, with\
+  \ any imports it needs:\n\n```python\nclass Solution:\n    def minConnectedGroups(self, intervals: List[List[int]],\
+  \ k: int) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().minConnectedGroups(intervals=[[1, 2], [2, 3], [3, 4]], k=0) == 1
+  - Solution().minConnectedGroups(intervals=[[1, 10]], k=5) == 1
+  - Solution().minConnectedGroups(intervals=[[1, 2], [4, 8], [10, 15]], k=2) == 2
+  - Solution().minConnectedGroups(intervals=[[1, 2], [4, 5], [7, 8]], k=2) == 2
+  - Solution().minConnectedGroups(intervals=[[1, 5], [6, 10], [11, 15], [16, 20]], k=4) == 3
+  - Solution().minConnectedGroups(intervals=[[1, 2], [3, 4], [5, 6]], k=1) == 2
+  - Solution().minConnectedGroups(intervals=[[5, 10], [1, 1], [3, 3]], k=1) == 3
+  - Solution().minConnectedGroups(intervals=[[1, 10], [10, 20], [20, 30]], k=5) == 1
+  - Solution().minConnectedGroups(intervals=[[1, 100]], k=50) == 1
+  - Solution().minConnectedGroups(intervals=[[2, 4], [6, 8], [10, 12]], k=5) == 2
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3323'
+  date: '2024-10-13'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

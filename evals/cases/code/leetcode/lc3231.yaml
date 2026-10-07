@@ -1,0 +1,36 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3231
+modality: code
+prompt: "Given an array of integers nums, you are allowed to perform the following operation any number\
+  \ of times:\n\nRemove a strictly increasing subsequence from the array.\n\nYour task is to find the\
+  \ minimum number of operations required to make the array empty.\n \nExample 1:\n\nInput: nums = [5,3,1,4,2]\n\
+  Output: 3\nExplanation:\nWe remove subsequences [1, 2], [3, 4], [5].\n\nExample 2:\n\nInput: nums =\
+  \ [1,2,3,4,5]\nOutput: 1\n\nExample 3:\n\nInput: nums = [5,4,3,2,1]\nOutput: 5\n\n \nConstraints:\n\n\
+  1 <= nums.length <= 105\n1 <= nums[i] <= 105\n\nWrite the solution in Python as this class, with any\
+  \ imports it needs:\n\n```python\nclass Solution:\n    def minOperations(self, nums: List[int]) -> int:\n\
+  ```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().minOperations(nums=[1, 3, 2, 4, 3, 5, 4, 6, 5, 7]) == 2
+  - Solution().minOperations(nums=[1, 2, 2, 3, 4, 5]) == 2
+  - Solution().minOperations(nums=[1, 2, 2, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 5]) == 5
+  - Solution().minOperations(nums=[10, 9, 8, 7, 6, 5, 4, 3, 2, 1]) == 10
+  - Solution().minOperations(nums=[1, 2, 2, 3, 3, 4, 4, 4, 5, 5, 5, 5]) == 4
+  - Solution().minOperations(nums=[10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1]) == 11
+  - Solution().minOperations(nums=[1]) == 1
+  - Solution().minOperations(nums=[1, 3, 2, 4, 3, 5]) == 2
+  - Solution().minOperations(nums=[2, 1, 3, 4, 5, 1, 2, 3, 4, 5]) == 3
+  - Solution().minOperations(nums=[1, 3, 2, 4, 3, 5, 4, 6, 5, 7, 6, 8, 7, 9, 8, 10, 9, 11, 10, 12]) ==
+    2
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3231'
+  date: '2024-07-21'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

@@ -1,0 +1,50 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3316
+modality: code
+prompt: "You are given a string source of size n, a string pattern that is a subsequence of source, and\
+  \ a sorted integer array targetIndices that contains distinct numbers in the range [0, n - 1].\nWe define\
+  \ an operation as removing a character at an index idx from source such that:\n\nidx is an element of\
+  \ targetIndices.\npattern remains a subsequence of source after removing the character.\n\nPerforming\
+  \ an operation does not change the indices of the other characters in source. For example, if you remove\
+  \ 'c' from \"acb\", the character at index 2 would still be 'b'.\nReturn the maximum number of operations\
+  \ that can be performed.\n \nExample 1:\n\nInput: source = \"abbaa\", pattern = \"aba\", targetIndices\
+  \ = [0,1,2]\nOutput: 1\nExplanation:\nWe can't remove source[0] but we can do either of these two operations:\n\
+  \nRemove source[1], so that source becomes \"a_baa\".\nRemove source[2], so that source becomes \"ab_aa\"\
+  .\n\n\nExample 2:\n\nInput: source = \"bcda\", pattern = \"d\", targetIndices = [0,3]\nOutput: 2\nExplanation:\n\
+  We can remove source[0] and source[3] in two operations.\n\nExample 3:\n\nInput: source = \"dda\", pattern\
+  \ = \"dda\", targetIndices = [0,1,2]\nOutput: 0\nExplanation:\nWe can't remove any character from source.\n\
+  \nExample 4:\n\nInput: source = \"yeyeykyded\", pattern = \"yeyyd\", targetIndices = [0,2,3,4]\nOutput:\
+  \ 2\nExplanation:\nWe can remove source[2] and source[3] in two operations.\n\n \nConstraints:\n\n1\
+  \ <= n == source.length <= 3 * 103\n1 <= pattern.length <= n\n1 <= targetIndices.length <= n\ntargetIndices\
+  \ is sorted in ascending order.\nThe input is generated such that targetIndices contains distinct elements\
+  \ in the range [0, n - 1].\nsource and pattern consist only of lowercase English letters.\nThe input\
+  \ is generated such that pattern appears as a subsequence in source.\n\nWrite the solution in Python\
+  \ as this class, with any imports it needs:\n\n```python\nclass Solution:\n    def maxRemovals(self,\
+  \ source: str, pattern: str, targetIndices: List[int]) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().maxRemovals(source='abbaa', pattern='aba', targetIndices=[0, 1, 2]) == 1
+  - Solution().maxRemovals(source='abracadabra', pattern='abc', targetIndices=[0, 1, 5, 7, 10]) == 3
+  - Solution().maxRemovals(source='bcda', pattern='d', targetIndices=[0, 3]) == 2
+  - Solution().maxRemovals(source='aaaaa', pattern='aaa', targetIndices=[0, 1, 2, 3, 4]) == 2
+  - Solution().maxRemovals(source='dda', pattern='dda', targetIndices=[0, 1, 2]) == 0
+  - Solution().maxRemovals(source='abcd', pattern='ac', targetIndices=[0, 1, 2, 3]) == 2
+  - Solution().maxRemovals(source='zzzz', pattern='z', targetIndices=[0, 1, 2, 3]) == 3
+  - Solution().maxRemovals(source='aaaaabbbbb', pattern='ab', targetIndices=[0, 1, 2, 3, 4, 5, 6, 7, 8,
+    9]) == 8
+  - Solution().maxRemovals(source='mississippi', pattern='issi', targetIndices=[0, 1, 2, 3, 4, 5, 6, 7,
+    8, 9, 10, 11, 12]) == 7
+  - Solution().maxRemovals(source='abcabcabc', pattern='abc', targetIndices=[0, 1, 2, 3, 4, 5, 6, 7, 8])
+    == 6
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3316'
+  date: '2024-10-06'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

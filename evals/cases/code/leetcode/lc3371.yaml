@@ -1,0 +1,41 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3371
+modality: code
+prompt: "You are given an integer array nums. This array contains n elements, where exactly n - 2 elements\
+  \ are special numbers. One of the remaining two elements is the sum of these special numbers, and the\
+  \ other is an outlier.\nAn outlier is defined as a number that is neither one of the original special\
+  \ numbers nor the element representing the sum of those numbers.\nNote that special numbers, the sum\
+  \ element, and the outlier must have distinct indices, but may share the same value.\nReturn the largest\
+  \ potential outlier in nums.\n \nExample 1:\n\nInput: nums = [2,3,5,10]\nOutput: 10\nExplanation:\n\
+  The special numbers could be 2 and 3, thus making their sum 5 and the outlier 10.\n\nExample 2:\n\n\
+  Input: nums = [-2,-1,-3,-6,4]\nOutput: 4\nExplanation:\nThe special numbers could be -2, -1, and -3,\
+  \ thus making their sum -6 and the outlier 4.\n\nExample 3:\n\nInput: nums = [1,1,1,1,1,5,5]\nOutput:\
+  \ 5\nExplanation:\nThe special numbers could be 1, 1, 1, 1, and 1, thus making their sum 5 and the other\
+  \ 5 as the outlier.\n\n \nConstraints:\n\n3 <= nums.length <= 105\n-1000 <= nums[i] <= 1000\nThe input\
+  \ is generated such that at least one potential outlier exists in nums.\n\nWrite the solution in Python\
+  \ as this class, with any imports it needs:\n\n```python\nclass Solution:\n    def getLargestOutlier(self,\
+  \ nums: List[int]) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().getLargestOutlier(nums=[1000, -1000, 0, 500, -500]) == 1000
+  - Solution().getLargestOutlier(nums=[0, 0, 0, 0, 0, 0, 0, 0, 0, 1]) == 1
+  - Solution().getLargestOutlier(nums=[5, 5, 5, 5, 5, 25, 30]) == 30
+  - Solution().getLargestOutlier(nums=[0, 0, 0, 0, 1]) == 1
+  - Solution().getLargestOutlier(nums=[2, 3, 5, 10]) == 10
+  - Solution().getLargestOutlier(nums=[100, 200, 300, 600, 500]) == 500
+  - Solution().getLargestOutlier(nums=[10, 20, 30, 60, 5]) == 5
+  - Solution().getLargestOutlier(nums=[0, 0, 0, 0, 1, 0]) == 1
+  - Solution().getLargestOutlier(nums=[1000, -1000, 0, 1000, -1000, 0]) == 0
+  - Solution().getLargestOutlier(nums=[-5, -5, -10, 0, 15]) == 15
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3371'
+  date: '2024-12-01'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

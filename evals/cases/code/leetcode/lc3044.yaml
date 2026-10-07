@@ -1,0 +1,61 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3044
+modality: code
+prompt: "You are given a m x n 0-indexed 2D matrix mat. From every cell, you can create numbers in the\
+  \ following way:\n\nThere could be at most 8 paths from the cells namely: east, south-east, south, south-west,\
+  \ west, north-west, north, and north-east.\nSelect a path from them and append digits in this path to\
+  \ the number being formed by traveling in this direction.\nNote that numbers are generated at every\
+  \ step, for example, if the digits along the path are 1, 9, 1, then there will be three numbers generated\
+  \ along the way: 1, 19, 191.\n\nReturn the most frequent prime number greater than 10 out of all the\
+  \ numbers created by traversing the matrix or -1 if no such prime number exists. If there are multiple\
+  \ prime numbers with the highest frequency, then return the largest among them.\nNote: It is invalid\
+  \ to change the direction during the move.\n \nExample 1:\n \n\n\nInput: mat = [[1,1],[9,9],[1,1]]\n\
+  Output: 19\nExplanation: \nFrom cell (0,0) there are 3 possible directions and the numbers greater than\
+  \ 10 which can be created in those directions are:\nEast: [11], South-East: [19], South: [19,191].\n\
+  Numbers greater than 10 created from the cell (0,1) in all possible directions are: [19,191,19,11].\n\
+  Numbers greater than 10 created from the cell (1,0) in all possible directions are: [99,91,91,91,91].\n\
+  Numbers greater than 10 created from the cell (1,1) in all possible directions are: [91,91,99,91,91].\n\
+  Numbers greater than 10 created from the cell (2,0) in all possible directions are: [11,19,191,19].\n\
+  Numbers greater than 10 created from the cell (2,1) in all possible directions are: [11,19,19,191].\n\
+  The most frequent prime number among all the created numbers is 19.\nExample 2:\n\nInput: mat = [[7]]\n\
+  Output: -1\nExplanation: The only number which can be formed is 7. It is a prime number however it is\
+  \ not greater than 10, so return -1.\nExample 3:\n\nInput: mat = [[9,7,8],[4,6,5],[2,8,6]]\nOutput:\
+  \ 97\nExplanation: \nNumbers greater than 10 created from the cell (0,0) in all possible directions\
+  \ are: [97,978,96,966,94,942].\nNumbers greater than 10 created from the cell (0,1) in all possible\
+  \ directions are: [78,75,76,768,74,79].\nNumbers greater than 10 created from the cell (0,2) in all\
+  \ possible directions are: [85,856,86,862,87,879].\nNumbers greater than 10 created from the cell (1,0)\
+  \ in all possible directions are: [46,465,48,42,49,47].\nNumbers greater than 10 created from the cell\
+  \ (1,1) in all possible directions are: [65,66,68,62,64,69,67,68].\nNumbers greater than 10 created\
+  \ from the cell (1,2) in all possible directions are: [56,58,56,564,57,58].\nNumbers greater than 10\
+  \ created from the cell (2,0) in all possible directions are: [28,286,24,249,26,268].\nNumbers greater\
+  \ than 10 created from the cell (2,1) in all possible directions are: [86,82,84,86,867,85].\nNumbers\
+  \ greater than 10 created from the cell (2,2) in all possible directions are: [68,682,66,669,65,658].\n\
+  The most frequent prime number among all the created numbers is 97.\n\n \nConstraints:\n\nm == mat.length\n\
+  n == mat[i].length\n1 <= m, n <= 6\n1 <= mat[i][j] <= 9\n\nWrite the solution in Python as this class,\
+  \ with any imports it needs:\n\n```python\nclass Solution:\n    def mostFrequentPrime(self, mat: List[List[int]])\
+  \ -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().mostFrequentPrime(mat=[[7]]) == -1
+  - Solution().mostFrequentPrime(mat=[[1, 1], [9, 9], [1, 1]]) == 19
+  - Solution().mostFrequentPrime(mat=[[2, 3, 5], [3, 5, 7], [5, 7, 1]]) == 53
+  - Solution().mostFrequentPrime(mat=[[9, 7, 8], [4, 6, 5], [2, 8, 6]]) == 97
+  - Solution().mostFrequentPrime(mat=[[3, 3, 3], [3, 3, 3], [3, 3, 3]]) == -1
+  - Solution().mostFrequentPrime(mat=[[1, 1, 1, 1, 1], [1, 1, 1, 1, 1], [1, 1, 1, 1, 1], [1, 1, 1, 1,
+    1], [1, 1, 1, 1, 1]]) == 11
+  - Solution().mostFrequentPrime(mat=[[2, 3, 5], [7, 1, 1], [6, 4, 9]]) == 41
+  - Solution().mostFrequentPrime(mat=[[1, 2, 3, 4], [5, 6, 7, 8], [9, 8, 7, 6], [5, 4, 3, 2]]) == 67
+  - Solution().mostFrequentPrime(mat=[[2, 3, 5], [7, 1, 4], [6, 9, 8]]) == 97
+  - Solution().mostFrequentPrime(mat=[[1, 2, 3, 4], [5, 6, 7, 8], [9, 1, 2, 3]]) == 83
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3044'
+  date: '2024-02-18'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

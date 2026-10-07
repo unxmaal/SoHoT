@@ -1,0 +1,44 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3355
+modality: code
+prompt: "You are given an integer array nums of length n and a 2D array queries, where queries[i] = [li,\
+  \ ri].\nFor each queries[i]:\n\nSelect a subset of indices within the range [li, ri] in nums.\nDecrement\
+  \ the values at the selected indices by 1.\n\nA Zero Array is an array where all elements are equal\
+  \ to 0.\nReturn true if it is possible to transform nums into a Zero Array after processing all the\
+  \ queries sequentially, otherwise return false.\n \nExample 1:\n\nInput: nums = [1,0,1], queries = [[0,2]]\n\
+  Output: true\nExplanation:\n\nFor i = 0:\n\nSelect the subset of indices as [0, 2] and decrement the\
+  \ values at these indices by 1.\nThe array will become [0, 0, 0], which is a Zero Array.\n\n\n\n\nExample\
+  \ 2:\n\nInput: nums = [4,3,2,1], queries = [[1,3],[0,2]]\nOutput: false\nExplanation:\n\nFor i = 0:\n\
+  \nSelect the subset of indices as [1, 2, 3] and decrement the values at these indices by 1.\nThe array\
+  \ will become [4, 2, 1, 0].\n\n\nFor i = 1:\n\nSelect the subset of indices as [0, 1, 2] and decrement\
+  \ the values at these indices by 1.\nThe array will become [3, 1, 0, 0], which is not a Zero Array.\n\
+  \n\n\n\n \nConstraints:\n\n1 <= nums.length <= 105\n0 <= nums[i] <= 105\n1 <= queries.length <= 105\n\
+  queries[i].length == 2\n0 <= li <= ri < nums.length\n\nWrite the solution in Python as this class, with\
+  \ any imports it needs:\n\n```python\nclass Solution:\n    def isZeroArray(self, nums: List[int], queries:\
+  \ List[List[int]]) -> bool:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().isZeroArray(nums=[0, 0, 0, 0], queries=[[0, 3], [1, 2], [2, 2]]) == True
+  - Solution().isZeroArray(nums=[0, 0, 0, 0], queries=[[0, 3]]) == True
+  - Solution().isZeroArray(nums=[5, 4, 3, 2, 1], queries=[[0, 4], [1, 3], [2, 2]]) == False
+  - Solution().isZeroArray(nums=[0, 0, 0, 0], queries=[[0, 3], [1, 2], [2, 3]]) == True
+  - Solution().isZeroArray(nums=[2, 2, 2, 2, 2], queries=[[0, 4], [0, 4], [0, 4], [0, 4], [0, 4]]) ==
+    True
+  - Solution().isZeroArray(nums=[1, 0, 1], queries=[[0, 2]]) == True
+  - Solution().isZeroArray(nums=[1, 2, 3, 4, 5], queries=[[0, 1], [1, 2], [2, 3], [3, 4]]) == False
+  - Solution().isZeroArray(nums=[10, 9, 8, 7, 6, 5, 4, 3, 2, 1], queries=[[0, 9], [1, 8], [2, 7], [3,
+    6], [4, 5]]) == False
+  - Solution().isZeroArray(nums=[2, 2, 2], queries=[[0, 2], [0, 1], [1, 2]]) == True
+  - Solution().isZeroArray(nums=[2, 2, 2], queries=[[0, 0], [1, 1], [2, 2]]) == False
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3355'
+  date: '2024-11-17'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

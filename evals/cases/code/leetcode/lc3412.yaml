@@ -1,0 +1,44 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3412
+modality: code
+prompt: "You are given a string s.\nWe define the mirror of a letter in the English alphabet as its corresponding\
+  \ letter when the alphabet is reversed. For example, the mirror of 'a' is 'z', and the mirror of 'y'\
+  \ is 'b'.\nInitially, all characters in the string s are unmarked.\nYou start with a score of 0, and\
+  \ you perform the following process on the string s:\n\nIterate through the string from left to right.\n\
+  At each index i, find the closest unmarked index j such that j < i and s[j] is the mirror of s[i]. Then,\
+  \ mark both indices i and j, and add the value i - j to the total score.\nIf no such index j exists\
+  \ for the index i, move on to the next index without making any changes.\n\nReturn the total score at\
+  \ the end of the process.\n \nExample 1:\n\nInput: s = \"aczzx\"\nOutput: 5\nExplanation:\n\ni = 0.\
+  \ There is no index j that satisfies the conditions, so we skip.\ni = 1. There is no index j that satisfies\
+  \ the conditions, so we skip.\ni = 2. The closest index j that satisfies the conditions is j = 0, so\
+  \ we mark both indices 0 and 2, and then add 2 - 0 = 2 to the score.\ni = 3. There is no index j that\
+  \ satisfies the conditions, so we skip.\ni = 4. The closest index j that satisfies the conditions is\
+  \ j = 1, so we mark both indices 1 and 4, and then add 4 - 1 = 3 to the score.\n\n\nExample 2:\n\nInput:\
+  \ s = \"abcdef\"\nOutput: 0\nExplanation:\nFor each index i, there is no index j that satisfies the\
+  \ conditions.\n\n \nConstraints:\n\n1 <= s.length <= 105\ns consists only of lowercase English letters.\n\
+  \nWrite the solution in Python as this class, with any imports it needs:\n\n```python\nclass Solution:\n\
+  \    def calculateScore(self, s: str) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().calculateScore(s='b') == 0
+  - Solution().calculateScore(s='mirror') == 1
+  - Solution().calculateScore(s='az') == 1
+  - Solution().calculateScore(s='abbabba') == 0
+  - Solution().calculateScore(s='abcba') == 0
+  - Solution().calculateScore(s='abcdefghijklmnopqrstuvwxyz') == 169
+  - Solution().calculateScore(s='qpwoeirutyplkjhgfdsazxcvbnm') == 96
+  - Solution().calculateScore(s='abzabzabz') == 6
+  - Solution().calculateScore(s='abcdef') == 0
+  - Solution().calculateScore(s='zazbzczdz') == 1
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3412'
+  date: '2025-01-05'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

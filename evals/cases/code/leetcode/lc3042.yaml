@@ -1,0 +1,46 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3042
+modality: code
+prompt: "You are given a 0-indexed string array words.\nLet's define a boolean function isPrefixAndSuffix\
+  \ that takes two strings, str1 and str2:\n\nisPrefixAndSuffix(str1, str2) returns true if str1 is both\
+  \ a prefix and a suffix of str2, and false otherwise.\n\nFor example, isPrefixAndSuffix(\"aba\", \"\
+  ababa\") is true because \"aba\" is a prefix of \"ababa\" and also a suffix, but isPrefixAndSuffix(\"\
+  abc\", \"abcd\") is false.\nReturn an integer denoting the number of index pairs (i, j) such that i\
+  \ < j, and isPrefixAndSuffix(words[i], words[j]) is true.\n \nExample 1:\n\nInput: words = [\"a\",\"\
+  aba\",\"ababa\",\"aa\"]\nOutput: 4\nExplanation: In this example, the counted index pairs are:\ni =\
+  \ 0 and j = 1 because isPrefixAndSuffix(\"a\", \"aba\") is true.\ni = 0 and j = 2 because isPrefixAndSuffix(\"\
+  a\", \"ababa\") is true.\ni = 0 and j = 3 because isPrefixAndSuffix(\"a\", \"aa\") is true.\ni = 1 and\
+  \ j = 2 because isPrefixAndSuffix(\"aba\", \"ababa\") is true.\nTherefore, the answer is 4.\nExample\
+  \ 2:\n\nInput: words = [\"pa\",\"papa\",\"ma\",\"mama\"]\nOutput: 2\nExplanation: In this example, the\
+  \ counted index pairs are:\ni = 0 and j = 1 because isPrefixAndSuffix(\"pa\", \"papa\") is true.\ni\
+  \ = 2 and j = 3 because isPrefixAndSuffix(\"ma\", \"mama\") is true.\nTherefore, the answer is 2.  \n\
+  Example 3:\n\nInput: words = [\"abab\",\"ab\"]\nOutput: 0\nExplanation: In this example, the only valid\
+  \ index pair is i = 0 and j = 1, and isPrefixAndSuffix(\"abab\", \"ab\") is false.\nTherefore, the answer\
+  \ is 0.\n \nConstraints:\n\n1 <= words.length <= 50\n1 <= words[i].length <= 10\nwords[i] consists only\
+  \ of lowercase English letters.\n\nWrite the solution in Python as this class, with any imports it needs:\n\
+  \n```python\nclass Solution:\n    def countPrefixSuffixPairs(self, words: List[str]) -> int:\n```\n\n\
+  Return only the code."
+assert:
+  checks:
+  - Solution().countPrefixSuffixPairs(words=['abc', 'abcabc', 'bc', 'abcabcabc']) == 3
+  - Solution().countPrefixSuffixPairs(words=['xyz', 'xyzxyz', 'zyx', 'z', 'x']) == 1
+  - Solution().countPrefixSuffixPairs(words=['hello', 'hellohello', 'hellohellohello']) == 3
+  - Solution().countPrefixSuffixPairs(words=['z', 'zaz', 'zzz', 'zazaz']) == 4
+  - Solution().countPrefixSuffixPairs(words=['aaa', 'aaaa', 'aaaaa', 'aa', 'a']) == 3
+  - Solution().countPrefixSuffixPairs(words=['cat', 'tac', 'catcat', 'tacatc']) == 1
+  - Solution().countPrefixSuffixPairs(words=['prefix', 'prefixprefix', 'fixpre', 'refixpre']) == 1
+  - Solution().countPrefixSuffixPairs(words=['repeat', 'repeattorepeat', 'eat', 'eateateat']) == 2
+  - Solution().countPrefixSuffixPairs(words=['suffix', 'suffixsuffix', 'fixsuf', 'ffixsuf']) == 1
+  - Solution().countPrefixSuffixPairs(words=['pa', 'papa', 'ma', 'mama']) == 2
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3042'
+  date: '2024-02-18'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

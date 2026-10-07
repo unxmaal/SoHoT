@@ -1,0 +1,45 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3488
+modality: code
+prompt: "You are given a circular array nums and an array queries.\nFor each query i, you have to find\
+  \ the following:\n\nThe minimum distance between the element at index queries[i] and any other index\
+  \ j in the circular array, where nums[j] == nums[queries[i]]. If no such index exists, the answer for\
+  \ that query should be -1.\n\nReturn an array answer of the same size as queries, where answer[i] represents\
+  \ the result for query i.\n \nExample 1:\n\nInput: nums = [1,3,1,4,1,3,2], queries = [0,3,5]\nOutput:\
+  \ [2,-1,3]\nExplanation:\n\nQuery 0: The element at queries[0] = 0 is nums[0] = 1. The nearest index\
+  \ with the same value is 2, and the distance between them is 2.\nQuery 1: The element at queries[1]\
+  \ = 3 is nums[3] = 4. No other index contains 4, so the result is -1.\nQuery 2: The element at queries[2]\
+  \ = 5 is nums[5] = 3. The nearest index with the same value is 1, and the distance between them is 3\
+  \ (following the circular path: 5 -> 6 -> 0 -> 1).\n\n\nExample 2:\n\nInput: nums = [1,2,3,4], queries\
+  \ = [0,1,2,3]\nOutput: [-1,-1,-1,-1]\nExplanation:\nEach value in nums is unique, so no index shares\
+  \ the same value as the queried element. This results in -1 for all queries.\n\n \nConstraints:\n\n\
+  1 <= queries.length <= nums.length <= 105\n1 <= nums[i] <= 106\n0 <= queries[i] < nums.length\n\nWrite\
+  \ the solution in Python as this class, with any imports it needs:\n\n```python\nclass Solution:\n \
+  \   def solveQueries(self, nums: List[int], queries: List[int]) -> List[int]:\n```\n\nReturn only the\
+  \ code."
+assert:
+  checks:
+  - Solution().solveQueries(nums=[1, 3, 1, 4, 1, 3, 2], queries=[0, 3, 5]) == [2, -1, 3]
+  - Solution().solveQueries(nums=[1, 2, 3, 4], queries=[0, 1, 2, 3]) == [-1, -1, -1, -1]
+  - Solution().solveQueries(nums=[1000000, 1000000, 1000000], queries=[0, 1, 2]) == [1, 1, 1]
+  - Solution().solveQueries(nums=[5, 1, 5, 2, 5, 3, 5, 4], queries=[2, 4, 6, 0]) == [2, 2, 2, 2]
+  - Solution().solveQueries(nums=[10, 20, 30, 40, 50, 10, 20], queries=[0, 1, 2, 3, 4, 5, 6]) == [2, 2,
+    -1, -1, -1, 2, 2]
+  - Solution().solveQueries(nums=[6, 5, 4, 3, 2, 1], queries=[0, 1, 2, 3, 4, 5]) == [-1, -1, -1, -1, -1,
+    -1]
+  - Solution().solveQueries(nums=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10], queries=[0, 9, 5]) == [-1, -1, -1]
+  - Solution().solveQueries(nums=[10, 10, 10, 10], queries=[0, 1, 2, 3]) == [1, 1, 1, 1]
+  - Solution().solveQueries(nums=[2, 1, 3, 1, 2], queries=[0, 1, 2, 3, 4]) == [1, 2, -1, 2, 1]
+  - Solution().solveQueries(nums=[5, 1, 5, 1, 5, 1], queries=[2, 4, 1, 3]) == [2, 2, 2, 2]
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3488'
+  date: '2025-03-16'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

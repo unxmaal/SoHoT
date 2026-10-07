@@ -1,0 +1,34 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3190
+modality: code
+prompt: "You are given an integer array nums. In one operation, you can add or subtract 1 from any element\
+  \ of nums.\nReturn the minimum number of operations to make all elements of nums divisible by 3.\n \n\
+  Example 1:\n\nInput: nums = [1,2,3,4]\nOutput: 3\nExplanation:\nAll array elements can be made divisible\
+  \ by 3 using 3 operations:\n\nSubtract 1 from 1.\nAdd 1 to 2.\nSubtract 1 from 4.\n\n\nExample 2:\n\n\
+  Input: nums = [3,6,9]\nOutput: 0\n\n \nConstraints:\n\n1 <= nums.length <= 50\n1 <= nums[i] <= 50\n\n\
+  Write the solution in Python as this class, with any imports it needs:\n\n```python\nclass Solution:\n\
+  \    def minimumOperations(self, nums: List[int]) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().minimumOperations(nums=[1, 2, 4, 5]) == 4
+  - Solution().minimumOperations(nums=[1, 1, 1, 1]) == 4
+  - Solution().minimumOperations(nums=[3, 3, 3, 3]) == 0
+  - Solution().minimumOperations(nums=[1, 2, 4, 5, 7]) == 5
+  - Solution().minimumOperations(nums=[1, 2, 4, 5, 7, 8]) == 6
+  - Solution().minimumOperations(nums=[11, 22, 33, 44]) == 3
+  - Solution().minimumOperations(nums=[15, 18, 21, 24]) == 0
+  - Solution().minimumOperations(nums=[50, 49, 48, 47, 46]) == 4
+  - Solution().minimumOperations(nums=[1, 2, 3, 4]) == 3
+  - Solution().minimumOperations(nums=[47, 49, 50]) == 3
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3190'
+  date: '2024-06-16'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

@@ -1,0 +1,40 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3106
+modality: code
+prompt: "You are given a string s and an integer k.\nDefine a function distance(s1, s2) between two strings\
+  \ s1 and s2 of the same length n as:\n\nThe sum of the minimum distance between s1[i] and s2[i] when\
+  \ the characters from 'a' to 'z' are placed in a cyclic order, for all i in the range [0, n - 1].\n\n\
+  For example, distance(\"ab\", \"cd\") == 4, and distance(\"a\", \"z\") == 1.\nYou can change any letter\
+  \ of s to any other lowercase English letter, any number of times.\nReturn a string denoting the lexicographically\
+  \ smallest string t you can get after some changes, such that distance(s, t) <= k.\n \nExample 1:\n\n\
+  Input: s = \"zbbz\", k = 3\nOutput: \"aaaz\"\nExplanation:\nChange s to \"aaaz\". The distance between\
+  \ \"zbbz\" and \"aaaz\" is equal to k = 3.\n\nExample 2:\n\nInput: s = \"xaxcd\", k = 4\nOutput: \"\
+  aawcd\"\nExplanation:\nThe distance between \"xaxcd\" and \"aawcd\" is equal to k = 4.\n\nExample 3:\n\
+  \nInput: s = \"lol\", k = 0\nOutput: \"lol\"\nExplanation:\nIt's impossible to change any character\
+  \ as k = 0.\n\n \nConstraints:\n\n1 <= s.length <= 100\n0 <= k <= 2000\ns consists only of lowercase\
+  \ English letters.\n\nWrite the solution in Python as this class, with any imports it needs:\n\n```python\n\
+  class Solution:\n    def getSmallestString(self, s: str, k: int) -> str:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().getSmallestString(s='zbbz', k=3) == 'aaaz'
+  - Solution().getSmallestString(s='abc', k=1) == 'aac'
+  - Solution().getSmallestString(s='abc', k=0) == 'abc'
+  - Solution().getSmallestString(s='zzz', k=9) == 'aaa'
+  - Solution().getSmallestString(s='zyxwvutsrqponmlkjihgfedcba', k=50) == 'aaaaaaaaalponmlkjihgfedcba'
+  - Solution().getSmallestString(s='xyz', k=10) == 'aaa'
+  - Solution().getSmallestString(s='aaa', k=5) == 'aaa'
+  - Solution().getSmallestString(s='abc', k=2) == 'aab'
+  - Solution().getSmallestString(s='vwxyz', k=25) == 'aaaaa'
+  - Solution().getSmallestString(s='hello', k=7) == 'aello'
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3106'
+  date: '2024-04-07'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

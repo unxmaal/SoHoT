@@ -1,0 +1,44 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3146
+modality: code
+prompt: "You are given two strings s and t such that every character occurs at most once in s and t is\
+  \ a permutation of s.\nThe permutation difference between s and t is defined as the sum of the absolute\
+  \ difference between the index of the occurrence of each character in s and the index of the occurrence\
+  \ of the same character in t.\nReturn the permutation difference between s and t.\n \nExample 1:\n\n\
+  Input: s = \"abc\", t = \"bac\"\nOutput: 2\nExplanation:\nFor s = \"abc\" and t = \"bac\", the permutation\
+  \ difference of s and t is equal to the sum of:\n\nThe absolute difference between the index of the\
+  \ occurrence of \"a\" in s and the index of the occurrence of \"a\" in t.\nThe absolute difference between\
+  \ the index of the occurrence of \"b\" in s and the index of the occurrence of \"b\" in t.\nThe absolute\
+  \ difference between the index of the occurrence of \"c\" in s and the index of the occurrence of \"\
+  c\" in t.\n\nThat is, the permutation difference between s and t is equal to |0 - 1| + |1 - 0| + |2\
+  \ - 2| = 2.\n\nExample 2:\n\nInput: s = \"abcde\", t = \"edbac\"\nOutput: 12\nExplanation: The permutation\
+  \ difference between s and t is equal to |0 - 3| + |1 - 2| + |2 - 4| + |3 - 1| + |4 - 0| = 12.\n\n \n\
+  Constraints:\n\n1 <= s.length <= 26\nEach character occurs at most once in s.\nt is a permutation of\
+  \ s.\ns consists only of lowercase English letters.\n\nWrite the solution in Python as this class, with\
+  \ any imports it needs:\n\n```python\nclass Solution:\n    def findPermutationDifference(self, s: str,\
+  \ t: str) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().findPermutationDifference(s='abcdefghijklmnopqrstuvwxyz', t='zyxwvutsrqponmlkjihgfedcba')
+    == 338
+  - Solution().findPermutationDifference(s='mnopqr', t='qrpmno') == 18
+  - Solution().findPermutationDifference(s='abcde', t='edbac') == 12
+  - Solution().findPermutationDifference(s='abcxyz', t='xyzabc') == 18
+  - Solution().findPermutationDifference(s='qrstuv', t='vutsrq') == 18
+  - Solution().findPermutationDifference(s='abc', t='bac') == 2
+  - Solution().findPermutationDifference(s='mnopqr', t='rqponm') == 18
+  - Solution().findPermutationDifference(s='uvwxy', t='yxuvw') == 12
+  - Solution().findPermutationDifference(s='mnopqr', t='qrponm') == 18
+  - Solution().findPermutationDifference(s='a', t='a') == 0
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3146'
+  date: '2024-05-12'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode

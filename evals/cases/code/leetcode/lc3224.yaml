@@ -1,0 +1,41 @@
+# LeetCodeDataset (newfacade, Xia et al. 2025), Apache-2.0 (https://huggingface.co/datasets/newfacade/LeetCodeDataset).
+# Imported by evals/importers from hf:newfacade/LeetCodeDataset@215604aeed660029df7de2fea5a4d7b6ed476a08; re-import, do not edit.
+id: lc3224
+modality: code
+prompt: "You are given an integer array nums of size n where n is even, and an integer k.\nYou can perform\
+  \ some changes on the array, where in one change you can replace any element in the array with any integer\
+  \ in the range from 0 to k.\nYou need to perform some changes (possibly none) such that the final array\
+  \ satisfies the following condition:\n\nThere exists an integer X such that abs(a[i] - a[n - i - 1])\
+  \ = X for all (0 <= i < n).\n\nReturn the minimum number of changes required to satisfy the above condition.\n\
+   \nExample 1:\n\nInput: nums = [1,0,1,2,4,3], k = 4\nOutput: 2\nExplanation:\nWe can perform the following\
+  \ changes:\n\nReplace nums[1] by 2. The resulting array is nums = [1,2,1,2,4,3].\nReplace nums[3] by\
+  \ 3. The resulting array is nums = [1,2,1,3,4,3].\n\nThe integer X will be 2.\n\nExample 2:\n\nInput:\
+  \ nums = [0,1,2,3,3,6,5,4], k = 6\nOutput: 2\nExplanation:\nWe can perform the following operations:\n\
+  \nReplace nums[3] by 0. The resulting array is nums = [0,1,2,0,3,6,5,4].\nReplace nums[4] by 4. The\
+  \ resulting array is nums = [0,1,2,0,4,6,5,4].\n\nThe integer X will be 4.\n\n \nConstraints:\n\n2 <=\
+  \ n == nums.length <= 105\nn is even.\n0 <= nums[i] <= k <= 105\n\nWrite the solution in Python as this\
+  \ class, with any imports it needs:\n\n```python\nclass Solution:\n    def minChanges(self, nums: List[int],\
+  \ k: int) -> int:\n```\n\nReturn only the code."
+assert:
+  checks:
+  - Solution().minChanges(nums=[100000, 99999, 99998, 99997, 99996, 99995], k=100000) == 2
+  - Solution().minChanges(nums=[10, 9, 8, 7, 6, 5], k=10) == 2
+  - Solution().minChanges(nums=[1, 2, 3, 4, 5, 6, 7, 8], k=8) == 3
+  - Solution().minChanges(nums=[1, 3, 5, 7, 9, 11, 13, 15], k=15) == 3
+  - Solution().minChanges(nums=[1, 0, 1, 2, 4, 3], k=4) == 2
+  - Solution().minChanges(nums=[5, 5, 5, 5], k=5) == 0
+  - Solution().minChanges(nums=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10], k=10) == 4
+  - Solution().minChanges(nums=[0, 0, 0, 0, 0, 0, 0, 0], k=0) == 0
+  - Solution().minChanges(nums=[0, 2, 4, 6, 8, 10], k=10) == 2
+  - Solution().minChanges(nums=[5, 5, 5, 5, 5, 5], k=5) == 0
+attribution:
+  dataset: LeetCodeDataset (newfacade, Xia et al. 2025)
+  url: https://huggingface.co/datasets/newfacade/LeetCodeDataset
+  license: Apache-2.0
+  source: hf:newfacade/LeetCodeDataset
+  revision: 215604aeed660029df7de2fea5a4d7b6ed476a08
+  item: '3224'
+  date: '2024-07-14'
+  transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
+    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+  importer: evals.importers.leetcode
