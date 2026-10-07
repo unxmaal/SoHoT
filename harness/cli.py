@@ -545,8 +545,9 @@ def build_parser() -> argparse.ArgumentParser:
                          "review questions a diff raises. Issue #492")
     gnt.add_argument("action", choices=("audit", "review"))
     gnt.add_argument("range", nargs="?", default="",
-                     help="review: the git range to read (default: origin/main...HEAD); "
-                          "audit: the history whose commits are read (default: origin/main)")
+                     help="review: the git range to read (default: origin/main...HEAD)")
+    gnt.add_argument("--ref", default="",
+                     help="audit: the history whose commits are read (default: origin/main)")
     gnt.add_argument("--offline", action="store_true",
                      help="audit: the committed defect snapshot, no gh")
     gnt.set_defaults(func=gauntlet_cmd.cmd_gauntlet)

@@ -28,9 +28,11 @@ def cmd_gauntlet(a) -> int:
         return err(f"soh gauntlet needs a SoHoT checkout; {CHECKOUT} has no tests/gauntlet")
     argv = [a.action]
     if a.action == "audit":
-        argv += (["--offline"] if a.offline else []) + (["--ref", a.range] if a.range else [])
-    elif a.offline:
-        return err("--offline is for audit; review reads only git")
+        if a.range:
+            return err("audit takes no range; name its history with --ref")
+        argv += (["--offline"] if a.offline else []) + (["--ref", a.ref] if a.ref else [])
+    elif a.offline or a.ref:
+        return err("--offline and --ref are for audit; review takes a git range")
     elif a.range:
         argv.append(a.range)
     out = io.StringIO()

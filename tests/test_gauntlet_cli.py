@@ -34,11 +34,16 @@ def test_a_failing_audit_is_not_ok_under_json(capsys, monkeypatch):
 
 def test_an_option_review_cannot_use_is_refused_not_ignored(capsys):
     assert cli.main(["gauntlet", "review", "--offline"]) == 1
-    assert "--offline is for audit" in capsys.readouterr().err
+    assert "are for audit" in capsys.readouterr().err
 
 
 def test_an_audit_where_the_history_ref_is_missing_says_so_and_does_not_crash(capsys):
     # A CI checkout is one commit with no origin/main; the closing-reference half is skipped there.
-    rc = cli.main(["gauntlet", "audit", "--offline", "refs/remotes/origin/no-such-branch"])
+    rc = cli.main(["gauntlet", "audit", "--offline", "--ref", "refs/remotes/origin/no-such-branch"])
     out = capsys.readouterr().out
     assert rc == 0 and "not in this clone" in out
+
+
+def test_a_range_given_to_audit_is_refused_not_ignored(capsys):
+    assert cli.main(["gauntlet", "audit", "HEAD"]) == 1
+    assert "--ref" in capsys.readouterr().err
