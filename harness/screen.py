@@ -163,6 +163,12 @@ def candidate_for(lane: str, model: str, attaches_to: str = "",
     via `conn`) identifies, and to none when nothing identifies it. #467.
     """
     specs = LANE_CANDIDATES.get(lanes.canonical(lane), ())
+    from harness import ds4
+    if model.startswith(ds4.PREFIX):
+        return model
+    if not attaches_to and lanes.canonical(lane) in lanes.GGUF_SERVED and ds4.recognised(model, card):
+        # ds4's own GGUFs load in ds4-server and nowhere else. #611.
+        return ds4.spec_for(model, (card or {}).get("siblings"), conn=conn)
     if attaches_to:
         if not takes_attachment(lane, attaches_to):
             return ""
@@ -267,6 +273,15 @@ def runner_gap(lane: str, model: str, attaches_to: str = "",
     """Why no runner here takes this candidate, or "". `no_runner` asks of a
     spec; this also answers for an adapter no engine is known to load. #467."""
     spec = candidate_for(lane, model, attaches_to, conn=conn, card=card)
+    from harness import ds4
+    if spec.startswith(ds4.PREFIX):
+        if lanes.canonical(lane) in ds4.NOT_SERVED:
+            return ds4.NOT_SERVED[lanes.canonical(lane)]
+        try:
+            ds4.parse(spec)
+        except ValueError as exc:
+            return str(exc)
+        return case_gap(lane, spec)
     if spec:
         from harness import engines
         if card is None and conn is not None:
@@ -461,7 +476,9 @@ ENGINE_RUNTIMES = {"mflux": "mflux", "diffusers": "diffusers",
                    # The audio server's runtime, as scripts/versions.sh pins it. #408.
                    "tts": "mlx-audio", "stt": "mlx-audio",
                    "hf-ocr": "transformers", "rerank": "sentence-transformers",
-                   "embed": "sentence-transformers", "hf-pii": "transformers"}
+                   "embed": "sentence-transformers", "hf-pii": "transformers",
+                   # Its checkout's commit date, which machine.versions records. #611.
+                   "ds4": "ds4"}
 LOAD_RUNTIME = "mlx-lm"
 
 

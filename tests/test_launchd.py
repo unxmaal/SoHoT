@@ -73,7 +73,8 @@ SERVERS = tuple(s for s in SERVICES if s not in PERIODIC)
 @pytest.mark.parametrize("service", SERVERS)
 def test_each_server_restarts_on_crash(plists, service):
     unit = next(v for k, v in plists.items() if service in k)
-    assert unit.get("KeepAlive") is True
+    # ds4 exits 0 when no lane adopted a ds4 spec; a crash is still restarted. #611.
+    assert unit.get("KeepAlive") in (True, {"SuccessfulExit": False})
     assert "StartInterval" not in unit, (
         f"{service} serves; an interval would let it die between runs")
 

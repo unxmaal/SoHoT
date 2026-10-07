@@ -89,12 +89,19 @@ def _has_llamacpp() -> bool:
     return any(shutil.which(n) for n in ("llama-server", "llama-cli"))
 
 
+def _has_ds4() -> bool:
+    """antirez/ds4's ds4-server, built by scripts/ds4-build.sh. #611."""
+    from harness import ds4
+    return ds4.available()
+
+
 #: runtime -> how to tell whether this machine has it. Order is not meaningful;
 #: a machine may have several.
 _RUNTIME_PROBES = {
     "mlx": _has_mlx,
     "vllm": _has_vllm,
     "llamacpp": _has_llamacpp,
+    "ds4": _has_ds4,
     "cuda": _has_cuda,
     "rocm": _has_rocm,
 }
@@ -307,6 +314,10 @@ def versions() -> dict[str, str]:
     build = serving.llamacpp_build()
     if build:
         got["llama.cpp"] = build
+    from harness import ds4
+    built = ds4.version()
+    if built:
+        got["ds4"] = built
     from harness import needle
     runtime = needle.installed_version()
     if runtime:

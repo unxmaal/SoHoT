@@ -256,6 +256,9 @@ def _upstream(spec: str, config=None) -> tuple[str, str] | None:
 def served_ctx(spec: str, config=None, get=None, conn=None) -> int | None:
     """The per-slot context llama-server serves this spec at: the router's own launch args,
     else the stored choice; None when neither says (another engine, or unknown)."""
+    from harness import ds4
+    if (spec or "").startswith(ds4.PREFIX):
+        return ds4.served_ctx(spec)
     where = _upstream(spec, config)
     if where is None:
         return None

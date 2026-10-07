@@ -234,6 +234,8 @@ RUNTIME_TERMS = {
     # deployment. #245.
     "vllm": re.compile(r"\b(vllm|v-llm|paged[- ]attention|continuous "
                        r"batching)\b", re.I),
+    # antirez/ds4, which loads only its own GGUFs. Narrow: "ds4" alone, and its names. #611.
+    "ds4": re.compile(r"\b(ds4|dwarfstar|ds4[._-]?server|qwen4exp)\b", re.I),
 }
 
 #: The Apple vocabulary under its old name, for callers that predate the rest.
