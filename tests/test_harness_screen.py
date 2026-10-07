@@ -3,6 +3,7 @@ import json
 
 import pytest
 
+from harness.commands import screen as screen_cmd
 from harness import reasons, screen
 
 
@@ -277,7 +278,7 @@ def test_an_empty_screen_is_a_result_not_a_failure(monkeypatch, capsys):
     sweep as a failure and a crash looked the same."""
     import argparse
     from harness import cli
-    monkeypatch.setattr(cli, "_screen_plan", lambda want: [
+    monkeypatch.setattr(screen_cmd, "_screen_plan", lambda want: [
         {"name": "org/x", "state": screen.WAITING, "why_not": "not fetched",
          "candidate": "x", "modality": "code"}])
     rc = cli._report_screen(argparse.Namespace(lane="", top=3, limit=3, run=True, json=False))

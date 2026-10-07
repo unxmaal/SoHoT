@@ -1,6 +1,7 @@
 """Proposal state and the one writer that moves it (#409): decide, retract, _write."""
 from __future__ import annotations
 
+import sqlite3
 from pathlib import Path
 import time
 

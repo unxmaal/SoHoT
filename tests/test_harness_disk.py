@@ -6,6 +6,10 @@ import time
 
 import pytest
 
+from harness.commands import discover as discover_cmd
+from harness.commands import loop as loop_cmd
+from harness.commands import measure as measure_cmd
+from harness.commands import screen as screen_cmd
 from harness import candidates, cli, disk, downloads
 from harness import memory_store as ms
 
@@ -383,14 +387,14 @@ def test_cli_inventory_groups_and_totals(world, capsys):
 
 def test_the_loop_cleans_before_it_fetches(monkeypatch):
     order = []
-    monkeypatch.setattr(cli, "_reopen_retests",
+    monkeypatch.setattr(loop_cmd, "_reopen_retests",
                         lambda *a, **k: order.append("retest") or [])
     monkeypatch.setattr(disk, "sweep",
                         lambda *a, **k: order.append("sweep") or {})
-    monkeypatch.setattr(cli, "cmd_fetch",
+    monkeypatch.setattr(screen_cmd, "cmd_fetch",
                         lambda a: order.append("fetch") or 0)
-    monkeypatch.setattr(cli, "cmd_discover", lambda a: 0)
-    monkeypatch.setattr(cli, "measurable", lambda *a, **k: [])
+    monkeypatch.setattr(discover_cmd, "cmd_discover", lambda a: 0)
+    monkeypatch.setattr(measure_cmd, "measurable", lambda *a, **k: [])
     cli._loop_spend(argparse.Namespace(top=1, budget_gib=1.0, lane=""), 0)
     # Retests first, so a reopened candidate's weights are queued, not swept. #431.
     assert order == ["retest", "sweep", "fetch"]

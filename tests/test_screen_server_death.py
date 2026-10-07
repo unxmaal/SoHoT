@@ -2,6 +2,8 @@
 import argparse
 import subprocess
 
+from harness.commands import measure as measure_cmd
+from harness.commands import screen as screen_cmd
 from harness import cli, memory, reasons, screen
 from harness import memory_store as ms
 
@@ -21,13 +23,13 @@ def _setup(monkeypatch, tmp_path, outcome):
     conn.close()
     plan = [{"name": n, "state": screen.READY, "candidate": n, "modality": "code",
              "why_not": ""} for n in ("org/first", "org/second")]
-    monkeypatch.setattr(cli, "_screen_plan", lambda want: plan)
+    monkeypatch.setattr(screen_cmd, "_screen_plan", lambda want: plan)
     monkeypatch.setattr(memory, "check_model", lambda *a, **k: (True, ""))
     monkeypatch.setattr(screen, "argv", lambda r, **k: ["screen", r["name"]])
     ran = []
     monkeypatch.setattr(subprocess, "run",
                         lambda argv, **kw: (argv[0] == "screen" and ran.append(argv[-1])) or _Done())
-    monkeypatch.setattr(cli, "_receipt_at",
+    monkeypatch.setattr(measure_cmd, "_receipt_at",
                         lambda out: {"summary": {"x": {"passed": 0}}})
     monkeypatch.setattr(screen, "outcome", lambda *a, **k: outcome)
     return ran

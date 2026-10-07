@@ -14,9 +14,7 @@ WATCHED = ("harness.cli", "harness.memory_store")
 STRICT = ("harness.cli", "harness.memory_store", "harness.commands")
 BUDGET = 1500
 #: Modules allowed over BUDGET, each with the reason it is not split yet.
-OVER_BUDGET = {
-    "harness/cli.py": "split in #484",
-}
+OVER_BUDGET: dict = {}
 
 
 def unresolved(refs) -> list:

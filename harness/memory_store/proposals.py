@@ -1,6 +1,7 @@
 """Proposals, sightings, verdicts and links: recording names and reading them back."""
 from __future__ import annotations
 
+import sqlite3
 from dataclasses import dataclass
 import json
 import time

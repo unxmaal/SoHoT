@@ -86,7 +86,10 @@ def test_a_harness_class_outranks_a_content_failure_in_the_same_run():
 
 
 #: Files that decide from classes and must never read a phrase themselves.
-DECIDERS = ("harness/screen.py", "harness/cli.py", "harness/fetching.py",
+#: The CLI's verbs, which live in harness/commands since #484.
+CLI = ("harness/cli.py", *sorted(p.relative_to(ROOT).as_posix()
+                                 for p in (ROOT / "harness" / "commands").glob("*.py")))
+DECIDERS = ("harness/screen.py", *CLI, "harness/fetching.py",
             "harness/adopt.py", "evals/run.py")
 PHRASES = (reasons._SERVER_DEAD + reasons._GPU_FAULT + reasons._GATEWAY
            + reasons._HARNESS + reasons._ABOUT_THE_SNAPSHOT
@@ -151,7 +154,7 @@ def _calls(path, name):
 
 def test_upstream_text_is_classified_at_the_runner_boundary_and_one_stderr_read():
     assert len(_calls("evals/runners/base.py", "classify")) == 1
-    assert len(_calls("harness/cli.py", "classify")) == 1
+    assert sum(len(_calls(p, "classify")) for p in CLI) == 1
     assert _calls("harness/screen.py", "classify") == []
 
 
@@ -189,7 +192,7 @@ def test_every_production_verdict_says_why(path):
 
 def test_the_writer_guard_sees_the_writers():
     """Red-proof: the guard is not vacuous."""
-    assert len(list(store_writes("harness/cli.py"))) >= 10
+    assert sum(len(list(store_writes(p))) for p in CLI) >= 10
     assert len(list(store_writes("harness/fetching.py"))) >= 5
 
 

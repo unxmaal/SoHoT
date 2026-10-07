@@ -8,6 +8,7 @@ prose cannot move a number again.
 """
 import pytest
 
+from harness.commands import discover as discover_cmd
 from harness import fetching, rank
 from harness import memory_store as ms
 
@@ -127,7 +128,7 @@ def test_inspect_writes_the_column_whatever_it_decides(tmp_path, monkeypatch,
         fit.lanes[repo] = "code"
         return fit
 
-    monkeypatch.setattr(cli, "resolve_registry",
+    monkeypatch.setattr(discover_cmd, "resolve_registry",
                         lambda name, client, model=None: (ms.HUGGINGFACE, {}))
     monkeypatch.setattr(ins, "inspect_model", fake_inspect)
     assert cli.main(["discover", "--inspect", "--repos", "org/w"]) == 0

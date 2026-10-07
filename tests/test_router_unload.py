@@ -4,6 +4,9 @@ import os
 
 import pytest
 
+from harness.commands import loop as loop_cmd
+from harness.commands import measure as measure_cmd
+from harness.commands import screen as screen_cmd
 from harness import adopt, cli, exclusive, router
 
 
@@ -131,7 +134,7 @@ def test_the_measure_unloads_its_challenger_however_it_ends(monkeypatch):
     def measure(a, row, loaded):
         loaded.append("llamacpp:Challenger-Q4_K_M")
         raise RuntimeError("the run died")
-    monkeypatch.setattr(cli, "_measure", measure)
+    monkeypatch.setattr(measure_cmd, "_measure", measure)
     with pytest.raises(RuntimeError):
         cli._measure_and_adopt(argparse.Namespace(), {"name": "org/c"})
     assert released == ["llamacpp:Challenger-Q4_K_M"]
@@ -143,7 +146,7 @@ def test_the_loop_ends_by_settling_the_router(monkeypatch):
 
     def spend(a, rc):
         raise RuntimeError("the measure died")
-    monkeypatch.setattr(cli, "_loop_spend", spend)
+    monkeypatch.setattr(loop_cmd, "_loop_spend", spend)
     with pytest.raises(RuntimeError):
         cli._spend_and_settle(argparse.Namespace(), 0)
     assert settled == ["the discovery loop is done"]
@@ -167,11 +170,11 @@ def test_the_screen_unloads_each_candidate_it_ran(monkeypatch, tmp_path):
     conn.close()
     plan = [{"name": "org/c-GGUF", "state": screen.READY, "modality": "code",
              "candidate": "llamacpp:C-Q4_K_M", "why_not": ""}]
-    monkeypatch.setattr(cli, "_screen_plan", lambda want: plan)
+    monkeypatch.setattr(screen_cmd, "_screen_plan", lambda want: plan)
     monkeypatch.setattr(memory, "check_model", lambda *a, **k: (True, ""))
     monkeypatch.setattr(screen, "argv", lambda r, **k: ["screen"])
     monkeypatch.setattr(subprocess, "run", lambda argv, **kw: _Done())
-    monkeypatch.setattr(cli, "_receipt_at", lambda out: None)
+    monkeypatch.setattr(measure_cmd, "_receipt_at", lambda out: None)
     released = []
     monkeypatch.setattr(router, "release_spec",
                         lambda spec, why, **k: released.append((spec, why)))

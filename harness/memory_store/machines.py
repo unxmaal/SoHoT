@@ -1,6 +1,7 @@
 """The machines table: this machine's facts and its row."""
 from __future__ import annotations
 
+import sqlite3
 import json
 import time
 

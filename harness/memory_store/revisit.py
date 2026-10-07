@@ -1,6 +1,7 @@
 """When a settled verdict may be asked again: until-conditions and receipts that are gone."""
 from __future__ import annotations
 
+import sqlite3
 from pathlib import Path
 import re
 

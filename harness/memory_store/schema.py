@@ -1,7 +1,6 @@
 """The store's shape: SCHEMA_VERSION, the vocabularies writers and readers share, the DDL."""
 from __future__ import annotations
 
-
 from harness import store
 
 

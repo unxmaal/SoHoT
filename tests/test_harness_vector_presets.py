@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 from evals.run import TRACE_PREFIXES, kind_of, modality_of
+from harness.commands import lanes as lanes_cmd
 from harness.checks import render
 from harness import vector
 
@@ -118,7 +119,7 @@ def test_the_cli_icon_method_uses_the_icon_preset(tmp_path, monkeypatch):
         gear(png)
         return 0
 
-    monkeypatch.setattr(cli, "_generate", fake_generate)
+    monkeypatch.setattr(lanes_cmd, "_generate", fake_generate)
     real = vector.trace
     monkeypatch.setattr(vector, "trace",
                         lambda p, **kw: seen.setdefault("preset",

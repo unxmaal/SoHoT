@@ -299,15 +299,16 @@ def _retract_verdicts_from_runs_that_never_ran(conn) -> None:
     candidate is a refusal this harness produced. One row that reached a model
     means the candidate really was measured and its score is its own.
     """
-    from harness import cli, runs
+    from harness import runs
+    from harness.commands import measure as measure_cmd
 
     never_ran = set()
     for _, summary, rows in runs.summaries(conn, tier=""):
         for key, got in summary.items():
             if got.get("passed") or not got.get("total"):
                 continue
-            why = cli._all_refused(rows, key)
-            if why and why != cli.NO_ROWS_FOR_CANDIDATE:
+            why = measure_cmd._all_refused(rows, key)
+            if why and why != measure_cmd.NO_ROWS_FOR_CANDIDATE:
                 never_ran.add((key, why))
 
     for key, why in sorted(never_ran):
