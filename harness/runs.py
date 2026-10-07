@@ -167,6 +167,15 @@ def split_legacy(value, lane: str, where: Path | None, candidate: str,
     return v, (str(hits[0]) if hits else None), "text"
 
 
+def row_fields(r: dict, lane: str, where: Path | None, candidate: str) -> tuple:
+    """(output, artifact_path) of a receipt row, old or new shape."""
+    if "output" in r or "artifact_path" in r:
+        return r.get("output"), r.get("artifact_path")
+    output, art, _ = split_legacy(r.get("artifact"), lane, where, candidate,
+                                  str(r.get("case_id") or ""))
+    return output, art
+
+
 def split_artifacts(conn) -> dict:
     """Fill results.output and artifact_path from the old artifact column. #463.
 
@@ -253,11 +262,7 @@ def record(conn, path, data: dict, *, at: float | None = None) -> int | None:
             # A receipt from before runners set a class: read once, here. #408.
             cls = reasons.legacy_class(str(r.get("detail") or ""),
                                        specs.get(name, ""))
-        if "output" in r or "artifact_path" in r:
-            output, art = r.get("output"), r.get("artifact_path")
-        else:
-            output, art, _ = split_legacy(r.get("artifact"), lane, run_dir(key),
-                                          name, str(r.get("case_id") or ""))
+        output, art = row_fields(r, lane, run_dir(key), name)
         conn.execute(
             "INSERT INTO results (run_id, seq, candidate_id, candidate, "
             "case_id, repeat_index, passed, seconds, peak_kb, detail, metrics, "

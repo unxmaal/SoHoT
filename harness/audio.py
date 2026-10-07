@@ -127,8 +127,8 @@ def resolve_voice(name: str) -> Voice:
 # overriding the 1.2 Chatterbox itself defaults to. Issue #6.
 CHATTERBOX_REPETITION_PENALTY = 1.2
 
-# Healthy is 0.25-0.56 s/word; a runaway was 3.4-5.3.
-SECONDS_PER_WORD_CEILING = 1.0
+# Geometric midpoint of the slowest good clip and the fastest runaway; `soh hear --rates`, #91.
+SECONDS_PER_WORD_CEILING = 0.95
 # Below this a clip is mostly onset and silence, so the rate is noise.
 RUNAWAY_MIN_WORDS = 6
 
