@@ -312,3 +312,26 @@ def test_installing_does_not_start_a_periodic_job(plists, service):
 def test_a_server_still_starts_when_loaded(plists, service):
     unit = next(v for k, v in plists.items() if service in k)
     assert unit.get("RunAtLoad") is True
+
+
+def test_the_live_store_is_audited_nightly(plists):
+    """`soh audit` reads the live store read-only; once a day it says whether it still holds. #492."""
+    unit = next(v for k, v in plists.items() if k.endswith(".audit"))
+    assert unit["ProgramArguments"][1].endswith("serve-audit.sh")
+    assert unit["StartInterval"] == 86400 and unit.get("RunAtLoad") is not True
+
+
+def test_the_discover_sweep_keeps_its_own_interval(plists):
+    unit = next(v for k, v in plists.items() if k.endswith(".discover"))
+    assert unit["StartInterval"] == 21600
+
+
+def test_install_audits_what_it_just_deployed():
+    body = GEN.read_text(encoding="utf-8").split("install_units() {", 1)[1].split("\n}\n", 1)[0]
+    assert "serve-audit.sh" in body, "a deploy is checked by `soh audit` once its units are loaded"
+    assert body.index("serve-audit.sh") > body.index("launchctl bootstrap")
+
+
+def test_the_audit_script_runs_soh_audit_from_its_checkout():
+    text = (REPO / "scripts" / "serve-audit.sh").read_text(encoding="utf-8")
+    assert "set -euo pipefail" in text and "uv run soh audit" in text
