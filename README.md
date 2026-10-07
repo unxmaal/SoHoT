@@ -248,9 +248,27 @@ refused rather than answered in a substitute voice.
 
 Each machine keeps its own receipts, so a GitHub runner has nothing to measure.
 Instead each machine publishes its own slice and a workflow renders the set at
-https://unxmaal.github.io/SoHoT/: a section per machine, a lane table across
-machines, and when each machine last published, so a quiet machine reads as
-stale rather than current.
+https://unxmaal.github.io/SoHoT/ as three pages:
+
+- the front page: what SoHoT is, the loop, the lanes and a quick start, with
+  stat cards and a ticker computed from the exports at render time. Each
+  number names the machines and dates it came from, and the lane list is the
+  harness's own lanes plus any an export carries;
+- `reports/`: a section per machine, a lane table across machines, and when
+  each machine last published, so a quiet machine reads as stale rather than
+  current;
+- `benchmarks/`: every lane's latest comparison table on each machine that
+  published one (candidate, pass, median, first, peak, metrics), each table
+  labelled with its machine and run date.
+
+The pages are self-contained HTML and CSS with fonts from Google Fonts, work at
+phone width and in dark mode, and switch their animation off under
+`prefers-reduced-motion`. To look at them locally:
+
+```bash
+python -m harness.publish render --data <dir of machine JSON> --out /tmp/site
+python -m harness.privacy --files /tmp/site      # a directory means every file under it
+```
 
 ```bash
 soh report --export              # $LOCALHARNESS_HOME/reports/<machine>.json, checked
@@ -269,8 +287,9 @@ machine's username and hostname added; any finding refuses the export.
 
 Publishing writes `machines/<slug>.json` on the `reports` branch through the
 GitHub contents API (one file per machine, never a force-push) using `gh`, then
-dispatches `.github/workflows/pages.yml` on main. The workflow renders the page,
-fails if the privacy scanner matches anything in it, and deploys to Pages.
+dispatches `.github/workflows/pages.yml` on main. The workflow renders the site,
+fails if the privacy scanner matches anything in any file under `site/`, and
+deploys to Pages.
 
 Two one-time steps: in the repository's Settings, Pages, set Source to "GitHub
 Actions"; then on each machine that should appear, run `soh report

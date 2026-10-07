@@ -16,84 +16,119 @@ FONTS = ("https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700"
          "&display=swap")
 
 CSS = """
-:root { --desk:#f3d5df; --dot:#e9bccb; --win:#fdf6e6; --ink:#1d1b22; --dim:#5f5a55;
-        --line:#1d1b22; --shadow:#1d1b22; --on:#1d1b22; --code:#f4ead2;
-        --pink:#ffa3c6; --teal:#86d9cb; --butter:#ffe28f; --sky:#aed5ff; --lilac:#d5c2ff;
-        --good:#1f5a37; --goodbg:#cdeedd; --warn:#7a5200; --warnbg:#ffefc2;
-        --bad:#8a1f1f; --badbg:#ffd9d9; }
+:root { --coral:#ff6f59; --hot:#ff4f8b; --tang:#ff9f1c; --butter:#ffd84d;
+        --turq:#2ec4b6; --pool:#1fb5d6; --deep:#0f7c99;
+        --sand:#fff4da; --sand2:#ffe9bd; --ink:#24161f; --dim:#6b5560;
+        --line:#24161f; --shadow:#24161f; --on:#24161f; --code:#fbe6bf;
+        --sky:linear-gradient(180deg,#ff6f59 0,#ff4f8b 340px,#ff9f1c 620px,#ffd84d 820px,
+              #8fe3d4 1150px,#2ec4b6 1500px,#1fb5d6 2100px,#0f7c99 100%);
+        --sun1:#fff3a8; --sun2:#ffb627; --sun3:#ff5d73;
+        --good:#14593a; --goodbg:#c9f2dc; --warn:#7a4a00; --warnbg:#ffeab0;
+        --bad:#8a1f2c; --badbg:#ffd6dc; }
 @media (prefers-color-scheme: dark) {
-  :root { --desk:#1c1930; --dot:#2a2646; --win:#2b2840; --ink:#f3ead6; --dim:#b3abc4;
-          --line:#0c0b14; --shadow:#07060c; --on:#141221; --code:#211e33;
-          --pink:#e07aa3; --teal:#4fb3a2; --butter:#d6b552; --sky:#6e9fdc; --lilac:#9c86d6;
-          --good:#9be8b8; --goodbg:#163626; --warn:#ffd27a; --warnbg:#3a2c09;
-          --bad:#ffa3a3; --badbg:#3d1717; } }
+  :root { --coral:#ff6a5c; --hot:#ff3fa4; --tang:#ff8c2b; --butter:#ffd23f;
+          --turq:#2de2e6; --pool:#3aa8ff; --deep:#0b3d4a;
+          --sand:#2a1d3d; --sand2:#3a2852; --ink:#fbeedd; --dim:#cdb7d6;
+          --line:#07040c; --shadow:#07040c; --on:#1a0f22; --code:#1d1430;
+          --sky:linear-gradient(180deg,#1b0b3a 0,#4b1366 380px,#9c1f6e 700px,#d9503f 900px,
+                #3b1d5c 1150px,#122d4d 1500px,#0b3d4a 100%);
+          --sun1:#ffe27a; --sun2:#ff7b39; --sun3:#ff2e88;
+          --good:#9bf0bf; --goodbg:#16392a; --warn:#ffd27a; --warnbg:#3d2a0a;
+          --bad:#ffa3b2; --badbg:#401624; } }
 * { box-sizing:border-box }
 html { -webkit-text-size-adjust:100% }
-body { margin:0; color:var(--ink); background-color:var(--desk);
-       background-image:radial-gradient(var(--dot) 1.2px, transparent 1.3px);
-       background-size:14px 14px;
-       font:16px/1.55 "IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; }
+body { margin:0; color:var(--ink); background:var(--sky); background-color:var(--deep);
+       font:16px/1.55 "IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+body.calm { background:var(--sand2); background-image:radial-gradient(var(--sand) 1.4px,
+            transparent 1.5px); background-size:16px 16px }
 a { color:inherit }
 code, pre, table { font-family:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace }
-h1, h2, h3, .menubar, .btn, .num, .chip { font-family:"Silkscreen",ui-monospace,monospace;
+h1, h2, h3, .menubar, .btn, .num, .chip, .ticker { font-family:"Silkscreen",ui-monospace,monospace;
        font-weight:400; letter-spacing:.02em }
-.menubar { display:flex; flex-wrap:wrap; align-items:center; gap:.25rem 1.25rem;
-           padding:.45rem 1rem; background:var(--win); border-bottom:2px solid var(--line);
-           font-size:.85rem }
+.menubar { display:flex; flex-wrap:wrap; align-items:center; gap:.25rem 1.1rem;
+           padding:.45rem 16px; background:var(--sand); border-bottom:2px solid var(--line);
+           font-size:.85rem; position:relative }
+.calm .menubar { box-shadow:0 6px 0 -2px var(--hot), 0 10px 0 -4px var(--tang),
+                 0 14px 0 -6px var(--turq) }
 .menubar a { text-decoration:none; padding:.1rem .35rem }
-.menubar a:hover, .menubar a[aria-current] { background:var(--ink); color:var(--win) }
-.menubar .brand { font-weight:700; margin-right:auto }
-main { max-width:64rem; margin:0 auto; padding:1.75rem 16px 3rem }
-.win { background:var(--win); border:2px solid var(--line); box-shadow:5px 5px 0 var(--shadow);
+.menubar a:hover, .menubar a[aria-current] { background:var(--ink); color:var(--sand) }
+.menubar .brand { margin-right:auto }
+.ticker { overflow:hidden; border-bottom:2px solid var(--line); background:var(--butter);
+          color:var(--on); font-size:.8rem; white-space:nowrap }
+.ticker .tape { display:inline-block; padding:.4rem 0 }
+.ticker span { padding:0 1.4rem }
+.ticker span + span::before { content:"*"; margin-right:1.4rem; color:var(--hot) }
+main { max-width:64rem; margin:0 auto; padding:2rem 16px 3rem }
+.calm main { padding-top:2.4rem }
+.win { background:var(--sand); border:2px solid var(--line); box-shadow:6px 6px 0 var(--shadow);
        margin:0 0 1.75rem; min-width:0 }
 .bar { display:flex; align-items:center; gap:.6rem; padding:5px 8px;
-       border-bottom:2px solid var(--line); background-color:var(--tint, var(--win));
+       border-bottom:2px solid var(--line); background-color:var(--tint, var(--sand));
        background-image:repeating-linear-gradient(var(--line) 0 1px, transparent 1px 4px);
        background-origin:content-box; background-clip:content-box }
 .bar .box { flex:none; width:15px; height:15px; border:2px solid var(--line);
-            background:var(--win); box-shadow:0 0 0 3px var(--tint, var(--win)) }
-.bar h2, .bar h1 { margin:0 auto; padding:0 .6rem; background:var(--tint, var(--win));
-                   color:var(--on); font-size:.95rem; line-height:1.5; text-align:center;
-                   overflow-wrap:anywhere }
-.win:not([style*="--tint"]) .bar h2 { color:var(--ink) }
+            background:var(--sand); box-shadow:0 0 0 3px var(--tint, var(--sand)) }
+.bar h2 { margin:0 auto; padding:0 .6rem; background:var(--tint, var(--sand)); color:var(--on);
+          font-size:.95rem; line-height:1.5; text-align:center; overflow-wrap:anywhere }
 .body { padding:1rem 1.1rem 1.15rem; min-width:0 }
 .body > :first-child { margin-top:0 }
 .body > :last-child { margin-bottom:0 }
-.pink { --tint:var(--pink) } .teal { --tint:var(--teal) } .butter { --tint:var(--butter) }
-.sky { --tint:var(--sky) } .lilac { --tint:var(--lilac) }
-.hero .body { text-align:center; padding:2rem 1.1rem 2.2rem }
-.hero h1 { font-size:clamp(2.6rem, 12vw, 5rem); line-height:1; margin:.2rem 0 .4rem }
-.hero .expand { font-family:"Silkscreen",monospace; font-size:clamp(.8rem, 3.2vw, 1.05rem);
-                margin:0 0 1.1rem }
-.lead { font-size:1.15rem; max-width:38rem; margin:0 auto 1.6rem }
-.buttons { display:flex; flex-wrap:wrap; gap:1rem; justify-content:center }
-.btn { display:inline-block; padding:.65rem 1.1rem; border:2px solid var(--line);
-       box-shadow:3px 3px 0 var(--shadow); background:var(--pink); color:var(--on);
+.pink { --tint:var(--hot) } .teal { --tint:var(--turq) } .butter { --tint:var(--butter) }
+.sky { --tint:var(--pool) } .coral { --tint:var(--tang) }
+.hero .body { position:relative; overflow:hidden; text-align:center; padding:0 0 1.8rem }
+.band { background:linear-gradient(180deg,var(--sun3) 0,var(--tang) 55%,var(--butter) 100%);
+        padding-bottom:1rem; margin-bottom:1.4rem; border-bottom:2px solid var(--line) }
+.scene { position:relative; height:13rem; overflow:hidden }
+.rays { position:absolute; left:50%; top:9rem; width:62rem; height:62rem; margin:-31rem 0 0 -31rem;
+        background:repeating-conic-gradient(from 0deg, rgba(255,255,255,.22) 0 7deg,
+        transparent 7deg 18deg); border-radius:50% }
+.sun { position:absolute; left:50%; bottom:-5rem; width:15rem; height:15rem; margin-left:-7.5rem;
+       border-radius:50%; border:2px solid var(--line);
+       background:linear-gradient(180deg,var(--sun1) 0,var(--sun2) 55%,var(--sun3) 100%);
+       -webkit-mask:linear-gradient(#000 0 52%, transparent 52% 56%, #000 56% 64%,
+         transparent 64% 69%, #000 69% 76%, transparent 76% 82%, #000 82%);
+       mask:linear-gradient(#000 0 52%, transparent 52% 56%, #000 56% 64%,
+         transparent 64% 69%, #000 69% 76%, transparent 76% 82%, #000 82%) }
+.wave { position:absolute; left:0; bottom:0; width:200%; height:28px; display:block }
+.palm { position:absolute; bottom:0; width:72px; height:96px }
+.palm.l { left:4% } .palm.r { right:4%; transform:scaleX(-1) }
+.hero h1 { font-size:clamp(2.8rem, 13vw, 5.4rem); line-height:1; margin:1.2rem 0 .2rem;
+           color:var(--on); text-shadow:4px 4px 0 var(--hot) }
+.pun { font-family:"Silkscreen",monospace; font-size:clamp(1.05rem, 4.6vw, 1.6rem);
+       margin:0 0 .3rem; color:#fff4da; text-shadow:2px 2px 0 var(--line) }
+.expand { font-size:.9rem; margin:0; color:var(--on); font-weight:600 }
+.lead { font-size:1.15rem; max-width:38rem; margin:0 auto 1.6rem; padding:0 1rem }
+.buttons { display:flex; flex-wrap:wrap; gap:1rem; justify-content:center; padding:0 1rem }
+.btn { display:inline-block; padding:.7rem 1.15rem; border:2px solid var(--line);
+       box-shadow:4px 4px 0 var(--shadow); background:var(--hot); color:var(--on);
        text-decoration:none; font-size:.95rem }
-.btn.alt { background:var(--teal) }
-.btn:active { transform:translate(3px,3px); box-shadow:none }
+.btn.alt { background:var(--turq) }
+.btn:active { transform:translate(4px,4px); box-shadow:none }
 .stats { display:grid; grid-template-columns:repeat(auto-fit, minmax(13rem, 1fr));
-         gap:1.25rem; margin:0 0 1.75rem }
-.stats .win { margin:0 }
+         gap:1.4rem; margin:0 0 2rem }
+.stats .win { margin:0; transform:rotate(-1.2deg) }
+.stats .win:nth-child(2n) { transform:rotate(1.1deg) }
 .stats .body { text-align:center }
-.num { display:block; font-size:2.4rem; line-height:1.1; margin:.2rem 0 .3rem }
+.num { display:block; font-size:2.5rem; line-height:1.1; margin:.2rem 0 .3rem; color:var(--hot);
+       text-shadow:2px 2px 0 var(--line) }
+[data-stat=latest] .num { font-size:1.7rem; white-space:nowrap }
 .stat-label { display:block; font-weight:600 }
 .where { display:block; color:var(--dim); font-size:.8rem; margin-top:.35rem;
          overflow-wrap:anywhere }
 .cards { display:grid; grid-template-columns:repeat(auto-fit, minmax(17rem, 1fr));
-         gap:1.25rem; margin:0 0 1.75rem }
+         gap:1.4rem; margin:0 0 1.75rem }
 .cards .win { margin:0 }
-.cards h3 { font-size:.9rem; margin:0 0 .5rem }
 .steps { list-style:none; counter-reset:step; padding:0; margin:0;
          display:grid; grid-template-columns:repeat(auto-fit, minmax(14rem, 1fr)); gap:.9rem }
 .steps li { counter-increment:step; border:2px solid var(--line); padding:.6rem .75rem;
-            background:var(--desk) }
-.steps li::before { content:counter(step) ". "; font-family:"Silkscreen",monospace }
+            background:var(--sand2) }
+.steps li::before { content:counter(step) ". "; font-family:"Silkscreen",monospace; color:var(--hot) }
 .steps b { font-family:"Silkscreen",monospace; font-weight:400 }
-.chips { list-style:none; padding:0; margin:.6rem 0; display:flex; flex-wrap:wrap; gap:.4rem }
+.chips { list-style:none; padding:0; margin:.6rem 0; display:flex; flex-wrap:wrap; gap:.45rem }
 .chip { border:2px solid var(--line); padding:.05rem .45rem; background:var(--butter);
         color:var(--on); font-size:.8rem }
-.chip.judged { background:var(--lilac) }
+.chip.judged { background:var(--turq) }
 .chip a { text-decoration:none }
 pre { background:var(--code); border:2px solid var(--line); padding:.75rem .9rem;
       overflow-x:auto; font-size:.85rem; line-height:1.45; margin:.4rem 0 1rem }
@@ -105,17 +140,51 @@ h3 { font-size:.9rem; margin:1.4rem 0 .4rem }
 .wide { overflow-x:auto; max-width:100%; margin:.4rem 0 }
 table { border-collapse:collapse; width:100%; font-size:.82rem }
 th, td { text-align:left; padding:.32rem .55rem; border:1px solid var(--line); vertical-align:top }
-th { background:var(--desk); font-weight:600; white-space:nowrap }
-td.num, .wide td.num { display:table-cell; font-family:inherit; font-size:inherit;
-                       text-align:right; font-variant-numeric:tabular-nums; margin:0 }
+th { background:var(--sand2); font-weight:600; white-space:nowrap }
+td.num { display:table-cell; font-family:inherit; font-size:inherit; color:inherit;
+         text-shadow:none; text-align:right; font-variant-numeric:tabular-nums; margin:0 }
 .tag { display:inline-block; padding:0 .35rem; border:1px solid currentColor;
        font-size:.75rem; white-space:nowrap }
 .warn { background:var(--warnbg); color:var(--warn) }
 .bad { background:var(--badbg); color:var(--bad) }
 .good { background:var(--goodbg); color:var(--good) }
 tr.changed td { background:var(--goodbg) }
-footer { text-align:center; color:var(--dim); font-size:.85rem; padding:0 16px 2.5rem }
+footer { text-align:center; color:#fff4da; font-size:.85rem; padding:0 16px 2.5rem }
+.calm footer { color:var(--dim) }
+@media (prefers-reduced-motion: no-preference) {
+  .rays { animation:spin 90s linear infinite }
+  .sun { animation:haze 5s ease-in-out infinite }
+  .wave { animation:roll 9s linear infinite }
+  .palm { animation:sway 6s ease-in-out infinite; transform-origin:50% 100% }
+  .palm.r { animation-name:sway-r }
+  .ticker .tape { animation:tape 40s linear infinite; padding-left:100% }
+  .btn:hover, .chip:hover { animation:wiggle .45s ease-in-out }
+  @keyframes spin { to { transform:rotate(360deg) } }
+  @keyframes haze { 50% { transform:translateY(3px) scaleX(1.015) } }
+  @keyframes roll { to { transform:translateX(-50%) } }
+  @keyframes sway { 50% { transform:rotate(3deg) } }
+  @keyframes sway-r { 0%, 100% { transform:scaleX(-1) } 50% { transform:scaleX(-1) rotate(3deg) } }
+  @keyframes tape { to { transform:translateX(-100%) } }
+  @keyframes wiggle { 25% { transform:rotate(-3deg) } 75% { transform:rotate(3deg) } }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ticker { white-space:normal }
+}
 """
+
+PALM = ('<svg class="palm {side}" viewBox="0 0 18 24" shape-rendering="crispEdges" '
+        'aria-hidden="true"><g fill="var(--line)">'
+        '<rect x="8" y="8" width="2" height="16"/><rect x="7" y="14" width="1" height="10"/>'
+        '</g><g fill="var(--turq)">'
+        '<rect x="2" y="5" width="7" height="2"/><rect x="0" y="7" width="3" height="2"/>'
+        '<rect x="9" y="4" width="7" height="2"/><rect x="15" y="6" width="3" height="2"/>'
+        '<rect x="5" y="2" width="4" height="2"/><rect x="10" y="1" width="3" height="3"/>'
+        '<rect x="3" y="8" width="2" height="3"/><rect x="12" y="7" width="2" height="3"/>'
+        '</g><rect x="8" y="5" width="2" height="2" fill="var(--tang)"/></svg>')
+
+WAVE = ('<svg class="wave" viewBox="0 0 200 14" preserveAspectRatio="none" aria-hidden="true">'
+        '<path d="M0 7 Q12.5 0 25 7 T50 7 T75 7 T100 7 T125 7 T150 7 T175 7 T200 7 V14 H0Z" '
+        'fill="var(--pool)" stroke="var(--line)" stroke-width="1.2"/></svg>')
 
 
 def _esc(x) -> str:
@@ -129,14 +198,15 @@ def _date(iso) -> str:
 
 def window(title: str, body: str, tint: str = "", cls: str = "", tag: str = "div",
            attrs: str = "") -> str:
-    """A classic desktop window: striped title bar, close box, cream body."""
+    """A classic desktop window: striped title bar, close box, sand body."""
     klass = " ".join(c for c in ("win", tint, cls) if c)
     return (f'<{tag}{attrs} class="{klass}"><div class="bar"><span class="box"></span>'
             f'<h2>{title}</h2></div><div class="body">{body}</div></{tag}>')
 
 
-def page(title: str, body: str, depth: int = 0, here: str = "", now: float | None = None) -> str:
-    """The shared shell: fonts, theme, menu bar and footer."""
+def page(title: str, body: str, depth: int = 0, here: str = "", now: float | None = None,
+         before: str = "") -> str:
+    """The shared shell: fonts, theme, menu bar and footer. Table pages get the calm palette."""
     up = "../" * depth
     links = (("", "SoHoT"), ("benchmarks/", "Benchmarks"), ("reports/", "Lane report"))
     menu = "".join(
@@ -151,9 +221,9 @@ def page(title: str, body: str, depth: int = 0, here: str = "", now: float | Non
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="{_esc(FONTS)}">
 <style>{CSS}</style></head>
-<body>
+<body{' class="calm"' if depth else ''}>
 <nav class="menubar">{menu}<a href="{REPO_URL}">Source</a></nav>
-<main>
+{before}<main>
 {body}
 </main>
 <footer>Built {_esc(when)} from each machine's own export.</footer>
@@ -215,6 +285,15 @@ def lane_names(machines: list[dict]) -> list[str]:
     return out
 
 
+def ticker_items(machines: list[dict]) -> list[str]:
+    """What each adopted lane serves and where, then when each machine last published."""
+    items = [f"{l['lane']} serves {l.get('serves')} on {d['machine'].get('label')}"
+             for d in machines for l in d.get("lanes") or [] if l.get("adopted")]
+    items += [f"{d['machine'].get('label')} last published {_date(d.get('generated_at'))}"
+              for d in machines]
+    return items or ["no machine has published yet"]
+
+
 # --- the front page --------------------------------------------------------
 
 LOOP = (
@@ -237,33 +316,41 @@ def _stat_card(s: dict, tint: str) -> str:
     return window(_esc(s["label"].split()[0]), body, tint, attrs=f' data-stat="{s["key"]}"')
 
 
+def _ticker(machines: list[dict]) -> str:
+    spans = "".join(f"<span>{_esc(t)}</span>" for t in ticker_items(machines))
+    return f'<div class="ticker" aria-label="live from the exports"><div class="tape">{spans}</div></div>'
+
+
 def front(machines: list[dict], now: float | None = None) -> str:
     from harness import gateway, lanes, publish
     tints = ("pink", "teal", "butter", "sky")
+    scene = ('<div class="scene" aria-hidden="true"><div class="rays"></div><div class="sun"></div>'
+             f'{PALM.format(side="l")}{PALM.format(side="r")}{WAVE}</div>')
     hero = window("SoHoT", (
-        '<h1>SoHoT</h1>'
-        '<p class="expand">Self-optimizing Harness of Theseus</p>'
-        '<p class="lead">Local models for images, video, speech, music, SVG and code, '
-        'and a harness that keeps replacing the model behind each job with a better one, '
-        'but only when a measured run says it is better.</p>'
+        f'<div class="band">{scene}<h1>SoHoT</h1>'
+        '<p class="pun">So hot right now.</p>'
+        '<p class="expand">Self-optimizing Harness of Theseus</p></div>'
+        '<p class="lead">It keeps swapping in better local models for each job, '
+        'and only on measured evidence.</p>'
         '<div class="buttons"><a class="btn" href="benchmarks/">See the benchmarks</a>'
         '<a class="btn alt" href="reports/">Read the lane report</a></div>'),
-        "pink", "hero")
+        "butter", "hero")
     empty = ('<p class="note">No machine has published yet.</p>' if not machines else "")
     cards = "".join(_stat_card(s, tints[i % len(tints)]) for i, s in enumerate(stats(machines)))
     what = window("What is SoHoT?", (
-        "<p>Like the ship of Theseus, every part of this harness gets replaced over time "
-        "while the harness stays itself. The parts are the models serving each lane. "
-        "SoHoT goes looking for challengers on its own, measures each one against the "
-        "model it would replace on identical cases on your hardware, and swaps it in "
-        "only on evidence. Nothing here was adopted because it was popular.</p>"
-        "<p>It runs on your machine. No account, no API key, no per-token bill, and no "
-        "model retired out from under you.</p>"), "sky")
+        "<p>Images, video, speech, music, SVG and code, made by models on your own machine. "
+        "Like the ship of Theseus, every part of this harness gets replaced over time while "
+        "the harness stays itself. The parts are the models serving each lane. SoHoT goes "
+        "looking for challengers on its own, measures each one against the model it would "
+        "replace on identical cases on your hardware, and swaps it in only on evidence. "
+        "Nothing here was adopted because it was popular.</p>"
+        "<p>No account, no API key, no per-token bill, and no model retired out from under "
+        "you.</p>"), "sky")
     steps = "".join(f"<li><b>{name}</b><br>{_esc(text)}</li>" for name, text in LOOP)
     loop = window("The loop", (
         "<p>Each tier costs more than the last and only sees what survived the one "
         "before, so measurement is spent where it counts.</p>"
-        f'<ol class="steps">{steps}</ol>'), "butter")
+        f'<ol class="steps">{steps}</ol>'), "coral")
     chips = "".join(
         f'<li class="chip{" judged" if lanes.human_judged(n) else ""}">{_esc(n)}</li>'
         for n in lane_names(machines))
@@ -277,10 +364,10 @@ def front(machines: list[dict], now: float | None = None) -> str:
          "too little power is recorded as underpowered, not as no better. Cases are split "
          "by content digest so nothing tunes itself on the cases that decide.</p>"),
         ("Lanes", "butter",
-         "<p>A lane is one job with its own cases and checks. Each serves its own "
+         "<p>A lane is one job with its own cases and checks, and each serves its own "
          f'winner:</p><ul class="chips">{chips}</ul>'
-         f"<p class=\"note\">Highlighted lanes ({_esc(judged)}) have no metric that can "
-         "pick a winner, so a person votes.</p>"),
+         f"<p class=\"note\">In the teal lanes ({_esc(judged)}) no metric can pick a winner, "
+         "so a person votes.</p>"),
         ("One gateway, stable names", "teal",
          "<p>An OpenAI-compatible gateway serves one alias per text lane: "
          f"{aliases}. An adoption re-points the alias to the winner without anyone "
@@ -291,7 +378,7 @@ def front(machines: list[dict], now: float | None = None) -> str:
          "hardware label and never a hostname. Paths are cut, and a privacy scan refuses "
          "any export that still names a person or a place. A machine that has not "
          f"published in {publish.STALE_DAYS:.0f} days is marked stale.</p>"),
-        ("The gauntlet", "lilac",
+        ("The gauntlet", "coral",
          "<p>Every missed defect is traced to the logical failing behind it, which becomes "
          "a generic class with a test shape. Later code is tested against every class "
          "that has bitten, and CI fails new code that trips a detector until it has a "
@@ -301,7 +388,7 @@ def front(machines: list[dict], now: float | None = None) -> str:
          "candidate already answered is not offered again, and one that lost stays "
          "lost until something about it changes.</p>"),
     ]
-    feat = "".join(window(_esc(t), b, tint) for t, b, tint in features)
+    feat = "".join(window(_esc(t), b, tint) for t, tint, b in features)
     quick = window("Quick start", (
         "<p>Install the command, <code>soh</code>, into its own environment:</p>"
         f"<pre><code>git clone {REPO_URL}\ncd SoHoT\n"
@@ -323,7 +410,7 @@ def front(machines: list[dict], now: float | None = None) -> str:
         "teal")
     body = (f'{hero}<div class="stats">{cards}</div>{empty}{what}{loop}'
             f'<div class="cards">{feat}</div>{quick}')
-    return page("SoHoT", body, 0, "", now)
+    return page("SoHoT", body, 0, "", now, before=_ticker(machines))
 
 
 # --- the benchmarks --------------------------------------------------------
@@ -355,7 +442,7 @@ def _bench_table(lane: dict) -> str:
 
 
 def benchmarks(machines: list[dict], now: float | None = None) -> str:
-    tints = ("pink", "teal", "butter", "sky", "lilac")
+    tints = ("pink", "teal", "butter", "sky", "coral")
     by = [{l["lane"]: l for l in d.get("lanes") or [] if l.get("lane")} for d in machines]
     measured, waiting = [], []
     for n in lane_names(machines):
@@ -376,15 +463,15 @@ def benchmarks(machines: list[dict], now: float | None = None) -> str:
             lane = b.get(n)
             if not lane or not lane.get("comparison"):
                 continue
+            how = f" (adopted {_esc(lane.get('adopted_how'))})" if lane.get("adopted") else ""
             parts.append(f'<h3>{_esc(d["machine"].get("label"))} &middot; run '
                          f'{_date(lane.get("last_run_at"))}</h3>{_bench_table(lane)}'
                          f'<p class="note">Serving here: {_esc(lane.get("serves")) or "--"}'
-                         f'{" (adopted " + _esc(lane.get("adopted_how")) + ")" if lane.get("adopted") else ""}'
-                         '</p>')
+                         f'{how}</p>')
         wins.append(window(_esc(n), "".join(parts), tints[i % len(tints)],
                            attrs=f' id="lane-{_esc(n)}"'))
     rest = (window("Not measured yet", "<p>No published measure run for: "
-                   + ", ".join(_esc(n) for n in waiting) + ".</p>", "lilac")
+                   + ", ".join(_esc(n) for n in waiting) + ".</p>", "coral")
             if waiting and machines else "")
     return page("SoHoT benchmarks", intro + "".join(wins) + rest, 1, "benchmarks/", now)
 

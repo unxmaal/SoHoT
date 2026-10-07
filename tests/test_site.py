@@ -97,6 +97,15 @@ def test_the_lanes_on_the_front_page_come_from_the_exports_and_the_lane_table():
         assert f">{lane}<" in front, lane
 
 
+def test_each_feature_card_carries_its_own_text_under_its_title():
+    front = site.render(_machines(), now=NOW)["index.html"]
+    cards = dict(re.findall(r'<h2>([^<]+)</h2></div><div class="body">(.*?)</div></div>',
+                            front, re.S))
+    assert "paired test" in cards["The paired adopt gate"]
+    assert '<li class="chip">code</li>' in cards["Lanes"]
+    assert "sohot-code" in cards["One gateway, stable names"]
+
+
 def test_benchmarks_have_each_lanes_latest_table_with_its_machine_and_date():
     machines = _machines()
     machines.append(_second(machines[0]))
@@ -138,3 +147,42 @@ def test_the_workflow_privacy_scan_covers_every_file_under_site(tmp_path, monkey
     bench.write_text(bench.read_text(encoding="utf-8")
                      + f"<p>/Users/{USER}/runs</p>", encoding="utf-8")  # privacy-ok
     assert privacy.main(scan) == 1
+
+
+def test_a_scan_of_a_directory_with_nothing_in_it_is_refused_not_passed(tmp_path):
+    (tmp_path / "site").mkdir()
+    with pytest.raises(FileNotFoundError):
+        privacy.main(["--files", str(tmp_path / "site")])
+    with pytest.raises(FileNotFoundError):
+        privacy.main(["--files", str(tmp_path / "nowhere")])
+
+
+def _outside_motion_query(css: str) -> str:
+    out, i, key = [], 0, "@media (prefers-reduced-motion: no-preference)"
+    while (j := css.find(key, i)) >= 0:
+        out.append(css[i:j])
+        depth, k = 0, css.index("{", j)
+        while True:
+            depth += {"{": 1, "}": -1}.get(css[k], 0)
+            k += 1
+            if depth == 0:
+                break
+        i = k
+    return "".join(out) + css[i:]
+
+
+def test_the_ticker_says_what_each_adopted_lane_serves_and_on_which_machine():
+    machines = _machines()
+    front = site.render(machines, now=NOW)["index.html"]
+    ticker = re.search(r'<div class="ticker".*?</div>', front, re.S).group(0)
+    label = machines[0]["machine"]["label"]
+    for lane in machines[0]["lanes"]:
+        if lane.get("adopted"):
+            assert f"{lane['lane']} serves {lane['serves']} on {label}" in ticker
+    assert machines[0]["generated_at"][:10] in ticker
+
+
+def test_all_motion_is_off_for_people_who_ask_for_less():
+    rest = _outside_motion_query(site.CSS)
+    assert "@media (prefers-reduced-motion: no-preference)" in site.CSS
+    assert "animation" not in rest and "@keyframes" not in rest

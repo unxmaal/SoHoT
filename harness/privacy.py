@@ -180,7 +180,10 @@ def expand(items) -> list[Path]:
     for item in items:
         p = Path(item)
         if p.is_dir():
-            out.extend(sorted(f for f in p.rglob("*") if f.is_file()))
+            found = sorted(f for f in p.rglob("*") if f.is_file())
+            if not found:
+                raise FileNotFoundError(f"privacy scan: {p} holds no files to scan")
+            out.extend(found)
         elif p.exists():
             out.append(p)
         else:
