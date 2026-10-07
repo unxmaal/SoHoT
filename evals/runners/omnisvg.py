@@ -22,12 +22,10 @@ import subprocess
 import tempfile
 from pathlib import Path
 
-from harness import proc, reasons
+from harness import paths, proc, reasons
 
 from evals.core import Case
 from evals.runners.base import BaseRunner, RunnerError
-
-DEFAULT_HOME = Path.home() / "localharness" / "omnisvg"
 
 #: Qwen half and OmniSVG half, per model size. The decoder weights are a
 #: state_dict over a stock Qwen2.5-VL that OmniSVG does not redistribute, so
@@ -48,7 +46,8 @@ TIMEOUT = 1800.0
 
 
 def home() -> Path:
-    return Path(os.environ.get("OMNISVG_HOME") or DEFAULT_HOME)
+    # Same default as scripts/setup-omnisvg.sh: under LOCALHARNESS_HOME, not a second home (#513).
+    return Path(os.environ.get("OMNISVG_HOME") or paths.home() / "omnisvg")
 
 
 def interpreter(root: Path | None = None) -> Path:

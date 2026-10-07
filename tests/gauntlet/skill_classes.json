@@ -56,6 +56,13 @@
   "bitten": 6
  },
  {
+  "id": "a-non-production-run-writes-live-state",
+  "heading": "A non-production run writes live state",
+  "source": "SKILL.md",
+  "tier": 1,
+  "bitten": 6
+ },
+ {
   "id": "state-is-whichever-row-came-last",
   "heading": "State is whichever row came last",
   "source": "SKILL.md",
@@ -93,13 +100,6 @@
  {
   "id": "a-number-without-its-configuration",
   "heading": "A number without its configuration",
-  "source": "SKILL.md",
-  "tier": 1,
-  "bitten": 4
- },
- {
-  "id": "a-non-production-run-writes-live-state",
-  "heading": "A non-production run writes live state",
   "source": "SKILL.md",
   "tier": 1,
   "bitten": 4
@@ -143,7 +143,7 @@
   "id": "a-fake-that-does-not-model-the-real-process-s-environment",
   "heading": "A fake that does not model the real process's environment",
   "source": "SKILL.md",
-  "tier": 1,
+  "tier": 2,
   "bitten": 3
  },
  {

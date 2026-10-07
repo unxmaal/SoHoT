@@ -29,7 +29,8 @@ INDEX = {
         "scanners": []},
     "a-number-without-its-configuration": {
         "instances": _i(88, 141, rules=(238,)),
-        "scanners": []},
+        "scanners": ["tests/test_gauntlet_scanners.py::test_numbers_without_their_configuration_are_an_inventory_that_only_shrinks",
+                     "tests/test_harness_assertions.py::test_no_unqualified_cost_ships"]},
     "a-part-s-cost-reported-as-the-whole-s": {
         "instances": _i(89),
         "scanners": ["tests/test_harness_assertions.py::test_no_unqualified_cost_ships"]},
@@ -65,23 +66,32 @@ INDEX = {
         "scanners": []},
     "a-shared-fixed-resource-in-tests": {
         "instances": _i(426, 505, rules=(384, 441)),
-        "scanners": []},
+        "scanners": ["tests/test_gauntlet_scanners.py::test_no_test_binds_or_writes_a_fixed_shared_resource"]},
     "a-fake-that-does-not-model-the-real-process-s-environment": {
         "instances": _i(399),
+        "tier": 2,
+        "tier_reason": "whether a fake matches the real process depends on how the code under test launches it; "
+                       "a scan sees only a proxy (a shebang, a skip marker)",
         "scanners": []},
     "a-transport-change-that-silently-changes-the-payload": {
         "instances": _i(489, rules=(426,)),
         "scanners": []},
     "the-empty-collection": {"instances": _i(118), "scanners": []},
-    "an-error-swallowed": {"instances": _i(477, 501), "scanners": []},
-    "success-assumed-exit-status-unchecked": {"instances": _i(328), "scanners": []},
+    "an-error-swallowed": {
+        "instances": _i(477, 501),
+        "scanners": ["tests/test_gauntlet_scanners.py::test_swallowed_errors_are_an_inventory_that_only_shrinks"]},
+    "success-assumed-exit-status-unchecked": {
+        "instances": _i(328),
+        "scanners": ["tests/test_gauntlet_scanners.py::test_no_shell_script_ignores_a_failure_it_could_see"]},
     "partial-failure-leaves-inconsistent-state": {"instances": _i(181), "scanners": []},
     "order-assumed-on-unordered-data": {"instances": _i(252), "scanners": []},
     "external-input-trusted": {"instances": _i(246, 363, 368, rules=(374,)), "scanners": []},
     "toctou-check-then-act": {"instances": _i(422), "scanners": []},
     "non-idempotent-retry": {"instances": _i(184, 496, rules=(432,)), "scanners": []},
     "resource-leak-on-the-error-path": {"instances": _i(444), "scanners": []},
-    "mutable-shared-or-default-state": {"instances": _i(303, 495, rules=(334, 431)), "scanners": []},
+    "mutable-shared-or-default-state": {
+        "instances": _i(303, 495, rules=(334, 431)),
+        "scanners": ["tests/test_gauntlet_scanners.py::test_no_function_has_a_mutable_default"]},
     "empty-versus-absent-conflated": {"instances": _i(195), "scanners": []},
     "regex-over-or-under-matching": {"instances": _i(49), "scanners": []},
     "flaky-by-time-or-randomness": {"instances": _i(349), "scanners": []},
@@ -96,7 +106,8 @@ INDEX = {
     "a-fact-recorded-without-its-context": {
         "instances": _i(266, 270, 281, 331, 341, 450, rules=(293, 356)), "scanners": []},
     "a-non-production-run-writes-live-state": {
-        "instances": _i(29, 188, 290, 455, rules=(414,)), "scanners": []},
+        "instances": _i(29, 188, 290, 455, 512, 513, rules=(414,)),
+        "scanners": ["tests/test_gauntlet_scanners.py::test_the_live_home_is_derived_only_in_harness_paths"]},
     "a-closed-table-fronting-an-open-set": {
         "instances": _i(213, 228, 245, 263, 298, 318, 379, 380, 387, rules=(379, 419)), "scanners": []},
     "state-is-whichever-row-came-last": {

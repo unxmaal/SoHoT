@@ -101,12 +101,18 @@ def _instance_problems(cid, entry, defects):
     return out
 
 
+def _tier(cid, entry, tiers):
+    return entry.get("tier", tiers.get(cid))
+
+
 def problems(index, pending, unclassified, snapshot, defects, repo):
     out = []
     tiers = {c["id"]: c["tier"] for c in snapshot}
     for cid, entry in index.items():
         if cid not in tiers:
             out.append(f"{cid}: not in the skill snapshot; propose it as PENDING instead")
+        if "tier" in entry and not str(entry.get("tier_reason", "")).strip():
+            out.append(f"{cid}: tier rebound here with no tier_reason")
         missing = [f for f in ("instances", "scanners") if f not in entry]
         for f in missing:
             out.append(f"{cid}: missing {f}")
@@ -140,7 +146,7 @@ def problems(index, pending, unclassified, snapshot, defects, repo):
 
 def unscanned(index, snapshot):
     tiers = {c["id"]: c["tier"] for c in snapshot}
-    return sorted(cid for cid, e in index.items() if tiers.get(cid) == 1 and not e.get("scanners"))
+    return sorted(cid for cid, e in index.items() if _tier(cid, e, tiers) == 1 and not e.get("scanners"))
 
 
 def bite_drift(index, snapshot):
@@ -176,7 +182,7 @@ def unbound_closures(messages, defect_numbers, index, pending, unclassified):
 def stats(index, pending, snapshot, defects):
     tiers = {c["id"]: c["tier"] for c in snapshot}
     per_tier, instances, rules, first, after = {}, {}, {}, {}, {}
-    entries = [(cid, e, tiers.get(cid)) for cid, e in index.items()]
+    entries = [(cid, e, _tier(cid, e, tiers)) for cid, e in index.items()]
     entries += [(cid, e, e.get("tier")) for cid, e in pending.items()]
     for cid, entry, tier in entries:
         per_tier[tier] = per_tier.get(tier, 0) + 1

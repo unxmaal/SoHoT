@@ -40,7 +40,7 @@ def test_a_control_needs_both_classes():
 
 
 @pytest.mark.slow
-def test_the_real_control_separates_on_ref_versus_clone():
+def test_the_real_control_separates_on_ref_versus_clone(tmp_path):
     """Regenerates clones through the live tts server and re-runs the control.
 
     Marked slow: needs the metrics group and port 8890. This is the assertion
@@ -48,7 +48,7 @@ def test_the_real_control_separates_on_ref_versus_clone():
     """
     from harness.audio import resolve_voice, speak
 
-    tmp = Path.home() / "localharness/runs/issue5-control"
+    tmp = tmp_path / "issue5-control"
     tmp.mkdir(parents=True, exist_ok=True)
     texts = ["The gateway is running and the weights are read from disk.",
              "Stop the containers before starting a download on this machine.",
