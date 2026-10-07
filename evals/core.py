@@ -353,6 +353,11 @@ METRIC_DIRECTION = {
     "decide_ece": "lower",
     # NEUTRAL: 1 when every field came with probabilities, 0 when one-hot.
     "calibrated": "neutral",
+    # NEUTRAL: 0 when the probabilities came from one score per call, not per option (#312).
+    "per_option": "neutral",
+    # agent, needle (#312): calls the engine withheld and the loop confirmed; its own peak.
+    "needle_withheld_calls": "neutral",
+    "needle_peak_mb": "lower",
     # agent (#474): completion decides; valid calls break ties; latency is reported beside.
     "agent_valid_call_rate": "higher",
     "agent_steps": "neutral",

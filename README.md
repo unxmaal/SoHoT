@@ -1344,6 +1344,8 @@ its lane: a repo id, base model, library or tag naming `strands-decider` goes
 to `decider:`, one naming `nimble` to `nimble:`. An adapter naming neither is
 reported under runners wanted rather than guessed at.
 
+`needle:needle3[,layers=N]` runs Cactus-Compute/needle3 through its own CLI (the card's platform binary and `needle3.cact` at a pinned revision, fetched into the HF cache on first use with `HF_HUB_OFFLINE=0`) in the decide lane, one call per field with a whole-call confidence rather than per-option probabilities, and in the agent lane over `--serve`.
+
     uv run python -m evals.run --modality decide --candidates \
       q3-4b,claude-code:claude-opus-5-5,nimble:bespokelabs/Bespoke-Nimble-9B,decider:StrandsAgents/strands-decider-2B-hobson-v21
 

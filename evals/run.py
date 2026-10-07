@@ -83,6 +83,8 @@ STT_OPTIONS = {"backend", "language"}
 from harness.serving import LLAMACPP_PREFIX  # noqa: E402
 
 LLAMACPP_KIND = LLAMACPP_PREFIX.rstrip(":")
+#: Cactus-Compute/needle3 through its own CLI; decide and agent lanes. #312.
+from harness.needle import LANES as NEEDLE_LANES, PREFIX as NEEDLE_KIND  # noqa: E402
 
 
 def kind_of(candidate: str) -> str:
@@ -106,6 +108,8 @@ def kind_of(candidate: str) -> str:
         return "chain"
     if head == LLAMACPP_KIND:
         return LLAMACPP_KIND
+    if head == NEEDLE_KIND:
+        return NEEDLE_KIND
     return "gateway"
 
 
@@ -127,6 +131,8 @@ def modality_of(candidate: str) -> str | None:
         return None
     if kind == "chain":
         return "image"
+    if kind == NEEDLE_KIND:
+        return "decide"
     if kind == "process":
         engine = engine_for(candidate)
         return engine.modality if engine else None
@@ -325,6 +331,12 @@ def _agent_runner(candidate: str, gateway: str):
         if not model:
             raise SystemExit("claude-code needs a model, e.g. claude-code:claude-opus-5-5")
         return ClaudeAgentRunner(model)
+    if kind == NEEDLE_KIND:
+        from evals.runners.needle import needle_agent_runner
+        try:
+            return needle_agent_runner(candidate)
+        except (ValueError, RunnerError) as exc:
+            raise SystemExit(f"{candidate}: {exc}") from None
     if kind not in ("gateway", LLAMACPP_KIND):
         raise SystemExit(f"{candidate} cannot drive a tool loop; the agent lane "
                          f"takes a text candidate or claude-code:<model>")
@@ -355,6 +367,14 @@ def _build_runner(candidate: str, gateway: str, outdir: Path | None,
             raise SystemExit(str(exc)) from None
         return CompletionRunner(where.base, candidate.partition(",")[0].strip(),
                                 sampling=where.sampling or None, model=where.model)
+    if kind == NEEDLE_KIND:
+        from evals.runners.needle import NeedleDecideRunner
+        if outdir is None:
+            raise SystemExit(f"{candidate} writes decide artifacts; pass --out")
+        try:
+            return NeedleDecideRunner(candidate, outdir)
+        except ValueError as exc:
+            raise SystemExit(f"{candidate}: {exc}") from None
     if kind == "tts":
         return _speech_runner(candidate, outdir)
     if kind == "stt":
@@ -468,6 +488,8 @@ def method_of(candidate: str) -> str:
 def cases_for(candidate: str, cases: list[Case]) -> list[Case]:
     """The cases this candidate can actually run."""
     modality = modality_of(candidate)
+    if kind_of(candidate) == NEEDLE_KIND:
+        return [c for c in cases if c.modality in NEEDLE_LANES]
     if modality is None:
         return [c for c in cases
                 if c.modality in TEXT_MODALITIES | AGENT_MODALITIES]
