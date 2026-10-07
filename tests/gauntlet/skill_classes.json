@@ -1,16 +1,37 @@
 [
  {
+  "id": "each-half-verified-against-its-own-spec-the-seam-against-nothing",
+  "heading": "Each half verified against its own spec, the seam against nothing",
+  "source": "SKILL.md",
+  "tier": 2,
+  "bitten": 16
+ },
+ {
   "id": "a-fact-about-the-harness-recorded-as-a-verdict-on-the-subject",
   "heading": "A fact about the harness recorded as a verdict on the subject",
   "source": "SKILL.md",
   "tier": 2,
-  "bitten": 10
+  "bitten": 14
+ },
+ {
+  "id": "one-question-two-answers",
+  "heading": "One question, two answers",
+  "source": "SKILL.md",
+  "tier": 1,
+  "bitten": 13
  },
  {
   "id": "a-closed-table-fronting-an-open-set",
   "heading": "A closed table fronting an open set",
   "source": "SKILL.md",
   "tier": 2,
+  "bitten": 9
+ },
+ {
+  "id": "a-platform-primitive-assumed-universal",
+  "heading": "A platform primitive assumed universal",
+  "source": "SKILL.md",
+  "tier": 1,
   "bitten": 9
  },
  {
@@ -28,25 +49,11 @@
   "bitten": 7
  },
  {
-  "id": "one-question-two-answers",
-  "heading": "One question, two answers",
-  "source": "SKILL.md",
-  "tier": 1,
-  "bitten": 6
- },
- {
   "id": "a-fact-recorded-without-its-context",
   "heading": "A fact recorded without its context",
   "source": "SKILL.md",
   "tier": 2,
   "bitten": 6
- },
- {
-  "id": "a-platform-primitive-assumed-universal",
-  "heading": "A platform primitive assumed universal",
-  "source": "SKILL.md",
-  "tier": 1,
-  "bitten": 5
  },
  {
   "id": "state-is-whichever-row-came-last",
@@ -63,31 +70,31 @@
   "bitten": 5
  },
  {
-  "id": "each-half-verified-against-its-own-spec-the-seam-against-nothing",
-  "heading": "Each half verified against its own spec, the seam against nothing",
-  "source": "SKILL.md",
-  "tier": 2,
-  "bitten": 4
- },
- {
   "id": "a-metric-quoted-without-a-negative-control",
   "heading": "A metric quoted without a negative control",
   "source": "SKILL.md",
   "tier": 2,
-  "bitten": 4
- },
- {
-  "id": "a-number-without-its-configuration",
-  "heading": "A number without its configuration",
-  "source": "SKILL.md",
-  "tier": 1,
-  "bitten": 4
+  "bitten": 5
  },
  {
   "id": "a-consumer-limits-before-it-filters-for-what-it-can-act-on",
   "heading": "A consumer limits before it filters for what it can act on",
   "source": "SKILL.md",
   "tier": 2,
+  "bitten": 5
+ },
+ {
+  "id": "identity-by-name-not-by-content",
+  "heading": "Identity by name, not by content",
+  "source": "SKILL.md",
+  "tier": 2,
+  "bitten": 5
+ },
+ {
+  "id": "a-number-without-its-configuration",
+  "heading": "A number without its configuration",
+  "source": "SKILL.md",
+  "tier": 1,
   "bitten": 4
  },
  {
@@ -105,17 +112,24 @@
   "bitten": 4
  },
  {
-  "id": "a-part-s-cost-reported-as-the-whole-s",
-  "heading": "A part's cost reported as the whole's",
-  "source": "SKILL.md",
-  "tier": 1,
-  "bitten": 3
- },
- {
   "id": "one-column-two-meanings",
   "heading": "One column, two meanings",
   "source": "SKILL.md",
   "tier": 2,
+  "bitten": 4
+ },
+ {
+  "id": "a-confounded-experiment-the-label-is-not-the-run",
+  "heading": "A confounded experiment: the label is not the run",
+  "source": "SKILL.md",
+  "tier": 2,
+  "bitten": 4
+ },
+ {
+  "id": "a-part-s-cost-reported-as-the-whole-s",
+  "heading": "A part's cost reported as the whole's",
+  "source": "SKILL.md",
+  "tier": 1,
   "bitten": 3
  },
  {
@@ -154,13 +168,6 @@
   "bitten": 2
  },
  {
-  "id": "a-confounded-experiment-the-label-is-not-the-run",
-  "heading": "A confounded experiment: the label is not the run",
-  "source": "SKILL.md",
-  "tier": 2,
-  "bitten": 2
- },
- {
   "id": "external-state-with-no-assertion-on-it",
   "heading": "External state with no assertion on it",
   "source": "SKILL.md",
@@ -173,13 +180,6 @@
   "source": "SKILL.md",
   "tier": 3,
   "bitten": 2
- },
- {
-  "id": "identity-by-name-not-by-content",
-  "heading": "Identity by name, not by content",
-  "source": "SKILL.md",
-  "tier": 2,
-  "bitten": 1
  },
  {
   "id": "a-failure-mode-inferred-not-observed",
