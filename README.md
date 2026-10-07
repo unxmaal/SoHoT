@@ -1338,7 +1338,8 @@ download, since their runners load the repo:
   never trigger this, because their runners load the repo. Until it is linked,
   a GGUF-only repo id still routes to llama-server by the stem it would be
   linked under, never to mlx_lm.server, which cannot load a GGUF or enforce
-  the decide lane's schema.
+  the decide lane's schema. That holds when `evals.run` is given a `--gateway`
+  too (it always is, by default), the same as for a `llamacpp:` spec.
 - **Screen and measure** spell it `llamacpp:<file stem>`, and the run sends it
   straight to the eval server at `127.0.0.1:8082` (`scripts/serve-eval.sh`).
   LiteLLM would refuse a name it has no alias for. A measure pits it against
