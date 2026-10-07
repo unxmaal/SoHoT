@@ -174,6 +174,8 @@ INDEX = {
                 "a one-time migration lifting the newest recorded value before the column is dropped",
             "harness/memory_store/migrations/prose.py:size_sources":
                 "a one-time migration reading the newest inspect size, which is a measurement, not a state",
+            "harness/reverify.py:judge":
+                "the run a queued job stored; a retried job's newest run is its latest attempt (#526)",
         },
         "instances": _i(225, 253, 254, 393, 399, rules=(382, 389)), "scanners": []},
     "a-proxy-checked-in-place-of-the-property": {
