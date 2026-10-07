@@ -438,35 +438,56 @@ def summaries(conn, *, tier: str = MEASURE, lane: str = ""):
             yield run, summarize(got), got
 
 
+def _unspecified_keys(receipts) -> set[str]:
+    """Receipt keys some row ran under that its receipt's specs map does not name."""
+    out = set()
+    for data in receipts:
+        specs = data.get("specs") or {}
+        for r in data.get("rows") or []:
+            if isinstance(r, dict) and r.get("candidate") and r["candidate"] not in specs:
+                out.add(str(r["candidate"]))
+    return out
+
+
+def _seed_typed(conn, keys: set[str]) -> None:
+    """A typed default, of any platform, that the imported rows name by key. #516."""
+    from harness import candidates as C
+    from harness import screen, winners
+    for lane, names in sorted(winners.typed_anywhere().items()) if keys else ():
+        for name in names:
+            try:
+                spec = screen.candidate_for(lane, name, conn=conn) or name
+                if C.key_of(spec) in keys:
+                    C.ensure(conn, spec, lane=lane)
+            except Exception:  # noqa: BLE001
+                pass
+
+
 def backfill(conn, root=None) -> dict:
     """Import every runs/**/results.json once; idempotent. Reads files only.
 
     Returns counts, and lists what could not be recorded rather than
     guessing at it.
     """
-    from harness import candidates as C
     from harness import memory_store as ms
-    from harness import paths, screen, winners
+    from harness import paths
 
     counts = {"runs": 0, "results": 0, "unlinked_results": 0,
               "not_eval_receipts": [], "unreadable": [], "no_receipt": [],
               "verdicts_linked": 0}
     root = Path(root) if root is not None else paths.runs()
     found = sorted(root.rglob("results.json")) if root.is_dir() else []
-    # What a lane serves often ran before receipts carried a specs map.
-    for lane, served in sorted(winners.typed().items()) if found else ():
-        try:
-            C.ensure(conn, screen.candidate_for(lane, served, conn=conn)
-                     or served, lane=lane)
-        except Exception:  # noqa: BLE001
-            pass
+    loaded = []
     for f in found:
         try:
             data = json.loads(f.read_text(encoding="utf-8"))
         except (OSError, ValueError):
             counts["unreadable"].append(str(f.parent.relative_to(root)))
             continue
-        run_id = record(conn, f.parent, data if isinstance(data, dict) else {})
+        loaded.append((f, data if isinstance(data, dict) else {}))
+    _seed_typed(conn, _unspecified_keys(data for _, data in loaded))
+    for f, data in loaded:
+        run_id = record(conn, f.parent, data)
         if run_id is None:
             counts["not_eval_receipts"].append(str(f.parent.relative_to(root)))
             continue

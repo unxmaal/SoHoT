@@ -15,12 +15,6 @@ table candidates [('id', 'INTEGER', 0, None, 1), ('proposal_id', 'INTEGER', 0, N
   (6, None, 'kokoro', 'kokoro', 'tts', 1788960000.0)
   (7, 12, 'mlx:org-l/svg-thing', 'svg-thing', 'svg', 1788960000.0)
   (8, None, 'local-large', 'local-large', 'svg', 1788960000.0)
-  (9, None, 'q3-4b', 'q3-4b', 'agent', '<now>')
-  (10, None, 'mflux:flux2-klein-4b', 'mflux/flux2-klein-4b-q8', 'image', '<now>')
-  (11, None, 'acestep:acestep-v15-turbo', 'acestep/acestep-v15-turbo', 'music', '<now>')
-  (12, None, 'stt:mlx-community/parakeet-tdt-0.6b-v2', 'parakeet-tdt-0.6b-v2', 'stt', '<now>')
-  (13, None, 'tts:mlx-community/Kokoro-82M-bf16', 'Kokoro-82M-bf16/bm_george', 'tts', '<now>')
-  (14, None, 'h3', 'h3/minimax-h3', 'video', '<now>')
 table downloads [('id', 'INTEGER', 0, None, 1), ('proposal_id', 'INTEGER', 0, None, 0), ('repo', 'TEXT', 1, "''", 0), ('kind', 'TEXT', 1, None, 0), ('path', 'TEXT', 1, None, 0), ('file', 'TEXT', 1, "''", 0), ('origin', 'TEXT', 1, "''", 0), ('source', 'TEXT', 1, "''", 0), ('bytes', 'INTEGER', 1, '0', 0), ('files', 'INTEGER', 1, '0', 0), ('complete', 'INTEGER', 1, '0', 0), ('requires', 'TEXT', 1, "'[]'", 0), ('started_at', 'REAL', 0, None, 0), ('finished_at', 'REAL', 0, None, 0), ('removed_at', 'REAL', 0, None, 0), ('removed_by', 'TEXT', 1, "''", 0), ('removal_verdict_id', 'INTEGER', 0, None, 0), ('machine_id', 'INTEGER', 0, None, 0), ('ctx', 'INTEGER', 1, '0', 0), ('ctx_trained', 'INTEGER', 1, '0', 0), ('kv_bytes_token', 'INTEGER', 1, '0', 0), ('ctx_slots', 'INTEGER', 1, '0', 0), ('ctx_why', 'TEXT', 1, "''", 0), ('ctx_at', 'REAL', 0, None, 0), ('kv_cap_bytes', 'INTEGER', 1, '0', 0), ('coresident_bytes', 'INTEGER', 1, '0', 0)]
   index ix_downloads_path unique=0 ['path']
   index ix_downloads_repo unique=0 ['repo']

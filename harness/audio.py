@@ -27,17 +27,19 @@ DEFAULT_BASE_URL = "http://127.0.0.1:8890/v1"
 #: transcribes with faster-whisper, and a result recording parakeet would name
 #: a model that never ran. Kokoro is the same weights either side, in a
 #: different runtime, so it is named differently for the same reason.
-if sys.platform == "win32":
-    DEFAULT_TTS_MODEL = "kokoro-onnx/Kokoro-82M"
-else:
-    DEFAULT_TTS_MODEL = "mlx-community/Kokoro-82M-bf16"
+#: Every platform's speech default, so a migration can read history by any of them. #516.
+SPEECH_DEFAULTS = {
+    "tts": {"win32": "kokoro-onnx/Kokoro-82M", "other": "mlx-community/Kokoro-82M-bf16"},
+    "stt": {"win32": "Systran/faster-whisper-base.en",
+            "other": "mlx-community/parakeet-tdt-0.6b-v2"}}
+_HERE = "win32" if sys.platform == "win32" else "other"
+DEFAULT_TTS_MODEL = SPEECH_DEFAULTS["tts"][_HERE]
 # A HuggingFace repo id, never "whisper-1": mlx_audio rejects the OpenAI model
 # name outright. This is why port 8890 matters to voicemode's provider probe.
 if sys.platform == "win32":
-    DEFAULT_STT_MODEL = os.environ.get(
-        "WHISPER_MODEL", "Systran/faster-whisper-base.en")
+    DEFAULT_STT_MODEL = os.environ.get("WHISPER_MODEL", SPEECH_DEFAULTS["stt"]["win32"])
 else:
-    DEFAULT_STT_MODEL = "mlx-community/parakeet-tdt-0.6b-v2"
+    DEFAULT_STT_MODEL = SPEECH_DEFAULTS["stt"]["other"]
 # Parakeet is English-only and there is no way around that: it hears French as
 # English words that rhyme. Whisper is the multilingual ear, and it has to be
 # called in-process because mlx_audio's server cannot load it -- the mlx repos

@@ -234,6 +234,24 @@ def test_the_backfill_links_a_verdict_to_the_run_it_names(conn):
     assert not ms.dangling_receipts(conn, exists=lambda p: False)
 
 
+@pytest.mark.parametrize("here", ["win32", "other"])
+def test_the_backfill_links_a_typed_default_by_the_key_its_rows_name(conn, monkeypatch,
+                                                                      here):
+    """The Mac's stt default ran with no specs map; the migrating platform's default is not used. #516."""
+    from harness import audio
+    for lane, name in (("tts", "DEFAULT_TTS_MODEL"), ("stt", "DEFAULT_STT_MODEL")):
+        monkeypatch.setattr(audio, name, audio.SPEECH_DEFAULTS[lane][here])
+    d = paths.runs() / "20261001-000000-000-0000-stt"
+    d.mkdir(parents=True)
+    (d / "results.json").write_text(json.dumps({
+        "receipt": {"modality": "stt", "tier": "measure"},
+        "rows": [{"case_id": "c", "candidate": "parakeet-tdt-0.6b-v2", "passed": True}]}),
+        encoding="utf-8")
+    assert runs.backfill(conn)["unlinked_results"] == 0
+    got = {r["spec"] for r in conn.execute("SELECT spec FROM candidates")}
+    assert got == {"stt:mlx-community/parakeet-tdt-0.6b-v2"}
+
+
 def test_a_candidate_created_later_claims_its_unlinked_rows(conn):
     runs.record(conn, paths.runs() / "r", {"receipt": {"modality": "svg"},
                 "rows": [{"case_id": "c", "candidate": "late-alias",
