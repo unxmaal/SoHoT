@@ -68,7 +68,6 @@
  "state-is-whichever-row-came-last": [
   "harness/commands/discover.py:_judge_neighbors",
   "harness/fetching.py:queued",
-  "harness/gateway_switch.py:_old_spec",
   "harness/memory_store/proposals.py:judgeable",
   "harness/publish.py:_accelerator_name"
  ]

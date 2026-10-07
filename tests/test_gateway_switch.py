@@ -304,6 +304,7 @@ def test_a_gateway_that_restarts_but_never_serves_the_new_alias_is_a_failure(gw,
     assert "sohot-code" in failed[0]["reason"]
 
 
+@pytest.mark.gauntlet("state-is-whichever-row-came-last", site="harness/gateway_switch.py:_old_spec")
 def test_a_failed_switch_leaves_the_last_good_one_current_and_is_retried(gw, config):
     gateway.write_served(config)
     adopt_for("code", f"llamacpp:{STEM}")

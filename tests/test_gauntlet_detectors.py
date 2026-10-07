@@ -255,7 +255,7 @@ def test_no_binding_or_waiver_names_a_site_no_detector_finds(tree_ledger):
 
 
 # Unbound hits pinned when the detectors landed; lower it as the backlog is bound.
-BACKLOG_PIN = 65
+BACKLOG_PIN = 64
 
 
 def test_every_detector_s_hits_are_reported_per_class(tree_ledger):
