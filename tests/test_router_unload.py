@@ -144,7 +144,7 @@ def test_the_loop_ends_by_settling_the_router(monkeypatch):
     settled = []
     monkeypatch.setattr(router, "settle", lambda why, **k: settled.append(why))
 
-    def spend(a, rc):
+    def spend(a, rc, failed=None):
         raise RuntimeError("the measure died")
     monkeypatch.setattr(loop_cmd, "_loop_spend", spend)
     with pytest.raises(RuntimeError):

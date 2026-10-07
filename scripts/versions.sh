@@ -55,6 +55,9 @@ TORCH_CUDA_PIN="torch==2.6.0+cu124"
 # wheel and the +cu124 build does not exist at all. Same MINOR version as the
 # CUDA pin so the two machines run the same diffusers against the same API.
 TORCH_MPS_PIN="torch==2.6.0"
+# torchvision 0.21 is the one built against torch 2.6; transformers image processors need it. #601.
+TORCHVISION_CUDA_PIN="torchvision==0.21.0+cu124"
+TORCHVISION_MPS_PIN="torchvision==0.21.0"
 DIFFUSERS_PIN="diffusers==0.40.0"
 TRANSFORMERS_PIN="transformers==5.17.0"
 ACCELERATE_PIN="accelerate==1.15.0"

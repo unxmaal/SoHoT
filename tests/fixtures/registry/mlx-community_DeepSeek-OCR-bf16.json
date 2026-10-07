@@ -1,0 +1,114 @@
+{
+ "id": "mlx-community/DeepSeek-OCR-bf16",
+ "pipeline_tag": "image-text-to-text",
+ "tags": [
+  "transformers",
+  "safetensors",
+  "deepseekocr",
+  "feature-extraction",
+  "deepseek",
+  "vision-language",
+  "ocr",
+  "custom_code",
+  "mlx",
+  "image-text-to-text",
+  "conversational",
+  "multilingual",
+  "license:mit",
+  "region:us"
+ ],
+ "library_name": "transformers",
+ "cardData": {
+  "pipeline_tag": "image-text-to-text",
+  "language": [
+   "multilingual"
+  ],
+  "tags": [
+   "deepseek",
+   "vision-language",
+   "ocr",
+   "custom_code",
+   "mlx"
+  ],
+  "license": "mit",
+  "library_name": "transformers"
+ },
+ "siblings": [
+  {
+   "rfilename": ".gitattributes",
+   "size": 1519
+  },
+  {
+   "rfilename": "README.md",
+   "size": 653
+  },
+  {
+   "rfilename": "chat_template.jinja",
+   "size": 191
+  },
+  {
+   "rfilename": "config.json",
+   "size": 3193
+  },
+  {
+   "rfilename": "configuration_deepseek_v2.py",
+   "size": 10646
+  },
+  {
+   "rfilename": "conversation.py",
+   "size": 9253
+  },
+  {
+   "rfilename": "deepencoder.py",
+   "size": 38008
+  },
+  {
+   "rfilename": "model-00001-of-00002.safetensors",
+   "size": 5240461970
+  },
+  {
+   "rfilename": "model-00002-of-00002.safetensors",
+   "size": 1431828399
+  },
+  {
+   "rfilename": "model.safetensors.index.json",
+   "size": 60282
+  },
+  {
+   "rfilename": "modeling_deepseekocr.py",
+   "size": 40133
+  },
+  {
+   "rfilename": "modeling_deepseekv2.py",
+   "size": 82224
+  },
+  {
+   "rfilename": "processor_config.json",
+   "size": 460
+  },
+  {
+   "rfilename": "special_tokens_map.json",
+   "size": 801
+  },
+  {
+   "rfilename": "tokenizer.json",
+   "size": 9979544
+  },
+  {
+   "rfilename": "tokenizer_config.json",
+   "size": 577
+  }
+ ],
+ "lastModified": "2026-01-28T10:58:21.000Z",
+ "downloads": 171,
+ "config": {
+  "architectures": [
+   "DeepseekOCRForCausalLM"
+  ],
+  "model_type": "deepseekocr",
+  "auto_map": {
+   "AutoConfig": "modeling_deepseekocr.DeepseekOCRConfig",
+   "AutoModel": "modeling_deepseekocr.DeepseekOCRForCausalLM"
+  }
+ }
+}

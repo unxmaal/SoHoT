@@ -131,6 +131,7 @@ def _report_loop(a) -> int:
 
     run = bool(getattr(a, "run", False))
     rc = 0
+    failed: list[str] = []
     for label, attr, needs_run in LOOP_STEPS:
         if needs_run and not run:
             print(f"\n=== {label} (skipped; --run) ===")
@@ -148,7 +149,7 @@ def _report_loop(a) -> int:
             # had run. Two tiers in one command, reading different sources.
             extra = {"from_store": True, "top": LOOP_INSPECT}
         sub = _ap.Namespace(**{**vars(a), **flags, **extra, "loop": False})
-        rc = discover_cmd.cmd_discover(sub) or rc
+        rc = _step(label, discover_cmd.cmd_discover(sub), failed) or rc
 
     want = (getattr(a, "lane", "") or "").strip().lower()
     store = ms.connect()
@@ -192,15 +193,30 @@ def _report_loop(a) -> int:
     if not run:
         print("\ninspect, fetch, screen and measure not run. Add --run to "
               "spend the disk and the minutes.")
-        return rc
-    return _spend_and_settle(a, rc)
+        return _why_nonzero(rc, failed)
+    return _why_nonzero(_spend_and_settle(a, rc, failed), failed)
 
 
-def _spend_and_settle(a, rc: int) -> int:
+def _step(label: str, got, failed: list) -> int:
+    """A step's exit status, with its label noted when it is not 0. #601."""
+    if got:
+        failed.append(label)
+    return got or 0
+
+
+def _why_nonzero(rc: int, failed: list) -> int:
+    """Say which steps made the loop exit nonzero, after the publish line hides them. #601."""
+    if rc:
+        from harness.commands.common import err
+        err(f"\nloop exit {rc}: {', '.join(failed) or 'a step'} reported a failure (see above)")
+    return rc
+
+
+def _spend_and_settle(a, rc: int, failed: list | None = None) -> int:
     """_loop_spend, then leave only lane defaults resident in the router. #444."""
     from harness import router
     try:
-        rc = _loop_spend(a, rc)
+        rc = _loop_spend(a, rc, failed if failed is not None else [])
     finally:
         router.settle("the discovery loop is done")
     _publish_if_enabled()
@@ -222,7 +238,7 @@ def _publish_if_enabled() -> str:
     return path
 
 
-def _loop_spend(a, rc: int) -> int:
+def _loop_spend(a, rc: int, failed: list | None = None) -> int:
     """Fetch, screen, measure and adopt, ONE CANDIDATE AT A TIME.
 
     Serial by construction, not by accident. An eval sweeping aliases took this
@@ -237,6 +253,7 @@ def _loop_spend(a, rc: int) -> int:
     from harness import memory_store as ms
 
     from harness import disk
+    failed = failed if failed is not None else []
 
     print("\n=== retests ===")
     _reopen_retests()
@@ -262,12 +279,12 @@ def _loop_spend(a, rc: int) -> int:
     else:
         sub = _ap.Namespace(**{**vars(a), "loop": False, "run": True,
                                "limit": top, "json": False})
-        rc = screen_cmd.cmd_fetch(sub) or rc
+        rc = _step("fetch", screen_cmd.cmd_fetch(sub), failed) or rc
 
     print(f"\n=== screen ===")
     sub = _ap.Namespace(**{**vars(a), "loop": False, "screen": True,
                            "run": True, "limit": top, "json": False})
-    rc = discover_cmd.cmd_discover(sub) or rc
+    rc = _step("screen", discover_cmd.cmd_discover(sub), failed) or rc
 
     print(f"\n=== measure and adopt ===")
     store = ms.connect()
@@ -280,7 +297,8 @@ def _loop_spend(a, rc: int) -> int:
               "A screen that rejects everything is the tier doing its job.")
         return rc
     for row in fresh:
-        rc = measure_cmd._measure_and_adopt(a, row) or rc
+        rc = _step(f"measure {row.get('name', '')}".strip(),
+                   measure_cmd._measure_and_adopt(a, row), failed) or rc
     return rc
 
 

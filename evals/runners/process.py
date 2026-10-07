@@ -19,6 +19,9 @@ from harness.engines import Engine
 from evals.core import Case
 from evals.runners.base import BaseRunner, RunnerError
 
+#: Lines of a failed child's stderr kept beside its artifact.
+STDERR_TAIL = 40
+
 
 class ProcessRunner(BaseRunner):
     def __init__(self, engine: Engine, outdir: str | Path,
@@ -69,6 +72,10 @@ class ProcessRunner(BaseRunner):
         if not r.ok:
             detail = f"exit {r.returncode}"
             tail = (r.stderr or "").strip().splitlines()
+            if tail:
+                # The why behind a one-line detail, kept in the run dir. #601.
+                kept = self.outdir / self.artifact(case, ".stderr.txt")
+                kept.write_text("\n".join(tail[-STDERR_TAIL:]) + "\n", encoding="utf-8")
             if tail:
                 detail += f": {tail[-1]}"
             raise RunnerError(detail, peak_kb=r.peak_kb)

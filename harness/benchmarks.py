@@ -196,7 +196,8 @@ def sweep(conn, lanes=None, get=None, now: float | None = None,
     get = get or _get_json
     now = time.time() if now is None else float(now)
     out: list[Benchmark] = []
-    for lane in lanes or sorted(LANE_QUERIES):
+    # A lane with no queries has no benchmark source to read, which is not a failed read. #601.
+    for lane in [x for x in (lanes or sorted(LANE_QUERIES)) if x in LANE_QUERIES]:
         for registry, read in (("huggingface", _read_hf), ("github", _read_gh)):
             name = f"{KIND}:{registry}:{lane}"
             if not _due(conn, name, now, force):

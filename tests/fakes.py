@@ -63,6 +63,12 @@ WHY = {
     "PaddlePaddle/PaddleOCR-VL-1.6":
         "image-text-to-text tagged ocr: filed under code until #387, laneless "
         "until the ocr lane, and a recurring candidate it was built for (#562)",
+    "mlx-community/DeepSeek-OCR-bf16":
+        "an MLX conversion the ocr loop downloaded although no hf-task runner loads MLX (#601)",
+    "mlx-community/DeepSeek-OCR-2-bf16":
+        "the second MLX OCR conversion job 0034 downloaded (#601)",
+    "mlx-community/PaddleOCR-VL-1.5-bf16":
+        "an MLX conversion of a model type transformers ships: only the mlx tag refuses it (#601)",
     "baidu/Unlimited-OCR":
         "an ocr card that ships its own modelling code, which hf-task refuses "
         "to execute, so it is a runner wanted rather than a broken model (#562)",
