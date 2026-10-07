@@ -89,6 +89,9 @@ def cmd_memory(a) -> int:
 
 def cmd_disk(a) -> int:
     """What the weights cache holds and what may go. #370, #373."""
+    if getattr(a, "action", "") == "speed":
+        from harness.commands.volume import cmd_disk_speed
+        return cmd_disk_speed(a)
     import time as _time
 
     from harness import disk, memory_store as ms

@@ -43,6 +43,7 @@ from harness.commands import reverify as reverify_cmd
 from harness.commands import screen as screen_cmd
 from harness.commands import store as store_cmd
 from harness.commands import usage as usage_cmd
+from harness.commands import volume as volume_cmd
 
 # What scripts, tests and other modules take from harness.cli, from where it now lives.
 from harness.commands.common import say  # noqa: F401
@@ -446,7 +447,18 @@ def build_parser() -> argparse.ArgumentParser:
     dsk.add_argument("--record", action="store_true",
                      help="give every path with no download row a row, and "
                           "stamp rows whose path is gone as removed")
+    dsk.add_argument("action", nargs="?", default="", choices=("", "speed"),
+                     help="speed: uncached sequential read of a volume, stored (#612)")
+    dsk.add_argument("path", nargs="?", default="",
+                     help="with speed, a directory on the volume (default: the models volume)")
+    dsk.add_argument("--mib", type=int, default=2560, help="with speed, how much to write and read")
     dsk.set_defaults(func=store_cmd.cmd_disk)
+    vol = sub.add_parser("volume", help="stop and start everything that reads the "
+                         "models volume, to swap its disk safely (#612)")
+    vol.add_argument("action", choices=("stop", "start", "status"))
+    vol.add_argument("--path", default="", help="the volume, or a path on it "
+                     "(default: the volume holding HF_HOME)")
+    vol.set_defaults(func=volume_cmd.cmd_volume)
     mem = sub.add_parser("memory", help="measure how much memory a run can "
                          "take before macOS starts pushing back")
     mem.add_argument("action", choices=("ramp", "show"))
