@@ -1,7 +1,6 @@
 """The split of cli.py and memory_store.py keeps every import, every patch and every migration. #484."""
 import importlib
 import os
-import re
 import time
 from pathlib import Path
 
@@ -101,21 +100,48 @@ def test_the_budget_sees_a_long_module(tmp_path):
 # The migration chain: every golden store migrates to exactly what it did before the split.
 
 MIGRATED = ls.REPO / "tests" / "golden" / "migrated"
-_FLOAT = re.compile(r"(?<![\w.])\d{9,}\.\d+|(?<![\w.])\d{10}(?![\w.])")
+
+
+def dump(conn, started: float) -> str:
+    """Every table's columns, indexes and rows, rendered by Python so no SQLite version shows."""
+    out = []
+    tables = [r[0] for r in conn.execute(
+        "SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name")]
+    for t in tables:
+        cols = [tuple(r)[1:] for r in conn.execute(f'PRAGMA table_info("{t}")')]
+        out.append(f"table {t} {cols!r}")
+        for ix in sorted(tuple(r)[1:3] for r in conn.execute(f'PRAGMA index_list("{t}")')):
+            on = [r[2] for r in conn.execute(f'PRAGMA index_info("{ix[0]}")')]
+            out.append(f"  index {ix[0]} unique={ix[1]} {on!r}")
+        for row in conn.execute(f'SELECT * FROM "{t}" ORDER BY rowid'):
+            out.append("  " + repr(tuple("<now>" if isinstance(v, float) and v >= started
+                                          else v for v in row)))
+    return "\n".join(out)
 
 
 def migrated_dump(version: int, tmp_path: Path, monkeypatch) -> str:
-    """The golden at `version` migrated to head, as SQL with this run's clock and paths masked."""
+    """The golden at `version` migrated to head, with this run's clock, paths and zone masked."""
     import test_golden_stores as tg
+    if not hasattr(time, "tzset") and time.localtime(0).tm_gmtoff:
+        pytest.skip("legacy JSON stamps are local time, and this platform cannot pin the zone")
     db, home = tg.open_golden(version, tmp_path, monkeypatch)
     started = time.time() - 1
     from harness import memory_store as ms
-    conn = ms.connect(db)
+    zone = os.environ.get("TZ")
+    os.environ["TZ"] = "UTC"
+    getattr(time, "tzset", lambda: None)()
     try:
-        text = "\n".join(conn.iterdump())
+        conn = ms.connect(db)
+        try:
+            text = dump(conn, started)
+        finally:
+            conn.close()
     finally:
-        conn.close()
-    text = _FLOAT.sub(lambda m: "<now>" if float(m.group()) >= started else m.group(), text)
+        if zone is None:
+            os.environ.pop("TZ", None)
+        else:
+            os.environ["TZ"] = zone
+        getattr(time, "tzset", lambda: None)()
     text = text.replace("\\\\", "/").replace("\\", "/")
     for path, mask in ((os.environ["HF_HOME"], "<hf>"), (tmp_path, "<tmp>")):
         for form in (Path(path).resolve(), path):
