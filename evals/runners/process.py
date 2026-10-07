@@ -15,6 +15,7 @@ from pathlib import Path
 
 from harness import proc, reasons
 from harness.engines import Engine
+from harness.hf_task import runtime_path
 
 from evals.core import Case
 from evals.runners.base import BaseRunner, RunnerError
@@ -45,6 +46,8 @@ class ProcessRunner(BaseRunner):
             case, self.engine.output_suffix)).resolve()
         if out.exists():
             out.unlink()
+        Path(runtime_path(out)).unlink(missing_ok=True)
+        self.last_runtime = {}
 
         try:
             # The material a decide engine scores travels with the params. #423.
@@ -77,7 +80,19 @@ class ProcessRunner(BaseRunner):
                 kept = self.outdir / self.artifact(case, ".stderr.txt")
                 kept.write_text("\n".join(tail[-STDERR_TAIL:]) + "\n", encoding="utf-8")
             if tail:
-                detail += f": {tail[-1]}"
+                # An MPS abort is followed by interpreter warnings; the abort is the why. #604.
+                detail += f": {reasons.backend_abort(tail) or tail[-1]}"
             raise RunnerError(detail, peak_kb=r.peak_kb)
 
+        self.last_runtime = _runtime_of(out)
         return out, r.peak_kb
+
+
+def _runtime_of(out: Path) -> dict:
+    """The device and attention an hf-task child says answered, or {}. #604."""
+    import json
+    try:
+        got = json.loads(Path(runtime_path(out)).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return {k: str(got[k]) for k in ("device", "attn") if got.get(k)}

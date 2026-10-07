@@ -1676,7 +1676,15 @@ safetensors, pillow, sentencepiece at the pins in `scripts/versions.sh`) on
 first use and rebuilds it when a pin moves. A package that venv lacks exits 4
 with `hf-task venv lacks a package: ...` and is queued as a harness fault,
 never recorded broken; a failed run keeps the last 40 lines of the runner's
-stderr beside its artifact as `<artifact>.stderr.txt`. An MLX conversion
+stderr beside its artifact as `<artifact>.stderr.txt`. An abort inside the
+MPS backend (`LLVM ERROR` on an `mps.*` op, an MPSGraph assertion) is a
+runtime fault, declined until the runtime moves rather than broken: hf-ocr
+runs each attempt as its own process and retries such an abort with
+`attn_implementation="eager"`, then on the CPU (PaddleOCR-VL-1.6's
+grouped-query attention aborts torch 2.6.0's MPS matmul and answers with eager
+attention). The device and attention that answered are written beside the
+artifact as `<artifact>.runtime.json` and land in the receipt's `devices`,
+which `comparable()` refuses to mix. An MLX conversion
 (card tagged `mlx`, such as mlx-community/DeepSeek-OCR-bf16) has no hf-task
 runner and is refused before download. It never passes `trust_remote_code`: a repo that ships its own
 modelling code, such as baidu/Unlimited-OCR or hayai-ocr-v2, is reported under

@@ -551,6 +551,8 @@ class Result:
     prefill_s: float | None = None
     #: First request after a load with no warm-up; None where unknown. #468.
     cold: bool | None = None
+    #: Where an out-of-process engine says it ran: {"device", "attn"}; {} if unsaid. #604.
+    runtime: dict = field(default_factory=dict)
 
 
 # ---------------------------------------------------------------------------
@@ -658,6 +660,8 @@ class Receipt:
     split_version: str = ""
     #: receipt key -> the method and its base, for each method candidate. Not an axis. #576.
     methods: dict = field(default_factory=dict)
+    #: receipt key -> "device:attention" an out-of-process engine answered on. An axis. #604.
+    devices: dict = field(default_factory=dict)
 
     def as_dict(self) -> dict:
         return {"modality": self.modality, "case_ids": list(self.case_ids),
@@ -671,7 +675,8 @@ class Receipt:
                 "pressure": dict(self.pressure),
                 "cases_digest": self.cases_digest,
                 "split": self.split, "split_version": self.split_version,
-                "methods": dict(self.methods)}
+                "methods": dict(self.methods),
+                "devices": dict(self.devices)}
 
 
 def cases_digest(cases) -> str:
@@ -785,6 +790,11 @@ def comparable(a: Receipt, b: Receipt) -> tuple[bool, str]:
     # not thereby different from one that did, and adding a fourth instrument
     # later must not retroactively invalidate every result on disk. Same rule
     # as the empty accelerator above, applied per key.
+    # A CPU answer and an MPS answer are two programs; compared only where both runs say. #604.
+    for key in sorted(set(a.devices) & set(b.devices)):
+        if a.devices[key] != b.devices[key]:
+            return False, (f"different device for {key}: {a.devices[key]} vs "
+                           f"{b.devices[key]}")
     for name in sorted(set(a.instruments) & set(b.instruments)):
         mine, theirs = a.instruments[name], b.instruments[name]
         if mine and theirs and mine != theirs:

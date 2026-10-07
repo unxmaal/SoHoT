@@ -444,3 +444,32 @@ def _requeue_missing_backends(conn) -> None:
             _migration_retraction(conn, r["id"], r["name"], "queued", SCREEN,
                                   f"retracted: the hf-task venv lacked a package "
                                   f"({phrase!r}), not a verdict on {r['name']}")
+
+
+def _kept_stderr_names_an_mps_abort(conn, proposal_id) -> bool:
+    """Whether a failed screen row of this proposal kept a stderr tail naming an MPS abort. #604."""
+    from evals.core import artifact_name
+    from harness import reasons, runs
+    for row in conn.execute(
+            "SELECT x.candidate, x.case_id, n.path FROM results x "
+            "JOIN runs n ON n.id = x.run_id JOIN candidates c ON c.id = x.candidate_id "
+            "WHERE n.tier = ? AND x.passed = 0 AND c.proposal_id = ?",
+            (SCREEN, proposal_id)).fetchall():
+        kept = runs.run_dir(row["path"]) / artifact_name(row["candidate"], row["case_id"],
+                                                         ".stderr.txt")
+        try:
+            if reasons.mps_abort(kept.read_text(encoding="utf-8")):
+                return True
+        except OSError:
+            continue
+    return False
+
+
+def _requeue_mps_aborts(conn) -> None:
+    """A screen the MPS backend aborted, as its detail or its run's kept stderr recorded. #604."""
+    from harness import reasons
+    for r in _stated(conn, "p.state = 'broken' AND v.tier = ?", (SCREEN,)):
+        if reasons.mps_abort(r["detail"]) or _kept_stderr_names_an_mps_abort(conn, r["id"]):
+            _migration_retraction(conn, r["id"], r["name"], "queued", SCREEN,
+                                  f"retracted: the MPS backend aborted (LLVM ERROR / MPSGraph), "
+                                  f"a runtime fault rather than a verdict on {r['name']}")

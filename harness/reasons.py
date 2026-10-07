@@ -35,6 +35,8 @@ TOKEN_BUDGET_EXHAUSTED = "token_budget_exhausted"
 MISSING_FILE_IN_SNAPSHOT = "missing_file_in_snapshot"
 CRASHED = "crashed"
 CONTENT_FAILED = "content_failed"
+#: An abort inside Apple's MPS backend (LLVM ERROR on an mps op, MPSGraph assertion). #604.
+BACKEND_FAULT = "backend_fault"
 
 #: A verdict's class, not a row's: the adopt gate lacked the power to see the effect. #479.
 UNDERPOWERED = "underpowered"
@@ -49,6 +51,7 @@ CLASSES = {
     TOKEN_BUDGET_EXHAUSTED: ("declined", LIMIT),
     LOAD_FAILED_RUNTIME: ("declined", RUNTIME),
     LOAD_FAILED_LAYOUT: ("declined", RUNTIME),
+    BACKEND_FAULT: ("declined", RUNTIME),
     MISSING_FILE_IN_SNAPSHOT: ("broken", CANDIDATE),
     CRASHED: ("broken", CANDIDATE),
     CONTENT_FAILED: ("broken", CANDIDATE),
@@ -116,6 +119,29 @@ def _any(low: str, phrases) -> str:
     return next((p for p in phrases if p in low), "")
 
 
+def mps_abort(text: str) -> bool:
+    """An abort inside the MPS backend: LLVM ERROR on an mps op, or an MPSGraph assertion. #604."""
+    low = (text or "").lower()
+    if "failed assertion" in low:
+        return "mpsgraph" in low
+    if "llvm error" in low:
+        return '"mps.' in low or "mps_" in low
+    return False
+
+
+def backend_abort(lines) -> str:
+    """The one line naming an MPS abort in a stderr tail, or ""; the LLVM line takes the op after it."""
+    lines = list(lines)
+    for i, line in enumerate(lines):
+        if "llvm error" in line.lower():
+            joined = " ".join(s.strip() for s in lines[i:i + 2])
+            if mps_abort(joined):
+                return joined
+        elif mps_abort(line):
+            return line.strip()
+    return ""
+
+
 def classify(text: str, where: str = RUNNER, candidate: str = "") -> str:
     """The failure class an upstream error text names, or "" from stderr."""
     from harness.serving import LLAMACPP_PREFIX
@@ -125,6 +151,8 @@ def classify(text: str, where: str = RUNNER, candidate: str = "") -> str:
         return SERVER_DEAD
     if _any(low, _GPU_FAULT):
         return GPU_FAULT
+    if mps_abort(low):
+        return BACKEND_FAULT
     if candidate.startswith(LLAMACPP_PREFIX) and all(
             p in low for p in _LLAMACPP_LOAD_FAILED):
         return LOAD_FAILED_RUNTIME
@@ -210,7 +238,8 @@ def legacy_reason(outcome: str, tier: str, detail: str,
     if "timed out after" in low:
         return LIMIT
     if low.startswith("the installed runtime could not load it") \
-            or low.startswith("needs its own runner"):
+            or low.startswith("needs its own runner") \
+            or low.startswith("the mps backend aborted"):
         return RUNTIME
     if _any(low, _GPU_FAULT) or "[metal]" in low:
         return MACHINE

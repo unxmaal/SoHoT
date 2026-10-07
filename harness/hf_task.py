@@ -1,19 +1,43 @@
 """One case through transformers, in the hf-task venv: ocr (#562), retrieval (#563), pii (#564).
 
-Run by scripts/hf-task.sh; imports nothing from this package but torch_device.
+Run by scripts/hf-task.sh; imports nothing from this package but torch_device and reasons.
 A repo that ships its own modelling code is refused, never executed.
 """
 from __future__ import annotations
 
 import argparse
 import functools
+import json
+import subprocess
 import sys
 from pathlib import Path
+
+from harness import reasons
 
 #: Exit status for "this needs a runner hf-task will not be": its own code.
 NEEDS_OWN_RUNNER = 3
 #: Exit status for "the hf-task venv lacks a package": the harness, never the model. #601.
 MISSING_PACKAGE = 4
+#: Beside an ocr artifact: the device and attention that answered. #604.
+RUNTIME_SUFFIX = ".runtime.json"
+#: (device, attention) tried in turn while the MPS backend aborts; None is the default device. #604.
+FALLBACKS = ((None, ""), (None, "eager"), ("cpu", ""))
+
+
+def runtime_path(out) -> str:
+    return f"{out}{RUNTIME_SUFFIX}"
+
+
+def fall_back(attempt) -> int:
+    """Run attempt(device, attn) per FALLBACKS until one ends without an MPS backend abort."""
+    rc = 0
+    for device, attn in FALLBACKS:
+        rc, err = attempt(device, attn)
+        if rc == 0 or not reasons.mps_abort(err):
+            return rc
+        print(f"hf-task: the MPS backend aborted (device {device or 'default'}, "
+              f"attention {attn or 'default'}); trying the next fallback", file=sys.stderr)
+    return rc
 
 
 def _device(torch, device: str | None) -> str:
@@ -22,7 +46,8 @@ def _device(torch, device: str | None) -> str:
 
 
 def read_image(model: str, image: str, prompt: str, revision: str | None = None,
-               max_new_tokens: int = 512, device: str | None = None) -> str:
+               max_new_tokens: int = 512, device: str | None = None, attn: str = "",
+               runtime: dict | None = None) -> str:
     """The model's transcription of `image`: a chat VLM is prompted, an encoder-decoder is not.
 
     Not a pipeline: transformers 5 has no image-to-text task, and its image-text-to-text
@@ -36,8 +61,13 @@ def read_image(model: str, image: str, prompt: str, revision: str | None = None,
     dev = _device(torch, device)
     dtype = torch.float16 if dev in HALF else torch.float32
     picture = Image.open(image).convert("RGB")
-    net = AutoModelForImageTextToText.from_pretrained(model, revision=revision,
-                                                      dtype=dtype).to(dev)
+    # Eager attention repeats grouped KV heads, which MPS's sdpa matmul cannot type. #604.
+    net = AutoModelForImageTextToText.from_pretrained(
+        model, revision=revision, dtype=dtype,
+        **({"attn_implementation": attn} if attn else {})).to(dev)
+    if runtime is not None:
+        runtime.update(device=dev, attn=str(getattr(net.config, "_attn_implementation", "")
+                                            or attn or "default"))
     proc = AutoProcessor.from_pretrained(model, revision=revision)
     if getattr(proc, "chat_template", None):
         messages = [{"role": "user", "content": [{"type": "image", "image": picture},
@@ -79,6 +109,19 @@ def _tokenizer(model: str, revision, auto):
 
 def ocr(model: str, image: str, prompt: str, out, read=read_image) -> None:
     Path(out).write_text(read(model, image, prompt), encoding="utf-8")
+
+
+def _attempt(argv: list[str]):
+    """One ocr attempt as its own process, since an MPS abort kills the interpreter."""
+    def run(device, attn):
+        cmd = [sys.executable, "-m", "harness.hf_task", *argv, "--one-attempt"]
+        cmd += ["--device", device] if device else []
+        cmd += ["--attn", attn] if attn else []
+        got = subprocess.run(cmd, capture_output=True, text=True)
+        sys.stdout.write(got.stdout or "")
+        sys.stderr.write(got.stderr or "")
+        return got.returncode, got.stderr or ""
+    return run
 
 
 def score_texts(mode: str, model: str, query: str, texts: list[str],
@@ -141,6 +184,8 @@ def main(argv=None, read=None, score=None, tag=None) -> int:
     o.add_argument("--revision")
     o.add_argument("--max-new-tokens", type=int, default=512)
     o.add_argument("--device")
+    o.add_argument("--attn", default="")
+    o.add_argument("--one-attempt", action="store_true")
     r = sub.add_parser("rank")
     r.add_argument("--mode", choices=("cross", "bi"), required=True)
     r.add_argument("--model", required=True)
@@ -155,12 +200,20 @@ def main(argv=None, read=None, score=None, tag=None) -> int:
     t.add_argument("--out", required=True)
     t.add_argument("--revision")
     t.add_argument("--device")
+    argv = list(sys.argv[1:] if argv is None else argv)
     a = p.parse_args(argv)
+    if a.task == "ocr" and read is None and not (a.one_attempt or a.device or a.attn):
+        rc = fall_back(_attempt(argv))
+        return rc if rc >= 0 else 128 - rc
     try:
         if a.task == "ocr":
+            runtime: dict = {}
             reader = read or functools.partial(read_image, revision=a.revision,
-                                               max_new_tokens=a.max_new_tokens, device=a.device)
+                                               max_new_tokens=a.max_new_tokens, device=a.device,
+                                               attn=a.attn, runtime=runtime)
             ocr(a.model, a.image, a.prompt, a.out, read=reader)
+            if runtime:
+                Path(runtime_path(a.out)).write_text(json.dumps(runtime), encoding="utf-8")
         elif a.task == "rank":
             scorer = score or functools.partial(score_texts, revision=a.revision,
                                                 device=a.device)
