@@ -520,38 +520,39 @@ def _section(doc: dict) -> str:
         comps.append(
             f'<h3>{_esc(lane["lane"])} <span class="dim">latest run '
             f'{_date(lane.get("last_run_at"))}</span></h3>'
-            '<table><tr><th>candidate</th><th>passed</th><th>pass</th>'
+            '<div class="wide"><table><tr><th>candidate</th><th>passed</th><th>pass</th>'
             '<th>median s</th><th>TTFT med / p95</th><th>peak GB</th>'
             '<th>metric</th></tr>'
-            f'{body}</table>')
+            f'{body}</table></div>')
     real = {l["lane"]: l["real_use"] for l in doc.get("lanes") or [] if l.get("real_use")}
     real_html = (f'<h3>Real use <span class="dim">last 7 days through the gateway</span></h3>'
-                 f'{REAL_USE_HEAD}{real_use_rows(real)}</table>' if real else "")
+                 f'<div class="wide">{REAL_USE_HEAD}{real_use_rows(real)}</table></div>'
+                 if real else "")
     adopts = "".join(
         f'<tr><td>{_esc(a["lane"])}</td><td>{_esc(a["candidate"])}</td>'
         f'<td>{_esc(a.get("incumbent")) or "--"}</td><td>{_esc(a["how"])}</td>'
         f'<td>{_date(a.get("adopted_at"))}</td></tr>'
         for a in doc.get("adoptions") or [])
-    return f"""
-<section id="{_esc(m.get('slug'))}">
-<h2>{_esc(m.get('label'))}</h2>
+    from harness import site
+    return site.window(_esc(m.get('label')), f"""
 <p class="sub">{_esc(m.get('os'))} &middot; {_esc(m.get('arch'))} &middot;
 {_esc(', '.join(m.get('runtimes') or []))} &middot; published {_esc(doc.get('generated_at'))}
 &middot; schema {_esc(doc.get('schema'))}</p>
-<table><tr><th>lane</th><th>serves</th><th>pass</th><th>median s</th>
+<div class="wide"><table><tr><th>lane</th><th>serves</th><th>pass</th><th>median s</th>
 <th>TTFT med / p95</th><th>metric</th><th>measured</th><th></th></tr>
 {''.join(rows)}
-</table>
+</table></div>
 {''.join(comps)}
 {real_html}
 <h3>Adoptions</h3>
-{f'<table><tr><th>lane</th><th>adopted</th><th>replaced</th><th>how</th><th>when</th></tr>{adopts}</table>' if adopts else '<p class="note">Nothing adopted on this machine.</p>'}
-</section>"""
+{f'<div class="wide"><table><tr><th>lane</th><th>adopted</th><th>replaced</th><th>how</th><th>when</th></tr>{adopts}</table></div>' if adopts else '<p class="note">Nothing adopted on this machine.</p>'}
+""", tag="section", attrs=f' id="{_esc(m.get("slug"))}"')
 
 
 def render_site(machines: list[dict], now: float | None = None) -> str:
-    """One self-contained page: freshness, a lane table across machines, a section each."""
-    from harness.report import CSS, _days, _esc
+    """The lane report: freshness, a lane table across machines, a window per machine."""
+    from harness import site
+    from harness.report import _days, _esc
 
     now = time.time() if now is None else now
     fresh = []
@@ -574,37 +575,23 @@ def render_site(machines: list[dict], now: float | None = None) -> str:
     head = "".join(f'<th>{_esc(d["machine"].get("label"))}</th>' for d in machines)
     side = "".join(f'<tr><td>{_esc(n)}</td>{"".join(_cell(b.get(n)) for b in by)}</tr>'
                    for n in lane_names)
-    when = time.strftime("%Y-%m-%d %H:%M UTC", time.gmtime(now))
     empty = '<p class="note">No machine has published yet.</p>' if not machines else ""
-    return f"""<!doctype html>
-<html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>SoHoT lanes</title><style>{CSS}
-h3 {{ font-size:.9rem; margin:1.5rem 0 .25rem }}
-.wide {{ overflow-x:auto }}
-a {{ color:inherit }}</style></head>
-<body><main>
-<h1>SoHoT</h1>
-<p class="sub">Built {_esc(when)} from each machine's own export.</p>
-{empty}
-<h2>Machines</h2>
-<table><tr><th>machine</th><th>last published</th><th>age</th><th>schema</th>
-<th>export</th><th></th></tr>
+    intro = site.window("Lane report", f"""<p>What each lane serves on each machine,
+the receipt behind it, and the latest run's full comparison.</p>{empty}""", "sky")
+    machines_win = site.window("Machines", f"""<div class="wide"><table><tr><th>machine</th>
+<th>last published</th><th>age</th><th>schema</th><th>export</th><th></th></tr>
 {''.join(fresh)}
-</table>
+</table></div>
 <p class="note">Each machine publishes its own measurements. One that has not
 published in {STALE_DAYS:.0f} days is marked stale, and its numbers are as old as
-its publish date.</p>
-
-<h2>Lanes across machines</h2>
-<div class="wide"><table><tr><th>lane</th>{head}</tr>
+its publish date.</p>""", "butter")
+    across = site.window("Lanes across machines", f"""<div class="wide"><table><tr><th>lane</th>{head}</tr>
 {side}
 </table></div>
 <p class="note">Wall-clock is only comparable within one machine. Across
-machines compare pass rates and what each lane serves.</p>
-{''.join(_section(d) for d in machines)}
-</main></body></html>
-"""
+machines compare pass rates and what each lane serves.</p>""", "teal")
+    body = intro + machines_win + across + "".join(_section(d) for d in machines)
+    return site.page("SoHoT lane report", body, 1, "reports/", now)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -614,12 +601,12 @@ def main(argv: list[str] | None = None) -> int:
                                  description="Render the published reports page.")
     ap.add_argument("action", choices=["render"])
     ap.add_argument("--data", required=True, help="directory of machine JSON files")
-    ap.add_argument("--out", required=True, help="where to write index.html")
+    ap.add_argument("--out", required=True,
+                    help="directory for the site: index.html, reports/, benchmarks/")
     a = ap.parse_args(argv)
-    out = Path(a.out)
-    out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(render_site(load(a.data)), encoding="utf-8")
-    print(out)
+    from harness import site
+    for p in site.write(load(a.data), a.out):
+        print(p)
     return 0
 
 

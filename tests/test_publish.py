@@ -232,9 +232,10 @@ def test_an_empty_set_still_renders(tmp_path):
 
 def test_the_renderer_cli_writes_the_page(tmp_path, store):
     _two(tmp_path, store)
-    out = tmp_path / "site" / "index.html"
+    out = tmp_path / "site"
     assert publish.main(["render", "--data", str(tmp_path), "--out", str(out)]) == 0
-    assert out.read_text(encoding="utf-8").count("<section id=") == 2
+    assert (out / "reports" / "index.html").read_text(encoding="utf-8").count(
+        "<section id=") == 2
 
 
 def test_the_privacy_scanner_fails_on_a_file_that_leaks(tmp_path):
