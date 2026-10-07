@@ -120,7 +120,7 @@ def ask(question: str, schema: dict, where: serving.Route, context: str = "",
         prompt, model=where.model, gateway=where.base, modality="decide",
         context=context, timeout=timeout or completion.TIMEOUT_S,
         sampling=where.sampling or None, top_logprobs=completion.TOP_LOGPROBS,
-        stream=stream)
+        stream=stream, response_format=decide_check.response_format(schema))
     parsed = decide_check.parse(
         decide_check.from_logprobs(got.text, got.tokens, schema), schema)
     missing = [n for n, f in parsed.items() if f["answer"] is None]

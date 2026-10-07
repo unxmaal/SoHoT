@@ -82,6 +82,9 @@ SAMPLING = {
     "decide": {"temperature": 0.0},
 }
 
+#: Chat-template kwargs per modality; decide reads one pass of option logprobs, so no reasoning. #311.
+TEMPLATE = {"decide": {"enable_thinking": False}}
+
 #: OpenAI's ceiling is 20 and mlx_lm.server's is 11. #423.
 TOP_LOGPROBS = 10
 
@@ -182,7 +185,8 @@ def complete_full(prompt: str, model: str, gateway: str = DEFAULT_GATEWAY,
                   temperature: float | None = None,
                   max_tokens: int = MAX_TOKENS, sampling: dict | None = None,
                   template: dict | None = None, top_logprobs: int = 0,
-                  stream: bool = False, system: str | None = None) -> Completion:
+                  stream: bool = False, system: str | None = None,
+                  response_format: dict | None = None) -> Completion:
     """One completion with its timing. `stream` asks for SSE so the first
     content token can be timed; a server that answers whole leaves ttft_s None."""
     knobs = dict(SAMPLING.get(modality, {}))
@@ -203,8 +207,11 @@ def complete_full(prompt: str, model: str, gateway: str = DEFAULT_GATEWAY,
         ],
         **knobs,
     }
+    template = template or TEMPLATE.get(modality)
     if template:
         payload["chat_template_kwargs"] = dict(template)
+    if response_format:
+        payload["response_format"] = dict(response_format)
     if top_logprobs:
         payload["logprobs"] = True
         payload["top_logprobs"] = int(top_logprobs)
