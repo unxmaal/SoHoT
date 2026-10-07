@@ -222,6 +222,31 @@ def test_served_starts_the_child_waits_for_it_and_stops_it(tmp_path):
     assert "serving ✓" in log.read_text(encoding="utf-8")
 
 
+def test_the_readiness_probe_never_goes_through_a_proxy(tmp_path, monkeypatch):
+    """A proxy in the environment (or the macOS system settings) must not stand between
+    the probe and a loopback server: on CI the child served and the probe never saw it."""
+    for var in ("http_proxy", "HTTP_PROXY", "all_proxy", "ALL_PROXY"):
+        monkeypatch.setenv(var, "http://127.0.0.1:9")
+    monkeypatch.delenv("no_proxy", raising=False)
+    monkeypatch.delenv("NO_PROXY", raising=False)
+    child = tmp_path / "child.py"
+    child.write_text(FAKE_CHILD, encoding="utf-8")
+    port = _free_port()
+    with vllm.served([sys.executable, str(child), str(port)], port, log=tmp_path / "s.log",
+                     env=_utf8_env(), timeout=20) as srv:
+        assert srv.proc.poll() is None
+
+
+def test_a_server_that_never_answers_says_why_the_probe_failed(tmp_path):
+    child = tmp_path / "child.py"
+    child.write_text("import time\nprint('loading', flush=True)\ntime.sleep(30)\n",
+                     encoding="utf-8")
+    with pytest.raises(RuntimeError, match="last probe: .*(Connection refused|URLError)"):
+        with vllm.served([sys.executable, str(child)], _free_port(),
+                         log=tmp_path / "s.log", env=_utf8_env(), timeout=2, poll=0.2):
+            pass
+
+
 def test_a_child_that_dies_before_it_serves_is_an_error_with_its_log(tmp_path):
     child = tmp_path / "child.py"
     child.write_text("import sys\nprint('no metal ✗', flush=True)\nsys.exit(3)\n",

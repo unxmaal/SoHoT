@@ -51,12 +51,17 @@ class Served(NamedTuple):
     proc: subprocess.Popen
 
 
-def _ready(base: str) -> bool:
+#: The server is on loopback: no proxy from the environment or the system settings applies.
+_DIRECT = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+
+
+def _probe(base: str) -> str:
+    """"" when the server answers /v1/models with 200, else why not."""
     try:
-        with urllib.request.urlopen(base + "/v1/models", timeout=2) as r:
-            return r.status == 200
-    except Exception:  # noqa: BLE001 - not up yet
-        return False
+        with _DIRECT.open(base + "/v1/models", timeout=2) as r:
+            return "" if r.status == 200 else f"HTTP {r.status}"
+    except Exception as exc:  # noqa: BLE001 - not up yet
+        return f"{type(exc).__name__}: {exc}"
 
 
 def _tail(log: Path, n: int = 2000) -> str:
@@ -93,13 +98,13 @@ def served(cmd: list[str], port: int, log, env=None, timeout: float = 600.0,
                                 start_new_session=True)
     try:
         deadline = time.monotonic() + timeout
-        while not _ready(base):
+        while why := _probe(base):
             if proc.poll() is not None:
                 raise RuntimeError(f"{cmd[0]} exited {proc.returncode} before serving:\n"
                                    f"{_tail(log)}")
             if time.monotonic() > deadline:
-                raise RuntimeError(f"{cmd[0]} did not serve within {timeout:.0f}s:\n"
-                                   f"{_tail(log)}")
+                raise RuntimeError(f"{cmd[0]} did not serve within {timeout:.0f}s "
+                                   f"(last probe: {why}):\n{_tail(log)}")
             time.sleep(poll)
         yield Served(base, proc)
     finally:
