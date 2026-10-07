@@ -29,8 +29,8 @@ def err(msg: str) -> int:
 
 
 def say(*, path=None, body=None, seconds=None, peak_kb=None, size=None,
-        human: str = "") -> int:
-    """Report a success, in whichever shape the caller asked for."""
+        human: str = "", method: dict | None = None) -> int:
+    """Report a success, in whichever shape the caller asked for; `method` is a served method's cost."""
     if _JSON:
         out = {"ok": True, "verb": _VERB}
         if path is not None:
@@ -43,10 +43,21 @@ def say(*, path=None, body=None, seconds=None, peak_kb=None, size=None,
             out["peak_gib"] = round(peak_kb / 1024 / 1024, 2)
         if size is not None:
             out["size"] = size
+        if method:
+            out["method"] = method
         print(json.dumps(out))
     else:
         print(human)
+        if method:
+            print(method_note(method), file=sys.stderr)
     return 0
+
+
+def method_note(method: dict) -> str:
+    """One line on what a served method cost, for stderr."""
+    extra = (f", kept sample {method['chosen']} of {method['samples']}"
+             if method.get("samples") else "")
+    return f"[{method['method']} over {method['base']}: {method['calls']} calls{extra}]"
 
 
 def note(*args, **kw) -> None:

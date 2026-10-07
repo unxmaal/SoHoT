@@ -92,9 +92,12 @@ def served(config=None, defaults=None) -> dict:
         from harness import adopt
         defaults = adopt.lane_defaults()
     added = []
+    from harness import methods
     for lane in TEXT_LANES:
+        spec = defaults.get(lane) or ""
         try:
-            where = serving.route(defaults.get(lane) or "", config=config)
+            # A LiteLLM alias cannot run a method, so an adopted method's alias serves its base. #581.
+            where = serving.route(methods.base_of(spec) or spec, config=config)
         except ValueError:
             continue
         known = by_name.get(where.model.lower())

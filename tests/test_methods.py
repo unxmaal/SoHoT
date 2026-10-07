@@ -369,18 +369,18 @@ def test_the_cost_note_says_what_the_method_paid_for_its_result():
     assert methods.cost_note({"median_s": 2.0}, {"median_s": 2.0}, "q3-4b") == ""
 
 
-# ---- adopt: a method that wins is recorded, never served by a lane command yet ---
+# ---- adopt: a method that wins is adopted, and the lane commands serve it (#581) ---
 
-def test_a_winning_method_is_measured_but_not_served(tmp_path):
+def test_a_winning_method_is_adopted(tmp_path):
     conn = ms.connect(tmp_path / "d.db")
     try:
         v = adopt.Verdict("code", "q3-4b", "best-of-3/q3-4b", True,
                           "beats q3-4b on the lane's metric, 8 gained against 0 lost, p=0.01")
         adopt.record(conn, v, spec="best-of:3:q3-4b")
-        assert adopt.current(conn) == {}
+        assert adopt.current(conn)["code"]["spec"] == "best-of:3:q3-4b"
         row = conn.execute("SELECT outcome, detail FROM verdicts ORDER BY id DESC").fetchone()
         assert row["outcome"] == "measured"
-        assert "not served" in row["detail"]
+        assert "not served" not in row["detail"]
     finally:
         conn.close()
 
