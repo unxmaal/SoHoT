@@ -512,9 +512,36 @@ with fewer than 6 cases is too small to split, decides on all of them, and the
 verdict says so. Before measuring, `soh adopt` works out the repeat count the
 paired test needs to see a gain of `--effect` (default 0.2 per case) from the
 incumbent's stored pass rates, capped at 16. A loss with too little power is
-recorded as `underpowered`, not as "no better". `soh report` marks a lane
+recorded as `underpowered`, not as "no better", unless the challenger is
+significantly worse on holdout, which is an ordinary loss whatever the power to
+see a gain. `soh report` marks a lane
 `saturated` when its incumbent passes at least 95% of holdout: those cases can
 no longer separate candidates.
+
+**Repeats of one case are not independent cases.** A model at low temperature
+answers a case the same way most of the time, so the case, not the repeat, is
+the unit. The power calculation and the adopt gate both measure the within-case
+correlation `rho` (the intraclass correlation of the incumbent's stored draws,
+and of both candidates' draws in the run) and shrink the cell count by the
+design effect `1 + (repeat - 1) * rho`. At `rho` 1 a case repeated sixteen
+times counts once; at 0 every repeat counts, as before. A lane with no repeated
+case assumes `rho` 1 until a run measures it. The negative control is pinned: a
+challenger that wins two cases and loses one, the same way on every draw, is
+never adopted at any repeat (the old cell count adopted it from repeat 14).
+
+`soh adopt --power` prints, per lane, the repeat that reaches power 0.8 to
+detect `--effect` at alpha 0.05, the holdout size needed when no repeat up to
+16 can (and how many more holdout and lane cases that is), and the projected
+wall time from the incumbent's median seconds per case over every lane case,
+both candidates, at that repeat. `--lane` narrows it; `--receipt
+<results.json>` (repeatable) reads the draws from receipts instead of the store.
+The measure tier spends the powered repeat when its projected time fits
+`--power-budget-min` (default 120, on `soh adopt` and `soh discover --loop`);
+otherwise it runs repeat 3, or less if that does not fit either, records the
+null as `underpowered`, and the verdict says what the powered repeat would have
+cost. An explicit `--repeat` is always honoured. More holdout cases come from
+new case files; `soh discover --benchmarks` proposes the datasets to draw them
+from.
 
 It has already returned a result nobody asked for. `parakeet-tdt-0.6b-v3`, the
 newer version of the speech model in use, is measurably *worse* than the v2 it

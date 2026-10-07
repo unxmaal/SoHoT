@@ -25,7 +25,7 @@ from __future__ import annotations
 import argparse
 import sys
 
-from harness import adopt, audio, completion, env, proc, vector  # noqa: F401
+from harness import adopt, audio, completion, env, power, proc, vector  # noqa: F401
 from harness.commands import adopt as adopt_cmd
 from harness.commands import benchmarks as benchmarks_cmd
 from harness.commands import chaos as chaos_cmd
@@ -260,6 +260,9 @@ def build_parser() -> argparse.ArgumentParser:
                         "default: what the power calculation needs (#479)")
     d.add_argument("--effect", type=float, default=None,
                    help="the smallest per-cell pass-rate gain worth adopting for")
+    d.add_argument("--power-budget-min", type=float, default=power.BUDGET_MIN,
+                   help="minutes one paired measure may take; a powered repeat "
+                        "over it runs the fallback repeat and says the cost (#591)")
     d.add_argument("--loop", action="store_true",
                    help="every step from a sweep to an adopted winner. Says "
                         "what it would do; --run spends the disk and minutes")
@@ -518,9 +521,17 @@ def build_parser() -> argparse.ArgumentParser:
         "adopt",
         help="measure a challenger against a lane's incumbent and adopt it "
              "on a significant win. Issue #464")
-    ado.add_argument("--lane", required=True)
-    ado.add_argument("--challenger", required=True,
+    ado.add_argument("--lane", default="")
+    ado.add_argument("--challenger", default="",
                      help="a spec or gateway alias, e.g. q3-30b")
+    ado.add_argument("--power", action="store_true",
+                     help="print, per lane, the repeat and holdout size needed to "
+                          "reach power 0.8, and the projected wall time (#591)")
+    ado.add_argument("--receipt", action="append", default=[],
+                     help="with --power, read the incumbent's draws from this "
+                          "results.json instead of the store (repeatable)")
+    ado.add_argument("--power-budget-min", type=float, default=power.BUDGET_MIN,
+                     help="minutes one paired measure may take (#591)")
     ado.add_argument("--repeat", type=int, default=None,
                      help="default: the smallest repeat with enough power to "
                           "detect --effect on the holdout, capped (#479)")

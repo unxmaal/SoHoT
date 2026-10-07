@@ -81,15 +81,20 @@ def _splits(root: str, stamp: tuple) -> dict:
     return {lane: assign(lane, cases) for lane, cases in by.items()}
 
 
-def for_lane(lane: str, root=None) -> Split:
-    """The split of a lane's shipped cases (evals/cases by default)."""
+def splits(root=None) -> dict:
+    """lane -> the split of its shipped cases (evals/cases by default)."""
     root = Path(root) if root is not None else (
         Path(__file__).resolve().parent.parent / "evals" / "cases")
     # Keyed on every file's mtime, so an edited case is drawn again.
     stamp = tuple(sorted((str(p), p.stat().st_mtime_ns)
                          for p in root.rglob("*") if p.is_file()))
+    return _splits(str(root), stamp)
+
+
+def for_lane(lane: str, root=None) -> Split:
+    """The split of a lane's shipped cases (evals/cases by default)."""
     key = (lane or "").strip().lower()
-    return _splits(str(root), stamp).get(key) or Split(key, (), (), True)
+    return splits(root).get(key) or Split(key, (), (), True)
 
 
 def only(cases, side: str):
