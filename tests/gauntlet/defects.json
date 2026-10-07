@@ -850,6 +850,11 @@
   "created": "2026-10-07T01:46:21Z"
  },
  {
+  "number": 529,
+  "title": "main is red: the patch-target guard (#524) flags tests patching evals.run.load_cases that harness.holdout (#525) reads as evals.core.load_cases",
+  "created": "2026-10-07T02:54:02Z"
+ },
+ {
   "number": 530,
   "title": "main is red: three tests patch evals.run.load_cases, which harness.holdout does not read",
   "created": "2026-10-07T02:55:16Z"
