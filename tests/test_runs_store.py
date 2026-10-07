@@ -143,7 +143,7 @@ def test_no_reader_scans_the_runs_directory():
     from pathlib import Path
     root = Path(__file__).resolve().parents[1]
     hits = []
-    for path in sorted(root.glob("harness/*.py")) + sorted(
+    for path in sorted(root.glob("harness/**/*.py")) + sorted(
             root.glob("evals/*.py")):
         text = path.read_text(encoding="utf-8")
         for needle in ('rglob("results.json")', "_newest_receipt_for",

@@ -67,7 +67,7 @@ def test_the_same_machine_twice_is_one_row(store):
 def test_an_unidentifiable_machine_is_recorded_as_unknown(store, monkeypatch):
     """NOT omitted. A NULL would read as "some machine" and be pooled with
     rows that do know which one."""
-    monkeypatch.setattr(ms, "_THIS_MACHINE", None)
+    monkeypatch.setattr(ms.machines, "_THIS_MACHINE", None)
     monkeypatch.setattr(ms, "this_machine",
                         lambda: {**MAC, "fingerprint": "unknown"})
     mid = ms.remember_machine(store)

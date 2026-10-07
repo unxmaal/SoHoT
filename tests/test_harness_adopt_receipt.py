@@ -10,6 +10,7 @@ import subprocess
 
 import pytest
 
+from harness.commands import measure as measure_cmd
 from harness import adopt, cli
 from harness import memory_store as ms
 
@@ -54,7 +55,7 @@ def test_the_measure_names_its_own_output_directory(monkeypatch, tmp_path):
                         lambda argv, **kw: (seen.update(argv=argv), _Done())[1])
     monkeypatch.setattr(adopt, "default_for",
                         lambda lane, fallback, conn=None: "q3-4b")
-    monkeypatch.setattr(cli, "_receipt_at", lambda out: None)
+    monkeypatch.setattr(measure_cmd, "_receipt_at", lambda out: None)
     real = ms.connect
     monkeypatch.setattr(ms, "connect", lambda *a, **k: real(tmp_path / "d.db"))
 
@@ -73,7 +74,7 @@ def test_a_receipt_naming_neither_candidate_is_refused(monkeypatch, tmp_path,
     monkeypatch.setattr(subprocess, "run", lambda argv, **kw: _Done())
     monkeypatch.setattr(adopt, "default_for",
                         lambda lane, fallback, conn=None: "q3-4b")
-    monkeypatch.setattr(cli, "_receipt_at", lambda out: {
+    monkeypatch.setattr(measure_cmd, "_receipt_at", lambda out: {
         "summary": {"local-small": {}, "q3-1.7b": {}}, "rows": []})
     real = ms.connect
     monkeypatch.setattr(ms, "connect", lambda *a, **k: real(tmp_path / "d.db"))
@@ -101,7 +102,7 @@ def test_the_measure_routes_a_repo_id_the_way_the_screen_does(monkeypatch,
                         lambda lane, fallback, conn=None: "q3-4b")
     monkeypatch.setattr("harness.screen.routed_gateway",
                         lambda model, config=None: "http://127.0.0.1:8081")
-    monkeypatch.setattr(cli, "_receipt_at", lambda out: None)
+    monkeypatch.setattr(measure_cmd, "_receipt_at", lambda out: None)
     real = ms.connect
     monkeypatch.setattr(ms, "connect", lambda *a, **k: real(tmp_path / "d.db"))
 
@@ -137,7 +138,7 @@ def test_a_wholly_refused_challenger_is_requeued_not_declined(monkeypatch,
                         lambda lane, fallback, conn=None: "q3-4b")
     monkeypatch.setattr("harness.screen.routed_gateway",
                         lambda model, config=None: "")
-    monkeypatch.setattr(cli, "_receipt_at", lambda out: {
+    monkeypatch.setattr(measure_cmd, "_receipt_at", lambda out: {
         "summary": {"q3-4b": {"passed": 21, "total": 27, "pass_rate": 0.78,
                               "median_s": 1.4, "metrics": {"code_pass": 0.91}},
                     "org/challenger": {"passed": 0, "total": 27,
@@ -168,7 +169,7 @@ def test_a_control_that_passed_nothing_blocks_any_verdict(monkeypatch,
                         lambda lane, fallback, conn=None: "q3-4b")
     monkeypatch.setattr("harness.screen.routed_gateway",
                         lambda model, config=None: "")
-    monkeypatch.setattr(cli, "_receipt_at", lambda out: {
+    monkeypatch.setattr(measure_cmd, "_receipt_at", lambda out: {
         "summary": {"q3-4b": {"passed": 0, "total": 27, "pass_rate": 0.0,
                               "median_s": 0.004, "metrics": {}},
                     "org/challenger": {"passed": 0, "total": 27,
@@ -193,7 +194,7 @@ def test_a_working_control_still_lets_a_loss_be_recorded(monkeypatch, tmp_path):
                         lambda lane, fallback, conn=None: "q3-4b")
     monkeypatch.setattr("harness.screen.routed_gateway",
                         lambda model, config=None: "")
-    monkeypatch.setattr(cli, "_receipt_at", lambda out: {
+    monkeypatch.setattr(measure_cmd, "_receipt_at", lambda out: {
         "summary": {"q3-4b": {"passed": 21, "total": 27, "pass_rate": 0.78,
                               "median_s": 1.4, "metrics": {"code_pass": 0.91}},
                     "org/challenger": {"passed": 9, "total": 27,
@@ -264,7 +265,7 @@ def test_the_incumbent_travels_as_a_repo_id_when_the_run_goes_upstream(
                         lambda model, config=None: "http://up:8081")
     monkeypatch.setattr("harness.screen.upstream_of",
                         lambda alias, config=None: "mlx-community/Q3-4B")
-    monkeypatch.setattr(cli, "_receipt_at", lambda out: None)
+    monkeypatch.setattr(measure_cmd, "_receipt_at", lambda out: None)
     real = ms.connect
     monkeypatch.setattr(ms, "connect", lambda *a, **k: real(tmp_path / "d.db"))
 
@@ -285,7 +286,7 @@ def test_the_incumbent_keeps_its_alias_when_the_run_stays_on_the_gateway(
                         lambda lane, fallback, conn=None: "q3-4b")
     monkeypatch.setattr("harness.screen.routed_gateway",
                         lambda model, config=None: "")
-    monkeypatch.setattr(cli, "_receipt_at", lambda out: None)
+    monkeypatch.setattr(measure_cmd, "_receipt_at", lambda out: None)
     real = ms.connect
     monkeypatch.setattr(ms, "connect", lambda *a, **k: real(tmp_path / "d.db"))
 
@@ -343,11 +344,11 @@ def test_a_measured_proposal_leaves_the_survivors_list(monkeypatch, tmp_path):
     monkeypatch.setattr("harness.screen.candidate_for",
                         lambda lane, name, *a, **k: "llamacpp:chal" if name == "org/challenger" else name)
     row = {"passed": 9, "total": 9}
-    monkeypatch.setattr(cli, "_receipt_at", lambda out: {
+    monkeypatch.setattr(measure_cmd, "_receipt_at", lambda out: {
         "summary": {"q3-4b": row, "llamacpp:chal": row}, "rows": []})
-    monkeypatch.setattr(cli, "_summary_row",
+    monkeypatch.setattr(measure_cmd, "_summary_row",
                         lambda summary, key: {**row, "candidate": key})
-    monkeypatch.setattr(cli, "_all_refused", lambda rows, name: "")
+    monkeypatch.setattr(measure_cmd, "_all_refused", lambda rows, name: "")
     cli._measure_and_adopt(argparse.Namespace(repeat=3),
                            {"name": "org/challenger", "lane": "code"})
     conn = ms.connect()

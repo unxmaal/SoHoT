@@ -3,6 +3,10 @@ import argparse
 
 import pytest
 
+from harness.commands import discover as discover_cmd
+from harness.commands import loop as loop_cmd
+from harness.commands import measure as measure_cmd
+from harness.commands import screen as screen_cmd
 from harness import cli
 from harness import memory_store as ms
 
@@ -204,10 +208,10 @@ def test_the_loop_reopens_due_retests_from_the_store(monkeypatch, capsys):
 
 def test_the_loop_spend_calls_the_retest_step(monkeypatch):
     called = []
-    monkeypatch.setattr(cli, "_reopen_retests", lambda *a, **k: called.append(1) or [])
-    monkeypatch.setattr(cli, "screenable_backlog", lambda want="": ["a"])
-    monkeypatch.setattr(cli, "cmd_discover", lambda a: 0)
-    monkeypatch.setattr(cli, "measurable", lambda *a, **k: [])
+    monkeypatch.setattr(loop_cmd, "_reopen_retests", lambda *a, **k: called.append(1) or [])
+    monkeypatch.setattr(screen_cmd, "screenable_backlog", lambda want="": ["a"])
+    monkeypatch.setattr(discover_cmd, "cmd_discover", lambda a: 0)
+    monkeypatch.setattr(measure_cmd, "measurable", lambda *a, **k: [])
     cli._loop_spend(argparse.Namespace(top=1, budget_gib=1.0, lane=""), 0)
     assert called == [1]
 

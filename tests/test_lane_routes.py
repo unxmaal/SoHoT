@@ -6,6 +6,7 @@ import pytest
 import respx
 import yaml
 
+from harness.commands import lanes as lanes_cmd
 from harness import adopt, cli, gateway, router, serving, winners
 from harness.proc import Outcome
 from harness import memory_store as ms
@@ -126,7 +127,7 @@ def test_every_text_lane_resolves_its_adoption_at_call_time(lane):
 
 def test_image_and_video_resolve_their_adoption_at_call_time(monkeypatch):
     built = []
-    monkeypatch.setattr(cli, "_generate", lambda spec, *a: built.append(spec) or 0)
+    monkeypatch.setattr(lanes_cmd, "_generate", lambda spec, *a: built.append(spec) or 0)
     assert cli.main(["image", "fox"]) == 0
     assert cli.main(["video", "fox"]) == 0
     assert built == [cli.DEFAULT_IMAGE_ENGINE, cli.DEFAULT_VIDEO_ENGINE]

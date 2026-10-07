@@ -93,7 +93,7 @@ def test_the_crowd_source_has_its_kind_and_url(store):
 def test_no_harness_module_reads_or_writes_the_state_file():
     hits = [p.name for p in HARNESS.rglob("*.py")
             if "discovery-state.json" in p.read_text(encoding="utf-8")
-            and p.name != "memory_store.py"]
+            and p.relative_to(HARNESS).as_posix() != "memory_store/migrations/legacy.py"]
     assert hits == []
 
 
@@ -157,14 +157,14 @@ def test_no_reader_parses_edges_note():
         for sql in re.findall(r"SELECT[^;]*?FROM edges", text, re.S):
             if re.search(r"\bnote\b", sql):
                 hits.append(p.name)
-        if p.name != "memory_store.py" and ("_EDGE_NOTE" in text
+        if p.name != "prose.py" and ("_EDGE_NOTE" in text
                                             or "e.note" in text):
             hits.append(p.name)
-    body = (HARNESS / "memory_store.py").read_text(encoding="utf-8")
+    body = (HARNESS / "memory_store" / "migrations" / "prose.py").read_text(encoding="utf-8")
     lift = body[body.index("def lift_edge_scores"):]
-    lift = lift[:lift.index("\ndef ")]
+    lift = lift.split("\ndef ")[0]
     assert body.count("_EDGE_NOTE") == lift.count("_EDGE_NOTE") + 1
-    assert hits == ["memory_store.py"], hits
+    assert hits == ["prose.py"], hits
 
 
 # ---- the HF size cache is an HTTP cache -----------------------------------

@@ -37,7 +37,7 @@ STATES = {
 def open_golden(version, tmp_path, monkeypatch):
     db, home = gb.load(GOLDEN / f"v{version}", tmp_path)
     monkeypatch.setenv(paths.ENV_VAR, str(home))
-    monkeypatch.setattr(ms, "_THIS_MACHINE", dict(THIS))
+    monkeypatch.setattr(ms.machines, "_THIS_MACHINE", dict(THIS))
     return db, home
 
 
@@ -78,17 +78,17 @@ def test_holds_every_invariant(migrated):
     assert [c for c in mc.invariants(conn) if not c.ok] == []
 
 
-@pytest.mark.parametrize("version,step,caught", [
-    (24, "backfill_reasons", "verdict_reason"),
-    (24, "_backfill_state", "proposal_state"),
-    (24, "merge_duplicate_machines", "machines_unique"),
-    (29, "split_result_artifacts", "results_split"),
+@pytest.mark.parametrize("version,home,step,caught", [
+    (24, "prose", "backfill_reasons", "verdict_reason"),
+    (24, "identity", "_backfill_state", "proposal_state"),
+    (24, "legacy", "merge_duplicate_machines", "machines_unique"),
+    (29, "columns", "split_result_artifacts", "results_split"),
 ])
-def test_a_migration_missing_a_step_is_caught(version, step, caught, tmp_path,
+def test_a_migration_missing_a_step_is_caught(version, home, step, caught, tmp_path,
                                               monkeypatch):
     """Negative control: each invariant fails when the step it guards does not run."""
     db, _ = open_golden(version, tmp_path, monkeypatch)
-    monkeypatch.setattr(ms, step, lambda *a, **k: {})
+    monkeypatch.setattr(getattr(ms.migrations, home), step, lambda *a, **k: {})
     conn = ms.connect(db)
     try:
         assert caught in {c.name for c in mc.invariants(conn) if not c.ok}

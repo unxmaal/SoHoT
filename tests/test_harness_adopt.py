@@ -1,6 +1,7 @@
 """Issue #201: the loop's closing step."""
 import pytest
 
+from harness.commands import measure as measure_cmd
 from harness import adopt, rank
 from harness import memory_store as ms
 
@@ -160,7 +161,7 @@ def test_the_incumbent_and_challenger_run_in_one_paired_invocation(monkeypatch, 
                         lambda lane, fallback, conn=None: "org/Kokoro-82M-bf16")
     # Patched at _receipt_at, because the loop now NAMES the directory it reads
     # rather than asking which one sorts highest. Issue #222.
-    monkeypatch.setattr(cli, "_receipt_at", lambda out: {
+    monkeypatch.setattr(measure_cmd, "_receipt_at", lambda out: {
         "specs": {"Kokoro-82M-bf16": "tts:org/Kokoro-82M-bf16",
                   "better-tts": "tts:org/better-tts"},
         # `passed` is load-bearing now: a control that passed NOTHING blocks

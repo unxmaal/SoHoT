@@ -7,7 +7,9 @@ import pytest
 
 from harness import cli
 
-CLI = Path(__file__).resolve().parents[1] / "harness" / "cli.py"
+HARNESS = Path(__file__).resolve().parents[1] / "harness"
+#: The verbs live in harness/commands since #484; cli.py only wires them.
+CLI = [HARNESS / "cli.py", *sorted((HARNESS / "commands").glob("*.py"))]
 
 
 def ignoring_json(source: str) -> list[str]:
@@ -52,7 +54,10 @@ def test_the_scanner_passes_verbs_that_honor_json():
 
 
 def test_no_verb_ignores_json():
-    assert ignoring_json(CLI.read_text(encoding="utf-8")) == []
+    sources = [p.read_text(encoding="utf-8") for p in CLI]
+    verbs = sum(src.count("\ndef cmd_") for src in sources)
+    assert verbs >= 25, f"the scan found {verbs} verbs; the verbs moved"
+    assert [bad for src in sources for bad in ignoring_json(src)] == []
 
 
 def one_object(capsys) -> dict:
@@ -70,7 +75,7 @@ def test_voices_is_one_object(capsys):
 
 def test_memory_ramp_is_one_object(capsys, monkeypatch):
     from harness import memory_store as ms, ramp
-    monkeypatch.setattr(ms, "_THIS_MACHINE", {
+    monkeypatch.setattr(ms.machines, "_THIS_MACHINE", {
         "hw_model": "Mac14,12", "os": "macOS-26", "arch": "arm64",
         "fingerprint": "Mac14,12/macOS/arm64"})
     report = {"steps": [{"gb": 1.0, "level": 1, "free_pct": 90,
@@ -86,7 +91,7 @@ def test_memory_ramp_is_one_object(capsys, monkeypatch):
 
 def test_memory_show_is_one_object(capsys, monkeypatch):
     from harness import memory_store as ms, ramp
-    monkeypatch.setattr(ms, "_THIS_MACHINE", {
+    monkeypatch.setattr(ms.machines, "_THIS_MACHINE", {
         "hw_model": "Mac14,12", "os": "macOS-26", "arch": "arm64",
         "fingerprint": "Mac14,12/macOS/arm64"})
     monkeypatch.setattr(ramp, "run", lambda **kw: {

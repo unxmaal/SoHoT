@@ -1631,6 +1631,34 @@ Every safety check here has been broken on purpose to confirm its test then
 fails. A test that passes against known-broken code is testing nothing, and the
 only way to know the difference is to try it.
 
+### Where the code lives
+
+- `harness/cli.py` is the argparse wiring and `main`. Each group of verbs is a
+  module in `harness/commands/`: `lanes` (image, video, svg, web, code, say,
+  hear ...), `discover`, `loop`, `screen` (and fetch), `measure` (and verify,
+  throughput), `adopt`, `judge` (and rubric), `report`, `jobs`, `store` (and
+  memory, disk), `gateway`, `usage`. `common` holds `err`, `say`, `note`,
+  `emit` and the `--json` state they read.
+- `harness/memory_store/` is the store. `connection` opens it, `schema` holds
+  the DDL and the shared vocabularies, and the accessors are `proposals`,
+  `transitions` (the one writer of proposal state, #409), `retests`,
+  `revisit`, `machines`, `cards` and `sources`. `harness.memory_store`
+  re-exports every name, so `ms.decide(...)` still works.
+- `harness/memory_store/migrations/` is the migration chain: one `vNN.py` per
+  schema version, helpers beside them.
+
+To add schema step N: create `migrations/vNN.py` with `VERSION = N` and any of
+`columns(conn)` (every migration: add this schema's columns to an older store),
+`early(conn)` (before the older steps' data), `data(conn)` and
+`indexes(conn)`; set `FRESH = True` if it must also run on a new store; then
+bump `SCHEMA_VERSION` in `schema.py`. `tests/test_module_layout.py` fails if the
+steps are not exactly 1..SCHEMA_VERSION, and if a golden store under
+`tests/golden/` no longer migrates to the content recorded in
+`tests/golden/migrated/` (re-record an intended change with
+`LH_RECORD_MIGRATED=1 uv run pytest tests/test_module_layout.py`). The same file
+fails when a test patches a name where no code reads it, and when a module
+under `harness/` passes 1500 lines.
+
 Work is tracked in [issues](https://github.com/unxmaal/SoHoT/issues);
 [#16](https://github.com/unxmaal/SoHoT/issues/16) is the roadmap.
 `PLAN.md` holds the reasoning, the issues hold the state, and the issues win when

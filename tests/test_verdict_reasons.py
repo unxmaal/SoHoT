@@ -86,7 +86,10 @@ def test_a_harness_class_outranks_a_content_failure_in_the_same_run():
 
 
 #: Files that decide from classes and must never read a phrase themselves.
-DECIDERS = ("harness/screen.py", "harness/cli.py", "harness/fetching.py",
+#: The CLI's verbs, which live in harness/commands since #484.
+CLI = ("harness/cli.py", *sorted(p.relative_to(ROOT).as_posix()
+                                 for p in (ROOT / "harness" / "commands").glob("*.py")))
+DECIDERS = ("harness/screen.py", *CLI, "harness/fetching.py",
             "harness/adopt.py", "evals/run.py")
 PHRASES = (reasons._SERVER_DEAD + reasons._GPU_FAULT + reasons._GATEWAY
            + reasons._HARNESS + reasons._ABOUT_THE_SNAPSHOT
@@ -151,12 +154,12 @@ def _calls(path, name):
 
 def test_upstream_text_is_classified_at_the_runner_boundary_and_one_stderr_read():
     assert len(_calls("evals/runners/base.py", "classify")) == 1
-    assert len(_calls("harness/cli.py", "classify")) == 1
+    assert sum(len(_calls(p, "classify")) for p in CLI) == 1
     assert _calls("harness/screen.py", "classify") == []
 
 
 def test_decide_never_reads_its_condition_out_of_the_detail():
-    tree = ast.parse((ROOT / "harness/memory_store.py").read_text(encoding="utf-8"))
+    tree = ast.parse((ROOT / "harness/memory_store/transitions.py").read_text(encoding="utf-8"))
     fn = next(n for n in tree.body
               if isinstance(n, ast.FunctionDef) and n.name == "decide")
     called = {getattr(c.func, "id", getattr(c.func, "attr", ""))
@@ -172,7 +175,7 @@ def store_writes(path):
             owner = getattr(getattr(call.func, "value", None), "id", "")
             if isinstance(call.func, ast.Attribute) and owner != "ms":
                 continue
-            if isinstance(call.func, ast.Name) and path != "harness/memory_store.py":
+            if isinstance(call.func, ast.Name) and not path.startswith("harness/memory_store/"):
                 continue
             kws = {k.arg for k in call.keywords}
             if None in kws or "reopen" in kws:
@@ -181,7 +184,7 @@ def store_writes(path):
 
 
 @pytest.mark.parametrize("path", sorted(
-    str(p.relative_to(ROOT)) for p in (ROOT / "harness").glob("*.py")))
+    p.relative_to(ROOT).as_posix() for p in (ROOT / "harness").rglob("*.py")))
 def test_every_production_verdict_says_why(path):
     for call, kws in store_writes(path):
         assert "reason" in kws, f"{path}:{call.lineno} without reason="
@@ -189,7 +192,7 @@ def test_every_production_verdict_says_why(path):
 
 def test_the_writer_guard_sees_the_writers():
     """Red-proof: the guard is not vacuous."""
-    assert len(list(store_writes("harness/cli.py"))) >= 10
+    assert sum(len(list(store_writes(p))) for p in CLI) >= 10
     assert len(list(store_writes("harness/fetching.py"))) >= 5
 
 

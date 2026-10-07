@@ -24,7 +24,7 @@ UNCONVERTED = {"coverage.py", "discover.py", "rank.py"}
 def _own_resolvers() -> set[str]:
     """Modules naming GATEWAY_CONFIG without asking harness.gateway."""
     out = set()
-    for f in sorted(HARNESS.glob("*.py")):
+    for f in sorted(HARNESS.rglob("*.py")):
         if f.name in ("gateway.py",):
             continue
         text = f.read_text(encoding="utf-8")

@@ -1,10 +1,13 @@
 """A proposal's state is a column one transition table writes. #409."""
+import inspect
 import random
 import re
 import sqlite3
 
 import pytest
 
+from harness.commands import measure as measure_cmd
+from harness.commands import screen as screen_cmd
 from harness import disk, fetching
 from harness import memory_store as ms
 
@@ -121,7 +124,7 @@ def test_a_writer_that_read_a_stale_state_is_checked_again(store, monkeypatch):
             row.update(state="queued", id=None)
         return row
 
-    monkeypatch.setattr(ms, "_held", stale)
+    monkeypatch.setattr(ms.transitions, "_held", stale)
     n = _count(store)
     with pytest.raises(ms.IllegalTransition):
         ms.decide(store, "org/w", "queued", tier=ms.INSPECT, detail="named")
@@ -132,11 +135,10 @@ def test_a_writer_that_read_a_stale_state_is_checked_again(store, monkeypatch):
 
 def test_every_retraction_migration_writes_through_the_state(store):
     """A migration that inserted a row directly would leave state behind."""
-    src = open(ms.__file__, encoding="utf-8").read()
-    for fn in sorted(n for n in dir(ms)
-                     if re.match(r"_(retract|relane|reopen|requeue)_", n)):
-        body = re.search(rf"\ndef {fn}\(.*?(?=\n(?:def |#: |class ))", src,
-                         re.S).group(0)
+    fns = sorted(n for n in dir(ms) if re.match(r"_(retract|relane|reopen|requeue)_", n))
+    assert len(fns) > 10, fns
+    for fn in fns:
+        body = inspect.getsource(getattr(ms, fn))
         assert "INSERT INTO verdicts" not in body, fn
 
 
@@ -400,13 +402,13 @@ def test_a_refused_screen_write_does_not_stop_the_next(monkeypatch, tmp_path,
     plan = [{"name": n, "state": screen.READY, "candidate": n,
              "modality": "code", "why_not": ""}
             for n in ("org/first", "org/second")]
-    monkeypatch.setattr(cli, "_screen_plan", lambda want: plan)
+    monkeypatch.setattr(screen_cmd, "_screen_plan", lambda want: plan)
     monkeypatch.setattr(memory, "check_model", lambda *a, **k: (True, ""))
     monkeypatch.setattr(screen, "argv", lambda r, **k: ["screen", r["name"]])
     ran = []
     monkeypatch.setattr(subprocess, "run", lambda argv, **kw: (
         argv[0] == "screen" and ran.append(argv[-1])) or _Done())
-    monkeypatch.setattr(cli, "_receipt_at",
+    monkeypatch.setattr(measure_cmd, "_receipt_at",
                         lambda out: {"summary": {"x": {"passed": 0}}})
     monkeypatch.setattr(screen, "outcome", lambda *a, **k: screen.Verdict(
         "broken", "it ran and passed nothing", "candidate"))
@@ -433,7 +435,7 @@ def test_a_refused_adoption_returns_to_the_measure_loop(monkeypatch, tmp_path,
     monkeypatch.setattr(subprocess, "run", lambda argv, **kw: _Done())
     monkeypatch.setattr(adopt, "default_for",
                         lambda lane, fallback, conn=None: "org/inc")
-    monkeypatch.setattr(cli, "_receipt_at", lambda out: {
+    monkeypatch.setattr(measure_cmd, "_receipt_at", lambda out: {
         "specs": {"inc": "tts:org/inc", "chal": "tts:org/chal"},
         "summary": {k: {"passed": 8, "total": 8, "pass_rate": 1.0,
                         "median_s": 1.0, "metrics": {"wer": w}}
