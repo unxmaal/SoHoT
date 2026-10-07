@@ -1,0 +1,822 @@
+[
+ {
+  "number": 1,
+  "title": "comparable() is written and tested but nothing calls it",
+  "created": "2026-09-07T14:58:40Z"
+ },
+ {
+  "number": 5,
+  "title": "Speaker-similarity metric cannot separate speakers; needs a stronger embedding",
+  "created": "2026-09-07T14:59:13Z"
+ },
+ {
+  "number": 6,
+  "title": "Chatterbox invents trailing speech that is in no prompt",
+  "created": "2026-09-07T14:59:14Z"
+ },
+ {
+  "number": 27,
+  "title": "mflux upscale-seedvr2 is broken against the installed mlx",
+  "created": "2026-09-07T18:27:02Z"
+ },
+ {
+  "number": 29,
+  "title": "Headless Chrome uses the user's real profile",
+  "created": "2026-09-07T19:11:44Z"
+ },
+ {
+  "number": 38,
+  "title": "trace-icon exists as an eval candidate but not as an lh svg --method",
+  "created": "2026-09-07T22:11:59Z"
+ },
+ {
+  "number": 49,
+  "title": "Feed extraction has no measured precision, and GitHub proposals are never verified",
+  "created": "2026-09-08T00:51:44Z"
+ },
+ {
+  "number": 51,
+  "title": "--no-verify help text is backwards: it makes results quieter, not noisier",
+  "created": "2026-09-08T00:51:46Z"
+ },
+ {
+  "number": 60,
+  "title": "Archived and stale repos rank in the crowd sweep",
+  "created": "2026-09-08T13:20:32Z"
+ },
+ {
+  "number": 68,
+  "title": "The download queue holds auxiliary models, not each repo's headline capability",
+  "created": "2026-09-08T14:39:39Z"
+ },
+ {
+  "number": 72,
+  "title": "The download queue sorts by a score that is never on the thing being sorted",
+  "created": "2026-09-08T16:33:58Z"
+ },
+ {
+  "number": 73,
+  "title": "Nothing re-evaluates a queued weight when the ranking that queued it changes",
+  "created": "2026-09-08T16:33:59Z"
+ },
+ {
+  "number": 77,
+  "title": "Sweeping more often than monthly is currently theatre: the cache TTL equals the interval",
+  "created": "2026-09-08T19:37:26Z"
+ },
+ {
+  "number": 81,
+  "title": "The queue can fetch weights no lane can test",
+  "created": "2026-09-08T21:54:23Z"
+ },
+ {
+  "number": 85,
+  "title": "judge.control() is not reproducible: the same rubric and model gave gap +4 then +2",
+  "created": "2026-09-09T00:18:37Z"
+ },
+ {
+  "number": 86,
+  "title": "The novelty rubric is ambiguous: a second judge scores a known failure 10/10",
+  "created": "2026-09-09T00:18:38Z"
+ },
+ {
+  "number": 87,
+  "title": "The recency decay is inert: switching it off changes nothing",
+  "created": "2026-09-09T00:19:17Z"
+ },
+ {
+  "number": 88,
+  "title": "Absolute WER is sample-dependent and is being quoted as a property of the model",
+  "created": "2026-09-09T00:19:18Z"
+ },
+ {
+  "number": 89,
+  "title": "Cold-start latency is 1.5x to 8.4x the median and is never reported",
+  "created": "2026-09-09T00:19:19Z"
+ },
+ {
+  "number": 101,
+  "title": "ink ranks 'more of the canvas is dark' as better, and OmniSVG exposes it",
+  "created": "2026-09-09T02:21:52Z"
+ },
+ {
+  "number": 103,
+  "title": "inspect() never plumbs dead_days through to decide()",
+  "created": "2026-09-09T13:18:50Z"
+ },
+ {
+  "number": 108,
+  "title": "HF_ROOT: default to a local ./hf_root, and let this machine be configured rather than assumed",
+  "created": "2026-09-09T19:53:13Z"
+ },
+ {
+  "number": 109,
+  "title": "Ten env.sh tests fail on the Apple Silicon machine and neither CI job can see them",
+  "created": "2026-09-09T19:53:29Z"
+ },
+ {
+  "number": 110,
+  "title": "accelerator is recorded in results.json but comparable() will still merge a 4070 run with a mini run",
+  "created": "2026-09-09T19:53:45Z"
+ },
+ {
+  "number": 115,
+  "title": "novelty@5 tells the judge that running here both scores high and counts for nothing",
+  "created": "2026-09-09T22:59:02Z"
+ },
+ {
+  "number": 116,
+  "title": "A rubric's identity does not record which machine fragments were merged into it",
+  "created": "2026-09-09T22:59:15Z"
+ },
+ {
+  "number": 117,
+  "title": "decide() names an arbitrary runtime when a repo offers several and the machine has none",
+  "created": "2026-09-09T22:59:35Z"
+ },
+ {
+  "number": 118,
+  "title": "relevance() scores every hardware-naming post negative on a machine with no accelerator",
+  "created": "2026-09-09T22:59:49Z"
+ },
+ {
+  "number": 123,
+  "title": "proc.py cannot measure peak memory on Linux: /usr/bin/time -l is macOS",
+  "created": "2026-09-11T21:36:46Z"
+ },
+ {
+  "number": 124,
+  "title": "comparable() cannot tell Windows from Linux on the same card",
+  "created": "2026-09-11T21:36:48Z"
+ },
+ {
+  "number": 126,
+  "title": "play_argv hardcodes /usr/bin/afplay, which is already broken on Windows",
+  "created": "2026-09-11T21:36:50Z"
+ },
+ {
+  "number": 127,
+  "title": "Receipts and memory readings answer wrongly on Linux (hw_model, available_gb)",
+  "created": "2026-09-11T21:36:52Z"
+ },
+ {
+  "number": 129,
+  "title": "CHROME_CANDIDATES names no Linux locations",
+  "created": "2026-09-11T21:36:54Z"
+ },
+ {
+  "number": 136,
+  "title": "The repo publishes one person's LAN, username and household",
+  "created": "2026-09-12T13:05:54Z"
+ },
+ {
+  "number": 137,
+  "title": "The queue guards the LAN caller and leaves lh unprotected",
+  "created": "2026-09-12T15:43:34Z"
+ },
+ {
+  "number": 140,
+  "title": "env.sh overrides an existing HF_HOME; env.py respects it. The two halves disagree again",
+  "created": "2026-09-12T17:28:50Z"
+ },
+ {
+  "number": 141,
+  "title": "Real image runs peak at 23.9 GiB; MEMORY_CEILING refuses candidates at 22",
+  "created": "2026-09-12T17:29:09Z"
+ },
+ {
+  "number": 143,
+  "title": "lh code is the one generating lane that prints its output unchecked",
+  "created": "2026-09-12T17:29:58Z"
+ },
+ {
+  "number": 144,
+  "title": "scripts/services.sh and five others are committed non-executable, so step 7 of the Linux runbook fails on a fresh clone",
+  "created": "2026-09-12T18:53:13Z"
+ },
+ {
+  "number": 145,
+  "title": "The Linux runbook cannot be followed literally: no clone step, missing packages, and a CUDA binary that does not exist for Linux",
+  "created": "2026-09-12T18:53:38Z"
+ },
+ {
+  "number": 147,
+  "title": "gateway/config.cuda.yaml names four GGUFs that cannot be obtained as specified",
+  "created": "2026-09-12T18:55:05Z"
+ },
+ {
+  "number": 150,
+  "title": "harness/audio.py does not try pw-play, the native player on a PipeWire desktop",
+  "created": "2026-09-12T19:07:26Z"
+ },
+ {
+  "number": 151,
+  "title": "serve-audio-cuda.sh looks for kokoro weights under a path that assumes where the checkout lives",
+  "created": "2026-09-12T19:07:26Z"
+ },
+ {
+  "number": 153,
+  "title": "preflight.sh and harness/audio.py keep separate copies of the player list, and they have already drifted",
+  "created": "2026-09-12T19:44:41Z"
+ },
+ {
+  "number": 155,
+  "title": "env.py returns an inherited HF_HOME without checking it; env.sh checks it. #140 fixed precedence and left validation split",
+  "created": "2026-09-12T20:19:26Z"
+ },
+ {
+  "number": 157,
+  "title": "lh image generates at 1024 and every eval case pins 512, so the lane table describes a configuration the CLI never runs",
+  "created": "2026-09-12T20:53:07Z"
+ },
+ {
+  "number": 167,
+  "title": "The sweep proposes HuggingFace ids and inspect asks GitHub, so most candidates 404",
+  "created": "2026-09-14T00:30:47Z"
+ },
+ {
+  "number": 172,
+  "title": "The repeated control exists, is tested, and nothing calls it: every judge score is authorised by one draw",
+  "created": "2026-09-14T14:25:48Z"
+ },
+ {
+  "number": 173,
+  "title": "services.sh status answers \"did I start it\", is read as \"is it up\", and is always wrong on the machine that uses launchd",
+  "created": "2026-09-14T14:28:23Z"
+ },
+ {
+  "number": 174,
+  "title": "helm upgrade fails once a tier Job has run: a Job's pod template is immutable, so the chart can be installed but not changed",
+  "created": "2026-09-14T14:31:04Z"
+ },
+ {
+  "number": 175,
+  "title": "The judge passes its control and then scores every real candidate 3/10: the control is richer than the queue it gates",
+  "created": "2026-09-14T14:42:21Z"
+ },
+ {
+  "number": 181,
+  "title": "A git clone timeout kills the whole inspect batch, and leaves a partial clone the next run scans as empty",
+  "created": "2026-09-17T00:40:32Z"
+ },
+ {
+  "number": 182,
+  "title": "The proposed-source probe has never run: it probes the hint string, not the URL",
+  "created": "2026-09-17T00:40:51Z"
+ },
+ {
+  "number": 183,
+  "title": "A proposed source carries an article URL, so it can never be probed as a feed or pasted into the config",
+  "created": "2026-09-17T00:40:52Z"
+ },
+ {
+  "number": 184,
+  "title": "A deterministic tier re-run records the same verdict again: 128 of 671 rows are repeats",
+  "created": "2026-09-17T00:50:22Z"
+ },
+ {
+  "number": 187,
+  "title": "A sweep reads the feeds and not the star graph, so the best source is nine days stale while the sweep reports success",
+  "created": "2026-09-17T21:15:42Z"
+ },
+ {
+  "number": 188,
+  "title": "The test suite writes to the user's real discovery-state.json, because read() redirects its cache but not its state",
+  "created": "2026-09-17T22:04:07Z"
+ },
+ {
+  "number": 191,
+  "title": "python -m evals.run never applies the HF_HOME guard, and it is the command the screen tier tells you to run",
+  "created": "2026-09-17T23:59:22Z"
+ },
+ {
+  "number": 194,
+  "title": "The tts screen picks a French case and no English candidate can run it, so the tier has never run",
+  "created": "2026-09-18T00:17:34Z"
+ },
+ {
+  "number": 195,
+  "title": "The eval path passes voice='' and kills SpeechRunner's default, so the tts positive control cannot run",
+  "created": "2026-09-18T00:19:47Z"
+ },
+ {
+  "number": 196,
+  "title": "ready means the named repo is on disk, not that the model can load: a config can name a second repo",
+  "created": "2026-09-18T00:19:48Z"
+ },
+ {
+  "number": 207,
+  "title": "Four modules define the set of lanes and no two agree, so only the image lane can complete the ladder",
+  "created": "2026-09-18T21:36:27Z"
+ },
+ {
+  "number": 209,
+  "title": "The --lane filter runs after the row limit, so a scoped queue samples the backlog and reports a lane as empty",
+  "created": "2026-09-18T21:55:23Z"
+ },
+ {
+  "number": 211,
+  "title": "The fetch tier reads a size format the inspect tier stopped writing, and records the miss as a terminal decline",
+  "created": "2026-09-18T22:01:23Z"
+ },
+ {
+  "number": 213,
+  "title": "The image lane cannot screen any discovered candidate: mflux_binary matches a family prefix and a discovered candidate is always a repo id",
+  "created": "2026-09-18T22:19:16Z"
+ },
+ {
+  "number": 214,
+  "title": "The measure step double-prefixes the incumbent, so the lane's control never runs",
+  "created": "2026-09-18T22:34:03Z"
+ },
+ {
+  "number": 215,
+  "title": "--budget-gib is documented as the ceiling on what an invocation spends and is never passed to the fetch",
+  "created": "2026-09-18T22:34:04Z"
+ },
+ {
+  "number": 219,
+  "title": "_summary_row reimplements winners.matches and knows only the speech receipt shape, so the image lane's control never matched",
+  "created": "2026-09-18T23:03:47Z"
+ },
+ {
+  "number": 222,
+  "title": "The measure step guesses which receipt its own run wrote, and a legacy directory name outranks every timestamp",
+  "created": "2026-09-19T20:52:53Z"
+ },
+ {
+  "number": 223,
+  "title": "The measure tier routes a discovered candidate to the gateway that cannot serve it, then reports the HTTP 400 as a quality loss",
+  "created": "2026-09-19T20:59:43Z"
+ },
+ {
+  "number": 224,
+  "title": "The fetch and the screen order the same queue by different keys, so the fetch never downloads what the screen is waiting for",
+  "created": "2026-09-19T21:08:37Z"
+ },
+ {
+  "number": 225,
+  "title": "Verdict dedup matches any earlier row of the tier, so a retracted candidate can never be re-screened",
+  "created": "2026-09-19T21:28:55Z"
+ },
+ {
+  "number": 227,
+  "title": "A feed source's subject area is recorded as every candidate's lane, and a recorded lane is never overwritten",
+  "created": "2026-09-19T23:22:25Z"
+ },
+ {
+  "number": 228,
+  "title": "A GGUF candidate needs llama.cpp, which nothing probes for, so 30 of them queue on a machine that cannot load one",
+  "created": "2026-09-19T23:22:39Z"
+ },
+ {
+  "number": 230,
+  "title": "Two measure results in the store are wrong: a routing failure recorded as a loss, and a real comparison never recorded at all",
+  "created": "2026-09-19T23:51:46Z"
+ },
+ {
+  "number": 238,
+  "title": "phys_footprint reports 36.3 GiB for the music lane on a 32 GB machine",
+  "created": "2026-09-20T14:33:43Z"
+ },
+ {
+  "number": 240,
+  "title": "Three lanes have no discovery source at all, and the coverage was never checkable",
+  "created": "2026-09-20T14:59:16Z"
+ },
+ {
+  "number": 241,
+  "title": "A card's decisive tag does not survive the summary: an adapter ranked top of the queue",
+  "created": "2026-09-20T15:37:26Z"
+ },
+ {
+  "number": 245,
+  "title": "The runtime filter only knows GGUF: cuda, vllm, nvfp4 and gemlite candidates rank and would be screened",
+  "created": "2026-09-20T20:54:17Z"
+ },
+ {
+  "number": 246,
+  "title": "pipeline_tag is the publisher's answer and can still be the wrong one: an SVG model is filed under code",
+  "created": "2026-09-20T20:54:35Z"
+ },
+ {
+  "number": 249,
+  "title": "A parked lane still ranks: four of the top twelve are video, and the loop would fetch 19 GiB for it",
+  "created": "2026-09-20T23:11:47Z"
+ },
+ {
+  "number": 252,
+  "title": "Ten code-lane candidates tie at +3.7 and the tiebreak is alphabetical, so the loop screens the same six every run",
+  "created": "2026-09-21T00:02:59Z"
+ },
+ {
+  "number": 253,
+  "title": "Candidates with terminal verdicts stay queueable, and cheapness is the only thing left when the score ties",
+  "created": "2026-09-21T00:03:47Z"
+ },
+ {
+  "number": 254,
+  "title": "A candidate this machine cannot run gets no verdict, so it is re-fetched and re-measured forever",
+  "created": "2026-09-21T14:18:54Z"
+ },
+ {
+  "number": 255,
+  "title": "The mlx launchd agent serves an empty model list and hangs every request, and writes no log",
+  "created": "2026-09-21T15:21:26Z"
+ },
+ {
+  "number": 263,
+  "title": "The image lane can only spell one engine, so five ranked candidates have no runner and mflux has never been challenged",
+  "created": "2026-09-21T19:13:22Z"
+ },
+ {
+  "number": 266,
+  "title": "A verdict does not record which machine decided it, so nothing can be re-asked when the machine changes",
+  "created": "2026-09-21T21:45:04Z"
+ },
+ {
+  "number": 270,
+  "title": "stale_days does not say whose staleness, and a dead upstream can never be reconsidered",
+  "created": "2026-09-21T23:39:02Z"
+ },
+ {
+  "number": 277,
+  "title": "Two option-variants of one engine collapse to one candidate, so a comparison between them overwrites itself",
+  "created": "2026-09-22T23:39:06Z"
+ },
+ {
+  "number": 279,
+  "title": "A human verdict must reach the adopt tier, or judging is a page somebody clicked",
+  "created": "2026-09-23T00:07:40Z"
+ },
+ {
+  "number": 281,
+  "title": "A screen verdict is terminal and carries no receipt: 27 of 27 `broken` candidates cannot be re-judged",
+  "created": "2026-09-25T15:09:19Z"
+ },
+ {
+  "number": 282,
+  "title": "The screen reads the newest receipt for the modality, not the run it just executed",
+  "created": "2026-09-25T15:09:39Z"
+ },
+ {
+  "number": 283,
+  "title": "The swap warning is a lagging indicator and cannot predict a wedge: record the signals macOS already maintains",
+  "created": "2026-09-25T15:24:34Z"
+ },
+ {
+  "number": 284,
+  "title": "The crash guard reaches one runner: the screen tier loads discovered weights unattended with no headroom check",
+  "created": "2026-09-25T15:27:09Z"
+ },
+ {
+  "number": 290,
+  "title": "The launchd agents run whatever branch the working checkout is on, so branch work becomes production",
+  "created": "2026-10-02T20:31:49Z"
+ },
+ {
+  "number": 292,
+  "title": "Fetch reports \"no measured size\" for candidates the inspect tier sized 40 seconds earlier, on every sweep since 2026-09-16",
+  "created": "2026-10-02T21:21:22Z"
+ },
+ {
+  "number": 293,
+  "title": "A screen records an mlx-lm load error as broken, so a model the installed runtime cannot parse is never asked again",
+  "created": "2026-10-02T21:21:35Z"
+ },
+ {
+  "number": 295,
+  "title": "58 candidates are excluded for MLX reasons, and the llama.cpp runtime this Mac now has never reopens them",
+  "created": "2026-10-02T23:13:56Z"
+ },
+ {
+  "number": 297,
+  "title": "An adopted llamacpp:<stem> winner is recorded but no lane command or gateway alias serves it",
+  "created": "2026-10-02T23:49:37Z"
+ },
+ {
+  "number": 298,
+  "title": "GGUF picker fetched an imatrix calibration file as a model, and took a TTS repo down the text-lane route",
+  "created": "2026-10-03T13:27:21Z"
+ },
+ {
+  "number": 301,
+  "title": "GGUF-only repos snapshot-downloaded before #296 are screened on MLX, which cannot load them",
+  "created": "2026-10-03T13:44:47Z"
+ },
+ {
+  "number": 303,
+  "title": "Hub-cache GGUF adoption (#302) links a non-text repo's file into the router directory",
+  "created": "2026-10-03T13:55:27Z"
+ },
+ {
+  "number": 305,
+  "title": "Screen records a runtime or prompt-shape refusal as a fact about the model: llama.cpp 'unknown model architecture', and chat templates that reject a system role",
+  "created": "2026-10-03T14:09:39Z"
+ },
+ {
+  "number": 308,
+  "title": "One stochastic screen draw writes a terminal verdict: Qwen3-0.6B screened on one run and broken on the next",
+  "created": "2026-10-03T15:52:07Z"
+ },
+ {
+  "number": 315,
+  "title": "response_format json_schema is silently dropped for every MLX alias: a client asking for a schema gets free text",
+  "created": "2026-10-04T13:27:00Z"
+ },
+ {
+  "number": 318,
+  "title": "OmniSVG repos are screened as mlx_lm text models and recorded broken: the svg lane spells every repo id bare",
+  "created": "2026-10-04T14:30:19Z"
+ },
+ {
+  "number": 322,
+  "title": "The headroom guard sizes a candidate by its weights on disk, and OmniSVG 4B peaks at 3x that (7.2 GB on disk, 22.3 GiB measured)",
+  "created": "2026-10-04T15:09:05Z"
+ },
+ {
+  "number": 328,
+  "title": "The discover loop exits 1 on a normal empty screen, and every launchd install starts an extra sweep",
+  "created": "2026-10-04T20:59:16Z"
+ },
+ {
+  "number": 329,
+  "title": "Eight lh verbs accept --json and ignore it, so stdout is not JSON",
+  "created": "2026-10-05T19:58:21Z"
+ },
+ {
+  "number": 331,
+  "title": "lh verify counts another machine's receipts as this machine's, and --all crashes on a parked lane",
+  "created": "2026-10-05T20:05:39Z"
+ },
+ {
+  "number": 333,
+  "title": "lh throughput times the model load into its first level",
+  "created": "2026-10-05T20:10:51Z"
+ },
+ {
+  "number": 335,
+  "title": "The music lane needs ACESTEP_ROOT exported by hand, so verify and the loop call it broken",
+  "created": "2026-10-05T20:17:47Z"
+ },
+ {
+  "number": 337,
+  "title": "Hand adoption stores an engine's display name, which cannot be run: the music default fails on every case",
+  "created": "2026-10-05T20:23:03Z"
+ },
+ {
+  "number": 339,
+  "title": "ubuntu-latest becomes Ubuntu 26 on 2026-10-19 and the CI parity guard will fail every PR",
+  "created": "2026-10-05T20:37:46Z"
+ },
+ {
+  "number": 341,
+  "title": "lh report prints another machine's median beside this machine's measurement date",
+  "created": "2026-10-05T20:47:03Z"
+ },
+ {
+  "number": 343,
+  "title": "The video lane's default h3 is wrapped into diffusers-video:h3, so verify and the screen run the wrong engine",
+  "created": "2026-10-05T20:58:12Z"
+ },
+ {
+  "number": 345,
+  "title": "env.configured() ignores HF_HOME, so H3 weights and corpora are looked for inside the checkout",
+  "created": "2026-10-05T21:01:01Z"
+ },
+ {
+  "number": 349,
+  "title": "test_throughput's warm-up control is timing-sensitive and failed on a loaded macOS runner",
+  "created": "2026-10-05T21:19:43Z"
+ },
+ {
+  "number": 355,
+  "title": "Discovery's ceiling is the M2 Pro's 22 GiB constant on every machine, so nothing refused as too big can reopen on the Studio",
+  "created": "2026-10-05T22:21:15Z"
+ },
+ {
+  "number": 363,
+  "title": "lh jobs add accepts a whole command line as one argument, and the job fails only when it runs",
+  "created": "2026-10-05T23:24:32Z"
+ },
+ {
+  "number": 365,
+  "title": "web/form-validation fails correct pages that use onsubmit, because it requires the string addEventListener",
+  "created": "2026-10-05T23:50:24Z"
+ },
+ {
+  "number": 366,
+  "title": "claude-code runner: one transient empty result is scored as the model failing",
+  "created": "2026-10-05T23:50:25Z"
+ },
+ {
+  "number": 368,
+  "title": "claude-code runner passes the prompt as an argument, so a prompt starting with '-' is parsed as an option",
+  "created": "2026-10-06T00:01:16Z"
+ },
+ {
+  "number": 371,
+  "title": "The work-queue worker holds the machine lock for a whole job, so a discovery download blocks every GPU run",
+  "created": "2026-10-06T00:24:13Z"
+ },
+ {
+  "number": 373,
+  "title": "Discovery should delete what it downloaded once it rejects a candidate, and clear its own partial downloads",
+  "created": "2026-10-06T00:26:34Z"
+ },
+ {
+  "number": 374,
+  "title": "A reference model (claude-code:) can be adopted as a lane default by hand-judging",
+  "created": "2026-10-06T00:35:12Z"
+ },
+ {
+  "number": 376,
+  "title": "Discovery screen slices the ranked queue before filtering for fetched weights, so fresh downloads are never screened",
+  "created": "2026-10-06T01:06:44Z"
+ },
+ {
+  "number": 378,
+  "title": "Screen rejects every mflux receipt: the engine names the run -q8 and row_for matches only the repo tail",
+  "created": "2026-10-06T01:23:35Z"
+ },
+ {
+  "number": 379,
+  "title": "inspect.lane_for falls through to card tags when the pipeline_tag maps to no lane",
+  "created": "2026-10-06T01:23:36Z"
+ },
+ {
+  "number": 380,
+  "title": "Diffusers image loader cannot open pipelines missing from AutoPipeline's table (PRXPixelPipeline)",
+  "created": "2026-10-06T01:23:37Z"
+ },
+ {
+  "number": 381,
+  "title": "Screen records broken when stock diffusers cannot assemble a repo's non-standard layout",
+  "created": "2026-10-06T01:23:38Z"
+ },
+ {
+  "number": 384,
+  "title": "Measure and discovery re-derive engine receipt keys and miss diffusers, h3, acestep and optioned specs",
+  "created": "2026-10-06T01:36:44Z"
+ },
+ {
+  "number": 385,
+  "title": "screen.outcome records harness and loader phrases as broken when they arrive in the summary rather than stderr",
+  "created": "2026-10-06T01:36:51Z"
+ },
+ {
+  "number": 386,
+  "title": "Two more slice-before-filter sites: the loop's measure step and discover.external",
+  "created": "2026-10-06T01:36:57Z"
+ },
+ {
+  "number": 387,
+  "title": "HuggingFace task census: seven tasks land in a lane whose cases they cannot run",
+  "created": "2026-10-06T01:37:05Z"
+ },
+ {
+  "number": 389,
+  "title": "Version predicates for diffusers, mflux and acestep read the main venv, so those declines never reopen",
+  "created": "2026-10-06T01:46:38Z"
+ },
+ {
+  "number": 390,
+  "title": "--candidates joins specs with commas, which specs with options also contain",
+  "created": "2026-10-06T01:46:39Z"
+ },
+ {
+  "number": 393,
+  "title": "Adopt verdicts land on the engine spec, not the discovery proposal, so screened candidates are re-measured every loop",
+  "created": "2026-10-06T02:07:00Z"
+ },
+ {
+  "number": 396,
+  "title": "Discovery fetches faster than it screens: 469 GiB of downloaded candidates wait unscreened",
+  "created": "2026-10-06T02:40:26Z"
+ },
+ {
+  "number": 399,
+  "title": "A neighbor sighting reopens a decided candidate, and a README-only snapshot counts as downloaded",
+  "created": "2026-10-06T02:53:45Z"
+ },
+ {
+  "number": 401,
+  "title": "Diffusers image runner forces SDXL-Turbo settings (4 steps, guidance 0) on every model",
+  "created": "2026-10-06T04:16:35Z"
+ },
+ {
+  "number": 404,
+  "title": "One crash of mlx_lm.server poisoned every later screen: six candidates recorded broken for 'generation thread died'",
+  "created": "2026-10-06T11:18:44Z"
+ },
+ {
+  "number": 406,
+  "title": "Screen limits the harness chose are recorded as the model failing: a reasoning budget and a 180 s timeout",
+  "created": "2026-10-06T11:21:47Z"
+ },
+ {
+  "number": 420,
+  "title": "rank's lineage looks for 'built from' but inspect writes 'adapter of', so every adapter's base is missed",
+  "created": "2026-10-06T11:27:07Z"
+ },
+ {
+  "number": 422,
+  "title": "remember_machine races: two first writers collide on machines.fingerprint",
+  "created": "2026-10-06T11:35:19Z"
+ },
+ {
+  "number": 424,
+  "title": "lh discover --inspect --repos forces every name to GitHub, so a HuggingFace model cannot be added by hand",
+  "created": "2026-10-06T11:35:53Z"
+ },
+ {
+  "number": 426,
+  "title": "Services tests used fixed ports, so two suites running at once (parallel worktrees) collided",
+  "created": "2026-10-06T11:43:09Z"
+ },
+ {
+  "number": 438,
+  "title": "inspect: a stray small top-level .gguf sizes a huge split GGUF repo at megabytes",
+  "created": "2026-10-06T13:44:23Z"
+ },
+ {
+  "number": 442,
+  "title": "Migration tests fake older stores with ALTER TABLE DROP COLUMN, which some SQLite builds reject",
+  "created": "2026-10-06T14:12:43Z"
+ },
+ {
+  "number": 444,
+  "title": "llama-server router keeps the last screened model resident indefinitely (43 GB idle after a discovery screen)",
+  "created": "2026-10-06T14:41:32Z"
+ },
+ {
+  "number": 450,
+  "title": "sightings.relevance is scored against the sweeping machine but stored with no machine",
+  "created": "2026-10-06T16:01:28Z"
+ },
+ {
+  "number": 455,
+  "title": "Code from a feature branch silently migrates the live store ahead of the deployed services",
+  "created": "2026-10-06T16:55:03Z"
+ },
+ {
+  "number": 458,
+  "title": "make lint with a local names file flags the voter fixture in tests/test_human_verdicts.py",
+  "created": "2026-10-06T18:10:35Z"
+ },
+ {
+  "number": 461,
+  "title": "Judge pages for svg and web show nothing: the artifact field holds the output text, not a path",
+  "created": "2026-10-06T19:18:41Z"
+ },
+ {
+  "number": 463,
+  "title": "Store: results.artifact means a path for image lanes and the output text for text lanes",
+  "created": "2026-10-06T19:18:59Z"
+ },
+ {
+  "number": 471,
+  "title": "evals.run overwrites a decide engine's canonical JSON with its own path",
+  "created": "2026-10-06T20:02:27Z"
+ },
+ {
+  "number": 477,
+  "title": "MCP svg/web/code/prompt failures reach the caller as 'Error executing tool', not soh's message",
+  "created": "2026-10-06T21:03:53Z"
+ },
+ {
+  "number": 489,
+  "title": "Since #473, the decide lane's text models are scored one-hot: the streamed request loses its logprobs",
+  "created": "2026-10-06T21:32:50Z"
+ },
+ {
+  "number": 495,
+  "title": "A migration re-enters itself: backfill_candidates resolves a spec through serving.route, which opens the store being migrated",
+  "created": "2026-10-06T22:07:07Z"
+ },
+ {
+  "number": 496,
+  "title": "A migration that stops part way imports the legacy JSON again when it is retried",
+  "created": "2026-10-06T22:10:36Z"
+ },
+ {
+  "number": 498,
+  "title": "Ornith fails every long-context agent case: llama-server serves it at a 16384-token context",
+  "created": "2026-10-06T22:13:20Z"
+ },
+ {
+  "number": 501,
+  "title": "The gateway refuses a missing key with 500 and a wrong key with 400 'No connected db', never 401",
+  "created": "2026-10-06T22:33:50Z"
+ },
+ {
+  "number": 505,
+  "title": "Apple Vision OCR tests fail with e5rtError in a full make check under empty homes; the file alone passes",
+  "created": "2026-10-06T22:57:13Z"
+ },
+ {
+  "number": 506,
+  "title": "Adoptions from stores below schema 24 are backfilled to whatever spec is on disk now, not the spec their receipt recorded",
+  "created": "2026-10-06T23:07:23Z"
+ }
+]

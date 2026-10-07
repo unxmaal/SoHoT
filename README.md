@@ -1638,6 +1638,31 @@ they disagree. `docs/validation-log.md` holds the evidence behind every claim,
 including conclusions that turned out wrong and how they were caught.
 `docs/testing.md` records which mutations were run and which two survived.
 
+### The gauntlet
+
+Every missed defect is traced to the logical failing behind it, that failing
+becomes a generic class with a test shape, and later code is tested against
+every class that has bitten (#492). The classes are defined once, in the
+gauntlet skill (`SKILL.md` and `general-corpus.md`). This repo binds its
+defects to them in `tests/gauntlet/classes.py`: `INDEX` maps a class id to its
+instances here (issues and KB rules) and any scanner tests, `PENDING` holds
+proposed classes that have no skill entry yet, and `UNCLASSIFIED` gives a
+one-line reason for a defect that fits nothing.
+
+When you fix a defect: label the issue `defect`, add `{"issue": N}` to the
+class it belongs to (or a `PENDING` entry, then add the class to the skill and
+move it into `INDEX`), and refresh the snapshots:
+
+```bash
+uv run python -m tests.gauntlet snapshot-defects   # closed `defect` issues, via gh
+uv run python -m tests.gauntlet snapshot-skill     # class ids from the skill
+uv run python -m tests.gauntlet audit              # gaps, classes per tier, kill rate
+```
+
+`audit` lists closed defects no class names and closing references to them in
+`main`'s history and merged PR bodies; `--offline` uses the committed
+snapshot. CI checks the registry against the snapshot without network.
+
 ## Two traps this repo exists to remember
 
 `mlx_lm.server` has no `/v1/responses`, and LiteLLM routes `/v1/messages` there
