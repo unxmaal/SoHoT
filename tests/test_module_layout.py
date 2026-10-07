@@ -173,14 +173,26 @@ def test_each_golden_migrates_to_the_recorded_content(version, tmp_path, monkeyp
     assert got + "\n" == want.read_text(encoding="utf-8")
 
 
-def test_the_speech_pin_is_what_the_migration_reads(tmp_path, monkeypatch):
-    """Red-proof: the Windows speech defaults change the dump, so pinning them is not a no-op."""
-    version = golden_eras()[0]
-    windows = {"DEFAULT_TTS_MODEL": "kokoro-onnx/Kokoro-82M",
-               "DEFAULT_STT_MODEL": "Systran/faster-whisper-base.en"}
-    got = migrated_dump(version, tmp_path, monkeypatch, speech=windows)
-    assert "faster-whisper-base.en" in got
-    assert got + "\n" != (MIGRATED / f"v{version}.sql").read_text(encoding="utf-8")
+WINDOWS_SPEECH = {"DEFAULT_TTS_MODEL": "kokoro-onnx/Kokoro-82M",
+                  "DEFAULT_STT_MODEL": "Systran/faster-whisper-base.en"}
+
+
+@pytest.mark.parametrize("version", golden_eras())
+def test_a_golden_migrates_the_same_under_every_platform_default(version, tmp_path,
+                                                                 monkeypatch):
+    """History comes from the record, not from the migrating machine's defaults. #516."""
+    mac = migrated_dump(version, tmp_path / "mac", monkeypatch, speech=MAC_SPEECH)
+    windows = migrated_dump(version, tmp_path / "win", monkeypatch, speech=WINDOWS_SPEECH)
+    assert windows.splitlines() == mac.splitlines()
+
+
+def test_the_speech_pin_reaches_the_typed_defaults(monkeypatch):
+    """Negative control: the Windows pin is what winners.typed() reads, so the test above is not a no-op."""
+    from harness import audio, winners
+    for name, value in WINDOWS_SPEECH.items():
+        monkeypatch.setattr(audio, name, value)
+    assert winners.typed()["stt"] == "Systran/faster-whisper-base.en"
+    assert winners.typed()["tts"] == "kokoro-onnx/Kokoro-82M"
 
 
 def test_the_dump_sees_one_changed_row(tmp_path, monkeypatch):
