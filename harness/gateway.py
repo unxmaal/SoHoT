@@ -108,7 +108,18 @@ def served(config=None, defaults=None) -> dict:
                                                 "litellm_params": params}
                 added.append(by_name[where.model.lower()])
         added.append({"model_name": LANE_ALIAS.format(lane), "litellm_params": params})
-    return {**data, "model_list": entries + added}
+    return {**data, "model_list": [_capped(e) for e in entries + added]}
+
+
+def _capped(entry: dict) -> dict:
+    """An mlx_lm.server deployment queues past MLX_MAX_PARALLEL in LiteLLM, not at its socket. #542."""
+    from harness import serving
+    params = dict(entry.get("litellm_params") or {})
+    base = str(params.get("api_base", "")).rstrip("/").removesuffix("/v1")
+    if base != serving.MLX_URL or "max_parallel_requests" in params:
+        return entry
+    return {**entry, "litellm_params": {**params,
+                                        "max_parallel_requests": serving.MLX_MAX_PARALLEL}}
 
 
 def write_served(config=None, defaults=None) -> Path:

@@ -28,13 +28,21 @@ class FakeGateway:
         self.busy = 0
         self.status = status
         self.calls = []
+        # None: the gateway serves whatever served config is on disk, as after a good restart.
+        self.models = None
         fake = self
 
         class Handler(BaseHTTPRequestHandler):
             def do_GET(self):
                 fake.calls.append((self.path, dict(self.headers)))
-                body = json.dumps({"in_flight_requests": fake.busy + 1}).encode()
-                self.send_response(fake.status if self.path == "/health/backlog" else 404)
+                if self.path == "/model/info":
+                    listed = fake.models if fake.models is not None else (
+                        gateway.load(gateway.served_path()).get("model_list") or [])
+                    body, code = json.dumps({"data": listed}).encode(), 200
+                else:
+                    body = json.dumps({"in_flight_requests": fake.busy + 1}).encode()
+                    code = fake.status if self.path == "/health/backlog" else 404
+                self.send_response(code)
                 self.send_header("Content-Type", "application/json")
                 self.send_header("Content-Length", str(len(body)))
                 self.end_headers()
@@ -252,3 +260,104 @@ def test_an_adoption_spawns_the_waiter_detached_with_its_own_log(monkeypatch):
     assert kw["start_new_session"] and exclusive.HELD_ENV not in kw["env"]
     assert kw["cwd"] == str(gateway.REPO)
     assert kw["stdout"].name.endswith("gateway-switch.log")
+
+
+# ---- a switch that does not take (#522) ---------------------------------------------
+
+def _failures():
+    conn = ms.connect()
+    try:
+        return gs.failures(conn), gs.switches(conn)
+    finally:
+        conn.close()
+
+
+def _switch(gw, restart, clock):
+    return gs.switch(base=gw.base, restart=restart, idle_s=1, max_wait_s=5, poll_s=1,
+                     clock=clock.now, sleep=clock.sleep)
+
+
+def test_a_restart_that_fails_is_a_failure_not_a_switch(gw, config):
+    gateway.write_served(config)
+    before = gateway.served_path(config).read_text(encoding="utf-8")
+    adopt_for("code", f"llamacpp:{STEM}")
+    clock = Clock()
+    restarts = []
+    got = _switch(gw, lambda: restarts.append(clock.now()) or False, clock)
+    failed, done = _failures()
+    assert done == [] and got == []
+    assert len(failed) == gs.RETRIES and all(f["lane"] == "code" for f in failed)
+    assert "restart" in failed[0]["reason"]
+    # The old config is back, so the gateway serves it and the next switch sees a difference.
+    assert gateway.served_path(config).read_text(encoding="utf-8") == before
+    assert len(restarts) == gs.RETRIES + 1
+
+
+def test_a_gateway_that_restarts_but_never_serves_the_new_alias_is_a_failure(gw, config):
+    gateway.write_served(config)
+    gw.models = gateway.load(gateway.served_path(config))["model_list"]
+    adopt_for("code", f"llamacpp:{STEM}")
+    clock = Clock()
+    _switch(gw, lambda: True, clock)
+    failed, done = _failures()
+    assert done == [] and len(failed) == gs.RETRIES
+    assert "sohot-code" in failed[0]["reason"]
+
+
+@pytest.mark.gauntlet("state-is-whichever-row-came-last", site="harness/gateway_switch.py:_old_spec")
+def test_a_failed_switch_leaves_the_last_good_one_current_and_is_retried(gw, config):
+    gateway.write_served(config)
+    adopt_for("code", f"llamacpp:{STEM}")
+    clock = Clock()
+    _switch(gw, lambda: False, clock)
+    _switch(gw, lambda: True, clock)
+    failed, done = _failures()
+    assert [(r["old_spec"], r["new_spec"]) for r in done] == [
+        ("openai/mlx-community/Qwen3-4B-Instruct-2507-4bit", f"llamacpp:{STEM}")]
+    assert len(failed) == gs.RETRIES
+
+
+def test_a_transient_failure_is_retried_after_a_backoff(gw, config):
+    gateway.write_served(config)
+    adopt_for("code", f"llamacpp:{STEM}")
+    clock = Clock()
+    outcomes = [False, True]
+    slept = []
+    real_sleep = clock.sleep
+
+    def sleep(s):
+        slept.append(s)
+        real_sleep(s)
+    got = gs.switch(base=gw.base, restart=lambda: outcomes.pop(0), idle_s=1, max_wait_s=5,
+                    poll_s=1, clock=clock.now, sleep=sleep)
+    failed, done = _failures()
+    assert len(failed) == 1 and len(done) == 1 and [r["lane"] for r in got] == ["code"]
+    assert gs.BACKOFF_S in slept
+
+
+def test_the_restart_service_reports_its_exit_status(monkeypatch):
+    monkeypatch.setattr(gs.sys, "platform", "darwin")
+    monkeypatch.setattr(gs.subprocess, "call", lambda argv: 5)
+    assert gs.restart_service() is False
+    monkeypatch.setattr(gs.subprocess, "call", lambda argv: 0)
+    assert gs.restart_service() is True
+
+
+def test_a_failed_switch_nobody_has_since_fixed_is_in_the_report(gw, config):
+    from harness import report
+    gateway.write_served(config)
+    adopt_for("code", f"llamacpp:{STEM}")
+    clock = Clock()
+    _switch(gw, lambda: False, clock)
+    conn = ms.connect()
+    try:
+        failing = report.state(conn)["failed_switches"]
+    finally:
+        conn.close()
+    assert [f["lane"] for f in failing] == ["code"] and failing[0]["attempts"] == gs.RETRIES
+    _switch(gw, lambda: True, clock)
+    conn = ms.connect()
+    try:
+        assert report.state(conn)["failed_switches"] == []
+    finally:
+        conn.close()

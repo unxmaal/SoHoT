@@ -20,9 +20,10 @@ def test_the_default_is_what_the_launcher_actually_starts():
     """RULE #237, sixth instance. The engine name lived only in a shell line;
     a second copy in Python that nothing compares is how that pair drifts."""
     text = (REPO / "scripts" / "serve-mlx.sh").read_text(encoding="utf-8")
-    started = re.search(r"exec\s+uv\s+run\s+(\S+)", text)
+    started = re.search(r"exec\s+uv\s+run\s+python\s+-m\s+(\S+)", text)
     assert started, "serve-mlx.sh no longer execs a recognisable server"
-    assert started.group(1) == serving.DEFAULT
+    from importlib import import_module
+    assert import_module(started.group(1)).WRAPS == serving.DEFAULT
 
 
 def test_an_unset_variable_gives_the_default():

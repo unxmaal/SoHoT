@@ -210,10 +210,12 @@ def _usage(conn) -> dict:
     """Real use per lane alias over the last week, and any switch it regressed after. #481."""
     from harness import usage
     try:
-        return {"real_use": usage.real_use(conn),
-                "usage_warnings": usage.regressions(usage.around_switches(conn))}
+        out = {"real_use": usage.real_use(conn),
+               "usage_warnings": usage.regressions(usage.around_switches(conn))}
     except Exception:  # noqa: BLE001
-        return {"real_use": {}, "usage_warnings": []}
+        out = {"real_use": {}, "usage_warnings": []}
+    from harness import gateway_switch
+    return {**out, "failed_switches": gateway_switch.unresolved(conn)}
 
 
 def real_use_rows(real: dict) -> str:
@@ -237,6 +239,9 @@ def _real_use_section(now: dict) -> str:
     real = now.get("real_use") or {}
     warns = "".join(f'<p><span class="tag bad">regressed</span> {_esc(w)}</p>'
                     for w in now.get("usage_warnings") or [])
+    warns += "".join(f'<p><span class="tag bad">switch failed</span> sohot-{_esc(f["lane"])} -&gt; '
+                     f'{_esc(f["new_spec"])}, {f["attempts"]} attempt(s): {_esc(f["reason"])}</p>'
+                     for f in now.get("failed_switches") or [])
     body = (f"{REAL_USE_HEAD}\n{real_use_rows(real)}\n</table>" if real else
             '<p class="note">No requests through the gateway in the last 7 days.</p>')
     return f"""
