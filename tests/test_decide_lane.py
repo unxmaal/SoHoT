@@ -259,6 +259,29 @@ def test_the_completion_asks_for_logprobs_only_when_told(monkeypatch):
     assert "logprobs" not in seen[-1]
 
 
+def test_a_decide_request_turns_thinking_off(monkeypatch):
+    seen = []
+
+    class R:
+        status_code = 200
+        text = ""
+
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {"choices": [{"message": {"content": "{}"}}]}
+
+    monkeypatch.setattr(completion, "_post", lambda g, p, t: seen.append(p) or R())
+    # The product is one pass of option logprobs; reasoning first spends the budget (#311).
+    completion.complete_full("x", "m", modality="decide", top_logprobs=5)
+    assert seen[-1]["chat_template_kwargs"] == {"enable_thinking": False}
+    completion.complete_full("x", "m", modality="code")
+    assert "chat_template_kwargs" not in seen[-1]
+    completion.complete_full("x", "m", modality="decide", template={"k": 1})
+    assert seen[-1]["chat_template_kwargs"] == {"k": 1}
+
+
 def test_the_text_runner_writes_probabilities_when_the_server_has_them(monkeypatch):
     import math
 

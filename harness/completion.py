@@ -82,6 +82,9 @@ SAMPLING = {
     "decide": {"temperature": 0.0},
 }
 
+#: Chat-template kwargs per modality; decide reads one pass of option logprobs, so no reasoning. #311.
+TEMPLATE = {"decide": {"enable_thinking": False}}
+
 #: OpenAI's ceiling is 20 and mlx_lm.server's is 11. #423.
 TOP_LOGPROBS = 10
 
@@ -203,6 +206,7 @@ def complete_full(prompt: str, model: str, gateway: str = DEFAULT_GATEWAY,
         ],
         **knobs,
     }
+    template = template or TEMPLATE.get(modality)
     if template:
         payload["chat_template_kwargs"] = dict(template)
     if top_logprobs:
