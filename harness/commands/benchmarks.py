@@ -59,11 +59,11 @@ def _readme(repo: str) -> str:
 
 
 def _probe(a, conn) -> int:
-    from evals.core import load_cases
+    from evals import run as evals_run
     from harness import contamination as ct
     from harness import memory_store as ms
     lane = (a.lane or "decide").strip().lower()
-    cases = [c for c in load_cases(_cases_root() / lane) if c.modality == lane]
+    cases = [c for c in evals_run.load_cases(_cases_root() / lane) if c.modality == lane]
     if a.limit:
         cases = cases[:a.limit]
     ask = ct.gateway_ask(a.gateway)
