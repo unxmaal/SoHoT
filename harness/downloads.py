@@ -245,7 +245,7 @@ def removed(conn, path, *, by: str, verdict_id=None, repo: str = "",
         for r in got:
             conn.execute(
                 "UPDATE downloads SET removed_at = ?, removed_by = ?, "
-                "removal_verdict_id = ? WHERE id = ?",
+                "removal_verdict_id = ?, complete = 0 WHERE id = ?",
                 (at, by, verdict_id, r["id"]))
         conn.commit()
         return got[0]["id"]
