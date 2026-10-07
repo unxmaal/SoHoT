@@ -91,6 +91,48 @@ def _lanes_wanted_lines(rows, ceiling_gib: float, top: int = 10) -> list[str]:
     return out
 
 
+def _cross_methods(store, want: str = "") -> list[tuple[str, str, bool]]:
+    """Queue each registered method over each lane's incumbent; (lane, spec, newly queued). #576.
+    A known crossing is left alone. Interim until proposals carry a category: kind `method`."""
+    from harness import adopt, methods, reasons, winners
+    from harness import memory_store as ms
+    typed = winners.typed()
+
+    def incumbent_of(lane):
+        return adopt.default_for(lane, typed.get(lane, ""), conn=store)
+
+    out = []
+    for lane in lanes.ALL:
+        if (want and lane != lanes.canonical(want)) or lanes.parked(lane)[0]:
+            continue
+        for spec in methods.crossings(lane, incumbent_of):
+            known = store.execute("SELECT 1 FROM proposals WHERE name = ?",
+                                  (spec,)).fetchone()
+            if not known:
+                parsed = methods.parse(spec)
+                ms.record(store, ms.Seen(
+                    name=spec, source=methods.CROSSING_SOURCE, kind=methods.CROSSING_KIND,
+                    lane=lane, resolved=spec,
+                    why=f"{parsed.method.name} over the incumbent {parsed.base}",
+                    description=parsed.method.note))
+                ms.decide(store, spec, "queued", tier=ms.INSPECT,
+                          detail=f"a registered method over the {lane} lane's incumbent",
+                          reason=reasons.CANDIDATE)
+            out.append((lane, spec, not known))
+    return out
+
+
+def _methods_lines(crossed) -> list[str]:
+    """The `methods` section: which crossings were queued this run and which were known."""
+    if not crossed:
+        return []
+    out = ["\n=== methods ===",
+           "each registered method over each lane's incumbent, queued like any candidate:"]
+    for lane, spec, new in crossed:
+        out.append(f"  {'queued' if new else 'known ':6}  {lane:8} {spec}")
+    return out
+
+
 def _report_loop(a) -> int:
     """Every step from a sweep to an adopted winner. Issue #201.
 
@@ -128,6 +170,8 @@ def _report_loop(a) -> int:
     want = (getattr(a, "lane", "") or "").strip().lower()
     store = ms.connect()
     try:
+        for line in _methods_lines(_cross_methods(store, want)):
+            print(line)
         rows, _ = _queueable(store, want)
         if want:
             print(f"\n(scoped to the {want} lane: {len(rows)} candidate(s))")

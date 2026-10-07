@@ -414,6 +414,10 @@ METRIC_DIRECTION = {
     # The per-slot context the candidate was served at. #498.
     "agent_ctx": "neutral",
     "prompt_tokens": "neutral",
+    # methods (#576): what a method paid for its row; cost is reported, never ranked on.
+    "method_calls": "neutral",
+    "method_samples": "neutral",
+    "method_chosen": "neutral",
     # retrieval (#563): every relevant document in the top k, and how high.
     "retrieval_recall": "higher",
     "retrieval_ndcg": "higher",
@@ -652,6 +656,8 @@ class Receipt:
     #: Which side of the holdout split ran, and the assignment version. #479.
     split: str = ""
     split_version: str = ""
+    #: receipt key -> the method and its base, for each method candidate. Not an axis. #576.
+    methods: dict = field(default_factory=dict)
 
     def as_dict(self) -> dict:
         return {"modality": self.modality, "case_ids": list(self.case_ids),
@@ -664,7 +670,8 @@ class Receipt:
                 "swap_used_mb": self.swap_used_mb,
                 "pressure": dict(self.pressure),
                 "cases_digest": self.cases_digest,
-                "split": self.split, "split_version": self.split_version}
+                "split": self.split, "split_version": self.split_version,
+                "methods": dict(self.methods)}
 
 
 def cases_digest(cases) -> str:

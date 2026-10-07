@@ -40,7 +40,6 @@ from evals.runners.chain import ChainRunner
 from evals.runners.repair import RepairRunner
 from evals.runners.speech import SpeechRunner
 from evals.runners.omnisvg import DEFAULT_CANDIDATES, OmniSVGRunner
-from evals.runners.trace import TraceRunner
 from evals.runners.text import CompletionRunner
 from evals.runners.transcription import TranscriptionRunner
 
@@ -59,8 +58,10 @@ PROCESS_ENGINES = tuple(sorted(engine_names()))
 #: The svg lane's second METHOD: draw a raster, then vectorize it. Written as
 #: `trace:<engine spec>` so the engine underneath stays the ordinary spec.
 TRACE_PREFIX = "trace"
+#: Every method, trace among them, lives in harness/methods.py. #576.
+from harness import methods  # noqa: E402
 # candidate prefix -> vector.TRACE_PRESETS key
-TRACE_PREFIXES = {"trace": "illustration", "trace-icon": "icon"}
+TRACE_PREFIXES = methods.TRACE_PRESETS
 #: Generate, check, repair. A WORKFLOW rather than a model: `local-large` and
 #: `repair:local-large` are different products. See evals/runners/repair.py.
 REPAIR_PREFIX = "repair"
@@ -100,7 +101,7 @@ def kind_of(candidate: str) -> str:
         return "process"
     if head in ("tts", "stt"):
         return head
-    if head in TRACE_PREFIXES:
+    if head in methods.REGISTRY:
         return head
     if head == OMNISVG_PREFIX:
         return OMNISVG_PREFIX
@@ -121,10 +122,10 @@ def modality_of(candidate: str) -> str | None:
     kind = kind_of(candidate)
     if kind in ("tts", "stt"):
         return kind
-    if kind in TRACE_PREFIXES:
-        # It answers svg cases; the engine underneath makes images, which is
-        # the whole point and would be the wrong modality to select on.
-        return "svg"
+    if kind in methods.REGISTRY:
+        # A trace answers svg cases while its engine makes images; a text method
+        # answers whatever its base answers.
+        return methods.REGISTRY[kind].modality or modality_of(methods.base_of(candidate))
     if kind == OMNISVG_PREFIX:
         return "svg"
     if kind in (REPAIR_PREFIX, CLAUDE_CODE_PREFIX):
@@ -257,11 +258,38 @@ def is_kokoro(model: str) -> bool:
     return "kokoro" in model.lower()
 
 
+def text_candidate(candidate: str) -> bool:
+    """A text server answers it: a text spec, or a method over one. #576."""
+    if kind_of(candidate) in TEXT_KINDS:
+        return True
+    base = methods.base_of(candidate)
+    return bool(base) and kind_of(base) in TEXT_KINDS
+
+
+def text_spec(candidate: str) -> str:
+    """The text spec under a candidate, for the server it reaches."""
+    return methods.base_of(candidate) or candidate
+
+
+def method_receipts(specs: dict) -> dict:
+    """receipt key -> the method and the base it composed over, for each method spec. #576."""
+    out = {}
+    for key, spec in specs.items():
+        try:
+            got = methods.parse(spec)
+        except ValueError:
+            got = None
+        if got is not None:
+            out[key] = {"spec": spec, "method": got.method.name,
+                        "args": list(got.args), "base": got.base}
+    return out
+
+
 def greedy(candidates: list[str]) -> list[str]:
     """Pin text candidates to temperature 0, so a screen is one fixed draw. #308."""
     out = []
     for c in candidates:
-        if (kind_of(c) in TEXT_KINDS
+        if (text_candidate(c)
                 and "temperature" not in parse_options(c.partition(",")[2], c)):
             c = f"{c},temperature=0"
         out.append(c)
@@ -287,7 +315,7 @@ def effective_sampling(modality: str, candidates: list[str]) -> dict:
             out.setdefault(m, {})
             out[m].setdefault("temperature", completion.DEFAULT_TEMPERATURE)
     for candidate in candidates:
-        if kind_of(candidate) not in TEXT_KINDS:
+        if not text_candidate(candidate):
             continue
         _, _, optstr = candidate.partition(",")
         if not optstr:
@@ -434,18 +462,12 @@ def _build_runner(candidate: str, gateway: str, outdir: Path | None,
                 candidates=int(options.get("candidates", DEFAULT_CANDIDATES)))
         except ValueError as exc:
             raise SystemExit(f"{candidate}: {exc}") from exc
-    if kind in TRACE_PREFIXES:
-        spec = candidate.partition(":")[2].strip()
-        if not spec:
-            raise SystemExit(f"a {kind} candidate needs an engine, e.g. "
-                             f"{kind}:mflux:flux2-klein-4b")
-        try:
-            engine = resolve(spec)
-        except ValueError as exc:
-            raise SystemExit(str(exc)) from exc
-        if outdir is None:
-            raise SystemExit(f"{candidate} writes images; pass --out")
-        return TraceRunner(engine, outdir, preset=TRACE_PREFIXES[kind])
+    if kind in methods.REGISTRY:
+        def base(spec):
+            runner = _build_runner(spec, gateway, outdir, adherence)
+            runner.spec = spec
+            return runner
+        return methods.build(candidate, base, outdir)
     try:
         engine = resolve(candidate)
     except ValueError as exc:
@@ -480,8 +502,8 @@ def method_of(candidate: str) -> str:
     exact thing Case.methods exists to prevent.
     """
     kind = kind_of(candidate)
-    if kind in TRACE_PREFIXES:
-        return TRACE_PREFIX
+    if kind in methods.REGISTRY:
+        return methods.REGISTRY[kind].takes or method_of(methods.base_of(candidate))
     if kind == OMNISVG_PREFIX:
         return OMNISVG_PREFIX
     return "llm"
@@ -493,9 +515,17 @@ def cases_for(candidate: str, cases: list[Case]) -> list[Case]:
     if kind_of(candidate) == NEEDLE_KIND:
         return [c for c in cases if c.modality in NEEDLE_LANES]
     if modality is None:
-        return [c for c in cases
-                if c.modality in TEXT_MODALITIES | AGENT_MODALITIES]
+        text = [c for c in cases if c.modality in TEXT_MODALITIES | AGENT_MODALITIES]
+        return _fair(candidate, text) if kind_of(candidate) in methods.REGISTRY else text
     picked = [c for c in cases if c.modality == modality]
+    return _fair(candidate, picked)
+
+
+def _fair(candidate: str, picked: list[Case]) -> list[Case]:
+    """The cases whose declared methods take this candidate, in its method's own lanes."""
+    method = methods.REGISTRY.get(kind_of(candidate))
+    if method is not None and method.lanes:
+        picked = [c for c in picked if c.modality in method.lanes]
     # A case may declare which methods it can fairly test. See Case.methods.
     picked = [c for c in picked
               if not c.methods or method_of(candidate) in c.methods]
@@ -792,7 +822,8 @@ def _execute(args) -> int:
             swap_used_mb=swap_used_mb(),
             pressure=pressed.as_dict(),
             cases_digest=cases_digest(cases),
-            split=side, split_version=holdout.VERSION)
+            split=side, split_version=holdout.VERSION,
+            methods=method_receipts(specs))
         now = time.time()
         ids = candidate_ids(specs, args.modality)
         for r in results:
@@ -847,8 +878,8 @@ def store_run(outdir, payload: dict, at: float) -> int | None:
 def engines(candidates) -> dict:
     """Which server answered each text candidate. #295."""
     from harness import serving
-    return {c: serving.engine_for(c) for c in candidates
-            if kind_of(c) in TEXT_KINDS}
+    return {c: serving.engine_for(text_spec(c)) for c in candidates
+            if text_candidate(c)}
 
 
 def instruments(candidates=()) -> dict:

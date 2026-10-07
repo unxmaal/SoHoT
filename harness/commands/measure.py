@@ -293,7 +293,7 @@ def _measure(a, row: dict, loaded: list) -> int:
         return err(f"{name}: every case was refused before it reached a model "
                    f"({refused}). The incumbent passed, so this says nothing "
                    f"about the candidate and it stays queued.")
-    verdict = adopt.decide(lane, inc_row, ch_row, rows, split=split, plan=plan)
+    verdict = adopt.decide(lane, inc_row, ch_row, rows, split=split, plan=plan, spec=spec)
     print(f"    {'ADOPTED' if verdict.adopt else 'kept the incumbent'}: "
           f"{verdict.why}")
     store = ms.connect()

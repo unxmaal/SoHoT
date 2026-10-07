@@ -242,6 +242,16 @@ def methods() -> list[Capability]:
                    "--candidates repair:local-large --modality svg",
                    note="svg 6/9 -> 9/9 at --repeat 3, mean ~1.4 attempts"),
     ]
+    from harness import methods as registry
+    have = {(c.name, c.lane) for c in out}
+    for m in registry.REGISTRY.values():
+        for lane in m.lanes:
+            if (m.name, lane) not in have:
+                out.append(Capability("method", m.name, lane, "harness/methods.py",
+                                      f"--candidates {m.compose('q3-4b')} --modality {lane}"
+                                      if not m.base_lane else
+                                      f"--candidates {m.compose('mflux:flux2-klein-4b')}",
+                                      note=m.note))
     for stage in sorted(STAGE_ENTRY_POINTS):
         broken = stages.stage_unavailable(stage)
         out.append(Capability(
