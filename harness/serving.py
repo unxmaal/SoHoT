@@ -98,6 +98,24 @@ def engine_for(candidate: str, environ=None, config=None) -> str:
     return text_engine(environ)
 
 
+def enforces_schema(spec: str, environ=None, config=None) -> bool:
+    """Whether this spec is answered by llama-server, the one engine that enforces response_format. #572."""
+    if engine_for(spec, environ, config) == LLAMACPP:
+        return True
+    try:
+        where = route(spec, config=config)
+    except ValueError:
+        return False
+    from harness import router
+    return where.base.rstrip("/").removesuffix("/v1") in (LLAMACPP_URL, router.url())
+
+
+def drops_schema(base: str, environ=None) -> bool:
+    """Whether a request sent straight to `base` reaches mlx_lm.server, which ignores response_format."""
+    return (base.rstrip("/").removesuffix("/v1") == MLX_URL
+            and text_engine(environ) == DEFAULT)
+
+
 def text_engine(environ=None) -> str:
     """The name of the server behind the text lane."""
     environ = os.environ if environ is None else environ

@@ -118,11 +118,15 @@ def test_minus_m_still_overrides_the_adoption(capsys):
     assert json.loads(hit.calls.last.request.content)["model"] == "local-large"
 
 
-@pytest.mark.parametrize("lane", ["web", "svg", "extract", "decide"])
-def test_every_text_lane_resolves_its_adoption_at_call_time(lane):
+@pytest.mark.parametrize("lane,spec", [
+    ("web", "mlx-community/Qwen3-8B-4bit"), ("svg", "mlx-community/Qwen3-8B-4bit"),
+    ("extract", "mlx-community/Qwen3-8B-4bit"),
+    # decide adopts only what llama-server serves. #572.
+    ("decide", f"llamacpp:{STEM}")])
+def test_every_text_lane_resolves_its_adoption_at_call_time(lane, spec):
     assert cli.lane_model(lane) == winners.typed()[lane]
-    adopt_for(lane, "mlx-community/Qwen3-8B-4bit")
-    assert cli.lane_model(lane) == "mlx-community/Qwen3-8B-4bit"
+    adopt_for(lane, spec)
+    assert cli.lane_model(lane) == spec
 
 
 def test_image_and_video_resolve_their_adoption_at_call_time(monkeypatch):

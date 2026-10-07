@@ -1415,6 +1415,11 @@ lane in #311) on llama-server, never an mlx_lm.server alias, which the gateway
 refuses for a schema. Its GGUF must be in the router's models dir
 (`scripts/fetch-gguf.sh mindchain/imajev-4b-GGUF imajev-4b-Q8_0.gguf`), and
 `scripts/smoke.sh` asks `sohot-decide` for an answer under a schema.
+The adopt tier will not adopt anything for a schema lane (`gateway.SCHEMA_LANES`)
+that llama-server does not serve: the win is recorded as `queued` with reason
+`harness` and class `refused_by_gateway`, never as a loss. The eval refuses a
+decide case aimed straight at mlx_lm.server (the same class) instead of scoring a
+reply whose schema was dropped.
 `nimble:<repo>` runs Bespoke-Nimble-9B
 through nimble's own MLX ParallelScorer. On first use `scripts/nimble-venv.sh`
 clones nimble at its pinned commit into `~/localharness/nimble/checkout` and

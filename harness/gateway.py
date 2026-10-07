@@ -64,6 +64,8 @@ def strip_provider(model: str) -> str:
 #: Text lanes the served config names by lane, so a LAN client can ask for `sohot-code`. #297.
 TEXT_LANES = ("code", "web", "svg", "extract", "decide", "agent")
 LANE_ALIAS = "sohot-{}"
+#: Text lanes whose requests carry response_format json_schema, so only llama-server can serve them. #572.
+SCHEMA_LANES = ("decide",)
 
 
 def refresh_gateway() -> None:
