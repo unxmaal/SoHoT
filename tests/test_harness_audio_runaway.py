@@ -122,6 +122,38 @@ def test_a_runaway_raises_rather_than_returning_the_audio(tmp_path, monkeypatch)
     assert made.exists(), "the audio must survive so it can be listened to"
 
 
-def test_the_ceiling_is_well_clear_of_the_measured_range():
-    """Fastest healthy 0.25, slowest healthy 0.56, slowest runaway 5.33."""
-    assert 0.56 < SECONDS_PER_WORD_CEILING < 1.37
+# Issue #91, measured 2026-10-07 from every stored tts clip with a known case.
+SLOWEST_GOOD = (7.84, 9)        # Breeze-TTS-2 pangram, WER 0, 0.871 s/word
+FASTEST_RUNAWAY = (14.42, 14)   # Chatterbox fr-numbers, invented "Le frais c'est...", 1.030
+SUBTLE_RUNAWAYS = [(14.42, 14), (12.66, 11)]   # 1.030 and 1.151, trailing invented speech
+MARGIN = 1.05
+
+
+def test_the_slowest_real_good_clip_is_not_a_runaway(tmp_path):
+    seconds, n = SLOWEST_GOOD
+    assert runaway_reason(wav(tmp_path / "slow.wav", seconds), words(n)) == ""
+
+
+@pytest.mark.parametrize("seconds,n", SUBTLE_RUNAWAYS)
+def test_the_subtle_measured_runaways_are_caught(tmp_path, seconds, n):
+    """Invented trailing speech, not the token-budget kind."""
+    assert runaway_reason(wav(tmp_path / "r.wav", seconds), words(n))
+
+
+def test_a_synthetic_runaway_trips_the_guard(tmp_path):
+    """Negative control: a median healthy rate plus several invented seconds."""
+    assert runaway_reason(wav(tmp_path / "s.wav", 9 * 0.39 + 6.0), words(9))
+
+
+def test_two_invented_seconds_on_a_short_line_is_a_known_blind_spot(tmp_path):
+    """Still inside the healthy range, so a rate ceiling cannot see it.
+    Pinned so the limit stays visible."""
+    assert runaway_reason(wav(tmp_path / "s.wav", 9 * 0.39 + 2.0), words(9)) == ""
+
+
+def test_the_ceiling_keeps_a_margin_on_both_sides_of_the_measured_gap():
+    """The old ceiling cleared the fastest runaway by a few percent, which is noise."""
+    good = SLOWEST_GOOD[0] / SLOWEST_GOOD[1]
+    bad = FASTEST_RUNAWAY[0] / FASTEST_RUNAWAY[1]
+    assert good * MARGIN <= SECONDS_PER_WORD_CEILING
+    assert SECONDS_PER_WORD_CEILING * MARGIN <= bad
