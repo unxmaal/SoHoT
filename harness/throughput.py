@@ -100,25 +100,26 @@ def sweep(model: str, texts: list[str], levels=(1, 2, 4), max_tokens: int = 300,
     returns the server's bytes, sampled for each level's peak."""
     post = post or _gateway_post(gateway, timeout)
 
-    def one(text: str) -> tuple[float, int, bool, float | None]:
+    def one(text: str) -> tuple[float, int, bool, float | None, str]:
         payload = {"model": model, "max_tokens": max_tokens, "temperature": 0,
                    "messages": [{"role": "user", "content": INSTRUCTION + text}]}
         t = clock()
-        ttft = None
+        ttft, why = None, ""
         try:
             body = post(payload) or {}
             tokens = int((body.get("usage") or {}).get("completion_tokens") or 0)
             ttft = body.get("_ttft_s")
             ok = True
-        except Exception:  # noqa: BLE001 - a failed request is a result
+        except Exception as exc:  # noqa: BLE001 - a failed request is a result
             tokens, ok = 0, False
-        return clock() - t, tokens, ok, ttft
+            why = f"{type(exc).__name__}: {str(exc).splitlines()[0] if str(exc) else ''}"[:160]
+        return clock() - t, tokens, ok, ttft, why
 
     out = []
     with exclusive.held("eval"):
         # Untimed: a model that is not resident loads on the first request,
         # and every ratio is taken against the first level. #333.
-        warm_s, _, warm_ok, _ = one(texts[0]) if texts else (0.0, 0, True, None)
+        warm_s, _, warm_ok, *_ = one(texts[0]) if texts else (0.0, 0, True, None, "")
         for level in levels:
             with _Peak(footprint, sample_s) as peak:
                 t0 = clock()
@@ -126,10 +127,15 @@ def sweep(model: str, texts: list[str], levels=(1, 2, 4), max_tokens: int = 300,
                     got = list(pool.map(one, texts))
                 wall = clock() - t0
             lat = sorted(s for s, *_ in got)
-            first = sorted(f for *_, f in got if f is not None)
+            first = sorted(f for _, _, _, f, _ in got if f is not None)
+            kinds: dict[str, int] = {}
+            for *_, why in got:
+                if why:
+                    kinds[why] = kinds.get(why, 0) + 1
             out.append({
                 "concurrency": level, "n": len(got),
-                "errors": sum(1 for _, _, ok, _ in got if not ok),
+                "errors": sum(1 for _, _, ok, *_ in got if not ok),
+                "error_kinds": kinds,
                 "wall_s": round(wall, 2),
                 "per_hour": round(len(got) / wall * 3600, 1) if wall else 0.0,
                 "p50_s": round(statistics.median(lat), 2),
@@ -138,8 +144,8 @@ def sweep(model: str, texts: list[str], levels=(1, 2, 4), max_tokens: int = 300,
                 "ttft_p95_s": (round(first[min(len(first) - 1,
                                                int(len(first) * 0.95))], 3)
                                if first else None),
-                "completion_tokens": sum(t for _, t, _, _ in got),
-                "tokens_per_s": (round(sum(t for _, t, _, _ in got) / wall, 1)
+                "completion_tokens": sum(t for _, t, *_ in got),
+                "tokens_per_s": (round(sum(t for _, t, *_ in got) / wall, 1)
                                  if wall else 0.0),
                 "peak_bytes": peak.peak,
                 "warmup_s": round(warm_s, 2), "warmup_ok": warm_ok,

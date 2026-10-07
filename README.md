@@ -579,7 +579,8 @@ someone here opens a web page, not that the port is reachable from outside.
 
 Every lane command uses what its lane has adopted on this machine, else the
 typed default, and sends it to the server that serves it: a gateway alias to
-the gateway, an MLX repo id to mlx_lm.server, `llamacpp:<stem>` to llama-server.
+the gateway, an MLX repo id to mlx_lm.server, `llamacpp:<stem>` to llama-server,
+`vllm:<repo id>` to the vLLM server on `VLLM_PORT`.
 `-m` overrides; `--gateway` sends the request somewhere verbatim.
 
 An adoption serves the machine it was made on, whether measured (`soh adopt`)
@@ -1555,6 +1556,33 @@ warm, with Photos analysis paused:
 One request at a time is 7.8x faster than the M2 Pro, and concurrency buys
 less: a single request already keeps more of this GPU busy. Past four in
 flight nothing is gained, because the server has four slots.
+
+`--model` takes any text spec, so `llamacpp:<stem>` and `vllm:<repo id>` go
+straight to their server. `--server-pid` samples that server's peak memory
+(phys_footprint of it and its children) during each level, and every level
+reports total tokens per second and why any request failed. `--serve
+vllm-mlx` or `--serve vllm-metal` starts that engine from
+`$LOCALHARNESS_HOME/venvs/<engine>` on `VLLM_PORT` (default 8086), sweeps, and
+stops it. vllm-metal always gets `--gpu-memory-utilization 0.2 --max-model-len
+16384`: without them, on the M5 Ultra on 2026-10-06, it reserved 68 GiB of KV
+for a 4B model. A `vllm:` spec
+works anywhere a text spec does (evals, lane commands, an adoption the
+generated gateway config fronts); `VLLM_ENGINE` names which implementation it
+is on the receipt's `engines` map.
+
+Measured 2026-10-07 on the M5 Ultra, Qwen3-4B-Instruct-2507 (MLX 4-bit; Q4_K_M
+GGUF for llama-server with 16 slots), 32 texts, 300-token budget, total tokens
+per second (#310):
+
+| in flight | mlx_lm.server 0.32.0 | vllm-mlx 0.5.0 | vllm-metal 0.30.0 | llama-server b11146 |
+|---|---|---|---|---|
+| 1 | 194 | 234 | 172 | 185 |
+| 4 | 418 | 533 | 487 | 325 |
+| 16 | 746 | 829 | 929 | 387 |
+
+mlx_lm.server batches by default since 0.32.0, but its HTTP server's listen
+backlog is 5, so at 16 in flight some connections are reset. The code lane
+scores the four alike (20 to 22 of 42 at repeat 3).
 
 ### How much memory a run can take
 

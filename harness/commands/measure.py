@@ -120,6 +120,8 @@ def cmd_throughput(a) -> int:
              f"peak {'-' if peak is None else f'{peak / 1024 ** 3:.1f} GiB'}  "
              f"errors {r['errors']}  "
              f"tokens {r['completion_tokens']}", flush=True)
+        for why, n in (r.get("error_kinds") or {}).items():
+            note(f"      {n} x {why}", flush=True)
     emit(model=a.model, engines={a.model: engine}, max_tokens=a.max_tokens, levels=got)
     return 0
 

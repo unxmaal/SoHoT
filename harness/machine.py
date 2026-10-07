@@ -239,9 +239,16 @@ def _other_venvs() -> list[Path]:
     root = engines.acestep_root()
     if root:
         out.append(Path(root) / ".venv")
-    from harness import vllm
-    out += [vllm.venv_for(e) for e in vllm.ENGINES]
     return out
+
+
+#: A vLLM venv carries its own mlx stack; only its vLLM packages describe it.
+VLLM_PACKAGES = ("vllm-mlx", "vllm-metal", "vllm")
+
+
+def _vllm_venvs() -> list[Path]:
+    from harness import vllm
+    return [vllm.venv_for(e) for e in vllm.ENGINES]
 
 
 def _uv_with_pins(path: Path | None = None) -> dict[str, str]:
@@ -286,6 +293,10 @@ def versions() -> dict[str, str]:
     for venv in _other_venvs():
         for k, v in _site_versions(venv).items():
             if k in WATCHED:
+                got.setdefault(k, v)
+    for venv in _vllm_venvs():
+        for k, v in _site_versions(venv).items():
+            if k in VLLM_PACKAGES:
                 got.setdefault(k, v)
     for k, v in _uv_with_pins().items():
         got.setdefault(k, v)

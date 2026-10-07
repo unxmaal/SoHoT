@@ -147,8 +147,24 @@ def test_the_vllm_venvs_report_their_versions(tmp_path, monkeypatch):
     (site / "vllm_mlx-0.5.0.dist-info").mkdir(parents=True)
     monkeypatch.setenv(vllm.VENV_VAR, str(tmp_path / "vllm-mlx"))
     assert {"vllm-mlx", "vllm-metal", "vllm"} <= set(machine.WATCHED)
-    assert tmp_path / "vllm-mlx" in machine._other_venvs()
+    assert tmp_path / "vllm-mlx" in machine._vllm_venvs()
     assert machine._site_versions(tmp_path / "vllm-mlx")["vllm-mlx"] == "0.5.0"
+
+
+def test_a_vllm_venv_names_only_vllm_not_the_mlx_it_carries(tmp_path, monkeypatch):
+    site = tmp_path / "vllm-mlx" / "lib" / "python3.12" / "site-packages"
+    for dist in ("vllm_mlx-0.5.0", "mlx_audio-9.9.9", "mlx_vlm-9.9.9"):
+        (site / f"{dist}.dist-info").mkdir(parents=True)
+    monkeypatch.setenv(vllm.VENV_VAR, str(tmp_path / "vllm-mlx"))
+    monkeypatch.setattr(machine, "_imported_versions", lambda: {})
+    monkeypatch.setattr(machine, "_uv_with_pins", lambda: {})
+    machine.versions.cache_clear()
+    try:
+        got = machine.versions()
+    finally:
+        machine.versions.cache_clear()
+    assert got["vllm-mlx"] == "0.5.0"
+    assert got.get("mlx-audio") != "9.9.9" and got.get("mlx-vlm") != "9.9.9"
 
 
 # ---- the launcher -----------------------------------------------------------
@@ -238,6 +254,14 @@ def test_the_peak_is_per_level():
     got = throughput.sweep("m", ["t"], levels=(1, 2), post=lambda p: {"usage": {}},
                            footprint=lambda: next(samples), sample_s=60)
     assert [r["peak_bytes"] for r in got] == [5_000, 3_000]
+
+
+def test_a_failed_request_says_why():
+    def post(payload):
+        raise RuntimeError("server error mid-stream: KV cache full\nmore")
+    got = throughput.sweep("m", ["t", "t"], levels=(1,), post=post)
+    assert got[0]["errors"] == 2
+    assert got[0]["error_kinds"] == {"RuntimeError: server error mid-stream: KV cache full": 2}
 
 
 def test_without_a_server_to_watch_there_is_no_peak():
