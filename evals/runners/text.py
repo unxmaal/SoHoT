@@ -70,12 +70,20 @@ class CompletionRunner(BaseRunner):
             modality=case.modality, context=case.context,
             timeout=self.timeout, sampling=self.sampling or None,
             template=template, stream=True,
-            top_logprobs=completion.TOP_LOGPROBS if case.modality == "decide" else 0)
+            top_logprobs=completion.TOP_LOGPROBS if case.modality == "decide" else 0,
+            response_format=self._reply_shape(case))
         self.answered = True
         self.last_timing = {**got.timing, "cold": cold}
         if case.modality == "decide":
             return self._decide(case, got)
         return got.text, got.usage
+
+    @staticmethod
+    def _reply_shape(case: Case):
+        if case.modality != "decide":
+            return None
+        from harness.checks import decide
+        return decide.response_format(case.params["schema"])
 
     def _decide(self, case: Case, got: completion.Completion):
         """Answer letters plus their token probabilities where the server

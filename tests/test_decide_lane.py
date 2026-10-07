@@ -259,6 +259,76 @@ def test_the_completion_asks_for_logprobs_only_when_told(monkeypatch):
     assert "logprobs" not in seen[-1]
 
 
+def test_a_decide_request_turns_thinking_off(monkeypatch):
+    seen = []
+
+    class R:
+        status_code = 200
+        text = ""
+
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {"choices": [{"message": {"content": "{}"}}]}
+
+    monkeypatch.setattr(completion, "_post", lambda g, p, t: seen.append(p) or R())
+    # The product is one pass of option logprobs; reasoning first spends the budget (#311).
+    completion.complete_full("x", "m", modality="decide", top_logprobs=5)
+    assert seen[-1]["chat_template_kwargs"] == {"enable_thinking": False}
+    completion.complete_full("x", "m", modality="code")
+    assert "chat_template_kwargs" not in seen[-1]
+    completion.complete_full("x", "m", modality="decide", template={"k": 1})
+    assert seen[-1]["chat_template_kwargs"] == {"k": 1}
+
+
+def test_the_reply_shape_is_a_json_schema_of_letters():
+    got = decide.json_schema(SPEC)
+    assert got["required"] == ["route", "urgent"] and got["additionalProperties"] is False
+    assert got["properties"]["route"] == {"type": "string", "enum": ["A", "B"]}
+    assert list(got["properties"]) == list(SPEC)
+
+
+def test_every_decide_request_carries_the_reply_schema(monkeypatch):
+    from evals.runners.text import CompletionRunner
+    from harness import delegate, serving
+    seen = []
+
+    def full(*a, **k):
+        seen.append(k)
+        return completion.Completion('{"route": "B", "urgent": "A"}', {}, [])
+
+    monkeypatch.setattr(completion, "complete_full", full)
+    # Decision models ignore a prose format request; llama-server enforces this one (#311).
+    c = Case(id="d", modality="decide", prompt="p", params={"schema": SPEC},
+             assertions={"answers": {"route": "tech", "urgent": False}})
+    CompletionRunner("http://gw", "q3-4b").run(c)
+    delegate.ask("q", SPEC, serving.Route("http://gw", "m", {}))
+    want = {"type": "json_schema",
+            "json_schema": {"name": "decide", "strict": True, "schema": decide.json_schema(SPEC)}}
+    assert [k.get("response_format") for k in seen] == [want, want]
+
+
+def test_the_reply_schema_reaches_the_payload(monkeypatch):
+    seen = []
+
+    class R:
+        status_code = 200
+        text = ""
+
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {"choices": [{"message": {"content": "{}"}}]}
+
+    monkeypatch.setattr(completion, "_post", lambda g, p, t: seen.append(p) or R())
+    completion.complete_full("x", "m", modality="decide", response_format={"type": "x"})
+    assert seen[-1]["response_format"] == {"type": "x"}
+    completion.complete_full("x", "m", modality="decide")
+    assert "response_format" not in seen[-1]
+
+
 def test_the_text_runner_writes_probabilities_when_the_server_has_them(monkeypatch):
     import math
 
@@ -420,6 +490,17 @@ def test_decide_is_a_named_lane_in_every_table():
     assert "decide" in winners.typed()
     assert discover.lane_queries("decide")
     assert "decide" in core.CHECKERS
+
+
+@pytest.mark.parametrize("repo,family", [
+    ("crh225/plumb-4b-GGUF", "plumb"), ("mindchain/imajev-4b-GGUF", "imajev"),
+    ("apus-ailab/APUS-OpenJev-v1-4B-GGUF", "openjev"),
+    ("Mapika/decider-4b-GGUF", "decider")])
+def test_a_jev_class_model_is_reachable_by_a_decide_query(repo, family):
+    from harness import discover
+    # HF search is substring-on-id ranked by downloads; "jev" alone never ranks imajev (#311).
+    queries = [q.lower() for q in discover.lane_queries("decide")]
+    assert family in queries and family in repo.lower(), queries
 
 
 def test_an_adapter_is_spelled_for_the_engine_that_loads_it():
