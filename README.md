@@ -270,6 +270,21 @@ python -m harness.publish render --data <dir of machine JSON> --out /tmp/site
 python -m harness.privacy --files /tmp/site      # a directory means every file under it
 ```
 
+The front page's "How it works" diagram is drawn from
+`harness/how-it-works.workflow.json`, a workflow model in the format of
+[Archify](https://github.com/tt-a1i/archify). Every box cites the code it stands
+for, pinned to one commit, and links there. After changing the loop, edit the
+model (or regenerate it with the Archify skill), set `meta.repository.revision`
+to a commit on main, fix any line ranges that moved, and check it against the
+repository with a local clone of Archify (no install; Node 18 or later):
+
+```bash
+make diagram ARCHIFY=<path to an archify clone>
+```
+
+`tests/test_site_diagram.py` fails if a cited file or line range no longer
+exists, if any box links outside this repository, or if a box goes undrawn.
+
 ```bash
 soh report --export              # $LOCALHARNESS_HOME/reports/<machine>.json, checked
 soh report --publish             # write it to the reports branch and rebuild the page

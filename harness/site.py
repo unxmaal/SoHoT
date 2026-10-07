@@ -8,7 +8,8 @@ from __future__ import annotations
 import time
 from pathlib import Path
 
-REPO_URL = "https://github.com/unxmaal/SoHoT"
+from harness.howitworks import MODEL, REPO_URL, diagram
+from harness.howitworks import CSS as FLOW_CSS
 PAGES = ("index.html", "reports/index.html", "benchmarks/index.html")
 
 FONTS = ("https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700"
@@ -170,7 +171,7 @@ footer { text-align:center; color:#fff4da; font-size:.85rem; padding:0 16px 2.5r
 @media (prefers-reduced-motion: reduce) {
   .ticker { white-space:normal }
 }
-"""
+""" + FLOW_CSS
 
 PALM = ('<svg class="palm {side}" viewBox="0 0 18 24" shape-rendering="crispEdges" '
         'aria-hidden="true"><g fill="var(--line)">'
@@ -321,7 +322,7 @@ def _ticker(machines: list[dict]) -> str:
     return f'<div class="ticker" aria-label="live from the exports"><div class="tape">{spans}</div></div>'
 
 
-def front(machines: list[dict], now: float | None = None) -> str:
+def front(machines: list[dict], now: float | None = None, model: dict | None = None) -> str:
     from harness import gateway, lanes, publish
     tints = ("pink", "teal", "butter", "sky")
     scene = ('<div class="scene" aria-hidden="true"><div class="rays"></div><div class="sun"></div>'
@@ -336,6 +337,11 @@ def front(machines: list[dict], now: float | None = None) -> str:
         '<a class="btn alt" href="reports/">Read the lane report</a></div>'),
         "butter", "hero")
     empty = ('<p class="note">No machine has published yet.</p>' if not machines else "")
+    how = window("How it works", (
+        "<p>SoHoT runs this loop on its own, on a timer. Each step is cheaper than the next "
+        "and only passes on what survived, and every winner becomes the model the next "
+        "challenger has to beat. Tap or click a box to read the code behind it.</p>"
+        f"{diagram(model)}"), "pink", attrs=' id="how-it-works"')
     cards = "".join(_stat_card(s, tints[i % len(tints)]) for i, s in enumerate(stats(machines)))
     what = window("What is SoHoT?", (
         "<p>Images, video, speech, music, SVG and code, made by models on your own machine. "
@@ -408,7 +414,7 @@ def front(machines: list[dict], now: float | None = None) -> str:
         "ANTHROPIC_AUTH_TOKEN=\"$SOHOT_GATEWAY_KEY\" \\\n  claude --model sohot-code</code></pre>"
         f'<p class="note">Everything else is in the <a href="{REPO_URL}#readme">README</a>.</p>'),
         "teal")
-    body = (f'{hero}<div class="stats">{cards}</div>{empty}{what}{loop}'
+    body = (f'{hero}{how}<div class="stats">{cards}</div>{empty}{what}{loop}'
             f'<div class="cards">{feat}</div>{quick}')
     return page("SoHoT", body, 0, "", now, before=_ticker(machines))
 
