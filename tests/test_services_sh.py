@@ -320,3 +320,27 @@ def test_every_service_with_a_port_has_a_probe():
         assert f"{name})" in probe_block, (
             f"{name} has a port and no health probe, so `status` can only say "
             f"whether something holds it")
+
+
+def test_restart_replaces_a_running_service(tmp_path):
+    """#327: the llama-server router reads its models dir at startup only."""
+    script = tree(tmp_path, ALIVE)
+    first = run(script, "start", "gateway")
+    try:
+        again = run(script, "restart", "gateway")
+        assert again.returncode == 0, again.stderr
+        assert _pid(again.stdout) != _pid(first.stdout)
+        assert not _alive(int(_pid(first.stdout))), "the old process survived"
+        assert "up" in run(script, "status").stdout
+    finally:
+        run(script, "stop", "gateway")
+
+
+def test_restart_starts_a_service_that_was_down(tmp_path):
+    script = tree(tmp_path, ALIVE)
+    try:
+        got = run(script, "restart", "gateway")
+        assert got.returncode == 0, got.stderr
+        assert _alive(int(_pid(got.stdout)))
+    finally:
+        run(script, "stop", "gateway")

@@ -417,3 +417,15 @@ def test_a_downloaded_gguf_asks_for_the_router_to_rescan(home):
 def test_the_suite_can_never_restart_the_real_eval_server():
     real = gguf.__dict__["refresh_router"]
     assert real.__module__ != "harness.gguf" or real.__name__ == "<lambda>"
+
+
+@pytest.mark.parametrize("platform,want", [
+    ("darwin", ["launchd.sh", "restart", "eval"]),
+    ("linux", ["with-gpu-lock", "services.sh", "restart", "llamacpp"]),
+    ("win32", ["with-gpu-lock", "services.sh", "restart", "llamacpp"]),
+])
+def test_the_router_restart_reaches_the_service_on_every_platform(platform, want):
+    """#327: off macOS a fetched GGUF stayed invisible until a manual restart."""
+    argv = gguf.router_restart_argv(platform)
+    names = [Path(a).name for a in argv]
+    assert [n for n in names if n in want] == want, argv

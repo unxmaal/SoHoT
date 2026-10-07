@@ -128,14 +128,21 @@ def adopt_pending(conn) -> list[str]:
     return out
 
 
+def router_restart_argv(platform: str) -> list[str]:
+    """The command that restarts the llama-server router on this platform. #319, #327."""
+    scripts = Path(__file__).resolve().parents[1] / "scripts"
+    if platform == "darwin":
+        return [str(scripts / "launchd.sh"), "restart", "eval"]
+    import sys
+    return [sys.executable, str(scripts / "with-gpu-lock"), "bash",
+            str(scripts / "services.sh"), "restart", "llamacpp"]
+
+
 def refresh_router() -> None:
     """Restart the eval server so its router sees a new file. #319."""
     import subprocess
     import sys
-    if sys.platform != "darwin":
-        return
-    script = Path(__file__).resolve().parents[1] / "scripts" / "launchd.sh"
-    subprocess.run([str(script), "restart", "eval"], check=False)
+    subprocess.run(router_restart_argv(sys.platform), check=False)
 
 
 def download(repo: str, filename: str, hf_download=None, refresh=None,
