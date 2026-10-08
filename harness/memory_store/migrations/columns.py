@@ -120,6 +120,12 @@ def _add_switch_outcome(conn) -> None:
             conn.execute(f"ALTER TABLE gateway_switches ADD COLUMN {col} {ddl}")
 
 
+def _add_source_retired(conn) -> None:
+    """sources.retired, on an older store. #625."""
+    if "retired" not in _columns(conn, "sources"):
+        conn.execute("ALTER TABLE sources ADD COLUMN retired TEXT NOT NULL DEFAULT ''")
+
+
 def _add_category(conn) -> None:
     """proposals.category, on an older store. #576."""
     if "category" not in _columns(conn, "proposals"):

@@ -16,7 +16,7 @@ def record_source(conn, name: str, *, kind: str = "", url: str = "",
         (name, kind, url, int(bool(enabled))))
     if ok:
         conn.execute("UPDATE sources SET last_read_at = ?, last_attempt_at = ?, "
-                     "last_status = 'ok', last_error = '', failures = 0 "
+                     "last_status = 'ok', last_error = '', failures = 0, retired = '' "
                      "WHERE name = ?", (at, at, name))
     else:
         conn.execute("UPDATE sources SET last_attempt_at = ?, "

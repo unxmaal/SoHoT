@@ -204,10 +204,10 @@ def import_discovery_state_json(conn, path: Path | None = None) -> int:
             continue
         s = known.get(name)
         conn.execute(
-            "INSERT INTO sources (name, kind, url, enabled) VALUES (?,?,?,?) "
+            "INSERT INTO sources (name, kind, url, enabled, retired) VALUES (?,?,?,?,?) "
             "ON CONFLICT (name) DO NOTHING",
             (name, s.kind if s else "", s.url if s else "",
-             int(s.enabled) if s else 1))
+             int(s.enabled) if s else 0, "" if s else feeds.retired_reason(name)))
         cur = conn.execute(
             "UPDATE sources SET last_read_at = ?, last_attempt_at = "
             "COALESCE(last_attempt_at, ?), last_status = CASE WHEN "
@@ -215,6 +215,17 @@ def import_discovery_state_json(conn, path: Path | None = None) -> int:
             "AND (last_read_at IS NULL OR last_read_at < ?)",
             (float(when), float(when), name, float(when)))
         n += cur.rowcount or 0
+    return n
+
+
+def retire_unread_sources(conn) -> int:
+    """Disable each live source row no tier can read (no kind, no url), recording why. #625."""
+    from harness import feeds
+    n = 0
+    for (name,) in conn.execute(
+            "SELECT name FROM sources WHERE retired = '' AND kind = '' AND url = ''").fetchall():
+        n += conn.execute("UPDATE sources SET enabled = 0, retired = ? WHERE name = ?",
+                          (feeds.retired_reason(name), name)).rowcount or 0
     return n
 
 

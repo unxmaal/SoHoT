@@ -25,12 +25,12 @@ DEPLOY="${LH_DEPLOY:-$LH_HOME/deploy}"
 # list because the thing that must survive a reboot is the SCHEDULE. #261.
 SERVICES="gateway mlx eval tts mcp discover worker audit ds4"
 
-#: Services that RUN AND EXIT rather than serve, with how often to run them.
-#: KeepAlive on one of these restarts a finished sweep at once and the machine
-#: discovers in a tight loop; StartInterval is the right key.
+#: Services that RUN AND EXIT rather than serve, at fixed local hours. KeepAlive
+#: would rerun a finished sweep at once; StartInterval counts from load, so a day
+#: of installs never lets it fire (#625). harness/heartbeat.SWEEP_EVERY_S matches.
 declare -a PERIODIC=(discover audit)
-DISCOVER_INTERVAL="${DISCOVER_INTERVAL:-21600}"   # six hours
-AUDIT_INTERVAL="${AUDIT_INTERVAL:-86400}"         # nightly, #492
+DISCOVER_HOURS="${DISCOVER_HOURS:-0 6 12 18}"
+AUDIT_HOURS="${AUDIT_HOURS:-3}"                   # nightly, #492
 
 # launchd starts jobs with PATH=/usr/bin:/bin:/usr/sbin:/sbin and NOTHING else.
 # uv, ffmpeg, rsvg-convert and rec all live in /opt/homebrew/bin, so without
@@ -77,9 +77,13 @@ _schedule() {
   for p in "${PERIODIC[@]}"; do
     if [ "$p" = "$service" ]; then
       # No RunAtLoad: an install is not a schedule tick (#328).
-      local every="$DISCOVER_INTERVAL"
-      [ "$service" = audit ] && every="$AUDIT_INTERVAL"
-      printf '  <key>StartInterval</key><integer>%s</integer>\n' "$every"
+      local hours="$DISCOVER_HOURS" h
+      [ "$service" = audit ] && hours="$AUDIT_HOURS"
+      printf '  <key>StartCalendarInterval</key>\n  <array>\n'
+      for h in $hours; do
+        printf '    <dict><key>Hour</key><integer>%s</integer><key>Minute</key><integer>0</integer></dict>\n' "$h"
+      done
+      printf '  </array>\n'
       return
     fi
   done

@@ -2,7 +2,7 @@
 
 The store is opened with SQLite's mode=ro, so the audit can neither migrate nor
 write it: an older store is reported, never upgraded. The checks are #478's
-migration invariants plus four about serving.
+migration invariants, four about serving and one about the sweep schedule.
 """
 from __future__ import annotations
 
@@ -16,7 +16,8 @@ MIN_REQUESTS = 20
 ERROR_RATE_MAX = 0.10
 
 SERVING = ("adoptions_pass_here", "no_reference_served", "served_matches_adoption", "gateway_errors")
-CHECKS = mc.INVARIANTS + SERVING
+SCHEDULE = ("sweep_on_schedule",)
+CHECKS = mc.INVARIANTS + SERVING + SCHEDULE
 
 
 def open_readonly(path) -> sqlite3.Connection:
@@ -68,6 +69,12 @@ def _gateway_errors(conn) -> list:
             if s["requests"] >= MIN_REQUESTS and (s["error_rate"] or 0) > ERROR_RATE_MAX]
 
 
+def _sweep_on_schedule() -> list:
+    from harness import heartbeat
+    late = heartbeat.overdue()
+    return [late] if late else []
+
+
 def serving(conn, config=None) -> tuple[dict, dict]:
     """(what the served config's sohot-<lane> aliases name, what the adoptions say they should)."""
     from harness import adopt, gateway
@@ -95,6 +102,7 @@ def audit(path=None, config=None) -> dict:
             mc._check("no_reference_served", _no_reference_served(conn, served)),
             mc._check("served_matches_adoption", _served_matches(served, wanted)),
             mc._check("gateway_errors", _gateway_errors(conn)),
+            mc._check("sweep_on_schedule", _sweep_on_schedule()),
         ]
         have = mc.schema(conn)
     finally:

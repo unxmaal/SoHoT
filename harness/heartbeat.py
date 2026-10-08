@@ -10,6 +10,9 @@ RUNNING = "running"
 FINISHED = "finished"
 #: No progress for this long reads as stalled: above the longest single measure seen, below a day.
 STALL_S = 3 * 3600
+#: The discover agent's calendar spacing (scripts/launchd.sh), and how late a sweep may start. #625.
+SWEEP_EVERY_S = 6 * 3600
+SWEEP_SLACK_S = 3600
 
 clock = time.time
 
@@ -141,3 +144,15 @@ def summary(alive=alive) -> dict | None:
                 f"{ago(now - float(d.get('started') or now))} ago, last progress "
                 f"{ago(age)} ago")
     return {**d, "status": st, "age_s": age, "line": line}
+
+
+def overdue(data=None) -> str:
+    """'' when the last discovery loop started within SWEEP_EVERY_S + SWEEP_SLACK_S; otherwise one line saying why."""
+    if data is None:
+        data = read()
+    if data is None or "started" not in data:
+        return "no discovery loop has run on this machine"
+    age = clock() - float(data["started"])
+    if age <= SWEEP_EVERY_S + SWEEP_SLACK_S:
+        return ""
+    return f"last discovery loop started {ago(age)} ago; the schedule starts one every {ago(SWEEP_EVERY_S)}"
