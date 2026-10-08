@@ -16,12 +16,14 @@ def cmd_jobs(a) -> int:
 
     rest, title = list(a.rest), a.title
     # REMAINDER swallows options written after the action.
-    priority = a.priority
-    while rest[:1] in (["--title"], ["--json"], ["--priority"]):
+    priority, cwd = a.priority, a.cwd
+    while rest[:1] in (["--title"], ["--json"], ["--priority"], ["--cwd"]):
         if rest[0] == "--json":
             common._JSON, rest = True, rest[1:]
         elif len(rest) > 1 and rest[0] == "--title":
             title, rest = rest[1], rest[2:]
+        elif len(rest) > 1 and rest[0] == "--cwd":
+            cwd, rest = rest[1], rest[2:]
         elif len(rest) > 1:
             try:
                 priority = int(rest[1])
@@ -38,7 +40,10 @@ def cmd_jobs(a) -> int:
     a.title = title
     try:
         if a.action == "add":
-            job = wq.add(rest, title=a.title, priority=priority, requested_by="cli")
+            import os
+            where = wq.queue_cwd(os.getcwd(), wq.deployed(), explicit=cwd)
+            job = wq.add(rest, title=a.title, cwd=where, priority=priority,
+                         requested_by="cli")
             note(f"queued {job['id']}: {job['title']}")
             emit(job=job)
             return 0

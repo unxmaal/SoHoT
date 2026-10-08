@@ -526,6 +526,14 @@ def method_of(candidate: str) -> str:
     return "llm"
 
 
+def unrunnable(candidate: str, modality: str | None) -> str:
+    """Why a candidate was skipped, naming the typed spelling a bare repo needed. #645."""
+    why = "no cases of a modality it can run, skipped"
+    if modality in ("tts", "stt") and kind_of(candidate) != modality:
+        why += f"; a {modality} candidate is spelled {modality}:{candidate}"
+    return why
+
+
 def cases_for(candidate: str, cases: list[Case]) -> list[Case]:
     """The cases this candidate can actually run."""
     modality = modality_of(candidate)
@@ -811,7 +819,7 @@ def _execute_at(args, overrides: dict) -> int:
         if args.screen:
             mine = _first_each(mine)
         if not mine:
-            print(f"\n── {candidate}: no cases of a modality it can run, skipped",
+            print(f"\n── {candidate}: {unrunnable(candidate, args.modality)}",
                   file=sys.stderr)
             continue
         runner = build_runner(candidate, args.gateway, outdir,
