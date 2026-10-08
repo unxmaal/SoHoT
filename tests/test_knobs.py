@@ -151,3 +151,11 @@ def test_sensitivity_inventory_counts_what_the_registry_covers(capsys):
     got = json.loads(capsys.readouterr().out)
     assert got["unregistered"] == len(got["unregistered_sites"]) == len(_backlog())
     assert got["registered"] >= 6
+
+
+def test_eval_7b_slots_and_slot_context_are_knobs_and_every_slot_context_clears_the_floor():
+    from harness import context
+    slots, slot_ctx = knobs.KNOBS["eval7b_slots"], knobs.KNOBS["eval7b_slot_ctx"]
+    assert slots.default() == context.EVAL_7B_SLOTS and slot_ctx.default() == context.EVAL_7B_SLOT_CTX
+    assert context.MIN_SLOT_CTX == 3072
+    assert all(v >= context.MIN_SLOT_CTX for v in (*slot_ctx.values, slot_ctx.default()))

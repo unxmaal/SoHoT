@@ -236,3 +236,39 @@ def test_an_older_store_gains_the_columns(tmp_path):
         assert "ctx" in cols and "ctx_why" in cols
     finally:
         c.close()
+
+
+def test_eval_7b_gets_its_slots_and_a_pool_of_slots_times_the_slot_context(conn, models, monkeypatch):
+    monkeypatch.setattr(context, "coresident_bytes", lambda conn: 0, raising=False)
+    monkeypatch.setattr(context, "EVAL_7B_SLOTS", 8)
+    monkeypatch.setattr(context, "EVAL_7B_SLOT_CTX", 4096)
+    _gguf(conn, models, context.EVAL_7B_STEM, QWEN3_4B)
+    _gguf(conn, models, "Other", QWEN3_4B)
+    got = {p["stem"]: p for p in context.plan(conn, budget=60 * GIB)}
+    seven = got[context.EVAL_7B_STEM]
+    assert seven["slots"] == 8 and seven["ctx"] == 8 * 4096
+    assert got["Other"]["slots"] == 1
+    row = context.served(conn, context.EVAL_7B_STEM)
+    assert row["ctx_slots"] == 8 and row["ctx"] == 32768
+    cp = _ini(context.preset_text(list(got.values()), default_ctx=16384, slots=1))
+    assert cp[context.EVAL_7B_STEM]["parallel"] == "8" and cp[context.EVAL_7B_STEM]["c"] == "32768"
+    assert cp[context.EVAL_7B_STEM]["kv-unified"] == "true"
+    assert cp["Other"]["parallel"] == "1"
+
+
+def test_a_slot_context_under_the_floor_is_refused_not_served(conn, models, monkeypatch):
+    monkeypatch.setattr(context, "coresident_bytes", lambda conn: 0, raising=False)
+    monkeypatch.setattr(context, "EVAL_7B_SLOTS", 8)
+    monkeypatch.setattr(context, "EVAL_7B_SLOT_CTX", context.MIN_SLOT_CTX - 1024)
+    _gguf(conn, models, context.EVAL_7B_STEM, QWEN3_4B)
+    with pytest.raises(ValueError, match="3072"):
+        context.plan(conn, budget=60 * GIB)
+
+
+def test_a_slot_pool_that_does_not_fit_the_kv_cap_is_refused(conn, models, monkeypatch):
+    monkeypatch.setattr(context, "coresident_bytes", lambda conn: 0, raising=False)
+    monkeypatch.setattr(context, "EVAL_7B_SLOTS", 32)
+    monkeypatch.setattr(context, "EVAL_7B_SLOT_CTX", 16384)
+    _gguf(conn, models, context.EVAL_7B_STEM, QWEN3_4B)
+    got = context.plan(conn, budget=60 * GIB, kv_cap=8 * GIB)[0]
+    assert got["ctx"] == 0 and "refused" in got["why"] and "32 slots" in got["why"]
