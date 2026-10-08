@@ -72,16 +72,26 @@ def _ttft_pair(p50, p95) -> str:
     return ttft_text(p50, p95)
 
 
+def _load_pair(pair) -> str:
+    return "/".join("-" if x is None else f"{x:.1f}" for x in (pair or [None, None]))
+
+
 def cmd_throughput(a) -> int:
     """How much faster a text spec goes with several requests in flight. #310."""
     import contextlib
     import json as _json
     from harness import exclusive, serving, throughput, vllm
-    try:
-        rows = [_json.loads(l) for l in open(a.texts, encoding="utf-8") if l.strip()]
-    except (OSError, ValueError) as exc:
-        return err(f"cannot read {a.texts}: {exc}")
-    texts = [str(r.get(a.field) or "") for r in rows][: a.n]
+    if not a.texts and not a.claims:
+        return err("throughput needs --texts or --claims")
+    texts: list = []
+    for path in [a.texts] if a.texts else a.claims:
+        try:
+            rows = [_json.loads(l) for l in open(path, encoding="utf-8") if l.strip()]
+        except (OSError, ValueError) as exc:
+            return err(f"cannot read {path}: {exc}")
+        texts += (throughput.claims_requests(rows) if not a.texts
+                  else [str(r.get(a.field) or "") for r in rows])
+    texts = texts[: a.n]
     levels = tuple(int(x) for x in a.levels.split(",") if x.strip())
     serve = getattr(a, "serve", None)
     try:
@@ -119,6 +129,8 @@ def cmd_throughput(a) -> int:
              f"ttft {_ttft_pair(r.get('ttft_p50_s'), r.get('ttft_p95_s'))}  "
              f"peak {'-' if peak is None else f'{peak / 1024 ** 3:.1f} GiB'}  "
              f"errors {r['errors']}  "
+             f"schema {r.get('schema_valid', 0)}/{r.get('schema_checked', 0)}  "
+             f"load {_load_pair(r.get('load_avg'))}  "
              f"tokens {r['completion_tokens']}", flush=True)
         for why, n in (r.get("error_kinds") or {}).items():
             note(f"      {n} x {why}", flush=True)

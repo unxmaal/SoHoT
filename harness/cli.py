@@ -416,8 +416,10 @@ def build_parser() -> argparse.ArgumentParser:
     thr = sub.add_parser("throughput", help="requests per hour at several "
                          "in-flight levels against one text spec")
     thr.add_argument("--model", required=True)
-    thr.add_argument("--texts", required=True,
+    thr.add_argument("--texts",
                      help="JSONL file; each line's --field is one request")
+    thr.add_argument("--claims", action="append",
+                     help="claims export JSONL; each case is the request the claims lane sends (#665)")
     thr.add_argument("--field", default="text")
     thr.add_argument("--n", type=int, default=16)
     thr.add_argument("--levels", default="1,2,4")

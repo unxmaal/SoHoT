@@ -1,6 +1,8 @@
 """Requests per hour at several in-flight levels against one alias. See README, #310."""
 from __future__ import annotations
 
+import json
+import os
 import statistics
 import subprocess
 import sys
@@ -12,6 +14,35 @@ from harness import exclusive
 
 INSTRUCTION = ("List every reusable technical fact in this conversation, one "
                "per line. Write none of the chatter.\n\n")
+
+
+def claims_requests(rows) -> list[dict]:
+    """The chat requests the claims lane sends for these export rows: system, transcript, schema. #665."""
+    from harness import completion
+    from harness.checks import claims
+    return [{"messages": [{"role": "system", "content": r["system"]},
+                          {"role": "user", "content": completion.user_message(r["transcript"])}],
+             "response_format": claims.response_format(r["schema"])} for r in rows]
+
+
+def schema_valid(body: dict, request: dict) -> bool | None:
+    """Whether a reply validates against the request's json_schema; None when it asks for none."""
+    from jsonschema import Draft202012Validator
+    rf = request.get("response_format") if isinstance(request, dict) else None
+    shape = rf.get("json_schema") if isinstance(rf, dict) and rf.get("type") == "json_schema" else None
+    schema = shape.get("schema") if isinstance(shape, dict) else None
+    if not isinstance(schema, dict):
+        return None
+    choices = body.get("choices")
+    first = choices[0] if isinstance(choices, list) and choices else None
+    message = first.get("message") if isinstance(first, dict) else None
+    if not isinstance(message, dict) or message.get("content") is None:
+        return False
+    try:
+        parsed = json.loads(str(message["content"]).strip())
+    except ValueError:
+        return False
+    return Draft202012Validator(schema).is_valid(parsed)
 
 
 def _gateway_post(gateway: str, timeout: float):
@@ -95,25 +126,31 @@ class _Peak:
 def sweep(model: str, texts: list[str], levels=(1, 2, 4), max_tokens: int = 300,
           gateway: str = "http://127.0.0.1:4000", timeout: float = 300.0,
           post=None, clock=time.perf_counter, footprint=None,
-          sample_s: float = 0.5) -> list[dict]:
+          sample_s: float = 0.5, load=os.getloadavg) -> list[dict]:
     """Each level sends every text with that many requests in flight; `footprint`
-    returns the server's bytes, sampled for each level's peak."""
+    returns the server's bytes, sampled for each level's peak. A dict in `texts` is
+    a chat request sent as given (messages, response_format). #665."""
     post = post or _gateway_post(gateway, timeout)
 
-    def one(text: str) -> tuple[float, int, bool, float | None, str]:
-        payload = {"model": model, "max_tokens": max_tokens, "temperature": 0,
-                   "messages": [{"role": "user", "content": INSTRUCTION + text}]}
+    def one(text) -> tuple[float, int, bool, float | None, str, int, bool | None]:
+        request = text if isinstance(text, dict) else {
+            "messages": [{"role": "user", "content": INSTRUCTION + text}]}
+        payload = {**request, "model": model, "max_tokens": max_tokens, "temperature": 0}
         t = clock()
-        ttft, why = None, ""
+        ttft, why, prompt, valid = None, "", 0, None
         try:
             body = post(payload) or {}
-            tokens = int((body.get("usage") or {}).get("completion_tokens") or 0)
+            usage = body.get("usage") or {}
+            tokens = int(usage.get("completion_tokens") or 0)
+            prompt = int(usage.get("prompt_tokens") or 0)
             ttft = body.get("_ttft_s")
+            valid = schema_valid(body, request)
             ok = True
         except Exception as exc:  # noqa: BLE001 - a failed request is a result
             tokens, ok = 0, False
+            valid = False if schema_valid({}, request) is not None else None
             why = f"{type(exc).__name__}: {str(exc).splitlines()[0] if str(exc) else ''}"[:160]
-        return clock() - t, tokens, ok, ttft, why
+        return clock() - t, tokens, ok, ttft, why, prompt, valid
 
     out = []
     with exclusive.held("eval"):
@@ -121,15 +158,17 @@ def sweep(model: str, texts: list[str], levels=(1, 2, 4), max_tokens: int = 300,
         # and every ratio is taken against the first level. #333.
         warm_s, _, warm_ok, *_ = one(texts[0]) if texts else (0.0, 0, True, None, "")
         for level in levels:
+            before = load()[0] if load else None
             with _Peak(footprint, sample_s) as peak:
                 t0 = clock()
                 with ThreadPoolExecutor(max_workers=level) as pool:
                     got = list(pool.map(one, texts))
                 wall = clock() - t0
+            after = load()[0] if load else None
             lat = sorted(s for s, *_ in got)
-            first = sorted(f for _, _, _, f, _ in got if f is not None)
+            first = sorted(r[3] for r in got if r[3] is not None)
             kinds: dict[str, int] = {}
-            for *_, why in got:
+            for why in (r[4] for r in got):
                 if why:
                     kinds[why] = kinds.get(why, 0) + 1
             out.append({
@@ -147,6 +186,10 @@ def sweep(model: str, texts: list[str], levels=(1, 2, 4), max_tokens: int = 300,
                 "completion_tokens": sum(t for _, t, *_ in got),
                 "tokens_per_s": (round(sum(t for _, t, *_ in got) / wall, 1)
                                  if wall else 0.0),
+                "prompt_tokens": sum(r[5] for r in got),
+                "schema_checked": sum(1 for r in got if r[6] is not None),
+                "schema_valid": sum(1 for r in got if r[6]),
+                "load_avg": [before, after],
                 "peak_bytes": peak.peak,
                 "warmup_s": round(warm_s, 2), "warmup_ok": warm_ok,
             })
