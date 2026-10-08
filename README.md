@@ -1925,7 +1925,15 @@ edge where the value next door behaves differently.
 ```bash
 soh sensitivity                 # all eleven probes, about four minutes, no network
 soh sensitivity --list          # and the constants nothing covers, with reasons
+soh sensitivity --inventory     # gating constants the knob registry does not cover yet
 ```
+
+Every constant that gates an outcome is meant to be a knob in `harness/knobs.py`:
+the values worth trying, the lanes it shapes, and the limit a result records
+when it binds. The suite fails on a new gating constant that is not registered.
+Knobs that change the exam (the request and load timeouts, the TTS runaway
+cutoff) are recorded on the receipt beside the reply budget, `--compare` refuses
+runs at different settings, and `--across knobs.request_timeout` reads a sweep.
 
 It compares rankings position by position rather than by pass rate, because a
 count over a set cannot see a reordering. `HALF_LIFE_DAYS` was recorded inert

@@ -25,7 +25,7 @@ import sys
 import time
 from pathlib import Path
 
-from harness import audio, completion, ds4, env, paths
+from harness import audio, completion, ds4, env, knobs, paths
 from harness.engines import Engine, names as engine_names, parse_options, resolve
 
 from dataclasses import replace
@@ -829,7 +829,8 @@ def _execute(args) -> int:
             methods=method_receipts(specs),
             devices=devices(results),
             launch=launches,
-            max_tokens=budget)
+            max_tokens=budget,
+            knobs=knobs.settings(args.modality))
         now = time.time()
         ids = candidate_ids(specs, args.modality)
         for r in results:
@@ -1064,8 +1065,8 @@ def compare_across(axis: str, loaded: list) -> int:
     """
     from harness import paired
 
-    if axis not in paired.AXES:
-        print(f"unknown axis {axis!r}; one of {', '.join(paired.AXES)}")
+    if not paired.is_axis(axis):
+        print(f"unknown axis {axis!r}; one of {', '.join(paired.AXES)}, or knobs.<name>")
         return 1
     base_file, base, _, base_rows = loaded[0]
     for f, receipt, _, rows in loaded[1:]:
@@ -1080,7 +1081,7 @@ def compare_across(axis: str, loaded: list) -> int:
                   f"as well as {axis}. A sweep that varies two things cannot "
                   f"say which one moved the result.")
             return 1
-        print(f"\n{axis}: {getattr(base, axis)!r} -> {getattr(receipt, axis)!r}")
+        print(f"\n{axis}: {paired.value(base, axis)!r} -> {paired.value(receipt, axis)!r}")
         print(f"  {'candidate':34} {'lost':>5} {'gained':>7} {'same':>6} "
               f"{'p':>7}  verdict")
         for cell in paired.cells(base_rows, rows):
