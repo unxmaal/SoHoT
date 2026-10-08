@@ -207,18 +207,16 @@ INDEX = {
                 "a contamination probe's reply budget, the same question to every model by design (#531)",
         },
         "instances": _i(355, 401, 498), "scanners": []},
+    "a-constant-chosen-before-the-thing-it-constrains-existed": {
+        "instances": _i(rules=(535,)),
+        "scanners": ["tests/test_knobs.py::test_no_new_gating_constant_is_unregistered"]},
     "history-reconstructed-from-present-state": {
         "review": r"(?i)\bbackfill\w*|\bUPDATE\s+\w+\s+SET\b",
         "instances": _i(506, 516, rules=(292,)), "scanners": []},
 }
 
 # Proposed classes with no skill entry yet; add the entry to SKILL.md, regenerate the snapshot, move here into INDEX.
-PENDING = {
-    "a-constant-chosen-before-the-thing-it-constrains-existed": {
-        "tier": 1,
-        "instances": _i(rules=(535,)),
-        "scanners": ["tests/test_knobs.py::test_no_new_gating_constant_is_unregistered"]},
-}
+PENDING = {}
 
 UNCLASSIFIED = {
     6: "upstream model behaviour (Chatterbox runs past its input), no failing in this repo's logic",

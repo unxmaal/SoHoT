@@ -207,6 +207,15 @@
   "test_shape": "assert the patched value is what the code under test observed, not only that the test passed; scan every patch target against its readers."
  },
  {
+  "id": "a-constant-chosen-before-the-thing-it-constrains-existed",
+  "heading": "A constant chosen before the thing it constrains existed",
+  "source": "SKILL.md",
+  "tier": 1,
+  "bitten": 3,
+  "trigger": "does this change add or keep a module-level number that decides a pass, a verdict or a cutoff (a token budget, a timeout, a ceiling, a threshold), picked before the model, lane or machine it limits was measured?",
+  "test_shape": "register it with the range to sweep, the lanes it affects and the limit it records when it binds. A repo-wide scan holds new unregistered gating constants at zero. Count the recorded limit per lane so a binding knob is reported and swept rather than silently shaping results."
+ },
+ {
   "id": "a-check-whose-input-differs-between-the-desk-and-ci",
   "heading": "A check whose input differs between the desk and CI",
   "source": "SKILL.md",
