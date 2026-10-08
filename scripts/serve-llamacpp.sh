@@ -11,7 +11,7 @@
 # --models-max is 1 rather than the router's default of 4. Four resident models
 # is an out-of-memory on a 12 GB card, and harness/memory.py already budgets on
 # the assumption that one model is resident and a swap may briefly hold two.
-# A larger card can raise it.
+# A machine with 64 GiB or more holds two, so a decide client does not evict a running eval (#644).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 source scripts/env.sh
@@ -72,7 +72,7 @@ exec "$BIN" \
   --jinja \
   --models-dir "$MODELS" \
   --sleep-idle-seconds "${LLAMACPP_SLEEP_IDLE:-300}" \
-  --models-max "${LLAMACPP_MAX_MODELS:-1}" \
+  --models-max "${LLAMACPP_MAX_MODELS:-$(scripts/router-max-models.sh)}" \
   --n-gpu-layers "${LLAMACPP_GPU_LAYERS:-999}" \
   "${CTX_ARGS[@]}" \
   --host "${LLAMACPP_HOST:-127.0.0.1}" \

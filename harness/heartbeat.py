@@ -11,7 +11,7 @@ FINISHED = "finished"
 #: No progress for this long reads as stalled: above the longest single measure seen, below a day.
 STALL_S = 3 * 3600
 #: The discover agent's calendar spacing (scripts/launchd.sh), and how late a sweep may start. #625.
-SWEEP_EVERY_S = 6 * 3600
+SWEEP_EVERY_S = 24 * 3600
 SWEEP_SLACK_S = 3600
 
 clock = time.time

@@ -229,13 +229,13 @@ def test_a_sweep_started_within_its_interval_plus_slack_is_on_time(clock):
     assert hb.overdue() == ""
 
 
-def test_a_last_sweep_older_than_seven_hours_is_overdue(clock):
-    """A reload postponed StartInterval all day and nothing said so (#625)."""
-    assert hb.SWEEP_EVERY_S + hb.SWEEP_SLACK_S == 7 * 3600
+def test_a_last_sweep_older_than_a_day_and_an_hour_is_overdue(clock):
+    """A reload postponed StartInterval all day and nothing said so (#625); one loop a day (#646)."""
+    assert hb.SWEEP_EVERY_S + hb.SWEEP_SLACK_S == 25 * 3600
     hb.start()
     hb.finish(0)
-    clock.t += 7 * 3600 + 60
-    assert "7h 1m ago" in hb.overdue()
+    clock.t += 25 * 3600 + 60
+    assert "1d 1h ago" in hb.overdue()
 
 
 def test_no_sweep_at_all_is_overdue(clock):

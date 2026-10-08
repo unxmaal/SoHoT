@@ -29,7 +29,7 @@ SERVICES="gateway mlx eval tts mcp discover worker audit ds4"
 #: would rerun a finished sweep at once; StartInterval counts from load, so a day
 #: of installs never lets it fire (#625). harness/heartbeat.SWEEP_EVERY_S matches.
 declare -a PERIODIC=(discover audit)
-DISCOVER_HOURS="${DISCOVER_HOURS:-0 6 12 18}"
+DISCOVER_HOURS="${DISCOVER_HOURS:-21}"
 AUDIT_HOURS="${AUDIT_HOURS:-3}"                   # nightly, #492
 
 # launchd starts jobs with PATH=/usr/bin:/bin:/usr/sbin:/sbin and NOTHING else.
