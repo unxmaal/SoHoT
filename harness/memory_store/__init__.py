@@ -25,7 +25,7 @@ from harness.memory_store.machines import (machine_row, recorded_facts,
     remember_machine, this_machine)  # noqa: F401
 from harness.memory_store.cards import (CARD_COLUMNS, card_of, parents_of, set_card,
     with_lineage)  # noqa: F401
-from harness.memory_store.sources import (record_source, source_row)  # noqa: F401
+from harness.memory_store.sources import (DEFERRED, record_source, source_row)  # noqa: F401
 from harness.memory_store.benchmarks import (benchmarks, probe_summary,
     record_benchmark, record_probe, set_training, training)  # noqa: F401
 from harness.memory_store.transitions import (IllegalTransition, REOPENS, RETEST,

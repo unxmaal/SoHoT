@@ -153,14 +153,8 @@ def _get_json(url: str, params: dict | None = None):
         from harness import github
         path = "search/repositories?" + urllib.parse.urlencode(params or {})
         return json.loads(github._gh(path))
-    import httpx
-    for attempt in range(5):
-        r = httpx.get(url, params=params, timeout=60, follow_redirects=True)
-        if r.status_code != 429 and r.status_code < 500:
-            break
-        time.sleep(float(r.headers.get("retry-after") or 2 ** attempt))
-    r.raise_for_status()
-    return r.json()
+    from harness import ratelimit
+    return ratelimit.get_json(url, params)
 
 
 def _due(conn, name: str, now: float, force: bool) -> bool:
@@ -193,6 +187,7 @@ def sweep(conn, lanes=None, get=None, now: float | None = None,
           force: bool = False) -> list[Benchmark]:
     """Read each lane's registries once per discovery interval and record every source found."""
     from harness import memory_store as ms
+    from harness.ratelimit import RateLimited
     get = get or _get_json
     now = time.time() if now is None else float(now)
     out: list[Benchmark] = []
@@ -204,6 +199,9 @@ def sweep(conn, lanes=None, get=None, now: float | None = None,
                 continue
             try:
                 found = read(lane, get)
+            except RateLimited as exc:
+                ms.record_source(conn, name, kind=KIND, deferred=True, error=str(exc), at=now)
+                continue
             except Exception as exc:  # noqa: BLE001
                 ms.record_source(conn, name, kind=KIND, ok=False, error=str(exc), at=now)
                 continue

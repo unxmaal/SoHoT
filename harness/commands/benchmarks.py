@@ -1,6 +1,8 @@
 """`soh benchmarks`: found benchmark sources, their contamination status, and what was imported. #491, #470."""
 from __future__ import annotations
 
+import time
+
 from harness.commands.common import emit, err, note
 
 
@@ -20,6 +22,7 @@ def sweep_report(a) -> int:
     from harness import benchmarks as bm
     from harness import memory_store as ms
     conn = ms.connect()
+    started = time.time()
     try:
         found = bm.sweep(conn, lanes=_lanes(a), force=bool(getattr(a, "force", False)))
         scope = _lanes(a)
@@ -27,6 +30,9 @@ def sweep_report(a) -> int:
             "SELECT name, last_error FROM sources WHERE kind = ? AND last_status = 'failed' "
             "ORDER BY name", (bm.KIND,))
                   if _counts(r["name"].rpartition(":")[2], scope)]
+        deferred = [r["name"] for r in conn.execute(
+            "SELECT name FROM sources WHERE kind = ? AND last_status = ? AND last_attempt_at >= ? "
+            "ORDER BY name", (bm.KIND, ms.DEFERRED, started))]
     finally:
         conn.close()
     by: dict[str, int] = {}
@@ -34,7 +40,9 @@ def sweep_report(a) -> int:
         by[b.lane] = by.get(b.lane, 0) + 1
     for lane in sorted(by):
         note(f"  {lane:8} {by[lane]} benchmark sources read")
-    if not found:
+    for name in deferred:
+        note(f"  rate-limited {name}: deferred to the next sweep")
+    if not found and not deferred:
         note("  no benchmark source was due; the sweep runs once per discovery interval")
     if scope and scope[0] not in bm.LANE_QUERIES:
         note(f"  the {scope[0]} lane has no benchmark queries, so there is nothing to read")
