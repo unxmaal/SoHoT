@@ -113,6 +113,12 @@ REQUIRES_KEYS = downloads.REQUIRES_KEYS
 PROVENANCE_KEYS = downloads.PROVENANCE_KEYS
 
 
+def runner_bases(model_id: str) -> list[str]:
+    """Base weights the candidate's runner loads beside it, which its own config never names. #632."""
+    from evals.runners.omnisvg import MODELS
+    return [base for base, repo in MODELS.values() if repo == model_id]
+
+
 def requires(model_id: str, conn=None) -> list[str]:
     """Other repos this model's own config named when it was downloaded.
 
@@ -128,6 +134,7 @@ def requires(model_id: str, conn=None) -> list[str]:
         except Exception:  # noqa: BLE001
             parents = []
         got.update(p for p, kind in parents if kind == "adapter" and p != model_id)
+    got.update(runner_bases(model_id))
     return sorted(got)
 
 
@@ -294,10 +301,62 @@ def _gguf_pick(repo: str, listing, snapshot):
     return gguf.choose(siblings, ins.ceiling_bytes()) or ()
 
 
+def _fetch_needs(name: str, needs: list[str], *, bases: list[str], sizes: dict, sizer,
+                 budget: int | None, spent: int, free: int | None, floor: int, fetch):
+    """Download what `name` needs beside itself: (done, bytes spent, (reason, why) of the first base not fetched)."""
+    done: list[dict] = []
+    spent_now = 0
+    waiting: tuple[str, str] | None = None
+    for dep in needs:
+        if dep not in bases:
+            try:
+                fetch(dep)
+            except FetchError as exc:
+                done.append({"repo": dep, "ok": False, "why": f"needed by {name}: {exc}"})
+            else:
+                done.append({"repo": dep, "ok": True, "why": f"needed by {name}"})
+            continue
+        size = (sizes or {}).get(dep) or sizer(dep) or -1
+        if budget is not None and size > 0 and spent + spent_now + size > budget:
+            why = (f"{dep}, the base its runner needs, is {size / GIB:.1f} GiB and would take "
+                   f"this run past its {budget / GIB:.0f} GiB budget")
+            done.append({"repo": dep, "ok": False, "why": why})
+            waiting = waiting or (reasons.LIMIT, why)
+            continue
+        p = plan(dep, size, free=free, floor=floor)
+        if not p.ok:
+            why = f"{dep}, the base its runner needs: {p.why}"
+            done.append({"repo": dep, "ok": False, "why": why})
+            waiting = waiting or (p.reason, why)
+            continue
+        try:
+            fetch(dep)
+        except FetchError as exc:
+            why = f"{dep}, the base its runner needs: {exc}"
+            done.append({"repo": dep, "ok": False, "why": why})
+            waiting = waiting or (reasons.HARNESS, why)
+        else:
+            spent_now += size
+            done.append({"repo": dep, "ok": True, "why": f"base weights for {name}"})
+    return done, spent_now, waiting
+
+
+def _on_disk_waiting(conn, lane: str = "") -> list[str]:
+    """Queued candidates already downloaded whose runner base is still missing. #632."""
+    out = []
+    for r in conn.execute("SELECT name, resolved, lane FROM proposals WHERE state = 'queued'"):
+        name = r["resolved"] or r["name"]
+        if lane and not lanes.serves(r["lane"], lane):
+            continue
+        if runner_bases(name) and have(name, conn) and missing(name, conn):
+            out.append(name)
+    return out
+
+
 def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=None,
         free: int | None = None, lane: str = "",
         budget: int | None = None, listing=None,
-        hf_download=None, floor: int = DISK_FLOOR) -> list[dict]:
+        hf_download=None, floor: int = DISK_FLOOR, sizer=None) -> list[dict]:
     """Fetch up to `limit` queued candidates, recording what happened.
 
     `budget` caps what ONE INVOCATION downloads in total, which is the job
@@ -320,6 +379,26 @@ def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=N
     spent = 0
     from harness import gguf
     gguf.adopt_pending(conn)
+    if sizer is None:
+        from harness import inspect as ins
+        sizer = ins.hf_size
+
+    def needs_of(name):
+        got, cost, waiting = _fetch_needs(
+            name, [m for m in requires(name, conn) if not have(m, conn)],
+            bases=runner_bases(name), sizes=sizes or {}, sizer=sizer, budget=budget,
+            spent=spent, free=free, floor=floor,
+            fetch=lambda dep: download(dep, snapshot=snapshot, conn=conn))
+        done.extend(got)
+        if waiting:
+            reason, why = waiting
+            ms.decide_or_skip(conn, name, "queued", tier="fetch", detail=f"waiting on {why}",
+                              reason=reason)
+        return cost
+
+    # A candidate already on disk can still be missing the base its runner loads. #632.
+    for name in _on_disk_waiting(conn, lane):
+        spent += needs_of(name)
     for row in queued(conn, lane=lane):
         if not row.get("lane"):
             continue      # nothing here could measure it, so nothing fetches it
@@ -431,18 +510,10 @@ def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=N
             gguf.adopt(conn, name)
         # WHAT IT NEEDS BESIDE ITSELF, as its config recorded it on landing.
         # A tokenizer in another repo makes a whole download unloadable. #196.
-        for dep in requires(name, conn):
-            if have(dep, conn):
-                continue
-            try:
-                download(dep, snapshot=snapshot, conn=conn)
-                done.append({"repo": dep, "ok": True,
-                             "why": f"needed by {name}"})
-            except FetchError as exc:
-                done.append({"repo": dep, "ok": False,
-                             "why": f"needed by {name}: {exc}"})
         # Where it landed is a downloads row, not this verdict's run_path. #411.
         ms.decide_or_skip(conn, row["name"], "queued", tier="fetch",
                           detail="downloaded", reason=reasons.CANDIDATE)
+        # What it needs beside itself: what its config named on landing (#196) and its runner's base (#632).
+        spent += needs_of(name)
         done.append({"repo": name, "ok": True, "why": where})
     return done
