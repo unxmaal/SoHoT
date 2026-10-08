@@ -18,11 +18,18 @@ import json
 from pathlib import Path
 
 from harness import github, inspect as insp, neighbors as nb, paths
+from harness import knobs
 from harness.sensitivity import Finding, bound, measure
 
 #: Big enough that every cached entry counts as fresh, so `get` never reaches
 #: the fetch branch at all.
 FOREVER_HOURS = 1e9
+
+
+def _range(name: str) -> tuple:
+    """(default, values) for a probe, read from the knob registry. #636."""
+    k = knobs.KNOBS[name]
+    return k.default(), list(k.values)
 
 
 def offline(cache: Path | None = None) -> github.Client:
@@ -91,7 +98,7 @@ def verdict_of_control(client, people, **kw) -> str:
 def probe_min_shared() -> Finding:
     client = offline()
     people = _people(client)
-    return measure("MIN_SHARED", nb.MIN_SHARED, [1, 2, 3, 5, 8],
+    return measure("MIN_SHARED", *_range("min_shared"),
                    lambda v: ranking(client, people, min_shared=v),
                    quality=lambda v: verdict_of_control(client, people,
                                                         min_shared=v),
@@ -112,8 +119,7 @@ def probe_population() -> Finding:
         with bound(nb, "enrichment", population=v):
             return verdict_of_control(client, people)
 
-    return measure("POPULATION", nb.POPULATION,
-                   [1e5, 1e6, 5e6, 2e7, 1e8], run, quality=check,
+    return measure("POPULATION", *_range("population"), run, quality=check,
                    note="the world's star count, the denominator of enrichment")
 
 
@@ -129,14 +135,13 @@ def probe_half_life() -> Finding:
         with bound(nb, "recency", half_life=v):
             return verdict_of_control(client, people)
 
-    return measure("HALF_LIFE_DAYS", nb.HALF_LIFE_DAYS,
-                   [90.0, 365.0, 1095.0, 1e9], run, quality=check,
+    return measure("HALF_LIFE_DAYS", *_range("half_life"), run, quality=check,
                    note="push-date decay; 1e9 is the decay switched off")
 
 
 def probe_min_degree() -> Finding:
     client = offline()
-    return measure("min_degree", 2, [1, 2, 3, 5],
+    return measure("min_degree", *_range("min_degree"),
                    lambda v: nb.cohort(client=client, min_degree=v),
                    quality=lambda v: verdict_of_control(
                        client, nb.cohort(client=client, min_degree=v)),
@@ -146,21 +151,21 @@ def probe_min_degree() -> Finding:
 
 def probe_per_repo() -> Finding:
     client = offline()
-    return measure("per_repo", 12, [4, 8, 12, 24],
+    return measure("per_repo", *_range("per_repo"),
                    lambda v: nb.cohort(client=client, per_repo=v),
                    note="contributors taken from each seed repo")
 
 
 def probe_hops() -> Finding:
     client = offline()
-    return measure("hops", 2, [1, 2, 3],
+    return measure("hops", *_range("hops"),
                    lambda v: nb.cohort(client=client, hops=v),
                    note="how far from the seeds the crowd reaches")
 
 
 def probe_crowd_limit() -> Finding:
     client = offline()
-    return measure("cohort limit", 250, [100, 250, 450],
+    return measure("cohort limit", *_range("crowd_limit"),
                    lambda v: nb.cohort(client=client, limit=v),
                    quality=lambda v: verdict_of_control(
                        client, nb.cohort(client=client, limit=v)),
@@ -212,9 +217,7 @@ def verdicts(**kw) -> dict[str, str]:
 
 
 def probe_memory_ceiling() -> Finding:
-    GIB = insp.GIB
-    return measure("MEMORY_CEILING", 22 * GIB,
-                   [8 * GIB, 16 * GIB, 22 * GIB, 32 * GIB, 96 * GIB],
+    return measure("MEMORY_CEILING", *_range("memory_ceiling"),
                    lambda v: verdicts(ceiling=v),
                    note="the largest weight this machine can hold")
 
@@ -230,19 +233,18 @@ def probe_size_limit() -> Finding:
         finally:
             insp.SIZE_LIMIT = old
 
-    return measure("SIZE_LIMIT", insp.SIZE_LIMIT, [2, 4, 12, 24, 64], run,
+    return measure("SIZE_LIMIT", *_range("size_limit"), run,
                    note="how many named weights get sized per repo")
 
 
 def probe_dead_days() -> Finding:
-    return measure("UPSTREAM_DEAD_DAYS", insp.UPSTREAM_DEAD_DAYS, [180, 365, 730, 1095, 3650],
+    return measure("UPSTREAM_DEAD_DAYS", *_range("dead_days"),
                    lambda v: verdicts(dead_days=v),
                    note="when a repo counts as abandoned")
 
 
 def probe_clone_kb_cap() -> Finding:
-    return measure("CLONE_KB_CAP", insp.CLONE_KB_CAP,
-                   [10_000, 50_000, 250_000, 1_000_000],
+    return measure("CLONE_KB_CAP", *_range("clone_kb_cap"),
                    lambda v: verdicts(kb_cap=v),
                    note="source tree size above which a repo is weights in git")
 

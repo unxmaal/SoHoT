@@ -209,7 +209,12 @@ INDEX = {
 }
 
 # Proposed classes with no skill entry yet; add the entry to SKILL.md, regenerate the snapshot, move here into INDEX.
-PENDING = {}
+PENDING = {
+    "a-constant-chosen-before-the-thing-it-constrains-existed": {
+        "tier": 1,
+        "instances": _i(rules=(535,)),
+        "scanners": ["tests/test_knobs.py::test_no_new_gating_constant_is_unregistered"]},
+}
 
 UNCLASSIFIED = {
     6: "upstream model behaviour (Chatterbox runs past its input), no failing in this repo's logic",
