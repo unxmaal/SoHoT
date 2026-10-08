@@ -512,6 +512,8 @@ def build_parser() -> argparse.ArgumentParser:
     jobs.add_argument("--title", default="")
     jobs.add_argument("--priority", type=int, default=0,
                       help="higher runs first; ties run in the order added")
+    jobs.add_argument("--cwd", default="",
+                      help="add: run here instead of the deploy checkout. #645")
     jobs.set_defaults(func=jobs_cmd.cmd_jobs)
     jud = sub.add_parser(
         "judge",

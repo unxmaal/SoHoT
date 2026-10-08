@@ -102,6 +102,43 @@ def jobs(conn=None) -> list[dict]:
         return _select(c)
 
 
+def _git(path: Path, *args: str) -> str | None:
+    try:
+        out = subprocess.run(["git", "-C", str(path), *args], capture_output=True,
+                             text=True, timeout=30)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return out.stdout.strip() if out.returncode == 0 else None
+
+
+def deployed() -> Path | None:
+    """The deploy checkout, when this machine has one."""
+    deploy = paths.deploy_checkout()
+    return deploy if deploy is not None and (deploy / ".git").exists() else None
+
+
+def queue_cwd(caller, deploy, explicit: str = "") -> str:
+    """Where a queued job runs: the deploy, unless the caller's checkout is at another commit. #645."""
+    if explicit:
+        return str(Path(explicit).resolve())
+    caller = Path(caller).resolve()
+    if deploy is None:
+        return str(caller)
+    deploy = Path(deploy).resolve()
+    top = _git(caller, "rev-parse", "--show-toplevel")
+    if top is None:
+        return str(deploy)
+    if Path(top).resolve() == deploy:
+        return str(caller)
+    mine, theirs = _git(caller, "rev-parse", "HEAD"), _git(deploy, "rev-parse", "HEAD")
+    if mine and mine == theirs:
+        return str(deploy)
+    raise ValueError(
+        f"this checkout ({top}) is at {(mine or 'no commit')[:8]} but the deploy "
+        f"({deploy}) is at {(theirs or 'no commit')[:8]}, and a queued job would run "
+        f"this checkout's code; pass --cwd {caller} to mean it, or queue from the deploy")
+
+
 def add(argv: list[str], title: str = "", cwd: str = "", kind: str = "command",
         output: str = "", priority: int = 0, requested_by: str = "",
         conn=None) -> dict:
