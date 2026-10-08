@@ -6,10 +6,9 @@
 # somebody remembers, and what it is meant to protect against is precisely the
 # passage of unattended time.
 #
-# NOT A SERVER, despite living beside the serve-* scripts. launchd runs it on
-# an interval and it exits; the plist carries StartInterval rather than
-# KeepAlive, or launchd would restart a finished sweep immediately and the
-# machine would discover in a tight loop.
+# NOT A SERVER, despite living beside the serve-* scripts. launchd runs it at
+# fixed hours and it exits; the plist carries StartCalendarInterval rather than
+# KeepAlive, or launchd would restart a finished sweep immediately. #625.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 source scripts/env.sh

@@ -85,8 +85,8 @@ def test_each_periodic_job_runs_on_an_interval(plists, service):
     machine would discover in a tight loop, which is the opposite failure from
     a sweep that never runs and just as invisible."""
     unit = next(v for k, v in plists.items() if service in k)
-    assert isinstance(unit.get("StartInterval"), int), unit
-    assert unit["StartInterval"] >= 300, "that is not a schedule, it is a loop"
+    assert unit.get("StartCalendarInterval"), unit
+    assert "StartInterval" not in unit, "an interval restarts at every reload (#625)"
     assert unit.get("KeepAlive") is not True
 
 
@@ -319,12 +319,24 @@ def test_the_live_store_is_audited_nightly(plists):
     """`soh audit` reads the live store read-only; once a day it says whether it still holds. #492."""
     unit = next(v for k, v in plists.items() if k.endswith(".audit"))
     assert unit["ProgramArguments"][1].endswith("serve-audit.sh")
-    assert unit["StartInterval"] == 86400 and unit.get("RunAtLoad") is not True
+    assert unit["StartCalendarInterval"] == [{"Hour": 3, "Minute": 0}]
+    assert unit.get("RunAtLoad") is not True
 
 
-def test_the_discover_sweep_keeps_its_own_interval(plists):
+def test_the_discover_sweep_runs_at_fixed_local_times(plists):
+    """StartInterval counts from load, so a day of deploys never let it fire (#625)."""
     unit = next(v for k, v in plists.items() if k.endswith(".discover"))
-    assert unit["StartInterval"] == 21600
+    assert unit["StartCalendarInterval"] == [
+        {"Hour": h, "Minute": 0} for h in (0, 6, 12, 18)]
+    assert "StartInterval" not in unit and unit.get("RunAtLoad") is not True
+
+
+def test_the_sweep_schedule_and_the_overdue_check_agree(plists):
+    from harness import heartbeat
+    unit = next(v for k, v in plists.items() if k.endswith(".discover"))
+    hours = [t["Hour"] for t in unit["StartCalendarInterval"]]
+    gaps = {(b - a) % 24 for a, b in zip(hours, hours[1:] + hours[:1])}
+    assert gaps == {heartbeat.SWEEP_EVERY_S // 3600}
 
 
 def test_install_audits_what_it_just_deployed():

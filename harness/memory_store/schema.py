@@ -4,7 +4,7 @@ from __future__ import annotations
 from harness import store
 
 
-SCHEMA_VERSION = 60
+SCHEMA_VERSION = 61
 
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
@@ -475,7 +475,9 @@ CREATE TABLE IF NOT EXISTS sources (
     last_status     TEXT NOT NULL DEFAULT '',
     last_error      TEXT NOT NULL DEFAULT '',
     -- Consecutive failed attempts since the last success.
-    failures        INTEGER NOT NULL DEFAULT 0
+    failures        INTEGER NOT NULL DEFAULT 0,
+    -- Why no sweep reads this source; '' while it is live. #625.
+    retired         TEXT NOT NULL DEFAULT ''
 );
 
 -- Names pulled out of prose and REJECTED. Without these there is no

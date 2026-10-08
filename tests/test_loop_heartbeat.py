@@ -220,3 +220,23 @@ def test_jobs_list_prints_and_emits_the_heartbeat(clock, capsys):
     assert cli.main(["jobs", "list", "--json"]) == 0
     got = json.loads(capsys.readouterr().out)
     assert got["loop"]["status"] == "stalled" and got["loop"]["tier"] == "fetch"
+
+
+def test_a_sweep_started_within_its_interval_plus_slack_is_on_time(clock):
+    hb.start()
+    hb.finish(0)
+    clock.t += hb.SWEEP_EVERY_S + hb.SWEEP_SLACK_S - 1
+    assert hb.overdue() == ""
+
+
+def test_a_last_sweep_older_than_seven_hours_is_overdue(clock):
+    """A reload postponed StartInterval all day and nothing said so (#625)."""
+    assert hb.SWEEP_EVERY_S + hb.SWEEP_SLACK_S == 7 * 3600
+    hb.start()
+    hb.finish(0)
+    clock.t += 7 * 3600 + 60
+    assert "7h 1m ago" in hb.overdue()
+
+
+def test_no_sweep_at_all_is_overdue(clock):
+    assert "no discovery loop" in hb.overdue()

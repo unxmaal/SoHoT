@@ -44,6 +44,9 @@ def live(tmp_path, config):
     finally:
         conn.close()
     gateway.write_served(config)
+    from harness import heartbeat
+    heartbeat.start()
+    heartbeat.finish(0)
     return ms.db_path()
 
 
@@ -175,3 +178,11 @@ def test_while_a_read_only_connection_is_lent_nothing_may_migrate(live):
         assert ms.lent() is None
     finally:
         conn.close()
+
+
+def test_a_last_sweep_older_than_its_interval_fails(live, monkeypatch):
+    """#625: the scheduled sweep stopped firing for a day and the audit said OK."""
+    from harness import heartbeat
+    monkeypatch.setattr(heartbeat, "clock", lambda: time.time() + 8 * 3600)
+    check = _checks(live_audit.audit(live))["sweep_on_schedule"]
+    assert not check["ok"] and "8h" in check["detail"]

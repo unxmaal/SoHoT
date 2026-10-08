@@ -298,3 +298,42 @@ def test_an_import_never_moves_a_newer_read_backwards(store, _home):
 
 def test_a_fresh_store_with_no_files_imports_nothing(store):
     assert store.execute("SELECT COUNT(*) FROM sources").fetchone()[0] == 0
+
+
+def test_an_imported_name_no_source_carries_is_retired_not_enabled(tmp_path, _home):
+    """#625: a probe-only name came in enabled and sat unread for weeks."""
+    _files(_home)
+    path = tmp_path / "old.db"
+    _v33(path)
+    conn = ms.connect(path)
+    try:
+        row = ms.source_row(conn, "gone")
+    finally:
+        conn.close()
+    assert row["enabled"] == 0 and row["retired"]
+
+
+def test_the_acestep_feed_is_retired_with_its_reason(tmp_path):
+    """Never in DEFAULT_SOURCES, so no sweep reads it; RULE #281 says why (#625)."""
+    path = tmp_path / "d.db"
+    conn = ms.connect(path)
+    conn.execute("INSERT INTO sources (name, enabled, last_read_at) VALUES ('acestep-releases', 1, 1789916484.3)")
+    conn.execute("UPDATE meta SET value = '60' WHERE key = 'schema'")
+    conn.commit()
+    conn.close()
+    conn = ms.connect(path)
+    try:
+        row = ms.source_row(conn, "acestep-releases")
+    finally:
+        conn.close()
+    assert row["enabled"] == 0
+    assert "1.5" in row["retired"] and "0.1" in row["retired"]
+    assert "acestep-releases" not in {s.name for s in feeds.DEFAULT_SOURCES}
+    assert feeds.RETIRED["acestep-releases"] == row["retired"]
+
+
+def test_a_retired_source_that_is_read_again_is_live(store):
+    store.execute("INSERT INTO sources (name, enabled, retired) VALUES ('s', 0, 'was a ghost')")
+    feeds.record_fetch(Source("s", "https://example.invalid/f", kind="atom"), store=store)
+    row = ms.source_row(store, "s")
+    assert row["enabled"] == 1 and row["retired"] == ""

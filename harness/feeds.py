@@ -143,6 +143,19 @@ DEFAULT_SOURCES = [
 ]
 
 
+#: Names a store may hold that no sweep reads, and why. #625.
+RETIRED = {
+    "acestep-releases": (
+        "never a source: probed 2026-09-20 and rejected because ACE-Step tags releases "
+        "v0.1.x while the package is 1.5.x, so drift is never computable (RULE #281); "
+        "the music lane is reached through the registry. #240, #625"),
+}
+
+
+def retired_reason(name: str) -> str:
+    return RETIRED.get(name, "no source by this name; nothing reads a row with no kind and no url. #625")
+
+
 def source_lanes(source) -> tuple:
     """Every lane `source` can surface candidates for.
 
