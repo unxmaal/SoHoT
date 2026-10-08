@@ -2,7 +2,6 @@
  "a-closed-table-fronting-an-open-set": [
   "evals/core.py:ASSERTION_KEYS",
   "evals/core.py:CHECKERS",
-  "evals/core.py:RATIO_METRICS",
   "evals/runners/chain.py:STAGE_SCALE",
   "harness/checks/svg.py:_EXTENT_ATTRS",
   "harness/completion.py:SAMPLING",

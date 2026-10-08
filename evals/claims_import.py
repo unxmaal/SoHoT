@@ -6,6 +6,7 @@ EXPORT defaults to $LOCALHARNESS_HOME/import/claims.jsonl, the negatives to
 claims-negatives.jsonl beside it (absent is fine), and DIR to
 $LOCALHARNESS_HOME/cases/claims. The cases are verbatim chat text. The one
 schema they share is written beside them as schema.json, which the lane serves.
+Each review keeps its `interface`; one without reads as legacy. #661.
 """
 from __future__ import annotations
 
@@ -120,9 +121,13 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     loaded = [yaml.safe_load(p.read_text(encoding="utf-8")) for p in written]
     empty = sum(1 for c in loaded if c["assert"].get("expect_empty"))
-    reviews = sum(len(c["assert"]["reviews"]) for c in loaded)
-    print(f"{len(loaded) - empty} reviewed, {empty} expect_empty, {reviews} reviews "
-          f"under {written[0].parent if written else '(none)'}")
+    from collections import Counter
+
+    from harness.checks.claims import interface_of
+    per = Counter(interface_of(r) for c in loaded for r in c["assert"]["reviews"])
+    split = ", ".join(f"{k} {v}" for k, v in sorted(per.items()))
+    print(f"{len(loaded) - empty} reviewed, {empty} expect_empty, {sum(per.values())} reviews "
+          f"({split or 'none'}) under {written[0].parent if written else '(none)'}")
     return 0
 
 

@@ -445,14 +445,13 @@ METRIC_DIRECTION = {
     "pii_precision": "higher",
     "pii_recall": "higher",
     # claims (#654): matched against human reviews; expect_empty cases report apart.
-    "claims_recall": "higher",
-    "claims_precision": "higher",
+    # Reviewed-case metrics are per review interface, never pooled (#661).
     "claims_schema_valid": "higher",
     "claims_empty_rate": "higher",
-    "claims_bad_matched": "lower",
     "claims_emitted": "neutral",
-    "claims_unreviewed": "neutral",
     "claims_judge_calibrated": "neutral",
+    **{claims_check.metric(name, i): way for i in claims_check.INTERFACES
+       for name, way in claims_check.PER_INTERFACE.items()},
 }
 
 
@@ -1338,9 +1337,10 @@ RATIO_METRICS = {"wer": ("wer_errors", "wer_words"),
                  "pii_f1": ("pii_2tp", "pii_f1_den"),
                  "pii_precision": ("pii_tp", "pii_pred"),
                  "pii_recall": ("pii_tp", "pii_gold"),
-                 "claims_recall": ("claims_good_found", "claims_good_total"),
-                 "claims_precision": ("claims_good_found", "claims_reviewed_matched"),
-                 "claims_empty_rate": ("claims_empty_kept", "claims_empty_cases")}
+                 "claims_empty_rate": ("claims_empty_kept", "claims_empty_cases"),
+                 **{claims_check.metric(name, i): (claims_check.metric(n, i), claims_check.metric(d, i))
+                    for i in claims_check.INTERFACES
+                    for name, (n, d) in claims_check.PER_INTERFACE_RATIOS.items()}}
 #: Bookkeeping that should not appear as a column of its own.
 _COMPANIONS = {name for pair in RATIO_METRICS.values() for name in pair}
 

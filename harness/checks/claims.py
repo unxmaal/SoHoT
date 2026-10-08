@@ -14,6 +14,18 @@ from harness.checks.base import CheckResult
 VERDICTS = ("good", "not_useful", "made_up", "wrong")
 NEGATIVE = ("made_up", "wrong")
 
+#: What a review without an interface (an export before #661) is scored as.
+LEGACY = "legacy"
+#: How a reviewer saw the claim; each is its own labelling function, never pooled (RULE #309). #661.
+INTERFACES = ("cited-only", "conversation", LEGACY)
+#: Per-interface metrics and the direction each ranks in.
+PER_INTERFACE = {"recall": "higher", "precision": "higher", "bad_matched": "lower",
+                 "unreviewed": "neutral", "pass": "higher", "verbatim": "neutral",
+                 "near_miss": "neutral"}
+#: Per-interface ratios as (numerator, denominator), summed across cases before dividing.
+PER_INTERFACE_RATIOS = {"recall": ("good_found", "good_total"),
+                        "precision": ("good_found", "reviewed_matched")}
+
 #: Shared-word similarity at or above which an emitted claim is the reviewed one it overlaps.
 MATCH_THRESHOLD = 0.5
 #: Share of a case's good reviewed claims a reply must recover to pass.
@@ -57,6 +69,15 @@ _WORD = re.compile(r"[^a-z0-9]+")
 _NEAR_MISS = 0.15
 
 
+def interface_of(review: dict) -> str:
+    return review.get("interface") or LEGACY
+
+
+def metric(name: str, interface: str) -> str:
+    """A per-interface metric's name, as rows and summaries carry it."""
+    return f"claims_{name}_{interface.replace('-', '_')}"
+
+
 def response_format(schema: dict) -> dict:
     return {"type": "json_schema", "json_schema": {"name": "claims", "strict": True, "schema": schema}}
 
@@ -82,6 +103,9 @@ def validate_case(system, schema, reviews, expect_empty) -> None:
         refs = r.get("refs")
         if not isinstance(refs, list) or not refs or not all(isinstance(x, int) for x in refs):
             raise ValueError(f"review {n} needs refs, a non-empty list of line numbers")
+        if interface_of(r) not in INTERFACES:
+            raise ValueError(f"review {n} has interface {r.get('interface')!r}; "
+                             f"known: {', '.join(INTERFACES)}")
     if expect_empty and reviews:
         raise ValueError("an expect_empty case carries no reviews")
     if not expect_empty and not reviews:
@@ -122,17 +146,15 @@ def match(emitted: list, reviewed: list[dict], threshold: float) -> list[tuple[i
     return sorted(out)
 
 
-def _near_miss(emitted: list, reviews: list[dict], pairs: list) -> bool:
-    """Whether an unmatched claim missed an unmatched good review by the threshold alone."""
+def _near_misses(emitted: list, reviews: list[dict], pairs: list) -> int:
+    """How many unmatched good reviews an unmatched claim missed by the threshold alone."""
     used_i, used_j = {i for i, _, _ in pairs}, {j for _, j, _ in pairs}
     floor = MATCH_THRESHOLD - _NEAR_MISS
-    for i, (user, claim, refs) in enumerate(emitted):
-        for j, r in enumerate(reviews):
-            if i in used_i or j in used_j or r["verdict"] != "good":
-                continue
-            if user == r["user"] and set(refs) & set(r["refs"]) and similarity(claim, r["claim"]) >= floor:
-                return True
-    return False
+    return sum(1 for j, r in enumerate(reviews)
+               if j not in used_j and r["verdict"] == "good"
+               and any(i not in used_i and user == r["user"] and set(refs) & set(r["refs"])
+                       and similarity(claim, r["claim"]) >= floor
+                       for i, (user, claim, refs) in enumerate(emitted)))
 
 
 def parse(text, schema: dict) -> list[tuple] | None:
@@ -168,6 +190,23 @@ def check(artifact, schema: dict, reviews: list[dict], expect_empty: bool = Fals
                        "claims_empty_kept": kept, "claims_empty_cases": 1,
                        "claims_empty_rate": float(kept), "claims_judge_calibrated": 0}
         return out
+    metrics = {"claims_schema_valid": 1, "claims_emitted": len(emitted), "claims_judge_calibrated": 0}
+    reason = limit = ""
+    by: dict[str, list[dict]] = {}
+    for r in reviews:
+        by.setdefault(interface_of(r), []).append(r)
+    for interface in sorted(by):
+        mine, why, knob = _score(emitted, by[interface])
+        metrics.update({metric(k, interface): v for k, v in mine.items()})
+        if why and not reason:
+            reason, limit = f"{interface}: {why}", knob
+    out = CheckResult(not reason, reason, limit=limit)
+    out.metrics = metrics
+    return out
+
+
+def _score(emitted: list, reviews: list[dict]) -> tuple[dict, str, str]:
+    """One interface's metrics, failure reason and deciding knob."""
     pairs = match(emitted, reviews, MATCH_THRESHOLD)
     verdicts = Counter(reviews[j]["verdict"] for _, j, _ in pairs)
     good_total = sum(1 for r in reviews if r["verdict"] == "good")
@@ -175,21 +214,27 @@ def check(artifact, schema: dict, reviews: list[dict], expect_empty: bool = Fals
     bad = sum(verdicts[v] for v in NEGATIVE)
     # A case whose reviews hold no good claim is passed by avoiding the rejected ones.
     recall = good / good_total if good_total else 1.0
-    metrics = {"claims_schema_valid": 1, "claims_emitted": len(emitted),
-               "claims_reviewed_matched": len(pairs), "claims_unreviewed": len(emitted) - len(pairs),
-               "claims_good_found": good, "claims_good_total": good_total,
-               "claims_bad_matched": bad, "claims_recall": round(recall, 4),
-               "claims_precision": round(good / len(pairs), 4) if pairs else 0.0,
-               "claims_judge_calibrated": 0}
-    reason = ""
+    near = _near_misses(emitted, reviews, pairs)
+    reason = limit = ""
     if bad:
         named = ", ".join(f"{verdicts[v]} {v}" for v in NEGATIVE if verdicts[v])
         reason = f"emitted claims a reviewer rejected: {named}"
-    limit = ""
     if not reason and good_total and recall < MIN_RECALL:
         reason = f"recall {recall:.2f} of {good_total} good claims, under {MIN_RECALL}"
         limit = (f"claims_match_threshold>{MATCH_THRESHOLD:g}"
-                 if _near_miss(emitted, reviews, pairs) else f"claims_min_recall>{MIN_RECALL:g}")
-    out = CheckResult(not reason, reason, limit=limit)
-    out.metrics = metrics
-    return out
+                 if near else f"claims_min_recall>{MIN_RECALL:g}")
+    return ({"reviewed_matched": len(pairs), "unreviewed": len(emitted) - len(pairs),
+             "good_found": good, "good_total": good_total, "bad_matched": bad,
+             "recall": round(recall, 4), "precision": round(good / len(pairs), 4) if pairs else 0.0,
+             "pass": int(not reason), "near_miss": near,
+             "verbatim": sum(1 for _, _, sim in pairs if sim >= 1.0)}, reason, limit)
+
+
+def paraphrase_control(items: list[dict], threshold: float = MATCH_THRESHOLD) -> dict:
+    """How many rewordings, and how many different claims, the matcher takes for the reviewed claim."""
+    got = {"n": len(items), "reword_matched": 0, "different_matched": 0}
+    for item in items:
+        reviewed = [{"user": "u", "claim": item["reviewed"], "refs": [1]}]
+        for kind in ("reword", "different"):
+            got[f"{kind}_matched"] += bool(match([("u", item[kind], [1])], reviewed, threshold))
+    return got
