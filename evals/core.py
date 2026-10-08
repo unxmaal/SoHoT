@@ -669,6 +669,8 @@ class Receipt:
     max_tokens: int = 0
     #: Exam knob settings by knob name (harness.knobs.settings); an axis. #636.
     knobs: dict = field(default_factory=dict)
+    #: receipt key -> each time the router evicted its model mid-run; any entry refuses ranking. #649.
+    router_swaps: dict = field(default_factory=dict)
 
     def as_dict(self) -> dict:
         return {"modality": self.modality, "case_ids": list(self.case_ids),
@@ -686,7 +688,8 @@ class Receipt:
                 "devices": dict(self.devices),
                 "launch": dict(self.launch),
                 "max_tokens": self.max_tokens,
-                "knobs": dict(self.knobs)}
+                "knobs": dict(self.knobs),
+                "router_swaps": dict(self.router_swaps)}
 
     @classmethod
     def from_dict(cls, raw: dict) -> "Receipt":
@@ -705,7 +708,8 @@ class Receipt:
                    split_version=raw.get("split_version") or "",
                    methods=raw.get("methods") or {}, devices=raw.get("devices") or {},
                    launch=raw.get("launch") or {}, max_tokens=int(budget),
-                   knobs=legacy_knobs(raw))
+                   knobs=legacy_knobs(raw),
+                   router_swaps=raw.get("router_swaps") or {})
 
 
 def legacy_knobs(raw: dict) -> dict:
@@ -758,6 +762,18 @@ def case_digest(case) -> str:
     return h.hexdigest()
 
 
+def contaminated(r: Receipt) -> str:
+    """Why a run cannot be ranked at all, "" when nothing says so. #649."""
+    for key, swaps in sorted((r.router_swaps or {}).items()):
+        if swaps:
+            first = swaps[0]
+            return (f"router swap during the run: {key} lost its model {len(swaps)} time(s), "
+                    f"first at case {first.get('case')} ({first.get('at')}), to "
+                    f"{', '.join(first.get('resident') or []) or 'nothing resident'}. Its timings "
+                    f"and timeouts measured a reload")
+    return ""
+
+
 def comparable(a: Receipt, b: Receipt) -> tuple[bool, str]:
     """May these two runs be ranked in one table?
 
@@ -790,7 +806,14 @@ def comparable(a: Receipt, b: Receipt) -> tuple[bool, str]:
         deliberately not compared: a commit that touches the README does not
         invalidate a measurement, and a commit that touches sampling is already
         caught by `sampling`.
+
+    REFUSED OUTRIGHT: a run whose model the llama-server router evicted mid-run
+    (`router_swaps`, #649). Its timings and timeouts measured a reload.
     """
+    for r in (a, b):
+        why = contaminated(r)
+        if why:
+            return False, why
     if a.tier != b.tier:
         return False, (f"different tier: {a.tier} vs {b.tier}. A screen asks "
                        f"whether it ran; a measurement asks whether it is "

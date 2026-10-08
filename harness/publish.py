@@ -242,7 +242,8 @@ def exam_receipt(conn, run: dict):
                    split=raw.get("split", ""), split_version=raw.get("split_version", ""),
                    devices=raw.get("devices") or {}, launch=raw.get("launch") or {},
                    max_tokens=Receipt.from_dict({**raw, "modality": lane}).max_tokens,
-                   knobs=Receipt.from_dict({**raw, "modality": lane}).knobs)
+                   knobs=Receipt.from_dict({**raw, "modality": lane}).knobs,
+                   router_swaps=raw.get("router_swaps") or {})
 
 
 def _rank(r: dict) -> tuple:
@@ -252,10 +253,11 @@ def _rank(r: dict) -> tuple:
 
 def exams(conn, mid: int, lane: str) -> list[dict]:
     """Every candidate's latest row per comparable exam on one machine, newest exam first. #621."""
-    from evals.core import comparable
+    from evals.core import comparable, contaminated
     from harness import runs
     found = [(run, exam_receipt(conn, run)) for run in
              runs.find(conn, lane=lane, machines=[mid], tier=runs.MEASURE)]
+    found = [(run, rec) for run, rec in found if not contaminated(rec)]
     same = (lambda a, b: a[0]["machine_id"] == b[0]["machine_id"]
             and comparable(a[1], b[1])[0])
     out = []
