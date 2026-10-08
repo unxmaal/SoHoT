@@ -450,6 +450,7 @@ METRIC_DIRECTION = {
     "claims_empty_rate": "higher",
     "claims_emitted": "neutral",
     "claims_judge_calibrated": "neutral",
+    "claims_matcher_version": "neutral",
     **{claims_check.metric(name, i): way for i in claims_check.INTERFACES
        for name, way in claims_check.PER_INTERFACE.items()},
 }
@@ -769,6 +770,9 @@ def cases_digest(cases) -> str:
     h = hashlib.sha256()
     for c in sorted(cases, key=lambda c: c.id):
         _digest_parts(h, c)
+    # A matcher change rescores the same claims cases, so it is a different exam; case_digest stays put for holdout. #662.
+    if any(c.modality == "claims" for c in cases):
+        h.update(f"claims_matcher\x00{claims_check.MATCHER_VERSION}".encode("utf-8"))
     return h.hexdigest()[:16]
 
 

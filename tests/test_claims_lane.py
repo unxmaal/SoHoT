@@ -33,8 +33,9 @@ def _check(reply, row=None):
 # --- matching --------------------------------------------------------------------
 
 def test_similarity_counts_shared_words_with_their_multiplicity():
-    assert C.similarity("a a b", "a a c") == pytest.approx(2 * 2 / 6)
-    assert C.similarity("", "") == 0.0
+    assert C.dice("a a b", "a a c") == pytest.approx(2 * 2 / 6)
+    assert C.similarity("fan fan rail", "fan fan pin") == pytest.approx(2 * 2 / 6)
+    assert C.similarity("", "") == 0.0 == C.dice("", "")
     assert C.similarity("Jumper J7!", "jumper j7") == 1.0
 
 
@@ -120,7 +121,7 @@ def test_an_expect_empty_case_passes_only_with_no_claims_and_reports_apart():
     assert ok.ok, ok.reason
     assert ok.metrics == {"claims_schema_valid": 1, "claims_emitted": 0,
                           "claims_empty_kept": 1, "claims_empty_cases": 1, "claims_empty_rate": 1.0,
-                          "claims_judge_calibrated": 0}
+                          "claims_judge_calibrated": 0, "claims_matcher_version": C.MATCHER_VERSION}
     got = _check(_reply(("member-a1b2", "Regattas need folding chairs.", [3])), row)
     assert not got.ok and "expected no claims" in got.reason
     assert got.metrics["claims_empty_kept"] == 0 and "claims_recall_legacy" not in got.metrics
@@ -497,8 +498,9 @@ def test_a_near_miss_under_the_match_threshold_records_that_knob():
     row = _line()
     good = _good(row)
     user, claim, refs = good[0]
-    near = (user, "J7 picks where the board boots from on this Quanta 40.", refs)
-    assert C.MATCH_THRESHOLD - 0.15 <= C.similarity(near[1], claim) < C.MATCH_THRESHOLD
+    near = (user, "Jumper J7 picks where the board boots from.", refs)
+    weight = C.weights([r["claim"] for r in row["reviews"]])
+    assert C.MATCH_THRESHOLD - 0.15 <= C.similarity(near[1], claim, weight) < C.MATCH_THRESHOLD
     got = _check(_reply(near, good[1]))
     assert not got.ok and got.limit == f"claims_match_threshold>{C.MATCH_THRESHOLD:g}"
 
@@ -763,7 +765,7 @@ def test_each_interface_counts_verbatim_matches_and_near_misses():
     row = _line()
     good = _good(row)
     user, claim, refs = good[0]
-    near = (user, "J7 picks where the board boots from on this Quanta 40.", refs)
+    near = (user, "Jumper J7 picks where the board boots from.", refs)
     m = C.check(_reply(near, good[1]), row["schema"], _tagged(row, "conversation")).metrics
     assert m["claims_verbatim_conversation"] == 1 and m["claims_near_miss_conversation"] == 1
     m = C.check(_reply(good[1]), row["schema"], _tagged(row, "conversation")).metrics
@@ -773,7 +775,7 @@ def test_each_interface_counts_verbatim_matches_and_near_misses():
 def test_the_matcher_control_blames_the_matcher_when_misses_sit_just_under_the_threshold():
     from evals import claims_report as R
     good = _good(_line())
-    near = [(u, "J7 picks where the board boots from on this Quanta 40.", r) for u, _, r in good[:1]]
+    near = [(u, "Jumper J7 picks where the board boots from.", r) for u, _, r in good[:1]]
     # The first two reviews are the good ones: one reproduced verbatim, one reworded just under 0.5.
     got = R.report(*_control_rows(*near, good[1], reviewed=2))
     assert got["eval-7b"]["control"] == {"interface": "conversation", "recall": 0.5, "good_total": 2,
@@ -811,16 +813,125 @@ def test_the_report_rescores_stored_replies_against_the_cases_it_is_given(tmp_pa
 PARAPHRASE = FIXTURES / "paraphrase.json"
 
 
-def test_the_paraphrase_control_matches_every_rewording_at_the_threshold():
-    items = json.loads(PARAPHRASE.read_text(encoding="utf-8"))
+def _paraphrases():
+    return json.loads(PARAPHRASE.read_text(encoding="utf-8"))
+
+
+def test_the_paraphrase_fixture_holds_three_cases_of_twelve_synthetic_triples():
+    items = _paraphrases()
+    assert Counter(i["case"] for i in items) == {"quanta": 12, "kestrel": 12, "vireo": 12}
+    assert all(set(i) == {"case", "reviewed", "reword", "different"} for i in items)
+
+
+def test_the_paraphrase_control_matches_every_rewording_and_no_different_claim():
+    got = C.paraphrase_control(_paraphrases())
+    assert got["n"] == 36
+    assert got["reword_matched"] == 36
+    # #662: shared subject words carried 6 of the first 12 different claims over plain Dice.
+    assert got["different_matched"] == 0
+
+
+def test_the_control_gap_between_classes_exceeds_the_spread_within_a_class():
+    got = C.paraphrase_control(_paraphrases())
+    assert got["gap"] == pytest.approx(got["reword_min"] - got["different_max"])
+    assert got["gap"] > got["spread"] > 0
+    assert got["reword_min"] > C.MATCH_THRESHOLD > got["different_max"]
+
+
+def test_plain_dice_fails_the_same_control():
+    got = C.paraphrase_control(_paraphrases(), plain=True)
+    assert got["different_matched"] >= 6
+    assert got["gap"] <= got["spread"]
+
+
+def test_a_case_holding_one_reviewed_claim_has_no_subject_evidence_and_falls_back_to_content_dice():
+    items = [{**i, "case": str(n)} for n, i in enumerate(_paraphrases())]
     got = C.paraphrase_control(items)
-    assert got["n"] == len(items) == 12
-    assert got["reword_matched"] == got["n"]
+    # #662: with one reviewed claim every word weighs the same; the classes still order but 0.5 sits inside one.
+    assert got["reword_matched"] == 36 and got["different_matched"] == 3
+    assert got["gap"] > got["spread"]
 
 
-def test_the_paraphrase_control_can_fail_and_counts_different_claims_it_matched():
-    items = json.loads(PARAPHRASE.read_text(encoding="utf-8"))
-    assert C.paraphrase_control(items, threshold=1.0)["reword_matched"] == 0
-    assert C.paraphrase_control(items, threshold=0.0)["different_matched"] == 12
-    # At 0.5 the shared subject words carry half the different claims over: #662.
-    assert C.paraphrase_control(items)["different_matched"] == 6
+def test_the_paraphrase_control_can_fail_at_either_end():
+    items = _paraphrases()
+    assert C.paraphrase_control(items, threshold=1.01)["reword_matched"] == 0
+    assert C.paraphrase_control(items, threshold=0.0)["different_matched"] == 36
+
+
+def test_a_word_in_every_reviewed_claim_weighs_least_and_an_unseen_one_as_the_rarest():
+    w = C.weights(["the Quanta 40 fan spins", "the Quanta 40 ROM boots", "Quanta 40 jumper J7"])
+    assert 0 < w("quanta") < w("jumper") == w("never")
+
+
+def test_stopwords_carry_no_weight_and_plural_or_tense_does_not_split_a_word():
+    w = C.weights(["the pins"])
+    assert C.content_tokens("The six pins were initialized") == ["6", "pin", "initializ"]
+    assert C.similarity("six pins", "six pin", w) == 1.0
+    assert C.similarity("the of and", "the of and", w) == 0.0
+
+
+@pytest.mark.parametrize("a, b", [
+    ("User e872 has three SCSI drives in the Quanta 40.", "They have 3 SCSI drives in the Quanta 40."),
+    ("The Quanta 40 lacks a parallel port.", "The Quanta 40 does not have a parallel port."),
+    ("member-a1b2 says the Quanta 40 doesn't have a parallel port.", "The Quanta 40 has no parallel port."),
+])
+def test_framing_number_words_and_negation_do_not_split_one_claim(a, b):
+    assert C.similarity(a, b) == 1.0
+
+
+@pytest.mark.parametrize("a, b", [
+    ("They have three SCSI drives.", "They have two SCSI drives."),
+    ("The Quanta 40 has a parallel port.", "The Quanta 40 has no parallel port."),
+    ("The bus runs at 9600 baud.", "The bus runs at 4800 baud."),
+])
+def test_the_normalisation_keeps_a_different_number_or_a_negation_apart(a, b):
+    assert C.similarity(a, b) < 1.0
+
+
+def test_check_weighs_words_by_the_case_s_own_reviews_so_a_different_claim_is_not_credited():
+    items = [i for i in _paraphrases() if i["case"] == "quanta"]
+    reviews = [{"user": "u", "claim": i["reviewed"], "refs": [n + 1], "verdict": "good",
+                "interface": "conversation"} for n, i in enumerate(items)]
+    schema = _line()["schema"]
+    rewords = _reply(*[("u", i["reword"], [n + 1]) for n, i in enumerate(items)])
+    others = _reply(*[("u", i["different"], [n + 1]) for n, i in enumerate(items)])
+    assert C.check(rewords, schema, reviews).metrics["claims_good_found_conversation"] == 12
+    assert C.check(others, schema, reviews).metrics["claims_good_found_conversation"] == 0
+
+
+def test_a_different_claim_is_not_blamed_as_the_rejected_one_it_shares_a_subject_with():
+    item = _paraphrases()[3]
+    reviews = [{"user": "u", "claim": item["reviewed"], "refs": [1], "verdict": "wrong"},
+               {"user": "u", "claim": "The Quanta 40 SCSI bus needs termination.", "refs": [2],
+                "verdict": "good"}]
+    got = C.check(_reply(("u", item["different"], [1])), _line()["schema"], reviews)
+    assert got.metrics["claims_bad_matched_legacy"] == 0
+
+
+def test_every_claims_row_carries_the_matcher_version():
+    got = _check(_reply(*_good(_line())))
+    assert got.metrics["claims_matcher_version"] == C.MATCHER_VERSION >= 2
+    bad = _check("not json")
+    assert bad.metrics["claims_matcher_version"] == C.MATCHER_VERSION
+
+
+def test_a_matcher_change_changes_a_claims_run_s_digest_but_not_a_case_s_holdout_side(monkeypatch):
+    from evals.core import Case, case_digest, cases_digest
+    case = _claims_case()
+    others = [Case(id="code-x", modality="code", prompt="add two numbers")]
+    before = (cases_digest([case]), cases_digest(others), case_digest(case))
+    monkeypatch.setattr(C, "MATCHER_VERSION", C.MATCHER_VERSION + 1)
+    after = (cases_digest([case]), cases_digest(others), case_digest(case))
+    assert after[0] != before[0]
+    assert after[1:] == before[1:]
+
+
+def test_the_report_names_the_matcher_versions_its_rows_were_scored_under():
+    from evals import claims_report as R
+    rows, cases = _control_rows(_good(_line())[0])
+    assert R.report(rows, cases)["eval-7b"]["matcher_versions"] == [C.MATCHER_VERSION]
+    old = [{**r, "metrics": {k: v for k, v in r["metrics"].items() if k != "claims_matcher_version"}}
+           for r in rows]
+    got = R.report(old + rows, cases)
+    assert got["eval-7b"]["matcher_versions"] == [1, C.MATCHER_VERSION]
+    assert "scored under matcher versions 1 and" in R.render(got)
