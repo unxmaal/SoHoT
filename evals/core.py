@@ -667,6 +667,8 @@ class Receipt:
     launch: dict = field(default_factory=dict)
     #: The reply budget every text request ran at; 0 where the lane generates no text. An axis. #628.
     max_tokens: int = 0
+    #: Exam knob settings by knob name (harness.knobs.settings); an axis. #636.
+    knobs: dict = field(default_factory=dict)
 
     def as_dict(self) -> dict:
         return {"modality": self.modality, "case_ids": list(self.case_ids),
@@ -683,7 +685,8 @@ class Receipt:
                 "methods": dict(self.methods),
                 "devices": dict(self.devices),
                 "launch": dict(self.launch),
-                "max_tokens": self.max_tokens}
+                "max_tokens": self.max_tokens,
+                "knobs": dict(self.knobs)}
 
     @classmethod
     def from_dict(cls, raw: dict) -> "Receipt":
@@ -701,7 +704,16 @@ class Receipt:
                    cases_digest=raw.get("cases_digest") or "", split=raw.get("split") or "",
                    split_version=raw.get("split_version") or "",
                    methods=raw.get("methods") or {}, devices=raw.get("devices") or {},
-                   launch=raw.get("launch") or {}, max_tokens=int(budget))
+                   launch=raw.get("launch") or {}, max_tokens=int(budget),
+                   knobs=legacy_knobs(raw))
+
+
+def legacy_knobs(raw: dict) -> dict:
+    """The exam knob settings a receipt records; one from before #636 ran at the constants of the time."""
+    from harness import knobs
+    if "knobs" in raw:
+        return dict(raw.get("knobs") or {})
+    return knobs.settings(raw.get("modality") or "")
 
 
 def legacy_budget(modality: str) -> int:
@@ -801,6 +813,11 @@ def comparable(a: Receipt, b: Receipt) -> tuple[bool, str]:
         return False, (f"different reply budget: {a.max_tokens} vs {b.max_tokens} "
                        f"tokens. A reasoning model cut off at the smaller one fails "
                        f"on the budget, not on the answer")
+    if dict(a.knobs) != dict(b.knobs):
+        moved = [f"{k} {a.knobs.get(k)} vs {b.knobs.get(k)}"
+                 for k in sorted(set(a.knobs) | set(b.knobs)) if a.knobs.get(k) != b.knobs.get(k)]
+        return False, (f"different knob settings: {'; '.join(moved)}. A limit the harness chose "
+                       f"decides which replies count")
     if dict(a.sampling) != dict(b.sampling):
         return False, f"different sampling: {a.sampling} vs {b.sampling}"
     if a.adherence != b.adherence:

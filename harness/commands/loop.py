@@ -49,7 +49,7 @@ LOOP_STEPS = (("sweep", "sweep", False),
 LOOP_INSPECT = 50
 
 #: The spend's steps, after LOOP_STEPS, for the heartbeat's step N of M. #251.
-SPEND_STEPS = ("retests", "reverify", "disk", "fetch", "screen", "measure")
+SPEND_STEPS = ("retests", "reverify", "knob sweeps", "disk", "fetch", "screen", "measure")
 LOOP_TOTAL = len(LOOP_STEPS) + len(SPEND_STEPS)
 
 
@@ -223,6 +223,7 @@ def _run_loop(a) -> int:
             for row in stuck[:10]:
                 print(f"  {row.get('lane', ''):8} {row['name']}\n"
                       f"           {row['why_not']}")
+        _report_binding(store)
         print(f"\n=== adopted ===")
         current = adopt.current(store)
         if current:
@@ -305,6 +306,10 @@ def _loop_spend(a, rc: int, failed: list | None = None) -> int:
     print("\n=== reverify ===")
     _beat("reverify")
     _reverify()
+
+    print("\n=== knob sweeps ===")
+    _beat("knob sweeps")
+    _sweeps()
 
     # After the retests, so a reopened candidate's weights are queued, not swept.
     print("\n=== disk ===")
@@ -420,3 +425,22 @@ def _methods_lines(crossed) -> list[str]:
     for lane, spec, new in crossed:
         out.append(f"  {'queued' if new else 'known ':6}  {lane:8} {spec}")
     return out
+
+
+def _report_binding(store, now: float | None = None) -> None:
+    """The knobs whose limits this machine's recent runs keep hitting. #636."""
+    from harness import binding, runs
+    print("\n=== binding knobs ===")
+    print(binding.render(binding.count(store, now=now, machines=runs.here(store))))
+
+
+def _sweeps() -> dict:
+    """Settle finished knob sweeps and queue one per binding knob not yet swept here. #636."""
+    from harness import memory_store as ms, sweeps
+    store = ms.connect()
+    try:
+        got = sweeps.check(store)
+    finally:
+        store.close()
+    print(sweeps.render(got))
+    return got

@@ -120,6 +120,23 @@ def test_a_runaway_raises_rather_than_returning_the_audio(tmp_path, monkeypatch)
         audio.speak(words(9), made, ref_audio=ref)
     assert "#6" in str(exc.value)
     assert made.exists(), "the audio must survive so it can be listened to"
+    assert exc.value.limit == ("seconds_per_word", SECONDS_PER_WORD_CEILING)
+
+
+def test_a_runaway_records_the_ceiling_in_force_when_it_was_judged(tmp_path, monkeypatch):
+    class R:
+        content = wav(tmp_path / "src.wav", 48.0).read_bytes()
+
+        def raise_for_status(self):
+            pass
+
+    monkeypatch.setattr(audio.httpx, "post", lambda url, json=None, timeout=None: R())
+    monkeypatch.setattr(audio, "SECONDS_PER_WORD_CEILING", 2.5)
+    ref = tmp_path / "ref.wav"
+    wav(ref, 1.0)
+    with pytest.raises(audio.Runaway) as exc:
+        audio.speak(words(9), tmp_path / "out.wav", ref_audio=ref)
+    assert exc.value.limit == ("seconds_per_word", 2.5)
 
 
 # Issue #91, measured 2026-10-07 from every stored tts clip with a known case.

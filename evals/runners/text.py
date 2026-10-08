@@ -38,6 +38,8 @@ class CompletionRunner(BaseRunner):
         self.candidate = candidate
         self.model = model or candidate
         self.timeout = timeout
+        #: Seconds the untimed first request may spend loading; a knob a run can set. #636.
+        self.load_timeout = LOAD_TIMEOUT_S
         #: The run's reply budget; 0 asks each case at its lane's. #628.
         self.max_tokens = int(max_tokens or 0)
         self.last_cut = ""
@@ -54,7 +56,7 @@ class CompletionRunner(BaseRunner):
         try:
             completion.complete_with_usage(
                 "Reply with the word ok.", model=self.model,
-                gateway=self.gateway, timeout=LOAD_TIMEOUT_S, max_tokens=8,
+                gateway=self.gateway, timeout=self.load_timeout, max_tokens=8,
                 sampling=self.sampling or None)
         except completion.CompletionError as exc:
             # It loaded and answered; a budget this small is not the case's.
@@ -63,7 +65,7 @@ class CompletionRunner(BaseRunner):
                 self.answered = True
                 return
             if exc.failure_class == reasons.TIMEOUT:
-                exc.limit = ("load_timeout_s", LOAD_TIMEOUT_S)
+                exc.limit = ("load_timeout_s", self.load_timeout)
             raise _runner_error(exc, "warm-up: ") from exc
         self.answered = True
 

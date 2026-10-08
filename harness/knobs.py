@@ -35,6 +35,8 @@ LIMIT, MACHINE = "limit", "machine"
 
 #: The lanes an eval asks for a text reply, the ones a reply budget is set for.
 TEXT_LANES = tuple(completion.BUDGET)
+#: The lanes whose replies go through the text runner's request and load timeouts; agent steps have their own.
+REQUEST_LANES = tuple(lane for lane in TEXT_LANES if lane != "agent")
 
 
 @dataclass(frozen=True)
@@ -50,6 +52,10 @@ class Knob:
     #: The recorded limit is the value divided by this.
     scale: float = 1.0
     probe: str = ""
+    #: Where an eval's receipt records it: "max_tokens" (its own field), "knobs" (Receipt.knobs), or "" (not the exam).
+    receipt: str = ""
+    #: The runner attribute a run sets for an override; "" rebinds the first site for the run instead.
+    runner_attr: str = ""
     note: str = ""
 
     def default(self, lane: str = ""):
@@ -77,19 +83,19 @@ def _k(name, sites, values, **kw) -> tuple[str, Knob]:
 KNOBS: dict[str, Knob] = dict([
     _k("reply_budget", ["harness/completion.py:BUDGET", "harness/completion.py:MAX_TOKENS"],
        [2000, 4000, 8000, 16384, 32768, 65536], lanes=TEXT_LANES, limit="max_tokens.{lane}",
-       note="the reply budget an eval asks every text reply at (#628)"),
+       receipt="max_tokens", note="the reply budget an eval asks every text reply at (#628)"),
     _k("request_timeout", ["harness/completion.py:TIMEOUT_S", "harness/completion.py:MIN_DECODE_TOK_S"],
-       [60.0, 120.0, 180.0, 300.0, 600.0], lanes=TEXT_LANES, limit="timeout_s",
+       [60.0, 120.0, 180.0, 300.0, 600.0], lanes=REQUEST_LANES, limit="timeout_s", receipt="knobs", runner_attr="timeout",
        note="seconds one request may take; a big budget stretches it at the slowest decode"),
     _k("load_timeout", ["harness/completion.py:LOAD_TIMEOUT_S"],
-       [600.0, 1200.0, 1800.0, 3600.0], lanes=TEXT_LANES, limit="load_timeout_s",
+       [600.0, 1200.0, 1800.0, 3600.0], lanes=REQUEST_LANES, limit="load_timeout_s", receipt="knobs", runner_attr="load_timeout",
        note="seconds the untimed first request may spend loading weights"),
     _k("memory_ceiling", ["harness/inspect.py:MEMORY_CEILING", "harness/inspect.py:MEMORY_CEILING_RAM_GB"],
        [8 * GIB, 16 * GIB, 22 * GIB, 32 * GIB, 96 * GIB], limit="ceiling_gb", predicate=MACHINE,
        scale=GIB, probe="memory_ceiling",
        note="the largest weight this machine can hold; measured on 32 GB and scaled by RAM (#96)"),
     _k("runaway_rate", ["harness/audio.py:SECONDS_PER_WORD_CEILING", "harness/audio.py:RUNAWAY_MIN_WORDS"],
-       [0.6, 0.8, 0.95, 1.2, 2.0], lanes=("tts",), limit="seconds_per_word",
+       [0.6, 0.8, 0.95, 1.2, 2.0], lanes=("tts",), limit="seconds_per_word", receipt="knobs",
        note="seconds of speech per word above which tts ran away (#91)"),
     _k("download_cap", ["harness/fetching.py:MAX_DOWNLOAD"],
        [20 * GIB, 40 * GIB, 60 * GIB, 120 * GIB], limit="download_gib", scale=GIB,
@@ -114,6 +120,12 @@ KNOBS: dict[str, Knob] = dict([
        note="when a repo counts as abandoned"),
     _k("clone_kb_cap", ["harness/inspect.py:CLONE_KB_CAP"], [10_000, 50_000, 250_000, 1_000_000],
        probe="clone_kb_cap", note="source tree size above which a repo is weights in git"),
+    _k("binding_window", ["harness/binding.py:BINDING_WINDOW_DAYS"], [7, 14, 30, 90],
+       note="days of runs and verdicts a binding count reads"),
+    _k("binding_fraction", ["harness/binding.py:BINDING_FRACTION"], [0.02, 0.05, 0.1, 0.25],
+       note="share of a lane's rows hitting a limit at which its knob is reported binding"),
+    _k("binding_min_hits", ["harness/binding.py:BINDING_MIN_HITS"], [1, 3, 5, 10],
+       note="fewer hits than this is never binding"),
 ])
 
 #: Constants the inventory finds whose name says gate and whose value does not, each with why.
@@ -210,3 +222,44 @@ def limits() -> dict:
             for lane in k.lanes:
                 out[k.limit_name(lane)] = k.limit_value(lane)
     return out
+
+
+def settings(lane: str, overrides: dict | None = None) -> dict:
+    """The exam knobs an eval of `lane` runs at, by knob name: their defaults, or the values a run names."""
+    overrides = dict(overrides or {})
+    unknown = sorted(n for n in overrides if n not in KNOBS or KNOBS[n].receipt != "knobs")
+    if unknown:
+        raise ValueError(f"not a knob a run can set: {', '.join(unknown)}")
+    return {k.name: overrides.get(k.name, k.default(lane)) for k in KNOBS.values()
+            if k.receipt == "knobs" and lane in k.lanes}
+
+
+def rebind(overrides: dict):
+    """Set each override that has no runner attribute on its module for the duration; restore after."""
+    import contextlib
+
+    @contextlib.contextmanager
+    def held():
+        saved = []
+        try:
+            for name, value in overrides.items():
+                k = KNOBS[name]
+                if k.runner_attr:
+                    continue
+                m = _SITE.fullmatch(k.sites[0])
+                module = importlib.import_module(m["rel"][:-3].replace("/", "."))
+                saved.append((module, m["name"], getattr(module, m["name"])))
+                setattr(module, m["name"], value)
+            yield
+        finally:
+            for module, attr, old in reversed(saved):
+                setattr(module, attr, old)
+    return held()
+
+
+def apply(runner, overrides: dict) -> None:
+    """Set the overrides a runner carries as attributes."""
+    for name, value in overrides.items():
+        attr = KNOBS[name].runner_attr
+        if attr and hasattr(runner, attr):
+            setattr(runner, attr, value)

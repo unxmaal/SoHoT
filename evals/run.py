@@ -25,7 +25,7 @@ import sys
 import time
 from pathlib import Path
 
-from harness import audio, completion, ds4, env, paths
+from harness import audio, completion, ds4, env, knobs, paths
 from harness.engines import Engine, names as engine_names, parse_options, resolve
 
 from dataclasses import replace
@@ -719,6 +719,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--split", choices=("all", "dev", "holdout"), default="all",
                     help="which side of the per-lane holdout split to run; the "
                          "screen always runs dev (#479)")
+    ap.add_argument("--knob", action="append", default=[], metavar="NAME=VALUE",
+                    help="run at this setting of a registered exam knob, recorded on the "
+                         "receipt; repeatable (harness/knobs.py, #636)")
     ap.add_argument("--max-tokens", type=int, default=None,
                     help="reply budget for every text request, recorded on the "
                          "receipt (default: the lane's, completion.BUDGET) (#628)")
@@ -743,7 +746,31 @@ def main(argv: list[str] | None = None) -> int:
         return _execute(args)
 
 
+def knob_overrides(pairs) -> dict:
+    """{knob: value} from NAME=VALUE pairs; a name that is not an exam knob is refused. #636."""
+    out = {}
+    for pair in pairs or ():
+        name, sep, value = str(pair).partition("=")
+        if not sep:
+            raise SystemExit(f"--knob takes NAME=VALUE, not {pair!r}")
+        try:
+            out[name.strip()] = float(value)
+        except ValueError:
+            raise SystemExit(f"--knob {name}: {value!r} is not a number") from None
+    try:
+        knobs.settings("", out)
+    except ValueError as exc:
+        raise SystemExit(str(exc)) from None
+    return out
+
+
 def _execute(args) -> int:
+    overrides = knob_overrides(getattr(args, "knob", None))
+    with knobs.rebind(overrides):
+        return _execute_at(args, overrides)
+
+
+def _execute_at(args, overrides: dict) -> int:
     if args.screen:
         # A screen is allowed to be statistically worthless. Its job is to
         # reject what does not run at all, which is how most things here have
@@ -790,6 +817,7 @@ def _execute(args) -> int:
         runner = build_runner(candidate, args.gateway, outdir,
                               adherence=args.adherence, modality=args.modality,
                               max_tokens=budget)
+        knobs.apply(runner, overrides)
         if runner.candidate in specs:
             # One key, one row set and one artifact name: the second would overwrite the first. #429.
             raise SystemExit(f"{specs[runner.candidate]} and {candidate} both "
@@ -829,7 +857,8 @@ def _execute(args) -> int:
             methods=method_receipts(specs),
             devices=devices(results),
             launch=launches,
-            max_tokens=budget)
+            max_tokens=budget,
+            knobs=knobs.settings(args.modality, overrides))
         now = time.time()
         ids = candidate_ids(specs, args.modality)
         for r in results:
@@ -1064,8 +1093,8 @@ def compare_across(axis: str, loaded: list) -> int:
     """
     from harness import paired
 
-    if axis not in paired.AXES:
-        print(f"unknown axis {axis!r}; one of {', '.join(paired.AXES)}")
+    if not paired.is_axis(axis):
+        print(f"unknown axis {axis!r}; one of {', '.join(paired.AXES)}, or knobs.<name>")
         return 1
     base_file, base, _, base_rows = loaded[0]
     for f, receipt, _, rows in loaded[1:]:
@@ -1080,7 +1109,7 @@ def compare_across(axis: str, loaded: list) -> int:
                   f"as well as {axis}. A sweep that varies two things cannot "
                   f"say which one moved the result.")
             return 1
-        print(f"\n{axis}: {getattr(base, axis)!r} -> {getattr(receipt, axis)!r}")
+        print(f"\n{axis}: {paired.value(base, axis)!r} -> {paired.value(receipt, axis)!r}")
         print(f"  {'candidate':34} {'lost':>5} {'gained':>7} {'same':>6} "
               f"{'p':>7}  verdict")
         for cell in paired.cells(base_rows, rows):

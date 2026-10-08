@@ -188,6 +188,10 @@ INDEX = {
                 "a one-time migration reading the newest inspect size, which is a measurement, not a state",
             "harness/reverify.py:judge":
                 "the run a queued job stored; a retried job's newest run is its latest attempt (#526)",
+            "harness/runs.py:for_job":
+                "the run a queued job stored; a retried job's newest run is its latest attempt (#636)",
+            "harness/sweeps.py:_key":
+                "the newest sweep of one knob, lane, model and machine; a settled sweep is never edited (#636)",
         },
         "instances": _i(225, 253, 254, 393, 399, 522, rules=(382, 389)), "scanners": []},
     "a-proxy-checked-in-place-of-the-property": {
@@ -203,18 +207,16 @@ INDEX = {
                 "a contamination probe's reply budget, the same question to every model by design (#531)",
         },
         "instances": _i(355, 401, 498), "scanners": []},
+    "a-constant-chosen-before-the-thing-it-constrains-existed": {
+        "instances": _i(rules=(535,)),
+        "scanners": ["tests/test_knobs.py::test_no_new_gating_constant_is_unregistered"]},
     "history-reconstructed-from-present-state": {
         "review": r"(?i)\bbackfill\w*|\bUPDATE\s+\w+\s+SET\b",
         "instances": _i(506, 516, rules=(292,)), "scanners": []},
 }
 
 # Proposed classes with no skill entry yet; add the entry to SKILL.md, regenerate the snapshot, move here into INDEX.
-PENDING = {
-    "a-constant-chosen-before-the-thing-it-constrains-existed": {
-        "tier": 1,
-        "instances": _i(rules=(535,)),
-        "scanners": ["tests/test_knobs.py::test_no_new_gating_constant_is_unregistered"]},
-}
+PENDING = {}
 
 UNCLASSIFIED = {
     6: "upstream model behaviour (Chatterbox runs past its input), no failing in this repo's logic",

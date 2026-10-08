@@ -19,7 +19,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from harness import audio
+from harness import audio, reasons
 
 from evals.core import Case
 from evals.runners.base import BaseRunner, RunnerError
@@ -72,6 +72,9 @@ class SpeechRunner(BaseRunner):
                         model=self.model, base_url=self.base_url,
                         timeout=self.timeout,
                         ref_audio=self.ref_audio, lang_code=self.lang_code)
+        except audio.Runaway as exc:
+            raise RunnerError(str(exc), failure_class=reasons.RUNAWAY,
+                              limit=f"{exc.limit[0]}>{exc.limit[1]:g}") from exc
         except audio.AudioError as exc:
             raise RunnerError(str(exc)) from exc
         # Peak memory is not observable across HTTP; the server holds the model.
