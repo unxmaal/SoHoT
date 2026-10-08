@@ -548,6 +548,16 @@ answer that then fails its checks) is recorded as `token_budget_exhausted` with
 the limit it hit, and the comparison table counts it under `budget`, apart from
 `wrong`.
 
+**A run whose model the router evicted is not ranked.** For a candidate served
+by llama-server's router (directly or through a gateway alias), the eval reads
+the router's `/models` before and after each case. If the model was held and
+then is not (unloaded, or reloading), the receipt's `router_swaps` records the
+case, whether it was seen at the start or the end, and which models were
+resident instead. `comparable()` refuses such a run against anything, itself
+included, `--compare` and `--across` refuse it, and the benchmarks page leaves
+it out. Two snapshots per case cannot see an evict-and-reload that finishes
+inside one case on a one-model router; that case still shows up in its timing.
+
 **Repeats of one case are not independent cases.** A model at low temperature
 answers a case the same way most of the time, so the case, not the repeat, is
 the unit. The power calculation and the adopt gate both measure the within-case

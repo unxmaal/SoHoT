@@ -32,19 +32,64 @@ def _post(path: str, body: dict) -> dict:
         return json.loads(r.read() or b"{}")
 
 
-def resident(get=None) -> list[str]:
-    """Stems the router holds in memory, [] when it cannot be asked."""
+def statuses(get=None) -> dict | None:
+    """Router model id -> status value, None when the router cannot be asked."""
     try:
         data = (get or _get)("/models")
     except Exception:  # noqa: BLE001
-        return []
-    out = []
+        return None
+    out = {}
     for m in data.get("data") or []:
         status = m.get("status")
         value = status.get("value") if isinstance(status, dict) else status
-        if value in RESIDENT and m.get("id"):
-            out.append(str(m["id"]))
+        if m.get("id"):
+            out[str(m["id"])] = str(value)
     return out
+
+
+def resident(get=None) -> list[str]:
+    """Stems the router holds in memory, [] when it cannot be asked."""
+    return [k for k, v in (statuses(get) or {}).items() if v in RESIDENT]
+
+
+class Watch:
+    """One eval candidate's router model across a run: each time it lost the model. #649."""
+
+    def __init__(self, model: str, get=None) -> None:
+        self.model = model
+        self.get = get
+        self.swaps: list[dict] = []
+        self._held = False
+
+    def look(self, case: str, at: str) -> None:
+        """Record an eviction when the model was held and now is not; unknown is not one."""
+        s = statuses(self.get)
+        if s is None:
+            return
+        status = s.get(self.model, "absent")
+        if status in ("loaded", "sleeping"):
+            self._held = True
+            return
+        if self._held:
+            self.swaps.append({"case": case, "at": at, "status": status,
+                               "resident": sorted(k for k, v in s.items()
+                                                  if v in RESIDENT and k != self.model)})
+            self._held = False
+
+
+def _upstream(spec: str, gateway: str = "") -> tuple:
+    from harness import delegate, serving
+    return delegate.upstream(serving.route(spec, gateway))
+
+
+def model_for(spec: str, gateway: str = "", route=None) -> str:
+    """The router model an eval candidate runs on, through a gateway alias too; "" otherwise."""
+    try:
+        base, model = (route or _upstream)(spec, gateway)
+    except Exception:  # noqa: BLE001
+        return ""
+    from harness import serving
+    return model if model and base in (serving.LLAMACPP_URL, url()) else ""
 
 
 def stem_of(spec: str) -> str:

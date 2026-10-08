@@ -25,7 +25,7 @@ import sys
 import time
 from pathlib import Path
 
-from harness import audio, completion, ds4, env, knobs, paths
+from harness import audio, completion, ds4, env, knobs, paths, router
 from harness.engines import Engine, names as engine_names, parse_options, resolve
 
 from dataclasses import replace
@@ -813,7 +813,7 @@ def _execute_at(args, overrides: dict) -> int:
     if skipped:
         print(f"\nnot run, no candidate for them -- {skipped}", file=sys.stderr)
 
-    results, specs, planned, launches = [], {}, [], {}
+    results, specs, planned, launches, evicted = [], {}, [], {}, {}
     for candidate in candidates:
         mine = cases_for(candidate, cases)
         if args.screen:
@@ -837,7 +837,7 @@ def _execute_at(args, overrides: dict) -> int:
         with _served(candidate) as launched:
             if launched:
                 launches[runner.candidate] = ds4.launch_text(launched["launch"])
-            _run_candidate(args, candidate, runner, mine, results, outdir)
+            _run_candidate(args, candidate, runner, mine, results, outdir, evicted)
 
     if not results:
         raise SystemExit("nothing ran: no candidate matched any case")
@@ -866,7 +866,8 @@ def _execute_at(args, overrides: dict) -> int:
             devices=devices(results),
             launch=launches,
             max_tokens=budget,
-            knobs=knobs.settings(args.modality, overrides))
+            knobs=knobs.settings(args.modality, overrides),
+            router_swaps=evicted)
         now = time.time()
         ids = candidate_ids(specs, args.modality)
         for r in results:
@@ -910,8 +911,10 @@ def _served(candidate: str):
         raise SystemExit(f"{candidate}: {exc}") from None
 
 
-def _run_candidate(args, candidate, runner, mine, results, outdir) -> None:
+def _run_candidate(args, candidate, runner, mine, results, outdir, evicted=None) -> None:
     runner.screening = bool(args.screen)
+    model = router.model_for(candidate, args.gateway)
+    watch = router.Watch(model) if model else None
     print(f"\n── {runner.candidate}", flush=True)
     # A cold load is not the case's to pay for; a failed one is every case's. #406.
     cold = None
@@ -921,7 +924,11 @@ def _run_candidate(args, candidate, runner, mine, results, outdir) -> None:
         except RunnerError as exc:
             cold = exc
     for case in mine:
+        if watch:
+            watch.look(case.id, "start")
         r = runner.failed(case, cold) if cold else runner.run(case)
+        if watch:
+            watch.look(case.id, "end")
         results.append(r)
         mark = "pass" if r.passed else "FAIL"
         note = "" if r.passed else f"  {r.detail}"
@@ -935,6 +942,10 @@ def _run_candidate(args, candidate, runner, mine, results, outdir) -> None:
                 case, TEXT_SUFFIX.get(case.modality, ".txt"))
             f.write_text(r.output, encoding="utf-8")
             r.artifact_path = str(f.resolve())
+    if watch and watch.swaps and evicted is not None:
+        evicted[runner.candidate] = watch.swaps
+        print(f"  router evicted {model} {len(watch.swaps)} time(s) during this run; "
+              f"it will not be ranked", file=sys.stderr)
 
 
 def export_row(r) -> dict:
@@ -1105,6 +1116,11 @@ def compare_across(axis: str, loaded: list) -> int:
         print(f"unknown axis {axis!r}; one of {', '.join(paired.AXES)}, or knobs.<name>")
         return 1
     base_file, base, _, base_rows = loaded[0]
+    for f, receipt, _, _ in loaded:
+        why = core.contaminated(receipt)
+        if why:
+            print(f"REFUSED: {f} cannot be compared -- {why}.")
+            return 1
     for f, receipt, _, rows in loaded[1:]:
         differs = paired.differences(base, receipt)
         if axis not in differs:
