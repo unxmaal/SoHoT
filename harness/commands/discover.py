@@ -367,9 +367,37 @@ def resolve_registry(name: str, client, model=None) -> tuple[str, dict | None]:
     return "", None
 
 
+def _answer_method(store, spec: str) -> str:
+    """Answer a method spec from its base's inspect verdict; no registry knows a method. #642."""
+    from harness import methods
+    from harness import memory_store as ms
+
+    base = spec
+    while methods.is_method(base) and methods.base_of(base):
+        base = methods.base_of(base)
+    got = store.execute(
+        "SELECT v.outcome, v.reason, v.until, v.detail, v.size_bytes, "
+        "v.upstream_idle_days, p.size_bytes AS base_size FROM verdicts v "
+        "JOIN proposals p ON v.id = p.state_verdict_id WHERE p.name = ? AND v.tier = ?",
+        (base, ms.INSPECT)).fetchone()
+    if got is None:
+        return f"    {spec}: its base {base} is past inspect or on disk unlisted; left as it was"
+    ms.set_size(store, spec, got["base_size"])
+    try:
+        ms.decide(store, spec, got["outcome"], tier=ms.INSPECT,
+                  size_bytes=got["size_bytes"], reason=got["reason"],
+                  until=got["until"], upstream_idle_days=got["upstream_idle_days"],
+                  detail=f"from its base {base}: {got['detail']}"[:200])
+    except KeyError:
+        return f"    {spec}: {got['outcome']} as its base {base}, and not a proposal to record"
+    except ms.IllegalTransition as exc:
+        return f"    kept its state: {exc}"
+    return f"    {spec}: {got['outcome']}, as its base {base}"
+
+
 def _report_inspect(a) -> int:
     """Read a candidate's source before anyone downloads its weights. #61."""
-    from harness import github, inspect as ins
+    from harness import github, inspect as ins, methods
     from harness import memory_store as ms
 
     client = github.Client(budget=getattr(a, "budget", 900))
@@ -416,6 +444,9 @@ def _report_inspect(a) -> int:
         out = []
         for repo, registry in work_items:
             card = None
+            if methods.is_method(repo):
+                print(_answer_method(store, repo))
+                continue
             if not registry:
                 try:
                     registry, card = resolve_registry(repo, client)
