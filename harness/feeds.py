@@ -44,6 +44,10 @@ class FeedError(RuntimeError):
     """A feed could not be fetched or did not parse as a feed."""
 
 
+class RateLimitedFeed(FeedError):
+    """The feed still answered 429 after every retry: deferred, not failed. #630."""
+
+
 @dataclass
 class Source:
     name: str
@@ -351,13 +355,13 @@ def record_fetch(source, when: float | None = None, store=None) -> None:
 
 
 def record_failure(source, error: str, when: float | None = None,
-                   store=None) -> None:
-    """A failed read: last_read_at stays, failures counts up. #416."""
+                   store=None, deferred: bool = False) -> None:
+    """A failed read: last_read_at stays, failures counts up unless rate-limited (#416, #630)."""
     from harness import memory_store as ms
     s = _source(source)
     with _Store(store) as conn:
-        ms.record_source(conn, s.name, kind=s.kind, url=s.url,
-                         enabled=s.enabled, ok=False, error=error, at=when)
+        ms.record_source(conn, s.name, kind=s.kind, url=s.url, enabled=s.enabled,
+                         ok=False, error=error, at=when, deferred=deferred)
 
 
 def last_fetched(name: str, store=None) -> float | None:
@@ -409,7 +413,8 @@ def fetch(url: str, timeout: float = 30.0, retries: int = RETRIES,
             raise FeedError(f"{url}: {exc}") from exc
         if attempt < retries:
             sleep(delay)
-    raise FeedError(f"{url}: gave up after {retries + 1} attempts ({last})")
+    error = RateLimitedFeed if last == "HTTP 429" else FeedError
+    raise error(f"{url}: gave up after {retries + 1} attempts ({last})")
 
 
 def parse(text: str) -> list[Entry]:
@@ -692,7 +697,8 @@ def read(source: Source, cache_dir: Path | None = None,
         text = fetcher(source.url)
         entries = parse(text)      # parse before caching, never cache a block page
     except Exception as exc:
-        record_failure(source, str(exc), store=store)
+        record_failure(source, str(exc), store=store,
+                       deferred=isinstance(exc, RateLimitedFeed))
         raise
     cached.write_text(text, encoding="utf-8")
     record_fetch(source, store=store)

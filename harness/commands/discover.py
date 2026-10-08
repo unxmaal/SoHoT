@@ -756,6 +756,9 @@ def _report_papers(a) -> int:
     if row.get("last_status") == "failed":
         err(f"{papers.SOURCE}: {row.get('last_error') or 'failed'}")
         return 1
+    if row.get("last_status") == ms.DEFERRED:
+        print(f"  {papers.SOURCE} rate-limited, deferred to the next sweep: {row.get('last_error')}")
+        return 0
     laned = sum(1 for s in found if s.lane)
     print(f"  {len(found)} paper(s) read, {laned} with a lane"
           if found else "  no day of papers was due")

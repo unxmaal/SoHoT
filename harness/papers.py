@@ -13,10 +13,8 @@ DESCRIPTION_CHARS = 600
 
 
 def _get_json(url: str, params: dict | None = None):
-    import httpx
-    r = httpx.get(url, params=params, timeout=60, follow_redirects=True)
-    r.raise_for_status()
-    return r.json()
+    from harness import ratelimit
+    return ratelimit.get_json(url, params)
 
 
 def _day(t: float) -> str:
@@ -62,6 +60,7 @@ def proposal(entry: dict):
 def sweep(conn, get=None, now: float | None = None, force: bool = False) -> list:
     """Read the days not yet read, record each paper as a technique sighting, and the read itself."""
     from harness import memory_store as ms
+    from harness.ratelimit import RateLimited
     get = get or _get_json
     now = time.time() if now is None else float(now)
     row = ms.source_row(conn, SOURCE) or {}
@@ -70,6 +69,10 @@ def sweep(conn, get=None, now: float | None = None, force: bool = False) -> list
     for day in days:
         try:
             entries = get(API, {} if day is None else {"date": day}) or []
+        except RateLimited as exc:
+            ms.record_source(conn, SOURCE, kind=KIND, url=API, deferred=True,
+                             error=str(exc), at=now)
+            return out
         except Exception as exc:  # noqa: BLE001
             ms.record_source(conn, SOURCE, kind=KIND, url=API, ok=False,
                              error=str(exc), at=now)
