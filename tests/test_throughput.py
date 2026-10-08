@@ -174,3 +174,25 @@ def test_throughput_takes_claims_exports_in_place_of_texts():
 def test_throughput_refuses_neither_texts_nor_claims(capsys):
     a = cli.build_parser().parse_args(["throughput", "--model", "eval-7b"])
     assert a.func(a) != 0
+
+
+def test_a_level_whose_requests_all_fail_serves_nothing_per_hour():
+    """A dead server answered 299 refusals in no time and read 1.6M/h. #666."""
+    def post(payload):
+        raise ConnectionError("refused")
+    got = throughput.sweep("eval-7b", ["t"] * 4, levels=(1,), post=post)
+    assert got[0]["errors"] == 4 and got[0]["per_hour"] == 0.0
+
+
+def test_only_answered_requests_count_toward_the_rate():
+    clock, calls = Clock(), []
+
+    def post(payload):
+        calls.append(1)
+        clock.now += 1.0
+        if len(calls) % 2:
+            raise RuntimeError("HTTP 500")
+        return {"usage": {"completion_tokens": 1}}
+    got = throughput.sweep("eval-7b", ["t"] * 4, levels=(1,), post=post, clock=clock)
+    assert got[0]["errors"] == 2 and got[0]["wall_s"] == 4.0
+    assert got[0]["per_hour"] == 1800.0

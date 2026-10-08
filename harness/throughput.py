@@ -176,7 +176,9 @@ def sweep(model: str, texts: list[str], levels=(1, 2, 4), max_tokens: int = 300,
                 "errors": sum(1 for _, _, ok, *_ in got if not ok),
                 "error_kinds": kinds,
                 "wall_s": round(wall, 2),
-                "per_hour": round(len(got) / wall * 3600, 1) if wall else 0.0,
+                # Answered requests only: refusals come back at once and read as speed. #666.
+                "per_hour": (round(sum(1 for r in got if r[2]) / wall * 3600, 1)
+                             if wall else 0.0),
                 "p50_s": round(statistics.median(lat), 2),
                 "p95_s": round(lat[min(len(lat) - 1, int(len(lat) * 0.95))], 2),
                 "ttft_p50_s": round(statistics.median(first), 3) if first else None,
