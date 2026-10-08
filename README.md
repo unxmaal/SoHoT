@@ -1524,8 +1524,13 @@ reads as `legacy`; any other value is refused at import and load.
 
 Scoring: the reply must validate against the case's schema, else the case
 fails. Per interface, each emitted claim is matched one to one to a reviewed
-claim with the same user, overlapping refs and word overlap of at least
-`MATCH_THRESHOLD` (0.5). An interface passes when no matched claim was
+claim with the same user, overlapping refs and a similarity of at least
+`MATCH_THRESHOLD` (0.5). The similarity (matcher version 2, #662) is Dice
+over content words, each weighted by its smoothed IDF over the case's own
+reviewed claims, so a word every review shares (the part under discussion)
+weighs least. Stopwords, reported-speech framing ("they", "user", "says",
+an anonymised handle) are dropped, number words read as digits, negations
+read as "not", and plural and tense endings are stripped. An interface passes when no matched claim was
 reviewed `made_up` or `wrong` and at least `MIN_RECALL` (0.5) of its `good`
 claims were recovered, and the case passes when every interface does; the
 reason names the interface that failed. Metrics are named
@@ -1560,8 +1565,21 @@ prints its recall, verbatim matches and near misses, and blames the matcher
 only when recall is under 0.9 and at least half the misses sat just under
 the threshold. Otherwise the model did not reproduce its own reviewed claims.
 `tests/fixtures/claims/paraphrase.json` pins the matcher on synthetic text:
-every light rewording matches at 0.5, and so do 6 of 12 different claims
-about the same part, because shared subject words carry the overlap.
+36 triples of a reviewed claim, a rewording and a different claim about the
+same part, in three cases of 12. All 36 rewordings match and no different
+claim does, and the gap between the classes (lowest rewording 0.75, highest
+different claim 0.47) exceeds the larger class's standard deviation (0.11).
+Plain word Dice, matcher version 1, matched 12 of the 36 different claims
+with a gap of 0.03, because shared subject words carried the overlap. A case
+holding a single reviewed claim has no evidence of what its subject is, so
+there the weights are uniform and 3 of 36 different claims still match.
+
+Changing the matcher changes every stored claims score, so each claims row
+carries `claims_matcher_version` and a claims run's `cases_digest` includes
+it: a run scored under version 1 is not comparable with one scored under
+version 2 (the digest differs, so `comparable()` refuses), and the report
+says so when its rows mix versions. A row with no version was scored under 1.
+`claims_report --rescore` re-checks an old run under the current matcher.
 
 A private case's text never leaves the machine: its scoring reasons quote
 nothing, `publish` refuses an export carrying any of its lines or reviewed

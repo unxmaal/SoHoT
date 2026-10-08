@@ -65,7 +65,10 @@ def report(rows: list[dict], cases) -> dict:
     by_id = {c.id: c for c in cases}
     out: dict = {}
     for r in rows:
-        mine = out.setdefault(r["candidate"], {"reviewed": {}, "empty": {}, "unknown_cases": 0})
+        mine = out.setdefault(r["candidate"], {"reviewed": {}, "empty": {}, "unknown_cases": 0,
+                                               "matcher_versions": set()})
+        # Rows scored before #662 carry no version: they were matched by plain Dice, version 1.
+        mine["matcher_versions"].add(int((r.get("metrics") or {}).get("claims_matcher_version") or 1))
         case = by_id.get(base_id(r["case_id"]))
         if case is None:
             mine["unknown_cases"] += 1
@@ -102,6 +105,7 @@ def report(rows: list[dict], cases) -> dict:
                                "matcher_suspect": control["recall"] < CONTROL_RECALL
                                and missed > 0 and 2 * near >= missed}
         mine.pop("_raw")
+        mine["matcher_versions"] = sorted(mine["matcher_versions"])
     return out
 
 
@@ -127,6 +131,10 @@ def render(got: dict) -> str:
                 verdict = "most misses have no claim near them: the model did not reproduce its reviewed claims"
             lines.append(f"  matcher control: {c['interface']} recall {c['recall']:.3f}, verbatim "
                          f"{c['verbatim']}/{c['good_total']}, near misses {c['near_miss']}; {verdict}")
+        versions = mine.get("matcher_versions") or []
+        if len(versions) > 1:
+            lines.append(f"  rows scored under matcher versions {' and '.join(map(str, versions))}: "
+                         "not comparable; rescore with --rescore")
         if mine["unknown_cases"]:
             lines.append(f"  {mine['unknown_cases']} rows name a case this machine does not hold")
     lines.append(CAVEAT)
