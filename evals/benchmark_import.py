@@ -261,11 +261,12 @@ def _source_of(raw: dict) -> str:
 
 
 def _raw_cases(root: Path):
+    from evals import core
     for p in sorted(Path(root).rglob("*.yaml")):
         if "repos" in p.parts:
             continue
         try:
-            raw = yaml.safe_load(p.read_text(encoding="utf-8")) or {}
+            raw = yaml.load(p.read_text(encoding="utf-8"), Loader=core._LOADER) or {}
         except yaml.YAMLError:
             continue
         if isinstance(raw, dict) and raw.get("id"):

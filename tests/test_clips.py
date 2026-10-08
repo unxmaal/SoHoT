@@ -122,7 +122,15 @@ def test_the_same_audio_in_two_receipts_is_listed_once(store, cases):
 def test_every_listed_clip_carries_a_way_to_play_it(store, cases):
     for lane in ("stt", "tts"):
         for c in clips.worst(lane, n=10, store=store, cases_dir=cases):
-            assert c["play"].endswith(c["audio"].split("/")[-1])
+            assert c["audio"] in c["play"]
+
+
+def test_the_play_line_is_quoted_for_the_shell_it_will_be_pasted_into():
+    argv = [r"C:\ProgramData\bin\ffplay.EXE", "-nodisp", r"C:\Temp\my runs\bad.wav"]
+    assert clips.command_line(argv, "win32") == (
+        r'C:\ProgramData\bin\ffplay.EXE -nodisp "C:\Temp\my runs\bad.wav"')
+    assert clips.command_line(["/usr/bin/afplay", "/tmp/my runs/a.wav"], "darwin") == (
+        "/usr/bin/afplay '/tmp/my runs/a.wav'")
 
 
 @pytest.mark.parametrize("detail,heard", [

@@ -1,4 +1,5 @@
 """Generated cases for the ocr, pii and tts lanes: deterministic, attributed, controlled. #603."""
+import functools
 import importlib
 import json
 import re
@@ -14,6 +15,8 @@ ROOT = Path(__file__).resolve().parents[1]
 GENERATORS = ("ocr_synth", "pii_synth", "tts_synth")
 #: #595: about 132 holdout cases give power 0.8 at +0.20 when a case is the unit.
 HOLDOUT_TARGET = 130
+#: CER ceiling for the positive control, per OCR instrument; windows measured 0.148 on windows-latest (#623).
+OCR_CER_BOUND = {"vision": 0.1, "rapidocr": 0.1, "windows": 0.2}
 
 
 def _mod(name):
@@ -143,9 +146,14 @@ def test_the_generated_text_passes_the_privacy_scanner(committed):
             assert not found, found
 
 
-def _prov(c):
+@functools.lru_cache(maxsize=None)
+def _attribution(source):
     import yaml
-    return yaml.safe_load(c.source.read_text(encoding="utf-8"))["attribution"]
+    return yaml.load(source.read_text(encoding="utf-8"), Loader=core._LOADER)["attribution"]
+
+
+def _prov(c):
+    return _attribution(c.source)
 
 
 # --- ocr -------------------------------------------------------------------
@@ -170,15 +178,21 @@ def test_ocr_negative_control_another_cases_text_scores_clearly_worse(committed)
     assert wrong["passed"] == 0 and wrong["metrics"]["cer"] > 0.5
 
 
+def test_every_ocr_instrument_has_its_own_measured_bound():
+    from harness.checks import ocr
+    assert set(OCR_CER_BOUND) == set(ocr.BACKENDS)
+
+
 @pytest.mark.usefixtures("real_ocr")
 def test_the_os_reader_reads_a_sample_of_the_generated_images(committed):
     """Positive control: a working OCR reads them, so a candidate's miss is its own."""
     from harness.checks import ocr
-    if ocr.available_backend() is None:
+    backend = ocr.available_backend()
+    if backend is None:
         pytest.skip("no OCR backend on this machine")
     clean = [c for c in committed["ocr_synth"] if _prov(c)["degrade"] == "none"][::8]
     rows = _rows(clean, lambda c: "\n".join(ocr.read(c.input_file)))
-    assert len(clean) >= 8 and rows["metrics"]["cer"] < 0.1
+    assert len(clean) >= 8 and rows["metrics"]["cer"] < OCR_CER_BOUND[backend], backend
 
 
 # --- pii -------------------------------------------------------------------

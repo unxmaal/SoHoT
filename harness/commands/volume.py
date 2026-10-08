@@ -10,6 +10,9 @@ def _holder_lines(found) -> list[str]:
 
 def cmd_volume(a) -> int:
     from harness import volume
+    if not volume.supported():
+        return err("soh volume is macOS-only: it stops launchd services and reads lsof. "
+                   "`soh disk speed` works on every platform.")
     ops = volume.default_ops()
     try:
         if a.action == "start":

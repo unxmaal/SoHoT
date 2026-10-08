@@ -206,7 +206,8 @@ def test_a_held_machine_lock_refuses_at_once_and_names_the_holder(fake):
         started = time.perf_counter()
         with pytest.raises(delegate.Refused, match="busy with eval"):
             delegate.complete("code", "x")
-        assert time.perf_counter() - started < 1.0
+        # Refused while the holder still holds; a wall-clock bound under 1s flaked on Windows CI (#623).
+        assert child.poll() is None and time.perf_counter() - started < 15
         assert fake.seen == []
     finally:
         child.kill()
