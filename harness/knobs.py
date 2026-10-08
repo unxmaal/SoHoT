@@ -135,6 +135,10 @@ KNOBS: dict[str, Knob] = dict([
        lanes=("claims",), limit="claims_match_threshold", receipt="knobs", note="word overlap at which an emitted claim is a reviewed one (#654)"),
     _k("claims_min_recall", ["harness/checks/claims.py:MIN_RECALL"], [0.25, 0.5, 0.75, 1.0],
        lanes=("claims",), limit="claims_min_recall", receipt="knobs", note="share of a case's good claims a reply must recover (#654)"),
+    _k("eval7b_slots", ["harness/context.py:EVAL_7B_SLOTS"], [1, 4, 8, 16, 32],
+       note="llama-server slots eval-7b batches across; sets claims throughput, not a grade (#665)"),
+    _k("eval7b_slot_ctx", ["harness/context.py:EVAL_7B_SLOT_CTX"], [3072, 4096, 8192],
+       note="context each eval-7b slot is sized for; never under context.MIN_SLOT_CTX (#665)"),
     _k("binding_min_hits", ["harness/binding.py:BINDING_MIN_HITS"], [1, 3, 5, 10],
        note="fewer hits than this is never binding"),
 ])
@@ -142,6 +146,7 @@ KNOBS: dict[str, Knob] = dict([
 #: Constants the inventory finds whose name says gate and whose value does not, each with why.
 NOT_GATING: dict[str, str] = {
     "harness/mcp_server.py:MAX_INLINE_BYTES": "how a result is returned, inline or as a path; never what it is",
+    "harness/context.py:MIN_SLOT_CTX": "the floor the eval7b_slot_ctx range is held to; a preset under it is refused (#665)",
     "evals/private.py:MIN_FRAGMENT": "which private text the leak scan looks for; never a lane's outcome (#654)",
 }
 

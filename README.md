@@ -1681,6 +1681,14 @@ asks for more (more slots share one pool, so each request can still use the
 whole context). If the preset cannot be written, every model gets
 `LLAMACPP_CTX` (16384).
 
+eval-7b (`Qwen2.5-7B-Instruct-Q4_K_M`) is the exception: it is served at a
+fixed number of slots and a context per slot, the knobs `eval7b_slots` and
+`eval7b_slot_ctx` (`harness/context.py`), so infovore's bulk claims run can
+keep several requests in flight. Its pool is slots times the slot context, one
+request may still use all of it up to the trained 32768, and a slot context
+under 3072 tokens (`MIN_SLOT_CTX`: a 6000-character window plus a 400-token
+reply) is refused. The default is 8 slots of 4096 (#665).
+
 Each receipt has an `engines` map from candidate to server, and
 `instruments.serving` names every engine in the run, such as
 `llama-server+mlx_lm.server`. `comparable()` therefore refuses to pool a
@@ -2159,6 +2167,7 @@ killed 32 of its 50 requests on 2026-10-04.
 
 ```bash
 soh throughput --model eval-7b --texts convos.jsonl --levels 1,2,4
+soh throughput --model eval-7b --claims claims.jsonl --levels 1,4,8 --max-tokens 400
 ```
 
 The command sends every line's `text` to a gateway alias with 1, 2 and 4
@@ -2192,6 +2201,22 @@ warm, with Photos analysis paused:
 One request at a time is 7.8x faster than the M2 Pro, and concurrency buys
 less: a single request already keeps more of this GPU busy. Past four in
 flight nothing is gained, because the server has four slots.
+
+`--claims FILE` (repeatable) sends each case of a claims export as the
+claims lane sends it: its system prompt, its transcript and its schema as
+`response_format`. Every level then also reports how many replies validate
+against their schema, the prompt tokens, and the load average at its start and
+end. Requests per hour counts answered requests only, so a server that refuses
+everything reads 0 (#666).
+
+Measured 2026-10-08 on the M5 Ultra (96 GB), llama.cpp build 11146, eval-7b
+Q4_K_M with 4096 tokens per slot on a unified f16 pool, the 48 reviewed cases of
+a claims export sent 4 times (about 627 prompt and 102 output tokens each),
+max_tokens 400, temperature 0: 1 slot 4,700 requests an hour (p95 1.6 s), 4 slots
+8,229 (p95 4.0 s), 8 slots 9,570 (p95 6.6 s, 3.7 GiB peak), 16 slots 7,697, 32 slots
+9,409 (p95 24.5 s, 9.0 GiB) on the M5 Ultra, and 32 slots with 8 in flight 9,639.
+Eight slots is the knee on the M5 Ultra. 188 of 192 replies matched the schema at
+every level there, so batching does not break the grammar (#665).
 
 `--model` takes any text spec, so `llamacpp:<stem>` and `vllm:<repo id>` go
 straight to their server. `--server-pid` samples that server's peak memory

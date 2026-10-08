@@ -54,6 +54,42 @@ CACHE_BYTES = {"f32": (4, 1), "f16": (2, 1), "bf16": (2, 1), "q8_0": (34, 32),
                "q4_0": (18, 32), "iq4_nl": (18, 32)}
 
 
+#: eval-7b serves infovore's bulk claims run in parallel: slots, and the context each slot is sized for. #665.
+EVAL_7B_STEM = "Qwen2.5-7B-Instruct-Q4_K_M"
+EVAL_7B_SLOTS = 8
+EVAL_7B_SLOT_CTX = 4096
+#: A claims request is a 6000-character window and a 400-token reply; no slot is sized under it. #665.
+MIN_SLOT_CTX = 3072
+
+
+def slot_plan(stem: str) -> tuple[int, int] | None:
+    """(slots, context per slot) a stem is served at by name, else None for the memory plan."""
+    if stem != EVAL_7B_STEM:
+        return None
+    if EVAL_7B_SLOT_CTX < MIN_SLOT_CTX:
+        raise ValueError(f"{stem}: {EVAL_7B_SLOT_CTX} tokens per slot is under the "
+                         f"{MIN_SLOT_CTX}-token floor a claims request needs")
+    return max(int(EVAL_7B_SLOTS), 1), int(EVAL_7B_SLOT_CTX)
+
+
+def choose_slots(meta: dict, weights: int, budget: int, slots: int, slot_ctx: int,
+                 cache_type: str = "f16", kv_cap: int | None = None) -> "Choice":
+    """A pool of slots * slot_ctx shared by the slots, when it fits beside the weights and under kv_cap."""
+    full = trained(meta)
+    per = kv_bytes_per_token(meta, cache_type)
+    pool = slots * slot_ctx
+    room = max(budget - weights, 0)
+    room = min(room, kv_cap) if kv_cap is not None else room
+    if not per or not full or slot_ctx > full:
+        return Choice(0, full, per, f"refused: {slots} slots of {slot_ctx} tokens, "
+                      f"trained for {full}, {per} B/token")
+    if pool * per > room:
+        return Choice(0, full, per, f"refused: {slots} slots of {slot_ctx} tokens need "
+                      f"{pool * per / 1024 ** 3:.1f} GiB of KV, {room / 1024 ** 3:.1f} GiB fits")
+    return Choice(pool, full, per, f"slots: {slots} x {slot_ctx} tokens, "
+                  f"{pool * per / 1024 ** 3:.1f} GiB of KV (#665)")
+
+
 class Choice(NamedTuple):
     ctx: int
     trained: int
@@ -203,18 +239,23 @@ def plan(conn, budget: int | None = None, slots: int = 1,
         path = Path(row["path"])
         if not path.exists():
             continue
+        stem = path.name[:-len(".gguf")]
+        fixed = slot_plan(stem)
+        n = fixed[0] if fixed else slots
         try:
-            got = choose(read_meta(path), _weights(path), budget - beside, slots,
-                         cache_type, kv_cap=kv_cap)
+            meta, weights = read_meta(path), _weights(path)
+            got = (choose_slots(meta, weights, budget - beside, *fixed, cache_type, kv_cap)
+                   if fixed else choose(meta, weights, budget - beside, slots,
+                                        cache_type, kv_cap=kv_cap))
         except (OSError, ValueError, KeyError, struct.error) as exc:
             got = Choice(0, 0, 0, f"refused: unreadable GGUF header ({exc})")
         conn.execute("UPDATE downloads SET ctx = ?, ctx_trained = ?, kv_bytes_token = ?, "
                      "ctx_slots = ?, ctx_why = ?, ctx_at = ?, kv_cap_bytes = ?, "
                      "coresident_bytes = ? WHERE id = ?",
-                     (got.ctx, got.trained, got.kv_per_token, slots, got.why,
+                     (got.ctx, got.trained, got.kv_per_token, n, got.why,
                       time.time(), kv_cap, beside, row["id"]))
-        out.append({"stem": path.name[:-len(".gguf")], "path": str(path),
-                    "ctx": got.ctx, "why": got.why})
+        out.append({"stem": stem, "path": str(path), "ctx": got.ctx, "slots": n,
+                    "why": got.why})
     conn.commit()
     return out
 
@@ -292,15 +333,15 @@ def refusal(stem: str, conn=None) -> str:
 
 def preset_text(plans: list[dict], default_ctx: int, slots: int, cache_type: str = "f16") -> str:
     """llama-server's --models-preset INI: [*] for unrecorded files, one section per servable stem."""
-    def args(ctx: int) -> list[str]:
+    def args(ctx: int, n: int) -> list[str]:
         # The KV type the plan priced, so the server allocates what was budgeted. #521.
-        out = [f"c = {ctx}", f"parallel = {slots}", f"cache-type-k = {cache_type}",
+        out = [f"c = {ctx}", f"parallel = {n}", f"cache-type-k = {cache_type}",
                f"cache-type-v = {cache_type}"]
-        return out + ["kv-unified = true"] if slots > 1 else out
-    lines = ["version = 1", "", "[*]", *args(default_ctx), ""]
+        return out + ["kv-unified = true"] if n > 1 else out
+    lines = ["version = 1", "", "[*]", *args(default_ctx, slots), ""]
     for p in sorted(plans, key=lambda p: p["stem"]):
         if p["ctx"]:
-            lines += [f"; {p['why']}", f"[{p['stem']}]", *args(p["ctx"]), ""]
+            lines += [f"; {p['why']}", f"[{p['stem']}]", *args(p["ctx"], p.get("slots", slots)), ""]
         else:
             lines += [f"; {p['stem']} {p['why']}", ""]
     return "\n".join(lines)

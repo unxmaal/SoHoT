@@ -111,3 +111,94 @@ def test_a_warm_server_reads_the_same_with_or_without_the_warmup():
     got = throughput.sweep("eval-7b", ["t"] * 4, levels=(1,), post=post,
                            clock=clock)
     assert got[0]["warmup_s"] == got[0]["p50_s"] == 0.5
+
+
+SCHEMA = {"type": "object", "properties": {"c": {"type": "array"}}, "required": ["c"],
+          "additionalProperties": False}
+SHAPED = {"type": "json_schema", "json_schema": {"name": "claims", "strict": True, "schema": SCHEMA}}
+
+
+def _reply(content, prompt=600, completion=80):
+    return {"choices": [{"message": {"content": content}}],
+            "usage": {"prompt_tokens": prompt, "completion_tokens": completion}}
+
+
+def test_a_chat_request_is_sent_as_given_with_the_budget_and_temperature_zero():
+    seen = []
+    req = {"messages": [{"role": "system", "content": "s"}, {"role": "user", "content": "u"}],
+           "response_format": SHAPED}
+    throughput.sweep("eval-7b", [req], levels=(1,), max_tokens=400,
+                     post=lambda p: seen.append(p) or _reply('{"c": []}'))
+    assert seen[-1]["messages"] == req["messages"]
+    assert seen[-1]["response_format"] == SHAPED
+    assert seen[-1]["max_tokens"] == 400 and seen[-1]["temperature"] == 0
+
+
+def test_each_level_counts_the_replies_that_validate_against_their_schema():
+    replies = iter(['{"c": []}', '{"c": []}', 'not json', '{"x": 1}', '{"c": [1]}'])
+    req = {"messages": [{"role": "user", "content": "u"}], "response_format": SHAPED}
+    got = throughput.sweep("eval-7b", [req] * 4, levels=(1,),
+                           post=lambda p: _reply(next(replies)))
+    assert got[0]["schema_checked"] == 4 and got[0]["schema_valid"] == 2
+
+
+def test_a_request_with_no_schema_is_not_counted_as_checked():
+    got = throughput.sweep("eval-7b", ["t"] * 3, levels=(1,), post=lambda p: _reply("x"))
+    assert got[0]["schema_checked"] == 0 and got[0]["schema_valid"] == 0
+
+
+def test_a_level_records_its_prompt_tokens_and_the_machine_load_beside_it():
+    loads = iter([(3.0, 2.0, 1.0), (5.0, 2.0, 1.0)])
+    got = throughput.sweep("eval-7b", ["t"] * 2, levels=(1,), post=lambda p: _reply("x"),
+                           load=lambda: next(loads))
+    assert got[0]["prompt_tokens"] == 1200
+    assert got[0]["load_avg"] == [3.0, 5.0]
+
+
+def test_claims_export_rows_become_the_requests_the_claims_lane_sends():
+    from harness import completion
+    from harness.checks import claims
+    row = {"id": "x1", "system": "SYS", "transcript": "T", "schema": SCHEMA, "reviews": []}
+    got = throughput.claims_requests([row])
+    assert got == [{"messages": [{"role": "system", "content": "SYS"},
+                                 {"role": "user", "content": completion.user_message("T")}],
+                    "response_format": claims.response_format(SCHEMA)}]
+
+
+def test_throughput_takes_claims_exports_in_place_of_texts():
+    a = cli.build_parser().parse_args(
+        ["throughput", "--model", "eval-7b", "--claims", "a.jsonl", "--claims", "b.jsonl"])
+    assert a.claims == ["a.jsonl", "b.jsonl"] and a.texts is None
+
+
+def test_throughput_refuses_neither_texts_nor_claims(capsys):
+    a = cli.build_parser().parse_args(["throughput", "--model", "eval-7b"])
+    assert a.func(a) != 0
+
+
+def test_a_level_whose_requests_all_fail_serves_nothing_per_hour():
+    """A dead server answered 299 refusals in no time and read 1.6M/h. #666."""
+    def post(payload):
+        raise ConnectionError("refused")
+    got = throughput.sweep("eval-7b", ["t"] * 4, levels=(1,), post=post)
+    assert got[0]["errors"] == 4 and got[0]["per_hour"] == 0.0
+
+
+def test_only_answered_requests_count_toward_the_rate():
+    clock, calls = Clock(), []
+
+    def post(payload):
+        calls.append(1)
+        clock.now += 1.0
+        if len(calls) % 2:
+            raise RuntimeError("HTTP 500")
+        return {"usage": {"completion_tokens": 1}}
+    got = throughput.sweep("eval-7b", ["t"] * 4, levels=(1,), post=post, clock=clock)
+    assert got[0]["errors"] == 2 and got[0]["wall_s"] == 4.0
+    assert got[0]["per_hour"] == 1800.0
+
+
+def test_a_platform_with_no_load_average_records_none(monkeypatch):
+    monkeypatch.setattr(throughput, "sys", __import__("types").SimpleNamespace(platform="win32"))
+    got = throughput.sweep("eval-7b", ["t"], levels=(1,), post=lambda p: _reply("x"))
+    assert got[0]["load_avg"] == [None, None]
