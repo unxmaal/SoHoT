@@ -19,6 +19,7 @@ from pathlib import Path
 
 import yaml
 
+from harness import reasons
 from harness.checks import adherence as adherence_check
 from harness.checks import code as code_check
 from harness.checks import decide as decide_check
@@ -664,6 +665,8 @@ class Receipt:
     devices: dict = field(default_factory=dict)
     #: receipt key -> how its server was launched (ds4: streaming, expert cache, ctx). An axis. #611.
     launch: dict = field(default_factory=dict)
+    #: The reply budget every text request ran at; 0 where the lane generates no text. An axis. #628.
+    max_tokens: int = 0
 
     def as_dict(self) -> dict:
         return {"modality": self.modality, "case_ids": list(self.case_ids),
@@ -679,7 +682,33 @@ class Receipt:
                 "split": self.split, "split_version": self.split_version,
                 "methods": dict(self.methods),
                 "devices": dict(self.devices),
-                "launch": dict(self.launch)}
+                "launch": dict(self.launch),
+                "max_tokens": self.max_tokens}
+
+    @classmethod
+    def from_dict(cls, raw: dict) -> "Receipt":
+        """A receipt read back from results.json or the store; a missing budget is the constant it ran at."""
+        budget = raw.get("max_tokens")
+        if budget is None:
+            budget = legacy_budget(raw.get("modality") or "")
+        return cls(modality=raw["modality"], case_ids=tuple(raw.get("case_ids") or ()),
+                   repeat=int(raw.get("repeat") or 1), sampling=raw.get("sampling") or {},
+                   gateway=raw.get("gateway") or "", adherence=raw.get("adherence") or "",
+                   tier=raw.get("tier") or "measure", accelerator=raw.get("accelerator") or "",
+                   instruments=raw.get("instruments") or {}, engines=raw.get("engines") or {},
+                   where=raw.get("where") or "", swap_used_mb=raw.get("swap_used_mb") or 0,
+                   pressure=raw.get("pressure") or {},
+                   cases_digest=raw.get("cases_digest") or "", split=raw.get("split") or "",
+                   split_version=raw.get("split_version") or "",
+                   methods=raw.get("methods") or {}, devices=raw.get("devices") or {},
+                   launch=raw.get("launch") or {}, max_tokens=int(budget))
+
+
+def legacy_budget(modality: str) -> int:
+    """The reply budget a run from before #628 used: the hard constants of the time."""
+    if modality in AGENT_MODALITIES:
+        return 8000
+    return 4000 if modality in TEXT_MODALITIES else 0
 
 
 def cases_digest(cases) -> str:
@@ -768,6 +797,10 @@ def comparable(a: Receipt, b: Receipt) -> tuple[bool, str]:
                        f"{b.split} v{b.split_version}")
     if a.repeat != b.repeat:
         return False, f"different repeat: {a.repeat} vs {b.repeat}"
+    if a.max_tokens != b.max_tokens:
+        return False, (f"different reply budget: {a.max_tokens} vs {b.max_tokens} "
+                       f"tokens. A reasoning model cut off at the smaller one fails "
+                       f"on the budget, not on the answer")
     if dict(a.sampling) != dict(b.sampling):
         return False, f"different sampling: {a.sampling} vs {b.sampling}"
     if a.adherence != b.adherence:
@@ -1079,13 +1112,15 @@ def summarize(results: list[Result]) -> dict:
             "failure_classes": _count(r.failure_class for r in rows
                                       if not r.passed and r.failure_class),
             "limits": sorted({r.limit for r in rows if not r.passed and r.limit}),
-            # HOW they failed, not just how many. See failure_kind().
-            "wrong": sum(1 for r in rows
-                         if not r.passed and failure_kind(r.detail) == "wrong"),
-            "empty": sum(1 for r in rows
-                         if not r.passed and failure_kind(r.detail) == "empty"),
-            "errored": sum(1 for r in rows
-                           if not r.passed and failure_kind(r.detail) == "error"),
+            # HOW they failed, not just how many. See failure_kind(); a budget
+            # row is our limit, counted apart from a wrong answer. #628.
+            "budget": sum(1 for r in rows if _over_budget(r)),
+            "wrong": sum(1 for r in rows if not _over_budget(r)
+                         and not r.passed and failure_kind(r.detail) == "wrong"),
+            "empty": sum(1 for r in rows if not _over_budget(r)
+                         and not r.passed and failure_kind(r.detail) == "empty"),
+            "errored": sum(1 for r in rows if not _over_budget(r)
+                           and not r.passed and failure_kind(r.detail) == "error"),
             # How many rows each metric was actually computed over. A mean over
             # 2 of 9 cases printed beside a mean over 9 is not a comparison.
             "metric_n": {**{k: len(v) for k, v in _gather_metrics(rows).items()},
@@ -1098,6 +1133,10 @@ def summarize(results: list[Result]) -> dict:
             **agent_summary(rows),
         }
     return out
+
+
+def _over_budget(r) -> bool:
+    return not r.passed and r.failure_class == reasons.TOKEN_BUDGET_EXHAUSTED
 
 
 def agent_summary(rows) -> dict:

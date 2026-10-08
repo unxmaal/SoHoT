@@ -327,11 +327,13 @@ def test_a_budget_still_exhausted_is_a_limit_a_bigger_budget_meets():
     runner = CompletionRunner(GW, "org/x")
     runner.screening = True
     v = _screen([runner.run(CASE)])
-    want = f"limit:max_tokens>{completion.MAX_TOKENS}"
+    # The lane's budget names the limit, so raising one lane reopens only its verdicts. #628.
+    want = f"limit:max_tokens.extract>{completion.budget('extract')}"
     assert (v.outcome, v.reason, v.until) == ("declined", "limit", want)
     assert v.outcome not in ("broken",)
-    assert not ms.until_met(want, {"limits": {"max_tokens": completion.MAX_TOKENS}})
-    assert ms.until_met(want, {"limits": {"max_tokens": 16000}})
+    assert not ms.until_met(want, {"limits": {"max_tokens.extract": completion.budget("extract")}})
+    assert not ms.until_met(want, {"limits": {"max_tokens.code": 32768}})
+    assert ms.until_met(want, {"limits": {"max_tokens.extract": 16000}})
 
 
 def test_the_screen_warms_untimed_so_a_cold_load_is_not_the_case_timeout(monkeypatch):

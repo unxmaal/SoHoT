@@ -133,7 +133,7 @@ def test_a_job_cut_off_mid_run_is_not_silently_rerun(tmp_path):
 def test_only_a_pending_job_can_be_cancelled():
     job = wq.add(py("pass"))
     wq.run_pending()
-    with pytest.raises(ValueError, match="only a pending job"):
+    with pytest.raises(ValueError, match="is done"):
         wq.cancel(job["id"])
     other = wq.add(py("pass"))
     wq.cancel(other["id"])
@@ -176,7 +176,7 @@ def test_a_pending_job_can_be_reprioritised_and_a_finished_one_cannot(tmp_path):
     wq.set_priority(second["id"], 3)
     assert [j["id"] for j in wq.pending()] == [second["id"], first["id"]]
     wq.run_pending()
-    with pytest.raises(ValueError, match="only a pending job"):
+    with pytest.raises(ValueError, match="is done"):
         wq.set_priority(first["id"], 9)
 
 
@@ -396,3 +396,63 @@ def test_quiesce_keeps_the_owners_pause():
     wq.pause()
     assert wq.quiesce(sleep=lambda _: None, is_running=lambda: False) is True
     assert wq.paused()
+
+
+# --- cancelling a running job (#628) -----------------------------------------
+
+def _wait_for(pred, seconds=30.0):
+    import time
+    end = time.monotonic() + seconds
+    while time.monotonic() < end:
+        if pred():
+            return True
+        time.sleep(0.05)
+    return False
+
+
+def test_cancel_stops_a_running_job_and_its_children_and_records_it(tmp_path):
+    """A real child that starts a grandchild: cancel signals the group, waits, records cancelled."""
+    import threading
+    pids = tmp_path / "pids"
+    child = ("import subprocess, sys, time; "
+             "g = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(120)']); "
+             f"open({str(pids)!r}, 'w').write(f'{{__import__(\"os\").getpid()}} {{g.pid}}'); "
+             "time.sleep(120)")
+    job = wq.add(py(child), title="sleeps")
+    worker = threading.Thread(target=wq.run_pending, daemon=True)
+    worker.start()
+    assert _wait_for(lambda: pids.exists() and len(pids.read_text(encoding="utf-8").split()) == 2)
+    leader, grandchild = map(int, pids.read_text(encoding="utf-8").split())
+    got = wq.cancel(job["id"], grace=5.0)
+    assert got["state"] == wq.CANCELLED
+    assert "cancelled" in got["note"]
+    assert not wq.alive(leader)
+    assert _wait_for(lambda: not wq.alive(grandchild), 10.0)
+    worker.join(30)
+    assert not worker.is_alive()
+    stored = wq.get(job["id"])
+    assert stored["state"] == wq.CANCELLED and "cancelled" in stored["note"]
+    assert stored["finished"]
+
+
+def test_cancel_refuses_a_finished_job():
+    job = wq.add(py("pass"))
+    wq.run_pending()
+    with pytest.raises(ValueError, match="done"):
+        wq.cancel(job["id"])
+
+
+def test_cancel_refuses_a_running_job_with_no_process_on_this_machine():
+    job = wq.add(py("pass"))
+    job["state"] = wq.RUNNING
+    wq._write(job)
+    with pytest.raises(ValueError, match="no process"):
+        wq.cancel(job["id"])
+
+
+def test_the_listing_shows_a_cancelled_job(capsys):
+    job = wq.add(py("pass"), title="was running")
+    job.update(state=wq.CANCELLED, note="cancelled by soh jobs cancel")
+    wq._write(job)
+    assert cli.main(["jobs", "list"]) == 0
+    assert "cancelled" in capsys.readouterr().out

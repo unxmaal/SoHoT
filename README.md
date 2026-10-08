@@ -537,6 +537,17 @@ see a gain. `soh report` marks a lane
 `saturated` when its incumbent passes at least 95% of holdout: those cases can
 no longer separate candidates.
 
+**The reply budget is part of the exam.** Every text request in an eval runs at
+one token budget, the lane's from `completion.BUDGET` unless the run names
+another with `evals.run --max-tokens N`, and the receipt records it. The code
+lane's default is sized for a reasoning model, the others keep the old one.
+`--compare` refuses to rank two runs at different budgets, and `--compare a b
+--across max_tokens` reports what a bigger budget changed case by case. A reply
+the budget cut off (no answer after reasoning, or `finish_reason` length on an
+answer that then fails its checks) is recorded as `token_budget_exhausted` with
+the limit it hit, and the comparison table counts it under `budget`, apart from
+`wrong`.
+
 **Repeats of one case are not independent cases.** A model at low temperature
 answers a case the same way most of the time, so the case, not the repeat, is
 the unit. The power calculation and the adopt gate both measure the within-case
@@ -1943,6 +1954,11 @@ soh jobs resume
 soh jobs cancel 0003
 soh jobs priority 0005 10   # higher runs first; ties run in the order added
 ```
+
+`soh jobs cancel` drops a pending job. On a running one it signals the job's
+process group (each job is started as its own), waits for it to exit, kills
+what is left after a grace period, and records the job `cancelled` with a note.
+It works on the machine running the job.
 
 While `soh discover --loop` runs it writes a heartbeat to
 `$LOCALHARNESS_HOME/loop-heartbeat.json`: its lane, current tier, candidate,

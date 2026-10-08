@@ -240,7 +240,8 @@ def exam_receipt(conn, run: dict):
                    accelerator=raw.get("accelerator", ""), instruments=instruments,
                    where=raw.get("where", ""), cases_digest=raw.get("cases_digest", ""),
                    split=raw.get("split", ""), split_version=raw.get("split_version", ""),
-                   devices=raw.get("devices") or {}, launch=raw.get("launch") or {})
+                   devices=raw.get("devices") or {}, launch=raw.get("launch") or {},
+                   max_tokens=Receipt.from_dict({**raw, "modality": lane}).max_tokens)
 
 
 def _rank(r: dict) -> tuple:

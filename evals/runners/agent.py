@@ -25,7 +25,6 @@ SYSTEM = ("You are a coding agent working inside a small repository. Use the "
 MAX_STEPS = 20
 STEP_TIMEOUT_S = 300.0
 CASE_TIMEOUT_S = 900.0
-MAX_TOKENS = 8000
 
 #: A tool call written into the text instead of the tools API.
 _TEXT_CALL = re.compile(r"<tool_call>|<function=|\"name\"\s*:\s*\"(read_file|write_file|"
@@ -95,8 +94,11 @@ def step_timing(steps: list) -> dict:
 class AgentRunner(BaseRunner):
     def __init__(self, gateway: str, candidate: str, model: str = "",
                  sampling: dict | None = None, chat=completion.chat,
-                 step_timeout: float = STEP_TIMEOUT_S, served_ctx: int | None = None):
+                 step_timeout: float = STEP_TIMEOUT_S, served_ctx: int | None = None,
+                 max_tokens: int = 0):
         self.served_ctx = served_ctx
+        #: The reply budget of each step; 0 is the lane's. #628.
+        self.max_tokens = int(max_tokens or 0) or completion.budget("agent")
         self.gateway = gateway.rstrip("/")
         self.candidate = candidate
         self.model = model or candidate
@@ -161,8 +163,9 @@ class AgentRunner(BaseRunner):
     def _step(self, n: int, messages: list, tools: list) -> tuple[dict, dict]:
         t0 = time.perf_counter()
         got = self.chat(messages, model=self.model, gateway=self.gateway,
-                        tools=tools, timeout=self.step_timeout,
-                        max_tokens=MAX_TOKENS, sampling=self.sampling or None)
+                        tools=tools,
+                        timeout=max(self.step_timeout, completion.timeout_for(self.max_tokens)),
+                        max_tokens=self.max_tokens, sampling=self.sampling or None)
         self.answered = True
         firsts = [v for v in (got.timing.get("ttft_s"), got.timing.get("first_tool_s"))
                   if v is not None]

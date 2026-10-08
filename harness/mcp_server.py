@@ -341,7 +341,7 @@ def _describe(job: dict) -> JobInfo:
                 info.waiting_for = exclusive.holder().get("kind")
     if job["state"] == workqueue.DONE:
         info.path = job.get("output") or None
-    if job["state"] == workqueue.FAILED:
+    if job["state"] in (workqueue.FAILED, workqueue.CANCELLED):
         info.error = job.get("note") or f"exited {job.get('rc')}; log {job.get('log')}"
     return info
 

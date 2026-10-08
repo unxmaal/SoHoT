@@ -99,6 +99,22 @@ MAX_TOKENS = 4000
 TIMEOUT_S = 180.0
 LOAD_TIMEOUT_S = 1800.0
 
+#: Eval reply budget per lane; code serves a reasoning model, sized at Qwen3's documented output length. #628.
+BUDGET = {"svg": MAX_TOKENS, "web": MAX_TOKENS, "code": 32768, "extract": MAX_TOKENS,
+          "decide": MAX_TOKENS, "agent": 8000}
+#: The slowest decode a budget's timeout allows for, tokens per second. #628.
+MIN_DECODE_TOK_S = 25.0
+
+
+def budget(lane: str) -> int:
+    """The reply budget an eval of `lane` runs at unless the run names one; 0 where no text is generated. #628."""
+    return BUDGET.get(lane, 0)
+
+
+def timeout_for(max_tokens: int) -> float:
+    """A request timeout long enough to spend `max_tokens` at MIN_DECODE_TOK_S. #628."""
+    return max(TIMEOUT_S, float(max_tokens) / MIN_DECODE_TOK_S)
+
 
 class CompletionError(RuntimeError):
     """The gateway did not return usable text."""
@@ -177,6 +193,8 @@ class Completion:
     model: str = ""
     #: The whole assistant message, tool_calls included; chat() only. #474.
     message: dict = field(default_factory=dict)
+    #: The server's finish_reason; "length" means the budget cut the reply off. #628.
+    finish: str = ""
 
 
 def complete_full(prompt: str, model: str, gateway: str = DEFAULT_GATEWAY,
@@ -242,6 +260,7 @@ def complete_full(prompt: str, model: str, gateway: str = DEFAULT_GATEWAY,
         message = choices[0]["message"]
         served = str(body.get("model") or "")
         text = message.get("content")
+        finish = str(choices[0].get("finish_reason") or "")
         usage = body.get("usage") or {}
         tokens = ((choices[0].get("logprobs") or {}).get("content") or []) \
             if top_logprobs else []
@@ -289,7 +308,7 @@ def complete_full(prompt: str, model: str, gateway: str = DEFAULT_GATEWAY,
         raise CompletionError("empty completion", reasons.CONTENT_FAILED)
     return Completion(text, usage,
                       list(tokens) if isinstance(tokens, list) else [], timing,
-                      served)
+                      served, finish=finish)
 
 
 def reasoning_tokens(usage) -> int | None:

@@ -56,6 +56,10 @@ class BaseRunner:
         """The one file name every runner writes a case's artifact under. #429."""
         return artifact_name(self.candidate, case.id, suffix)
 
+    def cut_off(self) -> str:
+        """The `limit:` body when the last reply stopped at the token budget, else "". #628."""
+        return ""
+
     def warm(self) -> None:
         """Load the model untimed, so no timed case pays for it. #406."""
 
@@ -99,6 +103,10 @@ class BaseRunner:
 
         row = core.score(case, artifact, **self.score_kwargs())
         row.candidate = self.candidate
+        cut = self.cut_off()
+        if not row.passed and cut:
+            # A reply the budget cut off failed on our limit, not on its answer. #628.
+            row.failure_class, row.limit = reasons.TOKEN_BUDGET_EXHAUSTED, cut
         if not row.passed and not row.failure_class:
             row.failure_class = reasons.CONTENT_FAILED
         row.seconds = round(elapsed, 3)
