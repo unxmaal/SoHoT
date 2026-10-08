@@ -68,6 +68,8 @@ class Case:
     input_file: Path | None = None
     #: Loaded from the local-only tree: its text never leaves this machine. #654.
     private: bool = False
+    #: Source run before a code answer, from preamble.py beside the case: an import source's harness. #657.
+    preamble: str = ""
 
 
 def _check_image(artifact, case: Case, adherence: str | None = None,
@@ -121,7 +123,8 @@ def _check_image(artifact, case: Case, adherence: str | None = None,
 
 def _check_code(artifact, case: Case) -> CheckResult:
     """Runs the generated code. See harness/checks/code.py for what that means."""
-    r = code_check.check(artifact, case.assertions.get("checks") or [])
+    r = code_check.check(artifact, case.assertions.get("checks") or [],
+                         preamble=getattr(case, "preamble", ""))
     out = CheckResult(r.ok, r.reason, r.warnings)
     out.metrics = r.metrics
     return out
@@ -780,6 +783,9 @@ def _digest_parts(h, c) -> None:
     source = getattr(c, "input_file", None)
     if source is not None and Path(source).is_file():
         h.update(hashlib.sha256(Path(source).read_bytes()).digest())
+    preamble = getattr(c, "preamble", "")
+    if preamble:
+        h.update(b"preamble\x00" + preamble.encode("utf-8"))
 
 
 def case_digest(case) -> str:
@@ -990,7 +996,14 @@ def load_case(path: Path, private: bool = False) -> Case:
                 context=context, audio=audio, params=params,
                 assertions=assertions, source=path, input_file=input_file,
                 language=raw.get("language") or "en",
-                methods=tuple(raw.get("methods") or ()), private=private)
+                methods=tuple(raw.get("methods") or ()), private=private,
+                preamble=_load_preamble(path, modality))
+
+
+def _load_preamble(path: Path, modality: str) -> str:
+    """preamble.py beside a code case, shared by every case of its import source. #657."""
+    beside = path.parent / "preamble.py"
+    return beside.read_text(encoding="utf-8") if modality == "code" and beside.is_file() else ""
 
 
 def _agent_params(path: Path, params: dict, assertions: dict) -> dict:

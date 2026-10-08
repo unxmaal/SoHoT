@@ -41,5 +41,6 @@ attribution:
   item: '3069'
   date: '2024-03-03'
   transform: problem_description and starter_code as the prompt; the first 10 check(candidate) asserts
-    under 300 chars with candidate -> entry_point; prompt imports + completion as reference
+    under 300 chars with candidate -> entry_point; completion as reference; the dataset's prompt field
+    as preamble.py, run before reference and answer alike
   importer: evals.importers.leetcode

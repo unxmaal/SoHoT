@@ -143,8 +143,8 @@ def recover(text: str) -> str:
 
 
 def check(source: str, checks: list[str],
-          timeout: float = DEFAULT_TIMEOUT) -> CodeResult:
-    """Run `source`, then evaluate each expression in `checks` against it."""
+          timeout: float = DEFAULT_TIMEOUT, preamble: str = "") -> CodeResult:
+    """Run `preamble` then `source`, then evaluate each expression in `checks` against it."""
     if not checks:
         # A code case with nothing to run would pass every model, which is
         # worse than not having the case.
@@ -154,7 +154,7 @@ def check(source: str, checks: list[str],
     if not body.strip():
         return CodeResult(False, "no code in the response", total=len(checks))
 
-    program = body + "\n" + _HARNESS.format(checks=checks)
+    program = (preamble + "\n" if preamble else "") + body + "\n" + _HARNESS.format(checks=checks)
     with tempfile.TemporaryDirectory() as scratch:
         script = Path(scratch) / "candidate.py"
         script.write_text(program, encoding="utf-8")

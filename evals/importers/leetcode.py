@@ -7,7 +7,7 @@ import re
 import sys
 import warnings
 
-from evals.importers import Imported, provenance
+from evals.importers import MARK, Imported, provenance
 
 LANE = "code"
 SOURCE = "hf:newfacade/LeetCodeDataset"
@@ -23,7 +23,87 @@ MAX_CHECKS = 10
 MAX_CHECK_CHARS = 300
 TRANSFORM = (f"problem_description and starter_code as the prompt; the first {MAX_CHECKS} "
              f"check(candidate) asserts under {MAX_CHECK_CHARS} chars with candidate -> "
-             f"entry_point; prompt imports + completion as reference")
+             f"entry_point; completion as reference; the dataset's prompt field as preamble.py, "
+             f"run before reference and answer alike")
+#: The `prompt` field of 408 of 433 rows read at REVISION: LeetCode's own imports and helpers. #657.
+PREAMBLE = """import random
+import functools
+import collections
+import string
+import math
+import datetime
+
+from typing import *
+from functools import *
+from collections import *
+from itertools import *
+from heapq import *
+from bisect import *
+from string import *
+from operator import *
+from math import *
+
+inf = float('inf')
+
+class ListNode:
+    def __init__(self, val=0, next=None):
+        self.val = val
+        self.next = next
+
+def list_node(values: list):
+    if not values:
+        return None
+    head = ListNode(values[0])
+    p = head
+    for val in values[1:]:
+        node = ListNode(val)
+        p.next = node
+        p = node
+    return head
+
+def is_same_list(p1, p2):
+    if p1 is None and p2 is None:
+        return True
+    if not p1 or not p2:
+        return False
+    return p1.val == p2.val and is_same_list(p1.next, p2.next)
+
+class TreeNode:
+    def __init__(self, val=0, left=None, right=None):
+        self.val = val
+        self.left = left
+        self.right = right
+
+def tree_node(values: list):
+    if not values:
+        return None
+    root = TreeNode(values[0])
+    i = 1
+    queue = deque()
+    queue.append(root)
+    while queue:
+        node = queue.popleft()
+        if i < len(values) and values[i] is not None:
+            node.left = TreeNode(values[i])
+            queue.append(node.left)
+        i += 1
+        if i < len(values) and values[i] is not None:
+            node.right = TreeNode(values[i])
+            queue.append(node.right)
+        i += 1
+    return root
+
+def is_same_tree(p, q):
+    if not p and not q:
+        return True
+    elif not p or not q:
+        return False
+    elif p.val != q.val:
+        return False
+    else:
+        return is_same_tree(p.left, q.left) and is_same_tree(p.right, q.right)
+"""
+
 _NODE = re.compile(r"\b(ListNode|TreeNode|Node)\b")
 _ALLOWED = {"candidate", "True", "False", "None"}
 
@@ -92,16 +172,18 @@ def checks_of(row: dict) -> list[str]:
 
 
 def convert(row: dict) -> Imported | None:
-    """One row as a code case, or None if it needs a helper, is constant-passable or fails its own reference."""
+    """One row as a code case, or None if it needs a helper or an import PREAMBLE lacks, is constant-passable or fails its own reference."""
     from harness.checks import code
     starter = row["starter_code"]
     if not starter.lstrip().startswith("class Solution") or _NODE.search(starter):
         return None
+    if not set(row["prompt"].splitlines()) <= set(PREAMBLE.splitlines()):
+        return None
     checks = checks_of(row)
     if len(checks) < 3 or len({_expected(c) for c in checks} - {None}) < 2:
         return None
-    reference = row["prompt"].split("\nclass ListNode")[0].rstrip() + "\n\n" + row["completion"]
-    if not code.check(reference, checks).ok:
+    reference = row["completion"]
+    if not code.check(reference, checks, preamble=PREAMBLE).ok:
         return None
     qid = row["question_id"]
     prompt = (f"{row['problem_description'].strip()}\n\n"
@@ -109,7 +191,8 @@ def convert(row: dict) -> Imported | None:
               f"```python\n{starter.rstrip()}\n```\n\nReturn only the code.")
     case = {"id": f"lc{qid}", "modality": "code", "prompt": prompt, "assert": {"checks": checks},
             "attribution": provenance(sys.modules[__name__], qid, TRANSFORM, row["estimated_date"][:10])}
-    return Imported(case, reference.rstrip() + "\n")
+    preamble = f"# {MARK} from {SOURCE}@{REVISION}.\n{PREAMBLE.rstrip()}\n"
+    return Imported(case, reference.rstrip() + "\n", files=(("preamble.py", preamble.encode("utf-8")),))
 
 
 _CONSTANT = "class Solution:\n    def __getattr__(self, name):\n        return lambda *a, **k: {value}\n"
@@ -129,4 +212,4 @@ RESPONDERS = {
 
 def passes(case, answer: str) -> bool:
     from harness.checks import code
-    return code.check(answer, case.assertions["checks"]).ok
+    return code.check(answer, case.assertions["checks"], preamble=case.preamble).ok

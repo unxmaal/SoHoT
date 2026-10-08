@@ -135,7 +135,7 @@ SHIPPED_SLICE = SHIPPED_CASES[::40]
 @pytest.mark.parametrize("case", SHIPPED_SLICE, ids=lambda c: c.id)
 def test_a_shipped_slice_passes_its_reference_and_fails_a_constant(case):
     ref = (case.source.parent / "reference" / f"{case.id}.py").read_text(encoding="utf-8")
-    assert code.check(ref, case.assertions["checks"]).ok
+    assert leetcode.passes(case, ref)
     assert not leetcode.passes(case, leetcode.RESPONDERS["none"](case))
 
 
@@ -152,3 +152,59 @@ def test_imported_text_is_not_scanned_as_this_projects_prose(tmp_path):
         assert assertions.is_imported(p.read_text(encoding="utf-8"))
         ref = p.parent / "reference" / f"{p.stem}.py"
         assert assertions.is_imported(ref.read_text(encoding="utf-8"))
+
+
+def test_the_preamble_is_the_datasets_own_prompt_field_exactly():
+    assert {r["prompt"] for r in _rows()} == {leetcode.PREAMBLE}
+
+
+def test_an_item_whose_prompt_imports_beyond_the_preamble_is_skipped():
+    row = _rows()[0]
+    assert leetcode.convert(row) is not None
+    row["prompt"] = row["prompt"].replace("inf = ", "from sortedcontainers import SortedList\ninf = ")
+    assert leetcode.convert(row) is None
+
+
+def test_the_preamble_is_written_once_per_source_and_references_carry_only_the_completion(tmp_path):
+    written = _imported(tmp_path)
+    out = tmp_path / "code" / "leetcode"
+    assert leetcode.PREAMBLE in (out / "preamble.py").read_text(encoding="utf-8")
+    for p in written:
+        ref = (out / "reference" / f"{p.stem}.py").read_text(encoding="utf-8")
+        assert "from typing import" not in ref and "class Solution" in ref
+
+
+def test_a_code_case_runs_after_the_preamble_beside_it_and_the_preamble_enters_the_digest(tmp_path):
+    from evals import core
+    case = {"id": "t", "modality": "code", "prompt": "p", "assert": {"checks": [
+        "Solution().total(nums=[1, 2]) == 3", "Solution().total(nums=[]) == 0",
+        "Solution().total(nums=[5]) == 5"]}}
+    (tmp_path / "t.yaml").write_text(yaml.safe_dump(case), encoding="utf-8")
+    answer = "class Solution:\n    def total(self, nums: List[int]) -> int:\n        return sum(nums)\n"
+    bare = core.load_case(tmp_path / "t.yaml")
+    assert bare.preamble == "" and not core.CHECKERS["code"](answer, bare).ok
+    (tmp_path / "preamble.py").write_text("from typing import *\n", encoding="utf-8")
+    framed = core.load_case(tmp_path / "t.yaml")
+    assert framed.preamble == "from typing import *\n"
+    assert core.CHECKERS["code"](answer, framed).ok
+    assert core.case_digest(framed) != core.case_digest(bare)
+
+
+def _control(cases, responders):
+    from concurrent.futures import ThreadPoolExecutor
+    with ThreadPoolExecutor(8) as pool:
+        return {name: sum(pool.map(lambda c: leetcode.passes(c, answer(c)), cases))
+                for name, answer in responders.items()}
+
+
+#: A reference that annotates with typing names and imports none of them; the shape #657 failed.
+LIST_ANNOTATED = [c for c in SHIPPED_CASES if "List[" in leetcode.RESPONDERS["reference"](c)]
+
+
+def test_the_whole_shipped_import_passes_its_reference_and_no_constant_657():
+    assert len(SHIPPED_CASES) == 401 and len(LIST_ANNOTATED) >= 200
+    for c in SHIPPED_CASES:
+        assert c.preamble == SHIPPED_CASES[0].preamble and leetcode.PREAMBLE in c.preamble
+        assert "from typing import *" not in leetcode.RESPONDERS["reference"](c)
+    got = _control(SHIPPED_CASES, leetcode.RESPONDERS)
+    assert got == {"reference": 401, "none": 0, "zero": 0}

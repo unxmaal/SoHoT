@@ -184,3 +184,20 @@ def test_syntax_error_names_the_line():
 
 def test_working_python_has_no_syntax_complaint():
     assert code.syntax_error("def f(t):\n    return t\n") == ""
+
+
+LIST_ANNOTATED = "class Solution:\n    def total(self, nums: List[int]) -> int:\n        return {body}\n"
+TOTAL_CHECKS = ["Solution().total(nums=[1, 2]) == 3", "Solution().total(nums=[]) == 0",
+                "Solution().total(nums=[5]) == 5"]
+
+
+def test_a_preamble_supplies_names_the_answer_uses_without_importing():
+    source = LIST_ANNOTATED.format(body="sum(nums)")
+    bare = code.check(source, TOTAL_CHECKS)
+    assert not bare.ok and "NameError" in bare.reason
+    assert code.check(source, TOTAL_CHECKS, preamble="from typing import *\n").ok
+
+
+def test_a_preamble_does_not_rescue_a_wrong_answer():
+    source = LIST_ANNOTATED.format(body="0")
+    assert not code.check(source, TOTAL_CHECKS, preamble="from typing import *\n").ok

@@ -1454,6 +1454,16 @@ items whose checks all expect one value (a constant could pass) are skipped,
 as is any row whose reference fails its own checks. Each case records its
 item date, so a receipt can be read against a candidate's cutoff.
 
+The dataset's `prompt` field is LeetCode's own preamble (`from typing import *`,
+collections, heapq, bisect, math, `inf`, the list and tree helpers). It is
+written once as `preamble.py` beside the cases, and the code check runs it
+before the reference and before every answer alike, so `nums: List[int]`
+needs no import of its own (#657). Any code case directory may carry one; it
+enters the case digest, so receipts from before it are not comparable with
+receipts after. Rows whose prompt imports more than the preamble (24 import
+`sortedcontainers`) are skipped. The negative control over every shipped case
+is pinned in `tests/test_importers.py`.
+
 `squad2_check` (decide), `squad2_extract` and `squad2_retrieval` read SQuAD 2.0
 dev (CC BY-SA 4.0) at a pinned commit of rajpurkar/SQuAD-explorer, checked by
 sha256. Decide asks five questions per paragraph, mixed answerable and not;
