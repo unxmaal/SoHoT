@@ -4,7 +4,8 @@
 
 EXPORT defaults to $LOCALHARNESS_HOME/import/claims.jsonl, the negatives to
 claims-negatives.jsonl beside it (absent is fine), and DIR to
-$LOCALHARNESS_HOME/cases/claims. The cases are verbatim chat text.
+$LOCALHARNESS_HOME/cases/claims. The cases are verbatim chat text. The one
+schema they share is written beside them as schema.json, which the lane serves.
 """
 from __future__ import annotations
 
@@ -69,7 +70,7 @@ def case_of(row: dict) -> dict:
 
 
 def run(export: Path, negatives: Path | None, out: Path) -> list[Path]:
-    """Replace `out` with one case per export line; refuses an `out` inside a git work tree."""
+    """Replace `out` with one case per export line and their schema; refuses an `out` inside a git work tree."""
     out = Path(out).resolve()
     if _in_git(out):
         raise Refused(f"{out} is inside a git work tree; claims cases are private and stay local")
@@ -78,6 +79,10 @@ def run(export: Path, negatives: Path | None, out: Path) -> list[Path]:
     ids = [c["id"] for c in cases]
     if len(set(ids)) != len(ids):
         raise Refused("the export and the negatives repeat a case id")
+    schemas = {json.dumps(c["params"]["schema"], sort_keys=True) for c in cases}
+    if len(schemas) > 1:
+        raise Refused(f"the export's cases disagree on the schema ({len(schemas)} distinct); "
+                      "the lane serves one")
     from harness.checks import claims as claims_check
     for c in cases:
         a = c["assert"]
@@ -86,6 +91,8 @@ def run(export: Path, negatives: Path | None, out: Path) -> list[Path]:
     if out.exists():
         shutil.rmtree(out)
     out.mkdir(parents=True)
+    if cases:
+        claims_check.write_schema(out, cases[0]["params"]["schema"])
     written = []
     for c in sorted(cases, key=lambda c: c["id"]):
         path = out / f"{c['id']}.yaml"

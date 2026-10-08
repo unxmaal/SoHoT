@@ -10,6 +10,18 @@ class Sent(Exception):
     pass
 
 
+def _import_synthetic_claims_schema() -> None:
+    """The claims lane serves only an imported schema (#659); the synthetic fixture stands in."""
+    import json
+    from pathlib import Path
+
+    from harness.checks import claims
+    row = Path(__file__).parent / "fixtures" / "claims" / "claims.jsonl"
+    schema = json.loads(row.read_text(encoding="utf-8").splitlines()[0])["schema"]
+    claims.schema_path().parent.mkdir(parents=True, exist_ok=True)
+    claims.write_schema(claims.schema_path().parent, schema)
+
+
 def _lanes_that_send_a_schema(monkeypatch) -> set[str]:
     """Drive every delegated request and record which lanes put a response_format on it."""
     from harness import completion
@@ -22,6 +34,7 @@ def _lanes_that_send_a_schema(monkeypatch) -> set[str]:
 
     monkeypatch.setattr(completion, "complete_full", capture)
     monkeypatch.setattr(delegate, "_preflight", lambda *a, **k: None)
+    _import_synthetic_claims_schema()
     for lane in gateway.TEXT_LANES:
         with pytest.raises(Sent):
             delegate.complete(lane, "p")

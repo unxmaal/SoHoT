@@ -383,7 +383,23 @@ def test_a_claims_case_is_never_scored_on_mlx_lm_server(monkeypatch):
     assert not sent and not r.passed and r.failure_class == reasons.REFUSED_BY_GATEWAY
 
 
-def test_delegating_to_the_claims_lane_sends_the_claims_schema(monkeypatch):
+def _export_with(tmp_path, schemas) -> Path:
+    rows = []
+    for n, schema in enumerate(schemas):
+        row = dict(_line(), id=f"synthetic-{n}", schema=schema)
+        rows.append(json.dumps(row))
+    path = tmp_path / "export.jsonl"
+    path.write_text("\n".join(rows) + "\n", encoding="utf-8")
+    return path
+
+
+def _pinned_speaker(schema) -> dict:
+    out = json.loads(json.dumps(schema))
+    out["properties"]["c"]["items"]["prefixItems"][0]["pattern"] = "^member-[0-9a-f]{4,}$"
+    return out
+
+
+def _delegate_sends(monkeypatch) -> dict:
     from harness import completion, delegate
     got = {}
 
@@ -392,9 +408,61 @@ def test_delegating_to_the_claims_lane_sends_the_claims_schema(monkeypatch):
         raise RuntimeError("sent")
     monkeypatch.setattr(completion, "complete_full", capture)
     monkeypatch.setattr(delegate, "_preflight", lambda *a, **k: None)
-    with pytest.raises(RuntimeError):
-        delegate.complete("claims", "[1] member-a: the fan is 12V")
-    assert got["response_format"] == C.response_format(C.SCHEMA)
+    with pytest.raises(RuntimeError, match="sent"):
+        delegate.complete("claims", "[1] member-a1b2: the fan is 12V")
+    return got
+
+
+def test_the_lane_carries_no_schema_of_its_own():
+    assert not hasattr(C, "SCHEMA")
+
+
+def test_delegating_sends_the_imported_cases_schema_not_the_synthetic_one(tmp_path, monkeypatch):
+    from evals import claims_import
+    imported = _pinned_speaker(_line()["schema"])
+    assert imported != _line()["schema"]
+    claims_import.run(_export_with(tmp_path, [imported, imported]), None, claims_import.default_out())
+    got = _delegate_sends(monkeypatch)
+    assert got["response_format"] == C.response_format(imported)
+
+
+def test_delegating_before_any_import_refuses_without_sending(monkeypatch):
+    from harness import completion, delegate
+    sent = []
+    monkeypatch.setattr(completion, "complete_full", lambda *a, **k: sent.append(k))
+    monkeypatch.setattr(delegate, "_preflight", lambda *a, **k: None)
+    with pytest.raises(delegate.Refused, match="claims_import"):
+        delegate.complete("claims", "[1] member-a1b2: the fan is 12V")
+    assert not sent
+
+
+def test_the_importer_writes_the_schema_once_beside_the_cases(tmp_path):
+    from evals import claims_import
+    out = tmp_path / "out"
+    claims_import.run(EXPORT, NEGATIVES, out)
+    assert json.loads((out / C.SCHEMA_FILE).read_text(encoding="utf-8")) == _line()["schema"]
+    assert C.served_schema(out) == _line()["schema"]
+    assert C.schema_path() == claims_import.default_out() / C.SCHEMA_FILE
+
+
+def test_the_importer_refuses_an_export_whose_cases_disagree_on_the_schema(tmp_path):
+    from evals import claims_import
+    schema = _line()["schema"]
+    out = tmp_path / "out"
+    assert claims_import.run(_export_with(tmp_path, [schema, schema]), None, out)
+    with pytest.raises(claims_import.Refused, match="schema"):
+        claims_import.run(_export_with(tmp_path, [schema, _pinned_speaker(schema)]), None, out)
+    assert json.loads((out / C.SCHEMA_FILE).read_text(encoding="utf-8")) == schema
+
+
+def test_the_importer_refuses_negatives_whose_schema_differs_from_the_export(tmp_path):
+    from evals import claims_import
+    neg = json.loads(NEGATIVES.read_text(encoding="utf-8").splitlines()[0])
+    neg["schema"] = _pinned_speaker(neg["schema"])
+    path = tmp_path / "neg.jsonl"
+    path.write_text(json.dumps(neg) + "\n", encoding="utf-8")
+    with pytest.raises(claims_import.Refused, match="schema"):
+        claims_import.run(EXPORT, path, tmp_path / "out")
 
 
 def test_the_claims_thresholds_are_registered_knobs_on_the_receipt():

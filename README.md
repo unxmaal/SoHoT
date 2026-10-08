@@ -1502,6 +1502,13 @@ and a `basis` (such as `human_irrelevant`) and optional `origin`, carried onto
 the case. The importer replaces the directory on every run and refuses a
 destination inside a git work tree.
 
+The reply schema has one source, infovore's export. The importer refuses an
+export (with its negatives) whose cases disagree on the schema, and writes that
+one schema to `schema.json` beside the cases. `delegate.complete("claims")`
+(and so `soh` delegation to the lane) serves that file and refuses until an
+import has written it; the lane keeps no copy of its own. The schema under
+`tests/fixtures/claims/` is the synthetic fixture only.
+
 `evals.run`, the holdout split and the screen read the shipped tree plus
 `$LOCALHARNESS_HOME/cases` (`--local-cases` names another), and mark those
 cases private. `case_digest`, the split and `comparable()` treat them as any

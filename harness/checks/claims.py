@@ -7,6 +7,7 @@ from __future__ import annotations
 import json
 import re
 from collections import Counter
+from pathlib import Path
 
 from harness.checks.base import CheckResult
 
@@ -18,15 +19,38 @@ MATCH_THRESHOLD = 0.5
 #: Share of a case's good reviewed claims a reply must recover to pass.
 MIN_RECALL = 0.5
 
-#: The tuple reply infovore asks for: {"c": [[user, claim, [refs]]]}.
-SCHEMA = {"type": "object",
-          "properties": {"c": {"type": "array", "items": {
-              "type": "array",
-              "prefixItems": [{"type": "string"},
-                              {"type": "string", "maxLength": 220},
-                              {"type": "array", "items": {"type": "integer"}, "minItems": 1}],
-              "minItems": 3, "maxItems": 3}}},
-          "required": ["c"], "additionalProperties": False}
+#: The reply schema, written by evals.claims_import from infovore's export: the lane keeps no copy. #659.
+SCHEMA_FILE = "schema.json"
+
+
+class NoSchema(ValueError):
+    """No claims schema has been imported on this machine."""
+
+
+def schema_path(root=None) -> Path:
+    """Where the imported schema lives: beside the local claims cases unless `root` says otherwise."""
+    if root is not None:
+        return Path(root) / SCHEMA_FILE
+    from harness import paths
+    return paths.home() / "cases" / "claims" / SCHEMA_FILE
+
+
+def served_schema(root=None) -> dict:
+    """The schema the claims lane serves, as the last import wrote it."""
+    path = schema_path(root)
+    if not path.is_file():
+        raise NoSchema("no claims schema imported; run `uv run python -m evals.claims_import` first")
+    data = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(data, dict):
+        raise NoSchema(f"{path.name} is not a JSON object")
+    return data
+
+
+def write_schema(out, schema: dict) -> Path:
+    path = Path(out) / SCHEMA_FILE
+    path.write_text(json.dumps(schema, sort_keys=True, indent=1) + "\n", encoding="utf-8")
+    return path
+
 
 _WORD = re.compile(r"[^a-z0-9]+")
 #: How far under the threshold an unmatched pair counts as one the threshold decided.

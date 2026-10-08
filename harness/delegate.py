@@ -275,7 +275,10 @@ def complete(lane: str, prompt: str, system: str | None = None,
                 _budget(base, max_tokens, text, mine or completion.SYSTEM.get(modality, ""))
             if modality == "claims":
                 from harness.checks import claims
-                kw = {**kw, "response_format": claims.response_format(claims.SCHEMA)}
+                try:
+                    kw = {**kw, "response_format": claims.response_format(claims.served_schema())}
+                except claims.NoSchema as exc:
+                    raise Refused(str(exc)) from exc
             return completion.complete_full(
                 text, modality=modality, timeout=timeout or TIMEOUT_S,
                 temperature=temperature, max_tokens=int(max_tokens), stream=True,
