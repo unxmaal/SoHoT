@@ -13,6 +13,8 @@ import time
 from harness import knobs
 
 DAY = 86400.0
+#: workqueue requested_by for a knob sweep's jobs (harness.sweeps.REQUESTED_BY).
+SWEEP = "sweep"
 #: Days of runs and verdicts a binding count reads.
 BINDING_WINDOW_DAYS = 30
 #: The share of a lane's rows hitting a knob's limit at which the knob is reported as binding.
@@ -35,9 +37,11 @@ def _machines(sql: str, params: list, column: str, machines) -> str:
 def _result_hits(conn, lane: str, name: str, since: float, machines) -> tuple[int, int]:
     """(rows whose hit_limit names `name`, all rows) in `lane`'s runs that ran since `since`."""
     params: list = [_like(name) + ">%", lane, since]
+    # A sweep's runs are the experiment at other settings, not the knob as it stands. #636.
     sql = ("SELECT SUM(CASE WHEN r.hit_limit LIKE ? ESCAPE '\\' THEN 1 ELSE 0 END), COUNT(*) "
-           "FROM results r JOIN runs ON r.run_id = runs.id "
-           "WHERE runs.lane = ? AND COALESCE(runs.generated_at, runs.recorded_at) >= ?")
+           "FROM results r JOIN runs ON r.run_id = runs.id LEFT JOIN jobs ON jobs.id = runs.job_id "
+           "WHERE runs.lane = ? AND COALESCE(runs.generated_at, runs.recorded_at) >= ? "
+           f"AND COALESCE(jobs.requested_by, '') != '{SWEEP}'")
     row = conn.execute(_machines(sql, params, "runs.machine_id", machines), params).fetchone()
     return int(row[0] or 0), int(row[1] or 0)
 

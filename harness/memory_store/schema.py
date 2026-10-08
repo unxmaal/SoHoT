@@ -4,7 +4,7 @@ from __future__ import annotations
 from harness import store
 
 
-SCHEMA_VERSION = 61
+SCHEMA_VERSION = 62
 
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
@@ -409,6 +409,29 @@ CREATE TABLE IF NOT EXISTS reverifications (
     reason          TEXT NOT NULL DEFAULT '',
     failure_class   TEXT NOT NULL DEFAULT '',
     detail          TEXT NOT NULL DEFAULT ''
+);
+
+-- One sweep of a binding knob across its range on one lane, model and machine, and the value it chose. #636.
+CREATE TABLE IF NOT EXISTS knob_sweeps (
+    id           INTEGER PRIMARY KEY,
+    knob         TEXT NOT NULL,
+    lane         TEXT NOT NULL,
+    spec         TEXT NOT NULL,
+    candidate_id INTEGER REFERENCES candidates(id),
+    machine_id   INTEGER REFERENCES machines(id),
+    -- JSON [[value, job id], ...], one queued evals.run per value swept.
+    jobs         TEXT NOT NULL DEFAULT '[]',
+    -- JSON {limit, hits, of}: the binding count that queued it.
+    trigger      TEXT NOT NULL DEFAULT '{}',
+    queued_at    REAL NOT NULL,
+    settled_at   REAL,
+    -- '' until settled, then chosen, unrun or cancelled.
+    outcome      TEXT NOT NULL DEFAULT '',
+    -- JSON value: the cheapest value statistically tied with the best.
+    chosen       TEXT NOT NULL DEFAULT '',
+    -- JSON {str(value): {passed, n, seconds, lost, gained, p, tied, best, run_id}}.
+    cost         TEXT NOT NULL DEFAULT '{}',
+    detail       TEXT NOT NULL DEFAULT ''
 );
 
 -- Weights on disk, one row per fetched or found path on one machine. #411.

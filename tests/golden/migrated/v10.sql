@@ -52,6 +52,8 @@ table jobs [('id', 'INTEGER', 0, None, 1), ('title', 'TEXT', 1, "''", 0), ('kind
   index ix_jobs_state unique=0 ['state', 'priority']
   (1, 'soh discover', 'command', '', 0, '["soh", "discover"]', '/REPO', 'done', 1789808400.0, 1789808405.0, 1789809000.0, 0, '/LOGS/0001.log', '', 'migration', 1)
   (2, 'tts measure', 'command', '', 5, '["uv", "run", "python", "-m", "evals.run"]', '/REPO', 'failed', 1789894800.0, 1789894805.0, 1789898400.0, 1, '/LOGS/0002.log', 'one case failed', 'migration', 1)
+table knob_sweeps [('id', 'INTEGER', 0, None, 1), ('knob', 'TEXT', 1, None, 0), ('lane', 'TEXT', 1, None, 0), ('spec', 'TEXT', 1, None, 0), ('candidate_id', 'INTEGER', 0, None, 0), ('machine_id', 'INTEGER', 0, None, 0), ('jobs', 'TEXT', 1, "'[]'", 0), ('trigger', 'TEXT', 1, "'{}'", 0), ('queued_at', 'REAL', 1, None, 0), ('settled_at', 'REAL', 0, None, 0), ('outcome', 'TEXT', 1, "''", 0), ('chosen', 'TEXT', 1, "''", 0), ('cost', 'TEXT', 1, "'{}'", 0), ('detail', 'TEXT', 1, "''", 0)]
+  index ix_knob_sweeps_key unique=0 ['knob', 'lane', 'spec', 'machine_id']
 table lineage [('id', 'INTEGER', 0, None, 1), ('proposal_id', 'INTEGER', 1, None, 0), ('parent', 'TEXT', 1, None, 0), ('kind', 'TEXT', 1, "''", 0)]
   index sqlite_autoindex_lineage_1 unique=1 ['proposal_id', 'parent', 'kind']
   (1, 4, 'org-z/base-xl', 'adapter')
@@ -66,7 +68,7 @@ table meta [('key', 'TEXT', 0, None, 1), ('value', 'TEXT', 0, None, 0)]
   index sqlite_autoindex_meta_1 unique=1 ['key']
   ('artifact_split', '{}')
   ('candidate_guesses', '[{"proposal": "org-f/screen-broke", "spec": "diffusers:org-f/screen-broke", "tier": "screen", "verdict": 16}, {"proposal": "org-f/screen-broke", "spec": "diffusers:org-f/screen-broke", "tier": "screen", "verdict": 17}, {"proposal": "org-k/harness-broke", "spec": "org-k/harness-broke", "tier": "screen", "verdict": 18}, {"proposal": "org-l/svg-thing", "spec": "org-l/svg-thing", "tier": "adopt", "verdict": 21}, {"proposal": "org-k/harness-broke", "spec": "org-k/harness-broke", "tier": "screen", "verdict": 22}, {"proposal": "org-f/screen-broke", "spec": "diffusers:org-f/screen-broke", "tier": "screen", "verdict": 23}, {"adoption": 2, "from": "the adopt verdict/'s machine; no vote or judged run names one", "lane": "svg", "machine": 1, "proposal": "org-l/svg-thing", "spec": "org-l/svg-thing"}]')
-  ('schema', '61')
+  ('schema', '62')
 table proposals [('id', 'INTEGER', 0, None, 1), ('name', 'TEXT', 1, None, 0), ('kind', 'TEXT', 1, "'candidate'", 0), ('registry', 'TEXT', 1, "''", 0), ('description', 'TEXT', 1, "''", 0), ('lane', 'TEXT', 1, "''", 0), ('resolved', 'TEXT', 1, "''", 0), ('first_seen', 'REAL', 1, None, 0), ('last_seen', 'REAL', 1, None, 0), ('state', 'TEXT', 1, "''", 0), ('state_verdict_id', 'INTEGER', 0, None, 0), ('retest_count', 'INTEGER', 1, '0', 0), ('next_retest_at', 'REAL', 0, None, 0), ('size_bytes', 'INTEGER', 1, '0', 0), ('hf_task', 'TEXT', 1, "''", 0), ('library', 'TEXT', 1, "''", 0), ('card_tags', 'TEXT', 1, "'[]'", 0), ('attaches_to', 'TEXT', 1, "''", 0), ('runtime_needed', 'TEXT', 1, "''", 0), ('lane_source', 'TEXT', 1, "''", 0), ('card_read', 'TEXT', 1, "''", 0), ('category', 'TEXT', 1, "''", 0), ('model_type', 'TEXT', 1, "''", 0), ('remote_code', 'TEXT', 1, "''", 0)]
   index ix_prop_state unique=0 ['state']
   index sqlite_autoindex_proposals_1 unique=1 ['name']

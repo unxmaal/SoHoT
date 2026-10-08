@@ -522,3 +522,10 @@ def backfill(conn, root=None) -> dict:
                 break
     conn.commit()
     return counts
+
+
+def for_job(conn, job_id: int) -> dict | None:
+    """The run a queued job stored; a retried job's newest run is its latest attempt. #636."""
+    row = conn.execute("SELECT * FROM runs WHERE job_id = ? ORDER BY id DESC LIMIT 1",
+                       (int(job_id),)).fetchone()
+    return dict(row) if row else None

@@ -372,6 +372,8 @@ def cmd_sensitivity(a) -> int:
 
     if getattr(a, "inventory", False):
         return _knob_inventory(a)
+    if getattr(a, "sweeps", False):
+        return _knob_sweeps(a)
     if getattr(a, "list", False):
         if a.json:
             print(json.dumps({"probes": sorted(probes.PROBES),
@@ -416,6 +418,31 @@ def cmd_sensitivity(a) -> int:
 def _knob_row(k) -> dict:
     return {"name": k.name, "sites": list(k.sites), "values": list(k.values), "lanes": list(k.lanes),
             "limit": k.limit, "probe": k.probe, "note": k.note}
+
+
+def _knob_sweeps(a) -> int:
+    """What a loop would sweep now, and every decision recorded. #636."""
+    from harness import memory_store as ms, sweeps
+    store = ms.connect()
+    try:
+        got = sweeps.check(store, dry_run=True)
+        done = [dict(r) for r in store.execute(
+            "SELECT knob, lane, spec, outcome, chosen, detail, settled_at FROM knob_sweeps "
+            "WHERE outcome != '' ORDER BY id").fetchall()]
+    finally:
+        store.close()
+    if a.json:
+        print(json.dumps({"planned": [{k: v for k, v in p.items() if k != "argv"} for p in got["planned"]],
+                          "decided": done}, indent=2, default=str))
+        return 0
+    print("\nknob sweeps (dry run):")
+    print(sweeps.render(got))
+    print("\ndecided:")
+    for d in done:
+        print(f"  {d['detail'] or d['outcome']}")
+    if not done:
+        print("  none yet")
+    return 0
 
 
 def _knob_inventory(a) -> int:

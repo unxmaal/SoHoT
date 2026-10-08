@@ -586,6 +586,9 @@ def build_parser() -> argparse.ArgumentParser:
                            "`--list` names them")
     sens.add_argument("--list", action="store_true",
                       help="name the probes and the constants nothing covers")
+    sens.add_argument("--sweeps", action="store_true",
+                      help="binding knobs, the sweeps that would be queued, and the decisions so far; "
+                           "writes nothing (the loop queues them) (#636)")
     sens.add_argument("--inventory", action="store_true",
                       help="gating constants the knob registry covers and the ones it does not (#636)")
     sens.set_defaults(func=lanes_cmd.cmd_sensitivity)

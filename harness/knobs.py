@@ -54,6 +54,8 @@ class Knob:
     probe: str = ""
     #: Where an eval's receipt records it: "max_tokens" (its own field), "knobs" (Receipt.knobs), or "" (not the exam).
     receipt: str = ""
+    #: The runner attribute a run sets for an override; "" rebinds the first site for the run instead.
+    runner_attr: str = ""
     note: str = ""
 
     def default(self, lane: str = ""):
@@ -83,10 +85,10 @@ KNOBS: dict[str, Knob] = dict([
        [2000, 4000, 8000, 16384, 32768, 65536], lanes=TEXT_LANES, limit="max_tokens.{lane}",
        receipt="max_tokens", note="the reply budget an eval asks every text reply at (#628)"),
     _k("request_timeout", ["harness/completion.py:TIMEOUT_S", "harness/completion.py:MIN_DECODE_TOK_S"],
-       [60.0, 120.0, 180.0, 300.0, 600.0], lanes=REQUEST_LANES, limit="timeout_s", receipt="knobs",
+       [60.0, 120.0, 180.0, 300.0, 600.0], lanes=REQUEST_LANES, limit="timeout_s", receipt="knobs", runner_attr="timeout",
        note="seconds one request may take; a big budget stretches it at the slowest decode"),
     _k("load_timeout", ["harness/completion.py:LOAD_TIMEOUT_S"],
-       [600.0, 1200.0, 1800.0, 3600.0], lanes=REQUEST_LANES, limit="load_timeout_s", receipt="knobs",
+       [600.0, 1200.0, 1800.0, 3600.0], lanes=REQUEST_LANES, limit="load_timeout_s", receipt="knobs", runner_attr="load_timeout",
        note="seconds the untimed first request may spend loading weights"),
     _k("memory_ceiling", ["harness/inspect.py:MEMORY_CEILING", "harness/inspect.py:MEMORY_CEILING_RAM_GB"],
        [8 * GIB, 16 * GIB, 22 * GIB, 32 * GIB, 96 * GIB], limit="ceiling_gb", predicate=MACHINE,
@@ -230,3 +232,34 @@ def settings(lane: str, overrides: dict | None = None) -> dict:
         raise ValueError(f"not a knob a run can set: {', '.join(unknown)}")
     return {k.name: overrides.get(k.name, k.default(lane)) for k in KNOBS.values()
             if k.receipt == "knobs" and lane in k.lanes}
+
+
+def rebind(overrides: dict):
+    """Set each override that has no runner attribute on its module for the duration; restore after."""
+    import contextlib
+
+    @contextlib.contextmanager
+    def held():
+        saved = []
+        try:
+            for name, value in overrides.items():
+                k = KNOBS[name]
+                if k.runner_attr:
+                    continue
+                m = _SITE.fullmatch(k.sites[0])
+                module = importlib.import_module(m["rel"][:-3].replace("/", "."))
+                saved.append((module, m["name"], getattr(module, m["name"])))
+                setattr(module, m["name"], value)
+            yield
+        finally:
+            for module, attr, old in reversed(saved):
+                setattr(module, attr, old)
+    return held()
+
+
+def apply(runner, overrides: dict) -> None:
+    """Set the overrides a runner carries as attributes."""
+    for name, value in overrides.items():
+        attr = KNOBS[name].runner_attr
+        if attr and hasattr(runner, attr):
+            setattr(runner, attr, value)
