@@ -279,28 +279,47 @@ def is_technique(row) -> bool:
     return (row.get("category") or "") == TECHNIQUE
 
 
+def technique_route(row) -> str:
+    """A technique's lane or bucket; only code read from prose is re-read, its old evidence was any LLM word. #631."""
+    lane = lane_of(row)
+    if lane and not (lane == "code" and (row.get("lane_source") or "") == "prose"):
+        return lane
+    return lanes.technique_route(row.get("title") or "", row.get("description") or "")
+
+
+def _by_seen(members) -> list[dict]:
+    return sorted(members, key=lambda r: (-int(r.get("times") or 0),
+                                          -float(r.get("last_seen") or 0.0), r["name"]))
+
+
 def techniques_wanted(rows, want: str = "") -> list[dict]:
     """Laned techniques grouped by lane, most-seen first. Evidence only: a method is
     implemented by a person or an agent, never guessed. #576."""
     groups: dict[str, list[dict]] = {}
     for r in rows:
-        lane = lane_of(r)
-        if not lane or (want and not lanes.serves(lane, want)):
+        lane = technique_route(r)
+        if lane not in lanes.ALL or (want and not lanes.serves(lane, want)):
             continue
         groups.setdefault(lane, []).append(r)
-    out = []
-    for lane, members in groups.items():
-        members = sorted(members, key=lambda r: (-int(r.get("times") or 0),
-                                                 -float(r.get("last_seen") or 0.0),
-                                                 r["name"]))
-        out.append({"lane": lane, "techniques": members,
-                    "sightings": sum(int(m.get("times") or 0) for m in members)})
+    out = [{"lane": lane, "techniques": _by_seen(members),
+            "sightings": sum(int(m.get("times") or 0) for m in members)}
+           for lane, members in groups.items()]
     return sorted(out, key=lambda g: (-len(g["techniques"]), -g["sightings"], g["lane"]))
 
 
+def techniques_unlaned(rows) -> dict[str, list[dict]]:
+    """Techniques in no lane: {SERVING: [...], GENERAL: [...], "": unrouted}, most-seen first. #631."""
+    out: dict[str, list[dict]] = {lanes.SERVING: [], lanes.GENERAL: [], "": []}
+    for r in rows:
+        got = technique_route(r)
+        if got not in lanes.ALL:
+            out[got].append(r)
+    return {k: _by_seen(v) for k, v in out.items()}
+
+
 def techniques_laneless(rows) -> int:
-    """How many techniques the prose routed to no lane. #576."""
-    return sum(1 for r in rows if not lane_of(r))
+    """How many techniques route to no lane. #576."""
+    return sum(len(v) for v in techniques_unlaned(rows).values())
 
 
 def tools_wanted(rows, minimum: int = 2) -> list[dict]:

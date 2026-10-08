@@ -190,3 +190,40 @@ def testable_in(lane) -> tuple[str, ...]:
 def serves(candidate_lane, target_lane) -> bool:
     """Can a candidate filed under `candidate_lane` run `target_lane`'s cases?"""
     return canonical(target_lane) in testable_in(candidate_lane)
+
+
+
+#: Not lanes: where a technique goes when it names a text model or a serving system but no lane's task. #631.
+SERVING = "serving"
+GENERAL = "general"
+
+# A technique is code only on evidence of the task; "Code is available at" is in most abstracts. #631.
+_CODE_TASK = (r"\b(?:code\s+(?:generation|completion|repair|writing|llms?|models?|language\s+models?|"
+              r"agents?|tasks?|assistants?|benchmarks?)|(?:generating|synthesi[sz]ing)\s+(?:code|programs?)|"
+              r"program\s+(?:repair|synthesis)|bug[-_ ]?fix\w*|fixing\s+bugs|unit\s+tests?|"
+              r"test\s+generation|software\s+engineering|swe-?bench|"
+              r"coding\s+(?:agents?|tasks?|assistants?|benchmarks?|models?)|competitive\s+programming|"
+              r"repository-level|code-writing|text-to-sql|humaneval|mbpp|livecodebench)\b")
+_SERVING = (r"\b(?:serving|kv[-_ ]?cache|speculative\s+decoding|prefill|batched\s+decoding|"
+            r"continuous\s+batching|expert\s+(?:pruning|offloading|parallelism)|paged\s+attention|"
+            r"inference\s+engines?)\b")
+_GENERAL = (r"\b(?:language\s+models?|llms?|chat|instruct\w*|reasoning|agentic|"
+            r"decoder-only|tokeni[sz]\w+)\b")
+
+
+def technique_route(title, summary="") -> str:
+    """A lane, SERVING, GENERAL or "" (unrouted): the title alone first, then with the summary. #631."""
+    import re
+    both = f"{title or ''} {summary or ''}"
+    for text in (str(title or ""), both):
+        got = [lane for lane, pattern in _PROSE.items()
+               if lane != "code" and re.search(pattern, text, re.I)]
+        if len(got) == 1:
+            return got[0]
+        if re.search(_CODE_TASK, text, re.I):
+            return "code"
+    if re.search(_SERVING, both, re.I):
+        return SERVING
+    if re.search(_GENERAL, both, re.I):
+        return GENERAL
+    return ""
