@@ -368,16 +368,23 @@ def cmd_voices(a) -> int:
 
 def cmd_sensitivity(a) -> int:
     """Vary a constant and say whether anything downstream moved."""
-    from harness import probes, sensitivity
+    from harness import knobs, probes, sensitivity
 
+    if getattr(a, "inventory", False):
+        return _knob_inventory(a)
     if getattr(a, "list", False):
         if a.json:
             print(json.dumps({"probes": sorted(probes.PROBES),
-                              "uncovered": probes.UNCOVERED}, indent=2))
+                              "knobs": [_knob_row(k) for k in knobs.KNOBS.values()],
+                              "uncovered": probes.UNCOVERED}, indent=2, default=str))
             return 0
-        print("\nprobes:")
-        for name in sorted(probes.PROBES):
-            print(f"  {name}")
+        print("\nknobs (probe: swept offline; limit: what an eval records when it binds):")
+        for k in knobs.KNOBS.values():
+            how = ", ".join(x for x in (f"probe {k.probe}" if k.probe else "",
+                                        f"limit {k.limit}" if k.limit else "") if x)
+            print(f"  {k.name:<16} {k.sites[0]}  {list(k.values)}  {how}")
+            if k.lanes:
+                print(f"      lanes: {', '.join(k.lanes)}")
         print("\nnot covered, and why:")
         for name, why in sorted(probes.UNCOVERED.items()):
             print(f"  {name}\n      {why}")
@@ -403,6 +410,27 @@ def cmd_sensitivity(a) -> int:
     print(f"\nagainst cached data only: a crowd of {cover['crowd']} and "
           f"{cover['clones']} clones on disk\n")
     print(sensitivity.report(found))
+    return 0
+
+
+def _knob_row(k) -> dict:
+    return {"name": k.name, "sites": list(k.sites), "values": list(k.values), "lanes": list(k.lanes),
+            "limit": k.limit, "probe": k.probe, "note": k.note}
+
+
+def _knob_inventory(a) -> int:
+    """Gating constants the knob registry covers and the ones it does not. #636."""
+    from harness import knobs, paths
+    got = knobs.census(paths.REPO)
+    left = knobs.unregistered(got["found"])
+    if a.json:
+        print(json.dumps({**{k: v for k, v in got.items() if k != "found"},
+                          "unregistered_sites": left}, indent=2))
+        return 0
+    print(f"\ngating constants: {len(got['found'])}  registered {got['registered']}  "
+          f"gates nothing {got['not_gating']}  unregistered {got['unregistered']}")
+    for site in left:
+        print(f"  {site}")
     return 0
 
 

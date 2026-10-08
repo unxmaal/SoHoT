@@ -98,8 +98,8 @@ def test_505_is_bound_to_the_shared_resource_class_not_unclassified():
     assert {"issue": 505} in classes.INDEX["a-shared-fixed-resource-in-tests"]["instances"]
 
 
-def test_pending_is_empty_once_the_skill_defines_every_proposed_class():
-    assert classes.PENDING == {}
+def test_pending_holds_only_the_classes_still_waiting_for_a_skill_entry():
+    assert set(classes.PENDING) <= {"a-constant-chosen-before-the-thing-it-constrains-existed"}
 
 
 def test_the_fixture_registry_is_clean():

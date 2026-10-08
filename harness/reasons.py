@@ -71,13 +71,9 @@ def first(classes) -> str:
 
 
 def limits() -> dict:
-    """The limits this harness currently chooses, by `limit:` predicate name."""
-    from harness import completion, fetching
-    return {"max_tokens": completion.MAX_TOKENS,
-            **{f"max_tokens.{lane}": n for lane, n in completion.BUDGET.items()},
-            "timeout_s": completion.TIMEOUT_S,
-            "load_timeout_s": completion.LOAD_TIMEOUT_S,
-            "download_gib": fetching.MAX_DOWNLOAD / 1024 ** 3}
+    """The limits this harness currently chooses, by `limit:` predicate name; the knob registry is the source. #636."""
+    from harness import knobs
+    return knobs.limits()
 
 
 # ---------------------------------------------------------------------------
