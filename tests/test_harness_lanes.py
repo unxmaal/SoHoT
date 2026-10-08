@@ -33,6 +33,8 @@ def video_parked(monkeypatch):
 GENERATED = {
     "stt": "uv run python -m evals.corpora  (LibriSpeech test-clean, "
            ".gitignore:10)",
+    "claims": "uv run python -m evals.claims_import  (private chat text, "
+              "$LOCALHARNESS_HOME/cases/claims, never in git; #654)",
 }
 
 
@@ -114,10 +116,11 @@ def test_the_wanted_order_is_the_one_that_was_asked_for():
     `music` is LAST and appended rather than inserted (#237): the five before
     it were ranked explicitly and music was asked for afterwards, so it has
     never been ranked against them. Moving it up is a decision somebody makes
-    out loud, not a tidy-up. `decide`, `agent`, `ocr`, `retrieval` and `pii` were appended the same way (#423, #474, #562-#564).
+    out loud, not a tidy-up. `decide`, `agent`, `ocr`, `retrieval`, `pii` and `claims` were appended the same way (#423, #474, #562-#564, #654).
     """
     assert rank.LANE_PRIORITY == ("image", "code", "web", "svg", "video",
-                                  "music", "decide", "agent", "ocr", "retrieval", "pii")
+                                  "music", "decide", "agent", "ocr", "retrieval", "pii",
+                                  "claims")
     assert not {"tts", "stt"} & set(rank.LANE_PRIORITY)
 
 

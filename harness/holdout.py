@@ -73,22 +73,26 @@ def assign(lane: str, cases) -> Split:
 
 
 @functools.lru_cache(maxsize=8)
-def _splits(root: str, stamp: tuple) -> dict:
+def _splits(roots: tuple, stamp: tuple) -> dict:
     from evals.core import load_cases
     by: dict[str, list] = {}
-    for c in load_cases(root):
-        by.setdefault(c.modality, []).append(c)
+    for root, private in roots:
+        for c in (load_cases(root, private=True) if private else load_cases(root)):
+            by.setdefault(c.modality, []).append(c)
     return {lane: assign(lane, cases) for lane, cases in by.items()}
 
 
 def splits(root=None) -> dict:
-    """lane -> the split of its shipped cases (evals/cases by default)."""
-    root = Path(root) if root is not None else (
-        Path(__file__).resolve().parent.parent / "evals" / "cases")
+    """lane -> the split of its shipped cases (evals/cases by default) plus local-only ones. #654."""
+    from evals.core import local_root
+    roots = [(Path(root) if root is not None else
+              Path(__file__).resolve().parent.parent / "evals" / "cases", False)]
+    if root is None and local_root().is_dir():
+        roots.append((local_root(), True))
     # Keyed on every file's mtime, so an edited case is drawn again.
     stamp = tuple(sorted((str(p), p.stat().st_mtime_ns)
-                         for p in root.rglob("*") if p.is_file()))
-    return _splits(str(root), stamp)
+                         for r, _ in roots for p in r.rglob("*") if p.is_file()))
+    return _splits(tuple((str(r), private) for r, private in roots), stamp)
 
 
 def for_lane(lane: str, root=None) -> Split:

@@ -57,6 +57,8 @@ class Knob:
     #: The runner attribute a run sets for an override; "" rebinds the first site for the run instead.
     runner_attr: str = ""
     note: str = ""
+    #: lane -> the range swept there, where a lane's default sits outside `values`. #654.
+    lane_values: tuple = ()
 
     def default(self, lane: str = ""):
         got = resolve(self.sites[0])
@@ -65,6 +67,9 @@ class Knob:
                 return got[lane]
             return resolve(self.sites[1]) if len(self.sites) > 1 else None
         return got
+
+    def values_for(self, lane: str = "") -> tuple:
+        return dict(self.lane_values).get(lane, self.values)
 
     def limit_name(self, lane: str = "") -> str:
         if "{lane}" not in self.limit:
@@ -76,13 +81,15 @@ class Knob:
         return got / self.scale if self.scale != 1.0 else got
 
 
-def _k(name, sites, values, **kw) -> tuple[str, Knob]:
-    return name, Knob(name, tuple(sites), tuple(values), **kw)
+def _k(name, sites, values, lane_values=None, **kw) -> tuple[str, Knob]:
+    per = tuple((lane, tuple(v)) for lane, v in sorted((lane_values or {}).items()))
+    return name, Knob(name, tuple(sites), tuple(values), lane_values=per, **kw)
 
 
 KNOBS: dict[str, Knob] = dict([
     _k("reply_budget", ["harness/completion.py:BUDGET", "harness/completion.py:MAX_TOKENS"],
-       [2000, 4000, 8000, 16384, 32768, 65536], lanes=TEXT_LANES, limit="max_tokens.{lane}",
+       [2000, 4000, 8000, 16384, 32768, 65536], lanes=TEXT_LANES,
+       lane_values={"claims": (200, 400, 800, 1600)}, limit="max_tokens.{lane}",
        receipt="max_tokens", note="the reply budget an eval asks every text reply at (#628)"),
     _k("request_timeout", ["harness/completion.py:TIMEOUT_S", "harness/completion.py:MIN_DECODE_TOK_S"],
        [60.0, 120.0, 180.0, 300.0, 600.0], lanes=REQUEST_LANES, limit="timeout_s", receipt="knobs", runner_attr="timeout",
@@ -124,6 +131,10 @@ KNOBS: dict[str, Knob] = dict([
        note="days of runs and verdicts a binding count reads"),
     _k("binding_fraction", ["harness/binding.py:BINDING_FRACTION"], [0.02, 0.05, 0.1, 0.25],
        note="share of a lane's rows hitting a limit at which its knob is reported binding"),
+    _k("claims_match_threshold", ["harness/checks/claims.py:MATCH_THRESHOLD"], [0.3, 0.4, 0.5, 0.6, 0.7],
+       lanes=("claims",), limit="claims_match_threshold", receipt="knobs", note="word overlap at which an emitted claim is a reviewed one (#654)"),
+    _k("claims_min_recall", ["harness/checks/claims.py:MIN_RECALL"], [0.25, 0.5, 0.75, 1.0],
+       lanes=("claims",), limit="claims_min_recall", receipt="knobs", note="share of a case's good claims a reply must recover (#654)"),
     _k("binding_min_hits", ["harness/binding.py:BINDING_MIN_HITS"], [1, 3, 5, 10],
        note="fewer hits than this is never binding"),
 ])
@@ -131,6 +142,7 @@ KNOBS: dict[str, Knob] = dict([
 #: Constants the inventory finds whose name says gate and whose value does not, each with why.
 NOT_GATING: dict[str, str] = {
     "harness/mcp_server.py:MAX_INLINE_BYTES": "how a result is returned, inline or as a path; never what it is",
+    "evals/private.py:MIN_FRAGMENT": "which private text the leak scan looks for; never a lane's outcome (#654)",
 }
 
 

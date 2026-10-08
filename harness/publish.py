@@ -403,6 +403,9 @@ def checked(doc: dict) -> dict:
     if found:
         raise ExportRefused("the export matched the privacy scanner:\n"
                             + "\n".join(str(f) for f in found))
+    from evals import private
+    if private.found_in(json.dumps(doc, sort_keys=True), private.fragments(private.local_cases())):
+        raise ExportRefused("the export carries text from a private case (#654)")
     return doc
 
 

@@ -439,6 +439,8 @@ _LANE_QUERIES_ANY = {
     "retrieval": ["reranker", "EVIE", "CLM-v0", "retriev", "colbert"],
     # privacy-filter, Shield-82M and Shieldstral each hold one of these. #564.
     "pii": ["privacy-filter", "Shield", "pii", "anonymiz", "deid"],
+    # Claim extraction is an instruct model served from a GGUF; NuExtract is the dedicated family. #654.
+    "claims": ["Instruct-GGUF", "NuExtract", "extraction"],
 }
 
 #: Every lane discovery can search, whichever machine is asking. `code`, `web`,
@@ -495,6 +497,7 @@ _HOW = {
     "ocr": "--modality ocr --candidates hf-ocr:{id}",
     "retrieval": "--modality retrieval --candidates rerank:{id}",
     "pii": "--modality pii --candidates hf-pii:{id}",
+    "claims": "--modality claims --candidates {id}",
 }
 
 #: runtime -> the lanes whose engine that runtime provides. Overrides _HOW for

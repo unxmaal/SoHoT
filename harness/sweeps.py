@@ -71,7 +71,7 @@ def plan(conn, *, now: float | None = None) -> list[dict]:
         out.append({"knob": k.name, "lane": row["lane"], "spec": item["spec"],
                     "candidate_id": item["candidate_id"], "machine_id": mid,
                     "trigger": {"limit": row["limit"], "hits": row["hits"], "of": row["of"]},
-                    "argv": {v: argv(item, k, v) for v in k.values},
+                    "argv": {v: argv(item, k, v) for v in k.values_for(row["lane"])},
                     "skip": _skip(conn, _key(conn, k.name, row["lane"], item["spec"], mid), now)})
     return out
 
@@ -149,13 +149,13 @@ def judge(conn, sw: dict) -> tuple[str, object, dict, str]:
         ran[value] = rid
         outcomes[value] = (runs.rows(conn, rid, sw["candidate_id"]) if sw["candidate_id"] is not None
                            else runs.rows(conn, rid))
-    chosen, cost = decide(k.values, outcomes, adopt.ALPHA)
+    chosen, cost = decide(k.values_for(sw["lane"]), outcomes, adopt.ALPHA)
     if chosen is None:
         return UNRUN, None, {}, f"none of the {len(json.loads(sw['jobs']))} jobs stored a run"
     for value, rid in ran.items():
         if str(value) in cost:
             cost[str(value)]["run_id"] = rid
-    best = next(v for v in k.values if cost.get(str(v), {}).get("best"))
+    best = next(v for v in k.values_for(sw["lane"]) if cost.get(str(v), {}).get("best"))
     spent = sum(c["seconds"] for c in cost.values())
     c, b = cost[str(chosen)], cost[str(best)]
     detail = (f"{k.name} on {sw['lane']} for {sw['spec']}: chose {chosen:g} ({c['passed']} of {c['n']}, "

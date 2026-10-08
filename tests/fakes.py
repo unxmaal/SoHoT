@@ -115,7 +115,8 @@ WHY = {
 #: and I reported that as a discovery hole once already before measuring it.
 #: These lanes are covered through the text-served path instead.
 #: `agent` likewise: no HF task names a tool-using agent, text-generation lands in code. #474.
-SERVED_NOT_SIGHTED = ("web", "extract", "agent")
+#: `claims` too: its candidates are instruct GGUFs, which a card files under code. #654.
+SERVED_NOT_SIGHTED = ("web", "extract", "agent", "claims")
 
 
 def card(model_id: str) -> dict:

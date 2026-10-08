@@ -37,6 +37,8 @@ COST_S = {
     "retrieval": 120,
     # Estimated: sixteen sentences, one model load each. #564.
     "pii": 120,
+    # Estimated: about 270 transcript windows at 400 tokens on a 7B, a second or two each. #654.
+    "claims": 600,
 }
 
 #: A lane nobody should start without meaning to. Video is ~40 minutes for ONE

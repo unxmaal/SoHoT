@@ -1472,6 +1472,59 @@ Neither source has per-item dates, so these cases carry a `date_note` bound
 instead; `trained_on` names the measured candidates whose cards list the
 source (the parakeet cards list LibriSpeech's train splits).
 
+### Local-only cases: the claims lane
+
+The `claims` lane measures infovore's claim extraction: a system prompt, a
+numbered chat transcript as the user turn, and a reply held to a JSON schema
+(`{"c": [[user, claim, [refs]]]}`, claim at most 220 characters) at
+temperature 0 and 400 tokens. It is a schema lane, so it is served and adopted
+only on llama-server; the typed default is `eval-7b`.
+
+Its cases are verbatim chat text, so they never enter this repo. They live
+under `$LOCALHARNESS_HOME/cases/claims/`, written by:
+
+    uv run python -m evals.claims_import [EXPORT] [--negatives PATH] [--out DIR]
+
+`EXPORT` defaults to `$LOCALHARNESS_HOME/import/claims.jsonl` (infovore's
+`claims export-cases`), the negatives to `claims-negatives.jsonl` beside it
+(absent is fine). A negatives line has `"reviews": []`, `"expect_empty": true`
+and a `basis` (such as `human_irrelevant`) and optional `origin`, carried onto
+the case. The importer replaces the directory on every run and refuses a
+destination inside a git work tree.
+
+`evals.run`, the holdout split and the screen read the shipped tree plus
+`$LOCALHARNESS_HOME/cases` (`--local-cases` names another), and mark those
+cases private. `case_digest`, the split and `comparable()` treat them as any
+other case. Run the lane with:
+
+    uv run python -m evals.run --modality claims --candidates eval-7b
+
+Scoring: the reply must validate against the case's schema, else the case
+fails. Each emitted claim is matched one to one to a reviewed claim with the
+same user, overlapping refs and word overlap of at least
+`MATCH_THRESHOLD` (0.5). A reviewed case passes when no matched claim was
+reviewed `made_up` or `wrong` and at least `MIN_RECALL` (0.5) of its `good`
+claims were recovered; unmatched claims are counted (`claims_unreviewed`) and
+not judged. An `expect_empty` case passes only on an empty list and reports
+`claims_empty_rate` apart from `claims_recall` and `claims_precision`. Both
+thresholds are knobs on the receipt, and a failed case records which one
+decided it (`claims_min_recall`, or `claims_match_threshold` when an
+unmatched claim fell just under the threshold). No judge scores unmatched
+claims yet (`claims_judge_calibrated` is 0): one must first separate the
+reviewed negatives from good claims in a pinned test.
+
+    uv run python -m evals.claims_report [RESULTS.JSON | --run ID] [--json]
+
+reads a claims run (the newest stored one by default) and prints, per
+candidate, the reviewed cases pooled and the expect_empty cases per `origin`
+with a Wilson 95% interval, since some origins are small.
+
+A private case's text never leaves the machine: its scoring reasons quote
+nothing, `publish` refuses an export carrying any of its lines or reviewed
+claims, and a test fails if any file under `evals/cases/` or `tests/` holds a
+private case's text or digest. Tests use the synthetic export in
+`tests/fixtures/claims/`.
+
 ### Technique discovery
 
 A lane can be beaten by a new method as well as by new weights: svg's

@@ -32,8 +32,9 @@ from __future__ import annotations
 #: tool calls over a repo, asked for 2026-10-06. #474.
 #: `ocr`, `retrieval` and `pii` are appended the same way: approved 2026-10-07 once three
 #: models from three publishers recurred. #562, #563, #564.
+#: `claims` is appended the same way: infovore's claim extraction, asked for 2026-10-08. #654.
 WANTED = ("image", "code", "web", "svg", "video", "music", "decide", "agent", "ocr",
-          "retrieval", "pii")
+          "retrieval", "pii", "claims")
 
 #: Measured here, and not on the wanted list. `extract` has more cases than any
 #: lane but stt and is a text job; stt and tts have the most measurement
@@ -78,7 +79,7 @@ def parked(lane) -> tuple[str, str]:
 TEXT_SERVED = ("code", "web", "svg", "extract", "agent")
 
 #: Lanes whose GGUF-only repo is linked into llama-server's router: decide needs its schema enforced. #583.
-GGUF_SERVED = (*TEXT_SERVED, "decide")
+GGUF_SERVED = (*TEXT_SERVED, "decide", "claims")
 
 #: Lanes whose winner no program can pick, so a person does. Not a failure to
 #: find the right metric: per the 2026 literature there is no per-clip
