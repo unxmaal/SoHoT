@@ -121,8 +121,25 @@ def _techniques_wanted_lines(rows, want: str = "", per_lane: int = 5) -> list[st
                 out.append(f"        {t['url']}")
         if len(g["techniques"]) > per_lane:
             out.append(f"    ... and {len(g['techniques']) - per_lane} more")
-    if laneless:
-        out.append(f"  {laneless} technique(s) name no lane the prose routing knows")
+    if want:
+        return out
+    from harness import lanes
+    unlaned = rank.techniques_unlaned(rows)
+    for bucket, why in ((lanes.SERVING, "not a lane: a serving method"),
+                        (lanes.GENERAL, "not a lane: a general text-model method")):
+        if unlaned[bucket]:
+            out.append(f"  {bucket}  {len(unlaned[bucket])} technique(s), {why}")
+            out += _technique_titles(unlaned[bucket], per_lane)
+    if unlaned[""]:
+        out.append(f"  {len(unlaned[''])} technique(s) name no lane the prose routing knows:")
+        out += _technique_titles(unlaned[""], per_lane)
+    return out
+
+
+def _technique_titles(rows, per_lane: int) -> list[str]:
+    out = [f"    {int(t.get('times') or 0)}x  {t.get('title') or t['name']}" for t in rows[:per_lane]]
+    if len(rows) > per_lane:
+        out.append(f"    ... and {len(rows) - per_lane} more")
     return out
 
 

@@ -317,7 +317,7 @@ def techniques(conn) -> list[dict]:
     from harness.memory_store.schema import TECHNIQUE
     # The paper's own sighting names it best; otherwise the newest that says anything.
     q = f"""
-        SELECT p.name, p.lane, p.description,
+        SELECT p.name, p.lane, p.lane_source, p.description,
                COUNT(s.id) AS times, MAX(s.seen_at) AS last_seen,
                (SELECT s2.why FROM sightings s2 WHERE s2.proposal_id = p.id
                  AND s2.why <> '' ORDER BY (s2.source = ?) DESC, s2.seen_at DESC,

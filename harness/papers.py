@@ -36,9 +36,10 @@ def due_dates(last_read: float | None, now: float, force: bool = False) -> list[
 
 
 def lane_of(title: str, summary: str) -> str:
-    """The title's lane, else the title and abstract together: the routing a model's prose gets."""
+    """The lane whose task the paper names; a serving or general LLM paper has none. #631."""
     from harness import lanes
-    return lanes.from_prose(title) or lanes.from_prose(f"{title} {summary}")
+    got = lanes.technique_route(title, summary)
+    return got if got in lanes.ALL else ""
 
 
 def proposal(entry: dict):

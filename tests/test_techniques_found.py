@@ -152,7 +152,7 @@ def test_each_paper_becomes_a_technique_with_its_title_link_and_abstract(conn):
     ("2610.07384", "image"),    # the title names images
     ("2610.08777", "video"),    # the title names video
     ("2609.29123", "tts"),      # the title names speech; the abstract names several lanes
-    ("2610.04596", "code"),     # the title names nothing; the abstract names language models
+    ("2610.04596", ""),         # names language models but no code task: general, not code (#631)
     ("2610.06104", ""),         # robot policies: no lane, and none is invented
 ])
 def test_a_paper_is_laned_by_the_same_prose_routing_as_a_model(conn, paper, lane):
