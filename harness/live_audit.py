@@ -105,15 +105,28 @@ def audit(path=None, config=None) -> dict:
             mc._check("sweep_on_schedule", _sweep_on_schedule()),
         ]
         have = mc.schema(conn)
+        bound = _binding(conn)
     finally:
         conn.close()
     return {"source": str(path), "schema": have, "ok": all(c.ok for c in checks),
-            "checks": [{"name": c.name, "ok": c.ok, "detail": c.detail} for c in checks]}
+            "checks": [{"name": c.name, "ok": c.ok, "detail": c.detail} for c in checks],
+            "binding": bound}
+
+
+def _binding(conn) -> list[dict]:
+    """Knobs this machine's recent runs keep hitting; reported, never a failed check. #636."""
+    from harness import binding, memory_store as ms
+    mid = ms.machine_row(conn)
+    return binding.binding(binding.count(conn, machines=[mid] if mid is not None else []))
 
 
 def report_text(got: dict) -> str:
     lines = [f"audit of {got['source']} (schema {got['schema']}, read-only)"]
     lines += [f"  {'ok  ' if c['ok'] else 'FAIL'} {c['name']}" + (f": {c['detail']}" if c["detail"] else "")
               for c in got["checks"]]
+    if "binding" in got:
+        from harness import binding
+        lines.append("binding knobs:")
+        lines.append(binding.render(got["binding"]))
     lines.append("OK" if got["ok"] else "NOT OK")
     return "\n".join(lines)

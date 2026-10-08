@@ -223,6 +223,7 @@ def _run_loop(a) -> int:
             for row in stuck[:10]:
                 print(f"  {row.get('lane', ''):8} {row['name']}\n"
                       f"           {row['why_not']}")
+        _report_binding(store)
         print(f"\n=== adopted ===")
         current = adopt.current(store)
         if current:
@@ -420,3 +421,10 @@ def _methods_lines(crossed) -> list[str]:
     for lane, spec, new in crossed:
         out.append(f"  {'queued' if new else 'known ':6}  {lane:8} {spec}")
     return out
+
+
+def _report_binding(store, now: float | None = None) -> None:
+    """The knobs whose limits this machine's recent runs keep hitting. #636."""
+    from harness import binding, runs
+    print("\n=== binding knobs ===")
+    print(binding.render(binding.count(store, now=now, machines=runs.here(store))))

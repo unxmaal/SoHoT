@@ -35,6 +35,8 @@ TOKEN_BUDGET_EXHAUSTED = "token_budget_exhausted"
 MISSING_FILE_IN_SNAPSHOT = "missing_file_in_snapshot"
 CRASHED = "crashed"
 CONTENT_FAILED = "content_failed"
+#: Speech that ran past the runaway rate: the candidate's failure, cut by a ceiling we chose. #637.
+RUNAWAY = "runaway"
 #: An abort inside Apple's MPS backend (LLVM ERROR on an mps op, MPSGraph assertion). #604.
 BACKEND_FAULT = "backend_fault"
 
@@ -55,6 +57,7 @@ CLASSES = {
     MISSING_FILE_IN_SNAPSHOT: ("broken", CANDIDATE),
     CRASHED: ("broken", CANDIDATE),
     CONTENT_FAILED: ("broken", CANDIDATE),
+    RUNAWAY: ("broken", CANDIDATE),
 }
 
 #: After one of these the shared server or the GPU is suspect, so a loop stops.
@@ -110,6 +113,7 @@ _REMOTE_CODE = ("trust_remote_code",)
 #: The audio server (mlx-audio) answers 500 when it cannot build the model.
 _AUDIO_HEADS = ("tts", "stt")
 _AUDIO_LOAD_FAILED = ("failed to load model",)
+_RUNAWAY = ("tts ran away",)
 
 
 def _any(low: str, phrases) -> str:
@@ -164,6 +168,8 @@ def classify(text: str, where: str = RUNNER, candidate: str = "") -> str:
         return HARNESS_ERROR
     if where == STDERR:
         return HARNESS_ERROR if _any(low, _ABOUT_THE_SNAPSHOT) else ""
+    if _any(low, _RUNAWAY):
+        return RUNAWAY
     if _any(low, _DIFFUSERS_LAYOUT_GAPS) or _any(low, _REMOTE_CODE):
         return LOAD_FAILED_LAYOUT
     if _any(low, _ABOUT_THE_SNAPSHOT):

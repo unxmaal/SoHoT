@@ -40,6 +40,7 @@ EXPECTED = {
     reasons.MISSING_FILE_IN_SNAPSHOT: ("broken", "candidate"),
     reasons.CRASHED: ("broken", "candidate"),
     reasons.CONTENT_FAILED: ("broken", "candidate"),
+    reasons.RUNAWAY: ("broken", "candidate"),
 }
 
 

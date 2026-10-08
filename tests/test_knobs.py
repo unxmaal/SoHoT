@@ -65,9 +65,8 @@ def test_every_knob_s_lanes_are_lanes():
 
 def test_a_knob_that_gates_an_eval_names_the_limit_that_shows_it_binding():
     for k in knobs.KNOBS.values():
-        if k.probe:
-            continue
-        assert k.limit, f"{k.name} declares no binding signal"
+        if k.lanes:
+            assert k.limit, f"{k.name} declares no binding signal"
 
 
 def test_the_knobs_that_have_bitten_are_registered():

@@ -118,6 +118,12 @@ KNOBS: dict[str, Knob] = dict([
        note="when a repo counts as abandoned"),
     _k("clone_kb_cap", ["harness/inspect.py:CLONE_KB_CAP"], [10_000, 50_000, 250_000, 1_000_000],
        probe="clone_kb_cap", note="source tree size above which a repo is weights in git"),
+    _k("binding_window", ["harness/binding.py:BINDING_WINDOW_DAYS"], [7, 14, 30, 90],
+       note="days of runs and verdicts a binding count reads"),
+    _k("binding_fraction", ["harness/binding.py:BINDING_FRACTION"], [0.02, 0.05, 0.1, 0.25],
+       note="share of a lane's rows hitting a limit at which its knob is reported binding"),
+    _k("binding_min_hits", ["harness/binding.py:BINDING_MIN_HITS"], [1, 3, 5, 10],
+       note="fewer hits than this is never binding"),
 ])
 
 #: Constants the inventory finds whose name says gate and whose value does not, each with why.

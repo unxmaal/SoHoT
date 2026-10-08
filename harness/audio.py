@@ -149,6 +149,14 @@ class AudioError(RuntimeError):
     """Anything that stops audio from being produced or understood."""
 
 
+class Runaway(AudioError):
+    """Speech past the runaway rate; `limit` names the ceiling it tripped. #637."""
+
+    def __init__(self, why: str, ceiling: float):
+        super().__init__(f"tts ran away: {why}")
+        self.limit = ("seconds_per_word", ceiling)
+
+
 def speak(text: str, out: str | Path, voice: str = DEFAULT_KOKORO_VOICE,
           speed: float = 1.0, model: str = "",
           base_url: str = DEFAULT_BASE_URL,
@@ -221,10 +229,12 @@ def speak(text: str, out: str | Path, voice: str = DEFAULT_KOKORO_VOICE,
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_bytes(r.content)
     # A runaway returns 200 with a minute of invented speech, not an error.
-    runaway = runaway_reason(out, text)
+    # Read at call time, so the ceiling recorded is the one the clip was judged against. #637.
+    ceiling = SECONDS_PER_WORD_CEILING
+    runaway = runaway_reason(out, text, ceiling=ceiling)
     if runaway:
-        raise AudioError(f"tts ran away: {runaway}. The audio is at {out} so it "
-                         f"can be listened to. See issue #6.")
+        raise Runaway(f"{runaway}. The audio is at {out} so it can be listened to. See issue #6.",
+                      ceiling)
     return out
 
 
