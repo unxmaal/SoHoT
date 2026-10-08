@@ -347,17 +347,28 @@ def effective_sampling(modality: str, candidates: list[str]) -> dict:
     return out
 
 
+def run_budget(modality: str, asked: int | None) -> int:
+    """The reply budget a run records: the one it was given, else its lane's; 0 where no text is generated. #628."""
+    if asked is not None and int(asked) < 1:
+        raise SystemExit(f"--max-tokens must be at least 1, not {asked}")
+    lane = completion.budget(modality)
+    if modality != "all" and not lane:
+        return 0
+    return int(asked) if asked is not None else lane
+
+
 def build_runner(candidate: str, gateway: str, outdir: Path | None,
-                 adherence: str | None = None, modality: str = ""):
+                 adherence: str | None = None, modality: str = "",
+                 max_tokens: int = 0):
     if modality in AGENT_MODALITIES:
-        runner = _agent_runner(candidate, gateway)
+        runner = _agent_runner(candidate, gateway, max_tokens)
     else:
-        runner = _build_runner(candidate, gateway, outdir, adherence)
+        runner = _build_runner(candidate, gateway, outdir, adherence, max_tokens)
     runner.spec = candidate
     return runner
 
 
-def _agent_runner(candidate: str, gateway: str):
+def _agent_runner(candidate: str, gateway: str, max_tokens: int = 0):
     """A tool loop for a text candidate, or claude -p on the same sandbox. #474."""
     kind = kind_of(candidate)
     if kind == CLAUDE_CODE_PREFIX:
@@ -384,11 +395,11 @@ def _agent_runner(candidate: str, gateway: str):
     from harness import context
     return AgentRunner(where.base, candidate.partition(",")[0].strip(),
                        model=where.model, sampling=where.sampling or None,
-                       served_ctx=context.served_ctx(candidate))
+                       served_ctx=context.served_ctx(candidate), max_tokens=max_tokens)
 
 
 def _build_runner(candidate: str, gateway: str, outdir: Path | None,
-                  adherence: str | None = None):
+                  adherence: str | None = None, max_tokens: int = 0):
     kind = kind_of(candidate)
     if kind in TEXT_KINDS:
         # A gateway alias may carry sampling overrides, so a sweep is a command
@@ -401,7 +412,8 @@ def _build_runner(candidate: str, gateway: str, outdir: Path | None,
         except ValueError as exc:
             raise SystemExit(str(exc)) from None
         return CompletionRunner(where.base, candidate.partition(",")[0].strip(),
-                                sampling=where.sampling or None, model=where.model)
+                                sampling=where.sampling or None, model=where.model,
+                                max_tokens=max_tokens)
     if kind == NEEDLE_KIND:
         from evals.runners.needle import NeedleDecideRunner
         if outdir is None:
@@ -469,7 +481,7 @@ def _build_runner(candidate: str, gateway: str, outdir: Path | None,
             raise SystemExit(f"{candidate}: {exc}") from exc
     if kind in methods.REGISTRY:
         def base(spec):
-            runner = _build_runner(spec, gateway, outdir, adherence)
+            runner = _build_runner(spec, gateway, outdir, adherence, max_tokens)
             runner.spec = spec
             return runner
         return methods.build(candidate, base, outdir)
@@ -707,6 +719,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--split", choices=("all", "dev", "holdout"), default="all",
                     help="which side of the per-lane holdout split to run; the "
                          "screen always runs dev (#479)")
+    ap.add_argument("--max-tokens", type=int, default=None,
+                    help="reply budget for every text request, recorded on the "
+                         "receipt (default: the lane's, completion.BUDGET) (#628)")
     args = ap.parse_args(argv)
     # SAME GUARD AS `lh`, and this is the entry point that actually downloads:
     # `lh discover --screen` prints this very command for a user to copy, so
@@ -750,6 +765,7 @@ def _execute(args) -> int:
         args.candidates = winner_for(args.modality)
         print(f"── winner for {args.modality}: {args.candidates}", flush=True)
     candidates = split_candidates(args.candidates)
+    budget = run_budget(args.modality, getattr(args, "max_tokens", None))
     if args.screen:
         candidates = greedy(candidates)
         cases = screen_cases(cases, candidates)
@@ -772,7 +788,8 @@ def _execute(args) -> int:
                   file=sys.stderr)
             continue
         runner = build_runner(candidate, args.gateway, outdir,
-                              adherence=args.adherence, modality=args.modality)
+                              adherence=args.adherence, modality=args.modality,
+                              max_tokens=budget)
         if runner.candidate in specs:
             # One key, one row set and one artifact name: the second would overwrite the first. #429.
             raise SystemExit(f"{specs[runner.candidate]} and {candidate} both "
@@ -811,7 +828,8 @@ def _execute(args) -> int:
             split=side, split_version=holdout.VERSION,
             methods=method_receipts(specs),
             devices=devices(results),
-            launch=launches)
+            launch=launches,
+            max_tokens=budget)
         now = time.time()
         ids = candidate_ids(specs, args.modality)
         for r in results:
@@ -1100,24 +1118,7 @@ def compare_runs(files: list[str], across: str = "") -> int:
                   f"anything. Runs written before receipts existed are in this "
                   f"state; re-run to get one.")
             return 1
-        loaded.append((f, Receipt(modality=raw["modality"],
-                                  case_ids=tuple(raw["case_ids"]),
-                                  repeat=raw["repeat"],
-                                  sampling=raw["sampling"],
-                                  gateway=raw["gateway"],
-                                  adherence=raw.get("adherence", ""),
-                                  tier=raw.get("tier", "measure"),
-                                  accelerator=raw.get("accelerator", ""),
-                                  instruments=raw.get("instruments") or {},
-                                  where=raw.get("where", ""),
-                                  swap_used_mb=raw.get("swap_used_mb", 0),
-                                  pressure=raw.get("pressure") or {},
-                                  engines=raw.get("engines") or {},
-                                  cases_digest=raw.get("cases_digest", ""),
-                                  split=raw.get("split", ""),
-                                  split_version=raw.get("split_version", ""),
-                                  devices=raw.get("devices") or {},
-                                  launch=raw.get("launch") or {}),
+        loaded.append((f, Receipt.from_dict(raw),
                        data.get("summary") or {},
                        data.get("rows") or []))
 
@@ -1272,6 +1273,8 @@ def report(summary: dict) -> None:
               f"{'ttft':>8} {'first':>8} {'peak':>9}")
     for name in metric_names:
         header += f" {name + ' ' + arrows[name]:>9} {name + '.worst':>13}"
+    # A wrong answer and a reply cut off at the budget are two findings. #628.
+    header += f" {'wrong':>6} {'budget':>6}"
     print("\n" + "=" * len(header))
     print(header)
 
@@ -1293,6 +1296,7 @@ def report(summary: dict) -> None:
             worst = s.get("metrics_worst", {}).get(metric)
             line += (f" {value:>9.3f}" if value is not None else f" {'-':>9}")
             line += (f" {worst:>13.3f}" if worst is not None else f" {'-':>13}")
+        line += f" {s.get('wrong', 0):>6} {s.get('budget', 0):>6}"
         print(line)
 
     agents = {n: (s2.get("agent") or {}).get("ctx") for n, s2 in summary.items()
@@ -1325,7 +1329,7 @@ def report(summary: dict) -> None:
     # looked like a winner; both failures were null content from a thinking
     # model that spent the budget reasoning. The pass rate could not say so.
     for name, s in sorted(summary.items(), key=rank):
-        kinds = [(k, s.get(k, 0)) for k in ("wrong", "empty", "errored")]
+        kinds = [(k, s.get(k, 0)) for k in ("wrong", "empty", "errored", "budget")]
         shown = [f"{n} {k}" for k, n in kinds if n]
         if len(shown) > 0 and s.get("passed", 0) < s.get("total", 0):
             print(f"  {name}: {', '.join(shown)}")

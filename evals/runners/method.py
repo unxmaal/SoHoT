@@ -33,6 +33,7 @@ class BestOfRunner(BaseRunner):
 
     def generate(self, case: Case):
         self.base.screening = self.screening
+        self.last_cut = ""
         best = best_key = None
         tokens = calls = 0
         failed = None
@@ -48,6 +49,7 @@ class BestOfRunner(BaseRunner):
             key = (row.passed, -len(row.warnings))
             if best_key is None or key > best_key:
                 best, best_key, chosen = (artifact, peak), key, i + 1
+                self.last_cut = self.base.cut_off()
         self.last_metrics = {"method_calls": calls, "method_samples": self.n}
         if best is None:
             raise failed or RunnerError("no sample came back")
@@ -59,6 +61,8 @@ class BestOfRunner(BaseRunner):
     def extra_metrics(self) -> dict:
         return dict(self.last_metrics)
 
+    def cut_off(self) -> str:
+        return getattr(self, "last_cut", "")
 
 
 class PlanRunner(BaseRunner):
@@ -80,7 +84,8 @@ class PlanRunner(BaseRunner):
             plan, usage = completion.complete_with_usage(
                 PLAN_PROMPT.format(task=case.prompt), model=self.base.model,
                 gateway=self.base.gateway, modality="", context=case.context,
-                timeout=self.timeout, sampling=sampling or None)
+                timeout=max(self.timeout, completion.timeout_for(self.base.budget(case))),
+                max_tokens=self.base.budget(case), sampling=sampling or None)
         except completion.CompletionError as exc:
             raise _runner_error(exc, "plan: ") from exc
         artifact, peak = self.base.generate(
@@ -94,3 +99,6 @@ class PlanRunner(BaseRunner):
 
     def extra_metrics(self) -> dict:
         return dict(self.last_metrics)
+
+    def cut_off(self) -> str:
+        return self.base.cut_off()

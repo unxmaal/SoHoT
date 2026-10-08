@@ -8,7 +8,9 @@ from __future__ import annotations
 import json
 import os
 import re
+import signal
 import subprocess
+import sys
 import time
 from contextlib import contextmanager
 from pathlib import Path
@@ -16,6 +18,9 @@ from pathlib import Path
 from harness import exclusive, paths
 
 PENDING, RUNNING, DONE, FAILED = "pending", "running", "done", "failed"
+CANCELLED = "cancelled"
+#: How long a cancelled job's process group gets to exit before it is killed. #628.
+CANCEL_GRACE_S = 30.0
 
 #: Set in a job's environment so evals.run can stamp the run it stores. #418.
 JOB_ENV = "LH_JOB_ID"
@@ -189,11 +194,129 @@ def set_priority(job_id: str, priority: int, conn=None) -> dict:
         return _select(c, "WHERE id = ?", (_key(job_id),))[0]
 
 
-def cancel(job_id: str, conn=None) -> dict:
+def cancel(job_id: str, conn=None, grace: float = CANCEL_GRACE_S) -> dict:
+    """Drop a pending job; stop a running one's process group, wait, and record it cancelled. #628."""
     with _store(conn) as c:
         job = get(job_id, conn=c)
-        _only_pending(c, job_id, "DELETE FROM jobs", verb="cancelled")
-        return job
+        if job is None or job["state"] != RUNNING:
+            _only_pending(c, job_id, "DELETE FROM jobs", verb="cancelled")
+            return job
+    pid = _pid_of(job["id"])
+    if pid is None:
+        raise ValueError(f"job {job['id']} is running but no process of it is on this "
+                         f"machine; cancel it where it runs")
+    _cancel_flag(job["id"]).write_text(time.strftime(_STAMP), encoding="utf-8")
+    how = stop_group(pid, grace=grace)
+    _settle_cancelled(job, how)
+    return get(job["id"]) or job
+
+
+def _settle_cancelled(job: dict, how: str = "", rc=None) -> None:
+    said = {"term": "stopped on request", "kill": "killed after the grace period",
+            "gone": "had already exited"}.get(how, "stopped")
+    note = f"cancelled by soh jobs cancel at {time.strftime(_STAMP)}; {said}"
+    stored = get(job["id"])
+    if not how and stored and stored["state"] == CANCELLED:
+        note = stored["note"]
+    job.update(state=CANCELLED, finished=job.get("finished") or time.strftime(_STAMP),
+               note=note, rc=job.get("rc") if rc is None else rc)
+    _write(job)
+
+
+def _pids() -> Path:
+    d = root() / "running"
+    d.mkdir(parents=True, exist_ok=True)
+    return d
+
+
+def _pid_file(job_id) -> Path:
+    return _pids() / f"{label(job_id)}.pid"
+
+
+def _cancel_flag(job_id) -> Path:
+    return _pids() / f"{label(job_id)}.cancel"
+
+
+def _pid_of(job_id) -> int | None:
+    try:
+        pid = int(_pid_file(job_id).read_text(encoding="utf-8").strip())
+    except (OSError, ValueError):
+        return None
+    return pid if alive(pid) else None
+
+
+def spawn_group(argv, cwd, stdout, env) -> subprocess.Popen:
+    """Start argv as the leader of a new process group, stderr into stdout. #628."""
+    if sys.platform == "win32":
+        group = {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP}
+    else:
+        group = {"start_new_session": True}
+    return subprocess.Popen(argv, cwd=cwd or None, stdout=stdout,
+                            stderr=subprocess.STDOUT, env=env, **group)
+
+
+def alive(pid: int) -> bool:
+    """Whether a process with this pid exists (a zombie counts until reaped)."""
+    if sys.platform == "win32":
+        import ctypes
+        from ctypes import wintypes
+        kernel32 = ctypes.windll.kernel32
+        handle = kernel32.OpenProcess(0x101000, False, int(pid))
+        if not handle:
+            return False
+        try:
+            code = wintypes.DWORD()
+            if not kernel32.GetExitCodeProcess(handle, ctypes.byref(code)):
+                return False
+            return code.value == 259
+        finally:
+            kernel32.CloseHandle(handle)
+    try:
+        os.kill(int(pid), 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    return True
+
+
+def _group_alive(pid: int) -> bool:
+    if sys.platform == "win32":
+        return alive(pid)
+    try:
+        os.killpg(int(pid), 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    return True
+
+
+def stop_group(pid: int, grace: float = CANCEL_GRACE_S, sleep=time.sleep) -> str:
+    """Signal the process group led by pid, wait up to `grace`, then kill it: "term", "kill" or "gone". #628."""
+    if not _group_alive(pid):
+        return "gone"
+    if sys.platform == "win32":
+        # The tree is walked from a live leader, and a console child has no SIGTERM to catch.
+        subprocess.run(["taskkill", "/T", "/F", "/PID", str(int(pid))], capture_output=True)
+        deadline = time.monotonic() + grace
+        while _group_alive(pid) and time.monotonic() < deadline:
+            sleep(0.1)
+        return "kill"
+    try:
+        os.killpg(int(pid), signal.SIGTERM)
+    except ProcessLookupError:
+        return "gone"
+    deadline = time.monotonic() + grace
+    while time.monotonic() < deadline:
+        if not _group_alive(pid):
+            return "term"
+        sleep(0.1)
+    try:
+        os.killpg(int(pid), signal.SIGKILL)
+    except ProcessLookupError:
+        return "term"
+    return "kill"
 
 
 def _write(job: dict, conn=None) -> None:
@@ -263,11 +386,27 @@ def running() -> bool:
     return False
 
 
-def run_one(job: dict, popen=subprocess.run) -> dict:
+def _in_group(job: dict):
+    """A popen that runs the job as its own process group and leaves its pid where cancel finds it. #628."""
+    def run(argv, cwd=None, stdout=None, stderr=None, env=None):
+        child = spawn_group(argv, cwd, stdout, env)
+        pid_file = _pid_file(job["id"])
+        pid_file.write_text(str(child.pid), encoding="utf-8")
+        try:
+            child.wait()
+        finally:
+            pid_file.unlink(missing_ok=True)
+        return child
+    return run
+
+
+def run_one(job: dict, popen=None) -> dict:
     log = log_dir() / f"{job['id']}.log"
     job.update(state=RUNNING, started=time.strftime(_STAMP), log=str(log))
     _write(job)
     env = {**os.environ, JOB_ENV: str(int(job["id"]))}
+    _cancel_flag(job["id"]).unlink(missing_ok=True)
+    popen = popen or _in_group(job)
     # No machine lock here: each command takes it for the part that loads a
     # model, so a job that is downloading does not block a GPU run. #371.
     with open(log, "w", encoding="utf-8") as out:
@@ -277,9 +416,14 @@ def run_one(job: dict, popen=subprocess.run) -> dict:
         except OSError as exc:
             out.write(f"could not start: {exc}\n")
             rc = 127
-    job.update(state=DONE if rc == 0 else FAILED, rc=rc,
-               finished=time.strftime(_STAMP))
-    _write(job)
+    flag = _cancel_flag(job["id"])
+    job.update(rc=rc, finished=time.strftime(_STAMP))
+    if flag.exists():
+        flag.unlink(missing_ok=True)
+        _settle_cancelled(job, rc=rc)
+    else:
+        job.update(state=DONE if rc == 0 else FAILED)
+        _write(job)
     return get(job["id"]) or job
 
 
@@ -293,7 +437,7 @@ def _recover() -> None:
         c.commit()
 
 
-def run_pending(popen=subprocess.run, gate=lambda: (True, "")) -> list[dict]:
+def run_pending(popen=None, gate=lambda: (True, "")) -> list[dict]:
     """Work the queue in order while the gate stays open. One runner at a time."""
     fd = _runner_lock()
     if fd is None:
@@ -374,7 +518,7 @@ def import_json(conn) -> dict:
     return got
 
 
-def serve(poll: float = 30.0, sleep=time.sleep, popen=subprocess.run,
+def serve(poll: float = 30.0, sleep=time.sleep, popen=None,
           gate_fn=None, forever=True) -> None:
     """The worker service: check the gate every `poll` seconds, run what waits."""
     gate_fn = gate_fn or gate

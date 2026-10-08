@@ -32,11 +32,15 @@ def _runner_error(exc: completion.CompletionError, prefix: str = "") -> RunnerEr
 class CompletionRunner(BaseRunner):
     def __init__(self, gateway: str, candidate: str,
                  timeout: float = completion.TIMEOUT_S,
-                 sampling: dict | None = None, model: str = ""):
+                 sampling: dict | None = None, model: str = "",
+                 max_tokens: int = 0):
         self.gateway = gateway.rstrip("/")
         self.candidate = candidate
         self.model = model or candidate
         self.timeout = timeout
+        #: The run's reply budget; 0 asks each case at its lane's. #628.
+        self.max_tokens = int(max_tokens or 0)
+        self.last_cut = ""
         #: Overrides on top of completion.SAMPLING for this run. Empty means
         #: the shipped defaults, which is what the product uses.
         self.sampling = dict(sampling or {})
@@ -72,15 +76,26 @@ class CompletionRunner(BaseRunner):
                 f"scored on a request the lane never sends. #572",
                 reasons.REFUSED_BY_GATEWAY)
         cold = not self.answered
-        got = completion.complete_full(
-            case.prompt, model=self.model, gateway=self.gateway,
-            modality=case.modality, context=case.context,
-            timeout=self.timeout, sampling=self.sampling or None,
-            template=template, stream=True,
-            top_logprobs=completion.TOP_LOGPROBS if case.modality == "decide" else 0,
-            response_format=self._reply_shape(case))
+        budget = self.budget(case)
+        limit = f"max_tokens.{case.modality}"
+        try:
+            got = completion.complete_full(
+                case.prompt, model=self.model, gateway=self.gateway,
+                modality=case.modality, context=case.context,
+                timeout=max(self.timeout, completion.timeout_for(budget)),
+                max_tokens=budget, sampling=self.sampling or None,
+                template=template, stream=True,
+                top_logprobs=completion.TOP_LOGPROBS if case.modality == "decide" else 0,
+                response_format=self._reply_shape(case))
+        except completion.CompletionError as exc:
+            if exc.failure_class == reasons.TOKEN_BUDGET_EXHAUSTED:
+                exc.limit = (limit, budget)
+            raise
         self.answered = True
         self.last_timing = {**got.timing, "cold": cold}
+        spent = int(got.usage.get("completion_tokens") or 0)
+        if got.finish == "length" or spent >= budget:
+            self.last_cut = f"{limit}>{budget}"
         if case.modality == "decide":
             return self._decide(case, got)
         return got.text, got.usage
@@ -115,6 +130,7 @@ class CompletionRunner(BaseRunner):
         started = time.perf_counter()
         self.last_metrics = {}
         self.last_timing = {}
+        self.last_cut = ""
         try:
             try:
                 text, usage = self._ask(case)
@@ -149,3 +165,9 @@ class CompletionRunner(BaseRunner):
 
     def extra_metrics(self) -> dict:
         return getattr(self, "last_metrics", {})
+
+    def budget(self, case: Case) -> int:
+        return self.max_tokens or completion.budget(case.modality) or completion.MAX_TOKENS
+
+    def cut_off(self) -> str:
+        return self.last_cut
