@@ -92,12 +92,29 @@ def cells(before: list[dict], after: list[dict]) -> list[Cell]:
 
 def differences(before, after) -> list[str]:
     """Receipt fields on which two runs disagree. The axis under test is
-    expected here; a SECOND entry means the sweep is confounded."""
+    expected here; a SECOND entry means the sweep is confounded. Each exam
+    knob is its own axis, `knobs.<name>`. #636."""
     out = []
     for name in AXES:
         if getattr(before, name, None) != getattr(after, name, None):
             out.append(name)
+    a, b = getattr(before, "knobs", None) or {}, getattr(after, "knobs", None) or {}
+    out += [f"knobs.{k}" for k in sorted(set(a) | set(b)) if a.get(k) != b.get(k)]
     return out
+
+
+def is_axis(axis: str) -> bool:
+    """A receipt field a sweep may vary, or one registered exam knob."""
+    from harness import knobs
+    name = axis[len("knobs."):] if axis.startswith("knobs.") else ""
+    return axis in AXES or (name in knobs.KNOBS and knobs.KNOBS[name].receipt == "knobs")
+
+
+def value(receipt, axis: str):
+    """What a receipt records for an axis."""
+    if axis.startswith("knobs."):
+        return (getattr(receipt, "knobs", None) or {}).get(axis[len("knobs."):])
+    return getattr(receipt, axis, None)
 
 
 def head_to_head(rows: list[dict], incumbent: str, challenger: str) -> Cell:
