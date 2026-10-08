@@ -34,12 +34,12 @@
   }
  ],
  "export_version": 2,
- "generated_at": "2026-10-08T09:02:56Z",
+ "generated_at": "2026-10-08T12:11:28Z",
  "lanes": [
   {
    "adopted": true,
    "adopted_how": "by-hand",
-   "age_days": 1.76,
+   "age_days": 1.89,
    "comparison": [
     {
      "candidate": "mflux/flux2-klein-4b-q8",
@@ -201,7 +201,7 @@
   {
    "adopted": true,
    "adopted_how": "measured",
-   "age_days": 0.0,
+   "age_days": 0.13,
    "comparison": [
     {
      "candidate": "plan/llamacpp:Ornith-1.5-35B-Q4_K_M",
@@ -966,13 +966,13 @@
    "parked_until": "",
    "pass_rate": 0.491,
    "real_use": {
-    "completion_tokens": 12561,
+    "completion_tokens": 12565,
     "error_rate": 0.0,
     "errors": 0,
     "invalid_calls": 0,
     "invalid_rate": 0.0,
-    "prompt_tokens": 481378,
-    "requests": 108,
+    "prompt_tokens": 481389,
+    "requests": 109,
     "tool_calls": 94,
     "ttft_p50": 0.12477779388427734,
     "ttft_p95": 0.4040029048919678
@@ -987,7 +987,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 2.39,
+   "age_days": 2.52,
    "comparison": [
     {
      "candidate": "q3-4b",
@@ -1201,7 +1201,7 @@
   {
    "adopted": true,
    "adopted_how": "measured",
-   "age_days": 1.55,
+   "age_days": 1.68,
    "comparison": [
     {
      "candidate": "q3-30b",
@@ -1426,13 +1426,13 @@
    "parked_until": "",
    "pass_rate": 1.0,
    "real_use": {
-    "completion_tokens": 78,
+    "completion_tokens": 82,
     "error_rate": 0.0,
     "errors": 0,
     "invalid_calls": 0,
     "invalid_rate": null,
-    "prompt_tokens": 181,
-    "requests": 20,
+    "prompt_tokens": 190,
+    "requests": 21,
     "tool_calls": 0,
     "ttft_p50": null,
     "ttft_p95": null
@@ -1447,7 +1447,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 2.46,
+   "age_days": 2.59,
    "comparison": [
     {
      "candidate": "h3/minimax-h3@ssd_streaming=false",
@@ -1548,7 +1548,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 0.9,
+   "age_days": 1.03,
    "comparison": [
     {
      "candidate": "acestep/acestep-v15-turbo",
@@ -1642,7 +1642,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 0.34,
+   "age_days": 0.47,
    "comparison": [
     {
      "candidate": "eval-imajev-4b",
@@ -1950,13 +1950,13 @@
    "parked_until": "",
    "pass_rate": 0.445,
    "real_use": {
-    "completion_tokens": 102,
+    "completion_tokens": 106,
     "error_rate": 0.0,
     "errors": 0,
     "invalid_calls": 0,
     "invalid_rate": null,
-    "prompt_tokens": 267,
-    "requests": 23,
+    "prompt_tokens": 278,
+    "requests": 24,
     "tool_calls": 0,
     "ttft_p50": null,
     "ttft_p95": null
@@ -1971,7 +1971,7 @@
   {
    "adopted": true,
    "adopted_how": "measured",
-   "age_days": 1.28,
+   "age_days": 1.41,
    "comparison": [
     {
      "candidate": "llamacpp:Ornith-1.5-35B-Q4_K_M",
@@ -2141,13 +2141,13 @@
    "parked_until": "",
    "pass_rate": 1.0,
    "real_use": {
-    "completion_tokens": 96,
+    "completion_tokens": 100,
     "error_rate": 0.0,
     "errors": 0,
     "invalid_calls": 0,
     "invalid_rate": null,
-    "prompt_tokens": 257,
-    "requests": 23,
+    "prompt_tokens": 268,
+    "requests": 24,
     "tool_calls": 0,
     "ttft_p50": null,
     "ttft_p95": null
@@ -2162,7 +2162,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 0.34,
+   "age_days": 0.47,
    "comparison": [
     {
      "candidate": "osocr/auto",
@@ -2274,7 +2274,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 0.34,
+   "age_days": 0.47,
    "comparison": [
     {
      "candidate": "bm25/okapi",
@@ -2391,7 +2391,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 0.34,
+   "age_days": 0.47,
    "comparison": [
     {
      "candidate": "pii-regex/patterns",
@@ -2513,7 +2513,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 0.34,
+   "age_days": 0.47,
    "comparison": [
     {
      "candidate": "local-large",
@@ -2747,7 +2747,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 2.53,
+   "age_days": 2.66,
    "comparison": [
     {
      "candidate": "parakeet-tdt-0.6b-v2",
@@ -2816,42 +2816,52 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 1.84,
+   "age_days": 0.0,
    "comparison": [
     {
      "candidate": "Kokoro-82M-bf16/bm_george",
-     "first_s": 2.789,
-     "median_s": 0.133,
+     "first_s": 19.897,
+     "median_s": 0.14,
      "metrics": {
-      "wer": 0.0
+      "wer": 0.0824
      },
      "not_run": "",
-     "pass_rate": 1.0,
-     "passed": 5,
+     "pass_rate": 0.865,
+     "passed": 115,
      "peak_gb": 0.0,
      "reference": false,
-     "total": 5,
-     "ttft_median_s": null,
-     "ttft_p95_s": null
-    },
-    {
-     "candidate": "Breeze-TTS-2",
-     "first_s": 16.507,
-     "median_s": 9.76,
-     "metrics": {
-      "wer": 0.0
-     },
-     "not_run": "",
-     "pass_rate": 1.0,
-     "passed": 5,
-     "peak_gb": 0.0,
-     "reference": false,
-     "total": 5,
+     "total": 133,
      "ttft_median_s": null,
      "ttft_p95_s": null
     }
    ],
    "exams": [
+    {
+     "cases": 135,
+     "first_run_at": "2026-10-08T12:11:27Z",
+     "repeat": 1,
+     "rows": [
+      {
+       "candidate": "Kokoro-82M-bf16/bm_george",
+       "first_s": 19.897,
+       "median_s": 0.14,
+       "metrics": {
+        "wer": 0.0824
+       },
+       "not_run": "",
+       "pass_rate": 0.865,
+       "passed": 115,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-10-08T12:11:27Z",
+       "total": 133,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      }
+     ],
+     "run_at": "2026-10-08T12:11:27Z",
+     "runs": 1
+    },
     {
      "cases": 10,
      "first_run_at": "2026-10-06T12:57:15Z",
@@ -2923,16 +2933,16 @@
     }
    ],
    "lane": "tts",
-   "last_run_at": "2026-10-06T12:57:15Z",
-   "measured_at": "2026-10-06T12:57:15Z",
-   "median_s": 0.133,
+   "last_run_at": "2026-10-08T12:11:27Z",
+   "measured_at": "2026-10-08T12:11:27Z",
+   "median_s": 0.14,
    "metrics": {
-    "wer": 0.0
+    "wer": 0.0824
    },
    "not_run": "",
    "parked": "",
    "parked_until": "",
-   "pass_rate": 1.0,
+   "pass_rate": 0.865,
    "real_use": null,
    "serves": "mlx-community/Kokoro-82M-bf16",
    "stale": false,
@@ -2949,7 +2959,7 @@
   "first_seen": "2026-10-05T19:28:52Z",
   "hw_model": "Mac17,15",
   "label": "Mac Studio M5 Ultra 96 GB",
-  "last_seen": "2026-10-08T09:02:56Z",
+  "last_seen": "2026-10-08T12:08:19Z",
   "memory_gb": 96.0,
   "os": "macOS 27.0.1",
   "runtimes": [
