@@ -1,5 +1,6 @@
 """The claims lane: schema-enforced claim extraction scored on matched human reviews, cases local only. #654."""
 import json
+from collections import Counter
 import shutil
 from pathlib import Path
 
@@ -58,8 +59,9 @@ def test_the_reviewed_good_claims_pass_and_report_full_recall():
     got = _check(_reply(*reversed(_good(row))))
     assert got.ok, got.reason
     m = got.metrics
-    assert (m["claims_good_found"], m["claims_good_total"], m["claims_bad_matched"]) == (4, 4, 0)
-    assert m["claims_recall"] == 1.0 and m["claims_precision"] == 1.0
+    assert (m["claims_good_found_legacy"], m["claims_good_total_legacy"],
+            m["claims_bad_matched_legacy"]) == (4, 4, 0)
+    assert m["claims_recall_legacy"] == 1.0 and m["claims_precision_legacy"] == 1.0
     assert m["claims_schema_valid"] == 1
     assert m["claims_judge_calibrated"] == 0
 
@@ -82,21 +84,21 @@ def test_matching_a_made_up_or_wrong_claim_fails_the_case():
     bad = [(r["user"], r["claim"], r["refs"]) for r in row["reviews"] if r["verdict"] == "made_up"]
     got = _check(_reply(*_good(row), *bad))
     assert not got.ok and "made_up" in got.reason
-    assert got.metrics["claims_bad_matched"] == 1
+    assert got.metrics["claims_bad_matched_legacy"] == 1
 
 
 def test_missing_most_good_claims_fails_on_recall():
     row = _line()
     got = _check(_reply(_good(row)[0]))
     assert not got.ok and "recall" in got.reason
-    assert got.metrics["claims_recall"] == 0.25
+    assert got.metrics["claims_recall_legacy"] == 0.25
 
 
 def test_an_unreviewed_claim_is_counted_and_does_not_fail():
     row = _line()
     got = _check(_reply(*_good(row), ("member-c3d4", "Totally novel unreviewed statement.", [8])))
     assert got.ok, got.reason
-    assert got.metrics["claims_unreviewed"] == 1 and got.metrics["claims_emitted"] == 5
+    assert got.metrics["claims_unreviewed_legacy"] == 1 and got.metrics["claims_emitted"] == 5
 
 
 def test_a_failure_reason_never_quotes_case_or_reply_text():
@@ -121,7 +123,7 @@ def test_an_expect_empty_case_passes_only_with_no_claims_and_reports_apart():
                           "claims_judge_calibrated": 0}
     got = _check(_reply(("member-a1b2", "Regattas need folding chairs.", [3])), row)
     assert not got.ok and "expected no claims" in got.reason
-    assert got.metrics["claims_empty_kept"] == 0 and "claims_recall" not in got.metrics
+    assert got.metrics["claims_empty_kept"] == 0 and "claims_recall_legacy" not in got.metrics
 
 
 def test_the_scorer_separates_a_perfect_responder_from_constant_and_echo_responders():
@@ -140,9 +142,9 @@ def test_the_summary_pools_reviewed_and_empty_cases_into_separate_ratios():
             Result("c2", "m", False, 0.1, 0, "", metrics=_check(_reply(_good(good)[0])).metrics),
             Result("n1", "m", True, 0.1, 0, "", metrics=_check(_reply(), neg).metrics)]
     m = summarize(rows)["m"]["metrics"]
-    assert m["claims_recall"] == pytest.approx(5 / 8)
+    assert m["claims_recall_legacy"] == pytest.approx(5 / 8)
     assert m["claims_empty_rate"] == 1.0
-    assert m["claims_precision"] == 1.0
+    assert m["claims_precision_legacy"] == 1.0
 
 
 # --- case files --------------------------------------------------------------------------
@@ -568,8 +570,9 @@ def test_the_report_splits_expect_empty_results_by_origin_with_intervals():
     assert got["empty"]["undecided"] == {"kept": 1, "n": 2, "rate": 0.5, "ci95": list(R.wilson(1, 2))}
     assert got["empty"]["lexicon"]["kept"] == 1 and got["empty"]["lexicon"]["n"] == 1
     assert got["empty"]["all"]["n"] == 3
-    assert got["reviewed"] == {"cases": 1, "passed": 1, "recall": 0.75, "precision": 1.0,
-                               "bad_matched": 0, "schema_invalid": 0}
+    # A row scored before #661 carries pooled metrics: it reads as the legacy interface.
+    assert got["reviewed"] == {"legacy": {"cases": 1, "passed": 1, "good_total": 4, "recall": 0.75, "precision": 1.0,
+                                          "bad_matched": 0, "schema_invalid": 0}}
     text = R.render(R.report(rows, cases))
     assert "undecided" in text and "1/2" in text
 
@@ -594,3 +597,230 @@ def test_the_claims_reply_budget_sweeps_its_own_range_and_leaves_code_s_alone():
     k = knobs.KNOBS["reply_budget"]
     assert k.default("claims") in k.values_for("claims") and 400 not in k.values_for("code")
     assert k.values_for("code") == k.values
+
+
+# --- review interfaces (#661): each one a separate labelling function --------------------
+
+def _tagged(row, *interfaces) -> list[dict]:
+    """The row's reviews once per interface, each copy tagged with it."""
+    return [{**r, "interface": i} for i in interfaces for r in row["reviews"]]
+
+
+def _export_tagged(tmp_path, *interfaces) -> Path:
+    row = {**_line(), "reviews": _tagged(_line(), *interfaces)}
+    path = tmp_path / "claims.jsonl"
+    path.write_text(json.dumps(row) + "\n", encoding="utf-8")
+    return path
+
+
+def test_the_importer_carries_each_review_s_interface(tmp_path):
+    from evals import claims_import
+    from evals.core import load_cases
+    out = tmp_path / "out"
+    claims_import.run(_export_tagged(tmp_path, "cited-only", "conversation"), None, out)
+    (case,) = load_cases(out, private=True)
+    got = Counter(r["interface"] for r in case.assertions["reviews"])
+    assert got == {"cited-only": 7, "conversation": 7}
+
+
+def test_the_importer_cli_counts_reviews_per_interface(tmp_path, capsys):
+    from evals import claims_import
+    export = _export_tagged(tmp_path, "cited-only", "conversation")
+    assert claims_import.main([str(export), "--out", str(tmp_path / "o")]) == 0
+    said = capsys.readouterr().out
+    assert "cited-only 7" in said and "conversation 7" in said
+    assert claims_import.main([str(EXPORT), "--out", str(tmp_path / "p")]) == 0
+    assert "legacy 7" in capsys.readouterr().out
+
+
+def test_a_review_with_an_unknown_interface_is_refused():
+    row = _line()
+    reviews = [{**r, "interface": "telepathy"} for r in row["reviews"]]
+    with pytest.raises(ValueError, match="interface"):
+        C.validate_case(row["system"], row["schema"], reviews, False)
+    C.validate_case(row["system"], row["schema"], _tagged(row, "conversation"), False)
+
+
+def test_a_review_without_an_interface_reads_as_legacy():
+    assert C.interface_of({"verdict": "good"}) == C.LEGACY
+    assert C.interface_of({"interface": "conversation"}) == "conversation"
+    got = _check(_reply(*_good(_line())))
+    assert got.metrics["claims_recall_legacy"] == 1.0
+    assert not any(k.endswith(("_conversation", "_cited_only")) for k in got.metrics)
+
+
+def test_each_interface_is_scored_on_its_own_reviews_and_never_pooled():
+    row = _line()
+    reviews = _tagged(row, "cited-only", "conversation")
+    got = C.check(_reply(*_good(row)), row["schema"], reviews)
+    assert got.ok, got.reason
+    m = got.metrics
+    for slug in ("cited_only", "conversation"):
+        assert (m[f"claims_good_found_{slug}"], m[f"claims_good_total_{slug}"]) == (4, 4)
+        assert m[f"claims_recall_{slug}"] == 1.0 and m[f"claims_pass_{slug}"] == 1
+    pooled = {"claims_recall", "claims_precision", "claims_good_found", "claims_good_total",
+              "claims_bad_matched", "claims_reviewed_matched", "claims_unreviewed"}
+    assert not pooled & set(m)
+
+
+def test_a_case_fails_on_the_one_interface_that_fails_and_says_which():
+    row = _line()
+    good = _good(row)
+    conversation = [{**r, "interface": "conversation"} for r in row["reviews"] if r["verdict"] == "good"]
+    cited = [{**r, "interface": "cited-only"} for r in row["reviews"]]
+    # cited-only misses most good claims; conversation reviews only the first.
+    got = C.check(_reply(good[0]), row["schema"], conversation[:1] + cited)
+    assert not got.ok and got.reason.startswith("cited-only: recall")
+    assert got.metrics["claims_pass_conversation"] == 1 and got.metrics["claims_pass_cited_only"] == 0
+    assert got.limit == f"claims_min_recall>{C.MIN_RECALL:g}"
+    made_up = [(r["user"], r["claim"], r["refs"]) for r in row["reviews"] if r["verdict"] == "made_up"]
+    got = C.check(_reply(*good, *made_up), row["schema"], conversation + cited)
+    assert not got.ok and "cited-only: emitted claims a reviewer rejected: 1 made_up" in got.reason
+    assert got.metrics["claims_pass_conversation"] == 1
+
+
+def test_every_per_interface_metric_declares_its_direction_and_ratios_are_summed():
+    from evals.core import METRIC_DIRECTION, RATIO_METRICS
+    row = _line()
+    got = C.check(_reply(*_good(row)), row["schema"], _tagged(row, *C.INTERFACES))
+    ratios = {n for pair in RATIO_METRICS.values() for n in pair}
+    assert all(k in METRIC_DIRECTION or k in ratios for k in got.metrics), sorted(got.metrics)
+    for slug in ("cited_only", "conversation", "legacy"):
+        assert RATIO_METRICS[f"claims_recall_{slug}"] == (f"claims_good_found_{slug}",
+                                                          f"claims_good_total_{slug}")
+
+
+def test_the_summary_keeps_each_interface_s_recall_apart():
+    from evals.core import Result, summarize
+    row = _line()
+    good = _good(row)
+    both = _tagged(row, "cited-only", "conversation")
+    convo_only = [r for r in both if r["interface"] == "conversation"]
+    rows = [Result("c1", "m", True, 0.1, 0, "",
+                   metrics=C.check(_reply(*good), row["schema"], both).metrics),
+            Result("c2", "m", False, 0.1, 0, "",
+                   metrics=C.check(_reply(good[0]), row["schema"], convo_only).metrics)]
+    m = summarize(rows)["m"]["metrics"]
+    assert m["claims_recall_cited_only"] == 1.0
+    assert m["claims_recall_conversation"] == pytest.approx(5 / 8)
+    assert "claims_recall" not in m
+
+
+def _tagged_case(cid, *interfaces):
+    from dataclasses import replace
+    return replace(_claims_case(), id=cid,
+                   assertions={"reviews": _tagged(_line(), *interfaces)})
+
+
+def test_the_report_prints_one_row_per_interface_and_no_pooled_row():
+    from evals import claims_report as R
+    row = _line()
+    good = _good(row)
+    cases = [_tagged_case("a", "cited-only", "conversation"), _tagged_case("b", "conversation")]
+    rows = [{"case_id": "a", "candidate": "m", "passed": False,
+             "metrics": C.check(_reply(*good), row["schema"], cases[0].assertions["reviews"]).metrics},
+            {"case_id": "b", "candidate": "m", "passed": False,
+             "metrics": C.check(_reply(good[0]), row["schema"], cases[1].assertions["reviews"]).metrics}]
+    got = R.report(rows, cases)["m"]["reviewed"]
+    assert set(got) == {"cited-only", "conversation"}
+    assert got["cited-only"]["cases"] == 1 and got["cited-only"]["passed"] == 1
+    assert got["conversation"] == {"cases": 2, "passed": 1, "good_total": 8, "recall": 0.625, "precision": 1.0,
+                                   "bad_matched": 0, "schema_invalid": 0}
+    text = R.render(R.report(rows, cases))
+    assert "reviewed cited-only" in text and "reviewed conversation" in text
+    assert "reviewed  " not in text
+
+
+def test_a_schema_invalid_reply_counts_against_every_interface_the_case_holds():
+    from evals import claims_report as R
+    case = _tagged_case("a", "cited-only", "conversation")
+    metrics = C.check("not json", _line()["schema"], case.assertions["reviews"]).metrics
+    got = R.report([{"case_id": "a", "candidate": "m", "passed": False, "metrics": metrics}],
+                   [case])["m"]["reviewed"]
+    assert got["cited-only"]["schema_invalid"] == 1 and got["conversation"]["schema_invalid"] == 1
+    assert got["conversation"]["passed"] == 0
+
+
+def test_the_report_states_that_every_reviewed_claim_came_from_one_model():
+    from evals import claims_report as R
+    text = R.render(R.report([], []))
+    assert R.REVIEWED_FROM == "eval-7b"
+    assert "eval-7b" in text and "circular" in text
+
+
+def _control_rows(*claims, reviewed=None):
+    from dataclasses import replace
+    row = _line()
+    case = _tagged_case("a", "conversation")
+    if reviewed is not None:
+        case = replace(case, assertions={"reviews": case.assertions["reviews"][:reviewed]})
+    metrics = C.check(_reply(*claims), row["schema"], case.assertions["reviews"]).metrics
+    return [{"case_id": "a", "candidate": cand, "passed": False, "metrics": metrics}
+            for cand in ("eval-7b", "eval-4b")], [case]
+
+
+def test_each_interface_counts_verbatim_matches_and_near_misses():
+    row = _line()
+    good = _good(row)
+    user, claim, refs = good[0]
+    near = (user, "J7 picks where the board boots from on this Quanta 40.", refs)
+    m = C.check(_reply(near, good[1]), row["schema"], _tagged(row, "conversation")).metrics
+    assert m["claims_verbatim_conversation"] == 1 and m["claims_near_miss_conversation"] == 1
+    m = C.check(_reply(good[1]), row["schema"], _tagged(row, "conversation")).metrics
+    assert m["claims_near_miss_conversation"] == 0
+
+
+def test_the_matcher_control_blames_the_matcher_when_misses_sit_just_under_the_threshold():
+    from evals import claims_report as R
+    good = _good(_line())
+    near = [(u, "J7 picks where the board boots from on this Quanta 40.", r) for u, _, r in good[:1]]
+    # The first two reviews are the good ones: one reproduced verbatim, one reworded just under 0.5.
+    got = R.report(*_control_rows(*near, good[1], reviewed=2))
+    assert got["eval-7b"]["control"] == {"interface": "conversation", "recall": 0.5, "good_total": 2,
+                                         "verbatim": 1, "near_miss": 1, "matcher_suspect": True}
+    assert "control" not in got["eval-4b"]
+    assert "matcher, not the model" in R.render(got)
+
+
+def test_the_matcher_control_does_not_blame_the_matcher_for_claims_the_model_never_made():
+    from evals import claims_report as R
+    got = R.report(*_control_rows(_good(_line())[0]))
+    c = got["eval-7b"]["control"]
+    assert c["recall"] == 0.25 and c["near_miss"] == 0 and c["matcher_suspect"] is False
+    text = R.render(got)
+    assert "matcher control" in text and "did not reproduce" in text
+    assert "matcher, not the model" not in text
+
+
+def test_the_report_rescores_stored_replies_against_the_cases_it_is_given(tmp_path):
+    from evals import claims_report as R
+    row = _line()
+    reply = tmp_path / "eval-7b--claims-x.json"
+    reply.write_text(_reply(*_good(row)), encoding="utf-8")
+    case = _tagged_case("claims-x", "conversation")
+    stale = {"case_id": "claims-x", "candidate": "eval-7b", "passed": False,
+             "artifact_path": str(reply), "metrics": {"claims_good_found": 0}}
+    missing = {**stale, "case_id": "claims-x#1", "artifact_path": str(tmp_path / "gone.json")}
+    got, skipped = R.rescore([stale, missing], [case])
+    assert skipped == 1 and len(got) == 1
+    assert got[0]["passed"] is True and got[0]["metrics"]["claims_recall_conversation"] == 1.0
+
+
+# --- the matcher control (#661): rewording versus a different claim ---------------------
+
+PARAPHRASE = FIXTURES / "paraphrase.json"
+
+
+def test_the_paraphrase_control_matches_every_rewording_at_the_threshold():
+    items = json.loads(PARAPHRASE.read_text(encoding="utf-8"))
+    got = C.paraphrase_control(items)
+    assert got["n"] == len(items) == 12
+    assert got["reword_matched"] == got["n"]
+
+
+def test_the_paraphrase_control_can_fail_and_counts_different_claims_it_matched():
+    items = json.loads(PARAPHRASE.read_text(encoding="utf-8"))
+    assert C.paraphrase_control(items, threshold=1.0)["reword_matched"] == 0
+    assert C.paraphrase_control(items, threshold=0.0)["different_matched"] == 12
+    # At 0.5 the shared subject words carry half the different claims over: #662.
+    assert C.paraphrase_control(items)["different_matched"] == 6

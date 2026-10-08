@@ -1516,25 +1516,52 @@ other case. Run the lane with:
 
     uv run python -m evals.run --modality claims --candidates eval-7b
 
+Each review carries the `interface` its reviewer judged it in: `cited-only`
+(only the cited lines) or `conversation` (the whole conversation). These are
+different labelling functions, so a case is scored once per interface and
+the two are never pooled. A review without `interface` (an older export)
+reads as `legacy`; any other value is refused at import and load.
+
 Scoring: the reply must validate against the case's schema, else the case
-fails. Each emitted claim is matched one to one to a reviewed claim with the
-same user, overlapping refs and word overlap of at least
-`MATCH_THRESHOLD` (0.5). A reviewed case passes when no matched claim was
+fails. Per interface, each emitted claim is matched one to one to a reviewed
+claim with the same user, overlapping refs and word overlap of at least
+`MATCH_THRESHOLD` (0.5). An interface passes when no matched claim was
 reviewed `made_up` or `wrong` and at least `MIN_RECALL` (0.5) of its `good`
-claims were recovered; unmatched claims are counted (`claims_unreviewed`) and
-not judged. An `expect_empty` case passes only on an empty list and reports
-`claims_empty_rate` apart from `claims_recall` and `claims_precision`. Both
+claims were recovered, and the case passes when every interface does; the
+reason names the interface that failed. Metrics are named
+`claims_<metric>_<interface>` (`claims_recall_conversation`,
+`claims_precision_cited_only`, `claims_pass_legacy`, ...); unmatched claims are
+counted (`claims_unreviewed_<interface>`) and not judged, and
+`claims_verbatim_*` and `claims_near_miss_*` count matches with identical
+words and good claims missed by under 0.15 of the threshold. An
+`expect_empty` case passes only on an empty list and reports
+`claims_empty_rate` apart. Both
 thresholds are knobs on the receipt, and a failed case records which one
 decided it (`claims_min_recall`, or `claims_match_threshold` when an
 unmatched claim fell just under the threshold). No judge scores unmatched
 claims yet (`claims_judge_calibrated` is 0): one must first separate the
 reviewed negatives from good claims in a pinned test.
 
-    uv run python -m evals.claims_report [RESULTS.JSON | --run ID] [--json]
+    uv run python -m evals.claims_report [RESULTS.JSON | --run ID] [--json] [--rescore] [--cases DIR]
 
 reads a claims run (the newest stored one by default) and prints, per
-candidate, the reviewed cases pooled and the expect_empty cases per `origin`
-with a Wilson 95% interval, since some origins are small.
+candidate, one reviewed row per interface and the expect_empty cases per
+`origin` with a Wilson 95% interval, since some origins are small. A row
+scored before interfaces existed reads as `legacy`. `--rescore` re-checks each
+row's stored reply against the cases (this machine's, or `--cases DIR`, such
+as a fresh import written outside the cases tree) without loading a model.
+
+Every reviewed claim so far was extracted by eval-7b, so recall against the
+reviews is circular and favours eval-7b-like output; the report says so on
+every run until reviews of another model's claims exist. The `conversation`
+reviews came from eval-7b under the current prompt at temperature 0, which
+makes eval-7b's `conversation` row a control for the matcher: the report
+prints its recall, verbatim matches and near misses, and blames the matcher
+only when recall is under 0.9 and at least half the misses sat just under
+the threshold. Otherwise the model did not reproduce its own reviewed claims.
+`tests/fixtures/claims/paraphrase.json` pins the matcher on synthetic text:
+every light rewording matches at 0.5, and so do 6 of 12 different claims
+about the same part, because shared subject words carry the overlap.
 
 A private case's text never leaves the machine: its scoring reasons quote
 nothing, `publish` refuses an export carrying any of its lines or reviewed
