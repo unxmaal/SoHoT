@@ -126,11 +126,13 @@ class _Peak:
 def sweep(model: str, texts: list[str], levels=(1, 2, 4), max_tokens: int = 300,
           gateway: str = "http://127.0.0.1:4000", timeout: float = 300.0,
           post=None, clock=time.perf_counter, footprint=None,
-          sample_s: float = 0.5, load=os.getloadavg) -> list[dict]:
+          sample_s: float = 0.5, load=None) -> list[dict]:
     """Each level sends every text with that many requests in flight; `footprint`
     returns the server's bytes, sampled for each level's peak. A dict in `texts` is
     a chat request sent as given (messages, response_format). #665."""
     post = post or _gateway_post(gateway, timeout)
+    if load is None and sys.platform != "win32":
+        load = os.getloadavg
 
     def one(text) -> tuple[float, int, bool, float | None, str, int, bool | None]:
         request = text if isinstance(text, dict) else {

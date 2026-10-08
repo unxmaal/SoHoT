@@ -196,3 +196,9 @@ def test_only_answered_requests_count_toward_the_rate():
     got = throughput.sweep("eval-7b", ["t"] * 4, levels=(1,), post=post, clock=clock)
     assert got[0]["errors"] == 2 and got[0]["wall_s"] == 4.0
     assert got[0]["per_hour"] == 1800.0
+
+
+def test_a_platform_with_no_load_average_records_none(monkeypatch):
+    monkeypatch.setattr(throughput, "sys", __import__("types").SimpleNamespace(platform="win32"))
+    got = throughput.sweep("eval-7b", ["t"], levels=(1,), post=lambda p: _reply("x"))
+    assert got[0]["load_avg"] == [None, None]
