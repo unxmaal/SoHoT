@@ -92,3 +92,32 @@ def test_linux_runs_the_suite_once_and_coverage_rides_on_it():
     runs = [s for s in steps if "pytest" in s.get("run", "") or "make check" in s.get("run", "")]
     assert len(runs) == 1 and "make check" in runs[0]["run"], [s.get("name") for s in runs]
     assert "--cov" in runs[0].get("env", {}).get("PYTEST_ADDOPTS", "")
+
+
+def _linux_step(steps, pred):
+    return next(i for i, s in enumerate(steps) if pred(s))
+
+
+def test_a_slow_apt_mirror_fails_its_own_step_rather_than_cancelling_make_check():
+    """A 13-minute apt download ate the job budget and cancelled make check (#647)."""
+    doc, _ = _ci()
+    job = doc["jobs"]["check-linux"]
+    apt = job["steps"][_linux_step(job["steps"], lambda s: s.get("name") == "Tools make check needs")]
+    assert isinstance(apt.get("timeout-minutes"), int) and 1 <= apt["timeout-minutes"] <= 8
+    # make check alone takes about 14 minutes on this runner.
+    assert job["timeout-minutes"] > apt["timeout-minutes"] + 20
+
+
+def test_apt_packages_are_cached_on_the_package_list():
+    """The .deb files come from a cache keyed on the package list, saved before make check (#647)."""
+    doc, _ = _ci()
+    steps = doc["jobs"]["check-linux"]["steps"]
+    restore = _linux_step(steps, lambda s: s.get("uses", "").startswith("actions/cache/restore@"))
+    apt = _linux_step(steps, lambda s: s.get("name") == "Tools make check needs")
+    save = _linux_step(steps, lambda s: s.get("uses", "").startswith("actions/cache/save@"))
+    check = _linux_step(steps, lambda s: s.get("name") == "make check")
+    assert restore < apt < save < check
+    key = steps[restore]["with"]["key"]
+    assert key == steps[save]["with"]["key"] and "steps." in key
+    assert "Dir::Cache::archives" in steps[apt]["run"]
+    assert "cache-hit" in steps[save]["if"]

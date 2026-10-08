@@ -80,10 +80,12 @@ jobs:
     # `ubuntu-latest` moves to 26 on 2026-10-19 (#339); the step below checks
     # the pin is honored. Keep it in step with EXPECT_UBUNTU.
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    # make check is about 14 minutes; the apt step has its own 6 below (#647).
+    timeout-minutes: 30
 
     env:
       EXPECT_UBUNTU: "24.04"
+      APT_PACKAGES: shellcheck librsvg2-bin ffmpeg zsh fonts-dejavu-core time
 
     steps:
       - uses: actions/checkout@v4
@@ -103,7 +105,22 @@ jobs:
         with:
           enable-cache: true
 
+      - name: Key the .deb cache on the package list
+        id: aptkey
+        run: |
+          echo "APT_ARCHIVES=$RUNNER_TEMP/apt-archives" >> "$GITHUB_ENV"
+          echo "key=apt-noble-$(echo "$APT_PACKAGES" | sha256sum | cut -c1-16)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore the .deb cache
+        id: aptcache
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ env.APT_ARCHIVES }}
+          key: ${{ steps.aptkey.outputs.key }}
+
       - name: Tools make check needs
+        # Its own limit, so a slow mirror fails here by name instead of cancelling make check (#647).
+        timeout-minutes: 6
         # shellcheck for `make lint`; librsvg2-bin for the ink lane; ffmpeg for
         # the video checks; zsh because tests/shells.py runs scripts/env.sh in
         # three shells and a missing one is a silent skip; fonts-dejavu-core
@@ -114,9 +131,13 @@ jobs:
         #
         # Chrome is already on this image, and render.py finds it by name.
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            shellcheck librsvg2-bin ffmpeg zsh fonts-dejavu-core time
+          mkdir -p "$APT_ARCHIVES/partial"
+          apt_opts="-o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Dir::Cache::archives=$APT_ARCHIVES"
+          # shellcheck disable=SC2086
+          sudo apt-get $apt_opts update
+          # shellcheck disable=SC2086
+          sudo apt-get $apt_opts install -y --no-install-recommends $APT_PACKAGES
+          sudo chown -R "$USER" "$APT_ARCHIVES"
           # helm renders the chart in tests/test_deploy_chart.py. Installed
           # explicitly rather than relied on from the runner image: those
           # assertions are the whole of #148 phase 0, and without helm they
@@ -133,6 +154,13 @@ jobs:
             echo "::error::not installed:$missing" >&2
             exit 1
           fi
+
+      - name: Save the .deb cache
+        if: steps.aptcache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ env.APT_ARCHIVES }}
+          key: ${{ steps.aptkey.outputs.key }}
 
       - run: uv sync --python 3.12
 
