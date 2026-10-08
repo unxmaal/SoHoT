@@ -34,12 +34,12 @@
   }
  ],
  "export_version": 2,
- "generated_at": "2026-10-08T00:59:43Z",
+ "generated_at": "2026-10-08T09:02:56Z",
  "lanes": [
   {
    "adopted": true,
    "adopted_how": "by-hand",
-   "age_days": 1.43,
+   "age_days": 1.76,
    "comparison": [
     {
      "candidate": "mflux/flux2-klein-4b-q8",
@@ -201,46 +201,93 @@
   {
    "adopted": true,
    "adopted_how": "measured",
-   "age_days": 0.57,
+   "age_days": 0.0,
    "comparison": [
     {
-     "candidate": "llamacpp:Ornith-1.5-35B-Q4_K_M",
-     "first_s": 0.899,
-     "median_s": 2.496,
+     "candidate": "plan/llamacpp:Ornith-1.5-35B-Q4_K_M",
+     "first_s": 1.926,
+     "median_s": 14.248,
      "metrics": {
-      "code_pass": 0.8353,
-      "completion_tokens": 657.2986,
-      "tokens_per_s": 135.6083
+      "code_pass": 0.8751,
+      "completion_tokens": 1483.8637,
+      "method_calls": 2.0
      },
      "not_run": "",
-     "pass_rate": 0.773,
-     "passed": 116,
+     "pass_rate": 0.559,
+     "passed": 504,
      "peak_gb": 0.0,
      "reference": false,
-     "total": 150,
-     "ttft_median_s": 1.103,
-     "ttft_p95_s": 15.842
+     "total": 902,
+     "ttft_median_s": null,
+     "ttft_p95_s": null
     },
     {
-     "candidate": "ibm-granite/granite-4.1-8b",
-     "first_s": 49.72,
-     "median_s": 1.959,
+     "candidate": "llamacpp:Ornith-1.5-35B-Q4_K_M",
+     "first_s": 0.981,
+     "median_s": 12.323,
      "metrics": {
-      "code_pass": 0.8083,
-      "completion_tokens": 141.72,
-      "tokens_per_s": 51.1893
+      "code_pass": 0.787,
+      "completion_tokens": 1130.9459,
+      "tokens_per_s": 138.303
      },
      "not_run": "",
-     "pass_rate": 0.693,
-     "passed": 104,
+     "pass_rate": 0.491,
+     "passed": 443,
      "peak_gb": 0.0,
      "reference": false,
-     "total": 150,
-     "ttft_median_s": 0.055,
-     "ttft_p95_s": 0.117
+     "total": 902,
+     "ttft_median_s": 4.374,
+     "ttft_p95_s": 23.157
     }
    ],
    "exams": [
+    {
+     "cases": 451,
+     "first_run_at": "2026-10-08T09:02:56Z",
+     "repeat": 2,
+     "rows": [
+      {
+       "candidate": "plan/llamacpp:Ornith-1.5-35B-Q4_K_M",
+       "first_s": 1.926,
+       "median_s": 14.248,
+       "metrics": {
+        "code_pass": 0.8751,
+        "completion_tokens": 1483.8637,
+        "method_calls": 2.0
+       },
+       "not_run": "",
+       "pass_rate": 0.559,
+       "passed": 504,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-10-08T09:02:56Z",
+       "total": 902,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      },
+      {
+       "candidate": "llamacpp:Ornith-1.5-35B-Q4_K_M",
+       "first_s": 0.981,
+       "median_s": 12.323,
+       "metrics": {
+        "code_pass": 0.787,
+        "completion_tokens": 1130.9459,
+        "tokens_per_s": 138.303
+       },
+       "not_run": "",
+       "pass_rate": 0.491,
+       "passed": 443,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-10-08T09:02:56Z",
+       "total": 902,
+       "ttft_median_s": 4.374,
+       "ttft_p95_s": 23.157
+      }
+     ],
+     "run_at": "2026-10-08T09:02:56Z",
+     "runs": 1
+    },
     {
      "cases": 50,
      "first_run_at": "2026-10-07T10:43:27Z",
@@ -906,18 +953,18 @@
     }
    ],
    "lane": "code",
-   "last_run_at": "2026-10-07T11:22:01Z",
-   "measured_at": "2026-10-07T11:22:01Z",
-   "median_s": 2.496,
+   "last_run_at": "2026-10-08T09:02:56Z",
+   "measured_at": "2026-10-08T09:02:56Z",
+   "median_s": 12.323,
    "metrics": {
-    "code_pass": 0.8353,
-    "completion_tokens": 657.2986,
-    "tokens_per_s": 135.6083
+    "code_pass": 0.787,
+    "completion_tokens": 1130.9459,
+    "tokens_per_s": 138.303
    },
    "not_run": "",
    "parked": "",
    "parked_until": "",
-   "pass_rate": 0.773,
+   "pass_rate": 0.491,
    "real_use": {
     "completion_tokens": 12561,
     "error_rate": 0.0,
@@ -932,15 +979,15 @@
    },
    "serves": "llamacpp:Ornith-1.5-35B-Q4_K_M",
    "stale": false,
-   "ttft_median_s": 1.103,
-   "ttft_p95_s": 15.842,
+   "ttft_median_s": 4.374,
+   "ttft_p95_s": 23.157,
    "unverified": false,
    "wanted": true
   },
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 2.05,
+   "age_days": 2.39,
    "comparison": [
     {
      "candidate": "q3-4b",
@@ -1154,7 +1201,7 @@
   {
    "adopted": true,
    "adopted_how": "measured",
-   "age_days": 1.21,
+   "age_days": 1.55,
    "comparison": [
     {
      "candidate": "q3-30b",
@@ -1400,7 +1447,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 2.12,
+   "age_days": 2.46,
    "comparison": [
     {
      "candidate": "h3/minimax-h3@ssd_streaming=false",
@@ -1501,7 +1548,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 0.57,
+   "age_days": 0.9,
    "comparison": [
     {
      "candidate": "acestep/acestep-v15-turbo",
@@ -1595,7 +1642,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 0.0,
+   "age_days": 0.34,
    "comparison": [
     {
      "candidate": "eval-imajev-4b",
@@ -1924,7 +1971,7 @@
   {
    "adopted": true,
    "adopted_how": "measured",
-   "age_days": 0.95,
+   "age_days": 1.28,
    "comparison": [
     {
      "candidate": "llamacpp:Ornith-1.5-35B-Q4_K_M",
@@ -2115,7 +2162,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 0.0,
+   "age_days": 0.34,
    "comparison": [
     {
      "candidate": "osocr/auto",
@@ -2227,7 +2274,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 0.0,
+   "age_days": 0.34,
    "comparison": [
     {
      "candidate": "bm25/okapi",
@@ -2344,7 +2391,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 0.0,
+   "age_days": 0.34,
    "comparison": [
     {
      "candidate": "pii-regex/patterns",
@@ -2466,7 +2513,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 0.0,
+   "age_days": 0.34,
    "comparison": [
     {
      "candidate": "local-large",
@@ -2700,7 +2747,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 2.2,
+   "age_days": 2.53,
    "comparison": [
     {
      "candidate": "parakeet-tdt-0.6b-v2",
@@ -2769,7 +2816,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 1.5,
+   "age_days": 1.84,
    "comparison": [
     {
      "candidate": "Kokoro-82M-bf16/bm_george",
@@ -2902,7 +2949,7 @@
   "first_seen": "2026-10-05T19:28:52Z",
   "hw_model": "Mac17,15",
   "label": "Mac Studio M5 Ultra 96 GB",
-  "last_seen": "2026-10-08T00:57:14Z",
+  "last_seen": "2026-10-08T09:02:56Z",
   "memory_gb": 96.0,
   "os": "macOS 27.0.1",
   "runtimes": [
