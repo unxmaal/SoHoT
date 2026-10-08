@@ -83,6 +83,12 @@ curl -sf --max-time 300 "$G/v1/chat/completions" -H 'Content-Type: application/j
   -d '{"model":"sohot-decide","messages":[{"role":"user","content":"Is the sky blue on a clear day? A: yes, B: no. Reply as JSON."}],"max_tokens":20,"temperature":0,"chat_template_kwargs":{"enable_thinking":false},"response_format":{"type":"json_schema","json_schema":{"name":"decide","strict":true,"schema":{"type":"object","properties":{"answer":{"type":"string","enum":["A","B"]}},"required":["answer"],"additionalProperties":false}}}}' \
   | grep -q 'answer' && ok "sohot-decide answers under its schema" || no "sohot-decide answers under its schema"
 
+# The claims lane sends its tuple schema too. #654.
+curl -sf --max-time 300 "$G/v1/chat/completions" -H 'Content-Type: application/json' \
+  -H "Authorization: Bearer $KEY" \
+  -d '{"model":"sohot-claims","messages":[{"role":"user","content":"[1] member-a: The fan runs at 12V."}],"max_tokens":100,"temperature":0,"response_format":{"type":"json_schema","json_schema":{"name":"claims","strict":true,"schema":{"type":"object","properties":{"c":{"type":"array","items":{"type":"array","prefixItems":[{"type":"string"},{"type":"string","maxLength":220},{"type":"array","items":{"type":"integer"},"minItems":1}],"minItems":3,"maxItems":3}}},"required":["c"],"additionalProperties":false}}}}' \
+  | grep -q '\\"c\\"' && ok "sohot-claims answers under its schema" || no "sohot-claims answers under its schema"
+
 # An alias with no weights behind it must FAIL rather than be answered with
 # whatever is loaded. gateway/config.cuda.yaml names GGUF files by filename
 # stem, so a typo there would measure the resident model under another

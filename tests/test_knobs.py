@@ -55,7 +55,7 @@ def test_every_knob_names_a_value_that_exists():
 def test_every_knob_s_range_holds_its_default_for_every_lane_it_affects():
     for k in knobs.KNOBS.values():
         for lane in k.lanes or ("",):
-            assert k.default(lane) in k.values, (k.name, lane, k.default(lane))
+            assert k.default(lane) in k.values_for(lane), (k.name, lane, k.default(lane))
 
 
 def test_every_knob_s_lanes_are_lanes():

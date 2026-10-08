@@ -17,6 +17,8 @@ class CheckResult:
     metrics: dict = field(default_factory=dict)
     #: A reasons class when the checker itself failed, not the artifact. #505.
     failure_class: str = ""
+    #: The knob that decided the verdict, as a `limit:` predicate body. #654.
+    limit: str = ""
 
 
 _FENCE = re.compile(r"```[a-zA-Z]*\s*\n(.*?)```", re.S)

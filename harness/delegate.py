@@ -273,6 +273,9 @@ def complete(lane: str, prompt: str, system: str | None = None,
             # Each call of a method gets the whole cap and the thinking switch. #581.
             if label:
                 _budget(base, max_tokens, text, mine or completion.SYSTEM.get(modality, ""))
+            if modality == "claims":
+                from harness.checks import claims
+                kw = {**kw, "response_format": claims.response_format(claims.SCHEMA)}
             return completion.complete_full(
                 text, modality=modality, timeout=timeout or TIMEOUT_S,
                 temperature=temperature, max_tokens=int(max_tokens), stream=True,

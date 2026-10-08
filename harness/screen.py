@@ -68,6 +68,8 @@ LANE_CANDIDATES = {
     "retrieval": ("rerank:{model}", "embed:{model}"),
     # pii-regex is the incumbent; a discovered model is a transformers token tagger. #564.
     "pii": ("hf-pii:{model}",),
+    # A GGUF instruct model on llama-server, which enforces the reply schema. #654.
+    "claims": ("{model}",),
     "stt": ("stt:{model}",),
     "tts": ("tts:{model}",),
     **{lane: ("{model}",) for lane in lanes.TEXT_SERVED},

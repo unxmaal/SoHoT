@@ -47,6 +47,9 @@ SYSTEM = {
                 "not contain the answer, reply: NOT FOUND"),
     # A typed decision: one letter per field, as JSON, so the letter tokens
     # carry the probabilities. #423.
+    # A case carries its own system prompt; this one serves a delegated request. #654.
+    "claims": ("You read a numbered chat transcript and list durable technical claims as JSON: "
+               "c is a list of [user, claim, refs], refs being the line numbers that support it."),
     "decide": ("You answer with a single JSON object and nothing else. No "
                "prose, no markdown fences, no explanation. Each key is a field "
                "name and each value is the letter of one allowed choice."),
@@ -80,6 +83,7 @@ SAMPLING = {
     "web": {"temperature": 0.4, "repetition_penalty": 1.1},
     # The answer is the argmax; the distribution comes from the logprobs.
     "decide": {"temperature": 0.0},
+    "claims": {"temperature": 0.0},
 }
 
 #: Chat-template kwargs per modality; decide reads one pass of option logprobs, so no reasoning. #311.
@@ -101,7 +105,7 @@ LOAD_TIMEOUT_S = 1800.0
 
 #: Eval reply budget per lane; code serves a reasoning model, sized at Qwen3's documented output length. #628.
 BUDGET = {"svg": MAX_TOKENS, "web": MAX_TOKENS, "code": 32768, "extract": MAX_TOKENS,
-          "decide": MAX_TOKENS, "agent": 8000}
+          "decide": MAX_TOKENS, "agent": 8000, "claims": 400}
 #: The slowest decode a budget's timeout allows for, tokens per second. #628.
 MIN_DECODE_TOK_S = 25.0
 

@@ -34,7 +34,7 @@ def _gold_spans(c):
 
 def test_pii_is_wanted_after_retrieval():
     assert lanes.WANTED.index("pii") == lanes.WANTED.index("retrieval") + 1
-    assert lanes.WANTED[-1] == "pii"
+    assert lanes.WANTED[lanes.WANTED.index("pii") + 1:] == ("claims",)
 
 
 # --- routing ---------------------------------------------------------------

@@ -34,7 +34,7 @@ from evals.core import (AGENT_MODALITIES, MODALITIES, TEXT_MODALITIES,
                         TEXT_SUFFIX, Case,
                         Receipt, cases_digest, comparable, direction_of,
                         summarize)
-from evals import core, environment
+from evals import core, environment, private
 from evals.runners.base import RunnerError
 from evals.runners.process import ProcessRunner
 from evals.runners.chain import ChainRunner
@@ -686,7 +686,24 @@ def select_cases(cases: list[Case], modality: str) -> list[Case]:
     return chosen
 
 
+def load_selected(args) -> list[Case]:
+    """The run's cases: --cases plus, when --cases is the shipped tree, the local-only ones. #654."""
+    shipped = Path(args.cases).resolve() == core.SHIPPED.resolve()
+    local = Path(args.local_cases) if getattr(args, "local_cases", None) else core.local_root()
+    loaded = core.load_suite(args.cases, local) if shipped else core.load_cases(args.cases)
+    return select_cases(loaded, args.modality)
+
+
+def parse_args(argv: list[str] | None = None):
+    return _parser().parse_args(argv)
+
+
 def main(argv: list[str] | None = None) -> int:
+    args = parse_args(argv)
+    return _main(args)
+
+
+def _parser():
     ap = argparse.ArgumentParser(prog="evals.run")
     ap.add_argument("--compare", nargs="+", metavar="RESULTS.JSON",
                     help="put finished runs in one table, or refuse if their "
@@ -707,6 +724,9 @@ def main(argv: list[str] | None = None) -> int:
                          "read it rather than be told it")
     ap.add_argument("--gateway", default="http://127.0.0.1:4000")
     ap.add_argument("--cases", default=str(ROOT / "cases"))
+    ap.add_argument("--local-cases", default=None,
+                    help="local-only cases added to the shipped ones "
+                         "(default: $LOCALHARNESS_HOME/cases)")
     ap.add_argument("--out", default=None,
                     help="write artifacts and results.json here "
                          "(default: a new directory under "
@@ -733,7 +753,10 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--max-tokens", type=int, default=None,
                     help="reply budget for every text request, recorded on the "
                          "receipt (default: the lane's, completion.BUDGET) (#628)")
-    args = ap.parse_args(argv)
+    return ap
+
+
+def _main(args) -> int:
     # SAME GUARD AS `lh`, and this is the entry point that actually downloads:
     # `lh discover --screen` prints this very command for a user to copy, so
     # without it the screen tier hands out the unguarded path. Issue #191.
@@ -787,7 +810,7 @@ def _execute_at(args, overrides: dict) -> int:
         args.adherence = ""
     from harness import holdout
     side = "dev" if args.screen else (getattr(args, "split", "") or "all")
-    chosen = select_cases(core.load_cases(args.cases), args.modality)
+    chosen = load_selected(args)
     cases = expand_cases(screen_pool(chosen) if args.screen
                          else holdout.only(chosen, side), args.repeat)
     # An engine spec contains commas, which are also the candidate separator.
@@ -929,6 +952,7 @@ def _run_candidate(args, candidate, runner, mine, results, outdir, evicted=None)
         r = runner.failed(case, cold) if cold else runner.run(case)
         if watch:
             watch.look(case.id, "end")
+        private.withhold_detail(r, case)
         results.append(r)
         mark = "pass" if r.passed else "FAIL"
         note = "" if r.passed else f"  {r.detail}"
@@ -942,6 +966,9 @@ def _run_candidate(args, candidate, runner, mine, results, outdir, evicted=None)
                 case, TEXT_SUFFIX.get(case.modality, ".txt"))
             f.write_text(r.output, encoding="utf-8")
             r.artifact_path = str(f.resolve())
+        if case.private:
+            # The reply stays in the run dir on this machine; the row carries no text. #654.
+            r.output = None
     if watch and watch.swaps and evicted is not None:
         evicted[runner.candidate] = watch.swaps
         print(f"  router evicted {model} {len(watch.swaps)} time(s) during this run; "

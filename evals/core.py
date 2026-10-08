@@ -21,6 +21,7 @@ import yaml
 
 from harness import reasons
 from harness.checks import adherence as adherence_check
+from harness.checks import claims as claims_check
 from harness.checks import code as code_check
 from harness.checks import decide as decide_check
 from harness.checks import html as html_check
@@ -65,6 +66,8 @@ class Case:
     source: Path | None = None
     #: A file the candidate reads, resolved beside the case: the ocr lane's image. #562.
     input_file: Path | None = None
+    #: Loaded from the local-only tree: its text never leaves this machine. #654.
+    private: bool = False
 
 
 def _check_image(artifact, case: Case, adherence: str | None = None,
@@ -280,6 +283,17 @@ def _check_decide(artifact, case: Case) -> CheckResult:
                               case.assertions["answers"])
 
 
+def _check_claims(artifact, case: Case) -> CheckResult:
+    """Schema first, then emitted claims matched to the reviewed ones. #654."""
+    if isinstance(artifact, Path):
+        if not artifact.exists():
+            return CheckResult(False, f"engine left no output at {artifact.name}")
+        artifact = artifact.read_text(encoding="utf-8")
+    a = case.assertions
+    return claims_check.check(artifact, case.params["schema"], a.get("reviews") or [],
+                              bool(a.get("expect_empty")))
+
+
 def _check_pii(artifact, case: Case) -> CheckResult:
     """Token F1 of the marked spans against the labelled ones. #564."""
     if isinstance(artifact, Path):
@@ -334,6 +348,7 @@ def _check_agent(artifact, case: Case) -> CheckResult:
 CHECKERS = {
     "agent": lambda a, c, **kw: _check_agent(a, c),
     "decide": lambda a, c, **kw: _check_decide(a, c),
+    "claims": lambda a, c, **kw: _check_claims(a, c),
     "ocr": lambda a, c, **kw: _check_ocr(a, c),
     "retrieval": lambda a, c, **kw: _check_retrieval(a, c),
     "pii": lambda a, c, **kw: _check_pii(a, c),
@@ -426,6 +441,15 @@ METRIC_DIRECTION = {
     "pii_f1": "higher",
     "pii_precision": "higher",
     "pii_recall": "higher",
+    # claims (#654): matched against human reviews; expect_empty cases report apart.
+    "claims_recall": "higher",
+    "claims_precision": "higher",
+    "claims_schema_valid": "higher",
+    "claims_empty_rate": "higher",
+    "claims_bad_matched": "lower",
+    "claims_emitted": "neutral",
+    "claims_unreviewed": "neutral",
+    "claims_judge_calibrated": "neutral",
 }
 
 
@@ -459,6 +483,8 @@ PARAM_KEYS = {"width", "height", "steps", "seed", "guidance", "frames",
               "task", "ref", "cover_strength",
               # decide: the flat schema of enum and boolean fields. #423.
               "schema",
+              # claims: the system prompt the case is asked with. #654.
+              "system",
               # agent: the case bundle, the pinned tools, the caps, the padding. #474.
               "repo", "tools", "max_steps", "pad_tokens", "timeout_s"}
 # Assertions that need text to search. Declaring one on an image case can only
@@ -501,15 +527,16 @@ ASSERTION_KEYS = {"svg": TEXT_ASSERTIONS, "web": TEXT_ASSERTIONS,
                   "agent": {"answer", "hidden"},
                   "ocr": {"text", "max_cer"},
                   "retrieval": {"relevant", "k"},
-                  "pii": {"pii"}}
+                  "pii": {"pii"},
+                  "claims": {"reviews", "expect_empty", "basis", "origin"}}
 
 
 #: Lanes whose runner returns text rather than a file.
-TEXT_MODALITIES = {"svg", "web", "code", "extract", "decide"}
+TEXT_MODALITIES = {"svg", "web", "code", "extract", "decide", "claims"}
 #: Lanes whose runner returns the path of a file it made.
 MEDIA_MODALITIES = {"image", "video", "tts", "music"}
 #: The suffix a text lane's output is written to the run dir under.
-TEXT_SUFFIX = {"svg": ".svg", "web": ".html", "code": ".py", "decide": ".json",
+TEXT_SUFFIX = {"svg": ".svg", "web": ".html", "code": ".py", "decide": ".json", "claims": ".json",
                "agent": ".json"}
 #: Lanes whose case hands the candidate a file to read through input_file. #562.
 INPUT_MODALITIES = {"ocr", "retrieval"}
@@ -889,56 +916,81 @@ def comparable(a: Receipt, b: Receipt) -> tuple[bool, str]:
 _LOADER = getattr(yaml, "CSafeLoader", yaml.SafeLoader)
 
 
-def load_cases(directory: str | Path) -> list[Case]:
+#: The cases a clone ships.
+SHIPPED = Path(__file__).resolve().parent / "cases"
+
+
+def local_root() -> Path:
+    """Cases that never enter git, such as verbatim chat transcripts. #654."""
+    from harness import paths
+    return paths.home() / "cases"
+
+
+def load_suite(root: str | Path | None = None, local: str | Path | None = None) -> list[Case]:
+    """The shipped cases plus this machine's local-only ones, marked private. #654."""
+    local = Path(local) if local is not None else local_root()
+    shipped = load_cases(root if root is not None else SHIPPED)
+    return shipped + (load_cases(local, private=True) if local.is_dir() else [])
+
+
+def load_cases(directory: str | Path, private: bool = False) -> list[Case]:
     """Load every *.yaml under `directory`, sorted by id for stable runs."""
-    directory = Path(directory)
-    cases: list[Case] = []
-    for path in sorted(directory.rglob("*.yaml")):
-        raw = yaml.load(path.read_text(encoding="utf-8"), Loader=_LOADER) or {}
-        # Name the file in every error: a broken case in a 50-case run must not
-        # fail anonymously.
-        for required in ("id", "modality", "prompt"):
-            if not raw.get(required):
-                raise ValueError(f"{path.name}: missing '{required}'")
-        modality = raw["modality"]
-        if modality not in MODALITIES:
-            raise ValueError(
-                f"{path.name}: unknown modality '{modality}' "
-                f"(known: {', '.join(sorted(MODALITIES))})")
-        context = _load_context(path, raw)
-        audio = _load_audio(path, raw, modality)
-        input_file = _load_input(path, raw, modality)
-        params = raw.get("params") or {}
-        assertions = raw.get("assert") or {}
-        if modality == "code" and not assertions.get("checks"):
-            # A code case with nothing to run passes every model, which is
-            # worse than not having the case at all.
-            raise ValueError(f"{path.name}: a code case needs assert.checks")
-        _reject_unknown(path, modality, "params", set(params), PARAM_KEYS)
-        _reject_unknown(path, modality, "assert", set(assertions),
-                        ASSERTION_KEYS.get(modality, set()))
-        prompt = raw["prompt"]
-        if modality == "decide":
-            try:
-                decide_check.validate(params.get("schema"), assertions.get("answers"))
-            except decide_check.SchemaError as exc:
-                raise ValueError(f"{path.name}: {exc}") from exc
-            # Every text runner then asks the same question; nimble reads the schema.
-            prompt = f"{prompt.rstrip()}\n\n{decide_check.render(params['schema'])}"
-        if modality == "agent":
-            params = {**params, **_agent_params(path, params, assertions)}
-        if modality == "ocr" and not str(assertions.get("text") or "").strip():
-            raise ValueError(f"{path.name}: an ocr case needs assert.text, the reference")
-        if modality == "retrieval":
-            _check_relevant(path, input_file, assertions.get("relevant"))
-        if modality == "pii":
-            params = {**params, "spans": _pii_spans(path, prompt, assertions.get("pii"))}
-        cases.append(Case(id=raw["id"], modality=modality, prompt=prompt,
-                          context=context, audio=audio, params=params,
-                          assertions=assertions, source=path, input_file=input_file,
-                          language=raw.get("language") or "en",
-                          methods=tuple(raw.get("methods") or ())))
-    return cases
+    return [load_case(path, private) for path in sorted(Path(directory).rglob("*.yaml"))]
+
+
+def load_case(path: Path, private: bool = False) -> Case:
+    """One case file, validated."""
+    path = Path(path)
+    raw = yaml.load(path.read_text(encoding="utf-8"), Loader=_LOADER) or {}
+    # Name the file in every error: a broken case in a 50-case run must not
+    # fail anonymously.
+    for required in ("id", "modality", "prompt"):
+        if not raw.get(required):
+            raise ValueError(f"{path.name}: missing '{required}'")
+    modality = raw["modality"]
+    if modality not in MODALITIES:
+        raise ValueError(
+            f"{path.name}: unknown modality '{modality}' "
+            f"(known: {', '.join(sorted(MODALITIES))})")
+    context = _load_context(path, raw)
+    audio = _load_audio(path, raw, modality)
+    input_file = _load_input(path, raw, modality)
+    params = raw.get("params") or {}
+    assertions = raw.get("assert") or {}
+    if modality == "code" and not assertions.get("checks"):
+        # A code case with nothing to run passes every model, which is
+        # worse than not having the case at all.
+        raise ValueError(f"{path.name}: a code case needs assert.checks")
+    _reject_unknown(path, modality, "params", set(params), PARAM_KEYS)
+    _reject_unknown(path, modality, "assert", set(assertions),
+                    ASSERTION_KEYS.get(modality, set()))
+    prompt = raw["prompt"]
+    if modality == "decide":
+        try:
+            decide_check.validate(params.get("schema"), assertions.get("answers"))
+        except decide_check.SchemaError as exc:
+            raise ValueError(f"{path.name}: {exc}") from exc
+        # Every text runner then asks the same question; nimble reads the schema.
+        prompt = f"{prompt.rstrip()}\n\n{decide_check.render(params['schema'])}"
+    if modality == "claims":
+        try:
+            claims_check.validate_case(params.get("system"), params.get("schema"),
+                                       assertions.get("reviews"), assertions.get("expect_empty"))
+        except ValueError as exc:
+            raise ValueError(f"{path.name}: {exc}") from exc
+    if modality == "agent":
+        params = {**params, **_agent_params(path, params, assertions)}
+    if modality == "ocr" and not str(assertions.get("text") or "").strip():
+        raise ValueError(f"{path.name}: an ocr case needs assert.text, the reference")
+    if modality == "retrieval":
+        _check_relevant(path, input_file, assertions.get("relevant"))
+    if modality == "pii":
+        params = {**params, "spans": _pii_spans(path, prompt, assertions.get("pii"))}
+    return Case(id=raw["id"], modality=modality, prompt=prompt,
+                context=context, audio=audio, params=params,
+                assertions=assertions, source=path, input_file=input_file,
+                language=raw.get("language") or "en",
+                methods=tuple(raw.get("methods") or ()), private=private)
 
 
 def _agent_params(path: Path, params: dict, assertions: dict) -> dict:
@@ -1069,9 +1121,11 @@ def score(case: Case, artifact, **checker_kwargs) -> Result:
     # own; SpeechResult.metrics is computed, not stored.
     metrics = getattr(r, "metrics_extra", None) or getattr(r, "metrics", {})
     if not r.ok:
+        limit = getattr(r, "limit", "")
         return Result(case.id, "", False, 0.0, 0, r.reason,
                       warnings=r.warnings, metrics=metrics,
-                      failure_class=getattr(r, "failure_class", ""))
+                      failure_class=getattr(r, "failure_class", ""),
+                      limit=limit if isinstance(limit, str) else "")
 
     a = case.assertions
     if not a:
@@ -1270,7 +1324,10 @@ RATIO_METRICS = {"wer": ("wer_errors", "wer_words"),
                  "cer": ("cer_errors", "cer_chars"),
                  "pii_f1": ("pii_2tp", "pii_f1_den"),
                  "pii_precision": ("pii_tp", "pii_pred"),
-                 "pii_recall": ("pii_tp", "pii_gold")}
+                 "pii_recall": ("pii_tp", "pii_gold"),
+                 "claims_recall": ("claims_good_found", "claims_good_total"),
+                 "claims_precision": ("claims_good_found", "claims_reviewed_matched"),
+                 "claims_empty_rate": ("claims_empty_kept", "claims_empty_cases")}
 #: Bookkeeping that should not appear as a column of its own.
 _COMPANIONS = {name for pair in RATIO_METRICS.values() for name in pair}
 

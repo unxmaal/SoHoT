@@ -116,6 +116,8 @@ DEFAULT_CODE_MODEL = "q3-4b"
 DEFAULT_EXTRACT_MODEL = "local-large"
 # Best measured on the decide lane (#311), on llama-server, which enforces the lane's schema. #572.
 DEFAULT_DECIDE_MODEL = "eval-imajev-4b"
+#: infovore claim extraction: Qwen2.5-7B on llama-server, which enforces the reply schema. #654.
+DEFAULT_CLAIMS_MODEL = "eval-7b"
 #: The agent lane starts on the code lane's typed default until it adopts. #474.
 DEFAULT_AGENT_MODEL = DEFAULT_CODE_MODEL
 #: The ocr lane starts on the reader the image lane's text check already trusts. #562.

@@ -88,7 +88,8 @@ class CompletionRunner(BaseRunner):
                 max_tokens=budget, sampling=self.sampling or None,
                 template=template, stream=True,
                 top_logprobs=completion.TOP_LOGPROBS if case.modality == "decide" else 0,
-                response_format=self._reply_shape(case))
+                response_format=self._reply_shape(case),
+                system=case.params.get("system") if case.modality == "claims" else None)
         except completion.CompletionError as exc:
             if exc.failure_class == reasons.TOKEN_BUDGET_EXHAUSTED:
                 exc.limit = (limit, budget)
@@ -104,6 +105,9 @@ class CompletionRunner(BaseRunner):
 
     @staticmethod
     def _reply_shape(case: Case):
+        if case.modality == "claims":
+            from harness.checks import claims
+            return claims.response_format(case.params["schema"])
         if case.modality != "decide":
             return None
         from harness.checks import decide
