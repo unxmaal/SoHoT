@@ -11,6 +11,8 @@ router mode, so the CUDA config has the same shape rather than one port per
 model. What differs is the ceiling: the router will hold several models at once
 if allowed to, and one 12 GB card cannot.
 """
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -66,8 +68,17 @@ def test_the_cuda_server_holds_one_model_at_a_time():
     text = (REPO / "scripts" / "serve-llamacpp.sh").read_text(encoding="utf-8")
     assert "--models-max" in text, (
         "serve-llamacpp.sh should cap resident models; the default is 4")
-    assert "${LLAMACPP_MAX_MODELS:-1}" in text, (
-        "the cap should default to 1 and stay overridable on a larger card")
+    assert "${LLAMACPP_MAX_MODELS:-$(scripts/router-max-models.sh)}" in text, (
+        "the cap should come from the machine's memory and stay overridable")
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="runs the bash helper directly")
+@pytest.mark.parametrize("gib,want", [(12, "1"), (32, "1"), (63, "1"), (64, "2"), (96, "2")])
+def test_a_large_memory_machine_holds_two_router_models(gib, want):
+    """Two resident models keep a decide client from evicting a running code eval (#644)."""
+    out = subprocess.run(["bash", str(REPO / "scripts" / "router-max-models.sh"), str(gib * 1024**3)],
+                         capture_output=True, text=True, check=True).stdout.strip()
+    assert out == want
 
 
 def test_the_gateway_takes_the_config_as_a_parameter():

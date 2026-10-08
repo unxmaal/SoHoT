@@ -324,10 +324,9 @@ def test_the_live_store_is_audited_nightly(plists):
 
 
 def test_the_discover_sweep_runs_at_fixed_local_times(plists):
-    """StartInterval counts from load, so a day of deploys never let it fire (#625)."""
+    """StartInterval counts from load, so a day of deploys never let it fire (#625); once a day after 21:00 (#646)."""
     unit = next(v for k, v in plists.items() if k.endswith(".discover"))
-    assert unit["StartCalendarInterval"] == [
-        {"Hour": h, "Minute": 0} for h in (0, 6, 12, 18)]
+    assert unit["StartCalendarInterval"] == [{"Hour": 21, "Minute": 0}]
     assert "StartInterval" not in unit and unit.get("RunAtLoad") is not True
 
 
@@ -335,7 +334,7 @@ def test_the_sweep_schedule_and_the_overdue_check_agree(plists):
     from harness import heartbeat
     unit = next(v for k, v in plists.items() if k.endswith(".discover"))
     hours = [t["Hour"] for t in unit["StartCalendarInterval"]]
-    gaps = {(b - a) % 24 for a, b in zip(hours, hours[1:] + hours[:1])}
+    gaps = {(b - a) % 24 or 24 for a, b in zip(hours, hours[1:] + hours[:1])}
     assert gaps == {heartbeat.SWEEP_EVERY_S // 3600}
 
 
