@@ -4,7 +4,7 @@ from __future__ import annotations
 from harness import store
 
 
-SCHEMA_VERSION = 62
+SCHEMA_VERSION = 63
 
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
@@ -308,7 +308,9 @@ CREATE TABLE IF NOT EXISTS results (
     -- llama-server's own prompt processing time. #468.
     prefill_s    REAL,
     -- 1 for the first request after a load (no warm-up); NULL if the runner cannot say.
-    cold         INTEGER
+    cold         INTEGER,
+    -- Each budget-ladder rung tried, as JSON; '[]' when the run had no ladder. #668.
+    attempts     TEXT NOT NULL DEFAULT '[]'
 );
 
 -- What a lane serves from now: one row per adoption, never parsed from detail. #412.

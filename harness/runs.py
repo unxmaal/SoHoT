@@ -267,8 +267,8 @@ def record(conn, path, data: dict, *, at: float | None = None) -> int | None:
             "INSERT INTO results (run_id, seq, candidate_id, candidate, "
             "case_id, repeat_index, passed, seconds, peak_kb, detail, metrics, "
             "warnings, output, artifact_path, failure_class, hit_limit, "
-            "ttft_s, first_reasoning_s, prefill_s, cold) "
-            "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            "ttft_s, first_reasoning_s, prefill_s, cold, attempts) "
+            "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             (run_id, seq, cid if cid is not None else ids[name], name,
              str(r.get("case_id") or ""), repeat,
              1 if r.get("passed") else 0, float(r.get("seconds") or 0.0),
@@ -279,7 +279,8 @@ def record(conn, path, data: dict, *, at: float | None = None) -> int | None:
              None if art is None else str(art),
              cls or "", str(r.get("limit") or ""),
              *(_seconds(r.get(k)) for k in FIRST_TOKEN),
-             None if r.get("cold") is None else int(bool(r["cold"]))))
+             None if r.get("cold") is None else int(bool(r["cold"])),
+             json.dumps(r.get("attempts") or [])))
     conn.commit()
     return run_id
 
@@ -314,7 +315,8 @@ def rows(conn, run_id: int, candidate_id: int | None = None) -> list[dict]:
                     "failure_class": r["failure_class"], "limit": r["hit_limit"],
                     "candidate_id": r["candidate_id"],
                     **{k: r[k] for k in FIRST_TOKEN},
-                    "cold": None if r["cold"] is None else bool(r["cold"])})
+                    "cold": None if r["cold"] is None else bool(r["cold"]),
+                    "attempts": json.loads(r["attempts"] or "[]")})
     return out
 
 
@@ -330,6 +332,7 @@ def summarize(result_rows: list[dict]) -> dict:
                            metrics=r["metrics"],
                            failure_class=r.get("failure_class") or "",
                            limit=r.get("limit") or "",
+                           attempts=r.get("attempts") or [],
                            **{k: r.get(k) for k in (*FIRST_TOKEN, "cold")})
                     for r in result_rows])
 

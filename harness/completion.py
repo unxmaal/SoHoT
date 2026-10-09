@@ -110,6 +110,17 @@ BUDGET = {"svg": MAX_TOKENS, "web": MAX_TOKENS, "code": 32768, "extract": MAX_TO
 MIN_DECODE_TOK_S = 25.0
 
 
+#: Budgets a laddered eval retries a cut-off reply at, smallest first. #668.
+LADDER = {"svg": (4000, 16000), "web": (4000, 16000), "code": (4000, 16000, 32000, 65536),
+          "extract": (4000, 16000), "decide": (4000, 16000), "agent": (8000, 32000),
+          "claims": (400, 1600)}
+
+
+def ladder(lane: str) -> tuple:
+    """The default budget ladder for `lane`; () where no text is generated. #668."""
+    return tuple(LADDER.get(lane, ()))
+
+
 def budget(lane: str) -> int:
     """The reply budget an eval of `lane` runs at unless the run names one; 0 where no text is generated. #628."""
     return BUDGET.get(lane, 0)

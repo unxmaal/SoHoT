@@ -99,6 +99,12 @@ def _add_first_token(conn) -> None:
             conn.execute(f"ALTER TABLE results ADD COLUMN {col} {ddl}")
 
 
+def _add_attempts(conn) -> None:
+    """results.attempts, the budget-ladder rungs a row tried, on an older store. #668."""
+    if "attempts" not in _columns(conn, "results"):
+        conn.execute("ALTER TABLE results ADD COLUMN attempts TEXT NOT NULL DEFAULT '[]'")
+
+
 def _add_served_context(conn) -> None:
     """downloads' served-context columns, on an older store. #498."""
     for col, ddl in (("ctx", "INTEGER NOT NULL DEFAULT 0"),
