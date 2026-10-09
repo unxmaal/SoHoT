@@ -25,7 +25,7 @@ import sys
 import time
 from pathlib import Path
 
-from harness import audio, completion, ds4, env, knobs, paths, router
+from harness import audio, completion, context, delegate, ds4, env, knobs, paths, reasons, router
 from harness.engines import Engine, names as engine_names, parse_options, resolve
 
 from dataclasses import replace
@@ -355,6 +355,61 @@ def run_budget(modality: str, asked: int | None) -> int:
     if modality != "all" and not lane:
         return 0
     return int(asked) if asked is not None else lane
+
+
+def run_ladder(modality: str, asked: str | None) -> tuple[int, ...]:
+    """The budget ladder a run climbs: none unless asked, the lane's when asked bare. #668."""
+    if asked is None or not completion.ladder(modality):
+        return ()
+    if asked == "default":
+        return completion.ladder(modality)
+    try:
+        rungs = tuple(int(part.strip()) for part in asked.split(","))
+    except ValueError:
+        raise SystemExit(f"--budget-ladder takes comma-separated token counts, not {asked!r}") from None
+    if len(rungs) < 2 or rungs[0] < 1 or any(b <= a for a, b in zip(rungs, rungs[1:])):
+        raise SystemExit(f"--budget-ladder needs two or more budgets of at least 1, smallest "
+                         f"first, not {asked!r}")
+    return rungs
+
+
+def rungs_for(ladder: tuple[int, ...], ctx: int | None, *texts: str) -> tuple[int, ...]:
+    """The ladder a case climbs: rungs past the served context less the prompt become that room. #668."""
+    if ctx is None:
+        return tuple(ladder)
+    room = delegate.cap(ctx, *texts)
+    if room < 1:
+        return tuple(ladder[:1])
+    kept = [rung for rung in ladder if rung < room]
+    if len(kept) < len(ladder):
+        kept.append(room)
+    return tuple(kept)
+
+
+def set_budget(runner, max_tokens: int) -> None:
+    """Point a runner, and any base a method wraps, at one reply budget. #668."""
+    runner.max_tokens = int(max_tokens)
+    base = getattr(runner, "base", None)
+    if base is not None:
+        set_budget(base, max_tokens)
+
+
+def climb(runner, case: Case, rungs: tuple[int, ...]) -> core.Result:
+    """Run `case` at each rung while its reply is cut off at the budget; the last row, with every attempt. #668."""
+    attempts = []
+    for rung in rungs:
+        set_budget(runner, rung)
+        row = runner.run(case)
+        exhausted = row.failure_class == reasons.TOKEN_BUDGET_EXHAUSTED
+        # A reply with no content and no usage spent the whole budget.
+        tokens = (row.metrics or {}).get("completion_tokens") or (rung if exhausted else None)
+        attempts.append({"max_tokens": rung, "tokens": tokens, "seconds": row.seconds,
+                         "passed": bool(row.passed), "failure_class": row.failure_class})
+        if row.passed or not exhausted:
+            break
+    row.attempts = attempts
+    row.seconds = round(sum(a["seconds"] for a in attempts), 3)
+    return row
 
 
 def build_runner(candidate: str, gateway: str, outdir: Path | None,
@@ -753,6 +808,11 @@ def _parser():
     ap.add_argument("--max-tokens", type=int, default=None,
                     help="reply budget for every text request, recorded on the "
                          "receipt (default: the lane's, completion.BUDGET) (#628)")
+    ap.add_argument("--budget-ladder", nargs="?", const="default", default=None,
+                    metavar="N,N,...",
+                    help="retry a reply cut off at its budget at the next larger one, e.g. "
+                         "4000,16000,32000,65536; bare, the lane's (completion.LADDER). Capped by "
+                         "each candidate's served context, recorded on the receipt (#668)")
     return ap
 
 
@@ -823,7 +883,11 @@ def _execute_at(args, overrides: dict) -> int:
         args.candidates = winner_for(args.modality)
         print(f"── winner for {args.modality}: {args.candidates}", flush=True)
     candidates = split_candidates(args.candidates)
-    budget = run_budget(args.modality, getattr(args, "max_tokens", None))
+    ladder = run_ladder(args.modality, getattr(args, "budget_ladder", None))
+    if ladder and getattr(args, "max_tokens", None) is not None:
+        raise SystemExit("--budget-ladder and --max-tokens say two things about the reply "
+                         "budget; pass one")
+    budget = ladder[-1] if ladder else run_budget(args.modality, getattr(args, "max_tokens", None))
     if args.screen:
         candidates = greedy(candidates)
         cases = screen_cases(cases, candidates)
@@ -860,7 +924,7 @@ def _execute_at(args, overrides: dict) -> int:
         with _served(candidate) as launched:
             if launched:
                 launches[runner.candidate] = ds4.launch_text(launched["launch"])
-            _run_candidate(args, candidate, runner, mine, results, outdir, evicted)
+            _run_candidate(args, candidate, runner, mine, results, outdir, evicted, ladder)
 
     if not results:
         raise SystemExit("nothing ran: no candidate matched any case")
@@ -890,7 +954,8 @@ def _execute_at(args, overrides: dict) -> int:
             launch=launches,
             max_tokens=budget,
             knobs=knobs.settings(args.modality, overrides),
-            router_swaps=evicted)
+            router_swaps=evicted,
+            budget_ladder=ladder)
         now = time.time()
         ids = candidate_ids(specs, args.modality)
         for r in results:
@@ -934,7 +999,8 @@ def _served(candidate: str):
         raise SystemExit(f"{candidate}: {exc}") from None
 
 
-def _run_candidate(args, candidate, runner, mine, results, outdir, evicted=None) -> None:
+def _run_candidate(args, candidate, runner, mine, results, outdir, evicted=None,
+                   ladder=()) -> None:
     runner.screening = bool(args.screen)
     model = router.model_for(candidate, args.gateway)
     watch = router.Watch(model) if model else None
@@ -946,10 +1012,16 @@ def _run_candidate(args, candidate, runner, mine, results, outdir, evicted=None)
             runner.warm()
         except RunnerError as exc:
             cold = exc
+    ctx = _served_ctx(candidate) if ladder else None
     for case in mine:
         if watch:
             watch.look(case.id, "start")
-        r = runner.failed(case, cold) if cold else runner.run(case)
+        if cold:
+            r = runner.failed(case, cold)
+        elif ladder:
+            r = climb(runner, case, rungs_for(ladder, ctx, case.prompt, case.context))
+        else:
+            r = runner.run(case)
         if watch:
             watch.look(case.id, "end")
         private.withhold_detail(r, case)
@@ -973,6 +1045,14 @@ def _run_candidate(args, candidate, runner, mine, results, outdir, evicted=None)
         evicted[runner.candidate] = watch.swaps
         print(f"  router evicted {model} {len(watch.swaps)} time(s) during this run; "
               f"it will not be ranked", file=sys.stderr)
+
+
+def _served_ctx(candidate: str) -> int | None:
+    """The per-slot context a candidate is served at, which caps its ladder; None when unknown. #668."""
+    try:
+        return context.served_ctx(candidate)
+    except Exception:  # noqa: BLE001
+        return None
 
 
 def export_row(r) -> dict:
@@ -1385,6 +1465,13 @@ def report(summary: dict) -> None:
         print("\nserved context (tokens per slot; a long case past it fails on step 1):")
         for n, ctx in agents.items():
             print(f"  {n}: {ctx or 'unknown'}")
+
+    rungs = {n: s2["by_rung"] for n, s2 in summary.items() if s2.get("by_rung")}
+    if rungs:
+        print("\npass by rung (passed / reached each budget, and the seconds spent there):")
+        for n, got in rungs.items():
+            print(f"  {n}: " + ", ".join(f"{m} {g['passed']}/{g['tried']} in {g['seconds']:.0f}s"
+                                         for m, g in got.items()))
 
     cold = [n for n, s2 in summary.items() if s2.get("first_is_cold")]
     if cold:

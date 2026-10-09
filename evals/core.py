@@ -584,6 +584,8 @@ class Result:
     cold: bool | None = None
     #: Where an out-of-process engine says it ran: {"device", "attn"}; {} if unsaid. #604.
     runtime: dict = field(default_factory=dict)
+    #: One {max_tokens, tokens, seconds, passed, failure_class} per budget-ladder rung tried; [] unladdered. #668.
+    attempts: list = field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------
@@ -701,6 +703,8 @@ class Receipt:
     knobs: dict = field(default_factory=dict)
     #: receipt key -> each time the router evicted its model mid-run; any entry refuses ranking. #649.
     router_swaps: dict = field(default_factory=dict)
+    #: The budget ladder a cut-off reply was retried up, max_tokens its top rung; () for one budget. An axis. #668.
+    budget_ladder: tuple = ()
 
     def as_dict(self) -> dict:
         return {"modality": self.modality, "case_ids": list(self.case_ids),
@@ -719,7 +723,8 @@ class Receipt:
                 "launch": dict(self.launch),
                 "max_tokens": self.max_tokens,
                 "knobs": dict(self.knobs),
-                "router_swaps": dict(self.router_swaps)}
+                "router_swaps": dict(self.router_swaps),
+                "budget_ladder": list(self.budget_ladder)}
 
     @classmethod
     def from_dict(cls, raw: dict) -> "Receipt":
@@ -739,7 +744,8 @@ class Receipt:
                    methods=raw.get("methods") or {}, devices=raw.get("devices") or {},
                    launch=raw.get("launch") or {}, max_tokens=int(budget),
                    knobs=legacy_knobs(raw),
-                   router_swaps=raw.get("router_swaps") or {})
+                   router_swaps=raw.get("router_swaps") or {},
+                   budget_ladder=tuple(int(n) for n in raw.get("budget_ladder") or ()))
 
 
 def legacy_knobs(raw: dict) -> dict:
@@ -868,6 +874,11 @@ def comparable(a: Receipt, b: Receipt) -> tuple[bool, str]:
                        f"{b.split} v{b.split_version}")
     if a.repeat != b.repeat:
         return False, f"different repeat: {a.repeat} vs {b.repeat}"
+    if tuple(a.budget_ladder) != tuple(b.budget_ladder):
+        def said(r):
+            return ",".join(map(str, r.budget_ladder)) or f"none (one budget, {r.max_tokens})"
+        return False, (f"different budget ladder: {said(a)} vs {said(b)}. A retry at a larger "
+                       f"budget turns a cut-off reply into an answer")
     if a.max_tokens != b.max_tokens:
         return False, (f"different reply budget: {a.max_tokens} vs {b.max_tokens} "
                        f"tokens. A reasoning model cut off at the smaller one fails "
@@ -1241,8 +1252,21 @@ def summarize(results: list[Result]) -> dict:
             "case_ids": sorted({r.case_id.split("#")[0] for r in rows}),
             **first_token(rows),
             **agent_summary(rows),
+            **by_rung(rows),
         }
     return out
+
+
+def by_rung(rows) -> dict:
+    """Per budget-ladder rung: rows that tried it, passed at it, and the seconds spent there; {} unladdered. #668."""
+    out: dict = {}
+    for r in rows:
+        for a in r.attempts or ():
+            got = out.setdefault(str(a["max_tokens"]), {"tried": 0, "passed": 0, "seconds": 0.0})
+            got["tried"] += 1
+            got["passed"] += 1 if a.get("passed") else 0
+            got["seconds"] = round(got["seconds"] + float(a.get("seconds") or 0.0), 3)
+    return {"by_rung": dict(sorted(out.items(), key=lambda kv: int(kv[0])))} if out else {}
 
 
 def _over_budget(r) -> bool:

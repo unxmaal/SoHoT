@@ -548,6 +548,18 @@ answer that then fails its checks) is recorded as `token_budget_exhausted` with
 the limit it hit, and the comparison table counts it under `budget`, apart from
 `wrong`.
 
+**A budget ladder retries a cut-off reply at a larger budget.** `evals.run
+--budget-ladder 4000,16000,32000,65536` asks each case at the first budget and,
+only when the reply ends `token_budget_exhausted`, asks it again at the next; a
+pass or any other failure stops the climb. A bare `--budget-ladder` takes the
+lane's from `completion.LADDER`. Every candidate climbs the same ladder, with
+rungs past its served context per slot (less the prompt) cut to that room. Each
+row records its `attempts` (budget, tokens, seconds, outcome) and its `seconds`
+is their sum. The receipt records `budget_ladder`, `max_tokens` is its top rung,
+and `--compare` refuses a laddered run against a single-budget run or another
+ladder. The report adds pass by rung: how many cases reached each budget, how
+many passed there, and the seconds spent there.
+
 **A run whose model the router evicted is not ranked.** For a candidate served
 by llama-server's router (directly or through a gateway alias), the eval reads
 the router's `/models` before and after each case. If the model was held and
