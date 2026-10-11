@@ -447,7 +447,7 @@ def _agent_runner(candidate: str, gateway: str, max_tokens: int = 0):
     if kind not in TEXT_KINDS:
         raise SystemExit(f"{candidate} cannot drive a tool loop; the agent lane "
                          f"takes a text candidate or claude-code:<model>")
-    from evals.runners.agent import AgentRunner
+    from evals.runners.agent import AgentRunner, served_counter
     from harness import serving
     try:
         where = serving.route(candidate, gateway)
@@ -456,7 +456,8 @@ def _agent_runner(candidate: str, gateway: str, max_tokens: int = 0):
     from harness import context
     return AgentRunner(where.base, candidate.partition(",")[0].strip(),
                        model=where.model, sampling=where.sampling or None,
-                       served_ctx=context.served_ctx(candidate), max_tokens=max_tokens)
+                       served_ctx=context.served_ctx(candidate), max_tokens=max_tokens,
+                       count=served_counter(where.base, where.model))
 
 
 def _build_runner(candidate: str, gateway: str, outdir: Path | None,

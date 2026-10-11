@@ -8,7 +8,7 @@ from __future__ import annotations
 import hashlib
 import random
 
-#: Rough chars per token for Python source; the case asks for tokens.
+#: Rough chars per token for Python source, used only when the served tokenizer cannot be asked. #695.
 CHARS_PER_TOKEN = 4
 PAD_DIR = "vendor"
 
@@ -66,20 +66,25 @@ def _module(r: random.Random) -> str:
     return "".join(parts)
 
 
-def padding(case_id: str, tokens: int) -> dict[str, str]:
-    """{relative path: source} totalling about `tokens` tokens."""
+def estimate(text: str) -> float:
+    """Tokens in `text` at CHARS_PER_TOKEN, for when the served tokenizer cannot be asked."""
+    return len(text) / CHARS_PER_TOKEN
+
+
+def padding(case_id: str, tokens: int, count=None) -> dict[str, str]:
+    """{relative path: source} of about `tokens` tokens by `count` (the served tokenizer), over by at most one module. #695."""
     if tokens <= 0:
         return {}
+    count = count or estimate
     seed = int.from_bytes(hashlib.sha256(case_id.encode("utf-8")).digest()[:8], "big")
     r = random.Random(seed)
-    budget = tokens * CHARS_PER_TOKEN
     out: dict[str, str] = {f"{PAD_DIR}/__init__.py": ""}
     used = 0
-    while used < budget:
+    while used < tokens:
         name = f"{PAD_DIR}/{_ident(r, _NOUNS, _VERBS)}_{len(out)}.py"
         text = _module(r)
         out[name] = text
-        used += len(text)
+        used += count(text)
     return out
 
 

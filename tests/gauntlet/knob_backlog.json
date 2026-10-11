@@ -1,5 +1,4 @@
 [
- "evals/agent_pad.py:CHARS_PER_TOKEN",
  "evals/claims_import.py:_in_git->subprocess.run(timeout)",
  "evals/claims_report.py:wilson(z)",
  "evals/decide_corpus.py:MAX_CHARS",
@@ -31,9 +30,6 @@
  "evals/run.py:_build_runner(max_tokens)",
  "evals/run.py:build_runner(max_tokens)",
  "evals/runners/agent.py:AgentRunner.__init__(max_tokens)",
- "evals/runners/agent.py:CASE_TIMEOUT_S",
- "evals/runners/agent.py:MAX_STEPS",
- "evals/runners/agent.py:STEP_TIMEOUT_S",
  "evals/runners/chain.py:ChainRunner.__init__(timeout)",
  "evals/runners/chain.py:STAGE_SCALE[controlnet]",
  "evals/runners/claude_code.py:ClaudeCodeRunner.generate->self._once(retries)",

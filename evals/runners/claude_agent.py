@@ -92,11 +92,11 @@ def parse_steps(line_times, log: list[dict]) -> list[dict]:
 
 
 class ClaudeAgentRunner(BaseRunner):
-    def __init__(self, model: str, timeout: float = agent.CASE_TIMEOUT_S,
+    def __init__(self, model: str, timeout: float | None = None,
                  execute=stream_run, binary=("claude",)):
         self.model = model
         self.candidate = f"{PREFIX}:{model}"
-        self.timeout = timeout
+        self.timeout = agent.CASE_TIMEOUT_S if timeout is None else timeout
         self.execute = execute
         self.binary = [binary] if isinstance(binary, str) else list(binary)
         self.last_timing: dict = {}

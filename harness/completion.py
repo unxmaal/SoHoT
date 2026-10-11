@@ -579,7 +579,26 @@ def chat(messages: list, model: str, gateway: str = "",
     except (KeyError, IndexError, TypeError, ValueError) as exc:
         raise CompletionError(f"malformed response: {exc}", reasons.CRASHED) from exc
     return Completion(message.get("content") or "", usage, [], timing,
-                      model=str(body.get("model") or ""), message=message)
+                      model=str(body.get("model") or ""), message=message,
+                      finish=str(body["choices"][0].get("finish_reason") or ""))
+
+
+def token_counter(base: str, model: str):
+    """A count(text) -> int from the served model's own tokenizer (llama-server POST /tokenize), or None when the server has none. #695."""
+    url = f"{base.rstrip('/')}/tokenize"
+    try:
+        r = httpx.post(url, json={"model": model, "content": "probe"}, timeout=TIMEOUT_S)
+        r.raise_for_status()
+        if not isinstance(r.json().get("tokens"), list):
+            return None
+    except (httpx.HTTPError, ValueError, AttributeError):
+        return None
+
+    def count(text: str) -> int:
+        got = httpx.post(url, json={"model": model, "content": text}, timeout=TIMEOUT_S)
+        got.raise_for_status()
+        return len(got.json()["tokens"])
+    return count
 
 
 def artifact(text: str, modality: str) -> str:

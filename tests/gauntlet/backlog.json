@@ -40,7 +40,6 @@
  ],
  "one-default-tuned-for-one-member-applied-to-all": [
   "evals/runners/agent.py:__init__(step_timeout)",
-  "evals/runners/claude_agent.py:__init__(timeout)",
   "evals/runners/omnisvg.py:__init__(timeout)",
   "evals/runners/text.py:__init__(timeout)",
   "evals/sandbox.py:__init__(test_timeout)",

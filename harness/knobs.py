@@ -158,6 +158,16 @@ KNOBS: dict[str, Knob] = dict([
        lanes=("web",), limit="chrome_render_timeout_s", receipt="knobs", note="seconds headless Chrome may take to screenshot a page (#693)"),
     _k("svg_render_timeout", ["harness/checks/render.py:SVG_TIMEOUT_S"], [10.0, 30.0, 60.0, 120.0],
        lanes=("svg",), limit="svg_render_timeout_s", receipt="knobs", note="seconds rsvg-convert may take to draw one SVG (#693)"),
+    _k("agent_max_steps", ["evals/runners/agent.py:MAX_STEPS"], [8, 12, 20, 40], lanes=("agent",),
+       limit="agent_max_steps", receipt="knobs", note="tool-loop steps an agent case may take when it names none (#695)"),
+    _k("agent_case_timeout", ["evals/runners/agent.py:CASE_TIMEOUT_S"], [600.0, 900.0, 1800.0, 3600.0],
+       lanes=("agent",), limit="agent_case_timeout_s", receipt="knobs",
+       note="seconds of an agent case's decoding and tools; prefill is not counted (#695)"),
+    _k("agent_step_timeout", ["evals/runners/agent.py:STEP_TIMEOUT_S"], [180.0, 300.0, 600.0, 1200.0],
+       lanes=("agent",), limit="agent_step_timeout_s", receipt="knobs", runner_attr="step_timeout",
+       note="seconds one agent step may take, stretched for the reply budget (#695)"),
+    _k("agent_pad_chars_per_token", ["evals/agent_pad.py:CHARS_PER_TOKEN"], [3, 3.5, 4],
+       note="agent padding size estimate, used only where the served tokenizer cannot be asked (#695)"),
     _k("eval7b_slots", ["harness/context.py:EVAL_7B_SLOTS"], [1, 4, 8, 16, 32],
        note="llama-server slots Qwen2.5-7B-Instruct-Q4_K_M batches across; sets claims throughput, not a grade (#665)"),
     _k("eval7b_slot_ctx", ["harness/context.py:EVAL_7B_SLOT_CTX"], [3072, 4096, 8192],
@@ -172,7 +182,8 @@ KNOBS: dict[str, Knob] = dict([
 
 #: The value a knob had on receipts written before it was recorded there, by knob name. #693.
 UNRECORDED = {"code_check_timeout": 15.0, "audio_timeout": 120.0, "chrome_render_timeout": 60.0,
-              "svg_render_timeout": 30.0, "claude_code_timeout": 600.0, "needle_serve_start": 60.0}
+              "svg_render_timeout": 30.0, "claude_code_timeout": 600.0, "needle_serve_start": 60.0,
+              "agent_max_steps": 20, "agent_case_timeout": 900.0, "agent_step_timeout": 300.0}
 
 #: Constants the inventory finds whose name says gate and whose value does not, each with why.
 NOT_GATING: dict[str, str] = {
