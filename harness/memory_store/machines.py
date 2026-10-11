@@ -101,8 +101,9 @@ def _machine_of(fp: str) -> dict:
 
 
 def _claim(conn, fp: str) -> None:
-    """A host takes over its board's row from before hosts were recorded, once. #697."""
-    if not _machine_of(fp):
+    """This host takes over its board's row from before hosts were recorded, once. #697."""
+    # Only the store's own host: another host's receipt must not inherit this one's history.
+    if not _machine_of(fp) or fp != ms.this_machine()["fingerprint"]:
         return
     if conn.execute("SELECT 1 FROM machines WHERE fingerprint = ?", (fp,)).fetchone():
         return

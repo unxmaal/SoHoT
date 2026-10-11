@@ -173,7 +173,7 @@ def running_job(conn=None) -> str:
         return f"{head}, no earlier run to estimate from"
     typical = statistics.median(took) / 60
     left = typical - ran
-    whose = " on other machines" if elsewhere else ""
+    whose = " on other or unrecorded machines" if elsewhere else ""
     if left <= 0:
         return f"{head}, past the {typical:.0f} min earlier runs of it{whose} took"
     return f"{head}, about {left:.0f} min left by earlier runs of it{whose}"

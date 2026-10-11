@@ -195,7 +195,13 @@ def current(conn=None) -> dict | None:
 def durations(title: str, conn=None, anywhere: bool = False) -> list[float]:
     """Seconds each finished, successful job with this title took here, or on any machine. #588, #697."""
     with _store(conn) as c:
-        where, args = ("1 = 1", ()) if anywhere else _here(c)
+        if anywhere:
+            where, args = "1 = 1", ()
+        else:
+            # An unstamped job ran on some machine, not necessarily this one.
+            from harness import memory_store as ms
+            mid = ms.machine_row(c)
+            where, args = ("machine_id = ?", (mid,)) if mid is not None else ("0 = 1", ())
         rows = c.execute("SELECT started_at, finished_at FROM jobs WHERE state = ? "
                          "AND title = ? AND started_at IS NOT NULL "
                          f"AND finished_at IS NOT NULL AND {where}",

@@ -973,7 +973,7 @@ def _execute_at(args, overrides: dict) -> int:
             budget_ladder=ladder,
             resolved=resolved,
             machine=serving,
-            served=served_shapes(specs, resolved, completion.served(), away))
+            served=served_shapes(specs, resolved, completion.served(), away, args.gateway))
         now = time.time()
         ids = candidate_ids(specs, args.modality)
         for r in results:
@@ -994,19 +994,15 @@ def _execute_at(args, overrides: dict) -> int:
     return 0
 
 
-def _loopback(url: str) -> bool:
-    from urllib.parse import urlsplit
-    return (urlsplit(url).hostname or "") in ("127.0.0.1", "localhost", "::1", "0.0.0.0")
-
-
 def serving_machine(seen: dict, here: str) -> tuple[str, bool]:
     """(the fingerprint of the host that served, whether it is another one) from the replies. #697."""
+    from harness import machine
     away = set()
     for (gw, _), got in seen.items():
         if got.get("machine"):
             if got["machine"] != here:
                 away.add(got["machine"])
-        elif not _loopback(gw):
+        elif not machine.is_loopback(gw):
             away.add(f"unknown: {gw} did not name its machine")
     if not away:
         return here, False
@@ -1023,16 +1019,27 @@ def serving_environment(client: dict, serving: str, away: bool) -> dict:
     return {**machine.parse_fingerprint(serving), "client": client}
 
 
-def served_shapes(specs: dict, resolved: dict, seen: dict, away: bool) -> dict:
+def _sent_as(spec: str, gateway: str | None) -> str:
+    """The model name a text spec's requests carry, which is how its replies are keyed. #697."""
+    from harness import serving
+    try:
+        return serving.route(spec, gateway or "").model
+    except Exception:  # noqa: BLE001 - an unroutable spec keeps its own name
+        return spec.partition(",")[0].strip()
+
+
+def served_shapes(specs: dict, resolved: dict, seen: dict, away: bool,
+                  gateway: str | None = None) -> dict:
     """receipt key -> the model, context and slots its text candidate was served with. #697."""
-    named = {model: got.get("model") for (_, model), got in seen.items() if got.get("model")}
+    named = {model: got for (_, model), got in seen.items()}
     out = {}
     for key, spec in specs.items():
         if not text_candidate(spec):
             continue
-        name = text_spec(spec).partition(",")[0]
-        shape = {"model": named.get(name) or ("" if away else resolved.get(key, ""))}
-        if not away:
+        said = named.get(_sent_as(text_spec(spec), gateway)) or {}
+        shape = {"model": said.get("model") or ("" if away else resolved.get(key, "")),
+                 "ctx": said.get("ctx"), "slots": said.get("slots")}
+        if not away and not (shape["ctx"] or shape["slots"]):
             shape["ctx"] = _served_ctx(spec)
             try:
                 shape["slots"] = context.served_slots(spec)

@@ -354,7 +354,7 @@ def _refuses_system_role(body: str) -> bool:
     return any(p in low for p in SYSTEM_ROLE_REFUSALS)
 
 
-#: (gateway, model) -> {"machine", "model"} its last good reply named in x-sohot-* headers. #697.
+#: (gateway, model) -> {"machine", "model", "ctx", "slots"} its last good reply named in x-sohot-* headers. #697.
 SERVED: dict = {}
 
 
@@ -362,9 +362,15 @@ def _note(gateway: str, model, r) -> None:
     if getattr(r, "status_code", 200) >= 400:
         return
     got = getattr(r, "headers", None) or {}
+    shape = {}
+    for key in ("ctx", "slots"):
+        try:
+            shape[key] = int(got.get(f"x-sohot-{key}") or 0) or None
+        except ValueError:
+            shape[key] = None
     SERVED[(gateway.rstrip("/"), str(model or ""))] = {
         "machine": str(got.get("x-sohot-machine") or ""),
-        "model": str(got.get("x-sohot-model") or "")}
+        "model": str(got.get("x-sohot-model") or ""), **shape}
 
 
 def served(gateway: str | None = None) -> dict:

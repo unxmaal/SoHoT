@@ -215,6 +215,14 @@ def parse_fingerprint(fp: str) -> dict:
 
 HOST_FILE = "host-id"
 
+#: Hostnames that mean this host, for the gateway and the client alike. #697.
+LOOPBACK = ("127.0.0.1", "localhost", "::1", "0.0.0.0")
+
+
+def is_loopback(url: str) -> bool:
+    from urllib.parse import urlsplit
+    return (urlsplit(url or "").hostname or "") in LOOPBACK
+
 
 @lru_cache(maxsize=1)
 def _platform_uuid() -> str:

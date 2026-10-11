@@ -272,4 +272,87 @@ def test_an_estimate_from_other_machines_says_so():
     job.update(state=wq.RUNNING, started=_ago(10))
     wq._write(job)
     got = delegate.running_job()
-    assert "about 50 min left" in got and "other machines" in got
+    assert "about 50 min left" in got and "other or unrecorded machines" in got
+
+
+# --- review round 2 -------------------------------------------------------------------
+
+def test_the_gateway_names_its_machine_when_the_alias_does_not_resolve(monkeypatch):
+    mod = _gateway_module()
+    monkeypatch.setattr(mod, "this_machine", lambda: B)
+    monkeypatch.setattr(mod.models, "resolve", lambda m: (_ for _ in ()).throw(KeyError(m)))
+    got = asyncio.run(mod.proxy_handler_instance.async_post_call_response_headers_hook(
+        data={"model": "eval-7b"}, user_api_key_dict=None, response=None))
+    assert got == {"x-sohot-machine": B}
+
+
+def test_one_loopback_list_serves_client_and_gateway():
+    mod = _gateway_module()
+    assert mod.LOOPBACK is machine.LOOPBACK
+    assert machine.is_loopback("http://[::1]:4000") and not machine.is_loopback(REMOTE)
+
+
+def test_the_gateway_names_the_context_and_slots_it_serves(monkeypatch):
+    mod = _gateway_module()
+    monkeypatch.setattr(mod, "this_machine", lambda: B)
+    monkeypatch.setattr(mod, "served_shape", lambda model: {"ctx": 32768, "slots": 4})
+    got = asyncio.run(mod.proxy_handler_instance.async_post_call_response_headers_hook(
+        data={"model": "eval-7b"}, user_api_key_dict=None, response=None))
+    assert got["x-sohot-ctx"] == "32768" and got["x-sohot-slots"] == "4"
+
+
+@respx.mock
+def test_a_remote_run_records_the_context_and_slots_the_host_served(tmp_path, monkeypatch, quiet):
+    reply = _reply(B)
+    reply.headers["x-sohot-ctx"] = "32768"
+    reply.headers["x-sohot-slots"] = "4"
+    respx.post(f"{REMOTE}/v1/chat/completions").mock(return_value=reply)
+    data = _run(tmp_path, monkeypatch, REMOTE)
+    assert data["receipt"]["served"]["sohot-code"] == {
+        "model": "Ornith-1.5-35B-Q4_K_M", "ctx": 32768, "slots": 4}
+
+
+def test_a_llamacpp_spec_finds_the_reply_by_the_model_it_was_sent_as(monkeypatch):
+    from harness import router, serving
+    monkeypatch.setattr(serving, "_servable", lambda stem: stem)
+    seen = {(router.url().rstrip("/"), "Ornith-Q4"): {"machine": B, "model": "Ornith-Q4"}}
+    got = R.served_shapes({"k": "llamacpp:Ornith-Q4"}, {}, seen, True)
+    assert got == {"k": {"model": "Ornith-Q4"}}
+
+
+def test_a_receipt_from_another_host_does_not_take_this_stores_old_row(tmp_path, be):
+    conn = ms.connect(tmp_path / "s.db")
+    old = runs.machine_for(conn, {"hw_model": "Mac17,15", "os": OS, "arch": "arm64"})
+    be(_env("aaaaaaaaaaaa"))
+    b = runs.machine_for(conn, _env("bbbbbbbbbbbb"))
+    assert b != old
+    assert ms.remember_machine(conn) == old
+    conn.close()
+
+
+def test_asking_for_the_client_machine_writes_nothing(tmp_path, be):
+    conn = ms.connect(tmp_path / "s.db")
+    be(_env("aaaaaaaaaaaa"))
+    run_id = runs.record(conn, tmp_path / "r.json", {
+        "generated": "2026-10-11T00:00:00", "environment": {**_env("bbbbbbbbbbbb"), "client": _env("cccccccccccc")},
+        "receipt": {"modality": "code"}, "rows": [{"case_id": "c1", "passed": True, "candidate": "k"}]})
+    client = runs.client_machine_id(conn, run_id)
+    assert client is not None
+    conn.execute("DELETE FROM machines WHERE id = ?", (client,))
+    before = conn.execute("SELECT COUNT(*) FROM machines").fetchone()[0]
+    assert runs.client_machine_id(conn, run_id) is None
+    assert conn.execute("SELECT COUNT(*) FROM machines").fetchone()[0] == before
+    conn.close()
+
+
+def test_jobs_with_no_machine_are_not_counted_as_this_ones():
+    _done("y", 20)
+    _done("y", 90)
+    conn = ms.connect()
+    try:
+        conn.execute("UPDATE jobs SET machine_id = NULL WHERE title = 'y' AND id = "
+                     "(SELECT MAX(id) FROM jobs WHERE title = 'y')")
+        conn.commit()
+    finally:
+        conn.close()
+    assert [round(s / 60) for s in wq.durations("y")] == [20]

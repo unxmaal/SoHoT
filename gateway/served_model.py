@@ -4,11 +4,13 @@ Loaded by LiteLLM from the gateway config (`litellm_settings.callbacks`). Header
 LiteLLM 1.100.0 restamps the body's `model` to the requested name after every hook.
 """
 import sys
+import time
 from functools import lru_cache
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from harness import models  # noqa: E402
+from harness.machine import LOOPBACK  # noqa: E402
 
 try:
     from litellm.integrations.custom_logger import CustomLogger
@@ -25,9 +27,6 @@ def resolved(data: dict) -> tuple[str, str]:
     except Exception:  # noqa: BLE001
         return "", ""
     return real, (model if real and real != model else "")
-
-
-LOOPBACK = ("127.0.0.1", "localhost", "::1", "0.0.0.0")
 
 
 @lru_cache(maxsize=1)
@@ -58,19 +57,44 @@ def serving_machine(model: str) -> str:
     return f"upstream:{away}" if away else this_machine()
 
 
+SHAPE_TTL_S = 30.0
+_SHAPES: dict = {}
+
+
+def served_shape(model: str) -> dict:
+    """{"ctx", "slots"} this gateway serves a model with, as far as it can tell; cached briefly. #697."""
+    now = time.monotonic()
+    hit = _SHAPES.get(model)
+    if hit and now - hit[0] < SHAPE_TTL_S:
+        return hit[1]
+    from harness import context
+    got = {}
+    for key, probe in (("ctx", context.served_ctx), ("slots", context.served_slots)):
+        try:
+            got[key] = probe(model)
+        except Exception:  # noqa: BLE001 - a reply header must not fail a reply
+            got[key] = None
+    got = {k: v for k, v in got.items() if v}
+    _SHAPES[model] = (now, got)
+    return got
+
+
 class ServedModel(CustomLogger):
     async def async_post_call_response_headers_hook(self, data, user_api_key_dict, response,
                                                     request_headers=None, litellm_call_info=None):
+        model = str(data.get("model") or "")
         real, alias = resolved(data)
-        if not real:
-            return None
-        headers = {"x-sohot-model": real}
-        who = serving_machine(str(data.get("model") or ""))
+        headers = {}
+        who = serving_machine(model)
         if who:
             headers["x-sohot-machine"] = who
+        if real:
+            headers["x-sohot-model"] = real
+            for key, value in served_shape(model).items():
+                headers[f"x-sohot-{key}"] = str(value)
         if alias:
             headers["x-sohot-served-as"] = alias
-        return headers
+        return headers or None
 
 
 proxy_handler_instance = ServedModel()

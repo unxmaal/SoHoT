@@ -308,7 +308,13 @@ def client_machine_id(conn, run_id: int) -> int | None:
         env = json.loads((got and got["environment"]) or "{}")
     except ValueError:
         return None
-    return machine_for(conn, env["client"]) if env.get("client") else None
+    client = env.get("client") if isinstance(env, dict) else None
+    if not isinstance(client, dict):
+        return None
+    from harness import machine
+    fp = machine.fingerprint(*(str(client.get(k) or "") for k in ("hw_model", "os", "arch", "host")))
+    row = conn.execute("SELECT id FROM machines WHERE fingerprint = ?", (fp,)).fetchone()
+    return int(row["id"]) if row else None
 
 
 def get(conn, run_id: int) -> dict | None:
