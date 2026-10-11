@@ -37,7 +37,7 @@ _SEQ = iter(range(1, 10_000))
 
 
 def record_run(conn, lane, results, *, at, versions=None, macos="27.0.1",
-               job_id=None, failure_class=""):
+               job_id=None, failure_class="", receipt=None):
     """Store one run: results is [(candidate, case, passed), ...]."""
     env = {"hw_model": "Mac14,12", "os": f"macOS-{macos}-arm64-arm-64bit",
            "arch": "arm64", "macos": macos,
@@ -47,7 +47,7 @@ def record_run(conn, lane, results, *, at, versions=None, macos="27.0.1",
             for c, case, ok in results]
     specs = {c: c for c, _, _ in results}
     rid = runs.record(conn, f"runs/r{next(_SEQ)}-{lane}",
-                      {"receipt": {"modality": lane}, "environment": env,
+                      {"receipt": {"modality": lane, **(receipt or {})}, "environment": env,
                        "specs": specs, "rows": rows}, at=at)
     if job_id is not None:
         conn.execute("UPDATE runs SET job_id = ? WHERE id = ?", (int(job_id), rid))
@@ -476,3 +476,36 @@ def test_the_discover_loop_runs_the_check(monkeypatch):
                         {"settled": [], "planned": [], "queued": []})
     loop_cmd._reverify()
     assert seen and not seen[0].get("dry_run")
+
+
+# ---- #690: the rerun pairs with its baseline on the case, at the baseline's repeat and split
+
+def _repeated(spec, passed, total=10, repeat=3):
+    return [(spec, f"c{i}#{r}", i < passed) for i in range(total) for r in range(1, repeat + 1)]
+
+
+def test_the_rerun_runs_at_the_baseline_repeat_and_split(conn, on):
+    record_run(conn, "code", _repeated("q3-4b", 10), at=NOW - DAY, receipt={"repeat": 3, "split": "holdout"})
+    on(versions={**VERSIONS, "mlx-lm": "0.29.1"})
+    check(conn)
+    [job] = queued(conn)
+    argv = job["argv"]
+    assert argv[argv.index("--repeat") + 1] == "3" and argv[argv.index("--split") + 1] == "holdout"
+
+
+def test_a_rerun_at_another_repeat_than_its_baseline_is_not_a_pass(conn, on):
+    record_run(conn, "code", _repeated("q3-4b", 10), at=NOW - DAY, receipt={"repeat": 3})
+    on(versions={**VERSIONS, "mlx-lm": "0.29.1"})
+    _queue_and_finish(conn, cases("q3-4b", 1))
+    check(conn, now=NOW + 120)
+    row = _latest(conn)
+    assert row["outcome"] == reverify.UNRUN and "repeat" in row["detail"]
+
+
+def test_a_repeated_rerun_that_regresses_is_flagged_counting_cases_not_draws(conn, on):
+    record_run(conn, "code", _repeated("q3-4b", 10), at=NOW - DAY, receipt={"repeat": 3})
+    on(versions={**VERSIONS, "mlx-lm": "0.29.1"})
+    _queue_and_finish(conn, _repeated("q3-4b", 1))
+    check(conn, now=NOW + 120)
+    row = _latest(conn)
+    assert row["outcome"] == reverify.REGRESSED and "27 lost against 0 gained" in row["detail"]

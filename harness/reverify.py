@@ -221,8 +221,8 @@ def _skip(conn, item: dict, found: list, now: float) -> str:
     return ""
 
 
-def argv(item: dict) -> list[str]:
-    """The evals.run command the job runs: the served spec, and its incumbent when there is one."""
+def argv(item: dict, base: dict | None = None) -> list[str]:
+    """The evals.run command the job runs: the served spec, its incumbent when there is one, at the baseline's repeat and split."""
     from harness import screen
     specs = [item["spec"]] + ([item["incumbent"]] if item["incumbent"] else [])
     out = ["uv", "run", "python", "-m", "evals.run", "--modality", item["lane"],
@@ -230,6 +230,9 @@ def argv(item: dict) -> list[str]:
     route = screen.routed_gateway(item["spec"])
     if route:
         out += ["--gateway", route]
+    if base is not None:
+        out += ["--repeat", str(int(base.get("repeat_count") or 1)),
+                "--split", base.get("split") or "all"]
     return out
 
 
@@ -248,7 +251,7 @@ def plan(conn, *, now: float, facts: dict, lane: str = "") -> list[dict]:
                     "baseline_run_id": base["id"] if base else None,
                     "last_pass_days": None if base is None
                     else round((now - base["generated_at"]) / 86400.0, 1),
-                    "days": days_for(conn, name), "argv": argv(item)})
+                    "days": days_for(conn, name), "argv": argv(item, base)})
     return out
 
 
@@ -267,22 +270,25 @@ def _queue(conn, entry: dict, now: float, add) -> dict:
     return {**entry, "job": job["id"]}
 
 
-def _paired(before: list[dict], after: list[dict]):
-    """The served candidate against itself across two runs, cell by case and repeat."""
-    from harness import paired
+def _lost(before: list[dict], after: list[dict]) -> list[dict]:
+    """The rerun's judged failures whose draw passed in the baseline; unjudged rows are neither. #690, #693."""
+    from harness import holdout, paired
+    was = paired.draws(before)
+    seen: Counter = Counter()
+    out = []
+    for r in sorted(after, key=lambda r: (holdout.base_id(r["case_id"]), paired.repeat_index(r["case_id"]))):
+        k = holdout.base_id(r["case_id"])
+        i = seen[k]
+        seen[k] += 1
+        if paired._verdict(r) is False and i < len(was.get(k, ())) and was[k][i]:
+            out.append(r)
+    return out
 
-    def cells(rows):
-        seen: Counter = Counter()
-        out = {}
-        for r in rows:
-            seen[r["case_id"]] += 1
-            out[(r["case_id"], seen[r["case_id"]])] = r
-        return out
-    a, b = cells(before), cells(after)
-    cell = paired._cell("", {k: paired._verdict(r) for k, r in a.items()},
-                        {k: paired._verdict(r) for k, r in b.items()})
-    lost = [k for k in a.keys() & b.keys() if paired._verdict(a[k]) and paired._verdict(b[k]) is False]
-    return cell, [b[k] for k in sorted(lost)]
+
+def _paired(before: list[dict], after: list[dict]):
+    """The served candidate against itself across two runs, by base case and repeat, and its lost rows."""
+    from harness import paired
+    return paired.pair(before, after, same_repeat=True), _lost(before, after)
 
 
 def _class_of(rows: list[dict]) -> str:
@@ -318,6 +324,9 @@ def judge(conn, rv: dict, job: dict | None) -> tuple[str, str, str, str, int | N
     if rv["baseline_run_id"]:
         before = runs.rows(conn, rv["baseline_run_id"], rv["candidate_id"])
         cell, lost = _paired(before, mine)
+        if cell.refused:
+            return (UNRUN, reasons.HARNESS, "", f"run {rid} cannot be paired with baseline run "
+                    f"{rv['baseline_run_id']}: {cell.refused}", rid)
         if cell.lost > cell.gained and cell.p <= adopt.ALPHA:
             cls = _class_of(lost)
             return (REGRESSED, _reason(cls), cls,

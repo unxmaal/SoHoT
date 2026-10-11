@@ -122,3 +122,52 @@ def test_without_across_the_refusal_still_stands(tmp_path, capsys):
               rows("m", [False]))
     assert compare_runs([a, b]) == 1
     assert "REFUSED" in capsys.readouterr().out
+
+
+def test_cells_pair_on_the_case_not_the_row_position():
+    """#690: the same cases in another row order, plus a second candidate in one run, still pair."""
+    before = rows("m", [True, True, True])
+    after = [{"candidate": "other", "case_id": "c0", "passed": True}] + rows("m", [False] * 3)[::-1]
+    got = paired.cells(before, after)[0]
+    assert (got.lost, got.gained, got.discordant) == (3, 0, 3)
+
+
+def test_repeats_pair_by_their_repeat_index():
+    before = [{"candidate": "m", "case_id": f"c0#{r}", "passed": r == 1} for r in (1, 2, 3)]
+    got = paired.cells(before, before[::-1])[0]
+    assert got.discordant == 0 and got.unchanged == 3
+
+
+def test_cells_refuse_when_the_case_sets_differ():
+    got = paired.cells(rows("m", [True, True]), rows("m", [True]))[0]
+    assert got.refused and got.verdict.startswith("not paired")
+
+
+def test_correlated_repeats_are_shrunk_by_the_design_effect():
+    """#591 applied to --across: three draws of a deterministic case are one case, not three cells."""
+    before = [{"candidate": "m", "case_id": f"c{i}#{r}", "passed": True} for i in range(2) for r in (1, 2, 3)]
+    after = [{**r, "passed": False} for r in before]
+    got = paired.cells(before, after)[0]
+    assert got.lost == 6 and got.p == paired.sign_test(0, 2)
+
+
+def test_the_cell_verdict_reads_adopt_alpha(monkeypatch):
+    from harness import adopt
+    monkeypatch.setattr(adopt, "ALPHA", 0.01)
+    cell = paired.Cell("m", lost=0, gained=6, unchanged=0)
+    assert 0.01 < cell.p <= 0.05 and cell.verdict == "no evidence"
+
+
+def test_repeats_pair_by_base_case_and_shrink_while_timeouts_stay_unjudged():
+    """#690 with #693: shuffled repeats pair by base case and repeat, the design effect shrinks them, and a timeout or harness failure is neither lost nor gained."""
+    from harness import reasons, reverify
+    before = [{"candidate": "m", "case_id": f"c{i}#{r}", "passed": True} for i in range(2) for r in (1, 2, 3)]
+    off = {"c0#2": reasons.TIMEOUT, "c1#3": reasons.HARNESS_ERROR}
+    after = [{**r, "passed": False, "failure_class": off.get(r["case_id"], reasons.CONTENT_FAILED)}
+             for r in before[::-1]]
+    got = paired.cells(before, after)[0]
+    assert (got.lost, got.gained, got.unchanged, got.unjudged) == (4, 0, 0, 2)
+    assert got.deff > 1.0 and got.p > paired.sign_test(0, 4)
+    cell, lost = reverify._paired(before, after)
+    assert (cell.lost, cell.unjudged) == (4, 2)
+    assert [r["case_id"] for r in lost] == ["c0#1", "c0#3", "c1#1", "c1#2"]

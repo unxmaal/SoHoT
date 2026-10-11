@@ -1,9 +1,9 @@
-"""A binding knob is swept across its range through the work queue, and the cheapest value tied with the best is recorded (#636).
+"""A binding knob is swept across its range through the work queue, and the cheapest value shown no worse than the best is recorded (#636, #690).
 
 binding.count says a knob keeps deciding a lane's results. This queues one
 evals.run of the lane's served model per value the knob declares, reads the
-runs those jobs store, and picks the cheapest value (fewest seconds) that the
-paired sign test cannot tell from the best. The decision and its cost are
+runs those jobs store, and picks the cheapest value (fewest seconds) that is
+not significantly worse than the best with power to have seen a loss. The decision and its cost are
 recorded in knob_sweeps; nothing here changes a constant. A sweep is not run
 again for the same knob, lane, model and machine; a change of any of those
 asks again.
@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import json
 import time
-from collections import Counter
 
 from harness import binding, knobs
 
@@ -92,18 +91,23 @@ def _queue(conn, entry: dict, now: float, add) -> dict:
     return {**entry, "sweep": cur.lastrowid, "jobs": jobs}
 
 
-def _cells(rows):
-    seen: Counter = Counter()
-    out = {}
-    for r in rows:
-        seen[r["case_id"]] += 1
-        out[(r["case_id"], seen[r["case_id"]])] = r
-    return out
+def _power_to_see_a_loss(best_rows, cell, alpha: float, effect: float) -> float:
+    """Power of the paired test to see this value lose `effect` per cell against the best. #690."""
+    from harness import paired, power
+    got = paired.draws(best_rows)
+    if not got:
+        return 0.0
+    repeat = sum(map(len, got.values())) / len(got)
+    rho = (cell.deff - 1.0) / (repeat - 1.0) if repeat > 1 else 0.0
+    # A loss of d from rate p has the odds of a gain of d from rate 1-p.
+    flipped = [1.0 - sum(v) / len(v) for v in got.values()]
+    return power.power(flipped, effect, repeat=max(1, round(repeat)), alpha=alpha, rho=rho)
 
 
-def decide(values, outcomes: dict, alpha: float) -> tuple[object, dict]:
-    """The cheapest swept value statistically tied with the best, and the cost table by str(value)."""
-    from harness import paired
+def decide(values, outcomes: dict, alpha: float, effect: float | None = None) -> tuple[object, dict]:
+    """The cheapest value not significantly worse than the best with power >= TARGET to see a loss of effect, and the cost table. #690."""
+    from harness import paired, power
+    effect = power.DEFAULT_EFFECT if effect is None else effect
     pos = {v: i for i, v in enumerate(values)}
     stats = {}
     for v in values:
@@ -114,18 +118,18 @@ def decide(values, outcomes: dict, alpha: float) -> tuple[object, dict]:
     if not stats:
         return None, {}
     best = min(stats, key=lambda v: (-stats[v]["passed"], stats[v]["seconds"], pos[v]))
-    base = _cells(stats[best]["rows"])
     table, tied = {}, []
     for v in (v for v in values if v in stats):
-        mine = _cells(stats[v]["rows"])
-        keys = base.keys() & mine.keys()
-        lost = sum(1 for key in keys if base[key]["passed"] and not mine[key]["passed"])
-        gained = sum(1 for key in keys if mine[key]["passed"] and not base[key]["passed"])
-        p = paired.sign_test(min(lost, gained), lost + gained)
-        ok = not (lost > gained and p <= alpha)
+        cell = paired.pair(stats[best]["rows"], stats[v]["rows"], same_repeat=True,
+                           unjudged=paired.UNJUDGED_ON_A_TIMEOUT_AXIS)
+        worse = cell.lost > cell.gained and cell.p <= alpha
+        pw = 1.0 if v == best else (0.0 if cell.refused else
+                                    _power_to_see_a_loss(stats[best]["rows"], cell, alpha, effect))
+        ok = v == best or (not worse and pw >= power.TARGET)
         table[str(v)] = {"passed": stats[v]["passed"], "n": stats[v]["n"],
-                         "seconds": round(stats[v]["seconds"], 3), "lost": lost, "gained": gained,
-                         "p": round(p, 4), "tied": ok, "best": v == best}
+                         "seconds": round(stats[v]["seconds"], 3), "lost": cell.lost, "gained": cell.gained,
+                         "p": round(cell.p, 4), "power": round(pw, 3), "tied": ok,
+                         "underpowered": not ok and not worse, "refused": cell.refused, "best": v == best}
         if ok:
             tied.append(v)
     return min(tied, key=lambda v: (stats[v]["seconds"], pos[v])), table
@@ -139,7 +143,7 @@ def _run_of(conn, job_id: int) -> int | None:
 
 def judge(conn, sw: dict) -> tuple[str, object, dict, str]:
     """(outcome, chosen, cost, detail) for one sweep whose jobs have all finished."""
-    from harness import adopt, runs
+    from harness import adopt, power, runs
     k = knobs.KNOBS[sw["knob"]]
     outcomes, ran = {}, {}
     for value, job_id in json.loads(sw["jobs"]):
@@ -149,7 +153,7 @@ def judge(conn, sw: dict) -> tuple[str, object, dict, str]:
         ran[value] = rid
         outcomes[value] = (runs.rows(conn, rid, sw["candidate_id"]) if sw["candidate_id"] is not None
                            else runs.rows(conn, rid))
-    chosen, cost = decide(k.values_for(sw["lane"]), outcomes, adopt.ALPHA)
+    chosen, cost = decide(k.values_for(sw["lane"]), outcomes, adopt.ALPHA, power.effect_for(sw["lane"]))
     if chosen is None:
         return UNRUN, None, {}, f"none of the {len(json.loads(sw['jobs']))} jobs stored a run"
     for value, rid in ran.items():
@@ -159,8 +163,10 @@ def judge(conn, sw: dict) -> tuple[str, object, dict, str]:
     spent = sum(c["seconds"] for c in cost.values())
     c, b = cost[str(chosen)], cost[str(best)]
     detail = (f"{k.name} on {sw['lane']} for {sw['spec']}: chose {chosen:g} ({c['passed']} of {c['n']}, "
-              f"{c['seconds']:g}s), tied with the best {best:g} ({b['passed']} of {b['n']}, "
-              f"{b['seconds']:g}s); now {k.default(sw['lane']):g}; the sweep spent {spent:g}s")
+              f"{c['seconds']:g}s), {'the best' if chosen == best else 'no worse than the best'} "
+              f"{best:g} ({b['passed']} of {b['n']}, {b['seconds']:g}s); now {k.default(sw['lane']):g}; the sweep spent {spent:g}s"
+              + "".join(f"; {v} not distinguishable from the best at power {row['power']:.2f}"
+                        for v, row in cost.items() if row["underpowered"]))
     return CHOSEN, chosen, cost, detail
 
 

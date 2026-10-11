@@ -109,15 +109,15 @@ def test_a_dry_run_queues_nothing(conn, serving):
     assert got["planned"] and not got["queued"] and queued(conn) == []
 
 
-def _finish(conn, outcomes, state=wq.DONE):
-    """outcomes: value -> (passed of 20, seconds per row), or None for a job that stored no run."""
+def _finish(conn, outcomes, state=wq.DONE, total=20):
+    """outcomes: value -> (passed of total, seconds per row), or None for a job that stored no run."""
     for job in queued(conn):
         wq._write({**job, "state": state, "rc": 0}, conn=conn)
     row = conn.execute("SELECT jobs FROM knob_sweeps ORDER BY id DESC").fetchone()
     for value, job_id in json.loads(row["jobs"]):
         got = outcomes.get(value)
         if got is not None:
-            record(conn, "code", got[0], 20, at=NOW + 60, job_id=job_id, seconds=got[1])
+            record(conn, "code", got[0], total, at=NOW + 60, job_id=job_id, seconds=got[1])
 
 
 def _settled(conn):
@@ -127,15 +127,16 @@ def _settled(conn):
 def test_the_cheapest_value_tied_with_the_best_is_chosen_and_its_cost_recorded(conn, serving):
     binding_budget(conn)
     sweeps.check(conn, now=NOW)
-    _finish(conn, {2000: (2, 0.5), 4000: (19, 1.0), 8000: (20, 2.0), 16384: (20, 4.0),
-                   32768: (20, 8.0), 65536: (20, 16.0)})
+    # 60 cases: enough power to call one lost case a tie at the default effect (#690).
+    _finish(conn, {2000: (6, 0.5), 4000: (59, 1.0), 8000: (60, 2.0), 16384: (60, 4.0),
+                   32768: (60, 8.0), 65536: (60, 16.0)}, total=60)
     got = sweeps.check(conn, now=NOW + 120)
     row = _settled(conn)
     assert row["outcome"] == sweeps.CHOSEN
     assert json.loads(row["chosen"]) == 4000
     cost = json.loads(row["cost"])
     assert cost["4000"]["tied"] and not cost["2000"]["tied"]
-    assert cost["8000"]["passed"] == 20 and cost["8000"]["seconds"] == 40.0
+    assert cost["8000"]["passed"] == 60 and cost["8000"]["seconds"] == 120.0
     assert "4000" in row["detail"] and "8000" in row["detail"]
     assert got["settled"][0]["chosen"] == 4000
 
@@ -247,3 +248,28 @@ def test_sensitivity_sweeps_is_a_dry_run(monkeypatch, capsys, tmp_path):
     assert cli.main(["sensitivity", "--sweeps", "--json"]) == 0
     got = json.loads(capsys.readouterr().out)
     assert got == {"planned": [], "decided": []}
+
+
+def _rows(passed, total, seconds):
+    return [{"case_id": f"c{i}", "passed": i < passed, "seconds": seconds} for i in range(total)]
+
+
+def test_a_value_that_loses_without_significance_is_underpowered_not_tied():
+    """#690: 3 lost against 0 gained is p=0.25, a failure to reject, not evidence the cheaper value is as good."""
+    chosen, table = sweeps.decide([2000, 4000], {2000: _rows(17, 20, 1.0), 4000: _rows(20, 20, 2.0)}, 0.05)
+    assert chosen == 4000
+    assert not table["2000"]["tied"] and table["2000"]["underpowered"]
+    assert table["2000"]["power"] < 0.8
+
+
+def test_a_value_tied_with_enough_power_is_chosen():
+    chosen, table = sweeps.decide([2000, 4000], {2000: _rows(199, 200, 1.0), 4000: _rows(200, 200, 2.0)}, 0.05)
+    assert chosen == 2000 and table["2000"]["tied"] and table["2000"]["power"] >= 0.8
+
+
+def test_a_timeout_the_swept_value_causes_is_a_loss_not_unjudged():
+    """#690 with #693: in a sweep the knob is the verdict, so a value whose rows time out lost them; only harness failures stay unjudged."""
+    from harness import reasons
+    short = [{**r, "passed": False, "failure_class": reasons.TIMEOUT} for r in _rows(0, 200, 1.0)]
+    chosen, table = sweeps.decide([10, 60], {10: short, 60: _rows(200, 200, 2.0)}, 0.05)
+    assert chosen == 60 and table["10"]["lost"] == 200 and not table["10"]["tied"]

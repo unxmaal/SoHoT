@@ -203,3 +203,17 @@ def test_a_variant_sharing_the_served_key_is_its_own_candidate(conn,
     got = winners.beaten_in(conn)["extract"]
     assert (got["candidate_id"], got["pass_rate"], got["match"]) == \
         (variant, 1.0, "")
+
+
+def test_metrics_compare_by_name_not_by_position():
+    """#690: a row missing duration_error_s must not have its wer compared with the other row's duration."""
+    a = {"pass_rate": 1.0, "median_s": 1.0, "metrics": {"duration_error_s": 0.01, "wer": 0.5}}
+    b = {"pass_rate": 1.0, "median_s": 1.0, "metrics": {"wer": 0.1}}
+    assert winners.order_key(b) > winners.order_key(a)
+    assert not winners.order_key(a) > winners.order_key(b)
+
+
+def test_pass_rate_still_ranks_first():
+    a = {"pass_rate": 0.9, "median_s": 1.0, "metrics": {"wer": 0.0}}
+    b = {"pass_rate": 1.0, "median_s": 1.0, "metrics": {"wer": 0.5}}
+    assert winners.order_key(b) > winners.order_key(a)

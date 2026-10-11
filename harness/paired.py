@@ -8,7 +8,7 @@ narrow. `--across sampling` still refuses if the runs also differ on the case
 set, the tier, the accelerator or anything else.
 
 The comparison is PAIRED because the alternative is not. Two runs over the same
-cases are matched on case and repeat index, so the question is how many cells
+cases are matched on the base case id and its repeat index, never on row position, so the question is how many cells
 changed verdict and in which direction, not whether two rates differ. A rate
 hides which cases moved: issue #90's code lane held 15/27 across two
 temperatures with an identical passing set at one pair and two cells swapped at
@@ -46,6 +46,10 @@ class Cell:
     unchanged: int
     #: Cells where either side failed on a class in UNJUDGED. #693.
     unjudged: int = 0
+    #: 1+(r-1)*rho: correlated repeats of a case count as one case in p. #591, #690.
+    deff: float = 1.0
+    #: Why the two sides could not be paired; p is then 1.0 and the verdict says so.
+    refused: str = ""
 
     @property
     def discordant(self) -> int:
@@ -53,13 +57,26 @@ class Cell:
 
     @property
     def p(self) -> float:
-        return sign_test(min(self.lost, self.gained), self.discordant)
+        if self.refused:
+            return 1.0
+        lost, gained = shrink(self.lost, self.gained, self.deff)
+        return sign_test(min(lost, gained), lost + gained)
 
     @property
     def verdict(self) -> str:
+        from harness import adopt
+        if self.refused:
+            return f"not paired: {self.refused}"
         if not self.discordant:
             return "identical"
-        return "differs" if self.p <= 0.05 else "no evidence"
+        return "differs" if self.p <= adopt.ALPHA else "no evidence"
+
+
+def shrink(lost: int, gained: int, deff: float) -> tuple[int, int]:
+    """Discordant cells as independent cases: gains rounded down, losses up, so shrinking never helps the challenger."""
+    if deff <= 1.0 + 1e-9:
+        return lost, gained
+    return math.ceil(lost / deff - 1e-9), int(gained / deff + 1e-9)
 
 
 def sign_test(k: int, n: int) -> float:
@@ -81,15 +98,61 @@ def _verdict(row: dict, unjudged=UNJUDGED):
     return bool(row.get("passed"))
 
 
-def _verdicts(rows: list[dict], candidate: str, unjudged=UNJUDGED) -> dict:
-    """Pass/fail per cell. The repeat index is part of the key, so three
-    repetitions of one case are three cells rather than one averaged."""
-    out = {}
-    for i, row in enumerate(rows):
-        if row.get("candidate") != candidate:
+def repeat_index(case_id) -> int:
+    tail = str(case_id or "").partition("#")[2]
+    return int(tail) if tail.isdigit() else 1
+
+
+def draws(rows: list[dict], candidate: str | None = None, unjudged=UNJUDGED) -> dict[str, list]:
+    """base case id -> verdict per draw in repeat order, whatever order the rows came in; None is unjudged."""
+    from harness import holdout
+    got: dict[str, list] = {}
+    for r in rows:
+        if candidate is not None and r.get("candidate") != candidate:
             continue
-        out[f"{row.get('case_id')}#{i}"] = _verdict(row, unjudged)
-    return out
+        got.setdefault(holdout.base_id(r.get("case_id")), []).append(
+            (repeat_index(r.get("case_id")), _verdict(r, unjudged)))
+    return {k: [ok for _, ok in sorted(v, key=lambda d: d[0])] for k, v in got.items()}
+
+
+def pair(before: list[dict], after: list[dict], candidate: str | None = None, *,
+         same_repeat: bool = False, name: str = "", unjudged=UNJUDGED) -> Cell:
+    """One candidate across two runs, paired on base case and repeat index; refuses unequal case sets (or draws, with same_repeat). #690."""
+    from harness import power
+    a, b = draws(before, candidate, unjudged), draws(after, candidate, unjudged)
+    label = name or candidate or ""
+    if not a.keys() & b.keys():
+        return Cell(label, 0, 0, 0, refused="the two runs share no case")
+    if a.keys() != b.keys():
+        return Cell(label, 0, 0, 0, refused=(
+            f"the case sets differ: {len(a.keys() - b.keys())} only before, "
+            f"{len(b.keys() - a.keys())} only after"))
+    if same_repeat and any(len(a[k]) != len(b[k]) for k in a):
+        ra = {len(v) for v in a.values()}
+        rb = {len(v) for v in b.values()}
+        return Cell(label, 0, 0, 0, refused=(
+            f"the repeat differs: {'/'.join(map(str, sorted(ra)))} draws per case before, "
+            f"{'/'.join(map(str, sorted(rb)))} after"))
+    lost = gained = same = off = 0
+    used = {}
+    for k in a:
+        judged = []
+        for x, y in zip(a[k], b[k]):
+            if x is None or y is None:
+                off += 1
+                continue
+            judged.append((x, y))
+            lost += x and not y
+            gained += y and not x
+            same += x == y
+        if judged:
+            used[k] = judged
+    if not used:
+        return Cell(label, lost, gained, same, off)
+    rho = power.icc([[[x for x, _ in d] for d in used.values()], [[y for _, y in d] for d in used.values()]])
+    repeat = sum(len(d) for d in used.values()) / len(used)
+    deff = power.design_effect(repeat, power.DEFAULT_RHO if rho is None else rho)
+    return Cell(label, lost, gained, same, off, deff=deff)
 
 
 def _cell(candidate: str, a: dict, b: dict) -> Cell:
@@ -105,8 +168,7 @@ def cells(before: list[dict], after: list[dict], unjudged=UNJUDGED) -> list[Cell
     """Per candidate, how many cells changed verdict and which way; a timeout axis passes unjudged=()."""
     shared = ({r.get("candidate") for r in before}
               & {r.get("candidate") for r in after})
-    return [_cell(c, _verdicts(before, c, unjudged), _verdicts(after, c, unjudged))
-            for c in sorted(c for c in shared if c)]
+    return [pair(before, after, c, unjudged=unjudged) for c in sorted(c for c in shared if c)]
 
 
 def differences(before, after) -> list[str]:

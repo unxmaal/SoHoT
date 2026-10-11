@@ -125,6 +125,11 @@ INDEX = {
         "review": r"executemany\(|\.rename\(|os\.replace\(|shutil\.move\(",
         "instances": _i(181), "scanners": []},
     "order-assumed-on-unordered-data": {
+        "detector": "row_index_keys",
+        "waivers": {
+            "evals/decide_corpus.py:check_case":
+                "q1..qn name fields of one schema and its answer key built in the same loop; nothing pairs them by position",
+        },
         "review": r"\bfor \w+ in (?:set\(|\w+\.keys\(\)|\w+\.glob\(|\w+\.iterdir\(|os\.listdir\()",
         "instances": _i(252), "scanners": []},
     "external-input-trusted": {

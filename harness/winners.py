@@ -18,6 +18,8 @@ this compares nothing and must not fail.
 """
 from __future__ import annotations
 
+import functools
+
 #: A candidate spec that is not a bare model: `repair:<model>` is a
 #: WORKFLOW built on a model, and `trace/mflux/...` a composition. Both can win
 #: a lane on merit, and neither is what a `--model` default can be set to.
@@ -77,18 +79,46 @@ def order_key(row: dict) -> tuple:
     from evals.core import direction_of
 
     metrics = row.get("metrics") or {}
-    ranked = []
+    ranked = {}
     for name in sorted(metrics):
         if direction_of(name) == "neutral":
             continue
         value = float(metrics[name] or 0.0)
-        ranked.append(value if direction_of(name) == "higher" else -value)
+        ranked[name] = value if direction_of(name) == "higher" else -value
     rate = float(row.get("pass_rate") or 0.0)
     median = float(row.get("median_s") or 0.0)
     # A candidate that passed less often is worse whatever its metric says: a
     # model that fails half the cases and scores well on the rest is scoring on
     # a different, easier subset.
-    return (rate, tuple(ranked), -median)
+    return OrderKey(rate, ranked, -median)
+
+
+@functools.total_ordering
+class OrderKey:
+    """(pass rate, metrics, -median) compared metric by NAME, on the metrics both rows carry. #690."""
+
+    def __init__(self, rate: float, metrics: dict, neg_median: float):
+        self.rate, self.metrics, self.neg_median = rate, dict(metrics), neg_median
+
+    def _pair(self, other: "OrderKey") -> tuple[tuple, tuple]:
+        shared = sorted(self.metrics.keys() & other.metrics.keys())
+        return ((self.rate, tuple(self.metrics[n] for n in shared), self.neg_median),
+                (other.rate, tuple(other.metrics[n] for n in shared), other.neg_median))
+
+    def __eq__(self, other):
+        if not isinstance(other, OrderKey):
+            return NotImplemented
+        mine, theirs = self._pair(other)
+        return mine == theirs
+
+    def __lt__(self, other):
+        if not isinstance(other, OrderKey):
+            return NotImplemented
+        mine, theirs = self._pair(other)
+        return mine < theirs
+
+    def __repr__(self):
+        return f"OrderKey({self.rate!r}, {self.metrics!r}, {self.neg_median!r})"
 
 
 def typed() -> dict[str, str]:
