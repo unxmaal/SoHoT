@@ -482,8 +482,9 @@ def registered() -> set[str]:
 
 
 def not_gating(site: str) -> bool:
-    """Whether NOT_GATING names this exact site; a new entry of an exempt table is not exempt."""
-    return site in NOT_GATING
+    """Whether NOT_GATING names this exact site, or it is UNRECORDED's frozen legacy value of a registered knob."""
+    m = re.fullmatch(r"harness/knobs\.py:UNRECORDED\[(\w+)\]", site)
+    return site in NOT_GATING or bool(m and m[1] in UNRECORDED and m[1] in KNOBS)
 
 
 def unregistered(found) -> list[str]:

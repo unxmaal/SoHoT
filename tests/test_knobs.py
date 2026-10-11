@@ -49,7 +49,7 @@ def test_the_inventory_reads_only_production_code():
 def test_the_inventory_sees_every_shape_a_gating_value_takes_in_this_repo():
     found = set(knobs.inventory(REPO))
     for site in ("harness/heartbeat.py:STALL_S", "evals/runners/agent.py:STEP_TIMEOUT_S",
-                 "harness/audio.py:speak(timeout)", "evals/run.py:SCREEN_PARAMS[steps]",
+                 "harness/feeds.py:fetch(timeout)", "evals/run.py:SCREEN_PARAMS[steps]",
                  "scripts/serve-llamacpp.sh:LLAMACPP_SLEEP_IDLE"):
         assert site in found, site
 
@@ -103,7 +103,7 @@ def test_the_inventory_reads_shell_defaults_and_gateway_settings():
 def test_a_table_entry_and_a_method_default_resolve():
     from evals import run
     assert knobs.resolve("evals/run.py:SCREEN_PARAMS[steps]") == run.SCREEN_PARAMS["steps"]
-    assert knobs.resolve("harness/audio.py:speak(timeout)") == 120.0
+    assert knobs.resolve("harness/feeds.py:fetch(timeout)") == 30.0
 
 
 def test_a_new_unregistered_retry_constant_fails_the_backlog_ratchet(tmp_path):
@@ -246,6 +246,16 @@ def test_the_knob_backlog_only_shrinks():
     found = set(knobs.unregistered(knobs.inventory(REPO)))
     gone = sorted(set(_backlog()) - found)
     assert not gone, "registered or gone: remove from tests/gauntlet/knob_backlog.json:\n  " + "\n  ".join(gone)
+
+
+def test_a_registered_knobs_legacy_value_is_history_and_any_other_unrecorded_entry_is_still_a_site():
+    found = set(knobs.inventory(REPO))
+    left = set(knobs.unregistered(found))
+    for name in knobs.UNRECORDED:
+        assert f"harness/knobs.py:UNRECORDED[{name}]" in found, name
+        assert f"harness/knobs.py:UNRECORDED[{name}]" not in left, name
+    assert not knobs.not_gating("harness/knobs.py:UNRECORDED[not_a_knob]")
+    assert not knobs.not_gating("harness/other.py:UNRECORDED[audio_timeout]")
 
 
 def test_a_constant_that_gates_nothing_says_why_and_is_still_found():
