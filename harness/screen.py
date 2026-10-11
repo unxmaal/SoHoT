@@ -425,7 +425,7 @@ def routed_gateway(model: str, config=None) -> str:
 
 
 def argv(row: dict, outdir=None) -> list[str]:
-    """The exact command a screen runs. One case, one repeat, no quality
+    """The exact command a screen runs. A few cases, one repeat, no quality
     metrics: the screen answers whether it runs, and a metric here would invite
     ranking a screen against a measurement."""
     out = [sys.executable or "python", "-m", "evals.run",
@@ -546,6 +546,77 @@ def decide_class(cls: str, why: str = "", candidate: str = "",
     return Verdict(got, _sentence(cls, why, limit), reason, until, cls)
 
 
+def cases_needed(rate: float, miss: float = 0.05) -> int:
+    """How many cases a screen needs so a model passing each at `rate` fails them all with chance under `miss`. #691."""
+    import math
+    if rate >= 1.0:
+        return 1
+    return max(1, math.floor(math.log(miss) / math.log(1.0 - rate)) + 1)
+
+
+#: The chance a model as good as the lane's incumbent passes at least one screen case. #691.
+SCREEN_CONFIDENCE = 0.95
+
+
+def incumbent_draws(lane: str, conn) -> dict[str, list[int]]:
+    """The served incumbent's measure draws per case, found by its candidates row and the keys its rows carry, never a spelling. #691."""
+    from harness import power, winners
+    cid = winners.served_ids(conn).get(lane)
+    if cid is None:
+        return {}
+    keys = [r["candidate"] for r in conn.execute(
+        "SELECT DISTINCT x.candidate FROM results x JOIN runs u ON u.id = x.run_id "
+        "WHERE u.lane = ? AND u.tier = 'measure' AND x.candidate_id = ?", (lane, cid))]
+    draws: dict[str, list[int]] = {}
+    for key in keys:
+        for case, got in power.incumbent_profile(conn, lane, key)[0].items():
+            draws.setdefault(case, []).extend(got)
+    return draws
+
+
+def incumbent_measure(lane: str, case_ids, conn=None) -> tuple[float, bool]:
+    """(the incumbent's mean stored pass rate on these cases, whether any row measured it); unmeasured is power.UNSEEN, said on stderr. #691."""
+    import sys
+
+    from harness import power
+    from harness import memory_store as ms
+    own = conn is None
+    draws: dict = {}
+    try:
+        conn = conn or ms.connect()
+        draws = incumbent_draws(lane, conn)
+    except Exception as exc:  # noqa: BLE001 - no store reads as no measurement
+        print(f"screen: could not read the {lane} incumbent's rows: {exc}", file=sys.stderr)
+        draws = {}
+    finally:
+        if own and conn is not None:
+            conn.close()
+    if not draws:
+        print(f"screen: the {lane} incumbent's pass rate is unmeasured (no stored measure rows); "
+              f"the screen count assumes {power.UNSEEN:g}", file=sys.stderr)
+        return power.UNSEEN, False
+    rates, _ = power.rates_from(draws, list(case_ids))
+    return (sum(rates.values()) / len(rates) if rates else power.UNSEEN), True
+
+
+def incumbent_rate(lane: str, case_ids, conn=None) -> float:
+    """The incumbent's mean stored pass rate on these cases, unmeasured ones filled as power.rates_from does. #691."""
+    return incumbent_measure(lane, case_ids, conn)[0]
+
+
+#: The engines whose screen runs at a shrunk size, so a zero-pass waits on the screen size. #691.
+MEDIA_ENGINES = frozenset(spec.partition(":")[0] for lane in ("image", "video")
+                          for spec in LANE_CANDIDATES[lane])
+
+
+def screen_limit(candidate: str = "") -> str:
+    """The screen limit a zero-pass waits on when its receipt names no screen_until (written before it did). #691."""
+    from harness import knobs
+    name = "screen_size" if candidate.partition(":")[0] in MEDIA_ENGINES else "screen_cases"
+    value = knobs.limits().get(name)
+    return f"limit:{name}>{value:g}" if value is not None else ""
+
+
 def outcome(returncode: int, summary: dict | None, candidate: str = "",
             key: str = "", stderr_class: str = "",
             facts: dict | None = None) -> Verdict:
@@ -582,5 +653,11 @@ def outcome(returncode: int, summary: dict | None, candidate: str = "",
     cls = reasons.first(c for r in mine for c in (r.get("failure_classes") or {}))
     why = why_nothing_passed(summary, candidate, key) if candidate else ""
     limits = [lim for r in mine for lim in (r.get("limits") or [])]
-    return decide_class(cls or reasons.CONTENT_FAILED, why, candidate,
-                        limits, facts)
+    if cls in ("", reasons.CONTENT_FAILED):
+        # A few cases at screen settings is not enough to call a candidate broken. #691.
+        until = next((r["screen_until"] for r in mine if r.get("screen_until")), "")
+        caveat = next((r["screen_caveat"] for r in mine if r.get("screen_caveat")), "")
+        why = f"{why}; {caveat}" if why and caveat else (why or caveat)
+        return Verdict("declined", _sentence(reasons.CONTENT_FAILED, why, ""), reasons.LIMIT,
+                       until or screen_limit(candidate), reasons.CONTENT_FAILED)
+    return decide_class(cls, why, candidate, limits, facts)

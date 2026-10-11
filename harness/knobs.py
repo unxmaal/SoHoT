@@ -218,6 +218,12 @@ KNOBS: dict[str, Knob] = dict([
        note="characters of a thread asked about in one mention call; the whole thread is read, one call per piece (#700)"),
     _k("usage_queue", ["harness/usage.py:QUEUE_MAX", "harness/usage.py:BATCH_MAX"], [1000, 10000, 100000],
        note="usage rows queued before the writer drops them; drops are recorded and fail the audit (#700)"),
+    _k("screen_cases", ["evals/run.py:SCREEN_CASES"], [1, 3, 6, 10], limit="screen_cases",
+       note="most cases a screen draws per lane and language; a zero-pass screen it capped waits on it (#691)"),
+    _k("screen_confidence", ["harness/screen.py:SCREEN_CONFIDENCE"], [0.8, 0.9, 0.95, 0.99], limit="screen_confidence",
+       note="chance a model as good as the incumbent passes one screen case; sets how many it draws (#691)"),
+    _k("screen_size", ["evals/run.py:SCREEN_PARAMS[width]", "evals/run.py:SCREEN_PARAMS[height]"], [256, 512, 1024],
+       limit="screen_size", note="pixels an image or video screen is shrunk to; a zero-pass media screen waits on it (#691)"),
 ])
 
 #: The value a knob had on receipts written before it was recorded there, by knob name. #693.
@@ -274,6 +280,8 @@ NOT_GATING: dict[str, str] = {
     "evals/runners/base.py:BaseRunner.failed(seconds)": "how long a failed case took, as reported (#706)",
     "evals/runners/agent.py:AgentRunner.failed(seconds)": "how long a failed case took, as reported (#706)",
     "harness/checks/ocr.py:check->OcrResult(cer)": "a measured result's value, as reported (#706)",
+    **{f"harness/image_diffusers.py:FAMILY_SAMPLING[{f}][{k}]": "the value the family's own model card names (#691)"
+       for f in ("sdxl_turbo", "z_image_turbo", "stable_diffusion_3_5_large_turbo") for k in ("steps", "guidance")},
 }
 
 

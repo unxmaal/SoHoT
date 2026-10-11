@@ -637,9 +637,10 @@ def _fair(candidate: str, picked: list[Case]) -> list[Case]:
 STOCHASTIC_MODALITIES = {"image", "video", "svg", "web", "code", "music", "agent"}
 
 
-#: Screen settings: the smallest thing that still proves the pipeline ran.
-SCREEN_PARAMS = {"width": 256, "height": 256, "steps": 2, "seconds": None,
-                 "frames": None}
+#: Screen settings: the smallest thing that still proves the pipeline ran. Steps are the model's own, never shrunk. #691.
+SCREEN_PARAMS = {"width": 256, "height": 256, "seconds": None, "frames": None}
+#: The most cases a screen draws per (modality, language); screen_counts says how many it needs. #691.
+SCREEN_CASES = 6
 
 
 def screen_pool(cases: list[Case]) -> list[Case]:
@@ -651,16 +652,68 @@ def screen_pool(cases: list[Case]) -> list[Case]:
                   and (c.modality, c.language) not in have]
 
 
-def _first_each(cases: list[Case]) -> list[Case]:
-    """The first case by id for each (modality, language)."""
-    picked: dict[tuple[str, str], Case] = {}
+def screen_rates(cases: list[Case]) -> dict[tuple[str, str], tuple[float, bool]]:
+    """(modality, language) -> (the incumbent's stored pass rate on its cases, whether any row measured it). #691."""
+    from harness import screen
+    ids: dict[tuple[str, str], list[str]] = {}
+    for c in cases:
+        ids.setdefault((c.modality, c.language), []).append(c.id)
+    return {g: screen.incumbent_measure(g[0], got) for g, got in ids.items()}
+
+
+def screen_counts(cases: list[Case], rates: dict | None = None) -> dict[tuple[str, str], int]:
+    """(modality, language) -> cases a model as good as the incumbent fails all of with chance under 1 - SCREEN_CONFIDENCE. #691."""
+    from harness import screen
+    rates = screen_rates(cases) if rates is None else rates
+    return {g: screen.cases_needed(rate, 1 - screen.SCREEN_CONFIDENCE) for g, (rate, _) in rates.items()}
+
+
+def screen_caveat(rates: dict) -> str:
+    """What a screen's count rests on that no row measured, for its verdict to say; "" when every rate was measured. #691."""
+    from harness import power
+    lanes = sorted({g[0] for g, (_, measured) in rates.items() if not measured})
+    if not lanes:
+        return ""
+    return (f"the {', '.join(lanes)} incumbent's pass rate was unmeasured, so the case count "
+            f"assumed {power.UNSEEN:g}")
+
+
+def _screen_each(cases: list[Case], counts: dict | None = None) -> list[Case]:
+    """screen_counts cases (at most SCREEN_CASES) for each (modality, language), dealt across case id families. #691."""
+    groups: dict[tuple[str, str], dict[str, list[Case]]] = {}
     for c in sorted(cases, key=lambda c: c.id):
-        picked.setdefault((c.modality, c.language), c)
-    return list(picked.values())
+        groups.setdefault((c.modality, c.language), {}).setdefault(c.id.split("-")[0], []).append(c)
+    out = []
+    for g, families in groups.items():
+        k = min((counts or {}).get(g, SCREEN_CASES), SCREEN_CASES)
+        queues = list(families.values())
+        picked = []
+        while len(picked) < k and any(queues):
+            picked += [q.pop(0) for q in queues if q][:k - len(picked)]
+        out += picked
+    return out
 
 
-def screen_cases(cases: list[Case], candidates=()) -> list[Case]:
-    """One case per modality AND LANGUAGE, shrunk. Cheap enough to be wrong about.
+def screen_until(pool: list[Case], picked: list[Case], counts: dict, chosen: list[Case]) -> str:
+    """The harness choice a zero-pass screen of `picked` waits on: size, case cap, the lane's cases, or confidence. #691."""
+    from harness import screen
+    native = {c.id: c.params for c in pool}
+    if any(native.get(c.id, {}).get(k) != c.params.get(k) for c in picked for k in ("width", "height")):
+        return f"limit:screen_size>{SCREEN_PARAMS['width']}"
+    groups = {(c.modality, c.language) for c in picked}
+    have = {g: sum(1 for c in pool if (c.modality, c.language) == g) for g in groups}
+    need = {g: counts.get(g, SCREEN_CASES) for g in groups}
+    if any(need[g] > SCREEN_CASES and have[g] > SCREEN_CASES for g in groups):
+        return f"limit:screen_cases>{SCREEN_CASES}"
+    short = sorted(g for g in groups if have[g] < need[g])
+    if short:
+        lane = short[0][0]
+        return f"cases:{lane}>{sum(1 for c in chosen if c.modality == lane)}"
+    return f"limit:screen_confidence>{screen.SCREEN_CONFIDENCE:g}"
+
+
+def screen_cases(cases: list[Case], candidates=(), counts: dict | None = None) -> list[Case]:
+    """SCREEN_CASES cases per modality AND LANGUAGE, shrunk in size only. Cheap enough to be wrong about.
 
     Keyed on modality alone this took the alphabetically first id, so the tts
     lane always picked `fr-liaison` and cases_for -- which filters by the
@@ -675,10 +728,11 @@ def screen_cases(cases: list[Case], candidates=()) -> list[Case]:
     take, so omnisvg is not handed chart-bars and left with nothing. #555.
     """
     import dataclasses
+    counts = screen_counts(cases) if counts is None else counts
     groups = [cases_for(c, cases) for c in candidates] or [cases]
     picked: dict[str, Case] = {}
     for group in groups:
-        for c in _first_each(group):
+        for c in _screen_each(group, counts):
             picked.setdefault(c.id, c)
     out = []
     for c in picked.values():
@@ -895,9 +949,12 @@ def _execute_at(args, overrides: dict) -> int:
         raise SystemExit("--budget-ladder and --max-tokens say two things about the reply "
                          "budget; pass one")
     budget = ladder[-1] if ladder else run_budget(args.modality, getattr(args, "max_tokens", None))
+    pool, counts, untils, caveat = cases, {}, {}, ""
     if args.screen:
         candidates = greedy(candidates)
-        cases = screen_cases(cases, candidates)
+        rates = screen_rates(pool)
+        counts, caveat = screen_counts(pool, rates), screen_caveat(rates)
+        cases = screen_cases(pool, candidates, counts)
     outdir = resolve_outdir(args.out, args.modality)
     if outdir:
         outdir.mkdir(parents=True, exist_ok=True)
@@ -912,7 +969,7 @@ def _execute_at(args, overrides: dict) -> int:
     for candidate in candidates:
         mine = cases_for(candidate, cases)
         if args.screen:
-            mine = _first_each(mine)
+            mine = _screen_each(mine, counts)
         if not mine:
             print(f"\n── {candidate}: {unrunnable(candidate, args.modality)}",
                   file=sys.stderr)
@@ -926,6 +983,8 @@ def _execute_at(args, overrides: dict) -> int:
             raise SystemExit(f"{specs[runner.candidate]} and {candidate} both "
                              f"run as {runner.candidate}; run them separately")
         specs[runner.candidate] = candidate
+        if args.screen:
+            untils[runner.candidate] = screen_until(cases_for(candidate, pool), mine, counts, chosen)
         _servable(candidate)
         planned.append((candidate, runner, mine))
         models.warn(candidate)
@@ -986,7 +1045,9 @@ def _execute_at(args, overrides: dict) -> int:
                    # A name is a label and can drop the repo org; the spec
                    # runs. #337.
                    "specs": specs,
-                   "summary": summarize(results),
+                   "summary": {k: {**v, **({"screen_until": untils[k]} if k in untils else {}),
+                                   **({"screen_caveat": caveat} if caveat else {})}
+                               for k, v in summarize(results).items()},
                    "rows": [export_row(r) for r in results]}
         (outdir / "results.json").write_text(json.dumps(payload, indent=2),
                                              encoding="utf-8")

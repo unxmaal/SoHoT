@@ -41,7 +41,7 @@ EXPECTED = {
     reasons.BACKEND_FAULT: ("declined", "runtime"),
     reasons.MISSING_FILE_IN_SNAPSHOT: ("broken", "candidate"),
     reasons.CRASHED: ("broken", "candidate"),
-    reasons.CONTENT_FAILED: ("broken", "candidate"),
+    reasons.CONTENT_FAILED: ("declined", "limit"),
     reasons.RUNAWAY: ("broken", "candidate"),
 }
 
@@ -292,13 +292,13 @@ def test_a_refused_sampling_setting_is_the_harnesss(tmp_path, monkeypatch):
     assert (v.outcome, v.reason) == ("queued", "harness")
 
 
-def test_a_genuine_content_failure_stays_the_candidates():
-    """Negative control: a checker's own failure is broken and terminal."""
+def test_a_genuine_content_failure_is_declined_until_the_screen_draws_more():
+    """A checker's own failure on a screen is not measured, and not terminal either. #691."""
     row = Result("chunk-bytes", "org/x", False, 1.0, 0, "expected 3 chunks, got 2",
                  failure_class=reasons.CONTENT_FAILED)
     v = _screen([row])
-    assert (v.outcome, v.reason) == ("broken", "candidate")
-    assert v.outcome in ms.TERMINAL
+    assert (v.outcome, v.reason, v.failure_class) == ("declined", "limit", reasons.CONTENT_FAILED)
+    assert v.until.startswith("limit:screen_cases>"), v.until
 
 
 @respx.mock

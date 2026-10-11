@@ -201,10 +201,11 @@ def test_diffusers_video_passes_the_model_prompt_and_output():
 def test_diffusers_video_forwards_the_generation_params():
     _, a = argv("diffusers-video:Lightricks/LTX-Video",
                 frames=25, steps=30, width=512, height=512, seed=7)
-    for flag, value in (("--frames", "25"), ("--steps", "30"),
-                        ("--width", "512"), ("--height", "512"),
+    for flag, value in (("--frames", "25"), ("--width", "512"), ("--height", "512"),
                         ("--seed", "7")):
         assert a[a.index(flag) + 1] == value
+    # A case's steps are h3's; the diffusers model keeps its own. #691.
+    assert "--steps" not in a
 
 
 def test_diffusers_video_offloads_to_host_memory_by_default():

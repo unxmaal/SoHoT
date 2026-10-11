@@ -49,7 +49,7 @@ def test_the_inventory_reads_only_production_code():
 def test_the_inventory_sees_every_shape_a_gating_value_takes_in_this_repo():
     found = set(knobs.inventory(REPO))
     for site in ("harness/heartbeat.py:STALL_S", "evals/runners/agent.py:STEP_TIMEOUT_S",
-                 "harness/feeds.py:fetch(timeout)", "evals/run.py:SCREEN_PARAMS[steps]",
+                 "harness/feeds.py:fetch(timeout)", "evals/run.py:SCREEN_PARAMS[width]",
                  "scripts/serve-llamacpp.sh:LLAMACPP_SLEEP_IDLE"):
         assert site in found, site
 
@@ -102,7 +102,7 @@ def test_the_inventory_reads_shell_defaults_and_gateway_settings():
 
 def test_a_table_entry_and_a_method_default_resolve():
     from evals import run
-    assert knobs.resolve("evals/run.py:SCREEN_PARAMS[steps]") == run.SCREEN_PARAMS["steps"]
+    assert knobs.resolve("evals/run.py:SCREEN_PARAMS[width]") == run.SCREEN_PARAMS["width"]
     assert knobs.resolve("harness/feeds.py:fetch(timeout)") == 30.0
 
 

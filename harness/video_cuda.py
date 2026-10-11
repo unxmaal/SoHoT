@@ -26,11 +26,11 @@ import sys
 import tempfile
 from pathlib import Path
 
+from harness import image_diffusers
+
 DEFAULT_FRAMES = 25
 DEFAULT_FPS = 8
-DEFAULT_STEPS = 30
 DEFAULT_SIZE = 512
-DEFAULT_GUIDANCE = 3.0
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -41,10 +41,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p.add_argument("--output", required=True)
     p.add_argument("--frames", type=int, default=DEFAULT_FRAMES)
     p.add_argument("--fps", type=int, default=DEFAULT_FPS)
-    p.add_argument("--steps", type=int, default=DEFAULT_STEPS)
+    p.add_argument("--steps", type=int, default=None)
     p.add_argument("--width", type=int, default=DEFAULT_SIZE)
     p.add_argument("--height", type=int, default=DEFAULT_SIZE)
-    p.add_argument("--guidance", type=float, default=DEFAULT_GUIDANCE)
+    p.add_argument("--guidance", type=float, default=None)
     p.add_argument("--seed", type=int, default=None)
     p.add_argument("--no-offload", action="store_true",
                    help="keep the pipeline resident; needs a larger card")
@@ -94,6 +94,25 @@ def encode(frames, out: Path, fps: int) -> None:
                              f"{proc.stderr.strip()[:300]}")
 
 
+def metadata(args, pipe, device: str, torch_version: str) -> dict:
+    """The sidecar beside a video, with the steps and guidance it was actually generated at. #691."""
+    used = image_diffusers.sampling(args.model, args.steps, args.guidance)
+    return {
+        "model": args.model,
+        "prompt": args.prompt,
+        "frames": args.frames,
+        "fps": args.fps,
+        "steps": used.get("num_inference_steps", image_diffusers.pipeline_default(pipe, "num_inference_steps")),
+        "guidance": used.get("guidance_scale", image_diffusers.pipeline_default(pipe, "guidance_scale")),
+        "width": args.width,
+        "height": args.height,
+        "seed": args.seed,
+        "device": device,
+        "offloaded": device == "cuda" and not args.no_offload,
+        "torch": torch_version,
+    }
+
+
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
 
@@ -128,27 +147,15 @@ def main(argv: list[str] | None = None) -> int:
         generator = torch.Generator(device="cpu").manual_seed(args.seed)
 
     result = pipe(prompt=args.prompt, num_frames=args.frames,
-                  num_inference_steps=args.steps, guidance_scale=args.guidance,
+                  **image_diffusers.sampling(args.model, args.steps, args.guidance),
                   width=args.width, height=args.height, generator=generator)
     frames = result.frames[0]
 
     out = Path(args.output)
     encode(frames, out, args.fps)
 
-    out.with_suffix(".json").write_text(json.dumps({
-        "model": args.model,
-        "prompt": args.prompt,
-        "frames": args.frames,
-        "fps": args.fps,
-        "steps": args.steps,
-        "guidance": args.guidance,
-        "width": args.width,
-        "height": args.height,
-        "seed": args.seed,
-        "device": device,
-        "offloaded": device == "cuda" and not args.no_offload,
-        "torch": torch.__version__,
-    }, indent=2), encoding="utf-8")
+    out.with_suffix(".json").write_text(json.dumps(
+        metadata(args, pipe, device, torch.__version__), indent=2), encoding="utf-8")
     print(out)
     return 0
 

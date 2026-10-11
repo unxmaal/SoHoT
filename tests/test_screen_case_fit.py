@@ -65,15 +65,13 @@ def _screen(tmp_path, monkeypatch, spec):
 def test_an_omnisvg_screen_runs_a_case_its_method_can_take(tmp_path, monkeypatch,
                                                           quiet):
     runner = _screen(tmp_path, monkeypatch, "omnisvg:8B")
-    assert len(runner.ran) == 1
-    case = runner.ran[0]
-    assert not case.methods or "omnisvg" in case.methods
-    assert case.id == "icon-gear"
+    assert runner.ran and all(not c.methods or "omnisvg" in c.methods for c in runner.ran)
+    assert runner.ran[0].id == "icon-gear"
 
 
-def test_an_llm_screen_still_runs_one_case(tmp_path, monkeypatch, quiet):
+def test_an_llm_screen_runs_every_case_up_to_the_screen_count(tmp_path, monkeypatch, quiet):
     runner = _screen(tmp_path, monkeypatch, "local-large")
-    assert [c.id for c in runner.ran] == ["chart-bars"]
+    assert [c.id for c in runner.ran] == ["chart-bars", "icon-gear", "logo-mark"]
 
 
 def test_a_candidate_with_no_fitting_case_is_a_gap_not_a_harness_error(

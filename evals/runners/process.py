@@ -47,6 +47,7 @@ class ProcessRunner(BaseRunner):
         if out.exists():
             out.unlink()
         Path(runtime_path(out)).unlink(missing_ok=True)
+        sidecar(out).unlink(missing_ok=True)
         self.last_runtime = {}
         self.last_limit = ""
 
@@ -100,11 +101,22 @@ def timed_out(lane: str, timeout: float, what: str = "") -> RunnerError:
                        limit=f"engine_timeout_s.{lane}>{timeout:g}")
 
 
-def _runtime_of(out: Path) -> dict:
-    """The device and attention an hf-task child says answered, or {}. #604."""
+def sidecar(out) -> Path:
+    """The .json a media engine writes beside its artifact; a .json artifact has none. #691."""
+    out = Path(out)
+    return out.with_suffix(".json") if out.suffix != ".json" else out.with_name(out.name + ".sidecar")
+
+
+def _runtime_of(out_path: Path) -> dict:
+    """The device, attention and limit an hf-task child says answered (#604, #700), and the steps and guidance a media sidecar says it used (#691)."""
     import json
-    try:
-        got = json.loads(Path(runtime_path(out)).read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return {}
-    return {k: str(got[k]) for k in ("device", "attn", "limit") if got.get(k)}
+    out = {}
+    for path, keys in ((Path(runtime_path(out_path)), ("device", "attn", "limit")),
+                       (sidecar(out_path), ("steps", "guidance"))):
+        try:
+            got = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if isinstance(got, dict):
+            out.update({k: str(got[k]) for k in keys if got.get(k) is not None and got.get(k) != ""})
+    return out

@@ -112,6 +112,19 @@ def until_met(until: str, facts: dict | None = None) -> bool:
             return have is not None and float(have) > float(floor)
         except ValueError:
             return False
+    if key == "cases" and ">" in want:
+        # A lane with too few cases to screen at the chosen confidence; met once it has more. #691.
+        lane, _, floor = want.partition(">")
+        if "cases" in facts:
+            have = (facts.get("cases") or {}).get(lane)
+        else:
+            from harness import holdout
+            split = holdout.for_lane(lane)
+            have = len(set(split.dev) | set(split.holdout))
+        try:
+            return have is not None and int(have) > int(floor)
+        except ValueError:
+            return False
     if key == "commit_after":
         seen = (facts.get("last_commit") or "").strip()
         # STRING COMPARISON IS CORRECT FOR ISO-8601 AND ONLY FOR IT, so both

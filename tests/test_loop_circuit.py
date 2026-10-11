@@ -394,7 +394,8 @@ def test_logprobs_survive_a_streaming_transport_into_the_stored_score(world):
     data = yaml.safe_load(world.config.read_text(encoding="utf-8"))
     data["model_list"][0]["engine"] = "vllm-mlx"
     world.config.write_text(yaml.safe_dump(data), encoding="utf-8")
-    world.decide_answer = _decide_reply(screen_cases(_cases("decide"))[0])
+    answered = screen_cases(_cases("decide"))[0]
+    world.decide_answer = _decide_reply(answered)
     conn = ms.connect()
     try:
         fakes.seeded_store(conn, [(CHALLENGER, "decide", 2.0, 2)])
@@ -406,7 +407,7 @@ def test_logprobs_survive_a_streaming_transport_into_the_stored_score(world):
     conn = ms.connect()
     try:
         metrics = [json.loads(r["metrics"] or "{}") for r in conn.execute(
-            "SELECT metrics FROM results WHERE candidate = ?", (CHALLENGER,))]
+            "SELECT metrics FROM results WHERE candidate = ? AND case_id = ?", (CHALLENGER, answered.id))]
     finally:
         conn.close()
     assert metrics and all(m.get("calibrated") == 1.0 for m in metrics), metrics
