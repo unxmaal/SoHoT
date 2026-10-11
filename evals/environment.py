@@ -53,9 +53,9 @@ def identity() -> dict:
     hw_model = (_sh("sysctl", "-n", "hw.model") or _dmi_model()
                 or platform.processor() or platform.machine())
     host = machine.host_id()
-    return {"hw_model": hw_model, "host": host,
-            "fingerprint": machine.fingerprint(hw_model, platform.platform(),
-                                               platform.machine(), host)}
+    os_, arch = platform.platform(), platform.machine()
+    return {"hw_model": hw_model, "host": host, "os": os_, "arch": arch,
+            "fingerprint": machine.fingerprint(hw_model, os_, arch, host)}
 
 
 def capture() -> dict:

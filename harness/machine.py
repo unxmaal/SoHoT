@@ -224,27 +224,36 @@ def is_loopback(url: str) -> bool:
     return (urlsplit(url or "").hostname or "") in LOOPBACK
 
 
-@lru_cache(maxsize=1)
+#: The platform uuid once a probe has answered; a failed probe is asked again. #747.
+_UUID: str | None = None
+
+
 def _platform_uuid() -> str:
     """IOPlatformUUID on a Mac, machine-id on Linux, "" when neither answers."""
+    global _UUID
+    if _UUID:
+        return _UUID
     import re
     import subprocess
+    got = ""
     if sys.platform == "darwin":
         try:
             out = subprocess.run(["ioreg", "-rd1", "-c", "IOPlatformExpertDevice"],
                                  capture_output=True, text=True, timeout=10).stdout
         except (OSError, subprocess.SubprocessError):
-            return ""
+            out = ""
         m = re.search(r'"IOPlatformUUID"\s*=\s*"([^"]+)"', out)
-        return m.group(1) if m else ""
-    for p in ("/etc/machine-id", "/var/lib/dbus/machine-id"):
-        try:
-            v = Path(p).read_text(encoding="utf-8").strip()
-        except OSError:
-            continue
-        if v:
-            return v
-    return ""
+        got = m.group(1) if m else ""
+    else:
+        for p in ("/etc/machine-id", "/var/lib/dbus/machine-id"):
+            try:
+                got = Path(p).read_text(encoding="utf-8").strip()
+            except OSError:
+                continue
+            if got:
+                break
+    _UUID = got or None
+    return got
 
 
 def host_id(probe=None, home=None) -> str:

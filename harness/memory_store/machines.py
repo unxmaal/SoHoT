@@ -57,12 +57,27 @@ def this_machine() -> dict:
         # whichever one wrote last, which would be worse than no column.
         got = {"hw_model": "", "os": "", "arch": "", "host": "", "memory_gb": 0.0,
                "accelerator": "", "runtimes": "", "ceiling_gb": 0.0,
-               "versions": {}}
+               "versions": {}, **_identity()}
+        # A failed probe is not this machine for the rest of the process: ask again next time. #747.
+        complete = False
+    else:
+        complete = True
     from harness import machine as _machine
     got["fingerprint"] = _machine.fingerprint(got["hw_model"], got["os"],
                                               got["arch"], got["host"])
-    _THIS_MACHINE = got
+    if complete:
+        _THIS_MACHINE = got
     return got
+
+
+def _identity() -> dict:
+    """hw_model, os, arch and host from the cheap probes, or {} when they fail too. #747."""
+    try:
+        from evals import environment
+        me = environment.identity()
+    except Exception:  # noqa: BLE001
+        return {}
+    return {k: me.get(k) or "" for k in ("hw_model", "os", "arch", "host")}
 
 
 def remember_machine(conn: sqlite3.Connection, facts: dict | None = None) -> int:
