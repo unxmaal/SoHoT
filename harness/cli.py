@@ -284,9 +284,9 @@ def build_parser() -> argparse.ArgumentParser:
     d.add_argument("--external", action="store_true",
                    help="ask the registries what exists that this machine has "
                         "never measured (needs --lane)")
-    d.add_argument("--budget-gib", type=float, default=20.0, dest="budget_gib",
+    d.add_argument("--budget-gib", type=float, default=None, dest="budget_gib",
                    help="with --loop --run, the ceiling on what this "
-                        "invocation will download")
+                        "invocation will download; default: the download_budget knob")
     d.add_argument("--repeat", type=int, default=None,
                    help="with --loop --run, repetitions per case when "
                         "measuring a challenger against the incumbent; "

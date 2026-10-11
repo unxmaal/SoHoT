@@ -29,6 +29,23 @@ from harness import rank
 from harness import lanes, reasons, screen
 
 GIB = 1024 ** 3
+_BUDGET_WAIT = "limit:download_budget_gib>"
+
+
+def budget_gib(gib=None) -> float:
+    """The run's budget in GiB: what it names, else the registered download_budget. #704."""
+    if gib:
+        return float(gib)
+    from harness import knobs
+    return float(knobs.KNOBS["download_budget"].default())
+
+
+def budget_allows(until, budget: int | None) -> bool:
+    """False when a row waits for a bigger download budget than `budget` bytes. #704."""
+    if budget is None or not (until or "").startswith(_BUDGET_WAIT):
+        return True
+    from harness.memory_store import revisit
+    return revisit.until_met(until, {"limits": {"download_budget_gib": budget / GIB}})
 #: Never fill the volume. A download that leaves no room is a download that
 #: breaks the next eval rather than enabling it.
 DISK_FLOOR = 50 * GIB
@@ -164,7 +181,7 @@ def queued(conn, tiers=FETCHABLE_TIERS, kind: str = FETCHABLE_KIND,
                -- foreign runtime before spending gigabytes on it. #414.
                p.attaches_to, p.runtime_needed,
                -- The state and the verdict that set it. #409.
-               p.state AS outcome, st.tier AS tier, st.detail AS detail,
+               p.state AS outcome, st.tier AS tier, st.detail AS detail, st.until AS until,
                -- The candidate's measured size, whatever verdict is newest. #211, #413.
                p.size_bytes,
                -- The judge scores REPOS; the queue holds WEIGHTS, and a weight
@@ -433,6 +450,8 @@ def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=N
             return done
         spent += cost
     for row in queued(conn, lane=lane):
+        if not budget_allows(row.get("until"), budget):
+            continue      # waits for a bigger budget than this run's, so this run settles nothing. #704
         if not row.get("lane"):
             continue      # nothing here could measure it, so nothing fetches it
         # AN ADAPTER IS NOT A CANDIDATE, and this tier is where that costs

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import time
+from email.utils import parsedate_to_datetime
 
 ATTEMPTS = 5
 MAX_WAIT_S = 60.0
@@ -13,12 +14,22 @@ class RateLimited(Exception):
 
 
 def wait_s(retry_after, attempt: int, base: float = 1.0) -> float:
-    """Seconds before the next attempt: Retry-After when the upstream sent one, else base doubling, capped. #704."""
+    """Seconds before the next attempt: Retry-After (seconds or HTTP-date) when sent, else base doubling, capped. #704."""
     try:
         wait = float(retry_after)
     except (ValueError, TypeError):
-        wait = base * 2 ** attempt
+        wait = _until_date(retry_after)
+        if wait is None:
+            wait = base * 2 ** attempt
     return min(max(wait, 0.0), MAX_WAIT_S)
+
+
+def _until_date(retry_after) -> float | None:
+    try:
+        when = parsedate_to_datetime(str(retry_after))
+    except (TypeError, ValueError, IndexError):
+        return None
+    return None if when is None or when.tzinfo is None else when.timestamp() - time.time()
 
 
 def _wait(response, attempt: int) -> float:
