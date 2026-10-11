@@ -17,6 +17,7 @@ against a one-stage candidate in the same table otherwise looks free.
 from __future__ import annotations
 
 import shutil
+import subprocess
 from pathlib import Path
 
 from harness import memory, proc, reasons
@@ -25,6 +26,7 @@ from harness import stages
 
 from evals.core import Case
 from evals.runners.base import BaseRunner, RunnerError
+from evals.runners.process import timed_out
 
 MFLUX_BIN = Path.home() / ".local/share/uv/tools/mflux/bin"
 
@@ -177,14 +179,14 @@ class ChainRunner(BaseRunner):
         except ValueError as exc:
             raise RunnerError(str(exc), failure_class=reasons.HARNESS_ERROR) from exc
 
-        first = self._run(argv, f"{self.engine.name} (stage 1)")
+        first = self._run(argv, f"{self.engine.name} (stage 1)", case.modality)
         if not mid.exists():
             raise RunnerError(f"{self.engine.name} exited 0 but wrote no image",
                               failure_class=reasons.CONTENT_FAILED)
         self.last_metrics = {"stages": 1}
 
         second = self._run(STAGES[self.stage](mid, out, params, case.prompt),
-                           f"{self.stage} (stage 2)")
+                           f"{self.stage} (stage 2)", case.modality)
         if not out.exists():
             raise RunnerError(f"{self.stage} exited 0 but wrote no image",
                               failure_class=reasons.CONTENT_FAILED)
@@ -193,9 +195,11 @@ class ChainRunner(BaseRunner):
         # whether it fits on this machine.
         return out, max(first.peak_kb, second.peak_kb)
 
-    def _run(self, argv: list[str], what: str):
+    def _run(self, argv: list[str], what: str, lane: str = "image"):
         try:
             r = proc.run(argv, timeout=self.timeout, cwd=self.engine.cwd)
+        except subprocess.TimeoutExpired as exc:
+            raise timed_out(lane, self.timeout, f"{what}: ") from exc
         except FileNotFoundError as exc:
             raise RunnerError(f"{what}: {exc} is not installed",
                               failure_class=reasons.HARNESS_ERROR) from exc

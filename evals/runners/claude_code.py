@@ -9,9 +9,11 @@ import time
 
 from evals.core import Case
 from evals.runners.base import BaseRunner, RunnerError
-from harness import completion
+from harness import completion, reasons
 
 PREFIX = "claude-code"
+#: Seconds one `claude -p` reference answer may take; a knob (#693), read at call time.
+TIMEOUT_S = 600.0
 
 
 class EmptyResult(RunnerError):
@@ -103,7 +105,7 @@ def result_of(stdout: str) -> dict:
 
 
 class ClaudeCodeRunner(BaseRunner):
-    def __init__(self, model: str, timeout: float = 600.0, execute=stream_run,
+    def __init__(self, model: str, timeout: float | None = None, execute=stream_run,
                  binary: str = "claude"):
         self.model = model
         self.candidate = f"{PREFIX}:{model}"
@@ -134,15 +136,18 @@ class ClaudeCodeRunner(BaseRunner):
     def _once(self, case: Case, retries: int):
         started = time.perf_counter()
         self.last_timing = {}
+        timeout = TIMEOUT_S if self.timeout is None else self.timeout
         with tempfile.TemporaryDirectory(prefix="lh-claude-code-") as cwd:
             try:
                 proc = self.execute(
                     self.argv(case), cwd=cwd, capture_output=True, text=True,
                     encoding="utf-8",
-                    timeout=self.timeout,
+                    timeout=timeout,
                     input=completion.user_message(case.prompt, case.context))
             except subprocess.TimeoutExpired as exc:
-                raise RunnerError(f"claude -p timed out after {self.timeout}s") from exc
+                raise RunnerError(f"claude -p timed out after {timeout:g}s",
+                                  failure_class=reasons.TIMEOUT,
+                                  limit=f"claude_code_timeout_s>{timeout:g}") from exc
             except OSError as exc:
                 raise RunnerError(f"could not run {self.binary}: {exc}") from exc
         elapsed = time.perf_counter() - started

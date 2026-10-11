@@ -1318,9 +1318,12 @@ def compare_across(axis: str, loaded: list) -> int:
         print(f"\n{axis}: {paired.value(base, axis)!r} -> {paired.value(receipt, axis)!r}")
         print(f"  {'candidate':34} {'lost':>5} {'gained':>7} {'same':>6} "
               f"{'p':>7}  verdict")
-        for cell in paired.cells(base_rows, rows):
+        # A timeout axis is what decides a timeout row, so those rows are judged there. #693.
+        unjudged = paired.UNJUDGED_ON_A_TIMEOUT_AXIS if "timeout" in axis else paired.UNJUDGED
+        for cell in paired.cells(base_rows, rows, unjudged):
             print(f"  {cell.candidate:34} {cell.lost:5d} {cell.gained:7d} "
-                  f"{cell.unchanged:6d} {cell.p:7.2f}  {cell.verdict}")
+                  f"{cell.unchanged:6d} {cell.p:7.2f}  {cell.verdict}"
+                  + (f"  ({cell.unjudged} timed out or never ran, not counted)" if cell.unjudged else ""))
     print("\n  Paired by case and repeat index. p is the exact McNemar test on "
           "discordant\n  cells; concordant cells carry no information about a "
           "change.")

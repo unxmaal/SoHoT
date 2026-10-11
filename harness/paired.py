@@ -25,6 +25,13 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 
+from harness import reasons
+
+#: Failure classes that are our limit or a request that never reached a model: neither lost nor gained, counted apart. #693.
+UNJUDGED = (reasons.TIMEOUT,) + reasons.NEVER_RAN
+#: On a timeout axis the timeout is the verdict under test, so only harness failures stay unjudged.
+UNJUDGED_ON_A_TIMEOUT_AXIS = reasons.NEVER_RAN
+
 #: Receipt fields a sweep may deliberately vary, one at a time.
 AXES = ("sampling", "repeat", "accelerator", "instruments", "where", "gateway", "launch",
         "max_tokens", "budget_ladder", "machine", "served")
@@ -37,6 +44,8 @@ class Cell:
     lost: int
     gained: int
     unchanged: int
+    #: Cells where either side failed on a class in UNJUDGED. #693.
+    unjudged: int = 0
 
     @property
     def discordant(self) -> int:
@@ -65,29 +74,39 @@ def sign_test(k: int, n: int) -> float:
     return min(1.0, 2 * tail)
 
 
-def _verdicts(rows: list[dict], candidate: str) -> dict[str, bool]:
+def _verdict(row: dict, unjudged=UNJUDGED):
+    """True or False for a judged row; None for a failure on a limit in `unjudged`."""
+    if not row.get("passed") and row.get("failure_class") in unjudged:
+        return None
+    return bool(row.get("passed"))
+
+
+def _verdicts(rows: list[dict], candidate: str, unjudged=UNJUDGED) -> dict:
     """Pass/fail per cell. The repeat index is part of the key, so three
     repetitions of one case are three cells rather than one averaged."""
     out = {}
     for i, row in enumerate(rows):
         if row.get("candidate") != candidate:
             continue
-        out[f"{row.get('case_id')}#{i}"] = bool(row.get("passed"))
+        out[f"{row.get('case_id')}#{i}"] = _verdict(row, unjudged)
     return out
 
 
-def cells(before: list[dict], after: list[dict]) -> list[Cell]:
-    """Per candidate, how many cells changed verdict and which way."""
+def _cell(candidate: str, a: dict, b: dict) -> Cell:
+    keys = a.keys() & b.keys()
+    off = {k for k in keys if a[k] is None or b[k] is None}
+    keys -= off
+    lost = sum(1 for k in keys if a[k] and not b[k])
+    gained = sum(1 for k in keys if not a[k] and b[k])
+    return Cell(candidate, lost, gained, len(keys) - lost - gained, len(off))
+
+
+def cells(before: list[dict], after: list[dict], unjudged=UNJUDGED) -> list[Cell]:
+    """Per candidate, how many cells changed verdict and which way; a timeout axis passes unjudged=()."""
     shared = ({r.get("candidate") for r in before}
               & {r.get("candidate") for r in after})
-    out = []
-    for candidate in sorted(c for c in shared if c):
-        a, b = _verdicts(before, candidate), _verdicts(after, candidate)
-        keys = a.keys() & b.keys()
-        lost = sum(1 for k in keys if a[k] and not b[k])
-        gained = sum(1 for k in keys if not a[k] and b[k])
-        out.append(Cell(candidate, lost, gained, len(keys) - lost - gained))
-    return out
+    return [_cell(c, _verdicts(before, c, unjudged), _verdicts(after, c, unjudged))
+            for c in sorted(c for c in shared if c)]
 
 
 def differences(before, after) -> list[str]:
@@ -129,11 +148,6 @@ def head_to_head(rows: list[dict], incumbent: str, challenger: str) -> Cell:
     handed share no candidate, and an empty result reads as "no difference"
     rather than "wrong comparison".
     """
-    mine = {r.get("case_id"): bool(r.get("passed"))
-            for r in rows if r.get("candidate") == incumbent}
-    theirs = {r.get("case_id"): bool(r.get("passed"))
-              for r in rows if r.get("candidate") == challenger}
-    keys = mine.keys() & theirs.keys()
-    lost = sum(1 for k in keys if mine[k] and not theirs[k])
-    gained = sum(1 for k in keys if not mine[k] and theirs[k])
-    return Cell(challenger, lost, gained, len(keys) - lost - gained)
+    mine = {r.get("case_id"): _verdict(r) for r in rows if r.get("candidate") == incumbent}
+    theirs = {r.get("case_id"): _verdict(r) for r in rows if r.get("candidate") == challenger}
+    return _cell(challenger, mine, theirs)

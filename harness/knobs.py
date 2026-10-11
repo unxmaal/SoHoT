@@ -114,6 +114,8 @@ KNOBS: dict[str, Knob] = dict([
     _k("runaway_rate", ["harness/audio.py:SECONDS_PER_WORD_CEILING", "harness/audio.py:RUNAWAY_MIN_WORDS"],
        [0.6, 0.8, 0.95, 1.2, 2.0], lanes=("tts",), limit="seconds_per_word", receipt="knobs",
        note="seconds of speech per word above which tts ran away (#91)"),
+    _k("audio_timeout", ["harness/audio.py:TIMEOUT_S"], [60.0, 120.0, 300.0, 600.0],
+       lanes=("tts", "stt"), limit="audio_timeout_s", receipt="knobs", note="seconds one tts or stt request may take (#693)"),
     _k("download_cap", ["harness/fetching.py:MAX_DOWNLOAD"],
        [20 * GIB, 40 * GIB, 60 * GIB, 120 * GIB], limit="download_gib", scale=GIB,
        note="the largest download one fetch may take"),
@@ -145,6 +147,17 @@ KNOBS: dict[str, Knob] = dict([
        lanes=("claims",), limit="claims_match_threshold", receipt="knobs", note="word overlap at which an emitted claim is a reviewed one (#654)"),
     _k("claims_min_recall", ["harness/checks/claims.py:MIN_RECALL"], [0.25, 0.5, 0.75, 1.0],
        lanes=("claims",), limit="claims_min_recall", receipt="knobs", note="share of a case's good claims a reply must recover (#654)"),
+    _k("code_check_timeout", ["harness/checks/code.py:DEFAULT_TIMEOUT"], [5.0, 15.0, 30.0, 60.0, 120.0],
+       lanes=("code",), limit="code_check_timeout_s", receipt="knobs",
+       note="wall clock a code answer and its checks may run; a case may set params.check_timeout (#693)"),
+    _k("claude_code_timeout", ["evals/runners/claude_code.py:TIMEOUT_S"], [300.0, 600.0, 1200.0, 1800.0],
+       lanes=REQUEST_LANES, limit="claude_code_timeout_s", receipt="knobs", note="seconds one claude -p reference answer may take (#693)"),
+    _k("needle_serve_start", ["harness/needle.py:SERVE_START_S"], [30.0, 60.0, 120.0, 300.0],
+       lanes=("decide", "agent"), limit="needle_serve_start_s", receipt="knobs", note="seconds needle --serve may take to report its address (#693)"),
+    _k("chrome_render_timeout", ["harness/checks/render.py:CHROME_TIMEOUT_S"], [30.0, 60.0, 120.0, 300.0],
+       lanes=("web",), limit="chrome_render_timeout_s", receipt="knobs", note="seconds headless Chrome may take to screenshot a page (#693)"),
+    _k("svg_render_timeout", ["harness/checks/render.py:SVG_TIMEOUT_S"], [10.0, 30.0, 60.0, 120.0],
+       lanes=("svg",), limit="svg_render_timeout_s", receipt="knobs", note="seconds rsvg-convert may take to draw one SVG (#693)"),
     _k("eval7b_slots", ["harness/context.py:EVAL_7B_SLOTS"], [1, 4, 8, 16, 32],
        note="llama-server slots Qwen2.5-7B-Instruct-Q4_K_M batches across; sets claims throughput, not a grade (#665)"),
     _k("eval7b_slot_ctx", ["harness/context.py:EVAL_7B_SLOT_CTX"], [3072, 4096, 8192],
@@ -156,6 +169,10 @@ KNOBS: dict[str, Knob] = dict([
     _k("binding_min_hits", ["harness/binding.py:BINDING_MIN_HITS"], [1, 3, 5, 10],
        note="fewer hits than this is never binding"),
 ])
+
+#: The value a knob had on receipts written before it was recorded there, by knob name. #693.
+UNRECORDED = {"code_check_timeout": 15.0, "audio_timeout": 120.0, "chrome_render_timeout": 60.0,
+              "svg_render_timeout": 30.0, "claude_code_timeout": 600.0, "needle_serve_start": 60.0}
 
 #: Constants the inventory finds whose name says gate and whose value does not, each with why.
 NOT_GATING: dict[str, str] = {
@@ -465,8 +482,9 @@ def registered() -> set[str]:
 
 
 def not_gating(site: str) -> bool:
-    """Whether NOT_GATING names this exact site; a new entry of an exempt table is not exempt."""
-    return site in NOT_GATING
+    """Whether NOT_GATING names this exact site, or it is UNRECORDED's frozen legacy value of a registered knob."""
+    m = re.fullmatch(r"harness/knobs\.py:UNRECORDED\[(\w+)\]", site)
+    return site in NOT_GATING or bool(m and m[1] in UNRECORDED and m[1] in KNOBS)
 
 
 def unregistered(found) -> list[str]:

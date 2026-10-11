@@ -20,7 +20,8 @@ from pathlib import Path
 import jiwer
 from num2words import num2words
 
-from harness.audio import AudioError
+from harness import reasons
+from harness.audio import AudioError, AudioTimeout
 
 # A WAV header is 44 bytes. Anything near it holds no speech, and transcribing
 # it would report the empty result as a terrible TTS model.
@@ -48,6 +49,8 @@ class SpeechResult:
     #: Errors and reference length, so the suite can aggregate a CORPUS rate.
     errors: int = 0
     words: int = 0
+    failure_class: str = ""
+    limit: str = ""
 
     @property
     def metrics(self) -> dict:
@@ -63,6 +66,11 @@ class SpeechResult:
             return {}
         return {"wer": round(self.wer, 4),
                 "wer_errors": self.errors, "wer_words": self.words}
+
+
+def timed_out(exc: AudioTimeout) -> dict:
+    """The class and limit a read-back past the audio timeout puts on a row. #693."""
+    return {"failure_class": reasons.TIMEOUT, "limit": f"{exc.limit[0]}>{exc.limit[1]:g}"}
 
 
 def _en_number(m: re.Match) -> str:
@@ -167,6 +175,8 @@ def check(path: str | Path, reference: str, max_wer: float | None = None,
 
     try:
         transcript = transcriber(path)
+    except AudioTimeout as exc:
+        return SpeechResult(False, f"could not transcribe: {exc}", **timed_out(exc))
     except AudioError as exc:
         # An STT outage must not be recorded as this candidate scoring 100%
         # error: that is a broken instrument, not a bad model.

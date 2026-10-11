@@ -279,11 +279,10 @@ def _paired(before: list[dict], after: list[dict]):
             out[(r["case_id"], seen[r["case_id"]])] = r
         return out
     a, b = cells(before), cells(after)
-    keys = a.keys() & b.keys()
-    lost = [k for k in keys if a[k]["passed"] and not b[k]["passed"]]
-    gained = sum(1 for k in keys if not a[k]["passed"] and b[k]["passed"])
-    cell = paired.Cell("", len(lost), gained, len(keys) - len(lost) - gained)
-    return cell, [b[k] for k in lost]
+    cell = paired._cell("", {k: paired._verdict(r) for k, r in a.items()},
+                        {k: paired._verdict(r) for k, r in b.items()})
+    lost = [k for k in a.keys() & b.keys() if paired._verdict(a[k]) and paired._verdict(b[k]) is False]
+    return cell, [b[k] for k in sorted(lost)]
 
 
 def _class_of(rows: list[dict]) -> str:

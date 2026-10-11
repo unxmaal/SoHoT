@@ -18,6 +18,7 @@ have a body, be perfectly self-contained, and render as a white rectangle.
 """
 from __future__ import annotations
 
+import contextlib
 import os
 import shutil
 import subprocess
@@ -75,6 +76,24 @@ MIN_INK = 0.0025
 
 class RenderError(RuntimeError):
     """The document could not be drawn."""
+
+
+#: Seconds headless Chrome may take to write a page's screenshot; a knob (#693), read at call time.
+CHROME_TIMEOUT_S = 60.0
+#: Seconds rsvg-convert may take to draw one SVG; a knob (#693), read at call time.
+SVG_TIMEOUT_S = 30.0
+
+
+class RenderTimeout(RenderError):
+    """A render past the timeout we chose; `limit` is the `limit:` predicate body. #693."""
+
+    def __init__(self, what: str, name: str, timeout: float):
+        super().__init__(f"{what} did not finish in {timeout:g}s")
+        self.limit = f"{name}>{timeout:g}"
+
+    def result(self) -> CheckResult:
+        from harness import reasons
+        return CheckResult(False, f"could not render: {self}", failure_class=reasons.TIMEOUT, limit=self.limit)
 
 
 def _is_snap(path: str) -> bool:
@@ -255,15 +274,20 @@ def rasterize_html(html: str, out: str | Path, width: int = 800) -> Path:
         # remembered and never handed one again in this process. Dropping it
         # everywhere would be the easy fix and would put every render back in
         # the user's own Chrome profile, which is what issue #29 was about.
+        timeout, timed_out = CHROME_TIMEOUT_S, False
         for profile in _profiles_to_try(Path(d)):
+            started = time.monotonic()
             stderr = _shoot(chrome_argv(src, out, width, profile=profile),
-                            out, d)
+                            out, d, timeout=timeout)
             if out.exists():
                 break
+            timed_out = time.monotonic() - started >= timeout
             if profile is not None:
                 _PROFILE_HANGS.add(chrome_path() or "")
     finally:
         _remove_tree(Path(d))
+    if not out.exists() and timed_out:
+        raise RenderTimeout("chrome", "chrome_render_timeout_s", timeout)
     if not out.exists():
         # NAME THE BINARY, AND QUOTE THE END OF WHAT IT SAID. "chrome produced
         # no screenshot" is unactionable on a machine with three of them
@@ -341,7 +365,9 @@ def _shoot(argv: list[str], out: Path, cwd: str, timeout: float = 60.0) -> str:
                 proc.wait(timeout=5)
             except subprocess.TimeoutExpired:
                 proc.kill()
-                proc.wait(timeout=5)
+                # A killed chrome that will not reap must not escape as TimeoutExpired; the caller classes the timeout.
+                with contextlib.suppress(subprocess.TimeoutExpired):
+                    proc.wait(timeout=5)
         _kill_tree(proc)
         err.seek(0)
         return err.read().strip()
@@ -373,7 +399,9 @@ def check_html(html: str, min_ink: float = 0.0005) -> CheckResult:
             ["not rasterized: no Chrome or Chromium found to render HTML"])
     try:
         coverage = ink_html(html)
-    except (RenderError, subprocess.TimeoutExpired) as exc:
+    except RenderTimeout as exc:
+        return exc.result()
+    except RenderError as exc:
         return CheckResult(False, f"could not render: {exc}")
 
     result = CheckResult(coverage >= min_ink, "")
@@ -400,12 +428,15 @@ def rasterize_svg(svg: str, out: str | Path, width: int = DEFAULT_WIDTH) -> Path
     with tempfile.NamedTemporaryFile("w", suffix=".svg", delete=False) as fh:
         fh.write(svg)
         src = fh.name
+    timeout = SVG_TIMEOUT_S
     try:
         proc = subprocess.run(
             [binary, "--width", str(width), "--height", str(width),
              "--keep-aspect-ratio", "--background-color", "white",
              "-o", str(out), src],
-            capture_output=True, text=True, timeout=30)
+            capture_output=True, text=True, timeout=timeout)
+    except subprocess.TimeoutExpired as exc:
+        raise RenderTimeout(RASTERIZER, "svg_render_timeout_s", timeout) from exc
     finally:
         Path(src).unlink(missing_ok=True)
 
@@ -452,6 +483,8 @@ def check(svg: str, min_ink: float = MIN_INK,
 
     try:
         coverage = ink(svg)
+    except RenderTimeout as exc:
+        return exc.result()
     except RenderError as exc:
         return CheckResult(False, f"could not render: {exc}")
 

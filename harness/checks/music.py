@@ -33,8 +33,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from harness.audio import AudioError
-from harness.checks.speech import MIN_AUDIO_BYTES, normalize, wer, wer_counts
+from harness.audio import AudioError, AudioTimeout
+from harness.checks.speech import MIN_AUDIO_BYTES, normalize, timed_out, wer, wer_counts
 
 #: How far a track may miss its requested length, as a fraction of it. The one
 #: measured run landed on 30.00s against a requested 30, so this starts loose
@@ -60,6 +60,8 @@ class MusicResult:
     words: int = 0
     seconds: float | None = None
     asked_seconds: float | None = None
+    failure_class: str = ""
+    limit: str = ""
 
     @property
     def metrics(self) -> dict:
@@ -118,6 +120,9 @@ def check(path: str | Path, lyrics: str, *, max_wer: float | None = None,
 
     try:
         transcript = transcriber(path)
+    except AudioTimeout as exc:
+        return MusicResult(False, f"could not transcribe: {exc}", warnings=warnings,
+                           seconds=seconds, asked_seconds=duration_s, **timed_out(exc))
     except AudioError as exc:
         # An STT outage recorded as this candidate scoring 100% error is a
         # broken instrument reported as a bad model.

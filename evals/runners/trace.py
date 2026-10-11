@@ -13,6 +13,7 @@ why the runner reports the engine's wall clock and peak memory honestly.
 """
 from __future__ import annotations
 
+import subprocess
 from pathlib import Path
 
 from harness import proc, reasons, vector
@@ -20,6 +21,7 @@ from harness.engines import Engine
 
 from evals.core import Case
 from evals.runners.base import BaseRunner, RunnerError
+from evals.runners.process import timed_out
 
 #: Appended to every prompt. A photographic subject vectorizes into thousands
 #: of paths; flat shapes on white vectorize into an icon. Without this the
@@ -60,6 +62,8 @@ class TraceRunner(BaseRunner):
         try:
             r = proc.run(argv, timeout=self.engine.timeout,
                          stream=self.engine.stream, cwd=self.engine.cwd)
+        except subprocess.TimeoutExpired as exc:
+            raise timed_out(case.modality, self.engine.timeout, f"{self.engine.name}: ") from exc
         except FileNotFoundError as exc:
             raise RunnerError(f"{exc} is not installed",
                               failure_class=reasons.HARNESS_ERROR) from exc

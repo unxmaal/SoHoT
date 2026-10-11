@@ -124,8 +124,9 @@ def _check_image(artifact, case: Case, adherence: str | None = None,
 def _check_code(artifact, case: Case) -> CheckResult:
     """Runs the generated code. See harness/checks/code.py for what that means."""
     r = code_check.check(artifact, case.assertions.get("checks") or [],
+                         timeout=case.params.get("check_timeout"),
                          preamble=getattr(case, "preamble", ""))
-    out = CheckResult(r.ok, r.reason, r.warnings)
+    out = CheckResult(r.ok, r.reason, r.warnings, failure_class=r.failure_class, limit=r.limit)
     out.metrics = r.metrics
     return out
 
@@ -188,7 +189,7 @@ def _check_music(artifact, case: Case, transcriber=None, **_) -> CheckResult:
                           expect_vocals=a.get("expect_vocals", True),
                           transcriber=transcriber,
                           language=case.language)
-    out = CheckResult(r.ok, r.reason, list(r.warnings))
+    out = CheckResult(r.ok, r.reason, list(r.warnings), failure_class=r.failure_class, limit=r.limit)
     out.metrics = r.metrics
     return out
 
@@ -231,7 +232,8 @@ def _check_svg(artifact, case: Case) -> CheckResult:
 
     drawn = render_check.check(extract(artifact, ("svg",)))
     out = CheckResult(drawn.ok, drawn.reason, r.warnings + drawn.warnings,
-                      shape_count=r.shape_count, has_title=r.has_title)
+                      shape_count=r.shape_count, has_title=r.has_title,
+                      failure_class=drawn.failure_class, limit=drawn.limit)
     out.metrics = dict(drawn.metrics)
     # Issue #4: a traced icon is ~28KB where a hand-authored one is hundreds of
     # bytes, and nothing reported it until someone opened the file.
@@ -271,7 +273,8 @@ def _check_web(artifact, case: Case) -> CheckResult:
 
     drawn = render_check.check_html(extract(artifact, ("html", "!doctype")))
     out = CheckResult(drawn.ok, drawn.reason, r.warnings + drawn.warnings,
-                      shape_count=r.shape_count, has_title=r.has_title)
+                      shape_count=r.shape_count, has_title=r.has_title,
+                      failure_class=drawn.failure_class, limit=drawn.limit)
     out.metrics = drawn.metrics
     return out
 
@@ -473,7 +476,7 @@ def direction_of(metric: str) -> str:
 
 # Generation knobs any engine might accept. Validated at load so `widht: 512`
 # costs nothing instead of silently generating at the default size and passing.
-PARAM_KEYS = {"width", "height", "steps", "seed", "guidance", "frames",
+PARAM_KEYS = {"width", "height", "steps", "seed", "guidance", "frames", "check_timeout",
               "seconds", "voice", "speed", "layers", "reuse", "ssd_streaming",
               # music: what the model is ASKED for, which is also what the
               # checker holds it to. `duration` is a request here and a
@@ -767,7 +770,11 @@ def legacy_knobs(raw: dict) -> dict:
     """The exam knob settings a receipt records; one from before #636 ran at the constants of the time."""
     from harness import knobs
     if "knobs" in raw:
-        return dict(raw.get("knobs") or {})
+        got, lane = dict(raw.get("knobs") or {}), raw.get("modality") or ""
+        for name, value in knobs.UNRECORDED.items():
+            if lane in knobs.KNOBS[name].lanes:
+                got.setdefault(name, value)
+        return got
     return knobs.settings(raw.get("modality") or "")
 
 
