@@ -107,6 +107,12 @@ fi
 # Not a flag at all when no key file is set: --api-key-file with an empty path
 # names nothing and the server refuses to start, which would break the keyless
 # default every other machine runs on.
+# Expanded below as ${KEY_ARGS[@]+"${KEY_ARGS[@]}"} rather than "${KEY_ARGS[@]}".
+# BASH 3.2 TREATS AN EMPTY ARRAY AS UNBOUND under set -u, so the plain spelling
+# aborts with "KEY_ARGS[@]: unbound variable" on every machine that sets no key,
+# which is most of them. macOS ships 3.2 as /bin/bash, and CTX_ARGS never shows
+# this because it always has at least one element. Caught on the macOS runner
+# after passing under bash 5 locally.
 KEY_ARGS=()
 if [ -n "${LLAMACPP_API_KEY_FILE:-}" ]; then
   LH_RUN="${LOCALHARNESS_HOME:-$HOME/localharness}/run"
@@ -123,6 +129,6 @@ exec "$BIN" \
   --models-max "${LLAMACPP_MAX_MODELS:-$(scripts/router-max-models.sh)}" \
   --n-gpu-layers "${LLAMACPP_GPU_LAYERS:-999}" \
   "${CTX_ARGS[@]}" \
-  "${KEY_ARGS[@]}" \
+  ${KEY_ARGS[@]+"${KEY_ARGS[@]}"} \
   --host "$HOST" \
   --port "${LLAMACPP_PORT:-8081}"

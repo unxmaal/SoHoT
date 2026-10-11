@@ -319,7 +319,11 @@ LAUNCH
   }
   echo "$NODE_TASK registered; it starts llamacpp at logon"
   echo
-  check_node || true
+  # THE EXIT STATUS IS check_node'S, DELIBERATELY. Registering the task is not
+  # the same as the node being ready: the firewall rule and the sleep setting
+  # need admin and are not applied here, so install-node reports non-zero while
+  # either is outstanding rather than returning success beside a warning.
+  check_node
 }
 
 # Whether anything already allows inbound TCP on the node's port.
@@ -391,11 +395,17 @@ check_node() {
 
 uninstall_node() {
   is_windows || { echo "uninstall-node is Windows only" >&2; return 1; }
-  powershell -NoProfile -Command \
-    "Unregister-ScheduledTask -TaskName '$NODE_TASK' -Confirm:\$false" \
-    >/dev/null 2>&1 || true
+  # SAY WHICH OF THE TWO HAPPENED. The usual reason this fails is that there
+  # was no task to remove, which is not an error and is not the same as having
+  # removed one either.
+  if powershell -NoProfile -Command \
+      "Unregister-ScheduledTask -TaskName '$NODE_TASK' -Confirm:\$false" \
+      >/dev/null 2>&1; then
+    echo "$NODE_TASK removed; a running server is left alone, stop it if you meant to"
+  else
+    echo "no $NODE_TASK was registered; nothing to remove"
+  fi
   rm -f "$RUN/node-launch.sh"
-  echo "$NODE_TASK removed; a running server is left alone, stop it if you meant to"
   echo "the firewall rule and the never-sleep setting are still in place"
 }
 # END node registration

@@ -206,6 +206,27 @@ def test_the_key_is_passed_as_a_file_not_as_an_argument():
         "the key would reach argv: " + "; ".join(offenders))
 
 
+def test_the_key_flag_survives_bash_3_2_when_no_key_is_set():
+    """macOS ships bash 3.2 as /bin/bash, and there an EMPTY array expanded as
+    "${arr[@]}" counts as unbound under set -u.
+
+    The plain spelling aborted the launcher with 'KEY_ARGS[@]: unbound
+    variable' on every machine that sets no key, which is most of them. It
+    passed under bash 5 locally and the macOS runner caught it. CTX_ARGS never
+    showed this because it always has at least one element.
+    """
+    text = LLAMACPP.read_text(encoding="utf-8")
+    assert 'KEY_ARGS[@]+"${KEY_ARGS[@]}"' in text, (
+        "expand the key array with the +alternate form, or bash 3.2 aborts "
+        "whenever no key is set")
+    offenders = [line.strip() for line in text.splitlines()
+                 if '"${KEY_ARGS[@]}"' in line
+                 and "KEY_ARGS[@]+" not in line
+                 and not line.lstrip().startswith("#")]
+    assert not offenders, (
+        "unguarded empty-array expansion: " + "; ".join(offenders))
+
+
 def test_a_keyless_launcher_passes_no_key_flag():
     """Most machines run this with no key at all. An empty --api-key-file
     would be a flag pointing at nothing, which the server rejects at startup,
