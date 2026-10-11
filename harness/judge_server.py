@@ -14,11 +14,12 @@ import html
 import json
 import mimetypes
 import webbrowser
-from http.server import BaseHTTPRequestHandler, HTTPServer
+from http.server import BaseHTTPRequestHandler
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
 from harness import human
+from harness.loopback import HTTPServer
 
 PAGE = """<!doctype html><meta charset=utf-8>
 <title>{lane} &middot; which is better?</title>

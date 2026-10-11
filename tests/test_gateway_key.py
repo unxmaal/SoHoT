@@ -6,12 +6,13 @@ import stat
 import subprocess
 import sys
 import threading
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from http.server import BaseHTTPRequestHandler
 from pathlib import Path
 
 import pytest
 
 from harness import gateway_key as gk
+from harness.loopback import ThreadingHTTPServer
 
 REPO = Path(__file__).resolve().parents[1]
 

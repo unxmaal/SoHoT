@@ -1,13 +1,14 @@
 """#483: an adoption re-points sohot-<lane> without cutting off a request in flight."""
 import json
 import threading
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from http.server import BaseHTTPRequestHandler
 
 import pytest
 import yaml
 
 from harness import adopt, exclusive, gateway, gateway_switch as gs
 from harness import memory_store as ms
+from harness.loopback import ThreadingHTTPServer
 
 STEM = "Ornith-1.5-35B-Q4_K_M"
 MLX = "http://127.0.0.1:8081"

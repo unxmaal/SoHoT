@@ -513,15 +513,11 @@ def test_a_decide_eval_of_a_gguf_repo_id_sends_the_schema_to_llama_server(plumb,
 def _fake_server(answer):
     """An OpenAI-style server on a free port that records each request body."""
     import http.server
-    import socketserver
     import threading
 
     bodies = []
 
-    class Server(http.server.ThreadingHTTPServer):
-        def server_bind(self):
-            socketserver.TCPServer.server_bind(self)
-            self.server_name, self.server_port = "127.0.0.1", self.server_address[1]
+    from harness.loopback import ThreadingHTTPServer as Server
 
     class Handler(http.server.BaseHTTPRequestHandler):
         def do_POST(self):

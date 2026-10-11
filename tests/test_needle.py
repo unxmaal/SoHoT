@@ -39,7 +39,8 @@ def answer(text):
 if "--serve" not in argv:
     print(json.dumps(answer(opt("--prompt"))))
     sys.exit(0)
-from http.server import BaseHTTPRequestHandler, HTTPServer
+from http.server import BaseHTTPRequestHandler
+from harness.loopback import HTTPServer
 turns = []
 class H(BaseHTTPRequestHandler):
     def log_message(self, *a):

@@ -77,7 +77,8 @@ def run(script: Path, *args, **overrides) -> subprocess.CompletedProcess:
 ALIVE = (
     'exec python3 -c \''
     'import os\n'
-    'from http.server import BaseHTTPRequestHandler, HTTPServer\n'
+    'import socketserver\n'
+    'from http.server import BaseHTTPRequestHandler\n'
     'class H(BaseHTTPRequestHandler):\n'
     '    def do_GET(self):\n'
     '        self.send_response(200)\n'
@@ -85,7 +86,8 @@ ALIVE = (
     '        self.end_headers()\n'
     '        self.wfile.write(b"{}")\n'
     '    def log_message(self, *a): pass\n'
-    'HTTPServer(("127.0.0.1", int(os.environ["GATEWAY_PORT"])), H).serve_forever()\n'
+    'socketserver.TCPServer.allow_reuse_address = True\n'
+    'socketserver.TCPServer(("127.0.0.1", int(os.environ["GATEWAY_PORT"])), H).serve_forever()\n'
     '\'\n')
 #: A listener that BINDS AND NEVER ANSWERS, which is what mlx_lm.server became
 #: after a failed model load: port held, every request hanging, and `status`

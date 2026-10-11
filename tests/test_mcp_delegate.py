@@ -4,11 +4,12 @@ import math
 import os
 import threading
 import time
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from http.server import BaseHTTPRequestHandler
 
 import pytest
 
 from harness import completion, context, delegate, exclusive, serving
+from harness.loopback import ThreadingHTTPServer
 
 ANSWER_AT = 0.3
 SERVED = "upstream/Real-Model-4bit"

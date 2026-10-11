@@ -5,6 +5,8 @@ CI, where that directory does not exist, and visible only as junk accumulating
 on the one machine nobody re-clones. Issue #188 found two such keys, `s` and
 `blocked`, sitting in a real discovery-state.json for ten days.
 """
+import socket
+
 import pytest
 
 from harness import paths
@@ -23,6 +25,14 @@ def _home(tmp_path_factory, monkeypatch):
     monkeypatch.setenv("HF_HOME", str(tmp_path_factory.mktemp("hf-home")))
     monkeypatch.delenv("LLAMACPP_MODELS_DIR", raising=False)
     return home
+
+
+@pytest.fixture(autouse=True)
+def _no_reverse_dns(monkeypatch):
+    """A reverse lookup costs ~35 s on check-macos; build servers from harness.loopback. #711."""
+    def refuse(name=""):
+        raise AssertionError(f"reverse DNS lookup of {name!r}; use harness.loopback")
+    monkeypatch.setattr(socket, "getfqdn", refuse)
 
 
 @pytest.fixture(autouse=True)

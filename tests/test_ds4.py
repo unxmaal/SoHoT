@@ -248,7 +248,9 @@ def test_a_server_holding_another_launch_is_refused_not_replaced(models):
 
 def test_a_server_nobody_recorded_is_refused(models):
     """Answering /v1/models proves something is up, not which model or flags it holds."""
-    from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+    from http.server import BaseHTTPRequestHandler
+
+    from harness.loopback import ThreadingHTTPServer
     import threading
 
     class H(BaseHTTPRequestHandler):

@@ -5,13 +5,14 @@ import subprocess
 import sys
 import threading
 import time
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from http.server import BaseHTTPRequestHandler
 
 import pytest
 
 from harness import delegate, mlx_server, pressure, router, serving
 from harness import workqueue as wq
 from harness.completion import DEFAULT_GATEWAY
+from harness.loopback import ThreadingHTTPServer
 from tests.test_mcp_delegate import fake  # noqa: F401
 
 

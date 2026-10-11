@@ -220,15 +220,43 @@ def build_parser() -> argparse.ArgumentParser:
 
     dc = sub.add_parser("decide", help="answer a schema's fields, with a "
                         "probability per choice")
-    dc.add_argument("prompt", help="the question")
-    dc.add_argument("--schema", required=True,
+    dc.add_argument("prompt", nargs="?", help="the question")
+    dc.add_argument("--schema",
                     help="a JSON file or inline JSON: {field: {type: enum|boolean, "
                          "description, choices}}")
     dc.add_argument("-f", "--file", help="the material; omit to read stdin")
     dc.add_argument("-m", "--model", default=None,
                     help=TEXT_MODEL_HELP.format(DEFAULT_DECIDE_MODEL))
     dc.add_argument("--gateway", default=None, help=GATEWAY_HELP)
+    dc.add_argument("--batch", help="JSONL of {id, question, context, schema}; "
+                    "answers each item, resumable. #683")
+    dc.add_argument("--out", help="with --batch: the JSONL to append "
+                    "{id, answers, probs, error} lines to")
+    dc.add_argument("--concurrency", type=int, default=4,
+                    help="with --batch: items in flight at once (default 4)")
     dc.set_defaults(func=lanes_cmd.cmd_decide)
+
+    ls = sub.add_parser("label-score", help="score local labels against Claude's "
+                        "checks and gold, with a confidence threshold per field. #683")
+    ls.add_argument("--labels", required=True, help="the `soh decide --batch` output")
+    ls.add_argument("--checks", help="JSONL of {id, answers} from Claude")
+    ls.add_argument("--gold", help="JSON {id: {field: value}} or JSONL {id, answers}")
+    ls.add_argument("--target", type=float, default=0.95,
+                    help="local accuracy a suggested threshold must reach (default 0.95)")
+    ls.set_defaults(func=lanes_cmd.cmd_label_score)
+
+    lsel = sub.add_parser("label-select", help="write the fields Claude should "
+                          "check blind: below threshold, plus every Nth item. #683")
+    lsel.add_argument("--items", required=True, help="the `soh decide --batch` input")
+    lsel.add_argument("--labels", required=True, help="the `soh decide --batch` output")
+    lsel.add_argument("--out", required=True, help="JSONL of {id, question, context, schema}")
+    lsel.add_argument("--threshold", type=float, default=0.9,
+                      help="check a field whose confidence is below this (default 0.9)")
+    lsel.add_argument("--thresholds", default="",
+                      help='per-field overrides as inline JSON, e.g. {"q1": 0.8}')
+    lsel.add_argument("--every", type=int, default=0,
+                      help="also check every Nth item whole (default 0, none)")
+    lsel.set_defaults(func=lanes_cmd.cmd_label_select)
 
     s = sub.add_parser("say", help="speak text aloud")
     s.add_argument("text", help="the text, or - to read stdin")

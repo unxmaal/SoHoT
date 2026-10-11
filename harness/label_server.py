@@ -9,11 +9,12 @@ from __future__ import annotations
 import html
 import random
 import webbrowser
-from http.server import BaseHTTPRequestHandler, HTTPServer
+from http.server import BaseHTTPRequestHandler
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
 from harness import rubric_eval as rv
+from harness.loopback import HTTPServer
 
 PAGE = """<!doctype html><meta charset=utf-8>
 <title>{name} &middot; label</title>

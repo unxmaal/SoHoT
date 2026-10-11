@@ -1,7 +1,7 @@
 """Every artifact a judge compares is shown in the page, with no click. #461."""
 import threading
 import urllib.request
-from http.server import HTTPServer
+from harness.loopback import HTTPServer
 
 import pytest
 
