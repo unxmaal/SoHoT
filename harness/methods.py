@@ -48,6 +48,8 @@ class Method:
     preset: str = ""
     #: (parsed, lane, prompt, ask) -> (text, cost): how a lane command serves it; None for trace.
     serve: Callable | None = None
+    #: (parsed) -> model calls one attempt makes on its base; None is one. #673.
+    per_attempt: Callable | None = None
     extra: dict = field(default_factory=dict)
 
     def compose(self, base: str, *args) -> str:
@@ -96,6 +98,17 @@ def base_of(spec: str) -> str:
     except ValueError:
         return ""
     return got.base if got else ""
+
+
+def calls(spec: str) -> int:
+    """Model calls one attempt of `spec` makes on its base: 1 for a plain model or a bad spec. #673."""
+    try:
+        parsed = parse(spec)
+    except ValueError:
+        return 1
+    if parsed is None or parsed.method.per_attempt is None:
+        return 1
+    return max(1, int(parsed.method.per_attempt(parsed)))
 
 
 def build(spec: str, base_builder, outdir=None):
@@ -278,10 +291,11 @@ REGISTRY: dict[str, Method] = {m.name: m for m in (
            modality="svg", base_lane="image", preset="icon", crosses=False),
     Method("best-of", "best-of:<n>:<base>", SAMPLED_TEXT_LANES, "",
            "sample n at the lane's temperature, keep what the lane's checks score highest",
-           _best_of, arity=1, defaults=(3,), minimum=2, serve=_serve_best_of),
+           _best_of, arity=1, defaults=(3,), minimum=2, serve=_serve_best_of,
+           per_attempt=lambda p: p.args[0]),
     Method("plan", "plan:<base>", TEXT_LANES, "",
            "ask for a plan, then answer with it: two calls", _plan,
-           serve=_serve_plan),
+           serve=_serve_plan, per_attempt=lambda p: 2),
 )}
 
 

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import time
+from dataclasses import dataclass
 
 from harness import lanes, paths, reasons
 from harness.commands.common import emit, err, note
@@ -166,8 +167,6 @@ def _measure(a, row: dict, loaded: list) -> int:
     Two separate runs would be two receipts that comparable() would refuse, and
     rightly.
     """
-    import subprocess
-
     from harness import adopt, candidates, screen, winners
     from harness import memory_store as ms
 
@@ -216,11 +215,13 @@ def _measure(a, row: dict, loaded: list) -> int:
     # candidates and then read a receipt from a different experiment. #222.
     out = (paths.home() / "runs"
            / f"{time.strftime('%Y%m%d-%H%M%S')}-adopt-{lane}")
-    split, plan = _plan(a, lane, inc_spec)
+    split, plan = _plan(a, lane, inc_spec, spec)
     argv = ["uv", "run", "python", "-m", "evals.run", "--modality", lane,
             "--repeat", str(plan.repeat),
             "--out", str(out),
             "--candidates", f"{inc_spec},{spec}"]
+    if plan.side != "all":
+        argv += ["--split", plan.side]
     # ROUTE IT THE WAY THE SCREEN DOES. LiteLLM validates `model` against its
     # alias table and a discovered candidate is always a repo id, so the
     # measure sent every request to a server that was never going to accept
@@ -233,7 +234,9 @@ def _measure(a, row: dict, loaded: list) -> int:
     print(f"\n  {lane}: {name} against {incumbent}")
     print(f"    {' '.join(argv)}", flush=True)
     loaded.append(spec)
-    proc = subprocess.run(argv, capture_output=True, text=True)
+    proc = _launch(argv, deadline_s=plan.deadline_s)
+    if getattr(proc, "timed_out", False):
+        return _stopped(name, lane, inc_spec, spec, split, plan, proc, out)
     if proc.returncode != 0:
         err(proc.stderr.strip()[-400:] or "no stderr")
         return 1
@@ -319,19 +322,30 @@ def _measure(a, row: dict, loaded: list) -> int:
     return 0
 
 
-def _plan(a, lane: str, inc_spec: str):
-    """The lane's split and the repeat the paired gate needs on its holdout, within the time budget. #479, #591."""
+def _plan(a, lane: str, inc_spec: str, spec: str = ""):
+    """The lane's split and the repeat the paired gate needs on its holdout, within the time budget. #479, #591, #673."""
+    from dataclasses import replace
+
     from evals.run import STOCHASTIC_MODALITIES
-    from harness import candidates, holdout, power
+    from harness import candidates, completion, holdout, methods, power
     from harness import memory_store as ms
 
     split = holdout.for_lane(lane)
+    settings = (completion.budget(lane), ())
     store = ms.connect()
     try:
         draws, median_s = power.incumbent_profile(
-            store, lane, candidates.key_of(inc_spec) or inc_spec)
+            store, lane, candidates.key_of(inc_spec) or inc_spec, settings)
     finally:
         store.close()
+    estimated = ""
+    if median_s is None:
+        median_s = power.estimated_seconds(lane)
+        if median_s is not None:
+            estimated = (f"seconds per call estimated at {median_s:.0f}s: no incumbent "
+                         f"receipt at the {settings[0]}-token reply budget, so every "
+                         f"reply is assumed to spend it at {power.DECODE_TOK_S:.0f} tok/s")
+    calls = methods.calls(inc_spec) + (methods.calls(spec) if spec else 1)
     rates, seen = power.rates_from(draws, split.holdout)
     effect = getattr(a, "effect", None) or power.effect_for(lane)
     explicit = getattr(a, "repeat", None)
@@ -340,20 +354,118 @@ def _plan(a, lane: str, inc_spec: str):
                       repeat=explicit, observed=seen,
                       rho=power.icc([list(draws.values())]))
     budget = float(getattr(a, "power_budget_min", None) or power.BUDGET_MIN) * 60
+    every = len(set(split.dev) | set(split.holdout))
+    full = power.projected_seconds(every, plan.repeat, median_s, calls)
+    side, dev_skipped = "all", ""
+    if split.dev and full is not None and full > budget:
+        side = "holdout"
+        dev_skipped = (f"dev: not run, dev and holdout at repeat {plan.repeat} would "
+                       f"take {power._hm(full)}, over the {power._hm(budget)} budget")
     plan = power.within_budget(
         plan, [rates[c] for c in split.holdout],
-        cases_run=len(set(split.dev) | set(split.holdout)), median_s=median_s,
-        budget_s=budget, explicit=bool(explicit))
+        cases_run=every if side == "all" else len(split.holdout), median_s=median_s,
+        budget_s=budget, explicit=bool(explicit), calls=calls)
+    plan = replace(plan, side=side, dev_skipped=dev_skipped,
+                   why="; ".join(x for x in (plan.why, estimated) if x))
+    plan = replace(plan, deadline_s=power.deadline(plan))
     print(f"    power: repeat {plan.repeat} over {len(split.holdout)} holdout "
           f"case(s) gives {plan.power:.2f} to detect +{plan.effect:.2f} at "
           f"alpha {plan.alpha}{'; ' + plan.why if plan.why else ''}"
           f"{'; ' + split.caveat if split.caveat else ''}", flush=True)
+    if plan.projected_s is not None:
+        print(f"    time: {plan.cases_run} case(s) x repeat {plan.repeat} x {calls} "
+              f"call(s) projected at {power._hm(plan.projected_s)}, stopped at "
+              f"{power._hm(plan.deadline_s)}", flush=True)
+    if dev_skipped:
+        print(f"    {dev_skipped}", flush=True)
     missing = power.unmeasured(draws, split.holdout)
     if missing:
         print(f"    projected: {len(missing)} of {len(split.holdout)} holdout "
               f"unmeasured, drawn from the incumbent's measured per-case rates",
               flush=True)
     return split, plan
+
+
+#: Seconds a stopped run's process group gets between SIGTERM and SIGKILL. #673.
+STOP_GRACE_S = 30.0
+
+
+@dataclass(frozen=True)
+class Launched:
+    returncode: int | None
+    stderr: str
+    timed_out: bool
+    elapsed_s: float
+
+
+def _launch(argv, deadline_s: float | None = None, cwd: str | None = None,
+            grace_s: float = STOP_GRACE_S) -> Launched:
+    """Run argv as its own process group; past `deadline_s` stop the whole group, which frees the locks it held. #673."""
+    import subprocess
+    import sys
+
+    group = ({"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP}
+             if sys.platform == "win32" else {"start_new_session": True})
+    started = time.monotonic()
+    proc = subprocess.Popen(argv, cwd=cwd, stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE, text=True, **group)
+    try:
+        _, stderr = proc.communicate(timeout=deadline_s)
+    except subprocess.TimeoutExpired:
+        _stop_group(proc, grace_s)
+        _, stderr = proc.communicate()
+        return Launched(proc.returncode, stderr or "", True, time.monotonic() - started)
+    except BaseException:
+        _stop_group(proc, grace_s)
+        proc.communicate()
+        raise
+    return Launched(proc.returncode, stderr or "", False, time.monotonic() - started)
+
+
+def _stop_group(proc, grace_s: float) -> None:
+    """SIGTERM the group, reap the leader, then SIGKILL what is left; an unreaped leader makes killpg say EPERM on macOS. #673."""
+    import contextlib
+    import os
+    import signal
+    import subprocess
+    import sys
+
+    from harness import workqueue
+    if sys.platform == "win32":
+        workqueue.stop_group(proc.pid, grace=grace_s)
+        return
+    with contextlib.suppress(ProcessLookupError, PermissionError):
+        os.killpg(proc.pid, signal.SIGTERM)
+    with contextlib.suppress(subprocess.TimeoutExpired):
+        proc.wait(timeout=grace_s)
+    with contextlib.suppress(ProcessLookupError, PermissionError):
+        os.killpg(proc.pid, signal.SIGKILL)
+
+
+def _stopped(name: str, lane: str, inc_spec: str, spec: str, split, plan,
+             proc, out) -> int:
+    """Record a run stopped at its deadline as a partial, inconclusive verdict. #673."""
+    from harness import adopt, power
+    from harness import memory_store as ms
+
+    data = _receipt_at(out) or {}
+    elapsed = getattr(proc, "elapsed_s", None) or plan.deadline_s or 0.0
+    why = (f"partial: stopped at its {power._hm(plan.deadline_s or elapsed)} deadline "
+           f"after {power._hm(elapsed)}, before {plan.side} cases at repeat "
+           f"{plan.repeat} finished; inconclusive, nothing is concluded about the challenger")
+    verdict = adopt.Verdict(
+        lane, inc_spec, spec, False, why, failure_class=reasons.INCONCLUSIVE,
+        evidence={"split": split.as_dict(), "power": plan.as_dict(),
+                  "partial": {"deadline_s": plan.deadline_s, "elapsed_s": elapsed,
+                              "side": plan.side, "stored_rows": bool(data)}})
+    store = ms.connect()
+    try:
+        adopt.record(store, verdict, spec=spec, run_id=data.get("run_id"))
+    except ms.IllegalTransition as exc:
+        print(f"  skipped {exc}", flush=True)
+    finally:
+        store.close()
+    return err(f"{name}: {why}")
 
 
 def _settle(name: str, outcome: str, detail: str) -> None:

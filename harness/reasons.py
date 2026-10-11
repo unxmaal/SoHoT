@@ -42,6 +42,8 @@ BACKEND_FAULT = "backend_fault"
 
 #: A verdict's class, not a row's: the adopt gate lacked the power to see the effect. #479.
 UNDERPOWERED = "underpowered"
+#: A verdict's class: the paired run stopped at its deadline, so it decided nothing. #673.
+INCONCLUSIVE = "inconclusive"
 
 #: class -> (screen outcome, reason), in precedence order when rows disagree.
 CLASSES = {

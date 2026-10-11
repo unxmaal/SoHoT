@@ -51,6 +51,7 @@ def test_a_results_json_on_disk_is_not_a_stored_run(tmp_path):
 def test_the_measure_names_its_own_output_directory(monkeypatch, tmp_path):
     """The subprocess must be told where to write, or the caller is guessing."""
     seen = {}
+    monkeypatch.setattr(measure_cmd, "_launch", lambda argv, **kw: subprocess.run(argv, **kw))
     monkeypatch.setattr(subprocess, "run",
                         lambda argv, **kw: (seen.update(argv=argv), _Done())[1])
     monkeypatch.setattr(adopt, "default_for",
@@ -71,6 +72,7 @@ def test_a_receipt_naming_neither_candidate_is_refused(monkeypatch, tmp_path,
                                                        capsys):
     """Naming the directory stops the loop reading a stranger's receipt. This
     stops it reading one that is its own and describes a different exam."""
+    monkeypatch.setattr(measure_cmd, "_launch", lambda argv, **kw: subprocess.run(argv, **kw))
     monkeypatch.setattr(subprocess, "run", lambda argv, **kw: _Done())
     monkeypatch.setattr(adopt, "default_for",
                         lambda lane, fallback, conn=None: "q3-4b")
@@ -96,6 +98,7 @@ def test_the_measure_routes_a_repo_id_the_way_the_screen_does(monkeypatch,
     discovered candidate is always a repo id. The screen passes --gateway and
     the measure did not. Issue #223, which is #206 one tier along."""
     seen = {}
+    monkeypatch.setattr(measure_cmd, "_launch", lambda argv, **kw: subprocess.run(argv, **kw))
     monkeypatch.setattr(subprocess, "run",
                         lambda argv, **kw: (seen.update(argv=argv), _Done())[1])
     monkeypatch.setattr(adopt, "default_for",
@@ -133,6 +136,7 @@ def test_a_real_low_score_is_not_a_refusal():
 
 def test_a_wholly_refused_challenger_is_requeued_not_declined(monkeypatch,
                                                               tmp_path, capsys):
+    monkeypatch.setattr(measure_cmd, "_launch", lambda argv, **kw: subprocess.run(argv, **kw))
     monkeypatch.setattr(subprocess, "run", lambda argv, **kw: _Done())
     monkeypatch.setattr(adopt, "default_for",
                         lambda lane, fallback, conn=None: "q3-4b")
@@ -164,6 +168,7 @@ def test_a_control_that_passed_nothing_blocks_any_verdict(monkeypatch,
     """The general form of the refusal check. A doubled /v1 produced HTTP 404,
     both candidates scored 0/27, and the loop reported "does not beat the
     incumbent on the lane's metric". Issue #223."""
+    monkeypatch.setattr(measure_cmd, "_launch", lambda argv, **kw: subprocess.run(argv, **kw))
     monkeypatch.setattr(subprocess, "run", lambda argv, **kw: _Done())
     monkeypatch.setattr(adopt, "default_for",
                         lambda lane, fallback, conn=None: "q3-4b")
@@ -189,6 +194,7 @@ def test_a_control_that_passed_nothing_blocks_any_verdict(monkeypatch,
 def test_a_working_control_still_lets_a_loss_be_recorded(monkeypatch, tmp_path):
     """The negative control for the guard: a real contest must still resolve,
     or nothing is ever declined and the ladder stops closing."""
+    monkeypatch.setattr(measure_cmd, "_launch", lambda argv, **kw: subprocess.run(argv, **kw))
     monkeypatch.setattr(subprocess, "run", lambda argv, **kw: _Done())
     monkeypatch.setattr(adopt, "default_for",
                         lambda lane, fallback, conn=None: "q3-4b")
@@ -257,6 +263,7 @@ def test_the_incumbent_travels_as_a_repo_id_when_the_run_goes_upstream(
     mlx_lm.server the incumbent cannot go as a LiteLLM alias: :8081 has never
     heard of `q3-4b`, so the control scored 0 of 27. Issue #223."""
     seen = {}
+    monkeypatch.setattr(measure_cmd, "_launch", lambda argv, **kw: subprocess.run(argv, **kw))
     monkeypatch.setattr(subprocess, "run",
                         lambda argv, **kw: (seen.update(argv=argv), _Done())[1])
     monkeypatch.setattr(adopt, "default_for",
@@ -280,6 +287,7 @@ def test_the_incumbent_keeps_its_alias_when_the_run_stays_on_the_gateway(
     """The negative control. A challenger that IS an alias needs no
     translation, and renaming the incumbent would change the exam."""
     seen = {}
+    monkeypatch.setattr(measure_cmd, "_launch", lambda argv, **kw: subprocess.run(argv, **kw))
     monkeypatch.setattr(subprocess, "run",
                         lambda argv, **kw: (seen.update(argv=argv), _Done())[1])
     monkeypatch.setattr(adopt, "default_for",
@@ -338,6 +346,7 @@ def test_a_measured_proposal_leaves_the_survivors_list(monkeypatch, tmp_path):
     conn = ms.connect()
     _seed_screened(conn, "org/challenger")
     conn.close()
+    monkeypatch.setattr(measure_cmd, "_launch", lambda argv, **kw: subprocess.run(argv, **kw))
     monkeypatch.setattr(subprocess, "run", lambda argv, **kw: _Done())
     monkeypatch.setattr(adopt, "default_for",
                         lambda lane, fallback, conn=None: "q3-4b")
@@ -367,6 +376,7 @@ def test_the_incumbent_is_not_measured_against_itself(monkeypatch, tmp_path,
     _seed_screened(conn, "org/winner")
     conn.close()
     ran = []
+    monkeypatch.setattr(measure_cmd, "_launch", lambda argv, **kw: subprocess.run(argv, **kw))
     monkeypatch.setattr(subprocess, "run", lambda argv, **kw: ran.append(argv))
     monkeypatch.setattr(adopt, "default_for",
                         lambda lane, fallback, conn=None: "llamacpp:win")

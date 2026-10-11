@@ -12,6 +12,7 @@ from __future__ import annotations
 import functools
 import math
 import statistics
+from fractions import Fraction
 from dataclasses import asdict, dataclass, replace
 
 #: Power the gate must reach before a null may be read as "no better".
@@ -33,6 +34,10 @@ BUDGET_MIN = 120.0
 FALLBACK_REPEAT = 3
 #: A stochastic lane whose correlation is unmeasured runs at least this, so the run measures it.
 MEASURING_REPEAT = 2
+#: Decode rate for a reply-budget estimate: Ornith-1.5-35B on the Studio, tokens per second. #628, #673.
+DECODE_TOK_S = 145.0
+#: A paired run may run this far past max(budget, projection) before it is stopped. #673.
+DEADLINE_GRACE = 1.25
 #: Repeats past the one reaching this share of the best power buy nothing.
 PLATEAU = 0.95
 #: Or within this much of it.
@@ -52,10 +57,11 @@ def _alpha() -> float:
 def _critical(d: int, alpha: float) -> int:
     """Fewest gains of d discordant cells that the two-sided test rejects on."""
     total = 2 ** d
+    level = Fraction(alpha).limit_denominator(10 ** 9)
     tail = 0
     for k in range(0, d // 2 + 1):
         tail += math.comb(d, k)
-        if 2 * tail > alpha * total:
+        if 2 * tail * level.denominator > level.numerator * total:
             return d - k + 1 if k else d + 1
     return d - d // 2
 
@@ -215,6 +221,12 @@ class Plan:
     needed_repeat: int | None = None
     projected_s: float | None = None
     budget_s: float | None = None
+    #: Which split side runs, model calls per case across both candidates, and how many cases. #673.
+    side: str = "all"
+    calls: int = 2
+    cases_run: int | None = None
+    dev_skipped: str = ""
+    deadline_s: float | None = None
 
     def as_dict(self) -> dict:
         return asdict(self)
@@ -296,11 +308,25 @@ def _more_cases(rates, effect, k: int, need: int | None, target: float) -> str:
 
 
 def projected_seconds(cases: int, repeat: int, median_s: float | None,
-                      candidates: int = 2) -> float | None:
-    """Wall time of a paired run: every lane case, every repeat, both candidates."""
+                      calls: int = 2) -> float | None:
+    """Wall time of a paired run: every case run, every repeat, every model call of both candidates. #673."""
     if median_s is None:
         return None
-    return cases * repeat * candidates * median_s
+    return cases * repeat * calls * median_s
+
+
+def estimated_seconds(lane: str) -> float | None:
+    """Seconds per call if every reply spends the lane's whole reply budget; None for a lane with no text. #673."""
+    from harness import completion
+    budget = completion.budget((lane or "").strip().lower())
+    return budget / DECODE_TOK_S if budget else None
+
+
+def deadline(chosen: "Plan") -> float | None:
+    """When a paired run is stopped: DEADLINE_GRACE past the larger of its budget and its projection. #673."""
+    if chosen.budget_s is None:
+        return None
+    return max(chosen.budget_s, chosen.projected_s or 0.0) * DEADLINE_GRACE
 
 
 def _hm(seconds: float) -> str:
@@ -309,21 +335,22 @@ def _hm(seconds: float) -> str:
 
 
 def within_budget(chosen: Plan, rates, *, cases_run: int, median_s: float | None,
-                  budget_s: float, explicit: bool = False) -> Plan:
+                  budget_s: float, explicit: bool = False, calls: int = 2) -> Plan:
     """The planned repeat if its projected time fits `budget_s`, else the fallback and what power would cost. #591."""
     def cost(r):
-        return projected_seconds(cases_run, r, median_s)
+        return projected_seconds(cases_run, r, median_s, calls)
 
+    run = {"calls": calls, "cases_run": cases_run}
     if explicit or not chosen.stochastic:
         return replace(chosen, projected_s=cost(chosen.repeat), budget_s=budget_s,
-                       needed_repeat=chosen.repeat)
+                       needed_repeat=chosen.repeat, **run)
     if median_s is None:
         r = min(chosen.repeat, FALLBACK_REPEAT)
         note = (f"no measured seconds per case in this lane, so the cost of "
                 f"repeat {chosen.repeat} is unknown; ran repeat {r}")
     elif cost(chosen.repeat) <= budget_s:
         return replace(chosen, projected_s=cost(chosen.repeat), budget_s=budget_s,
-                       needed_repeat=chosen.repeat)
+                       needed_repeat=chosen.repeat, **run)
     else:
         r = max(1, min(FALLBACK_REPEAT, chosen.repeat, int(budget_s // cost(1))))
         note = (f"repeat {chosen.repeat} for power {chosen.power:.2f} would take "
@@ -334,7 +361,7 @@ def within_budget(chosen: Plan, rates, *, cases_run: int, median_s: float | None
                observed=chosen.observed,
                rho=chosen.rho if chosen.rho_measured else None)
     return replace(got, needed_repeat=chosen.repeat, projected_s=cost(r),
-                   budget_s=budget_s,
+                   budget_s=budget_s, **run,
                    why="; ".join(x for x in (note, got.why) if x))
 
 
@@ -352,14 +379,36 @@ def draws_from(rows, key: str) -> tuple[dict[str, list[int]], float | None]:
     return by, (statistics.median(secs) if secs else None)
 
 
-def incumbent_profile(conn, lane: str, key: str) -> tuple[dict[str, list[int]], float | None]:
-    """The incumbent's stored draws per case in this lane's measure runs, and its median seconds."""
+def reply_settings(receipt, lane: str) -> tuple[int, tuple]:
+    """(max_tokens, budget_ladder) a stored receipt ran at; a receipt from before #628 ran at the legacy budget. #673."""
+    import json
+    from evals.core import legacy_budget
+    try:
+        got = json.loads(receipt or "{}")
+    except ValueError:
+        got = {}
+    budget = got.get("max_tokens")
+    budget = legacy_budget(got.get("modality") or lane) if budget is None else int(budget)
+    return budget, tuple(int(n) for n in got.get("budget_ladder") or ())
+
+
+def incumbent_profile(conn, lane: str, key: str,
+                      settings: tuple | None = None) -> tuple[dict[str, list[int]], float | None]:
+    """The incumbent's stored draws per case in this lane's measure runs, and its median seconds.
+
+    With `settings` (max_tokens, budget_ladder) the median comes only from runs at those settings. #673.
+    """
+    lane = (lane or "").strip().lower()
     rows = conn.execute(
-        "SELECT x.case_id, x.passed, x.seconds, x.candidate FROM results x "
+        "SELECT x.case_id, x.passed, x.seconds, x.candidate, u.receipt FROM results x "
         "JOIN runs u ON u.id = x.run_id "
         "WHERE u.lane = ? AND u.tier = 'measure' AND x.candidate = ?",
-        ((lane or "").strip().lower(), key)).fetchall()
-    return draws_from(rows, key)
+        (lane, key)).fetchall()
+    draws, median_s = draws_from(rows, key)
+    if settings is not None:
+        same = [r for r in rows if reply_settings(r["receipt"], lane) == tuple(settings)]
+        median_s = draws_from(same, key)[1]
+    return draws, median_s
 
 
 def control_of(receipts, prefer=()) -> str:

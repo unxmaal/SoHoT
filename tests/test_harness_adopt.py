@@ -152,6 +152,7 @@ def test_the_incumbent_and_challenger_run_in_one_paired_invocation(monkeypatch, 
         seen["argv"] = argv
         return Done()
 
+    monkeypatch.setattr(measure_cmd, "_launch", lambda argv, **kw: subprocess.run(argv, **kw))
     monkeypatch.setattr(subprocess, "run", fake_run)
     # PIN THE INCUMBENT. Speech defaults are platform-branched: this resolves
     # to kokoro-onnx/Kokoro-82M on Windows and the MLX name elsewhere, so a

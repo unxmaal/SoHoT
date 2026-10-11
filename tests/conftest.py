@@ -166,13 +166,13 @@ def store_run():
 
     def make(name, lane, summary=None, *, rows=None, tier="measure",
              specs=None, hw_model=None, generated="2026-10-05T12:00:00",
-             cases_digest="", conn=None):
+             cases_digest="", conn=None, receipt=None):
         here = ms.this_machine()
         env = {"hw_model": here["hw_model"] if hw_model is None else hw_model,
                "os": here["os"], "arch": here["arch"]}
         data = {"generated": generated, "environment": env,
                 "receipt": {"modality": lane, "tier": tier,
-                            "cases_digest": cases_digest},
+                            "cases_digest": cases_digest, **(receipt or {})},
                 "specs": specs or {},
                 "rows": rows if rows is not None else _rows_from(summary or {})}
         own = conn is None

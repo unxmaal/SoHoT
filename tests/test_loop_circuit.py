@@ -20,6 +20,7 @@ from harness import (adopt, cli, completion, downloads, gateway, gateway_switch 
                      inspect as ins, machine as _machine, memory)
 from harness import memory_store as ms  # noqa: E402
 from harness.memory import Accelerator  # noqa: E402
+from harness.commands import measure as measure_cmd  # noqa: E402
 
 CHALLENGER = "openbmb/MiniCPM5-1B"
 INCUMBENT_UPSTREAM = "mlx-community/Qwen3-4B-Instruct-2507-4bit"
@@ -177,6 +178,7 @@ def world(monkeypatch, tmp_path, _home):
     monkeypatch.setattr(ms.machines, "_THIS_MACHINE", None)
     gateway.write_served(config)
     monkeypatch.setattr(urllib.request, "urlopen", w.urlopen)
+    monkeypatch.setattr(measure_cmd, "_launch", lambda argv, **kw: subprocess.run(argv, **kw))
     monkeypatch.setattr(subprocess, "run", w.run)
     monkeypatch.setattr(completion, "_post", w.post)
     import huggingface_hub

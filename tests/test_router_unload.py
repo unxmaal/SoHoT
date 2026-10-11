@@ -173,6 +173,7 @@ def test_the_screen_unloads_each_candidate_it_ran(monkeypatch, tmp_path):
     monkeypatch.setattr(screen_cmd, "_screen_plan", lambda want: plan)
     monkeypatch.setattr(memory, "check_model", lambda *a, **k: (True, ""))
     monkeypatch.setattr(screen, "argv", lambda r, **k: ["screen"])
+    monkeypatch.setattr(measure_cmd, "_launch", lambda argv, **kw: subprocess.run(argv, **kw))
     monkeypatch.setattr(subprocess, "run", lambda argv, **kw: _Done())
     monkeypatch.setattr(measure_cmd, "_receipt_at", lambda out: None)
     released = []
