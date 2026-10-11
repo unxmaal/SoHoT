@@ -282,9 +282,19 @@ def old_store(tmp_path):
 
 @pytest.fixture
 def real_ocr(monkeypatch):
-    """A test that runs the real Vision OCR retries its transient a bounded number of times. #600."""
+    """A test that runs the real Vision OCR retries its transient a bounded number of times. #600.
+
+    AND SKIPS WHERE THERE IS NO ENGINE AT ALL. A machine can legitimately have
+    none: winsdk publishes no wheel above cp312, so Windows on 3.13 has no OS
+    binding, and RapidOCR is a linux-only install so it does not stand in.
+    Without this the tests still ran, read nothing, and a deliberately wrong
+    word scored as correct, which reads as a scoring bug rather than as a
+    missing engine. #758.
+    """
     from harness.checks import ocr
     from tests.ocr_retry import retrying
+    if ocr.available_backend() is None:
+        pytest.skip("no OCR backend on this machine")
     monkeypatch.setattr(ocr, "read", retrying(ocr.read))
 
 
