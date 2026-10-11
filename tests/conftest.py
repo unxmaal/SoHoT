@@ -79,6 +79,15 @@ def _no_real_registry(monkeypatch):
     # Nor the papers API: a recorded fixture is passed instead. #576.
     from harness import papers
     monkeypatch.setattr(papers, "_get_json", refuse)
+    # Nor the Hub API over httpx, which the fetch listing reads through ratelimit. #675.
+    import httpx
+    real_get = httpx.get
+
+    def hub_refused(url, *a, **k):
+        if str(url).startswith("https://huggingface.co/"):
+            refuse(url)
+        return real_get(url, *a, **k)
+    monkeypatch.setattr(httpx, "get", hub_refused)
 
 
 @pytest.fixture(autouse=True)

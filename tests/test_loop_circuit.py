@@ -53,7 +53,7 @@ class World:
     """The internet, the model server and the child processes, with one knob per fault."""
 
     def __init__(self):
-        self.hf_429_after, self.hf_answered = None, 0
+        self.hf_429_after, self.hf_answered, self.hf_refused = None, 0, 0
         self.snapshot_files = {"config.json": "{}", "model.safetensors": "x",
                                "tokenizer.json": "{}"}
         self.server = "ok"
@@ -73,7 +73,7 @@ class World:
                     f'<updated>2026-10-01T00:00:00Z</updated><content>Try '
                     f'https://huggingface.co/{CHALLENGER} for code</content></entry></feed>')
         elif url.startswith("https://huggingface.co/api/models/"):
-            if self.hf_429_after is not None and self.hf_answered >= self.hf_429_after:
+            if self._limited():
                 raise urllib.error.HTTPError(url, 429, "Too Many Requests", {}, None)
             self.hf_answered += 1
             body = fakes.registry()(url)
@@ -81,6 +81,22 @@ class World:
             self.unexpected.append(url)
             raise urllib.error.URLError("no network in tests")
         return contextlib.closing(io.BytesIO(body.encode("utf-8")))
+
+    def _limited(self) -> bool:
+        limited = self.hf_429_after is not None and self.hf_answered >= self.hf_429_after
+        self.hf_refused += limited
+        return limited
+
+    def httpx_get(self, url, params=None, **kw):
+        """The Hub API as the fetch listing reads it, through harness.ratelimit. #675."""
+        request = httpx.Request("GET", url)
+        if not str(url).startswith("https://huggingface.co/api/models/"):
+            self.unexpected.append(str(url))
+            raise httpx.ConnectError("no network in tests", request=request)
+        if self._limited():
+            return httpx.Response(429, request=request)
+        self.hf_answered += 1
+        return httpx.Response(200, text=fakes.registry()(str(url)), request=request)
 
     def snapshot(self, repo_id, **kw):
         where = downloads.hub_dir(repo_id) / "snapshots" / "0"
@@ -179,6 +195,9 @@ def world(monkeypatch, tmp_path, _home):
     gateway.write_served(config)
     monkeypatch.setattr(urllib.request, "urlopen", w.urlopen)
     monkeypatch.setattr(measure_cmd, "_launch", lambda argv, **kw: subprocess.run(argv, **kw))
+    monkeypatch.setattr(httpx, "get", w.httpx_get)
+    from harness import ratelimit
+    monkeypatch.setattr(ratelimit, "sleep", lambda s: None)
     monkeypatch.setattr(subprocess, "run", w.run)
     monkeypatch.setattr(completion, "_post", w.post)
     import huggingface_hub
@@ -314,6 +333,9 @@ def test_a_rate_limited_registry_at_fetch_settles_nothing(world):
     world.hf_429_after = 1
     loop()
     assert world.hf_answered == 1 and challenger_evals(world) == []
+    # The fetch listing met the 429 and waited it out before deferring. #675.
+    from harness import ratelimit
+    assert world.hf_refused >= ratelimit.ATTEMPTS
     row = latest(CHALLENGER)
     assert row["tier"] == "inspect" and row["outcome"] == "queued", row
 
