@@ -356,3 +356,9 @@ def test_install_lets_a_running_job_finish_before_reloading_the_worker():
     assert body.index("harness.workqueue quiesce") < body.index("launchctl bootout")
     assert "was-running" in body and "jobs resume" in body, (
         "the queue is resumed after the reload only if the owner had not paused it")
+
+
+def test_the_sweep_downloads_up_to_40_gib_by_default():
+    # 12 GiB skipped every 13-17 GiB candidate in the 2026-10-10 sweep. #678.
+    text = (REPO / "scripts" / "serve-discover.sh").read_text(encoding="utf-8")
+    assert 'BUDGET="${DISCOVER_BUDGET_GIB:-40}"' in text
