@@ -5,8 +5,8 @@ swept offline against cached data; a knob with a `limit` is one an eval can hit,
 and the limit is the predicate name a result row or a verdict records when it
 does (`timeout_s>180`, `max_tokens.code>32768`, `ceiling_gb:>66`).
 
-`inventory()` finds the module-level numeric constants whose names say they gate
-something. Every one is either registered here, named in NOT_GATING with a
+`inventory()` finds the numeric values whose names say they gate something:
+constants, table entries, argument defaults, call literals and environment defaults. Every one is either registered here, named in NOT_GATING with a
 reason, or in the shrinking backlog the tier-1 test holds.
 """
 from __future__ import annotations
@@ -26,9 +26,18 @@ GIB = 1024 ** 3
 GATING_WORDS = frozenset({"MAX", "MIN", "TIMEOUT", "CAP", "LIMIT", "FLOOR", "CEILING", "BUDGET",
                           "THRESHOLD", "TOLERANCE", "TEMPERATURE", "TOKENS", "RESERVE", "ALPHA",
                           "CUTOFF", "MARGIN", "STEPS", "FRACTION", "WER", "CER", "INK", "MOTION",
-                          "STDDEV", "F1", "DAYS", "SHARED", "POPULATION", "VOTES"})
+                          "STDDEV", "F1", "DAYS", "SHARED", "POPULATION", "VOTES", "RETRIES",
+                          "ATTEMPTS", "GRACE", "WAIT", "DELAY", "POLL", "INTERVAL", "STALL", "SECONDS",
+                          "EFFECT", "CTX", "Z", "IDLE", "SLEEP"})
+#: Name endings and phrases that mark a gate: seconds, a rate, a per-token or per-GiB allowance.
+GATING_SUFFIXES = ("_S",)
+GATING_PHRASES = ("PER_TOKEN", "PER_GIB")
+#: Argument names whose numeric default or call-site literal gates an outcome.
+GATING_PARAMS = frozenset({"timeout", "grace", "poll", "settle_s", "max_tokens", "max_new_tokens",
+                           "limit", "levels"})
 _UPPER = re.compile(r"_?[A-Z][A-Z0-9_]*")
-_SITE = re.compile(r"(?P<rel>[\w/]+\.py):(?P<name>\w+)(?:\((?P<param>\w+)\))?")
+_SITE = re.compile(r"(?P<rel>[\w/]+\.py):(?P<name>[\w.]+)(?P<keys>(?:\[\w+\])*)(?:\((?P<param>\w+)\))?")
+_SHELL_DEFAULT = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*):?[-=](-?[0-9]+(?:\.[0-9]+)?)\}")
 
 #: The until-predicate family a knob's limit is written in: `limit:name>N` or a machine fact `name:>N`.
 LIMIT, MACHINE = "limit", "machine"
@@ -161,8 +170,11 @@ def resolve(site: str):
     m = _SITE.fullmatch(site)
     if m is None:
         raise ValueError(f"not a site: {site!r}")
-    module = importlib.import_module(m["rel"][:-3].replace("/", "."))
-    got = getattr(module, m["name"])
+    got = importlib.import_module(m["rel"][:-3].replace("/", "."))
+    for part in m["name"].split("."):
+        got = getattr(got, part)
+    for key in re.findall(r"\[(\w+)\]", m["keys"] or ""):
+        got = got[key]
     if m["param"]:
         return _inspect.signature(got).parameters[m["param"]].default
     return got
@@ -184,18 +196,149 @@ def _num_or_ref(node) -> bool:
     return _numeric(node) or isinstance(node, (ast.Name, ast.Attribute))
 
 
+def named_gating(name: str) -> bool:
+    """Whether a constant, table key or environment variable name says it gates an outcome."""
+    name = name.upper().strip("_")
+    return bool(GATING_WORDS & set(name.split("_")) or name.endswith(GATING_SUFFIXES)
+                or any(p in name for p in GATING_PHRASES))
+
+
+def _param_gating(name: str) -> bool:
+    return name in GATING_PARAMS or name.endswith("_s")
+
+
+def _literal(node) -> bool:
+    if isinstance(node, (ast.Tuple, ast.List)):
+        return bool(node.elts) and all(_literal(e) for e in node.elts)
+    if isinstance(node, ast.UnaryOp):
+        return _literal(node.operand)
+    return isinstance(node, ast.Constant) and isinstance(node.value, (int, float)) and not isinstance(node.value, bool)
+
+
+def _dotted(node) -> str:
+    if isinstance(node, ast.Name):
+        return node.id
+    if isinstance(node, ast.Attribute):
+        inner = _dotted(node.value)
+        return f"{inner}.{node.attr}" if inner else ""
+    return ""
+
+
+def _table(rel: str, path: str, node) -> list[str]:
+    out = []
+    for key, value in zip(node.keys, node.values):
+        if not (isinstance(key, ast.Constant) and isinstance(key.value, str) and re.fullmatch(r"\w+", key.value)):
+            continue
+        here = f"{path}[{key.value}]"
+        if isinstance(value, ast.Dict):
+            out += _table(rel, here, value)
+        elif named_gating(key.value) and _literal(value):
+            out.append(f"{rel}:{here}")
+    return out
+
+
+def _env_default(node) -> tuple[str, object] | None:
+    """(VAR, default node) for os.environ.get(VAR, N), os.getenv(VAR, N), or either `or N`."""
+    def env(call):
+        while isinstance(call, ast.Call) and not _dotted(call.func).endswith(("environ.get", "getenv")):
+            if len(call.args) != 1:
+                return None
+            call = call.args[0]
+        if (isinstance(call, ast.Call) and call.args and isinstance(call.args[0], ast.Constant)
+                and isinstance(call.args[0].value, str)):
+            return call
+        return None
+    if isinstance(node, ast.BoolOp) and isinstance(node.op, ast.Or) and len(node.values) == 2:
+        call = env(node.values[0])
+        return (call.args[0].value, node.values[1]) if call is not None else None
+    if isinstance(node, ast.Call) and _dotted(node.func).endswith(("environ.get", "getenv")):
+        call = env(node)
+        if call is not None and len(call.args) == 2:
+            return call.args[0].value, call.args[1]
+    return None
+
+
+def _number(node) -> bool:
+    if isinstance(node, ast.Constant) and isinstance(node.value, str):
+        try:
+            float(node.value)
+        except ValueError:
+            return False
+        return True
+    return _literal(node)
+
+
+def _scoped(rel: str, body, scope: str) -> list[str]:
+    out = []
+
+    def visit(node, scope):
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            qual = f"{scope}.{node.name}" if scope else node.name
+            a = node.args
+            pos = a.posonlyargs + a.args
+            pairs = list(zip(pos[len(pos) - len(a.defaults):], a.defaults)) + [
+                (arg, d) for arg, d in zip(a.kwonlyargs, a.kw_defaults) if d is not None]
+            out.extend(f"{rel}:{qual}({arg.arg})" for arg, d in pairs if _param_gating(arg.arg) and _literal(d))
+            for child in node.body:
+                visit(child, qual)
+            return
+        if isinstance(node, ast.ClassDef):
+            for child in node.body:
+                visit(child, f"{scope}.{node.name}" if scope else node.name)
+            return
+        if isinstance(node, ast.Call):
+            callee = _dotted(node.func) or "call"
+            out.extend(f"{rel}:{scope or '<module>'}->{callee}({kw.arg})" for kw in node.keywords
+                       if kw.arg and _param_gating(kw.arg) and _literal(kw.value))
+        got = _env_default(node)
+        if got and named_gating(got[0]) and _number(got[1]):
+            out.append(f"{rel}:environ({got[0]})")
+        for child in ast.iter_child_nodes(node):
+            visit(child, scope)
+
+    for stmt in body:
+        visit(stmt, scope)
+    return out
+
+
 def gating(text: str, rel: str) -> list[str]:
-    """Sites 'rel:NAME' of module-level numeric constants whose name carries a gating word, in source order."""
+    """Sites rel:NAME, rel:NAME[key], rel:func(param), rel:scope->callee(param), rel:environ(VAR), in source order."""
     out = []
     for stmt in ast.parse(text).body:
+        name = value = None
         if isinstance(stmt, ast.Assign) and len(stmt.targets) == 1 and isinstance(stmt.targets[0], ast.Name):
             name, value = stmt.targets[0].id, stmt.value
         elif isinstance(stmt, ast.AnnAssign) and isinstance(stmt.target, ast.Name) and stmt.value is not None:
             name, value = stmt.target.id, stmt.value
-        else:
-            continue
-        if _UPPER.fullmatch(name) and GATING_WORDS & set(name.strip("_").split("_")) and _numeric(value):
+        if name and _UPPER.fullmatch(name) and named_gating(name) and _numeric(value):
             out.append(f"{rel}:{name}")
+        elif name and _UPPER.fullmatch(name) and isinstance(value, ast.Dict):
+            out += _table(rel, name, value)
+        out += _scoped(rel, [stmt], "")
+    return list(dict.fromkeys(out))
+
+
+def shell_defaults(text: str, rel: str) -> list[str]:
+    """Sites rel:VAR of `${VAR:-N}` defaults in a shell script whose name says gate."""
+    found = (m[1] for m in _SHELL_DEFAULT.finditer(text) if named_gating(m[1]))
+    return [f"{rel}:{var}" for var in dict.fromkeys(found)]
+
+
+def gateway_settings(text: str, rel: str) -> list[str]:
+    """Sites rel:litellm_settings.path of every number the gateway's LiteLLM settings set."""
+    import yaml
+    data = yaml.safe_load(text)
+    settings = data.get("litellm_settings") if isinstance(data, dict) else None
+    out = []
+
+    def walk(d, prefix):
+        for k, v in d.items():
+            if isinstance(v, dict):
+                walk(v, f"{prefix}.{k}")
+            elif isinstance(v, (int, float)) and not isinstance(v, bool):
+                out.append(f"{rel}:{prefix}.{k}")
+    if isinstance(settings, dict):
+        walk(settings, "litellm_settings")
     return out
 
 
@@ -204,14 +347,20 @@ def _production(rel: str) -> bool:
 
 
 def inventory(root) -> list[str]:
-    """Every gating constant in production Python under `root`, by site."""
+    """Every gating value in production Python, top-level scripts and gateway config under `root`, by site."""
     from harness import repo
     root = Path(root)
     out = []
     for path in repo.publishable(root):
         rel = path.relative_to(root).as_posix()
-        if _production(rel) and path.is_file():
+        if not path.is_file():
+            continue
+        if _production(rel):
             out += gating(path.read_text(encoding="utf-8", errors="replace"), rel)
+        elif re.fullmatch(r"scripts/[^/]+\.sh", rel):
+            out += shell_defaults(path.read_text(encoding="utf-8", errors="replace"), rel)
+        elif re.fullmatch(r"gateway/[^/]+\.ya?ml", rel):
+            out += gateway_settings(path.read_text(encoding="utf-8", errors="replace"), rel)
     return out
 
 
@@ -269,6 +418,8 @@ def rebind(overrides: dict):
                 if k.runner_attr:
                     continue
                 m = _SITE.fullmatch(k.sites[0])
+                if m is None or "." in m["name"] or m["keys"] or m["param"]:
+                    raise ValueError(f"{name}: only a module constant can be rebound, not {k.sites[0]}")
                 module = importlib.import_module(m["rel"][:-3].replace("/", "."))
                 saved.append((module, m["name"], getattr(module, m["name"])))
                 setattr(module, m["name"], value)

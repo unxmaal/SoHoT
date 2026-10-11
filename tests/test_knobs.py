@@ -39,11 +39,79 @@ def test_the_inventory_is_quiet_on_constants_that_gate_nothing_and_fires_once_on
     assert knobs.gating(innocent + "MAX_TOKENS = 4000\n", "harness/m.py") == ["harness/m.py:MAX_TOKENS"]
 
 
-def test_the_inventory_reads_only_production_python():
+def test_the_inventory_reads_only_production_code():
     found = knobs.inventory(REPO)
-    assert found and all(s.startswith(("harness/", "evals/")) for s in found)
+    assert found and all(s.startswith(("harness/", "evals/", "scripts/", "gateway/")) for s in found)
     assert not any(s.startswith("evals/cases/") for s in found)
     assert "harness/completion.py:BUDGET" in found
+
+
+def test_the_inventory_sees_every_shape_a_gating_value_takes_in_this_repo():
+    found = set(knobs.inventory(REPO))
+    for site in ("harness/heartbeat.py:STALL_S", "evals/runners/agent.py:STEP_TIMEOUT_S",
+                 "harness/audio.py:speak(timeout)", "evals/run.py:SCREEN_PARAMS[steps]",
+                 "scripts/serve-llamacpp.sh:LLAMACPP_SLEEP_IDLE"):
+        assert site in found, site
+
+
+def test_the_inventory_finds_the_time_and_retry_words_a_gate_is_named_with():
+    names = ("CANCEL_GRACE_S", "STALL_S", "IDLE_S", "SERVE_WAIT_S", "RETRIES", "BACKOFF_S", "RETRY_DELAY",
+             "ATTEMPTS", "SIZE_RETRIES", "IN_FLIGHT_SECONDS", "GRACE_SECONDS", "RETEST_AFTER_SECONDS",
+             "START_S_PER_GIB", "SERVE_START_S", "DECODE_TOK_S", "DEADLINE_GRACE", "STOP_GRACE_S",
+             "POLL_INTERVAL", "EFFECT_SIZE", "SLOT_CTX", "Z", "SECONDS_PER_TOKEN")
+    src = "".join(f"{n} = 3\n" for n in names) + "STATUS = 3\nWORDS = 3\n"
+    assert knobs.gating(src, "harness/m.py") == [f"harness/m.py:{n}" for n in names]
+
+
+def test_the_inventory_finds_defaults_call_literals_table_entries_and_environment_defaults():
+    src = ("import os\n"
+           "SCREEN = {'width': 256, 'steps': 2, 'inner': {'temperature': 0.2}}\n"
+           "BUDGET = {'code': 4000}\n"
+           "WAIT = float(os.environ.get('SOH_WAIT_S') or 30)\n"
+           "PORT = int(os.environ.get('SOH_PORT') or 8080)\n"
+           "GRACE = os.getenv('SOH_GRACE', '5')\n"
+           "def speak(text, timeout=120.0, speed=1.0, settle_s=3.0, levels=(1, 2), name='x'):\n"
+           "    return run(text, timeout=30, check=True)\n"
+           "class C:\n"
+           "    def go(self, poll=0.5, max_tokens=None):\n"
+           "        return get(max_new_tokens=64)\n"
+           "def outer():\n"
+           "    def inner(timeout=5):\n"
+           "        pass\n")
+    assert knobs.gating(src, "harness/m.py") == [
+        "harness/m.py:SCREEN[steps]", "harness/m.py:SCREEN[inner][temperature]", "harness/m.py:BUDGET",
+        "harness/m.py:environ(SOH_WAIT_S)", "harness/m.py:environ(SOH_GRACE)",
+        "harness/m.py:speak(timeout)", "harness/m.py:speak(settle_s)", "harness/m.py:speak(levels)",
+        "harness/m.py:speak->run(timeout)", "harness/m.py:C.go(poll)", "harness/m.py:C.go->get(max_new_tokens)",
+        "harness/m.py:outer.inner(timeout)"]
+
+
+def test_the_inventory_reads_shell_defaults_and_gateway_settings():
+    sh = ('PORT="${SOH_PORT:-8081}"\n'
+          'exec srv --idle "${SOH_SLEEP_IDLE:-300}" --ctx "${SOH_CTX:-16384}" --host "${SOH_HOST:-127.0.0.1}"\n')
+    assert knobs.shell_defaults(sh, "scripts/x.sh") == ["scripts/x.sh:SOH_SLEEP_IDLE", "scripts/x.sh:SOH_CTX"]
+    yml = ("model_list:\n  - model_name: a\n    litellm_params: {timeout: 5}\n"
+           "litellm_settings:\n  drop_params: true\n  request_timeout: 600\n  num_retries: 2\n"
+           "  cache_params: {ttl: 60}\n")
+    assert knobs.gateway_settings(yml, "gateway/config.yaml") == [
+        "gateway/config.yaml:litellm_settings.request_timeout", "gateway/config.yaml:litellm_settings.num_retries",
+        "gateway/config.yaml:litellm_settings.cache_params.ttl"]
+
+
+def test_a_table_entry_and_a_method_default_resolve():
+    from evals import run
+    assert knobs.resolve("evals/run.py:SCREEN_PARAMS[steps]") == run.SCREEN_PARAMS["steps"]
+    assert knobs.resolve("harness/audio.py:speak(timeout)") == 120.0
+
+
+def test_a_new_unregistered_retry_constant_fails_the_backlog_ratchet(tmp_path):
+    import subprocess
+    (tmp_path / "harness").mkdir()
+    (tmp_path / "harness" / "fixture.py").write_text("RETRIES = 3\nNAME = 'x'\n", encoding="utf-8")
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    found = knobs.unregistered(knobs.inventory(tmp_path))
+    assert found == ["harness/fixture.py:RETRIES"]
+    assert set(found) - set(_backlog()) == {"harness/fixture.py:RETRIES"}
 
 
 def test_every_knob_names_a_value_that_exists():
