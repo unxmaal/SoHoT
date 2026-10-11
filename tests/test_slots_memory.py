@@ -10,6 +10,12 @@ from harness import memory_store as ms
 from tests.test_context import GIB, ORNITH, QWEN3_4B, write_gguf
 
 
+@pytest.fixture(autouse=True)
+def _ram_the_cap_was_set_on(monkeypatch):
+    """The KV cap scales with RAM (#692); a 7 GB CI runner must price these plans as the dev box does."""
+    monkeypatch.setattr(memory, "total_gb", lambda: float(context.KV_MAX_RAM_GB))
+
+
 @pytest.fixture
 def models(tmp_path, monkeypatch):
     d = tmp_path / "gguf"
@@ -333,6 +339,7 @@ def test_an_explicit_models_max_is_the_one_the_plan_is_sized_for(conn, models, t
 def _studio(conn, models, monkeypatch):
     """Ornith beside a 4B second model on the Studio's numbers in #748: 54 GiB budget, 16 GiB MLX beside."""
     monkeypatch.delenv("LLAMACPP_MAX_MODELS", raising=False)
+    monkeypatch.setattr(memory, "total_gb", lambda: 96.0)
     monkeypatch.setattr(context, "ORNITH_SLOTS", 4)
     monkeypatch.setattr(context, "ORNITH_SLOT_CTX", 262144)
     monkeypatch.setattr(context, "coresident_bytes", lambda conn: 16 * GIB)
