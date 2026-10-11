@@ -24,6 +24,18 @@ import time
 
 IDLE_S = 60.0
 MAX_WAIT_S = 20 * 60.0
+
+
+def _longest_request_s() -> float:
+    from harness import completion
+    return max(completion.timeout_for(b) for rungs in completion.LADDER.values() for b in rungs)
+
+
+#: How long a drain waits for in-flight requests: the longest timeout any eval rung allows, plus a margin. #703.
+DRAIN_S = _longest_request_s() + 5 * 60.0
+DRAIN_FILE = "gateway.draining"
+#: What the gateway answers with its 503 while draining; reasons reads it as refused_by_gateway.
+DRAINING = "the gateway is draining"
 POLL_S = 2.0
 RETRIES = 3
 BACKOFF_S = 30.0
@@ -56,10 +68,51 @@ def in_flight(base: str) -> int | None:
     return max(got - 1, 0)
 
 
+def _drain_path():
+    from harness import paths
+    return paths.home() / DRAIN_FILE
+
+
+def start_drain(until: float | None = None) -> None:
+    """Ask the gateway to refuse new requests until `until` (epoch seconds), so a dead switch cannot wedge it."""
+    until = time.time() + DRAIN_S + SERVE_WAIT_S if until is None else until
+    _drain_path().write_text(repr(float(until)), encoding="utf-8")
+
+
+def stop_drain() -> None:
+    _drain_path().unlink(missing_ok=True)
+
+
+def draining(now: float | None = None) -> bool:
+    """Whether the gateway should refuse a new request because a switch is draining it."""
+    try:
+        until = float(_drain_path().read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return False
+    return (time.time() if now is None else now) < until
+
+
+def _drain(base, drain_s, poll_s, clock, sleep, log) -> tuple[str, int | None]:
+    """Refuse new requests and wait for the ones in flight, up to drain_s."""
+    start_drain(time.time() + drain_s + SERVE_WAIT_S)
+    start = clock()
+    while True:
+        busy = in_flight(base)
+        if busy == 0:
+            return "drained", busy
+        if clock() - start >= drain_s:
+            if log:
+                log(f"gateway still busy after a {drain_s:.0f}s drain "
+                    f"(in flight: {'unknown' if busy is None else busy}); restarting anyway")
+            return "forced", busy
+        sleep(poll_s)
+
+
 def wait_then_restart(base: str, restart, idle_s: float = IDLE_S,
                       max_wait_s: float = MAX_WAIT_S, poll_s: float = POLL_S,
-                      clock=time.time, sleep=time.sleep, log=None) -> dict:
-    """Restart once nothing has been in flight for idle_s, or at max_wait_s regardless."""
+                      clock=time.time, sleep=time.sleep, log=None,
+                      drain_s: float = DRAIN_S) -> dict:
+    """Restart once nothing has been in flight for idle_s; past max_wait_s, drain for up to drain_s first."""
     start = clock()
     quiet_since = None
     while True:
@@ -74,12 +127,20 @@ def wait_then_restart(base: str, restart, idle_s: float = IDLE_S,
             quiet_since = None
         if now - start >= max_wait_s:
             how = "forced"
-            if log:
+            if drain_s > 0:
+                if log:
+                    log(f"gateway not quiet after {max_wait_s:.0f}s; refusing new requests "
+                        f"and draining the ones in flight")
+                how, busy = _drain(base, drain_s, poll_s, clock, sleep, log)
+            elif log:
                 log(f"gateway not quiet after {max_wait_s:.0f}s "
                     f"(in flight: {'unknown' if busy is None else busy}); restarting anyway")
             break
         sleep(poll_s)
-    restart()
+    try:
+        restart()
+    finally:
+        stop_drain()
     return {"how": how, "in_flight": busy, "switched_at": clock()}
 
 
@@ -123,12 +184,24 @@ def _old_spec(conn, lane: str, params: dict) -> str:
     return row["new_spec"] if row else str(params.get("model") or "")
 
 
-def restart_service() -> bool:
-    """Restart the gateway's launchd service; the caller already holds the machine lock."""
+def _launchd_restart() -> bool:
     from harness import gateway
-    if sys.platform != "darwin":
-        return True
     return subprocess.call([str(gateway.REPO / "scripts" / "launchd.sh"), "restart", "gateway"]) == 0
+
+
+#: How each platform restarts its gateway service; a platform missing here cannot switch. #703.
+RESTARTERS = {"darwin": _launchd_restart}
+
+
+def can_restart() -> bool:
+    return sys.platform in RESTARTERS
+
+
+def restart_service() -> bool:
+    """Restart the gateway service; the caller already holds the machine lock."""
+    if not can_restart():
+        raise RuntimeError(f"no restart method on {sys.platform}")
+    return RESTARTERS[sys.platform]()
 
 
 def not_serving(base: str, want: dict) -> str:
@@ -162,7 +235,7 @@ def _await_serving(base, want, clock, sleep, poll_s) -> str:
 def switch(base: str | None = None, restart=restart_service, requested_at=None,
            idle_s: float = IDLE_S, max_wait_s: float = MAX_WAIT_S,
            poll_s: float = POLL_S, clock=time.time, sleep=time.sleep,
-           log=None, config=None) -> list[dict]:
+           log=None, config=None, drain_s: float = DRAIN_S) -> list[dict]:
     """Regenerate the served config and restart once quiet, if any lane alias moved."""
     from harness import adopt, gateway
     from harness.completion import DEFAULT_GATEWAY
@@ -172,6 +245,13 @@ def switch(base: str | None = None, restart=restart_service, requested_at=None,
     before = path.read_text(encoding="utf-8") if path.exists() else None
     old = _aliases(gateway.load(path))
     if _aliases(gateway.served(config)) == old:
+        return []
+    if restart is restart_service and not can_restart():
+        defaults, new = adopt.lane_defaults(), _aliases(gateway.served(config))
+        moved = {lane: (defaults.get(lane, ""), new[lane].get("model"))
+                 for lane in new if new[lane] != old.get(lane)}
+        _record(moved, old, {"how": "none", "in_flight": None, "switched_at": clock()},
+                requested_at, FAILED, f"no restart method on {sys.platform}", log)
         return []
     moved = {}
     for attempt in range(RETRIES):
@@ -192,7 +272,7 @@ def switch(base: str | None = None, restart=restart_service, requested_at=None,
                 restarted["ok"], restarted["why"] = False, f"{type(exc).__name__}: {exc}"
 
         got = wait_then_restart(base, regenerate_and_restart, idle_s, max_wait_s,
-                                poll_s, clock, sleep, log)
+                                poll_s, clock, sleep, log, drain_s)
         if restarted.get("ok"):
             want = {gateway.LANE_ALIAS.format(lane): model for lane, (_, model) in moved.items()}
             why = _await_serving(base, want, clock, sleep, poll_s)
@@ -250,7 +330,9 @@ def spawn(requested_at: float | None = None, popen=None) -> None:
     """Start the switch detached: it may wait hours for a run to free the machine lock."""
     import subprocess
     from harness import gateway, paths
-    if sys.platform != "darwin":
+    if not can_restart():
+        # Recorded as a failed switch, so report and judge do not read the lane as served. #703.
+        switch(requested_at=requested_at)
         return
     argv, env = waiter(time.time() if requested_at is None else requested_at)
     log = open(paths.logs() / "gateway-switch.log", "a", encoding="utf-8")

@@ -31,6 +31,35 @@ SERVICES="gateway mlx eval tts mcp discover worker audit ds4"
 declare -a PERIODIC=(discover audit)
 DISCOVER_HOURS="${DISCOVER_HOURS:-21}"
 AUDIT_HOURS="${AUDIT_HOURS:-3}"                   # nightly, #492
+# Machines sharing one store run the periodic jobs on one of them: scheduler, or node for the rest. #703.
+# A role given once is kept in $LH_HOME/role, so a later plain `make install` keeps it.
+ROLE_FILE="$LH_HOME/role"
+ROLE_GIVEN="${LH_ROLE:-}"
+if [ -z "$ROLE_GIVEN" ] && [ -f "$ROLE_FILE" ]; then
+  LH_ROLE="$(tr -d '[:space:]' < "$ROLE_FILE")"
+fi
+LH_ROLE="${LH_ROLE:-scheduler}"
+case "$LH_ROLE" in
+  scheduler|node) ;;
+  *) echo "LH_ROLE must be scheduler or node, not '$LH_ROLE' (from ${ROLE_GIVEN:+the environment}${ROLE_GIVEN:-$ROLE_FILE})" >&2; exit 2 ;;
+esac
+if [ -n "$ROLE_GIVEN" ]; then
+  mkdir -p "$LH_HOME"
+  printf '%s\n' "$LH_ROLE" > "$ROLE_FILE"
+fi
+
+# The services this machine runs: a node leaves the periodic ones to the scheduler.
+units() {
+  local service p skip
+  for service in $SERVICES; do
+    skip=""
+    if [ "$LH_ROLE" = node ]; then
+      for p in "${PERIODIC[@]}"; do [ "$p" = "$service" ] && skip=1; done
+    fi
+    [ -z "$skip" ] && printf '%s\n' "$service"
+  done
+  return 0
+}
 
 # launchd starts jobs with PATH=/usr/bin:/bin:/usr/sbin:/sbin and NOTHING else.
 # uv, ffmpeg, rsvg-convert and rec all live in /opt/homebrew/bin, so without
@@ -144,7 +173,7 @@ deploy() {
 generate() {
   local dest="${1:-$LH_HOME/launchd}"
   mkdir -p "$dest" "$LH_LOGS"
-  for service in $SERVICES; do
+  for service in $(units); do
     write_plist "$service" "$dest"
     echo "wrote $dest/$PREFIX.$service.plist"
   done
@@ -222,6 +251,18 @@ _await_unload() {
   return 1
 }
 
+# A node unloads periodic units an earlier scheduler install left behind.
+drop_periodic() {
+  local p
+  for p in "${PERIODIC[@]}"; do
+    if launchctl print "gui/$UID/$PREFIX.$p" >/dev/null 2>&1; then
+      launchctl bootout "gui/$UID/$PREFIX.$p"
+    fi
+    rm -f "$AGENTS/$PREFIX.$p.plist"
+    echo "removed $PREFIX.$p (LH_ROLE=node)"
+  done
+}
+
 install_units() {
   deploy
   preflight
@@ -229,7 +270,7 @@ install_units() {
   generate "$AGENTS" >/dev/null
   local failed=""
   local was=""
-  for service in $SERVICES; do
+  for service in $(units); do
     if [ "$service" = worker ]; then
       # Reloading the worker kills its running job, so let that job finish first. #577.
       echo "waiting for any running queued job to finish before reloading the worker"
@@ -255,6 +296,7 @@ install_units() {
       echo "FAILED to load $PREFIX.$service" >&2
     fi
   done
+  [ "$LH_ROLE" = node ] && drop_periodic
   if [ -n "$failed" ]; then
     echo >&2
     echo "not loaded:$failed -- the rest are running, so this machine is" >&2

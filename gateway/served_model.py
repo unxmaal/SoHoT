@@ -159,6 +159,11 @@ def _answered(response, entry: dict) -> str:
 class ServedModel(CustomLogger):
     async def async_pre_call_hook(self, user_api_key_dict, cache, data, call_type):
         """A node that takes no connection in a few seconds is skipped for this machine's copy. #684."""
+        from harness import gateway_switch
+        if gateway_switch.draining():
+            from fastapi import HTTPException
+            raise HTTPException(status_code=503, detail=f"{gateway_switch.DRAINING} for an alias "
+                                "switch; retry once it has restarted")
         model = str(data.get("model") or "")
         entry = _entry(model)
         if entry.get(nodes.NODE_KEY) and _entry(model + nodes.LOCAL_SUFFIX) \

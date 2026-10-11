@@ -1295,6 +1295,14 @@ The `discover` agent sweeps once a day at 21:00, out of the way of daytime work
 `install`s postponed the sweep all day (#625). Neither periodic agent runs at
 load (#328).
 
+Machines that share one store run the periodic agents on one of them. Install
+the others with `LH_ROLE=node ./scripts/launchd.sh install`, which loads no
+`discover` or `audit` agent and removes any left from an earlier install. The
+role is kept in `$LOCALHARNESS_HOME/role`, so a later plain `make services`
+keeps it. `soh discover --loop --run` also takes a store lease and renews it
+before each step, so a second one started anywhere refuses rather than races it,
+and a loop that lost its lease stops (#703).
+
 **Run `probe` first, always.** macOS TCC denies `/Volumes` to launchd jobs, and
 the failure is horrible unprepared: the volume stats fine, reports free space and
 appears in `/Volumes`, so nothing looks wrong until mlx_lm hangs forever inside

@@ -161,7 +161,7 @@ def test_a_gateway_that_is_never_quiet_restarts_at_the_max_wait(gw):
     restarts = []
     got = gs.wait_then_restart(gw.base, lambda: restarts.append(clock.now()),
                                idle_s=3, max_wait_s=20, poll_s=1,
-                               clock=clock.now, sleep=clock.sleep)
+                               clock=clock.now, sleep=clock.sleep, drain_s=0)
     assert got["how"] == "forced" and got["in_flight"] == 1
     assert restarts == [1020.0]
 
@@ -173,7 +173,7 @@ def test_an_unobservable_gateway_is_never_restarted_early():
     try:
         got = gs.wait_then_restart(fake.base, lambda: restarts.append(clock.now()),
                                    idle_s=3, max_wait_s=20, poll_s=1,
-                                   clock=clock.now, sleep=clock.sleep)
+                                   clock=clock.now, sleep=clock.sleep, drain_s=0)
     finally:
         fake.close()
     assert got["how"] == "forced" and got["in_flight"] is None

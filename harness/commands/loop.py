@@ -158,7 +158,52 @@ def _report_loop(a) -> int:
     return rc
 
 
+#: The store lease one discover loop holds, so machines sharing a store never sweep together. #703.
+LEASE = "discover-loop"
+#: How long a loop's lease outlives a holder that vanished without releasing it. #703.
+LEASE_S = 24 * 3600.0
+
+
 def _run_loop(a) -> int:
+    """The loop under the store lease: a second machine's loop refuses rather than races. #703."""
+    import sys
+
+    from harness import lease
+    from harness import memory_store as ms
+    from harness import workqueue as wq
+
+    if not getattr(a, "run", False):
+        # A dry run spends nothing, so it needs no lease and never refuses.
+        return _run_loop_held(a)
+    conn = ms.connect()
+    try:
+        who = lease.owner(conn)
+        held = lease.take(conn, LEASE, who, LEASE_S, alive=wq.alive)
+    finally:
+        conn.close()
+    if held:
+        print(f"another discover loop holds the store lease (machine {held.get('machine_id')}, "
+              f"pid {held.get('pid')}); not starting a second", file=sys.stderr)
+        return 1
+
+    def keep() -> bool:
+        conn = ms.connect()
+        try:
+            return lease.renew(conn, LEASE, who, LEASE_S)
+        finally:
+            conn.close()
+
+    try:
+        return _run_loop_held(a, keep)
+    finally:
+        conn = ms.connect()
+        try:
+            lease.release(conn, LEASE, who)
+        finally:
+            conn.close()
+
+
+def _run_loop_held(a, keep=None) -> int:
     """Every step from a sweep to an adopted winner. Issue #201.
 
     SAYS WHAT IT WOULD DO AND STOPS unless --run. Fetching weights and running
@@ -167,6 +212,7 @@ def _run_loop(a) -> int:
     up unusable overnight.
     """
     import argparse as _ap
+    import sys
 
     from harness import adopt, rank
     from harness import memory_store as ms
@@ -178,6 +224,10 @@ def _run_loop(a) -> int:
         if needs_run and not run:
             print(f"\n=== {label} (skipped; --run) ===")
             continue
+        if keep is not None and not keep():
+            print(f"the discover loop lost its store lease before {label}; stopping so two "
+                  f"machines never sweep together", file=sys.stderr)
+            return 1
         print(f"\n=== {label} ===")
         _beat(label)
         flags = {f: f == attr for _, f, _ in LOOP_STEPS}
