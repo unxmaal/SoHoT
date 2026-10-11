@@ -6,7 +6,7 @@ and the limit is the predicate name a result row or a verdict records when it
 does (`timeout_s>180`, `max_tokens.code>32768`, `ceiling_gb:>66`).
 
 `inventory()` finds the numeric values whose names say they gate something:
-constants, table entries, argument defaults, call literals and environment defaults. Every one is either registered here, named in NOT_GATING with a
+constants, table entries, argument and field defaults, call literals and environment defaults, whatever their name. Every one is either registered here, named in NOT_GATING with a
 reason, or in the shrinking backlog the tier-1 test holds.
 """
 from __future__ import annotations
@@ -21,6 +21,7 @@ from pathlib import Path
 from harness import completion
 
 GIB = 1024 ** 3
+REPO = Path(__file__).resolve().parent.parent
 
 #: Name words that mark a constant as one that gates an outcome.
 GATING_WORDS = frozenset({"MAX", "MIN", "TIMEOUT", "CAP", "LIMIT", "FLOOR", "CEILING", "BUDGET",
@@ -162,17 +163,44 @@ NOT_GATING: dict[str, str] = {
     "harness/context.py:MIN_SLOT_CTX": "the floor the eval7b_slot_ctx range is held to; a preset under it is refused (#665)",
     "harness/context.py:MIN_LONG_SLOT_CTX": "the floor the ornith_slot_ctx range is held to; a preset under it is refused (#682)",
     "evals/private.py:MIN_FRAGMENT": "which private text the leak scan looks for; never a lane's outcome (#654)",
+    "harness/audio_server.py:environ(AUDIO_PORT)": "where the audio server listens; never what it answers (#706)",
+    "harness/context.py:CACHE_BYTES": "bytes per KV element of each cache type, a fact of the format (#706)",
+    "harness/usage.py:_UNITS": "seconds in a day, hour and minute (#706)",
+    "harness/checks/image.py:ImageResult.stddev": "a measured result's value before it is measured (#706)",
+    "harness/checks/video.py:VideoResult.motion": "a measured result's value before it is measured (#706)",
+    "harness/checks/video.py:VideoResult.stddev": "a measured result's value before it is measured (#706)",
+    "harness/checks/ocr.py:OcrResult.cer": "a measured result's value before it is measured (#706)",
+    "evals/core.py:Receipt.max_tokens": "what a receipt records a run asked for; the budget itself is reply_budget (#706)",
+    "harness/mcp_server.py:JobInfo.seconds": "how long a job took, as reported (#706)",
 }
 
 
-def resolve(site: str):
-    """The value a site names now: a module constant, or a function's argument default."""
-    m = _SITE.fullmatch(site)
-    if m is None:
+def _static(site: str):
+    """The value of a site that only source holds: a call literal, an environment, shell or gateway default."""
+    rel = site.split(":", 1)[0]
+    text = (REPO / rel).read_text(encoding="utf-8")
+    if rel.endswith(".py"):
+        found = _sites(text, rel)
+    elif rel.endswith(".sh"):
+        found = _shell_sites(text, rel)
+    else:
+        found = _gateway_sites(text, rel)
+    if site not in found:
         raise ValueError(f"not a site: {site!r}")
+    return found[site]
+
+
+def resolve(site: str):
+    """The value a site names now: a module constant, a table entry, an argument or field default, or a literal in source."""
+    m = _SITE.fullmatch(site)
+    if m is None or m["name"] == "environ":
+        return _static(site)
     got = importlib.import_module(m["rel"][:-3].replace("/", "."))
-    for part in m["name"].split("."):
-        got = getattr(got, part)
+    try:
+        for part in m["name"].split("."):
+            got = getattr(got, part)
+    except AttributeError:
+        return _static(site)
     for key in re.findall(r"\[(\w+)\]", m["keys"] or ""):
         got = got[key]
     if m["param"]:
@@ -224,7 +252,7 @@ def _dotted(node) -> str:
     return ""
 
 
-def _table(rel: str, path: str, node) -> list[str]:
+def _table(rel: str, path: str, node) -> list[tuple[str, object]]:
     out = []
     for key, value in zip(node.keys, node.values):
         if not (isinstance(key, ast.Constant) and isinstance(key.value, str) and re.fullmatch(r"\w+", key.value)):
@@ -232,8 +260,8 @@ def _table(rel: str, path: str, node) -> list[str]:
         here = f"{path}[{key.value}]"
         if isinstance(value, ast.Dict):
             out += _table(rel, here, value)
-        elif named_gating(key.value) and _literal(value):
-            out.append(f"{rel}:{here}")
+        elif _literal(value):
+            out.append((f"{rel}:{here}", value))
     return out
 
 
@@ -268,31 +296,56 @@ def _number(node) -> bool:
     return _literal(node)
 
 
-def _scoped(rel: str, body, scope: str) -> list[str]:
+def _value(node):
+    got = ast.literal_eval(node)
+    return float(got) if isinstance(got, str) else got
+
+
+#: Methods whose first positional argument is a timeout: Popen/Event.wait, Thread/Process.join.
+_POSITIONAL_TIMEOUT = ("wait", "join")
+
+
+def _field(node) -> tuple[str, object] | None:
+    if isinstance(node, ast.Assign) and len(node.targets) == 1 and isinstance(node.targets[0], ast.Name):
+        return node.targets[0].id, node.value
+    if isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name) and node.value is not None:
+        return node.target.id, node.value
+    return None
+
+
+def _scoped(rel: str, body, scope: str) -> list[tuple[str, object]]:
     out = []
 
-    def visit(node, scope):
+    def visit(node, scope, in_class=False):
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             qual = f"{scope}.{node.name}" if scope else node.name
             a = node.args
             pos = a.posonlyargs + a.args
             pairs = list(zip(pos[len(pos) - len(a.defaults):], a.defaults)) + [
                 (arg, d) for arg, d in zip(a.kwonlyargs, a.kw_defaults) if d is not None]
-            out.extend(f"{rel}:{qual}({arg.arg})" for arg, d in pairs if _param_gating(arg.arg) and _literal(d))
+            out.extend((f"{rel}:{qual}({arg.arg})", d) for arg, d in pairs if _param_gating(arg.arg) and _literal(d))
             for child in node.body:
                 visit(child, qual)
             return
         if isinstance(node, ast.ClassDef):
+            qual = f"{scope}.{node.name}" if scope else node.name
             for child in node.body:
-                visit(child, f"{scope}.{node.name}" if scope else node.name)
+                visit(child, qual, in_class=True)
             return
+        field = _field(node) if in_class else None
+        if field and (_param_gating(field[0]) or named_gating(field[0])) and _literal(field[1]):
+            out.append((f"{rel}:{scope}.{field[0]}", field[1]))
         if isinstance(node, ast.Call):
             callee = _dotted(node.func) or "call"
-            out.extend(f"{rel}:{scope or '<module>'}->{callee}({kw.arg})" for kw in node.keywords
+            here = scope or "<module>"
+            out.extend((f"{rel}:{here}->{callee}({kw.arg})", kw.value) for kw in node.keywords
                        if kw.arg and _param_gating(kw.arg) and _literal(kw.value))
+            if (isinstance(node.func, ast.Attribute) and node.func.attr in _POSITIONAL_TIMEOUT and node.args
+                    and _literal(node.args[0])):
+                out.append((f"{rel}:{here}->{callee}(timeout)", node.args[0]))
         got = _env_default(node)
-        if got and named_gating(got[0]) and _number(got[1]):
-            out.append(f"{rel}:environ({got[0]})")
+        if got and _number(got[1]):
+            out.append((f"{rel}:environ({got[0]})", got[1]))
         for child in ast.iter_child_nodes(node):
             visit(child, scope)
 
@@ -301,45 +354,62 @@ def _scoped(rel: str, body, scope: str) -> list[str]:
     return out
 
 
-def gating(text: str, rel: str) -> list[str]:
-    """Sites rel:NAME, rel:NAME[key], rel:func(param), rel:scope->callee(param), rel:environ(VAR), in source order."""
+def _numbered(pairs) -> dict:
+    """Each site once; a repeat of a site in the same file is a new site, `site#2`, so adding one is seen."""
+    out, seen = {}, {}
+    for site, value in pairs:
+        seen[site] = seen.get(site, 0) + 1
+        out[site if seen[site] == 1 else f"{site}#{seen[site]}"] = value
+    return out
+
+
+def _sites(text: str, rel: str) -> dict:
     out = []
     for stmt in ast.parse(text).body:
-        name = value = None
-        if isinstance(stmt, ast.Assign) and len(stmt.targets) == 1 and isinstance(stmt.targets[0], ast.Name):
-            name, value = stmt.targets[0].id, stmt.value
-        elif isinstance(stmt, ast.AnnAssign) and isinstance(stmt.target, ast.Name) and stmt.value is not None:
-            name, value = stmt.target.id, stmt.value
+        name, value = _field(stmt) or (None, None)
         if name and _UPPER.fullmatch(name) and named_gating(name) and _numeric(value):
-            out.append(f"{rel}:{name}")
-        elif name and _UPPER.fullmatch(name) and isinstance(value, ast.Dict):
+            out.append((f"{rel}:{name}", value))
+        elif name and isinstance(value, ast.Dict):
             out += _table(rel, name, value)
         out += _scoped(rel, [stmt], "")
-    return list(dict.fromkeys(out))
+    return {site: _value(node) if _number(node) else None for site, node in _numbered(out).items()}
+
+
+def gating(text: str, rel: str) -> list[str]:
+    """Sites rel:NAME, rel:NAME[key], rel:func(param), rel:Class.field, rel:scope->callee(param), rel:environ(VAR), in source order."""
+    return list(_sites(text, rel))
+
+
+def _shell_sites(text: str, rel: str) -> dict:
+    return _numbered((f"{rel}:{m[1]}", float(m[2]) if "." in m[2] else int(m[2]))
+                     for m in _SHELL_DEFAULT.finditer(text) if named_gating(m[1]))
 
 
 def shell_defaults(text: str, rel: str) -> list[str]:
     """Sites rel:VAR of `${VAR:-N}` defaults in a shell script whose name says gate."""
-    found = (m[1] for m in _SHELL_DEFAULT.finditer(text) if named_gating(m[1]))
-    return [f"{rel}:{var}" for var in dict.fromkeys(found)]
+    return list(_shell_sites(text, rel))
 
 
-def gateway_settings(text: str, rel: str) -> list[str]:
-    """Sites rel:litellm_settings.path of every number the gateway's LiteLLM settings set."""
+def _gateway_sites(text: str, rel: str) -> dict:
     import yaml
     data = yaml.safe_load(text)
     settings = data.get("litellm_settings") if isinstance(data, dict) else None
-    out = []
+    out = {}
 
     def walk(d, prefix):
         for k, v in d.items():
             if isinstance(v, dict):
                 walk(v, f"{prefix}.{k}")
             elif isinstance(v, (int, float)) and not isinstance(v, bool):
-                out.append(f"{rel}:{prefix}.{k}")
+                out[f"{rel}:{prefix}.{k}"] = v
     if isinstance(settings, dict):
         walk(settings, "litellm_settings")
     return out
+
+
+def gateway_settings(text: str, rel: str) -> list[str]:
+    """Sites rel:litellm_settings.path of every number the gateway's LiteLLM settings set."""
+    return list(_gateway_sites(text, rel))
 
 
 def _production(rel: str) -> bool:
@@ -368,9 +438,14 @@ def registered() -> set[str]:
     return {s for k in KNOBS.values() for s in k.sites}
 
 
+def not_gating(site: str) -> bool:
+    """Whether NOT_GATING names this site, or the table it is an entry of."""
+    return site in NOT_GATING or site.split("[", 1)[0] in NOT_GATING
+
+
 def unregistered(found) -> list[str]:
-    known = registered() | set(NOT_GATING)
-    return [s for s in found if s not in known]
+    known = registered()
+    return [s for s in found if s not in known and not not_gating(s)]
 
 
 def census(root) -> dict:
@@ -378,7 +453,7 @@ def census(root) -> dict:
     found = inventory(root)
     known = registered()
     return {"found": found, "registered": sum(1 for s in found if s in known),
-            "not_gating": sum(1 for s in found if s in NOT_GATING),
+            "not_gating": sum(1 for s in found if not_gating(s)),
             "unregistered": len(unregistered(found))}
 
 

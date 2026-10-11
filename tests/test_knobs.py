@@ -34,7 +34,7 @@ def test_the_inventory_is_quiet_on_constants_that_gate_nothing_and_fires_once_on
                 "MAX_ON = True\n"
                 "max_tokens = 4000\n"
                 "def f():\n    MAX_TOKENS = 4000\n    return MAX_TOKENS\n"
-                "class C:\n    TIMEOUT_S = 3\n")
+                "class C:\n    name = 'x'\n    TIMEOUT_S = None\n")
     assert knobs.gating(innocent, "harness/m.py") == []
     assert knobs.gating(innocent + "MAX_TOKENS = 4000\n", "harness/m.py") == ["harness/m.py:MAX_TOKENS"]
 
@@ -79,8 +79,9 @@ def test_the_inventory_finds_defaults_call_literals_table_entries_and_environmen
            "    def inner(timeout=5):\n"
            "        pass\n")
     assert knobs.gating(src, "harness/m.py") == [
-        "harness/m.py:SCREEN[steps]", "harness/m.py:SCREEN[inner][temperature]", "harness/m.py:BUDGET",
-        "harness/m.py:environ(SOH_WAIT_S)", "harness/m.py:environ(SOH_GRACE)",
+        "harness/m.py:SCREEN[width]", "harness/m.py:SCREEN[steps]", "harness/m.py:SCREEN[inner][temperature]",
+        "harness/m.py:BUDGET", "harness/m.py:environ(SOH_WAIT_S)", "harness/m.py:environ(SOH_PORT)",
+        "harness/m.py:environ(SOH_GRACE)",
         "harness/m.py:speak(timeout)", "harness/m.py:speak(settle_s)", "harness/m.py:speak(levels)",
         "harness/m.py:speak->run(timeout)", "harness/m.py:C.go(poll)", "harness/m.py:C.go->get(max_new_tokens)",
         "harness/m.py:outer.inner(timeout)"]
@@ -107,11 +108,64 @@ def test_a_table_entry_and_a_method_default_resolve():
 def test_a_new_unregistered_retry_constant_fails_the_backlog_ratchet(tmp_path):
     import subprocess
     (tmp_path / "harness").mkdir()
-    (tmp_path / "harness" / "fixture.py").write_text("RETRIES = 3\nNAME = 'x'\n", encoding="utf-8")
+    (tmp_path / "harness" / "fixture.py").write_text("NAME = 'x'\n", encoding="utf-8")
     subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
-    found = knobs.unregistered(knobs.inventory(tmp_path))
-    assert found == ["harness/fixture.py:RETRIES"]
-    assert set(found) - set(_backlog()) == {"harness/fixture.py:RETRIES"}
+    _assert_no_new_gating_site(tmp_path)
+    (tmp_path / "harness" / "fixture.py").write_text("RETRIES = 3\nNAME = 'x'\n", encoding="utf-8")
+    with pytest.raises(AssertionError, match=r"harness/fixture\.py:RETRIES"):
+        _assert_no_new_gating_site(tmp_path)
+
+
+def test_a_second_call_literal_in_the_same_scope_is_a_new_site():
+    one = "def f(a):\n    subprocess.run(a, timeout=5)\n"
+    two = one + "    subprocess.run(a, timeout=600)\n"
+    assert knobs.gating(one, "harness/m.py") == ["harness/m.py:f->subprocess.run(timeout)"]
+    assert knobs.gating(two, "harness/m.py") == ["harness/m.py:f->subprocess.run(timeout)",
+                                                 "harness/m.py:f->subprocess.run(timeout)#2"]
+
+
+def test_class_and_dataclass_field_defaults_are_found():
+    src = ("class Engine:\n    name: str = 'x'\n    timeout: float = 900.0\n    stream: bool = False\n"
+           "class Kill:\n    recover_seconds = 5\n    budget = 3\n    cost_s: float = 1.5\n    TIMEOUT_S = 3\n")
+    assert knobs.gating(src, "harness/m.py") == [
+        "harness/m.py:Engine.timeout", "harness/m.py:Kill.recover_seconds", "harness/m.py:Kill.budget",
+        "harness/m.py:Kill.cost_s", "harness/m.py:Kill.TIMEOUT_S"]
+    found = set(knobs.inventory(REPO))
+    for site in ("harness/engines.py:Engine.timeout", "harness/chaos.py:ServerKill.recover_seconds",
+                 "harness/inspect.py:Fit.upstream_idle_days", "harness/github.py:Client.budget",
+                 "harness/verify.py:Task.cost_s"):
+        assert site in found, site
+    assert knobs.resolve("harness/engines.py:Engine.timeout") == 900.0
+
+
+def test_every_numeric_environment_default_and_table_entry_is_found_whatever_its_name():
+    src = ("import os\nN = int(os.environ.get('LLAMACPP_PARALLEL') or 1)\n"
+           "STRENGTH = {'lowres': 0.5, 'name': 'x'}\nweights = {'a': 2}\n")
+    assert knobs.gating(src, "harness/m.py") == [
+        "harness/m.py:environ(LLAMACPP_PARALLEL)", "harness/m.py:STRENGTH[lowres]", "harness/m.py:weights[a]"]
+    assert "harness/context.py:environ(LLAMACPP_PARALLEL)" in knobs.inventory(REPO)
+
+
+def test_a_timeout_passed_positionally_is_found():
+    src = ("def stop(proc, t, xs):\n    proc.wait(10)\n    t.join(5)\n    ', '.join(xs)\n    proc.wait()\n")
+    assert knobs.gating(src, "harness/m.py") == ["harness/m.py:stop->proc.wait(timeout)",
+                                                 "harness/m.py:stop->t.join(timeout)"]
+    found = set(knobs.inventory(REPO))
+    assert "harness/chaos.py:kill->server.proc.wait(timeout)" in found
+    assert "harness/chaos.py:run_screen->proc.wait(timeout)" in found
+
+
+def test_every_site_form_the_inventory_reports_resolves_so_it_can_be_registered():
+    assert knobs.resolve("harness/engines.py:_mflux->Engine(timeout)") > 0
+    assert knobs.resolve("harness/context.py:environ(LLAMACPP_PARALLEL)") == 1
+    assert knobs.resolve("scripts/serve-llamacpp.sh:LLAMACPP_SLEEP_IDLE") == 300
+    unresolved = []
+    for site in knobs.inventory(REPO):
+        try:
+            knobs.resolve(site)
+        except Exception as e:
+            unresolved.append(f"{site}: {e!r}")
+    assert not unresolved, "\n".join(unresolved)
 
 
 def test_every_knob_names_a_value_that_exists():
@@ -176,11 +230,15 @@ def test_a_probe_sweeps_the_range_its_knob_declares(monkeypatch):
     assert seen["UPSTREAM_DEAD_DAYS"] == (k.default(""), tuple(k.values))
 
 
-def test_no_new_gating_constant_is_unregistered():
-    found = knobs.unregistered(knobs.inventory(REPO))
+def _assert_no_new_gating_site(root):
+    found = knobs.unregistered(knobs.inventory(root))
     new = sorted(set(found) - set(_backlog()))
     assert not new, ("register these in harness/knobs.py, or name why one gates nothing in "
                      "knobs.NOT_GATING:\n  " + "\n  ".join(new))
+
+
+def test_no_new_gating_constant_is_unregistered():
+    _assert_no_new_gating_site(REPO)
 
 
 def test_the_knob_backlog_only_shrinks():
@@ -192,7 +250,8 @@ def test_the_knob_backlog_only_shrinks():
 def test_a_constant_that_gates_nothing_says_why_and_is_still_found():
     found = set(knobs.inventory(REPO))
     for site, why in knobs.NOT_GATING.items():
-        assert site in found, f"{site} is no longer found; remove it from NOT_GATING"
+        assert site in found or any(s.startswith(site + "[") for s in found), (
+            f"{site} is no longer found; remove it from NOT_GATING")
         assert why.strip(), site
         assert site not in {s for k in knobs.KNOBS.values() for s in k.sites}
 
