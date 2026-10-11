@@ -82,6 +82,15 @@ def test_a_probe_that_never_reports_is_not_called_a_permission_problem(tmp_path)
     assert "Full Disk Access" not in got.stderr
 
 
+@darwin
+def test_when_env_sh_refuses_the_weights_root_the_probe_says_so_and_probes_nothing(tmp_path):
+    got = _probe(tmp_path, {"HF_ROOT": str(tmp_path / "no-such-parent" / "hf")})
+    assert got.returncode != 0
+    assert "scripts/env.sh" in got.stderr, got.stderr
+    assert "a launchd agent cannot read" not in got.stderr
+    assert "did not finish" not in got.stderr
+
+
 def test_a_failed_gateway_generator_says_so(tmp_path):
     bin_dir = tmp_path / "bin"
     bin_dir.mkdir()
@@ -137,13 +146,89 @@ def test_a_new_step_forgets_the_last_steps_deadline(clock):
     assert hb.status(hb.read()) == "stalled"
 
 
-def test_a_loop_waiting_on_the_machine_lock_is_not_stalled(clock):
+def test_a_loop_waiting_behind_a_holder_with_a_deadline_is_running_until_it_passes(clock):
+    hb.start(lane="code", total=9)
+    hb.beat("measure", step=9, candidate="org/model")
+    hb.expect(6 * 3600, waiting="waiting for eval for 10s (pid 7) to finish")
+    clock.t += 4 * 3600
+    assert hb.status(hb.read()) == "running"
+    clock.t += 3 * 3600
+    assert hb.status(hb.read()) == "stalled"
+    assert "waiting for eval" in hb.summary()["line"]
+
+
+def test_a_loop_waiting_behind_a_wedged_holder_still_reads_stalled(clock):
     hb.start(lane="code", total=9)
     hb.beat("measure", step=9, candidate="org/model")
     hb.expect(None, waiting="waiting for a queued job to finish")
     clock.t += hb.STALL_S * 3
-    assert hb.status(hb.read()) == "running"
-    assert "waiting for a queued job" in hb.summary()["line"]
+    assert hb.status(hb.read(), alive=lambda pid: True) == "stalled"
+    assert "waiting for a queued job" in hb.summary(alive=lambda pid: True)["line"]
+
+
+def test_the_lock_holder_record_carries_its_deadline():
+    from harness import exclusive
+    with exclusive.held("eval", deadline_s=600.0):
+        assert exclusive.holder()["deadline_s"] == 600.0
+
+
+def test_measure_waits_behind_the_holders_deadline_and_declares_its_own(clock, monkeypatch):
+    import contextlib
+    from harness import exclusive
+    from harness.commands import measure
+    seen, calls = {}, []
+
+    @contextlib.contextmanager
+    def held(kind, announce=None, **kw):
+        seen.update(kw)
+        announce("waiting for eval for 5s (pid 7) to finish")
+        calls.append(dict(hb.read()))
+        yield True
+
+    monkeypatch.setattr(exclusive, "held", held)
+    monkeypatch.setattr(exclusive, "holder", lambda: {"kind": "eval", "pid": 7, "deadline_s": 7200.0})
+    hb.start(lane="code", total=9)
+    measure._launch([sys.executable, "-c", "pass"], deadline_s=600.0, lock="eval")
+    assert seen.get("deadline_s") == 600.0
+    assert calls[0]["deadline_s"] == 7200.0 and calls[0]["waiting"].startswith("waiting for eval")
+    assert hb.read()["deadline_s"] == 600.0 and hb.read()["waiting"] == ""
+
+
+def test_a_video_screen_declares_its_engines_deadline(monkeypatch, tmp_path):
+    import argparse
+    from harness import cli, memory, screen
+    from harness import memory_store as ms
+    from harness.commands import measure as measure_cmd
+    from harness.commands import screen as screen_cmd
+    from evals.run import SCREEN_CASES
+    real = ms.connect
+    monkeypatch.setattr(ms, "connect", lambda *a, **k: real(tmp_path / "d.db"))
+    conn = ms.connect()
+    ms.record(conn, ms.Seen(name="org/clip", source="t", kind="weights", lane="video", why="seeded"))
+    conn.close()
+    spec = "diffusers-video:org/clip"
+    monkeypatch.setattr(screen_cmd, "_screen_plan", lambda want: [
+        {"name": "org/clip", "state": screen.READY, "candidate": spec, "modality": "video", "why_not": ""}])
+    monkeypatch.setattr(memory, "check_model", lambda *a, **k: (True, ""))
+    monkeypatch.setattr(screen, "argv", lambda r, **k: ["screen", r["name"]])
+    beats = []
+
+    class Done:
+        returncode = 0
+        stderr = ""
+
+    monkeypatch.setattr(subprocess, "run", lambda argv, **kw: beats.append(dict(hb.read())) or Done())
+    monkeypatch.setattr(measure_cmd, "_receipt_at", lambda out: None)
+    hb.start(lane="video", total=9)
+    cli._report_screen(argparse.Namespace(lane="", top=5, limit=5, run=True, json=False))
+    assert screen.deadline_s(spec) == SCREEN_CASES * 6 * 3600.0
+    assert beats and beats[0]["deadline_s"] == SCREEN_CASES * 6 * 3600.0
+
+
+def test_a_screen_of_a_candidate_no_engine_bounds_keeps_the_default_threshold():
+    from harness import screen
+    assert screen.deadline_s("org/text-model") is None
+    assert screen.deadline_s("diffusers-video:") is None
 
 
 def test_measure_records_its_deadline_on_the_heartbeat(clock):
@@ -151,6 +236,25 @@ def test_measure_records_its_deadline_on_the_heartbeat(clock):
     hb.start(lane="code", total=9)
     measure._launch([sys.executable, "-c", "pass"], deadline_s=6 * 3600.0, lock="none")
     assert hb.read()["deadline_s"] == 6 * 3600.0
+
+
+def test_the_discover_unit_is_named_by_the_one_python_prefix(monkeypatch):
+    from harness import volume
+    monkeypatch.setattr(volume, "PREFIX", "org.example.other")
+    assert hb.discover_unit().name == "org.example.other.discover.plist"
+    assert hb.discover_unit().parent == volume.agents_dir()
+
+
+def test_launchd_generates_the_discover_unit_the_heartbeat_reads(tmp_path):
+    out = tmp_path / "gen"
+    hf = tmp_path / "hf"
+    hf.mkdir()
+    env = {**os.environ, "HF_ROOT": str(hf), "HF_MIN_FREE_GB": "0",
+           "LOCALHARNESS_HOME": str(tmp_path / "home")}
+    got = subprocess.run([shells.BASH, str(LAUNCHD), "generate", str(out)], env=env,
+                         capture_output=True, text=True, timeout=120)
+    assert got.returncode == 0, got.stderr
+    assert (out / hb.discover_unit().name).is_file(), sorted(p.name for p in out.iterdir())
 
 
 def test_two_sweeps_a_day_expect_one_every_twelve_hours():

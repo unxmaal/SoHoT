@@ -125,8 +125,6 @@ def status(data: dict | None, alive=alive) -> str:
         return "finished"
     if not alive(data.get("pid") or 0):
         return "stalled"
-    if data.get("waiting"):
-        return "running"
     if clock() - float(data.get("updated") or 0) > stall_after(data):
         return "stalled"
     return "running"
@@ -178,7 +176,8 @@ def sweep_every_s(hours) -> int:
 
 def discover_unit() -> Path:
     """Where scripts/launchd.sh installs the discover agent."""
-    return Path.home() / "Library" / "LaunchAgents" / "com.unxmaal.localharness.discover.plist"
+    from harness import volume
+    return volume.agent_unit(f"{volume.PREFIX}.discover")
 
 
 def _hours(text: str) -> list[int]:

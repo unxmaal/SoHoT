@@ -18,6 +18,17 @@ from typing import Callable
 from harness import env, paths
 
 PREFIX = "com.unxmaal.localharness"
+
+
+def agents_dir() -> Path:
+    """Where scripts/launchd.sh installs its units (AGENTS there)."""
+    return Path.home() / "Library" / "LaunchAgents"
+
+
+def agent_unit(label: str) -> Path:
+    return agents_dir() / f"{label}.plist"
+
+
 #: Services that load weights from the volume on demand, stopped even when idle.
 READERS = ("mlx", "eval", "tts", "discover")
 STATE = "volume-stopped.json"
@@ -205,10 +216,9 @@ def start(ops: Ops) -> dict:
     vol = saved["volume"]
     if not ops.ismount(vol):
         raise VolumeError(f"{vol} is not mounted; mount it, then run `soh volume start`")
-    agents = Path.home() / "Library" / "LaunchAgents"
     started, failed = [], []
     for label in saved["stopped"]:
-        got = ops.run(["launchctl", "bootstrap", _domain(), str(agents / f"{label}.plist")])
+        got = ops.run(["launchctl", "bootstrap", _domain(), str(agent_unit(label))])
         (started if got.returncode == 0 else failed).append(label)
     if failed:
         raise VolumeError("could not load " + ", ".join(failed)

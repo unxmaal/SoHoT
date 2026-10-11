@@ -428,9 +428,9 @@ def _launch(argv, deadline_s: float | None = None, cwd: str | None = None,
 
     def waiting(m):
         print(f"    {m}", flush=True)
-        heartbeat.expect(None, waiting=m)
+        heartbeat.expect(exclusive.holder().get("deadline_s"), waiting=m)
 
-    with exclusive.held(lock, announce=waiting):
+    with exclusive.held(lock, announce=waiting, deadline_s=deadline_s):
         heartbeat.expect(deadline_s)
         return _run_group(argv, deadline_s, cwd, grace_s)
 

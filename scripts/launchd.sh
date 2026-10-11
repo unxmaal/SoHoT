@@ -87,17 +87,20 @@ JOB_PATH="$HOME/.local/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/
 # this machine's own answer and a second machine gets its own.
 _hf_env() {
   local root home
-  root="$(cd "$REPO" && . scripts/env.sh >/dev/null 2>&1 && printf '%s' "${HF_ROOT:-}")"
-  home="$(cd "$REPO" && . scripts/env.sh >/dev/null 2>&1 && printf '%s' "${HF_HOME:-}")"
+  root="$(_hf_var HF_ROOT)"
+  home="$(_hf_var HF_HOME)"
   [ -n "$root" ] && printf '    <key>HF_ROOT</key><string>%s</string>\n' "$root"
   [ -n "$home" ] && printf '    <key>HF_HOME</key><string>%s</string>\n' "$home"
 }
 
-# The weights root the agents get: env.sh's answer from the checkout, as _hf_env writes it. #705.
+# One variable from env.sh run in the checkout; empty when env.sh refuses. #705.
+_hf_var() {
+  (cd "$REPO" && . scripts/env.sh >/dev/null 2>&1 && printf '%s' "${!1:-}")
+}
+
+# The weights root the agents get, exactly as _hf_env writes it; empty when env.sh refuses. #705.
 _hf_root() {
-  local got
-  got="$(cd "$REPO" && . scripts/env.sh >/dev/null 2>&1 && printf '%s' "${HF_HOME:-}")"
-  printf '%s' "${got:-${HF_ROOT:-${HF_HOME:-$REPO/hf_root}}}"
+  _hf_var HF_HOME
 }
 
 usage() {
@@ -200,6 +203,11 @@ preflight() {
   local label="$PREFIX.preflight.$$"   # per run: parallel suites share gui/$UID
   local root; root="$(_hf_root)"
   local wait_s="${PREFLIGHT_WAIT_S:-60}"
+  if [ -z "$root" ]; then
+    echo "FATAL: scripts/env.sh gives the agents no weights root, so there is nothing to probe:" >&2
+    (cd "$REPO" && . scripts/env.sh >/dev/null) 2>&1 | sed 's/^/  /' >&2
+    exit 1
+  fi
   cat > "$probe.sh" <<PROBE
 #!/bin/bash
 ls "$root" >/dev/null 2>&1 && echo ok > "$probe.out" || echo denied > "$probe.out"
