@@ -116,6 +116,8 @@ fi
 
 # Each serving node's models (#684): node up, the node answers; node down, this machine does, fast.
 if [ "$LOCAL" -eq 1 ]; then
+  # From inside launchd, where macOS Local Network privacy applies (#739); a Terminal connect proves nothing.
+  /bin/bash scripts/lan-probe.sh || FAIL=1
   NODES_OUT="$(SOHOT_GATEWAY_KEY="$KEY" uv run python -m harness.nodes smoke --gateway "$G" 2>&1)" || FAIL=1
   printf '%s\n' "$NODES_OUT"
 else

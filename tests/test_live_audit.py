@@ -186,3 +186,38 @@ def test_a_last_sweep_older_than_its_interval_fails(live, monkeypatch):
     monkeypatch.setattr(heartbeat, "clock", lambda: time.time() + 26 * 3600)
     check = _checks(live_audit.audit(live))["sweep_on_schedule"]
     assert not check["ok"] and "1d 2h" in check["detail"]
+
+
+def _route_to_node(config, name="q3-4b", node="pc"):
+    path = gateway.served_path(config)
+    data = yaml.safe_load(path.read_text(encoding="utf-8"))
+    for e in data["model_list"]:
+        if e["model_name"] == name:
+            e["node"] = node
+    path.write_text(yaml.safe_dump(data), encoding="utf-8")
+
+
+def _requests(live, *rows):
+    raw = sqlite3.connect(live)
+    raw.executemany("INSERT INTO gateway_requests (at, alias, lane) VALUES (?, ?, '')", rows)
+    raw.commit()
+    raw.close()
+
+
+def test_the_audit_lists_a_node_whose_requests_fell_back_in_the_last_hour(live, config, capsys):
+    """#739: a blocked node fell back for hours and only a response header said so."""
+    _route_to_node(config)
+    now = time.time()
+    _requests(live, (now - 60, "q3-4b@local"), (now - 120, "q3-4b@local"), (now - 30, "q3-4b"),
+              (now - 2 * live_audit.FALLBACK_WINDOW_S, "q3-4b@local"))
+    got = live_audit.audit(live)
+    assert got["fallbacks"] == [{"node": "pc", "requests": 2, "aliases": ["q3-4b"]}]
+    assert got["ok"], "a fallback is reported, never a failed check"
+    assert cli.main(["audit"]) == 0
+    assert "node pc: 2 request(s) answered here instead (q3-4b)" in capsys.readouterr().out
+
+
+def test_no_fallback_says_none(live, capsys):
+    assert live_audit.audit(live)["fallbacks"] == []
+    assert cli.main(["audit"]) == 0
+    assert "node fallbacks in the last hour: none" in capsys.readouterr().out

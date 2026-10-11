@@ -261,11 +261,18 @@ install_units() {
     echo "part old and part new. Re-run install." >&2
     return 1
   fi
+  # A launchd job can be refused the LAN while Terminal is not: Local Network privacy. #739.
+  local blocked=0
+  if ! /bin/bash "$DEPLOY/scripts/lan-probe.sh"; then
+    echo "the gateway is loaded but launchd cannot reach a serving node; see above" >&2
+    blocked=1
+  fi
   # The deploy is not done until the store it now serves passes the audit. #492.
   if ! /bin/bash "$DEPLOY/scripts/serve-audit.sh"; then
     echo "the deployed units are loaded but the live store FAILS its audit; see above" >&2
     return 1
   fi
+  [ "$blocked" -eq 0 ] || return 1
   echo
   echo "Give them a moment, then: ./scripts/smoke.sh"
 }
