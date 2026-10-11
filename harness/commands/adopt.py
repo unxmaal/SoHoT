@@ -29,13 +29,15 @@ def cmd_adopt(a) -> int:
     return measure_cmd._measure_and_adopt(a, {"name": a.challenger, "lane": lane})
 
 
-def _receipts(files) -> dict[str, list[list[dict]]]:
-    """lane -> the row lists of each receipt file given."""
-    out: dict[str, list[list[dict]]] = {}
+def _receipts(files) -> dict[str, list[dict]]:
+    """lane -> each receipt file given, as its receipt, environment and rows."""
+    out: dict[str, list[dict]] = {}
     for f in files:
         data = json.loads(Path(f).read_text(encoding="utf-8"))
         lane = lanes.canonical((data.get("receipt") or {}).get("modality") or "")
-        out.setdefault(lane, []).append(list(data.get("rows") or []))
+        out.setdefault(lane, []).append({"receipt": data.get("receipt") or {},
+                                         "environment": data.get("environment") or {},
+                                         "rows": list(data.get("rows") or [])})
     return out
 
 
@@ -44,23 +46,28 @@ def _row(r: dict) -> dict:
             "passed": r.get("passed"), "seconds": r.get("seconds")}
 
 
-def _profile(lane: str, receipts: dict, conn) -> tuple[str, dict, float | None]:
-    """(incumbent key, its draws per case, its median seconds) from receipts or the store."""
-    from harness import adopt, candidates, power, screen, winners
+def _profile(lane: str, receipts: dict, conn) -> tuple[str, str, dict, float | None, tuple, list]:
+    """(incumbent key, its spec, its draws per case, its median seconds here at the lane's budget, settings, machines)."""
+    from harness import adopt, candidates, completion, power, runs, screen, winners
     served = adopt.default_for(lane, winners.typed().get(lane, ""))
     spec = (screen.candidate_for(lane, served) or served) if served else ""
     try:
         key = candidates.key_of(spec) if spec else ""
     except Exception:  # noqa: BLE001
         key = ""
+    settings = (completion.budget(lane), ())
+    machines = runs.here(conn)
     if lane in receipts:
-        sets = [[_row(r) for r in rows] for rows in receipts[lane]]
+        sets = [[_row(r) for r in got["rows"]] for got in receipts[lane]]
         key = power.control_of(sets, prefer=[k for k in (key, spec, served) if k])
-        draws, median = power.draws_from([r for rows in sets for r in rows], key)
-        return key, draws, median
+        draws, _ = power.draws_from([r for rows in sets for r in rows], key)
+        timed = [_row(r) for got in receipts[lane] if power.receipt_here(got["environment"])
+                 and power.reply_settings(json.dumps(got["receipt"]), lane) == settings for r in got["rows"]]
+        return key, spec or served, draws, power.draws_from(timed, key)[1], settings, machines
     key = key or spec
-    draws, median = power.incumbent_profile(conn, lane, key) if key else ({}, None)
-    return key, draws, median
+    draws, median = (power.incumbent_profile(conn, lane, key, settings, machines)
+                     if key else ({}, None))
+    return key, spec or served, draws, median, settings, machines
 
 
 def _hm(seconds) -> str:
@@ -77,6 +84,7 @@ def cmd_power(a) -> int:
     from harness import memory_store as ms
 
     receipts = _receipts(getattr(a, "receipt", None) or [])
+    challenger = getattr(a, "challenger", "") or ""
     every = holdout.splits()
     want = lanes.canonical(a.lane) if a.lane else ""
     if want and want not in every:
@@ -88,7 +96,10 @@ def cmd_power(a) -> int:
     try:
         for lane in [want] if want else sorted(every):
             split = every[lane]
-            key, draws, median = _profile(lane, receipts, conn)
+            key, inc_spec, draws, inc_s, settings, machines = _profile(lane, receipts, conn)
+            median, calls, est = power.pair_cost(conn, lane, incumbent=key, incumbent_spec=inc_spec,
+                                                 incumbent_s=inc_s, challenger=challenger,
+                                                 settings=settings, machines=machines)
             rates, seen = power.rates_from(draws, split.holdout)
             rho = power.icc([list(draws.values())])
             effect = getattr(a, "effect", None) or power.effect_for(lane)
@@ -103,7 +114,7 @@ def cmd_power(a) -> int:
             alone = (power.power(measured, effect, plan.repeat, alpha, rho=plan.rho)
                      if measured else None)
             cases_run = len(set(split.dev) | set(split.holdout))
-            projected = power.projected_seconds(cases_run, plan.repeat, median)
+            projected = power.projected_seconds(cases_run, plan.repeat, median, calls)
             rows.append({
                 "lane": lane, "incumbent": key, "holdout": len(split.holdout),
                 "cases": cases_run, "too_small": split.too_small,
@@ -119,7 +130,7 @@ def cmd_power(a) -> int:
                 "cases_needed": plan.cases_needed,
                 "more_holdout": (max(0, plan.cases_needed - len(split.holdout))
                                  if plan.cases_needed else None),
-                "median_s": median, "projected_s": projected,
+                "median_s": median, "calls": calls, "projected_s": projected, "estimate": est,
                 "fits_budget": projected is not None and projected <= budget,
                 "why": plan.why})
     finally:
@@ -137,7 +148,7 @@ def cmd_power(a) -> int:
         need = ("saturated" if r["cases_needed"] is None and not r["enough"]
                 else f"{r['cases_needed']} holdout needed, "
                      f"{r['more_holdout']} more holdout")
-        cost = (f"{r['median_s']:.1f}s/case, {_hm(r['projected_s'])} at repeat "
+        cost = (f"{r['median_s']:.1f}s/call x {r['calls']} calls, {_hm(r['projected_s'])} at repeat "
                 f"{r['repeat']}" + (" fits" if r["fits_budget"] else " over budget")
                 if r["median_s"] is not None else "no measured seconds")
         note(f"  {r['lane']:8} holdout {r['holdout']}/{r['cases']}  {rho}  {head}  "

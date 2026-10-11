@@ -4,7 +4,8 @@ import json
 
 import pytest
 
-from harness import adopt, power
+from harness import adopt, completion, power
+from harness import memory_store as ms
 
 
 # --- within-case correlation -----------------------------------------------
@@ -228,7 +229,7 @@ def test_an_unmeasured_text_lane_is_priced_at_its_reply_budget(store_run):
     from harness import completion
     from harness.commands import measure as measure_cmd
     _, plan = measure_cmd._plan(_ns(), "svg", "inc")
-    per_call = completion.budget("svg") / power.DECODE_TOK_S
+    per_call = completion.budget("svg") / power.decode_tok_s()
     assert plan.projected_s == pytest.approx(plan.cases_run * plan.repeat * 2 * per_call)
     assert "estimated" in plan.why
 
@@ -309,7 +310,10 @@ def test_adopt_power_reads_receipts_and_speaks_json(tmp_path, capsys, monkeypatc
         rows += [{"case_id": f"{c}#{k}", "candidate": name, "passed": ok(i),
                   "seconds": 2.0} for i, c in enumerate(ids) for k in (1, 2, 3)]
     receipt = tmp_path / "results.json"
-    receipt.write_text(json.dumps({"receipt": {"modality": "code"}, "rows": rows}),
+    here = ms.this_machine()
+    env = {k: here[k] for k in ("hw_model", "os", "arch", "host")}
+    head = {"modality": "code", "max_tokens": completion.budget("code")}
+    receipt.write_text(json.dumps({"receipt": head, "environment": env, "rows": rows}),
                        encoding="utf-8")
     assert cli.main(["adopt", "--json", "--power", "--lane", "code",
                      "--receipt", str(receipt)]) == 0
@@ -384,7 +388,10 @@ def test_adopt_power_labels_the_projection_and_reports_the_measured_power(
     rows = [{"case_id": f"{c}#{k}", "candidate": "inc", "passed": i % 2 == 0,
              "seconds": 2.0} for i, c in enumerate(measured) for k in (1, 2, 3)]
     receipt = tmp_path / "results.json"
-    receipt.write_text(json.dumps({"receipt": {"modality": "code"}, "rows": rows}),
+    here = ms.this_machine()
+    env = {k: here[k] for k in ("hw_model", "os", "arch", "host")}
+    head = {"modality": "code", "max_tokens": completion.budget("code")}
+    receipt.write_text(json.dumps({"receipt": head, "environment": env, "rows": rows}),
                        encoding="utf-8")
     assert cli.main(["adopt", "--json", "--power", "--lane", "code",
                      "--receipt", str(receipt)]) == 0
@@ -405,7 +412,10 @@ def test_adopt_power_with_every_holdout_case_measured_says_nothing_is_projected(
     rows = [{"case_id": f"{c}#{k}", "candidate": "inc", "passed": i % 2 == 0,
              "seconds": 2.0} for i, c in enumerate(ids) for k in (1, 2)]
     receipt = tmp_path / "results.json"
-    receipt.write_text(json.dumps({"receipt": {"modality": "code"}, "rows": rows}),
+    here = ms.this_machine()
+    env = {k: here[k] for k in ("hw_model", "os", "arch", "host")}
+    head = {"modality": "code", "max_tokens": completion.budget("code")}
+    receipt.write_text(json.dumps({"receipt": head, "environment": env, "rows": rows}),
                        encoding="utf-8")
     assert cli.main(["adopt", "--json", "--power", "--lane", "code",
                      "--receipt", str(receipt)]) == 0

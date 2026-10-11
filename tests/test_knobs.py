@@ -392,7 +392,7 @@ def test_every_numeric_shell_default_is_found_whatever_its_name():
     src = 'TOP="${DISCOVER_TOP:-3}"\nPORT="${PORT:-8080}"\nNAME="${NAME:-x}"\n'
     assert knobs.shell_defaults(src, "scripts/s.sh") == ["scripts/s.sh:DISCOVER_TOP", "scripts/s.sh:PORT"]
     found = set(knobs.inventory(REPO))
-    for site in ("scripts/serve-discover.sh:DISCOVER_TOP", "scripts/serve-discover.sh:DISCOVER_REPEAT",
+    for site in ("scripts/serve-discover.sh:DISCOVER_TOP", "scripts/serve-discover.sh:DISCOVER_BUDGET_GIB",
                  "scripts/serve-llamacpp.sh:LLAMACPP_GPU_LAYERS"):
         assert site in found, site
 

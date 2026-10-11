@@ -22,8 +22,9 @@ mkdir -p "$LH_LOGS"
 # the place that sets the schedule.
 TOP="${DISCOVER_TOP:-3}"
 BUDGET="${DISCOVER_BUDGET_GIB:-40}"
-REPEAT="${DISCOVER_REPEAT:-3}"
+# Unset, the loop's power plan picks the repeat per lane within its time budget (#479, #591, #696).
+REPEAT="${DISCOVER_REPEAT:-}"
 
 echo "=== sweep $(date -u +%Y-%m-%dT%H:%M:%SZ) top=$TOP budget=${BUDGET}GiB ==="
 exec uv run soh discover --loop --run \
-  --top "$TOP" --budget-gib "$BUDGET" --repeat "$REPEAT"
+  --top "$TOP" --budget-gib "$BUDGET" ${REPEAT:+--repeat "$REPEAT"}

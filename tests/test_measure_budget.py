@@ -38,6 +38,7 @@ def test_a_spec_costs_its_method_calls_per_attempt(spec, calls):
 
 def test_a_best_of_3_challenger_is_projected_at_three_times_its_base(store_run):
     _store(store_run, "svg", "inc", 10.0)
+    _store(store_run, "svg", "ch", 10.0, name="ch-svg")
     _, plain = measure_cmd._plan(_ns(repeat=2, power_budget_min=10_000), "svg", "inc", "ch")
     _, best = measure_cmd._plan(_ns(repeat=2, power_budget_min=10_000), "svg", "inc",
                                 "best-of:3:ch")
@@ -51,6 +52,7 @@ def test_a_projection_over_budget_runs_the_holdout_only(store_run):
     from harness import holdout
     split = holdout.for_lane("svg")
     _store(store_run, "svg", "inc", 100.0)
+    _store(store_run, "svg", "ch", 100.0, name="ch-svg")
     _, fits = measure_cmd._plan(_ns(repeat=2, power_budget_min=10_000), "svg", "inc", "ch")
     assert fits.side == "all" and not fits.dev_skipped
     over = fits.projected_s / 60 * 0.75
@@ -94,8 +96,8 @@ def test_the_measure_argv_names_the_holdout_when_dev_does_not_fit(monkeypatch, t
 def test_a_median_from_another_reply_budget_is_not_used(store_run):
     _store(store_run, "code", "inc", 2.5, receipt={"max_tokens": 4000})
     _, plan = measure_cmd._plan(_ns(repeat=1, power_budget_min=10_000_000), "code", "inc", "ch")
-    per_case = completion.budget("code") / power.DECODE_TOK_S
-    assert plan.projected_s == pytest.approx(plan.cases_run * 1 * 2 * per_case)
+    per_case = completion.budget("code") / power.decode_tok_s()
+    assert plan.projected_s == pytest.approx(plan.cases_run * 1 * (per_case + power.floor_seconds("code")))
     assert "estimated" in plan.why
 
 
@@ -103,6 +105,8 @@ def test_a_median_at_this_reply_budget_is_used(store_run):
     _store(store_run, "code", "inc", 2.5, receipt={"max_tokens": 4000}, name="a-old")
     _store(store_run, "code", "inc", 35.0,
            receipt={"max_tokens": completion.budget("code")}, name="b-new")
+    _store(store_run, "code", "ch", 35.0,
+           receipt={"max_tokens": completion.budget("code")}, name="c-ch")
     _, plan = measure_cmd._plan(_ns(repeat=1, power_budget_min=10_000_000), "code", "inc", "ch")
     assert plan.projected_s == pytest.approx(plan.cases_run * 1 * 2 * 35.0)
 
@@ -111,8 +115,8 @@ def test_a_laddered_receipt_is_not_this_runs_budget(store_run):
     _store(store_run, "code", "inc", 3.0,
            receipt={"max_tokens": 65536, "budget_ladder": [4000, 16000, 32000, 65536]})
     _, plan = measure_cmd._plan(_ns(repeat=1, power_budget_min=10_000_000), "code", "inc", "ch")
-    per_case = completion.budget("code") / power.DECODE_TOK_S
-    assert plan.projected_s == pytest.approx(plan.cases_run * 1 * 2 * per_case)
+    per_case = completion.budget("code") / power.decode_tok_s()
+    assert plan.projected_s == pytest.approx(plan.cases_run * 1 * (per_case + power.floor_seconds("code")))
 
 
 HOLDER = """
