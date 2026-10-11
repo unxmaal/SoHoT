@@ -46,6 +46,8 @@ EXCLUSIVE = {"image", "video"}
 #: Batch runs that load models on any engine, and other projects through
 #: scripts/with-gpu-lock. A lane prompt is not one of these. #314.
 BATCH = {"eval", "ramp", "external", "chaos"}
+#: Batch kinds that reach their models through the gateway, so they load the serving machine, not this one. #769.
+GATEWAY_BATCH = {"eval"}
 #: Set while held, so a child that also asks (a helper running `lh ...`)
 #: does not deadlock against its own parent.
 HELD_ENV = "LH_GPU_LOCK_HELD"
@@ -124,6 +126,106 @@ def _release(fd: int) -> None:
             fcntl.flock(fd, fcntl.LOCK_UN)
 
 
+def remote(kind: str, environ=None) -> bool:
+    """Whether `kind` loads another machine: a gateway batch whose gateway is not this machine. #769."""
+    if kind not in GATEWAY_BATCH:
+        return False
+    from harness import batch, completion
+    return not batch.is_here(completion.gateway_url(environ))
+
+
+@contextlib.contextmanager
+def _named():
+    """This process and its children run under one batch id, which every gateway request names. #769."""
+    from harness import batch
+    if batch.current():
+        yield batch.current()
+        return
+    os.environ[batch.ENV] = batch.new_id()
+    try:
+        yield os.environ[batch.ENV]
+    finally:
+        os.environ.pop(batch.ENV, None)
+
+
+def _claim(mine: str, who: dict) -> dict:
+    from harness import batch
+    from harness import memory_store as ms
+    from harness import workqueue as wq
+    conn = ms.connect()
+    try:
+        return batch.claim(conn, batch.here(), mine, who=who, alive=wq.alive)
+    finally:
+        conn.close()
+
+
+def _owner() -> dict:
+    from harness import lease
+    from harness import memory_store as ms
+    conn = ms.connect()
+    try:
+        return lease.owner(conn)
+    finally:
+        conn.close()
+
+
+def _let_go(mine: str) -> None:
+    from harness import batch
+    from harness import memory_store as ms
+    with contextlib.suppress(Exception):
+        conn = ms.connect()
+        try:
+            batch.let_go(conn, batch.here(), mine)
+        finally:
+            conn.close()
+
+
+@contextlib.contextmanager
+def _renewing(mine: str, who: dict):
+    """Keep this machine's batch lease while the block runs, then drop it."""
+    import threading
+
+    from harness import batch
+    stop = threading.Event()
+
+    def keep():
+        while not stop.wait(batch.TTL_S / 3):
+            with contextlib.suppress(Exception):
+                _claim(mine, who)
+
+    t = threading.Thread(target=keep, name="batch-lease", daemon=True)
+    t.start()
+    try:
+        yield
+    finally:
+        stop.set()
+        t.join(timeout=5)
+        _let_go(mine)
+
+
+@contextlib.contextmanager
+def _leased(announce, poll: float):
+    """Hold this machine's serving lease, the one its gateway gives a remote batch, waiting while another has it. #769."""
+    from harness import batch
+    with _named() as mine:
+        try:
+            who = _owner()
+        except Exception as exc:  # noqa: BLE001 - the flock still holds this machine
+            if announce:
+                announce(f"no batch lease (the store would not open: {exc}); holding the local lock only")
+            yield False
+            return
+        waited, said = False, None
+        while (got := _claim(mine, who)):
+            waited = True
+            if announce and got.get("batch") != said:
+                announce(f"waiting for {batch.describe(got)} on this machine to finish")
+                said = got.get("batch")
+            time.sleep(poll)
+        with _renewing(mine, who):
+            yield waited
+
+
 @contextlib.contextmanager
 def held(kind: str, announce=None, poll: float = POLL_SECONDS, deadline_s: float | None = None):
     """Hold the machine for `kind`, waiting if someone else has it.
@@ -134,6 +236,11 @@ def held(kind: str, announce=None, poll: float = POLL_SECONDS, deadline_s: float
     """
     if kind not in EXCLUSIVE | BATCH or os.environ.get(HELD_ENV) == "1":
         yield False
+        return
+    if remote(kind):
+        # The serving gateway holds its machine for this batch; this machine is not loaded. #769.
+        with _named():
+            yield False
         return
 
     path = lock_path()
@@ -152,14 +259,17 @@ def held(kind: str, announce=None, poll: float = POLL_SECONDS, deadline_s: float
                 said = who
             time.sleep(poll)
 
-        _write_holder(kind, deadline_s)
-        os.environ[HELD_ENV] = "1"
         try:
-            yield waited
+            with _leased(announce, poll) as lease_waited:
+                _write_holder(kind, deadline_s)
+                os.environ[HELD_ENV] = "1"
+                try:
+                    yield waited or lease_waited
+                finally:
+                    os.environ.pop(HELD_ENV, None)
+                    with contextlib.suppress(OSError):
+                        holder_path().unlink()
         finally:
-            os.environ.pop(HELD_ENV, None)
-            with contextlib.suppress(OSError):
-                holder_path().unlink()
             _release(fd)
     finally:
         os.close(fd)
@@ -176,14 +286,26 @@ def try_held(kind: str):
         if not _take(fd):
             yield False
             return
-        _write_holder(kind)
-        os.environ[HELD_ENV] = "1"
         try:
-            yield True
+            with _named() as mine:
+                try:
+                    who = _owner()
+                    busy = _claim(mine, who)
+                except Exception:  # noqa: BLE001 - the flock still holds this machine
+                    who, busy = None, {}
+                if busy:
+                    yield False
+                    return
+                with _renewing(mine, who) if who else contextlib.nullcontext():
+                    _write_holder(kind)
+                    os.environ[HELD_ENV] = "1"
+                    try:
+                        yield True
+                    finally:
+                        os.environ.pop(HELD_ENV, None)
+                        with contextlib.suppress(OSError):
+                            holder_path().unlink()
         finally:
-            os.environ.pop(HELD_ENV, None)
-            with contextlib.suppress(OSError):
-                holder_path().unlink()
             _release(fd)
     finally:
         os.close(fd)

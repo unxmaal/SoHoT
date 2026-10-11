@@ -105,7 +105,9 @@ _GPU_FAULT = ("kiogpucommandbuffercallbackerrortimeout", "gpu timeout error")
 _GATEWAY = ("invalid model name", "gateway returned http 400",
             "is the gateway up", "connection refused",
             # gateway_switch.DRAINING: a switch refused the request, the model never saw it. #703.
-            "the gateway is draining")
+            "the gateway is draining",
+            # batch.BUSY: another batch holds the serving machine, the model never saw it. #769.
+            "the serving machine is busy with another batch")
 #: What a server says when a request does not fit the context it is served at: llama-server, vLLM, LiteLLM. #695, #692.
 OVER_CONTEXT = re.compile(r"exceeds? the available context|context.?window.?exceeded|maximum context length"
                           r"|context length exceeded|exceeds? (the )?context (size|window|length)|max_model_len", re.I)

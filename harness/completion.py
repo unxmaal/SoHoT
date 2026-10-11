@@ -338,13 +338,11 @@ def complete_full(prompt: str, model: str, gateway: str = "",
             raise CompletionError(
                 f"gateway at {gateway} refused the key (HTTP {status}): "
                 f"{gateway_key.HINT}", reasons.HARNESS_ERROR) from exc
-        from harness import gateway_switch
-        refused = status == 503 and gateway_switch.DRAINING in exc.response.text
         # LiteLLM explains itself in the body, not the status line.
         raise CompletionError(
             f"gateway returned HTTP {exc.response.status_code}: "
             f"{exc.response.text[:400]}",
-            reasons.REFUSED_BY_GATEWAY if refused else "") from exc
+            reasons.REFUSED_BY_GATEWAY if _refused(exc.response) else "") from exc
     except httpx.HTTPError as exc:
         raise CompletionError(
             f"gateway unreachable at {gateway}: {exc} ({_START_HINT})",
@@ -431,10 +429,36 @@ def served(gateway: str | None = None) -> dict:
     return {k: dict(v) for k, v in SERVED.items() if want is None or k[0] == want}
 
 
+def _refused(response) -> bool:
+    """A 503 the gateway sent on purpose: draining for a switch (#703) or busy with another batch (#769)."""
+    from harness import batch, gateway_switch
+    text = getattr(response, "text", "") or ""
+    return getattr(response, "status_code", 200) == 503 and (
+        gateway_switch.DRAINING in text or batch.BUSY in text)
+
+
+def _busy(response) -> bool:
+    from harness import batch
+    return getattr(response, "status_code", 200) == 503 and batch.BUSY in (getattr(response, "text", "") or "")
+
+
 def _post(gateway: str, payload: dict, timeout: float):
+    """One request, waited out while the serving machine is busy with another batch, up to batch.BUSY_WAIT_S. #769."""
+    from harness import batch
+    deadline = time.monotonic() + batch.BUSY_WAIT_S
+    while True:
+        r = _send(gateway, payload, timeout)
+        if not _busy(r) or time.monotonic() + batch.BUSY_POLL_S > deadline:
+            return r
+        time.sleep(batch.BUSY_POLL_S)
+
+
+def _send(gateway: str, payload: dict, timeout: float):
     url = f"{gateway.rstrip('/')}/v1/chat/completions"
-    from harness import gateway_key
+    from harness import batch, gateway_key
     headers = gateway_key.headers()
+    if batch.current():
+        headers = {**headers, batch.HEADER: batch.current()}
     if not payload.get("stream"):
         r = httpx.post(url, json=payload, timeout=timeout, headers=headers)
         _note(gateway, payload.get("model"), r)
@@ -575,7 +599,8 @@ def chat(messages: list, model: str, gateway: str = "",
     except httpx.HTTPStatusError as exc:
         raise CompletionError(
             f"gateway returned HTTP {exc.response.status_code}: "
-            f"{exc.response.text[:400]}") from exc
+            f"{exc.response.text[:400]}",
+            reasons.REFUSED_BY_GATEWAY if _refused(exc.response) else "") from exc
     except httpx.HTTPError as exc:
         raise CompletionError(
             f"gateway unreachable at {gateway}: {exc} ({_START_HINT})",
