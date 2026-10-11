@@ -44,15 +44,21 @@ def test_a_run_without_screen_warms_the_candidate_before_its_first_case(tmp_path
 
 
 def test_a_cold_case_that_times_out_is_charged_to_the_load_not_the_request(monkeypatch):
+    seen = []
+
     def slow(*a, **k):
-        raise completion.CompletionError("timed out after 180s", reasons.TIMEOUT, ("timeout_s", 180.0))
+        seen.append(k["timeout"])
+        raise completion.CompletionError("timed out", reasons.TIMEOUT, ("timeout_s", k["timeout"]))
     monkeypatch.setattr(completion, "complete_full", slow)
     case = Case(id="add", modality="code", prompt="Write add(a, b).", assertions={"checks": ["add(2, 3) == 5"]})
     r = CompletionRunner("http://gw.test", "m")
+    r.load_timeout = 900.0
     row = r.run(case)
-    assert row.failure_class == reasons.TIMEOUT and row.limit.startswith("load_timeout_s>")
+    warm = max(r.timeout, completion.timeout_for(r.budget(case)))
+    assert seen == [warm + 900.0]
+    assert row.failure_class == reasons.TIMEOUT and row.limit == "load_timeout_s>900"
     r.answered = True
-    assert r.run(case).limit == "timeout_s>180"
+    assert r.run(case).limit == f"timeout_s>{warm:g}" and seen[-1] == warm
 
 
 def test_a_model_that_slept_and_woke_between_cases_is_a_swap_and_the_run_is_not_ranked():
@@ -67,6 +73,21 @@ def test_a_model_that_slept_and_woke_between_cases_is_a_swap_and_the_run_is_not_
     rec = Receipt(modality="code", case_ids=("a", "b"), repeat=1, sampling={}, gateway="http://gw.test",
                   router_swaps={"llamacpp:" + OURS: w.swaps})
     assert not comparable(rec, rec)[0]
+
+
+@pytest.mark.parametrize("after", ["absent", "unloaded", "loading"])
+def test_a_model_that_slept_then_was_evicted_is_recorded_as_the_eviction(after):
+    fake_router = FakeRouter(**{OURS: "loaded"})
+    w = router.Watch(OURS, get=fake_router.get)
+    w.look("a", "end")
+    fake_router.models[OURS] = "sleeping"
+    w.look("b", "start")
+    if after == "absent":
+        del fake_router.models[OURS]
+    else:
+        fake_router.models[OURS] = after
+    w.look("b", "end")
+    assert [s["status"] for s in w.swaps] == [after]
 
 
 def test_a_model_held_across_the_whole_run_records_no_swap():
@@ -129,6 +150,8 @@ def test_a_server_that_says_the_model_is_not_held_is_refused_as_a_load(monkeypat
 
 
 @pytest.mark.parametrize("holder, resident, extra", [("", None, completion.LOAD_TIMEOUT_S),
+                                                     ("", False, completion.LOAD_TIMEOUT_S),
+                                                     ("", True, 0.0),
                                                      ("eval", True, 0.0)])
 def test_a_delegated_call_waits_for_its_reply_budget_and_for_a_load_it_may_cause(
         fake, monkeypatch, holder, resident, extra):  # noqa: F811
@@ -146,3 +169,24 @@ def test_a_delegated_call_waits_for_its_reply_budget_and_for_a_load_it_may_cause
     monkeypatch.setattr(completion, "complete_full", spy)
     delegate.complete("code", "write add", max_tokens=8000)
     assert seen == [max(delegate.TIMEOUT_S, completion.timeout_for(8000)) + extra]
+
+
+def test_the_desktop_idle_sleep_is_a_site_the_knob_inventory_sees():
+    found = knobs.inventory(REPO)
+    assert "scripts/router-sleep-idle.sh:LLAMACPP_SLEEP_IDLE" in found
+    assert subprocess.run(["bash", str(REPO / "scripts" / "router-sleep-idle.sh"), "0", "Linux"],
+                          env={"PATH": "/usr/bin:/bin", "LLAMACPP_SLEEP_IDLE": "120"},
+                          capture_output=True, text=True, check=True).stdout.strip() == "120"
+
+
+def test_an_agent_candidate_is_loaded_untimed_before_its_first_step():
+    from evals.runners.agent import AgentRunner
+    seen = []
+
+    def chat(messages, **k):
+        seen.append(k)
+        return completion.Completion(text="ok", usage={}, timing={}, model="m")
+    r = AgentRunner("http://gw.test", "m", chat=chat)
+    r.warm()
+    assert [k["timeout"] for k in seen] == [completion.LOAD_TIMEOUT_S]
+    assert seen[0]["max_tokens"] <= 16 and not seen[0].get("tools") and r.answered

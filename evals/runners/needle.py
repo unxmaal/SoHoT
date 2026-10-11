@@ -53,6 +53,9 @@ class NeedleAgentRunner(AgentRunner):
     def __init__(self, spec: str, chat: needle.Chat):
         super().__init__("", needle.parse(spec).name, chat=chat)
 
+    def warm(self) -> None:
+        """No-op: needle starts a server per tool set, under its own SERVE_START_S, so a tool-less warm-up is discarded."""
+
     def extra_metrics(self) -> dict:
         out = {"needle_withheld_calls": self.chat.withheld}
         if self.chat.peak_mb:

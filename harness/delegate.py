@@ -287,7 +287,9 @@ def complete(lane: str, prompt: str, system: str | None = None,
     from harness import methods
     base = methods.base_of(spec) or spec
     _budget(base, max_tokens, prompt, system or completion.SYSTEM.get(lane, ""))
-    timeout = timeout or _timeout(max_tokens, _gate(where))
+    resident = _gate(where)
+    # The gate asks only under a held lock; otherwise ask now, so a held model is not given a load's allowance.
+    timeout = timeout or _timeout(max_tokens, loaded(where) if resident is None else resident)
     started = time.perf_counter()
     made = []
 

@@ -1,4 +1,5 @@
 evals/runners/agent.py:AgentRunner.__init__(max_tokens)
+evals/runners/agent.py:AgentRunner.warm->self.chat(max_tokens)
 evals/runners/chain.py:ChainRunner.__init__(timeout)
 evals/runners/chain.py:STAGE_SCALE[controlnet]
 evals/runners/claude_code.py:ClaudeCodeRunner.generate->self._once(retries)

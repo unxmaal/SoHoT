@@ -77,7 +77,7 @@ class Watch:
             return
         if self._held:
             # A sleep that ended in a reload cost a case the load, as an eviction does. #694.
-            self.swaps.append({"case": case, "at": at, "status": "sleeping" if self._slept else status,
+            self.swaps.append({"case": case, "at": at, "status": "sleeping" if self._slept and status == "loaded" else status,
                                "resident": sorted(k for k, v in s.items()
                                                   if v in RESIDENT and k != self.model)})
         self._held = status == "loaded"

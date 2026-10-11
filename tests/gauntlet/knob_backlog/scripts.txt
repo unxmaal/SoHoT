@@ -2,6 +2,7 @@ scripts/env.sh:HF_MIN_FREE_GB
 scripts/h3-weights-status.sh:H3_TARGET_GIB
 scripts/launchd.sh:AUDIT_HOURS
 scripts/launchd.sh:DISCOVER_HOURS
+scripts/router-sleep-idle.sh:LLAMACPP_SLEEP_IDLE
 scripts/serve-discover.sh:DISCOVER_BUDGET_GIB
 scripts/serve-discover.sh:DISCOVER_REPEAT
 scripts/serve-discover.sh:DISCOVER_TOP

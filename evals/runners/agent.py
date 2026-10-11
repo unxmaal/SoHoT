@@ -149,6 +149,20 @@ class AgentRunner(BaseRunner):
         #: (failure class, limit) a failing row is put down to: the cap or budget that stopped it. #695.
         self.last_stop: tuple[str, str] = ("", "")
 
+    def warm(self) -> None:
+        """One untimed turn at the load allowance, so the first step does not pay the load. #406, #694."""
+        try:
+            self.chat([{"role": "user", "content": "Reply with the word ok."}], model=self.model,
+                      gateway=self.gateway, timeout=completion.LOAD_TIMEOUT_S, max_tokens=8,
+                      sampling=self.sampling or None)
+        except completion.CompletionError as exc:
+            if exc.failure_class not in (reasons.TOKEN_BUDGET_EXHAUSTED, reasons.CONTENT_FAILED):
+                if exc.failure_class == reasons.TIMEOUT:
+                    exc.limit = ("load_timeout_s", completion.LOAD_TIMEOUT_S)
+                raise RunnerError(f"warm-up: {exc}", failure_class=exc.failure_class,
+                                  limit=f"{exc.limit[0]}>{exc.limit[1]:g}" if exc.limit else "") from exc
+        self.answered = True
+
     def step_seconds(self) -> float:
         """Seconds one step may take: the step timeout, stretched for the reply budget."""
         return max(self.step_timeout, completion.timeout_for(self.max_tokens))
