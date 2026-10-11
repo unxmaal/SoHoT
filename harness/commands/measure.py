@@ -340,42 +340,27 @@ def _plan(a, lane: str, inc_spec: str, spec: str = ""):
     from dataclasses import replace
 
     from evals.run import STOCHASTIC_MODALITIES
-    from harness import adopt, candidates, completion, holdout, methods, power, runs
+    from harness import adopt, candidates, completion, holdout, power, runs
     from harness import memory_store as ms
 
     split = holdout.for_lane(lane)
     settings = (completion.budget(lane), ())
     inc_key = candidates.key_of(inc_spec) or inc_spec
-    tok_s = power.decode_tok_s()
     store = ms.connect()
     try:
         machines = runs.here(store)
         draws, inc_s = power.incumbent_profile(store, lane, inc_key, settings, machines)
-        inc_source = "measured"
-        if inc_s is None:
-            inc_s = power.estimated_seconds(lane, tok_s)
-            inc_source = "estimated" if inc_s is not None else "unknown"
-        ch_s, ch_source = inc_s, "incumbent"
-        if spec:
-            base = methods.base_of(spec) or spec
-            ch_s, ch_source = power.challenger_seconds(
-                store, lane, candidates.key_of(base) or base, incumbent=inc_key,
-                incumbent_s=inc_s, settings=settings, machines=machines)
+        median_s, calls, est = power.pair_cost(store, lane, incumbent=inc_key, incumbent_spec=inc_spec,
+                                               incumbent_s=inc_s, challenger=spec,
+                                               settings=settings, machines=machines)
         alpha = adopt.alpha_for(adopt.comparisons(store, lane, split.version))
     finally:
         store.close()
     estimated = ""
-    if inc_source == "estimated":
-        estimated = (f"seconds per call estimated at {inc_s:.0f}s: no incumbent "
+    if est["incumbent_source"] == "estimated":
+        estimated = (f"seconds per call estimated at {est['incumbent_s']:.0f}s: no incumbent "
                      f"receipt on this machine at the {settings[0]}-token reply budget, so every "
-                     f"reply is assumed to spend it at {tok_s:.0f} tok/s")
-    inc_calls, ch_calls = methods.calls(inc_spec), (methods.calls(spec) if spec else 1)
-    calls = inc_calls + ch_calls
-    median_s = (None if inc_s is None or ch_s is None
-                else (inc_calls * inc_s + ch_calls * ch_s) / calls)
-    est = {"machines": list(machines), "settings": list(settings), "decode_tok_s": tok_s,
-           "incumbent_s": inc_s, "incumbent_source": inc_source, "incumbent_calls": inc_calls,
-           "challenger_s": ch_s, "challenger_source": ch_source, "challenger_calls": ch_calls}
+                     f"reply is assumed to spend it at {est['decode_tok_s']:.0f} tok/s")
     rates, seen = power.rates_from(draws, split.holdout)
     effect = getattr(a, "effect", None) or power.effect_for(lane)
     explicit = getattr(a, "repeat", None)
@@ -396,8 +381,9 @@ def _plan(a, lane: str, inc_spec: str, spec: str = ""):
         plan, [rates[c] for c in split.holdout],
         cases_run=every if side == "all" else len(split.holdout), median_s=median_s,
         budget_s=budget, explicit=bool(explicit), calls=calls)
-    if ch_source not in ("measured", "incumbent"):
-        estimated = "; ".join(x for x in (estimated, f"challenger seconds per call {ch_s:.0f}s by {ch_source}") if x)
+    if est["challenger_source"] not in ("measured", "like incumbent") and est["challenger_s"] is not None:
+        estimated = "; ".join(x for x in (estimated, f"challenger seconds per call "
+                                          f"{est['challenger_s']:.0f}s by {est['challenger_source']}") if x)
     plan = replace(plan, side=side, dev_skipped=dev_skipped, estimate=est,
                    why="; ".join(x for x in (plan.why, estimated) if x))
     plan = replace(plan, deadline_s=power.deadline(plan))

@@ -345,14 +345,21 @@ def projected_seconds(cases: int, repeat: int, median_s: float | None,
     return cases * repeat * calls * median_s
 
 
-def decode_tok_s(hw_model: str | None = None) -> float:
-    """This machine's (or `hw_model`'s) registered decode rate, else the slowest the harness allows for. #696."""
+def machine_key(hw_model: str | None = None) -> str:
+    """This machine's (or `hw_model`'s) key in DECODE_TOK_S: hw_model with non-word characters as _. #696."""
     import re
 
-    from harness import completion
     from harness import memory_store as ms
     hw = ms.this_machine().get("hw_model", "") if hw_model is None else hw_model
-    return DECODE_TOK_S.get(re.sub(r"\W", "_", hw or ""), completion.MIN_DECODE_TOK_S)
+    return re.sub(r"\W", "_", hw or "")
+
+
+def decode_tok_s(hw_model: str | None = None) -> float:
+    """This machine's (or `hw_model`'s) registered decode rate, else the slowest the harness allows for. #696."""
+    from harness import completion
+    if not isinstance(DECODE_TOK_S, dict):
+        return float(DECODE_TOK_S)
+    return DECODE_TOK_S.get(machine_key(hw_model), completion.MIN_DECODE_TOK_S)
 
 
 def estimated_seconds(lane: str, tok_s: float | None = None) -> float | None:
@@ -490,6 +497,56 @@ def challenger_seconds(conn, lane: str, key: str, *, incumbent: str, incumbent_s
     if floor is not None:
         return floor, "floor"
     return incumbent_s, "incumbent"
+
+
+def pair_cost(conn, lane: str, *, incumbent: str, incumbent_spec: str, incumbent_s: float | None,
+              challenger: str = "", settings: tuple | None, machines) -> tuple[float | None, int, dict]:
+    """Mean seconds per call over both candidates, their calls per case, and how each was priced. #696."""
+    from harness import candidates, methods
+    tok_s = decode_tok_s()
+    inc_source = "measured"
+    if incumbent_s is None:
+        incumbent_s = estimated_seconds(lane, tok_s)
+        inc_source = "estimated" if incumbent_s is not None else "unknown"
+    inc_calls = methods.calls(incumbent_spec) if incumbent_spec else 1
+    if incumbent_s is not None and inc_source == "measured":
+        incumbent_s = incumbent_s / inc_calls  # a method row's seconds are every call of the case
+
+    def base_key(spec):
+        base = methods.base_of(spec) or spec
+        try:
+            return candidates.key_of(base) or base
+        except Exception:  # noqa: BLE001
+            return base
+
+    if challenger:
+        key = base_key(challenger)
+        if key in (incumbent, base_key(incumbent_spec or incumbent)):
+            ch_s, ch_source = incumbent_s, inc_source
+        else:
+            ch_s, ch_source = challenger_seconds(conn, lane, key, incumbent=incumbent, incumbent_s=incumbent_s,
+                                                 settings=settings, machines=machines)
+        ch_calls = methods.calls(challenger)
+    else:
+        ch_s, ch_source, ch_calls = incumbent_s, "like incumbent", inc_calls
+    calls = inc_calls + ch_calls
+    mean = None if incumbent_s is None or ch_s is None else (inc_calls * incumbent_s + ch_calls * ch_s) / calls
+    est = {"machines": list(machines or ()), "settings": list(settings or ()), "decode_tok_s": tok_s,
+           "incumbent_s": incumbent_s, "incumbent_source": inc_source, "incumbent_calls": inc_calls,
+           "challenger_s": ch_s, "challenger_source": ch_source, "challenger_calls": ch_calls}
+    return mean, calls, est
+
+
+def receipt_here(env: dict | None) -> bool:
+    """Whether a receipt file's environment names this machine; one from before hosts matches its board. #696."""
+    from harness import machine
+    from harness import memory_store as ms
+    env = env or {}
+    mine = ms.this_machine().get("fingerprint") or ""
+    theirs = machine.fingerprint(*(str(env.get(k) or "") for k in ("hw_model", "os", "arch", "host")))
+    if theirs == "unknown":
+        return False
+    return theirs == mine or (not env.get("host") and mine.rsplit("/", 1)[0] == theirs)
 
 
 def control_of(receipts, prefer=()) -> str:

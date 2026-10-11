@@ -125,23 +125,94 @@ def test_the_deadline_starts_when_the_lock_is_taken_not_at_launch(tmp_path):
     assert got.returncode == 0
 
 
-def _power_row(tmp_path, capsys, monkeypatch, served):
-    from harness import candidates, cli, holdout
+def _here_env():
+    here = ms.this_machine()
+    return {k: here[k] for k in ("hw_model", "os", "arch", "host")}
+
+
+def _receipt(tmp_path, name, key, seconds, *, env=None, max_tokens=None):
+    from harness import holdout
+    ids = holdout.for_lane("code").holdout
+    rows = [{"case_id": f"{c}#{k}", "candidate": key, "passed": i % 4 != 0, "seconds": seconds}
+            for i, c in enumerate(ids) for k in (1, 2, 3)]
+    head = {"modality": "code", "max_tokens": completion.budget("code") if max_tokens is None else max_tokens}
+    path = tmp_path / f"{name}.json"
+    path.write_text(json.dumps({"receipt": head, "environment": _here_env() if env is None else env,
+                                "rows": rows}), encoding="utf-8")
+    return path
+
+
+def _power_row(tmp_path, capsys, monkeypatch, served, *extra, challenger=""):
+    from harness import candidates, cli
     monkeypatch.setattr(adopt, "default_for", lambda lane, fallback, *a, **k: served)
     key = candidates.key_of(served)
-    ids = holdout.for_lane("code").holdout
-    rows = [{"case_id": f"{c}#{k}", "candidate": key, "passed": i % 4 != 0, "seconds": 2.0}
-            for i, c in enumerate(ids) for k in (1, 2, 3)]
-    receipt = tmp_path / "results.json"
-    receipt.write_text(json.dumps({"receipt": {"modality": "code"}, "rows": rows}), encoding="utf-8")
-    assert cli.main(["adopt", "--json", "--power", "--lane", "code", "--receipt", str(receipt)]) == 0
+    files = [_receipt(tmp_path, "results", key, 2.0)]
+    files += [_receipt(tmp_path, f"x{i}", key, 50.0, **kw) for i, kw in enumerate(extra)]
+    argv = ["adopt", "--json", "--power", "--lane", "code"]
+    argv += [x for f in files for x in ("--receipt", str(f))]
+    argv += ["--challenger", challenger] if challenger else []
+    assert cli.main(argv) == 0
     return json.loads(capsys.readouterr().out)["lanes"][0]
 
 
 def test_adopt_power_prices_a_best_of_3_incumbent_at_its_calls(tmp_path, capsys, monkeypatch):
-    row = _power_row(tmp_path, capsys, monkeypatch, "best-of:3:llamacpp:Ornith-1.5-35B-Q4_K_M")
-    assert row["projected_s"] == pytest.approx(row["cases"] * row["repeat"] * 4 * 2.0)
+    row = _power_row(tmp_path, capsys, monkeypatch, "best-of:3:llamacpp:Ornith-1.5-35B-Q4_K_M",
+                     challenger="best-of:3:llamacpp:Ornith-1.5-35B-Q4_K_M")
+    assert row["projected_s"] == pytest.approx(row["cases"] * row["repeat"] * 6 * 2.0 / 3)
+    assert row["calls"] == 6
+
+
+def test_adopt_power_prices_a_named_challenger_at_its_own_calls_and_speed(tmp_path, capsys, monkeypatch):
+    row = _power_row(tmp_path, capsys, monkeypatch, "best-of:3:llamacpp:Ornith-1.5-35B-Q4_K_M",
+                     challenger="llamacpp:Nobody-Measured-This-1B")
+    floor = completion.budget("code") / completion.MIN_DECODE_TOK_S
     assert row["calls"] == 4
+    assert row["estimate"]["challenger_source"] == "floor"
+    assert row["projected_s"] == pytest.approx(row["cases"] * row["repeat"] * (2.0 + floor))
+
+
+def test_adopt_power_with_no_challenger_prices_one_shaped_like_the_incumbent(tmp_path, capsys, monkeypatch):
+    row = _power_row(tmp_path, capsys, monkeypatch, "best-of:3:llamacpp:Ornith-1.5-35B-Q4_K_M")
+    assert row["calls"] == 6
+    assert row["estimate"]["challenger_source"] == "like incumbent"
+
+
+def test_adopt_power_reads_a_receipts_median_only_at_this_budget_on_this_machine(tmp_path, capsys, monkeypatch):
+    other = {**_here_env(), "hw_model": "OtherBox1,1", "host": "elsewhere"}
+    row = _power_row(tmp_path, capsys, monkeypatch, "llamacpp:Ornith-1.5-35B-Q4_K_M",
+                     {"env": other}, {"max_tokens": 1234}, {"env": other}, {"max_tokens": 1234})
+    assert row["estimate"]["incumbent_s"] == pytest.approx(2.0)
+
+
+def test_a_method_incumbents_row_seconds_are_split_across_its_calls(tmp_path, capsys, monkeypatch):
+    row = _power_row(tmp_path, capsys, monkeypatch, "best-of:3:llamacpp:Ornith-1.5-35B-Q4_K_M",
+                     challenger="llamacpp:Ornith-1.5-35B-Q4_K_M")
+    assert row["estimate"]["incumbent_s"] == pytest.approx(2.0 / 3)
+    assert row["estimate"]["challenger_s"] == pytest.approx(2.0 / 3)
+    assert row["projected_s"] == pytest.approx(row["cases"] * row["repeat"] * (2.0 + 2.0 / 3))
+
+
+def test_the_decode_knob_reports_this_machines_rate(monkeypatch):
+    from harness import knobs
+    monkeypatch.setattr(power, "machine_key", lambda hw=None: "Mac17_15")
+    assert knobs.KNOBS["decode_tok_s"].default("code") == 145.0
+    monkeypatch.setattr(power, "machine_key", lambda hw=None: "SomeOtherBox9_9")
+    assert knobs.KNOBS["decode_tok_s"].default("code") == completion.MIN_DECODE_TOK_S
+
+
+def test_the_decode_knob_can_be_rebound_for_a_run():
+    from harness import knobs
+    with knobs.rebind({"decode_tok_s": 15.0}):
+        assert power.decode_tok_s() == 15.0
+        assert power.estimated_seconds("code") == pytest.approx(completion.budget("code") / 15.0)
+    assert isinstance(power.DECODE_TOK_S, dict)
+
+
+def test_sweeping_either_decode_knob_leaves_the_shared_floor_alone():
+    from harness import knobs
+    floor = completion.MIN_DECODE_TOK_S
+    with knobs.rebind({"decode_tok_s": 15.0, "request_timeout": 999.0}):
+        assert completion.MIN_DECODE_TOK_S == floor
 
 
 def _discover_argv(tmp_path, extra):

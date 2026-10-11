@@ -4,7 +4,8 @@ import json
 
 import pytest
 
-from harness import adopt, power
+from harness import adopt, completion, power
+from harness import memory_store as ms
 
 
 # --- within-case correlation -----------------------------------------------
@@ -309,7 +310,10 @@ def test_adopt_power_reads_receipts_and_speaks_json(tmp_path, capsys, monkeypatc
         rows += [{"case_id": f"{c}#{k}", "candidate": name, "passed": ok(i),
                   "seconds": 2.0} for i, c in enumerate(ids) for k in (1, 2, 3)]
     receipt = tmp_path / "results.json"
-    receipt.write_text(json.dumps({"receipt": {"modality": "code"}, "rows": rows}),
+    here = ms.this_machine()
+    env = {k: here[k] for k in ("hw_model", "os", "arch", "host")}
+    head = {"modality": "code", "max_tokens": completion.budget("code")}
+    receipt.write_text(json.dumps({"receipt": head, "environment": env, "rows": rows}),
                        encoding="utf-8")
     assert cli.main(["adopt", "--json", "--power", "--lane", "code",
                      "--receipt", str(receipt)]) == 0
@@ -384,7 +388,10 @@ def test_adopt_power_labels_the_projection_and_reports_the_measured_power(
     rows = [{"case_id": f"{c}#{k}", "candidate": "inc", "passed": i % 2 == 0,
              "seconds": 2.0} for i, c in enumerate(measured) for k in (1, 2, 3)]
     receipt = tmp_path / "results.json"
-    receipt.write_text(json.dumps({"receipt": {"modality": "code"}, "rows": rows}),
+    here = ms.this_machine()
+    env = {k: here[k] for k in ("hw_model", "os", "arch", "host")}
+    head = {"modality": "code", "max_tokens": completion.budget("code")}
+    receipt.write_text(json.dumps({"receipt": head, "environment": env, "rows": rows}),
                        encoding="utf-8")
     assert cli.main(["adopt", "--json", "--power", "--lane", "code",
                      "--receipt", str(receipt)]) == 0
@@ -405,7 +412,10 @@ def test_adopt_power_with_every_holdout_case_measured_says_nothing_is_projected(
     rows = [{"case_id": f"{c}#{k}", "candidate": "inc", "passed": i % 2 == 0,
              "seconds": 2.0} for i, c in enumerate(ids) for k in (1, 2)]
     receipt = tmp_path / "results.json"
-    receipt.write_text(json.dumps({"receipt": {"modality": "code"}, "rows": rows}),
+    here = ms.this_machine()
+    env = {k: here[k] for k in ("hw_model", "os", "arch", "host")}
+    head = {"modality": "code", "max_tokens": completion.budget("code")}
+    receipt.write_text(json.dumps({"receipt": head, "environment": env, "rows": rows}),
                        encoding="utf-8")
     assert cli.main(["adopt", "--json", "--power", "--lane", "code",
                      "--receipt", str(receipt)]) == 0
