@@ -288,3 +288,26 @@ def test_retry_after_as_an_http_date_is_honoured():
     assert 55 <= ratelimit.wait_s(when, 0) <= 61
     assert ratelimit.wait_s(formatdate(time.time() - 60, usegmt=True), 3) == 0.0
     assert ratelimit.wait_s("not a date", 2) == 4.0
+
+
+def test_a_loop_run_with_no_budget_fetches_with_the_registered_budget(monkeypatch, capsys):
+    import argparse
+    from harness.commands import discover as discover_cmd, loop as loop_cmd
+    from harness.commands import measure as measure_cmd, screen as screen_cmd
+    monkeypatch.delenv("DISCOVER_BUDGET_GIB", raising=False)
+    seen = {}
+
+    def run(conn, *args, budget=None, **kw):
+        seen["budget"] = budget
+        return []
+    monkeypatch.setattr(fetching, "run", run)
+    monkeypatch.setattr(fetching, "queued", lambda *a, **k: [{"name": "org/x", "lane": "code"}])
+    monkeypatch.setattr(disk, "sweep", lambda *a, **k: {})
+    for name in ("_reopen_retests", "_reverify", "_sweeps"):
+        monkeypatch.setattr(loop_cmd, name, lambda *a, **k: {})
+    monkeypatch.setattr(screen_cmd, "screenable_backlog", lambda want="": [])
+    monkeypatch.setattr(discover_cmd, "cmd_discover", lambda a: 0)
+    monkeypatch.setattr(measure_cmd, "measurable", lambda store, top, want="": [])
+    loop_cmd._loop_spend(argparse.Namespace(top=1, budget_gib=None, lane=""), 0)
+    assert seen["budget"] == 40 * GIB
+    assert "budget 40 GiB" in capsys.readouterr().out
