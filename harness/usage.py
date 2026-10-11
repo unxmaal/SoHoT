@@ -374,14 +374,16 @@ def _pct(values: list[float], q: float):
 
 
 def stats(rows: list[dict]) -> dict:
-    """Requests, tokens, TTFT p50/p95, error rate and invalid tool-call rate of some rows."""
+    """Requests, tokens, TTFT p50/p95, model error rate, gateway errors apart, and invalid tool-call rate of some rows."""
     n = len(rows)
-    errors = sum(1 for r in rows if r["error_class"])
+    gateway = sum(1 for r in rows if r["error_class"] in NOT_MODEL_ERRORS)
+    errors = sum(1 for r in rows if r["error_class"]) - gateway
     calls = sum(r["tool_calls"] or 0 for r in rows)
     invalid = calls - sum(r["tool_calls_valid"] or 0 for r in rows)
     ttft = [r["ttft_s"] for r in rows if r["ttft_s"] is not None and not r["error_class"]]
     return {"requests": n, "errors": errors,
             "error_rate": errors / n if n else None,
+            "gateway_errors": gateway, "gateway_error_rate": gateway / n if n else None,
             "prompt_tokens": sum(r["prompt_tokens"] or 0 for r in rows),
             "completion_tokens": sum(r["completion_tokens"] or 0 for r in rows),
             "ttft_p50": _pct(ttft, 0.5), "ttft_p95": _pct(ttft, 0.95),
@@ -442,13 +444,20 @@ def around_switches(conn, lane=None, since=None, now=None) -> list[dict]:
 
 
 def sessions(rows: list[dict]) -> list[list[int]]:
-    """[requests, model errors, tool calls, invalid calls] per client session, in client then time order."""
+    """[requests, model errors, tool calls, invalid calls] per client session, in client then time order.
+
+    One session cannot estimate its own variance, so a single one is cut into SESSION_GAP_S blocks. #701.
+    """
+    one = _clusters(rows) == 1
     out: list[list[int]] = []
     last: tuple | None = None
+    start = 0.0
     for r in sorted(rows, key=lambda r: (r["client"] or "", r["at"])):
         client = r["client"] or ""
-        if last is None or last[0] != client or r["at"] - last[1] > SESSION_GAP_S:
+        if (last is None or last[0] != client or r["at"] - last[1] > SESSION_GAP_S
+                or (one and r["at"] - start >= SESSION_GAP_S)):
             out.append([0, 0, 0, 0])
+            start = r["at"]
         last = (client, r["at"])
         calls = r["tool_calls"] or 0
         cls = r["error_class"] or ""
@@ -457,6 +466,17 @@ def sessions(rows: list[dict]) -> list[list[int]]:
         out[-1][2] += calls
         out[-1][3] += calls - (r["tool_calls_valid"] or 0)
     return out
+
+
+def _clusters(rows: list[dict]) -> int:
+    """How many client sessions the rows make."""
+    n, last = 0, None
+    for r in sorted(rows, key=lambda r: (r["client"] or "", r["at"])):
+        client = r["client"] or ""
+        if last is None or last[0] != client or r["at"] - last[1] > SESSION_GAP_S:
+            n += 1
+        last = (client, r["at"])
+    return n
 
 
 def _rate_var(clusters: list[tuple[int, int]]) -> tuple[float, float, int]:

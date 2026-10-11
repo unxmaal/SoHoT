@@ -166,7 +166,7 @@ def decide(lane: str, incumbent: dict, challenger: dict,
             incumbent = _summary(rows, name_i) or incumbent
             challenger = _summary(rows, name_c) or challenger
             if dev:
-                d, p, _ = paired_p(dev, name_i, name_c)
+                d, p, _ = paired_p(dev, name_i, name_c, lane)
                 evidence["dev"] = {"gained": d.gained, "lost": d.lost, "p": p}
                 notes.append(f"dev: {d.gained} gained, {d.lost} lost, "
                              f"p={p:.2f}")
@@ -183,7 +183,7 @@ def decide(lane: str, incumbent: dict, challenger: dict,
             evidence["dev"] = {"not_run": plan.dev_skipped}
             notes.append(plan.dev_skipped)
     got = _gates(lane, name_i, name_c, incumbent, challenger, rows, alpha)
-    worse = _worse(rows, name_i, name_c, alpha) if rows and not got.adopt else ""
+    worse = _worse(rows, name_i, name_c, lane, alpha) if rows and not got.adopt else ""
     if worse:
         got = Verdict(lane, name_i, name_c, False, f"{got.why}; {worse}")
     elif not got.adopt and plan is not None and rows:
@@ -249,15 +249,15 @@ def _summary(rows: list[dict], name: str) -> dict | None:
     return {**summarize(mine)[name], "candidate": name}
 
 
-def paired_p(rows, name_i: str, name_c: str, against: str = "challenger"):
+def paired_p(rows, name_i: str, name_c: str, lane: str = "", against: str = "challenger"):
     """The paired cell, its p over independent evidence, and a note when repeats were shrunk.
 
     Repeats of a case correlate, so gained and lost cells are divided by the
     design effect 1+(r-1)*rho before the sign test: a near-deterministic case
     counts once at any repeat. #591. Rounding goes `against` the side the claim favours. #698.
     """
-    from harness import paired, power
-    cell = paired.head_to_head(rows, name_i, name_c)
+    from harness import paired, power, winners
+    cell = paired.head_to_head(rows, name_i, name_c, winners.PRIMARY.get(lane, ""))
     rho, repeat = power.rows_icc(rows, (name_i, name_c))
     used = power.DEFAULT_RHO if rho is None else rho
     deff = power.design_effect(repeat, used)
@@ -274,9 +274,9 @@ def paired_p(rows, name_i: str, name_c: str, against: str = "challenger"):
                      f"{repeat:.1f})")
 
 
-def _worse(rows, name_i: str, name_c: str, alpha: float = ALPHA) -> str:
+def _worse(rows, name_i: str, name_c: str, lane: str = "", alpha: float = ALPHA) -> str:
     """Why the challenger is significantly worse, else "". Power to see a gain does not bear on it. #594."""
-    cell, p, shrunk = paired_p(rows, name_i, name_c, against="incumbent")
+    cell, p, shrunk = paired_p(rows, name_i, name_c, lane, against="incumbent")
     if cell.lost <= cell.gained or p > alpha:
         return ""
     return (f"significantly worse: {cell.lost} lost against {cell.gained} "
@@ -290,7 +290,7 @@ def _gates(lane, name_i, name_c, incumbent, challenger, rows, alpha: float = ALP
     if not rows:
         return Verdict(lane, name_i, name_c, False,
                        "no paired rows, so the difference is unmeasured")
-    cell, p, shrunk = paired_p(rows, name_i, name_c)
+    cell, p, shrunk = paired_p(rows, name_i, name_c, lane)
     shrunk = f" ({shrunk})" if shrunk else ""
     if not cell.discordant and not cell.unchanged:
         return Verdict(lane, name_i, name_c, False,

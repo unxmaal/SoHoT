@@ -184,3 +184,62 @@ def test_gateway_error_classes_are_not_the_models_regression(conn):
     rows = _spread(at, 100, -1, bad=2) + _spread(at, 100, 1, bad=30, err="RateLimitError")
     usage.insert(conn, [(r, None) for r in rows])
     assert usage.regressions(usage.around_switches(conn, since=7 * DAY, now=NOW)) == []
+
+
+def test_one_steady_client_whose_errors_rise_after_a_switch_is_a_regression(conn):
+    at = NOW - DAY
+    _switch(conn, at)
+    rows = [_req(at - 2000 + i * 10, "only-client") for i in range(100)]
+    rows += [_req(at + 100 + i * 10, "only-client", "APIError" if i % 2 else "") for i in range(100)]
+    usage.insert(conn, [(r, None) for r in rows])
+    [w] = usage.regressions(usage.around_switches(conn, since=7 * DAY, now=NOW))
+    assert "error rate" in w
+
+
+def test_gateway_error_classes_are_not_in_the_shown_error_rate():
+    rows = [_req(NOW + i, "c", "RateLimitError" if i < 5 else "") for i in range(10)]
+    rows.append(_req(NOW + 20, "c", "APIError"))
+    got = usage.stats(rows)
+    assert got["errors"] == 1 and got["error_rate"] == pytest.approx(1 / 11)
+    assert got["gateway_errors"] == 5
+
+
+def test_the_live_audit_does_not_call_a_rate_limit_burst_the_models_failure(monkeypatch):
+    from harness import live_audit
+    rows = [_req(NOW + i, "c", "RateLimitError" if i < 10 else "") for i in range(30)]
+    monkeypatch.setattr(usage, "real_use", lambda conn: {"code": usage.stats(rows)})
+    [got] = live_audit._gateway_errors(None)
+    assert "gateway" in got and "requests failed" not in got
+
+
+# ---- the decide paired gate reads per-case accuracy, not exact-case bits ---------------
+
+def _decide_rows(name, acc, n=20):
+    return [{"candidate": name, "case_id": f"c{i}", "passed": acc[i] == 1.0,
+             "metrics": {"decide_accuracy": acc[i], "decide_correct": acc[i] * 5,
+                         "decide_fields": 5}} for i in range(n)]
+
+
+def test_a_decide_challenger_right_on_more_fields_in_every_case_is_adopted():
+    rows = _decide_rows("inc", [0.6] * 20) + _decide_rows("chal", [0.8] * 20)
+    inc = {"candidate": "inc", "pass_rate": 0.0, "metrics": {"decide_accuracy": 0.6}}
+    chal = {"candidate": "chal", "pass_rate": 0.0, "metrics": {"decide_accuracy": 0.8}}
+    got = adopt.decide("decide", inc, chal, rows)
+    assert got.adopt, got.why
+
+
+def test_fewer_exact_cases_is_not_significantly_worse_when_field_accuracy_is_higher():
+    rows = _decide_rows("inc", [1.0] * 8 + [0.2] * 12) + _decide_rows("chal", [0.8] * 20)
+    assert adopt._worse(rows, "inc", "chal", "decide") == ""
+    cell, _, _ = adopt.paired_p(rows, "inc", "chal", "decide")
+    assert (cell.gained, cell.lost) == (12, 8)
+
+
+def test_no_control_label_rests_on_the_stt_lane_701_found_biased():
+    for shape in ("bare", "carded"):
+        assert "mlx-community/whisper-large-v3-mlx" not in {i[0] for i in judge.SHAPES[shape]}, shape
+
+
+def test_the_text_render_case_does_not_call_its_max_cer_measured():
+    text = (Path(core.__file__).parent / "cases" / "image" / "text-render.yaml").read_text(encoding="utf-8")
+    assert "unmeasured" in text and "#730" in text

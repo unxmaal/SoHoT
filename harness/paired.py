@@ -159,8 +159,8 @@ def _cell(candidate: str, a: dict, b: dict) -> Cell:
     keys = a.keys() & b.keys()
     off = {k for k in keys if a[k] is None or b[k] is None}
     keys -= off
-    lost = sum(1 for k in keys if a[k] and not b[k])
-    gained = sum(1 for k in keys if not a[k] and b[k])
+    lost = sum(1 for k in keys if a[k] > b[k])
+    gained = sum(1 for k in keys if b[k] > a[k])
     return Cell(candidate, lost, gained, len(keys) - lost - gained, len(off))
 
 
@@ -198,7 +198,19 @@ def value(receipt, axis: str):
     return getattr(receipt, axis, None)
 
 
-def head_to_head(rows: list[dict], incumbent: str, challenger: str) -> Cell:
+def _score(row: dict, metric: str = ""):
+    """A judged row's verdict, or its signed `metric` when one is named (missing ranks last); None is unjudged. #701."""
+    got = _verdict(row)
+    if got is None or not metric:
+        return got
+    from evals.core import direction_of
+    value = (row.get("metrics") or {}).get(metric)
+    if value is None:
+        return float("-inf")
+    return float(value) * (1 if direction_of(metric) == "higher" else -1)
+
+
+def head_to_head(rows: list[dict], incumbent: str, challenger: str, metric: str = "") -> Cell:
     """Two candidates over the same cases in ONE run, paired by case.
 
     DIFFERENT PAIRING FROM cells(). That one matches a candidate against
@@ -210,6 +222,6 @@ def head_to_head(rows: list[dict], incumbent: str, challenger: str) -> Cell:
     handed share no candidate, and an empty result reads as "no difference"
     rather than "wrong comparison".
     """
-    mine = {r.get("case_id"): _verdict(r) for r in rows if r.get("candidate") == incumbent}
-    theirs = {r.get("case_id"): _verdict(r) for r in rows if r.get("candidate") == challenger}
+    mine = {r.get("case_id"): _score(r, metric) for r in rows if r.get("candidate") == incumbent}
+    theirs = {r.get("case_id"): _score(r, metric) for r in rows if r.get("candidate") == challenger}
     return _cell(challenger, mine, theirs)

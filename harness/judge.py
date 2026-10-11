@@ -355,14 +355,12 @@ CONTROL_BARE = [
     ("mlx-community/Kokoro-82M-bf16", "won"),
     # The text model that won the svg three-way at 8/9.
     ("mlx-community/Qwen2.5-7B-Instruct-4bit", "won"),
-    # Measured against parakeet in the same lane and lost it.
-    ("mlx-community/whisper-large-v3-mlx", "lost"),
     # local-small: 0/9, never closed a tag.
     ("mlx-community/Qwen2.5-0.5B-Instruct-4bit", "lost"),
-    # No Qwen3-30B-A3B: it was refused by a 32 GB machine's ceiling, which is not a quality outcome. #701.
+    # No Qwen3-30B-A3B (refused by a 32 GB ceiling) or whisper-large-v3 (lost on LibriSpeech WER, biased to parakeet): neither is a quality outcome. #701.
 ]
 
-#: THE SAME FIVE MODELS, described the way the store now describes them: from
+#: THE SAME MODELS, described the way the store now describes them: from
 #: their own registry card, via inspect.card_description(). Frozen here rather
 #: than fetched so a gate never depends on somebody else's afternoon; they were
 #: read from the registry on 2026-09-14.
@@ -380,9 +378,6 @@ CONTROL_CARDED = [
     ("mlx-community/Qwen2.5-7B-Instruct-4bit",
      "task text-generation; served by mlx; tagged mlx, qwen2, chat, "
      "text-generation; built from Qwen/Qwen2.5-7B; 4.0 GiB of weights", "won"),
-    ("mlx-community/whisper-large-v3-mlx",
-     "task automatic-speech-recognition; served by mlx; tagged mlx, whisper, "
-     "automatic-speech-recognition; 2.9 GiB of weights", "lost"),
     ("mlx-community/Qwen2.5-0.5B-Instruct-4bit",
      "task text-generation; served by mlx; tagged mlx, qwen2, chat, "
      "text-generation; built from Qwen/Qwen2.5-0.5B; 0.3 GiB of weights",
