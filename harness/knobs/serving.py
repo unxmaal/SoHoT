@@ -6,9 +6,17 @@ KNOBS = [
        note="context each Qwen2.5-7B-Instruct-Q4_K_M slot is sized for; never under context.MIN_SLOT_CTX (#665)"),
     _k("eval7b_slots", ["harness/context.py:EVAL_7B_SLOTS"], [1, 4, 8, 16, 32],
        note="llama-server slots Qwen2.5-7B-Instruct-Q4_K_M batches across; sets claims throughput, not a grade (#665)"),
+    _k("gpu_fraction", ["harness/memory.py:GPU_FRACTION"], [0.65, 0.75, 0.85],
+       note="share of RAM Metal hands out when sysctl iogpu.wired_limit_mb is unset; measured on 32 GB (#699)"),
     _k("kv_cap", ["harness/context.py:KV_MAX_GIB", "harness/context.py:KV_MAX_RAM_GB"], [4, 8, 16, 24, 32],
        note="GiB of KV one llama-server model may allocate on a 32 GB machine, scaled by RAM; it sets the planned "
             "served context, which binds as served_ctx (#692)"),
+    _k("llamacpp_slots", ["harness/context.py:LLAMACPP_SLOTS"], [1, 2, 4, 8],
+       note="llama-server slots every GGUF without its own slot plan batches across; throughput, not a grade (#699)"),
+    _k("mlx_max_parallel", ["harness/serving.py:MLX_MAX_PARALLEL"], [4, 8, 16, 32],
+       note="most requests the gateway lets mlx_lm.server hold; fewer when their KV does not fit (#542, #699)"),
+    _k("mlx_request_ctx", ["harness/serving.py:MLX_REQUEST_CTX"], [8192, 16384, 32768, 65536],
+       note="context one MLX request's KV is priced at when the parallel cap is sized (#699)"),
     _k("ornith_slot_ctx", ["harness/context.py:ORNITH_SLOT_CTX"], [131072, 262144],
        note="context each Ornith-1.5-35B-Q4_K_M slot is sized for; never under context.MIN_LONG_SLOT_CTX (#682)"),
     _k("ornith_slots", ["harness/context.py:ORNITH_SLOTS"], [1, 2, 4, 8],
@@ -25,6 +33,9 @@ NOT_GATING = {
     "harness/mcp_server.py:MAX_INLINE_BYTES": "how a result is returned, inline or as a path; never what it is",
     "harness/context.py:MIN_SLOT_CTX": "the floor the eval7b_slot_ctx range is held to; a preset under it is refused (#665)",
     "harness/context.py:MIN_LONG_SLOT_CTX": "the floor the ornith_slot_ctx range is held to; a preset under it is refused (#682)",
+    "harness/context.py:Choice.slot_ctx": "a planned result's value before it is planned (#699)",
+    "harness/context.py:plan(models_max)": "how many residents a plan is sized for; plan_router derives it from the plan (#699)",
+    "harness/memory.py:_wired_limit_gb->subprocess.run(timeout)": "how long sysctl may take to answer (#699)",
     "harness/audio_server.py:environ(AUDIO_PORT)": "where the audio server listens; never what it answers (#706)",
     **{f"harness/nodes.py:{n}": "a node's default, set per node in nodes.yaml; it decides which machine "
        "answers, which the receipt records, never whether a request is answered (#684)"

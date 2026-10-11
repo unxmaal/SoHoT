@@ -25,7 +25,7 @@ from __future__ import annotations
 import argparse
 import sys
 
-from harness import adopt, audio, completion, env, power, proc, vector  # noqa: F401
+from harness import adopt, audio, completion, env, power, proc, throughput, vector  # noqa: F401
 from harness.commands import adopt as adopt_cmd
 from harness.commands import benchmarks as benchmarks_cmd
 from harness.commands import cases as cases_cmd
@@ -453,8 +453,9 @@ def build_parser() -> argparse.ArgumentParser:
                      help="the code lane's cases on this side, sent and checked as the lane runs them (#682)")
     thr.add_argument("--field", default="text")
     thr.add_argument("--n", type=int, default=16)
-    thr.add_argument("--levels", default="1,2,4")
-    thr.add_argument("--max-tokens", type=int, default=300)
+    thr.add_argument("--levels", default=",".join(str(n) for n in throughput.default_levels()))
+    thr.add_argument("--max-tokens", type=int, default=None,
+                     help="reply budget; default the lane budget (completion.MAX_TOKENS, or the code/claims lane's)")
     thr.add_argument("--timeout", type=float, default=300.0, help="seconds one request may take")
     thr.add_argument("--gateway", default=completion.gateway_url())
     thr.add_argument("--serve", choices=("vllm-mlx", "vllm-metal"),

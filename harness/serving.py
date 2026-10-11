@@ -33,6 +33,23 @@ DEFAULT = "mlx_lm.server"
 MLX_URL = "http://127.0.0.1:8081"
 #: More queue in the gateway: at 32 a 4B model's footprint reached 49-57 GiB on the M5 Ultra. #542.
 MLX_MAX_PARALLEL = 16
+#: The context one MLX request is priced at when its KV cache is budgeted. #699.
+MLX_REQUEST_CTX = 32768
+
+
+def mlx_parallel(repo: str) -> int:
+    """Requests mlx_lm.server may hold at once: the MLX_REQUEST_CTX KV caches that fit beside the weights, at most MLX_MAX_PARALLEL. #699."""
+    from harness import memory
+    try:
+        per = memory.mlx_kv_bytes_per_token(repo)
+        path = memory.cache_path(repo)
+        weights = memory.size_gb(path) if path else None
+        if not per or weights is None:
+            return MLX_MAX_PARALLEL
+        room = memory.ceiling_gb() - memory.measured_reserve_gb() - weights
+    except Exception:  # noqa: BLE001 - an unsizable model keeps the default cap
+        return MLX_MAX_PARALLEL
+    return max(1, min(MLX_MAX_PARALLEL, int(room * 1024 ** 3 // (per * MLX_REQUEST_CTX))))
 
 
 #: llama-server for structured output and GGUF candidates (scripts/serve-eval.sh).

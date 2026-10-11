@@ -96,6 +96,10 @@ def cmd_throughput(a) -> int:
         texts += (throughput.claims_requests(rows) if not a.texts
                   else [str(r.get(a.field) or "") for r in rows])
     texts = texts[: a.n]
+    if a.max_tokens is None:
+        from harness import completion
+        lane = "code" if code else "claims" if a.claims and not a.texts else ""
+        a.max_tokens = completion.BUDGET.get(lane, completion.MAX_TOKENS)
     levels = tuple(int(x) for x in a.levels.split(",") if x.strip())
     serve = getattr(a, "serve", None)
     try:
@@ -135,7 +139,7 @@ def cmd_throughput(a) -> int:
              f"ttft {_ttft_pair(r.get('ttft_p50_s'), r.get('ttft_p95_s'))}  "
              f"first {_ttft_pair(r.get('first_token_p50_s'), r.get('first_token_p95_s'))}  "
              f"peak {'-' if peak is None else f'{peak / 1024 ** 3:.1f} GiB'}  "
-             f"errors {r['errors']}  "
+             f"errors {r['errors']}  truncated {r.get('truncated', 0)}  "
              f"schema {r.get('schema_valid', 0)}/{r.get('schema_checked', 0)}  "
              f"code {r.get('code_passed', 0)}/{r.get('code_checked', 0)}  "
              f"load {_load_pair(r.get('load_avg'))}  "

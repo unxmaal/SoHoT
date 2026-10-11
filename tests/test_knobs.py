@@ -151,7 +151,7 @@ def test_every_numeric_environment_default_and_table_entry_is_found_whatever_its
            "STRENGTH = {'lowres': 0.5, 'name': 'x'}\nweights = {'a': 2}\n")
     assert knobs.gating(src, "harness/m.py") == [
         "harness/m.py:environ(LLAMACPP_PARALLEL)", "harness/m.py:STRENGTH[lowres]", "harness/m.py:weights[a]"]
-    assert "harness/context.py:environ(LLAMACPP_PARALLEL)" in knobs.inventory(REPO)
+    assert "harness/context.py:environ(LLAMACPP_CTX)" in knobs.inventory(REPO)
 
 
 def test_a_timeout_passed_positionally_is_found():
@@ -165,7 +165,7 @@ def test_a_timeout_passed_positionally_is_found():
 
 def test_every_site_form_the_inventory_reports_resolves_so_it_can_be_registered():
     assert knobs.resolve("harness/engines.py:_mflux->Engine(timeout)") > 0
-    assert knobs.resolve("harness/context.py:environ(LLAMACPP_PARALLEL)") == 1
+    assert knobs.resolve("harness/context.py:environ(LLAMACPP_CTX)") == 16384
     assert knobs.resolve("scripts/serve-llamacpp.sh:LLAMACPP_TIMEOUT") == 7200
     unresolved = []
     for site in knobs.inventory(REPO):

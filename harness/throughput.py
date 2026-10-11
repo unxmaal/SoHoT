@@ -92,6 +92,13 @@ def schema_valid(body: dict, request: dict) -> bool | None:
     return Draft202012Validator(schema).is_valid(parsed)
 
 
+def _truncated(body) -> bool:
+    """Whether the reply budget cut this reply off (finish_reason length). #699."""
+    choices = body.get("choices") if isinstance(body, dict) else None
+    first = choices[0] if isinstance(choices, list) and choices else None
+    return isinstance(first, dict) and first.get("finish_reason") == "length"
+
+
 def first_token(timing: dict) -> float | None:
     """Seconds to the first streamed token of any kind, reasoning included. #682."""
     got = [timing.get(k) for k in ("ttft_s", "first_reasoning_s")]
@@ -178,19 +185,34 @@ class _Peak:
             self._take()
 
 
-def sweep(model: str, texts: list[str], levels=(1, 2, 4), max_tokens: int = 300,
+def default_levels() -> tuple[int, ...]:
+    """Doublings from 1 to twice the most slots any plan serves, so a knee at the plan is bracketed. #699."""
+    from harness import context
+    top = 2 * max(context.EVAL_7B_SLOTS, context.ORNITH_SLOTS, context.LLAMACPP_SLOTS)
+    out = [1]
+    while out[-1] < top:
+        out.append(out[-1] * 2)
+    return tuple(out)
+
+
+def sweep(model: str, texts: list[str], levels=None, max_tokens: int | None = None,
           gateway: str = "", timeout: float = 300.0,
           post=None, clock=time.perf_counter, footprint=None,
           sample_s: float = 0.5, load=None) -> list[dict]:
     """Each level sends every text with that many requests in flight; `footprint`
     returns the server's bytes, sampled for each level's peak. A dict in `texts` is
     a chat request sent as given (messages, response_format). #665."""
-    from harness.completion import gateway_url
-    post = post or _gateway_post(gateway or gateway_url(), timeout)
+    from harness import completion
+    levels = default_levels() if levels is None else levels
+    max_tokens = completion.MAX_TOKENS if max_tokens is None else max_tokens
+    base = gateway or completion.gateway_url()
+    # The warm-up may load weights; a request queued behind level-1 others may wait that long. #699.
+    post_for = (lambda t: post) if post else (lambda t: _gateway_post(base, t))
+    warm_post = post_for(max(timeout, completion.LOAD_TIMEOUT_S))
     if load is None and sys.platform != "win32":
         load = os.getloadavg
 
-    def one(text) -> tuple:
+    def one(text, send=None) -> tuple:
         request = text if isinstance(text, dict) else {
             "messages": [{"role": "user", "content": INSTRUCTION + text}]}
         sent = {k: v for k, v in request.items() if not k.startswith("_")}
@@ -198,7 +220,7 @@ def sweep(model: str, texts: list[str], levels=(1, 2, 4), max_tokens: int = 300,
         t = clock()
         ttft, why, prompt, valid = None, "", 0, None
         try:
-            body = post(payload) or {}
+            body = (send or warm_post)(payload) or {}
             usage = body.get("usage") or {}
             tokens = int(usage.get("completion_tokens") or 0)
             prompt = int(usage.get("prompt_tokens") or 0)
@@ -217,11 +239,12 @@ def sweep(model: str, texts: list[str], levels=(1, 2, 4), max_tokens: int = 300,
         # and every ratio is taken against the first level. #333.
         warm_s, _, warm_ok, *_ = one(texts[0]) if texts else (0.0, 0, True, None, "")
         for level in levels:
+            send = post_for(timeout * level)
             before = load()[0] if load else None
             with _Peak(footprint, sample_s) as peak:
                 t0 = clock()
                 with ThreadPoolExecutor(max_workers=level) as pool:
-                    got = list(pool.map(one, texts))
+                    got = list(pool.map(lambda t: one(t, send), texts))
                 wall = clock() - t0
             after = load()[0] if load else None
             # Graded after the clock stops: running a check must not hold back the next request.
@@ -234,14 +257,17 @@ def sweep(model: str, texts: list[str], levels=(1, 2, 4), max_tokens: int = 300,
             for why in (r[4] for r in got):
                 if why:
                     kinds[why] = kinds.get(why, 0) + 1
+            cut = [r[2] and _truncated(r[7]) for r in got]
             out.append({
                 "concurrency": level, "n": len(got),
                 "errors": sum(1 for _, _, ok, *_ in got if not ok),
                 "error_kinds": kinds,
                 "wall_s": round(wall, 2),
                 # Answered requests only: refusals come back at once and read as speed. #666.
-                "per_hour": (round(sum(1 for r in got if r[2]) / wall * 3600, 1)
-                             if wall else 0.0),
+                "per_hour": (round(sum(1 for r, c in zip(got, cut) if r[2] and not c)
+                                   / wall * 3600, 1) if wall else 0.0),
+                # Replies the budget cut off: neither answered nor a fair rate. #699.
+                "truncated": sum(cut),
                 "p50_s": round(statistics.median(lat), 2),
                 "p95_s": round(lat[min(len(lat) - 1, int(len(lat) * 0.95))], 2),
                 "ttft_p50_s": round(statistics.median(first), 3) if first else None,
