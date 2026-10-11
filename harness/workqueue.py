@@ -189,7 +189,8 @@ def _claimed(c) -> tuple[str, tuple]:
     from harness import memory_store as ms
     mid = ms.machine_row(c)
     if mid is None:
-        return "machine_id IS NULL", ()
+        # _claim stamps the machine, so a machine with no row has claimed nothing.
+        return "1 = 0", ()
     return "machine_id = ?", (mid,)
 
 

@@ -1298,8 +1298,10 @@ load (#328).
 Machines that share one store run the periodic agents on one of them. Install
 the others with `LH_ROLE=node ./scripts/launchd.sh install`, which loads no
 `discover` or `audit` agent and removes any left from an earlier install. The
-loop also takes a store lease, so a second `soh discover --loop` started while
-one runs anywhere refuses rather than races it (#703).
+role is kept in `$LOCALHARNESS_HOME/role`, so a later plain `make services`
+keeps it. `soh discover --loop --run` also takes a store lease and renews it
+before each step, so a second one started anywhere refuses rather than races it,
+and a loop that lost its lease stops (#703).
 
 **Run `probe` first, always.** macOS TCC denies `/Volumes` to launchd jobs, and
 the failure is horrible unprepared: the volume stats fine, reports free space and

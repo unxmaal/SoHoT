@@ -6,11 +6,14 @@ import subprocess
 import sys
 from pathlib import Path
 
+import httpx
 import pytest
+import respx
 import yaml
 
 from harness import adopt, completion, exclusive, gateway, gateway_switch as gs
 from harness import memory_store as ms
+from harness import reasons
 from harness import workqueue as wq
 
 REPO = Path(__file__).resolve().parent.parent
@@ -67,7 +70,8 @@ def test_a_claimed_job_is_stamped_with_the_machine_that_runs_it(tmp_path, monkey
     assert wq.get(job["id"])["machine_id"] == b
 
 
-def test_recover_on_one_machine_leaves_another_machines_running_job(monkeypatch):
+def test_recover_on_one_machine_leaves_another_machines_stamped_running_job(monkeypatch):
+    # A regression guard, green before #703 too; the red case is the unowned job below.
     job = wq.add([sys.executable, "-c", "pass"])
     conn = ms.connect()
     try:
@@ -93,6 +97,23 @@ def test_recover_does_not_fail_an_unowned_running_job(monkeypatch):
         conn.close()
     _as_other_machine(monkeypatch)
     wq.run_pending()
+    assert wq.get(job["id"])["state"] == wq.RUNNING
+
+
+def test_a_machine_with_no_machines_row_recovers_nothing(monkeypatch):
+    from harness import machine
+    job = wq.add([sys.executable, "-c", "pass"])
+    _unowned(job)
+    conn = ms.connect()
+    try:
+        conn.execute("UPDATE jobs SET state = ? WHERE id = ?", (wq.RUNNING, int(job["id"])))
+        conn.commit()
+    finally:
+        conn.close()
+    facts = {**OTHER, "host": "new-host", "fingerprint": machine.fingerprint(*OTHER.values()) + "-new"}
+    monkeypatch.setattr(ms, "this_machine", lambda: dict(facts))
+    wq._recover()
+    assert wq.current() is None
     assert wq.get(job["id"])["state"] == wq.RUNNING
 
 
@@ -161,6 +182,58 @@ def test_a_second_discover_loop_with_the_lease_held_refuses_to_start(monkeypatch
     assert "lease" in capsys.readouterr().err
 
 
+def test_a_dry_run_loop_does_not_need_the_lease(monkeypatch):
+    import argparse
+    from harness import lease
+    from harness.commands import loop as loop_cmd
+    conn = ms.connect()
+    try:
+        lease.take(conn, loop_cmd.LEASE, {"machine_id": 999, "pid": 1}, 3600)
+    finally:
+        conn.close()
+    ran = []
+    monkeypatch.setattr(loop_cmd, "_run_loop_held", lambda a, keep=None: ran.append(a) or 0)
+    assert loop_cmd._run_loop(argparse.Namespace(run=False, lane="")) == 0 and ran
+
+
+def test_renew_extends_only_the_holders_lease():
+    from harness import lease
+    conn = ms.connect()
+    try:
+        me, other = {"machine_id": 1, "pid": 10}, {"machine_id": 2, "pid": 20}
+        lease.take(conn, "discover", me, 100, now=0)
+        assert lease.renew(conn, "discover", me, 100, now=90)
+        assert lease.holder(conn, "discover")["expires"] == 190
+        assert not lease.renew(conn, "discover", other, 100, now=95)
+        assert lease.take(conn, "discover", other, 100, now=150)["machine_id"] == 1
+    finally:
+        conn.close()
+
+
+def test_a_loop_that_lost_its_lease_stops_before_the_next_step(monkeypatch, capsys):
+    import argparse
+    from harness import lease
+    from harness.commands import loop as loop_cmd
+    steps = []
+
+    def step(a):
+        steps.append(a)
+        conn = ms.connect()
+        try:
+            conn.execute("UPDATE meta SET value = ? WHERE key = ?",
+                         ('{"machine_id": 999, "pid": 1, "expires": 1e12}',
+                          lease.PREFIX + loop_cmd.LEASE))
+            conn.commit()
+        finally:
+            conn.close()
+        return 0
+
+    monkeypatch.setattr(loop_cmd.discover_cmd, "cmd_discover", step)
+    rc = loop_cmd._run_loop(argparse.Namespace(run=True, lane=""))
+    assert rc != 0 and len(steps) == 1
+    assert "lease" in capsys.readouterr().err
+
+
 # ---- periodic units on one designated machine -----------------------------------------
 
 @pytest.mark.skipif(sys.platform != "darwin", reason="launchd is macOS-only")
@@ -173,6 +246,24 @@ def test_a_serving_node_generates_no_periodic_units(tmp_path):
     names = {p.name for p in tmp_path.glob("*.plist")}
     assert not any(".discover." in n or ".audit." in n for n in names), names
     assert any(".worker." in n for n in names)
+
+
+@pytest.mark.skipif(sys.platform != "darwin", reason="launchd is macOS-only")
+def test_the_role_is_remembered_so_a_plain_reinstall_keeps_it(tmp_path):
+    from tests import shells
+    env = {k: v for k, v in os.environ.items() if k != "LH_ROLE"}
+    env["LOCALHARNESS_HOME"] = str(tmp_path / "home")
+
+    def generate(out, **extra):
+        proc = subprocess.run([shells.BASH, str(REPO / "scripts" / "launchd.sh"), "generate",
+                               str(out)], capture_output=True, text=True, env={**env, **extra})
+        assert proc.returncode == 0, proc.stderr
+        return {p.name for p in out.glob("*.plist")}
+
+    assert any(".discover." in n for n in generate(tmp_path / "first"))
+    generate(tmp_path / "node", LH_ROLE="node")
+    names = generate(tmp_path / "again")
+    assert not any(".discover." in n or ".audit." in n for n in names), names
 
 
 @pytest.mark.skipif(sys.platform != "darwin", reason="launchd is macOS-only")
@@ -251,6 +342,19 @@ def test_the_gateway_hook_refuses_a_request_while_draining():
     assert "draining" in str(getattr(got.value, "detail", got.value))
 
 
+@respx.mock
+def test_a_request_refused_by_a_draining_gateway_is_charged_to_the_harness():
+    gw = "http://127.0.0.1:4000"
+    respx.post(f"{gw}/v1/chat/completions").mock(return_value=httpx.Response(
+        503, json={"error": {"message": "the gateway is draining for an alias switch; retry once it has restarted", "code": "503"}}))
+    with pytest.raises(completion.CompletionError) as got:
+        completion.complete("hi", model="sohot-code", gateway=gw)
+    cls = got.value.failure_class or reasons.classify(str(got.value))
+    assert cls == reasons.REFUSED_BY_GATEWAY
+    assert reasons.classify(str(got.value)) == reasons.REFUSED_BY_GATEWAY
+    assert reasons.CLASSES[cls][1] == reasons.HARNESS
+
+
 # ---- a platform with no restart method fails loudly ----------------------------------
 
 CONFIG = {"model_list": [
@@ -297,3 +401,5 @@ def test_an_adoption_on_linux_records_a_failed_switch_with_the_reason(config, mo
         conn.close()
     assert [f["lane"] for f in failed] == ["code"]
     assert "no restart method on linux" in failed[0]["reason"]
+    # old_spec comes from _old_spec in _record on both platforms: what the alias served.
+    assert failed[0]["old_spec"] == CONFIG["model_list"][0]["litellm_params"]["model"]

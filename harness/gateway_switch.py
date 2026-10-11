@@ -34,6 +34,8 @@ def _longest_request_s() -> float:
 #: How long a drain waits for in-flight requests: the longest timeout any eval rung allows, plus a margin. #703.
 DRAIN_S = _longest_request_s() + 5 * 60.0
 DRAIN_FILE = "gateway.draining"
+#: What the gateway answers with its 503 while draining; reasons reads it as refused_by_gateway.
+DRAINING = "the gateway is draining"
 POLL_S = 2.0
 RETRIES = 3
 BACKOFF_S = 30.0

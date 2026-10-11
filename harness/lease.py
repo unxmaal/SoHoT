@@ -71,12 +71,30 @@ def take(conn, name: str, who: dict, ttl_s: float, now: float | None = None,
     return holder(conn, name)
 
 
+def _same(current: dict, who: dict) -> bool:
+    return bool(current) and (current.get("machine_id"), current.get("pid")) == (
+        who.get("machine_id"), who.get("pid"))
+
+
+def renew(conn, name: str, who: dict, ttl_s: float, now: float | None = None) -> bool:
+    """Extend the lease `who` still holds by ttl_s from now; False once someone else holds it."""
+    now = time.time() if now is None else now
+    raw = _raw(conn, name)
+    current = {} if raw is None else _decode(raw)
+    if not _same(current, who):
+        conn.commit()
+        return False
+    kept = conn.execute("UPDATE meta SET value = ? WHERE key = ? AND value = ?",
+                        (_encode(who, now, ttl_s), _key(name), raw)).rowcount == 1
+    conn.commit()
+    return kept
+
+
 def release(conn, name: str, who: dict) -> bool:
     """Drop the lease if `who` holds it; whether it did."""
     raw = _raw(conn, name)
     current = {} if raw is None else _decode(raw)
-    if not current or (current.get("machine_id"), current.get("pid")) != (
-            who.get("machine_id"), who.get("pid")):
+    if not _same(current, who):
         conn.commit()
         return False
     gone = conn.execute("DELETE FROM meta WHERE key = ? AND value = ?",

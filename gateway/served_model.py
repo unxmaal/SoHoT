@@ -162,7 +162,7 @@ class ServedModel(CustomLogger):
         from harness import gateway_switch
         if gateway_switch.draining():
             from fastapi import HTTPException
-            raise HTTPException(status_code=503, detail="the gateway is draining for an alias "
+            raise HTTPException(status_code=503, detail=f"{gateway_switch.DRAINING} for an alias "
                                 "switch; retry once it has restarted")
         model = str(data.get("model") or "")
         entry = _entry(model)

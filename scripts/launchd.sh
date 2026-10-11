@@ -32,11 +32,21 @@ declare -a PERIODIC=(discover audit)
 DISCOVER_HOURS="${DISCOVER_HOURS:-21}"
 AUDIT_HOURS="${AUDIT_HOURS:-3}"                   # nightly, #492
 # Machines sharing one store run the periodic jobs on one of them: scheduler, or node for the rest. #703.
+# A role given once is kept in $LH_HOME/role, so a later plain `make install` keeps it.
+ROLE_FILE="$LH_HOME/role"
+ROLE_GIVEN="${LH_ROLE:-}"
+if [ -z "$ROLE_GIVEN" ] && [ -f "$ROLE_FILE" ]; then
+  LH_ROLE="$(tr -d '[:space:]' < "$ROLE_FILE")"
+fi
 LH_ROLE="${LH_ROLE:-scheduler}"
 case "$LH_ROLE" in
   scheduler|node) ;;
-  *) echo "LH_ROLE must be scheduler or node, not '$LH_ROLE'" >&2; exit 2 ;;
+  *) echo "LH_ROLE must be scheduler or node, not '$LH_ROLE' (from ${ROLE_GIVEN:+the environment}${ROLE_GIVEN:-$ROLE_FILE})" >&2; exit 2 ;;
 esac
+if [ -n "$ROLE_GIVEN" ]; then
+  mkdir -p "$LH_HOME"
+  printf '%s\n' "$LH_ROLE" > "$ROLE_FILE"
+fi
 
 # The services this machine runs: a node leaves the periodic ones to the scheduler.
 units() {

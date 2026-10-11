@@ -338,10 +338,13 @@ def complete_full(prompt: str, model: str, gateway: str = "",
             raise CompletionError(
                 f"gateway at {gateway} refused the key (HTTP {status}): "
                 f"{gateway_key.HINT}", reasons.HARNESS_ERROR) from exc
+        from harness import gateway_switch
+        refused = status == 503 and gateway_switch.DRAINING in exc.response.text
         # LiteLLM explains itself in the body, not the status line.
         raise CompletionError(
             f"gateway returned HTTP {exc.response.status_code}: "
-            f"{exc.response.text[:400]}") from exc
+            f"{exc.response.text[:400]}",
+            reasons.REFUSED_BY_GATEWAY if refused else "") from exc
     except httpx.HTTPError as exc:
         raise CompletionError(
             f"gateway unreachable at {gateway}: {exc} ({_START_HINT})",
