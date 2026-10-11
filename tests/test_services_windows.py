@@ -216,6 +216,31 @@ def test_a_keyless_launcher_passes_no_key_flag():
         "the key flag should be built conditionally, not passed always")
 
 
+def test_the_node_reports_what_is_missing_rather_than_listing_steps():
+    """The firewall rule and the never-sleep setting need admin and nothing
+    here owns them, so they used to be printed every time and the reader had
+    to guess whether they had already been run. Both can be READ without
+    admin, so both are read."""
+    region = "\n".join(_node_region(SERVICES.read_text(encoding="utf-8")))
+    assert "Get-NetFirewallRule" in region, (
+        "check the firewall rather than telling the reader to check it")
+    assert "powercfg /query" in region, (
+        "read the current AC standby index rather than always printing the set "
+        "command")
+    assert re.search(r"^\s*check-node\)", SERVICES.read_text(encoding="utf-8"),
+                     re.M), "no check-node subcommand"
+
+
+def test_installing_the_node_checks_itself():
+    """install-node that registered a task and said nothing about the two
+    steps it cannot perform is how this node ended up reachable by accident
+    and asleep by default."""
+    region = "\n".join(_node_region(SERVICES.read_text(encoding="utf-8")))
+    body = region.split("install_node()", 1)[-1].split("node_firewall_ok()", 1)[0]
+    assert "check_node" in body, (
+        "install-node should finish by reporting what is still missing")
+
+
 @pytest.mark.skipif(shells.resolve("bash") is None,
                     reason="no bash on this machine")
 def test_a_bom_prefixed_key_file_yields_the_bare_key(tmp_path):

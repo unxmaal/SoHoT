@@ -54,7 +54,7 @@ usage() {
   echo "usage: $0 {start|stop|restart|status} [${ALL[*]} ${OPTIONAL[*]}]" >&2
   # Named apart from the verbs above because it is the only one that outlives
   # the session it was run in. #684.
-  echo "       $0 {install-node|uninstall-node}   serve at logon, Windows only" >&2
+  echo "       $0 {install-node|uninstall-node|check-node}  serve at logon, Windows only" >&2
   exit 2
 }
 
@@ -318,16 +318,75 @@ LAUNCH
     return 1
   }
   echo "$NODE_TASK registered; it starts llamacpp at logon"
-
-  # PRINTED, NEVER SWALLOWED. Both need admin and nothing in this repo owns
-  # them. A node that is registered but firewalled off, on a box that sleeps
-  # after two hours, fails in a way that reads as the gateway's fault.
   echo
-  echo "two steps are left, and they need an elevated shell:"
-  echo "  New-NetFirewallRule -DisplayName '$NODE_TASK' -Direction Inbound \\"
-  echo "    -Action Allow -Protocol TCP -LocalPort $port -Profile Private \\"
-  echo "    -Program '<the server binary, as serve-llamacpp.sh resolves it>'"
-  echo "  powercfg /change standby-timeout-ac 0"
+  check_node || true
+}
+
+# Whether anything already allows inbound TCP on the node's port.
+#
+# BY PORT, NOT BY RULE NAME. A rule that does the job under some other name is
+# not missing, and the first one on this node was created by the Windows
+# "allow this app" prompt rather than by the command below, so a name match
+# would have reported it absent while the node was answering the subnet. The
+# cost of asking this way is that an unrelated rule on the same port reads as
+# ok, which is why the wording below says something rather than the rule.
+node_firewall_ok() {
+  powershell -NoProfile -Command \
+    "\$p = '$1';\
+     \$r = Get-NetFirewallRule -Direction Inbound -Enabled True -Action Allow\
+       -ErrorAction SilentlyContinue |\
+       Where-Object { (\$_ | Get-NetFirewallPortFilter).LocalPort -contains \$p };\
+     if (\$r) { exit 0 } else { exit 1 }" >/dev/null 2>&1
+}
+
+# Whether this machine stays awake on AC. Read through PowerShell rather than
+# by running powercfg from here: MSYS rewrites /query into a path before
+# powercfg sees it, and the call then fails in a way that reads as "not set".
+node_sleep_ok() {
+  powershell -NoProfile -Command \
+    "\$v = powercfg /query SCHEME_CURRENT SUB_SLEEP STANDBYIDLE |\
+       Select-String 'Current AC Power Setting Index';\
+     if (\"\$v\" -match '0x00000000') { exit 0 } else { exit 1 }" >/dev/null 2>&1
+}
+
+# What is in place and what is not. BOTH REMAINING STEPS NEED ADMIN AND NOTHING
+# HERE OWNS THEM, so the alternative was printing two commands every time and
+# letting the reader guess whether they had already been run. Each can be read
+# without admin, so each is reported, and a command is printed only for what is
+# actually missing.
+check_node() {
+  is_windows || { echo "check-node is Windows only" >&2; return 1; }
+  local port rc=0
+  port="${LLAMACPP_PORT:-8081}"
+
+  if powershell -NoProfile -Command \
+      "if (Get-ScheduledTask -TaskName '$NODE_TASK' -ErrorAction SilentlyContinue)\
+       { exit 0 } else { exit 1 }" >/dev/null 2>&1; then
+    printf 'task      ok       %s is registered\n' "$NODE_TASK"
+  else
+    printf 'task      MISSING  run: %s install-node\n' "$0"
+    rc=1
+  fi
+
+  if node_firewall_ok "$port"; then
+    printf 'firewall  ok       something allows inbound TCP %s\n' "$port"
+  else
+    printf 'firewall  MISSING  run this in an elevated shell:\n'
+    echo "    New-NetFirewallRule -DisplayName '$NODE_TASK' -Direction Inbound \\"
+    echo "      -Action Allow -Protocol TCP -LocalPort $port -Profile Private \\"
+    echo "      -Program '<the server binary, as serve-llamacpp.sh resolves it>'"
+    rc=1
+  fi
+
+  if node_sleep_ok; then
+    printf 'sleep     ok       does not sleep on AC\n'
+  else
+    printf 'sleep     MISSING  run this in an elevated shell:\n'
+    echo "    powercfg /change standby-timeout-ac 0"
+    rc=1
+  fi
+
+  return "$rc"
 }
 
 uninstall_node() {
@@ -390,5 +449,6 @@ case "$verb" in
   status) status ;;
   install-node)   install_node ;;
   uninstall-node) uninstall_node ;;
+  check-node)     check_node ;;
   *)      usage ;;
 esac
