@@ -115,3 +115,23 @@ def test_a_deletion_beside_an_addition_is_kept_or_conflicts(repo, how):
     _branch(repo, "right", lambda: _add_backlog(repo, a + "_zz"))
     clean, lines = _settled(repo, how)
     assert not clean or (a not in lines and a + "_zz" in lines and b in lines), f"a clean {how} brought back {a}"
+
+
+@pytest.mark.parametrize("how", ["merge", "rebase"])
+def test_two_branches_deleting_far_apart_backlog_lines_merge_cleanly_and_both_stay_deleted(repo, how):
+    lines = (REPO / BACKLOG / "harness.txt").read_text(encoding="utf-8").splitlines()
+    a, b = lines[len(lines) // 4], lines[3 * len(lines) // 4]
+    _branch(repo, "left", lambda: _drop_backlog(repo, a))
+    _branch(repo, "right", lambda: _drop_backlog(repo, b))
+    clean, got = _settled(repo, how)
+    assert clean, f"a {how} of two far-apart deletions conflicted"
+    assert not {a, b} & set(got) and len(got) == len(lines) - 2 and got == sorted(got)
+
+
+@pytest.mark.parametrize("how", ["merge", "rebase"])
+def test_two_branches_adding_a_backlog_line_at_the_same_sorted_spot_conflict(repo, how):
+    a, _ = _neighbours()
+    _branch(repo, "left", lambda: _add_backlog(repo, a + "_left"))
+    _branch(repo, "right", lambda: _add_backlog(repo, a + "_right"))
+    clean, _ = _settled(repo, how)
+    assert not clean, f"a {how} of two same-spot additions merged silently; the #756 trade-off is a conflict"
