@@ -243,3 +243,25 @@ def test_no_control_label_rests_on_the_stt_lane_701_found_biased():
 def test_the_text_render_case_does_not_call_its_max_cer_measured():
     text = (Path(core.__file__).parent / "cases" / "image" / "text-render.yaml").read_text(encoding="utf-8")
     assert "unmeasured" in text and "#730" in text
+
+
+# ---- #726 rounding and alpha meet #701's lane metric ----------------------------
+
+def test_decide_worse_pairs_on_accuracy_and_still_rounds_against_the_worse_claim(monkeypatch):
+    from harness import power
+    monkeypatch.setattr(power, "rows_icc", lambda rows, names: (0.5, 2.0))
+    rows = _decide_rows("inc", [0.8] * 10, n=10) + _decide_rows("chal", [0.6] * 9 + [1.0], n=10)
+    bits = adopt.paired_p(rows, "inc", "chal")[0]
+    assert (bits.lost, bits.gained) == (0, 1)
+    cell, p_worse, _ = adopt.paired_p(rows, "inc", "chal", "decide", against="incumbent")
+    _, p_gain, _ = adopt.paired_p(rows, "inc", "chal", "decide")
+    assert (cell.lost, cell.gained) == (9, 1)
+    assert p_worse > p_gain
+    assert adopt._worse(rows, "inc", "chal", "decide") == ""
+
+
+def test_decide_worse_on_accuracy_answers_to_the_alpha_it_is_given():
+    rows = _decide_rows("inc", [0.8] * 20) + _decide_rows("chal", [0.6] * 20)
+    assert "significantly worse" in adopt._worse(rows, "inc", "chal", "decide")
+    assert adopt._worse(rows, "inc", "chal", "decide", alpha=1e-9) == ""
+    assert adopt._worse(rows, "inc", "chal") == ""
