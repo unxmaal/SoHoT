@@ -92,3 +92,42 @@ def test_the_report_prints_each_candidates_served_context(capsys):
     assert "sohot-code: 16384" in out and "claude-code:opus: unknown" in out
 
 
+
+
+def _args(*extra):
+    return {"data": [{"id": "Ornith", "status": {"value": "loaded", "args": ["llama-server", *extra]}}]}
+
+
+def test_a_split_pool_serves_each_slot_its_share():
+    get = lambda url: _args("--ctx-size", "524288", "--parallel", "2")  # noqa: E731
+    assert context.served_ctx("llamacpp:Ornith", get=get) == 262144
+
+
+def test_a_unified_pool_serves_one_slot_up_to_what_the_model_was_trained_for(monkeypatch):
+    monkeypatch.setattr(context, "_trained_of", lambda stem, conn=None: 262144)
+    get = lambda url: _args("--ctx-size", "1048576", "--kv-unified", "--parallel", "4")  # noqa: E731
+    assert context.served_ctx("llamacpp:Ornith", get=get) == 262144
+
+
+def test_a_unified_pool_with_no_trained_length_on_record_claims_only_a_share(monkeypatch):
+    monkeypatch.setattr(context, "_trained_of", lambda stem, conn=None: 0)
+    get = lambda url: _args("--ctx-size", "524288", "--kv-unified", "--parallel", "4")  # noqa: E731
+    assert context.served_ctx("llamacpp:Ornith", get=get) == 131072
+
+
+def test_the_store_answers_one_slot_of_a_sized_pool(tmp_path, monkeypatch):
+    d = tmp_path / "gguf"
+    d.mkdir()
+    monkeypatch.setenv("LLAMACPP_MODELS_DIR", str(d))
+    monkeypatch.setattr(context, "ORNITH_SLOTS", 4)
+    monkeypatch.setattr(context, "coresident_bytes", lambda conn: 0)
+    write_gguf(d / f"{context.ORNITH_STEM}.gguf", ORNITH)
+    conn = ms.connect()
+    downloads.record(conn, "org/o", downloads.GGUF, d / f"{context.ORNITH_STEM}.gguf",
+                     file=f"{context.ORNITH_STEM}.gguf")
+    context.plan(conn, budget=60 * 1024 ** 3)
+    conn.close()
+
+    def down(url):
+        raise OSError("refused")
+    assert context.served_ctx(f"llamacpp:{context.ORNITH_STEM}", get=down) == 262144

@@ -421,10 +421,13 @@ def build_parser() -> argparse.ArgumentParser:
                      help="JSONL file; each line's --field is one request")
     thr.add_argument("--claims", action="append",
                      help="claims export JSONL; each case is the request the claims lane sends (#665)")
+    thr.add_argument("--code", choices=("holdout", "dev", "all"),
+                     help="the code lane's cases on this side, sent and checked as the lane runs them (#682)")
     thr.add_argument("--field", default="text")
     thr.add_argument("--n", type=int, default=16)
     thr.add_argument("--levels", default="1,2,4")
     thr.add_argument("--max-tokens", type=int, default=300)
+    thr.add_argument("--timeout", type=float, default=300.0, help="seconds one request may take")
     thr.add_argument("--gateway", default="http://127.0.0.1:4000")
     thr.add_argument("--serve", choices=("vllm-mlx", "vllm-metal"),
                      help="start this engine for a vllm: --model, sweep, then stop it")

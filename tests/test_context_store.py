@@ -265,10 +265,48 @@ def test_a_slot_context_under_the_floor_is_refused_not_served(conn, models, monk
         context.plan(conn, budget=60 * GIB)
 
 
-def test_a_slot_pool_that_does_not_fit_the_kv_cap_is_refused(conn, models, monkeypatch):
+def test_a_slot_pool_that_does_not_fit_is_served_with_the_most_slots_that_do(conn, models, monkeypatch):
     monkeypatch.setattr(context, "coresident_bytes", lambda conn: 0, raising=False)
     monkeypatch.setattr(context, "EVAL_7B_SLOTS", 32)
     monkeypatch.setattr(context, "EVAL_7B_SLOT_CTX", 16384)
     _gguf(conn, models, context.EVAL_7B_STEM, QWEN3_4B)
+    got = context.plan(conn, budget=20 * GIB, kv_cap=8 * GIB)[0]
+    assert got["slots"] == 8 and got["ctx"] == 8 * 16384 and "32 asked" in got["why"]
+    assert context.served(conn, context.EVAL_7B_STEM)["ctx_slots"] == 8
+
+
+def test_a_slot_that_alone_does_not_fit_is_refused(conn, models, monkeypatch):
+    monkeypatch.setattr(context, "coresident_bytes", lambda conn: 0, raising=False)
+    monkeypatch.setattr(context, "EVAL_7B_SLOT_CTX", 16384)
+    _gguf(conn, models, context.EVAL_7B_STEM, QWEN3_4B)
+    got = context.plan(conn, budget=2 * GIB, kv_cap=8 * GIB)[0]
+    assert got["ctx"] == 0 and "refused" in got["why"]
+
+
+def test_ornith_gets_its_slots_each_at_the_full_slot_context(conn, models, monkeypatch):
+    monkeypatch.setattr(context, "coresident_bytes", lambda conn: 0, raising=False)
+    monkeypatch.setattr(context, "ORNITH_SLOTS", 4)
+    monkeypatch.setattr(context, "ORNITH_SLOT_CTX", 262144)
+    _gguf(conn, models, context.ORNITH_STEM, ORNITH)
     got = context.plan(conn, budget=60 * GIB, kv_cap=8 * GIB)[0]
-    assert got["ctx"] == 0 and "refused" in got["why"] and "32 slots" in got["why"]
+    assert got["slots"] == 4 and got["ctx"] == 4 * 262144, got["why"]
+    cp = _ini(context.preset_text([got], default_ctx=16384, slots=1))
+    assert cp[context.ORNITH_STEM]["parallel"] == "4" and cp[context.ORNITH_STEM]["c"] == "1048576"
+    assert cp[context.ORNITH_STEM]["kv-unified"] == "true"
+
+
+def test_the_kv_cap_bounds_one_slot_of_a_sized_plan_and_the_budget_bounds_the_pool(conn, models, monkeypatch):
+    monkeypatch.setattr(context, "coresident_bytes", lambda conn: 0, raising=False)
+    monkeypatch.setattr(context, "ORNITH_SLOTS", 4)
+    _gguf(conn, models, context.ORNITH_STEM, ORNITH)
+    assert context.plan(conn, budget=60 * GIB, kv_cap=4 * GIB)[0]["ctx"] == 0
+    got = context.plan(conn, budget=12 * GIB, kv_cap=8 * GIB)[0]
+    assert got["slots"] == 2 and got["ctx"] == 2 * 262144 and "4 asked" in got["why"]
+
+
+def test_an_ornith_slot_too_short_for_the_agent_lane_is_refused(conn, models, monkeypatch):
+    monkeypatch.setattr(context, "coresident_bytes", lambda conn: 0, raising=False)
+    monkeypatch.setattr(context, "ORNITH_SLOT_CTX", 32768)
+    _gguf(conn, models, context.ORNITH_STEM, ORNITH)
+    with pytest.raises(ValueError, match=str(context.MIN_LONG_SLOT_CTX)):
+        context.plan(conn, budget=60 * GIB)

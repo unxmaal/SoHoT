@@ -61,33 +61,65 @@ EVAL_7B_SLOT_CTX = 4096
 #: A claims request is a 6000-character window and a 400-token reply; no slot is sized under it. #665.
 MIN_SLOT_CTX = 3072
 
+#: Ornith-1.5-35B-Q4_K_M serves the code lane, the agent lane and local_complete: slots, each at its full trained context. #682.
+ORNITH_STEM = "Ornith-1.5-35B-Q4_K_M"
+ORNITH_SLOTS = 4
+ORNITH_SLOT_CTX = 262144
+#: The agent lane and the 65536 budget-ladder rung need one slot to hold more than this. #682.
+MIN_LONG_SLOT_CTX = 131072
+
+#: stem -> (slots constant, slot context constant, floor constant, what the floor is for), read at call time.
+SLOT_PLANS = {EVAL_7B_STEM: ("EVAL_7B_SLOTS", "EVAL_7B_SLOT_CTX", "MIN_SLOT_CTX", "a claims request"),
+              ORNITH_STEM: ("ORNITH_SLOTS", "ORNITH_SLOT_CTX", "MIN_LONG_SLOT_CTX",
+                            "the agent lane and the 64k ladder rung")}
+
 
 def slot_plan(stem: str) -> tuple[int, int] | None:
     """(slots, context per slot) a stem is served at by name, else None for the memory plan."""
-    if stem != EVAL_7B_STEM:
+    names = SLOT_PLANS.get(stem)
+    if names is None:
         return None
-    if EVAL_7B_SLOT_CTX < MIN_SLOT_CTX:
-        raise ValueError(f"{stem}: {EVAL_7B_SLOT_CTX} tokens per slot is under the "
-                         f"{MIN_SLOT_CTX}-token floor a claims request needs")
-    return max(int(EVAL_7B_SLOTS), 1), int(EVAL_7B_SLOT_CTX)
+    here = globals()
+    slots, slot_ctx, floor = (int(here[n]) for n in names[:3])
+    if slot_ctx < floor:
+        raise ValueError(f"{stem}: {slot_ctx} tokens per slot is under the "
+                         f"{floor}-token floor {names[3]} needs")
+    return max(slots, 1), slot_ctx
 
 
 def choose_slots(meta: dict, weights: int, budget: int, slots: int, slot_ctx: int,
                  cache_type: str = "f16", kv_cap: int | None = None) -> "Choice":
-    """A pool of slots * slot_ctx shared by the slots, when it fits beside the weights and under kv_cap."""
+    """A pool of slots * slot_ctx shared by the slots, when it fits beside the weights and one slot fits kv_cap."""
     full = trained(meta)
     per = kv_bytes_per_token(meta, cache_type)
     pool = slots * slot_ctx
     room = max(budget - weights, 0)
-    room = min(room, kv_cap) if kv_cap is not None else room
     if not per or not full or slot_ctx > full:
         return Choice(0, full, per, f"refused: {slots} slots of {slot_ctx} tokens, "
                       f"trained for {full}, {per} B/token")
+    # The cap bounds what one request's context may cost; the budget bounds the pool. #682.
+    if kv_cap is not None and slot_ctx * per > kv_cap:
+        return Choice(0, full, per, f"refused: one slot of {slot_ctx} tokens needs "
+                      f"{slot_ctx * per / 1024 ** 3:.1f} GiB of KV, over the "
+                      f"{kv_cap / 1024 ** 3:.1f} GiB cap")
     if pool * per > room:
         return Choice(0, full, per, f"refused: {slots} slots of {slot_ctx} tokens need "
                       f"{pool * per / 1024 ** 3:.1f} GiB of KV, {room / 1024 ** 3:.1f} GiB fits")
     return Choice(pool, full, per, f"slots: {slots} x {slot_ctx} tokens, "
                   f"{pool * per / 1024 ** 3:.1f} GiB of KV (#665)")
+
+
+def fitting_slots(meta: dict, weights: int, budget: int, slots: int, slot_ctx: int,
+                  cache_type: str = "f16", kv_cap: int | None = None) -> tuple[int, "Choice"]:
+    """The most slots up to `slots` whose pool fits, so a knob set for a bigger machine serves fewer, not none. #682."""
+    first = choose_slots(meta, weights, budget, slots, slot_ctx, cache_type, kv_cap)
+    if first.ctx:
+        return slots, first
+    for n in range(slots - 1, 0, -1):
+        got = choose_slots(meta, weights, budget, n, slot_ctx, cache_type, kv_cap)
+        if got.ctx:
+            return n, got._replace(why=f"{got.why}; {slots} asked, {n} fit")
+    return slots, first
 
 
 class Choice(NamedTuple):
@@ -244,9 +276,10 @@ def plan(conn, budget: int | None = None, slots: int = 1,
         n = fixed[0] if fixed else slots
         try:
             meta, weights = read_meta(path), _weights(path)
-            got = (choose_slots(meta, weights, budget - beside, *fixed, cache_type, kv_cap)
-                   if fixed else choose(meta, weights, budget - beside, slots,
-                                        cache_type, kv_cap=kv_cap))
+            if fixed:
+                n, got = fitting_slots(meta, weights, budget - beside, *fixed, cache_type, kv_cap)
+            else:
+                got = choose(meta, weights, budget - beside, slots, cache_type, kv_cap=kv_cap)
         except (OSError, ValueError, KeyError, struct.error) as exc:
             got = Choice(0, 0, 0, f"refused: unreadable GGUF header ({exc})")
         conn.execute("UPDATE downloads SET ctx = ?, ctx_trained = ?, kv_bytes_token = ?, "
@@ -308,7 +341,7 @@ def served_ctx(spec: str, config=None, get=None, conn=None) -> int | None:
         for m in (get or _get_json)(base + "/models").get("data") or []:
             args = (m.get("status") or {}).get("args") or [] if isinstance(m, dict) else []
             if m.get("id") == stem and "--ctx-size" in args:
-                return int(args[args.index("--ctx-size") + 1])
+                return _per_slot(stem, args, conn)
     except Exception:  # noqa: BLE001
         pass
     from harness import downloads
@@ -317,7 +350,32 @@ def served_ctx(spec: str, config=None, get=None, conn=None) -> int | None:
             row = served(c, stem)
     except Exception:  # noqa: BLE001
         return None
-    return int(row["ctx"]) if row and row["ctx"] else None
+    if not row or not row["ctx"]:
+        return None
+    # A sized pool is unified, so one request reaches up to the trained length. #682.
+    ctx, slots, full = int(row["ctx"]), int(row["ctx_slots"] or 1), int(row["ctx_trained"] or 0)
+    return ctx if slots <= 1 else (min(ctx, full) if full else ctx // slots)
+
+
+def _trained_of(stem: str, conn=None) -> int:
+    """The trained context recorded for a router stem, 0 when none is."""
+    from harness import downloads
+    try:
+        with downloads.store(conn) as c:
+            row = served(c, stem)
+    except Exception:  # noqa: BLE001
+        return 0
+    return int(row["ctx_trained"] or 0) if row else 0
+
+
+def _per_slot(stem: str, args: list, conn=None) -> int:
+    """What one request can reach: its share of a split pool, or a unified pool up to the trained length. #682."""
+    ctx = int(args[args.index("--ctx-size") + 1])
+    slots = int(args[args.index("--parallel") + 1]) if "--parallel" in args else 1
+    if slots <= 1:
+        return ctx
+    full = _trained_of(stem, conn) if "--kv-unified" in args else 0
+    return min(ctx, full) if full else ctx // slots
 
 
 def refusal(stem: str, conn=None) -> str:

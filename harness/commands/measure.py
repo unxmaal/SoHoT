@@ -82,10 +82,13 @@ def cmd_throughput(a) -> int:
     import contextlib
     import json as _json
     from harness import exclusive, serving, throughput, vllm
-    if not a.texts and not a.claims:
-        return err("throughput needs --texts or --claims")
+    code = getattr(a, "code", None)
+    if not a.texts and not a.claims and not code:
+        return err("throughput needs --texts, --claims or --code")
     texts: list = []
-    for path in [a.texts] if a.texts else a.claims:
+    if code:
+        texts = throughput.code_requests(throughput.spread(throughput.code_cases(code), a.n))
+    for path in ([a.texts] if a.texts else a.claims or []):
         try:
             rows = [_json.loads(l) for l in open(path, encoding="utf-8") if l.strip()]
         except (OSError, ValueError) as exc:
@@ -118,7 +121,7 @@ def cmd_throughput(a) -> int:
             pid = srv.proc.pid
         got = throughput.sweep(
             where.model, texts, levels=levels, max_tokens=a.max_tokens,
-            gateway=where.base,
+            gateway=where.base, timeout=getattr(a, "timeout", 300.0),
             footprint=(lambda: throughput.footprint_tree(pid)) if pid else None)
     if got and "warmup_s" in got[0]:
         note(f"  warm-up {got[0]['warmup_s']:.2f}s, not counted"
@@ -130,9 +133,11 @@ def cmd_throughput(a) -> int:
              f"x{r['per_hour'] / base:.2f}  {r.get('tokens_per_s', 0):7.1f} tok/s  "
              f"p50 {r['p50_s']:6.2f}s  p95 {r['p95_s']:6.2f}s  "
              f"ttft {_ttft_pair(r.get('ttft_p50_s'), r.get('ttft_p95_s'))}  "
+             f"first {_ttft_pair(r.get('first_token_p50_s'), r.get('first_token_p95_s'))}  "
              f"peak {'-' if peak is None else f'{peak / 1024 ** 3:.1f} GiB'}  "
              f"errors {r['errors']}  "
              f"schema {r.get('schema_valid', 0)}/{r.get('schema_checked', 0)}  "
+             f"code {r.get('code_passed', 0)}/{r.get('code_checked', 0)}  "
              f"load {_load_pair(r.get('load_avg'))}  "
              f"tokens {r['completion_tokens']}", flush=True)
         for why, n in (r.get("error_kinds") or {}).items():
