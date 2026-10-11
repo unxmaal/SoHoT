@@ -1,11 +1,13 @@
 """The agent lane records and reports the context each candidate was served at. #498."""
 
 
+import pytest
+
 from evals import run
 from evals.core import summarize
 from evals.runners.agent import AgentRunner
 from evals.runners.base import RunnerError
-from harness import context, downloads
+from harness import context, downloads, memory
 from harness import memory_store as ms
 from tests.test_agent_lane import case, serve  # noqa: F401
 from tests.test_context import ORNITH, write_gguf
@@ -14,6 +16,12 @@ ROUTER = {"data": [
     {"id": "Ornith", "status": {"value": "unloaded", "args": [
         "llama-server", "--ctx-size", "262144", "--model", "x.gguf", "--parallel", "1"]}},
     {"id": "Other", "status": {"value": "unloaded", "args": ["llama-server"]}}]}
+
+
+@pytest.fixture(autouse=True)
+def _ram_the_cap_was_set_on(monkeypatch):
+    """The KV cap scales with RAM (#692); a 7 GB CI runner must price these plans as the dev box does."""
+    monkeypatch.setattr(memory, "total_gb", lambda: float(context.KV_MAX_RAM_GB))
 
 
 def test_a_llamacpp_candidate_is_served_at_what_the_router_will_launch():
@@ -53,6 +61,24 @@ def test_the_store_answers_when_the_router_cannot(tmp_path, monkeypatch):
     def down(url):
         raise OSError("refused")
     assert context.served_ctx("llamacpp:Ornith", get=down) == 262144
+
+
+def test_a_small_machine_store_answers_what_its_kv_cap_reaches(tmp_path, monkeypatch):
+    monkeypatch.setattr(memory, "total_gb", lambda: 7.0)
+    d = tmp_path / "gguf"
+    d.mkdir()
+    monkeypatch.setenv("LLAMACPP_MODELS_DIR", str(d))
+    write_gguf(d / "Ornith.gguf", ORNITH)
+    conn = ms.connect()
+    downloads.record(conn, "org/o", downloads.GGUF, d / "Ornith.gguf", file="Ornith.gguf")
+    context.plan(conn, budget=60 * 1024 ** 3)
+    conn.close()
+
+    def down(url):
+        raise OSError("refused")
+    reach = context.served_ctx("llamacpp:Ornith", get=down)
+    assert reach == context.kv_cap_bytes() // context.kv_bytes_per_token(ORNITH) // context.STEP * context.STEP
+    assert reach < 262144
 
 
 def test_an_unknown_context_is_none_not_a_guess():
