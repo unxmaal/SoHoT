@@ -37,7 +37,8 @@ def test_the_settings_a_lane_records_are_its_knobs_defaults():
     assert "runaway_rate" not in got
     assert knobs.settings("tts") == {"runaway_rate": knobs.KNOBS["runaway_rate"].default("tts"),
                                      "audio_timeout": knobs.KNOBS["audio_timeout"].default("tts"),
-                                     "tts_token_floor": knobs.KNOBS["tts_token_floor"].default("tts")}
+                                     "tts_token_floor": knobs.KNOBS["tts_token_floor"].default("tts"),
+                                     "tts_cap_fill": knobs.KNOBS["tts_cap_fill"].default("tts")}
     assert knobs.settings("image") == {}
 
 

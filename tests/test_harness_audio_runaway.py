@@ -92,9 +92,9 @@ def test_cloning_sends_the_penalty_the_server_would_otherwise_clobber(
     ref = tmp_path / "ref.wav"
     wav(ref, 1.0)
 
-    audio.speak("one two three four five six", tmp_path / "a.wav", ref_audio=ref)
+    audio.speak("one two three four five six", tmp_path / "a.wav", ref_audio=ref, model="chatterbox")
     assert sent["repetition_penalty"] == 1.2
-    assert sent["max_tokens"] == token_budget("one two three four five six")
+    assert sent["max_tokens"] == token_budget("one two three four five six", "chatterbox")
 
     sent.clear()
     audio.speak("one two three four five six", tmp_path / "b.wav")

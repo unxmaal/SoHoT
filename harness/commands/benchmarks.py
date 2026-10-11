@@ -90,8 +90,9 @@ def _probe(a, conn) -> int:
         rows = ct.probe(conn, model, cases, ask, lane=lane)
         hits = sum(r["outcome"] == "hit" for r in rows)
         probed = sum(r["outcome"] in ("hit", "miss") for r in rows)
+        cut = sum(bool(r["hit_limit"]) for r in rows)
         note(f"  {model}: {hits}/{probed} probed cases reproduced verbatim "
-             f"({len(rows) - probed} skipped or errored)")
+             f"({len(rows) - probed} skipped or errored, {cut} of them cut at {ct.LIMIT})")
     emit(summary=ms.probe_summary(conn, lane))
     return 0
 
@@ -137,8 +138,8 @@ def _listing(a, conn) -> int:
              f"from {t['cutoff_source'] or '?'}, {len(t['datasets'])} declared datasets")
     for p in probes:
         note(f"probe   {p['model']} {p['lane']}/{p['family']}: {p['hits']}/{p['probed']} "
-             f"verbatim, mean overlap {p['mean_overlap'] or 0:.2f}, {p['skipped']} skipped "
-             f"(a miss is not proof of absence)")
+             f"verbatim, mean overlap {p['mean_overlap'] or 0:.2f}, {p['skipped']} skipped, "
+             f"{p['limited']} cut at our token budget (a miss is not proof of absence)")
     for o in overlap:
         note(f"score   {o['candidate']}: {o['all']} on {o['n_all']} cases, {o['clean']} on "
              f"{o['n_clean']} without the {len(o['overlapping'])} it trained on")

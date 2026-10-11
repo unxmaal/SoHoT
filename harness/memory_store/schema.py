@@ -4,7 +4,7 @@ from __future__ import annotations
 from harness import store
 
 
-SCHEMA_VERSION = 63
+SCHEMA_VERSION = 64
 
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
@@ -570,7 +570,9 @@ CREATE TABLE IF NOT EXISTS contamination_probes (
     outcome     TEXT NOT NULL,
     overlap     REAL,
     detail      TEXT NOT NULL DEFAULT '',
-    at          REAL NOT NULL
+    at          REAL NOT NULL,
+    -- The limit an 'error' probe hit, as a `limit:` predicate body. #700.
+    hit_limit   TEXT NOT NULL DEFAULT ''
 );
 
 -- One answer from a person on the judge page. #417.

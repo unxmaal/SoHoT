@@ -105,6 +105,12 @@ def _add_attempts(conn) -> None:
         conn.execute("ALTER TABLE results ADD COLUMN attempts TEXT NOT NULL DEFAULT '[]'")
 
 
+def _add_probe_limit(conn) -> None:
+    """contamination_probes.hit_limit, the limit a cut probe hit, on an older store. #700."""
+    if "hit_limit" not in _columns(conn, "contamination_probes"):
+        conn.execute("ALTER TABLE contamination_probes ADD COLUMN hit_limit TEXT NOT NULL DEFAULT ''")
+
+
 def _add_served_context(conn) -> None:
     """downloads' served-context columns, on an older store. #498."""
     for col, ddl in (("ctx", "INTEGER NOT NULL DEFAULT 0"),

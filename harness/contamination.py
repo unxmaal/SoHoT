@@ -20,6 +20,10 @@ INSTRUCTION = ("Continue the following text exactly as it appears in its origina
 class Cut(RuntimeError):
     """The probe's reply ended at our token budget or held no answer; a limit, never a miss. #700."""
 
+    def __init__(self, why: str, max_tokens: int):
+        self.limit = f"{LIMIT}>{max_tokens}"
+        super().__init__(f"limit {self.limit}: {why}")
+
 
 def _words(text: str) -> list[str]:
     return re.findall(r"[a-z0-9]+", (text or "").lower())
@@ -69,7 +73,7 @@ def probe(conn, model: str, cases, ask, at: float | None = None, lane: str = "de
     out = []
     for case in cases:
         row = {"model": model, "lane": lane, "case_id": case.id, "family": family(case.id),
-               "overlap": None, "detail": ""}
+               "overlap": None, "detail": "", "hit_limit": ""}
         parts = split_prefix(getattr(case, "context", "") or "")
         if parts is None:
             row.update(outcome="skipped", detail="source text too short to probe")
@@ -80,6 +84,8 @@ def probe(conn, model: str, cases, ask, at: float | None = None, lane: str = "de
                 row["overlap"] = overlap(got, target)
                 row["outcome"] = "hit" if row["overlap"] >= HIT else "miss"
                 row["detail"] = (got or "")[:200]
+            except Cut as exc:
+                row.update(outcome="error", detail=str(exc), hit_limit=exc.limit)
             except Exception as exc:  # noqa: BLE001
                 row.update(outcome="error", detail=str(exc))
         ms.record_probe(conn, at=at, **row)
@@ -104,9 +110,11 @@ def gateway_ask(base: str, post=None, max_tokens: int = MAX_TOKENS):
         r.raise_for_status()
         choice = (r.json().get("choices") or [{}])[0]
         text = _THINK.sub("", (choice.get("message") or {}).get("content") or "").strip()
-        if not text or choice.get("finish_reason") == "length":
-            why = "ended at the token budget" if choice.get("finish_reason") == "length" else "no answer in content"
-            raise Cut(f"limit {LIMIT}>{max_tokens}: {why}")
+        if not text:
+            raise Cut("no answer in content", max_tokens)
+        # Only the leading TARGET_WORDS are scored, so a capped reply that reaches them carries the whole signal.
+        if choice.get("finish_reason") == "length" and len(_words(text)) < TARGET_WORDS:
+            raise Cut("ended at the token budget", max_tokens)
         return text
     return ask
 

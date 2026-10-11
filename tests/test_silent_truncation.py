@@ -206,3 +206,143 @@ def test_a_name_past_the_first_chunk_of_a_long_thread_is_still_extracted():
         return "vtracer | beats potrace" if "vtracer" in prompt else "NONE"
     got = judge.mentions(body, complete=complete)
     assert ("vtracer", "beats potrace") in got and len(seen) > 1
+
+
+# ---- review round 2 ---------------------------------------------------------
+
+def test_a_length_capped_probe_that_reproduced_the_passage_is_still_a_hit():
+    target = " ".join(f"w{i}" for i in range(ct.PREFIX_WORDS, 60))
+
+    def post(url, json=None, headers=None, timeout=None):
+        return _reply({"content": target + " and on and on" * 200}, "length")
+    conn = ms.connect()
+    got = ct.probe(conn, "m", [Case("check-a", "decide", "p", context=WORDS)],
+                   ask=ct.gateway_ask("http://gw:4000", post=post), at=5.0)
+    assert got[0]["outcome"] == "hit" and got[0]["overlap"] == 1.0
+
+
+def test_a_cut_probe_records_its_limit_in_a_column_not_only_in_the_detail():
+    def post(url, json=None, headers=None, timeout=None):
+        return _reply({"content": "w32 w33"}, "length")
+    conn = ms.connect()
+    ct.probe(conn, "m", [Case("check-a", "decide", "p", context=WORDS)],
+             ask=ct.gateway_ask("http://gw:4000", post=post), at=5.0)
+    row = conn.execute("SELECT outcome, hit_limit FROM contamination_probes").fetchone()
+    assert (row["outcome"], row["hit_limit"]) == ("error", f"contamination_max_tokens>{ct.MAX_TOKENS}")
+    assert ms.probe_summary(conn)[0]["limited"] == 1
+
+
+def _codec_server(tmp_path, monkeypatch, hz: float, natural_s_per_word: float | None):
+    """A cloning server whose codec really runs at `hz`; None never stops speaking."""
+    sent = []
+
+    def post(url, json=None, timeout=None):
+        sent.append(dict(json))
+        natural = (len(json["input"].split()) * natural_s_per_word
+                   if natural_s_per_word is not None else float("inf"))
+        body = _wav(tmp_path / f"srv{len(sent)}.wav", min(natural, json["max_tokens"] / hz), rate=8000)
+
+        class R:
+            content = body
+
+            def raise_for_status(self):
+                return None
+        return R()
+    monkeypatch.setattr(audio.httpx, "post", post)
+    monkeypatch.setattr(audio, "_MEASURED_HZ", {}, raising=False)
+    ref = tmp_path / "ref.wav"
+    _wav(ref, 1.0, rate=8000)
+    return sent, ref
+
+
+def test_an_unlisted_codec_is_measured_so_its_budget_fits_the_sentence(tmp_path, monkeypatch):
+    sent, ref = _codec_server(tmp_path, monkeypatch, 400.0, 0.4)
+    audio.speak(SENTENCE, tmp_path / "a.wav", model="org/fast-codec-tts", ref_audio=ref)
+    audio.speak(SENTENCE, tmp_path / "b.wav", model="org/fast-codec-tts", ref_audio=ref)
+    spoken = [s for s in sent if s["input"] == SENTENCE]
+    assert len(sent) - len(spoken) == 1, "one calibration clip per model, then cached"
+    words = len(SENTENCE.split())
+    assert spoken[0]["max_tokens"] / 400.0 >= words * audio.SECONDS_PER_WORD_CEILING
+
+
+def test_an_unlisted_codec_that_fills_its_budget_names_the_limit(tmp_path, monkeypatch):
+    _, ref = _codec_server(tmp_path, monkeypatch, 400.0, None)
+    with pytest.raises(audio.TokenCap):
+        audio.speak("hello there", tmp_path / "o.wav", model="org/fast-codec-tts", ref_audio=ref)
+
+
+def test_the_tts_cap_detector_constants_are_registered():
+    assert not hasattr(audio, "DEFAULT_CODEC_HZ")
+    assert {"harness/audio.py:TOKEN_CAP_FILL", "harness/audio.py:CALIBRATION_TOKENS"} <= knobs.registered()
+
+
+def test_an_ocr_row_whose_child_filled_max_new_tokens_is_budget_exhausted(tmp_path):
+    import dataclasses
+    import sys
+    from evals.core import load_cases
+    from evals.runners.process import ProcessRunner
+    from harness import engines
+    here = Path(__file__).resolve().parents[1] / "evals" / "cases" / "ocr"
+    case = next(c for c in load_cases(here) if c.id == "ocr-sign-open")
+    fake = tmp_path / "fake_ocr.py"
+    fake.write_text(
+        "import json, sys\na = sys.argv\nout = a[a.index('--out') + 1]\n"
+        "open(out, 'w', encoding='utf-8').write('OPEN 24')\n"
+        f"open(out + {hf_task.RUNTIME_SUFFIX!r}, 'w').write("
+        "json.dumps({'device': 'cpu', 'limit': 'hf_max_new_tokens>512'}))\n", encoding="utf-8")
+    real = engines.resolve("hf-ocr:someorg/a-model")
+    eng = dataclasses.replace(real, argv=lambda p, o, params: [
+        sys.executable, str(fake), *real.argv(p, o, params)[1:]])
+    row = ProcessRunner(eng, tmp_path / "out").run(case)
+    assert not row.passed
+    assert row.failure_class == reasons.TOKEN_BUDGET_EXHAUSTED, row.detail
+    assert row.limit == "hf_max_new_tokens>512"
+
+
+class _Shape:
+    def __init__(self, n):
+        self.shape = (1, n)
+
+
+def _fake_hf(monkeypatch, out_len: int):
+    import sys
+    import types
+    torch = types.SimpleNamespace(float16="f16", float32="f32")
+
+    class Net:
+        config = types.SimpleNamespace(_attn_implementation="eager")
+
+        def to(self, dev):
+            return self
+
+        def generate(self, **kw):
+            return _Shape(out_len)
+
+    class Proc:
+        chat_template = None
+
+        def __call__(self, images=None, return_tensors=None):
+            return types.SimpleNamespace(pixel_values=types.SimpleNamespace(to=lambda *a, **k: None))
+
+        tokenizer = types.SimpleNamespace(batch_decode=lambda out, skip_special_tokens=True: ["text"])
+    tf = types.SimpleNamespace(
+        AutoModelForImageTextToText=types.SimpleNamespace(from_pretrained=lambda *a, **k: Net()),
+        AutoProcessor=types.SimpleNamespace(from_pretrained=lambda *a, **k: Proc()),
+        AutoTokenizer=None)
+    monkeypatch.setitem(sys.modules, "torch", torch)
+    monkeypatch.setitem(sys.modules, "transformers", tf)
+
+
+def test_an_encoder_decoder_reply_does_not_count_its_start_token_as_new(tmp_path, monkeypatch):
+    from PIL import Image
+    img = tmp_path / "i.png"
+    Image.new("RGB", (4, 4)).save(img)
+    for out_len, want in ((64, ""), (65, "hf_max_new_tokens>64")):
+        _fake_hf(monkeypatch, out_len)
+        runtime = {}
+        hf_task.read_image("m", str(img), "p", max_new_tokens=64, device="cpu", runtime=runtime)
+        assert runtime["limit"] == want, out_len
+
+
+def test_the_mention_chunk_size_is_a_registered_knob():
+    assert "harness/judge.py:MENTION_CHUNK_CHARS" in knobs.registered()
