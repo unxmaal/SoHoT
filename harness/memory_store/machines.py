@@ -12,6 +12,12 @@ from harness import memory_store as ms
 #: The machine this process is running on, resolved once. The probes shell
 #: out and the answer does not change while the process runs.
 _THIS_MACHINE: dict | None = None
+#: (monotonic time, answer) for an incomplete identity, reused until machine.RETRY_S passes. #747.
+_PROVISIONAL: tuple[float, dict] | None = None
+
+
+def _now() -> float:
+    return time.monotonic()
 
 
 def this_machine() -> dict:
@@ -28,9 +34,12 @@ def this_machine() -> dict:
     machine (#415). The 4070 under Linux and under Windows are different rigs
     by comparable()'s own definition and keep different fingerprints.
     """
-    global _THIS_MACHINE
+    global _THIS_MACHINE, _PROVISIONAL
     if _THIS_MACHINE is not None:
         return _THIS_MACHINE
+    from harness import machine as _machine
+    if _PROVISIONAL is not None and _now() - _PROVISIONAL[0] < _machine.RETRY_S:
+        return _PROVISIONAL[1]
     try:
         from evals import environment
         from harness import inspect as _ins
@@ -61,12 +70,14 @@ def this_machine() -> dict:
         # A failed probe is not this machine for the rest of the process: ask again next time. #747.
         complete = False
     else:
-        complete = True
-    from harness import machine as _machine
+        # A host read back after a failed uuid probe is not yet this machine's answer. #747.
+        complete = not _machine.uuid_failed()
     got["fingerprint"] = _machine.fingerprint(got["hw_model"], got["os"],
                                               got["arch"], got["host"])
     if complete:
-        _THIS_MACHINE = got
+        _THIS_MACHINE, _PROVISIONAL = got, None
+    else:
+        _PROVISIONAL = (_now(), got)
     return got
 
 

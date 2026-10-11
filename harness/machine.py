@@ -226,24 +226,42 @@ def is_loopback(url: str) -> bool:
 
 #: The platform uuid once a probe has answered; a failed probe is asked again. #747.
 _UUID: str | None = None
+#: When the uuid probe last failed, so a failing probe is not re-run on every call. #747.
+_UUID_FAILED_AT: float | None = None
+#: Seconds before a failed identity probe is asked again. #747.
+RETRY_S = 60.0
+
+
+def _now() -> float:
+    import time
+    return time.monotonic()
+
+
+def uuid_failed() -> bool:
+    """True while the last platform uuid probe failed rather than answered. #747."""
+    return _UUID is None and _UUID_FAILED_AT is not None
 
 
 def _platform_uuid() -> str:
     """IOPlatformUUID on a Mac, machine-id on Linux, "" when neither answers."""
-    global _UUID
+    global _UUID, _UUID_FAILED_AT
     if _UUID:
         return _UUID
+    if _UUID_FAILED_AT is not None and _now() - _UUID_FAILED_AT < RETRY_S:
+        return ""
     import re
     import subprocess
-    got = ""
+    got, failed = "", False
     if sys.platform == "darwin":
         try:
             out = subprocess.run(["ioreg", "-rd1", "-c", "IOPlatformExpertDevice"],
                                  capture_output=True, text=True, timeout=10).stdout
         except (OSError, subprocess.SubprocessError):
             out = ""
-        m = re.search(r'"IOPlatformUUID"\s*=\s*"([^"]+)"', out)
+        m = re.search(r'"IOPlatformUUID"\s*=\s*"([^"]+)"', out or "")
         got = m.group(1) if m else ""
+        # Every Mac has one, so no answer is a failed probe, not a machine without one.
+        failed = not got
     else:
         for p in ("/etc/machine-id", "/var/lib/dbus/machine-id"):
             try:
@@ -253,31 +271,40 @@ def _platform_uuid() -> str:
             if got:
                 break
     _UUID = got or None
+    _UUID_FAILED_AT = _now() if failed else None
     return got
 
 
 def host_id(probe=None, home=None) -> str:
-    """This host's stable id: the platform uuid hashed, else one persisted in LH_HOME. #697."""
+    """The platform uuid hashed, else the id persisted in LH_HOME; "" while the probe fails with none kept. #697, #747."""
     import hashlib
     import uuid
     raw = (probe or _platform_uuid)()
-    if raw:
-        return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:12]
     from harness import paths
     f = Path(home or paths.home()) / HOST_FILE
     try:
         got = f.read_text(encoding="utf-8").strip()
     except OSError:
         got = ""
-    if got:
+    if raw:
+        real = hashlib.sha256(raw.encode("utf-8")).hexdigest()[:12]
+        if got != real:
+            # Kept so a later failed probe reads back this host, not a random one. #747.
+            _persist(f, real)
+        return real
+    if got or (probe is None and uuid_failed()):
         return got
     got = uuid.uuid4().hex[:12]
+    return got if _persist(f, got) else ""
+
+
+def _persist(f: Path, host: str) -> bool:
     try:
         f.parent.mkdir(parents=True, exist_ok=True)
-        f.write_text(got + "\n", encoding="utf-8")
+        f.write_text(host + "\n", encoding="utf-8")
     except OSError:
-        return ""
-    return got
+        return False
+    return True
 
 
 #: Packages whose installed version a verdict or receipt may need. #389, #415.

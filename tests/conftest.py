@@ -340,3 +340,29 @@ def shared_render(monkeypatch, _render_cache):
 
     monkeypatch.setattr(render, "rasterize_html", cached)
     return cached
+
+
+#: This worker's identity, probed once under the suite's own patches. #747.
+_IDENTITY: dict = {}
+
+
+@pytest.fixture(autouse=True)
+def _identity_per_test(monkeypatch, _home, _no_real_metal, _no_real_runtime_probe,
+                       _no_real_runtime, _no_gateway_probe, _free_disk_is_pinned):
+    """Every test starts from the same this_machine, whatever an earlier test on this worker cached. #747."""
+    import copy
+
+    from harness import machine
+    from harness import memory_store as ms
+    monkeypatch.setattr(ms.machines, "_PROVISIONAL", None)
+    monkeypatch.setattr(machine, "_UUID_FAILED_AT", None)
+    if "facts" not in _IDENTITY:
+        monkeypatch.setattr(ms.machines, "_THIS_MACHINE", None)
+        monkeypatch.setattr(machine, "_UUID", None)
+        got = ms.this_machine()
+        if ms.machines._THIS_MACHINE is not None:
+            _IDENTITY.update(facts=got, uuid=machine._UUID)
+    monkeypatch.setattr(ms.machines, "_PROVISIONAL", None)
+    monkeypatch.setattr(machine, "_UUID_FAILED_AT", None)
+    monkeypatch.setattr(ms.machines, "_THIS_MACHINE", copy.deepcopy(_IDENTITY.get("facts")))
+    monkeypatch.setattr(machine, "_UUID", _IDENTITY.get("uuid"))

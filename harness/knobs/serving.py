@@ -47,6 +47,7 @@ NOT_GATING = {
        "answers, which the receipt records, never whether a request is answered (#684)"
        for n in ("CONNECT_TIMEOUT_S", "TIMEOUT_S", "COOLDOWN_S", "_to_node->params.update(max_retries)")},
     "harness/nodes.py:keychain->subprocess.run(timeout)": "how long the Keychain may take to hand over a key (#684)",
+    "harness/machine.py:RETRY_S": "how soon a failed identity probe is asked again; never which machine answers (#747)",
     "harness/live_audit.py:FALLBACK_WINDOW_S": "how far back the audit lists node fallbacks; reported, never a check (#739)",
     "scripts/lan-probe.sh:LAN_PROBE_WAIT_EXTRA_S": "how long the deploy waits for a launchd probe to write; never a lane's outcome (#739)",
     **{f"harness/context.py:SWA_PERIOD[{a}]": "llama.cpp's hard-coded sliding-window period of an architecture, a fact of "
