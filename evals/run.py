@@ -907,6 +907,7 @@ def _execute_at(args, overrides: dict) -> int:
         print(f"\nnot run, no candidate for them -- {skipped}", file=sys.stderr)
 
     results, specs, planned, launches, evicted = [], {}, [], {}, {}
+    completion.SERVED.clear()
     for candidate in candidates:
         mine = cases_for(candidate, cases)
         if args.screen:
@@ -938,6 +939,12 @@ def _execute_at(args, overrides: dict) -> int:
         raise SystemExit("nothing ran: no candidate matched any case")
 
     report(summarize(results), resolved)
+    from harness import memory_store as ms
+    client = environment.capture()
+    serving, away = serving_machine(completion.served(), ms.this_machine()["fingerprint"])
+    if away:
+        print(f"\nserved by {serving}, not this machine: the receipt records that host and "
+              f"leaves this one's accelerator, pressure and swap out", file=sys.stderr)
     if outdir:
         # The RECEIPT: what this run was, so a later run can be told apart
         # from it before anyone ranks the two together. See core.comparable().
@@ -949,12 +956,12 @@ def _execute_at(args, overrides: dict) -> int:
             gateway=args.gateway,
             adherence=getattr(args, "adherence", "") or "",
             tier="screen" if getattr(args, "screen", False) else "measure",
-            accelerator=accelerator_id(),
+            accelerator="" if away else accelerator_id(),
             instruments=instruments(candidates),
             engines=engines(candidates),
-            where=where_id(),
-            swap_used_mb=swap_used_mb(),
-            pressure=pressed.as_dict(),
+            where="" if away else where_id(),
+            swap_used_mb=0 if away else swap_used_mb(),
+            pressure={} if away else pressed.as_dict(),
             cases_digest=cases_digest(cases),
             split=side, split_version=holdout.VERSION,
             methods=method_receipts(specs),
@@ -964,14 +971,16 @@ def _execute_at(args, overrides: dict) -> int:
             knobs=knobs.settings(args.modality, overrides),
             router_swaps=evicted,
             budget_ladder=ladder,
-            resolved=resolved)
+            resolved=resolved,
+            machine=serving,
+            served=served_shapes(specs, resolved, completion.served(), away))
         now = time.time()
         ids = candidate_ids(specs, args.modality)
         for r in results:
             r.candidate_id = ids.get(r.candidate)
         payload = {"generated": time.strftime("%Y-%m-%dT%H:%M:%S",
                                               time.localtime(now)),
-                   "environment": environment.capture(),
+                   "environment": serving_environment(client, serving, away),
                    "receipt": receipt.as_dict(),
                    # A name is a label and can drop the repo org; the spec
                    # runs. #337.
@@ -983,6 +992,56 @@ def _execute_at(args, overrides: dict) -> int:
         run_id = store_run(outdir, payload, now)
         print(f"\nartifacts + results.json in {outdir}; stored as run {run_id}")
     return 0
+
+
+def _loopback(url: str) -> bool:
+    from urllib.parse import urlsplit
+    return (urlsplit(url).hostname or "") in ("127.0.0.1", "localhost", "::1", "0.0.0.0")
+
+
+def serving_machine(seen: dict, here: str) -> tuple[str, bool]:
+    """(the fingerprint of the host that served, whether it is another one) from the replies. #697."""
+    away = set()
+    for (gw, _), got in seen.items():
+        if got.get("machine"):
+            if got["machine"] != here:
+                away.add(got["machine"])
+        elif not _loopback(gw):
+            away.add(f"unknown: {gw} did not name its machine")
+    if not away:
+        return here, False
+    if len(away) == 1:
+        return away.pop(), True
+    return "unknown: several hosts served (" + ", ".join(sorted(away)) + ")", True
+
+
+def serving_environment(client: dict, serving: str, away: bool) -> dict:
+    """The receipt environment: the serving host's identity, the client's own capture beside it. #697."""
+    if not away:
+        return client
+    from harness import machine
+    return {**machine.parse_fingerprint(serving), "client": client}
+
+
+def served_shapes(specs: dict, resolved: dict, seen: dict, away: bool) -> dict:
+    """receipt key -> the model, context and slots its text candidate was served with. #697."""
+    named = {model: got.get("model") for (_, model), got in seen.items() if got.get("model")}
+    out = {}
+    for key, spec in specs.items():
+        if not text_candidate(spec):
+            continue
+        name = text_spec(spec).partition(",")[0]
+        shape = {"model": named.get(name) or ("" if away else resolved.get(key, ""))}
+        if not away:
+            shape["ctx"] = _served_ctx(spec)
+            try:
+                shape["slots"] = context.served_slots(spec)
+            except Exception:  # noqa: BLE001 - a receipt must not fail a finished run
+                shape["slots"] = None
+        got = {k: v for k, v in shape.items() if v}
+        if got:
+            out[key] = got
+    return out
 
 
 def _servable(candidate: str) -> None:

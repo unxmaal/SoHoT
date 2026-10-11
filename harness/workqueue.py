@@ -192,12 +192,14 @@ def current(conn=None) -> dict | None:
     return got[-1] if got else None
 
 
-def durations(title: str, conn=None) -> list[float]:
-    """Seconds each finished, successful job with this title took. #588."""
+def durations(title: str, conn=None, anywhere: bool = False) -> list[float]:
+    """Seconds each finished, successful job with this title took here, or on any machine. #588, #697."""
     with _store(conn) as c:
+        where, args = ("1 = 1", ()) if anywhere else _here(c)
         rows = c.execute("SELECT started_at, finished_at FROM jobs WHERE state = ? "
                          "AND title = ? AND started_at IS NOT NULL "
-                         "AND finished_at IS NOT NULL", (DONE, title)).fetchall()
+                         f"AND finished_at IS NOT NULL AND {where}",
+                         (DONE, title, *args)).fetchall()
     return [float(r[1]) - float(r[0]) for r in rows if r[1] >= r[0]]
 
 

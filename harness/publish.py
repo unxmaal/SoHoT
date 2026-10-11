@@ -271,7 +271,8 @@ def exam_receipt(conn, run: dict):
                    devices=raw.get("devices") or {}, launch=raw.get("launch") or {},
                    max_tokens=Receipt.from_dict({**raw, "modality": lane}).max_tokens,
                    knobs=Receipt.from_dict({**raw, "modality": lane}).knobs,
-                   router_swaps=raw.get("router_swaps") or {})
+                   router_swaps=raw.get("router_swaps") or {},
+                   machine=raw.get("machine", ""), served=raw.get("served") or {})
 
 
 def _resolved(run: dict | None) -> dict:

@@ -14,12 +14,14 @@ spec.loader.exec_module(served)
 def test_the_headers_name_the_model_and_the_alias_even_when_streamed():
     got = asyncio.run(served.proxy_handler_instance.async_post_call_response_headers_hook(
         data={"model": "eval-7b", "stream": True}, user_api_key_dict=None, response=None))
+    got.pop("x-sohot-machine", None)
     assert got == {"x-sohot-model": "Qwen2.5-7B-Instruct-Q4_K_M", "x-sohot-served-as": "eval-7b"}
 
 
 def test_a_real_id_gets_no_served_as_header():
     got = asyncio.run(served.proxy_handler_instance.async_post_call_response_headers_hook(
         data={"model": "Qwen2.5-7B-Instruct-Q4_K_M"}, user_api_key_dict=None, response=None))
+    got.pop("x-sohot-machine", None)
     assert got == {"x-sohot-model": "Qwen2.5-7B-Instruct-Q4_K_M"}
 
 

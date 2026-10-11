@@ -378,6 +378,23 @@ def _per_slot(stem: str, args: list, conn=None) -> int:
     return min(ctx, full) if full else ctx // slots
 
 
+def served_slots(spec: str, config=None, get=None) -> int | None:
+    """The slots llama-server serves this spec with, from the router's launch args; None if unknown. #697."""
+    where = _upstream(spec, config)
+    if where is None:
+        return None
+    base, stem = where
+    try:
+        for m in (get or _get_json)(base + "/models").get("data") or []:
+            args = (m.get("status") or {}).get("args") or [] if isinstance(m, dict) else []
+            for flag in ("--parallel", "-np"):
+                if m.get("id") == stem and flag in args:
+                    return int(args[args.index(flag) + 1])
+    except Exception:  # noqa: BLE001 - an unreachable router serves an unknown shape
+        return None
+    return None
+
+
 def refusal(stem: str, conn=None) -> str:
     """Why this stem is not served, or "" when it is or nothing is recorded."""
     from harness import downloads

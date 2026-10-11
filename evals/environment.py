@@ -47,6 +47,17 @@ def _dmi_model(path: str = "/sys/devices/virtual/dmi/id/product_name") -> str:
         return ""
 
 
+def identity() -> dict:
+    """hw_model, host and the fingerprint they make, without the slower probes. #697."""
+    from harness import machine
+    hw_model = (_sh("sysctl", "-n", "hw.model") or _dmi_model()
+                or platform.processor() or platform.machine())
+    host = machine.host_id()
+    return {"hw_model": hw_model, "host": host,
+            "fingerprint": machine.fingerprint(hw_model, platform.platform(),
+                                               platform.machine(), host)}
+
+
 def capture() -> dict:
     swap = _sh("sysctl", "-n", "vm.swapusage")
     m = re.search(r"used\s*=\s*([\d.]+)M", swap)
@@ -55,14 +66,13 @@ def capture() -> dict:
                  else round(memory.system_memory_gb()))
     accelerator = memory.detect()
     from harness import machine
-    hw_model = (_sh("sysctl", "-n", "hw.model") or _dmi_model()
-                or platform.processor() or platform.machine())
+    me = identity()
 
     return {
-        "hw_model": hw_model,
-        # The store's machine identity, so a receipt names its machines row. #415.
-        "fingerprint": machine.fingerprint(hw_model, platform.platform(),
-                                           platform.machine()),
+        "hw_model": me["hw_model"],
+        "host": me["host"],
+        # The store's machine identity, so a receipt names its machines row. #415, #697.
+        "fingerprint": me["fingerprint"],
         "os": platform.platform(),
         # The macOS version where there is one, empty elsewhere -- rather than
         # a key named `macos` holding a Windows string.

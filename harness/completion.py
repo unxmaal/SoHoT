@@ -354,20 +354,43 @@ def _refuses_system_role(body: str) -> bool:
     return any(p in low for p in SYSTEM_ROLE_REFUSALS)
 
 
+#: (gateway, model) -> {"machine", "model"} its last good reply named in x-sohot-* headers. #697.
+SERVED: dict = {}
+
+
+def _note(gateway: str, model, r) -> None:
+    if getattr(r, "status_code", 200) >= 400:
+        return
+    got = getattr(r, "headers", None) or {}
+    SERVED[(gateway.rstrip("/"), str(model or ""))] = {
+        "machine": str(got.get("x-sohot-machine") or ""),
+        "model": str(got.get("x-sohot-model") or "")}
+
+
+def served(gateway: str | None = None) -> dict:
+    """What the replies so far said served them, for one gateway or all. #697."""
+    want = gateway.rstrip("/") if gateway else None
+    return {k: dict(v) for k, v in SERVED.items() if want is None or k[0] == want}
+
+
 def _post(gateway: str, payload: dict, timeout: float):
     url = f"{gateway.rstrip('/')}/v1/chat/completions"
     from harness import gateway_key
     headers = gateway_key.headers()
     if not payload.get("stream"):
-        return httpx.post(url, json=payload, timeout=timeout, headers=headers)
+        r = httpx.post(url, json=payload, timeout=timeout, headers=headers)
+        _note(gateway, payload.get("model"), r)
+        return r
     started = time.perf_counter()
     with httpx.stream("POST", url, json=payload, timeout=timeout,
                       headers=headers) as r:
         if (r.status_code >= 400 or "text/event-stream"
                 not in r.headers.get("content-type", "")):
             r.read()
+            _note(gateway, payload.get("model"), r)
             return r
         body, timing = assemble(r.iter_lines(), started, timeout)
+        _note(gateway, payload.get("model"), r)
     return Streamed(body, timing)
 
 
