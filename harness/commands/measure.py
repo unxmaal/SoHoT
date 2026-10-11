@@ -315,7 +315,13 @@ def _measure(a, row: dict, loaded: list) -> int:
         return err(f"{name}: every case was refused before it reached a model "
                    f"({refused}). The incumbent passed, so this says nothing "
                    f"about the candidate and it stays queued.")
-    verdict = adopt.decide(lane, inc_row, ch_row, rows, split=split, plan=plan, spec=spec)
+    store = ms.connect()
+    try:
+        tested = adopt.comparisons(store, lane, split.version) if split is not None else 0
+    finally:
+        store.close()
+    verdict = adopt.decide(lane, inc_row, ch_row, rows, split=split, plan=plan, spec=spec,
+                           tested=tested)
     print(f"    {'ADOPTED' if verdict.adopt else 'kept the incumbent'}: "
           f"{verdict.why}")
     store = ms.connect()
@@ -334,7 +340,7 @@ def _plan(a, lane: str, inc_spec: str, spec: str = ""):
     from dataclasses import replace
 
     from evals.run import STOCHASTIC_MODALITIES
-    from harness import candidates, completion, holdout, methods, power
+    from harness import adopt, candidates, completion, holdout, methods, power
     from harness import memory_store as ms
 
     split = holdout.for_lane(lane)
@@ -343,6 +349,7 @@ def _plan(a, lane: str, inc_spec: str, spec: str = ""):
     try:
         draws, median_s = power.incumbent_profile(
             store, lane, candidates.key_of(inc_spec) or inc_spec, settings)
+        alpha = adopt.alpha_for(adopt.comparisons(store, lane, split.version))
     finally:
         store.close()
     estimated = ""
@@ -358,7 +365,8 @@ def _plan(a, lane: str, inc_spec: str, spec: str = ""):
     explicit = getattr(a, "repeat", None)
     plan = power.plan([rates[c] for c in split.holdout], effect,
                       stochastic=lane in STOCHASTIC_MODALITIES,
-                      repeat=explicit, observed=seen,
+                      repeat=explicit, observed=seen, alpha=alpha,
+                      unmeasured=not any(draws.values()),
                       rho=power.icc([list(draws.values())]))
     budget = float(getattr(a, "power_budget_min", None) or power.BUDGET_MIN) * 60
     every = len(set(split.dev) | set(split.holdout))

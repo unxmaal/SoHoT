@@ -47,6 +47,20 @@ class Held(Exception):
 ALPHA = 0.05
 
 
+def alpha_for(tested: int) -> float:
+    """The level the next challenger on a holdout faces after `tested` earlier ones: ALPHA over the comparison count. #698."""
+    return ALPHA / (max(0, int(tested)) + 1)
+
+
+def comparisons(conn, lane: str, version: str) -> int:
+    """Adopt verdicts already recorded in this lane on this holdout version. #698."""
+    head = f"{(lane or '').strip()}: "
+    return conn.execute(
+        "SELECT COUNT(*) FROM verdicts WHERE tier = ? AND split_version = ? "
+        "AND failure_class != 'inconclusive' AND substr(detail, 1, ?) = ?",
+        (TIER, version, len(head), head)).fetchone()[0]
+
+
 @dataclass(frozen=True)
 class Verdict:
     lane: str
@@ -123,7 +137,7 @@ def decide_by_hand(lane: str, incumbent: str, challenger: str,
 
 def decide(lane: str, incumbent: dict, challenger: dict,
            rows: list[dict] | None = None, split=None, plan=None,
-           spec: str = "") -> Verdict:
+           spec: str = "", tested: int = 0) -> Verdict:
     """Whether this challenger replaces this incumbent.
 
     Two gates, both required. The metric gate answers "better on what this lane
@@ -132,11 +146,17 @@ def decide(lane: str, incumbent: dict, challenger: dict,
 
     With a `split` both gates read holdout rows only and dev is reported beside
     them; with a `plan` whose power is short a null is underpowered. #479.
+    `tested` earlier challengers on this holdout lower the level this one faces. #698.
     """
     name_i = incumbent.get("candidate", "")
     name_c = challenger.get("candidate", "")
-    evidence: dict = {}
+    alpha = alpha_for(tested)
+    evidence: dict = ({"comparisons": tested + 1, "alpha": alpha}
+                      if split is not None or tested else {})
     notes = []
+    if tested:
+        notes.append(f"comparison {tested + 1} on this holdout, so alpha "
+                     f"{ALPHA}/{tested + 1} = {alpha:.4f}")
     if split is not None:
         from harness import holdout
         evidence["split"] = split.as_dict()
@@ -157,19 +177,12 @@ def decide(lane: str, incumbent: dict, challenger: dict,
         if getattr(plan, "dev_skipped", ""):
             evidence["dev"] = {"not_run": plan.dev_skipped}
             notes.append(plan.dev_skipped)
-    got = _gates(lane, name_i, name_c, incumbent, challenger, rows)
-    worse = _worse(rows, name_i, name_c) if rows and not got.adopt else ""
+    got = _gates(lane, name_i, name_c, incumbent, challenger, rows, alpha)
+    worse = _worse(rows, name_i, name_c, alpha) if rows and not got.adopt else ""
     if worse:
         got = Verdict(lane, name_i, name_c, False, f"{got.why}; {worse}")
-    elif not got.adopt and plan is not None and not plan.enough and rows:
-        from harness import reasons
-        got = Verdict(lane, name_i, name_c, False,
-                      f"underpowered: power {plan.power:.2f} < {plan.target} to "
-                      f"detect +{plan.effect:.2f} per cell at alpha "
-                      f"{plan.alpha} over {plan.cells} effective cells, so this null is "
-                      f"not evidence of no difference ({got.why})"
-                      f"{'; ' + plan.why if plan.why else ''}",
-                      failure_class=reasons.UNDERPOWERED)
+    elif not got.adopt and plan is not None and rows:
+        got = _null(lane, name_i, name_c, got, plan)
     # A method's calls and latency travel with its verdict, won or lost. #576.
     from harness import methods
     cost = methods.cost_note(incumbent, challenger, spec) if spec else ""
@@ -178,6 +191,37 @@ def decide(lane: str, incumbent: dict, challenger: dict,
     why = "; ".join([got.why, *notes, *([cost] if cost else [])])
     return Verdict(lane, name_i, name_c, got.adopt, why, got.how,
                    got.failure_class, evidence)
+
+
+def _null(lane, name_i, name_c, got: Verdict, plan) -> Verdict:
+    """A null is a loss only when the plan could see the smallest gain this lane cares about. #479, #698."""
+    from harness import power, reasons
+    wanted = power.effect_for(lane)
+    seen = getattr(plan, "mde", None)
+    seen = plan.effect if seen is None and plan.enough else seen
+    tail = f"{'; ' + plan.why if plan.why else ''}"
+    if getattr(plan, "unmeasured", False):
+        return Verdict(lane, name_i, name_c, False,
+                       f"underpowered: the incumbent has no stored draws, so the plan's "
+                       f"power {plan.power:.2f} rests on assumed rates and this null is "
+                       f"not evidence of no difference ({got.why}){tail}",
+                       failure_class=reasons.UNDERPOWERED)
+    if not plan.enough:
+        return Verdict(lane, name_i, name_c, False,
+                       f"underpowered: power {plan.power:.2f} < {plan.target} to "
+                       f"detect +{plan.effect:.2f} per cell at alpha "
+                       f"{plan.alpha} over {plan.cells} effective cells, so this null is "
+                       f"not evidence of no difference ({got.why}){tail}",
+                       failure_class=reasons.UNDERPOWERED)
+    if seen is None or seen > wanted + 1e-9:
+        shown = "any gain" if seen is None else f"+{seen:.2f}"
+        return Verdict(lane, name_i, name_c, False,
+                       f"not shown at {shown}: power {plan.target} reaches only "
+                       f"{shown} per cell, above the +{wanted:.2f} this lane adopts for, "
+                       f"so a smaller gain is still open ({got.why}){tail}",
+                       failure_class=reasons.UNDERPOWERED)
+    return Verdict(lane, name_i, name_c, False,
+                   f"{got.why}; no gain of +{seen:.2f} or more per cell at power {plan.target}")
 
 
 def _summary(rows: list[dict], name: str) -> dict | None:
@@ -196,12 +240,12 @@ def _summary(rows: list[dict], name: str) -> dict | None:
     return {**summarize(mine)[name], "candidate": name}
 
 
-def paired_p(rows, name_i: str, name_c: str):
+def paired_p(rows, name_i: str, name_c: str, against: str = "challenger"):
     """The paired cell, its p over independent evidence, and a note when repeats were shrunk.
 
     Repeats of a case correlate, so gained and lost cells are divided by the
     design effect 1+(r-1)*rho before the sign test: a near-deterministic case
-    counts once at any repeat. #591.
+    counts once at any repeat. #591. Rounding goes `against` the side the claim favours. #698.
     """
     from harness import paired, power
     cell = paired.head_to_head(rows, name_i, name_c)
@@ -210,7 +254,10 @@ def paired_p(rows, name_i: str, name_c: str):
     deff = power.design_effect(repeat, used)
     if deff <= 1.0 + 1e-9:
         return cell, cell.p, ""
-    lost, gained = paired.shrink(cell.lost, cell.gained, deff)
+    if against == "incumbent":
+        gained, lost = paired.shrink(cell.gained, cell.lost, deff)
+    else:
+        lost, gained = paired.shrink(cell.lost, cell.gained, deff)
     p = paired.sign_test(min(gained, lost), gained + lost)
     return cell, p, (f"{gained} gained against {lost} lost once correlated "
                      f"repeats are counted as cases (rho {used:.2f}"
@@ -218,16 +265,16 @@ def paired_p(rows, name_i: str, name_c: str):
                      f"{repeat:.1f})")
 
 
-def _worse(rows, name_i: str, name_c: str) -> str:
+def _worse(rows, name_i: str, name_c: str, alpha: float = ALPHA) -> str:
     """Why the challenger is significantly worse, else "". Power to see a gain does not bear on it. #594."""
-    cell, p, shrunk = paired_p(rows, name_i, name_c)
-    if cell.lost <= cell.gained or p > ALPHA:
+    cell, p, shrunk = paired_p(rows, name_i, name_c, against="incumbent")
+    if cell.lost <= cell.gained or p > alpha:
         return ""
     return (f"significantly worse: {cell.lost} lost against {cell.gained} "
             f"gained, p={p:.2f}{f' ({shrunk})' if shrunk else ''}")
 
 
-def _gates(lane, name_i, name_c, incumbent, challenger, rows) -> Verdict:
+def _gates(lane, name_i, name_c, incumbent, challenger, rows, alpha: float = ALPHA) -> Verdict:
     if not better(incumbent, challenger):
         return Verdict(lane, name_i, name_c, False,
                        "does not beat the incumbent on the lane's metric")
@@ -240,7 +287,7 @@ def _gates(lane, name_i, name_c, incumbent, challenger, rows) -> Verdict:
         return Verdict(lane, name_i, name_c, False,
                        f"{name_i} and {name_c} share no case in this run, so "
                        f"there is nothing to compare")
-    if p > ALPHA:
+    if p > alpha:
         return Verdict(lane, name_i, name_c, False,
                        f"better on the metric, but {cell.lost} lost against "
                        f"{cell.gained} gained is p={p:.2f}{shrunk}, so the "
@@ -311,7 +358,10 @@ def record(conn, verdict: Verdict, spec: str = "",
                          **({"partial": verdict.evidence["partial"]}
                             if verdict.evidence.get("partial") else {}),
                          **({"cost": verdict.evidence["cost"]}
-                            if verdict.evidence.get("cost") else {})}), vid))
+                            if verdict.evidence.get("cost") else {}),
+                         **({"comparisons": verdict.evidence["comparisons"],
+                             "alpha": verdict.evidence.get("alpha", ALPHA)}
+                            if verdict.evidence.get("comparisons") else {})}), vid))
         conn.commit()
     if serve:
         if verdict.how not in HOW:

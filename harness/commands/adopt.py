@@ -94,7 +94,8 @@ def cmd_power(a) -> int:
             effect = getattr(a, "effect", None) or power.effect_for(lane)
             plan = power.plan([rates[c] for c in split.holdout], effect,
                               stochastic=lane in STOCHASTIC_MODALITIES,
-                              observed=seen, rho=rho)
+                              observed=seen, rho=rho,
+                              unmeasured=not any(draws.values()))
             missing = set(power.unmeasured(draws, split.holdout))
             measured = [rates[c] for c in split.holdout if c not in missing]
             alone = (power.power(measured, effect, plan.repeat, rho=plan.rho)
@@ -111,6 +112,7 @@ def cmd_power(a) -> int:
                 "unmeasured": len(missing),
                 "power_measured": None if alone is None else round(alone, 4),
                 "enough": plan.enough, "effective_cells": plan.cells,
+                "mde": plan.mde, "unmeasured_plan": plan.unmeasured,
                 "cases_needed": plan.cases_needed,
                 "more_holdout": (max(0, plan.cases_needed - len(split.holdout))
                                  if plan.cases_needed else None),
