@@ -85,6 +85,30 @@ def _sweep_on_schedule() -> list:
     return [late] if late else []
 
 
+#: How far back the audit looks for requests a serving node handed to this machine. #739.
+FALLBACK_WINDOW_S = 3600.0
+
+
+def node_fallbacks(conn, config=None, now=None) -> list[dict]:
+    """{node, requests, aliases} per node whose requests this machine answered in the window."""
+    import time
+
+    from harness import gateway, nodes
+    now = time.time() if now is None else now
+    path = gateway.served_path(config)
+    entries = {str(e.get("model_name", "")): e for e in (gateway.load(path) if path.exists() else {})
+               .get("model_list") or []}
+    by: dict = {}
+    for r in conn.execute("SELECT alias FROM gateway_requests WHERE at >= ? AND alias LIKE ?",
+                          (now - FALLBACK_WINDOW_S, f"%{nodes.LOCAL_SUFFIX}")):
+        asked = r["alias"].removesuffix(nodes.LOCAL_SUFFIX)
+        node = str(entries.get(asked, {}).get(nodes.NODE_KEY) or "an unlisted node")
+        got = by.setdefault(node, {"node": node, "requests": 0, "aliases": set()})
+        got["requests"] += 1
+        got["aliases"].add(asked)
+    return [{**v, "aliases": sorted(v["aliases"])} for _, v in sorted(by.items())]
+
+
 def serving(conn, config=None) -> tuple[dict, dict]:
     """(what the served config's sohot-<lane> aliases name, what the adoptions say they should)."""
     from harness import adopt, gateway
@@ -116,11 +140,12 @@ def audit(path=None, config=None) -> dict:
         ]
         have = mc.schema(conn)
         bound = _binding(conn)
+        fell = node_fallbacks(conn, config)
     finally:
         conn.close()
     return {"source": str(path), "schema": have, "ok": all(c.ok for c in checks),
             "checks": [{"name": c.name, "ok": c.ok, "detail": c.detail} for c in checks],
-            "binding": bound}
+            "binding": bound, "fallbacks": fell}
 
 
 def _binding(conn) -> list[dict]:
@@ -138,5 +163,9 @@ def report_text(got: dict) -> str:
         from harness import binding
         lines.append("binding knobs:")
         lines.append(binding.render(got["binding"]))
+    if "fallbacks" in got:
+        lines.append("node fallbacks in the last hour:" + ("" if got["fallbacks"] else " none"))
+        lines += [f"  node {f['node']}: {f['requests']} request(s) answered here instead "
+                  f"({', '.join(f['aliases'])})" for f in got["fallbacks"]]
     lines.append("OK" if got["ok"] else "NOT OK")
     return "\n".join(lines)
