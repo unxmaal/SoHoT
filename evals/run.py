@@ -652,14 +652,30 @@ def screen_pool(cases: list[Case]) -> list[Case]:
                   and (c.modality, c.language) not in have]
 
 
-def screen_counts(cases: list[Case]) -> dict[tuple[str, str], int]:
-    """(modality, language) -> cases a model as good as the incumbent fails all of with chance under 1 - SCREEN_CONFIDENCE. #691."""
+def screen_rates(cases: list[Case]) -> dict[tuple[str, str], tuple[float, bool]]:
+    """(modality, language) -> (the incumbent's stored pass rate on its cases, whether any row measured it). #691."""
     from harness import screen
     ids: dict[tuple[str, str], list[str]] = {}
     for c in cases:
         ids.setdefault((c.modality, c.language), []).append(c.id)
-    return {g: screen.cases_needed(screen.incumbent_rate(g[0], got), 1 - screen.SCREEN_CONFIDENCE)
-            for g, got in ids.items()}
+    return {g: screen.incumbent_measure(g[0], got) for g, got in ids.items()}
+
+
+def screen_counts(cases: list[Case], rates: dict | None = None) -> dict[tuple[str, str], int]:
+    """(modality, language) -> cases a model as good as the incumbent fails all of with chance under 1 - SCREEN_CONFIDENCE. #691."""
+    from harness import screen
+    rates = screen_rates(cases) if rates is None else rates
+    return {g: screen.cases_needed(rate, 1 - screen.SCREEN_CONFIDENCE) for g, (rate, _) in rates.items()}
+
+
+def screen_caveat(rates: dict) -> str:
+    """What a screen's count rests on that no row measured, for its verdict to say; "" when every rate was measured. #691."""
+    from harness import power
+    lanes = sorted({g[0] for g, (_, measured) in rates.items() if not measured})
+    if not lanes:
+        return ""
+    return (f"the {', '.join(lanes)} incumbent's pass rate was unmeasured, so the case count "
+            f"assumed {power.UNSEEN:g}")
 
 
 def _screen_each(cases: list[Case], counts: dict | None = None) -> list[Case]:
@@ -689,7 +705,7 @@ def screen_until(pool: list[Case], picked: list[Case], counts: dict, chosen: lis
     need = {g: counts.get(g, SCREEN_CASES) for g in groups}
     if any(need[g] > SCREEN_CASES and have[g] > SCREEN_CASES for g in groups):
         return f"limit:screen_cases>{SCREEN_CASES}"
-    short = sorted(g for g in groups if have[g] < min(need[g], SCREEN_CASES))
+    short = sorted(g for g in groups if have[g] < need[g])
     if short:
         lane = short[0][0]
         return f"cases:{lane}>{sum(1 for c in chosen if c.modality == lane)}"
@@ -933,10 +949,11 @@ def _execute_at(args, overrides: dict) -> int:
         raise SystemExit("--budget-ladder and --max-tokens say two things about the reply "
                          "budget; pass one")
     budget = ladder[-1] if ladder else run_budget(args.modality, getattr(args, "max_tokens", None))
-    pool, counts, untils = cases, {}, {}
+    pool, counts, untils, caveat = cases, {}, {}, ""
     if args.screen:
         candidates = greedy(candidates)
-        counts = screen_counts(pool)
+        rates = screen_rates(pool)
+        counts, caveat = screen_counts(pool, rates), screen_caveat(rates)
         cases = screen_cases(pool, candidates, counts)
     outdir = resolve_outdir(args.out, args.modality)
     if outdir:
@@ -1028,7 +1045,8 @@ def _execute_at(args, overrides: dict) -> int:
                    # A name is a label and can drop the repo org; the spec
                    # runs. #337.
                    "specs": specs,
-                   "summary": {k: {**v, **({"screen_until": untils[k]} if k in untils else {})}
+                   "summary": {k: {**v, **({"screen_until": untils[k]} if k in untils else {}),
+                                   **({"screen_caveat": caveat} if caveat else {})}
                                for k, v in summarize(results).items()},
                    "rows": [export_row(r) for r in results]}
         (outdir / "results.json").write_text(json.dumps(payload, indent=2),

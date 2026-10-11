@@ -1,11 +1,13 @@
 """A screen is not a terminal verdict from one case at harness-chosen sampler settings (#691)."""
 import inspect
 import json
+import sys
 from argparse import Namespace
 from pathlib import Path
 
 from evals.core import Case, load_cases
-from evals.run import SCREEN_CASES, SCREEN_PARAMS, screen_cases, screen_counts, screen_pool, screen_until
+from evals.run import (SCREEN_CASES, SCREEN_PARAMS, screen_caveat, screen_cases, screen_counts, screen_pool,
+                       screen_rates, screen_until)
 from evals.runners import process
 from harness import engines, image_diffusers, reasons, screen, video_cuda
 from harness.memory_store import revisit
@@ -21,9 +23,12 @@ def _decide():
     return [c for c in screen_pool(load_cases(REPO / "evals" / "cases" / "decide")) if c.modality == "decide"]
 
 
-def _incumbent_rows(lane: str, ids, rate: float, draws: int = 20) -> list[dict]:
-    """The lane incumbent's measure rows, passing each case `rate` of the time."""
-    key = screen.incumbent_key(lane)
+#: The receipt key the live store's decide measure rows carry: the served model's pre-#670 name.
+STORED_KEY = "eval-imajev-4b"
+
+
+def _incumbent_rows(lane: str, ids, rate: float, draws: int = 20, key: str = STORED_KEY) -> list[dict]:
+    """The lane incumbent's measure rows, under the key measure stored them, passing each case `rate` of the time."""
     hits = round(rate * draws)
     return [{"case_id": f"{c}#{k}", "candidate": key, "passed": k <= hits,
              "seconds": 1.0, "peak_kb": 0, "detail": ""}
@@ -32,7 +37,7 @@ def _incumbent_rows(lane: str, ids, rate: float, draws: int = 20) -> list[dict]:
 
 def test_a_decide_screen_draws_enough_cases_that_a_model_as_good_as_the_incumbent_rarely_fails_it(store_run):
     pool = _decide()
-    store_run("20261011-000000-decide", "decide", rows=_incumbent_rows("decide", [c.id for c in pool], 0.45))
+    store_run("20261011-000000-decide", "decide", specs={STORED_KEY: STORED_KEY}, rows=_incumbent_rows("decide", [c.id for c in pool], 0.45))
     picked = screen_cases(pool, ["eval-imajev-4b"])
     assert len(picked) > 1, [c.id for c in picked]
     assert (1 - INCUMBENT_RATE) ** len(picked) < MISS, len(picked)
@@ -46,14 +51,14 @@ def test_the_case_count_comes_from_the_incumbent_rate():
 
 def test_a_lane_whose_incumbent_passes_most_cases_screens_on_few(store_run):
     pool = _decide()
-    store_run("20261011-000000-decide", "decide", rows=_incumbent_rows("decide", [c.id for c in pool], 0.9))
+    store_run("20261011-000000-decide", "decide", specs={STORED_KEY: STORED_KEY}, rows=_incumbent_rows("decide", [c.id for c in pool], 0.9))
     picked = screen_cases(pool, ["eval-imajev-4b"])
     assert len(picked) == screen.cases_needed(0.9, 1 - screen.SCREEN_CONFIDENCE) == 2, [c.id for c in picked]
 
 
 def test_a_lane_whose_incumbent_rarely_passes_screens_up_to_the_case_cap_and_waits_on_it(store_run):
     pool = _decide()
-    store_run("20261011-000000-decide", "decide", rows=_incumbent_rows("decide", [c.id for c in pool], 0.2))
+    store_run("20261011-000000-decide", "decide", specs={STORED_KEY: STORED_KEY}, rows=_incumbent_rows("decide", [c.id for c in pool], 0.2))
     counts = screen_counts(pool)
     picked = screen_cases(pool, ["eval-imajev-4b"], counts)
     assert len(picked) == SCREEN_CASES < screen.cases_needed(0.2, 1 - screen.SCREEN_CONFIDENCE)
@@ -62,7 +67,7 @@ def test_a_lane_whose_incumbent_rarely_passes_screens_up_to_the_case_cap_and_wai
 
 def test_a_screen_the_cap_did_not_bind_waits_on_the_confidence(store_run):
     pool = _decide()
-    store_run("20261011-000000-decide", "decide", rows=_incumbent_rows("decide", [c.id for c in pool], 0.9))
+    store_run("20261011-000000-decide", "decide", specs={STORED_KEY: STORED_KEY}, rows=_incumbent_rows("decide", [c.id for c in pool], 0.9))
     counts = screen_counts(pool)
     until = screen_until(pool, screen_cases(pool, ["eval-imajev-4b"], counts), counts, pool)
     assert until == f"limit:screen_confidence>{screen.SCREEN_CONFIDENCE:g}", until
@@ -185,3 +190,85 @@ def test_the_steps_a_media_engine_used_reach_the_receipt_row(tmp_path):
                                         encoding="utf-8")
     got = process._runtime_of(out)
     assert (got.get("steps"), got.get("guidance")) == ("9", "0.0"), got
+
+
+def test_the_incumbent_rate_comes_from_the_rows_measure_stored_under_the_served_model_s_old_name(store_run):
+    pool = _decide()
+    store_run("20261011-000000-decide", "decide", specs={STORED_KEY: STORED_KEY},
+              rows=_incumbent_rows("decide", [c.id for c in pool], 0.45))
+    assert screen.incumbent_rate("decide", [c.id for c in pool]) == 0.45
+    counts = screen_counts(pool)
+    assert set(counts.values()) == {screen.cases_needed(0.45, MISS)} == {6}, counts
+
+
+def test_an_incumbent_with_no_stored_rows_is_said_out_loud_and_on_the_run(store_run, capsys):
+    pool = _decide()
+    store_run("20261011-000000-decide", "decide", specs={"someone-else": "someone-else"},
+              rows=_incumbent_rows("decide", [c.id for c in pool], 0.9, key="someone-else"))
+    rates = screen_rates(pool)
+    assert all(not measured for _, measured in rates.values()), rates
+    assert "unmeasured" in capsys.readouterr().err
+    caveat = screen_caveat(rates)
+    assert "unmeasured" in caveat and "decide" in caveat, caveat
+    summary = {"o/x": {"total": 5, "passed": 0, "failures": ["check-squad2-1: wrong field"],
+                       "failure_classes": {reasons.CONTENT_FAILED: 5}, "screen_caveat": caveat}}
+    v = screen.outcome(0, summary, candidate="o/x")
+    assert v.outcome == "declined" and "unmeasured" in v.detail, v
+
+
+def test_a_lane_with_exactly_the_cap_of_cases_and_needing_more_waits_on_the_lane_gaining_one():
+    pool = _decide()[:SCREEN_CASES]
+    group = (pool[0].modality, pool[0].language)
+    counts = {group: SCREEN_CASES + 1}
+    picked = screen_cases(pool, ["eval-imajev-4b"], counts)
+    until = screen_until(pool, picked, counts, pool)
+    assert until == f"cases:decide>{SCREEN_CASES}", until
+
+
+def _screen_run(monkeypatch, tmp_path, modality: str, candidate: str) -> dict:
+    """evals.run --screen with every case failing, and the results.json it wrote."""
+    import contextlib
+
+    from evals import run
+    from evals.core import Result
+
+    def fail_all(args, cand, runner, mine, results, outdir, evicted=None, ladder=()):
+        results += [Result(candidate=runner.candidate, case_id=c.id, passed=False, seconds=1.0, peak_kb=0,
+                           detail="noise", failure_class=reasons.CONTENT_FAILED) for c in mine]
+    monkeypatch.setattr(run, "_run_candidate", fail_all)
+    monkeypatch.setattr(run, "_servable", lambda c: None)
+    monkeypatch.setattr(run, "_served", lambda c: contextlib.nullcontext({}))
+    out = tmp_path / "run"
+    run._execute(run.parse_args(["--modality", modality, "--screen", "--candidates", candidate,
+                                 "--out", str(out)]))
+    return json.loads((out / "results.json").read_text(encoding="utf-8"))
+
+
+def test_the_screen_run_writes_the_until_its_zero_pass_waits_on_into_results_json(monkeypatch, tmp_path):
+    video = load_cases(REPO / "evals" / "cases" / "video")
+    got = _screen_run(monkeypatch, tmp_path, "video", "diffusers-video:o/x")
+    (entry,) = got["summary"].values()
+    assert entry["screen_until"] == f"cases:video>{len(video)}", entry
+    v = screen.outcome(0, got["summary"], candidate="diffusers-video:o/x", key=next(iter(got["summary"])))
+    assert v.until == entry["screen_until"], v
+
+
+def test_a_screen_run_whose_incumbent_rate_is_unmeasured_says_so_in_results_json(monkeypatch, tmp_path):
+    got = _screen_run(monkeypatch, tmp_path, "decide", "o/x")
+    (entry,) = got["summary"].values()
+    assert "unmeasured" in entry.get("screen_caveat", ""), entry
+
+
+def test_a_stale_sidecar_from_an_earlier_run_never_reaches_this_run_s_row(tmp_path):
+    from evals.runners.process import ProcessRunner, sidecar
+    from harness.engines import Engine
+    write = ("import sys;from PIL import Image;import random;im=Image.new('RGB',(64,64));"
+             "im.putdata([(random.randint(0,255),)*3 for _ in range(64*64)]);im.save(sys.argv[1])")
+    engine = Engine(name="fake", spec="fake:1", modality="image", output_suffix=".png", timeout=60.0,
+                    argv=lambda p, out, params: [sys.executable, "-c", write, str(out)])
+    runner = ProcessRunner(engine, tmp_path)
+    case = Case(id="fox", modality="image", prompt="a fox", params={"width": 64, "height": 64})
+    stale = sidecar(tmp_path / runner.artifact(case, ".png"))
+    stale.write_text(json.dumps({"steps": 99, "guidance": 7.0}), encoding="utf-8")
+    runner.run(case)
+    assert "steps" not in runner.last_runtime, runner.last_runtime
