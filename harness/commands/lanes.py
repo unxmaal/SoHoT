@@ -302,6 +302,10 @@ def cmd_extract(a) -> int:
 def cmd_decide(a) -> int:
     """Answer a flat schema's fields with a probability per choice. #297, #423."""
     from harness import delegate
+    if a.batch:
+        return _decide_batch(a)
+    if not a.prompt or not a.schema:
+        return err("decide needs a question and --schema, or --batch and --out")
     raw = a.schema
     try:
         if not raw.lstrip().startswith("{"):
@@ -316,6 +320,63 @@ def cmd_decide(a) -> int:
         body, _ = delegate.ask(a.prompt, schema, where, context=context)
     except (OSError, ValueError, completion.CompletionError) as exc:
         return err(str(exc))
+    return say(body=body, human=json.dumps(body))
+
+
+def _decide_batch(a) -> int:
+    """`soh decide --batch IN --out OUT`: every item answered or given an error line. #683."""
+    from harness import delegate, label
+    if not a.out:
+        return err("--batch needs --out")
+    try:
+        items = label.read_items(a.batch)
+    except (OSError, ValueError) as exc:
+        return err(str(exc))
+    got = label.run_batch(items, a.out, decide=delegate.decide,
+                          concurrency=a.concurrency)
+    body = {**got, "items": len(items), "out": str(a.out)}
+    return say(body=body, human=json.dumps(body))
+
+
+def _gold(path) -> dict:
+    from harness import label
+    try:
+        whole = json.loads(Path(path).read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        whole = None
+    if isinstance(whole, dict) and "id" not in whole:
+        return whole
+    return {r["id"]: r.get("answers") or {} for r in label.read_jsonl(path)}
+
+
+def cmd_label_score(a) -> int:
+    """Score local labels against Claude's checks and gold. #683."""
+    from harness import label
+    try:
+        if not Path(a.labels).exists():
+            return err(f"no labels at {a.labels}")
+        s = label.score(label.read_jsonl(a.labels),
+                        label.read_jsonl(a.checks) if a.checks else [],
+                        _gold(a.gold) if a.gold else None, target=a.target)
+    except (OSError, ValueError, KeyError) as exc:
+        return err(str(exc))
+    return say(body=s, human=label.render(s))
+
+
+def cmd_label_select(a) -> int:
+    """Write the fields Claude checks blind, without the local answers. #683."""
+    from harness import label
+    try:
+        per = json.loads(a.thresholds) if a.thresholds.strip() else {}
+        todo = label.select(label.read_items(a.items), label.read_jsonl(a.labels),
+                            threshold=a.threshold, thresholds=per, every=a.every)
+        out = Path(a.out)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text("".join(json.dumps(t) + "\n" for t in todo), encoding="utf-8")
+    except (OSError, ValueError) as exc:
+        return err(str(exc))
+    body = {"items": len(todo), "fields": sum(len(t["schema"]) for t in todo),
+            "out": str(out)}
     return say(body=body, human=json.dumps(body))
 
 

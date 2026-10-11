@@ -715,6 +715,30 @@ DNS-rebinding protection stays on, with an allowlist in `MCP_ALLOW`. It guards a
 different thing than the missing authentication does: rebinding needs only that
 someone here opens a web page, not that the port is reachable from outside.
 
+### Bulk labels: the local model labels, Claude checks
+
+`.claude/workflows/local-label-claude-check.js` is a saved Claude Code workflow.
+The input is a JSONL (or JSON array) of `{id, question, context, schema}` items,
+the same flat schema `soh decide` takes. In Claude Code, run it with the
+Workflow tool by name, with args such as
+`{"items": "items.jsonl", "out": "label-run", "gold": "gold.json"}`.
+
+1. One cheap agent runs `soh decide --batch items.jsonl --out label-run/labels.jsonl`.
+   Each output line is `{id, answers, probs, error}`; a failed item gets an
+   error line, and a rerun skips ids already answered. Ids that are still
+   missing are retried once and then named in the log.
+2. `soh label-select` writes the fields whose confidence is under `threshold`
+   (per field with `thresholds`), plus every `every`th item whole, without the
+   local answers.
+3. Sonnet agents answer those fields blind, `check_batch` items each.
+4. `soh label-score --labels ... --checks ... --gold ...` prints accuracy per
+   field, per family and per confidence band, agreement with Claude and who was
+   right when they disagree, and a suggested threshold per field: the lowest
+   confidence above which the local model reaches `target`.
+
+Both commands also run on their own, so a threshold can be calibrated on gold
+before the workflow uses it.
+
 ## Use the adopted models from opencode / Claude Code
 
 Every lane command uses what its lane has adopted on this machine, else the
