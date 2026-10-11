@@ -181,6 +181,10 @@ NOT_GATING: dict[str, str] = {
     "harness/context.py:MIN_LONG_SLOT_CTX": "the floor the ornith_slot_ctx range is held to; a preset under it is refused (#682)",
     "evals/private.py:MIN_FRAGMENT": "which private text the leak scan looks for; never a lane's outcome (#654)",
     "harness/audio_server.py:environ(AUDIO_PORT)": "where the audio server listens; never what it answers (#706)",
+    **{f"harness/nodes.py:{n}": "a node's default, set per node in nodes.yaml; it decides which machine "
+       "answers, which the receipt records, never whether a request is answered (#684)"
+       for n in ("CONNECT_TIMEOUT_S", "TIMEOUT_S", "COOLDOWN_S", "_to_node->params.update(max_retries)")},
+    "harness/nodes.py:keychain->subprocess.run(timeout)": "how long the Keychain may take to hand over a key (#684)",
     **{f"harness/context.py:CACHE_BYTES[{t}]": "bytes per KV element of a cache type, a fact of the format (#706)"
        for t in ("f32", "f16", "bf16", "q8_0", "q5_1", "q5_0", "q4_1", "q4_0", "iq4_nl")},
     **{f"harness/usage.py:_UNITS[{u}]": "seconds in a day, hour, minute or second (#706)" for u in "dhms"},
@@ -197,11 +201,14 @@ NOT_GATING: dict[str, str] = {
         "scripts/serve-gateway.sh:GATEWAY_PORT",
         "scripts/serve-llamacpp.sh:LLAMACPP_PORT",
         "scripts/serve-llamacpp.sh:LLAMACPP_PORT#2",
+        "scripts/serve-llamacpp.sh:LLAMACPP_PORT#3",
         "scripts/serve-mcp.sh:MCP_PORT",
         "scripts/serve-mlx.sh:MLX_PORT",
         "scripts/serve-tts.sh:TTS_PORT",
         "scripts/services.sh:GATEWAY_PORT",
         "scripts/services.sh:LLAMACPP_PORT",
+        "scripts/services.sh:LLAMACPP_PORT#2",
+        "scripts/services.sh:LLAMACPP_PORT#3",
         "scripts/services.sh:AUDIO_PORT",
         "scripts/services.sh:DS4_PORT",
         "scripts/slots-sweep.sh:SWEEP_PORT",

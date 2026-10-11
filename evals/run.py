@@ -997,15 +997,21 @@ def _execute_at(args, overrides: dict) -> int:
 def serving_machine(seen: dict, here: str) -> tuple[str, bool]:
     """(the fingerprint of the host that served, whether it is another one) from the replies. #697."""
     from harness import machine
-    away = set()
+    away, home = set(), False
     for (gw, _), got in seen.items():
-        if got.get("machine"):
-            if got["machine"] != here:
-                away.add(got["machine"])
-        elif not machine.is_loopback(gw):
+        named = [m for m in (got.get("machines") or [got.get("machine")]) if m]
+        for m in named:
+            if m != here:
+                away.add(m)
+            else:
+                home = True
+        if not named and not machine.is_loopback(gw):
             away.add(f"unknown: {gw} did not name its machine")
     if not away:
         return here, False
+    if home:
+        # A node that answered part of a run and this machine the rest is two exams. #684.
+        away.add(here)
     if len(away) == 1:
         return away.pop(), True
     return "unknown: several hosts served (" + ", ".join(sorted(away)) + ")", True

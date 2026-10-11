@@ -58,6 +58,9 @@ export PYTHONIOENCODING=utf-8
 # The base config plus sohot-<lane> aliases for what each text lane has adopted. #297.
 CONFIG="${GATEWAY_CONFIG:-gateway/config.yaml}"
 SERVED="$(uv run python -m harness.gateway "$CONFIG")" || SERVED="$CONFIG"
+# Each serving node's key from the Keychain, for the os.environ/ reference the served config names. #684.
+NODE_EXPORTS="$(uv run python -m harness.nodes exports)" || NODE_EXPORTS=""
+eval "$NODE_EXPORTS"
 
 exec uv run --python 3.12 --with "$LITELLM_PIN" \
   litellm --config "$SERVED" \

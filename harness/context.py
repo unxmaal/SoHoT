@@ -1,6 +1,7 @@
 """The context each GGUF is served at: trained length, capped by what its KV cache leaves room for. #498."""
 from __future__ import annotations
 
+import os
 import struct
 from pathlib import Path
 from typing import NamedTuple
@@ -308,11 +309,30 @@ def served(conn, stem: str) -> dict | None:
     return None
 
 
-def _get_json(url: str) -> dict:
+def _get_json(url: str, key: str = "") -> dict:
     import json
     import urllib.request
-    with urllib.request.urlopen(url, timeout=5.0) as r:
+    req = urllib.request.Request(url, headers={"Authorization": f"Bearer {key}"} if key else {})
+    with urllib.request.urlopen(req, timeout=5.0) as r:
         return json.loads(r.read() or b"{}")
+
+
+def _entry_for(spec: str, config=None) -> dict | None:
+    from harness import gateway
+    name = (spec or "").partition(",")[0].strip()
+    served = gateway.served_path(config)
+    for entry in gateway.load(served if served.exists() else config).get("model_list") or []:
+        if str(entry.get("model_name", "")).lower() == name.lower():
+            return entry
+    return None
+
+
+def _key(spec: str, config=None) -> str:
+    """The key a gateway entry sends upstream, read from the environment it names; "" for none. #684."""
+    raw = str(((_entry_for(spec, config) or {}).get("litellm_params") or {}).get("api_key") or "")
+    if raw.startswith("os.environ/"):
+        return os.environ.get(raw[len("os.environ/"):], "").strip()
+    return "" if raw in ("", "not-needed") else raw
 
 
 def _upstream(spec: str, config=None) -> tuple[str, str] | None:
@@ -324,13 +344,22 @@ def _upstream(spec: str, config=None) -> tuple[str, str] | None:
         return router.url(), name[len(LLAMACPP_PREFIX):].strip()
     if not name or ":" in name:
         return None
-    served = gateway.served_path(config)
-    for entry in gateway.load(served if served.exists() else config).get("model_list") or []:
-        if str(entry.get("model_name", "")).lower() == name.lower():
-            params = entry.get("litellm_params") or {}
-            base = str(params.get("api_base", "")).rstrip("/").removesuffix("/v1")
-            return (base, gateway.strip_provider(str(params.get("model", "")))) if base else None
-    return None
+    entry = _entry_for(name, config)
+    if entry is None:
+        return None
+    params = entry.get("litellm_params") or {}
+    base = str(params.get("api_base", "")).rstrip("/").removesuffix("/v1")
+    return (base, gateway.strip_provider(str(params.get("model", "")))) if base else None
+
+
+def _props(base: str, key: str, get=None) -> dict:
+    """A single-model llama-server's /props: {"ctx": per-slot context, "slots"}; {} when it does not say. #684."""
+    try:
+        got = get(base + "/props") if get else _get_json(base + "/props", key)
+    except Exception:  # noqa: BLE001 - not llama-server, or not answering
+        return {}
+    ctx = (got.get("default_generation_settings") or {}).get("n_ctx")
+    return {k: int(v) for k, v in (("ctx", ctx), ("slots", got.get("total_slots"))) if v}
 
 
 def served_ctx(spec: str, config=None, get=None, conn=None) -> int | None:
@@ -343,17 +372,19 @@ def served_ctx(spec: str, config=None, get=None, conn=None) -> int | None:
     if where is None:
         return None
     base, stem = where
+    key = _key(spec, config)
     try:
-        for m in (get or _get_json)(base + "/models").get("data") or []:
+        for m in (get(base + "/models") if get else _get_json(base + "/models", key)
+                  ).get("data") or []:
             args = (m.get("status") or {}).get("args") or [] if isinstance(m, dict) else []
             if m.get("id") == stem and "--ctx-size" in args:
                 return _per_slot(stem, args, conn)
     except Exception:  # noqa: BLE001
         pass
     from harness import serving
-    # The stored choice was planned for this machine; a remote router's is unknown.
+    # The stored choice was planned for this machine; a remote server says itself or is unknown. #722.
     if not serving.loopback(base):
-        return None
+        return _props(base, key, get).get("ctx")
     from harness import downloads
     try:
         with downloads.store(conn) as c:
@@ -394,15 +425,18 @@ def served_slots(spec: str, config=None, get=None) -> int | None:
     if where is None:
         return None
     base, stem = where
+    key = _key(spec, config)
     try:
-        for m in (get or _get_json)(base + "/models").get("data") or []:
+        for m in (get(base + "/models") if get else _get_json(base + "/models", key)
+                  ).get("data") or []:
             args = (m.get("status") or {}).get("args") or [] if isinstance(m, dict) else []
             for flag in ("--parallel", "-np"):
                 if m.get("id") == stem and flag in args:
                     return int(args[args.index(flag) + 1])
     except Exception:  # noqa: BLE001 - an unreachable router serves an unknown shape
         return None
-    return None
+    from harness import serving
+    return None if serving.loopback(base) else _props(base, key, get).get("slots")
 
 
 def refusal(stem: str, conn=None) -> str:
