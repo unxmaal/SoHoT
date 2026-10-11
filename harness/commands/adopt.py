@@ -73,7 +73,7 @@ def _hm(seconds) -> str:
 def cmd_power(a) -> int:
     """Per lane: the repeat and holdout size power 0.8 needs, and what that run would cost. #591."""
     from evals.run import STOCHASTIC_MODALITIES
-    from harness import holdout, power
+    from harness import adopt, holdout, power
     from harness import memory_store as ms
 
     receipts = _receipts(getattr(a, "receipt", None) or [])
@@ -92,13 +92,15 @@ def cmd_power(a) -> int:
             rates, seen = power.rates_from(draws, split.holdout)
             rho = power.icc([list(draws.values())])
             effect = getattr(a, "effect", None) or power.effect_for(lane)
+            tested = adopt.comparisons(conn, lane, split.version)
+            alpha = adopt.alpha_for(tested)
             plan = power.plan([rates[c] for c in split.holdout], effect,
                               stochastic=lane in STOCHASTIC_MODALITIES,
-                              observed=seen, rho=rho,
+                              observed=seen, rho=rho, alpha=alpha,
                               unmeasured=not any(draws.values()))
             missing = set(power.unmeasured(draws, split.holdout))
             measured = [rates[c] for c in split.holdout if c not in missing]
-            alone = (power.power(measured, effect, plan.repeat, rho=plan.rho)
+            alone = (power.power(measured, effect, plan.repeat, alpha, rho=plan.rho)
                      if measured else None)
             cases_run = len(set(split.dev) | set(split.holdout))
             projected = power.projected_seconds(cases_run, plan.repeat, median)
@@ -113,6 +115,7 @@ def cmd_power(a) -> int:
                 "power_measured": None if alone is None else round(alone, 4),
                 "enough": plan.enough, "effective_cells": plan.cells,
                 "mde": plan.mde, "unmeasured_plan": plan.unmeasured,
+                "comparisons": tested, "alpha": alpha,
                 "cases_needed": plan.cases_needed,
                 "more_holdout": (max(0, plan.cases_needed - len(split.holdout))
                                  if plan.cases_needed else None),
@@ -139,7 +142,9 @@ def cmd_power(a) -> int:
                 if r["median_s"] is not None else "no measured seconds")
         note(f"  {r['lane']:8} holdout {r['holdout']}/{r['cases']}  {rho}  {head}  "
              f"{need}  {cost}  [{r['incumbent'] or 'no incumbent'}, "
-             f"{r['observed']} rows]")
+             f"{r['observed']} rows]"
+             + (f"  alpha {r['alpha']:.4f} after {r['comparisons']} verdict(s) on this holdout"
+                if r["comparisons"] else ""))
         if r["unmeasured"]:
             alone = ("nothing measured" if r["power_measured"] is None else
                      f"power {r['power_measured']:.2f} over the {r['measured']} measured")

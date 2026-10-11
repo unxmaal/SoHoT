@@ -174,6 +174,11 @@ def decide(lane: str, incumbent: dict, challenger: dict,
             notes.append(split.caveat)
     if plan is not None:
         evidence["power"] = plan.as_dict()
+        planned = getattr(plan, "alpha", None)
+        if planned is not None and abs(planned - alpha) > 1e-12:
+            evidence["planned_alpha"] = planned
+            notes.append(f"planned at alpha {planned}, tested at {alpha:.4f}: another "
+                         f"verdict on this holdout landed during the run")
         if getattr(plan, "dev_skipped", ""):
             evidence["dev"] = {"not_run": plan.dev_skipped}
             notes.append(plan.dev_skipped)
@@ -200,18 +205,22 @@ def _null(lane, name_i, name_c, got: Verdict, plan) -> Verdict:
     seen = getattr(plan, "mde", None)
     seen = plan.effect if seen is None and plan.enough else seen
     tail = f"{'; ' + plan.why if plan.why else ''}"
+    mde = getattr(plan, "mde", None)
+    sees = (f"; smallest gain this run could see: +{mde:.2f} per cell at power {plan.target}"
+            if mde is not None else
+            f"; no gain up to +1.00 is detectable at power {plan.target}")
     if getattr(plan, "unmeasured", False):
         return Verdict(lane, name_i, name_c, False,
                        f"underpowered: the incumbent has no stored draws, so the plan's "
                        f"power {plan.power:.2f} rests on assumed rates and this null is "
-                       f"not evidence of no difference ({got.why}){tail}",
+                       f"not evidence of no difference ({got.why}){sees}{tail}",
                        failure_class=reasons.UNDERPOWERED)
     if not plan.enough:
         return Verdict(lane, name_i, name_c, False,
                        f"underpowered: power {plan.power:.2f} < {plan.target} to "
                        f"detect +{plan.effect:.2f} per cell at alpha "
                        f"{plan.alpha} over {plan.cells} effective cells, so this null is "
-                       f"not evidence of no difference ({got.why}){tail}",
+                       f"not evidence of no difference ({got.why}){sees}{tail}",
                        failure_class=reasons.UNDERPOWERED)
     if seen is None or seen > wanted + 1e-9:
         shown = "any gain" if seen is None else f"+{seen:.2f}"
@@ -361,7 +370,9 @@ def record(conn, verdict: Verdict, spec: str = "",
                             if verdict.evidence.get("cost") else {}),
                          **({"comparisons": verdict.evidence["comparisons"],
                              "alpha": verdict.evidence.get("alpha", ALPHA)}
-                            if verdict.evidence.get("comparisons") else {})}), vid))
+                            if verdict.evidence.get("comparisons") else {}),
+                         **({"planned_alpha": verdict.evidence["planned_alpha"]}
+                            if "planned_alpha" in verdict.evidence else {})}), vid))
         conn.commit()
     if serve:
         if verdict.how not in HOW:

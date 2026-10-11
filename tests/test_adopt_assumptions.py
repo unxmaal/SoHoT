@@ -174,3 +174,66 @@ def test_effect_alpha_and_the_unseen_rate_are_registered_knobs():
     assert {"harness/power.py:EFFECT", "harness/power.py:DEFAULT_EFFECT",
             "harness/power.py:UNSEEN", "harness/adopt.py:ALPHA"} <= sites
     assert knobs.KNOBS["adopt_effect"].default("code") == power.effect_for("code")
+
+
+def test_an_underpowered_null_names_the_smallest_gain_the_run_could_see():
+    rows = _small_gain(150)
+    weak = power.plan([0.5] * 150, 0.2, stochastic=False, observed=150, rho=0.0, repeat=1,
+                      alpha=0.05, target=0.999)
+    assert not weak.enough
+    got = adopt.decide("code", _summary("inc", rows), _summary("ch", rows), rows,
+                       split=_split(150), plan=weak)
+    assert got.failure_class == reasons.UNDERPOWERED
+    assert f"smallest gain this run could see: +{weak.mde:.2f}" in got.why, got.why
+    blind = power.plan([0.5] * 150, 0.2, stochastic=False, observed=0, rho=0.0)
+    got = adopt.decide("code", _summary("inc", rows), _summary("ch", rows), rows,
+                       split=_split(150), plan=blind)
+    assert f"smallest gain this run could see: +{blind.mde:.2f}" in got.why, got.why
+
+
+def test_an_underpowered_null_with_no_detectable_gain_says_so():
+    rows = _small_gain(4)
+    tiny = power.plan([0.5] * 4, 0.2, stochastic=False, observed=4, rho=0.0)
+    assert tiny.mde is None and not tiny.enough
+    got = adopt.decide("code", _summary("inc", rows), _summary("ch", rows), rows,
+                       split=_split(4), plan=tiny)
+    assert "no gain up to +1.00 is detectable" in got.why, got.why
+
+
+def test_a_verdict_landing_mid_run_is_recorded_beside_the_alpha_the_plan_used():
+    rows = _small_gain(150)
+    planned = _powered_plan()
+    got = adopt.decide("code", _summary("inc", rows), _summary("ch", rows), rows,
+                       split=_split(150), plan=planned, tested=1)
+    assert got.evidence["planned_alpha"] == pytest.approx(planned.alpha)
+    assert got.evidence["alpha"] == pytest.approx(adopt.ALPHA / 2)
+    assert f"planned at alpha {planned.alpha}" in got.why, got.why
+    same = adopt.decide("code", _summary("inc", rows), _summary("ch", rows), rows,
+                        split=_split(150), plan=planned)
+    assert "planned_alpha" not in same.evidence and "planned at alpha" not in same.why
+
+
+def test_adopt_power_plans_at_the_holdouts_adjusted_alpha(store, capsys, monkeypatch, tmp_path):
+    from harness import cli
+    monkeypatch.setattr(adopt, "default_for", lambda lane, fallback, *a, **k: "inc")
+    split = holdout.for_lane("code")
+    conn = ms.connect()
+    ev = {"split": split.as_dict(), "power": {}}
+    for i in range(3):
+        adopt.record(conn, adopt.Verdict("code", "inc", f"org/c{i}", False, "x", evidence=ev),
+                     spec=f"org/c{i}")
+    conn.close()
+    rows = [{"case_id": f"{c}#{k}", "candidate": "inc", "passed": i % 4 != 0, "seconds": 2.0}
+            for i, c in enumerate(split.holdout) for k in (1, 2)]
+    receipt = tmp_path / "results.json"
+    receipt.write_text(json.dumps({"receipt": {"modality": "code"}, "rows": rows}),
+                       encoding="utf-8")
+    assert cli.main(["adopt", "--json", "--power", "--lane", "code",
+                     "--receipt", str(receipt)]) == 0
+    row = json.loads(capsys.readouterr().out)["lanes"][0]
+    assert row["comparisons"] == 3
+    assert row["alpha"] == pytest.approx(adopt.ALPHA / 4)
+    rates = [r for r in power.rates_from(
+        power.draws_from(rows, "inc")[0], split.holdout)[0].values()]
+    assert row["power"] == pytest.approx(
+        power.power(rates, row["effect"], row["repeat"], adopt.ALPHA / 4, row["rho"]), abs=1e-4)
