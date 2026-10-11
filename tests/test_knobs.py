@@ -159,3 +159,11 @@ def test_eval_7b_slots_and_slot_context_are_knobs_and_every_slot_context_clears_
     assert slots.default() == context.EVAL_7B_SLOTS and slot_ctx.default() == context.EVAL_7B_SLOT_CTX
     assert context.MIN_SLOT_CTX == 3072
     assert all(v >= context.MIN_SLOT_CTX for v in (*slot_ctx.values, slot_ctx.default()))
+
+
+def test_ornith_slots_and_slot_context_are_knobs_and_every_slot_reaches_the_long_floor():
+    from harness import context
+    slots, slot_ctx = knobs.KNOBS["ornith_slots"], knobs.KNOBS["ornith_slot_ctx"]
+    assert slots.default() == context.ORNITH_SLOTS and slot_ctx.default() == context.ORNITH_SLOT_CTX
+    assert context.MIN_LONG_SLOT_CTX > 65536
+    assert all(v >= context.MIN_LONG_SLOT_CTX for v in (*slot_ctx.values, slot_ctx.default()))

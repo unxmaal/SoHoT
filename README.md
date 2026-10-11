@@ -1746,6 +1746,24 @@ request may still use all of it up to the trained 32768, and a slot context
 under 3072 tokens (`MIN_SLOT_CTX`: a 6000-character window plus a 400-token
 reply) is refused. The default is 8 slots of 4096 (#665).
 
+`Ornith-1.5-35B-Q4_K_M` (the code and agent lanes, and `local_complete`) is
+served the same way from `ornith_slots` and `ornith_slot_ctx`: 4 slots, each
+able to reach the full trained 262144 tokens (a unified pool of 4 x 262144,
+20 GiB of KV), and a slot context under 131072 (`MIN_LONG_SLOT_CTX`) is
+refused. When a sized pool does not fit the memory budget the plan serves the
+most slots that do and says so in the preset comment (`4 asked, 3 fit`), so a
+knob set for a bigger machine serves fewer slots rather than none.
+`LLAMACPP_KV_MAX_GIB` bounds one slot of a sized plan, and the budget bounds
+the pool. The served context a caller reads (`context.served_ctx`) is what one
+request can reach: a share of a split pool, or a unified pool up to the
+trained length (#682).
+
+`scripts/slots-sweep.sh` measures a slot count on a scratch router (never the
+live one), one configuration at a time, with an optional second model kept
+resident and a long-context probe. `soh throughput --code holdout` sends the
+code lane's holdout cases as the lane sends them and checks every reply, so a
+level reports pass counts and per-case outcomes beside its speed.
+
 Each receipt has an `engines` map from candidate to server, and
 `instruments.serving` names every engine in the run, such as
 `llama-server+mlx_lm.server`. `comparable()` therefore refuses to pool a

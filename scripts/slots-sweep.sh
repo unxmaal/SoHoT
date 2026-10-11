@@ -5,20 +5,26 @@
 #      SWEEP_LONG (tokens for a one-request long-context probe per multi-slot config, 0 = none), SWEEP_OUT.
 set -euo pipefail
 cd "$(dirname "$0")/.."
+source scripts/env.sh
 STEM="$1"; SLOT_CTX="$2"; CONFIGS="$3"; shift 3
 PORT="${SWEEP_PORT:-18682}"
 SECOND="${SWEEP_SECOND:-}"
 BUDGET="${SWEEP_BUDGET_S:-2100}"
 LONG="${SWEEP_LONG:-0}"
 OUT="${SWEEP_OUT:-$(mktemp -d)}"
-MODELS_SRC="${LLAMACPP_MODELS_DIR:-/Volumes/Models/hf/gguf}"
+MODELS_SRC="${LLAMACPP_MODELS_DIR:-$HF_HOME/gguf}"
 mkdir -p "$OUT/models"
 for s in "$STEM" ${SECOND:+"$SECOND"}; do
   ln -sf "$MODELS_SRC/$s.gguf" "$OUT/models/$s.gguf"
 done
 START=$(date +%s)
 SERVER=""
-stop() { if [ -n "$SERVER" ]; then kill "$SERVER" 2>/dev/null || true; wait "$SERVER" 2>/dev/null || true; SERVER=""; fi; }
+stop() {
+  if [ -n "$SERVER" ] && kill "$SERVER" 2>/dev/null; then
+    wait "$SERVER" 2>/dev/null || echo "== router $SERVER stopped ($?)"
+  fi
+  SERVER=""
+}
 trap stop EXIT
 
 for cfg in $CONFIGS; do
@@ -51,7 +57,8 @@ for cfg in $CONFIGS; do
   LLAMACPP_PORT="$PORT" uv run python -m harness.cli throughput --model "llamacpp:$STEM" \
     --levels "$level" --server-pid "$SERVER" --json "$@" >"$OUT/level-$slots-$pool-$mode-$level.json" \
     || echo "== $cfg: throughput exited $?"
-  grep -h "n_slots\|n_ctx_slot\|kv_unified\|llama_kv_cache: size\|llama_kv_cache.*size" "$log" | sort -u | head -8 || true
+  grep -h "load_model: initializing\|exceeds the training context\|llama_kv_cache: size" "$log" | sort -u | head -8 \
+    || echo "== $cfg: no slot or KV lines in $log"
   if [ "$LONG" -gt 0 ] && [ "$slots" -gt 1 ]; then
     uv run python - "$PORT" "$STEM" "$LONG" <<'PY' || echo "== $cfg: long-context probe failed"
 import json, sys, urllib.request

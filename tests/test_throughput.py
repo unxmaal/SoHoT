@@ -265,7 +265,8 @@ def test_code_cases_are_one_side_of_the_code_split(tmp_path):
     from harness import holdout
     for i in range(8):
         (tmp_path / f"c{i}.yaml").write_text(
-            f"id: c{i}\nmodality: code\nprompt: Write f{i}.\nassert:\n  checks:\n    - \"f{i}() == {i}\"\n")
+            f"id: c{i}\nmodality: code\nprompt: Write f{i}.\nassert:\n  checks:\n    - \"f{i}() == {i}\"\n",
+            encoding="utf-8")
     split = holdout.for_lane("code", tmp_path)
     got = throughput.code_cases("holdout", tmp_path)
     assert [c.id for c in got] == sorted(split.holdout) and got
@@ -291,7 +292,7 @@ def test_throughput_passes_its_request_timeout_to_the_sweep(monkeypatch, tmp_pat
              "completion_tokens": 1}
     monkeypatch.setattr(throughput, "sweep", lambda *a, **k: seen.update(k) or [level])
     texts = tmp_path / "t.jsonl"
-    texts.write_text('{"text": "t"}\n')
+    texts.write_text('{"text": "t"}\n', encoding="utf-8")
     a = cli.build_parser().parse_args(
         ["throughput", "--model", "eval-7b", "--texts", str(texts), "--timeout", "900", "--n", "1"])
     a.func(a)
