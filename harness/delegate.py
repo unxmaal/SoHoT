@@ -158,6 +158,10 @@ def running_job(conn=None) -> str:
     try:
         job = wq.current(conn)
         took = wq.durations(job["title"], conn) if job else []
+        # Another machine's speed is a weaker estimate, so it says whose it is. #697.
+        elsewhere = bool(job) and not took
+        if elsewhere:
+            took = wq.durations(job["title"], conn, anywhere=True)
     except Exception:  # noqa: BLE001
         return ""
     if job is None:
@@ -169,9 +173,10 @@ def running_job(conn=None) -> str:
         return f"{head}, no earlier run to estimate from"
     typical = statistics.median(took) / 60
     left = typical - ran
+    whose = " on other or unrecorded machines" if elsewhere else ""
     if left <= 0:
-        return f"{head}, past the {typical:.0f} min earlier runs of it took"
-    return f"{head}, about {left:.0f} min left by earlier runs of it"
+        return f"{head}, past the {typical:.0f} min earlier runs of it{whose} took"
+    return f"{head}, about {left:.0f} min left by earlier runs of it{whose}"
 
 
 def _get_json(url: str) -> dict:

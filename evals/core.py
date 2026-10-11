@@ -710,6 +710,10 @@ class Receipt:
     budget_ladder: tuple = ()
     #: receipt key -> the model id each text candidate resolved to at run time. Not an axis. #670.
     resolved: dict = field(default_factory=dict)
+    #: The machines fingerprint of the host that served the run, "unknown ..." when nobody said. An axis. #697.
+    machine: str = ""
+    #: receipt key -> {"model", "ctx", "slots"} the serving host answered with. An axis. #697.
+    served: dict = field(default_factory=dict)
 
     def as_dict(self) -> dict:
         return {"modality": self.modality, "case_ids": list(self.case_ids),
@@ -730,7 +734,9 @@ class Receipt:
                 "knobs": dict(self.knobs),
                 "router_swaps": dict(self.router_swaps),
                 "budget_ladder": list(self.budget_ladder),
-                "resolved": dict(self.resolved)}
+                "resolved": dict(self.resolved),
+                "machine": self.machine,
+                "served": {k: dict(v) for k, v in self.served.items()}}
 
     @classmethod
     def from_dict(cls, raw: dict) -> "Receipt":
@@ -752,7 +758,9 @@ class Receipt:
                    knobs=legacy_knobs(raw),
                    router_swaps=raw.get("router_swaps") or {},
                    budget_ladder=tuple(int(n) for n in raw.get("budget_ladder") or ()),
-                   resolved=raw.get("resolved") or {})
+                   resolved=raw.get("resolved") or {},
+                   machine=raw.get("machine") or "",
+                   served=raw.get("served") or {})
 
 
 def legacy_knobs(raw: dict) -> dict:
@@ -849,8 +857,9 @@ def comparable(a: Receipt, b: Receipt) -> tuple[bool, str]:
         comparable at all, which is exactly the warm-versus-cold trap: an eval
         median amortises the model load across cases and a one-shot CLI call
         does not.
-      * `gateway` HOST. The same aliases served from another machine answer the
-        same questions. The alias NAMES are part of the candidate, not the run.
+      * `gateway` URL. What it names is compared instead: `machine`, the host
+        that served, and `served`, the model, context and slots an alias
+        resolved to there. One alias can be two models on two hosts. #697.
       * Wall-clock time and git sha. Recorded in the receipt for provenance,
         deliberately not compared: a commit that touches the README does not
         invalidate a measurement, and a commit that touches sampling is already
@@ -916,6 +925,15 @@ def comparable(a: Receipt, b: Receipt) -> tuple[bool, str]:
     if a.where and b.where and a.where != b.where:
         return False, (f"different place: {a.where} vs {b.where}. One of these "
                        f"ran the work and the other asked somebody else to")
+    if a.machine and b.machine and a.machine != b.machine:
+        return False, (f"different serving machine: {a.machine} vs {b.machine}. Timings and "
+                       f"memory belong to the host that served")
+    for key in sorted(set(a.served) & set(b.served)):
+        mine, theirs = a.served[key], b.served[key]
+        for part in sorted(set(mine) & set(theirs)):
+            if mine[part] and theirs[part] and mine[part] != theirs[part]:
+                return False, (f"{key} served differently: {part} {mine[part]} vs "
+                               f"{theirs[part]}. One alias, two exams")
     # ONLY THE INSTRUMENTS BOTH RUNS NAME. A run that recorded no OCR engine is
     # not thereby different from one that did, and adding a fourth instrument
     # later must not retroactively invalidate every result on disk. Same rule

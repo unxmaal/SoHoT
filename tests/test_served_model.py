@@ -14,12 +14,16 @@ spec.loader.exec_module(served)
 def test_the_headers_name_the_model_and_the_alias_even_when_streamed():
     got = asyncio.run(served.proxy_handler_instance.async_post_call_response_headers_hook(
         data={"model": "eval-7b", "stream": True}, user_api_key_dict=None, response=None))
+    for extra in ("x-sohot-machine", "x-sohot-ctx", "x-sohot-slots"):
+        got.pop(extra, None)
     assert got == {"x-sohot-model": "Qwen2.5-7B-Instruct-Q4_K_M", "x-sohot-served-as": "eval-7b"}
 
 
 def test_a_real_id_gets_no_served_as_header():
     got = asyncio.run(served.proxy_handler_instance.async_post_call_response_headers_hook(
         data={"model": "Qwen2.5-7B-Instruct-Q4_K_M"}, user_api_key_dict=None, response=None))
+    for extra in ("x-sohot-machine", "x-sohot-ctx", "x-sohot-slots"):
+        got.pop(extra, None)
     assert got == {"x-sohot-model": "Qwen2.5-7B-Instruct-Q4_K_M"}
 
 
@@ -29,7 +33,8 @@ def test_both_gateway_configs_load_the_callback():
         assert "served_model.proxy_handler_instance" in body["litellm_settings"]["callbacks"], name
 
 
-def test_a_name_nothing_serves_gets_no_header():
+def test_a_name_nothing_serves_gets_no_model_header():
     got = asyncio.run(served.proxy_handler_instance.async_post_call_response_headers_hook(
         data={"model": "sohot-nothing"}, user_api_key_dict=None, response=None))
-    assert got is None
+    # The host still names itself, so a loopback client does not guess. #697.
+    assert set(got or {}) <= {"x-sohot-machine"}

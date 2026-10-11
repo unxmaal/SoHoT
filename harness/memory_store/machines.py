@@ -22,8 +22,8 @@ def this_machine() -> dict:
     be a cycle -- and writing a second copy is how this repo collected four
     answers to "which engines exist" (RULE #237).
 
-    The fingerprint is machine.fingerprint: hw_model + OS family + arch. Not a
-    hostname, which changes without the machine changing, and not the
+    The fingerprint is machine.fingerprint: hw_model + OS family + arch + host
+    id (#697). Not a hostname, which changes without the machine changing, and not the
     interpreter's platform string, which differs between two venvs on one
     machine (#415). The 4070 under Linux and under Windows are different rigs
     by comparable()'s own definition and keep different fingerprints.
@@ -43,6 +43,7 @@ def this_machine() -> dict:
             "hw_model": env.get("hw_model", ""),
             "os": env.get("os", ""),
             "arch": env.get("arch", ""),
+            "host": env.get("host", ""),
             "memory_gb": float(env.get("memory_gb") or 0),
             "accelerator": f"{acc.get('kind', '')} "
                            f"{float(acc.get('total_gb') or 0):.0f}GB".strip(),
@@ -54,12 +55,12 @@ def this_machine() -> dict:
         # A store write must never fail because a probe did. An unknown
         # machine is recorded AS unknown rather than silently attributed to
         # whichever one wrote last, which would be worse than no column.
-        got = {"hw_model": "", "os": "", "arch": "", "memory_gb": 0.0,
+        got = {"hw_model": "", "os": "", "arch": "", "host": "", "memory_gb": 0.0,
                "accelerator": "", "runtimes": "", "ceiling_gb": 0.0,
                "versions": {}}
     from harness import machine as _machine
     got["fingerprint"] = _machine.fingerprint(got["hw_model"], got["os"],
-                                              got["arch"])
+                                              got["arch"], got["host"])
     _THIS_MACHINE = got
     return got
 
@@ -70,7 +71,9 @@ def remember_machine(conn: sqlite3.Connection, facts: dict | None = None) -> int
     if not facts.get("fingerprint"):
         from harness import machine as _machine
         facts["fingerprint"] = _machine.fingerprint(
-            facts.get("hw_model", ""), facts.get("os", ""), facts.get("arch", ""))
+            facts.get("hw_model", ""), facts.get("os", ""), facts.get("arch", ""),
+            facts.get("host", ""))
+    _claim(conn, facts["fingerprint"])
     versions = {k: v for k, v in (facts.get("versions") or {}).items() if v}
     now = time.time()
     # One statement: a SELECT-then-INSERT let two first writers collide. #422.
@@ -92,11 +95,31 @@ def remember_machine(conn: sqlite3.Connection, facts: dict | None = None) -> int
     return int(row["id"])
 
 
+def _machine_of(fp: str) -> dict:
+    from harness import machine as _machine
+    return _machine.parse_fingerprint(fp)
+
+
+def _claim(conn, fp: str) -> None:
+    """This host takes over its board's row from before hosts were recorded, once. #697."""
+    # Only the store's own host: another host's receipt must not inherit this one's history.
+    if not _machine_of(fp) or fp != ms.this_machine()["fingerprint"]:
+        return
+    if conn.execute("SELECT 1 FROM machines WHERE fingerprint = ?", (fp,)).fetchone():
+        return
+    conn.execute("UPDATE machines SET fingerprint = ? WHERE fingerprint = ?",
+                 (fp, fp.rsplit("/", 1)[0]))
+
+
 def machine_row(conn, fingerprint: str | None = None) -> int | None:
     """The id stored for a fingerprint (this machine's by default), or None."""
     fp = fingerprint if fingerprint is not None else ms.this_machine()["fingerprint"]
     row = conn.execute("SELECT id FROM machines WHERE fingerprint = ?",
                        (fp,)).fetchone()
+    if row is None and fingerprint is None and _machine_of(fp):
+        # Read only: the row from before hosts, until remember_machine claims it. #697.
+        row = conn.execute("SELECT id FROM machines WHERE fingerprint = ?",
+                           (fp.rsplit("/", 1)[0],)).fetchone()
     return int(row["id"]) if row else None
 
 

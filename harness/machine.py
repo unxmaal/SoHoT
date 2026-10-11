@@ -194,14 +194,81 @@ def os_family(os_string: str) -> str:
     return _OS_FAMILY.get(head.lower(), head)
 
 
-def fingerprint(hw_model: str, os_string: str, arch: str) -> str:
-    """A machine's identity: hardware, OS family and arch, never the interpreter.
+def fingerprint(hw_model: str, os_string: str, arch: str, host: str = "") -> str:
+    """A machine's identity: hardware, OS family, arch and host, never the interpreter.
 
     platform.platform() differs between Python builds on one machine, which
-    split one machine into several rows. #415.
+    split one machine into several rows. #415. Two boxes of one model are two
+    machines, so the host id is the last part. #697.
     """
-    parts = (hw_model or "", os_family(os_string), arch or "")
+    parts = (hw_model or "", os_family(os_string), arch or "", host or "")
     return "/".join(x for x in parts if x) or "unknown"
+
+
+def parse_fingerprint(fp: str) -> dict:
+    """The receipt environment a hw/os/arch/host fingerprint names; {} when it is not one. #697."""
+    parts = (fp or "").split("/")
+    if len(parts) != 4 or not all(parts):
+        return {}
+    return dict(zip(("hw_model", "os", "arch", "host"), parts))
+
+
+HOST_FILE = "host-id"
+
+#: Hostnames that mean this host, for the gateway and the client alike. #697.
+LOOPBACK = ("127.0.0.1", "localhost", "::1", "0.0.0.0")
+
+
+def is_loopback(url: str) -> bool:
+    from urllib.parse import urlsplit
+    return (urlsplit(url or "").hostname or "") in LOOPBACK
+
+
+@lru_cache(maxsize=1)
+def _platform_uuid() -> str:
+    """IOPlatformUUID on a Mac, machine-id on Linux, "" when neither answers."""
+    import re
+    import subprocess
+    if sys.platform == "darwin":
+        try:
+            out = subprocess.run(["ioreg", "-rd1", "-c", "IOPlatformExpertDevice"],
+                                 capture_output=True, text=True, timeout=10).stdout
+        except (OSError, subprocess.SubprocessError):
+            return ""
+        m = re.search(r'"IOPlatformUUID"\s*=\s*"([^"]+)"', out)
+        return m.group(1) if m else ""
+    for p in ("/etc/machine-id", "/var/lib/dbus/machine-id"):
+        try:
+            v = Path(p).read_text(encoding="utf-8").strip()
+        except OSError:
+            continue
+        if v:
+            return v
+    return ""
+
+
+def host_id(probe=None, home=None) -> str:
+    """This host's stable id: the platform uuid hashed, else one persisted in LH_HOME. #697."""
+    import hashlib
+    import uuid
+    raw = (probe or _platform_uuid)()
+    if raw:
+        return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:12]
+    from harness import paths
+    f = Path(home or paths.home()) / HOST_FILE
+    try:
+        got = f.read_text(encoding="utf-8").strip()
+    except OSError:
+        got = ""
+    if got:
+        return got
+    got = uuid.uuid4().hex[:12]
+    try:
+        f.parent.mkdir(parents=True, exist_ok=True)
+        f.write_text(got + "\n", encoding="utf-8")
+    except OSError:
+        return ""
+    return got
 
 
 #: Packages whose installed version a verdict or receipt may need. #389, #415.

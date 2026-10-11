@@ -72,7 +72,17 @@ def machine_for(conn, env: dict) -> int | None:
         if len(same) == 1:
             return same[0]["id"]
     # The same identity remember_machine writes, never platform.platform(). #415.
-    fingerprint = machine.fingerprint(*parts)
+    fingerprint = machine.fingerprint(*parts, str(env.get("host") or ""))
+    if not env.get("host"):
+        # A receipt from before hosts: the one host that has claimed its board. #697.
+        claimed = conn.execute("SELECT id FROM machines WHERE fingerprint = ? OR "
+                               "fingerprint LIKE ? ESCAPE '\\'",
+                               (fingerprint, _like(fingerprint) + "/%")).fetchall()
+        if len(claimed) == 1:
+            return claimed[0]["id"]
+    else:
+        from harness.memory_store import machines as _machines
+        _machines._claim(conn, fingerprint)
     now = time.time()
     conn.execute(
         "INSERT OR IGNORE INTO machines (fingerprint, hw_model, os, arch, "
@@ -81,6 +91,10 @@ def machine_for(conn, env: dict) -> int | None:
          float(env.get("memory_gb") or 0), now, now))
     return conn.execute("SELECT id FROM machines WHERE fingerprint = ?",
                         (fingerprint,)).fetchone()["id"]
+
+
+def _like(text: str) -> str:
+    return text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
 
 def here(conn) -> list[int]:
@@ -231,6 +245,8 @@ def record(conn, path, data: dict, *, at: float | None = None) -> int | None:
     lane = str(receipt.get("modality") or "").strip().lower()
     key = path_key(path)
     when = at if at is not None else _epoch(data.get("generated"))
+    if env.get("client"):
+        machine_for(conn, env["client"])
     values = (lane, str(receipt.get("tier") or MEASURE),
               machine_for(conn, env), when, int(receipt.get("repeat") or 1),
               str(receipt.get("cases_digest") or ""), json.dumps(receipt),
@@ -283,6 +299,22 @@ def record(conn, path, data: dict, *, at: float | None = None) -> int | None:
              json.dumps(r.get("attempts") or [])))
     conn.commit()
     return run_id
+
+
+def client_machine_id(conn, run_id: int) -> int | None:
+    """The machine that ran evals.run when another one served the run; None when they were one. #697."""
+    got = conn.execute("SELECT environment FROM runs WHERE id = ?", (run_id,)).fetchone()
+    try:
+        env = json.loads((got and got["environment"]) or "{}")
+    except ValueError:
+        return None
+    client = env.get("client") if isinstance(env, dict) else None
+    if not isinstance(client, dict):
+        return None
+    from harness import machine
+    fp = machine.fingerprint(*(str(client.get(k) or "") for k in ("hw_model", "os", "arch", "host")))
+    row = conn.execute("SELECT id FROM machines WHERE fingerprint = ?", (fp,)).fetchone()
+    return int(row["id"]) if row else None
 
 
 def get(conn, run_id: int) -> dict | None:

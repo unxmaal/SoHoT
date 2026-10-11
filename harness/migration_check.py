@@ -112,6 +112,9 @@ def _machines(conn) -> list:
     for r in conn.execute("SELECT * FROM machines ORDER BY id"):
         fp = (machine.fingerprint(r["hw_model"], r["os"], r["arch"])
               if (r["hw_model"] or r["os"] or r["arch"]) else r["fingerprint"])
+        if str(r["fingerprint"]).startswith(fp + "/"):
+            fp = machine.fingerprint(r["hw_model"], r["os"], r["arch"],
+                                     machine.parse_fingerprint(r["fingerprint"]).get("host", ""))
         if fp in seen:
             bad.append(f"machines {seen[fp]} and {r['id']} are one machine {fp}")
         elif fp != r["fingerprint"]:
