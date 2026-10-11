@@ -15,6 +15,8 @@ import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
 
+from harness import reasons
+
 PREFIX = "needle"
 REPO = "Cactus-Compute/needle3"
 REVISION = "2ae11323dc000f5e70c49f7403efa6af12ba9e67"
@@ -279,6 +281,10 @@ def free_port() -> int:
         return s.getsockname()[1]
 
 
+class ServeStartTimeout(RuntimeError):
+    """needle --serve past SERVE_START_S without an address: our limit, not the model's. #693."""
+
+
 class Server:
     """One `needle --serve` process for one tool set and system prompt."""
 
@@ -300,6 +306,8 @@ class Server:
                 line = None
             if line is None or left <= 0:
                 self.close()
+                if line is not None or time.monotonic() >= deadline:
+                    raise ServeStartTimeout(f"needle --serve did not report its address in {SERVE_START_S:g}s")
                 raise RuntimeError("needle --serve did not report its address")
             if "serving on http://" in line:
                 url = line.split("serving on ", 1)[1].split()[0].rstrip("/")
@@ -395,7 +403,13 @@ class Chat:
             for text in self.inputs(convo[self.sent:]):
                 body = self.server.post("/complete", {"input": text}, timeout)
             self.sent = len(convo)
+        except ServeStartTimeout as exc:
+            raise completion.CompletionError(f"needle: {exc}", reasons.TIMEOUT,
+                                             ("needle_serve_start_s", SERVE_START_S)) from exc
         except (OSError, RuntimeError, ValueError) as exc:
+            if isinstance(exc, TimeoutError) or isinstance(getattr(exc, "reason", None), TimeoutError):
+                raise completion.CompletionError(f"needle: timed out after {timeout:g}s", reasons.TIMEOUT,
+                                                 ("timeout_s", timeout)) from exc
             raise completion.CompletionError(f"needle: {exc}") from exc
         if body.get("success") is False and body.get("error"):
             raise completion.CompletionError(f"needle: {body['error']}")

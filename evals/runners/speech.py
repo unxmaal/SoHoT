@@ -35,14 +35,14 @@ class SpeechRunner(BaseRunner):
     def __init__(self, model: str, outdir: str | Path,
                  voice: str = audio.DEFAULT_KOKORO_VOICE,
                  base_url: str = audio.DEFAULT_BASE_URL,
-                 timeout: float = 120.0,
+                 timeout: float | None = None,
                  ref_audio: str | Path | None = None,
                  lang_code: str = "",
                  ear: str = "server"):
         self.model = model
         self.voice = voice
         self.base_url = base_url
-        self.timeout = timeout
+        self.timeout = audio.TIMEOUT_S if timeout is None else timeout
         self.ref_audio = Path(ref_audio) if ref_audio else None
         self.lang_code = lang_code
         self.ear = ear
@@ -50,7 +50,7 @@ class SpeechRunner(BaseRunner):
         # Raises on an unknown backend here, before a whole lane runs.
         self._transcribe = audio.transcriber(
             backend=backend, language=language,
-            base_url=base_url, timeout=timeout)
+            base_url=base_url, timeout=self.timeout)
         # What varies is part of the candidate: Kokoro at am_adam and at
         # ff_siwis are different products, and so are the same cloning weights
         # given two different speakers to imitate. Sharing a row is the same
@@ -74,6 +74,9 @@ class SpeechRunner(BaseRunner):
                         ref_audio=self.ref_audio, lang_code=self.lang_code)
         except audio.Runaway as exc:
             raise RunnerError(str(exc), failure_class=reasons.RUNAWAY,
+                              limit=f"{exc.limit[0]}>{exc.limit[1]:g}") from exc
+        except audio.AudioTimeout as exc:
+            raise RunnerError(str(exc), failure_class=reasons.TIMEOUT,
                               limit=f"{exc.limit[0]}>{exc.limit[1]:g}") from exc
         except audio.AudioError as exc:
             raise RunnerError(str(exc)) from exc

@@ -63,8 +63,7 @@ class ProcessRunner(BaseRunner):
             r = proc.run(argv, timeout=self.timeout, stream=self.engine.stream,
                          cwd=self.engine.cwd)
         except subprocess.TimeoutExpired as exc:
-            raise RunnerError(f"timed out after {self.timeout}s",
-                              failure_class=reasons.TIMEOUT) from exc
+            raise timed_out(case.modality, self.timeout) from exc
         except FileNotFoundError as exc:
             raise RunnerError(f"{argv[0]} not installed or not on PATH",
                               failure_class=reasons.HARNESS_ERROR) from exc
@@ -86,6 +85,12 @@ class ProcessRunner(BaseRunner):
 
         self.last_runtime = _runtime_of(out)
         return out, r.peak_kb
+
+
+def timed_out(lane: str, timeout: float, what: str = "") -> RunnerError:
+    """An engine past the wall clock we chose: TIMEOUT, naming the engine_timeout knob for its lane. #693."""
+    return RunnerError(f"{what}timed out after {timeout:g}s", failure_class=reasons.TIMEOUT,
+                       limit=f"engine_timeout_s.{lane}>{timeout:g}")
 
 
 def _runtime_of(out: Path) -> dict:

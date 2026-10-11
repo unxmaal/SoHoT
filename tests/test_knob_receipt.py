@@ -35,7 +35,8 @@ def test_the_settings_a_lane_records_are_its_knobs_defaults():
     got = knobs.settings("code")
     assert got["request_timeout"] == knobs.KNOBS["request_timeout"].default("code")
     assert "runaway_rate" not in got
-    assert knobs.settings("tts") == {"runaway_rate": knobs.KNOBS["runaway_rate"].default("tts")}
+    assert knobs.settings("tts") == {"runaway_rate": knobs.KNOBS["runaway_rate"].default("tts"),
+                                     "audio_timeout": knobs.KNOBS["audio_timeout"].default("tts")}
     assert knobs.settings("image") == {}
 
 
@@ -47,7 +48,7 @@ def test_an_override_replaces_only_the_knob_it_names():
 
 def test_the_knob_settings_round_trip_through_the_receipt():
     r = _receipt(knobs={"request_timeout": 600.0})
-    assert Receipt.from_dict(r.as_dict()).knobs == {"request_timeout": 600.0}
+    assert Receipt.from_dict(r.as_dict()).knobs == {"request_timeout": 600.0, "code_check_timeout": 15.0}
 
 
 def test_a_receipt_from_before_knobs_were_recorded_ran_at_the_constants_of_the_time():
@@ -109,6 +110,13 @@ class Answers(BaseRunner):
         return "", 0
 
 
+def test_a_receipt_from_before_a_knob_joined_it_reads_the_value_it_ran_at():
+    old = _receipt(knobs={"request_timeout": 180.0, "load_timeout": 1800.0}).as_dict()
+    new = _receipt(knobs=knobs.settings("code")).as_dict()
+    assert Receipt.from_dict(old).knobs["code_check_timeout"] == 15.0
+    assert comparable(Receipt.from_dict(old), Receipt.from_dict(new))[0]
+
+
 def test_a_run_records_the_knob_settings_it_ran_at(tmp_path, monkeypatch, quiet_receipt):
     monkeypatch.setattr(R, "build_runner", lambda *a, **k: Answers())
     args = argparse.Namespace(
@@ -123,4 +131,4 @@ def test_a_run_records_the_knob_settings_it_ran_at(tmp_path, monkeypatch, quiet_
 def test_the_published_receipt_keeps_the_knob_settings():
     raw = _receipt(knobs={"request_timeout": 600.0}).as_dict()
     got = publish.exam_receipt(None, {"id": 1, "receipt": json.dumps(raw), "lane": "code"})
-    assert got.knobs == {"request_timeout": 600.0}
+    assert got.knobs == {"request_timeout": 600.0, "code_check_timeout": 15.0}

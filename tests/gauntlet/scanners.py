@@ -54,6 +54,37 @@ def swallowed_python(text, rel):
     return out
 
 
+_TIMEOUTS = {"TimeoutExpired", "TimeoutException", "ReadTimeout", "ConnectTimeout", "TimeoutError", "timeout"}
+
+
+def _final_name(node):
+    return node.id if isinstance(node, ast.Name) else node.attr if isinstance(node, ast.Attribute) else None
+
+
+def _classed(call):
+    if any(k.arg == "failure_class" for k in call.keywords):
+        return True
+    return _final_name(call.func).endswith("CompletionError") and len(call.args) >= 2
+
+
+def unclassed_timeouts(text, rel):
+    """A RunnerError or CompletionError raised from a timeout handler with no failure_class (#693)."""
+    tree, out = _parse(text, rel)
+    if tree is None:
+        return out
+    for h in ast.walk(tree):
+        if not isinstance(h, ast.ExceptHandler) or h.type is None:
+            continue
+        types = h.type.elts if isinstance(h.type, ast.Tuple) else [h.type]
+        if not any(_final_name(t) in _TIMEOUTS for t in types):
+            continue
+        for n in (m for stmt in h.body for m in ast.walk(stmt)):
+            callee = _final_name(n.exc.func) if isinstance(n, ast.Raise) and isinstance(n.exc, ast.Call) else None
+            if callee and callee.endswith(("RunnerError", "CompletionError")) and not _classed(n.exc):
+                out.append(f"{rel}:{n.lineno}: a timeout raised with no failure_class")
+    return out
+
+
 _OR_TRUE = re.compile(r"\|\|\s*(?:true|:)(?=\s|;|\)|$)")
 
 

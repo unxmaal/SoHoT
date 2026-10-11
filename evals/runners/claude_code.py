@@ -9,7 +9,7 @@ import time
 
 from evals.core import Case
 from evals.runners.base import BaseRunner, RunnerError
-from harness import completion
+from harness import completion, reasons
 
 PREFIX = "claude-code"
 
@@ -142,7 +142,9 @@ class ClaudeCodeRunner(BaseRunner):
                     timeout=self.timeout,
                     input=completion.user_message(case.prompt, case.context))
             except subprocess.TimeoutExpired as exc:
-                raise RunnerError(f"claude -p timed out after {self.timeout}s") from exc
+                raise RunnerError(f"claude -p timed out after {self.timeout:g}s",
+                                  failure_class=reasons.TIMEOUT,
+                                  limit=f"claude_code_timeout_s>{self.timeout:g}") from exc
             except OSError as exc:
                 raise RunnerError(f"could not run {self.binary}: {exc}") from exc
         elapsed = time.perf_counter() - started

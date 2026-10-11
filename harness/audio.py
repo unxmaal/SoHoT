@@ -131,6 +131,8 @@ CHATTERBOX_REPETITION_PENALTY = 1.2
 SECONDS_PER_WORD_CEILING = 0.95
 # Below this a clip is mostly onset and silence, so the rate is noise.
 RUNAWAY_MIN_WORDS = 6
+#: Seconds one tts or stt request may take; a knob (#693), read at call time.
+TIMEOUT_S = 120.0
 
 
 def token_budget(text: str) -> int:
@@ -149,6 +151,14 @@ class AudioError(RuntimeError):
     """Anything that stops audio from being produced or understood."""
 
 
+class AudioTimeout(AudioError):
+    """A request past the timeout we chose; `limit` names it. #693."""
+
+    def __init__(self, what: str, timeout: float):
+        super().__init__(f"{what} timed out after {timeout:g}s")
+        self.limit = ("audio_timeout_s", timeout)
+
+
 class Runaway(AudioError):
     """Speech past the runaway rate; `limit` names the ceiling it tripped. #637."""
 
@@ -160,7 +170,7 @@ class Runaway(AudioError):
 def speak(text: str, out: str | Path, voice: str = DEFAULT_KOKORO_VOICE,
           speed: float = 1.0, model: str = "",
           base_url: str = DEFAULT_BASE_URL,
-          timeout: float = 120.0,
+          timeout: float | None = None,
           ref_audio: str | Path | None = None,
           lang_code: str = "") -> Path:
     """Synthesize `text` to a WAV at `out`. Returns the path.
@@ -175,6 +185,7 @@ def speak(text: str, out: str | Path, voice: str = DEFAULT_KOKORO_VOICE,
     never sent, which sends you looking in the wrong place.
     """
     out = Path(out)
+    timeout = TIMEOUT_S if timeout is None else timeout
     # THE ADOPTED WINNER, resolved here rather than captured in the signature.
     # A default argument is bound when the function is defined, so an adoption
     # written after import could never reach a caller. Issue #201.
@@ -203,6 +214,8 @@ def speak(text: str, out: str | Path, voice: str = DEFAULT_KOKORO_VOICE,
         r = httpx.post(f"{base_url.rstrip('/')}/audio/speech", json=payload,
                        timeout=timeout)
         r.raise_for_status()
+    except httpx.TimeoutException as exc:
+        raise AudioTimeout("tts", timeout) from exc
     except httpx.HTTPStatusError as exc:
         raise AudioError(
             f"tts failed: HTTP {exc.response.status_code}: "
@@ -239,7 +252,7 @@ def speak(text: str, out: str | Path, voice: str = DEFAULT_KOKORO_VOICE,
 
 
 def speak_as(voice_name: str, text: str, out: str | Path, speed: float = 1.0,
-             base_url: str = DEFAULT_BASE_URL, timeout: float = 120.0,
+             base_url: str = DEFAULT_BASE_URL, timeout: float | None = None,
              model: str = "") -> Path:
     """speak(), but the voice name carries its model and reference clip."""
     v = resolve_voice(voice_name)
@@ -250,9 +263,10 @@ def speak_as(voice_name: str, text: str, out: str | Path, speed: float = 1.0,
 
 def transcribe(path: str | Path, model: str = "",
                base_url: str = DEFAULT_BASE_URL,
-               timeout: float = 120.0) -> str:
+               timeout: float | None = None) -> str:
     """Transcribe an audio file. Returns the text, stripped."""
     from harness import adopt
+    timeout = TIMEOUT_S if timeout is None else timeout
     model = model or adopt.default_for("stt", DEFAULT_STT_MODEL)
     path = Path(path)
     if not path.exists():
@@ -265,6 +279,8 @@ def transcribe(path: str | Path, model: str = "",
                            data={"model": model}, timeout=timeout)
         r.raise_for_status()
         body = r.json()
+    except httpx.TimeoutException as exc:
+        raise AudioTimeout("stt", timeout) from exc
     except httpx.HTTPStatusError as exc:
         raise AudioError(
             f"stt failed: HTTP {exc.response.status_code}: "
@@ -479,7 +495,10 @@ def whisperkit_argv(path, model: str = DEFAULT_WHISPERKIT_MODEL,
 
 def _run_whisperkit(argv: list, timeout: float) -> str:
     import subprocess
-    r = subprocess.run(argv, capture_output=True, text=True, timeout=timeout)
+    try:
+        r = subprocess.run(argv, capture_output=True, text=True, timeout=timeout)
+    except subprocess.TimeoutExpired as exc:
+        raise AudioTimeout(Path(argv[0]).name, timeout) from exc
     if r.returncode != 0:
         raise AudioError(
             f"whisperkit-cli exited {r.returncode}: "
@@ -521,7 +540,7 @@ def transcribe_whisperkit(path, model: str = DEFAULT_WHISPERKIT_MODEL,
 
 
 def transcriber(backend: str = "server", model: str = "", language: str = "",
-                base_url: str = DEFAULT_BASE_URL, timeout: float = 120.0):
+                base_url: str = DEFAULT_BASE_URL, timeout: float | None = None):
     """Build the callable that reads audio back, as `check()` wants it.
 
     The backend is part of the measurement, not an implementation detail: a WER
@@ -538,13 +557,13 @@ def transcriber(backend: str = "server", model: str = "", language: str = "",
 
         def _run(path):
             return transcribe_fluidaudio(path, model=model, language=language,
-                                         timeout=timeout)
+                                         **({} if timeout is None else {"timeout": timeout}))
     elif backend == "whisperkit":
         model = model or DEFAULT_WHISPERKIT_MODEL
 
         def _run(path):
             return transcribe_whisperkit(path, model=model, language=language,
-                                         timeout=timeout)
+                                         **({} if timeout is None else {"timeout": timeout}))
     elif backend == "whisper":
         model = model or DEFAULT_WHISPER_MODEL
 

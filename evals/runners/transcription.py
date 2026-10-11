@@ -16,7 +16,7 @@ weights.npz and config.json without one -- so it is called in-process instead.
 """
 from __future__ import annotations
 
-from harness import audio
+from harness import audio, reasons
 
 from evals.core import Case
 from evals.runners.base import BaseRunner, RunnerError
@@ -25,18 +25,18 @@ from evals.runners.base import BaseRunner, RunnerError
 class TranscriptionRunner(BaseRunner):
     def __init__(self, model: str = audio.DEFAULT_STT_MODEL,
                  base_url: str = audio.DEFAULT_BASE_URL,
-                 timeout: float = 120.0,
+                 timeout: float | None = None,
                  backend: str = "server", language: str = ""):
         self.model = model
         self.base_url = base_url
-        self.timeout = timeout
+        self.timeout = audio.TIMEOUT_S if timeout is None else timeout
         self.backend = backend
         self.language = language
         # Raises on an unknown backend, here rather than on the first of forty
         # clips: a typo must not cost a corpus run.
         self._transcribe = audio.transcriber(
             backend=backend, model=model, language=language,
-            base_url=base_url, timeout=timeout)
+            base_url=base_url, timeout=self.timeout)
         # The same weights decoding French and English are two measurements.
         # Sharing a row would average them into a number describing neither.
         name = model.split("/")[-1]
@@ -47,6 +47,9 @@ class TranscriptionRunner(BaseRunner):
             raise RunnerError("case has no audio to transcribe")
         try:
             text = self._transcribe(case.audio)
+        except audio.AudioTimeout as exc:
+            raise RunnerError(str(exc), failure_class=reasons.TIMEOUT,
+                              limit=f"{exc.limit[0]}>{exc.limit[1]:g}") from exc
         except audio.AudioError as exc:
             raise RunnerError(str(exc)) from exc
         # Peak memory is not observable across HTTP; the server holds the model.

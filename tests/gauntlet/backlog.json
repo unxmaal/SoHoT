@@ -45,7 +45,6 @@
   "evals/runners/text.py:__init__(timeout)",
   "evals/sandbox.py:__init__(test_timeout)",
   "harness/audio.py:runaway_reason(ceiling)",
-  "harness/checks/code.py:check(timeout)",
   "harness/completion.py:assemble(timeout)",
   "harness/completion.py:chat(max_tokens)",
   "harness/completion.py:chat(timeout)",

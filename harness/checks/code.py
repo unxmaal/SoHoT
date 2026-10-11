@@ -28,6 +28,7 @@ import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from harness import reasons
 from harness.checks.base import extract
 
 DEFAULT_TIMEOUT = 15.0
@@ -70,6 +71,9 @@ class CodeResult:
     warnings: list[str] = field(default_factory=list)
     passed: int = 0
     total: int = 0
+    failure_class: str = ""
+    #: The knob that decided it, as a `limit:` predicate body. #693.
+    limit: str = ""
 
     @property
     def metrics(self) -> dict:
@@ -143,13 +147,14 @@ def recover(text: str) -> str:
 
 
 def check(source: str, checks: list[str],
-          timeout: float = DEFAULT_TIMEOUT, preamble: str = "") -> CodeResult:
+          timeout: float | None = None, preamble: str = "") -> CodeResult:
     """Run `preamble` then `source`, then evaluate each expression in `checks` against it."""
     if not checks:
         # A code case with nothing to run would pass every model, which is
         # worse than not having the case.
         raise ValueError("a code check needs at least one assertion to run")
 
+    timeout = DEFAULT_TIMEOUT if timeout is None else float(timeout)
     body = recover(source)
     if not body.strip():
         return CodeResult(False, "no code in the response", total=len(checks))
@@ -166,8 +171,9 @@ def check(source: str, checks: list[str],
                 # write it into the repo.
                 cwd=scratch)
         except subprocess.TimeoutExpired:
-            return CodeResult(False, f"timed out after {timeout}s",
-                              total=len(checks))
+            return CodeResult(False, f"timed out after {timeout:g}s", total=len(checks),
+                              failure_class=reasons.TIMEOUT,
+                              limit=f"code_check_timeout_s>{timeout:g}")
 
     marker = "__RESULTS__"
     line = next((ln for ln in (proc.stderr or "").splitlines()

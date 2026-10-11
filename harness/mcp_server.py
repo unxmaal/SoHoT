@@ -72,8 +72,8 @@ DEFAULT_TIMEOUT = 300.0
 SERVER = MCPServer(
     name="SoHoT",
     instructions=(
-        "Local media generation on Apple Silicon. svg, web and code answer in "
-        "a few seconds. image and video go on this machine's work queue and "
+        "Local media generation on Apple Silicon. svg, web and code answer "
+        "directly, in seconds once the model is loaded. image and video go on this machine's work queue and "
         "return a job id at once: jobs run in order, and wait while the "
         "machine is short of memory. Poll job_status; when it is "
         "done, job_result returns the file itself. local_complete and "
@@ -84,8 +84,12 @@ SERVER = MCPServer(
 
 def run_lh(argv: list[str], timeout: float = DEFAULT_TIMEOUT) -> str:
     """Run `lh` and return stdout, or raise with what it said on stderr."""
-    r = subprocess.run(argv, capture_output=True, text=True, timeout=timeout,
-                       env=_child_env())
+    try:
+        r = subprocess.run(argv, capture_output=True, text=True, timeout=timeout,
+                           env=_child_env())
+    except subprocess.TimeoutExpired as exc:
+        raise ToolError(f"soh {argv[len(LH)]} timed out after {timeout:g}s; a cold model load "
+                        f"or a long reasoning reply can take longer") from exc
     if r.returncode != 0:
         # ToolError, or the SDK hides the message from the caller. #477.
         raise ToolError(
