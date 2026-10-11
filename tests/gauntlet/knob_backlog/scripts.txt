@@ -4,7 +4,6 @@ scripts/launchd.sh:AUDIT_HOURS
 scripts/launchd.sh:DISCOVER_HOURS
 scripts/router-sleep-idle.sh:LLAMACPP_SLEEP_IDLE
 scripts/serve-discover.sh:DISCOVER_BUDGET_GIB
-scripts/serve-discover.sh:DISCOVER_REPEAT
 scripts/serve-discover.sh:DISCOVER_TOP
 scripts/serve-llamacpp.sh:LLAMACPP_CTX
 scripts/serve-llamacpp.sh:LLAMACPP_CTX#2

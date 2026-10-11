@@ -43,6 +43,8 @@ class Knob:
     lane_values: tuple = ()
     #: The value receipts written before this knob was recorded on them ran at; None if it always was. #693.
     unrecorded: object = None
+    #: What a dict first site is keyed by: "lane", or "machine" (power.machine_key()).
+    keyed: str = "lane"
 
     def __post_init__(self):
         for field in ("sites", "values", "lanes"):
@@ -53,8 +55,12 @@ class Knob:
         from harness.knobs import resolve
         got = resolve(self.sites[0])
         if isinstance(got, dict):
-            if lane in got:
-                return got[lane]
+            key = lane
+            if self.keyed == "machine":
+                from harness import power
+                key = power.machine_key()
+            if key in got:
+                return got[key]
             return resolve(self.sites[1]) if len(self.sites) > 1 else None
         return got
 

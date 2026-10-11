@@ -34,8 +34,8 @@ BUDGET_MIN = 120.0
 FALLBACK_REPEAT = 3
 #: A stochastic lane whose correlation is unmeasured runs at least this, so the run measures it.
 MEASURING_REPEAT = 2
-#: Decode rate for a reply-budget estimate: Ornith-1.5-35B on the Studio, tokens per second. #628, #673.
-DECODE_TOK_S = 145.0
+#: Decode rate for a reply-budget estimate by hw_model (non-word characters as _), tokens per second; any other machine gets completion.MIN_DECODE_TOK_S. #628, #673, #696.
+DECODE_TOK_S = {"Mac17_15": 145.0}
 #: A paired run may run this far past max(budget, projection) before it is stopped. #673.
 DEADLINE_GRACE = 1.25
 #: Repeats past the one reaching this share of the best power buy nothing.
@@ -253,6 +253,8 @@ class Plan:
     mde: float | None = None
     #: The incumbent had no stored draws, so every rate is UNSEEN and the power is a guess. #698.
     unmeasured: bool = False
+    #: Where each candidate's seconds per call came from, and the inputs. #696.
+    estimate: dict | None = None
 
     def as_dict(self) -> dict:
         return asdict(self)
@@ -343,11 +345,27 @@ def projected_seconds(cases: int, repeat: int, median_s: float | None,
     return cases * repeat * calls * median_s
 
 
-def estimated_seconds(lane: str) -> float | None:
+def decode_tok_s(hw_model: str | None = None) -> float:
+    """This machine's (or `hw_model`'s) registered decode rate, else the slowest the harness allows for. #696."""
+    import re
+
+    from harness import completion
+    from harness import memory_store as ms
+    hw = ms.this_machine().get("hw_model", "") if hw_model is None else hw_model
+    return DECODE_TOK_S.get(re.sub(r"\W", "_", hw or ""), completion.MIN_DECODE_TOK_S)
+
+
+def estimated_seconds(lane: str, tok_s: float | None = None) -> float | None:
     """Seconds per call if every reply spends the lane's whole reply budget; None for a lane with no text. #673."""
     from harness import completion
     budget = completion.budget((lane or "").strip().lower())
-    return budget / DECODE_TOK_S if budget else None
+    return budget / (tok_s or decode_tok_s()) if budget else None
+
+
+def floor_seconds(lane: str) -> float | None:
+    """Seconds per call if every reply spends the lane's budget at completion.MIN_DECODE_TOK_S. #696."""
+    from harness import completion
+    return estimated_seconds(lane, completion.MIN_DECODE_TOK_S)
 
 
 def deadline(chosen: "Plan") -> float | None:
@@ -421,23 +439,57 @@ def reply_settings(receipt, lane: str) -> tuple[int, tuple]:
     return budget, tuple(int(n) for n in got.get("budget_ladder") or ())
 
 
-def incumbent_profile(conn, lane: str, key: str,
-                      settings: tuple | None = None) -> tuple[dict[str, list[int]], float | None]:
+def _candidate_rows(conn, lane: str, key: str, tiers=("measure",)) -> list:
+    lane = (lane or "").strip().lower()
+    marks = ",".join("?" * len(tiers))
+    return conn.execute(
+        "SELECT x.case_id, x.passed, x.seconds, x.candidate, u.receipt, u.machine_id FROM results x "
+        f"JOIN runs u ON u.id = x.run_id WHERE u.lane = ? AND u.tier IN ({marks}) AND x.candidate = ?",
+        (lane, *tiers, key)).fetchall()
+
+
+def _median(rows, lane: str, key: str, settings: tuple | None, machines) -> float | None:
+    if machines is not None:
+        rows = [r for r in rows if r["machine_id"] in set(machines)]
+    if settings is not None:
+        rows = [r for r in rows if reply_settings(r["receipt"], lane) == tuple(settings)]
+    return draws_from(rows, key)[1]
+
+
+def incumbent_profile(conn, lane: str, key: str, settings: tuple | None = None,
+                      machines=None) -> tuple[dict[str, list[int]], float | None]:
     """The incumbent's stored draws per case in this lane's measure runs, and its median seconds.
 
-    With `settings` (max_tokens, budget_ladder) the median comes only from runs at those settings. #673.
+    With `settings` (max_tokens, budget_ladder) the median comes only from runs at those settings (#673),
+    and with `machines` only from runs on those machines (#696); the draws come from every run.
     """
+    rows = _candidate_rows(conn, lane, key)
+    draws, _ = draws_from(rows, key)
+    return draws, _median(rows, (lane or "").strip().lower(), key, settings, machines)
+
+
+def stored_size(conn, key: str) -> int:
+    """Bytes of the proposal a receipt key or spec runs as, 0 when none is stored. #696."""
+    row = conn.execute(
+        "SELECT MAX(p.size_bytes) AS b FROM candidates c JOIN proposals p ON p.id = c.proposal_id "
+        "WHERE c.receipt_key = ? OR c.spec = ?", (key, key)).fetchone()
+    return int(row["b"] or 0) if row else 0
+
+
+def challenger_seconds(conn, lane: str, key: str, *, incumbent: str, incumbent_s: float | None,
+                       settings: tuple | None, machines) -> tuple[float | None, str]:
+    """Seconds per call of a challenger here: its own screen or measure median, else scaled by size, else the floor. #696."""
     lane = (lane or "").strip().lower()
-    rows = conn.execute(
-        "SELECT x.case_id, x.passed, x.seconds, x.candidate, u.receipt FROM results x "
-        "JOIN runs u ON u.id = x.run_id "
-        "WHERE u.lane = ? AND u.tier = 'measure' AND x.candidate = ?",
-        (lane, key)).fetchall()
-    draws, median_s = draws_from(rows, key)
-    if settings is not None:
-        same = [r for r in rows if reply_settings(r["receipt"], lane) == tuple(settings)]
-        median_s = draws_from(same, key)[1]
-    return draws, median_s
+    own = _median(_candidate_rows(conn, lane, key, ("screen", "measure")), lane, key, settings, machines)
+    if own is not None:
+        return own, "measured"
+    mine, theirs = stored_size(conn, key), stored_size(conn, incumbent)
+    if incumbent_s is not None and mine and theirs:
+        return incumbent_s * mine / theirs, "size ratio"
+    floor = floor_seconds(lane)
+    if floor is not None:
+        return floor, "floor"
+    return incumbent_s, "incumbent"
 
 
 def control_of(receipts, prefer=()) -> str:

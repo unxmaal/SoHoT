@@ -228,7 +228,7 @@ def test_an_unmeasured_text_lane_is_priced_at_its_reply_budget(store_run):
     from harness import completion
     from harness.commands import measure as measure_cmd
     _, plan = measure_cmd._plan(_ns(), "svg", "inc")
-    per_call = completion.budget("svg") / power.DECODE_TOK_S
+    per_call = completion.budget("svg") / power.decode_tok_s()
     assert plan.projected_s == pytest.approx(plan.cases_run * plan.repeat * 2 * per_call)
     assert "estimated" in plan.why
 

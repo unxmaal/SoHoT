@@ -123,8 +123,6 @@ harness/papers.py:MAX_DAYS
 harness/paths.py:deploy_checkout->subprocess.run(timeout)
 harness/power.py:BUDGET_MIN
 harness/power.py:CAP
-harness/power.py:DEADLINE_GRACE
-harness/power.py:DECODE_TOK_S
 harness/power.py:MAX_CASES
 harness/pressure.py:_sysctl->subprocess.run(timeout)
 harness/pressure.py:_vm_stat->subprocess.run(timeout)
