@@ -259,6 +259,12 @@ def _timeout(max_tokens: int, resident: bool | None) -> float:
     return max(TIMEOUT_S, completion.timeout_for(int(max_tokens or 0))) + load
 
 
+def _allowance(where: serving.Route, max_tokens: int, timeout: float | None) -> float:
+    """Gate the call, then `timeout` or one sized by the model's residency, asked even when no lock is held."""
+    resident = _gate(where)
+    return timeout or _timeout(max_tokens, loaded(where) if resident is None else resident)
+
+
 def _timing(got: completion.Completion, started: float, replies=()) -> dict:
     """Timing of `got`; token counts summed over every reply a method made."""
     replies = list(replies) or [got]
@@ -287,9 +293,7 @@ def complete(lane: str, prompt: str, system: str | None = None,
     from harness import methods
     base = methods.base_of(spec) or spec
     _budget(base, max_tokens, prompt, system or completion.SYSTEM.get(lane, ""))
-    resident = _gate(where)
-    # The gate asks only under a held lock; otherwise ask now, so a held model is not given a load's allowance.
-    timeout = timeout or _timeout(max_tokens, loaded(where) if resident is None else resident)
+    timeout = _allowance(where, max_tokens, timeout)
     started = time.perf_counter()
     made = []
 
@@ -377,7 +381,7 @@ def decide(question: str, schema: dict, context: str = "",
     check_schema(schema)
     _preflight(question, context, str(schema))
     spec, where = route("decide")
-    timeout = timeout or _timeout(0, _gate(where))
+    timeout = _allowance(where, 0, timeout)
     started = time.perf_counter()
     # Whole, not streamed: the gateway drops logprobs from a stream, and they are the answer.
     body, got = ask(question, schema, where, context=context, timeout=timeout)

@@ -171,6 +171,30 @@ def test_a_delegated_call_waits_for_its_reply_budget_and_for_a_load_it_may_cause
     assert seen == [max(delegate.TIMEOUT_S, completion.timeout_for(8000)) + extra]
 
 
+@pytest.mark.parametrize("holder, resident, extra", [("", None, completion.LOAD_TIMEOUT_S),
+                                                     ("", False, completion.LOAD_TIMEOUT_S),
+                                                     ("", True, 0.0),
+                                                     ("eval", True, 0.0)])
+def test_a_decide_call_waits_for_a_load_only_when_the_model_may_not_be_held(
+        monkeypatch, holder, resident, extra):
+    from harness import pressure
+    from tests.test_mcp_delegate import SCHEMA
+    monkeypatch.setattr(delegate, "route", lambda lane: ("m", serving.Route("http://127.0.0.1:4000", "sohot-decide", {})))
+    monkeypatch.setattr(delegate, "upstream", lambda where, config=None: ("http://127.0.0.1:8082", "m"))
+    monkeypatch.setattr(delegate, "loaded", lambda where, **k: resident)
+    monkeypatch.setattr(delegate, "busy", lambda: holder)
+    monkeypatch.setattr(delegate, "running_job", lambda conn=None: "")
+    monkeypatch.setattr(pressure, "sample", lambda *a, **k: pressure.Pressure(level=pressure.NORMAL))
+    seen = []
+
+    def ask(question, schema, where, context="", timeout=None):
+        seen.append(timeout)
+        return {}, completion.Completion(text="", usage={}, timing={}, model="m")
+    monkeypatch.setattr(delegate, "ask", ask)
+    delegate.decide("triage this", SCHEMA)
+    assert seen == [delegate.TIMEOUT_S + extra]
+
+
 def test_the_desktop_idle_sleep_is_a_site_the_knob_inventory_sees():
     found = knobs.inventory(REPO)
     assert "scripts/router-sleep-idle.sh:LLAMACPP_SLEEP_IDLE" in found
