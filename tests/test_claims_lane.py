@@ -512,6 +512,9 @@ class _Echo:
     def __init__(self, passed):
         self.passed = passed
 
+    def warm(self):
+        pass
+
     def run(self, case):
         from evals.core import Result
         quoted = case.prompt.splitlines()[2]

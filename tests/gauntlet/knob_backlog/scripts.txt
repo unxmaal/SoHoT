@@ -8,7 +8,6 @@ scripts/serve-discover.sh:DISCOVER_TOP
 scripts/serve-llamacpp.sh:LLAMACPP_CTX
 scripts/serve-llamacpp.sh:LLAMACPP_CTX#2
 scripts/serve-llamacpp.sh:LLAMACPP_GPU_LAYERS
-scripts/serve-llamacpp.sh:LLAMACPP_SLEEP_IDLE
 scripts/services.sh:SERVICES_SETTLE_S
 scripts/slots-sweep.sh:SWEEP_BUDGET_S
 scripts/slots-sweep.sh:SWEEP_LONG

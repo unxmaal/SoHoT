@@ -1148,13 +1148,12 @@ def _run_candidate(args, candidate, runner, mine, results, outdir, evicted=None,
     base, model = router.upstream_for(candidate, args.gateway)
     watch = router.Watch(model, base=base) if model else None
     print(f"\n── {runner.candidate}", flush=True)
-    # A cold load is not the case's to pay for; a failed one is every case's. #406.
+    # A cold load is not the case's to pay for in any tier; a failed one is every case's. #406, #694.
     cold = None
-    if args.screen:
-        try:
-            runner.warm()
-        except RunnerError as exc:
-            cold = exc
+    try:
+        runner.warm()
+    except RunnerError as exc:
+        cold = exc
     ctx = _served_ctx(candidate) if ladder else None
     for case in mine:
         if watch:

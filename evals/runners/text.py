@@ -17,7 +17,7 @@ from evals.core import Case
 from evals.runners.base import BaseRunner, RunnerError
 
 
-#: How long a screen's untimed warm-up may spend loading weights. #406.
+#: How long the untimed warm-up may spend loading weights. #406.
 LOAD_TIMEOUT_S = completion.LOAD_TIMEOUT_S
 #: What a hybrid thinking model is asked with on the screen's one retry. #406.
 NO_THINKING = {"enable_thinking": False}
@@ -93,6 +93,9 @@ class CompletionRunner(BaseRunner):
         except completion.CompletionError as exc:
             if exc.failure_class == reasons.TOKEN_BUDGET_EXHAUSTED:
                 exc.limit = (limit, budget)
+            elif exc.failure_class == reasons.TIMEOUT and cold and exc.limit:
+                # Nothing has answered yet, so the timeout may have been the load. #694.
+                exc.limit = ("load_timeout_s", exc.limit[1])
             raise
         self.answered = True
         self.last_timing = {**got.timing, "cold": cold}

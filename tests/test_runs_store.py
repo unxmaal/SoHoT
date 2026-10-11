@@ -42,6 +42,9 @@ def _unstored(lane="svg", key="local-large", name="20261006-000000-000-0000"):
 class _Runner:
     candidate = "fake/key"
 
+    def warm(self):
+        pass
+
     def run(self, case):
         return Result(case_id=case.id, candidate=self.candidate,
                       passed=case.id.startswith("a"), seconds=0.5,
