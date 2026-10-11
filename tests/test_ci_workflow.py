@@ -121,3 +121,10 @@ def test_apt_packages_are_cached_on_the_package_list():
     assert key == steps[save]["with"]["key"] and "steps." in key
     assert "Dir::Cache::archives" in steps[apt]["run"]
     assert "cache-hit" in steps[save]["if"]
+
+
+def test_macos_leaves_room_over_the_measured_make_check():
+    """make check took 17.5-19.5 min on macos-latest and the 20-minute job cancelled it (#720)."""
+    doc, _ = _ci()
+    measured_minutes = 19.5
+    assert doc["jobs"]["check-macos"]["timeout-minutes"] >= measured_minutes + 10
