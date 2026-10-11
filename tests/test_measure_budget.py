@@ -128,6 +128,7 @@ child.wait()
 """
 
 
+@pytest.mark.long
 def test_a_run_past_its_deadline_is_stopped_and_the_lock_released(tmp_path):
     marker = tmp_path / "held"
     started = time.monotonic()

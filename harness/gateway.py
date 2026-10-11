@@ -11,6 +11,7 @@ them, and a sixth would agree only by the author remembering.
 """
 from __future__ import annotations
 
+import copy
 import os
 from pathlib import Path
 
@@ -46,10 +47,18 @@ def load(config=None) -> dict:
     except ImportError:      # pragma: no cover - yaml is a hard dependency
         return {}
     try:
-        return yaml.safe_load(config_path(config).read_text(
-            encoding="utf-8")) or {}
+        text = config_path(config).read_text(encoding="utf-8")
     except (OSError, ValueError):
         return {}
+    if text not in _PARSED:
+        if len(_PARSED) >= 64:
+            _PARSED.clear()
+        _PARSED[text] = yaml.load(text, Loader=getattr(yaml, "CSafeLoader", yaml.SafeLoader)) or {}
+    return copy.deepcopy(_PARSED[text])
+
+
+#: Parsed configs keyed by their text: callers resolve aliases hundreds of times per command. #720.
+_PARSED: dict[str, dict] = {}
 
 
 def strip_provider(model: str) -> str:

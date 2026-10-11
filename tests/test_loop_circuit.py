@@ -23,6 +23,8 @@ from harness.memory import Accelerator  # noqa: E402
 from harness.commands import measure as measure_cmd  # noqa: E402
 
 CHALLENGER = "openbmb/MiniCPM5-1B"
+pytestmark = pytest.mark.long
+
 INCUMBENT_UPSTREAM = "mlx-community/Qwen3-4B-Instruct-2507-4bit"
 FEED = "https://feeds.invalid/sohot/atom"
 SERVER = "http://127.0.0.1:9"
@@ -178,6 +180,7 @@ def world(monkeypatch, tmp_path, _home):
     real_load = core.load_cases
     monkeypatch.setattr(core, "load_cases", lambda d: _hand_written(real_load(d)))
     holdout._splits.cache_clear()
+    holdout._cases.cache_clear()
     w = World()
     (Path(_home) / "discovery-sources.json").write_text(json.dumps({"sources": [
         {"name": "fake-feed", "url": FEED, "kind": "atom", "lane": "all"}]}),
@@ -225,6 +228,7 @@ def world(monkeypatch, tmp_path, _home):
     w.config = config
     yield w
     holdout._splits.cache_clear()
+    holdout._cases.cache_clear()
 
 
 def latest(name):

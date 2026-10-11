@@ -22,8 +22,8 @@ import shells
 REPO = Path(__file__).resolve().parent.parent
 BASH = shells.resolve("bash")
 
-pytestmark = pytest.mark.skipif(
-    BASH is None, reason="no usable bash; services.sh is a bash script")
+pytestmark = [pytest.mark.skipif(
+    BASH is None, reason="no usable bash; services.sh is a bash script"), pytest.mark.long]
 
 
 def tree(tmp_path, gateway: str) -> Path:
@@ -57,9 +57,22 @@ TEST_PORTS = {"GATEWAY_PORT": _free_port(), "LLAMACPP_PORT": _free_port(),
               "AUDIO_PORT": _free_port()}
 
 
+def _listening(timeout: float = 15.0) -> None:
+    """Wait for the fake gateway to bind: start only waits SERVICES_SETTLE_S for it to stay alive. #720."""
+    import socket
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        with socket.socket() as s:
+            s.settimeout(0.5)
+            if s.connect_ex(("127.0.0.1", int(TEST_PORTS["GATEWAY_PORT"]))) == 0:
+                return
+        time.sleep(0.05)
+    raise AssertionError("the fake gateway never bound its port")
+
+
 def run(script: Path, *args, **overrides) -> subprocess.CompletedProcess:
     home = script.parent.parent / "home"
-    env = {**os.environ, "LOCALHARNESS_HOME": str(home), **TEST_PORTS,
+    env = {**os.environ, "LOCALHARNESS_HOME": str(home), **TEST_PORTS, "SERVICES_SETTLE_S": "0.5",
            **overrides}
     return subprocess.run([BASH, str(script), *args], capture_output=True,
                           text=True, env=env, timeout=120)
@@ -101,7 +114,7 @@ WEDGED = (
     's=socket.socket()\n'
     's.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)\n'
     's.bind(("127.0.0.1", int(__import__("os").environ["GATEWAY_PORT"])))\n'
-    's.listen(1)\n'
+    's.listen(16)\n'
     'import time; time.sleep(120)\n'
     '\'\n')
 
@@ -115,6 +128,7 @@ def test_a_service_that_starts_is_reported_started_and_is_running(tmp_path):
     assert started.returncode == 0, started.stderr
     assert "started" in started.stdout, started.stdout
     try:
+        _listening()
         assert "up" in run(script, "status").stdout
     finally:
         run(script, "stop", "gateway")
@@ -259,6 +273,7 @@ def test_a_service_this_script_did_not_start_is_still_reported_up(tmp_path):
     script = tree(other_root, "exit 0\n")
     run(owner, "start", "gateway")
     try:
+        _listening()
         got = run(script, "status")
     finally:
         run(owner, "stop", "gateway")
@@ -288,6 +303,7 @@ def test_a_wedged_service_is_not_reported_up(tmp_path):
     script = tree(tmp_path, WEDGED)
     run(script, "start", "gateway")
     try:
+        _listening()
         line = next(l for l in run(script, "status").stdout.splitlines()
                     if l.startswith("gateway"))
         assert "WEDGED" in line, line
@@ -303,6 +319,7 @@ def test_a_service_that_answers_is_still_reported_up(tmp_path):
     script = tree(tmp_path, ALIVE)
     run(script, "start", "gateway")
     try:
+        _listening()
         line = next(l for l in run(script, "status").stdout.splitlines()
                     if l.startswith("gateway"))
         assert "up" in line and "WEDGED" not in line, line
@@ -333,6 +350,7 @@ def test_restart_replaces_a_running_service(tmp_path):
         assert again.returncode == 0, again.stderr
         assert _pid(again.stdout) != _pid(first.stdout)
         assert not _alive(int(_pid(first.stdout))), "the old process survived"
+        _listening()
         assert "up" in run(script, "status").stdout
     finally:
         run(script, "stop", "gateway")

@@ -35,6 +35,29 @@ def _no_reverse_dns(monkeypatch):
     monkeypatch.setattr(socket, "getfqdn", refuse)
 
 
+#: Set by CI on an unlabelled pull request; push to main, nightly and full-ci run everything. #720.
+FAST_PATH_ENV = "SOHOT_FAST_PATH"
+
+
+def pytest_collection_modifyitems(config, items):
+    import os
+    if os.environ.get(FAST_PATH_ENV) != "1":
+        return
+    skipped = [i for i in items if i.get_closest_marker("long")]
+    if skipped:
+        config.hook.pytest_deselected(items=skipped)
+        items[:] = [i for i in items if not i.get_closest_marker("long")]
+        print(f"\n{FAST_PATH_ENV}=1: deselected {len(skipped)} `long` tests; main and nightly run them")
+
+
+@pytest.fixture(autouse=True)
+def _cli_output_mode(monkeypatch):
+    """cli.main sets common._JSON per call; a --json test must not turn the next test's output into JSON. #720."""
+    from harness.commands import common
+    monkeypatch.setattr(common, "_JSON", False)
+    monkeypatch.setattr(common, "_VERB", "")
+
+
 @pytest.fixture(autouse=True)
 def _no_real_gateway_key(monkeypatch, _home):
     """No test reads or writes the real Keychain, or sends this machine's key. #482."""

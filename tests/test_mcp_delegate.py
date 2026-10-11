@@ -21,6 +21,8 @@ class Fake(ThreadingHTTPServer):
     reply = "def add(a, b):\n    return a + b\n"
     logprobs = None
     stall_s = 0.0
+    #: Seconds before the first token; only the tests that assert on TTFT pay it. #720.
+    answer_at = 0.0
     #: What LiteLLM in front of mlx_lm.server did, measured 2026-10-06.
     drop_streamed_logprobs = True
     #: A thinking model that spends the whole budget before answering. #590.
@@ -62,7 +64,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header("Content-Type", "text/event-stream")
         self.end_headers()
-        time.sleep(ANSWER_AT)
+        time.sleep(s.answer_at)
         choice = {"index": 0, "delta": {"content": s.reply}}
         usage = {"prompt_tokens": 9, "completion_tokens": 7}
         if s.reasoning_only:
@@ -99,6 +101,7 @@ def fake(monkeypatch):
 
 
 def test_a_completion_carries_text_the_model_that_answered_and_its_timing(fake):
+    fake.answer_at = ANSWER_AT
     got = delegate.complete("code", "write add")
     assert got["text"] == Fake.reply
     assert got["model"] == SERVED and got["spec"] == "sohot-code"
@@ -291,6 +294,7 @@ def test_the_tool_passes_thinking_and_a_large_budget_through(fake, mcp_server, m
 
 
 def test_the_tool_returns_fields_not_json_in_a_string(fake, mcp_server):
+    fake.answer_at = ANSWER_AT
     got = mcp_server.local_complete(prompt="write add", lane="code")
     assert got.text == Fake.reply and got.model == SERVED
     assert got.ttft_s >= ANSWER_AT and got.seconds >= got.ttft_s

@@ -20,6 +20,9 @@ jobs:
     # runners are NOT free, so this label must stay standard.
     runs-on: macos-latest
     timeout-minutes: 35
+    env:
+      # An unlabelled pull request skips the `long` tests; push to main, nightly and full-ci run all of them (#720).
+      SOHOT_FAST_PATH: ${{ (github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'full-ci')) && '1' || '0' }}
 
     steps:
       - uses: actions/checkout@v4
@@ -52,8 +55,20 @@ jobs:
         # The same command a person runs locally. CI running something else is
         # how a repo gets a green badge and a broken checkout.
         env:
-          PYTEST_ADDOPTS: --durations=30
+          PYTEST_ADDOPTS: --durations=60 --durations-min=0.5 --junitxml=/tmp/junit.xml
         run: set -o pipefail && make check 2>&1 | tee /tmp/check.log
+
+      - name: Where the time went
+        if: always()
+        continue-on-error: true
+        run: |
+          {
+            echo "### Test time (fast path: $SOHOT_FAST_PATH)"
+            echo
+            echo '```'
+            uv run python -m harness.suite_time /tmp/junit.xml 2>&1 || true
+            echo '```'
+          } | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: What did not run
         # A test that silently skips reports green for something it never

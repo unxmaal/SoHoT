@@ -203,7 +203,7 @@ start_one() {
   # process that has already exited, so a launcher that dies on its first line
   # is reported as running and the pid file backs the claim up. That is the
   # failure this whole file exists to avoid: a service nobody knows is down.
-  sleep 2
+  sleep "${SERVICES_SETTLE_S:-2}"
   if ! alive "$pid"; then
     echo "$name exited immediately:" >&2
     tail -3 "$LOGS/$name.err.log" 2>/dev/null | sed 's/^/  /' >&2
@@ -230,9 +230,9 @@ stop_one() {
     # Negative pid is the process group, which setsid made this process lead.
     # TERM first so the server can put the card down, then KILL what is left.
     kill -TERM "-$pid" 2>/dev/null || kill -TERM "$pid" 2>/dev/null
-    for _ in 1 2 3 4 5; do
+    for _ in $(seq 1 25); do
       alive "$pid" || break
-      sleep 1
+      sleep 0.2
     done
     alive "$pid" && { kill -KILL "-$pid" 2>/dev/null || kill -KILL "$pid" 2>/dev/null; }
   fi

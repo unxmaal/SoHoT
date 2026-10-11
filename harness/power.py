@@ -54,13 +54,17 @@ def _alpha() -> float:
 
 
 @functools.lru_cache(maxsize=None)
+@functools.lru_cache(maxsize=None)
 def _critical(d: int, alpha: float) -> int:
     """Fewest gains of d discordant cells that the two-sided test rejects on."""
     total = 2 ** d
     level = Fraction(alpha).limit_denominator(10 ** 9)
     tail = 0
+    term = 1
     for k in range(0, d // 2 + 1):
-        tail += math.comb(d, k)
+        if k:
+            term = term * (d - k + 1) // k
+        tail += term
         if 2 * tail * level.denominator > level.numerator * total:
             return d - k + 1 if k else d + 1
     return d - d // 2
