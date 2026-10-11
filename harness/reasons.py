@@ -6,6 +6,8 @@ legacy classifier that backfills rows written before the column existed.
 """
 from __future__ import annotations
 
+import re
+
 #: verdicts.reason. The only place the vocabulary is defined.
 REASONS = {
     "candidate": "the candidate's own result: it ran and passed or failed, its "
@@ -97,6 +99,9 @@ _SERVER_DEAD = ("generation thread died",)
 _GPU_FAULT = ("kiogpucommandbuffercallbackerrortimeout", "gpu timeout error")
 _GATEWAY = ("invalid model name", "gateway returned http 400",
             "is the gateway up", "connection refused")
+#: What a server says when a request does not fit the context it is served at: llama-server, vLLM, LiteLLM. #695, #692.
+OVER_CONTEXT = re.compile(r"exceeds? the available context|context.?window.?exceeded|maximum context length"
+                          r"|context length exceeded|exceeds? (the )?context (size|window|length)|max_model_len", re.I)
 _HARNESS = ("no cases of a modality it can run", "no candidate matched any case",
             "no module named", "error while finding module specification",
             "command not found", "guidance_scale has to be",
@@ -170,6 +175,8 @@ def classify(text: str, where: str = RUNNER, candidate: str = "") -> str:
         return LOAD_FAILED_RUNTIME
     if head in _AUDIO_HEADS and _any(low, _AUDIO_LOAD_FAILED):
         return LOAD_FAILED_RUNTIME
+    if OVER_CONTEXT.search(low):
+        return CONTEXT_EXCEEDED
     if _any(low, _GATEWAY):
         return REFUSED_BY_GATEWAY
     if _any(low, _HARNESS):

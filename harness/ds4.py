@@ -17,7 +17,7 @@ import urllib.request
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from harness import paths
+from harness import completion, paths
 
 PREFIX = "ds4:"
 ENGINE = "ds4-server"
@@ -26,7 +26,10 @@ PORT_VAR = "DS4_PORT"
 BIN_VAR = "DS4_BIN"
 MODELS_VAR = "DS4_MODELS_DIR"
 SPEC_VAR = "DS4_SPEC"
-DEFAULT_CTX = 32768
+#: Tokens of prompt a served context must hold beside the reply: the largest case prompt, a 32000-token agent pad. #692.
+PROMPT_ROOM = 32768
+#: The top rung of any lane's budget ladder plus the largest prompt, so no ladder rung is cut by the context. #692.
+DEFAULT_CTX = max(max(rungs) for rungs in completion.LADDER.values()) + PROMPT_ROOM
 #: Options that change the launch; the rest of a spec's tail is sampling.
 OPTIONS = ("ssd_streaming", "expert_cache", "ctx")
 #: ds4-server has no response_format and returns no logprobs.

@@ -1,5 +1,5 @@
 """Knobs of slots and context of served models, and what a server listens on (#751)."""
-from harness.knobs.base import _k
+from harness.knobs.base import MACHINE, TEXT_LANES, _k
 
 KNOBS = [
     _k("eval7b_slot_ctx", ["harness/context.py:EVAL_7B_SLOT_CTX"], [3072, 4096, 8192],
@@ -10,6 +10,12 @@ KNOBS = [
        note="context each Ornith-1.5-35B-Q4_K_M slot is sized for; never under context.MIN_LONG_SLOT_CTX (#682)"),
     _k("ornith_slots", ["harness/context.py:ORNITH_SLOTS"], [1, 2, 4, 8],
        note="llama-server slots Ornith-1.5-35B-Q4_K_M batches across; sets code and agent lane throughput, not a grade (#682)"),
+    _k("served_ctx", ["harness/context.py:KV_MAX_GIB", "harness/context.py:KV_MAX_RAM_GB", "harness/ds4.py:DEFAULT_CTX",
+                      "harness/vllm.py:METAL_MAX_MODEL_LEN", "harness/context.py:environ(LLAMACPP_CTX)",
+                      "scripts/serve-llamacpp.sh:LLAMACPP_CTX", "scripts/serve-llamacpp.sh:LLAMACPP_CTX#2"],
+       [4, 8, 16, 24, 32], lanes=TEXT_LANES, limit="served_ctx", predicate=MACHINE,
+       note="the context a model is served at: KV GiB per model on 32 GB (scaled by RAM), ds4 --ctx, vllm-metal "
+            "--max-model-len, llama-server's unplanned default; the receipt records it as served ctx (#692)"),
 ]
 
 NOT_GATING = {
@@ -23,6 +29,8 @@ NOT_GATING = {
     "harness/nodes.py:keychain->subprocess.run(timeout)": "how long the Keychain may take to hand over a key (#684)",
     "harness/live_audit.py:FALLBACK_WINDOW_S": "how far back the audit lists node fallbacks; reported, never a check (#739)",
     "scripts/lan-probe.sh:LAN_PROBE_WAIT_EXTRA_S": "how long the deploy waits for a launchd probe to write; never a lane's outcome (#739)",
+    **{f"harness/context.py:SWA_PERIOD[{a}]": "llama.cpp's hard-coded sliding-window period of an architecture, a fact of "
+       "the model (#692)" for a in ("gemma2", "gemma3", "cohere2")},
     **{f"harness/context.py:CACHE_BYTES[{t}]": "bytes per KV element of a cache type, a fact of the format (#706)"
        for t in ("f32", "f16", "bf16", "q8_0", "q5_1", "q5_0", "q4_1", "q4_0", "iq4_nl")},
     "harness/mcp_server.py:JobInfo.seconds": "how long a job took, as reported (#706)",

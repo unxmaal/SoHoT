@@ -4,7 +4,7 @@ import sqlite3
 
 import pytest
 
-from harness import context, downloads
+from harness import context, downloads, memory
 from harness import memory_store as ms
 from tests.test_context import GIB, ORNITH, QWEN3_4B, write_gguf
 
@@ -23,6 +23,11 @@ def conn():
     yield c
     c.close()
 
+
+@pytest.fixture(autouse=True)
+def _ram_the_cap_was_set_on(monkeypatch):
+    """The KV cap scales with RAM; these plans are priced on the machine KV_MAX_GIB was set on. #692."""
+    monkeypatch.setattr(memory, "total_gb", lambda: float(context.KV_MAX_RAM_GB))
 
 def _gguf(conn, models, stem, meta, repo="org/m"):
     p = models / f"{stem}.gguf"

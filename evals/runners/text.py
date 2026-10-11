@@ -11,7 +11,7 @@ ship.
 """
 from __future__ import annotations
 
-from harness import completion, reasons
+from harness import completion, delegate, reasons
 
 from evals.core import Case
 from evals.runners.base import BaseRunner, RunnerError
@@ -33,7 +33,7 @@ class CompletionRunner(BaseRunner):
     def __init__(self, gateway: str, candidate: str,
                  timeout: float = completion.TIMEOUT_S,
                  sampling: dict | None = None, model: str = "",
-                 max_tokens: int = 0):
+                 max_tokens: int = 0, served_ctx: int | None = None, count=None):
         self.gateway = gateway.rstrip("/")
         self.candidate = candidate
         self.model = model or candidate
@@ -43,6 +43,10 @@ class CompletionRunner(BaseRunner):
         #: The run's reply budget; 0 asks each case at its lane's. #628.
         self.max_tokens = int(max_tokens or 0)
         self.last_cut = ""
+        #: The per-slot context the candidate is served at; None when unknown. #692.
+        self.served_ctx = served_ctx
+        #: count(text) -> tokens by the served tokenizer; None estimates. #692.
+        self.count = count
         #: Overrides on top of completion.SAMPLING for this run. Empty means
         #: the shipped defaults, which is what the product uses.
         self.sampling = dict(sampling or {})
@@ -78,8 +82,17 @@ class CompletionRunner(BaseRunner):
                 f"scored on a request the lane never sends. #572",
                 reasons.REFUSED_BY_GATEWAY)
         cold = not self.answered
-        budget = self.budget(case)
-        limit = f"max_tokens.{case.modality}"
+        asked = self.budget(case)
+        system = case.params.get("system") if case.modality == "claims" else None
+        room = self.room(case, system)
+        budget = min(asked, room) if room is not None else asked
+        if budget < 1:
+            raise completion.CompletionError(
+                f"unrunnable here: the prompt fills the {self.served_ctx}-token served context",
+                reasons.CONTEXT_EXCEEDED, ("served_ctx", self.served_ctx))
+        # The served context, not the reply budget, is what stops a reply the room was clamped to. #692.
+        limit = (f"served_ctx>{self.served_ctx}" if budget < asked
+                 else f"max_tokens.{case.modality}>{budget}")
         timeout = max(self.timeout, completion.timeout_for(budget))
         try:
             got = completion.complete_full(
@@ -90,19 +103,24 @@ class CompletionRunner(BaseRunner):
                 template=template, stream=True,
                 top_logprobs=completion.TOP_LOGPROBS if case.modality == "decide" else 0,
                 response_format=self._reply_shape(case),
-                system=case.params.get("system") if case.modality == "claims" else None)
+                system=system)
         except completion.CompletionError as exc:
             if exc.failure_class == reasons.TOKEN_BUDGET_EXHAUSTED:
-                exc.limit = (limit, budget)
+                exc.failure_class, exc.limit = self._cut(limit)
             elif exc.failure_class == reasons.TIMEOUT and cold:
                 # Nothing has answered yet, so the request was given the load's allowance and the load is what ran out. #694.
                 exc.limit = ("load_timeout_s", self.load_timeout)
+            elif not exc.failure_class and reasons.OVER_CONTEXT.search(str(exc)):
+                exc.failure_class = reasons.CONTEXT_EXCEEDED
+                exc.limit = ("served_ctx", self.served_ctx) if self.served_ctx else ()
             raise
         self.answered = True
         self.last_timing = {**got.timing, "cold": cold}
         spent = int(got.usage.get("completion_tokens") or 0)
         if got.finish == "length" or spent >= budget:
-            self.last_cut = f"{limit}>{budget}"
+            used = spent + int(got.usage.get("prompt_tokens") or 0)
+            at_ctx = bool(self.served_ctx) and used >= self.served_ctx
+            self.last_cut = f"served_ctx>{self.served_ctx}" if at_ctx else limit
         if case.modality == "decide":
             return self._decide(case, got)
         return got.text, got.usage
@@ -179,5 +197,25 @@ class CompletionRunner(BaseRunner):
     def budget(self, case: Case) -> int:
         return self.max_tokens or completion.budget(case.modality) or completion.MAX_TOKENS
 
+    def room(self, case: Case, system: str | None = None) -> int | None:
+        """Tokens the served context leaves for the reply after the prompt; None when the context is unknown. #692."""
+        if not self.served_ctx:
+            return None
+        system = system or completion.SYSTEM.get(case.modality, completion.NEUTRAL_SYSTEM)
+        return delegate.cap(self.served_ctx, system, completion.user_message(case.prompt, case.context),
+                            count=self.count)
+
+    def _cut(self, limit: str) -> tuple[str, tuple]:
+        """(failure class, limit) for a reply stopped at `limit`, a "name>value" body."""
+        name, _, value = limit.rpartition(">")
+        cls = reasons.CONTEXT_EXCEEDED if name == "served_ctx" else reasons.TOKEN_BUDGET_EXHAUSTED
+        return cls, (name, float(value))
+
     def cut_off(self) -> str:
         return self.last_cut
+
+    def stopped_by(self) -> tuple[str, str]:
+        """A reply stopped at the served context is that limit's, not the reply budget's. #692."""
+        if self.last_cut.startswith("served_ctx>"):
+            return reasons.CONTEXT_EXCEEDED, self.last_cut
+        return super().stopped_by()

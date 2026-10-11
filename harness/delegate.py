@@ -13,6 +13,8 @@ import statistics
 import time
 import urllib.request
 
+import httpx
+
 from harness import completion, context, exclusive, gateway, reasons, serving
 
 #: Lanes a delegated completion may name: the ones the gateway aliases as sohot-<lane>.
@@ -20,7 +22,7 @@ LANES = gateway.TEXT_LANES
 MAX_PROMPT_CHARS = 100_000
 #: The max_tokens cap when the served context is unknown.
 MAX_TOKENS = 8192
-#: A rough floor on characters per prompt token, so the estimate errs high.
+#: Characters per prompt token where the served tokenizer cannot be asked; CJK and base64 run lower. #692.
 CHARS_PER_TOKEN = 3
 TIMEOUT_S = 300.0
 #: Seconds to ask a server what it holds; an answer that late leaves residency unknown.
@@ -96,17 +98,34 @@ def _preflight(*texts: str, max_tokens: int = 1) -> None:
         raise Refused(f"max_tokens must be at least 1, not {max_tokens}")
 
 
-def cap(ctx: int | None, *texts: str) -> int:
-    """The largest max_tokens a request may ask for: the served context less the prompt. #590."""
+def prompt_tokens(*texts: str, count=None) -> int:
+    """Tokens in the prompt by the served tokenizer `count`, else at CHARS_PER_TOKEN. #692."""
+    chars = sum(len(t or "") for t in texts)
+    estimate = -(-chars // CHARS_PER_TOKEN)
+    if count is None:
+        return estimate
+    try:
+        return sum(int(count(t)) for t in texts if t)
+    except (httpx.HTTPError, ValueError, KeyError, TypeError):
+        return estimate
+
+
+def cap(ctx: int | None, *texts: str, count=None) -> int:
+    """The largest max_tokens a request may ask for: the served context less the prompt. #590, #692."""
     if ctx is None:
         return MAX_TOKENS
-    chars = sum(len(t or "") for t in texts)
-    return max(0, ctx - -(-chars // CHARS_PER_TOKEN))
+    return max(0, ctx - prompt_tokens(*texts, count=count))
+
+
+def counter(spec: str):
+    """count(text) by the tokenizer the spec is served with, or None where the server has none. #692."""
+    where = context._upstream(spec)
+    return completion.token_counter(*where) if where else None
 
 
 def _budget(spec: str, max_tokens: int, *texts: str) -> None:
     ctx = context.served_ctx(spec)
-    most = cap(ctx, *texts)
+    most = cap(ctx, *texts, count=counter(spec) if ctx else None)
     if int(max_tokens) > most:
         where = (f"the {ctx}-token context {spec} is served at, less the prompt"
                  if ctx else f"the cap while {spec}'s served context is unknown")

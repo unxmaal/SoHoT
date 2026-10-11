@@ -171,7 +171,7 @@ def test_the_launch_record_names_every_option_that_changes_the_exam(models):
     assert got == {"ssd_streaming": "on", "expert_cache": "32GB",
                    "ctx": ds4.DEFAULT_CTX, "ds4": "2026.09.20"}
     assert ds4.launch(f"ds4:{QWEN_Q2}")["expert_cache"] == "auto"
-    assert ds4.launch_text(got) == "ctx=32768,ds4=2026.09.20,expert_cache=32GB,ssd_streaming=on"
+    assert ds4.launch_text(got) == f"ctx={ds4.DEFAULT_CTX},ds4=2026.09.20,expert_cache=32GB,ssd_streaming=on"
 
 
 def test_the_launcher_execs_exactly_what_the_harness_would_start(models, monkeypatch):
@@ -312,7 +312,7 @@ def test_an_eval_run_measures_ds4_and_records_the_launch(models, monkeypatch, tm
     assert data["receipt"]["engines"] == {spec: "ds4-server"}
     assert data["receipt"]["instruments"]["serving"] == "ds4-server"
     assert data["receipt"]["launch"] == {
-        key: "ctx=32768,ds4=2026.09.20,expert_cache=auto,ssd_streaming=on"}
+        key: f"ctx={ds4.DEFAULT_CTX},ds4=2026.09.20,expert_cache=auto,ssd_streaming=on"}
     sent = json.loads(log.read_text(encoding="utf-8").splitlines()[0])
     assert sent["model"] == DSV4_Q2
     assert "ssd_streaming" not in sent
