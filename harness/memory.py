@@ -104,6 +104,26 @@ def _wired_limit_gb() -> float:
         return 0.0
 
 
+def _metal_info() -> dict:
+    """mlx's Metal device info, {} where mlx is not installed."""
+    try:
+        import mlx.core as mx
+        return dict((getattr(mx, "device_info", None) or mx.metal.device_info)())
+    except Exception:  # noqa: BLE001 - no mlx, or no Metal device
+        return {}
+
+
+def _working_set_gb() -> float:
+    """sysctl iogpu.wired_limit_mb, else Metal's recommendedMaxWorkingSetSize; 0 when neither answers. #699."""
+    wired = _wired_limit_gb()
+    if wired:
+        return wired
+    try:
+        return max(float(_metal_info().get("max_recommended_working_set_size") or 0), 0.0) / 1024 ** 3
+    except (TypeError, ValueError):
+        return 0.0
+
+
 def system_memory_gb() -> float:
     """Physical RAM where there is no sysctl to ask. Standard library only:
     this runs before anything optional is installed."""
@@ -141,34 +161,51 @@ def system_memory_gb() -> float:
     return 0.0
 
 
+def _visible(cards: list[tuple], visible: str, order: str) -> list[tuple]:
+    """The cards CUDA_VISIBLE_DEVICES names, by index or UUID prefix, up to the first it cannot match. #699."""
+    by_index = order.strip().upper() == "PCI_BUS_ID" or len({(c[2], c[3]) for c in cards}) <= 1
+    # FASTEST_FIRST numbering is not nvidia-smi's, so an index on mixed cards budgets the smallest. #699.
+    ranked = cards if by_index else sorted(cards, key=lambda c: c[3])
+    kept = []
+    for x in (x.strip() for x in visible.split(",")):
+        if x.isdigit():
+            got = ranked[int(x) if by_index else len(kept)] if int(x) < len(ranked) else None
+        else:
+            got = next((c for c in cards if x and c[1].lower().startswith(x.lower())), None)
+        if got is None:
+            break
+        if got not in kept:
+            kept.append(got)
+    return kept
+
+
 def _discrete() -> Accelerator | None:
     """Every NVIDIA card CUDA_VISIBLE_DEVICES leaves visible, summed as llama-server splits across them; None if none. #699."""
     try:
         out = subprocess.run(
-            ["nvidia-smi", "--query-gpu=name,memory.total,memory.free",
+            ["nvidia-smi", "--query-gpu=index,uuid,name,memory.total,memory.free",
              "--format=csv,noheader,nounits"],
             capture_output=True, text=True, timeout=10).stdout
     except (OSError, subprocess.SubprocessError):
         return None
     cards = []
-    for i, line in enumerate((out or "").splitlines()):
+    for line in (out or "").splitlines():
         parts = [p.strip() for p in line.split(",")]
-        if len(parts) < 3:
+        if len(parts) < 5:
             continue
         try:
-            total_mib, free_mib = float(parts[1]), float(parts[2])
+            total_mib, free_mib = float(parts[3]), float(parts[4])
         except ValueError:
             continue
         if total_mib > 0:
-            cards.append((i, parts[0], total_mib, free_mib))
-    visible = (os.environ.get("CUDA_VISIBLE_DEVICES") or "").strip()
-    if visible:
-        keep = {int(x) for x in visible.split(",") if x.strip().isdigit()}
-        cards = [c for c in cards if c[0] in keep]
+            cards.append((parts[0], parts[1], parts[2], total_mib, free_mib))
+    visible = os.environ.get("CUDA_VISIBLE_DEVICES")
+    if visible is not None:
+        cards = _visible(cards, visible, os.environ.get("CUDA_DEVICE_ORDER") or "")
     if not cards:
         return None
-    return Accelerator("discrete", sum(c[2] for c in cards) / 1024,
-                       sum(c[3] for c in cards) / 1024, " + ".join(c[1] for c in cards))
+    return Accelerator("discrete", sum(c[3] for c in cards) / 1024,
+                       sum(c[4] for c in cards) / 1024, " + ".join(c[2] for c in cards))
 
 
 def detect() -> Accelerator:
@@ -184,7 +221,7 @@ def detect() -> Accelerator:
     total = _unified_total_gb()
     if total > 0:
         return Accelerator("unified", total, available_gb() or total,
-                           platform.machine(), _wired_limit_gb())
+                           platform.machine(), _working_set_gb())
     found = _discrete()
     if found:
         return found
@@ -206,7 +243,7 @@ def ceiling_gb() -> float:
     """The working set to budget against, not the RAM figure on the box."""
     total = _unified_total_gb()
     if total > 0:
-        return _wired_limit_gb() or total * GPU_FRACTION
+        return _working_set_gb() or total * GPU_FRACTION
     found = _discrete()
     if found:
         return found.total_gb

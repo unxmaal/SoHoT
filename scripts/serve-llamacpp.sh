@@ -89,8 +89,8 @@ PRESET="${LOCALHARNESS_HOME:-$HOME/localharness}/llamacpp-preset-${LLAMACPP_PORT
 MAX_MODELS="${LLAMACPP_MAX_MODELS:-}"
 if uv run python -m harness.context "$PRESET" >/dev/null; then
   CTX_ARGS=(--models-preset "$PRESET")
-  # The plan sized each model for this many resident beside each other (#699).
-  if [ -z "$MAX_MODELS" ] && [ -s "$PRESET.models-max" ]; then MAX_MODELS="$(cat "$PRESET.models-max")"; fi
+  # The plan sized each model for this many resident, at most LLAMACPP_MAX_MODELS (#699).
+  if [ -s "$PRESET.models-max" ]; then MAX_MODELS="$(cat "$PRESET.models-max")"; fi
 else
   echo "WARN: no per-model context preset; every model gets ${LLAMACPP_CTX:-16384}" >&2
   CTX_ARGS=(--ctx-size "${LLAMACPP_CTX:-16384}")

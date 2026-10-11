@@ -169,20 +169,105 @@ def _smi(lines):
 def test_a_two_card_machine_budgets_both_cards(monkeypatch):
     monkeypatch.delenv("CUDA_VISIBLE_DEVICES", raising=False)
     monkeypatch.setattr(memory.subprocess, "run", _smi(
-        ["RTX 4070, 12288, 10240", "RTX 4070, 12288, 11264"]))
+        ["0, GPU-aaaa, RTX 4070, 12288, 10240", "1, GPU-cccc, RTX 4070, 12288, 11264"]))
     got = memory._discrete()
     assert got.total_gb == pytest.approx(24.0)
     assert got.available_gb == pytest.approx(21.0)
+
+
+MIXED = ["0, GPU-aaaa-4070, RTX 4070, 12288, 10240", "1, GPU-bbbb-3090, RTX 3090, 24576, 20480"]
 
 
 @pytest.mark.gauntlet("each-half-verified-against-its-own-spec-the-seam-against-nothing",
                       site="env:CUDA_VISIBLE_DEVICES")
 def test_cuda_visible_devices_chooses_the_cards(monkeypatch):
     monkeypatch.setenv("CUDA_VISIBLE_DEVICES", "1")
-    monkeypatch.setattr(memory.subprocess, "run", _smi(
-        ["RTX 4070, 12288, 10240", "RTX 3090, 24576, 20480"]))
+    monkeypatch.setenv("CUDA_DEVICE_ORDER", "PCI_BUS_ID")
+    monkeypatch.setattr(memory.subprocess, "run", _smi(MIXED))
     got = memory._discrete()
     assert got.total_gb == pytest.approx(24.0) and "3090" in got.name
+
+
+def test_a_card_named_by_uuid_is_the_card_budgeted(monkeypatch):
+    monkeypatch.setenv("CUDA_VISIBLE_DEVICES", "GPU-bbbb")
+    monkeypatch.delenv("CUDA_DEVICE_ORDER", raising=False)
+    monkeypatch.setattr(memory.subprocess, "run", _smi(MIXED))
+    got = memory._discrete()
+    assert got is not None and "3090" in got.name and got.total_gb == pytest.approx(24.0)
+
+
+@pytest.mark.gauntlet("each-half-verified-against-its-own-spec-the-seam-against-nothing",
+                      site="env:CUDA_DEVICE_ORDER")
+def test_a_cuda_index_in_fastest_first_order_on_mixed_cards_budgets_the_smaller(monkeypatch):
+    monkeypatch.setenv("CUDA_VISIBLE_DEVICES", "1")
+    monkeypatch.delenv("CUDA_DEVICE_ORDER", raising=False)
+    monkeypatch.setattr(memory.subprocess, "run", _smi(MIXED))
+    got = memory._discrete()
+    assert got.total_gb == pytest.approx(12.0) and "4070" in got.name
+
+
+def test_the_unified_ceiling_is_metal_s_recommended_working_set_without_a_wired_limit(monkeypatch):
+    monkeypatch.setattr(memory.subprocess, "run", _sysctl({
+        "hw.memsize": 96 * GIB, "iogpu.wired_limit_mb": 0}))
+    monkeypatch.setattr(memory, "_metal_info", lambda: {"max_recommended_working_set_size": 80 * GIB})
+    assert memory.ceiling_gb() == pytest.approx(80.0)
+    assert memory.ceiling_for(memory.detect()) == pytest.approx(80.0)
+
+
+def test_a_screen_prices_one_request_of_kv_beside_the_weights(tmp_path, monkeypatch):
+    from harness import screen
+    from harness.commands import screen as screen_cmd
+    _mlx(tmp_path, monkeypatch, weights_gib=60)
+    row = {"name": "mlx-community/Big-4bit", "candidate": "mlx-community/Big-4bit",
+           "state": screen.READY, "modality": "code"}
+    assert memory.check_model(row["name"], spec=row["candidate"], reserve_gb=6.0)[0]
+    assert screen_cmd.screenable_backlog(plan=[row]) == []
+
+
+def test_mlx_parallel_leaves_the_router_s_planned_models_their_room(conn, models, tmp_path, monkeypatch):
+    _mlx(tmp_path, monkeypatch)
+    alone = serving.mlx_parallel("mlx-community/Qwen2.5-32B-4bit")
+    monkeypatch.setattr(context, "coresident_bytes", lambda conn: 18 * GIB)
+    monkeypatch.setattr(context, "_ram_models_max", lambda: 1)
+    _gguf(conn, models, "Other", QWEN3_4B)
+    planned = context.plan(conn, budget=66 * GIB, kv_cap=20 * GIB)[0]
+    router = planned["ctx"] * 147456
+    cap = serving.mlx_parallel("mlx-community/Qwen2.5-32B-4bit")
+    assert cap < alone
+    assert (18 + cap * 8) * GIB + router <= 66 * GIB
+
+
+def test_the_launcher_starts_the_router_with_the_plan_s_models_max_over_the_env_cap(tmp_path):
+    import os
+    import shutil
+    import sys
+    from pathlib import Path
+
+    import shells
+    bash = shells.resolve("bash")
+    if bash is None or sys.platform == "win32":
+        pytest.skip("needs bash")
+    repo = Path(__file__).resolve().parents[1]
+    bindir = tmp_path / "bin"
+    bindir.mkdir()
+    fake = bindir / "llama-server"
+    fake.write_text('#!/usr/bin/env bash\nprintf "%s\\n" "$@"\n', encoding="utf-8")
+    uv = bindir / "uv"
+    uv.write_text('#!/usr/bin/env bash\n'
+                  'if [ "$4" = "harness.context" ]; then echo "[*]" > "$5"; echo 2 > "$5.models-max"; echo "$5"; exit 0; fi\n'
+                  f'exec {shutil.which("uv")} "$@"\n', encoding="utf-8")
+    for f in (fake, uv):
+        f.chmod(0o755)
+    hf = tmp_path / "hf"
+    (hf / "gguf").mkdir(parents=True)
+    env = {**os.environ, "PATH": f"{bindir}:{os.environ['PATH']}", "LLAMACPP_BIN": str(fake),
+           "HF_HOME": str(hf), "HF_ROOT": str(hf), "HF_MIN_FREE_GB": "0", "LLAMACPP_PORT": "0",
+           "LLAMACPP_MAX_MODELS": "3"}
+    out = subprocess.run([bash, str(repo / "scripts" / "serve-llamacpp.sh")],
+                         capture_output=True, text=True, env=env, timeout=120)
+    assert out.returncode == 0, out.stderr
+    args = out.stdout.split("\n")
+    assert args[args.index("--models-max") + 1] == "2"
 
 
 def test_the_warm_up_waits_the_load_timeout_and_levels_scale_theirs(monkeypatch):

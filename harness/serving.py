@@ -46,10 +46,21 @@ def mlx_parallel(repo: str) -> int:
         weights = memory.size_gb(path) if path else None
         if not per or weights is None:
             return MLX_MAX_PARALLEL
-        room = memory.ceiling_gb() - memory.measured_reserve_gb() - weights
+        room = memory.ceiling_gb() - memory.measured_reserve_gb() - weights - _router_gb()
     except Exception:  # noqa: BLE001 - an unsizable model keeps the default cap
         return MLX_MAX_PARALLEL
     return max(1, min(MLX_MAX_PARALLEL, int(room * 1024 ** 3 // (per * MLX_REQUEST_CTX))))
+
+
+def _router_gb() -> float:
+    """What the router's recorded plan holds on this machine, so MLX KV is not priced into the same room. #699."""
+    from harness import context
+    from harness import memory_store as ms
+    conn = ms.connect()
+    try:
+        return context.router_bytes(conn) / 1024 ** 3
+    finally:
+        conn.close()
 
 
 #: llama-server for structured output and GGUF candidates (scripts/serve-eval.sh).

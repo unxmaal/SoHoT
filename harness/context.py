@@ -322,6 +322,17 @@ def _ram_models_max() -> int:
     return 2 if memory.total_gb() >= 64 else 1
 
 
+def router_bytes(conn) -> int:
+    """Weights plus planned KV of the heaviest router models that may be resident at once on this machine. #699."""
+    from harness import downloads
+    held = []
+    for row in downloads.live(conn, kind=downloads.GGUF):
+        path = Path(row["path"])
+        if row.get("ctx_at") and row.get("ctx") and path.exists():
+            held.append(_weights(path) + int(row["ctx"]) * int(row.get("kv_bytes_token") or 0))
+    return sum(sorted(held, reverse=True)[:_ram_models_max()])
+
+
 def models_max_path(preset) -> Path:
     """Where main() writes the models-max the plan was sized for, beside the preset. #699."""
     return Path(f"{preset}.models-max")
