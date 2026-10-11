@@ -37,6 +37,13 @@ _SMALL = {"one", "two", "three", "four", "five", "six", "seven", "eight", "nine"
           "seventeen", "eighteen", "nineteen", "twenty", "thirty", "forty", "fifty",
           "sixty", "seventy", "eighty", "ninety"}
 
+#: One spelling per English word where references and transcribers differ only in orthography. #701.
+_EN_SPELLING = {"mr": "mister", "mrs": "missus", "dr": "doctor",
+                **{f"{stem}our": f"{stem}or" for stem in (
+                    "colo", "favo", "hono", "labo", "neighbo", "harbo", "humo", "vigo", "rigo",
+                    "odo", "parlo", "endeavo", "armo", "clamo", "rumo", "savo", "vapo")},
+                "centre": "center", "theatre": "theater", "grey": "gray", "practise": "practice"}
+
 
 @dataclass
 class SpeechResult:
@@ -111,7 +118,8 @@ def normalize(text: str, language: str = "en") -> str:
     """
     if language == "en":
         text = _EN_NUMBER.sub(_en_number, _EN_GROUPING.sub("", text))
-        return " ".join(drop_number_and(_PUNCT.sub(" ", text.lower()).split()))
+        words = drop_number_and(_PUNCT.sub(" ", text.lower()).split())
+        return " ".join(_EN_SPELLING.get(w, w) for w in words)
     try:
         text = _DIGITS.sub(
             lambda m: num2words(int(m.group()), lang=language), text)

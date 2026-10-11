@@ -53,45 +53,64 @@ def from_receipts(conn, plain_only: bool = True) -> dict[str, dict]:
                 "median_s": float(row.get("median_s") or 0.0),
                 "total": int(row.get("total") or 0), "run": run["path"],
                 "run_id": run["id"]})
-    return {lane: _pick(got) for lane, got in entries.items()}
+    return {lane: _pick(got, lane=lane) for lane, got in entries.items()}
+
+
+#: Lanes ranked on a pooled metric before pass rate: an exact-case rate is roughly acc^fields, and stt's is exact orthography. #701.
+PRIMARY = {"decide": "decide_accuracy", "stt": "wer"}
+#: Metrics that measure probabilities, meaningless on a row whose answers were one-hot. #701.
+CALIBRATION = frozenset({"decide_brier", "decide_ece"})
 
 
 def ranked_metrics(row: dict) -> dict[str, float]:
-    """The row's non-neutral metrics, signed so larger is better."""
+    """The row's non-neutral metrics, signed so larger is better; no calibration metric on an uncalibrated row."""
     from evals.core import direction_of
 
+    metrics = row.get("metrics") or {}
+    uncalibrated = float(metrics.get("calibrated", 1.0) or 0.0) < 1.0
     out = {}
-    for name, value in (row.get("metrics") or {}).items():
+    for name, value in metrics.items():
         way = direction_of(name)
-        if way != "neutral":
+        if way != "neutral" and not (uncalibrated and name in CALIBRATION):
             out[name] = float(value or 0.0) * (1 if way == "higher" else -1)
     return out
 
 
-def shared_metrics(rows) -> tuple[str, ...]:
-    """Metric names shared by the top-pass-rate rows that report any, so a crashed row cannot erase the lane's metric. #690."""
+def primary(row: dict, lane: str = "") -> tuple:
+    """The first rank key: the lane's pooled metric, else pass rate; a row missing it, or with it over fewer of its cases, sorts below."""
+    name = PRIMARY.get(lane)
+    if not name:
+        return (True, 1.0, float(row.get("pass_rate") or 0.0))
+    got = ranked_metrics(row)
+    n, total = (row.get("metric_n") or {}).get(name), int(row.get("total") or 0)
+    covered = round(min(1.0, n / total), 3) if n is not None and total else 1.0
+    return (name in got, covered, got.get(name, 0.0))
+
+
+def shared_metrics(rows, lane: str = "") -> tuple[str, ...]:
+    """Metric names shared by the top rows that report any, so a crashed row cannot erase the lane's metric. #690."""
     rows = list(rows)
-    top = max((float(r.get("pass_rate") or 0.0) for r in rows), default=0.0)
+    top = max((primary(r, lane) for r in rows), default=(True, 0.0))
     names = None
     for row in rows:
         mine = set(ranked_metrics(row))
-        if not mine or float(row.get("pass_rate") or 0.0) < top:
+        if not mine or primary(row, lane) < top:
             continue
         names = mine if names is None else names & mine
     return tuple(sorted(names or ()))
 
 
-def _pick(entries: list[dict], prefer=lambda e: False) -> dict:
+def _pick(entries: list[dict], prefer=lambda e: False, lane: str = "") -> dict:
     """The best entry, keyed on the metrics all entries share; exact ties go to `prefer`, then the lowest name."""
-    names = shared_metrics(e["row"] for e in entries)
+    names = shared_metrics((e["row"] for e in entries), lane)
     for e in entries:
-        e["key"] = order_key(e.pop("row"), names)
+        e["key"] = order_key(e.pop("row"), names, lane)
     top = max((e["key"], prefer(e)) for e in entries)
     return min((e for e in entries if (e["key"], prefer(e)) == top),
                key=lambda e: (str(e["candidate"]), int(e.get("run_id") or 0)))
 
 
-def order_key(row: dict, names) -> tuple:
+def order_key(row: dict, names, lane: str = "") -> tuple:
     """How good a summary row is, best LAST so `max` picks the winner.
 
     THE LANE'S OWN METRIC COMES FIRST, and getting that wrong is not
@@ -115,7 +134,7 @@ def order_key(row: dict, names) -> tuple:
     # model that fails half the cases and scores well on the rest is scoring on
     # a different, easier subset.
     # A row missing a shared metric sorts below every row that reports it.
-    return (rate, tuple((n in ranked, ranked.get(n, 0.0)) for n in names), -median)
+    return (primary(row, lane), rate, tuple((n in ranked, ranked.get(n, 0.0)) for n in names), -median)
 
 
 def typed() -> dict[str, str]:
@@ -211,7 +230,7 @@ def beaten_in(conn) -> dict[str, dict]:
                 "candidate_id": cid if isinstance(cid, int) else None,
                 "family": family})
     # A served default that ties was not beaten.
-    return {lane: _pick(got, prefer=lambda e: bool(e["match"]))
+    return {lane: _pick(got, prefer=lambda e: bool(e["match"]), lane=lane)
             for lane, got in entries.items()}
 
 

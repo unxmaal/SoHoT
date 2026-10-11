@@ -138,20 +138,24 @@ def test_answers_without_probabilities_score_one_hot_and_uncalibrated():
     c = CASES[0]
     gold = {k: decide.key(v) for k, v in _gold(c).items()}
     r = score(c, json.dumps(gold))
-    assert r.passed and r.metrics["decide_brier"] == 0.0
+    # One-hot Brier would be 2*(1-acc), the engine's missing logprobs; it is not reported. #701.
+    assert r.passed and "decide_brier" not in r.metrics
     assert r.metrics["calibrated"] == 0.0
     wrong_field, spec = next(iter(_schema(c).items()))
     other = next(v for v in decide.code_map(spec).values() if v != gold[wrong_field])
     r = score(c, json.dumps({**gold, wrong_field: other}))
     assert not r.passed and wrong_field in r.detail
-    assert r.metrics["decide_brier_sum"] == 2.0
+    assert "decide_brier_sum" not in r.metrics
+    rows = decide.field_scores(decide.parse({**gold, wrong_field: other}, _schema(c)),
+                               _gold(c), _schema(c))
+    assert sum(row["brier"] for row in rows) == 2.0
 
 
 def test_a_missing_field_is_wrong_and_scores_the_zero_vector():
     spec = {"f": {"type": "boolean", "description": "d"}}
     r = decide.check("{}", spec, {"f": True})
     assert not r.ok and "no answer for f" in r.reason
-    assert r.metrics["decide_brier_sum"] == 1.0
+    assert decide.field_scores(decide.parse("{}", spec), {"f": True}, spec)[0]["brier"] == 1.0
 
 
 def test_brier_is_the_multiclass_sum():

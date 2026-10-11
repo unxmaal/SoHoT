@@ -12,3 +12,5 @@ params:
   seed: 42
 assert:
   text: OPEN
+  # The ocr lane's tolerance for Vision on synthetic renders; four letters leave no error room. #701.
+  max_cer: 0.1

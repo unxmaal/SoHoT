@@ -80,7 +80,7 @@ class Verdict:
     held: str = ""
 
 
-def better(incumbent: dict, challenger: dict) -> bool:
+def better(incumbent: dict, challenger: dict, lane: str = "") -> bool:
     """Is the challenger's summary row better on the lane's own metric?
 
     Delegates to winners.order_key so there is one ordering rule in the
@@ -88,8 +88,8 @@ def better(incumbent: dict, challenger: dict) -> bool:
     """
     from harness import winners
 
-    names = winners.shared_metrics([incumbent, challenger])
-    return winners.order_key(challenger, names) > winners.order_key(incumbent, names)
+    names = winners.shared_metrics([incumbent, challenger], lane)
+    return winners.order_key(challenger, names, lane) > winners.order_key(incumbent, names, lane)
 
 
 def decide_by_hand(lane: str, incumbent: str, challenger: str,
@@ -284,7 +284,7 @@ def _worse(rows, name_i: str, name_c: str, alpha: float = ALPHA) -> str:
 
 
 def _gates(lane, name_i, name_c, incumbent, challenger, rows, alpha: float = ALPHA) -> Verdict:
-    if not better(incumbent, challenger):
+    if not better(incumbent, challenger, lane):
         return Verdict(lane, name_i, name_c, False,
                        "does not beat the incumbent on the lane's metric")
     if not rows:

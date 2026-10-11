@@ -111,9 +111,7 @@ def _check_image(artifact, case: Case, adherence: str | None = None,
         out.metrics = metrics
         return out
 
-    o = ocr_check.check(artifact, expect=expect_text,
-                        max_cer=case.assertions.get("max_cer",
-                                                    ocr_check.DEFAULT_MAX_CER))
+    o = ocr_check.check(artifact, expect=expect_text, max_cer=case.assertions["max_cer"])
     out = CheckResult(o.ok, o.reason, warnings_out + o.warnings,
                       failure_class=o.failure_class)
     metrics.update(o.metrics)
@@ -327,7 +325,7 @@ def _check_ocr(artifact, case: Case) -> CheckResult:
         artifact = artifact.read_text(encoding="utf-8")
     errors, chars = ocr_check.text_cer(case.assertions["text"], str(artifact or ""))
     rate = min(1.0, errors / chars) if chars else 1.0
-    limit = case.assertions.get("max_cer", ocr_check.DEFAULT_MAX_CER)
+    limit = case.assertions["max_cer"]
     out = CheckResult(rate <= limit, "")
     out.metrics = {"cer": round(rate, 4), "cer_errors": errors, "cer_chars": chars}
     if not out.ok:
@@ -1034,6 +1032,8 @@ def load_case(path: Path, private: bool = False) -> Case:
         params = {**params, **_agent_params(path, params, assertions)}
     if modality == "ocr" and not str(assertions.get("text") or "").strip():
         raise ValueError(f"{path.name}: an ocr case needs assert.text, the reference")
+    if assertions.get("text") and "max_cer" not in assertions:
+        raise ValueError(f"{path.name}: a case asserting text needs assert.max_cer; no lenient default (#701)")
     if modality == "retrieval":
         _check_relevant(path, input_file, assertions.get("relevant"))
     if modality == "pii":
@@ -1255,7 +1255,7 @@ def summarize(results: list[Result]) -> dict:
             "total_s": round(sum(times), 1),
             "peak_kb": max((r.peak_kb for r in rows), default=0),
             "warnings": sum(len(r.warnings) for r in rows),
-            "metrics": {**_mean_metrics(rows), **pooled},
+            "metrics": _calibrated_only({**_mean_metrics(rows), **pooled}),
             # Kept alongside the mean because an average of mostly-zeros hides
             # the one case that fell over, which is usually the interesting one.
             "metrics_worst": _worst_metrics(rows),
@@ -1367,6 +1367,13 @@ def _decide_calibration(rows: list[Result]) -> dict:
     if len(pairs) < decide_check.MIN_ECE_N:
         return {}
     return {"decide_ece": round(decide_check.ece(pairs), 4)}
+
+
+def _calibrated_only(metrics: dict) -> dict:
+    """No Brier or ECE for a candidate any of whose rows were one-hot: they would score the engine. #701."""
+    if float(metrics.get("calibrated", 1.0)) < 1.0:
+        return {k: v for k, v in metrics.items() if k not in ("decide_brier", "decide_ece")}
+    return metrics
 
 
 def _count(items) -> dict[str, int]:

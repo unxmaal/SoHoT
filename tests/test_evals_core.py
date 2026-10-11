@@ -352,7 +352,7 @@ def test_an_image_case_can_assert_the_text_it_should_render(tmp_path):
     the right size, both have variance."""
     case = Case(id="sign", modality="image", prompt="a sign reading OPEN",
                 params={"width": 512, "height": 512},
-                assertions={"text": "OPEN"})
+                assertions={"text": "OPEN", "max_cer": 0.25})
     assert score(case, render_text(tmp_path / "a.png", "OPEN")).passed
 
 
@@ -371,7 +371,7 @@ def test_a_misrendered_word_fails_and_reports_what_was_read(tmp_path):
 def test_the_character_error_rate_reaches_the_row_for_ranking(tmp_path):
     case = Case(id="sign", modality="image", prompt="a sign reading OPEN",
                 params={"width": 512, "height": 512},
-                assertions={"text": "OPEN"})
+                assertions={"text": "OPEN", "max_cer": 0.25})
     assert score(case, render_text(tmp_path / "a.png", "OPEN")).metrics["cer"] == 0.0
 
 
@@ -383,7 +383,7 @@ def test_the_pixel_check_runs_first_so_a_blank_image_is_not_an_ocr_failure(tmp_p
     Image.new("RGB", (512, 512), (128, 128, 128)).save(p)
     case = Case(id="sign", modality="image", prompt="x",
                 params={"width": 512, "height": 512},
-                assertions={"text": "OPEN"})
+                assertions={"text": "OPEN", "max_cer": 0.25})
     r = score(case, p)
     assert not r.passed
     assert "uniform" in r.detail.lower()

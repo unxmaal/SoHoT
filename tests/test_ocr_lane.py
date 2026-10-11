@@ -161,8 +161,8 @@ def test_an_empty_transcription_is_a_total_miss():
 
 
 def test_corpus_cer_is_pooled_over_characters_not_averaged_over_cases():
-    a = Case(id="a", modality="ocr", prompt="p", assertions={"text": "ab"})
-    b = Case(id="b", modality="ocr", prompt="p", assertions={"text": "abcdefghij"})
+    a = Case(id="a", modality="ocr", prompt="p", assertions={"text": "ab", "max_cer": 0.25})
+    b = Case(id="b", modality="ocr", prompt="p", assertions={"text": "abcdefghij", "max_cer": 0.25})
     rows = [score(a, "xb"), score(b, "abcdefghij")]
     for r in rows:
         r.candidate = "s"

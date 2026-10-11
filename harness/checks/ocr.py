@@ -27,8 +27,8 @@ appears anywhere in the output at all:
 
 Tesseract is built for scanned documents and this lane is scene text in a
 photograph. Shipping it would have reported twelve good renders as total
-failures, which is the exact failure the DEFAULT_MAX_CER note below warns
-about: measuring the OCR instead of the generator.
+failures, which is the exact failure a case's max_cer exists to avoid:
+measuring the OCR instead of the generator.
 
 WHICH ENGINE RAN IS PART OF THE RESULT. It goes in the eval receipt and
 comparable() refuses to rank across two of them, the same way PickScore is not
@@ -63,9 +63,6 @@ from harness import reasons
 # asked for, and stripping the middle would hide that.
 _EDGE = re.compile(r"^[^\w]+|[^\w]+$")
 
-# Vision is not perfect on synthetic renders either. A threshold of exactly
-# zero would measure the OCR rather than the generator under test.
-DEFAULT_MAX_CER = 0.25
 
 
 class OcrUnavailable(RuntimeError):
@@ -281,7 +278,7 @@ def text_cer(expected: str, got: str) -> tuple[int, int]:
     return out.substitutions + out.deletions + out.insertions, len(ref)
 
 
-def check(path: str | Path, expect: str, max_cer: float = DEFAULT_MAX_CER) -> OcrResult:
+def check(path: str | Path, expect: str, *, max_cer: float) -> OcrResult:
     """Is `expect` legibly rendered in the image at `path`?"""
     try:
         regions = read(path)

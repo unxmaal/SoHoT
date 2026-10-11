@@ -266,7 +266,7 @@ def from_logprobs(text: str, tokens: list, schema: dict) -> dict:
 
 
 def check(artifact, schema: dict, gold: dict) -> CheckResult:
-    """Pass when every field is answered correctly; the metrics carry the rest."""
+    """Pass when every field is answered correctly; decide_accuracy, which the lane ranks on, carries the rest."""
     rows = field_scores(parse(artifact, schema), gold, schema)
     n = len(rows)
     right = sum(1 for r in rows if r["correct"])
@@ -281,13 +281,16 @@ def check(artifact, schema: dict, gold: dict) -> CheckResult:
             out.reason += f"; wrong: {', '.join(wrong)}"
     elif wrong:
         out.reason = f"wrong: {', '.join(wrong)}"
+    calibrated = all(r["calibrated"] for r in rows)
     out.metrics = {
         "decide_accuracy": round(right / n, 4), "decide_correct": right,
-        "decide_fields": n, "decide_brier": round(brier / n, 4),
-        "decide_brier_sum": round(brier, 6),
-        "calibrated": 1.0 if all(r["calibrated"] for r in rows) else 0.0,
-        "decisions": [[round(r["confidence"], 6), int(r["correct"])] for r in rows],
+        "decide_fields": n, "calibrated": 1.0 if calibrated else 0.0,
     }
+    if calibrated:
+        # One-hot answers give Brier 2*(1-acc) and ECE 1-acc: the engine's missing logprobs, not the model. #701.
+        out.metrics.update({
+            "decide_brier": round(brier / n, 4), "decide_brier_sum": round(brier, 6),
+            "decisions": [[round(r["confidence"], 6), int(r["correct"])] for r in rows]})
     body = artifact if isinstance(artifact, dict) else _json_object(str(artifact or "")) or {}
     if body.get("per_option") is False:
         # One score per call spread over the choices, not a distribution. #312.
