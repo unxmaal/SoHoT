@@ -35,10 +35,10 @@ def name(deployment: str) -> str:
 
 
 def here() -> str:
-    """This machine's identity as its gateway keys a local deployment: served_model.this_machine."""
+    """This machine's identity as its gateway keys a local deployment, from the process's cached probe."""
     try:
-        from evals import environment
-        return environment.identity()["fingerprint"]
+        from harness import memory_store as ms
+        return ms.this_machine()["fingerprint"]
     except Exception:  # noqa: BLE001
         return ""
 

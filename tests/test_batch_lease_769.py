@@ -180,3 +180,14 @@ def test_chaos_does_not_start_while_a_remote_batch_holds_this_machine():
     asyncio.run(hook(None, None, _request("a-remote-eval"), "acompletion"))
     with exclusive.try_held("chaos") as got:
         assert got is False
+
+
+def test_this_machines_batch_lease_name_comes_from_the_cached_identity_not_a_fresh_probe(monkeypatch):
+    """The renewer asks every TTL_S/3 for as long as a batch runs; a sysctl each time is a probe per beat. #769."""
+    from harness import batch
+    from harness import memory_store as ms
+    want = ms.this_machine()["fingerprint"]
+    ran = []
+    monkeypatch.setattr(subprocess, "run", lambda argv, **kw: ran.append(argv))
+    assert batch.here() == want
+    assert ran == []
