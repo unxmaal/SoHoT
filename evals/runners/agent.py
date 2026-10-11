@@ -12,6 +12,8 @@ import statistics
 import time
 from pathlib import Path
 
+import httpx
+
 from evals import agent_pad, sandbox
 from evals.core import Case
 from evals.runners.base import BaseRunner, RunnerError
@@ -22,13 +24,14 @@ SYSTEM = ("You are a coding agent working inside a small repository. Use the "
           "Paths are relative to the repository root. Make the smallest change "
           "that completes the task. When the task is done, reply with a short "
           "final message and no tool call.")
-MAX_STEPS = 20
+#: Every case's own max_steps is multiplied by this; the knob a sweep moves. #695.
+MAX_STEPS_SCALE = 1.0
 STEP_TIMEOUT_S = 300.0
 CASE_TIMEOUT_S = 900.0
 
 #: What a server says when a request does not fit its context. #695.
 _OVER_CONTEXT = re.compile(r"exceeds? the available context|context.?window.?exceeded|maximum context length"
-                           r"|context length exceeded|n_ctx", re.I)
+                           r"|context length exceeded|exceeds? (the )?context (size|window|length)", re.I)
 
 #: A tool call written into the text instead of the tools API.
 _TEXT_CALL = re.compile(r"<tool_call>|<function=|\"name\"\s*:\s*\"(read_file|write_file|"
@@ -42,8 +45,19 @@ def served_counter(base: str, model: str):
     def count(text: str) -> float:
         if not held:
             held.append(completion.token_counter(base, model) or agent_pad.estimate)
-        return held[0](text)
+        try:
+            return held[0](text)
+        except (httpx.HTTPError, ValueError, KeyError, TypeError):
+            held[0] = agent_pad.estimate
+            return held[0](text)
     return count
+
+
+def step_cap(case: Case) -> int:
+    """The steps a case may take: its own max_steps, scaled by the knob. #695."""
+    if not case.params.get("max_steps"):
+        raise RunnerError(f"{case.id}: an agent case names its max_steps", failure_class=reasons.HARNESS_ERROR)
+    return max(1, round(int(case.params["max_steps"]) * MAX_STEPS_SCALE))
 
 
 def bundle_of(case: Case) -> Path:
@@ -149,7 +163,7 @@ class AgentRunner(BaseRunner):
             box.cleanup()
             raise RunnerError(f"unrunnable here: a {prompt:.0f}-token prompt and the {self.max_tokens}-token "
                               f"reply budget overflow the {self.served_ctx}-token served context",
-                              failure_class=reasons.CONTEXT_EXCEEDED)
+                              failure_class=reasons.CONTEXT_EXCEEDED, limit=f"served_ctx>{self.served_ctx}")
 
     def generate(self, case: Case):
         started = time.perf_counter()
@@ -159,14 +173,16 @@ class AgentRunner(BaseRunner):
         self._fits(case, box, first, tools)
         messages = [{"role": "system", "content": SYSTEM},
                     {"role": "user", "content": first}]
-        cap = int(case.params.get("max_steps") or MAX_STEPS)
-        # A case may never be shorter than one step at its reply budget.
-        allowed = max(float(case.params.get("timeout_s") or CASE_TIMEOUT_S), self.step_seconds())
+        cap = step_cap(case)
+        # A bigger reply budget stretches the case as it stretches a step; never shorter than one step.
+        stretch = max(1.0, self.max_tokens / completion.budget("agent"))
+        allowed = max(float(case.params.get("timeout_s") or CASE_TIMEOUT_S) * stretch, self.step_seconds())
         case_limit = f"agent_case_timeout_s>{allowed:g}"
         deadline = started + allowed
         steps: list[dict] = []
         final, stopped = "", "step cap"
         cut = ""
+        prefill = 0.0
         cold = not self.answered
         try:
             for n in range(cap):
@@ -175,17 +191,20 @@ class AgentRunner(BaseRunner):
                     stopped = "time cap"
                     break
                 try:
-                    rec, message, ended = self._step(n, messages, tools, min(self.step_seconds(), left))
+                    rec, message, ended = self._step(n, messages, tools, min(self.step_seconds(), left + prefill))
                 except completion.CompletionError as exc:
                     if exc.failure_class == reasons.TIMEOUT and exc.limit:
                         took = exc.limit[1]
                         exc.limit = (("agent_case_timeout_s", allowed) if took < self.step_seconds()
                                      else ("agent_step_timeout_s", took))
                     elif _OVER_CONTEXT.search(str(exc)):
-                        exc.failure_class, exc.limit = reasons.CONTEXT_EXCEEDED, ()
+                        exc.failure_class = reasons.CONTEXT_EXCEEDED
+                        exc.limit = ("served_ctx", self.served_ctx) if self.served_ctx else ()
                     raise
                 steps.append(rec)
                 # Prefill grows with the context, not with the agent's work, so it is not the case's to pay. #695.
+                # The prompt only grows, so the largest prefill yet is this step's floor.
+                prefill = max(prefill, _prefill(rec))
                 deadline += _prefill(rec)
                 if ended == "length":
                     rec["cut"] = True
@@ -219,7 +238,7 @@ class AgentRunner(BaseRunner):
         elif stopped == "time cap":
             self.last_stop = (reasons.TIMEOUT, case_limit)
         elif stopped == "step cap":
-            self.last_stop = (reasons.STEP_CAP, f"agent_max_steps>{cap}")
+            self.last_stop = (reasons.STEP_CAP, f"agent_steps_scale>{MAX_STEPS_SCALE:g}")
         return finish(case, box, steps, final, stopped, started), 0
 
     def stopped_by(self) -> tuple[str, str]:

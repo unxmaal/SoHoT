@@ -112,8 +112,8 @@ class ClaudeAgentRunner(BaseRunner):
 
     def generate(self, case: Case):
         started = time.perf_counter()
+        cap = agent.step_cap(case)
         box, first = agent.setup(case)
-        cap = int(case.params.get("max_steps") or agent.MAX_STEPS)
         try:
             with tempfile.TemporaryDirectory(prefix="soh-claude-agent-") as cwd:
                 log = Path(cwd) / "calls.jsonl"
