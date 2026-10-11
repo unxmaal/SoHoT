@@ -181,9 +181,9 @@ def _get_json(url: str) -> dict:
 
 def upstream(where: serving.Route, config=None) -> tuple[str, str]:
     """(server base, model name) that answers `where`, a gateway alias resolved; ("", "") if unknown."""
-    from harness.completion import DEFAULT_GATEWAY
-    base = where.base.rstrip("/").removesuffix("/v1")
-    if base != DEFAULT_GATEWAY:
+    from harness.completion import is_gateway
+    base = serving.bare(where.base)
+    if not is_gateway(base):
         return base, where.model
     for entry in gateway.load(config).get("model_list") or []:
         if str(entry.get("model_name", "")).strip().lower() == where.model.lower():
@@ -194,23 +194,24 @@ def upstream(where: serving.Route, config=None) -> tuple[str, str]:
 
 
 def loaded(where: serving.Route, get=None, config=None) -> bool:
-    """True only when the server behind `where` holds its model now; unknown is False."""
-    from harness import mlx_server, router
+    """True only when the server behind `where`, on any host, holds its model now; unknown is False."""
+    from harness import mlx_server
     get = get or _get_json
     base, model = upstream(where, config)
     if not model:
         return False
     try:
-        if base in (serving.LLAMACPP_URL, router.url()):
+        engine = serving.engine_at(base, config=config)
+        if engine == serving.LLAMACPP:
             for m in get(base + "/models").get("data") or []:
                 status = m.get("status")
                 value = status.get("value") if isinstance(status, dict) else status
                 if m.get("id") == model and value == "loaded":
                     return True
             return False
-        if base == serving.MLX_URL:
+        if engine == serving.DEFAULT:
             return get(base + mlx_server.LOADED_PATH).get("model") == model
-        if base == serving.vllm_url():
+        if engine in serving.VLLM_ENGINES:
             return any(m.get("id") == model
                        for m in get(base + "/v1/models").get("data") or [])
     except Exception:  # noqa: BLE001
@@ -220,6 +221,13 @@ def loaded(where: serving.Route, get=None, config=None) -> bool:
 
 def _gate(where: serving.Route) -> None:
     """Refuse a call that would load a model while another job holds the machine lock."""
+    try:
+        base, _ = upstream(where)
+    except Exception:  # noqa: BLE001
+        base = ""
+    # This machine's lock and pressure say nothing about a server on another host.
+    if base and not serving.loopback(base):
+        return
     held = busy()
     if not held:
         return

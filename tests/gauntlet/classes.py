@@ -72,6 +72,13 @@ INDEX = {
         "instances": _i(87),
         "scanners": []},
     "identity-by-name-not-by-content": {
+        "detector": "loopback_equality",
+        "waivers": {
+            "harness/serving.py:engine_at":
+                "a launcher's default port, asked only after the config's engine key, and only on this machine (#702)",
+            "harness/completion.py:is_gateway":
+                "this machine's own gateway is a gateway whatever SOHOT_GATEWAY_URL names (#702)",
+        },
         "review": r"\b(?:cache_key|dedup\w*|digest|etag|lru_cache)\b|\bseen\s*(?:=|\.add\()",
         "instances": _i(110, 116, 124, 277, 337, rules=(297,)),
         "scanners": []},

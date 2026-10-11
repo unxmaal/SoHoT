@@ -11,6 +11,7 @@ not ship.
 from __future__ import annotations
 
 import json
+import os
 import time
 from dataclasses import dataclass, field
 
@@ -20,6 +21,20 @@ from harness import reasons
 from harness.checks.base import extract
 
 DEFAULT_GATEWAY = "http://127.0.0.1:4000"
+#: The gateway clients reach when none is given: a client machine sets it to the serving machine's. #702.
+GATEWAY_ENV = "SOHOT_GATEWAY_URL"
+
+
+def gateway_url(environ=None) -> str:
+    """The gateway to use when a caller names none."""
+    environ = os.environ if environ is None else environ
+    return (environ.get(GATEWAY_ENV) or "").strip().rstrip("/") or DEFAULT_GATEWAY
+
+
+def is_gateway(base: str, environ=None) -> bool:
+    """Whether `base` is the configured gateway or this machine's own."""
+    got = (base or "").strip().rstrip("/").removesuffix("/v1")
+    return got in (gateway_url(environ), DEFAULT_GATEWAY)
 
 # Per-modality steering. The checkers recover fenced or chatty output anyway,
 # but asking for the bare artifact makes the comparison about the artifact
@@ -154,13 +169,13 @@ def user_message(prompt: str, context: str = "") -> str:
     return f"{context.rstrip()}\n\n---\n\n{prompt}"
 
 
-def complete(prompt: str, model: str, gateway: str = DEFAULT_GATEWAY,
+def complete(prompt: str, model: str, gateway: str = "",
              **kw) -> str:
     """Ask `model` for a completion. Returns the raw text, unrecovered."""
     return complete_with_usage(prompt, model, gateway, **kw)[0]
 
 
-def complete_with_usage(prompt: str, model: str, gateway: str = DEFAULT_GATEWAY,
+def complete_with_usage(prompt: str, model: str, gateway: str = "",
              modality: str = "", context: str = "", timeout: float = TIMEOUT_S,
              temperature: float | None = None, max_tokens: int = MAX_TOKENS,
              sampling: dict | None = None,
@@ -180,7 +195,7 @@ def complete_with_usage(prompt: str, model: str, gateway: str = DEFAULT_GATEWAY,
 
 
 def complete_with_logprobs(prompt: str, model: str,
-                           gateway: str = DEFAULT_GATEWAY, modality: str = "",
+                           gateway: str = "", modality: str = "",
                            context: str = "", timeout: float = TIMEOUT_S,
                            temperature: float | None = None,
                            max_tokens: int = MAX_TOKENS,
@@ -212,7 +227,7 @@ class Completion:
     finish: str = ""
 
 
-def complete_full(prompt: str, model: str, gateway: str = DEFAULT_GATEWAY,
+def complete_full(prompt: str, model: str, gateway: str = "",
                   modality: str = "", context: str = "",
                   timeout: float = TIMEOUT_S,
                   temperature: float | None = None,
@@ -222,6 +237,7 @@ def complete_full(prompt: str, model: str, gateway: str = DEFAULT_GATEWAY,
                   response_format: dict | None = None) -> Completion:
     """One completion with its timing. `stream` asks for SSE so the first
     content token can be timed; a server that answers whole leaves ttft_s None."""
+    gateway = gateway or gateway_url()
     knobs = dict(SAMPLING.get(modality, {}))
     if temperature is not None:
         knobs["temperature"] = temperature
@@ -453,7 +469,7 @@ def _merge_call(calls: dict, part: dict) -> None:
         got["function"]["arguments"] = json.dumps(fn["arguments"])
 
 
-def chat(messages: list, model: str, gateway: str = DEFAULT_GATEWAY,
+def chat(messages: list, model: str, gateway: str = "",
          tools: list | None = None, timeout: float = TIMEOUT_S,
          max_tokens: int = MAX_TOKENS, sampling: dict | None = None,
          stream: bool = True) -> Completion:
@@ -463,6 +479,7 @@ def chat(messages: list, model: str, gateway: str = DEFAULT_GATEWAY,
     assistant message, tool_calls included. timing["first_tool_s"] is the
     first tool-call fragment.
     """
+    gateway = gateway or gateway_url()
     knobs = {"temperature": DEFAULT_TEMPERATURE, **(sampling or {})}
     payload = {"model": model, "max_tokens": max_tokens,
                "messages": list(messages), **knobs}

@@ -332,7 +332,7 @@ def build_parser() -> argparse.ArgumentParser:
                    help="with --judge --from-store, score without running the "
                         "control first. For a person watching the output, "
                         "never for a Job")
-    d.add_argument("--gateway", default=completion.DEFAULT_GATEWAY,
+    d.add_argument("--gateway", default=completion.gateway_url(),
                    help="where the judge model is served. A pod reaches the "
                         "host's gateway, not its own localhost")
     d.add_argument("--neighbors", action="store_true",
@@ -436,7 +436,7 @@ def build_parser() -> argparse.ArgumentParser:
                                  "$LOCALHARNESS_HOME/evalsets")
     rub.add_argument("--candidates", default="",
                      help="with run, comma-separated gateway aliases")
-    rub.add_argument("--gateway", default=completion.DEFAULT_GATEWAY)
+    rub.add_argument("--gateway", default=completion.gateway_url())
     rub.add_argument("--port", type=int, default=8766)
     rub.add_argument("--repeat-rate", type=float, default=0.2)
     rub.add_argument("--no-browser", action="store_true")
@@ -456,7 +456,7 @@ def build_parser() -> argparse.ArgumentParser:
     thr.add_argument("--levels", default="1,2,4")
     thr.add_argument("--max-tokens", type=int, default=300)
     thr.add_argument("--timeout", type=float, default=300.0, help="seconds one request may take")
-    thr.add_argument("--gateway", default="http://127.0.0.1:4000")
+    thr.add_argument("--gateway", default=completion.gateway_url())
     thr.add_argument("--serve", choices=("vllm-mlx", "vllm-metal"),
                      help="start this engine for a vllm: --model, sweep, then stop it")
     thr.add_argument("--server-pid", type=int,
@@ -527,7 +527,7 @@ def build_parser() -> argparse.ArgumentParser:
     bch.add_argument("--probe", nargs="+", metavar="MODEL",
                      help="prefix-completion contamination probe of the lane's cases (default decide)")
     bch.add_argument("--limit", type=int, default=0, help="with --probe, at most this many cases")
-    bch.add_argument("--gateway", default=completion.DEFAULT_GATEWAY)
+    bch.add_argument("--gateway", default=completion.gateway_url())
     bch.set_defaults(func=benchmarks_cmd.cmd_benchmarks)
     cas = sub.add_parser("cases", help="re-run a case importer, or its negative control (#603)")
     cas.add_argument("action", choices=("import", "control"))

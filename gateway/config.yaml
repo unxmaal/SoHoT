@@ -1,5 +1,7 @@
 model_list:
+  # hot_swap: discovered repo ids go to this entry's mlx_lm.server, which loads any of them (#702).
   - model_name: mlx-community/Qwen2.5-0.5B-Instruct-4bit
+    hot_swap: true
     litellm_params: &localsmall
       model: openai/mlx-community/Qwen2.5-0.5B-Instruct-4bit
       api_base: http://127.0.0.1:8081/v1

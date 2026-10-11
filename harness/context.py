@@ -344,6 +344,10 @@ def served_ctx(spec: str, config=None, get=None, conn=None) -> int | None:
                 return _per_slot(stem, args, conn)
     except Exception:  # noqa: BLE001
         pass
+    from harness import serving
+    # The stored choice was planned for this machine; a remote router's is unknown.
+    if not serving.loopback(base):
+        return None
     from harness import downloads
     try:
         with downloads.store(conn) as c:

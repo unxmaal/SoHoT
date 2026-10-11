@@ -83,8 +83,67 @@ def llamacpp_build(binary: str = "") -> str:
     return m.group(1) if m else ""
 
 
+#: Hosts that are this machine, where a launcher's default port names its engine.
+LOOPBACK = ("127.0.0.1", "localhost", "::1")
+#: Gateway config entry keys: the engine behind its api_base, and the upstream discovered repo ids go to. #702.
+ENGINE_KEY = "engine"
+HOT_SWAP_KEY = "hot_swap"
+
+
+def bare(base: str) -> str:
+    """A server base without a trailing slash or /v1."""
+    return (base or "").strip().rstrip("/").removesuffix("/v1").rstrip("/")
+
+
+def loopback(base: str) -> bool:
+    """Whether `base` is on this machine."""
+    from urllib.parse import urlsplit
+    try:
+        return urlsplit(bare(base)).hostname in LOOPBACK
+    except ValueError:
+        return False
+
+
+def engines(environ=None) -> tuple:
+    """Every engine name a gateway config entry may declare."""
+    return (LLAMACPP, DEFAULT, DS4, text_engine(environ), *VLLM_ENGINES)
+
+
+def _declared(entry: dict, environ=None) -> str:
+    got = str(entry.get(ENGINE_KEY) or "").strip()
+    if got and got not in engines(environ):
+        raise ValueError(f"{entry.get('model_name')}: engine {got} is not one of "
+                         f"{', '.join(dict.fromkeys(engines(environ)))}")
+    return got
+
+
+def api_base(entry: dict) -> str:
+    return bare(str((entry.get("litellm_params") or {}).get("api_base", "")))
+
+
+def engine_at(base: str, environ=None, config=None, data=None) -> str | None:
+    """The engine serving `base`: a config entry's engine key, else the local launcher port; None if neither says."""
+    from harness import ds4, gateway, router
+    want = bare(base)
+    if not want:
+        return None
+    for entry in (gateway.load(config) if data is None else data).get("model_list") or []:
+        got = _declared(entry, environ)
+        if got and api_base(entry) == want:
+            return got
+    if want in (LLAMACPP_URL, router.url()):
+        return LLAMACPP
+    if want == vllm_url(environ):
+        return vllm_engine(environ)
+    if want == ds4.url(environ):
+        return DS4
+    if want == MLX_URL:
+        return text_engine(environ)
+    return None
+
+
 def engine_for(candidate: str, environ=None, config=None) -> str:
-    """The server that answers this candidate, read from where it routes."""
+    """The server that answers this candidate, read from where it routes; raises when nothing says."""
     name = (candidate or "").partition(",")[0].strip()
     if name.startswith(LLAMACPP_PREFIX):
         return LLAMACPP
@@ -92,36 +151,35 @@ def engine_for(candidate: str, environ=None, config=None) -> str:
         return vllm_engine(environ)
     if name.startswith(DS4_PREFIX):
         return DS4
-    from harness import ds4, gateway
-    for entry in gateway.load(config).get("model_list") or []:
+    from harness import gateway
+    data = gateway.load(config)
+    for entry in data.get("model_list") or []:
         if str(entry.get("model_name", "")).lower() == name.lower():
-            base = str((entry.get("litellm_params") or {}).get("api_base", ""))
-            base = base.rstrip("/").removesuffix("/v1")
-            if base == LLAMACPP_URL:
-                return LLAMACPP
-            if base == vllm_url(environ):
-                return vllm_engine(environ)
-            if base == ds4.url(environ):
-                return DS4
+            base = api_base(entry)
+            if not base:
+                break
+            got = _declared(entry, environ) or engine_at(base, environ, data=data)
+            if got is None:
+                raise ValueError(f"{name}: no engine is known for {base}; give its gateway "
+                                 f"config entry an {ENGINE_KEY}: key")
+            return got
     return text_engine(environ)
 
 
 def enforces_schema(spec: str, environ=None, config=None) -> bool:
     """Whether this spec is answered by llama-server, the one engine that enforces response_format. #572."""
-    if engine_for(spec, environ, config) == LLAMACPP:
-        return True
     try:
+        if engine_for(spec, environ, config) == LLAMACPP:
+            return True
         where = route(spec, config=config)
     except ValueError:
         return False
-    from harness import router
-    return where.base.rstrip("/").removesuffix("/v1") in (LLAMACPP_URL, router.url())
+    return engine_at(where.base, environ, config) == LLAMACPP
 
 
-def drops_schema(base: str, environ=None) -> bool:
+def drops_schema(base: str, environ=None, config=None) -> bool:
     """Whether a request sent straight to `base` reaches mlx_lm.server, which ignores response_format."""
-    return (base.rstrip("/").removesuffix("/v1") == MLX_URL
-            and text_engine(environ) == DEFAULT)
+    return engine_at(base, environ, config) == DEFAULT
 
 
 def text_engine(environ=None) -> str:
@@ -200,7 +258,7 @@ def route(spec: str, gateway: str = "", config=None) -> Route:
             raise ValueError(f"{spec!r} names no model; vllm:<repo id>")
         return Route(vllm_url(), model, sampling)
     from harness import screen
-    from harness.completion import DEFAULT_GATEWAY
+    from harness.completion import gateway_url
     alias = "/" not in name or name.lower() in screen.gateway_routes(config)[0]
     if not alias and ds4.recognised(name):
         # ds4's own GGUFs load nowhere else. #611.
@@ -214,8 +272,8 @@ def route(spec: str, gateway: str = "", config=None) -> Route:
     if gateway:
         return Route(gateway.rstrip("/"), name, sampling)
     if alias:
-        return Route(DEFAULT_GATEWAY, name, sampling)
-    return Route(screen.routed_gateway(name, config) or DEFAULT_GATEWAY, name, sampling)
+        return Route(gateway_url(), name, sampling)
+    return Route(screen.routed_gateway(name, config) or gateway_url(), name, sampling)
 
 
 def gguf_stem(repo: str) -> str | None:

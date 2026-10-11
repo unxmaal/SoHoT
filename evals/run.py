@@ -783,7 +783,7 @@ def _parser():
                          "won this lane, rather than from a constant. A "
                          "deployment built around 'the current winner' must "
                          "read it rather than be told it")
-    ap.add_argument("--gateway", default="http://127.0.0.1:4000")
+    ap.add_argument("--gateway", default=completion.gateway_url())
     ap.add_argument("--cases", default=str(ROOT / "cases"))
     ap.add_argument("--local-cases", default=None,
                     help="local-only cases added to the shipped ones "
@@ -1011,8 +1011,8 @@ def _served(candidate: str):
 def _run_candidate(args, candidate, runner, mine, results, outdir, evicted=None,
                    ladder=()) -> None:
     runner.screening = bool(args.screen)
-    model = router.model_for(candidate, args.gateway)
-    watch = router.Watch(model) if model else None
+    base, model = router.upstream_for(candidate, args.gateway)
+    watch = router.Watch(model, base=base) if model else None
     print(f"\n── {runner.candidate}", flush=True)
     # A cold load is not the case's to pay for; a failed one is every case's. #406.
     cold = None

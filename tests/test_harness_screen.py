@@ -248,7 +248,7 @@ def test_a_repo_id_goes_to_the_upstream(tmp_path):
     anything else. mlx_lm.server treats it as a live repo id and swaps to it,
     so a discovered candidate has to reach the upstream directly."""
     cfg = tmp_path / "g.yaml"
-    cfg.write_text("model_list:\n  - model_name: q3-4b\n    litellm_params:\n"
+    cfg.write_text("model_list:\n  - model_name: q3-4b\n    hot_swap: true\n    litellm_params:\n"
                    "      model: openai/org/x\n      api_base: http://up/v1\n",
                    encoding="utf-8")
     # The `--gateway` FORM, without the /v1 the config carries: evals.run

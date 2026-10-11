@@ -277,3 +277,20 @@ def test_a_marker_may_name_its_class_through_a_module_constant():
            "@pytest.mark.gauntlet(UNKNOWN, site=\"harness/t.py:X\")\ndef test_b():\n    pass\n")
     assert detectors.bindings({"tests/test_t.py": src}) == {
         ("a-closed-table-fronting-an-open-set", "harness/t.py:FAMILY"): ["tests/test_t.py::test_a"]}
+
+
+def test_an_address_compared_to_a_loopback_constant_is_found():
+    files = {"harness/s.py": ("URL = \"http://127.0.0.1:8082\"\n"
+                              "def engine(base):\n    if base == URL:\n        return 1\n"),
+             "harness/t.py": ("from harness import s\nclass R:\n    def f(self, b):\n"
+                              "        return b in (s.URL, \"x\")\n")}
+    assert sites(detectors.loopback_equality, files) == ["harness/s.py:engine", "harness/t.py:R.f"]
+
+
+def test_a_loopback_constant_used_without_comparing_is_left_alone():
+    innocent = {"harness/s.py": ("URL = \"http://127.0.0.1:8082\"\nOTHER = \"http://gw.test\"\n"
+                                 "def get(path):\n    return URL + path\n"
+                                 "def other(b):\n    return b == OTHER\n"),
+                "tests/test_s.py": "from harness.s import URL\ndef test_x():\n    assert URL == \"x\"\n"}
+    bad = {"harness/u.py": "def f(b):\n    return b != \"http://localhost:4000\"\n"}
+    quiet_then_fires(detectors.loopback_equality, innocent, bad)

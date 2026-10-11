@@ -25,8 +25,8 @@ class FakeRouter:
         self.models = dict(models)
         self.down = False
 
-    def get(self, path):
-        assert path == "/models"
+    def get(self, path, base=""):
+        assert path == "/models" and base in ("", router.url())
         if self.down:
             raise OSError("connection refused")
         return {"data": [{"id": k, "status": {"value": v}} for k, v in self.models.items()]}
@@ -171,7 +171,7 @@ class Evicted(BaseRunner):
 
 def _run(tmp_path, monkeypatch, runner, model):
     monkeypatch.setattr(R, "build_runner", lambda *a, **k: runner)
-    monkeypatch.setattr(router, "model_for", lambda *a, **k: model)
+    monkeypatch.setattr(router, "upstream_for", lambda *a, **k: (router.url() if model else "", model))
     args = argparse.Namespace(
         screen=False, repeat=1, adherence="", cases=str(ROOT / "evals" / "cases"),
         modality="decide", candidates="org/x", from_winners=False, gateway="http://gw.test",

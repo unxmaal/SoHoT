@@ -15,7 +15,9 @@
 #
 #   GATEWAY_CONFIG=gateway/config.cuda.yaml ./scripts/serve-gateway.sh
 model_list:
+  # engine: names the server behind this api_base for every entry that shares it (#702).
   - model_name: qwen2.5-0.5b-instruct-q4_k_m
+    engine: llama-server
     in_place_of: mlx-community/Qwen2.5-0.5B-Instruct-4bit
     litellm_params: &localsmall
       model: openai/qwen2.5-0.5b-instruct-q4_k_m

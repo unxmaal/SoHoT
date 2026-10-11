@@ -356,15 +356,22 @@ def gateway_routes(config=None) -> tuple[set[str], str]:
     candidate -- which is always a repo id and never an alias -- has to reach
     the upstream directly or it is refused before a token is generated.
     """
-    from harness import gateway
+    from harness import gateway, serving
 
     data = gateway.load(config)
-    names, base = set(), ""
+    names, named, mlx_base = set(), "", ""
     for entry in data.get("model_list") or []:
         if entry.get("model_name"):
             names.add(str(entry["model_name"]).strip().lower())
-        base = base or (entry.get("litellm_params") or {}).get("api_base", "")
-    return names, base
+        base = str((entry.get("litellm_params") or {}).get("api_base", ""))
+        if not base:
+            continue
+        if entry.get(serving.HOT_SWAP_KEY):
+            named = named or base
+        # Only mlx_lm.server loads a repo id it was never configured with.
+        elif not mlx_base and serving.engine_at(base, data=data) == serving.DEFAULT:
+            mlx_base = base
+    return names, named or mlx_base
 
 
 def upstream_of(alias: str, config=None) -> str:
