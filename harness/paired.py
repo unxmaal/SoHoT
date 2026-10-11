@@ -27,8 +27,10 @@ from dataclasses import dataclass
 
 from harness import reasons
 
-#: Failure classes that are our limit, not a verdict: neither lost nor gained, counted apart. #693.
-UNJUDGED = (reasons.TIMEOUT,)
+#: Failure classes that are our limit or a request that never reached a model: neither lost nor gained, counted apart. #693.
+UNJUDGED = (reasons.TIMEOUT,) + reasons.NEVER_RAN
+#: On a timeout axis the timeout is the verdict under test, so only harness failures stay unjudged.
+UNJUDGED_ON_A_TIMEOUT_AXIS = reasons.NEVER_RAN
 
 #: Receipt fields a sweep may deliberately vary, one at a time.
 AXES = ("sampling", "repeat", "accelerator", "instruments", "where", "gateway", "launch",
@@ -42,7 +44,7 @@ class Cell:
     lost: int
     gained: int
     unchanged: int
-    #: Cells where either side hit a limit in UNJUDGED. #693.
+    #: Cells where either side failed on a class in UNJUDGED. #693.
     unjudged: int = 0
 
     @property

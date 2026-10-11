@@ -224,3 +224,166 @@ def test_no_timeout_is_raised_without_its_class():
         if rel.endswith(".py") and rel.startswith(("harness/", "evals/")) and path.is_file():
             found += scanners.unclassed_timeouts(path.read_text(encoding="utf-8"), rel)
     assert not found, "\n  ".join(found)
+
+
+# ---- review round 2 ----
+
+def _clip(tmp_path):
+    from harness.checks import speech as speech_check
+    clip = tmp_path / "a.wav"
+    clip.write_bytes(b"\0" * (speech_check.MIN_AUDIO_BYTES + 10))
+    return clip
+
+
+def _slow_ear(path):
+    from harness import audio
+    raise audio.AudioTimeout("stt", 120.0)
+
+
+def test_a_tts_read_back_timeout_is_timeout_not_a_wrong_answer(tmp_path):
+    from evals import core
+    case = Case(id="p", modality="tts", prompt="hello there", assertions={"max_wer": 0.2})
+    row = score(case, str(_clip(tmp_path)), transcriber=_slow_ear)
+    assert (row.failure_class, row.limit) == (reasons.TIMEOUT, "audio_timeout_s>120")
+    assert core._check_tts(str(_clip(tmp_path)), case, transcriber=_slow_ear).failure_class == reasons.TIMEOUT
+
+
+def test_a_music_read_back_timeout_is_timeout_not_a_wrong_answer(tmp_path):
+    case = Case(id="m", modality="music", prompt="", params={"lyrics": "la la la", "duration": 5},
+                assertions={"max_wer": 0.5})
+    row = score(case, str(_clip(tmp_path)), transcriber=_slow_ear)
+    assert (row.failure_class, row.limit) == (reasons.TIMEOUT, "audio_timeout_s>120")
+
+
+def test_a_whisperkit_or_fluidaudio_timeout_is_an_audio_timeout(tmp_path, monkeypatch):
+    from harness import audio
+    clip = _clip(tmp_path)
+    monkeypatch.setattr(subprocess, "run", expired)
+    for run in (audio.transcribe_whisperkit, audio.transcribe_fluidaudio):
+        with pytest.raises(audio.AudioTimeout) as got:
+            run(clip, timeout=9.0)
+        assert got.value.limit == ("audio_timeout_s", 9.0)
+
+
+def test_a_local_transcriber_with_no_timeout_runs_at_the_audio_knob(tmp_path, monkeypatch):
+    from harness import audio
+    seen = []
+    monkeypatch.setattr(audio, "TIMEOUT_S", 33.0)
+    monkeypatch.setattr(audio, "_run_whisperkit", lambda argv, timeout: seen.append(timeout) or "hi")
+    clip = _clip(tmp_path)
+    audio.transcriber("whisperkit")(clip)
+    with pytest.raises(audio.AudioError):
+        audio.transcriber("fluidaudio")(clip)
+    assert seen == [33.0, 33.0]
+
+
+def test_a_claude_agent_timeout_is_timeout_on_the_agent_case_knob(monkeypatch):
+    from evals.runners import agent, claude_agent
+    monkeypatch.setattr(agent, "setup", lambda case: (type("Box", (), {"cleanup": lambda self: None,
+                                                                         "root": "/x"})(), "go"))
+    r = claude_agent.ClaudeAgentRunner("m", timeout=900.0, execute=expired)
+    row = r.run(Case(id="a", modality="agent", prompt="", params={"tools": ["read"]}))
+    assert (row.failure_class, row.limit) == (reasons.TIMEOUT, "agent_case_timeout_s>900")
+
+
+def test_the_claude_code_timeout_is_a_registered_knob_read_at_call_time(monkeypatch):
+    from evals.runners import claude_code
+    assert knobs.KNOBS["claude_code_timeout"].default("code") == claude_code.TIMEOUT_S
+    monkeypatch.setattr(claude_code, "TIMEOUT_S", 5.0)
+    row = claude_code.ClaudeCodeRunner("m", execute=expired).run(
+        Case(id="add", modality="code", prompt="Write add.", assertions={"checks": ["add(1, 2) == 3"]}))
+    assert row.limit == "claude_code_timeout_s>5"
+
+
+def test_every_timeout_limit_a_row_can_carry_names_a_registered_knob():
+    have = reasons.limits()
+    assert "claude_code_timeout_s" in have
+    assert have["needle_serve_start_s"] == knobs.KNOBS["needle_serve_start"].default()
+
+
+def test_a_harness_failure_cell_is_neither_lost_nor_gained():
+    before = [_row(c, True) for c in "abcd"]
+    after = [_row("a", False, reasons.HARNESS_ERROR), _row("b", False, reasons.SERVER_DEAD),
+             _row("c", False, reasons.REFUSED_BY_GATEWAY), _row("d", False, reasons.CONTENT_FAILED)]
+    cell, = paired.cells(before, after)
+    assert (cell.lost, cell.unjudged) == (1, 3)
+
+
+def test_a_timeout_axis_still_leaves_harness_failures_unjudged():
+    before = [_row("a", True), _row("b", True)]
+    after = [_row("a", False, reasons.TIMEOUT), _row("b", False, reasons.HARNESS_ERROR)]
+    cell, = paired.cells(before, after, paired.UNJUDGED_ON_A_TIMEOUT_AXIS)
+    assert (cell.lost, cell.unjudged) == (1, 1)
+
+
+def test_reverify_pairing_leaves_a_timeout_out_of_lost():
+    from harness import reverify
+    before = [_row("a", True), _row("b", True)]
+    after = [_row("a", False, reasons.TIMEOUT), _row("b", False, reasons.CONTENT_FAILED)]
+    cell, lost = reverify._paired(before, after)
+    assert (cell.lost, cell.unjudged, [r["case_id"] for r in lost]) == (1, 1, ["b"])
+
+
+def test_an_mcp_run_lh_timeout_with_no_verb_still_raises_the_tool_error(monkeypatch):
+    from mcp.server.mcpserver.exceptions import ToolError
+
+    from harness import mcp_server
+    monkeypatch.setattr(mcp_server.subprocess, "run", expired)
+    with pytest.raises(ToolError, match="timed out"):
+        mcp_server.run_lh(list(mcp_server.LH))
+
+
+def test_a_timeout_seen_by_isinstance_or_returned_as_a_failing_result_is_found():
+    bad_isinstance = ("try:\n    go()\nexcept (OSError, RuntimeError) as exc:\n"
+                      "    if isinstance(exc, TimeoutError):\n        raise CompletionError('slow') from exc\n")
+    bad_return = ("try:\n    go()\nexcept subprocess.TimeoutExpired:\n"
+                  "    return CodeResult(False, 'timed out')\n")
+    bad_parent = ("try:\n    t = ear(p)\nexcept AudioError as exc:\n"
+                  "    return SpeechResult(False, str(exc))\n")
+    good_parent = ("try:\n    t = ear(p)\nexcept AudioTimeout as exc:\n"
+                   "    return SpeechResult(False, str(exc), failure_class=reasons.TIMEOUT)\n"
+                   "except AudioError as exc:\n    return SpeechResult(False, str(exc))\n")
+    for bad in (bad_isinstance, bad_return, bad_parent):
+        assert scanners.unclassed_timeouts(bad, "m.py") != [], bad
+    assert scanners.unclassed_timeouts(good_parent, "m.py") == []
+
+
+# ---- the render instruments (found by the widened scanner) ----
+
+def test_a_page_chrome_never_shoots_in_time_is_timeout_on_the_render_knob(monkeypatch):
+    from harness.checks import render
+    monkeypatch.setattr(render, "chrome_path", lambda: "/fake/chrome")
+    monkeypatch.setattr(render, "CHROME_TIMEOUT_S", 0.2)
+    monkeypatch.setattr(render, "_PROFILE_HANGS", set())
+
+    def slow_shoot(argv, out, cwd, timeout=60.0):
+        import time
+        time.sleep(timeout)
+        return "still loading"
+
+    monkeypatch.setattr(render, "_shoot", slow_shoot)
+    got = render.check_html("<html><body>hi</body></html>")
+    assert (got.ok, got.failure_class, got.limit) == (False, reasons.TIMEOUT, "chrome_render_timeout_s>0.2")
+
+
+def test_an_svg_the_rasterizer_cannot_finish_in_time_is_timeout_on_the_render_knob(monkeypatch):
+    from harness.checks import render
+    monkeypatch.setattr(render, "rasterizer_path", lambda: "/fake/rsvg-convert")
+    monkeypatch.setattr(render, "_first_available", lambda names: "/fake/rsvg-convert")
+    monkeypatch.setattr(render.subprocess, "run", expired)
+    got = render.check('<svg xmlns="http://www.w3.org/2000/svg"><circle r="5"/></svg>')
+    assert (got.ok, got.failure_class, got.limit) == (
+        False, reasons.TIMEOUT, f"svg_render_timeout_s>{render.SVG_TIMEOUT_S:g}")
+
+
+def test_the_web_and_svg_lanes_carry_the_render_class_onto_the_row(monkeypatch):
+    from harness.checks import base, render
+    hit = base.CheckResult(False, "slow", failure_class=reasons.TIMEOUT, limit="chrome_render_timeout_s>60")
+    monkeypatch.setattr(render, "check_html", lambda html: hit)
+    monkeypatch.setattr(render, "check", lambda svg: hit)
+    web = score(Case(id="w", modality="web", prompt=""), "<!doctype html><html><head><title>t</title></head>"
+                "<body><h1>hi</h1></body></html>")
+    svg = score(Case(id="s", modality="svg", prompt=""), '<svg xmlns="http://www.w3.org/2000/svg">'
+                '<title>t</title><circle r="5"/></svg>')
+    assert (web.failure_class, web.limit) == (reasons.TIMEOUT, "chrome_render_timeout_s>60")
+    assert (svg.failure_class, svg.limit) == (reasons.TIMEOUT, "chrome_render_timeout_s>60")

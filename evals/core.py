@@ -189,7 +189,7 @@ def _check_music(artifact, case: Case, transcriber=None, **_) -> CheckResult:
                           expect_vocals=a.get("expect_vocals", True),
                           transcriber=transcriber,
                           language=case.language)
-    out = CheckResult(r.ok, r.reason, list(r.warnings))
+    out = CheckResult(r.ok, r.reason, list(r.warnings), failure_class=r.failure_class, limit=r.limit)
     out.metrics = r.metrics
     return out
 
@@ -232,7 +232,8 @@ def _check_svg(artifact, case: Case) -> CheckResult:
 
     drawn = render_check.check(extract(artifact, ("svg",)))
     out = CheckResult(drawn.ok, drawn.reason, r.warnings + drawn.warnings,
-                      shape_count=r.shape_count, has_title=r.has_title)
+                      shape_count=r.shape_count, has_title=r.has_title,
+                      failure_class=drawn.failure_class, limit=drawn.limit)
     out.metrics = dict(drawn.metrics)
     # Issue #4: a traced icon is ~28KB where a hand-authored one is hundreds of
     # bytes, and nothing reported it until someone opened the file.
@@ -272,7 +273,8 @@ def _check_web(artifact, case: Case) -> CheckResult:
 
     drawn = render_check.check_html(extract(artifact, ("html", "!doctype")))
     out = CheckResult(drawn.ok, drawn.reason, r.warnings + drawn.warnings,
-                      shape_count=r.shape_count, has_title=r.has_title)
+                      shape_count=r.shape_count, has_title=r.has_title,
+                      failure_class=drawn.failure_class, limit=drawn.limit)
     out.metrics = drawn.metrics
     return out
 

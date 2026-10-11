@@ -150,6 +150,14 @@ KNOBS: dict[str, Knob] = dict([
     _k("code_check_timeout", ["harness/checks/code.py:DEFAULT_TIMEOUT"], [5.0, 15.0, 30.0, 60.0, 120.0],
        lanes=("code",), limit="code_check_timeout_s", receipt="knobs",
        note="wall clock a code answer and its checks may run; a case may set params.check_timeout (#693)"),
+    _k("claude_code_timeout", ["evals/runners/claude_code.py:TIMEOUT_S"], [300.0, 600.0, 1200.0, 1800.0],
+       lanes=REQUEST_LANES, limit="claude_code_timeout_s", receipt="knobs", note="seconds one claude -p reference answer may take (#693)"),
+    _k("needle_serve_start", ["harness/needle.py:SERVE_START_S"], [30.0, 60.0, 120.0, 300.0],
+       lanes=("decide", "agent"), limit="needle_serve_start_s", receipt="knobs", note="seconds needle --serve may take to report its address (#693)"),
+    _k("chrome_render_timeout", ["harness/checks/render.py:CHROME_TIMEOUT_S"], [30.0, 60.0, 120.0, 300.0],
+       lanes=("web",), limit="chrome_render_timeout_s", receipt="knobs", note="seconds headless Chrome may take to screenshot a page (#693)"),
+    _k("svg_render_timeout", ["harness/checks/render.py:SVG_TIMEOUT_S"], [10.0, 30.0, 60.0, 120.0],
+       lanes=("svg",), limit="svg_render_timeout_s", receipt="knobs", note="seconds rsvg-convert may take to draw one SVG (#693)"),
     _k("eval7b_slots", ["harness/context.py:EVAL_7B_SLOTS"], [1, 4, 8, 16, 32],
        note="llama-server slots Qwen2.5-7B-Instruct-Q4_K_M batches across; sets claims throughput, not a grade (#665)"),
     _k("eval7b_slot_ctx", ["harness/context.py:EVAL_7B_SLOT_CTX"], [3072, 4096, 8192],
@@ -163,7 +171,8 @@ KNOBS: dict[str, Knob] = dict([
 ])
 
 #: The value a knob had on receipts written before it was recorded there, by knob name. #693.
-UNRECORDED = {"code_check_timeout": 15.0, "audio_timeout": 120.0}
+UNRECORDED = {"code_check_timeout": 15.0, "audio_timeout": 120.0, "chrome_render_timeout": 60.0,
+              "svg_render_timeout": 30.0, "claude_code_timeout": 600.0, "needle_serve_start": 60.0}
 
 #: Constants the inventory finds whose name says gate and whose value does not, each with why.
 NOT_GATING: dict[str, str] = {

@@ -455,7 +455,7 @@ def fluidaudio_argv(path, model: str = DEFAULT_FLUIDAUDIO_MODEL,
 
 
 def transcribe_fluidaudio(path, model: str = DEFAULT_FLUIDAUDIO_MODEL,
-                          language: str = "", timeout: float = 300.0) -> str:
+                          language: str = "", timeout: float | None = None) -> str:
     """Transcribe with FluidAudio, a Swift/CoreML Parakeet.
 
     A FOURTH RUNTIME, and the one combination the lane was missing. Parakeet
@@ -465,6 +465,7 @@ def transcribe_fluidaudio(path, model: str = DEFAULT_FLUIDAUDIO_MODEL,
     path = Path(path)
     if not path.exists():
         raise AudioError(f"no audio file at {path}")
+    timeout = TIMEOUT_S if timeout is None else timeout
     # READ THE JSON, NOT STDOUT. This CLI writes CoreML runtime errors to
     # stdout, unprefixed and on the SAME LINE as the transcript:
     #   ...zero shape error.The dull light fell more faintly upon the page
@@ -507,7 +508,7 @@ def _run_whisperkit(argv: list, timeout: float) -> str:
 
 
 def transcribe_whisperkit(path, model: str = DEFAULT_WHISPERKIT_MODEL,
-                          language: str = "", timeout: float = 300.0) -> str:
+                          language: str = "", timeout: float | None = None) -> str:
     """Transcribe with CoreML WhisperKit, shelling out to `whisperkit-cli`.
 
     A THIRD RUNTIME, which is the point. parakeet-on-mlx_audio,
@@ -518,6 +519,7 @@ def transcribe_whisperkit(path, model: str = DEFAULT_WHISPERKIT_MODEL,
     path = Path(path)
     if not path.exists():
         raise AudioError(f"no audio file at {path}")
+    timeout = TIMEOUT_S if timeout is None else timeout
     try:
         raw = _run_whisperkit(whisperkit_argv(path, model, language), timeout)
     except FileNotFoundError as exc:
@@ -557,13 +559,13 @@ def transcriber(backend: str = "server", model: str = "", language: str = "",
 
         def _run(path):
             return transcribe_fluidaudio(path, model=model, language=language,
-                                         **({} if timeout is None else {"timeout": timeout}))
+                                         timeout=timeout)
     elif backend == "whisperkit":
         model = model or DEFAULT_WHISPERKIT_MODEL
 
         def _run(path):
             return transcribe_whisperkit(path, model=model, language=language,
-                                         **({} if timeout is None else {"timeout": timeout}))
+                                         timeout=timeout)
     elif backend == "whisper":
         model = model or DEFAULT_WHISPER_MODEL
 

@@ -54,7 +54,10 @@ def swallowed_python(text, rel):
     return out
 
 
-_TIMEOUTS = {"TimeoutExpired", "TimeoutException", "ReadTimeout", "ConnectTimeout", "TimeoutError", "timeout"}
+_TIMEOUTS = {"TimeoutExpired", "TimeoutException", "ReadTimeout", "ConnectTimeout", "TimeoutError", "timeout",
+             "AudioTimeout", "ServeStartTimeout"}
+#: An exception caught here may be a timeout: parent -> the timeout subclass a handler must catch first.
+_TIMEOUT_PARENTS = {"AudioError": "AudioTimeout"}
 
 
 def _final_name(node):
@@ -62,27 +65,60 @@ def _final_name(node):
 
 
 def _classed(call):
-    if any(k.arg == "failure_class" for k in call.keywords):
+    if any(k.arg in ("failure_class", None) for k in call.keywords):
         return True
-    return _final_name(call.func).endswith("CompletionError") and len(call.args) >= 2
+    return (_final_name(call.func) or "").endswith("CompletionError") and len(call.args) >= 2
+
+
+def _caught(h):
+    types = h.type.elts if isinstance(h.type, ast.Tuple) else [h.type]
+    return {_final_name(t) for t in types}
+
+
+def _unclassed(body, rel):
+    """Raises of a runner error, and failing results returned, that carry no failure_class."""
+    out = []
+    for n in (m for stmt in body for m in ast.walk(stmt)):
+        if isinstance(n, ast.Raise) and isinstance(n.exc, ast.Call):
+            callee = _final_name(n.exc.func) or ""
+            if callee.endswith(("RunnerError", "CompletionError")) and not _classed(n.exc):
+                out.append(f"{rel}:{n.lineno}: a timeout raised with no failure_class")
+        elif isinstance(n, ast.Return) and isinstance(n.value, ast.Call) and n.value.args:
+            first = n.value.args[0]
+            if isinstance(first, ast.Constant) and first.value is False and not _classed(n.value):
+                out.append(f"{rel}:{n.lineno}: a timeout returned as a failing result with no failure_class")
+    return out
+
+
+def _timeout_test(test):
+    return any(isinstance(c, ast.Call) and _final_name(c.func) == "isinstance" and len(c.args) == 2
+               and any(_final_name(t) in _TIMEOUTS for t in
+                       (c.args[1].elts if isinstance(c.args[1], ast.Tuple) else [c.args[1]]))
+               for c in ast.walk(test))
 
 
 def unclassed_timeouts(text, rel):
-    """A RunnerError or CompletionError raised from a timeout handler with no failure_class (#693)."""
+    """A timeout handler, isinstance branch, or timeout-parent handler that raises or returns with no failure_class (#693)."""
     tree, out = _parse(text, rel)
     if tree is None:
         return out
-    for h in ast.walk(tree):
-        if not isinstance(h, ast.ExceptHandler) or h.type is None:
+    for t in ast.walk(tree):
+        if not isinstance(t, ast.Try):
             continue
-        types = h.type.elts if isinstance(h.type, ast.Tuple) else [h.type]
-        if not any(_final_name(t) in _TIMEOUTS for t in types):
-            continue
-        for n in (m for stmt in h.body for m in ast.walk(stmt)):
-            callee = _final_name(n.exc.func) if isinstance(n, ast.Raise) and isinstance(n.exc, ast.Call) else None
-            if callee and callee.endswith(("RunnerError", "CompletionError")) and not _classed(n.exc):
-                out.append(f"{rel}:{n.lineno}: a timeout raised with no failure_class")
-    return out
+        before = set()
+        for h in t.handlers:
+            if h.type is None:
+                continue
+            names = _caught(h)
+            if names & _TIMEOUTS:
+                out += _unclassed(h.body, rel)
+            elif any(p in names and c not in before for p, c in _TIMEOUT_PARENTS.items()):
+                out += [f for f in _unclassed(h.body, rel) if "returned" in f]
+            for n in (m for stmt in h.body for m in ast.walk(stmt)):
+                if isinstance(n, ast.If) and _timeout_test(n.test):
+                    out += _unclassed(n.body, rel)
+            before |= names
+    return sorted(set(out), key=lambda f: int(f.split(":")[1]))
 
 
 _OR_TRUE = re.compile(r"\|\|\s*(?:true|:)(?=\s|;|\)|$)")

@@ -48,7 +48,7 @@ def test_an_override_replaces_only_the_knob_it_names():
 
 def test_the_knob_settings_round_trip_through_the_receipt():
     r = _receipt(knobs={"request_timeout": 600.0})
-    assert Receipt.from_dict(r.as_dict()).knobs == {"request_timeout": 600.0, "code_check_timeout": 15.0}
+    assert Receipt.from_dict(r.as_dict()).knobs == {"request_timeout": 600.0, "code_check_timeout": 15.0, "claude_code_timeout": 600.0}
 
 
 def test_a_receipt_from_before_knobs_were_recorded_ran_at_the_constants_of_the_time():
@@ -131,4 +131,4 @@ def test_a_run_records_the_knob_settings_it_ran_at(tmp_path, monkeypatch, quiet_
 def test_the_published_receipt_keeps_the_knob_settings():
     raw = _receipt(knobs={"request_timeout": 600.0}).as_dict()
     got = publish.exam_receipt(None, {"id": 1, "receipt": json.dumps(raw), "lane": "code"})
-    assert got.knobs == {"request_timeout": 600.0, "code_check_timeout": 15.0}
+    assert got.knobs == {"request_timeout": 600.0, "code_check_timeout": 15.0, "claude_code_timeout": 600.0}

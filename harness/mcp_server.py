@@ -82,18 +82,22 @@ SERVER = MCPServer(
 )
 
 
+def _verb(argv: list[str]) -> str:
+    return argv[len(LH)] if len(argv) > len(LH) else "(no verb)"
+
+
 def run_lh(argv: list[str], timeout: float = DEFAULT_TIMEOUT) -> str:
     """Run `lh` and return stdout, or raise with what it said on stderr."""
     try:
         r = subprocess.run(argv, capture_output=True, text=True, timeout=timeout,
                            env=_child_env())
     except subprocess.TimeoutExpired as exc:
-        raise ToolError(f"soh {argv[len(LH)]} timed out after {timeout:g}s; a cold model load "
+        raise ToolError(f"soh {_verb(argv)} timed out after {timeout:g}s; a cold model load "
                         f"or a long reasoning reply can take longer") from exc
     if r.returncode != 0:
         # ToolError, or the SDK hides the message from the caller. #477.
         raise ToolError(
-            (r.stderr or r.stdout).strip()[:600] or f"{argv[len(LH)]} exited {r.returncode}")
+            (r.stderr or r.stdout).strip()[:600] or f"{_verb(argv)} exited {r.returncode}")
     return r.stdout.strip()
 
 
