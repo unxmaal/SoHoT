@@ -96,10 +96,11 @@ def test_per_layer_kv_heads_skip_recurrent_layers():
     assert context.kv_bytes_per_token(meta) == 2 * 8 * 256 * 2
 
 
-def test_sliding_window_layers_are_costed_as_full_attention():
+def test_sliding_window_layers_hold_their_window_rather_than_growing_with_the_context():
     meta = {**LLAMA, "llama.attention.sliding_window": 1024,
             "llama.attention.sliding_window_pattern": [True, False] * 16}
-    assert context.kv_bytes_per_token(meta) == context.kv_bytes_per_token(LLAMA)
+    assert context.kv_bytes_per_token(meta) == context.kv_bytes_per_token(LLAMA) // 2
+    assert context.swa_bytes(meta) == context.kv_bytes_per_token(LLAMA) // 2 * (1024 + context.SWA_UBATCH)
 
 
 def test_a_quantised_cache_costs_less_per_token():

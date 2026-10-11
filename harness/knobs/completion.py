@@ -2,6 +2,8 @@
 from harness.knobs.base import REQUEST_LANES, TEXT_LANES, _k
 
 KNOBS = [
+    _k("delegate_chars_per_token", ["harness/delegate.py:CHARS_PER_TOKEN"], [1, 2, 3, 4],
+       note="prompt size estimate for delegate.cap and the ladder, used only where the served tokenizer cannot be asked (#692)"),
     _k("load_timeout", ["harness/completion.py:LOAD_TIMEOUT_S"],
        [600.0, 1200.0, 1800.0, 3600.0], lanes=REQUEST_LANES, limit="load_timeout_s", receipt="knobs", runner_attr="load_timeout",
        note="seconds the untimed first request may spend loading weights"),

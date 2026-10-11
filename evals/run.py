@@ -379,11 +379,11 @@ def run_ladder(modality: str, asked: str | None) -> tuple[int, ...]:
     return rungs
 
 
-def rungs_for(ladder: tuple[int, ...], ctx: int | None, *texts: str) -> tuple[int, ...]:
+def rungs_for(ladder: tuple[int, ...], ctx: int | None, *texts: str, count=None) -> tuple[int, ...]:
     """The ladder a case climbs: rungs past the served context less the prompt become that room. #668."""
     if ctx is None:
         return tuple(ladder)
-    room = delegate.cap(ctx, *texts)
+    room = delegate.cap(ctx, *texts, count=count)
     if room < 1:
         return tuple(ladder[:1])
     kept = [rung for rung in ladder if rung < room]
@@ -398,6 +398,30 @@ def set_budget(runner, max_tokens: int) -> None:
     base = getattr(runner, "base", None)
     if base is not None:
         set_budget(base, max_tokens)
+
+
+def _served_tokens(base: str, model: str):
+    """count(text) by the served tokenizer, asked for on first use; ValueError where there is none, so callers estimate. #692."""
+    held: list = []
+
+    def count(text: str) -> int:
+        if not held:
+            held.append(completion.token_counter(base, model))
+        if held[0] is None:
+            raise ValueError(f"{base} has no /tokenize")
+        return held[0](text)
+    return count
+
+
+def set_served(runner, ctx: int | None, count=None) -> None:
+    """Tell a text runner, and any base a method wraps, the context it is served at and its tokenizer. #692."""
+    if hasattr(runner, "served_ctx") and runner.served_ctx is None:
+        runner.served_ctx = ctx
+    if hasattr(runner, "count") and runner.count is None:
+        runner.count = count
+    base = getattr(runner, "base", None)
+    if base is not None:
+        set_served(base, ctx, count)
 
 
 def climb(runner, case: Case, rungs: tuple[int, ...]) -> core.Result:
@@ -1154,14 +1178,16 @@ def _run_candidate(args, candidate, runner, mine, results, outdir, evicted=None,
         runner.warm()
     except RunnerError as exc:
         cold = exc
-    ctx = _served_ctx(candidate) if ladder else None
+    ctx = _served_ctx(candidate)
+    count = _served_tokens(base, model) if ctx and base and model else None
+    set_served(runner, ctx, count)
     for case in mine:
         if watch:
             watch.look(case.id, "start")
         if cold:
             r = runner.failed(case, cold)
         elif ladder:
-            r = climb(runner, case, rungs_for(ladder, ctx, case.prompt, case.context))
+            r = climb(runner, case, rungs_for(ladder, ctx, case.prompt, case.context, count=count))
         else:
             r = runner.run(case)
         if watch:

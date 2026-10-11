@@ -35,11 +35,8 @@ harness/completion.py:SAMPLING[web][temperature]
 harness/completion.py:_answers_as_gateway->httpx.get(timeout)
 harness/contamination.py:gateway_ask.ask->post(timeout)
 harness/context.py:FLOOR
-harness/context.py:KV_MAX_GIB
 harness/context.py:_get_json->urllib.request.urlopen(timeout)
-harness/context.py:environ(LLAMACPP_CTX)
 harness/context.py:environ(LLAMACPP_PARALLEL)
-harness/delegate.py:CHARS_PER_TOKEN
 harness/delegate.py:MAX_PROMPT_CHARS
 harness/delegate.py:MAX_TOKENS
 harness/delegate.py:RESIDENCY_TIMEOUT_S
@@ -52,7 +49,6 @@ harness/discover.py:from_feeds(limit)
 harness/disk.py:GRACE_SECONDS
 harness/dora.py:DEFAULT_DAYS
 harness/downloads.py:IN_FLIGHT_SECONDS
-harness/ds4.py:DEFAULT_CTX
 harness/ds4.py:START_FLOOR_S
 harness/ds4.py:START_S_PER_GIB
 harness/ds4.py:_models->_DIRECT.open(timeout)
@@ -155,7 +151,6 @@ harness/vector.py:TRACE_PRESETS[icon][trace_at]
 harness/vector.py:TRACE_PRESETS[illustration][path_precision]
 harness/verify.py:COST_S
 harness/verify.py:Task.cost_s
-harness/vllm.py:METAL_MAX_MODEL_LEN
 harness/vllm.py:METAL_MEMORY_FRACTION
 harness/vllm.py:_probe->_DIRECT.open(timeout)
 harness/vllm.py:served(grace)

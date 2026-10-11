@@ -47,8 +47,14 @@ def _value(fh, kind: int):
 #: Below this a served model fails ordinary agent work; refuse rather than serve it.
 FLOOR = 8192
 STEP = 1024
-#: Default ceiling on one model's KV cache, which llama-server allocates whole at load.
+#: Default ceiling on one model's KV cache, which llama-server allocates whole at load; set on a 32 GB machine.
 KV_MAX_GIB = 8
+#: The unified memory KV_MAX_GIB was set on; other machines scale it by their RAM, as inspect.MEMORY_CEILING does. #692.
+KV_MAX_RAM_GB = 32
+#: Tokens llama-server keeps per sliding-window layer beyond the window: one ubatch. #692.
+SWA_UBATCH = 512
+#: arch -> period of its hard-coded sliding-window pattern (n-1 local layers, then one global), where the header has none.
+SWA_PERIOD = {"gemma2": 2, "gemma3": 6, "cohere2": 4, "gpt-oss": 2}
 #: Bytes per cached element for each llama-server cache type, as (numerator, denominator).
 CACHE_BYTES = {"f32": (4, 1), "f16": (2, 1), "bf16": (2, 1), "q8_0": (34, 32),
                "q5_1": (24, 32), "q5_0": (22, 32), "q4_1": (20, 32),
@@ -94,7 +100,7 @@ def choose_slots(meta: dict, weights: int, budget: int, slots: int, slot_ctx: in
     full = trained(meta)
     per = kv_bytes_per_token(meta, cache_type)
     pool = slots * slot_ctx
-    room = max(budget - weights, 0)
+    room = max(budget - weights - swa_bytes(meta, cache_type) * slots, 0)
     if not per or not full or slot_ctx > full:
         return Choice(0, full, per, f"refused: {slots} slots of {slot_ctx} tokens, "
                       f"trained for {full}, {per} B/token")
@@ -139,12 +145,12 @@ def trained(meta: dict) -> int:
     return int(_arch(meta, "context_length") or 0)
 
 
-def _kv_heads(meta: dict) -> list[int]:
-    """KV heads per KV-bearing layer; recurrent layers are left out."""
+def _layer_heads(meta: dict) -> list[int]:
+    """KV heads per layer, 0 for a recurrent layer; a hybrid's layers are its attention layers only."""
     blocks = int(_arch(meta, "block_count") or 0)
     heads = _arch(meta, "attention.head_count_kv", _arch(meta, "attention.head_count"))
     if isinstance(heads, list):
-        return [int(h) for h in heads if h]
+        return [int(h or 0) for h in heads]
     if not heads or not blocks:
         return []
     layers = blocks - int(_arch(meta, "nextn_predict_layers") or 0)
@@ -154,17 +160,54 @@ def _kv_heads(meta: dict) -> list[int]:
     return [int(heads)] * layers
 
 
-def kv_bytes_per_token(meta: dict, cache_type: str = "f16") -> int:
-    """f16 KV bytes one token costs; sliding-window layers are costed as full. 0 if unknown."""
-    heads = _kv_heads(meta)
+def _kv_heads(meta: dict) -> list[int]:
+    """KV heads per KV-bearing layer; recurrent layers are left out."""
+    return [h for h in _layer_heads(meta) if h]
+
+
+def _swa_layers(meta: dict, n: int) -> list[bool]:
+    """Which of n layers use a sliding window: the header's pattern, else the arch's known period. #692."""
+    if not _arch(meta, "attention.sliding_window"):
+        return [False] * n
+    pattern = _arch(meta, "attention.sliding_window_pattern")
+    if isinstance(pattern, list) and pattern:
+        return [bool(pattern[i % len(pattern)]) for i in range(n)]
+    period = SWA_PERIOD.get(str(meta.get("general.architecture", "")), 0)
+    return [period > 1 and i % period < period - 1 for i in range(n)]
+
+
+def _per_layer_bytes(meta: dict, swa: bool) -> int:
     q_heads = _arch(meta, "attention.head_count")
     q_heads = max(q_heads) if isinstance(q_heads, list) else q_heads
     embd = _arch(meta, "embedding_length")
     per_head = embd // q_heads if embd and q_heads else 0
     k = int(_arch(meta, "attention.key_length") or per_head)
     v = int(_arch(meta, "attention.value_length") or per_head)
+    if swa:
+        k = int(_arch(meta, "attention.key_length_swa") or k)
+        v = int(_arch(meta, "attention.value_length_swa") or v)
+    return k + v
+
+
+def _split(meta: dict, cache_type: str) -> tuple[int, int]:
+    """(bytes per token of the layers that grow with the context, bytes per token of the sliding-window layers)."""
+    heads = _layer_heads(meta)
+    swa = _swa_layers(meta, len(heads))
     num, den = CACHE_BYTES[cache_type]
-    return sum(h * (k + v) for h in heads) * num // den
+    full = sum(h * _per_layer_bytes(meta, False) for h, w in zip(heads, swa) if h and not w)
+    local = sum(h * _per_layer_bytes(meta, True) for h, w in zip(heads, swa) if h and w)
+    return full * num // den, local * num // den
+
+
+def kv_bytes_per_token(meta: dict, cache_type: str = "f16") -> int:
+    """KV bytes one more token of context costs; sliding-window layers are not, they hold their window. 0 if unknown."""
+    return _split(meta, cache_type)[0]
+
+
+def swa_bytes(meta: dict, cache_type: str = "f16") -> int:
+    """KV bytes one slot's sliding-window layers hold whatever the context: the window plus one ubatch. #692."""
+    local = _split(meta, cache_type)[1]
+    return local * (int(_arch(meta, "attention.sliding_window") or 0) + SWA_UBATCH) if local else 0
 
 
 def choose(meta: dict, weights: int, budget: int, slots: int = 1,
@@ -178,6 +221,7 @@ def choose(meta: dict, weights: int, budget: int, slots: int = 1,
                       "or KV shape to size a cache from")
     room = max(budget - weights, 0)
     room = min(room, kv_cap) if kv_cap is not None else room
+    room = max(room - swa_bytes(meta, cache_type) * max(slots, 1), 0)
     fits = room // per // max(slots, 1) // STEP * STEP
     ctx = min(full // STEP * STEP or full, fits)
     if ctx < floor:
@@ -221,9 +265,12 @@ def budget_bytes(conn=None) -> int:
 
 
 def kv_cap_bytes() -> int:
-    """The most KV cache one model may allocate: LLAMACPP_KV_MAX_GIB, default 8."""
+    """The most KV cache one model may allocate: LLAMACPP_KV_MAX_GIB, else KV_MAX_GIB scaled by this machine's RAM. #692."""
     import os
-    return int(float(os.environ.get("LLAMACPP_KV_MAX_GIB") or KV_MAX_GIB) * 1024 ** 3)
+    if os.environ.get("LLAMACPP_KV_MAX_GIB"):
+        return int(float(os.environ["LLAMACPP_KV_MAX_GIB"]) * 1024 ** 3)
+    from harness import memory
+    return int(KV_MAX_GIB * memory.total_gb() / KV_MAX_RAM_GB * 1024 ** 3)
 
 
 def coresident_bytes(conn, defaults=None, config=None, size_of=None) -> int:

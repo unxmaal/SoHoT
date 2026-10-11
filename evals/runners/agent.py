@@ -29,10 +29,6 @@ MAX_STEPS_SCALE = 1.0
 STEP_TIMEOUT_S = 300.0
 CASE_TIMEOUT_S = 900.0
 
-#: What a server says when a request does not fit its context. #695.
-_OVER_CONTEXT = re.compile(r"exceeds? the available context|context.?window.?exceeded|maximum context length"
-                           r"|context length exceeded|exceeds? (the )?context (size|window|length)", re.I)
-
 #: A tool call written into the text instead of the tools API.
 _TEXT_CALL = re.compile(r"<tool_call>|<function=|\"name\"\s*:\s*\"(read_file|write_file|"
                         r"list_dir|run_tests)\"")
@@ -211,7 +207,7 @@ class AgentRunner(BaseRunner):
                         took = exc.limit[1]
                         exc.limit = (("agent_case_timeout_s", allowed) if took < self.step_seconds()
                                      else ("agent_step_timeout_s", took))
-                    elif _OVER_CONTEXT.search(str(exc)):
+                    elif reasons.OVER_CONTEXT.search(str(exc)):
                         exc.failure_class = reasons.CONTEXT_EXCEEDED
                         exc.limit = ("served_ctx", self.served_ctx) if self.served_ctx else ()
                     raise

@@ -17,7 +17,7 @@ import urllib.request
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from harness import paths
+from harness import completion, paths
 
 PREFIX = "ds4:"
 ENGINE = "ds4-server"
@@ -26,7 +26,23 @@ PORT_VAR = "DS4_PORT"
 BIN_VAR = "DS4_BIN"
 MODELS_VAR = "DS4_MODELS_DIR"
 SPEC_VAR = "DS4_SPEC"
-DEFAULT_CTX = 32768
+#: Tokens an agent conversation grows past its pad over its steps: tool output and the model's own turns. #692.
+STEP_ROOM = 8192
+CASES = paths.REPO / "evals" / "cases"
+_PAD = re.compile(r"^\s*pad_tokens:\s*(\d+)\s*$", re.M)
+
+
+def prompt_room(cases=CASES) -> int:
+    """Tokens of prompt a served context must hold beside the reply: the largest shipped case pad plus STEP_ROOM. #692."""
+    root = Path(cases)
+    pads = [int(n) for f in (root.rglob("*.yaml") if root.is_dir() else ())
+            for n in _PAD.findall(f.read_text(encoding="utf-8"))]
+    return max(pads, default=0) + STEP_ROOM
+
+
+PROMPT_ROOM = prompt_room()
+#: The top rung of any lane's budget ladder plus the largest prompt, so no ladder rung is cut by the context. #692.
+DEFAULT_CTX = max(max(rungs) for rungs in completion.LADDER.values()) + PROMPT_ROOM
 #: Options that change the launch; the rest of a spec's tail is sampling.
 OPTIONS = ("ssd_streaming", "expert_cache", "ctx")
 #: ds4-server has no response_format and returns no logprobs.
