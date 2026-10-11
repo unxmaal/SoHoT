@@ -935,3 +935,43 @@ def test_the_report_names_the_matcher_versions_its_rows_were_scored_under():
     got = R.report(old + rows, cases)
     assert got["eval-7b"]["matcher_versions"] == [1, C.MATCHER_VERSION]
     assert "scored under matcher versions 1 and" in R.render(got)
+
+
+def _every_check_path():
+    row = _line()
+    yield _check("not json")
+    yield C.check(_reply(), row["schema"], [], expect_empty=True)
+    yield C.check(_reply(*_good(row)), row["schema"], _tagged(row, *C.INTERFACES))
+
+
+def test_every_metric_the_claims_checker_emits_declares_a_direction():
+    from evals.core import METRIC_DIRECTION
+    for got in _every_check_path():
+        assert set(got.metrics) <= set(METRIC_DIRECTION), sorted(set(got.metrics) - set(METRIC_DIRECTION))
+
+
+# Rows stored before #661 carry pooled names; a sweep's publish step still summarizes them. #674.
+@pytest.mark.parametrize("name, way", [
+    ("claims_recall", "higher"), ("claims_precision", "higher"), ("claims_good_found", "higher"),
+    ("claims_good_total", "neutral"), ("claims_reviewed_matched", "neutral"),
+    ("claims_unreviewed", "neutral"), ("claims_bad_matched", "lower")])
+def test_a_pooled_metric_from_a_row_before_661_ranks_the_right_way(name, way):
+    from evals.core import METRIC_DIRECTION
+    assert METRIC_DIRECTION[name] == way
+
+
+def test_summarizing_rows_scored_before_661_warns_about_no_metric():
+    import warnings
+    from evals.core import Result, summarize
+    pooled = {"claims_schema_valid": 1, "claims_emitted": 3, "claims_reviewed_matched": 2,
+              "claims_unreviewed": 1, "claims_good_found": 1, "claims_good_total": 4,
+              "claims_bad_matched": 0, "claims_recall": 0.25, "claims_precision": 0.5,
+              "claims_judge_calibrated": 0}
+    rows = [Result("c1", "m", False, 1.0, 0, "", metrics=dict(pooled)),
+            Result("c2", "m", True, 1.0, 0, "",
+                   metrics={**pooled, "claims_recall": 1.0, "claims_good_found": 2, "claims_good_total": 2})]
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        got = summarize(rows)["m"]
+    assert got["metrics_worst"]["claims_recall"] == 0.25
+    assert got["metrics"]["claims_recall"] == 0.5
