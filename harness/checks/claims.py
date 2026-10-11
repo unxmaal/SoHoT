@@ -23,7 +23,10 @@ INTERFACES = ("cited-only", "conversation", LEGACY)
 #: Per-interface metrics and the direction each ranks in.
 PER_INTERFACE = {"recall": "higher", "precision": "higher", "bad_matched": "lower",
                  "unreviewed": "neutral", "pass": "higher", "verbatim": "neutral",
-                 "near_miss": "neutral"}
+                 "near_miss": "neutral", "good_found": "higher", "good_total": "neutral",
+                 "reviewed_matched": "neutral"}
+#: The pooled names a row scored before #661 carries, which summaries of stored rows still meet. #674.
+POOLED = ("recall", "precision", "bad_matched", "unreviewed", "good_found", "good_total", "reviewed_matched")
 #: Per-interface ratios as (numerator, denominator), summed across cases before dividing.
 PER_INTERFACE_RATIOS = {"recall": ("good_found", "good_total"),
                         "precision": ("good_found", "reviewed_matched")}

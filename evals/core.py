@@ -451,6 +451,9 @@ METRIC_DIRECTION = {
     "claims_emitted": "neutral",
     "claims_judge_calibrated": "neutral",
     "claims_matcher_version": "neutral",
+    "claims_empty_kept": "higher",
+    "claims_empty_cases": "neutral",
+    **{f"claims_{name}": claims_check.PER_INTERFACE[name] for name in claims_check.POOLED},
     **{claims_check.metric(name, i): way for i in claims_check.INTERFACES
        for name, way in claims_check.PER_INTERFACE.items()},
 }
@@ -1370,6 +1373,8 @@ RATIO_METRICS = {"wer": ("wer_errors", "wer_words"),
                  "pii_precision": ("pii_tp", "pii_pred"),
                  "pii_recall": ("pii_tp", "pii_gold"),
                  "claims_empty_rate": ("claims_empty_kept", "claims_empty_cases"),
+                 **{f"claims_{name}": (f"claims_{n}", f"claims_{d}")
+                    for name, (n, d) in claims_check.PER_INTERFACE_RATIOS.items()},
                  **{claims_check.metric(name, i): (claims_check.metric(n, i), claims_check.metric(d, i))
                     for i in claims_check.INTERFACES
                     for name, (n, d) in claims_check.PER_INTERFACE_RATIOS.items()}}
