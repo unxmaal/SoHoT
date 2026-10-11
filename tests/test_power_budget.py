@@ -485,8 +485,9 @@ def test_an_underpowered_null_is_a_loss_and_adds_no_empty_reason():
     got = adopt.decide("code", _summary("inc", rows), _summary("ch", rows), rows,
                        split=split, plan=weak)
     assert got.adopt is False and got.why.startswith("underpowered")
-    assert got.why.endswith("(does not beat the incumbent on the lane's metric)")
+    assert got.why.endswith("(does not beat the incumbent on the lane's metric); "
+                            "no gain up to +1.00 is detectable at power 0.8")
     why = dataclasses.replace(weak, why="needs more holdout cases")
     got = adopt.decide("code", _summary("inc", rows), _summary("ch", rows), rows,
                        split=split, plan=why)
-    assert got.why.endswith("metric); needs more holdout cases")
+    assert got.why.endswith("at power 0.8; needs more holdout cases")

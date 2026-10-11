@@ -168,10 +168,10 @@ def lane_verdict(lane: str, pairs: list[dict],
     not interchangeable -- this lane's own first run split `cover` to one
     candidate and `lyrics-dense` to the other, unanimously each way.
 
-    A PLURALITY OF CASES WINS, and a tie is a real outcome rather than a
+    A STRICT MAJORITY OF CASES WINS, and a tie is a real outcome rather than a
     reason to keep asking. Cases where the answer was "no preference" count
     toward the total and for nobody, so a candidate that wins one case out of
-    four does not carry the lane on a technicality.
+    four does not carry the lane on a technicality. #698.
     """
     from collections import Counter
 
@@ -197,8 +197,11 @@ def lane_verdict(lane: str, pairs: list[dict],
         return "", (f"the cases disagree {top[0][1]}-{top[1][1]} with no "
                     f"majority ({detail})")
     won, n = top[0]
-    return won, f"won {n} of {len(decided_by)} case(s) ({detail})" + (
-        f", {ties} with no preference" if ties else "")
+    tail = f", {ties} with no preference" if ties else ""
+    if 2 * n <= len(decided_by):
+        return "", (f"{won.split('@')[-1]} won {n} of {len(decided_by)} case(s), "
+                    f"not a majority ({detail}){tail}")
+    return won, f"won {n} of {len(decided_by)} case(s) ({detail}){tail}"
 
 
 def pending(lane: str, pairs: list[dict], conn=None) -> list[dict]:

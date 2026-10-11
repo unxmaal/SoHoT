@@ -282,8 +282,8 @@ def test_a_case_with_no_preference_counts_for_nobody():
     _settle("image", "fox", "alpha", "beta", "a")
     _settle("image", "sign", "alpha", "beta", "tie")
     won, why = human.lane_verdict("image", pairs)
-    assert won == "alpha"
-    assert "1 of 2" in why and "no preference" in why
+    assert won == ""
+    assert "1 of 2" in why and "not a majority" in why and "no preference" in why
 
 
 def test_an_unjudged_lane_is_not_a_loss():

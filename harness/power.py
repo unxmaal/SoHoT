@@ -135,6 +135,24 @@ def power(rates, effect: float, repeat: int = 1, alpha: float | None = None,
     return power_cells(gain, lose, effective_cells(len(rates), repeat, rho), alpha)
 
 
+def mde(rates, repeat: int, alpha: float, rho: float, target: float) -> float | None:
+    """Smallest per-cell gain in (0, 1] this many cases and repeats detect at `target`, rounded up to 0.001."""
+    rates = list(rates)
+    if not rates or power(rates, 1.0, repeat, alpha, rho) < target:
+        return None
+    lo, hi = 0.0, 1.0
+    for _ in range(30):
+        mid = (lo + hi) / 2
+        if power(rates, mid, repeat, alpha, rho) >= target:
+            hi = mid
+        else:
+            lo = mid
+    e = math.ceil(hi * 1000 - 1e-9) / 1000
+    while e < 1.0 and power(rates, e, repeat, alpha, rho) < target:
+        e = round(e + 0.001, 3)
+    return e
+
+
 def cases_needed(rates, effect: float, *, rho: float, stochastic: bool = True,
                  alpha: float | None = None, target: float = TARGET,
                  cap: int = CAP, most: int | None = None) -> int | None:
@@ -231,6 +249,10 @@ class Plan:
     cases_run: int | None = None
     dev_skipped: str = ""
     deadline_s: float | None = None
+    #: The smallest gain this plan detects at `target`; None when no gain reaches it. #698.
+    mde: float | None = None
+    #: The incumbent had no stored draws, so every rate is UNSEEN and the power is a guess. #698.
+    unmeasured: bool = False
 
     def as_dict(self) -> dict:
         return asdict(self)
@@ -243,7 +265,7 @@ class Plan:
 def plan(rates, effect: float | None = None, *, stochastic: bool = True,
          alpha: float | None = None, target: float = TARGET, cap: int = CAP,
          repeat: int | None = None, observed: int = 0,
-         rho: float | None = None) -> Plan:
+         rho: float | None = None, unmeasured: bool | None = None) -> Plan:
     """The smallest repeat reaching `target`, or `repeat` if one was chosen.
 
     `rho` is the incumbent's measured within-case correlation; None assumes
@@ -259,14 +281,16 @@ def plan(rates, effect: float | None = None, *, stochastic: bool = True,
     rho = DEFAULT_RHO if rho is None else rho
     need = cases_needed(rates, effect, rho=rho, stochastic=stochastic,
                         alpha=alpha, target=target, cap=cap)
-    extra = {"rho": rho, "rho_measured": measured, "cases_needed": need}
+    extra = {"rho": rho, "rho_measured": measured, "cases_needed": need,
+             "unmeasured": observed <= 0 if unmeasured is None else unmeasured}
 
     def at(r: int) -> float:
         return power(rates, effect, r, alpha, rho)
 
     def made(r, got, capped, why):
         return Plan(r, got, effective_cells(k, r, rho), k, effect, alpha, target,
-                    cap, capped, stochastic, observed, why, **extra)
+                    cap, capped, stochastic, observed, why, **extra,
+                    mde=mde(rates, r, alpha, rho, target))
 
     more = _more_cases(rates, effect, k, need, target)
     if not stochastic:
@@ -363,7 +387,8 @@ def within_budget(chosen: Plan, rates, *, cases_run: int, median_s: float | None
     got = plan(rates, chosen.effect, stochastic=True, alpha=chosen.alpha,
                target=chosen.target, cap=chosen.cap, repeat=r,
                observed=chosen.observed,
-               rho=chosen.rho if chosen.rho_measured else None)
+               rho=chosen.rho if chosen.rho_measured else None,
+               unmeasured=chosen.unmeasured)
     return replace(got, needed_repeat=chosen.repeat, projected_s=cost(r),
                    budget_s=budget_s, **run,
                    why="; ".join(x for x in (note, got.why) if x))
