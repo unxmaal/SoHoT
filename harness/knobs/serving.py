@@ -30,6 +30,12 @@ KNOBS = [
 ]
 
 NOT_GATING = {
+    "harness/commands/loop.py:LEASE_S": "how long a discover loop's store lease outlives a holder that died; "
+                                        "it picks which machine sweeps, never a result (#703)",
+    "harness/gateway_switch.py:IDLE_S": "the quiet window a switch restarts in; it never cuts a request (#703)",
+    "harness/gateway_switch.py:MAX_WAIT_S": "how long a switch waits for a quiet window before draining; the bound "
+                                            "on a request in flight is DRAIN_S, derived from completion.timeout_for "
+                                            "over every LADDER rung (#703)",
     "harness/mcp_server.py:MAX_INLINE_BYTES": "how a result is returned, inline or as a path; never what it is",
     "harness/context.py:MIN_SLOT_CTX": "the floor the eval7b_slot_ctx range is held to; a preset under it is refused (#665)",
     "harness/context.py:MIN_LONG_SLOT_CTX": "the floor the ornith_slot_ctx range is held to; a preset under it is refused (#682)",

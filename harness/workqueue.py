@@ -184,10 +184,19 @@ def pending(conn=None) -> list[dict]:
         return order(_select(c, f"WHERE state = ? AND {where}", (PENDING, *args)))
 
 
+def _claimed(c) -> tuple[str, tuple]:
+    """Jobs this machine claimed: an unowned running job is nobody's to recover. #703."""
+    from harness import memory_store as ms
+    mid = ms.machine_row(c)
+    if mid is None:
+        return "machine_id IS NULL", ()
+    return "machine_id = ?", (mid,)
+
+
 def current(conn=None) -> dict | None:
     """The job this machine's worker is running, or None. #588."""
     with _store(conn) as c:
-        where, args = _here(c)
+        where, args = _claimed(c)
         got = _select(c, f"WHERE state = ? AND {where}", (RUNNING, *args))
     return got[-1] if got else None
 
@@ -445,10 +454,27 @@ def _in_group(job: dict):
     return run
 
 
-def run_one(job: dict, popen=None) -> dict:
+def _claim(job: dict, log: Path) -> bool:
+    """Take a pending job for this machine in one statement, so two workers cannot both run it. #703."""
+    started = time.strftime(_STAMP)
+    with _store() as c:
+        mid = _machine(c)
+        took = c.execute(
+            "UPDATE jobs SET state = ?, started_at = ?, log = ?, machine_id = ? "
+            "WHERE id = ? AND state = ? AND (machine_id = ? OR machine_id IS NULL)",
+            (RUNNING, _epoch(started), str(log), mid, int(job["id"]), PENDING,
+             mid)).rowcount == 1
+        c.commit()
+    if took:
+        job.update(state=RUNNING, started=started, log=str(log), machine_id=mid)
+    return took
+
+
+def run_one(job: dict, popen=None) -> dict | None:
+    """Run a pending job here; None when another worker claimed it first."""
     log = log_dir() / f"{job['id']}.log"
-    job.update(state=RUNNING, started=time.strftime(_STAMP), log=str(log))
-    _write(job)
+    if not _claim(job, log):
+        return None
     env = {**os.environ, JOB_ENV: str(int(job["id"]))}
     _cancel_flag(job["id"]).unlink(missing_ok=True)
     popen = popen or _in_group(job)
@@ -476,7 +502,7 @@ def _recover() -> None:
     """Only the runner-lock holder calls this, so nothing here is really running:
     a job still marked running was cut off (a reboot) and may be half done."""
     with _store() as c:
-        where, args = _here(c)
+        where, args = _claimed(c)
         c.execute(f"UPDATE jobs SET state = ?, note = ? WHERE state = ? AND {where}",
                   (FAILED, "interrupted; add it again to retry", RUNNING, *args))
         c.commit()
@@ -494,7 +520,9 @@ def run_pending(popen=None, gate=lambda: (True, "")) -> list[dict]:
             nxt = next(iter(pending()), None)
             if nxt is None or not gate()[0]:
                 return done
-            done.append(run_one(nxt, popen=popen))
+            ran = run_one(nxt, popen=popen)
+            if ran is not None:
+                done.append(ran)
     finally:
         exclusive._release(fd)
         os.close(fd)

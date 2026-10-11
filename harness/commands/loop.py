@@ -158,7 +158,41 @@ def _report_loop(a) -> int:
     return rc
 
 
+#: The store lease one discover loop holds, so machines sharing a store never sweep together. #703.
+LEASE = "discover-loop"
+#: How long a loop's lease outlives a holder that vanished without releasing it. #703.
+LEASE_S = 24 * 3600.0
+
+
 def _run_loop(a) -> int:
+    """The loop under the store lease: a second machine's loop refuses rather than races. #703."""
+    import sys
+
+    from harness import lease
+    from harness import memory_store as ms
+    from harness import workqueue as wq
+
+    conn = ms.connect()
+    try:
+        who = lease.owner(conn)
+        held = lease.take(conn, LEASE, who, LEASE_S, alive=wq.alive)
+    finally:
+        conn.close()
+    if held:
+        print(f"another discover loop holds the store lease (machine {held.get('machine_id')}, "
+              f"pid {held.get('pid')}); not starting a second", file=sys.stderr)
+        return 1
+    try:
+        return _run_loop_held(a)
+    finally:
+        conn = ms.connect()
+        try:
+            lease.release(conn, LEASE, who)
+        finally:
+            conn.close()
+
+
+def _run_loop_held(a) -> int:
     """Every step from a sweep to an adopted winner. Issue #201.
 
     SAYS WHAT IT WOULD DO AND STOPS unless --run. Fetching weights and running

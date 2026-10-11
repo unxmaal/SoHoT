@@ -76,8 +76,6 @@ harness/fetching.py:DISK_FLOOR
 harness/fetching.py:in_rank_order->_ms.judgeable(limit)
 harness/fetching.py:run(limit)
 harness/gateway_switch.py:BACKOFF_S
-harness/gateway_switch.py:IDLE_S
-harness/gateway_switch.py:MAX_WAIT_S
 harness/gateway_switch.py:POLL_S
 harness/gateway_switch.py:RETRIES
 harness/gateway_switch.py:SERVE_WAIT_S
