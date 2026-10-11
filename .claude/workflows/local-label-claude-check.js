@@ -46,11 +46,18 @@ const ANSWERS = {
   required: ['results'],
 }
 
+// A relaying agent may return the whole {ok, verb, body} envelope as body; unwrap to the innermost body.
+const unwrap = r => {
+  if (!r) return r
+  let b = r.body || {}
+  while (b && typeof b.body === 'object' && b.body !== null && ('verb' in b || 'ok' in b)) b = b.body
+  return { ...r, body: b }
+}
 const runner = (cmd, label, phase) => agent(
   `Run exactly this one command with Bash and nothing else: ${cmd}\n` +
   'It prints one JSON object on stdout. Return exit_code, body = the "body" field of that JSON ' +
   '(or {} if there is none), and stderr_tail = the last 300 characters of any error output.',
-  { label, phase, schema: RUN, model: 'haiku', effort: 'low' })
+  { label, phase, schema: RUN, model: 'haiku', effort: 'low' }).then(unwrap)
 
 phase('Label')
 const labelCmd = `mkdir -p '${OUT}' && ${soh} decide --batch '${ITEMS}' --out '${LABELS}' --concurrency ${CONC} --json`
@@ -70,6 +77,7 @@ const sel = await runner(
   `${soh} label-select --items '${ITEMS}' --labels '${LABELS}' --out '${TODO}' --threshold ${THRESHOLD} --thresholds '${PER_FIELD}' --every ${EVERY} --json`,
   'label-select', 'Label')
 const nTodo = (sel && sel.body && sel.body.items) || 0
+if (sel && sel.exit_code === 0 && sel.body && sel.body.items === undefined) throw new Error(`label-select returned no item count: ${JSON.stringify(sel.body).slice(0, 300)}`)
 log(`checking ${nTodo} items, ${(sel && sel.body && sel.body.fields) || 0} fields (threshold ${THRESHOLD}, every ${EVERY})`)
 
 const askBlind = (lines, label) => agent(
