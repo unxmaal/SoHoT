@@ -104,6 +104,9 @@ model_list:
 
 litellm_settings:
   drop_params: true
+  # No retry hides a failed upstream, and no gateway timeout undercuts a load plus the longest reply (#694).
+  num_retries: 0
+  request_timeout: 7200
   # usage_log records each request's shape, never its text, to the store (#481).
   # served_model names the model that answered in the reply and its headers (#670).
   callbacks: ["usage_log.proxy_handler_instance",

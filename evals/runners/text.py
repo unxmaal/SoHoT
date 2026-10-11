@@ -17,7 +17,7 @@ from evals.core import Case
 from evals.runners.base import BaseRunner, RunnerError
 
 
-#: How long a screen's untimed warm-up may spend loading weights. #406.
+#: How long the untimed warm-up may spend loading weights. #406.
 LOAD_TIMEOUT_S = completion.LOAD_TIMEOUT_S
 #: What a hybrid thinking model is asked with on the screen's one retry. #406.
 NO_THINKING = {"enable_thinking": False}
@@ -80,11 +80,12 @@ class CompletionRunner(BaseRunner):
         cold = not self.answered
         budget = self.budget(case)
         limit = f"max_tokens.{case.modality}"
+        timeout = max(self.timeout, completion.timeout_for(budget))
         try:
             got = completion.complete_full(
                 case.prompt, model=self.model, gateway=self.gateway,
                 modality=case.modality, context=case.context,
-                timeout=max(self.timeout, completion.timeout_for(budget)),
+                timeout=timeout + (self.load_timeout if cold else 0.0),
                 max_tokens=budget, sampling=self.sampling or None,
                 template=template, stream=True,
                 top_logprobs=completion.TOP_LOGPROBS if case.modality == "decide" else 0,
@@ -93,6 +94,9 @@ class CompletionRunner(BaseRunner):
         except completion.CompletionError as exc:
             if exc.failure_class == reasons.TOKEN_BUDGET_EXHAUSTED:
                 exc.limit = (limit, budget)
+            elif exc.failure_class == reasons.TIMEOUT and cold:
+                # Nothing has answered yet, so the request was given the load's allowance and the load is what ran out. #694.
+                exc.limit = ("load_timeout_s", self.load_timeout)
             raise
         self.answered = True
         self.last_timing = {**got.timing, "cold": cold}

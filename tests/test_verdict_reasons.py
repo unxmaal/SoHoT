@@ -403,13 +403,12 @@ class Warmed(Fake):
             raise self.warm_error
 
 
-@pytest.mark.parametrize("screening,warmed", [(True, 1), (False, 0)])
-def test_evals_run_warms_only_a_screen(tmp_path, monkeypatch, quiet_receipt,
-                                       screening, warmed):
+@pytest.mark.parametrize("screening", [True, False])
+def test_evals_run_warms_every_tier(tmp_path, monkeypatch, quiet_receipt, screening):
     runner = Warmed()
     monkeypatch.setattr(R, "build_runner", lambda *a, **k: runner)
     R._execute(_args(tmp_path, screening))
-    assert runner.warmed == warmed and runner.screening is screening
+    assert runner.warmed == 1 and runner.screening is screening
 
 
 def test_a_failed_warm_up_becomes_every_cases_row_with_its_class(

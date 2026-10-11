@@ -122,10 +122,13 @@ if [ -n "${LLAMACPP_API_KEY_FILE:-}" ]; then
   KEY_ARGS=(--api-key-file "$SERVED_KEY")
 fi
 
+# A dedicated Mac server never sleeps (router-sleep-idle.sh), so no eval case pays a reload (#694).
+# --timeout outlasts the slowest load plus the longest reply the knobs allow, so the server never cuts a request first (#694).
 exec "$BIN" \
   --jinja \
   --models-dir "$MODELS" \
-  --sleep-idle-seconds "${LLAMACPP_SLEEP_IDLE:-300}" \
+  --sleep-idle-seconds "${LLAMACPP_SLEEP_IDLE:-$(scripts/router-sleep-idle.sh)}" \
+  --timeout "${LLAMACPP_TIMEOUT:-7200}" \
   --models-max "${LLAMACPP_MAX_MODELS:-$(scripts/router-max-models.sh)}" \
   --n-gpu-layers "${LLAMACPP_GPU_LAYERS:-999}" \
   "${CTX_ARGS[@]}" \

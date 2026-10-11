@@ -57,7 +57,7 @@ def test_the_inventory_sees_every_shape_a_gating_value_takes_in_this_repo():
     found = set(knobs.inventory(REPO))
     for site in ("harness/heartbeat.py:STALL_S", "evals/runners/agent.py:STEP_TIMEOUT_S",
                  "harness/feeds.py:fetch(timeout)", "evals/run.py:SCREEN_PARAMS[width]",
-                 "scripts/serve-llamacpp.sh:LLAMACPP_SLEEP_IDLE"):
+                 "scripts/serve-llamacpp.sh:LLAMACPP_TIMEOUT"):
         assert site in found, site
 
 
@@ -166,7 +166,7 @@ def test_a_timeout_passed_positionally_is_found():
 def test_every_site_form_the_inventory_reports_resolves_so_it_can_be_registered():
     assert knobs.resolve("harness/engines.py:_mflux->Engine(timeout)") > 0
     assert knobs.resolve("harness/context.py:environ(LLAMACPP_PARALLEL)") == 1
-    assert knobs.resolve("scripts/serve-llamacpp.sh:LLAMACPP_SLEEP_IDLE") == 300
+    assert knobs.resolve("scripts/serve-llamacpp.sh:LLAMACPP_TIMEOUT") == 7200
     unresolved = []
     for site in knobs.inventory(REPO):
         try:

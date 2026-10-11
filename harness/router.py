@@ -61,21 +61,27 @@ class Watch:
         self.base = base
         self.swaps: list[dict] = []
         self._held = False
+        self._slept = False
 
     def look(self, case: str, at: str) -> None:
-        """Record an eviction when the model was held and now is not; unknown is not one."""
+        """Record an eviction when the model was held and now is not, or slept and was reloaded; unknown is not one."""
         s = statuses(self.get, self.base)
         if s is None:
             return
         status = s.get(self.model, "absent")
-        if status in ("loaded", "sleeping"):
+        if status == "sleeping":
+            self._slept = self._slept or self._held
+            return
+        if status == "loaded" and not self._slept:
             self._held = True
             return
         if self._held:
-            self.swaps.append({"case": case, "at": at, "status": status,
+            # A sleep that ended in a reload cost a case the load, as an eviction does. #694.
+            self.swaps.append({"case": case, "at": at, "status": "sleeping" if self._slept and status == "loaded" else status,
                                "resident": sorted(k for k, v in s.items()
                                                   if v in RESIDENT and k != self.model)})
-            self._held = False
+        self._held = status == "loaded"
+        self._slept = False
 
 
 def _upstream(spec: str, gateway: str = "") -> tuple:

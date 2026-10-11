@@ -95,10 +95,13 @@ def test_decide_follows_the_same_gate(fake, held_by_job, monkeypatch):  # noqa: 
     assert fake.seen == []
 
 
-def test_nobody_holding_the_lock_never_asks_about_residency(fake, monkeypatch):  # noqa: F811
+def test_nobody_holding_the_lock_never_gates_on_residency(fake, monkeypatch):  # noqa: F811
     def boom(where, **k):
         raise AssertionError("asked")
     monkeypatch.setattr(delegate, "loaded", boom)
+    assert delegate._gate(delegate.route("code")[1]) is None
+    # Asked only to size the timeout (#694); an unknown answer still goes.
+    monkeypatch.setattr(delegate, "loaded", lambda where, **k: None)
     assert delegate.complete("code", "x")["text"]
 
 

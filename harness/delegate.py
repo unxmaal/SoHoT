@@ -23,7 +23,7 @@ MAX_TOKENS = 8192
 #: A rough floor on characters per prompt token, so the estimate errs high.
 CHARS_PER_TOKEN = 3
 TIMEOUT_S = 300.0
-#: Seconds to ask a server what it holds; an answer that late counts as not resident.
+#: Seconds to ask a server what it holds; an answer that late leaves residency unknown.
 RESIDENCY_TIMEOUT_S = 2.0
 
 
@@ -137,11 +137,15 @@ def template(lane: str, thinking: bool | None) -> dict | None:
     return kwargs or None
 
 
-def admit(holder: str, resident: bool, level: int | None) -> tuple[bool, str]:
-    """(ok, why): may a delegated call go now? Only a model load needs the lock. #588."""
+def admit(holder: str, resident: bool | None, level: int | None) -> tuple[bool, str]:
+    """(ok, why): may a delegated call go now? Only a model load needs the lock; None is residency unknown. #588, #694."""
     from harness.pressure import NORMAL
     if not holder:
         return True, ""
+    if resident is None:
+        return False, (f"this machine is busy with {holder} and its server did not say in "
+                       f"{RESIDENCY_TIMEOUT_S:g}s whether the model is loaded (residency unknown), "
+                       f"and delegation does not wait: retry when it finishes")
     if not resident:
         return False, (f"this machine is busy with {holder}; answering would load the "
                        f"model under its lock, and delegation does not wait: retry "
@@ -198,8 +202,8 @@ def upstream(where: serving.Route, config=None) -> tuple[str, str]:
     return "", ""
 
 
-def loaded(where: serving.Route, get=None, config=None) -> bool:
-    """True only when the server behind `where`, on any host, holds its model now; unknown is False."""
+def loaded(where: serving.Route, get=None, config=None) -> bool | None:
+    """True when the server behind `where`, on any host, holds its model now; None when it did not answer. #694."""
     from harness import mlx_server
     get = get or _get_json
     base, model = upstream(where, config)
@@ -220,22 +224,22 @@ def loaded(where: serving.Route, get=None, config=None) -> bool:
             return any(m.get("id") == model
                        for m in get(base + "/v1/models").get("data") or [])
     except Exception:  # noqa: BLE001
-        return False
+        return None
     return False
 
 
-def _gate(where: serving.Route) -> None:
-    """Refuse a call that would load a model while another job holds the machine lock."""
+def _gate(where: serving.Route) -> bool | None:
+    """Refuse a call that would load a model while another job holds the machine lock; its residency, None unasked."""
     try:
         base, _ = upstream(where)
     except Exception:  # noqa: BLE001
         base = ""
     # This machine's lock and pressure say nothing about a server on another host.
     if base and not serving.loopback(base):
-        return
+        return None
     held = busy()
     if not held:
-        return
+        return None
     job = running_job()
     holder = f"{held} under {job}" if job else held
     resident = loaded(where)
@@ -246,6 +250,19 @@ def _gate(where: serving.Route) -> None:
     ok, why = admit(holder, resident, level)
     if not ok:
         raise Refused(why)
+    return resident
+
+
+def _timeout(max_tokens: int, resident: bool | None) -> float:
+    """Long enough for the reply budget at the slowest decode, plus a load when the model may not be held. #694."""
+    load = 0.0 if resident else completion.LOAD_TIMEOUT_S
+    return max(TIMEOUT_S, completion.timeout_for(int(max_tokens or 0))) + load
+
+
+def _allowance(where: serving.Route, max_tokens: int, timeout: float | None) -> float:
+    """Gate the call, then `timeout` or one sized by the model's residency, asked even when no lock is held."""
+    resident = _gate(where)
+    return timeout or _timeout(max_tokens, loaded(where) if resident is None else resident)
 
 
 def _timing(got: completion.Completion, started: float, replies=()) -> dict:
@@ -276,7 +293,7 @@ def complete(lane: str, prompt: str, system: str | None = None,
     from harness import methods
     base = methods.base_of(spec) or spec
     _budget(base, max_tokens, prompt, system or completion.SYSTEM.get(lane, ""))
-    _gate(where)
+    timeout = _allowance(where, max_tokens, timeout)
     started = time.perf_counter()
     made = []
 
@@ -295,7 +312,7 @@ def complete(lane: str, prompt: str, system: str | None = None,
                 except claims.NoSchema as exc:
                     raise Refused(str(exc)) from exc
             return completion.complete_full(
-                text, modality=modality, timeout=timeout or TIMEOUT_S,
+                text, modality=modality, timeout=timeout,
                 temperature=temperature, max_tokens=int(max_tokens), stream=True,
                 system=mine, template=template(modality, thinking), **kw)
         except Refused as exc:
@@ -364,10 +381,9 @@ def decide(question: str, schema: dict, context: str = "",
     check_schema(schema)
     _preflight(question, context, str(schema))
     spec, where = route("decide")
-    _gate(where)
+    timeout = _allowance(where, 0, timeout)
     started = time.perf_counter()
     # Whole, not streamed: the gateway drops logprobs from a stream, and they are the answer.
-    body, got = ask(question, schema, where, context=context,
-                    timeout=timeout or TIMEOUT_S)
+    body, got = ask(question, schema, where, context=context, timeout=timeout)
     return {**body, "lane": "decide", "spec": spec,
             "model": got.model or where.model, **_timing(got, started)}

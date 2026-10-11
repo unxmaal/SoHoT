@@ -51,4 +51,13 @@ NOT_GATING = {
     "scripts/env.sh:HF_HUB_OFFLINE": "a switch, offline or not; never a threshold (#706)",
     "scripts/h3-weights-status.sh:BYTES": "the fallback of a measured size when none was measured (#706)",
     "scripts/router-max-models.sh:bytes": "the fallback of a measured RAM size when none was measured (#706)",
+    "scripts/router-sleep-idle.sh:bytes": "the fallback of a measured RAM size when none was measured (#694)",
+    **{site: "a ceiling held above the slowest load_timeout plus the longest reply_budget by a test, so the "
+       "server or gateway never ends a request before the eval's own limit does (#694)" for site in (
+        "scripts/serve-llamacpp.sh:LLAMACPP_TIMEOUT",
+        "gateway/config.yaml:litellm_settings.request_timeout",
+        "gateway/config.cuda.yaml:litellm_settings.request_timeout",
+    )},
+    **{f"gateway/{name}:litellm_settings.num_retries": "pinned at 0 by a test, so no retry hides a failed "
+       "upstream or folds two attempts into one timing (#694)" for name in ("config.yaml", "config.cuda.yaml")},
 }
