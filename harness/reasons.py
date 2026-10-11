@@ -38,6 +38,8 @@ TOKEN_BUDGET_EXHAUSTED = "token_budget_exhausted"
 STEP_CAP = "step_cap"
 #: A case whose prompt and reply budget do not fit the context the candidate is served at. #695.
 CONTEXT_EXCEEDED = "context_exceeded"
+#: llama-server's shared KV pool filled and it failed every request in flight; says nothing about the model. #748.
+POOL_FULL = "pool_full"
 MISSING_FILE_IN_SNAPSHOT = "missing_file_in_snapshot"
 CRASHED = "crashed"
 CONTENT_FAILED = "content_failed"
@@ -57,6 +59,7 @@ CLASSES = {
     GPU_FAULT: ("declined", MACHINE),
     REFUSED_BY_GATEWAY: ("queued", HARNESS),
     HARNESS_ERROR: ("queued", HARNESS),
+    POOL_FULL: ("queued", LIMIT),
     TIMEOUT: ("declined", LIMIT),
     TOKEN_BUDGET_EXHAUSTED: ("declined", LIMIT),
     STEP_CAP: ("declined", LIMIT),
@@ -96,6 +99,8 @@ def limits() -> dict:
 RUNNER, STDERR = "runner", "stderr"
 
 _SERVER_DEAD = ("generation thread died",)
+#: llama-server 0.5.0's error to every in-flight task when a decode finds no room in the pool. #748.
+_POOL_FULL = ("context size has been exceeded",)
 _GPU_FAULT = ("kiogpucommandbuffercallbackerrortimeout", "gpu timeout error")
 _GATEWAY = ("invalid model name", "gateway returned http 400",
             "is the gateway up", "connection refused")
@@ -167,6 +172,8 @@ def classify(text: str, where: str = RUNNER, candidate: str = "") -> str:
         return GPU_FAULT
     if mps_abort(low):
         return BACKEND_FAULT
+    if _any(low, _POOL_FULL):
+        return POOL_FULL
     if candidate.startswith(LLAMACPP_PREFIX) and all(
             p in low for p in _LLAMACPP_LOAD_FAILED):
         return LOAD_FAILED_RUNTIME

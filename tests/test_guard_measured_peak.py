@@ -58,4 +58,4 @@ def test_the_screen_passes_the_spec_to_the_guard():
     from pathlib import Path
     text = (Path(__file__).resolve().parents[1] / "harness" / "commands" / "screen.py"
             ).read_text(encoding="utf-8")
-    assert 'memory.check_model(r["name"], spec=r["candidate"])' in text
+    assert 'memory.check_model(r["name"], spec=r["candidate"], parallel=1)' in text

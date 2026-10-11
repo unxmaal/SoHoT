@@ -128,7 +128,8 @@ def screenable_backlog(want: str = "", plan=None, room=None) -> list[str]:
     from harness import screen
     plan = _screen_plan(want) if plan is None else plan
     from harness import methods
-    room = room or (lambda r: memory.check_model(r["name"], spec=r["candidate"])[0])
+    # One screen request's KV beside the weights, where config.json gives a shape. #699.
+    room = room or (lambda r: memory.check_model(r["name"], spec=r["candidate"], parallel=1)[0])
     # A method crossing downloads nothing, so no download waits behind it. #576.
     return [r["name"] for r in plan if r["state"] == screen.READY
             and not methods.is_method(r["name"]) and room(r)]
@@ -188,7 +189,7 @@ def _report_screen(a) -> int:
         for r in ready[:getattr(a, "limit", 1)]:
             print(f"\n── {r['name']}", flush=True)
             # Headroom, including what is already resident. #284.
-            room, why_not = memory.check_model(r["name"], spec=r["candidate"])
+            room, why_not = memory.check_model(r["name"], spec=r["candidate"], parallel=1)
             if not room:
                 print(f"   QUEUED: {why_not}")
                 ms.decide_or_skip(store, r["name"], "queued", tier=ms.SCREEN,

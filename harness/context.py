@@ -75,6 +75,9 @@ ORNITH_SLOT_CTX = 262144
 #: The agent lane and the 65536 budget-ladder rung need one slot to hold more than this. #682.
 MIN_LONG_SLOT_CTX = 131072
 
+#: Slots every other GGUF is served with, the measured knee of the code model (#682); fewer when the room does not hold them. #699.
+LLAMACPP_SLOTS = 4
+
 #: stem -> (slots constant, slot context constant, floor constant, what the floor is for), read at call time.
 SLOT_PLANS = {EVAL_7B_STEM: ("EVAL_7B_SLOTS", "EVAL_7B_SLOT_CTX", "MIN_SLOT_CTX", "a claims request"),
               ORNITH_STEM: ("ORNITH_SLOTS", "ORNITH_SLOT_CTX", "MIN_LONG_SLOT_CTX",
@@ -129,11 +132,29 @@ def fitting_slots(meta: dict, weights: int, budget: int, slots: int, slot_ctx: i
     return slots, first
 
 
+def shared_pool(meta: dict, weights: int, budget: int, slots: int, slot_ctx: int,
+                cache_type: str = "f16", kv_cap: int | None = None) -> "Choice":
+    """slots x slot_ctx when it fits, else one unified pool of the room that still holds one slot_ctx request. #748."""
+    got = choose_slots(meta, weights, budget, slots, slot_ctx, cache_type, kv_cap)
+    if got.ctx or not got.kv_per_token or got.why.startswith("refused: one slot"):
+        return got
+    per = got.kv_per_token
+    pool = min(slots * slot_ctx, max(budget - weights, 0) // per // STEP * STEP)
+    if pool < slot_ctx or slot_ctx > got.trained:
+        return got
+    return Choice(pool, got.trained, per, f"shared pool: {slots} slots over {pool} tokens, "
+                  f"{pool * per / 1024 ** 3:.1f} GiB of KV; one request up to {slot_ctx}, "
+                  f"concurrent long ones can fill it (#748)", pool // slots)
+
+
 class Choice(NamedTuple):
+    #: llama-server's c: the pool every slot shares.
     ctx: int
     trained: int
     kv_per_token: int
     why: str
+    #: What each slot is sized for when all of them are busy. #699.
+    slot_ctx: int = 0
 
 
 def _arch(meta: dict, key: str, default=None):
@@ -213,7 +234,7 @@ def swa_bytes(meta: dict, cache_type: str = "f16") -> int:
 def choose(meta: dict, weights: int, budget: int, slots: int = 1,
            cache_type: str = "f16", floor: int = FLOOR,
            kv_cap: int | None = None) -> Choice:
-    """min(trained, what fits beside the weights and under kv_cap), per slot, in steps of 1024; 0 below `floor`."""
+    """A pool of slots x min(trained, each slot's share of the room under kv_cap), in steps of 1024; 0 when a slot is below `floor`."""
     full = trained(meta)
     per = kv_bytes_per_token(meta, cache_type)
     if not full or not per:
@@ -221,20 +242,22 @@ def choose(meta: dict, weights: int, budget: int, slots: int = 1,
                       "or KV shape to size a cache from")
     room = max(budget - weights, 0)
     room = min(room, kv_cap) if kv_cap is not None else room
-    room = max(room - swa_bytes(meta, cache_type) * max(slots, 1), 0)
-    fits = room // per // max(slots, 1) // STEP * STEP
+    slots = max(slots, 1)
+    room = max(room - swa_bytes(meta, cache_type) * slots, 0)
+    fits = room // per // slots // STEP * STEP
     ctx = min(full // STEP * STEP or full, fits)
     if ctx < floor:
         limit = (f"trained for {full}" if full < floor else
                  f"{room / 1024 ** 3:.1f} GiB of KV room "
                  f"holds {fits} tokens at {per} B/token")
         return Choice(0, full, per, f"refused: {limit}, under the {floor}-token floor")
+    shape = f"{slots} x " if slots > 1 else ""
     if ctx < full:
-        return Choice(ctx, full, per, f"memory: {fits} tokens fit in "
+        return Choice(ctx * slots, full, per, f"memory: {shape}{fits} tokens fit in "
                       f"{room / 1024 ** 3:.1f} GiB of KV at {per} B/token "
-                      f"(trained {full})")
-    return Choice(ctx, full, per, f"trained: {full} tokens, {per * ctx / 1024 ** 3:.1f} "
-                  "GiB of KV fits")
+                      f"(trained {full})", ctx)
+    return Choice(ctx * slots, full, per, f"trained: {shape}{full} tokens, "
+                  f"{per * ctx * slots / 1024 ** 3:.1f} GiB of KV fits", ctx)
 
 
 def read_meta(path) -> dict:
@@ -305,9 +328,48 @@ def coresident_bytes(conn, defaults=None, config=None, size_of=None) -> int:
     return best
 
 
+def _ram_models_max() -> int:
+    """LLAMACPP_MAX_MODELS, else what scripts/router-max-models.sh allows for this machine's RAM. #644."""
+    got = (os.environ.get("LLAMACPP_MAX_MODELS") or "").strip()
+    if got.isdigit() and int(got) > 0:
+        return int(got)
+    from harness import memory
+    return 2 if memory.total_gb() >= 64 else 1
+
+
+def router_bytes(conn) -> int:
+    """Weights plus planned KV of the heaviest router models that may be resident at once on this machine. #699."""
+    from harness import downloads
+    held = []
+    for row in downloads.live(conn, kind=downloads.GGUF):
+        path = Path(row["path"])
+        if row.get("ctx_at") and row.get("ctx") and path.exists():
+            held.append(_weights(path) + int(row["ctx"]) * int(row.get("kv_bytes_token") or 0))
+    return sum(sorted(held, reverse=True)[:recorded_models_max()])
+
+
+def recorded_models_max() -> int:
+    """The most residents any router preset on this machine was planned for, at most _ram_models_max(). #699."""
+    from harness import paths
+    cap = _ram_models_max()
+    got = []
+    for f in paths.home().glob("llamacpp-preset-*.ini.models-max"):
+        text = f.read_text(encoding="utf-8").strip()
+        if text.isdigit() and int(text) > 0:
+            got.append(int(text))
+    return min(max(got), cap) if got else cap
+
+
+def models_max_path(preset) -> Path:
+    """Where main() writes the models-max the plan was sized for, beside the preset. #699."""
+    return Path(f"{preset}.models-max")
+
+
 def plan(conn, budget: int | None = None, slots: int = 1,
-         cache_type: str = "f16", kv_cap: int | None = None) -> list[dict]:
-    """Choose and record the context of every live GGUF row on this machine."""
+         cache_type: str = "f16", kv_cap: int | None = None,
+         models_max: int = 1, record: bool = True) -> list[dict]:
+    """Choose and record the context of every live GGUF row on this machine, so any
+    `models_max` of them resident at once fit the budget together. #699."""
     import time
 
     from harness import downloads
@@ -320,31 +382,59 @@ def plan(conn, budget: int | None = None, slots: int = 1,
         raise
     except Exception:  # noqa: BLE001
         beside = 0
+    rows = [r for r in downloads.live(conn, kind=downloads.GGUF) if Path(r["path"]).exists()]
+    sizes = [_weights(r["path"]) for r in rows]
+    k = max(min(models_max, len(sizes)), 1)
+    heaviest = sum(sorted(sizes, reverse=True)[:k])
     out = []
-    for row in downloads.live(conn, kind=downloads.GGUF):
+    for row in rows:
         path = Path(row["path"])
-        if not path.exists():
-            continue
         stem = path.name[:-len(".gguf")]
         fixed = slot_plan(stem)
-        n = fixed[0] if fixed else slots
+        n = fixed[0] if fixed else max(slots, 1)
         try:
             meta, weights = read_meta(path), _weights(path)
+            # With k resident, each gets an equal share of what the k heaviest weights leave. #699.
+            room = budget - beside if k == 1 else weights + max(budget - beside - heaviest, 0) // k
             if fixed:
+                # The slots it serves alone, sharing whatever pool the k-resident room holds. #748.
                 n, got = fitting_slots(meta, weights, budget - beside, *fixed, cache_type, kv_cap)
+                pooled = shared_pool(meta, weights, room, n, fixed[1], cache_type, kv_cap) if got.ctx else got
+                got = got if pooled.ctx == got.ctx else pooled
             else:
-                got = choose(meta, weights, budget - beside, slots, cache_type, kv_cap=kv_cap)
+                got = choose(meta, weights, room, n, cache_type, kv_cap=kv_cap)
+                while not got.ctx and n > 1:
+                    n -= 1
+                    got = choose(meta, weights, room, n, cache_type, kv_cap=kv_cap)
         except (OSError, ValueError, KeyError, struct.error) as exc:
             got = Choice(0, 0, 0, f"refused: unreadable GGUF header ({exc})")
+        if k > 1 and got.ctx:
+            got = got._replace(why=f"{got.why}; {k} resident share {budget - beside - heaviest >> 20} MiB of KV")
+        out.append({"stem": stem, "path": str(path), "ctx": got.ctx, "slots": n,
+                    "why": got.why})
+        if not record:
+            continue
         conn.execute("UPDATE downloads SET ctx = ?, ctx_trained = ?, kv_bytes_token = ?, "
                      "ctx_slots = ?, ctx_why = ?, ctx_at = ?, kv_cap_bytes = ?, "
                      "coresident_bytes = ? WHERE id = ?",
                      (got.ctx, got.trained, got.kv_per_token, n, got.why,
                       time.time(), kv_cap, beside, row["id"]))
-        out.append({"stem": stem, "path": str(path), "ctx": got.ctx, "slots": n,
-                    "why": got.why})
-    conn.commit()
+    if record:
+        conn.commit()
     return out
+
+
+def plan_router(conn, slots: int, cache_type: str = "f16") -> tuple[list[dict], int]:
+    """The most resident models up to _ram_models_max() that serve every stem one alone would, and the plan recorded for it. #699."""
+    cap = _ram_models_max()
+    alone = {p["stem"] for p in plan(conn, slots=slots, cache_type=cache_type, record=False) if p["ctx"]}
+    chosen = 1
+    for k in range(cap, 1, -1):
+        got = plan(conn, slots=slots, cache_type=cache_type, models_max=k, record=False)
+        if alone <= {p["stem"] for p in got if p["ctx"]}:
+            chosen = k
+            break
+    return plan(conn, slots=slots, cache_type=cache_type, models_max=chosen), chosen
 
 
 def served(conn, stem: str) -> dict | None:
@@ -523,17 +613,18 @@ def main(argv=None) -> int:
     if len(argv) != 1:
         print("usage: python -m harness.context PRESET.ini", file=sys.stderr)
         return 2
-    slots = max(int(os.environ.get("LLAMACPP_PARALLEL") or 1), 1)
+    slots = max(int(os.environ.get("LLAMACPP_PARALLEL") or LLAMACPP_SLOTS), 1)
     cache = os.environ.get("LLAMACPP_CACHE_TYPE") or "f16"
     default = int(os.environ.get("LLAMACPP_CTX") or 16384)
     conn = ms.connect()
     try:
-        plans = plan(conn, slots=slots, cache_type=cache)
+        plans, models_max = plan_router(conn, slots, cache)
     finally:
         conn.close()
     for p in plans:
         print(f"context: {p['stem']}: {p['ctx'] or 'refused'} ({p['why']})", file=sys.stderr)
     Path(argv[0]).write_text(preset_text(plans, default, slots, cache), encoding="utf-8")
+    models_max_path(argv[0]).write_text(f"{models_max}\n", encoding="utf-8")
     print(argv[0])
     return 0
 

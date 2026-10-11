@@ -86,8 +86,11 @@ esac
 # --jinja: the model's own chat template, which OpenAI tool calls need. #297.
 # Per-model context from the store via a preset; a CLI --ctx-size would override it. #498.
 PRESET="${LOCALHARNESS_HOME:-$HOME/localharness}/llamacpp-preset-${LLAMACPP_PORT:-8081}.ini"
+MAX_MODELS="${LLAMACPP_MAX_MODELS:-}"
 if uv run python -m harness.context "$PRESET" >/dev/null; then
   CTX_ARGS=(--models-preset "$PRESET")
+  # The plan sized each model for this many resident, at most LLAMACPP_MAX_MODELS (#699).
+  if [ -s "$PRESET.models-max" ]; then MAX_MODELS="$(cat "$PRESET.models-max")"; fi
 else
   echo "WARN: no per-model context preset; every model gets ${LLAMACPP_CTX:-16384}" >&2
   CTX_ARGS=(--ctx-size "${LLAMACPP_CTX:-16384}")
@@ -129,7 +132,7 @@ exec "$BIN" \
   --models-dir "$MODELS" \
   --sleep-idle-seconds "${LLAMACPP_SLEEP_IDLE:-$(scripts/router-sleep-idle.sh)}" \
   --timeout "${LLAMACPP_TIMEOUT:-7200}" \
-  --models-max "${LLAMACPP_MAX_MODELS:-$(scripts/router-max-models.sh)}" \
+  --models-max "${MAX_MODELS:-$(scripts/router-max-models.sh)}" \
   --n-gpu-layers "${LLAMACPP_GPU_LAYERS:-999}" \
   "${CTX_ARGS[@]}" \
   ${KEY_ARGS[@]+"${KEY_ARGS[@]}"} \

@@ -36,7 +36,6 @@ harness/completion.py:_answers_as_gateway->httpx.get(timeout)
 harness/contamination.py:gateway_ask.ask->post(timeout)
 harness/context.py:FLOOR
 harness/context.py:_get_json->urllib.request.urlopen(timeout)
-harness/context.py:environ(LLAMACPP_PARALLEL)
 harness/delegate.py:MAX_PROMPT_CHARS
 harness/delegate.py:MAX_TOKENS
 harness/delegate.py:RESIDENCY_TIMEOUT_S
@@ -106,7 +105,6 @@ harness/mcp_server.py:_local_hostname->subprocess.run(timeout)
 harness/mcp_server.py:local_complete(max_tokens)
 harness/memory.py:DEFAULT_RESERVE_GB
 harness/memory.py:DISCRETE_RESERVE_GB
-harness/memory.py:GPU_FRACTION
 harness/memory.py:MIN_RESERVE_GB
 harness/memory.py:_discrete->subprocess.run(timeout)
 harness/memory.py:_unified_total_gb->subprocess.run(timeout)
@@ -136,11 +134,8 @@ harness/reverify.py:DEFAULT_DAYS
 harness/router.py:TIMEOUT
 harness/rubric_eval.py:TEMPERATURE
 harness/rubric_eval.py:evaluate(timeout)
-harness/serving.py:MLX_MAX_PARALLEL
 harness/serving.py:llamacpp_build->subprocess.run(timeout)
 harness/throughput.py:_descendants->subprocess.run(timeout)
-harness/throughput.py:sweep(levels)
-harness/throughput.py:sweep(max_tokens)
 harness/throughput.py:sweep(sample_s)
 harness/throughput.py:sweep(timeout)
 harness/usage.py:FLUSH_S

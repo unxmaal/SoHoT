@@ -125,10 +125,10 @@ def test_context_is_capped_by_the_kv_room_left_after_the_weights():
     assert got.ctx % 1024 == 0 and got.ctx < 262144 and "memory" in got.why
 
 
-def test_parallel_slots_split_the_room():
+def test_parallel_slots_split_the_room_and_c_is_their_pool():
     one = context.choose(QWEN3_4B, weights=10 * GIB, budget=16 * GIB)
     two = context.choose(QWEN3_4B, weights=10 * GIB, budget=16 * GIB, slots=2)
-    assert two.ctx == one.ctx // 2 // 1024 * 1024
+    assert two.slot_ctx == one.ctx // 2 // 1024 * 1024 and two.ctx == 2 * two.slot_ctx
 
 
 def test_below_the_floor_is_refused_with_a_reason():

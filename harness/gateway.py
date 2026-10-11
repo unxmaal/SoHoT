@@ -143,8 +143,9 @@ def _capped(entry: dict, data=None) -> dict:
     if "max_parallel_requests" in params or serving.engine_at(
             str(params.get("api_base", "")), data=data or {}) != serving.DEFAULT:
         return entry
+    repo = strip_provider(str(params.get("model", "")))
     return {**entry, "litellm_params": {**params,
-                                        "max_parallel_requests": serving.MLX_MAX_PARALLEL}}
+                                        "max_parallel_requests": serving.mlx_parallel(repo)}}
 
 
 def write_served(config=None, defaults=None, nodes=None) -> Path:

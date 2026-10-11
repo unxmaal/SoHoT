@@ -51,6 +51,13 @@ def pytest_collection_modifyitems(config, items):
 
 
 @pytest.fixture(autouse=True)
+def _no_real_metal(monkeypatch):
+    """No test budgets against this Mac's Metal working set. #699."""
+    from harness import memory
+    monkeypatch.setattr(memory, "_metal_info", lambda: {})
+
+
+@pytest.fixture(autouse=True)
 def _cli_output_mode(monkeypatch):
     """cli.main sets common._JSON per call; a --json test must not turn the next test's output into JSON. #720."""
     from harness.commands import common

@@ -66,6 +66,8 @@ class Accelerator:
     total_gb: float
     available_gb: float
     name: str = ""
+    #: The Metal working set sysctl iogpu.wired_limit_mb sets, 0 when unset. #699.
+    wired_gb: float = 0.0
 
 
 def ceiling_for(acc: Accelerator) -> float:
@@ -74,7 +76,7 @@ def ceiling_for(acc: Accelerator) -> float:
         # The card is the wall; there is no fraction to take. What the desktop
         # is already holding comes off via available_gb, not off the ceiling.
         return acc.total_gb
-    return acc.total_gb * GPU_FRACTION
+    return acc.wired_gb or acc.total_gb * GPU_FRACTION
 
 
 def reserve_for(acc: Accelerator) -> float:
@@ -89,6 +91,36 @@ def _unified_total_gb() -> float:
                              text=True, timeout=5).stdout.strip()
         return int(out) / 1024 ** 3
     except (OSError, ValueError, subprocess.SubprocessError):
+        return 0.0
+
+
+def _wired_limit_gb() -> float:
+    """The GPU working set a serving Mac raised with sysctl iogpu.wired_limit_mb, 0 when unset. #699."""
+    try:
+        out = subprocess.run(["sysctl", "-n", "iogpu.wired_limit_mb"], capture_output=True,
+                             text=True, timeout=5).stdout.strip()
+        return max(int(out), 0) / 1024
+    except (OSError, ValueError, subprocess.SubprocessError):
+        return 0.0
+
+
+def _metal_info() -> dict:
+    """mlx's Metal device info, {} where mlx is not installed."""
+    try:
+        import mlx.core as mx
+        return dict((getattr(mx, "device_info", None) or mx.metal.device_info)())
+    except Exception:  # noqa: BLE001 - no mlx, or no Metal device
+        return {}
+
+
+def _working_set_gb() -> float:
+    """sysctl iogpu.wired_limit_mb, else Metal's recommendedMaxWorkingSetSize; 0 when neither answers. #699."""
+    wired = _wired_limit_gb()
+    if wired:
+        return wired
+    try:
+        return max(float(_metal_info().get("max_recommended_working_set_size") or 0), 0.0) / 1024 ** 3
+    except (TypeError, ValueError):
         return 0.0
 
 
@@ -129,34 +161,51 @@ def system_memory_gb() -> float:
     return 0.0
 
 
-def _discrete() -> Accelerator | None:
-    """The first NVIDIA card, or None if there is not one.
+def _visible(cards: list[tuple], visible: str, order: str) -> list[tuple]:
+    """The cards CUDA_VISIBLE_DEVICES names, by index or UUID prefix, up to the first it cannot match. #699."""
+    by_index = order.strip().upper() == "PCI_BUS_ID" or len({(c[2], c[3]) for c in cards}) <= 1
+    # FASTEST_FIRST numbering is not nvidia-smi's, so an index on mixed cards budgets the smallest. #699.
+    ranked = cards if by_index else sorted(cards, key=lambda c: c[3])
+    kept = []
+    for x in (x.strip() for x in visible.split(",")):
+        if x.isdigit():
+            got = ranked[int(x) if by_index else len(kept)] if int(x) < len(ranked) else None
+        else:
+            got = next((c for c in cards if x and c[1].lower().startswith(x.lower())), None)
+        if got is None:
+            break
+        if got not in kept:
+            kept.append(got)
+    return kept
 
-    `nvidia-smi` ships with the driver itself, so this needs no CUDA toolkit
-    and no Python binding -- which matters because the guard has to work
-    before any of that is installed.
-    """
+
+def _discrete() -> Accelerator | None:
+    """Every NVIDIA card CUDA_VISIBLE_DEVICES leaves visible, summed as llama-server splits across them; None if none. #699."""
     try:
         out = subprocess.run(
-            ["nvidia-smi", "--query-gpu=name,memory.total,memory.free",
+            ["nvidia-smi", "--query-gpu=index,uuid,name,memory.total,memory.free",
              "--format=csv,noheader,nounits"],
-            capture_output=True, text=True, timeout=10).stdout.strip()
+            capture_output=True, text=True, timeout=10).stdout
     except (OSError, subprocess.SubprocessError):
         return None
-    if not out:
+    cards = []
+    for line in (out or "").splitlines():
+        parts = [p.strip() for p in line.split(",")]
+        if len(parts) < 5:
+            continue
+        try:
+            total_mib, free_mib = float(parts[3]), float(parts[4])
+        except ValueError:
+            continue
+        if total_mib > 0:
+            cards.append((parts[0], parts[1], parts[2], total_mib, free_mib))
+    visible = os.environ.get("CUDA_VISIBLE_DEVICES")
+    if visible is not None:
+        cards = _visible(cards, visible, os.environ.get("CUDA_DEVICE_ORDER") or "")
+    if not cards:
         return None
-    # First card only. Multi-GPU would need the eval suite to say which one it
-    # ran on, and nothing here does yet; claiming the sum would be a lie.
-    parts = [p.strip() for p in out.splitlines()[0].split(",")]
-    if len(parts) < 3:
-        return None
-    try:
-        total_mib, free_mib = float(parts[1]), float(parts[2])
-    except ValueError:
-        return None
-    if total_mib <= 0:
-        return None
-    return Accelerator("discrete", total_mib / 1024, free_mib / 1024, parts[0])
+    return Accelerator("discrete", sum(c[3] for c in cards) / 1024,
+                       sum(c[4] for c in cards) / 1024, " + ".join(c[2] for c in cards))
 
 
 def detect() -> Accelerator:
@@ -172,7 +221,7 @@ def detect() -> Accelerator:
     total = _unified_total_gb()
     if total > 0:
         return Accelerator("unified", total, available_gb() or total,
-                           platform.machine())
+                           platform.machine(), _working_set_gb())
     found = _discrete()
     if found:
         return found
@@ -194,7 +243,7 @@ def ceiling_gb() -> float:
     """The working set to budget against, not the RAM figure on the box."""
     total = _unified_total_gb()
     if total > 0:
-        return total * GPU_FRACTION
+        return _working_set_gb() or total * GPU_FRACTION
     found = _discrete()
     if found:
         return found.total_gb
@@ -344,6 +393,29 @@ def size_gb(path: str) -> float | None:
     return total / 1024 ** 3 if total else None
 
 
+def mlx_kv_bytes_per_token(repo: str) -> int:
+    """f16 K and V bytes one token of context costs this repo, from its config.json; 0 when unknown. #699."""
+    import json
+    path = cache_path(repo)
+    if not path:
+        return 0
+    root = Path(path)
+    found = [root / "config.json"] if (root / "config.json").is_file() else sorted(root.rglob("config.json"))
+    try:
+        cfg = json.loads(found[0].read_text(encoding="utf-8")) if found else {}
+    except (OSError, ValueError):
+        return 0
+    cfg = cfg.get("text_config") if isinstance(cfg.get("text_config"), dict) else cfg
+    try:
+        layers = int(cfg.get("num_hidden_layers") or 0)
+        heads = int(cfg.get("num_attention_heads") or 0)
+        kv = int(cfg.get("num_key_value_heads") or heads)
+        dim = int(cfg.get("head_dim") or (int(cfg.get("hidden_size") or 0) // heads if heads else 0))
+    except (TypeError, ValueError):
+        return 0
+    return 2 * layers * kv * dim * 2
+
+
 #: Bits per weight in an unquantised checkpoint. Used to scale the on-disk
 #: size when a caller will quantise on load.
 _BASE_BITS = 16
@@ -352,7 +424,7 @@ _BASE_BITS = 16
 def check_model(repo: str, resident_gb: float = 0.0,
                 reserve_gb: float | None = None,
                 quantize: int | None = None,
-                spec: str = "") -> tuple[bool, str]:
+                spec: str = "", parallel: int = 0) -> tuple[bool, str]:
     """One call: will loading `repo` be safe on this machine right now?
 
     `quantize` is the bit width the CALLER will load at. Without it this used
@@ -382,6 +454,10 @@ def check_model(repo: str, resident_gb: float = 0.0,
         # Allowed, but said out loud. Refusing everything uncached would make
         # the guard the thing that breaks the workflow.
         return True, f"size of {repo} is unknown (not cached); proceeding unchecked"
+    if parallel:
+        from harness import serving
+        # Each request in flight holds its own KV cache beside the weights. #699.
+        need += parallel * mlx_kv_bytes_per_token(repo) * serving.MLX_REQUEST_CTX / 1024 ** 3
     if reserve_gb is None:
         reserve_gb = measured_reserve_gb()
     return fits(need, available_gb(), ceiling_gb(), resident_gb, reserve_gb)

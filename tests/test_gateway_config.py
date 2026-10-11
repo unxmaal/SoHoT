@@ -74,8 +74,9 @@ def test_the_cuda_server_holds_one_model_at_a_time():
     text = (REPO / "scripts" / "serve-llamacpp.sh").read_text(encoding="utf-8")
     assert "--models-max" in text, (
         "serve-llamacpp.sh should cap resident models; the default is 4")
-    assert "${LLAMACPP_MAX_MODELS:-$(scripts/router-max-models.sh)}" in text, (
-        "the cap should come from the machine's memory and stay overridable")
+    assert 'MAX_MODELS="${LLAMACPP_MAX_MODELS:-}"' in text and \
+        "${MAX_MODELS:-$(scripts/router-max-models.sh)}" in text, (
+        "the cap should come from the plan or the machine's memory and stay overridable")
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="runs the bash helper directly")
