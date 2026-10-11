@@ -10,13 +10,17 @@ gives: the alternative is registering real scheduled tasks in CI, and the
 failure being guarded against is visible in the text.
 """
 import re
+import subprocess
 from pathlib import Path
 
 import pytest
 
+import shells
+
 REPO = Path(__file__).resolve().parents[1]
 SERVICES = REPO / "scripts" / "services.sh"
 LLAMACPP = REPO / "scripts" / "serve-llamacpp.sh"
+APIKEY = REPO / "scripts" / "api-key.sh"
 
 #: Anything that would make Windows start something without being asked. The
 #: PowerShell trigger types and the schtasks schedules that fire on their own.
@@ -25,6 +29,33 @@ _AUTOSTART = re.compile(
     r"/sc\s+(ONSTART|ONLOGON|ONIDLE|DAILY|WEEKLY|MINUTE|HOURLY)|"
     r"HKCU.*\\\\Run|shell:startup",
     re.I)
+
+#: The one region allowed to register anything, fenced so the reversal #684
+#: asks for is visible in the text rather than spread through the file. The
+#: markers are literal because brace matching over shell is guesswork, and a
+#: test that guesses wrong here passes while the rule is broken.
+_NODE_BEGIN = "# BEGIN node registration"
+_NODE_END = "# END node registration"
+
+
+def _node_region(text):
+    """The lines between the node markers, or none when they are absent."""
+    lines = text.splitlines()
+    begin = next((i for i, line in enumerate(lines) if _NODE_BEGIN in line), None)
+    end = next((i for i, line in enumerate(lines) if _NODE_END in line), None)
+    if begin is None or end is None or end < begin:
+        return []
+    return lines[begin:end + 1]
+
+
+def _outside_node_region(text):
+    """Every other line, which the no-autostart rule still governs."""
+    lines = text.splitlines()
+    region = _node_region(text)
+    if not region:
+        return lines
+    begin = next(i for i, line in enumerate(lines) if _NODE_BEGIN in line)
+    return lines[:begin] + lines[begin + len(region):]
 
 
 def test_the_windows_services_script_exists():
@@ -36,13 +67,19 @@ def test_the_windows_services_script_exists():
 def test_nothing_registers_itself_to_start_on_its_own():
     """THE POINT OF THIS FILE. A machine with a day job that quietly starts a language
     model server at logon has lost 8 GB of VRAM to a machine that was supposed
-    to be idle, and the owner finds out from a frame rate rather than a log."""
+    to be idle, and the owner finds out from a frame rate rather than a log.
+
+    #684 makes this box a serving node behind the gateway, which does need one
+    registered task. That is allowed in the fenced node region and nowhere
+    else, so the default verbs keep the behaviour this test was written for:
+    a reboot leaves the card empty unless someone asked otherwise.
+    """
     text = SERVICES.read_text(encoding="utf-8")
-    offenders = [line.strip() for line in text.splitlines()
+    offenders = [line.strip() for line in _outside_node_region(text)
                  if _AUTOSTART.search(line) and not line.strip().startswith("#")]
     assert not offenders, (
-        "services.sh would start something without being asked: "
-        + "; ".join(offenders))
+        "services.sh would start something without being asked, outside the "
+        "opt-in node region: " + "; ".join(offenders))
 
 
 def test_stopping_takes_the_whole_process_tree():
@@ -106,3 +143,108 @@ def test_windows_tool_flags_are_written_so_msys_does_not_eat_them():
     assert not offenders, (
         "single-slash flags are rewritten as paths by MSYS; use // -- "
         + "; ".join(offenders))
+
+
+def test_the_node_region_is_fenced():
+    """The allowance has to name its own boundaries.
+
+    Without both markers _outside_node_region falls back to the whole file,
+    and the no-autostart rule would then be enforced over nothing while still
+    reporting green. The fence is the thing under test, not a formality.
+    """
+    text = SERVICES.read_text(encoding="utf-8")
+    assert _node_region(text), (
+        f"services.sh needs {_NODE_BEGIN!r} and {_NODE_END!r} around the one "
+        "region allowed to register a task")
+
+
+@pytest.mark.parametrize("verb", ["install-node", "uninstall-node"])
+def test_registering_the_node_is_a_verb_of_its_own(verb):
+    """#684 needs a node that survives a reboot. It does not need one on every
+    machine that runs this file, so registration is asked for by name."""
+    text = SERVICES.read_text(encoding="utf-8")
+    assert re.search(rf"^\s*{re.escape(verb)}\)", text, re.M), (
+        f"no {verb} subcommand")
+
+
+@pytest.mark.parametrize("verb", ["start", "stop", "restart", "status"])
+def test_the_everyday_verbs_register_nothing(verb):
+    """The reversal is scoped to install-node. If `start` reached the
+    registration then every ordinary use would leave a task behind, which is
+    the state #110 ruled out and the one this box was found in."""
+    text = SERVICES.read_text(encoding="utf-8")
+    branch = re.search(rf"^\s*{verb}\)(.*)$", text, re.M)
+    assert branch, f"no {verb} subcommand"
+    assert "install_node" not in branch.group(1), (
+        f"{verb} would register a task")
+
+
+def test_the_node_task_starts_the_service_through_the_launcher():
+    """A task that ran llama-server itself would bypass serve-llamacpp.sh and
+    lose --sleep-idle-seconds with it. Giving the card back when idle is what
+    makes a registered node tolerable on a machine with a day job, so the task
+    goes through the same launcher every other path uses."""
+    region = "\n".join(_node_region(SERVICES.read_text(encoding="utf-8")))
+    assert "start llamacpp" in region, (
+        "the node task should run this script's own start verb")
+    assert "llama-server" not in region, (
+        "the node task should not invoke the server directly; that skips the "
+        "launcher and the idle sleep")
+
+
+def test_the_key_is_passed_as_a_file_not_as_an_argument():
+    """A key in argv is readable by every other process on the box, and it
+    lands in the task definition and in any log that echoes the command. The
+    server takes --api-key-file for exactly this reason."""
+    text = LLAMACPP.read_text(encoding="utf-8")
+    assert "--api-key-file" in text, "the launcher should pass the key by file"
+    offenders = [line.strip() for line in text.splitlines()
+                 if "--api-key" in line
+                 and "--api-key-file" not in line
+                 and not line.lstrip().startswith("#")]
+    assert not offenders, (
+        "the key would reach argv: " + "; ".join(offenders))
+
+
+def test_a_keyless_launcher_passes_no_key_flag():
+    """Most machines run this with no key at all. An empty --api-key-file
+    would be a flag pointing at nothing, which the server rejects at startup,
+    so the flag has to be absent rather than empty."""
+    text = LLAMACPP.read_text(encoding="utf-8")
+    assert "LLAMACPP_API_KEY_FILE" in text
+    assert re.search(r"KEY_ARGS|key_args", text), (
+        "the key flag should be built conditionally, not passed always")
+
+
+@pytest.mark.skipif(shells.resolve("bash") is None,
+                    reason="no bash on this machine")
+def test_a_bom_prefixed_key_file_yields_the_bare_key(tmp_path):
+    """PowerShell 5.1 writes a UTF-8 BOM for -Encoding utf8.
+
+    The BOM went into the key the server expected and was stripped from the
+    Authorization header on the way in, so the CORRECT key returned 401 and
+    read as a key mismatch. It cost a while to find because both sides looked
+    identical in every log. 67 bytes where 64 were meant.
+    """
+    key = "0123456789abcdef" * 4
+    path = tmp_path / "api-key.txt"
+    path.write_bytes(b"\xef\xbb\xbf" + key.encode("ascii") + b"\r\n")
+    done = subprocess.run(
+        [shells.resolve("bash"), "-c",
+         f'. scripts/api-key.sh; read_api_key "{path.as_posix()}"'],
+        cwd=REPO, capture_output=True, text=True, timeout=60)
+    assert done.returncode == 0, done.stderr
+    assert done.stdout.strip() == key
+    assert len(done.stdout.strip()) == 64
+
+
+@pytest.mark.skipif(shells.resolve("bash") is None,
+                    reason="no bash on this machine")
+def test_a_missing_key_file_is_an_error_not_an_empty_key():
+    """An unreadable key file silently yielding "" would start the server wide
+    open on a LAN address, which is worse than not starting at all."""
+    done = subprocess.run(
+        [shells.resolve("bash"), "-c",
+         '. scripts/api-key.sh; read_api_key /nonexistent/key.txt'],
+        cwd=REPO, capture_output=True, text=True, timeout=60)
+    assert done.returncode != 0, "a missing key file should fail loudly"
