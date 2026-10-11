@@ -268,10 +268,10 @@ def test_each_knob_backlog_file_is_sorted_unique_and_holds_only_its_own_director
         assert not wrong, f"{path.name} holds sites of another directory: {wrong}"
 
 
-def test_the_knob_backlog_merges_by_union():
+def test_the_knob_backlog_does_not_merge_by_union_which_cannot_delete_a_line():
     got = subprocess.run(["git", "check-attr", "merge", "--", "tests/gauntlet/knob_backlog/harness.txt"],
                          cwd=REPO, capture_output=True, text=True, check=True).stdout
-    assert got.strip().endswith(": merge: union")
+    assert got.strip().endswith(": merge: unspecified")
 
 
 def test_the_legacy_values_old_receipts_ran_at_are_exactly_these():

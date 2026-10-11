@@ -13,6 +13,3 @@
 *.mp4 binary
 *.wav binary
 *.safetensors binary
-
-# One site per line, sorted: two PRs that each drop or add a line keep both (#751).
-tests/gauntlet/knob_backlog/*.txt merge=union
