@@ -163,13 +163,22 @@ def test_the_backend_is_chosen_by_what_the_machine_has():
     """One lane, two implementations. Apple's Vision on macOS and
     Windows.Media.Ocr on Windows -- both ship with the OS, neither needs a
     download or a server, and which one runs is not a decision any caller
-    should be making."""
+    should be making.
+
+    A PLATFORM DOES NOT GUARANTEE A BACKEND. winsdk publishes no wheel above
+    cp312, so a Windows box on 3.13 has no OS binding, and RapidOCR is a
+    linux-only install so it does not stand in. available_backend() returns
+    None there and the lane warns rather than failing, which the next test
+    covers. Asserting "windows" unconditionally would make an absent optional
+    binding look like a broken lane. #758.
+    """
     name = ocr.available_backend()
-    assert name in ocr.BACKENDS
     if sys.platform == "darwin":
         assert name == "vision"
-    if sys.platform == "win32":
-        assert name == "windows"
+    elif sys.platform == "win32":
+        assert name == ("windows" if ocr.BACKENDS["windows"][1]() else None)
+    else:
+        assert name in ocr.BACKENDS
 
 
 def test_an_unmeasurable_lane_warns_rather_than_failing(tmp_path, monkeypatch):

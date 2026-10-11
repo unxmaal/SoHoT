@@ -810,7 +810,7 @@ dependencies = [
     { name = "pyyaml" },
     { name = "rapidocr-onnxruntime", marker = "sys_platform == 'linux'" },
     { name = "vtracer" },
-    { name = "winsdk", marker = "sys_platform == 'win32'" },
+    { name = "winsdk", marker = "python_full_version < '3.13' and sys_platform == 'win32'" },
 ]
 
 [package.dev-dependencies]
@@ -857,7 +857,7 @@ requires-dist = [
     { name = "pyyaml", specifier = ">=6" },
     { name = "rapidocr-onnxruntime", marker = "sys_platform == 'linux'", specifier = ">=1.4.4" },
     { name = "vtracer", specifier = ">=0.6.15" },
-    { name = "winsdk", marker = "sys_platform == 'win32'", specifier = ">=1.0.0b10" },
+    { name = "winsdk", marker = "python_full_version < '3.13' and sys_platform == 'win32'", specifier = ">=1.0.0b10" },
 ]
 
 [package.metadata.requires-dev]

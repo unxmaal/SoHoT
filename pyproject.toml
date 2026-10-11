@@ -13,7 +13,14 @@ dependencies = [
     "pyobjc-framework-vision>=12.2.2; sys_platform == 'darwin'",
     # The same lane's Windows implementation. Both ship with their OS; this is
     # only the binding to it. See harness/checks/ocr.py.
-    "winsdk>=1.0.0b10; sys_platform == 'win32'",
+    # Bounded to the Pythons winsdk publishes wheels for, which stop at cp312.
+    # Unbounded, uv resolves 3.13 on a Windows box with nothing pinned, finds
+    # no wheel, and tries to build from source, which needs Visual Studio. That
+    # does not fail the OCR lane, it fails every `uv run`: the suite, lint's
+    # privacy step, and serve-llamacpp.sh's call to harness.context, which is
+    # what sizes a GGUF. The last one is silent, because the launcher has a WARN
+    # path, so the store's slot plan just stops arriving. #758.
+    "winsdk>=1.0.0b10; sys_platform == 'win32' and python_version < '3.13'",
     # The same lane on Linux, which ships no OCR engine of its own. An ONNX
     # detector plus recogniser, CPU, no torch. Measured against Apple's Vision
     # on this project's own text-render images: 18/18 either way, where
