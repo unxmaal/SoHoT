@@ -427,6 +427,7 @@ def build_parser() -> argparse.ArgumentParser:
     thr.add_argument("--n", type=int, default=16)
     thr.add_argument("--levels", default="1,2,4")
     thr.add_argument("--max-tokens", type=int, default=300)
+    thr.add_argument("--timeout", type=float, default=300.0, help="seconds one request may take")
     thr.add_argument("--gateway", default="http://127.0.0.1:4000")
     thr.add_argument("--serve", choices=("vllm-mlx", "vllm-metal"),
                      help="start this engine for a vllm: --model, sweep, then stop it")

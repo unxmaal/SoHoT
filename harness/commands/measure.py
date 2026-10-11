@@ -121,7 +121,7 @@ def cmd_throughput(a) -> int:
             pid = srv.proc.pid
         got = throughput.sweep(
             where.model, texts, levels=levels, max_tokens=a.max_tokens,
-            gateway=where.base,
+            gateway=where.base, timeout=getattr(a, "timeout", 300.0),
             footprint=(lambda: throughput.footprint_tree(pid)) if pid else None)
     if got and "warmup_s" in got[0]:
         note(f"  warm-up {got[0]['warmup_s']:.2f}s, not counted"

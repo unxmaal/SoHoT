@@ -283,3 +283,16 @@ def test_the_streamed_post_reports_the_earlier_of_reasoning_and_content():
     assert throughput.first_token({"ttft_s": 3.4, "first_reasoning_s": 0.09}) == 0.09
     assert throughput.first_token({"ttft_s": 0.5, "first_reasoning_s": None}) == 0.5
     assert throughput.first_token({}) is None
+
+
+def test_throughput_passes_its_request_timeout_to_the_sweep(monkeypatch, tmp_path):
+    seen = {}
+    level = {"concurrency": 1, "per_hour": 1.0, "p50_s": 1.0, "p95_s": 1.0, "errors": 0,
+             "completion_tokens": 1}
+    monkeypatch.setattr(throughput, "sweep", lambda *a, **k: seen.update(k) or [level])
+    texts = tmp_path / "t.jsonl"
+    texts.write_text('{"text": "t"}\n')
+    a = cli.build_parser().parse_args(
+        ["throughput", "--model", "eval-7b", "--texts", str(texts), "--timeout", "900", "--n", "1"])
+    a.func(a)
+    assert seen["timeout"] == 900.0

@@ -38,15 +38,15 @@ def code_requests(cases) -> list[dict]:
 
 def code_cases(side: str, root=None) -> list:
     """The code lane's cases on one side of its split, shipped and local-only, by id. #682."""
-    from evals.core import load_cases, local_root
+    from evals import core
     from harness import holdout
     split = holdout.for_lane("code", root)
     keep = set(split.holdout if side == "holdout" else split.dev if side == "dev"
                else (*split.dev, *split.holdout))
     base = Path(root) if root is not None else Path(__file__).resolve().parent.parent / "evals" / "cases"
-    cases = list(load_cases(base))
-    if root is None and local_root().is_dir():
-        cases += load_cases(local_root(), private=True)
+    cases = list(core.load_cases(base))
+    if root is None and core.local_root().is_dir():
+        cases += core.load_cases(core.local_root(), private=True)
     return sorted((c for c in cases if c.modality == "code" and c.id in keep), key=lambda c: c.id)
 
 
