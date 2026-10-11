@@ -386,6 +386,8 @@ class Fit:
     #: Weights it names that could not be sized. Kept apart from naming none
     #: at all: "unknown" and "none" are different answers.
     unsized: list[str] = field(default_factory=list)
+    #: The unsized ids the registry rate-limited or timed out on, so their size says nothing. #704.
+    deferred: list[str] = field(default_factory=list)
     #: model id -> the lane that could measure it, "" when nothing here can.
     lanes: dict[str, str] = field(default_factory=dict)
     #: Named weights ranked by how likely each is the thing the repo is FOR.
@@ -546,6 +548,11 @@ def _size_cache() -> dict:
         return {}
 
 
+def fetchable_weights(fit: Fit, ceiling: int, top: int = 3) -> list[str]:
+    """The first `top` headline weights this machine can hold, so a fourth that fits is not retired. #704."""
+    return [m for m in fit.headline if m in fit.weights and fit.weights[m] <= ceiling][:top]
+
+
 def headline(repo: str, ids, counts: dict, in_readme) -> list[str]:
     """The models a repo is FOR, best first, separated from the ones it merely
     touches.
@@ -591,6 +598,12 @@ def hf_facts(model_id: str, fetch=None, cache: dict | None = None) -> dict:
     url = f"https://huggingface.co/api/models/{model_id}?blobs=true"
     try:
         data = json.loads(fetch(url))
+    except feeds.RateLimitedFeed:
+        return {"size": -1, "lane": "", "deferred": True}
+    except feeds.FeedError as exc:
+        if "HTTP" in str(exc) and "HTTP 5" not in str(exc):
+            return {"size": -1, "lane": ""}
+        return {"size": -1, "lane": "", "deferred": True}
     except Exception:  # noqa: BLE001 - unreachable is unknown, never zero
         return {"size": -1, "lane": ""}
     sizes = [s.get("size") or 0 for s in data.get("siblings", [])]
@@ -1023,6 +1036,11 @@ def decide(fit: Fit, ceiling: int | None = None, dead_days: int = UPSTREAM_DEAD_
                    f"{fit.smallest / GIB:.1f} GiB, but {len(fit.unsized)} more "
                    f"were never sized, so the floor is not known")
         return fit
+    if fit.smallest > ceiling and fit.deferred:
+        fit.verdict = "unknown"
+        fit.why = (f"smallest sized weight is {fit.smallest / GIB:.1f} GiB, but the registry "
+                   f"rate-limited or timed out sizing {len(fit.deferred)} more")
+        return fit
     if fit.smallest > ceiling:
         fit.verdict = "too-big"
         fit.why = (f"smallest weight it names is {fit.smallest / GIB:.1f} GiB, "
@@ -1160,6 +1178,8 @@ def inspect(repo: str, workdir: Path, *, meta: dict | None = None,
             fit.weights[model_id] = size
         else:
             fit.unsized.append(model_id)
+            if isinstance(got, dict) and got.get("deferred"):
+                fit.deferred.append(model_id)
     fit.unsized += [i for i in found["hf_ids"] if i not in picked]
     if len(cache) > before:
         try:

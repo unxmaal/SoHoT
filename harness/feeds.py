@@ -38,6 +38,8 @@ INTERVAL_ENV = "LOCALHARNESS_DISCOVERY_DAYS"
 #: Rapid repeat requests get 429 with an empty body.
 RETRIES = 4
 RETRY_DELAY = 20.0
+#: A host that did not answer at all is tried this many more times, not RETRIES. #704.
+UNREACHABLE_RETRIES = 1
 
 
 class FeedError(RuntimeError):
@@ -394,9 +396,12 @@ def staleness(sources: list[Source] | None = None, now: float | None = None,
 
 def fetch(url: str, timeout: float = 30.0, retries: int = RETRIES,
           delay: float = RETRY_DELAY, sleep=time.sleep) -> str:
-    """GET `url` as text, retrying on the rate limit."""
+    """GET `url` as text, retrying on the rate limit with ratelimit's backoff; an unreachable host is retried once."""
+    from harness import ratelimit
     last = ""
+    unreachable = 0
     for attempt in range(retries + 1):
+        retry_after = None
         try:
             req = urllib.request.Request(url,
                                          headers={"User-Agent": USER_AGENT})
@@ -406,15 +411,19 @@ def fetch(url: str, timeout: float = 30.0, retries: int = RETRIES,
             last = f"HTTP {exc.code}"
             if exc.code not in (429, 500, 502, 503, 504):
                 raise FeedError(f"{url}: {last}") from exc
+            retry_after = exc.headers.get("Retry-After") if exc.headers else None
         except (urllib.error.URLError, OSError) as exc:
             last = str(exc)
+            unreachable += 1
+            if unreachable > UNREACHABLE_RETRIES:
+                break
         except ValueError as exc:
             # Request() rejects a schemeless URL at construction.
             raise FeedError(f"{url}: {exc}") from exc
         if attempt < retries:
-            sleep(delay)
+            sleep(ratelimit.wait_s(retry_after, attempt, delay))
     error = RateLimitedFeed if last == "HTTP 429" else FeedError
-    raise error(f"{url}: gave up after {retries + 1} attempts ({last})")
+    raise error(f"{url}: gave up after {attempt + 1} attempts ({last})")
 
 
 def parse(text: str) -> list[Entry]:

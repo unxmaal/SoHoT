@@ -7,12 +7,19 @@ what is physically present; `drift` names where the two disagree.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
 import time
 from contextlib import contextmanager
 from pathlib import Path
+
+try:
+    import fcntl
+except ImportError:  # Windows
+    fcntl = None
+    import msvcrt
 
 HUB, GGUF = "hub", "gguf"
 KINDS = (HUB, GGUF)
@@ -37,8 +44,88 @@ PROVENANCE_KEYS = {
     "_name_or_path": "where the config came from, not what it needs",
 }
 _REPO = re.compile(r"^[A-Za-z0-9][\w.-]*/[\w.-]+$")
-#: A started download with no finish this long ago has no live fetch writing it.
+#: A started download with no finish and no lock file (an older row) is judged by wall time after this long.
 IN_FLIGHT_SECONDS = 24 * 3600
+#: Row id -> the open lock file the fetching process holds while it writes. #704.
+_HELD: dict[int, object] = {}
+
+
+def lock_path(path_key: str) -> Path:
+    from harness import paths
+    return paths.home() / "locks" / f"download-{hashlib.sha1(path_key.encode()).hexdigest()[:16]}.lock"
+
+
+def _try_lock(f) -> bool:
+    try:
+        if fcntl is not None:
+            fcntl.flock(f.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        else:
+            f.seek(0)
+            msvcrt.locking(f.fileno(), msvcrt.LK_NBLCK, 1)
+        return True
+    except OSError:
+        return False
+
+
+def _unlock(f) -> bool:
+    try:
+        if fcntl is not None:
+            fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+        else:
+            f.seek(0)
+            msvcrt.locking(f.fileno(), msvcrt.LK_UNLCK, 1)
+    except OSError:
+        return False
+    return True
+
+
+def _drop_lock(path_key: str) -> bool:
+    """Remove a finished download's lock file; False when it could not be removed."""
+    try:
+        lock_path(path_key).unlink(missing_ok=True)
+    except OSError:
+        return False
+    return True
+
+
+def hold(rid: int, path_key: str) -> None:
+    """Lock the download for as long as this process writes it; a crash or SIGKILL lets go. #704."""
+    release(rid)
+    try:
+        p = lock_path(path_key)
+        p.parent.mkdir(parents=True, exist_ok=True)
+        f = p.open("a+b")
+    except OSError:
+        return
+    if _try_lock(f):
+        _HELD[rid] = f
+    else:
+        f.close()
+
+
+def release(rid: int) -> None:
+    f = _HELD.pop(rid, None)
+    if f is not None:
+        _unlock(f)
+        f.close()
+
+
+def held_elsewhere(path_key: str) -> bool | None:
+    """Whether a live process holds this download's lock; None when no lock file says either way."""
+    p = lock_path(path_key)
+    try:
+        if not p.exists():
+            return None
+        f = p.open("a+b")
+    except OSError:
+        return None
+    try:
+        if _try_lock(f):
+            _unlock(f)
+            return False
+        return True
+    finally:
+        f.close()
 
 
 @contextmanager
@@ -190,6 +277,7 @@ def start(conn, repo: str, kind: str, path, *, file: str = "",
         conn.execute("UPDATE downloads SET started_at = ?, finished_at = NULL, "
                      "complete = 0 WHERE id = ?", (now, got[0]["id"]))
         conn.commit()
+        hold(got[0]["id"], key(path))
         return got[0]["id"]
     rid = conn.execute(
         "INSERT INTO downloads (proposal_id, repo, kind, path, file, origin, "
@@ -197,6 +285,7 @@ def start(conn, repo: str, kind: str, path, *, file: str = "",
         (_proposal(conn, proposal or repo), repo, kind, key(path), file,
          origin, now, this_machine(conn))).lastrowid
     conn.commit()
+    hold(rid, key(path))
     return rid
 
 
@@ -214,6 +303,8 @@ def finish(conn, rid: int, path=None, *, failed: bool = False) -> dict:
         "requires = ?, finished_at = ? WHERE id = ?",
         (where, size, files, complete, json.dumps(needs), time.time(), rid))
     conn.commit()
+    release(rid)
+    _drop_lock(row["path"])
     return {**row, "path": where, "bytes": size, "files": files,
             "complete": complete, "requires": json.dumps(needs)}
 
@@ -301,9 +392,14 @@ def complete_hub(conn) -> list[dict]:
 
 
 def in_flight(row: dict, now: float | None = None) -> bool:
+    """Started, not finished, and a live process still holds its lock; wall time only for a row with no lock. #704."""
     now = time.time() if now is None else now
-    return (row.get("started_at") is not None and row.get("finished_at") is None
-            and now - float(row["started_at"]) < IN_FLIGHT_SECONDS)
+    if row.get("started_at") is None or row.get("finished_at") is not None:
+        return False
+    live = held_elsewhere(row["path"])
+    if live is not None:
+        return live
+    return now - float(row["started_at"]) < IN_FLIGHT_SECONDS
 
 
 def scan(hub: Path, ggufs: Path) -> list[tuple[str, Path]]:

@@ -14,6 +14,7 @@ from __future__ import annotations
 import ast
 import importlib
 import inspect as _inspect
+import os
 import pkgutil
 import re
 from pathlib import Path
@@ -98,9 +99,21 @@ def _static(site: str):
     return found[site]
 
 
+def _env_number(raw: str):
+    """A shell variable's numeric value, None when it is unset or not a number."""
+    if not re.fullmatch(r"-?\d+(\.\d*)?", raw.strip()):
+        return None
+    return float(raw) if "." in raw else int(raw)
+
+
 def resolve(site: str):
     """The value a site names now: a module constant, a table entry, an argument or field default, or a literal in source."""
     m = _SITE.fullmatch(site)
+    if m is None and re.fullmatch(r"scripts/[^/]+\.sh:\w+", site):
+        # The script's ${VAR:-N} yields to VAR, so the registry does too. #704.
+        got = _env_number(os.environ.get(site.split(":", 1)[1], ""))
+        if got is not None:
+            return got
     if m is None or m["name"] == "environ":
         return _static(site)
     got = importlib.import_module(m["rel"][:-3].replace("/", "."))

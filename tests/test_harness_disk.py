@@ -66,10 +66,14 @@ def world(tmp_path, monkeypatch):
     conn.close()
 
 
-def verdict(conn, name, outcome, tier="screen", at=NOW - 2 * DAY, retract=""):
+def verdict(conn, name, outcome, tier="screen", at=NOW - 2 * DAY, retract="", retest=False):
     ms.record(conn, ms.Seen(name=name, source="t"))
     ms.decide(conn, name, outcome, tier=tier, at=at, reopen_why=retract,
               reopen=ms.RETRACTION if retract else "")
+    if not retest:
+        # Its retests are spent, so a pending retest does not keep its weights. #704.
+        conn.execute("UPDATE proposals SET next_retest_at = NULL WHERE name = ?", (name,))
+        conn.commit()
 
 
 def inv(w, typed=None, adopted=None):
@@ -184,7 +188,7 @@ def test_a_queued_candidate_is_kept(world):
 def test_a_candidate_reopened_for_retest_is_kept(world):
     """#431: a retest re-uses the weights rather than fighting the cleanup."""
     d = make_repo(world.hub, "org/retest")
-    verdict(world.conn, "org/retest", "broken", at=NOW - 30 * DAY)
+    verdict(world.conn, "org/retest", "broken", at=NOW - 30 * DAY, retest=True)
     assert entry(inv(world), "org/retest").group == disk.REJECTED
     assert ms.reopen_due_retests(world.conn, NOW) == ["org/retest"]
     i = inv(world)
@@ -310,6 +314,8 @@ def test_a_default_that_names_no_weights_protects_its_lane(world):
 def _lane_verdict(conn, name, lane, outcome="broken", at=NOW - 25 * 3600):
     ms.record(conn, ms.Seen(name=name, source="t", lane=lane))
     ms.decide(conn, name, outcome, tier="screen", at=at)
+    conn.execute("UPDATE proposals SET next_retest_at = NULL WHERE name = ?", (name,))
+    conn.commit()
 
 
 def test_an_mflux_preset_winner_keeps_the_weights_it_loads_and_cleanup_runs(world):

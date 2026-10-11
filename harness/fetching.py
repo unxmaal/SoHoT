@@ -513,8 +513,10 @@ def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=N
             why = (f"{size / GIB:.1f} GiB would take this run past its "
                    f"{budget / GIB:.0f} GiB budget ({spent / GIB:.1f} GiB "
                    f"already fetched)")
+            # Bigger than the whole budget, no sweep at this budget ever takes it. #704.
+            until = f"limit:download_budget_gib>{budget / GIB:g}" if size > budget else ""
             ms.decide_or_skip(conn, row["name"], "queued", tier="fetch", detail=why,
-                              reason=reasons.LIMIT)
+                              reason=reasons.LIMIT, until=until)
             done.append({"repo": name, "ok": False, "why": why})
             continue
         p = plan(name, size, free=free, floor=floor)
