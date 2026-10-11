@@ -192,6 +192,31 @@ def test_the_node_task_starts_the_service_through_the_launcher():
         "launcher and the idle sleep")
 
 
+@pytest.mark.parametrize("var", ["LLAMACPP_BIN", "LLAMACPP_MODELS_DIR",
+                                 "LLAMACPP_API_KEY_FILE"])
+def test_the_launcher_carries_the_environment_the_node_needs(var):
+    """A LOGON TASK INHERITS NOTHING FROM THE INSTALLING SHELL.
+
+    The first version exported host, port and the key file only. The node then
+    started at logon, resolved the models directory to the default inside the
+    checkout because LLAMACPP_MODELS_DIR lived in that shell and nowhere else,
+    and exited 1. From a gateway that reads as an unreachable node rather than
+    as one that never ran. LLAMACPP_BIN is here for the same reason: a box can
+    carry more than one llama.cpp build. #736.
+    """
+    region = "\n".join(_node_region(SERVICES.read_text(encoding="utf-8")))
+    assert var in region, f"the generated launcher should carry {var}"
+
+
+def test_installing_a_node_demands_a_models_directory():
+    """Falling back to $HF_HOME/gguf puts a node's weights path inside the
+    checkout, where there are none. Naming it is part of setting up a node, as
+    naming the key file already is."""
+    region = "\n".join(_node_region(SERVICES.read_text(encoding="utf-8")))
+    assert re.search(r'-z "\$\{LLAMACPP_MODELS_DIR:-\}"', region), (
+        "install-node should refuse an unset LLAMACPP_MODELS_DIR")
+
+
 def test_the_key_is_passed_as_a_file_not_as_an_argument():
     """A key in argv is readable by every other process on the box, and it
     lands in the task definition and in any log that echoes the command. The
