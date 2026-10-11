@@ -5,6 +5,7 @@ these are defects that cannot fail on macOS, so no amount of running the suite
 there would catch one being reintroduced.
 """
 import ast
+import functools
 import importlib.metadata
 import re
 import sys
@@ -114,9 +115,14 @@ def _third_party(top):
                 or (REPO / "tests" / f"{top}.py").exists() or (REPO / "tests" / top).is_dir())
 
 
+@functools.cache
+def _installed():
+    return importlib.metadata.packages_distributions()
+
+
 def _dists(top):
     # Not installed here: assume the distribution shares the module's name.
-    return {_norm(d) for d in importlib.metadata.packages_distributions().get(top, ())} or {_norm(top)}
+    return {_norm(d) for d in _installed().get(top, ())} or {_norm(top)}
 
 
 def _closure(roots):

@@ -79,6 +79,7 @@ dev = [
     "httpx>=0.27",
     "uvicorn>=0.30",
     "python-multipart>=0.0.9",
+    "pytest-xdist>=3.6",
 ]
 mcp = [
     "mcp>=1.2",
@@ -105,8 +106,11 @@ markers = [
     "postgres: needs a live Postgres; `make test-postgres` starts one",
     "litellm: runs a real LiteLLM proxy against a fake upstream; `make test-litellm`",
     "real_runtime: may execute a real runtime binary (llama-server, mlx_lm.server, mflux, needle) (#536)",
+    "long: slow and worth it (a real end-to-end loop, real processes); make check runs it, the per-PR CI fast path skips it (#720)",
     "gauntlet(class_id, site): binds a test to a gauntlet class at a detector's site (#492)",
 ]
 # The repo root, so `from evals...` resolves without a sys.path hack in every
 # test module.
 pythonpath = ["."]
+# A hung test dumps every thread's stack and names itself instead of running into the job timeout (#712).
+faulthandler_timeout = 180

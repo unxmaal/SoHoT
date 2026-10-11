@@ -26,8 +26,13 @@ def _forms(fragment: str) -> tuple[str, ...]:
     return (fragment, json.dumps(fragment)[1:-1], repr(fragment)[1:-1])
 
 
+def forms(frags) -> frozenset[str]:
+    """Every spelling of every fragment, once: most fragments spell the same three ways. #720."""
+    return frozenset(form for f in frags for form in _forms(f))
+
+
 def found_in(text: str, frags) -> bool:
-    return any(form in text for f in frags for form in _forms(f))
+    return any(form in text for form in forms(frags))
 
 
 def leaks(roots, cases) -> list[tuple[str, str]]:
@@ -36,7 +41,7 @@ def leaks(roots, cases) -> list[tuple[str, str]]:
     private = [c for c in cases if getattr(c, "private", False)]
     if not private:
         return []
-    frags = fragments(private)
+    needles = forms(fragments(private))
     digests = {case_digest(c) for c in private}
     out = []
     for root in map(Path, roots):
@@ -47,7 +52,7 @@ def leaks(roots, cases) -> list[tuple[str, str]]:
                 text = path.read_text(encoding="utf-8")
             except (UnicodeDecodeError, OSError):
                 continue
-            if found_in(text, frags):
+            if any(form in text for form in needles):
                 out.append((str(path), "private case text"))
                 continue
             if path.suffix == ".yaml":

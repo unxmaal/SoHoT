@@ -128,3 +128,46 @@ def test_macos_leaves_room_over_the_measured_make_check():
     doc, _ = _ci()
     measured_minutes = 19.5
     assert doc["jobs"]["check-macos"]["timeout-minutes"] >= measured_minutes + 10
+
+
+FAST = "SOHOT_FAST_PATH"
+
+
+def test_only_an_unlabelled_pull_request_takes_the_fast_path_on_macos():
+    """push to main, schedule, dispatch and full-ci run the `long` tests too (#720)."""
+    doc, _ = _ci()
+    expr = doc["jobs"]["check-macos"]["env"][FAST]
+    assert "github.event_name == 'pull_request'" in expr
+    assert f"!contains(github.event.pull_request.labels.*.name, '{LABEL}')" in expr
+    assert expr.replace(" ", "").endswith("&&'1'||'0'}}")
+    for job in DEFERRED:
+        assert FAST not in str(doc["jobs"][job])
+
+
+def test_the_fast_path_variable_is_the_one_conftest_reads():
+    from tests import conftest
+    assert conftest.FAST_PATH_ENV == FAST
+
+
+def test_make_check_spreads_the_suite_over_every_core():
+    make = (CI.parents[2] / "Makefile").read_text(encoding="utf-8")
+    recipe = make.split("\ntest:", 1)[1].split("\n\n", 1)[0]
+    assert "pytest" in recipe and "-n auto" in recipe
+
+
+def test_check_macos_reports_where_the_test_time_went():
+    doc, _ = _ci()
+    steps = doc["jobs"]["check-macos"]["steps"]
+    check = next(s for s in steps if s.get("name") == "make check")
+    assert "--junitxml=/tmp/junit.xml" in check["env"]["PYTEST_ADDOPTS"]
+    report = next(s for s in steps if "harness.suite_time" in s.get("run", ""))
+    assert report.get("if") == "always()" and "/tmp/junit.xml" in report["run"]
+
+
+def test_a_hung_test_names_itself_before_the_job_timeout():
+    """A stack dump per hung test, well under the job timeout and over the slowest real test (#712)."""
+    import tomllib
+    ini = tomllib.loads((CI.parents[2] / "pyproject.toml").read_text(encoding="utf-8"))
+    limit = int(ini["tool"]["pytest"]["ini_options"]["faulthandler_timeout"])
+    doc, _ = _ci()
+    assert 60 <= limit < doc["jobs"]["check-macos"]["timeout-minutes"] * 60 / 4

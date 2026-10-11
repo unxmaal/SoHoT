@@ -210,7 +210,10 @@ def test_a_real_path_with_a_space_is_still_a_command(tmp_path):
 
 ADDER = """
 import sys
-from harness import workqueue as wq
+from harness import machine, serving, workqueue as wq
+# The child is outside conftest's guards; it must not run llama-server --version either. #536, #720.
+serving.llamacpp_build = lambda binary="": ""
+machine._mflux_cli = lambda: ""
 for _ in range(int(sys.argv[1])):
     print(wq.add(["true"], requested_by=sys.argv[2])["id"], flush=True)
 """
