@@ -195,7 +195,7 @@ def test_incumbent_rates_come_from_stored_runs(store_run):
     store_run("20261006-000000-code", "code", rows=rows)
     conn = ms.connect()
     try:
-        rates, seen = power.incumbent_rates(conn, "code", "inc", ["a", "b", "c"])
+        rates, seen = power.rates_from(power.served_profile(conn, "code", "inc")[0], ["a", "b", "c"])
     finally:
         conn.close()
     assert rates["a"] == 0.5 and rates["b"] == 1.0 and rates["c"] in (0.5, 1.0)

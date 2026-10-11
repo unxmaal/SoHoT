@@ -463,16 +463,55 @@ def _median(rows, lane: str, key: str, settings: tuple | None, machines) -> floa
     return draws_from(rows, key)[1]
 
 
-def incumbent_profile(conn, lane: str, key: str, settings: tuple | None = None,
-                      machines=None) -> tuple[dict[str, list[int]], float | None]:
-    """The incumbent's stored draws per case in this lane's measure runs, and its median seconds.
+def served_keys(conn, lane: str, spec: str = "", cid: int | None = None) -> list[str]:
+    """The receipt keys a served model's measure rows carry, under its own name and its renames, read only. #740."""
+    from harness import candidates, models
+    lane = (lane or "").strip().lower()
+    if not spec and cid is not None:
+        row = conn.execute("SELECT spec FROM candidates WHERE id = ?", (cid,)).fetchone()
+        spec = row["spec"] if row else ""
 
-    With `settings` (max_tokens, budget_ladder) the median comes only from runs at those settings (#673),
-    and with `machines` only from runs on those machines (#696); the draws come from every run.
-    """
-    rows = _candidate_rows(conn, lane, key)
-    draws, _ = draws_from(rows, key)
-    return draws, _median(rows, (lane or "").strip().lower(), key, settings, machines)
+    def key(name):
+        try:
+            return candidates.key_of(name) or name
+        except Exception:  # noqa: BLE001
+            return name
+
+    names = {spec, models.resolve(spec), *models.old_names(spec), *models.old_names(models.resolve(spec))} if spec else set()
+    names = sorted(n for n in names | {key(n) for n in names if n} if n)
+    marks = ",".join("?" * len(names))
+    ids = {r["id"] for r in conn.execute(
+        f"SELECT id FROM candidates WHERE spec IN ({marks}) OR receipt_key IN ({marks})",
+        (*names, *names))} if names else set()
+    if cid is not None:
+        ids.add(cid)
+    ids_marks = ",".join("?" * len(ids))
+    keys = [r["candidate"] for r in conn.execute(
+        "SELECT DISTINCT x.candidate FROM results x JOIN runs u ON u.id = x.run_id "
+        f"WHERE u.lane = ? AND u.tier = 'measure' AND (x.candidate_id IN ({ids_marks}) OR x.candidate IN ({marks})) "
+        "ORDER BY x.candidate", (lane, *ids, *names))] if names or ids else []
+    return keys if keys or not spec else [key(spec)]
+
+
+def served_profile(conn, lane: str, spec: str = "", settings: tuple | None = None, machines=None,
+                   cid: int | None = None) -> tuple[dict[str, list[int]], float | None]:
+    """The served incumbent's draws per case over every key its rows carry, store-wide; its median only at `settings` on `machines`. #673, #696, #740."""
+    lane = (lane or "").strip().lower()
+    draws: dict[str, list[int]] = {}
+    rows = []
+    for key in served_keys(conn, lane, spec, cid):
+        got = _candidate_rows(conn, lane, key)
+        for case, oks in draws_from(got, key)[0].items():
+            draws.setdefault(case, []).extend(oks)
+        rows += [dict(r, candidate="") for r in got]
+    return draws, _median(rows, lane, "", settings, machines)
+
+
+def unseen_note(draws: dict) -> str:
+    """What a plan from no stored incumbent draws assumes, or "" when it has some. #740."""
+    if any(draws.values()):
+        return ""
+    return f"the incumbent's pass rate is unmeasured (no stored measure rows), so the plan assumes {UNSEEN:g}"
 
 
 def stored_size(conn, key: str) -> int:
@@ -484,13 +523,13 @@ def stored_size(conn, key: str) -> int:
 
 
 def challenger_seconds(conn, lane: str, key: str, *, incumbent: str, incumbent_s: float | None,
-                       settings: tuple | None, machines) -> tuple[float | None, str]:
+                       settings: tuple | None, machines, incumbent_keys=()) -> tuple[float | None, str]:
     """Seconds per call of a challenger here: its own screen or measure median, else scaled by size, else the floor. #696."""
     lane = (lane or "").strip().lower()
     own = _median(_candidate_rows(conn, lane, key, ("screen", "measure")), lane, key, settings, machines)
     if own is not None:
         return own, "measured"
-    mine, theirs = stored_size(conn, key), stored_size(conn, incumbent)
+    mine, theirs = stored_size(conn, key), max(stored_size(conn, k) for k in (incumbent, *incumbent_keys))
     if incumbent_s is not None and mine and theirs:
         return incumbent_s * mine / theirs, "size ratio"
     floor = floor_seconds(lane)
@@ -521,11 +560,12 @@ def pair_cost(conn, lane: str, *, incumbent: str, incumbent_spec: str, incumbent
 
     if challenger:
         key = base_key(challenger)
-        if key in (incumbent, base_key(incumbent_spec or incumbent)):
+        known = served_keys(conn, lane, incumbent_spec) if incumbent_spec else []
+        if key in (incumbent, base_key(incumbent_spec or incumbent), *known):
             ch_s, ch_source = incumbent_s, inc_source
         else:
             ch_s, ch_source = challenger_seconds(conn, lane, key, incumbent=incumbent, incumbent_s=incumbent_s,
-                                                 settings=settings, machines=machines)
+                                                 settings=settings, machines=machines, incumbent_keys=known)
         ch_calls = methods.calls(challenger)
     else:
         ch_s, ch_source, ch_calls = incumbent_s, "like incumbent", inc_calls
@@ -588,11 +628,3 @@ def rates_from(draws: dict, case_ids) -> tuple[dict, int]:
     fill = stratified(measured, len(missing)) if measured else [UNSEEN] * len(missing)
     out.update(zip(missing, fill))
     return {cid: out[cid] for cid in case_ids}, sum(len(draws.get(c) or ()) for c in case_ids)
-
-
-def incumbent_rates(conn, lane: str, key: str, case_ids) -> tuple[dict, int]:
-    """case -> the incumbent's stored pass rate, and how many rows it rests on.
-
-    A case with no rows is drawn from its measured per-case rates, else UNSEEN.
-    """
-    return rates_from(incumbent_profile(conn, lane, key)[0], case_ids)

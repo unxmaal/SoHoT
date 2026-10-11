@@ -564,14 +564,7 @@ def incumbent_draws(lane: str, conn) -> dict[str, list[int]]:
     cid = winners.served_ids(conn).get(lane)
     if cid is None:
         return {}
-    keys = [r["candidate"] for r in conn.execute(
-        "SELECT DISTINCT x.candidate FROM results x JOIN runs u ON u.id = x.run_id "
-        "WHERE u.lane = ? AND u.tier = 'measure' AND x.candidate_id = ?", (lane, cid))]
-    draws: dict[str, list[int]] = {}
-    for key in keys:
-        for case, got in power.incumbent_profile(conn, lane, key)[0].items():
-            draws.setdefault(case, []).extend(got)
-    return draws
+    return power.served_profile(conn, lane, cid=cid)[0]
 
 
 def incumbent_measure(lane: str, case_ids, conn=None) -> tuple[float, bool]:

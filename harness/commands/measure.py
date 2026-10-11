@@ -353,7 +353,7 @@ def _plan(a, lane: str, inc_spec: str, spec: str = ""):
     store = ms.connect()
     try:
         machines = runs.here(store)
-        draws, inc_s = power.incumbent_profile(store, lane, inc_key, settings, machines)
+        draws, inc_s = power.served_profile(store, lane, inc_spec, settings, machines)
         median_s, calls, est = power.pair_cost(store, lane, incumbent=inc_key, incumbent_spec=inc_spec,
                                                incumbent_s=inc_s, challenger=spec,
                                                settings=settings, machines=machines)
@@ -389,7 +389,7 @@ def _plan(a, lane: str, inc_spec: str, spec: str = ""):
         estimated = "; ".join(x for x in (estimated, f"challenger seconds per call "
                                           f"{est['challenger_s']:.0f}s by {est['challenger_source']}") if x)
     plan = replace(plan, side=side, dev_skipped=dev_skipped, estimate=est,
-                   why="; ".join(x for x in (plan.why, estimated) if x))
+                   why="; ".join(x for x in (plan.why, power.unseen_note(draws), estimated) if x))
     plan = replace(plan, deadline_s=power.deadline(plan))
     print(f"    power: repeat {plan.repeat} over {len(split.holdout)} holdout "
           f"case(s) gives {plan.power:.2f} to detect +{plan.effect:.2f} at "
@@ -402,7 +402,7 @@ def _plan(a, lane: str, inc_spec: str, spec: str = ""):
     if dev_skipped:
         print(f"    {dev_skipped}", flush=True)
     missing = power.unmeasured(draws, split.holdout)
-    if missing:
+    if missing and any(draws.values()):
         print(f"    projected: {len(missing)} of {len(split.holdout)} holdout "
               f"unmeasured, drawn from the incumbent's measured per-case rates",
               flush=True)

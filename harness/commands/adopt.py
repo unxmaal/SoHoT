@@ -65,8 +65,8 @@ def _profile(lane: str, receipts: dict, conn) -> tuple[str, str, dict, float | N
                  and power.reply_settings(json.dumps(got["receipt"]), lane) == settings for r in got["rows"]]
         return key, spec or served, draws, power.draws_from(timed, key)[1], settings, machines
     key = key or spec
-    draws, median = (power.incumbent_profile(conn, lane, key, settings, machines)
-                     if key else ({}, None))
+    draws, median = (power.served_profile(conn, lane, spec, settings, machines)
+                     if spec else ({}, None))
     return key, spec or served, draws, median, settings, machines
 
 
@@ -117,6 +117,7 @@ def cmd_power(a) -> int:
             projected = power.projected_seconds(cases_run, plan.repeat, median, calls)
             rows.append({
                 "lane": lane, "incumbent": key, "holdout": len(split.holdout),
+                "incumbent_keys": [key] if lane in receipts else power.served_keys(conn, lane, inc_spec),
                 "cases": cases_run, "too_small": split.too_small,
                 "stochastic": plan.stochastic, "observed": seen,
                 "rho": plan.rho, "rho_measured": plan.rho_measured,
@@ -126,6 +127,7 @@ def cmd_power(a) -> int:
                 "power_measured": None if alone is None else round(alone, 4),
                 "enough": plan.enough, "effective_cells": plan.cells,
                 "mde": plan.mde, "unmeasured_plan": plan.unmeasured,
+                "unseen": power.unseen_note(draws),
                 "comparisons": tested, "alpha": alpha,
                 "cases_needed": plan.cases_needed,
                 "more_holdout": (max(0, plan.cases_needed - len(split.holdout))
@@ -156,7 +158,9 @@ def cmd_power(a) -> int:
              f"{r['observed']} rows]"
              + (f"  alpha {r['alpha']:.4f} after {r['comparisons']} verdict(s) on this holdout"
                 if r["comparisons"] else ""))
-        if r["unmeasured"]:
+        if r["unseen"]:
+            note(f"           {r['unseen']}")
+        elif r["unmeasured"]:
             alone = ("nothing measured" if r["power_measured"] is None else
                      f"power {r['power_measured']:.2f} over the {r['measured']} measured")
             note(f"           projected: {r['unmeasured']} of {r['holdout']} holdout "
