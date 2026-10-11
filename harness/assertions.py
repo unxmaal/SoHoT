@@ -194,6 +194,19 @@ def is_imported(text: str) -> bool:
     return IMPORTED in "\n".join(text.splitlines()[:3])
 
 
+#: One file's claims keyed by (path, rel, mtime_ns, size): a second collect re-reads only what changed. #724.
+_SCANNED: dict[tuple, tuple[Claim, ...]] = {}
+
+
+def _claims_in(p: Path, rel: str) -> tuple[Claim, ...]:
+    st = p.stat()
+    key = (str(p), rel, st.st_mtime_ns, st.st_size)
+    if key not in _SCANNED:
+        text = p.read_text(encoding="utf-8", errors="replace")
+        _SCANNED[key] = () if is_imported(text) else tuple(scan(text, p, rel))
+    return _SCANNED[key]
+
+
 def collect(root: Path, include_archives: bool = False) -> list[Claim]:
     out: list[Claim] = []
     for p in tracked(root):
@@ -204,10 +217,7 @@ def collect(root: Path, include_archives: bool = False) -> list[Claim]:
             continue
         if p.name == Path(__file__).name:
             continue
-        text = p.read_text(encoding="utf-8", errors="replace")
-        if is_imported(text):
-            continue
-        out.extend(scan(text, p, rel))
+        out.extend(_claims_in(p, rel))
     return out
 
 

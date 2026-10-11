@@ -189,3 +189,29 @@ def test_no_unqualified_cost_ships():
         "a cost is quoted beside the command that incurs it with nothing said "
         "about the conditions; a reader will read it as their own wait:\n"
         + "\n".join(bad))
+
+
+def _git_root(tmp_path, files):
+    import subprocess
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    for name, text in files.items():
+        (tmp_path / name).write_text(text, encoding="utf-8")
+    return tmp_path
+
+
+def test_a_second_collect_reads_only_the_files_it_had_not_read(tmp_path, monkeypatch):
+    """#724: the archives test collected the whole repo twice, reading every file both times."""
+    root = _git_root(tmp_path, {"a.py": "# it holds 11.4 GiB\n", "PLAN.md": "it took 19s\n"})
+    read = []
+    real = Path.read_text
+    monkeypatch.setattr(Path, "read_text", lambda self, *a, **k: read.append(self.name) or real(self, *a, **k))
+    assert len(assertions.collect(root)) == 1
+    assert len(assertions.collect(root, include_archives=True)) == 2
+    assert read == ["a.py", "PLAN.md"]
+
+
+def test_a_changed_file_is_scanned_again(tmp_path):
+    root = _git_root(tmp_path, {"a.py": "# it holds 11.4 GiB\n"})
+    assert len(assertions.collect(root)) == 1
+    (root / "a.py").write_text("# it holds 11.4 GiB\n# and 9s\n", encoding="utf-8")
+    assert len(assertions.collect(root)) == 2

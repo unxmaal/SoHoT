@@ -1,9 +1,12 @@
 """must_contain takes alternatives, so a check tests behaviour, not one spelling. #365."""
 from pathlib import Path
 
+import pytest
 import yaml
 
 from evals.core import Case, score
+
+pytestmark = pytest.mark.usefixtures("shared_render")
 
 PAGE = ('<!doctype html><html><body><form onsubmit="return check()">'
         '<input type="password"></form><script>function check(){return false}'

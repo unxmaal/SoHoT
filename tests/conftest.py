@@ -286,3 +286,40 @@ def _no_gateway_probe(monkeypatch):
     """No test probes a host to ask whether it is a gateway. #702."""
     from harness import completion
     monkeypatch.setattr(completion, "_answers_as_gateway", lambda base: False)
+
+
+@pytest.fixture(scope="session")
+def _render_cache(tmp_path_factory):
+    import os
+    base = tmp_path_factory.getbasetemp()
+    # Under xdist the parent is shared by every worker of this run.
+    root = (base.parent if os.environ.get("PYTEST_XDIST_WORKER") else base) / "render-cache"
+    root.mkdir(exist_ok=True)
+    return root
+
+
+@pytest.fixture
+def shared_render(monkeypatch, _render_cache):
+    """Chrome renders each distinct page once per run, for tests of what a page shows rather than how it is shot. #724."""
+    import hashlib
+    import os
+    import shutil
+    from pathlib import Path
+
+    from harness.checks import render
+    real = render.rasterize_html
+
+    def cached(html, out, width=800):
+        key = hashlib.sha256(f"{width}\0{render.chrome_path()}\0{html}".encode()).hexdigest()
+        hit = _render_cache / f"{key}.png"
+        if not hit.exists():
+            part = _render_cache / f"{key}.{os.getpid()}.png"
+            real(html, part, width=width)
+            os.replace(part, hit)
+        out = Path(out)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(hit, out)
+        return out
+
+    monkeypatch.setattr(render, "rasterize_html", cached)
+    return cached
