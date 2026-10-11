@@ -390,7 +390,8 @@ def _diffusers_video(spec: str, model: str, options: dict) -> Engine:
     defaults = dict(options)
 
     def argv(prompt: str, out: Path, params: dict) -> list[str]:
-        p = {**defaults, **{k: v for k, v in params.items() if v is not None}}
+        # A case's steps are h3's; a diffusers model runs at its pipeline's own unless the spec names them. #691.
+        p = {**defaults, **{k: v for k, v in params.items() if v is not None and k != "steps"}}
         cmd = [os.environ.get("VIDEO_CUDA_BIN", VIDEO_CUDA_DEFAULT_BIN),
                "--model", model, "--prompt", prompt, "--output", str(out)]
         for name in ("width", "height", "frames", "fps", "steps", "seed",

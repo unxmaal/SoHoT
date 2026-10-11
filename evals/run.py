@@ -639,7 +639,7 @@ STOCHASTIC_MODALITIES = {"image", "video", "svg", "web", "code", "music", "agent
 
 #: Screen settings: the smallest thing that still proves the pipeline ran. Steps are the model's own, never shrunk. #691.
 SCREEN_PARAMS = {"width": 256, "height": 256, "seconds": None, "frames": None}
-#: Cases a screen draws per (modality, language): screen.cases_needed at the lowest measured incumbent rate. #691.
+#: The most cases a screen draws per (modality, language); screen_counts says how many it needs. #691.
 SCREEN_CASES = 6
 
 
@@ -652,22 +652,51 @@ def screen_pool(cases: list[Case]) -> list[Case]:
                   and (c.modality, c.language) not in have]
 
 
-def _screen_each(cases: list[Case]) -> list[Case]:
-    """Up to SCREEN_CASES cases for each (modality, language), dealt by id across the families of case ids. #691."""
+def screen_counts(cases: list[Case]) -> dict[tuple[str, str], int]:
+    """(modality, language) -> cases a model as good as the incumbent fails all of with chance under 1 - SCREEN_CONFIDENCE. #691."""
+    from harness import screen
+    ids: dict[tuple[str, str], list[str]] = {}
+    for c in cases:
+        ids.setdefault((c.modality, c.language), []).append(c.id)
+    return {g: screen.cases_needed(screen.incumbent_rate(g[0], got), 1 - screen.SCREEN_CONFIDENCE)
+            for g, got in ids.items()}
+
+
+def _screen_each(cases: list[Case], counts: dict | None = None) -> list[Case]:
+    """screen_counts cases (at most SCREEN_CASES) for each (modality, language), dealt across case id families. #691."""
     groups: dict[tuple[str, str], dict[str, list[Case]]] = {}
     for c in sorted(cases, key=lambda c: c.id):
         groups.setdefault((c.modality, c.language), {}).setdefault(c.id.split("-")[0], []).append(c)
     out = []
-    for families in groups.values():
+    for g, families in groups.items():
+        k = min((counts or {}).get(g, SCREEN_CASES), SCREEN_CASES)
         queues = list(families.values())
         picked = []
-        while len(picked) < SCREEN_CASES and any(queues):
-            picked += [q.pop(0) for q in queues if q][:SCREEN_CASES - len(picked)]
+        while len(picked) < k and any(queues):
+            picked += [q.pop(0) for q in queues if q][:k - len(picked)]
         out += picked
     return out
 
 
-def screen_cases(cases: list[Case], candidates=()) -> list[Case]:
+def screen_until(pool: list[Case], picked: list[Case], counts: dict, chosen: list[Case]) -> str:
+    """The harness choice a zero-pass screen of `picked` waits on: size, case cap, the lane's cases, or confidence. #691."""
+    from harness import screen
+    native = {c.id: c.params for c in pool}
+    if any(native.get(c.id, {}).get(k) != c.params.get(k) for c in picked for k in ("width", "height")):
+        return f"limit:screen_size>{SCREEN_PARAMS['width']}"
+    groups = {(c.modality, c.language) for c in picked}
+    have = {g: sum(1 for c in pool if (c.modality, c.language) == g) for g in groups}
+    need = {g: counts.get(g, SCREEN_CASES) for g in groups}
+    if any(need[g] > SCREEN_CASES and have[g] > SCREEN_CASES for g in groups):
+        return f"limit:screen_cases>{SCREEN_CASES}"
+    short = sorted(g for g in groups if have[g] < min(need[g], SCREEN_CASES))
+    if short:
+        lane = short[0][0]
+        return f"cases:{lane}>{sum(1 for c in chosen if c.modality == lane)}"
+    return f"limit:screen_confidence>{screen.SCREEN_CONFIDENCE:g}"
+
+
+def screen_cases(cases: list[Case], candidates=(), counts: dict | None = None) -> list[Case]:
     """SCREEN_CASES cases per modality AND LANGUAGE, shrunk in size only. Cheap enough to be wrong about.
 
     Keyed on modality alone this took the alphabetically first id, so the tts
@@ -683,10 +712,11 @@ def screen_cases(cases: list[Case], candidates=()) -> list[Case]:
     take, so omnisvg is not handed chart-bars and left with nothing. #555.
     """
     import dataclasses
+    counts = screen_counts(cases) if counts is None else counts
     groups = [cases_for(c, cases) for c in candidates] or [cases]
     picked: dict[str, Case] = {}
     for group in groups:
-        for c in _screen_each(group):
+        for c in _screen_each(group, counts):
             picked.setdefault(c.id, c)
     out = []
     for c in picked.values():
@@ -903,9 +933,11 @@ def _execute_at(args, overrides: dict) -> int:
         raise SystemExit("--budget-ladder and --max-tokens say two things about the reply "
                          "budget; pass one")
     budget = ladder[-1] if ladder else run_budget(args.modality, getattr(args, "max_tokens", None))
+    pool, counts, untils = cases, {}, {}
     if args.screen:
         candidates = greedy(candidates)
-        cases = screen_cases(cases, candidates)
+        counts = screen_counts(pool)
+        cases = screen_cases(pool, candidates, counts)
     outdir = resolve_outdir(args.out, args.modality)
     if outdir:
         outdir.mkdir(parents=True, exist_ok=True)
@@ -920,7 +952,7 @@ def _execute_at(args, overrides: dict) -> int:
     for candidate in candidates:
         mine = cases_for(candidate, cases)
         if args.screen:
-            mine = _screen_each(mine)
+            mine = _screen_each(mine, counts)
         if not mine:
             print(f"\n── {candidate}: {unrunnable(candidate, args.modality)}",
                   file=sys.stderr)
@@ -934,6 +966,8 @@ def _execute_at(args, overrides: dict) -> int:
             raise SystemExit(f"{specs[runner.candidate]} and {candidate} both "
                              f"run as {runner.candidate}; run them separately")
         specs[runner.candidate] = candidate
+        if args.screen:
+            untils[runner.candidate] = screen_until(cases_for(candidate, pool), mine, counts, chosen)
         _servable(candidate)
         planned.append((candidate, runner, mine))
         models.warn(candidate)
@@ -994,7 +1028,8 @@ def _execute_at(args, overrides: dict) -> int:
                    # A name is a label and can drop the repo org; the spec
                    # runs. #337.
                    "specs": specs,
-                   "summary": summarize(results),
+                   "summary": {k: {**v, **({"screen_until": untils[k]} if k in untils else {})}
+                               for k, v in summarize(results).items()},
                    "rows": [export_row(r) for r in results]}
         (outdir / "results.json").write_text(json.dumps(payload, indent=2),
                                              encoding="utf-8")

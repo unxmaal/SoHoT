@@ -233,7 +233,6 @@
  "harness/vector.py:TRACE_PRESETS[illustration][path_precision]",
  "harness/verify.py:COST_S",
  "harness/verify.py:Task.cost_s",
- "harness/video_cuda.py:DEFAULT_STEPS",
  "harness/vllm.py:METAL_MAX_MODEL_LEN",
  "harness/vllm.py:METAL_MEMORY_FRACTION",
  "harness/vllm.py:_probe->_DIRECT.open(timeout)",

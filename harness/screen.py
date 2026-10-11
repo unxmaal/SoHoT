@@ -554,13 +554,44 @@ def cases_needed(rate: float, miss: float = 0.05) -> int:
     return max(1, math.floor(math.log(miss) / math.log(1.0 - rate)) + 1)
 
 
+#: The chance a model as good as the lane's incumbent passes at least one screen case. #691.
+SCREEN_CONFIDENCE = 0.95
+
+
+def incumbent_key(lane: str, conn=None) -> str:
+    """The receipt key the lane's incumbent is stored under, spelled as measure spells it. #691."""
+    from harness import adopt, candidates, winners
+    inc = adopt.default_for(lane, winners.typed().get(lane, ""), conn)
+    if not inc:
+        return ""
+    spec = candidate_for(lane, inc) or inc
+    return candidates.key_of(spec) or spec
+
+
+def incumbent_rate(lane: str, case_ids, conn=None) -> float:
+    """The incumbent's mean stored pass rate on these cases, unmeasured ones filled as power.rates_from does. #691."""
+    from harness import power
+    from harness import memory_store as ms
+    own = conn is None
+    rates: dict = {}
+    try:
+        conn = conn or ms.connect()
+        rates, _ = power.incumbent_rates(conn, lane, incumbent_key(lane, conn), list(case_ids))
+    except Exception:  # noqa: BLE001 - no store reads as no measurement
+        rates = {}
+    finally:
+        if own and conn is not None:
+            conn.close()
+    return sum(rates.values()) / len(rates) if rates else power.UNSEEN
+
+
 #: The engines whose screen runs at a shrunk size, so a zero-pass waits on the screen size. #691.
 MEDIA_ENGINES = frozenset(spec.partition(":")[0] for lane in ("image", "video")
                           for spec in LANE_CANDIDATES[lane])
 
 
 def screen_limit(candidate: str = "") -> str:
-    """The harness-chosen screen limit a candidate that passed nothing waits on. #691."""
+    """The screen limit a zero-pass waits on when its receipt names no screen_until (written before it did). #691."""
     from harness import knobs
     name = "screen_size" if candidate.partition(":")[0] in MEDIA_ENGINES else "screen_cases"
     value = knobs.limits().get(name)
@@ -605,6 +636,7 @@ def outcome(returncode: int, summary: dict | None, candidate: str = "",
     limits = [lim for r in mine for lim in (r.get("limits") or [])]
     if cls in ("", reasons.CONTENT_FAILED):
         # A few cases at screen settings is not enough to call a candidate broken. #691.
+        until = next((r["screen_until"] for r in mine if r.get("screen_until")), "")
         return Verdict("declined", _sentence(reasons.CONTENT_FAILED, why, ""), reasons.LIMIT,
-                       screen_limit(candidate), reasons.CONTENT_FAILED)
+                       until or screen_limit(candidate), reasons.CONTENT_FAILED)
     return decide_class(cls, why, candidate, limits, facts)

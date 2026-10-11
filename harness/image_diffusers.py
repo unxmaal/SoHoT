@@ -60,7 +60,7 @@ def sampling(model: str, steps: int | None, guidance: float | None) -> dict:
     return out
 
 
-def _default(pipe, name: str):
+def pipeline_default(pipe, name: str):
     p = inspect.signature(pipe.__call__).parameters.get(name)
     return None if p is None or p.default is inspect.Parameter.empty else p.default
 
@@ -71,8 +71,8 @@ def metadata(args, pipe, device: str, torch_version: str) -> dict:
     return {
         "model": args.model,
         "prompt": args.prompt,
-        "steps": used.get("num_inference_steps", _default(pipe, "num_inference_steps")),
-        "guidance": used.get("guidance_scale", _default(pipe, "guidance_scale")),
+        "steps": used.get("num_inference_steps", pipeline_default(pipe, "num_inference_steps")),
+        "guidance": used.get("guidance_scale", pipeline_default(pipe, "guidance_scale")),
         "width": args.width,
         "height": args.height,
         "seed": args.seed,
