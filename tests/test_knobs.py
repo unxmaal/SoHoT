@@ -34,16 +34,139 @@ def test_the_inventory_is_quiet_on_constants_that_gate_nothing_and_fires_once_on
                 "MAX_ON = True\n"
                 "max_tokens = 4000\n"
                 "def f():\n    MAX_TOKENS = 4000\n    return MAX_TOKENS\n"
-                "class C:\n    TIMEOUT_S = 3\n")
+                "class C:\n    name = 'x'\n    TIMEOUT_S = None\n")
     assert knobs.gating(innocent, "harness/m.py") == []
     assert knobs.gating(innocent + "MAX_TOKENS = 4000\n", "harness/m.py") == ["harness/m.py:MAX_TOKENS"]
 
 
-def test_the_inventory_reads_only_production_python():
+def test_the_inventory_reads_only_production_code():
     found = knobs.inventory(REPO)
-    assert found and all(s.startswith(("harness/", "evals/")) for s in found)
+    assert found and all(s.startswith(("harness/", "evals/", "scripts/", "gateway/")) for s in found)
     assert not any(s.startswith("evals/cases/") for s in found)
     assert "harness/completion.py:BUDGET" in found
+
+
+def test_the_inventory_sees_every_shape_a_gating_value_takes_in_this_repo():
+    found = set(knobs.inventory(REPO))
+    for site in ("harness/heartbeat.py:STALL_S", "evals/runners/agent.py:STEP_TIMEOUT_S",
+                 "harness/audio.py:speak(timeout)", "evals/run.py:SCREEN_PARAMS[steps]",
+                 "scripts/serve-llamacpp.sh:LLAMACPP_SLEEP_IDLE"):
+        assert site in found, site
+
+
+def test_the_inventory_finds_the_time_and_retry_words_a_gate_is_named_with():
+    names = ("CANCEL_GRACE_S", "STALL_S", "IDLE_S", "SERVE_WAIT_S", "RETRIES", "BACKOFF_S", "RETRY_DELAY",
+             "ATTEMPTS", "SIZE_RETRIES", "IN_FLIGHT_SECONDS", "GRACE_SECONDS", "RETEST_AFTER_SECONDS",
+             "START_S_PER_GIB", "SERVE_START_S", "DECODE_TOK_S", "DEADLINE_GRACE", "STOP_GRACE_S",
+             "POLL_INTERVAL", "EFFECT_SIZE", "SLOT_CTX", "Z", "SECONDS_PER_TOKEN")
+    src = "".join(f"{n} = 3\n" for n in names) + "STATUS = 3\nWORDS = 3\n"
+    assert knobs.gating(src, "harness/m.py") == [f"harness/m.py:{n}" for n in names]
+
+
+def test_the_inventory_finds_defaults_call_literals_table_entries_and_environment_defaults():
+    src = ("import os\n"
+           "SCREEN = {'width': 256, 'steps': 2, 'inner': {'temperature': 0.2}}\n"
+           "BUDGET = {'code': 4000}\n"
+           "WAIT = float(os.environ.get('SOH_WAIT_S') or 30)\n"
+           "PORT = int(os.environ.get('SOH_PORT') or 8080)\n"
+           "GRACE = os.getenv('SOH_GRACE', '5')\n"
+           "def speak(text, timeout=120.0, speed=1.0, settle_s=3.0, levels=(1, 2), name='x'):\n"
+           "    return run(text, timeout=30, check=True)\n"
+           "class C:\n"
+           "    def go(self, poll=0.5, max_tokens=None):\n"
+           "        return get(max_new_tokens=64)\n"
+           "def outer():\n"
+           "    def inner(timeout=5):\n"
+           "        pass\n")
+    assert knobs.gating(src, "harness/m.py") == [
+        "harness/m.py:SCREEN[width]", "harness/m.py:SCREEN[steps]", "harness/m.py:SCREEN[inner][temperature]",
+        "harness/m.py:BUDGET", "harness/m.py:environ(SOH_WAIT_S)", "harness/m.py:environ(SOH_PORT)",
+        "harness/m.py:environ(SOH_GRACE)",
+        "harness/m.py:speak(timeout)", "harness/m.py:speak(settle_s)", "harness/m.py:speak(levels)",
+        "harness/m.py:speak->run(timeout)", "harness/m.py:C.go(poll)", "harness/m.py:C.go->get(max_new_tokens)",
+        "harness/m.py:outer.inner(timeout)"]
+
+
+def test_the_inventory_reads_shell_defaults_and_gateway_settings():
+    sh = ('PORT="${SOH_PORT:-8081}"\n'
+          'exec srv --idle "${SOH_SLEEP_IDLE:-300}" --ctx "${SOH_CTX:-16384}" --host "${SOH_HOST:-127.0.0.1}"\n')
+    assert knobs.shell_defaults(sh, "scripts/x.sh") == [
+        "scripts/x.sh:SOH_PORT", "scripts/x.sh:SOH_SLEEP_IDLE", "scripts/x.sh:SOH_CTX"]
+    yml = ("model_list:\n  - model_name: a\n    litellm_params: {timeout: 5}\n"
+           "litellm_settings:\n  drop_params: true\n  request_timeout: 600\n  num_retries: 2\n"
+           "  cache_params: {ttl: 60}\n")
+    assert knobs.gateway_settings(yml, "gateway/config.yaml") == [
+        "gateway/config.yaml:litellm_settings.request_timeout", "gateway/config.yaml:litellm_settings.num_retries",
+        "gateway/config.yaml:litellm_settings.cache_params.ttl"]
+
+
+def test_a_table_entry_and_a_method_default_resolve():
+    from evals import run
+    assert knobs.resolve("evals/run.py:SCREEN_PARAMS[steps]") == run.SCREEN_PARAMS["steps"]
+    assert knobs.resolve("harness/audio.py:speak(timeout)") == 120.0
+
+
+def test_a_new_unregistered_retry_constant_fails_the_backlog_ratchet(tmp_path):
+    import subprocess
+    (tmp_path / "harness").mkdir()
+    (tmp_path / "harness" / "fixture.py").write_text("NAME = 'x'\n", encoding="utf-8")
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    _assert_no_new_gating_site(tmp_path)
+    (tmp_path / "harness" / "fixture.py").write_text("RETRIES = 3\nNAME = 'x'\n", encoding="utf-8")
+    with pytest.raises(AssertionError, match=r"harness/fixture\.py:RETRIES"):
+        _assert_no_new_gating_site(tmp_path)
+
+
+def test_a_second_call_literal_in_the_same_scope_is_a_new_site():
+    one = "def f(a):\n    subprocess.run(a, timeout=5)\n"
+    two = one + "    subprocess.run(a, timeout=600)\n"
+    assert knobs.gating(one, "harness/m.py") == ["harness/m.py:f->subprocess.run(timeout)"]
+    assert knobs.gating(two, "harness/m.py") == ["harness/m.py:f->subprocess.run(timeout)",
+                                                 "harness/m.py:f->subprocess.run(timeout)#2"]
+
+
+def test_class_and_dataclass_field_defaults_are_found():
+    src = ("class Engine:\n    name: str = 'x'\n    timeout: float = 900.0\n    stream: bool = False\n"
+           "class Kill:\n    recover_seconds = 5\n    budget = 3\n    cost_s: float = 1.5\n    TIMEOUT_S = 3\n")
+    assert knobs.gating(src, "harness/m.py") == [
+        "harness/m.py:Engine.timeout", "harness/m.py:Kill.recover_seconds", "harness/m.py:Kill.budget",
+        "harness/m.py:Kill.cost_s", "harness/m.py:Kill.TIMEOUT_S"]
+    found = set(knobs.inventory(REPO))
+    for site in ("harness/engines.py:Engine.timeout", "harness/chaos.py:ServerKill.recover_seconds",
+                 "harness/inspect.py:Fit.upstream_idle_days", "harness/github.py:Client.budget",
+                 "harness/verify.py:Task.cost_s"):
+        assert site in found, site
+    assert knobs.resolve("harness/engines.py:Engine.timeout") == 900.0
+
+
+def test_every_numeric_environment_default_and_table_entry_is_found_whatever_its_name():
+    src = ("import os\nN = int(os.environ.get('LLAMACPP_PARALLEL') or 1)\n"
+           "STRENGTH = {'lowres': 0.5, 'name': 'x'}\nweights = {'a': 2}\n")
+    assert knobs.gating(src, "harness/m.py") == [
+        "harness/m.py:environ(LLAMACPP_PARALLEL)", "harness/m.py:STRENGTH[lowres]", "harness/m.py:weights[a]"]
+    assert "harness/context.py:environ(LLAMACPP_PARALLEL)" in knobs.inventory(REPO)
+
+
+def test_a_timeout_passed_positionally_is_found():
+    src = ("def stop(proc, t, xs):\n    proc.wait(10)\n    t.join(5)\n    ', '.join(xs)\n    proc.wait()\n")
+    assert knobs.gating(src, "harness/m.py") == ["harness/m.py:stop->proc.wait(timeout)",
+                                                 "harness/m.py:stop->t.join(timeout)"]
+    found = set(knobs.inventory(REPO))
+    assert "harness/chaos.py:kill->server.proc.wait(timeout)" in found
+    assert "harness/chaos.py:run_screen->proc.wait(timeout)" in found
+
+
+def test_every_site_form_the_inventory_reports_resolves_so_it_can_be_registered():
+    assert knobs.resolve("harness/engines.py:_mflux->Engine(timeout)") > 0
+    assert knobs.resolve("harness/context.py:environ(LLAMACPP_PARALLEL)") == 1
+    assert knobs.resolve("scripts/serve-llamacpp.sh:LLAMACPP_SLEEP_IDLE") == 300
+    unresolved = []
+    for site in knobs.inventory(REPO):
+        try:
+            knobs.resolve(site)
+        except Exception as e:
+            unresolved.append(f"{site}: {e!r}")
+    assert not unresolved, "\n".join(unresolved)
 
 
 def test_every_knob_names_a_value_that_exists():
@@ -108,11 +231,15 @@ def test_a_probe_sweeps_the_range_its_knob_declares(monkeypatch):
     assert seen["UPSTREAM_DEAD_DAYS"] == (k.default(""), tuple(k.values))
 
 
-def test_no_new_gating_constant_is_unregistered():
-    found = knobs.unregistered(knobs.inventory(REPO))
+def _assert_no_new_gating_site(root):
+    found = knobs.unregistered(knobs.inventory(root))
     new = sorted(set(found) - set(_backlog()))
     assert not new, ("register these in harness/knobs.py, or name why one gates nothing in "
                      "knobs.NOT_GATING:\n  " + "\n  ".join(new))
+
+
+def test_no_new_gating_constant_is_unregistered():
+    _assert_no_new_gating_site(REPO)
 
 
 def test_the_knob_backlog_only_shrinks():
@@ -167,3 +294,44 @@ def test_ornith_slots_and_slot_context_are_knobs_and_every_slot_reaches_the_long
     assert slots.default() == context.ORNITH_SLOTS and slot_ctx.default() == context.ORNITH_SLOT_CTX
     assert context.MIN_LONG_SLOT_CTX > 65536
     assert all(v >= context.MIN_LONG_SLOT_CTX for v in (*slot_ctx.values, slot_ctx.default()))
+
+
+def test_an_argument_default_or_call_keyword_is_found_by_the_same_name_words_as_a_constant():
+    src = ("def check_html(path, min_ink=0.0005):\n    pass\n"
+           "class RepairRunner:\n    def __init__(self, attempts=3):\n        pass\n"
+           "def run(c):\n    c.ask(retries=1, etag_timeout=5, max_length=80, name=2)\n")
+    assert knobs.gating(src, "harness/m.py") == [
+        "harness/m.py:check_html(min_ink)", "harness/m.py:RepairRunner.__init__(attempts)",
+        "harness/m.py:run->c.ask(retries)", "harness/m.py:run->c.ask(etag_timeout)",
+        "harness/m.py:run->c.ask(max_length)"]
+    found = set(knobs.inventory(REPO))
+    for site in ("harness/checks/render.py:check_html(min_ink)", "evals/runners/repair.py:RepairRunner.__init__(attempts)",
+                 "harness/checks/render.py:_remove_tree(attempts)", "harness/checks/render.py:_remove_tree(delay)"):
+        assert site in found, site
+    assert knobs.resolve("harness/checks/render.py:check_html(min_ink)") == 0.0005
+
+
+def test_a_second_function_with_its_own_ink_threshold_fails_the_ratchet(tmp_path):
+    import subprocess
+    (tmp_path / "harness").mkdir()
+    (tmp_path / "harness" / "fixture.py").write_text("NAME = 'x'\n", encoding="utf-8")
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    _assert_no_new_gating_site(tmp_path)
+    (tmp_path / "harness" / "fixture.py").write_text("def check_svg(p, min_ink=0.001):\n    pass\n", encoding="utf-8")
+    with pytest.raises(AssertionError, match=r"harness/fixture\.py:check_svg\(min_ink\)"):
+        _assert_no_new_gating_site(tmp_path)
+
+
+def test_every_numeric_shell_default_is_found_whatever_its_name():
+    src = 'TOP="${DISCOVER_TOP:-3}"\nPORT="${PORT:-8080}"\nNAME="${NAME:-x}"\n'
+    assert knobs.shell_defaults(src, "scripts/s.sh") == ["scripts/s.sh:DISCOVER_TOP", "scripts/s.sh:PORT"]
+    found = set(knobs.inventory(REPO))
+    for site in ("scripts/serve-discover.sh:DISCOVER_TOP", "scripts/serve-discover.sh:DISCOVER_REPEAT",
+                 "scripts/serve-llamacpp.sh:LLAMACPP_GPU_LAYERS"):
+        assert site in found, site
+
+
+def test_a_new_entry_in_a_table_named_as_gating_nothing_is_not_exempt():
+    assert knobs.not_gating("harness/context.py:CACHE_BYTES[f16]")
+    assert not knobs.not_gating("harness/context.py:CACHE_BYTES[q2_k]")
+    assert not knobs.not_gating("harness/usage.py:_UNITS[w]")

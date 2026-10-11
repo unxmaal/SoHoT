@@ -5,8 +5,8 @@ swept offline against cached data; a knob with a `limit` is one an eval can hit,
 and the limit is the predicate name a result row or a verdict records when it
 does (`timeout_s>180`, `max_tokens.code>32768`, `ceiling_gb:>66`).
 
-`inventory()` finds the module-level numeric constants whose names say they gate
-something. Every one is either registered here, named in NOT_GATING with a
+`inventory()` finds the numeric values whose names say they gate something:
+constants, table entries, argument and field defaults, call literals and environment defaults, whatever their name. Every one is either registered here, named in NOT_GATING with a
 reason, or in the shrinking backlog the tier-1 test holds.
 """
 from __future__ import annotations
@@ -21,14 +21,24 @@ from pathlib import Path
 from harness import completion
 
 GIB = 1024 ** 3
+REPO = Path(__file__).resolve().parent.parent
 
 #: Name words that mark a constant as one that gates an outcome.
 GATING_WORDS = frozenset({"MAX", "MIN", "TIMEOUT", "CAP", "LIMIT", "FLOOR", "CEILING", "BUDGET",
                           "THRESHOLD", "TOLERANCE", "TEMPERATURE", "TOKENS", "RESERVE", "ALPHA",
                           "CUTOFF", "MARGIN", "STEPS", "FRACTION", "WER", "CER", "INK", "MOTION",
-                          "STDDEV", "F1", "DAYS", "SHARED", "POPULATION", "VOTES"})
+                          "STDDEV", "F1", "DAYS", "SHARED", "POPULATION", "VOTES", "RETRIES",
+                          "ATTEMPTS", "GRACE", "WAIT", "DELAY", "POLL", "INTERVAL", "STALL", "SECONDS",
+                          "EFFECT", "CTX", "Z", "IDLE", "SLEEP"})
+#: Name endings and phrases that mark a gate: seconds, a rate, a per-token or per-GiB allowance.
+GATING_SUFFIXES = ("_S",)
+GATING_PHRASES = ("PER_TOKEN", "PER_GIB")
+#: Argument names whose numeric default or call-site literal gates an outcome.
+GATING_PARAMS = frozenset({"timeout", "grace", "poll", "settle_s", "max_tokens", "max_new_tokens",
+                           "limit", "levels"})
 _UPPER = re.compile(r"_?[A-Z][A-Z0-9_]*")
-_SITE = re.compile(r"(?P<rel>[\w/]+\.py):(?P<name>\w+)(?:\((?P<param>\w+)\))?")
+_SITE = re.compile(r"(?P<rel>[\w/]+\.py):(?P<name>[\w.]+)(?P<keys>(?:\[\w+\])*)(?:\((?P<param>\w+)\))?")
+_SHELL_DEFAULT = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*):?[-=](-?[0-9]+(?:\.[0-9]+)?)\}")
 
 #: The until-predicate family a knob's limit is written in: `limit:name>N` or a machine fact `name:>N`.
 LIMIT, MACHINE = "limit", "machine"
@@ -153,16 +163,72 @@ NOT_GATING: dict[str, str] = {
     "harness/context.py:MIN_SLOT_CTX": "the floor the eval7b_slot_ctx range is held to; a preset under it is refused (#665)",
     "harness/context.py:MIN_LONG_SLOT_CTX": "the floor the ornith_slot_ctx range is held to; a preset under it is refused (#682)",
     "evals/private.py:MIN_FRAGMENT": "which private text the leak scan looks for; never a lane's outcome (#654)",
+    "harness/audio_server.py:environ(AUDIO_PORT)": "where the audio server listens; never what it answers (#706)",
+    **{f"harness/context.py:CACHE_BYTES[{t}]": "bytes per KV element of a cache type, a fact of the format (#706)"
+       for t in ("f32", "f16", "bf16", "q8_0", "q5_1", "q5_0", "q4_1", "q4_0", "iq4_nl")},
+    **{f"harness/usage.py:_UNITS[{u}]": "seconds in a day, hour, minute or second (#706)" for u in "dhms"},
+    "harness/checks/image.py:ImageResult.stddev": "a measured result's value before it is measured (#706)",
+    "harness/checks/video.py:VideoResult.motion": "a measured result's value before it is measured (#706)",
+    "harness/checks/video.py:VideoResult.stddev": "a measured result's value before it is measured (#706)",
+    "harness/checks/ocr.py:OcrResult.cer": "a measured result's value before it is measured (#706)",
+    "evals/core.py:Receipt.max_tokens": "what a receipt records a run asked for; the budget itself is reply_budget (#706)",
+    "harness/mcp_server.py:JobInfo.seconds": "how long a job took, as reported (#706)",
+    **{site: "where a server listens; never what it answers (#706)" for site in (
+        "scripts/serve-audio-cuda.sh:AUDIO_PORT",
+        "scripts/serve-ds4.sh:DS4_PORT",
+        "scripts/serve-eval.sh:LLAMACPP_PORT",
+        "scripts/serve-gateway.sh:GATEWAY_PORT",
+        "scripts/serve-llamacpp.sh:LLAMACPP_PORT",
+        "scripts/serve-llamacpp.sh:LLAMACPP_PORT#2",
+        "scripts/serve-mcp.sh:MCP_PORT",
+        "scripts/serve-mlx.sh:MLX_PORT",
+        "scripts/serve-tts.sh:TTS_PORT",
+        "scripts/services.sh:GATEWAY_PORT",
+        "scripts/services.sh:LLAMACPP_PORT",
+        "scripts/services.sh:AUDIO_PORT",
+        "scripts/services.sh:DS4_PORT",
+        "scripts/slots-sweep.sh:SWEEP_PORT",
+        "scripts/smoke.sh:GATEWAY_PORT",
+        "scripts/smoke.sh:MLX_PORT",
+        "scripts/smoke.sh:TTS_PORT",
+    )},
+    "scripts/env.sh:HF_HUB_OFFLINE": "a switch, offline or not; never a threshold (#706)",
+    "scripts/h3-weights-status.sh:BYTES": "the fallback of a measured size when none was measured (#706)",
+    "scripts/router-max-models.sh:bytes": "the fallback of a measured RAM size when none was measured (#706)",
+    "evals/runners/base.py:BaseRunner.failed(seconds)": "how long a failed case took, as reported (#706)",
+    "evals/runners/agent.py:AgentRunner.failed(seconds)": "how long a failed case took, as reported (#706)",
+    "harness/checks/ocr.py:check->OcrResult(cer)": "a measured result's value, as reported (#706)",
 }
 
 
-def resolve(site: str):
-    """The value a site names now: a module constant, or a function's argument default."""
-    m = _SITE.fullmatch(site)
-    if m is None:
+def _static(site: str):
+    """The value of a site that only source holds: a call literal, an environment, shell or gateway default."""
+    rel = site.split(":", 1)[0]
+    text = (REPO / rel).read_text(encoding="utf-8")
+    if rel.endswith(".py"):
+        found = _sites(text, rel)
+    elif rel.endswith(".sh"):
+        found = _shell_sites(text, rel)
+    else:
+        found = _gateway_sites(text, rel)
+    if site not in found:
         raise ValueError(f"not a site: {site!r}")
-    module = importlib.import_module(m["rel"][:-3].replace("/", "."))
-    got = getattr(module, m["name"])
+    return found[site]
+
+
+def resolve(site: str):
+    """The value a site names now: a module constant, a table entry, an argument or field default, or a literal in source."""
+    m = _SITE.fullmatch(site)
+    if m is None or m["name"] == "environ":
+        return _static(site)
+    got = importlib.import_module(m["rel"][:-3].replace("/", "."))
+    try:
+        for part in m["name"].split("."):
+            got = getattr(got, part)
+    except AttributeError:
+        return _static(site)
+    for key in re.findall(r"\[(\w+)\]", m["keys"] or ""):
+        got = got[key]
     if m["param"]:
         return _inspect.signature(got).parameters[m["param"]].default
     return got
@@ -184,19 +250,192 @@ def _num_or_ref(node) -> bool:
     return _numeric(node) or isinstance(node, (ast.Name, ast.Attribute))
 
 
-def gating(text: str, rel: str) -> list[str]:
-    """Sites 'rel:NAME' of module-level numeric constants whose name carries a gating word, in source order."""
+def named_gating(name: str) -> bool:
+    """Whether a constant, table key or environment variable name says it gates an outcome."""
+    name = name.upper().strip("_")
+    return bool(GATING_WORDS & set(name.split("_")) or name.endswith(GATING_SUFFIXES)
+                or any(p in name for p in GATING_PHRASES))
+
+
+def _param_gating(name: str) -> bool:
+    return name in GATING_PARAMS or name.endswith("_s") or named_gating(name)
+
+
+def _literal(node) -> bool:
+    if isinstance(node, (ast.Tuple, ast.List)):
+        return bool(node.elts) and all(_literal(e) for e in node.elts)
+    if isinstance(node, ast.UnaryOp):
+        return _literal(node.operand)
+    return isinstance(node, ast.Constant) and isinstance(node.value, (int, float)) and not isinstance(node.value, bool)
+
+
+def _dotted(node) -> str:
+    if isinstance(node, ast.Name):
+        return node.id
+    if isinstance(node, ast.Attribute):
+        inner = _dotted(node.value)
+        return f"{inner}.{node.attr}" if inner else ""
+    return ""
+
+
+def _table(rel: str, path: str, node) -> list[tuple[str, object]]:
+    out = []
+    for key, value in zip(node.keys, node.values):
+        if not (isinstance(key, ast.Constant) and isinstance(key.value, str) and re.fullmatch(r"\w+", key.value)):
+            continue
+        here = f"{path}[{key.value}]"
+        if isinstance(value, ast.Dict):
+            out += _table(rel, here, value)
+        elif _literal(value):
+            out.append((f"{rel}:{here}", value))
+    return out
+
+
+def _env_default(node) -> tuple[str, object] | None:
+    """(VAR, default node) for os.environ.get(VAR, N), os.getenv(VAR, N), or either `or N`."""
+    def env(call):
+        while isinstance(call, ast.Call) and not _dotted(call.func).endswith(("environ.get", "getenv")):
+            if len(call.args) != 1:
+                return None
+            call = call.args[0]
+        if (isinstance(call, ast.Call) and call.args and isinstance(call.args[0], ast.Constant)
+                and isinstance(call.args[0].value, str)):
+            return call
+        return None
+    if isinstance(node, ast.BoolOp) and isinstance(node.op, ast.Or) and len(node.values) == 2:
+        call = env(node.values[0])
+        return (call.args[0].value, node.values[1]) if call is not None else None
+    if isinstance(node, ast.Call) and _dotted(node.func).endswith(("environ.get", "getenv")):
+        call = env(node)
+        if call is not None and len(call.args) == 2:
+            return call.args[0].value, call.args[1]
+    return None
+
+
+def _number(node) -> bool:
+    if isinstance(node, ast.Constant) and isinstance(node.value, str):
+        try:
+            float(node.value)
+        except ValueError:
+            return False
+        return True
+    return _literal(node)
+
+
+def _value(node):
+    got = ast.literal_eval(node)
+    return float(got) if isinstance(got, str) else got
+
+
+#: Methods whose first positional argument is a timeout: Popen/Event.wait, Thread/Process.join.
+_POSITIONAL_TIMEOUT = ("wait", "join")
+
+
+def _field(node) -> tuple[str, object] | None:
+    if isinstance(node, ast.Assign) and len(node.targets) == 1 and isinstance(node.targets[0], ast.Name):
+        return node.targets[0].id, node.value
+    if isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name) and node.value is not None:
+        return node.target.id, node.value
+    return None
+
+
+def _scoped(rel: str, body, scope: str) -> list[tuple[str, object]]:
+    out = []
+
+    def visit(node, scope, in_class=False):
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            qual = f"{scope}.{node.name}" if scope else node.name
+            a = node.args
+            pos = a.posonlyargs + a.args
+            pairs = list(zip(pos[len(pos) - len(a.defaults):], a.defaults)) + [
+                (arg, d) for arg, d in zip(a.kwonlyargs, a.kw_defaults) if d is not None]
+            out.extend((f"{rel}:{qual}({arg.arg})", d) for arg, d in pairs if _param_gating(arg.arg) and _literal(d))
+            for child in node.body:
+                visit(child, qual)
+            return
+        if isinstance(node, ast.ClassDef):
+            qual = f"{scope}.{node.name}" if scope else node.name
+            for child in node.body:
+                visit(child, qual, in_class=True)
+            return
+        field = _field(node) if in_class else None
+        if field and _param_gating(field[0]) and _literal(field[1]):
+            out.append((f"{rel}:{scope}.{field[0]}", field[1]))
+        if isinstance(node, ast.Call):
+            callee = _dotted(node.func) or "call"
+            here = scope or "<module>"
+            out.extend((f"{rel}:{here}->{callee}({kw.arg})", kw.value) for kw in node.keywords
+                       if kw.arg and _param_gating(kw.arg) and _literal(kw.value))
+            if (isinstance(node.func, ast.Attribute) and node.func.attr in _POSITIONAL_TIMEOUT and node.args
+                    and _literal(node.args[0])):
+                out.append((f"{rel}:{here}->{callee}(timeout)", node.args[0]))
+        got = _env_default(node)
+        if got and _number(got[1]):
+            out.append((f"{rel}:environ({got[0]})", got[1]))
+        for child in ast.iter_child_nodes(node):
+            visit(child, scope)
+
+    for stmt in body:
+        visit(stmt, scope)
+    return out
+
+
+def _numbered(pairs) -> dict:
+    """Each site once; a repeat of a site in the same file is a new site, `site#2`, so adding one is seen."""
+    out, seen = {}, {}
+    for site, value in pairs:
+        seen[site] = seen.get(site, 0) + 1
+        out[site if seen[site] == 1 else f"{site}#{seen[site]}"] = value
+    return out
+
+
+def _sites(text: str, rel: str) -> dict:
     out = []
     for stmt in ast.parse(text).body:
-        if isinstance(stmt, ast.Assign) and len(stmt.targets) == 1 and isinstance(stmt.targets[0], ast.Name):
-            name, value = stmt.targets[0].id, stmt.value
-        elif isinstance(stmt, ast.AnnAssign) and isinstance(stmt.target, ast.Name) and stmt.value is not None:
-            name, value = stmt.target.id, stmt.value
-        else:
-            continue
-        if _UPPER.fullmatch(name) and GATING_WORDS & set(name.strip("_").split("_")) and _numeric(value):
-            out.append(f"{rel}:{name}")
+        name, value = _field(stmt) or (None, None)
+        if name and _UPPER.fullmatch(name) and named_gating(name) and _numeric(value):
+            out.append((f"{rel}:{name}", value))
+        elif name and isinstance(value, ast.Dict):
+            out += _table(rel, name, value)
+        out += _scoped(rel, [stmt], "")
+    return {site: _value(node) if _number(node) else None for site, node in _numbered(out).items()}
+
+
+def gating(text: str, rel: str) -> list[str]:
+    """Sites rel:NAME, rel:NAME[key], rel:func(param), rel:Class.field, rel:scope->callee(param), rel:environ(VAR), in source order."""
+    return list(_sites(text, rel))
+
+
+def _shell_sites(text: str, rel: str) -> dict:
+    return _numbered((f"{rel}:{m[1]}", float(m[2]) if "." in m[2] else int(m[2]))
+                     for m in _SHELL_DEFAULT.finditer(text))
+
+
+def shell_defaults(text: str, rel: str) -> list[str]:
+    """Sites rel:VAR of every numeric `${VAR:-N}` default in a shell script, whatever its name."""
+    return list(_shell_sites(text, rel))
+
+
+def _gateway_sites(text: str, rel: str) -> dict:
+    import yaml
+    data = yaml.safe_load(text)
+    settings = data.get("litellm_settings") if isinstance(data, dict) else None
+    out = {}
+
+    def walk(d, prefix):
+        for k, v in d.items():
+            if isinstance(v, dict):
+                walk(v, f"{prefix}.{k}")
+            elif isinstance(v, (int, float)) and not isinstance(v, bool):
+                out[f"{rel}:{prefix}.{k}"] = v
+    if isinstance(settings, dict):
+        walk(settings, "litellm_settings")
     return out
+
+
+def gateway_settings(text: str, rel: str) -> list[str]:
+    """Sites rel:litellm_settings.path of every number the gateway's LiteLLM settings set."""
+    return list(_gateway_sites(text, rel))
 
 
 def _production(rel: str) -> bool:
@@ -204,14 +443,20 @@ def _production(rel: str) -> bool:
 
 
 def inventory(root) -> list[str]:
-    """Every gating constant in production Python under `root`, by site."""
+    """Every gating value in production Python, top-level scripts and gateway config under `root`, by site."""
     from harness import repo
     root = Path(root)
     out = []
     for path in repo.publishable(root):
         rel = path.relative_to(root).as_posix()
-        if _production(rel) and path.is_file():
+        if not path.is_file():
+            continue
+        if _production(rel):
             out += gating(path.read_text(encoding="utf-8", errors="replace"), rel)
+        elif re.fullmatch(r"scripts/[^/]+\.sh", rel):
+            out += shell_defaults(path.read_text(encoding="utf-8", errors="replace"), rel)
+        elif re.fullmatch(r"gateway/[^/]+\.ya?ml", rel):
+            out += gateway_settings(path.read_text(encoding="utf-8", errors="replace"), rel)
     return out
 
 
@@ -219,9 +464,14 @@ def registered() -> set[str]:
     return {s for k in KNOBS.values() for s in k.sites}
 
 
+def not_gating(site: str) -> bool:
+    """Whether NOT_GATING names this exact site; a new entry of an exempt table is not exempt."""
+    return site in NOT_GATING
+
+
 def unregistered(found) -> list[str]:
-    known = registered() | set(NOT_GATING)
-    return [s for s in found if s not in known]
+    known = registered()
+    return [s for s in found if s not in known and not not_gating(s)]
 
 
 def census(root) -> dict:
@@ -229,7 +479,7 @@ def census(root) -> dict:
     found = inventory(root)
     known = registered()
     return {"found": found, "registered": sum(1 for s in found if s in known),
-            "not_gating": sum(1 for s in found if s in NOT_GATING),
+            "not_gating": sum(1 for s in found if not_gating(s)),
             "unregistered": len(unregistered(found))}
 
 
@@ -269,6 +519,8 @@ def rebind(overrides: dict):
                 if k.runner_attr:
                     continue
                 m = _SITE.fullmatch(k.sites[0])
+                if m is None or "." in m["name"] or m["keys"] or m["param"]:
+                    raise ValueError(f"{name}: only a module constant can be rebound, not {k.sites[0]}")
                 module = importlib.import_module(m["rel"][:-3].replace("/", "."))
                 saved.append((module, m["name"], getattr(module, m["name"])))
                 setattr(module, m["name"], value)
