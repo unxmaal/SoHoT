@@ -5,10 +5,17 @@ for a machine that exists to serve. The Windows box is a machine with a day job 
 runs this, so the same behaviour there would hold VRAM and CPU against whatever
 is being played, and would do it again after every reboot without being asked.
 
-Everything here is a grep over the scripts, for the reason test_service_pinning
+Most of this is a grep over the scripts, for the reason test_service_pinning
 gives: the alternative is registering real scheduled tasks in CI, and the
 failure being guarded against is visible in the text.
+
+The `status` probe tests are the exception and run for real, against a fake on
+loopback. What they guard is not visible in the text: whether an HTTP status
+is read as serving, as alive and keyed, or as wedged. A grep asserting the
+word 401 appears somewhere would have passed the version of the code that
+printed WEDGED for a healthy node. #757.
 """
+import os
 import re
 import subprocess
 from pathlib import Path
@@ -143,6 +150,92 @@ def test_windows_tool_flags_are_written_so_msys_does_not_eat_them():
     assert not offenders, (
         "single-slash flags are rewritten as paths by MSYS; use // -- "
         + "; ".join(offenders))
+
+
+def _status_against(handler_code, env, tmp_path):
+    """Run `services.sh status` against a fake on loopback, and return stdout.
+
+    harness.loopback, not http.server: a stock server costs about 35 s of
+    reverse DNS on the macOS runner and conftest refuses the lookup outright
+    (#711).
+    """
+    import http.server
+    import threading
+
+    from harness import loopback
+
+    class Handler(http.server.BaseHTTPRequestHandler):
+        def do_GET(self):
+            self.send_response(handler_code)
+            self.end_headers()
+
+        def log_message(self, *a):
+            pass
+
+    server = loopback.ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+    port = server.server_address[1]
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        full = dict(os.environ, LLAMACPP_PORT=str(port),
+                    LOCALHARNESS_HOME=str(tmp_path), **env)
+        done = subprocess.run(
+            [shells.resolve("bash"), "scripts/services.sh", "status"],
+            cwd=REPO, capture_output=True, text=True, timeout=120, env=full)
+        return done.stdout
+    finally:
+        server.shutdown()
+        server.server_close()
+
+
+@pytest.mark.skipif(shells.resolve("bash") is None,
+                    reason="no bash on this machine")
+def test_a_node_that_demands_a_key_is_not_reported_wedged(tmp_path):
+    """THE FAILURE THIS GUARDS. A keyed node answers 401 to an
+    unauthenticated probe, curl -fsS called that a failure, and status printed
+
+        llamacpp  WEDGED:18082 holds the port and does not answer
+
+    for a node that was serving: /health 200, /v1/models 200 with the key, and
+    completions round-tripping. It is the inverse of #255 and misleads the same
+    expensive way, because status is what gets read before starting a game.
+    #757.
+    """
+    out = _status_against(401, {}, tmp_path)
+    assert "WEDGED" not in out, out
+    assert "keyed" in out, out
+
+
+@pytest.mark.skipif(shells.resolve("bash") is None,
+                    reason="no bash on this machine")
+def test_a_port_held_by_something_that_cannot_answer_is_still_wedged(tmp_path):
+    """The #255 guarantee has to survive the fix. A 500 is not an auth
+    challenge and must still read as wedged, or this trades one misreport for
+    another."""
+    out = _status_against(500, {}, tmp_path)
+    assert "WEDGED" in out, out
+
+
+@pytest.mark.skipif(shells.resolve("bash") is None,
+                    reason="no bash on this machine")
+def test_the_probe_key_never_reaches_the_command_line(tmp_path):
+    """A bearer token in argv is readable by every other process here, which is
+    why serve-llamacpp.sh passes --api-key-file rather than --api-key. The
+    probe uses curl -K with a config file for the same reason, and removes it
+    afterwards."""
+    region = SERVICES.read_text(encoding="utf-8")
+    assert "-K " in region, "probe with a curl config, not -H"
+    offenders = [line.strip() for line in region.splitlines()
+                 if "Authorization: Bearer" in line
+                 and "printf" not in line
+                 and not line.lstrip().startswith("#")]
+    assert not offenders, (
+        "the token would reach argv: " + "; ".join(offenders))
+    key_file = tmp_path / "k.txt"
+    key_file.write_text("f" * 64, encoding="utf-8")
+    _status_against(200, {"LLAMACPP_API_KEY_FILE": str(key_file)}, tmp_path)
+    left = list((tmp_path / "run").glob("probe-auth-*"))
+    assert not left, f"probe config left behind: {left}"
 
 
 def test_the_node_region_is_fenced():

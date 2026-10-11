@@ -25,6 +25,9 @@
 # holding 8 GB by morning. `stop` is the immediate version of the same thing.
 set -uo pipefail
 cd "$(dirname "$0")/.." || exit 1
+# read_api_key, for probing a keyed node in `status`. Not env.sh: this file
+# starts and stops things and has never needed the weights cache resolved.
+source scripts/api-key.sh
 
 LH_HOME="${LOCALHARNESS_HOME:-$HOME/localharness}"
 RUN="$LH_HOME/run"
@@ -98,11 +101,51 @@ listening() {
 #
 # One cheap GET with a short timeout. A service that cannot answer its own
 # listing in three seconds is not serving, whatever the port says.
+# A curl config carrying SERVICE's Authorization header, or nothing. The
+# caller removes the file.
+#
+# -K A FILE, NOT -H ON THE COMMAND LINE. A bearer token in argv is readable by
+# every other process here, which is the same reason serve-llamacpp.sh passes
+# --api-key-file rather than --api-key. #757.
+probe_auth() {
+  local name="$1" key conf
+  [ "$name" = "llamacpp" ] || return 1
+  [ -n "${LLAMACPP_API_KEY_FILE:-}" ] || return 1
+  key="$(read_api_key "$LLAMACPP_API_KEY_FILE" 2>/dev/null)" || return 1
+  conf="$RUN/probe-auth-$name"
+  ( umask 077; printf 'header = "Authorization: Bearer %s"\n' "$key" > "$conf" )
+  printf '%s\n' "$conf"
+}
+
+# THREE ANSWERS, NOT TWO: serving, alive and refusing an unauthenticated
+# probe, or not answering at all.
+#
+# Since #684 a node requires a key, and /v1/models then returns 401. curl -fsS
+# treated that as failure, so `status` called a node WEDGED for hours while it
+# was serving: /health 200, /v1/models 200 with the key, completions
+# round-tripping. That is the exact inverse of #255 and it misleads in the same
+# expensive direction, because on this machine `status` is what gets read
+# before starting a game. #757.
+#
+# Returns 0 serving, 3 alive but keyed, 1 not answering.
 answering() {
-  local port="$1" path="$2"
+  local port="$1" path="$2" name="${3:-}" conf code
   [ -n "$path" ] || return 0          # no probe defined: the port is all we have
   command -v curl >/dev/null 2>&1 || return 0
-  curl -fsS -m 3 -o /dev/null "http://127.0.0.1:$port$path" >/dev/null 2>&1
+  conf="$(probe_auth "$name")" || conf=""
+  if [ -n "$conf" ]; then
+    code="$(curl -sS -m 3 -o /dev/null -w '%{http_code}' -K "$conf" \
+      "http://127.0.0.1:$port$path" 2>/dev/null)" || code=""
+    rm -f "$conf"
+  else
+    code="$(curl -sS -m 3 -o /dev/null -w '%{http_code}' \
+      "http://127.0.0.1:$port$path" 2>/dev/null)" || code=""
+  fi
+  case "$code" in
+    2??)     return 0 ;;
+    401|403) return 3 ;;
+    *)       return 1 ;;
+  esac
 }
 
 # service -> the cheapest endpoint that proves it can do its job. A service
@@ -461,23 +504,31 @@ uninstall_node() {
 # END node registration
 
 status() {
-  local name pid port
+  local name pid port probe keyed
   for name in "${ALL[@]}"; do
     pid="$(cat "$(pidfile "$name")" 2>/dev/null || true)"
     port="$(port_for "$name")"
     if listening "$port"; then
-      if ! answering "$port" "$(probe_for "$name")"; then
+      answering "$port" "$(probe_for "$name")" "$name"
+      probe=$?
+      # Said out loud rather than folded into `up`. A reader who expects an
+      # open node wants to know the key was required, and one who does not
+      # expect a key wants to know even more.
+      keyed=""
+      [ "$probe" -eq 3 ] && keyed=" (keyed)"
+      if [ "$probe" -eq 1 ]; then
         # Bound and not serving. The state that cost hours: `up` here sends a
         # reader looking at the models instead of at the service.
         printf '%-9s WEDGED:%-5s holds the port and does not answer%s\n' \
           "$name" "$port" "$(alive "$pid" && printf ', pid %s' "$pid" || true)"
       elif alive "$pid"; then
-        printf '%-9s up    :%-5s pid %s\n' "$name" "$port" "$pid"
+        printf '%-9s up    :%-5s pid %s%s\n' "$name" "$port" "$pid" "$keyed"
       else
         # Up, and not by this script. Say so rather than claiming it: `stop`
         # can only stop what it started, and a reader about to run it should
         # know that before being surprised.
-        printf '%-9s up    :%-5s (not started by this script)\n' "$name" "$port"
+        printf '%-9s up    :%-5s (not started by this script)%s\n' \
+          "$name" "$port" "$keyed"
       fi
     elif alive "$pid"; then
       # A live process that answers on no port is starting, wedged, or dying.
