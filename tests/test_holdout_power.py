@@ -346,6 +346,7 @@ def test_adopt_without_repeat_measures_at_the_planned_repeat(monkeypatch, tmp_pa
         seen["argv"] = argv
         return Done()
 
+    monkeypatch.setattr(measure_cmd, "_launch", lambda argv, **kw: subprocess.run(argv, **kw))
     monkeypatch.setattr(subprocess, "run", fake_run)
     monkeypatch.setattr(adopt, "default_for", lambda lane, fallback, conn=None: "q3-4b")
     monkeypatch.setattr(measure_cmd, "_receipt_at", lambda out: None)

@@ -217,11 +217,20 @@ def test_over_budget_runs_the_fallback_and_says_what_power_would_cost(store_run)
     assert "would take" in plan.why
 
 
-def test_an_unmeasured_lane_has_no_cost_and_runs_the_fallback(store_run):
+def test_an_unmeasured_lane_has_no_cost_and_runs_the_fallback():
+    got = power.within_budget(power.plan([0.5, 0.5, 0.5], 0.4), [0.5, 0.5, 0.5],
+                              cases_run=6, median_s=None, budget_s=600.0)
+    assert got.repeat <= power.FALLBACK_REPEAT
+    assert "no measured seconds" in got.why
+
+
+def test_an_unmeasured_text_lane_is_priced_at_its_reply_budget(store_run):
+    from harness import completion
     from harness.commands import measure as measure_cmd
     _, plan = measure_cmd._plan(_ns(), "svg", "inc")
-    assert plan.repeat <= power.FALLBACK_REPEAT
-    assert "no measured seconds" in plan.why
+    per_call = completion.budget("svg") / power.DECODE_TOK_S
+    assert plan.projected_s == pytest.approx(plan.cases_run * plan.repeat * 2 * per_call)
+    assert "estimated" in plan.why
 
 
 def test_an_explicit_repeat_is_honoured(store_run):

@@ -406,6 +406,7 @@ def test_a_refused_screen_write_does_not_stop_the_next(monkeypatch, tmp_path,
     monkeypatch.setattr(memory, "check_model", lambda *a, **k: (True, ""))
     monkeypatch.setattr(screen, "argv", lambda r, **k: ["screen", r["name"]])
     ran = []
+    monkeypatch.setattr(measure_cmd, "_launch", lambda argv, **kw: subprocess.run(argv, **kw))
     monkeypatch.setattr(subprocess, "run", lambda argv, **kw: (
         argv[0] == "screen" and ran.append(argv[-1])) or _Done())
     monkeypatch.setattr(measure_cmd, "_receipt_at",
@@ -432,6 +433,7 @@ def test_a_refused_adoption_returns_to_the_measure_loop(monkeypatch, tmp_path,
 
     from harness import adopt, cli
 
+    monkeypatch.setattr(measure_cmd, "_launch", lambda argv, **kw: subprocess.run(argv, **kw))
     monkeypatch.setattr(subprocess, "run", lambda argv, **kw: _Done())
     monkeypatch.setattr(adopt, "default_for",
                         lambda lane, fallback, conn=None: "org/inc")

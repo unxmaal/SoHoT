@@ -154,6 +154,9 @@ def decide(lane: str, incumbent: dict, challenger: dict,
             notes.append(split.caveat)
     if plan is not None:
         evidence["power"] = plan.as_dict()
+        if getattr(plan, "dev_skipped", ""):
+            evidence["dev"] = {"not_run": plan.dev_skipped}
+            notes.append(plan.dev_skipped)
     got = _gates(lane, name_i, name_c, incumbent, challenger, rows)
     worse = _worse(rows, name_i, name_c) if rows and not got.adopt else ""
     if worse:
@@ -278,7 +281,8 @@ def record(conn, verdict: Verdict, spec: str = "",
     verdict = _schema_guard(verdict, spec)
     from harness import reasons
     outcome, reason = reasons.CLASSES.get(verdict.failure_class, (
-        "declined", reasons.LIMIT if verdict.failure_class == reasons.UNDERPOWERED
+        "declined", reasons.LIMIT
+        if verdict.failure_class in (reasons.UNDERPOWERED, reasons.INCONCLUSIVE)
         else reasons.CANDIDATE))
     if verdict.adopt:
         outcome = "measured"
@@ -305,6 +309,8 @@ def record(conn, verdict: Verdict, spec: str = "",
              (verdict.evidence.get("split") or {}).get("version", ""),
              json.dumps({**(verdict.evidence.get("power") or {}),
                          "dev": verdict.evidence.get("dev"),
+                         **({"partial": verdict.evidence["partial"]}
+                            if verdict.evidence.get("partial") else {}),
                          **({"cost": verdict.evidence["cost"]}
                             if verdict.evidence.get("cost") else {})}), vid))
         conn.commit()
