@@ -93,6 +93,8 @@ class Entry:
     tier: str = ""
     decided_at: float = 0.0
     verdict_id: int | None = None
+    #: When a retest of this rejection is due; its weights are kept until then. #704.
+    retest_at: float | None = None
     links: list = field(default_factory=list)
     download_id: int | None = None
     proposal_ids: list = field(default_factory=list)
@@ -261,7 +263,7 @@ def latest_verdicts(conn) -> dict:
     """Each proposal's state and the verdict that set it, by name. #409."""
     rows = conn.execute(
         "SELECT p.name, p.id AS pid, p.lane, v.id, p.state AS outcome, v.tier, "
-        "v.decided_at FROM proposals p JOIN verdicts v "
+        "v.decided_at, p.next_retest_at FROM proposals p JOIN verdicts v "
         "ON v.id = p.state_verdict_id ORDER BY v.id").fetchall()
     return {str(r["name"]).lower(): dict(r) for r in rows}
 
@@ -375,6 +377,7 @@ def _classify(e: Entry, k: Keepers, verdicts: dict, conn=None) -> None:
     if last:
         e.outcome, e.tier = last["outcome"], last["tier"]
         e.decided_at, e.verdict_id = float(last["decided_at"]), last["id"]
+        e.retest_at = last.get("next_retest_at")
     why = (k.repos.get(e.repo.lower()) if e.repo else None) \
         or next((k.stems[s] for s in _stems(e) if s in k.stems), None) \
         or _lane_kept(e, k, by_pid)
@@ -435,6 +438,8 @@ def safe_to_delete(e: Entry, now: float, wanted: str = REJECTED,
         return False, f"{e.group}, not {wanted}"
     if e.group == REJECTED and now - e.decided_at < GRACE_SECONDS:
         return False, "rejected less than 24 h ago"
+    if e.group == REJECTED and e.retest_at is not None and now < float(e.retest_at) + GRACE_SECONDS:
+        return False, "kept for the retest due then"
     root = next((Path(r) for r in roots if _inside(Path(e.path), Path(r))),
                 None)
     if root is None:

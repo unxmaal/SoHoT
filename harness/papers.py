@@ -22,15 +22,24 @@ def _day(t: float) -> str:
 
 
 def due_dates(last_read: float | None, now: float, force: bool = False) -> list[str | None]:
-    """The days to ask for: [None] (today's page) on a first read or a forced one, else each missed day."""
+    """The days to ask for: [None] (today's page) on a first read or a forced one, else the oldest missed days first. #704."""
     if force or not last_read:
         return [None]
     days = []
     t = now
-    while _day(t) > _day(last_read) and len(days) < MAX_DAYS:
+    while _day(t) > _day(last_read):
         days.append(_day(t))
         t -= 86400
-    return sorted(days)
+    return sorted(days)[:MAX_DAYS]
+
+
+def read_through(days: list, now: float) -> float:
+    """What last_read becomes: now once caught up, else the start of the newest day read, so the rest is read next."""
+    import calendar
+    newest = days[-1] if days else None
+    if newest is None or newest >= _day(now):
+        return now
+    return float(calendar.timegm(time.strptime(newest, "%Y-%m-%d")))
 
 
 def lane_of(title: str, summary: str) -> str:
@@ -85,5 +94,5 @@ def sweep(conn, get=None, now: float | None = None, force: bool = False) -> list
             ms.record(conn, seen, at=now)
             out.append(seen)
     if days:
-        ms.record_source(conn, SOURCE, kind=KIND, url=API, at=now)
+        ms.record_source(conn, SOURCE, kind=KIND, url=API, at=read_through(days, now))
     return out

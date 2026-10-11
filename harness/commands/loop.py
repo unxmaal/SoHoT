@@ -317,7 +317,7 @@ def _loop_spend(a, rc: int, failed: list | None = None) -> int:
     disk.sweep()
 
     top = int(getattr(a, "top", 3) or 3)
-    budget = float(getattr(a, "budget_gib", 20.0) or 20.0)
+    budget = fetching.budget_gib(getattr(a, "budget_gib", None))
 
     want = (getattr(a, "lane", "") or "").strip().lower()
     if want:

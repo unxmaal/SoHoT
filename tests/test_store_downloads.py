@@ -186,6 +186,7 @@ def test_removing_a_hub_dir_stamps_its_gguf_link_row_too(w):
                      file=link.name, origin=downloads.LINK)
     ms.record(w.conn, ms.Seen(name="org/T-GGUF", source="t"))
     ms.decide(w.conn, "org/T-GGUF", "broken", tier="screen", at=NOW - 2 * DAY)
+    w.conn.execute("UPDATE proposals SET next_retest_at = NULL")
     disk.delete(inv(w), NOW, disk.REJECTED, w.conn)
     rows = w.conn.execute("SELECT kind, removed_by FROM downloads "
                           "ORDER BY kind").fetchall()

@@ -49,8 +49,7 @@ def cmd_fetch(a) -> int:
                          for r in testable],
                  orphans=[r["resolved"] or r["name"] for r in orphans])
             return 0
-        gib = getattr(a, "budget_gib", None)
-        budget = int(float(gib) * fetching.GIB) if gib else None
+        budget = int(fetching.budget_gib(getattr(a, "budget_gib", None)) * fetching.GIB)
         fetched = []
         for got in fetching.run(store, limit=a.limit, lane=want,
                                 budget=budget):

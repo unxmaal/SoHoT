@@ -540,7 +540,7 @@ def _report_inspect(a) -> int:
             # In HEADLINE order, not smallest-first: the smallest named
             # weight is almost always a tokenizer or a helper, and the first
             # queue built that way filled with them. Issue #68.
-            ranked = [m for m in fit.headline if m in fit.weights][:3]
+            ranked = ins.fetchable_weights(fit, ins.ceiling_bytes())
             # Re-inspecting CORRECTS the queue rather than only extending it:
             # weights this repo queued under an older ranking, and no longer
             # ranks, are retired. Issue #73.
@@ -549,8 +549,6 @@ def _report_inspect(a) -> int:
                     "no longer among this repo's top-ranked weights"))
             for model_id in ranked:
                 size = fit.weights[model_id]
-                if size > ins.ceiling_bytes():
-                    continue
                 ms.record(store, ms.Seen(
                     name=model_id, source="inspect", kind="weights",
                     registry=ms.HUGGINGFACE, category=ms.MODEL,
