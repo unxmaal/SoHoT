@@ -272,3 +272,17 @@ def test_a_stale_sidecar_from_an_earlier_run_never_reaches_this_run_s_row(tmp_pa
     stale.write_text(json.dumps({"steps": 99, "guidance": 7.0}), encoding="utf-8")
     runner.run(case)
     assert "steps" not in runner.last_runtime, runner.last_runtime
+
+
+def test_the_unseen_rate_knob_sets_both_an_unmeasured_screen_count_and_an_unmeasured_adopt_plan(monkeypatch):
+    from harness import knobs, power
+    assert "harness/power.py:UNSEEN" in knobs.KNOBS["unseen_rate"].sites
+    ids = [c.id for c in _decide()]
+    for value in knobs.KNOBS["unseen_rate"].values:
+        monkeypatch.setattr(power, "UNSEEN", value)
+        monkeypatch.setattr(screen, "incumbent_draws", lambda lane, conn: {})
+        rate, measured = screen.incumbent_measure("decide", ids, conn=object())
+        assert (rate, measured) == (value, False)
+        rates, observed = power.rates_from({}, ids)
+        assert rates == {i: value for i in ids}
+        assert power.plan(rates.values(), observed=observed).unmeasured
