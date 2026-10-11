@@ -132,6 +132,21 @@ def fitting_slots(meta: dict, weights: int, budget: int, slots: int, slot_ctx: i
     return slots, first
 
 
+def shared_pool(meta: dict, weights: int, budget: int, slots: int, slot_ctx: int,
+                cache_type: str = "f16", kv_cap: int | None = None) -> "Choice":
+    """slots x slot_ctx when it fits, else one unified pool of the room that still holds one slot_ctx request. #748."""
+    got = choose_slots(meta, weights, budget, slots, slot_ctx, cache_type, kv_cap)
+    if got.ctx or not got.kv_per_token or got.why.startswith("refused: one slot"):
+        return got
+    per = got.kv_per_token
+    pool = min(slots * slot_ctx, max(budget - weights, 0) // per // STEP * STEP)
+    if pool < slot_ctx or slot_ctx > got.trained:
+        return got
+    return Choice(pool, got.trained, per, f"shared pool: {slots} slots over {pool} tokens, "
+                  f"{pool * per / 1024 ** 3:.1f} GiB of KV; one request up to {slot_ctx}, "
+                  f"concurrent long ones can fill it (#748)", pool // slots)
+
+
 class Choice(NamedTuple):
     #: llama-server's c: the pool every slot shares.
     ctx: int
@@ -330,7 +345,19 @@ def router_bytes(conn) -> int:
         path = Path(row["path"])
         if row.get("ctx_at") and row.get("ctx") and path.exists():
             held.append(_weights(path) + int(row["ctx"]) * int(row.get("kv_bytes_token") or 0))
-    return sum(sorted(held, reverse=True)[:_ram_models_max()])
+    return sum(sorted(held, reverse=True)[:recorded_models_max()])
+
+
+def recorded_models_max() -> int:
+    """The most residents any router preset on this machine was planned for, at most _ram_models_max(). #699."""
+    from harness import paths
+    cap = _ram_models_max()
+    got = []
+    for f in paths.home().glob("llamacpp-preset-*.ini.models-max"):
+        text = f.read_text(encoding="utf-8").strip()
+        if text.isdigit() and int(text) > 0:
+            got.append(int(text))
+    return min(max(got), cap) if got else cap
 
 
 def models_max_path(preset) -> Path:
@@ -370,7 +397,10 @@ def plan(conn, budget: int | None = None, slots: int = 1,
             # With k resident, each gets an equal share of what the k heaviest weights leave. #699.
             room = budget - beside if k == 1 else weights + max(budget - beside - heaviest, 0) // k
             if fixed:
-                n, got = fitting_slots(meta, weights, room, *fixed, cache_type, kv_cap)
+                # The slots it serves alone, sharing whatever pool the k-resident room holds. #748.
+                n, got = fitting_slots(meta, weights, budget - beside, *fixed, cache_type, kv_cap)
+                pooled = shared_pool(meta, weights, room, n, fixed[1], cache_type, kv_cap) if got.ctx else got
+                got = got if pooled.ctx == got.ctx else pooled
             else:
                 got = choose(meta, weights, room, n, cache_type, kv_cap=kv_cap)
                 while not got.ctx and n > 1:

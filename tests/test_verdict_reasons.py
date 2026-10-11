@@ -43,6 +43,7 @@ EXPECTED = {
     reasons.CRASHED: ("broken", "candidate"),
     reasons.CONTENT_FAILED: ("declined", "limit"),
     reasons.RUNAWAY: ("broken", "candidate"),
+    reasons.POOL_FULL: ("queued", "limit"),
 }
 
 

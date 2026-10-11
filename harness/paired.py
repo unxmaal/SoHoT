@@ -28,7 +28,8 @@ from dataclasses import dataclass
 from harness import reasons
 
 #: Failure classes that are our limit or a request that never reached a model: neither lost nor gained, counted apart. #693.
-UNJUDGED = (reasons.TIMEOUT, reasons.STEP_CAP, reasons.CONTEXT_EXCEEDED) + reasons.NEVER_RAN
+UNJUDGED = (reasons.TIMEOUT, reasons.STEP_CAP, reasons.CONTEXT_EXCEEDED,
+             reasons.POOL_FULL) + reasons.NEVER_RAN
 #: On a timeout axis the timeout is the verdict under test, so only harness failures stay unjudged.
 UNJUDGED_ON_A_TIMEOUT_AXIS = reasons.NEVER_RAN
 

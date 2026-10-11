@@ -328,3 +328,61 @@ def test_an_explicit_models_max_is_the_one_the_plan_is_sized_for(conn, models, t
     assert context.models_max_path(out).read_text(encoding="utf-8").strip() == "3"
     text = (context.Path(context.__file__).parents[1] / "scripts" / "serve-llamacpp.sh").read_text(encoding="utf-8")
     assert 'MAX_MODELS="${LLAMACPP_MAX_MODELS:-}"' in text
+
+
+def _studio(conn, models, monkeypatch):
+    """Ornith beside a 4B second model on the Studio's numbers in #748: 54 GiB budget, 16 GiB MLX beside."""
+    monkeypatch.delenv("LLAMACPP_MAX_MODELS", raising=False)
+    monkeypatch.setattr(context, "ORNITH_SLOTS", 4)
+    monkeypatch.setattr(context, "ORNITH_SLOT_CTX", 262144)
+    monkeypatch.setattr(context, "coresident_bytes", lambda conn: 16 * GIB)
+    monkeypatch.setattr(context, "budget_bytes", lambda conn=None: 54 * GIB)
+    monkeypatch.setattr(context, "_ram_models_max", lambda: 2)
+    monkeypatch.setattr(context, "_weights", lambda p: 20 * GIB if context.ORNITH_STEM in str(p) else 4 * GIB)
+    _gguf(conn, models, context.ORNITH_STEM, ORNITH)
+    _gguf(conn, models, "Second", QWEN3_4B)
+
+
+def test_a_shared_pool_smaller_than_slots_times_ctx_keeps_the_slots_and_the_per_request_cap(
+        conn, models, monkeypatch):
+    _studio(conn, models, monkeypatch)
+    alone = {p["stem"]: p for p in context.plan(conn, slots=4, record=False)}
+    plans, k = context.plan_router(conn, slots=4)
+    got = {p["stem"]: p for p in plans}[context.ORNITH_STEM]
+    assert k == 2
+    assert got["slots"] == alone[context.ORNITH_STEM]["slots"] == 3, got["why"]
+    assert 262144 <= got["ctx"] < 3 * 262144, got["why"]
+    share = (54 - 16 - 24) * GIB // 2
+    assert got["ctx"] * context.kv_bytes_per_token(ORNITH) <= share
+    cp = _ini(context.preset_text(plans, default_ctx=16384, slots=4))
+    assert cp[context.ORNITH_STEM]["parallel"] == "3" and cp[context.ORNITH_STEM]["kv-unified"] == "true"
+
+    def down(url):
+        raise OSError("refused")
+    assert context.served_ctx(f"llamacpp:{context.ORNITH_STEM}", get=down) == 262144
+
+
+def test_router_bytes_counts_the_residents_the_recorded_plan_was_sized_for(conn, models, monkeypatch):
+    from harness import paths
+    monkeypatch.setattr(context, "_ram_models_max", lambda: 2)
+    monkeypatch.setattr(context, "coresident_bytes", lambda conn: 0)
+    monkeypatch.setattr(context, "budget_bytes", lambda conn=None: 60 * GIB)
+    monkeypatch.setattr(context, "_weights", lambda path: 29 * GIB)
+    _gguf(conn, models, "A", QWEN3_4B)
+    _gguf(conn, models, "B", QWEN3_4B)
+    out = paths.home() / "llamacpp-preset-8082.ini"
+    assert context.main([str(out)]) == 0
+    assert context.models_max_path(out).read_text(encoding="utf-8").strip() == "1"
+    held = [29 * GIB + int(r["ctx"]) * 147456 for r in downloads.live(conn, kind=downloads.GGUF)]
+    assert context.router_bytes(conn) == max(held)
+
+
+def test_a_full_shared_pool_is_a_limit_not_the_model_s_failure():
+    from harness import paired, reasons
+    # The body llama-server 0.5.0 b11146 answered every in-flight request with when its unified pool filled. #748.
+    text = ('gateway returned HTTP 500: {"error":{"code":500,"message":"Context size has been exceeded.",'
+            '"type":"server_error"}}')
+    got = reasons.classify(text, reasons.RUNNER, "llamacpp:Ornith-1.5-35B-Q4_K_M")
+    assert got == reasons.POOL_FULL
+    assert reasons.CLASSES[got][1] == reasons.LIMIT
+    assert got in paired.UNJUDGED
