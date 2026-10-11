@@ -171,7 +171,7 @@ def _switch_with_errors(conn, lane="code", at=NOW - DAY, before=0, after=20):
                  "requested_at, switched_at) VALUES (?,?,?,?,?,?)",
                  (lane, "q3-1.7b", "q3-4b", "idle", at, at))
     for i in range(40):
-        side = at - 3600 + i if i < 20 else at + i
+        side = at - 600 * (20 - i) if i < 20 else at + 600 * (i - 19)
         err = (i < before) if i < 20 else (i - 20 < after)
         conn.execute("INSERT INTO gateway_requests (at, alias, lane, error_class) "
                      "VALUES (?,?,?,?)", (side, f"sohot-{lane}", lane,

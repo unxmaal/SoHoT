@@ -344,8 +344,14 @@ class Writer:
 
 #: Fewer requests (or tool calls) than this on either side of a switch says nothing.
 MIN_REQUESTS = 20
-#: How many standard errors a rate must rise by to be called a regression.
+#: How many cluster-robust standard errors a rate must rise by to be called a regression.
 Z_WARN = 3.0
+#: A client's requests further apart than this are separate sessions; one session is one piece of evidence. #701.
+SESSION_GAP_S = 300.0
+#: Failures the gateway or the client caused, which say nothing about the model behind the alias. #701.
+NOT_MODEL_ERRORS = frozenset({"AuthenticationError", "PermissionDeniedError", "RateLimitError",
+                              "NotFoundError", "BadRequestError", "BudgetExceededError",
+                              "UnprocessableEntityError"})
 DEFAULT_SINCE = "7d"
 _UNITS = {"d": 86400.0, "h": 3600.0, "m": 60.0, "s": 1.0}
 
@@ -368,14 +374,16 @@ def _pct(values: list[float], q: float):
 
 
 def stats(rows: list[dict]) -> dict:
-    """Requests, tokens, TTFT p50/p95, error rate and invalid tool-call rate of some rows."""
+    """Requests, tokens, TTFT p50/p95, model error rate, gateway errors apart, and invalid tool-call rate of some rows."""
     n = len(rows)
-    errors = sum(1 for r in rows if r["error_class"])
+    gateway = sum(1 for r in rows if r["error_class"] in NOT_MODEL_ERRORS)
+    errors = sum(1 for r in rows if r["error_class"]) - gateway
     calls = sum(r["tool_calls"] or 0 for r in rows)
     invalid = calls - sum(r["tool_calls_valid"] or 0 for r in rows)
     ttft = [r["ttft_s"] for r in rows if r["ttft_s"] is not None and not r["error_class"]]
     return {"requests": n, "errors": errors,
             "error_rate": errors / n if n else None,
+            "gateway_errors": gateway, "gateway_error_rate": gateway / n if n else None,
             "prompt_tokens": sum(r["prompt_tokens"] or 0 for r in rows),
             "completion_tokens": sum(r["completion_tokens"] or 0 for r in rows),
             "ttft_p50": _pct(ttft, 0.5), "ttft_p95": _pct(ttft, 0.95),
@@ -429,36 +437,88 @@ def around_switches(conn, lane=None, since=None, now=None) -> list[dict]:
             nxt = sws[i + 1]["switched_at"] if i + 1 < len(sws) else None
             span = (nxt or now) - at
             start = max(prev if prev is not None else at - span, at - since)
-            out.append({"switch": sw,
-                        "before": stats(_rows(conn, name, start, at)),
-                        "after": stats(_rows(conn, name, at, nxt))})
+            before, after = _rows(conn, name, start, at), _rows(conn, name, at, nxt)
+            out.append({"switch": sw, "before": stats(before), "after": stats(after),
+                        "sessions": {"before": sessions(before), "after": sessions(after)}})
     return sorted(out, key=lambda c: c["switch"]["switched_at"])
 
 
-def _worse(k1: int, n1: int, k2: int, n2: int) -> bool:
-    """Is k2/n2 above k1/n1 by more than Z_WARN standard errors, with enough of each."""
-    if n1 < MIN_REQUESTS or n2 < MIN_REQUESTS:
-        return False
-    p1, p2 = k1 / n1, k2 / n2
-    pooled = (k1 + k2) / (n1 + n2)
-    se = (pooled * (1 - pooled) * (1 / n1 + 1 / n2)) ** 0.5
-    return p2 > p1 and (se == 0 or (p2 - p1) / se > Z_WARN)
+def sessions(rows: list[dict]) -> list[list[int]]:
+    """[requests, model errors, tool calls, invalid calls] per client session, in client then time order.
+
+    One session cannot estimate its own variance, so a single one is cut into SESSION_GAP_S blocks. #701.
+    """
+    one = _clusters(rows) == 1
+    out: list[list[int]] = []
+    last: tuple | None = None
+    start = 0.0
+    for r in sorted(rows, key=lambda r: (r["client"] or "", r["at"])):
+        client = r["client"] or ""
+        if (last is None or last[0] != client or r["at"] - last[1] > SESSION_GAP_S
+                or (one and r["at"] - start >= SESSION_GAP_S)):
+            out.append([0, 0, 0, 0])
+            start = r["at"]
+        last = (client, r["at"])
+        calls = r["tool_calls"] or 0
+        cls = r["error_class"] or ""
+        out[-1][0] += 1
+        out[-1][1] += int(bool(cls) and cls not in NOT_MODEL_ERRORS)
+        out[-1][2] += calls
+        out[-1][3] += calls - (r["tool_calls_valid"] or 0)
+    return out
+
+
+def _clusters(rows: list[dict]) -> int:
+    """How many client sessions the rows make."""
+    n, last = 0, None
+    for r in sorted(rows, key=lambda r: (r["client"] or "", r["at"])):
+        client = r["client"] or ""
+        if last is None or last[0] != client or r["at"] - last[1] > SESSION_GAP_S:
+            n += 1
+        last = (client, r["at"])
+    return n
+
+
+def _rate_var(clusters: list[tuple[int, int]]) -> tuple[float, float, int]:
+    """(rate, cluster-robust variance of the rate, trials) over (hits, trials) clusters."""
+    used = [(k, n) for k, n in clusters if n]
+    total = sum(n for _, n in used)
+    if not total:
+        return 0.0, 0.0, 0
+    p = sum(k for k, _ in used) / total
+    g = len(used)
+    if g < 2:
+        return p, float("inf"), total
+    return p, g / (g - 1) * sum((k - p * n) ** 2 for k, n in used) / total ** 2, total
+
+
+def _worse(before: list[tuple[int, int]], after: list[tuple[int, int]]) -> tuple[float, float] | None:
+    """(before rate, after rate) when after is above before by more than Z_WARN clustered standard errors, else None."""
+    p1, v1, n1 = _rate_var(before)
+    p2, v2, n2 = _rate_var(after)
+    if n1 < MIN_REQUESTS or n2 < MIN_REQUESTS or p2 <= p1:
+        return None
+    se = (v1 + v2) ** 0.5
+    return (p1, p2) if se == 0 or (p2 - p1) / se > Z_WARN else None
 
 
 def regressions(comparisons: list[dict]) -> list[str]:
-    """A warning per switch after which errors or invalid tool calls rose beyond noise."""
+    """A warning per switch after which model errors or invalid tool calls rose beyond session-clustered noise."""
     out = []
     for c in comparisons:
-        sw, b, a = c["switch"], c["before"], c["after"]
+        sw, b, a = c["switch"], c["sessions"]["before"], c["sessions"]["after"]
         named = (f"sohot-{sw['lane']} after switch #{sw['id']} "
                  f"({sw['old_spec']} -> {sw['new_spec']}, "
                  f"{time.strftime('%Y-%m-%d %H:%M', time.localtime(sw['switched_at']))})")
-        if _worse(b["errors"], b["requests"], a["errors"], a["requests"]):
-            out.append(f"{named}: error rate {b['error_rate']:.1%} -> {a['error_rate']:.1%} "
-                       f"over {b['requests']} / {a['requests']} requests")
-        if _worse(b["invalid_calls"], b["tool_calls"], a["invalid_calls"], a["tool_calls"]):
-            out.append(f"{named}: invalid tool-call rate {b['invalid_rate']:.1%} -> "
-                       f"{a['invalid_rate']:.1%} over {b['tool_calls']} / {a['tool_calls']} calls")
+        got = _worse([(s[1], s[0]) for s in b], [(s[1], s[0]) for s in a])
+        if got:
+            out.append(f"{named}: error rate {got[0]:.1%} -> {got[1]:.1%} "
+                       f"over {c['before']['requests']} / {c['after']['requests']} requests "
+                       f"in {len(b)} / {len(a)} sessions")
+        got = _worse([(s[3], s[2]) for s in b], [(s[3], s[2]) for s in a])
+        if got:
+            out.append(f"{named}: invalid tool-call rate {got[0]:.1%} -> {got[1]:.1%} "
+                       f"over {c['before']['tool_calls']} / {c['after']['tool_calls']} calls")
     return out
 
 

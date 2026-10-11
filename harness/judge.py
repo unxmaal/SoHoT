@@ -355,15 +355,12 @@ CONTROL_BARE = [
     ("mlx-community/Kokoro-82M-bf16", "won"),
     # The text model that won the svg three-way at 8/9.
     ("mlx-community/Qwen2.5-7B-Instruct-4bit", "won"),
-    # Measured against parakeet in the same lane and lost it.
-    ("mlx-community/whisper-large-v3-mlx", "lost"),
     # local-small: 0/9, never closed a tag.
     ("mlx-community/Qwen2.5-0.5B-Instruct-4bit", "lost"),
-    # Refused on the working set: 16 GB of weights against a 24 GB ceiling (#12).
-    ("mlx-community/Qwen3-30B-A3B-Instruct-2507-4bit", "lost"),
+    # No Qwen3-30B-A3B (refused by a 32 GB ceiling) or whisper-large-v3 (lost on LibriSpeech WER, biased to parakeet): neither is a quality outcome. #701.
 ]
 
-#: THE SAME SIX MODELS, described the way the store now describes them: from
+#: THE SAME MODELS, described the way the store now describes them: from
 #: their own registry card, via inspect.card_description(). Frozen here rather
 #: than fetched so a gate never depends on somebody else's afternoon; they were
 #: read from the registry on 2026-09-14.
@@ -381,17 +378,10 @@ CONTROL_CARDED = [
     ("mlx-community/Qwen2.5-7B-Instruct-4bit",
      "task text-generation; served by mlx; tagged mlx, qwen2, chat, "
      "text-generation; built from Qwen/Qwen2.5-7B; 4.0 GiB of weights", "won"),
-    ("mlx-community/whisper-large-v3-mlx",
-     "task automatic-speech-recognition; served by mlx; tagged mlx, whisper, "
-     "automatic-speech-recognition; 2.9 GiB of weights", "lost"),
     ("mlx-community/Qwen2.5-0.5B-Instruct-4bit",
      "task text-generation; served by mlx; tagged mlx, qwen2, chat, "
      "text-generation; built from Qwen/Qwen2.5-0.5B; 0.3 GiB of weights",
      "lost"),
-    ("mlx-community/Qwen3-30B-A3B-Instruct-2507-4bit",
-     "task text-generation; served by mlx; tagged mlx, qwen3_moe, "
-     "text-generation, 4-bit; built from Qwen/Qwen3-30B-A3B-Instruct-2507; "
-     "16.0 GiB of weights", "lost"),
 ]
 
 #: Which control shape a caller means. A tier must gate on the shape of ITS OWN

@@ -160,11 +160,15 @@ def test_passing_less_often_loses_whatever_the_metric_says(store_run, conn,
     pin(monkeypatch, stt="mlx-community/parakeet-tdt-0.6b-v2")
     # A receipt key is a model, or a model and the voice it used -- never the
     # org-prefixed id the default carries.
-    store_run("stt", "stt", {
-        "parakeet-tdt-0.6b-v2": {"pass_rate": 1.0, "median_s": 1.0,
-                                 "metrics": {"wer": 0.05}},
-        "other": {"pass_rate": 0.5, "median_s": 1.0,
-                  "metrics": {"wer": 0.001}}})
+    from tests.conftest import _rows_from
+    rows = _rows_from({"parakeet-tdt-0.6b-v2": {"pass_rate": 1.0, "median_s": 1.0,
+                                                "metrics": {"wer": 0.05}},
+                       "other": {"pass_rate": 0.5, "median_s": 1.0, "metrics": {"wer": 0.001}}})
+    # stt ranks on corpus WER (#701); the half that crashed reported none, so other's WER is over the easy half.
+    for r in rows:
+        if r["candidate"] == "other" and not r["passed"]:
+            r["metrics"] = {}
+    store_run("stt", "stt", rows=rows)
     got = winners.beaten_in(conn)["stt"]
     assert got["candidate"] == "parakeet-tdt-0.6b-v2"
 

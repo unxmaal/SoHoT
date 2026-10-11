@@ -47,6 +47,6 @@ def test_the_real_ocr_fixture_scores_a_render_through_a_transient(tmp_path, monk
     from harness.checks import ocr
     from tests.test_harness_checks_ocr import E5RT, _fake_vision, _noise
     calls = _fake_vision(monkeypatch, [OcrTransient(E5RT), OcrTransient(E5RT), ["OPEN"]])
-    r = ocr.check(_noise(tmp_path / "a.png"), expect="OPEN")
+    r = ocr.check(_noise(tmp_path / "a.png"), expect="OPEN", max_cer=0.1)
     assert r.ok and r.cer == 0.0
     assert calls == ["in-process", "fresh", "in-process"]

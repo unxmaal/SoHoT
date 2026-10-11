@@ -573,6 +573,10 @@ def outcome(returncode: int, summary: dict | None, candidate: str = "",
     if rows:
         return Verdict("screened", f"{rows} case(s) passed a screen",
                        reasons.CANDIDATE)
+    # A decide case passes only when every field is right; a right field shows the model ran. #701.
+    if any(float((v.get("metrics") or {}).get("decide_accuracy") or 0.0) > 0 for v in summary.values()):
+        return Verdict("screened", "it answered decide fields correctly though no case was right in full",
+                       reasons.CANDIDATE)
     mine = ([row_for(summary, candidate, key) or {}] if candidate
             else list(summary.values()))
     cls = reasons.first(c for r in mine for c in (r.get("failure_classes") or {}))

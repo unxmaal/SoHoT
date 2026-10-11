@@ -68,7 +68,7 @@ def test_a_missing_file_raises_rather_than_reading_as_empty(tmp_path):
 
 @pytest.mark.usefixtures("real_ocr")
 def test_the_expected_word_rendered_correctly_scores_zero_error(tmp_path):
-    r = ocr.check(render(tmp_path / "a.png", "OPEN"), expect="OPEN")
+    r = ocr.check(render(tmp_path / "a.png", "OPEN"), expect="OPEN", max_cer=0.1)
     assert r.ok
     assert r.cer == 0.0
 
@@ -90,7 +90,7 @@ def test_text_that_is_not_there_at_all_is_total_error(tmp_path):
     from PIL import Image
     p = tmp_path / "n.png"
     Image.new("RGB", (256, 256), (255, 255, 255)).save(p)
-    r = ocr.check(p, expect="OPEN")
+    r = ocr.check(p, expect="OPEN", max_cer=0.1)
     assert not r.ok
     assert r.cer == 1.0
     assert "no text" in r.reason.lower()
@@ -101,27 +101,27 @@ def test_case_and_surrounding_words_do_not_count_against_it(tmp_path):
     """Vision returns each text region separately and models add flourishes.
     The check is whether the requested word is rendered, not whether it is the
     only thing on the sign."""
-    r = ocr.check(render(tmp_path / "a.png", "open"), expect="OPEN")
+    r = ocr.check(render(tmp_path / "a.png", "open"), expect="OPEN", max_cer=0.1)
     assert r.ok and r.cer == 0.0
 
 
 @pytest.mark.usefixtures("real_ocr")
 def test_the_best_matching_region_is_the_one_scored(tmp_path):
     r = ocr.check(render(tmp_path / "a.png", "CAFE\nOPEN", size=(480, 320)),
-                  expect="OPEN")
+                  expect="OPEN", max_cer=0.1)
     assert r.ok, r.reason
 
 
 @pytest.mark.usefixtures("real_ocr")
 def test_the_metric_is_published_for_ranking(tmp_path):
-    r = ocr.check(render(tmp_path / "a.png", "OPEN"), expect="OPEN")
+    r = ocr.check(render(tmp_path / "a.png", "OPEN"), expect="OPEN", max_cer=0.1)
     assert r.metrics == {"cer": 0.0}
 
 
-def test_the_default_tolerance_allows_a_little_ocr_noise(tmp_path):
-    """Vision is not perfect on synthetic renders either, so a threshold of
-    exactly zero would measure the OCR rather than the generator."""
-    assert 0 < ocr.DEFAULT_MAX_CER < 0.5
+def test_the_check_has_no_default_tolerance():
+    """#701: a silent 0.25 passed an image with a quarter of its letters wrong; a case names its own."""
+    with pytest.raises(TypeError):
+        ocr.check("a.png", expect="OPEN")
 
 
 # ---- normalization ---------------------------------------------------------
@@ -133,14 +133,14 @@ def test_the_default_tolerance_allows_a_little_ocr_noise(tmp_path):
 
 @pytest.mark.usefixtures("real_ocr")
 def test_trailing_punctuation_is_not_a_rendering_error(tmp_path):
-    r = ocr.check(render(tmp_path / "a.png", "OPEN."), expect="OPEN")
+    r = ocr.check(render(tmp_path / "a.png", "OPEN."), expect="OPEN", max_cer=0.1)
     assert r.ok
     assert r.cer == 0.0
 
 
 @pytest.mark.usefixtures("real_ocr")
 def test_surrounding_quotes_are_not_a_rendering_error(tmp_path):
-    r = ocr.check(render(tmp_path / "a.png", '"OPEN"'), expect="OPEN")
+    r = ocr.check(render(tmp_path / "a.png", '"OPEN"'), expect="OPEN", max_cer=0.1)
     assert r.ok and r.cer == 0.0
 
 
@@ -181,7 +181,7 @@ def test_an_unmeasurable_lane_warns_rather_than_failing(tmp_path, monkeypatch):
     refuses to fetch a weight nothing can measure.
     """
     monkeypatch.setattr(ocr, "available_backend", lambda: None)
-    r = ocr.check(render(tmp_path / "a.png", "OPEN"), expect="OPEN")
+    r = ocr.check(render(tmp_path / "a.png", "OPEN"), expect="OPEN", max_cer=0.1)
     assert r.ok, r.reason
     assert any("not measured" in w for w in r.warnings), r.warnings
 
@@ -190,7 +190,7 @@ def test_an_unmeasured_lane_publishes_no_metric(tmp_path, monkeypatch):
     """A cer of 0 would rank as a perfect render and a cer of 1 as a total
     failure. Neither happened, so neither number belongs in the table."""
     monkeypatch.setattr(ocr, "available_backend", lambda: None)
-    r = ocr.check(render(tmp_path / "a.png", "OPEN"), expect="OPEN")
+    r = ocr.check(render(tmp_path / "a.png", "OPEN"), expect="OPEN", max_cer=0.1)
     assert "cer" not in r.metrics
 
 
@@ -265,7 +265,7 @@ def test_a_vision_transient_is_retried_once_in_a_fresh_process(
         tmp_path, monkeypatch):
     """aned loses the process's cached model and that process stays broken."""
     calls = _fake_vision(monkeypatch, [ocr.OcrTransient(E5RT), ["OPEN"]])
-    r = ocr.check(_noise(tmp_path / "a.png"), expect="OPEN")
+    r = ocr.check(_noise(tmp_path / "a.png"), expect="OPEN", max_cer=0.1)
     assert calls == ["in-process", "fresh"]
     assert r.ok and r.cer == 0.0 and r.failure_class == ""
 
@@ -297,7 +297,7 @@ def test_a_vision_transient_twice_is_a_harness_error_not_a_failed_render(
         tmp_path, monkeypatch):
     from harness import reasons
     calls = _fake_vision(monkeypatch, [ocr.OcrTransient(E5RT)])
-    r = ocr.check(_noise(tmp_path / "a.png"), expect="OPEN")
+    r = ocr.check(_noise(tmp_path / "a.png"), expect="OPEN", max_cer=0.1)
     assert calls == ["in-process", "fresh"]
     assert not r.ok
     assert r.failure_class == reasons.HARNESS_ERROR
@@ -308,7 +308,7 @@ def test_a_vision_transient_twice_is_a_harness_error_not_a_failed_render(
 def test_any_other_vision_error_is_not_retried(tmp_path, monkeypatch):
     calls = _fake_vision(monkeypatch, [RuntimeError("Vision failed: other")])
     with pytest.raises(RuntimeError):
-        ocr.check(_noise(tmp_path / "a.png"), expect="OPEN")
+        ocr.check(_noise(tmp_path / "a.png"), expect="OPEN", max_cer=0.1)
     assert calls == ["in-process"]
 
 
@@ -328,7 +328,7 @@ def test_a_vision_transient_reaches_the_row_as_a_harness_error(
             return str(path), 0
 
     case = Case(id="sign", modality="image", prompt="a sign reading OPEN",
-                params={"width": 64, "height": 64}, assertions={"text": "OPEN"})
+                params={"width": 64, "height": 64}, assertions={"text": "OPEN", "max_cer": 0.25})
     row = Runner().run(case)
     assert not row.passed
     assert row.failure_class == reasons.HARNESS_ERROR

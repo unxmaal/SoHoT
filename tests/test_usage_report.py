@@ -107,14 +107,15 @@ def _regressed(conn, before_err, after_err, n_before=100, n_after=100, calls=Fal
     at = NOW - DAY
     switch(conn, at=at)
     rows = []
+    # Ten minutes apart, so each request is its own client session. #701.
     for i in range(n_before):
         bad = i < before_err
-        rows.append(req(at - 100 - i, calls=1, valid=0 if bad else 1) if calls
-                    else req(at - 100 - i, err="APIError" if bad else ""))
+        rows.append(req(at - 100 - 600 * i, calls=1, valid=0 if bad else 1) if calls
+                    else req(at - 100 - 600 * i, err="APIError" if bad else ""))
     for i in range(n_after):
         bad = i < after_err
-        rows.append(req(at + 100 + i, spec="new", calls=1, valid=0 if bad else 1) if calls
-                    else req(at + 100 + i, spec="new", err="APIError" if bad else ""))
+        rows.append(req(at + 100 + 600 * i, spec="new", calls=1, valid=0 if bad else 1) if calls
+                    else req(at + 100 + 600 * i, spec="new", err="APIError" if bad else ""))
     put(conn, rows)
     return usage.regressions(usage.around_switches(conn, since=7 * DAY, now=NOW))
 

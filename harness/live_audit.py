@@ -67,10 +67,16 @@ def _gateway_errors(conn) -> list:
 
     from harness import usage
     # Rates over a window the writer dropped rows from are not rates of real use. #700.
-    short = usage.drop_warning(conn, time.time() - usage.parse_since(usage.DEFAULT_SINCE))
-    return short + [f"sohot-{lane}: {s['error_rate']:.0%} of {s['requests']} requests failed"
-                    for lane, s in sorted(usage.real_use(conn).items())
-                    if s["requests"] >= MIN_REQUESTS and (s["error_rate"] or 0) > ERROR_RATE_MAX]
+    out = usage.drop_warning(conn, time.time() - usage.parse_since(usage.DEFAULT_SINCE))
+    for lane, s in sorted(usage.real_use(conn).items()):
+        if s["requests"] < MIN_REQUESTS:
+            continue
+        if (s["error_rate"] or 0) > ERROR_RATE_MAX:
+            out.append(f"sohot-{lane}: {s['error_rate']:.0%} of {s['requests']} requests failed in the model")
+        if (s.get("gateway_error_rate") or 0) > ERROR_RATE_MAX:
+            out.append(f"sohot-{lane}: the gateway or client refused {s['gateway_error_rate']:.0%} "
+                       f"of {s['requests']} requests (rate limit, auth, budget or bad request)")
+    return out
 
 
 def _sweep_on_schedule() -> list:
