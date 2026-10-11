@@ -335,6 +335,11 @@ install_units() {
     echo "the gateway is loaded but launchd cannot reach a serving node; see above" >&2
     blocked=1
   fi
+  # A node with no machine fingerprint files every run it serves under no machine. #781.
+  if ! (cd "$DEPLOY" && uv run python -m harness.nodes check); then
+    echo "a serving node has no machine fingerprint; set machine: in nodes.yaml, see above" >&2
+    blocked=1
+  fi
   # The deploy is not done until the store it now serves passes the audit. #492.
   if ! /bin/bash "$DEPLOY/scripts/serve-audit.sh"; then
     echo "the deployed units are loaded but the live store FAILS its audit; see above" >&2

@@ -65,9 +65,26 @@ class Node:
         return f"SOHOT_NODE_{re.sub(r'[^A-Z0-9]', '_', self.name.upper())}_KEY" if self.key else ""
 
     @property
+    def fingerprint(self) -> str:
+        """The node's hw_model/OS family/arch/host, "" when `machine:` does not name all four. #781."""
+        from harness import machine
+        got = machine.parse_fingerprint(self.machine)
+        # The OS family, never a build string that changes with every update. #781.
+        return machine.fingerprint(got["hw_model"], got["os"], got["arch"], got["host"]) if got else ""
+
+    @property
     def identity(self) -> str:
         """What x-sohot-machine and a receipt name: the node's fingerprint, else node:<name>."""
-        return self.machine or f"node:{self.name}"
+        return self.fingerprint or f"node:{self.name}"
+
+
+def unidentified(node: Node) -> str:
+    """Why a node's runs would be filed under no machine, or "" when its fingerprint is whole. #781."""
+    if node.fingerprint:
+        return ""
+    have = f"`machine: {node.machine}` is not" if node.machine else "it has no `machine:`, which must be"
+    return (f"node {node.name}: {have} hw_model/os/arch/host in {path()}, so its runs are stored with "
+            f"no machine; run `python -m harness.nodes fingerprint` on the node and paste the line")
 
 
 def path(environ=None) -> Path:
@@ -303,6 +320,8 @@ def smoke(gateway: str, key: str, nodes: list[Node], get=_get_models, ask=_ask, 
     clock = clock or time.monotonic
     out = []
     for node in nodes:
+        if unidentified(node):
+            out.append((False, unidentified(node)))
         up, ids = _probe(node, get)
         for model in node.models:
             if up and node.node_id(model) not in ids:
@@ -321,6 +340,11 @@ def smoke(gateway: str, key: str, nodes: list[Node], get=_get_models, ask=_ask, 
             fell = r.headers.get("x-sohot-fallback", "")
             if r.status_code >= 400:
                 out.append((False, f"node {node.name} {model}: HTTP {r.status_code}"))
+            elif up and served_by == node.name and node.fingerprint \
+                    and r.headers.get("x-sohot-machine", "") != node.identity:
+                out.append((False, f"node {node.name} up: {model} served by {served_by}, but the gateway "
+                                   f"names its machine {r.headers.get('x-sohot-machine') or 'nothing'}, "
+                                   f"not {node.identity}; restart the gateway to reload nodes.yaml"))
             elif up:
                 out.append((served_by == node.name,
                             f"node {node.name} up: {model} served by "
@@ -339,10 +363,24 @@ def main(argv=None) -> int:
     sub = p.add_subparsers(dest="cmd", required=True)
     sub.add_parser("exports", help="shell exports of each node's Keychain key, for serve-gateway.sh")
     sub.add_parser("show", help="the nodes this machine routes to")
+    sub.add_parser("check", help="fail each node with no machine fingerprint")
+    sub.add_parser("fingerprint", help="this machine's fingerprint, for `machine:` where it serves as a node")
     s = sub.add_parser("smoke", help="ask the gateway for each node's models; node up and node down")
     s.add_argument("--gateway", required=True)
     args = p.parse_args(argv)
+    if args.cmd == "fingerprint":
+        from evals import environment
+        print(environment.identity()["fingerprint"])
+        return 0
     nodes = load()
+    if args.cmd == "check":
+        bad = [why for why in map(unidentified, nodes) if why]
+        for why in bad:
+            print(f"FAIL  {why}")
+        for n in nodes:
+            if not unidentified(n):
+                print(f"PASS  node {n.name} is {n.identity}")
+        return 1 if bad else 0
     if args.cmd == "exports":
         print("\n".join(exports(nodes)))
         return 0

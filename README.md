@@ -887,6 +887,10 @@ A run records that host, so `comparable()` refuses to rank a run on a node besid
 one on this machine, and a run answered partly by each is filed as several hosts.
 `make smoke` asks the gateway for each node's models and passes when the node
 answers while it is up and this machine answers quickly while it is down.
+Each node needs `machine:`, its hw_model/os/arch/host fingerprint, which
+`python -m harness.nodes fingerprint` prints on the node. Without it a run the
+node serves is stored under no machine, so `make smoke`, `launchd.sh install` and
+`python -m harness.nodes check` fail that node and `evals.run` warns.
 
 ## Gateway auth
 
