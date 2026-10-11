@@ -32,6 +32,12 @@ KNOBS = [
 NOT_GATING = {
     "harness/commands/loop.py:LEASE_S": "how long a discover loop's store lease outlives a holder that died; "
                                         "it picks which machine sweeps, never a result (#703)",
+    "harness/batch.py:TTL_S": "how long a batch lease outlives its last request; it picks which batch loads a "
+                              "serving machine, never a result (#769)",
+    "harness/batch.py:BUSY_WAIT_S": "how long a request waits out another batch; past it the request is "
+                                    "refused_by_gateway, charged to the harness, never to the model (#769)",
+    "harness/batch.py:BUSY_POLL_S": "how often a request refused as busy asks again; never a result (#769)",
+    "harness/exclusive.py:_renewing->t.join(timeout)": "how long a batch lease renewer may take to stop (#769)",
     "harness/gateway_switch.py:IDLE_S": "the quiet window a switch restarts in; it never cuts a request (#703)",
     "harness/gateway_switch.py:MAX_WAIT_S": "how long a switch waits for a quiet window before draining; the bound "
                                             "on a request in flight is DRAIN_S, derived from completion.timeout_for "

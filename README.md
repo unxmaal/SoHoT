@@ -2292,6 +2292,18 @@ Image and video generation, eval runs (screen, measure, `soh rubric run`) and
 it is waiting behind. Text lane prompts do not take it, because each server
 already queues its own requests.
 
+The lock is local, so it also takes a batch lease on the serving machine
+(#769). Every request a batch sends carries `x-sohot-batch: <id>`. The
+serving gateway's pre-call hook takes or renews a lease for that id in its
+own store, keyed by the machine or node that answers the alias. A request
+from another batch while the lease is held gets a 503 ("the serving machine
+is busy with another batch"), which the client waits out for up to
+`batch.BUSY_WAIT_S` and which is charged to the harness, never the model. A
+local run takes the same lease, so a local eval and a remote eval against
+this machine's gateway exclude each other. An eval whose `SOHOT_GATEWAY_URL`
+is another machine takes no local lock, so this machine's image jobs do not
+wait behind it. A lease outlives its last request by `batch.TTL_S`.
+
 Other projects on the same machine take the same lock around anything that
 loads a model:
 

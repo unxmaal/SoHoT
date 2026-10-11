@@ -156,20 +156,117 @@ def _answered(response, entry: dict) -> str:
     return str(hidden.get("api_base") or (entry.get("litellm_params") or {}).get("api_base") or "")
 
 
+def _refuse(detail: str):
+    from fastapi import HTTPException
+    raise HTTPException(status_code=503, detail=detail)
+
+
+def batch_of(data: dict) -> str:
+    """The x-sohot-batch a request names, or "". #769."""
+    from harness import batch
+    for where in ((data.get("proxy_server_request") or {}).get("headers"),
+                  (data.get("metadata") or {}).get("headers")):
+        for key, value in (where or {}).items():
+            if str(key).lower() == batch.HEADER and str(value or "").strip():
+                return str(value).strip()
+    return ""
+
+
+def _claim(deployment: str, batch_id: str) -> dict:
+    from harness import batch
+    from harness import memory_store as ms
+    conn = ms.connect()
+    try:
+        return batch.claim(conn, deployment, batch_id)
+    finally:
+        conn.close()
+
+
+#: litellm_call_id -> (deployment, batch, monotonic start) for a batch request in flight. #769.
+_INFLIGHT: dict = {}
+_RENEWER: dict = {}
+
+
+def _longest_request_s() -> float:
+    from harness import gateway_switch
+    return gateway_switch.DRAIN_S
+
+
+async def _renew_inflight() -> None:
+    """Keep a batch's lease while one of its requests is still running, however long the reply takes."""
+    from harness import batch
+    while _INFLIGHT:
+        await asyncio.sleep(batch.TTL_S / 3)
+        now = time.monotonic()
+        for call, (_, _, since) in list(_INFLIGHT.items()):
+            if now - since > _longest_request_s():
+                _INFLIGHT.pop(call, None)
+        for deployment, batch_id in {(d, b) for d, b, _ in list(_INFLIGHT.values())}:
+            try:
+                await asyncio.to_thread(_claim, deployment, batch_id)
+            except Exception as exc:  # noqa: BLE001 - the next pass tries again
+                print(f"served_model: batch lease renew for {batch_id} failed: {exc}", file=sys.stderr)
+
+
+def _track(call: str, deployment: str, batch_id: str) -> None:
+    if not call:
+        return
+    _INFLIGHT[call] = (deployment, batch_id, time.monotonic())
+    task = _RENEWER.get("task")
+    if task is None or task.done():
+        _RENEWER["task"] = asyncio.ensure_future(_renew_inflight())
+
+
+async def _finished(call) -> None:
+    """A batch request ended: its lease runs TTL_S from now."""
+    got = _INFLIGHT.pop(str(call or ""), None)
+    if got:
+        try:
+            await asyncio.to_thread(_claim, got[0], got[1])
+        except Exception as exc:  # noqa: BLE001 - the lease still expires on its own
+            print(f"served_model: batch lease renew for {got[1]} failed: {exc}", file=sys.stderr)
+
+
+async def hold_for_batch(data: dict) -> None:
+    """Take or renew the serving deployment's batch lease for this request, or refuse it as busy. #769."""
+    from harness import batch
+    batch_id = batch_of(data)
+    if not batch_id:
+        return
+    deployment = serving_machine(str(data.get("model") or ""))
+    got = await asyncio.to_thread(_claim, deployment, batch_id)
+    if got:
+        _refuse(f"{batch.BUSY} ({batch.describe(got)}); retry once it finishes")
+    _track(str(data.get("litellm_call_id") or ""), deployment, batch_id)
+
+
 class ServedModel(CustomLogger):
     async def async_pre_call_hook(self, user_api_key_dict, cache, data, call_type):
         """A node that takes no connection in a few seconds is skipped for this machine's copy. #684."""
         from harness import gateway_switch
         if gateway_switch.draining():
-            from fastapi import HTTPException
-            raise HTTPException(status_code=503, detail=f"{gateway_switch.DRAINING} for an alias "
-                                "switch; retry once it has restarted")
+            _refuse(f"{gateway_switch.DRAINING} for an alias switch; retry once it has restarted")
         model = str(data.get("model") or "")
         entry = _entry(model)
         if entry.get(nodes.NODE_KEY) and _entry(model + nodes.LOCAL_SUFFIX) \
                 and not await reachable(entry):
             data["model"] = model + nodes.LOCAL_SUFFIX
+        await hold_for_batch(data)
         return data
+
+    async def async_post_call_success_hook(self, data, user_api_key_dict, response):
+        await _finished((data or {}).get("litellm_call_id"))
+        return response
+
+    async def async_post_call_failure_hook(self, request_data, original_exception, user_api_key_dict,
+                                           traceback_str=None):
+        await _finished((request_data or {}).get("litellm_call_id"))
+
+    async def async_log_success_event(self, kwargs, response_obj, start_time, end_time):
+        await _finished((kwargs or {}).get("litellm_call_id"))
+
+    async def async_log_failure_event(self, kwargs, response_obj, start_time, end_time):
+        await _finished((kwargs or {}).get("litellm_call_id"))
 
     async def async_post_call_response_headers_hook(self, data, user_api_key_dict, response,
                                                     request_headers=None, litellm_call_info=None):
