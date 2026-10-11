@@ -21,7 +21,7 @@ mkdir -p "$LH_LOGS"
 # already refuses to exceed these and they are here so the answer is visible in
 # the place that sets the schedule.
 TOP="${DISCOVER_TOP:-3}"
-BUDGET="${DISCOVER_BUDGET_GIB:-12}"
+BUDGET="${DISCOVER_BUDGET_GIB:-40}"
 REPEAT="${DISCOVER_REPEAT:-3}"
 
 echo "=== sweep $(date -u +%Y-%m-%dT%H:%M:%SZ) top=$TOP budget=${BUDGET}GiB ==="
