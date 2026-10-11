@@ -273,3 +273,14 @@ def test_a_timeout_the_swept_value_causes_is_a_loss_not_unjudged():
     short = [{**r, "passed": False, "failure_class": reasons.TIMEOUT} for r in _rows(0, 200, 1.0)]
     chosen, table = sweeps.decide([10, 60], {10: short, 60: _rows(200, 200, 2.0)}, 0.05)
     assert chosen == 60 and table["10"]["lost"] == 200 and not table["10"]["tied"]
+
+
+def test_a_value_that_cannot_be_paired_says_so_rather_than_underpowered():
+    """#690 review: a refused pairing was reported as 'power 0.00', hiding that the runs share no case set."""
+    other = [{"case_id": f"d{i}", "passed": i > 0, "seconds": 1.0} for i in range(20)]
+    chosen, table = sweeps.decide([2000, 4000], {2000: other, 4000: _rows(20, 20, 2.0)}, 0.05)
+    assert chosen == 4000
+    row = table["2000"]
+    assert row["refused"] and not row["underpowered"] and not row["tied"]
+    said = sweeps.caveats(table)
+    assert "2000 could not be paired with the best" in said and "power" not in said

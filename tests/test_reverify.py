@@ -502,10 +502,19 @@ def test_a_rerun_at_another_repeat_than_its_baseline_is_not_a_pass(conn, on):
     assert row["outcome"] == reverify.UNRUN and "repeat" in row["detail"]
 
 
-def test_a_repeated_rerun_that_regresses_is_flagged_counting_cases_not_draws(conn, on):
+def test_a_repeated_rerun_that_regresses_on_most_cases_is_flagged(conn, on):
     record_run(conn, "code", _repeated("q3-4b", 10), at=NOW - DAY, receipt={"repeat": 3})
     on(versions={**VERSIONS, "mlx-lm": "0.29.1"})
     _queue_and_finish(conn, _repeated("q3-4b", 1))
     check(conn, now=NOW + 120)
     row = _latest(conn)
     assert row["outcome"] == reverify.REGRESSED and "27 lost against 0 gained" in row["detail"]
+
+
+def test_two_deterministic_failures_at_repeat_3_are_not_a_regression(conn, on):
+    """#690: 2 cases failing all 3 repeats are 6 lost draws, p=0.031 as independent cells; with the design effect it is 2 cases."""
+    record_run(conn, "code", _repeated("q3-4b", 10), at=NOW - DAY, receipt={"repeat": 3})
+    on(versions={**VERSIONS, "mlx-lm": "0.29.1"})
+    _queue_and_finish(conn, [("q3-4b", f"c{i}#{r}", i >= 2) for i in range(10) for r in range(1, 4)])
+    check(conn, now=NOW + 120)
+    assert _latest(conn)["outcome"] == reverify.PASSED

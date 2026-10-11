@@ -209,11 +209,36 @@ def test_metrics_compare_by_name_not_by_position():
     """#690: a row missing duration_error_s must not have its wer compared with the other row's duration."""
     a = {"pass_rate": 1.0, "median_s": 1.0, "metrics": {"duration_error_s": 0.01, "wer": 0.5}}
     b = {"pass_rate": 1.0, "median_s": 1.0, "metrics": {"wer": 0.1}}
-    assert winners.order_key(b) > winners.order_key(a)
-    assert not winners.order_key(a) > winners.order_key(b)
+    names = winners.shared_metrics([a, b])
+    assert winners.order_key(b, names) > winners.order_key(a, names)
+    assert not winners.order_key(a, names) > winners.order_key(b, names)
+    from harness import adopt
+    assert adopt.better(a, b) and not adopt.better(b, a)
 
 
 def test_pass_rate_still_ranks_first():
     a = {"pass_rate": 0.9, "median_s": 1.0, "metrics": {"wer": 0.0}}
     b = {"pass_rate": 1.0, "median_s": 1.0, "metrics": {"wer": 0.5}}
-    assert winners.order_key(b) > winners.order_key(a)
+    assert winners.order_key(b, ("wer",)) > winners.order_key(a, ("wer",))
+
+
+CYCLE = {"A": {"pass_rate": 1.0, "median_s": 1.0, "metrics": {"duration_error_s": 0.5, "wer": 0.1}},
+         "B": {"pass_rate": 1.0, "median_s": 1.0, "metrics": {"wer": 0.2}},
+         "C": {"pass_rate": 1.0, "median_s": 1.0, "metrics": {"duration_error_s": 0.1}}}
+
+
+@pytest.mark.parametrize("order", ["ABC", "BCA", "CAB", "ACB", "BAC", "CBA"])
+def test_the_lane_winner_does_not_depend_on_scan_order(monkeypatch, order):
+    """#690 review: pairwise comparison on shared metric names cycles (A>B, B==C, C>A), so a running max picked by scan order."""
+    from harness import runs
+    summary = {k: CYCLE[k] for k in order}
+    run = {"lane": "tts", "path": "p", "id": 1}
+    monkeypatch.setattr(runs, "summaries", lambda conn, tier=None: [(run, summary, [])])
+    winner = winners.from_receipts(None, plain_only=False)["tts"]["candidate"]
+    reference = {k: CYCLE[k] for k in "ABC"}
+    monkeypatch.setattr(runs, "summaries", lambda conn, tier=None: [(run, reference, [])])
+    assert winners.from_receipts(None, plain_only=False)["tts"]["candidate"] == winner
+
+
+def test_an_order_key_is_hashable():
+    hash(winners.order_key({"pass_rate": 1.0, "median_s": 1.0, "metrics": {"wer": 0.1}}, ("wer",)))

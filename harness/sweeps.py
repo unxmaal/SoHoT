@@ -129,10 +129,22 @@ def decide(values, outcomes: dict, alpha: float, effect: float | None = None) ->
         table[str(v)] = {"passed": stats[v]["passed"], "n": stats[v]["n"],
                          "seconds": round(stats[v]["seconds"], 3), "lost": cell.lost, "gained": cell.gained,
                          "p": round(cell.p, 4), "power": round(pw, 3), "tied": ok,
-                         "underpowered": not ok and not worse, "refused": cell.refused, "best": v == best}
+                         "underpowered": not ok and not worse and not cell.refused,
+                         "refused": cell.refused, "best": v == best}
         if ok:
             tied.append(v)
     return min(tied, key=lambda v: (stats[v]["seconds"], pos[v])), table
+
+
+def caveats(cost: dict) -> str:
+    """Why each value that was neither chosen nor worse was left out."""
+    out = ""
+    for v, row in cost.items():
+        if row.get("refused"):
+            out += f"; {v} could not be paired with the best: {row['refused']}"
+        elif row.get("underpowered"):
+            out += f"; {v} not distinguishable from the best at power {row['power']:.2f}"
+    return out
 
 
 def _run_of(conn, job_id: int) -> int | None:
@@ -165,8 +177,7 @@ def judge(conn, sw: dict) -> tuple[str, object, dict, str]:
     detail = (f"{k.name} on {sw['lane']} for {sw['spec']}: chose {chosen:g} ({c['passed']} of {c['n']}, "
               f"{c['seconds']:g}s), {'the best' if chosen == best else 'no worse than the best'} "
               f"{best:g} ({b['passed']} of {b['n']}, {b['seconds']:g}s); now {k.default(sw['lane']):g}; the sweep spent {spent:g}s"
-              + "".join(f"; {v} not distinguishable from the best at power {row['power']:.2f}"
-                        for v, row in cost.items() if row["underpowered"]))
+              + caveats(cost))
     return CHOSEN, chosen, cost, detail
 
 

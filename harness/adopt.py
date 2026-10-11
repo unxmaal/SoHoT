@@ -74,7 +74,8 @@ def better(incumbent: dict, challenger: dict) -> bool:
     """
     from harness import winners
 
-    return winners.order_key(challenger) > winners.order_key(incumbent)
+    names = winners.shared_metrics([incumbent, challenger])
+    return winners.order_key(challenger, names) > winners.order_key(incumbent, names)
 
 
 def decide_by_hand(lane: str, incumbent: str, challenger: str,
