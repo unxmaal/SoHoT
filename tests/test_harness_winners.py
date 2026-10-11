@@ -242,3 +242,32 @@ def test_the_lane_winner_does_not_depend_on_scan_order(monkeypatch, order):
 
 def test_an_order_key_is_hashable():
     hash(winners.order_key({"pass_rate": 1.0, "median_s": 1.0, "metrics": {"wer": 0.1}}, ("wer",)))
+
+
+PARAKEET = {"tdt-v2": {"pass_rate": 1.0, "median_s": 0.135, "metrics": {"wer": 0.0162}},
+            "ctc": {"pass_rate": 1.0, "median_s": 0.116, "metrics": {"wer": 0.0225}},
+            "crashed": {"pass_rate": 0.0, "median_s": 0.0, "metrics": {}}}
+
+
+def test_a_metricless_row_does_not_erase_the_lanes_metric(monkeypatch):
+    """#690 review: one crashed candidate with no metrics made the lane rank on pass rate and latency, so ctc beat tdt-v2."""
+    from harness import runs
+    run = {"lane": "stt", "path": "p", "id": 1}
+    monkeypatch.setattr(runs, "summaries", lambda conn, tier=None: [(run, dict(PARAKEET), [])])
+    assert winners.from_receipts(None, plain_only=False)["stt"]["candidate"] == "tdt-v2"
+
+
+def test_a_metricless_row_at_the_top_pass_rate_loses_on_the_metric():
+    rows = [PARAKEET["tdt-v2"], {"pass_rate": 1.0, "median_s": 0.01, "metrics": {}}]
+    names = winners.shared_metrics(rows)
+    assert names == ("wer",)
+    assert winners.order_key(rows[0], names) > winners.order_key(rows[1], names)
+
+
+def test_beaten_in_keeps_the_metric_when_a_crashed_row_is_in_the_room(store_run, conn, monkeypatch):
+    pin(monkeypatch, stt="mlx-community/parakeet-tdt-0.6b-v2")
+    store_run("stt", "stt", {
+        "parakeet-tdt-0.6b-v2": {"pass_rate": 1.0, "median_s": 0.135, "total": 300, "metrics": {"wer": 0.0162}},
+        "parakeet-ctc-0.6b": {"pass_rate": 1.0, "median_s": 0.116, "total": 300, "metrics": {"wer": 0.0225}},
+        "parakeet-crashed": {"pass_rate": 0.0, "median_s": 0.0, "total": 300}})
+    assert winners.beaten_in(conn)["stt"]["candidate"] == "parakeet-tdt-0.6b-v2"

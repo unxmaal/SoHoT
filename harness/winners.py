@@ -69,10 +69,14 @@ def ranked_metrics(row: dict) -> dict[str, float]:
 
 
 def shared_metrics(rows) -> tuple[str, ...]:
-    """Metric names every row carries, so one key compares all rows on the same names. #690."""
+    """Metric names shared by the top-pass-rate rows that report any, so a crashed row cannot erase the lane's metric. #690."""
+    rows = list(rows)
+    top = max((float(r.get("pass_rate") or 0.0) for r in rows), default=0.0)
     names = None
     for row in rows:
         mine = set(ranked_metrics(row))
+        if not mine or float(row.get("pass_rate") or 0.0) < top:
+            continue
         names = mine if names is None else names & mine
     return tuple(sorted(names or ()))
 
@@ -110,8 +114,8 @@ def order_key(row: dict, names) -> tuple:
     # A candidate that passed less often is worse whatever its metric says: a
     # model that fails half the cases and scores well on the rest is scoring on
     # a different, easier subset.
-    # names are the metrics shared by every row compared, so tuples line up by name.
-    return (rate, tuple(ranked[n] for n in names), -median)
+    # A row missing a shared metric sorts below every row that reports it.
+    return (rate, tuple((n in ranked, ranked.get(n, 0.0)) for n in names), -median)
 
 
 def typed() -> dict[str, str]:
