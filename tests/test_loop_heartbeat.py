@@ -222,16 +222,18 @@ def test_jobs_list_prints_and_emits_the_heartbeat(clock, capsys):
     assert got["loop"]["status"] == "stalled" and got["loop"]["tier"] == "fetch"
 
 
-def test_a_sweep_started_within_its_interval_plus_slack_is_on_time(clock):
+def test_a_sweep_started_within_its_interval_plus_slack_is_on_time(clock, monkeypatch):
+    monkeypatch.setattr(hb, "discover_hours", lambda: [21])
     hb.start()
     hb.finish(0)
-    clock.t += hb.SWEEP_EVERY_S + hb.SWEEP_SLACK_S - 1
+    clock.t += hb.sweep_every_s([21]) + hb.SWEEP_SLACK_S - 1
     assert hb.overdue() == ""
 
 
-def test_a_last_sweep_older_than_a_day_and_an_hour_is_overdue(clock):
+def test_a_last_sweep_older_than_a_day_and_an_hour_is_overdue(clock, monkeypatch):
     """A reload postponed StartInterval all day and nothing said so (#625); one loop a day (#646)."""
-    assert hb.SWEEP_EVERY_S + hb.SWEEP_SLACK_S == 25 * 3600
+    monkeypatch.setattr(hb, "discover_hours", lambda: [21])
+    assert hb.sweep_every_s([21]) + hb.SWEEP_SLACK_S == 25 * 3600
     hb.start()
     hb.finish(0)
     clock.t += 25 * 3600 + 60

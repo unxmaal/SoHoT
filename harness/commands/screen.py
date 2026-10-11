@@ -155,7 +155,7 @@ def _report_screen(a) -> int:
     """
     import subprocess
 
-    from harness import candidates, rank, router, screen
+    from harness import candidates, heartbeat, rank, router, screen
     from harness import memory_store as ms
 
     want = (getattr(a, "lane", "") or "").strip().lower()
@@ -200,8 +200,11 @@ def _report_screen(a) -> int:
             # Its own receipt directory, not the newest for the modality. #282.
             outdir = paths.runs() / f"screen-{int(time.time())}-{r['modality']}"
             try:
-                proc = subprocess.run(screen.argv(r, outdir=outdir),
-                                      capture_output=True, text=True)
+                # The lock is taken here so its wait reaches the heartbeat; the child inherits it. #705.
+                with heartbeat.held("eval", screen.deadline_s(r["candidate"]),
+                                    say=lambda m: print(f"   {m}", flush=True)):
+                    proc = subprocess.run(screen.argv(r, outdir=outdir),
+                                          capture_output=True, text=True)
             except OSError as exc:
                 print(f"   QUEUED: the screen could not start: {exc}")
                 ms.decide_or_skip(store, r["name"], "queued", tier=ms.SCREEN,

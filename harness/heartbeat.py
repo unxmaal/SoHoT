@@ -1,17 +1,19 @@
 """What the discovery loop is doing while it runs, and whether it is still alive. #251."""
 from __future__ import annotations
 
+import contextlib
 import json
 import os
+import plistlib
+import re
 import time
 from pathlib import Path
 
 RUNNING = "running"
 FINISHED = "finished"
-#: No progress for this long reads as stalled: above the longest single measure seen, below a day.
+#: No progress for this long reads as stalled when the step declared no deadline of its own. #705.
 STALL_S = 3 * 3600
-#: The discover agent's calendar spacing (scripts/launchd.sh), and how late a sweep may start. #625.
-SWEEP_EVERY_S = 24 * 3600
+#: How late a sweep may start past the installed discover schedule's longest gap. #625, #705.
 SWEEP_SLACK_S = 3600
 
 clock = time.time
@@ -88,10 +90,45 @@ def beat(tier: str, step: int, total: int | None = None, candidate: str = "",
     if data is None or data.get("state") != RUNNING:
         return
     data.update(tier=tier, step=int(step), candidate=candidate, item=int(item),
-                items=int(items), updated=clock())
+                items=int(items), updated=clock(), deadline_s=None, waiting="")
     if total is not None:
         data["total"] = int(total)
     _write(data)
+
+
+def expect(deadline_s: float | None, waiting: str = "") -> None:
+    """Record the current step's deadline, or what it is waiting behind; a no-op unless this process started it."""
+    data = _mine()
+    if data is None or data.get("state") != RUNNING:
+        return
+    data.update(deadline_s=float(deadline_s) if deadline_s else None, waiting=waiting, updated=clock())
+    _write(data)
+
+
+def waiting(message: str) -> None:
+    """Record that this loop waits behind the machine lock, for as long as its holder declared."""
+    from harness import exclusive
+    expect(exclusive.holder().get("deadline_s"), waiting=message)
+
+
+@contextlib.contextmanager
+def held(kind: str, deadline_s: float | None = None, say=None):
+    """Take the machine lock declaring `deadline_s`; while waiting, the loop reads the holder's deadline. #705."""
+    from harness import exclusive
+
+    def announce(message):
+        if say:
+            say(message)
+        waiting(message)
+
+    with exclusive.held(kind, announce=announce, deadline_s=deadline_s) as waited:
+        expect(deadline_s)
+        yield waited
+
+
+def stall_after(data: dict) -> float:
+    """Seconds without a beat before this loop reads as stalled: the step's own deadline when it set one."""
+    return max(STALL_S, float(data.get("deadline_s") or 0))
 
 
 def finish(rc: int | None = None, error: str = "") -> None:
@@ -108,7 +145,9 @@ def status(data: dict | None, alive=alive) -> str:
         return ""
     if data.get("state") == FINISHED:
         return "finished"
-    if clock() - float(data.get("updated") or 0) > STALL_S or not alive(data.get("pid") or 0):
+    if not alive(data.get("pid") or 0):
+        return "stalled"
+    if clock() - float(data.get("updated") or 0) > stall_after(data):
         return "stalled"
     return "running"
 
@@ -119,6 +158,8 @@ def _where(d: dict) -> str:
         out += f", {d['candidate']}"
         if d.get("items"):
             out += f" ({d.get('item', 0)} of {d['items']})"
+    if d.get("waiting"):
+        out += f", {d['waiting']}"
     return out
 
 
@@ -146,13 +187,64 @@ def summary(alive=alive) -> dict | None:
     return {**d, "status": st, "age_s": age, "line": line}
 
 
+def sweep_every_s(hours) -> int:
+    """The longest gap in seconds between consecutive daily firings at these local hours."""
+    got = sorted({int(h) % 24 for h in hours})
+    if not got:
+        return 24 * 3600
+    gaps = [b - a for a, b in zip(got, got[1:])] + [got[0] + 24 - got[-1]]
+    return max(gaps) * 3600
+
+
+def discover_unit() -> Path:
+    """Where scripts/launchd.sh installs the discover agent."""
+    from harness import volume
+    return volume.agent_unit(f"{volume.PREFIX}.discover")
+
+
+def _hours(text: str) -> list[int]:
+    return sorted(int(h) for h in text.split())
+
+
+def _installed_hours() -> list[int]:
+    try:
+        cal = plistlib.loads(discover_unit().read_bytes()).get("StartCalendarInterval")
+        cal = [cal] if isinstance(cal, dict) else list(cal or [])
+        return sorted(int(c["Hour"]) for c in cal if isinstance(c, dict) and "Hour" in c)
+    except (OSError, ValueError, TypeError, AttributeError):
+        return []
+
+
+def _default_hours() -> list[int]:
+    script = Path(__file__).resolve().parents[1] / "scripts" / "launchd.sh"
+    try:
+        m = re.search(r'^DISCOVER_HOURS="\$\{DISCOVER_HOURS:-([^}]+)\}"',
+                      script.read_text(encoding="utf-8"), re.M)
+        return _hours(m.group(1)) if m else []
+    except (OSError, ValueError):
+        return []
+
+
+def _env_hours() -> list[int]:
+    try:
+        return _hours(os.environ.get("DISCOVER_HOURS", ""))
+    except ValueError:
+        return []
+
+
+def discover_hours() -> list[int]:
+    """The installed discover agent's hours, else DISCOVER_HOURS, else scripts/launchd.sh's default."""
+    return _installed_hours() or _env_hours() or _default_hours() or [21]
+
+
 def overdue(data=None) -> str:
-    """'' when the last discovery loop started within SWEEP_EVERY_S + SWEEP_SLACK_S; otherwise one line saying why."""
+    """'' when the last discovery loop started within the schedule's longest gap plus SWEEP_SLACK_S; otherwise why."""
     if data is None:
         data = read()
     if data is None or "started" not in data:
         return "no discovery loop has run on this machine"
+    every = sweep_every_s(discover_hours())
     age = clock() - float(data["started"])
-    if age <= SWEEP_EVERY_S + SWEEP_SLACK_S:
+    if age <= every + SWEEP_SLACK_S:
         return ""
-    return f"last discovery loop started {ago(age)} ago; the schedule starts one every {ago(SWEEP_EVERY_S)}"
+    return f"last discovery loop started {ago(age)} ago; the schedule starts one every {ago(every)}"

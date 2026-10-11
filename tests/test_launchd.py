@@ -330,12 +330,16 @@ def test_the_discover_sweep_runs_at_fixed_local_times(plists):
     assert "StartInterval" not in unit and unit.get("RunAtLoad") is not True
 
 
-def test_the_sweep_schedule_and_the_overdue_check_agree(plists):
+def test_the_sweep_schedule_and_the_overdue_check_agree(tmp_path, monkeypatch):
     from harness import heartbeat
-    unit = next(v for k, v in plists.items() if k.endswith(".discover"))
-    hours = [t["Hour"] for t in unit["StartCalendarInterval"]]
-    gaps = {(b - a) % 24 or 24 for a, b in zip(hours, hours[1:] + hours[:1])}
-    assert gaps == {heartbeat.SWEEP_EVERY_S // 3600}
+    out = tmp_path / "agents"
+    env = {**os.environ, "DISCOVER_HOURS": "9 21"}
+    proc = subprocess.run([shells.BASH, str(GEN), "generate", str(out)],
+                          capture_output=True, text=True, env=env)
+    assert proc.returncode == 0, proc.stderr
+    monkeypatch.setattr(heartbeat, "discover_unit", lambda: next(out.glob("*.discover.plist")))
+    assert heartbeat.discover_hours() == [9, 21]
+    assert heartbeat.sweep_every_s(heartbeat.discover_hours()) == 12 * 3600
 
 
 def test_install_audits_what_it_just_deployed():

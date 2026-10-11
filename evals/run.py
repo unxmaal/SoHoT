@@ -918,8 +918,17 @@ def _main(args) -> int:
     from harness import exclusive
     # One model-loading run on the machine at a time, across projects. #314.
     with exclusive.held("eval", announce=lambda m: print(
-            f"evals.run: {m}", file=sys.stderr, flush=True)):
+            f"evals.run: {m}", file=sys.stderr, flush=True), deadline_s=deadline_s(args)):
         return _execute(args)
+
+
+def deadline_s(args) -> float | None:
+    """The longest this run may hold the machine: a screen's per-candidate deadlines summed, else None. #705."""
+    if not args.screen:
+        return None
+    from harness import screen
+    each = [screen.deadline_s(c.strip()) for c in args.candidates.split(",") if c.strip()]
+    return sum(each) if each and all(each) else None
 
 
 def knob_overrides(pairs) -> dict:

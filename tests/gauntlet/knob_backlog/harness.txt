@@ -84,7 +84,6 @@ harness/gateway_switch.py:not_serving->httpx.get(timeout)
 harness/github.py:Client.budget
 harness/github.py:_gh->subprocess.run(timeout)
 harness/heartbeat.py:STALL_S
-harness/heartbeat.py:SWEEP_EVERY_S
 harness/heartbeat.py:SWEEP_SLACK_S
 harness/holdout.py:FRACTION
 harness/holdout.py:MIN_DEV

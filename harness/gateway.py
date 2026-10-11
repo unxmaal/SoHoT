@@ -137,15 +137,15 @@ def served(config=None, defaults=None, nodes=None) -> dict:
 
 
 def _capped(entry: dict, data=None) -> dict:
-    """An mlx_lm.server deployment queues past MLX_MAX_PARALLEL in LiteLLM, not at its socket. #542."""
+    """An mlx_lm.server deployment queues past its sized cap in LiteLLM; a declared cap is a ceiling. #542, #705."""
     from harness import serving
     params = dict(entry.get("litellm_params") or {})
-    if "max_parallel_requests" in params or serving.engine_at(
-            str(params.get("api_base", "")), data=data or {}) != serving.DEFAULT:
+    if serving.engine_at(str(params.get("api_base", "")), data=data or {}) != serving.DEFAULT:
         return entry
-    repo = strip_provider(str(params.get("model", "")))
-    return {**entry, "litellm_params": {**params,
-                                        "max_parallel_requests": serving.mlx_parallel(repo)}}
+    cap = serving.mlx_parallel(strip_provider(str(params.get("model", ""))))
+    if "max_parallel_requests" in params:
+        cap = min(int(params["max_parallel_requests"]), cap)
+    return {**entry, "litellm_params": {**params, "max_parallel_requests": cap}}
 
 
 def write_served(config=None, defaults=None, nodes=None) -> Path:

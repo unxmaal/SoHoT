@@ -73,7 +73,7 @@ def _generate(spec: str, prompt: str, out: Path, params: dict) -> int:
     try:
         # Issue #137. Held across the RUN only: resolving a spec and building
         # an argv cost nothing and should not make anyone queue.
-        with exclusive.held(engine.modality, announce=waiting):
+        with exclusive.held(engine.modality, announce=waiting, deadline_s=engine.timeout):
             r = proc.run(argv, timeout=engine.timeout, stream=engine.stream,
                          cwd=engine.cwd)
     except FileNotFoundError as exc:

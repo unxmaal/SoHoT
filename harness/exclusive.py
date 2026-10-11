@@ -125,7 +125,7 @@ def _release(fd: int) -> None:
 
 
 @contextlib.contextmanager
-def held(kind: str, announce=None, poll: float = POLL_SECONDS):
+def held(kind: str, announce=None, poll: float = POLL_SECONDS, deadline_s: float | None = None):
     """Hold the machine for `kind`, waiting if someone else has it.
 
     `announce` is called with a sentence the first time this has to wait, and
@@ -152,7 +152,7 @@ def held(kind: str, announce=None, poll: float = POLL_SECONDS):
                 said = who
             time.sleep(poll)
 
-        _write_holder(kind)
+        _write_holder(kind, deadline_s)
         os.environ[HELD_ENV] = "1"
         try:
             yield waited
@@ -189,7 +189,9 @@ def try_held(kind: str):
         os.close(fd)
 
 
-def _write_holder(kind: str) -> None:
+def _write_holder(kind: str, deadline_s: float | None = None) -> None:
     record = {"kind": kind, "pid": os.getpid(), "since": time.time()}
+    if deadline_s:
+        record["deadline_s"] = float(deadline_s)
     with contextlib.suppress(OSError):
         holder_path().write_text(json.dumps(record), encoding="utf-8")

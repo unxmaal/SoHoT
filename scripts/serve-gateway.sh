@@ -57,7 +57,10 @@ export PYTHONIOENCODING=utf-8
 
 # The base config plus sohot-<lane> aliases for what each text lane has adopted. #297.
 CONFIG="${GATEWAY_CONFIG:-gateway/config.yaml}"
-SERVED="$(uv run python -m harness.gateway "$CONFIG")" || SERVED="$CONFIG"
+if ! SERVED="$(uv run python -m harness.gateway "$CONFIG")"; then
+  echo "WARN: the served config could not be generated; serving $CONFIG with no sohot-<lane> aliases. #705" >&2
+  SERVED="$CONFIG"
+fi
 # Each serving node's key from the Keychain, for the os.environ/ reference the served config names. #684.
 NODE_EXPORTS="$(uv run python -m harness.nodes exports)" || NODE_EXPORTS=""
 eval "$NODE_EXPORTS"

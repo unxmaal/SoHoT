@@ -441,6 +441,18 @@ def argv(row: dict, outdir=None) -> list[str]:
 
 
 
+def deadline_s(candidate: str) -> float | None:
+    """The longest a screen of this candidate may run: every screen case at its engine's timeout; None when no engine bounds it. #705."""
+    from harness import engines
+    from evals.run import SCREEN_CASES
+    if candidate.partition(":")[0] not in engines.names():
+        return None
+    try:
+        return SCREEN_CASES * engines.resolve(candidate).timeout
+    except ValueError:
+        return None
+
+
 class Verdict(NamedTuple):
     """A screen's verdict, with why as a column rather than a sentence. #408."""
     outcome: str
