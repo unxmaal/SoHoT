@@ -64,17 +64,21 @@ metrics:                  ## the four DORA numbers, from git and gh
 	uv run python -m harness.dora
 
 test-postgres:            ## the store against a REAL database, in docker
-	@docker rm -f lh-pg-test >/dev/null 2>&1 || true
-	@docker run -d --name lh-pg-test -e POSTGRES_PASSWORD=test \
+	@docker rm -f $(PG_TEST) >/dev/null 2>&1 || true
+	@docker run -d --name $(PG_TEST) -e POSTGRES_PASSWORD=test \
 	  -e POSTGRES_USER=discovery -e POSTGRES_DB=discovery \
-	  -p 55432:5432 postgres:16-alpine >/dev/null
+	  -p 127.0.0.1::5432 postgres:16-alpine >/dev/null
 	@for i in $$(seq 1 30); do \
-	  docker exec lh-pg-test pg_isready -U discovery >/dev/null 2>&1 && break; \
+	  docker exec $(PG_TEST) pg_isready -U discovery >/dev/null 2>&1 && break; \
 	  sleep 1; done
-	LOCALHARNESS_STORE=postgres PGHOST=127.0.0.1 PGPORT=55432 \
+	port=$$(docker port $(PG_TEST) 5432/tcp | head -1 | sed 's/.*://'); \
+	  LOCALHARNESS_STORE=postgres PGHOST=127.0.0.1 PGPORT=$$port \
 	  PGUSER=discovery PGPASSWORD=test PGDATABASE=discovery \
 	  uv run --group cluster pytest tests/ -q -m postgres; \
-	  status=$$?; docker rm -f lh-pg-test >/dev/null 2>&1; exit $$status
+	  status=$$?; docker rm -f $(PG_TEST) >/dev/null 2>&1; exit $$status
+
+# One container per worktree on a docker-assigned port, so parallel worktrees do not kill each other's database. #705.
+PG_TEST := lh-pg-test-$(shell printf '%s' '$(CURDIR)' | cksum | cut -d' ' -f1)
 
 lint:                     ## shellcheck every script, syntax-check every one
 	shellcheck -S warning scripts/*.sh

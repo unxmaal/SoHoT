@@ -50,6 +50,7 @@ NOT_GATING = {
     "harness/machine.py:RETRY_S": "how soon a failed identity probe is asked again; never which machine answers (#747)",
     "harness/live_audit.py:FALLBACK_WINDOW_S": "how far back the audit lists node fallbacks; reported, never a check (#739)",
     "scripts/lan-probe.sh:LAN_PROBE_WAIT_EXTRA_S": "how long the deploy waits for a launchd probe to write; never a lane's outcome (#739)",
+    "scripts/launchd.sh:PREFLIGHT_WAIT_S": "how long install waits for the weights probe agent; a timeout is its own verdict, never a lane's outcome (#705)",
     **{f"harness/context.py:SWA_PERIOD[{a}]": "llama.cpp's hard-coded sliding-window period of an architecture, a fact of "
        "the model (#692)" for a in ("gemma2", "gemma3", "cohere2", "gpt-oss")},
     **{f"harness/context.py:CACHE_BYTES[{t}]": "bytes per KV element of a cache type, a fact of the format (#706)"

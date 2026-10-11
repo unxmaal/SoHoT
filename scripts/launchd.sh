@@ -27,7 +27,7 @@ SERVICES="gateway mlx eval tts mcp discover worker audit ds4"
 
 #: Services that RUN AND EXIT rather than serve, at fixed local hours. KeepAlive
 #: would rerun a finished sweep at once; StartInterval counts from load, so a day
-#: of installs never lets it fire (#625). harness/heartbeat.SWEEP_EVERY_S matches.
+#: of installs never lets it fire (#625). harness/heartbeat reads the installed hours (#705).
 declare -a PERIODIC=(discover audit)
 DISCOVER_HOURS="${DISCOVER_HOURS:-21}"
 AUDIT_HOURS="${AUDIT_HOURS:-3}"                   # nightly, #492
@@ -91,6 +91,13 @@ _hf_env() {
   home="$(cd "$REPO" && . scripts/env.sh >/dev/null 2>&1 && printf '%s' "${HF_HOME:-}")"
   [ -n "$root" ] && printf '    <key>HF_ROOT</key><string>%s</string>\n' "$root"
   [ -n "$home" ] && printf '    <key>HF_HOME</key><string>%s</string>\n' "$home"
+}
+
+# The weights root the agents get: env.sh's answer from the checkout, as _hf_env writes it. #705.
+_hf_root() {
+  local got
+  got="$(cd "$REPO" && . scripts/env.sh >/dev/null 2>&1 && printf '%s' "${HF_HOME:-}")"
+  printf '%s' "${got:-${HF_ROOT:-${HF_HOME:-$REPO/hf_root}}}"
 }
 
 usage() {
@@ -191,7 +198,8 @@ generate() {
 preflight() {
   local probe="/tmp/localharness-preflight.$$"
   local label="$PREFIX.preflight.$$"   # per run: parallel suites share gui/$UID
-  local root="${HF_ROOT:-$PWD/hf_root}"
+  local root; root="$(_hf_root)"
+  local wait_s="${PREFLIGHT_WAIT_S:-60}"
   cat > "$probe.sh" <<PROBE
 #!/bin/bash
 ls "$root" >/dev/null 2>&1 && echo ok > "$probe.out" || echo denied > "$probe.out"
@@ -209,11 +217,21 @@ PROBE
 PLIST
   launchctl bootout "gui/$UID/$label" 2>/dev/null || true
   launchctl bootstrap "gui/$UID" "$probe.plist" 2>/dev/null || true
-  for _ in $(seq 1 20); do [ -f "$probe.out" ] && break; sleep 0.5; done
+  for _ in $(seq 1 $((wait_s * 2))); do [ -f "$probe.out" ] && break; sleep 0.5; done
   local verdict; verdict="$(cat "$probe.out" 2>/dev/null || echo unknown)"
   launchctl bootout "gui/$UID/$label" 2>/dev/null || true
   rm -f "$probe.sh" "$probe.plist" "$probe.out"
 
+  if [ "$verdict" = unknown ]; then
+    cat >&2 <<MSG
+FATAL: the launchd probe of $root did not finish in $wait_s s.
+
+  This says nothing about permissions: launchd did not run the probe, or it
+  is still waiting on a slow or sleeping volume. Re-run with a longer wait:
+    PREFLIGHT_WAIT_S=180 ./scripts/launchd.sh install
+MSG
+    exit 1
+  fi
   if [ "$verdict" != "ok" ]; then
     cat >&2 <<MSG
 FATAL: a launchd agent cannot read $root ($verdict).
@@ -349,7 +367,7 @@ case "${1:-}" in
   # The one definition of DEPLOY; harness/paths.py asks here. #455.
   deploy-path) printf '%s\n' "$DEPLOY" ;;
   generate)  shift; generate "${1:-}" ;;
-  probe)     preflight && echo "ok: a launchd agent can read ${HF_ROOT:-$PWD/hf_root}" ;;
+  probe)     preflight && echo "ok: a launchd agent can read $(_hf_root)" ;;
   install)
     # Restarting a model server mid-run killed 32 requests on 2026-10-04, so
     # wait for any model-loading run to finish first. #314.

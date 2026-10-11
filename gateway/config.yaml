@@ -1,4 +1,5 @@
 model_list:
+  # The MLX cap is here too so the raw config is safe when the generator fails (#705).
   # hot_swap: discovered repo ids go to this entry's mlx_lm.server, which loads any of them (#702).
   - model_name: mlx-community/Qwen2.5-0.5B-Instruct-4bit
     hot_swap: true
@@ -6,11 +7,13 @@ model_list:
       model: openai/mlx-community/Qwen2.5-0.5B-Instruct-4bit
       api_base: http://127.0.0.1:8081/v1
       api_key: not-needed
+      max_parallel_requests: 16
   - model_name: mlx-community/Qwen2.5-1.5B-Instruct-4bit
     litellm_params: &localmid
       model: openai/mlx-community/Qwen2.5-1.5B-Instruct-4bit
       api_base: http://127.0.0.1:8081/v1
       api_key: not-needed
+      max_parallel_requests: 16
 
   # The largest text model that is comfortable here. It was called local-summarize
   # for a voice-layer summarizer that no longer exists, then local-large; a name
@@ -24,6 +27,7 @@ model_list:
       model: openai/mlx-community/Qwen2.5-7B-Instruct-4bit
       api_base: http://127.0.0.1:8081/v1
       api_key: not-needed
+      max_parallel_requests: 16
 
   # ---- Qwen3 candidates (2026-09-06) --------------------------------------
   # The Qwen2.5 aliases above were never chosen: 0.5B entered this repo as a
@@ -43,31 +47,37 @@ model_list:
       model: openai/mlx-community/Qwen3-1.7B-4bit
       api_base: http://127.0.0.1:8081/v1
       api_key: not-needed
+      max_parallel_requests: 16
   - model_name: mlx-community/Qwen3-4B-Instruct-2507-4bit
     litellm_params: &q34b
       model: openai/mlx-community/Qwen3-4B-Instruct-2507-4bit
       api_base: http://127.0.0.1:8081/v1
       api_key: not-needed
+      max_parallel_requests: 16
   - model_name: mlx-community/Qwen3-8B-4bit
     litellm_params: &q38b
       model: openai/mlx-community/Qwen3-8B-4bit
       api_base: http://127.0.0.1:8081/v1
       api_key: not-needed
+      max_parallel_requests: 16
   - model_name: mlx-community/Qwen3-14B-4bit
     litellm_params: &q314b
       model: openai/mlx-community/Qwen3-14B-4bit
       api_base: http://127.0.0.1:8081/v1
       api_key: not-needed
+      max_parallel_requests: 16
   - model_name: mlx-community/Qwen3-30B-A3B-Instruct-2507-4bit
     litellm_params: &q330b
       model: openai/mlx-community/Qwen3-30B-A3B-Instruct-2507-4bit
       api_base: http://127.0.0.1:8081/v1
       api_key: not-needed
+      max_parallel_requests: 16
   - model_name: mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit
     litellm_params: &q3coder
       model: openai/mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit
       api_base: http://127.0.0.1:8081/v1
       api_key: not-needed
+      max_parallel_requests: 16
   # llama-server (scripts/serve-eval.sh): enforces response_format json_schema.
   - model_name: Qwen3-4B-Instruct-2507-Q4_K_M
     source_repo: unsloth/Qwen3-4B-Instruct-2507-GGUF
