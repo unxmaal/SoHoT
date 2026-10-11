@@ -421,6 +421,8 @@ def build_parser() -> argparse.ArgumentParser:
                      help="JSONL file; each line's --field is one request")
     thr.add_argument("--claims", action="append",
                      help="claims export JSONL; each case is the request the claims lane sends (#665)")
+    thr.add_argument("--code", choices=("holdout", "dev", "all"),
+                     help="the code lane's cases on this side, sent and checked as the lane runs them (#682)")
     thr.add_argument("--field", default="text")
     thr.add_argument("--n", type=int, default=16)
     thr.add_argument("--levels", default="1,2,4")
