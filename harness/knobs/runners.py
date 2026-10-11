@@ -11,4 +11,6 @@ KNOBS = [
 NOT_GATING = {
     "evals/runners/base.py:BaseRunner.failed(seconds)": "how long a failed case took, as reported (#706)",
     "evals/runners/agent.py:AgentRunner.failed(seconds)": "how long a failed case took, as reported (#706)",
+    **{f"evals/runners/chain.py:STAGE_SCALE[{s}]": "the factor a chain stage multiplies the image size by, a fact of "
+       "the stage (#692)" for s in ("upscale-seedvr2", "upscale-controlnet", "controlnet")},
 }

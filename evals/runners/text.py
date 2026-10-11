@@ -106,7 +106,7 @@ class CompletionRunner(BaseRunner):
                 system=system)
         except completion.CompletionError as exc:
             if exc.failure_class == reasons.TOKEN_BUDGET_EXHAUSTED:
-                exc.failure_class, exc.limit = self._cut(limit)
+                exc.failure_class, exc.limit = self._cut(self._stopped_at(limit, exc.usage))
             elif exc.failure_class == reasons.TIMEOUT and cold:
                 # Nothing has answered yet, so the request was given the load's allowance and the load is what ran out. #694.
                 exc.limit = ("load_timeout_s", self.load_timeout)
@@ -118,9 +118,7 @@ class CompletionRunner(BaseRunner):
         self.last_timing = {**got.timing, "cold": cold}
         spent = int(got.usage.get("completion_tokens") or 0)
         if got.finish == "length" or spent >= budget:
-            used = spent + int(got.usage.get("prompt_tokens") or 0)
-            at_ctx = bool(self.served_ctx) and used >= self.served_ctx
-            self.last_cut = f"served_ctx>{self.served_ctx}" if at_ctx else limit
+            self.last_cut = self._stopped_at(limit, got.usage)
         if case.modality == "decide":
             return self._decide(case, got)
         return got.text, got.usage
@@ -204,6 +202,11 @@ class CompletionRunner(BaseRunner):
         system = system or completion.SYSTEM.get(case.modality, completion.NEUTRAL_SYSTEM)
         return delegate.cap(self.served_ctx, system, completion.user_message(case.prompt, case.context),
                             count=self.count)
+
+    def _stopped_at(self, limit: str, usage: dict) -> str:
+        """The served context when the server's own count of prompt plus reply reached it, else `limit`. #692."""
+        used = int(usage.get("completion_tokens") or 0) + int(usage.get("prompt_tokens") or 0)
+        return f"served_ctx>{self.served_ctx}" if self.served_ctx and used >= self.served_ctx else limit
 
     def _cut(self, limit: str) -> tuple[str, tuple]:
         """(failure class, limit) for a reply stopped at `limit`, a "name>value" body."""

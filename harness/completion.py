@@ -179,11 +179,12 @@ class CompletionError(RuntimeError):
     """The gateway did not return usable text."""
 
     def __init__(self, detail: str, failure_class: str = "",
-                 limit: tuple = ()):
+                 limit: tuple = (), usage: dict | None = None):
         super().__init__(detail)
         # Set where the cause is known; "" leaves it to reasons.classify. #408.
         self.failure_class = failure_class
         self.limit = limit
+        self.usage = usage or {}
 
 
 def user_message(prompt: str, context: str = "") -> str:
@@ -364,7 +365,7 @@ def complete_full(prompt: str, model: str, gateway: str = "",
                 + f"{len(reasoning)} characters). This is a hybrid "
                 f"thinking model; use a non-thinking one for this lane, or "
                 f"raise max_tokens.", reasons.TOKEN_BUDGET_EXHAUSTED,
-                ("max_tokens", max_tokens))
+                ("max_tokens", max_tokens), usage=usage)
         raise CompletionError("empty completion", reasons.CONTENT_FAILED)
     return Completion(text, usage,
                       list(tokens) if isinstance(tokens, list) else [], timing,

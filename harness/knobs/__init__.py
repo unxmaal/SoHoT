@@ -36,7 +36,7 @@ GATING_PHRASES = ("PER_TOKEN", "PER_GIB")
 GATING_PARAMS = frozenset({"timeout", "grace", "poll", "settle_s", "max_tokens", "max_new_tokens",
                            "limit", "levels"})
 _UPPER = re.compile(r"_?[A-Z][A-Z0-9_]*")
-_SITE = re.compile(r"(?P<rel>[\w/]+\.py):(?P<name>[\w.]+)(?P<keys>(?:\[\w+\])*)(?:\((?P<param>\w+)\))?")
+_SITE = re.compile(r"(?P<rel>[\w/]+\.py):(?P<name>[\w.]+)(?P<keys>(?:\[[\w.-]+\])*)(?:\((?P<param>\w+)\))?")
 _SHELL_DEFAULT = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*):?[-=](-?[0-9]+(?:\.[0-9]+)?)\}")
 
 
@@ -109,7 +109,7 @@ def resolve(site: str):
             got = getattr(got, part)
     except AttributeError:
         return _static(site)
-    for key in re.findall(r"\[(\w+)\]", m["keys"] or ""):
+    for key in re.findall(r"\[([\w.-]+)\]", m["keys"] or ""):
         got = got[key]
     if m["param"]:
         return _inspect.signature(got).parameters[m["param"]].default
@@ -163,7 +163,7 @@ def _dotted(node) -> str:
 def _table(rel: str, path: str, node) -> list[tuple[str, object]]:
     out = []
     for key, value in zip(node.keys, node.values):
-        if not (isinstance(key, ast.Constant) and isinstance(key.value, str) and re.fullmatch(r"\w+", key.value)):
+        if not (isinstance(key, ast.Constant) and isinstance(key.value, str) and re.fullmatch(r"[\w.-]+", key.value)):
             continue
         here = f"{path}[{key.value}]"
         if isinstance(value, ast.Dict):

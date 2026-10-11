@@ -4,6 +4,7 @@ import json
 import httpx
 import pytest
 import respx
+import yaml
 
 from evals import run as R
 from evals.core import Case
@@ -129,10 +130,56 @@ def test_a_per_layer_sliding_window_pattern_is_read_from_the_header():
     assert context.kv_bytes_per_token(meta) == 24 * 8 * 512 * 2
 
 
-def test_ds4_context_holds_the_top_ladder_rung_and_the_largest_case_prompt():
+def test_ds4_context_holds_the_top_ladder_rung_and_the_largest_shipped_case_prompt():
+    pads = [int((yaml.safe_load(f.read_text(encoding="utf-8")).get("params") or {}).get("pad_tokens") or 0)
+            for f in (knobs.REPO / "evals" / "cases").rglob("*.yaml")]
     top = max(max(completion.ladder(lane) or (0,)) for lane in completion.LADDER)
-    assert ds4.DEFAULT_CTX >= top + ds4.PROMPT_ROOM
-    assert ds4.DEFAULT_CTX > completion.budget("code")
+    assert max(pads) >= 32000
+    assert ds4.DEFAULT_CTX >= top + max(pads) + ds4.STEP_ROOM
+
+
+def test_a_larger_case_pad_grows_the_ds4_prompt_room(tmp_path):
+    (tmp_path / "agent").mkdir()
+    (tmp_path / "agent" / "long64k.yaml").write_text("id: long64k\nparams:\n  pad_tokens: 64000\n", encoding="utf-8")
+    (tmp_path / "agent" / "short.yaml").write_text("id: short\nparams:\n  max_steps: 4\n", encoding="utf-8")
+    assert ds4.prompt_room(tmp_path) == 64000 + ds4.STEP_ROOM
+    assert ds4.prompt_room(tmp_path / "missing") == ds4.STEP_ROOM
+
+
+@respx.mock
+def test_a_reasoning_only_reply_stopped_at_the_served_context_is_the_context_not_the_budget():
+    respx.post(URL).mock(return_value=httpx.Response(200, json={
+        "choices": [{"message": {"content": None, "reasoning_content": "thinking"}, "finish_reason": "length"}],
+        "usage": {"completion_tokens": 4000, "prompt_tokens": 12384}}, request=httpx.Request("POST", URL)))
+    row = CompletionRunner(GW, "org/x", max_tokens=4000, served_ctx=16384, count=lambda text: 1).run(CODE)
+    assert row.failure_class == reasons.CONTEXT_EXCEEDED
+    assert row.limit == "served_ctx>16384"
+
+
+@respx.mock
+def test_a_reasoning_only_reply_under_the_served_context_is_still_the_budget():
+    respx.post(URL).mock(return_value=httpx.Response(200, json={
+        "choices": [{"message": {"content": None, "reasoning_content": "thinking"}, "finish_reason": "length"}],
+        "usage": {"completion_tokens": 4000, "prompt_tokens": 40}}, request=httpx.Request("POST", URL)))
+    row = CompletionRunner(GW, "org/x", max_tokens=4000, served_ctx=16384, count=lambda text: 1).run(CODE)
+    assert row.failure_class == reasons.TOKEN_BUDGET_EXHAUSTED
+    assert row.limit == "max_tokens.code>4000"
+
+
+def test_the_served_ctx_knob_is_valued_in_tokens_like_the_limit_it_records():
+    k = knobs.KNOBS["served_ctx"]
+    assert k.default() >= context.FLOOR
+    assert min(k.values) >= context.FLOOR
+    assert "harness/context.py:KV_MAX_GIB" not in k.sites
+    assert knobs.KNOBS["kv_cap"].sites[:2] == ("harness/context.py:KV_MAX_GIB", "harness/context.py:KV_MAX_RAM_GB")
+
+
+def test_the_inventory_sees_table_keys_with_hyphens():
+    found = set(knobs.inventory(knobs.REPO))
+    for arch in context.SWA_PERIOD:
+        site = f"harness/context.py:SWA_PERIOD[{arch}]"
+        assert site in found and knobs.not_gating(site)
+    assert knobs.resolve("harness/context.py:SWA_PERIOD[gpt-oss]") == context.SWA_PERIOD["gpt-oss"]
 
 
 CJK = "漢字" * 300
@@ -165,7 +212,7 @@ def test_served_ctx_is_a_registered_knob_whose_limit_a_text_lane_records():
     k = knobs.KNOBS["served_ctx"]
     assert k.limit == "served_ctx" and k.predicate == knobs.MACHINE
     assert set(k.lanes) >= {"code", "agent"}
-    for site in ("harness/context.py:KV_MAX_GIB", "harness/ds4.py:DEFAULT_CTX",
+    for site in ("harness/ds4.py:DEFAULT_CTX",
                  "harness/vllm.py:METAL_MAX_MODEL_LEN", "harness/context.py:environ(LLAMACPP_CTX)"):
         assert site in k.sites
 
