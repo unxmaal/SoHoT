@@ -18,6 +18,7 @@ this compares nothing and must not fail.
 """
 from __future__ import annotations
 
+
 #: A candidate spec that is not a bare model: `repair:<model>` is a
 #: WORKFLOW built on a model, and `trace/mflux/...` a composition. Both can win
 #: a lane on merit, and neither is what a `--model` default can be set to.
@@ -41,23 +42,56 @@ FAMILIES = {
 def from_receipts(conn, plain_only: bool = True) -> dict[str, dict]:
     """The best candidate per lane over every stored measure run. #410."""
     from harness import runs
-    best: dict[str, dict] = {}
+    entries: dict[str, list] = {}
     for run, summary, _ in runs.summaries(conn, tier=runs.MEASURE):
         for candidate, row in summary.items():
             if plain_only and not is_plain_model(candidate):
                 continue
-            got = {"candidate": candidate, "key": order_key(row),
-                   "pass_rate": float(row.get("pass_rate") or 0.0),
-                   "median_s": float(row.get("median_s") or 0.0),
-                   "total": int(row.get("total") or 0), "run": run["path"],
-                   "run_id": run["id"]}
-            held = best.get(run["lane"])
-            if held is None or got["key"] > held["key"]:
-                best[run["lane"]] = got
-    return best
+            entries.setdefault(run["lane"], []).append({
+                "candidate": candidate, "row": row,
+                "pass_rate": float(row.get("pass_rate") or 0.0),
+                "median_s": float(row.get("median_s") or 0.0),
+                "total": int(row.get("total") or 0), "run": run["path"],
+                "run_id": run["id"]})
+    return {lane: _pick(got) for lane, got in entries.items()}
 
 
-def order_key(row: dict) -> tuple:
+def ranked_metrics(row: dict) -> dict[str, float]:
+    """The row's non-neutral metrics, signed so larger is better."""
+    from evals.core import direction_of
+
+    out = {}
+    for name, value in (row.get("metrics") or {}).items():
+        way = direction_of(name)
+        if way != "neutral":
+            out[name] = float(value or 0.0) * (1 if way == "higher" else -1)
+    return out
+
+
+def shared_metrics(rows) -> tuple[str, ...]:
+    """Metric names shared by the top-pass-rate rows that report any, so a crashed row cannot erase the lane's metric. #690."""
+    rows = list(rows)
+    top = max((float(r.get("pass_rate") or 0.0) for r in rows), default=0.0)
+    names = None
+    for row in rows:
+        mine = set(ranked_metrics(row))
+        if not mine or float(row.get("pass_rate") or 0.0) < top:
+            continue
+        names = mine if names is None else names & mine
+    return tuple(sorted(names or ()))
+
+
+def _pick(entries: list[dict], prefer=lambda e: False) -> dict:
+    """The best entry, keyed on the metrics all entries share; exact ties go to `prefer`, then the lowest name."""
+    names = shared_metrics(e["row"] for e in entries)
+    for e in entries:
+        e["key"] = order_key(e.pop("row"), names)
+    top = max((e["key"], prefer(e)) for e in entries)
+    return min((e for e in entries if (e["key"], prefer(e)) == top),
+               key=lambda e: (str(e["candidate"]), int(e.get("run_id") or 0)))
+
+
+def order_key(row: dict, names) -> tuple:
     """How good a summary row is, best LAST so `max` picks the winner.
 
     THE LANE'S OWN METRIC COMES FIRST, and getting that wrong is not
@@ -74,21 +108,14 @@ def order_key(row: dict) -> tuple:
     this and says which way each metric runs; `neutral` ones are reported and
     never ranked on.
     """
-    from evals.core import direction_of
-
-    metrics = row.get("metrics") or {}
-    ranked = []
-    for name in sorted(metrics):
-        if direction_of(name) == "neutral":
-            continue
-        value = float(metrics[name] or 0.0)
-        ranked.append(value if direction_of(name) == "higher" else -value)
+    ranked = ranked_metrics(row)
     rate = float(row.get("pass_rate") or 0.0)
     median = float(row.get("median_s") or 0.0)
     # A candidate that passed less often is worse whatever its metric says: a
     # model that fails half the cases and scores well on the rest is scoring on
     # a different, easier subset.
-    return (rate, tuple(ranked), -median)
+    # A row missing a shared metric sorts below every row that reports it.
+    return (rate, tuple((n in ranked, ranked.get(n, 0.0)) for n in names), -median)
 
 
 def typed() -> dict[str, str]:
@@ -156,7 +183,7 @@ def beaten_in(conn) -> dict[str, dict]:
     """
     from harness import runs
     wanted = served_ids(conn)
-    best: dict[str, dict] = {}
+    entries: dict[str, list] = {}
     for run, _, rows in runs.summaries(conn, tier=runs.MEASURE):
         lane = run["lane"]
         if lane not in wanted or not any(
@@ -173,20 +200,19 @@ def beaten_in(conn) -> dict[str, dict]:
             if family != "engine" and not is_plain_model(candidate) \
                     and not served:
                 continue
-            key = order_key(row)
-            held = best.get(lane)
-            if held is None or key > held["key"]:
-                best[lane] = {
-                    "candidate": candidate, "key": key,
-                    "pass_rate": float(row.get("pass_rate") or 0.0),
-                    "median_s": float(row.get("median_s") or 0.0),
-                    "metrics": dict(row.get("metrics") or {}),
-                    "run": run["path"], "run_id": run["id"],
-                    "total": int(row.get("total") or 0),
-                    "match": "exact" if served else "",
-                    "candidate_id": cid if isinstance(cid, int) else None,
-                    "family": family}
-    return best
+            entries.setdefault(lane, []).append({
+                "candidate": candidate, "row": row,
+                "pass_rate": float(row.get("pass_rate") or 0.0),
+                "median_s": float(row.get("median_s") or 0.0),
+                "metrics": dict(row.get("metrics") or {}),
+                "run": run["path"], "run_id": run["id"],
+                "total": int(row.get("total") or 0),
+                "match": "exact" if served else "",
+                "candidate_id": cid if isinstance(cid, int) else None,
+                "family": family})
+    # A served default that ties was not beaten.
+    return {lane: _pick(got, prefer=lambda e: bool(e["match"]))
+            for lane, got in entries.items()}
 
 
 def disagreements(conn) -> list[dict]:

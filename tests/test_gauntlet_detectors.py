@@ -294,3 +294,13 @@ def test_a_loopback_constant_used_without_comparing_is_left_alone():
                 "tests/test_s.py": "from harness.s import URL\ndef test_x():\n    assert URL == \"x\"\n"}
     bad = {"harness/u.py": "def f(b):\n    return b != \"http://localhost:4000\"\n"}
     quiet_then_fires(detectors.loopback_equality, innocent, bad)
+
+
+def test_a_key_built_from_a_row_position_is_found():
+    """#690: paired._verdicts keyed f"{case_id}#{i}" over enumerate(rows), so two runs paired only if row order matched."""
+    innocent = {"harness/p.py": ("def f(rows):\n    out = {}\n    for i, r in enumerate(rows):\n"
+                                 "        out[r['case_id']] = i\n        print(f\"{i}\")\n    return out\n")}
+    bad = {"harness/q.py": ("def g(rows):\n    out = {}\n    for i, r in enumerate(rows):\n"
+                            "        out[f\"{r['case_id']}#{i}\"] = r['passed']\n    return out\n")}
+    quiet_then_fires(detectors.row_index_keys, innocent, bad)
+    assert sites(detectors.row_index_keys, bad) == ["harness/q.py:g"]

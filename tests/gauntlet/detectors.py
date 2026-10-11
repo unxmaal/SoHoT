@@ -356,7 +356,32 @@ def loopback_equality(trees):
     return out
 
 
+def _names(node):
+    return {n.id for n in ast.walk(node) if isinstance(n, ast.Name)}
+
+
+def row_index_keys(trees):
+    # A dict keyed on a string holding an enumerate() index pairs rows by list position, not by identity (#690).
+    out = []
+    for rel, tree in _prod(trees).items():
+        owner = _innermost(tree)
+        for loop in ast.walk(tree):
+            if not (isinstance(loop, (ast.For, ast.comprehension)) and isinstance(loop.iter, ast.Call)
+                    and isinstance(loop.iter.func, ast.Name) and loop.iter.func.id == "enumerate"
+                    and isinstance(loop.target, ast.Tuple) and isinstance(loop.target.elts[0], ast.Name)):
+                continue
+            index = loop.target.elts[0].id
+            body = loop.body if isinstance(loop, ast.For) else []
+            for n in (x for stmt in body for x in ast.walk(stmt)):
+                key = n.slice if isinstance(n, ast.Subscript) and isinstance(n.ctx, ast.Store) else None
+                if isinstance(key, ast.JoinedStr) and index in _names(key):
+                    out.append(Hit(f"{rel}:{owner.get(id(loop), '<module>')}", n.lineno,
+                                   "a key built from a row's position pairs two lists only if they share an order"))
+    return out
+
+
 DETECTORS = {
+    "row_index_keys": row_index_keys,
     "closed_tables": closed_tables,
     "latest_row_state": latest_row_state,
     "unreached_guards": unreached_guards,

@@ -203,3 +203,71 @@ def test_a_variant_sharing_the_served_key_is_its_own_candidate(conn,
     got = winners.beaten_in(conn)["extract"]
     assert (got["candidate_id"], got["pass_rate"], got["match"]) == \
         (variant, 1.0, "")
+
+
+def test_metrics_compare_by_name_not_by_position():
+    """#690: a row missing duration_error_s must not have its wer compared with the other row's duration."""
+    a = {"pass_rate": 1.0, "median_s": 1.0, "metrics": {"duration_error_s": 0.01, "wer": 0.5}}
+    b = {"pass_rate": 1.0, "median_s": 1.0, "metrics": {"wer": 0.1}}
+    names = winners.shared_metrics([a, b])
+    assert winners.order_key(b, names) > winners.order_key(a, names)
+    assert not winners.order_key(a, names) > winners.order_key(b, names)
+    from harness import adopt
+    assert adopt.better(a, b) and not adopt.better(b, a)
+
+
+def test_pass_rate_still_ranks_first():
+    a = {"pass_rate": 0.9, "median_s": 1.0, "metrics": {"wer": 0.0}}
+    b = {"pass_rate": 1.0, "median_s": 1.0, "metrics": {"wer": 0.5}}
+    assert winners.order_key(b, ("wer",)) > winners.order_key(a, ("wer",))
+
+
+CYCLE = {"A": {"pass_rate": 1.0, "median_s": 1.0, "metrics": {"duration_error_s": 0.5, "wer": 0.1}},
+         "B": {"pass_rate": 1.0, "median_s": 1.0, "metrics": {"wer": 0.2}},
+         "C": {"pass_rate": 1.0, "median_s": 1.0, "metrics": {"duration_error_s": 0.1}}}
+
+
+@pytest.mark.parametrize("order", ["ABC", "BCA", "CAB", "ACB", "BAC", "CBA"])
+def test_the_lane_winner_does_not_depend_on_scan_order(monkeypatch, order):
+    """#690 review: pairwise comparison on shared metric names cycles (A>B, B==C, C>A), so a running max picked by scan order."""
+    from harness import runs
+    summary = {k: CYCLE[k] for k in order}
+    run = {"lane": "tts", "path": "p", "id": 1}
+    monkeypatch.setattr(runs, "summaries", lambda conn, tier=None: [(run, summary, [])])
+    winner = winners.from_receipts(None, plain_only=False)["tts"]["candidate"]
+    reference = {k: CYCLE[k] for k in "ABC"}
+    monkeypatch.setattr(runs, "summaries", lambda conn, tier=None: [(run, reference, [])])
+    assert winners.from_receipts(None, plain_only=False)["tts"]["candidate"] == winner
+
+
+def test_an_order_key_is_hashable():
+    hash(winners.order_key({"pass_rate": 1.0, "median_s": 1.0, "metrics": {"wer": 0.1}}, ("wer",)))
+
+
+PARAKEET = {"tdt-v2": {"pass_rate": 1.0, "median_s": 0.135, "metrics": {"wer": 0.0162}},
+            "ctc": {"pass_rate": 1.0, "median_s": 0.116, "metrics": {"wer": 0.0225}},
+            "crashed": {"pass_rate": 0.0, "median_s": 0.0, "metrics": {}}}
+
+
+def test_a_metricless_row_does_not_erase_the_lanes_metric(monkeypatch):
+    """#690 review: one crashed candidate with no metrics made the lane rank on pass rate and latency, so ctc beat tdt-v2."""
+    from harness import runs
+    run = {"lane": "stt", "path": "p", "id": 1}
+    monkeypatch.setattr(runs, "summaries", lambda conn, tier=None: [(run, dict(PARAKEET), [])])
+    assert winners.from_receipts(None, plain_only=False)["stt"]["candidate"] == "tdt-v2"
+
+
+def test_a_metricless_row_at_the_top_pass_rate_loses_on_the_metric():
+    rows = [PARAKEET["tdt-v2"], {"pass_rate": 1.0, "median_s": 0.01, "metrics": {}}]
+    names = winners.shared_metrics(rows)
+    assert names == ("wer",)
+    assert winners.order_key(rows[0], names) > winners.order_key(rows[1], names)
+
+
+def test_beaten_in_keeps_the_metric_when_a_crashed_row_is_in_the_room(store_run, conn, monkeypatch):
+    pin(monkeypatch, stt="mlx-community/parakeet-tdt-0.6b-v2")
+    store_run("stt", "stt", {
+        "parakeet-tdt-0.6b-v2": {"pass_rate": 1.0, "median_s": 0.135, "total": 300, "metrics": {"wer": 0.0162}},
+        "parakeet-ctc-0.6b": {"pass_rate": 1.0, "median_s": 0.116, "total": 300, "metrics": {"wer": 0.0225}},
+        "parakeet-crashed": {"pass_rate": 0.0, "median_s": 0.0, "total": 300}})
+    assert winners.beaten_in(conn)["stt"]["candidate"] == "parakeet-tdt-0.6b-v2"

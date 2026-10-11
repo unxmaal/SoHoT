@@ -24,7 +24,6 @@ it does today.
 from __future__ import annotations
 
 import json
-import math
 import statistics
 from dataclasses import dataclass, field
 
@@ -75,7 +74,8 @@ def better(incumbent: dict, challenger: dict) -> bool:
     """
     from harness import winners
 
-    return winners.order_key(challenger) > winners.order_key(incumbent)
+    names = winners.shared_metrics([incumbent, challenger])
+    return winners.order_key(challenger, names) > winners.order_key(incumbent, names)
 
 
 def decide_by_hand(lane: str, incumbent: str, challenger: str,
@@ -210,8 +210,7 @@ def paired_p(rows, name_i: str, name_c: str):
     deff = power.design_effect(repeat, used)
     if deff <= 1.0 + 1e-9:
         return cell, cell.p, ""
-    gained = int(cell.gained / deff + 1e-9)
-    lost = math.ceil(cell.lost / deff - 1e-9)
+    lost, gained = paired.shrink(cell.lost, cell.gained, deff)
     p = paired.sign_test(min(gained, lost), gained + lost)
     return cell, p, (f"{gained} gained against {lost} lost once correlated "
                      f"repeats are counted as cases (rho {used:.2f}"
