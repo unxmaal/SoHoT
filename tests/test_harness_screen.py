@@ -83,10 +83,10 @@ def test_a_screen_that_did_not_run_is_broken_and_terminal():
     assert got in ms.TERMINAL, "a thing that does not run is answered"
 
 
-def test_a_screen_that_ran_and_passed_nothing_is_broken():
-    """seedvr2 crashed 0/3 and local-small never closed a tag 0/9. Exiting zero
-    is not the same as working."""
-    assert screen.outcome(0, {"c": {"total": 3, "passed": 0}})[0] == "broken"
+def test_a_screen_that_ran_and_passed_nothing_is_declined_on_the_screen_limit():
+    """Exiting zero is not the same as working, and a few screen cases are not enough to call it broken. #691."""
+    v = screen.outcome(0, {"c": {"total": 3, "passed": 0}})
+    assert v.outcome == "declined" and v.until.startswith("limit:screen_cases>"), v
 
 
 def test_a_screen_that_passed_is_screened_and_not_terminal():
@@ -213,9 +213,9 @@ def test_a_passing_screen_is_screened_not_broken():
     assert "1 case" in why
 
 
-def test_a_failing_screen_is_still_broken():
-    """The negative half. A tier that never says broken screens nothing out."""
-    assert screen.outcome(0, {"m": {"total": 3, "passed": 0}})[0] == "broken"
+def test_a_failing_screen_is_never_screened():
+    """The negative half. A tier that passes a failure screens nothing out."""
+    assert screen.outcome(0, {"m": {"total": 3, "passed": 0}})[0] == "declined"
 
 
 @pytest.mark.gauntlet("a-fact-about-the-harness-recorded-as-a-verdict-on-the-subject",

@@ -768,9 +768,8 @@ def test_a_chain_candidate_needs_an_output_directory(tmp_path):
     assert "--out" in str(e.value)
 
 
-def test_screen_picks_one_case_per_modality_and_shrinks_it():
-    """1,081 pairs at full settings does not run. The screen is what makes
-    traversal affordable."""
+def test_screen_picks_cases_per_modality_and_shrinks_their_size_but_not_their_steps():
+    """The screen shrinks the size to stay affordable and leaves steps to the model. #691."""
     from evals.core import Case
     from evals.run import screen_cases
     cases = [Case(id="b", modality="image", prompt="p",
@@ -780,10 +779,9 @@ def test_screen_picks_one_case_per_modality_and_shrinks_it():
              Case(id="c", modality="svg", prompt="p")]
     got = screen_cases(cases)
     assert {c.modality for c in got} == {"image", "svg"}
-    assert len(got) == 2
-    img = next(c for c in got if c.modality == "image")
-    assert img.id == "a", "picks deterministically, by id"
-    assert img.params["width"] == 256 and img.params["steps"] == 2
+    assert [c.id for c in got] == ["a", "b", "c"], "picks deterministically, by id"
+    img = got[0]
+    assert img.params["width"] == 256 and img.params["steps"] == 8
 
 
 def test_screen_never_enlarges_a_case_that_is_already_smaller():

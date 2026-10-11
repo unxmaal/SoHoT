@@ -637,9 +637,10 @@ def _fair(candidate: str, picked: list[Case]) -> list[Case]:
 STOCHASTIC_MODALITIES = {"image", "video", "svg", "web", "code", "music", "agent"}
 
 
-#: Screen settings: the smallest thing that still proves the pipeline ran.
-SCREEN_PARAMS = {"width": 256, "height": 256, "steps": 2, "seconds": None,
-                 "frames": None}
+#: Screen settings: the smallest thing that still proves the pipeline ran. Steps are the model's own, never shrunk. #691.
+SCREEN_PARAMS = {"width": 256, "height": 256, "seconds": None, "frames": None}
+#: Cases a screen draws per (modality, language): screen.cases_needed at the lowest measured incumbent rate. #691.
+SCREEN_CASES = 6
 
 
 def screen_pool(cases: list[Case]) -> list[Case]:
@@ -651,16 +652,23 @@ def screen_pool(cases: list[Case]) -> list[Case]:
                   and (c.modality, c.language) not in have]
 
 
-def _first_each(cases: list[Case]) -> list[Case]:
-    """The first case by id for each (modality, language)."""
-    picked: dict[tuple[str, str], Case] = {}
+def _screen_each(cases: list[Case]) -> list[Case]:
+    """Up to SCREEN_CASES cases for each (modality, language), dealt by id across the families of case ids. #691."""
+    groups: dict[tuple[str, str], dict[str, list[Case]]] = {}
     for c in sorted(cases, key=lambda c: c.id):
-        picked.setdefault((c.modality, c.language), c)
-    return list(picked.values())
+        groups.setdefault((c.modality, c.language), {}).setdefault(c.id.split("-")[0], []).append(c)
+    out = []
+    for families in groups.values():
+        queues = list(families.values())
+        picked = []
+        while len(picked) < SCREEN_CASES and any(queues):
+            picked += [q.pop(0) for q in queues if q][:SCREEN_CASES - len(picked)]
+        out += picked
+    return out
 
 
 def screen_cases(cases: list[Case], candidates=()) -> list[Case]:
-    """One case per modality AND LANGUAGE, shrunk. Cheap enough to be wrong about.
+    """SCREEN_CASES cases per modality AND LANGUAGE, shrunk in size only. Cheap enough to be wrong about.
 
     Keyed on modality alone this took the alphabetically first id, so the tts
     lane always picked `fr-liaison` and cases_for -- which filters by the
@@ -678,7 +686,7 @@ def screen_cases(cases: list[Case], candidates=()) -> list[Case]:
     groups = [cases_for(c, cases) for c in candidates] or [cases]
     picked: dict[str, Case] = {}
     for group in groups:
-        for c in _first_each(group):
+        for c in _screen_each(group):
             picked.setdefault(c.id, c)
     out = []
     for c in picked.values():
@@ -912,7 +920,7 @@ def _execute_at(args, overrides: dict) -> int:
     for candidate in candidates:
         mine = cases_for(candidate, cases)
         if args.screen:
-            mine = _first_each(mine)
+            mine = _screen_each(mine)
         if not mine:
             print(f"\n── {candidate}: {unrunnable(candidate, args.modality)}",
                   file=sys.stderr)

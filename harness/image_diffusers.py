@@ -24,31 +24,61 @@ from three weeks ago is only reproducible if it says what produced it.
 from __future__ import annotations
 
 import argparse
+import inspect
 import json
 import sys
 from pathlib import Path
 
 from harness.torch_device import HALF, accelerator
 
-#: Steps a turbo model wants. SDXL-Turbo is trained for 1 to 4 and produces
-#: mush at 30, which is the opposite of the usual more-is-better assumption.
-TURBO_STEPS = 4
 DEFAULT_SIZE = 512
-#: Turbo models are distilled to run without classifier-free guidance, and a
-#: guidance above 1.0 makes them worse rather than more faithful.
-TURBO_GUIDANCE = 0.0
+#: Steps and guidance each distilled family's own model card names; any other model gets its pipeline's defaults. #691.
+FAMILY_SAMPLING = {
+    "sdxl_turbo": {"steps": 4, "guidance": 0.0},
+    "z_image_turbo": {"steps": 9, "guidance": 0.0},
+    "stable_diffusion_3_5_large_turbo": {"steps": 4, "guidance": 0.0},
+}
+
+
+def family(model: str) -> dict:
+    """The sampling a model's family card names, by the longest family key in its repo name, else {}."""
+    tail = model.rsplit("/", 1)[-1].lower().replace("-", "_").replace(".", "_")
+    keys = [k for k in FAMILY_SAMPLING if k in tail]
+    return FAMILY_SAMPLING[max(keys, key=len)] if keys else {}
 
 
 def sampling(model: str, steps: int | None, guidance: float | None) -> dict:
-    """What to pass the pipeline: the caller's values, turbo settings for a
-    turbo model, else nothing so the pipeline uses its own defaults. #401."""
-    turbo = "turbo" in model.lower()
+    """What to pass the pipeline: the caller's values, else the family's, else nothing. #401, #691."""
+    fam = family(model)
+    steps = fam.get("steps") if steps is None else steps
+    guidance = fam.get("guidance") if guidance is None else guidance
     out = {}
-    if steps is not None or turbo:
-        out["num_inference_steps"] = TURBO_STEPS if steps is None else steps
-    if guidance is not None or turbo:
-        out["guidance_scale"] = TURBO_GUIDANCE if guidance is None else guidance
+    if steps is not None:
+        out["num_inference_steps"] = steps
+    if guidance is not None:
+        out["guidance_scale"] = guidance
     return out
+
+
+def _default(pipe, name: str):
+    p = inspect.signature(pipe.__call__).parameters.get(name)
+    return None if p is None or p.default is inspect.Parameter.empty else p.default
+
+
+def metadata(args, pipe, device: str, torch_version: str) -> dict:
+    """The sidecar beside an image, with the steps and guidance it was actually generated at. #691."""
+    used = sampling(args.model, args.steps, args.guidance)
+    return {
+        "model": args.model,
+        "prompt": args.prompt,
+        "steps": used.get("num_inference_steps", _default(pipe, "num_inference_steps")),
+        "guidance": used.get("guidance_scale", _default(pipe, "guidance_scale")),
+        "width": args.width,
+        "height": args.height,
+        "seed": args.seed,
+        "device": device,
+        "torch": torch_version,
+    }
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -123,17 +153,8 @@ def main(argv: list[str] | None = None) -> int:
                  **sampling(args.model, args.steps, args.guidance)).images[0]
     image.save(out)
 
-    out.with_suffix(".json").write_text(json.dumps({
-        "model": args.model,
-        "prompt": args.prompt,
-        "steps": args.steps,
-        "guidance": args.guidance,
-        "width": args.width,
-        "height": args.height,
-        "seed": args.seed,
-        "device": device,
-        "torch": torch.__version__,
-    }, indent=2), encoding="utf-8")
+    out.with_suffix(".json").write_text(json.dumps(
+        metadata(args, pipe, device, torch.__version__), indent=2), encoding="utf-8")
     print(out)
     return 0
 

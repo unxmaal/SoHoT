@@ -49,7 +49,7 @@ SOMEBODY_ELSE = {"mflux/Z-Image-Turbo-mflux-4bit": {"total": 1, "passed": 1,
 
 def test_a_failing_screen_records_the_checkers_reason():
     got, why, *_ = screen.outcome(0, FAILED, candidate=SPEC)
-    assert got == "broken"
+    assert got == "declined"
     assert "model_index.json" in why, why
 
 
@@ -57,7 +57,7 @@ def test_a_failing_screen_with_no_stated_reason_still_says_it_ran():
     """The old sentence is the fallback, not the only answer."""
     bare = {"c": {"total": 1, "passed": 0, "failures": []}}
     got, why, *_ = screen.outcome(0, bare, candidate="c")
-    assert got == "broken"
+    assert got == "declined"
     assert why == "it ran and passed nothing"
 
 
@@ -179,11 +179,11 @@ def test_a_load_failure_waits_for_a_newer_runtime_instead_of_breaking():
     assert "rope_theta" in why
 
 
-def test_a_wrong_answer_is_still_broken():
-    """THE NEGATIVE CONTROL. A model that loaded and answered badly has been
-    measured, and that verdict stays terminal."""
-    got, *_ = screen.outcome(0, WRONG_ANSWER, candidate="incoai/Qwen3.8-27B-DFlash2")
-    assert got == "broken"
+def test_a_wrong_answer_is_declined_on_the_screen_limit_not_a_runtime():
+    """THE NEGATIVE CONTROL. A model that loaded and answered badly is not screened, and waits on the screen. #691."""
+    v = screen.outcome(0, WRONG_ANSWER, candidate="incoai/Qwen3.8-27B-DFlash2")
+    assert (v.outcome, v.failure_class) == ("declined", reasons.CONTENT_FAILED)
+    assert v.until.startswith("limit:screen_cases>"), v.until
 
 
 def test_the_load_failure_names_the_runtime_that_would_end_the_wait():
@@ -233,10 +233,11 @@ def test_a_layout_stock_diffusers_cannot_assemble_is_not_broken(why):
     assert v.reason == "runtime" and v.until.startswith("version:diffusers>")
 
 
-def test_a_model_that_ran_and_failed_is_still_broken():
-    """Negative control for #381."""
+def test_a_model_that_ran_and_failed_is_not_screened():
+    """Negative control for #381: declined on the screen size, not on a runtime. #691."""
     s = ran("diffusers:o/x", "diffusers/x", "fox-snow: no fox in image", checker=True)
-    assert screen.outcome(0, s, candidate="diffusers:o/x")[0] == "broken"
+    v = screen.outcome(0, s, candidate="diffusers:o/x")
+    assert v.outcome == "declined" and v.until.startswith("limit:screen_size>"), v
 
 
 # --- #383 class 1: every consumer reads the key the engine wrote ------------
@@ -382,18 +383,20 @@ def test_no_loader_failure_is_recorded_broken(cand, key, failure):
     assert screen.outcome(0, summary, candidate=cand)[0] != "broken", failure
 
 
-@pytest.mark.parametrize("cand,key,failure,checker", [
-    ("diffusers:o/x", "diffusers/x", "fox-snow: no fox in the image (clip 0.12)", True),
-    ("o/x", "o/x", "fox-snow: no fox in the image (clip 0.12)", True),
-    ("diffusers:o/x", "diffusers/x",
-     "fox-snow: exit 1: OSError: [Errno 2] No such file or directory: 'vae/config.json'",
-     False),
-])
-def test_a_content_or_snapshot_failure_is_still_broken(cand, key, failure, checker):
-    """Negative control: the output was wrong, or the snapshot lacks a file."""
-    summary = ran(cand, key, failure, checker)
-    v = screen.outcome(0, summary, candidate=cand)
+def test_a_snapshot_failure_is_still_broken():
+    """Negative control: the snapshot lacks a file."""
+    summary = ran("diffusers:o/x", "diffusers/x",
+                  "fox-snow: exit 1: OSError: [Errno 2] No such file or directory: 'vae/config.json'")
+    v = screen.outcome(0, summary, candidate="diffusers:o/x")
     assert (v.outcome, v.reason) == ("broken", "candidate")
+
+
+@pytest.mark.parametrize("cand,key", [("diffusers:o/x", "diffusers/x"), ("o/x", "o/x")])
+def test_a_wrong_output_is_declined_on_a_screen_limit(cand, key):
+    """The output was wrong on a few screen cases: not screened, not terminal. #691."""
+    summary = ran(cand, key, "fox-snow: no fox in the image (clip 0.12)", True)
+    v = screen.outcome(0, summary, candidate=cand)
+    assert (v.outcome, v.reason) == ("declined", "limit")
 
 
 def test_a_process_engine_decline_waits_on_its_own_runtime():
