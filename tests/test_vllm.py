@@ -7,13 +7,14 @@ import subprocess
 import sys
 import textwrap
 import threading
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from http.server import BaseHTTPRequestHandler
 
 import pytest
 
 from evals import run as R
 from evals.runners.text import CompletionRunner
 from harness import cli, gateway, machine, reverify, serving, throughput, vllm
+from harness.loopback import ThreadingHTTPServer
 
 
 class Fake(ThreadingHTTPServer):

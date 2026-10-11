@@ -9,7 +9,7 @@ import subprocess
 import sys
 import threading
 import time
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from http.server import BaseHTTPRequestHandler
 from pathlib import Path
 
 import pytest
@@ -19,6 +19,7 @@ httpx = pytest.importorskip("httpx")
 
 from harness import memory_store as ms  # noqa: E402
 from harness import paths  # noqa: E402
+from harness.loopback import ThreadingHTTPServer  # noqa: E402
 
 pytestmark = pytest.mark.litellm
 REPO = Path(__file__).resolve().parents[1]

@@ -3,7 +3,7 @@ import json
 import sys
 import threading
 import time
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from http.server import BaseHTTPRequestHandler
 
 import pytest
 
@@ -12,6 +12,7 @@ from evals.runners import claude_code as CC
 from evals.runners.text import CompletionRunner
 from harness import completion, publish, report, runs, throughput
 from harness import memory_store as ms
+from harness.loopback import ThreadingHTTPServer
 
 THINK_AT, ANSWER_AT = 0.2, 0.5
 PIECES = ["def add(a, b):", "\n    return", " a + b\n"]

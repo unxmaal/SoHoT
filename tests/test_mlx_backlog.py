@@ -10,7 +10,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from harness import gateway, mlx_server, serving
+from harness import gateway, loopback, mlx_server, serving
 
 REPO = Path(__file__).resolve().parents[1]
 IN_FLIGHT = 32
@@ -35,7 +35,7 @@ def _connect_all(port: int, n: int = IN_FLIGHT) -> list[str]:
 
 def _busy_server():
     """A ThreadingHTTPServer built as mlx_lm.server builds it, whose accept loop has not run yet."""
-    return http.server.ThreadingHTTPServer(("127.0.0.1", 0), http.server.BaseHTTPRequestHandler)
+    return loopback.ThreadingHTTPServer(("127.0.0.1", 0), http.server.BaseHTTPRequestHandler)
 
 
 @pytest.mark.skipif(sys.platform != "darwin", reason="macOS resets past the backlog")

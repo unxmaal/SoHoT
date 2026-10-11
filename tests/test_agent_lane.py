@@ -7,7 +7,7 @@ import sys
 import textwrap
 import threading
 import time
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from http.server import BaseHTTPRequestHandler
 from pathlib import Path
 
 import pytest
@@ -18,6 +18,7 @@ from evals.runners.agent import AgentRunner
 from evals.runners.base import BaseRunner
 from evals.runners.claude_agent import ClaudeAgentRunner, parse_steps
 from harness import lanes
+from harness.loopback import ThreadingHTTPServer
 
 ROOT = Path(__file__).resolve().parents[1]
 CASES = ROOT / "evals" / "cases" / "agent"

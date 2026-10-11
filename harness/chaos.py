@@ -166,6 +166,7 @@ def _last_verdict(conn, name: str, tier: str):
 _STUB = r"""
 import http.server, sys, time
 from pathlib import Path
+from harness.loopback import ThreadingHTTPServer
 marker = Path(sys.argv[1])
 class H(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
@@ -178,7 +179,7 @@ class H(http.server.BaseHTTPRequestHandler):
         time.sleep(3600)
     def log_message(self, *a):
         pass
-s = http.server.ThreadingHTTPServer(("127.0.0.1", 0), H)
+s = ThreadingHTTPServer(("127.0.0.1", 0), H)
 print(s.server_address[1], flush=True)
 s.serve_forever()
 """
