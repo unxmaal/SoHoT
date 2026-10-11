@@ -1,4 +1,4 @@
-"""Two PRs that each add a knob in a different area and a backlog line merge with no conflict (#751)."""
+"""Knob PRs merge cleanly when they touch different spots, and a merge never brings back a deleted backlog line (#751, #756)."""
 import importlib.util
 import os
 import shutil
@@ -80,10 +80,38 @@ def test_two_prs_adding_a_knob_in_different_areas_and_a_backlog_line_each_merge_
     assert lines == sorted(lines) and {"harness/zz_left.py:MAX_X", "harness/aa_right.py:MAX_X"} <= set(lines)
 
 
-def test_two_backlog_lines_at_the_same_spot_merge_by_union_where_git_reads_the_attributes(repo):
-    _branch(repo, "left", lambda: _add_backlog(repo, "harness/mm_a.py:MAX_X"))
-    _branch(repo, "right", lambda: _add_backlog(repo, "harness/mm_b.py:MAX_X"))
+def _drop_backlog(root: Path, site: str):
+    path = root / BACKLOG / "harness.txt"
+    lines = path.read_text(encoding="utf-8").splitlines()
+    assert site in lines
+    path.write_text("\n".join(s for s in lines if s != site) + "\n", encoding="utf-8")
+
+
+def _neighbours() -> tuple[str, str]:
+    lines = (REPO / BACKLOG / "harness.txt").read_text(encoding="utf-8").splitlines()
+    return lines[len(lines) // 2], lines[len(lines) // 2 + 1]
+
+
+def _settled(repo, how: str) -> tuple[bool, list[str]]:
     git(repo, "checkout", "-q", "left")
-    git(repo, "merge", "-q", "--no-edit", "right")
-    lines = (repo / BACKLOG / "harness.txt").read_text(encoding="utf-8").splitlines()
-    assert {"harness/mm_a.py:MAX_X", "harness/mm_b.py:MAX_X"} <= set(lines)
+    args = ["merge", "-q", "--no-edit", "right"] if how == "merge" else ["rebase", "-q", "right"]
+    clean = git(repo, *args, check=False).returncode == 0
+    return clean, (repo / BACKLOG / "harness.txt").read_text(encoding="utf-8").splitlines()
+
+
+@pytest.mark.parametrize("how", ["merge", "rebase"])
+def test_two_branches_each_deleting_a_neighbouring_backlog_line_never_resurrect_either(repo, how):
+    a, b = _neighbours()
+    _branch(repo, "left", lambda: _drop_backlog(repo, a))
+    _branch(repo, "right", lambda: _drop_backlog(repo, b))
+    clean, lines = _settled(repo, how)
+    assert not clean or not {a, b} & set(lines), f"a clean {how} brought back a deleted site"
+
+
+@pytest.mark.parametrize("how", ["merge", "rebase"])
+def test_a_deletion_beside_an_addition_is_kept_or_conflicts(repo, how):
+    a, b = _neighbours()
+    _branch(repo, "left", lambda: _drop_backlog(repo, a))
+    _branch(repo, "right", lambda: _add_backlog(repo, a + "_zz"))
+    clean, lines = _settled(repo, how)
+    assert not clean or (a not in lines and a + "_zz" in lines and b in lines), f"a clean {how} brought back {a}"
