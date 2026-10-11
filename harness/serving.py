@@ -90,6 +90,14 @@ ENGINE_KEY = "engine"
 HOT_SWAP_KEY = "hot_swap"
 
 
+#: An entry with no api_base goes to its LiteLLM provider's own hosted API.
+HOSTED = "hosted"
+
+
+class UnknownEngine(ValueError):
+    """No config key or local launcher port names the engine behind an upstream. #702."""
+
+
 def bare(base: str) -> str:
     """A server base without a trailing slash or /v1."""
     return (base or "").strip().rstrip("/").removesuffix("/v1").rstrip("/")
@@ -106,7 +114,7 @@ def loopback(base: str) -> bool:
 
 def engines(environ=None) -> tuple:
     """Every engine name a gateway config entry may declare."""
-    return (LLAMACPP, DEFAULT, DS4, text_engine(environ), *VLLM_ENGINES)
+    return (LLAMACPP, DEFAULT, DS4, text_engine(environ), *VLLM_ENGINES, HOSTED)
 
 
 def _declared(entry: dict, environ=None) -> str:
@@ -156,12 +164,10 @@ def engine_for(candidate: str, environ=None, config=None) -> str:
     for entry in data.get("model_list") or []:
         if str(entry.get("model_name", "")).lower() == name.lower():
             base = api_base(entry)
-            if not base:
-                break
-            got = _declared(entry, environ) or engine_at(base, environ, data=data)
+            got = _declared(entry, environ) or (engine_at(base, environ, data=data) if base else HOSTED)
             if got is None:
-                raise ValueError(f"{name}: no engine is known for {base}; give its gateway "
-                                 f"config entry an {ENGINE_KEY}: key")
+                raise UnknownEngine(f"{name}: no engine is known for {base}; "
+                                    f"give its gateway config entry an {ENGINE_KEY}: key")
             return got
     return text_engine(environ)
 
@@ -172,6 +178,8 @@ def enforces_schema(spec: str, environ=None, config=None) -> bool:
         if engine_for(spec, environ, config) == LLAMACPP:
             return True
         where = route(spec, config=config)
+    except UnknownEngine:
+        raise
     except ValueError:
         return False
     return engine_at(where.base, environ, config) == LLAMACPP

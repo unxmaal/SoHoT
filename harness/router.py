@@ -88,9 +88,9 @@ def upstream_for(spec: str, gateway: str = "", route=None) -> tuple[str, str]:
     from harness import serving
     try:
         base, model = (route or _upstream)(spec, gateway)
-        engine = serving.engine_at(base) if model else None
     except Exception:  # noqa: BLE001
         return "", ""
+    engine = serving.engine_at(base) if model else None
     return (serving.bare(base), model) if engine == serving.LLAMACPP else ("", "")
 
 

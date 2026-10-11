@@ -10,6 +10,7 @@ not ship.
 """
 from __future__ import annotations
 
+import functools
 import json
 import os
 import time
@@ -28,13 +29,35 @@ GATEWAY_ENV = "SOHOT_GATEWAY_URL"
 def gateway_url(environ=None) -> str:
     """The gateway to use when a caller names none."""
     environ = os.environ if environ is None else environ
-    return (environ.get(GATEWAY_ENV) or "").strip().rstrip("/") or DEFAULT_GATEWAY
+    return _bare(environ.get(GATEWAY_ENV) or "") or DEFAULT_GATEWAY
 
 
-def is_gateway(base: str, environ=None) -> bool:
-    """Whether `base` is the configured gateway or this machine's own."""
-    got = (base or "").strip().rstrip("/").removesuffix("/v1")
-    return got in (gateway_url(environ), DEFAULT_GATEWAY)
+def _bare(base: str) -> str:
+    return (base or "").strip().rstrip("/").removesuffix("/v1").rstrip("/")
+
+
+@functools.lru_cache(maxsize=64)
+def _answers_as_gateway(base: str) -> bool:
+    """Whether `base` answers LiteLLM's liveness probe."""
+    try:
+        r = httpx.get(base + "/health/liveliness", timeout=2.0)
+    except httpx.HTTPError:
+        return False
+    return r.status_code == 200 and "alive" in r.text.lower()
+
+
+def is_gateway(base: str, environ=None, config=None) -> bool:
+    """Whether `base` is a gateway: the configured or default one, else an unknown host that answers as LiteLLM."""
+    from harness import gateway, serving
+    got = _bare(base)
+    if not got:
+        return False
+    if got in (gateway_url(environ), DEFAULT_GATEWAY):
+        return True
+    upstreams = {serving.api_base(e) for e in gateway.load(config).get("model_list") or []}
+    if got in upstreams or serving.loopback(got):
+        return False
+    return _answers_as_gateway(got)
 
 # Per-modality steering. The checkers recover fenced or chatty output anyway,
 # but asking for the bare artifact makes the comparison about the artifact

@@ -256,3 +256,10 @@ def real_ocr(monkeypatch):
     from harness.checks import ocr
     from tests.ocr_retry import retrying
     monkeypatch.setattr(ocr, "read", retrying(ocr.read))
+
+
+@pytest.fixture(autouse=True)
+def _no_gateway_probe(monkeypatch):
+    """No test probes a host to ask whether it is a gateway. #702."""
+    from harness import completion
+    monkeypatch.setattr(completion, "_answers_as_gateway", lambda base: False)
