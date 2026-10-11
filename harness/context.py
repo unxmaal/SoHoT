@@ -265,8 +265,11 @@ def plan(conn, budget: int | None = None, slots: int = 1,
     from harness import downloads
     budget = budget_bytes(conn) if budget is None else budget
     kv_cap = kv_cap_bytes() if kv_cap is None else kv_cap
+    from harness import serving
     try:
         beside = coresident_bytes(conn)
+    except serving.UnknownEngine:
+        raise
     except Exception:  # noqa: BLE001
         beside = 0
     out = []

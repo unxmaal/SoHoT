@@ -10,6 +10,8 @@ from harness import completion, context, delegate, router, screen, serving
 
 REMOTE_LLAMA = "http://studio2:8082"
 REMOTE_MLX = "http://studio2:8081"
+# The real probe, taken before the autouse fixture stubs it.
+PROBE = completion._answers_as_gateway
 
 
 def _config(tmp_path, *entries, name="gateway.yaml"):
@@ -219,3 +221,45 @@ def test_a_gateway_reached_by_hostname_is_found_by_probe(remote, monkeypatch):
     asked.clear()
     assert not completion.is_gateway(REMOTE_LLAMA)
     assert asked == []
+
+
+def test_plan_does_not_swallow_an_unknown_engine(monkeypatch):
+    def unknown(conn):
+        raise serving.UnknownEngine("near")
+    monkeypatch.setattr(context, "coresident_bytes", unknown)
+    with pytest.raises(serving.UnknownEngine):
+        context.plan(None, budget=1, kv_cap=1)
+
+
+def test_a_failed_probe_is_not_remembered():
+    import http.server
+    import threading
+
+    from harness import loopback
+    up = []
+
+    class Handler(http.server.BaseHTTPRequestHandler):
+        def do_GET(self):
+            body = b"I'm alive!" if up else b"down"
+            self.send_response(200 if up else 503)
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, *a):
+            pass
+
+    srv = loopback.HTTPServer(("127.0.0.1", 0), Handler)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    base = f"http://127.0.0.1:{srv.server_address[1]}"
+    try:
+        assert not PROBE(base)
+        up.append(1)
+        assert PROBE(base)
+    finally:
+        srv.shutdown()
+        srv.server_close()
+
+
+def test_a_loopback_gateway_on_another_port_is_found_by_probe(remote, monkeypatch):
+    monkeypatch.setattr(completion, "_answers_as_gateway", lambda base: True)
+    assert completion.is_gateway("http://127.0.0.1:4100")

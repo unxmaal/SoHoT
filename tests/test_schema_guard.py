@@ -44,3 +44,19 @@ def test_the_mac_gateway_loads_the_guard_and_the_cuda_one_does_not():
         mac["litellm_settings"].get("callbacks") or [])
     assert "schema_guard.proxy_handler_instance" not in (
         (cuda.get("litellm_settings") or {}).get("callbacks") or [])
+
+
+def test_an_entry_with_no_engine_refuses_rather_than_raising(tmp_path, monkeypatch):
+    def entry(name, base, **extra):
+        return {"model_name": name, **extra,
+                "litellm_params": {"model": f"openai/{name}", "api_base": f"{base}/v1"}}
+    cfg = tmp_path / "gateway.yaml"
+    cfg.write_text(yaml.safe_dump({"model_list": [
+        entry("enforcer", "http://far:8082", engine="llama-server"),
+        entry("loose", "http://far:8081", engine="mlx_lm.server"),
+        entry("mystery", "http://far:8083")]}), encoding="utf-8")
+    monkeypatch.setattr(guard, "CONFIG", cfg)
+    why = guard.refusal({"model": "loose", "response_format": SCHEMA})
+    assert "enforcer" in why and "mystery" not in why
+    why = guard.refusal({"model": "mystery", "response_format": SCHEMA})
+    assert "mystery" in why and "engine" in why and "enforcer" in why

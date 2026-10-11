@@ -10,7 +10,6 @@ not ship.
 """
 from __future__ import annotations
 
-import functools
 import json
 import os
 import time
@@ -36,18 +35,25 @@ def _bare(base: str) -> str:
     return (base or "").strip().rstrip("/").removesuffix("/v1").rstrip("/")
 
 
-@functools.lru_cache(maxsize=64)
+_GATEWAYS: set = set()
+
+
 def _answers_as_gateway(base: str) -> bool:
-    """Whether `base` answers LiteLLM's liveness probe."""
+    """Whether `base` answers LiteLLM's liveness probe; only a yes is remembered."""
+    if base in _GATEWAYS:
+        return True
     try:
         r = httpx.get(base + "/health/liveliness", timeout=2.0)
     except httpx.HTTPError:
         return False
-    return r.status_code == 200 and "alive" in r.text.lower()
+    if r.status_code == 200 and "alive" in r.text.lower():
+        _GATEWAYS.add(base)
+        return True
+    return False
 
 
 def is_gateway(base: str, environ=None, config=None) -> bool:
-    """Whether `base` is a gateway: the configured or default one, else an unknown host that answers as LiteLLM."""
+    """Whether `base` is a gateway: the configured or default one, else any base that is no config upstream and answers as LiteLLM."""
     from harness import gateway, serving
     got = _bare(base)
     if not got:
@@ -55,7 +61,7 @@ def is_gateway(base: str, environ=None, config=None) -> bool:
     if got in (gateway_url(environ), DEFAULT_GATEWAY):
         return True
     upstreams = {serving.api_base(e) for e in gateway.load(config).get("model_list") or []}
-    if got in upstreams or serving.loopback(got):
+    if got in upstreams:
         return False
     return _answers_as_gateway(got)
 
