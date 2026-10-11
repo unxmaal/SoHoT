@@ -32,6 +32,10 @@ LOAD_FAILED_RUNTIME = "load_failed_runtime"
 LOAD_FAILED_LAYOUT = "load_failed_layout"
 TIMEOUT = "timeout"
 TOKEN_BUDGET_EXHAUSTED = "token_budget_exhausted"
+#: An agent run stopped at the step cap we chose. #695.
+STEP_CAP = "step_cap"
+#: A case whose prompt and reply budget do not fit the context the candidate is served at. #695.
+CONTEXT_EXCEEDED = "context_exceeded"
 MISSING_FILE_IN_SNAPSHOT = "missing_file_in_snapshot"
 CRASHED = "crashed"
 CONTENT_FAILED = "content_failed"
@@ -53,6 +57,8 @@ CLASSES = {
     HARNESS_ERROR: ("queued", HARNESS),
     TIMEOUT: ("declined", LIMIT),
     TOKEN_BUDGET_EXHAUSTED: ("declined", LIMIT),
+    STEP_CAP: ("declined", LIMIT),
+    CONTEXT_EXCEEDED: ("declined", LIMIT),
     LOAD_FAILED_RUNTIME: ("declined", RUNTIME),
     LOAD_FAILED_LAYOUT: ("declined", RUNTIME),
     BACKEND_FAULT: ("declined", RUNTIME),

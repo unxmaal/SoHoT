@@ -282,7 +282,7 @@ def test_a_claude_agent_timeout_is_timeout_on_the_agent_case_knob(monkeypatch):
     monkeypatch.setattr(agent, "setup", lambda case: (type("Box", (), {"cleanup": lambda self: None,
                                                                          "root": "/x"})(), "go"))
     r = claude_agent.ClaudeAgentRunner("m", timeout=900.0, execute=expired)
-    row = r.run(Case(id="a", modality="agent", prompt="", params={"tools": ["read"]}))
+    row = r.run(Case(id="a", modality="agent", prompt="", params={"tools": ["read"], "max_steps": 8}))
     assert (row.failure_class, row.limit) == (reasons.TIMEOUT, "agent_case_timeout_s>900")
 
 

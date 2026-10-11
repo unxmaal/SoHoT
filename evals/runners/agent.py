@@ -12,32 +12,61 @@ import statistics
 import time
 from pathlib import Path
 
+import httpx
+
 from evals import agent_pad, sandbox
 from evals.core import Case
 from evals.runners.base import BaseRunner, RunnerError
-from harness import completion
+from harness import completion, reasons
 
 SYSTEM = ("You are a coding agent working inside a small repository. Use the "
           "provided tools to inspect and change files and to run the tests. "
           "Paths are relative to the repository root. Make the smallest change "
           "that completes the task. When the task is done, reply with a short "
           "final message and no tool call.")
-MAX_STEPS = 20
+#: Every case's own max_steps is multiplied by this; the knob a sweep moves. #695.
+MAX_STEPS_SCALE = 1.0
 STEP_TIMEOUT_S = 300.0
 CASE_TIMEOUT_S = 900.0
+
+#: What a server says when a request does not fit its context. #695.
+_OVER_CONTEXT = re.compile(r"exceeds? the available context|context.?window.?exceeded|maximum context length"
+                           r"|context length exceeded|exceeds? (the )?context (size|window|length)", re.I)
 
 #: A tool call written into the text instead of the tools API.
 _TEXT_CALL = re.compile(r"<tool_call>|<function=|\"name\"\s*:\s*\"(read_file|write_file|"
                         r"list_dir|run_tests)\"")
 
 
+def served_counter(base: str, model: str):
+    """count(text) by the served tokenizer, asked for on first use; the CHARS_PER_TOKEN estimate where there is none. #695."""
+    held: list = []
+
+    def count(text: str) -> float:
+        if not held:
+            held.append(completion.token_counter(base, model) or agent_pad.estimate)
+        try:
+            return held[0](text)
+        except (httpx.HTTPError, ValueError, KeyError, TypeError):
+            held[0] = agent_pad.estimate
+            return held[0](text)
+    return count
+
+
+def step_cap(case: Case) -> int:
+    """The steps a case may take: its own max_steps, scaled by the knob. #695."""
+    if not case.params.get("max_steps"):
+        raise RunnerError(f"{case.id}: an agent case names its max_steps", failure_class=reasons.HARNESS_ERROR)
+    return max(1, round(int(case.params["max_steps"]) * MAX_STEPS_SCALE))
+
+
 def bundle_of(case: Case) -> Path:
     return Path(case.source).parent / str(case.params["repo"])
 
 
-def setup(case: Case) -> tuple[sandbox.Sandbox, str]:
-    """The sandbox for a case and the first user message."""
-    pad = agent_pad.padding(case.id, int(case.params.get("pad_tokens") or 0))
+def setup(case: Case, count=None) -> tuple[sandbox.Sandbox, str]:
+    """The sandbox for a case and the first user message, padded by `count`, the served tokenizer."""
+    pad = agent_pad.padding(case.id, int(case.params.get("pad_tokens") or 0), count=count)
     box = sandbox.Sandbox.create(bundle_of(case) / "repo", extra=pad,
                                  tools=tuple(case.params["tools"]))
     goal = case.prompt.strip()
@@ -82,6 +111,14 @@ def rollup(steps: list, wall: float) -> dict:
     return out
 
 
+def _prefill(rec: dict) -> float:
+    """A step's prompt processing: the server's own figure, else the wait for its first token of any kind."""
+    if rec.get("prefill_s") is not None:
+        return float(rec["prefill_s"])
+    firsts = [v for v in (rec.get("ttft_s"), rec.get("first_reasoning_s")) if v is not None]
+    return float(min(firsts)) if firsts else 0.0
+
+
 def step_timing(steps: list) -> dict:
     """Row-level first-token timing: the median step. #468 fields."""
     def med(key):
@@ -95,8 +132,10 @@ class AgentRunner(BaseRunner):
     def __init__(self, gateway: str, candidate: str, model: str = "",
                  sampling: dict | None = None, chat=completion.chat,
                  step_timeout: float = STEP_TIMEOUT_S, served_ctx: int | None = None,
-                 max_tokens: int = 0):
+                 max_tokens: int = 0, count=None):
         self.served_ctx = served_ctx
+        #: count(text) -> tokens by the served tokenizer; None estimates. #695.
+        self.count = count
         #: The reply budget of each step; 0 is the lane's. #628.
         self.max_tokens = int(max_tokens or 0) or completion.budget("agent")
         self.gateway = gateway.rstrip("/")
@@ -107,25 +146,69 @@ class AgentRunner(BaseRunner):
         self.step_timeout = step_timeout
         self.answered = False
         self.last_timing: dict = {}
+        #: (failure class, limit) a failing row is put down to: the cap or budget that stopped it. #695.
+        self.last_stop: tuple[str, str] = ("", "")
+
+    def step_seconds(self) -> float:
+        """Seconds one step may take: the step timeout, stretched for the reply budget."""
+        return max(self.step_timeout, completion.timeout_for(self.max_tokens))
+
+    def _fits(self, case: Case, box, first: str, tools: list) -> None:
+        """Refuse a case whose first prompt and reply budget overflow the served context. #695."""
+        if not self.served_ctx:
+            return
+        count = self.count or agent_pad.estimate
+        prompt = count(SYSTEM) + count(first) + count(json.dumps(tools))
+        if prompt + self.max_tokens > self.served_ctx:
+            box.cleanup()
+            raise RunnerError(f"unrunnable here: a {prompt:.0f}-token prompt and the {self.max_tokens}-token "
+                              f"reply budget overflow the {self.served_ctx}-token served context",
+                              failure_class=reasons.CONTEXT_EXCEEDED, limit=f"served_ctx>{self.served_ctx}")
 
     def generate(self, case: Case):
         started = time.perf_counter()
-        box, first = setup(case)
+        self.last_stop = ("", "")
+        box, first = setup(case, self.count)
         tools = sandbox.openai_tools(case.params["tools"])
+        self._fits(case, box, first, tools)
         messages = [{"role": "system", "content": SYSTEM},
                     {"role": "user", "content": first}]
-        cap = int(case.params.get("max_steps") or MAX_STEPS)
-        deadline = started + float(case.params.get("timeout_s") or CASE_TIMEOUT_S)
+        cap = step_cap(case)
+        # A bigger reply budget stretches the case as it stretches a step; never shorter than one step.
+        stretch = max(1.0, self.max_tokens / completion.budget("agent"))
+        allowed = max(float(case.params.get("timeout_s") or CASE_TIMEOUT_S) * stretch, self.step_seconds())
+        case_limit = f"agent_case_timeout_s>{allowed:g}"
+        deadline = started + allowed
         steps: list[dict] = []
         final, stopped = "", "step cap"
+        cut = ""
+        prefill = 0.0
         cold = not self.answered
         try:
             for n in range(cap):
-                if time.perf_counter() > deadline:
+                left = deadline - time.perf_counter()
+                if left <= 0:
                     stopped = "time cap"
                     break
-                rec, message = self._step(n, messages, tools)
+                try:
+                    rec, message, ended = self._step(n, messages, tools, min(self.step_seconds(), left + prefill))
+                except completion.CompletionError as exc:
+                    if exc.failure_class == reasons.TIMEOUT and exc.limit:
+                        took = exc.limit[1]
+                        exc.limit = (("agent_case_timeout_s", allowed) if took < self.step_seconds()
+                                     else ("agent_step_timeout_s", took))
+                    elif _OVER_CONTEXT.search(str(exc)):
+                        exc.failure_class = reasons.CONTEXT_EXCEEDED
+                        exc.limit = ("served_ctx", self.served_ctx) if self.served_ctx else ()
+                    raise
                 steps.append(rec)
+                # Prefill grows with the context, not with the agent's work, so it is not the case's to pay. #695.
+                # The prompt only grows, so the largest prefill yet is this step's floor.
+                prefill = max(prefill, _prefill(rec))
+                deadline += _prefill(rec)
+                if ended == "length":
+                    rec["cut"] = True
+                    cut = f"max_tokens.agent>{self.max_tokens}"
                 calls = message.get("tool_calls") or []
                 if not calls:
                     text = message.get("content") or ""
@@ -150,7 +233,16 @@ class AgentRunner(BaseRunner):
             box.cleanup()
             raise
         self.last_timing = {**step_timing(steps), "cold": cold}
+        if cut:
+            self.last_stop = (reasons.TOKEN_BUDGET_EXHAUSTED, cut)
+        elif stopped == "time cap":
+            self.last_stop = (reasons.TIMEOUT, case_limit)
+        elif stopped == "step cap":
+            self.last_stop = (reasons.STEP_CAP, f"agent_steps_scale>{MAX_STEPS_SCALE:g}")
         return finish(case, box, steps, final, stopped, started), 0
+
+    def stopped_by(self) -> tuple[str, str]:
+        return self.last_stop
 
     def extra_metrics(self) -> dict:
         return {"agent_ctx": self.served_ctx} if self.served_ctx else {}
@@ -160,11 +252,10 @@ class AgentRunner(BaseRunner):
         row.metrics = {**(row.metrics or {}), **self.extra_metrics()}
         return row
 
-    def _step(self, n: int, messages: list, tools: list) -> tuple[dict, dict]:
+    def _step(self, n: int, messages: list, tools: list, timeout: float) -> tuple[dict, dict, str]:
         t0 = time.perf_counter()
         got = self.chat(messages, model=self.model, gateway=self.gateway,
-                        tools=tools,
-                        timeout=max(self.step_timeout, completion.timeout_for(self.max_tokens)),
+                        tools=tools, timeout=timeout,
                         max_tokens=self.max_tokens, sampling=self.sampling or None)
         self.answered = True
         firsts = [v for v in (got.timing.get("ttft_s"), got.timing.get("first_tool_s"))
@@ -176,7 +267,7 @@ class AgentRunner(BaseRunner):
         for key in ("prompt_tokens", "completion_tokens"):
             if isinstance(got.usage.get(key), int):
                 rec[key] = got.usage[key]
-        return rec, got.message or {"content": got.text}
+        return rec, got.message or {"content": got.text}, got.finish
 
     def _act(self, box, calls, message, messages, rec) -> None:
         t0 = time.perf_counter()
