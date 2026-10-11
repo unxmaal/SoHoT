@@ -309,3 +309,9 @@ def test_label_select_cli_writes_the_todo(tmp_path, capsys):
     body = json.loads(capsys.readouterr().out)["body"]
     assert body == {"items": 1, "fields": 1, "out": str(out)}
     assert _read_jsonl(out)[0]["id"] == "a-4"
+
+
+def test_render_rounds_a_threshold():
+    s = label.score(LABELS, CHECKS, GOLD)
+    s["thresholds"] = {"q1": 0.9850720780574148}
+    assert "0.9851" in label.render(s) and "0.98507" not in label.render(s)

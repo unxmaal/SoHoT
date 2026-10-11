@@ -252,5 +252,5 @@ def render(s: dict) -> str:
     out.append("agreement")
     out.append("  " + "  ".join(f"{k} {v}" for k, v in s["agreement"].items()))
     out.append(f"threshold (target {s['target']})")
-    out += [f"  {f:<24} {'none' if t is None else t}" for f, t in s["thresholds"].items()]
+    out += [f"  {f:<24} {'none' if t is None else round(t, 4)}" for f, t in s["thresholds"].items()]
     return "\n".join(out)
