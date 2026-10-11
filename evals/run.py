@@ -865,7 +865,7 @@ def _parser():
                          "screen always runs dev (#479)")
     ap.add_argument("--knob", action="append", default=[], metavar="NAME=VALUE",
                     help="run at this setting of a registered exam knob, recorded on the "
-                         "receipt; repeatable (harness/knobs.py, #636)")
+                         "receipt; repeatable (harness/knobs/, #636)")
     ap.add_argument("--max-tokens", type=int, default=None,
                     help="reply budget for every text request, recorded on the "
                          "receipt (default: the lane's, completion.BUDGET) (#628)")

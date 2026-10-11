@@ -1,0 +1,14 @@
+evals/claims_import.py:_in_git->subprocess.run(timeout)
+evals/claims_report.py:wilson(z)
+evals/decide_corpus.py:MAX_CHARS
+evals/decide_corpus.py:THRESHOLD
+evals/decide_corpus.py:_get->httpx.get(timeout)
+evals/decide_corpus.py:_indexed(limit)
+evals/environment.py:_sh->subprocess.run(timeout)
+evals/run.py:_agent_runner(max_tokens)
+evals/run.py:_build_runner(max_tokens)
+evals/run.py:build_runner(max_tokens)
+evals/sandbox.py:OUTPUT_CAP
+evals/sandbox.py:READ_CAP
+evals/sandbox.py:TEST_TIMEOUT_S
+evals/sandbox.py:WRITE_CAP

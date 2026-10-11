@@ -1,0 +1,8 @@
+harness/memory_store/connection.py:BUSY_TIMEOUT_SECONDS
+harness/memory_store/proposals.py:judgeable(limit)
+harness/memory_store/proposals.py:judgeable_total->ms.judgeable(limit)
+harness/memory_store/proposals.py:pending(limit)
+harness/memory_store/proposals.py:ranked(limit)
+harness/memory_store/proposals.py:survivors(limit)
+harness/memory_store/transitions.py:RETEST_AFTER_SECONDS
+harness/memory_store/transitions.py:decide(upstream_idle_days)

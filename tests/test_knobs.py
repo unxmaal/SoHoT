@@ -1,5 +1,6 @@
 """The knob registry: every outcome-gating constant declares its range, lanes and binding signal (#636)."""
 import json
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -7,11 +8,17 @@ import pytest
 from harness import knobs, lanes, probes, reasons
 
 REPO = Path(__file__).resolve().parent.parent
-BACKLOG_FILE = REPO / "tests" / "gauntlet" / "knob_backlog.json"
+BACKLOG_DIR = REPO / "tests" / "gauntlet" / "knob_backlog"
+
+
+def _backlog_file(site: str) -> Path:
+    """One backlog file per source directory, so PRs in different directories never touch the same file (#751)."""
+    return BACKLOG_DIR / (site.split(":", 1)[0].rsplit("/", 1)[0].replace("/", "_") + ".txt")
 
 
 def _backlog():
-    return json.loads(BACKLOG_FILE.read_text(encoding="utf-8"))
+    return [line for path in sorted(BACKLOG_DIR.glob("*.txt"))
+            for line in path.read_text(encoding="utf-8").splitlines()]
 
 
 def test_the_inventory_finds_each_shape_of_gating_constant():
@@ -234,8 +241,8 @@ def test_a_probe_sweeps_the_range_its_knob_declares(monkeypatch):
 def _assert_no_new_gating_site(root):
     found = knobs.unregistered(knobs.inventory(root))
     new = sorted(set(found) - set(_backlog()))
-    assert not new, ("register these in harness/knobs.py, or name why one gates nothing in "
-                     "knobs.NOT_GATING:\n  " + "\n  ".join(new))
+    assert not new, ("register these in an area of harness/knobs/, or name why one gates nothing in "
+                     "that area's NOT_GATING:\n  " + "\n  ".join(new))
 
 
 def test_no_new_gating_constant_is_unregistered():
@@ -245,17 +252,66 @@ def test_no_new_gating_constant_is_unregistered():
 def test_the_knob_backlog_only_shrinks():
     found = set(knobs.unregistered(knobs.inventory(REPO)))
     gone = sorted(set(_backlog()) - found)
-    assert not gone, "registered or gone: remove from tests/gauntlet/knob_backlog.json:\n  " + "\n  ".join(gone)
+    assert not gone, "registered or gone: remove from tests/gauntlet/knob_backlog/:\n  " + "\n  ".join(
+        f"{_backlog_file(s).name}: {s}" for s in gone)
 
 
-def test_a_registered_knobs_legacy_value_is_history_and_any_other_unrecorded_entry_is_still_a_site():
-    found = set(knobs.inventory(REPO))
-    left = set(knobs.unregistered(found))
-    for name in knobs.UNRECORDED:
-        assert f"harness/knobs.py:UNRECORDED[{name}]" in found, name
-        assert f"harness/knobs.py:UNRECORDED[{name}]" not in left, name
-    assert not knobs.not_gating("harness/knobs.py:UNRECORDED[not_a_knob]")
+def test_each_knob_backlog_file_is_sorted_unique_and_holds_only_its_own_directory():
+    files = sorted(BACKLOG_DIR.glob("*.txt"))
+    assert files
+    for path in files:
+        text = path.read_text(encoding="utf-8")
+        lines = text.splitlines()
+        assert lines and text.endswith("\n") and "\n\n" not in text, path.name
+        assert lines == sorted(set(lines)), f"{path.name}: one site per line, sorted, no repeats"
+        wrong = [s for s in lines if _backlog_file(s) != path]
+        assert not wrong, f"{path.name} holds sites of another directory: {wrong}"
+
+
+def test_the_knob_backlog_merges_by_union():
+    got = subprocess.run(["git", "check-attr", "merge", "--", "tests/gauntlet/knob_backlog/harness.txt"],
+                         cwd=REPO, capture_output=True, text=True, check=True).stdout
+    assert got.strip().endswith(": merge: union")
+
+
+def test_the_legacy_values_old_receipts_ran_at_are_exactly_these():
+    assert knobs.UNRECORDED == {
+        "code_check_timeout": 15.0, "audio_timeout": 120.0, "chrome_render_timeout": 60.0,
+        "svg_render_timeout": 30.0, "claude_code_timeout": 600.0, "needle_serve_start": 60.0,
+        "agent_steps_scale": 1.0, "agent_case_timeout": 900.0, "agent_step_timeout": 300.0,
+        "tts_token_floor": 8.0, "ocr_max_new_tokens": 512}
+    assert all(knobs.KNOBS[n].unrecorded == v and knobs.KNOBS[n].receipt == "knobs"
+               for n, v in knobs.UNRECORDED.items())
+
+
+def test_a_legacy_value_is_history_on_its_knob_and_never_an_inventory_site():
+    found = knobs.inventory(REPO)
+    assert not [s for s in found if s.startswith("harness/knobs/") or "UNRECORDED" in s]
     assert not knobs.not_gating("harness/other.py:UNRECORDED[audio_timeout]")
+
+
+def test_every_knob_and_not_gating_entry_lives_in_one_area_module():
+    areas = knobs.areas()
+    assert len(areas) > 1 and "base" not in areas
+    names = [n for mod in areas.values() for n in knobs.entries(mod)]
+    assert sorted(names) == sorted(knobs.KNOBS) and len(names) == len(set(names))
+    sites = [s for mod in areas.values() for s in getattr(mod, "NOT_GATING", {})]
+    assert sorted(sites) == sorted(knobs.NOT_GATING) and len(sites) == len(set(sites))
+
+
+def test_a_knob_registered_in_two_areas_is_refused():
+    one = knobs.Knob("twice", ("harness/a.py:X",), (1,))
+    with pytest.raises(ValueError, match="twice"):
+        knobs.collect({"a": [one], "b": [("twice", one)]})
+
+
+def test_registration_order_does_not_change_the_registry():
+    a = knobs.Knob("a_knob", ["harness/a.py:X"], [1, 2])
+    b = knobs.Knob("b_knob", ("harness/b.py:Y",), (3,), unrecorded=3)
+    one, _ = knobs.collect({"x": [a], "y": [b]})
+    two, _ = knobs.collect({"x": [b], "y": [a]})
+    assert one == two and list(one) == ["a_knob", "b_knob"]
+    assert one["a_knob"].sites == ("harness/a.py:X",) and one["a_knob"].values == (1, 2)
 
 
 def test_a_constant_that_gates_nothing_says_why_and_is_still_found():
@@ -345,3 +401,18 @@ def test_a_new_entry_in_a_table_named_as_gating_nothing_is_not_exempt():
     assert knobs.not_gating("harness/context.py:CACHE_BYTES[f16]")
     assert not knobs.not_gating("harness/context.py:CACHE_BYTES[q2_k]")
     assert not knobs.not_gating("harness/usage.py:_UNITS[w]")
+
+
+def test_a_limit_two_knobs_share_takes_the_value_of_the_first_by_name_whatever_the_registration_order(monkeypatch):
+    shared = [k for k in knobs.KNOBS.values() if k.limit == "tts_tokens"]
+    assert [k.name for k in shared] == ["tts_cap_fill", "tts_token_floor"]
+    want = knobs.limits()["tts_tokens"]
+    assert want == shared[0].limit_value("")
+    monkeypatch.setattr(knobs, "KNOBS", dict(reversed(list(knobs.KNOBS.items()))))
+    assert knobs.limits()["tts_tokens"] == want
+
+
+def test_each_area_lists_its_knobs_in_name_order_so_two_prs_insert_at_different_lines():
+    for area, mod in knobs.areas().items():
+        names = knobs.entries(mod)
+        assert names == sorted(names), f"harness/knobs/{area}.py: list KNOBS in name order"

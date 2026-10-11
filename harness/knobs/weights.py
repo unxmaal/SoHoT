@@ -1,0 +1,18 @@
+"""Knobs of how big a weight, download or repo may be (#751)."""
+from harness.knobs.base import GIB, MACHINE, _k
+
+KNOBS = [
+    _k("clone_kb_cap", ["harness/inspect.py:CLONE_KB_CAP"], [10_000, 50_000, 250_000, 1_000_000],
+       probe="clone_kb_cap", note="source tree size above which a repo is weights in git"),
+    _k("dead_days", ["harness/inspect.py:UPSTREAM_DEAD_DAYS"], [180, 365, 730, 1095, 3650], probe="dead_days",
+       note="when a repo counts as abandoned"),
+    _k("download_cap", ["harness/fetching.py:MAX_DOWNLOAD"],
+       [20 * GIB, 40 * GIB, 60 * GIB, 120 * GIB], limit="download_gib", scale=GIB,
+       note="the largest download one fetch may take"),
+    _k("memory_ceiling", ["harness/inspect.py:MEMORY_CEILING", "harness/inspect.py:MEMORY_CEILING_RAM_GB"],
+       [8 * GIB, 16 * GIB, 22 * GIB, 32 * GIB, 96 * GIB], limit="ceiling_gb", predicate=MACHINE,
+       scale=GIB, probe="memory_ceiling",
+       note="the largest weight this machine can hold; measured on 32 GB and scaled by RAM (#96)"),
+    _k("size_limit", ["harness/inspect.py:SIZE_LIMIT"], [2, 4, 12, 24, 64], probe="size_limit",
+       note="how many named weights get sized per repo"),
+]
