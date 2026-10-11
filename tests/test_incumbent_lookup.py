@@ -70,3 +70,68 @@ def test_soh_power_says_an_unseen_incumbent(store_run, monkeypatch, capsys):
     captured = capsys.readouterr()
     text = captured.out + captured.err
     assert "unmeasured" in text and f"assumes {power.UNSEEN:g}" in text
+
+
+def test_the_old_names_rows_still_count_once_the_new_name_has_one_of_its_own(renamed, store_run):
+    from harness import completion
+    from harness import memory_store as ms
+    store_run("20261002-000000-adopt-decide", "decide", specs={NEW: NEW},
+              rows=[{"case_id": f"{renamed[0]}#1", "candidate": NEW, "passed": 1, "seconds": 2.0,
+                     "peak_kb": 0, "detail": ""}], receipt={"max_tokens": completion.budget("decide")})
+    conn = ms.connect()
+    try:
+        draws, _ = power.served_profile(conn, "decide", NEW)
+    finally:
+        conn.close()
+    assert set(draws) == set(renamed)
+    assert sum(len(v) for v in draws.values()) == 2 * len(renamed) + 1
+
+
+def test_reading_the_served_profile_writes_nothing(renamed):
+    from harness import memory_store as ms
+    conn = ms.connect()
+    try:
+        before = conn.total_changes
+        power.served_profile(conn, "decide", NEW)
+        assert conn.total_changes == before
+    finally:
+        conn.close()
+
+
+def test_a_challenger_is_sized_against_the_renamed_incumbents_proposal(renamed):
+    from harness import candidates
+    from harness import memory_store as ms
+    from harness.commands import measure as measure_cmd
+    conn = ms.connect()
+    try:
+        for name, size in (("org/imajev", 4 * 1024 ** 3), ("org/ch", 8 * 1024 ** 3)):
+            ms.record(conn, ms.Seen(name=name, source="t", lane="decide"))
+            ms.set_size(conn, name, size)
+        candidates.ensure(conn, OLD, proposal="org/imajev", lane="decide")
+        candidates.ensure(conn, "ch", proposal="org/ch", lane="decide")
+        conn.commit()
+    finally:
+        conn.close()
+    _, plan = measure_cmd._plan(_ns(), "decide", NEW, "ch")
+    assert plan.estimate["challenger_source"] == "size ratio"
+    assert plan.estimate["challenger_s"] == pytest.approx(2 * plan.estimate["incumbent_s"])
+
+
+def test_no_spelling_keyed_incumbent_lookup_is_left_to_reuse():
+    assert not hasattr(power, "incumbent_profile")
+    assert not hasattr(power, "incumbent_rates")
+
+
+def test_soh_power_json_names_the_keys_the_profile_read(renamed, monkeypatch, capsys):
+    import json
+
+    from harness import screen, winners
+    from harness.commands import adopt as adopt_cmd
+    from harness.commands import common
+    monkeypatch.setattr(winners, "typed", lambda: {"decide": NEW})
+    monkeypatch.setattr(screen, "candidate_for", lambda lane, model, *a, **k: model)
+    monkeypatch.setattr(common, "_JSON", True)
+    adopt_cmd.cmd_power(argparse.Namespace(lane="decide", receipt=None, challenger="",
+                                           power_budget_min=None, effect=None, json=True))
+    out = json.loads(capsys.readouterr().out.strip().splitlines()[-1])
+    assert out["lanes"][0]["incumbent_keys"] == [OLD]

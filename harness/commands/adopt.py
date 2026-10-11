@@ -117,6 +117,7 @@ def cmd_power(a) -> int:
             projected = power.projected_seconds(cases_run, plan.repeat, median, calls)
             rows.append({
                 "lane": lane, "incumbent": key, "holdout": len(split.holdout),
+                "incumbent_keys": [key] if lane in receipts else power.served_keys(conn, lane, inc_spec),
                 "cases": cases_run, "too_small": split.too_small,
                 "stochastic": plan.stochastic, "observed": seen,
                 "rho": plan.rho, "rho_measured": plan.rho_measured,
