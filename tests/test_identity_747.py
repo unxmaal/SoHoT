@@ -155,7 +155,7 @@ def test_a_probe_that_keeps_failing_is_asked_at_most_once_a_minute(monkeypatch, 
     for _ in range(5):
         ms.this_machine()
     assert len(run.calls) == 1 and len(captures) == 1
-    clock.t += machine.RETRY_S + 1
+    clock.t += getattr(machine, "RETRY_S", 60) + 1
     ms.this_machine()
     assert len(run.calls) == 2 and len(captures) == 2
 
@@ -185,3 +185,23 @@ def test_an_identity_one_test_leaves_behind_is_not_the_next_tests(tmp_path):
                           "-p", "no:cacheprovider", "-o", "addopts=", str(tmp_path / "test_order.py")],
                          capture_output=True, text=True, cwd=Path(__file__).parents[1], timeout=120)
     assert got.returncode == 0, got.stdout[-2000:]
+
+
+def test_a_failed_capture_never_blanks_the_real_machines_row(monkeypatch, tmp_path, clock):
+    conn = ms.connect(tmp_path / "s.db")
+    monkeypatch.setattr(ms.machines, "_THIS_MACHINE", None)
+    full = {**ENV, "accelerator": {"kind": "metal", "total_gb": 96},
+            "versions": {"mlx": "0.30.0"}}
+    monkeypatch.setattr(environment, "capture", lambda: dict(full))
+    monkeypatch.setattr(machine, "uuid_failed", lambda: False)
+    first = ms.remember_machine(conn)
+    before = dict(conn.execute("SELECT * FROM machines WHERE id = ?", (first,)).fetchone())
+    monkeypatch.setattr(ms.machines, "_THIS_MACHINE", None)
+    monkeypatch.setattr(environment, "capture", lambda: (_ for _ in ()).throw(OSError("no sysctl")))
+    monkeypatch.setattr(environment, "identity", lambda: {
+        "hw_model": "Mac17,15", "host": "aaaaaaaaaaaa", "os": ENV["os"], "arch": "arm64"})
+    assert ms.remember_machine(conn) == first
+    after = dict(conn.execute("SELECT * FROM machines WHERE id = ?", (first,)).fetchone())
+    keep = ("memory_gb", "ceiling_gb", "accelerator", "runtimes", "versions", "os")
+    assert {k: after[k] for k in keep} == {k: before[k] for k in keep}
+    assert before["memory_gb"] == 96 and before["versions"] != "{}"

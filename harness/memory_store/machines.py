@@ -61,12 +61,10 @@ def this_machine() -> dict:
             "versions": dict(env.get("versions") or {}),
         }
     except Exception:  # noqa: BLE001
-        # A store write must never fail because a probe did. An unknown
-        # machine is recorded AS unknown rather than silently attributed to
-        # whichever one wrote last, which would be worse than no column.
+        # A store write must never fail because a probe did; partial facts never overwrite a stored row. #747.
         got = {"hw_model": "", "os": "", "arch": "", "host": "", "memory_gb": 0.0,
                "accelerator": "", "runtimes": "", "ceiling_gb": 0.0,
-               "versions": {}, **_identity()}
+               "versions": {}, **_identity(), "partial": True}
         # A failed probe is not this machine for the rest of the process: ask again next time. #747.
         complete = False
     else:
@@ -102,15 +100,18 @@ def remember_machine(conn: sqlite3.Connection, facts: dict | None = None) -> int
     _claim(conn, facts["fingerprint"])
     versions = {k: v for k, v in (facts.get("versions") or {}).items() if v}
     now = time.time()
+    # Facts from a failed capture refresh only last_seen, never the row's measured facts. #747.
+    refresh = ("last_seen = excluded.last_seen" if facts.get("partial") else
+               "last_seen = excluded.last_seen, runtimes = excluded.runtimes, "
+               "ceiling_gb = excluded.ceiling_gb, memory_gb = excluded.memory_gb, "
+               "accelerator = excluded.accelerator, os = excluded.os, "
+               "versions = excluded.versions")
     # One statement: a SELECT-then-INSERT let two first writers collide. #422.
     conn.execute(
         "INSERT INTO machines (fingerprint, hw_model, os, arch, memory_gb, "
         "accelerator, runtimes, ceiling_gb, first_seen, last_seen, versions) "
         "VALUES (?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT (fingerprint) DO UPDATE SET "
-        "last_seen = excluded.last_seen, runtimes = excluded.runtimes, "
-        "ceiling_gb = excluded.ceiling_gb, memory_gb = excluded.memory_gb, "
-        "accelerator = excluded.accelerator, os = excluded.os, "
-        "versions = excluded.versions",
+        + refresh,
         (facts["fingerprint"], facts.get("hw_model", ""), facts.get("os", ""),
          facts.get("arch", ""), facts.get("memory_gb", 0.0),
          facts.get("accelerator", ""), facts.get("runtimes", ""),
