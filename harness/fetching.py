@@ -40,6 +40,10 @@ class FetchError(RuntimeError):
     """The download could not be started. Never a verdict about the model."""
 
 
+class FetchDeferred(FetchError):
+    """The registry rate-limited us: the rest of this tier waits for the next sweep. #675."""
+
+
 @dataclass
 class Plan:
     repo: str
@@ -273,8 +277,10 @@ def download(repo: str, snapshot=None, listing=None, hf_download=None,
                 raise
             downloads.finish(c, rid, downloads.snapshot_dir(Path(where)))
         return where
+    except FetchError:
+        raise
     except Exception as exc:  # noqa: BLE001
-        raise FetchError(f"{repo}: {str(exc)[:200]}") from exc
+        raise FetchError(str(exc)[:200]) from exc
     finally:
         if constants is not None:
             constants.HF_HUB_OFFLINE = restore
@@ -284,21 +290,38 @@ def download(repo: str, snapshot=None, listing=None, hf_download=None,
             os.environ["HF_HUB_OFFLINE"] = was
 
 
+def _listing(repo: str) -> list:
+    """The registry's file list for `repo`, waiting out a 429 as the feeds do. #630, #675."""
+    from harness import inspect as ins
+    from harness import ratelimit
+    return ratelimit.get_json(ins.MODEL_URL.format(model_id=repo)).get("siblings") or []
+
+
 def _gguf_pick(repo: str, listing, snapshot):
     """(file, bytes) for a GGUF-only repo, () if none fits, None otherwise."""
     from harness import gguf
     from harness import inspect as ins
+    from harness import ratelimit
     if listing is None:
         if snapshot is not None:
             return None
-        listing = lambda r: ins.hf_model(r).get("siblings") or []  # noqa: E731
+        listing = _listing
     try:
         siblings = listing(repo)
+    except ratelimit.RateLimited as exc:
+        raise FetchDeferred(f"listing rate-limited (HTTP 429 after {ratelimit.ATTEMPTS} attempts); "
+                            f"the rest of this tier waits for the next sweep") from exc
     except Exception as exc:  # noqa: BLE001
-        raise FetchError(f"{repo}: listing failed: {str(exc)[:200]}") from exc
+        raise FetchError(f"listing failed: {_reason(exc)}") from exc
     if not gguf.only(siblings):
         return None
     return gguf.choose(siblings, ins.ceiling_bytes()) or ()
+
+
+def _reason(exc: Exception) -> str:
+    """An HTTP failure as its status, since the exception text repeats the URL and so the repo id. #675."""
+    status = getattr(getattr(exc, "response", None), "status_code", None)
+    return f"HTTP {status}" if status else str(exc)[:200]
 
 
 def _fetch_needs(name: str, needs: list[str], *, bases: list[str], sizes: dict, sizer,
@@ -311,6 +334,9 @@ def _fetch_needs(name: str, needs: list[str], *, bases: list[str], sizes: dict, 
         if dep not in bases:
             try:
                 fetch(dep)
+            except FetchDeferred as exc:
+                done.append({"repo": dep, "ok": False, "why": f"needed by {name}: {exc}", "deferred": True})
+                return done, spent_now, waiting
             except FetchError as exc:
                 done.append({"repo": dep, "ok": False, "why": f"needed by {name}: {exc}"})
             else:
@@ -333,8 +359,11 @@ def _fetch_needs(name: str, needs: list[str], *, bases: list[str], sizes: dict, 
             fetch(dep)
         except FetchError as exc:
             why = f"{dep}, the base its runner needs: {exc}"
-            done.append({"repo": dep, "ok": False, "why": why})
+            done.append({"repo": dep, "ok": False, "why": why,
+                         **({"deferred": True} if isinstance(exc, FetchDeferred) else {})})
             waiting = waiting or (reasons.HARNESS, why)
+            if isinstance(exc, FetchDeferred):
+                return done, spent_now, waiting
         else:
             spent_now += size
             done.append({"repo": dep, "ok": True, "why": f"base weights for {name}"})
@@ -384,6 +413,7 @@ def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=N
         sizer = ins.hf_size
 
     def needs_of(name):
+        """Bytes spent on what `name` needs, None when the registry deferred the tier."""
         got, cost, waiting = _fetch_needs(
             name, [m for m in requires(name, conn) if not have(m, conn)],
             bases=runner_bases(name), sizes=sizes or {}, sizer=sizer, budget=budget,
@@ -394,11 +424,14 @@ def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=N
             reason, why = waiting
             ms.decide_or_skip(conn, name, "queued", tier="fetch", detail=f"waiting on {why}",
                               reason=reason)
-        return cost
+        return None if any(d.get("deferred") for d in got) else cost
 
     # A candidate already on disk can still be missing the base its runner loads. #632.
     for name in _on_disk_waiting(conn, lane):
-        spent += needs_of(name)
+        cost = needs_of(name)
+        if cost is None:
+            return done
+        spent += cost
     for row in queued(conn, lane=lane):
         if not row.get("lane"):
             continue      # nothing here could measure it, so nothing fetches it
@@ -499,6 +532,9 @@ def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=N
                                  hf_download=hf_download, text=text, conn=conn)
             else:
                 where = download(name, snapshot=snapshot, conn=conn)
+        except FetchDeferred as exc:
+            done.append({"repo": name, "ok": False, "why": str(exc), "deferred": True})
+            break
         except FetchError as exc:
             done.append({"repo": name, "ok": False, "why": str(exc)})
             continue
@@ -514,6 +550,9 @@ def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=N
         ms.decide_or_skip(conn, row["name"], "queued", tier="fetch",
                           detail="downloaded", reason=reasons.CANDIDATE)
         # What it needs beside itself: what its config named on landing (#196) and its runner's base (#632).
-        spent += needs_of(name)
+        cost = needs_of(name)
         done.append({"repo": name, "ok": True, "why": where})
+        if cost is None:
+            break
+        spent += cost
     return done
