@@ -164,14 +164,40 @@ NOT_GATING: dict[str, str] = {
     "harness/context.py:MIN_LONG_SLOT_CTX": "the floor the ornith_slot_ctx range is held to; a preset under it is refused (#682)",
     "evals/private.py:MIN_FRAGMENT": "which private text the leak scan looks for; never a lane's outcome (#654)",
     "harness/audio_server.py:environ(AUDIO_PORT)": "where the audio server listens; never what it answers (#706)",
-    "harness/context.py:CACHE_BYTES": "bytes per KV element of each cache type, a fact of the format (#706)",
-    "harness/usage.py:_UNITS": "seconds in a day, hour and minute (#706)",
+    **{f"harness/context.py:CACHE_BYTES[{t}]": "bytes per KV element of a cache type, a fact of the format (#706)"
+       for t in ("f32", "f16", "bf16", "q8_0", "q5_1", "q5_0", "q4_1", "q4_0", "iq4_nl")},
+    **{f"harness/usage.py:_UNITS[{u}]": "seconds in a day, hour, minute or second (#706)" for u in "dhms"},
     "harness/checks/image.py:ImageResult.stddev": "a measured result's value before it is measured (#706)",
     "harness/checks/video.py:VideoResult.motion": "a measured result's value before it is measured (#706)",
     "harness/checks/video.py:VideoResult.stddev": "a measured result's value before it is measured (#706)",
     "harness/checks/ocr.py:OcrResult.cer": "a measured result's value before it is measured (#706)",
     "evals/core.py:Receipt.max_tokens": "what a receipt records a run asked for; the budget itself is reply_budget (#706)",
     "harness/mcp_server.py:JobInfo.seconds": "how long a job took, as reported (#706)",
+    **{site: "where a server listens; never what it answers (#706)" for site in (
+        "scripts/serve-audio-cuda.sh:AUDIO_PORT",
+        "scripts/serve-ds4.sh:DS4_PORT",
+        "scripts/serve-eval.sh:LLAMACPP_PORT",
+        "scripts/serve-gateway.sh:GATEWAY_PORT",
+        "scripts/serve-llamacpp.sh:LLAMACPP_PORT",
+        "scripts/serve-llamacpp.sh:LLAMACPP_PORT#2",
+        "scripts/serve-mcp.sh:MCP_PORT",
+        "scripts/serve-mlx.sh:MLX_PORT",
+        "scripts/serve-tts.sh:TTS_PORT",
+        "scripts/services.sh:GATEWAY_PORT",
+        "scripts/services.sh:LLAMACPP_PORT",
+        "scripts/services.sh:AUDIO_PORT",
+        "scripts/services.sh:DS4_PORT",
+        "scripts/slots-sweep.sh:SWEEP_PORT",
+        "scripts/smoke.sh:GATEWAY_PORT",
+        "scripts/smoke.sh:MLX_PORT",
+        "scripts/smoke.sh:TTS_PORT",
+    )},
+    "scripts/env.sh:HF_HUB_OFFLINE": "a switch, offline or not; never a threshold (#706)",
+    "scripts/h3-weights-status.sh:BYTES": "the fallback of a measured size when none was measured (#706)",
+    "scripts/router-max-models.sh:bytes": "the fallback of a measured RAM size when none was measured (#706)",
+    "evals/runners/base.py:BaseRunner.failed(seconds)": "how long a failed case took, as reported (#706)",
+    "evals/runners/agent.py:AgentRunner.failed(seconds)": "how long a failed case took, as reported (#706)",
+    "harness/checks/ocr.py:check->OcrResult(cer)": "a measured result's value, as reported (#706)",
 }
 
 
@@ -232,7 +258,7 @@ def named_gating(name: str) -> bool:
 
 
 def _param_gating(name: str) -> bool:
-    return name in GATING_PARAMS or name.endswith("_s")
+    return name in GATING_PARAMS or name.endswith("_s") or named_gating(name)
 
 
 def _literal(node) -> bool:
@@ -333,7 +359,7 @@ def _scoped(rel: str, body, scope: str) -> list[tuple[str, object]]:
                 visit(child, qual, in_class=True)
             return
         field = _field(node) if in_class else None
-        if field and (_param_gating(field[0]) or named_gating(field[0])) and _literal(field[1]):
+        if field and _param_gating(field[0]) and _literal(field[1]):
             out.append((f"{rel}:{scope}.{field[0]}", field[1]))
         if isinstance(node, ast.Call):
             callee = _dotted(node.func) or "call"
@@ -382,11 +408,11 @@ def gating(text: str, rel: str) -> list[str]:
 
 def _shell_sites(text: str, rel: str) -> dict:
     return _numbered((f"{rel}:{m[1]}", float(m[2]) if "." in m[2] else int(m[2]))
-                     for m in _SHELL_DEFAULT.finditer(text) if named_gating(m[1]))
+                     for m in _SHELL_DEFAULT.finditer(text))
 
 
 def shell_defaults(text: str, rel: str) -> list[str]:
-    """Sites rel:VAR of `${VAR:-N}` defaults in a shell script whose name says gate."""
+    """Sites rel:VAR of every numeric `${VAR:-N}` default in a shell script, whatever its name."""
     return list(_shell_sites(text, rel))
 
 
@@ -439,8 +465,8 @@ def registered() -> set[str]:
 
 
 def not_gating(site: str) -> bool:
-    """Whether NOT_GATING names this site, or the table it is an entry of."""
-    return site in NOT_GATING or site.split("[", 1)[0] in NOT_GATING
+    """Whether NOT_GATING names this exact site; a new entry of an exempt table is not exempt."""
+    return site in NOT_GATING
 
 
 def unregistered(found) -> list[str]:

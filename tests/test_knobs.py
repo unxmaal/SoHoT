@@ -90,7 +90,8 @@ def test_the_inventory_finds_defaults_call_literals_table_entries_and_environmen
 def test_the_inventory_reads_shell_defaults_and_gateway_settings():
     sh = ('PORT="${SOH_PORT:-8081}"\n'
           'exec srv --idle "${SOH_SLEEP_IDLE:-300}" --ctx "${SOH_CTX:-16384}" --host "${SOH_HOST:-127.0.0.1}"\n')
-    assert knobs.shell_defaults(sh, "scripts/x.sh") == ["scripts/x.sh:SOH_SLEEP_IDLE", "scripts/x.sh:SOH_CTX"]
+    assert knobs.shell_defaults(sh, "scripts/x.sh") == [
+        "scripts/x.sh:SOH_PORT", "scripts/x.sh:SOH_SLEEP_IDLE", "scripts/x.sh:SOH_CTX"]
     yml = ("model_list:\n  - model_name: a\n    litellm_params: {timeout: 5}\n"
            "litellm_settings:\n  drop_params: true\n  request_timeout: 600\n  num_retries: 2\n"
            "  cache_params: {ttl: 60}\n")
@@ -250,8 +251,7 @@ def test_the_knob_backlog_only_shrinks():
 def test_a_constant_that_gates_nothing_says_why_and_is_still_found():
     found = set(knobs.inventory(REPO))
     for site, why in knobs.NOT_GATING.items():
-        assert site in found or any(s.startswith(site + "[") for s in found), (
-            f"{site} is no longer found; remove it from NOT_GATING")
+        assert site in found, f"{site} is no longer found; remove it from NOT_GATING"
         assert why.strip(), site
         assert site not in {s for k in knobs.KNOBS.values() for s in k.sites}
 
@@ -294,3 +294,44 @@ def test_ornith_slots_and_slot_context_are_knobs_and_every_slot_reaches_the_long
     assert slots.default() == context.ORNITH_SLOTS and slot_ctx.default() == context.ORNITH_SLOT_CTX
     assert context.MIN_LONG_SLOT_CTX > 65536
     assert all(v >= context.MIN_LONG_SLOT_CTX for v in (*slot_ctx.values, slot_ctx.default()))
+
+
+def test_an_argument_default_or_call_keyword_is_found_by_the_same_name_words_as_a_constant():
+    src = ("def check_html(path, min_ink=0.0005):\n    pass\n"
+           "class RepairRunner:\n    def __init__(self, attempts=3):\n        pass\n"
+           "def run(c):\n    c.ask(retries=1, etag_timeout=5, max_length=80, name=2)\n")
+    assert knobs.gating(src, "harness/m.py") == [
+        "harness/m.py:check_html(min_ink)", "harness/m.py:RepairRunner.__init__(attempts)",
+        "harness/m.py:run->c.ask(retries)", "harness/m.py:run->c.ask(etag_timeout)",
+        "harness/m.py:run->c.ask(max_length)"]
+    found = set(knobs.inventory(REPO))
+    for site in ("harness/checks/render.py:check_html(min_ink)", "evals/runners/repair.py:RepairRunner.__init__(attempts)",
+                 "harness/checks/render.py:_remove_tree(attempts)", "harness/checks/render.py:_remove_tree(delay)"):
+        assert site in found, site
+    assert knobs.resolve("harness/checks/render.py:check_html(min_ink)") == 0.0005
+
+
+def test_a_second_function_with_its_own_ink_threshold_fails_the_ratchet(tmp_path):
+    import subprocess
+    (tmp_path / "harness").mkdir()
+    (tmp_path / "harness" / "fixture.py").write_text("NAME = 'x'\n", encoding="utf-8")
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    _assert_no_new_gating_site(tmp_path)
+    (tmp_path / "harness" / "fixture.py").write_text("def check_svg(p, min_ink=0.001):\n    pass\n", encoding="utf-8")
+    with pytest.raises(AssertionError, match=r"harness/fixture\.py:check_svg\(min_ink\)"):
+        _assert_no_new_gating_site(tmp_path)
+
+
+def test_every_numeric_shell_default_is_found_whatever_its_name():
+    src = 'TOP="${DISCOVER_TOP:-3}"\nPORT="${PORT:-8080}"\nNAME="${NAME:-x}"\n'
+    assert knobs.shell_defaults(src, "scripts/s.sh") == ["scripts/s.sh:DISCOVER_TOP", "scripts/s.sh:PORT"]
+    found = set(knobs.inventory(REPO))
+    for site in ("scripts/serve-discover.sh:DISCOVER_TOP", "scripts/serve-discover.sh:DISCOVER_REPEAT",
+                 "scripts/serve-llamacpp.sh:LLAMACPP_GPU_LAYERS"):
+        assert site in found, site
+
+
+def test_a_new_entry_in_a_table_named_as_gating_nothing_is_not_exempt():
+    assert knobs.not_gating("harness/context.py:CACHE_BYTES[f16]")
+    assert not knobs.not_gating("harness/context.py:CACHE_BYTES[q2_k]")
+    assert not knobs.not_gating("harness/usage.py:_UNITS[w]")
