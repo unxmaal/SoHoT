@@ -208,6 +208,7 @@ def test_the_live_audit_does_not_call_a_rate_limit_burst_the_models_failure(monk
     from harness import live_audit
     rows = [_req(NOW + i, "c", "RateLimitError" if i < 10 else "") for i in range(30)]
     monkeypatch.setattr(usage, "real_use", lambda conn: {"code": usage.stats(rows)})
+    monkeypatch.setattr(usage, "drop_warning", lambda conn, start: [])
     [got] = live_audit._gateway_errors(None)
     assert "gateway" in got and "requests failed" not in got
 
@@ -265,3 +266,14 @@ def test_decide_worse_on_accuracy_answers_to_the_alpha_it_is_given():
     assert "significantly worse" in adopt._worse(rows, "inc", "chal", "decide")
     assert adopt._worse(rows, "inc", "chal", "decide", alpha=1e-9) == ""
     assert adopt._worse(rows, "inc", "chal") == ""
+
+
+def test_the_live_audit_says_a_window_dropped_rows_beside_model_and_gateway_errors_apart(monkeypatch):
+    from harness import live_audit
+    rows = [_req(NOW + i, "c", "RateLimitError" if i < 10 else "APIError" if i < 20 else "") for i in range(30)]
+    monkeypatch.setattr(usage, "real_use", lambda conn: {"code": usage.stats(rows)})
+    monkeypatch.setattr(usage, "drop_warning", lambda conn, start: ["7 gateway usage row(s) were dropped"])
+    drop, model, gateway = live_audit._gateway_errors(None)
+    assert "dropped" in drop
+    assert "failed in the model" in model and "gateway" not in model
+    assert "gateway or client refused" in gateway
