@@ -166,6 +166,9 @@ def test_the_schema_check_reads_the_config_and_route_it_is_given(tmp_path, monke
 
 
 def test_a_routed_upstream_with_a_trailing_slash_still_enforces_the_schema(tmp_path, monkeypatch):
+    import yaml
     monkeypatch.setattr(serving, "gguf_stem", lambda name: None)
-    cfg = _config(tmp_path, ("alias", "http://127.0.0.1:8082/"))
+    cfg = tmp_path / "gateway.yaml"
+    cfg.write_text(yaml.safe_dump({"model_list": [{"model_name": "alias", "hot_swap": True, "litellm_params": {
+        "model": "openai/x", "api_base": "http://127.0.0.1:8082/"}}]}), encoding="utf-8")
     assert serving.enforces_schema("org/a-model", {}, cfg)

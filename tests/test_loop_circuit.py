@@ -187,10 +187,12 @@ def world(monkeypatch, tmp_path, _home):
         encoding="utf-8")
     config = tmp_path / "config.yaml"
     config.write_text(yaml.safe_dump({"model_list": [
-        {"model_name": INCUMBENT_UPSTREAM, "litellm_params": {
+        {"model_name": INCUMBENT_UPSTREAM, "engine": "mlx_lm.server", "hot_swap": True,
+         "litellm_params": {
             "model": f"openai/{INCUMBENT_UPSTREAM}", "api_base": f"{SERVER}/v1",
             "api_key": "not-needed"}}]}), encoding="utf-8")
     monkeypatch.setenv(gateway.ENV_VAR, str(config))
+    w.config = config
     from evals import environment
     monkeypatch.setattr(environment, "capture", lambda: {
         "hw_model": "Mac14,12", "os": "macOS-test", "arch": "arm64", "versions": {}})
@@ -388,6 +390,10 @@ def _decide_reply(case):
 
 def test_logprobs_survive_a_streaming_transport_into_the_stored_score(world):
     from evals.run import screen_cases
+    # This fake answers the schema, which mlx_lm.server would drop, so it is declared as vLLM. #702.
+    data = yaml.safe_load(world.config.read_text(encoding="utf-8"))
+    data["model_list"][0]["engine"] = "vllm-mlx"
+    world.config.write_text(yaml.safe_dump(data), encoding="utf-8")
     world.decide_answer = _decide_reply(screen_cases(_cases("decide"))[0])
     conn = ms.connect()
     try:

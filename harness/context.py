@@ -244,9 +244,12 @@ def coresident_bytes(conn, defaults=None, config=None, size_of=None) -> int:
         name = (spec or "").partition(",")[0].strip()
         if lane not in text or not name or ":" in name:
             continue
+        entry = entries.get(name.lower())
+        # A model served by another machine is not resident in this one's memory.
+        if entry and not serving.loopback(serving.api_base(entry) or serving.MLX_URL):
+            continue
         if serving.engine_for(name, config=config) == serving.LLAMACPP:
             continue
-        entry = entries.get(name.lower())
         repo = (gateway.strip_provider(str((entry.get("litellm_params") or {}).get("model", "")))
                 if entry else name)
         if "/" in repo:
@@ -262,8 +265,11 @@ def plan(conn, budget: int | None = None, slots: int = 1,
     from harness import downloads
     budget = budget_bytes(conn) if budget is None else budget
     kv_cap = kv_cap_bytes() if kv_cap is None else kv_cap
+    from harness import serving
     try:
         beside = coresident_bytes(conn)
+    except serving.UnknownEngine:
+        raise
     except Exception:  # noqa: BLE001
         beside = 0
     out = []
@@ -344,6 +350,10 @@ def served_ctx(spec: str, config=None, get=None, conn=None) -> int | None:
                 return _per_slot(stem, args, conn)
     except Exception:  # noqa: BLE001
         pass
+    from harness import serving
+    # The stored choice was planned for this machine; a remote router's is unknown.
+    if not serving.loopback(base):
+        return None
     from harness import downloads
     try:
         with downloads.store(conn) as c:

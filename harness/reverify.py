@@ -67,9 +67,12 @@ def runtimes_for(lane: str, spec: str) -> tuple[str, ...]:
         from harness import serving
         try:
             engine = serving.engine_for(spec)
-        except Exception:  # noqa: BLE001
-            engine = ""
-        got = (_TEXT_LLAMA if engine == serving.LLAMACPP else
+        except serving.UnknownEngine:
+            engine = None
+        # An engine nothing names could be any of them, so every text runtime is watched.
+        got = (tuple(dict.fromkeys((*_TEXT_MLX, *_TEXT_LLAMA, *_TEXT_VLLM, *_TEXT_DS4)))
+               if engine is None else
+               _TEXT_LLAMA if engine == serving.LLAMACPP else
                _TEXT_DS4 if engine == serving.DS4 else
                _TEXT_VLLM if engine in serving.VLLM_ENGINES else _TEXT_MLX)
     return (*got, "macos")

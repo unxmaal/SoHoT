@@ -325,6 +325,37 @@ def env_seams(trees):
             for name, (rel, line) in first.items()]
 
 
+_LOOPBACK = re.compile(r"https?://(?:127\.0\.0\.1|localhost)\b")
+_EQUALITY = (ast.Eq, ast.NotEq, ast.In, ast.NotIn)
+
+
+def loopback_equality(trees):
+    prod = _prod(trees)
+    names = {name for tree in prod.values() for name, value, _ in _assign_targets(tree)
+             if _upper(name) and _LOOPBACK.match(_str(value) or "")}
+
+    def named(node):
+        if isinstance(node, (ast.Tuple, ast.List, ast.Set)):
+            return next((got for e in node.elts if (got := named(e))), None)
+        if isinstance(node, ast.Name) and node.id in names:
+            return node.id
+        if isinstance(node, ast.Attribute) and node.attr in names:
+            return node.attr
+        text = _str(node)
+        return text if text and _LOOPBACK.match(text) else None
+    out = []
+    for rel, tree in sorted(prod.items()):
+        owner = _innermost(tree)
+        for n in ast.walk(tree):
+            if not isinstance(n, ast.Compare) or not any(isinstance(op, _EQUALITY) for op in n.ops):
+                continue
+            got = next((g for g in map(named, [n.left, *n.comparators]) if g), None)
+            if got:
+                out.append(Hit(f"{rel}:{owner.get(id(n), '<module>')}", n.lineno,
+                               f"compares an address to {got}; ask the config or the server which engine it is"))
+    return out
+
+
 DETECTORS = {
     "closed_tables": closed_tables,
     "latest_row_state": latest_row_state,
@@ -334,6 +365,7 @@ DETECTORS = {
     "harness_verdicts": harness_verdicts,
     "duplicated_literals": duplicated_literals,
     "env_seams": env_seams,
+    "loopback_equality": loopback_equality,
 }
 
 

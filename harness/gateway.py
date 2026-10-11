@@ -93,7 +93,7 @@ def served(config=None, defaults=None) -> dict:
     """The base config plus a sohot-<lane> alias per text lane's adopted model, and an
     alias by name for an adopted model the base config does not list. #297."""
     from harness import serving
-    from harness.completion import DEFAULT_GATEWAY
+    from harness.completion import is_gateway
     data = load(config)
     entries = list(data.get("model_list") or [])
     by_name = {str(e.get("model_name", "")).strip().lower(): e for e in entries}
@@ -110,7 +110,7 @@ def served(config=None, defaults=None) -> dict:
         except ValueError:
             continue
         known = by_name.get(where.model.lower())
-        if where.base == DEFAULT_GATEWAY:
+        if is_gateway(where.base):
             if known is None:
                 continue
             params = dict(known.get("litellm_params") or {})
@@ -122,15 +122,15 @@ def served(config=None, defaults=None) -> dict:
                                                 "litellm_params": params}
                 added.append(by_name[where.model.lower()])
         added.append({"model_name": LANE_ALIAS.format(lane), "litellm_params": params})
-    return {**data, "model_list": [_capped(e) for e in entries + added]}
+    return {**data, "model_list": [_capped(e, data) for e in entries + added]}
 
 
-def _capped(entry: dict) -> dict:
+def _capped(entry: dict, data=None) -> dict:
     """An mlx_lm.server deployment queues past MLX_MAX_PARALLEL in LiteLLM, not at its socket. #542."""
     from harness import serving
     params = dict(entry.get("litellm_params") or {})
-    base = str(params.get("api_base", "")).rstrip("/").removesuffix("/v1")
-    if base != serving.MLX_URL or "max_parallel_requests" in params:
+    if "max_parallel_requests" in params or serving.engine_at(
+            str(params.get("api_base", "")), data=data or {}) != serving.DEFAULT:
         return entry
     return {**entry, "litellm_params": {**params,
                                         "max_parallel_requests": serving.MLX_MAX_PARALLEL}}

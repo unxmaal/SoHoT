@@ -19,23 +19,23 @@ def url() -> str:
     return f"{LLAMACPP_URL.rsplit(':', 1)[0]}:{port}" if port.isdigit() else LLAMACPP_URL
 
 
-def _get(path: str) -> dict:
-    with urllib.request.urlopen(url() + path, timeout=TIMEOUT) as r:
+def _get(path: str, base: str = "") -> dict:
+    with urllib.request.urlopen((base or url()) + path, timeout=TIMEOUT) as r:
         return json.loads(r.read() or b"{}")
 
 
-def _post(path: str, body: dict) -> dict:
-    req = urllib.request.Request(url() + path, data=json.dumps(body).encode(),
+def _post(path: str, body: dict, base: str = "") -> dict:
+    req = urllib.request.Request((base or url()) + path, data=json.dumps(body).encode(),
                                  headers={"Content-Type": "application/json"},
                                  method="POST")
     with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
         return json.loads(r.read() or b"{}")
 
 
-def statuses(get=None) -> dict | None:
-    """Router model id -> status value, None when the router cannot be asked."""
+def statuses(get=None, base: str = "") -> dict | None:
+    """Router model id -> status value, None when the router at `base` (this machine's by default) cannot be asked."""
     try:
-        data = (get or _get)("/models")
+        data = get("/models") if get else _get("/models", base) if base else _get("/models")
     except Exception:  # noqa: BLE001
         return None
     out = {}
@@ -47,23 +47,24 @@ def statuses(get=None) -> dict | None:
     return out
 
 
-def resident(get=None) -> list[str]:
+def resident(get=None, base: str = "") -> list[str]:
     """Stems the router holds in memory, [] when it cannot be asked."""
-    return [k for k, v in (statuses(get) or {}).items() if v in RESIDENT]
+    return [k for k, v in (statuses(get, base) or {}).items() if v in RESIDENT]
 
 
 class Watch:
     """One eval candidate's router model across a run: each time it lost the model. #649."""
 
-    def __init__(self, model: str, get=None) -> None:
+    def __init__(self, model: str, get=None, base: str = "") -> None:
         self.model = model
         self.get = get
+        self.base = base
         self.swaps: list[dict] = []
         self._held = False
 
     def look(self, case: str, at: str) -> None:
         """Record an eviction when the model was held and now is not; unknown is not one."""
-        s = statuses(self.get)
+        s = statuses(self.get, self.base)
         if s is None:
             return
         status = s.get(self.model, "absent")
@@ -82,14 +83,20 @@ def _upstream(spec: str, gateway: str = "") -> tuple:
     return delegate.upstream(serving.route(spec, gateway))
 
 
-def model_for(spec: str, gateway: str = "", route=None) -> str:
-    """The router model an eval candidate runs on, through a gateway alias too; "" otherwise."""
+def upstream_for(spec: str, gateway: str = "", route=None) -> tuple[str, str]:
+    """(router base, model) an eval candidate runs on, on any host, through a gateway alias too; ("", "") otherwise."""
+    from harness import serving
     try:
         base, model = (route or _upstream)(spec, gateway)
     except Exception:  # noqa: BLE001
-        return ""
-    from harness import serving
-    return model if model and base in (serving.LLAMACPP_URL, url()) else ""
+        return "", ""
+    engine = serving.engine_at(base) if model else None
+    return (serving.bare(base), model) if engine == serving.LLAMACPP else ("", "")
+
+
+def model_for(spec: str, gateway: str = "", route=None) -> str:
+    """The router model an eval candidate runs on, through a gateway alias too; "" otherwise."""
+    return upstream_for(spec, gateway, route)[1]
 
 
 def stem_of(spec: str) -> str:
@@ -142,12 +149,12 @@ def _no_run_in_flight():
         os.close(fd)
 
 
-def release(stems, why: str, *, get=None, post=None, keep=None, say=print) -> list[str]:
-    """Unload each resident stem nothing protects, while no run is in flight."""
+def release(stems, why: str, *, get=None, post=None, keep=None, say=print, base: str = "") -> list[str]:
+    """Unload each resident stem nothing protects from the router at `base`, while no run is in flight."""
     wanted = [s for s in dict.fromkeys(stems) if s]
     if not wanted:
         return []
-    held = resident(get)
+    held = resident(get, base)
     wanted = [s for s in wanted if s in held]
     if not wanted:
         return []
@@ -165,7 +172,12 @@ def release(stems, why: str, *, get=None, post=None, keep=None, say=print) -> li
                 say(f"  router: kept {stem}: a run is in flight")
                 continue
             try:
-                (post or _post)("/models/unload", {"model": stem})
+                if post:
+                    post("/models/unload", {"model": stem})
+                elif base:
+                    _post("/models/unload", {"model": stem}, base)
+                else:
+                    _post("/models/unload", {"model": stem})
             except Exception as exc:  # noqa: BLE001
                 say(f"  router: could not unload {stem}: {exc}")
                 continue
@@ -181,4 +193,4 @@ def release_spec(spec: str, why: str, **kw) -> list[str]:
 
 def settle(why: str, **kw) -> list[str]:
     """Leave only protected models resident."""
-    return release(resident(kw.get("get")), why, **kw)
+    return release(resident(kw.get("get"), kw.get("base", "")), why, **kw)

@@ -266,7 +266,7 @@ def _control(name, runner):
 def gateway_world(monkeypatch, tmp_path):
     config = tmp_path / "config.yaml"
     config.write_text(yaml.safe_dump({"model_list": [
-        {"model_name": "q3-4b", "litellm_params": {
+        {"model_name": "q3-4b", "engine": "mlx_lm.server", "litellm_params": {
             "model": "openai/org/q3", "api_base": f"{SERVER}/v1", "api_key": "x"}}]}),
         encoding="utf-8")
     monkeypatch.setenv(gateway.ENV_VAR, str(config))

@@ -20,10 +20,17 @@ except ImportError:  # the test suite has no litellm
     CustomLogger = object
 
 
+def _engine(model: str) -> str | None:
+    try:
+        return serving.engine_for(model, config=CONFIG)
+    except serving.UnknownEngine:
+        return None
+
+
 def _enforcing() -> list[str]:
     return sorted(str(e["model_name"]) for e in gateway.load(CONFIG).get("model_list") or []
                   if not e.get("deprecated_for")
-                  and serving.engine_for(str(e["model_name"]), config=CONFIG) == serving.LLAMACPP)
+                  and _engine(str(e["model_name"])) == serving.LLAMACPP)
 
 
 def refusal(data: dict) -> str:
@@ -32,9 +39,13 @@ def refusal(data: dict) -> str:
     if not isinstance(fmt, dict) or fmt.get("type") not in ENFORCED:
         return ""
     model = str(data.get("model") or "")
-    engine = serving.engine_for(model, config=CONFIG)
+    engine = _engine(model)
     if engine == serving.LLAMACPP:
         return ""
+    if engine is None:
+        return (f"{model} names no engine in the gateway config, so nothing says it "
+                f"enforces response_format. Give it an {serving.ENGINE_KEY}: key, or use "
+                f"an alias that enforces it: {', '.join(_enforcing())}")
     return (f"{model} is served by {engine}, which ignores response_format, so "
             f"the reply would not be guaranteed to match the schema. Use an "
             f"alias that enforces it: {', '.join(_enforcing())}")
