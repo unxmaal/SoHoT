@@ -22,6 +22,8 @@ MISSING_PACKAGE = 4
 RUNTIME_SUFFIX = ".runtime.json"
 #: (device, attention) tried in turn while the MPS backend aborts; None is the default device. #604.
 FALLBACKS = ((None, ""), (None, "eager"), ("cpu", ""))
+#: New tokens an ocr reply may take; a reply that fills it records hf_max_new_tokens on its row. #700.
+MAX_NEW_TOKENS = 512
 
 
 def runtime_path(out) -> str:
@@ -45,8 +47,13 @@ def _device(torch, device: str | None) -> str:
     return device or accelerator(torch) or "cpu"
 
 
+def limit_hit(generated: int, max_new_tokens: int) -> str:
+    """The `limit:` body when a reply took every new token it was allowed, else "". #700."""
+    return f"hf_max_new_tokens>{max_new_tokens}" if generated >= max_new_tokens else ""
+
+
 def read_image(model: str, image: str, prompt: str, revision: str | None = None,
-               max_new_tokens: int = 512, device: str | None = None, attn: str = "",
+               max_new_tokens: int | None = None, device: str | None = None, attn: str = "",
                runtime: dict | None = None) -> str:
     """The model's transcription of `image`: a chat VLM is prompted, an encoder-decoder is not.
 
@@ -59,15 +66,16 @@ def read_image(model: str, image: str, prompt: str, revision: str | None = None,
 
     from harness.torch_device import HALF
     dev = _device(torch, device)
+    max_new_tokens = MAX_NEW_TOKENS if max_new_tokens is None else max_new_tokens
+    runtime = {} if runtime is None else runtime
     dtype = torch.float16 if dev in HALF else torch.float32
     picture = Image.open(image).convert("RGB")
     # Eager attention repeats grouped KV heads, which MPS's sdpa matmul cannot type. #604.
     net = AutoModelForImageTextToText.from_pretrained(
         model, revision=revision, dtype=dtype,
         **({"attn_implementation": attn} if attn else {})).to(dev)
-    if runtime is not None:
-        runtime.update(device=dev, attn=str(getattr(net.config, "_attn_implementation", "")
-                                            or attn or "default"))
+    runtime.update(device=dev, attn=str(getattr(net.config, "_attn_implementation", "")
+                                        or attn or "default"))
     proc = AutoProcessor.from_pretrained(model, revision=revision)
     if getattr(proc, "chat_template", None):
         messages = [{"role": "user", "content": [{"type": "image", "image": picture},
@@ -77,10 +85,13 @@ def read_image(model: str, image: str, prompt: str, revision: str | None = None,
         inputs = inputs.to(dev, dtype=dtype)
         out = net.generate(**inputs, max_new_tokens=max_new_tokens, do_sample=False)
         new = out[:, inputs["input_ids"].shape[1]:]
+        runtime["limit"] = limit_hit(new.shape[1], max_new_tokens)
         return proc.batch_decode(new, skip_special_tokens=True)[0].strip()
     pixels = getattr(proc, "image_processor", proc)(images=picture, return_tensors="pt")
     out = net.generate(pixel_values=pixels.pixel_values.to(dev, dtype=dtype),
                        max_new_tokens=max_new_tokens, do_sample=False)
+    # The decoder's start token is not a new one.
+    runtime["limit"] = limit_hit(out.shape[1] - 1, max_new_tokens)
     decoder = getattr(proc, "tokenizer", None) or _tokenizer(model, revision, AutoTokenizer)
     return decoder.batch_decode(out, skip_special_tokens=True)[0].strip()
 
@@ -182,7 +193,7 @@ def main(argv=None, read=None, score=None, tag=None) -> int:
     o.add_argument("--prompt", default="")
     o.add_argument("--out", required=True)
     o.add_argument("--revision")
-    o.add_argument("--max-new-tokens", type=int, default=512)
+    o.add_argument("--max-new-tokens", type=int, default=None)
     o.add_argument("--device")
     o.add_argument("--attn", default="")
     o.add_argument("--one-attempt", action="store_true")

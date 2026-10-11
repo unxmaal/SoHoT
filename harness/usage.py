@@ -22,6 +22,10 @@ SAMPLE_ROWS = 2000
 TEXT_KEY = "usage_text"
 QUEUE_MAX = 10000
 BATCH_MAX = 500
+#: The meta key holding [at, rows] for each flush that dropped rows, so a report knows its sample is short. #700.
+DROPS_KEY = "usage_dropped"
+#: Seconds of drop history kept, longer than any window a report reads.
+DROP_HISTORY = 90 * 86400.0
 FLUSH_S = 1.0
 LANE_PREFIX = "sohot-"
 
@@ -189,6 +193,33 @@ def insert(conn, rows: list[tuple[dict, dict | None]]) -> None:
     conn.commit()
 
 
+def record_dropped(conn, rows: int, at: float | None = None) -> None:
+    """Note that `rows` usage rows were lost at `at`, keeping DROP_HISTORY of such notes."""
+    at = time.time() if at is None else float(at)
+    kept = [d for d in _drops(conn) if d[0] >= at - DROP_HISTORY] + [[at, int(rows)]]
+    conn.execute("INSERT OR REPLACE INTO meta VALUES (?, ?)", (DROPS_KEY, json.dumps(kept)))
+    conn.commit()
+
+
+def _drops(conn) -> list:
+    got = conn.execute("SELECT value FROM meta WHERE key = ?", (DROPS_KEY,)).fetchone()
+    try:
+        return [list(d) for d in json.loads(got[0])] if got else []
+    except (TypeError, ValueError):
+        return []
+
+
+def dropped_since(conn, start: float) -> int:
+    """Usage rows the writer lost at or after `start`."""
+    return sum(int(n) for at, n in _drops(conn) if at >= start)
+
+
+def drop_warning(conn, start: float) -> list[str]:
+    """A line saying the window's rows are incomplete, or none."""
+    n = dropped_since(conn, start)
+    return [f"{n} gateway usage row(s) were dropped in this window; its rates are on an incomplete sample"] if n else []
+
+
 class Writer:
     """A queue and one thread that drains it into the store in batches."""
 
@@ -201,6 +232,8 @@ class Writer:
         self._thread = None
         self._stop = threading.Event()
         self.dropped = 0
+        self._unsaved = 0
+        self._lock = threading.Lock()
         self.disabled = ""
         self.specs: dict = {}
 
@@ -216,7 +249,25 @@ class Writer:
         try:
             self._q.put_nowait((r, s))
         except queue.Full:
-            self.dropped += 1
+            self._drop(1, "the queue is full")
+
+    def _drop(self, n: int, why: str) -> None:
+        with self._lock:
+            first = self.dropped == 0
+            self.dropped += n
+            self._unsaved += n
+        if first:
+            self._log(f"dropping usage rows: {why}")
+
+    def _save_drops(self, conn) -> None:
+        with self._lock:
+            n, self._unsaved = self._unsaved, 0
+        if n:
+            try:
+                record_dropped(conn, n)
+            except Exception:  # noqa: BLE001
+                with self._lock:
+                    self._unsaved += n
 
     def _open(self):
         if self._connect is not None:
@@ -246,10 +297,17 @@ class Writer:
             batch = self._drain(block=not stopping)
             if not batch:
                 if stopping:
+                    if self._unsaved and not self.disabled:
+                        try:
+                            conn = conn or self._open()
+                            self._save_drops(conn)
+                        except Exception as exc:  # noqa: BLE001
+                            self._log(f"{self._unsaved} dropped row(s) not recorded: {exc}")
                     break
                 continue
             if self.disabled:
-                self.dropped += len(batch)
+                with self._lock:
+                    self.dropped += len(batch)
                 continue
             try:
                 if conn is None:
@@ -257,8 +315,11 @@ class Writer:
                     self.specs = _specs(conn)
                 insert(conn, [({**r, "spec": self.specs.get(r.get("alias")) or r.get("spec")}, s)
                               for r, s in batch])
+                self._save_drops(conn)
             except Exception as exc:  # noqa: BLE001
-                self.dropped += len(batch)
+                with self._lock:
+                    self.dropped += len(batch)
+                    self._unsaved += len(batch)
                 if not warned:
                     self._log(f"dropping usage rows: {exc}")
                     warned = True

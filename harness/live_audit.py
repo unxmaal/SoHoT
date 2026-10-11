@@ -63,10 +63,14 @@ def _served_matches(served: dict, wanted: dict) -> list:
 
 
 def _gateway_errors(conn) -> list:
+    import time
+
     from harness import usage
-    return [f"sohot-{lane}: {s['error_rate']:.0%} of {s['requests']} requests failed"
-            for lane, s in sorted(usage.real_use(conn).items())
-            if s["requests"] >= MIN_REQUESTS and (s["error_rate"] or 0) > ERROR_RATE_MAX]
+    # Rates over a window the writer dropped rows from are not rates of real use. #700.
+    short = usage.drop_warning(conn, time.time() - usage.parse_since(usage.DEFAULT_SINCE))
+    return short + [f"sohot-{lane}: {s['error_rate']:.0%} of {s['requests']} requests failed"
+                    for lane, s in sorted(usage.real_use(conn).items())
+                    if s["requests"] >= MIN_REQUESTS and (s["error_rate"] or 0) > ERROR_RATE_MAX]
 
 
 def _sweep_on_schedule() -> list:

@@ -12,6 +12,7 @@ Two failure modes are handled explicitly because both look like success:
 """
 from __future__ import annotations
 
+import math
 import os
 import re
 import shutil
@@ -135,9 +136,25 @@ RUNAWAY_MIN_WORDS = 6
 TIMEOUT_S = 120.0
 
 
-def token_budget(text: str) -> int:
-    """A cap proportional to the text instead of mlx_audio's flat 1200."""
-    return max(200, len(text.split()) * 12)
+#: Audio tokens a second of speech costs, by a name fragment of the cloning model; the codec's frame rate. #700.
+CODEC_HZ = {"chatterbox": 25.0}
+#: The rate assumed for a model CODEC_HZ does not name: high, so an unknown codec is not cut short.
+DEFAULT_CODEC_HZ = 100.0
+#: The fewest seconds of speech a cloning request is allowed, however short its text.
+TOKEN_BUDGET_MIN_S = 8.0
+#: Headroom over the runaway ceiling, so the cap only ever cuts a clip that has already run away.
+TOKEN_BUDGET_MARGIN = 1.1
+
+
+def codec_hz(model: str) -> float:
+    name = (model or "").lower()
+    return next((hz for key, hz in CODEC_HZ.items() if key in name), DEFAULT_CODEC_HZ)
+
+
+def token_budget(text: str, model: str = "") -> int:
+    """A cap that fits `text` read at the runaway ceiling, at the model's own codec rate, instead of mlx_audio's flat 1200."""
+    seconds = max(TOKEN_BUDGET_MIN_S, len(text.split()) * SECONDS_PER_WORD_CEILING * TOKEN_BUDGET_MARGIN)
+    return math.ceil(seconds * codec_hz(model))
 
 
 # A WAV header is 44 bytes and 8000 bytes is a fifth of a second at 16k mono:
@@ -157,6 +174,14 @@ class AudioTimeout(AudioError):
     def __init__(self, what: str, timeout: float):
         super().__init__(f"{what} timed out after {timeout:g}s")
         self.limit = ("audio_timeout_s", timeout)
+
+
+class TokenCap(AudioError):
+    """A clip as long as the token budget allows: cut by our cap, not judged on its speech. #700."""
+
+    def __init__(self, seconds: float, budget: int):
+        super().__init__(f"tts filled its token budget: {seconds:.2f}s of audio at max_tokens {budget}")
+        self.limit = ("tts_tokens", budget)
 
 
 class Runaway(AudioError):
@@ -196,7 +221,7 @@ def speak(text: str, out: str | Path, voice: str = DEFAULT_KOKORO_VOICE,
     # Cloning path only: Kokoro takes neither field. Issue #6.
     if ref_audio is not None:
         payload["repetition_penalty"] = CHATTERBOX_REPETITION_PENALTY
-        payload["max_tokens"] = token_budget(text)
+        payload["max_tokens"] = token_budget(text, model)
     # Only some models have a voice table. Sending voice="" to one that does
     # not is a request for a voice named empty string.
     if voice:
@@ -248,6 +273,10 @@ def speak(text: str, out: str | Path, voice: str = DEFAULT_KOKORO_VOICE,
     if runaway:
         raise Runaway(f"{runaway}. The audio is at {out} so it can be listened to. See issue #6.",
                       ceiling)
+    if "max_tokens" in payload:
+        seconds = audio_seconds(out)
+        if seconds >= 0.95 * payload["max_tokens"] / codec_hz(model):
+            raise TokenCap(seconds, payload["max_tokens"])
     return out
 
 

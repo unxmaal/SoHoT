@@ -705,8 +705,12 @@ def _hf_ocr(spec: str, model: str, options: dict) -> Engine:
         cmd = [os.environ.get("HF_TASK_BIN", HF_TASK_DEFAULT_BIN), "ocr",
                "--model", model, "--image", _input_of(params, "image"),
                "--prompt", str(defaults.get("prompt") or prompt), "--out", str(out)]
-        for key in ("revision", "max_new_tokens", "device"):
-            _flag(cmd, f"--{key.replace('_', '-')}", defaults.get(key))
+        from harness import hf_task
+        # Read at call time, so a knob override reaches the child. #700.
+        tokens = defaults.get("max_new_tokens") or hf_task.MAX_NEW_TOKENS
+        for key, value in (("revision", defaults.get("revision")), ("max_new_tokens", tokens),
+                           ("device", defaults.get("device"))):
+            _flag(cmd, f"--{key.replace('_', '-')}", value)
         return cmd
 
     return Engine(name=f"hf-ocr/{model.rsplit('/', 1)[-1]}{distinguish(options)}",

@@ -36,7 +36,7 @@ def cmd_usage(a) -> int:
         now = usage.time.time()
         rows = usage.summary(conn, lane=lane, since=since, now=now)
         comps = usage.around_switches(conn, lane=lane, since=since, now=now)
-        warnings = usage.regressions(comps)
+        warnings = usage.drop_warning(conn, now - since) + usage.regressions(comps)
         text_on = usage.text_enabled(conn)
     finally:
         conn.close()

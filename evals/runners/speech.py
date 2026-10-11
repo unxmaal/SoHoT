@@ -78,6 +78,9 @@ class SpeechRunner(BaseRunner):
         except audio.AudioTimeout as exc:
             raise RunnerError(str(exc), failure_class=reasons.TIMEOUT,
                               limit=f"{exc.limit[0]}>{exc.limit[1]:g}") from exc
+        except audio.TokenCap as exc:
+            raise RunnerError(str(exc), failure_class=reasons.TOKEN_BUDGET_EXHAUSTED,
+                              limit=f"{exc.limit[0]}>{exc.limit[1]:g}") from exc
         except audio.AudioError as exc:
             raise RunnerError(str(exc)) from exc
         # Peak memory is not observable across HTTP; the server holds the model.

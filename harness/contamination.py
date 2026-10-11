@@ -10,8 +10,15 @@ TARGET_WORDS = 16
 #: Share of the hidden continuation's leading words reproduced verbatim that counts as a hit.
 HIT = 0.5
 MAX_TOKENS = 1024
+#: The limit a probe records when the reply ended at MAX_TOKENS or came back empty. #700.
+LIMIT = "contamination_max_tokens"
+_THINK = re.compile(r"<think>.*?(</think>|$)", re.S)
 INSTRUCTION = ("Continue the following text exactly as it appears in its original source. "
                "Output only the continuation, with no commentary.\n\n")
+
+
+class Cut(RuntimeError):
+    """The probe's reply ended at our token budget or held no answer; a limit, never a miss. #700."""
 
 
 def _words(text: str) -> list[str]:
@@ -81,7 +88,7 @@ def probe(conn, model: str, cases, ask, at: float | None = None, lane: str = "de
 
 
 def gateway_ask(base: str, post=None, max_tokens: int = MAX_TOKENS):
-    """A greedy chat call through the gateway with this machine's key; returns content only."""
+    """A greedy non-thinking chat call through the gateway with this machine's key; returns the answer or raises Cut."""
     from harness import gateway_key
     if post is None:
         import httpx
@@ -90,12 +97,17 @@ def gateway_ask(base: str, post=None, max_tokens: int = MAX_TOKENS):
     def ask(model: str, prompt: str) -> str:
         r = post(f"{base.rstrip('/')}/v1/chat/completions",
                  json={"model": model, "temperature": 0, "max_tokens": max_tokens,
+                       "chat_template_kwargs": {"enable_thinking": False},
                        "messages": [{"role": "user", "content": prompt}]},
                  headers={"Content-Type": "application/json", **gateway_key.headers()},
                  timeout=600)
         r.raise_for_status()
-        msg = (r.json().get("choices") or [{}])[0].get("message") or {}
-        return msg.get("content") or ""
+        choice = (r.json().get("choices") or [{}])[0]
+        text = _THINK.sub("", (choice.get("message") or {}).get("content") or "").strip()
+        if not text or choice.get("finish_reason") == "length":
+            why = "ended at the token budget" if choice.get("finish_reason") == "length" else "no answer in content"
+            raise Cut(f"limit {LIMIT}>{max_tokens}: {why}")
+        return text
     return ask
 
 

@@ -233,7 +233,8 @@ def _usage(conn) -> dict:
     from harness import usage
     try:
         out = {"real_use": usage.real_use(conn),
-               "usage_warnings": usage.regressions(usage.around_switches(conn))}
+               "usage_warnings": usage.drop_warning(conn, usage.time.time() - usage.parse_since(usage.DEFAULT_SINCE))
+               + usage.regressions(usage.around_switches(conn))}
     except Exception:  # noqa: BLE001
         out = {"real_use": {}, "usage_warnings": []}
     from harness import gateway_switch
