@@ -268,6 +268,17 @@ mixedpath() {
   fi
 }
 
+# Append `export NAME=VALUE` to FILE, skipping an empty value.
+#
+# Seven explicit calls rather than a loop over ${!name}: this file already
+# chose a case over `declare -A` because macOS ships bash 3.2, and indirect
+# expansion carrying a default is the same kind of bet. %q so a path with a
+# space in it survives being read back.
+node_export() {
+  [ -n "$3" ] || return 0
+  printf 'export %s=%q\n' "$2" "$3" >> "$1"
+}
+
 install_node() {
   is_windows || { echo "install-node is Windows only; use launchd.sh elsewhere" >&2; return 1; }
 
@@ -278,6 +289,22 @@ install_node() {
     return 1
   fi
   [ -r "$key_file" ] || { echo "FATAL: cannot read $key_file" >&2; return 1; }
+
+  # NAMED, NOT INHERITED. serve-llamacpp.sh falls back to $HF_HOME/gguf, and
+  # with HF_ROOT and HF_HOME unset env.sh falls back again to a directory
+  # inside the checkout. A node installed without this started at logon, found
+  # no model directory in the repo tree, and exited 1, which from a gateway
+  # reads as the node being unreachable rather than as one that never ran. #736.
+  if [ -z "${LLAMACPP_MODELS_DIR:-}" ]; then
+    echo "FATAL: set LLAMACPP_MODELS_DIR first." >&2
+    echo "       A logon task inherits nothing from this shell, and the default" >&2
+    echo "       points inside the checkout rather than at the weights." >&2
+    return 1
+  fi
+  [ -d "$LLAMACPP_MODELS_DIR" ] || {
+    echo "FATAL: no model directory at $LLAMACPP_MODELS_DIR" >&2
+    return 1
+  }
 
   local host port launcher bash_exe
   host="${LLAMACPP_HOST:-0.0.0.0}"
@@ -297,9 +324,24 @@ install_node() {
 cd "$PWD" || exit 1
 export LLAMACPP_HOST="$host"
 export LLAMACPP_PORT="$port"
-export LLAMACPP_API_KEY_FILE="$key_file"
-exec ./scripts/services.sh start llamacpp
 LAUNCH
+
+  # EVERY LLAMACPP VARIABLE THAT IS SET, not a hand-picked few. The first
+  # version of this carried host, port and the key file, and the node then died
+  # on a missing model directory because LLAMACPP_MODELS_DIR lived in the
+  # installing shell and nowhere else. LLAMACPP_BIN matters for the same
+  # reason: resolving the server from a logon task's PATH can find a different
+  # build from the one whoever ran install-node just tested, and on a box
+  # carrying more than one llama.cpp it reliably does. #736.
+  node_export "$launcher" LLAMACPP_BIN          "${LLAMACPP_BIN:-}"
+  node_export "$launcher" LLAMACPP_MODELS_DIR   "${LLAMACPP_MODELS_DIR:-}"
+  node_export "$launcher" LLAMACPP_API_KEY_FILE "${LLAMACPP_API_KEY_FILE:-}"
+  node_export "$launcher" LLAMACPP_CTX          "${LLAMACPP_CTX:-}"
+  node_export "$launcher" LLAMACPP_SLEEP_IDLE   "${LLAMACPP_SLEEP_IDLE:-}"
+  node_export "$launcher" LLAMACPP_MAX_MODELS   "${LLAMACPP_MAX_MODELS:-}"
+  node_export "$launcher" LLAMACPP_GPU_LAYERS   "${LLAMACPP_GPU_LAYERS:-}"
+
+  printf 'exec ./scripts/services.sh start llamacpp\n' >> "$launcher"
   chmod +x "$launcher"
 
   bash_exe="$(winpath "$(command -v bash)")"
@@ -315,6 +357,14 @@ LAUNCH
      Register-ScheduledTask -TaskName '$NODE_TASK' -Action \$a -Trigger \$t\
        -Principal \$p -Settings \$s -Force | Out-Null" || {
     echo "FATAL: could not register $NODE_TASK" >&2
+    # "Access is denied" from Register-ScheduledTask is the usual answer here,
+    # and it does not mean the arguments were wrong: creating a task in the
+    # root folder needs an elevated shell on this machine even when the task
+    # will run unelevated as the installing user. The launcher above was
+    # written either way, so a second run from an elevated shell is all this
+    # needs. #736.
+    echo "       If that said access denied, run this from an elevated shell." >&2
+    echo "       The task itself still runs unelevated as the current user." >&2
     return 1
   }
   echo "$NODE_TASK registered; it starts llamacpp at logon"
