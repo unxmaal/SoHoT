@@ -18,6 +18,7 @@ have a body, be perfectly self-contained, and render as a white rectangle.
 """
 from __future__ import annotations
 
+import contextlib
 import os
 import shutil
 import subprocess
@@ -364,7 +365,9 @@ def _shoot(argv: list[str], out: Path, cwd: str, timeout: float = 60.0) -> str:
                 proc.wait(timeout=5)
             except subprocess.TimeoutExpired:
                 proc.kill()
-                proc.wait(timeout=5)
+                # A killed chrome that will not reap must not escape as TimeoutExpired; the caller classes the timeout.
+                with contextlib.suppress(subprocess.TimeoutExpired):
+                    proc.wait(timeout=5)
         _kill_tree(proc)
         err.seek(0)
         return err.read().strip()

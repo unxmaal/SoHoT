@@ -366,6 +366,35 @@ def test_a_page_chrome_never_shoots_in_time_is_timeout_on_the_render_knob(monkey
     assert (got.ok, got.failure_class, got.limit) == (False, reasons.TIMEOUT, "chrome_render_timeout_s>0.2")
 
 
+def test_a_chrome_that_will_not_reap_after_kill_is_still_a_timeout_row(monkeypatch):
+    from harness.checks import render
+
+    class Unreapable:
+        pid = 0
+
+        def __init__(self, *a, **k):
+            pass
+
+        def poll(self):
+            return None
+
+        def terminate(self):
+            pass
+
+        def kill(self):
+            pass
+
+        def wait(self, timeout=None):
+            raise render.subprocess.TimeoutExpired("chrome", timeout)
+
+    monkeypatch.setattr(render, "chrome_path", lambda: "/fake/chrome")
+    monkeypatch.setattr(render, "CHROME_TIMEOUT_S", 0.2)
+    monkeypatch.setattr(render, "_PROFILE_HANGS", set())
+    monkeypatch.setattr(render.subprocess, "Popen", Unreapable)
+    got = render.check_html("<html><body>hi</body></html>")
+    assert (got.ok, got.failure_class, got.limit) == (False, reasons.TIMEOUT, "chrome_render_timeout_s>0.2")
+
+
 def test_an_svg_the_rasterizer_cannot_finish_in_time_is_timeout_on_the_render_knob(monkeypatch):
     from harness.checks import render
     monkeypatch.setattr(render, "rasterizer_path", lambda: "/fake/rsvg-convert")
