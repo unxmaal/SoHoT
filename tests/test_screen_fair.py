@@ -286,3 +286,14 @@ def test_the_unseen_rate_knob_sets_both_an_unmeasured_screen_count_and_an_unmeas
         rates, observed = power.rates_from({}, ids)
         assert rates == {i: value for i in ids}
         assert power.plan(rates.values(), observed=observed).unmeasured
+
+
+def test_a_child_s_limit_and_a_sidecar_s_steps_both_reach_the_row(tmp_path):
+    from harness import hf_task
+    out = tmp_path / "fox-snow.png"
+    out.write_bytes(b"png")
+    Path(hf_task.runtime_path(out)).write_text(json.dumps({"device": "mps", "limit": "hf_max_new_tokens>512"}),
+                                               encoding="utf-8")
+    process.sidecar(out).write_text(json.dumps({"steps": 9, "guidance": 0.0}), encoding="utf-8")
+    got = process._runtime_of(out)
+    assert got == {"device": "mps", "limit": "hf_max_new_tokens>512", "steps": "9", "guidance": "0.0"}

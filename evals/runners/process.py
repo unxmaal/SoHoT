@@ -108,7 +108,7 @@ def sidecar(out) -> Path:
 
 
 def _runtime_of(out_path: Path) -> dict:
-    """The device and attention an hf-task child says answered (#604), and the steps and guidance a media sidecar says it used (#691)."""
+    """The device, attention and limit an hf-task child says answered (#604, #700), and the steps and guidance a media sidecar says it used (#691)."""
     import json
     out = {}
     for path, keys in ((Path(runtime_path(out_path)), ("device", "attn", "limit")),
