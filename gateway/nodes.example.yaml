@@ -1,0 +1,23 @@
+# Serving nodes behind this gateway (#684). Copy to $LOCALHARNESS_HOME/nodes.yaml on the gateway's
+# machine and fill in the placeholders there; that file is per machine and never committed.
+# Each model a node holds is served by the node first and by this machine's own entry when the node
+# takes no connection within connect_timeout, times out, or errors. Run `python -m harness.nodes show`.
+nodes:
+  - name: node1
+    api_base: http://NODE_HOST:18082/v1
+    # The node's server, as a gateway entry's engine: key. An entry moves to the node only when its
+    # own server runs the same engine, so a schema lane still reaches a llama-server.
+    engine: llama-server
+    # The gateway's model ids. Where the node advertises another id (a router names a model by its
+    # file in --models-dir), map it: `- {id: <gateway id>, as: <the node's id>}`. `make smoke` checks.
+    models:
+      - Qwen2.5-7B-Instruct-Q4_K_M
+    # Never the key itself: keychain:<service>/<account> (login Keychain) or env:<VARIABLE>.
+    key: keychain:NODE_KEY_SERVICE/NODE_KEY_ACCOUNT
+    # Optional: the node's machine fingerprint (hw_model/os/arch/host), else receipts say node:<name>.
+    machine: ""
+    connect_timeout: 3
+    timeout: 120
+    cooldown: 30
+    # Connect over IPv4: an mDNS name can resolve to a link-local IPv6 address that never answers.
+    ipv4: true

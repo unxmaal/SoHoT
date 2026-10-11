@@ -851,6 +851,43 @@ ANTHROPIC_BASE_URL=http://<host>:4000 ANTHROPIC_AUTH_TOKEN="$SOHOT_GATEWAY_KEY" 
   claude --model sohot-code
 ```
 
+## Serving nodes behind the gateway
+
+Another machine can serve some of the gateway's models (#684). The list is per
+machine and never committed: `$LOCALHARNESS_HOME/nodes.yaml`, in the shape of
+`gateway/nodes.example.yaml`. Each node names an `api_base`, its `engine`, the
+model ids it holds, and where its key lives (`keychain:<service>/<account>` or
+`env:<VARIABLE>`, never the key itself). `python -m harness.nodes show` lists them.
+
+At start, `serve-gateway.sh` writes every entry for a node's model (its id, old
+nicknames and `sohot-<lane>` aliases that adopted it) to point at the node, and
+keeps this machine's copy as `<name>@local` behind a LiteLLM router fallback.
+An entry moves only when the node runs the same engine its own server does, so
+a schema lane still reaches a llama-server. The node's key is exported from the
+Keychain into the gateway's environment; the generated config names only the
+variable.
+
+A request goes to the node first. The gateway falls back to this machine when
+the node:
+
+- takes no connection within `connect_timeout`: an async probe before the
+  request, cached for `served_model.UP_TTL_S` while up and for `cooldown` while down;
+- does not answer within `timeout` (sized for a reload after
+  `--sleep-idle-seconds`), or answers with an error. LiteLLM then cools that
+  deployment down for `cooldown`, and every other name on the node skips it for
+  that time too. The defaults are in `harness/nodes.py`.
+
+Nodes are reached over IPv4 (`ipv4: true`, the default), because a `.local` name
+can resolve to a link-local IPv6 address first that never connects.
+
+The reply says who answered: `x-sohot-node` and `x-sohot-served-as: <name>@<node>`
+when the node did, `x-sohot-fallback: <node>` when this machine did instead, and
+`x-sohot-machine` either way (the node's `machine` fingerprint, or `node:<name>`).
+A run records that host, so `comparable()` refuses to rank a run on a node beside
+one on this machine, and a run answered partly by each is filed as several hosts.
+`make smoke` asks the gateway for each node's models and passes when the node
+answers while it is up and this machine answers quickly while it is down.
+
 ## Gateway auth
 
 The gateway listens on every interface so other machines on the LAN can use

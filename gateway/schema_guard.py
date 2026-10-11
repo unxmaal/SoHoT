@@ -29,7 +29,7 @@ def _engine(model: str) -> str | None:
 
 def _enforcing() -> list[str]:
     return sorted(str(e["model_name"]) for e in gateway.load(CONFIG).get("model_list") or []
-                  if not e.get("deprecated_for")
+                  if not e.get("deprecated_for") and not e.get("fallback_for")
                   and _engine(str(e["model_name"])) == serving.LLAMACPP)
 
 

@@ -86,7 +86,7 @@ def _no_real_router(monkeypatch):
     from harness import context, router
     posts = []
     monkeypatch.setattr(router, "_get", lambda path: {"data": []})
-    monkeypatch.setattr(context, "_get_json", lambda url: {"data": []})
+    monkeypatch.setattr(context, "_get_json", lambda url, key="": {"data": []})
     monkeypatch.setattr(router, "_post",
                         lambda path, body: posts.append((path, body)) or {})
     return posts

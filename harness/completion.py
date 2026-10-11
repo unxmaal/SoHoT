@@ -413,9 +413,12 @@ def _note(gateway: str, model, r) -> None:
             shape[key] = int(got.get(f"x-sohot-{key}") or 0) or None
         except ValueError:
             shape[key] = None
-    SERVED[(gateway.rstrip("/"), str(model or ""))] = {
-        "machine": str(got.get("x-sohot-machine") or ""),
-        "model": str(got.get("x-sohot-model") or ""), **shape}
+    key = (gateway.rstrip("/"), str(model or ""))
+    machine = str(got.get("x-sohot-machine") or "")
+    # Every host that answered, so a run a node served only in part is not filed under one. #684.
+    machines = sorted(set((SERVED.get(key) or {}).get("machines") or ()) | ({machine} - {""}))
+    SERVED[key] = {"machine": machine, "machines": machines,
+                   "model": str(got.get("x-sohot-model") or ""), **shape}
 
 
 def served(gateway: str | None = None) -> dict:

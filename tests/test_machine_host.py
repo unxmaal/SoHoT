@@ -312,12 +312,17 @@ def test_a_remote_run_records_the_context_and_slots_the_host_served(tmp_path, mo
         "model": "Ornith-1.5-35B-Q4_K_M", "ctx": 32768, "slots": 4}
 
 
-def test_a_llamacpp_spec_finds_the_reply_by_the_model_it_was_sent_as(monkeypatch):
-    from harness import router, serving
+def test_a_llamacpp_spec_takes_the_local_shape_because_llama_server_sends_no_headers(monkeypatch):
+    """A llamacpp: spec goes straight to the router, whose replies carry no x-sohot-* headers. #722."""
+    from harness import context, router, serving
     monkeypatch.setattr(serving, "_servable", lambda stem: stem)
-    seen = {(router.url().rstrip("/"), "Ornith-Q4"): {"machine": B, "model": "Ornith-Q4"}}
-    got = R.served_shapes({"k": "llamacpp:Ornith-Q4"}, {}, seen, True)
-    assert got == {"k": {"model": "Ornith-Q4"}}
+    monkeypatch.setattr(R, "_served_ctx", lambda spec: 8192)
+    monkeypatch.setattr(context, "served_slots", lambda spec: 2)
+    seen = {(router.url().rstrip("/"), "Ornith-Q4"): {"machine": "", "machines": [], "model": "",
+                                                      "ctx": None, "slots": None}}
+    assert R.serving_machine(seen, B) == (B, False)
+    got = R.served_shapes({"k": "llamacpp:Ornith-Q4"}, {"k": "Ornith-Q4"}, seen, False)
+    assert got == {"k": {"model": "Ornith-Q4", "ctx": 8192, "slots": 2}}
 
 
 def test_a_receipt_from_another_host_does_not_take_this_stores_old_row(tmp_path, be):

@@ -114,6 +114,14 @@ if [ "$LOCAL" -eq 1 ]; then
   fi
 fi
 
+# Each serving node's models (#684): node up, the node answers; node down, this machine does, fast.
+if [ "$LOCAL" -eq 1 ]; then
+  NODES_OUT="$(SOHOT_GATEWAY_KEY="$KEY" uv run python -m harness.nodes smoke --gateway "$G" 2>&1)" || FAIL=1
+  printf '%s\n' "$NODES_OUT"
+else
+  printf 'SKIP  node checks: the node list lives on the serving machine\n'
+fi
+
 # ---- audio ------------------------------------------------------------------
 #
 # Half the goal, and until now nothing guarded it the way the text seam is
