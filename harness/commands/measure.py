@@ -424,14 +424,9 @@ class Launched:
 def _launch(argv, deadline_s: float | None = None, cwd: str | None = None,
             grace_s: float = STOP_GRACE_S, lock: str = "eval") -> Launched:
     """Take `lock`, then run argv as its own process group; past `deadline_s` stop the whole group. #673, #696."""
-    from harness import exclusive, heartbeat
+    from harness import heartbeat
 
-    def waiting(m):
-        print(f"    {m}", flush=True)
-        heartbeat.expect(exclusive.holder().get("deadline_s"), waiting=m)
-
-    with exclusive.held(lock, announce=waiting, deadline_s=deadline_s):
-        heartbeat.expect(deadline_s)
+    with heartbeat.held(lock, deadline_s, say=lambda m: print(f"    {m}", flush=True)):
         return _run_group(argv, deadline_s, cwd, grace_s)
 
 

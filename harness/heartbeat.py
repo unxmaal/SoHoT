@@ -1,6 +1,7 @@
 """What the discovery loop is doing while it runs, and whether it is still alive. #251."""
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import plistlib
@@ -102,6 +103,27 @@ def expect(deadline_s: float | None, waiting: str = "") -> None:
         return
     data.update(deadline_s=float(deadline_s) if deadline_s else None, waiting=waiting, updated=clock())
     _write(data)
+
+
+def waiting(message: str) -> None:
+    """Record that this loop waits behind the machine lock, for as long as its holder declared."""
+    from harness import exclusive
+    expect(exclusive.holder().get("deadline_s"), waiting=message)
+
+
+@contextlib.contextmanager
+def held(kind: str, deadline_s: float | None = None, say=None):
+    """Take the machine lock declaring `deadline_s`; while waiting, the loop reads the holder's deadline. #705."""
+    from harness import exclusive
+
+    def announce(message):
+        if say:
+            say(message)
+        waiting(message)
+
+    with exclusive.held(kind, announce=announce, deadline_s=deadline_s) as waited:
+        expect(deadline_s)
+        yield waited
 
 
 def stall_after(data: dict) -> float:

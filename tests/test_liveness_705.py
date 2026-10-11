@@ -304,3 +304,85 @@ def test_two_worktrees_run_test_postgres_under_distinct_names_and_no_fixed_port(
     names = [set(re.findall(r"--name (\S+)", _make_n(d))) for d in (a, b)]
     assert all(len(n) == 1 for n in names) and names[0] != names[1]
     assert not re.search(r"-p \d+:5432", _make_n(a))
+
+
+def test_a_loop_waiting_behind_a_real_video_job_reads_running_for_the_engines_timeout(clock, monkeypatch, tmp_path):
+    from harness import engines, proc
+    from harness.commands import lanes
+    engine = engines.resolve("diffusers-video:org/clip")
+    seen = []
+
+    def run(argv, **kw):
+        os.environ.pop("LH_GPU_LOCK_HELD", None)
+        hb.waiting("waiting for video for 5s (pid 7) to finish")
+        seen.append(dict(hb.read()))
+        os.environ["LH_GPU_LOCK_HELD"] = "1"
+        return proc.Outcome(1, 0.0, 0, "", "stop")
+
+    monkeypatch.setattr(proc, "run", run)
+    hb.start(lane="video", total=9)
+    lanes._generate("diffusers-video:org/clip", "a cat", tmp_path / "c.mp4", {})
+    assert seen and seen[0]["deadline_s"] == engine.timeout == 6 * 3600.0
+    clock.t += 4 * 3600
+    assert hb.status(seen[0], alive=lambda pid: True) == "running"
+
+
+def test_a_screen_waits_for_the_lock_in_the_loop_and_reads_the_holders_deadline(clock, monkeypatch, tmp_path):
+    import argparse
+    import contextlib
+    from harness import cli, exclusive, memory, screen
+    from harness import memory_store as ms
+    from harness.commands import measure as measure_cmd
+    from harness.commands import screen as screen_cmd
+    real = ms.connect
+    monkeypatch.setattr(ms, "connect", lambda *a, **k: real(tmp_path / "d.db"))
+    conn = ms.connect()
+    ms.record(conn, ms.Seen(name="org/text", source="t", kind="weights", lane="code", why="seeded"))
+    conn.close()
+    monkeypatch.setattr(screen_cmd, "_screen_plan", lambda want: [
+        {"name": "org/text", "state": screen.READY, "candidate": "org/text", "modality": "code", "why_not": ""}])
+    monkeypatch.setattr(memory, "check_model", lambda *a, **k: (True, ""))
+    monkeypatch.setattr(screen, "argv", lambda r, **k: ["screen", r["name"]])
+    waits, ran = [], []
+
+    @contextlib.contextmanager
+    def held(kind, announce=None, **kw):
+        announce("waiting for video for 5s (pid 7) to finish")
+        waits.append((kind, dict(hb.read())))
+        os.environ[exclusive.HELD_ENV] = "1"
+        try:
+            yield True
+        finally:
+            os.environ.pop(exclusive.HELD_ENV, None)
+
+    class Done:
+        returncode = 0
+        stderr = ""
+
+    monkeypatch.setattr(exclusive, "held", held)
+    monkeypatch.setattr(exclusive, "holder", lambda: {"kind": "video", "pid": 7, "deadline_s": 6 * 3600.0})
+    monkeypatch.setattr(subprocess, "run", lambda argv, **kw: ran.append(os.environ.get(exclusive.HELD_ENV)) or Done())
+    monkeypatch.setattr(measure_cmd, "_receipt_at", lambda out: None)
+    hb.start(lane="code", total=9)
+    cli._report_screen(argparse.Namespace(lane="", top=5, limit=5, run=True, json=False))
+    assert waits and waits[0][0] == "eval" and waits[0][1]["deadline_s"] == 6 * 3600.0
+    assert ran == ["1"]
+
+
+def test_a_standalone_video_screen_declares_its_deadline_on_the_lock(monkeypatch):
+    import contextlib
+    import evals.run as run
+    from harness import exclusive
+    seen = {}
+
+    @contextlib.contextmanager
+    def held(kind, announce=None, **kw):
+        seen.update(kw, kind=kind)
+        yield False
+
+    monkeypatch.setattr(exclusive, "held", held)
+    monkeypatch.setattr(run, "_execute", lambda args: 0)
+    monkeypatch.setattr(run.env, "guard", lambda: None)
+    run._main(run.parse_args(
+        ["--modality", "video", "--screen", "--candidates", "diffusers-video:org/a,diffusers-video:org/b"]))
+    assert seen["kind"] == "eval" and seen.get("deadline_s") == 2 * run.SCREEN_CASES * 6 * 3600.0
