@@ -16,6 +16,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 source scripts/env.sh
 source scripts/versions.sh
+source scripts/api-key.sh
 
 LH_LOGS="${LOCALHARNESS_HOME:-$HOME/localharness}/logs"
 mkdir -p "$LH_LOGS"
@@ -46,8 +47,31 @@ if [ ! -d "$MODELS" ]; then
   exit 1
 fi
 
-# Loopback only: it takes no key, so another machine uses this GPU through the
-# gateway on this one, which does (#482). LLAMACPP_HOST overrides.
+HOST="${LLAMACPP_HOST:-127.0.0.1}"
+
+# REFUSE TO SERVE A LAN ADDRESS WITHOUT A KEY, and refuse before doing anything
+# slow. Binding 0.0.0.0 is a one-word edit and forgetting the key beside it
+# leaves a model server answering every host on the subnet. Checked here rather
+# than in the caller so it covers every way this script is reached.
+case "$HOST" in
+  127.0.0.1|localhost|::1) ;;
+  *)
+    if [ -z "${LLAMACPP_API_KEY_FILE:-}" ]; then
+      echo "FATAL: LLAMACPP_HOST is $HOST and LLAMACPP_API_KEY_FILE is unset." >&2
+      echo "       A node on a LAN address needs a key of its own; see #684." >&2
+      exit 1
+    fi ;;
+esac
+
+# Loopback and keyless BY DEFAULT, so another machine uses this GPU through the
+# gateway on this one, which does hold a key (#482).
+#
+# A SERVING NODE IS THE EXCEPTION. #684 puts a second node behind the Studio's
+# gateway, and that one binds a LAN address and demands a key of its own: there
+# is no gateway in front of it on its own machine to do it instead. Set
+# LLAMACPP_HOST=0.0.0.0 and LLAMACPP_API_KEY_FILE together. Either alone is a
+# mistake, and the open one is the dangerous direction, so the key is checked
+# below whenever the host is not loopback.
 #
 # Port 8081 is mlx_lm.server's, on purpose. Only one of the two runs on any one
 # machine, and sharing the port means gateway/config.cuda.yaml differs from the
@@ -68,6 +92,36 @@ else
   echo "WARN: no per-model context preset; every model gets ${LLAMACPP_CTX:-16384}" >&2
   CTX_ARGS=(--ctx-size "${LLAMACPP_CTX:-16384}")
 fi
+# The key, when there is one. THE SERVER READS THIS FILE ITSELF, so the BOM has
+# to be gone from the file rather than from a variable here: pointing
+# --api-key-file straight at a key written by PowerShell hands the server three
+# bytes of BOM as part of the key. read_api_key normalises it and the cleaned
+# copy is what the server is given.
+#
+# Rewritten on every start, in the run directory under the invoking user's own
+# home. The umask is honoured on the Unix half and is advisory on the Windows
+# half, where MSYS reports 644 whatever it is asked for; what actually keeps
+# the copy private there is the profile directory's own ACL, so do not move
+# this to a shared location on the strength of the umask alone.
+#
+# Not a flag at all when no key file is set: --api-key-file with an empty path
+# names nothing and the server refuses to start, which would break the keyless
+# default every other machine runs on.
+# Expanded below as ${KEY_ARGS[@]+"${KEY_ARGS[@]}"} rather than "${KEY_ARGS[@]}".
+# BASH 3.2 TREATS AN EMPTY ARRAY AS UNBOUND under set -u, so the plain spelling
+# aborts with "KEY_ARGS[@]: unbound variable" on every machine that sets no key,
+# which is most of them. macOS ships 3.2 as /bin/bash, and CTX_ARGS never shows
+# this because it always has at least one element. Caught on the macOS runner
+# after passing under bash 5 locally.
+KEY_ARGS=()
+if [ -n "${LLAMACPP_API_KEY_FILE:-}" ]; then
+  LH_RUN="${LOCALHARNESS_HOME:-$HOME/localharness}/run"
+  mkdir -p "$LH_RUN"
+  SERVED_KEY="$LH_RUN/llamacpp-api-key-${LLAMACPP_PORT:-8081}"
+  ( umask 077; read_api_key "$LLAMACPP_API_KEY_FILE" > "$SERVED_KEY" ) || exit 1
+  KEY_ARGS=(--api-key-file "$SERVED_KEY")
+fi
+
 exec "$BIN" \
   --jinja \
   --models-dir "$MODELS" \
@@ -75,5 +129,6 @@ exec "$BIN" \
   --models-max "${LLAMACPP_MAX_MODELS:-$(scripts/router-max-models.sh)}" \
   --n-gpu-layers "${LLAMACPP_GPU_LAYERS:-999}" \
   "${CTX_ARGS[@]}" \
-  --host "${LLAMACPP_HOST:-127.0.0.1}" \
+  ${KEY_ARGS[@]+"${KEY_ARGS[@]}"} \
+  --host "$HOST" \
   --port "${LLAMACPP_PORT:-8081}"
