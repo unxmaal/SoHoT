@@ -215,6 +215,19 @@ languages. Do not invent names that are not in the text.
 ---"""
 #: A reply longer than this is the model narrating rather than listing.
 MAX_MENTIONS = 12
+#: Characters of a thread asked about at once; a longer one is read in pieces and the mentions joined. #700.
+MENTION_CHUNK_CHARS = 4000
+
+
+def _chunks(body: str, size: int) -> list[str]:
+    """`body` in pieces of at most `size` characters, split at whitespace where there is any."""
+    out = []
+    while len(body) > size:
+        cut = body.rfind(" ", 0, size)
+        cut = cut if cut > 0 else size
+        out.append(body[:cut])
+        body = body[cut:].lstrip()
+    return out + ([body] if body else [])
 
 
 def mentions(text: str, *, gateway: str = "", complete=None,
@@ -236,8 +249,19 @@ def mentions(text: str, *, gateway: str = "", complete=None,
     kw = {"model": model, "modality": "extract"}
     if gateway:
         kw["gateway"] = gateway
+    out: list[tuple[str, str]] = []
+    seen: set[str] = set()
+    for piece in _chunks(body, MENTION_CHUNK_CHARS):
+        for name, claim in _mentioned(piece, complete, kw):
+            if name.casefold() not in seen:
+                seen.add(name.casefold())
+                out.append((name, claim))
+    return out
+
+
+def _mentioned(piece: str, complete, kw: dict) -> list[tuple[str, str]]:
     try:
-        reply = complete(MENTION_PROMPT.format(text=body[:4000]), **kw)
+        reply = complete(MENTION_PROMPT.format(text=piece), **kw)
     except Exception:  # noqa: BLE001
         return []
     out = []

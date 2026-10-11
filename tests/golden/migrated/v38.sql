@@ -19,7 +19,7 @@ table candidates [('id', 'INTEGER', 0, None, 1), ('proposal_id', 'INTEGER', 0, N
   (6, None, 'kokoro', 'kokoro', 'tts', 1788960000.0)
   (7, 12, 'mlx:org-l/svg-thing', 'svg-thing', 'svg', 1788960000.0)
   (8, None, 'local-large', 'local-large', 'svg', 1788960000.0)
-table contamination_probes [('id', 'INTEGER', 0, None, 1), ('model', 'TEXT', 1, None, 0), ('lane', 'TEXT', 1, "''", 0), ('case_id', 'TEXT', 1, None, 0), ('family', 'TEXT', 1, "''", 0), ('outcome', 'TEXT', 1, None, 0), ('overlap', 'REAL', 0, None, 0), ('detail', 'TEXT', 1, "''", 0), ('at', 'REAL', 1, None, 0)]
+table contamination_probes [('id', 'INTEGER', 0, None, 1), ('model', 'TEXT', 1, None, 0), ('lane', 'TEXT', 1, "''", 0), ('case_id', 'TEXT', 1, None, 0), ('family', 'TEXT', 1, "''", 0), ('outcome', 'TEXT', 1, None, 0), ('overlap', 'REAL', 0, None, 0), ('detail', 'TEXT', 1, "''", 0), ('at', 'REAL', 1, None, 0), ('hit_limit', 'TEXT', 1, "''", 0)]
   index ix_probes_model unique=0 ['model', 'lane']
 table downloads [('id', 'INTEGER', 0, None, 1), ('proposal_id', 'INTEGER', 0, None, 0), ('repo', 'TEXT', 1, "''", 0), ('kind', 'TEXT', 1, None, 0), ('path', 'TEXT', 1, None, 0), ('file', 'TEXT', 1, "''", 0), ('origin', 'TEXT', 1, "''", 0), ('source', 'TEXT', 1, "''", 0), ('bytes', 'INTEGER', 1, '0', 0), ('files', 'INTEGER', 1, '0', 0), ('complete', 'INTEGER', 1, '0', 0), ('requires', 'TEXT', 1, "'[]'", 0), ('started_at', 'REAL', 0, None, 0), ('finished_at', 'REAL', 0, None, 0), ('removed_at', 'REAL', 0, None, 0), ('removed_by', 'TEXT', 1, "''", 0), ('removal_verdict_id', 'INTEGER', 0, None, 0), ('machine_id', 'INTEGER', 0, None, 0), ('ctx', 'INTEGER', 1, '0', 0), ('ctx_trained', 'INTEGER', 1, '0', 0), ('kv_bytes_token', 'INTEGER', 1, '0', 0), ('ctx_slots', 'INTEGER', 1, '0', 0), ('ctx_why', 'TEXT', 1, "''", 0), ('ctx_at', 'REAL', 0, None, 0), ('kv_cap_bytes', 'INTEGER', 1, '0', 0), ('coresident_bytes', 'INTEGER', 1, '0', 0)]
   index ix_downloads_path unique=0 ['path']
@@ -70,7 +70,7 @@ table meta [('key', 'TEXT', 0, None, 1), ('value', 'TEXT', 0, None, 0)]
   index sqlite_autoindex_meta_1 unique=1 ['key']
   ('artifact_split', '{"code": {"missing": 4, "none": 2, "path": 0, "resolved": 0, "text": 4}, "image": {"missing": 0, "none": 2, "path": 2, "resolved": 0, "text": 0}, "tts": {"missing": 0, "none": 0, "path": 4, "resolved": 0, "text": 0}}')
   ('candidate_guesses', '[{"adoption": 2, "from": "the adopt verdict/'s machine; no vote or judged run names one", "lane": "svg", "machine": 2, "proposal": "org-l/svg-thing", "spec": "mlx:org-l/svg-thing"}]')
-  ('schema', '63')
+  ('schema', '64')
 table proposals [('id', 'INTEGER', 0, None, 1), ('name', 'TEXT', 1, None, 0), ('kind', 'TEXT', 1, "'candidate'", 0), ('registry', 'TEXT', 1, "''", 0), ('description', 'TEXT', 1, "''", 0), ('lane', 'TEXT', 1, "''", 0), ('resolved', 'TEXT', 1, "''", 0), ('first_seen', 'REAL', 1, None, 0), ('last_seen', 'REAL', 1, None, 0), ('state', 'TEXT', 1, "''", 0), ('state_verdict_id', 'INTEGER', 0, None, 0), ('retest_count', 'INTEGER', 1, '0', 0), ('next_retest_at', 'REAL', 0, None, 0), ('size_bytes', 'INTEGER', 1, '0', 0), ('hf_task', 'TEXT', 1, "''", 0), ('library', 'TEXT', 1, "''", 0), ('card_tags', 'TEXT', 1, "'[]'", 0), ('attaches_to', 'TEXT', 1, "''", 0), ('runtime_needed', 'TEXT', 1, "''", 0), ('lane_source', 'TEXT', 1, "''", 0), ('card_read', 'TEXT', 1, "''", 0), ('category', 'TEXT', 1, "''", 0), ('model_type', 'TEXT', 1, "''", 0), ('remote_code', 'TEXT', 1, "''", 0)]
   index ix_prop_state unique=0 ['state']
   index sqlite_autoindex_proposals_1 unique=1 ['name']

@@ -184,12 +184,35 @@ KNOBS: dict[str, Knob] = dict([
        note="level of the first paired test on a holdout; later ones face it over their comparison count (#698)"),
     _k("unseen_rate", ["harness/power.py:UNSEEN"], [0.25, 0.5, 0.75],
        note="pass rate a plan assumes for an incumbent with no draws; such a plan is unmeasured (#698)"),
+    _k("contamination_max_tokens", ["harness/contamination.py:MAX_TOKENS"], [256, 1024, 4096],
+       note="reply budget of a contamination probe; a probe that ends there is an error naming it, never a miss (#700)"),
+    _k("contamination_hit", ["harness/contamination.py:HIT"], [0.25, 0.5, 0.75, 1.0],
+       note="leading-word overlap counted as reproducing a source; not calibrated on known-clean text (#700)"),
+    _k("tts_token_floor", ["harness/audio.py:TOKEN_BUDGET_MIN_S", "harness/audio.py:TOKEN_BUDGET_MARGIN",
+                           "harness/audio.py:CODEC_HZ[chatterbox]"], [4.0, 8.0, 16.0, 30.0],
+       lanes=("tts",), limit="tts_tokens", receipt="knobs",
+       note="fewest seconds a cloning request may speak; the budget is that or the text at the runaway rate, at the codec's rate (#700)"),
+    _k("tts_cap_fill", ["harness/audio.py:TOKEN_CAP_FILL"], [0.9, 0.95, 0.99],
+       lanes=("tts",), limit="tts_tokens", receipt="knobs",
+       note="share of the token budget's seconds a cloning clip must reach to be TOKEN_BUDGET_EXHAUSTED (#700)"),
+    _k("tts_calibration_tokens", ["harness/audio.py:CALIBRATION_TOKENS"], [50, 100, 200],
+       note="cap on the clip that measures an unlisted cloning model's codec rate; the clip must end at it (#700)"),
+    _k("ocr_max_new_tokens", ["harness/hf_task.py:MAX_NEW_TOKENS"], [256, 512, 1024, 2048, 4096],
+       lanes=("ocr",), limit="hf_max_new_tokens", receipt="knobs",
+       note="new tokens an hf-task ocr reply may take (#700)"),
+    _k("max_mentions", ["harness/judge.py:MAX_MENTIONS"], [6, 12, 24],
+       note="names kept from one mention reply; a thread is read in MENTION_CHUNK_CHARS pieces (#700)"),
+    _k("mention_chunk_chars", ["harness/judge.py:MENTION_CHUNK_CHARS"], [2000, 4000, 8000],
+       note="characters of a thread asked about in one mention call; the whole thread is read, one call per piece (#700)"),
+    _k("usage_queue", ["harness/usage.py:QUEUE_MAX", "harness/usage.py:BATCH_MAX"], [1000, 10000, 100000],
+       note="usage rows queued before the writer drops them; drops are recorded and fail the audit (#700)"),
 ])
 
 #: The value a knob had on receipts written before it was recorded there, by knob name. #693.
 UNRECORDED = {"code_check_timeout": 15.0, "audio_timeout": 120.0, "chrome_render_timeout": 60.0,
               "svg_render_timeout": 30.0, "claude_code_timeout": 600.0, "needle_serve_start": 60.0,
-              "agent_steps_scale": 1.0, "agent_case_timeout": 900.0, "agent_step_timeout": 300.0}
+              "agent_steps_scale": 1.0, "agent_case_timeout": 900.0, "agent_step_timeout": 300.0,
+              "tts_token_floor": 8.0, "ocr_max_new_tokens": 512}
 
 #: Constants the inventory finds whose name says gate and whose value does not, each with why.
 NOT_GATING: dict[str, str] = {

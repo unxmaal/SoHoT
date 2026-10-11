@@ -161,17 +161,25 @@ def _gh(*args: str) -> list[dict]:
     return json.loads(r.stdout)
 
 
-def scan_github(limit: int = 300,
-                extra: tuple[str, re.Pattern[str], str] | None = None) -> list[Finding]:
-    """Issues and PRs, which are published the moment they are filed."""
+def scan_github(page: int = 300,
+                extra: tuple[str, re.Pattern[str], str] | None = None) -> tuple[list[Finding], dict[str, int]]:
+    """Every issue and PR, which are published the moment they are filed; returns the findings and how many of each were read."""
     out: list[Finding] = []
+    counts = {"issue": 0, "pr": 0}
     for kind, cmd in (("issue", "issue"), ("pr", "pr")):
-        rows = _gh(cmd, "list", "--state", "all", "--limit", str(limit),
-                   "--json", "number,title,body")
+        limit = page
+        while True:
+            rows = _gh(cmd, "list", "--state", "all", "--limit", str(limit),
+                       "--json", "number,title,body")
+            # A full answer may be a truncated one: ask again for more until fewer come back. #700.
+            if len(rows) < limit:
+                break
+            limit *= 2
         for r in rows:
             body = f"{r['title']}\n{r['body'] or ''}"
             out.extend(scan(body, f"{kind}#{r['number']}", extra))
-    return out
+        counts[kind] = len(rows)
+    return out, counts
 
 
 def expand(items) -> list[Path]:
@@ -209,10 +217,14 @@ def main(argv: list[str] | None = None) -> int:
             name_pattern(root))]
     else:
         found = scan_paths(root)
+    read = None
     if a.github:
-        found += scan_github(extra=name_pattern(root))
+        more, read = scan_github(extra=name_pattern(root))
+        found += more
     for f in found:
         print(f)
+    if read is not None:
+        print(f"scanned {read['issue']} issue(s) and {read['pr']} PR(s)")
     print(f"{len(found)} finding(s)")
     return 1 if found else 0
 

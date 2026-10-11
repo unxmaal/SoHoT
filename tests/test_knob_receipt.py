@@ -36,7 +36,9 @@ def test_the_settings_a_lane_records_are_its_knobs_defaults():
     assert got["request_timeout"] == knobs.KNOBS["request_timeout"].default("code")
     assert "runaway_rate" not in got
     assert knobs.settings("tts") == {"runaway_rate": knobs.KNOBS["runaway_rate"].default("tts"),
-                                     "audio_timeout": knobs.KNOBS["audio_timeout"].default("tts")}
+                                     "audio_timeout": knobs.KNOBS["audio_timeout"].default("tts"),
+                                     "tts_token_floor": knobs.KNOBS["tts_token_floor"].default("tts"),
+                                     "tts_cap_fill": knobs.KNOBS["tts_cap_fill"].default("tts")}
     assert knobs.settings("image") == {}
 
 
@@ -132,3 +134,13 @@ def test_the_published_receipt_keeps_the_knob_settings():
     raw = _receipt(knobs={"request_timeout": 600.0}).as_dict()
     got = publish.exam_receipt(None, {"id": 1, "receipt": json.dumps(raw), "lane": "code"})
     assert got.knobs == {"request_timeout": 600.0, "code_check_timeout": 15.0, "claude_code_timeout": 600.0}
+
+
+@pytest.mark.parametrize("lane", ["agent", "tts", "ocr"])
+def test_a_receipt_from_before_the_agent_and_truncation_knobs_joined_still_ranks(lane):
+    new = knobs.settings(lane)
+    joined = {k for k in knobs.UNRECORDED if k in new}
+    assert joined
+    old = Receipt.from_dict(_receipt(modality=lane, knobs={k: v for k, v in new.items() if k not in joined}).as_dict())
+    assert all(old.knobs[k] == knobs.UNRECORDED[k] for k in joined)
+    assert comparable(old, Receipt.from_dict(_receipt(modality=lane, knobs=new).as_dict()))[0]

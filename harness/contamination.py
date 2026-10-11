@@ -10,8 +10,19 @@ TARGET_WORDS = 16
 #: Share of the hidden continuation's leading words reproduced verbatim that counts as a hit.
 HIT = 0.5
 MAX_TOKENS = 1024
+#: The limit a probe records when the reply ended at MAX_TOKENS or came back empty. #700.
+LIMIT = "contamination_max_tokens"
+_THINK = re.compile(r"<think>.*?(</think>|$)", re.S)
 INSTRUCTION = ("Continue the following text exactly as it appears in its original source. "
                "Output only the continuation, with no commentary.\n\n")
+
+
+class Cut(RuntimeError):
+    """The probe's reply ended at our token budget or held no answer; a limit, never a miss. #700."""
+
+    def __init__(self, why: str, max_tokens: int):
+        self.limit = f"{LIMIT}>{max_tokens}"
+        super().__init__(f"limit {self.limit}: {why}")
 
 
 def _words(text: str) -> list[str]:
@@ -62,7 +73,7 @@ def probe(conn, model: str, cases, ask, at: float | None = None, lane: str = "de
     out = []
     for case in cases:
         row = {"model": model, "lane": lane, "case_id": case.id, "family": family(case.id),
-               "overlap": None, "detail": ""}
+               "overlap": None, "detail": "", "hit_limit": ""}
         parts = split_prefix(getattr(case, "context", "") or "")
         if parts is None:
             row.update(outcome="skipped", detail="source text too short to probe")
@@ -73,6 +84,8 @@ def probe(conn, model: str, cases, ask, at: float | None = None, lane: str = "de
                 row["overlap"] = overlap(got, target)
                 row["outcome"] = "hit" if row["overlap"] >= HIT else "miss"
                 row["detail"] = (got or "")[:200]
+            except Cut as exc:
+                row.update(outcome="error", detail=str(exc), hit_limit=exc.limit)
             except Exception as exc:  # noqa: BLE001
                 row.update(outcome="error", detail=str(exc))
         ms.record_probe(conn, at=at, **row)
@@ -81,7 +94,7 @@ def probe(conn, model: str, cases, ask, at: float | None = None, lane: str = "de
 
 
 def gateway_ask(base: str, post=None, max_tokens: int = MAX_TOKENS):
-    """A greedy chat call through the gateway with this machine's key; returns content only."""
+    """A greedy non-thinking chat call through the gateway with this machine's key; returns the answer or raises Cut."""
     from harness import gateway_key
     if post is None:
         import httpx
@@ -90,12 +103,19 @@ def gateway_ask(base: str, post=None, max_tokens: int = MAX_TOKENS):
     def ask(model: str, prompt: str) -> str:
         r = post(f"{base.rstrip('/')}/v1/chat/completions",
                  json={"model": model, "temperature": 0, "max_tokens": max_tokens,
+                       "chat_template_kwargs": {"enable_thinking": False},
                        "messages": [{"role": "user", "content": prompt}]},
                  headers={"Content-Type": "application/json", **gateway_key.headers()},
                  timeout=600)
         r.raise_for_status()
-        msg = (r.json().get("choices") or [{}])[0].get("message") or {}
-        return msg.get("content") or ""
+        choice = (r.json().get("choices") or [{}])[0]
+        text = _THINK.sub("", (choice.get("message") or {}).get("content") or "").strip()
+        if not text:
+            raise Cut("no answer in content", max_tokens)
+        # Only the leading TARGET_WORDS are scored, so a capped reply that reaches them carries the whole signal.
+        if choice.get("finish_reason") == "length" and len(_words(text)) < TARGET_WORDS:
+            raise Cut("ended at the token budget", max_tokens)
+        return text
     return ask
 
 

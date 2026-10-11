@@ -62,11 +62,12 @@ def test_unreadable_audio_is_not_reported_as_a_runaway(tmp_path):
 
 
 def test_the_budget_scales_with_the_text_and_has_a_floor():
-    assert token_budget("one two three") == 200        # floor
-    assert token_budget(words(35)) == 420
-    assert token_budget(words(100)) > token_budget(words(35))
+    assert token_budget("one two three", "chatterbox") == 200        # floor
+    # The text read at the runaway ceiling, with headroom, at Chatterbox's 25 Hz. #700.
+    assert token_budget(words(35), "chatterbox") == 915
+    assert token_budget(words(100), "chatterbox") > token_budget(words(35), "chatterbox")
     # The whole point: below mlx_audio's flat 1200 for ordinary input.
-    assert token_budget(words(35)) < 1200
+    assert token_budget(words(35), "chatterbox") < 1200
 
 
 def test_cloning_sends_the_penalty_the_server_would_otherwise_clobber(
@@ -91,9 +92,9 @@ def test_cloning_sends_the_penalty_the_server_would_otherwise_clobber(
     ref = tmp_path / "ref.wav"
     wav(ref, 1.0)
 
-    audio.speak("one two three four five six", tmp_path / "a.wav", ref_audio=ref)
+    audio.speak("one two three four five six", tmp_path / "a.wav", ref_audio=ref, model="chatterbox")
     assert sent["repetition_penalty"] == 1.2
-    assert sent["max_tokens"] == token_budget("one two three four five six")
+    assert sent["max_tokens"] == token_budget("one two three four five six", "chatterbox")
 
     sent.clear()
     audio.speak("one two three four five six", tmp_path / "b.wav")

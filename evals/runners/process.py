@@ -48,6 +48,7 @@ class ProcessRunner(BaseRunner):
             out.unlink()
         Path(runtime_path(out)).unlink(missing_ok=True)
         self.last_runtime = {}
+        self.last_limit = ""
 
         try:
             # The material a decide engine scores travels with the params. #423.
@@ -83,8 +84,14 @@ class ProcessRunner(BaseRunner):
                 detail += f": {reasons.backend_abort(tail) or tail[-1]}"
             raise RunnerError(detail, peak_kb=r.peak_kb)
 
-        self.last_runtime = _runtime_of(out)
+        got = _runtime_of(out)
+        self.last_limit = got.pop("limit", "")
+        self.last_runtime = got
         return out, r.peak_kb
+
+    def cut_off(self) -> str:
+        """The limit an hf-task child says its reply filled, else "". #700."""
+        return getattr(self, "last_limit", "")
 
 
 def timed_out(lane: str, timeout: float, what: str = "") -> RunnerError:
@@ -100,4 +107,4 @@ def _runtime_of(out: Path) -> dict:
         got = json.loads(Path(runtime_path(out)).read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return {}
-    return {k: str(got[k]) for k in ("device", "attn") if got.get(k)}
+    return {k: str(got[k]) for k in ("device", "attn", "limit") if got.get(k)}

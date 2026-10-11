@@ -12,6 +12,7 @@ Two failure modes are handled explicitly because both look like success:
 """
 from __future__ import annotations
 
+import math
 import os
 import re
 import shutil
@@ -135,9 +136,58 @@ RUNAWAY_MIN_WORDS = 6
 TIMEOUT_S = 120.0
 
 
-def token_budget(text: str) -> int:
-    """A cap proportional to the text instead of mlx_audio's flat 1200."""
-    return max(200, len(text.split()) * 12)
+#: Audio tokens a second of speech costs, by a name fragment of the cloning model; the codec's frame rate. #700.
+CODEC_HZ = {"chatterbox": 25.0}
+#: The fewest seconds of speech a cloning request is allowed, however short its text.
+TOKEN_BUDGET_MIN_S = 8.0
+#: Headroom over the runaway ceiling, so the cap only ever cuts a clip that has already run away.
+TOKEN_BUDGET_MARGIN = 1.1
+#: Share of the budget's seconds a clip must reach to count as having filled it.
+TOKEN_CAP_FILL = 0.95
+#: Tokens a calibration clip is capped at, to measure the codec rate of a model CODEC_HZ does not name.
+CALIBRATION_TOKENS = 100
+#: Read far longer than CALIBRATION_TOKENS last at any codec rate, so the clip always ends at the cap.
+CALIBRATION_TEXT = " ".join(["the quick brown fox jumps over the lazy dog"] * 12)
+_MEASURED_HZ: dict[str, float] = {}
+
+
+def codec_hz(model: str) -> float | None:
+    """The model's codec rate from CODEC_HZ or an earlier calibration clip; None if neither knows it."""
+    name = (model or "").lower()
+    hz = next((hz for key, hz in CODEC_HZ.items() if key in name), None)
+    return hz if hz is not None else _MEASURED_HZ.get(model)
+
+
+def token_budget(text: str, model: str = "", hz: float | None = None) -> int:
+    """A cap that fits `text` read at the runaway ceiling, at the model's own codec rate, instead of mlx_audio's flat 1200."""
+    hz = hz or codec_hz(model)
+    if not hz:
+        raise AudioError(f"no codec rate for {model!r}; speak() measures one with a calibration clip")
+    seconds = max(TOKEN_BUDGET_MIN_S, len(text.split()) * SECONDS_PER_WORD_CEILING * TOKEN_BUDGET_MARGIN)
+    return math.ceil(seconds * hz)
+
+
+def measure_codec_hz(payload: dict, out: Path, base_url: str, timeout: float) -> float:
+    """Tokens per second of audio, from a clip of CALIBRATION_TEXT cut at CALIBRATION_TOKENS; cached per model. #700."""
+    probe = out.with_name(f"{out.stem}.calibration.wav")
+    try:
+        r = httpx.post(f"{base_url.rstrip('/')}/audio/speech", timeout=timeout,
+                       json={**payload, "input": CALIBRATION_TEXT, "max_tokens": CALIBRATION_TOKENS})
+        r.raise_for_status()
+    except httpx.TimeoutException as exc:
+        raise AudioTimeout("tts calibration", timeout) from exc
+    except httpx.HTTPError as exc:
+        raise AudioError(f"tts calibration clip failed: {exc}") from exc
+    probe.parent.mkdir(parents=True, exist_ok=True)
+    probe.write_bytes(r.content)
+    try:
+        seconds = audio_seconds(probe)
+    finally:
+        probe.unlink(missing_ok=True)
+    if seconds <= 0:
+        raise AudioError(f"tts calibration clip for {payload['model']!r} held no audio; its codec rate is unknown")
+    _MEASURED_HZ[payload["model"]] = CALIBRATION_TOKENS / seconds
+    return _MEASURED_HZ[payload["model"]]
 
 
 # A WAV header is 44 bytes and 8000 bytes is a fifth of a second at 16k mono:
@@ -157,6 +207,14 @@ class AudioTimeout(AudioError):
     def __init__(self, what: str, timeout: float):
         super().__init__(f"{what} timed out after {timeout:g}s")
         self.limit = ("audio_timeout_s", timeout)
+
+
+class TokenCap(AudioError):
+    """A clip as long as the token budget allows: cut by our cap, not judged on its speech. #700."""
+
+    def __init__(self, seconds: float, budget: int):
+        super().__init__(f"tts filled its token budget: {seconds:.2f}s of audio at max_tokens {budget}")
+        self.limit = ("tts_tokens", budget)
 
 
 class Runaway(AudioError):
@@ -196,7 +254,6 @@ def speak(text: str, out: str | Path, voice: str = DEFAULT_KOKORO_VOICE,
     # Cloning path only: Kokoro takes neither field. Issue #6.
     if ref_audio is not None:
         payload["repetition_penalty"] = CHATTERBOX_REPETITION_PENALTY
-        payload["max_tokens"] = token_budget(text)
     # Only some models have a voice table. Sending voice="" to one that does
     # not is a request for a voice named empty string.
     if voice:
@@ -210,6 +267,8 @@ def speak(text: str, out: str | Path, voice: str = DEFAULT_KOKORO_VOICE,
             # which sends you to its log rather than to the typo in the path.
             raise AudioError(f"no reference audio at {ref_audio}")
         payload["ref_audio"] = str(ref_audio)
+        hz = codec_hz(model) or measure_codec_hz(payload, out, base_url, timeout)
+        payload["max_tokens"] = token_budget(text, model, hz)
     try:
         r = httpx.post(f"{base_url.rstrip('/')}/audio/speech", json=payload,
                        timeout=timeout)
@@ -248,6 +307,10 @@ def speak(text: str, out: str | Path, voice: str = DEFAULT_KOKORO_VOICE,
     if runaway:
         raise Runaway(f"{runaway}. The audio is at {out} so it can be listened to. See issue #6.",
                       ceiling)
+    if "max_tokens" in payload:
+        seconds = audio_seconds(out)
+        if seconds >= TOKEN_CAP_FILL * payload["max_tokens"] / hz:
+            raise TokenCap(seconds, payload["max_tokens"])
     return out
 
 

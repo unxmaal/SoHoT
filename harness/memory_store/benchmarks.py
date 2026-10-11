@@ -55,12 +55,12 @@ def training(conn) -> list[dict]:
 
 def record_probe(conn, *, model: str, lane: str, case_id: str, family: str,
                  outcome: str, overlap: float | None, detail: str = "",
-                 at: float | None = None) -> None:
+                 at: float | None = None, hit_limit: str = "") -> None:
     at = time.time() if at is None else float(at)
     conn.execute(
         "INSERT INTO contamination_probes (model, lane, case_id, family, outcome, overlap, "
-        "detail, at) VALUES (?,?,?,?,?,?,?,?)",
-        (model, lane, case_id, family, outcome, overlap, detail[:500], at))
+        "detail, at, hit_limit) VALUES (?,?,?,?,?,?,?,?,?)",
+        (model, lane, case_id, family, outcome, overlap, detail[:500], at, hit_limit))
     conn.commit()
 
 
@@ -73,6 +73,7 @@ def probe_summary(conn, lane: str = "") -> list[dict]:
         "SUM(CASE WHEN p.outcome = 'hit' THEN 1 ELSE 0 END) AS hits, "
         "SUM(CASE WHEN p.outcome = 'skipped' THEN 1 ELSE 0 END) AS skipped, "
         "SUM(CASE WHEN p.outcome = 'error' THEN 1 ELSE 0 END) AS errors, "
+        "SUM(CASE WHEN p.hit_limit <> '' THEN 1 ELSE 0 END) AS limited, "
         "AVG(p.overlap) AS mean_overlap, MAX(p.at) AS at "
         "FROM contamination_probes p JOIN (SELECT model, case_id, MAX(id) AS id "
         "FROM contamination_probes GROUP BY model, case_id) n ON n.id = p.id "

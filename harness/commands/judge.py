@@ -57,8 +57,10 @@ def cmd_rubric(a) -> int:
     note(f"{report['rubric']}  floor {report['floor']:.2f} (always the most "
          f"common label)  ceiling {agree}/{total} (your repeats)")
     for model, row in report["candidates"].items():
-        note(f"  {model:24} agree {row['agree']}/{row['n']} "
-             f"({row['agreement']:.2f})  valid {row['valid']}/{row['n']}  "
+        rate = "n/a" if row["agreement"] is None else f"{row['agreement']:.2f}"
+        cut = f"  truncated {row['truncated']} (not judged)" if row["truncated"] else ""
+        note(f"  {model:24} agree {row['agree']}/{row['judged']} "
+             f"({rate})  valid {row['valid']}/{row['n']}{cut}  "
              f"median {row['median_s']}s"
              f"{'' if row['beats_floor'] else '  NOT above the floor'}")
     note(f"receipt: {out / 'results.json'}")

@@ -19,7 +19,7 @@ import httpx
 import jsonschema
 import yaml
 
-from harness import gateway_key
+from harness import completion, gateway_key
 
 CANT_TELL = "cant-tell"
 TEMPERATURE = 0
@@ -66,6 +66,8 @@ class Verdict:
     raw: str
     error: str
     seconds: float
+    #: The limit the reply ended at, when it ended there; a truncated verdict is not a disagreement. #700.
+    limit: str = ""
 
 
 def _rubric(path: Path) -> Rubric:
@@ -152,7 +154,7 @@ def next_item(root, rng, repeat_rate: float = 0.1):
 def request(rubric: Rubric, text: str, model: str) -> dict:
     """Rubric first and identical every call, so the server's prefix cache
     holds it; only the item changes. RULE #326."""
-    return {"model": model, "temperature": TEMPERATURE, "max_tokens": 600,
+    return {"model": model, "temperature": TEMPERATURE, "max_tokens": completion.budget("extract"),
             "messages": [{"role": "system", "content": rubric.instructions},
                          {"role": "user", "content": text}],
             "response_format": {"type": "json_schema", "json_schema": {
@@ -168,7 +170,12 @@ def evaluate(rubric: Rubric, text: str, model: str, gateway: str,
                  json=request(rubric, text, model), timeout=timeout,
                  headers=gateway_key.headers())
         r.raise_for_status()
-        raw = r.json()["choices"][0]["message"].get("content") or ""
+        choice = r.json()["choices"][0]
+        raw = choice["message"].get("content") or ""
+        if choice.get("finish_reason") == "length":
+            cap = f"max_tokens.extract>{completion.budget('extract')}"
+            return Verdict(False, None, raw, f"reply ended at the token budget ({cap})",
+                           time.monotonic() - t0, cap)
         value = json.loads(raw)
         jsonschema.validate(value, rubric.schema)
         return Verdict(True, value[rubric.label], raw, "",
@@ -197,20 +204,23 @@ def run(evalset: EvalSet, candidates, gateway: str, post=httpx.post) -> dict:
               ).hexdigest()[:8],
               "candidates": {}, "rows": []}
     for model in candidates:
-        times, valid, agree = [], 0, 0
+        times, valid, agree, truncated = [], 0, 0, 0
         for item_id, want in sorted(gold_labels.items()):
             v = evaluate(evalset.rubric, evalset.item(item_id)["text"], model,
                          gateway, post=post)
             times.append(v.seconds)
             valid += v.ok
             agree += v.ok and v.label == want
+            truncated += bool(v.limit)
             report["rows"].append({"candidate": model, "id": item_id,
                                    "gold": want, "label": v.label, "ok": v.ok,
-                                   "raw": v.raw, "error": v.error,
+                                   "raw": v.raw, "error": v.error, "limit": v.limit,
                                    "seconds": round(v.seconds, 3)})
         n = len(gold_labels)
+        judged = n - truncated
         report["candidates"][model] = {
-            "n": n, "valid": valid, "agree": agree, "agreement": agree / n,
-            "beats_floor": agree / n > floor,
+            "n": n, "valid": valid, "agree": agree, "truncated": truncated, "judged": judged,
+            "agreement": agree / judged if judged else None,
+            "beats_floor": bool(judged) and agree / judged > floor,
             "median_s": round(statistics.median(times), 3)}
     return report
