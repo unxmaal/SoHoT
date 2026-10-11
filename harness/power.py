@@ -475,6 +475,45 @@ def incumbent_profile(conn, lane: str, key: str, settings: tuple | None = None,
     return draws, _median(rows, (lane or "").strip().lower(), key, settings, machines)
 
 
+def served_keys(conn, lane: str, spec: str = "", cid: int | None = None) -> list[str]:
+    """The receipt keys a served model's measure rows carry, found by its candidates row (renames via candidates.served), never a spelling alone. #740."""
+    from harness import candidates
+    lane = (lane or "").strip().lower()
+    try:
+        own = candidates.key_of(spec) if spec else ""
+    except Exception:  # noqa: BLE001
+        own = ""
+    own = own or spec
+    if cid is None and spec:
+        cid = candidates.served(conn, spec, lane=lane)
+    keys = [r["candidate"] for r in conn.execute(
+        "SELECT DISTINCT x.candidate FROM results x JOIN runs u ON u.id = x.run_id "
+        "WHERE u.lane = ? AND u.tier = 'measure' AND x.candidate_id = ? ORDER BY x.candidate",
+        (lane, cid))] if cid is not None else []
+    return keys or ([own] if own else [])
+
+
+def served_profile(conn, lane: str, spec: str = "", settings: tuple | None = None, machines=None,
+                   cid: int | None = None) -> tuple[dict[str, list[int]], float | None]:
+    """incumbent_profile over every receipt key the served model's rows carry. #740."""
+    lane = (lane or "").strip().lower()
+    draws: dict[str, list[int]] = {}
+    rows = []
+    for key in served_keys(conn, lane, spec, cid):
+        got = _candidate_rows(conn, lane, key)
+        for case, oks in draws_from(got, key)[0].items():
+            draws.setdefault(case, []).extend(oks)
+        rows += [dict(r, candidate="") for r in got]
+    return draws, _median(rows, lane, "", settings, machines)
+
+
+def unseen_note(draws: dict) -> str:
+    """What a plan from no stored incumbent draws assumes, or "" when it has some. #740."""
+    if any(draws.values()):
+        return ""
+    return f"the incumbent's pass rate is unmeasured (no stored measure rows), so the plan assumes {UNSEEN:g}"
+
+
 def stored_size(conn, key: str) -> int:
     """Bytes of the proposal a receipt key or spec runs as, 0 when none is stored. #696."""
     row = conn.execute(
