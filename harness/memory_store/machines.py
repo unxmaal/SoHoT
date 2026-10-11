@@ -12,6 +12,12 @@ from harness import memory_store as ms
 #: The machine this process is running on, resolved once. The probes shell
 #: out and the answer does not change while the process runs.
 _THIS_MACHINE: dict | None = None
+#: (monotonic time, answer) for an incomplete identity, reused until machine.RETRY_S passes. #747.
+_PROVISIONAL: tuple[float, dict] | None = None
+
+
+def _now() -> float:
+    return time.monotonic()
 
 
 def this_machine() -> dict:
@@ -28,9 +34,12 @@ def this_machine() -> dict:
     machine (#415). The 4070 under Linux and under Windows are different rigs
     by comparable()'s own definition and keep different fingerprints.
     """
-    global _THIS_MACHINE
+    global _THIS_MACHINE, _PROVISIONAL
     if _THIS_MACHINE is not None:
         return _THIS_MACHINE
+    from harness import machine as _machine
+    if _PROVISIONAL is not None and _now() - _PROVISIONAL[0] < _machine.RETRY_S:
+        return _PROVISIONAL[1]
     try:
         from evals import environment
         from harness import inspect as _ins
@@ -52,17 +61,32 @@ def this_machine() -> dict:
             "versions": dict(env.get("versions") or {}),
         }
     except Exception:  # noqa: BLE001
-        # A store write must never fail because a probe did. An unknown
-        # machine is recorded AS unknown rather than silently attributed to
-        # whichever one wrote last, which would be worse than no column.
+        # A store write must never fail because a probe did; partial facts never overwrite a stored row. #747.
         got = {"hw_model": "", "os": "", "arch": "", "host": "", "memory_gb": 0.0,
                "accelerator": "", "runtimes": "", "ceiling_gb": 0.0,
-               "versions": {}}
-    from harness import machine as _machine
+               "versions": {}, **_identity(), "partial": True}
+        # A failed probe is not this machine for the rest of the process: ask again next time. #747.
+        complete = False
+    else:
+        # A host read back after a failed uuid probe is not yet this machine's answer. #747.
+        complete = not _machine.uuid_failed()
     got["fingerprint"] = _machine.fingerprint(got["hw_model"], got["os"],
                                               got["arch"], got["host"])
-    _THIS_MACHINE = got
+    if complete:
+        _THIS_MACHINE, _PROVISIONAL = got, None
+    else:
+        _PROVISIONAL = (_now(), got)
     return got
+
+
+def _identity() -> dict:
+    """hw_model, os, arch and host from the cheap probes, or {} when they fail too. #747."""
+    try:
+        from evals import environment
+        me = environment.identity()
+    except Exception:  # noqa: BLE001
+        return {}
+    return {k: me.get(k) or "" for k in ("hw_model", "os", "arch", "host")}
 
 
 def remember_machine(conn: sqlite3.Connection, facts: dict | None = None) -> int:
@@ -76,15 +100,18 @@ def remember_machine(conn: sqlite3.Connection, facts: dict | None = None) -> int
     _claim(conn, facts["fingerprint"])
     versions = {k: v for k, v in (facts.get("versions") or {}).items() if v}
     now = time.time()
+    # Facts from a failed capture refresh only last_seen, never the row's measured facts. #747.
+    refresh = ("last_seen = excluded.last_seen" if facts.get("partial") else
+               "last_seen = excluded.last_seen, runtimes = excluded.runtimes, "
+               "ceiling_gb = excluded.ceiling_gb, memory_gb = excluded.memory_gb, "
+               "accelerator = excluded.accelerator, os = excluded.os, "
+               "versions = excluded.versions")
     # One statement: a SELECT-then-INSERT let two first writers collide. #422.
     conn.execute(
         "INSERT INTO machines (fingerprint, hw_model, os, arch, memory_gb, "
         "accelerator, runtimes, ceiling_gb, first_seen, last_seen, versions) "
         "VALUES (?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT (fingerprint) DO UPDATE SET "
-        "last_seen = excluded.last_seen, runtimes = excluded.runtimes, "
-        "ceiling_gb = excluded.ceiling_gb, memory_gb = excluded.memory_gb, "
-        "accelerator = excluded.accelerator, os = excluded.os, "
-        "versions = excluded.versions",
+        + refresh,
         (facts["fingerprint"], facts.get("hw_model", ""), facts.get("os", ""),
          facts.get("arch", ""), facts.get("memory_gb", 0.0),
          facts.get("accelerator", ""), facts.get("runtimes", ""),

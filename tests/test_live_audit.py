@@ -95,6 +95,28 @@ def test_an_adoption_with_no_passing_run_here_fails(tmp_path, config):
     assert not check["ok"] and "code" in check["detail"]
 
 
+def test_a_probe_that_fails_at_the_first_identity_read_does_not_hide_the_run_here(tmp_path, config, monkeypatch):
+    """#747: a failed probe was cached as an unknown machine, so the run was filed nowhere."""
+    from evals import environment
+    real, calls = environment.capture, []
+
+    def flaky():
+        calls.append(1)
+        if len(calls) == 1:
+            raise OSError("probe timed out")
+        return real()
+    monkeypatch.setattr(ms.machines, "_THIS_MACHINE", None)
+    monkeypatch.setattr(environment, "capture", flaky)
+    conn = ms.connect()
+    try:
+        _adopt(conn, _run(conn, tmp_path, True))
+    finally:
+        conn.close()
+    gateway.write_served(config)
+    check = _checks(live_audit.audit(ms.db_path()))["adoptions_pass_here"]
+    assert check["ok"], check
+
+
 def test_a_reference_model_adopted_for_a_lane_fails(live):
     raw = sqlite3.connect(live)
     raw.execute("INSERT INTO candidates (spec, receipt_key, lane, created_at) VALUES "
