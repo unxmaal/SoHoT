@@ -19,7 +19,7 @@ jobs:
     # Apple Silicon, and standard runners are free for public repos. Larger
     # runners are NOT free, so this label must stay standard.
     runs-on: macos-latest
-    timeout-minutes: 35
+    timeout-minutes: 15
     env:
       # An unlabelled pull request skips the `long` tests; push to main, nightly and full-ci run all of them (#720).
       SOHOT_FAST_PATH: ${{ (github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'full-ci')) && '1' || '0' }}

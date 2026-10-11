@@ -121,30 +121,30 @@ def test_rasterizes_a_page_to_a_png(tmp_path):
 
 
 @html_only
-def test_a_page_with_visible_text_has_ink():
+def test_a_page_with_visible_text_has_ink(shared_render):
     assert render.ink_html(PAGE) > 0.001
 
 
 @html_only
-def test_white_on_white_renders_blank():
+def test_white_on_white_renders_blank(shared_render):
     """The same failure SVG has: valid markup, real content, nothing visible."""
     assert render.ink_html(BLANK_PAGE) == 0.0
 
 
 @html_only
-def test_an_empty_body_renders_blank():
+def test_an_empty_body_renders_blank(shared_render):
     assert render.ink_html(EMPTY_PAGE) == 0.0
 
 
 @html_only
-def test_check_html_passes_a_real_page():
+def test_check_html_passes_a_real_page(shared_render):
     r = render.check_html(PAGE)
     assert r.ok, r.reason
     assert r.metrics["ink"] > 0
 
 
 @html_only
-def test_check_html_fails_a_page_that_renders_nothing():
+def test_check_html_fails_a_page_that_renders_nothing(shared_render):
     r = render.check_html(BLANK_PAGE)
     assert not r.ok
     assert "blank" in r.reason.lower()
@@ -340,3 +340,17 @@ def test_a_browser_that_cannot_take_a_profile_is_retried_without_one(
     render.rasterize_html("<p>x</p>", tmp_path / "b.png")
     assert seen == [False], seen
     render._PROFILE_HANGS.discard("/fake/chromium")
+
+
+@html_only
+def test_a_shared_render_shoots_each_page_once(shared_render, monkeypatch):
+    """#724: tests of what a page shows share one Chrome launch per distinct page."""
+    import uuid
+    shots = []
+    real = render._shoot
+    monkeypatch.setattr(render, "_shoot", lambda *a, **k: shots.append(1) or real(*a, **k))
+    page = PAGE.replace("Coffee Roaster", f"Roaster {uuid.uuid4().hex[:6]}")
+    first = render.ink_html(page)
+    once = len(shots)
+    assert once >= 1 and render.ink_html(page) == first and len(shots) == once
+    assert render.ink_html(page, width=640) > 0.001 and len(shots) > once

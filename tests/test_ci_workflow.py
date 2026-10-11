@@ -123,11 +123,15 @@ def test_apt_packages_are_cached_on_the_package_list():
     assert "cache-hit" in steps[save]["if"]
 
 
+#: The slowest full check-macos job after #723: 4.3-5.6 min on main pushes, 2026-10-11.
+MACOS_FULL_RUN_MINUTES = 5.6
+
+
 def test_macos_leaves_room_over_the_measured_make_check():
-    """make check took 17.5-19.5 min on macos-latest and the 20-minute job cancelled it (#720)."""
+    """Room for a slow runner over the full run, and no more: 35 min was 7x it and hid a regression (#720, #724)."""
     doc, _ = _ci()
-    measured_minutes = 19.5
-    assert doc["jobs"]["check-macos"]["timeout-minutes"] >= measured_minutes + 10
+    limit = doc["jobs"]["check-macos"]["timeout-minutes"]
+    assert 2 * MACOS_FULL_RUN_MINUTES <= limit <= 3 * MACOS_FULL_RUN_MINUTES
 
 
 FAST = "SOHOT_FAST_PATH"
