@@ -155,7 +155,54 @@ def test_a_run_ended_by_the_cap_measured_no_margin():
     assert run(Box(), cap_gb=5)["margin_gb"] is None
 
 
-def test_the_reserve_is_the_largest_measured_margin(store):
+@pytest.fixture
+def unified(monkeypatch):
+    """Pin a unified machine. The fallback reserve depends on the accelerator
+    (#788), so a test asserting DEFAULT_RESERVE_GB on an empty store without
+    pinning one passes on a Mac runner and fails on a box with a card. RULE
+    #249, one layer down."""
+    from harness import memory
+    monkeypatch.setattr(memory, "detect",
+                        lambda: memory.Accelerator("unified", 32.0, 25.0, "Mac16,1"))
+
+
+@pytest.fixture
+def discrete(monkeypatch):
+    from harness import memory
+    monkeypatch.setattr(memory, "detect",
+                        lambda: memory.Accelerator("discrete", 11.99, 11.13,
+                                                   "NVIDIA GeForce RTX 4070"))
+
+
+def test_a_card_with_no_ramp_history_reserves_the_discrete_default(store, discrete):
+    """THE BUG THIS FILE GAINED A FIXTURE FOR. measured_reserve_gb fell back to
+    DEFAULT_RESERVE_GB whatever it was budgeting for, so a 12 GiB card reserved
+    6 GiB, half of itself, and the planner budgeted 5.99 GiB.
+
+    It refused a 14B outright and cost the 7B its eighth slot, which is KB
+    #367's measured knee. reserve_for() already chose correctly; this did not
+    ask it. #788.
+    """
+    from harness import memory
+    assert memory.measured_reserve_gb(store) == memory.DISCRETE_RESERVE_GB
+
+
+def test_unified_memory_still_reserves_the_larger_default(store, unified):
+    """The 6 GiB is right where the GPU draws from system RAM. Narrowing the
+    fallback to one value would have fixed the card by starving the Mac."""
+    from harness import memory
+    assert memory.measured_reserve_gb(store) == memory.DEFAULT_RESERVE_GB
+
+
+def test_a_measured_margin_still_wins_over_either_default(store, discrete):
+    """A margin this machine actually measured beats a default chosen from its
+    hardware, which is the whole point of `lh memory ramp`."""
+    from harness import memory
+    ramp.save(store, {"margin_gb": 4.5}, _mid(store, MAC))
+    assert memory.measured_reserve_gb(store) == 4.5
+
+
+def test_the_reserve_is_the_largest_measured_margin(store, unified):
     """The guard reads the store, this machine's rows only. #299, #415."""
     from harness import memory
     assert memory.measured_reserve_gb(store) == memory.DEFAULT_RESERVE_GB
@@ -170,7 +217,7 @@ def test_the_reserve_is_the_largest_measured_margin(store):
     assert memory.measured_reserve_gb() == 3.8
 
 
-def test_a_memory_limits_file_is_not_read(store):
+def test_a_memory_limits_file_is_not_read(store, unified):
     from harness import memory, paths
     (paths.home() / "memory-limits.json").write_text(
         '{"Mac14,12/macOS-26.5.1-arm64-arm-64bit/arm64": [{"margin_gb": 7.0}]}',
