@@ -184,9 +184,63 @@ def download(repo: str, filename: str, hf_download=None, refresh=None,
     return str(where)
 
 
+def record_existing(path, repo: str = "", refresh=None, conn=None,
+                    origin: str = "") -> str:
+    """Record a GGUF already on disk, writing the row download() would have. #783.
+
+    A file placed by hand is a real case: curl, a copy, an external drive. Until
+    this existed, fetch-gguf.sh was the only way to get a row, and
+    harness.context.plan iterates the store, so a hand-placed file got no plan
+    and no preset section. It was still advertised, because the router lists
+    --models-dir directly, so it served at the [*] defaults and nothing said
+    why. Measured on a 12 GB card with a 32B: the unplanned defaults reached 98
+    percent of host RAM and generated 2.07 tok/s against 2.52 planned.
+
+    NOT HASHED. The downloads table has no hash column and the fetch path does
+    not hash either, so a digest here would have nowhere to go and nothing to
+    compare against. Recording exactly the columns the fetch path records is
+    what keeps a hand-placed file indistinguishable from a fetched one
+    everywhere downstream.
+    """
+    from harness import downloads
+    path = Path(path)
+    if path.suffix.lower() != ".gguf":
+        raise ValueError(f"not a gguf: {path.name}")
+    if not path.is_file():
+        raise FileNotFoundError(path)
+    # The router reads ONE directory. A row for a file outside it would price
+    # VRAM in the plan for something that can never be loaded.
+    where = models_dir().resolve()
+    if path.resolve().parent != where:
+        raise ValueError(f"{path.name} is outside the models dir {where}")
+    with downloads.store(conn) as c:
+        if downloads.live(c, path=path):
+            raise ValueError(f"already recorded: {path.name}")
+        # repo stays empty when provenance is unknown. Inventing one would have
+        # the fetch tier believe in a hub repo nobody can re-fetch from.
+        downloads.record(c, repo, downloads.GGUF, path, file=path.name,
+                         origin=origin or downloads.SCRIPT)
+    # The file was already visible to the router; the PLAN is what is new, and
+    # the preset is only read at startup.
+    (refresh or refresh_router)()
+    return path.name
+
+
+def _usage() -> str:
+    return ("usage: python -m harness.gguf REPO FILE.gguf\n"
+            "       python -m harness.gguf record PATH [REPO]")
+
+
 if __name__ == "__main__":
     import sys
-    if len(sys.argv) != 3:
-        sys.exit("usage: python -m harness.gguf REPO FILE.gguf")
     from harness import downloads as _downloads
-    print(download(sys.argv[1], sys.argv[2], origin=_downloads.SCRIPT))
+    argv = sys.argv[1:]
+    if argv[:1] == ["record"]:
+        if len(argv) not in (2, 3):
+            sys.exit(_usage())
+        print(record_existing(argv[1], repo=argv[2] if len(argv) == 3 else "",
+                              origin=_downloads.SCRIPT))
+    elif len(argv) == 2:
+        print(download(argv[0], argv[1], origin=_downloads.SCRIPT))
+    else:
+        sys.exit(_usage())
