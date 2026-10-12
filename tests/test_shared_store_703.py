@@ -53,11 +53,12 @@ def test_two_workers_on_one_store_run_an_unowned_job_once(tmp_path, monkeypatch)
     job = wq.add([sys.executable, "-c", f"open({str(marks)!r}, 'a').write('x')"])
     _unowned(job)
     seen_by_a = wq.pending()[0]
-    _as_other_machine(monkeypatch)
-    seen_by_b = wq.pending()[0]
-    assert seen_by_a["id"] == seen_by_b["id"]
-    wq.run_one(seen_by_b)
-    monkeypatch.undo()
+    # Its own patcher: undoing the shared one dropped the autouse home and opened the live store. #804.
+    with pytest.MonkeyPatch.context() as other:
+        _as_other_machine(other)
+        seen_by_b = wq.pending()[0]
+        assert seen_by_a["id"] == seen_by_b["id"]
+        wq.run_one(seen_by_b)
     wq.run_one(seen_by_a)
     assert marks.read_text(encoding="utf-8") == "x"
 
