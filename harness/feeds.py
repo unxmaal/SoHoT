@@ -395,7 +395,8 @@ def staleness(sources: list[Source] | None = None, now: float | None = None,
 
 
 def fetch(url: str, timeout: float = 30.0, retries: int = RETRIES,
-          delay: float = RETRY_DELAY, sleep=time.sleep) -> str:
+          delay: float = RETRY_DELAY, sleep=time.sleep, headers: dict | None = None,
+          on_limit=None) -> str:
     """GET `url` as text, retrying on the rate limit with ratelimit's backoff; an unreachable host is retried once."""
     from harness import ratelimit
     last = ""
@@ -404,7 +405,7 @@ def fetch(url: str, timeout: float = 30.0, retries: int = RETRIES,
         retry_after = None
         try:
             req = urllib.request.Request(url,
-                                         headers={"User-Agent": USER_AGENT})
+                                         headers={"User-Agent": USER_AGENT, **(headers or {})})
             with urllib.request.urlopen(req, timeout=timeout) as r:
                 return r.read().decode("utf-8", "replace")
         except urllib.error.HTTPError as exc:
@@ -412,6 +413,8 @@ def fetch(url: str, timeout: float = 30.0, retries: int = RETRIES,
             if exc.code not in (429, 500, 502, 503, 504):
                 raise FeedError(f"{url}: {last}") from exc
             retry_after = exc.headers.get("Retry-After") if exc.headers else None
+            if exc.code == 429 and on_limit is not None:
+                on_limit(retry_after)
         except (urllib.error.URLError, OSError) as exc:
             last = str(exc)
             unreachable += 1

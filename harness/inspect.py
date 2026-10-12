@@ -26,7 +26,7 @@ import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from harness import lanes
+from harness import lanes, ratelimit
 from harness import memory_store as ms
 
 GIB = 1024 ** 3
@@ -370,6 +370,10 @@ class Gone(InspectError):
     sweep's worth of real models as broken."""
 
 
+class Deferred(InspectError):
+    """The registry still answered 429: nothing is known, and the rest of the batch waits. #797."""
+
+
 @dataclass
 class Fit:
     repo: str
@@ -593,8 +597,7 @@ def hf_facts(model_id: str, fetch=None, cache: dict | None = None) -> dict:
             return {"size": int(got.get("size") or -1),
                     "lane": lane_for(got)}
     if fetch is None:
-        def fetch(url):
-            return feeds.fetch(url, retries=SIZE_RETRIES, delay=SIZE_DELAY)
+        fetch = hf_get
     url = f"https://huggingface.co/api/models/{model_id}?blobs=true"
     try:
         data = json.loads(fetch(url))
@@ -651,6 +654,25 @@ def hf_size(model_id: str, fetch=None, cache: dict | None = None) -> int:
 MODEL_URL = "https://huggingface.co/api/models/{model_id}?blobs=true"
 
 
+#: Shared by every registry call in one inspect batch. #797.
+PACE = ratelimit.Pace()
+
+
+def hf_get(url: str) -> str:
+    """GET a registry URL with the HF token, paced by the batch; a stopped batch asks nothing. #797."""
+    from harness import feeds
+    if PACE.stopped:
+        raise feeds.RateLimitedFeed(f"{url}: not asked ({PACE.stopped})")
+    PACE.before()
+    try:
+        return feeds.fetch(url, retries=SIZE_RETRIES, delay=SIZE_DELAY,
+                           sleep=lambda s: ratelimit.sleep(s),
+                           headers=ratelimit.hf_headers(url), on_limit=PACE.limited)
+    except feeds.RateLimitedFeed:
+        PACE.stop("HTTP 429 persisted")
+        raise
+
+
 def hf_model(model_id: str, fetch=None) -> dict:
     """One model's registry record, or a raised reason it has none.
 
@@ -660,10 +682,11 @@ def hf_model(model_id: str, fetch=None) -> dict:
     """
     from harness import feeds
     if fetch is None:
-        def fetch(url):
-            return feeds.fetch(url, retries=SIZE_RETRIES, delay=SIZE_DELAY)
+        fetch = hf_get
     try:
         return json.loads(fetch(MODEL_URL.format(model_id=model_id)))
+    except feeds.RateLimitedFeed as exc:
+        raise Deferred(f"{model_id}: rate-limited (HTTP 429)") from exc
     except Exception as exc:  # noqa: BLE001 - classified, then re-raised
         detail = str(exc)
         if "HTTP 404" in detail:
