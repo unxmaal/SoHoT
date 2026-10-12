@@ -9,8 +9,11 @@ about which port they used.
 import os
 import plistlib
 import re
+import shutil
+import signal
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 import pytest
@@ -366,3 +369,91 @@ def test_the_sweep_downloads_up_to_40_gib_by_default():
     # 12 GiB skipped every 13-17 GiB candidate in the 2026-10-10 sweep. #678.
     text = (REPO / "scripts" / "serve-discover.sh").read_text(encoding="utf-8")
     assert 'BUDGET="${DISCOVER_BUDGET_GIB:-40}"' in text
+
+
+# --- install leaves a live periodic run alone. #794 ---------------------------
+
+FAKE_LAUNCHCTL_794 = r"""#!/usr/bin/env bash
+echo "$*" >> "$FAKE_STATE/log"
+case "$1" in
+  print) l="${2##*/}"; [ -f "$FAKE_STATE/$l" ] || exit 113
+         printf '%s = {\n\tstate = %s\n' "$2" "$([ -f "$FAKE_STATE/$l.running" ] && echo running || echo waiting)"
+         [ -f "$FAKE_STATE/$l.running" ] && printf '\tpid = 4242\n'
+         printf '}\n' ;;
+  bootout) rm -f "$FAKE_STATE/${2##*/}" ;;
+  bootstrap) touch "$FAKE_STATE/$(basename "$3" .plist)" ;;
+esac
+exit 0
+"""
+
+
+def _install(tmp_path, role="scheduler", running=()):
+    """install_units against a fake launchctl, with deploy and preflight stubbed out."""
+    scripts, bin_, state, deploy = (tmp_path / d for d in ("scripts", "bin", "state", "deploy"))
+    for d in (scripts, bin_, state, deploy / "scripts"):
+        d.mkdir(parents=True)
+    text = GEN.read_text(encoding="utf-8")
+    (scripts / "lib.sh").write_text(text[:text.index('case "${1:-}" in')], encoding="utf-8")
+    (scripts / "env.sh").write_text("", encoding="utf-8")
+    (scripts / "run.sh").write_text(
+        'source "$(dirname "$0")/lib.sh"\ndeploy() { :; }\npreflight() { :; }\ninstall_units\n',
+        encoding="utf-8")
+    for name, body in (("launchctl", FAKE_LAUNCHCTL_794), ("uv", "#!/bin/sh\nexit 0\n")):
+        (bin_ / name).write_text(body, encoding="utf-8")
+        (bin_ / name).chmod(0o755)
+    for name in ("lan-probe.sh", "serve-audit.sh"):
+        (deploy / "scripts" / name).write_text("exit 0\n", encoding="utf-8")
+    for service in SERVICES:
+        (state / f"com.unxmaal.localharness.{service}").touch()
+    for service in running:
+        (state / f"com.unxmaal.localharness.{service}.running").touch()
+    env = {**os.environ, "PATH": f"{bin_}{os.pathsep}{os.environ['PATH']}", "HOME": str(tmp_path / "home"),
+           "LOCALHARNESS_HOME": str(tmp_path / "lh"), "LH_DEPLOY": str(deploy), "LH_ROLE": role,
+           "FAKE_STATE": str(state)}
+    got = subprocess.run([shells.BASH, str(scripts / "run.sh")], env=env, capture_output=True,
+                         text=True, timeout=120)
+    return got, (state / "log").read_text(encoding="utf-8").splitlines()
+
+
+def test_install_does_not_kill_a_sweep_that_is_running(tmp_path):
+    got, calls = _install(tmp_path, running=("discover",))
+    assert not [c for c in calls if c.startswith("bootout") and c.endswith(".discover")], calls
+    assert "pid 4242" in got.stderr and "deferred: discover" in got.stderr, got.stderr
+    assert "Re-run install after it finishes" in got.stderr
+    assert got.returncode != 0, "a deferred unit is still on the old plist, so install is not done"
+    for service in ("gateway", "audit", "worker"):
+        assert f"loaded com.unxmaal.localharness.{service}" in got.stdout, (service, got.stdout)
+
+
+def test_install_reloads_an_idle_periodic_unit(tmp_path):
+    got, calls = _install(tmp_path)
+    assert got.returncode == 0, got.stderr
+    assert any(c.startswith("bootout") and c.endswith(".discover") for c in calls)
+    assert "deferred" not in got.stderr
+
+
+def test_a_node_still_drops_the_periodic_units(tmp_path):
+    got, calls = _install(tmp_path, role="node")
+    assert got.returncode == 0, got.stderr
+    assert "removed com.unxmaal.localharness.discover (LH_ROLE=node)" in got.stdout
+    assert not [c for c in calls if c.startswith("bootstrap") and c.endswith(".discover.plist")]
+
+
+def test_a_killed_sweep_says_which_signal_killed_it(tmp_path):
+    (tmp_path / "scripts").mkdir()
+    shutil.copy(REPO / "scripts" / "serve-discover.sh", tmp_path / "scripts" / "serve-discover.sh")
+    (tmp_path / "scripts" / "env.sh").write_text("", encoding="utf-8")
+    (tmp_path / "bin").mkdir()
+    uv = tmp_path / "bin" / "uv"
+    uv.write_text("#!/bin/sh\nexec sleep 60\n", encoding="utf-8")
+    uv.chmod(0o755)
+    env = {**os.environ, "PATH": f"{tmp_path / 'bin'}{os.pathsep}{os.environ['PATH']}",
+           "LOCALHARNESS_HOME": str(tmp_path / "home")}
+    proc = subprocess.Popen([shells.BASH, str(tmp_path / "scripts" / "serve-discover.sh")], env=env,
+                            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    assert proc.stdout.readline().startswith("=== sweep")
+    time.sleep(0.5)
+    proc.send_signal(signal.SIGTERM)
+    out, err = proc.communicate(timeout=30)
+    assert "sweep killed by SIGTERM" in err, err
+    assert proc.returncode == 143

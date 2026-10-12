@@ -277,6 +277,13 @@ _await_unload() {
   return 1
 }
 
+# The pid of a label's live run; empty when it is idle or not loaded. #794.
+_live_pid() {
+  local out
+  out="$(launchctl print "gui/$UID/$1" 2>/dev/null)" || return 0
+  awk '/^\tpid = /{print $3; exit}' <<<"$out"
+}
+
 # A node unloads periodic units an earlier scheduler install left behind.
 drop_periodic() {
   local p
@@ -294,9 +301,17 @@ install_units() {
   preflight
   mkdir -p "$AGENTS"
   generate "$AGENTS" >/dev/null
-  local failed=""
-  local was=""
+  local failed="" deferred=""
+  local was="" pid
   for service in $(units); do
+    # A bootout signals a periodic job mid-run, and the run is lost without a trace. #794.
+    pid=""
+    case " ${PERIODIC[*]} " in *" $service "*) pid="$(_live_pid "$PREFIX.$service")" ;; esac
+    if [ -n "$pid" ]; then
+      deferred="$deferred $service"
+      echo "NOT reloading $PREFIX.$service: a run is live (pid $pid) and bootout would kill it" >&2
+      continue
+    fi
     if [ "$service" = worker ]; then
       # Reloading the worker kills its running job, so let that job finish first. #577.
       echo "waiting for any running queued job to finish before reloading the worker"
@@ -323,6 +338,10 @@ install_units() {
     fi
   done
   [ "$LH_ROLE" = node ] && drop_periodic
+  if [ -n "$deferred" ]; then
+    echo >&2
+    echo "deferred:$deferred -- mid-run, still on the old unit. Re-run install after it finishes." >&2
+  fi
   if [ -n "$failed" ]; then
     echo >&2
     echo "not loaded:$failed -- the rest are running, so this machine is" >&2
@@ -331,6 +350,7 @@ install_units() {
   fi
   # A launchd job can be refused the LAN while Terminal is not: Local Network privacy. #739.
   local blocked=0
+  [ -z "$deferred" ] || blocked=1
   if ! /bin/bash "$DEPLOY/scripts/lan-probe.sh"; then
     echo "the gateway is loaded but launchd cannot reach a serving node; see above" >&2
     blocked=1

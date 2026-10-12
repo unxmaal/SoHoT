@@ -26,5 +26,17 @@ BUDGET="${DISCOVER_BUDGET_GIB:-40}"
 REPEAT="${DISCOVER_REPEAT:-}"
 
 echo "=== sweep $(date -u +%Y-%m-%dT%H:%M:%SZ) top=$TOP budget=${BUDGET}GiB ==="
-exec uv run soh discover --loop --run \
-  --top "$TOP" --budget-gib "$BUDGET" ${REPEAT:+--repeat "$REPEAT"}
+# Not exec: a sweep killed by a bootout or ^C must leave a line in discover.log. #794.
+child=""
+_killed() {
+  echo "=== sweep killed by SIG$1 $(date -u +%Y-%m-%dT%H:%M:%SZ) ===" >&2
+  [ -z "$child" ] || kill -s TERM "$child" 2>/dev/null || exit "$2"
+  exit "$2"
+}
+trap '_killed TERM 143' TERM
+trap '_killed INT 130' INT
+trap '_killed HUP 129' HUP
+uv run soh discover --loop --run \
+  --top "$TOP" --budget-gib "$BUDGET" ${REPEAT:+--repeat "$REPEAT"} &
+child=$!
+wait "$child"
