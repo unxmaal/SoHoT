@@ -353,6 +353,8 @@ def resolve_registry(name: str, client, model=None) -> tuple[str, dict | None]:
     reachable = False
     try:
         return ms.HUGGINGFACE, model(name)
+    except ins.Deferred:
+        raise
     except ins.Gone:
         reachable = True
     except ins.InspectError:
@@ -442,7 +444,13 @@ def _report_inspect(a) -> int:
                           .neighbors(client=client, top=getattr(a, "top", 10))]
         work_items = shard(work_items, getattr(a, "shard", ""))
         out = []
-        for repo, registry in work_items:
+        ins.PACE.start()
+        for done, (repo, registry) in enumerate(work_items):
+            if ins.PACE.stopped:
+                # Nothing is decided for the rest: they stay queued for the next sweep. #797.
+                print(f"  registry rate-limited ({ins.PACE.stopped}); "
+                      f"{len(work_items) - done} left queued for the next sweep")
+                break
             card = None
             if methods.is_method(repo):
                 print(_answer_method(store, repo))
@@ -450,6 +458,10 @@ def _report_inspect(a) -> int:
             if not registry:
                 try:
                     registry, card = resolve_registry(repo, client)
+                except ins.Deferred as exc:
+                    err(f"{repo}: {exc}; left queued")
+                    ins.PACE.stop(str(exc))
+                    continue
                 except ins.Gone as exc:
                     err(f"{repo}: {exc}")
                     try:
@@ -466,6 +478,10 @@ def _report_inspect(a) -> int:
             if registry == ms.HUGGINGFACE:
                 try:
                     fit = ins.inspect_model(repo, data=card)
+                except ins.Deferred as exc:
+                    err(f"{repo}: {exc}; left queued")
+                    ins.PACE.stop(str(exc))
+                    continue
                 except ins.Gone as exc:
                     # A definite 404 is an answer about the candidate, so it is
                     # recorded as one. An unreachable registry is not.
@@ -572,6 +588,7 @@ def _report_inspect(a) -> int:
                 except ms.IllegalTransition:
                     continue
     finally:
+        ins.PACE.end()
         store.close()
     if getattr(a, "judge", False):
         screen_cmd._judge_fits(out, store_path=None)
