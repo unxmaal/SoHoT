@@ -28,6 +28,8 @@ cd "$(dirname "$0")/.." || exit 1
 # read_api_key, for probing a keyed node in `status`. Not env.sh: this file
 # starts and stops things and has never needed the weights cache resolved.
 source scripts/api-key.sh
+# rotate_log, so a restart does not destroy the session before it. #786.
+source scripts/logs.sh
 
 LH_HOME="${LOCALHARNESS_HOME:-$HOME/localharness}"
 RUN="$LH_HOME/run"
@@ -201,6 +203,11 @@ start_one() {
     echo "$name already up (pid $pid)"
     return 0
   fi
+
+  # BEFORE ANYTHING REDIRECTS INTO THEM. Both halves truncate on start, so the
+  # previous session is kept by moving it aside here or not at all. #786.
+  rotate_log "$LOGS/$name.log"
+  rotate_log "$LOGS/$name.err.log"
 
   if is_windows; then
     bash_exe="$(winpath "$(command -v bash)")"
