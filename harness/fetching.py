@@ -61,6 +61,26 @@ class FetchDeferred(FetchError):
     """The registry rate-limited us: the rest of this tier waits for the next sweep. #675."""
 
 
+class Unloadable(FetchError):
+    """The listing holds no weights a runner here loads: a fact about the candidate. #798."""
+
+
+#: Weight formats some registered runner loads: mlx/transformers/diffusers, llama.cpp, mlx whisper, kokoro.
+RUNNER_FORMATS = (".safetensors", ".gguf", ".bin", ".npz", ".onnx")
+
+
+def weights_gap(siblings) -> str:
+    """Why nothing in this listing is weights a runner here loads, or "". #798."""
+    names = [str(s.get("rfilename", "")).lower() for s in siblings or []]
+    if any(n.endswith(RUNNER_FORMATS) for n in names):
+        return ""
+    other = sorted({Path(n).suffix for n in names if n.endswith(downloads.WEIGHT_SUFFIXES)})
+    if other:
+        return (f"runners wanted: its weights are {', '.join(other)}, and no runner here "
+                f"loads that format (only {', '.join(RUNNER_FORMATS)})")
+    return f"no weights: none of its {len(names)} file(s) is a weight file"
+
+
 @dataclass
 class Plan:
     repo: str
@@ -184,6 +204,13 @@ def queued(conn, tiers=FETCHABLE_TIERS, kind: str = FETCHABLE_KIND,
                p.state AS outcome, st.tier AS tier, st.detail AS detail, st.until AS until,
                -- The candidate's measured size, whatever verdict is newest. #211, #413.
                p.size_bytes,
+               -- Inspect has answered since the last reopen; a 429 writes nothing. #798.
+               COALESCE((SELECT vi.tier = 'inspect' AND vi.outcome = 'queued'
+                                AND vi.reason NOT IN (:reopened, :harness)
+                           FROM verdicts vi
+                          WHERE vi.proposal_id = p.id
+                            AND (vi.tier = 'inspect' OR vi.reason = :reopened)
+                          ORDER BY vi.id DESC LIMIT 1), 0) AS inspected,
                -- The judge scores REPOS; the queue holds WEIGHTS, and a weight
                -- is never judged (judging a model id in isolation is the
                -- copywriting problem the rubric exists to avoid). So a weight
@@ -196,7 +223,8 @@ def queued(conn, tiers=FETCHABLE_TIERS, kind: str = FETCHABLE_KIND,
                             AND v2.score IS NOT NULL
                           ORDER BY v2.id DESC LIMIT 1), 0) AS score
         FROM proposals p LEFT JOIN verdicts st ON st.id = p.state_verdict_id
-        WHERE p.state = 'queued'""").fetchall()
+        WHERE p.state = 'queued'""",
+                        {"reopened": reasons.REOPENED, "harness": reasons.HARNESS}).fetchall()
     def downloadable(r) -> bool:
         """snapshot_download wants a HuggingFace id. The registry says so
         outright; `kind` only has to answer for rows older than that column."""
@@ -257,7 +285,7 @@ def in_rank_order(rows: list[dict], conn=None) -> list[dict]:
 
 
 def download(repo: str, snapshot=None, listing=None, hf_download=None,
-             text: bool = True, conn=None) -> str:
+             text: bool = True, conn=None, require_weights: bool = False) -> str:
     """Weights into the shared cache. Returns the path.
 
     HF_HUB_OFFLINE is 1 everywhere else in this project on purpose: an eval
@@ -270,6 +298,12 @@ def download(repo: str, snapshot=None, listing=None, hf_download=None,
     os.environ["HF_HUB_OFFLINE"] = "0"
     constants = restore = None
     try:
+        if require_weights and (listing is not None or snapshot is None):
+            siblings = _siblings(repo, listing or _listing)
+            gap = weights_gap(siblings)
+            if gap:
+                raise Unloadable(gap)
+            listing = lambda _repo, s=siblings: s  # noqa: E731
         single = _gguf_pick(repo, listing, snapshot) if text else None
         if single == ():
             raise FetchError("no single GGUF file fits the ceiling")
@@ -314,22 +348,27 @@ def _listing(repo: str) -> list:
     return ratelimit.get_json(ins.MODEL_URL.format(model_id=repo)).get("siblings") or []
 
 
-def _gguf_pick(repo: str, listing, snapshot):
-    """(file, bytes) for a GGUF-only repo, () if none fits, None otherwise."""
-    from harness import gguf
-    from harness import inspect as ins
+def _siblings(repo: str, listing) -> list:
+    """The listing, a 429 as FetchDeferred and any other failure as FetchError. #675."""
     from harness import ratelimit
-    if listing is None:
-        if snapshot is not None:
-            return None
-        listing = _listing
     try:
-        siblings = listing(repo)
+        return listing(repo)
     except ratelimit.RateLimited as exc:
         raise FetchDeferred(f"listing rate-limited (HTTP 429 after {ratelimit.ATTEMPTS} attempts); "
                             f"the rest of this tier waits for the next sweep") from exc
     except Exception as exc:  # noqa: BLE001
         raise FetchError(f"listing failed: {_reason(exc)}") from exc
+
+
+def _gguf_pick(repo: str, listing, snapshot):
+    """(file, bytes) for a GGUF-only repo, () if none fits, None otherwise."""
+    from harness import gguf
+    from harness import inspect as ins
+    if listing is None:
+        if snapshot is not None:
+            return None
+        listing = _listing
+    siblings = _siblings(repo, listing)
     if not gguf.only(siblings):
         return None
     return gguf.choose(siblings, ins.ceiling_bytes()) or ()
@@ -454,6 +493,11 @@ def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=N
             continue      # waits for a bigger budget than this run's, so this run settles nothing. #704
         if not row.get("lane"):
             continue      # nothing here could measure it, so nothing fetches it
+        if not row.get("inspected"):
+            # A reopen or a 429'd inspect leaves a stale size and no format; inspect answers first. #798.
+            done.append({"repo": row["resolved"] or row["name"], "ok": False,
+                         "why": "inspect has not answered since it was queued or reopened"})
+            continue
         # AN ADAPTER IS NOT A CANDIDATE, and this tier is where that costs
         # gigabytes. rank drops attachments so they never reach the top of the
         # queue, but rank is an ORDERING and this is a SPEND: a LoRA that is
@@ -550,12 +594,18 @@ def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=N
             text = lanes.canonical(row.get("lane") or "") in lanes.GGUF_SERVED
             if listing is not None or hf_download is not None or not text:
                 where = download(name, snapshot=snapshot, listing=listing,
-                                 hf_download=hf_download, text=text, conn=conn)
+                                 hf_download=hf_download, text=text, conn=conn,
+                                 require_weights=True)
             else:
-                where = download(name, snapshot=snapshot, conn=conn)
+                where = download(name, snapshot=snapshot, conn=conn, require_weights=True)
         except FetchDeferred as exc:
             done.append({"repo": name, "ok": False, "why": str(exc), "deferred": True})
             break
+        except Unloadable as exc:
+            ms.decide_or_skip(conn, row["name"], "declined", tier="fetch", detail=str(exc),
+                              reason=reasons.CANDIDATE)
+            done.append({"repo": name, "ok": False, "why": str(exc)})
+            continue
         except FetchError as exc:
             done.append({"repo": name, "ok": False, "why": str(exc)})
             continue
