@@ -227,6 +227,8 @@ def _measure(a, row: dict, loaded: list) -> int:
     out = (paths.home() / "runs"
            / f"{time.strftime('%Y%m%d-%H%M%S')}-adopt-{lane}")
     split, plan = _plan(a, lane, inc_spec, spec)
+    if plan.refused:
+        return _refused(name, lane, inc_spec, spec, split, plan)
     argv = ["uv", "run", "python", "-m", "evals.run", "--modality", lane,
             "--repeat", str(plan.repeat),
             "--out", str(out),
@@ -354,9 +356,13 @@ def _plan(a, lane: str, inc_spec: str, spec: str = ""):
     try:
         machines = runs.here(store)
         draws, inc_s = power.served_profile(store, lane, inc_spec, settings, machines)
+        basis = ""
+        if inc_s is None and settings[0]:
+            inc_s, basis = power.served_bound(store, lane, inc_spec, settings, machines)
         median_s, calls, est = power.pair_cost(store, lane, incumbent=inc_key, incumbent_spec=inc_spec,
                                                incumbent_s=inc_s, challenger=spec,
-                                               settings=settings, machines=machines)
+                                               settings=settings, machines=machines,
+                                               incumbent_basis=basis)
         alpha = adopt.alpha_for(adopt.comparisons(store, lane, split.version))
     finally:
         store.close()
@@ -365,6 +371,9 @@ def _plan(a, lane: str, inc_spec: str, spec: str = ""):
         estimated = (f"seconds per call estimated at {est['incumbent_s']:.0f}s: no incumbent "
                      f"receipt on this machine at the {settings[0]}-token reply budget, so every "
                      f"reply is assumed to spend it at {est['decode_tok_s']:.0f} tok/s")
+    elif est["incumbent_source"] == "bounded":
+        estimated = (f"seconds per call {est['incumbent_basis']}: no incumbent receipt on this "
+                     f"machine at the {settings[0]}-token reply budget")
     rates, seen = power.rates_from(draws, split.holdout)
     effect = getattr(a, "effect", None) or power.effect_for(lane)
     explicit = getattr(a, "repeat", None)
@@ -385,17 +394,24 @@ def _plan(a, lane: str, inc_spec: str, spec: str = ""):
         plan, [rates[c] for c in split.holdout],
         cases_run=every if side == "all" else len(split.holdout), median_s=median_s,
         budget_s=budget, explicit=bool(explicit), calls=calls)
-    if est["challenger_source"] not in ("measured", "like incumbent") and est["challenger_s"] is not None:
+    if est["challenger_source"] not in ("measured", "like incumbent", "bounded") and est["challenger_s"] is not None:
         estimated = "; ".join(x for x in (estimated, f"challenger seconds per call "
                                           f"{est['challenger_s']:.0f}s by {est['challenger_source']}") if x)
     plan = replace(plan, side=side, dev_skipped=dev_skipped, estimate=est,
                    why="; ".join(x for x in (plan.why, power.unseen_note(draws), estimated) if x))
     plan = replace(plan, deadline_s=power.deadline(plan))
+    if plan.projected_s is not None and plan.budget_s is not None and plan.projected_s > plan.budget_s:
+        # Even the fallback repeat does not fit: refuse rather than run past it to DEADLINE_GRACE. #796.
+        plan = replace(plan, refused=(
+            f"not run: {plan.cases_run} case(s) x repeat {plan.repeat} x {calls} call(s) projected at "
+            f"{power._hm(plan.projected_s)}, over the {power._hm(plan.budget_s)} budget"))
     print(f"    power: repeat {plan.repeat} over {len(split.holdout)} holdout "
           f"case(s) gives {plan.power:.2f} to detect +{plan.effect:.2f} at "
           f"alpha {plan.alpha}{'; ' + plan.why if plan.why else ''}"
           f"{'; ' + split.caveat if split.caveat else ''}", flush=True)
-    if plan.projected_s is not None:
+    if plan.refused:
+        print(f"    time: {plan.refused}", flush=True)
+    elif plan.projected_s is not None:
         print(f"    time: {plan.cases_run} case(s) x repeat {plan.repeat} x {calls} "
               f"call(s) projected at {power._hm(plan.projected_s)}, stopped at "
               f"{power._hm(plan.deadline_s)}", flush=True)
@@ -496,6 +512,25 @@ def _stopped(name: str, lane: str, inc_spec: str, spec: str, split, plan,
     finally:
         store.close()
     return err(f"{name}: {why}")
+
+
+def _refused(name: str, lane: str, inc_spec: str, spec: str, split, plan) -> int:
+    """Record a run refused for its projected time as an inconclusive verdict, never launched. #796."""
+    from harness import adopt
+    from harness import memory_store as ms
+
+    why = f"{plan.refused}; inconclusive, nothing is concluded about the challenger"
+    verdict = adopt.Verdict(lane, inc_spec, spec, False, why, failure_class=reasons.INCONCLUSIVE,
+                            evidence={"split": split.as_dict(), "power": plan.as_dict()})
+    store = ms.connect()
+    try:
+        adopt.record(store, verdict, spec=spec)
+    except ms.IllegalTransition as exc:
+        print(f"  skipped {exc}", flush=True)
+    finally:
+        store.close()
+    print(f"  {name}: {why}", flush=True)
+    return 0
 
 
 def _settle(name: str, outcome: str, detail: str) -> None:

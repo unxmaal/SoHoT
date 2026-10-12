@@ -255,6 +255,8 @@ class Plan:
     unmeasured: bool = False
     #: Where each candidate's seconds per call came from, and the inputs. #696.
     estimate: dict | None = None
+    #: Why the run is not started: its projection is over the budget. #796.
+    refused: str = ""
 
     def as_dict(self) -> dict:
         return asdict(self)
@@ -420,7 +422,7 @@ def within_budget(chosen: Plan, rates, *, cases_run: int, median_s: float | None
 
 
 def draws_from(rows, key: str) -> tuple[dict[str, list[int]], float | None]:
-    """case -> one candidate's pass/fail draws, and its median seconds per case."""
+    """case -> one candidate's pass/fail draws, and its mean seconds per case: wall time is a sum. #796."""
     from harness import holdout
     by: dict[str, list[int]] = {}
     secs = []
@@ -430,7 +432,7 @@ def draws_from(rows, key: str) -> tuple[dict[str, list[int]], float | None]:
         by.setdefault(holdout.base_id(r["case_id"]), []).append(int(bool(r["passed"])))
         if r["seconds"] is not None:
             secs.append(float(r["seconds"]))
-    return by, (statistics.median(secs) if secs else None)
+    return by, (statistics.fmean(secs) if secs else None)
 
 
 def reply_settings(receipt, lane: str) -> tuple[int, tuple]:
@@ -493,9 +495,7 @@ def served_keys(conn, lane: str, spec: str = "", cid: int | None = None) -> list
     return keys if keys or not spec else [key(spec)]
 
 
-def served_profile(conn, lane: str, spec: str = "", settings: tuple | None = None, machines=None,
-                   cid: int | None = None) -> tuple[dict[str, list[int]], float | None]:
-    """The served incumbent's draws per case over every key its rows carry, store-wide; its median only at `settings` on `machines`. #673, #696, #740."""
+def _served_rows(conn, lane: str, spec: str = "", cid: int | None = None):
     lane = (lane or "").strip().lower()
     draws: dict[str, list[int]] = {}
     rows = []
@@ -504,7 +504,42 @@ def served_profile(conn, lane: str, spec: str = "", settings: tuple | None = Non
         for case, oks in draws_from(got, key)[0].items():
             draws.setdefault(case, []).extend(oks)
         rows += [dict(r, candidate="") for r in got]
-    return draws, _median(rows, lane, "", settings, machines)
+    return draws, rows
+
+
+def served_profile(conn, lane: str, spec: str = "", settings: tuple | None = None, machines=None,
+                   cid: int | None = None) -> tuple[dict[str, list[int]], float | None]:
+    """The served incumbent's draws per case over every key its rows carry, store-wide; its mean seconds only at `settings` on `machines`. #673, #696, #740."""
+    draws, rows = _served_rows(conn, lane, spec, cid)
+    return draws, _median(rows, (lane or "").strip().lower(), "", settings, machines)
+
+
+def served_bound(conn, lane: str, spec: str, settings: tuple, machines) -> tuple[float | None, str]:
+    """Seconds per case bounded by the served incumbent's receipts at other reply budgets here, and the basis. #796.
+
+    A reply at budget B takes no longer than one at a larger budget, nor than B/b times one cut at b;
+    the least such bound, capped at the whole-budget estimate."""
+    lane = (lane or "").strip().lower()
+    want = int(settings[0])
+    rows = [r for r in _served_rows(conn, lane, spec)[1]
+            if machines is None or r["machine_id"] in set(machines)]
+    by: dict[int, list] = {}
+    for r in rows:
+        b = reply_settings(r["receipt"], lane)[0]
+        if b > 0 and r["seconds"] is not None:
+            by.setdefault(b, []).append(r)
+    best, basis = None, ""
+    for b, got in sorted(by.items()):
+        mean = draws_from(got, "")[1]
+        scale = 1.0 if b >= want else want / b
+        if mean is not None and (best is None or mean * scale < best):
+            best = mean * scale
+            basis = (f"bounded at {best:.0f}s from the incumbent's {b}-token receipt(s) here "
+                     f"({mean:.0f}s{'' if scale == 1.0 else f' x {want}/{b}'})")
+    cap = estimated_seconds(lane)
+    if best is not None and cap is not None and best > cap:
+        best, basis = cap, f"{basis}, capped at the whole {want}-token budget ({cap:.0f}s)"
+    return best, basis
 
 
 def unseen_note(draws: dict) -> str:
@@ -539,16 +574,17 @@ def challenger_seconds(conn, lane: str, key: str, *, incumbent: str, incumbent_s
 
 
 def pair_cost(conn, lane: str, *, incumbent: str, incumbent_spec: str, incumbent_s: float | None,
-              challenger: str = "", settings: tuple | None, machines) -> tuple[float | None, int, dict]:
-    """Mean seconds per call over both candidates, their calls per case, and how each was priced. #696."""
+              challenger: str = "", settings: tuple | None, machines,
+              incumbent_basis: str = "") -> tuple[float | None, int, dict]:
+    """Mean seconds per call over both candidates, their calls per case, and how each was priced. #696, #796."""
     from harness import candidates, methods
     tok_s = decode_tok_s()
-    inc_source = "measured"
+    inc_source = "bounded" if incumbent_basis else "measured"
     if incumbent_s is None:
         incumbent_s = estimated_seconds(lane, tok_s)
         inc_source = "estimated" if incumbent_s is not None else "unknown"
     inc_calls = methods.calls(incumbent_spec) if incumbent_spec else 1
-    if incumbent_s is not None and inc_source == "measured":
+    if incumbent_s is not None and inc_source in ("measured", "bounded"):
         incumbent_s = incumbent_s / inc_calls  # a method row's seconds are every call of the case
 
     def base_key(spec):
@@ -573,6 +609,7 @@ def pair_cost(conn, lane: str, *, incumbent: str, incumbent_spec: str, incumbent
     mean = None if incumbent_s is None or ch_s is None else (inc_calls * incumbent_s + ch_calls * ch_s) / calls
     est = {"machines": list(machines or ()), "settings": list(settings or ()), "decode_tok_s": tok_s,
            "incumbent_s": incumbent_s, "incumbent_source": inc_source, "incumbent_calls": inc_calls,
+           "incumbent_basis": incumbent_basis,
            "challenger_s": ch_s, "challenger_source": ch_source, "challenger_calls": ch_calls}
     return mean, calls, est
 
