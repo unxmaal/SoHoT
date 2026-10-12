@@ -161,6 +161,64 @@ def system_memory_gb() -> float:
     return 0.0
 
 
+def commit_headroom_gb() -> float | None:
+    """What a new allocation may actually take: the commit limit less what is
+    already committed. None where the platform has no such limit to read.
+
+    THE WALL A PARTLY OFFLOADED MODEL HITS, and not the one anybody looks at.
+    Serving an 18.48 GiB model on a 12 GiB card put the 4070 node 0.58 GiB from
+    its commit limit, with 20.23 GiB of committed PRIVATE memory in one process
+    and 0.34 GiB of standby cache, so almost nothing reclaimable. Past the
+    limit, allocations fail across the whole machine and not only in the server.
+    Free physical RAM says nothing useful about that: it was 0.54 GiB at the
+    time and would have been 0.54 GiB with a 200 GiB pagefile, which would have
+    been survivable. #779.
+
+    Windows keeps the figure directly: GlobalMemoryStatusEx's ullAvailPageFile
+    IS commit limit minus committed, so it already accounts for the pagefile.
+    Linux exposes CommitLimit and Committed_AS, which mean the same thing only
+    when overcommit is off, so it is read but treated as advisory. macOS has no
+    commit limit: it grows swap until the disk is gone, so there is no number
+    here to return and the caller should say nothing rather than guess.
+    """
+    if sys.platform == "win32":
+        import ctypes
+
+        class MemoryStatusEx(ctypes.Structure):
+            _fields_ = [("dwLength", ctypes.c_ulong),
+                        ("dwMemoryLoad", ctypes.c_ulong),
+                        ("ullTotalPhys", ctypes.c_ulonglong),
+                        ("ullAvailPhys", ctypes.c_ulonglong),
+                        ("ullTotalPageFile", ctypes.c_ulonglong),
+                        ("ullAvailPageFile", ctypes.c_ulonglong),
+                        ("ullTotalVirtual", ctypes.c_ulonglong),
+                        ("ullAvailVirtual", ctypes.c_ulonglong),
+                        ("ullAvailExtendedVirtual", ctypes.c_ulonglong)]
+
+        status = MemoryStatusEx()
+        status.dwLength = ctypes.sizeof(status)
+        try:
+            if not ctypes.windll.kernel32.GlobalMemoryStatusEx(
+                    ctypes.byref(status)):
+                return None
+        except (AttributeError, OSError):
+            return None
+        return status.ullAvailPageFile / 1024**3
+    if sys.platform.startswith("linux"):
+        try:
+            with open("/proc/meminfo", encoding="utf-8") as fh:
+                have = {}
+                for line in fh:
+                    name = line.split(":", 1)[0]
+                    if name in ("CommitLimit", "Committed_AS"):
+                        have[name] = int(line.split()[1]) / 1024**2
+            if len(have) == 2:
+                return max(have["CommitLimit"] - have["Committed_AS"], 0.0)
+        except (OSError, ValueError, IndexError, KeyError):
+            pass
+    return None
+
+
 def _visible(cards: list[tuple], visible: str, order: str) -> list[tuple]:
     """The cards CUDA_VISIBLE_DEVICES names, by index or UUID prefix, up to the first it cannot match. #699."""
     by_index = order.strip().upper() == "PCI_BUS_ID" or len({(c[2], c[3]) for c in cards}) <= 1
