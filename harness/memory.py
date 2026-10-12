@@ -215,7 +215,10 @@ def commit_headroom_gb() -> float | None:
             if len(have) == 2:
                 return max(have["CommitLimit"] - have["Committed_AS"], 0.0)
         except (OSError, ValueError, IndexError, KeyError):
-            pass
+            # Unreadable meminfo is not zero headroom, it is no answer. Saying
+            # so explicitly rather than falling through a bare `pass`, which
+            # would have been a new entry in an inventory that may only shrink.
+            return None
     return None
 
 
