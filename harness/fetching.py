@@ -62,11 +62,43 @@ class FetchDeferred(FetchError):
 
 
 class Unloadable(FetchError):
-    """The listing holds no weights a runner here loads: a fact about the candidate. #798."""
+    """The listing holds no weights a runner here loads; `formats` names the ones it has. #798."""
+
+    def __init__(self, why: str, formats=()):
+        super().__init__(why)
+        self.formats = tuple(formats)
 
 
 #: Weight formats some registered runner loads: mlx/transformers/diffusers, llama.cpp, mlx whisper, kokoro.
 RUNNER_FORMATS = (".safetensors", ".gguf", ".bin", ".npz", ".onnx")
+#: until for weights only in formats no runner loads; met once RUNNER_FORMATS takes one. #798.
+FORMAT_WAIT = "format:"
+
+
+def foreign_formats(siblings) -> list[str]:
+    """Weight formats in the listing when none of it is in RUNNER_FORMATS, else []."""
+    names = [str(s.get("rfilename", "")).lower() for s in siblings or []]
+    if any(n.endswith(RUNNER_FORMATS) for n in names):
+        return []
+    return sorted({Path(n).suffix for n in names if n.endswith(downloads.WEIGHT_SUFFIXES)})
+
+
+def format_waits(until) -> bool:
+    """True while a row waits on a runner for formats RUNNER_FORMATS still lacks."""
+    if not (until or "").startswith(FORMAT_WAIT):
+        return False
+    return not any(f in RUNNER_FORMATS for f in until.removeprefix(FORMAT_WAIT).split("|"))
+
+
+def format_wanted(conn, lane: str = "") -> list[dict]:
+    """Queued candidates waiting on a runner for their weight format, for the runners-wanted report."""
+    rows = conn.execute("""
+        SELECT p.name, p.lane, st.detail, st.until FROM proposals p
+          JOIN verdicts st ON st.id = p.state_verdict_id
+         WHERE p.state = 'queued' AND st.tier = 'fetch' AND st.until LIKE ?""",
+                        (FORMAT_WAIT + "%",)).fetchall()
+    return [{"name": r["name"], "lane": r["lane"], "why_not": r["detail"]} for r in rows
+            if format_waits(r["until"]) and (not lane or lanes.serves(r["lane"], lane))]
 
 
 def weights_gap(siblings) -> str:
@@ -74,7 +106,7 @@ def weights_gap(siblings) -> str:
     names = [str(s.get("rfilename", "")).lower() for s in siblings or []]
     if any(n.endswith(RUNNER_FORMATS) for n in names):
         return ""
-    other = sorted({Path(n).suffix for n in names if n.endswith(downloads.WEIGHT_SUFFIXES)})
+    other = foreign_formats(siblings)
     if other:
         return (f"runners wanted: its weights are {', '.join(other)}, and no runner here "
                 f"loads that format (only {', '.join(RUNNER_FORMATS)})")
@@ -302,7 +334,7 @@ def download(repo: str, snapshot=None, listing=None, hf_download=None,
             siblings = _siblings(repo, listing or _listing)
             gap = weights_gap(siblings)
             if gap:
-                raise Unloadable(gap)
+                raise Unloadable(gap, foreign_formats(siblings))
             listing = lambda _repo, s=siblings: s  # noqa: E731
         single = _gguf_pick(repo, listing, snapshot) if text else None
         if single == ():
@@ -491,6 +523,8 @@ def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=N
     for row in queued(conn, lane=lane):
         if not budget_allows(row.get("until"), budget):
             continue      # waits for a bigger budget than this run's, so this run settles nothing. #704
+        if format_waits(row.get("until")):
+            continue      # waits for a runner that loads its format; listing it again changes nothing. #798
         if not row.get("lane"):
             continue      # nothing here could measure it, so nothing fetches it
         if not row.get("inspected"):
@@ -602,8 +636,14 @@ def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=N
             done.append({"repo": name, "ok": False, "why": str(exc), "deferred": True})
             break
         except Unloadable as exc:
-            ms.decide_or_skip(conn, row["name"], "declined", tier="fetch", detail=str(exc),
-                              reason=reasons.CANDIDATE)
+            # Foreign formats wait on an engine entry, a person's call (runners wanted); no weights is final.
+            if exc.formats:
+                ms.decide_or_skip(conn, row["name"], "queued", tier="fetch", detail=str(exc),
+                                  reason=reasons.HARNESS,
+                                  until=FORMAT_WAIT + "|".join(exc.formats))
+            else:
+                ms.decide_or_skip(conn, row["name"], "declined", tier="fetch", detail=str(exc),
+                                  reason=reasons.CANDIDATE)
             done.append({"repo": name, "ok": False, "why": str(exc)})
             continue
         except FetchError as exc:

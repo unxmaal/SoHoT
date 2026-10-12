@@ -77,18 +77,53 @@ def test_an_inspect_deferred_by_the_harness_is_not_an_answer(db):
     assert snap.asked == []
 
 
-def test_weights_only_in_a_format_no_runner_loads_are_refused_before_fetch(db):
+SHADOW = ["config.json", "finetune/shadow250m_instruct.pt",
+          "deployment/shadow250m_instruct.shdw", "README.md"]
+
+
+def test_weights_only_in_a_format_no_runner_loads_wait_queued_for_a_runner(db):
     name = "QLNI/SHADOW-250M"
     _queue(db, name)
     snap = Snapshot()
-    done = fetching.run(db, limit=5, free=FREE, snapshot=snap, listing=_listing(
-        ["config.json", "finetune/shadow250m_instruct.pt", "deployment/shadow250m_instruct.shdw",
-         "README.md"]))
+    done = fetching.run(db, limit=5, free=FREE, snapshot=snap, listing=_listing(SHADOW))
     assert snap.asked == []
-    row = _latest(db, name)
-    assert (row["outcome"], row["tier"], row["reason"]) == ("declined", "fetch", reasons.CANDIDATE)
+    row = db.execute("SELECT v.outcome, v.tier, v.reason, v.detail, v.until FROM verdicts v "
+                     "JOIN proposals p ON p.state_verdict_id = v.id WHERE p.name = ?",
+                     (name,)).fetchone()
+    assert (row["outcome"], row["tier"], row["reason"]) == ("queued", "fetch", reasons.HARNESS)
+    assert row["until"] == "format:.pt"
     assert "runners wanted" in row["detail"] and ".pt" in row["detail"]
     assert not done[0]["ok"]
+
+
+def test_a_format_wait_is_not_listed_again_until_a_runner_loads_the_format(db, monkeypatch):
+    name = "QLNI/SHADOW-250M"
+    _queue(db, name)
+    asked = []
+
+    def listing(repo):
+        asked.append(repo)
+        return [{"rfilename": f, "size": 1} for f in SHADOW]
+    fetching.run(db, limit=5, free=FREE, snapshot=Snapshot(), listing=listing)
+    fetching.run(db, limit=5, free=FREE, snapshot=Snapshot(), listing=listing)
+    assert asked == [name]
+    monkeypatch.setattr(fetching, "RUNNER_FORMATS", (*fetching.RUNNER_FORMATS, ".pt"))
+    snap = Snapshot()
+    fetching.run(db, limit=5, free=FREE, snapshot=snap, listing=listing)
+    assert snap.asked == [name]
+
+
+def test_a_format_wait_is_in_the_runners_wanted_report(db):
+    _queue(db, "QLNI/SHADOW-250M")
+    _queue(db, "peculiar-ragdoll/Qwen-Sharp-Chat-Templates")
+    files = {"QLNI/SHADOW-250M": SHADOW,
+             "peculiar-ragdoll/Qwen-Sharp-Chat-Templates": ["README.md", "chat_template.jinja"]}
+    fetching.run(db, limit=5, free=FREE, snapshot=Snapshot(),
+                 listing=lambda repo: [{"rfilename": f, "size": 1} for f in files[repo]])
+    got = fetching.format_wanted(db)
+    assert [r["name"] for r in got] == ["QLNI/SHADOW-250M"]
+    assert "runners wanted" in got[0]["why_not"]
+    assert fetching.format_wanted(db, lane="image") == []
 
 
 def test_a_repo_with_no_weights_at_all_is_refused_before_fetch(db):
