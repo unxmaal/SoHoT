@@ -86,6 +86,15 @@ def test_the_measure_argv_names_the_holdout_when_dev_does_not_fit(monkeypatch, t
                         lambda argv, **kw: (seen.update(argv=argv, **kw), Done())[1])
     monkeypatch.setattr(adopt, "default_for", lambda lane, fallback, conn=None: "q3-4b")
     monkeypatch.setattr(measure_cmd, "_receipt_at", lambda out: None)
+    real = measure_cmd._plan
+
+    def fitted(a, lane, inc, spec):  # holdout fits the budget, dev and holdout do not. #796.
+        from harness import holdout
+        _, full = real(argparse.Namespace(repeat=3, power_budget_min=1e9), lane, inc, spec)
+        hold = full.projected_s * len(holdout.for_lane(lane).holdout) / full.cases_run
+        return real(argparse.Namespace(repeat=3, power_budget_min=hold / 60 * 1.01), lane, inc, spec)
+
+    monkeypatch.setattr(measure_cmd, "_plan", fitted)
     measure_cmd._measure_and_adopt(argparse.Namespace(repeat=3, power_budget_min=1),
                                    {"name": "org/challenger", "lane": "code"})
     argv = seen["argv"]
@@ -93,12 +102,12 @@ def test_the_measure_argv_names_the_holdout_when_dev_does_not_fit(monkeypatch, t
     assert seen["deadline_s"] > 0
 
 
-def test_a_median_from_another_reply_budget_is_not_used(store_run):
+def test_a_mean_from_a_smaller_reply_budget_is_scaled_up_to_this_one(store_run):
     _store(store_run, "code", "inc", 2.5, receipt={"max_tokens": 4000})
     _, plan = measure_cmd._plan(_ns(repeat=1, power_budget_min=10_000_000), "code", "inc", "ch")
-    per_case = completion.budget("code") / power.decode_tok_s()
+    per_case = 2.5 * completion.budget("code") / 4000
     assert plan.projected_s == pytest.approx(plan.cases_run * 1 * (per_case + power.floor_seconds("code")))
-    assert "estimated" in plan.why
+    assert "4000-token" in plan.why
 
 
 def test_a_median_at_this_reply_budget_is_used(store_run):
@@ -111,11 +120,12 @@ def test_a_median_at_this_reply_budget_is_used(store_run):
     assert plan.projected_s == pytest.approx(plan.cases_run * 1 * 2 * 35.0)
 
 
-def test_a_laddered_receipt_is_not_this_runs_budget(store_run):
+def test_a_laddered_receipt_is_not_this_runs_budget_but_bounds_it(store_run):
     _store(store_run, "code", "inc", 3.0,
            receipt={"max_tokens": 65536, "budget_ladder": [4000, 16000, 32000, 65536]})
     _, plan = measure_cmd._plan(_ns(repeat=1, power_budget_min=10_000_000), "code", "inc", "ch")
-    per_case = completion.budget("code") / power.decode_tok_s()
+    assert plan.estimate["incumbent_source"] == "bounded"
+    per_case = 3.0
     assert plan.projected_s == pytest.approx(plan.cases_run * 1 * (per_case + power.floor_seconds("code")))
 
 
@@ -160,7 +170,7 @@ def test_a_deadline_stop_records_a_partial_inconclusive_verdict(monkeypatch, tmp
     monkeypatch.setattr(measure_cmd, "_receipt_at", lambda out: None)
     real = ms.connect
     monkeypatch.setattr(ms, "connect", lambda *a, **k: real(tmp_path / "d.db"))
-    rc = measure_cmd._measure_and_adopt(argparse.Namespace(repeat=3),
+    rc = measure_cmd._measure_and_adopt(argparse.Namespace(repeat=3, power_budget_min=1e9),
                                         {"name": "org/challenger", "lane": "code"})
     assert rc == 1
     conn = real(tmp_path / "d.db")

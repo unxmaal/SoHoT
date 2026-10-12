@@ -60,7 +60,7 @@ def test_the_measure_names_its_own_output_directory(monkeypatch, tmp_path):
     real = ms.connect
     monkeypatch.setattr(ms, "connect", lambda *a, **k: real(tmp_path / "d.db"))
 
-    cli._measure_and_adopt(argparse.Namespace(repeat=3),
+    cli._measure_and_adopt(argparse.Namespace(repeat=3, power_budget_min=1e9),
                            {"name": "org/challenger", "lane": "code"})
     argv = seen["argv"]
     assert "--out" in argv, argv
@@ -81,7 +81,7 @@ def test_a_receipt_naming_neither_candidate_is_refused(monkeypatch, tmp_path,
     real = ms.connect
     monkeypatch.setattr(ms, "connect", lambda *a, **k: real(tmp_path / "d.db"))
 
-    rc = cli._measure_and_adopt(argparse.Namespace(repeat=3),
+    rc = cli._measure_and_adopt(argparse.Namespace(repeat=3, power_budget_min=1e9),
                                 {"name": "org/challenger", "lane": "code"})
     assert rc == 1
     assert "does not describe the run that was just made" in capsys.readouterr().err
@@ -109,7 +109,7 @@ def test_the_measure_routes_a_repo_id_the_way_the_screen_does(monkeypatch,
     real = ms.connect
     monkeypatch.setattr(ms, "connect", lambda *a, **k: real(tmp_path / "d.db"))
 
-    cli._measure_and_adopt(argparse.Namespace(repeat=3),
+    cli._measure_and_adopt(argparse.Namespace(repeat=3, power_budget_min=1e9),
                            {"name": "org/challenger", "lane": "code"})
     argv = seen["argv"]
     assert "--gateway" in argv, argv
@@ -153,7 +153,7 @@ def test_a_wholly_refused_challenger_is_requeued_not_declined(monkeypatch,
     real = ms.connect
     monkeypatch.setattr(ms, "connect", lambda *a, **k: real(tmp_path / "d.db"))
 
-    rc = cli._measure_and_adopt(argparse.Namespace(repeat=3),
+    rc = cli._measure_and_adopt(argparse.Namespace(repeat=3, power_budget_min=1e9),
                                 {"name": "org/challenger", "lane": "code"})
     assert rc == 1
     err_text = capsys.readouterr().err
@@ -185,7 +185,7 @@ def test_a_control_that_passed_nothing_blocks_any_verdict(monkeypatch,
     real = ms.connect
     monkeypatch.setattr(ms, "connect", lambda *a, **k: real(tmp_path / "d.db"))
 
-    rc = cli._measure_and_adopt(argparse.Namespace(repeat=3),
+    rc = cli._measure_and_adopt(argparse.Namespace(repeat=3, power_budget_min=1e9),
                                 {"name": "org/challenger", "lane": "code"})
     assert rc == 1
     assert "no working control" in capsys.readouterr().err
@@ -213,7 +213,7 @@ def test_a_working_control_still_lets_a_loss_be_recorded(monkeypatch, tmp_path):
     real = ms.connect
     monkeypatch.setattr(ms, "connect", lambda *a, **k: real(tmp_path / "d.db"))
 
-    assert cli._measure_and_adopt(argparse.Namespace(repeat=3),
+    assert cli._measure_and_adopt(argparse.Namespace(repeat=3, power_budget_min=1e9),
                                   {"name": "org/challenger", "lane": "code"}) == 0
 
 
@@ -276,7 +276,7 @@ def test_the_incumbent_travels_as_a_repo_id_when_the_run_goes_upstream(
     real = ms.connect
     monkeypatch.setattr(ms, "connect", lambda *a, **k: real(tmp_path / "d.db"))
 
-    cli._measure_and_adopt(argparse.Namespace(repeat=3),
+    cli._measure_and_adopt(argparse.Namespace(repeat=3, power_budget_min=1e9),
                            {"name": "org/challenger", "lane": "code"})
     cands = seen["argv"][seen["argv"].index("--candidates") + 1]
     assert cands == "mlx-community/Q3-4B,org/challenger", cands
@@ -298,7 +298,7 @@ def test_the_incumbent_keeps_its_alias_when_the_run_stays_on_the_gateway(
     real = ms.connect
     monkeypatch.setattr(ms, "connect", lambda *a, **k: real(tmp_path / "d.db"))
 
-    cli._measure_and_adopt(argparse.Namespace(repeat=3),
+    cli._measure_and_adopt(argparse.Namespace(repeat=3, power_budget_min=1e9),
                            {"name": "q3-8b", "lane": "code"})
     cands = seen["argv"][seen["argv"].index("--candidates") + 1]
     assert cands == "q3-4b,q3-8b", cands
@@ -358,7 +358,7 @@ def test_a_measured_proposal_leaves_the_survivors_list(monkeypatch, tmp_path):
     monkeypatch.setattr(measure_cmd, "_summary_row",
                         lambda summary, key: {**row, "candidate": key})
     monkeypatch.setattr(measure_cmd, "_all_refused", lambda rows, name: "")
-    cli._measure_and_adopt(argparse.Namespace(repeat=3),
+    cli._measure_and_adopt(argparse.Namespace(repeat=3, power_budget_min=1e9),
                            {"name": "org/challenger", "lane": "code"})
     conn = ms.connect()
     try:
@@ -382,7 +382,7 @@ def test_the_incumbent_is_not_measured_against_itself(monkeypatch, tmp_path,
                         lambda lane, fallback, conn=None: "llamacpp:win")
     monkeypatch.setattr("harness.screen.candidate_for",
                         lambda lane, name, *a, **k: "llamacpp:win")
-    assert cli._measure_and_adopt(argparse.Namespace(repeat=3),
+    assert cli._measure_and_adopt(argparse.Namespace(repeat=3, power_budget_min=1e9),
                                   {"name": "org/winner", "lane": "code"}) == 0
     assert ran == []
     assert "already the code lane's default" in capsys.readouterr().out
