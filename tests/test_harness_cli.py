@@ -922,16 +922,17 @@ def test_an_unguarded_entry_point_really_does_leave_hf_home_unset(module,
     from harness import env
 
     monkeypatch.delenv("HF_HOME", raising=False)
-    monkeypatch.setattr(env, "guard", lambda *a, **k: None)   # as if unguarded
     mod = importlib.import_module(module)
-    try:
-        mod.main(ENTRY_POINTS[module])
-    except SystemExit:
-        pass
-    assert "HF_HOME" not in os.environ, "nothing else sets it, so the guard is load-bearing"
+    # Its own patcher: undoing the shared one dropped the autouse LOCALHARNESS_HOME. #804.
+    with pytest.MonkeyPatch.context() as unguarded:
+        unguarded.setattr(env, "guard", lambda *a, **k: None)
+        try:
+            mod.main(ENTRY_POINTS[module])
+        except SystemExit:
+            pass
+        assert "HF_HOME" not in os.environ, "nothing else sets it, so the guard is load-bearing"
 
     # And with the guard in place it IS set, on the same argv.
-    monkeypatch.undo()
     monkeypatch.delenv("HF_HOME", raising=False)
     try:
         mod.main(ENTRY_POINTS[module])

@@ -135,6 +135,25 @@ def screenable_backlog(want: str = "", plan=None, room=None) -> list[str]:
             and not methods.is_method(r["name"]) and room(r)]
 
 
+def snapshot_gap(row: dict, conn) -> str:
+    """Why an offline load cannot open a ready row's recorded weights, its rows stood down; "" when it can. #799."""
+    from harness import downloads, fetching, methods
+    name = row["name"]
+    target = methods.weights_of(name) if methods.is_method(name) else name
+    if not target:
+        return ""
+    for repo in [target] + fetching.requires(target, conn):
+        path = downloads.path_of(repo, conn)
+        if path is None:
+            continue
+        kind = downloads.GGUF if path.name.lower().endswith(".gguf") else downloads.HUB
+        gap = downloads.offline_gap(kind, path)
+        if gap:
+            downloads.stand_down(conn, repo)
+            return gap
+    return ""
+
+
 def verdict_of_run(returncode: int, stderr: str, summary, candidate: str,
                    key: str = "", facts: dict | None = None):
     """One finished screen process's verdict; stderr is classed only without a receipt."""
@@ -188,6 +207,14 @@ def _report_screen(a) -> int:
     try:
         for r in ready[:getattr(a, "limit", 1)]:
             print(f"\n── {r['name']}", flush=True)
+            # Weights an offline load cannot open go back to fetch, never to a verdict. #799.
+            gap = snapshot_gap(r, store)
+            if gap:
+                print(f"   QUEUED: {gap}; back to fetch")
+                ms.decide_or_skip(store, r["name"], "queued", tier=ms.FETCH,
+                                  detail=f"not screened: {gap}; soh fetch --run"[:600],
+                                  reason=reasons.HARNESS)
+                continue
             # Headroom, including what is already resident. #284.
             room, why_not = memory.check_model(r["name"], spec=r["candidate"], parallel=1)
             if not room:

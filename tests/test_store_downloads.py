@@ -43,6 +43,8 @@ def snapshot(repo, files=("config.json", "model.safetensors")):
         blob = d / "blobs" / f"b-{f}"
         blob.write_bytes(b"x" * 100)
         (snap / f).symlink_to(blob)
+    import fakes
+    fakes.hub_ref(snap)
     return d
 
 
@@ -70,6 +72,44 @@ def test_a_card_only_snapshot_is_recorded_incomplete_and_not_had(w):
     assert fetching.missing("org/card", w.conn) == ["org/card"]
 
 
+def test_a_hub_dir_with_no_ref_is_recorded_incomplete_and_not_had(w):
+    """Qwen/Qwen3.5-9B: weights and config on disk, no refs/main, so offline loads 404. #799."""
+    d = snapshot("org/noref")
+    (d / "refs" / "main").unlink()
+    downloads.record_unrecorded(w.conn, w.hub, w.gguf, {})
+    assert not fetching.have("org/noref", w.conn)
+    assert "refs/main" in downloads.offline_gap(downloads.HUB, d)
+    (d / "refs" / "main").write_text("other", encoding="utf-8")
+    assert "not on disk" in downloads.offline_gap(downloads.HUB, d)
+
+
+def test_schema_65_reopens_a_missing_snapshot_broken_and_stands_down_refless_rows(w):
+    """Qwen/Qwen3.5-9B went BROKEN on the warm-up 404, and BROKEN is terminal, so no screen reaches it again. #799."""
+    from harness import reasons
+    from harness.memory_store.migrations import v65
+    for name in ("org/noref", "org/fixed", "org/bad", "org/quiet"):
+        d = snapshot(name)
+        downloads.record(w.conn, name, downloads.HUB, d)
+        if name != "org/fixed":
+            (d / "refs" / "main").unlink()
+    w.conn.execute("UPDATE downloads SET complete = 1")
+    w.conn.commit()
+    gone = ('it ran and passed nothing: chunk-bytes: warm-up: gateway returned HTTP 404: '
+            '{"error": "Cannot find an appropriate cached snapshot folder for the specified revision"}')
+    for name, detail in (("org/noref", gone), ("org/fixed", gone),
+                         ("org/bad", "it ran and passed nothing: chunk-bytes: exit 1")):
+        ms.record(w.conn, ms.Seen(name=name, source="t", kind="weights", lane="extract"))
+        ms.decide(w.conn, name, "broken", tier=ms.SCREEN, detail=detail, reason=reasons.CANDIDATE)
+    v65.data(w.conn)
+    got = {r["name"]: (r["state"], r["tier"]) for r in w.conn.execute(
+        "SELECT p.name, p.state, v.tier FROM proposals p JOIN verdicts v ON v.id = p.state_verdict_id")}
+    assert got == {"org/noref": ("queued", "fetch"), "org/fixed": ("queued", "screen"),
+                   "org/bad": ("broken", "screen")}
+    assert not fetching.have("org/noref", w.conn) and fetching.have("org/fixed", w.conn)
+    assert not fetching.have("org/quiet", w.conn), "a ref-less row with no verdict, bge-large-en-v1.5's shape"
+    assert ms.SCHEMA_VERSION >= 65
+
+
 def test_a_recorded_download_whose_dir_is_gone_is_not_had(w):
     d = snapshot("org/m")
     downloads.record(w.conn, "org/m", downloads.HUB, d)
@@ -95,6 +135,8 @@ def test_requires_is_what_the_config_said_when_it_landed(w):
     (d / "config.json").write_text(json.dumps(
         {"text_tokenizer": "org/base", "_name_or_path": "org/parent"}),
         encoding="utf-8")
+    import fakes
+    fakes.hub_ref(d)
     downloads.record(w.conn, "org/8bit", downloads.HUB, d.parent.parent)
     assert fetching.requires("org/8bit", w.conn) == ["org/base"]
     assert fetching.missing("org/8bit", w.conn) == ["org/base"]

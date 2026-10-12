@@ -184,6 +184,25 @@ def loadable(kind: str, path) -> bool:
     return False
 
 
+def offline_gap(kind: str, path, revision: str = "main") -> str:
+    """Why huggingface_hub offline cannot open this hub dir at `revision`, or "". #799."""
+    p = Path(path)
+    if kind == GGUF:
+        return "" if loadable(kind, p) else f"{p.name} is not on disk"
+    try:
+        commit = (p / "refs" / revision).read_text(encoding="utf-8").strip()
+    except OSError:
+        return (f"{p.name} has no refs/{revision}, so an offline load finds no "
+                f"snapshot for it")
+    snap = p / "snapshots" / commit
+    if not snap.is_dir():
+        return f"{p.name} refs/{revision} names snapshot {commit}, which is not on disk"
+    if not any((f.name in LOADABLE or f.name.endswith(WEIGHT_SUFFIXES)) and f.exists()
+               for f in snap.rglob("*")):
+        return f"{p.name} snapshot {commit} holds no config or weights"
+    return ""
+
+
 def _measure(kind: str, path) -> tuple[int, int]:
     p = Path(path)
     if kind == GGUF:
@@ -295,7 +314,9 @@ def finish(conn, rid: int, path=None, *, failed: bool = False) -> dict:
                             (rid,)).fetchone())
     where = key(path) if path is not None else row["path"]
     size, files = _measure(row["kind"], where)
-    complete = 0 if failed else int(loadable(row["kind"], where))
+    # Offline loads resolve refs/main; a dir without it is not had. #799.
+    complete = 0 if failed else int(loadable(row["kind"], where)
+                                    and not offline_gap(row["kind"], where))
     needs = (requires_in(config_of(where), row["repo"])
              if row["kind"] == HUB and complete else [])
     conn.execute(
@@ -361,6 +382,15 @@ def have(repo: str, conn=None, *, stat: bool = True) -> bool:
     """A complete download of `repo` on this machine, still present."""
     with store(conn) as c:
         return bool(_complete(c, repo, stat=stat))
+
+
+def stand_down(conn, repo: str) -> int:
+    """This machine's complete rows for `repo` marked incomplete, so the fetch tier takes it again. #799."""
+    got = conn.execute("UPDATE downloads SET complete = 0 WHERE repo = ? AND complete = 1 "
+                       "AND removed_at IS NULL AND machine_id = ?",
+                       (repo, this_machine(conn))).rowcount
+    conn.commit()
+    return got
 
 
 def path_of(repo: str, conn=None, kind: str = "") -> Path | None:

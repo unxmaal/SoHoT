@@ -473,3 +473,29 @@ def _requeue_mps_aborts(conn) -> None:
             _migration_retraction(conn, r["id"], r["name"], "queued", SCREEN,
                                   f"retracted: the MPS backend aborted (LLVM ERROR / MPSGraph), "
                                   f"a runtime fault rather than a verdict on {r['name']}")
+
+
+def _requeue_screens_of_unresolvable_snapshots(conn) -> None:
+    """A warm-up 404 for no cached snapshot screened our hub dir, not the model; back to fetch unless it now opens. #799."""
+    from harness import downloads
+    phrase = "cannot find an appropriate cached snapshot folder"
+    has_downloads = downloads._has_table(conn, "downloads")
+    for r in _stated(conn, "p.state = 'broken' AND v.tier = ?", (SCREEN,)):
+        if phrase not in (r["detail"] or "").lower():
+            continue
+        path = downloads.path_of(r["name"], conn) if has_downloads else None
+        kind = downloads.GGUF if path and path.name.lower().endswith(".gguf") else downloads.HUB
+        if path is not None and not downloads.offline_gap(kind, path):
+            tier = SCREEN
+        else:
+            if has_downloads:
+                downloads.stand_down(conn, r["name"])
+            tier = "fetch"
+        _migration_retraction(conn, r["id"], r["name"], "queued", tier,
+                              f"retracted: no cached snapshot an offline load could open "
+                              f"({phrase!r}), not a verdict on {r['name']}")
+    # Rows recorded complete before finish() asked for the ref, bge-large-en-v1.5's among them.
+    if has_downloads:
+        for row in downloads.complete_hub(conn):
+            if downloads.offline_gap(downloads.HUB, row["path"]):
+                downloads.stand_down(conn, row["repo"])
