@@ -117,6 +117,8 @@ def test_a_finished_download_records_where_it_landed(db):
     def fetch(repo_id):
         snap.mkdir(parents=True)
         (snap / "model.safetensors").write_bytes(b"w" * 64)
+        import fakes
+        fakes.hub_ref(snap)
         return str(snap)
     f.run(db, {"org/a": 2 * f.GIB}, snapshot=fetch, free=900 * f.GIB)
     row = db.execute("SELECT run_path FROM verdicts WHERE tier='fetch'").fetchone()
@@ -234,6 +236,8 @@ def cached(db, model_id, config=None):
     d = downloads.hub_dir(model_id) / "snapshots" / "abc123"
     d.mkdir(parents=True, exist_ok=True)
     (d / "config.json").write_text(json.dumps(config or {}), encoding="utf-8")
+    import fakes
+    fakes.hub_ref(d)
     downloads.record(db, model_id, downloads.HUB, d.parent.parent)
     return d
 

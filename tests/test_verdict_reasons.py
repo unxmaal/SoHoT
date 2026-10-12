@@ -239,6 +239,22 @@ def test_generation_thread_died_is_the_harnesss_and_stops_the_loop():
     assert v.failure_class in reasons.STOPS
 
 
+#: The gateway's warm-up answer for Qwen/Qwen3.5-9B, whose hub dir had no refs/main. #799.
+NO_SNAPSHOT = ('{"error": "Cannot find an appropriate cached snapshot folder for the specified '
+               'revision on the local disk and outgoing traffic has been disabled. To enable '
+               'repo look-ups and downloads online, set \'HF_HUB_OFFLINE=0\' as environment variable."}')
+
+
+@respx.mock
+def test_a_warm_up_that_finds_no_cached_snapshot_is_the_harnesss_never_broken():
+    respx.post(URL).mock(return_value=httpx.Response(404, text=NO_SNAPSHOT))
+    runner = CompletionRunner(GW, "org/x")
+    with pytest.raises(RunnerError) as got:
+        runner.warm()
+    v = _screen([runner.failed(CASE, got.value)])
+    assert (v.outcome, v.reason, v.failure_class) == ("queued", "harness", reasons.HARNESS_ERROR)
+
+
 def _process(stderr, rc=1):
     eng = engines.resolve("mflux:Qwen/Qwen-Image-Bench")
     return eng, SimpleNamespace(ok=rc == 0, returncode=rc, stderr=stderr,

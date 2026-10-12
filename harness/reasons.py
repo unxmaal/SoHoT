@@ -118,6 +118,8 @@ _HARNESS = ("no cases of a modality it can run", "no candidate matched any case"
             "installed to convert a slow tokenizer",
             # transformers offline with weights the fetch never finished. #563.
             "run the library in offline mode",
+            # huggingface_hub offline with no snapshot its refs resolve to, through the gateway. #799.
+            "cannot find an appropriate cached snapshot folder",
             # transformers' requires_backends tail: a backend the venv lacks (torchvision). #601.
             "restart your runtime after installation", "venv lacks a package")
 #: In stderr this is our missing script; in a loader's error it is the snapshot's.

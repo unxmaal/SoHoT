@@ -286,3 +286,43 @@ def test_an_empty_screen_is_a_result_not_a_failure(monkeypatch, capsys):
     rc = cli._report_screen(argparse.Namespace(lane="", top=3, limit=3, run=True, json=False))
     assert rc == 0
     assert "nothing is ready to screen" in capsys.readouterr().out
+
+
+def test_a_recorded_snapshot_offline_loads_cannot_open_goes_back_to_fetch(monkeypatch, tmp_path):
+    """Qwen/Qwen3.5-9B: a scan row said complete, refs/main was absent, the warm-up 404'd and it went BROKEN. #799."""
+    import argparse
+    import subprocess
+
+    from harness import cli, downloads, fetching, memory
+    monkeypatch.setenv("HF_HOME", str(tmp_path / "hf"))
+    real = ms.connect
+    monkeypatch.setattr(ms, "connect", lambda *a, **k: real(tmp_path / "d.db"))
+    snap = downloads.hub_dir("org/noref") / "snapshots" / "abc"
+    snap.mkdir(parents=True)
+    for f in ("config.json", "model.safetensors"):
+        (snap / f).write_text("x", encoding="utf-8")
+    conn = ms.connect()
+    ms.record(conn, Seen(name="org/noref", source="t", kind="weights", lane="code", why="seeded"))
+    rid = downloads.record(conn, "org/noref", downloads.HUB, snap.parent.parent)["id"]
+    conn.execute("UPDATE downloads SET complete = 1 WHERE id = ?", (rid,))
+    conn.commit()
+    assert fetching.have("org/noref", conn), "the row as a scan before #799 wrote it"
+    conn.close()
+    monkeypatch.setattr(screen_cmd, "_screen_plan", lambda want: [
+        {"name": "org/noref", "state": screen.READY, "why_not": "", "candidate": "org/noref",
+         "modality": "code"}])
+    monkeypatch.setattr(memory, "check_model", lambda *a, **k: (True, ""))
+    ran = []
+    monkeypatch.setattr(subprocess, "run", lambda argv, **kw: ran.append(argv))
+    assert cli._report_screen(argparse.Namespace(lane="", top=5, limit=5, run=True, json=False)) == 0
+    assert ran == []
+    conn = ms.connect()
+    try:
+        got = conn.execute("SELECT v.outcome, v.tier, v.reason, v.detail FROM verdicts v "
+                           "JOIN proposals p ON p.state_verdict_id = v.id "
+                           "WHERE p.name = 'org/noref'").fetchone()
+        assert (got["outcome"], got["tier"], got["reason"]) == ("queued", "fetch", reasons.HARNESS)
+        assert "refs/main" in got["detail"]
+        assert not fetching.have("org/noref", conn)
+    finally:
+        conn.close()

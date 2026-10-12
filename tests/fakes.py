@@ -216,3 +216,10 @@ def seeded_store(conn, rows):
         ms.set_size(conn, name, int(gib * 1024 ** 3))
         ms.decide(conn, name, "queued", tier="inspect", detail="fits")
     return conn
+
+
+def hub_ref(snap) -> None:
+    """refs/main naming `snap`, as snapshot_download leaves it; offline loads need it. #799."""
+    refs = Path(snap).parent.parent / "refs"
+    refs.mkdir(parents=True, exist_ok=True)
+    (refs / "main").write_text(Path(snap).name, encoding="utf-8")

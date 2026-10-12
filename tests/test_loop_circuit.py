@@ -105,6 +105,7 @@ class World:
         where.mkdir(parents=True, exist_ok=True)
         for name, text in self.snapshot_files.items():
             (where / name).write_text(text, encoding="utf-8")
+        fakes.hub_ref(where)
         return str(where)
 
     def run(self, argv, *a, **kw):

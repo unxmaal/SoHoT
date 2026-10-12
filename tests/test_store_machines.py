@@ -684,6 +684,8 @@ def _hub(conn, name, files):
     snap.mkdir(parents=True)
     for f in files:
         (snap / f).write_text("x", encoding="utf-8")
+    import fakes
+    fakes.hub_ref(snap)
     return downloads.record(conn, name, downloads.HUB, snap.parent.parent)
 
 

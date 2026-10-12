@@ -352,6 +352,8 @@ def _hub(home, monkeypatch, repo, files, lane):
     snap.mkdir(parents=True)
     for name, size in files.items():
         (snap / name).write_bytes(b"x" * size)
+    import fakes
+    fakes.hub_ref(snap)
     conn = ms.connect()
     ms.record(conn, ms.Seen(name=repo, source="t", lane=lane))
     downloads.record(conn, repo, downloads.HUB, snap.parent.parent)

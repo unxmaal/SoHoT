@@ -34,6 +34,8 @@ class Snapshot:
         snap.mkdir(parents=True, exist_ok=True)
         for f in ("config.json", "model.safetensors"):
             (snap / f).write_bytes(b"x" * 100)
+        import fakes
+        fakes.hub_ref(snap)
         return str(snap)
 
 
