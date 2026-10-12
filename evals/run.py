@@ -1217,6 +1217,7 @@ def _run_candidate(args, candidate, runner, mine, results, outdir, evicted=None,
             r = runner.run(case)
         if watch:
             watch.look(case.id, "end")
+        core.stamp_stratum(r, case)
         private.withhold_detail(r, case)
         results.append(r)
         mark = "pass" if r.passed else "FAIL"

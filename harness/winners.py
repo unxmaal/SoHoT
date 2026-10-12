@@ -57,7 +57,10 @@ def from_receipts(conn, plain_only: bool = True) -> dict[str, dict]:
 
 
 #: Lanes ranked on a pooled metric before pass rate: an exact-case rate is roughly acc^fields, and stt's is exact orthography. #701.
-PRIMARY = {"decide": "decide_accuracy", "stt": "wer"}
+#: claims balances case recall and specificity, since most cases expect nothing and silence passes them. #791.
+PRIMARY = {"decide": "decide_accuracy", "stt": "wer", "claims": "claims_balanced"}
+#: Lanes whose primary metric is a summary of strata, paired per stratum rather than per row. #791.
+STRATIFIED = {"claims"}
 #: Metrics that measure probabilities, meaningless on a row whose answers were one-hot. #701.
 CALIBRATION = frozenset({"decide_brier", "decide_ece"})
 

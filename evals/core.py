@@ -454,6 +454,11 @@ METRIC_DIRECTION = {
     "claims_matcher_version": "neutral",
     "claims_empty_kept": "higher",
     "claims_empty_cases": "neutral",
+    # Case-level strata and their balance, the lane's primary metric (#791).
+    "claims_case_recall": "higher",
+    "claims_case_specificity": "higher",
+    "claims_balanced": "higher",
+    claims_check.STRATUM: "neutral",
     **{f"claims_{name}": claims_check.PER_INTERFACE[name] for name in claims_check.POOLED},
     **{claims_check.metric(name, i): way for i in claims_check.INTERFACES
        for name, way in claims_check.PER_INTERFACE.items()},
@@ -1234,6 +1239,7 @@ def summarize(results: list[Result]) -> dict:
     for candidate, rows in by.items():
         times = [r.seconds for r in rows]
         pooled = _decide_calibration(rows)
+        strata, strata_n = _claims_strata(rows)
         out[candidate] = {
             "total": len(rows),
             "passed": sum(1 for r in rows if r.passed),
@@ -1255,7 +1261,7 @@ def summarize(results: list[Result]) -> dict:
             "total_s": round(sum(times), 1),
             "peak_kb": max((r.peak_kb for r in rows), default=0),
             "warnings": sum(len(r.warnings) for r in rows),
-            "metrics": _calibrated_only({**_mean_metrics(rows), **pooled}),
+            "metrics": _calibrated_only({**_mean_metrics(rows), **pooled, **strata}),
             # Kept alongside the mean because an average of mostly-zeros hides
             # the one case that fell over, which is usually the interesting one.
             "metrics_worst": _worst_metrics(rows),
@@ -1277,7 +1283,7 @@ def summarize(results: list[Result]) -> dict:
             # How many rows each metric was actually computed over. A mean over
             # 2 of 9 cases printed beside a mean over 9 is not a comparison.
             "metric_n": {**{k: len(v) for k, v in _gather_metrics(rows).items()},
-                         **({"decide_ece": _decision_count(rows)} if pooled else {})},
+                         **({"decide_ece": _decision_count(rows)} if pooled else {}), **strata_n},
             # WHICH cases this candidate actually sat. Two candidates in one
             # run can get different sets -- a case may be unfair to a method,
             # or to a language -- and then their pass rates are not comparable.
@@ -1361,6 +1367,28 @@ def _decision_count(rows: list[Result]) -> int:
     return len(_decisions(rows))
 
 
+def stamp_stratum(row: Result, case: Case) -> None:
+    """Mark a claims row with its case's stratum, so a row the checker never saw still counts. #791."""
+    if case.modality == "claims":
+        row.metrics = {**(row.metrics or {}),
+                       claims_check.STRATUM: int(bool(case.assertions.get("expect_empty")))}
+
+
+def claims_stratum(metrics: dict):
+    """The row's stratum; a row stored before #791 is read from what its checker recorded, else None."""
+    if claims_check.STRATUM in metrics:
+        return int(metrics[claims_check.STRATUM])
+    if "claims_empty_cases" in metrics:
+        return 1
+    return 0 if metrics.get("claims_schema_valid") == 1 else None
+
+
+def _claims_strata(rows: list[Result]) -> tuple[dict, dict]:
+    marked = [(s, int(bool(r.passed))) for r in rows
+              if (s := claims_stratum(r.metrics or {})) is not None]
+    return claims_check.strata(marked) if marked else ({}, {})
+
+
 def _decide_calibration(rows: list[Result]) -> dict:
     """Pooled ECE over every field decision, once there are enough to bin."""
     pairs = _decisions(rows)
@@ -1411,7 +1439,7 @@ RATIO_METRICS = {"wer": ("wer_errors", "wer_words"),
                     for i in claims_check.INTERFACES
                     for name, (n, d) in claims_check.PER_INTERFACE_RATIOS.items()}}
 #: Bookkeeping that should not appear as a column of its own.
-_COMPANIONS = {name for pair in RATIO_METRICS.values() for name in pair}
+_COMPANIONS = {name for pair in RATIO_METRICS.values() for name in pair} | {claims_check.STRATUM}
 
 
 def _mean_metrics(rows: list[Result]) -> dict:
