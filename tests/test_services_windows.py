@@ -238,6 +238,91 @@ def test_the_probe_key_never_reaches_the_command_line(tmp_path):
     assert not left, f"probe config left behind: {left}"
 
 
+def _rotate(tmp_path, script, timeout=60):
+    """Run `script` with scripts/logs.sh sourced, in tmp_path."""
+    done = subprocess.run(
+        [shells.resolve("bash"), "-c",
+         f'set -u; cd "{REPO.as_posix()}"; . scripts/logs.sh; '
+         f'cd "{tmp_path.as_posix()}"; {script}'],
+        cwd=REPO, capture_output=True, text=True, timeout=timeout)
+    assert done.returncode == 0, done.stderr
+    return done.stdout
+
+
+@pytest.mark.skipif(shells.resolve("bash") is None,
+                    reason="no bash on this machine")
+def test_a_restart_keeps_the_previous_sessions_log(tmp_path):
+    """THE FAILURE THIS GUARDS. Both halves truncate on start, so without
+    rotation the session before this one is gone. A 32B load failed
+    intermittently on the 4070 and the useful comparison was against an
+    earlier run that had succeeded on identical flags; those lines had already
+    been destroyed by the restart in between. #786.
+    """
+    log = tmp_path / "llamacpp.log"
+    log.write_text("first session\n", encoding="utf-8")
+    _rotate(tmp_path, 'rotate_log llamacpp.log')
+    assert not log.exists(), "the live name should be free for the new session"
+    assert (tmp_path / "llamacpp.log.1").read_text(encoding="utf-8") == \
+        "first session\n"
+
+
+@pytest.mark.skipif(shells.resolve("bash") is None,
+                    reason="no bash on this machine")
+def test_each_restart_shifts_the_older_generations_up(tmp_path):
+    log = tmp_path / "s.log"
+    for n in ("one", "two", "three"):
+        log.write_text(f"{n}\n", encoding="utf-8")
+        _rotate(tmp_path, 'rotate_log s.log')
+    assert (tmp_path / "s.log.1").read_text(encoding="utf-8") == "three\n"
+    assert (tmp_path / "s.log.2").read_text(encoding="utf-8") == "two\n"
+    assert (tmp_path / "s.log.3").read_text(encoding="utf-8") == "one\n"
+
+
+@pytest.mark.skipif(shells.resolve("bash") is None,
+                    reason="no bash on this machine")
+def test_retained_history_is_bounded(tmp_path):
+    """LOG_KEEP generations and no more, or a box that restarts often fills a
+    disk with logs nobody will read."""
+    log = tmp_path / "s.log"
+    for n in range(6):
+        log.write_text(f"session {n}\n", encoding="utf-8")
+        _rotate(tmp_path, 'LOG_KEEP=3 rotate_log s.log')
+    kept = sorted(p.name for p in tmp_path.glob("s.log*"))
+    assert kept == ["s.log.1", "s.log.2", "s.log.3"], kept
+
+
+@pytest.mark.skipif(shells.resolve("bash") is None,
+                    reason="no bash on this machine")
+def test_a_log_over_the_cap_is_dropped_rather_than_kept(tmp_path):
+    """Kept history is for reading. A huge file is grepped once and regretted,
+    and it would evict two useful generations to sit there."""
+    log = tmp_path / "s.log"
+    log.write_text("x" * 5000, encoding="utf-8")
+    _rotate(tmp_path, 'LOG_MAX_BYTES=1000 rotate_log s.log')
+    assert not log.exists()
+    assert not (tmp_path / "s.log.1").exists(), \
+        "an oversized log should not take a generation slot"
+
+
+@pytest.mark.skipif(shells.resolve("bash") is None,
+                    reason="no bash on this machine")
+def test_rotating_a_log_that_does_not_exist_is_not_an_error(tmp_path):
+    """First ever start. Returning non-zero here would make start_one look
+    like it failed under set -e."""
+    _rotate(tmp_path, 'rotate_log never-written.log; echo ok')
+
+
+def test_the_log_is_rotated_before_anything_redirects_into_it():
+    """Rotation after the redirect would keep an empty file and throw away the
+    session it was supposed to save."""
+    text = SERVICES.read_text(encoding="utf-8")
+    assert "source scripts/logs.sh" in text, "services.sh should source logs.sh"
+    rotate = text.index("rotate_log")
+    for flag in ("-RedirectStandardOutput", '>"$LOGS/'):
+        assert flag not in text or rotate < text.index(flag), (
+            f"{flag} appears before the log is rotated")
+
+
 def test_the_node_region_is_fenced():
     """The allowance has to name its own boundaries.
 
