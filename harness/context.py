@@ -231,6 +231,41 @@ def swa_bytes(meta: dict, cache_type: str = "f16") -> int:
     return local * (int(_arch(meta, "attention.sliding_window") or 0) + SWA_UBATCH) if local else 0
 
 
+def _too_big_why(weights: int, budget: int) -> str:
+    """Why a model whose weights alone exceed the budget is not served. #779.
+
+    SAY THE TERM THAT ACTUALLY REFUSED IT. This used to fall through to the KV
+    arithmetic, which then reported "0.0 GiB of KV room holds 0 tokens", and
+    that reads as a context problem fixable by asking for less context. It is
+    not. The weights do not fit, and no context would make them.
+
+    Where the platform has a commit limit, the host side is named too, because
+    that is the wall a partly offloaded model actually hits. An 18.48 GiB model
+    on a 12 GiB card served at 2.1 tok/s with 0.58 GiB of commit headroom left,
+    which is half a gigabyte from allocations failing across the whole machine.
+    Reporting only the VRAM shortfall would invite someone to offload the
+    remainder and meet that wall without warning.
+    """
+    from harness import memory
+    why = (f"refused: {weights / 1024 ** 3:.1f} GiB of weights over the "
+           f"{budget / 1024 ** 3:.1f} GiB budget")
+    head = memory.commit_headroom_gb()
+    if head is None:
+        # No commit limit to read, so no claim about the host side. macOS grows
+        # swap until the disk is gone; inventing a number here would be worse
+        # than the silence.
+        return why
+    # NOT "over by N GiB", WHICH INVITES THE WRONG SUM. The shortfall is not
+    # the host cost: partly offloading an 18.48 GiB file committed 20.23 GiB of
+    # private host memory, the whole model plus overhead, not the 8.5 GiB that
+    # did not fit on the card. A reader given the shortfall and the headroom
+    # would compare 8.5 against 13.0, conclude it fits, and meet the commit
+    # limit instead.
+    return (f"{why}; offloading the rest commits the whole file in host "
+            f"memory, not the shortfall, against {head:.1f} GiB of commit "
+            f"headroom")
+
+
 def choose(meta: dict, weights: int, budget: int, slots: int = 1,
            cache_type: str = "f16", floor: int = FLOOR,
            kv_cap: int | None = None) -> Choice:
@@ -240,6 +275,8 @@ def choose(meta: dict, weights: int, budget: int, slots: int = 1,
     if not full or not per:
         return Choice(0, full, per, "refused: the GGUF header gives no trained context "
                       "or KV shape to size a cache from")
+    if weights >= budget:
+        return Choice(0, full, per, _too_big_why(weights, budget))
     room = max(budget - weights, 0)
     room = min(room, kv_cap) if kv_cap is not None else room
     slots = max(slots, 1)
