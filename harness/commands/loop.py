@@ -214,7 +214,7 @@ def _run_loop_held(a, keep=None) -> int:
     import argparse as _ap
     import sys
 
-    from harness import adopt, rank
+    from harness import adopt, fetching, rank
     from harness import memory_store as ms
 
     run = bool(getattr(a, "run", False))
@@ -264,6 +264,8 @@ def _run_loop_held(a, keep=None) -> int:
         for line in _techniques_wanted_lines(ms.techniques(store), want):
             print(line)
         stuck = rank.runnerless(rows)
+        named = {r["name"] for r in stuck}
+        stuck += [r for r in fetching.format_wanted(store, want) if r["name"] not in named]
         if stuck:
             print(f"\n=== runners wanted ===")
             print(f"{len(stuck)} candidate(s) have a lane and no runner that "
