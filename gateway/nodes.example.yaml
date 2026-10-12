@@ -14,7 +14,7 @@ nodes:
       - Qwen2.5-7B-Instruct-Q4_K_M
     # Never the key itself: keychain:<service>/<account> (login Keychain) or env:<VARIABLE>.
     key: keychain:NODE_KEY_SERVICE/NODE_KEY_ACCOUNT
-    # Optional: the node's machine fingerprint (hw_model/os/arch/host), else receipts say node:<name>.
+    # Required: the node's fingerprint (hw_model/os/arch/host); `python -m harness.nodes fingerprint` on it prints it.
     machine: ""
     connect_timeout: 3
     timeout: 120

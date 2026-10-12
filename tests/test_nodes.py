@@ -35,6 +35,9 @@ BASE = """model_list:
 """
 
 
+PC = "PC1/Windows/x86_64/abc123"
+
+
 def node(**kw):
     raw = {"name": "pc", "api_base": "http://node.invalid:18082/v1", "engine": "llama-server",
            "models": ["Qwen2.5-7B-Instruct-Q4_K_M"], "key": "keychain:svc/acct"}
@@ -347,7 +350,7 @@ def test_comparable_refuses_a_node_run_beside_a_run_here():
 
 def test_smoke_passes_up_on_the_node_and_down_on_a_fast_fallback():
     n = nodes.parse({"nodes": [{"name": "pc", "api_base": "http://h.invalid:1/v1",
-                                "engine": "llama-server", "models": ["m"]}]})
+                                "engine": "llama-server", "models": ["m"], "machine": PC}]})
 
     class R:
         status_code = 200
@@ -355,7 +358,7 @@ def test_smoke_passes_up_on_the_node_and_down_on_a_fast_fallback():
         def __init__(self, h):
             self.headers = h
     up = nodes.smoke("g", "k", n, get=lambda url, node: (200, {"m"}),
-                     ask=lambda *a: R({"x-sohot-node": "pc"}))
+                     ask=lambda *a: R({"x-sohot-node": "pc", "x-sohot-machine": PC}))
     assert up == [(True, "node pc up: m served by pc")]
     down = nodes.smoke("g", "k", n, get=lambda url, node: (_ for _ in ()).throw(OSError("no")),
                        ask=lambda *a: R({"x-sohot-fallback": "pc"}))
@@ -425,7 +428,8 @@ def test_a_model_entry_must_be_an_id_or_an_id_and_its_node_name(bad):
 
 def test_smoke_fails_a_node_that_does_not_advertise_the_id_it_is_sent():
     n = nodes.parse({"nodes": [{"name": "pc", "api_base": "http://h.invalid:1/v1",
-                                "engine": "llama-server", "models": [{"id": "M", "as": "m-stem"}]}]})
+                                "engine": "llama-server", "models": [{"id": "M", "as": "m-stem"}],
+                                "machine": PC}]})
     got = nodes.smoke("g", "k", n, get=lambda url, node: (200, {"other"}),
                       ask=lambda *a: pytest.fail("asked the gateway"))
     assert got[0][0] is False and "m-stem" in got[0][1] and "other" in got[0][1]

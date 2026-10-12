@@ -207,8 +207,9 @@ def fingerprint(hw_model: str, os_string: str, arch: str, host: str = "") -> str
 
 def parse_fingerprint(fp: str) -> dict:
     """The receipt environment a hw/os/arch/host fingerprint names; {} when it is not one. #697."""
-    parts = (fp or "").split("/")
-    if len(parts) != 4 or not all(parts):
+    # A board name may hold a slash; OS family, arch and host never do. #781.
+    parts = (fp or "").rsplit("/", 3)
+    if len(parts) != 4 or not all(p.strip() for p in parts):
         return {}
     return dict(zip(("hw_model", "os", "arch", "host"), parts))
 

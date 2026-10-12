@@ -1038,6 +1038,7 @@ def _execute_at(args, overrides: dict) -> int:
     if away:
         print(f"\nserved by {serving}, not this machine: the receipt records that host and "
               f"leaves this one's accelerator, pressure and swap out", file=sys.stderr)
+        warn_unfiled(serving)
     if outdir:
         # The RECEIPT: what this run was, so a later run can be told apart
         # from it before anyone ranks the two together. See core.comparable().
@@ -1110,6 +1111,21 @@ def serving_machine(seen: dict, here: str) -> tuple[str, bool]:
     if len(away) == 1:
         return away.pop(), True
     return "unknown: several hosts served (" + ", ".join(sorted(away)) + ")", True
+
+
+def warn_unfiled(serving: str) -> None:
+    """Say so when the host that served has no fingerprint, so the run is stored under no machine. #781."""
+    from harness import machine, nodes
+    if machine.parse_fingerprint(serving):
+        return
+    tail = "so it is stored with no machine and adopt, fit and power never read it"
+    if serving.startswith("node:"):
+        name = serving.removeprefix("node:")
+        print(f"\nwarning: node {name} served this run but has no machine fingerprint, {tail}. "
+              f"Set `machine:` for {name} in {nodes.path()} (`python -m harness.nodes fingerprint` "
+              f"on the node prints it) and restart the gateway.", file=sys.stderr)
+        return
+    print(f"\nwarning: the host that served this run is unknown ({serving}), {tail}.", file=sys.stderr)
 
 
 def serving_environment(client: dict, serving: str, away: bool) -> dict:
