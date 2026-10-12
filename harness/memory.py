@@ -310,17 +310,26 @@ MIN_RESERVE_GB = 1.0
 
 def measured_reserve_gb(conn=None) -> float:
     """The largest margin `lh memory ramp` stored for this machine, else the
-    default. #299, #415."""
+    default FOR THE ACCELERATOR IT IS BUDGETING FOR. #299, #415, #788.
+
+    The fallback used to be DEFAULT_RESERVE_GB whatever the hardware was. That
+    is the unified figure, right where the GPU draws from system RAM and 6 GiB
+    belongs to the OS. On a discrete card it reserved half a 12 GiB card: the
+    planner budgeted 5.99 GiB, refused a 14B whose weights and KV fit the card
+    with room, and cost a 7B its eighth slot, which is the measured knee in KB
+    #367. reserve_for() already made this distinction; nothing asked it.
+    """
     from harness import memory_store as ms
     from harness import ramp, runs
+    default = reserve_for(detect())
     try:
         with runs.store(conn) as c:
             margins = [r.get("margin_gb") for r in
                        ramp.runs(c, ms.machine_row(c))]
     except Exception:  # noqa: BLE001 - the guard must not fail on its own record
-        return DEFAULT_RESERVE_GB
+        return default
     margins = [m for m in margins if isinstance(m, (int, float))]
-    return max(max(margins), MIN_RESERVE_GB) if margins else DEFAULT_RESERVE_GB
+    return max(max(margins), MIN_RESERVE_GB) if margins else default
 
 
 def measured_peak_gb(spec: str, conn=None) -> float | None:
