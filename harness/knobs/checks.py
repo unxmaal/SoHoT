@@ -8,6 +8,8 @@ KNOBS = [
        lanes=("claims",), limit="claims_match_threshold", receipt="knobs", note="word overlap at which an emitted claim is a reviewed one (#654)"),
     _k("claims_min_recall", ["harness/checks/claims.py:MIN_RECALL"], [0.25, 0.5, 0.75, 1.0],
        lanes=("claims",), limit="claims_min_recall", receipt="knobs", note="share of a case's good claims a reply must recover (#654)"),
+    _k("claims_recall_weight", ["harness/checks/claims.py:RECALL_WEIGHT"], [0.25, 0.5, 0.75],
+       note="weight of a missed claim against a fabricated one in claims_balanced; a ranking weight, not a grade; infovore's call, equal until then (#791)"),
     _k("code_check_timeout", ["harness/checks/code.py:DEFAULT_TIMEOUT"], [5.0, 15.0, 30.0, 60.0, 120.0],
        lanes=("code",), limit="code_check_timeout_s", receipt="knobs",
        note="wall clock a code answer and its checks may run; a case may set params.check_timeout (#693)", unrecorded=15.0),

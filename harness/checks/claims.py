@@ -37,6 +37,30 @@ MATCH_THRESHOLD = 0.5
 MATCHER_VERSION = 2
 #: Share of a case's good reviewed claims a reply must recover to pass.
 MIN_RECALL = 0.5
+#: Weight of case recall against case specificity in claims_balanced; infovore's call, equal until it makes it. #791.
+RECALL_WEIGHT = 0.5
+#: The row metric naming its case's stratum: 1 expects no claims, 0 expects some. #791.
+STRATUM = "claims_expect_empty"
+
+
+def balanced(recall: float, specificity: float) -> float:
+    """The lane's primary score: case recall and specificity at the lane's weight, whatever the corpus mix. #791."""
+    return round(RECALL_WEIGHT * recall + (1 - RECALL_WEIGHT) * specificity, 4)
+
+
+def strata(rows) -> tuple[dict, dict]:
+    """(metrics, metric_n) per stratum from (expect_empty, passed) pairs; balanced only when both are present."""
+    rows = list(rows)
+    rate, n = {}, {}
+    for name, want in (("claims_case_specificity", 1), ("claims_case_recall", 0)):
+        mine = [passed for empty, passed in rows if empty == want]
+        if mine:
+            rate[name], n[name] = sum(mine) / len(mine), len(mine)
+    out = {name: round(value, 4) for name, value in rate.items()}
+    if len(rate) == 2:
+        out["claims_balanced"] = balanced(rate["claims_case_recall"], rate["claims_case_specificity"])
+        n["claims_balanced"] = len(rows)
+    return out, n
 
 #: The reply schema, written by evals.claims_import from infovore's export: the lane keeps no copy. #659.
 SCHEMA_FILE = "schema.json"

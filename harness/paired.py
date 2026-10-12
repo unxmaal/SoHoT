@@ -211,6 +211,32 @@ def _score(row: dict, metric: str = ""):
     return float(value) * (1 if direction_of(metric) == "higher" else -1)
 
 
+def stratified(rows: list[dict], incumbent: str, challenger: str, stratum_of,
+               weights: dict, against: str = "challenger") -> Cell:
+    """head_to_head on verdicts with each stratum's cells scaled to its weight per case, never above one case each. #791.
+
+    Scaling rounds against the side the claim favours, so the weighting never manufactures evidence.
+    """
+    by: dict = {}
+    for r in rows:
+        key = stratum_of(r.get("metrics") or {})
+        if key is not None:
+            by.setdefault(key, []).append(r)
+    sizes = {k: len({r.get("case_id") for r in mine}) for k, mine in by.items()}
+    per = {k: weights.get(k, 0.0) / sizes[k] for k in by if sizes[k]}
+    top = max(per.values(), default=0.0)
+    lost = gained = unchanged = off = 0
+    for k, mine in by.items():
+        cell = head_to_head(mine, incumbent, challenger)
+        scale = per.get(k, 0.0) / top if top else 0.0
+        up, down = (lambda x: math.ceil(x - 1e-9)), (lambda x: int(x + 1e-9))
+        lost += (up if against == "challenger" else down)(cell.lost * scale)
+        gained += (down if against == "challenger" else up)(cell.gained * scale)
+        unchanged += cell.unchanged
+        off += cell.unjudged
+    return Cell(challenger, lost, gained, unchanged, off)
+
+
 def head_to_head(rows: list[dict], incumbent: str, challenger: str, metric: str = "") -> Cell:
     """Two candidates over the same cases in ONE run, paired by case.
 

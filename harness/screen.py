@@ -483,6 +483,18 @@ def row_for(summary: dict | None, candidate: str,
     return (summary[key] or {}) if key and key in summary else None
 
 
+def _no_better_than_silence(summary: dict) -> str:
+    """Why a claims screen's passes are an always-empty reply's, else "": balanced must beat that control. #791."""
+    from harness.checks import claims
+    for row in summary.values():
+        got = (row.get("metrics") or {}).get("claims_balanced")
+        if got is not None and got > claims.balanced(0.0, 1.0):
+            return ""
+    if any("claims_balanced" in (row.get("metrics") or {}) for row in summary.values()):
+        return f"its claims_balanced is no better than an always-empty reply's {claims.balanced(0.0, 1.0):g}"
+    return ""
+
+
 def why_nothing_passed(summary: dict | None, candidate: str,
                        key: str = "") -> str:
     """The checker's own reason for failing, or "". #281."""
@@ -646,7 +658,8 @@ def outcome(returncode: int, summary: dict | None, candidate: str = "",
                        reasons.CANDIDATE, failure_class=reasons.CRASHED)
     # THE SUMMARY SPELLS IT `passed`; reading `pass` recorded every pass broken.
     rows = sum(int(v.get("passed", 0)) for v in summary.values())
-    if rows:
+    silent = _no_better_than_silence(summary)
+    if rows and not silent:
         return Verdict("screened", f"{rows} case(s) passed a screen",
                        reasons.CANDIDATE)
     # A decide case passes only when every field is right; a right field shows the model ran. #701.
@@ -656,7 +669,7 @@ def outcome(returncode: int, summary: dict | None, candidate: str = "",
     mine = ([row_for(summary, candidate, key) or {}] if candidate
             else list(summary.values()))
     cls = reasons.first(c for r in mine for c in (r.get("failure_classes") or {}))
-    why = why_nothing_passed(summary, candidate, key) if candidate else ""
+    why = silent or (why_nothing_passed(summary, candidate, key) if candidate else "")
     limits = [lim for r in mine for lim in (r.get("limits") or [])]
     if cls in ("", reasons.CONTENT_FAILED):
         # A few cases at screen settings is not enough to call a candidate broken. #691.

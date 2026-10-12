@@ -257,7 +257,13 @@ def paired_p(rows, name_i: str, name_c: str, lane: str = "", against: str = "cha
     counts once at any repeat. #591. Rounding goes `against` the side the claim favours. #698.
     """
     from harness import paired, power, winners
-    cell = paired.head_to_head(rows, name_i, name_c, winners.PRIMARY.get(lane, ""))
+    if lane in winners.STRATIFIED:
+        from evals.core import claims_stratum
+        from harness.checks import claims
+        cell = paired.stratified(rows, name_i, name_c, claims_stratum,
+                                 {0: claims.RECALL_WEIGHT, 1: 1 - claims.RECALL_WEIGHT}, against)
+    else:
+        cell = paired.head_to_head(rows, name_i, name_c, winners.PRIMARY.get(lane, ""))
     rho, repeat = power.rows_icc(rows, (name_i, name_c))
     used = power.DEFAULT_RHO if rho is None else rho
     deff = power.design_effect(repeat, used)
