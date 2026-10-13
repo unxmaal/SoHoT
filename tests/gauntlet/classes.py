@@ -27,6 +27,7 @@ INDEX = {
             "tests/test_portability.py::test_no_posix_only_primitive_is_used_without_a_platform_guard",
             "tests/test_portability.py::test_no_text_file_is_read_or_written_without_an_explicit_encoding",
             "tests/test_portability.py::test_no_script_uses_a_bsd_only_df_flag",
+            "tests/test_portability.py::test_no_test_grows_a_file_to_fake_its_size",
             "tests/test_script_modes.py::test_a_script_with_a_shebang_is_executable_in_the_index",
             "tests/test_no_drop_column.py::test_no_test_drops_a_column"]},
     "each-half-verified-against-its-own-spec-the-seam-against-nothing": {

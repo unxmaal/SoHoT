@@ -87,6 +87,14 @@ def test_no_posix_only_primitive_is_used_without_a_platform_guard():
     assert not offenders, "a POSIX-only primitive with no platform guard:\n  " + "\n  ".join(offenders)
 
 
+def test_no_test_grows_a_file_to_fake_its_size():
+    """#838: an 18 GiB truncate() is sparse on macOS and filled the Windows runner's disk."""
+    offenders = []
+    for path in _sources():
+        offenders += scanners.grown_files(path.read_text(encoding="utf-8"), path.relative_to(REPO).as_posix())
+    assert not offenders, "a file grown to fake its size:\n  " + "\n  ".join(offenders)
+
+
 # The groups `make test` syncs on every CI platform: uv's default group plus the Makefile's --group flags.
 def _test_groups():
     make = (REPO / "Makefile").read_text(encoding="utf-8")
