@@ -24,6 +24,8 @@ KNOBS = [
        note="seconds a sweep, job or unowned eval may run at night before the watchdog flags it"),
     _k("watchdog_long_run_day", [f"{W}:LONG_RUN_DAY_S"], [3600.0, 2 * 3600.0, 4 * 3600.0],
        note="the same inside the day hours (Decision #456)"),
+    _k("watchdog_notify_every", [f"{W}:NOTIFY_EVERY_S"], [900.0, 3600.0, 4 * 3600.0],
+       note="seconds between desktop notifications for one criterion on one subject; a repeating trip is recorded, not re-shown (#818)"),
     _k("watchdog_orphan_grace", [f"{W}:ORPHAN_GRACE_S"], [30.0, 120.0, 600.0],
        note="seconds an orphaned eval or job is left before it is reaped, so a parent mid-exit is not raced"),
     _k("watchdog_overrun_factor", [f"{W}:OVERRUN_FACTOR"], [1.5, 2.0, 3.0],
@@ -40,6 +42,8 @@ KNOBS = [
 
 NOT_GATING = {
     f"{W}:GH_TIMEOUT_S": "how long one gh call may take when filing; a slow gh leaves the issue unfiled and says so (#814)",
+    f"{W}:NOTIFY_TIMEOUT_S": "how long osascript may take to post one notification; a slow one is recorded as "
+                             "notify failed and the row and log line still stand (#818)",
     f"{W}:PROBE_TIMEOUT_S": "how long one outside probe (ps, launchctl, gh, the gateway) may take; a slow probe "
                             "is a gap the wake reports, never a verdict (#814)",
     f"{W}:RESTART_TIMEOUT_S": "how long the watchdog waits on launchd.sh restart behind the GPU lock; it says it "
