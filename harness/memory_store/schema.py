@@ -4,7 +4,7 @@ from __future__ import annotations
 from harness import store
 
 
-SCHEMA_VERSION = 69
+SCHEMA_VERSION = 70
 
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
@@ -501,6 +501,21 @@ CREATE TABLE IF NOT EXISTS watchdog_actions (
     -- JSON: the measurements that tripped it, how the subject was identified, the fingerprint.
     evidence    TEXT NOT NULL DEFAULT '{}',
     outcome     TEXT NOT NULL DEFAULT ''
+);
+
+-- One day of `soh ledger`: cloud spend, displaced dollars and energy, so trends outlive transcripts. #826.
+CREATE TABLE IF NOT EXISTS ledger_days (
+    day           TEXT PRIMARY KEY,
+    recorded_at   REAL NOT NULL,
+    -- NULL when ccusage did not run; unpriced models are never in it.
+    cloud_usd     REAL,
+    displaced_usd REAL,
+    mapped_usd    REAL,
+    -- The counterfactual tier the displaced figure assumed.
+    tier          TEXT NOT NULL DEFAULT '',
+    energy_kwh    REAL,
+    -- JSON: the day as `soh ledger --json` gives it.
+    detail        TEXT NOT NULL DEFAULT '{}'
 );
 
 -- Weights on disk, one row per fetched or found path on one machine. #411.

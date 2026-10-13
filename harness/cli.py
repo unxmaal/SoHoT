@@ -44,6 +44,7 @@ from harness.commands import reverify as reverify_cmd
 from harness.commands import screen as screen_cmd
 from harness.commands import store as store_cmd
 from harness.commands import headless as headless_cmd
+from harness.commands import ledger as ledger_cmd
 from harness.commands import usage as usage_cmd
 from harness.commands import delegated as delegated_cmd
 from harness.commands import volume as volume_cmd
@@ -490,6 +491,17 @@ def build_parser() -> argparse.ArgumentParser:
     ctx.add_argument("--root", default="",
                      help="transcript root (default $SOH_CLAUDE_PROJECTS or ~/.claude/projects)")
     ctx.set_defaults(func=context_cmd.cmd_context)
+    led = sub.add_parser("ledger", help="cloud spend (ccusage), plan headroom, local use by purpose, "
+                         "displaced dollars and energy, per day")
+    led.add_argument("--since", default="7d", help="7d, 12h, or a date such as 2026-10-06")
+    led.add_argument("--tier", choices=("haiku", "sonnet", "opus"), default="",
+                     help="price all local work at this tier (default: per lane, knob ledger_counterfactual)")
+    led.add_argument("--tariff", type=float, default=None,
+                     help="USD per kWh (default: knob ledger_tariff)")
+    led.add_argument("--record", action="store_true", help="upsert each day into ledger_days")
+    led.add_argument("--sample-power", action="store_true",
+                     help="append one macmon reading to the power log and exit (the energy unit)")
+    led.set_defaults(func=ledger_cmd.cmd_ledger)
     headless_cmd.add_parser(sub)
     dlg = sub.add_parser("delegated", help="record what became of a local_complete or "
                          "local_decide answer, or --report the rates per lane")
