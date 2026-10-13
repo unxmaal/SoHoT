@@ -188,8 +188,10 @@ def build_app():
 
 def main() -> None:
     import uvicorn
-    uvicorn.run(build_app(),
-                host=os.environ.get("AUDIO_HOST", "0.0.0.0"),
+
+    from harness import lan_auth
+    host = os.environ.get("AUDIO_HOST", "127.0.0.1")
+    uvicorn.run(lan_auth.guard(build_app(), host), host=host,
                 port=int(os.environ.get("AUDIO_PORT", "8890")))
 
 

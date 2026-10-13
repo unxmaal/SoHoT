@@ -42,11 +42,9 @@ if [ ! -f "$KOKORO_MODEL" ] || [ ! -f "$KOKORO_VOICES" ]; then
   exit 1
 fi
 
-# Binds every interface by default, for the same reason as the other services:
-# a trusted LAN, local models, and the point of the machine is that the Apple Silicon machine can
-# use its GPU. There is NO AUTHENTICATION -- set AUDIO_HOST=127.0.0.1 on an
-# untrusted network.
-export AUDIO_HOST="${AUDIO_HOST:-0.0.0.0}"
+# Binds 127.0.0.1 by default; AUDIO_HOST=0.0.0.0 opens it to the LAN behind the
+# gateway key (#510).
+export AUDIO_HOST="${AUDIO_HOST:-127.0.0.1}"
 export AUDIO_PORT="${AUDIO_PORT:-8890}"
 
 # THE CUDA RUNTIME HAS TO BE ON PATH BEFORE THE PROCESS STARTS. CTranslate2

@@ -1,4 +1,4 @@
-"""SoHoT over MCP: the same `soh`, reachable from the LAN.
+"""SoHoT over MCP: the same `soh`, reachable from another agent.
 
 A second agent on another machine (its own Claude Code, its own context) asks
 this one to draw something. What crosses the network is a tool call; what runs
@@ -19,9 +19,8 @@ svg, web and code answer directly. image and video go on the shared work
 queue (harness/workqueue.py, #353): they return a job id at once, run in order
 while memory pressure is normal, and job_result hands back the file.
 
-    ./scripts/serve-mcp.sh          # 0.0.0.0, no auth, trusted LAN only
-
-The other machine adds one entry pointing at http://<host>.local:8899/mcp
+    ./scripts/serve-mcp.sh                  # 127.0.0.1, this machine only
+    MCP_HOST=0.0.0.0 ./scripts/serve-mcp.sh # the LAN, behind the gateway key (#510)
 """
 from __future__ import annotations
 
@@ -395,7 +394,8 @@ def _local_hostname() -> str:
 def main() -> None:
     import argparse
     ap = argparse.ArgumentParser(prog="soh-mcp")
-    ap.add_argument("--host", default="0.0.0.0")
+    ap.add_argument("--host", default="127.0.0.1",
+                    help="0.0.0.0 exposes it to the LAN, which then demands the gateway key")
     ap.add_argument("--port", type=int, default=8899)
     ap.add_argument("--allow", action="append", default=[],
                     help="another hostname clients may use, e.g. an IP or the "
@@ -408,8 +408,20 @@ def main() -> None:
     if a.transport == "stdio":
         SERVER.run(transport="stdio")
         return
-    SERVER.run(transport=a.transport, host=a.host, port=a.port,
-               transport_security=transport_security(a.host, a.port, a.allow))
+    import uvicorn
+    uvicorn.run(http_app(a.transport, a.host, a.port, a.allow), host=a.host, port=a.port,
+                log_level=SERVER.settings.log_level.lower())
+
+
+def http_app(transport: str, host: str, port: int, allow=(), store=None):
+    """The ASGI app SERVER.run would serve, behind the gateway key when `host` reaches the LAN. #510."""
+    from harness import lan_auth
+    security = transport_security(host, port, allow)
+    if transport == "sse":
+        app = SERVER.sse_app(transport_security=security, host=host)
+    else:
+        app = SERVER.streamable_http_app(transport_security=security, host=host)
+    return lan_auth.guard(app, host, store)
 
 
 if __name__ == "__main__":

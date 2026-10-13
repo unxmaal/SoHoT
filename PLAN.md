@@ -205,9 +205,10 @@ change, and that it speaks both `/v1/chat/completions` and Anthropic's
 ### Serving the other machine
 
 `scripts/serve-mcp.sh` exposes `svg`, `web`, `code` and `image` over MCP on
-`0.0.0.0:8899`, so another person's Claude Code on another machine can use this
-one's GPU. `claude mcp add --transport http soh http://<host>.local:8899/mcp`
-is the whole client setup.
+`127.0.0.1:8899`; `MCP_HOST=0.0.0.0` lets another person's Claude Code on another
+machine use this one's GPU, with the gateway key as a Bearer header (#510):
+`claude mcp add --transport http soh http://<host>.local:8899/mcp --header
+"Authorization: Bearer <key>"`.
 
 Every tool SHELLS OUT TO `soh`. The CLI, the eval suite and the MCP server run
 identical commands, which is the same rule as everywhere else in this repo and

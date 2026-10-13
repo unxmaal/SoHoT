@@ -1,9 +1,9 @@
 """Which address the services listen on.
 
-The LAN-facing services bind 0.0.0.0 by default, on purpose: the point of the
-machine is that other machines on it can use the GPU. The gateway demands a key
-for that; the text engines behind it take none, so they listen on loopback
-(#482). Either way the address is a PARAMETER: one variable per service.
+Only the gateway binds 0.0.0.0 by default, and it demands a key (#482). The
+text engines behind it take none, so they listen on loopback; MCP and audio
+listen on loopback too and demand the gateway key when opened to the LAN
+(#510). Either way the address is a PARAMETER: one variable per service.
 """
 import re
 from pathlib import Path
@@ -22,6 +22,7 @@ SERVICES = {
     # The audio lanes on the same machine. mlx_audio serves these two
     # endpoints on the Mac; harness/audio_server.py serves them here.
     "scripts/serve-audio-cuda.sh": "AUDIO_HOST",
+    "scripts/serve-mcp.sh": "MCP_HOST",
 }
 
 
@@ -34,16 +35,24 @@ def test_the_listening_address_is_a_variable(script, var):
         f"{script} still hardcodes 127.0.0.1")
 
 
-#: Behind the gateway, keyless, loopback by default. #482.
-BEHIND_GATEWAY = {"scripts/serve-mlx.sh", "scripts/serve-llamacpp.sh"}
+#: Loopback by default: keyless behind the gateway (#482), or keyed only when opened (#510).
+LOOPBACK = {"scripts/serve-mlx.sh", "scripts/serve-llamacpp.sh", "scripts/serve-tts.sh",
+            "scripts/serve-audio-cuda.sh", "scripts/serve-mcp.sh"}
 
 
-@pytest.mark.parametrize("script,var", [(s, v) for s, v in SERVICES.items()
-                                        if s not in BEHIND_GATEWAY])
-def test_the_default_is_every_interface(script, var):
+@pytest.mark.parametrize("script,var", SERVICES.items())
+def test_only_the_keyed_gateway_defaults_to_every_interface(script, var):
     text = (REPO / script).read_text(encoding="utf-8")
-    assert re.search(rf'\$\{{{var}:-0\.0\.0\.0\}}', text), (
-        f"{script} should default {var} to 0.0.0.0")
+    want = r"127\.0\.0\.1" if script in LOOPBACK else r"0\.0\.0\.0"
+    assert re.search(rf'\$\{{{var}:-{want}\}}', text), (
+        f"{script} should default {var} to {want}")
+
+
+def test_the_mac_tts_goes_through_the_key_guard():
+    """mlx-audio has no key option, so its app is served by harness.lan_auth. #510."""
+    text = (REPO / "scripts" / "serve-tts.sh").read_text(encoding="utf-8")
+    assert "python -m harness.lan_auth mlx_audio.server:app" in text
+    assert "python -m mlx_audio.server" not in text
 
 
 @pytest.mark.parametrize("script", SERVICES)

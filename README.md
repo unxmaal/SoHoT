@@ -649,14 +649,26 @@ serving makes it.
 That is done over MCP, a small standard for letting an assistant call outside
 tools.
 
+On the serving machine itself the server listens on localhost and needs no key:
+
 ```bash
-./scripts/serve-mcp.sh      # listen on 0.0.0.0:8899
-claude mcp add --transport http soh http://<host>.local:8899/mcp
+./scripts/serve-mcp.sh      # listen on 127.0.0.1:8899
+claude mcp add --transport http --scope user soh http://localhost:8899/mcp
 ```
 
-> **There is no authentication.** Anyone who can reach port 8899 can use this
-> machine's GPU. That is a deliberate choice for a home network. On any network
-> you do not control, bind to localhost instead: `MCP_HOST=127.0.0.1`.
+To let another machine in, open it to the LAN. Every request must then carry
+this machine's gateway key (`soh gateway key` prints it), and a request without
+it gets a 401 that says so:
+
+```bash
+MCP_HOST=0.0.0.0 ./scripts/serve-mcp.sh
+claude mcp add --transport http soh http://<host>.local:8899/mcp \
+  --header "Authorization: Bearer <the gateway key>"
+```
+
+The speech server works the same way: `./scripts/serve-tts.sh` listens on
+127.0.0.1:8890, and `TTS_HOST=0.0.0.0` opens it behind the same key, which an
+OpenAI-style client sends as its API key.
 
 That exposes `svg`, `web`, `code`, `image` and `video` to the assistant. Each of those shells
 out to `soh`, so the CLI, the eval suite and the MCP server run identical
