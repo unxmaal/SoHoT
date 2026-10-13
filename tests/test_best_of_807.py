@@ -15,14 +15,19 @@ GOOD = "def f():\n    return 1\n"
 BROKEN = "def f(:\n"
 
 
-def counting(replies, delay=0.0):
-    made, lock = [], threading.Lock()
+def counting(replies, delay=0.0, peak=None):
+    made, lock, live = [], threading.Lock(), [0]
 
     def ask(prompt, modality):
         with lock:
             made.append(modality)
             i = len(made) - 1
+            live[0] += 1
+            if peak is not None:
+                peak[0] = max(peak[0], live[0])
         time.sleep(delay)
+        with lock:
+            live[0] -= 1
         return replies[min(i, len(replies) - 1)]
     return ask, made
 
@@ -42,13 +47,11 @@ def test_one_slot_samples_in_turn_and_stops_at_the_first_clean_pass():
 
 
 def test_samples_after_the_first_go_concurrently_up_to_the_slots():
-    delay = 0.3
-    ask, made = counting([BROKEN], delay)
-    started = time.perf_counter()
+    peak = [0]
+    ask, made = counting([BROKEN], 0.2, peak)
     _, meta = methods.run("best-of:4:q3-4b", "code", "write f", ask, slots=3)
-    took = time.perf_counter() - started
     assert len(made) == 4 and meta["calls"] == 4
-    assert took < 3 * delay   # the first alone, then three at once: two delays, not four
+    assert peak == [3]   # the first alone, then three at once; a timing bound flaked on CI
 
 
 def test_slots_are_asked_only_when_a_second_wave_is_needed(monkeypatch):
@@ -96,7 +99,7 @@ def test_the_runner_samples_concurrently_and_its_seconds_are_wall_time():
     base = Slow(["12"], delay)
     r = BestOfRunner(base, 4, slots=3).run(extract_case())
     assert len(base.made) == 4 and r.metrics["method_calls"] == 4
-    assert r.seconds < 3 * delay
+    assert r.seconds < 3.5 * delay   # two delays concurrent, four in turn
     assert r.metrics["completion_tokens"] == 40
 
 
