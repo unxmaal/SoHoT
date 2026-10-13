@@ -543,6 +543,11 @@ def build_parser() -> argparse.ArgumentParser:
     aud.add_argument("path", nargs="?", default="",
                      help="the store to audit (default: this home's discovery.db)")
     aud.set_defaults(func=store_cmd.cmd_audit)
+    wd = sub.add_parser("watchdog", help="judge every running SoHoT job against the watchdog's criteria "
+                        "and act; a dry run unless LH_WATCHDOG_ACT=1 or --act. #814")
+    wd.add_argument("--act", action="store_true", help="take the actions this once")
+    wd.add_argument("--dry-run", action="store_true", help="only print and record what it would do")
+    wd.set_defaults(func=_watchdog)
     jobs = sub.add_parser("jobs", help="the work queue: runs in order while "
                           "memory pressure is normal")
     jobs.add_argument("action", choices=("add", "list", "pause", "resume",
@@ -678,6 +683,11 @@ def build_parser() -> argparse.ArgumentParser:
                             help="machine-readable result on stdout, including "
                                  "on failure")
     return ap
+
+
+def _watchdog(a) -> int:
+    from harness import watchdog
+    return watchdog.run(a)
 
 
 def main(argv: list[str] | None = None) -> int:
