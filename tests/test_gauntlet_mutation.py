@@ -8,6 +8,12 @@ import pytest
 from tests.gauntlet import mutation
 
 REPO = Path(__file__).resolve().parent.parent
+REAL_BASELINE = mutation._baseline
+
+
+@pytest.fixture(autouse=True)
+def _no_real_baseline(monkeypatch):
+    monkeypatch.setattr(mutation, "_baseline", lambda tree, env, module: None)
 
 MUTATED = '''
 import os
@@ -144,6 +150,26 @@ def test_mutmut_workers_never_ask_macos_for_proxies(monkeypatch, tmp_path):
             monkeypatch.setenv(k, v)
     assert urllib.request.getproxies_environment(), "an environment proxy setting is what skips _scproxy"
     assert urllib.request.proxy_bypass_environment("127.0.0.1")
+
+
+def test_a_selected_test_that_fails_unmutated_is_named_before_mutmut_hides_it(monkeypatch, tmp_path):
+    """#840: on the CI runner mutmut said only "exited 1"; its stats run swallows which test failed."""
+    import subprocess
+    seen = {}
+
+    def run(argv, **kw):
+        seen["argv"] = argv
+        return subprocess.CompletedProcess(argv, 1, stdout="..F\nFAILED tests/test_x.py::test_y - boom\n"
+                                                          "ERROR tests/test_z.py::test_w\n1 failed\n")
+    monkeypatch.setattr(mutation.subprocess, "run", run)
+    with pytest.raises(mutation.BrokenRun) as e:
+        REAL_BASELINE(tmp_path, {}, "harness/reasons.py")
+    assert "tests/test_x.py::test_y" in str(e.value) and "tests/test_z.py::test_w" in str(e.value)
+    assert mutation.MODULES["harness/reasons.py"][0] in seen["argv"]
+    assert mutation.READS_SOURCE[0] in seen["argv"]
+    monkeypatch.setattr(mutation.subprocess, "run",
+                        lambda argv, **kw: subprocess.CompletedProcess(argv, 0, stdout="ok\n"))
+    assert REAL_BASELINE(tmp_path, {}, "harness/reasons.py") is None
 
 
 def test_a_mutant_that_never_settles_breaks_the_run(monkeypatch, tmp_path):

@@ -262,6 +262,19 @@ def copy_tree(dest):
             shutil.copy2(path, target)
 
 
+def _baseline(tree, env, module):
+    """The selection must pass unmutated; mutmut reports only "exited 1" and hides which test failed (#840)."""
+    deselect = [a for t in READS_SOURCE for a in ("--deselect", t)]
+    argv = ["uv", "run", "--python", "3.12", *MUTMUT_GROUPS, "python", "-m", "pytest",
+            "-p", "no:randomly", "-n", "auto", "-rfE", *deselect, *MODULES[module]]
+    r = subprocess.run(argv, cwd=tree, env=env, capture_output=True, text=True, check=False)
+    if r.returncode == 0:
+        return
+    failed = [line for line in r.stdout.splitlines() if line.startswith(("FAILED ", "ERROR "))]
+    raise BrokenRun(f"the selected tests fail unmutated (exit {r.returncode}):\n  "
+                    + "\n  ".join(failed or (r.stdout + r.stderr).splitlines()[-20:]))
+
+
 def run_module(tree, module, pyproject, log):
     (tree / "pyproject.toml").write_text(pyproject + config(module), encoding="utf-8")
     shutil.rmtree(tree / "mutants", ignore_errors=True)
@@ -270,6 +283,10 @@ def run_module(tree, module, pyproject, log):
                OBJC_DISABLE_INITIALIZE_FORK_SAFETY="YES", no_proxy="*")
     for d in (env["LOCALHARNESS_HOME"], env["HF_HOME"]):
         Path(d).mkdir(exist_ok=True)
+    try:
+        _baseline(tree, env, module)
+    except BrokenRun as e:
+        raise BrokenRun(f"{module}: {e}") from None
     base, meta_path = _paths(tree, module)
     names = []
     for _ in range(1 + RETRIES):
