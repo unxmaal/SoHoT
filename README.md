@@ -967,6 +967,18 @@ requests (or tool calls) on each side, it prints a WARNING naming the switch.
 Nothing is reverted automatically. `soh report` and the published page carry the
 per-lane figures under "Real use", without clients.
 
+`soh context` measures the other side: how much tool output entered Claude
+Code's context (#828). It reads `~/.claude/projects/**/*.jsonl` (subagents
+included, `--main-only` leaves them out), pairs each tool_result with its
+tool_use and prints calls, estimated tokens (characters / 4, not a tokenizer),
+p50, p95, max and the share from results over 2k tokens, per tool or per day.
+When `rtk` is on PATH it adds `rtk gain`'s own savings.
+
+```bash
+soh context --since 2026-10-06 --until 2026-10-13   # before the rtk hook
+soh context --since 2026-10-13 --by day --json
+```
+
 ---
 
 # Setup and upkeep

@@ -31,6 +31,7 @@ from harness.commands import benchmarks as benchmarks_cmd
 from harness.commands import cases as cases_cmd
 from harness.commands import chaos as chaos_cmd
 from harness.commands import common
+from harness.commands import context as context_cmd
 from harness.commands import discover as discover_cmd
 from harness.commands import gateway as gateway_cmd
 from harness.commands import gauntlet as gauntlet_cmd
@@ -478,6 +479,15 @@ def build_parser() -> argparse.ArgumentParser:
     use.add_argument("--text", choices=("on", "off"), default="",
                      help="keep bounded prompt and completion text samples (off by default)")
     use.set_defaults(func=usage_cmd.cmd_usage)
+    ctx = sub.add_parser("context", help="tool-result tokens entering Claude's context, "
+                         "per tool or day, from Claude Code transcripts (chars/4 estimate)")
+    ctx.add_argument("--since", default="7d", help="7d, 12h, or a date such as 2026-10-06")
+    ctx.add_argument("--until", default="", help="same forms as --since; default now")
+    ctx.add_argument("--by", choices=("tool", "day"), default="tool")
+    ctx.add_argument("--main-only", action="store_true", help="leave out subagent transcripts")
+    ctx.add_argument("--root", default="",
+                     help="transcript root (default $SOH_CLAUDE_PROJECTS or ~/.claude/projects)")
+    ctx.set_defaults(func=context_cmd.cmd_context)
     dsk = sub.add_parser("disk", help="what the weights cache holds, what "
                          "uses it, and what is safe to delete")
     dsk.add_argument("--delete", choices=("rejected", "unknown"), default="",
