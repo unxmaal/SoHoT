@@ -248,8 +248,10 @@ class ServedModel(CustomLogger):
             _refuse(f"{gateway_switch.DRAINING} for an alias switch; retry once it has restarted")
         model = str(data.get("model") or "")
         entry = _entry(model)
-        if entry.get(nodes.NODE_KEY) and _entry(model + nodes.LOCAL_SUFFIX) \
-                and not await reachable(entry):
+        if entry.get(nodes.NODE_KEY) and not await reachable(entry):
+            if not _entry(model + nodes.LOCAL_SUFFIX):
+                # Waiting out the connect timeout and retries ends in a bare 500. #823.
+                _refuse(f"node {entry[nodes.NODE_KEY]} is down and {nodes.NO_LOCAL_COPY} {model}")
             data["model"] = model + nodes.LOCAL_SUFFIX
         await hold_for_batch(data)
         return data

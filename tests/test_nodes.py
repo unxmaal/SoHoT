@@ -433,3 +433,25 @@ def test_smoke_fails_a_node_that_does_not_advertise_the_id_it_is_sent():
     got = nodes.smoke("g", "k", n, get=lambda url, node: (200, {"other"}),
                       ask=lambda *a: pytest.fail("asked the gateway"))
     assert got[0][0] is False and "m-stem" in got[0][1] and "other" in got[0][1]
+
+
+def test_smoke_passes_a_fast_named_refusal_for_a_model_with_no_local_copy():
+    """#823: down, with nothing here to fall back to, the right answer is a quick 503 that says so."""
+    n = nodes.parse({"nodes": [{"name": "pc", "api_base": "http://h.invalid:1/v1",
+                                "engine": "llama-server", "models": ["m"], "machine": PC}]})
+
+    class R:
+        headers = {}
+
+        def __init__(self, code, text):
+            self.status_code, self.text = code, text
+    down = lambda url, node: (_ for _ in ()).throw(OSError("no"))  # noqa: E731
+    ok = nodes.smoke("g", "k", n, get=down,
+                     ask=lambda *a: R(503, f"node pc is down and {nodes.NO_LOCAL_COPY} m"))
+    assert ok[0][0] and "refused" in ok[0][1]
+    bare = nodes.smoke("g", "k", n, get=down, ask=lambda *a: R(500, "Connection error"))
+    assert not bare[0][0] and "HTTP 500" in bare[0][1]
+    ticks = iter([0.0, 60.0])
+    slow = nodes.smoke("g", "k", n, get=down, clock=lambda: next(ticks),
+                       ask=lambda *a: R(503, f"node pc is down and {nodes.NO_LOCAL_COPY} m"))
+    assert not slow[0][0]

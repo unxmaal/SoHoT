@@ -97,7 +97,7 @@ def _free_port():
     return port
 
 
-def _proxy(tmp_path, node_base):
+def _proxy(tmp_path, node_base, extra=()):
     studio_seen, node_seen = [], []
     studio = _server("from-studio", studio_seen)
     for mod, name in (("usage_log", "proxy_handler_instance"), ("key_auth", "user_api_key_auth"),
@@ -126,7 +126,7 @@ general_settings:
   custom_auth: key_auth.user_api_key_auth
 """, encoding="utf-8")
     nodes = nodes_mod.parse({"nodes": [{
-        "name": "pc", "api_base": node_base, "engine": "llama-server", "models": [MODEL],
+        "name": "pc", "api_base": node_base, "engine": "llama-server", "models": [MODEL, *extra],
         "key": "env:TEST_NODE_KEY", "machine": "PC1/Windows/x86_64/abc123",
         "connect_timeout": 1, "timeout": TIMEOUT, "cooldown": 30}]})
     served = gateway.write_served(cfg, defaults={}, nodes=nodes)
@@ -240,3 +240,15 @@ def test_a_node_reloading_after_idle_answers_late_and_still_serves(tmp_path, sto
     code, h, text, took = _ask(base)
     assert "from-node" in text and took < 1.0
     node.shutdown()
+
+
+def test_a_down_node_model_with_no_local_copy_is_refused_at_once(tmp_path, stop):
+    """#823: it waited out the connect timeout and retries, then answered a bare 500."""
+    base, proc, _, studio_seen, _ = _proxy(tmp_path, f"http://127.0.0.1:{_free_port()}/v1",
+                                          extra=("node-only-14b",))
+    stop(proc)
+    code, _, text, took = _ask(base, "node-only-14b")
+    assert code == 503, text
+    assert "node pc is down" in text and "no copy of node-only-14b" in text
+    assert took < 1 + 2
+    assert not studio_seen
