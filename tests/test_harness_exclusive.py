@@ -99,6 +99,7 @@ HOLD = textwrap.dedent("""
     with exclusive.held("video"):
         print("held", flush=True)
         time.sleep({seconds})
+        print(time.time(), flush=True)
 """)
 
 TAKE = textwrap.dedent("""
@@ -110,6 +111,7 @@ TAKE = textwrap.dedent("""
     with exclusive.held("image", announce=saw.append, poll=0.05) as waited:
         print(json.dumps({{"waited": waited,
                            "seconds": time.perf_counter() - started,
+                           "acquired_at": time.time(),
                            "said": saw}}), flush=True)
 """)
 
@@ -131,12 +133,14 @@ def test_a_second_process_waits_instead_of_colliding(seconds, home, monkeypatch)
     assert holder.stdout.readline().strip() == "held"
 
     taker = subprocess.run(_script(TAKE), capture_output=True, text=True, env=env)
+    released_at = float(holder.stdout.readline())
     holder.wait(timeout=30)
 
     assert taker.returncode == 0, taker.stderr
     got = json.loads(taker.stdout)
     assert got["waited"] is True
-    assert got["seconds"] >= seconds * 0.8, "took the lock while it was held"
+    # Order, not duration: the taker's own startup eats into any measured wait. #772.
+    assert got["acquired_at"] >= released_at, "took the lock while it was held"
     assert any("video" in s for s in got["said"]), got["said"]
 
 
