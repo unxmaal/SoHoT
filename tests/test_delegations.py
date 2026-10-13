@@ -35,7 +35,7 @@ def _row(conn, call_id):
 # ---- the table and its migration ----------------------------------------------
 
 def test_the_store_is_schema_69_with_the_table_and_the_join_column(conn):
-    assert ms.SCHEMA_VERSION == 69
+    assert ms.SCHEMA_VERSION >= 69
     cols = {r["name"] for r in conn.execute("PRAGMA table_info(delegations)")}
     assert {"call_id", "id_source", "at", "lane", "spec", "model", "seconds",
             "prompt_tokens", "completion_tokens", "outcome", "why", "outcome_at"} <= cols
@@ -53,7 +53,7 @@ def test_a_schema_67_store_gains_the_table_and_column_on_connect(old_store):
                      ddl=OLD_GATEWAY_REQUESTS)
     c = ms.connect(path)
     try:
-        assert c.execute("SELECT value FROM meta WHERE key='schema'").fetchone()[0] == "69"
+        assert c.execute("SELECT value FROM meta WHERE key='schema'").fetchone()[0] == str(ms.SCHEMA_VERSION)
         assert c.execute("SELECT call_id FROM gateway_requests").fetchone()[0] == ""
         delegations.record(c, "x", "code")
         assert _row(c, "x")["outcome"] is None

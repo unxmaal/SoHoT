@@ -979,6 +979,27 @@ soh context --since 2026-10-06 --until 2026-10-13   # before the rtk hook
 soh context --since 2026-10-13 --by day --json
 ```
 
+`soh ledger` joins cloud and local per day (#826). Cloud is
+`npx ccusage@<CCUSAGE_PIN version> daily --json --mode calculate --offline`; models
+ccusage cannot price are listed, never counted at $0. Plan headroom comes from
+the statusLine wrapper, which logs `rate_limits` to
+`$LOCALHARNESS_HOME/ledger/ratelimits.jsonl`. Install it in
+`~/.claude/settings.json` as
+`"statusLine": {"type": "command", "command": "~/localharness/deploy/scripts/statusline.sh"}`.
+Local is `gateway_requests` by purpose: work is priced at the lane's
+counterfactual tier (knob `ledger_counterfactual`, default Sonnet, from
+`litellm.model_cost` at `LITELLM_PIN`) and the tier is printed beside every
+figure; eval and smoke are cost; untagged rows stay `unknown` except where
+`ledger.ALIAS_PURPOSE` maps an alias and day range, shown as "mapped". Energy is
+the `energy` unit's `macmon pipe` readings times `ledger_tariff`; without macmon
+the ledger says energy is unavailable. The `ledger` unit upserts `ledger_days`
+nightly. `--json` carries aggregates only.
+
+```bash
+soh ledger --since 7d
+soh ledger --since 2026-10-06 --tier haiku --json
+```
+
 ---
 
 # Setup and upkeep

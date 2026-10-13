@@ -25,18 +25,22 @@ SRC="${LH_REPO:-$REPO}"
 DEPLOY="${LH_DEPLOY:-$LH_HOME/deploy}"
 # `discover` is not a server. It is the scheduled sweep, and it is in this
 # list because the thing that must survive a reboot is the SCHEDULE. #261.
-SERVICES="gateway mlx eval tts mcp discover worker audit ds4 watchdog"
+SERVICES="gateway mlx eval tts mcp discover worker audit ds4 watchdog energy ledger"
 
 #: Services that RUN AND EXIT rather than serve, at fixed local hours. KeepAlive
 #: would rerun a finished sweep at once; StartInterval counts from load, so a day
 #: of installs never lets it fire (#625). harness/heartbeat reads the installed hours (#705).
-declare -a PERIODIC=(discover audit watchdog)
+declare -a PERIODIC=(discover audit watchdog energy ledger)
 DISCOVER_HOURS="${DISCOVER_HOURS:-21}"
 AUDIT_HOURS="${AUDIT_HOURS:-3}"                   # nightly, #492
 # The watchdog watches this machine's own jobs, so every role runs it. #814.
 WATCHDOG_EVERY_MIN="${WATCHDOG_EVERY_MIN:-5}"
+# This machine's power through macmon, one reading a minute; every role samples its own. #826.
+ENERGY_EVERY_MIN="${ENERGY_EVERY_MIN:-1}"
+# The day's ledger row, written late each evening and rewritten the next. #826.
+LEDGER_HOURS="${LEDGER_HOURS:-23}"
 # Periodic jobs that read or write the shared store: only the scheduler runs them. #703.
-declare -a SCHEDULER_ONLY=(discover audit)
+declare -a SCHEDULER_ONLY=(discover audit ledger)
 # Machines sharing one store run the periodic jobs on one of them: scheduler, or node for the rest. #703.
 # A role given once is kept in $LH_HOME/role, so a later plain `make install` keeps it.
 ROLE_FILE="$LH_HOME/role"
@@ -139,11 +143,12 @@ usage() {
 _schedule() {
   local service="$1" p
   for p in "${PERIODIC[@]}"; do
-    if [ "$p" = "$service" ] && [ "$service" = watchdog ]; then
+    if [ "$p" = "$service" ] && { [ "$service" = watchdog ] || [ "$service" = energy ]; }; then
       # Every N minutes of every hour: a calendar, since an interval restarts at each load (#625).
-      local m
+      local m every="$WATCHDOG_EVERY_MIN"
+      [ "$service" = energy ] && every="$ENERGY_EVERY_MIN"
       printf '  <key>StartCalendarInterval</key>\n  <array>\n'
-      for m in $(seq 0 "$WATCHDOG_EVERY_MIN" 59); do
+      for m in $(seq 0 "$every" 59); do
         printf '    <dict><key>Minute</key><integer>%s</integer></dict>\n' "$m"
       done
       printf '  </array>\n'
@@ -153,6 +158,7 @@ _schedule() {
       # No RunAtLoad: an install is not a schedule tick (#328).
       local hours="$DISCOVER_HOURS" h
       [ "$service" = audit ] && hours="$AUDIT_HOURS"
+      [ "$service" = ledger ] && hours="$LEDGER_HOURS"
       printf '  <key>StartCalendarInterval</key>\n  <array>\n'
       for h in $hours; do
         printf '    <dict><key>Hour</key><integer>%s</integer><key>Minute</key><integer>0</integer></dict>\n' "$h"

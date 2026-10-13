@@ -18,6 +18,9 @@
 
 LITELLM_PIN="litellm[proxy]==1.100.0"
 
+# `soh ledger` runs `npx ccusage@<version> daily --json --mode calculate --offline`. #826.
+CCUSAGE_PIN="ccusage==20.0.26"
+
 MLX_AUDIO_PIN="mlx-audio==0.5.3"
 MISAKI_PIN="misaki[en]==0.9.4"
 WEBRTCVAD_PIN="webrtcvad==2.0.10"
