@@ -457,3 +457,58 @@ def test_a_killed_sweep_says_which_signal_killed_it(tmp_path):
     out, err = proc.communicate(timeout=30)
     assert "sweep killed by SIGTERM" in err, err
     assert proc.returncode == 143
+
+
+def _gone(pid, within=10.0):
+    deadline = time.monotonic() + within
+    while time.monotonic() < deadline:
+        try:
+            os.kill(pid, 0)
+        except ProcessLookupError:
+            return True
+        time.sleep(0.1)
+    return False
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="launchd and process groups are POSIX")
+def test_a_killed_sweep_leaves_no_descendant_running(tmp_path):
+    """#805: TERM reached uv only; the eval under it kept the GPU."""
+    (tmp_path / "scripts").mkdir()
+    shutil.copy(REPO / "scripts" / "serve-discover.sh", tmp_path / "scripts" / "serve-discover.sh")
+    (tmp_path / "scripts" / "env.sh").write_text("", encoding="utf-8")
+    (tmp_path / "bin").mkdir()
+    pids = tmp_path / "pids"
+    uv = tmp_path / "bin" / "uv"
+    uv.write_text(f"#!/bin/sh\nsleep 300 &\necho $! > {pids}\nwait\n", encoding="utf-8")
+    uv.chmod(0o755)
+    env = {**os.environ, "PATH": f"{tmp_path / 'bin'}{os.pathsep}{os.environ['PATH']}",
+           "LOCALHARNESS_HOME": str(tmp_path / "home")}
+    proc = subprocess.Popen([shells.BASH, str(tmp_path / "scripts" / "serve-discover.sh")], env=env,
+                            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    deadline = time.monotonic() + 10
+    while not (pids.exists() and pids.read_text(encoding="utf-8").strip()) and time.monotonic() < deadline:
+        time.sleep(0.05)
+    grandchild = int(pids.read_text(encoding="utf-8"))
+    proc.send_signal(signal.SIGTERM)
+    _, err = proc.communicate(timeout=30)
+    assert "sweep killed by SIGTERM" in err and proc.returncode == 143, err
+    assert _gone(grandchild), "the sweep's grandchild outlived the TERM"
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="SIGTERM to a POSIX process")
+def test_a_terminated_measure_stops_the_eval_in_its_own_session(tmp_path):
+    """#805: the eval runs in its own session, so only the measure step can stop it."""
+    pids = tmp_path / "pid"
+    child = f"import os, time; open({str(pids)!r}, 'w').write(str(os.getpid())); time.sleep(300)"
+    script = ("import sys\nfrom harness.commands import measure\n"
+              f"measure._run_group([sys.executable, '-c', {child!r}], None, None, 5.0)\n")
+    proc = subprocess.Popen([sys.executable, "-c", script], cwd=REPO,
+                            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    deadline = time.monotonic() + 30
+    while not (pids.exists() and pids.read_text(encoding="utf-8").strip()) and time.monotonic() < deadline:
+        time.sleep(0.05)
+    eval_pid = int(pids.read_text(encoding="utf-8"))
+    proc.send_signal(signal.SIGTERM)
+    _, err = proc.communicate(timeout=30)
+    assert proc.returncode == 128 + signal.SIGTERM, err
+    assert _gone(eval_pid), "the eval outlived its terminated measure step"
