@@ -72,7 +72,7 @@ def test_a_schema_67_store_gains_the_column_and_its_rows_are_unknown(old_store):
         got = [tuple(r) for r in conn.execute(
             "SELECT client, purpose FROM gateway_requests ORDER BY at")]
         assert got == [("Python-urllib/3.12", "unknown"), ("python-httpx/0.28.1", "unknown")]
-        assert conn.execute("SELECT value FROM meta WHERE key='schema'").fetchone()[0] == "68"
+        assert conn.execute("SELECT value FROM meta WHERE key='schema'").fetchone()[0] == str(ms.SCHEMA_VERSION)
     finally:
         conn.close()
 

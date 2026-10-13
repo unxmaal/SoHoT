@@ -230,3 +230,36 @@ def test_a_tagged_request_lands_with_its_purpose_on_every_route(gateway, monkeyp
                   ("boom", 0, "acompletion", "discover"),
                   ("sohot-code", 0, "acompletion", "unknown"),
                   ("sohot-code", 0, "acompletion", "watchdog")}
+
+
+def test_a_delegation_s_call_id_is_the_gateway_row_s_call_id(gateway, monkeypatch):
+    """#829: the id completion reads off the reply joins delegations to gateway_requests."""
+    from harness import completion, gateway_key
+    monkeypatch.setattr(gateway_key, "key", lambda *a, **k: KEY)
+    streamed = completion.complete_full("hi", "sohot-code", gateway=gateway, stream=True,
+                                        max_tokens=20).call_id
+    whole = completion.call_id_of(httpx.post(
+        f"{gateway}/v1/chat/completions", headers={"Authorization": f"Bearer {KEY}"},
+        timeout=30, json={"model": "sohot-code", "messages": [{"role": "user", "content": "hi"}]}))
+    assert streamed and whole and streamed != whole
+    assert sorted(r["call_id"] for r in _wait_rows(2)) == sorted([streamed, whole])
+
+
+def test_a_delegation_through_the_real_gateway_joins_its_request_row(gateway, monkeypatch):
+    """#829: delegate.complete via LiteLLM is keyed by the id the gateway's own row carries."""
+    from harness import completion, context, delegate, gateway_key, serving
+    monkeypatch.setattr(gateway_key, "key", lambda *a, **k: KEY)
+    monkeypatch.setenv(completion.GATEWAY_ENV, gateway)
+    monkeypatch.setattr(delegate, "route", lambda lane, chosen=None, via="": (
+        "sohot-code", serving.Route(gateway, "sohot-code", {})))
+    monkeypatch.setattr(context, "served_ctx", lambda spec: None)
+    got = delegate.complete("code", "hi", max_tokens=20)
+    (row,) = _wait_rows(1)
+    assert row["call_id"] == got["call_id"] and row["client"] != "soh-delegate"
+    conn = ms.connect()
+    try:
+        d = conn.execute("SELECT id_source FROM delegations WHERE call_id = ?",
+                         (got["call_id"],)).fetchone()
+    finally:
+        conn.close()
+    assert d["id_source"] == "gateway"

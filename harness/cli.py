@@ -45,6 +45,7 @@ from harness.commands import screen as screen_cmd
 from harness.commands import store as store_cmd
 from harness.commands import headless as headless_cmd
 from harness.commands import usage as usage_cmd
+from harness.commands import delegated as delegated_cmd
 from harness.commands import volume as volume_cmd
 
 # What scripts, tests and other modules take from harness.cli, from where it now lives.
@@ -490,6 +491,15 @@ def build_parser() -> argparse.ArgumentParser:
                      help="transcript root (default $SOH_CLAUDE_PROJECTS or ~/.claude/projects)")
     ctx.set_defaults(func=context_cmd.cmd_context)
     headless_cmd.add_parser(sub)
+    dlg = sub.add_parser("delegated", help="record what became of a local_complete or "
+                         "local_decide answer, or --report the rates per lane")
+    dlg.add_argument("call_id", nargs="?", default="", help="the call_id the delegation returned")
+    dlg.add_argument("outcome", nargs="?", default="", choices=("", "used", "edited", "discarded"))
+    dlg.add_argument("--why", default="", help="what was wrong with it, or why it was kept")
+    dlg.add_argument("--report", action="store_true",
+                     help="per lane: calls, recorded rate, used/edited/discarded rates, median seconds")
+    dlg.add_argument("--since", default="7d", help="report window: 7d, 12h, 30m, 90s")
+    dlg.set_defaults(func=delegated_cmd.cmd_delegated)
     dsk = sub.add_parser("disk", help="what the weights cache holds, what "
                          "uses it, and what is safe to delete")
     dsk.add_argument("--delete", choices=("rejected", "unknown"), default="",

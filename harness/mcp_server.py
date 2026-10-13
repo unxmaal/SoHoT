@@ -34,7 +34,7 @@ from mcp.server.mcpserver import MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
 from pydantic import BaseModel
 
-from harness import completion, delegate, env, exclusive, paths, workqueue
+from harness import completion, delegate, delegations, env, exclusive, paths, workqueue
 
 
 class JobInfo(BaseModel):
@@ -190,6 +190,8 @@ class LocalCompletion(BaseModel):
     completion_tokens: int | None = None
     #: An adopted method's cost: method, base, calls, and for best-of samples and chosen. #581.
     method: dict | None = None
+    #: Pass to `delegated` with used, edited or discarded. #829.
+    call_id: str
 
 
 class LocalDecision(BaseModel):
@@ -201,6 +203,16 @@ class LocalDecision(BaseModel):
     seconds: float
     prompt_tokens: int | None = None
     completion_tokens: int | None = None
+    call_id: str
+
+
+class DelegationOutcome(BaseModel):
+    call_id: str
+    outcome: str
+    why: str
+    #: The outcome this one replaced, when the call was already recorded.
+    previous: str | None = None
+    note: str = ""
 
 
 def _delegated(call, *args, **kw) -> dict:
@@ -220,7 +232,8 @@ def _delegated(call, *args, **kw) -> dict:
     "already loaded; otherwise it refuses rather than waits. `thinking` false "
     "turns a hybrid thinking model's reasoning off; left out, the lane is "
     "served as it was measured. max_tokens may go up to the model's served "
-    "context less the prompt (8192 when that context is unknown)."))
+    "context less the prompt (8192 when that context is unknown). Report what "
+    "became of the answer with `delegated` and the returned call_id."))
 def local_complete(prompt: str, lane: str = "code", system: str | None = None,
                    max_tokens: int = 2048, temperature: float | None = None,
                    thinking: bool | None = None) -> LocalCompletion:
@@ -236,10 +249,26 @@ def local_complete(prompt: str, lane: str = "code", system: str | None = None,
     "\"description\": ...} or {\"type\": \"boolean\", \"description\": ...}; "
     "returns the "
     "chosen answer per field and a probability per choice. `context` is the "
-    "material to judge. Cheap enough for bulk labelling."))
+    "material to judge. Cheap enough for bulk labelling. Report what became of "
+    "the answer with `delegated` and the returned call_id."))
 def local_decide(question: str, schema: dict, context: str = "") -> LocalDecision:
     got = _delegated(delegate.decide, question, schema, context=context)
     return LocalDecision(**{k: got[k] for k in LocalDecision.model_fields})
+
+
+@SERVER.tool(description=(
+    "Record what became of a local_complete or local_decide answer: used as-is, "
+    "edited, or discarded, with an optional why. `call_id` is the one that "
+    "call returned. Recording again overwrites and keeps the earlier outcome in why."))
+def delegated(call_id: str, outcome: str, why: str = "") -> DelegationOutcome:
+    from harness import memory_store as ms
+    conn = ms.connect()
+    try:
+        return DelegationOutcome(**delegations.outcome(conn, call_id, outcome, why))
+    except (ValueError, delegations.UnknownCall) as exc:
+        raise ToolError(str(exc)) from exc
+    finally:
+        conn.close()
 
 
 # ---------------------------------------------------------------------------
