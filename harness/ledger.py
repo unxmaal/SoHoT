@@ -30,7 +30,6 @@ ALIAS_PURPOSE = (
 )
 
 COST, WORK, UNKNOWN = ("eval", "smoke"), "work", "unknown"
-DELEGATE_CLIENT = "soh-delegate"
 PIN_RE = r'^{name}="([^"]+)"'
 
 
@@ -162,14 +161,24 @@ def _columns(conn, table: str) -> set[str]:
 
 
 def gateway_rows(conn, since: float) -> list[tuple]:
-    """(at, alias, lane, client, purpose, prompt_tokens, completion_tokens) since `since`."""
+    """(at, alias, lane, client, purpose, prompt_tokens, completion_tokens, call_id) since `since`."""
     have = _columns(conn, "gateway_requests")
     if not have:
         return []
     purpose = "purpose" if "purpose" in have else f"'{UNKNOWN}'"
+    call_id = "call_id" if "call_id" in have else "''"
     return [tuple(r) for r in conn.execute(
-        f"SELECT at, alias, lane, client, {purpose}, prompt_tokens, completion_tokens "
+        f"SELECT at, alias, lane, client, {purpose}, prompt_tokens, completion_tokens, {call_id} "
         f"FROM gateway_requests WHERE at >= ?", (since,))]
+
+
+def delegation_rows(conn, since: float) -> list[tuple]:
+    """(call_id, at, lane, outcome, prompt_tokens, completion_tokens) of each delegation since `since`; [] before schema 69."""
+    if not _columns(conn, "delegations"):
+        return []
+    return [tuple(r) for r in conn.execute(
+        "SELECT call_id, at, lane, outcome, prompt_tokens, completion_tokens FROM delegations WHERE at >= ?",
+        (since,))]
 
 
 def mapped(alias: str, day: str, mapping=None) -> tuple[str, str] | None:
@@ -189,12 +198,23 @@ def _add(b: dict, pin_, pout) -> None:
     b["output"] += pout or 0
 
 
-def local(rows: list[tuple], tz=None, mapping=None) -> dict:
-    """Per day: tokens by purpose; work by lane; untagged rows a mapping names, kept apart from tagged ones."""
+def _day(days: dict, day: str) -> dict:
+    return days.setdefault(day, {"purposes": {}, "work_lanes": {}, "mapped": {},
+                                 "delegated": {"requests": 0, "outcomes": {}}, "unjoined": _bucket()})
+
+
+def local(rows: list[tuple], tz=None, mapping=None, delegations=()) -> dict:
+    """Per day: tokens by purpose; work by lane; untagged rows a mapping names, kept apart from tagged ones.
+
+    A delegation is counted through its gateway_requests row (joined on call_id), never on its own;
+    one with no such row in the window is reported as unjoined and priced nowhere."""
     days: dict = {}
-    for at, alias, lane, client, purpose, pin_, pout in rows:
+    by_call = {c: (outcome or "pending") for c, _at, _lane, outcome, _i, _o in delegations if c}
+    seen = set()
+    for at, alias, lane, client, purpose, pin_, pout, *rest in rows:
+        call_id = rest[0] if rest else ""
         day = day_of(at, tz)
-        d = days.setdefault(day, {"purposes": {}, "work_lanes": {}, "mapped": {}, "delegated": 0})
+        d = _day(days, day)
         purpose = purpose or UNKNOWN
         if purpose == UNKNOWN:
             hit = mapped(alias, day, mapping)
@@ -206,8 +226,14 @@ def local(rows: list[tuple], tz=None, mapping=None) -> dict:
         _add(d["purposes"].setdefault(purpose, _bucket()), pin_, pout)
         if purpose == WORK:
             _add(d["work_lanes"].setdefault(lane or "", _bucket()), pin_, pout)
-            if client == DELEGATE_CLIENT:
-                d["delegated"] += 1
+        if call_id and call_id in by_call:
+            seen.add(call_id)
+            d["delegated"]["requests"] += 1
+            o = by_call[call_id]
+            d["delegated"]["outcomes"][o] = d["delegated"]["outcomes"].get(o, 0) + 1
+    for c, at, _lane, _outcome, pin_, pout in delegations:
+        if c not in seen:
+            _add(_day(days, day_of(at, tz))["unjoined"], pin_, pout)
     return days
 
 
@@ -334,11 +360,11 @@ def _sum(buckets) -> dict:
 
 def build(*, since: float, now: float, cloud_doc: dict, rows: list[tuple], limits: list[dict],
           power: list[dict], table: dict, tier: str = "", tariff: float | None = None,
-          macmon: bool = False, litellm_pin: str = "", tz=None, mapping=None) -> dict:
+          macmon: bool = False, litellm_pin: str = "", tz=None, mapping=None, delegations=()) -> dict:
     """The ledger: aggregates only, no prompts, paths or keys."""
     tariff = TARIFF_USD_PER_KWH if tariff is None else tariff
     days = days_between(since, now, tz)
-    loc = local(rows, tz, mapping)
+    loc = local(rows, tz, mapping, delegations)
     hr = headroom(limits, since, tz)
     en = energy(power, since, tariff, macmon, tz)
     cdays = cloud_doc.get("days", {}) if cloud_doc.get("available") else {}
@@ -347,7 +373,7 @@ def build(*, since: float, now: float, cloud_doc: dict, rows: list[tuple], limit
     priced_ok = True
     for day in days:
         c = cdays.get(day, {})
-        lday = loc.get(day, {"purposes": {}, "work_lanes": {}, "mapped": {}, "delegated": 0})
+        lday = loc.get(day) or _day({}, day)
         displaced = []
         for lane, b in sorted(lday["work_lanes"].items()):
             t = tier_of(lane, tier)
@@ -369,7 +395,8 @@ def build(*, since: float, now: float, cloud_doc: dict, rows: list[tuple], limit
             "day": day,
             "cloud": {"usd": c.get("usd"), "tokens": c.get("tokens"), "unpriced": c.get("unpriced", {})},
             "local": lday["purposes"],
-            "delegated_requests": lday["delegated"],
+            "delegated": lday["delegated"],
+            "unjoined_delegations": lday["unjoined"],
             "displaced": {"usd": round(d_usd, 6), "lanes": displaced},
             "mapped": {"usd": round(m_usd, 6), "rows": mapped_rows},
             "cost": {p: lday["purposes"][p] for p in COST if p in lday["purposes"]},
@@ -397,7 +424,7 @@ def build(*, since: float, now: float, cloud_doc: dict, rows: list[tuple], limit
         | {"usd": round(totals["cloud_usd"], 6) if cloud_doc.get("available") else None},
         "headroom": {k: v for k, v in hr.items() if k != "days"},
         "local": {p: _sum(bs) for p, bs in sorted(purposes.items())},
-        "delegated_requests": sum(d["delegated_requests"] for d in out_days),
+        "delegated": _delegated(out_days),
         "displaced": {"usd": round(totals["displaced_usd"], 6), "tier": tier_label(default_tier, table),
                       "complete": priced_ok},
         "mapped": {"usd": round(totals["mapped_usd"], 6), "tier": tier_label(default_tier, table),
@@ -405,6 +432,17 @@ def build(*, since: float, now: float, cloud_doc: dict, rows: list[tuple], limit
         "energy": {k: v for k, v in en.items() if k != "days"},
         "days": out_days,
     }
+
+
+def _delegated(days: list[dict]) -> dict:
+    outcomes: dict = {}
+    for d in days:
+        for o, n in d["delegated"]["outcomes"].items():
+            outcomes[o] = outcomes.get(o, 0) + n
+    return {"requests": sum(d["delegated"]["requests"] for d in days), "outcomes": outcomes,
+            "unjoined": _sum(d["unjoined_delegations"] for d in days),
+            "note": "delegations are counted inside work through their gateway_requests row (call_id); "
+                    "unjoined ones have no such row and are priced nowhere"}
 
 
 # --- the daily table (schema 70) ------------------------------------------------------------------

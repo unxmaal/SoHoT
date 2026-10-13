@@ -141,9 +141,36 @@ def test_unknown_rows_stay_apart_and_the_mapping_is_bounded_by_its_days():
     assert L["mapped"]["note"].startswith("untagged history assigned by the alias mapping")
 
 
-def test_delegated_requests_are_counted_as_work():
-    rows = [row("2026-10-08", "work", 10, 10, client=ledger.DELEGATE_CLIENT), row("2026-10-08", "work", 1, 1)]
-    assert build(rows=rows)["delegated_requests"] == 1
+def test_a_delegation_is_counted_once_through_its_call_id():
+    rows = [row("2026-10-08", "work", 1_000_000, 0) + ("local-a",),
+            row("2026-10-08", "work", 1_000_000, 0, alias="imajev", lane="") + ("gw-b",),
+            row("2026-10-08", "work", 1_000_000, 0) + ("",)]
+    dels = [("local-a", at("2026-10-08"), "code", "used", 1_000_000, 0),
+            ("gw-b", at("2026-10-08"), "decide", None, 1_000_000, 0),
+            ("local-c", at("2026-10-09"), "code", "discarded", 500, 50)]
+    L = build(rows=rows, delegations=dels)
+    assert L["displaced"]["usd"] == pytest.approx(6.0)
+    assert L["local"]["work"] == {"requests": 3, "input": 3_000_000, "output": 0}
+    assert L["delegated"]["requests"] == 2
+    assert L["delegated"]["outcomes"] == {"used": 1, "pending": 1}
+    assert L["delegated"]["unjoined"] == {"requests": 1, "input": 500, "output": 50}
+    assert L["days"][1]["displaced"]["usd"] == 0
+
+
+def test_the_delegations_table_is_read_from_the_store_and_joins_the_gateway_row():
+    from harness import delegations
+    conn = ms.connect()
+    try:
+        conn.execute("INSERT INTO gateway_requests (at, alias, lane, client, purpose, prompt_tokens, "
+                     "completion_tokens, call_id) VALUES (?, 'sohot-code', 'code', 'soh-delegate', 'work', 100, 10, "
+                     "'local-x')", (at("2026-10-08"),))
+        conn.commit()
+        delegations.record(conn, "local-x", "code", prompt_tokens=100, completion_tokens=10, at=at("2026-10-08"))
+        L = build(rows=ledger.gateway_rows(conn, 0), delegations=ledger.delegation_rows(conn, 0))
+    finally:
+        conn.close()
+    assert L["delegated"]["requests"] == 1 and L["delegated"]["unjoined"]["requests"] == 0
+    assert L["local"]["work"]["requests"] == 1
 
 
 def test_a_store_before_schema_68_reads_every_row_as_unknown(tmp_path):
@@ -156,7 +183,8 @@ def test_a_store_before_schema_68_reads_every_row_as_unknown(tmp_path):
     c.commit()
     c.close()
     conn = ledger.open_ro(db)
-    assert ledger.gateway_rows(conn, 0) == [(at("2026-10-08"), "a", "", "c", "unknown", 5, 6)]
+    assert ledger.gateway_rows(conn, 0) == [(at("2026-10-08"), "a", "", "c", "unknown", 5, 6, "")]
+    assert ledger.delegation_rows(conn, 0) == []
     with pytest.raises(sqlite3.OperationalError):
         conn.execute("INSERT INTO gateway_requests (at) VALUES (1)")
 
@@ -336,7 +364,8 @@ def test_ledger_json_is_aggregates_only(monkeypatch, capsys, tmp_path, _home):
     assert cli.main(["ledger", "--since", "2026-10-08", "--json"]) == 0
     out = capsys.readouterr().out
     doc = json.loads(out)
-    for key in ("window", "assumptions", "cloud", "headroom", "local", "displaced", "mapped", "energy", "days"):
+    for key in ("window", "assumptions", "cloud", "headroom", "local", "delegated", "displaced", "mapped",
+                "energy", "days"):
         assert key in doc
     assert doc["cloud"]["unpriced_models"] == ["claude-haiku-5-5", "claude-sonnet-5-5"]
     assert doc["local"]["work"] == {"requests": 1, "input": 1000, "output": 100}

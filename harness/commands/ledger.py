@@ -22,7 +22,7 @@ def gather(a, now: float) -> dict:
     since = cr.parse_when(a.since, now)
     first_day = ledger.days_between(since, now)[0]
     start = ledger.day_start(first_day)
-    rows, history = [], []
+    rows, dels, history = [], [], []
     if store.backend() == store.POSTGRES:
         conn = ms.connect()
     else:
@@ -31,6 +31,7 @@ def gather(a, now: float) -> dict:
     if conn is not None:
         try:
             rows = ledger.gateway_rows(conn, start)
+            dels = ledger.delegation_rows(conn, start)
             history = ledger.recorded(conn, first_day)
         finally:
             conn.close()
@@ -40,7 +41,7 @@ def gather(a, now: float) -> dict:
         limits=ledger.read_jsonl(ledger.ledger_dir() / "ratelimits.jsonl"),
         power=ledger.read_jsonl(ledger.ledger_dir() / "power.jsonl"),
         table=ledger.prices(pin), tier=a.tier, tariff=a.tariff,
-        macmon=bool(shutil.which("macmon")), litellm_pin=pin)
+        macmon=bool(shutil.which("macmon")), litellm_pin=pin, delegations=dels)
     out["recorded"] = history
     return out
 
@@ -68,7 +69,10 @@ def show(L: dict) -> None:
         note(f"local     {p:<9} {b['requests']:>7,} reqs {_tok(b['input']):>8} in {_tok(b['output']):>8} out  ({kind})")
     if not L["local"]:
         note("local     no gateway requests in the window")
-    note(f"delegated {L['delegated_requests']:,} work requests from local_complete/local_decide")
+    dg = L["delegated"]
+    outcomes = ", ".join(f"{k} {v}" for k, v in sorted(dg["outcomes"].items())) or "none"
+    note(f"delegated {dg['requests']:,} requests inside work, joined on call_id (outcomes: {outcomes})"
+         + (f"; {dg['unjoined']['requests']} with no gateway row, not priced" if dg["unjoined"]["requests"] else ""))
     note(f"displaced {_usd(L['displaced']['usd'])} of tagged work at {L['displaced']['tier']}")
     if L["mapped"]["usd"]:
         note(f"mapped    {_usd(L['mapped']['usd'])} of untagged history by alias mapping, "
