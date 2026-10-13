@@ -10,6 +10,7 @@ from pathlib import Path
 
 from harness.howitworks import MODEL, REPO_URL, diagram
 from harness.howitworks import CSS as FLOW_CSS
+from harness.trends import CSS as TREND_CSS
 PAGES = ("index.html", "reports/index.html", "benchmarks/index.html")
 
 FONTS = ("https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700"
@@ -222,7 +223,7 @@ def page(title: str, body: str, depth: int = 0, here: str = "", now: float | Non
 <title>{_esc(title)}</title>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="{_esc(FONTS)}">
-<style>{CSS}</style></head>
+<style>{CSS}{TREND_CSS}</style></head>
 <body{' class="calm"' if depth else ''}>
 <nav class="menubar">{menu}<a href="{REPO_URL}">Source</a></nav>
 {before}<main>
@@ -489,6 +490,10 @@ def benchmarks(machines: list[dict], now: float | None = None) -> str:
         (measured if any(_has_tables(b.get(n)) for b in by) else waiting).append(n)
     index = "".join(f'<li class="chip"><a href="#lane-{_esc(n)}">{_esc(n)}</a></li>'
                     for n in measured)
+    from harness import trends
+    trended = [d for d in machines if trends.has_data(d.get("trends"))]
+    if trended:
+        index += '<li class="chip"><a href="#trends">trends</a></li>'
     intro = window("Benchmarks", (
         "<p>Each table is one exam on one machine: every run in it asked the same cases "
         "under the same conditions, and each candidate shows its latest result there. "
@@ -514,7 +519,11 @@ def benchmarks(machines: list[dict], now: float | None = None) -> str:
     rest = (window("Not measured yet", "<p>No published measure run for: "
                    + ", ".join(_esc(n) for n in waiting) + ".</p>", "coral")
             if waiting and machines else "")
-    return page("SoHoT benchmarks", intro + "".join(wins) + rest, 1, "benchmarks/", now)
+    trend_wins = "".join(
+        window(f'Trends &middot; {_esc(d["machine"].get("label"))}', trends.render(d["trends"]), "butter",
+               attrs=' id="trends"' if i == 0 else "")
+        for i, d in enumerate(trended))
+    return page("SoHoT benchmarks", intro + trend_wins + "".join(wins) + rest, 1, "benchmarks/", now)
 
 
 # --- the whole site --------------------------------------------------------

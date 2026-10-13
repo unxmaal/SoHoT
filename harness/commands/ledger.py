@@ -36,12 +36,15 @@ def gather(a, now: float) -> dict:
         finally:
             conn.close()
     pin = ledger.pin("LITELLM_PIN")
+    table = ledger.prices(pin)
+    root = cr.default_root()
+    ctx = cr.scan(cr.transcripts(root, newer_than=start), since=start) if root.is_dir() else []
     out = ledger.build(
-        since=start, now=now, cloud_doc=ledger.cloud(first_day), rows=rows,
+        since=start, now=now, cloud_doc=ledger.cloud(first_day, table=table, litellm_pin=pin), rows=rows,
         limits=ledger.read_jsonl(ledger.ledger_dir() / "ratelimits.jsonl"),
         power=ledger.read_jsonl(ledger.ledger_dir() / "power.jsonl"),
-        table=ledger.prices(pin), tier=a.tier, tariff=a.tariff,
-        macmon=bool(shutil.which("macmon")), litellm_pin=pin, delegations=dels)
+        table=table, tier=a.tier, tariff=a.tariff,
+        macmon=bool(shutil.which("macmon")), litellm_pin=pin, delegations=dels, context=ctx)
     out["recorded"] = history
     return out
 
@@ -54,6 +57,9 @@ def show(L: dict) -> None:
         unpriced = ", ".join(c.get("unpriced_models") or []) or "none"
         note(f"cloud     {_usd(c['usd'])} Claude Code API-equivalent ({c['source']}); "
              f"unpriced, not counted: {unpriced}")
+        if c.get("litellm_priced_models"):
+            note(f"          priced from {c.get('litellm_price_source')} (ccusage has no price): "
+                 f"{', '.join(c['litellm_priced_models'])}")
     else:
         note(f"cloud     unavailable: {c.get('why')}")
     h = L["headroom"]

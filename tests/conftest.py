@@ -24,6 +24,8 @@ def _home(tmp_path_factory, monkeypatch):
     # Nor reads this machine's weights: what is on disk is a downloads row. #411.
     monkeypatch.setenv("HF_HOME", str(tmp_path_factory.mktemp("hf-home")))
     monkeypatch.delenv("LLAMACPP_MODELS_DIR", raising=False)
+    # Nor this machine's Claude Code transcripts, which the ledger and the trends read. #827.
+    monkeypatch.setenv("SOH_CLAUDE_PROJECTS", str(tmp_path_factory.mktemp("claude-projects")))
     return home
 
 
