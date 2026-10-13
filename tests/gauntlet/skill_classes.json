@@ -166,7 +166,7 @@
   "heading": "A test that bounds a measured duration",
   "source": "SKILL.md",
   "tier": 2,
-  "bitten": 4,
+  "bitten": 5,
   "trigger": "does a test compare an elapsed time (perf_counter, time.time, a measured wait or TTFT) against a number? Is any of that time spent in something the test does not control: interpreter startup, a sleeping fake, the scheduler under parallel workers?",
   "test_shape": "assert what the duration stood for. Order (acquired after released, reasoning before answer), counts (peak in-flight requests), lower bounds that a slow machine cannot break, or a structural fact (the holder is still alive). Keep a time bound only if it is loose enough to mean \"did not hang\"."
  },
