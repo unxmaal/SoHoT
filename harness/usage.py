@@ -31,7 +31,8 @@ LANE_PREFIX = "sohot-"
 
 COLUMNS = ("at", "alias", "lane", "served", "spec", "client", "call_type", "stream",
            "prompt_tokens", "completion_tokens", "ttft_s", "total_s", "tool_calls",
-           "tool_calls_valid", "finish_reason", "error_class", "error_code", "purpose")
+           "tool_calls_valid", "finish_reason", "error_class", "error_code", "purpose",
+           "call_id")
 
 
 def _plain(obj):
@@ -132,6 +133,7 @@ def row(kwargs, response_obj, specs: dict | None = None) -> dict:
         "error_class": (str(err.get("error_class") or "") or "error") if failed else "",
         "error_code": str(err.get("error_code") or "") if failed else "",
         "purpose": purpose.of_tags(slo.get("request_tags")),
+        "call_id": str(slo.get("litellm_call_id") or kwargs.get("litellm_call_id") or "")[:128],
     }
 
 
@@ -225,7 +227,8 @@ def insert(conn, rows: list[tuple[dict, dict | None]]) -> None:
            f"({', '.join(':' + c for c in COLUMNS)})")
     for r, s in rows:
         cur = conn.execute(sql, {**{c: r.get(c) for c in COLUMNS},
-                                 "purpose": r.get("purpose") or purpose.UNKNOWN})
+                                 "purpose": r.get("purpose") or purpose.UNKNOWN,
+                                 "call_id": r.get("call_id") or ""})
         if keep and s:
             conn.execute("INSERT INTO gateway_samples (request_id, prompt, completion) "
                          "VALUES (?, ?, ?)", (cur.lastrowid, s.get("prompt", ""),

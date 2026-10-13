@@ -299,8 +299,11 @@ def _timing(got: completion.Completion, started: float, replies=()) -> dict:
 
 
 @contextlib.contextmanager
-def as_work(lane: str, spec: str, where: serving.Route, stream: bool):
-    """Send the block's requests tagged work; one that skips the gateway is logged as the gateway would. #825."""
+def as_work(lane: str, spec: str, where: serving.Route, stream: bool, delegation: bool = False):
+    """Send the block's requests tagged work; one that skips the gateway is logged as the gateway would. #825.
+
+    `delegation` also records the result as a delegations row sharing the request row's call_id. #829.
+    """
     direct = not completion.is_gateway(where.base)
     from harness import usage
     got: dict = {}
@@ -312,9 +315,14 @@ def as_work(lane: str, spec: str, where: serving.Route, stream: bool):
             if direct:
                 usage.record(usage.direct_row(lane, spec, where.model, at, error=exc, stream=stream))
             raise
+    from harness import delegations
+    # One id for the delegation and its request row: LiteLLM's via the gateway, ours when direct. #829.
+    call_id = got.get("call_id") or (delegations.new_id() if delegation else "")
     if direct:
-        usage.record(usage.direct_row(lane, spec, got.get("model") or where.model, at, got,
-                                      stream=stream))
+        usage.record({**usage.direct_row(lane, spec, got.get("model") or where.model, at, got,
+                                         stream=stream), "call_id": call_id})
+    if delegation:
+        got.update(delegations.note(got, call_id, gateway=bool(got.get("call_id"))))
 
 
 def complete(lane: str, prompt: str, system: str | None = None,
@@ -363,12 +371,12 @@ def complete(lane: str, prompt: str, system: str | None = None,
             raise completion.CompletionError(
                 f"{label + ': ' if label else ''}{exc}{hint}",
                 exc.failure_class, exc.limit) from exc
-    with as_work(lane, spec, where, stream=True) as out:
+    with as_work(lane, spec, where, stream=True, delegation=True) as out:
         text, cost, replies = generate(spec, where, lane, prompt, call)
         got = replies[-1]
         out.update({"text": text, "lane": lane, "spec": spec,
                     "model": _answered_by(got.model or where.model), "method": cost or None,
-                    **_timing(got, started, replies)})
+                    "call_id": got.call_id, **_timing(got, started, replies)})
     return out
 
 
@@ -425,8 +433,9 @@ def decide(question: str, schema: dict, context: str = "",
     timeout = _allowance(where, 0, timeout)
     started = time.perf_counter()
     # Whole, not streamed: the gateway drops logprobs from a stream, and they are the answer.
-    with as_work("decide", spec, where, stream=False) as out:
+    with as_work("decide", spec, where, stream=False, delegation=True) as out:
         body, got = ask(question, schema, where, context=context, timeout=timeout)
         out.update({**body, "lane": "decide", "spec": spec,
-                    "model": got.model or where.model, **_timing(got, started)})
+                    "model": got.model or where.model, "call_id": got.call_id,
+                    **_timing(got, started)})
     return out

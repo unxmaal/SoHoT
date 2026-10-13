@@ -4,7 +4,7 @@ from __future__ import annotations
 from harness import store
 
 
-SCHEMA_VERSION = 68
+SCHEMA_VERSION = 69
 
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
@@ -408,7 +408,28 @@ CREATE TABLE IF NOT EXISTS gateway_requests (
     error_class       TEXT NOT NULL DEFAULT '',
     error_code        TEXT NOT NULL DEFAULT '',
     -- The caller's purpose:<x> request tag (work, eval, smoke, discover, watchdog). #825.
-    purpose           TEXT NOT NULL DEFAULT 'unknown'
+    purpose           TEXT NOT NULL DEFAULT 'unknown',
+    -- LiteLLM's litellm_call_id, the key delegations joins on; '' before schema 69. #829.
+    call_id           TEXT NOT NULL DEFAULT ''
+);
+
+-- One delegated subtask (local_complete, local_decide) and what became of its answer. #829.
+CREATE TABLE IF NOT EXISTS delegations (
+    -- LiteLLM's call id when the gateway answered (joins gateway_requests.call_id), else generated.
+    call_id           TEXT PRIMARY KEY,
+    -- 'gateway' or 'local': which of the two call_id is.
+    id_source         TEXT NOT NULL DEFAULT 'local',
+    at                REAL NOT NULL,
+    lane              TEXT NOT NULL,
+    spec              TEXT NOT NULL DEFAULT '',
+    model             TEXT NOT NULL DEFAULT '',
+    seconds           REAL,
+    prompt_tokens     INTEGER,
+    completion_tokens INTEGER,
+    -- NULL until the caller says: used, edited or discarded.
+    outcome           TEXT,
+    why               TEXT NOT NULL DEFAULT '',
+    outcome_at        REAL
 );
 
 -- Text of a request, only while the usage_text setting is on, newest kept. #481.

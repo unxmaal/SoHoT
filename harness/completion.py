@@ -255,6 +255,8 @@ class Completion:
     message: dict = field(default_factory=dict)
     #: The server's finish_reason; "length" means the budget cut the reply off. #628.
     finish: str = ""
+    #: LiteLLM's x-litellm-call-id, the gateway_requests.call_id of this request; "" off the gateway. #829.
+    call_id: str = ""
 
 
 def complete_full(prompt: str, model: str, gateway: str = "",
@@ -370,7 +372,18 @@ def complete_full(prompt: str, model: str, gateway: str = "",
         raise CompletionError("empty completion", reasons.CONTENT_FAILED)
     return Completion(text, usage,
                       list(tokens) if isinstance(tokens, list) else [], timing,
-                      served, finish=finish)
+                      served, finish=finish, call_id=call_id_of(r))
+
+
+#: The header LiteLLM's proxy answers with; its value is the logged litellm_call_id. #829.
+CALL_ID_HEADER = "x-litellm-call-id"
+
+
+def call_id_of(r) -> str:
+    try:
+        return str((getattr(r, "headers", None) or {}).get(CALL_ID_HEADER) or "")
+    except (AttributeError, TypeError):
+        return ""
 
 
 def reasoning_tokens(usage) -> int | None:
@@ -473,7 +486,7 @@ def _send(gateway: str, payload: dict, timeout: float):
             return r
         body, timing = assemble(r.iter_lines(), started, timeout)
         _note(gateway, payload.get("model"), r)
-    return Streamed(body, timing)
+    return Streamed(body, timing, r.headers)
 
 
 class Streamed:
@@ -481,8 +494,8 @@ class Streamed:
     status_code = 200
     text = ""
 
-    def __init__(self, body: dict, timing: dict):
-        self.body, self.timing = body, timing
+    def __init__(self, body: dict, timing: dict, headers=None):
+        self.body, self.timing, self.headers = body, timing, headers or {}
 
     def raise_for_status(self) -> None:
         pass
