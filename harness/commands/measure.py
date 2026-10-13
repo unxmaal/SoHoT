@@ -1,6 +1,7 @@
 """The measure tier, verify and throughput: run a candidate's cases and settle what they say."""
 from __future__ import annotations
 
+import contextlib
 import time
 from dataclasses import dataclass
 
@@ -478,19 +479,41 @@ def _run_group(argv, deadline_s, cwd, grace_s) -> Launched:
     group = ({"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP}
              if sys.platform == "win32" else {"start_new_session": True})
     started = time.monotonic()
-    proc = subprocess.Popen(argv, cwd=cwd, stdout=subprocess.PIPE,
-                            stderr=subprocess.PIPE, text=True, **group)
-    try:
-        _, stderr = proc.communicate(timeout=deadline_s)
-    except subprocess.TimeoutExpired:
-        _stop_group(proc, grace_s)
-        _, stderr = proc.communicate()
-        return Launched(proc.returncode, stderr or "", True, time.monotonic() - started)
-    except BaseException:
-        _stop_group(proc, grace_s)
-        proc.communicate()
-        raise
+    with _term_raises():
+        proc = subprocess.Popen(argv, cwd=cwd, stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE, text=True, **group)
+        try:
+            _, stderr = proc.communicate(timeout=deadline_s)
+        except subprocess.TimeoutExpired:
+            _stop_group(proc, grace_s)
+            _, stderr = proc.communicate()
+            return Launched(proc.returncode, stderr or "", True, time.monotonic() - started)
+        except BaseException:
+            _stop_group(proc, grace_s)
+            proc.communicate()
+            raise
     return Launched(proc.returncode, stderr or "", False, time.monotonic() - started)
+
+
+@contextlib.contextmanager
+def _term_raises():
+    """SIGTERM unwinds instead of killing outright, so the eval's own session is stopped with us. #805."""
+    import signal
+    import threading
+
+    if threading.current_thread() is not threading.main_thread():
+        yield
+        return
+
+    def _raise(signum, frame):
+        signal.signal(signal.SIGTERM, signal.SIG_IGN)
+        raise SystemExit(128 + signum)
+
+    before = signal.signal(signal.SIGTERM, _raise)
+    try:
+        yield
+    finally:
+        signal.signal(signal.SIGTERM, before)
 
 
 def _stop_group(proc, grace_s: float) -> None:

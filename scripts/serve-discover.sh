@@ -30,12 +30,15 @@ echo "=== sweep $(date -u +%Y-%m-%dT%H:%M:%SZ) top=$TOP budget=${BUDGET}GiB ==="
 child=""
 _killed() {
   echo "=== sweep killed by SIG$1 $(date -u +%Y-%m-%dT%H:%M:%SZ) ===" >&2
-  [ -z "$child" ] || kill -s TERM "$child" 2>/dev/null || exit "$2"
+  [ -z "$child" ] || kill -s TERM -- "-$child" 2>/dev/null || exit "$2"
+  wait "$child" 2>/dev/null || exit "$2"
   exit "$2"
 }
 trap '_killed TERM 143' TERM
 trap '_killed INT 130' INT
 trap '_killed HUP 129' HUP
+# Its own process group, so the trap reaches every descendant, not just uv. #805.
+set -m
 uv run soh discover --loop --run \
   --top "$TOP" --budget-gib "$BUDGET" ${REPEAT:+--repeat "$REPEAT"} &
 child=$!
