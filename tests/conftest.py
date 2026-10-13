@@ -366,3 +366,15 @@ def _identity_per_test(monkeypatch, _home, _no_real_metal, _no_real_runtime_prob
     monkeypatch.setattr(machine, "_UUID_FAILED_AT", None)
     monkeypatch.setattr(ms.machines, "_THIS_MACHINE", copy.deepcopy(_IDENTITY.get("facts")))
     monkeypatch.setattr(machine, "_UUID", _IDENTITY.get("uuid"))
+
+
+@pytest.fixture(autouse=True)
+def _no_inherited_purpose():
+    """purpose.set_process writes os.environ; a cli or mcp test must not tag the next test's requests. #825."""
+    import os
+    from harness import purpose
+    saved = os.environ.pop(purpose.ENV, None)
+    yield
+    os.environ.pop(purpose.ENV, None)
+    if saved is not None:
+        os.environ[purpose.ENV] = saved
