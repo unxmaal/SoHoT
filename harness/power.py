@@ -579,39 +579,57 @@ def challenger_seconds(conn, lane: str, key: str, *, incumbent: str, incumbent_s
     return incumbent_s, "incumbent"
 
 
+def _base_key(spec: str) -> str:
+    """The receipt key of a method's base, or of the spec itself."""
+    from harness import candidates, methods
+    base = methods.base_of(spec) or spec
+    try:
+        return candidates.key_of(base) or base
+    except Exception:  # noqa: BLE001
+        return base
+
+
+def expected_calls(conn, lane: str, spec: str, settings: tuple | None, *also) -> float:
+    """Calls one attempt of `spec` is expected to take, from its base's stored per-case pass rates. #807."""
+    from harness import methods
+    if not methods.base_of(spec):
+        return methods.calls(spec)
+    for key in (_base_key(spec), *also):
+        rows = _candidate_rows(conn, lane, key, ("screen", "measure"))
+        if settings is not None:
+            rows = [r for r in rows if reply_settings(r["receipt"], lane) == tuple(settings)]
+        draws = draws_from(rows, key)[0]
+        if draws:
+            return methods.expected_calls(spec, [statistics.fmean(d) for d in draws.values()])
+    return methods.calls(spec)
+
+
 def pair_cost(conn, lane: str, *, incumbent: str, incumbent_spec: str, incumbent_s: float | None,
               challenger: str = "", settings: tuple | None, machines,
-              incumbent_basis: str = "") -> tuple[float | None, int, dict]:
-    """Mean seconds per call over both candidates, their calls per case, and how each was priced. #696, #796."""
-    from harness import candidates, methods
+              incumbent_basis: str = "") -> tuple[float | None, float, dict]:
+    """Mean seconds per call over both candidates, their expected calls per case, and how each was priced. #696, #796, #807."""
     tok_s = decode_tok_s()
     inc_source = "bounded" if incumbent_basis else "measured"
     if incumbent_s is None:
         incumbent_s = estimated_seconds(lane, tok_s)
         inc_source = "estimated" if incumbent_s is not None else "unknown"
-    inc_calls = methods.calls(incumbent_spec) if incumbent_spec else 1
+    inc_calls = expected_calls(conn, lane, incumbent_spec, settings) if incumbent_spec else 1
     if incumbent_s is not None and inc_source in ("measured", "bounded"):
         incumbent_s = incumbent_s / inc_calls  # a method row's seconds are every call of the case
 
-    def base_key(spec):
-        base = methods.base_of(spec) or spec
-        try:
-            return candidates.key_of(base) or base
-        except Exception:  # noqa: BLE001
-            return base
-
     if challenger:
-        key = base_key(challenger)
+        key = _base_key(challenger)
         known = served_keys(conn, lane, incumbent_spec) if incumbent_spec else []
-        if key in (incumbent, base_key(incumbent_spec or incumbent), *known):
+        same = key in (incumbent, _base_key(incumbent_spec or incumbent), *known)
+        if same:
             ch_s, ch_source = incumbent_s, inc_source
         else:
             ch_s, ch_source = challenger_seconds(conn, lane, key, incumbent=incumbent, incumbent_s=incumbent_s,
                                                  settings=settings, machines=machines, incumbent_keys=known)
-        ch_calls = methods.calls(challenger)
+        ch_calls = expected_calls(conn, lane, challenger, settings, *((incumbent, *known) if same else ()))
     else:
         ch_s, ch_source, ch_calls = incumbent_s, "like incumbent", inc_calls
-    calls = inc_calls + ch_calls
+    calls = round(inc_calls + ch_calls, 2)
     mean = None if incumbent_s is None or ch_s is None else (inc_calls * incumbent_s + ch_calls * ch_s) / calls
     est = {"machines": list(machines or ()), "settings": list(settings or ()), "decode_tok_s": tok_s,
            "incumbent_s": incumbent_s, "incumbent_source": inc_source, "incumbent_calls": inc_calls,

@@ -36,7 +36,7 @@ def test_a_spec_costs_its_method_calls_per_attempt(spec, calls):
     assert methods.calls(spec) == calls
 
 
-def test_a_best_of_3_challenger_is_projected_at_three_times_its_base(store_run):
+def test_a_best_of_3_challenger_is_projected_at_its_bases_expected_calls(store_run):
     _store(store_run, "svg", "inc", 10.0)
     _store(store_run, "svg", "ch", 10.0, name="ch-svg")
     _, plain = measure_cmd._plan(_ns(repeat=2, power_budget_min=10_000), "svg", "inc", "ch")
@@ -44,8 +44,9 @@ def test_a_best_of_3_challenger_is_projected_at_three_times_its_base(store_run):
                                 "best-of:3:ch")
     cases = plain.cases_run
     assert plain.projected_s == pytest.approx(cases * 2 * (1 + 1) * 10.0)
-    assert best.projected_s == pytest.approx(cases * 2 * (1 + 3) * 10.0)
-    assert best.calls == 4
+    # ch passes half its draws, so best-of stops after 1 + 0.5 + 0.25 calls on average. #807.
+    assert best.projected_s == pytest.approx(cases * 2 * (1 + 1.75) * 10.0)
+    assert best.calls == 2.75
 
 
 def test_a_projection_over_budget_runs_the_holdout_only(store_run):

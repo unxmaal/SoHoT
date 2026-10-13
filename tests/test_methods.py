@@ -184,16 +184,16 @@ def test_best_of_keeps_the_sample_the_lanes_own_checks_score_highest():
     base = Scripted(["12", "137", "99"])
     r = BestOfRunner(base, 3).run(extract_case())
     assert r.passed and r.output == "137"
-    assert base.calls == 3
-    assert r.metrics["method_calls"] == 3 and r.metrics["method_samples"] == 3
+    assert base.answers == ["99"]           # a clean pass ends the sampling
+    assert r.metrics["method_calls"] == 2 and r.metrics["method_samples"] == 3
     assert r.metrics["method_chosen"] == 2
-    assert r.metrics["completion_tokens"] == 30
+    assert r.metrics["completion_tokens"] == 20
 
 
 def test_best_of_takes_the_first_of_equals_and_survives_a_failed_sample():
     from evals.runners.method import BestOfRunner
     r = BestOfRunner(Scripted([RunnerError("timed out"), "7", "7"]), 3).run(extract_case("7"))
-    assert r.passed and r.metrics["method_chosen"] == 2 and r.metrics["method_calls"] == 3
+    assert r.passed and r.metrics["method_chosen"] == 2 and r.metrics["method_calls"] == 2
 
 
 def test_best_of_with_every_sample_failed_is_a_failed_row():

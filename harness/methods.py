@@ -46,7 +46,7 @@ class Method:
     crosses: bool = True
     #: vector.TRACE_PRESETS key, for a trace method.
     preset: str = ""
-    #: (parsed, lane, prompt, ask) -> (text, cost): how a lane command serves it; None for trace.
+    #: (parsed, lane, prompt, ask, slots) -> (text, cost): how a lane command serves it; None for trace.
     serve: Callable | None = None
     #: (parsed) -> model calls one attempt makes on its base; None is one. #673.
     per_attempt: Callable | None = None
@@ -111,6 +111,75 @@ def calls(spec: str) -> int:
     return max(1, int(parsed.method.per_attempt(parsed)))
 
 
+def expected_calls(spec: str, rates=(), slots: int = 1) -> float:
+    """Calls' worth of wall time one attempt of `spec` takes, given its base's per-case pass rates:
+    best-of stops after the wave that passes; with no rates, every call. #807."""
+    n = calls(spec)
+    rates = list(rates)
+    if not rates or base_of(spec) == "" or parse(spec).method.serve is not _serve_best_of:
+        return n
+    total = 0.0
+    for p in rates:
+        miss = 1.0
+        for size in _waves(n, slots):
+            total += miss
+            miss *= (1.0 - p) ** size
+    return round(total / len(rates), 2)
+
+
+def slots_of(spec: str) -> int:
+    """Requests the server of `spec`'s base answers at once: its llama-server slots, 1 when unknown. #807."""
+    from harness import context
+    return max(1, int(context.served_slots(base_of(spec) or spec) or 1))
+
+
+def _waves(n: int, slots: int) -> list[int]:
+    """Sample counts per wave: the first alone, since most cases pass it, then up to `slots` at once."""
+    out, left, slots = [1], n - 1, max(1, int(slots))
+    while left > 0:
+        out.append(min(slots, left))
+        left -= out[-1]
+    return out
+
+
+#: _rank's key for a reply that passes every check with no warnings; best-of stops there. #807.
+TOP = (True, 0)
+
+
+def sample(n: int, slots, draw, rank, errors: tuple) -> tuple[list, list, int]:
+    """([(index, key, result)], [errors raised], calls made): draw(i) up to n times in _waves,
+    concurrently within a wave, stopping after the wave that ranks TOP. `slots` is an int or a
+    callable asked only when a second wave is needed. #807."""
+    from concurrent.futures import ThreadPoolExecutor
+
+    def attempt(i):
+        try:
+            return True, draw(i)
+        except errors as exc:
+            return False, exc
+    got, failed, made, sizes = [], [], 0, [1]
+    for k in range(n):
+        if made >= n:
+            break
+        if k == 1:
+            sizes = _waves(n, slots() if callable(slots) else slots)
+        wave = list(range(made, made + sizes[k]))
+        if len(wave) == 1:
+            outs = [attempt(wave[0])]
+        else:
+            with ThreadPoolExecutor(len(wave)) as pool:
+                outs = list(pool.map(attempt, wave))
+        made += len(wave)
+        for i, (ok, val) in zip(wave, outs):
+            if ok:
+                got.append((i, rank(val), val))
+            else:
+                failed.append(val)
+        if any(key == TOP for _, key, _ in got):
+            break
+    return got, failed, made
+
+
 def build(spec: str, base_builder, outdir=None):
     """The runner for a method spec. SystemExit on a bad spec, as every runner is built."""
     try:
@@ -165,16 +234,17 @@ Follow this plan:
 {plan}"""
 
 
-def run(spec: str, lane: str, prompt: str, ask) -> tuple[str, dict]:
+def run(spec: str, lane: str, prompt: str, ask, slots: int | None = None) -> tuple[str, dict]:
     """(text, cost) for `prompt` served by `spec`, where ask(prompt, modality) -> text is one call
-    on its base's route. A plain model is one ask and {}. ValueError for a method no text call serves. #581."""
+    on its base's route, safe to make from several threads. A plain model is one ask and {}.
+    `slots` None asks the base's server. ValueError for a method no text call serves. #581, #807."""
     parsed = parse(spec)
     if parsed is None:
         return ask(prompt, lane), {}
     if parsed.method.serve is None:
         raise ValueError(f"{spec} draws with an image engine rather than answering in text; "
                          f"run `soh svg` for it")
-    return parsed.method.serve(parsed, lane, prompt, ask)
+    return parsed.method.serve(parsed, lane, prompt, ask, slots)
 
 
 def text_method(spec: str) -> bool:
@@ -202,30 +272,25 @@ def _rank(lane: str, text: str) -> tuple:
     return (bool(got.ok), -len(got.warnings))
 
 
-def _serve_plan(parsed: Parsed, lane: str, prompt: str, ask) -> tuple[str, dict]:
+def _serve_plan(parsed: Parsed, lane: str, prompt: str, ask, slots=None) -> tuple[str, dict]:
     plan = ask(PLAN_PROMPT.format(task=prompt), "")
     answer = ask(ANSWER_PROMPT.format(task=prompt, plan=plan.strip()), lane)
     return answer, {"method": parsed.method.name, "base": parsed.base, "calls": 2}
 
 
-def _serve_best_of(parsed: Parsed, lane: str, prompt: str, ask) -> tuple[str, dict]:
+def _serve_best_of(parsed: Parsed, lane: str, prompt: str, ask, slots=None) -> tuple[str, dict]:
+    import time
     from harness import completion
     n = parsed.args[0]
-    best = best_key = failed = None
-    chosen = 0
-    for i in range(1, n + 1):
-        try:
-            text = ask(prompt, lane)
-        except completion.CompletionError as exc:
-            failed = exc
-            continue
-        key = _rank(lane, text)
-        if best_key is None or key > best_key:
-            best, best_key, chosen = text, key, i
-    if best is None:
-        raise failed or completion.CompletionError("no sample came back")
-    return best, {"method": parsed.method.name, "base": parsed.base, "calls": n,
-                  "samples": n, "chosen": chosen}
+    started = time.perf_counter()
+    got, failed, made = sample(n, slots if slots is not None else (lambda: slots_of(parsed.base)),
+                               lambda i: ask(prompt, lane), lambda text: _rank(lane, text),
+                               (completion.CompletionError,))
+    if not got:
+        raise (failed[0] if failed else completion.CompletionError("no sample came back"))
+    i, _, best = max(got, key=lambda g: (g[1], -g[0]))
+    return best, {"method": parsed.method.name, "base": parsed.base, "calls": made,
+                  "samples": n, "chosen": i + 1, "wall_s": round(time.perf_counter() - started, 2)}
 
 
 def cost(incumbent: dict, challenger: dict, spec: str) -> dict:
@@ -273,7 +338,7 @@ def _trace(parsed: Parsed, base_builder, outdir):
 
 def _best_of(parsed: Parsed, base_builder, outdir):
     from evals.runners.method import BestOfRunner
-    return BestOfRunner(base_builder(parsed.base), parsed.args[0])
+    return BestOfRunner(base_builder(parsed.base), parsed.args[0], spec=parsed.base)
 
 
 def _plan(parsed: Parsed, base_builder, outdir):
