@@ -1,0 +1,9 @@
+job: issue triage
+prompt: |
+  issue.md in the current directory is a bug report; labels.txt lists the allowed labels, one per
+  line. Choose the labels that apply: exactly one of bug, enhancement, documentation, question,
+  exactly one area:* label, and optionally one priority:* label. Write them to labels.json as a JSON
+  array of strings, and write nothing else to that file.
+checks:
+  - {kind: labels, file: labels.json, allowed_file: labels.txt, required: [bug, "area:gateway"],
+     forbidden: [enhancement, documentation, question, "area:ui", "area:evals"]}

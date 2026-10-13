@@ -1,0 +1,51 @@
+2026-10-01T12:00:00Z INFO  [cache] hit
+2026-10-01T12:00:01Z INFO  [db] query ok
+2026-10-01T12:00:02Z INFO  [db] query ok
+2026-10-01T12:00:03Z WARN  [db] slow query, no error
+2026-10-01T12:00:04Z INFO  [db] query ok
+2026-10-01T12:00:05Z INFO  [scheduler] tick
+2026-10-01T12:00:06Z INFO  [scheduler] tick
+2026-10-01T12:00:07Z WARN  [gateway] retrying after error from upstream
+2026-10-01T12:00:08Z WARN  [db] slow query, no error
+2026-10-01T12:00:09Z ERROR [db] connection reset by peer
+2026-10-01T12:00:10Z ERROR [db] connection reset by peer
+2026-10-01T12:00:11Z INFO  [db] query ok
+2026-10-01T12:00:12Z INFO  [gateway] request served
+2026-10-01T12:00:13Z WARN  [gateway] retrying after error from upstream
+2026-10-01T12:00:14Z INFO  [cache] hit
+2026-10-01T12:00:15Z ERROR [gateway] upstream returned 502
+2026-10-01T12:00:16Z ERROR [db] connection reset by peer
+2026-10-01T12:00:17Z ERROR [db] connection reset by peer
+2026-10-01T12:00:18Z INFO  [db] query ok
+2026-10-01T12:00:19Z INFO  [gateway] request served
+2026-10-01T12:00:20Z INFO  [cache] hit
+2026-10-01T12:00:21Z INFO  [scheduler] tick
+2026-10-01T12:00:22Z INFO  [gateway] request served
+2026-10-01T12:00:23Z INFO  [scheduler] tick
+2026-10-01T12:00:24Z WARN  [gateway] retrying after error from upstream
+2026-10-01T12:00:25Z INFO  [gateway] request served
+2026-10-01T12:00:26Z INFO  [gateway] request served
+2026-10-01T12:00:27Z INFO  [scheduler] tick
+2026-10-01T12:00:28Z INFO  [gateway] request served
+2026-10-01T12:00:29Z WARN  [gateway] retrying after error from upstream
+2026-10-01T12:00:30Z INFO  [cache] hit
+2026-10-01T12:00:31Z INFO  [cache] hit
+2026-10-01T12:00:32Z INFO  [cache] hit
+2026-10-01T12:00:33Z ERROR [cache] eviction failed: lock held
+2026-10-01T12:00:34Z INFO  [gateway] request served
+2026-10-01T12:00:35Z INFO  [gateway] request served
+2026-10-01T12:00:36Z INFO  [scheduler] tick
+2026-10-01T12:00:37Z INFO  [cache] hit
+2026-10-01T12:00:38Z INFO  [scheduler] tick
+2026-10-01T12:00:39Z INFO  [scheduler] tick
+2026-10-01T12:00:40Z INFO  [gateway] request served
+2026-10-01T12:00:41Z INFO  [db] query ok
+2026-10-01T12:00:42Z ERROR [db] connection reset by peer
+2026-10-01T12:00:43Z INFO  [cache] hit
+2026-10-01T12:00:44Z INFO  [db] query ok
+2026-10-01T12:00:45Z INFO  [scheduler] tick
+2026-10-01T12:00:46Z INFO  [cache] hit
+2026-10-01T12:00:47Z WARN  [db] slow query, no error
+2026-10-01T12:00:48Z INFO  [db] query ok
+2026-10-01T12:00:49Z INFO  [db] query ok
+2026-10-01T12:00:50Z ERROR [gateway] upstream returned 502

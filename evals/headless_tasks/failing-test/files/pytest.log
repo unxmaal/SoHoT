@@ -1,0 +1,28 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.12.15, pytest-8.4.2, pluggy-1.6.0
+rootdir: /work/ledger
+collected 11 items
+
+tests/test_parse.py::test_empty PASSED
+tests/test_parse.py::test_unicode PASSED
+tests/test_parse.py::test_failure_message PASSED
+tests/test_parse.py::test_trailing_comma PASSED
+tests/test_money.py::test_round_half_even PASSED
+tests/test_money.py::test_negative_amount FAILED
+tests/test_money.py::test_currency_symbol PASSED
+tests/test_report.py::test_header PASSED
+tests/test_report.py::test_footer PASSED
+tests/test_report.py::test_error_rows PASSED
+tests/test_report.py::test_legacy_totals XFAIL (known rounding issue)
+
+=================================== FAILURES ===================================
+_____________________________ test_negative_amount _____________________________
+
+    def test_negative_amount():
+>       assert fmt(-12.5) == "-$12.50"
+E       AssertionError: assert '$-12.50' == '-$12.50'
+
+tests/test_money.py:41: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_money.py::test_negative_amount - AssertionError: assert '$-12.50' == '-$12.50'
+=================== 1 failed, 9 passed, 1 xfailed in 0.42s ====================
