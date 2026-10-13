@@ -11,7 +11,7 @@ from pathlib import Path
 from harness.howitworks import MODEL, REPO_URL, diagram
 from harness.howitworks import CSS as FLOW_CSS
 from harness.trends import CSS as TREND_CSS
-PAGES = ("index.html", "reports/index.html", "benchmarks/index.html")
+PAGES = ("index.html", "reports/index.html", "benchmarks/index.html", "trends/index.html")
 
 FONTS = ("https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700"
          "&family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono:wght@400;600"
@@ -211,7 +211,7 @@ def page(title: str, body: str, depth: int = 0, here: str = "", now: float | Non
          before: str = "") -> str:
     """The shared shell: fonts, theme, menu bar and footer. Table pages get the calm palette."""
     up = "../" * depth
-    links = (("", "SoHoT"), ("benchmarks/", "Benchmarks"), ("reports/", "Lane report"))
+    links = (("", "SoHoT"), ("benchmarks/", "Benchmarks"), ("trends/", "Trends"), ("reports/", "Lane report"))
     menu = "".join(
         f'<a href="{up + href or "./"}"{" class=brand" if not href else ""}'
         f'{" aria-current=page" if href == here else ""}>{label}</a>'
@@ -490,10 +490,6 @@ def benchmarks(machines: list[dict], now: float | None = None) -> str:
         (measured if any(_has_tables(b.get(n)) for b in by) else waiting).append(n)
     index = "".join(f'<li class="chip"><a href="#lane-{_esc(n)}">{_esc(n)}</a></li>'
                     for n in measured)
-    from harness import trends
-    trended = [d for d in machines if trends.has_data(d.get("trends"))]
-    if trended:
-        index += '<li class="chip"><a href="#trends">trends</a></li>'
     intro = window("Benchmarks", (
         "<p>Each table is one exam on one machine: every run in it asked the same cases "
         "under the same conditions, and each candidate shows its latest result there. "
@@ -519,11 +515,24 @@ def benchmarks(machines: list[dict], now: float | None = None) -> str:
     rest = (window("Not measured yet", "<p>No published measure run for: "
                    + ", ".join(_esc(n) for n in waiting) + ".</p>", "coral")
             if waiting and machines else "")
-    trend_wins = "".join(
-        window(f'Trends &middot; {_esc(d["machine"].get("label"))}', trends.render(d["trends"]), "butter",
+    return page("SoHoT benchmarks", intro + "".join(wins) + rest, 1, "benchmarks/", now)
+
+
+def trends_page(machines: list[dict], now: float | None = None) -> str:
+    """Cost, tokens, plan cap and energy over time, one window per machine; its own page so the benchmarks stay on top. #849."""
+    from harness import trends
+    trended = [d for d in machines if trends.has_data(d.get("trends"))]
+    intro = window("Trends", (
+        "<p>Daily series from each machine's ledger: what Claude would have cost at list prices, "
+        "how much of the plan's cap was used, local tokens by purpose, the work moved off Claude, "
+        "energy, and the tool output that entered Claude's context. A trend is a benchmark too: "
+        "a change should show as a step.</p>"
+        + ("" if trended else '<p class="note">No machine has published trends yet.</p>')), "sky")
+    wins = "".join(
+        window(f'{_esc(d["machine"].get("label"))}', trends.render(d["trends"]), "butter",
                attrs=' id="trends"' if i == 0 else "")
         for i, d in enumerate(trended))
-    return page("SoHoT benchmarks", intro + trend_wins + "".join(wins) + rest, 1, "benchmarks/", now)
+    return page("SoHoT trends", intro + wins, 1, "trends/", now)
 
 
 # --- the whole site --------------------------------------------------------
@@ -533,7 +542,8 @@ def render(machines: list[dict], now: float | None = None) -> dict[str, str]:
     now = time.time() if now is None else now
     return {"index.html": front(machines, now),
             "reports/index.html": publish.render_site(machines, now=now),
-            "benchmarks/index.html": benchmarks(machines, now)}
+            "benchmarks/index.html": benchmarks(machines, now),
+            "trends/index.html": trends_page(machines, now)}
 
 
 def write(machines: list[dict], out) -> list[Path]:
