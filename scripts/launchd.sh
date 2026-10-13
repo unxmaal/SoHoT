@@ -23,14 +23,18 @@ SRC="${LH_REPO:-$REPO}"
 DEPLOY="${LH_DEPLOY:-$LH_HOME/deploy}"
 # `discover` is not a server. It is the scheduled sweep, and it is in this
 # list because the thing that must survive a reboot is the SCHEDULE. #261.
-SERVICES="gateway mlx eval tts mcp discover worker audit ds4"
+SERVICES="gateway mlx eval tts mcp discover worker audit ds4 watchdog"
 
 #: Services that RUN AND EXIT rather than serve, at fixed local hours. KeepAlive
 #: would rerun a finished sweep at once; StartInterval counts from load, so a day
 #: of installs never lets it fire (#625). harness/heartbeat reads the installed hours (#705).
-declare -a PERIODIC=(discover audit)
+declare -a PERIODIC=(discover audit watchdog)
 DISCOVER_HOURS="${DISCOVER_HOURS:-21}"
 AUDIT_HOURS="${AUDIT_HOURS:-3}"                   # nightly, #492
+# The watchdog watches this machine's own jobs, so every role runs it. #814.
+WATCHDOG_EVERY_MIN="${WATCHDOG_EVERY_MIN:-5}"
+# Periodic jobs that read or write the shared store: only the scheduler runs them. #703.
+declare -a SCHEDULER_ONLY=(discover audit)
 # Machines sharing one store run the periodic jobs on one of them: scheduler, or node for the rest. #703.
 # A role given once is kept in $LH_HOME/role, so a later plain `make install` keeps it.
 ROLE_FILE="$LH_HOME/role"
@@ -54,7 +58,7 @@ units() {
   for service in $SERVICES; do
     skip=""
     if [ "$LH_ROLE" = node ]; then
-      for p in "${PERIODIC[@]}"; do [ "$p" = "$service" ] && skip=1; done
+      for p in "${SCHEDULER_ONLY[@]}"; do [ "$p" = "$service" ] && skip=1; done
     fi
     [ -z "$skip" ] && printf '%s\n' "$service"
   done
@@ -103,6 +107,25 @@ _hf_root() {
   _hf_var HF_HOME
 }
 
+# The watchdog acts and files issues only once Eric sets these; a value given once is kept. #814.
+_watchdog_env() {
+  local var val
+  [ "$1" = watchdog ] || return 0
+  for var in LH_WATCHDOG_ACT LH_WATCHDOG_FILE; do
+    val="${!var:-}"
+    if [ -n "$val" ]; then
+      mkdir -p "$LH_HOME"
+      printf '%s\n' "$val" > "$LH_HOME/$var"
+    elif [ -f "$LH_HOME/$var" ]; then
+      val="$(tr -d '[:space:]' < "$LH_HOME/$var")"
+    fi
+    if [ -n "$val" ]; then
+      printf '    <key>%s</key><string>%s</string>\n' "$var" "$val"
+    fi
+  done
+  return 0
+}
+
 usage() {
   echo "usage: $0 {deploy|deploy-path|generate [DIR]|install|uninstall|status|probe}" >&2
   exit 2
@@ -114,6 +137,16 @@ usage() {
 _schedule() {
   local service="$1" p
   for p in "${PERIODIC[@]}"; do
+    if [ "$p" = "$service" ] && [ "$service" = watchdog ]; then
+      # Every N minutes of every hour: a calendar, since an interval restarts at each load (#625).
+      local m
+      printf '  <key>StartCalendarInterval</key>\n  <array>\n'
+      for m in $(seq 0 "$WATCHDOG_EVERY_MIN" 59); do
+        printf '    <dict><key>Minute</key><integer>%s</integer></dict>\n' "$m"
+      done
+      printf '  </array>\n'
+      return
+    fi
     if [ "$p" = "$service" ]; then
       # No RunAtLoad: an install is not a schedule tick (#328).
       local hours="$DISCOVER_HOURS" h
@@ -158,7 +191,7 @@ $(_schedule "$service")
     <key>HOME</key><string>$HOME</string>
     <!-- stdout is a file here, so an unbuffered log is the only progress. -->
     <key>PYTHONUNBUFFERED</key><string>1</string>
-$(_hf_env)  </dict>
+$(_hf_env)$(_watchdog_env "$service")  </dict>
   <key>ProcessType</key><string>Interactive</string>
 </dict>
 </plist>
@@ -287,7 +320,7 @@ _live_pid() {
 # A node unloads periodic units an earlier scheduler install left behind.
 drop_periodic() {
   local p
-  for p in "${PERIODIC[@]}"; do
+  for p in "${SCHEDULER_ONLY[@]}"; do
     if launchctl print "gui/$UID/$PREFIX.$p" >/dev/null 2>&1; then
       launchctl bootout "gui/$UID/$PREFIX.$p"
     fi

@@ -512,3 +512,55 @@ def test_a_terminated_measure_stops_the_eval_in_its_own_session(tmp_path):
     _, err = proc.communicate(timeout=30)
     assert proc.returncode == 128 + signal.SIGTERM, err
     assert _gone(eval_pid), "the eval outlived its terminated measure step"
+
+
+# --- the watchdog: every role, every few minutes, dry run until enabled. #814 -------
+
+def _generate(out, **extra):
+    env = {k: v for k, v in os.environ.items() if not k.startswith("LH_WATCHDOG_") and k != "LH_ROLE"}
+    proc = subprocess.run([shells.BASH, str(GEN), "generate", str(out)], capture_output=True, text=True,
+                          env={**env, **extra})
+    assert proc.returncode == 0, proc.stderr
+    return {p.stem.rsplit(".", 1)[-1]: plistlib.loads(p.read_bytes()) for p in out.glob("*.plist")}
+
+
+def test_the_watchdog_wakes_every_few_minutes_on_a_calendar(plists):
+    unit = next(v for k, v in plists.items() if k.endswith(".watchdog"))
+    assert unit["ProgramArguments"][1].endswith("serve-watchdog.sh")
+    cal = unit["StartCalendarInterval"]
+    assert [c["Minute"] for c in cal] == list(range(0, 60, 5)) and not any("Hour" in c for c in cal)
+    assert "StartInterval" not in unit and unit.get("RunAtLoad") is not True
+
+
+def test_a_node_keeps_the_watchdog_because_it_watches_this_machine(tmp_path):
+    units = _generate(tmp_path, LH_ROLE="node", LOCALHARNESS_HOME=str(tmp_path / "home"))
+    assert "watchdog" in units and "discover" not in units and "audit" not in units
+
+
+def test_the_watchdog_acts_only_once_enabled_and_keeps_the_switch(tmp_path):
+    home = str(tmp_path / "home")
+    off = _generate(tmp_path / "off", LOCALHARNESS_HOME=home)["watchdog"]["EnvironmentVariables"]
+    assert "LH_WATCHDOG_ACT" not in off and "LH_WATCHDOG_FILE" not in off
+    on = _generate(tmp_path / "on", LOCALHARNESS_HOME=home, LH_WATCHDOG_ACT="1")["watchdog"]
+    assert on["EnvironmentVariables"]["LH_WATCHDOG_ACT"] == "1"
+    again = _generate(tmp_path / "again", LOCALHARNESS_HOME=home)
+    assert again["watchdog"]["EnvironmentVariables"]["LH_WATCHDOG_ACT"] == "1"
+    assert "LH_WATCHDOG_ACT" not in again["gateway"]["EnvironmentVariables"]
+
+
+def test_install_does_not_kill_a_watchdog_wake_that_is_running(tmp_path):
+    got, calls = _install(tmp_path, running=("watchdog",))
+    assert not [c for c in calls if c.startswith("bootout") and c.endswith(".watchdog")], calls
+    assert "deferred: watchdog" in got.stderr
+
+
+def test_a_node_drops_the_scheduler_units_and_keeps_the_watchdog(tmp_path):
+    got, calls = _install(tmp_path, role="node")
+    assert got.returncode == 0, got.stderr
+    assert "removed com.unxmaal.localharness.watchdog" not in got.stdout
+    assert any(c.startswith("bootstrap") and c.endswith(".watchdog.plist") for c in calls)
+
+
+def test_the_watchdog_script_runs_one_wake_from_its_checkout():
+    text = (REPO / "scripts" / "serve-watchdog.sh").read_text(encoding="utf-8")
+    assert "set -euo pipefail" in text and "uv run soh watchdog" in text

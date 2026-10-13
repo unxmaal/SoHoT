@@ -4,7 +4,7 @@ from __future__ import annotations
 from harness import store
 
 
-SCHEMA_VERSION = 66
+SCHEMA_VERSION = 67
 
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
@@ -462,6 +462,22 @@ CREATE TABLE IF NOT EXISTS knob_sweeps (
     -- JSON {str(value): {passed, n, seconds, lost, gained, p, tied, best, run_id}}.
     cost         TEXT NOT NULL DEFAULT '{}',
     detail       TEXT NOT NULL DEFAULT ''
+);
+
+-- One act of the watchdog: the criterion that tripped, on what, the action, and what came of it. #814.
+CREATE TABLE IF NOT EXISTS watchdog_actions (
+    id          INTEGER PRIMARY KEY,
+    at          REAL NOT NULL,
+    machine_id  INTEGER REFERENCES machines(id),
+    criterion   TEXT NOT NULL,
+    -- A key stable across wakes: "job 0042", "eval pgid N", "model <stem>", "gateway".
+    subject     TEXT NOT NULL,
+    action      TEXT NOT NULL,
+    escalated   INTEGER NOT NULL DEFAULT 0,
+    dry_run     INTEGER NOT NULL DEFAULT 1,
+    -- JSON: the measurements that tripped it, how the subject was identified, the fingerprint.
+    evidence    TEXT NOT NULL DEFAULT '{}',
+    outcome     TEXT NOT NULL DEFAULT ''
 );
 
 -- Weights on disk, one row per fetched or found path on one machine. #411.
