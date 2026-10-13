@@ -317,7 +317,8 @@ def test_a_method_crossed_with_the_incumbent_climbs_the_same_ladder(world):
         finally:
             conn.close()
         cost = json.loads(power)["cost"]
-        assert cost["base"] == INCUMBENT_UPSTREAM and cost["calls"] == (2.0 if spec[0] == "p" else 3.0)
+        # The fake's first sample passes clean, so best-of stops there. #807.
+        assert cost["base"] == INCUMBENT_UPSTREAM and cost["calls"] == (2.0 if spec[0] == "p" else 1.0)
 
 
 def test_a_model_server_that_dies_mid_screen_is_the_harnesss_fault(world):

@@ -5,9 +5,10 @@ the row's seconds are the whole method, every call included.
 """
 from __future__ import annotations
 
+import copy
 from dataclasses import replace
 
-from harness import completion
+from harness import completion, methods
 from harness.methods import ANSWER_PROMPT, PLAN_PROMPT
 
 from evals import core
@@ -17,11 +18,14 @@ from evals.runners.text import _runner_error
 
 
 class BestOfRunner(BaseRunner):
-    """Sample the base n times at the lane's temperature; keep what the lane's checks score highest."""
+    """Sample the base up to n times at the lane's temperature, stopping once one passes clean; keep
+    what the lane's checks score highest. Samples after the first go concurrently, one per slot. #807."""
 
-    def __init__(self, base: BaseRunner, n: int):
+    def __init__(self, base: BaseRunner, n: int, spec: str = "", slots: int | None = None):
         self.base = base
         self.n = int(n)
+        self.spec = spec
+        self.slots = slots
         self.candidate = f"best-of-{self.n}/{base.candidate}"
         self.last_metrics: dict = {}
 
@@ -31,29 +35,32 @@ class BestOfRunner(BaseRunner):
     def score_kwargs(self) -> dict:
         return self.base.score_kwargs()
 
+    def _slots(self) -> int:
+        if self.slots is None:
+            self.slots = methods.slots_of(self.spec) if self.spec else 1
+        return self.slots
+
     def generate(self, case: Case):
         self.base.screening = self.screening
         self.last_cut = ""
-        best = best_key = None
-        tokens = calls = 0
-        failed = None
-        for i in range(self.n):
-            calls += 1
-            try:
-                artifact, peak = self.base.generate(case)
-            except RunnerError as exc:
-                failed = exc
-                continue
-            tokens += int(self.base.extra_metrics().get("completion_tokens") or 0)
-            row = core.score(case, artifact, **self.base.score_kwargs())
-            key = (row.passed, -len(row.warnings))
-            if best_key is None or key > best_key:
-                best, best_key, chosen = (artifact, peak), key, i + 1
-                self.last_cut = self.base.cut_off()
-        self.last_metrics = {"method_calls": calls, "method_samples": self.n}
-        if best is None:
-            raise failed or RunnerError("no sample came back")
-        self.last_metrics["method_chosen"] = chosen
+
+        def draw(i):
+            # Each concurrent sample keeps its metrics and cut on its own copy of the base.
+            runner = self.base if i == 0 else copy.copy(self.base)
+            artifact, peak = runner.generate(case)
+            return (artifact, peak), runner
+
+        def rank(out):
+            row = core.score(case, out[0][0], **self.base.score_kwargs())
+            return (row.passed, -len(row.warnings))
+        got, failed, made = methods.sample(self.n, self._slots, draw, rank, (RunnerError,))
+        self.last_metrics = {"method_calls": made, "method_samples": self.n}
+        if not got:
+            raise failed[0] if failed else RunnerError("no sample came back")
+        i, _, (best, runner) = max(got, key=lambda g: (g[1], -g[0]))
+        self.last_cut = runner.cut_off()
+        self.last_metrics["method_chosen"] = i + 1
+        tokens = sum(int(r.extra_metrics().get("completion_tokens") or 0) for _, _, (_, r) in got)
         if tokens:
             self.last_metrics["completion_tokens"] = tokens
         return best

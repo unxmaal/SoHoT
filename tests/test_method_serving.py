@@ -81,7 +81,8 @@ def test_best_of_serves_the_sample_the_lanes_own_check_ranks_highest():
     replies = iter(["not svg", GOOD_SVG, "<svg"])
     text, meta = methods.run("best-of:3:q3-4b", "svg", "a square", lambda p, m: next(replies))
     assert text == GOOD_SVG
-    assert meta == {"method": "best-of", "base": "q3-4b", "calls": 3, "samples": 3, "chosen": 2}
+    meta.pop("wall_s")
+    assert meta == {"method": "best-of", "base": "q3-4b", "calls": 2, "samples": 3, "chosen": 2}
 
 
 def test_best_of_survives_a_failed_sample_and_fails_when_every_sample_does():
@@ -129,8 +130,8 @@ def test_soh_svg_runs_an_adopted_best_of_and_says_which_sample_it_kept(capsys, t
         side_effect=[answered("no"), answered(GOOD_SVG), answered("no")])
     assert cli.main(["svg", "a square", "-o", str(tmp_path / "s.svg"), "--json"]) == 0
     out = json.loads(capsys.readouterr().out)
-    assert out["method"]["chosen"] == 2 and out["method"]["calls"] == 3
-    assert len(hit.calls) == 3
+    assert out["method"]["chosen"] == 2 and out["method"]["calls"] == 2
+    assert len(hit.calls) == 2
     assert (tmp_path / "s.svg").read_text(encoding="utf-8").startswith("<svg")
 
 
@@ -216,7 +217,8 @@ def test_local_complete_carries_the_methods_cost(monkeypatch):
     monkeypatch.setattr(completion, "complete_full",
                         lambda *a, **k: completion.Completion("def f(): pass"))
     got = mcp_server.local_complete(prompt="write f", lane="code")
-    assert got.method == {"method": "best-of", "base": "q3-4b", "calls": 2,
+    got.method.pop("wall_s")
+    assert got.method == {"method": "best-of", "base": "q3-4b", "calls": 1,
                           "samples": 2, "chosen": 1}
 
 
