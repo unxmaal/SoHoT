@@ -44,7 +44,7 @@ MODULES = {
         "tests/test_adopt_by_spec.py", "tests/test_adoptions.py", "tests/test_adopt_cmd.py",
         "tests/test_human_verdicts.py", "tests/test_schema_lanes.py", "tests/test_holdout_power.py",
         "tests/test_power_budget.py", "tests/test_methods.py", "tests/test_adopt_scope.py",
-        "tests/test_method_serving.py"],
+        "tests/test_method_serving.py", "tests/test_resume_813.py"],
     "harness/serving.py": [
         "tests/test_harness_serving.py", "tests/test_lane_routes.py", "tests/test_gguf_route.py",
         "tests/test_schema_lanes.py", "tests/test_ds4.py"],

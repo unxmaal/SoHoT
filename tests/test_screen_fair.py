@@ -232,7 +232,7 @@ def _screen_run(monkeypatch, tmp_path, modality: str, candidate: str) -> dict:
     from evals import run
     from evals.core import Result
 
-    def fail_all(args, cand, runner, mine, results, outdir, evicted=None, ladder=()):
+    def fail_all(args, cand, runner, mine, results, outdir, evicted=None, ladder=(), *rest):
         results += [Result(candidate=runner.candidate, case_id=c.id, passed=False, seconds=1.0, peak_kb=0,
                            detail="noise", failure_class=reasons.CONTENT_FAILED) for c in mine]
     monkeypatch.setattr(run, "_run_candidate", fail_all)

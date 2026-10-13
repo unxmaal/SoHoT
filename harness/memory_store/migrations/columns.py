@@ -205,3 +205,11 @@ def _add_holdout_power(conn) -> None:
                             ("runs", "split_version", "TEXT NOT NULL DEFAULT ''")):
         if col not in _columns(conn, table):
             conn.execute(f"ALTER TABLE {table} ADD COLUMN {col} {ddl}")
+
+
+def _add_verdict_seconds(conn) -> None:
+    """verdicts.planned_s_per_case and observed_s_per_case, on an older store. #813."""
+    have = _columns(conn, "verdicts")
+    for name in ("planned_s_per_case", "observed_s_per_case"):
+        if name not in have:
+            conn.execute(f"ALTER TABLE verdicts ADD COLUMN {name} REAL")

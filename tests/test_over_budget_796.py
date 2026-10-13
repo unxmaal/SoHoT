@@ -1,9 +1,11 @@
-"""A paired run projected past its time budget is refused, and an incumbent receipt at another reply budget bounds the projection. #796."""
+"""A paired run projected past its time budget spans sweeps (#813, was refused in #796); an incumbent receipt at another reply budget bounds the projection."""
 import argparse
+import math
+import time
 
 import pytest
 
-from harness import adopt, completion, power, reasons
+from harness import adopt, completion, power
 from harness import memory_store as ms
 from harness.commands import measure as measure_cmd
 
@@ -24,47 +26,45 @@ def _rows(lane, spec, seconds):
             for c in (*split.dev, *split.holdout) for k, s in enumerate(seconds, 1)]
 
 
-def test_a_plan_projected_over_its_budget_is_refused(store_run):
+def test_a_plan_projected_over_its_budget_is_sliced_across_sweeps_not_refused(store_run):
     store_run("inc-1", "svg", rows=_rows("svg", "inc", (100.0,) * 4),
               receipt={"max_tokens": completion.budget("svg")})
     _, plan = measure_cmd._plan(_ns(power_budget_min=1), "svg", "inc", "inc")
-    assert plan.projected_s > plan.budget_s
-    assert "not run" in plan.refused and "over the 1m budget" in plan.refused
+    assert plan.projected_s > plan.budget_s == 60.0
+    assert plan.sweeps == math.ceil(plan.projected_s / 60.0) > 1
+    assert f"projected {plan.sweeps} sweep(s) at 1m each, paused and resumed" in plan.why
+    assert not hasattr(plan, "refused")
 
 
-def test_an_explicit_repeat_over_budget_is_refused_too(store_run):
+def test_an_explicit_repeat_over_budget_keeps_its_repeat(store_run):
     store_run("inc-1", "svg", rows=_rows("svg", "inc", (100.0,) * 4),
               receipt={"max_tokens": completion.budget("svg")})
     _, plan = measure_cmd._plan(_ns(repeat=2, power_budget_min=1), "svg", "inc", "inc")
-    assert plan.repeat == 2 and plan.refused
+    assert plan.repeat == 2 and plan.sweeps > 1
 
 
-def test_a_plan_inside_its_budget_is_not_refused(store_run):
+def test_a_plan_inside_its_budget_spans_one_sweep(store_run):
     store_run("inc-1", "svg", rows=_rows("svg", "inc", (1.0,) * 4),
               receipt={"max_tokens": completion.budget("svg")})
     _, plan = measure_cmd._plan(_ns(repeat=1, power_budget_min=10_000), "svg", "inc", "inc")
-    assert not plan.refused
-    assert plan.deadline_s == pytest.approx(plan.budget_s * power.DEADLINE_GRACE)
+    assert plan.sweeps == 1 and "sweep(s)" not in plan.why
+    one = plan.projected_s / (plan.cases_run * plan.repeat)
+    assert plan.deadline_s == pytest.approx(plan.budget_s * power.DEADLINE_GRACE + one)
 
 
 @pytest.mark.long
-def test_a_refused_run_is_never_launched_and_records_why(monkeypatch, tmp_path):
+def test_an_over_budget_run_is_launched_to_pause_at_its_slice(monkeypatch, tmp_path):
+    from harness.commands.measure import Launched
     launched = []
-    monkeypatch.setattr(measure_cmd, "_launch", lambda argv, **kw: launched.append(argv))
+    monkeypatch.setattr(measure_cmd, "_launch",
+                        lambda argv, **kw: launched.append(argv) or Launched(1, "boom", False, 0.0))
     monkeypatch.setattr(adopt, "default_for", lambda lane, fallback, conn=None: "q3-4b")
     real = ms.connect
     monkeypatch.setattr(ms, "connect", lambda *a, **k: real(tmp_path / "d.db"))
-    rc = measure_cmd._measure_and_adopt(_ns(power_budget_min=1),
-                                        {"name": "org/challenger", "lane": "code"})
-    assert rc == 0 and launched == []
-    conn = real(tmp_path / "d.db")
-    try:
-        row = conn.execute("SELECT outcome, detail, failure_class FROM verdicts "
-                           "WHERE tier = ? ORDER BY id DESC", (adopt.TIER,)).fetchone()
-    finally:
-        conn.close()
-    assert row["failure_class"] == reasons.INCONCLUSIVE
-    assert "not run" in row["detail"] and "budget" in row["detail"]
+    measure_cmd._measure_and_adopt(_ns(power_budget_min=1), {"name": "org/challenger", "lane": "code"})
+    assert len(launched) == 1
+    stop = float(launched[0][launched[0].index("--stop-at") + 1])
+    assert 0 < stop - time.time() <= 61
 
 
 def test_a_receipt_at_a_smaller_reply_budget_bounds_the_incumbent(store_run):

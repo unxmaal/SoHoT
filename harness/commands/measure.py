@@ -2,9 +2,12 @@
 from __future__ import annotations
 
 import contextlib
+import math
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
+from pathlib import Path
 
+from evals import watch
 from harness import lanes, paths, reasons
 from harness.commands.common import emit, err, note
 from harness.commands import jobs as jobs_cmd
@@ -160,6 +163,15 @@ def measurable(store, top: int, want: str = "") -> list[dict]:
     return rows[:top]
 
 
+def resume_first(store, fresh: list[dict], want: str = "") -> list[dict]:
+    """Paused measurements before anything new, each once. #813."""
+    from harness import paused
+    held = [{"name": p["proposal"] or p["challenger"], "lane": p["lane"]} for p in paused.waiting(store)
+            if not want or lanes.serves(p["lane"], want)]
+    names = {r["name"] for r in held}
+    return held + [r for r in fresh if r.get("name") not in names]
+
+
 def _measure_and_adopt(a, row: dict, sweep=None) -> int:
     """_measure, then unload the challenger it loaded. #444."""
     from harness import router
@@ -221,41 +233,42 @@ def _measure(a, row: dict, loaded: list, sweep=None) -> int:
         upstream = screen.upstream_of(incumbent)
         if upstream:
             inc_spec = screen.candidate_for(lane, upstream) or upstream
-    # NAME THE DIRECTORY, DO NOT GUESS AT IT AFTERWARDS. A newest-receipt read
-    # whichever directory sorted highest, and `legacy-ev-small-code` outranks
-    # every timestamp because `l` sorts above `2`. The loop measured two
-    # candidates and then read a receipt from a different experiment. #222.
-    out = (paths.home() / "runs"
-           / f"{time.strftime('%Y%m%d-%H%M%S')}-adopt-{lane}")
     split, plan = _plan(a, lane, inc_spec, spec, sweep=sweep)
-    if sweep is not None and (plan.refused or plan.lead):
-        sweep.lines.append(f"{name}: {plan.refused or plan.lead}")
-    if plan.refused:
-        return _refused(name, lane, inc_spec, spec, split, plan)
-    argv = ["uv", "run", "python", "-m", "evals.run", "--modality", lane,
-            "--repeat", str(plan.repeat),
-            "--out", str(out),
-            "--candidates", f"{inc_spec},{spec}"]
-    if plan.side != "all":
-        argv += ["--split", plan.side]
-    # ROUTE IT THE WAY THE SCREEN DOES. LiteLLM validates `model` against its
-    # alias table and a discovered candidate is always a repo id, so the
-    # measure sent every request to a server that was never going to accept
-    # the name: 0/27 at 11ms a case, reported as "does not beat the incumbent
-    # on the lane's metric". #223, which is #206 at the tier its fix did not
-    # reach.
-    route = screen.routed_gateway(name)
-    if route:
-        argv += ["--gateway", route]
-    print(f"\n  {lane}: {name} against {incumbent}")
-    print(f"    {' '.join(argv)}", flush=True)
-    loaded.append(spec)
-    proc = _launch(argv, deadline_s=plan.deadline_s)
-    if getattr(proc, "timed_out", False):
-        return _stopped(name, lane, inc_spec, spec, split, plan, proc, out)
+    held, ident = _held(lane, inc_spec, spec, split, name, sweep)
+    if held:
+        # A resume runs the exam it started: the stored plan's repeat and side, this sweep's slice. #813.
+        plan = _resumed_plan(held["plan"], plan)
+    if sweep is not None and sweep.remaining() <= 0:
+        print(f"  {name}: not started, the sweep ceiling is reached; it waits for the next sweep", flush=True)
+        return 0
+    for _ in range(2):
+        # NAME THE DIRECTORY, DO NOT GUESS AT IT AFTERWARDS: a newest-receipt read
+        # took a stranger's run (`legacy-...` sorts above timestamps). #222.
+        out = (Path(held["out"]) if held else paths.home() / "runs"
+               / f"{time.strftime('%Y%m%d-%H%M%S')}-adopt-{lane}")
+        argv = _argv(lane, plan, out, inc_spec, spec, resume=bool(held))
+        # ROUTE IT THE WAY THE SCREEN DOES: LiteLLM refuses a repo id it has no alias for. #223, #206.
+        route = screen.routed_gateway(name)
+        if route:
+            argv += ["--gateway", route]
+        print(f"\n  {lane}: {name} against {incumbent}")
+        print(f"    {' '.join(argv)}", flush=True)
+        loaded.append(spec)
+        proc = _launch(argv, deadline_s=plan.deadline_s)
+        if proc.returncode == watch.STALE and held:
+            _stale(held, "the run's own checkpoint is another exam", name, sweep)
+            held = None
+            continue
+        break
+    if getattr(proc, "timed_out", False) or proc.returncode == watch.PAUSED:
+        return _paused(name, lane, inc_spec, spec, split, plan, out, held, ident, sweep)
     if proc.returncode != 0:
         err(proc.stderr.strip()[-400:] or "no stderr")
         return 1
+    taken = (held or {}).get("looks") or []
+    if held:
+        # The run finished; whatever is read from it next, nothing is left to resume.
+        _settle_pause(held["id"], "done", f"finished after {len(taken)} pause(s)")
     data = _receipt_at(out)
     if not data:
         return err(f"{name}: the run stored no receipt for {out}, so nothing "
@@ -329,27 +342,23 @@ def _measure(a, row: dict, loaded: list, sweep=None) -> int:
         tested = adopt.comparisons(store, lane, split.version) if split is not None else 0
     finally:
         store.close()
+    spent = taken[-1]["spent"] if taken else 0.0
     verdict = adopt.decide(lane, inc_row, ch_row, rows, split=split, plan=plan, spec=spec,
-                           tested=tested)
+                           tested=tested, alpha=adopt.alpha_for(tested) - spent if taken else None)
+    if taken:
+        verdict = replace(verdict, evidence={**verdict.evidence, "looks": taken})
     print(f"    {'ADOPTED' if verdict.adopt else 'kept the incumbent'}: "
           f"{verdict.why}")
-    store = ms.connect()
-    try:
-        # On the proposal the candidate maps to, so it leaves survivors. #393.
-        adopt.record(store, verdict, spec=spec, run_id=data.get("run_id"))
-    except ms.IllegalTransition as exc:
-        print(f"  skipped {exc}", flush=True)
-    finally:
-        store.close()
+    _record(verdict, spec, data.get("run_id"), out)
     return 0
 
 
 def _plan(a, lane: str, inc_spec: str, spec: str = "", sweep=None):
-    """The lane's split and the repeat the paired gate needs on its holdout, within the time budget and the sweep's ceiling. #479, #591, #673, #806."""
+    """The lane's split and the repeat the paired gate needs on its holdout; this sweep's slice of it. #479, #591, #673, #806, #813."""
     from dataclasses import replace
 
     from evals.run import STOCHASTIC_MODALITIES
-    from harness import adopt, candidates, ceiling, completion, holdout, power, runs
+    from harness import adopt, candidates, completion, holdout, power, runs
     from harness import memory_store as ms
 
     split = holdout.for_lane(lane)
@@ -367,9 +376,6 @@ def _plan(a, lane: str, inc_spec: str, spec: str = "", sweep=None):
                                                settings=settings, machines=machines,
                                                incumbent_basis=basis)
         alpha = adopt.alpha_for(adopt.comparisons(store, lane, split.version))
-        pairing = ceiling.key(lane, inc_spec, spec)
-        found = (ceiling.lead(store, lane, inc_spec, spec)
-                 if sweep is not None and spec and pairing not in sweep.spent else None)
     finally:
         store.close()
     estimated = ""
@@ -388,59 +394,40 @@ def _plan(a, lane: str, inc_spec: str, spec: str = "", sweep=None):
                       repeat=explicit, observed=seen, alpha=alpha,
                       unmeasured=not any(draws.values()),
                       rho=power.icc([list(draws.values())]))
-    budget = per = float(getattr(a, "power_budget_min", None) or power.BUDGET_MIN) * 60
+    per = float(getattr(a, "power_budget_min", None) or power.BUDGET_MIN) * 60
     left = sweep.remaining() if sweep is not None else None
-    lead = ""
-    if found is not None and left > per:
-        # Once per lead per sweep: its follow-up may spend what the ceiling has left. #806.
-        sweep.spent.add(pairing)
-        budget = left
-        lead = (f"{found.text()}, so up to the {power._hm(left)} left before the sweep "
-                f"ceiling instead of the {power._hm(per)} budget")
-    elif left is not None:
-        budget = min(per, left)
+    budget = per if left is None else min(per, left)
     every = len(set(split.dev) | set(split.holdout))
     full = power.projected_seconds(every, plan.repeat, median_s, calls)
     side, dev_skipped = "all", ""
-    if split.dev and full is not None and full > budget:
+    if split.dev and full is not None and full > per:
         side = "holdout"
         dev_skipped = (f"dev: not run, dev and holdout at repeat {plan.repeat} would "
-                       f"take {power._hm(full)}, over the {power._hm(budget)} budget")
+                       f"take {power._hm(full)}, over the {power._hm(per)} budget")
     plan = power.within_budget(
         plan, [rates[c] for c in split.holdout],
         cases_run=every if side == "all" else len(split.holdout), median_s=median_s,
-        budget_s=budget, explicit=bool(explicit), calls=calls)
+        budget_s=per, explicit=bool(explicit), calls=calls)
     if est["challenger_source"] not in ("measured", "like incumbent", "bounded") and est["challenger_s"] is not None:
         estimated = "; ".join(x for x in (estimated, f"challenger seconds per call "
                                           f"{est['challenger_s']:.0f}s by {est['challenger_source']}") if x)
-    plan = replace(plan, side=side, dev_skipped=dev_skipped, estimate=est,
-                   why="; ".join(x for x in (lead, plan.why, power.unseen_note(draws), estimated) if x),
-                   lead=lead)
-    stop = power.deadline(plan)
-    plan = replace(plan, deadline_s=stop if left is None or stop is None else min(stop, left))
-    if plan.projected_s is not None and plan.budget_s is not None and plan.projected_s > plan.budget_s:
-        # Even the fallback repeat does not fit: refuse rather than run past it to DEADLINE_GRACE. #796.
-        cost = (f"{plan.cases_run} case(s) x repeat {plan.repeat} x {calls} call(s) projected at "
-                f"{power._hm(plan.projected_s)}")
-        if lead:
-            why = (f"lead, unaffordable in one sweep: {cost}, over the {power._hm(left)} left before "
-                   f"the sweep ceiling ({found.text()})")
-        elif left is not None and left < per:
-            why = (f"not run: would end after the sweep ceiling: {cost}, "
-                   f"{power._hm(left)} left of it")
-        else:
-            why = f"not run: {cost}, over the {power._hm(plan.budget_s)} budget"
-        plan = replace(plan, refused=why)
+    # Longer than one budget is paused and resumed, never refused for length. #813.
+    sweeps = (math.ceil(plan.projected_s / per) if plan.projected_s and per else None)
+    spans = (f"projected {sweeps} sweep(s) at {power._hm(per)} each, paused and resumed"
+             if sweeps and sweeps > 1 else "")
+    plan = replace(plan, side=side, dev_skipped=dev_skipped, estimate=est, budget_s=budget,
+                   odds=power._cell_odds([rates[c] for c in split.holdout], plan.effect)
+                   if split.holdout else None, sweeps=sweeps,
+                   why="; ".join(x for x in (spans, plan.why, power.unseen_note(draws), estimated) if x))
+    plan = replace(plan, deadline_s=power.deadline(plan))
     print(f"    power: repeat {plan.repeat} over {len(split.holdout)} holdout "
           f"case(s) gives {plan.power:.2f} to detect +{plan.effect:.2f} at "
           f"alpha {plan.alpha}{'; ' + plan.why if plan.why else ''}"
           f"{'; ' + split.caveat if split.caveat else ''}", flush=True)
-    if plan.refused:
-        print(f"    time: {plan.refused}", flush=True)
-    elif plan.projected_s is not None:
+    if plan.projected_s is not None:
         print(f"    time: {plan.cases_run} case(s) x repeat {plan.repeat} x {calls} "
-              f"call(s) projected at {power._hm(plan.projected_s)}, stopped at "
-              f"{power._hm(plan.deadline_s)}", flush=True)
+              f"call(s) projected at {power._hm(plan.projected_s)}; this slice pauses at "
+              f"{power._hm(plan.budget_s)}", flush=True)
     if dev_skipped:
         print(f"    {dev_skipped}", flush=True)
     missing = power.unmeasured(draws, split.holdout)
@@ -536,49 +523,158 @@ def _stop_group(proc, grace_s: float) -> None:
         os.killpg(proc.pid, signal.SIGKILL)
 
 
-def _stopped(name: str, lane: str, inc_spec: str, spec: str, split, plan,
-             proc, out) -> int:
-    """Record a run stopped at its deadline as a partial, inconclusive verdict. #673."""
-    from harness import adopt, power
-    from harness import memory_store as ms
+def _argv(lane: str, plan, out, inc_spec: str, spec: str, resume: bool = False) -> list[str]:
+    """The paired evals.run: pause at this sweep's slice, a plan per case for a watchdog, resume when held. #813, #810."""
+    argv = ["uv", "run", "python", "-m", "evals.run", "--modality", lane,
+            "--repeat", str(plan.repeat), "--out", str(out),
+            "--candidates", f"{inc_spec},{spec}"]
+    if plan.side != "all":
+        argv += ["--split", plan.side]
+    if plan.budget_s is not None:
+        argv += ["--stop-at", f"{time.time() + plan.budget_s:.0f}"]
+    est = plan.estimate or {}
+    each = [est.get(f"{who}_s") and est[f"{who}_s"] * (est.get(f"{who}_calls") or 1)
+            for who in ("incumbent", "challenger")]
+    if all(each):
+        argv += [x for s_ in each for x in ("--plan-s", f"{s_:.2f}")]
+    if resume:
+        argv.append("--resume")
+    return argv
 
-    data = _receipt_at(out) or {}
-    elapsed = getattr(proc, "elapsed_s", None) or plan.deadline_s or 0.0
-    why = (f"partial: stopped at its {power._hm(plan.deadline_s or elapsed)} deadline "
-           f"after {power._hm(elapsed)}, before {plan.side} cases at repeat "
-           f"{plan.repeat} finished; inconclusive, nothing is concluded about the challenger")
-    verdict = adopt.Verdict(
-        lane, inc_spec, spec, False, why, failure_class=reasons.INCONCLUSIVE,
-        evidence={"split": split.as_dict(), "power": plan.as_dict(),
-                  "partial": {"deadline_s": plan.deadline_s, "elapsed_s": elapsed,
-                              "side": plan.side, "stored_rows": bool(data)}})
+
+def _held(lane: str, inc_spec: str, spec: str, split, name: str, sweep):
+    """(the pairing's live pause if it may resume, the identity a resume needs); a changed exam is reported stale. #813."""
+    from harness import completion, knobs, paused
+    from harness import memory_store as ms
+    ident = paused.identity(lane, inc_spec, (completion.budget(lane), ()), knobs.settings(lane),
+                            split.version)
     store = ms.connect()
     try:
-        adopt.record(store, verdict, spec=spec, run_id=data.get("run_id"))
-    except ms.IllegalTransition as exc:
-        print(f"  skipped {exc}", flush=True)
+        held = paused.find(store, lane, spec)
     finally:
         store.close()
-    return err(f"{name}: {why}")
+    if not held:
+        return None, ident
+    changed = watch.differs(held["identity"], ident)
+    if not changed and not (Path(held["out"]) / watch.CHECKPOINT).is_file():
+        changed = ["its checkpoint"]
+    if changed:
+        _stale(held, f"{', '.join(changed)} changed", name, sweep)
+        return None, ident
+    return held, ident
 
 
-def _refused(name: str, lane: str, inc_spec: str, spec: str, split, plan) -> int:
-    """Record a run refused for its projected time as an inconclusive verdict, never launched. #796."""
-    from harness import adopt
+def _stale(held: dict, what: str, name: str, sweep) -> None:
+    why = (f"stale: {what} since the pause at {held['done']}/{held['total']}; restarted, "
+           f"the paused rows stay in {held['out']}")
+    _settle_pause(held["id"], "stale", why)
+    print(f"  {name}: {why}", flush=True)
+    if sweep is not None:
+        sweep.lines.append(f"{name}: {why}")
+
+
+def _settle_pause(pause_id: int, state: str, why: str) -> None:
+    from harness import paused
     from harness import memory_store as ms
-
-    why = f"{plan.refused}; inconclusive, nothing is concluded about the challenger"
-    verdict = adopt.Verdict(lane, inc_spec, spec, False, why, failure_class=reasons.INCONCLUSIVE,
-                            evidence={"split": split.as_dict(), "power": plan.as_dict()})
     store = ms.connect()
     try:
-        adopt.record(store, verdict, spec=spec)
-    except ms.IllegalTransition as exc:
-        print(f"  skipped {exc}", flush=True)
+        paused.settle(store, pause_id, state, why)
+    finally:
+        store.close()
+
+
+def _resumed_plan(stored: dict, fresh):
+    """The stored plan's exam (repeat, side, power) with this sweep's budget and deadline."""
+    from dataclasses import fields
+
+    from harness import power
+    names = {f.name for f in fields(power.Plan)}
+    got = power.Plan(**{k: v for k, v in stored.items() if k in names})
+    if got.odds is not None:
+        got = replace(got, odds=tuple(got.odds))
+    return replace(got, budget_s=fresh.budget_s, deadline_s=fresh.deadline_s)
+
+
+def _paused(name: str, lane: str, inc_spec: str, spec: str, split, plan, out, held, ident, sweep) -> int:
+    """A run paused at its slice: take an interim look, then stop early on it or keep the pause for the next sweep. #813."""
+    import math
+
+    from harness import adopt, candidates, looks, paused, power
+    from harness import memory_store as ms
+    got = watch.read(out)
+    rows = got[1] if got else []
+    progress = watch.read_progress(out)
+    keys = {spec_: key for key, spec_ in (progress.get("specs") or {}).items()}
+    inc_key = keys.get(inc_spec) or candidates.key_of(inc_spec) or inc_spec
+    ch_key = keys.get(spec) or candidates.key_of(spec) or spec
+    taken = list((held or {}).get("looks") or [])
+    store = ms.connect()
+    try:
+        tested = adopt.comparisons(store, lane, split.version)
+    finally:
+        store.close()
+    look, verdict = looks.look(rows, lane=lane, inc_key=inc_key, ch_key=ch_key, split=split,
+                               plan=plan.as_dict(), alpha=adopt.alpha_for(tested),
+                               spent_before=taken[-1]["spent"] if taken else 0.0, n=len(taken) + 1,
+                               spec=spec, tested=tested)
+    taken.append(look.as_dict())
+    print(f"    {look.text}", flush=True)
+    done = len(rows)
+    total = int(progress.get("total") or (plan.cases_run or 0) * plan.repeat * 2 or done)
+    if verdict is not None:
+        verdict = replace(verdict, evidence={**verdict.evidence, "split": split.as_dict(),
+                                             "power": plan.as_dict(), "looks": taken})
+        print(f"    {'ADOPTED' if verdict.adopt else 'kept the incumbent'}: {verdict.why}", flush=True)
+        _record(verdict, spec, progress.get("run_id"), out)
+        if held:
+            _settle_pause(held["id"], "done", look.text)
+        if sweep is not None:
+            sweep.lines.append(f"{name}: {look.text}")
+        return 0
+    per = plan.budget_s or 0.0
+    rest = None if not plan.projected_s or not per else max(
+        1, math.ceil(plan.projected_s * (1 - done / max(total, 1)) / per))
+    why = (f"paused at {done}/{total} case(s); {look.text}"
+           f"{f'; about {rest} more sweep(s) at {power._hm(per)} each' if rest else ''}")
+    store = ms.connect()
+    try:
+        paused.save(store, lane=lane, inc_spec=inc_spec, spec=spec, proposal=name, out=str(out),
+                    ident=ident, plan=plan.as_dict(), done=done, total=total, looks=taken,
+                    run_id=progress.get("run_id"), machine_id=ms.remember_machine(store),
+                    pause_id=held["id"] if held else None, why=why)
     finally:
         store.close()
     print(f"  {name}: {why}", flush=True)
+    if sweep is not None:
+        sweep.lines.append(f"{name}: {why}")
+        if str(progress.get("why") or "").startswith("paused on request"):
+            sweep.halted = why
     return 0
+
+
+def _record(verdict, spec: str, run_id, out) -> None:
+    """Record the verdict with its planned and observed seconds per case beside it. #810, #813."""
+    from harness import adopt
+    from harness import memory_store as ms
+    progress = watch.read_progress(out)
+    planned, seen = _per_case(progress.get("planned_s_per_case")), _per_case(progress.get("observed_s_per_case"))
+    store = ms.connect()
+    try:
+        # On the proposal the candidate maps to, so it leaves survivors. #393.
+        vid = adopt.record(store, verdict, spec=spec, run_id=run_id)
+        store.execute("UPDATE verdicts SET planned_s_per_case = ?, observed_s_per_case = ? WHERE id = ?",
+                      (planned, seen, vid))
+        store.commit()
+    except ms.IllegalTransition as exc:
+        print(f"  skipped {exc}", flush=True)
+    finally:
+        store.close()
+
+
+def _per_case(by_key) -> float | None:
+    """Wall seconds per paired case: the candidates' seconds per case summed, None when one is unknown."""
+    got = list((by_key or {}).values())
+    return round(sum(got), 3) if got and all(x is not None for x in got) else None
 
 
 def _settle(name: str, outcome: str, detail: str) -> None:

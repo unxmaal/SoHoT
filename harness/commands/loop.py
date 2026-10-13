@@ -398,7 +398,7 @@ def _loop_spend(a, rc: int, failed: list | None = None, sweep=None) -> int:
     _beat("measure")
     store = ms.connect()
     try:
-        fresh = measure_cmd.measurable(store, top, want)
+        fresh = measure_cmd.resume_first(store, measure_cmd.measurable(store, top, want), want)
     finally:
         store.close()
     if not fresh:
@@ -406,10 +406,22 @@ def _loop_spend(a, rc: int, failed: list | None = None, sweep=None) -> int:
               "A screen that rejects everything is the tier doing its job.")
         return rc
     for i, row in enumerate(fresh, 1):
+        held = _held_back(sweep, len(fresh) - i + 1)
+        if held:
+            sweep.lines.append(held)
+            break
         _beat("measure", candidate=row.get("name", ""), item=i, items=len(fresh))
         rc = _step(f"measure {row.get('name', '')}".strip(),
                    measure_cmd._measure_and_adopt(a, row, sweep), failed) or rc
     return rc
+
+
+def _held_back(sweep, waiting: int) -> str:
+    """Why the measure step starts nothing more this sweep, else "": the ceiling, or a run paused on request. #813."""
+    if sweep is None or not (sweep.remaining() <= 0 or sweep.halted):
+        return ""
+    stop = "a run was paused on request" if sweep.halted else "ceiling reached"
+    return f"{stop}: {waiting} measurement(s) wait for the next sweep"
 
 
 def _reverify() -> dict:

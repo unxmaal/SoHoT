@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from harness import adopt, completion, exclusive, methods, power, reasons
+from harness import adopt, completion, exclusive, methods, power
 from harness import memory_store as ms
 from harness.commands import measure as measure_cmd
 
@@ -160,30 +160,6 @@ def test_a_run_inside_its_deadline_returns_its_output():
     got = measure_cmd._launch([sys.executable, "-c", "import sys; sys.stderr.write('x')"],
                               deadline_s=30.0)
     assert not got.timed_out and got.returncode == 0 and got.stderr == "x"
-
-
-def test_a_deadline_stop_records_a_partial_inconclusive_verdict(monkeypatch, tmp_path):
-    class Stopped:
-        returncode, stderr, timed_out, elapsed_s = -15, "", True, 7300.0
-
-    monkeypatch.setattr(measure_cmd, "_launch", lambda argv, **kw: Stopped())
-    monkeypatch.setattr(adopt, "default_for", lambda lane, fallback, conn=None: "q3-4b")
-    monkeypatch.setattr(measure_cmd, "_receipt_at", lambda out: None)
-    real = ms.connect
-    monkeypatch.setattr(ms, "connect", lambda *a, **k: real(tmp_path / "d.db"))
-    rc = measure_cmd._measure_and_adopt(argparse.Namespace(repeat=3, power_budget_min=1e9),
-                                        {"name": "org/challenger", "lane": "code"})
-    assert rc == 1
-    conn = real(tmp_path / "d.db")
-    try:
-        row = conn.execute("SELECT outcome, detail, failure_class, power FROM verdicts "
-                           "WHERE tier = ? ORDER BY id DESC", (adopt.TIER,)).fetchone()
-    finally:
-        conn.close()
-    assert row["failure_class"] == reasons.INCONCLUSIVE
-    assert row["outcome"] == "declined"
-    assert "partial" in row["detail"] and "inconclusive" in row["detail"]
-    assert '"partial"' in row["power"]
 
 
 def test_the_critical_count_holds_past_a_thousand_discordant_cells():
