@@ -396,7 +396,7 @@ def _install(tmp_path, role="scheduler", running=()):
     (scripts / "lib.sh").write_text(text[:text.index('case "${1:-}" in')], encoding="utf-8")
     (scripts / "env.sh").write_text("", encoding="utf-8")
     (scripts / "run.sh").write_text(
-        'source "$(dirname "$0")/lib.sh"\ndeploy() { :; }\npreflight() { :; }\ninstall_units\n',
+        'source "$(dirname "$0")/lib.sh"\ndeploy() { :; }\n_run_deployed() { :; }\npreflight() { :; }\ninstall_units\n',
         encoding="utf-8")
     for name, body in (("launchctl", FAKE_LAUNCHCTL_794), ("uv", "#!/bin/sh\nexit 0\n")):
         (bin_ / name).write_text(body, encoding="utf-8")
@@ -564,3 +564,35 @@ def test_a_node_drops_the_scheduler_units_and_keeps_the_watchdog(tmp_path):
 def test_the_watchdog_script_runs_one_wake_from_its_checkout():
     text = (REPO / "scripts" / "serve-watchdog.sh").read_text(encoding="utf-8")
     assert "set -euo pipefail" in text and "uv run soh watchdog" in text
+
+
+# --- install runs the copy it deployed, not the one that started. #821 -------
+
+def test_install_reruns_as_the_deployed_script(repos):
+    origin, work, deploy = repos
+    _git(work, "checkout", "-q", "main")
+    (work / "scripts").mkdir()
+    (work / "scripts" / "launchd.sh").write_text(
+        'echo "deployed copy ran: $1 reexec=$LH_REEXECED"\n', encoding="utf-8")
+    _git(work, "add", "scripts")
+    _git(work, "commit", "-q", "-m", "a launchd.sh that differs from this one")
+    _git(work, "push", "-q", "origin", "HEAD:main")
+    # Without the fix this runs a real install, so it must only ever reach fakes.
+    bin_ = work.parent / "bin"
+    bin_.mkdir()
+    (bin_ / "launchctl").write_text("#!/bin/sh\nexit 1\n", encoding="utf-8")
+    (bin_ / "launchctl").chmod(0o755)
+    env = {**os.environ, "PATH": f"{bin_}{os.pathsep}{os.environ['PATH']}",
+           "HOME": str(work.parent / "home"), "LOCALHARNESS_HOME": str(work.parent / "lh"),
+           "LH_REPO": str(work), "LH_DEPLOY": str(deploy),
+           "LH_GPU_LOCK_HELD": "1", "LH_ROLE": "scheduler"}
+    env.pop("LH_REEXECED", None)
+    proc = subprocess.run([shells.BASH, str(GEN), "install"], env=env,
+                          capture_output=True, text=True, timeout=60)
+    assert proc.returncode == 0, proc.stderr
+    assert "deployed copy ran: install reexec=1" in proc.stdout
+
+
+def test_the_rerun_cannot_loop():
+    body = GEN.read_text(encoding="utf-8")
+    assert 'LH_REEXECED:-}" = 1 ] && return 0' in body

@@ -12,6 +12,8 @@
 # port they used, and that took a while to find.
 set -euo pipefail
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
+# What this run parsed; deploy can rewrite the file under it. #821.
+SELF_SUM="$(cksum < "$0")"
 AGENTS="$HOME/Library/LaunchAgents"
 # One place for everything this project produces; see harness/paths.py.
 LH_HOME="${LOCALHARNESS_HOME:-$HOME/localharness}"
@@ -329,8 +331,17 @@ drop_periodic() {
   done
 }
 
+# Run the copy deploy just checked out, or units added by the deployed commit are never installed. #821.
+_run_deployed() {
+  [ "${LH_REEXECED:-}" = 1 ] && return 0
+  [ "$(cksum < "$DEPLOY/scripts/launchd.sh")" = "$SELF_SUM" ] && return 0
+  echo "re-running as the deployed $DEPLOY/scripts/launchd.sh"
+  LH_REEXECED=1 LH_REPO="$SRC" LH_DEPLOY="$DEPLOY" exec bash "$DEPLOY/scripts/launchd.sh" "$@"
+}
+
 install_units() {
   deploy
+  _run_deployed install
   preflight
   mkdir -p "$AGENTS"
   generate "$AGENTS" >/dev/null
