@@ -2,6 +2,7 @@
 import configparser
 import json
 import subprocess
+from pathlib import Path
 
 import pytest
 
@@ -113,8 +114,9 @@ def _mlx(tmp_path, monkeypatch, weights_gib=18, layers=64, kv_heads=8, head_dim=
     (d / "config.json").write_text(json.dumps(
         {"num_hidden_layers": layers, "num_key_value_heads": kv_heads, "head_dim": head_dim,
          "num_attention_heads": 64, "hidden_size": 5120}), encoding="utf-8")
-    with open(d / "model.safetensors", "wb") as fh:
-        fh.truncate(weights_gib * GIB)
+    (d / "model.safetensors").write_bytes(b"\0")
+    real_size = memory.size_gb
+    monkeypatch.setattr(memory, "size_gb", lambda path: weights_gib if Path(path) == d else real_size(path))
     monkeypatch.setattr(memory, "cache_path", lambda repo: str(d))
     monkeypatch.setattr(memory, "available_gb", lambda: 80.0)
     monkeypatch.setattr(memory, "ceiling_gb", lambda: 72.0)

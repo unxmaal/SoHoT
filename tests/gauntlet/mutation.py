@@ -25,43 +25,118 @@ MUTMUT_GROUPS = ("--group", "mutation", "--group", "mcp")
 
 MODULES = {
     "harness/memory_store/transitions.py": [
-        "tests/test_store_state.py", "tests/test_store_retest.py",
-        "tests/test_harness_store_retraction.py", "tests/test_store_retract_screens.py",
-        "tests/test_harness_memory_store.py", "tests/test_verdict_reasons.py",
-        "tests/test_harness_store.py"],
+        "tests/test_store_state.py", "tests/test_store_retest.py", "tests/test_harness_store_retraction.py",
+        "tests/test_store_retract_screens.py", "tests/test_harness_memory_store.py",
+        "tests/test_verdict_reasons.py", "tests/test_harness_store.py"],
     "harness/reasons.py": [
-        "tests/test_verdict_reasons.py", "tests/test_refusal_shapes.py",
-        "tests/test_screen_server_death.py", "tests/test_screen_evidence.py",
-        "tests/test_harness_engines_repo_id.py", "tests/test_mps_backend_abort.py"],
+        "tests/test_verdict_reasons.py", "tests/test_refusal_shapes.py", "tests/test_screen_server_death.py",
+        "tests/test_screen_evidence.py", "tests/test_harness_engines_repo_id.py",
+        "tests/test_mps_backend_abort.py", "tests/test_timeouts_classed.py", "tests/test_agent_limits.py",
+        "tests/test_served_ctx_limit.py", "tests/test_eval_budget.py", "tests/test_batch_lease_769.py",
+        "tests/test_budget_ladder.py", "tests/test_knob_binding.py", "tests/test_screen_fair.py",
+        "tests/test_new_lane_loop_faults.py", "tests/test_shared_store_703.py", "tests/test_ocr_lane.py",
+        "tests/test_fetch_inspected_798.py", "tests/test_retrieval_lane.py",
+        "tests/test_adopt_assumptions.py", "tests/test_cold_load.py"],
     "harness/screen.py": [
-        "tests/test_harness_screen.py", "tests/test_harness_screen_spec.py",
-        "tests/test_screen_evidence.py", "tests/test_screen_server_death.py",
-        "tests/test_decide_lane.py", "tests/test_refusal_shapes.py",
+        "tests/test_harness_screen.py", "tests/test_harness_screen_spec.py", "tests/test_screen_evidence.py",
+        "tests/test_screen_server_death.py", "tests/test_decide_lane.py", "tests/test_refusal_shapes.py",
         "tests/test_verdict_reasons.py", "tests/test_screen_case_fit.py", "tests/test_methods.py",
-        "tests/test_ds4.py"],
+        "tests/test_ds4.py", "tests/test_screen_fair.py", "tests/test_gguf_route.py",
+        "tests/test_harness_adopt_receipt.py", "tests/test_lane_coverage.py",
+        "tests/test_loop_end_to_end.py", "tests/test_retrieval_lane.py", "tests/test_harness_lanes.py",
+        "tests/test_liveness_705.py", "tests/test_runner_base_weights.py", "tests/test_ladder_seams.py",
+        "tests/test_harness_lane_provenance.py", "tests/test_pii_lane.py", "tests/test_remote_code.py",
+        "tests/test_ocr_lane.py"],
     "harness/adopt.py": [
-        "tests/test_harness_adopt.py", "tests/test_harness_adopt_receipt.py",
-        "tests/test_adopt_by_spec.py", "tests/test_adoptions.py", "tests/test_adopt_cmd.py",
-        "tests/test_human_verdicts.py", "tests/test_schema_lanes.py", "tests/test_holdout_power.py",
-        "tests/test_power_budget.py", "tests/test_methods.py", "tests/test_adopt_scope.py",
-        "tests/test_method_serving.py", "tests/test_resume_813.py"],
+        "tests/test_harness_adopt.py", "tests/test_harness_adopt_receipt.py", "tests/test_adopt_by_spec.py",
+        "tests/test_adoptions.py", "tests/test_adopt_cmd.py", "tests/test_human_verdicts.py",
+        "tests/test_schema_lanes.py", "tests/test_holdout_power.py", "tests/test_power_budget.py",
+        "tests/test_methods.py", "tests/test_adopt_scope.py", "tests/test_method_serving.py",
+        "tests/test_resume_813.py", "tests/test_adopt_assumptions.py", "tests/test_lane_metric_validity.py",
+        "tests/test_reverify.py", "tests/test_loop_end_to_end.py", "tests/test_candidates.py",
+        "tests/test_claims_balanced_metric.py", "tests/test_gateway_switch.py", "tests/test_live_audit.py",
+        "tests/test_shared_store_703.py", "tests/test_screen_evidence.py", "tests/test_harness_winners.py",
+        "tests/test_lane_routes.py", "tests/test_remote_upstreams.py"],
     "harness/serving.py": [
         "tests/test_harness_serving.py", "tests/test_lane_routes.py", "tests/test_gguf_route.py",
-        "tests/test_schema_lanes.py", "tests/test_ds4.py"],
-    "harness/router.py": ["tests/test_router_unload.py", "tests/test_lane_routes.py"],
+        "tests/test_schema_lanes.py", "tests/test_ds4.py", "tests/test_remote_upstreams.py",
+        "tests/test_cold_load.py", "tests/test_slots_memory.py",
+        "tests/test_liveness_705.py", "tests/test_mcp_delegate.py", "tests/test_context_store.py",
+        "tests/test_nodes.py"],
+    "harness/router.py": [
+        "tests/test_router_unload.py", "tests/test_lane_routes.py", "tests/test_router_swaps.py",
+        "tests/test_cold_load.py", "tests/test_remote_upstreams.py", "tests/test_gguf_route.py"],
+}
+
+# Test files that import a mutated module and are deliberately not run against its mutants:
+# a constant or a type only, too slow, or crashes the forkserver (#596; test_mlx_backlog imports mlx, whose Metal
+# thread segfaults a forked worker). A new importer goes in one or the other (#840).
+LEFT_OUT = {
+    "harness/reasons.py": (
+        "test_chaos.py", "test_claims_lane.py", "test_gateway_key.py", "test_harness_checks_ocr.py",
+        "test_harness_paired.py", "test_harness_screen.py", "test_harness_screen_spec.py",
+        "test_holdout_power.py", "test_inspect_method_specs.py", "test_inspect_ratelimit.py",
+        "test_knob_sweeps.py", "test_knobs.py", "test_method_serving.py", "test_pii_lane.py",
+        "test_power_budget.py", "test_runner_base_weights.py", "test_schema_lanes.py",
+        "test_silent_truncation.py", "test_slots_memory.py", "test_store_downloads.py"),
+    "harness/screen.py": (
+        "test_chaos.py", "test_claims_balanced_metric.py", "test_harness_engines_repo_id.py",
+        "test_harness_report.py", "test_incumbent_lookup.py", "test_lane_metric_validity.py",
+        "test_mps_backend_abort.py", "test_new_lane_loop_faults.py", "test_remote_upstreams.py",
+        "test_router_unload.py", "test_slots_memory.py", "test_store_card_facts.py", "test_store_state.py"),
+    "harness/adopt.py": (
+        "test_harness_paired.py", "test_harness_report.py", "test_loop_circuit.py", "test_measure_budget.py",
+        "test_over_budget_796.py", "test_projection_696.py", "test_router_unload.py", "test_store_state.py",
+        "test_sweep_ceiling_806.py"),
+    "harness/serving.py": (
+        "test_mlx_backlog.py", "test_agent_limits.py", "test_claims_lane.py", "test_decide_lane.py",
+        "test_delegate_resident.py", "test_delegations.py", "test_machine_host.py",
+        "test_machine_identity.py", "test_purpose_825.py", "test_usage_gateway.py", "test_vllm.py"),
+    "harness/router.py": (
+        "test_delegate_resident.py", "test_machine_host.py", "test_sweep_ceiling_806.py", "test_watchdog.py"),
 }
 
 # mutmut 3 exit codes: survived and untested are gaps; anything unrecognised means the run is not trustworthy.
 GAP = {0, 5, 33}
 KILLED = {1, 3, 24, -24, 36, 37, 152}
-# 255 is os._exit(-1) after the test runner raised in the worker, which flaps between runs, so it is retried.
-UNSETTLED = 255
+# 255 is os._exit(-1) after the test runner raised in the worker; -11 a segfaulted worker. Both flap, so are retried.
+UNSETTLED = {255, -11}
 RETRIES = 3
 SKIP_TOKENS = {tokenize.NEWLINE, tokenize.NL, tokenize.INDENT, tokenize.DEDENT,
                tokenize.COMMENT, tokenize.ENCODING, tokenize.ENDMARKER}
 SEP = "ǁ"
-# Tests that parse harness source with ast; under mutmut they would read the mutated file, not the module.
-READS_SOURCE = ("tests/test_verdict_reasons.py::test_every_production_verdict_says_why",)
+# Tests that parse harness source, list the repo with git or run a serve script; under mutmut they fail unmutated.
+READS_SOURCE = (
+    "tests/test_verdict_reasons.py::test_every_production_verdict_says_why",
+    "tests/test_cold_load.py::test_the_desktop_idle_sleep_is_a_site_the_knob_inventory_sees",
+    "tests/test_harness_lanes.py::test_every_measurable_modality_is_a_named_lane",
+    "tests/test_harness_lanes.py::test_every_named_lane_has_cases_to_measure_it",
+    "tests/test_harness_lanes.py::test_a_generated_lane_is_still_absent_from_the_tree",
+    "tests/test_served_ctx_limit.py::test_the_inventory_sees_table_keys_with_hyphens",
+    "tests/test_timeouts_classed.py::test_no_timeout_is_raised_without_its_class",
+    "tests/test_slots_memory.py::test_the_router_is_started_with_the_models_max_its_plan_was_sized_for",
+    "tests/test_context_store.py::test_the_router_reads_its_contexts_from_the_preset_not_one_ctx_size",
+)
+
+
+def imports(text, module):
+    """Whether Python source imports a harness module, by any of the three spellings."""
+    name = module[:-3].replace("/", ".")
+    pkg, _, short = name.rpartition(".")
+    for n in ast.walk(ast.parse(text)):
+        if isinstance(n, ast.Import) and any(a.name == name or a.name.startswith(name + ".") for a in n.names):
+            return True
+        if isinstance(n, ast.ImportFrom) and n.level == 0 and (
+                n.module == name or (n.module == pkg and any(a.name == short for a in n.names))):
+            return True
+    return False
+
+
+def unplaced(module, root=REPO):
+    """Test files that import the module but are neither selected for it nor deliberately left out."""
+    placed = {Path(t).name for t in MODULES[module]} | set(LEFT_OUT.get(module, ()))
+    return sorted(p.name for p in (root / "tests").glob("test_*.py")
+                  if p.name not in placed and imports(p.read_text(encoding="utf-8"), module))
 
 
 class BrokenRun(RuntimeError):
@@ -114,7 +189,7 @@ def kind(orig, mutant):
 
 
 def unsettled(meta):
-    return sorted(k for k, v in meta["exit_code_by_key"].items() if v == UNSETTLED)
+    return sorted(k for k, v in meta["exit_code_by_key"].items() if v in UNSETTLED)
 
 
 def survivors(meta, mutated_source):
@@ -187,13 +262,31 @@ def copy_tree(dest):
             shutil.copy2(path, target)
 
 
+def _baseline(tree, env, module):
+    """The selection must pass unmutated; mutmut reports only "exited 1" and hides which test failed (#840)."""
+    deselect = [a for t in READS_SOURCE for a in ("--deselect", t)]
+    argv = ["uv", "run", "--python", "3.12", *MUTMUT_GROUPS, "python", "-m", "pytest",
+            "-p", "no:randomly", "-n", "auto", "-rfE", *deselect, *MODULES[module]]
+    r = subprocess.run(argv, cwd=tree, env=env, capture_output=True, text=True, check=False)
+    if r.returncode == 0:
+        return
+    failed = [line for line in r.stdout.splitlines() if line.startswith(("FAILED ", "ERROR "))]
+    raise BrokenRun(f"the selected tests fail unmutated (exit {r.returncode}):\n  "
+                    + "\n  ".join(failed or (r.stdout + r.stderr).splitlines()[-20:]))
+
+
 def run_module(tree, module, pyproject, log):
     (tree / "pyproject.toml").write_text(pyproject + config(module), encoding="utf-8")
     shutil.rmtree(tree / "mutants", ignore_errors=True)
+    # no_proxy: urllib's macOS proxy lookup reads CFPreferences, which segfaults a forked worker (#840).
     env = dict(os.environ, LOCALHARNESS_HOME=str(tree / ".lh-home"), HF_HOME=str(tree / ".hf-home"),
-               OBJC_DISABLE_INITIALIZE_FORK_SAFETY="YES")
+               OBJC_DISABLE_INITIALIZE_FORK_SAFETY="YES", no_proxy="*")
     for d in (env["LOCALHARNESS_HOME"], env["HF_HOME"]):
         Path(d).mkdir(exist_ok=True)
+    try:
+        _baseline(tree, env, module)
+    except BrokenRun as e:
+        raise BrokenRun(f"{module}: {e}") from None
     base, meta_path = _paths(tree, module)
     names = []
     for _ in range(1 + RETRIES):

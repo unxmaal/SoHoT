@@ -131,6 +131,28 @@ def test_a_posix_primitive_behind_a_platform_guard_is_left_alone():
     _quiet_then_fires(scanners.posix_primitives, innocent, "os.killpg(1, signal.SIGTERM)\n", "m.py")
 
 
+def test_a_bare_shell_in_a_subprocess_argv_is_found():
+    src = ("subprocess.run([\"bash\", str(p)], check=True)\nsubprocess.Popen(\n    [\"zsh\", \"-c\", x])\n")
+    assert [f.split(":")[1] for f in scanners.bare_shells(src, "t.py")] == ["1", "2"]
+
+
+def test_a_resolved_shell_is_left_alone():
+    innocent = ("subprocess.run([shells.BASH, str(p)])\nsubprocess.run([sys.executable, \"-c\", \"bash\"])\n"
+                "x = [\"bash\", \"zsh\"]\n")
+    _quiet_then_fires(scanners.bare_shells, innocent, "subprocess.check_output([\"sh\", \"-c\", c])\n", "t.py")
+
+
+def test_a_file_grown_by_truncate_is_found():
+    src = ("with open(p, \"wb\") as fh:\n    fh.truncate(18 * GIB)\n"
+           "os.truncate(p, size)\nf.truncate(length=4 << 30)\n")
+    assert [f.split(":")[1] for f in scanners.grown_files(src, "t.py")] == ["2", "3", "4"]
+
+
+def test_a_small_or_shrinking_truncate_is_left_alone():
+    innocent = "fh.seek(0)\nfh.truncate()\nfh.truncate(0)\nos.truncate(p, 1024)\n"
+    _quiet_then_fires(scanners.grown_files, innocent, "fh.truncate(60 * GIB)\n", "t.py")
+
+
 def test_an_unguarded_import_is_found_and_a_guarded_one_is_not():
     src = ("import yaml\ntry:\n    import torch\nexcept ImportError:\n    torch = None\n"
            "def f():\n    from huggingface_hub import snapshot_download\n    from . import local\n")

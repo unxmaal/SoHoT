@@ -347,7 +347,7 @@ def test_ledger_json_is_aggregates_only(monkeypatch, capsys, tmp_path, _home):
     conn.execute("INSERT INTO gateway_samples VALUES (?, ?, ?)", (rid, PROMPT, PROMPT))
     conn.commit()
     conn.close()
-    lines = [x.replace("HOME_MARK", str(fake_home)) for x in (FIX / "statusline.jsonl").read_text(encoding="utf-8").splitlines()]
+    lines = [x.replace("HOME_MARK", json.dumps(str(fake_home))[1:-1]) for x in (FIX / "statusline.jsonl").read_text(encoding="utf-8").splitlines()]
     for i, x in enumerate(lines):
         statusline.main(io.StringIO(x), io.StringIO(), {"LOCALHARNESS_HOME": str(_home)}, now=at("2026-10-09") + i * 400)
     (_home / "ledger" / "power.jsonl").write_text(

@@ -218,7 +218,8 @@ def test_helper_functions_print_nothing_but_their_answer(tmp_path):
     already has a value. These helpers are read through command substitution,
     so that noise becomes the answer. bash and sh are silent, which is why it
     survived until someone sourced env.sh from a zsh login shell."""
-    if not shutil.which("zsh"):
+    zsh = shells.resolve("zsh")
+    if not zsh:
         pytest.skip("zsh not installed")
     probe = (f'. "{REPO}/scripts/env.sh" >/dev/null 2>&1; '
              f'echo "MP:[$(_hf_mountpoint {tmp_path}/deep/path)]"; '
@@ -226,7 +227,7 @@ def test_helper_functions_print_nothing_but_their_answer(tmp_path):
     env = {"PATH": os.environ["PATH"], "HOME": os.environ["HOME"],
            "HF_MIN_FREE_GB": "0", "HF_ROOT": str(tmp_path / "hf"),
            "HF_STATE_FILE": str(tmp_path / "state")}
-    p = subprocess.run(["zsh", "-c", probe], capture_output=True, text=True,
+    p = subprocess.run([zsh, "-c", probe], capture_output=True, text=True,
                        env=env)
     for line in p.stdout.splitlines():
         assert "=" not in line.split(":", 1)[1], (

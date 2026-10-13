@@ -341,6 +341,17 @@ jobs:
     # Nightly or on demand, never on a pull request, labelled or not (#492 F3).
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: macos-latest
+    # One job per module: all six in one job outgrew 120 minutes and a cancelled job reports nothing (#840).
+    strategy:
+      fail-fast: false
+      matrix:
+        module:
+          - harness/memory_store/transitions.py
+          - harness/reasons.py
+          - harness/screen.py
+          - harness/adopt.py
+          - harness/serving.py
+          - harness/router.py
     timeout-minutes: 120
 
     steps:
@@ -354,13 +365,13 @@ jobs:
 
       - name: make mutation
         # Fails on a new surviving mutant, or on a pinned one that is now killed and still listed.
-        run: make mutation
+        run: make mutation MUTATION_ARGS="--module ${{ matrix.module }}"
 
       - name: Mutation summary
         if: always()
         run: |
           {
-            echo "### Mutation testing"
+            echo "### Mutation testing: ${{ matrix.module }}"
             echo
             echo '```'
             tail -n 60 .logs/mutation.log 2>/dev/null || echo 'no log'

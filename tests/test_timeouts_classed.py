@@ -391,6 +391,8 @@ def test_a_chrome_that_will_not_reap_after_kill_is_still_a_timeout_row(monkeypat
     monkeypatch.setattr(render, "CHROME_TIMEOUT_S", 0.2)
     monkeypatch.setattr(render, "_PROFILE_HANGS", set())
     monkeypatch.setattr(render.subprocess, "Popen", Unreapable)
+    # On Windows _kill_tree runs taskkill through subprocess.run, which would get the fake too. #855.
+    monkeypatch.setattr(render, "_kill_tree", lambda proc: None)
     got = render.check_html("<html><body>hi</body></html>")
     assert (got.ok, got.failure_class, got.limit) == (False, reasons.TIMEOUT, "chrome_render_timeout_s>0.2")
 

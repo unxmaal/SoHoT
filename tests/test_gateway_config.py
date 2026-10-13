@@ -18,6 +18,8 @@ from pathlib import Path
 import pytest
 import yaml
 
+from tests import shells
+
 REPO = Path(__file__).resolve().parents[1]
 MAC = REPO / "gateway" / "config.yaml"
 CUDA = REPO / "gateway" / "config.cuda.yaml"
@@ -83,7 +85,7 @@ def test_the_cuda_server_holds_one_model_at_a_time():
 @pytest.mark.parametrize("gib,want", [(12, "1"), (32, "1"), (63, "1"), (64, "2"), (96, "2")])
 def test_a_large_memory_machine_holds_two_router_models(gib, want):
     """Two resident models keep a decide client from evicting a running code eval (#644)."""
-    out = subprocess.run(["bash", str(REPO / "scripts" / "router-max-models.sh"), str(gib * 1024**3)],
+    out = subprocess.run([shells.BASH, str(REPO / "scripts" / "router-max-models.sh"), str(gib * 1024**3)],
                          capture_output=True, text=True, check=True).stdout.strip()
     assert out == want
 

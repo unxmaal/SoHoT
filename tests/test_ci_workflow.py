@@ -72,6 +72,17 @@ def test_mutation_testing_runs_nightly_and_never_on_a_pull_request():
     assert "mutation" in doc["jobs"]["report-nightly"]["needs"]
 
 
+def test_each_mutated_module_is_its_own_job_so_one_timeout_cannot_void_the_rest():
+    """#840: all six in one job grew 35 -> 89 min, then hit the 120-minute limit and reported nothing."""
+    from tests.gauntlet import mutation
+    doc, _ = _ci()
+    job = doc["jobs"]["mutation"]
+    assert sorted(job["strategy"]["matrix"]["module"]) == sorted(mutation.MODULES)
+    assert job["strategy"]["fail-fast"] is False
+    run = "\n".join(s.get("run", "") for s in job["steps"])
+    assert "--module ${{ matrix.module }}" in run
+
+
 def test_make_mutation_redirects_its_output():
     make = (Path(__file__).resolve().parents[1] / "Makefile").read_text(encoding="utf-8")
     recipe = make.split("\nmutation:", 1)[1].split("\n\n", 1)[0]

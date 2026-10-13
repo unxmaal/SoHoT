@@ -305,6 +305,46 @@ def posix_primitives(text, rel):
     return out + [f"{rel}:{line}: {why}" for line, why in sorted(found)]
 
 
+_SHELLS = {"bash", "sh", "zsh"}
+_SPAWNS = {"run", "Popen", "check_output", "check_call", "call"}
+
+
+def bare_shells(text, rel):
+    """A subprocess argv starting with a bare shell name: on Windows "bash" is the WSL launcher (tests/shells.py)."""
+    tree, out = _parse(text, rel)
+    if tree is None:
+        return out
+    found = []
+    for n in ast.walk(tree):
+        if isinstance(n, ast.Call) and _call_name(n) in _SPAWNS and n.args and isinstance(n.args[0], ast.List) \
+                and n.args[0].elts and isinstance(n.args[0].elts[0], ast.Constant) \
+                and n.args[0].elts[0].value in _SHELLS:
+            found.append((n.lineno, f"runs a bare {n.args[0].elts[0].value!r}; use tests.shells.resolve()"))
+    return out + [f"{rel}:{line}: {why}" for line, why in sorted(found)]
+
+
+SMALL_FILE = 1 << 20
+
+
+def grown_files(text, rel):
+    """truncate() that grows a file: sparse on APFS and ext4, real clusters on NTFS (#838)."""
+    tree, out = _parse(text, rel)
+    if tree is None:
+        return out
+    for n in sorted(ast.walk(tree), key=lambda n: getattr(n, "lineno", 0)):
+        if not (isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute) and n.func.attr == "truncate"):
+            continue
+        is_os = isinstance(n.func, ast.Attribute) and isinstance(n.func.value, ast.Name) and n.func.value.id == "os"
+        args = n.args[1:] if is_os else n.args
+        size = args[0] if args else next((k.value for k in n.keywords if k.arg in ("size", "length")), None)
+        if size is None or (isinstance(size, ast.Constant) and isinstance(size.value, int)
+                            and size.value <= SMALL_FILE):
+            continue
+        out.append(f"{rel}:{n.lineno}: truncate() grows a file, which allocates every byte on Windows; "
+                   "fake the size where it is read")
+    return out
+
+
 def unguarded_imports(text, rel):
     """(line, top-level module) for each absolute import no ImportError handler covers."""
     tree, _ = _parse(text, rel)

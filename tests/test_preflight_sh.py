@@ -23,6 +23,8 @@ from pathlib import Path
 
 import pytest
 
+from tests import shells
+
 REPO = Path(__file__).resolve().parents[1]
 PREFLIGHT = REPO / "scripts" / "preflight.sh"
 
@@ -91,7 +93,7 @@ def run_preflight(tmp_path, bindir, time_reports=True, fonts=True, env=None):
     }
     e.update(env or {})
     proc = subprocess.run(
-        ["bash", str(PREFLIGHT)], cwd=REPO, env=e,
+        [shells.BASH, str(PREFLIGHT)], cwd=REPO, env=e,
         capture_output=True, text=True,
     )
     return proc.returncode, proc.stdout
