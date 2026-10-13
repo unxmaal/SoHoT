@@ -272,10 +272,49 @@ def finding(criterion="overrun", **kw):
     return wd.Finding(criterion, s, {"x": 1})
 
 
-def test_note_and_notify_record_without_touching_anything():
-    h = wd.Hands(run=None)
-    assert h.do(wd.NOTE, finding()) == "noted"
-    assert "notify unavailable" in h.do(wd.NOTIFY, finding())
+def test_note_records_without_touching_anything():
+    assert wd.Hands(run=None).do(wd.NOTE, finding()) == "noted"
+
+
+def _osascript(rc=0, stderr=""):
+    calls = []
+
+    def fake(cmd, **kw):
+        calls.append(cmd)
+        return subprocess.CompletedProcess(cmd, rc, "", stderr)
+    return calls, fake
+
+
+def test_notify_posts_a_desktop_notification_naming_the_criterion_and_target():
+    calls, fake = _osascript()
+    out = wd.Hands(run=fake, platform="darwin").do(wd.NOTIFY, finding("long_run"))
+    assert out == "notified: long_run: eval pgid 1"
+    cmd = calls[0]
+    assert cmd[0] == "osascript" and "display notification" in " ".join(cmd)
+    assert cmd[-3:] == [wd.NOTIFY_TITLE, "long_run: eval pgid 1", wd.BY_ID["long_run"].what]
+
+
+def test_notify_passes_the_subject_as_argv_so_quotes_cannot_break_the_script():
+    calls, fake = _osascript()
+    f = wd.Finding("long_run", wd.Subject("eval", 'eval "x" & do shell script "rm"', "t"), {})
+    wd.Hands(run=fake, platform="darwin").do(wd.NOTIFY, f)
+    assert all("rm" not in part for part in calls[0][:-3])
+
+
+def test_notify_says_why_when_osascript_fails_or_hangs():
+    _, fake = _osascript(rc=1, stderr="execution error")
+    assert wd.Hands(run=fake, platform="darwin").do(wd.NOTIFY, finding()).startswith("notify failed: osascript rc 1")
+
+    def slow(cmd, **kw):
+        raise subprocess.TimeoutExpired(cmd, kw.get("timeout"))
+    assert wd.Hands(run=slow, platform="darwin").do(wd.NOTIFY, finding()).startswith("notify failed")
+
+
+@pytest.mark.parametrize("plat", ["win32", "linux"])
+def test_notify_is_unavailable_off_macos_and_says_why(plat):
+    calls, fake = _osascript()
+    out = wd.Hands(run=fake, platform=plat).do(wd.NOTIFY, finding())
+    assert out.startswith("notify unavailable") and plat in out and calls == []
 
 
 def test_pause_writes_the_pause_file_in_the_run_directory(tmp_path):
@@ -519,3 +558,49 @@ def test_a_real_evals_run_progress_file_is_read_and_paused_through_its_own_hook(
     assert "pause file written" in out
     with pytest.raises(watch.Stop):
         eye.before("a")
+
+
+class Notifier(wd.Hands):
+    def __init__(self):
+        self.calls, fake = _osascript()
+        super().__init__(run=fake, environ={}, platform="darwin")
+
+
+def _fallbacks(*nodes):
+    return [{"node": n, "requests": wd.FALLBACK_MAX, "aliases": []} for n in nodes]
+
+
+def test_a_repeating_notify_is_shown_once_per_criterion_and_target_then_again_after_the_interval(tmp_path,
+                                                                                               monkeypatch):
+    monkeypatch.setattr(wd, "ESCALATE_AFTER", 99)
+    conn = ms.connect()
+    hand = Notifier()
+    fake = Fake(tmp_path, fallbacks=_fallbacks("a", "b"))
+    for i in range(3):
+        wd.wake(conn, fake, hand, act=True, now=NIGHT + i * 300, say=lambda *_: None)
+    assert [c[-2] for c in hand.calls] == ["node_fallbacks: node a", "node_fallbacks: node b"]
+    outcomes = [r["outcome"] for r in _rows(conn)]
+    assert sum(o.startswith("notified:") for o in outcomes) == 2
+    assert sum(o.startswith("notify held") for o in outcomes) == 4
+    wd.wake(conn, fake, hand, act=True, now=NIGHT + wd.NOTIFY_EVERY_S + 1, say=lambda *_: None)
+    assert len(hand.calls) == 4
+
+
+def test_a_failed_notify_does_not_hold_the_next_one(tmp_path, monkeypatch):
+    monkeypatch.setattr(wd, "ESCALATE_AFTER", 99)
+    conn = ms.connect()
+    hand = Notifier()
+    hand.run = _osascript(rc=1)[1]
+    fake = Fake(tmp_path, fallbacks=_fallbacks("a"))
+    wd.wake(conn, fake, hand, act=True, now=NIGHT, say=lambda *_: None)
+    hand.run = _osascript()[1]
+    wd.wake(conn, fake, hand, act=True, now=NIGHT + 300, say=lambda *_: None)
+    assert [r["outcome"].split(":")[0] for r in _rows(conn)] == ["notify failed", "notified"]
+
+
+def test_a_dry_run_records_the_notify_and_shows_nothing(tmp_path):
+    conn = ms.connect()
+    hand = Notifier()
+    wd.wake(conn, Fake(tmp_path, fallbacks=_fallbacks("a")), hand, act=False, now=NIGHT, say=lambda *_: None)
+    assert hand.calls == []
+    assert [(r["action"], r["dry_run"], r["outcome"]) for r in _rows(conn)] == [("notify", 1, "dry-run")]

@@ -57,6 +57,11 @@ RESTART_TIMEOUT_S = 180.0
 #: Each outside probe (ps, launchctl, gh, the gateway) gets this long.
 PROBE_TIMEOUT_S = 10.0
 GH_TIMEOUT_S = 30.0
+#: One desktop notification per criterion and subject this often at most; a repeating trip is recorded, not re-shown.
+NOTIFY_EVERY_S = 3600.0
+NOTIFY_TIMEOUT_S = 10.0
+NOTIFY_TITLE = "SoHoT watchdog"
+NOTIFIED = "notified"
 
 ACT_ENV = "LH_WATCHDOG_ACT"
 FILE_ENV = "LH_WATCHDOG_FILE"
@@ -599,17 +604,33 @@ def fingerprint(f: Finding) -> str:
 class Hands:
     """The fixed action set. Each returns an outcome string for the store row."""
 
-    def __init__(self, reader: ProgressFiles | None = None, run=subprocess.run, environ=None, say=print):
+    def __init__(self, reader: ProgressFiles | None = None, run=subprocess.run, environ=None, say=print,
+                 platform: str | None = None):
         self.reader = reader or ProgressFiles()
         self.run = run
         self.environ = os.environ if environ is None else environ
         self.say = say
+        self.platform = sys.platform if platform is None else platform
 
     def note(self, f: Finding) -> str:
         return "noted"
 
     def notify(self, f: Finding) -> str:
-        return "notify unavailable: this repo has no push path; the row and the log line are the notice"
+        if self.platform != "darwin":
+            return (f"notify unavailable: no desktop notifier on {self.platform} (macOS osascript only); "
+                    "the row and the log line are the notice")
+        message = f"{f.criterion}: {f.subject.key}"[:200]
+        # argv, not string interpolation, so a command line in the subject cannot break the AppleScript.
+        script = ["osascript", "-e", "on run argv", "-e",
+                  "display notification (item 2 of argv) with title (item 1 of argv) subtitle (item 3 of argv)",
+                  "-e", "end run", NOTIFY_TITLE, message, BY_ID[f.criterion].what[:120]]
+        try:
+            got = self.run(script, capture_output=True, text=True, timeout=NOTIFY_TIMEOUT_S)
+        except (OSError, subprocess.SubprocessError) as exc:
+            return f"notify failed: {exc}"
+        if got.returncode != 0:
+            return f"notify failed: osascript rc {got.returncode}: {(got.stderr or '').strip()[:200]}"
+        return f"{NOTIFIED}: {message}"
 
     def file(self, f: Finding) -> str:
         if self.environ.get(FILE_ENV, "") != "1":
@@ -706,6 +727,24 @@ def repeats(conn, f: Finding, now: float, dry_run: bool) -> int:
     return int(row["n"])
 
 
+def notified_since(conn, f: Finding, now: float) -> float | None:
+    """When this criterion last put a notification on this subject's desktop inside NOTIFY_EVERY_S, this machine."""
+    row = conn.execute(
+        "SELECT MAX(at) AS at FROM watchdog_actions WHERE criterion = ? AND subject = ? AND action = ? "
+        "AND dry_run = 0 AND outcome LIKE ? AND at >= ? AND (machine_id = ? OR (machine_id IS NULL AND ? IS NULL))",
+        (f.criterion, f.subject.key, NOTIFY, f"{NOTIFIED}:%", now - NOTIFY_EVERY_S, _machine(conn), _machine(conn))
+    ).fetchone()
+    return None if row["at"] is None else float(row["at"])
+
+
+def _act(conn, hands: Hands, action: str, f: Finding, now: float) -> str:
+    if action == NOTIFY:
+        last = notified_since(conn, f, now)
+        if last is not None:
+            return f"notify held: shown {now - last:.0f}s ago (once per {NOTIFY_EVERY_S:.0f}s per criterion and subject)"
+    return hands.do(action, f)
+
+
 def record(conn, f: Finding, action: str, escalated: bool, dry_run: bool, outcome: str, now: float) -> int:
     evidence = {**f.evidence, "identified_by": f.subject.why, "pid": f.subject.pid, "pgid": f.subject.pgid,
                 "command": f.subject.command, "owner": f.subject.owner, "fingerprint": fingerprint(f)}
@@ -758,7 +797,7 @@ def wake(conn, probes: Probes | None = None, hands: Hands | None = None, act: bo
             c = BY_ID[f.criterion]
             escalated = repeats(conn, f, now, not act) >= ESCALATE_AFTER
             action = c.escalation if escalated else c.action
-            outcome = hands.do(action, f) if act else "dry-run"
+            outcome = _act(conn, hands, action, f, now) if act else "dry-run"
             row = record(conn, f, action, escalated, not act, outcome, now)
             mark = "" if act else "[dry-run] would "
             say(f"{mark}{action}{' (escalated)' if escalated else ''} {f.subject.key}: {f.criterion} "
