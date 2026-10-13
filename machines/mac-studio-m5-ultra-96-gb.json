@@ -34,12 +34,12 @@
   }
  ],
  "export_version": 4,
- "generated_at": "2026-10-13T16:33:55Z",
+ "generated_at": "2026-10-13T17:22:27Z",
  "lanes": [
   {
    "adopted": true,
    "adopted_how": "by-hand",
-   "age_days": 0.64,
+   "age_days": 0.67,
    "comparison": [
     {
      "about": "family unknown, unknown params, unknown, by mflux",
@@ -234,7 +234,7 @@
   {
    "adopted": true,
    "adopted_how": "measured",
-   "age_days": 0.8,
+   "age_days": 0.83,
    "comparison": [
     {
      "about": "family unknown, 35B (3B active) params, Q4_K_M, by ornith-ai",
@@ -1422,7 +1422,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 1.18,
+   "age_days": 1.22,
    "comparison": [
     {
      "about": "family unknown, 4B params, 4bit, by mlx-community",
@@ -1719,7 +1719,7 @@
   {
    "adopted": true,
    "adopted_how": "measured",
-   "age_days": 6.86,
+   "age_days": 6.89,
    "comparison": [
     {
      "about": "family unknown, 30B (3B active) params, 4bit, by mlx-community",
@@ -2004,7 +2004,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 0.64,
+   "age_days": 0.67,
    "comparison": [
     {
      "about": "family unknown, unknown params, unknown, by h3",
@@ -2122,7 +2122,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 6.21,
+   "age_days": 6.25,
    "comparison": [
     {
      "about": "family unknown, unknown params, unknown, by acestep",
@@ -2229,7 +2229,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 5.65,
+   "age_days": 5.68,
    "comparison": [
     {
      "about": "family unknown, 4B params, Q8_0, by mindchain",
@@ -2610,7 +2610,7 @@
   {
    "adopted": true,
    "adopted_how": "measured",
-   "age_days": 6.59,
+   "age_days": 6.63,
    "comparison": [
     {
      "about": "family unknown, 35B (3B active) params, Q4_K_M, by ornith-ai",
@@ -2824,7 +2824,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 5.65,
+   "age_days": 5.68,
    "comparison": [
     {
      "about": "family unknown, unknown params, unknown, by osocr",
@@ -2953,7 +2953,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 5.65,
+   "age_days": 5.68,
    "comparison": [
     {
      "about": "family unknown, unknown params, unknown, by bm25",
@@ -3087,7 +3087,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 5.65,
+   "age_days": 5.68,
    "comparison": [
     {
      "about": "family unknown, unknown params, unknown, by pii-regex",
@@ -3226,7 +3226,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 0.7,
+   "age_days": 0.74,
    "comparison": [
     {
      "about": "family unknown, 7B params, Q4_K_M, by bartowski",
@@ -3556,7 +3556,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 5.65,
+   "age_days": 5.68,
    "comparison": [
     {
      "about": "family unknown, 7B params, 4bit, by mlx-community",
@@ -3841,7 +3841,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 5.16,
+   "age_days": 5.19,
    "comparison": [
     {
      "about": "family unknown, 0.6B params, unknown, by unknown",
@@ -3949,7 +3949,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 5.18,
+   "age_days": 5.22,
    "comparison": [
     {
      "about": "family unknown, 82M params, bf16, by Kokoro-82M-bf16",
@@ -4591,7 +4591,7 @@
     "note": "Peak of each day's statusline readings.",
     "series": {
      "5-hour window, daily peak": {
-      "2026-10-13": 11.0
+      "2026-10-13": 12.0
      },
      "7-day window, daily peak": {
       "2026-10-13": 56.0
