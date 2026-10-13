@@ -28,7 +28,7 @@ UNSEEN = 0.5
 DEFAULT_RHO = 1.0
 #: The largest holdout cases_needed searches.
 MAX_CASES = 2000
-#: Minutes the loop may spend on one challenger's paired run. #591.
+#: Minutes one challenger's paired run may spend per sweep before it pauses. #591, #813.
 BUDGET_MIN = 120.0
 #: The repeat run when the powered one does not fit the budget.
 FALLBACK_REPEAT = 3
@@ -38,10 +38,8 @@ MEASURING_REPEAT = 2
 DECODE_TOK_S = {"Mac17_15": 145.0}
 #: A paired run may run this far past max(budget, projection) before it is stopped. #673.
 DEADLINE_GRACE = 1.25
-#: Hours a discover loop may run from its start; no measurement is planned to end past it. #806.
+#: Hours a discover loop may run from its start; a measurement running at it pauses for the next sweep. #806, #813.
 SWEEP_CEILING_H = 6.0
-#: An underpowered verdict that leaned to the challenger below this paired p is a lead. #806.
-LEAD_P = 0.10
 #: Repeats past the one reaching this share of the best power buy nothing.
 PLATEAU = 0.95
 #: Or within this much of it.
@@ -259,10 +257,10 @@ class Plan:
     unmeasured: bool = False
     #: Where each candidate's seconds per call came from, and the inputs. #696.
     estimate: dict | None = None
-    #: Why the run is not started: its projection is over the budget. #796.
-    refused: str = ""
-    #: The lead whose evidence extended the budget to the sweep ceiling. #806.
-    lead: str = ""
+    #: Per-cell P(gained), P(lost) at `effect` over the holdout, for interim looks. #813.
+    odds: tuple | None = None
+    #: Budgets (sweeps) the projection spans; a run past one pauses and resumes. #813.
+    sweeps: int | None = None
 
     def as_dict(self) -> dict:
         return asdict(self)
@@ -384,10 +382,12 @@ def floor_seconds(lane: str) -> float | None:
 
 
 def deadline(chosen: "Plan") -> float | None:
-    """When a paired run is stopped: DEADLINE_GRACE past the larger of its budget and its projection. #673."""
+    """When a slice that did not pause itself is stopped: DEADLINE_GRACE past its budget, plus one case to finish. #673, #813."""
     if chosen.budget_s is None:
         return None
-    return max(chosen.budget_s, chosen.projected_s or 0.0) * DEADLINE_GRACE
+    cells = (chosen.cases_run or 0) * chosen.repeat
+    one = (chosen.projected_s or 0.0) / cells if cells else 0.0
+    return chosen.budget_s * DEADLINE_GRACE + one
 
 
 def _hm(seconds: float) -> str:
@@ -469,6 +469,11 @@ def _median(rows, lane: str, key: str, settings: tuple | None, machines) -> floa
     if settings is not None:
         rows = [r for r in rows if reply_settings(r["receipt"], lane) == tuple(settings)]
     return draws_from(rows, key)[1]
+
+
+def mean_seconds(conn, lane: str, key: str, settings: tuple, machines) -> float | None:
+    """One receipt key's mean seconds per case in a lane, at `settings` on `machines`. #810."""
+    return _median(_candidate_rows(conn, lane, key), (lane or "").strip().lower(), key, settings, machines)
 
 
 def served_keys(conn, lane: str, spec: str = "", cid: int | None = None) -> list[str]:

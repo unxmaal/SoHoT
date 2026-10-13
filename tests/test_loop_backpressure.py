@@ -29,6 +29,7 @@ def _loop(monkeypatch, backlog):
     monkeypatch.setattr(screen_cmd, "cmd_fetch", lambda a: fetched.append(a) or 0)
     monkeypatch.setattr(discover_cmd, "cmd_discover", lambda a: 0)
     monkeypatch.setattr(measure_cmd, "measurable", lambda store, top, want="": [])
+    monkeypatch.setattr(measure_cmd, "resume_first", lambda store, fresh, want="": fresh)
     monkeypatch.setattr("harness.memory_store.connect",
                         lambda *a, **k: type("S", (), {"close": lambda s: None})())
     cli._loop_spend(argparse.Namespace(top=3, budget_gib=40, lane=""), 0)

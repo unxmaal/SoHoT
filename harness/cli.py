@@ -294,11 +294,11 @@ def build_parser() -> argparse.ArgumentParser:
     d.add_argument("--effect", type=float, default=None,
                    help="the smallest per-cell pass-rate gain worth adopting for")
     d.add_argument("--power-budget-min", type=float, default=power.BUDGET_MIN,
-                   help="minutes one paired measure may take; a powered repeat "
-                        "over it runs the fallback repeat and says the cost (#591)")
+                   help="minutes one paired measure may take per sweep before it pauses and "
+                        "resumes next sweep; a powered repeat over it runs the fallback repeat (#591, #813)")
     d.add_argument("--ceiling-h", type=float, default=power.SWEEP_CEILING_H,
-                   help="hours a --loop may run from its start; a measurement projected "
-                        "to end past it is not run, a lead may spend what is left (#806)")
+                   help="hours a --loop may run from its start; a measurement running at it "
+                        "pauses with its rows kept and resumes first next sweep (#806, #813)")
     d.add_argument("--loop", action="store_true",
                    help="every step from a sweep to an adopted winner. Says "
                         "what it would do; --run spends the disk and minutes")

@@ -34,7 +34,7 @@ from evals.core import (AGENT_MODALITIES, MODALITIES, TEXT_MODALITIES,
                         TEXT_SUFFIX, Case,
                         Receipt, cases_digest, comparable, direction_of,
                         summarize)
-from evals import core, environment, private
+from evals import core, environment, private, watch
 from evals.runners.base import RunnerError
 from evals.runners.process import ProcessRunner
 from evals.runners.chain import ChainRunner
@@ -898,6 +898,18 @@ def _parser():
                     help="retry a reply cut off at its budget at the next larger one, e.g. "
                          "4000,16000,32000,65536; bare, the lane's (completion.LADDER). Capped by "
                          "each candidate's served context, recorded on the receipt (#668)")
+    ap.add_argument("--resume", action="store_true",
+                    help="continue the run checkpointed in --out, skipping finished cases; "
+                         f"exits {watch.STALE} if it was another exam (#813)")
+    ap.add_argument("--stop-at", type=float, default=None, metavar="EPOCH",
+                    help=f"pause between cases at this time, rows checkpointed, exit {watch.PAUSED}; "
+                         f"a `{watch.PAUSE_FILE}` file in --out or SIGUSR1 pauses it too (#813)")
+    ap.add_argument("--plan-s", type=float, action="append", default=None, metavar="SECONDS",
+                    help="planned seconds per case, once per candidate in order, written to "
+                         f"{watch.PROGRESS} for a watchdog (#810). Default: each candidate's "
+                         "stored mean on this machine, else --budget-min over the cases")
+    ap.add_argument("--budget-min", type=float, default=None,
+                    help="a stated budget for the whole run, the plan where no receipt gives one (#810)")
     return ap
 
 
@@ -991,6 +1003,21 @@ def _execute_at(args, overrides: dict) -> int:
     outdir = resolve_outdir(args.out, args.modality)
     if outdir:
         outdir.mkdir(parents=True, exist_ok=True)
+    identity = {"modality": args.modality, "candidates": candidates, "repeat": args.repeat,
+                "split": side, "split_version": holdout.VERSION, "cases_digest": cases_digest(cases),
+                "max_tokens": budget, "budget_ladder": list(ladder),
+                "knobs": knobs.settings(args.modality, overrides)}
+    had = watch.read(outdir) if getattr(args, "resume", False) else None
+    if had and watch.differs(had[0], identity):
+        print(f"stale: the checkpoint in {outdir} ran another exam "
+              f"({', '.join(watch.differs(had[0], identity))} changed); not resumed", file=sys.stderr)
+        return watch.STALE
+    restored: dict = {}
+    for row in (had or ({}, []))[1]:
+        restored.setdefault(row.get("candidate"), []).append(row)
+    ckpt = watch.Checkpoint(outdir, identity, keep=bool(had))
+    # A pause request was for the run it paused, not this one.
+    (outdir / watch.PAUSE_FILE).unlink(missing_ok=True)
 
     pressed = warn_if_pressed()
     skipped = unrun_summary(cases, candidates)
@@ -1022,13 +1049,43 @@ def _execute_at(args, overrides: dict) -> int:
         planned.append((candidate, runner, mine))
         models.warn(candidate)
     resolved = resolved_models(specs)
+    total = sum(len(mine) for _, _, mine in planned)
+    eye = watch.Watch(planned=planned_seconds(args, planned, budget, ladder, total),
+                      stop_at=getattr(args, "stop_at", None), outdir=outdir)
+    todo = []
     for candidate, runner, mine in planned:
-        with _served(candidate) as launched:
-            if launched:
-                launches[runner.candidate] = ds4.launch_text(launched["launch"])
-            _run_candidate(args, candidate, runner, mine, results, outdir, evicted, ladder)
+        prior = restored.get(runner.candidate, [])
+        done = {r.get("case_id") for r in prior}
+        results.extend(restored_result(r) for r in prior)
+        eye.walls[runner.candidate] = [float(r.get("wall_s") or 0.0) for r in prior]
+        rest = [c for c in mine if c.id not in done]
+        eye.left[runner.candidate] = len(rest)
+        todo.append((candidate, runner, rest))
+    if restored:
+        print(f"── resumed: {len(results)} of {total} case(s) already done", flush=True)
+    progress = watch.Progress(outdir, eye, specs, total, len(results))
+    progress.write()
+    stopped = None
+    try:
+        with watch.asks_pause(eye):
+            for candidate, runner, mine in todo:
+                if not mine:
+                    continue
+                with _served(candidate) as launched:
+                    if launched:
+                        launches[runner.candidate] = ds4.launch_text(launched["launch"])
+                    _run_candidate(args, candidate, runner, mine, results, outdir, evicted, ladder,
+                                   eye, ckpt, progress)
+    except watch.Stop as exc:
+        stopped = exc
+        print(f"\n{exc.why}", file=sys.stderr, flush=True)
+    state, why = ("paused", stopped.why) if stopped else ("done", "")
+    code = watch.PAUSED if stopped else 0
 
     if not results:
+        if stopped:
+            progress.write(state, why)
+            return code
         raise SystemExit("nothing ran: no candidate matched any case")
 
     report(summarize(results), resolved)
@@ -1072,10 +1129,14 @@ def _execute_at(args, overrides: dict) -> int:
         ids = candidate_ids(specs, args.modality)
         for r in results:
             r.candidate_id = ids.get(r.candidate)
+        stamped = receipt.as_dict()
+        if stopped:
+            # Stored at the path the finished run replaces, so its rows are kept and never doubled. #813.
+            stamped["progress"] = {"state": state, "why": why, "done": len(results), "total": total}
         payload = {"generated": time.strftime("%Y-%m-%dT%H:%M:%S",
                                               time.localtime(now)),
                    "environment": serving_environment(client, serving, away),
-                   "receipt": receipt.as_dict(),
+                   "receipt": stamped,
                    # A name is a label and can drop the repo org; the spec
                    # runs. #337.
                    "specs": specs,
@@ -1087,7 +1148,40 @@ def _execute_at(args, overrides: dict) -> int:
                                              encoding="utf-8")
         run_id = store_run(outdir, payload, now)
         print(f"\nartifacts + results.json in {outdir}; stored as run {run_id}")
-    return 0
+        progress.write(state, why, run_id)
+    return code
+
+
+def planned_seconds(args, planned, budget: int, ladder, total: int) -> dict:
+    """receipt key -> planned seconds per case: --plan-s, else its stored mean here, else --budget-min over the cases. #810."""
+    given = getattr(args, "plan_s", None) or []
+    if given and len(given) != len(planned):
+        raise SystemExit(f"--plan-s given {len(given)} time(s) for {len(planned)} candidate(s)")
+    stated = getattr(args, "budget_min", None)
+    out = {}
+    for i, (_, runner, _) in enumerate(planned):
+        each = given[i] if given else stored_seconds(args.modality, runner.candidate, budget, ladder)
+        if each is None and stated and total:
+            each = stated * 60.0 / total
+        out[runner.candidate] = each
+    return out
+
+
+def stored_seconds(modality: str, key: str, budget: int, ladder) -> float | None:
+    """A receipt key's mean seconds per case in this lane on this machine at this reply budget."""
+    from harness import memory_store as ms
+    from harness import power, runs
+    conn = ms.connect()
+    try:
+        return power.mean_seconds(conn, modality, key, (budget, tuple(ladder or ())), runs.here(conn))
+    finally:
+        conn.close()
+
+
+def restored_result(row: dict) -> core.Result:
+    from dataclasses import fields
+    names = {f.name for f in fields(core.Result)}
+    return core.Result(**{k: v for k, v in row.items() if k in names})
 
 
 def serving_machine(seen: dict, here: str) -> tuple[str, bool]:
@@ -1192,10 +1286,10 @@ def _served(candidate: str):
 
 
 def _run_candidate(args, candidate, runner, mine, results, outdir, evicted=None,
-                   ladder=()) -> None:
+                   ladder=(), eye=None, ckpt=None, progress=None) -> None:
     runner.screening = bool(args.screen)
     base, model = router.upstream_for(candidate, args.gateway)
-    watch = router.Watch(model, base=base) if model else None
+    held = router.Watch(model, base=base) if model else None
     print(f"\n── {runner.candidate}", flush=True)
     # A cold load is not the case's to pay for in any tier; a failed one is every case's. #406, #694.
     cold = None
@@ -1206,39 +1300,52 @@ def _run_candidate(args, candidate, runner, mine, results, outdir, evicted=None,
     ctx = _served_ctx(candidate)
     count = _served_tokens(base, model) if ctx and base and model else None
     set_served(runner, ctx, count)
-    for case in mine:
-        if watch:
-            watch.look(case.id, "start")
-        if cold:
-            r = runner.failed(case, cold)
-        elif ladder:
-            r = climb(runner, case, rungs_for(ladder, ctx, case.prompt, case.context, count=count))
-        else:
-            r = runner.run(case)
-        if watch:
-            watch.look(case.id, "end")
-        core.stamp_stratum(r, case)
-        private.withhold_detail(r, case)
-        results.append(r)
-        mark = "pass" if r.passed else "FAIL"
-        note = "" if r.passed else f"  {r.detail}"
-        warn = f"  ({len(r.warnings)} warn)" if r.warnings else ""
-        first = ("" if r.ttft_s is None else
-                 f"  ttft {r.ttft_s:.2f}s{' cold' if r.cold else ''}")
-        print(f"  {mark}  {r.seconds:6.2f}s  {case.id}{warn}{first}{note}",
-              flush=True)
-        if outdir and r.output:
-            f = outdir / runner.artifact(
-                case, TEXT_SUFFIX.get(case.modality, ".txt"))
-            f.write_text(r.output, encoding="utf-8")
-            r.artifact_path = str(f.resolve())
-        if case.private:
-            # The reply stays in the run dir on this machine; the row carries no text. #654.
-            r.output = None
-    if watch and watch.swaps and evicted is not None:
-        evicted[runner.candidate] = watch.swaps
-        print(f"  router evicted {model} {len(watch.swaps)} time(s) during this run; "
-              f"it will not be ranked", file=sys.stderr)
+    eye = eye or watch.Watch()
+    try:
+        for case in mine:
+            eye.before(runner.candidate)
+            results.append(_one_case(runner, case, held, cold, ladder, ctx, count, outdir))
+            wall = eye.lap(runner.candidate)
+            if ckpt is not None:
+                ckpt.add(export_row(results[-1]), wall)
+            if progress is not None:
+                progress.case_done()
+    finally:
+        if held and held.swaps and evicted is not None:
+            evicted[runner.candidate] = held.swaps
+            print(f"  router evicted {model} {len(held.swaps)} time(s) during this run; "
+                  f"it will not be ranked", file=sys.stderr)
+
+
+def _one_case(runner, case, held, cold, ladder, ctx, count, outdir):
+    if held:
+        held.look(case.id, "start")
+    if cold:
+        r = runner.failed(case, cold)
+    elif ladder:
+        r = climb(runner, case, rungs_for(ladder, ctx, case.prompt, case.context, count=count))
+    else:
+        r = runner.run(case)
+    if held:
+        held.look(case.id, "end")
+    core.stamp_stratum(r, case)
+    private.withhold_detail(r, case)
+    mark = "pass" if r.passed else "FAIL"
+    note = "" if r.passed else f"  {r.detail}"
+    warn = f"  ({len(r.warnings)} warn)" if r.warnings else ""
+    first = ("" if r.ttft_s is None else
+             f"  ttft {r.ttft_s:.2f}s{' cold' if r.cold else ''}")
+    print(f"  {mark}  {r.seconds:6.2f}s  {case.id}{warn}{first}{note}",
+          flush=True)
+    if outdir and r.output:
+        f = outdir / runner.artifact(
+            case, TEXT_SUFFIX.get(case.modality, ".txt"))
+        f.write_text(r.output, encoding="utf-8")
+        r.artifact_path = str(f.resolve())
+    if case.private:
+        # The reply stays in the run dir on this machine; the row carries no text. #654.
+        r.output = None
+    return r
 
 
 def _served_ctx(candidate: str) -> int | None:

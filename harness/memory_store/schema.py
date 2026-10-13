@@ -4,7 +4,7 @@ from __future__ import annotations
 from harness import store
 
 
-SCHEMA_VERSION = 65
+SCHEMA_VERSION = 66
 
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
@@ -188,7 +188,35 @@ CREATE TABLE IF NOT EXISTS verdicts (
     failure_class TEXT NOT NULL DEFAULT '',
     -- The holdout assignment version and the power plan an adopt verdict used. #479.
     split_version TEXT NOT NULL DEFAULT '',
-    power       TEXT NOT NULL DEFAULT '{}'
+    power       TEXT NOT NULL DEFAULT '{}',
+    -- A paired run's planned and observed wall seconds per case, so the projection has a control. #810, #813.
+    planned_s_per_case  REAL,
+    observed_s_per_case REAL
+);
+
+-- A paired measurement paused at a time limit, resumed first by the next sweep. #813.
+CREATE TABLE IF NOT EXISTS paused_runs (
+    id          INTEGER PRIMARY KEY,
+    lane        TEXT NOT NULL,
+    incumbent   TEXT NOT NULL,
+    challenger  TEXT NOT NULL,
+    proposal    TEXT NOT NULL DEFAULT '',
+    out         TEXT NOT NULL,
+    -- json: what must be unchanged for a resume (holdout version, incumbent, reply budget, knobs).
+    identity    TEXT NOT NULL DEFAULT '{}',
+    -- json: the power plan the run started with, kept for every resume.
+    plan        TEXT NOT NULL DEFAULT '{}',
+    done        INTEGER NOT NULL DEFAULT 0,
+    total       INTEGER NOT NULL DEFAULT 0,
+    sweeps      INTEGER NOT NULL DEFAULT 0,
+    -- json list of interim looks, one per pause.
+    looks       TEXT NOT NULL DEFAULT '[]',
+    -- paused, resumed, stale or done.
+    state       TEXT NOT NULL DEFAULT 'paused',
+    why         TEXT NOT NULL DEFAULT '',
+    run_id      INTEGER REFERENCES runs(id),
+    machine_id  INTEGER REFERENCES machines(id),
+    paused_at   REAL NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS machines (

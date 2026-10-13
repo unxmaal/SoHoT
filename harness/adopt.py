@@ -137,7 +137,7 @@ def decide_by_hand(lane: str, incumbent: str, challenger: str,
 
 def decide(lane: str, incumbent: dict, challenger: dict,
            rows: list[dict] | None = None, split=None, plan=None,
-           spec: str = "", tested: int = 0) -> Verdict:
+           spec: str = "", tested: int = 0, alpha: float | None = None) -> Verdict:
     """Whether this challenger replaces this incumbent.
 
     Two gates, both required. The metric gate answers "better on what this lane
@@ -147,16 +147,20 @@ def decide(lane: str, incumbent: dict, challenger: dict,
     With a `split` both gates read holdout rows only and dev is reported beside
     them; with a `plan` whose power is short a null is underpowered. #479.
     `tested` earlier challengers on this holdout lower the level this one faces. #698.
+    `alpha`, when given, is that level less what interim looks spent. #813.
     """
     name_i = incumbent.get("candidate", "")
     name_c = challenger.get("candidate", "")
-    alpha = alpha_for(tested)
+    alpha = alpha_for(tested) if alpha is None else alpha
     evidence: dict = ({"comparisons": tested + 1, "alpha": alpha}
                       if split is not None or tested else {})
     notes = []
+    if abs(alpha - alpha_for(tested)) > 1e-12:
+        evidence["alpha"] = alpha
+        notes.append(f"tested at alpha {alpha:.4f}: {alpha_for(tested) - alpha:.4f} was spent on interim looks")
     if tested:
         notes.append(f"comparison {tested + 1} on this holdout, so alpha "
-                     f"{ALPHA}/{tested + 1} = {alpha:.4f}")
+                     f"{ALPHA}/{tested + 1} = {alpha_for(tested):.4f}")
     if split is not None:
         from harness import holdout
         evidence["split"] = split.as_dict()
@@ -175,7 +179,7 @@ def decide(lane: str, incumbent: dict, challenger: dict,
     if plan is not None:
         evidence["power"] = plan.as_dict()
         planned = getattr(plan, "alpha", None)
-        if planned is not None and abs(planned - alpha) > 1e-12:
+        if planned is not None and abs(planned - alpha_for(tested)) > 1e-12:
             evidence["planned_alpha"] = planned
             notes.append(f"planned at alpha {planned}, tested at {alpha:.4f}: another "
                          f"verdict on this holdout landed during the run")

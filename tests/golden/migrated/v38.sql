@@ -70,7 +70,8 @@ table meta [('key', 'TEXT', 0, None, 1), ('value', 'TEXT', 0, None, 0)]
   index sqlite_autoindex_meta_1 unique=1 ['key']
   ('artifact_split', '{"code": {"missing": 4, "none": 2, "path": 0, "resolved": 0, "text": 4}, "image": {"missing": 0, "none": 2, "path": 2, "resolved": 0, "text": 0}, "tts": {"missing": 0, "none": 0, "path": 4, "resolved": 0, "text": 0}}')
   ('candidate_guesses', '[{"adoption": 2, "from": "the adopt verdict/'s machine; no vote or judged run names one", "lane": "svg", "machine": 2, "proposal": "org-l/svg-thing", "spec": "mlx:org-l/svg-thing"}]')
-  ('schema', '65')
+  ('schema', '66')
+table paused_runs [('id', 'INTEGER', 0, None, 1), ('lane', 'TEXT', 1, None, 0), ('incumbent', 'TEXT', 1, None, 0), ('challenger', 'TEXT', 1, None, 0), ('proposal', 'TEXT', 1, "''", 0), ('out', 'TEXT', 1, None, 0), ('identity', 'TEXT', 1, "'{}'", 0), ('plan', 'TEXT', 1, "'{}'", 0), ('done', 'INTEGER', 1, '0', 0), ('total', 'INTEGER', 1, '0', 0), ('sweeps', 'INTEGER', 1, '0', 0), ('looks', 'TEXT', 1, "'[]'", 0), ('state', 'TEXT', 1, "'paused'", 0), ('why', 'TEXT', 1, "''", 0), ('run_id', 'INTEGER', 0, None, 0), ('machine_id', 'INTEGER', 0, None, 0), ('paused_at', 'REAL', 1, None, 0)]
 table proposals [('id', 'INTEGER', 0, None, 1), ('name', 'TEXT', 1, None, 0), ('kind', 'TEXT', 1, "'candidate'", 0), ('registry', 'TEXT', 1, "''", 0), ('description', 'TEXT', 1, "''", 0), ('lane', 'TEXT', 1, "''", 0), ('resolved', 'TEXT', 1, "''", 0), ('first_seen', 'REAL', 1, None, 0), ('last_seen', 'REAL', 1, None, 0), ('state', 'TEXT', 1, "''", 0), ('state_verdict_id', 'INTEGER', 0, None, 0), ('retest_count', 'INTEGER', 1, '0', 0), ('next_retest_at', 'REAL', 0, None, 0), ('size_bytes', 'INTEGER', 1, '0', 0), ('hf_task', 'TEXT', 1, "''", 0), ('library', 'TEXT', 1, "''", 0), ('card_tags', 'TEXT', 1, "'[]'", 0), ('attaches_to', 'TEXT', 1, "''", 0), ('runtime_needed', 'TEXT', 1, "''", 0), ('lane_source', 'TEXT', 1, "''", 0), ('card_read', 'TEXT', 1, "''", 0), ('category', 'TEXT', 1, "''", 0), ('model_type', 'TEXT', 1, "''", 0), ('remote_code', 'TEXT', 1, "''", 0)]
   index ix_prop_state unique=0 ['state']
   index sqlite_autoindex_proposals_1 unique=1 ['name']
@@ -135,27 +136,27 @@ table sources [('id', 'INTEGER', 0, None, 1), ('name', 'TEXT', 1, None, 0), ('ki
   (2, 'github-search', '', '', 0, 1790007600.0, 1790007600.0, 'ok', '', 0, 'no source by this name; nothing reads a row with no kind and no url. #625')
 table sqlite_sequence [('name', '', 0, None, 0), ('seq', '', 0, None, 0)]
   ('jobs', 2)
-table verdicts [('id', 'INTEGER', 0, None, 1), ('proposal_id', 'INTEGER', 0, None, 0), ('outcome', 'TEXT', 1, None, 0), ('tier', 'TEXT', 1, "''", 0), ('detail', 'TEXT', 1, "''", 0), ('run_path', 'TEXT', 1, "''", 0), ('score', 'REAL', 0, None, 0), ('rubric', 'TEXT', 1, "''", 0), ('judge', 'TEXT', 1, "''", 0), ('decided_at', 'REAL', 1, None, 0), ('machine_id', 'INTEGER', 0, None, 0), ('size_bytes', 'INTEGER', 1, '0', 0), ('upstream_idle_days', 'REAL', 1, '0', 0), ('until', 'TEXT', 1, "''", 0), ('candidate_id', 'INTEGER', 0, None, 0), ('reopens', 'INTEGER', 0, None, 0), ('reopen_kind', 'TEXT', 1, "''", 0), ('run_id', 'INTEGER', 0, None, 0), ('reason', 'TEXT', 1, "''", 0), ('failure_class', 'TEXT', 1, "''", 0), ('split_version', 'TEXT', 1, "''", 0), ('power', 'TEXT', 1, "'{}'", 0)]
+table verdicts [('id', 'INTEGER', 0, None, 1), ('proposal_id', 'INTEGER', 0, None, 0), ('outcome', 'TEXT', 1, None, 0), ('tier', 'TEXT', 1, "''", 0), ('detail', 'TEXT', 1, "''", 0), ('run_path', 'TEXT', 1, "''", 0), ('score', 'REAL', 0, None, 0), ('rubric', 'TEXT', 1, "''", 0), ('judge', 'TEXT', 1, "''", 0), ('decided_at', 'REAL', 1, None, 0), ('machine_id', 'INTEGER', 0, None, 0), ('size_bytes', 'INTEGER', 1, '0', 0), ('upstream_idle_days', 'REAL', 1, '0', 0), ('until', 'TEXT', 1, "''", 0), ('candidate_id', 'INTEGER', 0, None, 0), ('reopens', 'INTEGER', 0, None, 0), ('reopen_kind', 'TEXT', 1, "''", 0), ('run_id', 'INTEGER', 0, None, 0), ('reason', 'TEXT', 1, "''", 0), ('failure_class', 'TEXT', 1, "''", 0), ('split_version', 'TEXT', 1, "''", 0), ('power', 'TEXT', 1, "'{}'", 0), ('planned_s_per_case', 'REAL', 0, None, 0), ('observed_s_per_case', 'REAL', 0, None, 0)]
   index ix_verdict_cand unique=0 ['candidate_id']
   index ix_verdict_prop unique=0 ['proposal_id']
-  (1, 1, 'queued', 'inspect', 'fits: 4.4 GiB of weights under the 23.0 GiB ceiling', '', None, '', '', 1788636000.0, 1, 4724464025, 0.0, '', None, None, '', None, 'candidate', '', '', '{}')
-  (2, 1, 'queued', 'judge', 'judged relevant', '', 0.81, 'relevance', 'local-mid', 1788639600.0, 1, 0, 0.0, '', None, None, '', None, 'candidate', '', '', '{}')
-  (3, 1, 'queued', 'fetch', 'downloaded', '', None, '', '', 1788643200.0, 1, 0, 0.0, '', None, None, '', None, 'candidate', '', '', '{}')
-  (4, 2, 'declined', 'inspect', 'too-big: 39.5 GiB of weights over the 23.0 GiB ceiling', '', None, '', '', 1788646800.0, 1, 42412802048, 0.0, 'ceiling_gb:>39.5', None, None, '', None, 'machine', '', '', '{}')
-  (5, 3, 'declined', 'inspect', 'dead: last commit 2.9 years ago', '', None, '', '', 1788650400.0, 1, 0, 1059.0, '', None, None, '', None, 'upstream', '', '', '{}')
-  (6, 4, 'ignored', 'inspect', 'attaches to a model: lora in its own card', '', None, '', '', 1788654000.0, 1, 0, 0.0, '', None, None, '', None, 'candidate', '', '', '{}')
-  (7, 5, 'queued', 'inspect', 'fits: 14.0 GiB of weights under the 23.0 GiB ceiling', '', None, '', '', 1788657600.0, 1, 0, 0.0, '', None, None, '', None, 'candidate', '', '', '{}')
-  (8, 5, 'declined', 'fetch', 'needs-vllm: no vllm on this machine', '', None, '', '', 1788661200.0, 1, 0, 0.0, 'runtime:vllm', None, None, '', None, 'machine', '', '', '{}')
-  (9, 7, 'declined', 'inspect', 'needs-llamacpp', '', None, '', '', 1788664800.0, 1, 0, 0.0, 'runtime:llamacpp', None, None, '', None, 'machine', '', '', '{}')
-  (10, 8, 'queued', 'inspect', 'fits: 0.3 GiB of weights under the 23.0 GiB ceiling', '', None, '', '', 1788668400.0, 1, 0, 0.0, '', None, None, '', None, 'candidate', '', '', '{}')
-  (11, 8, 'queued', 'fetch', 'downloaded', '', None, '', '', 1788672000.0, 1, 0, 0.0, '', None, None, '', None, 'candidate', '', '', '{}')
-  (12, 9, 'queued', 'inspect', 'fits: 2.0 GiB of weights under the 23.0 GiB ceiling', '', None, '', '', 1788675600.0, 1, 0, 0.0, '', None, None, '', None, 'candidate', '', '', '{}')
-  (13, 1, 'screened', 'screen', 'passed 2/3', 'runs/20260910-120000-0001-code', 0.67, '', '', 1789035600.0, 1, 0, 0.0, '', 1, None, '', 1, 'candidate', '', '', '{}')
-  (14, 1, 'measured', 'adopt', 'code: adopted over local-mid at 0.67 vs 0.33', 'runs/20260910-120000-0001-code', 0.67, '', '', 1789039200.0, 1, 0, 0.0, '', 1, None, '', 1, 'candidate', '', '', '{}')
-  (15, 13, 'screened', 'screen', 'passed 2/2', 'runs/20260912-090000-0002-image', 1.0, '', '', 1789143600.0, 1, 0, 0.0, '', 3, None, '', 2, 'candidate', '', '', '{}')
-  (16, 6, 'broken', 'screen', 'it ran and passed nothing: 0/2', 'runs/20260912-090000-0002-image', 0.0, '', '', 1789147200.0, 1, 0, 0.0, '', 4, None, '', 2, 'candidate', '', '', '{}')
-  (17, 11, 'broken', 'screen', 'the screen exited 1: generation thread died', '', None, '', '', 1789176000.0, 1, 0, 0.0, '', None, None, '', None, 'harness', '', '', '{}')
-  (18, 11, 'queued', 'inspect', 'retracted: generation thread died is this harness', '', None, '', '', 1789179600.0, 1, 0, 0.0, '', None, 17, 'retraction', None, 'reopened', '', '', '{}')
-  (19, 8, 'screened', 'screen', 'passed 1/2', 'runs/20260920-100000-0003-tts', 0.5, '', '', 1789791600.0, 2, 0, 0.0, '', 5, None, '', 3, 'candidate', '', '', '{}')
-  (20, 8, 'declined', 'measure', 'lost to the incumbent: 0.50 vs 1.00', 'runs/20260920-100000-0003-tts', 0.5, '', '', 1789795200.0, 2, 0, 0.0, '', 5, None, '', 3, 'candidate', '', '', '{}')
-  (21, 12, 'measured', 'adopt', 'svg: preferred by hand over local-large', '', None, '', '', 1789824000.0, 2, 0, 0.0, '', 7, None, '', None, 'candidate', '', '', '{}')
+  (1, 1, 'queued', 'inspect', 'fits: 4.4 GiB of weights under the 23.0 GiB ceiling', '', None, '', '', 1788636000.0, 1, 4724464025, 0.0, '', None, None, '', None, 'candidate', '', '', '{}', None, None)
+  (2, 1, 'queued', 'judge', 'judged relevant', '', 0.81, 'relevance', 'local-mid', 1788639600.0, 1, 0, 0.0, '', None, None, '', None, 'candidate', '', '', '{}', None, None)
+  (3, 1, 'queued', 'fetch', 'downloaded', '', None, '', '', 1788643200.0, 1, 0, 0.0, '', None, None, '', None, 'candidate', '', '', '{}', None, None)
+  (4, 2, 'declined', 'inspect', 'too-big: 39.5 GiB of weights over the 23.0 GiB ceiling', '', None, '', '', 1788646800.0, 1, 42412802048, 0.0, 'ceiling_gb:>39.5', None, None, '', None, 'machine', '', '', '{}', None, None)
+  (5, 3, 'declined', 'inspect', 'dead: last commit 2.9 years ago', '', None, '', '', 1788650400.0, 1, 0, 1059.0, '', None, None, '', None, 'upstream', '', '', '{}', None, None)
+  (6, 4, 'ignored', 'inspect', 'attaches to a model: lora in its own card', '', None, '', '', 1788654000.0, 1, 0, 0.0, '', None, None, '', None, 'candidate', '', '', '{}', None, None)
+  (7, 5, 'queued', 'inspect', 'fits: 14.0 GiB of weights under the 23.0 GiB ceiling', '', None, '', '', 1788657600.0, 1, 0, 0.0, '', None, None, '', None, 'candidate', '', '', '{}', None, None)
+  (8, 5, 'declined', 'fetch', 'needs-vllm: no vllm on this machine', '', None, '', '', 1788661200.0, 1, 0, 0.0, 'runtime:vllm', None, None, '', None, 'machine', '', '', '{}', None, None)
+  (9, 7, 'declined', 'inspect', 'needs-llamacpp', '', None, '', '', 1788664800.0, 1, 0, 0.0, 'runtime:llamacpp', None, None, '', None, 'machine', '', '', '{}', None, None)
+  (10, 8, 'queued', 'inspect', 'fits: 0.3 GiB of weights under the 23.0 GiB ceiling', '', None, '', '', 1788668400.0, 1, 0, 0.0, '', None, None, '', None, 'candidate', '', '', '{}', None, None)
+  (11, 8, 'queued', 'fetch', 'downloaded', '', None, '', '', 1788672000.0, 1, 0, 0.0, '', None, None, '', None, 'candidate', '', '', '{}', None, None)
+  (12, 9, 'queued', 'inspect', 'fits: 2.0 GiB of weights under the 23.0 GiB ceiling', '', None, '', '', 1788675600.0, 1, 0, 0.0, '', None, None, '', None, 'candidate', '', '', '{}', None, None)
+  (13, 1, 'screened', 'screen', 'passed 2/3', 'runs/20260910-120000-0001-code', 0.67, '', '', 1789035600.0, 1, 0, 0.0, '', 1, None, '', 1, 'candidate', '', '', '{}', None, None)
+  (14, 1, 'measured', 'adopt', 'code: adopted over local-mid at 0.67 vs 0.33', 'runs/20260910-120000-0001-code', 0.67, '', '', 1789039200.0, 1, 0, 0.0, '', 1, None, '', 1, 'candidate', '', '', '{}', None, None)
+  (15, 13, 'screened', 'screen', 'passed 2/2', 'runs/20260912-090000-0002-image', 1.0, '', '', 1789143600.0, 1, 0, 0.0, '', 3, None, '', 2, 'candidate', '', '', '{}', None, None)
+  (16, 6, 'broken', 'screen', 'it ran and passed nothing: 0/2', 'runs/20260912-090000-0002-image', 0.0, '', '', 1789147200.0, 1, 0, 0.0, '', 4, None, '', 2, 'candidate', '', '', '{}', None, None)
+  (17, 11, 'broken', 'screen', 'the screen exited 1: generation thread died', '', None, '', '', 1789176000.0, 1, 0, 0.0, '', None, None, '', None, 'harness', '', '', '{}', None, None)
+  (18, 11, 'queued', 'inspect', 'retracted: generation thread died is this harness', '', None, '', '', 1789179600.0, 1, 0, 0.0, '', None, 17, 'retraction', None, 'reopened', '', '', '{}', None, None)
+  (19, 8, 'screened', 'screen', 'passed 1/2', 'runs/20260920-100000-0003-tts', 0.5, '', '', 1789791600.0, 2, 0, 0.0, '', 5, None, '', 3, 'candidate', '', '', '{}', None, None)
+  (20, 8, 'declined', 'measure', 'lost to the incumbent: 0.50 vs 1.00', 'runs/20260920-100000-0003-tts', 0.5, '', '', 1789795200.0, 2, 0, 0.0, '', 5, None, '', 3, 'candidate', '', '', '{}', None, None)
+  (21, 12, 'measured', 'adopt', 'svg: preferred by hand over local-large', '', None, '', '', 1789824000.0, 2, 0, 0.0, '', 7, None, '', None, 'candidate', '', '', '{}', None, None)
