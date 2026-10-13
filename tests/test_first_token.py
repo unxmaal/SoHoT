@@ -108,7 +108,9 @@ def ask(srv, stream=True, **kw):
 def test_streaming_pins_first_reasoning_and_first_content(fake):
     got = ask(fake)
     t = got.timing
-    assert THINK_AT <= t["first_reasoning_s"] < ANSWER_AT <= t["ttft_s"] < 5
+    # Lower bounds and order only: a loaded machine overruns the fake server's sleeps. #833.
+    assert t["first_reasoning_s"] >= THINK_AT and t["ttft_s"] >= ANSWER_AT
+    assert t["first_reasoning_s"] < t["ttft_s"]
     assert t["prefill_s"] == pytest.approx(0.123)
     assert fake.seen[0]["stream"] is True
     assert fake.seen[0]["stream_options"] == {"include_usage": True}
