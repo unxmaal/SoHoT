@@ -213,3 +213,9 @@ def _add_verdict_seconds(conn) -> None:
     for name in ("planned_s_per_case", "observed_s_per_case"):
         if name not in have:
             conn.execute(f"ALTER TABLE verdicts ADD COLUMN {name} REAL")
+
+
+def _add_request_purpose(conn) -> None:
+    """gateway_requests.purpose on an older store; every earlier row is 'unknown'. #825."""
+    if "purpose" not in _columns(conn, "gateway_requests"):
+        conn.execute("ALTER TABLE gateway_requests ADD COLUMN purpose TEXT NOT NULL DEFAULT 'unknown'")

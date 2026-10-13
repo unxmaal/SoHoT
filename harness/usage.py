@@ -12,7 +12,7 @@ import sys
 import threading
 import time
 
-from harness import paths
+from harness import paths, purpose
 
 #: Characters of prompt or completion kept per sample when text is on.
 SAMPLE_CHARS = 8000
@@ -31,7 +31,7 @@ LANE_PREFIX = "sohot-"
 
 COLUMNS = ("at", "alias", "lane", "served", "spec", "client", "call_type", "stream",
            "prompt_tokens", "completion_tokens", "ttft_s", "total_s", "tool_calls",
-           "tool_calls_valid", "finish_reason", "error_class", "error_code")
+           "tool_calls_valid", "finish_reason", "error_class", "error_code", "purpose")
 
 
 def _plain(obj):
@@ -131,7 +131,50 @@ def row(kwargs, response_obj, specs: dict | None = None) -> dict:
         "finish_reason": finish,
         "error_class": (str(err.get("error_class") or "") or "error") if failed else "",
         "error_code": str(err.get("error_code") or "") if failed else "",
+        "purpose": purpose.of_tags(slo.get("request_tags")),
     }
+
+
+#: The client a delegated request that bypassed the gateway is recorded under. #825.
+DIRECT_CLIENT = "soh-delegate"
+
+
+def direct_row(lane: str, spec: str, served: str, at: float, got: dict | None = None,
+               error: BaseException | None = None, stream: bool = False) -> dict:
+    """A delegated request that went straight to an engine, as the row the gateway would have written. #825."""
+    from harness import gateway
+    got = got or {}
+    alias = gateway.LANE_ALIAS.format(lane)
+    return {"at": at, "alias": alias, "lane": lane, "served": served or "", "spec": spec or alias,
+            "client": DIRECT_CLIENT, "call_type": "acompletion", "stream": int(stream),
+            "prompt_tokens": _num(got.get("prompt_tokens"), int),
+            "completion_tokens": _num(got.get("completion_tokens"), int),
+            "ttft_s": _num(got.get("ttft_s")) if stream else None,
+            "total_s": _num(got.get("seconds")) if error is None else time.time() - at,
+            "tool_calls": 0, "tool_calls_valid": 0, "finish_reason": "",
+            "error_class": type(error).__name__ if error is not None else "",
+            "error_code": str(getattr(error, "failure_class", "") or "") if error is not None else "",
+            "purpose": purpose.WORK}
+
+
+def record(r: dict, connect=None) -> bool:
+    """Write one row now, never raising; False when the store is not this checkout's to write."""
+    try:
+        if connect is None:
+            from harness import memory_store as ms
+            path = target()
+            if path is None:
+                return False
+            conn = ms.connect(path)
+        else:
+            conn = connect()
+        try:
+            insert(conn, [(r, None)])
+        finally:
+            conn.close()
+        return True
+    except Exception:  # noqa: BLE001
+        return False
 
 
 def sample(kwargs, response_obj) -> dict:
@@ -181,7 +224,8 @@ def insert(conn, rows: list[tuple[dict, dict | None]]) -> None:
     sql = (f"INSERT INTO gateway_requests ({', '.join(COLUMNS)}) VALUES "
            f"({', '.join(':' + c for c in COLUMNS)})")
     for r, s in rows:
-        cur = conn.execute(sql, {c: r.get(c) for c in COLUMNS})
+        cur = conn.execute(sql, {**{c: r.get(c) for c in COLUMNS},
+                                 "purpose": r.get("purpose") or purpose.UNKNOWN})
         if keep and s:
             conn.execute("INSERT INTO gateway_samples (request_id, prompt, completion) "
                          "VALUES (?, ?, ?)", (cur.lastrowid, s.get("prompt", ""),
@@ -406,15 +450,30 @@ def _rows(conn, lane=None, start=None, end=None) -> list[dict]:
 
 
 def summary(conn, lane=None, since=None, now=None) -> list[dict]:
-    """stats() per (alias, served model) over the window, busiest first."""
+    """stats() per (purpose, alias, served model) over the window, busiest first."""
     now = time.time() if now is None else now
     since = parse_since(DEFAULT_SINCE) if since is None else since
     groups: dict = {}
     for r in _rows(conn, lane, now - since):
-        groups.setdefault((r["alias"], r["served"]), []).append(r)
-    out = [{"alias": a, "served": m, "lane": lane_of(a),
-            "spec": rows[-1]["spec"], **stats(rows)} for (a, m), rows in groups.items()]
-    return sorted(out, key=lambda s: (-s["requests"], s["alias"], s["served"]))
+        groups.setdefault((_purpose(r), r["alias"], r["served"]), []).append(r)
+    out = [{"purpose": p, "alias": a, "served": m, "lane": lane_of(a),
+            "spec": rows[-1]["spec"], **stats(rows)} for (p, a, m), rows in groups.items()]
+    return sorted(out, key=lambda s: (-s["requests"], s["purpose"], s["alias"], s["served"]))
+
+
+def _purpose(r: dict) -> str:
+    return r.get("purpose") or purpose.UNKNOWN
+
+
+def by_purpose(conn, lane=None, since=None, now=None) -> list[dict]:
+    """stats() per purpose over the window, busiest first. #825."""
+    now = time.time() if now is None else now
+    since = parse_since(DEFAULT_SINCE) if since is None else since
+    groups: dict = {}
+    for r in _rows(conn, lane, now - since):
+        groups.setdefault(_purpose(r), []).append(r)
+    out = [{"purpose": p, **stats(rows)} for p, rows in groups.items()]
+    return sorted(out, key=lambda s: (-s["requests"], s["purpose"]))
 
 
 def around_switches(conn, lane=None, since=None, now=None) -> list[dict]:

@@ -785,6 +785,8 @@ def main(argv=None) -> int:
 
 def run(a) -> int:
     from harness import memory_store as ms
+    from harness import purpose
+    purpose.set_process(purpose.WATCHDOG)
     act = (a.act or acting()) and not a.dry_run
     conn = ms.connect()
     try:

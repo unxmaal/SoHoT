@@ -194,3 +194,39 @@ def test_the_reply_names_the_model_that_answered_not_the_alias(gateway):
         assert s.headers.get("x-sohot-model") == "up"
         for _ in s.iter_lines():
             pass
+
+
+def test_a_tagged_request_lands_with_its_purpose_on_every_route(gateway, monkeypatch):
+    """#825 inside a real LiteLLM proxy: x-litellm-tags purpose:<x> reaches standard_logging_object.request_tags."""
+    from harness import completion, purpose
+    h = {"Authorization": f"Bearer {KEY}"}
+    msgs = [{"role": "user", "content": "hi"}]
+    assert httpx.post(f"{gateway}/v1/chat/completions", timeout=30, json={
+        "model": "sohot-code", "messages": msgs}, headers={
+        **h, "x-litellm-tags": "purpose:eval"}).status_code == 200
+    with httpx.stream("POST", f"{gateway}/v1/chat/completions", timeout=30, json={
+            "model": "sohot-code", "messages": msgs, "stream": True},
+            headers={**h, "x-litellm-tags": "purpose:smoke"}) as r:
+        for _ in r.iter_lines():
+            pass
+    assert httpx.post(f"{gateway}/v1/messages", timeout=30, headers={
+        "x-api-key": KEY, "anthropic-version": "2023-06-01", "x-litellm-tags": "purpose:work"},
+        json={"model": "sohot-code", "max_tokens": 20, "messages": msgs}).status_code == 200
+    assert httpx.post(f"{gateway}/v1/chat/completions", timeout=30, json={
+        "model": "boom", "messages": msgs}, headers={
+        **h, "x-litellm-tags": "purpose:discover"}).status_code >= 500
+    assert httpx.post(f"{gateway}/v1/chat/completions", headers=h, timeout=30, json={
+        "model": "sohot-code", "messages": [{"role": "user", "content": "untagged"}]}
+    ).status_code == 200
+    monkeypatch.setenv("SOHOT_GATEWAY_KEY", KEY)
+    with purpose.using(purpose.WATCHDOG):
+        assert completion._send(gateway, {"model": "sohot-code", "messages": msgs},
+                                30).status_code == 200
+    rows = _wait_rows(6)
+    by = {(r["alias"], r["stream"], r["call_type"], r["purpose"]) for r in rows}
+    assert by == {("sohot-code", 0, "acompletion", "eval"),
+                  ("sohot-code", 1, "acompletion", "smoke"),
+                  ("sohot-code", 0, "anthropic_messages", "work"),
+                  ("boom", 0, "acompletion", "discover"),
+                  ("sohot-code", 0, "acompletion", "unknown"),
+                  ("sohot-code", 0, "acompletion", "watchdog")}

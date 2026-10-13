@@ -403,6 +403,8 @@ def main() -> None:
     ap.add_argument("--transport", default="streamable-http",
                     choices=["streamable-http", "stdio", "sse"])
     a = ap.parse_args()
+    from harness import purpose
+    purpose.set_process(purpose.WORK)
     if a.transport == "stdio":
         SERVER.run(transport="stdio")
         return

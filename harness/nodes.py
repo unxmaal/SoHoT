@@ -310,8 +310,11 @@ def _get_models(url: str, node: Node) -> tuple[int, set]:
 
 def _ask(gateway: str, key: str, model: str, timeout: float):
     import httpx
+    from harness import purpose
+    tag = {purpose.HEADER: purpose.TAG_PREFIX + purpose.SMOKE}
     return httpx.post(f"{gateway.rstrip('/')}/v1/chat/completions",
-                      headers={"Authorization": f"Bearer {key}"} if key else {}, timeout=timeout,
+                      headers={**({"Authorization": f"Bearer {key}"} if key else {}), **tag},
+                      timeout=timeout,
                       json={"model": model, "max_tokens": 4,
                             "messages": [{"role": "user", "content": "Reply with exactly: OK"}]})
 

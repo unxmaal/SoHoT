@@ -97,9 +97,10 @@ def key(environ=None, store=None) -> str:
 
 
 def headers(environ=None, store=None) -> dict:
-    """The Authorization header for a gateway request, {} without a key."""
+    """The Authorization header for a gateway request, {} without a key, and the request's purpose tag. #825."""
+    from harness import purpose
     k = key(environ, store)
-    return {"Authorization": f"Bearer {k}"} if k else {}
+    return {**({"Authorization": f"Bearer {k}"} if k else {}), **purpose.headers(environ)}
 
 
 def refused(status: int, body: str = "", sent: str = "") -> bool:
