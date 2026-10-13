@@ -101,6 +101,12 @@ def test_exit_255_is_a_crashed_test_runner_not_a_kill():
         mutation.survivors(meta, MUTATED)
 
 
+def test_a_segfaulted_worker_is_rerun_like_a_crashed_one():
+    """#840: mlx_parallel mutant 1 was killed twice and ended -11 once, so one crash broke a whole module."""
+    meta = {"exit_code_by_key": {"m.x_a__mutmut_1": -11, "m.x_a__mutmut_2": 255, "m.x_a__mutmut_3": 1}}
+    assert mutation.unsettled(meta) == ["m.x_a__mutmut_1", "m.x_a__mutmut_2"]
+
+
 def test_unsettled_mutants_are_rerun_by_name_until_they_settle(monkeypatch, tmp_path):
     rel = "harness/reasons.py"
     calls = []
@@ -118,6 +124,26 @@ def test_unsettled_mutants_are_rerun_by_name_until_they_settle(monkeypatch, tmp_
     got = mutation.run_module(tmp_path, rel, "", None)
     assert calls == [[], ["m.x_pick__mutmut_1"]]
     assert got == ["m:pick:x '>'->'>='"]
+
+
+def test_mutmut_workers_never_ask_macos_for_proxies(monkeypatch, tmp_path):
+    """#840: urllib's _scproxy lookup reads CFPreferences, which segfaults in a forked worker (exit -11)."""
+    import urllib.request
+    seen = {}
+
+    def fake(tree, env, log, names):
+        seen.update(env)
+        raise mutation.BrokenRun("stop")
+    monkeypatch.setattr(mutation, "_mutmut", fake)
+    with pytest.raises(mutation.BrokenRun):
+        mutation.run_module(tmp_path, "harness/reasons.py", "", None)
+    for k in [k for k in list(__import__("os").environ) if k.lower().endswith("_proxy")]:
+        monkeypatch.delenv(k)
+    for k, v in seen.items():
+        if k.lower().endswith("_proxy"):
+            monkeypatch.setenv(k, v)
+    assert urllib.request.getproxies_environment(), "an environment proxy setting is what skips _scproxy"
+    assert urllib.request.proxy_bypass_environment("127.0.0.1")
 
 
 def test_a_mutant_that_never_settles_breaks_the_run(monkeypatch, tmp_path):
@@ -177,6 +203,27 @@ def test_every_module_and_its_selected_tests_exist():
             assert (REPO / t).is_file(), (module, t)
 
 
+def test_every_test_file_that_imports_a_mutated_module_is_selected_or_left_out_on_purpose():
+    """#840: tests for new code went into new files that mutmut never ran, so the nightly saw survivors."""
+    found = {m: mutation.unplaced(m) for m in mutation.MODULES}
+    assert not any(found.values()), (
+        "add each to tests/gauntlet/mutation.py MODULES (then re-pin) or LEFT_OUT: "
+        + "; ".join(f"{m}: {', '.join(f)}" for m, f in found.items() if f))
+    for module, left in mutation.LEFT_OUT.items():
+        for name in left:
+            assert mutation.imports((REPO / "tests" / name).read_text(encoding="utf-8"), module), (module, name)
+
+
+def test_an_import_is_recognised_in_each_spelling():
+    for src in ("import harness.router\n", "from harness import router, screen\n",
+                "from harness.router import Watch\n", "from harness import (\n    adopt,\n    router,\n)\n"):
+        assert mutation.imports(src, "harness/router.py"), src
+    for src in ("from harness import routers\n", "import harness.routerx\n", "x = 'harness.router'\n",
+                "from .router import Watch\n"):
+        assert not mutation.imports(src, "harness/router.py"), src
+    assert mutation.imports("from harness.memory_store import transitions\n", "harness/memory_store/transitions.py")
+
+
 def test_the_config_mutates_one_module_against_its_own_tests_in_a_forkserver():
     cfg = mutation.config("harness/reasons.py")
     import tomllib
@@ -191,7 +238,9 @@ def test_the_config_mutates_one_module_against_its_own_tests_in_a_forkserver():
 def test_tests_that_read_harness_source_are_deselected_since_they_would_read_the_mutants():
     import tomllib
     args = tomllib.loads(mutation.config("harness/adopt.py"))["tool"]["mutmut"]["pytest_add_cli_args"]
-    assert args == ["--deselect", "tests/test_verdict_reasons.py::test_every_production_verdict_says_why"]
+    assert args[::2] == ["--deselect"] * len(mutation.READS_SOURCE)
+    assert args[1::2] == list(mutation.READS_SOURCE)
+    assert "tests/test_verdict_reasons.py::test_every_production_verdict_says_why" in args
     for nodeid in args[1::2]:
         path, _, name = nodeid.partition("::")
         assert f"def {name}(" in (REPO / path).read_text(encoding="utf-8"), nodeid
