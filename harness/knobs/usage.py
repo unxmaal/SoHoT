@@ -14,4 +14,5 @@ KNOBS = [
 
 NOT_GATING = {
     **{f"harness/usage.py:_UNITS[{u}]": "seconds in a day, hour, minute or second (#706)" for u in "dhms"},
+    "harness/context_report.py:rtk_gain->runner(timeout)": "how long `rtk gain` may take to report (#828)",
 }
