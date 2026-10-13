@@ -839,6 +839,8 @@ def parse_args(argv: list[str] | None = None):
 
 
 def main(argv: list[str] | None = None) -> int:
+    from harness import purpose
+    purpose.set_process(purpose.EVAL)
     args = parse_args(argv)
     return _main(args)
 

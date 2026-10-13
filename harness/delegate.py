@@ -7,6 +7,7 @@ commands resolve their model through route() here too.
 """
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import statistics
@@ -15,7 +16,7 @@ import urllib.request
 
 import httpx
 
-from harness import completion, context, exclusive, gateway, reasons, serving
+from harness import completion, context, exclusive, gateway, purpose, reasons, serving
 
 #: Lanes a delegated completion may name: the ones the gateway aliases as sohot-<lane>.
 LANES = gateway.TEXT_LANES
@@ -297,6 +298,25 @@ def _timing(got: completion.Completion, started: float, replies=()) -> dict:
             "completion_tokens": total("completion_tokens")}
 
 
+@contextlib.contextmanager
+def as_work(lane: str, spec: str, where: serving.Route, stream: bool):
+    """Send the block's requests tagged work; one that skips the gateway is logged as the gateway would. #825."""
+    direct = not completion.is_gateway(where.base)
+    from harness import usage
+    got: dict = {}
+    at = time.time()
+    with purpose.using(purpose.WORK):
+        try:
+            yield got
+        except Exception as exc:
+            if direct:
+                usage.record(usage.direct_row(lane, spec, where.model, at, error=exc, stream=stream))
+            raise
+    if direct:
+        usage.record(usage.direct_row(lane, spec, got.get("model") or where.model, at, got,
+                                      stream=stream))
+
+
 def complete(lane: str, prompt: str, system: str | None = None,
              max_tokens: int = 2048, temperature: float | None = None,
              timeout: float | None = None, thinking: bool | None = None) -> dict:
@@ -343,11 +363,13 @@ def complete(lane: str, prompt: str, system: str | None = None,
             raise completion.CompletionError(
                 f"{label + ': ' if label else ''}{exc}{hint}",
                 exc.failure_class, exc.limit) from exc
-    text, cost, replies = generate(spec, where, lane, prompt, call)
-    got = replies[-1]
-    return {"text": text, "lane": lane, "spec": spec,
-            "model": _answered_by(got.model or where.model), "method": cost or None,
-            **_timing(got, started, replies)}
+    with as_work(lane, spec, where, stream=True) as out:
+        text, cost, replies = generate(spec, where, lane, prompt, call)
+        got = replies[-1]
+        out.update({"text": text, "lane": lane, "spec": spec,
+                    "model": _answered_by(got.model or where.model), "method": cost or None,
+                    **_timing(got, started, replies)})
+    return out
 
 
 def _answered_by(model: str) -> str:
@@ -403,6 +425,8 @@ def decide(question: str, schema: dict, context: str = "",
     timeout = _allowance(where, 0, timeout)
     started = time.perf_counter()
     # Whole, not streamed: the gateway drops logprobs from a stream, and they are the answer.
-    body, got = ask(question, schema, where, context=context, timeout=timeout)
-    return {**body, "lane": "decide", "spec": spec,
-            "model": got.model or where.model, **_timing(got, started)}
+    with as_work("decide", spec, where, stream=False) as out:
+        body, got = ask(question, schema, where, context=context, timeout=timeout)
+        out.update({**body, "lane": "decide", "spec": spec,
+                    "model": got.model or where.model, **_timing(got, started)})
+    return out

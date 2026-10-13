@@ -35,6 +35,7 @@ def cmd_usage(a) -> int:
         lane = (a.lane or "").strip().lower() or None
         now = usage.time.time()
         rows = usage.summary(conn, lane=lane, since=since, now=now)
+        purposes = usage.by_purpose(conn, lane=lane, since=since, now=now)
         comps = usage.around_switches(conn, lane=lane, since=since, now=now)
         warnings = usage.drop_warning(conn, now - since) + usage.regressions(comps)
         text_on = usage.text_enabled(conn)
@@ -44,10 +45,15 @@ def cmd_usage(a) -> int:
         note(f"no requests through the gateway in the last {a.since}"
              f"{f' on sohot-{lane}' if lane else ''}")
     else:
-        note(f"{'alias':<16} {'served':<36} {'reqs':>5} {'tokens in/out':>15} "
+        note(f"{'purpose':<9} {'reqs':>6} {'tokens in/out':>21} {'errors':>7}")
+        for p in purposes:
+            note(f"{p['purpose']:<9} {p['requests']:>6} "
+                 f"{p['prompt_tokens']:>10}/{p['completion_tokens']:<10} {_rate(p['error_rate']):>7}")
+        note("")
+        note(f"{'purpose':<9} {'alias':<16} {'served':<36} {'reqs':>5} {'tokens in/out':>15} "
              f"{'TTFT p50/p95':>14} {'errors':>7} {'bad calls':>9}")
         for r in rows:
-            note(f"{r['alias'][:16]:<16} {r['served'][:36]:<36} {r['requests']:>5} "
+            note(f"{r['purpose']:<9} {r['alias'][:16]:<16} {r['served'][:36]:<36} {r['requests']:>5} "
                  f"{r['prompt_tokens']:>7}/{r['completion_tokens']:<7} "
                  f"{_secs(r['ttft_p50']):>6}/{_secs(r['ttft_p95']):<7} "
                  f"{_rate(r['error_rate']):>7} {_rate(r['invalid_rate']):>9}")
@@ -61,5 +67,5 @@ def cmd_usage(a) -> int:
         note(f"WARNING {w}")
     if text_on:
         note("text samples are ON (`soh usage --text off` stops keeping them)")
-    emit(summary=rows, switches=comps, warnings=warnings, text=text_on)
+    emit(purposes=purposes, summary=rows, switches=comps, warnings=warnings, text=text_on)
     return 0

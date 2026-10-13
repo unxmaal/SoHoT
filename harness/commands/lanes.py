@@ -43,7 +43,8 @@ def _complete(a, lane: str, prompt: str, context: str = "") -> tuple[str, str, d
     def call(text, modality="", **kw):
         return completion.Completion(completion.complete(text, modality=modality,
                                                          context=context, **kw))
-    raw, cost, _ = delegate.generate(spec, where, lane, prompt, call)
+    with delegate.as_work(lane, spec, where, stream=False):
+        raw, cost, _ = delegate.generate(spec, where, lane, prompt, call)
     return spec, raw, cost
 
 
@@ -316,8 +317,10 @@ def cmd_decide(a) -> int:
             context = Path(a.file).read_text(encoding="utf-8")
         elif not sys.stdin.isatty():
             context = sys.stdin.read()
-        _, where = _text_route(a, "decide")
-        body, _ = delegate.ask(a.prompt, schema, where, context=context)
+        spec, where = _text_route(a, "decide")
+        with delegate.as_work("decide", spec, where, stream=False) as out:
+            body, got = delegate.ask(a.prompt, schema, where, context=context)
+            out.update(model=got.model, **(got.usage or {}))
     except (OSError, ValueError, completion.CompletionError) as exc:
         return err(str(exc))
     return say(body=body, human=json.dumps(body))

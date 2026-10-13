@@ -702,11 +702,25 @@ def _watchdog(a) -> int:
     return watchdog.run(a)
 
 
+#: The purpose a verb's gateway requests carry, unless an enclosing process already set one. #825.
+VERB_PURPOSE = {
+    **dict.fromkeys(("image", "video", "svg", "web", "prompt", "code", "extract", "decide",
+                     "label-score", "label-select", "say", "hear"), "work"),
+    **dict.fromkeys(("discover", "fetch"), "discover"),
+    **dict.fromkeys(("rubric", "throughput", "judge", "adopt", "verify", "reverify",
+                     "sensitivity", "gauntlet", "chaos"), "eval"),
+    "watchdog": "watchdog",
+}
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = build_parser()
     a = ap.parse_args(argv)
     common._JSON = bool(getattr(a, "json", False))
     common._VERB = getattr(a, "command", "") or ""
+    from harness import purpose
+    if not purpose.current() and VERB_PURPOSE.get(common._VERB):
+        purpose.set_process(VERB_PURPOSE[common._VERB])
     # Before anything spawns mflux or h3. Installed on PATH this runs with
     # nothing sourced, and an unset HF_HOME sends huggingface_hub to
     # ~/.cache/huggingface to re-download weights that are already on the

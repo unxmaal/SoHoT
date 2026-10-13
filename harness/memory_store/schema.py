@@ -4,7 +4,7 @@ from __future__ import annotations
 from harness import store
 
 
-SCHEMA_VERSION = 67
+SCHEMA_VERSION = 68
 
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
@@ -406,7 +406,9 @@ CREATE TABLE IF NOT EXISTS gateway_requests (
     finish_reason     TEXT NOT NULL DEFAULT '',
     -- '' on success.
     error_class       TEXT NOT NULL DEFAULT '',
-    error_code        TEXT NOT NULL DEFAULT ''
+    error_code        TEXT NOT NULL DEFAULT '',
+    -- The caller's purpose:<x> request tag (work, eval, smoke, discover, watchdog). #825.
+    purpose           TEXT NOT NULL DEFAULT 'unknown'
 );
 
 -- Text of a request, only while the usage_text setting is on, newest kept. #481.
