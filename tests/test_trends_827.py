@@ -260,12 +260,13 @@ def test_the_benchmarks_page_draws_each_chart_and_parses(store, tmp_path):
     assert "Delegation acceptance by lane" in text
 
 
-def test_annotations_inside_the_window_are_marked_and_others_are_left_out(store):
+def test_annotations_inside_the_window_are_marked_and_others_are_left_out(store, monkeypatch):
+    monkeypatch.setattr(trends, "ANNOTATIONS", (("2026-10-13", "change one"), ("2026-10-13", "change two")))
     inside = trends.gather(store, at("2026-10-14"), days=10, limits=[], live_context={})
     assert [a["day"] for a in inside["charts"]["context"]["annotations"]] == ["2026-10-13", "2026-10-13"]
     html = trends.render(inside)
     assert html.count('class="mark"') == 1
-    assert "rtk hook and bashOutputMaxChars 8000; mcm-engine#119 search summaries" in html
+    assert "change one; change two" in html
     assert _gather(store)["charts"]["context"]["annotations"] == []
 
 

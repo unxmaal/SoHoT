@@ -16,8 +16,8 @@ MAX_SERIES = 8
 #: (day, what changed): marked on the context chart as a before and after.
 ANNOTATIONS = (
     ("2026-10-13", "rtk hook and bashOutputMaxChars 8000"),
-    ("2026-10-13", "mcm-engine#119 search summaries"),
 )
+# mcm-engine#119 (search summaries) is merged but unreleased: add its row on the day the basement pod runs 3.12.0.
 #: A tool, model, lane or purpose name the page may print; anything else is counted as "other".
 SAFE_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_ .,:+()#/-]{0,63}$")
 OTHER = "other"
