@@ -1,0 +1,6 @@
+job: log digest
+prompt: |
+  pytest.log in the current directory is a pytest run. Find the test that failed and write its
+  pytest node id (path::name), and nothing else, to FAILING.txt.
+checks:
+  - {kind: text, file: FAILING.txt, equals: 'tests/test_money.py::test_negative_amount'}

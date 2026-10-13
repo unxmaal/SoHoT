@@ -1,0 +1,7 @@
+job: edit per instruction
+prompt: |
+  In src/config.js change TIMEOUT_MS from 30000 to 45000, and rename the function loadCfg to
+  loadConfig everywhere it is defined, exported or used in src/. Change nothing else.
+checks:
+  - {kind: same, file: src/config.js, expected: expected/src/config.js}
+  - {kind: same, file: src/main.js, expected: expected/src/main.js}

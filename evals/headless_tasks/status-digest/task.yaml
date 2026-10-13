@@ -1,0 +1,7 @@
+job: log digest
+prompt: |
+  access.log in the current directory is a web server access log. Count the requests by HTTP
+  status code and write counts.json: one JSON object mapping each status code, as a string,
+  to its count, for example {"200": 10}. Write nothing else to that file.
+checks:
+  - {kind: json, file: counts.json, equals: {"200": 23, "404": 6, "500": 3}}

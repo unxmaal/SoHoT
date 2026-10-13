@@ -1,0 +1,10 @@
+job: PR description
+prompt: |
+  change.diff in the current directory is a change about to be opened as a pull request. Write PR.md:
+  a first line that is a Markdown title starting with "# ", then a "## Summary" section saying what
+  changed and why, then a "## Testing" section saying how it is tested. Name the functions and
+  constants the diff changes.
+checks:
+  - {kind: line, file: PR.md, line: 1, pattern: '^# \S'}
+  - {kind: contains, file: PR.md, all: ['## Summary', '## Testing', backoff_seconds, MAX_RETRIES, test_retry]}
+  - {kind: regex, file: PR.md, pattern: '\b3\b[^\n]*\b5\b|\b5\b[^\n]*\b3\b'}

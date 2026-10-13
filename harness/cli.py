@@ -43,6 +43,7 @@ from harness.commands import report as report_cmd
 from harness.commands import reverify as reverify_cmd
 from harness.commands import screen as screen_cmd
 from harness.commands import store as store_cmd
+from harness.commands import headless as headless_cmd
 from harness.commands import usage as usage_cmd
 from harness.commands import volume as volume_cmd
 
@@ -488,6 +489,7 @@ def build_parser() -> argparse.ArgumentParser:
     ctx.add_argument("--root", default="",
                      help="transcript root (default $SOH_CLAUDE_PROJECTS or ~/.claude/projects)")
     ctx.set_defaults(func=context_cmd.cmd_context)
+    headless_cmd.add_parser(sub)
     dsk = sub.add_parser("disk", help="what the weights cache holds, what "
                          "uses it, and what is safe to delete")
     dsk.add_argument("--delete", choices=("rejected", "unknown"), default="",

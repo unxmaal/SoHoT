@@ -1,0 +1,9 @@
+job: report summary
+prompt: |
+  Read service.log in the current directory. Write SUMMARY.md with exactly this shape:
+  line 1: `ERRORS: <n>` where n is the number of lines whose level is ERROR
+  line 2: `TOP: <component>` naming the component (the word in square brackets) with the most ERROR lines
+  then one to three sentences summarising what went wrong.
+checks:
+  - {kind: line, file: SUMMARY.md, line: 1, pattern: '^ERRORS:\s*8\s*$'}
+  - {kind: line, file: SUMMARY.md, line: 2, pattern: '^TOP:\s*`?\[?db\]?`?\s*$'}

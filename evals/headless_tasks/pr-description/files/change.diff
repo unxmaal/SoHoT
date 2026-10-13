@@ -1,0 +1,38 @@
+diff --git a/ledger/retry.py b/ledger/retry.py
+index 3f1c2aa..8b0e4d1 100644
+--- a/ledger/retry.py
++++ b/ledger/retry.py
+@@ -1,12 +1,19 @@
+ import time
+ 
+-MAX_RETRIES = 3
++MAX_RETRIES = 5
++
++
++def backoff_seconds(attempt: int, base: float = 0.5, cap: float = 8.0) -> float:
++    """Exponential backoff for the given attempt, never above cap."""
++    return min(cap, base * (2 ** attempt))
+ 
+ 
+ def with_retry(fn):
+     for attempt in range(MAX_RETRIES):
+         try:
+             return fn()
+         except ConnectionError:
+-            time.sleep(1)
++            time.sleep(backoff_seconds(attempt))
+     return fn()
+diff --git a/tests/test_retry.py b/tests/test_retry.py
+new file mode 100644
+index 0000000..c0ffee1
+--- /dev/null
++++ b/tests/test_retry.py
+@@ -0,0 +1,8 @@
++from ledger.retry import backoff_seconds
++
++
++def test_backoff_doubles_until_the_cap():
++    assert backoff_seconds(0) == 0.5
++    assert backoff_seconds(1) == 1.0
++    assert backoff_seconds(3) == 4.0
++    assert backoff_seconds(10) == 8.0
