@@ -23,6 +23,8 @@ MACHINE_KEY = "node_machine"
 CONNECT_KEY = "connect_timeout"
 IPV4_KEY = "ipv4"
 FALLBACK_KEY = "fallback_for"
+#: The refusal for a down node's model with no local twin; smoke matches it. #823.
+NO_LOCAL_COPY = "this machine has no copy of"
 
 CONNECT_TIMEOUT_S = 3.0
 #: Covers a cold reload after --sleep-idle-seconds plus a long reply.
@@ -338,7 +340,10 @@ def smoke(gateway: str, key: str, nodes: list[Node], get=_get_models, ask=_ask, 
             took = clock() - started
             served_by = r.headers.get("x-sohot-node", "")
             fell = r.headers.get("x-sohot-fallback", "")
-            if r.status_code >= 400:
+            if not up and r.status_code == 503 and NO_LOCAL_COPY in getattr(r, "text", ""):
+                out.append((took <= node.connect_timeout + 10,
+                            f"node {node.name} down: {model} refused in {took:.1f}s, {NO_LOCAL_COPY} it"))
+            elif r.status_code >= 400:
                 out.append((False, f"node {node.name} {model}: HTTP {r.status_code}"))
             elif up and served_by == node.name and node.fingerprint \
                     and r.headers.get("x-sohot-machine", "") != node.identity:
