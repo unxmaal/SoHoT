@@ -247,7 +247,8 @@ def latest(name):
 
 def loop(*extra):
     return cli.main(["discover", "--loop", "--run", "--lane", "code", "--top", "1",
-                     "--budget-gib", "12", "--repeat", "4", "--power-budget-min", "1e9", *extra])
+                     "--budget-gib", "12", "--repeat", "4", "--power-budget-min", "1e9",
+                     "--ceiling-h", "1e9", *extra])
 
 
 def adopted():

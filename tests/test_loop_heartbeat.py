@@ -159,7 +159,7 @@ def test_the_spend_beats_each_candidate_it_measures(monkeypatch, clock):
     monkeypatch.setattr(measure_cmd, "measurable",
                         lambda store, top, want: [{"name": "a/one"}, {"name": "b/two"}])
     monkeypatch.setattr(measure_cmd, "_measure_and_adopt",
-                        lambda a, row: seen.append(dict(hb.read())) or 0)
+                        lambda a, row, sweep=None: seen.append(dict(hb.read())) or 0)
     hb.start(lane="code", total=loop.LOOP_TOTAL)
     _quiet(loop._loop_spend, argparse.Namespace(top=2, budget_gib=12.0, lane="code"), 0, [])
     tiers = [(s["tier"], s["candidate"], s["item"], s["items"]) for s in seen]

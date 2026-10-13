@@ -88,7 +88,7 @@ def test_the_measure_argv_names_the_holdout_when_dev_does_not_fit(monkeypatch, t
     monkeypatch.setattr(measure_cmd, "_receipt_at", lambda out: None)
     real = measure_cmd._plan
 
-    def fitted(a, lane, inc, spec):  # holdout fits the budget, dev and holdout do not. #796.
+    def fitted(a, lane, inc, spec, sweep=None):  # holdout fits the budget, dev and holdout do not. #796.
         from harness import holdout
         _, full = real(argparse.Namespace(repeat=3, power_budget_min=1e9), lane, inc, spec)
         hold = full.projected_s * len(holdout.for_lane(lane).holdout) / full.cases_run

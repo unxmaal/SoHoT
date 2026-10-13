@@ -11,6 +11,10 @@ KNOBS = [
     _k("decode_tok_s", ["harness/power.py:DECODE_TOK_S", "harness/completion.py:MIN_DECODE_TOK_S"],
        [15.0, 25.0, 50.0, 100.0, 145.0, 200.0], keyed="machine",
        note="decode rate per machine a paired run's reply-budget estimate assumes; prices the deadline, not a grade (#696)"),
+    _k("lead_p", ["harness/power.py:LEAD_P"], [0.05, 0.1, 0.2],
+       note="paired p under which an underpowered verdict that leaned to the challenger is a lead (#806)"),
+    _k("sweep_ceiling_h", ["harness/power.py:SWEEP_CEILING_H"], [4.0, 6.0, 8.0],
+       note="hours a discover loop runs from its start; no measurement is planned to end past it (#806)"),
     _k("unseen_rate", ["harness/power.py:UNSEEN"], [0.25, 0.5, 0.75],
        note="pass rate a plan assumes for an incumbent with no draws; such a plan is unmeasured (#698)"),
 ]

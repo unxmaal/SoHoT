@@ -38,6 +38,10 @@ MEASURING_REPEAT = 2
 DECODE_TOK_S = {"Mac17_15": 145.0}
 #: A paired run may run this far past max(budget, projection) before it is stopped. #673.
 DEADLINE_GRACE = 1.25
+#: Hours a discover loop may run from its start; no measurement is planned to end past it. #806.
+SWEEP_CEILING_H = 6.0
+#: An underpowered verdict that leaned to the challenger below this paired p is a lead. #806.
+LEAD_P = 0.10
 #: Repeats past the one reaching this share of the best power buy nothing.
 PLATEAU = 0.95
 #: Or within this much of it.
@@ -257,6 +261,8 @@ class Plan:
     estimate: dict | None = None
     #: Why the run is not started: its projection is over the budget. #796.
     refused: str = ""
+    #: The lead whose evidence extended the budget to the sweep ceiling. #806.
+    lead: str = ""
 
     def as_dict(self) -> dict:
         return asdict(self)
