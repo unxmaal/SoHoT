@@ -3,6 +3,7 @@ import json
 import subprocess
 import sys
 import time
+from pathlib import Path
 
 import pytest
 
@@ -392,7 +393,7 @@ def test_restart_runs_launchd_restart_for_the_gateway_only():
         return subprocess.CompletedProcess(argv, 0, "", "")
     g = wd.Finding("gateway_down", wd.Subject("gateway", "gateway", "t", detail={"service": "gateway"}), {})
     assert wd.Hands(run=fake).do(wd.RESTART, g) == "restarted gateway"
-    assert calls[0][-2:] == ["restart", "gateway"] and calls[0][1].endswith("scripts/launchd.sh")
+    assert calls[0][-2:] == ["restart", "gateway"] and Path(calls[0][1]).as_posix().endswith("scripts/launchd.sh")
     other = wd.Finding("x", wd.Subject("model", "m", "t", detail={"service": "mlx"}), {})
     assert wd.Hands(run=fake).do(wd.RESTART, other).startswith("refused") and len(calls) == 1
 

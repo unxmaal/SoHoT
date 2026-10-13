@@ -8,6 +8,7 @@ from evals.core import Case, Receipt, comparable
 from evals.runners.base import BaseRunner, RunnerError
 from evals.runners.text import CompletionRunner
 from harness import completion, delegate, gateway, knobs, reasons, router, serving
+from tests import shells
 from tests.test_context_store import _serve
 from tests.test_mcp_delegate import fake  # noqa: F401
 from tests.test_router_swaps import OURS, FakeRouter, _run, quiet_receipt  # noqa: F401
@@ -100,7 +101,9 @@ def test_a_model_held_across_the_whole_run_records_no_swap():
 
 
 def _sleep_idle(gib, os_name):
-    out = subprocess.run(["bash", str(REPO / "scripts" / "router-sleep-idle.sh"), str(gib * 1024 ** 3), os_name],
+    if not shells.BASH:
+        pytest.skip("no bash that runs a POSIX script")
+    out = subprocess.run([shells.BASH, str(REPO / "scripts" / "router-sleep-idle.sh"), str(gib * 1024 ** 3), os_name],
                          capture_output=True, text=True, check=True)
     return int(out.stdout.strip())
 
@@ -113,7 +116,7 @@ def test_a_dedicated_server_never_sleeps_and_a_shared_desktop_gives_the_card_bac
 
 def test_the_router_sleeps_as_this_machine_should_and_outlasts_the_longest_request(tmp_path, monkeypatch):
     args, _, _ = _serve(tmp_path, monkeypatch)
-    here = subprocess.run(["bash", str(REPO / "scripts" / "router-sleep-idle.sh")],
+    here = subprocess.run([shells.BASH, str(REPO / "scripts" / "router-sleep-idle.sh")],
                           capture_output=True, text=True, check=True).stdout.strip()
     assert args[args.index("--sleep-idle-seconds") + 1] == here
     assert float(args[args.index("--timeout") + 1]) >= CEILING
@@ -198,7 +201,9 @@ def test_a_decide_call_waits_for_a_load_only_when_the_model_may_not_be_held(
 def test_the_desktop_idle_sleep_is_a_site_the_knob_inventory_sees():
     found = knobs.inventory(REPO)
     assert "scripts/router-sleep-idle.sh:LLAMACPP_SLEEP_IDLE" in found
-    assert subprocess.run(["bash", str(REPO / "scripts" / "router-sleep-idle.sh"), "0", "Linux"],
+    if not shells.BASH:
+        pytest.skip("no bash that runs a POSIX script")
+    assert subprocess.run([shells.BASH, str(REPO / "scripts" / "router-sleep-idle.sh"), "0", "Linux"],
                           env={"PATH": "/usr/bin:/bin", "LLAMACPP_SLEEP_IDLE": "120"},
                           capture_output=True, text=True, check=True).stdout.strip() == "120"
 

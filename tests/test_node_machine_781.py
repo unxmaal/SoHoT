@@ -99,7 +99,7 @@ def test_a_reply_from_a_node_with_no_fingerprint_warns_naming_the_node_and_key(c
     monkeypatch.setattr(nodes, "path", lambda environ=None: Path("~/lh/nodes.yaml"))
     R.warn_unfiled("node:khryll")
     err = capsys.readouterr().err
-    assert "khryll" in err and "machine:" in err and "~/lh/nodes.yaml" in err
+    assert "khryll" in err and "machine:" in err and str(Path("~/lh/nodes.yaml")) in err
 
 
 @pytest.mark.parametrize("who", ["unknown: http://g did not name its machine", "upstream:h:1"])

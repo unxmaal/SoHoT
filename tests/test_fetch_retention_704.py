@@ -154,6 +154,12 @@ def test_a_dead_fetch_partial_download_is_cleared(world):
     child = ("import sys\nfrom harness import downloads, memory_store as ms\n"
              "downloads.start(ms.connect(), 'org/dead', downloads.HUB, sys.argv[1])\n")
     subprocess.run([sys.executable, "-c", child, str(d)], cwd=REPO, check=True)
+    # Windows lets go of a dead process's lock "depending on available system resources", not at exit. #851.
+    for _ in range(200):
+        if downloads.held_elsewhere(downloads.key(d)) is False:
+            break
+        time.sleep(0.05)
+    assert downloads.held_elsewhere(downloads.key(d)) is False, "the dead fetch's lock was never released"
     disk.clean(inv(world), time.time(), world.conn)
     assert not part.exists()
 

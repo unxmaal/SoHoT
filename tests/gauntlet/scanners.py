@@ -305,6 +305,24 @@ def posix_primitives(text, rel):
     return out + [f"{rel}:{line}: {why}" for line, why in sorted(found)]
 
 
+_SHELLS = {"bash", "sh", "zsh"}
+_SPAWNS = {"run", "Popen", "check_output", "check_call", "call"}
+
+
+def bare_shells(text, rel):
+    """A subprocess argv starting with a bare shell name: on Windows "bash" is the WSL launcher (tests/shells.py)."""
+    tree, out = _parse(text, rel)
+    if tree is None:
+        return out
+    found = []
+    for n in ast.walk(tree):
+        if isinstance(n, ast.Call) and _call_name(n) in _SPAWNS and n.args and isinstance(n.args[0], ast.List) \
+                and n.args[0].elts and isinstance(n.args[0].elts[0], ast.Constant) \
+                and n.args[0].elts[0].value in _SHELLS:
+            found.append((n.lineno, f"runs a bare {n.args[0].elts[0].value!r}; use tests.shells.resolve()"))
+    return out + [f"{rel}:{line}: {why}" for line, why in sorted(found)]
+
+
 SMALL_FILE = 1 << 20
 
 
