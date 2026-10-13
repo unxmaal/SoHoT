@@ -296,6 +296,9 @@ def build_parser() -> argparse.ArgumentParser:
     d.add_argument("--power-budget-min", type=float, default=power.BUDGET_MIN,
                    help="minutes one paired measure may take; a powered repeat "
                         "over it runs the fallback repeat and says the cost (#591)")
+    d.add_argument("--ceiling-h", type=float, default=power.SWEEP_CEILING_H,
+                   help="hours a --loop may run from its start; a measurement projected "
+                        "to end past it is not run, a lead may spend what is left (#806)")
     d.add_argument("--loop", action="store_true",
                    help="every step from a sweep to an adopted winner. Says "
                         "what it would do; --run spends the disk and minutes")

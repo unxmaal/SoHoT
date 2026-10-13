@@ -159,18 +159,18 @@ def measurable(store, top: int, want: str = "") -> list[dict]:
     return rows[:top]
 
 
-def _measure_and_adopt(a, row: dict) -> int:
+def _measure_and_adopt(a, row: dict, sweep=None) -> int:
     """_measure, then unload the challenger it loaded. #444."""
     from harness import router
     loaded: list[str] = []
     try:
-        return _measure(a, row, loaded)
+        return _measure(a, row, loaded, sweep)
     finally:
         for spec in loaded:
             router.release_spec(spec, f"measured {row['name']}")
 
 
-def _measure(a, row: dict, loaded: list) -> int:
+def _measure(a, row: dict, loaded: list, sweep=None) -> int:
     """One challenger against the lane's incumbent, then the verdict.
 
     PAIRED AND IN ONE RUN. Both candidates see the same cases, the same repeat
@@ -226,7 +226,9 @@ def _measure(a, row: dict, loaded: list) -> int:
     # candidates and then read a receipt from a different experiment. #222.
     out = (paths.home() / "runs"
            / f"{time.strftime('%Y%m%d-%H%M%S')}-adopt-{lane}")
-    split, plan = _plan(a, lane, inc_spec, spec)
+    split, plan = _plan(a, lane, inc_spec, spec, sweep=sweep)
+    if sweep is not None and (plan.refused or plan.lead):
+        sweep.lines.append(f"{name}: {plan.refused or plan.lead}")
     if plan.refused:
         return _refused(name, lane, inc_spec, spec, split, plan)
     argv = ["uv", "run", "python", "-m", "evals.run", "--modality", lane,
@@ -341,12 +343,12 @@ def _measure(a, row: dict, loaded: list) -> int:
     return 0
 
 
-def _plan(a, lane: str, inc_spec: str, spec: str = ""):
-    """The lane's split and the repeat the paired gate needs on its holdout, within the time budget. #479, #591, #673."""
+def _plan(a, lane: str, inc_spec: str, spec: str = "", sweep=None):
+    """The lane's split and the repeat the paired gate needs on its holdout, within the time budget and the sweep's ceiling. #479, #591, #673, #806."""
     from dataclasses import replace
 
     from evals.run import STOCHASTIC_MODALITIES
-    from harness import adopt, candidates, completion, holdout, power, runs
+    from harness import adopt, candidates, ceiling, completion, holdout, power, runs
     from harness import memory_store as ms
 
     split = holdout.for_lane(lane)
@@ -364,6 +366,9 @@ def _plan(a, lane: str, inc_spec: str, spec: str = ""):
                                                settings=settings, machines=machines,
                                                incumbent_basis=basis)
         alpha = adopt.alpha_for(adopt.comparisons(store, lane, split.version))
+        pairing = ceiling.key(lane, inc_spec, spec)
+        found = (ceiling.lead(store, lane, inc_spec, spec)
+                 if sweep is not None and spec and pairing not in sweep.spent else None)
     finally:
         store.close()
     estimated = ""
@@ -382,7 +387,17 @@ def _plan(a, lane: str, inc_spec: str, spec: str = ""):
                       repeat=explicit, observed=seen, alpha=alpha,
                       unmeasured=not any(draws.values()),
                       rho=power.icc([list(draws.values())]))
-    budget = float(getattr(a, "power_budget_min", None) or power.BUDGET_MIN) * 60
+    budget = per = float(getattr(a, "power_budget_min", None) or power.BUDGET_MIN) * 60
+    left = sweep.remaining() if sweep is not None else None
+    lead = ""
+    if found is not None and left > per:
+        # Once per lead per sweep: its follow-up may spend what the ceiling has left. #806.
+        sweep.spent.add(pairing)
+        budget = left
+        lead = (f"{found.text()}, so up to the {power._hm(left)} left before the sweep "
+                f"ceiling instead of the {power._hm(per)} budget")
+    elif left is not None:
+        budget = min(per, left)
     every = len(set(split.dev) | set(split.holdout))
     full = power.projected_seconds(every, plan.repeat, median_s, calls)
     side, dev_skipped = "all", ""
@@ -398,13 +413,23 @@ def _plan(a, lane: str, inc_spec: str, spec: str = ""):
         estimated = "; ".join(x for x in (estimated, f"challenger seconds per call "
                                           f"{est['challenger_s']:.0f}s by {est['challenger_source']}") if x)
     plan = replace(plan, side=side, dev_skipped=dev_skipped, estimate=est,
-                   why="; ".join(x for x in (plan.why, power.unseen_note(draws), estimated) if x))
-    plan = replace(plan, deadline_s=power.deadline(plan))
+                   why="; ".join(x for x in (lead, plan.why, power.unseen_note(draws), estimated) if x),
+                   lead=lead)
+    stop = power.deadline(plan)
+    plan = replace(plan, deadline_s=stop if left is None or stop is None else min(stop, left))
     if plan.projected_s is not None and plan.budget_s is not None and plan.projected_s > plan.budget_s:
         # Even the fallback repeat does not fit: refuse rather than run past it to DEADLINE_GRACE. #796.
-        plan = replace(plan, refused=(
-            f"not run: {plan.cases_run} case(s) x repeat {plan.repeat} x {calls} call(s) projected at "
-            f"{power._hm(plan.projected_s)}, over the {power._hm(plan.budget_s)} budget"))
+        cost = (f"{plan.cases_run} case(s) x repeat {plan.repeat} x {calls} call(s) projected at "
+                f"{power._hm(plan.projected_s)}")
+        if lead:
+            why = (f"lead, unaffordable in one sweep: {cost}, over the {power._hm(left)} left before "
+                   f"the sweep ceiling ({found.text()})")
+        elif left is not None and left < per:
+            why = (f"not run: would end after the sweep ceiling: {cost}, "
+                   f"{power._hm(left)} left of it")
+        else:
+            why = f"not run: {cost}, over the {power._hm(plan.budget_s)} budget"
+        plan = replace(plan, refused=why)
     print(f"    power: repeat {plan.repeat} over {len(split.holdout)} holdout "
           f"case(s) gives {plan.power:.2f} to detect +{plan.effect:.2f} at "
           f"alpha {plan.alpha}{'; ' + plan.why if plan.why else ''}"

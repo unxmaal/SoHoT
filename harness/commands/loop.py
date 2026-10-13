@@ -214,10 +214,11 @@ def _run_loop_held(a, keep=None) -> int:
     import argparse as _ap
     import sys
 
-    from harness import adopt, fetching, rank
+    from harness import adopt, ceiling, fetching, power, rank
     from harness import memory_store as ms
 
     run = bool(getattr(a, "run", False))
+    sweep = ceiling.Sweep(float(getattr(a, "ceiling_h", None) or power.SWEEP_CEILING_H) * 3600)
     rc = 0
     failed: list[str] = []
     for label, attr, needs_run in LOOP_STEPS:
@@ -290,7 +291,7 @@ def _run_loop_held(a, keep=None) -> int:
         print("\ninspect, fetch, screen and measure not run. Add --run to "
               "spend the disk and the minutes.")
         return _why_nonzero(rc, failed)
-    return _why_nonzero(_spend_and_settle(a, rc, failed), failed)
+    return _why_nonzero(_spend_and_settle(a, rc, failed, sweep), failed)
 
 
 def _step(label: str, got, failed: list) -> int:
@@ -308,13 +309,15 @@ def _why_nonzero(rc: int, failed: list) -> int:
     return rc
 
 
-def _spend_and_settle(a, rc: int, failed: list | None = None) -> int:
+def _spend_and_settle(a, rc: int, failed: list | None = None, sweep=None) -> int:
     """_loop_spend, then leave only lane defaults resident in the router. #444."""
     from harness import router
     try:
-        rc = _loop_spend(a, rc, failed if failed is not None else [])
+        rc = _loop_spend(a, rc, failed if failed is not None else [], sweep)
     finally:
         router.settle("the discovery loop is done")
+        if sweep is not None:
+            print("\n".join(sweep.summary()))
     _publish_if_enabled()
     return rc
 
@@ -334,7 +337,7 @@ def _publish_if_enabled() -> str:
     return path
 
 
-def _loop_spend(a, rc: int, failed: list | None = None) -> int:
+def _loop_spend(a, rc: int, failed: list | None = None, sweep=None) -> int:
     """Fetch, screen, measure and adopt, ONE CANDIDATE AT A TIME.
 
     Serial by construction, not by accident. An eval sweeping aliases took this
@@ -405,7 +408,7 @@ def _loop_spend(a, rc: int, failed: list | None = None) -> int:
     for i, row in enumerate(fresh, 1):
         _beat("measure", candidate=row.get("name", ""), item=i, items=len(fresh))
         rc = _step(f"measure {row.get('name', '')}".strip(),
-                   measure_cmd._measure_and_adopt(a, row), failed) or rc
+                   measure_cmd._measure_and_adopt(a, row, sweep), failed) or rc
     return rc
 
 

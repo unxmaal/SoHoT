@@ -131,7 +131,7 @@ def test_the_measure_unloads_its_challenger_however_it_ends(monkeypatch):
     monkeypatch.setattr(router, "release_spec",
                         lambda spec, why, **k: released.append(spec))
 
-    def measure(a, row, loaded):
+    def measure(a, row, loaded, sweep=None):
         loaded.append("llamacpp:Challenger-Q4_K_M")
         raise RuntimeError("the run died")
     monkeypatch.setattr(measure_cmd, "_measure", measure)
@@ -144,7 +144,7 @@ def test_the_loop_ends_by_settling_the_router(monkeypatch):
     settled = []
     monkeypatch.setattr(router, "settle", lambda why, **k: settled.append(why))
 
-    def spend(a, rc, failed=None):
+    def spend(a, rc, failed=None, sweep=None):
         raise RuntimeError("the measure died")
     monkeypatch.setattr(loop_cmd, "_loop_spend", spend)
     with pytest.raises(RuntimeError):
