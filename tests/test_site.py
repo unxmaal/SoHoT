@@ -11,7 +11,7 @@ from harness import lanes, privacy, publish, site
 
 ROOT = Path(__file__).resolve().parent.parent
 FIXTURES = ROOT / "tests" / "fixtures" / "site"
-PAGES = ("index.html", "reports/index.html", "benchmarks/index.html")
+PAGES = ("index.html", "reports/index.html", "benchmarks/index.html", "trends/index.html")
 NOW = 1.7598e9
 USER = "patq"  # privacy-ok: a planted username the scan must catch
 
@@ -54,8 +54,8 @@ def test_the_front_page_links_the_report_and_the_benchmarks():
     pages = site.render(_machines(), now=NOW)
     front = pages["index.html"]
     assert 'href="reports/"' in front and 'href="benchmarks/"' in front
-    for rel in ("reports/index.html", "benchmarks/index.html"):
-        assert 'href="../"' in pages[rel]
+    for rel in ("reports/index.html", "benchmarks/index.html", "trends/index.html"):
+        assert 'href="../"' in pages[rel] and 'href="../trends/"' in pages[rel]
 
 
 def test_a_stat_on_the_front_page_changes_when_the_export_changes():

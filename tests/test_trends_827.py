@@ -242,11 +242,12 @@ def _machine(t):
             "generated_at": "2026-10-10T23:00:00Z", "lanes": [], "trends": t}
 
 
-def test_the_benchmarks_page_draws_each_chart_and_parses(store, tmp_path):
+def test_the_trends_page_draws_each_chart_and_parses(store, tmp_path):
     t = _gather(store)
     doc = json.loads(json.dumps(_machine(t)))
     (tmp_path / "m.json").write_text(json.dumps(doc), encoding="utf-8")
-    html = site.benchmarks(publish.load(tmp_path), now=at("2026-10-10", 23))
+    machines = publish.load(tmp_path)
+    html = site.trends_page(machines, now=at("2026-10-10", 23))
     p = _Parse()
     p.feed(html)
     p.close()
@@ -254,7 +255,9 @@ def test_the_benchmarks_page_draws_each_chart_and_parses(store, tmp_path):
     svgs = [a for tag, a in p.tags if tag == "svg" and "trend" in a.get("class", "")]
     drawn = [c for c in t["charts"].values() if c["series"]]
     assert len(svgs) == len(drawn) == 7
-    assert 'id="trends"' in html and 'href="#trends"' in html
+    assert 'id="trends"' in html and 'aria-current=page>Trends' in html
+    bench = site.benchmarks(machines, now=at("2026-10-10", 23))
+    assert 'id="trends"' not in bench and "<svg" not in bench, "trends stay off the benchmarks page (#849)"
     text = "".join(p.text)
     assert "claude-opus-5-5 2026-10-08: $89.17" in text
     assert "Delegation acceptance by lane" in text
