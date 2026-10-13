@@ -20,6 +20,9 @@ KNOBS = [
 ]
 
 NOT_GATING = {
+    "harness/trends.py:MAX_SERIES": "how many series a published trend chart draws before folding into other; "
+                                    "presentation only, the totals are unchanged (#827)",
+    "harness/trends.py:TREND_DAYS": "how many days back the published trend charts reach; presentation only (#827)",
     "harness/ledger.py:cloud->runner(timeout)": "how long ccusage may take; a timeout reports the cloud unavailable (#826)",
     "harness/ledger.py:prices->runner(timeout)": "how long installing litellm at the pin may take to print prices; "
                                                  "a timeout leaves displaced dollars unpriced, never zero (#826)",

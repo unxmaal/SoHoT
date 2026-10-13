@@ -63,9 +63,41 @@ def day_start(day: str, tz=None) -> float:
 
 # --- cloud: ccusage -------------------------------------------------------------------------------
 
-def parse_ccusage(doc: dict) -> dict:
-    """ccusage daily JSON as {days: {day: {usd, tokens, unpriced}}, unpriced_models}; unpriced cost is never counted."""
-    unpriced = sorted((doc.get("totals") or {}).get("unpricedModels") or [])
+_BREAKDOWN = (("inputTokens", 0), ("outputTokens", 1), ("cacheReadTokens", 2), ("cacheCreationTokens", 3))
+
+
+def litellm_entry(name: str, table: dict):
+    """The cost-map entry for a ccusage model name: exact, then without a date suffix, then provider-prefixed."""
+    for key in (name, re.sub(r"-\d{8}$", "", name), f"anthropic/{name}"):
+        if key in (table or {}):
+            return table[key]
+    return None
+
+
+def price_breakdown(b: dict, table: dict) -> float | None:
+    """A ccusage model breakdown priced from LiteLLM's map; None when any nonzero part has no price. #845."""
+    p = litellm_entry(b.get("modelName") or "", table)
+    if not p:
+        return None
+    usd = 0.0
+    for key, i in _BREAKDOWN:
+        n = b.get(key) or 0
+        if not n:
+            continue
+        rate = p[i] if i < len(p) else None
+        if rate is None:
+            return None
+        usd += n * rate
+    return round(usd, 6)
+
+
+def parse_ccusage(doc: dict, table: dict | None = None, price_source: str = "") -> dict:
+    """ccusage daily JSON as {days: {day: {usd, tokens, unpriced, models}}, unpriced_models, litellm_priced_models}.
+
+    A model ccusage leaves unpriced is priced from LiteLLM's map when `table` has it and labelled so; one that
+    neither prices stays out of the cost and is named, never counted as 0. #845."""
+    flagged = set((doc.get("totals") or {}).get("unpricedModels") or [])
+    neither, by_litellm = set(), set()
     days: dict = {}
     for day in doc.get("daily") or []:
         period = day.get("period") or day.get("date")
@@ -75,21 +107,34 @@ def parse_ccusage(doc: dict) -> dict:
         tokens = {"input": day.get("inputTokens") or 0, "output": day.get("outputTokens") or 0,
                   "cache_write": day.get("cacheCreationTokens") or 0,
                   "cache_read": day.get("cacheReadTokens") or 0}
-        priced, n_priced, unpriced_day = 0.0, 0, {}
+        priced, n_priced, unpriced_day, models = 0.0, 0, {}, {}
         for b in breakdowns:
             name = b.get("modelName")
-            if name in unpriced:
-                unpriced_day[name] = sum(b.get(k) or 0 for k in (
-                    "inputTokens", "outputTokens", "cacheCreationTokens", "cacheReadTokens"))
+            n_tok = sum(b.get(k) or 0 for k, _ in _BREAKDOWN)
+            if name in flagged:
+                usd = price_breakdown(b, table) if table else None
+                by = "litellm" if usd is not None else None
             else:
-                priced += b.get("cost") or 0
-                n_priced += 1
+                usd, by = b.get("cost") or 0, "ccusage"
+            models[name] = {"usd": usd, "priced_by": by, "tokens": n_tok}
+            if usd is None:
+                unpriced_day[name] = n_tok
+                neither.add(name)
+                continue
+            if by == "litellm":
+                by_litellm.add(name)
+            priced += usd
+            n_priced += 1
         if breakdowns:
             usd = round(priced, 6) if n_priced else None
         else:
-            usd = None if unpriced else day.get("totalCost")
-        days[period] = {"usd": usd, "tokens": tokens, "unpriced": unpriced_day}
-    return {"days": days, "unpriced_models": unpriced}
+            usd = None if flagged else day.get("totalCost")
+        days[period] = {"usd": usd, "tokens": tokens, "unpriced": unpriced_day, "models": models}
+    out = {"days": days, "unpriced_models": sorted(neither),
+           "litellm_priced_models": sorted(by_litellm)}
+    if by_litellm:
+        out["litellm_price_source"] = price_source or "litellm.model_cost"
+    return out
 
 
 def ccusage_argv(since_day: str, version: str) -> list[str]:
@@ -97,8 +142,9 @@ def ccusage_argv(since_day: str, version: str) -> list[str]:
             "--offline", "--since", since_day.replace("-", "")]
 
 
-def cloud(since_day: str, runner=subprocess.run, which=shutil.which, versions: Path | None = None) -> dict:
-    """Claude Code spend from the pinned ccusage; {available: False, why} when it cannot run."""
+def cloud(since_day: str, runner=subprocess.run, which=shutil.which, versions: Path | None = None,
+          table: dict | None = None, litellm_pin: str = "") -> dict:
+    """Claude Code spend from the pinned ccusage, gaps priced from LiteLLM; {available: False, why} when it cannot run."""
     version = pin("CCUSAGE_PIN", versions).split("==")[-1]
     out = {"source": f"ccusage@{version}", "mode": "calculate --offline"}
     if not which("npx"):
@@ -110,7 +156,8 @@ def cloud(since_day: str, runner=subprocess.run, which=shutil.which, versions: P
         doc = None
     if not isinstance(doc, dict):
         return {**out, "available": False, "why": "ccusage failed or printed no JSON"}
-    return {**out, "available": True, **parse_ccusage(doc)}
+    src = f"litellm.model_cost at {litellm_pin}" if litellm_pin else ""
+    return {**out, "available": True, **parse_ccusage(doc, table, src)}
 
 
 # --- plan headroom: the statusline's readings -----------------------------------------------------
@@ -239,14 +286,16 @@ def local(rows: list[tuple], tz=None, mapping=None, delegations=()) -> dict:
 
 # --- displaced dollars: litellm's cost map at the pin ---------------------------------------------
 
+#: [input, output, cache read, cache write] USD per token for the tiers and every claude-* entry (#845).
 PRICE_PROBE = ("import json, litellm\n"
-               "print(json.dumps({k: [v.get('input_cost_per_token'), v.get('output_cost_per_token')]"
-               " for k, v in litellm.model_cost.items() if k in %r}))")
+               "print(json.dumps({k: [v.get('input_cost_per_token'), v.get('output_cost_per_token'),"
+               " v.get('cache_read_input_token_cost'), v.get('cache_creation_input_token_cost')]"
+               " for k, v in litellm.model_cost.items() if k in %r or k.startswith('claude')}))")
 
 
 def prices(litellm_pin: str, runner=subprocess.run, cache: Path | None = None) -> dict:
-    """{model: [usd per input token, usd per output token]} for TIERS, from litellm.model_cost at the pin; cached per pin."""
-    cache = cache or ledger_dir() / f"prices-{re.sub(r'[^A-Za-z0-9_.=-]', '_', litellm_pin)}.json"
+    """{model: [in, out, cache read, cache write] usd per token} for TIERS and claude-*, at the pin; cached per pin."""
+    cache = cache or ledger_dir() / f"prices2-{re.sub(r'[^A-Za-z0-9_.=-]', '_', litellm_pin)}.json"
     if cache.exists():
         try:
             return json.loads(cache.read_text(encoding="utf-8"))
@@ -360,7 +409,8 @@ def _sum(buckets) -> dict:
 
 def build(*, since: float, now: float, cloud_doc: dict, rows: list[tuple], limits: list[dict],
           power: list[dict], table: dict, tier: str = "", tariff: float | None = None,
-          macmon: bool = False, litellm_pin: str = "", tz=None, mapping=None, delegations=()) -> dict:
+          macmon: bool = False, litellm_pin: str = "", tz=None, mapping=None, delegations=(),
+          context=()) -> dict:
     """The ledger: aggregates only, no prompts, paths or keys."""
     tariff = TARIFF_USD_PER_KWH if tariff is None else tariff
     days = days_between(since, now, tz)
@@ -368,6 +418,7 @@ def build(*, since: float, now: float, cloud_doc: dict, rows: list[tuple], limit
     hr = headroom(limits, since, tz)
     en = energy(power, since, tariff, macmon, tz)
     cdays = cloud_doc.get("days", {}) if cloud_doc.get("available") else {}
+    ctx = context_days(context, tz)
     out_days = []
     totals = {"cloud_usd": 0.0, "displaced_usd": 0.0, "mapped_usd": 0.0}
     priced_ok = True
@@ -393,7 +444,9 @@ def build(*, since: float, now: float, cloud_doc: dict, rows: list[tuple], limit
         e = en.get("days", {}).get(day) if en.get("available") else None
         out_days.append({
             "day": day,
-            "cloud": {"usd": c.get("usd"), "tokens": c.get("tokens"), "unpriced": c.get("unpriced", {})},
+            "cloud": {"usd": c.get("usd"), "tokens": c.get("tokens"), "unpriced": c.get("unpriced", {}),
+                      "models": c.get("models", {})},
+            "context": ctx.get(day, {}),
             "local": lday["purposes"],
             "delegated": lday["delegated"],
             "unjoined_delegations": lday["unjoined"],
@@ -432,6 +485,17 @@ def build(*, since: float, now: float, cloud_doc: dict, rows: list[tuple], limit
         "energy": {k: v for k, v in en.items() if k != "days"},
         "days": out_days,
     }
+
+
+def context_days(rows, tz=None) -> dict:
+    """{day: {tool: tokens}} of tool results entering Claude's context (#828 rows), by local day. #827."""
+    out: dict = {}
+    for r in rows or ():
+        if r.get("at") is None:
+            continue
+        d = out.setdefault(day_of(r["at"], tz), {})
+        d[r["tool"]] = d.get(r["tool"], 0) + (r.get("tokens") or 0)
+    return out
 
 
 def _delegated(days: list[dict]) -> dict:

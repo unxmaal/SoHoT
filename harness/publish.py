@@ -17,7 +17,7 @@ import time
 from pathlib import Path
 
 #: Bumped when the JSON's shape changes in a way the renderer must know about.
-EXPORT_VERSION = 3
+EXPORT_VERSION = 4
 BRANCH = "reports"
 WORKFLOW = "pages.yml"
 #: Per-machine switch for publishing at the end of a discovery loop; absent is off.
@@ -387,9 +387,18 @@ def _real_use(conn, now: float) -> dict:
         return {}
 
 
+def _trends(conn, now: float) -> dict:
+    """This machine's daily series (#827); {} when they cannot be read, so a report still publishes."""
+    from harness import trends
+    try:
+        return trends.gather(conn, now)
+    except (OSError, ValueError) as exc:
+        return {"error": f"trends unavailable: {type(exc).__name__}"}
+
+
 def export(conn=None, machine_id: int | None = None,
            now: float | None = None) -> dict:
-    """One machine's report as plain, scrubbed data. This machine by default."""
+    """One machine's report as plain, scrubbed data. This machine by default; trends only for this machine."""
     from harness import adopt, lanes as L, winners
     from harness import memory_store as ms
     from harness import runs
@@ -433,6 +442,8 @@ def export(conn=None, machine_id: int | None = None,
                        "real_use": real.get(lane)} for lane in L.ALL],
             "adoptions": _adoptions(c, mid),
         }
+        if machine_id is None:
+            doc["trends"] = _trends(c, now)
     return scrub(doc)
 
 
