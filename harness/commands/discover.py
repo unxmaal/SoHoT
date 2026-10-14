@@ -803,7 +803,8 @@ def _report_papers(a) -> int:
         err(f"{papers.SOURCE}: {row.get('last_error') or 'failed'}")
         return 1
     if row.get("last_status") == ms.DEFERRED:
-        print(f"  {papers.SOURCE} rate-limited, deferred to the next sweep: {row.get('last_error')}")
+        why = "rate-limited" if "429" in (row.get("last_error") or "") else "not published yet"
+        print(f"  {papers.SOURCE} {why}, deferred to the next sweep: {row.get('last_error')}")
         return 0
     laned = sum(1 for s in found if s.lane)
     print(f"  {len(found)} paper(s) read, {laned} with a lane"
