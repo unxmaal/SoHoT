@@ -135,6 +135,20 @@ def _requeue_disk_floor_declines(conn) -> None:
                               f"not a verdict on {row['name']}")
 
 
+def _requeue_length_refusals(conn) -> None:
+    """A measurement the #803 length cap refused before #813 never ran; hand it back to measure. #858."""
+    for row in conn.execute(
+            "SELECT p.id, p.name FROM proposals p JOIN verdicts v ON v.id = p.state_verdict_id "
+            "WHERE p.state = 'declined' AND v.tier = 'adopt' AND v.reason = 'limit' "
+            "AND v.failure_class = 'inconclusive' AND v.run_id IS NULL "
+            "AND COALESCE(v.until, '') = '' AND v.detail LIKE '%not run: % projected at % budget%' "
+            "AND (SELECT b.outcome FROM verdicts b WHERE b.proposal_id = p.id AND b.id < v.id "
+            "     ORDER BY b.id DESC LIMIT 1) = 'screened'").fetchall():
+        _migration_retraction(conn, row["id"], row["name"], "screened", SCREEN,
+                              f"retracted: the length cap refused {row['name']} before it was "
+                              f"measured; a time limit now pauses a run instead")
+
+
 def _retract_verdicts_with_no_control(conn) -> None:
     """Undo an adoption verdict drawn from a run where the CONTROL scored zero.
 
