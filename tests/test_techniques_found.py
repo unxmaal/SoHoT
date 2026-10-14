@@ -172,7 +172,8 @@ def test_a_paper_is_never_queued_for_the_model_ladder(conn):
 def test_the_read_is_recorded_in_the_sources_table(conn):
     papers.sweep(conn, get=Asked(), now=NOW)
     row = ms.source_row(conn, papers.SOURCE)
-    assert (row["kind"], row["last_status"], row["last_read_at"]) == ("papers", "ok", NOW)
+    assert (row["kind"], row["last_status"]) == ("papers", "ok")
+    assert papers._day(row["last_read_at"]) == papers._day(NOW - DAY)   # read through yesterday UTC (#859)
     assert row["url"] == papers.API
 
 
@@ -201,7 +202,7 @@ def test_a_sweep_catches_up_on_each_day_it_missed_and_no_further_than_the_cap(co
     papers.sweep(conn, get=later, now=NOW + 3 * DAY)
     dates = [p.get("date") for _, p in later.calls]
     assert len(dates) == 3 and dates == sorted(dates)
-    assert dates[-1] == time.strftime("%Y-%m-%d", time.gmtime(NOW + 3 * DAY))
+    assert dates[-1] == time.strftime("%Y-%m-%d", time.gmtime(NOW + 2 * DAY))   # yesterday, not today (#859)
     much_later = Asked()
     papers.sweep(conn, get=much_later, now=NOW + 40 * DAY)
     assert len(much_later.calls) == papers.MAX_DAYS

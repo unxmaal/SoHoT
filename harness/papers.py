@@ -22,11 +22,11 @@ def _day(t: float) -> str:
 
 
 def due_dates(last_read: float | None, now: float, force: bool = False) -> list[str | None]:
-    """The days to ask for: [None] (today's page) on a first read or a forced one, else the oldest missed days first. #704."""
+    """The days to ask for: [None] (the latest published page) on a first or forced read, else the missed days through yesterday UTC, oldest first; today is not published at the 01:00Z sweep. #704, #859."""
     if force or not last_read:
         return [None]
     days = []
-    t = now
+    t = now - 86400
     while _day(t) > _day(last_read):
         days.append(_day(t))
         t -= 86400
@@ -34,12 +34,25 @@ def due_dates(last_read: float | None, now: float, force: bool = False) -> list[
 
 
 def read_through(days: list, now: float) -> float:
-    """What last_read becomes: now once caught up, else the start of the newest day read, so the rest is read next."""
+    """What last_read becomes: the end of the newest day read (yesterday for the undated page), so the next sweep starts on the day after. #859."""
     import calendar
-    newest = days[-1] if days else None
-    if newest is None or newest >= _day(now):
-        return now
-    return float(calendar.timegm(time.strptime(newest, "%Y-%m-%d")))
+    newest = days[-1] if days and days[-1] is not None else _day(now - 86400)
+    end = float(calendar.timegm(time.strptime(newest, "%Y-%m-%d"))) + 86399
+    return min(end, now)
+
+
+class Unpublished(Exception):
+    """HF answered 400 for a dated page: that day is not published yet. #859."""
+
+
+def _read_day(get, day):
+    import httpx
+    try:
+        return get(API, {} if day is None else {"date": day}) or []
+    except httpx.HTTPStatusError as exc:
+        if day is not None and exc.response.status_code == 400:
+            raise Unpublished(f"{day} not published yet (HTTP 400)") from exc
+        raise
 
 
 def lane_of(title: str, summary: str) -> str:
@@ -75,24 +88,28 @@ def sweep(conn, get=None, now: float | None = None, force: bool = False) -> list
     now = time.time() if now is None else float(now)
     row = ms.source_row(conn, SOURCE) or {}
     days = due_dates(row.get("last_read_at"), now, force)
-    out = []
+    out, read = [], []
+
+    def stop(**how):
+        if read:
+            ms.record_source(conn, SOURCE, kind=KIND, url=API, at=read_through(read, now))
+        ms.record_source(conn, SOURCE, kind=KIND, url=API, at=now, **how)
+        return out
+
     for day in days:
         try:
-            entries = get(API, {} if day is None else {"date": day}) or []
-        except RateLimited as exc:
-            ms.record_source(conn, SOURCE, kind=KIND, url=API, deferred=True,
-                             error=str(exc), at=now)
-            return out
+            entries = _read_day(get, day)
+        except (RateLimited, Unpublished) as exc:
+            return stop(deferred=True, error=str(exc))
         except Exception as exc:  # noqa: BLE001
-            ms.record_source(conn, SOURCE, kind=KIND, url=API, ok=False,
-                             error=str(exc), at=now)
-            return out
+            return stop(ok=False, error=str(exc))
         for entry in entries:
             seen = proposal(entry)
             if seen is None:
                 continue
             ms.record(conn, seen, at=now)
             out.append(seen)
+        read.append(day)
     if days:
         ms.record_source(conn, SOURCE, kind=KIND, url=API, at=read_through(days, now))
     return out

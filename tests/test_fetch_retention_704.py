@@ -207,7 +207,7 @@ def test_a_ten_day_outage_continues_the_backlog(tmp_path):
     assert first[0] == papers._day(now - 9 * DAY) and len(first) == papers.MAX_DAYS
     asked.clear()
     papers.sweep(conn, get=lambda url, params=None: asked.append(params["date"]) or [], now=now)
-    assert sorted(asked) == [papers._day(now - d * DAY) for d in (2, 1, 0)]
+    assert sorted(asked) == [papers._day(now - d * DAY) for d in (2, 1)]   # through yesterday UTC (#859)
 
 
 def test_inspect_queues_a_fourth_headline_weight_that_fits_rather_than_retiring_it(tmp_path, monkeypatch):
