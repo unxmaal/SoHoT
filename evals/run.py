@@ -1067,17 +1067,22 @@ def _execute_at(args, overrides: dict) -> int:
         print(f"── resumed: {len(results)} of {total} case(s) already done", flush=True)
     progress = watch.Progress(outdir, eye, specs, total, len(results))
     progress.write()
+    block = None if args.screen or len(todo) < 2 else pair_block([c for c, _, _ in todo], args.gateway)
+    order = list(dict.fromkeys(c.id for _, _, mine in planned for c in mine))
+    segments = paired_segments(order, [rest for _, _, rest in todo], block, key=lambda c: c.id)
+    if block:
+        print(f"── paired order: {block} case(s) per candidate in turn", flush=True)
+    kept = [{} for _ in todo]
     stopped = None
     try:
         with watch.asks_pause(eye):
-            for candidate, runner, mine in todo:
-                if not mine:
-                    continue
+            for i, mine in segments:
+                candidate, runner, _ = todo[i]
                 with _served(candidate) as launched:
                     if launched:
                         launches[runner.candidate] = ds4.launch_text(launched["launch"])
                     _run_candidate(args, candidate, runner, mine, results, outdir, evicted, ladder,
-                                   eye, ckpt, progress)
+                                   eye, ckpt, progress, kept[i], block != 1)
     except watch.Stop as exc:
         stopped = exc
         print(f"\n{exc.why}", file=sys.stderr, flush=True)
@@ -1287,22 +1292,87 @@ def _served(candidate: str):
         raise SystemExit(f"{candidate}: {exc}") from None
 
 
-def _run_candidate(args, candidate, runner, mine, results, outdir, evicted=None,
-                   ladder=(), eye=None, ckpt=None, progress=None) -> None:
-    runner.screening = bool(args.screen)
-    base, model = router.upstream_for(candidate, args.gateway)
-    held = router.Watch(model, base=base) if model else None
-    print(f"\n── {runner.candidate}", flush=True)
-    # A cold load is not the case's to pay for in any tier; a failed one is every case's. #406, #694.
-    cold = None
+#: Cases per candidate in turn when the candidates' models cannot all be held at once. #816.
+PAIR_BLOCK = 10
+
+
+def _home(candidate: str, gateway: str) -> tuple[str, str, int | None]:
+    """(server, model, how many models that server holds at once, None for no limit) for a candidate."""
+    from harness import serving
     try:
-        runner.warm()
-    except RunnerError as exc:
-        cold = exc
-    ctx = _served_ctx(candidate)
-    count = _served_tokens(base, model) if ctx and base and model else None
-    set_served(runner, ctx, count)
+        base, model = delegate.upstream(serving.route(candidate, gateway))
+        engine = serving.engine_at(base) if model else None
+    except Exception:  # noqa: BLE001
+        return "", "", None
+    if engine is None:
+        return "", "", None
+    if engine == serving.LLAMACPP:
+        return serving.bare(base), model, context.recorded_models_max() if serving.loopback(base) else 1
+    return serving.bare(base), model, 1
+
+
+def pair_block(candidates, gateway: str, home=_home) -> int | None:
+    """Cases per candidate in turn: 1 when every model stays resident, PAIR_BLOCK when a turn reloads, None for candidate-major. #816."""
+    if any(kind_of(c) == DS4_KIND for c in candidates):
+        return None   # one ds4-server per candidate, started and stopped around its cases
+    held: dict = {}
+    for c in candidates:
+        base, model, cap = home(c, gateway)
+        if base and model:
+            held.setdefault(base, [cap, set()])[1].add(model)
+    fits = all(cap is None or len(models) <= cap for cap, models in held.values())
+    return 1 if fits else PAIR_BLOCK
+
+
+def paired_segments(order, rest, block, key=lambda c: c) -> list[tuple[int, list]]:
+    """(candidate index, its cases) in run order: `block` case ids at a time, each candidate in turn. #816."""
+    if not block:
+        return [(i, mine) for i, mine in enumerate(rest) if mine]
+    at = {k: n for n, k in enumerate(order)}
+    out: list[tuple[int, list]] = []
+    for start in range(0, len(order), block):
+        for i, mine in enumerate(rest):
+            got = [c for c in mine if start <= at.get(key(c), -1) < start + block]
+            if not got:
+                continue
+            if out and out[-1][0] == i:
+                out[-1][1].extend(got)
+            else:
+                out.append((i, got))
+    return out
+
+
+def _run_candidate(args, candidate, runner, mine, results, outdir, evicted=None,
+                   ladder=(), eye=None, ckpt=None, progress=None, kept=None, reload=True) -> None:
+    """Run `mine`; `kept` carries the candidate's warm-up and router watch between turns of a paired run. #816."""
+    kept = {} if kept is None else kept
     eye = eye or watch.Watch()
+    if not mine:
+        return
+    # A pause due now is taken before a warm-up loads the model for nothing.
+    eye.before(runner.candidate)
+    runner.screening = bool(args.screen)
+    first = "base" not in kept
+    if first:
+        kept["base"], kept["model"] = router.upstream_for(candidate, args.gateway)
+        kept["lost"] = []
+        print(f"\n── {runner.candidate}", flush=True)
+    base, model = kept["base"], kept["model"]
+    if first or reload:
+        # A turn that reloads watches only its own span, so the planned swap between turns is not an eviction.
+        kept["held"] = router.Watch(model, base=base) if model else None
+        # A cold load is not the case's to pay for in any tier; a failed one is every case's. #406, #694.
+        kept["cold"] = None
+        try:
+            runner.warm()
+        except RunnerError as exc:
+            kept["cold"] = exc
+    if first:
+        kept["ctx"] = _served_ctx(candidate)
+        kept["count"] = (_served_tokens(base, model)
+                         if kept["ctx"] and base and model else None)
+        set_served(runner, kept["ctx"], kept["count"])
+    held, cold, ctx, count = kept["held"], kept["cold"], kept["ctx"], kept["count"]
     try:
         for case in mine:
             eye.before(runner.candidate)
@@ -1313,9 +1383,11 @@ def _run_candidate(args, candidate, runner, mine, results, outdir, evicted=None,
             if progress is not None:
                 progress.case_done()
     finally:
-        if held and held.swaps and evicted is not None:
-            evicted[runner.candidate] = held.swaps
-            print(f"  router evicted {model} {len(held.swaps)} time(s) during this run; "
+        new = [s for s in (held.swaps if held else []) if not any(s is x for x in kept["lost"])]
+        kept["lost"].extend(new)
+        if new and evicted is not None:
+            evicted[runner.candidate] = kept["lost"]
+            print(f"  router evicted {model} {len(kept['lost'])} time(s) during this run; "
                   f"it will not be ranked", file=sys.stderr)
 
 
