@@ -32,6 +32,8 @@ KNOBS = [
        note="observed over planned seconds per case that reads as a harness defect (Decision #456)"),
     _k("watchdog_overrun_min_cases", [f"{W}:OVERRUN_MIN_CASES"], [1, 3, 10],
        note="cases a run must finish before its observed rate is judged"),
+    _k("watchdog_overrun_min_pairs", [f"{W}:OVERRUN_MIN_PAIRS"], [3, 5, 10],
+       note="cases both candidates of a paired run must finish before the challenger is judged against the incumbent (#864)"),
     _k("watchdog_stall", [f"{W}:STALL_S"], [600.0, 1800.0, 3600.0],
        note="seconds with no case finished that read as a wedged run"),
     _k("watchdog_stall_cases", [f"{W}:STALL_CASES"], [5, 10, 20],

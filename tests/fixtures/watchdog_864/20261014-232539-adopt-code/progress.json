@@ -1,0 +1,20 @@
+{
+  "state": "running",
+  "why": "",
+  "done": 18,
+  "total": 270,
+  "specs": {
+    "llamacpp:Ornith-1.5-35B-Q4_K_M": "llamacpp:Ornith-1.5-35B-Q4_K_M",
+    "WeiboAI/VibeThinker-3B": "WeiboAI/VibeThinker-3B"
+  },
+  "planned_s_per_case": {
+    "llamacpp:Ornith-1.5-35B-Q4_K_M": 57.13,
+    "WeiboAI/VibeThinker-3B": 16.28
+  },
+  "observed_s_per_case": {
+    "llamacpp:Ornith-1.5-35B-Q4_K_M": 59.894920349121094,
+    "WeiboAI/VibeThinker-3B": 68.12395951482985
+  },
+  "started_at": 1792034741.014714,
+  "last_progress_at": 1792035897.745446
+}

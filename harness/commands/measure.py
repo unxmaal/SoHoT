@@ -237,7 +237,7 @@ def _measure(a, row: dict, loaded: list, sweep=None) -> int:
     held, ident = _held(lane, inc_spec, spec, split, name, sweep)
     if held:
         # A resume runs the exam it started: the stored plan's repeat and side, this sweep's slice. #813.
-        plan = _resumed_plan(held["plan"], plan)
+        plan = _resumed_plan(held["plan"], plan) if held.get("plan") is not None else _recovered_plan(held, plan)
     if sweep is not None and sweep.remaining() <= 0:
         print(f"  {name}: not started, the sweep ceiling is reached; it waits for the next sweep", flush=True)
         return 0
@@ -262,11 +262,15 @@ def _measure(a, row: dict, loaded: list, sweep=None) -> int:
         break
     if getattr(proc, "timed_out", False) or proc.returncode == watch.PAUSED:
         return _paused(name, lane, inc_spec, spec, split, plan, out, held, ident, sweep)
+    if _signalled(proc.returncode) and (watch.read(out) or ({}, []))[1]:
+        # Stopped from outside (the watchdog, a TERM): its rows are kept and the next sweep resumes it. #864.
+        print(f"    stopped by a signal (exit {proc.returncode}); its checkpointed cases are kept", flush=True)
+        return _paused(name, lane, inc_spec, spec, split, plan, out, held, ident, sweep)
     if proc.returncode != 0:
         err(proc.stderr.strip()[-400:] or "no stderr")
         return 1
     taken = (held or {}).get("looks") or []
-    if held:
+    if held and held.get("id") is not None:
         # The run finished; whatever is read from it next, nothing is left to resume.
         _settle_pause(held["id"], "done", f"finished after {len(taken)} pause(s)")
     data = _receipt_at(out)
@@ -551,8 +555,14 @@ def _held(lane: str, inc_spec: str, spec: str, split, name: str, sweep):
     store = ms.connect()
     try:
         held = paused.find(store, lane, spec)
+        found = None if held else paused.abandoned(store, paths.home() / "runs", lane, inc_spec, spec)
     finally:
         store.close()
+    if found:
+        # A run stopped with no pause recorded (the watchdog before #864) still has its rows. #864.
+        print(f"  {name}: resuming {found['out']}, stopped at {found['done']} case(s) with no pause recorded",
+              flush=True)
+        return {**found, "identity": ident}, ident
     if not held:
         return None, ident
     changed = watch.differs(held["identity"], ident)
@@ -567,7 +577,8 @@ def _held(lane: str, inc_spec: str, spec: str, split, name: str, sweep):
 def _stale(held: dict, what: str, name: str, sweep) -> None:
     why = (f"stale: {what} since the pause at {held['done']}/{held['total']}; restarted, "
            f"the paused rows stay in {held['out']}")
-    _settle_pause(held["id"], "stale", why)
+    if held.get("id") is not None:
+        _settle_pause(held["id"], "stale", why)
     print(f"  {name}: {why}", flush=True)
     if sweep is not None:
         sweep.lines.append(f"{name}: {why}")
@@ -592,7 +603,21 @@ def _resumed_plan(stored: dict, fresh):
     got = power.Plan(**{k: v for k, v in stored.items() if k in names})
     if got.odds is not None:
         got = replace(got, odds=tuple(got.odds))
-    return replace(got, budget_s=fresh.budget_s, deadline_s=fresh.deadline_s)
+    # The exam is kept; its price is this sweep's, or a stale screen price judges the run. #864.
+    return replace(got, budget_s=fresh.budget_s, deadline_s=fresh.deadline_s, estimate=fresh.estimate)
+
+
+def _recovered_plan(held: dict, fresh):
+    """A run found by its checkpoint alone resumes the exam the checkpoint names, at this sweep's price. #864."""
+    ident = held.get("checkpoint") or {}
+    return replace(fresh, repeat=int(ident.get("repeat") or fresh.repeat), side=ident.get("split") or "all")
+
+
+def _signalled(rc) -> bool:
+    """Whether a run's exit says a signal stopped it, raw or as a shell's 128 + signal."""
+    import signal
+    stops = {getattr(signal, n, None) for n in ("SIGTERM", "SIGKILL", "SIGINT")} - {None}
+    return rc is not None and (rc < 0 or rc - 128 in stops)
 
 
 def _paused(name: str, lane: str, inc_spec: str, spec: str, split, plan, out, held, ident, sweep) -> int:

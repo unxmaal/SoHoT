@@ -568,10 +568,38 @@ def stored_size(conn, key: str) -> int:
     return int(row["b"] or 0) if row else 0
 
 
+def decode_rate(conn, lane: str, keys, settings: tuple | None, machines, tiers=("measure",)) -> float | None:
+    """Mean reply tokens per second the receipt keys' rows record in a lane, at `settings` on `machines`. #864."""
+    import json
+    keys = [k for k in dict.fromkeys(keys) if k]
+    if not keys:
+        return None
+    lane = (lane or "").strip().lower()
+    rows = conn.execute(
+        "SELECT x.metrics, u.receipt, u.machine_id FROM results x JOIN runs u ON u.id = x.run_id "
+        f"WHERE u.lane = ? AND u.tier IN ({','.join('?' * len(tiers))}) "
+        f"AND x.candidate IN ({','.join('?' * len(keys))})", (lane, *tiers, *keys)).fetchall()
+    rates = []
+    for r in rows:
+        if machines is not None and r["machine_id"] not in set(machines):
+            continue
+        if settings is not None and reply_settings(r["receipt"], lane) != tuple(settings):
+            continue
+        rate = json.loads(r["metrics"] or "{}").get("tokens_per_s")
+        if isinstance(rate, (int, float)) and rate > 0:
+            rates.append(float(rate))
+    return statistics.fmean(rates) if rates else None
+
+
 def challenger_seconds(conn, lane: str, key: str, *, incumbent: str, incumbent_s: float | None,
                        settings: tuple | None, machines, incumbent_keys=()) -> tuple[float | None, str]:
     """Seconds per call of a challenger here: its own screen or measure median, else scaled by size, else the floor. #696."""
     lane = (lane or "").strip().lower()
+    # A screen's few cases price its decode speed, not the holdout's heavy-tailed reply lengths; speed is any budget's. #864.
+    mine = decode_rate(conn, lane, (key,), None, machines, ("screen", "measure"))
+    theirs = decode_rate(conn, lane, (incumbent, *incumbent_keys), None, machines)
+    if incumbent_s is not None and mine and theirs:
+        return incumbent_s * theirs / mine, "decode ratio"
     own = _median(_candidate_rows(conn, lane, key, ("screen", "measure")), lane, key, settings, machines)
     if own is not None:
         return own, "measured"

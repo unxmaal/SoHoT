@@ -19,6 +19,38 @@ def find(conn, lane: str, spec: str) -> dict | None:
     return _row(row) if row else None
 
 
+def abandoned(conn, root, lane: str, inc_spec: str, spec: str) -> dict | None:
+    """The newest run directory a stopped paired run left with no pause recorded: its checkpoint is resumable. #864."""
+    from pathlib import Path
+
+    from evals import watch
+    lane = (lane or "").strip().lower()
+    known = {r["out"] for r in conn.execute("SELECT out FROM paused_runs")}
+    for out in sorted(Path(root).glob(f"*-adopt-{lane}"), reverse=True):
+        got = watch.read(out)
+        progress = watch.read_progress(out)
+        if not got or not got[1] or str(out) in known or progress.get("state") not in ("running", "paused"):
+            continue
+        ident = got[0]
+        if ident.get("modality") != lane or list(ident.get("candidates") or ()) != [inc_spec, spec]:
+            continue
+        if _alive(progress.get("pid"), progress.get("pgid")):
+            continue
+        return {"id": None, "out": str(out), "plan": None, "looks": [], "checkpoint": ident,
+                "done": len(got[1]), "total": progress.get("total") or "?"}
+    return None
+
+
+def _alive(pid, pgid) -> bool:
+    """Whether the run's process still exists in the group it recorded; a reused pid is in another group."""
+    import os
+    try:
+        pid = int(pid)
+        return os.getpgid(pid) == int(pgid if pgid is not None else pid)
+    except (TypeError, ValueError, AttributeError, OSError):
+        return False
+
+
 def waiting(conn) -> list[dict]:
     """Every live pause, oldest first: the next sweep resumes these before starting anything new."""
     return [_row(r) for r in conn.execute("SELECT * FROM paused_runs WHERE state = 'paused' ORDER BY id")]
