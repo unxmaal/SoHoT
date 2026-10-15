@@ -1000,6 +1000,19 @@ soh ledger --since 7d
 soh ledger --since 2026-10-06 --tier haiku --json
 ```
 
+Claude Code can also report its own spend over OpenTelemetry (#868). The
+`otel` launchd unit receives it on 127.0.0.1:4318 (http/json only) into
+`otel_metrics` and `otel_events`; prompts, tool input and error text are
+dropped. `soh otel env` prints the settings.json `env` entries that turn
+export on. `soh ledger` then shows the OTel figure beside ccusage, and
+`soh context --source otel` reads tool result sizes from it.
+
+```bash
+soh otel env
+soh ledger --compare 2026-10-14        # OTel events, OTel metrics, ccusage, transcripts
+soh context --source otel --by category
+```
+
 ---
 
 # Setup and upkeep

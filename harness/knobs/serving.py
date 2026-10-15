@@ -74,6 +74,7 @@ NOT_GATING = {
         "scripts/serve-llamacpp.sh:LLAMACPP_PORT#3",
         "scripts/serve-mcp.sh:MCP_PORT",
         "scripts/serve-mlx.sh:MLX_PORT",
+        "scripts/serve-otel.sh:OTEL_PORT",
         "scripts/serve-tts.sh:TTS_PORT",
         "scripts/services.sh:GATEWAY_PORT",
         "scripts/services.sh:LLAMACPP_PORT",

@@ -26,4 +26,5 @@ NOT_GATING = {
     "harness/ledger.py:cloud->runner(timeout)": "how long ccusage may take; a timeout reports the cloud unavailable (#826)",
     "harness/ledger.py:prices->runner(timeout)": "how long installing litellm at the pin may take to print prices; "
                                                  "a timeout leaves displaced dollars unpriced, never zero (#826)",
+    "harness/commands/ledger.py:gather_compare->_dt.timedelta(days)": "one calendar day, the compared window (#868)",
 }

@@ -1,0 +1,582 @@
+{
+ "resourceLogs": [
+  {
+   "resource": {
+    "attributes": [
+     {
+      "key": "service.name",
+      "value": {
+       "stringValue": "claude-code"
+      }
+     },
+     {
+      "key": "service.version",
+      "value": {
+       "stringValue": "2.1.300"
+      }
+     },
+     {
+      "key": "user.email",
+      "value": {
+       "stringValue": "eric@example.invalid"
+      }
+     },
+     {
+      "key": "terminal.type",
+      "value": {
+       "stringValue": "WezTerm"
+      }
+     }
+    ]
+   },
+   "scopeLogs": [
+    {
+     "scope": {
+      "name": "com.anthropic.claude_code.events",
+      "version": "2.1.300"
+     },
+     "logRecords": [
+      {
+       "timeUnixNano": "1791971940000000000",
+       "observedTimeUnixNano": "1791971940000000000",
+       "severityNumber": 9,
+       "body": {
+        "stringValue": "claude_code.user_prompt"
+       },
+       "attributes": [
+        {
+         "key": "event.name",
+         "value": {
+          "stringValue": "user_prompt"
+         }
+        },
+        {
+         "key": "event.timestamp",
+         "value": {
+          "stringValue": "2026-10-14T09:59:00Z"
+         }
+        },
+        {
+         "key": "event.sequence",
+         "value": {
+          "intValue": "0"
+         }
+        },
+        {
+         "key": "session.id",
+         "value": {
+          "stringValue": "s1"
+         }
+        },
+        {
+         "key": "prompt",
+         "value": {
+          "stringValue": "SECRET-PROMPT"
+         }
+        },
+        {
+         "key": "prompt_length",
+         "value": {
+          "intValue": "13"
+         }
+        },
+        {
+         "key": "prompt.id",
+         "value": {
+          "stringValue": "p1"
+         }
+        }
+       ]
+      },
+      {
+       "timeUnixNano": "1791972000000000000",
+       "observedTimeUnixNano": "1791972000000000000",
+       "severityNumber": 9,
+       "body": {
+        "stringValue": "claude_code.api_request"
+       },
+       "attributes": [
+        {
+         "key": "event.name",
+         "value": {
+          "stringValue": "api_request"
+         }
+        },
+        {
+         "key": "event.timestamp",
+         "value": {
+          "stringValue": "2026-10-14T10:00:00Z"
+         }
+        },
+        {
+         "key": "event.sequence",
+         "value": {
+          "intValue": "1"
+         }
+        },
+        {
+         "key": "session.id",
+         "value": {
+          "stringValue": "s1"
+         }
+        },
+        {
+         "key": "model",
+         "value": {
+          "stringValue": "claude-opus-5-5"
+         }
+        },
+        {
+         "key": "cost_usd",
+         "value": {
+          "doubleValue": 0.1
+         }
+        },
+        {
+         "key": "input_tokens",
+         "value": {
+          "intValue": "100"
+         }
+        },
+        {
+         "key": "output_tokens",
+         "value": {
+          "intValue": "20"
+         }
+        },
+        {
+         "key": "cache_read_tokens",
+         "value": {
+          "intValue": "1000"
+         }
+        },
+        {
+         "key": "cache_creation_tokens",
+         "value": {
+          "intValue": "0"
+         }
+        },
+        {
+         "key": "request_id",
+         "value": {
+          "stringValue": "req_a"
+         }
+        },
+        {
+         "key": "duration_ms",
+         "value": {
+          "intValue": "1200"
+         }
+        },
+        {
+         "key": "query_source",
+         "value": {
+          "stringValue": "repl_main_thread"
+         }
+        },
+        {
+         "key": "prompt.id",
+         "value": {
+          "stringValue": "p1"
+         }
+        }
+       ]
+      },
+      {
+       "timeUnixNano": "1791972030000000000",
+       "observedTimeUnixNano": "1791972030000000000",
+       "severityNumber": 9,
+       "body": {
+        "stringValue": "claude_code.tool_result"
+       },
+       "attributes": [
+        {
+         "key": "event.name",
+         "value": {
+          "stringValue": "tool_result"
+         }
+        },
+        {
+         "key": "event.timestamp",
+         "value": {
+          "stringValue": "2026-10-14T10:00:30Z"
+         }
+        },
+        {
+         "key": "event.sequence",
+         "value": {
+          "intValue": "2"
+         }
+        },
+        {
+         "key": "session.id",
+         "value": {
+          "stringValue": "s1"
+         }
+        },
+        {
+         "key": "tool_name",
+         "value": {
+          "stringValue": "Bash"
+         }
+        },
+        {
+         "key": "tool_use_id",
+         "value": {
+          "stringValue": "toolu_1"
+         }
+        },
+        {
+         "key": "success",
+         "value": {
+          "stringValue": "true"
+         }
+        },
+        {
+         "key": "duration_ms",
+         "value": {
+          "intValue": "40"
+         }
+        },
+        {
+         "key": "tool_result_size_bytes",
+         "value": {
+          "intValue": "400"
+         }
+        },
+        {
+         "key": "tool_input",
+         "value": {
+          "stringValue": "rm -rf SECRET-INPUT"
+         }
+        },
+        {
+         "key": "prompt.id",
+         "value": {
+          "stringValue": "p1"
+         }
+        }
+       ]
+      },
+      {
+       "timeUnixNano": "1791975600000000000",
+       "observedTimeUnixNano": "1791975600000000000",
+       "severityNumber": 9,
+       "body": {
+        "stringValue": "claude_code.api_request"
+       },
+       "attributes": [
+        {
+         "key": "event.name",
+         "value": {
+          "stringValue": "api_request"
+         }
+        },
+        {
+         "key": "event.timestamp",
+         "value": {
+          "stringValue": "2026-10-14T11:00:00Z"
+         }
+        },
+        {
+         "key": "event.sequence",
+         "value": {
+          "intValue": "0"
+         }
+        },
+        {
+         "key": "session.id",
+         "value": {
+          "stringValue": "s2"
+         }
+        },
+        {
+         "key": "model",
+         "value": {
+          "stringValue": "claude-sonnet-5-5"
+         }
+        },
+        {
+         "key": "cost_usd",
+         "value": {
+          "doubleValue": 0.25
+         }
+        },
+        {
+         "key": "input_tokens",
+         "value": {
+          "intValue": "50"
+         }
+        },
+        {
+         "key": "output_tokens",
+         "value": {
+          "intValue": "30"
+         }
+        },
+        {
+         "key": "cache_read_tokens",
+         "value": {
+          "intValue": "0"
+         }
+        },
+        {
+         "key": "cache_creation_tokens",
+         "value": {
+          "intValue": "400"
+         }
+        },
+        {
+         "key": "request_id",
+         "value": {
+          "stringValue": "req_b"
+         }
+        },
+        {
+         "key": "duration_ms",
+         "value": {
+          "intValue": "900"
+         }
+        },
+        {
+         "key": "query_source",
+         "value": {
+          "stringValue": "repl_main_thread"
+         }
+        },
+        {
+         "key": "cache_creation_5m_tokens",
+         "value": {
+          "intValue": "300"
+         }
+        },
+        {
+         "key": "cache_creation_1h_tokens",
+         "value": {
+          "intValue": "100"
+         }
+        }
+       ]
+      },
+      {
+       "timeUnixNano": "1791975630000000000",
+       "observedTimeUnixNano": "1791975630000000000",
+       "severityNumber": 9,
+       "body": {
+        "stringValue": "claude_code.tool_decision"
+       },
+       "attributes": [
+        {
+         "key": "event.timestamp",
+         "value": {
+          "stringValue": "2026-10-14T11:00:30Z"
+         }
+        },
+        {
+         "key": "event.sequence",
+         "value": {
+          "intValue": "1"
+         }
+        },
+        {
+         "key": "session.id",
+         "value": {
+          "stringValue": "s2"
+         }
+        },
+        {
+         "key": "tool_use_id",
+         "value": {
+          "stringValue": "toolu_2"
+         }
+        },
+        {
+         "key": "tool_parameters",
+         "value": {
+          "stringValue": "{\"mcp_server_name\": \"mcm-engine\", \"mcp_tool_name\": \"search\"}"
+         }
+        },
+        {
+         "key": "event.name",
+         "value": {
+          "stringValue": "tool_decision"
+         }
+        },
+        {
+         "key": "tool_name",
+         "value": {
+          "stringValue": "mcp_tool"
+         }
+        },
+        {
+         "key": "decision",
+         "value": {
+          "stringValue": "accept"
+         }
+        },
+        {
+         "key": "source",
+         "value": {
+          "stringValue": "config"
+         }
+        }
+       ]
+      },
+      {
+       "timeUnixNano": "1791975630000000000",
+       "observedTimeUnixNano": "1791975630000000000",
+       "severityNumber": 9,
+       "body": {
+        "stringValue": "claude_code.tool_result"
+       },
+       "attributes": [
+        {
+         "key": "event.name",
+         "value": {
+          "stringValue": "tool_result"
+         }
+        },
+        {
+         "key": "event.timestamp",
+         "value": {
+          "stringValue": "2026-10-14T11:00:30Z"
+         }
+        },
+        {
+         "key": "event.sequence",
+         "value": {
+          "intValue": "1"
+         }
+        },
+        {
+         "key": "session.id",
+         "value": {
+          "stringValue": "s2"
+         }
+        },
+        {
+         "key": "tool_name",
+         "value": {
+          "stringValue": "mcp__mcm-engine__search"
+         }
+        },
+        {
+         "key": "tool_use_id",
+         "value": {
+          "stringValue": "toolu_2"
+         }
+        },
+        {
+         "key": "success",
+         "value": {
+          "stringValue": "false"
+         }
+        },
+        {
+         "key": "duration_ms",
+         "value": {
+          "intValue": "90"
+         }
+        },
+        {
+         "key": "tool_result_size_bytes",
+         "value": {
+          "intValue": "1003"
+         }
+        },
+        {
+         "key": "error",
+         "value": {
+          "stringValue": "SECRET-ERROR"
+         }
+        },
+        {
+         "key": "tool_parameters",
+         "value": {
+          "stringValue": "{\"mcp_server_name\": \"mcm-engine\", \"mcp_tool_name\": \"search\"}"
+         }
+        }
+       ]
+      },
+      {
+       "timeUnixNano": "1792065600000000000",
+       "observedTimeUnixNano": "1792065600000000000",
+       "severityNumber": 9,
+       "body": {
+        "stringValue": "claude_code.api_request"
+       },
+       "attributes": [
+        {
+         "key": "event.name",
+         "value": {
+          "stringValue": "api_request"
+         }
+        },
+        {
+         "key": "event.timestamp",
+         "value": {
+          "stringValue": "2026-10-15T12:00:00Z"
+         }
+        },
+        {
+         "key": "event.sequence",
+         "value": {
+          "intValue": "0"
+         }
+        },
+        {
+         "key": "session.id",
+         "value": {
+          "stringValue": "s3"
+         }
+        },
+        {
+         "key": "model",
+         "value": {
+          "stringValue": "claude-opus-5-5"
+         }
+        },
+        {
+         "key": "cost_usd",
+         "value": {
+          "doubleValue": 9.0
+         }
+        },
+        {
+         "key": "input_tokens",
+         "value": {
+          "intValue": "9000"
+         }
+        },
+        {
+         "key": "output_tokens",
+         "value": {
+          "intValue": "900"
+         }
+        },
+        {
+         "key": "cache_read_tokens",
+         "value": {
+          "intValue": "0"
+         }
+        },
+        {
+         "key": "cache_creation_tokens",
+         "value": {
+          "intValue": "0"
+         }
+        },
+        {
+         "key": "request_id",
+         "value": {
+          "stringValue": "req_c"
+         }
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

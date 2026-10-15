@@ -17,12 +17,12 @@ def _tok(n: int) -> str:
 
 def gather(a, now: float) -> dict:
     """Every source read once; the live store only through a read-only connection."""
-    from harness import context_report as cr, ledger, memory_store as ms, store
+    from harness import context_report as cr, ledger, memory_store as ms, otel, store
 
     since = cr.parse_when(a.since, now)
     first_day = ledger.days_between(since, now)[0]
     start = ledger.day_start(first_day)
-    rows, dels, history = [], [], []
+    rows, dels, history, ev = [], [], [], []
     if store.backend() == store.POSTGRES:
         conn = ms.connect()
     else:
@@ -33,6 +33,7 @@ def gather(a, now: float) -> dict:
             rows = ledger.gateway_rows(conn, start)
             dels = ledger.delegation_rows(conn, start)
             history = ledger.recorded(conn, first_day)
+            ev = otel.events(conn, start, now + 1)
         finally:
             conn.close()
     pin = ledger.pin("LITELLM_PIN")
@@ -46,7 +47,17 @@ def gather(a, now: float) -> dict:
         table=table, tier=a.tier, tariff=a.tariff,
         macmon=bool(shutil.which("macmon")), litellm_pin=pin, delegations=dels, context=ctx)
     out["recorded"] = history
+    out["otel"] = otel_days(ev)
     return out
+
+
+def otel_days(ev: list[dict], tz=None) -> dict:
+    """Per local day, what Claude Code's own export says it spent. #868."""
+    from harness import ledger, otel
+    by_day: dict = {}
+    for e in ev:
+        by_day.setdefault(ledger.day_of(e["at"], tz), []).append(e)
+    return {d: otel.from_events(rows) for d, rows in sorted(by_day.items())}
 
 
 def show(L: dict) -> None:
@@ -62,6 +73,12 @@ def show(L: dict) -> None:
                  f"{', '.join(c['litellm_priced_models'])}")
     else:
         note(f"cloud     unavailable: {c.get('why')}")
+    od = L.get("otel") or {}
+    if od:
+        note(f"otel      {_usd(sum(d['usd'] for d in od.values()))} over {sum(d['requests'] for d in od.values()):,} "
+             f"api_request events, {sum(d['sessions'] for d in od.values())} session-days (Claude Code's own figure)")
+    else:
+        note("otel      no rows; `soh otel env` prints the settings.json env that turns export on")
     h = L["headroom"]
     if h.get("available"):
         lt = h["latest"]
@@ -105,10 +122,62 @@ def show(L: dict) -> None:
     note(f"\ntier assumed: {s['counterfactual_default']}; prices {s['price_source']}")
 
 
+def gather_compare(day: str, tz=None) -> dict:
+    """One day from every source: OTel events and metrics, ccusage, transcripts. #868."""
+    from harness import context_report as cr, ledger, otel
+    from harness.commands.context import _read_conn
+    import datetime as _dt
+    start = ledger.day_start(day, tz)
+    end = ledger.day_start((_dt.date.fromisoformat(day) + _dt.timedelta(days=1)).isoformat(), tz)
+    ev, mt = [], []
+    conn = _read_conn()
+    if conn is not None:
+        try:
+            ev, mt = otel.events(conn, start, end), otel.metrics(conn, start, end)
+        finally:
+            conn.close()
+    pin = ledger.pin("LITELLM_PIN")
+    cc = ledger.cloud(day, table=ledger.prices(pin), litellm_pin=pin)
+    root = cr.default_root()
+    ctx = cr.scan(cr.transcripts(root, newer_than=start), since=start, until=end) if root.is_dir() else []
+    return otel.compare(day, ev, mt, (cc.get("days") or {}).get(day), ctx,
+                        ccusage_available=bool(cc.get("available")))
+
+
+def _cell(row: str, v) -> str:
+    if v is None:
+        return "-"
+    return _usd(v) if row == "usd" else f"{int(v):,}"
+
+
+def show_compare(C: dict) -> None:
+    from harness import otel
+    note(f"compare {C['day']}")
+    note(f"{'':<26}" + "".join(f"{s:>16}" for s in otel.SOURCES))
+    for r in C["rows"]:
+        note(f"{r['label']:<26}" + "".join(f"{_cell(r['row'], r[s]):>16}" for s in otel.SOURCES))
+    if C["models"]:
+        note("\ncost by model")
+        for m in C["models"]:
+            note(f"{m['model'][:26]:<26}" + "".join(f"{_cell('usd', m.get(s)):>16}" for s in otel.SOURCES))
+    for k, v in C["notes"].items():
+        note(f"{k}: {v}")
+
+
 def cmd_ledger(a) -> int:
     from harness import ledger
 
     now = time.time()
+    if getattr(a, "compare", ""):
+        try:
+            C = gather_compare(a.compare)
+        except ValueError as exc:
+            note(str(exc))
+            emit(False, error=str(exc))
+            return 2
+        show_compare(C)
+        emit(**C)
+        return 0
     if a.sample_power:
         got = ledger.sample_power()
         note(f"{got['watts']:.1f} W" if got["ok"] else got["why"])

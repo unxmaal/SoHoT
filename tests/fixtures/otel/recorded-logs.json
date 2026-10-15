@@ -1,0 +1,2930 @@
+[
+ {
+  "resourceLogs": [
+   {
+    "resource": {
+     "attributes": [
+      {
+       "key": "host.arch",
+       "value": {
+        "stringValue": "arm64"
+       }
+      },
+      {
+       "key": "os.type",
+       "value": {
+        "stringValue": "darwin"
+       }
+      },
+      {
+       "key": "os.version",
+       "value": {
+        "stringValue": "redacted"
+       }
+      },
+      {
+       "key": "service.name",
+       "value": {
+        "stringValue": "claude-code"
+       }
+      },
+      {
+       "key": "service.version",
+       "value": {
+        "stringValue": "2.1.300"
+       }
+      }
+     ],
+     "droppedAttributesCount": 0
+    },
+    "scopeLogs": [
+     {
+      "scope": {
+       "name": "com.anthropic.claude_code.events",
+       "version": "2.1.300"
+      },
+      "logRecords": [
+       {
+        "timeUnixNano": "1792087737342000000",
+        "observedTimeUnixNano": "1792087737342000000",
+        "body": {
+         "stringValue": "claude_code.managed_settings_resolved"
+        },
+        "attributes": [
+         {
+          "key": "user.id",
+          "value": {
+           "stringValue": "user-redacted"
+          }
+         },
+         {
+          "key": "session.id",
+          "value": {
+           "stringValue": "498af117-f4f3-4c4a-9b18-5301ce03a126"
+          }
+         },
+         {
+          "key": "organization.id",
+          "value": {
+           "stringValue": "org-redacted"
+          }
+         },
+         {
+          "key": "user.email",
+          "value": {
+           "stringValue": "user@example.invalid"
+          }
+         },
+         {
+          "key": "user.account_uuid",
+          "value": {
+           "stringValue": "00000000-0000-0000-0000-000000000000"
+          }
+         },
+         {
+          "key": "user.account_id",
+          "value": {
+           "stringValue": "acct-redacted"
+          }
+         },
+         {
+          "key": "terminal.type",
+          "value": {
+           "stringValue": "tmux"
+          }
+         },
+         {
+          "key": "event.name",
+          "value": {
+           "stringValue": "managed_settings_resolved"
+          }
+         },
+         {
+          "key": "event.timestamp",
+          "value": {
+           "stringValue": "2026-10-15T18:08:57.342Z"
+          }
+         },
+         {
+          "key": "event.sequence",
+          "value": {
+           "intValue": 0
+          }
+         },
+         {
+          "key": "managed_settings.trigger",
+          "value": {
+           "stringValue": "startup"
+          }
+         },
+         {
+          "key": "managed_settings.sources",
+          "value": {
+           "arrayValue": {
+            "values": []
+           }
+          }
+         },
+         {
+          "key": "managed_settings.source_behavior",
+          "value": {
+           "stringValue": "first-wins"
+          }
+         },
+         {
+          "key": "managed_settings.helper.state",
+          "value": {
+           "stringValue": "none"
+          }
+         },
+         {
+          "key": "managed_settings.helper.applied",
+          "value": {
+           "stringValue": "none"
+          }
+         }
+        ],
+        "droppedAttributesCount": 0
+       },
+       {
+        "timeUnixNano": "1792087737378000000",
+        "observedTimeUnixNano": "1792087737378000000",
+        "body": {
+         "stringValue": "claude_code.hook_registered"
+        },
+        "attributes": [
+         {
+          "key": "user.id",
+          "value": {
+           "stringValue": "user-redacted"
+          }
+         },
+         {
+          "key": "session.id",
+          "value": {
+           "stringValue": "498af117-f4f3-4c4a-9b18-5301ce03a126"
+          }
+         },
+         {
+          "key": "organization.id",
+          "value": {
+           "stringValue": "org-redacted"
+          }
+         },
+         {
+          "key": "user.email",
+          "value": {
+           "stringValue": "user@example.invalid"
+          }
+         },
+         {
+          "key": "user.account_uuid",
+          "value": {
+           "stringValue": "00000000-0000-0000-0000-000000000000"
+          }
+         },
+         {
+          "key": "user.account_id",
+          "value": {
+           "stringValue": "acct-redacted"
+          }
+         },
+         {
+          "key": "terminal.type",
+          "value": {
+           "stringValue": "tmux"
+          }
+         },
+         {
+          "key": "event.name",
+          "value": {
+           "stringValue": "hook_registered"
+          }
+         },
+         {
+          "key": "event.timestamp",
+          "value": {
+           "stringValue": "2026-10-15T18:08:57.378Z"
+          }
+         },
+         {
+          "key": "event.sequence",
+          "value": {
+           "intValue": 1
+          }
+         },
+         {
+          "key": "hook_event",
+          "value": {
+           "stringValue": "PreToolUse"
+          }
+         },
+         {
+          "key": "hook_type",
+          "value": {
+           "stringValue": "command"
+          }
+         },
+         {
+          "key": "hook_source",
+          "value": {
+           "stringValue": "userSettings"
+          }
+         },
+         {
+          "key": "safe_mode",
+          "value": {
+           "stringValue": "false"
+          }
+         },
+         {
+          "key": "hook_matcher",
+          "value": {
+           "stringValue": "Bash"
+          }
+         }
+        ],
+        "droppedAttributesCount": 0
+       },
+       {
+        "timeUnixNano": "1792087737378000000",
+        "observedTimeUnixNano": "1792087737378000000",
+        "body": {
+         "stringValue": "claude_code.plugin_loaded"
+        },
+        "attributes": [
+         {
+          "key": "user.id",
+          "value": {
+           "stringValue": "user-redacted"
+          }
+         },
+         {
+          "key": "session.id",
+          "value": {
+           "stringValue": "498af117-f4f3-4c4a-9b18-5301ce03a126"
+          }
+         },
+         {
+          "key": "organization.id",
+          "value": {
+           "stringValue": "org-redacted"
+          }
+         },
+         {
+          "key": "user.email",
+          "value": {
+           "stringValue": "user@example.invalid"
+          }
+         },
+         {
+          "key": "user.account_uuid",
+          "value": {
+           "stringValue": "00000000-0000-0000-0000-000000000000"
+          }
+         },
+         {
+          "key": "user.account_id",
+          "value": {
+           "stringValue": "acct-redacted"
+          }
+         },
+         {
+          "key": "terminal.type",
+          "value": {
+           "stringValue": "tmux"
+          }
+         },
+         {
+          "key": "event.name",
+          "value": {
+           "stringValue": "plugin_loaded"
+          }
+         },
+         {
+          "key": "event.timestamp",
+          "value": {
+           "stringValue": "2026-10-15T18:08:57.378Z"
+          }
+         },
+         {
+          "key": "event.sequence",
+          "value": {
+           "intValue": 2
+          }
+         },
+         {
+          "key": "plugin.name",
+          "value": {
+           "stringValue": "clangd-lsp"
+          }
+         },
+         {
+          "key": "marketplace.name",
+          "value": {
+           "stringValue": "claude-plugins-official"
+          }
+         },
+         {
+          "key": "plugin.version",
+          "value": {
+           "stringValue": "1.0.0"
+          }
+         },
+         {
+          "key": "plugin.scope",
+          "value": {
+           "stringValue": "official"
+          }
+         },
+         {
+          "key": "enabled_via",
+          "value": {
+           "stringValue": "user-install"
+          }
+         },
+         {
+          "key": "plugin_id_hash",
+          "value": {
+           "stringValue": "redacted"
+          }
+         },
+         {
+          "key": "has_hooks",
+          "value": {
+           "boolValue": false
+          }
+         },
+         {
+          "key": "has_mcp",
+          "value": {
+           "boolValue": false
+          }
+         },
+         {
+          "key": "host_owned_mcp",
+          "value": {
+           "boolValue": false
+          }
+         },
+         {
+          "key": "skill_path_count",
+          "value": {
+           "intValue": 0
+          }
+         },
+         {
+          "key": "command_path_count",
+          "value": {
+           "intValue": 0
+          }
+         },
+         {
+          "key": "agent_path_count",
+          "value": {
+           "intValue": 0
+          }
+         },
+         {
+          "key": "safe_mode",
+          "value": {
+           "stringValue": "false"
+          }
+         }
+        ],
+        "droppedAttributesCount": 0
+       },
+       {
+        "timeUnixNano": "1792087737379000000",
+        "observedTimeUnixNano": "1792087737379000000",
+        "body": {
+         "stringValue": "claude_code.plugin_loaded"
+        },
+        "attributes": [
+         {
+          "key": "user.id",
+          "value": {
+           "stringValue": "user-redacted"
+          }
+         },
+         {
+          "key": "session.id",
+          "value": {
+           "stringValue": "498af117-f4f3-4c4a-9b18-5301ce03a126"
+          }
+         },
+         {
+          "key": "organization.id",
+          "value": {
+           "stringValue": "org-redacted"
+          }
+         },
+         {
+          "key": "user.email",
+          "value": {
+           "stringValue": "user@example.invalid"
+          }
+         },
+         {
+          "key": "user.account_uuid",
+          "value": {
+           "stringValue": "00000000-0000-0000-0000-000000000000"
+          }
+         },
+         {
+          "key": "user.account_id",
+          "value": {
+           "stringValue": "acct-redacted"
+          }
+         },
+         {
+          "key": "terminal.type",
+          "value": {
+           "stringValue": "tmux"
+          }
+         },
+         {
+          "key": "event.name",
+          "value": {
+           "stringValue": "plugin_loaded"
+          }
+         },
+         {
+          "key": "event.timestamp",
+          "value": {
+           "stringValue": "2026-10-15T18:08:57.379Z"
+          }
+         },
+         {
+          "key": "event.sequence",
+          "value": {
+           "intValue": 3
+          }
+         },
+         {
+          "key": "plugin.name",
+          "value": {
+           "stringValue": "cc-plugin-agents-md"
+          }
+         },
+         {
+          "key": "marketplace.name",
+          "value": {
+           "stringValue": "builtin"
+          }
+         },
+         {
+          "key": "plugin.scope",
+          "value": {
+           "stringValue": "default-bundle"
+          }
+         },
+         {
+          "key": "enabled_via",
+          "value": {
+           "stringValue": "default-enable"
+          }
+         },
+         {
+          "key": "plugin_id_hash",
+          "value": {
+           "stringValue": "redacted"
+          }
+         },
+         {
+          "key": "has_hooks",
+          "value": {
+           "boolValue": true
+          }
+         },
+         {
+          "key": "has_mcp",
+          "value": {
+           "boolValue": false
+          }
+         },
+         {
+          "key": "host_owned_mcp",
+          "value": {
+           "boolValue": false
+          }
+         },
+         {
+          "key": "skill_path_count",
+          "value": {
+           "intValue": 0
+          }
+         },
+         {
+          "key": "command_path_count",
+          "value": {
+           "intValue": 0
+          }
+         },
+         {
+          "key": "agent_path_count",
+          "value": {
+           "intValue": 0
+          }
+         },
+         {
+          "key": "safe_mode",
+          "value": {
+           "stringValue": "false"
+          }
+         }
+        ],
+        "droppedAttributesCount": 0
+       },
+       {
+        "timeUnixNano": "1792087737379000000",
+        "observedTimeUnixNano": "1792087737379000000",
+        "body": {
+         "stringValue": "claude_code.plugin_loaded"
+        },
+        "attributes": [
+         {
+          "key": "user.id",
+          "value": {
+           "stringValue": "user-redacted"
+          }
+         },
+         {
+          "key": "session.id",
+          "value": {
+           "stringValue": "498af117-f4f3-4c4a-9b18-5301ce03a126"
+          }
+         },
+         {
+          "key": "organization.id",
+          "value": {
+           "stringValue": "org-redacted"
+          }
+         },
+         {
+          "key": "user.email",
+          "value": {
+           "stringValue": "user@example.invalid"
+          }
+         },
+         {
+          "key": "user.account_uuid",
+          "value": {
+           "stringValue": "00000000-0000-0000-0000-000000000000"
+          }
+         },
+         {
+          "key": "user.account_id",
+          "value": {
+           "stringValue": "acct-redacted"
+          }
+         },
+         {
+          "key": "terminal.type",
+          "value": {
+           "stringValue": "tmux"
+          }
+         },
+         {
+          "key": "event.name",
+          "value": {
+           "stringValue": "plugin_loaded"
+          }
+         },
+         {
+          "key": "event.timestamp",
+          "value": {
+           "stringValue": "2026-10-15T18:08:57.379Z"
+          }
+         },
+         {
+          "key": "event.sequence",
+          "value": {
+           "intValue": 4
+          }
+         },
+         {
+          "key": "plugin.name",
+          "value": {
+           "stringValue": "cc-plugin-telemetry"
+          }
+         },
+         {
+          "key": "marketplace.name",
+          "value": {
+           "stringValue": "builtin"
+          }
+         },
+         {
+          "key": "plugin.scope",
+          "value": {
+           "stringValue": "default-bundle"
+          }
+         },
+         {
+          "key": "enabled_via",
+          "value": {
+           "stringValue": "default-enable"
+          }
+         },
+         {
+          "key": "plugin_id_hash",
+          "value": {
+           "stringValue": "redacted"
+          }
+         },
+         {
+          "key": "has_hooks",
+          "value": {
+           "boolValue": true
+          }
+         },
+         {
+          "key": "has_mcp",
+          "value": {
+           "boolValue": false
+          }
+         },
+         {
+          "key": "host_owned_mcp",
+          "value": {
+           "boolValue": false
+          }
+         },
+         {
+          "key": "skill_path_count",
+          "value": {
+           "intValue": 0
+          }
+         },
+         {
+          "key": "command_path_count",
+          "value": {
+           "intValue": 0
+          }
+         },
+         {
+          "key": "agent_path_count",
+          "value": {
+           "intValue": 0
+          }
+         },
+         {
+          "key": "safe_mode",
+          "value": {
+           "stringValue": "false"
+          }
+         }
+        ],
+        "droppedAttributesCount": 0
+       },
+       {
+        "timeUnixNano": "1792087737379000000",
+        "observedTimeUnixNano": "1792087737379000000",
+        "body": {
+         "stringValue": "claude_code.plugin_loaded"
+        },
+        "attributes": [
+         {
+          "key": "user.id",
+          "value": {
+           "stringValue": "user-redacted"
+          }
+         },
+         {
+          "key": "session.id",
+          "value": {
+           "stringValue": "498af117-f4f3-4c4a-9b18-5301ce03a126"
+          }
+         },
+         {
+          "key": "organization.id",
+          "value": {
+           "stringValue": "org-redacted"
+          }
+         },
+         {
+          "key": "user.email",
+          "value": {
+           "stringValue": "user@example.invalid"
+          }
+         },
+         {
+          "key": "user.account_uuid",
+          "value": {
+           "stringValue": "00000000-0000-0000-0000-000000000000"
+          }
+         },
+         {
+          "key": "user.account_id",
+          "value": {
+           "stringValue": "acct-redacted"
+          }
+         },
+         {
+          "key": "terminal.type",
+          "value": {
+           "stringValue": "tmux"
+          }
+         },
+         {
+          "key": "event.name",
+          "value": {
+           "stringValue": "plugin_loaded"
+          }
+         },
+         {
+          "key": "event.timestamp",
+          "value": {
+           "stringValue": "2026-10-15T18:08:57.379Z"
+          }
+         },
+         {
+          "key": "event.sequence",
+          "value": {
+           "intValue": 5
+          }
+         },
+         {
+          "key": "plugin.name",
+          "value": {
+           "stringValue": "cc-plugin-plugin-authoring"
+          }
+         },
+         {
+          "key": "marketplace.name",
+          "value": {
+           "stringValue": "builtin"
+          }
+         },
+         {
+          "key": "plugin.scope",
+          "value": {
+           "stringValue": "default-bundle"
+          }
+         },
+         {
+          "key": "enabled_via",
+          "value": {
+           "stringValue": "default-enable"
+          }
+         },
+         {
+          "key": "plugin_id_hash",
+          "value": {
+           "stringValue": "redacted"
+          }
+         },
+         {
+          "key": "has_hooks",
+          "value": {
+           "boolValue": true
+          }
+         },
+         {
+          "key": "has_mcp",
+          "value": {
+           "boolValue": false
+          }
+         },
+         {
+          "key": "host_owned_mcp",
+          "value": {
+           "boolValue": false
+          }
+         },
+         {
+          "key": "skill_path_count",
+          "value": {
+           "intValue": 0
+          }
+         },
+         {
+          "key": "command_path_count",
+          "value": {
+           "intValue": 0
+          }
+         },
+         {
+          "key": "agent_path_count",
+          "value": {
+           "intValue": 0
+          }
+         },
+         {
+          "key": "safe_mode",
+          "value": {
+           "stringValue": "false"
+          }
+         }
+        ],
+        "droppedAttributesCount": 0
+       },
+       {
+        "timeUnixNano": "1792087737387000000",
+        "observedTimeUnixNano": "1792087737387000000",
+        "body": {
+         "stringValue": "claude_code.mcp_server_connection"
+        },
+        "attributes": [
+         {
+          "key": "user.id",
+          "value": {
+           "stringValue": "user-redacted"
+          }
+         },
+         {
+          "key": "session.id",
+          "value": {
+           "stringValue": "498af117-f4f3-4c4a-9b18-5301ce03a126"
+          }
+         },
+         {
+          "key": "organization.id",
+          "value": {
+           "stringValue": "org-redacted"
+          }
+         },
+         {
+          "key": "user.email",
+          "value": {
+           "stringValue": "user@example.invalid"
+          }
+         },
+         {
+          "key": "user.account_uuid",
+          "value": {
+           "stringValue": "00000000-0000-0000-0000-000000000000"
+          }
+         },
+         {
+          "key": "user.account_id",
+          "value": {
+           "stringValue": "acct-redacted"
+          }
+         },
+         {
+          "key": "terminal.type",
+          "value": {
+           "stringValue": "tmux"
+          }
+         },
+         {
+          "key": "event.name",
+          "value": {
+           "stringValue": "mcp_server_connection"
+          }
+         },
+         {
+          "key": "event.timestamp",
+          "value": {
+           "stringValue": "2026-10-15T18:08:57.387Z"
+          }
+         },
+         {
+          "key": "event.sequence",
+          "value": {
+           "intValue": 6
+          }
+         },
+         {
+          "key": "status",
+          "value": {
+           "stringValue": "connected"
+          }
+         },
+         {
+          "key": "transport_type",
+          "value": {
+           "stringValue": "http"
+          }
+         },
+         {
+          "key": "server_scope",
+          "value": {
+           "stringValue": "user"
+          }
+         },
+         {
+          "key": "duration_ms",
+          "value": {
+           "stringValue": "25"
+          }
+         },
+         {
+          "key": "is_plugin",
+          "value": {
+           "boolValue": false
+          }
+         },
+         {
+          "key": "server_name",
+          "value": {
+           "stringValue": "server-redacted"
+          }
+         }
+        ],
+        "droppedAttributesCount": 0
+       },
+       {
+        "timeUnixNano": "1792087737768000000",
+        "observedTimeUnixNano": "1792087737768000000",
+        "body": {
+         "stringValue": "claude_code.mcp_server_connection"
+        },
+        "attributes": [
+         {
+          "key": "user.id",
+          "value": {
+           "stringValue": "user-redacted"
+          }
+         },
+         {
+          "key": "session.id",
+          "value": {
+           "stringValue": "498af117-f4f3-4c4a-9b18-5301ce03a126"
+          }
+         },
+         {
+          "key": "organization.id",
+          "value": {
+           "stringValue": "org-redacted"
+          }
+         },
+         {
+          "key": "user.email",
+          "value": {
+           "stringValue": "user@example.invalid"
+          }
+         },
+         {
+          "key": "user.account_uuid",
+          "value": {
+           "stringValue": "00000000-0000-0000-0000-000000000000"
+          }
+         },
+         {
+          "key": "user.account_id",
+          "value": {
+           "stringValue": "acct-redacted"
+          }
+         },
+         {
+          "key": "terminal.type",
+          "value": {
+           "stringValue": "tmux"
+          }
+         },
+         {
+          "key": "event.name",
+          "value": {
+           "stringValue": "mcp_server_connection"
+          }
+         },
+         {
+          "key": "event.timestamp",
+          "value": {
+           "stringValue": "2026-10-15T18:08:57.768Z"
+          }
+         },
+         {
+          "key": "event.sequence",
+          "value": {
+           "intValue": 7
+          }
+         },
+         {
+          "key": "status",
+          "value": {
+           "stringValue": "connected"
+          }
+         },
+         {
+          "key": "transport_type",
+          "value": {
+           "stringValue": "http"
+          }
+         },
+         {
+          "key": "server_scope",
+          "value": {
+           "stringValue": "user"
+          }
+         },
+         {
+          "key": "duration_ms",
+          "value": {
+           "stringValue": "406"
+          }
+         },
+         {
+          "key": "is_plugin",
+          "value": {
+           "boolValue": false
+          }
+         },
+         {
+          "key": "server_name",
+          "value": {
+           "stringValue": "server-redacted"
+          }
+         }
+        ],
+        "droppedAttributesCount": 0
+       },
+       {
+        "timeUnixNano": "1792087737812000000",
+        "observedTimeUnixNano": "1792087737812000000",
+        "body": {
+         "stringValue": "claude_code.mcp_server_connection"
+        },
+        "attributes": [
+         {
+          "key": "user.id",
+          "value": {
+           "stringValue": "user-redacted"
+          }
+         },
+         {
+          "key": "session.id",
+          "value": {
+           "stringValue": "498af117-f4f3-4c4a-9b18-5301ce03a126"
+          }
+         },
+         {
+          "key": "organization.id",
+          "value": {
+           "stringValue": "org-redacted"
+          }
+         },
+         {
+          "key": "user.email",
+          "value": {
+           "stringValue": "user@example.invalid"
+          }
+         },
+         {
+          "key": "user.account_uuid",
+          "value": {
+           "stringValue": "00000000-0000-0000-0000-000000000000"
+          }
+         },
+         {
+          "key": "user.account_id",
+          "value": {
+           "stringValue": "acct-redacted"
+          }
+         },
+         {
+          "key": "terminal.type",
+          "value": {
+           "stringValue": "tmux"
+          }
+         },
+         {
+          "key": "event.name",
+          "value": {
+           "stringValue": "mcp_server_connection"
+          }
+         },
+         {
+          "key": "event.timestamp",
+          "value": {
+           "stringValue": "2026-10-15T18:08:57.812Z"
+          }
+         },
+         {
+          "key": "event.sequence",
+          "value": {
+           "intValue": 8
+          }
+         },
+         {
+          "key": "status",
+          "value": {
+           "stringValue": "connected"
+          }
+         },
+         {
+          "key": "transport_type",
+          "value": {
+           "stringValue": "claudeai-proxy"
+          }
+         },
+         {
+          "key": "server_scope",
+          "value": {
+           "stringValue": "claudeai"
+          }
+         },
+         {
+          "key": "duration_ms",
+          "value": {
+           "stringValue": "206"
+          }
+         },
+         {
+          "key": "is_plugin",
+          "value": {
+           "boolValue": false
+          }
+         },
+         {
+          "key": "server_name",
+          "value": {
+           "stringValue": "server-redacted"
+          }
+         }
+        ],
+        "droppedAttributesCount": 0
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "resourceLogs": [
+   {
+    "resource": {
+     "attributes": [
+      {
+       "key": "host.arch",
+       "value": {
+        "stringValue": "arm64"
+       }
+      },
+      {
+       "key": "os.type",
+       "value": {
+        "stringValue": "darwin"
+       }
+      },
+      {
+       "key": "os.version",
+       "value": {
+        "stringValue": "redacted"
+       }
+      },
+      {
+       "key": "service.name",
+       "value": {
+        "stringValue": "claude-code"
+       }
+      },
+      {
+       "key": "service.version",
+       "value": {
+        "stringValue": "2.1.300"
+       }
+      }
+     ],
+     "droppedAttributesCount": 0
+    },
+    "scopeLogs": [
+     {
+      "scope": {
+       "name": "com.anthropic.claude_code.events",
+       "version": "2.1.300"
+      },
+      "logRecords": [
+       {
+        "timeUnixNano": "1792087738633000000",
+        "observedTimeUnixNano": "1792087738633000000",
+        "body": {
+         "stringValue": "claude_code.mcp_server_connection"
+        },
+        "attributes": [
+         {
+          "key": "user.id",
+          "value": {
+           "stringValue": "user-redacted"
+          }
+         },
+         {
+          "key": "session.id",
+          "value": {
+           "stringValue": "498af117-f4f3-4c4a-9b18-5301ce03a126"
+          }
+         },
+         {
+          "key": "organization.id",
+          "value": {
+           "stringValue": "org-redacted"
+          }
+         },
+         {
+          "key": "user.email",
+          "value": {
+           "stringValue": "user@example.invalid"
+          }
+         },
+         {
+          "key": "user.account_uuid",
+          "value": {
+           "stringValue": "00000000-0000-0000-0000-000000000000"
+          }
+         },
+         {
+          "key": "user.account_id",
+          "value": {
+           "stringValue": "acct-redacted"
+          }
+         },
+         {
+          "key": "terminal.type",
+          "value": {
+           "stringValue": "tmux"
+          }
+         },
+         {
+          "key": "event.name",
+          "value": {
+           "stringValue": "mcp_server_connection"
+          }
+         },
+         {
+          "key": "event.timestamp",
+          "value": {
+           "stringValue": "2026-10-15T18:08:58.633Z"
+          }
+         },
+         {
+          "key": "event.sequence",
+          "value": {
+           "intValue": 9
+          }
+         },
+         {
+          "key": "status",
+          "value": {
+           "stringValue": "connected"
+          }
+         },
+         {
+          "key": "transport_type",
+          "value": {
+           "stringValue": "stdio"
+          }
+         },
+         {
+          "key": "server_scope",
+          "value": {
+           "stringValue": "user"
+          }
+         },
+         {
+          "key": "duration_ms",
+          "value": {
+           "stringValue": "1289"
+          }
+         },
+         {
+          "key": "is_plugin",
+          "value": {
+           "boolValue": false
+          }
+         },
+         {
+          "key": "server_name",
+          "value": {
+           "stringValue": "server-redacted"
+          }
+         }
+        ],
+        "droppedAttributesCount": 0
+       },
+       {
+        "timeUnixNano": "1792087738659000000",
+        "observedTimeUnixNano": "1792087738659000000",
+        "body": {
+         "stringValue": "claude_code.user_prompt"
+        },
+        "attributes": [
+         {
+          "key": "user.id",
+          "value": {
+           "stringValue": "user-redacted"
+          }
+         },
+         {
+          "key": "session.id",
+          "value": {
+           "stringValue": "498af117-f4f3-4c4a-9b18-5301ce03a126"
+          }
+         },
+         {
+          "key": "organization.id",
+          "value": {
+           "stringValue": "org-redacted"
+          }
+         },
+         {
+          "key": "user.email",
+          "value": {
+           "stringValue": "user@example.invalid"
+          }
+         },
+         {
+          "key": "user.account_uuid",
+          "value": {
+           "stringValue": "00000000-0000-0000-0000-000000000000"
+          }
+         },
+         {
+          "key": "user.account_id",
+          "value": {
+           "stringValue": "acct-redacted"
+          }
+         },
+         {
+          "key": "terminal.type",
+          "value": {
+           "stringValue": "tmux"
+          }
+         },
+         {
+          "key": "event.name",
+          "value": {
+           "stringValue": "user_prompt"
+          }
+         },
+         {
+          "key": "event.timestamp",
+          "value": {
+           "stringValue": "2026-10-15T18:08:58.659Z"
+          }
+         },
+         {
+          "key": "event.sequence",
+          "value": {
+           "intValue": 10
+          }
+         },
+         {
+          "key": "prompt.id",
+          "value": {
+           "stringValue": "e9697005-a000-4326-9a61-f0dd063b0a55"
+          }
+         },
+         {
+          "key": "prompt_length",
+          "value": {
+           "stringValue": "65"
+          }
+         },
+         {
+          "key": "prompt",
+          "value": {
+           "stringValue": "PROMPT-MARKER"
+          }
+         },
+         {
+          "key": "prompt_text",
+          "value": {
+           "stringValue": "PROMPT-MARKER"
+          }
+         },
+         {
+          "key": "message.uuid",
+          "value": {
+           "stringValue": "356e4a8d-c2f2-4ffa-b5c7-7e766d4be11a"
+          }
+         }
+        ],
+        "droppedAttributesCount": 0
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "resourceLogs": [
+   {
+    "resource": {
+     "attributes": [
+      {
+       "key": "host.arch",
+       "value": {
+        "stringValue": "arm64"
+       }
+      },
+      {
+       "key": "os.type",
+       "value": {
+        "stringValue": "darwin"
+       }
+      },
+      {
+       "key": "os.version",
+       "value": {
+        "stringValue": "redacted"
+       }
+      },
+      {
+       "key": "service.name",
+       "value": {
+        "stringValue": "claude-code"
+       }
+      },
+      {
+       "key": "service.version",
+       "value": {
+        "stringValue": "2.1.300"
+       }
+      }
+     ],
+     "droppedAttributesCount": 0
+    },
+    "scopeLogs": [
+     {
+      "scope": {
+       "name": "com.anthropic.claude_code.events",
+       "version": "2.1.300"
+      },
+      "logRecords": [
+       {
+        "timeUnixNano": "1792087740131000000",
+        "observedTimeUnixNano": "1792087740131000000",
+        "body": {
+         "stringValue": "claude_code.hook_execution_start"
+        },
+        "attributes": [
+         {
+          "key": "user.id",
+          "value": {
+           "stringValue": "user-redacted"
+          }
+         },
+         {
+          "key": "session.id",
+          "value": {
+           "stringValue": "498af117-f4f3-4c4a-9b18-5301ce03a126"
+          }
+         },
+         {
+          "key": "organization.id",
+          "value": {
+           "stringValue": "org-redacted"
+          }
+         },
+         {
+          "key": "user.email",
+          "value": {
+           "stringValue": "user@example.invalid"
+          }
+         },
+         {
+          "key": "user.account_uuid",
+          "value": {
+           "stringValue": "00000000-0000-0000-0000-000000000000"
+          }
+         },
+         {
+          "key": "user.account_id",
+          "value": {
+           "stringValue": "acct-redacted"
+          }
+         },
+         {
+          "key": "terminal.type",
+          "value": {
+           "stringValue": "tmux"
+          }
+         },
+         {
+          "key": "event.name",
+          "value": {
+           "stringValue": "hook_execution_start"
+          }
+         },
+         {
+          "key": "event.timestamp",
+          "value": {
+           "stringValue": "2026-10-15T18:09:00.131Z"
+          }
+         },
+         {
+          "key": "event.sequence",
+          "value": {
+           "intValue": 11
+          }
+         },
+         {
+          "key": "prompt.id",
+          "value": {
+           "stringValue": "e9697005-a000-4326-9a61-f0dd063b0a55"
+          }
+         },
+         {
+          "key": "hook_event",
+          "value": {
+           "stringValue": "PreToolUse"
+          }
+         },
+         {
+          "key": "hook_name",
+          "value": {
+           "stringValue": "PreToolUse:Bash"
+          }
+         },
+         {
+          "key": "num_hooks",
+          "value": {
+           "stringValue": "1"
+          }
+         },
+         {
+          "key": "managed_only",
+          "value": {
+           "stringValue": "false"
+          }
+         },
+         {
+          "key": "hook_source",
+          "value": {
+           "stringValue": "merged"
+          }
+         },
+         {
+          "key": "safe_mode",
+          "value": {
+           "stringValue": "false"
+          }
+         }
+        ],
+        "droppedAttributesCount": 0
+       },
+       {
+        "timeUnixNano": "1792087740144000000",
+        "observedTimeUnixNano": "1792087740144000000",
+        "body": {
+         "stringValue": "claude_code.api_request"
+        },
+        "attributes": [
+         {
+          "key": "user.id",
+          "value": {
+           "stringValue": "user-redacted"
+          }
+         },
+         {
+          "key": "session.id",
+          "value": {
+           "stringValue": "498af117-f4f3-4c4a-9b18-5301ce03a126"
+          }
+         },
+         {
+          "key": "organization.id",
+          "value": {
+           "stringValue": "org-redacted"
+          }
+         },
+         {
+          "key": "user.email",
+          "value": {
+           "stringValue": "user@example.invalid"
+          }
+         },
+         {
+          "key": "user.account_uuid",
+          "value": {
+           "stringValue": "00000000-0000-0000-0000-000000000000"
+          }
+         },
+         {
+          "key": "user.account_id",
+          "value": {
+           "stringValue": "acct-redacted"
+          }
+         },
+         {
+          "key": "terminal.type",
+          "value": {
+           "stringValue": "tmux"
+          }
+         },
+         {
+          "key": "event.name",
+          "value": {
+           "stringValue": "api_request"
+          }
+         },
+         {
+          "key": "event.timestamp",
+          "value": {
+           "stringValue": "2026-10-15T18:09:00.144Z"
+          }
+         },
+         {
+          "key": "event.sequence",
+          "value": {
+           "intValue": 12
+          }
+         },
+         {
+          "key": "prompt.id",
+          "value": {
+           "stringValue": "e9697005-a000-4326-9a61-f0dd063b0a55"
+          }
+         },
+         {
+          "key": "model",
+          "value": {
+           "stringValue": "claude-haiku-5-5"
+          }
+         },
+         {
+          "key": "input_tokens",
+          "value": {
+           "intValue": 2
+          }
+         },
+         {
+          "key": "output_tokens",
+          "value": {
+           "intValue": 80
+          }
+         },
+         {
+          "key": "cache_read_tokens",
+          "value": {
+           "intValue": 11091
+          }
+         },
+         {
+          "key": "cache_creation_tokens",
+          "value": {
+           "intValue": 12189
+          }
+         },
+         {
+          "key": "cache_creation_5m_tokens",
+          "value": {
+           "intValue": 0
+          }
+         },
+         {
+          "key": "cache_creation_1h_tokens",
+          "value": {
+           "intValue": 12189
+          }
+         },
+         {
+          "key": "cost_usd",
+          "value": {
+           "doubleValue": 0.0025889100000000003
+          }
+         },
+         {
+          "key": "cost_usd_micros",
+          "value": {
+           "intValue": 2589
+          }
+         },
+         {
+          "key": "duration_ms",
+          "value": {
+           "intValue": 1470
+          }
+         },
+         {
+          "key": "ttft_ms",
+          "value": {
+           "intValue": 1107
+          }
+         },
+         {
+          "key": "request_id",
+          "value": {
+           "stringValue": "req_011Cg4UFM1AKkR32LNv7EDMP"
+          }
+         },
+         {
+          "key": "client_request_id",
+          "value": {
+           "stringValue": "d8b2151c-f02a-4290-9005-728561cdee34"
+          }
+         },
+         {
+          "key": "speed",
+          "value": {
+           "stringValue": "normal"
+          }
+         },
+         {
+          "key": "query_source",
+          "value": {
+           "stringValue": "sdk"
+          }
+         },
+         {
+          "key": "effort",
+          "value": {
+           "stringValue": "medium"
+          }
+         }
+        ],
+        "droppedAttributesCount": 0
+       },
+       {
+        "timeUnixNano": "1792087740145000000",
+        "observedTimeUnixNano": "1792087740145000000",
+        "body": {
+         "stringValue": "claude_code.hook_execution_complete"
+        },
+        "attributes": [
+         {
+          "key": "user.id",
+          "value": {
+           "stringValue": "user-redacted"
+          }
+         },
+         {
+          "key": "session.id",
+          "value": {
+           "stringValue": "498af117-f4f3-4c4a-9b18-5301ce03a126"
+          }
+         },
+         {
+          "key": "organization.id",
+          "value": {
+           "stringValue": "org-redacted"
+          }
+         },
+         {
+          "key": "user.email",
+          "value": {
+           "stringValue": "user@example.invalid"
+          }
+         },
+         {
+          "key": "user.account_uuid",
+          "value": {
+           "stringValue": "00000000-0000-0000-0000-000000000000"
+          }
+         },
+         {
+          "key": "user.account_id",
+          "value": {
+           "stringValue": "acct-redacted"
+          }
+         },
+         {
+          "key": "terminal.type",
+          "value": {
+           "stringValue": "tmux"
+          }
+         },
+         {
+          "key": "event.name",
+          "value": {
+           "stringValue": "hook_execution_complete"
+          }
+         },
+         {
+          "key": "event.timestamp",
+          "value": {
+           "stringValue": "2026-10-15T18:09:00.145Z"
+          }
+         },
+         {
+          "key": "event.sequence",
+          "value": {
+           "intValue": 13
+          }
+         },
+         {
+          "key": "prompt.id",
+          "value": {
+           "stringValue": "e9697005-a000-4326-9a61-f0dd063b0a55"
+          }
+         },
+         {
+          "key": "hook_event",
+          "value": {
+           "stringValue": "PreToolUse"
+          }
+         },
+         {
+          "key": "hook_name",
+          "value": {
+           "stringValue": "PreToolUse:Bash"
+          }
+         },
+         {
+          "key": "num_hooks",
+          "value": {
+           "stringValue": "1"
+          }
+         },
+         {
+          "key": "num_success",
+          "value": {
+           "stringValue": "1"
+          }
+         },
+         {
+          "key": "num_blocking",
+          "value": {
+           "stringValue": "0"
+          }
+         },
+         {
+          "key": "num_non_blocking_error",
+          "value": {
+           "stringValue": "0"
+          }
+         },
+         {
+          "key": "num_cancelled",
+          "value": {
+           "stringValue": "0"
+          }
+         },
+         {
+          "key": "total_duration_ms",
+          "value": {
+           "stringValue": "14"
+          }
+         },
+         {
+          "key": "stdout_chars",
+          "value": {
+           "stringValue": "0"
+          }
+         },
+         {
+          "key": "additional_context_chars",
+          "value": {
+           "stringValue": "0"
+          }
+         },
+         {
+          "key": "system_message_chars",
+          "value": {
+           "stringValue": "0"
+          }
+         },
+         {
+          "key": "initial_user_message_chars",
+          "value": {
+           "stringValue": "0"
+          }
+         },
+         {
+          "key": "num_outputs_persisted",
+          "value": {
+           "stringValue": "0"
+          }
+         },
+         {
+          "key": "managed_only",
+          "value": {
+           "stringValue": "false"
+          }
+         },
+         {
+          "key": "hook_source",
+          "value": {
+           "stringValue": "merged"
+          }
+         },
+         {
+          "key": "safe_mode",
+          "value": {
+           "stringValue": "false"
+          }
+         }
+        ],
+        "droppedAttributesCount": 0
+       },
+       {
+        "timeUnixNano": "1792087740148000000",
+        "observedTimeUnixNano": "1792087740148000000",
+        "body": {
+         "stringValue": "claude_code.tool_decision"
+        },
+        "attributes": [
+         {
+          "key": "user.id",
+          "value": {
+           "stringValue": "user-redacted"
+          }
+         },
+         {
+          "key": "session.id",
+          "value": {
+           "stringValue": "498af117-f4f3-4c4a-9b18-5301ce03a126"
+          }
+         },
+         {
+          "key": "organization.id",
+          "value": {
+           "stringValue": "org-redacted"
+          }
+         },
+         {
+          "key": "user.email",
+          "value": {
+           "stringValue": "user@example.invalid"
+          }
+         },
+         {
+          "key": "user.account_uuid",
+          "value": {
+           "stringValue": "00000000-0000-0000-0000-000000000000"
+          }
+         },
+         {
+          "key": "user.account_id",
+          "value": {
+           "stringValue": "acct-redacted"
+          }
+         },
+         {
+          "key": "terminal.type",
+          "value": {
+           "stringValue": "tmux"
+          }
+         },
+         {
+          "key": "event.name",
+          "value": {
+           "stringValue": "tool_decision"
+          }
+         },
+         {
+          "key": "event.timestamp",
+          "value": {
+           "stringValue": "2026-10-15T18:09:00.148Z"
+          }
+         },
+         {
+          "key": "event.sequence",
+          "value": {
+           "intValue": 14
+          }
+         },
+         {
+          "key": "prompt.id",
+          "value": {
+           "stringValue": "e9697005-a000-4326-9a61-f0dd063b0a55"
+          }
+         },
+         {
+          "key": "decision",
+          "value": {
+           "stringValue": "accept"
+          }
+         },
+         {
+          "key": "source",
+          "value": {
+           "stringValue": "config"
+          }
+         },
+         {
+          "key": "tool_name",
+          "value": {
+           "stringValue": "Bash"
+          }
+         },
+         {
+          "key": "tool_use_id",
+          "value": {
+           "stringValue": "toolu_01Dr48Wz3d2hSvDjeCyHh4Ub"
+          }
+         },
+         {
+          "key": "tool_source",
+          "value": {
+           "stringValue": "builtin"
+          }
+         },
+         {
+          "key": "tool_parameters",
+          "value": {
+           "stringValue": "{\"bash_command\":\"echo\",\"full_command\":\"echo otel-probe\",\"description\":\"Echo the probe string\"}"
+          }
+         }
+        ],
+        "droppedAttributesCount": 0
+       },
+       {
+        "timeUnixNano": "1792087740249000000",
+        "observedTimeUnixNano": "1792087740249000000",
+        "body": {
+         "stringValue": "claude_code.tool_result"
+        },
+        "attributes": [
+         {
+          "key": "user.id",
+          "value": {
+           "stringValue": "user-redacted"
+          }
+         },
+         {
+          "key": "session.id",
+          "value": {
+           "stringValue": "498af117-f4f3-4c4a-9b18-5301ce03a126"
+          }
+         },
+         {
+          "key": "organization.id",
+          "value": {
+           "stringValue": "org-redacted"
+          }
+         },
+         {
+          "key": "user.email",
+          "value": {
+           "stringValue": "user@example.invalid"
+          }
+         },
+         {
+          "key": "user.account_uuid",
+          "value": {
+           "stringValue": "00000000-0000-0000-0000-000000000000"
+          }
+         },
+         {
+          "key": "user.account_id",
+          "value": {
+           "stringValue": "acct-redacted"
+          }
+         },
+         {
+          "key": "terminal.type",
+          "value": {
+           "stringValue": "tmux"
+          }
+         },
+         {
+          "key": "event.name",
+          "value": {
+           "stringValue": "tool_result"
+          }
+         },
+         {
+          "key": "event.timestamp",
+          "value": {
+           "stringValue": "2026-10-15T18:09:00.249Z"
+          }
+         },
+         {
+          "key": "event.sequence",
+          "value": {
+           "intValue": 15
+          }
+         },
+         {
+          "key": "prompt.id",
+          "value": {
+           "stringValue": "e9697005-a000-4326-9a61-f0dd063b0a55"
+          }
+         },
+         {
+          "key": "tool_name",
+          "value": {
+           "stringValue": "Bash"
+          }
+         },
+         {
+          "key": "tool_use_id",
+          "value": {
+           "stringValue": "toolu_01Dr48Wz3d2hSvDjeCyHh4Ub"
+          }
+         },
+         {
+          "key": "success",
+          "value": {
+           "stringValue": "true"
+          }
+         },
+         {
+          "key": "duration_ms",
+          "value": {
+           "stringValue": "100"
+          }
+         },
+         {
+          "key": "tool_parameters",
+          "value": {
+           "stringValue": "{\"bash_command\":\"echo\",\"full_command\":\"echo otel-probe\",\"description\":\"Echo the probe string\"}"
+          }
+         },
+         {
+          "key": "tool_input",
+          "value": {
+           "stringValue": "{\"command\":\"echo otel-probe\",\"description\":\"Echo the probe string\"}"
+          }
+         },
+         {
+          "key": "tool_input_size_bytes",
+          "value": {
+           "stringValue": "67"
+          }
+         },
+         {
+          "key": "tool_result_size_bytes",
+          "value": {
+           "stringValue": "10"
+          }
+         }
+        ],
+        "droppedAttributesCount": 0
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "resourceLogs": [
+   {
+    "resource": {
+     "attributes": [
+      {
+       "key": "host.arch",
+       "value": {
+        "stringValue": "arm64"
+       }
+      },
+      {
+       "key": "os.type",
+       "value": {
+        "stringValue": "darwin"
+       }
+      },
+      {
+       "key": "os.version",
+       "value": {
+        "stringValue": "redacted"
+       }
+      },
+      {
+       "key": "service.name",
+       "value": {
+        "stringValue": "claude-code"
+       }
+      },
+      {
+       "key": "service.version",
+       "value": {
+        "stringValue": "2.1.300"
+       }
+      }
+     ],
+     "droppedAttributesCount": 0
+    },
+    "scopeLogs": [
+     {
+      "scope": {
+       "name": "com.anthropic.claude_code.events",
+       "version": "2.1.300"
+      },
+      "logRecords": [
+       {
+        "timeUnixNano": "1792087741484000000",
+        "observedTimeUnixNano": "1792087741484000000",
+        "body": {
+         "stringValue": "claude_code.api_request"
+        },
+        "attributes": [
+         {
+          "key": "user.id",
+          "value": {
+           "stringValue": "user-redacted"
+          }
+         },
+         {
+          "key": "session.id",
+          "value": {
+           "stringValue": "498af117-f4f3-4c4a-9b18-5301ce03a126"
+          }
+         },
+         {
+          "key": "organization.id",
+          "value": {
+           "stringValue": "org-redacted"
+          }
+         },
+         {
+          "key": "user.email",
+          "value": {
+           "stringValue": "user@example.invalid"
+          }
+         },
+         {
+          "key": "user.account_uuid",
+          "value": {
+           "stringValue": "00000000-0000-0000-0000-000000000000"
+          }
+         },
+         {
+          "key": "user.account_id",
+          "value": {
+           "stringValue": "acct-redacted"
+          }
+         },
+         {
+          "key": "terminal.type",
+          "value": {
+           "stringValue": "tmux"
+          }
+         },
+         {
+          "key": "event.name",
+          "value": {
+           "stringValue": "api_request"
+          }
+         },
+         {
+          "key": "event.timestamp",
+          "value": {
+           "stringValue": "2026-10-15T18:09:01.484Z"
+          }
+         },
+         {
+          "key": "event.sequence",
+          "value": {
+           "intValue": 16
+          }
+         },
+         {
+          "key": "prompt.id",
+          "value": {
+           "stringValue": "e9697005-a000-4326-9a61-f0dd063b0a55"
+          }
+         },
+         {
+          "key": "model",
+          "value": {
+           "stringValue": "claude-haiku-5-5"
+          }
+         },
+         {
+          "key": "input_tokens",
+          "value": {
+           "intValue": 2
+          }
+         },
+         {
+          "key": "output_tokens",
+          "value": {
+           "intValue": 7
+          }
+         },
+         {
+          "key": "cache_read_tokens",
+          "value": {
+           "intValue": 23280
+          }
+         },
+         {
+          "key": "cache_creation_tokens",
+          "value": {
+           "intValue": 114
+          }
+         },
+         {
+          "key": "cache_creation_5m_tokens",
+          "value": {
+           "intValue": 0
+          }
+         },
+         {
+          "key": "cache_creation_1h_tokens",
+          "value": {
+           "intValue": 114
+          }
+         },
+         {
+          "key": "cost_usd",
+          "value": {
+           "doubleValue": 0.0002593
+          }
+         },
+         {
+          "key": "cost_usd_micros",
+          "value": {
+           "intValue": 259
+          }
+         },
+         {
+          "key": "duration_ms",
+          "value": {
+           "intValue": 1228
+          }
+         },
+         {
+          "key": "ttft_ms",
+          "value": {
+           "intValue": 1182
+          }
+         },
+         {
+          "key": "request_id",
+          "value": {
+           "stringValue": "req_011Cg4UFTdXiBRjFajCVF9Kj"
+          }
+         },
+         {
+          "key": "client_request_id",
+          "value": {
+           "stringValue": "9472baec-0bc5-475a-a590-41375a708fe5"
+          }
+         },
+         {
+          "key": "speed",
+          "value": {
+           "stringValue": "normal"
+          }
+         },
+         {
+          "key": "query_source",
+          "value": {
+           "stringValue": "sdk"
+          }
+         },
+         {
+          "key": "effort",
+          "value": {
+           "stringValue": "medium"
+          }
+         }
+        ],
+        "droppedAttributesCount": 0
+       },
+       {
+        "timeUnixNano": "1792087741484000000",
+        "observedTimeUnixNano": "1792087741484000000",
+        "body": {
+         "stringValue": "claude_code.assistant_response"
+        },
+        "attributes": [
+         {
+          "key": "user.id",
+          "value": {
+           "stringValue": "user-redacted"
+          }
+         },
+         {
+          "key": "session.id",
+          "value": {
+           "stringValue": "498af117-f4f3-4c4a-9b18-5301ce03a126"
+          }
+         },
+         {
+          "key": "organization.id",
+          "value": {
+           "stringValue": "org-redacted"
+          }
+         },
+         {
+          "key": "user.email",
+          "value": {
+           "stringValue": "user@example.invalid"
+          }
+         },
+         {
+          "key": "user.account_uuid",
+          "value": {
+           "stringValue": "00000000-0000-0000-0000-000000000000"
+          }
+         },
+         {
+          "key": "user.account_id",
+          "value": {
+           "stringValue": "acct-redacted"
+          }
+         },
+         {
+          "key": "terminal.type",
+          "value": {
+           "stringValue": "tmux"
+          }
+         },
+         {
+          "key": "event.name",
+          "value": {
+           "stringValue": "assistant_response"
+          }
+         },
+         {
+          "key": "event.timestamp",
+          "value": {
+           "stringValue": "2026-10-15T18:09:01.484Z"
+          }
+         },
+         {
+          "key": "event.sequence",
+          "value": {
+           "intValue": 17
+          }
+         },
+         {
+          "key": "prompt.id",
+          "value": {
+           "stringValue": "e9697005-a000-4326-9a61-f0dd063b0a55"
+          }
+         },
+         {
+          "key": "response_length",
+          "value": {
+           "intValue": 10
+          }
+         },
+         {
+          "key": "response",
+          "value": {
+           "stringValue": "RESPONSE-MARKER"
+          }
+         },
+         {
+          "key": "request_id",
+          "value": {
+           "stringValue": "req_011Cg4UFTdXiBRjFajCVF9Kj"
+          }
+         },
+         {
+          "key": "message.uuid",
+          "value": {
+           "stringValue": "f8acea2b-6c99-4260-af95-66ce547daab9"
+          }
+         },
+         {
+          "key": "model",
+          "value": {
+           "stringValue": "claude-haiku-5-5"
+          }
+         },
+         {
+          "key": "query_source",
+          "value": {
+           "stringValue": "sdk"
+          }
+         }
+        ],
+        "droppedAttributesCount": 0
+       },
+       {
+        "timeUnixNano": "1792087741495000000",
+        "observedTimeUnixNano": "1792087741495000000",
+        "body": {
+         "stringValue": "claude_code.mcp_server_connection"
+        },
+        "attributes": [
+         {
+          "key": "user.id",
+          "value": {
+           "stringValue": "user-redacted"
+          }
+         },
+         {
+          "key": "session.id",
+          "value": {
+           "stringValue": "498af117-f4f3-4c4a-9b18-5301ce03a126"
+          }
+         },
+         {
+          "key": "organization.id",
+          "value": {
+           "stringValue": "org-redacted"
+          }
+         },
+         {
+          "key": "user.email",
+          "value": {
+           "stringValue": "user@example.invalid"
+          }
+         },
+         {
+          "key": "user.account_uuid",
+          "value": {
+           "stringValue": "00000000-0000-0000-0000-000000000000"
+          }
+         },
+         {
+          "key": "user.account_id",
+          "value": {
+           "stringValue": "acct-redacted"
+          }
+         },
+         {
+          "key": "terminal.type",
+          "value": {
+           "stringValue": "tmux"
+          }
+         },
+         {
+          "key": "event.name",
+          "value": {
+           "stringValue": "mcp_server_connection"
+          }
+         },
+         {
+          "key": "event.timestamp",
+          "value": {
+           "stringValue": "2026-10-15T18:09:01.495Z"
+          }
+         },
+         {
+          "key": "event.sequence",
+          "value": {
+           "intValue": 18
+          }
+         },
+         {
+          "key": "prompt.id",
+          "value": {
+           "stringValue": "e9697005-a000-4326-9a61-f0dd063b0a55"
+          }
+         },
+         {
+          "key": "status",
+          "value": {
+           "stringValue": "disconnected"
+          }
+         },
+         {
+          "key": "transport_type",
+          "value": {
+           "stringValue": "http"
+          }
+         },
+         {
+          "key": "server_scope",
+          "value": {
+           "stringValue": "user"
+          }
+         },
+         {
+          "key": "duration_ms",
+          "value": {
+           "stringValue": "3727"
+          }
+         },
+         {
+          "key": "is_plugin",
+          "value": {
+           "boolValue": false
+          }
+         },
+         {
+          "key": "server_name",
+          "value": {
+           "stringValue": "server-redacted"
+          }
+         }
+        ],
+        "droppedAttributesCount": 0
+       },
+       {
+        "timeUnixNano": "1792087741496000000",
+        "observedTimeUnixNano": "1792087741496000000",
+        "body": {
+         "stringValue": "claude_code.mcp_server_connection"
+        },
+        "attributes": [
+         {
+          "key": "user.id",
+          "value": {
+           "stringValue": "user-redacted"
+          }
+         },
+         {
+          "key": "session.id",
+          "value": {
+           "stringValue": "498af117-f4f3-4c4a-9b18-5301ce03a126"
+          }
+         },
+         {
+          "key": "organization.id",
+          "value": {
+           "stringValue": "org-redacted"
+          }
+         },
+         {
+          "key": "user.email",
+          "value": {
+           "stringValue": "user@example.invalid"
+          }
+         },
+         {
+          "key": "user.account_uuid",
+          "value": {
+           "stringValue": "00000000-0000-0000-0000-000000000000"
+          }
+         },
+         {
+          "key": "user.account_id",
+          "value": {
+           "stringValue": "acct-redacted"
+          }
+         },
+         {
+          "key": "terminal.type",
+          "value": {
+           "stringValue": "tmux"
+          }
+         },
+         {
+          "key": "event.name",
+          "value": {
+           "stringValue": "mcp_server_connection"
+          }
+         },
+         {
+          "key": "event.timestamp",
+          "value": {
+           "stringValue": "2026-10-15T18:09:01.496Z"
+          }
+         },
+         {
+          "key": "event.sequence",
+          "value": {
+           "intValue": 19
+          }
+         },
+         {
+          "key": "prompt.id",
+          "value": {
+           "stringValue": "e9697005-a000-4326-9a61-f0dd063b0a55"
+          }
+         },
+         {
+          "key": "status",
+          "value": {
+           "stringValue": "disconnected"
+          }
+         },
+         {
+          "key": "transport_type",
+          "value": {
+           "stringValue": "http"
+          }
+         },
+         {
+          "key": "server_scope",
+          "value": {
+           "stringValue": "user"
+          }
+         },
+         {
+          "key": "duration_ms",
+          "value": {
+           "stringValue": "4109"
+          }
+         },
+         {
+          "key": "is_plugin",
+          "value": {
+           "boolValue": false
+          }
+         },
+         {
+          "key": "server_name",
+          "value": {
+           "stringValue": "server-redacted"
+          }
+         }
+        ],
+        "droppedAttributesCount": 0
+       },
+       {
+        "timeUnixNano": "1792087741496000000",
+        "observedTimeUnixNano": "1792087741496000000",
+        "body": {
+         "stringValue": "claude_code.mcp_server_connection"
+        },
+        "attributes": [
+         {
+          "key": "user.id",
+          "value": {
+           "stringValue": "user-redacted"
+          }
+         },
+         {
+          "key": "session.id",
+          "value": {
+           "stringValue": "498af117-f4f3-4c4a-9b18-5301ce03a126"
+          }
+         },
+         {
+          "key": "organization.id",
+          "value": {
+           "stringValue": "org-redacted"
+          }
+         },
+         {
+          "key": "user.email",
+          "value": {
+           "stringValue": "user@example.invalid"
+          }
+         },
+         {
+          "key": "user.account_uuid",
+          "value": {
+           "stringValue": "00000000-0000-0000-0000-000000000000"
+          }
+         },
+         {
+          "key": "user.account_id",
+          "value": {
+           "stringValue": "acct-redacted"
+          }
+         },
+         {
+          "key": "terminal.type",
+          "value": {
+           "stringValue": "tmux"
+          }
+         },
+         {
+          "key": "event.name",
+          "value": {
+           "stringValue": "mcp_server_connection"
+          }
+         },
+         {
+          "key": "event.timestamp",
+          "value": {
+           "stringValue": "2026-10-15T18:09:01.496Z"
+          }
+         },
+         {
+          "key": "event.sequence",
+          "value": {
+           "intValue": 20
+          }
+         },
+         {
+          "key": "prompt.id",
+          "value": {
+           "stringValue": "e9697005-a000-4326-9a61-f0dd063b0a55"
+          }
+         },
+         {
+          "key": "status",
+          "value": {
+           "stringValue": "disconnected"
+          }
+         },
+         {
+          "key": "transport_type",
+          "value": {
+           "stringValue": "claudeai-proxy"
+          }
+         },
+         {
+          "key": "server_scope",
+          "value": {
+           "stringValue": "claudeai"
+          }
+         },
+         {
+          "key": "duration_ms",
+          "value": {
+           "stringValue": "3684"
+          }
+         },
+         {
+          "key": "is_plugin",
+          "value": {
+           "boolValue": false
+          }
+         },
+         {
+          "key": "server_name",
+          "value": {
+           "stringValue": "server-redacted"
+          }
+         }
+        ],
+        "droppedAttributesCount": 0
+       },
+       {
+        "timeUnixNano": "1792087741726000000",
+        "observedTimeUnixNano": "1792087741726000000",
+        "body": {
+         "stringValue": "claude_code.mcp_server_connection"
+        },
+        "attributes": [
+         {
+          "key": "user.id",
+          "value": {
+           "stringValue": "user-redacted"
+          }
+         },
+         {
+          "key": "session.id",
+          "value": {
+           "stringValue": "498af117-f4f3-4c4a-9b18-5301ce03a126"
+          }
+         },
+         {
+          "key": "organization.id",
+          "value": {
+           "stringValue": "org-redacted"
+          }
+         },
+         {
+          "key": "user.email",
+          "value": {
+           "stringValue": "user@example.invalid"
+          }
+         },
+         {
+          "key": "user.account_uuid",
+          "value": {
+           "stringValue": "00000000-0000-0000-0000-000000000000"
+          }
+         },
+         {
+          "key": "user.account_id",
+          "value": {
+           "stringValue": "acct-redacted"
+          }
+         },
+         {
+          "key": "terminal.type",
+          "value": {
+           "stringValue": "tmux"
+          }
+         },
+         {
+          "key": "event.name",
+          "value": {
+           "stringValue": "mcp_server_connection"
+          }
+         },
+         {
+          "key": "event.timestamp",
+          "value": {
+           "stringValue": "2026-10-15T18:09:01.726Z"
+          }
+         },
+         {
+          "key": "event.sequence",
+          "value": {
+           "intValue": 21
+          }
+         },
+         {
+          "key": "prompt.id",
+          "value": {
+           "stringValue": "e9697005-a000-4326-9a61-f0dd063b0a55"
+          }
+         },
+         {
+          "key": "status",
+          "value": {
+           "stringValue": "disconnected"
+          }
+         },
+         {
+          "key": "transport_type",
+          "value": {
+           "stringValue": "stdio"
+          }
+         },
+         {
+          "key": "server_scope",
+          "value": {
+           "stringValue": "user"
+          }
+         },
+         {
+          "key": "duration_ms",
+          "value": {
+           "stringValue": "3092"
+          }
+         },
+         {
+          "key": "is_plugin",
+          "value": {
+           "boolValue": false
+          }
+         },
+         {
+          "key": "server_name",
+          "value": {
+           "stringValue": "server-redacted"
+          }
+         }
+        ],
+        "droppedAttributesCount": 0
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ }
+]
