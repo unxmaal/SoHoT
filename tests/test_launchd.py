@@ -247,8 +247,30 @@ def repos(tmp_path):
     return origin, work, tmp_path / "deploy"
 
 
-def _deploy(work, deploy):
-    env = {**os.environ, "LH_REPO": str(work), "LH_DEPLOY": str(deploy)}
+FAKE_GH = """#!/bin/sh
+# run list ... --commit SHA ... | run view ID --json jobs; answers with FAKE_GH_CHECK for check-macos.
+if [ "$1 $2" = "run list" ]; then
+  while [ $# -gt 0 ]; do [ "$1" = --commit ] && sha="$2"; shift; done
+  printf '[{"databaseId":7,"status":"completed","conclusion":"%s","headSha":"%s","url":"https://example.invalid/7"}]' \
+    "$FAKE_GH_CHECK" "$sha"
+else
+  printf '{"jobs":[{"name":"check-macos","status":"completed","conclusion":"%s"}]}' "$FAKE_GH_CHECK"
+fi
+"""
+
+
+def _fake_gh(bin_):
+    bin_.mkdir(exist_ok=True)
+    (bin_ / "gh").write_text(FAKE_GH, encoding="utf-8")
+    (bin_ / "gh").chmod(0o755)
+    return bin_
+
+
+def _deploy(work, deploy, check="success", **extra):
+    bin_ = _fake_gh(work.parent / "ghbin")
+    env = {**os.environ, "PATH": f"{bin_}{os.pathsep}{os.environ['PATH']}", "LH_REPO": str(work),
+           "LH_DEPLOY": str(deploy), "FAKE_GH_CHECK": check, **extra}
+    env = {k: v for k, v in env.items() if k != "LH_DEPLOY_UNCHECKED" or k in extra}
     return subprocess.run([shells.BASH, str(GEN), "deploy"], env=env,
                           capture_output=True, text=True)
 
@@ -274,6 +296,22 @@ def test_deploy_follows_main_when_it_moves(repos):
     _git(other, "push", "-q", "origin", "HEAD:main")
     assert _deploy(work, deploy).returncode == 0
     assert (deploy / "f").read_text(encoding="utf-8") == "main 2\n"
+
+
+def test_deploy_refuses_a_main_whose_check_failed(repos):
+    origin, work, deploy = repos
+    proc = _deploy(work, deploy, check="failure")
+    assert proc.returncode != 0
+    assert "REFUSING to deploy" in proc.stderr and "LH_DEPLOY_UNCHECKED=1" in proc.stderr
+    assert not deploy.exists()
+
+
+def test_deploy_unchecked_goes_ahead_with_a_warning(repos):
+    origin, work, deploy = repos
+    proc = _deploy(work, deploy, check="failure", LH_DEPLOY_UNCHECKED="1")
+    assert proc.returncode == 0, proc.stderr
+    assert "WARNING: LH_DEPLOY_UNCHECKED=1" in proc.stderr
+    assert _git(deploy, "rev-parse", "HEAD") == _git(origin, "rev-parse", "main")
 
 
 def test_deploy_refuses_to_overwrite_edits_in_the_deploy_checkout(repos):
@@ -582,9 +620,10 @@ def test_install_reruns_as_the_deployed_script(repos):
     bin_.mkdir()
     (bin_ / "launchctl").write_text("#!/bin/sh\nexit 1\n", encoding="utf-8")
     (bin_ / "launchctl").chmod(0o755)
+    _fake_gh(bin_)
     env = {**os.environ, "PATH": f"{bin_}{os.pathsep}{os.environ['PATH']}",
            "HOME": str(work.parent / "home"), "LOCALHARNESS_HOME": str(work.parent / "lh"),
-           "LH_REPO": str(work), "LH_DEPLOY": str(deploy),
+           "LH_REPO": str(work), "LH_DEPLOY": str(deploy), "FAKE_GH_CHECK": "success",
            "LH_GPU_LOCK_HELD": "1", "LH_ROLE": "scheduler"}
     env.pop("LH_REEXECED", None)
     proc = subprocess.run([shells.BASH, str(GEN), "install"], env=env,

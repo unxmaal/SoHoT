@@ -1321,7 +1321,10 @@ a separate worktree, `$LOCALHARNESS_HOME/deploy`, and points every agent there,
 so checking out a branch here changes nothing that is serving. After a merge,
 run `install` again to deploy it; `status` names the commit the agents are
 running and the current `origin/main`. `deploy` refuses to overwrite local
-edits made inside the deploy worktree.
+edits made inside the deploy worktree, and refuses a commit until check-macos
+has passed in that commit's own push run on main (asked through `gh`), so two
+PRs that were green apart but break main together never reach the agents.
+`LH_DEPLOY_UNCHECKED=1` deploys without asking, with a warning.
 
 **Before deploying to a machine that has not deployed in a while, run
 `soh store dry-run` there from a checkout of the commit you are about to deploy.**

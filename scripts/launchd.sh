@@ -223,6 +223,8 @@ PLIST
 deploy() {
   git -C "$SRC" fetch -q origin main
   local want; want="$(git -C "$SRC" rev-parse origin/main)"
+  # Two green PRs can merge into a red main; deploy only a commit whose own push run passed. #870.
+  python3 -I "$REPO/harness/deploy_guard.py" "$want" "$SRC" || exit 1
   if [ ! -e "$DEPLOY/.git" ]; then
     git -C "$SRC" worktree add -q --detach "$DEPLOY" "$want"
   elif [ -n "$(git -C "$DEPLOY" status --porcelain --untracked-files=no)" ]; then
