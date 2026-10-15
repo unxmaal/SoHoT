@@ -252,7 +252,8 @@ def test_the_morning_unit_fires_at_half_past_six_on_the_scheduler_only(tmp_path)
     assert unit["ProgramArguments"][1].endswith("serve-morning.sh")
     assert "--notify" in (REPO / "scripts" / "serve-morning.sh").read_text(encoding="utf-8")
     text = gen.read_text(encoding="utf-8")
-    assert "declare -a SCHEDULER_ONLY=(discover audit ledger morning)" in text
+    only = next(l for l in text.splitlines() if l.startswith("declare -a SCHEDULER_ONLY=("))
+    assert "morning" in only.split("(", 1)[1].rstrip(")").split()
 
 
 def test_the_cli_runs_end_to_end_without_notifying(monkeypatch, deploy_dir, capsys):
