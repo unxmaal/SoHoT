@@ -1,0 +1,114 @@
+"""`soh morning`: one report of last night, with a notification only when something needs a person. #867."""
+from __future__ import annotations
+
+import time
+from datetime import datetime
+
+from harness.commands.common import emit, note
+
+
+def _hm(t) -> str:
+    return datetime.fromtimestamp(float(t)).strftime("%m-%d %H:%M") if t else "--"
+
+
+def _usd(v) -> str:
+    return "n/a" if v is None else f"${v:,.2f}"
+
+
+def _tally(d: dict) -> str:
+    return ", ".join(f"{k} {v}" for k, v in sorted(d.items())) or "none"
+
+
+def render(r: dict) -> list[str]:
+    """The deterministic report, one line per fact."""
+    s = r["sweep"]
+    out = [f"since {_hm(r['since'])}"]
+    loop = s.get("loop")
+    if loop is None:
+        out.append("sweep     no loop heartbeat")
+    else:
+        when = "" if loop["in_window"] else " (not last night)"
+        out.append(f"sweep     started {_hm(loop['started'])}{when}; {loop['line']}")
+    out.append(f"screened  {_tally(s['screened'])}")
+    runs = s["measured"]["runs"]
+    out.append(f"measured  {len(runs)} run(s){': ' + ', '.join(x['lane'] for x in runs) if runs else ''}; "
+               f"verdicts {_tally(s['measured']['verdicts'])}")
+    for p in s["paused"]:
+        out.append(f"paused    #{p['id']} {p['lane']} {p['challenger']} {p['state']} at {p['done']}/{p['total']} "
+                   f"({_hm(p['paused_at'])})")
+    if not s["paused"]:
+        out.append("paused    none")
+    out.append(f"stopped   {len(s['stopped'])}"
+               + "".join(f"\n          {_hm(w['at'])} {w['criterion']} on {w['subject']}: {w['outcome']}"
+                         for w in s["stopped"]))
+    adopted = s["settled"]["adopted"]
+    out.append(f"settled   {_tally(s['settled']['verdicts'])}"
+               + (f"; adopted {', '.join(a['lane'] + ' ' + a['spec'] for a in adopted)}" if adopted else ""))
+    out.append(f"watchdog  {len(r['watchdog'])} action(s)")
+    for w in r["watchdog"]:
+        flags = ("escalated " if w["escalated"] else "") + ("dry-run" if w["dry_run"] else "acted")
+        out.append(f"          {_hm(w['at'])} {w['action']:<6} {w['criterion']} on {w['subject']} [{flags}]: "
+                   f"{w['outcome']}")
+    c = r["ci"]
+    if not c.get("available"):
+        out.append(f"nightly   unavailable: {c.get('why')}")
+    else:
+        age = "" if c["fresh"] else " (not last night's)"
+        out.append(f"nightly   run {c['id']} {c['status']} {c['conclusion'] or '-'} at {_hm(c['created'])}{age} "
+                   f"on {c['sha'][:8]}")
+        for j in c["jobs"]:
+            out.append(f"          {j['conclusion'] or j['status']:<10} {j['name']}")
+    led = r["ledger"]
+    if led is None:
+        out.append("ledger    no ledger_days table")
+    elif led.get("missing"):
+        out.append(f"ledger    no row for {led['day']}")
+    else:
+        kwh = "n/a" if led["energy_kwh"] is None else f"{led['energy_kwh']:.2f} kWh"
+        out.append(f"ledger    {led['day']}: cloud {_usd(led['cloud_usd'])}, displaced {_usd(led['displaced_usd'])} "
+                   f"at {led['tier'] or '-'}, energy {kwh} (recorded {_hm(led['recorded_at'])})")
+    out.append(f"stale     {len(r['stale'])} lane(s)")
+    for t in r["stale"]:
+        out.append(f"          {t['lane']:<9} {t['candidate'][:40]} {t['skip'] or t['why']}")
+    d = r["deploy"]
+    if not d.get("available"):
+        out.append(f"deploy    unavailable: {d.get('why')}")
+    else:
+        out.append(f"deploy    {d['head'][:8]} vs origin/main {d['main'][:8]}: "
+                   + (f"{d['behind']} commit(s) behind" if d["behind"] else "current"))
+        out.extend(f"          {m}" for m in d["missing"])
+    return out
+
+
+def cmd_morning(a) -> int:
+    from harness import context_report as cr, heartbeat, morning, paths
+
+    now = time.time()
+    try:
+        since = cr.parse_when(a.since, now)
+    except ValueError as exc:
+        note(str(exc))
+        emit(False, error=str(exc))
+        return 2
+    conn = morning.snapshot()
+    try:
+        r = morning.gather(conn, now, since, beat=heartbeat.summary(), where=paths.deploy_checkout())
+    finally:
+        conn.close()
+    lines = render(r)
+    head = morning.headline(r, "\n".join(lines), ask=None if a.no_model else morning._ask)
+    r["headline"] = head
+    r["notified"] = morning.notify(r, head["text"]) if a.notify else None
+    for ln in head["text"].splitlines():
+        note(ln)
+    note(f"({'condensed by the local model' if head['by'] == 'model' else 'deterministic: ' + head['why']})\n")
+    for ln in lines:
+        note(ln)
+    if r["needs"]:
+        note("\nneeds a person:")
+        for n in r["needs"]:
+            note(f"  - {n}")
+    if r["notified"]:
+        note(r["notified"])
+    emit(**r)
+    return 0
