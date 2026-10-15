@@ -25,12 +25,12 @@ SRC="${LH_REPO:-$REPO}"
 DEPLOY="${LH_DEPLOY:-$LH_HOME/deploy}"
 # `discover` is not a server. It is the scheduled sweep, and it is in this
 # list because the thing that must survive a reboot is the SCHEDULE. #261.
-SERVICES="gateway mlx eval tts mcp discover worker audit ds4 watchdog energy ledger morning"
+SERVICES="gateway mlx eval tts mcp discover worker audit ds4 watchdog energy ledger morning claude-news"
 
 #: Services that RUN AND EXIT rather than serve, at fixed local hours. KeepAlive
 #: would rerun a finished sweep at once; StartInterval counts from load, so a day
 #: of installs never lets it fire (#625). harness/heartbeat reads the installed hours (#705).
-declare -a PERIODIC=(discover audit watchdog energy ledger morning)
+declare -a PERIODIC=(discover audit watchdog energy ledger morning claude-news)
 DISCOVER_HOURS="${DISCOVER_HOURS:-21}"
 AUDIT_HOURS="${AUDIT_HOURS:-3}"                   # nightly, #492
 # The watchdog watches this machine's own jobs, so every role runs it. #814.
@@ -42,8 +42,11 @@ LEDGER_HOURS="${LEDGER_HOURS:-23}"
 # The morning report, before Eric's day starts; it notifies only when something needs a person. #867.
 MORNING_HOURS="${MORNING_HOURS:-6}"
 MORNING_MINUTE="${MORNING_MINUTE:-30}"
+# Claude Code changelog digest, weekly: launchd Weekday 1 is Monday. #866.
+CLAUDE_NEWS_WEEKDAY="${CLAUDE_NEWS_WEEKDAY:-1}"
+CLAUDE_NEWS_HOUR="${CLAUDE_NEWS_HOUR:-9}"
 # Periodic jobs that read or write the shared store: only the scheduler runs them. #703.
-declare -a SCHEDULER_ONLY=(discover audit ledger morning)
+declare -a SCHEDULER_ONLY=(discover audit ledger morning claude-news)
 # Machines sharing one store run the periodic jobs on one of them: scheduler, or node for the rest. #703.
 # A role given once is kept in $LH_HOME/role, so a later plain `make install` keeps it.
 ROLE_FILE="$LH_HOME/role"
@@ -154,6 +157,13 @@ _schedule() {
       for m in $(seq 0 "$every" 59); do
         printf '    <dict><key>Minute</key><integer>%s</integer></dict>\n' "$m"
       done
+      printf '  </array>\n'
+      return
+    fi
+    if [ "$p" = "$service" ] && [ "$service" = claude-news ]; then
+      printf '  <key>StartCalendarInterval</key>\n  <array>\n'
+      printf '    <dict><key>Weekday</key><integer>%s</integer><key>Hour</key><integer>%s</integer><key>Minute</key><integer>0</integer></dict>\n' \
+        "$CLAUDE_NEWS_WEEKDAY" "$CLAUDE_NEWS_HOUR"
       printf '  </array>\n'
       return
     fi

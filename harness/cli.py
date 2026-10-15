@@ -47,6 +47,7 @@ from harness.commands import headless as headless_cmd
 from harness.commands import ledger as ledger_cmd
 from harness.commands import morning as morning_cmd
 from harness.commands import usage as usage_cmd
+from harness.commands import claude_news as claude_news_cmd
 from harness.commands import delegated as delegated_cmd
 from harness.commands import volume as volume_cmd
 
@@ -483,6 +484,15 @@ def build_parser() -> argparse.ArgumentParser:
     use.add_argument("--text", choices=("on", "off"), default="",
                      help="keep bounded prompt and completion text samples (off by default)")
     use.set_defaults(func=usage_cmd.cmd_usage)
+    cn = sub.add_parser("claude-news", help="Claude Code changelog entries newer than the last "
+                        "version seen, relevant to this setup first (#866)")
+    cn.add_argument("--since", default="", help="digest versions above this one instead of the recorded one")
+    cn.add_argument("--changelog", default="", help="read this CHANGELOG.md instead of fetching it")
+    cn.add_argument("--settings", default="", help="settings.json to compare (default ~/.claude/settings.json)")
+    cn.add_argument("--no-record", action="store_true", help="leave the recorded last-seen version as it is")
+    cn.add_argument("--notify", action="store_true",
+                    help="desktop notification when any new entry is relevant")
+    cn.set_defaults(func=claude_news_cmd.cmd_claude_news)
     ctx = sub.add_parser("context", help="tool-result tokens entering Claude's context, "
                          "per tool or day, from Claude Code transcripts (chars/4 estimate)")
     ctx.add_argument("--since", default="7d", help="7d, 12h, or a date such as 2026-10-06")
