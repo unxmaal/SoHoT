@@ -1,0 +1,20 @@
+{
+  "state": "running",
+  "why": "",
+  "done": 21,
+  "total": 270,
+  "specs": {
+    "llamacpp:Ornith-1.5-35B-Q4_K_M": "llamacpp:Ornith-1.5-35B-Q4_K_M",
+    "LiquidAI/LFM2.5-2.6B": "LiquidAI/LFM2.5-2.6B"
+  },
+  "planned_s_per_case": {
+    "llamacpp:Ornith-1.5-35B-Q4_K_M": 57.13,
+    "LiquidAI/LFM2.5-2.6B": 32.65
+  },
+  "observed_s_per_case": {
+    "llamacpp:Ornith-1.5-35B-Q4_K_M": 50.41010730916803,
+    "LiquidAI/LFM2.5-2.6B": 83.7041889667511
+  },
+  "started_at": 1792035903.3479948,
+  "last_progress_at": 1792037298.4328792
+}

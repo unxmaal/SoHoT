@@ -31,6 +31,8 @@ LONG_RUN_DAY_S = 2 * 3600.0
 OVERRUN_FACTOR = 2.0
 #: Cases a run must have finished before its observed rate is judged against the plan.
 OVERRUN_MIN_CASES = 3
+#: Cases both candidates of a paired run must have finished before the challenger is judged against the incumbent (#864).
+OVERRUN_MIN_PAIRS = 5
 #: No case finished for this long reads as wedged, or this many planned cases if that is longer.
 STALL_S = 1800.0
 STALL_CASES = 10
@@ -432,6 +434,47 @@ def _long_run(w: World) -> list[Finding]:
             for s in w.top if s.elapsed_s is not None and s.elapsed_s > limit and not s.orphan]
 
 
+def _cells(run: dict):
+    """(incumbent key, {key: {case: [wall_s, reply tokens or None, rows]}}) from a paired run's checkpoint, else None. #864."""
+    from evals.watch import read
+    got = read(run["_dir"]) if run.get("_dir") else None
+    if not got:
+        return None
+    ident, rows = got
+    key_of = {spec: key for key, spec in (run.get("specs") or {}).items()}
+    order = [key_of.get(c, c) for c in ident.get("candidates") or []]
+    if len(order) < 2:
+        return None
+    budget = ident.get("max_tokens")
+    by: dict = {}
+    for r in rows:
+        if r.get("candidate") is None or r.get("case_id") is None:
+            continue
+        toks = (r.get("metrics") or {}).get("completion_tokens")
+        if not toks and r.get("failure_class") == "token_budget_exhausted":
+            toks = budget
+        cell = by.setdefault(r["candidate"], {}).setdefault(r["case_id"], [0.0, 0, 0])
+        cell[0] += float(r.get("wall_s") or r.get("seconds") or 0.0)
+        cell[1] = cell[1] + toks if toks and cell[1] is not None else None
+        cell[2] += 1
+    return order[0], by
+
+
+def _paired(by: dict, inc: str, ch: str):
+    """(observed challenger/incumbent ratio, basis, pairs) on the cases both finished, or None below the minimum. #864."""
+    mine, theirs = by.get(ch) or {}, by.get(inc) or {}
+    pairs = [c for c in mine if c in theirs and mine[c][2] == theirs[c][2]]
+    tok = [c for c in pairs if mine[c][1] and theirs[c][1]]
+    if len(tok) >= OVERRUN_MIN_PAIRS:
+        a, at = sum(mine[c][0] for c in tok), sum(mine[c][1] for c in tok)
+        b, bt = sum(theirs[c][0] for c in tok), sum(theirs[c][1] for c in tok)
+        return ((a / at) / (b / bt) if b else None), "seconds per reply token", len(tok)
+    if len(pairs) >= OVERRUN_MIN_PAIRS:
+        b = sum(theirs[c][0] for c in pairs)
+        return (sum(mine[c][0] for c in pairs) / b if b else None), "seconds", len(pairs)
+    return None
+
+
 def _overrun(w: World) -> list[Finding]:
     out = []
     for s in w.evals:
@@ -439,14 +482,31 @@ def _overrun(w: World) -> list[Finding]:
         if int(run.get("done") or 0) < OVERRUN_MIN_CASES:
             continue
         planned, seen = run.get("planned_s_per_case") or {}, run.get("observed_s_per_case") or {}
-        worst = [(k, seen[k], planned[k]) for k in seen
-                 if seen.get(k) and planned.get(k) and seen[k] > OVERRUN_FACTOR * planned[k]]
+        cells = _cells(run)
+        worst = []
+        for k in seen:
+            if not (seen.get(k) and planned.get(k)):
+                continue
+            if cells is None or k == cells[0] or k not in cells[1]:
+                if seen[k] > OVERRUN_FACTOR * planned[k]:
+                    worst.append((seen[k] / planned[k], k, {}))
+                continue
+            # A challenger is judged against the incumbent on the same cases, not its plan's mean: case time is heavy-tailed. #864.
+            inc = cells[0]
+            got = _paired(cells[1], inc, k) if planned.get(inc) else None
+            if got is None or got[0] is None:
+                continue
+            ratio, basis, n = got
+            expected = planned[k] / planned[inc]
+            if ratio > OVERRUN_FACTOR * expected:
+                worst.append((ratio / expected, k, {"observed_ratio": round(ratio, 3), "planned_ratio": round(expected, 3),
+                                                    "basis": basis, "paired": n, "against": inc}))
         if worst:
-            k, o, p = max(worst, key=lambda x: x[1] / x[2])
-            out.append(Finding("overrun", s, {"candidate": k, "observed_s_per_case": round(o, 2),
-                                              "planned_s_per_case": round(p, 2), "factor": OVERRUN_FACTOR,
+            _, k, extra = max(worst, key=lambda x: x[0])
+            out.append(Finding("overrun", s, {"candidate": k, "observed_s_per_case": round(seen[k], 2),
+                                              "planned_s_per_case": round(planned[k], 2), "factor": OVERRUN_FACTOR,
                                               "done": run.get("done"), "total": run.get("total"),
-                                              "specs": run.get("specs")}))
+                                              "specs": run.get("specs"), **extra}))
     return out
 
 
@@ -542,8 +602,9 @@ class Criterion:
 CRITERIA = (
     Criterion("long_run", ("watchdog_long_run", "watchdog_long_run_day"), NOTIFY, PAUSE, ("processes",),
               _long_run, "has run a long time (tighter during the day)"),
-    Criterion("overrun", ("watchdog_overrun_factor", "watchdog_overrun_min_cases"), FILE, STOP,
-              ("processes", "progress"), _overrun, "observed s/case far over the plan's: a suspected defect"),
+    Criterion("overrun", ("watchdog_overrun_factor", "watchdog_overrun_min_cases", "watchdog_overrun_min_pairs"), FILE, STOP,
+              ("processes", "progress"), _overrun,
+              "observed s/case far over the plan's, or a challenger far slower than planned on the incumbent's cases"),
     Criterion("no_progress", ("watchdog_stall", "watchdog_stall_cases"), NOTIFY, STOP, ("processes", "progress"),
               _no_progress, "no case finished for too long: wedged"),
     Criterion("orphan", ("watchdog_orphan_grace",), REAP, FILE, ("processes",), _orphan,
