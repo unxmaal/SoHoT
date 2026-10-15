@@ -662,8 +662,9 @@ def fingerprint(f: Finding) -> str:
     return hashlib.sha256(f"{f.criterion}|{s.kind}|{what}".encode()).hexdigest()[:16]
 
 
-def desktop(title: str, message: str, subtitle: str = "", run=subprocess.run, platform: str = sys.platform) -> str:
+def desktop(title: str, message: str, subtitle: str = "", run=subprocess.run, platform: str | None = None) -> str:
     """One macOS desktop notification through osascript; the outcome string. #818, #867."""
+    platform = platform or sys.platform
     if platform != "darwin":
         return (f"notify unavailable: no desktop notifier on {platform} (macOS osascript only); "
                 "the row and the log line are the notice")

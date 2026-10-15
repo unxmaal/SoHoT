@@ -37,6 +37,12 @@ SETTINGS = {"hooks": {"PreToolUse": [], "Stop": []}, "statusLine": {"type": "com
             "enabledPlugins": {"gauntlet@local": True, "off@x": False}, "model": "opus"}
 
 
+
+@pytest.fixture(autouse=True)
+def _macos(monkeypatch):
+    from harness import watchdog
+    monkeypatch.setattr(watchdog.sys, "platform", "darwin")
+
 class Runner:
     """Fake subprocess.run: `claude --version` answers, osascript is recorded."""
 
