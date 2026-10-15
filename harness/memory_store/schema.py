@@ -4,7 +4,7 @@ from __future__ import annotations
 from harness import store
 
 
-SCHEMA_VERSION = 71
+SCHEMA_VERSION = 72
 
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
@@ -516,6 +516,52 @@ CREATE TABLE IF NOT EXISTS ledger_days (
     energy_kwh    REAL,
     -- JSON: the day as `soh ledger --json` gives it.
     detail        TEXT NOT NULL DEFAULT '{}'
+);
+
+-- Claude Code's OTLP metrics, one row per data point. #868.
+CREATE TABLE IF NOT EXISTS otel_metrics (
+    id           INTEGER PRIMARY KEY,
+    -- A retried export repeats the key and adds nothing.
+    key          TEXT NOT NULL UNIQUE,
+    series       TEXT NOT NULL DEFAULT '',
+    received_at  REAL NOT NULL,
+    at           REAL NOT NULL,
+    session_id   TEXT NOT NULL DEFAULT '',
+    name         TEXT NOT NULL,
+    unit         TEXT NOT NULL DEFAULT '',
+    temporality  TEXT NOT NULL DEFAULT '',
+    value        REAL NOT NULL,
+    type         TEXT NOT NULL DEFAULT '',
+    model        TEXT NOT NULL DEFAULT '',
+    query_source TEXT NOT NULL DEFAULT '',
+    tool         TEXT NOT NULL DEFAULT '',
+    attrs        TEXT NOT NULL DEFAULT '{}'
+);
+
+-- Claude Code's OTLP events (api_request, tool_result, ...), content attributes dropped. #868.
+CREATE TABLE IF NOT EXISTS otel_events (
+    id                    INTEGER PRIMARY KEY,
+    key                   TEXT NOT NULL UNIQUE,
+    received_at           REAL NOT NULL,
+    at                    REAL NOT NULL,
+    session_id            TEXT NOT NULL DEFAULT '',
+    prompt_id             TEXT NOT NULL DEFAULT '',
+    name                  TEXT NOT NULL,
+    tool                  TEXT NOT NULL DEFAULT '',
+    model                 TEXT NOT NULL DEFAULT '',
+    query_source          TEXT NOT NULL DEFAULT '',
+    success               INTEGER,
+    duration_ms           REAL,
+    input_tokens          REAL,
+    output_tokens         REAL,
+    cache_read_tokens     REAL,
+    cache_creation_tokens REAL,
+    -- The 5-minute and 1-hour shares of cache_creation_tokens, which the export carries undocumented.
+    cache_creation_5m_tokens REAL,
+    cache_creation_1h_tokens REAL,
+    cost_usd              REAL,
+    result_bytes          REAL,
+    attrs                 TEXT NOT NULL DEFAULT '{}'
 );
 
 -- Weights on disk, one row per fetched or found path on one machine. #411.

@@ -46,6 +46,7 @@ from harness.commands import store as store_cmd
 from harness.commands import headless as headless_cmd
 from harness.commands import ledger as ledger_cmd
 from harness.commands import morning as morning_cmd
+from harness.commands import otel as otel_cmd
 from harness.commands import usage as usage_cmd
 from harness.commands import claude_news as claude_news_cmd
 from harness.commands import delegated as delegated_cmd
@@ -497,7 +498,11 @@ def build_parser() -> argparse.ArgumentParser:
                          "per tool or day, from Claude Code transcripts (chars/4 estimate)")
     ctx.add_argument("--since", default="7d", help="7d, 12h, or a date such as 2026-10-06")
     ctx.add_argument("--until", default="", help="same forms as --since; default now")
-    ctx.add_argument("--by", choices=("tool", "day"), default="tool")
+    ctx.add_argument("--by", choices=("tool", "day", "category"), default="tool")
+    ctx.add_argument("--source", choices=("transcripts", "otel"), default="transcripts",
+                     help="transcripts (chars/4) or the OTel tool_result rows (bytes/4), #868")
+    ctx.add_argument("--label", choices=("table", "local"), default="table",
+                     help="--by category: the fixed table, or the decide lane for tools it does not name")
     ctx.add_argument("--main-only", action="store_true", help="leave out subagent transcripts")
     ctx.add_argument("--root", default="",
                      help="transcript root (default $SOH_CLAUDE_PROJECTS or ~/.claude/projects)")
@@ -510,6 +515,8 @@ def build_parser() -> argparse.ArgumentParser:
     led.add_argument("--tariff", type=float, default=None,
                      help="USD per kWh (default: knob ledger_tariff)")
     led.add_argument("--record", action="store_true", help="upsert each day into ledger_days")
+    led.add_argument("--compare", default="", metavar="DAY",
+                     help="one day side by side: OTel events, OTel metrics, ccusage, transcripts (#868)")
     led.add_argument("--sample-power", action="store_true",
                      help="append one macmon reading to the power log and exit (the energy unit)")
     led.set_defaults(func=ledger_cmd.cmd_ledger)
@@ -522,6 +529,7 @@ def build_parser() -> argparse.ArgumentParser:
                      help="deterministic headline; do not ask the local model to condense it")
     mor.set_defaults(func=morning_cmd.cmd_morning)
     headless_cmd.add_parser(sub)
+    otel_cmd.add_parser(sub)
     dlg = sub.add_parser("delegated", help="record what became of a local_complete or "
                          "local_decide answer, or --report the rates per lane")
     dlg.add_argument("call_id", nargs="?", default="", help="the call_id the delegation returned")

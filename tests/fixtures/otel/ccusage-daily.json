@@ -1,0 +1,31 @@
+{
+ "daily": [
+  {
+   "period": "2026-10-14",
+   "inputTokens": 150,
+   "outputTokens": 50,
+   "cacheCreationTokens": 400,
+   "cacheReadTokens": 1000,
+   "totalCost": 0.4,
+   "modelBreakdowns": [
+    {
+     "modelName": "claude-opus-5-5",
+     "inputTokens": 100,
+     "outputTokens": 20,
+     "cacheCreationTokens": 0,
+     "cacheReadTokens": 1000,
+     "cost": 0.12
+    },
+    {
+     "modelName": "claude-sonnet-5-5",
+     "inputTokens": 50,
+     "outputTokens": 30,
+     "cacheCreationTokens": 400,
+     "cacheReadTokens": 0,
+     "cost": 0.28
+    }
+   ]
+  }
+ ],
+ "totals": {}
+}
