@@ -290,7 +290,7 @@ def test_soh_gateway_key_rotate_replaces_it(capsys, monkeypatch):
 
 # --- smoke.sh ----------------------------------------------------------------
 
-def _smoke(env_extra: dict, tmp_path):
+def _smoke(env_extra: dict, tmp_path, cwd=REPO, script="scripts/smoke.sh"):
     from tests.shells import BASH
     import shutil
     if not BASH or not shutil.which("curl"):
@@ -300,7 +300,7 @@ def _smoke(env_extra: dict, tmp_path):
            "MLX_PORT": "9", "TTS_PORT": "9", **env_extra}
     if "SOHOT_GATEWAY_KEY" not in env_extra:
         env.pop("SOHOT_GATEWAY_KEY", None)
-    return subprocess.run([BASH, "scripts/smoke.sh"], cwd=REPO, env=env,
+    return subprocess.run([BASH, str(script)], cwd=cwd, env=env,
                            capture_output=True, text=True, encoding="utf-8",
                            timeout=120)
 
@@ -331,6 +331,19 @@ def test_smoke_fails_when_the_decide_alias_refuses_a_schema(tmp_path):
         g.shutdown()
     assert r.returncode != 0
     assert "FAIL  sohot-decide" in r.stdout
+
+
+def test_smoke_finds_the_stored_key_when_run_from_outside_the_checkout(gateway, tmp_path):
+    """Deploys run smoke by absolute path from anywhere. #875."""
+    (tmp_path / "gateway.key").write_text("sk-stored\n", encoding="utf-8")
+    elsewhere = tmp_path / "elsewhere"
+    elsewhere.mkdir()
+    # As from Eric's shell: no project venv on PATH, so uv resolves the project from the cwd.
+    path = os.pathsep.join(p for p in os.environ.get("PATH", "").split(os.pathsep)
+                           if ".venv" not in p)
+    _smoke({"GATEWAY_PORT": str(gateway.server_address[1]), "VIRTUAL_ENV": "", "PATH": path}, tmp_path,
+           cwd=elsewhere, script=REPO / "scripts" / "smoke.sh")
+    assert "Bearer sk-stored" in gateway.seen
 
 
 def test_smoke_without_a_key_says_where_to_get_one(tmp_path):

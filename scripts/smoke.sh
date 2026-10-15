@@ -2,6 +2,8 @@
 # Asserts the behaviours the architecture depends on. Run after any
 # mlx-lm or litellm upgrade. Non-zero exit means the seam broke.
 set -uo pipefail
+# uv and `python -m harness...` resolve from the cwd; deploys run this by absolute path. #875.
+cd "$(dirname "$0")/.." || exit 1
 # SMOKE_HOST so this can be run against another machine: when the Studio serves
 # and the Apple Silicon machine is a client, the seam to check is the Studio's.
 H="${SMOKE_HOST:-127.0.0.1}"
