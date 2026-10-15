@@ -662,6 +662,25 @@ def fingerprint(f: Finding) -> str:
     return hashlib.sha256(f"{f.criterion}|{s.kind}|{what}".encode()).hexdigest()[:16]
 
 
+def desktop(title: str, message: str, subtitle: str, run=subprocess.run, platform: str = sys.platform) -> str:
+    """One macOS desktop notification through osascript; the outcome string. #818, #867."""
+    if platform != "darwin":
+        return (f"notify unavailable: no desktop notifier on {platform} (macOS osascript only); "
+                "the row and the log line are the notice")
+    message = message[:200]
+    # argv, not string interpolation, so a command line in the subject cannot break the AppleScript.
+    script = ["osascript", "-e", "on run argv", "-e",
+              "display notification (item 2 of argv) with title (item 1 of argv) subtitle (item 3 of argv)",
+              "-e", "end run", title, message, subtitle[:120]]
+    try:
+        got = run(script, capture_output=True, text=True, timeout=NOTIFY_TIMEOUT_S)
+    except (OSError, subprocess.SubprocessError) as exc:
+        return f"notify failed: {exc}"
+    if got.returncode != 0:
+        return f"notify failed: osascript rc {got.returncode}: {(got.stderr or '').strip()[:200]}"
+    return f"{NOTIFIED}: {message}"
+
+
 class Hands:
     """The fixed action set. Each returns an outcome string for the store row."""
 
@@ -677,21 +696,8 @@ class Hands:
         return "noted"
 
     def notify(self, f: Finding) -> str:
-        if self.platform != "darwin":
-            return (f"notify unavailable: no desktop notifier on {self.platform} (macOS osascript only); "
-                    "the row and the log line are the notice")
-        message = f"{f.criterion}: {f.subject.key}"[:200]
-        # argv, not string interpolation, so a command line in the subject cannot break the AppleScript.
-        script = ["osascript", "-e", "on run argv", "-e",
-                  "display notification (item 2 of argv) with title (item 1 of argv) subtitle (item 3 of argv)",
-                  "-e", "end run", NOTIFY_TITLE, message, BY_ID[f.criterion].what[:120]]
-        try:
-            got = self.run(script, capture_output=True, text=True, timeout=NOTIFY_TIMEOUT_S)
-        except (OSError, subprocess.SubprocessError) as exc:
-            return f"notify failed: {exc}"
-        if got.returncode != 0:
-            return f"notify failed: osascript rc {got.returncode}: {(got.stderr or '').strip()[:200]}"
-        return f"{NOTIFIED}: {message}"
+        return desktop(NOTIFY_TITLE, f"{f.criterion}: {f.subject.key}", BY_ID[f.criterion].what,
+                       run=self.run, platform=self.platform)
 
     def file(self, f: Finding) -> str:
         if self.environ.get(FILE_ENV, "") != "1":

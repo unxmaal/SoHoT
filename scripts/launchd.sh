@@ -25,12 +25,12 @@ SRC="${LH_REPO:-$REPO}"
 DEPLOY="${LH_DEPLOY:-$LH_HOME/deploy}"
 # `discover` is not a server. It is the scheduled sweep, and it is in this
 # list because the thing that must survive a reboot is the SCHEDULE. #261.
-SERVICES="gateway mlx eval tts mcp discover worker audit ds4 watchdog energy ledger"
+SERVICES="gateway mlx eval tts mcp discover worker audit ds4 watchdog energy ledger morning"
 
 #: Services that RUN AND EXIT rather than serve, at fixed local hours. KeepAlive
 #: would rerun a finished sweep at once; StartInterval counts from load, so a day
 #: of installs never lets it fire (#625). harness/heartbeat reads the installed hours (#705).
-declare -a PERIODIC=(discover audit watchdog energy ledger)
+declare -a PERIODIC=(discover audit watchdog energy ledger morning)
 DISCOVER_HOURS="${DISCOVER_HOURS:-21}"
 AUDIT_HOURS="${AUDIT_HOURS:-3}"                   # nightly, #492
 # The watchdog watches this machine's own jobs, so every role runs it. #814.
@@ -39,8 +39,11 @@ WATCHDOG_EVERY_MIN="${WATCHDOG_EVERY_MIN:-5}"
 ENERGY_EVERY_MIN="${ENERGY_EVERY_MIN:-1}"
 # The day's ledger row, written late each evening and rewritten the next. #826.
 LEDGER_HOURS="${LEDGER_HOURS:-23}"
+# The morning report, before Eric's day starts; it notifies only when something needs a person. #867.
+MORNING_HOURS="${MORNING_HOURS:-6}"
+MORNING_MINUTE="${MORNING_MINUTE:-30}"
 # Periodic jobs that read or write the shared store: only the scheduler runs them. #703.
-declare -a SCHEDULER_ONLY=(discover audit ledger)
+declare -a SCHEDULER_ONLY=(discover audit ledger morning)
 # Machines sharing one store run the periodic jobs on one of them: scheduler, or node for the rest. #703.
 # A role given once is kept in $LH_HOME/role, so a later plain `make install` keeps it.
 ROLE_FILE="$LH_HOME/role"
@@ -156,12 +159,13 @@ _schedule() {
     fi
     if [ "$p" = "$service" ]; then
       # No RunAtLoad: an install is not a schedule tick (#328).
-      local hours="$DISCOVER_HOURS" h
+      local hours="$DISCOVER_HOURS" minute=0 h
       [ "$service" = audit ] && hours="$AUDIT_HOURS"
       [ "$service" = ledger ] && hours="$LEDGER_HOURS"
+      [ "$service" = morning ] && hours="$MORNING_HOURS" && minute="$MORNING_MINUTE"
       printf '  <key>StartCalendarInterval</key>\n  <array>\n'
       for h in $hours; do
-        printf '    <dict><key>Hour</key><integer>%s</integer><key>Minute</key><integer>0</integer></dict>\n' "$h"
+        printf '    <dict><key>Hour</key><integer>%s</integer><key>Minute</key><integer>%s</integer></dict>\n' "$h" "$minute"
       done
       printf '  </array>\n'
       return

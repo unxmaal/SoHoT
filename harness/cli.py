@@ -45,6 +45,7 @@ from harness.commands import screen as screen_cmd
 from harness.commands import store as store_cmd
 from harness.commands import headless as headless_cmd
 from harness.commands import ledger as ledger_cmd
+from harness.commands import morning as morning_cmd
 from harness.commands import usage as usage_cmd
 from harness.commands import delegated as delegated_cmd
 from harness.commands import volume as volume_cmd
@@ -502,6 +503,14 @@ def build_parser() -> argparse.ArgumentParser:
     led.add_argument("--sample-power", action="store_true",
                      help="append one macmon reading to the power log and exit (the energy unit)")
     led.set_defaults(func=ledger_cmd.cmd_ledger)
+    mor = sub.add_parser("morning", help="last night in one report: sweep, watchdog, nightly CI, ledger row, "
+                         "stale lanes and deploy; --notify only when something needs a person")
+    mor.add_argument("--since", default="18h", help="window: 18h, or a date such as 2026-10-14T20:00")
+    mor.add_argument("--notify", action="store_true",
+                     help="desktop notification when something needs a person (the morning unit)")
+    mor.add_argument("--no-model", action="store_true",
+                     help="deterministic headline; do not ask the local model to condense it")
+    mor.set_defaults(func=morning_cmd.cmd_morning)
     headless_cmd.add_parser(sub)
     dlg = sub.add_parser("delegated", help="record what became of a local_complete or "
                          "local_decide answer, or --report the rates per lane")
@@ -732,6 +741,7 @@ VERB_PURPOSE = {
     **dict.fromkeys(("rubric", "throughput", "judge", "adopt", "verify", "reverify",
                      "sensitivity", "gauntlet", "chaos"), "eval"),
     "watchdog": "watchdog",
+    "morning": "watchdog",
 }
 
 
