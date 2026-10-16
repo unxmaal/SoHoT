@@ -4,7 +4,6 @@ from __future__ import annotations
 import argparse
 import json
 import re
-import shutil
 import subprocess
 import sys
 import time
@@ -167,7 +166,7 @@ def _pytest(task: Path, python: Path, args, log, timeout) -> int | str:
 
 def outcomes(task: Path, python: Path, files, log, timeout=TIMEOUT_S) -> dict | str:
     """{"outcomes": junit key -> outcome, "seconds": s} of one sandboxed run, or a drop reason."""
-    report = task / ".grade" / "survey.xml"
+    report = task / repo.HARNESS_DIR / "survey.xml"
     report.parent.mkdir(parents=True, exist_ok=True)
     report.unlink(missing_ok=True)
     t0 = time.perf_counter()
@@ -225,8 +224,6 @@ def probe(mirror: Path, c: dict, log, timeout=TIMEOUT_S, runs=RUNS, env=None) ->
         applied, _ = repo.apply(task, repo.reference_diff(mirror, c["base"], c["fix"]))
         if not applied:
             return {"drop": "reference_unappliable"}
-        # install_tests reads untracked files, and pytest's basetemp under .grade holds test_* dirs.
-        shutil.rmtree(task / ".grade", ignore_errors=True)
         repo.install_tests(mirror, task, c["base"], c["fix"])
         fix_runs = [outcomes(task, python, files, log, timeout) for _ in range(runs)]
         bad = next((r for r in [*base_runs, *fix_runs] if isinstance(r, str)), None)
