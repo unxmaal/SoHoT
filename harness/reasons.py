@@ -47,6 +47,10 @@ CONTENT_FAILED = "content_failed"
 RUNAWAY = "runaway"
 #: An abort inside Apple's MPS backend (LLVM ERROR on an mps op, MPSGraph assertion). #604.
 BACKEND_FAULT = "backend_fault"
+#: A repo-lane reply whose diff git cannot apply: the candidate's own failure. #887.
+INVALID_PATCH = "invalid_patch"
+#: The repo lane's mirror, checkout or environment could not be built; the model never ran. #887.
+ENVIRONMENT_ERROR = "environment_error"
 
 #: A verdict's class, not a row's: the adopt gate lacked the power to see the effect. #479.
 UNDERPOWERED = "underpowered"
@@ -59,6 +63,7 @@ CLASSES = {
     GPU_FAULT: ("declined", MACHINE),
     REFUSED_BY_GATEWAY: ("queued", HARNESS),
     HARNESS_ERROR: ("queued", HARNESS),
+    ENVIRONMENT_ERROR: ("queued", HARNESS),
     POOL_FULL: ("queued", LIMIT),
     TIMEOUT: ("declined", LIMIT),
     TOKEN_BUDGET_EXHAUSTED: ("declined", LIMIT),
@@ -70,6 +75,7 @@ CLASSES = {
     MISSING_FILE_IN_SNAPSHOT: ("broken", CANDIDATE),
     CRASHED: ("broken", CANDIDATE),
     CONTENT_FAILED: ("broken", CANDIDATE),
+    INVALID_PATCH: ("broken", CANDIDATE),
     RUNAWAY: ("broken", CANDIDATE),
 }
 

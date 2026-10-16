@@ -97,6 +97,9 @@ SYSTEM = {
     "decide": ("You answer with a single JSON object and nothing else. No "
                "prose, no markdown fences, no explanation. Each key is a field "
                "name and each value is the letter of one allowed choice."),
+    # One single-attempt patch against a real repository, applied with git apply. #887.
+    "repo": ("You fix issues in a software repository. You output one unified diff that git "
+             "apply accepts, with a/ and b/ paths from the repository root, and nothing else."),
 }
 NEUTRAL_SYSTEM = "Answer directly and concisely."
 
@@ -149,7 +152,7 @@ LOAD_TIMEOUT_S = 1800.0
 
 #: Eval reply budget per lane; code serves a reasoning model, sized at Qwen3's documented output length. #628.
 BUDGET = {"svg": MAX_TOKENS, "web": MAX_TOKENS, "code": 32768, "extract": MAX_TOKENS,
-          "decide": MAX_TOKENS, "agent": 8000, "claims": 400}
+          "decide": MAX_TOKENS, "agent": 8000, "claims": 400, "repo": 32768}
 #: The slowest decode a budget's timeout allows for, tokens per second. #628.
 MIN_DECODE_TOK_S = 25.0
 
@@ -157,7 +160,7 @@ MIN_DECODE_TOK_S = 25.0
 #: Budgets a laddered eval retries a cut-off reply at, smallest first. #668.
 LADDER = {"svg": (4000, 16000), "web": (4000, 16000), "code": (4000, 16000, 32000, 65536),
           "extract": (4000, 16000), "decide": (4000, 16000), "agent": (8000, 32000),
-          "claims": (400, 1600)}
+          "claims": (400, 1600), "repo": (32768, 65536)}
 
 
 def ladder(lane: str) -> tuple:

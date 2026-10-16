@@ -116,7 +116,8 @@ WHY = {
 #: These lanes are covered through the text-served path instead.
 #: `agent` likewise: no HF task names a tool-using agent, text-generation lands in code. #474.
 #: `claims` too: its candidates are instruct GGUFs, which a card files under code. #654.
-SERVED_NOT_SIGHTED = ("web", "extract", "agent", "claims")
+#: `repo` too: a diff against a commit is asked of the same text model a card files under code. #887.
+SERVED_NOT_SIGHTED = ("web", "extract", "agent", "claims", "repo")
 
 
 def card(model_id: str) -> dict:
