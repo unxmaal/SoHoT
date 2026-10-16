@@ -315,6 +315,9 @@ def build_parser() -> argparse.ArgumentParser:
                         "graph unread")
     d.add_argument("--benchmarks", action="store_true",
                    help="sweep the registries for benchmark sources per lane (#491)")
+    d.add_argument("--quants", action="store_true",
+                   help="follow bases too big or unloadable here, and the incumbents' "
+                        "families and compared models, to quantized repos that fit (#882)")
     d.add_argument("--papers", action="store_true",
                    help="read HuggingFace daily papers; each is a technique for a lane (#576)")
     d.add_argument("--feeds", action="store_true",
