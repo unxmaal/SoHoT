@@ -9,7 +9,7 @@ import re
 from harness import memory_store as ms
 
 from harness.memory_store.machines import recorded_facts, remember_machine
-from harness.memory_store.schema import TERMINAL
+from harness.memory_store.schema import INSPECT, TERMINAL, _columns
 from harness.memory_store.transitions import retract
 
 
@@ -176,6 +176,38 @@ def requeue_revisitable(conn, facts: dict | None = None) -> list[str]:
     names = []
     for r in revisitable(conn, facts):
         retract(conn, r["name"], f"{r['until']} is met here")
+        names.append(r["name"])
+    conn.commit()
+    return names
+
+
+#: A recorded ceiling this far under the current one is a different machine's answer. #880.
+STALE_CEILING_GB = 1.0
+
+
+def stale_too_big(conn, ceiling_gb: float) -> list[dict]:
+    """Too-big inspect refusals judged against a ceiling below `ceiling_gb`, whose size this ceiling re-asks. #880."""
+    from harness import reasons
+    if "ceiling_gb" not in _columns(conn, "verdicts"):
+        return []
+    rows = conn.execute("""
+        SELECT p.name, v.ceiling_gb, v.size_bytes, v.until
+          FROM proposals p JOIN verdicts v ON v.id = p.state_verdict_id
+         WHERE p.state = 'declined' AND v.tier = ? AND v.reason = ?
+           AND v.until LIKE 'ceiling_gb:>%' AND v.ceiling_gb IS NOT NULL
+           AND v.ceiling_gb + ? < ?
+         ORDER BY p.name
+    """, (INSPECT, reasons.MACHINE, STALE_CEILING_GB, float(ceiling_gb or 0))).fetchall()
+    return [dict(r) for r in rows]
+
+
+def requeue_stale_too_big(conn, ceiling_gb: float | None = None) -> list[str]:
+    """Hand each stale too-big refusal back to inspect, which re-sizes it with current code. #880."""
+    here = ms.this_machine()["ceiling_gb"] if ceiling_gb is None else ceiling_gb
+    names = []
+    for r in stale_too_big(conn, here):
+        retract(conn, r["name"], f"too-big against a {r['ceiling_gb']:g} GiB ceiling; "
+                                 f"re-inspected against {here:g} GiB")
         names.append(r["name"])
     conn.commit()
     return names

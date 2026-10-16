@@ -4,7 +4,7 @@ from __future__ import annotations
 from harness import store
 
 
-SCHEMA_VERSION = 72
+SCHEMA_VERSION = 73
 
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
@@ -191,7 +191,9 @@ CREATE TABLE IF NOT EXISTS verdicts (
     power       TEXT NOT NULL DEFAULT '{}',
     -- A paired run's planned and observed wall seconds per case, so the projection has a control. #810, #813.
     planned_s_per_case  REAL,
-    observed_s_per_case REAL
+    observed_s_per_case REAL,
+    -- The memory ceiling, GiB, an inspect verdict was judged against. #880.
+    ceiling_gb  REAL
 );
 
 -- A paired measurement paused at a time limit, resumed first by the next sweep. #813.
