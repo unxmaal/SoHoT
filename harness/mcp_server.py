@@ -411,7 +411,8 @@ def transport_security(host: str, port: int, extra=()):
     if host not in ("0.0.0.0", "::", ""):
         names.append(host)
     allowed = []
-    for name in dict.fromkeys(n for n in names if n):
+    # httpx, Node and curl lowercase the host they send; mcp matches exactly
+    for name in dict.fromkeys(n for m in names if m for n in (m, m.lower())):
         allowed += [f"{name}:{port}", name]
     return TransportSecuritySettings(
         enable_dns_rebinding_protection=True,
