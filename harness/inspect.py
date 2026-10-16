@@ -425,6 +425,8 @@ class Fit:
     entry_points: list[str] = field(default_factory=list)
     last_commit: str = ""
     source_kb: int = 0
+    #: The memory ceiling, bytes, decide() judged it against; 0 when it judged no size. #880.
+    ceiling: int = 0
     #: The runtimes it offers, as decide() resolved them. #408.
     offered: list[str] = field(default_factory=list)
     #: GitHub's own one-line description, carried so the judge can be shown the
@@ -997,6 +999,7 @@ def decide(fit: Fit, ceiling: int | None = None, dead_days: int = UPSTREAM_DEAD_
     # the module first.
     if ceiling is None:
         ceiling = ceiling_bytes()
+    fit.ceiling = int(ceiling)
     if machine is None:
         from harness import machine as _machine
         machine = _machine.detect()

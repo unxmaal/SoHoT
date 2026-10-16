@@ -118,6 +118,21 @@ def _lift_sizes_out_of_prose(conn: sqlite3.Connection) -> None:
                          (size, vid))
 
 
+def _lift_ceilings_out_of_prose(conn: sqlite3.Connection) -> None:
+    """Move the ceiling a too-big verdict names into verdicts.ceiling_gb. Schema 73, #880."""
+    for vid, detail in conn.execute(
+            "SELECT id, detail FROM verdicts WHERE ceiling_gb IS NULL "
+            "AND detail LIKE 'too-big:%ceiling%'").fetchall():
+        m = _PROSE_CEILING.search(detail or "")
+        if m:
+            conn.execute("UPDATE verdicts SET ceiling_gb = ? WHERE id = ?",
+                         (float(m.group(1)), vid))
+
+
+#: How inspect.decide() names the ceiling a too-big verdict was judged against. Backfill only.
+_PROSE_CEILING = re.compile(r"over the ([\d.]+) GiB ceiling")
+
+
 #: The two spellings inspect used for a size before it was a column. Backfill only. #211.
 _PROSE_BYTES = re.compile(r"bytes=(\d+)")
 

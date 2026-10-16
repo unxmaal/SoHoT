@@ -17,7 +17,8 @@ ERROR_RATE_MAX = 0.10
 
 SERVING = ("adoptions_pass_here", "no_reference_served", "served_matches_adoption", "gateway_errors")
 SCHEDULE = ("sweep_on_schedule",)
-CHECKS = mc.INVARIANTS + SERVING + SCHEDULE
+VERDICTS = ("too_big_ceiling_current",)
+CHECKS = mc.INVARIANTS + SERVING + SCHEDULE + VERDICTS
 
 
 def open_readonly(path) -> sqlite3.Connection:
@@ -79,6 +80,18 @@ def _gateway_errors(conn) -> list:
     return out
 
 
+def _too_big_ceiling_current(conn, ceiling_gb: float | None = None) -> list:
+    """Too-big refusals judged against a smaller ceiling than this machine's: the loop re-inspects them. #880."""
+    from harness import memory_store as ms
+    here = ms.this_machine()["ceiling_gb"] if ceiling_gb is None else ceiling_gb
+    stale = ms.stale_too_big(conn, here)
+    if not stale:
+        return []
+    named = ", ".join(f"{r['name']} ({r['ceiling_gb']:g} GiB)" for r in stale[:5])
+    return [f"{len(stale)} too-big verdict(s) judged against a ceiling under this machine's "
+            f"{here:g} GiB, e.g. {named}"]
+
+
 def _sweep_on_schedule() -> list:
     from harness import heartbeat
     late = heartbeat.overdue()
@@ -137,6 +150,7 @@ def audit(path=None, config=None) -> dict:
             mc._check("served_matches_adoption", _served_matches(served, wanted)),
             mc._check("gateway_errors", _gateway_errors(conn)),
             mc._check("sweep_on_schedule", _sweep_on_schedule()),
+            mc._check("too_big_ceiling_current", _too_big_ceiling_current(conn)),
         ]
         have = mc.schema(conn)
         bound = _binding(conn)
