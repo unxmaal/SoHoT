@@ -1,0 +1,62 @@
+# SoHoT fix history (unxmaal/SoHoT), generated (https://github.com/unxmaal/SoHoT).
+# Imported by evals/importers from git:unxmaal/SoHoT@35ac01f5c487124fb40fc7a94680178c22b78ac6; re-import, do not edit.
+id: sohot-371-symptom
+modality: repo
+prompt: '# The work-queue worker holds the machine lock for a whole job, so a discovery download blocks
+  every GPU run
+
+
+  2026-10-05: the queued discovery loop spent its time downloading (80 GiB budget). Meanwhile a corrected
+  extract eval waited with \"waiting for external ... to finish\". The lock holder was the worker (\`kind:
+  external\`), which wraps every job in \`exclusive.held(\"external\")\` for its whole duration (#353),
+  network time included.
+
+
+  Every command the queue runs that loads a model already takes the lock itself, and only while it loads:
+  \`evals.run\` (#314), \`lh image\`/\`lh video\`, and discovery''s screens (through \`evals.run\`). The
+  worker''s lock adds no protection; it only serialises network and disk work behind itself.'
+params:
+  source_repo: https://github.com/unxmaal/SoHoT.git
+  base: 5839a35521538db8763719731ee7ceee102691af
+  fix: 467550a8e0da62e8f3e790887a08452c7a91b6e4
+  variant: symptom
+  context: oracle
+  context_files:
+  - README.md
+  - harness/workqueue.py
+  fail_to_pass:
+  - tests/test_workqueue.py::test_a_job_does_not_hold_the_machine_lock_for_its_whole_run
+  pass_to_pass:
+  - tests/test_workqueue.py::test_a_command_that_cannot_run_is_refused_when_queued[argv0-one argument]
+  - tests/test_workqueue.py::test_a_command_that_cannot_run_is_refused_when_queued[argv1-did not recognise]
+  - tests/test_workqueue.py::test_a_failed_job_is_recorded_and_the_rest_still_run
+  - tests/test_workqueue.py::test_a_job_cut_off_mid_run_is_not_silently_rerun
+  - tests/test_workqueue.py::test_a_pending_job_can_be_reprioritised_and_a_finished_one_cannot
+  - tests/test_workqueue.py::test_a_real_path_with_a_space_is_still_a_command
+  - tests/test_workqueue.py::test_a_returning_owner_stops_the_next_job_not_the_running_one
+  - tests/test_workqueue.py::test_adding_runs_nothing
+  - tests/test_workqueue.py::test_higher_priority_runs_first_and_ties_keep_their_order
+  - tests/test_workqueue.py::test_jobs_run_in_the_order_they_were_added
+  - tests/test_workqueue.py::test_only_a_pending_job_can_be_cancelled
+  - tests/test_workqueue.py::test_only_one_runner_works_the_queue
+  - tests/test_workqueue.py::test_pause_closes_the_gate_and_resume_opens_it
+  - tests/test_workqueue.py::test_pause_resume_and_list_through_the_cli
+  - tests/test_workqueue.py::test_priority_through_the_cli
+  - tests/test_workqueue.py::test_the_command_keeps_its_own_separators_and_flags
+  - tests/test_workqueue.py::test_the_owner_at_the_machine_closes_the_gate
+  - tests/test_workqueue.py::test_the_worker_runs_nothing_while_the_owner_is_here
+  - tests/test_workqueue.py::test_the_worker_runs_the_queue_when_the_owner_leaves
+attribution:
+  dataset: SoHoT fix history (unxmaal/SoHoT)
+  url: https://github.com/unxmaal/SoHoT
+  license: generated
+  source: git:unxmaal/SoHoT
+  revision: 35ac01f5c487124fb40fc7a94680178c22b78ac6
+  item: '#371 (PR #372)'
+  date: '2026-10-05'
+  transform: issue title and body from `gh issue view` at survey time, home paths as ~/, 'Prior art checked'
+    removed (spec), and the Fix/Shape/Design/Options/Remedy/Proposal/Build/What-to sections and labelled
+    paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
+    of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
+    and sandbox (evals/repo.py)
+  importer: evals.importers.history

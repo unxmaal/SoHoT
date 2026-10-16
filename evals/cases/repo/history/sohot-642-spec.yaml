@@ -1,0 +1,43 @@
+# SoHoT fix history (unxmaal/SoHoT), generated (https://github.com/unxmaal/SoHoT).
+# Imported by evals/importers from git:unxmaal/SoHoT@35ac01f5c487124fb40fc7a94680178c22b78ac6; re-import, do not edit.
+id: sohot-642-spec
+modality: repo
+prompt: '# inspect asks the model registries about method specs (plan:, best-of:), which can never answer
+
+
+  In the 2026-10-08 04:00Z loop, inspect printed lines such as ''plan:local-large: neither registry could
+  be reached, so it stays unanswered'' and the same for plan:q3-30b and best-of:3:q3-30b. A method spec
+  wraps an incumbent that is already on disk and has no registry entry, so every loop spends registry
+  calls on it during a run that also logged 83 HF 429 or gave-up lines in inspect, and the method is left
+  ''unanswered''.
+
+
+  Fix: inspect skips method specs and answers them from their inner spec (size, license and runtime are
+  the inner model''s). Test: a queued best-of:3:<spec> makes no registry call and inherits the inner spec''s
+  inspect verdict.'
+params:
+  source_repo: https://github.com/unxmaal/SoHoT.git
+  base: 4de3887b848f92583630befa80b29da1b350923c
+  fix: 50a5aba1dfff8b0ae73cbf994493b29168258bea
+  variant: spec
+  context: oracle
+  context_files:
+  - harness/commands/discover.py
+  fail_to_pass:
+  - tests/test_inspect_method_specs.py::test_a_method_inherits_its_bases_inspect_verdict_with_no_registry_call
+  - tests/test_inspect_method_specs.py::test_a_method_over_an_unregistered_incumbent_stays_queued_unasked
+  pass_to_pass: []
+attribution:
+  dataset: SoHoT fix history (unxmaal/SoHoT)
+  url: https://github.com/unxmaal/SoHoT
+  license: generated
+  source: git:unxmaal/SoHoT
+  revision: 35ac01f5c487124fb40fc7a94680178c22b78ac6
+  item: '#642 (PR #643)'
+  date: '2026-10-08'
+  transform: issue title and body from `gh issue view` at survey time, home paths as ~/, 'Prior art checked'
+    removed (spec), and the Fix/Shape/Design/Options/Remedy/Proposal/Build/What-to sections and labelled
+    paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
+    of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
+    and sandbox (evals/repo.py)
+  importer: evals.importers.history

@@ -1,0 +1,48 @@
+# SoHoT fix history (unxmaal/SoHoT), generated (https://github.com/unxmaal/SoHoT).
+# Imported by evals/importers from git:unxmaal/SoHoT@35ac01f5c487124fb40fc7a94680178c22b78ac6; re-import, do not edit.
+id: sohot-858-spec
+modality: repo
+prompt: '# Candidates the #803 length cap declined stay declined after #813 made limits pause instead
+
+
+  Three candidates that passed the screen on 2026-10-12 (openbmb/MiniCPM5-2B, LiquidAI/LFM2.5-2.6B, WeiboAI/VibeThinker-3B)
+  were refused by the old #803 per-measurement length cap. They were recorded `declined` with reason `limit`
+  and no `until`/`reopens` (verdicts 11612-11614).
+
+
+  #813 (PR #815) replaced that refusal with pause and resume, but nothing reopened the verdicts it had
+  already written. The 2026-10-13 sweep did not consider them, so they will never be measured.
+
+
+  Fix: a migration that requeues `declined`/`limit` verdicts written by the length refusal (screened but
+  never measured), plus a test that a pre-#815 length refusal comes back as measurable.'
+params:
+  source_repo: https://github.com/unxmaal/SoHoT.git
+  base: 784795a99048efa3ce0c8bc729d68a8973e20cda
+  fix: df54638acb63e1b628c762a74d79b59fb43d9ff7
+  variant: spec
+  context: oracle
+  context_files:
+  - harness/memory_store/migrations/retractions.py
+  - harness/memory_store/migrations/v71.py
+  - harness/memory_store/schema.py
+  fail_to_pass:
+  - tests/test_length_refusal_reopen_858.py::test_a_pre_815_length_refusal_is_requeued_for_measurement
+  pass_to_pass:
+  - tests/test_length_refusal_reopen_858.py::test_a_refusal_after_a_later_retest_is_left_alone
+  - tests/test_length_refusal_reopen_858.py::test_only_a_refusal_straight_after_the_screen_is_requeued
+  - tests/test_length_refusal_reopen_858.py::test_other_limit_declines_stay_declined
+attribution:
+  dataset: SoHoT fix history (unxmaal/SoHoT)
+  url: https://github.com/unxmaal/SoHoT
+  license: generated
+  source: git:unxmaal/SoHoT
+  revision: 35ac01f5c487124fb40fc7a94680178c22b78ac6
+  item: '#858 (PR #861)'
+  date: '2026-10-14'
+  transform: issue title and body from `gh issue view` at survey time, home paths as ~/, 'Prior art checked'
+    removed (spec), and the Fix/Shape/Design/Options/Remedy/Proposal/Build/What-to sections and labelled
+    paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
+    of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
+    and sandbox (evals/repo.py)
+  importer: evals.importers.history

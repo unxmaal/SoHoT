@@ -1,0 +1,184 @@
+# SoHoT fix history (unxmaal/SoHoT), generated (https://github.com/unxmaal/SoHoT).
+# Imported by evals/importers from git:unxmaal/SoHoT@35ac01f5c487124fb40fc7a94680178c22b78ac6; re-import, do not edit.
+id: sohot-399-symptom
+modality: repo
+prompt: '# A neighbor sighting reopens a decided candidate, and a README-only snapshot counts as downloaded
+
+
+  Sweep at 22:43 on the Studio:
+
+
+  1. Qwen/Qwen3.5-0.8B had a terminal ''declined at adopt'' verdict (22:18). The inspect tier''s neighbor
+  path (''named by vllm-project/vllm-metal'') wrote inspect ''queued'' over it, so the candidate was screened
+  and will be measured again. That path never reads the latest verdict.
+
+  2. NemoStation/Marlin-2B''s hub dir holds a snapshot with only LICENSE and README (Sep 20), no config
+  or weights. fetching.have() checks only that the dir exists, so fetch skipped it, the screen ran, and
+  the candidate got a terminal ''broken'' for ''No such file or directory ... config.json'': a download
+  that never happened, blamed on the model.'
+params:
+  source_repo: https://github.com/unxmaal/SoHoT.git
+  base: 644f52812413a7d9849ff21e5aad0bcf32764175
+  fix: 7d44a19c8fc4bfd052054a0a29a19c430ebf5077
+  variant: symptom
+  context: oracle
+  context_files:
+  - harness/cli.py
+  - harness/fetching.py
+  - harness/memory_store.py
+  fail_to_pass:
+  - tests/test_harness_registry.py::test_a_neighbor_sighting_does_not_reopen_a_decided_name[None-None-queued]
+  - tests/test_harness_registry.py::test_a_neighbor_sighting_does_not_reopen_a_decided_name[declined-adopt-declined]
+  - tests/test_harness_registry.py::test_a_neighbor_sighting_does_not_reopen_a_decided_name[screened-screen-screened]
+  - 'tests/test_store_machines.py::test_a_lane_independent_verdict_survives_every_retraction[_requeue_screens_of_missing_weights-fetch-lora
+    in its own card: this attaches to a model rather than being one]'
+  - 'tests/test_store_machines.py::test_a_lane_independent_verdict_survives_every_retraction[_requeue_screens_of_missing_weights-inspect-too-big:
+    weights 1453.8 GiB over the 22 GiB ceiling]'
+  - tests/test_store_machines.py::test_a_snapshot_with_only_a_card_is_not_downloaded
+  - tests/test_store_machines.py::test_schema_20_requeues_a_screen_of_weights_never_downloaded
+  pass_to_pass:
+  - tests/test_harness_fetching.py::test_a_config_naming_another_repo_declares_a_requirement
+  - tests/test_harness_fetching.py::test_a_dependency_already_present_is_not_refetched
+  - tests/test_harness_fetching.py::test_a_download_over_the_cap_is_refused_however_much_disk_there_is
+  - tests/test_harness_fetching.py::test_a_download_that_fits_is_allowed
+  - tests/test_harness_fetching.py::test_a_download_that_would_fill_the_volume_is_refused
+  - tests/test_harness_fetching.py::test_a_failed_download_does_not_condemn_the_candidate
+  - tests/test_harness_fetching.py::test_a_finished_download_records_where_it_landed
+  - tests/test_harness_fetching.py::test_a_github_repo_is_not_downloadable
+  - tests/test_harness_fetching.py::test_a_laneless_weight_is_not_declined
+  - tests/test_harness_fetching.py::test_a_laneless_weight_is_still_listed_not_hidden
+  - tests/test_harness_fetching.py::test_a_model_naming_itself_is_not_its_own_dependency
+  - tests/test_harness_fetching.py::test_a_model_with_no_config_requires_nothing
+  - tests/test_harness_fetching.py::test_a_refusal_does_not_consume_the_download_budget
+  - tests/test_harness_fetching.py::test_a_terminal_verdict_leaves_the_queue
+  - tests/test_harness_fetching.py::test_a_value_that_is_not_repo_shaped_is_not_a_repo
+  - tests/test_harness_fetching.py::test_a_weight_inherits_the_score_of_the_repo_that_named_it
+  - tests/test_harness_fetching.py::test_a_weight_with_no_lane_is_not_downloaded
+  - tests/test_harness_fetching.py::test_an_unknown_size_is_refused_rather_than_attempted
+  - tests/test_harness_fetching.py::test_fetching_a_model_also_fetches_what_its_config_names
+  - tests/test_harness_fetching.py::test_fetching_lifts_the_offline_guard_and_puts_it_back
+  - tests/test_harness_fetching.py::test_missing_is_empty_when_the_whole_closure_is_present
+  - tests/test_harness_fetching.py::test_missing_reports_the_dependency_when_the_model_is_present
+  - tests/test_harness_fetching.py::test_missing_reports_the_model_itself_when_nothing_is_there
+  - tests/test_harness_fetching.py::test_one_at_a_time_by_default
+  - tests/test_harness_fetching.py::test_only_the_inspect_tier_can_queue_a_download
+  - tests/test_harness_fetching.py::test_provenance_is_not_a_requirement
+  - tests/test_harness_fetching.py::test_something_already_in_the_cache_is_not_queued
+  - tests/test_harness_fetching.py::test_something_too_big_is_declined_permanently
+  - tests/test_harness_fetching.py::test_the_size_is_read_from_the_store_not_asked_for_again
+  - tests/test_harness_registry.py::test_a_404_and_an_outage_are_different_answers
+  - tests/test_harness_registry.py::test_a_card_description_says_what_bears_on_measuring_it
+  - tests/test_harness_registry.py::test_a_card_listing_no_blob_sizes_is_unsized_rather_than_zero
+  - tests/test_harness_registry.py::test_a_gated_model_is_not_reported_as_missing
+  - tests/test_harness_registry.py::test_a_later_sighting_fills_an_empty_registry_and_never_overwrites_one
+  - tests/test_harness_registry.py::test_a_model_card_yields_a_verdict_with_nothing_cloned
+  - tests/test_harness_registry.py::test_a_model_is_not_refused_for_having_no_entry_point
+  - tests/test_harness_registry.py::test_a_name_neither_registry_has_is_a_definite_answer
+  - tests/test_harness_registry.py::test_a_name_only_github_has_resolves_to_github
+  - tests/test_harness_registry.py::test_a_name_with_no_evidence_is_left_unknown_rather_than_guessed
+  - tests/test_harness_registry.py::test_a_proposal_records_which_registry_answers_for_it
+  - tests/test_harness_registry.py::test_a_settled_proposal_is_not_pending_in_its_registry
+  - tests/test_harness_registry.py::test_a_source_tree_with_no_entry_point_is_still_refused
+  - tests/test_harness_registry.py::test_a_store_written_before_descriptions_existed_still_opens
+  - tests/test_harness_registry.py::test_an_existing_store_is_backfilled_from_evidence_it_already_holds
+  - tests/test_harness_registry.py::test_an_unreachable_registry_settles_nothing
+  - tests/test_harness_registry.py::test_by_registry_counts_the_names_nothing_can_resolve
+  - tests/test_harness_registry.py::test_huggingface_answers_first_where_both_would
+  - tests/test_harness_registry.py::test_pending_asks_one_registry_at_a_time
+  - tests/test_harness_registry.py::test_popularity_is_not_carried_into_the_description
+  - tests/test_harness_registry.py::test_the_description_reaches_the_store_and_the_judge_can_read_it
+  - tests/test_harness_registry.py::test_the_download_queue_refuses_a_github_name
+  - tests/test_harness_registry.py::test_the_inspect_tier_asks_each_registry_only_about_its_own_names
+  - tests/test_harness_registry.py::test_the_same_card_reads_differently_on_a_machine_without_the_runtime
+  - tests/test_store_load_gaps.py::test_a_missing_file_stays_broken
+  - tests/test_store_load_gaps.py::test_a_newer_runtime_reopens_it
+  - tests/test_store_load_gaps.py::test_a_runtime_upgrade_on_the_same_machine_is_revisitable
+  - tests/test_store_load_gaps.py::test_an_architecture_gap_becomes_declined_until_a_newer_runtime
+  - tests/test_store_machines.py::test_a_bigger_machine_reopens_only_what_it_can_hold
+  - tests/test_store_machines.py::test_a_condition_is_a_predicate_not_a_sentence
+  - tests/test_store_machines.py::test_a_dead_upstream_can_be_reconsidered_when_it_commits
+  - tests/test_store_machines.py::test_a_judge_using_the_word_workflow_is_not_a_verdict_about_one
+  - 'tests/test_store_machines.py::test_a_lane_independent_verdict_survives_every_retraction[_relane_from_the_card-fetch-lora
+    in its own card: this attaches to a model rather than being one]'
+  - 'tests/test_store_machines.py::test_a_lane_independent_verdict_survives_every_retraction[_relane_from_the_card-inspect-too-big:
+    weights 1453.8 GiB over the 22 GiB ceiling]'
+  - 'tests/test_store_machines.py::test_a_lane_independent_verdict_survives_every_retraction[_reopen_architecture_gaps-fetch-lora
+    in its own card: this attaches to a model rather than being one]'
+  - 'tests/test_store_machines.py::test_a_lane_independent_verdict_survives_every_retraction[_reopen_architecture_gaps-inspect-too-big:
+    weights 1453.8 GiB over the 22 GiB ceiling]'
+  - 'tests/test_store_machines.py::test_a_lane_independent_verdict_survives_every_retraction[_requeue_diffusers_layout_gaps-fetch-lora
+    in its own card: this attaches to a model rather than being one]'
+  - 'tests/test_store_machines.py::test_a_lane_independent_verdict_survives_every_retraction[_requeue_diffusers_layout_gaps-inspect-too-big:
+    weights 1453.8 GiB over the 22 GiB ceiling]'
+  - 'tests/test_store_machines.py::test_a_lane_independent_verdict_survives_every_retraction[_retract_harness_refusals-fetch-lora
+    in its own card: this attaches to a model rather than being one]'
+  - 'tests/test_store_machines.py::test_a_lane_independent_verdict_survives_every_retraction[_retract_harness_refusals-inspect-too-big:
+    weights 1453.8 GiB over the 22 GiB ceiling]'
+  - 'tests/test_store_machines.py::test_a_lane_independent_verdict_survives_every_retraction[_retract_screens_with_no_evidence-fetch-lora
+    in its own card: this attaches to a model rather than being one]'
+  - 'tests/test_store_machines.py::test_a_lane_independent_verdict_survives_every_retraction[_retract_screens_with_no_evidence-inspect-too-big:
+    weights 1453.8 GiB over the 22 GiB ceiling]'
+  - 'tests/test_store_machines.py::test_a_lane_independent_verdict_survives_every_retraction[_retract_verdicts_from_runs_that_never_ran-fetch-lora
+    in its own card: this attaches to a model rather than being one]'
+  - 'tests/test_store_machines.py::test_a_lane_independent_verdict_survives_every_retraction[_retract_verdicts_from_runs_that_never_ran-inspect-too-big:
+    weights 1453.8 GiB over the 22 GiB ceiling]'
+  - 'tests/test_store_machines.py::test_a_lane_independent_verdict_survives_every_retraction[_retract_verdicts_with_no_control-fetch-lora
+    in its own card: this attaches to a model rather than being one]'
+  - 'tests/test_store_machines.py::test_a_lane_independent_verdict_survives_every_retraction[_retract_verdicts_with_no_control-inspect-too-big:
+    weights 1453.8 GiB over the 22 GiB ceiling]'
+  - tests/test_store_machines.py::test_a_measured_size_is_a_column_not_a_sentence
+  - tests/test_store_machines.py::test_a_queued_row_is_not_revisitable
+  - tests/test_store_machines.py::test_a_refusal_elsewhere_reopens_where_its_reason_does_not_apply
+  - tests/test_store_machines.py::test_a_relative_run_path_is_resolved_before_it_is_called_missing
+  - tests/test_store_machines.py::test_a_run_path_that_is_not_a_path_is_refused
+  - tests/test_store_machines.py::test_a_runtime_installed_here_reopens_this_machines_refusal
+  - tests/test_store_machines.py::test_a_runtime_version_predicate_compares_numerically
+  - tests/test_store_machines.py::test_a_verdict_whose_run_is_gone_is_reported
+  - tests/test_store_machines.py::test_a_version_predicate_reads_the_same_source_load_until_wrote_from
+  - tests/test_store_machines.py::test_an_old_store_is_attributed_and_says_it_was_inferred
+  - tests/test_store_machines.py::test_an_unidentifiable_machine_is_recorded_as_unknown
+  - tests/test_store_machines.py::test_an_unparseable_commit_date_does_not_reopen_everything
+  - tests/test_store_machines.py::test_an_unreadable_condition_leaves_the_verdict_standing
+  - tests/test_store_machines.py::test_any_of_several_runtimes_meets_the_condition
+  - tests/test_store_machines.py::test_decide_records_the_condition_the_refusal_names
+  - tests/test_store_machines.py::test_every_verdict_records_its_machine
+  - tests/test_store_machines.py::test_not_an_attachment_is_distinguishable_from_nobody_asking
+  - tests/test_store_machines.py::test_only_the_latest_verdict_can_be_revisited
+  - tests/test_store_machines.py::test_schema_18_backfills_refusals_written_after_266
+  - tests/test_store_machines.py::test_schema_19_does_not_reopen_a_verdict_the_lane_never_touched
+  - tests/test_store_machines.py::test_schema_19_keeps_an_svg_model_in_the_svg_lane
+  - tests/test_store_machines.py::test_schema_19_leaves_a_model_that_genuinely_failed
+  - tests/test_store_machines.py::test_schema_19_refiles_a_vlm_judge_out_of_the_image_lane
+  - tests/test_store_machines.py::test_schema_19_requeues_a_layout_diffusers_could_not_assemble
+  - tests/test_store_machines.py::test_the_attachment_kind_is_a_column
+  - tests/test_store_machines.py::test_the_column_wins_over_the_prose
+  - 'tests/test_store_machines.py::test_the_condition_is_read_from_the_refusal[fits: weights from 5.5
+    to 8.9 GiB-]'
+  - 'tests/test_store_machines.py::test_the_condition_is_read_from_the_refusal[needs-cuda: depends on
+    torch, and this machine has none of cuda, rocm-runtime:cuda|rocm]'
+  - 'tests/test_store_machines.py::test_the_condition_is_read_from_the_refusal[needs-llamacpp: depends
+    on GGUF weights, and this machine has no llamacpp-runtime:llamacpp]'
+  - 'tests/test_store_machines.py::test_the_condition_is_read_from_the_refusal[too-big: smallest weight
+    it names is 59.9 GiB, over the 22 GiB ceiling-ceiling_gb:>59.9]'
+  - 'tests/test_store_machines.py::test_the_condition_is_read_from_the_refusal[too-big: source tree is
+    259 MB, which is weights in git, not a source repo-]'
+  - tests/test_store_machines.py::test_the_machine_conditions_still_ignore_an_upstream_fact
+  - tests/test_store_machines.py::test_the_prose_is_still_read_when_the_column_is_empty
+  - tests/test_store_machines.py::test_the_retraction_census_is_not_empty
+  - tests/test_store_machines.py::test_the_same_machine_twice_is_one_row
+  - tests/test_store_machines.py::test_the_upstream_idle_time_is_a_number_not_one_decimal_of_years
+  - tests/test_store_machines.py::test_two_operating_systems_on_one_box_are_two_machines
+attribution:
+  dataset: SoHoT fix history (unxmaal/SoHoT)
+  url: https://github.com/unxmaal/SoHoT
+  license: generated
+  source: git:unxmaal/SoHoT
+  revision: 35ac01f5c487124fb40fc7a94680178c22b78ac6
+  item: '#399 (PR #400)'
+  date: '2026-10-05'
+  transform: issue title and body from `gh issue view` at survey time, home paths as ~/, 'Prior art checked'
+    removed (spec), and the Fix/Shape/Design/Options/Remedy/Proposal/Build/What-to sections and labelled
+    paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
+    of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
+    and sandbox (evals/repo.py)
+  importer: evals.importers.history
