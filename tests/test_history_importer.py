@@ -3,10 +3,14 @@ import subprocess
 import sys
 from pathlib import Path
 
-from evals import importers
+import pytest
+
+from evals import importers, repo
+from evals.core import Case
 from evals.importers import history
 
-PY = (sys.executable,)
+DARWIN = pytest.mark.skipif(sys.platform != "darwin" or not Path(repo.SANDBOX_EXEC).is_file(),
+                            reason="the survey runs pytest under the lane's sandbox-exec")
 PARAMS = {"source_repo", "base", "fix", "context_files", "fail_to_pass", "pass_to_pass",
           "variant", "context"}
 ISSUE = {"title": "add subtracts", "body": "## Problem\nadd(2, 2) is 0.\n\n## Fix\nUse +.\n\n"
@@ -33,7 +37,7 @@ def _repo(tmp_path, fixed: str, test: str, base_test: str = BASE_TEST) -> Path:
     repo = tmp_path / "repo"
     repo.mkdir()
     _git(repo, "init", "-q", "-b", "main")
-    _commit(repo, {"pyproject.toml": "[tool.pytest.ini_options]\npythonpath = [\".\"]\n",
+    _commit(repo, {"pytest.ini": "[pytest]\npythonpath = .\n",
                    "mod.py": "def add(a, b):\n    return a - b\n\ndef sub(a, b):\n    return a - b\n",
                    "tests/test_mod.py": base_test}, "start")
     _commit(repo, {"mod.py": fixed, "tests/test_mod.py": test}, "add adds (#5) (#6)")
@@ -43,28 +47,34 @@ def _repo(tmp_path, fixed: str, test: str, base_test: str = BASE_TEST) -> Path:
 FIXED = "def add(a, b):\n    return a + b\n\ndef sub(a, b):\n    return a - b\n"
 
 
-def _survey(repo, tmp_path, **kw):
-    return history.survey(repo, "main", 20, tmp_path / "log.txt", tmp_path / "work",
-                          get_issue=lambda n: ISSUE, python=PY, sync=None, **kw)
+def _here(task):
+    """The harness's own venv stands in for `uv sync`: it has pytest and needs no network."""
+    return Path(sys.prefix)
 
 
+def _survey(src, tmp_path, **kw):
+    return history.survey(str(src), "main", 20, tmp_path / "log.txt", get_issue=lambda n: ISSUE,
+                          env=_here, **kw)
+
+
+@DARWIN
 def test_a_flipping_test_becomes_one_task_with_its_fail_to_pass_and_pass_to_pass(tmp_path):
-    repo = _repo(tmp_path, FIXED, ADD_TEST)
-    got = _survey(repo, tmp_path)
+    src = _repo(tmp_path, FIXED, ADD_TEST)
+    got = _survey(src, tmp_path)
     assert got["dropped"] == {} and got["examined"] == 1
     (task,) = got["tasks"]
     assert task["fail_to_pass"] == ["tests/test_mod.py::test_add"]
     assert task["pass_to_pass"] == ["tests/test_mod.py::test_sub"]
     assert task["context_files"] == ["mod.py"] and task["issue"] == 5 and task["pr"] == 6
     assert task["strata"]["files"] == 1 and task["strata"]["lines"] == 2
-    head = subprocess.run(["git", "-C", str(repo), "rev-parse", "main", "main^"],
+    head = subprocess.run(["git", "-C", str(src), "rev-parse", "main", "main^"],
                           capture_output=True, text=True).stdout.split()
     assert [task["fix"], task["base"]] == head
-    listed = subprocess.run(["git", "-C", str(repo), "worktree", "list"],
-                            capture_output=True, text=True).stdout
-    assert len(listed.splitlines()) == 1, "the throwaway worktree is removed"
+    work = repo.cache_root() / "work"
+    assert not any(work.iterdir()), "the throwaway worktree is removed"
 
 
+@DARWIN
 def test_a_task_converts_to_a_spec_and_a_symptom_case_in_the_repo_lane_shape(tmp_path):
     got = _survey(_repo(tmp_path, FIXED, ADD_TEST), tmp_path)
     rows = [{**got["tasks"][0], "variant": v} for v in history.VARIANTS]
@@ -77,25 +87,28 @@ def test_a_task_converts_to_a_spec_and_a_symptom_case_in_the_repo_lane_shape(tmp
     assert "Use +." in cases["spec"]["prompt"] and "Use +." not in cases["symptom"]["prompt"]
 
 
+@DARWIN
 def test_a_fix_whose_new_test_already_passes_at_base_is_dropped_since_the_empty_patch_resolves(tmp_path):
     passing = BASE_TEST + "\ndef test_more():\n    assert sub(5, 1) == 4\n"
     got = _survey(_repo(tmp_path, FIXED, passing), tmp_path)
     assert got["tasks"] == [] and got["dropped"] == {"no_flip": 1}
 
 
+@DARWIN
 def test_a_reference_that_fails_its_own_tests_is_dropped(tmp_path):
     got = _survey(_repo(tmp_path, FIXED.replace("a + b", "a * b + 1"), ADD_TEST), tmp_path)
     assert got["dropped"] == {"reference_fails": 1}
 
 
+@DARWIN
 def test_a_test_that_disagrees_with_itself_across_two_runs_is_dropped_as_flaky(tmp_path):
-    marker = tmp_path / "ran-once"
-    flaky = ADD_TEST + (f"\nimport pathlib\ndef test_once():\n    p = pathlib.Path({str(marker)!r})\n"
-                        f"    seen = p.exists()\n    p.touch()\n    assert not seen\n")
+    flaky = ADD_TEST + ("\nimport pathlib\ndef test_once():\n    p = pathlib.Path('ran-once')\n"
+                        "    seen = p.exists()\n    p.touch()\n    assert not seen\n")
     got = _survey(_repo(tmp_path, FIXED, flaky), tmp_path)
     assert got["dropped"] == {"flaky": 1}
 
 
+@DARWIN
 def test_a_pytest_run_past_its_timeout_is_killed_and_the_task_dropped(tmp_path):
     slow = ADD_TEST + "\nimport time\ndef test_slow():\n    time.sleep(60)\n"
     got = _survey(_repo(tmp_path, FIXED, slow), tmp_path, timeout=3)
@@ -103,11 +116,33 @@ def test_a_pytest_run_past_its_timeout_is_killed_and_the_task_dropped(tmp_path):
 
 
 def test_an_issue_with_no_solution_section_is_dropped_before_anything_runs(tmp_path):
-    repo = _repo(tmp_path, FIXED, ADD_TEST)
-    got = history.survey(repo, "main", 20, tmp_path / "log.txt", tmp_path / "work",
+    src = _repo(tmp_path, FIXED, ADD_TEST)
+    got = history.survey(str(src), "main", 20, tmp_path / "log.txt",
                          get_issue=lambda n: {"title": "t", "body": "## Problem\nbroken\n"},
-                         python=("false",), sync=None)
+                         env=lambda task: pytest.fail("nothing runs"))
     assert got["dropped"] == {"no_fix_section": 1}
+
+
+@DARWIN
+def test_the_negative_control_resolves_the_reference_and_fails_the_empty_patch(tmp_path, monkeypatch):
+    src = _repo(tmp_path, FIXED, ADD_TEST)
+    task = _survey(src, tmp_path)["tasks"][0]
+    case = history.convert({**task, "variant": "spec"}).case
+    monkeypatch.setattr(repo, "prepare", _here)
+    c = Case(id=case["id"], modality="repo", prompt=case["prompt"],
+             params={**case["params"], "source_repo": str(src)})
+    got = importers.negative_control([c], history.RESPONDERS, history.passes)
+    assert got == {"reference": (1, 1), "empty": (0, 1)}
+
+
+def test_junit_keys_map_back_to_node_ids_through_the_files_run():
+    keys = ["tests.test_a::test_x[1-2]", "tests.test_a.TestC::test_y", "tests.sub.test_b::test_z",
+            "other::test_w"]
+    files = ["tests/test_a.py", "tests/sub/test_b.py"]
+    got = history.node_ids(keys, files)
+    assert got == ["tests/sub/test_b.py::test_z", "tests/test_a.py::TestC::test_y",
+                   "tests/test_a.py::test_x[1-2]"]
+    assert all(repo.junit_key(i) in keys for i in got)
 
 
 def test_symptom_strips_solution_sections_at_their_level_and_bold_labelled_paragraphs():
