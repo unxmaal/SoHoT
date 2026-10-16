@@ -221,6 +221,12 @@ def _add_verdict_ceiling(conn) -> None:
         conn.execute("ALTER TABLE verdicts ADD COLUMN ceiling_gb REAL")
 
 
+def _add_job_not_before(conn) -> None:
+    """jobs.not_before on an older store. #900."""
+    if "not_before" not in _columns(conn, "jobs"):
+        conn.execute("ALTER TABLE jobs ADD COLUMN not_before REAL")
+
+
 def _add_request_purpose(conn) -> None:
     """gateway_requests.purpose on an older store; every earlier row is 'unknown'. #825."""
     if "purpose" not in _columns(conn, "gateway_requests"):

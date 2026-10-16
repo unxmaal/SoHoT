@@ -43,6 +43,9 @@ KNOBS = [
 ]
 
 NOT_GATING = {
+    "harness/workqueue.py:at_clock->timedelta(days)": "one calendar day: a clock time already past today means tomorrow (#900)",
+    "harness/workqueue.py:night_start->timedelta(days)": "one calendar day: the night window's edges on yesterday, today "
+                                                         "and tomorrow (#900)",
     f"{W}:GH_TIMEOUT_S": "how long one gh call may take when filing; a slow gh leaves the issue unfiled and says so (#814)",
     f"{W}:NOTIFY_TIMEOUT_S": "how long osascript may take to post one notification; a slow one is recorded as "
                              "notify failed and the row and log line still stand (#818)",

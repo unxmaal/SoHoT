@@ -240,3 +240,39 @@ def test_tests_that_outrun_the_timeout_are_our_limit_not_a_wrong_answer(upstream
     monkeypatch.setattr(repo, "TEST_TIMEOUT_S", 3.0)
     row = runner_with(_diff(BUGGY, FIXED + "\nimport time\ntime.sleep(60)\n")).run(upstream)
     assert (row.passed, row.failure_class, row.limit) == (False, reasons.TIMEOUT, "repo_test_timeout_s>3")
+
+
+def test_install_tests_leaves_the_graders_own_directory_alone(upstream):
+    p = upstream.params
+    a = repo.Attempt.open(p, env=_here)
+    try:
+        kept = a.task / repo.HARNESS_DIR / "tmp" / "pytest-0" / "test_kept.py"
+        kept.parent.mkdir(parents=True)
+        kept.write_text("x", encoding="utf-8")
+        repo.install_tests(a.mirror, a.task, p["base"], p["fix"])
+        assert kept.read_text(encoding="utf-8") == "x"
+    finally:
+        a.close()
+
+
+@DARWIN
+def test_install_tests_is_idempotent_around_a_pytest_run(upstream):
+    """#899: the second call met pytest's .grade/tmp/test_* dirs and raised EPERM."""
+    p = dict(upstream.params)
+    src = Path(p["source_repo"])
+    # A nested repository is what makes git status list the test_* directory itself.
+    uses_tmp = HIDDEN + ("\n\ndef test_writes_tmp(tmp_path):\n    import subprocess\n"
+                         "    subprocess.run(['git', 'init', '-q', str(tmp_path)], check=True)\n")
+    (src / "tests" / "test_mod.py").write_text(uses_tmp, encoding="utf-8")
+    _git(src, "commit", "-qam", "tmp")
+    p["fix"] = _sha(src)
+    a = repo.Attempt.open(p, env=_here)
+    try:
+        repo.install_tests(a.mirror, a.task, p["base"], p["fix"])
+        g = repo.grade(a.task, a.python, ["tests/test_mod.py::test_writes_tmp"], [])
+        assert g.resolved, g.detail
+        assert list((a.task / repo.HARNESS_DIR / "tmp").rglob("test_writes_tmp*"))
+        repo.install_tests(a.mirror, a.task, p["base"], p["fix"])
+        assert (a.task / "tests" / "test_mod.py").read_text(encoding="utf-8") == uses_tmp
+    finally:
+        a.close()
