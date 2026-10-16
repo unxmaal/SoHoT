@@ -77,7 +77,7 @@ LEFT_OUT = {
         "test_harness_paired.py", "test_harness_screen.py", "test_harness_screen_spec.py",
         "test_holdout_power.py", "test_inspect_method_specs.py", "test_inspect_ratelimit.py",
         "test_knob_sweeps.py", "test_knobs.py", "test_method_serving.py", "test_pii_lane.py",
-        "test_power_budget.py", "test_runner_base_weights.py", "test_schema_lanes.py",
+        "test_power_budget.py", "test_quants_882.py", "test_runner_base_weights.py", "test_schema_lanes.py",
         "test_silent_truncation.py", "test_slots_memory.py", "test_store_downloads.py"),
     "harness/screen.py": (
         "test_chaos.py", "test_claims_balanced_metric.py", "test_harness_engines_repo_id.py",
