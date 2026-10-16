@@ -1,6 +1,7 @@
 """`soh fetch` and the screen tier: what to fetch, what fits, and the screen of what arrived."""
 from __future__ import annotations
 
+import re
 import time
 
 from harness import memory, paths, reasons
@@ -164,6 +165,32 @@ def verdict_of_run(returncode: int, stderr: str, summary, candidate: str,
                           stderr_class=stderr_class, facts=facts)
 
 
+_PY_WARNING = re.compile(r"^\S.*:\d+: \w*Warning: ")
+
+
+def _without_warnings(stderr: str) -> str:
+    """stderr less Python warnings and the source line each one quotes. #879."""
+    kept, skip = [], False
+    for line in (stderr or "").splitlines():
+        if _PY_WARNING.match(line):
+            skip = True
+            continue
+        if skip and line[:1].isspace():
+            skip = False
+            continue
+        skip = False
+        kept.append(line)
+    return "\n".join(kept)
+
+
+def screen_detail(why: str, stderr: str, summary) -> str:
+    """A screen verdict's detail: the receipt is the evidence when there is one, else the stderr tail less warnings. #281, #879."""
+    if summary is not None:
+        return why[:600]
+    evidence = " ".join(_without_warnings(stderr).split())[-300:]
+    return (f"{why} || {evidence}" if evidence else why)[:600]
+
+
 def _report_screen(a) -> int:
     """Run the cheapest real thing, and record whether it ran at all. #53.
 
@@ -256,10 +283,7 @@ def _report_screen(a) -> int:
             print(f"   {got.upper()}: {why}")
             if proc.returncode != 0:
                 err(proc.stderr.strip()[-400:] or "no stderr")
-            # The stderr tail stays as evidence for a person; the reason and
-            # the class are the columns code reads. #281, #408.
-            evidence = " ".join((proc.stderr or "").split())[-300:]
-            detail = f"{why} || {evidence}" if evidence else why
+            detail = screen_detail(why, proc.stderr, summary)
             ms.decide_or_skip(store, r["name"], got, tier=ms.SCREEN,
                               detail=detail[:600],
                               run_id=(stored or {}).get("run_id"),
