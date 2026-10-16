@@ -74,9 +74,14 @@ def _mine() -> dict | None:
     return got if got and got.get("pid") == os.getpid() else None
 
 
+#: When a loop last handed stale too-big refusals back to inspect; kept across loops. #904.
+REOPENED_TOO_BIG = "reopened_too_big"
+
+
 def start(lane: str = "", total: int = 0) -> dict:
     now = clock()
-    data = {"state": RUNNING, "pid": os.getpid(), "lane": lane, "tier": "",
+    kept = {k: v for k, v in (read() or {}).items() if k == REOPENED_TOO_BIG}
+    data = {**kept, "state": RUNNING, "pid": os.getpid(), "lane": lane, "tier": "",
             "candidate": "", "step": 0, "total": int(total), "item": 0, "items": 0,
             "started": now, "updated": now, "finished": None, "rc": None, "error": ""}
     _write(data)
@@ -124,6 +129,22 @@ def held(kind: str, deadline_s: float | None = None, say=None):
     with exclusive.held(kind, announce=announce, deadline_s=deadline_s) as waited:
         expect(deadline_s)
         yield waited
+
+
+def mark(key: str, at: float | None = None) -> None:
+    """Record when this loop did `key`; a no-op unless this process started the heartbeat."""
+    data = _mine()
+    if data is None or data.get("state") != RUNNING:
+        return
+    data[key] = clock() if at is None else float(at)
+    _write(data)
+
+
+def reopened_too_big(data=None) -> float | None:
+    """When a loop last requeued the stale too-big refusals, or None. #904."""
+    data = read() if data is None else data
+    got = (data or {}).get(REOPENED_TOO_BIG)
+    return float(got) if got else None
 
 
 def stall_after(data: dict) -> float:

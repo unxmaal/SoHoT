@@ -1,5 +1,6 @@
 """A too-big refusal judged against a smaller ceiling is re-inspected, never left on a stale size. #880."""
 import argparse
+import time
 import types
 
 import pytest
@@ -113,10 +114,10 @@ def test_the_migration_lifts_the_ceiling_out_of_the_prose(store):
     assert got == {"org/old": 22.0, "org/ds4": 66.0}
 
 
-def test_the_audit_fails_on_a_stale_too_big_verdict(store):
-    assert live_audit._too_big_ceiling_current(store, 66.0) == []
+def test_the_audit_fails_on_a_stale_too_big_verdict_a_requeue_left_behind(store):
+    assert live_audit._too_big_ceiling_current(store, 66.0, None) == ([], [])
     _decline(store, "org/stale", 22.0)
-    bad = live_audit._too_big_ceiling_current(store, 66.0)
+    bad, _ = live_audit._too_big_ceiling_current(store, 66.0, time.time() + 1)
     assert len(bad) == 1 and "org/stale (22 GiB)" in bad[0]
     assert "too_big_ceiling_current" in live_audit.CHECKS
 

@@ -80,16 +80,27 @@ def _gateway_errors(conn) -> list:
     return out
 
 
-def _too_big_ceiling_current(conn, ceiling_gb: float | None = None) -> list:
-    """Too-big refusals judged against a smaller ceiling than this machine's: the loop re-inspects them. #880."""
-    from harness import memory_store as ms
+def _too_big_ceiling_current(conn, ceiling_gb: float | None = None, reopened_at=...) -> tuple[list, list]:
+    """(failures, warnings) for too-big refusals judged under this machine's ceiling. #880, #904.
+    The backlog is an inventory until a loop's requeue has run since it was decided; one that survives fails."""
+    from harness import heartbeat, memory_store as ms
     here = ms.this_machine()["ceiling_gb"] if ceiling_gb is None else ceiling_gb
+    swept = heartbeat.reopened_too_big() if reopened_at is ... else reopened_at
     stale = ms.stale_too_big(conn, here)
-    if not stale:
-        return []
-    named = ", ".join(f"{r['name']} ({r['ceiling_gb']:g} GiB)" for r in stale[:5])
-    return [f"{len(stale)} too-big verdict(s) judged against a ceiling under this machine's "
-            f"{here:g} GiB, e.g. {named}"]
+    survived = [r for r in stale if swept and float(r["decided_at"] or 0) < swept]
+    fresh = [r for r in stale if r not in survived]
+
+    def say(rows, what):
+        named = ", ".join(f"{r['name']} ({r['ceiling_gb']:g} GiB)" for r in rows[:5])
+        return [f"{len(rows)} too-big verdict(s) judged against a ceiling under this machine's "
+                f"{here:g} GiB {what}, e.g. {named}"] if rows else []
+    return (say(survived, f"survived the loop's requeue at {_when(swept)}"),
+            say(fresh, "await the next loop's requeue"))
+
+
+def _when(at) -> str:
+    import time
+    return time.strftime("%Y-%m-%d %H:%M", time.localtime(at)) if at else "never"
 
 
 def _sweep_on_schedule() -> list:
@@ -150,15 +161,18 @@ def audit(path=None, config=None) -> dict:
             mc._check("served_matches_adoption", _served_matches(served, wanted)),
             mc._check("gateway_errors", _gateway_errors(conn)),
             mc._check("sweep_on_schedule", _sweep_on_schedule()),
-            mc._check("too_big_ceiling_current", _too_big_ceiling_current(conn)),
         ]
+        stale, backlog = _too_big_ceiling_current(conn)
+        checks.append(mc._check("too_big_ceiling_current", stale))
+        warnings = {"too_big_ceiling_current": mc._say(backlog)} if backlog and not stale else {}
         have = mc.schema(conn)
         bound = _binding(conn)
         fell = node_fallbacks(conn, config)
     finally:
         conn.close()
     return {"source": str(path), "schema": have, "ok": all(c.ok for c in checks),
-            "checks": [{"name": c.name, "ok": c.ok, "detail": c.detail} for c in checks],
+            "checks": [{"name": c.name, "ok": c.ok, "detail": c.detail or warnings.get(c.name, ""),
+                        "warn": c.name in warnings} for c in checks],
             "binding": bound, "fallbacks": fell}
 
 
@@ -171,7 +185,7 @@ def _binding(conn) -> list[dict]:
 
 def report_text(got: dict) -> str:
     lines = [f"audit of {got['source']} (schema {got['schema']}, read-only)"]
-    lines += [f"  {'ok  ' if c['ok'] else 'FAIL'} {c['name']}" + (f": {c['detail']}" if c["detail"] else "")
+    lines += [f"  {'FAIL' if not c['ok'] else 'warn' if c.get('warn') else 'ok  '} {c['name']}" + (f": {c['detail']}" if c["detail"] else "")
               for c in got["checks"]]
     if "binding" in got:
         from harness import binding
