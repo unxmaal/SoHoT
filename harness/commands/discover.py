@@ -51,6 +51,8 @@ def cmd_discover(a) -> int:
         return _report_feeds(a)
     if getattr(a, "benchmarks", False):
         return _report_benchmarks(a)
+    if getattr(a, "quants", False):
+        return _report_quants(a)
     if getattr(a, "papers", False):
         return _report_papers(a)
     if a.external:
@@ -397,6 +399,17 @@ def _answer_method(store, spec: str) -> str:
     return f"    {spec}: {got['outcome']}, as its base {base}"
 
 
+def _follow_quants(store, repo: str, fit) -> str:
+    """A refused model's base, followed to a quantized repo that fits. #882."""
+    from harness import inspect as ins, quants
+    base = next((p for p, k in fit.card.parents if k == quants.RELATION), repo)
+    try:
+        return quants.follow(store, base)
+    except ins.Deferred as exc:
+        ins.PACE.stop(str(exc))
+        return f"    {base}: quantized repos not listed ({exc}); left for the next sweep"
+
+
 def _report_inspect(a) -> int:
     """Read a candidate's source before anyone downloads its weights. #61."""
     from harness import github, inspect as ins, methods
@@ -539,9 +552,13 @@ def _report_inspect(a) -> int:
                               size_bytes=fit.largest if fit.verdict == "fits" else 0,
                               upstream_idle_days=fit.upstream_idle_days,
                               reason=ins.reason_of(fit), until=ins.until_of(fit),
+                              ceiling_gb=fit.ceiling / ins.GIB if fit.ceiling else None,
                               detail=f"{fit.verdict}: {fit.why}"[:200])
                 except ms.IllegalTransition as exc:
                     print(f"    kept its state: {exc}")
+            if registry == ms.HUGGINGFACE and (
+                    fit.verdict == "too-big" or fit.verdict.startswith("needs-")):
+                print(_follow_quants(store, repo, fit))
             # The WEIGHTS are what a download queue can act on. The repo is
             # something to install and screen, and the two are not the same
             # queue: queueing the repo sent GitHub names to snapshot_download,
@@ -780,13 +797,35 @@ def _report_sources(a) -> int:
 #: Every source family, in the order a sweep reads them. Each entry is the
 #: attribute cmd_discover dispatches on, so adding a source family here is the
 #: only edit needed to put it in the sweep.
-SOURCE_TIERS = ("feeds", "neighbors", "benchmarks", "papers")
+SOURCE_TIERS = ("feeds", "neighbors", "benchmarks", "papers", "quants")
 
 
 def _report_benchmarks(a) -> int:
     """The benchmark tier of a sweep: registries per lane, once per interval. #491."""
     from harness.commands import benchmarks as benchmarks_cmd
     return benchmarks_cmd.sweep_report(a)
+
+
+def _report_quants(a) -> int:
+    """The quantization tier of a sweep: unrunnable bases and incumbent peers to quants. #882."""
+    from harness import inspect as ins, quants
+    from harness import memory_store as ms
+    conn = ms.connect()
+    ins.PACE.start()
+    try:
+        lines = quants.sweep(conn, force=bool(getattr(a, "force", False)))
+        row = ms.source_row(conn, quants.SOURCE) or {}
+    finally:
+        ins.PACE.end()
+        conn.close()
+    for line in lines:
+        print(line)
+    if not lines:
+        print("  no quantization follow-up was due")
+    if row.get("last_status") == "failed":
+        err(f"{quants.SOURCE}: {row.get('last_error') or 'failed'}")
+        return 1
+    return 0
 
 
 def _report_papers(a) -> int:

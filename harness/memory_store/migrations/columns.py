@@ -215,6 +215,12 @@ def _add_verdict_seconds(conn) -> None:
             conn.execute(f"ALTER TABLE verdicts ADD COLUMN {name} REAL")
 
 
+def _add_verdict_ceiling(conn) -> None:
+    """verdicts.ceiling_gb on an older store. #880."""
+    if "ceiling_gb" not in _columns(conn, "verdicts"):
+        conn.execute("ALTER TABLE verdicts ADD COLUMN ceiling_gb REAL")
+
+
 def _add_request_purpose(conn) -> None:
     """gateway_requests.purpose on an older store; every earlier row is 'unknown'. #825."""
     if "purpose" not in _columns(conn, "gateway_requests"):
