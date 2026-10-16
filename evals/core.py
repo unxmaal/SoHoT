@@ -454,8 +454,9 @@ METRIC_DIRECTION = {
     "wall_s": "neutral",
     "test_s": "neutral",
     "prompt_tokens": "neutral",
-    # What a claude -p answer cost, from its result body; reported, never ranked on. #905.
-    "cost_usd": "neutral",
+    # claude -p usage token counts; reported, never ranked on. #907.
+    "cache_read_tokens": "neutral",
+    "cache_creation_tokens": "neutral",
     # methods (#576): what a method paid for its row; cost is reported, never ranked on.
     "method_calls": "neutral",
     "method_samples": "neutral",

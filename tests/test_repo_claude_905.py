@@ -19,7 +19,7 @@ here = Path(__file__).parent
 reply = (here / "reply.txt").read_text()
 print(json.dumps({{"type": "stream_event", "event": {{"delta": {{"type": "text_delta", "text": "x"}}}}}}))
 print(json.dumps({{"type": "result", "result": reply, "is_error": False, "total_cost_usd": 0.0421,
-                  "usage": {{"output_tokens": 50}}}}))
+                  "usage": {{"input_tokens": 12, "output_tokens": 50}}}}))
 """
 
 
@@ -48,10 +48,11 @@ def test_the_repo_lane_builds_a_claude_runner_for_a_claude_code_candidate():
         run._repo_runner("claude-code:", "", 0)
 
 
-def test_a_claude_reply_is_parsed_as_a_diff_and_graded_with_its_cost(upstream, claude):
+def test_a_claude_reply_is_parsed_as_a_diff_and_graded_with_its_tokens(upstream, claude):
     row = _runner(claude, f"Here is the fix.\n```diff\n{_diff(BUGGY, FIXED)}```\n").run(upstream)
     assert row.passed and row.metrics["resolved"] == 1 and row.metrics["patch_applied"] == 1
-    assert row.metrics["cost_usd"] == 0.0421 and row.metrics["completion_tokens"] == 50
+    assert "cost_usd" not in row.metrics and row.metrics["completion_tokens"] == 50
+    assert row.metrics["prompt_tokens"] == 12
     assert row.candidate == "claude-code:claude-opus-5-5"
     asked = (claude / "stdin.txt").read_text(encoding="utf-8")
     assert "def add(a, b)" in asked and "test_add_hidden_marker" not in asked
