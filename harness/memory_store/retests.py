@@ -5,20 +5,22 @@ import time
 
 from harness.memory_store.schema import INSPECT
 from harness.memory_store.transitions import (REOPENS, RETEST, RETESTS, decide_or_skip,
-    retest_eligible)
+    retest_eligible, retest_spent)
 
 
 def due_retests(conn, now: float | None = None) -> list[dict]:
     """Rejections whose next retest has come due, oldest first. #431."""
     now = time.time() if now is None else now
     rows = conn.execute(
-        "SELECT p.name, p.state, p.retest_count, p.next_retest_at, v.tier, "
+        "SELECT p.id, p.name, p.state, p.retest_count, p.next_retest_at, v.tier, "
         "v.until FROM proposals p JOIN verdicts v ON v.id = p.state_verdict_id "
         "WHERE p.next_retest_at IS NOT NULL AND p.next_retest_at <= ? "
         "AND p.retest_count < ? ORDER BY p.next_retest_at, p.id",
         (now, RETESTS)).fetchall()
+    # One scheduled before the adopt cap is held to it too. #881.
     return [dict(r) for r in rows
-            if retest_eligible(r["state"], r["tier"], r["until"])]
+            if retest_eligible(r["state"], r["tier"], r["until"])
+            and not retest_spent(conn, r["id"], r["tier"])]
 
 
 def reopen_due_retests(conn, now: float | None = None) -> list[str]:
@@ -51,9 +53,11 @@ def retest_counts(conn, now: float | None = None) -> dict:
     pending = conn.execute(
         "SELECT COUNT(*) FROM proposals WHERE next_retest_at > ?",
         (now,)).fetchone()[0]
-    final = conn.execute(
-        "SELECT COUNT(*) FROM proposals WHERE retest_count >= ? "
-        "AND next_retest_at IS NULL AND state IN (?, ?)",
-        (RETESTS, *REOPENS[RETEST])).fetchone()[0]
+    final = sum(1 for r in conn.execute(
+        "SELECT p.id, v.tier FROM proposals p "
+        "LEFT JOIN verdicts v ON v.id = p.state_verdict_id "
+        "WHERE p.next_retest_at IS NULL AND p.state IN (?, ?)",
+        REOPENS[RETEST]).fetchall()
+        if retest_spent(conn, r[0], r[1] or ""))
     return {"due": len(due_retests(conn, now)), "pending": pending,
             "final": final, "recovered": len(recovered_false_negatives(conn))}
