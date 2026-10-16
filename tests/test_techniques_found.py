@@ -258,10 +258,10 @@ def test_a_technique_repo_is_not_a_tool_wanted_nor_a_lane_wanted():
     assert [r["name"] for r in rank.wanted(rows)] == ["c/model"]
 
 
-def test_a_technique_never_enters_the_model_queue():
+def test_a_technique_never_enters_the_model_queue(store_conn):
     rows = [row("b/paper-code", lane="code", category="technique", registry="github"),
             row("c/model", lane="code", registry="huggingface", category="model")]
-    got = rank.rank(rows, ceiling_gib=22.0)
+    got = rank.rank(rows, ceiling_gib=22.0, conn=store_conn)
     assert [r["name"] for r in got] == ["c/model"]
 
 

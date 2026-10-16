@@ -26,7 +26,7 @@ def order(rows, **kw):
     kw.setdefault("bases_by_lane", {})
     return [r["name"] for r in rank.rank(rows, serving=(), measured_lanes={"code"},
                                          ceiling_gib=66.0, incumbents_by_lane=INC,
-                                         now=NOW, **kw)]
+                                         now=NOW, **kw, conn=None)]
 
 
 def test_an_old_27b_peer_screens_before_three_fresh_sub_1b_releases():
@@ -49,7 +49,7 @@ def test_the_longer_wait_ranks_first_on_otherwise_equal_rows():
 def test_the_head_says_it_is_a_peer_of_the_incumbent():
     got = rank.rank([row("Qwen/Qwen3.6-27B-GGUF", gib=14.3, age_days=38)], serving=(),
                     measured_lanes={"code"}, ceiling_gib=66.0, incumbents_by_lane=INC,
-                    bases_by_lane={}, now=NOW)[0]["value_why"]
+                    bases_by_lane={}, now=NOW, conn=None)[0]["value_why"]
     assert "27B, a size peer of the incumbent Ornith-1.5-35B-Q4_K_M (35B)" in got
     assert "waiting 38 days" in got
 
@@ -59,11 +59,11 @@ def test_a_full_precision_base_ranks_below_its_queued_quant():
             row("someone/Qwen3.6-27B-Q4-GGUF", gib=15.0, age_days=5,
                 parents=[("Qwen/Qwen3.6-27B", "quantized")])]
     got = rank.rank(rows, serving=(), measured_lanes={"code"}, ceiling_gib=66.0,
-                    incumbents_by_lane=INC, bases_by_lane={}, now=NOW)
+                    incumbents_by_lane=INC, bases_by_lane={}, now=NOW, conn=None)
     assert [r["name"] for r in got] == ["someone/Qwen3.6-27B-Q4-GGUF", "Qwen/Qwen3.6-27B"]
     assert "a quantised form is queued: someone/Qwen3.6-27B-Q4-GGUF" in got[1]["value_why"]
     alone = rank.rank(rows[:1], serving=(), measured_lanes={"code"}, ceiling_gib=66.0,
-                      incumbents_by_lane=INC, bases_by_lane={}, now=NOW)[0]["value"]
+                      incumbents_by_lane=INC, bases_by_lane={}, now=NOW, conn=None)[0]["value"]
     assert got[1]["value"] == pytest.approx(alone + rank.QUANT_QUEUED)
     assert rank.QUANT_QUEUED < 0
 

@@ -85,23 +85,23 @@ def test_a_source_covering_every_lane_is_not_a_lane():
     assert "no lane can measure it" in rank.value(row("a", lane="all"), ceiling_gib=22.0)[1][0]
 
 
-def test_every_row_says_why_it_is_where_it_is():
+def test_every_row_says_why_it_is_where_it_is(store_conn):
     """A ranking whose rows cannot say why is one nobody can argue with, and
     every metric in this project that went wrong went wrong quietly."""
     got = rank.rank([row("a/thing", lane="tts", times=3,
                          description="0.5 GiB of weights")],
-                    serving=SERVING, measured_lanes=MEASURED)
+                    serving=SERVING, measured_lanes=MEASURED, conn=store_conn)
     assert got[0]["value_why"]
     assert "tts" in got[0]["value_why"]
 
 
-def test_the_order_is_stable_when_two_rows_tie():
+def test_the_order_is_stable_when_two_rows_tie(store_conn):
     """Two runs of a deterministic instrument must not disagree. The judge
     needed three runs to be believed; this one should need none."""
     rows = [row("b/second", lane="tts"), row("a/first", lane="tts")]
-    assert [r["name"] for r in rank.rank(rows, measured_lanes=MEASURED)] == \
+    assert [r["name"] for r in rank.rank(rows, measured_lanes=MEASURED, conn=store_conn)] == \
            ["a/first", "b/second"]
-    assert rank.rank(rows) == rank.rank(rows)
+    assert rank.rank(rows, conn=store_conn) == rank.rank(rows, conn=store_conn)
 
 
 # --- reading the facts out of a description ------------------------------
@@ -139,16 +139,16 @@ def test_a_lane_nobody_asked_for_gets_nothing():
     assert rank.priority_of("") == 0.0
 
 
-def test_a_wanted_lane_outranks_an_unwanted_one_on_equal_information():
+def test_a_wanted_lane_outranks_an_unwanted_one_on_equal_information(store_conn):
     """The defect this fixes: every candidate tied at +5.0 and the tiebreak was
     ALPHABETICAL, so a tts model sat above an image one because of its name."""
     rows = [{"name": "zzz/image-model", "lane": "image", "times": 1, "bytes": 0},
             {"name": "aaa/tts-model", "lane": "tts", "times": 1, "bytes": 0}]
-    got = rank.rank(rows, serving=(), measured_lanes=())
+    got = rank.rank(rows, serving=(), measured_lanes=(), conn=store_conn)
     assert [r["name"] for r in got] == ["zzz/image-model", "aaa/tts-model"]
 
 
-def test_priority_never_outranks_teaching_nothing():
+def test_priority_never_outranks_teaching_nothing(store_conn):
     """A requant of something already served teaches nothing whatever lane it
     is in. If priority could overcome that, the loop would spend its budget
     re-measuring what it already runs."""
@@ -160,15 +160,15 @@ def test_priority_never_outranks_teaching_nothing():
              "parents": [("org/served", "quantized")]},
             {"name": "org/fresh", "lane": "svg", "times": 1, "bytes": 0,
              "description": ""}]
-    got = rank.rank(rows, serving={"org/served"}, measured_lanes=())
+    got = rank.rank(rows, serving={"org/served"}, measured_lanes=(), conn=store_conn)
     assert [r["name"] for r in got] == ["org/fresh", "org/requant"], (
         "image is the top lane, and a requant of something already served "
         "still teaches nothing")
 
 
-def test_the_reason_names_the_lane():
+def test_the_reason_names_the_lane(store_conn):
     rows = [{"name": "org/m", "lane": "image", "times": 1, "bytes": 0}]
-    got = rank.rank(rows, serving=(), measured_lanes=())
+    got = rank.rank(rows, serving=(), measured_lanes=(), conn=store_conn)
     assert "wanted lane" in got[0]["value_why"]
 
 

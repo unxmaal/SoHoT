@@ -210,6 +210,15 @@ def _rows_from(summary: dict) -> list[dict]:
 
 
 @pytest.fixture
+def store_conn(tmp_path):
+    """A fresh store connection for code that requires one, such as rank.rank. #893."""
+    from harness import memory_store as ms
+    conn = ms.connect(tmp_path / "store.db")
+    yield conn
+    conn.close()
+
+
+@pytest.fixture
 def store_run():
     """Store one run, as evals.run would, from rows or a summary. #410."""
     from harness import memory_store as ms

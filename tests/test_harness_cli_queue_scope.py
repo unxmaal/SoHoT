@@ -73,6 +73,7 @@ def test_the_denominator_counts_only_what_a_screen_could_answer(monkeypatch, cap
     monkeypatch.setattr("harness.memory_store.retest_counts", lambda conn: {
         "due": 0, "pending": 0, "final": 0, "recovered": 0})
     monkeypatch.setattr("harness.rank.serving", lambda *a, **k: set())
+    monkeypatch.setattr("harness.rank.incumbents", lambda conn: {})
     monkeypatch.setattr("harness.rank.lanes_with_receipts", lambda *a, **k: set())
     cli._report_queue(argparse.Namespace(lane="image", top=25, json=False))
     out = capsys.readouterr().out
@@ -94,6 +95,7 @@ def test_the_screen_tier_scopes_before_limiting_too(monkeypatch, capsys):
     monkeypatch.setattr("harness.fetching.missing",
                         lambda name, conn=None: [name])
     monkeypatch.setattr("harness.rank.serving", lambda *a, **k: set())
+    monkeypatch.setattr("harness.rank.incumbents", lambda conn: {})
     monkeypatch.setattr("harness.rank.lanes_with_receipts", lambda *a, **k: set())
     cli._report_screen(argparse.Namespace(lane="image", top=2, run=False,
                                           json=False))
@@ -116,6 +118,7 @@ def test_a_fetched_candidate_below_the_rank_head_is_still_screened(monkeypatch, 
     monkeypatch.setattr("harness.memory_store.connect",
                         lambda *a, **k: _Store(rows))
     monkeypatch.setattr("harness.rank.serving", lambda *a, **k: set())
+    monkeypatch.setattr("harness.rank.incumbents", lambda conn: {})
     monkeypatch.setattr("harness.rank.lanes_with_receipts", lambda *a, **k: set())
     monkeypatch.setattr("harness.screen.plan", lambda ranked, **k: waiting + [fetched])
     monkeypatch.setattr("harness.screen.argv", lambda r, **k: ["screen", r["name"]])
