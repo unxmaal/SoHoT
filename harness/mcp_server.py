@@ -279,18 +279,24 @@ def delegated(call_id: str, outcome: str, why: str = "") -> DelegationOutcome:
 INTERACTIVE_PRIORITY = 10
 
 
-def _queue(kind: str, prompt: str, argv: list[str], out: Path) -> JobInfo:
+def _queue(kind: str, prompt: str, argv: list[str], out: Path, start: str = "") -> JobInfo:
+    try:
+        not_before = workqueue.start_at(start)
+    except ValueError as exc:
+        raise ToolError(str(exc)) from exc
     job = workqueue.add(argv, title=f"{kind}: {prompt[:80]}", kind=kind,
                         output=str(out), cwd=str(Path(__file__).resolve().parents[1]),
-                        priority=INTERACTIVE_PRIORITY, requested_by="mcp")
+                        priority=INTERACTIVE_PRIORITY, requested_by="mcp",
+                        not_before=not_before)
     return _describe(job)
 
 
 @SERVER.tool(description="Generate an image. Queued on this machine's work "
                          "queue: returns a job id at once. Poll job_status, "
-                         "then job_result for the PNG. About 3 s once started.")
+                         "then job_result for the PNG. About 3 s once started. "
+                         "`start` 'night' or 'HH:MM' holds it until then.")
 def image(prompt: str, width: int = 512, height: int = 512,
-          seed: int = 0, model: str = "") -> JobInfo:
+          seed: int = 0, model: str = "", start: str = "") -> JobInfo:
     out = _out("image", ".png")
     argv = [*LH, "image", prompt, "-o", str(out),
             "--width", str(width), "--height", str(height)]
@@ -298,21 +304,22 @@ def image(prompt: str, width: int = 512, height: int = 512,
         argv += ["--seed", str(seed)]
     if model:
         argv += ["-m", model]
-    return _queue("image", prompt, argv, out)
+    return _queue("image", prompt, argv, out, start)
 
 
 @SERVER.tool(description="Generate a short video clip (MP4). Queued on this "
                          "machine's work queue: returns a job id at once. Poll "
                          "job_status, then job_result for the file. Minutes "
-                         "once started.")
+                         "once started. `start` 'night' or 'HH:MM' holds it "
+                         "until then.")
 def video(prompt: str, width: int = 512, height: int = 512, frames: int = 22,
-          seed: int = 0) -> JobInfo:
+          seed: int = 0, start: str = "") -> JobInfo:
     out = _out("video", ".mp4")
     argv = [*LH, "video", prompt, "-o", str(out), "--width", str(width),
             "--height", str(height), "--frames", str(frames)]
     if seed:
         argv += ["--seed", str(seed)]
-    return _queue("video", prompt, argv, out)
+    return _queue("video", prompt, argv, out, start)
 
 
 @SERVER.tool(description="Check a queued job. States: queued, running, done, "
@@ -369,7 +376,9 @@ def _describe(job: dict) -> JobInfo:
         info.ahead = (sum(1 for j in everyone if j["state"] == workqueue.RUNNING)
                       + line.index(job["id"]))
         running = next((j for j in everyone if j["state"] == workqueue.RUNNING), None)
-        if running:
+        if not workqueue.due(job):
+            info.waiting_for = f"its start time {job['not_before']}"
+        elif running:
             info.waiting_for = running.get("kind") or "a job"
         else:
             ok, why = workqueue.gate()

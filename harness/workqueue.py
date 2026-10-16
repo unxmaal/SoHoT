@@ -89,7 +89,7 @@ def _row(conn, r) -> dict:
             "started": _iso(r["started_at"]), "finished": _iso(r["finished_at"]),
             "rc": r["rc"], "log": r["log"], "note": r["note"],
             "requested_by": r["requested_by"], "machine_id": r["machine_id"],
-            "runs": runs}
+            "not_before": _iso(r["not_before"]), "runs": runs}
 
 
 def _select(conn, where: str = "", args=()) -> list[dict]:
@@ -139,9 +139,52 @@ def queue_cwd(caller, deploy, explicit: str = "") -> str:
         f"this checkout's code; pass --cwd {caller} to mean it, or queue from the deploy")
 
 
+def night_start(now: float) -> float:
+    """now if it is night, else when the next night starts: discovery's evening hours until the watchdog's day start. #900."""
+    from datetime import datetime, timedelta
+
+    from harness import heartbeat, watchdog
+    day = range(watchdog.DAY_START_HOUR, watchdog.DAY_END_HOUR)
+    hours = [h for h in heartbeat.discover_hours() if h % 24 not in day] or [watchdog.DAY_END_HOUR]
+    t = datetime.fromtimestamp(now)
+    later = []
+    for back in (-1, 0, 1):
+        d = t.date() + timedelta(days=back)
+        for h in hours:
+            start = datetime(d.year, d.month, d.day, h % 24)
+            end = start.replace(hour=watchdog.DAY_START_HOUR)
+            if end <= start:
+                end += timedelta(days=1)
+            if start <= t < end:
+                return now
+            if start > t:
+                later.append(start)
+    return min(later).timestamp()
+
+
+def at_clock(hhmm: str, now: float) -> float:
+    """The next local HH:MM at or after now. #900."""
+    from datetime import datetime, timedelta
+    m = re.fullmatch(r"(\d{1,2}):(\d{2})", hhmm.strip())
+    if not m or int(m.group(1)) > 23 or int(m.group(2)) > 59:
+        raise ValueError(f"a start time is HH:MM or 'night', not {hhmm!r}")
+    t = datetime.fromtimestamp(now)
+    at = t.replace(hour=int(m.group(1)), minute=int(m.group(2)), second=0, microsecond=0)
+    return (at if at >= t else at + timedelta(days=1)).timestamp()
+
+
+def start_at(spec: str, now: float | None = None) -> float | None:
+    """'' -> None, 'night' -> night_start, 'HH:MM' -> its next occurrence. #900."""
+    spec = (spec or "").strip()
+    if not spec:
+        return None
+    now = time.time() if now is None else now
+    return night_start(now) if spec == "night" else at_clock(spec, now)
+
+
 def add(argv: list[str], title: str = "", cwd: str = "", kind: str = "command",
         output: str = "", priority: int = 0, requested_by: str = "",
-        conn=None) -> dict:
+        not_before: float | None = None, conn=None) -> dict:
     if not argv:
         raise ValueError("a job needs a command")
     first = str(argv[0])
@@ -156,10 +199,11 @@ def add(argv: list[str], title: str = "", cwd: str = "", kind: str = "command",
         # The store assigns the id inside the insert, so two writers cannot collide. #418.
         cur = c.execute(
             "INSERT INTO jobs (title, kind, output, priority, argv, cwd, state, "
-            "created_at, requested_by, machine_id) VALUES (?,?,?,?,?,?,?,?,?,?)",
+            "created_at, requested_by, machine_id, not_before) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
             (title or " ".join(argv), kind, output, int(priority),
              json.dumps([str(a) for a in argv]), cwd or os.getcwd(), PENDING,
-             time.time(), requested_by, machine))
+             time.time(), requested_by, machine,
+             None if not_before is None else float(not_before)))
         c.commit()
         return _select(c, "WHERE id = ?", (cur.lastrowid,))[0]
 
@@ -182,6 +226,17 @@ def pending(conn=None) -> list[dict]:
     with _store(conn) as c:
         where, args = _here(c)
         return order(_select(c, f"WHERE state = ? AND {where}", (PENDING, *args)))
+
+
+def due(job: dict, now: float | None = None) -> bool:
+    """Whether a job's earliest start has come. #900."""
+    at = _epoch(job.get("not_before")) if job.get("not_before") else None
+    return at is None or at <= (time.time() if now is None else now)
+
+
+def ready(conn=None, now: float | None = None) -> list[dict]:
+    """Pending jobs whose start time has come, in run order; a later job runs while an earlier one waits. #900."""
+    return [j for j in pending(conn) if due(j, now)]
 
 
 def _claimed(c) -> tuple[str, tuple]:
@@ -509,7 +564,7 @@ def _recover() -> None:
         c.commit()
 
 
-def run_pending(popen=None, gate=lambda: (True, "")) -> list[dict]:
+def run_pending(popen=None, gate=lambda: (True, ""), clock=time.time) -> list[dict]:
     """Work the queue in order while the gate stays open. One runner at a time."""
     fd = _runner_lock()
     if fd is None:
@@ -518,7 +573,7 @@ def run_pending(popen=None, gate=lambda: (True, "")) -> list[dict]:
     try:
         _recover()
         while True:
-            nxt = next(iter(pending()), None)
+            nxt = next(iter(ready(now=clock())), None)
             if nxt is None or not gate()[0]:
                 return done
             ran = run_one(nxt, popen=popen)
@@ -593,19 +648,19 @@ def import_json(conn) -> dict:
 
 
 def serve(poll: float = 30.0, sleep=time.sleep, popen=None,
-          gate_fn=None, forever=True) -> None:
+          gate_fn=None, forever=True, clock=time.time) -> None:
     """The worker service: check the gate every `poll` seconds, run what waits."""
     gate_fn = gate_fn or gate
     said = ""
     while True:
-        if pending():
+        if ready(now=clock()):
             ok, why = gate_fn()
             if why != said:
                 print(f"{time.strftime('%H:%M:%S')} {'running' if ok else 'waiting'}: {why}",
                       flush=True)
                 said = why
             if ok:
-                ran = run_pending(popen=popen, gate=gate_fn)
+                ran = run_pending(popen=popen, gate=gate_fn, clock=clock)
                 for j in ran:
                     print(f"{time.strftime('%H:%M:%S')} {j['id']} {j['state']} "
                           f"rc={j['rc']} {j['title']}", flush=True)

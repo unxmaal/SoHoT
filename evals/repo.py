@@ -48,6 +48,10 @@ class Grade:
     limit: str = ""
 
 
+#: The grader's own directory in a task: sandbox profile, HOME, TMPDIR, junit report. #899.
+HARNESS_DIR = ".grade"
+
+
 def cache_root() -> Path:
     from harness import paths
     return paths.home() / "repo-cache"
@@ -280,6 +284,7 @@ def install_tests(mirror_path: Path, task: Path, base: str, fix: str) -> None:
     touched = _git(["status", "--porcelain", "--untracked-files=all", "--no-renames"], cwd=task
                    ).stdout.decode().splitlines()
     paths = {line[3:].strip() for line in touched if line[3:].strip()}
+    paths = {p for p in paths if Path(p).parts[:1] != (HARNESS_DIR,)}
     for rel in sorted({p for p in paths if is_test_path(p)} | set(hidden_tests(mirror_path, base, fix))):
         data = _blob(mirror_path, fix, rel)
         if data is None:
@@ -316,7 +321,7 @@ def sandboxed(argv: list, task: Path) -> list:
     """argv under sandbox-exec: no network, no write outside the task dir."""
     if sys.platform != "darwin" or not Path(SANDBOX_EXEC).is_file():
         raise RepoEnvError(f"grading needs {SANDBOX_EXEC} (macOS); this host has none")
-    profile = task / ".grade" / "profile.sb"
+    profile = task / HARNESS_DIR / "profile.sb"
     profile.parent.mkdir(parents=True, exist_ok=True)
     profile.write_text(PROFILE, encoding="utf-8")
     return [SANDBOX_EXEC, "-f", str(profile), "-D", f"TASK={task}", *argv]
@@ -324,7 +329,7 @@ def sandboxed(argv: list, task: Path) -> list:
 
 def run_sandboxed(argv: list, task: Path, timeout: float) -> tuple[int, str, bool]:
     """(returncode, output tail, timed out) of argv run sandboxed in task with HOME and TMPDIR inside it."""
-    home, tmp = task / ".grade" / "home", task / ".grade" / "tmp"
+    home, tmp = task / HARNESS_DIR / "home", task / HARNESS_DIR / "tmp"
     home.mkdir(parents=True, exist_ok=True)
     tmp.mkdir(parents=True, exist_ok=True)
     env = {"PATH": "/usr/bin:/bin", "HOME": str(home), "TMPDIR": str(tmp),
@@ -347,7 +352,7 @@ def grade(task: Path, python: Path, fail_to_pass, pass_to_pass) -> Grade:
     """Run the named tests sandboxed; resolved when pytest reports every one of them passed."""
     timeout = TEST_TIMEOUT_S
     ids = [*fail_to_pass, *pass_to_pass]
-    report = task / ".grade" / "junit.xml"
+    report = task / HARNESS_DIR / "junit.xml"
     report.parent.mkdir(parents=True, exist_ok=True)
     report.unlink(missing_ok=True)
     started = time.perf_counter()

@@ -4,7 +4,7 @@ from __future__ import annotations
 from harness import store
 
 
-SCHEMA_VERSION = 73
+SCHEMA_VERSION = 74
 
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
@@ -283,7 +283,9 @@ CREATE TABLE IF NOT EXISTS jobs (
     note         TEXT NOT NULL DEFAULT '',
     -- cli, mcp or migration.
     requested_by TEXT NOT NULL DEFAULT '',
-    machine_id   INTEGER REFERENCES machines(id)
+    machine_id   INTEGER REFERENCES machines(id),
+    -- Epoch before which the worker leaves this job alone; NULL means as soon as it can. #900.
+    not_before   REAL
 );
 
 -- One eval run, written by evals.run; results.json is its export. #410.

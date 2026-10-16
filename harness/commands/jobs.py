@@ -17,9 +17,15 @@ def cmd_jobs(a) -> int:
     rest, title = list(a.rest), a.title
     # REMAINDER swallows options written after the action.
     priority, cwd = a.priority, a.cwd
-    while rest[:1] in (["--title"], ["--json"], ["--priority"], ["--cwd"]):
+    start = "night" if getattr(a, "night", False) else getattr(a, "not_before", "")
+    while rest[:1] in (["--title"], ["--json"], ["--priority"], ["--cwd"], ["--night"],
+                       ["--not-before"]):
         if rest[0] == "--json":
             common._JSON, rest = True, rest[1:]
+        elif rest[0] == "--night":
+            start, rest = "night", rest[1:]
+        elif len(rest) > 1 and rest[0] == "--not-before":
+            start, rest = rest[1], rest[2:]
         elif len(rest) > 1 and rest[0] == "--title":
             title, rest = rest[1], rest[2:]
         elif len(rest) > 1 and rest[0] == "--cwd":
@@ -43,8 +49,9 @@ def cmd_jobs(a) -> int:
             import os
             where = wq.queue_cwd(os.getcwd(), wq.deployed(), explicit=cwd)
             job = wq.add(rest, title=a.title, cwd=where, priority=priority,
-                         requested_by="cli")
-            note(f"queued {job['id']}: {job['title']}")
+                         requested_by="cli", not_before=wq.start_at(start))
+            after = f" (not before {job['not_before']})" if job["not_before"] else ""
+            note(f"queued {job['id']}{after}: {job['title']}")
             emit(job=job)
             return 0
         if a.action == "priority":
@@ -78,8 +85,10 @@ def cmd_jobs(a) -> int:
     loop = heartbeat.summary()
     if loop:
         note(loop["line"])
+    later = sum(j["state"] == wq.PENDING and not wq.due(j) for j in got)
     note(f"{'a job is running' if wq.running() else 'nothing running'}; "
-         f"{sum(j['state'] == wq.PENDING for j in got)} pending; next job "
+         f"{sum(j['state'] == wq.PENDING for j in got)} pending"
+         f"{f' ({later} waiting for their start time)' if later else ''}; next job "
          f"{'may start' if ok else 'waits'}: {why}")
     shown = ([j for j in got if j["state"] == wq.RUNNING] + wq.order(
         [j for j in got if j["state"] == wq.PENDING])
@@ -87,6 +96,8 @@ def cmd_jobs(a) -> int:
     for j in shown:
         rc = "" if j["rc"] is None else f" rc={j['rc']}"
         pri = int(j.get("priority") or 0)
-        note(f"  {j['id']}  {j['state']:8}{rc:7}  p{pri:<3} {j['title']}")
+        at = (f"from {j['not_before'].replace('T', ' ')[:16]} "
+              if j["state"] == wq.PENDING and not wq.due(j) else "")
+        note(f"  {j['id']}  {j['state']:8}{rc:7}  p{pri:<3} {at}{j['title']}")
     emit(running=wq.running(), gate_open=ok, why=why, jobs=got, loop=loop)
     return 0
