@@ -450,7 +450,7 @@ def test_crossing_twice_queues_nothing_new_and_adds_no_sighting(monkeypatch, tmp
         conn.close()
 
 
-def test_a_crossed_method_reaches_the_screen_as_ready(monkeypatch, tmp_path):
+def test_a_crossed_method_reaches_the_screen_as_ready(monkeypatch, tmp_path, store_conn):
     from harness import rank
     from harness.commands import loop
     _lane_defaults(monkeypatch, {"code": "q3-4b"})
@@ -460,7 +460,7 @@ def test_a_crossed_method_reaches_the_screen_as_ready(monkeypatch, tmp_path):
         rows = ms.judgeable(conn, limit=1000)
     finally:
         conn.close()
-    ranked = rank.rank(rows, ceiling_gib=22.0)
+    ranked = rank.rank(rows, ceiling_gib=22.0, conn=store_conn)
     plan = {r["name"]: r for r in screen.plan(ranked, missing=lambda n: [n])}
     assert plan["best-of:3:q3-4b"]["state"] == screen.READY
     assert plan["plan:q3-4b"]["state"] == screen.READY

@@ -218,33 +218,33 @@ def _row(name, lane="video", description="", times=2, card=None):
             "runtime_needed": facts.runtime_needed, "parents": facts.parents}
 
 
-def test_an_adapter_never_reaches_the_queue():
+def test_an_adapter_never_reaches_the_queue(store_conn):
     """screen.is_attachment() refused these only AFTER they took the top of
     the ranking: the first six rows were video LoRAs. Issue #207."""
     rows = [_row("LiconStudio/Ltx2.3-VBVR-lora-I2V"),
             _row("Robert1212star/TaoMate-H3-3Step-ComfyUI", lane="image"),
             _row("org/real-model", description="a text-to-video model")]
-    got = rank.rank(rows, serving=(), measured_lanes=())
+    got = rank.rank(rows, serving=(), measured_lanes=(), conn=store_conn)
     assert [r["name"] for r in got] == ["org/real-model"]
 
 
-def test_an_adapter_is_caught_by_its_card_as_well_as_its_name():
+def test_an_adapter_is_caught_by_its_card_as_well_as_its_name(store_conn):
     rows = [_row("org/innocuous-name", card={"tags": ["LoRA", "flux"]})]
-    assert rank.rank(rows, serving=(), measured_lanes=()) == []
+    assert rank.rank(rows, serving=(), measured_lanes=(), conn=store_conn) == []
 
 
-def test_an_adapter_in_the_prose_alone_is_not_parsed_back():
+def test_an_adapter_in_the_prose_alone_is_not_parsed_back(store_conn):
     """#414: the description is for the judge. A reader that parses it again
     fails here, with no attaches_to on the row."""
     rows = [_row("org/innocuous-name", description="a style LoRA for FLUX")]
-    assert [r["name"] for r in rank.rank(rows, serving=(), measured_lanes=())
+    assert [r["name"] for r in rank.rank(rows, serving=(), measured_lanes=(), conn=store_conn)
             ] == ["org/innocuous-name"]
 
 
-def test_a_real_model_whose_card_says_lora_ready_is_kept():
+def test_a_real_model_whose_card_says_lora_ready_is_kept(store_conn):
     """The one enumerated exception, so the refusal cannot creep."""
     rows = [_row("org/base", card={"tags": ["lora-ready", "base"]})]
-    assert [r["name"] for r in rank.rank(rows, serving=(), measured_lanes=())
+    assert [r["name"] for r in rank.rank(rows, serving=(), measured_lanes=(), conn=store_conn)
             ] == ["org/base"]
 
 
@@ -307,13 +307,13 @@ def test_a_parked_lanes_candidates_sink_below_the_laneless(video_parked):
     assert parked < laneless
 
 
-def test_a_parked_candidate_stays_in_the_queue(video_parked):
+def test_a_parked_candidate_stays_in_the_queue(video_parked, store_conn):
     """Ranked down, never dropped. When the Studio arrives the lane un-parks
     and these candidates must still be here with their recurrence intact,
     which is why this is a ranking answer and never a stored verdict."""
     rows = [_row("org/v", lane="video", description="a text-to-video model"),
             _row("org/i", lane="image", description="a text-to-image model")]
-    got = [r["name"] for r in rank.rank(rows, serving=(), measured_lanes=())]
+    got = [r["name"] for r in rank.rank(rows, serving=(), measured_lanes=(), conn=store_conn)]
     assert set(got) == {"org/v", "org/i"}, "a parked candidate was discarded"
     assert got[-1] == "org/v", "a parked candidate must rank last"
 

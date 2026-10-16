@@ -524,7 +524,7 @@ def test_an_adapter_is_spelled_for_the_engine_that_loads_it():
     assert not screen.takes_attachment("image", "lora")
 
 
-def test_rank_keeps_an_adapter_only_where_an_engine_loads_it():
+def test_rank_keeps_an_adapter_only_where_an_engine_loads_it(store_conn):
     from harness import rank
 
     def row(name, lane, attaches):
@@ -533,7 +533,7 @@ def test_rank_keeps_an_adapter_only_where_an_engine_loads_it():
                 "runtime_needed": "", "parents": []}
     got = rank.rank([row(NIMBLE, "decide", "lora"), row("org/style-lora", "image", "lora"),
                      row("org/nodes", "decide", "comfyui")],
-                    serving=(), measured_lanes=(), ceiling_gib=64.0)
+                    serving=(), measured_lanes=(), ceiling_gib=64.0, conn=store_conn)
     assert [r["name"] for r in got] == [NIMBLE]
 
 

@@ -94,15 +94,15 @@ def proposal(name, lane, times=1):
     return {"name": name, "lane": lane, "times": times, "bytes": 0}
 
 
-def test_a_candidate_with_no_lane_is_not_ranked():
+def test_a_candidate_with_no_lane_is_not_ranked(store_conn):
     """Penalising it left 66 of 94 queue slots holding things nothing could
     measure."""
     got = rank.rank([proposal("org/tool", ""), proposal("org/model", "tts")],
-                    serving=(), measured_lanes=())
+                    serving=(), measured_lanes=(), conn=store_conn)
     assert [r["name"] for r in got] == ["org/model"]
 
 
-def test_a_lane_of_all_counts_as_none_and_text_is_the_code_lane():
+def test_a_lane_of_all_counts_as_none_and_text_is_the_code_lane(store_conn):
     """A feed source declares lane 'all' to mean it covers everything, and that
     was recorded as the candidate's own lane on hundreds of proposals.
 
@@ -111,7 +111,7 @@ def test_a_lane_of_all_counts_as_none_and_text_is_the_code_lane():
     proposals from the queue entirely. Issue #207.
     """
     got = rank.rank([proposal("org/a", "all"), proposal("org/b", "text")],
-                    serving=(), measured_lanes=())
+                    serving=(), measured_lanes=(), conn=store_conn)
     assert [r["name"] for r in got] == ["org/b"]
     assert got[0]["lane"] == "text", "the stored row is not rewritten in place"
     assert rank.lane_of(got[0]) == "code"
@@ -126,9 +126,9 @@ def test_the_laneless_are_reported_rather_than_discarded():
     assert [r["name"] for r in got] == ["org/tool"]
 
 
-def test_keeping_them_is_possible_for_a_report_that_wants_them():
+def test_keeping_them_is_possible_for_a_report_that_wants_them(store_conn):
     got = rank.rank([proposal("org/tool", "")], serving=(), measured_lanes=(),
-                    keep_laneless=True)
+                    keep_laneless=True, conn=store_conn)
     assert [r["name"] for r in got] == ["org/tool"]
 
 

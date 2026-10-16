@@ -46,7 +46,7 @@ def test_the_fetch_order_is_the_screen_order(store):
     rows = [r for r in ms.judgeable(store, limit=1_000_000)
             if lanes.serves(rank.lane_of(r), "code")]
     screen = [r["name"] for r in rank.rank(
-        rows, serving=set(), measured_lanes=set())]
+        rows, serving=set(), measured_lanes=set(), conn=store)]
     assert fetch == screen, (
         "the fetch is downloading in an order the screen does not ask in")
 
