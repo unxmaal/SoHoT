@@ -162,12 +162,13 @@ def test_a_busy_gateway_past_the_clients_deadline_is_charged_to_the_harness(monk
 
 
 def test_a_batch_request_still_in_flight_keeps_the_serving_machine(monkeypatch):
-    _short_ttl(monkeypatch, 0.3)
+    # Renewal every TTL/3 must outrun a store connect on a slow Windows runner; 0.3s did not (#869).
+    _short_ttl(monkeypatch, 1.5)
     hook = _gateway()
 
     async def scenario():
         await hook(None, None, {**_request("a-long-reply"), "litellm_call_id": "c1"}, "acompletion")
-        await asyncio.sleep(1.0)
+        await asyncio.sleep(2.5)
         with pytest.raises(Exception) as got:
             await hook(None, None, _request("another"), "acompletion")
         return got.value

@@ -358,7 +358,10 @@ def test_a_page_chrome_never_shoots_in_time_is_timeout_on_the_render_knob(monkey
 
     def slow_shoot(argv, out, cwd, timeout=60.0):
         import time
-        time.sleep(timeout)
+        # Like _shoot, return only once monotonic has passed the deadline; Windows' coarse clock can trail time.sleep. #869.
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            time.sleep(0.05)
         return "still loading"
 
     monkeypatch.setattr(render, "_shoot", slow_shoot)

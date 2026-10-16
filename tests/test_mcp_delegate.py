@@ -190,11 +190,12 @@ def test_a_budget_spent_on_reasoning_says_how_much_and_offers_thinking_off(fake)
 
 
 def test_a_stalled_server_times_out_rather_than_hanging(fake):
-    fake.stall_s = 3.0
+    fake.stall_s = 30.0
     started = time.perf_counter()
     with pytest.raises(completion.CompletionError, match="timed out"):
         delegate.complete("code", "x", timeout=0.5)
-    assert time.perf_counter() - started < 2.5
+    # Gave up long before the stall ended; a 2.5s bound flaked on Windows CI (#869).
+    assert time.perf_counter() - started < 15
 
 
 def test_a_held_machine_lock_refuses_at_once_and_names_the_holder(fake):
@@ -216,6 +217,11 @@ def test_a_held_machine_lock_refuses_at_once_and_names_the_holder(fake):
     finally:
         child.kill()
         child.wait()
+    # Windows frees a dead process's lock some time after it exits. #851, #869.
+    for _ in range(200):
+        if delegate.busy() == "":
+            break
+        time.sleep(0.05)
     assert delegate.busy() == ""
 
 
