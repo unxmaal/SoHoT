@@ -438,6 +438,12 @@ METRIC_DIRECTION = {
     "method_calls": "neutral",
     "method_samples": "neutral",
     "method_chosen": "neutral",
+    # repair (#879): the attempt a repair loop passed on, or its cap; fewer is the same artifact for less.
+    "attempts": "lower",
+    # Bookkeeping, never ranked on: a retried empty reply, a chain's stage count, thinking turned off.
+    "retries": "neutral",
+    "stages": "neutral",
+    "thinking_disabled": "neutral",
     # retrieval (#563): every relevant document in the top k, and how high.
     "retrieval_recall": "higher",
     "retrieval_ndcg": "higher",

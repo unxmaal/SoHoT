@@ -326,3 +326,22 @@ def test_a_recorded_snapshot_offline_loads_cannot_open_goes_back_to_fetch(monkey
         assert not fetching.have("org/noref", conn)
     finally:
         conn.close()
+
+
+# --- verdict detail keeps subprocess stderr out (#879) --------------------
+
+WARNED = ("/deploy/evals/run.py:1869: UserWarning: metric 'attempts' declares no direction\n"
+          "  flat = [n for n in metric_names if direction_of(n) == \"neutral\"]\n")
+
+
+def test_a_screen_with_a_receipt_records_no_stderr_in_its_detail():
+    from harness.commands.screen import screen_detail
+    assert screen_detail("1 case(s) passed a screen", WARNED + "loading weights\n", {"m": {}}) \
+        == "1 case(s) passed a screen"
+
+
+def test_a_screen_without_a_receipt_keeps_its_stderr_less_warnings():
+    from harness.commands.screen import screen_detail
+    got = screen_detail("the screen exited 1", WARNED + "Traceback\nValueError: bad config\n", None)
+    assert got == "the screen exited 1 || Traceback ValueError: bad config"
+    assert screen_detail("the screen exited 1", WARNED, None) == "the screen exited 1"
