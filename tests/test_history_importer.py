@@ -17,7 +17,7 @@ ISSUE = {"title": "add subtracts", "body": "## Problem\nadd(2, 2) is 0.\n\n## Fi
                                         "## Prior art checked\nnone\n"}
 
 BASE_TEST = "from mod import add, sub\n\ndef test_sub():\n    assert sub(3, 1) == 2\n"
-ADD_TEST = BASE_TEST + "\ndef test_add():\n    assert add(2, 2) == 4\n"
+ADD_TEST = BASE_TEST + "\ndef test_add(tmp_path):\n    assert add(2, 2) == 4\n"
 
 
 def _git(repo, *args):
@@ -109,6 +109,9 @@ def test_a_test_that_disagrees_with_itself_across_two_runs_is_dropped_as_flaky(t
 
 
 @DARWIN
+@pytest.mark.gauntlet("one-default-tuned-for-one-member-applied-to-all", site="evals/importers/history.py:outcomes(timeout)")
+@pytest.mark.gauntlet("one-default-tuned-for-one-member-applied-to-all", site="evals/importers/history.py:probe(timeout)")
+@pytest.mark.gauntlet("one-default-tuned-for-one-member-applied-to-all", site="evals/importers/history.py:survey(timeout)")
 def test_a_pytest_run_past_its_timeout_is_killed_and_the_task_dropped(tmp_path):
     slow = ADD_TEST + "\nimport time\ndef test_slow():\n    time.sleep(60)\n"
     got = _survey(_repo(tmp_path, FIXED, slow), tmp_path, timeout=3)
@@ -167,6 +170,11 @@ def test_symptom_strips_plain_labelled_paragraphs_with_their_lists_and_keeps_wha
     for gone in ("drop it", "keep it", "request yesterday", "And test it", "change w"):
         assert gone not in got["symptom"] and gone in got["spec"], gone
     assert "#630" not in got["spec"]
+
+
+def test_a_home_path_in_an_issue_reaches_the_prompt_as_a_tilde():
+    got = history.prompts("t", "## Problem\nfails under " + "/Use" + "rs/someone/proj/deploy\n## Fix\nx\n")
+    assert "/Users/" not in got["spec"] and "~/proj/deploy" in got["symptom"]
 
 
 def test_a_lockfile_change_or_an_oversized_fix_is_screened_out():

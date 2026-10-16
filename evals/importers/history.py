@@ -36,7 +36,8 @@ VARIANTS = ("spec", "symptom")
 NOT_PROMPT = ("prior art checked",)
 SOLUTION = ("fix", "the fix", "shape", "shape of the fix", "design", "options", "remedy",
             "proposal", "build", "what to change", "what to build", "what to do")
-TRANSFORM = ("issue title and body from `gh issue view` at survey time, 'Prior art checked' removed "
+TRANSFORM = ("issue title and body from `gh issue view` at survey time, home paths as ~/, "
+             "'Prior art checked' removed "
              "(spec), and the Fix/Shape/Design/Options/Remedy/Proposal/Build/What-to sections and "
              "labelled paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from "
              f"{RUNS} sandboxed pytest runs of the fix's test files at base+hidden tests and at "
@@ -45,6 +46,7 @@ TRANSFORM = ("issue title and body from `gh issue view` at survey time, 'Prior a
 _HEADING = re.compile(r"^(#{1,6})\s+(.*?)\s*#*\s*$")
 _LABEL = re.compile(r"^(?:\*\*([^*\n]{1,60}?)[:.]?\*\*:?|([A-Z][A-Za-z ]{0,40}?):(?=\s|$))")
 _LIST = re.compile(r"^(\s+|[-*+] |\d+[.)] )")
+_HOME = re.compile(r"/(?:Users|home)/[^/\s]+/")
 
 
 def _norm(heading: str) -> str:
@@ -84,6 +86,7 @@ def strip_sections(body: str, names) -> str:
 
 def prompts(title: str, body: str) -> dict[str, str]:
     """variant -> prompt text; symptom is None when it would only repeat spec or say nothing."""
+    body = _HOME.sub("~/", body)
     spec = strip_sections(body, NOT_PROMPT)
     symptom = strip_sections(body, NOT_PROMPT + SOLUTION)
     head = f"# {title.strip()}\n\n"

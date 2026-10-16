@@ -1,0 +1,121 @@
+# SoHoT fix history (unxmaal/SoHoT), generated (https://github.com/unxmaal/SoHoT).
+# Imported by evals/importers from git:unxmaal/SoHoT@35ac01f5c487124fb40fc7a94680178c22b78ac6; re-import, do not edit.
+id: sohot-788-spec
+modality: repo
+prompt: '# A discrete card reserves the unified-memory default, so half of it is unusable
+
+
+  `context.budget_bytes()` is the planner''s VRAM budget:
+
+
+  ```python
+
+  return int((memory.ceiling_gb() - memory.measured_reserve_gb(conn)) * 1024 ** 3)
+
+  ```
+
+
+  `measured_reserve_gb()` returns the largest margin `lh memory ramp` stored for this machine, and **falls
+  back to `DEFAULT_RESERVE_GB` regardless of what it is budgeting for**. There are two reserves and it
+  picks the wrong one:
+
+
+  ```
+
+  DEFAULT_RESERVE_GB  = 6.0   unified memory: the GPU draws from system RAM, so 6 GiB for the OS is right
+
+  DISCRETE_RESERVE_GB = 2.0   a card is the wall; what the desktop holds comes off via available_gb
+
+  MIN_RESERVE_GB      = 1.0
+
+  ```
+
+
+  `memory.reserve_for(acc)` already chooses between them correctly. `measured_reserve_gb` does not ask.
+
+
+  On the 4070 node there is no ramp history, so the fallback applies: a 12 GiB card reserves 6 GiB, half
+  of itself, and the planner budgets 5.99 GiB.
+
+
+  Measured consequences, by passing `plan()` the budget the discrete reserve gives:
+
+
+  | | reserve 6.0 (today) | reserve 2.0 (correct) |
+
+  |---|---|---|
+
+  | Qwen2.5-7B-Instruct-Q4_K_M | ctx 28672, **7 slots**, "8 asked, 7 fit" | ctx 32768, **8 slots**, 1.8
+  GiB of KV |
+
+  | Qwen2.5-14B-Instruct-Q4_K_M | **refused**: "0.0 GiB of KV room holds 0 tokens" | ctx 8192, 1 slot,
+  1.6 GiB of KV |
+
+  | Qwen2.5-32B-Instruct-Q4_K_M | refused | refused, correctly: 18.48 GiB of weights |
+
+
+  Two things follow.
+
+
+  The 14B is refused by a constant, not by this machine. Nothing about the card prevents 8.37 GiB of weights
+  plus 1.6 GiB of KV from fitting in 11.99 GiB.
+
+
+  And **"8 asked, 7 fit" was never this card running out of room.** It was the planner holding half the
+  card for a desktop that does not need it. KB #367''s measured knee for the 7B is 8 x 4096 unified, and
+  with the right reserve this box delivers exactly that. Any baseline served at 7 slots measured a shape
+  that is not the knee; by that KB entry''s own figures the 7-to-8 slot step is most of the distance between
+  4700 and 9570 req/h.
+
+
+  Fix: the fallback should be `reserve_for(detect())`, so a machine with no ramp history gets the default
+  for the accelerator it actually has.
+
+
+  Note for whoever reviews the tests: `test_the_reserve_is_the_largest_measured_margin` and `test_a_memory_limits_file_is_not_read`
+  both assert `DEFAULT_RESERVE_GB` on an empty store without pinning an accelerator. They pass on a unified
+  runner and would fail on a discrete one, so they are platform-dependent today and the fix makes that
+  visible. They should pin the machine they mean, which is RULE #249''s point one layer down.'
+params:
+  source_repo: https://github.com/unxmaal/SoHoT.git
+  base: 4bb657c421c144c0170303abb4f7766d42d1c775
+  fix: 9f042f9d52302b4d042da37dea47f66e343e4f6b
+  variant: spec
+  context: oracle
+  context_files:
+  - harness/memory.py
+  fail_to_pass:
+  - tests/test_memory_ramp.py::test_a_card_with_no_ramp_history_reserves_the_discrete_default
+  pass_to_pass:
+  - tests/test_memory_ramp.py::test_a_machine_that_never_complains_stops_at_the_cap
+  - tests/test_memory_ramp.py::test_a_measured_margin_below_the_floor_is_not_trusted
+  - tests/test_memory_ramp.py::test_a_measured_margin_still_wins_over_either_default
+  - tests/test_memory_ramp.py::test_a_memory_limits_file_is_not_read
+  - tests/test_memory_ramp.py::test_a_run_ended_by_the_cap_measured_no_margin
+  - tests/test_memory_ramp.py::test_an_allocation_the_gpu_refuses_ends_the_ramp_and_still_releases
+  - tests/test_memory_ramp.py::test_an_unknown_total_refuses_rather_than_measuring_nothing
+  - tests/test_memory_ramp.py::test_compressor_swapping_out_is_a_stop_even_at_normal_pressure
+  - tests/test_memory_ramp.py::test_every_step_carries_both_free_memory_figures
+  - tests/test_memory_ramp.py::test_it_stops_at_the_first_warning_and_gives_the_memory_back
+  - tests/test_memory_ramp.py::test_lh_memory_ramp_is_a_command
+  - tests/test_memory_ramp.py::test_runs_accumulate_per_machine
+  - tests/test_memory_ramp.py::test_the_default_cap_comes_from_unified_memory
+  - tests/test_memory_ramp.py::test_the_free_floor_stops_it_before_the_kernel_warns
+  - tests/test_memory_ramp.py::test_the_margin_is_available_at_start_minus_the_last_normal_step
+  - tests/test_memory_ramp.py::test_the_reserve_is_the_largest_measured_margin
+  - tests/test_memory_ramp.py::test_the_result_is_kept_per_machine
+  - tests/test_memory_ramp.py::test_unified_memory_still_reserves_the_larger_default
+attribution:
+  dataset: SoHoT fix history (unxmaal/SoHoT)
+  url: https://github.com/unxmaal/SoHoT
+  license: generated
+  source: git:unxmaal/SoHoT
+  revision: 35ac01f5c487124fb40fc7a94680178c22b78ac6
+  item: '#788 (PR #789)'
+  date: '2026-10-11'
+  transform: issue title and body from `gh issue view` at survey time, home paths as ~/, 'Prior art checked'
+    removed (spec), and the Fix/Shape/Design/Options/Remedy/Proposal/Build/What-to sections and labelled
+    paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
+    of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
+    and sandbox (evals/repo.py)
+  importer: evals.importers.history

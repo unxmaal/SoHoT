@@ -1,0 +1,103 @@
+# SoHoT fix history (unxmaal/SoHoT), generated (https://github.com/unxmaal/SoHoT).
+# Imported by evals/importers from git:unxmaal/SoHoT@35ac01f5c487124fb40fc7a94680178c22b78ac6; re-import, do not edit.
+id: sohot-859-symptom
+modality: repo
+prompt: '# hf-daily-papers asks for today''s UTC date at 01:00Z, gets 400, and fails every nightly sweep
+
+
+  `hf-daily-papers` has failed every night since 2026-10-11 with `400 Bad Request` for `https://huggingface.co/api/daily_papers?date=<today
+  UTC>`. The sweep runs at 21:00 EDT = 01:00Z, so it asks for a UTC date that has only just begun; by
+  morning the same URL returns 200. The source''s last successful read was 2026-10-07 (failures=6).
+
+
+  Each 400 is recorded `failed`, which makes `soh discover --loop` exit 1 ("loop exit 1: sweep reported
+  a failure"), so every night''s sweep is reported as a failure and the papers feed is never read.'
+params:
+  source_repo: https://github.com/unxmaal/SoHoT.git
+  base: df54638acb63e1b628c762a74d79b59fb43d9ff7
+  fix: 8ae08a76bd2915b41bb353790bc11fb9ff8da315
+  variant: symptom
+  context: oracle
+  context_files:
+  - harness/commands/discover.py
+  - harness/papers.py
+  fail_to_pass:
+  - tests/test_fetch_retention_704.py::test_a_ten_day_outage_continues_the_backlog
+  - tests/test_papers_unpublished_859.py::test_a_400_that_persists_is_deferred_not_failed
+  - tests/test_papers_unpublished_859.py::test_a_first_read_uses_the_undated_page_and_the_next_night_asks_for_the_day_after
+  - tests/test_papers_unpublished_859.py::test_the_01z_sweep_reads_yesterday_and_never_asks_for_today
+  - tests/test_papers_unpublished_859.py::test_the_days_read_before_an_unpublished_one_are_kept
+  - tests/test_papers_unpublished_859.py::test_the_papers_tier_exits_0_when_the_day_is_not_published_yet
+  - tests/test_techniques_found.py::test_a_sweep_catches_up_on_each_day_it_missed_and_no_further_than_the_cap
+  - tests/test_techniques_found.py::test_the_read_is_recorded_in_the_sources_table
+  pass_to_pass:
+  - tests/test_fetch_retention_704.py::test_a_429_on_the_small_variants_only_is_unknown_not_too_big
+  - tests/test_fetch_retention_704.py::test_a_candidate_bigger_than_the_whole_budget_says_what_would_end_the_wait
+  - tests/test_fetch_retention_704.py::test_a_candidate_over_only_what_is_left_of_the_budget_waits_for_the_next_sweep
+  - tests/test_fetch_retention_704.py::test_a_candidate_waiting_on_a_bigger_budget_is_not_retried_at_the_same_budget
+  - tests/test_fetch_retention_704.py::test_a_dead_fetch_partial_download_is_cleared
+  - tests/test_fetch_retention_704.py::test_a_dead_host_is_not_retried_like_a_rate_limit
+  - tests/test_fetch_retention_704.py::test_a_live_fetch_older_than_a_day_keeps_its_partial_blobs
+  - tests/test_fetch_retention_704.py::test_a_loop_run_with_no_budget_fetches_with_the_registered_budget
+  - tests/test_fetch_retention_704.py::test_a_manual_run_with_no_budget_uses_the_registered_budget
+  - tests/test_fetch_retention_704.py::test_a_missing_model_is_unsized_but_not_deferred
+  - tests/test_fetch_retention_704.py::test_a_rate_limited_size_is_reported_deferred_by_hf_facts
+  - tests/test_fetch_retention_704.py::test_a_repo_whose_fourth_weight_is_the_only_one_that_fits_queues_it
+  - tests/test_fetch_retention_704.py::test_a_retest_seven_days_on_still_finds_the_weights
+  - tests/test_fetch_retention_704.py::test_feeds_backs_off_rather_than_waiting_a_fixed_delay
+  - tests/test_fetch_retention_704.py::test_feeds_waits_as_retry_after_directs_up_to_the_cap
+  - tests/test_fetch_retention_704.py::test_fetchable_weights_keeps_headline_order_and_three_at_most
+  - tests/test_fetch_retention_704.py::test_inspect_queues_a_fourth_headline_weight_that_fits_rather_than_retiring_it
+  - tests/test_fetch_retention_704.py::test_retry_after_as_an_http_date_is_honoured
+  - tests/test_fetch_retention_704.py::test_the_budget_registry_reads_the_environment_the_sweep_runs_with
+  - tests/test_fetch_retention_704.py::test_the_download_budget_is_a_registered_knob_with_a_limit
+  - tests/test_fetch_retention_704.py::test_weights_with_no_retest_pending_still_go_after_the_grace
+  - tests/test_papers_unpublished_859.py::test_a_400_on_the_undated_page_still_fails
+  - tests/test_techniques_found.py::test_a_failed_read_is_recorded_and_raises_nothing
+  - tests/test_techniques_found.py::test_a_github_repo_is_a_technique_when_it_names_a_paper_else_a_tool[meta0-technique]
+  - tests/test_techniques_found.py::test_a_github_repo_is_a_technique_when_it_names_a_paper_else_a_tool[meta1-technique]
+  - tests/test_techniques_found.py::test_a_github_repo_is_a_technique_when_it_names_a_paper_else_a_tool[meta2-technique]
+  - tests/test_techniques_found.py::test_a_github_repo_is_a_technique_when_it_names_a_paper_else_a_tool[meta3-technique]
+  - tests/test_techniques_found.py::test_a_github_repo_is_a_technique_when_it_names_a_paper_else_a_tool[meta4-tool]
+  - tests/test_techniques_found.py::test_a_github_repo_is_a_technique_when_it_names_a_paper_else_a_tool[meta5-tool]
+  - tests/test_techniques_found.py::test_a_model_the_feeds_link_is_recorded_as_a_model
+  - tests/test_techniques_found.py::test_a_paper_is_laned_by_the_same_prose_routing_as_a_model[2609.29123-tts]
+  - tests/test_techniques_found.py::test_a_paper_is_laned_by_the_same_prose_routing_as_a_model[2610.04596-]
+  - tests/test_techniques_found.py::test_a_paper_is_laned_by_the_same_prose_routing_as_a_model[2610.06104-]
+  - tests/test_techniques_found.py::test_a_paper_is_laned_by_the_same_prose_routing_as_a_model[2610.07384-image]
+  - tests/test_techniques_found.py::test_a_paper_is_laned_by_the_same_prose_routing_as_a_model[2610.08777-video]
+  - tests/test_techniques_found.py::test_a_paper_is_never_queued_for_the_model_ladder
+  - tests/test_techniques_found.py::test_a_paper_listed_again_is_one_proposal_and_one_sighting
+  - tests/test_techniques_found.py::test_a_proposal_says_whether_it_is_a_model_a_tool_or_a_technique
+  - tests/test_techniques_found.py::test_a_registry_card_is_a_model
+  - tests/test_techniques_found.py::test_a_sighting_fills_an_unknown_category_and_never_overwrites_a_known_one
+  - tests/test_techniques_found.py::test_a_store_at_the_previous_schema_gains_the_column_and_its_backfill
+  - tests/test_techniques_found.py::test_a_technique_never_enters_the_model_queue
+  - tests/test_techniques_found.py::test_a_technique_repo_is_not_a_tool_wanted_nor_a_lane_wanted
+  - tests/test_techniques_found.py::test_each_paper_becomes_a_technique_with_its_title_link_and_abstract
+  - tests/test_techniques_found.py::test_no_techniques_prints_nothing
+  - tests/test_techniques_found.py::test_one_call_on_a_first_read_and_none_again_the_same_day
+  - tests/test_techniques_found.py::test_set_card_writes_the_category
+  - tests/test_techniques_found.py::test_techniques_are_grouped_by_lane_most_seen_first
+  - tests/test_techniques_found.py::test_techniques_wanted_can_be_scoped_to_a_lane
+  - tests/test_techniques_found.py::test_the_backfill_fills_only_what_the_store_already_knows
+  - tests/test_techniques_found.py::test_the_feed_reader_leaves_the_papers_source_to_its_own_tier
+  - tests/test_techniques_found.py::test_the_loop_prints_techniques_wanted
+  - tests/test_techniques_found.py::test_the_papers_source_is_a_source_family_of_the_sweep
+  - tests/test_techniques_found.py::test_the_report_prints_evidence_per_lane_and_decides_nothing
+  - tests/test_techniques_found.py::test_the_store_lists_techniques_with_their_evidence
+  - tests/test_techniques_found.py::test_the_sweep_dispatches_the_papers_tier
+attribution:
+  dataset: SoHoT fix history (unxmaal/SoHoT)
+  url: https://github.com/unxmaal/SoHoT
+  license: generated
+  source: git:unxmaal/SoHoT
+  revision: 35ac01f5c487124fb40fc7a94680178c22b78ac6
+  item: '#859 (PR #860)'
+  date: '2026-10-14'
+  transform: issue title and body from `gh issue view` at survey time, home paths as ~/, 'Prior art checked'
+    removed (spec), and the Fix/Shape/Design/Options/Remedy/Proposal/Build/What-to sections and labelled
+    paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
+    of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
+    and sandbox (evals/repo.py)
+  importer: evals.importers.history

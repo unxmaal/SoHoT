@@ -1,0 +1,2149 @@
+{
+ "version": 1,
+ "source": "git:unxmaal/SoHoT",
+ "repo": "https://github.com/unxmaal/SoHoT.git",
+ "revision": "35ac01f5c487124fb40fc7a94680178c22b78ac6",
+ "criteria": {
+  "subject": "\\(#(\\d+)\\) \\(#(\\d+)\\)$",
+  "first_parent": true,
+  "max_source_files": 3,
+  "max_lines": 150,
+  "tests_changed": "a test_*.py the grader would install",
+  "no_env_file_change": [
+   "uv.lock",
+   "pyproject.toml",
+   ".python-version"
+  ],
+  "runs": 2,
+  "markers": "not slow and not network and not postgres and not litellm",
+  "pytest_timeout_s": 300.0,
+  "order": "newest first",
+  "limit": 20
+ },
+ "examined": 190,
+ "dropped": {
+  "dependency_change": 2,
+  "no_fix_section": 29,
+  "no_source_change": 7,
+  "no_test_change": 3,
+  "reference_fails": 8,
+  "too_big": 121
+ },
+ "tasks": [
+  {
+   "id": "sohot-879",
+   "issue": 879,
+   "pr": 883,
+   "base": "396b2a3e9f5158666a97e6cc2ff858bf65390f2b",
+   "fix": "9382f449fa0ef038da1e439db5cb47ed1fd4c6b6",
+   "date": "2026-10-16",
+   "subject": "attempts has a METRIC_DIRECTION, a scan fails the next undeclared metric, and screen detail drops stderr when a receipt exists (#879) (#883)",
+   "context_files": [
+    "evals/core.py",
+    "harness/commands/screen.py"
+   ],
+   "test_files": [
+    "tests/test_harness_screen.py",
+    "tests/test_metric_directions.py"
+   ],
+   "fail_to_pass": [
+    "tests/test_harness_screen.py::test_a_screen_with_a_receipt_records_no_stderr_in_its_detail",
+    "tests/test_harness_screen.py::test_a_screen_without_a_receipt_keeps_its_stderr_less_warnings",
+    "tests/test_metric_directions.py::test_attempts_is_lower_is_better",
+    "tests/test_metric_directions.py::test_every_emitted_metric_declares_a_direction"
+   ],
+   "pass_to_pass": [
+    "tests/test_harness_screen.py::test_a_candidate_whose_weights_are_absent_is_waiting_not_failed",
+    "tests/test_harness_screen.py::test_a_candidate_with_no_description_is_not_assumed_to_be_an_adapter",
+    "tests/test_harness_screen.py::test_a_candidate_with_no_lane_says_so_in_its_own_terms",
+    "tests/test_harness_screen.py::test_a_comfyui_node_pack_is_refused",
+    "tests/test_harness_screen.py::test_a_failing_screen_is_never_screened",
+    "tests/test_harness_screen.py::test_a_lane_with_no_runner_is_named_rather_than_dropped",
+    "tests/test_harness_screen.py::test_a_lane_with_no_runner_is_not_asked_about_weights",
+    "tests/test_harness_screen.py::test_a_lora_is_refused_before_anything_downloads",
+    "tests/test_harness_screen.py::test_a_missing_config_routes_nowhere_rather_than_guessing",
+    "tests/test_harness_screen.py::test_a_model_missing_only_itself_reads_as_a_plain_fetch",
+    "tests/test_harness_screen.py::test_a_model_whose_config_names_an_absent_repo_is_not_ready",
+    "tests/test_harness_screen.py::test_a_model_with_everything_present_is_ready",
+    "tests/test_harness_screen.py::test_a_passing_screen_is_screened_not_broken",
+    "tests/test_harness_screen.py::test_a_ready_candidate_gets_the_spec_its_lane_actually_takes",
+    "tests/test_harness_screen.py::test_a_real_failure_is_not_excused_as_a_refusal",
+    "tests/test_harness_screen.py::test_a_real_model_is_still_a_candidate",
+    "tests/test_harness_screen.py::test_a_recorded_snapshot_offline_loads_cannot_open_goes_back_to_fetch",
+    "tests/test_harness_screen.py::test_a_refused_request_is_not_the_candidates_failure",
+    "tests/test_harness_screen.py::test_a_repo_id_goes_to_the_upstream",
+    "tests/test_harness_screen.py::test_a_screen_that_did_not_run_is_broken_and_terminal",
+    "tests/test_harness_screen.py::test_a_screen_that_passed_is_screened_and_not_terminal",
+    "tests/test_harness_screen.py::test_a_screen_that_ran_and_passed_nothing_is_declined_on_the_screen_limit",
+    "tests/test_harness_screen.py::test_an_alias_goes_through_the_gateway",
+    "tests/test_harness_screen.py::test_an_empty_screen_is_a_result_not_a_failure",
+    "tests/test_harness_screen.py::test_an_enumerated_exception_survives",
+    "tests/test_harness_screen.py::test_screened_is_a_verdict_the_store_recognises",
+    "tests/test_harness_screen.py::test_the_command_is_one_case_one_repeat_and_no_metrics",
+    "tests/test_harness_screen.py::test_the_fixture_key_is_the_one_the_run_writes",
+    "tests/test_harness_screen.py::test_the_plan_does_not_parse_the_description",
+    "tests/test_harness_screen.py::test_the_state_says_why_rather_than_no_runner",
+    "tests/test_metric_directions.py::test_every_shape_of_metric_write_is_found",
+    "tests/test_metric_directions.py::test_the_repo_scan_sees_the_metrics_it_must",
+    "tests/test_metric_directions.py::test_what_is_not_a_metric_write_stays_quiet"
+   ],
+   "prompts": {
+    "spec": "# attempts metric has no METRIC_DIRECTION; the warning leaks into soh morning and verdict detail\n\n## Problem\nThe `attempts` metric has no entry in METRIC_DIRECTION, so `evals/core.py:438` warns \"metric 'attempts' declares no direction in METRIC_DIRECTION; assuming lower is better\" every time it ranks.\n\nSeen 2026-10-16:\n- `soh morning` output starts with the UserWarning and its source line.\n- The stderr text reached the store: verdict detail for Qwen/Qwen3.5-0.8B screened 2026-10-15 21:32 ends with `||  [n for n in metric_names if direction_of(n) == \"neutral\"] ~/localharness/deploy/...`. Whatever builds screen detail from the subprocess output takes warnings along with the result.\n\n## Fix\n1. Give `attempts` its direction (lower is better, if that is what it means; confirm where it is produced).\n2. Keep subprocess stderr out of verdict detail.\n3. A scanner test: every metric name an eval emits has a METRIC_DIRECTION entry, so the next new metric fails the check instead of warning at run time.",
+    "symptom": "# attempts metric has no METRIC_DIRECTION; the warning leaks into soh morning and verdict detail\n\n## Problem\nThe `attempts` metric has no entry in METRIC_DIRECTION, so `evals/core.py:438` warns \"metric 'attempts' declares no direction in METRIC_DIRECTION; assuming lower is better\" every time it ranks.\n\nSeen 2026-10-16:\n- `soh morning` output starts with the UserWarning and its source line.\n- The stderr text reached the store: verdict detail for Qwen/Qwen3.5-0.8B screened 2026-10-15 21:32 ends with `||  [n for n in metric_names if direction_of(n) == \"neutral\"] ~/localharness/deploy/...`. Whatever builds screen detail from the subprocess output takes warnings along with the result."
+   },
+   "strata": {
+    "files": 2,
+    "lines": 38,
+    "test_s": 5.93,
+    "area": "evals,harness/commands"
+   }
+  },
+  {
+   "id": "sohot-859",
+   "issue": 859,
+   "pr": 860,
+   "base": "df54638acb63e1b628c762a74d79b59fb43d9ff7",
+   "fix": "8ae08a76bd2915b41bb353790bc11fb9ff8da315",
+   "date": "2026-10-14",
+   "subject": "hf-daily-papers: ask for yesterday UTC, defer a 400 for an unpublished day (#859) (#860)",
+   "context_files": [
+    "harness/commands/discover.py",
+    "harness/papers.py"
+   ],
+   "test_files": [
+    "tests/test_fetch_retention_704.py",
+    "tests/test_papers_unpublished_859.py",
+    "tests/test_techniques_found.py"
+   ],
+   "fail_to_pass": [
+    "tests/test_fetch_retention_704.py::test_a_ten_day_outage_continues_the_backlog",
+    "tests/test_papers_unpublished_859.py::test_a_400_that_persists_is_deferred_not_failed",
+    "tests/test_papers_unpublished_859.py::test_a_first_read_uses_the_undated_page_and_the_next_night_asks_for_the_day_after",
+    "tests/test_papers_unpublished_859.py::test_the_01z_sweep_reads_yesterday_and_never_asks_for_today",
+    "tests/test_papers_unpublished_859.py::test_the_days_read_before_an_unpublished_one_are_kept",
+    "tests/test_papers_unpublished_859.py::test_the_papers_tier_exits_0_when_the_day_is_not_published_yet",
+    "tests/test_techniques_found.py::test_a_sweep_catches_up_on_each_day_it_missed_and_no_further_than_the_cap",
+    "tests/test_techniques_found.py::test_the_read_is_recorded_in_the_sources_table"
+   ],
+   "pass_to_pass": [
+    "tests/test_fetch_retention_704.py::test_a_429_on_the_small_variants_only_is_unknown_not_too_big",
+    "tests/test_fetch_retention_704.py::test_a_candidate_bigger_than_the_whole_budget_says_what_would_end_the_wait",
+    "tests/test_fetch_retention_704.py::test_a_candidate_over_only_what_is_left_of_the_budget_waits_for_the_next_sweep",
+    "tests/test_fetch_retention_704.py::test_a_candidate_waiting_on_a_bigger_budget_is_not_retried_at_the_same_budget",
+    "tests/test_fetch_retention_704.py::test_a_dead_fetch_partial_download_is_cleared",
+    "tests/test_fetch_retention_704.py::test_a_dead_host_is_not_retried_like_a_rate_limit",
+    "tests/test_fetch_retention_704.py::test_a_live_fetch_older_than_a_day_keeps_its_partial_blobs",
+    "tests/test_fetch_retention_704.py::test_a_loop_run_with_no_budget_fetches_with_the_registered_budget",
+    "tests/test_fetch_retention_704.py::test_a_manual_run_with_no_budget_uses_the_registered_budget",
+    "tests/test_fetch_retention_704.py::test_a_missing_model_is_unsized_but_not_deferred",
+    "tests/test_fetch_retention_704.py::test_a_rate_limited_size_is_reported_deferred_by_hf_facts",
+    "tests/test_fetch_retention_704.py::test_a_repo_whose_fourth_weight_is_the_only_one_that_fits_queues_it",
+    "tests/test_fetch_retention_704.py::test_a_retest_seven_days_on_still_finds_the_weights",
+    "tests/test_fetch_retention_704.py::test_feeds_backs_off_rather_than_waiting_a_fixed_delay",
+    "tests/test_fetch_retention_704.py::test_feeds_waits_as_retry_after_directs_up_to_the_cap",
+    "tests/test_fetch_retention_704.py::test_fetchable_weights_keeps_headline_order_and_three_at_most",
+    "tests/test_fetch_retention_704.py::test_inspect_queues_a_fourth_headline_weight_that_fits_rather_than_retiring_it",
+    "tests/test_fetch_retention_704.py::test_retry_after_as_an_http_date_is_honoured",
+    "tests/test_fetch_retention_704.py::test_the_budget_registry_reads_the_environment_the_sweep_runs_with",
+    "tests/test_fetch_retention_704.py::test_the_download_budget_is_a_registered_knob_with_a_limit",
+    "tests/test_fetch_retention_704.py::test_weights_with_no_retest_pending_still_go_after_the_grace",
+    "tests/test_papers_unpublished_859.py::test_a_400_on_the_undated_page_still_fails",
+    "tests/test_techniques_found.py::test_a_failed_read_is_recorded_and_raises_nothing",
+    "tests/test_techniques_found.py::test_a_github_repo_is_a_technique_when_it_names_a_paper_else_a_tool[meta0-technique]",
+    "tests/test_techniques_found.py::test_a_github_repo_is_a_technique_when_it_names_a_paper_else_a_tool[meta1-technique]",
+    "tests/test_techniques_found.py::test_a_github_repo_is_a_technique_when_it_names_a_paper_else_a_tool[meta2-technique]",
+    "tests/test_techniques_found.py::test_a_github_repo_is_a_technique_when_it_names_a_paper_else_a_tool[meta3-technique]",
+    "tests/test_techniques_found.py::test_a_github_repo_is_a_technique_when_it_names_a_paper_else_a_tool[meta4-tool]",
+    "tests/test_techniques_found.py::test_a_github_repo_is_a_technique_when_it_names_a_paper_else_a_tool[meta5-tool]",
+    "tests/test_techniques_found.py::test_a_model_the_feeds_link_is_recorded_as_a_model",
+    "tests/test_techniques_found.py::test_a_paper_is_laned_by_the_same_prose_routing_as_a_model[2609.29123-tts]",
+    "tests/test_techniques_found.py::test_a_paper_is_laned_by_the_same_prose_routing_as_a_model[2610.04596-]",
+    "tests/test_techniques_found.py::test_a_paper_is_laned_by_the_same_prose_routing_as_a_model[2610.06104-]",
+    "tests/test_techniques_found.py::test_a_paper_is_laned_by_the_same_prose_routing_as_a_model[2610.07384-image]",
+    "tests/test_techniques_found.py::test_a_paper_is_laned_by_the_same_prose_routing_as_a_model[2610.08777-video]",
+    "tests/test_techniques_found.py::test_a_paper_is_never_queued_for_the_model_ladder",
+    "tests/test_techniques_found.py::test_a_paper_listed_again_is_one_proposal_and_one_sighting",
+    "tests/test_techniques_found.py::test_a_proposal_says_whether_it_is_a_model_a_tool_or_a_technique",
+    "tests/test_techniques_found.py::test_a_registry_card_is_a_model",
+    "tests/test_techniques_found.py::test_a_sighting_fills_an_unknown_category_and_never_overwrites_a_known_one",
+    "tests/test_techniques_found.py::test_a_store_at_the_previous_schema_gains_the_column_and_its_backfill",
+    "tests/test_techniques_found.py::test_a_technique_never_enters_the_model_queue",
+    "tests/test_techniques_found.py::test_a_technique_repo_is_not_a_tool_wanted_nor_a_lane_wanted",
+    "tests/test_techniques_found.py::test_each_paper_becomes_a_technique_with_its_title_link_and_abstract",
+    "tests/test_techniques_found.py::test_no_techniques_prints_nothing",
+    "tests/test_techniques_found.py::test_one_call_on_a_first_read_and_none_again_the_same_day",
+    "tests/test_techniques_found.py::test_set_card_writes_the_category",
+    "tests/test_techniques_found.py::test_techniques_are_grouped_by_lane_most_seen_first",
+    "tests/test_techniques_found.py::test_techniques_wanted_can_be_scoped_to_a_lane",
+    "tests/test_techniques_found.py::test_the_backfill_fills_only_what_the_store_already_knows",
+    "tests/test_techniques_found.py::test_the_feed_reader_leaves_the_papers_source_to_its_own_tier",
+    "tests/test_techniques_found.py::test_the_loop_prints_techniques_wanted",
+    "tests/test_techniques_found.py::test_the_papers_source_is_a_source_family_of_the_sweep",
+    "tests/test_techniques_found.py::test_the_report_prints_evidence_per_lane_and_decides_nothing",
+    "tests/test_techniques_found.py::test_the_store_lists_techniques_with_their_evidence",
+    "tests/test_techniques_found.py::test_the_sweep_dispatches_the_papers_tier"
+   ],
+   "prompts": {
+    "spec": "# hf-daily-papers asks for today's UTC date at 01:00Z, gets 400, and fails every nightly sweep\n\n`hf-daily-papers` has failed every night since 2026-10-11 with `400 Bad Request` for `https://huggingface.co/api/daily_papers?date=<today UTC>`. The sweep runs at 21:00 EDT = 01:00Z, so it asks for a UTC date that has only just begun; by morning the same URL returns 200. The source's last successful read was 2026-10-07 (failures=6).\n\nEach 400 is recorded `failed`, which makes `soh discover --loop` exit 1 (\"loop exit 1: sweep reported a failure\"), so every night's sweep is reported as a failure and the papers feed is never read.\n\nFix: request the most recent published day (the undated endpoint, or yesterday UTC), and treat a 400 for a date that hasn't been published yet as deferred, like the #630 429 handling. Test with a fake returning 400 for today and 200 for yesterday.",
+    "symptom": "# hf-daily-papers asks for today's UTC date at 01:00Z, gets 400, and fails every nightly sweep\n\n`hf-daily-papers` has failed every night since 2026-10-11 with `400 Bad Request` for `https://huggingface.co/api/daily_papers?date=<today UTC>`. The sweep runs at 21:00 EDT = 01:00Z, so it asks for a UTC date that has only just begun; by morning the same URL returns 200. The source's last successful read was 2026-10-07 (failures=6).\n\nEach 400 is recorded `failed`, which makes `soh discover --loop` exit 1 (\"loop exit 1: sweep reported a failure\"), so every night's sweep is reported as a failure and the papers feed is never read."
+   },
+   "strata": {
+    "files": 2,
+    "lines": 52,
+    "test_s": 11.64,
+    "area": "harness,harness/commands"
+   }
+  },
+  {
+   "id": "sohot-858",
+   "issue": 858,
+   "pr": 861,
+   "base": "784795a99048efa3ce0c8bc729d68a8973e20cda",
+   "fix": "df54638acb63e1b628c762a74d79b59fb43d9ff7",
+   "date": "2026-10-14",
+   "subject": "Schema 71 requeues for measurement the candidates the #803 length cap refused (#858) (#861)",
+   "context_files": [
+    "harness/memory_store/migrations/retractions.py",
+    "harness/memory_store/migrations/v71.py",
+    "harness/memory_store/schema.py"
+   ],
+   "test_files": [
+    "tests/golden/migrated/v10.sql",
+    "tests/golden/migrated/v18.sql",
+    "tests/golden/migrated/v24.sql",
+    "tests/golden/migrated/v29.sql",
+    "tests/golden/migrated/v34.sql",
+    "tests/golden/migrated/v38.sql",
+    "tests/golden/migrated/v41.sql",
+    "tests/test_length_refusal_reopen_858.py"
+   ],
+   "fail_to_pass": [
+    "tests/test_length_refusal_reopen_858.py::test_a_pre_815_length_refusal_is_requeued_for_measurement"
+   ],
+   "pass_to_pass": [
+    "tests/test_length_refusal_reopen_858.py::test_a_refusal_after_a_later_retest_is_left_alone",
+    "tests/test_length_refusal_reopen_858.py::test_only_a_refusal_straight_after_the_screen_is_requeued",
+    "tests/test_length_refusal_reopen_858.py::test_other_limit_declines_stay_declined"
+   ],
+   "prompts": {
+    "spec": "# Candidates the #803 length cap declined stay declined after #813 made limits pause instead\n\nThree candidates that passed the screen on 2026-10-12 (openbmb/MiniCPM5-2B, LiquidAI/LFM2.5-2.6B, WeiboAI/VibeThinker-3B) were refused by the old #803 per-measurement length cap. They were recorded `declined` with reason `limit` and no `until`/`reopens` (verdicts 11612-11614).\n\n#813 (PR #815) replaced that refusal with pause and resume, but nothing reopened the verdicts it had already written. The 2026-10-13 sweep did not consider them, so they will never be measured.\n\nFix: a migration that requeues `declined`/`limit` verdicts written by the length refusal (screened but never measured), plus a test that a pre-#815 length refusal comes back as measurable.",
+    "symptom": "# Candidates the #803 length cap declined stay declined after #813 made limits pause instead\n\nThree candidates that passed the screen on 2026-10-12 (openbmb/MiniCPM5-2B, LiquidAI/LFM2.5-2.6B, WeiboAI/VibeThinker-3B) were refused by the old #803 per-measurement length cap. They were recorded `declined` with reason `limit` and no `until`/`reopens` (verdicts 11612-11614).\n\n#813 (PR #815) replaced that refusal with pause and resume, but nothing reopened the verdicts it had already written. The 2026-10-13 sweep did not consider them, so they will never be measured."
+   },
+   "strata": {
+    "files": 3,
+    "lines": 26,
+    "test_s": 1.62,
+    "area": "harness/memory_store,harness/memory_store/migrations"
+   }
+  },
+  {
+   "id": "sohot-788",
+   "issue": 788,
+   "pr": 789,
+   "base": "4bb657c421c144c0170303abb4f7766d42d1c775",
+   "fix": "9f042f9d52302b4d042da37dea47f66e343e4f6b",
+   "date": "2026-10-11",
+   "subject": "Reserve the discrete default on a card, not the unified one (#788) (#789)",
+   "context_files": [
+    "harness/memory.py"
+   ],
+   "test_files": [
+    "tests/test_memory_ramp.py"
+   ],
+   "fail_to_pass": [
+    "tests/test_memory_ramp.py::test_a_card_with_no_ramp_history_reserves_the_discrete_default"
+   ],
+   "pass_to_pass": [
+    "tests/test_memory_ramp.py::test_a_machine_that_never_complains_stops_at_the_cap",
+    "tests/test_memory_ramp.py::test_a_measured_margin_below_the_floor_is_not_trusted",
+    "tests/test_memory_ramp.py::test_a_measured_margin_still_wins_over_either_default",
+    "tests/test_memory_ramp.py::test_a_memory_limits_file_is_not_read",
+    "tests/test_memory_ramp.py::test_a_run_ended_by_the_cap_measured_no_margin",
+    "tests/test_memory_ramp.py::test_an_allocation_the_gpu_refuses_ends_the_ramp_and_still_releases",
+    "tests/test_memory_ramp.py::test_an_unknown_total_refuses_rather_than_measuring_nothing",
+    "tests/test_memory_ramp.py::test_compressor_swapping_out_is_a_stop_even_at_normal_pressure",
+    "tests/test_memory_ramp.py::test_every_step_carries_both_free_memory_figures",
+    "tests/test_memory_ramp.py::test_it_stops_at_the_first_warning_and_gives_the_memory_back",
+    "tests/test_memory_ramp.py::test_lh_memory_ramp_is_a_command",
+    "tests/test_memory_ramp.py::test_runs_accumulate_per_machine",
+    "tests/test_memory_ramp.py::test_the_default_cap_comes_from_unified_memory",
+    "tests/test_memory_ramp.py::test_the_free_floor_stops_it_before_the_kernel_warns",
+    "tests/test_memory_ramp.py::test_the_margin_is_available_at_start_minus_the_last_normal_step",
+    "tests/test_memory_ramp.py::test_the_reserve_is_the_largest_measured_margin",
+    "tests/test_memory_ramp.py::test_the_result_is_kept_per_machine",
+    "tests/test_memory_ramp.py::test_unified_memory_still_reserves_the_larger_default"
+   ],
+   "prompts": {
+    "spec": "# A discrete card reserves the unified-memory default, so half of it is unusable\n\n`context.budget_bytes()` is the planner's VRAM budget:\n\n```python\nreturn int((memory.ceiling_gb() - memory.measured_reserve_gb(conn)) * 1024 ** 3)\n```\n\n`measured_reserve_gb()` returns the largest margin `lh memory ramp` stored for this machine, and **falls back to `DEFAULT_RESERVE_GB` regardless of what it is budgeting for**. There are two reserves and it picks the wrong one:\n\n```\nDEFAULT_RESERVE_GB  = 6.0   unified memory: the GPU draws from system RAM, so 6 GiB for the OS is right\nDISCRETE_RESERVE_GB = 2.0   a card is the wall; what the desktop holds comes off via available_gb\nMIN_RESERVE_GB      = 1.0\n```\n\n`memory.reserve_for(acc)` already chooses between them correctly. `measured_reserve_gb` does not ask.\n\nOn the 4070 node there is no ramp history, so the fallback applies: a 12 GiB card reserves 6 GiB, half of itself, and the planner budgets 5.99 GiB.\n\nMeasured consequences, by passing `plan()` the budget the discrete reserve gives:\n\n| | reserve 6.0 (today) | reserve 2.0 (correct) |\n|---|---|---|\n| Qwen2.5-7B-Instruct-Q4_K_M | ctx 28672, **7 slots**, \"8 asked, 7 fit\" | ctx 32768, **8 slots**, 1.8 GiB of KV |\n| Qwen2.5-14B-Instruct-Q4_K_M | **refused**: \"0.0 GiB of KV room holds 0 tokens\" | ctx 8192, 1 slot, 1.6 GiB of KV |\n| Qwen2.5-32B-Instruct-Q4_K_M | refused | refused, correctly: 18.48 GiB of weights |\n\nTwo things follow.\n\nThe 14B is refused by a constant, not by this machine. Nothing about the card prevents 8.37 GiB of weights plus 1.6 GiB of KV from fitting in 11.99 GiB.\n\nAnd **\"8 asked, 7 fit\" was never this card running out of room.** It was the planner holding half the card for a desktop that does not need it. KB #367's measured knee for the 7B is 8 x 4096 unified, and with the right reserve this box delivers exactly that. Any baseline served at 7 slots measured a shape that is not the knee; by that KB entry's own figures the 7-to-8 slot step is most of the distance between 4700 and 9570 req/h.\n\nFix: the fallback should be `reserve_for(detect())`, so a machine with no ramp history gets the default for the accelerator it actually has.\n\nNote for whoever reviews the tests: `test_the_reserve_is_the_largest_measured_margin` and `test_a_memory_limits_file_is_not_read` both assert `DEFAULT_RESERVE_GB` on an empty store without pinning an accelerator. They pass on a unified runner and would fail on a discrete one, so they are platform-dependent today and the fix makes that visible. They should pin the machine they mean, which is RULE #249's point one layer down.",
+    "symptom": "# A discrete card reserves the unified-memory default, so half of it is unusable\n\n`context.budget_bytes()` is the planner's VRAM budget:\n\n```python\nreturn int((memory.ceiling_gb() - memory.measured_reserve_gb(conn)) * 1024 ** 3)\n```\n\n`measured_reserve_gb()` returns the largest margin `lh memory ramp` stored for this machine, and **falls back to `DEFAULT_RESERVE_GB` regardless of what it is budgeting for**. There are two reserves and it picks the wrong one:\n\n```\nDEFAULT_RESERVE_GB  = 6.0   unified memory: the GPU draws from system RAM, so 6 GiB for the OS is right\nDISCRETE_RESERVE_GB = 2.0   a card is the wall; what the desktop holds comes off via available_gb\nMIN_RESERVE_GB      = 1.0\n```\n\n`memory.reserve_for(acc)` already chooses between them correctly. `measured_reserve_gb` does not ask.\n\nOn the 4070 node there is no ramp history, so the fallback applies: a 12 GiB card reserves 6 GiB, half of itself, and the planner budgets 5.99 GiB.\n\nMeasured consequences, by passing `plan()` the budget the discrete reserve gives:\n\n| | reserve 6.0 (today) | reserve 2.0 (correct) |\n|---|---|---|\n| Qwen2.5-7B-Instruct-Q4_K_M | ctx 28672, **7 slots**, \"8 asked, 7 fit\" | ctx 32768, **8 slots**, 1.8 GiB of KV |\n| Qwen2.5-14B-Instruct-Q4_K_M | **refused**: \"0.0 GiB of KV room holds 0 tokens\" | ctx 8192, 1 slot, 1.6 GiB of KV |\n| Qwen2.5-32B-Instruct-Q4_K_M | refused | refused, correctly: 18.48 GiB of weights |\n\nTwo things follow.\n\nThe 14B is refused by a constant, not by this machine. Nothing about the card prevents 8.37 GiB of weights plus 1.6 GiB of KV from fitting in 11.99 GiB.\n\nAnd **\"8 asked, 7 fit\" was never this card running out of room.** It was the planner holding half the card for a desktop that does not need it. KB #367's measured knee for the 7B is 8 x 4096 unified, and with the right reserve this box delivers exactly that. Any baseline served at 7 slots measured a shape that is not the knee; by that KB entry's own figures the 7-to-8 slot step is most of the distance between 4700 and 9570 req/h.\n\nNote for whoever reviews the tests: `test_the_reserve_is_the_largest_measured_margin` and `test_a_memory_limits_file_is_not_read` both assert `DEFAULT_RESERVE_GB` on an empty store without pinning an accelerator. They pass on a unified runner and would fail on a discrete one, so they are platform-dependent today and the fix makes that visible. They should pin the machine they mean, which is RULE #249's point one layer down."
+   },
+   "strata": {
+    "files": 1,
+    "lines": 15,
+    "test_s": 2.74,
+    "area": "harness"
+   }
+  },
+  {
+   "id": "sohot-720",
+   "issue": 720,
+   "pr": 721,
+   "base": "b922961a14a606c039c581132fad46d5177be3f8",
+   "fix": "78b0d43faa3ce096241eccc2bde9b87066ce6f3f",
+   "date": "2026-10-11",
+   "subject": "CI: give check-macos 35 minutes; make check now takes 17.5-19.5 min on the runner (#720) (#721)",
+   "context_files": [
+    ".github/workflows/ci.yml"
+   ],
+   "test_files": [
+    "tests/test_ci_workflow.py"
+   ],
+   "fail_to_pass": [
+    "tests/test_ci_workflow.py::test_macos_leaves_room_over_the_measured_make_check"
+   ],
+   "pass_to_pass": [
+    "tests/test_ci_workflow.py::test_a_new_pages_publish_cancels_a_stuck_one",
+    "tests/test_ci_workflow.py::test_a_nightly_failure_opens_an_issue",
+    "tests/test_ci_workflow.py::test_a_slow_apt_mirror_fails_its_own_step_rather_than_cancelling_make_check",
+    "tests/test_ci_workflow.py::test_adding_the_label_starts_the_deferred_jobs",
+    "tests/test_ci_workflow.py::test_apt_packages_are_cached_on_the_package_list",
+    "tests/test_ci_workflow.py::test_linux_and_windows_skip_a_push_to_main",
+    "tests/test_ci_workflow.py::test_linux_and_windows_skip_an_unlabelled_pull_request",
+    "tests/test_ci_workflow.py::test_linux_runs_the_suite_once_and_coverage_rides_on_it",
+    "tests/test_ci_workflow.py::test_macos_runs_on_every_pull_request",
+    "tests/test_ci_workflow.py::test_main_gets_every_platform_nightly_and_on_demand",
+    "tests/test_ci_workflow.py::test_make_mutation_redirects_its_output",
+    "tests/test_ci_workflow.py::test_mutation_testing_runs_nightly_and_never_on_a_pull_request"
+   ],
+   "prompts": {
+    "spec": "# check-macos cancelled at its 20-minute timeout: make check now takes 17.5-19.5 min on the runner\n\ncheck-macos is being cancelled at its 20-minute job timeout. This is not a GitHub outage (githubstatus.com shows Actions operational) and not a hang: `make check` now takes 17.5 to 19.5 minutes on the macos-latest runner.\n\nPassing runs on 2026-10-11 (make check step only):\n- main 704372b2: 18m34s\n- #707: 19m16s\n- #710: 19m12s\n- #715: 17m27s\n\nCancelled at the limit: main after #707, #709, #718, and three pushes of #689. Locally make check takes about 7 minutes on the Studio.\n\nThe suite grew past a timeout chosen when it was shorter: the same hidden-assumption class as #688.\n\nFix in two steps:\n1. Now: raise check-macos timeout-minutes to 35, and pin in tests/test_ci_workflow.py that the job timeout leaves at least 10 minutes over the last measured make check time.\n2. Next: cut wall time. Run pytest with xdist across the runner's cores (fixed ports and shared paths need isolating first, RULE #388), or split the suite into shards.",
+    "symptom": "# check-macos cancelled at its 20-minute timeout: make check now takes 17.5-19.5 min on the runner\n\ncheck-macos is being cancelled at its 20-minute job timeout. This is not a GitHub outage (githubstatus.com shows Actions operational) and not a hang: `make check` now takes 17.5 to 19.5 minutes on the macos-latest runner.\n\nPassing runs on 2026-10-11 (make check step only):\n- main 704372b2: 18m34s\n- #707: 19m16s\n- #710: 19m12s\n- #715: 17m27s\n\nCancelled at the limit: main after #707, #709, #718, and three pushes of #689. Locally make check takes about 7 minutes on the Studio.\n\nThe suite grew past a timeout chosen when it was shorter: the same hidden-assumption class as #688."
+   },
+   "strata": {
+    "files": 1,
+    "lines": 2,
+    "test_s": 0.54,
+    "area": ".github/workflows"
+   }
+  },
+  {
+   "id": "sohot-647",
+   "issue": 647,
+   "pr": 652,
+   "base": "a240393005aad83766457557295eec17b468efdb",
+   "fix": "29cad057045f10d97b028ef179ecf171310494a8",
+   "date": "2026-10-08",
+   "subject": "Cache apt .debs and time-box the apt step in check-linux (#647) (#652)",
+   "context_files": [
+    ".github/workflows/ci.yml"
+   ],
+   "test_files": [
+    "tests/test_ci_workflow.py"
+   ],
+   "fail_to_pass": [
+    "tests/test_ci_workflow.py::test_a_slow_apt_mirror_fails_its_own_step_rather_than_cancelling_make_check",
+    "tests/test_ci_workflow.py::test_apt_packages_are_cached_on_the_package_list"
+   ],
+   "pass_to_pass": [
+    "tests/test_ci_workflow.py::test_a_new_pages_publish_cancels_a_stuck_one",
+    "tests/test_ci_workflow.py::test_a_nightly_failure_opens_an_issue",
+    "tests/test_ci_workflow.py::test_adding_the_label_starts_the_deferred_jobs",
+    "tests/test_ci_workflow.py::test_linux_and_windows_skip_a_push_to_main",
+    "tests/test_ci_workflow.py::test_linux_and_windows_skip_an_unlabelled_pull_request",
+    "tests/test_ci_workflow.py::test_linux_runs_the_suite_once_and_coverage_rides_on_it",
+    "tests/test_ci_workflow.py::test_macos_runs_on_every_pull_request",
+    "tests/test_ci_workflow.py::test_main_gets_every_platform_nightly_and_on_demand",
+    "tests/test_ci_workflow.py::test_make_mutation_redirects_its_output",
+    "tests/test_ci_workflow.py::test_mutation_testing_runs_nightly_and_never_on_a_pull_request"
+   ],
+   "prompts": {
+    "spec": "# Linux CI is cancelled when a slow apt mirror eats the 20-minute job limit\n\nPR #641 run 37776408316: check-linux was cancelled at its 20-minute limit after the apt step 'Tools make check needs' took 13m11s (normally about 20 s). On the re-run apt took 19 s and make check 13m35s, so make check alone uses about two thirds of the budget, and one slow mirror cancels the job. #643 hit the same cancellation in the same step.\n\nFix: cache the apt packages (or the .deb files) keyed on the package list, and give the apt step its own timeout-minutes so a stuck mirror fails fast and names itself instead of cancelling make check. Raise the job limit to leave margin. Related: RULE #532.",
+    "symptom": "# Linux CI is cancelled when a slow apt mirror eats the 20-minute job limit\n\nPR #641 run 37776408316: check-linux was cancelled at its 20-minute limit after the apt step 'Tools make check needs' took 13m11s (normally about 20 s). On the re-run apt took 19 s and make check 13m35s, so make check alone uses about two thirds of the budget, and one slow mirror cancels the job. #643 hit the same cancellation in the same step."
+   },
+   "strata": {
+    "files": 1,
+    "lines": 36,
+    "test_s": 0.54,
+    "area": ".github/workflows"
+   }
+  },
+  {
+   "id": "sohot-642",
+   "issue": 642,
+   "pr": 643,
+   "base": "4de3887b848f92583630befa80b29da1b350923c",
+   "fix": "50a5aba1dfff8b0ae73cbf994493b29168258bea",
+   "date": "2026-10-08",
+   "subject": "inspect: answer method specs from their base, not the registries (#642) (#643)",
+   "context_files": [
+    "harness/commands/discover.py"
+   ],
+   "test_files": [
+    "tests/test_inspect_method_specs.py"
+   ],
+   "fail_to_pass": [
+    "tests/test_inspect_method_specs.py::test_a_method_inherits_its_bases_inspect_verdict_with_no_registry_call",
+    "tests/test_inspect_method_specs.py::test_a_method_over_an_unregistered_incumbent_stays_queued_unasked"
+   ],
+   "pass_to_pass": [],
+   "prompts": {
+    "spec": "# inspect asks the model registries about method specs (plan:, best-of:), which can never answer\n\nIn the 2026-10-08 04:00Z loop, inspect printed lines such as 'plan:local-large: neither registry could be reached, so it stays unanswered' and the same for plan:q3-30b and best-of:3:q3-30b. A method spec wraps an incumbent that is already on disk and has no registry entry, so every loop spends registry calls on it during a run that also logged 83 HF 429 or gave-up lines in inspect, and the method is left 'unanswered'.\n\nFix: inspect skips method specs and answers them from their inner spec (size, license and runtime are the inner model's). Test: a queued best-of:3:<spec> makes no registry call and inherits the inner spec's inspect verdict.",
+    "symptom": "# inspect asks the model registries about method specs (plan:, best-of:), which can never answer\n\nIn the 2026-10-08 04:00Z loop, inspect printed lines such as 'plan:local-large: neither registry could be reached, so it stays unanswered' and the same for plan:q3-30b and best-of:3:q3-30b. A method spec wraps an incumbent that is already on disk and has no registry entry, so every loop spends registry calls on it during a run that also logged 83 HF 429 or gave-up lines in inspect, and the method is left 'unanswered'."
+   },
+   "strata": {
+    "files": 1,
+    "lines": 33,
+    "test_s": 0.84,
+    "area": "harness/commands"
+   }
+  },
+  {
+   "id": "sohot-632",
+   "issue": 632,
+   "pr": 635,
+   "base": "4e0f6d131e369571bf3c04e98a07bc63065a66ec",
+   "fix": "5068697ae0ec4d7030c2aef4390c901744116a9d",
+   "date": "2026-10-08",
+   "subject": "Fetch a runner's declared base weights, or record the candidate waiting on them (#632) (#635)",
+   "context_files": [
+    "harness/fetching.py"
+   ],
+   "test_files": [
+    "tests/test_runner_base_weights.py"
+   ],
+   "fail_to_pass": [
+    "tests/test_runner_base_weights.py::test_a_base_of_unknown_size_is_not_fetched",
+    "tests/test_runner_base_weights.py::test_a_base_past_the_budget_is_not_fetched_and_the_candidate_waits_on_it",
+    "tests/test_runner_base_weights.py::test_a_candidate_already_on_disk_gets_its_missing_base",
+    "tests/test_runner_base_weights.py::test_a_candidate_fetched_this_run_brings_its_base",
+    "tests/test_runner_base_weights.py::test_a_candidate_waiting_on_its_base_is_not_screened",
+    "tests/test_runner_base_weights.py::test_the_runner_base_is_a_requirement_of_each_omnisvg_size"
+   ],
+   "pass_to_pass": [
+    "tests/test_runner_base_weights.py::test_with_its_base_on_disk_the_candidate_is_ready"
+   ],
+   "prompts": {
+    "spec": "# OmniSVG is re-queued every loop with harness_error: base weights Qwen2.5-VL-3B-Instruct not cached\n\nEvery discovery loop reports OmniSVG/OmniSVG1.1_4B as 'QUEUED: not screened: harness_error ... icon-gear: weights not cached: Qwen/Qwen2.5-VL-3B-Instruct. Run scripts/setup-omnisvg.sh'. The classification is right (it says nothing about the candidate), but nothing acts on it, so the candidate stays queued forever and spends a screen slot each run.\n\nFix: the fetch step should fetch declared base weights the runner needs (they are a lineage parent, like adapters' base models), within the disk budget; failing that, record the candidate as waiting on a named setup step and skip it until that step's artifact exists. Test: a candidate whose runner needs an uncached base is fetched with it, or is waiting and not re-screened.",
+    "symptom": "# OmniSVG is re-queued every loop with harness_error: base weights Qwen2.5-VL-3B-Instruct not cached\n\nEvery discovery loop reports OmniSVG/OmniSVG1.1_4B as 'QUEUED: not screened: harness_error ... icon-gear: weights not cached: Qwen/Qwen2.5-VL-3B-Instruct. Run scripts/setup-omnisvg.sh'. The classification is right (it says nothing about the candidate), but nothing acts on it, so the candidate stays queued forever and spends a screen slot each run."
+   },
+   "strata": {
+    "files": 1,
+    "lines": 93,
+    "test_s": 1.31,
+    "area": "harness"
+   }
+  },
+  {
+   "id": "sohot-598",
+   "issue": 598,
+   "pr": 599,
+   "base": "c8ee78916ef58d2906457d8545edff78ec4e422e",
+   "fix": "6fcaf37ed54e4cbdecbae022fe2bc2ad1bbcdcb6",
+   "date": "2026-10-07",
+   "subject": "A removed download is not complete; schema 58 repairs rows the cleanup stamped (#598) (#599)",
+   "context_files": [
+    "harness/downloads.py",
+    "harness/memory_store/migrations/v58.py",
+    "harness/memory_store/schema.py"
+   ],
+   "test_files": [
+    "tests/golden/migrated/v10.sql",
+    "tests/golden/migrated/v18.sql",
+    "tests/golden/migrated/v24.sql",
+    "tests/golden/migrated/v29.sql",
+    "tests/golden/migrated/v34.sql",
+    "tests/golden/migrated/v38.sql",
+    "tests/golden/migrated/v41.sql",
+    "tests/test_store_downloads.py"
+   ],
+   "fail_to_pass": [
+    "tests/test_store_downloads.py::test_a_deleted_download_is_no_longer_complete",
+    "tests/test_store_downloads.py::test_the_migration_repairs_rows_removed_while_complete"
+   ],
+   "pass_to_pass": [
+    "tests/test_store_downloads.py::test_a_card_only_snapshot_is_recorded_incomplete_and_not_had",
+    "tests/test_store_downloads.py::test_a_complete_download_on_disk_with_no_row_is_not_had",
+    "tests/test_store_downloads.py::test_a_dir_no_row_explains_is_drift_and_never_deleted",
+    "tests/test_store_downloads.py::test_a_failed_download_is_recorded_incomplete",
+    "tests/test_store_downloads.py::test_a_keeper_spec_is_resolved_through_the_stored_candidate",
+    "tests/test_store_downloads.py::test_a_recorded_download_whose_dir_is_gone_is_not_had",
+    "tests/test_store_downloads.py::test_a_recorded_keeper_is_never_deleted",
+    "tests/test_store_downloads.py::test_a_row_whose_path_is_gone_is_reported_not_guessed",
+    "tests/test_store_downloads.py::test_another_machines_row_is_not_had_here",
+    "tests/test_store_downloads.py::test_cli_disk_json_reports_drift",
+    "tests/test_store_downloads.py::test_recording_drift_makes_an_unknown_deletable_and_stamps_it",
+    "tests/test_store_downloads.py::test_removing_a_hub_dir_stamps_its_gguf_link_row_too",
+    "tests/test_store_downloads.py::test_requires_is_what_the_config_said_when_it_landed",
+    "tests/test_store_downloads.py::test_the_backfill_reads_the_weights_dirs_and_never_writes_them",
+    "tests/test_store_downloads.py::test_the_migration_backfills_every_source_once"
+   ],
+   "prompts": {
+    "spec": "# The loop's cleanup stamps downloads removed but leaves them complete, so the deploy dry run refuses\n\n2026-10-07 15:13: the discovery loop's cleanup (working since #559) deleted 38 rejected downloads, ~280 GB. downloads.removed() set removed_at and removed_by but not complete = 0, while the backfill writer in the same module does clear it. The store's downloads_sane invariant ('removed yet complete') then failed `soh store dry-run`, and the #592 deploy stopped before install. Nothing in use was deleted.\n\nFix: removed() clears complete; schema 58 repairs the rows already written.\n\n\ud83e\udd16 Generated with [Claude Code](https://claude.com/claude-code)",
+    "symptom": "# The loop's cleanup stamps downloads removed but leaves them complete, so the deploy dry run refuses\n\n2026-10-07 15:13: the discovery loop's cleanup (working since #559) deleted 38 rejected downloads, ~280 GB. downloads.removed() set removed_at and removed_by but not complete = 0, while the backfill writer in the same module does clear it. The store's downloads_sane invariant ('removed yet complete') then failed `soh store dry-run`, and the #592 deploy stopped before install. Nothing in use was deleted.\n\n\ud83e\udd16 Generated with [Claude Code](https://claude.com/claude-code)"
+   },
+   "strata": {
+    "files": 3,
+    "lines": 12,
+    "test_s": 1.15,
+    "area": "harness,harness/memory_store,harness/memory_store/migrations"
+   }
+  },
+  {
+   "id": "sohot-570",
+   "issue": 570,
+   "pr": 571,
+   "base": "10de9a6915e07516682a52b9fee00f0d8594d65c",
+   "fix": "fd1698fba9aa0ac1767f2f9a1a7e7f97e68e20b9",
+   "date": "2026-10-07",
+   "subject": "A new Pages publish cancels a stuck one (#570) (#571)",
+   "context_files": [
+    ".github/workflows/pages.yml"
+   ],
+   "test_files": [
+    "tests/test_ci_workflow.py"
+   ],
+   "fail_to_pass": [
+    "tests/test_ci_workflow.py::test_a_new_pages_publish_cancels_a_stuck_one"
+   ],
+   "pass_to_pass": [
+    "tests/test_ci_workflow.py::test_a_nightly_failure_opens_an_issue",
+    "tests/test_ci_workflow.py::test_adding_the_label_starts_the_deferred_jobs",
+    "tests/test_ci_workflow.py::test_linux_and_windows_skip_a_push_to_main",
+    "tests/test_ci_workflow.py::test_linux_and_windows_skip_an_unlabelled_pull_request",
+    "tests/test_ci_workflow.py::test_macos_runs_on_every_pull_request",
+    "tests/test_ci_workflow.py::test_main_gets_every_platform_nightly_and_on_demand",
+    "tests/test_ci_workflow.py::test_make_mutation_redirects_its_output",
+    "tests/test_ci_workflow.py::test_mutation_testing_runs_nightly_and_never_on_a_pull_request"
+   ],
+   "prompts": {
+    "spec": "# A Pages deploy stuck waiting on the environment blocked every later publish for 16 hours\n\nRun 37521808207 (2026-10-06 19:49Z) built fine and its deploy job sat 'waiting' on the github-pages environment for 16 hours. pages.yml uses `concurrency: {group: pages, cancel-in-progress: false}`, so every later dispatch pended behind it and was then replaced by the next one: four publishes cancelled, and the live site stayed on the old page while main had the new one (#565). Cancelling the stuck run let today's deploy go through at once.\n\nFix: Pages is latest-wins, so `cancel-in-progress: true`. A test in tests/test_ci_workflow.py pins it.\n\n\ud83e\udd16 Generated with [Claude Code](https://claude.com/claude-code)",
+    "symptom": "# A Pages deploy stuck waiting on the environment blocked every later publish for 16 hours\n\nRun 37521808207 (2026-10-06 19:49Z) built fine and its deploy job sat 'waiting' on the github-pages environment for 16 hours. pages.yml uses `concurrency: {group: pages, cancel-in-progress: false}`, so every later dispatch pended behind it and was then replaced by the next one: four publishes cancelled, and the live site stayed on the old page while main had the new one (#565). Cancelling the stuck run let today's deploy go through at once.\n\n\ud83e\udd16 Generated with [Claude Code](https://claude.com/claude-code)"
+   },
+   "strata": {
+    "files": 1,
+    "lines": 2,
+    "test_s": 0.52,
+    "area": ".github/workflows"
+   }
+  },
+  {
+   "id": "sohot-455",
+   "issue": 455,
+   "pr": 456,
+   "base": "829c2e75aaa3beeb2e1773f535f77f0afad5bd35",
+   "fix": "93b0d696963a293a6d37f05816af36c21bae0b06",
+   "date": "2026-10-06",
+   "subject": "Only the deploy checkout migrates the live store (#455) (#456)",
+   "context_files": [
+    "harness/memory_store.py",
+    "harness/paths.py",
+    "scripts/launchd.sh"
+   ],
+   "test_files": [
+    "tests/test_live_store_guard.py"
+   ],
+   "fail_to_pass": [
+    "tests/test_live_store_guard.py::test_a_live_store_behind_the_code_is_refused_from_another_checkout",
+    "tests/test_live_store_guard.py::test_a_machine_with_no_deploy_checkout_migrates_as_before",
+    "tests/test_live_store_guard.py::test_a_newer_live_store_keeps_the_newer_store_refusal",
+    "tests/test_live_store_guard.py::test_a_non_default_home_migrates_as_before",
+    "tests/test_live_store_guard.py::test_an_absent_live_store_is_not_created_from_another_checkout",
+    "tests/test_live_store_guard.py::test_an_explicit_store_path_migrates_as_before",
+    "tests/test_live_store_guard.py::test_launchd_and_python_agree_on_where_the_deploy_is",
+    "tests/test_live_store_guard.py::test_the_deploy_checkout_migrates_the_live_store",
+    "tests/test_live_store_guard.py::test_the_override_migrates_the_live_store"
+   ],
+   "pass_to_pass": [],
+   "prompts": {
+    "spec": "# Code from a feature branch silently migrates the live store ahead of the deployed services\n\nFound 2026-10-06 while building #423: a scratch `evals.run` from the agent's worktree defaulted to the live LOCALHARNESS_HOME, and opening the store with that branch's code would have migrated discovery.db to the branch's schema. The deployed services then refuse a newer store (or, worse, a later main renumbers the same version differently). The agent caught it before anything was stored; the live store was confirmed at schema 36, integrity ok.\n\nThe same class as RULE #329 (services must run the deploy checkout, never the working checkout): any process can open the live store, and connect() migrates on open.\n\nFix: connect() migrates the LIVE store only from the deploy checkout (or with an explicit override such as LH_ALLOW_MIGRATE=1, used by launchd.sh install). From any other checkout, a store whose schema is behind the code is refused with a message naming the deploy step, and the suggestion to set LOCALHARNESS_HOME to a scratch dir. Tests and scratch homes (tmp paths, non-default LOCALHARNESS_HOME) are unaffected.",
+    "symptom": "# Code from a feature branch silently migrates the live store ahead of the deployed services\n\nFound 2026-10-06 while building #423: a scratch `evals.run` from the agent's worktree defaulted to the live LOCALHARNESS_HOME, and opening the store with that branch's code would have migrated discovery.db to the branch's schema. The deployed services then refuse a newer store (or, worse, a later main renumbers the same version differently). The agent caught it before anything was stored; the live store was confirmed at schema 36, integrity ok.\n\nThe same class as RULE #329 (services must run the deploy checkout, never the working checkout): any process can open the live store, and connect() migrates on open."
+   },
+   "strata": {
+    "files": 3,
+    "lines": 77,
+    "test_s": 1.08,
+    "area": "harness,scripts"
+   }
+  },
+  {
+   "id": "sohot-438",
+   "issue": 438,
+   "pr": 448,
+   "base": "209de7482e29e9da65cea2b4af847aebc261bfee",
+   "fix": "295ba9e5b47aaddad8dfe9c0b6ef9d9d50c4c222",
+   "date": "2026-10-06",
+   "subject": "A split GGUF repo is sized by its cheapest whole shard set (#438) (#448)",
+   "context_files": [
+    "harness/gguf.py"
+   ],
+   "test_files": [
+    "tests/test_gguf_route.py"
+   ],
+   "fail_to_pass": [
+    "tests/test_gguf_route.py::test_a_split_repo_is_sized_by_its_cheapest_whole_variant",
+    "tests/test_gguf_route.py::test_a_stray_small_gguf_beside_a_split_model_is_not_the_model",
+    "tests/test_gguf_route.py::test_an_incomplete_split_set_is_not_a_variant",
+    "tests/test_gguf_route.py::test_inspect_calls_the_split_glm_repo_too_big_not_nine_megabytes"
+   ],
+   "pass_to_pass": [
+    "tests/test_gguf_route.py::test_a_downloaded_gguf_asks_for_the_router_to_rescan",
+    "tests/test_gguf_route.py::test_a_fetched_gguf_is_spelled_for_llama_server",
+    "tests/test_gguf_route.py::test_a_file_on_disk_with_no_row_is_not_fetched",
+    "tests/test_gguf_route.py::test_a_gguf_repo_already_in_the_hub_cache_is_served_by_llama_server",
+    "tests/test_gguf_route.py::test_a_hub_repo_with_safetensors_stays_on_its_own_route",
+    "tests/test_gguf_route.py::test_a_llamacpp_spec_runs_against_llama_server",
+    "tests/test_gguf_route.py::test_a_mixed_run_names_both_engines",
+    "tests/test_gguf_route.py::test_a_non_text_lane_keeps_the_snapshot_route",
+    "tests/test_gguf_route.py::test_a_read_never_adopts_even_in_a_text_lane",
+    "tests/test_gguf_route.py::test_a_real_single_quant_beside_a_split_one_is_still_chosen",
+    "tests/test_gguf_route.py::test_a_recorded_file_that_is_gone_is_not_fetched",
+    "tests/test_gguf_route.py::test_a_repo_with_safetensors_is_not_gguf_only",
+    "tests/test_gguf_route.py::test_a_retracted_refusal_is_pending_again",
+    "tests/test_gguf_route.py::test_an_imatrix_file_is_never_a_model",
+    "tests/test_gguf_route.py::test_each_candidate_is_labelled_with_its_engine",
+    "tests/test_gguf_route.py::test_fetch_downloads_one_gguf_file_and_records_it",
+    "tests/test_gguf_route.py::test_files_the_router_cannot_serve_alone_are_never_chosen[M-Q4_K_M-00001-of-00002.gguf]",
+    "tests/test_gguf_route.py::test_files_the_router_cannot_serve_alone_are_never_chosen[M-Q4_K_M.safetensors]",
+    "tests/test_gguf_route.py::test_files_the_router_cannot_serve_alone_are_never_chosen[Q4_K_M/M-Q4_K_M.gguf]",
+    "tests/test_gguf_route.py::test_files_the_router_cannot_serve_alone_are_never_chosen[mmproj-M-F16.gguf]",
+    "tests/test_gguf_route.py::test_inspect_calls_an_oversized_gguf_repo_too_big",
+    "tests/test_gguf_route.py::test_inspect_sizes_a_gguf_repo_by_the_file_it_would_fetch",
+    "tests/test_gguf_route.py::test_inspect_still_sums_a_safetensors_repo",
+    "tests/test_gguf_route.py::test_nothing_that_fits_is_none",
+    "tests/test_gguf_route.py::test_only_a_text_lane_adopts_from_the_hub",
+    "tests/test_gguf_route.py::test_q4_k_m_is_preferred",
+    "tests/test_gguf_route.py::test_requeue_retracts_every_revisitable_verdict",
+    "tests/test_gguf_route.py::test_the_ceiling_moves_the_choice_to_a_quant_that_fits",
+    "tests/test_gguf_route.py::test_the_headroom_guard_sizes_a_fetched_gguf",
+    "tests/test_gguf_route.py::test_the_llama_server_url_is_the_one_serve_eval_starts",
+    "tests/test_gguf_route.py::test_the_models_dir_is_the_one_the_router_reads",
+    "tests/test_gguf_route.py::test_the_receipt_key_of_a_llamacpp_run_is_found",
+    "tests/test_gguf_route.py::test_the_suite_can_never_restart_the_real_eval_server"
+   ],
+   "prompts": {
+    "spec": "# inspect: a stray small top-level .gguf sizes a huge split GGUF repo at megabytes\n\nFound during #413's dry-run on a copy of the live store.\n\nunsloth/GLM-5.2-GGUF: inspect recorded `fits: weights from 0.0 to 0.0 GiB` with size_bytes 9423744 (9 MB). The card total is about 9919 GiB. gguf.choose()/gguf.smallest() exclude split shards (`-0000N-of-0000M.gguf`), mmproj and imatrix, so the only servable top-level file left is a small one, and it decides both the verdict and the size.\n\nBefore #413 the fetch tier already read this 9 MB figure; rank read the card's `N GiB of weights` instead, so the two disagreed. After #413 both read proposals.size_bytes, so rank now calls it cheap to screen.\n\nFix shape: when a repo's weights are split shards, size the shard set (sum of one quant's parts) rather than falling through to whatever small single file remains, or treat a single file far below the repo total as not the model.",
+    "symptom": "# inspect: a stray small top-level .gguf sizes a huge split GGUF repo at megabytes\n\nFound during #413's dry-run on a copy of the live store.\n\nunsloth/GLM-5.2-GGUF: inspect recorded `fits: weights from 0.0 to 0.0 GiB` with size_bytes 9423744 (9 MB). The card total is about 9919 GiB. gguf.choose()/gguf.smallest() exclude split shards (`-0000N-of-0000M.gguf`), mmproj and imatrix, so the only servable top-level file left is a small one, and it decides both the verdict and the size.\n\nBefore #413 the fetch tier already read this 9 MB figure; rank read the card's `N GiB of weights` instead, so the two disagreed. After #413 both read proposals.size_bytes, so rank now calls it cheap to screen."
+   },
+   "strata": {
+    "files": 1,
+    "lines": 36,
+    "test_s": 1.13,
+    "area": "harness"
+   }
+  },
+  {
+   "id": "sohot-404",
+   "issue": 404,
+   "pr": 405,
+   "base": "aeea363a3c7408b5a5680470d7e2bb290e9ea8d1",
+   "fix": "73432117367aea974813cd0817b4e0b6e518f7e5",
+   "date": "2026-10-06",
+   "subject": "A dead model server stops the screen; its refusals are the harness's (#404) (#405)",
+   "context_files": [
+    "harness/cli.py",
+    "harness/memory_store.py",
+    "harness/screen.py"
+   ],
+   "test_files": [
+    "tests/test_screen_server_death.py",
+    "tests/test_store_machines.py"
+   ],
+   "fail_to_pass": [
+    "tests/test_screen_server_death.py::test_a_dead_server_stops_the_screen",
+    "tests/test_screen_server_death.py::test_generation_thread_died_is_the_harnesss_fault",
+    "tests/test_store_machines.py::test_schema_22_requeues_screens_of_a_dead_server"
+   ],
+   "pass_to_pass": [
+    "tests/test_screen_server_death.py::test_an_ordinary_failure_does_not_stop_the_screen",
+    "tests/test_store_machines.py::test_a_bigger_machine_reopens_only_what_it_can_hold",
+    "tests/test_store_machines.py::test_a_condition_is_a_predicate_not_a_sentence",
+    "tests/test_store_machines.py::test_a_dead_upstream_can_be_reconsidered_when_it_commits",
+    "tests/test_store_machines.py::test_a_judge_using_the_word_workflow_is_not_a_verdict_about_one",
+    "tests/test_store_machines.py::test_a_lane_independent_verdict_survives_every_retraction[_relane_from_the_card-fetch-lora in its own card: this attaches to a model rather than being one]",
+    "tests/test_store_machines.py::test_a_lane_independent_verdict_survives_every_retraction[_relane_from_the_card-inspect-too-big: weights 1453.8 GiB over the 22 GiB ceiling]",
+    "tests/test_store_machines.py::test_a_lane_independent_verdict_survives_every_retraction[_reopen_architecture_gaps-fetch-lora in its own card: this attaches to a model rather than being one]",
+    "tests/test_store_machines.py::test_a_lane_independent_verdict_survives_every_retraction[_reopen_architecture_gaps-inspect-too-big: weights 1453.8 GiB over the 22 GiB ceiling]",
+    "tests/test_store_machines.py::test_a_lane_independent_verdict_survives_every_retraction[_requeue_broken_matching-fetch-lora in its own card: this attaches to a model rather than being one]",
+    "tests/test_store_machines.py::test_a_lane_independent_verdict_survives_every_retraction[_requeue_broken_matching-inspect-too-big: weights 1453.8 GiB over the 22 GiB ceiling]",
+    "tests/test_store_machines.py::test_a_lane_independent_verdict_survives_every_retraction[_requeue_diffusers_layout_gaps-fetch-lora in its own card: this attaches to a model rather than being one]",
+    "tests/test_store_machines.py::test_a_lane_independent_verdict_survives_every_retraction[_requeue_diffusers_layout_gaps-inspect-too-big: weights 1453.8 GiB over the 22 GiB ceiling]",
+    "tests/test_store_machines.py::test_a_lane_independent_verdict_survives_every_retraction[_requeue_screens_of_missing_weights-fetch-lora in its own card: this attaches to a model rather than being one]",
+    "tests/test_store_machines.py::test_a_lane_independent_verdict_survives_every_retraction[_requeue_screens_of_missing_weights-inspect-too-big: weights 1453.8 GiB over the 22 GiB ceiling]",
+    "tests/test_store_machines.py::test_a_lane_independent_verdict_survives_every_retraction[_retract_harness_refusals-fetch-lora in its own card: this attaches to a model rather than being one]",
+    "tests/test_store_machines.py::test_a_lane_independent_verdict_survives_every_retraction[_retract_harness_refusals-inspect-too-big: weights 1453.8 GiB over the 22 GiB ceiling]",
+    "tests/test_store_machines.py::test_a_lane_independent_verdict_survives_every_retraction[_retract_screens_with_no_evidence-fetch-lora in its own card: this attaches to a model rather than being one]",
+    "tests/test_store_machines.py::test_a_lane_independent_verdict_survives_every_retraction[_retract_screens_with_no_evidence-inspect-too-big: weights 1453.8 GiB over the 22 GiB ceiling]",
+    "tests/test_store_machines.py::test_a_lane_independent_verdict_survives_every_retraction[_retract_verdicts_from_runs_that_never_ran-fetch-lora in its own card: this attaches to a model rather than being one]",
+    "tests/test_store_machines.py::test_a_lane_independent_verdict_survives_every_retraction[_retract_verdicts_from_runs_that_never_ran-inspect-too-big: weights 1453.8 GiB over the 22 GiB ceiling]",
+    "tests/test_store_machines.py::test_a_lane_independent_verdict_survives_every_retraction[_retract_verdicts_with_no_control-fetch-lora in its own card: this attaches to a model rather than being one]",
+    "tests/test_store_machines.py::test_a_lane_independent_verdict_survives_every_retraction[_retract_verdicts_with_no_control-inspect-too-big: weights 1453.8 GiB over the 22 GiB ceiling]",
+    "tests/test_store_machines.py::test_a_measured_size_is_a_column_not_a_sentence",
+    "tests/test_store_machines.py::test_a_queued_row_is_not_revisitable",
+    "tests/test_store_machines.py::test_a_refusal_elsewhere_reopens_where_its_reason_does_not_apply",
+    "tests/test_store_machines.py::test_a_relative_run_path_is_resolved_before_it_is_called_missing",
+    "tests/test_store_machines.py::test_a_run_path_that_is_not_a_path_is_refused",
+    "tests/test_store_machines.py::test_a_runtime_installed_here_reopens_this_machines_refusal",
+    "tests/test_store_machines.py::test_a_runtime_version_predicate_compares_numerically",
+    "tests/test_store_machines.py::test_a_snapshot_with_only_a_card_is_not_downloaded",
+    "tests/test_store_machines.py::test_a_verdict_whose_run_is_gone_is_reported",
+    "tests/test_store_machines.py::test_a_version_predicate_reads_the_same_source_load_until_wrote_from",
+    "tests/test_store_machines.py::test_an_old_store_is_attributed_and_says_it_was_inferred",
+    "tests/test_store_machines.py::test_an_unidentifiable_machine_is_recorded_as_unknown",
+    "tests/test_store_machines.py::test_an_unparseable_commit_date_does_not_reopen_everything",
+    "tests/test_store_machines.py::test_an_unreadable_condition_leaves_the_verdict_standing",
+    "tests/test_store_machines.py::test_any_of_several_runtimes_meets_the_condition",
+    "tests/test_store_machines.py::test_decide_records_the_condition_the_refusal_names",
+    "tests/test_store_machines.py::test_every_verdict_records_its_machine",
+    "tests/test_store_machines.py::test_not_an_attachment_is_distinguishable_from_nobody_asking",
+    "tests/test_store_machines.py::test_only_the_latest_verdict_can_be_revisited",
+    "tests/test_store_machines.py::test_schema_18_backfills_refusals_written_after_266",
+    "tests/test_store_machines.py::test_schema_19_does_not_reopen_a_verdict_the_lane_never_touched",
+    "tests/test_store_machines.py::test_schema_19_keeps_an_svg_model_in_the_svg_lane",
+    "tests/test_store_machines.py::test_schema_19_leaves_a_model_that_genuinely_failed",
+    "tests/test_store_machines.py::test_schema_19_refiles_a_vlm_judge_out_of_the_image_lane",
+    "tests/test_store_machines.py::test_schema_19_requeues_a_layout_diffusers_could_not_assemble",
+    "tests/test_store_machines.py::test_schema_20_requeues_a_screen_of_weights_never_downloaded",
+    "tests/test_store_machines.py::test_schema_21_requeues_a_sampling_setting_the_pipeline_refused",
+    "tests/test_store_machines.py::test_the_attachment_kind_is_a_column",
+    "tests/test_store_machines.py::test_the_column_wins_over_the_prose",
+    "tests/test_store_machines.py::test_the_condition_is_read_from_the_refusal[fits: weights from 5.5 to 8.9 GiB-]",
+    "tests/test_store_machines.py::test_the_condition_is_read_from_the_refusal[needs-cuda: depends on torch, and this machine has none of cuda, rocm-runtime:cuda|rocm]",
+    "tests/test_store_machines.py::test_the_condition_is_read_from_the_refusal[needs-llamacpp: depends on GGUF weights, and this machine has no llamacpp-runtime:llamacpp]",
+    "tests/test_store_machines.py::test_the_condition_is_read_from_the_refusal[too-big: smallest weight it names is 59.9 GiB, over the 22 GiB ceiling-ceiling_gb:>59.9]",
+    "tests/test_store_machines.py::test_the_condition_is_read_from_the_refusal[too-big: source tree is 259 MB, which is weights in git, not a source repo-]",
+    "tests/test_store_machines.py::test_the_machine_conditions_still_ignore_an_upstream_fact",
+    "tests/test_store_machines.py::test_the_prose_is_still_read_when_the_column_is_empty",
+    "tests/test_store_machines.py::test_the_retraction_census_is_not_empty",
+    "tests/test_store_machines.py::test_the_same_machine_twice_is_one_row",
+    "tests/test_store_machines.py::test_the_upstream_idle_time_is_a_number_not_one_decimal_of_years",
+    "tests/test_store_machines.py::test_two_operating_systems_on_one_box_are_two_machines"
+   ],
+   "prompts": {
+    "spec": "# One crash of mlx_lm.server poisoned every later screen: six candidates recorded broken for 'generation thread died'\n\nOvernight loop 5 (job 0018) screened Qwen/Qwen-Image-Bench (51 GB). mlx_lm.server hit '[METAL] Command buffer execution failed: Caused GPU Timeout Error' and never recovered: every later request answered HTTP 404 'generation thread died' until it was restarted at 07:xx. The screen kept going and recorded TERMINAL 'broken' for LFM2.5-1.2B-Instruct, Qwen3.5-4B-Base-ZitGen-V1, gemma-2-2b-it-4bit, Qwen3-8B-4bit, Qwen2-VL-2B-Instruct-4bit and Qwen3-0.6B. Every MLX-served lane was down for ~6 hours and nothing noticed.\n\nFix:\n1. 'generation thread died' is a harness fault (NOT_THE_CANDIDATE), so it records queued, not broken.\n2. Once a screen sees the server die, the run stops screening rather than spending every remaining candidate on a dead server.\n3. Schema migration requeues the six.\n4. Follow-up: the loop health-checks and restarts the server it depends on; a dead model server is a fact the harness should record and report, not infer from a phrase.",
+    "symptom": "# One crash of mlx_lm.server poisoned every later screen: six candidates recorded broken for 'generation thread died'\n\nOvernight loop 5 (job 0018) screened Qwen/Qwen-Image-Bench (51 GB). mlx_lm.server hit '[METAL] Command buffer execution failed: Caused GPU Timeout Error' and never recovered: every later request answered HTTP 404 'generation thread died' until it was restarted at 07:xx. The screen kept going and recorded TERMINAL 'broken' for LFM2.5-1.2B-Instruct, Qwen3.5-4B-Base-ZitGen-V1, gemma-2-2b-it-4bit, Qwen3-8B-4bit, Qwen2-VL-2B-Instruct-4bit and Qwen3-0.6B. Every MLX-served lane was down for ~6 hours and nothing noticed."
+   },
+   "strata": {
+    "files": 3,
+    "lines": 13,
+    "test_s": 0.63,
+    "area": "harness"
+   }
+  },
+  {
+   "id": "sohot-399",
+   "issue": 399,
+   "pr": 400,
+   "base": "644f52812413a7d9849ff21e5aad0bcf32764175",
+   "fix": "7d44a19c8fc4bfd052054a0a29a19c430ebf5077",
+   "date": "2026-10-05",
+   "subject": "A sighting never reopens a decided name; a card-only snapshot is not a download (#399) (#400)",
+   "context_files": [
+    "harness/cli.py",
+    "harness/fetching.py",
+    "harness/memory_store.py"
+   ],
+   "test_files": [
+    "tests/test_harness_fetching.py",
+    "tests/test_harness_registry.py",
+    "tests/test_store_load_gaps.py",
+    "tests/test_store_machines.py"
+   ],
+   "fail_to_pass": [
+    "tests/test_harness_registry.py::test_a_neighbor_sighting_does_not_reopen_a_decided_name[None-None-queued]",
+    "tests/test_harness_registry.py::test_a_neighbor_sighting_does_not_reopen_a_decided_name[declined-adopt-declined]",
+    "tests/test_harness_registry.py::test_a_neighbor_sighting_does_not_reopen_a_decided_name[screened-screen-screened]",
+    "tests/test_store_machines.py::test_a_lane_independent_verdict_survives_every_retraction[_requeue_screens_of_missing_weights-fetch-lora in its own card: this attaches to a model rather than being one]",
+    "tests/test_store_machines.py::test_a_lane_independent_verdict_survives_every_retraction[_requeue_screens_of_missing_weights-inspect-too-big: weights 1453.8 GiB over the 22 GiB ceiling]",
+    "tests/test_store_machines.py::test_a_snapshot_with_only_a_card_is_not_downloaded",
+    "tests/test_store_machines.py::test_schema_20_requeues_a_screen_of_weights_never_downloaded"
+   ],
+   "pass_to_pass": [
+    "tests/test_harness_fetching.py::test_a_config_naming_another_repo_declares_a_requirement",
+    "tests/test_harness_fetching.py::test_a_dependency_already_present_is_not_refetched",
+    "tests/test_harness_fetching.py::test_a_download_over_the_cap_is_refused_however_much_disk_there_is",
+    "tests/test_harness_fetching.py::test_a_download_that_fits_is_allowed",
+    "tests/test_harness_fetching.py::test_a_download_that_would_fill_the_volume_is_refused",
+    "tests/test_harness_fetching.py::test_a_failed_download_does_not_condemn_the_candidate",
+    "tests/test_harness_fetching.py::test_a_finished_download_records_where_it_landed",
+    "tests/test_harness_fetching.py::test_a_github_repo_is_not_downloadable",
+    "tests/test_harness_fetching.py::test_a_laneless_weight_is_not_declined",
+    "tests/test_harness_fetching.py::test_a_laneless_weight_is_still_listed_not_hidden",
+    "tests/test_harness_fetching.py::test_a_model_naming_itself_is_not_its_own_dependency",
+    "tests/test_harness_fetching.py::test_a_model_with_no_config_requires_nothing",
+    "tests/test_harness_fetching.py::test_a_refusal_does_not_consume_the_download_budget",
+    "tests/test_harness_fetching.py::test_a_terminal_verdict_leaves_the_queue",
+    "tests/test_harness_fetching.py::test_a_value_that_is_not_repo_shaped_is_not_a_repo",
+    "tests/test_harness_fetching.py::test_a_weight_inherits_the_score_of_the_repo_that_named_it",
+    "tests/test_harness_fetching.py::test_a_weight_with_no_lane_is_not_downloaded",
+    "tests/test_harness_fetching.py::test_an_unknown_size_is_refused_rather_than_attempted",
+    "tests/test_harness_fetching.py::test_fetching_a_model_also_fetches_what_its_config_names",
+    "tests/test_harness_fetching.py::test_fetching_lifts_the_offline_guard_and_puts_it_back",
+    "tests/test_harness_fetching.py::test_missing_is_empty_when_the_whole_closure_is_present",
+    "tests/test_harness_fetching.py::test_missing_reports_the_dependency_when_the_model_is_present",
+    "tests/test_harness_fetching.py::test_missing_reports_the_model_itself_when_nothing_is_there",
+    "tests/test_harness_fetching.py::test_one_at_a_time_by_default",
+    "tests/test_harness_fetching.py::test_only_the_inspect_tier_can_queue_a_download",
+    "tests/test_harness_fetching.py::test_provenance_is_not_a_requirement",
+    "tests/test_harness_fetching.py::test_something_already_in_the_cache_is_not_queued",
+    "tests/test_harness_fetching.py::test_something_too_big_is_declined_permanently",
+    "tests/test_harness_fetching.py::test_the_size_is_read_from_the_store_not_asked_for_again",
+    "tests/test_harness_registry.py::test_a_404_and_an_outage_are_different_answers",
+    "tests/test_harness_registry.py::test_a_card_description_says_what_bears_on_measuring_it",
+    "tests/test_harness_registry.py::test_a_card_listing_no_blob_sizes_is_unsized_rather_than_zero",
+    "tests/test_harness_registry.py::test_a_gated_model_is_not_reported_as_missing",
+    "tests/test_harness_registry.py::test_a_later_sighting_fills_an_empty_registry_and_never_overwrites_one",
+    "tests/test_harness_registry.py::test_a_model_card_yields_a_verdict_with_nothing_cloned",
+    "tests/test_harness_registry.py::test_a_model_is_not_refused_for_having_no_entry_point",
+    "tests/test_harness_registry.py::test_a_name_neither_registry_has_is_a_definite_answer",
+    "tests/test_harness_registry.py::test_a_name_only_github_has_resolves_to_github",
+    "tests/test_harness_registry.py::test_a_name_with_no_evidence_is_left_unknown_rather_than_guessed",
+    "tests/test_harness_registry.py::test_a_proposal_records_which_registry_answers_for_it",
+    "tests/test_harness_registry.py::test_a_settled_proposal_is_not_pending_in_its_registry",
+    "tests/test_harness_registry.py::test_a_source_tree_with_no_entry_point_is_still_refused",
+    "tests/test_harness_registry.py::test_a_store_written_before_descriptions_existed_still_opens",
+    "tests/test_harness_registry.py::test_an_existing_store_is_backfilled_from_evidence_it_already_holds",
+    "tests/test_harness_registry.py::test_an_unreachable_registry_settles_nothing",
+    "tests/test_harness_registry.py::test_by_registry_counts_the_names_nothing_can_resolve",
+    "tests/test_harness_registry.py::test_huggingface_answers_first_where_both_would",
+    "tests/test_harness_registry.py::test_pending_asks_one_registry_at_a_time",
+    "tests/test_harness_registry.py::test_popularity_is_not_carried_into_the_description",
+    "tests/test_harness_registry.py::test_the_description_reaches_the_store_and_the_judge_can_read_it",
+    "tests/test_harness_registry.py::test_the_download_queue_refuses_a_github_name",
+    "tests/test_harness_registry.py::test_the_inspect_tier_asks_each_registry_only_about_its_own_names",
+    "tests/test_harness_registry.py::test_the_same_card_reads_differently_on_a_machine_without_the_runtime",
+    "tests/test_store_load_gaps.py::test_a_missing_file_stays_broken",
+    "tests/test_store_load_gaps.py::test_a_newer_runtime_reopens_it",
+    "tests/test_store_load_gaps.py::test_a_runtime_upgrade_on_the_same_machine_is_revisitable",
+    "tests/test_store_load_gaps.py::test_an_architecture_gap_becomes_declined_until_a_newer_runtime",
+    "tests/test_store_machines.py::test_a_bigger_machine_reopens_only_what_it_can_hold",
+    "tests/test_store_machines.py::test_a_condition_is_a_predicate_not_a_sentence",
+    "tests/test_store_machines.py::test_a_dead_upstream_can_be_reconsidered_when_it_commits",
+    "tests/test_store_machines.py::test_a_judge_using_the_word_workflow_is_not_a_verdict_about_one",
+    "tests/test_store_machines.py::test_a_lane_independent_verdict_survives_every_retraction[_relane_from_the_card-fetch-lora in its own card: this attaches to a model rather than being one]",
+    "tests/test_store_machines.py::test_a_lane_independent_verdict_survives_every_retraction[_relane_from_the_card-inspect-too-big: weights 1453.8 GiB over the 22 GiB ceiling]",
+    "tests/test_store_machines.py::test_a_lane_independent_verdict_survives_every_retraction[_reopen_architecture_gaps-fetch-lora in its own card: this attaches to a model rather than being one]",
+    "tests/test_store_machines.py::test_a_lane_independent_verdict_survives_every_retraction[_reopen_architecture_gaps-inspect-too-big: weights 1453.8 GiB over the 22 GiB ceiling]",
+    "tests/test_store_machines.py::test_a_lane_independent_verdict_survives_every_retraction[_requeue_diffusers_layout_gaps-fetch-lora in its own card: this attaches to a model rather than being one]",
+    "tests/test_store_machines.py::test_a_lane_independent_verdict_survives_every_retraction[_requeue_diffusers_layout_gaps-inspect-too-big: weights 1453.8 GiB over the 22 GiB ceiling]",
+    "tests/test_store_machines.py::test_a_lane_independent_verdict_survives_every_retraction[_retract_harness_refusals-fetch-lora in its own card: this attaches to a model rather than being one]",
+    "tests/test_store_machines.py::test_a_lane_independent_verdict_survives_every_retraction[_retract_harness_refusals-inspect-too-big: weights 1453.8 GiB over the 22 GiB ceiling]",
+    "tests/test_store_machines.py::test_a_lane_independent_verdict_survives_every_retraction[_retract_screens_with_no_evidence-fetch-lora in its own card: this attaches to a model rather than being one]",
+    "tests/test_store_machines.py::test_a_lane_independent_verdict_survives_every_retraction[_retract_screens_with_no_evidence-inspect-too-big: weights 1453.8 GiB over the 22 GiB ceiling]",
+    "tests/test_store_machines.py::test_a_lane_independent_verdict_survives_every_retraction[_retract_verdicts_from_runs_that_never_ran-fetch-lora in its own card: this attaches to a model rather than being one]",
+    "tests/test_store_machines.py::test_a_lane_independent_verdict_survives_every_retraction[_retract_verdicts_from_runs_that_never_ran-inspect-too-big: weights 1453.8 GiB over the 22 GiB ceiling]",
+    "tests/test_store_machines.py::test_a_lane_independent_verdict_survives_every_retraction[_retract_verdicts_with_no_control-fetch-lora in its own card: this attaches to a model rather than being one]",
+    "tests/test_store_machines.py::test_a_lane_independent_verdict_survives_every_retraction[_retract_verdicts_with_no_control-inspect-too-big: weights 1453.8 GiB over the 22 GiB ceiling]",
+    "tests/test_store_machines.py::test_a_measured_size_is_a_column_not_a_sentence",
+    "tests/test_store_machines.py::test_a_queued_row_is_not_revisitable",
+    "tests/test_store_machines.py::test_a_refusal_elsewhere_reopens_where_its_reason_does_not_apply",
+    "tests/test_store_machines.py::test_a_relative_run_path_is_resolved_before_it_is_called_missing",
+    "tests/test_store_machines.py::test_a_run_path_that_is_not_a_path_is_refused",
+    "tests/test_store_machines.py::test_a_runtime_installed_here_reopens_this_machines_refusal",
+    "tests/test_store_machines.py::test_a_runtime_version_predicate_compares_numerically",
+    "tests/test_store_machines.py::test_a_verdict_whose_run_is_gone_is_reported",
+    "tests/test_store_machines.py::test_a_version_predicate_reads_the_same_source_load_until_wrote_from",
+    "tests/test_store_machines.py::test_an_old_store_is_attributed_and_says_it_was_inferred",
+    "tests/test_store_machines.py::test_an_unidentifiable_machine_is_recorded_as_unknown",
+    "tests/test_store_machines.py::test_an_unparseable_commit_date_does_not_reopen_everything",
+    "tests/test_store_machines.py::test_an_unreadable_condition_leaves_the_verdict_standing",
+    "tests/test_store_machines.py::test_any_of_several_runtimes_meets_the_condition",
+    "tests/test_store_machines.py::test_decide_records_the_condition_the_refusal_names",
+    "tests/test_store_machines.py::test_every_verdict_records_its_machine",
+    "tests/test_store_machines.py::test_not_an_attachment_is_distinguishable_from_nobody_asking",
+    "tests/test_store_machines.py::test_only_the_latest_verdict_can_be_revisited",
+    "tests/test_store_machines.py::test_schema_18_backfills_refusals_written_after_266",
+    "tests/test_store_machines.py::test_schema_19_does_not_reopen_a_verdict_the_lane_never_touched",
+    "tests/test_store_machines.py::test_schema_19_keeps_an_svg_model_in_the_svg_lane",
+    "tests/test_store_machines.py::test_schema_19_leaves_a_model_that_genuinely_failed",
+    "tests/test_store_machines.py::test_schema_19_refiles_a_vlm_judge_out_of_the_image_lane",
+    "tests/test_store_machines.py::test_schema_19_requeues_a_layout_diffusers_could_not_assemble",
+    "tests/test_store_machines.py::test_the_attachment_kind_is_a_column",
+    "tests/test_store_machines.py::test_the_column_wins_over_the_prose",
+    "tests/test_store_machines.py::test_the_condition_is_read_from_the_refusal[fits: weights from 5.5 to 8.9 GiB-]",
+    "tests/test_store_machines.py::test_the_condition_is_read_from_the_refusal[needs-cuda: depends on torch, and this machine has none of cuda, rocm-runtime:cuda|rocm]",
+    "tests/test_store_machines.py::test_the_condition_is_read_from_the_refusal[needs-llamacpp: depends on GGUF weights, and this machine has no llamacpp-runtime:llamacpp]",
+    "tests/test_store_machines.py::test_the_condition_is_read_from_the_refusal[too-big: smallest weight it names is 59.9 GiB, over the 22 GiB ceiling-ceiling_gb:>59.9]",
+    "tests/test_store_machines.py::test_the_condition_is_read_from_the_refusal[too-big: source tree is 259 MB, which is weights in git, not a source repo-]",
+    "tests/test_store_machines.py::test_the_machine_conditions_still_ignore_an_upstream_fact",
+    "tests/test_store_machines.py::test_the_prose_is_still_read_when_the_column_is_empty",
+    "tests/test_store_machines.py::test_the_retraction_census_is_not_empty",
+    "tests/test_store_machines.py::test_the_same_machine_twice_is_one_row",
+    "tests/test_store_machines.py::test_the_upstream_idle_time_is_a_number_not_one_decimal_of_years",
+    "tests/test_store_machines.py::test_two_operating_systems_on_one_box_are_two_machines"
+   ],
+   "prompts": {
+    "spec": "# A neighbor sighting reopens a decided candidate, and a README-only snapshot counts as downloaded\n\nSweep at 22:43 on the Studio:\n\n1. Qwen/Qwen3.5-0.8B had a terminal 'declined at adopt' verdict (22:18). The inspect tier's neighbor path ('named by vllm-project/vllm-metal') wrote inspect 'queued' over it, so the candidate was screened and will be measured again. That path never reads the latest verdict.\n2. NemoStation/Marlin-2B's hub dir holds a snapshot with only LICENSE and README (Sep 20), no config or weights. fetching.have() checks only that the dir exists, so fetch skipped it, the screen ran, and the candidate got a terminal 'broken' for 'No such file or directory ... config.json': a download that never happened, blamed on the model.\n\nFix: the neighbor path does not re-queue a name whose latest verdict is terminal or past inspect; have() requires a snapshot with a config or weight file; schema 20 requeues broken verdicts whose snapshot has no weights.",
+    "symptom": "# A neighbor sighting reopens a decided candidate, and a README-only snapshot counts as downloaded\n\nSweep at 22:43 on the Studio:\n\n1. Qwen/Qwen3.5-0.8B had a terminal 'declined at adopt' verdict (22:18). The inspect tier's neighbor path ('named by vllm-project/vllm-metal') wrote inspect 'queued' over it, so the candidate was screened and will be measured again. That path never reads the latest verdict.\n2. NemoStation/Marlin-2B's hub dir holds a snapshot with only LICENSE and README (Sep 20), no config or weights. fetching.have() checks only that the dir exists, so fetch skipped it, the screen ran, and the candidate got a terminal 'broken' for 'No such file or directory ... config.json': a download that never happened, blamed on the model."
+   },
+   "strata": {
+    "files": 3,
+    "lines": 58,
+    "test_s": 0.98,
+    "area": "harness"
+   }
+  },
+  {
+   "id": "sohot-396",
+   "issue": 396,
+   "pr": 397,
+   "base": "840629bbb98b1d77edbe216f28a8bea8248432cc",
+   "fix": "8f2219efa0bf873fdf7ae531f289378c98763523",
+   "date": "2026-10-05",
+   "subject": "The loop fetches only when the screen has room for more (#396) (#397)",
+   "context_files": [
+    "harness/cli.py"
+   ],
+   "test_files": [
+    "tests/test_loop_backpressure.py"
+   ],
+   "fail_to_pass": [
+    "tests/test_loop_backpressure.py::test_a_full_backlog_skips_the_fetch",
+    "tests/test_loop_backpressure.py::test_a_short_backlog_still_fetches",
+    "tests/test_loop_backpressure.py::test_the_backlog_counts_only_what_the_screen_could_take_now"
+   ],
+   "pass_to_pass": [],
+   "prompts": {
+    "spec": "# Discovery fetches faster than it screens: 469 GiB of downloaded candidates wait unscreened\n\nlh disk on the Studio after the shakedown loops: queued 58 entries, 468.8 GiB. Each loop downloads up to its budget (40 GiB) but screens at most --top candidates, and a candidate too big for free memory (Qwen-Image-Bench, 51 GB) stays ready-but-unscreenable. The producer outruns the consumer and the disk is what absorbs the difference.\n\nFix: backpressure. Before fetching, count the candidates already on disk that the screen could take now (ready, and passing the memory check). If that backlog is at least --top, skip the fetch and screen what is there.",
+    "symptom": "# Discovery fetches faster than it screens: 469 GiB of downloaded candidates wait unscreened\n\nlh disk on the Studio after the shakedown loops: queued 58 entries, 468.8 GiB. Each loop downloads up to its budget (40 GiB) but screens at most --top candidates, and a candidate too big for free memory (Qwen-Image-Bench, 51 GB) stays ready-but-unscreenable. The producer outruns the consumer and the disk is what absorbs the difference."
+   },
+   "strata": {
+    "files": 1,
+    "lines": 49,
+    "test_s": 0.46,
+    "area": "harness"
+   }
+  },
+  {
+   "id": "sohot-376",
+   "issue": 376,
+   "pr": 377,
+   "base": "fee4061ce9157cbd572262084c0eaf5eae5ed8e8",
+   "fix": "67dc663cb680a42125353f09df40ef71865311d6",
+   "date": "2026-10-05",
+   "subject": "Screen picks ready candidates from the whole plan, not the top N (#376) (#377)",
+   "context_files": [
+    "harness/cli.py"
+   ],
+   "test_files": [
+    "tests/test_harness_cli_queue_scope.py"
+   ],
+   "fail_to_pass": [
+    "tests/test_harness_cli_queue_scope.py::test_a_fetched_candidate_below_the_rank_head_is_still_screened"
+   ],
+   "pass_to_pass": [
+    "tests/test_harness_cli_queue_scope.py::test_a_text_candidate_is_in_scope_for_the_web_lane",
+    "tests/test_harness_cli_queue_scope.py::test_an_unscoped_queue_keeps_every_row",
+    "tests/test_harness_cli_queue_scope.py::test_the_denominator_counts_only_what_a_screen_could_answer",
+    "tests/test_harness_cli_queue_scope.py::test_the_lane_scope_sees_the_whole_backlog",
+    "tests/test_harness_cli_queue_scope.py::test_the_screen_tier_scopes_before_limiting_too"
+   ],
+   "prompts": {
+    "spec": "# Discovery screen slices the ranked queue before filtering for fetched weights, so fresh downloads are never screened\n\nJob 0013 (discovery loop, 80 GiB budget) fetched six models and the screen tier screened one older candidate instead.\n\n`cmd_discover --screen` takes `screen.plan(ranked)[:top]` and only then keeps rows whose state is READY. The head of the ranked queue is candidates the fetch skipped for budget (`waiting-on-fetch`), so they fill the top N and the freshly fetched rows fall below the cut. A dry run on the Studio shows 40 planned, 8 ready, none screened.\n\nSame class as the fetch/screen ordering split fixed earlier: two tiers of one pipeline choosing from the same queue by different rules.\n\nFix: pick the ready rows from the whole plan, then apply the limit. Test: a plan whose top N are all waiting-on-fetch still screens a ready row below them.",
+    "symptom": "# Discovery screen slices the ranked queue before filtering for fetched weights, so fresh downloads are never screened\n\nJob 0013 (discovery loop, 80 GiB budget) fetched six models and the screen tier screened one older candidate instead.\n\n`cmd_discover --screen` takes `screen.plan(ranked)[:top]` and only then keeps rows whose state is READY. The head of the ranked queue is candidates the fetch skipped for budget (`waiting-on-fetch`), so they fill the top N and the freshly fetched rows fall below the cut. A dry run on the Studio shows 40 planned, 8 ready, none screened.\n\nSame class as the fetch/screen ordering split fixed earlier: two tiers of one pipeline choosing from the same queue by different rules."
+   },
+   "strata": {
+    "files": 1,
+    "lines": 10,
+    "test_s": 0.5,
+    "area": "harness"
+   }
+  },
+  {
+   "id": "sohot-374",
+   "issue": 374,
+   "pr": 375,
+   "base": "467550a8e0da62e8f3e790887a08452c7a91b6e4",
+   "fix": "fee4061ce9157cbd572262084c0eaf5eae5ed8e8",
+   "date": "2026-10-05",
+   "subject": "A reference model is never adopted as a lane default (#374) (#375)",
+   "context_files": [
+    "harness/adopt.py"
+   ],
+   "test_files": [
+    "tests/test_adopt_by_spec.py"
+   ],
+   "fail_to_pass": [
+    "tests/test_adopt_by_spec.py::test_a_reference_model_is_never_adopted"
+   ],
+   "pass_to_pass": [
+    "tests/test_adopt_by_spec.py::test_a_local_challenger_preferred_by_hand_is_still_adopted",
+    "tests/test_adopt_by_spec.py::test_a_receipt_without_specs_still_records_the_name",
+    "tests/test_adopt_by_spec.py::test_a_run_writes_its_specs",
+    "tests/test_adopt_by_spec.py::test_a_stored_display_name_runs_the_same_program",
+    "tests/test_adopt_by_spec.py::test_the_judge_records_the_spec_not_the_display_name"
+   ],
+   "prompts": {
+    "spec": "# A reference model (claude-code:) can be adopted as a lane default by hand-judging\n\n\\`lh judge <run>\\` records every challenger the person prefers through \\`adopt.record\\`. If Eric preferred \\`claude-code:claude-opus-5-5\\` on the svg lane (which is in \\`HUMAN_JUDGED\\`), it would become the svg default. That would route a local lane to a cloud model through a subscription login. The \\`claude-code:\\` candidates exist as a ceiling to measure local models against (#359), never as a default.\n\nFix: \\`adopt.record\\` never writes an adoption for a reference candidate. The person's answers are still stored by \\`human\\` (who won each pairing), and the record says \\\"reference model; never a lane default\\\".",
+    "symptom": "# A reference model (claude-code:) can be adopted as a lane default by hand-judging\n\n\\`lh judge <run>\\` records every challenger the person prefers through \\`adopt.record\\`. If Eric preferred \\`claude-code:claude-opus-5-5\\` on the svg lane (which is in \\`HUMAN_JUDGED\\`), it would become the svg default. That would route a local lane to a cloud model through a subscription login. The \\`claude-code:\\` candidates exist as a ceiling to measure local models against (#359), never as a default."
+   },
+   "strata": {
+    "files": 1,
+    "lines": 12,
+    "test_s": 0.73,
+    "area": "harness"
+   }
+  },
+  {
+   "id": "sohot-371",
+   "issue": 371,
+   "pr": 372,
+   "base": "5839a35521538db8763719731ee7ceee102691af",
+   "fix": "467550a8e0da62e8f3e790887a08452c7a91b6e4",
+   "date": "2026-10-05",
+   "subject": "The work-queue worker no longer holds the machine lock for a whole job (#371) (#372)",
+   "context_files": [
+    "README.md",
+    "harness/workqueue.py"
+   ],
+   "test_files": [
+    "tests/test_workqueue.py"
+   ],
+   "fail_to_pass": [
+    "tests/test_workqueue.py::test_a_job_does_not_hold_the_machine_lock_for_its_whole_run"
+   ],
+   "pass_to_pass": [
+    "tests/test_workqueue.py::test_a_command_that_cannot_run_is_refused_when_queued[argv0-one argument]",
+    "tests/test_workqueue.py::test_a_command_that_cannot_run_is_refused_when_queued[argv1-did not recognise]",
+    "tests/test_workqueue.py::test_a_failed_job_is_recorded_and_the_rest_still_run",
+    "tests/test_workqueue.py::test_a_job_cut_off_mid_run_is_not_silently_rerun",
+    "tests/test_workqueue.py::test_a_pending_job_can_be_reprioritised_and_a_finished_one_cannot",
+    "tests/test_workqueue.py::test_a_real_path_with_a_space_is_still_a_command",
+    "tests/test_workqueue.py::test_a_returning_owner_stops_the_next_job_not_the_running_one",
+    "tests/test_workqueue.py::test_adding_runs_nothing",
+    "tests/test_workqueue.py::test_higher_priority_runs_first_and_ties_keep_their_order",
+    "tests/test_workqueue.py::test_jobs_run_in_the_order_they_were_added",
+    "tests/test_workqueue.py::test_only_a_pending_job_can_be_cancelled",
+    "tests/test_workqueue.py::test_only_one_runner_works_the_queue",
+    "tests/test_workqueue.py::test_pause_closes_the_gate_and_resume_opens_it",
+    "tests/test_workqueue.py::test_pause_resume_and_list_through_the_cli",
+    "tests/test_workqueue.py::test_priority_through_the_cli",
+    "tests/test_workqueue.py::test_the_command_keeps_its_own_separators_and_flags",
+    "tests/test_workqueue.py::test_the_owner_at_the_machine_closes_the_gate",
+    "tests/test_workqueue.py::test_the_worker_runs_nothing_while_the_owner_is_here",
+    "tests/test_workqueue.py::test_the_worker_runs_the_queue_when_the_owner_leaves"
+   ],
+   "prompts": {
+    "spec": "# The work-queue worker holds the machine lock for a whole job, so a discovery download blocks every GPU run\n\n2026-10-05: the queued discovery loop spent its time downloading (80 GiB budget). Meanwhile a corrected extract eval waited with \\\"waiting for external ... to finish\\\". The lock holder was the worker (\\`kind: external\\`), which wraps every job in \\`exclusive.held(\\\"external\\\")\\` for its whole duration (#353), network time included.\n\nEvery command the queue runs that loads a model already takes the lock itself, and only while it loads: \\`evals.run\\` (#314), \\`lh image\\`/\\`lh video\\`, and discovery's screens (through \\`evals.run\\`). The worker's lock adds no protection; it only serialises network and disk work behind itself.\n\nFix: the worker does not take the machine lock. Jobs still run one at a time (one runner), and each command takes the lock for the part that needs it. The test that a job holds the lock becomes a test that it does not, so a GPU run can start while a queued job is downloading.",
+    "symptom": "# The work-queue worker holds the machine lock for a whole job, so a discovery download blocks every GPU run\n\n2026-10-05: the queued discovery loop spent its time downloading (80 GiB budget). Meanwhile a corrected extract eval waited with \\\"waiting for external ... to finish\\\". The lock holder was the worker (\\`kind: external\\`), which wraps every job in \\`exclusive.held(\\\"external\\\")\\` for its whole duration (#353), network time included.\n\nEvery command the queue runs that loads a model already takes the lock itself, and only while it loads: \\`evals.run\\` (#314), \\`lh image\\`/\\`lh video\\`, and discovery's screens (through \\`evals.run\\`). The worker's lock adds no protection; it only serialises network and disk work behind itself."
+   },
+   "strata": {
+    "files": 2,
+    "lines": 10,
+    "test_s": 0.74,
+    "area": ".,harness"
+   }
+  },
+  {
+   "id": "sohot-368",
+   "issue": 368,
+   "pr": 369,
+   "base": "7cf18e0eeff12182cebd3fb66415b8d62fca4e70",
+   "fix": "5839a35521538db8763719731ee7ceee102691af",
+   "date": "2026-10-05",
+   "subject": "claude-code runner sends the prompt on stdin, UTF-8 (#368) (#369)",
+   "context_files": [
+    "evals/runners/claude_code.py"
+   ],
+   "test_files": [
+    "tests/test_claude_code_runner.py"
+   ],
+   "fail_to_pass": [
+    "tests/test_claude_code_runner.py::test_case_text_never_reaches_the_argument_parser",
+    "tests/test_claude_code_runner.py::test_the_pipe_is_utf8_whatever_the_locale"
+   ],
+   "pass_to_pass": [
+    "tests/test_claude_code_runner.py::test_a_failure_is_a_failed_row_not_a_crash[Error: Input must be provided-1]",
+    "tests/test_claude_code_runner.py::test_a_failure_is_a_failed_row_not_a_crash[body0-1]",
+    "tests/test_claude_code_runner.py::test_a_failure_is_a_failed_row_not_a_crash[body1-0]",
+    "tests/test_claude_code_runner.py::test_empty_twice_is_the_models_answer",
+    "tests/test_claude_code_runner.py::test_one_empty_result_is_retried_and_recorded",
+    "tests/test_claude_code_runner.py::test_the_answer_and_its_throughput_come_back",
+    "tests/test_claude_code_runner.py::test_the_candidate_kind_runs_every_text_lane",
+    "tests/test_claude_code_runner.py::test_the_lane_prompt_replaces_claude_codes_own_and_tools_are_off",
+    "tests/test_claude_code_runner.py::test_the_runner_keeps_the_base_run_method",
+    "tests/test_claude_code_runner.py::test_the_runner_reports_its_spec_as_the_candidate"
+   ],
+   "prompts": {
+    "spec": "# claude-code runner passes the prompt as an argument, so a prompt starting with '-' is parsed as an option\n\nExtract lane, 2026-10-05: \\`claude-code:claude-opus-5-5\\` failed 2/10, both in the runner rather than the model:\n\n    claude -p exited 1 without JSON: error: unknown option '--- a/scripts/...'\n    claude -p exited 1 without JSON: Error: --resume requires a valid session\n\nThe user message goes in argv after \\`-p\\` as a positional. Extract cases embed material that can start with \\`-\\` (a unified diff), and the CLI parses it as options. One case's text even turned into \\`--resume\\`.\n\nFix: pass the user message on stdin (\\`claude -p\\` reads its prompt from stdin when none is given), so no case content can reach the argument parser. Then re-run extract.",
+    "symptom": "# claude-code runner passes the prompt as an argument, so a prompt starting with '-' is parsed as an option\n\nExtract lane, 2026-10-05: \\`claude-code:claude-opus-5-5\\` failed 2/10, both in the runner rather than the model:\n\n    claude -p exited 1 without JSON: error: unknown option '--- a/scripts/...'\n    claude -p exited 1 without JSON: Error: --resume requires a valid session\n\nThe user message goes in argv after \\`-p\\` as a positional. Extract cases embed material that can start with \\`-\\` (a unified diff), and the CLI parses it as options. One case's text even turned into \\`--resume\\`."
+   },
+   "strata": {
+    "files": 1,
+    "lines": 14,
+    "test_s": 0.56,
+    "area": "evals/runners"
+   }
+  },
+  {
+   "id": "sohot-363",
+   "issue": 363,
+   "pr": 364,
+   "base": "933cc7418cf9144e063d7845a7f9b8944c43006b",
+   "fix": "bf4586bc29517ca2fe28fe55bb2d74ddf4203227",
+   "date": "2026-10-05",
+   "subject": "lh jobs add refuses a command that cannot run (#363) (#364)",
+   "context_files": [
+    "harness/workqueue.py"
+   ],
+   "test_files": [
+    "tests/test_workqueue.py"
+   ],
+   "fail_to_pass": [
+    "tests/test_workqueue.py::test_a_command_that_cannot_run_is_refused_when_queued[argv0-one argument]",
+    "tests/test_workqueue.py::test_a_command_that_cannot_run_is_refused_when_queued[argv1-did not recognise]"
+   ],
+   "pass_to_pass": [
+    "tests/test_workqueue.py::test_a_failed_job_is_recorded_and_the_rest_still_run",
+    "tests/test_workqueue.py::test_a_job_cut_off_mid_run_is_not_silently_rerun",
+    "tests/test_workqueue.py::test_a_pending_job_can_be_reprioritised_and_a_finished_one_cannot",
+    "tests/test_workqueue.py::test_a_real_path_with_a_space_is_still_a_command",
+    "tests/test_workqueue.py::test_a_returning_owner_stops_the_next_job_not_the_running_one",
+    "tests/test_workqueue.py::test_adding_runs_nothing",
+    "tests/test_workqueue.py::test_each_job_holds_the_machine_lock_and_children_know_it",
+    "tests/test_workqueue.py::test_higher_priority_runs_first_and_ties_keep_their_order",
+    "tests/test_workqueue.py::test_jobs_run_in_the_order_they_were_added",
+    "tests/test_workqueue.py::test_only_a_pending_job_can_be_cancelled",
+    "tests/test_workqueue.py::test_only_one_runner_works_the_queue",
+    "tests/test_workqueue.py::test_pause_closes_the_gate_and_resume_opens_it",
+    "tests/test_workqueue.py::test_pause_resume_and_list_through_the_cli",
+    "tests/test_workqueue.py::test_priority_through_the_cli",
+    "tests/test_workqueue.py::test_the_command_keeps_its_own_separators_and_flags",
+    "tests/test_workqueue.py::test_the_owner_at_the_machine_closes_the_gate",
+    "tests/test_workqueue.py::test_the_worker_runs_nothing_while_the_owner_is_here",
+    "tests/test_workqueue.py::test_the_worker_runs_the_queue_when_the_owner_leaves"
+   ],
+   "prompts": {
+    "spec": "# lh jobs add accepts a whole command line as one argument, and the job fails only when it runs\n\nFive overnight jobs failed at once with rc=127, \\\"No such file or directory: 'uv run python -m evals.run --repeat 3'\\\". They were queued from zsh with an unquoted variable holding the command. zsh does not word-split parameters, so argv[0] was the entire command line. The mistake surfaced only when the worker ran the jobs, hours after queueing in the intended use.\n\nA second batch was queued with \\`--priority\\` through a deployed CLI that predated #362. That CLI did not know the option, so it stored \\`--priority 5 --title ...\\` as the command.\n\nFix: \\`workqueue.add\\` refuses an argv whose first element contains whitespace and is not an existing path, naming the likely cause. It also refuses one that starts with \\`-\\`, which means an option the CLI did not recognise was taken as the command.",
+    "symptom": "# lh jobs add accepts a whole command line as one argument, and the job fails only when it runs\n\nFive overnight jobs failed at once with rc=127, \\\"No such file or directory: 'uv run python -m evals.run --repeat 3'\\\". They were queued from zsh with an unquoted variable holding the command. zsh does not word-split parameters, so argv[0] was the entire command line. The mistake surfaced only when the worker ran the jobs, hours after queueing in the intended use.\n\nA second batch was queued with \\`--priority\\` through a deployed CLI that predated #362. That CLI did not know the option, so it stored \\`--priority 5 --title ...\\` as the command."
+   },
+   "strata": {
+    "files": 1,
+    "lines": 7,
+    "test_s": 0.74,
+    "area": "harness"
+   }
+  }
+ ],
+ "drops": [
+  {
+   "issue": 880,
+   "pr": 885,
+   "fix": "35ac01f5c487124fb40fc7a94680178c22b78ac6",
+   "reason": "too_big"
+  },
+  {
+   "issue": 882,
+   "pr": 884,
+   "fix": "9552763886b13099e24048c39eb9c19891bce910",
+   "reason": "too_big"
+  },
+  {
+   "issue": 875,
+   "pr": 876,
+   "fix": "396b2a3e9f5158666a97e6cc2ff858bf65390f2b",
+   "reason": "reference_fails"
+  },
+  {
+   "issue": 870,
+   "pr": 874,
+   "fix": "5cf6943ac4e4e788c088b6a17020baf6861396cf",
+   "reason": "too_big"
+  },
+  {
+   "issue": 868,
+   "pr": 873,
+   "fix": "98005fdee6603b7250bfd117649c36ed4cd6f5be",
+   "reason": "too_big"
+  },
+  {
+   "issue": 866,
+   "pr": 872,
+   "fix": "5e84d5cbb5299125cdf9fdca35463b367f04e319",
+   "reason": "too_big"
+  },
+  {
+   "issue": 867,
+   "pr": 871,
+   "fix": "01957bd169cf0ed8bebcfa77cdbc07a9d84cd558",
+   "reason": "too_big"
+  },
+  {
+   "issue": 864,
+   "pr": 865,
+   "fix": "66d289fd6da0044f23523b9d6bd29e524e734072",
+   "reason": "too_big"
+  },
+  {
+   "issue": 827,
+   "pr": 863,
+   "fix": "f4f9566b12fa804087c150d1ce7bd30ef627e8aa",
+   "reason": "no_test_change"
+  },
+  {
+   "issue": 844,
+   "pr": 857,
+   "fix": "784795a99048efa3ce0c8bc729d68a8973e20cda",
+   "reason": "no_test_change"
+  },
+  {
+   "issue": 650,
+   "pr": 848,
+   "fix": "dec3f44d1647bdb9626a35167cd6006b6193f44a",
+   "reason": "no_fix_section"
+  },
+  {
+   "issue": 849,
+   "pr": 856,
+   "fix": "3c7ba6169792dc2fc05522179208a4184cbd4ad9",
+   "reason": "no_fix_section"
+  },
+  {
+   "issue": 844,
+   "pr": 847,
+   "fix": "1beb1287132ba0b4fe358d67239d90554301938c",
+   "reason": "no_source_change"
+  },
+  {
+   "issue": 826,
+   "pr": 841,
+   "fix": "6771b6988846ca85e5d28ddf1d4208dd721a0e4f",
+   "reason": "too_big"
+  },
+  {
+   "issue": 829,
+   "pr": 832,
+   "fix": "4e1e49c6d2da3ea155b50d5c8e35bb51b9725969",
+   "reason": "too_big"
+  },
+  {
+   "issue": 818,
+   "pr": 839,
+   "fix": "4f0898abd380809374bd918633031184c6259857",
+   "reason": "no_fix_section"
+  },
+  {
+   "issue": 772,
+   "pr": 837,
+   "fix": "a10a644d7424aa262aaec7eb383b89d1153b265e",
+   "reason": "no_source_change"
+  },
+  {
+   "issue": 825,
+   "pr": 836,
+   "fix": "3f3bf790f8ed59ad4766df9ca64ff3f351d7ef68",
+   "reason": "too_big"
+  },
+  {
+   "issue": 830,
+   "pr": 835,
+   "fix": "8fd336e0dfeb826895342db715985d44dfac86f6",
+   "reason": "too_big"
+  },
+  {
+   "issue": 833,
+   "pr": 834,
+   "fix": "c9cf56641d958f219d22fc56495c4ed06a6ecb0e",
+   "reason": "no_source_change"
+  },
+  {
+   "issue": 828,
+   "pr": 831,
+   "fix": "2e4651def1768d3a2c6b61eeb0ba3ff8a624cc3d",
+   "reason": "too_big"
+  },
+  {
+   "issue": 823,
+   "pr": 824,
+   "fix": "728f5f7a983c0edab44672f7be352f8864afa81a",
+   "reason": "reference_fails"
+  },
+  {
+   "issue": 821,
+   "pr": 822,
+   "fix": "1102c2df76d9311103940ca7da93c2cc04e76442",
+   "reason": "reference_fails"
+  },
+  {
+   "issue": 814,
+   "pr": 817,
+   "fix": "0e387c2c5a00737be59bd505cba952a440464cbc",
+   "reason": "too_big"
+  },
+  {
+   "issue": 819,
+   "pr": 820,
+   "fix": "e7eacc5fbc66a7bf98a1e03c1717d8cbbea69b1b",
+   "reason": "no_source_change"
+  },
+  {
+   "issue": 813,
+   "pr": 815,
+   "fix": "c9f724827df95298200b940d30df76c1d9baaaee",
+   "reason": "too_big"
+  },
+  {
+   "issue": 807,
+   "pr": 812,
+   "fix": "cef0bcb78929553f8ffec9baf4485ee627de8c5e",
+   "reason": "too_big"
+  },
+  {
+   "issue": 805,
+   "pr": 811,
+   "fix": "7a541c435dfab6588b19b02fc55db8eb03c94632",
+   "reason": "no_fix_section"
+  },
+  {
+   "issue": 806,
+   "pr": 808,
+   "fix": "5bf5641466c8fb8a4182b3cff2375c36e2e13b7e",
+   "reason": "too_big"
+  },
+  {
+   "issue": 799,
+   "pr": 802,
+   "fix": "8d624b01265638c26a0273d7029e399acc4f0a86",
+   "reason": "too_big"
+  },
+  {
+   "issue": 796,
+   "pr": 803,
+   "fix": "bcf2a2feacef82ba9117798cd43b9a69529dd54c",
+   "reason": "no_fix_section"
+  },
+  {
+   "issue": 798,
+   "pr": 801,
+   "fix": "3a325e94bbe0ced0231c91e6f97cf4affdf15e86",
+   "reason": "no_fix_section"
+  },
+  {
+   "issue": 797,
+   "pr": 800,
+   "fix": "577d0c70adbfa7f063f5b3e04eb2c82b7a82f26a",
+   "reason": "too_big"
+  },
+  {
+   "issue": 794,
+   "pr": 795,
+   "fix": "b9a8f8a651da98e365eaea7d0267455bd3361e1d",
+   "reason": "reference_fails"
+  },
+  {
+   "issue": 791,
+   "pr": 793,
+   "fix": "35e2e10b4cca765a0bebfd28c178a635b65e23d9",
+   "reason": "too_big"
+  },
+  {
+   "issue": 786,
+   "pr": 787,
+   "fix": "4bb657c421c144c0170303abb4f7766d42d1c775",
+   "reason": "no_fix_section"
+  },
+  {
+   "issue": 783,
+   "pr": 785,
+   "fix": "e2c6044371b0d70de6275442ee394f367ba7f56e",
+   "reason": "no_fix_section"
+  },
+  {
+   "issue": 781,
+   "pr": 782,
+   "fix": "78da9a12665ae5a33401642ef29d4663a8e16137",
+   "reason": "too_big"
+  },
+  {
+   "issue": 769,
+   "pr": 777,
+   "fix": "f434b35e055e313bf68a16515d665f9478100197",
+   "reason": "too_big"
+  },
+  {
+   "issue": 705,
+   "pr": 768,
+   "fix": "94be76d40ba031979693093c9c86749004b15d8c",
+   "reason": "too_big"
+  },
+  {
+   "issue": 747,
+   "pr": 767,
+   "fix": "1f96f038066e3d8882de982cc3f1336774c08ad6",
+   "reason": "too_big"
+  },
+  {
+   "issue": 756,
+   "pr": 765,
+   "fix": "7e68fb86fb1ed19f2bf0539f564389ee01b30757",
+   "reason": "reference_fails"
+  },
+  {
+   "issue": 740,
+   "pr": 766,
+   "fix": "a650e77e3e53ca606684a63d027f9e0670ea1c96",
+   "reason": "too_big"
+  },
+  {
+   "issue": 703,
+   "pr": 770,
+   "fix": "e0f31635b38f65a6b916acb305dd3a744d66f14d",
+   "reason": "too_big"
+  },
+  {
+   "issue": 757,
+   "pr": 761,
+   "fix": "4d715b20f415a665614ac10f2ccbc2fe3f7653f5",
+   "reason": "no_fix_section"
+  },
+  {
+   "issue": 758,
+   "pr": 760,
+   "fix": "3d9001b7c1eecb24288e633dfe7b114da5bc8a26",
+   "reason": "dependency_change"
+  },
+  {
+   "issue": 699,
+   "pr": 749,
+   "fix": "8d3255f34317d284f0b82e6f1f261a48e011045d",
+   "reason": "too_big"
+  },
+  {
+   "issue": 704,
+   "pr": 744,
+   "fix": "a7cc2bab987b5f2d21f75420007ebaca45f9c41c",
+   "reason": "too_big"
+  },
+  {
+   "issue": 692,
+   "pr": 746,
+   "fix": "778dc9450d65f03136d74cd4fbbe09768403aa20",
+   "reason": "too_big"
+  },
+  {
+   "issue": 696,
+   "pr": 745,
+   "fix": "c9e45bda3c5ca680cb0ddbc50c326dde4978cce4",
+   "reason": "too_big"
+  },
+  {
+   "issue": 694,
+   "pr": 743,
+   "fix": "419726c6aea385d7acf20879aac5a7ae187beec0",
+   "reason": "too_big"
+  },
+  {
+   "issue": 751,
+   "pr": 753,
+   "fix": "1c31382f8277e18eb328acfdd523b267fd499845",
+   "reason": "too_big"
+  },
+  {
+   "issue": 739,
+   "pr": 742,
+   "fix": "a4bd28681790741b3fd57e055c1502fcb33e6d7d",
+   "reason": "too_big"
+  },
+  {
+   "issue": 691,
+   "pr": 731,
+   "fix": "86ea4c5e5bc148e7f19ac083ab8c49470dff5bd4",
+   "reason": "too_big"
+  },
+  {
+   "issue": 724,
+   "pr": 750,
+   "fix": "e5b783c665c35199ae966c9c7ed83e6728f9eb22",
+   "reason": "no_fix_section"
+  },
+  {
+   "issue": 701,
+   "pr": 732,
+   "fix": "61ec324946c5f5205c35c2299b262a782f0d1012",
+   "reason": "too_big"
+  },
+  {
+   "issue": 700,
+   "pr": 728,
+   "fix": "324fc5c11e1c17d024c4e4966ddf1a83627b0eb5",
+   "reason": "too_big"
+  },
+  {
+   "issue": 736,
+   "pr": 737,
+   "fix": "12011899915648299d1906f4f5aad8bff60dc6b5",
+   "reason": "no_fix_section"
+  },
+  {
+   "issue": 698,
+   "pr": 726,
+   "fix": "4932110ce1b593c18f4049314029875206634b2b",
+   "reason": "too_big"
+  },
+  {
+   "issue": 695,
+   "pr": 729,
+   "fix": "60e5a223bd2331dc35204aacdf2c9ea409bf5030",
+   "reason": "too_big"
+  },
+  {
+   "issue": 690,
+   "pr": 718,
+   "fix": "49380253d75c032ec848ef11b5196f25ccaefdb8",
+   "reason": "too_big"
+  },
+  {
+   "issue": 693,
+   "pr": 709,
+   "fix": "64d3c494c5f2a00c2e7e8f0709a321bdb8ce9384",
+   "reason": "too_big"
+  },
+  {
+   "issue": 706,
+   "pr": 710,
+   "fix": "e09c2cc0d32d857580163583d8645504661b5eb5",
+   "reason": "too_big"
+  },
+  {
+   "issue": 702,
+   "pr": 714,
+   "fix": "621c6eda9fe57453e584dd31f8355263bfd9b5f6",
+   "reason": "too_big"
+  },
+  {
+   "issue": 720,
+   "pr": 723,
+   "fix": "5b3ca3c3796134f8cdd308773456dd2cc82aca25",
+   "reason": "too_big"
+  },
+  {
+   "issue": 697,
+   "pr": 715,
+   "fix": "c3eecc72312801b9684b6b7f6ca56f357ee47e0e",
+   "reason": "too_big"
+  },
+  {
+   "issue": 683,
+   "pr": 689,
+   "fix": "b922961a14a606c039c581132fad46d5177be3f8",
+   "reason": "too_big"
+  },
+  {
+   "issue": 682,
+   "pr": 707,
+   "fix": "6efc4a7e755cc3794c3dfa9da750ec0a2eb2b1f3",
+   "reason": "too_big"
+  },
+  {
+   "issue": 675,
+   "pr": 681,
+   "fix": "704372b2a4b525e9525b483a170bfd146649ba9f",
+   "reason": "no_fix_section"
+  },
+  {
+   "issue": 674,
+   "pr": 680,
+   "fix": "405ed0606decd4a082d7396a2cc76155ca5b2668",
+   "reason": "no_fix_section"
+  },
+  {
+   "issue": 673,
+   "pr": 676,
+   "fix": "5a95ee1976cd38faf057c3ef9a4b610319eda31b",
+   "reason": "too_big"
+  },
+  {
+   "issue": 670,
+   "pr": 672,
+   "fix": "6bb2fc98347fcc978aadc1d08a9884c1b20e98c5",
+   "reason": "too_big"
+  },
+  {
+   "issue": 668,
+   "pr": 669,
+   "fix": "236d758b2487dc44edf2c020fed92ba9bc730822",
+   "reason": "too_big"
+  },
+  {
+   "issue": 665,
+   "pr": 667,
+   "fix": "a1c466a45752ab69de3b446e6b0d9d507aaa3818",
+   "reason": "too_big"
+  },
+  {
+   "issue": 662,
+   "pr": 664,
+   "fix": "07e2d5e886b8c39bc72f1cfe206e1b9617d435a5",
+   "reason": "too_big"
+  },
+  {
+   "issue": 661,
+   "pr": 663,
+   "fix": "12d2679128cc106ab2b5bc2e4666581c86b19994",
+   "reason": "too_big"
+  },
+  {
+   "issue": 659,
+   "pr": 660,
+   "fix": "4af59c46d886e0d9282fa0455338748309a7d1fd",
+   "reason": "too_big"
+  },
+  {
+   "issue": 657,
+   "pr": 658,
+   "fix": "1ec16797fbb64c6c27e1da0e5b282bf241da02ae",
+   "reason": "too_big"
+  },
+  {
+   "issue": 654,
+   "pr": 656,
+   "fix": "08d28da8e7df1aa08a5c95dc66cd85c1a072aede",
+   "reason": "too_big"
+  },
+  {
+   "issue": 649,
+   "pr": 653,
+   "fix": "a240393005aad83766457557295eec17b468efdb",
+   "reason": "too_big"
+  },
+  {
+   "issue": 645,
+   "pr": 651,
+   "fix": "655eda16cc5d07b3156a1ffa9c7a9e270c225f18",
+   "reason": "too_big"
+  },
+  {
+   "issue": 636,
+   "pr": 638,
+   "fix": "f8d100ad67163e489d6da49af4a7765cccac2bd7",
+   "reason": "too_big"
+  },
+  {
+   "issue": 631,
+   "pr": 634,
+   "fix": "4e0f6d131e369571bf3c04e98a07bc63065a66ec",
+   "reason": "too_big"
+  },
+  {
+   "issue": 630,
+   "pr": 633,
+   "fix": "3d28d463b976cfba2e98efebe5c5381cea628d6c",
+   "reason": "too_big"
+  },
+  {
+   "issue": 628,
+   "pr": 629,
+   "fix": "4f5fe77b30d23f4dd187659001c21758bdeb8269",
+   "reason": "too_big"
+  },
+  {
+   "issue": 623,
+   "pr": 624,
+   "fix": "02afb1a113318f41342c2f243122f43a97c95adc",
+   "reason": "too_big"
+  },
+  {
+   "issue": 625,
+   "pr": 627,
+   "fix": "f8d3f19c56fc041e9e0fb4ad06ce06adf3e4e5cf",
+   "reason": "too_big"
+  },
+  {
+   "issue": 621,
+   "pr": 622,
+   "fix": "5dec7b7465974fc207088b8a9cbe7e906f369958",
+   "reason": "too_big"
+  },
+  {
+   "issue": 596,
+   "pr": 620,
+   "fix": "50370f2bb0c39ed6212956b5f5ca42653f9e86c1",
+   "reason": "no_fix_section"
+  },
+  {
+   "issue": 600,
+   "pr": 615,
+   "fix": "689a389f65d12a990a1111c6c6bdf04f6947e331",
+   "reason": "no_fix_section"
+  },
+  {
+   "issue": 608,
+   "pr": 618,
+   "fix": "0443866e88b065e8731dfe35b895eae968853c1b",
+   "reason": "too_big"
+  },
+  {
+   "issue": 606,
+   "pr": 617,
+   "fix": "bf14309bab16e417942fd6fcdde2460308c4cecc",
+   "reason": "too_big"
+  },
+  {
+   "issue": 251,
+   "pr": 616,
+   "fix": "e9b42907490ce04b4e26590e41c8750954475480",
+   "reason": "too_big"
+  },
+  {
+   "issue": 611,
+   "pr": 614,
+   "fix": "a8b4e328cabe2fbb9875e32fe1326badce015bda",
+   "reason": "too_big"
+  },
+  {
+   "issue": 603,
+   "pr": 605,
+   "fix": "8cd38d6b38b61871a82ff2cf773e2976c65654f8",
+   "reason": "too_big"
+  },
+  {
+   "issue": 612,
+   "pr": 613,
+   "fix": "ff45e827551651da34de5e74fad4dcd57307cf65",
+   "reason": "too_big"
+  },
+  {
+   "issue": 604,
+   "pr": 609,
+   "fix": "cd81e84dd00932791792c083980cb17a025afe9a",
+   "reason": "too_big"
+  },
+  {
+   "issue": 603,
+   "pr": 607,
+   "fix": "75e1b783c28dda352ffcc47bfb9fc2c8a3e2f7e1",
+   "reason": "too_big"
+  },
+  {
+   "issue": 601,
+   "pr": 602,
+   "fix": "d3ec3a01c9eedea8600116b3960f1cce022961cb",
+   "reason": "too_big"
+  },
+  {
+   "issue": 581,
+   "pr": 597,
+   "fix": "d3278d32b93be459bdd5799c17c32597b4294817",
+   "reason": "too_big"
+  },
+  {
+   "issue": 567,
+   "pr": 593,
+   "fix": "c8ee78916ef58d2906457d8545edff78ec4e422e",
+   "reason": "too_big"
+  },
+  {
+   "issue": 590,
+   "pr": 592,
+   "fix": "7febad6a1ca2a4ed4ae038e1350e7a71a38ee535",
+   "reason": "too_big"
+  },
+  {
+   "issue": 588,
+   "pr": 589,
+   "fix": "339d4e94d7144d1d64b3f88a729fb5f98c64a259",
+   "reason": "too_big"
+  },
+  {
+   "issue": 583,
+   "pr": 587,
+   "fix": "ac7b5d56cc26103893c338342f52cefdd41ba5f3",
+   "reason": "no_fix_section"
+  },
+  {
+   "issue": 584,
+   "pr": 586,
+   "fix": "d6fe515c76f5dc8bb3063fd032f9499bd6600281",
+   "reason": "too_big"
+  },
+  {
+   "issue": 583,
+   "pr": 585,
+   "fix": "c0c36a3e4b5bb2deef0fbcaf8649965592aa0523",
+   "reason": "too_big"
+  },
+  {
+   "issue": 577,
+   "pr": 578,
+   "fix": "ac303085db2006b55ad7757f5ceb50686730414c",
+   "reason": "reference_fails"
+  },
+  {
+   "issue": 572,
+   "pr": 575,
+   "fix": "53df9c922404f6dd8eb49ca317ac781626903f0a",
+   "reason": "too_big"
+  },
+  {
+   "issue": 573,
+   "pr": 574,
+   "fix": "15c1ea2a94ae95aa68c09755e34f07d34dcc21b4",
+   "reason": "too_big"
+  },
+  {
+   "issue": 561,
+   "pr": 565,
+   "fix": "a78917e37731bab540be8c2bf70af2b867c99bbe",
+   "reason": "too_big"
+  },
+  {
+   "issue": 327,
+   "pr": 550,
+   "fix": "e721fe59ff9cc9ef74eeb873c10fc497dbbc9caf",
+   "reason": "reference_fails"
+  },
+  {
+   "issue": 522,
+   "pr": 544,
+   "fix": "334b3c8dba6da71eefb641d41eda1ac9d3abfffc",
+   "reason": "too_big"
+  },
+  {
+   "issue": 542,
+   "pr": 549,
+   "fix": "b57c04aff5d645bfa714aa270fbeafe512c1982e",
+   "reason": "too_big"
+  },
+  {
+   "issue": 528,
+   "pr": 543,
+   "fix": "b27078c9ff6dec1d1469cd9463d2c023bb97f3d3",
+   "reason": "too_big"
+  },
+  {
+   "issue": 310,
+   "pr": 541,
+   "fix": "e66712aa8b440a9193b47da2188fb117a642304f",
+   "reason": "too_big"
+  },
+  {
+   "issue": 536,
+   "pr": 538,
+   "fix": "ee4274ee9d22e7c8a2e6fbdbaad4f8ffe8db3276",
+   "reason": "dependency_change"
+  },
+  {
+   "issue": 537,
+   "pr": 539,
+   "fix": "2b6f0b6fa82b8ce5eee0ce49456fe41986486e92",
+   "reason": "no_source_change"
+  },
+  {
+   "issue": 485,
+   "pr": 533,
+   "fix": "56bd5fed6c9b9bcfd949c0d3b06bb813bb40bc2e",
+   "reason": "too_big"
+  },
+  {
+   "issue": 312,
+   "pr": 534,
+   "fix": "9464ccc0d033c483f58a0af9694e4c2eeffe6fdb",
+   "reason": "too_big"
+  },
+  {
+   "issue": 311,
+   "pr": 535,
+   "fix": "6a551830ee87042dca1c972b8e65ff89b775a5df",
+   "reason": "too_big"
+  },
+  {
+   "issue": 479,
+   "pr": 525,
+   "fix": "658ea0fa9e2a8c3cc62d261a894a81d6603c6a0f",
+   "reason": "too_big"
+  },
+  {
+   "issue": 516,
+   "pr": 523,
+   "fix": "a9675a46912f43b7d71df5af37cdb84324a9ec4b",
+   "reason": "too_big"
+  },
+  {
+   "issue": 484,
+   "pr": 514,
+   "fix": "1644375781cf5957a3c3b9bf24ba7dfce83a2862",
+   "reason": "too_big"
+  },
+  {
+   "issue": 498,
+   "pr": 503,
+   "fix": "df8093bf987c53e80564632c006c7d489d30fd20",
+   "reason": "too_big"
+  },
+  {
+   "issue": 506,
+   "pr": 508,
+   "fix": "245e4c49883fc3ea83ce76b1ad095042bd974db6",
+   "reason": "no_fix_section"
+  },
+  {
+   "issue": 505,
+   "pr": 507,
+   "fix": "18a64430726784e23f424f1d5249124a42a2cc1a",
+   "reason": "too_big"
+  },
+  {
+   "issue": 481,
+   "pr": 504,
+   "fix": "8ddd89eb72dc8fabca1f44f75d1dfee949bd1ead",
+   "reason": "too_big"
+  },
+  {
+   "issue": 478,
+   "pr": 500,
+   "fix": "854f2d5a1e9ea6b5e0f27c42afbf78a5ada9296e",
+   "reason": "too_big"
+  },
+  {
+   "issue": 501,
+   "pr": 502,
+   "fix": "c539506965db446da542ba98ca8804f68774422d",
+   "reason": "too_big"
+  },
+  {
+   "issue": 474,
+   "pr": 497,
+   "fix": "e5ced76aeacfff96a72a2b2f14a264f0fb1279f5",
+   "reason": "too_big"
+  },
+  {
+   "issue": 482,
+   "pr": 499,
+   "fix": "187afcaf97d51165df37a18c5e6bacf94c5a8327",
+   "reason": "too_big"
+  },
+  {
+   "issue": 483,
+   "pr": 494,
+   "fix": "65337701d078d2b0115c708628b643aaeb6363b7",
+   "reason": "too_big"
+  },
+  {
+   "issue": 328,
+   "pr": 493,
+   "fix": "d4d186506e4e953d13cae2681b3886a4b67ab911",
+   "reason": "no_fix_section"
+  },
+  {
+   "issue": 475,
+   "pr": 488,
+   "fix": "4ed55f78d736876d18694490b38107c14bdb41d5",
+   "reason": "too_big"
+  },
+  {
+   "issue": 489,
+   "pr": 490,
+   "fix": "2077c7416f12e762a1590fd13b4fc5b2d4492ac8",
+   "reason": "no_fix_section"
+  },
+  {
+   "issue": 468,
+   "pr": 473,
+   "fix": "d664fbb2a7eae5bbcf9a509614d348f0f8450900",
+   "reason": "too_big"
+  },
+  {
+   "issue": 297,
+   "pr": 476,
+   "fix": "1ead3ea17c0bd6d92d65341ec4fa1fb1f3c1cdb5",
+   "reason": "too_big"
+  },
+  {
+   "issue": 463,
+   "pr": 472,
+   "fix": "77e9639c7dfffa4f8f8e320ab3ef20b5de310b45",
+   "reason": "too_big"
+  },
+  {
+   "issue": 467,
+   "pr": 469,
+   "fix": "820749e0f7d7f597b6ef6cb5f3c158c0998ced8c",
+   "reason": "too_big"
+  },
+  {
+   "issue": 387,
+   "pr": 466,
+   "fix": "af60ac8fda07eacf32de3a89ab7eafe39fabdc86",
+   "reason": "no_fix_section"
+  },
+  {
+   "issue": 464,
+   "pr": 465,
+   "fix": "7cef8c69323738ec1da45c24b141b22d6159c63d",
+   "reason": "no_fix_section"
+  },
+  {
+   "issue": 461,
+   "pr": 462,
+   "fix": "a26c816289e1b1ee91dda16f750025a19cdccd4f",
+   "reason": "reference_fails"
+  },
+  {
+   "issue": 193,
+   "pr": 460,
+   "fix": "ea1594c81a5e81e9c78fb1be32a30034a3e60a26",
+   "reason": "no_test_change"
+  },
+  {
+   "issue": 432,
+   "pr": 459,
+   "fix": "0c0bb01f50e880c6f886daa3e8d819213e1b6cf5",
+   "reason": "too_big"
+  },
+  {
+   "issue": 193,
+   "pr": 457,
+   "fix": "9702de451269f169a2fab2bbf28b630fbfea961a",
+   "reason": "too_big"
+  },
+  {
+   "issue": 423,
+   "pr": 454,
+   "fix": "829c2e75aaa3beeb2e1773f535f77f0afad5bd35",
+   "reason": "too_big"
+  },
+  {
+   "issue": 450,
+   "pr": 453,
+   "fix": "b522eb0ddbd4bb14498562ab28b9ffbcc31f164d",
+   "reason": "no_fix_section"
+  },
+  {
+   "issue": 429,
+   "pr": 452,
+   "fix": "b7aba1fd9b7b2b2654aa61fe078ba04dbd318c55",
+   "reason": "too_big"
+  },
+  {
+   "issue": 442,
+   "pr": 446,
+   "fix": "0492a7db650c97952f81841c93fe5fedcb5c9380",
+   "reason": "no_source_change"
+  },
+  {
+   "issue": 419,
+   "pr": 451,
+   "fix": "1823b786d8c8e52a0f29d4630e34a282549163c9",
+   "reason": "no_fix_section"
+  },
+  {
+   "issue": 444,
+   "pr": 449,
+   "fix": "5d95d06dd10acb0f236468bbf152af9380d46865",
+   "reason": "too_big"
+  },
+  {
+   "issue": 418,
+   "pr": 447,
+   "fix": "209de7482e29e9da65cea2b4af847aebc261bfee",
+   "reason": "too_big"
+  },
+  {
+   "issue": 416,
+   "pr": 445,
+   "fix": "942008647d2139287d7949cfdf98cfd99c80fa00",
+   "reason": "too_big"
+  },
+  {
+   "issue": 415,
+   "pr": 443,
+   "fix": "0274ebbb681481159a2f4de1d17bd3a25187e153",
+   "reason": "too_big"
+  },
+  {
+   "issue": 414,
+   "pr": 441,
+   "fix": "ebe70842f6e4e6f4283c7d09cf71157952c16f74",
+   "reason": "too_big"
+  },
+  {
+   "issue": 411,
+   "pr": 439,
+   "fix": "f7264fc518aec962d3ea2662b0c9dc3a3e580243",
+   "reason": "too_big"
+  },
+  {
+   "issue": 413,
+   "pr": 440,
+   "fix": "406fc123bec6baacac2533801ae05bdec334b9c8",
+   "reason": "too_big"
+  },
+  {
+   "issue": 412,
+   "pr": 436,
+   "fix": "2c11d3321137722164cab1ac644b6f6674efb9ea",
+   "reason": "too_big"
+  },
+  {
+   "issue": 410,
+   "pr": 435,
+   "fix": "4f9cd606b8adbeaa1083ad71e57727a012ca6d27",
+   "reason": "too_big"
+  },
+  {
+   "issue": 431,
+   "pr": 434,
+   "fix": "3420b2b5048f117f4c537478fb14b07cb607e869",
+   "reason": "too_big"
+  },
+  {
+   "issue": 409,
+   "pr": 433,
+   "fix": "8d7fa5c7e1f69398ddd4e33e2f1dc7cb37db8f19",
+   "reason": "too_big"
+  },
+  {
+   "issue": 407,
+   "pr": 428,
+   "fix": "c77e69e85184319f88b10cd6f4b6f1a390c835b3",
+   "reason": "too_big"
+  },
+  {
+   "issue": 426,
+   "pr": 430,
+   "fix": "a1ceb1ca9c2dd0654ba3d826e89b76318db5776f",
+   "reason": "no_source_change"
+  },
+  {
+   "issue": 424,
+   "pr": 427,
+   "fix": "ee107b4774ae314db35dc4d091e84d991d109fc7",
+   "reason": "no_fix_section"
+  },
+  {
+   "issue": 420,
+   "pr": 421,
+   "fix": "6e8e5b02dfefebd26de8f9e1fa2f85ebb9c56c76",
+   "reason": "no_fix_section"
+  },
+  {
+   "issue": 401,
+   "pr": 402,
+   "fix": "aeea363a3c7408b5a5680470d7e2bb290e9ea8d1",
+   "reason": "no_fix_section"
+  },
+  {
+   "issue": 389,
+   "pr": 398,
+   "fix": "644f52812413a7d9849ff21e5aad0bcf32764175",
+   "reason": "no_fix_section"
+  },
+  {
+   "issue": 393,
+   "pr": 395,
+   "fix": "6219e2f355a8a5c8b8ad7fd6210968b84363488e",
+   "reason": "no_fix_section"
+  },
+  {
+   "issue": 391,
+   "pr": 392,
+   "fix": "a1fc7300e03299d13b5944f9ed9def72b94ebd1b",
+   "reason": "too_big"
+  },
+  {
+   "issue": 383,
+   "pr": 388,
+   "fix": "d98dae0c21ff143f55a90a4ad8a9c099b0e65a21",
+   "reason": "no_fix_section"
+  }
+ ]
+}

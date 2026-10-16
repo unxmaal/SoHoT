@@ -1,0 +1,57 @@
+# SoHoT fix history (unxmaal/SoHoT), generated (https://github.com/unxmaal/SoHoT).
+# Imported by evals/importers from git:unxmaal/SoHoT@35ac01f5c487124fb40fc7a94680178c22b78ac6; re-import, do not edit.
+id: sohot-455-spec
+modality: repo
+prompt: '# Code from a feature branch silently migrates the live store ahead of the deployed services
+
+
+  Found 2026-10-06 while building #423: a scratch `evals.run` from the agent''s worktree defaulted to
+  the live LOCALHARNESS_HOME, and opening the store with that branch''s code would have migrated discovery.db
+  to the branch''s schema. The deployed services then refuse a newer store (or, worse, a later main renumbers
+  the same version differently). The agent caught it before anything was stored; the live store was confirmed
+  at schema 36, integrity ok.
+
+
+  The same class as RULE #329 (services must run the deploy checkout, never the working checkout): any
+  process can open the live store, and connect() migrates on open.
+
+
+  Fix: connect() migrates the LIVE store only from the deploy checkout (or with an explicit override such
+  as LH_ALLOW_MIGRATE=1, used by launchd.sh install). From any other checkout, a store whose schema is
+  behind the code is refused with a message naming the deploy step, and the suggestion to set LOCALHARNESS_HOME
+  to a scratch dir. Tests and scratch homes (tmp paths, non-default LOCALHARNESS_HOME) are unaffected.'
+params:
+  source_repo: https://github.com/unxmaal/SoHoT.git
+  base: 829c2e75aaa3beeb2e1773f535f77f0afad5bd35
+  fix: 93b0d696963a293a6d37f05816af36c21bae0b06
+  variant: spec
+  context: oracle
+  context_files:
+  - harness/memory_store.py
+  - harness/paths.py
+  - scripts/launchd.sh
+  fail_to_pass:
+  - tests/test_live_store_guard.py::test_a_live_store_behind_the_code_is_refused_from_another_checkout
+  - tests/test_live_store_guard.py::test_a_machine_with_no_deploy_checkout_migrates_as_before
+  - tests/test_live_store_guard.py::test_a_newer_live_store_keeps_the_newer_store_refusal
+  - tests/test_live_store_guard.py::test_a_non_default_home_migrates_as_before
+  - tests/test_live_store_guard.py::test_an_absent_live_store_is_not_created_from_another_checkout
+  - tests/test_live_store_guard.py::test_an_explicit_store_path_migrates_as_before
+  - tests/test_live_store_guard.py::test_launchd_and_python_agree_on_where_the_deploy_is
+  - tests/test_live_store_guard.py::test_the_deploy_checkout_migrates_the_live_store
+  - tests/test_live_store_guard.py::test_the_override_migrates_the_live_store
+  pass_to_pass: []
+attribution:
+  dataset: SoHoT fix history (unxmaal/SoHoT)
+  url: https://github.com/unxmaal/SoHoT
+  license: generated
+  source: git:unxmaal/SoHoT
+  revision: 35ac01f5c487124fb40fc7a94680178c22b78ac6
+  item: '#455 (PR #456)'
+  date: '2026-10-06'
+  transform: issue title and body from `gh issue view` at survey time, home paths as ~/, 'Prior art checked'
+    removed (spec), and the Fix/Shape/Design/Options/Remedy/Proposal/Build/What-to sections and labelled
+    paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
+    of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
+    and sandbox (evals/repo.py)
+  importer: evals.importers.history
