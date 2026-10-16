@@ -10,6 +10,12 @@ GIB = 1024 ** 3
 INC = {"code": "llamacpp:Ornith-1.5-35B-Q4_K_M"}
 
 
+@pytest.fixture(autouse=True)
+def runnable_here(monkeypatch):
+    """GGUF rows drop on a machine without llama.cpp; this file tests order, not this machine."""
+    monkeypatch.setattr(rank, "unrunnable", lambda row, machine=None: "")
+
+
 def row(name, *, gib, age_days, times=1, **kw):
     return {"name": name, "lane": "code", "times": times, "description": "",
             "size_bytes": int(gib * GIB), "first_seen": NOW - age_days * DAY,
