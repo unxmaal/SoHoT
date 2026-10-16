@@ -199,6 +199,22 @@ def test_the_lan_hostname_is_allowed_or_the_other_machine_gets_a_rejection(monke
             "localhost:8899"} <= set(s.allowed_hosts)
 
 
+def test_the_lowercased_hostname_is_allowed_because_clients_lowercase_it(monkeypatch):
+    """httpx, Node and curl lowercase the host they send; mcp matches the
+    allowlist exactly, so a mixed-case Bonjour name alone leaves its
+    lowercase form at 421."""
+    # privacy-ok: a fabricated mixed-case name, pinned so the runner is not the input
+    monkeypatch.setattr(mcp_server, "_local_hostname", lambda: "My-Studio.local")
+    s = mcp_server.transport_security(host="0.0.0.0", port=8899, extra=["Other-Box"])
+    hosts = set(s.allowed_hosts)
+    assert {"My-Studio.local:8899", "my-studio.local:8899"} <= hosts  # privacy-ok: fabricated
+    assert {"My-Studio.local", "my-studio.local"} <= hosts  # privacy-ok: fabricated
+    assert {"Other-Box:8899", "other-box:8899"} <= hosts
+    assert "http://my-studio.local:8899" in s.allowed_origins  # privacy-ok: fabricated
+    assert {"http://My-Studio.local:8899", "http://other-box"} <= set(s.allowed_origins)
+    assert len(s.allowed_hosts) == len(set(s.allowed_hosts))
+
+
 class _Ran:
     def __init__(self, stdout):
         self.stdout = stdout
