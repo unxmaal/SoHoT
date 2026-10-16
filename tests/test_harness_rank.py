@@ -128,7 +128,7 @@ def test_the_priority_order_is_the_one_that_was_asked_for():
     """
     assert rank.LANE_PRIORITY == ("image", "code", "web", "svg", "video",
                                   "music", "decide", "agent", "ocr", "retrieval", "pii",
-                                  "claims")
+                                  "claims", "repo")
     got = [rank.priority_of(l) for l in rank.LANE_PRIORITY]
     assert got == sorted(got, reverse=True), "priority must fall down the list"
 

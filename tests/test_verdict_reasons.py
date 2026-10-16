@@ -44,6 +44,8 @@ EXPECTED = {
     reasons.CONTENT_FAILED: ("declined", "limit"),
     reasons.RUNAWAY: ("broken", "candidate"),
     reasons.POOL_FULL: ("queued", "limit"),
+    reasons.INVALID_PATCH: ("broken", "candidate"),
+    reasons.ENVIRONMENT_ERROR: ("queued", "harness"),
 }
 
 

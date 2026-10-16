@@ -1,4 +1,4 @@
-"""`soh cases import|control <source>`: re-run an importer, or its negative control. #603."""
+"""`soh cases import|control <source>`: re-run an importer, or its negative control; `control repo` the repo lane's. #603, #887."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -9,6 +9,8 @@ from harness.commands.common import emit, err, note
 def cmd_cases(a) -> int:
     from evals import importers
     from evals.core import load_cases
+    if a.source == "repo" and a.action == "control":
+        return _repo_controls(Path(a.out) if a.out else importers.CASES)
     try:
         mod = importers.module(a.source)
     except ValueError as exc:
@@ -26,3 +28,22 @@ def cmd_cases(a) -> int:
         note(f"  {name} {passed}/{total}")
     emit(True, control={k: list(v) for k, v in got.items()})
     return 0
+
+
+def _repo_controls(root: Path) -> int:
+    from evals import repo
+    from evals.core import load_cases
+    sound, got = True, {}
+    for case in load_cases(root / "repo"):
+        try:
+            c = repo.controls(case.params)
+        except repo.RepoEnvError as exc:
+            return err(f"{case.id}: environment: {exc}")
+        ok = c["reference"]["resolved"] and not c["empty"]["resolved"]
+        sound &= ok
+        got[case.id] = c
+        note(f"  {case.id}: empty {'resolves' if c['empty']['resolved'] else 'fails'}, reference "
+             f"{'resolves' if c['reference']['resolved'] else 'fails: ' + c['reference']['detail']}"
+             f"{'' if ok else '  UNSOUND'}")
+    emit(sound, control=got)
+    return 0 if sound else 1

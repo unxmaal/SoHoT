@@ -253,6 +253,7 @@ def test_compare_refuses_two_stored_runs_at_different_budgets(tmp_path, capsys):
 
 @pytest.mark.gauntlet("a-closed-table-fronting-an-open-set", site="harness/completion.py:BUDGET")
 def test_every_lane_that_generates_text_has_a_budget():
-    for lane in sorted(core.TEXT_MODALITIES | core.AGENT_MODALITIES):
+    asking = core.TEXT_MODALITIES | core.AGENT_MODALITIES | core.REPO_MODALITIES
+    for lane in sorted(asking):
         assert completion.budget(lane) > 0, lane
-    assert set(completion.BUDGET) == core.TEXT_MODALITIES | core.AGENT_MODALITIES
+    assert set(completion.BUDGET) == asking

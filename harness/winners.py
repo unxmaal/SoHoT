@@ -32,7 +32,7 @@ def is_plain_model(candidate: str) -> bool:
 #: Which lanes a default is an engine spec for, so a composite key can win.
 FAMILIES = {
     "svg": "alias", "web": "alias", "code": "alias", "extract": "alias",
-    "decide": "alias", "agent": "alias", "claims": "alias",
+    "decide": "alias", "agent": "alias", "claims": "alias", "repo": "alias",
     "image": "engine", "video": "engine", "music": "engine", "ocr": "engine",
     "retrieval": "engine", "pii": "engine",
     "tts": "speech", "stt": "speech",
@@ -58,7 +58,7 @@ def from_receipts(conn, plain_only: bool = True) -> dict[str, dict]:
 
 #: Lanes ranked on a pooled metric before pass rate: an exact-case rate is roughly acc^fields, and stt's is exact orthography. #701.
 #: claims balances case recall and specificity, since most cases expect nothing and silence passes them. #791.
-PRIMARY = {"decide": "decide_accuracy", "stt": "wer", "claims": "claims_balanced"}
+PRIMARY = {"decide": "decide_accuracy", "stt": "wer", "claims": "claims_balanced", "repo": "resolved"}
 #: Lanes whose primary metric is a summary of strata, paired per stratum rather than per row. #791.
 STRATIFIED = {"claims"}
 #: Metrics that measure probabilities, meaningless on a row whose answers were one-hot. #701.
@@ -160,6 +160,7 @@ def typed() -> dict[str, str]:
             "decide": build_here(cli.DEFAULT_DECIDE_MODEL),
             "claims": build_here(cli.DEFAULT_CLAIMS_MODEL),
             "agent": build_here(cli.DEFAULT_AGENT_MODEL),
+            "repo": build_here(cli.DEFAULT_REPO_MODEL),
             "image": cli.DEFAULT_IMAGE_ENGINE,
             "video": cli.DEFAULT_VIDEO_ENGINE,
             "music": cli.DEFAULT_MUSIC_ENGINE,

@@ -1,0 +1,242 @@
+"""The repo lane: restore a commit, take one diff, grade it sandboxed with hidden tests. #887."""
+import socket
+import subprocess
+import sys
+import threading
+from pathlib import Path
+
+import pytest
+
+from evals import core, repo
+from evals.core import Case, load_cases
+from evals.runners.repo import RepoRunner
+from harness import reasons
+
+ROOT = Path(__file__).resolve().parents[1]
+DARWIN = pytest.mark.skipif(sys.platform != "darwin" or not Path(repo.SANDBOX_EXEC).is_file(),
+                            reason="grading runs under macOS sandbox-exec")
+
+BUGGY = "def add(a, b):\n    return a - b\n\n\ndef sub(a, b):\n    return a - b\n"
+FIXED = "def add(a, b):\n    return a + b\n\n\ndef sub(a, b):\n    return a - b\n"
+BASE_TESTS = "from pkg.mod import sub\n\n\ndef test_sub():\n    assert sub(3, 1) == 2\n"
+HIDDEN = BASE_TESTS + "\n\ndef test_add_hidden_marker():\n    from pkg.mod import add\n    assert add(2, 2) == 4\n"
+
+
+def _git(cwd, *args):
+    subprocess.run(["git", "-c", "user.email=t@t", "-c", "user.name=t", *args], cwd=cwd, check=True,
+                   capture_output=True)
+
+
+def _sha(cwd, rev="HEAD"):
+    return subprocess.run(["git", "rev-parse", rev], cwd=cwd, check=True, capture_output=True,
+                          text=True).stdout.strip()
+
+
+@pytest.fixture
+def upstream(tmp_path):
+    """A two-commit repository: base has the bug, fix fixes it and adds the hidden test."""
+    src = tmp_path / "upstream"
+    (src / "pkg").mkdir(parents=True)
+    (src / "tests").mkdir()
+    _git(src, "init", "-q", "-b", "main")
+    (src / "pkg" / "__init__.py").write_text("", encoding="utf-8")
+    (src / "pkg" / "mod.py").write_text(BUGGY, encoding="utf-8")
+    (src / "tests" / "test_mod.py").write_text(BASE_TESTS, encoding="utf-8")
+    (src / "pytest.ini").write_text("[pytest]\npythonpath = .\n", encoding="utf-8")
+    _git(src, "add", "-A")
+    _git(src, "commit", "-qm", "base")
+    base = _sha(src)
+    (src / "pkg" / "mod.py").write_text(FIXED, encoding="utf-8")
+    (src / "tests" / "test_mod.py").write_text(HIDDEN, encoding="utf-8")
+    _git(src, "commit", "-qam", "fix")
+    params = {"source_repo": str(src), "base": base, "fix": _sha(src), "variant": "spec",
+              "context": "oracle", "context_files": ["pkg/mod.py"],
+              "fail_to_pass": ["tests/test_mod.py::test_add_hidden_marker"],
+              "pass_to_pass": ["tests/test_mod.py::test_sub"]}
+    return Case(id="fixture", modality="repo", prompt="add() subtracts; make it add.", params=params)
+
+
+def _here(task):
+    """The harness's own venv stands in for `uv sync`: it has pytest and needs no network."""
+    return Path(sys.prefix)
+
+
+def runner_with(reply, seen=None, env=_here):
+    r = RepoRunner("http://unused", "fake")
+    r.attempt = lambda params: repo.Attempt.open(params, env=env)
+
+    def ask(case, template=None):
+        if seen is not None:
+            seen.append(case.prompt)
+        return reply, {}
+    r._ask = ask
+    return r
+
+
+def _diff(old: str, new: str, path="pkg/mod.py") -> str:
+    import difflib
+    lines = difflib.unified_diff(old.splitlines(True), new.splitlines(True), f"a/{path}", f"b/{path}")
+    return f"diff --git a/{path} b/{path}\n" + "".join(lines)
+
+
+def test_hidden_tests_never_appear_in_the_prompt(upstream):
+    seen = []
+    runner_with("no diff here", seen).run(upstream)
+    assert seen and "def add(a, b)" in seen[0] and "pkg/mod.py" in seen[0]
+    assert "test_add_hidden_marker" not in seen[0]
+    assert "tests/test_mod.py" not in seen[0] and "assert sub(3, 1)" not in seen[0]
+
+
+def test_an_unappliable_diff_is_invalid_patch(upstream):
+    bad = _diff("def nothing():\n    pass\n", "def nothing():\n    return 1\n")
+    row = runner_with(f"```diff\n{bad}```").run(upstream)
+    assert not row.passed and row.failure_class == reasons.INVALID_PATCH
+    assert row.metrics["patch_applied"] == 0 and row.metrics["resolved"] == 0
+    assert reasons.CLASSES[reasons.INVALID_PATCH] == ("broken", reasons.CANDIDATE)
+
+
+def test_a_diff_that_writes_outside_the_tree_is_refused_by_git(upstream, tmp_path):
+    escape = tmp_path / "escaped.txt"
+    rel = Path("..") / ".." / ".." / escape.name
+    bad = (f"diff --git a/{rel} b/{rel}\nnew file mode 100644\n--- /dev/null\n+++ b/{rel}\n"
+           "@@ -0,0 +1 @@\n+owned\n")
+    row = runner_with(bad).run(upstream)
+    assert row.failure_class == reasons.INVALID_PATCH
+    assert not list(tmp_path.rglob(escape.name))
+
+
+def test_an_environment_failure_is_never_the_models(upstream):
+    def broken(task):
+        raise repo.RepoEnvError("uv sync --frozen failed: no network")
+    row = runner_with("x", env=broken).run(upstream)
+    assert row.failure_class == reasons.ENVIRONMENT_ERROR
+    assert reasons.ENVIRONMENT_ERROR in reasons.NEVER_RAN
+
+
+def test_an_attempt_leaves_no_checkout_behind(upstream):
+    runner_with("no diff").run(upstream)
+    work = repo.cache_root() / "work"
+    assert not work.is_dir() or not list(work.iterdir())
+
+
+@DARWIN
+def test_the_profile_denies_a_socket_and_a_write_outside_the_task(tmp_path):
+    task, outside = (tmp_path / "task").resolve(), (tmp_path / "outside").resolve()
+    task.mkdir()
+    outside.mkdir()
+    probe = ("import socket, sys\n"
+             "open(sys.argv[1] + '/in.txt', 'w').write('x')\n"
+             "try:\n    open(sys.argv[2] + '/out.txt', 'w').write('x'); print('WROTE')\n"
+             "except PermissionError: print('write denied')\n"
+             "try:\n    socket.create_connection(('127.0.0.1', int(sys.argv[3])), 2); print('CONNECTED')\n"
+             "except PermissionError: print('socket denied')\n")
+    with socket.socket() as server:
+        server.bind(("127.0.0.1", 0))
+        server.listen(1)
+        port = server.getsockname()[1]
+        rc, out, late = repo.run_sandboxed([sys.executable, "-c", probe, str(task), str(outside), str(port)],
+                                           task, 60)
+    assert (task / "in.txt").is_file() and not (outside / "out.txt").exists()
+    assert "write denied" in out and "socket denied" in out, out
+    assert rc == 0 and not late
+
+
+@DARWIN
+def test_model_code_that_escapes_or_dials_out_is_denied_while_tests_run(upstream, tmp_path):
+    escape = (tmp_path / "escaped.txt").resolve()
+    hits, misses = [], []
+    server = socket.socket()
+    server.bind(("127.0.0.1", 0))
+    server.listen(1)
+    server.settimeout(5)
+    port = server.getsockname()[1]
+
+    def accept():
+        try:
+            hits.append(server.accept())
+        except OSError as exc:
+            misses.append(exc)
+    t = threading.Thread(target=accept)
+    t.start()
+    evil = FIXED + (f"\nopen({str(escape)!r}, 'w').write('owned')\n"
+                    f"import socket\nsocket.create_connection(('127.0.0.1', {port}), 2)\n")
+    row = runner_with(_diff(BUGGY, evil)).run(upstream)
+    t.join()
+    server.close()
+    assert not escape.exists() and not hits and misses
+    assert row.metrics["patch_applied"] == 1 and not row.passed
+
+
+@DARWIN
+def test_the_reference_diff_resolves_and_the_empty_one_does_not(upstream):
+    p = upstream.params
+    got = repo.controls(p, env=_here)
+    assert got["reference"]["resolved"] and not got["empty"]["resolved"], got
+    row = runner_with(_diff(BUGGY, FIXED)).run(upstream)
+    assert row.passed and row.metrics["resolved"] == 1 and row.metrics["patch_applied"] == 1
+    assert row.seconds == row.metrics["wall_s"]
+
+
+@DARWIN
+def test_a_model_that_rewrites_the_tests_is_graded_on_the_real_ones(upstream):
+    cheat = _diff(BASE_TESTS, "def test_add_hidden_marker():\n    assert True\n\n\ndef test_sub():\n"
+                  "    assert True\n", path="tests/test_mod.py")
+    row = runner_with(cheat).run(upstream)
+    assert row.metrics["patch_applied"] == 1 and not row.passed
+    assert "test_add_hidden_marker" in row.detail
+
+
+@DARWIN
+def test_tests_skipped_by_model_code_do_not_resolve_although_pytest_exits_0(upstream):
+    skip = FIXED + "\nimport pytest\npytest.skip('not today', allow_module_level=True)\n"
+    row = runner_with(_diff(BUGGY, skip)).run(upstream)
+    assert row.metrics["patch_applied"] == 1 and not row.passed
+    assert "fail_to_pass still failing" in row.detail
+
+
+@DARWIN
+def test_model_code_that_exits_0_before_the_tests_run_does_not_resolve(upstream):
+    quit_early = FIXED.replace("return a + b", "return a - b") + "\nimport os\nos._exit(0)\n"
+    row = runner_with(_diff(BUGGY, quit_early)).run(upstream)
+    assert row.metrics["patch_applied"] == 1 and not row.passed
+    assert "no report" in row.detail
+
+
+@pytest.mark.parametrize("key,value,why", [
+    ("base", "abc123", "40-hex"), ("variant", "other", "spec or symptom"),
+    ("context_files", ["tests/test_mod.py"], "would show the model tests"),
+    ("fail_to_pass", [], "fail_to_pass")])
+def test_a_case_that_cannot_be_graded_is_refused_at_load(upstream, key, value, why):
+    with pytest.raises(ValueError, match=why):
+        repo.validate("x.yaml", {**upstream.params, key: value})
+
+
+def test_the_commit_and_the_tests_are_in_the_digest(upstream):
+    other = Case(**{**upstream.__dict__, "params": {**upstream.params, "fix": "f" * 40}})
+    assert core.cases_digest([upstream]) != core.cases_digest([other])
+
+
+def test_the_shipped_task_loads_with_both_commits_pinned():
+    cases = load_cases(ROOT / "evals" / "cases" / "repo")
+    assert cases and all(c.modality == "repo" for c in cases)
+    for c in cases:
+        repo.validate(c.id, c.params)
+
+
+@DARWIN
+def test_soh_cases_control_repo_reports_a_sound_task(upstream, tmp_path, monkeypatch, capsys):
+    import yaml
+    from harness import cli
+    (tmp_path / "cases" / "repo").mkdir(parents=True)
+    raw = {"id": "fixture", "modality": "repo", "prompt": upstream.prompt, "params": upstream.params}
+    (tmp_path / "cases" / "repo" / "fixture.yaml").write_text(yaml.safe_dump(raw), encoding="utf-8")
+    monkeypatch.setattr(repo, "prepare", _here)
+    assert cli.main(["cases", "control", "repo", "--out", str(tmp_path / "cases")]) == 0
+    assert "empty fails, reference resolves" in capsys.readouterr().out
+
+
+@DARWIN
+def test_tests_that_outrun_the_timeout_are_our_limit_not_a_wrong_answer(upstream, monkeypatch):
+    monkeypatch.setattr(repo, "TEST_TIMEOUT_S", 3.0)
+    row = runner_with(_diff(BUGGY, FIXED + "\nimport time\ntime.sleep(60)\n")).run(upstream)
+    assert (row.passed, row.failure_class, row.limit) == (False, reasons.TIMEOUT, "repo_test_timeout_s>3")
