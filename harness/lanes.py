@@ -33,8 +33,9 @@ from __future__ import annotations
 #: `ocr`, `retrieval` and `pii` are appended the same way: approved 2026-10-07 once three
 #: models from three publishers recurred. #562, #563, #564.
 #: `claims` is appended the same way: infovore's claim extraction, asked for 2026-10-08. #654.
+#: `repo` is appended the same way: one diff against a real repository's commit, 2026-10-16. #887.
 WANTED = ("image", "code", "web", "svg", "video", "music", "decide", "agent", "ocr",
-          "retrieval", "pii", "claims")
+          "retrieval", "pii", "claims", "repo")
 
 #: Measured here, and not on the wanted list. `extract` has more cases than any
 #: lane but stt and is a text job; stt and tts have the most measurement
@@ -76,7 +77,7 @@ def parked(lane) -> tuple[str, str]:
 #: candidate spec.
 #: `agent` is served by the same text model through the same route; its runner
 #: is a tool loop rather than one completion, chosen by modality in evals.run. #474.
-TEXT_SERVED = ("code", "web", "svg", "extract", "agent")
+TEXT_SERVED = ("code", "web", "svg", "extract", "agent", "repo")
 
 #: Lanes whose GGUF-only repo is linked into llama-server's router: decide needs its schema enforced. #583.
 GGUF_SERVED = (*TEXT_SERVED, "decide", "claims")

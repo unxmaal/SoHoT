@@ -242,6 +242,7 @@ def _run_loop_held(a, keep=None) -> int:
             # inspect it first", immediately after the loop's own inspect step
             # had run. Two tiers in one command, reading different sources.
             extra = {"from_store": True, "top": LOOP_INSPECT}
+            _reopen_stale_too_big()
         sub = _ap.Namespace(**{**vars(a), **flags, **extra, "loop": False})
         rc = _step(label, discover_cmd.cmd_discover(sub), failed) or rc
 
@@ -447,6 +448,20 @@ def _reopen_retests(now: float | None = None) -> list[str]:
     finally:
         store.close()
     print(f"  reopened {len(names)} rejection(s) for a retest")
+    for n in names:
+        print(f"    {n}")
+    return names
+
+
+def _reopen_stale_too_big() -> list[str]:
+    """Requeue for inspect the too-big refusals judged against a smaller ceiling than this machine's. #880."""
+    from harness import memory_store as ms
+    store = ms.connect()
+    try:
+        names = ms.requeue_stale_too_big(store)
+    finally:
+        store.close()
+    print(f"  requeued {len(names)} too-big refusal(s) judged against a smaller ceiling")
     for n in names:
         print(f"    {n}")
     return names

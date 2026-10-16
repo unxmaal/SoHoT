@@ -113,7 +113,7 @@ def test_every_typed_default_declares_which_family_it_belongs_to():
     assert set(winners.typed()) <= set(winners.FAMILIES)
     assert set(winners.typed()) == {"svg", "web", "code", "extract", "image",
                                     "video", "music", "tts", "stt", "decide", "agent", "ocr", "retrieval", "pii",
-                                    "claims"}
+                                    "claims", "repo"}
 
 
 # --- the lane's own metric decides, not a statistic blind to it -----------

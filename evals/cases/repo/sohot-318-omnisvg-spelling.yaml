@@ -1,0 +1,23 @@
+id: sohot-318-omnisvg-spelling
+modality: repo
+prompt: |
+  OmniSVG repos are screened as mlx_lm text models and recorded broken: the svg lane spells every repo id bare
+
+  Seen 2026-10-04 in the code-lane re-screen after #313: `OmniSVG/OmniSVG1.1_4B` was screened as a bare repo id through mlx_lm.server, got `HTTP 404: No such file or directory` on the svg case `chart-bars`, and was recorded BROKEN, which is terminal. OmniSVG runs only through its own runner, `omnisvg:4B` (evals/runners/omnisvg.py, measured in #3). The svg lane is in `lanes.TEXT_SERVED`, so `screen.candidate_for` spells every svg candidate as `{model}` for the text gateway.
+
+  Retracted by hand. Fix: `candidate_for` maps the OmniSVG repos to the `omnisvg:` spelling that already exists, and a test checks that both OmniSVG repos get it.
+params:
+  source_repo: https://github.com/unxmaal/SoHoT.git
+  base: 5b6df05904f0a1987771f866585c99e9f40af65a
+  fix: a4d363f61ebf75f95be37713f12f5ee0f33450bf
+  variant: spec
+  context: oracle
+  context_files:
+    - harness/screen.py
+    - evals/runners/omnisvg.py
+  fail_to_pass:
+    - tests/test_harness_screen_spec.py::test_an_omnisvg_repo_is_spelled_for_its_runner
+  pass_to_pass:
+    - tests/test_harness_screen_spec.py::test_another_svg_repo_still_goes_to_the_text_gateway
+    - tests/test_harness_screen_spec.py::test_a_text_lane_has_no_prefix_to_double
+    - tests/test_harness_screen_spec.py::test_it_is_idempotent_for_every_lane_that_has_a_spelling

@@ -35,6 +35,27 @@ RETEST_AFTER_SECONDS = 7 * 86400
 RETESTS = 3
 
 
+#: A decline at adopt lost a paired measurement; one retest checks it, more re-ask a settled question. #881.
+RETESTS_AT_ADOPT = 1
+
+
+def retest_limit(tier: str) -> int:
+    """How many retests a rejection at `tier` may have."""
+    return RETESTS_AT_ADOPT if tier == ADOPT else RETESTS
+
+
+def retest_spent(conn, pid: int, tier: str) -> bool:
+    """No retest left: three in all, or more adopt declines than RETESTS_AT_ADOPT retests them."""
+    spent = conn.execute("SELECT retest_count FROM proposals WHERE id = ?", (pid,)).fetchone()[0]
+    if spent >= RETESTS:
+        return True
+    if tier != ADOPT:
+        return False
+    lost = conn.execute("SELECT COUNT(*) FROM verdicts WHERE proposal_id = ? AND tier = ? "
+                        "AND outcome = 'declined'", (pid, ADOPT)).fetchone()[0]
+    return lost > RETESTS_AT_ADOPT
+
+
 #: Tiers whose rejection can be the harness's fault; the measure step records
 #: its verdict at adopt. Inspect and fetch decide facts.
 RETEST_TIERS = (SCREEN, MEASURE, ADOPT)
@@ -54,9 +75,7 @@ def _schedule_retest(conn, pid: int, row: dict, reopen: str) -> None:
         return
     due = None
     if retest_eligible(row["outcome"], row.get("tier", ""), row.get("until", "")):
-        spent = conn.execute("SELECT retest_count FROM proposals WHERE id = ?",
-                             (pid,)).fetchone()[0]
-        if spent < RETESTS:
+        if not retest_spent(conn, pid, row.get("tier", "")):
             due = float(row["decided_at"]) + RETEST_AFTER_SECONDS
     conn.execute("UPDATE proposals SET next_retest_at = ? WHERE id = ?",
                  (due, pid))
@@ -202,7 +221,7 @@ def decide(conn: sqlite3.Connection, name: str, outcome: str, *, tier: str = "",
            size_bytes: int = 0, upstream_idle_days: float = 0.0,
            candidate_id: int | None = None, reopen: str = "",
            reopen_why: str = "", reason: str = "",
-           run_id: int | None = None) -> int:
+           run_id: int | None = None, ceiling_gb: float | None = None) -> int:
     """Record what happened to a proposal, and move its state.
 
     The single write path for a verdict and for proposals.state. A move
@@ -257,6 +276,8 @@ def decide(conn: sqlite3.Connection, name: str, outcome: str, *, tier: str = "",
               "upstream_idle_days": float(upstream_idle_days or 0.0),
               "candidate_id": candidate_id, "run_id": run_id,
               "reason": reason}
+    if ceiling_gb is not None:
+        fields["ceiling_gb"] = round(float(ceiling_gb), 1)
     if pid is None:
         cols = {**fields, "proposal_id": None}
         vid = conn.execute(

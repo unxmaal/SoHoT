@@ -18,3 +18,8 @@ KNOBS = [
     _k("size_limit", ["harness/inspect.py:SIZE_LIMIT"], [2, 4, 12, 24, 64], probe="size_limit",
        note="how many named weights get sized per repo"),
 ]
+
+NOT_GATING = {
+    "harness/inspect.py:Fit.ceiling": "the ceiling decide() judged against, recorded on the verdict; its default 0 means none (#880)",
+    "harness/memory_store/revisit.py:STALE_CEILING_GB": "absorbs rounding of one machine's probed ceiling; a real ceiling change is GiBs (#880)",
+}

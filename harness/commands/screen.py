@@ -117,10 +117,11 @@ def _screen_plan(want: str) -> list[dict]:
         # loop fetched two image models and then said "nothing queued to
         # screen". Issue #209.
         rows, _ = loop_cmd._queueable(store, want)
+        # The same store as the fetch's ranking, so both tiers order by one key. #275, #881.
+        ranked = rank.rank(rows, serving=rank.serving(),
+                           measured_lanes=rank.lanes_with_receipts(store), conn=store)
     finally:
         store.close()
-    ranked = rank.rank(rows, serving=rank.serving(),
-                       measured_lanes=rank.lanes_with_receipts())
     return screen.plan(ranked)
 
 

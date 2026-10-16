@@ -334,6 +334,20 @@ def _check_ocr(artifact, case: Case) -> CheckResult:
     return out
 
 
+def _check_repo(artifact, case: Case) -> CheckResult:
+    """The runner graded the checkout before discarding it; this reads its verdict. #887."""
+    try:
+        record = json.loads(artifact) if isinstance(artifact, str) else {}
+    except ValueError:
+        return CheckResult(False, "repo record is not JSON")
+    grade = record.get("grade") or {}
+    cls = reasons.TIMEOUT if grade.get("limit") else "" if grade.get("patch_applied") else reasons.INVALID_PATCH
+    out = CheckResult(bool(grade.get("resolved")), grade.get("detail") or "", failure_class=cls,
+                      limit=grade.get("limit") or "")
+    out.metrics = dict(record.get("metrics") or {})
+    return out
+
+
 def _check_agent(artifact, case: Case) -> CheckResult:
     """The runner graded the sandbox before deleting it; this reads its verdict. #474."""
     try:
@@ -351,6 +365,7 @@ def _check_agent(artifact, case: Case) -> CheckResult:
 
 CHECKERS = {
     "agent": lambda a, c, **kw: _check_agent(a, c),
+    "repo": lambda a, c, **kw: _check_repo(a, c),
     "decide": lambda a, c, **kw: _check_decide(a, c),
     "claims": lambda a, c, **kw: _check_claims(a, c),
     "ocr": lambda a, c, **kw: _check_ocr(a, c),
@@ -433,6 +448,11 @@ METRIC_DIRECTION = {
     "agent_no_tool_steps": "neutral",
     # The per-slot context the candidate was served at. #498.
     "agent_ctx": "neutral",
+    # repo (#887): resolved decides; an applied patch that fails is nearer than one git refused.
+    "resolved": "higher",
+    "patch_applied": "higher",
+    "wall_s": "neutral",
+    "test_s": "neutral",
     "prompt_tokens": "neutral",
     # methods (#576): what a method paid for its row; cost is reported, never ranked on.
     "method_calls": "neutral",
@@ -504,7 +524,10 @@ PARAM_KEYS = {"width", "height", "steps", "seed", "guidance", "frames", "check_t
               # claims: the system prompt the case is asked with. #654.
               "system",
               # agent: the case bundle, the pinned tools, the caps, the padding. #474.
-              "repo", "tools", "max_steps", "pad_tokens", "timeout_s"}
+              "repo", "tools", "max_steps", "pad_tokens", "timeout_s",
+              # repo: the commit to fix, its hidden fix, the files shown and the tests that grade it. #887.
+              "source_repo", "base", "fix", "context_files", "fail_to_pass", "pass_to_pass",
+              "variant", "context"}
 # Assertions that need text to search. Declaring one on an image case can only
 # pass vacuously until the suite can OCR, so it is rejected rather than ignored.
 TEXT_ASSERTIONS = {"min_shapes", "must_contain", "must_not_contain"}
@@ -543,6 +566,7 @@ ASSERTION_KEYS = {"svg": TEXT_ASSERTIONS, "web": TEXT_ASSERTIONS,
                   "music": {"max_wer", "expect_vocals", "duration_s"},
                   "decide": {"answers"},
                   "agent": {"answer", "hidden"},
+                  "repo": set(),
                   "ocr": {"text", "max_cer"},
                   "retrieval": {"relevant", "k"},
                   "pii": {"pii"},
@@ -555,11 +579,13 @@ TEXT_MODALITIES = {"svg", "web", "code", "extract", "decide", "claims"}
 MEDIA_MODALITIES = {"image", "video", "tts", "music"}
 #: The suffix a text lane's output is written to the run dir under.
 TEXT_SUFFIX = {"svg": ".svg", "web": ".html", "code": ".py", "decide": ".json", "claims": ".json",
-               "agent": ".json"}
+               "agent": ".json", "repo": ".json"}
 #: Lanes whose case hands the candidate a file to read through input_file. #562.
 INPUT_MODALITIES = {"ocr", "retrieval"}
 #: Lanes whose runner drives a tool loop over a sandboxed repo. #474.
 AGENT_MODALITIES = {"agent"}
+#: Lanes whose runner restores a real repository at a commit and grades a diff in it. #887.
+REPO_MODALITIES = {"repo"}
 
 
 def artifact_name(candidate: str, case_id: str, suffix: str) -> str:
@@ -1041,6 +1067,9 @@ def load_case(path: Path, private: bool = False) -> Case:
             raise ValueError(f"{path.name}: {exc}") from exc
     if modality == "agent":
         params = {**params, **_agent_params(path, params, assertions)}
+    if modality == "repo":
+        from evals import repo
+        repo.validate(path.name, params)
     if modality == "ocr" and not str(assertions.get("text") or "").strip():
         raise ValueError(f"{path.name}: an ocr case needs assert.text, the reference")
     if assertions.get("text") and "max_cer" not in assertions:

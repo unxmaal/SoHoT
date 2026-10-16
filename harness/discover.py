@@ -494,6 +494,7 @@ _HOW = {
     "music": "--modality music --candidates acestep:{id}",
     "decide": "--modality decide --candidates {id}",
     "agent": "--modality agent --candidates {id}",
+    "repo": "--modality repo --candidates {id}",
     "ocr": "--modality ocr --candidates hf-ocr:{id}",
     "retrieval": "--modality retrieval --candidates rerank:{id}",
     "pii": "--modality pii --candidates hf-pii:{id}",

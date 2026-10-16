@@ -30,7 +30,7 @@ from harness.engines import Engine, names as engine_names, parse_options, resolv
 
 from dataclasses import replace
 
-from evals.core import (AGENT_MODALITIES, MODALITIES, TEXT_MODALITIES,
+from evals.core import (AGENT_MODALITIES, MODALITIES, REPO_MODALITIES, TEXT_MODALITIES,
                         TEXT_SUFFIX, Case,
                         Receipt, cases_digest, comparable, direction_of,
                         summarize)
@@ -447,6 +447,8 @@ def build_runner(candidate: str, gateway: str, outdir: Path | None,
                  max_tokens: int = 0):
     if modality in AGENT_MODALITIES:
         runner = _agent_runner(candidate, gateway, max_tokens)
+    elif modality in REPO_MODALITIES:
+        runner = _repo_runner(candidate, gateway, max_tokens)
     else:
         runner = _build_runner(candidate, gateway, outdir, adherence, max_tokens)
     runner.spec = candidate
@@ -482,6 +484,20 @@ def _agent_runner(candidate: str, gateway: str, max_tokens: int = 0):
                        model=where.model, sampling=where.sampling or None,
                        served_ctx=context.served_ctx(candidate), max_tokens=max_tokens,
                        count=served_counter(where.base, where.model))
+
+
+def _repo_runner(candidate: str, gateway: str, max_tokens: int):
+    """One completion asked for a diff against a restored commit, for a text candidate. #887."""
+    if kind_of(candidate) not in TEXT_KINDS:
+        raise SystemExit(f"{candidate} cannot answer with a diff; the repo lane takes a text candidate")
+    from evals.runners.repo import RepoRunner
+    from harness import serving
+    try:
+        where = serving.route(candidate, gateway)
+    except ValueError as exc:
+        raise SystemExit(str(exc)) from None
+    return RepoRunner(where.base, candidate.partition(",")[0].strip(),
+                      sampling=where.sampling or None, model=where.model, max_tokens=max_tokens)
 
 
 def _build_runner(candidate: str, gateway: str, outdir: Path | None,
@@ -626,7 +642,7 @@ def cases_for(candidate: str, cases: list[Case]) -> list[Case]:
     if kind_of(candidate) == NEEDLE_KIND:
         return [c for c in cases if c.modality in NEEDLE_LANES]
     if modality is None:
-        text = [c for c in cases if c.modality in TEXT_MODALITIES | AGENT_MODALITIES]
+        text = [c for c in cases if c.modality in TEXT_MODALITIES | AGENT_MODALITIES | REPO_MODALITIES]
         return _fair(candidate, text) if kind_of(candidate) in methods.REGISTRY else text
     picked = [c for c in cases if c.modality == modality]
     return _fair(candidate, picked)
@@ -658,7 +674,7 @@ def _fair(candidate: str, picked: list[Case]) -> list[Case]:
 # because ACE-Step's 5Hz chain-of-thought samples at its own temperature and
 # `seed` only reaches the diffusion below it (RULE #280). Omitting it made
 # --repeat a silent no-op for the one lane that needs it most.
-STOCHASTIC_MODALITIES = {"image", "video", "svg", "web", "code", "music", "agent"}
+STOCHASTIC_MODALITIES = {"image", "video", "svg", "web", "code", "music", "agent", "repo"}
 
 
 #: Screen settings: the smallest thing that still proves the pipeline ran. Steps are the model's own, never shrunk. #691.
@@ -818,8 +834,8 @@ def select_cases(cases: list[Case], modality: str) -> list[Case]:
     if modality != "all" and modality not in MODALITIES:
         raise SystemExit(f"unknown modality '{modality}'; known: "
                          f"{', '.join(ALL_MODALITIES)}")
-    # The agent lane drives a tool loop for minutes per case, so `all` leaves it out. #474.
-    chosen = ([c for c in cases if c.modality not in AGENT_MODALITIES]
+    # The agent and repo lanes take minutes per case and build environments, so `all` leaves them out. #474, #887.
+    chosen = ([c for c in cases if c.modality not in AGENT_MODALITIES | REPO_MODALITIES]
               if modality == "all" else [c for c in cases if c.modality == modality])
     if not chosen:
         raise SystemExit(f"no cases for modality '{modality}'")

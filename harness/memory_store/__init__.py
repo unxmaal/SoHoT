@@ -31,11 +31,12 @@ from harness.memory_store.benchmarks import (benchmarks, probe_summary,
 from harness.memory_store.transitions import (IllegalTransition, REOPENS, RETEST,
     RETESTS, RETEST_AFTER_SECONDS, RETEST_TIERS, RETRACTION, _held,
     _migration_retraction, _schedule_retest, _write, decide, decide_or_skip, fold,
-    retest_eligible, retract, state_audit, transition_refused)  # noqa: F401
+    retest_eligible, retest_limit, retest_spent, retract, state_audit, transition_refused)  # noqa: F401
 from harness.memory_store.retests import (due_retests, recovered_false_negatives,
     reopen_due_retests, retest_counts)  # noqa: F401
 from harness.memory_store.revisit import (_version_tuple, dangling_receipts,
-    requeue_revisitable, resolved_run_paths, revisitable, until_for, until_met)  # noqa: F401
+    requeue_revisitable, requeue_stale_too_big, resolved_run_paths, revisitable,
+    stale_too_big, until_for, until_met)  # noqa: F401
 from harness.memory_store.proposals import (REJECTIONS, Seen, by_registry, by_source,
     export, extraction, judgeable, judgeable_total, latest, link, parents, pending,
     precision, ranked, record, recurrence, reject, retire_unlisted, set_lane,

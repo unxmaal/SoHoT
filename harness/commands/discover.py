@@ -552,6 +552,7 @@ def _report_inspect(a) -> int:
                               size_bytes=fit.largest if fit.verdict == "fits" else 0,
                               upstream_idle_days=fit.upstream_idle_days,
                               reason=ins.reason_of(fit), until=ins.until_of(fit),
+                              ceiling_gb=fit.ceiling / ins.GIB if fit.ceiling else None,
                               detail=f"{fit.verdict}: {fit.why}"[:200])
                 except ms.IllegalTransition as exc:
                     print(f"    kept its state: {exc}")

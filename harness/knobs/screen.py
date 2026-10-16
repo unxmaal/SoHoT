@@ -13,4 +13,5 @@ KNOBS = [
 NOT_GATING = {
     **{f"harness/image_diffusers.py:FAMILY_SAMPLING[{f}][{k}]": "the value the family's own model card names (#691)"
        for f in ("sdxl_turbo", "z_image_turbo", "stable_diffusion_3_5_large_turbo") for k in ("steps", "guidance")},
+    "harness/rank.py:AGE_DAYS": "a queue-order weight's ramp: it orders the queue and never refuses a row (#881)",
 }

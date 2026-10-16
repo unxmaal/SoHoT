@@ -101,6 +101,8 @@ def _report_queue(a) -> int:
     try:
         rows, waiting = loop_cmd._queueable(store, want)
         retests = ms.retest_counts(store)
+        ranked_all = rank.rank(rows, serving=rank.serving(),
+                               measured_lanes=rank.lanes_with_receipts(store), conn=store)
     finally:
         store.close()
     if not a.json:
@@ -113,8 +115,7 @@ def _report_queue(a) -> int:
     # -- a laneless row, an adapter -- so the denominator has to come from
     # after that or it counts rows that will never be offered. The image lane
     # held 11 waiting of which 6 were LoRAs. Issue #209.
-    ranked = rank.rank(rows, serving=rank.serving(),
-                       measured_lanes=rank.lanes_with_receipts())
+    ranked = ranked_all
     waiting, ranked = len(ranked), ranked[:getattr(a, "top", 25)]
     if a.json:
         print(json.dumps({"queue": ranked, "waiting": waiting,

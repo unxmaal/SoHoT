@@ -39,6 +39,8 @@ COST_S = {
     "pii": 120,
     # Estimated: about 270 transcript windows at 400 tokens on a 7B, a second or two each. #654.
     "claims": 600,
+    # Estimated: one diff from a 35B, an environment from the cache, one pytest run. #887.
+    "repo": 300,
 }
 
 #: A lane nobody should start without meaning to. Video is ~40 minutes for ONE

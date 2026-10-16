@@ -27,7 +27,7 @@ MODULES = {
     "harness/memory_store/transitions.py": [
         "tests/test_store_state.py", "tests/test_store_retest.py", "tests/test_harness_store_retraction.py",
         "tests/test_store_retract_screens.py", "tests/test_harness_memory_store.py",
-        "tests/test_verdict_reasons.py", "tests/test_harness_store.py"],
+        "tests/test_verdict_reasons.py", "tests/test_harness_store.py", "tests/test_rank_881.py"],
     "harness/reasons.py": [
         "tests/test_verdict_reasons.py", "tests/test_refusal_shapes.py", "tests/test_screen_server_death.py",
         "tests/test_screen_evidence.py", "tests/test_harness_engines_repo_id.py",
@@ -77,13 +77,14 @@ LEFT_OUT = {
         "test_harness_paired.py", "test_harness_screen.py", "test_harness_screen_spec.py",
         "test_holdout_power.py", "test_inspect_method_specs.py", "test_inspect_ratelimit.py",
         "test_knob_sweeps.py", "test_knobs.py", "test_method_serving.py", "test_pii_lane.py",
-        "test_power_budget.py", "test_quants_882.py", "test_runner_base_weights.py", "test_schema_lanes.py",
+        "test_power_budget.py", "test_quants_882.py", "test_repo_lane.py", "test_runner_base_weights.py", "test_schema_lanes.py",
         "test_silent_truncation.py", "test_slots_memory.py", "test_store_downloads.py"),
     "harness/screen.py": (
         "test_chaos.py", "test_claims_balanced_metric.py", "test_harness_engines_repo_id.py",
         "test_harness_report.py", "test_incumbent_lookup.py", "test_lane_metric_validity.py",
-        "test_mps_backend_abort.py", "test_new_lane_loop_faults.py", "test_remote_upstreams.py",
-        "test_router_unload.py", "test_slots_memory.py", "test_store_card_facts.py", "test_store_state.py"),
+        "test_mps_backend_abort.py", "test_new_lane_loop_faults.py", "test_rank_881.py",
+        "test_remote_upstreams.py", "test_router_unload.py", "test_slots_memory.py", "test_store_card_facts.py",
+        "test_store_state.py"),
     "harness/adopt.py": (
         "test_harness_paired.py", "test_harness_report.py", "test_loop_circuit.py", "test_measure_budget.py",
         "test_over_budget_796.py", "test_projection_696.py", "test_router_unload.py", "test_store_state.py",

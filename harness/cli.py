@@ -128,6 +128,7 @@ DEFAULT_DECIDE_MODEL = "imajev-4b-Q8_0"
 DEFAULT_CLAIMS_MODEL = "Qwen2.5-7B-Instruct-Q4_K_M"
 #: The agent lane starts on the code lane's typed default until it adopts. #474.
 DEFAULT_AGENT_MODEL = DEFAULT_CODE_MODEL
+DEFAULT_REPO_MODEL = DEFAULT_CODE_MODEL
 #: The ocr lane starts on the reader the image lane's text check already trusts. #562.
 DEFAULT_OCR_ENGINE = "osocr:auto"
 #: The retrieval lane starts on BM25: no weights, and the bar a model must clear. #563.
@@ -599,7 +600,7 @@ def build_parser() -> argparse.ArgumentParser:
     bch.set_defaults(func=benchmarks_cmd.cmd_benchmarks)
     cas = sub.add_parser("cases", help="re-run a case importer, or its negative control (#603)")
     cas.add_argument("action", choices=("import", "control"))
-    cas.add_argument("source", help="an importer in evals/importers, e.g. leetcode")
+    cas.add_argument("source", help="an importer in evals/importers, e.g. leetcode; `control repo` runs the repo lane's controls")
     cas.add_argument("--out", default="", help="cases root (default: evals/cases)")
     cas.set_defaults(func=cases_cmd.cmd_cases)
     aud = sub.add_parser("audit", help="check the live store and what the gateway serves, "
