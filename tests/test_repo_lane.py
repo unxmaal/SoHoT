@@ -113,6 +113,18 @@ def test_an_environment_failure_is_never_the_models(upstream):
     assert reasons.ENVIRONMENT_ERROR in reasons.NEVER_RAN
 
 
+@pytest.mark.parametrize("source, stem", [
+    ("C:\\Users\\runneradmin\\AppData\\Local\\Temp\\pytest-0\\test_x0\\upstream", "upstream"),
+    ("https://github.com/org/proj.git", "proj"),
+    ("/tmp/a/b/proj/", "proj"),
+    ("/tmp/" + "x" * 200, "x" * 40),
+])
+def test_a_mirror_is_named_by_the_last_component_of_its_source(source, stem):
+    """A whole Windows path kept as the name overran MAX_PATH in git clone. #897."""
+    name = repo.mirror_path(source).name
+    assert name.startswith(stem + "-") and len(name) <= 40 + 18
+
+
 def test_an_attempt_leaves_no_checkout_behind(upstream):
     runner_with("no diff").run(upstream)
     work = repo.cache_root() / "work"
