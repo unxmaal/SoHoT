@@ -236,15 +236,18 @@ def lane_of(row) -> str:
     return lanes.canonical(row.get("lane"))
 
 
-def incumbents(conn=None) -> dict[str, str]:
-    """lane -> what it serves now, resolved at call time; a lane that cannot say is absent."""
+def incumbents(conn) -> dict[str, str]:
+    """lane -> what it serves now, from this store; an unreadable store raises (#893)."""
     from harness import adopt, winners
+    if conn is None:
+        raise ValueError("rank.incumbents needs the store connection; it never opens one (#893)")
     typed = winners.typed()
+    got = adopt.adopted(conn)
     out = {}
     for lane in lanes.ALL:
-        got = adopt.default_for(lane, typed.get(lane, ""), conn=conn)
-        if got:
-            out[lane] = got
+        name = got.get(lane) or typed.get(lane, "")
+        if name:
+            out[lane] = name
     return out
 
 
@@ -277,7 +280,7 @@ def quantised_children(rows) -> dict[str, list[str]]:
 
 def rank(rows, *, serving=(), measured_lanes=(), ceiling_gib: float | None = None,
          keep_laneless: bool = False, incumbents_by_lane: dict | None = None,
-         bases_by_lane: dict | None = None, now: float | None = None, conn=None):
+         bases_by_lane: dict | None = None, now: float | None = None, conn):
     """Best first. Ties break on name so the order is stable across runs.
 
     A candidate NO LANE CAN TEST IS DROPPED rather than ranked last. Penalising

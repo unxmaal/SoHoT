@@ -96,7 +96,7 @@ def test_an_adapter_is_an_attachment_from_the_column(tmp_path):
         ms.set_card(conn, "org/plain", ins.card_facts(
             {"pipeline_tag": "text-to-image", "tags": ["base_model:org/base"]}))
         rows = ms.judgeable(conn, limit=10)
-        ranked = [r["name"] for r in rank.rank(rows, measured_lanes=())]
+        ranked = [r["name"] for r in rank.rank(rows, measured_lanes=(), conn=conn)]
         assert ranked == ["org/plain"], "the adapter must drop, the plain stay"
         plan = {r["name"]: r for r in screen.plan(rows, missing=lambda n: [])}
         assert "attaches to a model" in plan["org/innocuous"]["why_not"]
