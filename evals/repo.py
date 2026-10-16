@@ -97,11 +97,18 @@ def _has(mirror: Path, sha: str) -> bool:
                     check=False).returncode
 
 
+def mirror_path(source: str) -> Path:
+    """Where `source`'s mirror lives: its last path component, capped, and a digest of the whole."""
+    key = hashlib.sha256(source.encode("utf-8")).hexdigest()[:12]
+    # Either separator: a whole Windows path kept as the name overran MAX_PATH. #897.
+    last = re.split(r"[/\\]", source.rstrip("/\\"))[-1]
+    stem = re.sub(r"[^A-Za-z0-9_.-]+", "-", last).removesuffix(".git")[:40]
+    return cache_root() / "mirrors" / f"{stem}-{key}.git"
+
+
 def mirror(source: str, need=()) -> Path:
     """A bare mirror of `source` under the cache, fetched until it holds every commit in `need`."""
-    key = hashlib.sha256(source.encode("utf-8")).hexdigest()[:12]
-    stem = re.sub(r"[^A-Za-z0-9_.-]+", "-", source.rstrip("/").rsplit("/", 1)[-1]).removesuffix(".git")
-    path = cache_root() / "mirrors" / f"{stem}-{key}.git"
+    path = mirror_path(source)
     try:
         if not path.is_dir():
             path.parent.mkdir(parents=True, exist_ok=True)
