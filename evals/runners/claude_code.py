@@ -14,6 +14,8 @@ from harness import completion, reasons
 PREFIX = "claude-code"
 #: Seconds one `claude -p` reference answer may take; a knob (#693), read at call time.
 TIMEOUT_S = 600.0
+USAGE_METRICS = {"input_tokens": "prompt_tokens", "cache_read_input_tokens": "cache_read_tokens",
+                 "cache_creation_input_tokens": "cache_creation_tokens"}
 
 
 class EmptyResult(RunnerError):
@@ -164,14 +166,17 @@ class ClaudeCodeRunner(BaseRunner):
             if retries:
                 raise RunnerError("claude -p returned an empty result twice")
             raise EmptyResult("claude -p returned an empty result")
-        out = int((body.get("usage") or {}).get("output_tokens") or 0)
+        usage = body.get("usage") or {}
+        out = int(usage.get("output_tokens") or 0)
         self.last_metrics = ({"completion_tokens": out,
                               "tokens_per_s": round(out / elapsed, 1)}
                              if out and elapsed > 0 else {})
+        # Measured counts only: total_cost_usd is an API-price estimate, and a subscription login pays none of it. #907.
+        for key, name in USAGE_METRICS.items():
+            if usage.get(key) is not None:
+                self.last_metrics[name] = int(usage[key])
         if retries:
             self.last_metrics["retries"] = retries
-        if body.get("total_cost_usd") is not None:
-            self.last_metrics["cost_usd"] = float(body["total_cost_usd"])
         # A fresh CLI per case loads no weights, so no row is cold.
         self.last_timing = {**first_token(getattr(proc, "line_times", None)),
                             "prefill_s": None, "cold": False}

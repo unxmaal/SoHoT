@@ -49,6 +49,25 @@ def test_the_answer_and_its_throughput_come_back():
     assert r.extra_metrics()["completion_tokens"] == 20
 
 
+def test_a_subscription_answer_records_measured_tokens_and_no_price():
+    """#907: total_cost_usd is an API-price estimate; a Max login pays none of it."""
+    r = ClaudeCodeRunner("m", execute=fake({
+        "result": "def add(a, b): return a + b", "total_cost_usd": 0.117,
+        "usage": {"input_tokens": 7, "output_tokens": 20, "cache_read_input_tokens": 1500,
+                  "cache_creation_input_tokens": 300}}))
+    r.generate(case())
+    got = r.extra_metrics()
+    assert "cost_usd" not in got and not any("usd" in k or "cost" in k for k in got), got
+    assert (got["prompt_tokens"], got["completion_tokens"], got["cache_read_tokens"],
+            got["cache_creation_tokens"]) == (7, 20, 1500, 300)
+
+
+def test_cost_usd_is_no_longer_a_declared_metric():
+    from evals.core import METRIC_DIRECTION
+    assert "cost_usd" not in METRIC_DIRECTION
+    assert METRIC_DIRECTION["cache_read_tokens"] == METRIC_DIRECTION["cache_creation_tokens"] == "neutral"
+
+
 @pytest.mark.parametrize("body,rc", [
     ({"is_error": True, "result": "Not logged in"}, 1),
     ({"result": "   "}, 0),
