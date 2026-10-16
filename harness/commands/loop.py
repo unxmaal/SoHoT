@@ -455,12 +455,14 @@ def _reopen_retests(now: float | None = None) -> list[str]:
 
 def _reopen_stale_too_big() -> list[str]:
     """Requeue for inspect the too-big refusals judged against a smaller ceiling than this machine's. #880."""
-    from harness import memory_store as ms
+    from harness import heartbeat, memory_store as ms
+    began = heartbeat.clock()
     store = ms.connect()
     try:
         names = ms.requeue_stale_too_big(store)
     finally:
         store.close()
+    heartbeat.mark(heartbeat.REOPENED_TOO_BIG, began)
     print(f"  requeued {len(names)} too-big refusal(s) judged against a smaller ceiling")
     for n in names:
         print(f"    {n}")

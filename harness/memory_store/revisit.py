@@ -191,7 +191,7 @@ def stale_too_big(conn, ceiling_gb: float) -> list[dict]:
     if "ceiling_gb" not in _columns(conn, "verdicts"):
         return []
     rows = conn.execute("""
-        SELECT p.name, v.ceiling_gb, v.size_bytes, v.until
+        SELECT p.name, v.ceiling_gb, v.size_bytes, v.until, v.decided_at
           FROM proposals p JOIN verdicts v ON v.id = p.state_verdict_id
          WHERE p.state = 'declined' AND v.tier = ? AND v.reason = ?
            AND v.until LIKE 'ceiling_gb:>%' AND v.ceiling_gb IS NOT NULL

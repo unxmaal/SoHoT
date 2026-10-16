@@ -8,11 +8,13 @@ import time
 from evals import repo
 from evals.core import Case
 from evals.runners.base import RunnerError
+from evals.runners.claude_code import ClaudeCodeRunner
 from evals.runners.text import CompletionRunner
 from harness import reasons
 
 
-class RepoRunner(CompletionRunner):
+class RepoGrading:
+    """Restore, ask the next runner in the MRO once, grade the diff; mixed into a text or claude-code runner."""
     #: (params) -> repo.Attempt; tests hand in a fixture's.
     attempt = staticmethod(repo.Attempt.open)
 
@@ -49,3 +51,11 @@ class RepoRunner(CompletionRunner):
             # The checkout and its environment are the harness's to build, not the model's to pay for.
             row.seconds = row.metrics["wall_s"]
         return row
+
+
+class RepoRunner(RepoGrading, CompletionRunner):
+    pass
+
+
+class ClaudeRepoRunner(RepoGrading, ClaudeCodeRunner):
+    """The patch-only call through `claude -p`, built-in tools off, so Opus answers the same one prompt. #905."""

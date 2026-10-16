@@ -487,9 +487,17 @@ def _agent_runner(candidate: str, gateway: str, max_tokens: int = 0):
 
 
 def _repo_runner(candidate: str, gateway: str, max_tokens: int):
-    """One completion asked for a diff against a restored commit, for a text candidate. #887."""
-    if kind_of(candidate) not in TEXT_KINDS:
-        raise SystemExit(f"{candidate} cannot answer with a diff; the repo lane takes a text candidate")
+    """One completion asked for a diff against a restored commit, for a text or claude-code candidate. #887, #905."""
+    kind = kind_of(candidate)
+    if kind == CLAUDE_CODE_PREFIX:
+        from evals.runners.repo import ClaudeRepoRunner
+        model = candidate.partition(":")[2].strip()
+        if not model:
+            raise SystemExit("claude-code needs a model, e.g. claude-code:claude-opus-5-5")
+        return ClaudeRepoRunner(model)
+    if kind not in TEXT_KINDS:
+        raise SystemExit(f"{candidate} cannot answer with a diff; the repo lane takes a text "
+                         f"candidate or claude-code:<model>")
     from evals.runners.repo import RepoRunner
     from harness import serving
     try:

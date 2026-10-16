@@ -170,6 +170,8 @@ class ClaudeCodeRunner(BaseRunner):
                              if out and elapsed > 0 else {})
         if retries:
             self.last_metrics["retries"] = retries
+        if body.get("total_cost_usd") is not None:
+            self.last_metrics["cost_usd"] = float(body["total_cost_usd"])
         # A fresh CLI per case loads no weights, so no row is cold.
         self.last_timing = {**first_token(getattr(proc, "line_times", None)),
                             "prefill_s": None, "cold": False}
