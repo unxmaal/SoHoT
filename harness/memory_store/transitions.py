@@ -35,6 +35,27 @@ RETEST_AFTER_SECONDS = 7 * 86400
 RETESTS = 3
 
 
+#: A decline at adopt lost a paired measurement; one retest checks it, more re-ask a settled question. #881.
+RETESTS_AT_ADOPT = 1
+
+
+def retest_limit(tier: str) -> int:
+    """How many retests a rejection at `tier` may have."""
+    return RETESTS_AT_ADOPT if tier == ADOPT else RETESTS
+
+
+def retest_spent(conn, pid: int, tier: str) -> bool:
+    """No retest left: three in all, or more adopt declines than RETESTS_AT_ADOPT retests them."""
+    spent = conn.execute("SELECT retest_count FROM proposals WHERE id = ?", (pid,)).fetchone()[0]
+    if spent >= RETESTS:
+        return True
+    if tier != ADOPT:
+        return False
+    lost = conn.execute("SELECT COUNT(*) FROM verdicts WHERE proposal_id = ? AND tier = ? "
+                        "AND outcome = 'declined'", (pid, ADOPT)).fetchone()[0]
+    return lost > RETESTS_AT_ADOPT
+
+
 #: Tiers whose rejection can be the harness's fault; the measure step records
 #: its verdict at adopt. Inspect and fetch decide facts.
 RETEST_TIERS = (SCREEN, MEASURE, ADOPT)
@@ -54,9 +75,7 @@ def _schedule_retest(conn, pid: int, row: dict, reopen: str) -> None:
         return
     due = None
     if retest_eligible(row["outcome"], row.get("tier", ""), row.get("until", "")):
-        spent = conn.execute("SELECT retest_count FROM proposals WHERE id = ?",
-                             (pid,)).fetchone()[0]
-        if spent < RETESTS:
+        if not retest_spent(conn, pid, row.get("tier", "")):
             due = float(row["decided_at"]) + RETEST_AFTER_SECONDS
     conn.execute("UPDATE proposals SET next_retest_at = ? WHERE id = ?",
                  (due, pid))

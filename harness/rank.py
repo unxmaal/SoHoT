@@ -34,6 +34,11 @@ a sampling language model whose control had to be run three times to be believed
 """
 from __future__ import annotations
 
+import math
+import re
+import sqlite3
+import time
+
 from harness import lanes
 
 GIB = 1024 ** 3
@@ -52,6 +57,47 @@ NO_LANE = -6.0
 #: 16.2 GiB for it.
 PARKED_LANE = -8.0
 CHEAP = 1.0
+#: Expected value against the incumbent (#881): its size class, its family, the long-queued.
+PEER = 4.0
+FAMILY = 1.0
+AGE = 1.5
+AGE_DAYS = 30.0
+#: Per earlier adopt decline, up to three: a measured loss is an answer, not an open question.
+DECLINED = -1.5
+#: Over half the ceiling: a full-precision base screens slower than its quant.
+HEAVY = -1.0
+#: A quantised child of this row is queued, which is the form a screen should take.
+QUANT_QUEUED = -2.0
+
+_PARAMS = re.compile(r"(?<![A-Za-z0-9.])(\d+(?:\.\d+)?)([BbMm])(?![A-Za-z])")
+_FAMILY = re.compile(r"[a-z]+")
+
+
+def params_b(name: str) -> float:
+    """Total parameters in billions from a model name (35B-A3B is 35), 0.0 when it says none."""
+    base = (name or "").rsplit("/", 1)[-1].rsplit(":", 1)[-1]
+    for num, unit in _PARAMS.findall(base):
+        return float(num) / (1000.0 if unit in "Mm" else 1.0)
+    return 0.0
+
+
+def family(name: str) -> str:
+    """The leading word of a model's basename: qwen, gemma, ornith."""
+    base = (name or "").rsplit("/", 1)[-1].rsplit(":", 1)[-1].lower()
+    m = _FAMILY.match(base)
+    return m.group(0) if m else ""
+
+
+def families(row) -> set[str]:
+    """The row's family and its base_model parents' families."""
+    return {f for f in [family(row.get("name", ""))] + [family(p) for p in parents(row)] if f}
+
+
+def peer_share(cand_b: float, inc_b: float) -> float:
+    """1.0 at the incumbent's size, falling to 0 at half or double it."""
+    if cand_b <= 0 or inc_b <= 0:
+        return 0.0
+    return max(0.0, 1.0 - abs(math.log2(cand_b / inc_b)))
 
 def parents(row) -> set[str]:
     """The row's base_model parents, from the lineage rows inspect wrote. #414."""
@@ -61,7 +107,8 @@ def parents(row) -> set[str]:
 
 def value(row: dict, *, serving: set[str] = frozenset(),
           measured_lanes: set[str] = frozenset(),
-          ceiling_gib: float) -> tuple[float, list[str]]:
+          ceiling_gib: float, incumbent: str = "", bases=(),
+          now: float | None = None) -> tuple[float, list[str]]:
     """What a screen would teach us about this candidate, and why.
 
     The reasons travel with the number. A ranking whose rows cannot say why
@@ -120,6 +167,37 @@ def value(row: dict, *, serving: set[str] = frozenset(),
     if 0 < gib <= ceiling_gib / 4:
         score += CHEAP
         why.append(f"{gib:.1f} GiB, cheap to screen")
+    elif gib > ceiling_gib / 2:
+        score += HEAVY
+        why.append(f"{gib:.1f} GiB, over half the {ceiling_gib:.0f} GiB ceiling")
+
+    if incumbent:
+        short = incumbent.rsplit("/", 1)[-1].rsplit(":", 1)[-1]
+        cand_b, inc_b = params_b(row.get("name", "")), params_b(incumbent)
+        share = peer_share(cand_b, inc_b)
+        if share:
+            score += PEER * share
+            why.append(f"{cand_b:g}B, a size peer of the incumbent {short} ({inc_b:g}B)")
+        own, mine = family(incumbent), families(row)
+        if own and own in mine:
+            score += KNOWN_LINEAGE
+            why.append(f"built from the incumbent's own family ({own})")
+        elif mine & set(bases):
+            score += FAMILY
+            why.append(f"the family the incumbent is built on "
+                       f"({', '.join(sorted(mine & set(bases)))})")
+
+    declines = min(int(row.get("adopt_declines") or 0), 3)
+    if declines:
+        score += DECLINED * declines
+        why.append(f"declined at adopt {int(row.get('adopt_declines'))} time(s)")
+
+    first = float(row.get("first_seen") or 0.0)
+    if first:
+        days = ((time.time() if now is None else now) - first) / 86400
+        if days >= 1:
+            score += AGE * min(1.0, days / AGE_DAYS)
+            why.append(f"waiting {days:.0f} days")
     return score, why
 
 
@@ -158,8 +236,48 @@ def lane_of(row) -> str:
     return lanes.canonical(row.get("lane"))
 
 
+def incumbents(conn=None) -> dict[str, str]:
+    """lane -> what it serves now, resolved at call time; a lane that cannot say is absent."""
+    from harness import adopt, winners
+    typed = winners.typed()
+    out = {}
+    for lane in lanes.ALL:
+        got = adopt.default_for(lane, typed.get(lane, ""), conn=conn)
+        if got:
+            out[lane] = got
+    return out
+
+
+def incumbent_bases(conn, incumbent: str) -> set[str]:
+    """Families the incumbent is built on, from lineage of proposals that name it; never its own."""
+    own, size = family(incumbent), params_b(incumbent)
+    if not own or conn is None:
+        return set()
+    from harness.memory_store.cards import parents_of
+    try:
+        names = [r[0] for r in conn.execute(
+            "SELECT name FROM proposals WHERE lower(name) LIKE ?", (f"%{own}%",))
+            if family(r[0]) == own and params_b(r[0]) == size]
+        got = parents_of(conn, names) if names else {}
+    except (AttributeError, sqlite3.Error):
+        # An order hint never fails the ranking; no bases is the answer.
+        return set()
+    return {family(p) for ps in got.values() for p, _ in ps} - {own, ""}
+
+
+def quantised_children(rows) -> dict[str, list[str]]:
+    """parent -> the rows in this queue that name it as a quantized base."""
+    out: dict[str, list[str]] = {}
+    for r in rows:
+        for p in r.get("parents") or []:
+            if isinstance(p, (tuple, list)) and len(p) > 1 and p[1] == "quantized":
+                out.setdefault(str(p[0]).strip().lower(), []).append(r["name"])
+    return out
+
+
 def rank(rows, *, serving=(), measured_lanes=(), ceiling_gib: float | None = None,
-         keep_laneless: bool = False):
+         keep_laneless: bool = False, incumbents_by_lane: dict | None = None,
+         bases_by_lane: dict | None = None, now: float | None = None, conn=None):
     """Best first. Ties break on name so the order is stable across runs.
 
     A candidate NO LANE CAN TEST IS DROPPED rather than ranked last. Penalising
@@ -182,6 +300,13 @@ def rank(rows, *, serving=(), measured_lanes=(), ceiling_gib: float | None = Non
         ceiling_gib = ms.this_machine()["ceiling_gb"]
     serving = {s.lower() for s in serving}
     measured = {m.lower() for m in measured_lanes}
+    if incumbents_by_lane is None:
+        incumbents_by_lane = incumbents(conn)
+    if bases_by_lane is None:
+        bases_by_lane = {lane: incumbent_bases(conn, inc)
+                         for lane, inc in incumbents_by_lane.items()}
+    rows = list(rows)
+    quants = quantised_children(rows)
     out = []
     for row in rows:
         if not keep_laneless and not lane_of(row):
@@ -197,7 +322,13 @@ def rank(rows, *, serving=(), measured_lanes=(), ceiling_gib: float | None = Non
         if is_technique(row):
             continue
         got, why = value(row, serving=serving, measured_lanes=measured,
-                         ceiling_gib=ceiling_gib)
+                         ceiling_gib=ceiling_gib,
+                         incumbent=incumbents_by_lane.get(lane_of(row), ""),
+                         bases=bases_by_lane.get(lane_of(row), ()), now=now)
+        kids = quants.get(row["name"].lower())
+        if kids:
+            got += QUANT_QUEUED
+            why.append(f"a quantised form is queued: {sorted(kids)[0]}")
         out.append({**row, "value": got, "value_why": "; ".join(why)})
     # THE TIEBREAK IS ABOUT THE CANDIDATE, NEVER ITS NAME. Ten code candidates
     # scored an identical +3.7, so the order was the alphabet: `AxiomicLabs`

@@ -271,7 +271,10 @@ def judgeable(conn, limit: int = 50) -> list[dict]:
         SELECT p.name, p.lane, p.registry, p.kind, p.description,
                p.size_bytes, p.category,
                p.hf_task, p.library, p.card_tags, p.attaches_to, p.runtime_needed,
-               p.model_type, p.remote_code,
+               p.model_type, p.remote_code, p.first_seen,
+               -- Measured losses, so the rank does not re-ask a settled question. #881.
+               (SELECT COUNT(*) FROM verdicts va WHERE va.proposal_id = p.id
+                  AND va.tier = 'adopt' AND va.outcome = 'declined') AS adopt_declines,
                COUNT(s.id) AS times,
                MAX(CASE WHEN s.machine_id = ? THEN s.relevance END) AS relevance,
                MAX(s.seen_at) AS last_seen,

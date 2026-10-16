@@ -155,7 +155,7 @@ def queue_state(conn) -> dict:
 
     rows = ms_judgeable(conn)
     ranked = rank.rank(rows, serving=rank.serving(),
-                       measured_lanes=rank.lanes_with_receipts(conn))
+                       measured_lanes=rank.lanes_with_receipts(conn), conn=conn)
     per_lane = {}
     for r in ranked:
         per_lane.setdefault(rank.lane_of(r), []).append(r)
