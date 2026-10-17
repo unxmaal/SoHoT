@@ -262,6 +262,7 @@ def test_the_cli_runs_end_to_end_without_notifying(monkeypatch, deploy_dir, caps
     monkeypatch.setattr(morning, "_gh", _gh())
     monkeypatch.setattr(morning, "_git", _git())
     monkeypatch.setattr(morning, "stale_lanes", lambda c: [])
+    monkeypatch.setattr("harness.canary.morning_line", lambda now=None: "")
     monkeypatch.setattr(heartbeat, "summary", lambda: _beat(started=time.time() - 3600))
     monkeypatch.setattr(paths, "deploy_checkout", lambda: deploy_dir)
     monkeypatch.setattr(morning, "notify", lambda *a, **k: pytest.fail("notified without --notify"))

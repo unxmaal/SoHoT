@@ -324,6 +324,16 @@ def is_reference(candidate: str) -> bool:
     return (candidate or "").startswith(REFERENCE_PREFIXES)
 
 
+def outcome_of(verdict: Verdict) -> tuple[str, str]:
+    """The (outcome, reason) record() writes for this verdict."""
+    from harness import reasons
+    outcome, reason = reasons.CLASSES.get(verdict.failure_class, (
+        "declined", reasons.LIMIT
+        if verdict.failure_class in (reasons.UNDERPOWERED, reasons.INCONCLUSIVE)
+        else reasons.CANDIDATE))
+    return ("measured" if verdict.adopt else outcome), reason
+
+
 def record(conn, verdict: Verdict, spec: str = "",
            run_id: int | None = None) -> int:
     """Write an adoption, or the loss, on the candidate that ran. #407, #412.
@@ -344,13 +354,7 @@ def record(conn, verdict: Verdict, spec: str = "",
                           f"({verdict.why})", verdict.how)
     spec = spec or verdict.challenger
     verdict = _schema_guard(verdict, spec)
-    from harness import reasons
-    outcome, reason = reasons.CLASSES.get(verdict.failure_class, (
-        "declined", reasons.LIMIT
-        if verdict.failure_class in (reasons.UNDERPOWERED, reasons.INCONCLUSIVE)
-        else reasons.CANDIDATE))
-    if verdict.adopt:
-        outcome = "measured"
+    outcome, reason = outcome_of(verdict)
     serve = verdict.adopt
     detail = f"{verdict.lane}: {verdict.why}"
     # A text-lane spec is the proposal's own name; anything else maps by row.

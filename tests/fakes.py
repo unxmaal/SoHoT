@@ -103,6 +103,9 @@ WHY = {
     "dslim/bert-base-NER":
         "a general named-entity tagger: the pii lane's negative control, which "
         "must stay laneless (#564)",
+    "Ninnix96/Qwengram-0.8B":
+        "top-level GGUF quants beside an auxiliary safetensors and no config.json, which mlx-lm "
+        "was handed and screened BROKEN five times (#911, #919)",
     "hexgrad/Kokoro-82M":
         "the tts lane's incumbent, and the upstream of the repo the lane "
         "actually serves, so the card is a requant's parent (#264)",
