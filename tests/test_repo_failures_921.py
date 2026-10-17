@@ -135,6 +135,8 @@ def test_the_receipt_command_fails_an_arm_that_did_not_run_as_labelled(run_dir, 
 def test_the_committed_labels_parse_against_the_codebook():
     for lab in F.load_labels():
         assert lab["class"] in F.CODEBOOK
+    blind = F.load_labels(F.LABELS.with_name("repo_failure_labels_blind.jsonl"))
+    assert blind and {(x["run"], x["case"]) for x in blind} <= {(x["run"], x["case"]) for x in F.load_labels()}
 
 
 @pytest.mark.parametrize("arm", sorted(F.ARMS))
@@ -160,3 +162,44 @@ def test_the_arms_differ_in_one_thing_each_from_the_control():
     assert c["template"] == {"enable_thinking": True} and c["max_tokens"] == (32768, 65536)
     assert c["sampling"] == {"temperature": 1.0, "top_p": 0.95, "top_k": 20, "min_p": 0.0,
                              "presence_penalty": 0.0}
+
+
+def test_a_run_that_kept_no_reasoning_is_labelled_budget_exhausted_unrecorded(run_dir, tmp_path):
+    (lab,) = F.load_labels(_write(tmp_path / "l.jsonl", [_label(run_dir, cls="budget_exhausted", at_cut="unrecorded")]))
+    assert lab["at_cut"] == "unrecorded"
+
+
+def test_the_recount_header_defect_is_charged_to_the_harness():
+    assert F.CODEBOOK["recount_header"] == "harness"
+
+
+def test_every_class_has_a_definition_and_one_precedence_place(capsys):
+    assert set(F.DEFINITIONS) == set(F.CODEBOOK) == set(F.PRECEDENCE)
+    assert len(F.PRECEDENCE) == len(set(F.PRECEDENCE))
+    assert F.main(["codebook"]) == 0
+    out = capsys.readouterr().out
+    assert all(f"{c} ({F.CODEBOOK[c]})" in out for c in F.CODEBOOK)
+    assert out.index("tool_call") < out.index("wrong_fix")
+
+
+def test_a_stratified_sample_takes_from_every_stratum_and_skips_what_it_is_told(tmp_path):
+    d = tmp_path / "r"
+    d.mkdir()
+    rows = ([_row(f"i{n}") for n in range(20)] + [_row(f"c{n}", cls="content_failed") for n in range(2)]
+            + [_row(f"t{n}", cls="token_budget_exhausted") for n in range(5)])
+    (d / "results.json").write_text(json.dumps({"receipt": {}, "rows": rows}), encoding="utf-8")
+    runs = [F.load_run(d)]
+    got = F.sample(runs, 6, 921, stratify=True, skip=("token_budget_exhausted",))
+    assert got == F.sample(runs, 6, 921, stratify=True, skip=("token_budget_exhausted",))
+    cases = [c for _, c in got]
+    assert len(cases) == 6 and sum(c.startswith("c") for c in cases) == 2
+    assert not any(c.startswith("t") for c in cases)
+    assert len(F.sample(runs, 100, 921, stratify=True)) == 27
+
+
+def test_kappa_names_each_row_the_labellers_disagree_on(tmp_path, capsys):
+    a = [{"run": "r", "case": c, "class": "wrong_fix", "file": "f", "offset": 0, "excerpt": "x"} for c in "ab"]
+    b = [a[0], {**a[1], "class": "regression"}]
+    assert F.disagreements(a, b) == [("r", "b", "wrong_fix", "regression")]
+    assert F.main(["kappa", str(_write(tmp_path / "a.jsonl", a)), str(_write(tmp_path / "b.jsonl", b))]) == 0
+    assert "r b: wrong_fix / regression" in capsys.readouterr().out
