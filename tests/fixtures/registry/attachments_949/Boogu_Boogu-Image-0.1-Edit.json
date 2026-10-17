@@ -1,0 +1,244 @@
+{
+"id": "Boogu/Boogu-Image-0.1-Edit",
+"pipeline_tag": "image-to-image",
+"library_name": "diffusers",
+"tags": [
+"diffusers",
+"safetensors",
+"image-to-image",
+"en",
+"zh",
+"arxiv:2607.13125",
+"doi:10.57967/hf/9466",
+"license:apache-2.0",
+"diffusers:BooguImagePipeline",
+"region:us"
+],
+"config": {
+"diffusers": {
+"_class_name": "BooguImagePipeline"
+}
+},
+"siblings": [
+{
+"rfilename": ".gitattributes",
+"size": 2203
+},
+{
+"rfilename": "README.md",
+"size": 25938
+},
+{
+"rfilename": "README_CN.md",
+"size": 24985
+},
+{
+"rfilename": "assets/Boogu-Image-Discussion-Group.png",
+"size": 347049
+},
+{
+"rfilename": "assets/arena_elo_chart.svg",
+"size": 79147
+},
+{
+"rfilename": "assets/boogu-arena-chart.svg",
+"size": 79147
+},
+{
+"rfilename": "assets/boogu-arena-elo.svg",
+"size": 5886
+},
+{
+"rfilename": "assets/boogu-elo-chart.svg",
+"size": 79147
+},
+{
+"rfilename": "assets/boogu-infinity-teaser.png",
+"size": 3700554
+},
+{
+"rfilename": "assets/boogu-logo-title.svg",
+"size": 1329
+},
+{
+"rfilename": "assets/boogu_elo_arena.svg",
+"size": 76614
+},
+{
+"rfilename": "assets/ci_chart.svg",
+"size": 69136
+},
+{
+"rfilename": "assets/edit_cases_combined.png",
+"size": 10925020
+},
+{
+"rfilename": "assets/photography_triptych.png",
+"size": 5349973
+},
+{
+"rfilename": "assets/poster_cases_combined.png",
+"size": 10811774
+},
+{
+"rfilename": "assets/style_cases_combined.png",
+"size": 8846061
+},
+{
+"rfilename": "assets/stylization_triptych.png",
+"size": 10670265
+},
+{
+"rfilename": "assets/text_cases_combined.png",
+"size": 13173775
+},
+{
+"rfilename": "assets/text_rendering_triptych.png",
+"size": 5445654
+},
+{
+"rfilename": "mllm/.gitattributes",
+"size": 1519
+},
+{
+"rfilename": "mllm/README.md",
+"size": 7078
+},
+{
+"rfilename": "mllm/chat_template.json",
+"size": 5499
+},
+{
+"rfilename": "mllm/config.json",
+"size": 1474
+},
+{
+"rfilename": "mllm/generation_config.json",
+"size": 269
+},
+{
+"rfilename": "mllm/merges.txt",
+"size": 1671839
+},
+{
+"rfilename": "mllm/model-00001-of-00004.safetensors",
+"size": 4902275944
+},
+{
+"rfilename": "mllm/model-00002-of-00004.safetensors",
+"size": 4915962496
+},
+{
+"rfilename": "mllm/model-00003-of-00004.safetensors",
+"size": 4999831048
+},
+{
+"rfilename": "mllm/model-00004-of-00004.safetensors",
+"size": 2716270024
+},
+{
+"rfilename": "mllm/model.safetensors.index.json",
+"size": 67759
+},
+{
+"rfilename": "mllm/preprocessor_config.json",
+"size": 390
+},
+{
+"rfilename": "mllm/tokenizer.json",
+"size": 7032403
+},
+{
+"rfilename": "mllm/tokenizer_config.json",
+"size": 10868
+},
+{
+"rfilename": "mllm/video_preprocessor_config.json",
+"size": 385
+},
+{
+"rfilename": "mllm/vocab.json",
+"size": 2776833
+},
+{
+"rfilename": "model_index.json",
+"size": 475
+},
+{
+"rfilename": "processor/added_tokens.json",
+"size": 707
+},
+{
+"rfilename": "processor/chat_template.jinja",
+"size": 5292
+},
+{
+"rfilename": "processor/merges.txt",
+"size": 1671853
+},
+{
+"rfilename": "processor/preprocessor_config.json",
+"size": 782
+},
+{
+"rfilename": "processor/special_tokens_map.json",
+"size": 613
+},
+{
+"rfilename": "processor/tokenizer.json",
+"size": 11422654
+},
+{
+"rfilename": "processor/tokenizer_config.json",
+"size": 5445
+},
+{
+"rfilename": "processor/video_preprocessor_config.json",
+"size": 817
+},
+{
+"rfilename": "processor/vocab.json",
+"size": 2776833
+},
+{
+"rfilename": "scheduler/scheduler_config.json",
+"size": 221
+},
+{
+"rfilename": "scheduler/scheduling_flow_match_euler_discrete_time_shifting.py",
+"size": 1168
+},
+{
+"rfilename": "transformer/config.json",
+"size": 956
+},
+{
+"rfilename": "transformer/diffusion_pytorch_model-00001-of-00003.safetensors",
+"size": 9998734680
+},
+{
+"rfilename": "transformer/diffusion_pytorch_model-00002-of-00003.safetensors",
+"size": 9920503728
+},
+{
+"rfilename": "transformer/diffusion_pytorch_model-00003-of-00003.safetensors",
+"size": 665989440
+},
+{
+"rfilename": "transformer/diffusion_pytorch_model.safetensors.index.json",
+"size": 101661
+},
+{
+"rfilename": "transformer/transformer_boogu.py",
+"size": 1097
+},
+{
+"rfilename": "vae/config.json",
+"size": 840
+},
+{
+"rfilename": "vae/diffusion_pytorch_model.safetensors",
+"size": 335306212
+}
+]
+}

@@ -1,0 +1,74 @@
+{
+"id": "inclusionAI/VISTA-9B",
+"pipeline_tag": "image-text-to-text",
+"library_name": "transformers",
+"tags": [
+"transformers",
+"safetensors",
+"qwen3_5",
+"image-text-to-text",
+"vista",
+"qwen3.5",
+"vision-language",
+"gui-grounding",
+"reinforcement-learning",
+"conversational",
+"en",
+"arxiv:2606.14579",
+"license:apache-2.0",
+"endpoints_compatible",
+"region:us"
+],
+"config": {
+"architectures": [
+"Qwen3_5ForConditionalGeneration"
+],
+"model_type": "qwen3_5"
+},
+"siblings": [
+{
+"rfilename": ".gitattributes",
+"size": 1570
+},
+{
+"rfilename": "README.md",
+"size": 4745
+},
+{
+"rfilename": "chat_template.jinja",
+"size": 7756
+},
+{
+"rfilename": "config.json",
+"size": 2903
+},
+{
+"rfilename": "generation_config.json",
+"size": 168
+},
+{
+"rfilename": "model.safetensors",
+"size": 18819722392
+},
+{
+"rfilename": "processor_config.json",
+"size": 1300
+},
+{
+"rfilename": "tokenizer.json",
+"size": 19989511
+},
+{
+"rfilename": "tokenizer_config.json",
+"size": 1139
+},
+{
+"rfilename": "trainer_state.json",
+"size": 320480
+},
+{
+"rfilename": "training_args.bin",
+"size": 7889
+}
+]
+}

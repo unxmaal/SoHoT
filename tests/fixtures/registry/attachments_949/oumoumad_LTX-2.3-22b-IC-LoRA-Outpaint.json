@@ -1,0 +1,35 @@
+{
+"id": "oumoumad/LTX-2.3-22b-IC-LoRA-Outpaint",
+"pipeline_tag": "video-to-video",
+"library_name": null,
+"tags": [
+"ltx-video",
+"ic-lora",
+"outpaint",
+"video-to-video",
+"en",
+"base_model:Lightricks/LTX-2.3",
+"base_model:finetune:Lightricks/LTX-2.3",
+"license:other",
+"region:us"
+],
+"config": {},
+"siblings": [
+{
+"rfilename": ".gitattributes",
+"size": 1519
+},
+{
+"rfilename": "README.md",
+"size": 2768
+},
+{
+"rfilename": "ltx-2.3-22b-ic-lora-outpaint.safetensors",
+"size": 1308756416
+},
+{
+"rfilename": "outpaint_LTX-IC.json",
+"size": 60119
+}
+]
+}

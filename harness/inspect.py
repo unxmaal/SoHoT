@@ -862,7 +862,7 @@ def card_facts(data: dict) -> Card:
     task = (data.get("pipeline_tag") or "").strip()
     library = (data.get("library_name") or "").strip()
     adapter = any(k == "adapter" for _, k in parents)
-    words = " ".join([task, library, *plain, "adapter" if adapter else ""])
+    words = [task, library, *plain, "adapter" if adapter else ""]
     lane, source = lane_and_source(data)
     from harness.remote_code import code_evidence
     config = data.get("config") or {}
@@ -870,7 +870,7 @@ def card_facts(data: dict) -> Card:
     from harness import variants
     found = variants.variants(data.get("siblings") or [], model_type=_model_type(data))
     return Card(task=task, library=library, tags=plain, parents=parents,
-                attaches_to=screen.is_attachment(words),
+                attaches_to=screen.is_attachment(words, data.get("siblings"), config, found),
                 runtime_needed=runtime_needed(library, plain, found),
                 lane=lane, lane_source=source, category="model",
                 model_type=str(config.get("model_type") or "").strip(),
@@ -910,7 +910,7 @@ def screen_words(tag: str) -> bool:
     other names six times.
     """
     from harness import screen
-    return bool(screen.is_attachment(tag))
+    return bool(screen.is_attachment([tag]))
 
 
 def card_description(data: dict, size: int | None = None, *, ceiling: int | None = None,

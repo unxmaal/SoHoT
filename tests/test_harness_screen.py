@@ -156,8 +156,9 @@ def test_a_lora_is_refused_before_anything_downloads():
     assert screen.candidate_for("image", "org/style", "lora") == ""
 
 
-def test_a_comfyui_node_pack_is_refused():
-    assert screen.is_attachment("served by minimax-h3; tagged comfyui") == "comfyui"
+def test_comfyui_is_a_capability_and_a_weightless_workflow_is_refused():
+    assert screen.is_attachment("served by minimax-h3; tagged comfyui") == ""
+    assert screen.is_attachment(["comfyui", "workflow"], [{"rfilename": "README.md", "size": 900}]) == "workflow"
 
 
 def test_a_real_model_is_still_a_candidate():

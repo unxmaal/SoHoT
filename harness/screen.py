@@ -21,6 +21,7 @@ absent is reported as waiting on a fetch, not screened and not failed.
 from __future__ import annotations
 
 import functools
+import re
 import sys
 from pathlib import Path
 from typing import NamedTuple
@@ -80,42 +81,104 @@ LANE_CANDIDATES = {
 WAITING, NO_RUNNER, READY = "waiting-on-fetch", "no-runner", "ready"
 
 
-#: Words in a card that mean "this attaches to a model" rather than "this is
-#: one". An adapter, a node pack or a workflow cannot be handed to a runner as
-#: a candidate: mflux loads a base model, and `mflux:org/some-style-lora`
-#: downloads gigabytes and then fails, recording a verdict that says nothing
-#: about the thing.
-NOT_A_MODEL = ("lora", "comfyui", "workflow", "adapter", "controlnet",
-               "textual_inversion", "embedding",
-               # A TOOL IS NOT A MODEL EITHER, and having a lane is not enough
-               # to be one. PoopMan333/Video_Tools ranked SECOND in the whole
-               # queue at 0.0 GiB, tagged `video, video-editing, image-editing,
-               # gif, browser, offline`. It is a browser utility. The laneless
-               # filter missed it because it HAS a lane, and the list above
-               # missed it because it attaches to nothing. #249.
-               "browser", "extension", "plugin", "gui", "toolkit",
-               "cli-tool", "video-editing", "image-editing")
+#: Weights that load onto a base: an attachment when the listing agrees. #949.
+WEIGHT_KINDS = ("lora", "adapter", "controlnet", "textual_inversion")
+#: A non-model (PoopMan333/Video_Tools, #249): an attachment only when the listing holds no weights.
+TOOL_WORDS = ("browser", "extension", "plugin", "toolkit", "cli-tool", "workflow")
+#: gui, image-editing, video-editing, embedding and comfyui are capabilities full models carry too. #563, #949.
+NOT_A_MODEL = WEIGHT_KINDS + TOOL_WORDS
 
-#: The one substring that is a model in its own right despite matching above.
-#: Kept as an enumerated exception so the list can be read rather than guessed.
-NOT_A_MODEL_EXCEPTIONS = ("lora-ready",
-                          # A serving-compatibility tag on rerankers and embedders. #563.
-                          "text-embeddings-inference")
+#: Whole tags that are a model in their own right despite naming a weight kind.
+NOT_A_MODEL_EXCEPTIONS = ("lora-ready",)
+
+#: Tag namespaces that name another repo or a class, never this one's kind. #949.
+FOREIGN_NAMESPACES = ("dataset", "base_model", "diffusers", "license", "arxiv", "doi", "region")
+
+#: A weight file under this, with nothing saying "full model", is adapter-sized. #949.
+ADAPTER_FLOOR_BYTES = 4 * 2**30
+
+#: listing_kind's answers; None is a listing nobody read.
+ADAPTER, MODEL, LOOSE, BULK, EMPTY = "adapter", "model", "loose", "bulk", "empty"
 
 
-def is_attachment(description: str) -> str:
-    """The word that says this attaches to a model, or "" if none does.
+def _tags(words) -> list[str]:
+    if isinstance(words, str):
+        words = words.split()
+    out = []
+    for t in words or ():
+        t = str(t).strip().strip(",;()[]").lower()
+        space, sep, rest = t.partition(":")
+        if not t or (sep and space in FOREIGN_NAMESPACES) or t in NOT_A_MODEL_EXCEPTIONS:
+            continue
+        out.append(rest if sep and rest else t)
+    return out
 
-    Read from the registry's own tags. A style LoRA and a ComfyUI node pack are
-    both `text-to-image` and neither is something a lane can run alone.
-    """
-    text = (description or "").lower()
-    for allowed in NOT_A_MODEL_EXCEPTIONS:
-        text = text.replace(allowed, "")
-    for word in NOT_A_MODEL:
-        if word in text:
-            return word
+
+def _weight_word(tags) -> tuple[str, bool]:
+    """The weight kind the tags name and whether a whole tag names it, else ("", False)."""
+    for word in WEIGHT_KINDS:
+        if word in tags:
+            return word, True
+    for word in WEIGHT_KINDS:
+        if any(word in re.split(r"[\s\-./]+", t) for t in tags):
+            return word, False
+    return "", False
+
+
+def listing_kind(files, config=None, found=None) -> str | None:
+    """What a listing says it is, read through harness.variants: ADAPTER, MODEL, LOOSE, BULK, EMPTY, or None. #949."""
+    if files is None:
+        return None
+    from harness import variants
+    names = [str(s.get("rfilename", "") if isinstance(s, dict) else s).lower() for s in files]
+    root = {n for n in names if "/" not in n}
+
+    def adapter_file(n):
+        return n.rsplit("/", 1)[-1] == "adapter_config.json" or n.rsplit("/", 1)[-1].startswith("adapter_model.")
+    if any(adapter_file(n) for n in root):
+        return ADAPTER
+    config = config or {}
+    if found is None:
+        found = variants.variants(files, model_type=str(config.get("model_type") or ""))
+    whole = any(v.format in (variants.DIFFUSERS, variants.MISTRAL)
+                or (v.format in (variants.GGUF, variants.COMFYUI)
+                    and not any(re.search(r"lora|adapter", f.lower()) for f in v.files))
+                for v in found)
+    if whole or "model_index.json" in root or config.get("model_type") or config.get("architectures"):
+        return MODEL
+    if any(adapter_file(n) for n in names):
+        return ADAPTER
+    weights = variants._weights(files)
+    if not weights:
+        return EMPTY
+    largest = max(size for _, size in weights)
+    if "config.json" in root or largest < ADAPTER_FLOOR_BYTES:
+        return LOOSE
+    return BULK
+
+
+def is_attachment(words, files=None, config=None, found=None) -> str:
+    """The kind that says this attaches to a model, or "": whole tags only, and a read listing decides. #949."""
+    tags = _tags(words)
+    weight, whole = _weight_word(tags)
+    kind = listing_kind(files, config, found)
+    if kind == MODEL:
+        return ""
+    if weight and (whole or (kind is None and isinstance(words, str))):
+        return weight
+    if (weight and kind == LOOSE) or kind == ADAPTER:
+        return ADAPTER
+    if kind in (None, EMPTY):
+        return next((w for w in TOOL_WORDS if w in tags), "")
     return ""
+
+
+def tags_support(word: str, tags) -> bool:
+    """Whether the current rule could store `word` from these tags; False marks an older rule's answer. #949."""
+    word = (word or "").strip().lower()
+    if word == ADAPTER:
+        return True
+    return word in NOT_A_MODEL and word in _tags(tags)
 
 
 #: Attachment kinds that are weights an adapter-loading engine can apply. A
@@ -270,6 +333,10 @@ def case_gap(lane: str, spec: str) -> str:
     return f"no {lane} case fits the {method} method ({wants})"
 
 
+#: Libraries a full model ships in that no engine here loads, whatever its lane. #798, #949.
+FOREIGN_LIBRARIES = {"comfyui": "weights packaged for ComfyUI, which no engine here loads"}
+
+
 def runner_gap(lane: str, model: str, attaches_to: str = "",
                conn=None, card=None) -> str:
     """Why no runner here takes this candidate, or "". `no_runner` asks of a
@@ -289,6 +356,9 @@ def runner_gap(lane: str, model: str, attaches_to: str = "",
         if card is None and conn is not None:
             from harness import memory_store as ms
             card = ms.card_of(conn, model)
+        library = str((card or {}).get("library") or (card or {}).get("library_name") or "").strip().lower()
+        if library in FOREIGN_LIBRARIES:
+            return f"needs its own runner: its card names the {library} library, {FOREIGN_LIBRARIES[library]}"
         return no_runner(spec) or case_gap(lane, spec) or engines.card_gap(spec, card)
     if attaches_to and takes_attachment(lane, attaches_to):
         from harness import engines

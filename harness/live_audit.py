@@ -18,7 +18,8 @@ ERROR_RATE_MAX = 0.10
 SERVING = ("adoptions_pass_here", "no_reference_served", "served_matches_adoption", "gateway_errors")
 SCHEDULE = ("sweep_on_schedule",)
 VERDICTS = ("too_big_ceiling_current", "too_big_names_variant", "terminal_reason_coherent", "no_ranking_verdict",
-            "load_log_kept", "runner_gap_until_current", "broken_runner_layout")
+            "load_log_kept", "runner_gap_until_current", "broken_runner_layout",
+            "attachment_by_tag")
 CHECKS = mc.INVARIANTS + SERVING + SCHEDULE + VERDICTS
 
 
@@ -182,6 +183,13 @@ def _broken_runner_layout(conn) -> list:
             if reasons.classify(r["detail"] or "", reasons.RUNNER, r["spec"]) == reasons.LOAD_FAILED_LAYOUT]
 
 
+def _attachment_by_tag(conn) -> list:
+    """Attachment words no current card reading gives, held at 0 once the loop re-reads them. #949."""
+    from harness import memory_store as ms
+    return [f"{r['name']}: attaches_to {r['attaches_to']} ({r['card_read'] or 'unread'})"
+            for r in ms.stale_attachments(conn)]
+
+
 def _when(at) -> str:
     import time
     return time.strftime("%Y-%m-%d %H:%M", time.localtime(at)) if at else "never"
@@ -257,6 +265,7 @@ def audit(path=None, config=None) -> dict:
         checks.append(mc._check("load_log_kept", unkept))
         checks.append(mc._check("runner_gap_until_current", _runner_gap_until_current(conn)))
         checks.append(mc._check("broken_runner_layout", _broken_runner_layout(conn)))
+        checks.append(mc._check("attachment_by_tag", _attachment_by_tag(conn)))
         warnings = {"too_big_ceiling_current": mc._say(backlog)} if backlog and not stale else {}
         if unswept and not summed:
             warnings["too_big_names_variant"] = mc._say(unswept)

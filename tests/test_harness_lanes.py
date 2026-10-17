@@ -225,7 +225,8 @@ def test_an_adapter_never_reaches_the_queue(store_conn):
             _row("Robert1212star/TaoMate-H3-3Step-ComfyUI", lane="image"),
             _row("org/real-model", description="a text-to-video model")]
     got = rank.rank(rows, serving=(), measured_lanes=(), conn=store_conn)
-    assert [r["name"] for r in got] == ["org/real-model"]
+    # ComfyUI names a format full models ship in; its card and listing decide. #949.
+    assert sorted(r["name"] for r in got) == ["Robert1212star/TaoMate-H3-3Step-ComfyUI", "org/real-model"]
 
 
 def test_an_adapter_is_caught_by_its_card_as_well_as_its_name(store_conn):

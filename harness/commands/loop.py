@@ -246,6 +246,7 @@ def _run_loop_held(a, keep=None) -> int:
             _reopen_unranked()
             _reopen_upstream_committed()
             _reread_runtime_declines(a)
+            _rederive_attachments()
         sub = _ap.Namespace(**{**vars(a), **flags, **extra, "loop": False})
         rc = _step(label, discover_cmd.cmd_discover(sub), failed) or rc
 
@@ -510,6 +511,24 @@ def upstream_line(got: dict, requeued: bool = True) -> str:
             f"last commit: {got['answered']} answered, {len(got['committed'])} committed since"
             + (" and requeued" if requeued else "")
             + (f"; {left} not asked (registry rate-limited)" if left else ""))
+
+
+def _rederive_attachments() -> dict:
+    """Re-read the cards whose attachment an older rule set; every one, the first time. #949."""
+    from harness import heartbeat, memory_store as ms
+    every = not (heartbeat.read() or {}).get(heartbeat.REDERIVED_ATTACHMENTS)
+    store = ms.connect()
+    try:
+        got = ms.rederive_attachments(store, every=every)
+    finally:
+        store.close()
+    if every and not got["unread"]:
+        heartbeat.mark(heartbeat.REDERIVED_ATTACHMENTS)
+    print(f"  re-read {got['read']} attachment card(s): {len(got['changed'])} changed, "
+          f"{len(got['requeued'])} requeued, {len(got['unread'])} unread, {len(got['gone'])} gone")
+    for c in got["changed"]:
+        print(f"    {c['name']}: {c['was']} -> {c['now'] or '(a model)'}")
+    return got
 
 
 def _reopen_stale_too_big() -> list[str]:
