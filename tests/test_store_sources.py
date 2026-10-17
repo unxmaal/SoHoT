@@ -180,7 +180,7 @@ def test_a_cached_answer_has_no_lane_field():
 
 def test_a_cache_hit_derives_the_lane_from_the_card_without_asking():
     calls = []
-    cache = {"org/x": {"size": 7, "pipeline_tag": "text-to-speech", "tags": []}}
+    cache = {"org/x": {"size": 7, "ceiling": ins.ceiling_bytes(), "pipeline_tag": "text-to-speech", "tags": []}}
     got = ins.hf_facts("org/x", cache=cache, fetch=lambda u: calls.append(u))
     assert got == {"size": 7, "lane": "tts"} and calls == []
 

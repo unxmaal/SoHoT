@@ -513,6 +513,47 @@ def offline_flips(text, rel):
                   "so lift it with harness.env.online()" for line in lines]
 
 
+LISTING_OWNER = "harness/variants.py"
+
+
+def _names_siblings(node):
+    return any((isinstance(x, ast.Name) and "sibling" in x.id.lower())
+               or (isinstance(x, ast.Attribute) and x.attr == "siblings")
+               or (isinstance(x, ast.Constant) and x.value == "siblings") for x in ast.walk(node))
+
+
+def _reads_size(node):
+    return any((isinstance(x, ast.Constant) and x.value == "size")
+               or (isinstance(x, ast.Attribute) and x.attr == "size") for x in ast.walk(node))
+
+
+def _sizes_of_siblings(node):
+    return (isinstance(node, (ast.GeneratorExp, ast.ListComp))
+            and any(_names_siblings(g.iter) for g in node.generators) and _reads_size(node.elt))
+
+
+def listing_sums(text, rel):
+    """A whole HF listing's sizes added up outside harness/variants.py, the one place a listing is sized (#964)."""
+    if rel == LISTING_OWNER:
+        return []
+    tree, out = _parse(text, rel)
+    if tree is None:
+        return out
+    named = {t.id for n in ast.walk(tree) if isinstance(n, ast.Assign) and _sizes_of_siblings(n.value)
+             for t in n.targets if isinstance(t, ast.Name)}
+    lines = set()
+    for n in ast.walk(tree):
+        if isinstance(n, ast.Call) and _call_name(n) == "sum" and n.args:
+            a = n.args[0]
+            if _sizes_of_siblings(a) or (isinstance(a, ast.Name) and a.id in named):
+                lines.add(n.lineno)
+        elif isinstance(n, ast.For) and _names_siblings(n.iter):
+            lines |= {x.lineno for x in ast.walk(n) if isinstance(x, ast.AugAssign)
+                      and isinstance(x.op, ast.Add) and _reads_size(x.value)}
+    return out + [f"{rel}:{line}: adds up a listing's file sizes; size it through harness.variants "
+                  "(inspect.size_listing) so every reader reports the variant inspect runs" for line in sorted(lines)]
+
+
 def _shebang(path):
     with open(path, "rb") as f:
         first = f.readline(200)
