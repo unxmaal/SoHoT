@@ -1642,6 +1642,20 @@ prose scanners off dataset text. Tests feed a recorded slice from
 `tests/fixtures/importers/` and run a slice of the shipped cases; the full set
 is `soh cases control`.
 
+`soh cases control repo` validates each repo case the way a candidate meets
+it: it builds the prompt, then runs every fail_to_pass and pass_to_pass id at
+base plus the hidden tests and again with the reference diff,
+`VALIDATION_RUNS` times a side (`evals/repo.py`). Each case is `valid`,
+`invalid: <why>`, `flaky: <ids>` or `error: <why>`, kept per machine under
+`$LOCALHARNESS_HOME/validation/repo/`. `evals.run --modality repo` copies each
+verdict into the receipt and counts resolves over valid cases only.
+`soh cases labels repo` reports the fairness labels in
+`evals/cases/repo/labels.json`: two blind labellers score SWE-bench Verified's
+two axes (is the issue specified, do the hidden tests accept every reasonable
+fix), with Cohen's kappa per axis; `--packets DIR` writes what a labeller
+reads. A case both labellers flag, or one that fails validation, goes in
+`evals/importers/history.py:DROPPED` with its reason (#920).
+
 `leetcode` (code lane) imports LeetCodeDataset (Apache-2.0) at a pinned
 revision: its whole temporal test split, items dated 2024-08 to 2025-03, plus
 train items dated 2024 or later, read from the file's tail by a byte range.

@@ -1176,6 +1176,7 @@ def _execute_at(args, overrides: dict) -> int:
 
     report(summarize(results), resolved)
     from harness import memory_store as ms
+    validation = case_validation(args.modality, cases, results, ms.this_machine()["fingerprint"])
     client = environment.capture()
     serving, away = serving_machine(completion.served(), ms.this_machine()["fingerprint"])
     if away:
@@ -1213,7 +1214,8 @@ def _execute_at(args, overrides: dict) -> int:
             served=served_shapes(specs, resolved, completion.served(), away, args.gateway),
             template=effective_template(args.modality, candidates),
             requests=sent_requests(planned),
-            server_sampling=server_sampling(specs))
+            server_sampling=server_sampling(specs),
+            validation=validation)
         now = time.time()
         ids = candidate_ids(specs, args.modality)
         for r in results:
@@ -1870,6 +1872,31 @@ def _note_ranking_disagreements(summary: dict, metric_names: list) -> None:
                   f"passes more cases; {by_metric[0]} scores better on "
                   f"{metric}. A case fails outright on one missed check, so "
                   f"the pass rate punishes a strong model that slips once.")
+
+
+def valid_only(results, validation: dict) -> dict:
+    """candidate -> (passed, rows) over the cases whose verdict is valid. #920."""
+    out: dict = {}
+    for r in results:
+        if validation.get(r.case_id) == "valid":
+            passed, total = out.get(r.candidate, (0, 0))
+            out[r.candidate] = (passed + bool(r.passed), total + 1)
+    return out
+
+
+def case_validation(modality: str, cases, results, machine: str) -> dict:
+    """The repo lane's verdict per case for the receipt, with resolves counted over valid cases only. #920."""
+    if modality != "repo":
+        return {}
+    from evals import repo
+    got = repo.verdicts(cases, machine)
+    rest = {k: v for k, v in sorted(got.items()) if v != "valid"}
+    print(f"\nvalidation: {len(got) - len(rest)} of {len(got)} case(s) valid on this machine")
+    for name, (passed, total) in sorted(valid_only(results, got).items()):
+        print(f"  {name}: {passed}/{total} resolved over valid cases")
+    for case_id, why in rest.items():
+        print(f"  not counted {case_id}: {why}")
+    return got
 
 
 def report(summary: dict, resolved: dict | None = None) -> None:
