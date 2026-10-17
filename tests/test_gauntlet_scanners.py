@@ -238,6 +238,31 @@ def test_no_code_flips_the_offline_guard_except_through_env_online():
                "wrap the call in harness.env.online() (#931, RULE #208)")
 
 
+def test_a_sum_over_a_listing_is_found():
+    src = ("def a(data):\n    return sum(s.get(\"size\") or 0 for s in data.get(\"siblings\", []))\n"
+           "def b(siblings):\n    sizes = [f[\"size\"] for f in siblings]\n    return sum(sizes)\n"
+           "def c(card):\n    t = 0\n    for f in card.siblings:\n        t += f.size\n    return t\n")
+    got = scanners.listing_sums(src, "harness/x.py")
+    assert [f.split(":")[1] for f in got] == ["2", "5", "9"]
+
+
+def test_a_sum_inside_variants_or_over_one_variant_is_left_alone():
+    innocent = ("def shard_sets(siblings):\n    parts = {f[\"rfilename\"]: f[\"size\"] for f in siblings}\n"
+                "    return sum(parts.values())\n"
+                "def total(files):\n    return sum(s for _, s in files)\n"
+                "def names(siblings):\n    return sum(1 for f in siblings if f.get(\"rfilename\"))\n")
+    bad = "def d(data):\n    return sum(s.get(\"size\") or 0 for s in data[\"siblings\"])\n"
+    _quiet_then_fires(scanners.listing_sums, innocent, bad, "harness/x.py")
+    assert scanners.listing_sums(bad, scanners.LISTING_OWNER) == []
+
+
+def test_no_code_adds_up_a_listing_outside_variants():
+    _fail_with(scanners.scan_tree(REPO, scanners.listing_sums, scanners.is_python,
+                                  lambda rel: rel.startswith("harness/")),
+               "a listing's sum is the repo, not what runs; hf_facts and card_description reported it "
+               "after the verdict stopped (#964, gauntlet one-question-two-answers)")
+
+
 # Inventories: reported, never grown. Lower a pin when a fix lands.
 SWALLOWED_PIN = 60
 CONFIG_LESS_PIN = 153

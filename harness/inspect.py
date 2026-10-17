@@ -588,18 +588,21 @@ def headline(repo: str, ids, counts: dict, in_readme) -> list[str]:
     return sorted(ids, key=score, reverse=True)
 
 
-def hf_facts(model_id: str, fetch=None, cache: dict | None = None) -> dict:
-    """Total bytes and measurable lane, from ONE registry call.
+def hf_facts(model_id: str, fetch=None, cache: dict | None = None, *,
+             ceiling: int | None = None, machine=None) -> dict:
+    """Bytes of the variant inspect would run and measurable lane, from ONE registry call.
 
     Both come out of the same response, and the registry rate-limits, so
     asking twice for one model is a request spent on nothing.
     """
     from harness import feeds
+    ceiling = ceiling if ceiling is not None else ceiling_bytes()
     if cache is not None and model_id in cache:
         got = cache[model_id]
         # The cache holds the registry's answer; the lane is derived on read.
         # An entry without the card fields predates that and is refetched. #416.
-        if isinstance(got, dict) and "pipeline_tag" in got:
+        # One sized against another ceiling, or as the listing's sum before #964, is too.
+        if isinstance(got, dict) and "pipeline_tag" in got and got.get("ceiling") == ceiling:
             return {"size": int(got.get("size") or -1),
                     "lane": lane_for(got)}
     if fetch is None:
@@ -615,12 +618,12 @@ def hf_facts(model_id: str, fetch=None, cache: dict | None = None) -> dict:
         return {"size": -1, "lane": "", "deferred": True}
     except Exception:  # noqa: BLE001 - unreachable is unknown, never zero
         return {"size": -1, "lane": ""}
-    sizes = [s.get("size") or 0 for s in data.get("siblings", [])]
-    out = {"size": sum(sizes) if sizes else -1, "lane": lane_for(data)}
+    size = size_listing(Fit(repo=model_id), model_id, data, ceiling=ceiling, machine=machine)
+    out = {"size": size if size > 0 else -1, "lane": lane_for(data)}
     # Only a real answer is worth keeping. Caching a failure would freeze a
     # rate-limit into a permanent "unknown".
     if cache is not None and out["size"] > 0:
-        cache[model_id] = cache_entry(data, out["size"])
+        cache[model_id] = cache_entry(data, out["size"], ceiling)
     return out
 
 
@@ -628,8 +631,8 @@ def hf_facts(model_id: str, fetch=None, cache: dict | None = None) -> dict:
 CACHED_CARD = ("pipeline_tag", "tags")
 
 
-def cache_entry(data: dict, size: int) -> dict:
-    entry = {"size": int(size)}
+def cache_entry(data: dict, size: int, ceiling: int) -> dict:
+    entry = {"size": int(size), "ceiling": int(ceiling)}
     for k in CACHED_CARD:
         entry[k] = data.get(k) or ([] if k == "tags" else "")
     return entry
@@ -891,7 +894,7 @@ def screen_words(tag: str) -> bool:
     return bool(screen.is_attachment(tag))
 
 
-def card_description(data: dict) -> str:
+def card_description(data: dict, size: int | None = None) -> str:
     """What a model card says that bears on whether to measure this.
 
     THE JUDGE SCORES A DESCRIPTION, and with only a name to read it gave six
@@ -935,9 +938,11 @@ def card_description(data: dict) -> str:
         how = (LINEAGE_ADAPTER if any(k == "adapter" for _, k in parents)
                else LINEAGE_BUILT)
         bits.append(f"{how} " + ", ".join(sorted({p for p, _ in parents})[:3]))
-    total = sum(s.get("size") or 0 for s in (data.get("siblings") or []))
-    if total > 0:
-        bits.append(f"{total / GIB:.1f} GiB of weights")
+    if size is None:
+        name = str(data.get("id") or data.get("modelId") or "")
+        size = size_listing(Fit(repo=name), name, data)
+    if size > 0:
+        bits.append(f"{size / GIB:.1f} GiB of weights")
     return "; ".join(bits)[:300]
 
 
@@ -956,31 +961,10 @@ def inspect_model(model_id: str, *, data: dict | None = None, fetch=None,
     """
     data = hf_model(model_id, fetch=fetch) if data is None else data
     fit = Fit(repo=model_id, registry=ms.HUGGINGFACE)
-    siblings = data.get("siblings") or []
-    sizes = [s.get("size") or 0 for s in siblings]
-    total = sum(sizes)
     if machine is None:
         from harness import machine as _machine
         machine = _machine.detect()
-    from harness import ds4, variants
-    if ds4.recognised(model_id, data):
-        fit.ds4 = True
-        got = ds4.pick(model_id, siblings, ceiling if ceiling is not None
-                       else ceiling_bytes())
-        if got:
-            model, total, fit.resident, fit.streaming = got
-            fit.ds4_file = model.file
-        else:
-            total = 0
-    elif variants.weight_bytes(siblings):
-        # The smallest variant this machine can run is the size, never the listing's sum. #295, #947.
-        found = variants.variants(siblings, ceiling if ceiling is not None else ceiling_bytes(),
-                                  model_type=_model_type(data))
-        chosen = variants.pick(found, has=lambda rt: not machine.refuses(rt))
-        if chosen:
-            total, fit.variant = chosen.bytes, chosen.describe()
-        else:
-            total, fit.layout = variants.weight_bytes(siblings), variants.layout(siblings)
+    total = size_listing(fit, model_id, data, ceiling=ceiling, machine=machine)
     if total > 0:
         fit.weights[model_id] = total
         fit.largest = fit.smallest = total
@@ -996,9 +980,37 @@ def inspect_model(model_id: str, *, data: dict | None = None, fetch=None,
     fit.mlx = (data.get("library_name") or "").lower() == "mlx" or "mlx" in tags
     fit.gguf = is_gguf(model_id, data) and not fit.ds4
     fit.last_commit = (data.get("lastModified") or "").strip()
-    fit.description = card_description(data)
+    fit.description = card_description(data, size=total)
     fit.card = card_facts(data)
     return decide(fit, ceiling=ceiling, dead_days=dead_days, machine=machine)
+
+
+def size_listing(fit: Fit, model_id: str, data: dict, *, ceiling: int | None = None,
+                 machine=None) -> int:
+    """Bytes of the variant this machine would run, the one size every reader of a listing reports. #947, #964."""
+    from harness import ds4, variants
+    if machine is None:
+        from harness import machine as _machine
+        machine = _machine.detect()
+    ceiling = ceiling if ceiling is not None else ceiling_bytes()
+    siblings = data.get("siblings") or []
+    if ds4.recognised(model_id, data):
+        fit.ds4 = True
+        got = ds4.pick(model_id, siblings, ceiling)
+        if not got:
+            return 0
+        model, total, fit.resident, fit.streaming = got
+        fit.ds4_file = model.file
+        return total
+    if not variants.weight_bytes(siblings):
+        return variants.listing_bytes(siblings)
+    found = variants.variants(siblings, ceiling, model_type=_model_type(data))
+    chosen = variants.pick(found, has=lambda rt: not machine.refuses(rt))
+    if chosen:
+        fit.variant = chosen.describe()
+        return chosen.bytes
+    fit.layout = variants.layout(siblings)
+    return variants.weight_bytes(siblings)
 
 
 def decide(fit: Fit, ceiling: int | None = None, dead_days: int = UPSTREAM_DEAD_DAYS,
@@ -1183,10 +1195,10 @@ def until_of(fit: Fit) -> str:
     return ""
 
 
-def _takes_cache(fn) -> bool:
+def _takes_cache(fn, name: str = "cache") -> bool:
     import inspect as _i
     try:
-        return "cache" in _i.signature(fn).parameters
+        return name in _i.signature(fn).parameters
     except (TypeError, ValueError):
         return False
 
@@ -1231,8 +1243,11 @@ def inspect(repo: str, workdir: Path, *, meta: dict | None = None,
     half = max(1, SIZE_LIMIT // 2)
     picked = list(dict.fromkeys(
         sorted(found["hf_ids"], key=len)[:half] + fit.headline[:half]))
+    # The weights it names are sized as inspect_model would size each one. #964.
+    sizing = {k: v for k, v in (("ceiling", ceiling), ("machine", machine))
+              if v is not None and _takes_cache(facts, k)}
     for model_id in picked:
-        got = (facts(model_id, cache=cache) if _takes_cache(facts)
+        got = (facts(model_id, cache=cache, **sizing) if _takes_cache(facts)
                else facts(model_id))
         size = got["size"] if isinstance(got, dict) else int(got)
         if isinstance(got, dict) and got.get("lane"):

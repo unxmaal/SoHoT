@@ -149,7 +149,7 @@ def test_a_registry_reply_with_no_files_is_unknown_not_zero():
     assert ins.hf_size("org/x", fetch=lambda url: '{"siblings": []}') == -1
 
 
-def test_sizes_are_summed_across_the_repo():
+def test_a_listing_with_no_weight_file_is_sized_by_its_files():
     reply = '{"siblings": [{"size": 100}, {"size": 250}]}'
     assert ins.hf_size("org/x", fetch=lambda url: reply) == 350
 
@@ -191,7 +191,7 @@ def test_a_known_size_is_answered_from_cache_without_asking():
         calls.append(url)
         return '{"siblings": [{"size": 5}]}'
 
-    cache = {"org/x": {"size": 4242, "pipeline_tag": "", "tags": []}}
+    cache = {"org/x": {"size": 4242, "ceiling": ins.ceiling_bytes(), "pipeline_tag": "", "tags": []}}
     assert ins.hf_size("org/x", fetch=fetch, cache=cache) == 4242
     assert calls == []
 
@@ -211,7 +211,7 @@ def test_a_real_size_is_kept_so_the_next_sweep_is_free():
     cache = {}
     ins.hf_size("org/x", fetch=lambda url: '{"siblings": [{"size": 7}]}',
                 cache=cache)
-    assert cache == {"org/x": {"size": 7, "pipeline_tag": "", "tags": []}}
+    assert cache == {"org/x": {"size": 7, "ceiling": ins.ceiling_bytes(), "pipeline_tag": "", "tags": []}}
 
 
 def test_an_older_size_only_cache_entry_is_upgraded_not_trusted():

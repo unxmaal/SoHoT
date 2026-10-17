@@ -191,6 +191,11 @@ def weight_bytes(siblings) -> int:
     return sum(s for _, s in _weights(siblings))
 
 
+def listing_bytes(siblings) -> int:
+    """Every file's bytes: the size only of a listing with no weight file to group. #798."""
+    return sum(int(s.get("size") or 0) for s in siblings or [])
+
+
 def layout(siblings) -> str:
     """The folders and suffixes of weights no variant takes, for an until a reader can act on."""
     where = sorted({(n.split("/", 1)[0] + "/" if "/" in n else "") + "*." + n.rsplit(".", 1)[-1].lower()
