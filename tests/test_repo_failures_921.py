@@ -203,3 +203,40 @@ def test_kappa_names_each_row_the_labellers_disagree_on(tmp_path, capsys):
     assert F.disagreements(a, b) == [("r", "b", "wrong_fix", "regression")]
     assert F.main(["kappa", str(_write(tmp_path / "a.jsonl", a)), str(_write(tmp_path / "b.jsonl", b))]) == 0
     assert "r b: wrong_fix / regression" in capsys.readouterr().out
+
+
+def _regrade(run_dir, case, resolved, detail=""):
+    return {"run": run_dir.name, "file": f"org_x--{case}.json", "case": case, "resolved": resolved,
+            "patch_applied": True, "detail": detail}
+
+
+def test_a_row_its_regrade_resolved_needs_no_label_and_must_not_keep_one(run_dir, tmp_path, capsys):
+    regrades = _write(tmp_path / "r.jsonl", [_regrade(run_dir, "d", True)])
+    labels = [_label(run_dir), _label(run_dir, case="b", cls="budget_exhausted", at_cut="unrecorded"),
+              _label(run_dir, case="e", cls="wrong_fix")]
+    good = _write(tmp_path / "good.jsonl", labels)
+    assert F.unlabelled(F.load_run(run_dir), F.load_labels(good), F.load_regrades(regrades)) == []
+    assert F.main(["tally", str(run_dir), "--labels", str(good), "--regrades", str(regrades), "--complete"]) == 0
+    assert "now resolved: d" in capsys.readouterr().out
+    kept = _write(tmp_path / "kept.jsonl", [*labels, _label(run_dir, case="d", cls="recount_header")])
+    assert F.main(["tally", str(run_dir), "--labels", str(kept), "--regrades", str(regrades)]) == 1
+    assert "its regrade resolved" in capsys.readouterr().err
+
+
+def test_a_label_may_cite_its_rows_regrade_detail(run_dir, tmp_path):
+    again = _regrade(run_dir, "c", False, "fail_to_pass still failing: t")
+    regrades = F.load_regrades(_write(tmp_path / "r.jsonl", [again]))
+    lab = {"run": run_dir.name, "case": "c", "class": "wrong_fix", "file": "org_x--c.json", "regrade": True,
+           "offset": 0, "excerpt": "fail_to_pass still failing"}
+    assert F.check_excerpt(run_dir, lab, regrades) == ""
+    assert "not the cited excerpt" in F.check_excerpt(run_dir, {**lab, "offset": 1}, regrades)
+    assert F.check_excerpt(run_dir, {**lab, "case": "d"}, regrades) == "no regrade of this row"
+
+
+def test_every_committed_label_that_cites_a_regrade_has_one():
+    regrades = F.load_regrades()
+    cited = [x for x in F.load_labels() + F.load_labels(F.LABELS.with_name("repo_failure_labels_blind.jsonl"))
+             if x.get("regrade")]
+    assert cited and all((x["run"], x["case"]) in regrades for x in cited)
+    assert not any(g["resolved"] and (r, c) in {(x["run"], x["case"]) for x in F.load_labels()}
+                   for (r, c), g in regrades.items())
