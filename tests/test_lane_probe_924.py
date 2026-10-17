@@ -52,6 +52,8 @@ class Lane(http.server.BaseHTTPRequestHandler):
         if mode == "hang":
             s["release"].wait(60)
             mode = "ok"
+        if s.get("delay"):
+            time.sleep(s["delay"])
         if mode == "dead":
             self._send(404, {"error": "generation thread died"})
         elif mode == "empty":
@@ -251,8 +253,10 @@ def test_a_server_that_never_answers_is_slow_and_is_not_asked_again_while_the_fi
     assert second["outcome"] == "skipped" and "has not returned" in second["reason"]
     assert len(f.state["posts"]) == 1
     f.state["mode"] = "ok"
+    f.state["delay"] = 0.6
     f.state["release"].set()
     _until(lambda: not f.sender.in_flight("extract"))
+    monkeypatch.setattr(lp, "TIMEOUT_DEFAULT_S", 30.0)
     assert f.wake(conn, 2)["outcome"] == "up" and len(f.state["posts"]) == 2
 
 
