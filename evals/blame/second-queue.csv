@@ -1,0 +1,22 @@
+# {"max_verdict_id": 12213, "population": {"adopt/candidate": 4, "adopt/limit": 3, "fetch/candidate": 60, "fetch/limit": 1, "fetch/machine": 6, "inspect/candidate": 17, "inspect/machine": 99, "inspect/upstream": 13, "screen/candidate": 6, "screen/limit": 4, "screen/runtime": 26}, "seed": 918}
+verdict_id,name
+227,facebook/sam3.1
+237,funasr/campplus
+5771,Jackrong/Qwopus3.5-9B-Coder-GGUF
+6548,z-lab/Qwen3.6-35B-A3B-DFlash
+8150,black-forest-labs/FLUX.2-klein-9B
+8158,realrebelai/FastH3-V2_GGUFs
+8872,google/umt5-xxl
+8938,microsoft/wavlm-base-plus-sv
+9143,bartowski/Qwen_Qwen3.5-4B-GGUF
+10089,unsloth/Kimi-K2.7-Code-GGUF
+10680,anthropics/jacobian-lens
+10898,JustANormalTinkerer/hayai-ocr-v2
+11378,plan:q3-4b
+11488,SupraLabs/Supra2-Medium-Base
+11556,harshatheg/Qwen-2.5-1B-RLCD
+11611,spitfire4794/Supra-1.5-50M-Base-exp
+11711,XiaomiMiMo/MiMo-Audio-7B-Instruct
+11835,SupraLabs/Supra-A2A-Nano-Exp
+11942,LiquidAI/LFM2.5-8B-A1B
+12211,kpsss34/Walkyrie-1.3B-v1.0

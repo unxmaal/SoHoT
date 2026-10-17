@@ -17,7 +17,7 @@ ERROR_RATE_MAX = 0.10
 
 SERVING = ("adoptions_pass_here", "no_reference_served", "served_matches_adoption", "gateway_errors")
 SCHEDULE = ("sweep_on_schedule",)
-VERDICTS = ("too_big_ceiling_current",)
+VERDICTS = ("too_big_ceiling_current", "terminal_reason_coherent")
 CHECKS = mc.INVARIANTS + SERVING + SCHEDULE + VERDICTS
 
 
@@ -98,6 +98,34 @@ def _too_big_ceiling_current(conn, ceiling_gb: float | None = None, reopened_at=
             say(fresh, "await the next loop's requeue"))
 
 
+#: Reasons that name a fact outside the candidate, so the verdict needs a condition that can reopen it.
+CONDITIONAL = ("runtime", "machine", "limit")
+
+
+#: Incoherent rows the check started with (store of 2026-10-17); they warn until fixed, any other fails.
+PINNED_INCOHERENT = frozenset({686, 687, 9143, 11513})
+
+
+def _terminal_reason_coherent(conn, pinned=None) -> tuple[list, list]:
+    """(failures, warnings): terminal state verdicts whose reason contradicts the outcome or nothing can reopen. #918."""
+    pinned = PINNED_INCOHERENT if pinned is None else pinned
+    bad, known = [], []
+    for r in conn.execute(
+            "SELECT v.id, p.name, p.state, v.reason, v.until, p.next_retest_at FROM proposals p "
+            "JOIN verdicts v ON v.id = p.state_verdict_id "
+            "WHERE p.state IN ('broken', 'declined', 'ignored') ORDER BY v.id"):
+        if r["reason"] == "harness":
+            why = "a harness fault holds a terminal state"
+        elif r["state"] == "broken" and r["reason"] != "candidate":
+            why = f"broken with reason {r['reason'] or 'empty'}"
+        elif r["reason"] in CONDITIONAL and not r["until"] and r["next_retest_at"] is None:
+            why = f"reason {r['reason']} with no until and no retest"
+        else:
+            continue
+        (known if r["id"] in pinned else bad).append(f"verdict {r['id']} {r['name']}: {why}")
+    return bad, known
+
+
 def _when(at) -> str:
     import time
     return time.strftime("%Y-%m-%d %H:%M", time.localtime(at)) if at else "never"
@@ -164,7 +192,11 @@ def audit(path=None, config=None) -> dict:
         ]
         stale, backlog = _too_big_ceiling_current(conn)
         checks.append(mc._check("too_big_ceiling_current", stale))
+        incoherent, pinned = _terminal_reason_coherent(conn)
+        checks.append(mc._check("terminal_reason_coherent", incoherent))
         warnings = {"too_big_ceiling_current": mc._say(backlog)} if backlog and not stale else {}
+        if pinned and not incoherent:
+            warnings["terminal_reason_coherent"] = "pinned, awaiting a fix: " + mc._say(pinned)
         have = mc.schema(conn)
         bound = _binding(conn)
         fell = node_fallbacks(conn, config)
