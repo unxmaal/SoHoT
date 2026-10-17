@@ -203,6 +203,41 @@ def test_the_live_home_is_derived_only_in_harness_paths():
     _fail_with(found, "conftest redirects LOCALHARNESS_HOME; a path derived any other way is the live one")
 
 
+
+def test_a_hand_flip_of_the_offline_guard_is_found():
+    src = ("import os\nfrom huggingface_hub import constants\n"
+           "os.environ[\"HF_HUB_OFFLINE\"] = \"0\"\n"
+           "constants.HF_HUB_OFFLINE = False\n"
+           "os.environ.pop(\"HF_HUB_OFFLINE\", None)\n"
+           "environ.setdefault(\"HF_HUB_OFFLINE\", \"0\")\n"
+           "os.environ.update(HF_HUB_OFFLINE=\"0\")\n"
+           "setattr(constants, \"HF_HUB_OFFLINE\", False)\n"
+           "del os.environ[\"HF_HUB_OFFLINE\"]\n"
+           "os.putenv(\"HF_HUB_OFFLINE\", \"0\")\n")
+    got = scanners.offline_flips(src, "harness/x.py")
+    assert [f.split(":")[1] for f in got] == [str(n) for n in range(3, 11)]
+
+
+def test_the_shared_offline_guard_and_a_child_env_are_left_alone():
+    innocent = ("import os, subprocess\nfrom harness import env\n"
+                "with env.online():\n    go()\n"
+                "was = os.environ.get(\"HF_HUB_OFFLINE\")\n"
+                "subprocess.run(cmd, env=dict(os.environ, HF_HUB_OFFLINE=\"0\"))\n")
+    _quiet_then_fires(scanners.offline_flips, innocent,
+                      "os.environ[\"HF_HUB_OFFLINE\"] = \"0\"\n", "harness/x.py")
+    owner = ("def online():\n    os.environ[\"HF_HUB_OFFLINE\"] = \"0\"\n"
+             "def apply(environ):\n    environ.setdefault(\"HF_HUB_OFFLINE\", \"1\")\n")
+    _quiet_then_fires(scanners.offline_flips, owner,
+                      "def other():\n    os.environ[\"HF_HUB_OFFLINE\"] = \"0\"\n", "harness/env.py")
+
+
+def test_no_code_flips_the_offline_guard_except_through_env_online():
+    _fail_with(scanners.scan_tree(REPO, scanners.offline_flips, scanners.is_python,
+                                  lambda rel: not _tests_only(rel)),
+               "huggingface_hub reads HF_HUB_OFFLINE once at import, so the env var alone lifts nothing; "
+               "wrap the call in harness.env.online() (#931, RULE #208)")
+
+
 # Inventories: reported, never grown. Lower a pin when a fix lands.
 SWALLOWED_PIN = 60
 CONFIG_LESS_PIN = 153

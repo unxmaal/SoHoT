@@ -16,11 +16,13 @@ INDEX = {
         },
         "instances": _i(211, 223, 230, 293, 305, 366, 378, 380, 381, 385, 399, 401, 404, 406, 528,
                         rules=(270, 282, 298, 331, 378, 385, 393)),
-        "scanners": ["tests/test_timeouts_classed.py::test_no_timeout_is_raised_without_its_class"]},
+        "scanners": ["tests/test_timeouts_classed.py::test_no_timeout_is_raised_without_its_class",
+                     "tests/test_gauntlet_scanners.py::test_no_code_flips_the_offline_guard_except_through_env_online"]},
     "one-question-two-answers": {
         "detector": "duplicated_literals",
         "instances": _i(38, 51, 115, 117, 140, 153, 155, 157, 187, 207, 224, 249, 345, 520, rules=(268,)),
-        "scanners": ["tests/test_duplicated_policy.py::test_every_duplicated_policy_still_has_a_guard"]},
+        "scanners": ["tests/test_duplicated_policy.py::test_every_duplicated_policy_still_has_a_guard",
+                     "tests/test_gauntlet_scanners.py::test_no_code_flips_the_offline_guard_except_through_env_online"]},
     "a-platform-primitive-assumed-universal": {
         "instances": _i(123, 126, 127, 129, 144, 150, 174, 255, 442, 552, rules=(192,)),
         "scanners": [

@@ -24,6 +24,7 @@ will not refuse the Studio's.
 """
 from __future__ import annotations
 
+import contextlib
 import os
 import shutil
 from pathlib import Path
@@ -202,3 +203,26 @@ def apply(environ=None, root: str | None = None,
     if found:
         environ["HF_HOME"] = found
     return found
+
+
+@contextlib.contextmanager
+def online():
+    """Lift HF_HUB_OFFLINE for the block: the env var and the constant huggingface_hub read at import (#931, RULE #208)."""
+    try:
+        from huggingface_hub import constants
+    except ImportError:
+        constants = None
+    was = os.environ.get("HF_HUB_OFFLINE")
+    restore = constants.HF_HUB_OFFLINE if constants is not None else None
+    os.environ["HF_HUB_OFFLINE"] = "0"
+    if constants is not None:
+        constants.HF_HUB_OFFLINE = False
+    try:
+        yield
+    finally:
+        if constants is not None:
+            constants.HF_HUB_OFFLINE = restore
+        if was is None:
+            os.environ.pop("HF_HUB_OFFLINE", None)
+        else:
+            os.environ["HF_HUB_OFFLINE"] = was

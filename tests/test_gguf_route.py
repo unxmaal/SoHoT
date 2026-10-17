@@ -590,3 +590,26 @@ def test_an_alias_given_with_a_gateway_still_goes_to_the_gateway(plumb, monkeypa
         runner.generate(Case(id="c", modality="code", prompt="p", params={},
                              assertions={}))
     assert [b["model"] for b in gw.bodies] == ["eval-imajev-4b"]
+
+
+def test_a_gguf_fetch_lifts_the_offline_constant_read_at_import(home, monkeypatch):
+    """huggingface_hub read HF_HUB_OFFLINE=1 at import, so every nightly GGUF fetch failed offline. #931."""
+    import os
+
+    from huggingface_hub import constants
+    monkeypatch.setenv("HF_HUB_OFFLINE", "1")
+    monkeypatch.setattr(constants, "HF_HUB_OFFLINE", True)
+    seen = []
+
+    def hf_download(repo, filename, local_dir):
+        seen.append((constants.HF_HUB_OFFLINE, os.environ["HF_HUB_OFFLINE"]))
+        (Path(local_dir) / filename).write_bytes(b"GGUF")
+        return str(Path(local_dir) / filename)
+
+    conn = ms.connect()
+    fetching.download("org/Model-4B-GGUF", listing=lambda repo: SIBLINGS,
+                      hf_download=hf_download, conn=conn)
+    conn.close()
+    assert seen == [(False, "0")]
+    assert constants.HF_HUB_OFFLINE is True
+    assert os.environ["HF_HUB_OFFLINE"] == "1"

@@ -377,10 +377,12 @@ def download(repo: str, snapshot=None, listing=None, hf_download=None,
     "failure" mid-run. Fetching is the ONE operation whose whole job is to go
     online, so it lifts the guard for the length of the call and puts it back.
     """
-    import os
-    was = os.environ.get("HF_HUB_OFFLINE")
-    os.environ["HF_HUB_OFFLINE"] = "0"
-    constants = restore = None
+    from harness import env
+    with env.online():
+        return _download(repo, snapshot, listing, hf_download, text, conn, require_weights)
+
+
+def _download(repo, snapshot, listing, hf_download, text, conn, require_weights) -> str:
     try:
         if require_weights and (listing is not None or snapshot is None):
             siblings = _siblings(repo, listing or _listing)
@@ -396,13 +398,7 @@ def download(repo: str, snapshot=None, listing=None, hf_download=None,
             return gguf.download(repo, single[0], hf_download=hf_download,
                                  conn=conn)
         if snapshot is None:
-            # The env var alone is not enough: huggingface_hub reads it ONCE at
-            # import into a module constant, and harness.env has already set it
-            # by then. Set both, and put both back.
-            from huggingface_hub import constants
             from huggingface_hub import snapshot_download as snapshot
-            restore = constants.HF_HUB_OFFLINE
-            constants.HF_HUB_OFFLINE = False
         with downloads.store(conn) as c:
             rid = downloads.start(c, repo, downloads.HUB, downloads.hub_dir(repo))
             try:
@@ -416,13 +412,6 @@ def download(repo: str, snapshot=None, listing=None, hf_download=None,
         raise
     except Exception as exc:  # noqa: BLE001
         raise FetchError(str(exc)[:200]) from exc
-    finally:
-        if constants is not None:
-            constants.HF_HUB_OFFLINE = restore
-        if was is None:
-            os.environ.pop("HF_HUB_OFFLINE", None)
-        else:
-            os.environ["HF_HUB_OFFLINE"] = was
 
 
 def _listing(repo: str) -> list:

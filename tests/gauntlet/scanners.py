@@ -470,6 +470,49 @@ def ratchet(found, pin, what):
     return None
 
 
+OFFLINE_OWNER = ("harness/env.py", {"online", "apply"})
+_OFFLINE = "HF_HUB_OFFLINE"
+_ENV_WRITERS = {"setdefault", "pop", "update", "__setitem__", "__delitem__"}
+
+
+def _is_environ(node):
+    return (isinstance(node, ast.Attribute) and node.attr == "environ") or (
+        isinstance(node, ast.Name) and node.id == "environ")
+
+
+def _names_offline(node):
+    return isinstance(node, ast.Constant) and node.value == _OFFLINE
+
+
+def _flips_offline(n):
+    if isinstance(n, (ast.Assign, ast.AugAssign, ast.AnnAssign, ast.Delete)):
+        targets = n.targets if isinstance(n, (ast.Assign, ast.Delete)) else [n.target]
+        return any((isinstance(t, ast.Subscript) and _is_environ(t.value) and _names_offline(t.slice))
+                   or (isinstance(t, ast.Attribute) and t.attr == _OFFLINE) for t in targets)
+    if not isinstance(n, ast.Call):
+        return False
+    name = _call_name(n)
+    named = any(_names_offline(a) for a in n.args) or any(k.arg == _OFFLINE for k in n.keywords)
+    if name in _ENV_WRITERS and isinstance(n.func, ast.Attribute) and _is_environ(n.func.value):
+        return named
+    return name in ("putenv", "unsetenv", "setattr") and named
+
+
+def offline_flips(text, rel):
+    """Writes to HF_HUB_OFFLINE outside harness.env.online(): huggingface_hub read it at import (#931)."""
+    tree, out = _parse(text, rel)
+    if tree is None:
+        return out
+    exempt = set()
+    if rel == OFFLINE_OWNER[0]:
+        for f in tree.body:
+            if isinstance(f, ast.FunctionDef) and f.name in OFFLINE_OWNER[1]:
+                exempt |= {id(x) for x in ast.walk(f)}
+    lines = sorted({n.lineno for n in ast.walk(tree) if id(n) not in exempt and _flips_offline(n)})
+    return out + [f"{rel}:{line}: sets HF_HUB_OFFLINE by hand; huggingface_hub read it at import, "
+                  "so lift it with harness.env.online()" for line in lines]
+
+
 def _shebang(path):
     with open(path, "rb") as f:
         first = f.readline(200)
