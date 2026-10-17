@@ -477,3 +477,18 @@ def test_a_second_run_is_always_a_new_verdict(tmp_path):
               run_path="runs/b")
     n = conn.execute("SELECT COUNT(*) c FROM verdicts").fetchone()["c"]
     assert n == 2
+
+
+@pytest.mark.parametrize("given,stored", [(21.94, 21.9), ("21.96", 22.0), (8, 8.0)])
+def test_decide_records_the_ceiling_rounded_to_a_tenth(tmp_path, given, stored):
+    conn = _store(tmp_path)
+    vid = ms.decide(conn, "org/thing", "declined", tier=ms.INSPECT, detail="too-big",
+                    ceiling_gb=given)
+    got = conn.execute("SELECT ceiling_gb FROM verdicts WHERE id = ?", (vid,)).fetchone()[0]
+    assert got == stored and isinstance(got, float)
+
+
+def test_decide_without_a_ceiling_leaves_it_unrecorded(tmp_path):
+    conn = _store(tmp_path)
+    vid = ms.decide(conn, "org/thing", "declined", tier=ms.INSPECT, detail="too-big")
+    assert conn.execute("SELECT ceiling_gb FROM verdicts WHERE id = ?", (vid,)).fetchone()[0] is None
