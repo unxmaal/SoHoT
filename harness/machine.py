@@ -353,6 +353,17 @@ def _other_venvs() -> list[Path]:
     return out
 
 
+#: Venvs recorded under their own name, because the checkout's copy of a package would shadow theirs. #950.
+KEYED_VENVS = {"hf-task": ("transformers", "sentence-transformers", "torch")}
+
+
+def _keyed_venvs() -> dict[str, Path]:
+    """Each KEYED_VENVS venv's path, where scripts/hf-task-venv.sh builds it."""
+    import os
+    from harness import paths
+    return {"hf-task": Path(os.environ.get("HF_TASK_VENV") or paths.home() / "venvs" / "hf-task")}
+
+
 #: A vLLM venv carries its own mlx stack; only its vLLM packages describe it.
 VLLM_PACKAGES = ("vllm-mlx", "vllm-metal", "vllm")
 
@@ -405,6 +416,10 @@ def versions() -> dict[str, str]:
         for k, v in _site_versions(venv).items():
             if k in WATCHED:
                 got.setdefault(k, v)
+    for name, venv in _keyed_venvs().items():
+        for k, v in _site_versions(venv).items():
+            if k in KEYED_VENVS.get(name, ()):
+                got[f"{name}/{k}"] = v
     for venv in _vllm_venvs():
         for k, v in _site_versions(venv).items():
             if k in VLLM_PACKAGES:

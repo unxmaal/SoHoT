@@ -282,19 +282,19 @@ def test_a_metal_gpu_timeout_declines_the_candidate_that_caused_it(tmp_path, mon
     assert v.failure_class in reasons.STOPS
 
 
-def test_an_audio_server_that_cannot_load_the_model_waits_on_its_runtime():
+def test_an_audio_server_that_cannot_load_the_model_waits_on_a_runner():
     """The 12:50Z sweep: m-a-p/YuE2-3B in the tts lane was recorded broken for
-    mlx-audio failing to build the architecture."""
+    mlx-audio failing to read its layout; a runner gap, not a release, ends it (#951)."""
     runner = Fake("")
     runner.candidate, runner.spec = "YuE2-3B", "tts:m-a-p/YuE2-3B"
     runner.generate = lambda case: (_ for _ in ()).throw(RunnerError(
         "tts failed: HTTP 500: {\"detail\":\"Failed to load model "
         "'m-a-p/YuE2-3B': Could not determine model type\"}"))
     row = runner.run(Case("long-clause", "tts", "say it"))
-    assert row.failure_class == reasons.LOAD_FAILED_RUNTIME
+    assert row.failure_class == reasons.LOAD_FAILED_LAYOUT
     v = screen.outcome(0, summarize([row]), candidate=runner.spec, key="YuE2-3B")
     assert (v.outcome, v.reason) == ("declined", "runtime")
-    assert v.until.startswith("version:mlx-audio>")
+    assert v.until == "runner:tts/no-model-type"
 
 
 def test_a_tts_model_that_loaded_and_misspoke_is_still_the_candidates():

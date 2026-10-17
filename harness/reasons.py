@@ -14,7 +14,8 @@ REASONS = {
                  "snapshot lacks a file, it is not a model, it scored low",
     "harness": "this harness could not deliver the request; nothing is known "
                "about the candidate",
-    "runtime": "the installed runtime cannot build it; a newer version may",
+    "runtime": "the installed runtimes cannot build it; a newer version, or a runner, format "
+               "reader or policy this harness lacks (the until names which), may",
     "machine": "this machine lacks the runtime, ceiling or disk it needs, or "
                "faulted running it; another machine may not",
     "memory": "not enough free memory right now",
@@ -163,6 +164,13 @@ _GGUF_HEADER_FAULT = re.compile(r"tensor '[^']*' has offset \d+, expected \d+|in
 #: What a newer llama.cpp can add. #953.
 _LLAMACPP_GAPS = ("unknown model architecture", "unknown pre-tokenizer type", "invalid ggml type")
 _DIFFUSERS_LAYOUT_GAPS = ("can't find a pipeline linked to", "were passed")
+#: A lane's runner that cannot open the repo's layout: a runner gap, never a fault of the repo. #951.
+_RUNNER_LAYOUT_GAPS = ("does not appear to have a file named model_index.json",
+                       "no safetensors found", "could not determine model type",
+                       # scripts/acestep_generate.py's own exit for a checkpoint ACE-Step cannot build.
+                       "dit init failed")
+_NO_PIPELINE_CLASS = re.compile(r"has no attribute \w+pipeline\b")
+_ACESTEP_INIT_EXIT = re.compile(r"\bexit 3\b")
 _ENGINE_HEADS = ("mflux", "diffusers", "diffusers-video", "acestep", "hf-ocr",
                  "rerank", "embed", "hf-pii")
 #: A repo whose modelling code is its own: hf-task never executes it. #562.
@@ -228,6 +236,15 @@ def _llamacpp_load(low: str) -> str:
     return LOAD_LOG_UNREAD
 
 
+def runner_layout_gap(text: str, head: str = "") -> bool:
+    """A runner that cannot open the repo's layout, unless the file it missed is in our own snapshot. #951, #911."""
+    low = (text or "").lower()
+    if _OUR_SNAPSHOT.search(low):
+        return False
+    return bool(_any(low, _RUNNER_LAYOUT_GAPS) or _NO_PIPELINE_CLASS.search(low)
+                or (head == "acestep" and _ACESTEP_INIT_EXIT.search(low)))
+
+
 def classify(text: str, where: str = RUNNER, candidate: str = "") -> str:
     """The failure class an upstream error text names, or "" from stderr."""
     from harness.serving import LLAMACPP_PREFIX
@@ -241,6 +258,8 @@ def classify(text: str, where: str = RUNNER, candidate: str = "") -> str:
         return BACKEND_FAULT
     if _any(low, _POOL_FULL):
         return POOL_FULL
+    if runner_layout_gap(low, head):
+        return LOAD_FAILED_LAYOUT
     if candidate.startswith(LLAMACPP_PREFIX) and all(
             p in low for p in _LLAMACPP_LOAD_FAILED):
         return _llamacpp_load(low)

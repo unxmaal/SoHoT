@@ -34,10 +34,11 @@ from harness.memory_store.transitions import (IllegalTransition, REOPENS, RETEST
     retest_eligible, retest_limit, retest_spent, retract, state_audit, transition_refused)  # noqa: F401
 from harness.memory_store.retests import (due_retests, recovered_false_negatives,
     reopen_due_retests, retest_counts)  # noqa: F401
-from harness.memory_store.revisit import (_version_tuple, dangling_receipts,
+from harness.memory_store.revisit import (_version_tuple, cards_to_reread, dangling_receipts,
     requeue_missing_in_snapshot, requeue_old_sizing, requeue_revisitable, requeue_stale_too_big,
-    requeue_unranked, requeue_upstream_committed, resolved_run_paths, revisitable, runtime_by_library,
-    sized_by_repo_total, stale_too_big, unranked_terminal, until_for, until_met, upstream_committed,
+    requeue_unranked, requeue_upstream_committed, resolved_run_paths, revisitable,
+    rewrite_runner_gap_untils, runner_gap_rewrites, runner_waits, runtime_by_library, sized_by_repo_total,
+    stale_too_big, unranked_terminal, until_for, until_met, upstream_committed,
     waiting_on_upstream)  # noqa: F401
 from harness.memory_store.proposals import (REJECTIONS, UNRANKED, Seen, by_registry, by_source,
     export, extraction, judgeable, judgeable_total, latest, link, parents, pending,

@@ -226,11 +226,11 @@ def test_an_mflux_receipt_is_this_runs():
     "fox-snow: exit 1: ValueError: Pipeline <class 'ZImagePipeline'> expected ['vae'], but only set() were passed.",
 ])
 def test_a_layout_stock_diffusers_cannot_assemble_is_not_broken(why):
-    """#381: the loader failed, not the model, and broken is terminal."""
+    """#381: the loader failed, not the model, and broken is terminal; #951: a runner route ends it, not a release."""
     v = screen.outcome(0, ran("diffusers:o/x", "diffusers/x", why),
                        candidate="diffusers:o/x")
     assert v.outcome == "declined" and "own runner" in v.detail
-    assert v.reason == "runtime" and v.until.startswith("version:diffusers>")
+    assert v.reason == "runtime" and v.until.startswith("runner:diffusers/") and "Pipeline" in v.until
 
 
 def test_a_model_that_ran_and_failed_is_not_screened():
