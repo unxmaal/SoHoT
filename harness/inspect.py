@@ -894,7 +894,8 @@ def screen_words(tag: str) -> bool:
     return bool(screen.is_attachment(tag))
 
 
-def card_description(data: dict, size: int | None = None) -> str:
+def card_description(data: dict, size: int | None = None, *, ceiling: int | None = None,
+                     machine=None) -> str:
     """What a model card says that bears on whether to measure this.
 
     THE JUDGE SCORES A DESCRIPTION, and with only a name to read it gave six
@@ -940,7 +941,7 @@ def card_description(data: dict, size: int | None = None) -> str:
         bits.append(f"{how} " + ", ".join(sorted({p for p, _ in parents})[:3]))
     if size is None:
         name = str(data.get("id") or data.get("modelId") or "")
-        size = size_listing(Fit(repo=name), name, data)
+        size = size_listing(Fit(repo=name), name, data, ceiling=ceiling, machine=machine)
     if size > 0:
         bits.append(f"{size / GIB:.1f} GiB of weights")
     return "; ".join(bits)[:300]

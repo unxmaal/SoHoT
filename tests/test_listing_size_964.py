@@ -36,8 +36,9 @@ def test_a_mixed_mlx_and_gguf_listing_has_one_size_everywhere():
 
 def test_card_description_alone_sizes_as_inspect_does():
     card = fakes.card(MIXED)
-    fit = ins.inspect_model(MIXED, data=card, machine=MAC)
-    assert ins.card_description(card) == fit.description
+    for machine, ceiling in ((MAC, CEILING), (MAC, 16 * GIB), (_machine("mlx"), CEILING)):
+        fit = ins.inspect_model(MIXED, data=card, ceiling=ceiling, machine=machine)
+        assert ins.card_description(card, ceiling=ceiling, machine=machine) == fit.description
 
 
 def test_a_listing_with_no_weight_file_is_sized_by_its_files():
