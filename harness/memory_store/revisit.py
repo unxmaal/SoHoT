@@ -71,7 +71,7 @@ UNTIL = {
     "room_gb": "the memory guard's budget now with nothing resident (memory.room_gb)",
     "limit": "a limit this harness chose (reasons.limits)",
     "cases": "how many cases a lane has (holdout.for_lane)",
-    "commit_after": "the upstream's last commit date (facts.last_commit)",
+    "commit_after": "the upstream's last commit date (inspect.upstream_commit, per row)",
     "format": "a weight format a runner reads; fetching.format_waits reads it, not until_met",
     "layout": "a weight layout harness.variants groups; inspect re-reads it each sweep, not until_met",
 }
@@ -153,9 +153,22 @@ def until_met(until: str, facts: dict | None = None) -> bool:
         # characters and sorts ABOVE any date beginning with a digit, so an
         # unparseable field reopened the verdict -- the opposite of the safe
         # direction this function is supposed to fail in.
-        return bool(_ISO_DATE.match(seen) and _ISO_DATE.match(want)
-                    and seen > want)
+        if not (_ISO_DATE.match(seen) and _ISO_DATE.match(want)):
+            return False
+        a, b = _instant(seen), _instant(want)
+        # Instants, so `07.000Z` equals `07Z` and an offset is not compared as text. #961.
+        return a > b if a is not None and b is not None else seen > want
     return False
+
+
+def _instant(iso: str):
+    """An ISO-8601 time as an aware datetime, UTC when it names no zone, or None."""
+    from datetime import datetime, timezone
+    try:
+        got = datetime.fromisoformat(iso.strip().replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return got if got.tzinfo else got.replace(tzinfo=timezone.utc)
 
 
 def _version_tuple(v) -> tuple | None:
@@ -199,6 +212,43 @@ def requeue_revisitable(conn, facts: dict | None = None) -> list[str]:
         names.append(r["name"])
     conn.commit()
     return names
+
+
+def waiting_on_upstream(conn) -> list[dict]:
+    """State-holding refusals whose until is commit_after:<iso>, with the repo and registry to ask. #961."""
+    rows = conn.execute(
+        "SELECT p.name, COALESCE(NULLIF(p.resolved, ''), p.name) AS repo, p.registry, v.until "
+        "FROM proposals p JOIN verdicts v ON v.id = p.state_verdict_id "
+        f"WHERE v.until LIKE 'commit_after:%' AND v.outcome IN ({','.join('?' * len(TERMINAL))}) "
+        "ORDER BY p.name", tuple(TERMINAL)).fetchall()
+    return [dict(r) for r in rows]
+
+
+def upstream_committed(conn, last_commit) -> dict:
+    """Ask each commit_after row's upstream; last_commit(repo, registry) gives an ISO time, '' unknown, None to stop. #961."""
+    got = {"waiting": 0, "asked": 0, "answered": 0, "committed": []}
+    rows = waiting_on_upstream(conn)
+    got["waiting"] = len(rows)
+    for r in rows:
+        seen = last_commit(r["repo"], r["registry"])
+        if seen is None:
+            break
+        got["asked"] += 1
+        if not seen:
+            continue
+        got["answered"] += 1
+        if until_met(r["until"], {"last_commit": seen}):
+            got["committed"].append({**r, "last_commit": seen})
+    return got
+
+
+def requeue_upstream_committed(conn, last_commit) -> dict:
+    """Retract to inspect each commit_after refusal whose upstream has committed since. #961."""
+    got = upstream_committed(conn, last_commit)
+    for r in got["committed"]:
+        retract(conn, r["name"], f"{r['until']} is met: the upstream last committed {r['last_commit']}")
+    conn.commit()
+    return got
 
 
 #: A recorded ceiling this far under the current one is a different machine's answer. #880.

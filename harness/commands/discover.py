@@ -191,20 +191,30 @@ def _report_revisit(a) -> int:
     a verdict made elsewhere was a dead end -- there was no way to ask which
     of them this machine could now answer.
     """
-    from harness import memory_store as ms
+    from harness import inspect as ins, memory_store as ms
 
     store = ms.connect()
+    ins.PACE.start()
     try:
         here = ms.this_machine()
         rows = ms.revisitable(store)
         if getattr(a, "requeue", False) and rows:
             ms.requeue_revisitable(store)
+        # The one until no machine fact meets: it is asked of the upstream itself. #961.
+        ask = ms.requeue_upstream_committed if getattr(a, "requeue", False) else ms.upstream_committed
+        upstream = ask(store, ins.upstream_commit)
     finally:
+        ins.PACE.end()
         store.close()
     print(f"this machine: {here['fingerprint']}")
     print(f"  runtimes {here['runtimes'] or '-'}, "
           f"ceiling {here['ceiling_gb']:.0f} GiB, "
           f"memory {here['memory_gb']:.0f} GB\n")
+    if upstream["waiting"]:
+        print(loop_cmd.upstream_line(upstream, requeued=getattr(a, "requeue", False)).strip())
+        for r in upstream["committed"]:
+            print(f"  {r['name']}: {r['until']}, last commit {r['last_commit']}")
+        print()
     if not rows:
         print("nothing to revisit: no verdict from another machine has a "
               "condition this one satisfies.")

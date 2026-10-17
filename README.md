@@ -1841,7 +1841,11 @@ A refusal records the condition that would end it, as a predicate rather than
 a sentence: `runtime:llamacpp`, `ceiling_gb:>52.7`, `version:mlx-lm>0.31.3`,
 `commit_after:<date>`. `runtime:cuda|rocm` is met by either. When the tier
 does not pass one, it is read from the refusal's own `needs-*` or `too-big`
-wording.
+wording. `commit_after` is the one no machine fact meets: `--revisit` and the
+loop's inspect step ask the upstream itself (HuggingFace `lastModified`, GitHub
+`pushed_at`, one request per state-holding refusal) and reopen the refusal
+once it has committed since. A 429 stops the asking and leaves the rest
+standing.
 
 ```bash
 soh discover --revisit             # refusals this machine now satisfies
