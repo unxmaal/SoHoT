@@ -232,16 +232,19 @@ def needs(r: dict) -> list[str]:
         out.append("ranked head not fetched: " + "; ".join(
             f"{s['lane']} #{s['lane_rank']} {s['name']} {s['in_state_days']:.0f}d ({s['reason']})"
             for s in r["stalled"]))
+    if r.get("canary"):
+        out.append(r["canary"])
     return out
 
 
 def gather(conn, now: float, since: float, *, beat=None, gh=None, git=None, where=None, lanes=None,
-           health=None, stalls=None) -> dict:
-    """`health` probes the headline's lane (lane_health); None leaves it unprobed."""
+           health=None, stalls=None, canary=None) -> dict:
+    """`health` probes the headline's lane (lane_health), `canary` reads its receipts (canary.morning_line); None skips either."""
     r = {"lane": health(MODEL_LANE) if health else {"lane": MODEL_LANE, "generating": None, "why": "not probed"},
          "generated": now, "since": since, "sweep": sweep(conn, since, beat), "watchdog": watchdog(conn, since),
          "ci": ci(now, gh=gh or _gh), "ledger": ledger_row(conn, now), "stale": (lanes or stale_lanes)(conn),
-         "stalled": (stalls or stalled)(conn), "deploy": deploy(where, git=git or _git)}
+         "stalled": (stalls or stalled)(conn), "deploy": deploy(where, git=git or _git),
+         "canary": canary(now) if canary else ""}
     r["needs"] = needs(r)
     return r
 

@@ -78,6 +78,8 @@ def render(r: dict) -> list[str]:
     for t in r.get("stalled") or []:
         out.append(f"          {t['lane']:<9} #{t['lane_rank']} {t['name'][:40]} {t['stage']} "
                    f"{t['in_state_days']:.0f}d: {t['reason']}: {t['why']}")
+    if r.get("canary"):
+        out.append(f"canary    {r['canary']}")
     d = r["deploy"]
     if not d.get("available"):
         out.append(f"deploy    unavailable: {d.get('why')}")
@@ -89,7 +91,7 @@ def render(r: dict) -> list[str]:
 
 
 def cmd_morning(a) -> int:
-    from harness import context_report as cr, heartbeat, morning, paths
+    from harness import canary, context_report as cr, heartbeat, morning, paths
 
     now = time.time()
     try:
@@ -101,7 +103,7 @@ def cmd_morning(a) -> int:
     conn = morning.snapshot()
     try:
         r = morning.gather(conn, now, since, beat=heartbeat.summary(), where=paths.deploy_checkout(),
-                           health=morning.lane_health)
+                           health=morning.lane_health, canary=canary.morning_line)
     finally:
         conn.close()
     lines = render(r)

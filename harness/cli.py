@@ -49,6 +49,7 @@ from harness.commands import funnel as funnel_cmd
 from harness.commands import morning as morning_cmd
 from harness.commands import otel as otel_cmd
 from harness.commands import usage as usage_cmd
+from harness.commands import canary as canary_cmd
 from harness.commands import claude_news as claude_news_cmd
 from harness.commands import delegated as delegated_cmd
 from harness.commands import volume as volume_cmd
@@ -499,6 +500,18 @@ def build_parser() -> argparse.ArgumentParser:
     use.add_argument("--text", choices=("on", "off"), default="",
                      help="keep bounded prompt and completion text samples (off by default)")
     use.set_defaults(func=usage_cmd.cmd_usage)
+    can = sub.add_parser("canary", help="planted candidates with known verdicts, run for real under an "
+                         "isolated home; one receipt per run under the canary directory (#919)")
+    can.add_argument("canary_cmd", nargs="?", choices=("run", "check", "spend"), default="run",
+                     help="run (default) plants them; check asks whether the adopt gate separates each "
+                          "pair on this store's stored results; spend is the isolated home's own step")
+    can.add_argument("--run", action="store_true", help="plant them; without it, list the plants and steps")
+    can.add_argument("--plant", action="append", default=[], help="only this plant (repeatable)")
+    can.add_argument("--wait-h", type=float, default=None,
+                     help="how long to wait for the live discovery loop to finish first")
+    can.add_argument("--lane", default="", help="spend: the lane")
+    can.add_argument("--top", type=int, default=1, help="spend: candidates carried the whole way")
+    can.set_defaults(func=canary_cmd.cmd_canary)
     cn = sub.add_parser("claude-news", help="Claude Code changelog entries newer than the last "
                         "version seen, relevant to this setup first (#866)")
     cn.add_argument("--since", default="", help="digest versions above this one instead of the recorded one")

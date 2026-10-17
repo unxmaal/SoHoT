@@ -1,0 +1,339 @@
+{
+ "id": "Ninnix96/Qwengram-0.8B",
+ "pipeline_tag": "text-generation",
+ "tags": [
+  "safetensors",
+  "gguf",
+  "qwengram",
+  "external-memory",
+  "llama-cpp",
+  "text-generation",
+  "conversational",
+  "base_model:Qwen/Qwen3.5-0.8B",
+  "base_model:quantized:Qwen/Qwen3.5-0.8B",
+  "license:apache-2.0",
+  "endpoints_compatible",
+  "region:us"
+ ],
+ "library_name": null,
+ "cardData": {
+  "license": "apache-2.0",
+  "base_model": "Qwen/Qwen3.5-0.8B",
+  "pipeline_tag": "text-generation",
+  "tags": [
+   "gguf",
+   "qwengram",
+   "external-memory",
+   "llama-cpp"
+  ]
+ },
+ "siblings": [
+  {
+   "rfilename": ".gitattributes",
+   "size": 1866
+  },
+  {
+   "rfilename": "LICENSE",
+   "size": 11544
+  },
+  {
+   "rfilename": "QwenGram-0.8B-BF16.gguf",
+   "size": 1599611872
+  },
+  {
+   "rfilename": "QwenGram-0.8B-Q4_K_M.gguf",
+   "size": 583853024
+  },
+  {
+   "rfilename": "QwenGram-0.8B-Q6_K.gguf",
+   "size": 688489952
+  },
+  {
+   "rfilename": "QwenGram-0.8B-Q8_0.gguf",
+   "size": 875541472
+  },
+  {
+   "rfilename": "README.md",
+   "size": 7559
+  },
+  {
+   "rfilename": "SHA256.json",
+   "size": 11804
+  },
+  {
+   "rfilename": "arbiter.pt",
+   "size": 6493
+  },
+  {
+   "rfilename": "chat_template.jinja",
+   "size": 7755
+  },
+  {
+   "rfilename": "evaluation/15m/alpha8-paired.json",
+   "size": 525710
+  },
+  {
+   "rfilename": "evaluation/15m/arb-15m-shas.json",
+   "size": 1605
+  },
+  {
+   "rfilename": "evaluation/15m/checkpoints.json",
+   "size": 1996
+  },
+  {
+   "rfilename": "evaluation/15m/contrast.json",
+   "size": 87971
+  },
+  {
+   "rfilename": "evaluation/15m/decision.md",
+   "size": 5903
+  },
+  {
+   "rfilename": "evaluation/15m/eval-linear750.json",
+   "size": 78079
+  },
+  {
+   "rfilename": "evaluation/15m/reader-15m-shas.json",
+   "size": 1093
+  },
+  {
+   "rfilename": "evaluation/15m/reader-15m-summary.json",
+   "size": 1106
+  },
+  {
+   "rfilename": "evaluation/15m/summary.json",
+   "size": 279256
+  },
+  {
+   "rfilename": "evaluation/README.md",
+   "size": 1372
+  },
+  {
+   "rfilename": "evaluation/canonical-10m.json",
+   "size": 788
+  },
+  {
+   "rfilename": "evaluation/current-canonical.json",
+   "size": 824
+  },
+  {
+   "rfilename": "evaluation/endpoints.json",
+   "size": 1909
+  },
+  {
+   "rfilename": "qwengram-0.8b.json",
+   "size": 1259
+  },
+  {
+   "rfilename": "qwengram_0_8b.png",
+   "size": 866443
+  },
+  {
+   "rfilename": "reader.safetensors",
+   "size": 41943736
+  },
+  {
+   "rfilename": "research-20m/README.md",
+   "size": 1262
+  },
+  {
+   "rfilename": "research-20m/alpha8-paired.json",
+   "size": 1685522
+  },
+  {
+   "rfilename": "research-20m/arb-20m-shas.json",
+   "size": 1738
+  },
+  {
+   "rfilename": "research-20m/checkpoints.json",
+   "size": 2580
+  },
+  {
+   "rfilename": "research-20m/compact-20m-suffix.json",
+   "size": 892
+  },
+  {
+   "rfilename": "research-20m/compact-20m.json",
+   "size": 894
+  },
+  {
+   "rfilename": "research-20m/contrasts.json",
+   "size": 289520
+  },
+  {
+   "rfilename": "research-20m/decision.md",
+   "size": 8723
+  },
+  {
+   "rfilename": "research-20m/eval-reader15m-linear750.json",
+   "size": 78079
+  },
+  {
+   "rfilename": "research-20m/eval-reader20m-arb750.json",
+   "size": 77913
+  },
+  {
+   "rfilename": "research-20m/hs-trend.json",
+   "size": 426
+  },
+  {
+   "rfilename": "research-20m/qwen-reader20-original-logs.json",
+   "size": 18141
+  },
+  {
+   "rfilename": "research-20m/qwen-reader20-suffix-logs.json",
+   "size": 19501
+  },
+  {
+   "rfilename": "research-20m/qwengram-0.8b.json",
+   "size": 913
+  },
+  {
+   "rfilename": "research-20m/reader-20m-shas.json",
+   "size": 1228
+  },
+  {
+   "rfilename": "research-20m/reader-20m-suffix-summary.json",
+   "size": 1109
+  },
+  {
+   "rfilename": "research-20m/reader-20m-summary.json",
+   "size": 1109
+  },
+  {
+   "rfilename": "research-20m/summary.json",
+   "size": 697995
+  },
+  {
+   "rfilename": "runtime/README.md",
+   "size": 4746
+  },
+  {
+   "rfilename": "runtime/analyze.py",
+   "size": 4733
+  },
+  {
+   "rfilename": "runtime/logs/quant-qwengram-q6.log",
+   "size": 57105
+  },
+  {
+   "rfilename": "runtime/logs/quant-qwengram-q6.run.json",
+   "size": 502
+  },
+  {
+   "rfilename": "runtime/logs/quant-stock-q6.log",
+   "size": 52712
+  },
+  {
+   "rfilename": "runtime/logs/quant-stock-q6.run.json",
+   "size": 480
+  },
+  {
+   "rfilename": "runtime/logs/qwengram-bf16.log",
+   "size": 4519
+  },
+  {
+   "rfilename": "runtime/logs/qwengram-q4.log",
+   "size": 4517
+  },
+  {
+   "rfilename": "runtime/logs/qwengram-q6.log",
+   "size": 4726
+  },
+  {
+   "rfilename": "runtime/logs/qwengram-q6.run.json",
+   "size": 630
+  },
+  {
+   "rfilename": "runtime/logs/qwengram-q8.log",
+   "size": 4517
+  },
+  {
+   "rfilename": "runtime/logs/smoke-Q6_K-cpu.log",
+   "size": 3672
+  },
+  {
+   "rfilename": "runtime/logs/smoke-Q6_K-vulkan.log",
+   "size": 3466
+  },
+  {
+   "rfilename": "runtime/logs/stock-bf16.log",
+   "size": 4519
+  },
+  {
+   "rfilename": "runtime/logs/stock-q4.log",
+   "size": 4517
+  },
+  {
+   "rfilename": "runtime/logs/stock-q6.log",
+   "size": 4726
+  },
+  {
+   "rfilename": "runtime/logs/stock-q6.run.json",
+   "size": 621
+  },
+  {
+   "rfilename": "runtime/logs/stock-q8.log",
+   "size": 4517
+  },
+  {
+   "rfilename": "runtime/q6-smoke.json",
+   "size": 1326
+  },
+  {
+   "rfilename": "runtime/q6-verification.json",
+   "size": 1271
+  },
+  {
+   "rfilename": "runtime/results.json",
+   "size": 18374
+  },
+  {
+   "rfilename": "safetensors/LICENSE",
+   "size": 11544
+  },
+  {
+   "rfilename": "safetensors/README.md",
+   "size": 1452
+  },
+  {
+   "rfilename": "safetensors/chat_template.jinja",
+   "size": 7755
+  },
+  {
+   "rfilename": "safetensors/config.json",
+   "size": 2907
+  },
+  {
+   "rfilename": "safetensors/merges.txt",
+   "size": 3353259
+  },
+  {
+   "rfilename": "safetensors/model.safetensors",
+   "size": 1788891232
+  },
+  {
+   "rfilename": "safetensors/tokenizer.json",
+   "size": 12807982
+  },
+  {
+   "rfilename": "safetensors/tokenizer_config.json",
+   "size": 16709
+  },
+  {
+   "rfilename": "safetensors/vocab.json",
+   "size": 6722759
+  },
+  {
+   "rfilename": "tokenizer.json",
+   "size": 12807982
+  },
+  {
+   "rfilename": "tokenizer_config.json",
+   "size": 16709
+  }
+ ],
+ "lastModified": "2026-09-28T11:17:45.000Z",
+ "downloads": 3978,
+ "config": {}
+}
