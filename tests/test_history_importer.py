@@ -210,7 +210,9 @@ def test_the_committed_manifest_is_pinned_versioned_and_a_pilot_sized_set_of_fli
 def test_the_committed_manifest_converts_to_both_variants_of_every_task():
     rows = history.fetch()
     cases = [history.convert(r).case for r in rows]
-    assert len(cases) == 2 * len(history.manifest()["tasks"])
+    variants = {f"{t['id']}-{v}" for t in history.manifest()["tasks"] for v in history.VARIANTS}
+    assert set(history.DROPPED) <= variants
+    assert len(cases) == len(variants) - len(history.DROPPED)
     for c in cases:
         assert set(c["params"]) - {"new_files"} == PARAMS and len(c["params"]["base"]) == 40
         assert c["prompt"].startswith("# ")
