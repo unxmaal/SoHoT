@@ -53,13 +53,23 @@ def test_every_committed_repo_case_has_two_valid_labels():
     assert fairness.check(fairness.load(), [c.id for c in cases]) == []
 
 
-def test_no_case_both_labellers_flag_is_still_committed():
-    """A case scoring 2 or 3 on an axis from both labellers is dropped through the importer. #920."""
-    cases = load_cases(ROOT / "evals" / "cases" / "repo")
+def test_unfair_cases_stay_committed_and_only_validity_failures_are_dropped():
+    """Eric on #944: keep and tag. A flagged or disputed case stays, outside the fair subset. #920."""
+    cases = [c.id for c in load_cases(ROOT / "evals" / "cases" / "repo")]
     labels = fairness.load()
-    assert fairness.summary(labels, [c.id for c in cases])["flagged"] == {}
-    for cid in history.DROPPED:
-        assert cid in labels["labels"], cid
+    got = fairness.summary(labels, cases)
+    assert got["flagged"] and set(got["flagged"]) <= set(cases)
+    assert all(why.startswith("validation") for why in history.DROPPED.values())
+    fair = fairness.fair(labels, cases)
+    assert not fair & (set(got["flagged"]) | set(got["disputed"]))
+    assert "sohot-858-spec" in got["disputed"] and "sohot-858-spec" not in fair
+
+
+def test_a_disputed_axis_is_unfair_until_settled():
+    labels = _labels(y=_pair((0, 2), (0, 1)), z=_pair((1, 1), (0, 0)))
+    assert fairness.fair(labels, ["y", "z"]) == {"z"}
+    assert fairness.fair({**labels, "settled": {"y": {"tests": 1}}}, ["y", "z"]) == {"y", "z"}
+    assert fairness.fair(labels, ["unlabelled"]) == set()
 
 
 def test_soh_cases_labels_repo_reports_kappa(tmp_path, capsys):

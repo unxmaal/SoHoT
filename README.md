@@ -1653,7 +1653,10 @@ verdict into the receipt and counts resolves over valid cases only.
 `evals/cases/repo/labels.json`: two blind labellers score SWE-bench Verified's
 two axes (is the issue specified, do the hidden tests accept every reasonable
 fix), with Cohen's kappa per axis; `--packets DIR` writes what a labeller
-reads. A case both labellers flag, or one that fails validation, goes in
+reads. Unfair cases stay committed and tagged; `soh repo-report` prints every
+statistic for the valid set and again for the fair subset, the cases both
+labellers score under 2 on both axes (a disputed axis is unfair until
+`settled`). A case that fails validation goes in
 `evals/importers/history.py:DROPPED` with its reason (#920).
 
 `leetcode` (code lane) imports LeetCodeDataset (Apache-2.0) at a pinned

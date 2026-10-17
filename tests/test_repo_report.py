@@ -149,6 +149,10 @@ def test_the_pilot_reads_as_the_store_does():
     assert (rep["baseline"], rep["candidate"]) == (ORNITH, OPUS)
     assert (v["rates"][OPUS]["all"]["resolved"], v["rates"][OPUS]["all"]["n"]) == (11, 36)
     assert (v["rates"][ORNITH]["all"]["resolved"], v["rates"][ORNITH]["all"]["n"]) == (3, 36)
+    f = rep["fair"]["views"]["limits as losses"]
+    assert (f["cases"], f["tasks"]) == (12, 7) and "sohot-858-spec" in rep["fair"]["unfair"]
+    assert (f["rates"][OPUS]["all"]["resolved"], f["rates"][ORNITH]["all"]["resolved"]) == (9, 3)
+    assert "limits as losses, fair subset: 12 cases from 7 tasks" in R.text(rep)
     assert v["rates"][OPUS]["all"]["ci95"] == [0.18, 0.4686] and v["rates"][ORNITH]["all"]["ci95"] == [0.0287, 0.2183]
     named = {rep["labels"][t] for t in v["only"][OPUS]}
     assert named == {"sohot-363", "sohot-374", "sohot-376", "sohot-788"} and v["only"][ORNITH] == []
@@ -267,3 +271,18 @@ def test_there_is_one_wilson():
     from evals import claims_report
     from harness import intervals
     assert claims_report.wilson is intervals.wilson
+
+
+def test_an_empty_fair_subset_reports_beside_the_valid_set():
+    rep = R.report(_runs(466, 467), _pilot_rows(), _repo_cases(), resamples=50, fair=set())
+    assert rep["fair"]["views"]["limits as losses"]["cases"] == 0
+    assert "fair subset: 0 cases from 0 tasks" in R.text(rep)
+
+
+def test_a_case_the_receipt_validated_as_not_valid_is_set_aside():
+    runs = _runs(466, 467)
+    for r in runs:
+        r["receipt"]["validation"] = {"sohot-371-spec": "flaky: x"}
+    rep = R.report(runs, _pilot_rows(), _repo_cases(), resamples=50)
+    assert rep["set_aside"]["not_valid"] == ["sohot-371-spec"]
+    assert rep["views"]["limits as losses"]["cases"] == 35

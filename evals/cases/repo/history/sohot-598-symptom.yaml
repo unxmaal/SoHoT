@@ -1,0 +1,59 @@
+# SoHoT fix history (unxmaal/SoHoT), generated (https://github.com/unxmaal/SoHoT).
+# Imported by evals/importers from git:unxmaal/SoHoT@35ac01f5c487124fb40fc7a94680178c22b78ac6; re-import, do not edit.
+id: sohot-598-symptom
+modality: repo
+prompt: '# The loop''s cleanup stamps downloads removed but leaves them complete, so the deploy dry run
+  refuses
+
+
+  2026-10-07 15:13: the discovery loop''s cleanup (working since #559) deleted 38 rejected downloads,
+  ~280 GB. downloads.removed() set removed_at and removed_by but not complete = 0, while the backfill
+  writer in the same module does clear it. The store''s downloads_sane invariant (''removed yet complete'')
+  then failed `soh store dry-run`, and the #592 deploy stopped before install. Nothing in use was deleted.
+
+
+  🤖 Generated with [Claude Code](https://claude.com/claude-code)'
+params:
+  source_repo: https://github.com/unxmaal/SoHoT.git
+  base: c8ee78916ef58d2906457d8545edff78ec4e422e
+  fix: 6fcaf37ed54e4cbdecbae022fe2bc2ad1bbcdcb6
+  variant: symptom
+  context: oracle
+  context_files:
+  - harness/downloads.py
+  - harness/memory_store/schema.py
+  new_files:
+  - harness/memory_store/migrations/v58.py
+  fail_to_pass:
+  - tests/test_store_downloads.py::test_a_deleted_download_is_no_longer_complete
+  - tests/test_store_downloads.py::test_the_migration_repairs_rows_removed_while_complete
+  pass_to_pass:
+  - tests/test_store_downloads.py::test_a_card_only_snapshot_is_recorded_incomplete_and_not_had
+  - tests/test_store_downloads.py::test_a_complete_download_on_disk_with_no_row_is_not_had
+  - tests/test_store_downloads.py::test_a_dir_no_row_explains_is_drift_and_never_deleted
+  - tests/test_store_downloads.py::test_a_failed_download_is_recorded_incomplete
+  - tests/test_store_downloads.py::test_a_keeper_spec_is_resolved_through_the_stored_candidate
+  - tests/test_store_downloads.py::test_a_recorded_download_whose_dir_is_gone_is_not_had
+  - tests/test_store_downloads.py::test_a_recorded_keeper_is_never_deleted
+  - tests/test_store_downloads.py::test_a_row_whose_path_is_gone_is_reported_not_guessed
+  - tests/test_store_downloads.py::test_another_machines_row_is_not_had_here
+  - tests/test_store_downloads.py::test_cli_disk_json_reports_drift
+  - tests/test_store_downloads.py::test_recording_drift_makes_an_unknown_deletable_and_stamps_it
+  - tests/test_store_downloads.py::test_removing_a_hub_dir_stamps_its_gguf_link_row_too
+  - tests/test_store_downloads.py::test_requires_is_what_the_config_said_when_it_landed
+  - tests/test_store_downloads.py::test_the_backfill_reads_the_weights_dirs_and_never_writes_them
+  - tests/test_store_downloads.py::test_the_migration_backfills_every_source_once
+attribution:
+  dataset: SoHoT fix history (unxmaal/SoHoT)
+  url: https://github.com/unxmaal/SoHoT
+  license: generated
+  source: git:unxmaal/SoHoT
+  revision: 35ac01f5c487124fb40fc7a94680178c22b78ac6
+  item: '#598 (PR #599)'
+  date: '2026-10-07'
+  transform: issue title and body from `gh issue view` at survey time, home paths as ~/, 'Prior art checked'
+    removed (spec), and the Fix/Shape/Design/Options/Remedy/Proposal/Build/What-to sections and labelled
+    paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
+    of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
+    and sandbox (evals/repo.py)
+  importer: evals.importers.history

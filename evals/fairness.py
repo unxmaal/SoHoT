@@ -77,6 +77,20 @@ def summary(labels: dict, case_ids) -> dict:
     return out
 
 
+def fair(labels: dict, case_ids) -> set:
+    """The labelled cases every labeller scores under FLAG on both axes; a disputed axis is unfair until settled."""
+    out = set()
+    for cid in case_ids:
+        got = (labels.get("labels") or {}).get(cid) or {}
+        settled = (labels.get("settled") or {}).get(cid) or {}
+        if not all(who in got for who in labels.get("labellers") or ["?"]):
+            continue
+        if all((settled[axis] if axis in settled else max(got[who][axis] for who in labels["labellers"])) < FLAG
+               for axis in AXES):
+            out.add(cid)
+    return out
+
+
 def packet(case) -> str:
     """What a labeller reads for one case: the prompt, the reference fix and the hidden tests, no results."""
     p = case.params

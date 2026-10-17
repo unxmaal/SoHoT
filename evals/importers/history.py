@@ -42,33 +42,10 @@ TRANSFORM = ("issue title and body from `gh issue view` at survey time, home pat
              f"{RUNS} sandboxed pytest runs of the fix's test files at base+hidden tests and at "
              "base+reference diff, in the lane's own environment and sandbox (evals/repo.py)")
 
-#: Cases dropped after the survey, with why: both fairness labellers flagged them, or validation failed. #920.
+#: Cases dropped after the survey because validation fails, with why; unfair cases stay, tagged in labels.json. #920.
 DROPPED: dict[str, str] = {
-    "sohot-363-spec": "fairness tests >=2 by both: pytest.raises(match='one argument') demands error wording the prompt never gives; any other message naming...",
-    "sohot-363-symptom": "fairness tests >=2 by both: error text must contain 'one argument' and 'did not recognise', neither suggested by the prompt; refusal...",
-    "sohot-368-spec": "fairness tests >=2 by both: test_the_pipe_is_utf8_whatever_the_locale requires encoding='utf-8' passed to execute, which the prompt...",
-    "sohot-368-symptom": "fairness tests >=2 by both: requires the prompt via the input= kwarg (rejects a '--' end-of-options fix) and an encoding='utf-8' kwarg...",
-    "sohot-396-spec": "fairness tests >=2 by both: tests call a new cli.screenable_backlog(want, plan=, room=) and match the printed phrase 'already on disk...",
-    "sohot-396-symptom": "fairness tests >=2 by both: tests demand fetch-skipping backpressure via cli.screenable_backlog and an exact message, a remedy the...",
-    "sohot-399-spec": "fairness tests >=2 by both: tests need new ms.latest() and a migration function named _requeue_screens_of_missing_weights, names the...",
-    "sohot-399-symptom": "fairness tests >=2 by both: graded schema-20 migration repairing old broken verdicts is not asked for, plus required names ms.latest...",
-    "sohot-404-spec": "fairness tests >=2 by both: dead-server test requires _report_screen to return exactly 1 when it stops; the prompt only says stop...",
-    "sohot-404-symptom": "fairness spec+tests >=2 by both: remedy is open: classify as harness fault, stop the run, health-check/restart the server, or migrate",
-    "sohot-438-spec": "fairness tests >=2 by both: requires a new gguf.shard_sets() returning {} for incomplete sets and both remedies at once (shard sum and...",
-    "sohot-438-symptom": "fairness tests >=2 by both: requires a gguf.shard_sets() function by name, incomplete-set semantics and exact smallest() equal to the...",
-    "sohot-455-spec": "validation error, tests/test_live_store_guard.py does not collect at base; fairness tests >=2 by both: tests need ms.LiveStoreRefused, paths.is_live/REPO/r",
-    "sohot-455-symptom": "validation error, tests/test_live_store_guard.py does not collect at base; fairness spec+tests >=2 by both: symptom gives no remedy; refusing, warning, or ",
-    "sohot-598-symptom": "fairness tests >=2 by both: graded test imports migrations.v58 and calls its data(conn); a repair migration is not asked by the symptom",
-    "sohot-632-spec": "fairness tests >=2 by both: tests need fetching.runner_bases, a sizer= kwarg on fetching.run, unknown-size bases refused with 'size'...",
-    "sohot-632-symptom": "fairness spec+tests >=2 by both: symptom names no remedy: run the setup script, fetch the base, park the candidate, or decline it are all...",
-    "sohot-642-symptom": "fairness tests >=2 by both: tests require the method spec to inherit the base's inspect verdict and size_bytes, a remedy the symptom...",
-    "sohot-647-spec": "fairness tests >=2 by both: requires split actions/cache/restore and actions/cache/save steps, a key from a steps. output,...",
-    "sohot-647-symptom": "fairness tests >=2 by both: tests demand an apt .deb cache with restore/save layout and a per-step timeout, none asked by the symptom",
-    "sohot-720-symptom": "fairness tests >=2 by both: requires timeout-minutes >= 29.5; a raise to 25 or an xdist speed-up alone fails, and the 10-minute margin...",
-    "sohot-859-spec": "fairness tests >=2 by both: prompt allows the undated endpoint but tests require dated requests for yesterday, partial-progress...",
-    "sohot-859-symptom": "fairness tests >=2 by both: same exact request sequence, last_read_at semantics, partial-progress retention and message text, none in...",
-    "sohot-879-spec": "fairness tests >=2 by both: tests need a new screen_detail(why, stderr, summary) that drops stderr entirely when a receipt exists, and...",
-    "sohot-879-symptom": "fairness tests >=2 by both: same unasked screen_detail function, receipt/no-receipt split and extra metric directions as the spec variant",
+    "sohot-455-spec": "validation error: tests/test_live_store_guard.py does not collect at base",
+    "sohot-455-symptom": "validation error: tests/test_live_store_guard.py does not collect at base",
 }
 
 _HEADING = re.compile(r"^(#{1,6})\s+(.*?)\s*#*\s*$")

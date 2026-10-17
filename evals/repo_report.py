@@ -201,9 +201,19 @@ def _config(r: dict) -> dict:
             if at else None}
 
 
+def fair_cases(case_ids, labels=None) -> set:
+    """Case ids both fairness labellers score under 2 on both axes (evals/fairness.py). #920."""
+    from evals import fairness
+    try:
+        labels = labels if labels is not None else fairness.load()
+    except (OSError, ValueError):
+        return set()
+    return fairness.fair(labels, case_ids)
+
+
 def report(runs: list[dict], rows: list[dict], cases, *, resamples: int = compare.DEFAULT_RESAMPLES,
-           seed: int = 1) -> dict:
-    """Everything the text prints, as data. The first run's candidate is the baseline."""
+           seed: int = 1, fair=None) -> dict:
+    """Everything the text prints, as data, over the valid cases and their fair subset. The first run's candidate is the baseline."""
     alpha = _alpha()
     order = []
     for r in runs:
@@ -221,7 +231,11 @@ def report(runs: list[dict], rows: list[dict], cases, *, resamples: int = compar
         if k in task and k not in unpaired:
             variants.setdefault(task[k][0], set()).add(task[k][1])
     single = sorted(k for k in draws if k in task and k not in unpaired and variants[task[k][0]] != set(VARIANTS))
-    suite = {k: d for k, d in draws.items() if k in task and k not in unpaired and k not in single}
+    invalid = sorted({k for r in runs for k, v in ((r["receipt"] or {}).get("validation") or {}).items()
+                      if v != "valid" and k in draws})
+    suite = {k: d for k, d in draws.items() if k in task and k not in unpaired and k not in single
+             and k not in invalid}
+    fair = fair_cases(list(suite)) if fair is None else set(fair)
     never_ran = sorted(k for k, d in suite.items() if any(fc in reasons.NEVER_RAN for x in d.values() for _, fc in x))
     limits = {c: sum(fc in LIMIT_CLASSES for k in suite if k not in never_ran for _, fc in suite[k][c])
               for c in order}
@@ -230,10 +244,15 @@ def report(runs: list[dict], rows: list[dict], cases, *, resamples: int = compar
             "labels": labels({k: task[k] for k in suite}),
             "differ_on": [a for a in paired.AXES + ("engines",)
                           if len(runs) == 2 and runs[0]["receipt"].get(a) != runs[1]["receipt"].get(a)],
-            "set_aside": {"no_task_key": no_key, "unpaired": unpaired, "single_variant": single},
+            "set_aside": {"no_task_key": no_key, "unpaired": unpaired, "single_variant": single,
+                          "not_valid": invalid},
             "excluded_never_ran": never_ran, "limit_rows": limits,
             "views": {name: _view(suite, task, order, skip, alpha=alpha, resamples=resamples, seed=seed)
-                      for name, skip in VIEWS.items()}}
+                      for name, skip in VIEWS.items()},
+            "fair": {"unfair": sorted(k for k in suite if k not in fair),
+                     "views": {name: _view({k: d for k, d in suite.items() if k in fair}, task, order, skip,
+                                           alpha=alpha, resamples=resamples, seed=seed)
+                               for name, skip in VIEWS.items()}}}
 
 
 def _ci(x: dict) -> str:
@@ -258,36 +277,49 @@ def text(rep: dict) -> str:
             out.append(f"set aside ({why.replace('_', ' ')}): {', '.join(ids)}")
     out.append(f"excluded, harness never ran ({len(rep['excluded_never_ran'])}): "
                f"{', '.join(rep['excluded_never_ran']) or 'none'}")
-    for name, v in rep["views"].items():
-        out.append(f"\n{name}: {v['cases']} cases from {v['tasks']} tasks; a task is resolved when either variant is")
-        out.append(f"  {'candidate':40s} {'all':>18s} {'spec':>18s} {'symptom':>18s} {'tasks':>6s}"
-                   + (f" {'LIMIT':>6s}" if name == "limits as losses" else ""))
-        for c in (base, cand):
-            r = v["rates"][c]
-            out.append(f"  {c:40.40s} {_ci(r['all']):>18s} {_ci(r['spec']):>18s} {_ci(r['symptom']):>18s} "
-                       f"{v['tasks_resolved'][c]:>6d}" + (f" {rep['limit_rows'][c]:>6d}" if name == "limits as losses"
-                                                          else ""))
-        name_of = rep["labels"]
-        out.append(f"  tasks: {cand} only {_named(v['only'][cand], name_of)}, {base} only "
-                   f"{_named(v['only'][base], name_of)}, both {_named(v['both'], name_of)}; "
-                   f"exact sign p = {v['p']}: {v['verdict']}")
-        if "difference" in v:
-            d = v["difference"]
-            out.append(f"  case resolve rate {cand} minus {base}: {d['difference']:+.3f}, 95% task bootstrap "
-                       f"[{d['low']:+.3f}, {d['high']:+.3f}] (descriptive; the sign test is the verdict)")
-        for c in (base, cand):
-            g = v["gap"][c]
-            line = (f"  spec minus symptom, {c}: spec only {_named(g['spec_only'], name_of)}, symptom only "
-                    f"{_named(g['symptom_only'], name_of)} of {g['tasks']} tasks: {g['verdict']}")
-            if g["testable"]:
-                line += f", p = {g['p']}"
-                if "difference" in g:
-                    line += f", {g['difference']['difference']:+.3f} [{g['difference']['low']:+.3f}, {g['difference']['high']:+.3f}]"
-            out.append(line)
-    v = rep["views"]["limits as losses"]
-    out.append(f"\npower (limits as losses, alpha {rep['alpha']}, target {power.TARGET}); effect is a per-failing-case "
-               f"lift q = min(1, p + d), not a resolve-rate difference")
+    out.append(f"fair subset: both labellers under 2 on both axes; {len(rep['fair']['unfair'])} valid case(s) "
+               f"left out: {', '.join(rep['fair']['unfair']) or 'none'}")
+    for name in rep["views"]:
+        for which, v in (("valid set", rep["views"][name]), ("fair subset", rep["fair"]["views"][name])):
+            out += _block(rep, f"{name}, {which}", v, name == "limits as losses")
+    for which, views in (("valid set", rep["views"]), ("fair subset", rep["fair"]["views"])):
+        out += _power_lines(rep, which, views["limits as losses"])
+    return "\n".join(out)
+
+
+def _block(rep: dict, title: str, v: dict, limits: bool) -> list:
+    base, cand = rep["baseline"], rep["candidate"]
+    out = [f"\n{title}: {v['cases']} cases from {v['tasks']} tasks; a task is resolved when either variant is",
+           f"  {'candidate':40s} {'all':>18s} {'spec':>18s} {'symptom':>18s} {'tasks':>6s}"
+           + (f" {'LIMIT':>6s}" if limits else "")]
     for c in (base, cand):
+        r = v["rates"][c]
+        out.append(f"  {c:40.40s} {_ci(r['all']):>18s} {_ci(r['spec']):>18s} {_ci(r['symptom']):>18s} "
+                   f"{v['tasks_resolved'][c]:>6d}" + (f" {rep['limit_rows'][c]:>6d}" if limits else ""))
+    name_of = rep["labels"]
+    out.append(f"  tasks: {cand} only {_named(v['only'][cand], name_of)}, {base} only "
+               f"{_named(v['only'][base], name_of)}, both {_named(v['both'], name_of)}; "
+               f"exact sign p = {v['p']}: {v['verdict']}")
+    if "difference" in v:
+        d = v["difference"]
+        out.append(f"  case resolve rate {cand} minus {base}: {d['difference']:+.3f}, 95% task bootstrap "
+                   f"[{d['low']:+.3f}, {d['high']:+.3f}] (descriptive; the sign test is the verdict)")
+    for c in (base, cand):
+        g = v["gap"][c]
+        line = (f"  spec minus symptom, {c}: spec only {_named(g['spec_only'], name_of)}, symptom only "
+                f"{_named(g['symptom_only'], name_of)} of {g['tasks']} tasks: {g['verdict']}")
+        if g["testable"]:
+            line += f", p = {g['p']}"
+            if "difference" in g:
+                line += f", {g['difference']['difference']:+.3f} [{g['difference']['low']:+.3f}, {g['difference']['high']:+.3f}]"
+        out.append(line)
+    return out
+
+
+def _power_lines(rep: dict, which: str, v: dict) -> list:
+    out = [f"\npower, {which} (limits as losses, alpha {rep['alpha']}, target {power.TARGET}); effect is a "
+           f"per-failing-case lift q = min(1, p + d), not a resolve-rate difference"]
+    for c in (rep["baseline"], rep["candidate"]):
         pw = v["power"][c]
         rho = f"rho {pw['rho']}" if pw["rho_measured"] else f"rho unmeasured (repeat {pw['repeat']}), {pw['rho_used']} used"
         for var in VARIANTS:
@@ -295,7 +327,7 @@ def text(rep: dict) -> str:
             need = " / ".join(str(p["needed"][str(e)]) for e in LIFTS)
             out.append(f"  {c:40.40s} {var:8s} base: tasks needed {need} for lifts "
                        f"{' / '.join(map(str, LIFTS))}; MDE at {p['tasks']} tasks {p['mde']}; {rho}")
-    return "\n".join(out)
+    return out
 
 
 def _named(keys, name_of) -> str:
