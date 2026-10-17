@@ -574,12 +574,8 @@ def _report_inspect(a) -> int:
             # weight is almost always a tokenizer or a helper, and the first
             # queue built that way filled with them. Issue #68.
             ranked = ins.fetchable_weights(fit, ins.ceiling_bytes())
-            # Re-inspecting CORRECTS the queue rather than only extending it:
-            # weights this repo queued under an older ranking, and no longer
-            # ranks, are retired. Issue #73.
-            ms.retire_unlisted(
-                store, repo, keep=ranked, why=(
-                    "no longer among this repo's top-ranked weights"))
+            # A weight this repo no longer ranks loses its edge and goes back to inspect. #73, #954.
+            ms.retire_unlisted(store, repo, keep=ranked)
             for model_id in ranked:
                 size = fit.weights[model_id]
                 ms.record(store, ms.Seen(

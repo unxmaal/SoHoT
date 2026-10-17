@@ -243,6 +243,7 @@ def _run_loop_held(a, keep=None) -> int:
             # had run. Two tiers in one command, reading different sources.
             extra = {"from_store": True, "top": LOOP_INSPECT}
             _reopen_stale_too_big()
+            _reopen_unranked()
         sub = _ap.Namespace(**{**vars(a), **flags, **extra, "loop": False})
         rc = _step(label, discover_cmd.cmd_discover(sub), failed) or rc
 
@@ -462,6 +463,20 @@ def _reopen_missing_in_snapshot() -> list[str]:
     finally:
         store.close()
     print(f"  requeued {len(names)} screen(s) that failed on our own snapshot")
+    for n in names:
+        print(f"    {n}")
+    return names
+
+
+def _reopen_unranked() -> list[str]:
+    """Requeue for inspect the weights a parent's ranking retired before #954."""
+    from harness import memory_store as ms
+    store = ms.connect()
+    try:
+        names = ms.requeue_unranked(store)
+    finally:
+        store.close()
+    print(f"  requeued {len(names)} weight(s) a parent's ranking had retired")
     for n in names:
         print(f"    {n}")
     return names

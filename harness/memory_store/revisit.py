@@ -232,6 +232,24 @@ def requeue_stale_too_big(conn, ceiling_gb: float | None = None) -> list[str]:
     return names
 
 
+def unranked_terminal(conn) -> list[dict]:
+    """Proposals held terminal by a parent's ranking, which says nothing about them. #954."""
+    from harness.memory_store.proposals import UNRANKED
+    return [dict(r) for r in conn.execute(
+        "SELECT p.name, v.id AS verdict_id FROM proposals p JOIN verdicts v ON v.id = p.state_verdict_id "
+        f"WHERE p.state IN ({','.join('?' * len(TERMINAL))}) AND v.tier = ? AND v.detail = ? ORDER BY p.name",
+        (*TERMINAL, INSPECT, UNRANKED))]
+
+
+def requeue_unranked(conn) -> list[str]:
+    """Hand back to inspect each weight a parent's ranking retired before #954."""
+    names = [r["name"] for r in unranked_terminal(conn)]
+    for name in names:
+        retract(conn, name, "a parent's download ranking retired it; inspect reads it on its own")
+    conn.commit()
+    return names
+
+
 def requeue_missing_in_snapshot(conn) -> list[str]:
     """Send back to screen each BROKEN screen whose loader missed a file in our own snapshot. #911."""
     from harness import reasons

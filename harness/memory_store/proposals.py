@@ -450,22 +450,18 @@ def parents(conn: sqlite3.Connection, name: str,
         "WHERE dst.name = ? AND e.relation = ?", (name, relation))]
 
 
+#: What a parent's re-inspection says of a queued weight it no longer ranks: a fact about its queue. #954.
+UNRANKED = "no longer among this repo's top-ranked weights"
+
+
 def retire_unlisted(conn: sqlite3.Connection, name: str, keep,
-                    relation: str = "needs", why: str = "",
-                    outcome: str = "ignored") -> list[str]:
-    """Retire things `name` queued that it no longer ranks.
-
-    A queue entry is a decision a ranking made at a point in time, and when the
-    ranking changes every decision it made is suspect. Re-inspecting a repo used
-    to only ADD, so the queue mixed picks from rules that no longer exist.
-
-    A weight named by TWO repos is not this one's to retire: if any other parent
-    still ranks it, it stays. Returns what was retired.
-    """
+                    relation: str = "needs", why: str = UNRANKED) -> list[str]:
+    """Drop `name`'s edge to each queued weight it no longer ranks; one no parent names goes back to inspect. #73, #954."""
+    from harness import reasons
     keep = set(keep)
-    retired = []
+    returned = []
     rows = conn.execute(
-        "SELECT dst.name AS name FROM edges e JOIN proposals src ON src.id = e.src "
+        "SELECT e.id AS edge, dst.name AS name FROM edges e JOIN proposals src ON src.id = e.src "
         "JOIN proposals dst ON dst.id = e.dst "
         "WHERE src.name = ? AND e.relation = ?", (name, relation)).fetchall()
     for row in rows:
@@ -476,13 +472,15 @@ def retire_unlisted(conn: sqlite3.Connection, name: str, keep,
                            (other,)).fetchone()
         if not cur or cur["state"] != "queued":
             continue
-        if any(p != name for p in parents(conn, other, relation)):
-            continue      # another repo still names it; not ours to retire
+        conn.execute("DELETE FROM edges WHERE id = ?", (row["edge"],))
+        conn.commit()
+        if parents(conn, other, relation):
+            continue      # another repo still ranks it
         # The state can move between the read above and this write.
-        if decide_or_skip(conn, other, outcome, tier="inspect",
-                          detail=why[:200], reason="candidate") is not None:
-            retired.append(other)
-    return retired
+        if decide_or_skip(conn, other, "queued", tier=INSPECT, detail=why[:200],
+                          reason=reasons.HARNESS) is not None:
+            returned.append(other)
+    return returned
 
 
 def by_source(conn: sqlite3.Connection) -> list[dict]:
