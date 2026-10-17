@@ -405,6 +405,11 @@ def measured_peak_gb(spec: str, conn=None) -> float | None:
     return best / 1024 ** 2 if best else None
 
 
+def budget_gb(available_gb: float, ceiling_gb: float, resident_gb: float,
+              reserve_gb: float) -> float:
+    return min(available_gb, ceiling_gb) - reserve_gb - resident_gb
+
+
 def fits(need_gb: float, available_gb: float, ceiling_gb: float,
          resident_gb: float = 0.0,
          reserve_gb: float = DEFAULT_RESERVE_GB) -> tuple[bool, str]:
@@ -413,7 +418,7 @@ def fits(need_gb: float, available_gb: float, ceiling_gb: float,
     `resident_gb` is what a hot-swapping server may still be holding. Budgeting
     as if only one model is resident is exactly how this went wrong.
     """
-    budget = min(available_gb, ceiling_gb) - reserve_gb - resident_gb
+    budget = budget_gb(available_gb, ceiling_gb, resident_gb, reserve_gb)
     if need_gb > budget:
         return False, (
             f"needs {need_gb:.1f} GB but only {budget:.1f} GB is safely "
@@ -504,6 +509,21 @@ def check_model(repo: str, resident_gb: float = 0.0,
     successfully on the same machine. A guard that blocks working work gets
     switched off, which is worse than no guard at all.
     """
+    need = need_gb(repo, quantize, spec, parallel)
+    if need is None:
+        # Allowed, but said out loud. Refusing everything uncached would make
+        # the guard the thing that breaks the workflow.
+        return True, f"size of {repo} is unknown (not cached); proceeding unchecked"
+    if isinstance(need, str):
+        return True, need
+    if reserve_gb is None:
+        reserve_gb = measured_reserve_gb()
+    return fits(need, available_gb(), ceiling_gb(), resident_gb, reserve_gb)
+
+
+def need_gb(repo: str, quantize: int | None = None, spec: str = "",
+            parallel: int = 0) -> float | str | None:
+    """What loading `repo` costs in GB, None when unknown, or why it cannot be priced."""
     path = cache_path(repo)
     need = size_gb(path) if path else None
     if need is not None and quantize:
@@ -513,21 +533,31 @@ def check_model(repo: str, resident_gb: float = 0.0,
         # ds4 reads its n-gram and Engram tables from disk; streaming holds only the expert cache. #611.
         resident = ds4.resident_bytes(spec, int(need * 1024 ** 3))
         if resident is None:
-            return True, (f"{spec}: ds4 sizes its expert cache to the memory it finds; "
-                          f"proceeding unchecked")
+            return (f"{spec}: ds4 sizes its expert cache to the memory it finds; "
+                    f"proceeding unchecked")
         need = resident / 1024 ** 3
     # A measured peak beats the weights-on-disk proxy. #322.
     peak = measured_peak_gb(spec) if spec else None
     if peak is not None and (need is None or peak > need):
         need = peak
     if need is None:
-        # Allowed, but said out loud. Refusing everything uncached would make
-        # the guard the thing that breaks the workflow.
-        return True, f"size of {repo} is unknown (not cached); proceeding unchecked"
+        return None
     if parallel:
         from harness import serving
         # Each request in flight holds its own KV cache beside the weights. #699.
         need += parallel * mlx_kv_bytes_per_token(repo) * serving.MLX_REQUEST_CTX / 1024 ** 3
-    if reserve_gb is None:
-        reserve_gb = measured_reserve_gb()
-    return fits(need, available_gb(), ceiling_gb(), resident_gb, reserve_gb)
+    return need
+
+
+def room_gb() -> float:
+    """What fits() would budget here now with nothing resident: the quantity `room_gb:>n` reads. #928."""
+    return budget_gb(available_gb(), ceiling_gb(), 0.0, measured_reserve_gb())
+
+
+def wait_for(repo: str, spec: str = "", parallel: int = 0, resident_gb: float = 0.0,
+             quantize: int | None = None) -> str:
+    """The until a load fits() refused waits on: room for its need, or '' when the need is unknown. #928."""
+    need = need_gb(repo, quantize, spec, parallel)
+    if isinstance(need, str) or need is None:
+        return ""
+    return f"room_gb:>{need + resident_gb:.1f}"
