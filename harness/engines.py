@@ -773,7 +773,11 @@ def card_gap(spec: str, card) -> str:
     if loads and library.strip() and library.strip().lower() not in loads:
         return (f"needs its own runner: its card names the {library} library, and "
                 f"{head} loads {' or '.join(loads)}")
-    return ""
+    if head in HF_TASK_ENGINES:
+        return ""
+    from harness import runner_gaps
+    why, _ = runner_gaps.pre_screen(spec, card)
+    return f"needs its own runner: {why}" if why else ""
 
 
 def _corpus_of(params: dict) -> str:

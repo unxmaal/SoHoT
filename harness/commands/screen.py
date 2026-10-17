@@ -187,13 +187,13 @@ def snapshot_gap(row: dict, conn) -> str:
 
 
 def verdict_of_run(returncode: int, stderr: str, summary, candidate: str,
-                   key: str = "", facts: dict | None = None):
-    """One finished screen process's verdict; stderr is classed only without a receipt."""
+                   key: str = "", facts: dict | None = None, card=None):
+    """One finished screen process's verdict; stderr is classed only without a receipt, and the card picks a runtime gap's until."""
     from harness import screen
-    stderr_class = "" if summary is not None else reasons.classify(
-        (stderr or "")[-2000:], reasons.STDERR, candidate)
+    tail = "" if summary is not None else (stderr or "")[-2000:]
+    stderr_class = reasons.classify(tail, reasons.STDERR, candidate) if tail else ""
     return screen.outcome(returncode, summary, candidate=candidate, key=key,
-                          stderr_class=stderr_class, facts=facts)
+                          stderr_class=stderr_class, facts=facts, evidence=tail, card=card)
 
 
 _PY_WARNING = re.compile(r"^\S.*:\d+: \w*Warning: ")
@@ -305,7 +305,8 @@ def _report_screen(a) -> int:
                 print(f"   QUEUED: the screen could not start: {exc}")
                 ms.decide_or_skip(store, r["name"], "queued", tier=ms.SCREEN,
                                   detail=f"not screened: the screen could not start: "
-                                         f"{exc}"[:600], reason=reasons.HARNESS)
+                                         f"{exc}"[:600], reason=reasons.HARNESS,
+                                  failure_class=reasons.HARNESS_ERROR)
                 continue
             # The RUN's own summary, read from what it wrote rather than parsed
             # out of its chatter: a tier that infers an outcome from stdout is
@@ -320,7 +321,7 @@ def _report_screen(a) -> int:
             key = candidates.key_for(store, r["candidate"])
             # Read once, here, and only when the run wrote no receipt. #408.
             verdict = verdict_of_run(proc.returncode, proc.stderr, summary,
-                                     r["candidate"], key=key, facts=ms.this_machine())
+                                     r["candidate"], key=key, facts=ms.this_machine(), card=r)
             if verdict.failure_class == reasons.LOAD_LOG_UNREAD:
                 # The router's log says why; its child's lines are kept with the run. #953.
                 from harness import load_log
@@ -339,7 +340,7 @@ def _report_screen(a) -> int:
                               detail=detail[:600],
                               run_id=(stored or {}).get("run_id"),
                               reason=verdict.reason, until=verdict.until,
-                              candidate_id=cid)
+                              candidate_id=cid, failure_class=verdict.failure_class)
             router.release_spec(r["candidate"], f"screened {r['name']}")
             if verdict.failure_class in reasons.STOPS:
                 print(f"   {verdict.failure_class}: the model server or GPU is "

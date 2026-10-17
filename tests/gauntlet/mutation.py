@@ -36,9 +36,10 @@ MODULES = {
         "tests/test_budget_ladder.py", "tests/test_knob_binding.py", "tests/test_screen_fair.py",
         "tests/test_new_lane_loop_faults.py", "tests/test_shared_store_703.py", "tests/test_ocr_lane.py",
         "tests/test_fetch_inspected_798.py", "tests/test_retrieval_lane.py",
-        "tests/test_adopt_assumptions.py", "tests/test_cold_load.py", "tests/test_degenerate_955.py", "tests/test_load_log_953.py"],
+        "tests/test_adopt_assumptions.py", "tests/test_cold_load.py", "tests/test_degenerate_955.py",
+        "tests/test_load_log_953.py", "tests/test_runner_gap_until_950.py"],
     "harness/screen.py": [
-        "tests/test_gguf_first_911.py", "tests/test_harness_screen.py", "tests/test_harness_screen_spec.py", "tests/test_screen_evidence.py",
+        "tests/test_runner_gap_until_950.py", "tests/test_gguf_first_911.py", "tests/test_harness_screen.py", "tests/test_harness_screen_spec.py", "tests/test_screen_evidence.py",
         "tests/test_screen_server_death.py", "tests/test_decide_lane.py", "tests/test_refusal_shapes.py",
         "tests/test_verdict_reasons.py", "tests/test_screen_case_fit.py", "tests/test_methods.py",
         "tests/test_ds4.py", "tests/test_screen_fair.py", "tests/test_gguf_route.py",
@@ -92,7 +93,7 @@ LEFT_OUT = {
         "test_over_budget_796.py", "test_planted_919.py", "test_projection_696.py", "test_rank_893.py", "test_router_unload.py",
         "test_store_state.py", "test_sweep_ceiling_806.py"),
     "harness/serving.py": (
-        "test_mlx_backlog.py", "test_agent_limits.py", "test_claims_lane.py", "test_decide_lane.py",
+        "test_mlx_backlog.py", "test_runner_gap_until_950.py", "test_agent_limits.py", "test_claims_lane.py", "test_decide_lane.py",
         "test_delegate_resident.py", "test_delegations.py", "test_lane_probe_924.py", "test_machine_host.py",
         "test_machine_identity.py", "test_mlx_dead_912.py", "test_purpose_825.py", "test_usage_gateway.py",
         "test_vllm.py", "test_repo_failures_921.py"),

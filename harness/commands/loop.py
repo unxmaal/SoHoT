@@ -245,6 +245,7 @@ def _run_loop_held(a, keep=None) -> int:
             _reopen_stale_too_big()
             _reopen_unranked()
             _reopen_upstream_committed()
+            _reread_runtime_declines(a)
         sub = _ap.Namespace(**{**vars(a), **flags, **extra, "loop": False})
         rc = _step(label, discover_cmd.cmd_discover(sub), failed) or rc
 
@@ -270,6 +271,8 @@ def _run_loop_held(a, keep=None) -> int:
         stuck = rank.runnerless(rows)
         named = {r["name"] for r in stuck}
         stuck += [r for r in fetching.format_wanted(store, want) if r["name"] not in named]
+        named = {r["name"] for r in stuck}
+        stuck += [r for r in ms.runner_waits(store, want) if r["name"] not in named]
         if stuck:
             print(f"\n=== runners wanted ===")
             print(f"{len(stuck)} candidate(s) have a lane and no runner that "
@@ -527,6 +530,36 @@ def _reopen_stale_too_big() -> list[str]:
     for n in sized:
         print(f"    {n}")
     return names + sized
+
+
+#: How many runtime declines one loop re-reads the cards of; the rest wait for the next. #950.
+REREAD_PER_LOOP = 25
+
+
+def _reread_runtime_declines(a) -> list[str]:
+    """Re-read the cards of screen runtime declines that predate model_type, then rewrite every runtime until by its cause. #950."""
+    import argparse as _argparse
+
+    from harness import memory_store as ms
+    store = ms.connect()
+    try:
+        names = ms.cards_to_reread(store)[:REREAD_PER_LOOP]
+    finally:
+        store.close()
+    if names:
+        print(f"  re-reading {len(names)} runtime decline card(s) for their model type")
+        discover_cmd._report_inspect(_argparse.Namespace(
+            repos=names, budget=getattr(a, "budget", 900), top=len(names), shard=""))
+    store = ms.connect()
+    try:
+        moved = ms.rewrite_runner_gap_untils(store)
+        store.commit()
+    finally:
+        store.close()
+    print(f"  {len(moved)} runtime decline(s) now wait on their cause")
+    for n in moved:
+        print(f"    {n}")
+    return moved
 
 
 def _cross_methods(store, want: str = "") -> list[tuple[str, str, bool]]:

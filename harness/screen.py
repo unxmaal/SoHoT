@@ -508,8 +508,9 @@ ENGINE_RUNTIMES = {"mflux": "mflux", "diffusers": "diffusers",
                    "diffusers-video": "diffusers", "acestep": "ace-step",
                    # The audio server's runtime, as scripts/versions.sh pins it. #408.
                    "tts": "mlx-audio", "stt": "mlx-audio",
-                   "hf-ocr": "transformers", "rerank": "sentence-transformers",
-                   "embed": "sentence-transformers", "hf-pii": "transformers",
+                   # The hf-task venv's own copies, keyed by venv in machine.versions. #950.
+                   "hf-ocr": "hf-task/transformers", "rerank": "hf-task/sentence-transformers",
+                   "embed": "hf-task/sentence-transformers", "hf-pii": "hf-task/transformers",
                    # Its checkout's commit date, which machine.versions records. #611.
                    "ds4": "ds4"}
 LOAD_RUNTIME = "mlx-lm"
@@ -526,14 +527,14 @@ def _installed(pkg: str) -> str:
     return ms.this_machine().get("versions", {}).get(pkg) or "0"
 
 
-def load_until(candidate: str = "") -> str:
-    """The predicate that reopens a load failure: a newer runtime."""
+def load_until(candidate: str = "", evidence: str = "", card=None, cls: str = "") -> str:
+    """The predicate that reopens a load failure: what its cause lacks, else a newer runtime. #950."""
     if candidate.startswith(LLAMACPP_PREFIX):
         return f"version:llama.cpp>{_installed('llama.cpp')}"
-    runtime = engine_runtime(candidate)
-    if runtime:
-        return f"version:{runtime}>{_installed(runtime)}"
-    return f"version:{LOAD_RUNTIME}>{_installed(LOAD_RUNTIME)}"
+    from harness import runner_gaps
+    runtime = engine_runtime(candidate) or LOAD_RUNTIME
+    return (runner_gaps.cause_until(cls, evidence, candidate, card)
+            or f"version:{runtime}>{_installed(runtime)}")
 
 
 def _sentence(cls: str, why: str, limit: str) -> str:
@@ -564,13 +565,13 @@ def _sentence(cls: str, why: str, limit: str) -> str:
 
 
 def decide_class(cls: str, why: str = "", candidate: str = "",
-                 limits=(), facts: dict | None = None) -> Verdict:
-    """The verdict a failure class means, with its reason and until. #408."""
+                 limits=(), facts: dict | None = None, evidence: str = "", card=None) -> Verdict:
+    """The verdict a failure class means, with its reason and until; `evidence` is the failure text when `why` is not. #408, #950."""
     got, reason = reasons.CLASSES[cls]
     limit = sorted(limits)[0] if limits else ""
     until = ""
     if reason == reasons.RUNTIME:
-        until = load_until(candidate)
+        until = load_until(candidate, " ".join(x for x in (why, evidence) if x), card, cls)
     elif reason == reasons.LIMIT and limit:
         until = f"limit:{limit}"
     elif cls == reasons.GPU_FAULT and (facts or {}).get("memory_gb"):
@@ -649,20 +650,23 @@ SAMPLER_CHECK = ("check the receipt's sampler against the model card's recommend
 
 def outcome(returncode: int, summary: dict | None, candidate: str = "",
             key: str = "", stderr_class: str = "",
-            facts: dict | None = None) -> Verdict:
+            facts: dict | None = None, evidence: str = "", card=None) -> Verdict:
     """A store verdict from one screen run, decided from failure classes.
 
     `broken` is TERMINAL and `screened` is not. A request the harness could
     not deliver is `queued`; a limit the harness chose, a runtime gap and a
     GPU fault are `declined` with an `until` that reopens them.
     `stderr_class` is the run's own stderr, classed once by the caller, and
-    only counts when the run wrote no receipt.
+    only counts when the run wrote no receipt; `evidence` is that stderr and
+    `card` the candidate's card, which together choose a runtime gap's until.
     """
     if summary is None and stderr_class:
-        return decide_class(stderr_class, candidate=candidate, facts=facts)
+        return decide_class(stderr_class, candidate=candidate, facts=facts,
+                            evidence=evidence, card=card)
     mismatch = wrong_run(summary, candidate, key) if candidate else ""
     if mismatch:
-        return Verdict("queued", f"not screened: {mismatch}", reasons.HARNESS)
+        return Verdict("queued", f"not screened: {mismatch}", reasons.HARNESS,
+                       failure_class=reasons.HARNESS_ERROR)
     if returncode != 0:
         return Verdict("broken", f"the screen exited {returncode}",
                        reasons.CANDIDATE, failure_class=reasons.CRASHED)
@@ -694,4 +698,4 @@ def outcome(returncode: int, summary: dict | None, candidate: str = "",
         why = f"{why}; {caveat}" if why and caveat else (why or caveat)
         return Verdict("declined", _sentence(cls or reasons.CONTENT_FAILED, why, ""), reasons.LIMIT,
                        until or screen_limit(candidate), cls or reasons.CONTENT_FAILED)
-    return decide_class(cls, why, candidate, limits, facts)
+    return decide_class(cls, why, candidate, limits, facts, card=card)

@@ -74,6 +74,8 @@ UNTIL = {
     "commit_after": "the upstream's last commit date (inspect.upstream_commit, per row)",
     "format": "a weight format a runner reads; fetching.format_waits reads it, not until_met",
     "layout": "a weight layout harness.variants groups; inspect re-reads it each sweep, not until_met",
+    "runner": "an engine this harness registers (engines.names); none by that name exists yet",
+    "policy": "a model type the pinned transformers ships natively (remote_code.native_types)",
 }
 
 
@@ -145,6 +147,22 @@ def until_met(until: str, facts: dict | None = None) -> bool:
             return have is not None and int(have) > int(floor)
         except ValueError:
             return False
+    if key == "runner":
+        have = facts.get("engines")
+        if have is None:
+            from harness import engines
+            have = engines.names()
+        return bool(want) and want in have
+    if key == "policy":
+        # A repo's own code is never run; it loads once the pinned transformers ships its type. #950.
+        rule, _, mtype = want.partition("@")
+        if rule != "trust_remote_code" or not mtype:
+            return False
+        native = facts.get("native_types")
+        if native is None:
+            from harness import remote_code
+            native = remote_code.native_types()[1]
+        return mtype in native
     if key == "commit_after":
         seen = (facts.get("last_commit") or "").strip()
         # STRING COMPARISON IS CORRECT FOR ISO-8601 AND ONLY FOR IT, so both
@@ -356,6 +374,87 @@ def requeue_missing_in_snapshot(conn) -> list[str]:
                             f"not a verdict on {name}", tier=SCREEN)
     conn.commit()
     return names
+
+
+#: Until keys a screen runtime decline may hold; before #950 every one was `version`.
+GAP_KEYS = ("version", "runner", "format", "policy")
+#: The ones a runner gap waits on, for the runners-wanted report.
+RUNNER_WAITS = ("runner", "format", "policy")
+
+
+def _runtime_declines(conn) -> list:
+    return conn.execute(
+        "SELECT p.name, p.lane, p.hf_task, p.library, p.card_tags, p.model_type, p.remote_code, "
+        "v.id, v.until, v.detail, v.failure_class, coalesce(c.spec, '') AS spec "
+        "FROM proposals p JOIN verdicts v ON v.id = p.state_verdict_id "
+        "LEFT JOIN candidates c ON c.id = v.candidate_id "
+        "WHERE p.state = 'declined' AND v.tier = ? AND v.reason = 'runtime' ORDER BY v.id",
+        (SCREEN,)).fetchall()
+
+
+def _screen_class(row) -> str:
+    """A screen runtime decline's class: its column, else the sentence screen._sentence wrote. #292."""
+    from harness import reasons
+    if row["failure_class"] in (reasons.LOAD_FAILED_RUNTIME, reasons.LOAD_FAILED_LAYOUT):
+        return row["failure_class"]
+    low = (row["detail"] or "").lower()
+    if low.startswith("needs its own runner"):
+        return reasons.LOAD_FAILED_LAYOUT
+    if low.startswith("the installed runtime could not load it"):
+        return reasons.LOAD_FAILED_RUNTIME
+    return ""
+
+
+def runner_gap_rewrites(conn) -> list[dict]:
+    """Screen runtime declines whose until is not the one their recorded detail and card name now. #950."""
+    from harness import runner_gaps
+    from harness.serving import LLAMACPP_PREFIX
+    out = []
+    for r in _runtime_declines(conn):
+        until = r["until"] or ""
+        # llama-server's load failures are #953's.
+        if until.partition(":")[0] not in GAP_KEYS or until.startswith("version:llama.cpp") \
+                or r["spec"].startswith(LLAMACPP_PREFIX):
+            continue
+        cls = _screen_class(r)
+        new = runner_gaps.cause_until(cls, r["detail"], r["spec"] or r["name"], dict(r)) if cls else ""
+        if new and new != until:
+            out.append({"id": r["id"], "name": r["name"], "until": until, "new": new, "class": cls})
+    return out
+
+
+def rewrite_runner_gap_untils(conn) -> list[str]:
+    """Give each runner_gap_rewrites row its new until and class, in place; the caller commits. #950."""
+    names = []
+    for r in runner_gap_rewrites(conn):
+        conn.execute("UPDATE verdicts SET until = ?, failure_class = ? WHERE id = ?",
+                     (r["new"], r["class"], r["id"]))
+        names.append(r["name"])
+    return names
+
+
+def cards_to_reread(conn) -> list[str]:
+    """Screen runtime declines with no model_type and no inspect since, so their card cannot tell the gap. #950."""
+    rows = conn.execute(
+        "SELECT p.name FROM proposals p JOIN verdicts v ON v.id = p.state_verdict_id "
+        "WHERE p.state = 'declined' AND v.tier = ? AND v.reason = 'runtime' "
+        "AND coalesce(p.model_type, '') = '' AND coalesce(p.registry, '') IN ('', ?) "
+        "AND NOT EXISTS (SELECT 1 FROM sightings s WHERE s.proposal_id = p.id "
+        "  AND s.source = 'inspect' AND s.seen_at > v.decided_at) ORDER BY p.name",
+        (SCREEN, ms.HUGGINGFACE)).fetchall()
+    return [r["name"] for r in rows]
+
+
+def runner_waits(conn, lane: str = "") -> list[dict]:
+    """Screen declines waiting on a runner, format or policy this harness lacks, for runners wanted. #950."""
+    from harness import lanes
+    out = []
+    for r in _runtime_declines(conn):
+        if (r["until"] or "").partition(":")[0] in RUNNER_WAITS and (
+                not lane or lanes.serves(r["lane"] or "", lane)):
+            out.append({"name": r["name"], "lane": r["lane"],
+                        "why_not": f"waits on {r['until']}: {(r['detail'] or '')[:200]}"})
+    return out
 
 
 _NONE_OF = re.compile(r"none of ([\w, ]+)$")

@@ -18,7 +18,7 @@ ERROR_RATE_MAX = 0.10
 SERVING = ("adoptions_pass_here", "no_reference_served", "served_matches_adoption", "gateway_errors")
 SCHEDULE = ("sweep_on_schedule",)
 VERDICTS = ("too_big_ceiling_current", "too_big_names_variant", "terminal_reason_coherent", "no_ranking_verdict",
-            "load_log_kept")
+            "load_log_kept", "runner_gap_until_current", "broken_runner_layout")
 CHECKS = mc.INVARIANTS + SERVING + SCHEDULE + VERDICTS
 
 
@@ -164,6 +164,24 @@ def _load_log_kept(conn, pinned=None) -> tuple[list, list]:
     return bad, known
 
 
+def _runner_gap_until_current(conn) -> list:
+    """Live screen runtime declines whose until is not what their detail and card name: a release that cannot help. #950."""
+    from harness.memory_store.revisit import runner_gap_rewrites
+    return [f"verdict {r['id']} {r['name']}: {r['until']}, its cause names {r['new']}"
+            for r in runner_gap_rewrites(conn)]
+
+
+def _broken_runner_layout(conn) -> list:
+    """Live broken screens whose runner could not open the repo's layout: a runner gap written as a verdict. #951."""
+    from harness import reasons
+    return [f"verdict {r['id']} {r['name']}: {reasons.LOAD_FAILED_LAYOUT} recorded broken"
+            for r in conn.execute(
+                "SELECT v.id, p.name, v.detail, coalesce(c.spec, p.name) AS spec FROM proposals p "
+                "JOIN verdicts v ON v.id = p.state_verdict_id LEFT JOIN candidates c ON c.id = v.candidate_id "
+                "WHERE p.state = 'broken' AND v.tier = 'screen' ORDER BY v.id")
+            if reasons.classify(r["detail"] or "", reasons.RUNNER, r["spec"]) == reasons.LOAD_FAILED_LAYOUT]
+
+
 def _when(at) -> str:
     import time
     return time.strftime("%Y-%m-%d %H:%M", time.localtime(at)) if at else "never"
@@ -237,6 +255,8 @@ def audit(path=None, config=None) -> dict:
         checks.append(mc._check("no_ranking_verdict", _no_ranking_verdict(conn)))
         unkept, waiting = _load_log_kept(conn)
         checks.append(mc._check("load_log_kept", unkept))
+        checks.append(mc._check("runner_gap_until_current", _runner_gap_until_current(conn)))
+        checks.append(mc._check("broken_runner_layout", _broken_runner_layout(conn)))
         warnings = {"too_big_ceiling_current": mc._say(backlog)} if backlog and not stale else {}
         if unswept and not summed:
             warnings["too_big_names_variant"] = mc._say(unswept)

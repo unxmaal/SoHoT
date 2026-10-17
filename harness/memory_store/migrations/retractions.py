@@ -513,3 +513,34 @@ def _requeue_screens_of_unresolvable_snapshots(conn) -> None:
         for row in downloads.complete_hub(conn):
             if downloads.offline_gap(downloads.HUB, row["path"]):
                 downloads.stand_down(conn, row["repo"])
+
+
+def _rewrite_runner_gap_untils(conn) -> None:
+    """Runtime screen declines wait on what their cause lacks, not on the failing runner's next release. #950."""
+    from harness.memory_store.revisit import rewrite_runner_gap_untils
+    rewrite_runner_gap_untils(conn)
+
+
+def _decline_runner_layout_gaps(conn) -> None:
+    """A broken screen, or a retest about to re-run one, whose runner could not open the repo's layout waits on that runner. #951."""
+    from harness import reasons, runner_gaps
+    rows = conn.execute(
+        "SELECT p.id, p.name, p.hf_task, p.library, p.card_tags, p.model_type, p.remote_code, "
+        "v.detail, coalesce(c.spec, '') AS spec FROM proposals p "
+        "JOIN verdicts v ON v.proposal_id = p.id AND v.tier = ? AND v.outcome = 'broken' "
+        "LEFT JOIN candidates c ON c.id = v.candidate_id "
+        "WHERE v.id = (SELECT max(w.id) FROM verdicts w WHERE w.proposal_id = p.id AND w.tier = ?) "
+        "AND ((p.state = 'broken' AND p.state_verdict_id = v.id) "
+        "  OR (p.state = 'queued' AND p.retest_count > 0)) ORDER BY p.id",
+        (SCREEN, SCREEN)).fetchall()
+    for r in rows:
+        spec, detail = r["spec"] or r["name"], r["detail"] or ""
+        cls = reasons.classify(detail, reasons.RUNNER, spec)
+        if cls != reasons.LOAD_FAILED_LAYOUT:
+            continue
+        until = runner_gaps.cause_until(cls, detail, spec, dict(r))
+        vid = _migration_retraction(
+            conn, r["id"], r["name"], "declined", SCREEN,
+            f"retracted: {spec}'s runner could not open the repo's layout, a runner gap rather "
+            f"than a verdict on {r['name']}: {detail[:400]}", until=until)
+        conn.execute("UPDATE verdicts SET failure_class = ? WHERE id = ?", (cls, vid))
