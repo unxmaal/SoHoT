@@ -94,8 +94,6 @@ NOT_A_MODEL_EXCEPTIONS = ("lora-ready",)
 #: Tag namespaces that name another repo or a class, never this one's kind. #949.
 FOREIGN_NAMESPACES = ("dataset", "base_model", "diffusers", "license", "arxiv", "doi", "region")
 
-#: Weight files a listing is weighed by.
-WEIGHT_SUFFIXES = (".safetensors", ".gguf", ".bin", ".pt", ".pth", ".ckpt", ".onnx", ".npz")
 #: A weight file under this, with nothing saying "full model", is adapter-sized. #949.
 ADAPTER_FLOOR_BYTES = 4 * 2**30
 

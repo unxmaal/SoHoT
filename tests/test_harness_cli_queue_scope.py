@@ -65,7 +65,7 @@ def test_the_denominator_counts_only_what_a_screen_could_answer(monkeypatch, cap
     rows = [{"name": "org/real", "lane": "image", "description": "", "times": 1},
             {"name": "org/a-style-lora", "lane": "image", "description": "",
              "times": 1},
-            {"name": "org/pack-ComfyUI", "lane": "image", "description": "",
+            {"name": "org/b-style-LoRA", "lane": "image", "description": "",
              "times": 1}]
     monkeypatch.setattr("harness.memory_store.judgeable",
                         lambda conn, limit=50: rows)

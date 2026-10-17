@@ -15,7 +15,7 @@ GIB = fetching.GIB
 
 
 def _card(repo: str) -> dict:
-    return json.loads((CARDS / f"{repo.replace('/', '_')}.json").read_text())
+    return json.loads((CARDS / f"{repo.replace('/', '_')}.json").read_text(encoding="utf-8"))
 
 
 def _words(data: dict) -> list[str]:

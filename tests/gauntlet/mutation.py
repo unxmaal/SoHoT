@@ -75,6 +75,7 @@ MODULES = {
 LEFT_OUT = {
     "harness/memory_store/transitions.py": ("test_blame_audit.py",),
     "harness/reasons.py": (
+        "test_attachment_tags_949.py",
         "test_chaos.py", "test_claims_lane.py", "test_gateway_key.py", "test_harness_checks_ocr.py",
         "test_harness_paired.py", "test_harness_screen.py", "test_harness_screen_spec.py",
         "test_holdout_power.py", "test_inspect_method_specs.py", "test_inspect_ratelimit.py",
@@ -83,6 +84,7 @@ LEFT_OUT = {
         "test_planted_919.py", "test_trajectory_921.py", "test_unranked_weight_954.py",
         "test_silent_truncation.py", "test_slots_memory.py", "test_store_downloads.py"),
     "harness/screen.py": (
+        "test_attachment_tags_949.py",
         "test_variants_947.py", "test_chaos.py", "test_claims_balanced_metric.py", "test_harness_engines_repo_id.py",
         "test_harness_report.py", "test_incumbent_lookup.py", "test_lane_metric_validity.py", "test_loop_backpressure.py",
         "test_canary_919.py", "test_mps_backend_abort.py", "test_new_lane_loop_faults.py", "test_rank_881.py",
