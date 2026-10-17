@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import random
+import re
 from types import SimpleNamespace
 
 import pytest
@@ -196,6 +197,32 @@ def test_a_run_whose_case_files_changed_is_refused():
     runs[0]["cases_digest"] = "0" * 16
     with pytest.raises(R.Refused, match="differ from the local case files"):
         R.check_runs(runs, cases)
+
+
+def test_cases_edited_since_the_run_are_read_back_from_its_commit(tmp_path):
+    import shutil
+    import subprocess
+
+    from evals.core import cases_digest, load_cases
+    from evals.importers import CASES
+    sha = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True, cwd=CASES).stdout.strip()
+    if not sha or subprocess.run(["git", "diff", "--quiet", "HEAD", "--", "."], cwd=CASES / "repo").returncode:
+        pytest.skip("needs a git checkout whose repo cases match HEAD")
+    committed = R.cases_at(sha)
+    shutil.copytree(CASES / "repo", tmp_path / "repo")
+    edited = next((tmp_path / "repo" / "history").glob("*.yaml"))
+    text = edited.read_text(encoding="utf-8")
+    edited.write_text(re.sub(r"\n  base: [0-9a-f]{40}", "\n  base: " + "f" * 40, text, count=1), encoding="utf-8")
+    runs = _runs(1)
+    runs[0]["receipt"]["case_ids"] = [c.id for c in committed]
+    runs[0]["cases_digest"] = cases_digest(committed)
+    runs[0]["environment"]["git_sha"] = sha
+    local = load_cases(tmp_path / "repo")
+    assert cases_digest(local) != runs[0]["cases_digest"]
+    got, source = R.cases_for(runs, local)
+    assert source == f"case files at git {sha}" and cases_digest(got) == runs[0]["cases_digest"]
+    runs[0]["environment"]["git_sha"] = "0" * 40
+    assert R.cases_for(runs, local) == (local, "local case files")
 
 
 def test_soh_repo_report_reads_the_store(store_run, tmp_path, capsys):

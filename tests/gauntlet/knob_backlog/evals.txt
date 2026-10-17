@@ -4,6 +4,7 @@ evals/decide_corpus.py:THRESHOLD
 evals/decide_corpus.py:_get->httpx.get(timeout)
 evals/decide_corpus.py:_indexed(limit)
 evals/environment.py:_sh->subprocess.run(timeout)
+evals/repo_report.py:cases_at->subprocess.run(timeout)
 evals/run.py:_agent_runner(max_tokens)
 evals/run.py:_build_runner(max_tokens)
 evals/run.py:build_runner(max_tokens)

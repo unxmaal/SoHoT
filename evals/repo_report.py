@@ -249,6 +249,8 @@ def text(rep: dict) -> str:
                    f"at {c['generated_at']}")
         out.append(f"  engines {c['engines'] or 'none recorded'}, served {c['served'] or 'none recorded'}, "
                    f"free memory {c['pressure'].get('free_pct', '?')}%")
+    if rep.get("cases_from"):
+        out.append(f"task keys from {rep['cases_from']}")
     if rep["differ_on"]:
         out.append(f"the two runs also differ on: {', '.join(rep['differ_on'])}")
     for why, ids in rep["set_aside"].items():
@@ -312,5 +314,49 @@ def run(run_ids, *, store=None, cases_dir=None, resamples: int = compare.DEFAULT
     finally:
         conn.close()
     cases = load_cases(Path(cases_dir) if cases_dir else CASES / "repo")
+    source = f"case files {cases_dir}" if cases_dir else "local case files"
+    if not cases_dir:
+        cases, source = cases_for(runs, cases)
     check_runs(runs, cases)
-    return report(runs, rows, cases, resamples=resamples, seed=seed)
+    return {**report(runs, rows, cases, resamples=resamples, seed=seed), "cases_from": source}
+
+
+def _matches(runs, cases) -> bool:
+    try:
+        check_runs(runs, cases)
+    except Refused:
+        return False
+    return True
+
+
+def cases_at(sha: str, root: Path | None = None) -> list:
+    """The repo cases as committed at `sha`, or [] when this checkout cannot produce them."""
+    import io
+    import subprocess
+    import tarfile
+    import tempfile
+
+    from evals.core import load_cases
+    root = root or Path(__file__).resolve().parent.parent
+    try:
+        got = subprocess.run(["git", "-C", str(root), "archive", sha, "evals/cases/repo"],
+                             capture_output=True, timeout=60)
+    except (OSError, subprocess.TimeoutExpired):
+        return []
+    if got.returncode != 0:
+        return []
+    with tempfile.TemporaryDirectory() as d:
+        with tarfile.open(fileobj=io.BytesIO(got.stdout)) as tar:
+            tar.extractall(d, filter="data")
+        return load_cases(Path(d) / "evals" / "cases" / "repo")
+
+
+def cases_for(runs, local) -> tuple[list, str]:
+    """Today's case files when they are what ran; else the files at a run's git sha, when those are."""
+    if _matches(runs, local):
+        return local, "local case files"
+    for sha in sorted({r["environment"].get("git_sha") or "" for r in runs} - {""}):
+        old = cases_at(sha)
+        if old and _matches(runs, old):
+            return old, f"case files at git {sha}"
+    return local, "local case files"
