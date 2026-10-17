@@ -242,3 +242,28 @@ model load into your timings. Measurement isolation is assumed, not enforced.
 
 Punishing a model for wrapping its SVG in a code fence measures prompt
 compliance, not SVG ability.
+
+## SWE-bench Verified calibration (#922)
+
+`python -m evals.swebench` checks the repo lane's generation and apply path
+against the published SWE-Llama 13B run (`20231010_rag_swellama13b`). Our
+executor cannot build SWE-bench environments, so the work splits at the seam:
+we generate, the official harness grades.
+
+1. `uv run --with pyarrow python -m evals.swebench sample RUN_DIR` draws 100
+   ids (seed 922) stratified by repo and difficulty, without the reference's
+   no_generation, reset_failed and install_fail ids. It also saves the
+   reference's `results.json` and its published `all_preds.jsonl`.
+2. `uv run --with pyarrow python -m evals.swebench predict RUN_DIR --server URL`
+   sends each bm25_13K prompt verbatim to a llama-server serving SWE-Llama-13b
+   (no GGUF is published; convert it with llama.cpp). Run the server and this
+   step under `scripts/with-gpu-lock`, at night. It writes `predictions.jsonl`
+   and `receipt.json` (quant, decoding, llama.cpp build, dataset revisions).
+3. `python -m evals.swebench grade RUN_DIR` writes `grade/grade.sh`. Copy
+   RUN_DIR to any x86_64 Linux host with Docker, run `sh grade/grade.sh`, and
+   copy its `grades/` back. It grades gold patches, a null patch that applies
+   but changes nothing, our predictions and the reference's, with the pinned
+   harness.
+4. `python -m evals.swebench compare RUN_DIR` drops ids that fail either
+   control and prints per-instance applied and resolved rates against the
+   reference, with Wilson intervals and an exact McNemar test.
