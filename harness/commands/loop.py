@@ -358,6 +358,7 @@ def _loop_spend(a, rc: int, failed: list | None = None, sweep=None) -> int:
     print("\n=== retests ===")
     _beat("retests")
     _reopen_retests()
+    _reopen_missing_in_snapshot()
 
     print("\n=== reverify ===")
     _beat("reverify")
@@ -448,6 +449,20 @@ def _reopen_retests(now: float | None = None) -> list[str]:
     finally:
         store.close()
     print(f"  reopened {len(names)} rejection(s) for a retest")
+    for n in names:
+        print(f"    {n}")
+    return names
+
+
+def _reopen_missing_in_snapshot() -> list[str]:
+    """Requeue for screen the BROKEN screens a loader failed on a file missing from our own snapshot. #911."""
+    from harness import memory_store as ms
+    store = ms.connect()
+    try:
+        names = ms.requeue_missing_in_snapshot(store)
+    finally:
+        store.close()
+    print(f"  requeued {len(names)} screen(s) that failed on our own snapshot")
     for n in names:
         print(f"    {n}")
     return names

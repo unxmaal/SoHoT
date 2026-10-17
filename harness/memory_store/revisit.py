@@ -9,7 +9,7 @@ import re
 from harness import memory_store as ms
 
 from harness.memory_store.machines import recorded_facts, remember_machine
-from harness.memory_store.schema import INSPECT, TERMINAL, _columns
+from harness.memory_store.schema import INSPECT, SCREEN, TERMINAL, _columns
 from harness.memory_store.transitions import retract
 
 
@@ -209,6 +209,20 @@ def requeue_stale_too_big(conn, ceiling_gb: float | None = None) -> list[str]:
         retract(conn, r["name"], f"too-big against a {r['ceiling_gb']:g} GiB ceiling; "
                                  f"re-inspected against {here:g} GiB")
         names.append(r["name"])
+    conn.commit()
+    return names
+
+
+def requeue_missing_in_snapshot(conn) -> list[str]:
+    """Send back to screen each BROKEN screen whose loader missed a file in our own snapshot. #911."""
+    from harness import reasons
+    rows = conn.execute(
+        "SELECT p.name, v.detail FROM proposals p JOIN verdicts v ON v.id = p.state_verdict_id "
+        "WHERE p.state = 'broken' AND v.tier = ? ORDER BY p.name", (SCREEN,)).fetchall()
+    names = [r["name"] for r in rows if reasons.in_our_snapshot(r["detail"])]
+    for name in names:
+        retract(conn, name, "a loader missed a file in our own snapshot; the harness's routing, "
+                            f"not a verdict on {name}", tier=SCREEN)
     conn.commit()
     return names
 

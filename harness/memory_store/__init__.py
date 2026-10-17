@@ -35,7 +35,7 @@ from harness.memory_store.transitions import (IllegalTransition, REOPENS, RETEST
 from harness.memory_store.retests import (due_retests, recovered_false_negatives,
     reopen_due_retests, retest_counts)  # noqa: F401
 from harness.memory_store.revisit import (_version_tuple, dangling_receipts,
-    requeue_revisitable, requeue_stale_too_big, resolved_run_paths, revisitable,
+    requeue_missing_in_snapshot, requeue_revisitable, requeue_stale_too_big, resolved_run_paths, revisitable,
     stale_too_big, until_for, until_met)  # noqa: F401
 from harness.memory_store.proposals import (REJECTIONS, Seen, by_registry, by_source,
     export, extraction, judgeable, judgeable_total, latest, link, parents, pending,

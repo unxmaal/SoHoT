@@ -25,6 +25,7 @@ def _loop(monkeypatch, backlog):
     fetched = []
     monkeypatch.setattr(disk, "sweep", lambda *a, **k: {})
     monkeypatch.setattr(loop_cmd, "_reopen_retests", lambda *a, **k: [])
+    monkeypatch.setattr(loop_cmd, "_reopen_missing_in_snapshot", lambda *a, **k: [])
     monkeypatch.setattr(loop_cmd, "_reverify", lambda *a, **k: {})
     monkeypatch.setattr(loop_cmd, "_sweeps", lambda *a, **k: {})
     monkeypatch.setattr(screen_cmd, "screenable_backlog", lambda want="": backlog)
