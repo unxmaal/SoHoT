@@ -39,9 +39,13 @@ def at(hours: float) -> float:
     return T0 + hours * HOUR
 
 
+#: The zone the committed goldens were stamped in, fixed so a UTC runner builds the same bytes. #913.
+STAMP_TZ = -4
+
+
 def stamp(hours: float) -> str:
-    import time
-    return time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime(at(hours)))
+    from datetime import datetime, timedelta, timezone
+    return datetime.fromtimestamp(at(hours), timezone(timedelta(hours=STAMP_TZ))).strftime("%Y-%m-%dT%H:%M:%S")
 
 
 def git_show(sha: str, path: str) -> str | None:
