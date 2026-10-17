@@ -1,0 +1,162 @@
+"""The repo-lane failure taxonomy reads run directories, checks every cited excerpt, and reads each arm back. #921."""
+import json
+
+import pytest
+
+from evals.analysis import repo_failures as F
+
+REPLY = "I'll start by exploring the repository.<tool_call>\n<function=command>"
+
+
+def _row(case, passed=False, cls="invalid_patch"):
+    return {"case_id": case, "candidate": "org/x", "passed": passed, "failure_class": "" if passed else cls}
+
+
+@pytest.fixture
+def run_dir(tmp_path):
+    d = tmp_path / "20261018-210000-000-0000-repo"
+    d.mkdir()
+    rows = [_row("a", True), _row("b", cls="token_budget_exhausted"), _row("c"), _row("d"),
+            _row("e", cls="content_failed"), _row("f", cls="environment_error")]
+    requests = {"org/x": [{"max_tokens": 32768, "sampling": {"temperature": 0.2},
+                           "template": {"enable_thinking": False}, "system_sha": "abc"}]}
+    (d / "results.json").write_text(json.dumps({"receipt": {
+        "modality": "repo", "case_ids": list("abcdef"), "max_tokens": 32768,
+        "template": {"repo": {"enable_thinking": False}}, "sampling": {"repo": {"temperature": 0.2}},
+        "requests": requests}, "rows": rows}), encoding="utf-8")
+    (d / "org_x--c.json").write_text(json.dumps({"case": "c", "reply": REPLY}), encoding="utf-8")
+    return d
+
+
+def _label(run_dir, case="c", cls="tool_call", text="<tool_call>", **kw):
+    f = run_dir / "org_x--c.json"
+    (at,) = F.locate(f, text)
+    return {"run": run_dir.name, "case": case, "class": cls, "file": f.name, "offset": at,
+            "excerpt": text, **kw}
+
+
+def _write(path, labels):
+    path.write_text("".join(json.dumps(x) + "\n" for x in labels), encoding="utf-8")
+    return path
+
+
+def test_the_tally_counts_each_runner_class(run_dir):
+    got = F.tally(F.load_run(run_dir))
+    assert [got[c] for c in F.TALLY] == [1, 1, 2, 1, 1]
+
+
+def test_a_paused_run_is_tallied_from_its_checkpoint(tmp_path):
+    d = tmp_path / "paused"
+    d.mkdir()
+    (d / "checkpoint.jsonl").write_text(
+        json.dumps({"identity": {"modality": "repo"}}) + "\n"
+        + "".join(json.dumps({"row": _row(c)}) + "\n" for c in "xy"), encoding="utf-8")
+    run = F.load_run(d)
+    assert run.receipt["modality"] == "repo" and F.tally(run)["invalid_patch"] == 2
+
+
+def test_an_excerpt_is_checked_at_its_byte_offset(run_dir):
+    good = _label(run_dir)
+    assert F.check_excerpt(run_dir, good) == ""
+    assert "not the cited excerpt" in F.check_excerpt(run_dir, {**good, "offset": good["offset"] + 1})
+    assert "outside" in F.check_excerpt(run_dir, {**good, "file": "../elsewhere.json"})
+    assert "is not in" in F.check_excerpt(run_dir, {**good, "file": "org_x--zz.json"})
+
+
+def test_a_non_ascii_excerpt_is_found_by_bytes_not_characters(run_dir):
+    f = run_dir / "org_x--c.json"
+    f.write_bytes("café — then <tool_call>".encode("utf-8"))
+    lab = _label(run_dir)
+    assert lab["offset"] == len("café — then ".encode("utf-8"))
+    assert F.check_excerpt(run_dir, lab) == ""
+
+
+def test_every_failing_row_but_an_environment_error_needs_a_label(run_dir, tmp_path):
+    labels = F.load_labels(_write(tmp_path / "l.jsonl", [_label(run_dir)]))
+    assert F.unlabelled(F.load_run(run_dir), labels) == ["b", "d", "e"]
+
+
+def test_the_command_fails_on_a_bad_excerpt_and_with_complete_on_a_gap(run_dir, tmp_path, capsys):
+    good = _write(tmp_path / "good.jsonl", [_label(run_dir)])
+    assert F.main(["tally", str(run_dir), "--labels", str(good)]) == 0
+    assert F.main(["tally", str(run_dir), "--labels", str(good), "--complete"]) == 1
+    bad = _write(tmp_path / "bad.jsonl", [{**_label(run_dir), "offset": 0}])
+    assert F.main(["tally", str(run_dir), "--labels", str(bad)]) == 1
+    assert "excerpt" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("extra, why", [
+    ({"class": "vibes"}, "codebook"),
+    ({"class": "budget_exhausted"}, "at_cut"),
+])
+def test_a_label_off_the_codebook_is_refused(run_dir, tmp_path, extra, why):
+    with pytest.raises(ValueError, match=why):
+        F.load_labels(_write(tmp_path / "l.jsonl", [{**_label(run_dir), **extra}]))
+
+
+def test_every_class_names_whose_fault_it_is():
+    assert set(F.CODEBOOK.values()) <= {"model", "protocol", "harness"}
+    assert F.CODEBOOK["budget_exhausted"] == "harness" and F.CODEBOOK["tool_call"] == "protocol"
+
+
+def test_kappa_is_one_for_agreement_and_zero_at_chance():
+    a = [{"run": "r", "case": c, "class": k} for c, k in zip("abcd", ["x", "x", "y", "y"])]
+    assert F.kappa(a, a) == (1.0, 4)
+    flipped = [{**x, "class": {"x": "y", "y": "x"}[x["class"]]} for x in a]
+    assert F.kappa(a, flipped)[0] == pytest.approx(-1.0)
+    half = [{**x, "class": k} for x, k in zip(a, ["x", "y", "x", "y"])]
+    assert F.kappa(a, half)[0] == pytest.approx(0.0)
+    assert F.kappa(a, []) == (None, 0)
+
+
+def test_the_blind_sample_is_seeded_and_skips_passes_and_environment_errors(run_dir):
+    runs = [F.load_run(run_dir)]
+    got = F.sample(runs, 3, 921)
+    assert got == F.sample(runs, 3, 921) and len(got) == 3
+    assert {case for _, case in got} <= {"b", "c", "d", "e"}
+
+
+def test_an_arm_is_read_back_from_what_was_sent_not_from_its_name(run_dir):
+    receipt = F.load_run(run_dir).receipt
+    assert F.arm_check(receipt, "B") == []
+    wrong = F.arm_check(receipt, "A")
+    assert any("template" in w for w in wrong)
+    assert any("max_tokens" in w for w in F.arm_check(
+        {"requests": {"k": [{**receipt["requests"]["org/x"][0], "max_tokens": 4000}]}}, "B"))
+    assert "predates" in F.arm_check({}, "C")[0]
+
+
+def test_the_receipt_command_fails_an_arm_that_did_not_run_as_labelled(run_dir, capsys):
+    assert F.main(["receipt", str(run_dir), "--arm", "B"]) == 0
+    assert "enable_thinking" in capsys.readouterr().out
+    assert F.main(["receipt", str(run_dir), "--arm", "C"]) == 1
+
+
+def test_the_committed_labels_parse_against_the_codebook():
+    for lab in F.load_labels():
+        assert lab["class"] in F.CODEBOOK
+
+
+@pytest.mark.parametrize("arm", sorted(F.ARMS))
+def test_each_arm_command_is_one_evals_run_accepts_and_reads_back_as_itself(arm):
+    from evals import run as R
+    from harness import serving
+    argv = F.arm_command(arm, "/tmp/out")
+    args = R.parse_args(argv[argv.index("evals.run") + 1:])
+    assert args.modality == "repo" and args.repeat == 1 and args.split == "all"
+    (spec,) = R.split_candidates(args.candidates)
+    want = F.expected(arm)
+    assert R.effective_template("repo", [spec]).get("repo", {}) == want["template"]
+    sent = {"template": want["template"], "sampling": want["sampling"],
+            "max_tokens": want["max_tokens"][-1], "system_sha": "x"}
+    assert F.arm_check({"requests": {"k": [sent]}}, arm) == []
+    assert serving.route(spec, "http://gw").template == want["template"]
+
+
+def test_the_arms_differ_in_one_thing_each_from_the_control():
+    a, b, c = (F.expected(x) for x in "ABC")
+    assert a["template"] == {} and a["sampling"] == {"temperature": 0.2} and a["max_tokens"] == (32768,)
+    assert b == {**a, "template": {"enable_thinking": False}}
+    assert c["template"] == {"enable_thinking": True} and c["max_tokens"] == (32768, 65536)
+    assert c["sampling"] == {"temperature": 1.0, "top_p": 0.95, "top_k": 20, "min_p": 0.0,
+                             "presence_penalty": 0.0}

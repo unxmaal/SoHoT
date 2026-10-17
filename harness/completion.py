@@ -182,12 +182,18 @@ class CompletionError(RuntimeError):
     """The gateway did not return usable text."""
 
     def __init__(self, detail: str, failure_class: str = "",
-                 limit: tuple = (), usage: dict | None = None):
+                 limit: tuple = (), usage: dict | None = None,
+                 reasoning: str = "", finish: str = ""):
         super().__init__(detail)
         # Set where the cause is known; "" leaves it to reasons.classify. #408.
         self.failure_class = failure_class
         self.limit = limit
         self.usage = usage or {}
+        #: The reasoning text of a reply that never answered, kept so the row can be read. #921.
+        self.reasoning = reasoning
+        self.finish = finish
+        #: What was sent: max_tokens, sampling, template, system_sha; set by complete_full. #921.
+        self.request: dict = {}
 
 
 def user_message(prompt: str, context: str = "") -> str:
@@ -260,6 +266,10 @@ class Completion:
     finish: str = ""
     #: LiteLLM's x-litellm-call-id, the gateway_requests.call_id of this request; "" off the gateway. #829.
     call_id: str = ""
+    #: The reply's reasoning_content; "" when the server sent none. #921.
+    reasoning: str = ""
+    #: What was sent: max_tokens, sampling, template, system_sha. #921.
+    request: dict = field(default_factory=dict)
 
 
 def complete_full(prompt: str, model: str, gateway: str = "",
@@ -272,6 +282,34 @@ def complete_full(prompt: str, model: str, gateway: str = "",
                   response_format: dict | None = None) -> Completion:
     """One completion with its timing. `stream` asks for SSE so the first
     content token can be timed; a server that answers whole leaves ttft_s None."""
+    sent: dict = {}
+    try:
+        got = _complete_full(sent, prompt, model, gateway, modality, context, timeout, temperature,
+                             max_tokens, sampling, template, top_logprobs, stream, system,
+                             response_format)
+    except CompletionError as exc:
+        exc.request = dict(sent)
+        raise
+    got.request = dict(sent)
+    return got
+
+
+def request_of(payload: dict) -> dict:
+    """The parts of a chat request that decide what is asked: budget, sampler, template kwargs, system digest. #921."""
+    import hashlib
+
+    from harness.serving import SAMPLING_KEYS
+    system = next((m.get("content") or "" for m in payload.get("messages") or []
+                   if m.get("role") == "system"), "")
+    return {"max_tokens": payload.get("max_tokens"),
+            "sampling": {k: payload[k] for k in sorted(payload) if k in SAMPLING_KEYS},
+            "template": dict(payload.get("chat_template_kwargs") or {}),
+            "system_sha": hashlib.sha256(system.encode("utf-8")).hexdigest()[:16] if system else ""}
+
+
+def _complete_full(sent: dict, prompt, model, gateway, modality, context, timeout, temperature,
+                   max_tokens, sampling, template, top_logprobs, stream, system,
+                   response_format) -> Completion:
     gateway = gateway or gateway_url()
     knobs = dict(SAMPLING.get(modality, {}))
     if temperature is not None:
@@ -304,6 +342,7 @@ def complete_full(prompt: str, model: str, gateway: str = "",
     if stream and not top_logprobs:
         payload["stream"] = True
         payload["stream_options"] = {"include_usage": True}
+    sent.update(request_of(payload))
     try:
         r = _post(gateway, payload, timeout)
         if (400 <= getattr(r, "status_code", 200) < 500
@@ -326,6 +365,7 @@ def complete_full(prompt: str, model: str, gateway: str = "",
         message = choices[0]["message"]
         served = str(body.get("model") or "")
         text = message.get("content")
+        reasoning = message.get("reasoning_content") or message.get("reasoning") or ""
         finish = str(choices[0].get("finish_reason") or "")
         usage = body.get("usage") or {}
         tokens = ((choices[0].get("logprobs") or {}).get("content") or []) \
@@ -361,7 +401,6 @@ def complete_full(prompt: str, model: str, gateway: str = "",
         # this; Qwen3-4B-Instruct-2507 and Qwen2.5 do not. Saying so beats a
         # TypeError from three frames away, or "empty completion" for a model
         # that in fact produced 4000 tokens of thought.
-        reasoning = message.get("reasoning_content") or ""
         if reasoning:
             spent = reasoning_tokens(usage)
             raise CompletionError(
@@ -371,11 +410,12 @@ def complete_full(prompt: str, model: str, gateway: str = "",
                 + f"{len(reasoning)} characters). This is a hybrid "
                 f"thinking model; use a non-thinking one for this lane, or "
                 f"raise max_tokens.", reasons.TOKEN_BUDGET_EXHAUSTED,
-                ("max_tokens", max_tokens), usage=usage)
-        raise CompletionError("empty completion", reasons.CONTENT_FAILED)
+                ("max_tokens", max_tokens), usage=usage, reasoning=reasoning, finish=finish)
+        raise CompletionError("empty completion", reasons.CONTENT_FAILED,
+                              usage=usage, finish=finish)
     return Completion(text, usage,
                       list(tokens) if isinstance(tokens, list) else [], timing,
-                      served, finish=finish, call_id=call_id_of(r))
+                      served, finish=finish, call_id=call_id_of(r), reasoning=reasoning)
 
 
 #: The header LiteLLM's proxy answers with; its value is the logged litellm_call_id. #829.

@@ -33,8 +33,15 @@ class CompletionRunner(BaseRunner):
     def __init__(self, gateway: str, candidate: str,
                  timeout: float = completion.TIMEOUT_S,
                  sampling: dict | None = None, model: str = "",
-                 max_tokens: int = 0, served_ctx: int | None = None, count=None):
+                 max_tokens: int = 0, served_ctx: int | None = None, count=None,
+                 template: dict | None = None):
         self.gateway = gateway.rstrip("/")
+        #: Chat-template kwargs the spec names, sent on every case in place of the lane's. #921.
+        self.template = dict(template or {})
+        #: One record per request of the case in hand: the reply's reasoning, finish and tokens, and what was sent. #921.
+        self.trajectories: list = []
+        #: Each distinct request this runner sent, for the receipt. #921.
+        self.sent: list = []
         self.candidate = candidate
         self.model = model or candidate
         self.timeout = timeout
@@ -100,11 +107,12 @@ class CompletionRunner(BaseRunner):
                 modality=case.modality, context=case.context,
                 timeout=timeout + (self.load_timeout if cold else 0.0),
                 max_tokens=budget, sampling=self.sampling or None,
-                template=template, stream=True,
+                template=template or self.template or None, stream=True,
                 top_logprobs=completion.TOP_LOGPROBS if case.modality == "decide" else 0,
                 response_format=self._reply_shape(case),
                 system=system)
         except completion.CompletionError as exc:
+            self._keep(exc.request, exc.reasoning, exc.finish, exc.usage, str(exc))
             if exc.failure_class == reasons.TOKEN_BUDGET_EXHAUSTED:
                 exc.failure_class, exc.limit = self._cut(self._stopped_at(limit, exc.usage))
             elif exc.failure_class == reasons.TIMEOUT and cold:
@@ -114,6 +122,7 @@ class CompletionRunner(BaseRunner):
                 exc.failure_class = reasons.CONTEXT_EXCEEDED
                 exc.limit = ("served_ctx", self.served_ctx) if self.served_ctx else ()
             raise
+        self._keep(got.request, got.reasoning, got.finish, got.usage)
         self.answered = True
         self.last_timing = {**got.timing, "cold": cold}
         spent = int(got.usage.get("completion_tokens") or 0)
@@ -122,6 +131,16 @@ class CompletionRunner(BaseRunner):
         if case.modality == "decide":
             return self._decide(case, got)
         return got.text, got.usage
+
+    def _keep(self, request: dict, reasoning: str, finish: str, usage: dict, error: str = "") -> None:
+        if request and request not in self.sent:
+            self.sent.append(dict(request))
+        self.trajectories.append({
+            "request": dict(request or {}), "finish_reason": finish or "",
+            "prompt_tokens": (usage or {}).get("prompt_tokens"),
+            "completion_tokens": (usage or {}).get("completion_tokens"),
+            "reasoning_tokens": ((usage or {}).get("completion_tokens_details") or {}).get("reasoning_tokens"),
+            "reasoning": reasoning or "", "error": error})
 
     @staticmethod
     def _reply_shape(case: Case):

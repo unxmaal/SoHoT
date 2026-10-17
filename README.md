@@ -560,6 +560,24 @@ and `--compare` refuses a laddered run against a single-budget run or another
 ladder. The report adds pass by rung: how many cases reached each budget, how
 many passed there, and the seconds spent there.
 
+**Every text row keeps its trajectory, and the receipt says what was sent.**
+Beside each row `evals.run --out` writes `<candidate>--<case>.trajectory.json`,
+with one entry per request (each ladder rung, and a screen's retry): the
+reasoning text, `finish_reason`, the prompt, completion and reasoning tokens, and
+the request itself. A reply cut off while reasoning keeps its reasoning there,
+too. A text spec may carry `temperature`, `top_p`, `top_k`, `min_p`,
+`presence_penalty` and `repetition_penalty`, plus `enable_thinking=true|false`,
+which is sent as `chat_template_kwargs`. The receipt records several things:
+`template` (the kwargs per lane), `requests` (each distinct request a runner
+sent: max_tokens, sampler, template kwargs and a system-prompt digest) and
+`server_sampling` (llama-server's `/props` defaults for any key a request left
+out). `comparable()` treats thinking on and thinking off as two exams. For the
+repo lane, `python -m evals.analysis.repo_failures` has five subcommands: `tally`
+counts failure classes per run and checks every label in
+`evals/analysis/repo_failure_labels.jsonl` against the byte offset it cites,
+`receipt --arm` reads a #921 rerun arm back from its receipt, `arms` prints the
+arms' commands, and `sample` and `kappa` serve the blind second labeller.
+
 **A run whose model the router evicted is not ranked.** For a candidate served
 by llama-server's router (directly or through a gateway alias), the eval reads
 the router's `/models` before and after each case. If the model was held and

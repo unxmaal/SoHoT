@@ -581,6 +581,8 @@ TEXT_MODALITIES = {"svg", "web", "code", "extract", "decide", "claims"}
 #: Lanes whose runner returns the path of a file it made.
 MEDIA_MODALITIES = {"image", "video", "tts", "music"}
 #: The suffix a text lane's output is written to the run dir under.
+#: The file beside a text row's artifact holding each request's reasoning, finish and tokens. #921.
+TRAJECTORY_SUFFIX = ".trajectory.json"
 TEXT_SUFFIX = {"svg": ".svg", "web": ".html", "code": ".py", "decide": ".json", "claims": ".json",
                "agent": ".json", "repo": ".json"}
 #: Lanes whose case hands the candidate a file to read through input_file. #562.
@@ -755,6 +757,12 @@ class Receipt:
     machine: str = ""
     #: receipt key -> {"model", "ctx", "slots"} the serving host answered with. An axis. #697.
     served: dict = field(default_factory=dict)
+    #: modality -> the chat-template kwargs the run sends; None on receipts written before #921.
+    template: dict | None = None
+    #: receipt key -> each distinct request its runner sent (max_tokens, sampling, template, system_sha). #921.
+    requests: dict = field(default_factory=dict)
+    #: receipt key -> the sampler its server applies to a key no request names. #921.
+    server_sampling: dict = field(default_factory=dict)
 
     def as_dict(self) -> dict:
         return {"modality": self.modality, "case_ids": list(self.case_ids),
@@ -777,7 +785,10 @@ class Receipt:
                 "budget_ladder": list(self.budget_ladder),
                 "resolved": dict(self.resolved),
                 "machine": self.machine,
-                "served": {k: dict(v) for k, v in self.served.items()}}
+                "served": {k: dict(v) for k, v in self.served.items()},
+                "template": None if self.template is None else {k: dict(v) for k, v in self.template.items()},
+                "requests": {k: [dict(r) for r in v] for k, v in self.requests.items()},
+                "server_sampling": {k: dict(v) for k, v in self.server_sampling.items()}}
 
     @classmethod
     def from_dict(cls, raw: dict) -> "Receipt":
@@ -801,7 +812,9 @@ class Receipt:
                    budget_ladder=tuple(int(n) for n in raw.get("budget_ladder") or ()),
                    resolved=raw.get("resolved") or {},
                    machine=raw.get("machine") or "",
-                   served=raw.get("served") or {})
+                   served=raw.get("served") or {}, template=raw.get("template"),
+                   requests=raw.get("requests") or {},
+                   server_sampling=raw.get("server_sampling") or {})
 
 
 def legacy_knobs(raw: dict) -> dict:
@@ -951,6 +964,9 @@ def comparable(a: Receipt, b: Receipt) -> tuple[bool, str]:
                        f"decides which replies count")
     if dict(a.sampling) != dict(b.sampling):
         return False, f"different sampling: {a.sampling} vs {b.sampling}"
+    if a.template is not None and b.template is not None and dict(a.template) != dict(b.template):
+        return False, (f"different chat-template kwargs: {a.template} vs {b.template}. Thinking on "
+                       f"and thinking off are two exams")
     if a.adherence != b.adherence:
         return False, (f"different adherence backend: {a.adherence!r} vs "
                        f"{b.adherence!r}")

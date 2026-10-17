@@ -31,7 +31,7 @@ from harness.engines import Engine, names as engine_names, parse_options, resolv
 from dataclasses import replace
 
 from evals.core import (AGENT_MODALITIES, MODALITIES, REPO_MODALITIES, TEXT_MODALITIES,
-                        TEXT_SUFFIX, Case,
+                        TEXT_SUFFIX, TRAJECTORY_SUFFIX, Case,
                         Receipt, cases_digest, comparable, direction_of,
                         summarize)
 from evals import core, environment, private, watch
@@ -82,7 +82,7 @@ STT_OPTIONS = {"backend", "language"}
 
 
 #: A GGUF file by stem, sent straight to llama-server. #295.
-from harness.serving import DS4_PREFIX, LLAMACPP_PREFIX, VLLM_PREFIX  # noqa: E402
+from harness.serving import DS4_PREFIX, LLAMACPP_PREFIX, TEMPLATE_KEYS, VLLM_PREFIX  # noqa: E402
 
 LLAMACPP_KIND = LLAMACPP_PREFIX.rstrip(":")
 #: Cactus-Compute/needle3 through its own CLI; decide and agent lanes. #312.
@@ -332,6 +332,8 @@ def effective_sampling(modality: str, candidates: list[str]) -> dict:
         for key, value in parse_options(optstr, candidate).items():
             if kind_of(candidate) == DS4_KIND and key in ds4.OPTIONS:
                 continue  # the server's launch, on the receipt as `launch`. #611.
+            if key in TEMPLATE_KEYS:
+                continue  # sent as chat_template_kwargs, on the receipt as `template`. #921.
             try:
                 value = float(value)
             except ValueError:
@@ -350,6 +352,54 @@ def effective_sampling(modality: str, candidates: list[str]) -> dict:
             raise SystemExit(
                 f"candidates disagree on {key}: {spread}. Two values are two "
                 f"exams, so run them separately and compare the results.")
+    return out
+
+
+def effective_template(modality: str, candidates: list[str]) -> dict:
+    """The chat-template kwargs this run sends, per modality: the shipped table, then what the specs name. #921."""
+    from harness import serving
+    out = {m: dict(v) for m, v in sorted(completion.TEMPLATE.items())}
+    seen: dict[str, dict] = {}
+    for candidate in candidates:
+        if not text_candidate(candidate) or kind_of(candidate) == DS4_KIND:
+            continue
+        try:
+            got = serving.template_options(candidate.partition(",")[2], candidate)
+        except ValueError as exc:
+            raise SystemExit(str(exc)) from None
+        for key, value in got.items():
+            seen.setdefault(key, {}).setdefault(value, []).append(candidate)
+            out.setdefault(modality, {})[key] = value
+    texts = [c for c in candidates if text_candidate(c) and kind_of(c) != DS4_KIND]
+    for key, values in sorted(seen.items()):
+        if len(values) > 1 or sum(map(len, values.values())) < len(texts):
+            raise SystemExit(f"candidates disagree on {key}: two settings are two exams, so run "
+                             f"them separately and compare the results")
+    return out
+
+
+def sent_requests(planned: list) -> dict:
+    """receipt key -> each distinct request its runner sent: max_tokens, sampler, template kwargs, system digest. #921."""
+    out = {}
+    for _, runner, _ in planned:
+        traced = _traced(runner)
+        if traced is not None and traced.sent:
+            out[runner.candidate] = [dict(r) for r in traced.sent]
+    return out
+
+
+def server_sampling(specs: dict) -> dict:
+    """receipt key -> the sampler its llama-server defaults a request's unnamed keys to. #921."""
+    out = {}
+    for key, spec in specs.items():
+        if not text_candidate(spec):
+            continue
+        try:
+            got = context.served_sampler(text_spec(spec))
+        except Exception:  # noqa: BLE001 - a receipt must not fail a finished run
+            got = {}
+        if got:
+            out[key] = got
     return out
 
 
@@ -479,6 +529,9 @@ def _agent_runner(candidate: str, gateway: str, max_tokens: int = 0):
         where = serving.route(candidate, gateway)
     except ValueError as exc:
         raise SystemExit(str(exc)) from None
+    if getattr(where, "template", None):
+        raise SystemExit(f"{candidate}: the agent lane sends no chat-template kwargs, so "
+                         f"{', '.join(where.template)} would be recorded and not run (#921)")
     from harness import context
     return AgentRunner(where.base, candidate.partition(",")[0].strip(),
                        model=where.model, sampling=where.sampling or None,
@@ -505,7 +558,8 @@ def _repo_runner(candidate: str, gateway: str, max_tokens: int):
     except ValueError as exc:
         raise SystemExit(str(exc)) from None
     return RepoRunner(where.base, candidate.partition(",")[0].strip(),
-                      sampling=where.sampling or None, model=where.model, max_tokens=max_tokens)
+                      sampling=where.sampling or None, model=where.model, max_tokens=max_tokens,
+                      template=getattr(where, "template", None))
 
 
 def _build_runner(candidate: str, gateway: str, outdir: Path | None,
@@ -523,7 +577,7 @@ def _build_runner(candidate: str, gateway: str, outdir: Path | None,
             raise SystemExit(str(exc)) from None
         return CompletionRunner(where.base, candidate.partition(",")[0].strip(),
                                 sampling=where.sampling or None, model=where.model,
-                                max_tokens=max_tokens)
+                                max_tokens=max_tokens, template=getattr(where, "template", None))
     if kind == NEEDLE_KIND:
         from evals.runners.needle import NeedleDecideRunner
         if outdir is None:
@@ -1015,6 +1069,7 @@ def _execute_at(args, overrides: dict) -> int:
         args.candidates = winner_for(args.modality)
         print(f"── winner for {args.modality}: {args.candidates}", flush=True)
     candidates = split_candidates(args.candidates)
+    effective_template(args.modality, candidates)
     ladder = run_ladder(args.modality, getattr(args, "budget_ladder", None))
     if ladder and getattr(args, "max_tokens", None) is not None:
         raise SystemExit("--budget-ladder and --max-tokens say two things about the reply "
@@ -1155,7 +1210,10 @@ def _execute_at(args, overrides: dict) -> int:
             budget_ladder=ladder,
             resolved=resolved,
             machine=serving,
-            served=served_shapes(specs, resolved, completion.served(), away, args.gateway))
+            served=served_shapes(specs, resolved, completion.served(), away, args.gateway),
+            template=effective_template(args.modality, candidates),
+            requests=sent_requests(planned),
+            server_sampling=server_sampling(specs))
         now = time.time()
         ids = candidate_ids(specs, args.modality)
         for r in results:
@@ -1415,7 +1473,17 @@ def _run_candidate(args, candidate, runner, mine, results, outdir, evicted=None,
                   f"it will not be ranked", file=sys.stderr)
 
 
+def _traced(runner):
+    """The text runner whose requests a case's trajectory is read from, under any method wrapping it. #921."""
+    while runner is not None and not isinstance(getattr(runner, "trajectories", None), list):
+        runner = getattr(runner, "base", None)
+    return runner
+
+
 def _one_case(runner, case, held, cold, ladder, ctx, count, outdir):
+    traced = _traced(runner)
+    if traced is not None:
+        traced.trajectories = []
     if held:
         held.look(case.id, "start")
     if cold:
@@ -1440,6 +1508,12 @@ def _one_case(runner, case, held, cold, ladder, ctx, count, outdir):
             case, TEXT_SUFFIX.get(case.modality, ".txt"))
         f.write_text(r.output, encoding="utf-8")
         r.artifact_path = str(f.resolve())
+    if outdir and traced is not None and traced.trajectories:
+        # Every row's, a cut-off one too: the reasoning is the only record of what it was doing. #921.
+        (outdir / runner.artifact(case, TRAJECTORY_SUFFIX)).write_text(json.dumps(
+            {"case": case.id, "candidate": runner.candidate, "passed": bool(r.passed),
+             "failure_class": r.failure_class, "requests": traced.trajectories}, indent=1),
+            encoding="utf-8")
     if case.private:
         # The reply stays in the run dir on this machine; the row carries no text. #654.
         r.output = None

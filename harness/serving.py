@@ -225,7 +225,9 @@ def text_engine(environ=None) -> str:
 
 
 #: Sampling keys a spec may carry after a comma, e.g. `<model id>,temperature=0`. #90.
-SAMPLING_KEYS = ("temperature", "top_p", "repetition_penalty")
+SAMPLING_KEYS = ("temperature", "top_p", "top_k", "min_p", "presence_penalty", "repetition_penalty")
+#: Chat-template kwargs a spec may carry, sent as chat_template_kwargs, e.g. `,enable_thinking=false`. #921.
+TEMPLATE_KEYS = ("enable_thinking",)
 
 
 class Route(NamedTuple):
@@ -233,6 +235,7 @@ class Route(NamedTuple):
     base: str
     model: str
     sampling: dict
+    template: dict = {}
 
 
 def text_spec(spec: str) -> bool:
@@ -248,12 +251,32 @@ def _sampling(optstr: str, spec: str) -> dict:
     for part in (p.strip() for p in optstr.split(",") if p.strip()):
         key, eq, value = part.partition("=")
         key = key.strip()
+        if eq and key in TEMPLATE_KEYS:
+            continue
         if not eq or key not in SAMPLING_KEYS:
             raise ValueError(f"{spec}: unknown option(s) {key}")
         try:
             out[key] = float(value)
         except ValueError:
             raise ValueError(f"{spec}: {key} must be a number") from None
+        if key == "top_k":
+            if not out[key].is_integer():
+                raise ValueError(f"{spec}: top_k must be a whole number")
+            out[key] = int(out[key])
+    return out
+
+
+def template_options(optstr: str, spec: str) -> dict:
+    """The chat-template kwargs a spec's options name; a flag is true or false, never a guess. #921."""
+    out = {}
+    for part in (p.strip() for p in (optstr or "").split(",") if p.strip()):
+        key, _, value = part.partition("=")
+        if key.strip() not in TEMPLATE_KEYS:
+            continue
+        flag = value.strip().lower()
+        if flag not in ("true", "false", "1", "0"):
+            raise ValueError(f"{spec}: {key.strip()} must be true or false")
+        out[key.strip()] = flag in ("true", "1")
     return out
 
 
@@ -281,7 +304,12 @@ def route(spec: str, gateway: str = "", config=None) -> Route:
     if name.startswith(DS4_PREFIX):
         got = ds4.parse(spec)
         return Route(ds4.url(), got.stem, got.sampling)
-    sampling = _sampling(optstr, spec)
+    template = template_options(optstr, spec)
+    return _route(name, _sampling(optstr, spec), spec, gateway, config)._replace(template=template)
+
+
+def _route(name: str, sampling: dict, spec: str, gateway: str, config) -> Route:
+    from harness import ds4
     if not text_spec(name):
         raise ValueError(f"{spec!r} is not served by a text server")
     from harness import router
