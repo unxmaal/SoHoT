@@ -27,7 +27,7 @@ from pathlib import Path
 from harness import downloads
 from harness import memory_store as ms
 from harness import rank
-from harness import lanes, reasons, screen
+from harness import lanes, reasons, screen, variants
 
 GIB = 1024 ** 3
 _BUDGET_WAIT = "limit:download_budget_gib>"
@@ -275,7 +275,7 @@ def queued(conn, tiers=FETCHABLE_TIERS, kind: str = FETCHABLE_KIND,
         SELECT p.name, p.resolved, p.kind, p.lane, p.registry,
                -- The card's facts, so this tier can refuse an adapter or a
                -- foreign runtime before spending gigabytes on it. #414.
-               p.attaches_to, p.runtime_needed,
+               p.attaches_to, p.runtime_needed, p.model_type,
                -- The state and the verdict that set it. #409.
                p.state AS outcome, st.tier AS tier, st.detail AS detail, st.until AS until,
                -- The candidate's measured size, whatever verdict is newest. #211, #413.
@@ -369,7 +369,8 @@ def in_rank_order(rows: list[dict], conn=None) -> list[dict]:
 
 
 def download(repo: str, snapshot=None, listing=None, hf_download=None,
-             text: bool = True, conn=None, require_weights: bool = False) -> str:
+             text: bool = True, conn=None, require_weights: bool = False,
+             model_type: str = "") -> str:
     """Weights into the shared cache. Returns the path.
 
     HF_HUB_OFFLINE is 1 everywhere else in this project on purpose: an eval
@@ -379,18 +380,23 @@ def download(repo: str, snapshot=None, listing=None, hf_download=None,
     """
     from harness import env
     with env.online():
-        return _download(repo, snapshot, listing, hf_download, text, conn, require_weights)
+        return _download(repo, snapshot, listing, hf_download, text, conn, require_weights,
+                         model_type)
 
 
-def _download(repo, snapshot, listing, hf_download, text, conn, require_weights) -> str:
+def _download(repo, snapshot, listing, hf_download, text, conn, require_weights,
+              model_type="") -> str:
     try:
+        allow = None
         if require_weights and (listing is not None or snapshot is None):
             siblings = _siblings(repo, listing or _listing)
             gap = weights_gap(siblings)
             if gap:
                 raise Unloadable(gap, foreign_formats(siblings))
             listing = lambda _repo, s=siblings: s  # noqa: E731
-        single = _gguf_pick(repo, listing, snapshot) if text else None
+            chosen = _chosen(siblings, model_type)
+            allow = variants.download_files(siblings, chosen) if chosen else None
+        single = _gguf_pick(repo, listing, snapshot, model_type) if text else None
         if single == ():
             raise FetchError("no single GGUF file fits the ceiling")
         if single:
@@ -402,7 +408,9 @@ def _download(repo, snapshot, listing, hf_download, text, conn, require_weights)
         with downloads.store(conn) as c:
             rid = downloads.start(c, repo, downloads.HUB, downloads.hub_dir(repo))
             try:
-                where = str(snapshot(repo_id=repo))
+                # Only the variant inspect sized, not every copy the repo holds. #947.
+                where = str(snapshot(repo_id=repo, allow_patterns=allow) if allow
+                            else snapshot(repo_id=repo))
             except BaseException:
                 downloads.finish(c, rid, failed=True)
                 raise
@@ -433,8 +441,17 @@ def _siblings(repo: str, listing) -> list:
         raise FetchError(f"listing failed: {_reason(exc)}") from exc
 
 
-def _gguf_pick(repo: str, listing, snapshot):
-    """(file, bytes) for a GGUF-only repo, () if none fits, None otherwise."""
+def _chosen(siblings, model_type: str = ""):
+    """The variant inspect sizes this listing by on this machine. #947."""
+    from harness import inspect as ins
+    from harness import machine
+    here = machine.detect()
+    return variants.pick(variants.variants(siblings, ins.ceiling_bytes(), model_type),
+                         has=lambda rt: not here.refuses(rt))
+
+
+def _gguf_pick(repo: str, listing, snapshot, model_type: str = ""):
+    """(file, bytes) for a GGUF-only repo or one whose chosen variant is a GGUF, () if none fits, None otherwise."""
     from harness import gguf
     from harness import inspect as ins
     if listing is None:
@@ -442,9 +459,12 @@ def _gguf_pick(repo: str, listing, snapshot):
             return None
         listing = _listing
     siblings = _siblings(repo, listing)
-    if not gguf.only(siblings):
-        return None
-    return gguf.choose(siblings, ins.ceiling_bytes()) or ()
+    if gguf.only(siblings):
+        return gguf.choose(siblings, ins.ceiling_bytes()) or ()
+    chosen = _chosen(siblings, model_type)
+    if chosen and chosen.format == variants.GGUF:
+        return gguf.choose(siblings, ins.ceiling_bytes()) or ()
+    return None
 
 
 def _reason(exc: Exception) -> str:
@@ -665,9 +685,10 @@ def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=N
             if listing is not None or hf_download is not None or not text:
                 where = download(name, snapshot=snapshot, listing=listing,
                                  hf_download=hf_download, text=text, conn=conn,
-                                 require_weights=True)
+                                 require_weights=True, model_type=row.get("model_type") or "")
             else:
-                where = download(name, snapshot=snapshot, conn=conn, require_weights=True)
+                where = download(name, snapshot=snapshot, conn=conn, require_weights=True,
+                                 model_type=row.get("model_type") or "")
         except FetchDeferred as exc:
             done.append({"repo": name, "ok": False, "why": str(exc), "deferred": True})
             break

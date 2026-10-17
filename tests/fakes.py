@@ -109,6 +109,20 @@ WHY = {
     "hexgrad/Kokoro-82M":
         "the tts lane's incumbent, and the upstream of the repo the lane "
         "actually serves, so the card is a requant's parent (#264)",
+    "OBLITERATUS/Qwen3.8-27B-OBLITERATED":
+        "GGUF quants beside two safetensors sets, refused too-big at the 223 GiB sum (#947)",
+    "Comfy-Org/MiniMax-H3":
+        "a ComfyUI tree of precisions per component, refused too-big at the 489 GiB sum (#947)",
+    "lodestones/Kroma":
+        "single-file diffusion checkpoints and a LoRA, refused too-big at the 98 GiB sum (#947)",
+    "mistralai/Mistral-7B-Instruct-v0.3":
+        "a consolidated and an HF copy of one checkpoint, library vllm, declined needs-vllm (#947)",
+    "mistralai/Voxtral-Mini-4B-Realtime-2602":
+        "the stt lane's consolidated layout mlx-audio reads, beside an HF copy, library vllm (#947)",
+    "Abiray/Kroma-v0.3.1-Turbo-OPD-GGUF":
+        "an image-lane GGUF quant repo sized at its 56 GiB sum by the #882 descendant follow (#947)",
+    "CohereLabs/command-a-plus-05-2026-bf16":
+        "one 407 GiB transformers set: the variant reader's too-big negative control (#947)",
 }
 
 #: Lanes no recorded card can ever land in, and why that is not a gap.

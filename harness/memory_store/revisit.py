@@ -73,6 +73,7 @@ UNTIL = {
     "cases": "how many cases a lane has (holdout.for_lane)",
     "commit_after": "the upstream's last commit date (facts.last_commit)",
     "format": "a weight format a runner reads; fetching.format_waits reads it, not until_met",
+    "layout": "a weight layout harness.variants groups; inspect re-reads it each sweep, not until_met",
 }
 
 
@@ -246,6 +247,49 @@ def requeue_unranked(conn) -> list[str]:
     names = [r["name"] for r in unranked_terminal(conn)]
     for name in names:
         retract(conn, name, "a parent's download ranking retired it; inspect reads it on its own")
+    conn.commit()
+    return names
+
+
+def sized_by_repo_total(conn) -> list[dict]:
+    """State-holding too-big HF inspect refusals whose detail names no variant: sized by the listing's sum. #947."""
+    from harness import reasons, variants
+    rows = conn.execute("""
+        SELECT p.name, v.decided_at, v.detail
+          FROM proposals p JOIN verdicts v ON v.id = p.state_verdict_id
+         WHERE p.state = 'declined' AND v.tier = ? AND v.reason = ? AND p.registry = ?
+           AND v.detail LIKE 'too-big:%' AND v.detail NOT LIKE ? AND v.detail NOT LIKE '%GiB resident%'
+         ORDER BY p.name
+    """, (INSPECT, reasons.MACHINE, ms.HUGGINGFACE, f"too-big: {variants.MARK}%")).fetchall()
+    return [dict(r) for r in rows]
+
+
+def runtime_by_library(conn) -> list[dict]:
+    """State-holding needs-vllm fetch refusals whose last inspect read no variant: the library tag decided. #947."""
+    from harness import reasons, variants
+    rows = conn.execute("""
+        SELECT p.name, v.decided_at, v.detail
+          FROM proposals p JOIN verdicts v ON v.id = p.state_verdict_id
+         WHERE p.state = 'declined' AND v.tier = 'fetch' AND v.reason = ? AND p.registry = ?
+           AND v.until = 'runtime:vllm'
+           AND COALESCE((SELECT vi.detail FROM verdicts vi
+                          WHERE vi.proposal_id = p.id AND vi.tier = ? AND vi.reason != ?
+                          ORDER BY vi.id DESC LIMIT 1), '') NOT LIKE ?
+         ORDER BY p.name
+    """, (reasons.MACHINE, ms.HUGGINGFACE, INSPECT, reasons.REOPENED,
+          f"%{variants.MARK}%")).fetchall()
+    return [dict(r) for r in rows]
+
+
+def requeue_old_sizing(conn) -> list[str]:
+    """Hand back to inspect each refusal sized by the repo total or refused on the library tag. #947."""
+    names = []
+    for r in sized_by_repo_total(conn):
+        retract(conn, r["name"], "too-big on the listing's sum; re-inspected by its smallest variant")
+        names.append(r["name"])
+    for r in runtime_by_library(conn):
+        retract(conn, r["name"], "needs-vllm on the library tag; re-inspected by its variants")
+        names.append(r["name"])
     conn.commit()
     return names
 

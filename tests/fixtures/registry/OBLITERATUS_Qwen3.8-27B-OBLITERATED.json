@@ -1,0 +1,333 @@
+{
+ "id": "OBLITERATUS/Qwen3.8-27B-OBLITERATED",
+ "pipeline_tag": "text-generation",
+ "tags": [
+  "mlx",
+  "safetensors",
+  "gguf",
+  "qwen3_5",
+  "abliterated",
+  "uncensored",
+  "obliteratus",
+  "qwen3",
+  "qwen3.8",
+  "red-team",
+  "ai-safety-research",
+  "text-generation",
+  "conversational",
+  "base_model:Qwen/Qwen3.8-27B",
+  "base_model:quantized:Qwen/Qwen3.8-27B",
+  "license:apache-2.0",
+  "endpoints_compatible",
+  "region:us"
+ ],
+ "library_name": "mlx",
+ "cardData": {
+  "license": "apache-2.0",
+  "base_model": "Qwen/Qwen3.8-27B",
+  "tags": [
+   "abliterated",
+   "uncensored",
+   "obliteratus",
+   "qwen3",
+   "qwen3.8",
+   "red-team",
+   "ai-safety-research",
+   "gguf",
+   "safetensors",
+   "mlx"
+  ],
+  "model_type": "qwen3",
+  "pipeline_tag": "text-generation"
+ },
+ "siblings": [
+  {
+   "rfilename": ".gitattributes",
+   "size": 2339
+  },
+  {
+   "rfilename": "LICENSE",
+   "size": 11544
+  },
+  {
+   "rfilename": "Qwen3.8-27B-OBLITERATED-IQ4_XS.gguf",
+   "size": 15420441632
+  },
+  {
+   "rfilename": "Qwen3.8-27B-OBLITERATED-Q2_K.gguf",
+   "size": 10864583712
+  },
+  {
+   "rfilename": "Qwen3.8-27B-OBLITERATED-Q3_K_M.gguf",
+   "size": 13500728352
+  },
+  {
+   "rfilename": "Qwen3.8-27B-OBLITERATED-Q4_K_M.gguf",
+   "size": 16810705952
+  },
+  {
+   "rfilename": "Qwen3.8-27B-OBLITERATED-Q5_K_M.gguf",
+   "size": 19535692832
+  },
+  {
+   "rfilename": "Qwen3.8-27B-OBLITERATED-Q6_K.gguf",
+   "size": 22430991392
+  },
+  {
+   "rfilename": "Qwen3.8-27B-OBLITERATED-Q8_0.gguf",
+   "size": 29047075872
+  },
+  {
+   "rfilename": "README.md",
+   "size": 11278
+  },
+  {
+   "rfilename": "abliteration_metadata.json",
+   "size": 2908
+  },
+  {
+   "rfilename": "chat_template.jinja",
+   "size": 506
+  },
+  {
+   "rfilename": "config.json",
+   "size": 3688
+  },
+  {
+   "rfilename": "generation_config.json",
+   "size": 165
+  },
+  {
+   "rfilename": "hard_negative_residue.json",
+   "size": 3892
+  },
+  {
+   "rfilename": "merges.txt",
+   "size": 3353259
+  },
+  {
+   "rfilename": "mmproj-model-bf16.gguf",
+   "size": 931145888
+  },
+  {
+   "rfilename": "model-00001-of-00018.safetensors",
+   "size": 3966730520
+  },
+  {
+   "rfilename": "model-00001-of-00028.safetensors",
+   "size": 2542796928
+  },
+  {
+   "rfilename": "model-00002-of-00018.safetensors",
+   "size": 3043080296
+  },
+  {
+   "rfilename": "model-00002-of-00028.safetensors",
+   "size": 1943107672
+  },
+  {
+   "rfilename": "model-00003-of-00018.safetensors",
+   "size": 2542796928
+  },
+  {
+   "rfilename": "model-00003-of-00028.safetensors",
+   "size": 1930594464
+  },
+  {
+   "rfilename": "model-00004-of-00018.safetensors",
+   "size": 3988973120
+  },
+  {
+   "rfilename": "model-00004-of-00028.safetensors",
+   "size": 1858073840
+  },
+  {
+   "rfilename": "model-00005-of-00018.safetensors",
+   "size": 2099339832
+  },
+  {
+   "rfilename": "model-00005-of-00028.safetensors",
+   "size": 1952630728
+  },
+  {
+   "rfilename": "model-00006-of-00018.safetensors",
+   "size": 3979553664
+  },
+  {
+   "rfilename": "model-00006-of-00028.safetensors",
+   "size": 1858073880
+  },
+  {
+   "rfilename": "model-00007-of-00018.safetensors",
+   "size": 2108759312
+  },
+  {
+   "rfilename": "model-00007-of-00028.safetensors",
+   "size": 1889633232
+  },
+  {
+   "rfilename": "model-00008-of-00018.safetensors",
+   "size": 3979553664
+  },
+  {
+   "rfilename": "model-00008-of-00028.safetensors",
+   "size": 1921071440
+  },
+  {
+   "rfilename": "model-00009-of-00018.safetensors",
+   "size": 2108759312
+  },
+  {
+   "rfilename": "model-00009-of-00028.safetensors",
+   "size": 1930594496
+  },
+  {
+   "rfilename": "model-00010-of-00018.safetensors",
+   "size": 3979553664
+  },
+  {
+   "rfilename": "model-00010-of-00028.safetensors",
+   "size": 1880110176
+  },
+  {
+   "rfilename": "model-00011-of-00018.safetensors",
+   "size": 2108759312
+  },
+  {
+   "rfilename": "model-00011-of-00028.safetensors",
+   "size": 1930594504
+  },
+  {
+   "rfilename": "model-00012-of-00018.safetensors",
+   "size": 3979553664
+  },
+  {
+   "rfilename": "model-00012-of-00028.safetensors",
+   "size": 1858073864
+  },
+  {
+   "rfilename": "model-00013-of-00018.safetensors",
+   "size": 2108759312
+  },
+  {
+   "rfilename": "model-00013-of-00028.safetensors",
+   "size": 1952630800
+  },
+  {
+   "rfilename": "model-00014-of-00018.safetensors",
+   "size": 3979553664
+  },
+  {
+   "rfilename": "model-00014-of-00028.safetensors",
+   "size": 1858073880
+  },
+  {
+   "rfilename": "model-00015-of-00018.safetensors",
+   "size": 2108759312
+  },
+  {
+   "rfilename": "model-00015-of-00028.safetensors",
+   "size": 1889633232
+  },
+  {
+   "rfilename": "model-00016-of-00018.safetensors",
+   "size": 3979564008
+  },
+  {
+   "rfilename": "model-00016-of-00028.safetensors",
+   "size": 1921071440
+  },
+  {
+   "rfilename": "model-00017-of-00018.safetensors",
+   "size": 2108759312
+  },
+  {
+   "rfilename": "model-00017-of-00028.safetensors",
+   "size": 1930594496
+  },
+  {
+   "rfilename": "model-00018-of-00018.safetensors",
+   "size": 3392197320
+  },
+  {
+   "rfilename": "model-00018-of-00028.safetensors",
+   "size": 1880110176
+  },
+  {
+   "rfilename": "model-00019-of-00028.safetensors",
+   "size": 1930594504
+  },
+  {
+   "rfilename": "model-00020-of-00028.safetensors",
+   "size": 1858073864
+  },
+  {
+   "rfilename": "model-00021-of-00028.safetensors",
+   "size": 1952630800
+  },
+  {
+   "rfilename": "model-00022-of-00028.safetensors",
+   "size": 1858073880
+  },
+  {
+   "rfilename": "model-00023-of-00028.safetensors",
+   "size": 1889633232
+  },
+  {
+   "rfilename": "model-00024-of-00028.safetensors",
+   "size": 1921071440
+  },
+  {
+   "rfilename": "model-00025-of-00028.safetensors",
+   "size": 1930594496
+  },
+  {
+   "rfilename": "model-00026-of-00028.safetensors",
+   "size": 1880110176
+  },
+  {
+   "rfilename": "model-00027-of-00028.safetensors",
+   "size": 2542796896
+  },
+  {
+   "rfilename": "model-00028-of-00028.safetensors",
+   "size": 1101059064
+  },
+  {
+   "rfilename": "model-extra-00001-of-00001.safetensors",
+   "size": 1770897616
+  },
+  {
+   "rfilename": "model.safetensors.index.json",
+   "size": 114303
+  },
+  {
+   "rfilename": "preprocessor_config.json",
+   "size": 390
+  },
+  {
+   "rfilename": "tokenizer.json",
+   "size": 12809320
+  },
+  {
+   "rfilename": "tokenizer_config.json",
+   "size": 7675
+  },
+  {
+   "rfilename": "video_preprocessor_config.json",
+   "size": 385
+  },
+  {
+   "rfilename": "vocab.json",
+   "size": 6722759
+  }
+ ],
+ "lastModified": "2026-08-24T17:47:52.000Z",
+ "downloads": 567708,
+ "config": {
+  "architectures": [
+   "Qwen3_5ForConditionalGeneration"
+  ],
+  "model_type": "qwen3_5"
+ }
+}

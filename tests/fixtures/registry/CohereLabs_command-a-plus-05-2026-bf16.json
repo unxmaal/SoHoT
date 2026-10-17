@@ -1,0 +1,218 @@
+{
+ "id": "CohereLabs/command-a-plus-05-2026-bf16",
+ "pipeline_tag": "image-text-to-text",
+ "tags": [
+  "transformers",
+  "safetensors",
+  "cohere2_vision",
+  "image-text-to-text",
+  "conversational",
+  "chat",
+  "en",
+  "ar",
+  "bg",
+  "bn",
+  "ca",
+  "cs",
+  "da",
+  "de",
+  "el",
+  "es",
+  "et",
+  "fa",
+  "fi",
+  "fil",
+  "fr",
+  "ga",
+  "he",
+  "hi",
+  "hr",
+  "hu",
+  "id",
+  "is",
+  "it",
+  "ja",
+  "ko",
+  "lt",
+  "lv",
+  "ms",
+  "mt",
+  "nl",
+  "no",
+  "pa",
+  "pl",
+  "pt",
+  "ro",
+  "ru",
+  "sk",
+  "sl",
+  "sr",
+  "sv",
+  "ta",
+  "te",
+  "th",
+  "tr",
+  "uk",
+  "ur",
+  "vi",
+  "zh",
+  "license:apache-2.0",
+  "deploy:azure",
+  "region:us"
+ ],
+ "library_name": "transformers",
+ "cardData": {
+  "inference": false,
+  "library_name": "transformers",
+  "language": [
+   "en",
+   "ar",
+   "bg",
+   "bn",
+   "ca",
+   "cs",
+   "da",
+   "de",
+   "el",
+   "es",
+   "et",
+   "fa",
+   "fi",
+   "fil",
+   "fr",
+   "ga",
+   "he",
+   "hi",
+   "hr",
+   "hu",
+   "id",
+   "is",
+   "it",
+   "ja",
+   "ko",
+   "lt",
+   "lv",
+   "ms",
+   "mt",
+   "nl",
+   "no",
+   "pa",
+   "pl",
+   "pt",
+   "ro",
+   "ru",
+   "sk",
+   "sl",
+   "sr",
+   "sv",
+   "ta",
+   "te",
+   "th",
+   "tr",
+   "uk",
+   "ur",
+   "vi",
+   "zh"
+  ],
+  "license": "apache-2.0",
+  "pipeline_tag": "image-text-to-text",
+  "tags": [
+   "conversational",
+   "chat"
+  ]
+ },
+ "siblings": [
+  {
+   "rfilename": ".gitattributes",
+   "size": 1570
+  },
+  {
+   "rfilename": "README.md",
+   "size": 10428
+  },
+  {
+   "rfilename": "chat_template.jinja",
+   "size": 12171
+  },
+  {
+   "rfilename": "config.json",
+   "size": 4251
+  },
+  {
+   "rfilename": "generation_config.json",
+   "size": 136
+  },
+  {
+   "rfilename": "model-00001-of-00009.safetensors",
+   "size": 49982701376
+  },
+  {
+   "rfilename": "model-00002-of-00009.safetensors",
+   "size": 49966979712
+  },
+  {
+   "rfilename": "model-00003-of-00009.safetensors",
+   "size": 49982702224
+  },
+  {
+   "rfilename": "model-00004-of-00009.safetensors",
+   "size": 49966981096
+  },
+  {
+   "rfilename": "model-00005-of-00009.safetensors",
+   "size": 49966981152
+  },
+  {
+   "rfilename": "model-00006-of-00009.safetensors",
+   "size": 49982703368
+  },
+  {
+   "rfilename": "model-00007-of-00009.safetensors",
+   "size": 49966981096
+  },
+  {
+   "rfilename": "model-00008-of-00009.safetensors",
+   "size": 49966981152
+  },
+  {
+   "rfilename": "model-00009-of-00009.safetensors",
+   "size": 37719390320
+  },
+  {
+   "rfilename": "model.safetensors.index.json",
+   "size": 1370845
+  },
+  {
+   "rfilename": "preprocessor_config.json",
+   "size": 1022
+  },
+  {
+   "rfilename": "signatures/command-a-plus-05-2026-bf16.sig",
+   "size": 15857
+  },
+  {
+   "rfilename": "signatures/verification-instructions.txt",
+   "size": 1474
+  },
+  {
+   "rfilename": "special_tokens_map.json",
+   "size": 830
+  },
+  {
+   "rfilename": "tokenizer.json",
+   "size": 28217141
+  },
+  {
+   "rfilename": "tokenizer_config.json",
+   "size": 9322
+  }
+ ],
+ "lastModified": "2026-06-15T04:32:10.000Z",
+ "downloads": 20567,
+ "config": {
+  "architectures": [
+   "Cohere2VisionForConditionalGeneration"
+  ],
+  "model_type": "cohere2_vision"
+ }
+}

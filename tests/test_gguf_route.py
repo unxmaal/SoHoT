@@ -87,9 +87,13 @@ def test_inspect_sizes_a_gguf_repo_by_the_file_it_would_fetch():
 
 def test_inspect_still_sums_a_safetensors_repo():
     fit = ins.inspect_model("org/M", ceiling=22 * GIB,
-                            data={"siblings": [sib("a.safetensors", 2),
+                            data={"siblings": [sib("config.json", 0), sib("a.safetensors", 2),
                                                sib("b.safetensors", 3)]})
     assert fit.largest == 5 * GIB
+    # With no config.json, top-level checkpoints are alternatives, not parts. #947.
+    alone = ins.inspect_model("org/M", ceiling=22 * GIB,
+                              data={"siblings": [sib("a.safetensors", 2), sib("b.safetensors", 3)]})
+    assert alone.largest == 2 * GIB
 
 
 # --- fetch downloads one file ----------------------------------------------

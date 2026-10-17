@@ -1,0 +1,106 @@
+{
+ "id": "mistralai/Voxtral-Mini-4B-Realtime-2602",
+ "pipeline_tag": "automatic-speech-recognition",
+ "tags": [
+  "vllm",
+  "safetensors",
+  "voxtral_realtime",
+  "mistral-common",
+  "automatic-speech-recognition",
+  "en",
+  "fr",
+  "es",
+  "de",
+  "ru",
+  "zh",
+  "ja",
+  "it",
+  "pt",
+  "nl",
+  "ar",
+  "hi",
+  "ko",
+  "arxiv:2602.11298",
+  "base_model:mistralai/Ministral-3-3B-Base-2512",
+  "base_model:finetune:mistralai/Ministral-3-3B-Base-2512",
+  "license:apache-2.0",
+  "eval-results",
+  "deploy:sagemaker",
+  "region:us"
+ ],
+ "library_name": "vllm",
+ "cardData": {
+  "library_name": "vllm",
+  "language": [
+   "en",
+   "fr",
+   "es",
+   "de",
+   "ru",
+   "zh",
+   "ja",
+   "it",
+   "pt",
+   "nl",
+   "ar",
+   "hi",
+   "ko"
+  ],
+  "license": "apache-2.0",
+  "inference": false,
+  "base_model": [
+   "mistralai/Ministral-3-3B-Base-2512"
+  ],
+  "extra_gated_description": "If you want to learn more about how we process your personal data, please read our <a href=\"https://mistral.ai/terms/\">Privacy Policy</a>.",
+  "pipeline_tag": "automatic-speech-recognition",
+  "tags": [
+   "mistral-common"
+  ]
+ },
+ "siblings": [
+  {
+   "rfilename": ".gitattributes",
+   "size": 1567
+  },
+  {
+   "rfilename": "README.md",
+   "size": 14942
+  },
+  {
+   "rfilename": "config.json",
+   "size": 1572
+  },
+  {
+   "rfilename": "consolidated.safetensors",
+   "size": 8859462744
+  },
+  {
+   "rfilename": "generation_config.json",
+   "size": 191
+  },
+  {
+   "rfilename": "model.safetensors",
+   "size": 8859446848
+  },
+  {
+   "rfilename": "params.json",
+   "size": 1343
+  },
+  {
+   "rfilename": "processor_config.json",
+   "size": 384
+  },
+  {
+   "rfilename": "tekken.json",
+   "size": 14910348
+  }
+ ],
+ "lastModified": "2026-03-11T15:04:02.000Z",
+ "downloads": 2065722,
+ "config": {
+  "architectures": [
+   "VoxtralRealtimeForConditionalGeneration"
+  ],
+  "model_type": "voxtral_realtime"
+ }
+}

@@ -429,6 +429,10 @@ class Fit:
     ceiling: int = 0
     #: The runtimes it offers, as decide() resolved them. #408.
     offered: list[str] = field(default_factory=list)
+    #: The listing variant it was sized by, as variants.Variant.describe() says it. #947.
+    variant: str = ""
+    #: Where its weights sit when no variant groups them; its sum is then no size it runs at. #947.
+    layout: str = ""
     #: GitHub's own one-line description, carried so the judge can be shown the
     #: prose AND the source facts in one place.
     description: str = ""
@@ -758,7 +762,7 @@ _NEEDS_CUDA = re.compile(
 _SERVED_RUNTIME = {"vllm": "vllm"}
 
 
-def runtime_needed(library: str = "", tags=()) -> str:
+def runtime_needed(library: str = "", tags=(), found=None) -> str:
     """The runtime a card's own fields say its weights need, or "".
 
     Read once from the registry's structured fields by the inspect tier and
@@ -770,7 +774,20 @@ def runtime_needed(library: str = "", tags=()) -> str:
     """
     if any(_NEEDS_CUDA.search(str(t)) for t in (library, *tags)):
         return "cuda"
-    return _SERVED_RUNTIME.get((library or "").strip().lower(), "")
+    served = _SERVED_RUNTIME.get((library or "").strip().lower(), "")
+    if found:
+        # The listing outranks the library tag, but only a variant something else loads lifts it. #947.
+        from harness import variants
+        got = variants.needs(found)
+        if got in (*_SERVED_RUNTIME.values(), "cuda"):
+            return got
+        elsewhere = any(v.format != variants.CHECKPOINT and v.runtime != served for v in found)
+        return "" if elsewhere else served
+    return served
+
+
+def _model_type(data: dict) -> str:
+    return str((data.get("config") or {}).get("model_type") or "").strip()
 
 
 #: How a card types its parent: base_model:<kind>:<id>. #414.
@@ -828,9 +845,11 @@ def card_facts(data: dict) -> Card:
     from harness.remote_code import code_evidence
     config = data.get("config") or {}
     files = [s.get("rfilename", "") for s in (data.get("siblings") or [])]
+    from harness import variants
+    found = variants.variants(data.get("siblings") or [], model_type=_model_type(data))
     return Card(task=task, library=library, tags=plain, parents=parents,
                 attaches_to=screen.is_attachment(words),
-                runtime_needed=runtime_needed(library, plain),
+                runtime_needed=runtime_needed(library, plain, found),
                 lane=lane, lane_source=source, category="model",
                 model_type=str(config.get("model_type") or "").strip(),
                 remote_code=code_evidence(config, files))
@@ -940,9 +959,10 @@ def inspect_model(model_id: str, *, data: dict | None = None, fetch=None,
     siblings = data.get("siblings") or []
     sizes = [s.get("size") or 0 for s in siblings]
     total = sum(sizes)
-    from harness import gguf, lanes
-    text = lanes.canonical(lane_for(data) or "") in ("", *lanes.TEXT_SERVED)
-    from harness import ds4
+    if machine is None:
+        from harness import machine as _machine
+        machine = _machine.detect()
+    from harness import ds4, variants
     if ds4.recognised(model_id, data):
         fit.ds4 = True
         got = ds4.pick(model_id, siblings, ceiling if ceiling is not None
@@ -952,11 +972,15 @@ def inspect_model(model_id: str, *, data: dict | None = None, fetch=None,
             fit.ds4_file = model.file
         else:
             total = 0
-    elif text and gguf.only(siblings):
-        # One file is fetched, not every quant. #295, #298.
-        pick = gguf.choose(siblings, ceiling if ceiling is not None
-                           else ceiling_bytes())
-        total = pick[1] if pick else gguf.smallest(siblings)
+    elif variants.weight_bytes(siblings):
+        # The smallest variant this machine can run is the size, never the listing's sum. #295, #947.
+        found = variants.variants(siblings, ceiling if ceiling is not None else ceiling_bytes(),
+                                  model_type=_model_type(data))
+        chosen = variants.pick(found, has=lambda rt: not machine.refuses(rt))
+        if chosen:
+            total, fit.variant = chosen.bytes, chosen.describe()
+        else:
+            total, fit.layout = variants.weight_bytes(siblings), variants.layout(siblings)
     if total > 0:
         fit.weights[model_id] = total
         fit.largest = fit.smallest = total
@@ -993,6 +1017,8 @@ def decide(fit: Fit, ceiling: int | None = None, dead_days: int = UPSTREAM_DEAD_
     """
     import time
     from datetime import datetime, timezone
+
+    from harness import variants
 
     # Resolved here rather than as a default argument: a default is bound at
     # import time, which would pin the ceiling to whatever machine imported
@@ -1067,10 +1093,16 @@ def decide(fit: Fit, ceiling: int | None = None, dead_days: int = UPSTREAM_DEAD_
         fit.why = (f"smallest sized weight is {fit.smallest / GIB:.1f} GiB, but the registry "
                    f"rate-limited or timed out sizing {len(fit.deferred)} more")
         return fit
+    if fit.smallest > ceiling and fit.layout:
+        fit.verdict = "unknown"
+        fit.why = (f"no variant groups its weights ({fit.layout}), so their "
+                   f"{fit.smallest / GIB:.1f} GiB sum is not a size it runs at")
+        return fit
     if fit.smallest > ceiling:
         fit.verdict = "too-big"
-        fit.why = (f"smallest weight it names is {fit.smallest / GIB:.1f} GiB, "
-                   f"over the {ceiling / GIB:.0f} GiB ceiling")
+        what = (f"{variants.MARK}{fit.variant}" if fit.variant
+                else f"smallest weight it names is {fit.smallest / GIB:.1f} GiB")
+        fit.why = f"{what}, over the {ceiling / GIB:.0f} GiB ceiling"
         return fit
     if fit.last_commit:
         try:
@@ -1094,7 +1126,8 @@ def decide(fit: Fit, ceiling: int | None = None, dead_days: int = UPSTREAM_DEAD_
         fit.why = (f"names {len(fit.unsized)} weight(s) and none could be "
                    f"sized, so whether it fits is not known")
         return fit
-    size = (f"weights from {fit.smallest / GIB:.1f} to {fit.largest / GIB:.1f} GiB"
+    size = (f"{variants.MARK}{fit.variant}" if fit.variant
+            else f"weights from {fit.smallest / GIB:.1f} to {fit.largest / GIB:.1f} GiB"
             if fit.largest > 0 else "no weights named in the source")
     fit.verdict = "fits"
     fit.why = f"{'MLX-native, ' if fit.mlx else ''}{size}"
@@ -1129,6 +1162,8 @@ def reason_of(fit: Fit) -> str:
         return reasons.UPSTREAM
     if fit.verdict == "too-big" or fit.verdict.startswith("needs-"):
         return reasons.MACHINE
+    if fit.verdict == "unknown" and fit.layout:
+        return reasons.HARNESS
     return reasons.CANDIDATE
 
 
@@ -1143,6 +1178,8 @@ def until_of(fit: Fit) -> str:
         return f"ceiling_gb:>{fit.smallest / GIB:.1f}"
     if fit.verdict == "dead" and fit.last_commit:
         return f"commit_after:{fit.last_commit}"
+    if fit.verdict == "unknown" and fit.layout:
+        return f"layout:{fit.layout}"
     return ""
 
 

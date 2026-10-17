@@ -489,13 +489,17 @@ def _reopen_stale_too_big() -> list[str]:
     store = ms.connect()
     try:
         names = ms.requeue_stale_too_big(store)
+        sized = ms.requeue_old_sizing(store)
     finally:
         store.close()
     heartbeat.mark(heartbeat.REOPENED_TOO_BIG, began)
     print(f"  requeued {len(names)} too-big refusal(s) judged against a smaller ceiling")
     for n in names:
         print(f"    {n}")
-    return names
+    print(f"  requeued {len(sized)} refusal(s) sized by the repo total or the library tag (#947)")
+    for n in sized:
+        print(f"    {n}")
+    return names + sized
 
 
 def _cross_methods(store, want: str = "") -> list[tuple[str, str, bool]]:
