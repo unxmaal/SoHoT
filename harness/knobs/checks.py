@@ -19,6 +19,8 @@ KNOBS = [
 
 NOT_GATING = {
     "evals/private.py:MIN_FRAGMENT": "which private text the leak scan looks for; never a lane's outcome (#654)",
+    "evals/analysis/laya_finetune.py:MAX_CHARS": "characters of an exchange the offline #970 embedding control reads, infovore's embed MAX_CHARS; never a lane's outcome (#970)",
+    "evals/analysis/laya_finetune.py:_embed_fitter.vectors->tok(max_length)": "bge-small's own 512-token window in the offline #970 analysis; never a lane's outcome (#970)",
     "harness/checks/image.py:ImageResult.stddev": "a measured result's value before it is measured (#706)",
     "harness/checks/video.py:VideoResult.motion": "a measured result's value before it is measured (#706)",
     "harness/checks/video.py:VideoResult.stddev": "a measured result's value before it is measured (#706)",
