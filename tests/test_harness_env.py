@@ -118,6 +118,28 @@ def test_an_explicit_offline_setting_is_not_overridden(tmp_path):
     assert environ["HF_HUB_OFFLINE"] == "0"
 
 
+def test_online_lifts_both_halves_and_puts_both_back_after_a_failure(monkeypatch):
+    """The env var alone does nothing once huggingface_hub has read it at import. #931."""
+    from huggingface_hub import constants
+    monkeypatch.setenv("HF_HUB_OFFLINE", "1")
+    monkeypatch.setattr(constants, "HF_HUB_OFFLINE", True)
+    with pytest.raises(RuntimeError):
+        with env.online():
+            assert (constants.HF_HUB_OFFLINE, os.environ["HF_HUB_OFFLINE"]) == (False, "0")
+            raise RuntimeError("download failed")
+    assert (constants.HF_HUB_OFFLINE, os.environ["HF_HUB_OFFLINE"]) == (True, "1")
+
+
+def test_online_leaves_an_unset_variable_unset(monkeypatch):
+    from huggingface_hub import constants
+    monkeypatch.delenv("HF_HUB_OFFLINE", raising=False)
+    monkeypatch.setattr(constants, "HF_HUB_OFFLINE", False)
+    with env.online():
+        assert os.environ["HF_HUB_OFFLINE"] == "0"
+    assert "HF_HUB_OFFLINE" not in os.environ
+    assert constants.HF_HUB_OFFLINE is False
+
+
 # ---- the two implementations must not drift --------------------------------
 
 def test_the_threshold_matches_the_one_env_sh_uses():

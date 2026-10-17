@@ -407,13 +407,11 @@ def _registry_for(url: str):
 
 def _snapshot_for(url: str):
     def snapshot(repo_id: str):
-        from huggingface_hub import constants, snapshot_download
-        was = constants.HF_HUB_OFFLINE
-        constants.HF_HUB_OFFLINE = False
-        try:
+        from huggingface_hub import snapshot_download
+
+        from harness import env
+        with env.online():
             return snapshot_download(repo_id=repo_id, endpoint=url, etag_timeout=5)
-        finally:
-            constants.HF_HUB_OFFLINE = was
     return snapshot
 
 
