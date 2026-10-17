@@ -72,6 +72,7 @@ MODULES = {
 # a constant or a type only, too slow, or crashes the forkserver (#596; test_mlx_backlog imports mlx, whose Metal
 # thread segfaults a forked worker). A new importer goes in one or the other (#840).
 LEFT_OUT = {
+    "harness/memory_store/transitions.py": ("test_blame_audit.py",),
     "harness/reasons.py": (
         "test_chaos.py", "test_claims_lane.py", "test_gateway_key.py", "test_harness_checks_ocr.py",
         "test_harness_paired.py", "test_harness_screen.py", "test_harness_screen_spec.py",
