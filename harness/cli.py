@@ -40,6 +40,7 @@ from harness.commands import gauntlet as gauntlet_cmd
 from harness.commands import jobs as jobs_cmd
 from harness.commands import judge as judge_cmd
 from harness.commands import lanes as lanes_cmd
+from harness.commands import load_log as load_log_cmd
 from harness.commands import measure as measure_cmd
 from harness.commands import report as report_cmd
 from harness.commands import reverify as reverify_cmd
@@ -667,6 +668,13 @@ def build_parser() -> argparse.ArgumentParser:
     deg.add_argument("--db", default="", help="redecide: the store (default: this home's discovery.db)")
     deg.add_argument("--apply", action="store_true", help="redecide: write the changed verdicts")
     deg.set_defaults(func=degenerate_cmd.cmd_degenerate)
+    llg = sub.add_parser("load-log", help="re-decide held llama.cpp load failures from the router's log, "
+                         "keeping each child's lines in its run directory; read-only without --apply. #953")
+    llg.add_argument("--db", default="", help="the store (default: this home's discovery.db)")
+    llg.add_argument("--runs", default="", help="run directories by name (default: this home's runs)")
+    llg.add_argument("--log", action="append", help="a router log to read (repeatable; default: this home's)")
+    llg.add_argument("--apply", action="store_true", help="write the excerpts and the verdicts")
+    llg.set_defaults(func=load_log_cmd.cmd_load_log)
     wd = sub.add_parser("watchdog", help="judge every running SoHoT job against the watchdog's criteria "
                         "and act; a dry run unless LH_WATCHDOG_ACT=1 or --act. #814")
     wd.add_argument("--act", action="store_true", help="take the actions this once")

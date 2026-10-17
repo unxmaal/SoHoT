@@ -66,14 +66,15 @@ def _summary(cand, failure):
                                     RunnerError(detail))])
 
 
-def test_llama_server_failing_to_load_waits_on_a_newer_build(monkeypatch):
+def test_llama_server_failing_to_load_waits_on_the_load_log_not_a_newer_build(monkeypatch):
+    """The 500 alone names no cause; the screen reads the child's log for one. #953."""
     monkeypatch.setattr(screen, "_installed",
                         lambda pkg: {"llama.cpp": "10809"}.get(pkg, "0"))
     cand = "llamacpp:K2-Horizon-7B-Q4_K_M"
     fail = ('chunk-bytes: gateway returned HTTP 500: {"error":{"code":500,'
             '"message":"model name=K2-Horizon-7B-Q4_K_M failed to load"}}')
-    got, why, *_ = screen.outcome(0, _summary(cand, fail), candidate=cand)
-    assert got == "declined", why
+    got = screen.outcome(0, _summary(cand, fail), candidate=cand)
+    assert (got.outcome, got.reason, got.failure_class) == ("queued", "harness", reasons.LOAD_LOG_UNREAD)
     assert screen.load_until(cand) == "version:llama.cpp>10809"
 
 

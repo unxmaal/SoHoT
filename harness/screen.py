@@ -540,6 +540,12 @@ def _sentence(cls: str, why: str, limit: str) -> str:
     tail = f": {why}" if why else ""
     if cls == reasons.LOAD_FAILED_RUNTIME:
         return f"the installed runtime could not load it{tail}"
+    if cls == reasons.LOAD_FAILED_FILE:
+        return f"the file is malformed, its header disagrees with itself{tail}"
+    if cls == reasons.LOAD_LOG_UNREAD:
+        return f"not screened: llama-server failed to load it and no load log says why{tail}"
+    if cls == reasons.SHORT_COPY:
+        return f"not screened: our copy is shorter than its header says; refetch{tail}"
     if cls == reasons.LOAD_FAILED_LAYOUT:
         return f"needs its own runner: the stock loader could not assemble it{tail}"
     if cls == reasons.GPU_FAULT:

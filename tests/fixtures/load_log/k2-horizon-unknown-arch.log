@@ -1,0 +1,36 @@
+[55987] 1.18.953.871 I srv    operator(): exit command received, exiting...
+[55987] 1.18.953.962 I srv    operator(): operator(): cleaning up before exit...
+89.08.802.123 I srv           run: instance name=supergemma4-26b-uncensored-fast-v2-Q4_K_M exited with status 0
+89.08.802.150 I srv  ensure_model: slot available, loading queued model name=K2-Horizon-7B-Q4_K_M
+89.08.802.226 I srv          load: spawning server instance with name=K2-Horizon-7B-Q4_K_M on port 55991
+89.08.802.238 I srv          load: spawning server instance with args:
+89.08.802.239 I srv          load:   /opt/homebrew/Cellar/llama.cpp/0.5.0/bin/llama-server
+89.08.802.239 I srv          load:   --host
+89.08.802.239 I srv          load:   127.0.0.1
+89.08.802.239 I srv          load:   --port
+89.08.802.239 I srv          load:   55991
+89.08.802.240 I srv          load:   --sleep-idle-seconds
+89.08.802.240 I srv          load:   300
+89.08.802.240 I srv          load:   --alias
+89.08.802.240 I srv          load:   K2-Horizon-7B-Q4_K_M
+89.08.802.240 I srv          load:   --ctx-size
+89.08.802.240 I srv          load:   16384
+89.08.802.240 I srv          load:   --model
+89.08.802.240 I srv          load:   /Volumes/Models/hf/gguf/K2-Horizon-7B-Q4_K_M.gguf
+89.08.802.241 I srv          load:   --n-gpu-layers
+89.08.802.241 I srv          load:   999
+[55991] 0.00.000.074 I srv  llama_server: initializing ...
+[55991] 0.00.028.399 I cmn  common_param: common_params_print_info: verbosity = 3 (adjust with the `-lv N` CLI arg)
+[55991] 0.00.028.747 W srv  llama_server: security: no API key is set and CORS allows all origins (see https://github.com/ggml-org/llama.cpp/pull/25655)
+[55991] 
+[55991] 0.00.030.613 I srv    load_model: loading model '/Volumes/Models/hf/gguf/K2-Horizon-7B-Q4_K_M.gguf'
+[55991] 0.00.123.847 E llama_model_load: error loading model: unknown model architecture: 'k2-horizon'
+[55991] 0.00.123.920 E llama_model_load_from_file_impl: failed to load model
+[55991] 0.00.123.940 E common_fit_params: encountered an error while trying to fit params to free device memory: failed to load model
+[55991] 0.00.188.763 E llama_model_load: error loading model: unknown model architecture: 'k2-horizon'
+[55991] 0.00.188.767 E llama_model_load_from_file_impl: failed to load model
+[55991] 0.00.188.768 E cmn  common_init_: failed to load model '/Volumes/Models/hf/gguf/K2-Horizon-7B-Q4_K_M.gguf'
+[55991] 0.00.188.769 E srv    load_model: failed to load model, '/Volumes/Models/hf/gguf/K2-Horizon-7B-Q4_K_M.gguf'
+[55991] 0.00.188.771 I srv    operator(): operator(): cleaning up before exit...
+[55991] 0.00.189.126 E srv  llama_server: exiting due to model loading error
+89.09.070.060 I srv           run: instance name=K2-Horizon-7B-Q4_K_M exited with status 1

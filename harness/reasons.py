@@ -32,6 +32,12 @@ REFUSED_BY_GATEWAY = "refused_by_gateway"
 HARNESS_ERROR = "harness_error"
 LOAD_FAILED_RUNTIME = "load_failed_runtime"
 LOAD_FAILED_LAYOUT = "load_failed_layout"
+#: llama-server said it failed to load and no loader log says why: nothing is known yet. #953.
+LOAD_LOG_UNREAD = "load_log_unread"
+#: The GGUF's own header disagrees with itself: a fault in the upload, not the runtime. #953.
+LOAD_FAILED_FILE = "load_failed_file"
+#: Our copy of the GGUF is shorter than its header says: refetch it. #953.
+SHORT_COPY = "short_copy"
 TIMEOUT = "timeout"
 TOKEN_BUDGET_EXHAUSTED = "token_budget_exhausted"
 #: An agent run stopped at the step cap we chose. #695.
@@ -66,12 +72,15 @@ CLASSES = {
     REFUSED_BY_GATEWAY: ("queued", HARNESS),
     HARNESS_ERROR: ("queued", HARNESS),
     ENVIRONMENT_ERROR: ("queued", HARNESS),
+    LOAD_LOG_UNREAD: ("queued", HARNESS),
+    SHORT_COPY: ("queued", HARNESS),
     POOL_FULL: ("queued", LIMIT),
     TIMEOUT: ("declined", LIMIT),
     TOKEN_BUDGET_EXHAUSTED: ("declined", LIMIT),
     STEP_CAP: ("declined", LIMIT),
     CONTEXT_EXCEEDED: ("declined", LIMIT),
     LOAD_FAILED_RUNTIME: ("declined", RUNTIME),
+    LOAD_FAILED_FILE: ("declined", CANDIDATE),
     LOAD_FAILED_LAYOUT: ("declined", RUNTIME),
     BACKEND_FAULT: ("declined", RUNTIME),
     MISSING_FILE_IN_SNAPSHOT: ("broken", CANDIDATE),
@@ -139,7 +148,20 @@ _OUR_SNAPSHOT = re.compile(r"no such file or directory: '[^']*/snapshots/[^/']+/
 _LOAD_FAILED = "gateway returned http 404"
 _ARCHITECTURE_GAPS = ("model type", "modelargs", "parameters not in model",
                       "required positional argument")
-_LLAMACPP_LOAD_FAILED = ("http 500", "failed to load")
+_LLAMACPP_LOAD_FAILED = ("failed to load",)
+#: llama-server's own 500 body names the router alias that failed. #953.
+_LLAMACPP_ALIAS = re.compile(r"model name=(\S+?) failed to load")
+#: A router child's error line: `[<port>] <time> E <message>`. #953.
+_CHILD_ERROR = re.compile(r"^\[\d+\] \S+ E (.+)$", re.M | re.I)
+#: The loader read past the end of our copy. #953.
+_GGUF_SHORT = ("not within the file bounds", "unexpectedly reached end of file",
+               "failed to read magic")
+#: The file's header is inconsistent with itself, before any tensor data is read. #953.
+_GGUF_HEADER_FAULT = re.compile(r"tensor '[^']*' has offset \d+, expected \d+|invalid magic characters"
+                                r"|failed to read key-value pairs|failed to read tensor info"
+                                r"|duplicate key|duplicate tensor name|not a multiple of block size")
+#: What a newer llama.cpp can add. #953.
+_LLAMACPP_GAPS = ("unknown model architecture", "unknown pre-tokenizer type", "invalid ggml type")
 _DIFFUSERS_LAYOUT_GAPS = ("can't find a pipeline linked to", "were passed")
 _ENGINE_HEADS = ("mflux", "diffusers", "diffusers-video", "acestep", "hf-ocr",
                  "rerank", "embed", "hf-pii")
@@ -183,6 +205,29 @@ def in_our_snapshot(text: str) -> bool:
     return bool(_OUR_SNAPSHOT.search((text or "").lower()))
 
 
+def llamacpp_alias(text: str) -> str:
+    """The router alias llama-server's 500 says failed to load, or "". #953."""
+    got = _LLAMACPP_ALIAS.search(text or "")
+    return got.group(1) if got else ""
+
+
+def child_errors(lines) -> list[str]:
+    """A router child's error messages, prefix and level cut, whitespace folded. #953."""
+    return [" ".join(m.group(1).split()) for line in lines
+            for m in [_CHILD_ERROR.match(line.rstrip())] if m]
+
+
+def _llamacpp_load(low: str) -> str:
+    """A llama-server load failure's class, read from the child's own log when the text carries it. #953."""
+    if _any(low, _GGUF_SHORT):
+        return SHORT_COPY
+    if _GGUF_HEADER_FAULT.search(low):
+        return LOAD_FAILED_FILE
+    if _any(low, _LLAMACPP_GAPS) or _CHILD_ERROR.search(low):
+        return LOAD_FAILED_RUNTIME
+    return LOAD_LOG_UNREAD
+
+
 def classify(text: str, where: str = RUNNER, candidate: str = "") -> str:
     """The failure class an upstream error text names, or "" from stderr."""
     from harness.serving import LLAMACPP_PREFIX
@@ -198,7 +243,7 @@ def classify(text: str, where: str = RUNNER, candidate: str = "") -> str:
         return POOL_FULL
     if candidate.startswith(LLAMACPP_PREFIX) and all(
             p in low for p in _LLAMACPP_LOAD_FAILED):
-        return LOAD_FAILED_RUNTIME
+        return _llamacpp_load(low)
     if (_LOAD_FAILED in low or head in _ENGINE_HEADS) and _any(
             low, _ARCHITECTURE_GAPS):
         return LOAD_FAILED_RUNTIME

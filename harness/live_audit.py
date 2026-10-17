@@ -17,7 +17,8 @@ ERROR_RATE_MAX = 0.10
 
 SERVING = ("adoptions_pass_here", "no_reference_served", "served_matches_adoption", "gateway_errors")
 SCHEDULE = ("sweep_on_schedule",)
-VERDICTS = ("too_big_ceiling_current", "too_big_names_variant", "terminal_reason_coherent", "no_ranking_verdict")
+VERDICTS = ("too_big_ceiling_current", "too_big_names_variant", "terminal_reason_coherent", "no_ranking_verdict",
+            "load_log_kept")
 CHECKS = mc.INVARIANTS + SERVING + SCHEDULE + VERDICTS
 
 
@@ -148,6 +149,21 @@ def _no_ranking_verdict(conn) -> list:
             for r in ms.unranked_terminal(conn)]
 
 
+#: Held llama.cpp load failures decided before #953 kept the child's log; they warn until `soh load-log --apply`.
+PINNED_UNKEPT = frozenset({9144, 9289})
+
+
+def _load_log_kept(conn, pinned=None) -> tuple[list, list]:
+    """(failures, warnings): held llama.cpp runtime verdicts whose run directory has no server-load.log. #953."""
+    from harness import load_log
+    pinned = PINNED_UNKEPT if pinned is None else pinned
+    bad, known = [], []
+    for r in load_log.unkept(conn):
+        (known if r["id"] in pinned else bad).append(
+            f"verdict {r['id']} {r['name']}: no {load_log.FILE} in {r['dir'] or 'any run directory'}")
+    return bad, known
+
+
 def _when(at) -> str:
     import time
     return time.strftime("%Y-%m-%d %H:%M", time.localtime(at)) if at else "never"
@@ -219,11 +235,15 @@ def audit(path=None, config=None) -> dict:
         incoherent, pinned = _terminal_reason_coherent(conn)
         checks.append(mc._check("terminal_reason_coherent", incoherent))
         checks.append(mc._check("no_ranking_verdict", _no_ranking_verdict(conn)))
+        unkept, waiting = _load_log_kept(conn)
+        checks.append(mc._check("load_log_kept", unkept))
         warnings = {"too_big_ceiling_current": mc._say(backlog)} if backlog and not stale else {}
         if unswept and not summed:
             warnings["too_big_names_variant"] = mc._say(unswept)
         if pinned and not incoherent:
             warnings["terminal_reason_coherent"] = "pinned, awaiting a fix: " + mc._say(pinned)
+        if waiting and not unkept:
+            warnings["load_log_kept"] = "pinned, awaiting soh load-log --apply: " + mc._say(waiting)
         have = mc.schema(conn)
         bound = _binding(conn)
         fell = node_fallbacks(conn, config)

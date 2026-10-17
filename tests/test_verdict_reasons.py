@@ -47,6 +47,9 @@ EXPECTED = {
     reasons.POOL_FULL: ("queued", "limit"),
     reasons.INVALID_PATCH: ("broken", "candidate"),
     reasons.ENVIRONMENT_ERROR: ("queued", "harness"),
+    reasons.LOAD_LOG_UNREAD: ("queued", "harness"),
+    reasons.SHORT_COPY: ("queued", "harness"),
+    reasons.LOAD_FAILED_FILE: ("declined", "candidate"),
 }
 
 
