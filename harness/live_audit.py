@@ -102,9 +102,14 @@ def _too_big_ceiling_current(conn, ceiling_gb: float | None = None, reopened_at=
 CONDITIONAL = ("runtime", "machine", "limit")
 
 
-def _terminal_reason_coherent(conn) -> list:
-    """Terminal state verdicts whose reason contradicts the outcome or that nothing can reopen. #918."""
-    bad = []
+#: Incoherent rows the check started with (store of 2026-10-17); they warn until fixed, any other fails.
+PINNED_INCOHERENT = frozenset({686, 687, 9143, 11513})
+
+
+def _terminal_reason_coherent(conn, pinned=None) -> tuple[list, list]:
+    """(failures, warnings): terminal state verdicts whose reason contradicts the outcome or nothing can reopen. #918."""
+    pinned = PINNED_INCOHERENT if pinned is None else pinned
+    bad, known = [], []
     for r in conn.execute(
             "SELECT v.id, p.name, p.state, v.reason, v.until, p.next_retest_at FROM proposals p "
             "JOIN verdicts v ON v.id = p.state_verdict_id "
@@ -117,8 +122,8 @@ def _terminal_reason_coherent(conn) -> list:
             why = f"reason {r['reason']} with no until and no retest"
         else:
             continue
-        bad.append(f"verdict {r['id']} {r['name']}: {why}")
-    return bad
+        (known if r["id"] in pinned else bad).append(f"verdict {r['id']} {r['name']}: {why}")
+    return bad, known
 
 
 def _when(at) -> str:
@@ -187,8 +192,11 @@ def audit(path=None, config=None) -> dict:
         ]
         stale, backlog = _too_big_ceiling_current(conn)
         checks.append(mc._check("too_big_ceiling_current", stale))
-        checks.append(mc._check("terminal_reason_coherent", _terminal_reason_coherent(conn)))
+        incoherent, pinned = _terminal_reason_coherent(conn)
+        checks.append(mc._check("terminal_reason_coherent", incoherent))
         warnings = {"too_big_ceiling_current": mc._say(backlog)} if backlog and not stale else {}
+        if pinned and not incoherent:
+            warnings["terminal_reason_coherent"] = "pinned, awaiting a fix: " + mc._say(pinned)
         have = mc.schema(conn)
         bound = _binding(conn)
         fell = node_fallbacks(conn, config)

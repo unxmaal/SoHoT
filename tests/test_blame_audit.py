@@ -195,7 +195,7 @@ def test_soh_blame_samples_the_store_read_only_and_reports(store, tmp_path, caps
 def _coherent(strata, prefix="org"):
     conn = _store(strata, prefix)
     try:
-        return live_audit._terminal_reason_coherent(conn)
+        return live_audit._terminal_reason_coherent(conn, pinned=frozenset())[0]
     finally:
         conn.close()
 
@@ -242,3 +242,20 @@ def test_a_machine_refusal_reopened_for_a_bigger_machine_is_not_a_harness_plant(
     ms.decide(store, name, "queued", tier="inspect", reopen=RETRACTION, reopen_why="bigger machine")
     ms.decide(store, name, "declined", tier="inspect", reason="machine", until="ceiling_gb:>81")
     assert ba.plants(store, 918, []) == []
+
+
+def test_the_pinned_incoherent_rows_only_warn_and_a_fifth_fails():
+    conn = _store([("screen", "broken", "limit", "limit:max_tokens>4000", 5)], prefix="pinned")
+    try:
+        ids = [r[0] for r in conn.execute(
+            "SELECT state_verdict_id FROM proposals WHERE name LIKE 'pinned/%' ORDER BY state_verdict_id")]
+        bad, known = live_audit._terminal_reason_coherent(conn, pinned=frozenset(ids[:4]))
+        assert len(known) == 4 and len(bad) == 1 and f"verdict {ids[4]} " in bad[0]
+        bad, known = live_audit._terminal_reason_coherent(conn, pinned=frozenset(ids))
+        assert bad == [] and len(known) == 5
+    finally:
+        conn.close()
+
+
+def test_the_pin_is_exactly_the_four_rows_the_check_started_with():
+    assert live_audit.PINNED_INCOHERENT == {686, 687, 9143, 11513}

@@ -257,3 +257,19 @@ def test_a_broken_row_with_a_limit_reason_fails_the_audit(live):
     got = live_audit.audit(live)
     assert not got["ok"]
     assert "broken with reason limit" in _checks(got)["terminal_reason_coherent"]["detail"]
+
+
+def test_a_pinned_incoherent_row_warns_without_failing_the_audit(live, monkeypatch):
+    conn = ms.connect()
+    try:
+        ms.record(conn, ms.Seen(name="org/pinned", source="s", kind="candidate", registry=ms.HUGGINGFACE,
+                                lane="code", resolved="org/pinned"))
+        ms.decide(conn, "org/pinned", "queued", tier="inspect", detail="fits", reason="candidate")
+        vid = ms.decide(conn, "org/pinned", "broken", tier="screen", reason="limit", until="limit:max_tokens>4000")
+    finally:
+        conn.close()
+    monkeypatch.setattr(live_audit, "PINNED_INCOHERENT", frozenset({vid}))
+    got = live_audit.audit(live)
+    check = _checks(got)["terminal_reason_coherent"]
+    assert check["ok"] and check["warn"] and f"verdict {vid} " in check["detail"], got
+    assert got["ok"], got
