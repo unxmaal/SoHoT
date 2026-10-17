@@ -17,7 +17,7 @@ from pathlib import Path
 
 from evals import core
 from evals.core import Case, Result, artifact_name
-from harness import reasons
+from harness import degenerate, reasons
 
 
 class RunnerError(RuntimeError):
@@ -109,15 +109,21 @@ class BaseRunner:
         row = core.score(case, artifact, **self.score_kwargs())
         row.candidate = self.candidate
         cls, limit = self.stopped_by()
+        tail: dict = {}
         if not row.passed and cls:
             # A reply our budget or cap stopped failed on our limit, not on its answer. #628, #695.
             row.failure_class, row.limit = cls, limit
+            if cls == reasons.TOKEN_BUDGET_EXHAUSTED and case.modality in degenerate.LANES:
+                tail = degenerate.measure(artifact if isinstance(artifact, str) else "")
+                if degenerate.is_degenerate(tail):
+                    # A loop or a collapse would fill any budget, so the cut is not what failed it. #955.
+                    row.failure_class, row.limit = reasons.DEGENERATE, ""
         if not row.passed and not row.failure_class:
             row.failure_class = reasons.CONTENT_FAILED
         row.seconds = round(elapsed, 3)
         # A runner may have measured something the checker cannot see,
         # such as tokens/sec from the server's usage block.
-        row.metrics = {**row.metrics, **self.extra_metrics()}
+        row.metrics = {**row.metrics, **self.extra_metrics(), **tail}
         row.peak_kb = peak_kb
         if isinstance(artifact, str):
             row.output = artifact

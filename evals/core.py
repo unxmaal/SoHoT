@@ -467,6 +467,9 @@ METRIC_DIRECTION = {
     "retries": "neutral",
     "stages": "neutral",
     "thinking_disabled": "neutral",
+    # A budget-cut reply's tail, measured to tell a loop from a cut-off (#955).
+    "tail_repeat": "neutral",
+    "tail_entropy": "neutral",
     # retrieval (#563): every relevant document in the top k, and how high.
     "retrieval_recall": "higher",
     "retrieval_ndcg": "higher",

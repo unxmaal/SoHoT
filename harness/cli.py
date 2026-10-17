@@ -33,6 +33,7 @@ from harness.commands import cases as cases_cmd
 from harness.commands import chaos as chaos_cmd
 from harness.commands import common
 from harness.commands import context as context_cmd
+from harness.commands import degenerate as degenerate_cmd
 from harness.commands import discover as discover_cmd
 from harness.commands import gateway as gateway_cmd
 from harness.commands import gauntlet as gauntlet_cmd
@@ -653,6 +654,14 @@ def build_parser() -> argparse.ArgumentParser:
     bla.add_argument("--labels", default="", help="first labeller's file (default: <dir>/labels.csv)")
     bla.add_argument("--second", default="", help="second labeller's file (default: <dir>/labels-second.csv)")
     bla.set_defaults(func=blame_cmd.cmd_blame)
+    deg = sub.add_parser("degenerate", help="fit the looping-reply threshold on labelled rows, or re-decide "
+                         "screens a max_tokens limit decided from their stored rows. #955")
+    deg.add_argument("action", choices=("fit", "redecide"))
+    deg.add_argument("--rows", default="", help="labelled rows (default: evals/degenerate/rows.jsonl)")
+    deg.add_argument("--runs", default="", help="fit: also scan this runs dir; redecide: where run paths resolve")
+    deg.add_argument("--db", default="", help="redecide: the store (default: this home's discovery.db)")
+    deg.add_argument("--apply", action="store_true", help="redecide: write the changed verdicts")
+    deg.set_defaults(func=degenerate_cmd.cmd_degenerate)
     wd = sub.add_parser("watchdog", help="judge every running SoHoT job against the watchdog's criteria "
                         "and act; a dry run unless LH_WATCHDOG_ACT=1 or --act. #814")
     wd.add_argument("--act", action="store_true", help="take the actions this once")
