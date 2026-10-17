@@ -613,6 +613,27 @@ def served_slots(spec: str, config=None, get=None) -> int | None:
     return None if serving.loopback(base) else _props(base, key, get).get("slots")
 
 
+#: llama-server's /props sampler names, as the request keys they default. #921.
+PROPS_SAMPLER = {"temperature": "temperature", "top_p": "top_p", "top_k": "top_k", "min_p": "min_p",
+                 "presence_penalty": "presence_penalty", "repeat_penalty": "repetition_penalty"}
+
+
+def served_sampler(spec: str, config=None, get=None) -> dict:
+    """The sampler llama-server applies where a request names no value, from its /props; {} when it does not say. #921."""
+    where = _upstream(spec, config)
+    if where is None:
+        return {}
+    base, stem = where
+    try:
+        url = f"{base}/props?model={stem}"
+        got = (get(url) if get else _get_json(url, _key(spec, config))).get("default_generation_settings") or {}
+    except Exception:  # noqa: BLE001 - not llama-server, or not answering
+        return {}
+    params = got.get("params") if isinstance(got.get("params"), dict) else got
+    return {ours: params[theirs] for theirs, ours in PROPS_SAMPLER.items()
+            if isinstance(params.get(theirs), (int, float))}
+
+
 def refusal(stem: str, conn=None) -> str:
     """Why this stem is not served, or "" when it is or nothing is recorded."""
     from harness import downloads

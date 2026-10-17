@@ -62,7 +62,7 @@ MODULES = {
         "tests/test_schema_lanes.py", "tests/test_ds4.py", "tests/test_remote_upstreams.py",
         "tests/test_cold_load.py", "tests/test_slots_memory.py",
         "tests/test_liveness_705.py", "tests/test_mcp_delegate.py", "tests/test_context_store.py",
-        "tests/test_nodes.py"],
+        "tests/test_nodes.py", "tests/test_trajectory_921.py"],
     "harness/router.py": [
         "tests/test_router_unload.py", "tests/test_lane_routes.py", "tests/test_router_swaps.py",
         "tests/test_cold_load.py", "tests/test_remote_upstreams.py", "tests/test_gguf_route.py"],
@@ -78,6 +78,7 @@ LEFT_OUT = {
         "test_holdout_power.py", "test_inspect_method_specs.py", "test_inspect_ratelimit.py",
         "test_knob_sweeps.py", "test_knobs.py", "test_loop_backpressure.py", "test_method_serving.py", "test_pii_lane.py",
         "test_power_budget.py", "test_quants_882.py", "test_repo_claude_905.py", "test_repo_lane.py", "test_runner_base_weights.py", "test_schema_lanes.py",
+        "test_trajectory_921.py",
         "test_silent_truncation.py", "test_slots_memory.py", "test_store_downloads.py"),
     "harness/screen.py": (
         "test_chaos.py", "test_claims_balanced_metric.py", "test_harness_engines_repo_id.py",
@@ -93,7 +94,7 @@ LEFT_OUT = {
         "test_mlx_backlog.py", "test_agent_limits.py", "test_claims_lane.py", "test_decide_lane.py",
         "test_delegate_resident.py", "test_delegations.py", "test_machine_host.py",
         "test_machine_identity.py", "test_mlx_dead_912.py", "test_purpose_825.py", "test_usage_gateway.py",
-        "test_vllm.py"),
+        "test_vllm.py", "test_repo_failures_921.py"),
     "harness/router.py": (
         "test_delegate_resident.py", "test_machine_host.py", "test_sweep_ceiling_806.py", "test_watchdog.py"),
 }
