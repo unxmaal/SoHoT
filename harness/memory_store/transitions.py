@@ -74,8 +74,9 @@ def _schedule_retest(conn, pid: int, row: dict, reopen: str) -> None:
                      "next_retest_at = NULL WHERE id = ?", (pid,))
         return
     due = None
-    if retest_eligible(row["outcome"], row.get("tier", ""), row.get("until", "")):
-        if not retest_spent(conn, pid, row.get("tier", "")):
+    tier = row.get("tier", "")
+    if retest_eligible(row["outcome"], tier, row.get("until", "")):
+        if not retest_spent(conn, pid, tier):
             due = float(row["decided_at"]) + RETEST_AFTER_SECONDS
     conn.execute("UPDATE proposals SET next_retest_at = ? WHERE id = ?",
                  (due, pid))
