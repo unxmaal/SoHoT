@@ -24,9 +24,13 @@ def render(r: dict) -> list[str]:
     s = r["sweep"]
     out = [f"since {_hm(r['since'])}"]
     h = r.get("lane") or {}
-    if h:
+    from harness import morning
+    from harness.availability import incident_line
+    if h and morning.open_incident(r, h["lane"]) is None:
         state = {True: "generating", False: "CANNOT GENERATE"}.get(h.get("generating"), f"unknown ({h.get('why')})")
         out.append(f"lane      {h['lane']}: {state}")
+    out.append(f"incidents {len(r.get('incidents') or [])}")
+    out.extend(f"          {incident_line(i)}" for i in r.get("incidents") or [])
     loop = s.get("loop")
     if loop is None:
         out.append("sweep     no loop heartbeat")

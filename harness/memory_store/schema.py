@@ -4,7 +4,7 @@ from __future__ import annotations
 from harness import store
 
 
-SCHEMA_VERSION = 74
+SCHEMA_VERSION = 75
 
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
@@ -505,6 +505,27 @@ CREATE TABLE IF NOT EXISTS watchdog_actions (
     -- JSON: the measurements that tripped it, how the subject was identified, the fingerprint.
     evidence    TEXT NOT NULL DEFAULT '{}',
     outcome     TEXT NOT NULL DEFAULT ''
+);
+
+-- One known-answer completion the watchdog sent a text lane, or why it sent none. #924.
+CREATE TABLE IF NOT EXISTS lane_probes (
+    id                INTEGER PRIMARY KEY,
+    at                REAL NOT NULL,
+    machine_id        INTEGER REFERENCES machines(id),
+    lane              TEXT NOT NULL,
+    spec              TEXT NOT NULL DEFAULT '',
+    base              TEXT NOT NULL DEFAULT '',
+    upstream          TEXT NOT NULL DEFAULT '',
+    model             TEXT NOT NULL DEFAULT '',
+    engine            TEXT NOT NULL DEFAULT '',
+    -- up, down, slow or skipped.
+    outcome           TEXT NOT NULL,
+    reason            TEXT NOT NULL DEFAULT '',
+    http_status       INTEGER,
+    error             TEXT NOT NULL DEFAULT '',
+    seconds           REAL,
+    prompt_tokens     INTEGER,
+    completion_tokens INTEGER
 );
 
 -- One day of `soh ledger`: cloud spend, displaced dollars and energy, so trends outlive transcripts. #826.

@@ -124,6 +124,8 @@ class World:
     gateway_up: bool | None = None
     mlx_generating: bool | None = None
     fallbacks: list | None = None
+    #: This wake's lane_probes rows (#924).
+    lanes: list | None = None
     #: observation -> why it could not be made.
     gaps: dict = field(default_factory=dict)
 
@@ -263,6 +265,13 @@ class Probes:
             return None
         from harness import mlx_server, serving
         return mlx_server.generating(serving.MLX_URL, timeout=PROBE_TIMEOUT_S)
+
+    def lanes(self, conn, now: float) -> list[dict] | None:
+        """One known-answer completion per resident text lane, each recorded in lane_probes (#924); None without a store."""
+        if conn is None:
+            return None
+        from harness import lane_probe
+        return lane_probe.wake(conn, now, machine_id=_machine(conn))
 
     def fallbacks(self, conn) -> list[dict] | None:
         from harness import live_audit
@@ -413,6 +422,10 @@ def observe(probes: Probes, conn=None, now: float | None = None) -> World:
     world.gateway_up = probes.gateway_up()
     world.mlx_generating = probes.mlx_generating()
     world.fallbacks = probes.fallbacks(conn)
+    try:
+        world.lanes = probes.lanes(conn, now)
+    except Exception as exc:  # noqa: BLE001 - a probe that cannot run is a gap, never a lost wake
+        world.gaps["lanes"] = f"the lane probes failed: {type(exc).__name__}: {exc}"[:300]
     return world
 
 
@@ -907,11 +920,18 @@ def wake(conn, probes: Probes | None = None, hands: Hands | None = None, act: bo
                           "escalated": escalated, "outcome": outcome})
         for cid, why in skipped.items():
             say(f"skipped {cid}: {why}")
+        from harness import lane_probe
+        for r in world.lanes or []:
+            say(lane_probe.line(r))
+        if "lanes" in world.gaps:
+            say(world.gaps["lanes"])
+        down = [r["lane"] for r in world.lanes or [] if r["outcome"] == lane_probe.DOWN]
         for s in world.unowned:
             say(f"left alone (not provably SoHoT's): pid {s.pid} {s.command[:120]}")
-        if not findings:
+        if not findings and not down:
             say(f"all clear: {len(world.top)} running, {len(world.evals)} eval(s)")
-        return {"acted": acted, "skipped": skipped, "unowned": [s.key for s in world.unowned], "busy": False}
+        return {"acted": acted, "skipped": skipped, "unowned": [s.key for s in world.unowned], "busy": False,
+                "lanes": world.lanes, "down": down}
 
 
 def main(argv=None) -> int:

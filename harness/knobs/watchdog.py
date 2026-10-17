@@ -2,8 +2,18 @@
 from harness.knobs.base import _k
 
 W = "harness/watchdog.py"
+P = "harness/lane_probe.py"
 
 KNOBS = [
+    _k("availability_target", ["harness/availability.py:TARGET"], [0.95, 0.99, 0.999],
+       note="weekly share of judged probes an adopted text lane should answer; revisit with two weeks measured (#924)"),
+    _k("lane_probe_hold", [f"{P}:HOLD_S"], [300.0, 1800.0, 3600.0],
+       note="seconds a slow probe's request is left to finish; the lane is not probed again until it does (#924)"),
+    _k("lane_probe_max_tokens", [f"{P}:MAX_TOKENS", f"{P}:MAX_TOKENS_DEFAULT"], [2, 8, 16],
+       note="reply tokens a known-answer probe allows past the lane's own table; too few cuts the answer off and "
+            "reads as down (#924)"),
+    _k("lane_probe_timeout", [f"{P}:TIMEOUT_S", f"{P}:TIMEOUT_DEFAULT_S"], [10.0, 30.0, 60.0, 120.0],
+       note="seconds a probe waits before the lane reads as slow, never down; a busy queue or a 35B is slow (#924)"),
     _k("watchdog_day_end_hour", [f"{W}:DAY_END_HOUR"], [18, 20, 21, 22],
        note="local hour Eric's day ends; the discover agent fires at it (Decision #456)"),
     _k("watchdog_day_start_hour", [f"{W}:DAY_START_HOUR"], [6, 7, 8, 9],
@@ -46,6 +56,10 @@ NOT_GATING = {
     "harness/workqueue.py:at_clock->timedelta(days)": "one calendar day: a clock time already past today means tomorrow (#900)",
     "harness/workqueue.py:night_start->timedelta(days)": "one calendar day: the night window's edges on yesterday, today "
                                                          "and tomorrow (#900)",
+    f"{P}:CLAIMS_FORMAT[json_schema][schema][properties][c][items][maxItems]":
+        "the claims tuple's shape in the probe's known question, as smoke sends it; not a limit (#924)",
+    f"{P}:CLAIMS_FORMAT[json_schema][schema][properties][c][items][minItems]":
+        "the claims tuple's shape in the probe's known question, as smoke sends it; not a limit (#924)",
     f"{W}:GH_TIMEOUT_S": "how long one gh call may take when filing; a slow gh leaves the issue unfiled and says so (#814)",
     f"{W}:NOTIFY_TIMEOUT_S": "how long osascript may take to post one notification; a slow one is recorded as "
                              "notify failed and the row and log line still stand (#818)",

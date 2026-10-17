@@ -103,6 +103,17 @@ def _no_real_launchd_units(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def _no_real_lane_probes(monkeypatch):
+    """No watchdog wake sends a real lane a completion; a test that wants the real probe restores Probes.lanes.real. #924."""
+    from harness import watchdog
+
+    def none(self, conn, now):
+        return None
+    none.real = watchdog.Probes.lanes
+    monkeypatch.setattr(watchdog.Probes, "lanes", none)
+
+
+@pytest.fixture(autouse=True)
 def _no_real_router(monkeypatch):
     """No test asks or unloads the real llama-server router. #444."""
     from harness import context, router

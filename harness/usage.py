@@ -142,7 +142,7 @@ DIRECT_CLIENT = "soh-delegate"
 
 
 def direct_row(lane: str, spec: str, served: str, at: float, got: dict | None = None,
-               error: BaseException | None = None, stream: bool = False) -> dict:
+               error: BaseException | None = None, stream: bool = False, tag: str = "") -> dict:
     """A delegated request that went straight to an engine, as the row the gateway would have written. #825."""
     from harness import gateway
     got = got or {}
@@ -156,7 +156,7 @@ def direct_row(lane: str, spec: str, served: str, at: float, got: dict | None = 
             "tool_calls": 0, "tool_calls_valid": 0, "finish_reason": "",
             "error_class": type(error).__name__ if error is not None else "",
             "error_code": str(getattr(error, "failure_class", "") or "") if error is not None else "",
-            "purpose": purpose.WORK}
+            "purpose": tag or purpose.WORK}
 
 
 def record(r: dict, connect=None) -> bool:

@@ -46,6 +46,7 @@ from harness.commands import reverify as reverify_cmd
 from harness.commands import screen as screen_cmd
 from harness.commands import store as store_cmd
 from harness.commands import headless as headless_cmd
+from harness.commands import availability as availability_cmd
 from harness.commands import ledger as ledger_cmd
 from harness.commands import funnel as funnel_cmd
 from harness.commands import morning as morning_cmd
@@ -565,6 +566,10 @@ def build_parser() -> argparse.ArgumentParser:
     fun.add_argument("--budget-gib", type=float, default=None, help="a sweep's download budget (default: knob)")
     fun.add_argument("--head", type=int, default=10, help="how much of each lane's ranked head to list")
     fun.set_defaults(func=funnel_cmd.cmd_funnel)
+    avl = sub.add_parser("availability", help="per text lane: the share of watchdog probes it answered, and each "
+                         "outage with the bounds of its start and end")
+    avl.add_argument("--days", type=float, default=7.0, help="window in days (default 7)")
+    avl.set_defaults(func=availability_cmd.cmd_availability)
     headless_cmd.add_parser(sub)
     otel_cmd.add_parser(sub)
     dlg = sub.add_parser("delegated", help="record what became of a local_complete or "
@@ -822,6 +827,7 @@ VERB_PURPOSE = {
                      "sensitivity", "gauntlet", "chaos"), "eval"),
     "watchdog": "watchdog",
     "morning": "watchdog",
+    "availability": "watchdog",
 }
 
 
