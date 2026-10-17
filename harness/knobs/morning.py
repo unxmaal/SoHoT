@@ -10,6 +10,10 @@ KNOBS = [
        note="local hour the morning unit reports last night and notifies if something needs a person (#867)"),
     _k("morning_minute", ["scripts/launchd.sh:MORNING_MINUTE"], [0, 30],
        note="minute past morning_hours the morning unit fires (#867)"),
+    _k("morning_stall_days", [f"{M}:STALL_DAYS"], [7.0, 14.0, 30.0],
+       note="days a ranked-head candidate may wait undownloaded in one state before the morning says so (#925)"),
+    _k("morning_stall_head", [f"{M}:STALL_HEAD"], [3, 10, 25],
+       note="how much of each wanted lane's ranked head the morning stall line watches (#925)"),
 ]
 
 NOT_GATING = {

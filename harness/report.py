@@ -44,17 +44,9 @@ def _load_state(path) -> dict:
 
 
 def funnel(conn) -> list[dict]:
-    """Candidates and verdicts per tier, cheapest tier first.
-
-    The honest measure of whether the loop is turning: a wide top and an empty
-    bottom is a queue rather than a loop.
-    """
-    order = {t: i for i, t in enumerate(LADDER)}
-    rows = conn.execute(
-        "SELECT tier, COUNT(DISTINCT proposal_id) AS candidates, "
-        "COUNT(*) AS verdicts FROM verdicts GROUP BY tier").fetchall()
-    out = [dict(r) for r in rows]
-    return sorted(out, key=lambda r: order.get(r["tier"], 99))
+    """Proposals per stage of the ladder with their time in it: the same numbers `soh funnel` shows. #925."""
+    from harness import funnel as F
+    return F.stages(F.proposals(conn))
 
 
 def lanes_state(conn, now: float | None = None) -> list[dict]:
@@ -150,22 +142,29 @@ def _candidate_of(conn, lane: str, serves: str) -> int | None:
     return candidates.served(conn, spec, lane=lane)
 
 
+def ranked(conn, rows=None) -> list[dict]:
+    """The judgeable rows in rank order, as the queue and the funnel both read it. #925."""
+    from harness import rank
+    rows = ms_judgeable(conn) if rows is None else rows
+    return rank.rank(rows, serving=rank.serving(),
+                     measured_lanes=rank.lanes_with_receipts(conn), conn=conn)
+
+
 def queue_state(conn) -> dict:
     from harness import rank, lanes as L
 
     rows = ms_judgeable(conn)
-    ranked = rank.rank(rows, serving=rank.serving(),
-                       measured_lanes=rank.lanes_with_receipts(conn), conn=conn)
+    ranked_rows = ranked(conn, rows)
     per_lane = {}
-    for r in ranked:
+    for r in ranked_rows:
         per_lane.setdefault(rank.lane_of(r), []).append(r)
     return {
         "waiting": len(rows),
-        "rankable": len(ranked),
+        "rankable": len(ranked_rows),
         "by_lane": {lane: len(v) for lane, v in sorted(per_lane.items())},
         "top": [{"name": r["name"], "value": r["value"],
                  "lane": rank.lane_of(r), "why": r["value_why"]}
-                for r in ranked[:10]],
+                for r in ranked_rows[:10]],
         "wanted_with_none": [lane for lane in L.WANTED
                              if not per_lane.get(lane)],
     }
@@ -393,16 +392,21 @@ def _lane_rows(lanes, changed) -> str:
     return "\n".join(out)
 
 
+def _in_days(v) -> str:
+    return "-" if v is None else f"{v:.1f}"
+
+
 def _funnel_rows(rows) -> str:
-    top = max([r["candidates"] for r in rows] or [1])
+    top = max([r["count"] for r in rows] or [1]) or 1
     out = []
     for r in rows:
-        width = max(1, round(18 * r["candidates"] / top))
+        width = max(1, round(18 * r["count"] / top))
         out.append(
-            f'<tr><td>{_esc(r["tier"])}</td>'
-            f'<td class="num">{r["candidates"]}'
+            f'<tr><td>{_esc(r["stage"])}</td>'
+            f'<td class="num">{r["count"]}'
             f'<span class="bar" style="width:{width}ch"></span></td>'
-            f'<td class="num dim">{r["verdicts"]}</td></tr>')
+            f'<td class="num dim">{_in_days(r["median_days"])}</td>'
+            f'<td class="num dim">{_in_days(r["oldest_days"])}</td></tr>')
     return "\n".join(out)
 
 
@@ -452,7 +456,7 @@ no receipt here is unverified rather than stale: there is no age to quote.</p>
 
 {_real_use_section(now)}
 <h2>The ladder</h2>
-<table><tr><th>tier</th><th>candidates</th><th>verdicts</th></tr>
+<table><tr><th>stage</th><th>proposals</th><th>median days in it</th><th>oldest</th></tr>
 {_funnel_rows(now['funnel'])}
 </table>
 <p class="note">A wide top and an empty bottom is a queue, not a loop.</p>
