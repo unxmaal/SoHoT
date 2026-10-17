@@ -20,8 +20,9 @@ params:
   context: oracle
   context_files:
   - harness/memory_store/migrations/retractions.py
-  - harness/memory_store/migrations/v71.py
   - harness/memory_store/schema.py
+  new_files:
+  - harness/memory_store/migrations/v71.py
   fail_to_pass:
   - tests/test_length_refusal_reopen_858.py::test_a_pre_815_length_refusal_is_requeued_for_measurement
   pass_to_pass:

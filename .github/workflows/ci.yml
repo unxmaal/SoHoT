@@ -26,6 +26,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          # tests/test_repo_cases_at_base.py reads every repo case's base commit (#913).
+          fetch-depth: 0
 
       - name: Refuse to run on x86
         # mlx and mflux are Apple Silicon only. If macos-latest ever moves back
@@ -104,6 +107,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          # tests/test_repo_cases_at_base.py reads every repo case's base commit (#913).
+          fetch-depth: 0
 
       - name: The runner is still the release the distro choice rests on
         run: |
@@ -279,6 +285,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          # tests/test_repo_cases_at_base.py reads every repo case's base commit (#913).
+          fetch-depth: 0
 
       - uses: astral-sh/setup-uv@v5
         with:

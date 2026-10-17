@@ -112,12 +112,31 @@ def candidates(mirror, revision: str) -> list[dict]:
             added, deleted, path = row.split("\t")
             files[path] = 10 ** 6 if added == "-" else int(added) + int(deleted)
         source = sorted(p for p in files if not repo.is_test_path(p))
+        context, new = split_new(mirror, parents.strip(), sha, source)
         out.append({"issue": int(m.group(1)), "pr": int(m.group(2)), "fix": sha,
                     "base": parents.strip(), "date": date[:10], "subject": subject,
-                    "source_files": source,
+                    "source_files": source, "context_files": context, "new_files": new,
                     "test_files": sorted(p for p in files if repo.is_test_path(p)),
                     "lines": sum(files[p] for p in source)})
     return out
+
+
+def split_new(mirror, base: str, fix: str, source) -> tuple[list, list]:
+    """(source files base has, source files the fix created): only the first can be shown at base. #913."""
+    added = {line.split("\t", 1)[1] for line in
+             git(mirror, "diff", "--name-status", "--no-renames", "--diff-filter=A", base, fix).splitlines()
+             if "\t" in line}
+    return sorted(p for p in source if p not in added), sorted(p for p in source if p in added)
+
+
+def refresh(got: dict, mirror) -> dict:
+    """The manifest with every task's context_files and new_files recomputed from the mirror. #913."""
+    tasks = []
+    for t in got["tasks"]:
+        source = sorted({*t["context_files"], *t.get("new_files", [])})
+        context, new = split_new(mirror, t["base"], t["fix"], source)
+        tasks.append({**t, "context_files": context, "new_files": new})
+    return {**got, "tasks": tasks}
 
 
 def _test_module(path: str) -> bool:
@@ -134,6 +153,8 @@ def screen(c: dict) -> str | None:
         return "too_big"
     if set(repo.ENV_FILES) & set(c["source_files"]):
         return "dependency_change"
+    if not c["context_files"]:
+        return "only_new_files"
     return None
 
 
@@ -263,7 +284,8 @@ def survey(source: str, revision: str, limit: int, log, get_issue=issue, timeout
         seen.add(c["issue"])
         kept.append({"id": f"sohot-{c['issue']}", "issue": c["issue"], "pr": c["pr"],
                      "base": c["base"], "fix": c["fix"], "date": c["date"],
-                     "subject": c["subject"], "context_files": c["source_files"],
+                     "subject": c["subject"], "context_files": c["context_files"],
+                     "new_files": c["new_files"],
                      "test_files": c["test_files"], "fail_to_pass": res["fail_to_pass"],
                      "pass_to_pass": res["pass_to_pass"], "prompts": text,
                      "strata": {"files": len(c["source_files"]), "lines": c["lines"],
@@ -298,6 +320,7 @@ def convert(row: dict) -> Imported | None:
             "params": {"source_repo": REPO_URL, "base": row["base"], "fix": row["fix"],
                        "variant": row["variant"], "context": "oracle",
                        "context_files": row["context_files"],
+                       **({"new_files": row["new_files"]} if row.get("new_files") else {}),
                        "fail_to_pass": row["fail_to_pass"], "pass_to_pass": row["pass_to_pass"]},
             "attribution": provenance(sys.modules[__name__], f"#{row['issue']} (PR #{row['pr']})",
                                       TRANSFORM, row["date"])}
@@ -330,9 +353,19 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--source", default=REPO_URL)
     ap.add_argument("--revision", default="HEAD")
     ap.add_argument("--limit", type=int, default=20)
-    ap.add_argument("--log", type=Path, required=True)
+    ap.add_argument("--log", type=Path)
     ap.add_argument("--out", type=Path, default=MANIFEST)
+    ap.add_argument("--refresh", action="store_true",
+                    help="recompute context_files and new_files of the committed manifest; no survey")
     a = ap.parse_args(argv)
+    if a.refresh:
+        got = refresh(manifest(a.out), repo.mirror(a.source))
+        a.out.write_text(json.dumps(got, indent=1) + "\n", encoding="utf-8")
+        moved = {t["id"]: t["new_files"] for t in got["tasks"] if t["new_files"]}
+        print(f"refreshed {len(got['tasks'])} tasks; files to create: {moved}", file=sys.stderr)
+        return 0
+    if a.log is None:
+        ap.error("--log is required for a survey")
     got = survey(a.source, a.revision, a.limit, a.log)
     a.out.write_text(json.dumps(got, indent=1) + "\n", encoding="utf-8")
     print(f"{len(got['tasks'])} tasks of {got['examined']} examined, dropped {got['dropped']}; "

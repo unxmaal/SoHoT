@@ -530,7 +530,7 @@ PARAM_KEYS = {"width", "height", "steps", "seed", "guidance", "frames", "check_t
               "repo", "tools", "max_steps", "pad_tokens", "timeout_s",
               # repo: the commit to fix, its hidden fix, the files shown and the tests that grade it. #887.
               "source_repo", "base", "fix", "context_files", "fail_to_pass", "pass_to_pass",
-              "variant", "context"}
+              "variant", "context", "new_files"}
 # Assertions that need text to search. Declaring one on an image case can only
 # pass vacuously until the suite can OCR, so it is rejected rather than ignored.
 TEXT_ASSERTIONS = {"min_shapes", "must_contain", "must_not_contain"}

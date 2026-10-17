@@ -96,7 +96,8 @@
     "lines": 38,
     "test_s": 5.93,
     "area": "evals,harness/commands"
-   }
+   },
+   "new_files": []
   },
   {
    "id": "sohot-859",
@@ -192,7 +193,8 @@
     "lines": 52,
     "test_s": 11.64,
     "area": "harness,harness/commands"
-   }
+   },
+   "new_files": []
   },
   {
    "id": "sohot-858",
@@ -204,7 +206,6 @@
    "subject": "Schema 71 requeues for measurement the candidates the #803 length cap refused (#858) (#861)",
    "context_files": [
     "harness/memory_store/migrations/retractions.py",
-    "harness/memory_store/migrations/v71.py",
     "harness/memory_store/schema.py"
    ],
    "test_files": [
@@ -234,7 +235,10 @@
     "lines": 26,
     "test_s": 1.62,
     "area": "harness/memory_store,harness/memory_store/migrations"
-   }
+   },
+   "new_files": [
+    "harness/memory_store/migrations/v71.py"
+   ]
   },
   {
    "id": "sohot-788",
@@ -282,7 +286,8 @@
     "lines": 15,
     "test_s": 2.74,
     "area": "harness"
-   }
+   },
+   "new_files": []
   },
   {
    "id": "sohot-720",
@@ -324,7 +329,8 @@
     "lines": 2,
     "test_s": 0.54,
     "area": ".github/workflows"
-   }
+   },
+   "new_files": []
   },
   {
    "id": "sohot-647",
@@ -365,7 +371,8 @@
     "lines": 36,
     "test_s": 0.54,
     "area": ".github/workflows"
-   }
+   },
+   "new_files": []
   },
   {
    "id": "sohot-642",
@@ -395,7 +402,8 @@
     "lines": 33,
     "test_s": 0.84,
     "area": "harness/commands"
-   }
+   },
+   "new_files": []
   },
   {
    "id": "sohot-632",
@@ -431,7 +439,8 @@
     "lines": 93,
     "test_s": 1.31,
     "area": "harness"
-   }
+   },
+   "new_files": []
   },
   {
    "id": "sohot-598",
@@ -443,7 +452,6 @@
    "subject": "A removed download is not complete; schema 58 repairs rows the cleanup stamped (#598) (#599)",
    "context_files": [
     "harness/downloads.py",
-    "harness/memory_store/migrations/v58.py",
     "harness/memory_store/schema.py"
    ],
    "test_files": [
@@ -486,7 +494,10 @@
     "lines": 12,
     "test_s": 1.15,
     "area": "harness,harness/memory_store,harness/memory_store/migrations"
-   }
+   },
+   "new_files": [
+    "harness/memory_store/migrations/v58.py"
+   ]
   },
   {
    "id": "sohot-570",
@@ -524,7 +535,8 @@
     "lines": 2,
     "test_s": 0.52,
     "area": ".github/workflows"
-   }
+   },
+   "new_files": []
   },
   {
    "id": "sohot-455",
@@ -563,7 +575,8 @@
     "lines": 77,
     "test_s": 1.08,
     "area": "harness,scripts"
-   }
+   },
+   "new_files": []
   },
   {
    "id": "sohot-438",
@@ -629,7 +642,8 @@
     "lines": 36,
     "test_s": 1.13,
     "area": "harness"
-   }
+   },
+   "new_files": []
   },
   {
    "id": "sohot-404",
@@ -727,7 +741,8 @@
     "lines": 13,
     "test_s": 0.63,
     "area": "harness"
-   }
+   },
+   "new_files": []
   },
   {
    "id": "sohot-399",
@@ -880,7 +895,8 @@
     "lines": 58,
     "test_s": 0.98,
     "area": "harness"
-   }
+   },
+   "new_files": []
   },
   {
    "id": "sohot-396",
@@ -911,7 +927,8 @@
     "lines": 49,
     "test_s": 0.46,
     "area": "harness"
-   }
+   },
+   "new_files": []
   },
   {
    "id": "sohot-376",
@@ -946,7 +963,8 @@
     "lines": 10,
     "test_s": 0.5,
     "area": "harness"
-   }
+   },
+   "new_files": []
   },
   {
    "id": "sohot-374",
@@ -981,7 +999,8 @@
     "lines": 12,
     "test_s": 0.73,
     "area": "harness"
-   }
+   },
+   "new_files": []
   },
   {
    "id": "sohot-371",
@@ -1031,7 +1050,8 @@
     "lines": 10,
     "test_s": 0.74,
     "area": ".,harness"
-   }
+   },
+   "new_files": []
   },
   {
    "id": "sohot-368",
@@ -1072,7 +1092,8 @@
     "lines": 14,
     "test_s": 0.56,
     "area": "evals/runners"
-   }
+   },
+   "new_files": []
   },
   {
    "id": "sohot-363",
@@ -1121,7 +1142,8 @@
     "lines": 7,
     "test_s": 0.74,
     "area": "harness"
-   }
+   },
+   "new_files": []
   }
  ],
  "drops": [
