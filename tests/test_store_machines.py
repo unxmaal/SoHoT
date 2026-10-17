@@ -338,10 +338,10 @@ def test_a_runtime_installed_here_reopens_this_machines_refusal(store):
 
 
 def test_a_queued_row_is_not_revisitable(store):
-    """The headroom guard queues with memory_gb:> the memory free at the time,
-    which total memory always meets. A queued row is already in the queue."""
+    """A queued row is already in the queue, even when its condition is met."""
     _decide_as(store, MAC, "queued", "not enough headroom",
-               until="memory_gb:>6.8")
+               until="room_gb:>6.8")
+    assert ms.until_met("room_gb:>6.8", {"room_gb": 7.0})
     assert not ms.revisitable(store, MAC)
 
 

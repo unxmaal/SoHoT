@@ -62,6 +62,20 @@ def resolved_run_paths(run_path: str) -> list[str]:
     return [raw, str(paths.home() / raw)]
 
 
+#: Every until key a writer may record, and the one quantity its reader compares. #928.
+UNTIL = {
+    "runtime": "a runtime this machine has (machines.runtimes)",
+    "version": "the installed version of a package (machines.versions)",
+    "memory_gb": "this machine's total RAM in GB (machines.memory_gb)",
+    "ceiling_gb": "the largest weight this machine loads, GiB (inspect.ceiling_bytes)",
+    "room_gb": "the memory guard's budget now with nothing resident (memory.room_gb)",
+    "limit": "a limit this harness chose (reasons.limits)",
+    "cases": "how many cases a lane has (holdout.for_lane)",
+    "commit_after": "the upstream's last commit date (facts.last_commit)",
+    "format": "a weight format a runner reads; fetching.format_waits reads it, not until_met",
+}
+
+
 def until_met(until: str, facts: dict | None = None) -> bool:
     """Whether `facts` satisfies the condition a verdict is waiting on.
 
@@ -69,12 +83,7 @@ def until_met(until: str, facts: dict | None = None) -> bool:
     fact buried in prose cannot be queried, so writing the condition as prose
     would move the defect rather than fix it.
 
-    Five forms, which is all the real rows need:
-        runtime:<name>     the machine has that runtime
-        version:<pkg>><v>  the installed <pkg> is newer than v (#293)
-        memory_gb:><n>     the machine holds more than n GB
-        ceiling_gb:><n>    the machine will load weights larger than n GiB
-        commit_after:<iso> the candidate's upstream has committed since
+    The forms and the one quantity each reads are UNTIL.
 
     THE FIRST THREE ARE ABOUT THE MACHINE AND THE FOURTH IS NOT, which is why
     `facts` is a plain dict rather than a Machine: a verdict waits on whatever
@@ -92,6 +101,16 @@ def until_met(until: str, facts: dict | None = None) -> bool:
     if key in ("memory_gb", "ceiling_gb") and want.startswith(">"):
         try:
             return float(facts.get(key) or 0) > float(want[1:])
+        except ValueError:
+            return False
+    if key == "room_gb" and want.startswith(">"):
+        if "room_gb" in facts:
+            have = facts.get("room_gb")
+        else:
+            from harness import memory
+            have = memory.room_gb()
+        try:
+            return have is not None and float(have) > float(want[1:])
         except ValueError:
             return False
     if key == "version" and ">" in want:

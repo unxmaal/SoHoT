@@ -290,7 +290,7 @@ def _report_screen(a) -> int:
                 ms.decide_or_skip(store, r["name"], "queued", tier=ms.SCREEN,
                                   detail=f"not screened: {why_not}"[:600],
                                   reason=reasons.MEMORY,
-                                  until=f"memory_gb:>{memory.available_gb():.1f}")
+                                  until=memory.wait_for(r["name"], spec=r["candidate"], parallel=1))
                 continue
             taken += 1
             # Its own receipt directory, not the newest for the modality. #282.
