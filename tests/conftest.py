@@ -90,6 +90,19 @@ def _no_real_services(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def _no_real_launchd_units(monkeypatch):
+    """No watchdog probe asks the real launchd, or the live mlx unit's /health, what it holds; only a test's own stub /health is asked. #912."""
+    from harness import watchdog
+    monkeypatch.setattr(watchdog.Probes, "launchd_loaded", lambda self, service: None)
+    monkeypatch.setattr(watchdog.Probes, "launchd_pid", lambda self, service: None)
+    from harness import mlx_server
+    real = mlx_server.generating
+    live = {u.rstrip("/") for u in ("http://127.0.0.1:8081", "http://localhost:8081")}
+    monkeypatch.setattr(mlx_server, "generating",
+                        lambda base, *a, **kw: None if base.rstrip("/") in live else real(base, *a, **kw))
+
+
+@pytest.fixture(autouse=True)
 def _no_real_router(monkeypatch):
     """No test asks or unloads the real llama-server router. #444."""
     from harness import context, router

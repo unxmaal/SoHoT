@@ -2,7 +2,7 @@
 
 It acts only on what it identified positively as SoHoT's own: the discover
 agent, a work queue job's process group, an evals.run under either, a run's
-progress file (#813), the eval lock, the router, the gateway. Anything else it
+progress file (#813), the eval lock, the router, the gateway, the mlx server. Anything else it
 sees is listed and left alone. Until LH_WATCHDOG_ACT=1 every action is a dry
 run that prints and records what it would have done.
 """
@@ -122,6 +122,7 @@ class World:
     pressure: object = None
     swap_per_min: float | None = None
     gateway_up: bool | None = None
+    mlx_generating: bool | None = None
     fallbacks: list | None = None
     #: observation -> why it could not be made.
     gaps: dict = field(default_factory=dict)
@@ -255,6 +256,13 @@ class Probes:
         except httpx.HTTPError:
             return False
         return r.status_code == 200
+
+    def mlx_generating(self) -> bool | None:
+        """False when the loaded mlx unit answers that its generation thread died (#912); None when it cannot be asked."""
+        if not self.launchd_loaded("mlx"):
+            return None
+        from harness import mlx_server, serving
+        return mlx_server.generating(serving.MLX_URL, timeout=PROBE_TIMEOUT_S)
 
     def fallbacks(self, conn) -> list[dict] | None:
         from harness import live_audit
@@ -403,6 +411,7 @@ def observe(probes: Probes, conn=None, now: float | None = None) -> World:
     world.pressure = probes.pressure()
     world.swap_per_min = _swap_rate(probes, world.pressure, now)
     world.gateway_up = probes.gateway_up()
+    world.mlx_generating = probes.mlx_generating()
     world.fallbacks = probes.fallbacks(conn)
     return world
 
@@ -579,6 +588,13 @@ def _gateway_down(w: World) -> list[Finding]:
                                             detail={"service": "gateway"}), {"liveliness": "no answer"})]
 
 
+def _mlx_dead(w: World) -> list[Finding]:
+    if w.mlx_generating is not False:
+        return []
+    return [Finding("mlx_dead", Subject("server", "mlx", "the launchd mlx unit is loaded and its /health says 503",
+                                        detail={"service": "mlx"}), {"health": "unavailable"})]
+
+
 def _node_fallbacks(w: World) -> list[Finding]:
     return [Finding("node_fallbacks", Subject("node", f"node {f['node']}", "live_audit.node_fallbacks",
                                               detail=f), {"requests": f["requests"], "limit": FALLBACK_MAX,
@@ -619,6 +635,8 @@ CRITERIA = (
               "memory pressure or swap growth while a job runs"),
     Criterion("gateway_down", (), NOTIFY, RESTART, ("gateway",), _gateway_down,
               "the gateway's liveliness probe fails"),
+    Criterion("mlx_dead", (), RESTART, NOTIFY, ("mlx",), _mlx_dead,
+              "mlx_lm.server is up but its generation thread died, so every request fails"),
     Criterion("node_fallbacks", ("watchdog_fallback_max",), NOTIFY, FILE, ("fallbacks",), _node_fallbacks,
               "a serving node's requests falling back to this machine"),
 )
@@ -631,11 +649,12 @@ def _gap(w: World, need: str) -> str:
     if need == "progress" and not any(s.progress for s in w.evals):
         return "no running eval has written a progress file"
     value = {"lock": w.lock, "resident": w.resident, "pressure": w.pressure,
-             "gateway": w.gateway_up, "fallbacks": w.fallbacks}.get(need, True)
+             "gateway": w.gateway_up, "mlx": w.mlx_generating, "fallbacks": w.fallbacks}.get(need, True)
     if value is None:
         return {"lock": "the eval lock could not be read", "resident": "the router or its defaults could not be read",
                 "pressure": "memory pressure could not be sampled",
                 "gateway": "no gateway unit is loaded here, or launchd cannot be asked",
+                "mlx": "no mlx unit is loaded here, or its /health did not answer",
                 "fallbacks": "the store or the served config could not be read"}[need]
     return ""
 
@@ -756,6 +775,8 @@ class Hands:
     def restart(self, f: Finding) -> str:
         from harness import paths
         service = f.subject.detail.get("service", "")
+        if service == "mlx":
+            return self._kickstart(service)
         if service != "gateway":
             return f"refused: {service or f.subject.kind} is not a service the watchdog restarts"
         try:
@@ -767,6 +788,18 @@ class Hands:
             return f"restart of {service} failed: {exc}"
         return f"restarted {service}" if got.returncode == 0 else \
             f"restart of {service} failed rc {got.returncode}: {got.stderr.strip()[:200]}"
+
+    def _kickstart(self, service: str) -> str:
+        """kickstart -k without the GPU lock: a server that cannot generate has no work in flight to protect."""
+        if self.platform != "darwin":
+            return f"refused: restarting {service} needs launchd (macOS); this is {self.platform}"
+        try:
+            got = self.run(["launchctl", "kickstart", "-k", f"gui/{os.getuid()}/{LABEL}.{service}"],
+                           capture_output=True, text=True, timeout=RESTART_TIMEOUT_S)
+        except (AttributeError, OSError, subprocess.SubprocessError) as exc:
+            return f"restart of {service} failed: {exc}"
+        return f"restarted {service}" if got.returncode == 0 else \
+            f"restart of {service} failed rc {got.returncode}: {(got.stderr or '').strip()[:200]}"
 
     def do(self, action: str, f: Finding) -> str:
         if action not in ACTIONS:
