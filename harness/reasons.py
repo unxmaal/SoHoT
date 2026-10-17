@@ -131,6 +131,8 @@ _HARNESS = ("no cases of a modality it can run", "no candidate matched any case"
 #: In stderr this is our missing script; in a loader's error it is the snapshot's.
 _ABOUT_THE_SNAPSHOT = ("no such file or directory",
                        "does not appear to have a file named")
+#: A loader naming a file absent from our own hub snapshot: we sent it to the wrong runtime or under-fetched. #911.
+_OUR_SNAPSHOT = re.compile(r"no such file or directory: '[^']*/snapshots/[^/']+/[^']+'")
 _LOAD_FAILED = "gateway returned http 404"
 _ARCHITECTURE_GAPS = ("model type", "modelargs", "parameters not in model",
                       "required positional argument")
@@ -173,6 +175,11 @@ def backend_abort(lines) -> str:
     return ""
 
 
+def in_our_snapshot(text: str) -> bool:
+    """A failure naming a file missing from a snapshot on this machine. #911."""
+    return bool(_OUR_SNAPSHOT.search((text or "").lower()))
+
+
 def classify(text: str, where: str = RUNNER, candidate: str = "") -> str:
     """The failure class an upstream error text names, or "" from stderr."""
     from harness.serving import LLAMACPP_PREFIX
@@ -198,7 +205,7 @@ def classify(text: str, where: str = RUNNER, candidate: str = "") -> str:
         return CONTEXT_EXCEEDED
     if _any(low, _GATEWAY):
         return REFUSED_BY_GATEWAY
-    if _any(low, _HARNESS):
+    if _any(low, _HARNESS) or _OUR_SNAPSHOT.search(low):
         return HARNESS_ERROR
     if where == STDERR:
         return HARNESS_ERROR if _any(low, _ABOUT_THE_SNAPSHOT) else ""

@@ -403,7 +403,7 @@ def test_a_read_never_adopts_even_in_a_text_lane(home, monkeypatch):
 
 def test_a_hub_repo_with_safetensors_stays_on_its_own_route(home, monkeypatch):
     conn = _hub(home, monkeypatch, "org/B",
-                {"b.gguf": 64, "model.safetensors": 64}, "code")
+                {"b.gguf": 64, "model.safetensors": 64, "config.json": 1}, "code")
     assert gguf.adopt_pending(conn) == []
     assert gguf.fetched("org/B") is None
     assert not (home / "gguf" / "b.gguf").exists()
@@ -477,7 +477,7 @@ def test_routing_a_gguf_only_repo_links_nothing(plumb, home):
 def test_a_hub_repo_with_safetensors_still_routes_away_from_the_router(home, monkeypatch):
     from harness import router
     monkeypatch.delenv("GATEWAY_CONFIG", raising=False)
-    conn = _hub(home, monkeypatch, "org/Both", {"b.gguf": 64, "model.safetensors": 64},
+    conn = _hub(home, monkeypatch, "org/Both", {"b.gguf": 64, "model.safetensors": 64, "config.json": 1},
                 "decide")
     assert serving.route("org/Both").base != router.url()
     conn.close()

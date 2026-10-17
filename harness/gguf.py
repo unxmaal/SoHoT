@@ -61,6 +61,11 @@ def only(siblings) -> bool:
     return (any(n.endswith(".gguf") for n in names)
             and not any(n.endswith(".safetensors") for n in names))
 
+def gguf_first(siblings) -> bool:
+    """GGUF-only, or top-level GGUF beside no config.json, so mlx-lm cannot load the repo. #911."""
+    top = {str(f.get("rfilename", "")).lower() for f in siblings or []}
+    return only(siblings) or ("config.json" not in top and any(map(_servable, siblings or [])))
+
 def choose(siblings, ceiling: int) -> tuple[str, int] | None:
     """The file to fetch: (name, bytes), or None if none fits."""
     fits = [(n, s) for n, s in _singles(siblings) if s <= ceiling]
@@ -96,7 +101,7 @@ def _hub_pick(repo: str, conn=None):
         for snap in sorted(snaps.iterdir()):
             files = [{"rfilename": f.name, "size": f.stat().st_size}
                      for f in snap.iterdir() if f.is_file()]
-            pick = choose(files, ins.ceiling_bytes()) if only(files) else None
+            pick = choose(files, ins.ceiling_bytes()) if gguf_first(files) else None
             if pick:
                 return row, snap, pick[0]
     return None
@@ -141,6 +146,8 @@ def adopt_pending(conn) -> list[str]:
         if got and lanes.canonical(got["lane"] or "") in lanes.GGUF_SERVED \
                 and adopt(conn, row["repo"]):
             out.append(row["repo"])
+    if out:
+        refresh_router()
     return out
 
 

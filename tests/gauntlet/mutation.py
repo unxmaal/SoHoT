@@ -29,7 +29,7 @@ MODULES = {
         "tests/test_store_retract_screens.py", "tests/test_harness_memory_store.py",
         "tests/test_verdict_reasons.py", "tests/test_harness_store.py", "tests/test_rank_881.py"],
     "harness/reasons.py": [
-        "tests/test_verdict_reasons.py", "tests/test_refusal_shapes.py", "tests/test_screen_server_death.py",
+        "tests/test_gguf_first_911.py", "tests/test_verdict_reasons.py", "tests/test_refusal_shapes.py", "tests/test_screen_server_death.py",
         "tests/test_screen_evidence.py", "tests/test_harness_engines_repo_id.py",
         "tests/test_mps_backend_abort.py", "tests/test_timeouts_classed.py", "tests/test_agent_limits.py",
         "tests/test_served_ctx_limit.py", "tests/test_eval_budget.py", "tests/test_batch_lease_769.py",
@@ -38,7 +38,7 @@ MODULES = {
         "tests/test_fetch_inspected_798.py", "tests/test_retrieval_lane.py",
         "tests/test_adopt_assumptions.py", "tests/test_cold_load.py"],
     "harness/screen.py": [
-        "tests/test_harness_screen.py", "tests/test_harness_screen_spec.py", "tests/test_screen_evidence.py",
+        "tests/test_gguf_first_911.py", "tests/test_harness_screen.py", "tests/test_harness_screen_spec.py", "tests/test_screen_evidence.py",
         "tests/test_screen_server_death.py", "tests/test_decide_lane.py", "tests/test_refusal_shapes.py",
         "tests/test_verdict_reasons.py", "tests/test_screen_case_fit.py", "tests/test_methods.py",
         "tests/test_ds4.py", "tests/test_screen_fair.py", "tests/test_gguf_route.py",
