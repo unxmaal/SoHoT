@@ -1,4 +1,4 @@
-"""#955: a reply cut at the token budget that loops or collapses is the candidate's failure, not a limit."""
+"""#955: a reply cut at the token budget that loops or collapses is not a budget limit."""
 import json
 import zlib
 
@@ -83,7 +83,7 @@ def test_no_passing_reply_in_the_control_reads_as_degenerate():
 
 
 @pytest.mark.parametrize("run", LABELLED_MODEL)
-def test_the_audited_budget_screens_are_the_models_failure_with_no_limit(run):
+def test_the_audited_budget_screens_wait_on_the_screen_size_not_the_budget(run):
     mine = [r for r in ROWS if r["run"] == run]
     rows = [_replay(r, candidate=r["candidate"]) for r in mine]
     assert {r.failure_class for r in rows} == {reasons.DEGENERATE}
@@ -92,8 +92,9 @@ def test_the_audited_budget_screens_are_the_models_failure_with_no_limit(run):
     if run == "screen-1791806973-code":
         rows += [_content_failure(mine[0]["candidate"], c) for c in ("chunk-bytes", "glob-match", "hevalpro-0")]
     got = screen.outcome(0, core.summarize(rows))
-    assert (got.outcome, got.reason, got.until) == ("broken", reasons.CANDIDATE, "")
-    assert not got.until.startswith("limit:")
+    assert (got.outcome, got.reason, got.until) == ("declined", reasons.LIMIT, screen.screen_limit())
+    assert not got.until.startswith("limit:max_tokens")
+    assert got.failure_class == reasons.DEGENERATE and screen.SAMPLER_CHECK in got.detail
 
 
 @pytest.mark.parametrize("case_id", ["lc3197", "lc3017", "lc3382", "lc3235"])
@@ -184,10 +185,13 @@ def test_redecide_moves_only_the_screens_their_degenerate_rows_decide(tmp_path):
         # Today's rules decide this one differently for reasons that are not #955's.
         _seed_screen(conn, "org/old", "old", until="limit:max_tokens>4000")
         found = cmd.changes(conn, tmp_path / "runs")
-        assert [(c["name"], c["now"]) for c in found] == [("org/loops", ["broken", "candidate", ""])]
+        assert [(c["name"], c["now"]) for c in found] == [("org/loops", ["declined", "limit", screen.screen_limit()])]
         cmd.apply(conn, found)
         state = dict(conn.execute("SELECT name, state FROM proposals WHERE name LIKE 'org/%'").fetchall())
-        assert state == {"org/loops": "broken", "org/cut": "declined", "org/old": "declined"}
+        assert state == {"org/loops": "declined", "org/cut": "declined", "org/old": "declined"}
+        until = conn.execute("SELECT v.until FROM proposals p JOIN verdicts v ON v.id = p.state_verdict_id "
+                             "WHERE p.name = 'org/loops'").fetchone()[0]
+        assert until == screen.screen_limit()
         assert cmd.changes(conn, tmp_path / "runs") == []
     finally:
         conn.close()

@@ -45,7 +45,7 @@ CRASHED = "crashed"
 CONTENT_FAILED = "content_failed"
 #: Speech that ran past the runaway rate: the candidate's failure, cut by a ceiling we chose. #637.
 RUNAWAY = "runaway"
-#: A reply cut at the token budget that was looping or collapsed: the candidate's failure, no limit. #955.
+#: A reply cut at the token budget that was looping or collapsed: no budget limit; a screen declines it per #691. #955.
 DEGENERATE = "degenerate"
 #: An abort inside Apple's MPS backend (LLVM ERROR on an mps op, MPSGraph assertion). #604.
 BACKEND_FAULT = "backend_fault"
