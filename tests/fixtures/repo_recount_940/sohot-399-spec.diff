@@ -1,0 +1,161 @@
+--- a/harness/cli.py
++++ b/harness/cli.py
+@@ -809,6 +809,16 @@ def _report_inspect(a) -> int:
+                     print(f"    lane corrected from the card: {model_id} "
+                           f"-> {fit.lanes[model_id]}")
+                 ms.link(store, repo, model_id, "needs")
++                # A NEIGHBOR SIGHTING IS NOT A NEW QUESTION. Writing `queued`
++                # over a terminal verdict, or over one a later tier wrote,
++                # reopened decided candidates: Qwen3.5-0.8B was declined at
++                # adopt, then re-queued here because vllm-metal named it, and
++                # screened and measured again.
++                past = ms.past_inspect(store, model_id)
++                if past:
++                    print(f"    not re-queued: {model_id} ({past}); "
++                          f"named by {repo}")
++                    continue
+                 ms.decide(store, model_id, "queued", tier=ms.INSPECT,
+                           size_bytes=size,
+                           detail=f"bytes={size} lane={fit.lanes.get(model_id) or '-'} "
+--- a/harness/fetching.py
++++ b/harness/fetching.py
+@@ -103,14 +103,46 @@ FETCHABLE_TIERS = ("inspect", "fetch")
+ FETCHABLE_KIND = "weights"
+ 
+ 
+-def have(model_id: str, root: Path | None = None) -> bool:
+-    """Already in the HuggingFace cache, so there is nothing to download."""
++#: Files whose presence means a snapshot holds a model rather than a card.
++CONFIG_FILES = ("config.json", "model_index.json", "params.json")
++WEIGHT_SUFFIXES = (".safetensors", ".bin", ".gguf", ".npz", ".pt", ".pth",
++                   ".ckpt", ".onnx", ".mlpackage", ".h5", ".msgpack")
++
++
++def hub_dir(model_id: str, root: Path | None = None) -> Path:
++    """Where the HuggingFace cache keeps this repo."""
+     import os
+     home = Path(root or os.environ.get("HF_HOME")
+                 or Path.home() / ".cache" / "huggingface")
++    return home / "hub" / f"models--{model_id.replace('/', '--')}"
++
++
++def has_payload(d: Path) -> bool:
++    """A snapshot under `d` holding a config or a weight file.
++
++    A DIRECTORY IS NOT A DOWNLOAD. A snapshot with only LICENSE and README
++    exists, and counting it as present skipped the fetch and blamed the model
++    for the missing config.json.
++    """
++    snaps = d / "snapshots"
++    if not snaps.is_dir():
++        return False
++    for f in snaps.rglob("*"):
++        name = f.name.lower()
++        if name in CONFIG_FILES or name.endswith(WEIGHT_SUFFIXES):
++            try:
++                if f.exists():
++                    return True
++            except OSError:
++                continue
++    return False
++
++
++def have(model_id: str, root: Path | None = None) -> bool:
++    """Already in the HuggingFace cache, so there is nothing to download."""
+     from harness import gguf
+-    return ((home / "hub" / f"models--{model_id.replace('/', '--')}").exists()
++    return (has_payload(hub_dir(model_id, root))
+             or gguf.path_of(model_id) is not None)
+ 
+ 
+--- a/harness/memory_store.py
++++ b/harness/memory_store.py
+@@ -17,7 +17,7 @@ from pathlib import Path
+ 
+ from harness import paths, store
+ 
+-SCHEMA_VERSION = 19
++SCHEMA_VERSION = 20
+ 
+ #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
+ VERDICTS = ("measured", "declined", "broken", "queued", "ignored", "screened")
+@@ -46,6 +46,10 @@ INSPECT, JUDGE, SCREEN, MEASURE = "inspect", "judge", "screen", "measure"
+ ADOPT = "adopt"
+ TIERS = (INSPECT, JUDGE, SCREEN, MEASURE, ADOPT)
+ 
++#: Tiers that come after inspect. A latest verdict from one of these means the
++#: inspect tier has nothing left to say about the candidate.
++PAST_INSPECT = ("fetch", SCREEN, MEASURE, ADOPT)
++
+ _DDL = """
+ CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT);
+ 
+@@ -578,11 +582,43 @@ def _migrate(conn: sqlite3.Connection) -> None:
+         # diffusers cannot assemble is not the candidate's fault. #379, #381.
+         _relane_from_the_card(conn)
+         _requeue_diffusers_layout_gaps(conn)
++    if have and have < 20:
++        # A snapshot with no config or weights was counted as downloaded, so
++        # the screen ran on nothing and blamed the model.
++        _requeue_broken_without_weights(conn)
+     conn.execute("INSERT OR REPLACE INTO meta VALUES ('schema', ?)",
+                  (str(SCHEMA_VERSION),))
+     conn.commit()
+ 
+ 
++def _requeue_broken_without_weights(conn) -> None:
++    """Reopen screen `broken` verdicts whose snapshot never held weights."""
++    from harness import fetching
++    rows = conn.execute(
++        "SELECT p.id, p.name, p.resolved, v.tier FROM proposals p "
++        "JOIN verdicts v ON v.proposal_id = p.id "
++        "WHERE v.id = (SELECT v2.id FROM verdicts v2 "
++        "               WHERE v2.proposal_id = p.id ORDER BY v2.id DESC LIMIT 1) "
++        "  AND v.outcome = 'broken'").fetchall()
++    now = time.time()
++    for pid, name, resolved, tier in rows:
++        if tier != SCREEN:
++            continue
++        model_id = resolved or name
++        try:
++            d = fetching.hub_dir(model_id)
++            if not d.exists() or fetching.have(model_id):
++                continue
++        except Exception:  # noqa: BLE001
++            continue
++        conn.execute(
++            "INSERT INTO verdicts (proposal_id, tier, outcome, detail, "
++            "decided_at) VALUES (?, 'fetch', 'queued', ?, ?)",
++            (pid, f"retracted: the snapshot of {name} holds no config or "
++                  f"weights, so the download never happened and the screen "
++                  f"ran on nothing", now))
++
++
+ def _retract_screens_with_no_evidence(conn) -> None:
+     """Reopen screen verdicts that are terminal on no evidence. #281."""
+     rows = conn.execute(
+@@ -1146,6 +1182,24 @@ def settled(conn: sqlite3.Connection) -> set[str]:
+     return {r["name"] for r in conn.execute(q, TERMINAL)}
+ 
+ 
++def past_inspect(conn, name: str) -> str:
++    """Why the inspect tier must not re-queue `name`, or "" when it may.
++
++    The latest verdict decides: terminal, screened, or written by a tier that
++    comes after inspect.
++    """
++    row = conn.execute(
++        "SELECT v.outcome, v.tier FROM verdicts v JOIN proposals p "
++        "ON p.id = v.proposal_id WHERE p.name = ? "
++        "ORDER BY v.id DESC LIMIT 1", (name,)).fetchone()
++    if not row:
++        return ""
++    outcome, tier = row["outcome"], row["tier"] or ""
++    if outcome in TERMINAL or outcome == "screened" or tier in PAST_INSPECT:
++        return f"latest verdict is {outcome} at {tier or 'an unnamed tier'}"
++    return ""
++
++
+ def pending(conn, limit: int = 50, registry: str | None = None,
+             screened: bool = True) -> list[str]:
+     """Proposals nothing has answered yet, most-corroborated first.
