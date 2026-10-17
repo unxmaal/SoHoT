@@ -1859,9 +1859,14 @@ terminal (#308). The receipt's `sampling` records the 0.
 
 A runtime that cannot build a model is a fact about the runtime, so the
 screen declines it until a newer one: `version:mlx-lm>X` for mlx_lm.server's
-"Model type ... not supported", and `version:llama.cpp>BUILD` when
-llama-server's router answers "failed to load". The router keeps the reason,
-such as an unknown architecture, in `logs/eval.log`. A chat template that has
+"Model type ... not supported". When llama-server's router answers "failed
+to load", the screen cuts the child's lines out of the router's log (the
+spawn line names its port) into the run's `server-load.log` and decides from
+the first error: an unknown architecture waits on `version:llama.cpp>BUILD`,
+a GGUF header that disagrees with itself is the file's fault and waits on its
+repo committing again, a read past the end of our copy goes back to fetch, and
+no log at all is the harness's. `soh load-log` does the same for verdicts
+decided before the log was kept. A chat template that has
 no system role (Gemma 2, Mistral v0.3) is neither: the request is retried
 once with the system prompt at the top of the user turn.
 

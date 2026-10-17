@@ -321,12 +321,21 @@ def _report_screen(a) -> int:
             # Read once, here, and only when the run wrote no receipt. #408.
             verdict = verdict_of_run(proc.returncode, proc.stderr, summary,
                                      r["candidate"], key=key, facts=ms.this_machine())
+            if verdict.failure_class == reasons.LOAD_LOG_UNREAD:
+                # The router's log says why; its child's lines are kept with the run. #953.
+                from harness import load_log
+                verdict = load_log.redecide(verdict, r["candidate"], r["name"], outdir, store)
+            tier = ms.SCREEN
+            if verdict.failure_class == reasons.SHORT_COPY:
+                from harness import downloads
+                downloads.stand_down(store, r["name"])
+                tier = ms.FETCH
             got, why = verdict.outcome, verdict.detail
             print(f"   {got.upper()}: {why}")
             if proc.returncode != 0:
                 err(proc.stderr.strip()[-400:] or "no stderr")
             detail = screen_detail(why, proc.stderr, summary)
-            ms.decide_or_skip(store, r["name"], got, tier=ms.SCREEN,
+            ms.decide_or_skip(store, r["name"], got, tier=tier,
                               detail=detail[:600],
                               run_id=(stored or {}).get("run_id"),
                               reason=verdict.reason, until=verdict.until,

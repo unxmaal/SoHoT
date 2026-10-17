@@ -1,0 +1,41 @@
+[52604] 0.45.464.132 I srv    operator(): exit command received, exiting...
+[52604] 0.45.464.187 I srv    operator(): operator(): cleaning up before exit...
+9.31.587.834 I srv           run: instance name=Qwen_Qwen3.5-4B-Q4_K_M exited with status 0
+9.31.587.863 I srv  ensure_model: slot available, loading queued model name=Nex-N2-mini-Turbo-Phase-Twin
+9.31.587.938 I srv          load: spawning server instance with name=Nex-N2-mini-Turbo-Phase-Twin on port 52611
+9.31.587.950 I srv          load: spawning server instance with args:
+9.31.587.950 I srv          load:   /opt/homebrew/Cellar/llama.cpp/0.5.0/bin/llama-server
+9.31.587.950 I srv          load:   --host
+9.31.587.950 I srv          load:   127.0.0.1
+9.31.587.951 I srv          load:   --port
+9.31.587.951 I srv          load:   52611
+9.31.587.951 I srv          load:   --sleep-idle-seconds
+9.31.587.951 I srv          load:   300
+9.31.587.951 I srv          load:   --alias
+9.31.587.952 I srv          load:   Nex-N2-mini-Turbo-Phase-Twin
+9.31.587.952 I srv          load:   --ctx-size
+9.31.587.952 I srv          load:   16384
+9.31.587.952 I srv          load:   --model
+9.31.587.952 I srv          load:   /Volumes/Models/hf/gguf/Nex-N2-mini-Turbo-Phase-Twin.gguf
+9.31.587.952 I srv          load:   --n-gpu-layers
+9.31.587.952 I srv          load:   999
+[52611] 0.00.000.085 I srv  llama_server: initializing ...
+[52611] 0.00.031.832 I cmn  common_param: common_params_print_info: verbosity = 3 (adjust with the `-lv N` CLI arg)
+[52611] 0.00.031.998 W srv  llama_server: security: no API key is set and CORS allows all origins (see https://github.com/ggml-org/llama.cpp/pull/25655)
+[52611] 
+[52611] 0.00.033.855 I srv    load_model: loading model '/Volumes/Models/hf/gguf/Nex-N2-mini-Turbo-Phase-Twin.gguf'
+[52611] 0.00.084.798 E gguf_init_from_reader: tensor 'blk.0.ffn_gate_inp.weight' has offset 1078173696, expected 1046716416
+[52611] 0.00.084.801 E gguf_init_from_reader: failed to read tensor data
+[52611] 0.00.086.064 E llama_model_load: error loading model: llama_model_loader: failed to load model from /Volumes/Models/hf/gguf/Nex-N2-mini-Turbo-Phase-Twin.gguf
+[52611] 0.00.086.151 E llama_model_load_from_file_impl: failed to load model
+[52611] 0.00.086.554 E common_fit_params: encountered an error while trying to fit params to free device memory: failed to load model
+[52611] 0.00.113.309 E gguf_init_from_reader: tensor 'blk.0.ffn_gate_inp.weight' has offset 1078173696, expected 1046716416
+[52611] 0.00.113.311 E gguf_init_from_reader: failed to read tensor data
+[52611] 0.00.114.069 E llama_model_load: error loading model: llama_model_loader: failed to load model from /Volumes/Models/hf/gguf/Nex-N2-mini-Turbo-Phase-Twin.gguf
+[52611] 0.00.114.071 E llama_model_load_from_file_impl: failed to load model
+[52611] 0.00.114.072 E cmn  common_init_: failed to load model '/Volumes/Models/hf/gguf/Nex-N2-mini-Turbo-Phase-Twin.gguf'
+[52611] 0.00.114.073 E srv    load_model: failed to load model, '/Volumes/Models/hf/gguf/Nex-N2-mini-Turbo-Phase-Twin.gguf'
+[52611] 0.00.114.074 I srv    operator(): operator(): cleaning up before exit...
+[52611] 0.00.114.456 E srv  llama_server: exiting due to model loading error
+9.31.774.202 I srv           run: instance name=Nex-N2-mini-Turbo-Phase-Twin exited with status 1
+9.31.774.362 W srv    operator(): got exception: {"error":{"code":500,"message":"model name=Nex-N2-mini-Turbo-Phase-Twin failed to load","type":"server_error"}}
