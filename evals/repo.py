@@ -29,6 +29,8 @@ PROFILE = """(version 1)
        (regex #"^/dev/tty") (regex #"^/dev/fd/"))
 """
 _FENCE = re.compile(r"```[ \t]*(?:diff|patch|udiff)?[ \t]*\n(.*?)```", re.S)
+#: SWE-Llama's trained reply shape (#922); an unclosed tag is a reply cut off mid-patch.
+_TAG = re.compile(r"<(patch|diff)>(.*?)(?:</\1>|\Z)", re.S)
 REPLY = ("Reply with one unified diff (as `git diff` prints it, paths a/ and b/ from the "
          "repository root) that fixes the issue, and nothing else. Do not change tests.")
 
@@ -232,8 +234,12 @@ def prompt_for(issue: str, task: Path, files, new=()) -> str:
 
 
 def extract_diff(reply: str) -> str:
-    """The diff in a reply: a fenced block that looks like one, else from the first diff header on."""
+    """The diff in a reply: a <patch>/<diff> body, else a fenced block that looks like one, else from the first header on."""
     text = str(reply or "")
+    for _, block in _TAG.findall(text):
+        block = block.lstrip("\r\n")
+        if re.search(r"^(diff --git |--- |@@ )", block, re.M):
+            return block if block.endswith("\n") else block + "\n"
     for block in _FENCE.findall(text):
         if re.search(r"^(diff --git |--- |@@ )", block, re.M):
             return block if block.endswith("\n") else block + "\n"
