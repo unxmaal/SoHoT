@@ -18,11 +18,11 @@ EVAL = "/usr/bin/python3 -m evals.run --modality code --candidates a"
 
 class Fake(wd.Probes):
     def __init__(self, tmp_path, procs=(), discover=None, beat=None, jobs=None, rows=None, worker=True,
-                 progress=(), lock=None, resident=None, pressure=None, gateway=None, fallbacks=None):
+                 progress=(), lock=None, resident=None, pressure=None, gateway=None, fallbacks=None, mlx=None):
         self.tmp, self.procs, self.discover, self.beat = tmp_path, list(procs), discover, beat
         self.jobs, self.rows, self.worker = jobs or {}, rows or {}, worker
         self.runs, self._lock, self._resident = list(progress), lock if lock is not None else {}, resident
-        self._pressure, self._gateway, self._fallbacks = pressure, gateway, fallbacks
+        self._pressure, self._gateway, self._fallbacks, self._mlx = pressure, gateway, fallbacks, mlx
 
     def processes(self):
         return self.procs
@@ -56,6 +56,9 @@ class Fake(wd.Probes):
 
     def gateway_up(self):
         return self._gateway
+
+    def mlx_generating(self):
+        return self._mlx
 
     def fallbacks(self, conn):
         return self._fallbacks if self._fallbacks is not None else []
@@ -385,7 +388,7 @@ def test_unload_goes_through_the_router_s_own_protection(monkeypatch):
     assert wd.Hands().do(wd.UNLOAD, f).startswith("kept")
 
 
-def test_restart_runs_launchd_restart_for_the_gateway_only():
+def test_restart_runs_launchd_restart_for_the_gateway_and_refuses_an_unlisted_service():
     calls = []
 
     def fake(argv, **kw):
@@ -394,7 +397,7 @@ def test_restart_runs_launchd_restart_for_the_gateway_only():
     g = wd.Finding("gateway_down", wd.Subject("gateway", "gateway", "t", detail={"service": "gateway"}), {})
     assert wd.Hands(run=fake).do(wd.RESTART, g) == "restarted gateway"
     assert calls[0][-2:] == ["restart", "gateway"] and Path(calls[0][1]).as_posix().endswith("scripts/launchd.sh")
-    other = wd.Finding("x", wd.Subject("model", "m", "t", detail={"service": "mlx"}), {})
+    other = wd.Finding("x", wd.Subject("model", "m", "t", detail={"service": "tts"}), {})
     assert wd.Hands(run=fake).do(wd.RESTART, other).startswith("refused") and len(calls) == 1
 
 

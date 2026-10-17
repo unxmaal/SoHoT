@@ -92,7 +92,8 @@ LEFT_OUT = {
     "harness/serving.py": (
         "test_mlx_backlog.py", "test_agent_limits.py", "test_claims_lane.py", "test_decide_lane.py",
         "test_delegate_resident.py", "test_delegations.py", "test_machine_host.py",
-        "test_machine_identity.py", "test_purpose_825.py", "test_usage_gateway.py", "test_vllm.py"),
+        "test_machine_identity.py", "test_mlx_dead_912.py", "test_purpose_825.py", "test_usage_gateway.py",
+        "test_vllm.py"),
     "harness/router.py": (
         "test_delegate_resident.py", "test_machine_host.py", "test_sweep_ceiling_806.py", "test_watchdog.py"),
 }

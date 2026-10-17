@@ -161,9 +161,38 @@ def deploy(where: Path | None, git=_git) -> dict:
     return {"available": True, "path": str(where), "head": head, "main": main, "behind": behind, "missing": missing}
 
 
+def lane_health(lane: str = MODEL_LANE) -> dict:
+    """Whether the server behind `lane` can generate: False when mlx_lm.server says its generation thread died (#912)."""
+    from harness import delegate, mlx_server, serving
+    out = {"lane": lane, "spec": "", "base": "", "generating": None, "why": ""}
+    try:
+        out["spec"], where = delegate.route(lane)
+        out["base"], _ = delegate.upstream(where)
+        engine = serving.engine_at(out["base"]) if out["base"] else ""
+    except Exception as exc:  # noqa: BLE001 - an unknown route is a fact for the report, not a crash
+        out["why"] = f"{type(exc).__name__}: {exc}"[:300]
+        return out
+    if engine != serving.DEFAULT:
+        out["why"] = f"served by {engine or 'an unknown server'}, which has no generation-thread health"
+        return out
+    from harness import watchdog
+    out["generating"] = mlx_server.generating(out["base"], watchdog.PROBE_TIMEOUT_S)
+    if out["generating"] is None:
+        out["why"] = f"{out['base']}{mlx_server.HEALTH_PATH} did not answer"
+    return out
+
+
+def lane_dead(r: dict) -> bool:
+    return (r.get("lane") or {}).get("generating") is False
+
+
 def needs(r: dict) -> list[str]:
     """What needs a person, one line each; empty on a quiet night."""
     out = []
+    if lane_dead(r):
+        h = r["lane"]
+        out.append(f"the {h['lane']} lane cannot generate: {h['spec']} at {h['base']} says its generation thread "
+                   "died; the watchdog restarts the mlx unit, or run `scripts/launchd.sh restart mlx`")
     loop = r["sweep"].get("loop")
     if loop is None or not loop["in_window"]:
         out.append("no discovery sweep ran last night")
@@ -189,8 +218,11 @@ def needs(r: dict) -> list[str]:
     return out
 
 
-def gather(conn, now: float, since: float, *, beat=None, gh=None, git=None, where=None, lanes=None) -> dict:
-    r = {"generated": now, "since": since, "sweep": sweep(conn, since, beat), "watchdog": watchdog(conn, since),
+def gather(conn, now: float, since: float, *, beat=None, gh=None, git=None, where=None, lanes=None,
+           health=None) -> dict:
+    """`health` probes the headline's lane (lane_health); None leaves it unprobed."""
+    r = {"lane": health(MODEL_LANE) if health else {"lane": MODEL_LANE, "generating": None, "why": "not probed"},
+         "generated": now, "since": since, "sweep": sweep(conn, since, beat), "watchdog": watchdog(conn, since),
          "ci": ci(now, gh=gh or _gh), "ledger": ledger_row(conn, now), "stale": (lanes or stale_lanes)(conn),
          "deploy": deploy(where, git=git or _git)}
     r["needs"] = needs(r)
@@ -223,6 +255,8 @@ def headline(r: dict, facts: str, ask=_ask) -> dict:
         return {"text": fallback, "by": "deterministic", "why": "a quiet night needs no model"}
     if ask is None:
         return {"text": fallback, "by": "deterministic", "why": "model not asked"}
+    if lane_dead(r):
+        return {"text": fallback, "by": "deterministic", "why": f"the {MODEL_LANE} lane cannot generate"}
     prompt = (f"Things that need a person ({len(r['needs'])}):\n"
               + ("\n".join(f"- {n}" for n in r["needs"]) or "- none")
               + f"\n\nFull report:\n{facts}\n\nWrite the 2-3 line headline.")

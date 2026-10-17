@@ -23,6 +23,10 @@ def render(r: dict) -> list[str]:
     """The deterministic report, one line per fact."""
     s = r["sweep"]
     out = [f"since {_hm(r['since'])}"]
+    h = r.get("lane") or {}
+    if h:
+        state = {True: "generating", False: "CANNOT GENERATE"}.get(h.get("generating"), f"unknown ({h.get('why')})")
+        out.append(f"lane      {h['lane']}: {state}")
     loop = s.get("loop")
     if loop is None:
         out.append("sweep     no loop heartbeat")
@@ -92,7 +96,8 @@ def cmd_morning(a) -> int:
         return 2
     conn = morning.snapshot()
     try:
-        r = morning.gather(conn, now, since, beat=heartbeat.summary(), where=paths.deploy_checkout())
+        r = morning.gather(conn, now, since, beat=heartbeat.summary(), where=paths.deploy_checkout(),
+                           health=morning.lane_health)
     finally:
         conn.close()
     lines = render(r)
