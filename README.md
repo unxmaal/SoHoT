@@ -1033,6 +1033,19 @@ soh ledger --compare 2026-10-14        # OTel events, OTel metrics, ccusage, tra
 soh context --source otel --by category
 ```
 
+Each watchdog wake also asks every text lane a known-answer completion on the
+route `local_complete` takes (#924), but only when the lane's model is
+resident and, for a server on this machine, nobody holds the eval lock. Each
+probe is a `lane_probes` row: up, down, slow (no answer within the lane's
+`lane_probe_timeout`, never down) or skipped with the reason. An outage is a
+run of down rows, bounded by the last up before it and the first up after;
+`soh availability` prints the share answered per lane against
+`availability_target` (99%) and every outage, and `soh morning` names each one.
+
+```bash
+soh availability --days 7
+```
+
 ---
 
 # Setup and upkeep

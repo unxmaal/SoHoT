@@ -195,15 +195,29 @@ def lane_health(lane: str = MODEL_LANE) -> dict:
     return out
 
 
+def incidents(conn, since: float, now: float) -> list[dict]:
+    """Every lane outage the watchdog's probes recorded that was open at or after `since` (#924)."""
+    from harness import availability
+    if not availability.has_table(conn):
+        return []
+    return availability.report(conn, since, now, machine_id=availability.here(conn))["incidents"]
+
+
+def open_incident(r: dict, lane: str) -> dict | None:
+    return next((i for i in r.get("incidents") or [] if i["lane"] == lane and i["open"]), None)
+
+
 def lane_dead(r: dict) -> bool:
-    return (r.get("lane") or {}).get("generating") is False
+    lane = (r.get("lane") or {}).get("lane") or MODEL_LANE
+    return (r.get("lane") or {}).get("generating") is False or open_incident(r, lane) is not None
 
 
 def needs(r: dict) -> list[str]:
     """What needs a person, one line each; empty on a quiet night."""
-    out = []
-    if lane_dead(r):
-        h = r["lane"]
+    from harness.availability import incident_line
+    out = [f"lane {incident_line(i)}" for i in r.get("incidents") or [] if i["open"]]
+    h = r.get("lane") or {}
+    if h.get("generating") is False and open_incident(r, h["lane"]) is None:
         out.append(f"the {h['lane']} lane cannot generate: {h['spec']} at {h['base']} says its generation thread "
                    "died; the watchdog restarts the mlx unit, or run `scripts/launchd.sh restart mlx`")
     loop = r["sweep"].get("loop")
@@ -244,7 +258,7 @@ def gather(conn, now: float, since: float, *, beat=None, gh=None, git=None, wher
          "generated": now, "since": since, "sweep": sweep(conn, since, beat), "watchdog": watchdog(conn, since),
          "ci": ci(now, gh=gh or _gh), "ledger": ledger_row(conn, now), "stale": (lanes or stale_lanes)(conn),
          "stalled": (stalls or stalled)(conn), "deploy": deploy(where, git=git or _git),
-         "canary": canary(now) if canary else ""}
+         "canary": canary(now) if canary else "", "incidents": incidents(conn, since, now)}
     r["needs"] = needs(r)
     return r
 

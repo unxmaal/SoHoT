@@ -15,6 +15,11 @@ KNOBS = [
        note="llama-server slots every GGUF without its own slot plan batches across; throughput, not a grade (#699)"),
     _k("mlx_max_parallel", ["harness/serving.py:MLX_MAX_PARALLEL"], [4, 8, 16, 32],
        note="most requests the gateway lets mlx_lm.server hold; fewer when their KV does not fit (#542, #699)"),
+    _k("mlx_prompt_cache_bytes", ["harness/mlx_server.py:PROMPT_CACHE_BYTES"], ["4GB", "8GB", "16GB"],
+       note="bytes of KV cache mlx_lm.server keeps; mlx-lm leaves it unbounded (#912)"),
+    _k("mlx_prompt_cache_size", ["harness/mlx_server.py:PROMPT_CACHE_SIZE"], [2, 4, 8, 10],
+       note="distinct KV caches mlx_lm.server keeps; at mlx-lm's 10 Metal's 499000-buffer limit killed its "
+            "generation thread (#912)"),
     _k("mlx_request_ctx", ["harness/serving.py:MLX_REQUEST_CTX"], [8192, 16384, 32768, 65536],
        note="context one MLX request's KV is priced at when the parallel cap is sized (#699)"),
     _k("ornith_slot_ctx", ["harness/context.py:ORNITH_SLOT_CTX"], [131072, 262144],
