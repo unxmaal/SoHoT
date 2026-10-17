@@ -1,0 +1,178 @@
+{
+ "id": "Comfy-Org/MiniMax-H3",
+ "pipeline_tag": null,
+ "tags": [
+  "diffusion-single-file",
+  "comfyui",
+  "base_model:MiniMaxAI/MiniMax-H3",
+  "base_model:finetune:MiniMaxAI/MiniMax-H3",
+  "license:other",
+  "region:us"
+ ],
+ "library_name": "diffusion-single-file",
+ "cardData": {
+  "license": "other",
+  "license_name": "minimax-h3-community-license-agreement",
+  "license_link": "https://huggingface.co/MiniMaxAI/MiniMax-H3/blob/main/LICENSE",
+  "tags": [
+   "comfyui",
+   "diffusion-single-file"
+  ],
+  "base_model": [
+   "MiniMaxAI/MiniMax-H3"
+  ]
+ },
+ "siblings": [
+  {
+   "rfilename": ".gitattributes",
+   "size": 1519
+  },
+  {
+   "rfilename": "README.md",
+   "size": 8293
+  },
+  {
+   "rfilename": "diffusion_models/minimax_h3_fl2va_bf16.safetensors",
+   "size": 66280487368
+  },
+  {
+   "rfilename": "diffusion_models/minimax_h3_fl2va_int8_convrot.safetensors",
+   "size": 34038892334
+  },
+  {
+   "rfilename": "diffusion_models/minimax_h3_fl2va_pruned_bf16.safetensors",
+   "size": 40225724176
+  },
+  {
+   "rfilename": "diffusion_models/minimax_h3_fl2va_pruned_fp8_scaled.safetensors",
+   "size": 20958205608
+  },
+  {
+   "rfilename": "diffusion_models/minimax_h3_fl2va_pruned_int8_convrot.safetensors",
+   "size": 20970379616
+  },
+  {
+   "rfilename": "diffusion_models/minimax_h3_fl2va_pruned_w6a8.safetensors",
+   "size": 15983746636
+  },
+  {
+   "rfilename": "diffusion_models/minimax_h3_ref2va_bf16.safetensors",
+   "size": 66280487368
+  },
+  {
+   "rfilename": "diffusion_models/minimax_h3_ref2va_int8_convrot.safetensors",
+   "size": 34038894550
+  },
+  {
+   "rfilename": "diffusion_models/minimax_h3_ref2va_pruned_bf16.safetensors",
+   "size": 40225724176
+  },
+  {
+   "rfilename": "diffusion_models/minimax_h3_ref2va_pruned_fp8_scaled.safetensors",
+   "size": 20958205608
+  },
+  {
+   "rfilename": "diffusion_models/minimax_h3_ref2va_pruned_int8_convrot.safetensors",
+   "size": 20970379616
+  },
+  {
+   "rfilename": "diffusion_models/minimax_h3_ref2va_pruned_w6a8.safetensors",
+   "size": 15983746636
+  },
+  {
+   "rfilename": "embeddings/minimaxh3_art_is_explosion.safetensors",
+   "size": 512120
+  },
+  {
+   "rfilename": "embeddings/minimaxh3_blooming_flowers.safetensors",
+   "size": 1259640
+  },
+  {
+   "rfilename": "embeddings/minimaxh3_bullet_time.safetensors",
+   "size": 962680
+  },
+  {
+   "rfilename": "embeddings/minimaxh3_dark_magic.safetensors",
+   "size": 604280
+  },
+  {
+   "rfilename": "embeddings/minimaxh3_fire_breath.safetensors",
+   "size": 1208440
+  },
+  {
+   "rfilename": "embeddings/minimaxh3_four_seasons.safetensors",
+   "size": 1454200
+  },
+  {
+   "rfilename": "embeddings/minimaxh3_kiss_camera.safetensors",
+   "size": 993400
+  },
+  {
+   "rfilename": "embeddings/minimaxh3_spiral_ascent.safetensors",
+   "size": 1341560
+  },
+  {
+   "rfilename": "embeddings/minimaxh3_storm_magic.safetensors",
+   "size": 1403000
+  },
+  {
+   "rfilename": "embeddings/minimaxh3_truman_show.safetensors",
+   "size": 921720
+  },
+  {
+   "rfilename": "loras/minimax_h3_fl2v_turbo_4step_v1.0_768p_comfyui_bf16.safetensors",
+   "size": 1956192992
+  },
+  {
+   "rfilename": "loras/minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors",
+   "size": 1956193000
+  },
+  {
+   "rfilename": "loras/minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors",
+   "size": 1956193000
+  },
+  {
+   "rfilename": "model_patches/minimax_h3_fun_controlnet_union_2.0_pruned_bf16.safetensors",
+   "size": 8382288792
+  },
+  {
+   "rfilename": "model_patches/minimax_h3_fun_controlnet_union_2.0_pruned_int8_convrot.safetensors",
+   "size": 4531220608
+  },
+  {
+   "rfilename": "model_patches/minimax_h3_fun_controlnet_union_pruned_bf16.safetensors",
+   "size": 4222169456
+  },
+  {
+   "rfilename": "model_patches/minimax_h3_fun_controlnet_union_pruned_int8_convrot.safetensors",
+   "size": 2296635360
+  },
+  {
+   "rfilename": "text_encoders/qwen3vl_32b_minimax_h3_bf16.safetensors",
+   "size": 51506295256
+  },
+  {
+   "rfilename": "text_encoders/qwen3vl_32b_minimax_h3_int8_convrot.safetensors",
+   "size": 27141342152
+  },
+  {
+   "rfilename": "text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+   "size": 15687142551
+  },
+  {
+   "rfilename": "vae/minimax_h3_audio_vae_fp32.safetensors",
+   "size": 605254808
+  },
+  {
+   "rfilename": "vae/minimax_h3_video_vae_fp16.safetensors",
+   "size": 5207808496
+  },
+  {
+   "rfilename": "vae/minimax_h3_video_vae_int8_convrot.safetensors",
+   "size": 2811065184
+  }
+ ],
+ "lastModified": "2026-09-29T11:11:09.000Z",
+ "downloads": 24983722,
+ "config": {}
+}

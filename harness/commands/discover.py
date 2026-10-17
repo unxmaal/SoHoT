@@ -543,7 +543,9 @@ def _report_inspect(a) -> int:
             ms.set_card(store, repo, fit.card)
             # A thing that cannot run here is ANSWERED, so it is terminal and
             # never proposed again. "unknown" settles nothing, deliberately.
-            outcome = {"fits": "queued", "unknown": ""}.get(fit.verdict, "declined")
+            # A layout no variant groups is our gap: queued for inspect, never too-big on the sum. #947.
+            outcome = {"fits": "queued", "unknown": "queued" if fit.layout else ""}.get(
+                fit.verdict, "declined")
             if outcome:
                 # The tier that read the repo writes why and what would end
                 # the wait; nothing re-reads its sentence. #270, #333, #408.

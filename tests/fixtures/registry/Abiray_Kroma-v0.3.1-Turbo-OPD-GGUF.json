@@ -1,0 +1,72 @@
+{
+ "id": "Abiray/Kroma-v0.3.1-Turbo-OPD-GGUF",
+ "pipeline_tag": "text-to-image",
+ "tags": [
+  "gguf",
+  "text-to-image",
+  "comfyui",
+  "krea2",
+  "turbo",
+  "quantized",
+  "base_model:lodestones/Kroma",
+  "base_model:quantized:lodestones/Kroma",
+  "license:other",
+  "region:us"
+ ],
+ "library_name": null,
+ "cardData": {
+  "license": "other",
+  "license_name": "krea-2-community-license",
+  "license_link": "https://huggingface.co/lodestones/Kroma/blob/main/LICENSE",
+  "base_model": "lodestones/Kroma",
+  "tags": [
+   "text-to-image",
+   "comfyui",
+   "gguf",
+   "krea2",
+   "turbo",
+   "quantized"
+  ]
+ },
+ "siblings": [
+  {
+   "rfilename": ".gitattributes",
+   "size": 2012
+  },
+  {
+   "rfilename": "README.md",
+   "size": 2116
+  },
+  {
+   "rfilename": "kroma-v0.3.1-turbo-opd-Q2_K.gguf",
+   "size": 5961520160
+  },
+  {
+   "rfilename": "kroma-v0.3.1-turbo-opd-Q3_K_M.gguf",
+   "size": 7196021792
+  },
+  {
+   "rfilename": "kroma-v0.3.1-turbo-opd-Q3_K_S.gguf",
+   "size": 7196021792
+  },
+  {
+   "rfilename": "kroma-v0.3.1-turbo-opd-Q4_K_M.gguf",
+   "size": 8810370080
+  },
+  {
+   "rfilename": "kroma-v0.3.1-turbo-opd-Q4_K_S.gguf",
+   "size": 8810370080
+  },
+  {
+   "rfilename": "kroma-v0.3.1-turbo-opd-Q5_K_M.gguf",
+   "size": 10329756704
+  },
+  {
+   "rfilename": "kroma-v0.3.1-turbo-opd-Q6_K.gguf",
+   "size": 11944104992
+  }
+ ],
+ "lastModified": "2026-10-11T18:44:47.000Z",
+ "downloads": 1975,
+ "config": {}
+}

@@ -1,0 +1,139 @@
+{
+ "id": "lodestones/Kroma",
+ "pipeline_tag": "text-to-image",
+ "tags": [
+  "krea2",
+  "krea",
+  "text-to-image",
+  "comfyui",
+  "not-for-all-audiences",
+  "license:other",
+  "region:us"
+ ],
+ "library_name": null,
+ "cardData": {
+  "license": "other",
+  "license_name": "krea-2-community-license",
+  "tags": [
+   "krea2",
+   "krea",
+   "text-to-image",
+   "comfyui",
+   "not-for-all-audiences"
+  ],
+  "base_model": "Krea/Krea-2"
+ },
+ "siblings": [
+  {
+   "rfilename": ".gitattributes",
+   "size": 2786
+  },
+  {
+   "rfilename": "README.md",
+   "size": 3623
+  },
+  {
+   "rfilename": "banner.png",
+   "size": 26084225
+  },
+  {
+   "rfilename": "kroma-sensei-booru-e6-teacher-velocity-v0.3.safetensors",
+   "size": 25723392952
+  },
+  {
+   "rfilename": "kroma-v0.3-base.safetensors",
+   "size": 51280336920
+  },
+  {
+   "rfilename": "kroma-v0.3.1-turbo-opd.safetensors",
+   "size": 26283332880
+  },
+  {
+   "rfilename": "samples/output_00001.png",
+   "size": 11889173
+  },
+  {
+   "rfilename": "samples/output_00004.png",
+   "size": 12107410
+  },
+  {
+   "rfilename": "samples/output_00005.png",
+   "size": 12965708
+  },
+  {
+   "rfilename": "samples/output_00008.png",
+   "size": 12100641
+  },
+  {
+   "rfilename": "samples/output_00010.png",
+   "size": 10305147
+  },
+  {
+   "rfilename": "samples/output_00018.png",
+   "size": 12045532
+  },
+  {
+   "rfilename": "samples/output_00026.png",
+   "size": 11939957
+  },
+  {
+   "rfilename": "samples/output_00032.png",
+   "size": 12204274
+  },
+  {
+   "rfilename": "samples/output_00033.png",
+   "size": 11457598
+  },
+  {
+   "rfilename": "samples/output_00039.png",
+   "size": 8073151
+  },
+  {
+   "rfilename": "samples/output_00041.png",
+   "size": 8830015
+  },
+  {
+   "rfilename": "samples/output_00042.png",
+   "size": 12031423
+  },
+  {
+   "rfilename": "samples/output_00045.png",
+   "size": 8417076
+  },
+  {
+   "rfilename": "samples/output_00048.png",
+   "size": 12627465
+  },
+  {
+   "rfilename": "samples/output_00056.png",
+   "size": 10003839
+  },
+  {
+   "rfilename": "samples/output_00081.png",
+   "size": 5850949
+  },
+  {
+   "rfilename": "samples/output_00089.png",
+   "size": 8314252
+  },
+  {
+   "rfilename": "samples/output_00093.png",
+   "size": 12302593
+  },
+  {
+   "rfilename": "samples/output_00094.png",
+   "size": 8206469
+  },
+  {
+   "rfilename": "samples/output_00122.png",
+   "size": 7610092
+  },
+  {
+   "rfilename": "scanline-11-lora-v0.1.safetensors",
+   "size": 1717646008
+  }
+ ],
+ "lastModified": "2026-10-11T10:45:11.000Z",
+ "downloads": 0,
+ "config": {}
+}

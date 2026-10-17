@@ -21,5 +21,6 @@ KNOBS = [
 
 NOT_GATING = {
     "harness/inspect.py:Fit.ceiling": "the ceiling decide() judged against, recorded on the verdict; its default 0 means none (#880)",
-    "harness/memory_store/revisit.py:STALE_CEILING_GB": "absorbs rounding of one machine's probed ceiling; a real ceiling change is GiBs (#880)",
+    "harness/variants.py:LORA_FRACTION": "tells an add-on file from a checkpoint in one listing; no size, run or machine gates on it (#947)",
+    "harness/memory_store/revisit.py:STALE_CEILING_GB":"absorbs rounding of one machine's probed ceiling; a real ceiling change is GiBs (#880)",
 }

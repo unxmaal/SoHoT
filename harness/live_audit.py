@@ -17,7 +17,7 @@ ERROR_RATE_MAX = 0.10
 
 SERVING = ("adoptions_pass_here", "no_reference_served", "served_matches_adoption", "gateway_errors")
 SCHEDULE = ("sweep_on_schedule",)
-VERDICTS = ("too_big_ceiling_current", "terminal_reason_coherent", "no_ranking_verdict")
+VERDICTS = ("too_big_ceiling_current", "too_big_names_variant", "terminal_reason_coherent", "no_ranking_verdict")
 CHECKS = mc.INVARIANTS + SERVING + SCHEDULE + VERDICTS
 
 
@@ -96,6 +96,21 @@ def _too_big_ceiling_current(conn, ceiling_gb: float | None = None, reopened_at=
                 f"{here:g} GiB {what}, e.g. {named}"] if rows else []
     return (say(survived, f"survived the loop's requeue at {_when(swept)}"),
             say(fresh, "await the next loop's requeue"))
+
+
+def _too_big_names_variant(conn, reopened_at=...) -> tuple[list, list]:
+    """(failures, warnings) for too-big refusals sized by the listing's sum; one that survived a requeue fails. #947."""
+    from harness import heartbeat, memory_store as ms
+    swept = heartbeat.reopened_too_big() if reopened_at is ... else reopened_at
+    rows = ms.sized_by_repo_total(conn)
+    survived = [r for r in rows if swept and float(r["decided_at"] or 0) < swept]
+    fresh = [r for r in rows if r not in survived]
+
+    def say(group, what):
+        return [f"{len(group)} too-big verdict(s) name no variant {what}, e.g. "
+                + ", ".join(r["name"] for r in group[:5])] if group else []
+    return (say(survived, f"after the loop's requeue at {_when(swept)}"),
+            say(fresh, "and await the next loop's requeue"))
 
 
 #: Reasons that name a fact outside the candidate, so the verdict needs a condition that can reopen it.
@@ -199,10 +214,14 @@ def audit(path=None, config=None) -> dict:
         ]
         stale, backlog = _too_big_ceiling_current(conn)
         checks.append(mc._check("too_big_ceiling_current", stale))
+        summed, unswept = _too_big_names_variant(conn)
+        checks.append(mc._check("too_big_names_variant", summed))
         incoherent, pinned = _terminal_reason_coherent(conn)
         checks.append(mc._check("terminal_reason_coherent", incoherent))
         checks.append(mc._check("no_ranking_verdict", _no_ranking_verdict(conn)))
         warnings = {"too_big_ceiling_current": mc._say(backlog)} if backlog and not stale else {}
+        if unswept and not summed:
+            warnings["too_big_names_variant"] = mc._say(unswept)
         if pinned and not incoherent:
             warnings["terminal_reason_coherent"] = "pinned, awaiting a fix: " + mc._say(pinned)
         have = mc.schema(conn)

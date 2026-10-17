@@ -102,5 +102,11 @@
   }
  ],
  "lastModified": "2026-08-05T10:06:52.000Z",
- "downloads": 38037
+ "downloads": 37461,
+ "config": {
+  "architectures": [
+   "Mistral3ForConditionalGeneration"
+  ],
+  "model_type": "mistral3"
+ }
 }
