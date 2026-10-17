@@ -21,8 +21,9 @@ params:
   context: oracle
   context_files:
   - harness/downloads.py
-  - harness/memory_store/migrations/v58.py
   - harness/memory_store/schema.py
+  new_files:
+  - harness/memory_store/migrations/v58.py
   fail_to_pass:
   - tests/test_store_downloads.py::test_a_deleted_download_is_no_longer_complete
   - tests/test_store_downloads.py::test_the_migration_repairs_rows_removed_while_complete

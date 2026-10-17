@@ -77,12 +77,16 @@ def validate(name: str, params: dict) -> None:
         raise ValueError(f"{name}: params.variant must be spec or symptom")
     if params.get("context") != "oracle":
         raise ValueError(f"{name}: params.context must be oracle")
-    for key in ("fail_to_pass", "pass_to_pass", "context_files"):
+    for key in ("fail_to_pass", "pass_to_pass", "context_files", "new_files"):
         if not isinstance(params.get(key) or [], list):
             raise ValueError(f"{name}: params.{key} must be a list")
-    shown = [p for p in params["context_files"] if is_test_path(p)]
+    new = params.get("new_files") or []
+    shown = [p for p in [*params["context_files"], *new] if is_test_path(p)]
     if shown:
         raise ValueError(f"{name}: context_files would show the model tests: {shown}")
+    both = sorted(set(params["context_files"]) & set(new))
+    if both:
+        raise ValueError(f"{name}: {both} cannot be both shown at base and created by the fix")
 
 
 def _git(args, cwd=None, check=True, input=None) -> subprocess.CompletedProcess:
@@ -219,9 +223,12 @@ def context_block(task: Path, files) -> str:
     return "\n\n".join(out)
 
 
-def prompt_for(issue: str, task: Path, files) -> str:
+def prompt_for(issue: str, task: Path, files, new=()) -> str:
+    """The issue, the context files at base, and the files the fix creates, which base does not have. #913."""
+    create = ("Files to create (they do not exist at the commit to fix): "
+              f"{', '.join(new)}\n\n") if new else ""
     return (f"{issue.strip()}\n\nThe relevant files at the commit to fix:\n\n"
-            f"{context_block(task, files)}\n\n{REPLY}")
+            f"{context_block(task, files)}\n\n{create}{REPLY}")
 
 
 def extract_diff(reply: str) -> str:
@@ -238,7 +245,7 @@ def extract_diff(reply: str) -> str:
 
 
 def apply(task: Path, diff: str) -> tuple[bool, str]:
-    """git apply, then git apply --3way; (applied, why not). git refuses paths that leave the tree."""
+    """git apply, then git apply --3way; (applied, plain apply's error). git refuses paths that leave the tree."""
     if not diff.strip():
         return False, "the reply holds no diff"
     tries = (["apply", "--recount", "--whitespace=nowarn"],
@@ -248,7 +255,8 @@ def apply(task: Path, diff: str) -> tuple[bool, str]:
         got = _git([*args, "-"], cwd=task, check=False, input=diff.encode("utf-8"))
         if not got.returncode:
             return True, ""
-        why = got.stderr.decode(errors="replace").strip()[-400:]
+        # A diff with no index lines always fails --3way with "lacks the necessary blob", hiding why. #913.
+        why = why or got.stderr.decode(errors="replace").strip()[-400:]
         _git(["reset", "--hard", "--quiet"], cwd=task, check=False)
         _git(["clean", "-fdq"], cwd=task, check=False)
     return False, f"git apply: {why}"
@@ -395,7 +403,8 @@ class Attempt:
         return cls(m, task, python_of(Path(venv)), params)
 
     def prompt(self, issue: str) -> str:
-        return prompt_for(issue, self.task, self.params["context_files"])
+        return prompt_for(issue, self.task, self.params["context_files"],
+                          self.params.get("new_files") or ())
 
     def submit(self, diff: str) -> Grade:
         applied, why = apply(self.task, diff)

@@ -178,8 +178,10 @@ def test_a_home_path_in_an_issue_reaches_the_prompt_as_a_tilde():
 
 
 def test_a_lockfile_change_or_an_oversized_fix_is_screened_out():
-    c = {"test_files": ["tests/test_a.py"], "source_files": ["harness/a.py"], "lines": 10}
+    c = {"test_files": ["tests/test_a.py"], "source_files": ["harness/a.py"], "lines": 10,
+         "context_files": ["harness/a.py"]}
     assert history.screen(c) is None
+    assert history.screen({**c, "context_files": []}) == "only_new_files"
     assert history.screen({**c, "source_files": ["harness/a.py", "uv.lock"]}) == "dependency_change"
     assert history.screen({**c, "lines": history.MAX_LINES + 1}) == "too_big"
     assert history.screen({**c, "test_files": ["tests/fixtures/x.json"]}) == "no_test_change"
@@ -210,6 +212,44 @@ def test_the_committed_manifest_converts_to_both_variants_of_every_task():
     cases = [history.convert(r).case for r in rows]
     assert len(cases) == 2 * len(history.manifest()["tasks"])
     for c in cases:
-        assert set(c["params"]) == PARAMS and len(c["params"]["base"]) == 40
+        assert set(c["params"]) - {"new_files"} == PARAMS and len(c["params"]["base"]) == 40
         assert c["prompt"].startswith("# ")
 
+
+
+def _creating(tmp_path) -> Path:
+    """A fix that edits mod.py and creates helper.py, which base does not have. #913."""
+    src = _repo(tmp_path, FIXED, ADD_TEST)
+    _git(src, "reset", "-q", "--hard", "HEAD^")
+    _commit(src, {"mod.py": FIXED.replace("a + b", "plus(a, b)").replace(
+        "def add", "from helper import plus\n\ndef add"), "helper.py": "def plus(a, b):\n    return a + b\n",
+        "tests/test_mod.py": ADD_TEST}, "add adds (#5) (#6)")
+    return src
+
+
+def test_a_file_the_fix_creates_is_split_out_of_the_context_and_refresh_recomputes_it(tmp_path):
+    src = _creating(tmp_path)
+    (c,) = history.candidates(src, "main")
+    assert c["source_files"] == ["helper.py", "mod.py"]
+    assert c["context_files"] == ["mod.py"] and c["new_files"] == ["helper.py"]
+    old = {"tasks": [{"id": "sohot-5", "base": c["base"], "fix": c["fix"],
+                      "context_files": ["helper.py", "mod.py"]}]}
+    (t,) = history.refresh(old, src)["tasks"]
+    assert t["context_files"] == ["mod.py"] and t["new_files"] == ["helper.py"]
+
+
+@DARWIN
+def test_a_task_whose_fix_creates_a_file_names_it_to_create_and_its_reference_resolves(tmp_path):
+    src = _creating(tmp_path)
+    got = _survey(src, tmp_path)
+    (task,) = got["tasks"]
+    assert task["context_files"] == ["mod.py"] and task["new_files"] == ["helper.py"]
+    case = history.convert({**task, "variant": "spec"}).case
+    assert case["params"]["new_files"] == ["helper.py"]
+    a = repo.Attempt.open({**case["params"], "source_repo": str(src)}, env=_here)
+    try:
+        asked = a.prompt(case["prompt"])
+    finally:
+        a.close()
+    assert "--- mod.py ---" in asked and "--- helper.py ---" not in asked
+    assert "Files to create (they do not exist at the commit to fix): helper.py" in asked

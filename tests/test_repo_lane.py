@@ -288,3 +288,29 @@ def test_install_tests_is_idempotent_around_a_pytest_run(upstream):
         assert (a.task / "tests" / "test_mod.py").read_text(encoding="utf-8") == uses_tmp
     finally:
         a.close()
+
+
+def test_a_file_the_fix_creates_is_named_to_create_and_never_read_at_base(upstream):
+    params = {**upstream.params, "new_files": ["pkg/helper.py"]}
+    seen = []
+    runner_with("no diff here", seen).run(Case(id="fixture", modality="repo",
+                                               prompt=upstream.prompt, params=params))
+    assert seen and "--- pkg/mod.py ---" in seen[0]
+    assert "Files to create (they do not exist at the commit to fix): pkg/helper.py" in seen[0]
+
+
+@pytest.mark.parametrize("new, why", [(["pkg/mod.py"], "both shown at base and created"),
+                                      (["tests/test_new.py"], "would show the model tests")])
+def test_a_new_file_that_is_also_shown_or_is_a_test_is_refused(upstream, new, why):
+    with pytest.raises(ValueError, match=why):
+        repo.validate("c", {**upstream.params, "new_files": new})
+
+
+def test_a_hunk_that_misses_base_reports_plain_apply_and_not_the_3way_fallback(upstream):
+    a = repo.Attempt.open(upstream.params, env=_here)
+    try:
+        got = a.submit(_diff("def add(a, b):\n    return a * b\n", "def add(a, b):\n    return a + b\n"))
+    finally:
+        a.close()
+    assert not got.patch_applied and "patch does not apply" in got.detail
+    assert "lacks the necessary blob" not in got.detail
