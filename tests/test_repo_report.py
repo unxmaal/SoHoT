@@ -130,9 +130,17 @@ def _pilot_rows():
 
 
 def _repo_cases():
-    from evals.core import load_cases
-    from evals.importers import CASES
-    return load_cases(CASES / "repo")
+    """The 41 cases the pilot ran on, the ones #920 dropped afterwards included."""
+    from evals.core import Case, load_cases
+    from evals.importers import CASES, history
+    held = dict(history.DROPPED)
+    history.DROPPED.clear()
+    try:
+        made = [history.convert(r).case for r in history.fetch()]
+    finally:
+        history.DROPPED.update(held)
+    own = [c for c in load_cases(CASES / "repo") if "history" not in c.source.parts]
+    return own + [Case(id=c["id"], modality=c["modality"], prompt=c["prompt"], params=c["params"]) for c in made]
 
 
 def test_the_pilot_reads_as_the_store_does():
@@ -230,8 +238,16 @@ def test_soh_repo_report_reads_the_store(store_run, tmp_path, capsys):
 
     from evals.core import cases_digest
     from harness import cli
+    import yaml
+
+    from evals.core import load_cases
     from harness import memory_store as ms
-    cases = _repo_cases()
+    pilot = tmp_path / "pilot"
+    pilot.mkdir()
+    for c in _repo_cases():
+        raw = {"id": c.id, "modality": c.modality, "prompt": c.prompt, "params": c.params}
+        (pilot / f"{c.id}.yaml").write_text(yaml.safe_dump(raw), encoding="utf-8")
+    cases = load_cases(pilot)
     receipt = {"case_ids": [c.id for c in cases], "repeat": 1, "max_tokens": 32768}
     conn = ms.connect(tmp_path / "s.db")
     rows = {466: [], 467: []}
@@ -241,10 +257,10 @@ def test_soh_repo_report_reads_the_store(store_run, tmp_path, capsys):
                      receipt=receipt) for n in (466, 467)]
     conn.close()
     assert cli.main(["repo-report", "--json", *map(str, ids), "--store", str(tmp_path / "s.db"),
-                     "--resamples", "200"]) == 0
+                     "--cases", str(pilot), "--resamples", "200"]) == 0
     got = json.loads(capsys.readouterr().out)
     assert got["ok"] and got["views"]["limits as losses"]["p"] == 0.125
-    assert cli.main(["repo-report", str(ids[0]), "--store", str(tmp_path / "s.db")]) == 1
+    assert cli.main(["repo-report", str(ids[0]), "--store", str(tmp_path / "s.db"), "--cases", str(pilot)]) == 1
 
 
 def test_there_is_one_wilson():
