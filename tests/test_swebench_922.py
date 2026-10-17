@@ -217,6 +217,11 @@ def test_compare_before_grading_says_pending_and_still_reports_extraction(tmp_pa
     assert "with_patch 1" in text and "identical_to_reference 1" in text and "same_files_as_reference 1" in text
 
 
+def test_a_patch_without_git_lines_still_names_its_files():
+    assert swebench._files(GOLD.replace("diff --git a/pkg/mod.py b/pkg/mod.py\n", "")) == swebench._files(GOLD)
+    assert swebench._files(GOLD) == {"pkg/mod.py"}
+
+
 @pytest.mark.network
 def test_the_reference_results_and_predictions_are_still_published():
     results = json.loads(swebench._fetch(swebench.RESULTS_URL))

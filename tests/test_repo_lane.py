@@ -248,6 +248,31 @@ def test_soh_cases_control_repo_reports_a_sound_task(upstream, tmp_path, monkeyp
 
 
 @DARWIN
+def test_soh_cases_regrade_repo_grades_a_runs_stored_diffs_again(upstream, tmp_path, monkeypatch, capsys):
+    import json
+    import yaml
+    from harness import cli
+    (tmp_path / "cases" / "repo").mkdir(parents=True)
+    raw = {"id": "fixture", "modality": "repo", "prompt": upstream.prompt, "params": upstream.params}
+    (tmp_path / "cases" / "repo" / "fixture.yaml").write_text(yaml.safe_dump(raw), encoding="utf-8")
+    headerless = (_diff(BUGGY, FIXED).split("\n", 1)[1]
+                  + "--- /dev/null\n+++ b/pkg/extra.py\n@@ -0,0 +1 @@\n+X = 1\n")
+    run = tmp_path / "run"
+    run.mkdir()
+    stored = {"case": "fixture", "diff": headerless, "grade": {"resolved": False, "patch_applied": False}}
+    (run / "cand--fixture.json").write_text(json.dumps(stored), encoding="utf-8")
+    before = (run / "cand--fixture.json").read_bytes()
+    monkeypatch.setattr(repo, "prepare", _here)
+    assert cli.main(["cases", "regrade", "repo", "--json", "--run", str(run),
+                     "--out", str(tmp_path / "cases")]) == 0
+    got = json.loads(capsys.readouterr().out)["regraded"]
+    assert [(r["case"], r["was_resolved"], r["resolved"]) for r in got] == [("fixture", False, True)]
+    assert (run / "cand--fixture.json").read_bytes() == before
+    assert cli.main(["cases", "regrade", "repo", "--run", str(run), "--case", "other",
+                     "--out", str(tmp_path / "cases")]) == 1
+
+
+@DARWIN
 def test_tests_that_outrun_the_timeout_are_our_limit_not_a_wrong_answer(upstream, monkeypatch):
     monkeypatch.setattr(repo, "TEST_TIMEOUT_S", 3.0)
     row = runner_with(_diff(BUGGY, FIXED + "\nimport time\ntime.sleep(60)\n")).run(upstream)

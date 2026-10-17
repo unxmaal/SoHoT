@@ -250,10 +250,40 @@ def extract_diff(reply: str) -> str:
     return body if body.endswith("\n") else body + "\n"
 
 
+_SIDE = re.compile(r"^(?:---|\+\+\+) (?:[ab]/(\S+)|(/dev/null))(?:\t.*)?\r?\n?$")
+_EXTENDED = re.compile(r"^(index |old mode |new mode |new file mode |deleted file mode |similarity index "
+                       r"|dissimilarity index |rename from |rename to |copy from |copy to )")
+
+
+def _headed(lines: list[str], i: int) -> bool:
+    j = i - 1
+    while j >= 0 and _EXTENDED.match(lines[j]):
+        j -= 1
+    return j >= 0 and lines[j].startswith("diff --git ")
+
+
+def with_git_headers(diff: str) -> str:
+    """A `diff --git` line before each ---/+++/@@ file header lacking one, so --recount stops at it. #940."""
+    lines = diff.splitlines(keepends=True)
+    out = []
+    for i, line in enumerate(lines):
+        if line.startswith("--- ") and i + 2 < len(lines) and lines[i + 1].startswith("+++ ") \
+                and lines[i + 2].startswith("@@ ") and not _headed(lines, i):
+            old, new = _SIDE.match(line), _SIDE.match(lines[i + 1])
+            path = old and new and (new.group(1) or old.group(1))
+            if path:
+                out.append(f"diff --git a/{path} b/{path}\n")
+                if old.group(2):
+                    out.append("new file mode 100644\n")
+        out.append(line)
+    return "".join(out)
+
+
 def apply(task: Path, diff: str) -> tuple[bool, str]:
     """git apply, then git apply --3way; (applied, plain apply's error). git refuses paths that leave the tree."""
     if not diff.strip():
         return False, "the reply holds no diff"
+    diff = with_git_headers(diff)
     tries = (["apply", "--recount", "--whitespace=nowarn"],
              ["apply", "--3way", "--recount", "--whitespace=nowarn"])
     why = ""

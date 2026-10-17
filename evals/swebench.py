@@ -404,7 +404,7 @@ def published(results: dict, ids: list[str]) -> dict:
 
 
 def _files(patch: str) -> frozenset:
-    return frozenset(re.findall(r"^diff --git a/(\S+) b/", patch or "", re.M))
+    return frozenset(re.findall(r"^diff --git a/(\S+) b/", repo.with_git_headers(patch or ""), re.M))
 
 
 def extraction(run: Path, ids: list[str]) -> dict:

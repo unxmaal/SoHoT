@@ -1,4 +1,4 @@
-"""`soh cases import|control <source>`: re-run an importer, or its negative control; `control repo` the repo lane's. #603, #887."""
+"""`soh cases import|control|regrade <source>`: an importer, its negative control, or a repo run's stored diffs regraded. #603, #887, #940."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -11,6 +11,10 @@ def cmd_cases(a) -> int:
     from evals.core import load_cases
     if a.source == "repo" and a.action == "control":
         return _repo_controls(Path(a.out) if a.out else importers.CASES)
+    if a.action == "regrade":
+        if a.source != "repo" or not a.run:
+            return err("regrade takes `repo --run <run dir>`")
+        return _repo_regrade(Path(a.out) if a.out else importers.CASES, Path(a.run), a.case or [])
     try:
         mod = importers.module(a.source)
     except ValueError as exc:
@@ -47,3 +51,36 @@ def _repo_controls(root: Path) -> int:
              f"{'' if ok else '  UNSOUND'}")
     emit(sound, control=got)
     return 0 if sound else 1
+
+
+def _repo_regrade(root: Path, run: Path, only: list[str]) -> int:
+    """Each stored diff of a repo run through today's apply and grader; the run and the store are not touched."""
+    import json
+    from evals import repo
+    from evals.core import load_cases
+    cases = {c.id: c for c in load_cases(root / "repo")}
+    rows = []
+    for path in sorted(run.glob("*--*.json")):
+        stored = json.loads(path.read_text(encoding="utf-8"))
+        cid = stored.get("case") if isinstance(stored, dict) else None
+        if cid not in cases or (only and cid not in only) or "diff" not in stored:
+            continue
+        try:
+            a = repo.Attempt.open(cases[cid].params)
+        except repo.RepoEnvError as exc:
+            return err(f"{cid}: environment: {exc}")
+        try:
+            g = a.submit(stored["diff"])
+        finally:
+            a.close()
+        was = stored.get("grade") or {}
+        rows.append({"file": path.name, "case": cid, "was_resolved": bool(was.get("resolved")),
+                     "was_applied": bool(was.get("patch_applied")), "resolved": g.resolved,
+                     "patch_applied": g.patch_applied, "detail": g.detail})
+        note(f"  {path.name}: {'resolved' if g.resolved else 'applied, unresolved' if g.patch_applied else 'invalid_patch'}"
+             f" (was {'resolved' if was.get('resolved') else 'applied' if was.get('patch_applied') else 'invalid_patch'})"
+             f"{'' if g.resolved else ': ' + g.detail[:200]}")
+    if only and not {r["case"] for r in rows} >= set(only):
+        return err(f"no stored diff in {run} for {', '.join(sorted(set(only) - {r['case'] for r in rows}))}")
+    emit(bool(rows), regraded=rows)
+    return 0 if rows else 1

@@ -1,0 +1,70 @@
+--- a/evals/core.py
++++ b/evals/core.py
+@@ -462,6 +462,10 @@ METRIC_DIRECTION = {
+     "method_calls": "neutral",
+     "method_samples": "neutral",
+     "method_chosen": "neutral",
++    # budget ladder (#668): how many rungs a row needed before it answered or
++    # gave up. Fewer is better: a candidate that answers at the first budget
++    # spent less. Undeclared, it was already ranked this way, with a warning.
++    "attempts": "lower",
+     # retrieval (#563): every relevant document in the top k, and how high.
+     "retrieval_recall": "higher",
+     "retrieval_ndcg": "higher",
+--- a/harness/commands/screen.py
++++ b/harness/commands/screen.py
+@@ -1,6 +1,7 @@
+ """`soh fetch` and the screen tier: what to fetch, what fits, and the screen of what arrived."""
+ from __future__ import annotations
+ 
++import re
+ import time
+ 
+ from harness import memory, paths, reasons
+@@ -145,6 +146,34 @@ def snapshot_gap(row: dict, conn) -> str:
+     return ""
+ 
+ 
++#: A Python warning header, "path:123: SomeWarning: message".
++_WARNING_LINE = re.compile(r"^\S.*:\d+: \w*Warning: ")
++
++
++def stderr_evidence(stderr: str, summary) -> str:
++    """The stderr tail kept beside a verdict for a person; "" when the run wrote a receipt.
++
++    A run that produced a summary already says what happened, so its stderr
++    adds nothing but chatter, and warnings reached the store that way. Where
++    there is no receipt, Python warnings and the source line printed beneath
++    them are dropped before the tail is taken.
++    """
++    if summary is not None or not stderr:
++        return ""
++    kept, skip_source = [], False
++    for line in stderr.splitlines():
++        if _WARNING_LINE.match(line):
++            skip_source = True
++            continue
++        if skip_source and line[:1].isspace():
++            skip_source = False
++            continue
++        skip_source = False
++        kept.append(line)
++    return " ".join(" ".join(kept).split())[-300:]
++
++
+ def verdict_of_run(returncode: int, stderr: str, summary, candidate: str,
+                    key: str = "", facts: dict | None = None):
+     """One finished screen process's verdict; stderr is classed only without a receipt."""
+@@ -263,9 +292,9 @@ def _report_screen(a) -> int:
+             print(f"   {got.upper()}: {why}")
+             if proc.returncode != 0:
+                 err(proc.stderr.strip()[-400:] or "no stderr")
+-            # The stderr tail stays as evidence for a person; the reason and
+-            # the class are the columns code reads. #281, #408.
+-            evidence = " ".join((proc.stderr or "").split())[-300:]
++            # The stderr tail stays as evidence for a person only when there is
++            # no receipt; the reason and the class are the columns code reads. #281, #408.
++            evidence = stderr_evidence(proc.stderr or "", summary)
+             detail = f"{why} || {evidence}" if evidence else why
+             ms.decide_or_skip(store, r["name"], got, tier=ms.SCREEN,
+                               detail=detail[:600],

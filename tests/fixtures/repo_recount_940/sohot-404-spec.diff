@@ -1,0 +1,109 @@
+--- a/harness/screen.py
++++ b/harness/screen.py
+@@ -393,8 +393,39 @@ NOT_THE_CANDIDATE = (
+     "no such file or directory",
+     # A sampling setting the runner chose and the pipeline refused. #401.
+     "guidance_scale has to be",
++    # THE MODEL SERVER DIED. mlx_lm.server hit a Metal GPU timeout on one
++    # candidate and answered every later request HTTP 404 "generation thread
++    # died" until it was restarted, and six unrelated candidates were
++    # recorded `broken`, which is terminal, for a server that was down.
++    "generation thread died",
++    "command buffer execution failed",
+ )
+ 
++#: Phrases that mean the model server itself is dead, not merely that one
++#: request was refused. Once one is seen, every later request to that server
++#: fails the same way, so a screen that keeps going spends every remaining
++#: candidate on a dead server.
++SERVER_DIED = (
++    "generation thread died",
++    "command buffer execution failed",
++)
++
++
++def server_died(detail: str) -> str:
++    """The phrase saying the model server is dead, or "".
++
++    A dead server is a fact about the harness's own infrastructure. The
++    caller must stop and report it rather than carry on and record each
++    remaining candidate against it.
++    """
++    text = (detail or "").lower()
++    for phrase in SERVER_DIED:
++        if phrase in text:
++            return phrase
++    return ""
++
+ 
+ #: In stderr this is our missing script; inside a loader's error it is a file
+ #: the candidate's snapshot lacks, which is the candidate's.
+--- a/harness/cli.py
++++ b/harness/cli.py
+@@ -1601,6 +1601,17 @@ def _report_screen(a) -> int:
+                       run_path=str(outdir) if outdir.exists() else "",
+                       until=screen.load_until(r["candidate"])
+                       if got == "declined" else "")
++            # A DEAD SERVER IS NOT A CANDIDATE'S PROBLEM, AND IT DOES NOT
++            # RECOVER ON ITS OWN. One Metal GPU timeout left mlx_lm.server
++            # answering "generation thread died" to everything, and the screen
++            # recorded six later candidates against it. Stop here and say so.
++            died = screen.server_died(f"{proc.stderr or ''} {why}")
++            if died:
++                return err(f"the model server died ({died!r}) while screening "
++                           f"{r['name']}. Stopping rather than screening the "
++                           f"remaining candidates against a dead server; "
++                           f"restart it and run again. {r['name']} stays "
++                           f"queued.")
+     finally:
+         store.close()
+     return 0
+--- a/harness/memory_store.py
++++ b/harness/memory_store.py
+@@ -18,7 +18,7 @@ from pathlib import Path
+ 
+ from harness import paths, store
+ 
+-SCHEMA_VERSION = 21
++SCHEMA_VERSION = 22
+ 
+ #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
+ VERDICTS = ("measured", "declined", "broken", "queued", "ignored", "screened")
+@@ -637,6 +637,15 @@ def _migrate(conn: sqlite3.Connection) -> None:
+         # Only the new phrase: rerunning the whole list reopens what earlier
+         # schemas deliberately left. #401.
+         _requeue_broken_matching(conn)
++    if have and have < 22:
++        # mlx_lm.server died on a Metal GPU timeout and answered every later
++        # request "generation thread died"; six candidates were recorded
++        # broken against a dead server.
++        _requeue_broken_matching(
++            conn, phrases=("generation thread died",
++                           "command buffer execution failed"),
++            why="retracted: {hit!r} means the model server had died, which "
++                "is a fact about this harness, not a verdict on {name}")
+     conn.execute("INSERT OR REPLACE INTO meta VALUES ('schema', ?)",
+                  (str(SCHEMA_VERSION),))
+     conn.commit()
+@@ -847,7 +856,10 @@ def _relane_from_the_card(conn) -> None:
+              now))
+ 
+ 
+-def _requeue_broken_matching(conn, phrases: tuple = ("guidance_scale has to be",)) -> None:
++def _requeue_broken_matching(conn, phrases: tuple = ("guidance_scale has to be",),
++                             why: str = "retracted: {hit!r} was a setting this "
++                                        "harness chose, not a verdict on "
++                                        "{name}") -> None:
+     rows = conn.execute(
+         "SELECT p.id, p.name, v.detail FROM proposals p "
+         "JOIN verdicts v ON v.proposal_id = p.id "
+@@ -861,8 +873,7 @@ def _requeue_broken_matching(conn, phrases: tuple = ("guidance_scale has to be",
+             conn.execute(
+                 "INSERT INTO verdicts (proposal_id, tier, outcome, detail, "
+                 "decided_at) VALUES (?, ?, 'queued', ?, ?)",
+-                (pid, SCREEN, f"retracted: {hit!r} was a setting this harness "
+-                              f"chose, not a verdict on {name}", now))
++                (pid, SCREEN, why.format(hit=hit, name=name), now))
+ 
+ 
+ def _requeue_screens_of_missing_weights(conn) -> None:

@@ -1,0 +1,63 @@
+--- a/evals/core.py
++++ b/evals/core.py
+@@ -398,6 +398,9 @@ METRIC_DIRECTION = {
+     "method_calls": "neutral",
+     "method_samples": "neutral",
+     "method_chosen": "neutral",
++    # budget ladder (#668): how many rungs a row tried. It explains a latency
++    # and a pass at a larger budget; reported, never ranked on.
++    "attempts": "neutral",
+     # retrieval (#563): every relevant document in the top k, and how high.
+     "retrieval_recall": "higher",
+     "retrieval_ndcg": "higher",
+--- a/harness/commands/screen.py
++++ b/harness/commands/screen.py
+@@ -1,6 +1,7 @@
+ """`soh fetch` and the screen tier: what to fetch, what fits, and the screen of what arrived."""
+ from __future__ import annotations
+ 
++import re
+ import time
+ 
+ from harness import memory, paths, reasons
+@@ -140,6 +141,31 @@ def verdict_of_run(returncode: int, stderr: str, summary, candidate: str,
+                           stderr_class=stderr_class, facts=facts)
+ 
+ 
++#: The header line Python prints for a warning: "path:line: SomeWarning: message".
++_WARNING_LINE = re.compile(r"^.*:\d+: \w*Warning: ")
++
++
++def stderr_evidence(stderr: str, limit: int = 300) -> str:
++    """The stderr tail kept as evidence, without Python warnings and their source lines.
++
++    A warning is chatter about the harness, not about the candidate, and stored
++    in a verdict detail it reads as if the run said it.
++    """
++    kept = []
++    after_warning = False
++    for line in (stderr or "").splitlines():
++        if _WARNING_LINE.match(line):
++            after_warning = True
++            continue
++        if after_warning and line.startswith((" ", "\t")):
++            # The source line warnings.warn prints beneath its header.
++            after_warning = False
++            continue
++        after_warning = False
++        kept.append(line)
++    return " ".join(" ".join(kept).split())[-limit:]
++
++
+ def _report_screen(a) -> int:
+     """Run the cheapest real thing, and record whether it ran at all. #53.
+ 
+@@ -236,7 +262,7 @@ def _report_screen(a) -> int:
+                 err(proc.stderr.strip()[-400:] or "no stderr")
+             # The stderr tail stays as evidence for a person; the reason and
+             # the class are the columns code reads. #281, #408.
+-            evidence = " ".join((proc.stderr or "").split())[-300:]
++            evidence = stderr_evidence(proc.stderr)
+             detail = f"{why} || {evidence}" if evidence else why
+             ms.decide_or_skip(store, r["name"], got, tier=ms.SCREEN,
+                               detail=detail[:600],
