@@ -702,6 +702,25 @@ def hf_model(model_id: str, fetch=None) -> dict:
         raise InspectError(f"{model_id}: {detail[:160]}") from exc
 
 
+def upstream_commit(repo: str, registry: str, fetch=None, client=None) -> str | None:
+    """When `repo` last committed: HF lastModified or GitHub pushed_at; '' unknown, None once rate-limited. #961."""
+    from harness import github
+    if registry == ms.HUGGINGFACE:
+        try:
+            return (hf_model(repo, fetch=fetch).get("lastModified") or "").strip()
+        except Deferred as exc:
+            PACE.stop(str(exc))
+            return None
+        except InspectError:
+            return ""
+    if registry == ms.GITHUB:
+        try:
+            return ((client or github.Client()).repo(repo).get("pushed_at") or "").strip()
+        except github.GitHubError:
+            return ""
+    return ""
+
+
 #: Tags that say nothing about whether a model is worth measuring. Licences,
 #: regions and file formats are facts about paperwork and packaging.
 _NOISE_TAGS = re.compile(

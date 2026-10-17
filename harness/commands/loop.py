@@ -244,6 +244,7 @@ def _run_loop_held(a, keep=None) -> int:
             extra = {"from_store": True, "top": LOOP_INSPECT}
             _reopen_stale_too_big()
             _reopen_unranked()
+            _reopen_upstream_committed()
         sub = _ap.Namespace(**{**vars(a), **flags, **extra, "loop": False})
         rc = _step(label, discover_cmd.cmd_discover(sub), failed) or rc
 
@@ -480,6 +481,32 @@ def _reopen_unranked() -> list[str]:
     for n in names:
         print(f"    {n}")
     return names
+
+
+def _reopen_upstream_committed(fetch=None, client=None) -> dict:
+    """Requeue for inspect the commit_after refusals whose upstream has committed since. #961."""
+    from harness import inspect as ins, memory_store as ms
+    store = ms.connect()
+    ins.PACE.start()
+    try:
+        got = ms.requeue_upstream_committed(
+            store, lambda repo, registry: ins.upstream_commit(repo, registry, fetch=fetch, client=client))
+    finally:
+        ins.PACE.end()
+        store.close()
+    print(upstream_line(got))
+    for r in got["committed"]:
+        print(f"    {r['name']}  ({r['until']}, last commit {r['last_commit']})")
+    return got
+
+
+def upstream_line(got: dict, requeued: bool = True) -> str:
+    """How many commit_after refusals were asked about, answered and reopened. #961."""
+    left = got["waiting"] - got["asked"]
+    return (f"  asked {got['asked']} of {got['waiting']} commit_after refusal(s) for their upstream's "
+            f"last commit: {got['answered']} answered, {len(got['committed'])} committed since"
+            + (" and requeued" if requeued else "")
+            + (f"; {left} not asked (registry rate-limited)" if left else ""))
 
 
 def _reopen_stale_too_big() -> list[str]:
