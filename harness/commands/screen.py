@@ -125,16 +125,46 @@ def _screen_plan(want: str) -> list[dict]:
     return screen.plan(ranked)
 
 
-def screenable_backlog(want: str = "", plan=None, room=None) -> list[str]:
-    """On disk, runnable, and fitting in memory now: what a fetch would queue behind. #396."""
+#: Consecutive same-need memory deferrals after which the screen stops recording another one. #910.
+MEMORY_DEFERRALS = 3
+
+_NEEDS = re.compile(r"needs (\d+(?:\.\d+)?) GB")
+
+
+def memory_deferrals(conn, name: str) -> tuple[int, str]:
+    """How many of a name's newest verdicts in a row are screen memory deferrals of one need, and that need. #910."""
+    from harness import memory_store as ms
+    streak, need = 0, ""
+    for v in conn.execute(
+            "SELECT v.tier, v.reason, v.detail FROM verdicts v JOIN proposals p "
+            "ON p.id = v.proposal_id WHERE p.name = ? ORDER BY v.id DESC", (name,)):
+        got = _NEEDS.search(v["detail"] or "")
+        if v["tier"] != ms.SCREEN or v["reason"] != reasons.MEMORY or not got \
+                or (need and got.group(1) != need):
+            break
+        streak, need = streak + 1, got.group(1)
+    return streak, need
+
+
+def screenable_backlog(want: str = "", plan=None, room=None, deferred=None) -> list[str]:
+    """On disk, runnable, fitting in memory now, and not deferred for memory last screen: what a fetch would queue behind. #396, #910."""
     from harness import screen
     plan = _screen_plan(want) if plan is None else plan
     from harness import methods
     # One screen request's KV beside the weights, where config.json gives a shape. #699.
     room = room or (lambda r: memory.check_model(r["name"], spec=r["candidate"], parallel=1)[0])
+    if deferred is None:
+        from harness import memory_store as ms
+        store = ms.connect()
+        try:
+            held = {r["name"] for r in plan if r["state"] == screen.READY
+                    and memory_deferrals(store, r["name"])[0]}
+        finally:
+            store.close()
+        deferred = held.__contains__
     # A method crossing downloads nothing, so no download waits behind it. #576.
     return [r["name"] for r in plan if r["state"] == screen.READY
-            and not methods.is_method(r["name"]) and room(r)]
+            and not methods.is_method(r["name"]) and not deferred(r["name"]) and room(r)]
 
 
 def snapshot_gap(row: dict, conn) -> str:
@@ -233,7 +263,10 @@ def _report_screen(a) -> int:
 
     store = ms.connect()
     try:
-        for r in ready[:getattr(a, "limit", 1)]:
+        limit, taken = getattr(a, "limit", 1), 0
+        for r in ready:
+            if taken >= limit:
+                break
             print(f"\n── {r['name']}", flush=True)
             # Weights an offline load cannot open go back to fetch, never to a verdict. #799.
             gap = snapshot_gap(r, store)
@@ -246,12 +279,20 @@ def _report_screen(a) -> int:
             # Headroom, including what is already resident. #284.
             room, why_not = memory.check_model(r["name"], spec=r["candidate"], parallel=1)
             if not room:
+                # A memory deferral screens nothing, so it does not spend a slot. #910.
                 print(f"   QUEUED: {why_not}")
+                streak, need = memory_deferrals(store, r["name"])
+                got = _NEEDS.search(why_not)
+                if streak >= MEMORY_DEFERRALS and got and got.group(1) == need:
+                    print(f"   deferred {streak} times for {need} GB; left queued "
+                          f"and out of the fetch's wait")
+                    continue
                 ms.decide_or_skip(store, r["name"], "queued", tier=ms.SCREEN,
                                   detail=f"not screened: {why_not}"[:600],
                                   reason=reasons.MEMORY,
                                   until=f"memory_gb:>{memory.available_gb():.1f}")
                 continue
+            taken += 1
             # Its own receipt directory, not the newest for the modality. #282.
             outdir = paths.runs() / f"screen-{int(time.time())}-{r['modality']}"
             try:
