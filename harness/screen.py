@@ -546,6 +546,8 @@ def _sentence(cls: str, why: str, limit: str) -> str:
         return f"the GPU faulted running it on this machine{tail}"
     if cls == reasons.BACKEND_FAULT:
         return f"the MPS backend aborted running it{tail}"
+    if cls == reasons.DEGENERATE:
+        return f"its replies looped or collapsed until the token budget cut them{tail}"
     if reasons.CLASSES[cls][1] == reasons.LIMIT:
         return (f"stopped at a limit this harness chose"
                 f"{f' ({limit})' if limit else ''}{tail}")
@@ -634,6 +636,11 @@ def screen_limit(candidate: str = "") -> str:
     return f"limit:{name}>{value:g}" if value is not None else ""
 
 
+#: The note a degenerate screen carries, since a loop may be the sampler this harness sent. #955.
+SAMPLER_CHECK = ("check the receipt's sampler against the model card's recommended settings "
+                 "(temperature, repetition or presence penalty) before reading this as the model's")
+
+
 def outcome(returncode: int, summary: dict | None, candidate: str = "",
             key: str = "", stderr_class: str = "",
             facts: dict | None = None) -> Verdict:
@@ -671,11 +678,14 @@ def outcome(returncode: int, summary: dict | None, candidate: str = "",
     cls = reasons.first(c for r in mine for c in (r.get("failure_classes") or {}))
     why = silent or (why_nothing_passed(summary, candidate, key) if candidate else "")
     limits = [lim for r in mine for lim in (r.get("limits") or [])]
-    if cls in ("", reasons.CONTENT_FAILED):
+    if cls in ("", reasons.CONTENT_FAILED, reasons.DEGENERATE):
         # A few cases at screen settings is not enough to call a candidate broken. #691.
         until = next((r["screen_until"] for r in mine if r.get("screen_until")), "")
         caveat = next((r["screen_caveat"] for r in mine if r.get("screen_caveat")), "")
+        if cls == reasons.DEGENERATE:
+            # A loop is often our sampler's (greedy, no repetition penalty), not the model's. #955, #921.
+            caveat = "; ".join(c for c in (caveat, SAMPLER_CHECK) if c)
         why = f"{why}; {caveat}" if why and caveat else (why or caveat)
-        return Verdict("declined", _sentence(reasons.CONTENT_FAILED, why, ""), reasons.LIMIT,
-                       until or screen_limit(candidate), reasons.CONTENT_FAILED)
+        return Verdict("declined", _sentence(cls or reasons.CONTENT_FAILED, why, ""), reasons.LIMIT,
+                       until or screen_limit(candidate), cls or reasons.CONTENT_FAILED)
     return decide_class(cls, why, candidate, limits, facts)
