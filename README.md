@@ -572,11 +572,13 @@ which is sent as `chat_template_kwargs`. The receipt records several things:
 sent: max_tokens, sampler, template kwargs and a system-prompt digest) and
 `server_sampling` (llama-server's `/props` defaults for any key a request left
 out). `comparable()` treats thinking on and thinking off as two exams. For the
-repo lane, `python -m evals.analysis.repo_failures` has five subcommands: `tally`
+repo lane, `python -m evals.analysis.repo_failures` has these subcommands: `tally`
 counts failure classes per run and checks every label in
 `evals/analysis/repo_failure_labels.jsonl` against the byte offset it cites,
 `receipt --arm` reads a #921 rerun arm back from its receipt, `arms` prints the
-arms' commands, and `sample` and `kappa` serve the blind second labeller.
+arms' commands, `locate` finds the offset to cite, `codebook` prints each class
+with its definition and precedence, and `sample --stratify` and `kappa` (which
+lists every disagreement) serve the blind second labeller.
 
 **A run whose model the router evicted is not ranked.** For a candidate served
 by llama-server's router (directly or through a gateway alias), the eval reads

@@ -20,9 +20,27 @@ CODEBOOK = {
     "no_diff": "model",
     "wrong_fix": "model",
     "regression": "model",
+    "recount_header": "harness",
 }
-#: What a budget-exhausted reply's reasoning was doing when the budget cut it.
-AT_CUT = ("looping", "rereading", "drafting_diff", "other")
+#: One line per class, for a labeller who sees only this and the evidence.
+DEFINITIONS = {
+    "budget_exhausted": "the runner says the reply spent max_tokens with no answer; at_cut says what the reasoning was "
+                        "doing at the cut, or unrecorded when the run kept no reasoning",
+    "tool_call": "the reply holds no diff and calls tools instead (<tool_call>, <function=...>), as an agent would",
+    "no_diff": "the reply holds no diff and no tool call: prose, a refusal, or code outside a unified diff",
+    "malformed_hunk": "a hunk header git cannot parse, such as `@@ def name(...)` or `@@ -def ...` with no line ranges",
+    "recount_header": "git apply --recount rejects a diff only because a file has no `diff --git` line, so the next "
+                      "file's ---/+++ headers count as hunk lines; it applies once one is added before each `--- ` (#940)",
+    "context_mismatch": "the hunks parse, but their context or removed lines are not in the base file, so git apply "
+                        "--recount fails (\"patch failed: <file>:<line>\")",
+    "wrong_fix": "the patch applied and at least one fail_to_pass test still fails",
+    "regression": "the patch applied, every fail_to_pass test passes, and a pass_to_pass test now fails",
+}
+#: The first class that fits wins: a row is labelled by the earliest step it failed at.
+PRECEDENCE = ("budget_exhausted", "tool_call", "no_diff", "malformed_hunk", "recount_header", "context_mismatch",
+              "wrong_fix", "regression")
+#: What a budget-exhausted reply's reasoning was doing when the budget cut it; unrecorded when the run kept none.
+AT_CUT = ("looping", "rereading", "drafting_diff", "other", "unrecorded")
 #: The runner's own classes, in the order the issue's table reports them.
 TALLY = ("pass", "token_budget_exhausted", "invalid_patch", "content_failed", "environment_error")
 UNLABELLED = ("environment_error",)
@@ -149,11 +167,29 @@ def kappa(a: list[dict], b: list[dict]) -> tuple[float | None, int]:
     return (observed - expected) / (1 - expected), n
 
 
-def sample(runs: list[Run], n: int, seed: int) -> list[tuple[str, str]]:
-    """A seeded random `n` of the labellable rows, for a second labeller who sees only the codebook."""
-    pool = sorted((run.name, r["case_id"]) for run in runs for r in run.rows
-                  if not r.get("passed") and r.get("failure_class") not in UNLABELLED)
-    return sorted(random.Random(seed).sample(pool, min(n, len(pool))))
+def sample(runs: list[Run], n: int, seed: int, stratify: bool = False, skip=()) -> list[tuple[str, str]]:
+    """A seeded random `n` of the labellable rows; stratified, an even share of each (run, runner class)."""
+    strata: dict[tuple[str, str], list[tuple[str, str]]] = {}
+    for run in runs:
+        for r in run.rows:
+            cls = r.get("failure_class")
+            if not r.get("passed") and cls not in UNLABELLED and cls not in skip:
+                strata.setdefault((run.name, cls) if stratify else ("", ""), []).append((run.name, r["case_id"]))
+    rng = random.Random(seed)
+    pools = {k: rng.sample(sorted(v), len(v)) for k, v in sorted(strata.items())}
+    take = dict.fromkeys(pools, 0)
+    while sum(take.values()) < n and any(take[k] < len(pools[k]) for k in pools):
+        open_ = [k for k in pools if take[k] < len(pools[k])]
+        k = min(open_, key=lambda k: (take[k], -len(pools[k]), k))
+        take[k] += 1
+    return sorted(x for k in pools for x in pools[k][:take[k]])
+
+
+def disagreements(a: list[dict], b: list[dict]) -> list[tuple[str, str, str, str]]:
+    """(run, case, a's class, b's class) for each row both labelled differently."""
+    mine = {(x["run"], x["case"]): x["class"] for x in a}
+    theirs = {(x["run"], x["case"]): x["class"] for x in b}
+    return [(*k, mine[k], theirs[k]) for k in sorted(set(mine) & set(theirs)) if mine[k] != theirs[k]]
 
 
 def arm_check(receipt: dict, arm: str) -> list[str]:
@@ -240,8 +276,15 @@ def _arms(args) -> int:
     return 0
 
 
+def _codebook(args) -> int:
+    for cls in PRECEDENCE:
+        print(f"{cls} ({CODEBOOK[cls]}): {DEFINITIONS[cls]}")
+    print(f"\nThe first class that fits wins, in the order above. at_cut is one of {', '.join(AT_CUT)}.")
+    return 0
+
+
 def _sample(args) -> int:
-    for run, case in sample([load_run(p) for p in args.runs], args.n, args.seed):
+    for run, case in sample([load_run(p) for p in args.runs], args.n, args.seed, args.stratify, args.skip):
         print(f"{run}\t{case}")
     return 0
 
@@ -249,6 +292,8 @@ def _sample(args) -> int:
 def _kappa(args) -> int:
     value, n = kappa(load_labels(args.a), load_labels(args.b))
     print("no rows labelled by both" if value is None else f"Cohen's kappa {value:.3f} over {n} rows")
+    for run, case, x, y in disagreements(load_labels(args.a), load_labels(args.b)):
+        print(f"  {run} {case}: {x} / {y}")
     return 0
 
 
@@ -277,7 +322,11 @@ def main(argv: list[str] | None = None) -> int:
     s.add_argument("runs", nargs="+")
     s.add_argument("--n", type=int, default=25)
     s.add_argument("--seed", type=int, default=921)
+    s.add_argument("--stratify", action="store_true", help="an even share of each (run, runner class)")
+    s.add_argument("--skip", action="append", default=[], help="a runner class to leave out; repeatable")
     s.set_defaults(fn=_sample)
+    c = sub.add_parser("codebook", help="each label class, whose fault it is, its definition and precedence")
+    c.set_defaults(fn=_codebook)
     k = sub.add_parser("kappa", help="Cohen's kappa of two label files over the rows both labelled")
     k.add_argument("a")
     k.add_argument("b")
