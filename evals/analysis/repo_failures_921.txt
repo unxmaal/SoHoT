@@ -7,7 +7,9 @@ run                                      rows         pass token_budget invalid_
 20261016-210012-526-0000-repo labels: budget_exhausted 19 (harness), context_mismatch 5 (model), malformed_hunk 2 (model), regression 1 (model), tool_call 3 (protocol), wrong_fix 3 (model)
   at the cut: unrecorded 19
 
-20261016-225321-316-0000-repo labels: context_mismatch 3 (model), recount_header 4 (harness), wrong_fix 18 (model)
+20261016-225321-316-0000-repo regraded: 4, now resolved: sohot-404-spec
+
+20261016-225321-316-0000-repo labels: context_mismatch 3 (model), wrong_fix 21 (model)
 
 20261016-230724-857-0000-repo labels: context_mismatch 28 (model), wrong_fix 9 (model)
 
@@ -44,4 +46,4 @@ $ python -m evals.analysis.repo_failures sample <run 466> <run 467> <run 470> --
 20261016-230724-857-0000-repo	sohot-879-symptom
 
 $ python -m evals.analysis.repo_failures kappa evals/analysis/repo_failure_labels.jsonl evals/analysis/repo_failure_labels_blind.jsonl
-Cohen's kappa 1.000 over 30 rows
+Cohen's kappa 1.000 over 29 rows

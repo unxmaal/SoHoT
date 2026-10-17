@@ -10,6 +10,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 LABELS = Path(__file__).resolve().parent / "repo_failure_labels.jsonl"
+#: Rows graded again from their stored diffs (`soh cases regrade repo --json`), with the run each came from. #940.
+REGRADES = LABELS.with_name("repo_regrades.jsonl")
 
 #: Label class -> whose fault it is: the model, the lane's prompt or protocol, or the harness.
 CODEBOOK = {
@@ -129,8 +131,30 @@ def load_labels(path=LABELS) -> list[dict]:
     return out
 
 
-def check_excerpt(run_dir, label: dict) -> str:
-    """"" when the label's excerpt is the bytes at its offset in its file under the run directory, else why not."""
+def load_regrades(path=REGRADES) -> dict:
+    """{(run, case): regrade row}; a row missing a key is refused."""
+    out, path = {}, Path(path)
+    if not path.is_file():
+        return out
+    for n, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+        if line.strip():
+            got = json.loads(line)
+            missing = {"run", "case", "file", "resolved", "patch_applied", "detail"} - set(got)
+            if missing:
+                raise ValueError(f"{path.name}:{n}: missing {', '.join(sorted(missing))}")
+            out[(got["run"], got["case"])] = got
+    return out
+
+
+def check_excerpt(run_dir, label: dict, regrades=None) -> str:
+    """"" when the label's excerpt is the bytes at its offset in its file (or its regrade's detail), else why not."""
+    if label.get("regrade"):
+        again = (regrades or {}).get((Path(run_dir).name, label["case"]))
+        if again is None:
+            return "no regrade of this row"
+        want, at = label["excerpt"].encode("utf-8"), int(label["offset"])
+        got = again["detail"].encode("utf-8")[at:at + len(want)]
+        return "" if got == want else f"regrade detail@{at} reads {got[:60]!r}, not the cited excerpt"
     root = Path(run_dir).resolve()
     f = (root / label["file"]).resolve()
     if root not in f.parents:
@@ -143,12 +167,13 @@ def check_excerpt(run_dir, label: dict) -> str:
     return "" if got == want else f"{label['file']}@{at} reads {got[:60]!r}, not the cited excerpt"
 
 
-def unlabelled(run: Run, labels: list[dict]) -> list[str]:
-    """Failing rows of `run` no label covers, environment errors aside (#913 owns those)."""
+def unlabelled(run: Run, labels: list[dict], regrades=None) -> list[str]:
+    """Failing rows of `run` no label covers, environment errors and rows a regrade resolved aside."""
     have = {lab["case"] for lab in labels if lab["run"] == run.name}
+    fixed = {c for (r, c), g in (regrades or {}).items() if r == run.name and g["resolved"]}
     return sorted(r["case_id"] for r in run.rows
                   if not r.get("passed") and r.get("failure_class") not in UNLABELLED
-                  and r["case_id"] not in have)
+                  and r["case_id"] not in have | fixed)
 
 
 def kappa(a: list[dict], b: list[dict]) -> tuple[float | None, int]:
@@ -221,6 +246,7 @@ def locate(path, text: str) -> list[int]:
 def _tally(args) -> int:
     runs = [load_run(p) for p in args.runs]
     labels = load_labels(args.labels)
+    regrades = load_regrades(args.regrades)
     print(f"{'run':40} {'rows':>4} " + " ".join(f"{c[:12]:>12}" for c in TALLY) + "  other")
     for run in runs:
         got = tally(run)
@@ -229,7 +255,14 @@ def _tally(args) -> int:
     bad, missing = [], {}
     for run in runs:
         mine = [lab for lab in labels if lab["run"] == run.name]
-        bad += [f"{run.name} {lab['case']}: {why}" for lab in mine if (why := check_excerpt(run.path, lab))]
+        bad += [f"{run.name} {lab['case']}: {why}" for lab in mine
+                if (why := check_excerpt(run.path, lab, regrades))]
+        bad += [f"{run.name} {case}: labelled, but its regrade resolved" for lab in mine
+                if (g := regrades.get((run.name, case := lab["case"]))) and g["resolved"]]
+        again = [g for (r, _), g in sorted(regrades.items()) if r == run.name]
+        if again:
+            print(f"\n{run.name} regraded: {len(again)}, now resolved: "
+                  + (", ".join(g["case"] for g in again if g["resolved"]) or "none"))
         classes = Counter(lab["class"] for lab in mine)
         if classes:
             print(f"\n{run.name} labels: " + ", ".join(
@@ -237,7 +270,7 @@ def _tally(args) -> int:
             cuts = Counter(lab.get("at_cut") for lab in mine if lab["class"] == "budget_exhausted")
             if cuts:
                 print("  at the cut: " + ", ".join(f"{c} {n}" for c, n in sorted(cuts.items())))
-        missing[run.name] = unlabelled(run, labels)
+        missing[run.name] = unlabelled(run, labels, regrades)
     for name, cases in missing.items():
         if cases:
             print(f"\n{name}: {len(cases)} failing row(s) unlabelled: {', '.join(cases)}")
@@ -309,6 +342,7 @@ def main(argv: list[str] | None = None) -> int:
     t = sub.add_parser("tally", help="runner classes per run, label classes, excerpt check, unlabelled rows")
     t.add_argument("runs", nargs="+")
     t.add_argument("--labels", default=str(LABELS))
+    t.add_argument("--regrades", default=str(REGRADES), help="rows graded again from their stored diffs (#940)")
     t.add_argument("--complete", action="store_true", help="exit 1 while any failing row is unlabelled")
     t.set_defaults(fn=_tally)
     r = sub.add_parser("receipt", help="what the run's receipt says it sent; --arm checks it against an arm")

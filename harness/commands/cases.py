@@ -74,8 +74,9 @@ def _repo_regrade(root: Path, run: Path, only: list[str]) -> int:
         finally:
             a.close()
         was = stored.get("grade") or {}
-        rows.append({"file": path.name, "case": cid, "was_resolved": bool(was.get("resolved")),
-                     "was_applied": bool(was.get("patch_applied")), "resolved": g.resolved,
+        rows.append({"run": run.name, "file": path.name, "case": cid,
+                     "was_resolved": bool(was.get("resolved")), "was_applied": bool(was.get("patch_applied")),
+                     "resolved": g.resolved,
                      "patch_applied": g.patch_applied, "detail": g.detail})
         note(f"  {path.name}: {'resolved' if g.resolved else 'applied, unresolved' if g.patch_applied else 'invalid_patch'}"
              f" (was {'resolved' if was.get('resolved') else 'applied' if was.get('patch_applied') else 'invalid_patch'})"
