@@ -17,7 +17,7 @@ ERROR_RATE_MAX = 0.10
 
 SERVING = ("adoptions_pass_here", "no_reference_served", "served_matches_adoption", "gateway_errors")
 SCHEDULE = ("sweep_on_schedule",)
-VERDICTS = ("too_big_ceiling_current", "terminal_reason_coherent")
+VERDICTS = ("too_big_ceiling_current", "terminal_reason_coherent", "no_ranking_verdict")
 CHECKS = mc.INVARIANTS + SERVING + SCHEDULE + VERDICTS
 
 
@@ -126,6 +126,13 @@ def _terminal_reason_coherent(conn, pinned=None) -> tuple[list, list]:
     return bad, known
 
 
+def _no_ranking_verdict(conn) -> list:
+    """Terminal states a parent's download ranking wrote, held at 0. #954."""
+    from harness import memory_store as ms
+    return [f"verdict {r['verdict_id']} {r['name']}: ignored because a parent stopped ranking it"
+            for r in ms.unranked_terminal(conn)]
+
+
 def _when(at) -> str:
     import time
     return time.strftime("%Y-%m-%d %H:%M", time.localtime(at)) if at else "never"
@@ -194,6 +201,7 @@ def audit(path=None, config=None) -> dict:
         checks.append(mc._check("too_big_ceiling_current", stale))
         incoherent, pinned = _terminal_reason_coherent(conn)
         checks.append(mc._check("terminal_reason_coherent", incoherent))
+        checks.append(mc._check("no_ranking_verdict", _no_ranking_verdict(conn)))
         warnings = {"too_big_ceiling_current": mc._say(backlog)} if backlog and not stale else {}
         if pinned and not incoherent:
             warnings["terminal_reason_coherent"] = "pinned, awaiting a fix: " + mc._say(pinned)

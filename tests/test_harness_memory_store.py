@@ -313,17 +313,16 @@ def _queued_weight(db, repo, weight):
     ms.decide(db, weight, "queued", tier="inspect")
 
 
-def test_a_repo_retires_the_weights_it_no_longer_ranks(db):
-    """Re-inspecting used to only ADD, so the queue mixed picks from rankings
-    that no longer exist: DepthPro and sam3 sat there after #68 replaced the
-    rule that chose them."""
+def test_a_repo_drops_its_claim_on_the_weights_it_no_longer_ranks(db):
+    """A ranking change is about the repo's queue, so the weight goes back to inspect, not to ignored. #73, #954."""
     _queued_weight(db, "org/tool", "org/stale")
     _queued_weight(db, "org/tool", "org/current")
     got = ms.retire_unlisted(db, "org/tool", keep=["org/current"],
                              why="superseded")
     assert got == ["org/stale"]
-    assert "org/stale" in ms.settled(db)
-    assert "org/current" not in ms.settled(db)
+    assert not ms.settled(db)
+    assert ms.parents(db, "org/stale") == []
+    assert ms.parents(db, "org/current") == ["org/tool"]
 
 
 def test_a_weight_another_repo_still_names_is_not_retired(db):
