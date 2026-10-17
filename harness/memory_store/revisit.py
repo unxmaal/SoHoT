@@ -1,6 +1,7 @@
 """When a settled verdict may be asked again: until-conditions and receipts that are gone."""
 from __future__ import annotations
 
+import json
 import sqlite3
 from pathlib import Path
 import re
@@ -489,3 +490,50 @@ _UNTIL_FROM_DETAIL = tuple(
 
 #: A date this can order by comparing strings. Anything else is not met.
 _ISO_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}")
+
+
+#: The fetch decline an attachment word wrote; its proposal is held by that word.
+ATTACHMENT_DECLINE = "attaches to a model rather than being one"
+
+
+def stale_attachments(conn, every: bool = False) -> list[dict]:
+    """HF proposals whose attaches_to an older rule set: a description backfill, or a word its tags no longer give. #949."""
+    from harness import screen
+    from harness.memory_store.schema import HUGGINGFACE
+    rows = conn.execute("SELECT p.name, p.attaches_to, p.card_read, p.card_tags, p.state, v.detail "
+                        "FROM proposals p LEFT JOIN verdicts v ON v.id = p.state_verdict_id "
+                        "WHERE p.attaches_to != '' AND p.registry = ? ORDER BY p.name",
+                        (HUGGINGFACE,)).fetchall()
+    out = []
+    for r in rows:
+        try:
+            tags = json.loads(r["card_tags"] or "[]")
+        except ValueError:
+            tags = []
+        if every or r["card_read"] != "card" or not screen.tags_support(r["attaches_to"], tags):
+            out.append(dict(r))
+    return out
+
+
+def rederive_attachments(conn, read=None, every: bool = False) -> dict:
+    """Re-read each stale attachment's card under the current rule; requeue a decline it no longer holds. #949."""
+    from harness import inspect as ins
+    read = read or ins.hf_model
+    got = {"read": 0, "changed": [], "requeued": [], "unread": [], "gone": []}
+    for r in stale_attachments(conn, every=every):
+        try:
+            card = ins.card_facts(read(r["name"]))
+        except ins.InspectError as exc:
+            got["gone" if isinstance(exc, ins.Gone) else "unread"].append(f"{r['name']}: {exc}")
+            continue
+        got["read"] += 1
+        ms.set_card(conn, r["name"], card)
+        if card.attaches_to == r["attaches_to"]:
+            continue
+        got["changed"].append({"name": r["name"], "was": r["attaches_to"], "now": card.attaches_to})
+        if not card.attaches_to and r["state"] == "declined" and ATTACHMENT_DECLINE in (r["detail"] or ""):
+            retract(conn, r["name"], f"{r['attaches_to']} was an older rule's reading of its card; "
+                                     f"its tags and listing say it is a model (#949)")
+            got["requeued"].append(r["name"])
+    conn.commit()
+    return got

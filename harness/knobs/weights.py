@@ -2,6 +2,8 @@
 from harness.knobs.base import GIB, MACHINE, _k
 
 KNOBS = [
+    _k("adapter_floor", ["harness/screen.py:ADAPTER_FLOOR_BYTES"], [1 * GIB, 2 * GIB, 4 * GIB, 8 * GIB],
+       note="loose weights under this, named a LoRA or adapter by a tag, are an attachment (#949)"),
     _k("clone_kb_cap", ["harness/inspect.py:CLONE_KB_CAP"], [10_000, 50_000, 250_000, 1_000_000],
        probe="clone_kb_cap", note="source tree size above which a repo is weights in git"),
     _k("dead_days", ["harness/inspect.py:UPSTREAM_DEAD_DAYS"], [180, 365, 730, 1095, 3650], probe="dead_days",

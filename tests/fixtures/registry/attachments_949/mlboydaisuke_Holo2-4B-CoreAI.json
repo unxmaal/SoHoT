@@ -1,0 +1,101 @@
+{
+"id": "mlboydaisuke/Holo2-4B-CoreAI",
+"pipeline_tag": "image-text-to-text",
+"library_name": "coreai",
+"tags": [
+"coreai",
+"coreai-aimodel",
+"core-ai",
+"coreml",
+"on-device",
+"ios",
+"iphone",
+"vision-language",
+"gui-grounding",
+"computer-use",
+"qwen3-vl",
+"image-text-to-text",
+"en",
+"base_model:Hcompany/Holo2-4B",
+"base_model:quantized:Hcompany/Holo2-4B",
+"license:apache-2.0",
+"region:us"
+],
+"config": {
+"model_type": "coreai-aimodel"
+},
+"siblings": [
+{
+"rfilename": ".gitattributes",
+"size": 1845
+},
+{
+"rfilename": "LICENSE",
+"size": 196
+},
+{
+"rfilename": "README.md",
+"size": 6273
+},
+{
+"rfilename": "config.json",
+"size": 307
+},
+{
+"rfilename": "gpu-pipelined/holo2_4b_decode_int8lin_s1/holo2_4b_decode_int8lin_s1.aimodel/main.hash",
+"size": 32
+},
+{
+"rfilename": "gpu-pipelined/holo2_4b_decode_int8lin_s1/holo2_4b_decode_int8lin_s1.aimodel/main.mlirb",
+"size": 4639657201
+},
+{
+"rfilename": "gpu-pipelined/holo2_4b_decode_int8lin_s1/holo2_4b_decode_int8lin_s1.aimodel/metadata.json",
+"size": 105
+},
+{
+"rfilename": "gpu-pipelined/holo2_4b_decode_int8lin_s1/metadata.json",
+"size": 576
+},
+{
+"rfilename": "gpu-pipelined/holo2_4b_decode_int8lin_s1/tokenizer/added_tokens.json",
+"size": 707
+},
+{
+"rfilename": "gpu-pipelined/holo2_4b_decode_int8lin_s1/tokenizer/chat_template.jinja",
+"size": 5287
+},
+{
+"rfilename": "gpu-pipelined/holo2_4b_decode_int8lin_s1/tokenizer/merges.txt",
+"size": 1671853
+},
+{
+"rfilename": "gpu-pipelined/holo2_4b_decode_int8lin_s1/tokenizer/special_tokens_map.json",
+"size": 613
+},
+{
+"rfilename": "gpu-pipelined/holo2_4b_decode_int8lin_s1/tokenizer/tokenizer.json",
+"size": 11422654
+},
+{
+"rfilename": "gpu-pipelined/holo2_4b_decode_int8lin_s1/tokenizer/tokenizer_config.json",
+"size": 5445
+},
+{
+"rfilename": "gpu-pipelined/holo2_4b_decode_int8lin_s1/tokenizer/vocab.json",
+"size": 2776833
+},
+{
+"rfilename": "gpu-pipelined/holo2_4b_vision/holo2_4b_vision.aimodel/main.hash",
+"size": 32
+},
+{
+"rfilename": "gpu-pipelined/holo2_4b_vision/holo2_4b_vision.aimodel/main.mlirb",
+"size": 828033958
+},
+{
+"rfilename": "gpu-pipelined/holo2_4b_vision/holo2_4b_vision.aimodel/metadata.json",
+"size": 105
+}
+]
+}

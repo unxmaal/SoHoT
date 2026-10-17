@@ -1,0 +1,107 @@
+{
+"id": "neuralvfx/Z-Image-SAM-ControlNet",
+"pipeline_tag": null,
+"library_name": "diffusers",
+"tags": [
+"diffusers",
+"safetensors",
+"z-image",
+"controlnet",
+"dataset:opendiffusionai/laion2b-squareish-1536px",
+"base_model:Tongyi-MAI/Z-Image",
+"base_model:adapter:Tongyi-MAI/Z-Image",
+"license:apache-2.0",
+"region:us"
+],
+"config": {},
+"siblings": [
+{
+"rfilename": ".gitattributes",
+"size": 426
+},
+{
+"rfilename": ".gitignore",
+"size": 38
+},
+{
+"rfilename": "README.md",
+"size": 3742
+},
+{
+"rfilename": "assets/comfyui.png",
+"size": 69660
+},
+{
+"rfilename": "assets/gallery.png",
+"size": 657897
+},
+{
+"rfilename": "assets/girl_icon.png",
+"size": 459628
+},
+{
+"rfilename": "assets/resized_dread_girl.png",
+"size": 2114661
+},
+{
+"rfilename": "assets/resized_dread_girl_seg.png",
+"size": 274826
+},
+{
+"rfilename": "assets/resized_house.png",
+"size": 1281915
+},
+{
+"rfilename": "assets/resized_house_seg.png",
+"size": 217329
+},
+{
+"rfilename": "assets/resized_kitten.png",
+"size": 1553024
+},
+{
+"rfilename": "assets/resized_kitten_seg.png",
+"size": 186041
+},
+{
+"rfilename": "assets/side_by_side_d.png",
+"size": 1335065
+},
+{
+"rfilename": "assets/stacked_vertical.png",
+"size": 863196
+},
+{
+"rfilename": "assets/z-image.png",
+"size": 33675
+},
+{
+"rfilename": "comfy-ui-patch/z-image-control.json",
+"size": 21965
+},
+{
+"rfilename": "comfy-ui-patch/z-image-sam-controlnet.safetensors",
+"size": 6712485600
+},
+{
+"rfilename": "config.json",
+"size": 813
+},
+{
+"rfilename": "diffusers_local/patch.py",
+"size": 22705
+},
+{
+"rfilename": "diffusers_local/pipeline_z_image_control_unified.py",
+"size": 49340
+},
+{
+"rfilename": "diffusers_local/z_image_control_transformer_2d.py",
+"size": 63845
+},
+{
+"rfilename": "diffusion_pytorch_model.safetensors",
+"size": 19022360384
+}
+]
+}

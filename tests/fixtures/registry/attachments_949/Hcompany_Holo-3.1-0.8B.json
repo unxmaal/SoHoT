@@ -1,0 +1,85 @@
+{
+"id": "Hcompany/Holo-3.1-0.8B",
+"pipeline_tag": "image-text-to-text",
+"library_name": "transformers",
+"tags": [
+"transformers",
+"safetensors",
+"qwen3_5",
+"image-text-to-text",
+"multimodal",
+"action",
+"agent",
+"pytorch",
+"computer use",
+"gui agents",
+"moe",
+"conversational",
+"en",
+"base_model:Qwen/Qwen3.5-0.8B",
+"base_model:finetune:Qwen/Qwen3.5-0.8B",
+"license:apache-2.0",
+"endpoints_compatible",
+"region:us"
+],
+"config": {
+"architectures": [
+"Qwen3_5ForConditionalGeneration"
+],
+"model_type": "qwen3_5"
+},
+"siblings": [
+{
+"rfilename": ".gitattributes",
+"size": 1570
+},
+{
+"rfilename": "README.md",
+"size": 2927
+},
+{
+"rfilename": "chat_template.jinja",
+"size": 7755
+},
+{
+"rfilename": "config.json",
+"size": 2579
+},
+{
+"rfilename": "latest",
+"size": 5
+},
+{
+"rfilename": "merges.txt",
+"size": 3353259
+},
+{
+"rfilename": "model-00001-of-00001.safetensors",
+"size": 2214629376
+},
+{
+"rfilename": "model.safetensors.index.json",
+"size": 43961
+},
+{
+"rfilename": "preprocessor_config.json",
+"size": 390
+},
+{
+"rfilename": "tokenizer.json",
+"size": 12807982
+},
+{
+"rfilename": "tokenizer_config.json",
+"size": 16709
+},
+{
+"rfilename": "video_preprocessor_config.json",
+"size": 385
+},
+{
+"rfilename": "vocab.json",
+"size": 6722759
+}
+]
+}

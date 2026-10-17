@@ -1,0 +1,104 @@
+{
+"id": "mlx-community/all-MiniLM-L6-v2-4bit",
+"pipeline_tag": "sentence-similarity",
+"library_name": "sentence-transformers",
+"tags": [
+"sentence-transformers",
+"safetensors",
+"bert",
+"feature-extraction",
+"sentence-similarity",
+"transformers",
+"mlx",
+"en",
+"dataset:s2orc",
+"dataset:flax-sentence-embeddings/stackexchange_xml",
+"dataset:ms_marco",
+"dataset:gooaq",
+"dataset:yahoo_answers_topics",
+"dataset:code_search_net",
+"dataset:search_qa",
+"dataset:eli5",
+"dataset:snli",
+"dataset:multi_nli",
+"dataset:wikihow",
+"dataset:natural_questions",
+"dataset:trivia_qa",
+"dataset:embedding-data/sentence-compression",
+"dataset:embedding-data/flickr30k-captions",
+"dataset:embedding-data/altlex",
+"dataset:embedding-data/simple-wiki",
+"dataset:embedding-data/QQP",
+"dataset:embedding-data/SPECTER",
+"dataset:embedding-data/PAQ_pairs",
+"dataset:embedding-data/WikiAnswers",
+"license:apache-2.0",
+"text-embeddings-inference",
+"endpoints_compatible",
+"region:us"
+],
+"config": {
+"architectures": [
+"BertModel"
+],
+"model_type": "bert"
+},
+"siblings": [
+{
+"rfilename": ".gitattributes",
+"size": 1519
+},
+{
+"rfilename": "README.md",
+"size": 1491
+},
+{
+"rfilename": "config.json",
+"size": 674
+},
+{
+"rfilename": "config_sentence_transformers.json",
+"size": 116
+},
+{
+"rfilename": "data_config.json",
+"size": 39265
+},
+{
+"rfilename": "model.safetensors",
+"size": 12840715
+},
+{
+"rfilename": "model.safetensors.index.json",
+"size": 13488
+},
+{
+"rfilename": "modules.json",
+"size": 349
+},
+{
+"rfilename": "sentence_bert_config.json",
+"size": 53
+},
+{
+"rfilename": "special_tokens_map.json",
+"size": 695
+},
+{
+"rfilename": "tokenizer.json",
+"size": 711661
+},
+{
+"rfilename": "tokenizer_config.json",
+"size": 1464
+},
+{
+"rfilename": "train_script.py",
+"size": 13156
+},
+{
+"rfilename": "vocab.txt",
+"size": 231508
+}
+]
+}

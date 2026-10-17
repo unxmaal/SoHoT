@@ -1,0 +1,141 @@
+{
+"id": "black-forest-labs/FLUX.2-klein-9B",
+"pipeline_tag": "image-to-image",
+"library_name": "diffusers",
+"tags": [
+"diffusers",
+"safetensors",
+"image-generation",
+"image-editing",
+"flux",
+"diffusion-single-file",
+"image-to-image",
+"en",
+"license:other",
+"diffusers:Flux2KleinPipeline",
+"region:us"
+],
+"config": {
+"diffusers": {
+"_class_name": "Flux2KleinPipeline"
+}
+},
+"siblings": [
+{
+"rfilename": ".gitattributes",
+"size": 1580
+},
+{
+"rfilename": "LICENSE.md",
+"size": 18158
+},
+{
+"rfilename": "README.md",
+"size": 10404
+},
+{
+"rfilename": "editing.jpg",
+"size": 2506178
+},
+{
+"rfilename": "flux-2-klein-9b.safetensors",
+"size": 18157185168
+},
+{
+"rfilename": "model_index.json",
+"size": 446
+},
+{
+"rfilename": "others.jpg",
+"size": 3386946
+},
+{
+"rfilename": "realism.jpg",
+"size": 2855711
+},
+{
+"rfilename": "scheduler/scheduler_config.json",
+"size": 486
+},
+{
+"rfilename": "text_encoder/config.json",
+"size": 1538
+},
+{
+"rfilename": "text_encoder/generation_config.json",
+"size": 214
+},
+{
+"rfilename": "text_encoder/model-00001-of-00004.safetensors",
+"size": 4902257696
+},
+{
+"rfilename": "text_encoder/model-00002-of-00004.safetensors",
+"size": 4915960368
+},
+{
+"rfilename": "text_encoder/model-00003-of-00004.safetensors",
+"size": 4983068496
+},
+{
+"rfilename": "text_encoder/model-00004-of-00004.safetensors",
+"size": 1580230264
+},
+{
+"rfilename": "text_encoder/model.safetensors.index.json",
+"size": 32914
+},
+{
+"rfilename": "tokenizer/added_tokens.json",
+"size": 707
+},
+{
+"rfilename": "tokenizer/chat_template.jinja",
+"size": 4168
+},
+{
+"rfilename": "tokenizer/merges.txt",
+"size": 1671853
+},
+{
+"rfilename": "tokenizer/special_tokens_map.json",
+"size": 613
+},
+{
+"rfilename": "tokenizer/tokenizer.json",
+"size": 11422654
+},
+{
+"rfilename": "tokenizer/tokenizer_config.json",
+"size": 5404
+},
+{
+"rfilename": "tokenizer/vocab.json",
+"size": 2776833
+},
+{
+"rfilename": "transformer/config.json",
+"size": 542
+},
+{
+"rfilename": "transformer/diffusion_pytorch_model-00001-of-00002.safetensors",
+"size": 9801069272
+},
+{
+"rfilename": "transformer/diffusion_pytorch_model-00002-of-00002.safetensors",
+"size": 8356121608
+},
+{
+"rfilename": "transformer/diffusion_pytorch_model.safetensors.index.json",
+"size": 24875
+},
+{
+"rfilename": "vae/config.json",
+"size": 821
+},
+{
+"rfilename": "vae/diffusion_pytorch_model.safetensors",
+"size": 168120878
+}
+]
+}

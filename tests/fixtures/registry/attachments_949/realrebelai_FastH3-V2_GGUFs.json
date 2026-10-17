@@ -1,0 +1,55 @@
+{
+"id": "realrebelai/FastH3-V2_GGUFs",
+"pipeline_tag": "text-to-video",
+"library_name": "comfyui",
+"tags": [
+"comfyui",
+"gguf",
+"video",
+"text-to-video",
+"minimax",
+"minimax-h3",
+"fastvideo",
+"fasth3",
+"quantization",
+"base_model:FastVideo/FastVideo-FastH3-8-Step-V2",
+"base_model:quantized:FastVideo/FastVideo-FastH3-8-Step-V2",
+"license:other",
+"region:us"
+],
+"config": {},
+"siblings": [
+{
+"rfilename": ".gitattributes",
+"size": 1837
+},
+{
+"rfilename": "FastH3---FL2VA (WORKFLOW).json",
+"size": 25664
+},
+{
+"rfilename": "FastH3---T2V (WORKFLOW).json",
+"size": 23217
+},
+{
+"rfilename": "FastH3-8-Step-V2-Q4_K_M.gguf",
+"size": 19840127552
+},
+{
+"rfilename": "FastH3-8-Step-V2-Q5_K_M.gguf",
+"size": 24211460672
+},
+{
+"rfilename": "README.md",
+"size": 7704
+},
+{
+"rfilename": "Text Encoders/qwen3vl-32B-MiniMax-H3-Q2_K.gguf",
+"size": 8487968160
+},
+{
+"rfilename": "Text Encoders/qwen3vl-32B-MiniMax-H3-Q4_K_M.gguf",
+"size": 14576977888
+}
+]
+}

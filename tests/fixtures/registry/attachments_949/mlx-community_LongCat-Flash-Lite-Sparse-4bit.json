@@ -1,0 +1,103 @@
+{
+"id": "mlx-community/LongCat-Flash-Lite-Sparse-4bit",
+"pipeline_tag": "text-generation",
+"library_name": "mlx",
+"tags": [
+"mlx",
+"safetensors",
+"longcat_flash_sparse",
+"longcat",
+"lsa",
+"moe",
+"ngram-embedding",
+"text-generation",
+"conversational",
+"en",
+"zh",
+"base_model:meituan-longcat/LongCat-Flash-Lite-Sparse",
+"base_model:quantized:meituan-longcat/LongCat-Flash-Lite-Sparse",
+"license:mit",
+"4-bit",
+"region:us"
+],
+"config": {
+"architectures": [
+"LongcatCausalLM"
+],
+"model_type": "longcat_flash_sparse"
+},
+"siblings": [
+{
+"rfilename": ".gitattributes",
+"size": 1519
+},
+{
+"rfilename": "README.md",
+"size": 3430
+},
+{
+"rfilename": "chat_template.jinja",
+"size": 10110
+},
+{
+"rfilename": "config.json",
+"size": 5787
+},
+{
+"rfilename": "generation_config.json",
+"size": 215
+},
+{
+"rfilename": "model-00001-of-00008.safetensors",
+"size": 4643097497
+},
+{
+"rfilename": "model-00002-of-00008.safetensors",
+"size": 4416607252
+},
+{
+"rfilename": "model-00003-of-00008.safetensors",
+"size": 4416609836
+},
+{
+"rfilename": "model-00004-of-00008.safetensors",
+"size": 5327891749
+},
+{
+"rfilename": "model-00005-of-00008.safetensors",
+"size": 5348043880
+},
+{
+"rfilename": "model-00006-of-00008.safetensors",
+"size": 5366577377
+},
+{
+"rfilename": "model-00007-of-00008.safetensors",
+"size": 5351455810
+},
+{
+"rfilename": "model-00008-of-00008.safetensors",
+"size": 3734215463
+},
+{
+"rfilename": "model.safetensors.index.json",
+"size": 131524
+},
+{
+"rfilename": "special_tokens_map.json",
+"size": 584
+},
+{
+"rfilename": "tokenization_llama.py",
+"size": 8613
+},
+{
+"rfilename": "tokenizer.json",
+"size": 10238236
+},
+{
+"rfilename": "tokenizer_config.json",
+"size": 371
+}
+]
+}

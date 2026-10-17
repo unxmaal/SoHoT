@@ -76,11 +76,14 @@ def _mine() -> dict | None:
 
 #: When a loop last handed stale too-big refusals back to inspect; kept across loops. #904.
 REOPENED_TOO_BIG = "reopened_too_big"
+#: When a loop last re-read every attachment's card under #949's rule; kept across loops.
+REDERIVED_ATTACHMENTS = "rederived_attachments_949"
+KEPT = (REOPENED_TOO_BIG, REDERIVED_ATTACHMENTS)
 
 
 def start(lane: str = "", total: int = 0) -> dict:
     now = clock()
-    kept = {k: v for k, v in (read() or {}).items() if k == REOPENED_TOO_BIG}
+    kept = {k: v for k, v in (read() or {}).items() if k in KEPT}
     data = {**kept, "state": RUNNING, "pid": os.getpid(), "lane": lane, "tier": "",
             "candidate": "", "step": 0, "total": int(total), "item": 0, "items": 0,
             "started": now, "updated": now, "finished": None, "rc": None, "error": ""}

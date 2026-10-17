@@ -1,0 +1,99 @@
+{
+"id": "FINAL-Bench/Darwin-4B-David",
+"pipeline_tag": "text-generation",
+"library_name": "transformers",
+"tags": [
+"transformers",
+"safetensors",
+"gemma4",
+"image-text-to-text",
+"darwin-v6",
+"generation-2",
+"evolutionary-merge",
+"mri-guided",
+"dare-ties",
+"reasoning",
+"thinking",
+"proto-agi",
+"vidraft",
+"text-generation",
+"conversational",
+"en",
+"ko",
+"ja",
+"zh",
+"multilingual",
+"arxiv:2311.03099",
+"arxiv:2510.13940",
+"arxiv:2605.14386",
+"license:apache-2.0",
+"model-index",
+"eval-results",
+"endpoints_compatible",
+"region:us"
+],
+"config": {
+"architectures": [
+"Gemma4ForConditionalGeneration"
+],
+"model_type": "gemma4"
+},
+"siblings": [
+{
+"rfilename": ".eval_results/gpqa_diamond.yaml",
+"size": 226
+},
+{
+"rfilename": ".gitattributes",
+"size": 2027
+},
+{
+"rfilename": "README.md",
+"size": 15706
+},
+{
+"rfilename": "chat_template.jinja",
+"size": 11926
+},
+{
+"rfilename": "config.json",
+"size": 2942
+},
+{
+"rfilename": "family.png",
+"size": 241972
+},
+{
+"rfilename": "generation_config.json",
+"size": 284
+},
+{
+"rfilename": "info.png",
+"size": 4053403
+},
+{
+"rfilename": "model.safetensors",
+"size": 15992595852
+},
+{
+"rfilename": "parent_comparison.png",
+"size": 143677
+},
+{
+"rfilename": "s1.png",
+"size": 448952
+},
+{
+"rfilename": "s2.png",
+"size": 514443
+},
+{
+"rfilename": "tokenizer.json",
+"size": 32169626
+},
+{
+"rfilename": "tokenizer_config.json",
+"size": 2685
+}
+]
+}

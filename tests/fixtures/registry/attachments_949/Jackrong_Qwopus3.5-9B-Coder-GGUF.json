@@ -1,0 +1,73 @@
+{
+"id": "Jackrong/Qwopus3.5-9B-Coder-GGUF",
+"pipeline_tag": "image-text-to-text",
+"library_name": "transformers",
+"tags": [
+"transformers",
+"gguf",
+"llama.cpp",
+"image-text-to-text",
+"vision",
+"multimodal",
+"text-generation-inference",
+"unsloth",
+"conversational",
+"qwen3_5",
+"reasoning",
+"chain-of-thought",
+"lora",
+"sft",
+"agent",
+"tool-use",
+"function-calling",
+"coder",
+"en",
+"zh",
+"es",
+"ru",
+"ja",
+"dataset:lambda/hermes-agent-reasoning-traces",
+"dataset:Jackrong/Claude-opus-4.7-TraceInversion-5000x",
+"dataset:Jackrong/Claude-opus-4.6-TraceInversion-9000x",
+"base_model:Jackrong/Qwopus3.5-9B-v3.5",
+"base_model:adapter:Jackrong/Qwopus3.5-9B-v3.5",
+"license:apache-2.0",
+"endpoints_compatible",
+"region:us"
+],
+"config": {},
+"siblings": [
+{
+"rfilename": ".gitattributes",
+"size": 2463
+},
+{
+"rfilename": "Qwopus3.5-9B-coder-Exp-Q3_K_M.gguf",
+"size": 4623526880
+},
+{
+"rfilename": "Qwopus3.5-9B-coder-Exp-Q4_K_M.gguf",
+"size": 5629111264
+},
+{
+"rfilename": "Qwopus3.5-9B-coder-Exp-Q5_K_M.gguf",
+"size": 6467972064
+},
+{
+"rfilename": "Qwopus3.5-9B-coder-Exp-Q6_K.gguf",
+"size": 7359261664
+},
+{
+"rfilename": "Qwopus3.5-9B-coder-Exp-Q8_0.gguf",
+"size": 9527503840
+},
+{
+"rfilename": "README.md",
+"size": 33553
+},
+{
+"rfilename": "mmproj-F32.gguf",
+"size": 921704480
+}
+]
+}
