@@ -763,6 +763,8 @@ class Receipt:
     requests: dict = field(default_factory=dict)
     #: receipt key -> the sampler its server applies to a key no request names. #921.
     server_sampling: dict = field(default_factory=dict)
+    #: case id -> this machine's latest repo-case validation verdict (evals.repo.verdicts). Not an axis. #920.
+    validation: dict = field(default_factory=dict)
 
     def as_dict(self) -> dict:
         return {"modality": self.modality, "case_ids": list(self.case_ids),
@@ -788,7 +790,8 @@ class Receipt:
                 "served": {k: dict(v) for k, v in self.served.items()},
                 "template": None if self.template is None else {k: dict(v) for k, v in self.template.items()},
                 "requests": {k: [dict(r) for r in v] for k, v in self.requests.items()},
-                "server_sampling": {k: dict(v) for k, v in self.server_sampling.items()}}
+                "server_sampling": {k: dict(v) for k, v in self.server_sampling.items()},
+                "validation": dict(self.validation)}
 
     @classmethod
     def from_dict(cls, raw: dict) -> "Receipt":
@@ -814,7 +817,8 @@ class Receipt:
                    machine=raw.get("machine") or "",
                    served=raw.get("served") or {}, template=raw.get("template"),
                    requests=raw.get("requests") or {},
-                   server_sampling=raw.get("server_sampling") or {})
+                   server_sampling=raw.get("server_sampling") or {},
+                   validation=raw.get("validation") or {})
 
 
 def legacy_knobs(raw: dict) -> dict:

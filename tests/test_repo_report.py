@@ -130,9 +130,17 @@ def _pilot_rows():
 
 
 def _repo_cases():
-    from evals.core import load_cases
-    from evals.importers import CASES
-    return load_cases(CASES / "repo")
+    """The 41 cases the pilot ran on, the ones #920 dropped afterwards included."""
+    from evals.core import Case, load_cases
+    from evals.importers import CASES, history
+    held = dict(history.DROPPED)
+    history.DROPPED.clear()
+    try:
+        made = [history.convert(r).case for r in history.fetch()]
+    finally:
+        history.DROPPED.update(held)
+    own = [c for c in load_cases(CASES / "repo") if "history" not in c.source.parts]
+    return own + [Case(id=c["id"], modality=c["modality"], prompt=c["prompt"], params=c["params"]) for c in made]
 
 
 def test_the_pilot_reads_as_the_store_does():
@@ -141,6 +149,10 @@ def test_the_pilot_reads_as_the_store_does():
     assert (rep["baseline"], rep["candidate"]) == (ORNITH, OPUS)
     assert (v["rates"][OPUS]["all"]["resolved"], v["rates"][OPUS]["all"]["n"]) == (11, 36)
     assert (v["rates"][ORNITH]["all"]["resolved"], v["rates"][ORNITH]["all"]["n"]) == (3, 36)
+    f = rep["fair"]["views"]["limits as losses"]
+    assert (f["cases"], f["tasks"]) == (12, 7) and "sohot-858-spec" in rep["fair"]["unfair"]
+    assert (f["rates"][OPUS]["all"]["resolved"], f["rates"][ORNITH]["all"]["resolved"]) == (9, 3)
+    assert "limits as losses, fair subset: 12 cases from 7 tasks" in R.text(rep)
     assert v["rates"][OPUS]["all"]["ci95"] == [0.18, 0.4686] and v["rates"][ORNITH]["all"]["ci95"] == [0.0287, 0.2183]
     named = {rep["labels"][t] for t in v["only"][OPUS]}
     assert named == {"sohot-363", "sohot-374", "sohot-376", "sohot-788"} and v["only"][ORNITH] == []
@@ -230,8 +242,16 @@ def test_soh_repo_report_reads_the_store(store_run, tmp_path, capsys):
 
     from evals.core import cases_digest
     from harness import cli
+    import yaml
+
+    from evals.core import load_cases
     from harness import memory_store as ms
-    cases = _repo_cases()
+    pilot = tmp_path / "pilot"
+    pilot.mkdir()
+    for c in _repo_cases():
+        raw = {"id": c.id, "modality": c.modality, "prompt": c.prompt, "params": c.params}
+        (pilot / f"{c.id}.yaml").write_text(yaml.safe_dump(raw), encoding="utf-8")
+    cases = load_cases(pilot)
     receipt = {"case_ids": [c.id for c in cases], "repeat": 1, "max_tokens": 32768}
     conn = ms.connect(tmp_path / "s.db")
     rows = {466: [], 467: []}
@@ -241,13 +261,28 @@ def test_soh_repo_report_reads_the_store(store_run, tmp_path, capsys):
                      receipt=receipt) for n in (466, 467)]
     conn.close()
     assert cli.main(["repo-report", "--json", *map(str, ids), "--store", str(tmp_path / "s.db"),
-                     "--resamples", "200"]) == 0
+                     "--cases", str(pilot), "--resamples", "200"]) == 0
     got = json.loads(capsys.readouterr().out)
     assert got["ok"] and got["views"]["limits as losses"]["p"] == 0.125
-    assert cli.main(["repo-report", str(ids[0]), "--store", str(tmp_path / "s.db")]) == 1
+    assert cli.main(["repo-report", str(ids[0]), "--store", str(tmp_path / "s.db"), "--cases", str(pilot)]) == 1
 
 
 def test_there_is_one_wilson():
     from evals import claims_report
     from harness import intervals
     assert claims_report.wilson is intervals.wilson
+
+
+def test_an_empty_fair_subset_reports_beside_the_valid_set():
+    rep = R.report(_runs(466, 467), _pilot_rows(), _repo_cases(), resamples=50, fair=set())
+    assert rep["fair"]["views"]["limits as losses"]["cases"] == 0
+    assert "fair subset: 0 cases from 0 tasks" in R.text(rep)
+
+
+def test_a_case_the_receipt_validated_as_not_valid_is_set_aside():
+    runs = _runs(466, 467)
+    for r in runs:
+        r["receipt"]["validation"] = {"sohot-371-spec": "flaky: x"}
+    rep = R.report(runs, _pilot_rows(), _repo_cases(), resamples=50)
+    assert rep["set_aside"]["not_valid"] == ["sohot-371-spec"]
+    assert rep["views"]["limits as losses"]["cases"] == 35

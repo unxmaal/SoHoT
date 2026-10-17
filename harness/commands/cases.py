@@ -1,4 +1,4 @@
-"""`soh cases import|control|regrade <source>`: an importer, its negative control, or a repo run's stored diffs regraded. #603, #887, #940."""
+"""`soh cases import|control|regrade|labels <source>`: an importer, its control, a repo run regraded, fairness labels. #603, #887, #940, #920."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -15,6 +15,10 @@ def cmd_cases(a) -> int:
         if a.source != "repo" or not a.run:
             return err("regrade takes `repo --run <run dir>`")
         return _repo_regrade(Path(a.out) if a.out else importers.CASES, Path(a.run), a.case or [])
+    if a.action == "labels":
+        if a.source != "repo":
+            return err("only the repo lane has fairness labels")
+        return _repo_labels(Path(a.out) if a.out else importers.CASES, a.packets)
     try:
         mod = importers.module(a.source)
     except ValueError as exc:
@@ -35,20 +39,23 @@ def cmd_cases(a) -> int:
 
 
 def _repo_controls(root: Path) -> int:
-    from evals import repo
+    """Validate every repo case test by test and keep each verdict for evals.run to read. #920."""
+    import time
+    from evals import environment, repo
     from evals.core import load_cases
-    sound, got = True, {}
+    from harness import memory_store as ms
+    from harness import paths
+    machine = ms.this_machine()["fingerprint"]
+    commit = environment._sh("git", "-C", str(paths.REPO), "rev-parse", "--short=12", "HEAD")
+    got, counts, memo = {}, {}, {}
     for case in load_cases(root / "repo"):
-        try:
-            c = repo.controls(case.params)
-        except repo.RepoEnvError as exc:
-            return err(f"{case.id}: environment: {exc}")
-        ok = c["reference"]["resolved"] and not c["empty"]["resolved"]
-        sound &= ok
-        got[case.id] = c
-        note(f"  {case.id}: empty {'resolves' if c['empty']['resolved'] else 'fails'}, reference "
-             f"{'resolves' if c['reference']['resolved'] else 'fails: ' + c['reference']['detail']}"
-             f"{'' if ok else '  UNSOUND'}")
+        rec = repo.save_validation(case, repo.controls(case, memo=memo), machine, commit, time.time())
+        got[case.id] = rec["verdict"]
+        kind = rec["verdict"].split(":", 1)[0]
+        counts[kind] = counts.get(kind, 0) + 1
+        note(f"  {case.id}: {rec['verdict']}")
+    note("  " + ", ".join(f"{k} {n}" for k, n in sorted(counts.items())))
+    sound = bool(got) and set(counts) == {"valid"}
     emit(sound, control=got)
     return 0 if sound else 1
 
@@ -84,3 +91,31 @@ def _repo_regrade(root: Path, run: Path, only: list[str]) -> int:
         return err(f"no stored diff in {run} for {', '.join(sorted(set(only) - {r['case'] for r in rows}))}")
     emit(bool(rows), regraded=rows)
     return 0 if rows else 1
+
+
+def _repo_labels(root: Path, packets: str) -> int:
+    """Kappa per axis, the cases both labellers flag and those they dispute; or write labeller packets. #920."""
+    from evals import fairness
+    from evals.core import load_cases
+    cases = load_cases(root / "repo")
+    if packets:
+        out = Path(packets)
+        out.mkdir(parents=True, exist_ok=True)
+        for case in cases:
+            (out / f"{case.id}.md").write_text(fairness.packet(case), encoding="utf-8")
+        note(f"{len(cases)} packets under {out}")
+        return 0
+    labels = fairness.load(root / "repo" / fairness.LABELS.name)
+    wrong = fairness.check(labels, [c.id for c in cases])
+    if wrong:
+        for line in wrong:
+            note(f"  {line}")
+        return err(f"{len(wrong)} problem(s) in the labels")
+    got = fairness.summary(labels, [c.id for c in cases])
+    for axis, k in got["kappa"].items():
+        note(f"  kappa {axis}: {'undefined' if k is None else f'{k:.2f}'}")
+    for kind in ("flagged", "disputed"):
+        for cid, axes in sorted(got[kind].items()):
+            note(f"  {kind} {cid}: {', '.join(axes)}")
+    emit(True, **got)
+    return 0

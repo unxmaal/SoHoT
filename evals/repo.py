@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import os
 import re
 import shutil
@@ -18,6 +19,8 @@ SANDBOX_EXEC = "/usr/bin/sandbox-exec"
 TEST_TIMEOUT_S = 600.0
 ENV_TIMEOUT_S = 1800.0
 GIT_TIMEOUT_S = 600.0
+#: Runs per side a case control takes; an id whose outcome changes between them makes the case flaky. #920.
+VALIDATION_RUNS = 3
 _SHA = re.compile(r"^[0-9a-f]{40}$")
 #: Lock and manifest files whose bytes decide the environment; one venv per digest of them.
 ENV_FILES = ("uv.lock", "pyproject.toml", ".python-version")
@@ -454,19 +457,145 @@ class Attempt:
         discard(self.mirror, self.task)
 
 
-def controls(params: dict, env=None) -> dict:
-    """{empty: resolved?, reference: resolved?}: a sound task fails the first and passes the second."""
-    out = {}
-    for name in ("empty", "reference"):
-        a = Attempt.open(params, env)
+#: pytest on whole files, keeping only the named ids, so an id the base cannot collect is missing, not a usage error.
+_ONLY = ("import json, sys, pytest\n"
+         "want = set(json.load(open(sys.argv[1], encoding='utf-8')))\n"
+         "class Only:\n"
+         "    def pytest_collection_modifyitems(self, config, items):\n"
+         "        config.hook.pytest_deselected(items=[i for i in items if i.nodeid not in want])\n"
+         "        items[:] = [i for i in items if i.nodeid in want]\n"
+         "sys.exit(pytest.main(sys.argv[2:], plugins=[Only()]))\n")
+
+
+def _junit_outcomes(xml: Path) -> tuple[dict, set]:
+    """(junit key -> passed|failed|skipped|error, the test files that failed to collect)."""
+    out, broken = {}, set()
+    for case in ET.parse(xml).getroot().iter("testcase"):
+        tags = {child.tag for child in case}
+        if not case.get("classname") and "error" in tags:
+            broken.add((case.get("name") or "").replace(".", "/") + ".py")
+            continue
+        out[f"{case.get('classname') or ''}::{case.get('name') or ''}"] = (
+            "failed" if "failure" in tags else "error" if "error" in tags
+            else "skipped" if "skipped" in tags else "passed")
+    return out, broken
+
+
+def run_ids(task: Path, python: Path, ids) -> dict:
+    """{"ids": id -> passed|failed|skipped|error|missing, "error": why the run said nothing, else ""}."""
+    timeout = TEST_TIMEOUT_S
+    files = sorted({i.partition("::")[0] for i in ids})
+    report, want = task / HARNESS_DIR / "control.xml", task / HARNESS_DIR / "control.json"
+    report.parent.mkdir(parents=True, exist_ok=True)
+    report.unlink(missing_ok=True)
+    want.write_text(json.dumps(sorted(ids)), encoding="utf-8")
+    rc, tail, late = run_sandboxed([str(python), "-c", _ONLY, str(want), "-p", "no:cacheprovider", "-q",
+                                    "-o", "addopts=", "--continue-on-collection-errors",
+                                    f"--junitxml={report}", *files], task, timeout)
+    if late:
+        return {"ids": {}, "error": f"tests timed out after {timeout:g}s"}
+    if not report.is_file() or rc in (3, 4):
+        said = "wrote no report" if not report.is_file() else "stopped on an internal or usage error"
+        return {"ids": {}, "error": f"pytest {said} (exit {rc}): {tail[-300:]}"}
+    got, broken = _junit_outcomes(report)
+    return {"ids": {i: got.get(junit_key(i)) or ("error" if i.partition("::")[0] in broken else "missing")
+                    for i in ids}, "error": ""}
+
+
+def verdict(base_runs: list, ref_runs: list, fail_to_pass, pass_to_pass) -> str:
+    """SWE-bench's check test by test: valid, invalid: <why>, flaky: <ids> or error: <why>."""
+    for side, runs in (("base", base_runs), ("reference", ref_runs)):
+        bad = next((r["error"] for r in runs if r["error"]), "")
+        if bad:
+            return f"error: {side}: {bad}"
+    shifting = sorted({i for runs in (base_runs, ref_runs) for r in runs for i in r["ids"]
+                       if len({x["ids"].get(i) for x in runs}) > 1})
+    if shifting:
+        return f"flaky: {', '.join(shifting)}"
+    base, ref = base_runs[0]["ids"], ref_runs[0]["ids"]
+    errored = [i for i in [*fail_to_pass, *pass_to_pass] if base.get(i) == "error"]
+    if errored:
+        return f"error: base: did not collect or set up: {', '.join(errored)}"
+    checks = (("fail_to_pass passes at base", base, fail_to_pass, {"passed"}),
+              ("fail_to_pass does not run at base", base, fail_to_pass, {"skipped"}),
+              ("pass_to_pass fails at base", base, pass_to_pass, {"failed", "skipped", "missing", None}),
+              ("reference fails", ref, [*fail_to_pass, *pass_to_pass],
+               {"failed", "error", "skipped", "missing", None}))
+    why = []
+    for label, got, ids, bad in checks:
+        off = [f"{i} ({got.get(i) or 'missing'})" for i in ids if got.get(i) in bad]
+        if off:
+            why.append(f"{label}: {', '.join(off)}")
+    return f"invalid: {'; '.join(why)}" if why else "valid"
+
+
+def controls(case, env=None, runs=None, memo=None) -> dict:
+    """Validate one case the way a candidate meets it: prompt, then each test at base+hidden tests and with the reference."""
+    p = case.params
+    runs = runs or VALIDATION_RUNS
+    f2p, p2p = list(p["fail_to_pass"]), list(p.get("pass_to_pass") or [])
+    out = {"verdict": "", "prompt": "", "env_digest": "", "base": [], "reference": []}
+    try:
+        a = Attempt.open(p, env)
+    except RepoEnvError as exc:
+        return {**out, "verdict": f"error: environment: {exc}"}
+    try:
+        out["env_digest"] = env_digest(a.task)
         try:
-            diff = "" if name == "empty" else reference_diff(a.mirror, params["base"], params["fix"])
-            if name == "empty":
-                install_tests(a.mirror, a.task, params["base"], params["fix"])
-                g = grade(a.task, a.python, params["fail_to_pass"], params.get("pass_to_pass") or [])
-            else:
-                g = a.submit(diff)
-            out[name] = {"resolved": g.resolved, "detail": g.detail, "test_s": g.test_s}
-        finally:
-            a.close()
+            a.prompt(case.prompt)
+        except RepoEnvError as exc:
+            out["prompt"] = str(exc)
+            return {**out, "verdict": f"invalid: prompt: {exc}"}
+        key = json.dumps([p["source_repo"], p["base"], p["fix"], f2p, p2p, out["env_digest"], runs])
+        if memo is not None and key in memo:
+            return {**out, **memo[key]}
+        install_tests(a.mirror, a.task, p["base"], p["fix"])
+        out["base"] = [run_ids(a.task, a.python, [*f2p, *p2p]) for _ in range(runs)]
+        applied, why = apply(a.task, reference_diff(a.mirror, p["base"], p["fix"]))
+        if not applied:
+            return {**out, "verdict": f"invalid: reference does not apply: {why}"}
+        install_tests(a.mirror, a.task, p["base"], p["fix"])
+        out["reference"] = [run_ids(a.task, a.python, [*f2p, *p2p]) for _ in range(runs)]
+    finally:
+        a.close()
+    out["verdict"] = verdict(out["base"], out["reference"], f2p, p2p)
+    if memo is not None:
+        memo[key] = {k: out[k] for k in ("base", "reference", "verdict")}
+    return out
+
+
+def validation_path(case_id: str) -> Path:
+    from harness import paths
+    return paths.home() / "validation" / "repo" / f"{case_id}.json"
+
+
+def save_validation(case, got: dict, machine: str, commit: str, now: float) -> dict:
+    """Keep `got` as this machine's latest validation of `case`, beside other machines' own."""
+    from evals.core import cases_digest
+    rec = {"case": case.id, "cases_digest": cases_digest([case]), "sohot_commit": commit,
+           "machine": machine, "at": now, **got}
+    path = validation_path(case.id)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        held = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        held = {}
+    held[machine] = rec
+    tmp = path.with_name(f"{path.name}.{os.getpid()}")
+    tmp.write_text(json.dumps(held, indent=1) + "\n", encoding="utf-8")
+    tmp.replace(path)
+    return rec
+
+
+def verdicts(cases, machine: str) -> dict:
+    """case id -> this machine's latest verdict, "unvalidated" when none, "stale" when the case changed since."""
+    from evals.core import cases_digest
+    out = {}
+    for case in cases:
+        try:
+            rec = json.loads(validation_path(case.id).read_text(encoding="utf-8")).get(machine)
+        except (OSError, ValueError):
+            rec = None
+        out[case.id] = ("unvalidated" if not rec else
+                        "stale" if rec.get("cases_digest") != cases_digest([case]) else rec["verdict"])
     return out

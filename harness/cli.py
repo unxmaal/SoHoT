@@ -631,11 +631,13 @@ def build_parser() -> argparse.ArgumentParser:
     bch.add_argument("--gateway", default=completion.gateway_url())
     bch.set_defaults(func=benchmarks_cmd.cmd_benchmarks)
     cas = sub.add_parser("cases", help="re-run a case importer, or its negative control (#603)")
-    cas.add_argument("action", choices=("import", "control", "regrade"))
-    cas.add_argument("source", help="an importer in evals/importers, e.g. leetcode; `control repo` runs the repo lane's controls")
+    cas.add_argument("action", choices=("import", "control", "regrade", "labels"))
+    cas.add_argument("source", help="an importer in evals/importers, e.g. leetcode; `control repo` validates "
+                     "the repo cases test by test, `labels repo` reports their fairness labels (#920)")
     cas.add_argument("--out", default="", help="cases root (default: evals/cases)")
     cas.add_argument("--run", default="", help="regrade: a repo run directory whose stored diffs to grade again")
     cas.add_argument("--case", action="append", help="regrade: only this case id (repeatable)")
+    cas.add_argument("--packets", default="", help="with `labels repo`, write one labeller packet per case here")
     cas.set_defaults(func=cases_cmd.cmd_cases)
     aud = sub.add_parser("audit", help="check the live store and what the gateway serves, "
                          "read-only; run after every deploy and nightly. #492")

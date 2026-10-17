@@ -21,7 +21,7 @@ def _missing(objects) -> set:
 
 
 def test_the_repo_lane_has_cases_from_this_repository():
-    assert len(CASES) >= 40
+    assert len(CASES) >= 2 * len(history.manifest()["tasks"]) - len(history.DROPPED) > 0
 
 
 def test_every_case_base_commit_is_in_this_checkout():

@@ -1,0 +1,592 @@
+{
+ "axes": {
+  "spec": "is the issue specified well enough to know what a correct fix is (0-3)",
+  "tests": "do the hidden tests accept every reasonable fix the issue allows (0-3)"
+ },
+ "labellers": [
+  "A",
+  "B"
+ ],
+ "who": {
+  "A": "claude-opus-5-5 subagent, 2026-10-17, read only soh cases labels repo --packets output",
+  "B": "claude-opus-5-5 subagent, 2026-10-17, separate context, same packets, reverse order"
+ },
+ "settled": {},
+ "labels": {
+  "sohot-318-omnisvg-spelling": {
+   "A": {
+    "spec": 0,
+    "tests": 0
+   },
+   "B": {
+    "spec": 0,
+    "tests": 0
+   }
+  },
+  "sohot-363-spec": {
+   "A": {
+    "spec": 0,
+    "tests": 2,
+    "why": {
+     "tests": "pytest.raises(match='one argument') demands error wording the prompt never gives; any other message naming the cause fails"
+    }
+   },
+   "B": {
+    "spec": 0,
+    "tests": 2,
+    "why": {
+     "tests": "Error messages must match the regexes 'one argument' and 'did not recognise'; the prompt gives no wording."
+    }
+   }
+  },
+  "sohot-363-symptom": {
+   "A": {
+    "spec": 1,
+    "tests": 2,
+    "why": {
+     "tests": "error text must contain 'one argument' and 'did not recognise', neither suggested by the prompt; refusal of a leading '-' is only implied"
+    }
+   },
+   "B": {
+    "spec": 1,
+    "tests": 3,
+    "why": {
+     "tests": "Requires refusing at add() with specific message wording; symptom asks no refusal, and auto-splitting the command would fail."
+    }
+   }
+  },
+  "sohot-368-spec": {
+   "A": {
+    "spec": 0,
+    "tests": 3,
+    "why": {
+     "tests": "test_the_pipe_is_utf8_whatever_the_locale requires encoding='utf-8' passed to execute, which the prompt never mentions"
+    }
+   },
+   "B": {
+    "spec": 0,
+    "tests": 2,
+    "why": {
+     "tests": "Second graded test requires encoding='utf-8' passed to execute, which the prompt never mentions."
+    }
+   }
+  },
+  "sohot-368-symptom": {
+   "A": {
+    "spec": 1,
+    "tests": 3,
+    "why": {
+     "tests": "requires the prompt via the input= kwarg (rejects a '--' end-of-options fix) and an encoding='utf-8' kwarg never asked for"
+    }
+   },
+   "B": {
+    "spec": 1,
+    "tests": 3,
+    "why": {
+     "tests": "Requires stdin delivery (a '--' end-of-options fix fails) and an unrequested utf-8 encoding kwarg."
+    }
+   }
+  },
+  "sohot-371-spec": {
+   "A": {
+    "spec": 0,
+    "tests": 0
+   },
+   "B": {
+    "spec": 0,
+    "tests": 0
+   }
+  },
+  "sohot-371-symptom": {
+   "A": {
+    "spec": 1,
+    "tests": 1
+   },
+   "B": {
+    "spec": 0,
+    "tests": 0
+   }
+  },
+  "sohot-374-spec": {
+   "A": {
+    "spec": 0,
+    "tests": 0
+   },
+   "B": {
+    "spec": 0,
+    "tests": 0
+   }
+  },
+  "sohot-374-symptom": {
+   "A": {
+    "spec": 1,
+    "tests": 1
+   },
+   "B": {
+    "spec": 1,
+    "tests": 1
+   }
+  },
+  "sohot-376-spec": {
+   "A": {
+    "spec": 0,
+    "tests": 1
+   },
+   "B": {
+    "spec": 0,
+    "tests": 1
+   }
+  },
+  "sohot-376-symptom": {
+   "A": {
+    "spec": 1,
+    "tests": 1
+   },
+   "B": {
+    "spec": 0,
+    "tests": 1
+   }
+  },
+  "sohot-396-spec": {
+   "A": {
+    "spec": 0,
+    "tests": 2,
+    "why": {
+     "tests": "tests call a new cli.screenable_backlog(want, plan=, room=) and match the printed phrase 'already on disk wait for a screen', neither named in the prompt"
+    }
+   },
+   "B": {
+    "spec": 1,
+    "tests": 2,
+    "why": {
+     "tests": "Requires cli.screenable_backlog(want, plan=, room=) and the exact output text 'already on disk wait for a screen'."
+    }
+   }
+  },
+  "sohot-396-symptom": {
+   "A": {
+    "spec": 2,
+    "tests": 3,
+    "why": {
+     "spec": "symptom only describes producer outrunning consumer; backpressure, cleanup, larger screen batches are all plausible",
+     "tests": "tests demand fetch-skipping backpressure via cli.screenable_backlog and an exact message, a remedy the symptom never asks for"
+    }
+   },
+   "B": {
+    "spec": 1,
+    "tests": 3,
+    "why": {
+     "tests": "Tests require backpressure via a named screenable_backlog helper and exact message; the symptom never asks for backpressure (a disk cap or other fix fails)."
+    }
+   }
+  },
+  "sohot-399-spec": {
+   "A": {
+    "spec": 1,
+    "tests": 2,
+    "why": {
+     "tests": "tests need new ms.latest() and a migration function named _requeue_screens_of_missing_weights, names the prompt never gives"
+    }
+   },
+   "B": {
+    "spec": 1,
+    "tests": 2,
+    "why": {
+     "tests": "Graded ids embed the private name _requeue_screens_of_missing_weights, and tests call a new ms.latest(); neither name is in the prompt."
+    }
+   }
+  },
+  "sohot-399-symptom": {
+   "A": {
+    "spec": 1,
+    "tests": 3,
+    "why": {
+     "tests": "graded schema-20 migration repairing old broken verdicts is not asked for, plus required names ms.latest and _requeue_screens_of_missing_weights"
+    }
+   },
+   "B": {
+    "spec": 1,
+    "tests": 3,
+    "why": {
+     "tests": "Adds the unrequested schema-20 requeue migration under a fixed private name and a new ms.latest API."
+    }
+   }
+  },
+  "sohot-404-spec": {
+   "A": {
+    "spec": 1,
+    "tests": 2,
+    "why": {
+     "tests": "dead-server test requires _report_screen to return exactly 1 when it stops; the prompt only says stop screening"
+    }
+   },
+   "B": {
+    "spec": 1,
+    "tests": 2,
+    "why": {
+     "tests": "Requires _report_screen to return exit code 1 when the server dies; a fix that breaks out and returns 0 fails."
+    }
+   }
+  },
+  "sohot-404-symptom": {
+   "A": {
+    "spec": 2,
+    "tests": 3,
+    "why": {
+     "spec": "remedy is open: classify as harness fault, stop the run, health-check/restart the server, or migrate",
+     "tests": "tests require stopping the screen with rc 1 and a schema-22 migration, neither asked by the symptom"
+    }
+   },
+   "B": {
+    "spec": 2,
+    "tests": 3,
+    "why": {
+     "spec": "Does not say whether to reclassify, stop the screen, requeue, or restart the server.",
+     "tests": "Tests require stop-with-rc-1, the harness-fault classification and a schema-22 requeue migration, none asked by the symptom."
+    }
+   }
+  },
+  "sohot-438-spec": {
+   "A": {
+    "spec": 1,
+    "tests": 2,
+    "why": {
+     "tests": "requires a new gguf.shard_sets() returning {} for incomplete sets and both remedies at once (shard sum and stray exclusion) where the prompt offers either"
+    }
+   },
+   "B": {
+    "spec": 1,
+    "tests": 3,
+    "why": {
+     "tests": "Requires a new gguf.shard_sets name and that an incomplete split set sizes to 0, not asked; the prompt's alternative 'ignore a far-smaller single file' fix fails smallest()==shard sum."
+    }
+   }
+  },
+  "sohot-438-symptom": {
+   "A": {
+    "spec": 1,
+    "tests": 2,
+    "why": {
+     "tests": "requires a gguf.shard_sets() function by name, incomplete-set semantics and exact smallest() equal to the full shard-set sum"
+    }
+   },
+   "B": {
+    "spec": 1,
+    "tests": 3,
+    "why": {
+     "tests": "Requires gguf.shard_sets, shard-sum sizing and incomplete-set exclusion, none of which the symptom specifies."
+    }
+   }
+  },
+  "sohot-455-spec": {
+   "A": {
+    "spec": 1,
+    "tests": 3,
+    "why": {
+     "tests": "tests need ms.LiveStoreRefused, paths.is_live/REPO/runs_elsewhere/deploy_checkout/ALLOW_MIGRATE_ENV, an LH_DEPLOY-aware launchd.sh deploy-path, and unasked behaviours (absent store refused, no-deploy machine migrates)"
+    }
+   },
+   "B": {
+    "spec": 1,
+    "tests": 3,
+    "why": {
+     "tests": "Requires ms.LiveStoreRefused, paths.is_live/REPO/ALLOW_MIGRATE_ENV/runs_elsewhere/deploy_checkout, LH_DEPLOY and a launchd.sh deploy-path subcommand, plus 'no deploy checkout migrates' behaviour never asked."
+    }
+   }
+  },
+  "sohot-455-symptom": {
+   "A": {
+    "spec": 2,
+    "tests": 3,
+    "why": {
+     "spec": "symptom gives no remedy; refusing, warning, or defaulting scratch runs to another home are all plausible",
+     "tests": "same unasked names, env vars and launchd.sh deploy-path contract as the spec variant"
+    }
+   },
+   "B": {
+    "spec": 2,
+    "tests": 3,
+    "why": {
+     "spec": "Describes the hazard but not the guard: who may migrate, what to refuse, what override.",
+     "tests": "Same unrequested names, env vars, launchd deploy-path and message contents; symptom asks for none of it."
+    }
+   }
+  },
+  "sohot-570-spec": {
+   "A": {
+    "spec": 0,
+    "tests": 0
+   },
+   "B": {
+    "spec": 0,
+    "tests": 0
+   }
+  },
+  "sohot-570-symptom": {
+   "A": {
+    "spec": 1,
+    "tests": 1
+   },
+   "B": {
+    "spec": 1,
+    "tests": 1
+   }
+  },
+  "sohot-598-spec": {
+   "A": {
+    "spec": 0,
+    "tests": 1
+   },
+   "B": {
+    "spec": 0,
+    "tests": 1
+   }
+  },
+  "sohot-598-symptom": {
+   "A": {
+    "spec": 1,
+    "tests": 2,
+    "why": {
+     "tests": "graded test imports migrations.v58 and calls its data(conn); a repair migration is not asked by the symptom"
+    }
+   },
+   "B": {
+    "spec": 1,
+    "tests": 2,
+    "why": {
+     "tests": "Graded test calls migrations.v58.data() to repair existing rows; the symptom asks no repair, only the listed v58.py file hints it."
+    }
+   }
+  },
+  "sohot-632-spec": {
+   "A": {
+    "spec": 1,
+    "tests": 3,
+    "why": {
+     "tests": "tests need fetching.runner_bases, a sizer= kwarg on fetching.run, unknown-size bases refused with 'size' in why, reason LIMIT, and both fetch and wait paths though the prompt offers either"
+    }
+   },
+   "B": {
+    "spec": 1,
+    "tests": 3,
+    "why": {
+     "tests": "Requires new fetching.runner_bases and a sizer kwarg on fetching.run, and refusing a base of unknown size, none named or asked; the allowed 'wait on a setup step' path fails."
+    }
+   }
+  },
+  "sohot-632-symptom": {
+   "A": {
+    "spec": 2,
+    "tests": 3,
+    "why": {
+     "spec": "symptom names no remedy: run the setup script, fetch the base, park the candidate, or decline it are all plausible",
+     "tests": "same unasked names (runner_bases, sizer=) and fetch/budget/wait behaviours as the spec variant"
+    }
+   },
+   "B": {
+    "spec": 2,
+    "tests": 3,
+    "why": {
+     "spec": "No direction on whether to fetch the base, wait on setup, or skip the candidate.",
+     "tests": "Requires runner_bases, sizer kwarg, budget/unknown-size refusals with LIMIT reason; symptom asks none of this."
+    }
+   }
+  },
+  "sohot-642-spec": {
+   "A": {
+    "spec": 1,
+    "tests": 1
+   },
+   "B": {
+    "spec": 1,
+    "tests": 1
+   }
+  },
+  "sohot-642-symptom": {
+   "A": {
+    "spec": 1,
+    "tests": 2,
+    "why": {
+     "tests": "tests require the method spec to inherit the base's inspect verdict and size_bytes, a remedy the symptom never states"
+    }
+   },
+   "B": {
+    "spec": 2,
+    "tests": 2,
+    "why": {
+     "spec": "Says registry calls are wasted and methods left unanswered but not what verdict a method spec should get.",
+     "tests": "Requires the method to inherit the base's inspect outcome and size_bytes; simply skipping method specs fails."
+    }
+   }
+  },
+  "sohot-647-spec": {
+   "A": {
+    "spec": 1,
+    "tests": 2,
+    "why": {
+     "tests": "requires split actions/cache/restore and actions/cache/save steps, a key from a steps. output, Dir::Cache::archives in the apt run, and job timeout > apt+20"
+    }
+   },
+   "B": {
+    "spec": 0,
+    "tests": 2,
+    "why": {
+     "tests": "Requires split actions/cache/restore+save steps, a key built from a step output ('steps.' in key), and Dir::Cache::archives in the apt run; actions/cache@v4 with hashFiles fails."
+    }
+   }
+  },
+  "sohot-647-symptom": {
+   "A": {
+    "spec": 2,
+    "tests": 3,
+    "why": {
+     "spec": "symptom gives no remedy; retry, mirror change, raised timeout, or caching all plausible",
+     "tests": "tests demand an apt .deb cache with restore/save layout and a per-step timeout, none asked by the symptom"
+    }
+   },
+   "B": {
+    "spec": 1,
+    "tests": 3,
+    "why": {
+     "tests": "Tests check apt .deb caching and a per-step apt timeout, which the symptom never asks for; raising the job limit alone fails."
+    }
+   }
+  },
+  "sohot-720-spec": {
+   "A": {
+    "spec": 0,
+    "tests": 0
+   },
+   "B": {
+    "spec": 0,
+    "tests": 0
+   }
+  },
+  "sohot-720-symptom": {
+   "A": {
+    "spec": 1,
+    "tests": 2,
+    "why": {
+     "tests": "requires timeout-minutes >= 29.5; a raise to 25 or an xdist speed-up alone fails, and the 10-minute margin is not stated"
+    }
+   },
+   "B": {
+    "spec": 1,
+    "tests": 2,
+    "why": {
+     "tests": "Requires timeout-minutes >= 29.5 (10-minute margin over 19.5); a modest raise to 25 or a speed-up via xdist/sharding fails."
+    }
+   }
+  },
+  "sohot-788-spec": {
+   "A": {
+    "spec": 0,
+    "tests": 0
+   },
+   "B": {
+    "spec": 0,
+    "tests": 1
+   }
+  },
+  "sohot-788-symptom": {
+   "A": {
+    "spec": 0,
+    "tests": 1
+   },
+   "B": {
+    "spec": 0,
+    "tests": 1
+   }
+  },
+  "sohot-858-spec": {
+   "A": {
+    "spec": 1,
+    "tests": 2,
+    "why": {
+     "tests": "test requires the proposal state to become 'screened' after migration, while the prompt says 'requeue', which most would read as queued"
+    }
+   },
+   "B": {
+    "spec": 1,
+    "tests": 1
+   }
+  },
+  "sohot-858-symptom": {
+   "A": {
+    "spec": 1,
+    "tests": 2,
+    "why": {
+     "tests": "requires a schema migration restoring state 'screened' specifically; re-queueing or changing the sweep fails"
+    }
+   },
+   "B": {
+    "spec": 1,
+    "tests": 1
+   }
+  },
+  "sohot-859-spec": {
+   "A": {
+    "spec": 1,
+    "tests": 3,
+    "why": {
+     "tests": "prompt allows the undated endpoint but tests require dated requests for yesterday, partial-progress retention across a deferred day, last_read_at bookkeeping and the 'not published yet' message"
+    }
+   },
+   "B": {
+    "spec": 1,
+    "tests": 3,
+    "why": {
+     "tests": "Rejects the undated-endpoint option the prompt allows (expects dated YESTERDAY), and checks unrequested last_read_at semantics, kept partial progress and a 'not published yet' message."
+    }
+   }
+  },
+  "sohot-859-symptom": {
+   "A": {
+    "spec": 1,
+    "tests": 3,
+    "why": {
+     "tests": "same exact request sequence, last_read_at semantics, partial-progress retention and message text, none in the symptom"
+    }
+   },
+   "B": {
+    "spec": 1,
+    "tests": 3,
+    "why": {
+     "tests": "Pins yesterday-UTC dated requests, last_read_at = end of yesterday, partial-progress retention and the 'not published yet' output string, none of which the symptom asks."
+    }
+   }
+  },
+  "sohot-879-spec": {
+   "A": {
+    "spec": 1,
+    "tests": 3,
+    "why": {
+     "tests": "tests need a new screen_detail(why, stderr, summary) that drops stderr entirely when a receipt exists, and directions for retries/stages/thinking_disabled the prompt never names"
+    }
+   },
+   "B": {
+    "spec": 1,
+    "tests": 3,
+    "why": {
+     "tests": "Tests import a new screen_detail(why, stderr, summary) never named, and require dropping all stderr when a receipt exists, a receipt/no-receipt split the prompt never describes."
+    }
+   }
+  },
+  "sohot-879-symptom": {
+   "A": {
+    "spec": 1,
+    "tests": 3,
+    "why": {
+     "tests": "same unasked screen_detail function, receipt/no-receipt split and extra metric directions as the spec variant"
+    }
+   },
+   "B": {
+    "spec": 1,
+    "tests": 3,
+    "why": {
+     "tests": "Requires screen_detail(why, stderr, summary), the receipt split, and an AST scanner forcing directions for retries/stages/thinking_disabled; symptom asks none of it."
+    }
+   }
+  }
+ }
+}

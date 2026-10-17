@@ -42,6 +42,12 @@ TRANSFORM = ("issue title and body from `gh issue view` at survey time, home pat
              f"{RUNS} sandboxed pytest runs of the fix's test files at base+hidden tests and at "
              "base+reference diff, in the lane's own environment and sandbox (evals/repo.py)")
 
+#: Cases dropped after the survey because validation fails, with why; unfair cases stay, tagged in labels.json. #920.
+DROPPED: dict[str, str] = {
+    "sohot-455-spec": "validation error: tests/test_live_store_guard.py does not collect at base",
+    "sohot-455-symptom": "validation error: tests/test_live_store_guard.py does not collect at base",
+}
+
 _HEADING = re.compile(r"^(#{1,6})\s+(.*?)\s*#*\s*$")
 _LABEL = re.compile(r"^(?:\*\*([^*\n]{1,60}?)[:.]?\*\*:?|([A-Z][A-Za-z ]{0,40}?):(?=\s|$))")
 _LIST = re.compile(r"^(\s+|[-*+] |\d+[.)] )")
@@ -311,7 +317,8 @@ def fetch(path: Path = MANIFEST) -> list[dict]:
     got = manifest(path)
     if got["revision"] != REVISION:
         raise RuntimeError(f"{path.name} was surveyed at {got['revision']}, not REVISION")
-    return [{**t, "variant": v} for t in got["tasks"] for v in VARIANTS if t["prompts"].get(v)]
+    return [{**t, "variant": v} for t in got["tasks"] for v in VARIANTS
+            if t["prompts"].get(v) and f"{t['id']}-{v}" not in DROPPED]
 
 
 def convert(row: dict) -> Imported | None:
