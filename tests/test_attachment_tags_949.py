@@ -139,3 +139,9 @@ def test_the_loop_rereads_every_attachment_once_then_only_stale_ones(monkeypatch
     loop_cmd._rederive_attachments()
     heartbeat.finish(0)
     assert asked == [True, False]
+
+
+def test_lora_files_in_a_checkpoints_folder_are_not_a_comfyui_model():
+    files = [{"rfilename": f"_archive/checkpoints/krea2_turbo_4step_rank_64_lora_chk0000{i}000.safetensors",
+              "size": 440_000_000} for i in range(4, 9)]
+    assert screen.is_attachment(["text-to-image", "lora"], files) == "lora"

@@ -140,8 +140,9 @@ def listing_kind(files, config=None, found=None) -> str | None:
     config = config or {}
     if found is None:
         found = variants.variants(files, model_type=str(config.get("model_type") or ""))
-    whole = any(v.format in (variants.DIFFUSERS, variants.COMFYUI, variants.MISTRAL)
-                or (v.format == variants.GGUF and not any(re.search(r"lora|adapter", f.lower()) for f in v.files))
+    whole = any(v.format in (variants.DIFFUSERS, variants.MISTRAL)
+                or (v.format in (variants.GGUF, variants.COMFYUI)
+                    and not any(re.search(r"lora|adapter", f.lower()) for f in v.files))
                 for v in found)
     if whole or "model_index.json" in root or config.get("model_type") or config.get("architectures"):
         return MODEL
