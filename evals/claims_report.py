@@ -9,11 +9,11 @@ from __future__ import annotations
 
 import argparse
 import json
-import math
 import sys
 from pathlib import Path
 
 from harness.checks import claims as claims_check
+from harness.intervals import wilson
 
 #: The model every reviewed claim so far was extracted by.
 REVIEWED_FROM = "Qwen2.5-7B-Instruct-Q4_K_M"
@@ -29,17 +29,6 @@ def _reviewed_model(candidate: str) -> bool:
     """True for a run of the model the reviews came from, under its id or its old nickname. #670."""
     from harness import models
     return models.resolve(candidate) == REVIEWED_FROM
-
-
-def wilson(k: int, n: int, z: float = 1.96) -> tuple[float, float]:
-    """Wilson score interval for k of n, rounded to 4 places."""
-    if n == 0:
-        return (0.0, 1.0)
-    p = k / n
-    denom = 1 + z * z / n
-    center = (p + z * z / (2 * n)) / denom
-    half = (z / denom) * math.sqrt(p * (1 - p) / n + z * z / (4 * n * n))
-    return (max(0.0, round(center - half, 4)), min(1.0, round(center + half, 4)))
 
 
 def _slice(kept: int, n: int) -> dict:
