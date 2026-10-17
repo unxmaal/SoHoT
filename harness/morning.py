@@ -18,6 +18,10 @@ MODEL_LANE = "extract"
 MODEL_TIMEOUT_S = 90.0
 MODEL_MAX_TOKENS = 220
 HEADLINE_LINES = 3
+#: A ranked-head candidate waiting undownloaded in one state this many days needs a person. #925.
+STALL_DAYS = 14.0
+#: How much of each wanted lane's ranked head the stall line watches.
+STALL_HEAD = 10
 HEADLINE_CHARS = 400
 NOTIFY_TITLE = "SoHoT morning"
 FAILED = ("failure", "cancelled", "timed_out", "startup_failure", "action_required")
@@ -110,6 +114,15 @@ def stale_lanes(conn) -> list[dict]:
     from harness import report, verify
     tasks = verify.plan(report.lanes_state(conn))
     return [{"lane": t.lane, "candidate": t.candidate, "why": t.why, "skip": t.skip} for t in tasks]
+
+
+def stalled(conn, days: float | None = None, head: int | None = None) -> list[dict]:
+    """The ranked head of a wanted lane, not downloaded, in its state past STALL_DAYS. #925."""
+    from harness import funnel
+    got = funnel.stalls(funnel.proposals(conn), STALL_DAYS if days is None else days,
+                        STALL_HEAD if head is None else head)
+    return [{k: r[k] for k in ("name", "lane", "lane_rank", "stage", "in_state_days", "age_days", "reason", "why")}
+            for r in got]
 
 
 def _gh(argv: list[str]) -> str:
@@ -215,16 +228,20 @@ def needs(r: dict) -> list[str]:
         out.append(f"deploy is {d['behind']} commit(s) behind origin/main")
     if r["stale"]:
         out.append(f"stale lanes: {', '.join(s['lane'] for s in r['stale'])}")
+    if r.get("stalled"):
+        out.append("ranked head not fetched: " + "; ".join(
+            f"{s['lane']} #{s['lane_rank']} {s['name']} {s['in_state_days']:.0f}d ({s['reason']})"
+            for s in r["stalled"]))
     return out
 
 
 def gather(conn, now: float, since: float, *, beat=None, gh=None, git=None, where=None, lanes=None,
-           health=None) -> dict:
+           health=None, stalls=None) -> dict:
     """`health` probes the headline's lane (lane_health); None leaves it unprobed."""
     r = {"lane": health(MODEL_LANE) if health else {"lane": MODEL_LANE, "generating": None, "why": "not probed"},
          "generated": now, "since": since, "sweep": sweep(conn, since, beat), "watchdog": watchdog(conn, since),
          "ci": ci(now, gh=gh or _gh), "ledger": ledger_row(conn, now), "stale": (lanes or stale_lanes)(conn),
-         "deploy": deploy(where, git=git or _git)}
+         "stalled": (stalls or stalled)(conn), "deploy": deploy(where, git=git or _git)}
     r["needs"] = needs(r)
     return r
 

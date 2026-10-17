@@ -381,10 +381,9 @@ def _loop_spend(a, rc: int, failed: list | None = None, sweep=None) -> int:
         print(f"\n(spending only on the {want} lane)")
     print(f"\n=== fetch (up to {top}, budget {budget:g} GiB) ===")
     _beat("fetch")
-    backlog = screen_cmd.screenable_backlog(want)
-    if len(backlog) >= top:
-        print(f"  skipped: {len(backlog)} candidate(s) already on disk wait "
-              f"for a screen, and this run screens {top}")
+    held = fetching.held(len(screen_cmd.screenable_backlog(want)), top)
+    if held:
+        print(f"  skipped: {held[1]}")
     else:
         sub = _ap.Namespace(**{**vars(a), "loop": False, "run": True,
                                "limit": top, "json": False})

@@ -26,7 +26,8 @@ def _state(**over):
     base = {"generated": 0.0,
             "machine": {"runtimes": ["mlx"], "accelerator": "x", "kind":
                         "unified", "total_gb": 32.0, "available_gb": 8.0},
-            "funnel": [{"tier": "inspect", "candidates": 9, "verdicts": 9}],
+            "funnel": [{"stage": "inspected", "count": 9, "median_days": 1.0, "p90_days": 2.0,
+                        "oldest_days": 3.0, "oldest": []}],
             "lanes": [dict(LANE)],
             "queue": {"waiting": 3, "rankable": 2, "by_lane": {"code": 2},
                       "top": [], "wanted_with_none": ["web"]},
@@ -145,8 +146,13 @@ def test_the_funnel_orders_by_the_ladder_not_by_count(tmp_path):
                                     registry=ms.HUGGINGFACE, lane="code",
                                     resolved=name))
             ms.decide(conn, name, "queued", tier=tier, detail="d")
-        got = [r["tier"] for r in report.funnel(conn)]
-        assert got == ["inspect", "screen", "adopt"]
+        ms.decide(conn, "a", "measured", tier="adopt", detail="won")
+        ms.decide(conn, "c", "screened", tier="screen", detail="passed")
+        from harness import funnel
+        got = report.funnel(conn)
+        assert [r["stage"] for r in got] == list(funnel.STAGES)
+        counts = {r["stage"]: r["count"] for r in got}
+        assert (counts["screened"], counts["adopted"], counts["ranked"] + counts["inspected"]) == (1, 1, 1)
     finally:
         conn.close()
 

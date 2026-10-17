@@ -74,6 +74,10 @@ def render(r: dict) -> list[str]:
     out.append(f"stale     {len(r['stale'])} lane(s)")
     for t in r["stale"]:
         out.append(f"          {t['lane']:<9} {t['candidate'][:40]} {t['skip'] or t['why']}")
+    out.append(f"stalled   {len(r.get('stalled') or [])} ranked-head candidate(s)")
+    for t in r.get("stalled") or []:
+        out.append(f"          {t['lane']:<9} #{t['lane_rank']} {t['name'][:40]} {t['stage']} "
+                   f"{t['in_state_days']:.0f}d: {t['reason']}: {t['why']}")
     d = r["deploy"]
     if not d.get("available"):
         out.append(f"deploy    unavailable: {d.get('why')}")

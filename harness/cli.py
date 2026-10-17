@@ -45,6 +45,7 @@ from harness.commands import screen as screen_cmd
 from harness.commands import store as store_cmd
 from harness.commands import headless as headless_cmd
 from harness.commands import ledger as ledger_cmd
+from harness.commands import funnel as funnel_cmd
 from harness.commands import morning as morning_cmd
 from harness.commands import otel as otel_cmd
 from harness.commands import usage as usage_cmd
@@ -541,6 +542,14 @@ def build_parser() -> argparse.ArgumentParser:
     mor.add_argument("--no-model", action="store_true",
                      help="deterministic headline; do not ask the local model to condense it")
     mor.set_defaults(func=morning_cmd.cmd_morning)
+    fun = sub.add_parser("funnel", help="every proposal's stage, time in it, age since first seen, and why "
+                         "it waits; read from a copy of the store")
+    fun.add_argument("--since", default="", help="only proposals first seen since: 30d, or a date")
+    fun.add_argument("--lane", default="", help="only this lane")
+    fun.add_argument("--top", type=int, default=3, help="what a sweep fetches and screens, as `--top` (default 3)")
+    fun.add_argument("--budget-gib", type=float, default=None, help="a sweep's download budget (default: knob)")
+    fun.add_argument("--head", type=int, default=10, help="how much of each lane's ranked head to list")
+    fun.set_defaults(func=funnel_cmd.cmd_funnel)
     headless_cmd.add_parser(sub)
     otel_cmd.add_parser(sub)
     dlg = sub.add_parser("delegated", help="record what became of a local_complete or "

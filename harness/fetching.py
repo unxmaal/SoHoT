@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import re
 import shutil
+import time
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -88,6 +89,49 @@ def format_waits(until) -> bool:
     if not (until or "").startswith(FORMAT_WAIT):
         return False
     return not any(f in RUNNER_FORMATS for f in until.removeprefix(FORMAT_WAIT).split("|"))
+
+
+#: why_not reasons, and the ones fetch skips on without trying or writing anything. #925.
+BACKPRESSURE, BUDGET, FORMAT, NO_LANE, UNINSPECTED = "backpressure", "budget", "format", "no lane", "uninspected"
+OVER_BUDGET, FAILED = "over budget", "last download failed"
+SILENT = (BACKPRESSURE, BUDGET, FORMAT, NO_LANE, UNINSPECTED)
+
+
+def held(backlog: int, top: int) -> tuple[str, str] | None:
+    """The loop's backpressure: enough already on disk waits for a screen, so nothing is fetched. #396."""
+    if top and backlog >= top:
+        return BACKPRESSURE, (f"{backlog} candidate(s) already on disk wait for a screen, "
+                              f"and this run screens {top}")
+    return None
+
+
+def over_budget(size: int, budget: int | None, spent: int = 0) -> bool:
+    """A measured size that would take this run past its budget. #215."""
+    return budget is not None and size > 0 and spent + size > budget
+
+
+def why_not(row: dict, *, budget: int | None = None, backlog: int = 0,
+            top: int = 0) -> tuple[str, str] | None:
+    """Why fetch would not download this queued row now, as (reason, detail), or None. #925."""
+    got = held(backlog, top)
+    if got:
+        return got
+    until = row.get("until") or ""
+    if not budget_allows(until, budget):
+        return BUDGET, f"waits for a download budget over {until.removeprefix(_BUDGET_WAIT)} GiB"
+    if format_waits(until):
+        return FORMAT, f"waits for a runner that loads {until.removeprefix(FORMAT_WAIT).replace('|', ', ')}"
+    if not row.get("lane"):
+        return NO_LANE, "nothing here could measure it, so nothing fetches it"
+    if not row.get("inspected"):
+        return UNINSPECTED, "inspect has not answered since it was queued or reopened"
+    size = int(row.get("size_bytes") or 0)
+    if over_budget(size, budget):
+        return OVER_BUDGET, f"{size / GIB:.1f} GiB is over the {budget / GIB:.0f} GiB budget of a whole run"
+    if row.get("failed_at"):
+        when = time.strftime("%Y-%m-%d %H:%M", time.localtime(row["failed_at"]))
+        return FAILED, f"its last download, at {when}, failed and left nothing; fetch tries again"
+    return None
 
 
 def format_wanted(conn, lane: str = "") -> list[dict]:
@@ -236,6 +280,13 @@ def queued(conn, tiers=FETCHABLE_TIERS, kind: str = FETCHABLE_KIND,
                p.state AS outcome, st.tier AS tier, st.detail AS detail, st.until AS until,
                -- The candidate's measured size, whatever verdict is newest. #211, #413.
                p.size_bytes,
+               -- When its newest fetch download finished incomplete, none complete since. #925.
+               (SELECT d.finished_at FROM downloads d
+                 WHERE d.proposal_id = p.id AND d.origin = 'fetch' AND d.removed_at IS NULL
+                 ORDER BY d.id DESC LIMIT 1) AS last_fetch_at,
+               (SELECT d.complete FROM downloads d
+                 WHERE d.proposal_id = p.id AND d.origin = 'fetch' AND d.removed_at IS NULL
+                 ORDER BY d.id DESC LIMIT 1) AS last_fetch_complete,
                -- Inspect has answered since the last reopen; a 429 writes nothing. #798.
                COALESCE((SELECT vi.tier = 'inspect' AND vi.outcome = 'queued'
                                 AND vi.reason NOT IN (:reopened, :harness)
@@ -264,7 +315,8 @@ def queued(conn, tiers=FETCHABLE_TIERS, kind: str = FETCHABLE_KIND,
             return r["registry"] != ms.GITHUB
         return not kind or r["kind"] == kind
 
-    out = [dict(r) for r in rows
+    out = [{**dict(r), "failed_at": r["last_fetch_at"] if r["last_fetch_at"] and not r["last_fetch_complete"]
+            else None} for r in rows
            if r["outcome"] == "queued" and r["tier"] in tiers
            and downloadable(r)
            and not have(r["resolved"] or r["name"], conn)]
@@ -521,16 +573,11 @@ def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=N
             return done
         spent += cost
     for row in queued(conn, lane=lane):
-        if not budget_allows(row.get("until"), budget):
-            continue      # waits for a bigger budget than this run's, so this run settles nothing. #704
-        if format_waits(row.get("until")):
-            continue      # waits for a runner that loads its format; listing it again changes nothing. #798
-        if not row.get("lane"):
-            continue      # nothing here could measure it, so nothing fetches it
-        if not row.get("inspected"):
-            # A reopen or a 429'd inspect leaves a stale size and no format; inspect answers first. #798.
-            done.append({"repo": row["resolved"] or row["name"], "ok": False,
-                         "why": "inspect has not answered since it was queued or reopened"})
+        # Budget (#704), format (#798), no lane, and a reopen inspect has not answered (#798).
+        why = why_not(row, budget=budget)
+        if why and why[0] in SILENT:
+            if why[0] == UNINSPECTED:
+                done.append({"repo": row["resolved"] or row["name"], "ok": False, "why": why[1]})
             continue
         # AN ADAPTER IS NOT A CANDIDATE, and this tier is where that costs
         # gigabytes. rank drops attachments so they never reach the top of the
@@ -606,7 +653,7 @@ def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=N
         # Each row's own measured size; an override map covering only the
         # first `limit` rows left the rest at 0 for 22 sweeps. #292.
         size = (sizes or {}).get(name) or int(row.get("size_bytes") or 0)
-        if budget is not None and size > 0 and spent + size > budget:
+        if over_budget(size, budget, spent):
             why = (f"{size / GIB:.1f} GiB would take this run past its "
                    f"{budget / GIB:.0f} GiB budget ({spent / GIB:.1f} GiB "
                    f"already fetched)")
