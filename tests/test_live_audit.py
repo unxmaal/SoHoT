@@ -243,3 +243,17 @@ def test_no_fallback_says_none(live, capsys):
     assert live_audit.audit(live)["fallbacks"] == []
     assert cli.main(["audit"]) == 0
     assert "node fallbacks in the last hour: none" in capsys.readouterr().out
+
+
+def test_a_broken_row_with_a_limit_reason_fails_the_audit(live):
+    conn = ms.connect()
+    try:
+        ms.record(conn, ms.Seen(name="org/limited", source="s", kind="candidate", registry=ms.HUGGINGFACE,
+                                lane="code", resolved="org/limited"))
+        ms.decide(conn, "org/limited", "queued", tier="inspect", detail="fits")
+        ms.decide(conn, "org/limited", "broken", tier="screen", reason="limit", until="limit:max_tokens>4000")
+    finally:
+        conn.close()
+    got = live_audit.audit(live)
+    assert not got["ok"]
+    assert "broken with reason limit" in _checks(got)["terminal_reason_coherent"]["detail"]

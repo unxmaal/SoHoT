@@ -28,6 +28,7 @@ import sys
 from harness import adopt, audio, completion, env, power, proc, throughput, vector  # noqa: F401
 from harness.commands import adopt as adopt_cmd
 from harness.commands import benchmarks as benchmarks_cmd
+from harness.commands import blame as blame_cmd
 from harness.commands import cases as cases_cmd
 from harness.commands import chaos as chaos_cmd
 from harness.commands import common
@@ -639,6 +640,15 @@ def build_parser() -> argparse.ArgumentParser:
     aud.add_argument("path", nargs="?", default="",
                      help="the store to audit (default: this home's discovery.db)")
     aud.set_defaults(func=store_cmd.cmd_audit)
+    bla = sub.add_parser("blame", help="sample terminal verdicts, print the codebook, or report the "
+                         "labelled harness-fault share; read-only. #918")
+    bla.add_argument("action", choices=("sample", "report", "codebook"))
+    bla.add_argument("--seed", type=int, default=918)
+    bla.add_argument("--db", default="", help="the store (default: this home's discovery.db)")
+    bla.add_argument("--dir", default="", help="queue, key and label files (default: evals/blame)")
+    bla.add_argument("--labels", default="", help="first labeller's file (default: <dir>/labels.csv)")
+    bla.add_argument("--second", default="", help="second labeller's file (default: <dir>/labels-second.csv)")
+    bla.set_defaults(func=blame_cmd.cmd_blame)
     wd = sub.add_parser("watchdog", help="judge every running SoHoT job against the watchdog's criteria "
                         "and act; a dry run unless LH_WATCHDOG_ACT=1 or --act. #814")
     wd.add_argument("--act", action="store_true", help="take the actions this once")

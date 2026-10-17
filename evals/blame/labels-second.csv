@@ -1,0 +1,41 @@
+verdict_id,label,evidence
+227,model,"Rule 11: proposals 269 has lane '' (no lane measures segmentation) and duplicates proposal 270 facebook/sam3 (SELECT id,name,lane FROM proposals WHERE name LIKE '%sam3%')"
+237,model,Rule 11: proposals 273 funasr/campplus is a speaker-embedding weight with lane '' so no lane measures it (proposals.lane)
+586,machine-correct,"Rule 6: smallest unsloth/Qwen3.8-Flash-Next-GGUF main variant UD-IQ1_S/ is 67.6 GiB (MTP/ files are draft heads), over verdicts.ceiling_gb=22.0 on machine_id 1"
+612,machine-correct,"Rule 6: smallest unsloth/Kimi-K2.6-GGUF variant UD-Q2_K_XL/ sums to 317.1 GiB in HF siblings, over verdicts.ceiling_gb=22.0 (machine_id 1)"
+858,machine-correct,"Rule 6: Comfy-Org/MiniMax-H3 smallest pipeline (w6a8 diffusion 14.9 GiB + smallest text encoder 14.6 GiB + vae 2.6 GiB, about 32 GiB) exceeds verdicts.ceiling_gb=22.0 on machine_id 1"
+1158,harness,"Rule 6: TenStrip/10Eros-Max smallest single checkpoint 10Eros_Max_h3_hybrid_beta5_w4a8_14gb_optimized.safetensors is 13.0 GiB, under the 22 GiB ceiling; until 'ceiling_gb:>366.4' is the repo total"
+1223,model,"Rule 1: HF siblings for TaoLiveAIGC/TaoMate-H3 are adapter_model.safetensors + adapter_config.json only, a LoRA, not a standalone model"
+1228,model,Rule 1: proposals.attaches_to='lora' and HF siblings are one 0.1 GiB h3-realism-people-t2v-i2v-r2v.safetensors LoRA
+5771,harness,"Rule 2: attaches_to='lora' from the card tag, but HF siblings show full merged GGUFs (Qwopus3.5-9B-coder-Exp-Q4_K_M.gguf 5629111264 bytes, Q3..Q8) and no adapter file"
+6539,harness,"Rule 3/5: a gliner2 extractor (HF architectures 'Gliner2ForSchemaExtraction') sent to mlx_lm.server in runs/screen-1791123931-code/results.json, 'Model type extractor not supported'; no runner of ours loads gliner2"
+6548,model,"Rule 1: HF config.architectures ['DFlashDraftModel'] and tags 'speculative-decoding-draft'; a draft head, not a standalone model (runs/screen-1791123993-code/results.json 'Received 69 parameters not in model')"
+6549,harness,"Rule 4: mlx-lm 0.32.0 ships mlx_lm/models/qwen3_5.py, which accepts a text-only config, but runs/screen-1791123997-code/results.json failed on the model_type string 'qwen3_5_text not supported'"
+8150,harness,"Rule 2: attaches_to='image-editing' taken from a card tag on a whole diffusers pipeline (HF model_index.json, diffusers:Flux2KleinPipeline, transformer/text_encoder/vae siblings)"
+8158,harness,"Rule 2: attaches_to='comfyui' from the library tag on full quantized model weights (HF siblings FastH3-8-Step-V2-Q4_K_M.gguf 19840127552 bytes plus text-encoder GGUFs), not an adapter"
+8670,harness,"Rule 3: OCR VLM sent to mlx_lm.server in runs/screen-1791252588-code/results.json, 'Model type hayai not supported'"
+8671,harness,"Rule 3: OCR VLM sent to mlx_lm.server in runs/screen-1791252591-code/results.json, 'Model type paddleocr_vl not supported', though hf-task transformers has models/paddleocr_vl"
+8872,model,Rule 10: verdicts.upstream_idle_days=1190.9 with until 'commit_after:2023-07-03T05:37:17.000Z'
+8933,model,Rule 10: verdicts.upstream_idle_days=959.7 with until 'commit_after:2024-02-19T10:57:45.000Z' (HF lastModified 2024-02-19)
+8938,model,Rule 10: verdicts.upstream_idle_days=1655.7 with until 'commit_after:2022-03-25T10:39:41.000Z'
+9143,harness,"Rule 8: runs/screen-1791261916-code/results.json failure 'it spent the whole 4000-token budget on reasoning', the pre-#628 max_tokens 4000 cap bound the outcome"
+9145,harness,"Rule 8: runs/screen-1791261964-code/results.json row 'timed out after 180.0s' with no output, so our 180s case timeout bound the outcome; IQ1_S (45.9 GiB) fits the 66 GiB ceiling"
+10089,machine-correct,"Rule 6: smallest single variant UD-IQ1_M sums to 283.0 GiB in HF siblings (?blobs=true), over the 66 GiB ceiling (verdicts.ceiling_gb=66.0)"
+10680,model,"Rule 1: GitHub API description 'Companion code for the global workspace interpretability paper', proposals.category='technique', size_bytes=0, no weights"
+10751,harness,"Rule 2: proposals.attaches_to='gui' from prose (lane_source 'prose') on a whole diffusers pipeline (HF diffusers._class_name 'BooguImagePipeline', transformer/mllm/vae siblings)"
+10898,harness,"Rule 5: runs/screen-1791386173-ocr/results.json 'ships its own modelling code (trust_remote_code), which hf-task never executes'; HF config model_type 'hayai' absent from hf-task transformers/models"
+10899,harness,"Rule 5: runs/screen-1791386187-ocr/results.json 'ships its own modelling code (trust_remote_code), which hf-task never executes'; HF config model_type 'unlimited_ocr' is not in transformers"
+11044,harness,"No numbered rule; by definition: paddleocr_vl is native in hf-task transformers but runs/screen-1791391456-ocr/hf-ocr_PaddleOCR-VL-1.6--ocr-invoice-line.stderr.txt shows an MPS backend abort 'mps.matmul ... incompatible dimensions' on GQA shapes, not the checkpoint failing"
+11378,harness,"Rule 8: runs/20261010-212708-adopt-web/results.json incumbent q3-4b passed 15/15 (saturated) on 5 cases x3, candidate 14/15, read as underpowered (verdicts.failure_class='underpowered')"
+11472,harness,"Rule 6: lodestones/Kroma smallest single checkpoint kroma-sensei-booru-e6-teacher-velocity-v0.3.safetensors is 24.0 GiB, under 66 GiB; until 'ceiling_gb:>98.0' sums several variants"
+11488,model,"Rule 9: runs/screen-1791806973-code/results.json outputs are degenerate ('ASSISTANT: The function is not a function.' repeated, then 'W?W?WW?'); 3 of 5 rows failed content without reaching the 32768 cap"
+11556,model,"Rule 1: HF siblings for harshatheg/Qwen-2.5-1B-RLCD are app code only (app.py, core/engine_mlx.py, Dockerfile), no weight file; proposals.size_bytes=131999"
+11611,model,"Rule 9: runs/screen-1791854855-code/results.json all 5 rows are never-ending degenerate output ('#include <iostream>' repeated, runs of newlines/backticks), not a cap cutting off a real answer"
+11613,harness,"Rule 8: adopt verdict with failure_class='inconclusive' and no run_id, decided 2026-10-13 01:32 UTC, under the #803 length refusal (git bcf2a2fe), never launched"
+11614,harness,"Rule 8: adopt verdict with failure_class='inconclusive' and no run_id, decided 2026-10-13 01:32 UTC, under the #803 length refusal (git bcf2a2fe '_refused ... inconclusive, nothing is concluded about the challenger', removed in c9f72482)"
+11711,harness,"Rule 3: audio any-to-any checkpoint (proposals.card_tags 'Audio-to-Audio','any-to-any') sent to mlx_lm.server per runs/screen-1791940434-code/results.json receipt.engines, 'Received 284 parameters not in model'"
+11835,harness,Rule 3/5: any-to-any vqvae+gpt checkpoint with lane from tag (proposals.lane_source='tag') sent to diffusers; runs/screen-1792026585-image/results.json 'does not appear to have a file named model_index.json'
+11942,model,Rule 9: runs/20261013-211356-adopt-code/results.json paired loss under identical max_tokens 32768: candidate 50/116 vs incumbent Ornith 86/116; even all 24 budget-exhausted rows passing gives 74/116 < 86
+12142,machine-correct,"Rule 6: HF siblings for zai-org/GLM-5.1 are one checkpoint, model.safetensors x282 = 1404.2 GiB, over verdicts.ceiling_gb=66.0"
+12193,harness,"Rule 6: Comfy-Org/MiniMax-H3 smallest pipeline (diffusion_models/minimax_h3_fl2va_pruned_w6a8 14.9 GiB + text_encoders int8 25.3 GiB + vae int8 2.6 GiB, about 43 GiB) fits under 66 GiB; until 'ceiling_gb:>489.1' is the repo total"
+12211,harness,"Rule 5: runs/screen-1792199065-image/diffusers_Walkyrie-1.3B-v1.0--fox-snow.stderr.txt 'module diffusers has no attribute WalkyriePipeline', a pipeline class diffusers 0.40 lacks"
