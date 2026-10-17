@@ -66,26 +66,44 @@ def rate(by: dict, candidate: str, cases: list[str]) -> float:
     return num / den if den else 0.0
 
 
+def _units(by: dict, cases: list[str], candidate: str, baseline: str, clusters: dict | None) -> list:
+    """Per resampling unit (a case, or every case of one cluster): candidate and baseline (num, den) sums."""
+    groups: dict = {}
+    for c in cases:
+        groups.setdefault(clusters[c] if clusters is not None else c, []).append(c)
+    return [tuple(sum(by[who][c][i] for c in members) for who in (candidate, baseline) for i in (0, 1))
+            for members in groups.values()]
+
+
 def interval(by: dict, cases: list[str], candidate: str, baseline: str, *,
              resamples: int = DEFAULT_RESAMPLES, seed: int = 1,
-             confidence: float = 0.95) -> dict:
+             confidence: float = 0.95, clusters: dict | None = None) -> dict:
     """Difference in corpus rate, with a bootstrap confidence interval.
 
     An interval that spans zero means the two are NOT separable on this data,
-    however different the point estimates look.
+    however different the point estimates look. `clusters` (case -> cluster)
+    resamples whole clusters, for cases that are not independent. #923.
     """
     rng = random.Random(seed)
     point = rate(by, candidate, cases) - rate(by, baseline, cases)
+    units = _units(by, cases, candidate, baseline, clusters)
+    n = len(units)
     diffs = []
     for _ in range(resamples):
-        sample = [cases[rng.randrange(len(cases))] for _ in cases]
-        diffs.append(rate(by, candidate, sample) - rate(by, baseline, sample))
+        na = da = nb = db = 0.0
+        for _ in range(n):
+            u = units[rng.randrange(n)]
+            na += u[0]
+            da += u[1]
+            nb += u[2]
+            db += u[3]
+        diffs.append((na / da if da else 0.0) - (nb / db if db else 0.0))
     diffs.sort()
     tail = (1.0 - confidence) / 2.0
     lo = diffs[int(tail * resamples)]
     hi = diffs[min(int((1.0 - tail) * resamples), resamples - 1)]
     return {"candidate": candidate, "baseline": baseline, "difference": point,
-            "low": lo, "high": hi, "cases": len(cases),
+            "low": lo, "high": hi, "cases": len(cases), "units": n,
             "separable": lo > 0 or hi < 0}
 
 

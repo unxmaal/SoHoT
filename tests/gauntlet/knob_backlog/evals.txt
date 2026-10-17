@@ -1,5 +1,4 @@
 evals/claims_import.py:_in_git->subprocess.run(timeout)
-evals/claims_report.py:wilson(z)
 evals/decide_corpus.py:MAX_CHARS
 evals/decide_corpus.py:THRESHOLD
 evals/decide_corpus.py:_get->httpx.get(timeout)

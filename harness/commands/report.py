@@ -237,3 +237,19 @@ def _report_winners(a) -> int:
         for r in unmeasured:
             print(f"    {r['modality']}: {r['typed']}")
     return 0
+
+
+def cmd_repo_report(a) -> int:
+    """The repo lane's paired report over one or two stored runs, the task as the unit. #923."""
+    import sqlite3
+
+    from evals import repo_report
+    from harness.commands.common import emit, err, note
+    try:
+        got = repo_report.run(a.runs, store=a.store or None, cases_dir=a.cases or None,
+                              resamples=a.resamples, seed=a.seed)
+    except (repo_report.Refused, OSError, sqlite3.Error) as exc:
+        return err(f"repo report refused: {exc}")
+    note(repo_report.text(got))
+    emit(True, **got)
+    return 0

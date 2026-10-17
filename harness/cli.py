@@ -441,6 +441,15 @@ def build_parser() -> argparse.ArgumentParser:
                      help="publish at the end of every discovery loop on this "
                           "machine; off until turned on")
     rep.set_defaults(func=report_cmd.cmd_report)
+    rr = sub.add_parser("repo-report", help="repo-lane resolve rates, paired comparison and power over "
+                        "stored runs, with the task as the unit of analysis (#923)")
+    rr.add_argument("runs", nargs="+", type=int, metavar="RUN", help="one run with two candidates, or two runs; "
+                    "the first run's candidate is the baseline")
+    rr.add_argument("--store", default="", help="the store to read, read-only (default: this home's discovery.db)")
+    rr.add_argument("--cases", default="", help="the repo cases the task keys come from (default: evals/cases/repo)")
+    rr.add_argument("--resamples", type=int, default=3000, help="task bootstrap resamples")
+    rr.add_argument("--seed", type=int, default=1)
+    rr.set_defaults(func=report_cmd.cmd_repo_report)
 
     rub = sub.add_parser(
         "rubric",

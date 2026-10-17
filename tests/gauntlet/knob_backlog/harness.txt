@@ -92,6 +92,7 @@ harness/inspect.py:Fit.upstream_idle_days
 harness/inspect.py:SIZE_DELAY
 harness/inspect.py:SIZE_RETRIES
 harness/inspect.py:_run(timeout)
+harness/intervals.py:wilson(z)
 harness/label.py:select(threshold)
 harness/live_audit.py:ERROR_RATE_MAX
 harness/live_audit.py:MIN_REQUESTS
