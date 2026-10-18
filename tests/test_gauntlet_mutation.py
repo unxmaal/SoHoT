@@ -317,6 +317,15 @@ def test_a_clean_run_matching_the_pin_passes_and_a_new_survivor_fails(monkeypatc
     assert mutation.main(["run", "--module", b, "--workdir", str(tmp_path / "w")]) == 1
 
 
+def test_the_counts_come_last_so_a_tail_that_cuts_the_new_keys_still_shows_them(monkeypatch, tmp_path, capsys):
+    b = "harness/router.py"
+    _fake_run(monkeypatch, tmp_path, {b: [f"harness.router:f:k{i}" for i in range(60)]})
+    mutation.PIN_FILE.write_text(json.dumps({b: ["harness.router:f:old"]}), encoding="utf-8")
+    assert mutation.main(["run", "--module", b, "--workdir", str(tmp_path / "w")]) == 1
+    tail = capsys.readouterr().out.splitlines()[-40:]
+    assert f"{b}: 60 new survivor(s), 1 pinned now killed" in tail
+
+
 def test_a_ci_run_s_found_file_pins_only_its_own_modules(monkeypatch, tmp_path):
     a, b = "harness/reasons.py", "harness/router.py"
     _fake_run(monkeypatch, tmp_path, {a: mutation.BrokenRun("boom"), b: ["harness.router:f:k2", "harness.router:f:k1"]})

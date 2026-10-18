@@ -134,17 +134,19 @@ def listing_kind(files, config=None, found=None) -> str | None:
     root = {n for n in names if "/" not in n}
 
     def adapter_file(n):
-        return n.rsplit("/", 1)[-1] == "adapter_config.json" or n.rsplit("/", 1)[-1].startswith("adapter_model.")
+        base = n.rpartition("/")[2]
+        return base == "adapter_config.json" or base.startswith("adapter_model.")
     if any(adapter_file(n) for n in root):
         return ADAPTER
     config = config or {}
+    if "model_index.json" in root or config.get("model_type") or config.get("architectures"):
+        return MODEL
     if found is None:
-        found = variants.variants(files, model_type=str(config.get("model_type") or ""))
-    whole = any(v.format in (variants.DIFFUSERS, variants.MISTRAL)
-                or (v.format in (variants.GGUF, variants.COMFYUI)
-                    and not any(re.search(r"lora|adapter", f.lower()) for f in v.files))
-                for v in found)
-    if whole or "model_index.json" in root or config.get("model_type") or config.get("architectures"):
+        found = variants.variants(files)
+    if any(v.format in (variants.DIFFUSERS, variants.MISTRAL)
+           or (v.format in (variants.GGUF, variants.COMFYUI)
+               and not any(re.search(r"lora|adapter", f.lower()) for f in v.files))
+           for v in found):
         return MODEL
     if any(adapter_file(n) for n in names):
         return ADAPTER

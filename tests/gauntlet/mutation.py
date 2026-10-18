@@ -48,7 +48,8 @@ MODULES = {
         "tests/test_loop_end_to_end.py", "tests/test_retrieval_lane.py", "tests/test_harness_lanes.py",
         "tests/test_liveness_705.py", "tests/test_runner_base_weights.py", "tests/test_ladder_seams.py",
         "tests/test_harness_lane_provenance.py", "tests/test_pii_lane.py", "tests/test_remote_code.py",
-        "tests/test_ocr_lane.py", "tests/test_degenerate_955.py", "tests/test_load_log_953.py"],
+        "tests/test_ocr_lane.py", "tests/test_degenerate_955.py", "tests/test_load_log_953.py",
+        "tests/test_screen_listing_984.py"],
     "harness/adopt.py": [
         "tests/test_harness_adopt.py", "tests/test_harness_adopt_receipt.py", "tests/test_adopt_by_spec.py",
         "tests/test_adoptions.py", "tests/test_adopt_cmd.py", "tests/test_human_verdicts.py",
@@ -250,6 +251,12 @@ def gate(found_by_module, pin):
     return problems, notes
 
 
+def tally(found_by_module, pin):
+    """One count line per pinned module, printed last so a log tail that cuts the key lists still shows both."""
+    return [f"{m}: {len(set(f) - set(pin[m]))} new survivor(s), {len(set(pin[m]) - set(f))} pinned now killed"
+            for m, f in sorted(found_by_module.items()) if m in pin]
+
+
 def _paths(tree, module):
     base = Path(tree) / "mutants" / module
     return base, Path(f"{base}.meta")
@@ -347,7 +354,7 @@ def cmd_run(a):
         return 1 if broken else 0
     problems, notes = gate(found, pin)
     problems += broken
-    for line in notes + problems:
+    for line in notes + problems + tally(found, pin):
         print(line)
     print(f"mutmut log: {workdir / 'mutmut.log'}")
     return 1 if problems else 0
