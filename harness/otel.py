@@ -312,34 +312,37 @@ def from_events(ev: list[dict]) -> dict:
     api = [e for e in ev if e["name"] == "api_request"]
     tools = [e for e in ev if e["name"] == "tool_result"]
     s = lambda rows, c: sum(r[c] or 0 for r in rows)  # noqa: E731
-    models: dict = defaultdict(float)
+    models: dict = defaultdict(int)
     for e in api:
-        models[e["model"] or "?"] += e["cost_usd"] or 0
-    return {"usd": round(s(api, "cost_usd"), 6), "input": int(s(api, "input_tokens")),
+        models[e["model"] or "?"] += sum(int(e[c] or 0) for c in _EVENT_TOKENS)
+    return {"input": int(s(api, "input_tokens")),
             "output": int(s(api, "output_tokens")), "cache_read": int(s(api, "cache_read_tokens")),
             "cache_write": int(s(api, "cache_creation_tokens")),
             "cache_write_5m": int(s(api, "cache_creation_5m_tokens")),
             "cache_write_1h": int(s(api, "cache_creation_1h_tokens")), "requests": len(api),
             "tool_results": len(tools), "tool_tokens": sum(int(t["result_bytes"] or 0) // 4 for t in tools),
             "sessions": len({e["session_id"] for e in ev if e["session_id"]}),
-            "models": {k: round(v, 6) for k, v in sorted(models.items())}}
+            "models": dict(sorted(models.items()))}
+
+
+#: api_request token fields summed per model; cost_usd is never read (#976).
+_EVENT_TOKENS = ("input_tokens", "output_tokens", "cache_read_tokens", "cache_creation_tokens")
 
 
 def from_metrics(mt: list[dict]) -> dict:
-    usd = metric_total(mt, "cost.usage").get("", 0.0)
     tok = metric_total(mt, "token.usage", key=lambda r: _TOKEN_TYPES.get(r["type"], r["type"]))
-    models = metric_total(mt, "cost.usage", key=lambda r: r["model"] or "?")
+    models = metric_total(mt, "token.usage", key=lambda r: r["model"] or "?")
     unknown = {k: int(v) for k, v in sorted(tok.items()) if k not in _TOKEN_TYPES.values()}
-    return {"usd": round(usd, 6), **{k: int(tok.get(k, 0)) for k in _TOKEN_TYPES.values()},
-            "unknown_types": unknown, "models": {k: round(v, 6) for k, v in sorted(models.items())}}
+    return {**{k: int(tok.get(k, 0)) for k in _TOKEN_TYPES.values()},
+            "unknown_types": unknown, "models": {k: int(v) for k, v in sorted(models.items())}}
 
 
 def from_ccusage(day: dict | None) -> dict | None:
     if day is None:
         return None
     t = day.get("tokens") or {}
-    return {"usd": day.get("usd"), **{k: int(t.get(k) or 0) for k in _TOKEN_TYPES.values()},
-            "models": {k: v.get("usd") for k, v in sorted((day.get("models") or {}).items())}}
+    return {**{k: int(t.get(k) or 0) for k in _TOKEN_TYPES.values()},
+            "models": {k: sum(int(n or 0) for n in v.values()) for k, v in sorted((day.get("models") or {}).items())}}
 
 
 def from_transcripts(rows: list[dict]) -> dict:
@@ -347,7 +350,7 @@ def from_transcripts(rows: list[dict]) -> dict:
 
 
 #: (row, label) in the comparison table, and which sources measure each.
-COMPARE_ROWS = (("usd", "cost USD"), ("input", "input tokens"), ("output", "output tokens"),
+COMPARE_ROWS = (("input", "input tokens"), ("output", "output tokens"),
                 ("cache_read", "cache read tokens"), ("cache_write", "cache write tokens"),
                 ("cache_write_5m", "  of which 5m"), ("cache_write_1h", "  of which 1h"),
                 ("requests", "API requests"), ("tool_results", "tool results"),

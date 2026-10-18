@@ -4,9 +4,6 @@ from harness.knobs.base import _k
 KNOBS = [
     _k("energy_every", ["scripts/launchd.sh:ENERGY_EVERY_MIN"], [1, 5, 15],
        note="minutes between macmon power readings from the energy unit (#826)"),
-    _k("ledger_counterfactual", ["harness/ledger.py:COUNTERFACTUAL", "harness/ledger.py:COUNTERFACTUAL_DEFAULT"],
-       ["haiku", "sonnet", "opus"],
-       note="cloud tier a lane's local work is priced at as displaced dollars; printed beside every figure (#826)"),
     _k("ledger_hours", ["scripts/launchd.sh:LEDGER_HOURS"], [21, 23],
        note="local hour the ledger unit upserts today's and yesterday's ledger_days rows (#826)"),
     _k("ledger_power_gap", ["harness/ledger.py:POWER_GAP_S"], [120.0, 180.0, 600.0],
@@ -24,7 +21,5 @@ NOT_GATING = {
                                     "presentation only, the totals are unchanged (#827)",
     "harness/trends.py:TREND_DAYS": "how many days back the published trend charts reach; presentation only (#827)",
     "harness/ledger.py:cloud->runner(timeout)": "how long ccusage may take; a timeout reports the cloud unavailable (#826)",
-    "harness/ledger.py:prices->runner(timeout)": "how long installing litellm at the pin may take to print prices; "
-                                                 "a timeout leaves displaced dollars unpriced, never zero (#826)",
     "harness/commands/ledger.py:gather_compare->_dt.timedelta(days)": "one calendar day, the compared window (#868)",
 }

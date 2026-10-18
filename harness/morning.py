@@ -100,13 +100,22 @@ def watchdog(conn, since: float) -> list[dict]:
 
 
 def ledger_row(conn, now: float) -> dict | None:
-    """Last night's ledger_days row: yesterday's local day."""
+    """Last night's ledger_days row in tokens, read from its detail so a row from before #976 reads too."""
     if not _has(conn, "ledger_days"):
         return None
     day = datetime.fromtimestamp(now - 86400).strftime("%Y-%m-%d")
-    r = conn.execute("SELECT day, recorded_at, cloud_usd, displaced_usd, mapped_usd, tier, energy_kwh "
-                     "FROM ledger_days WHERE day = ?", (day,)).fetchone()
-    return dict(r) if r else {"day": day, "missing": True}
+    r = conn.execute("SELECT day, recorded_at, energy_kwh, detail FROM ledger_days WHERE day = ?",
+                     (day,)).fetchone()
+    if not r:
+        return {"day": day, "missing": True}
+    try:
+        d = json.loads(r["detail"] or "{}")
+    except ValueError:
+        d = {}
+    lanes = (d.get("displaced") or {}).get("lanes") or []
+    displaced = {k: sum(x.get(k) or 0 for x in lanes) for k in ("requests", "input", "output")}
+    return {"day": r["day"], "recorded_at": r["recorded_at"], "energy_kwh": r["energy_kwh"],
+            "cloud": (d.get("cloud") or {}).get("tokens"), "plan": d.get("headroom") or {}, "displaced": displaced}
 
 
 def stale_lanes(conn) -> list[dict]:

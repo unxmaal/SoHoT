@@ -7,12 +7,21 @@ import time
 from harness.commands.common import emit, note
 
 
-def _usd(v) -> str:
-    return "n/a" if v is None else f"${v:,.2f}"
-
-
 def _tok(n: int) -> str:
     return f"{n / 1e6:.2f}M" if n >= 1_000_000 else f"{n:,}"
+
+
+def tokens(t: dict | None) -> str:
+    """Claude Code tokens as one phrase; a Max-plan login is not charged per token, so no price. #976."""
+    if t is None:
+        return "n/a"
+    return (f"{_tok(t.get('input') or 0)} in, {_tok(t.get('output') or 0)} out, "
+            f"{_tok(t.get('cache_read') or 0)} cache read, {_tok(t.get('cache_write') or 0)} cache write")
+
+
+def local_tokens(b: dict | None) -> str:
+    b = b or {}
+    return f"{_tok(b.get('input') or 0)} in, {_tok(b.get('output') or 0)} out"
 
 
 def gather(a, now: float) -> dict:
@@ -36,16 +45,13 @@ def gather(a, now: float) -> dict:
             ev = otel.events(conn, start, now + 1)
         finally:
             conn.close()
-    pin = ledger.pin("LITELLM_PIN")
-    table = ledger.prices(pin)
     root = cr.default_root()
     ctx = cr.scan(cr.transcripts(root, newer_than=start), since=start) if root.is_dir() else []
     out = ledger.build(
-        since=start, now=now, cloud_doc=ledger.cloud(first_day, table=table, litellm_pin=pin), rows=rows,
+        since=start, now=now, cloud_doc=ledger.cloud(first_day), rows=rows,
         limits=ledger.read_jsonl(ledger.ledger_dir() / "ratelimits.jsonl"),
         power=ledger.read_jsonl(ledger.ledger_dir() / "power.jsonl"),
-        table=table, tier=a.tier, tariff=a.tariff,
-        macmon=bool(shutil.which("macmon")), litellm_pin=pin, delegations=dels, context=ctx)
+        tariff=a.tariff, macmon=bool(shutil.which("macmon")), delegations=dels, context=ctx)
     out["recorded"] = history
     out["otel"] = otel_days(ev)
     return out
@@ -65,18 +71,13 @@ def show(L: dict) -> None:
     note(f"ledger {w['first_day']} .. {w['last_day']}")
     c = L["cloud"]
     if c.get("available"):
-        unpriced = ", ".join(c.get("unpriced_models") or []) or "none"
-        note(f"cloud     {_usd(c['usd'])} Claude Code API-equivalent ({c['source']}); "
-             f"unpriced, not counted: {unpriced}")
-        if c.get("litellm_priced_models"):
-            note(f"          priced from {c.get('litellm_price_source')} (ccusage has no price): "
-                 f"{', '.join(c['litellm_priced_models'])}")
+        note(f"cloud     {tokens(c['tokens'])} ({c['source']})")
     else:
         note(f"cloud     unavailable: {c.get('why')}")
     od = L.get("otel") or {}
     if od:
-        note(f"otel      {_usd(sum(d['usd'] for d in od.values()))} over {sum(d['requests'] for d in od.values()):,} "
-             f"api_request events, {sum(d['sessions'] for d in od.values())} session-days (Claude Code's own figure)")
+        note(f"otel      {tokens(_otel_sum(od))} over {sum(d['requests'] for d in od.values()):,} "
+             f"api_request events, {sum(d['sessions'] for d in od.values())} session-days (Claude Code's own count)")
     else:
         note("otel      no rows; `soh otel env` prints the settings.json env that turns export on")
     h = L["headroom"]
@@ -95,31 +96,37 @@ def show(L: dict) -> None:
     dg = L["delegated"]
     outcomes = ", ".join(f"{k} {v}" for k, v in sorted(dg["outcomes"].items())) or "none"
     note(f"delegated {dg['requests']:,} requests inside work, joined on call_id (outcomes: {outcomes})"
-         + (f"; {dg['unjoined']['requests']} with no gateway row, not priced" if dg["unjoined"]["requests"] else ""))
-    note(f"displaced {_usd(L['displaced']['usd'])} of tagged work at {L['displaced']['tier']}")
-    if L["mapped"]["usd"]:
-        note(f"mapped    {_usd(L['mapped']['usd'])} of untagged history by alias mapping, "
-             f"at {L['mapped']['tier']}")
+         + (f"; {dg['unjoined']['requests']} with no gateway row, not counted" if dg["unjoined"]["requests"] else ""))
+    note(f"displaced {local_tokens(L['displaced']['tokens'])} of tagged work served locally")
+    if L["mapped"]["tokens"]["requests"]:
+        note(f"mapped    {local_tokens(L['mapped']['tokens'])} of untagged history by alias mapping")
         for m in s["mapping"]:
             note(f"          {m['alias']} {m['first_day']}..{m['last_day']} -> {m['purpose']}: {m['why']}")
     e = L["energy"]
     if e.get("available"):
-        note(f"energy    {e['kwh']:.2f} kWh, {_usd(e['usd'])} at ${e['tariff_usd_per_kwh']}/kWh "
+        note(f"energy    {e['kwh']:.2f} kWh, ${e['usd']:,.2f} at ${e['tariff_usd_per_kwh']}/kWh "
              f"(mean {e['mean_watts'] or 0:.0f} W over {e['covered_s'] / 3600:.1f} h covered)")
     else:
         note(f"energy    {e.get('why')}")
     note("")
-    note(f"{'day':<10} {'cloud':>10} {'displaced':>10} {'mapped':>10} {'work out':>9} "
-         f"{'eval out':>9} {'unknown out':>11} {'kWh':>6} {'7d peak':>7}")
+    note(f"{'day':<10} {'cloud in':>9} {'cloud out':>9} {'cache rd':>9} {'displaced':>9} "
+         f"{'eval out':>9} {'unknown out':>11} {'kWh':>6} {'5h peak':>7} {'7d peak':>7}")
     for d in L["days"]:
         loc = d["local"]
         en = d["energy"] or {}
-        peak = d["headroom"].get("seven_day")
-        note(f"{d['day']:<10} {_usd(d['cloud']['usd']):>10} {_usd(d['displaced']['usd']):>10} "
-             f"{_usd(d['mapped']['usd']):>10} {_tok(loc.get('work', {}).get('output', 0)):>9} "
+        ct = d["cloud"]["tokens"]
+        cell = (lambda k: "n/a" if ct is None else _tok(ct.get(k) or 0))  # noqa: E731
+        peaks = ["" if d["headroom"].get(k) is None else f"{d['headroom'][k]:.0f}%" for k in ("five_hour", "seven_day")]
+        dt = d["displaced"]["tokens"]
+        note(f"{d['day']:<10} {cell('input'):>9} {cell('output'):>9} {cell('cache_read'):>9} "
+             f"{_tok(dt['input'] + dt['output']):>9} "
              f"{_tok(loc.get('eval', {}).get('output', 0)):>9} {_tok(loc.get('unknown', {}).get('output', 0)):>11} "
-             f"{en.get('kwh', 0):>6.2f} {'' if peak is None else f'{peak:.0f}%':>7}")
-    note(f"\ntier assumed: {s['counterfactual_default']}; prices {s['price_source']}")
+             f"{en.get('kwh', 0):>6.2f} {peaks[0]:>7} {peaks[1]:>7}")
+    note("\nClaude Code on a subscription is counted in tokens and plan-window use, not priced (#976)")
+
+
+def _otel_sum(od: dict) -> dict:
+    return {k: sum(d.get(k) or 0 for d in od.values()) for k in ("input", "output", "cache_read", "cache_write")}
 
 
 def gather_compare(day: str, tz=None) -> dict:
@@ -136,18 +143,15 @@ def gather_compare(day: str, tz=None) -> dict:
             ev, mt = otel.events(conn, start, end), otel.metrics(conn, start, end)
         finally:
             conn.close()
-    pin = ledger.pin("LITELLM_PIN")
-    cc = ledger.cloud(day, table=ledger.prices(pin), litellm_pin=pin)
+    cc = ledger.cloud(day)
     root = cr.default_root()
     ctx = cr.scan(cr.transcripts(root, newer_than=start), since=start, until=end) if root.is_dir() else []
     return otel.compare(day, ev, mt, (cc.get("days") or {}).get(day), ctx,
                         ccusage_available=bool(cc.get("available")))
 
 
-def _cell(row: str, v) -> str:
-    if v is None:
-        return "-"
-    return _usd(v) if row == "usd" else f"{int(v):,}"
+def _cell(v) -> str:
+    return "-" if v is None else f"{int(v):,}"
 
 
 def show_compare(C: dict) -> None:
@@ -155,11 +159,11 @@ def show_compare(C: dict) -> None:
     note(f"compare {C['day']}")
     note(f"{'':<26}" + "".join(f"{s:>16}" for s in otel.SOURCES))
     for r in C["rows"]:
-        note(f"{r['label']:<26}" + "".join(f"{_cell(r['row'], r[s]):>16}" for s in otel.SOURCES))
+        note(f"{r['label']:<26}" + "".join(f"{_cell(r[s]):>16}" for s in otel.SOURCES))
     if C["models"]:
-        note("\ncost by model")
+        note("\ntokens by model")
         for m in C["models"]:
-            note(f"{m['model'][:26]:<26}" + "".join(f"{_cell('usd', m.get(s)):>16}" for s in otel.SOURCES))
+            note(f"{m['model'][:26]:<26}" + "".join(f"{_cell(m.get(s)):>16}" for s in otel.SOURCES))
     for k, v in C["notes"].items():
         note(f"{k}: {v}")
 

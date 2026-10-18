@@ -58,7 +58,7 @@ table knob_sweeps [('id', 'INTEGER', 0, None, 1), ('knob', 'TEXT', 1, None, 0), 
   index ix_knob_sweeps_key unique=0 ['knob', 'lane', 'spec', 'machine_id']
 table lane_probes [('id', 'INTEGER', 0, None, 1), ('at', 'REAL', 1, None, 0), ('machine_id', 'INTEGER', 0, None, 0), ('lane', 'TEXT', 1, None, 0), ('spec', 'TEXT', 1, "''", 0), ('base', 'TEXT', 1, "''", 0), ('upstream', 'TEXT', 1, "''", 0), ('model', 'TEXT', 1, "''", 0), ('engine', 'TEXT', 1, "''", 0), ('outcome', 'TEXT', 1, None, 0), ('reason', 'TEXT', 1, "''", 0), ('http_status', 'INTEGER', 0, None, 0), ('error', 'TEXT', 1, "''", 0), ('seconds', 'REAL', 0, None, 0), ('prompt_tokens', 'INTEGER', 0, None, 0), ('completion_tokens', 'INTEGER', 0, None, 0)]
   index ix_lane_probes_lane unique=0 ['lane', 'machine_id', 'at']
-table ledger_days [('day', 'TEXT', 0, None, 1), ('recorded_at', 'REAL', 1, None, 0), ('cloud_usd', 'REAL', 0, None, 0), ('displaced_usd', 'REAL', 0, None, 0), ('mapped_usd', 'REAL', 0, None, 0), ('tier', 'TEXT', 1, "''", 0), ('energy_kwh', 'REAL', 0, None, 0), ('detail', 'TEXT', 1, "'{}'", 0)]
+table ledger_days [('day', 'TEXT', 0, None, 1), ('recorded_at', 'REAL', 1, None, 0), ('energy_kwh', 'REAL', 0, None, 0), ('detail', 'TEXT', 1, "'{}'", 0)]
   index sqlite_autoindex_ledger_days_1 unique=1 ['day']
 table lineage [('id', 'INTEGER', 0, None, 1), ('proposal_id', 'INTEGER', 1, None, 0), ('parent', 'TEXT', 1, None, 0), ('kind', 'TEXT', 1, "''", 0)]
   index sqlite_autoindex_lineage_1 unique=1 ['proposal_id', 'parent', 'kind']
@@ -81,7 +81,7 @@ table meta [('key', 'TEXT', 0, None, 1), ('value', 'TEXT', 0, None, 0)]
   index sqlite_autoindex_meta_1 unique=1 ['key']
   ('artifact_split', '{}')
   ('candidate_guesses', '[{"adoption": 2, "from": "the adopt verdict/'s machine; no vote or judged run names one", "lane": "svg", "machine": 4, "proposal": "org-l/svg-thing", "spec": "mlx:org-l/svg-thing"}]')
-  ('schema', '76')
+  ('schema', '77')
 table otel_events [('id', 'INTEGER', 0, None, 1), ('key', 'TEXT', 1, None, 0), ('received_at', 'REAL', 1, None, 0), ('at', 'REAL', 1, None, 0), ('session_id', 'TEXT', 1, "''", 0), ('prompt_id', 'TEXT', 1, "''", 0), ('name', 'TEXT', 1, None, 0), ('tool', 'TEXT', 1, "''", 0), ('model', 'TEXT', 1, "''", 0), ('query_source', 'TEXT', 1, "''", 0), ('success', 'INTEGER', 0, None, 0), ('duration_ms', 'REAL', 0, None, 0), ('input_tokens', 'REAL', 0, None, 0), ('output_tokens', 'REAL', 0, None, 0), ('cache_read_tokens', 'REAL', 0, None, 0), ('cache_creation_tokens', 'REAL', 0, None, 0), ('cache_creation_5m_tokens', 'REAL', 0, None, 0), ('cache_creation_1h_tokens', 'REAL', 0, None, 0), ('cost_usd', 'REAL', 0, None, 0), ('result_bytes', 'REAL', 0, None, 0), ('attrs', 'TEXT', 1, "'{}'", 0)]
   index ix_otel_events_at unique=0 ['at', 'name']
   index ix_otel_events_session unique=0 ['session_id', 'at']

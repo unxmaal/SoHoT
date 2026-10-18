@@ -1472,11 +1472,15 @@ def _count(items) -> dict[str, int]:
     return out
 
 
+#: Metric names no runner emits any more that stored rows still carry; never summarized. #976.
+RETIRED_METRICS = frozenset({"cost_usd"})
+
+
 def _gather_metrics(rows: list[Result]) -> dict[str, list[float]]:
     gathered: dict[str, list[float]] = {}
     for r in rows:
         for name, value in (r.metrics or {}).items():
-            if isinstance(value, (int, float)):
+            if isinstance(value, (int, float)) and name not in RETIRED_METRICS:
                 gathered.setdefault(name, []).append(float(value))
     return gathered
 

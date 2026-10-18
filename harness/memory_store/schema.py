@@ -4,7 +4,7 @@ from __future__ import annotations
 from harness import store
 
 
-SCHEMA_VERSION = 76
+SCHEMA_VERSION = 77
 
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
@@ -528,16 +528,10 @@ CREATE TABLE IF NOT EXISTS lane_probes (
     completion_tokens INTEGER
 );
 
--- One day of `soh ledger`: cloud spend, displaced dollars and energy, so trends outlive transcripts. #826.
+-- One day of `soh ledger`: Claude and local tokens, plan peaks and energy, so trends outlive transcripts. #826, #976.
 CREATE TABLE IF NOT EXISTS ledger_days (
     day           TEXT PRIMARY KEY,
     recorded_at   REAL NOT NULL,
-    -- NULL when ccusage did not run; unpriced models are never in it.
-    cloud_usd     REAL,
-    displaced_usd REAL,
-    mapped_usd    REAL,
-    -- The counterfactual tier the displaced figure assumed.
-    tier          TEXT NOT NULL DEFAULT '',
     energy_kwh    REAL,
     -- JSON: the day as `soh ledger --json` gives it.
     detail        TEXT NOT NULL DEFAULT '{}'

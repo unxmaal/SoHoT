@@ -1,4 +1,4 @@
-"""soh ledger: ccusage totals, statusline readings, gateway purpose, displaced dollars, energy, privacy (#826)."""
+"""soh ledger: ccusage tokens, statusline readings, gateway purpose, displaced tokens, energy, privacy (#826, #976)."""
 from __future__ import annotations
 
 import io
@@ -18,8 +18,6 @@ from tests import shells
 FIX = Path(__file__).parent / "fixtures" / "ledger"
 REPO = Path(__file__).resolve().parents[1]
 UTC = timezone.utc
-TABLE = {"claude-haiku-5-5": [1e-07, 5e-07], "claude-sonnet-5-5": [2e-06, 1e-05],
-         "claude-opus-5-5": [4e-06, 2e-05]}
 
 
 def at(day: str, hour: int = 12) -> float:
@@ -32,35 +30,26 @@ def ccusage_doc() -> dict:
 
 def build(**kw):
     args = dict(since=at("2026-10-08", 0), now=at("2026-10-10", 23), cloud_doc={"available": False},
-                rows=[], limits=[], power=[], table=TABLE, tz=UTC, litellm_pin="litellm[proxy]==1.100.0")
+                rows=[], limits=[], power=[], tz=UTC)
     args.update(kw)
     return ledger.build(**args)
 
 
 # --- cloud ----------------------------------------------------------------------------------------
 
-def test_ccusage_days_count_only_priced_models_and_name_the_unpriced():
+def test_ccusage_days_carry_tokens_in_all_and_by_model():
     got = ledger.parse_ccusage(ccusage_doc())
-    assert got["unpriced_models"] == ["claude-haiku-5-5", "claude-sonnet-5-5"]
     d8 = got["days"]["2026-10-08"]
-    assert d8["usd"] == 89.17
-    assert d8["unpriced"] == {"claude-sonnet-5-5": 600}
     assert d8["tokens"] == {"input": 1000, "output": 2000, "cache_write": 3000, "cache_read": 4000}
-    assert got["days"]["2026-10-09"]["usd"] == 14.58
+    assert d8["models"]["claude-sonnet-5-5"] == {"input": 100, "output": 500, "cache_read": 0, "cache_write": 0}
+    assert "usd" not in json.dumps(got) and "unpriced" not in json.dumps(got)
 
 
-def test_a_day_of_only_unpriced_models_has_no_price_rather_than_zero():
-    d10 = ledger.parse_ccusage(ccusage_doc())["days"]["2026-10-10"]
-    assert d10["usd"] is None
-    assert d10["unpriced"] == {"claude-haiku-5-5": 12}
-
-
-def test_the_cloud_total_is_exact_and_reports_unpriced_models():
+def test_the_cloud_total_is_the_sum_of_each_days_tokens():
     doc = {"available": True, "source": "ccusage@x", **ledger.parse_ccusage(ccusage_doc())}
     L = build(cloud_doc=doc)
-    assert L["cloud"]["usd"] == pytest.approx(103.75)
-    assert L["cloud"]["unpriced_models"] == ["claude-haiku-5-5", "claude-sonnet-5-5"]
-    assert [d["cloud"]["usd"] for d in L["days"]] == [89.17, 14.58, None]
+    assert L["cloud"]["tokens"] == {"input": 1015, "output": 2027, "cache_read": 4000, "cache_write": 3000}
+    assert [d["cloud"]["tokens"]["output"] for d in L["days"]] == [2000, 20, 7]
 
 
 def test_ccusage_runs_at_the_pin_in_calculate_offline_mode():
@@ -75,13 +64,13 @@ def test_ccusage_runs_at_the_pin_in_calculate_offline_mode():
     assert ledger.pin("CCUSAGE_PIN").startswith("ccusage==") and re.fullmatch(r"\d+\.\d+\.\d+", pin)
     assert seen["argv"] == ["npx", "-y", f"ccusage@{pin}", "daily", "--json", "--mode", "calculate",
                             "--offline", "--since", "20261008"]
-    assert got["available"] and got["unpriced_models"] == ["claude-haiku-5-5", "claude-sonnet-5-5"]
+    assert got["available"] and sorted(got["days"]) == ["2026-10-08", "2026-10-09", "2026-10-10"]
 
 
 def test_without_npx_the_cloud_is_unavailable_not_zero():
     got = ledger.cloud("2026-10-08", runner=None, which=lambda n: None)
     assert got["available"] is False
-    assert build(cloud_doc=got)["cloud"]["usd"] is None
+    assert build(cloud_doc=got)["cloud"]["tokens"] is None
 
 
 # --- local and displaced --------------------------------------------------------------------------
@@ -90,37 +79,25 @@ def row(day, purpose, pin_, pout, alias="sohot-code", lane="code", client="pytho
     return (at(day), alias, lane, client, purpose, pin_, pout)
 
 
-def test_work_is_displaced_at_the_lane_tier_and_the_tier_is_printed_beside_it():
-    rows = [row("2026-10-08", "work", 1_000_000, 100_000)]
+def test_work_is_displaced_in_tokens_by_lane():
+    rows = [row("2026-10-08", "work", 1_000_000, 100_000),
+            row("2026-10-08", "work", 1_000_000, 0, "sohot-web", "web")]
     L = build(rows=rows)
-    assert L["displaced"]["usd"] == pytest.approx(3.0)
-    assert L["displaced"]["tier"].startswith("sonnet (claude-sonnet-5-5 $2.00/$10.00")
-    lane = L["days"][0]["displaced"]["lanes"][0]
-    assert lane["usd"] == pytest.approx(3.0) and lane["tier"].startswith("sonnet")
-    haiku = build(rows=rows, tier="haiku")
-    assert haiku["displaced"]["usd"] == pytest.approx(0.15)
-    assert haiku["displaced"]["tier"].startswith("haiku (claude-haiku-5-5")
-
-
-def test_a_lane_knob_moves_only_that_lane(monkeypatch):
-    monkeypatch.setattr(ledger, "COUNTERFACTUAL", {"code": "opus"})
-    rows = [row("2026-10-08", "work", 1_000_000, 0), row("2026-10-08", "work", 1_000_000, 0, "sohot-web", "web")]
-    L = build(rows=rows)
+    assert L["displaced"]["tokens"] == {"requests": 2, "input": 2_000_000, "output": 100_000}
     by = {x["lane"]: x for x in L["days"][0]["displaced"]["lanes"]}
-    assert by["code"]["usd"] == pytest.approx(4.0) and by["code"]["tier"].startswith("opus")
-    assert by["web"]["usd"] == pytest.approx(2.0) and by["web"]["tier"].startswith("sonnet")
+    assert by["code"] == {"lane": "code", "requests": 1, "input": 1_000_000, "output": 100_000}
+    assert "usd" not in json.dumps(L["displaced"]) and "tier" not in json.dumps(L["days"][0]["displaced"])
 
 
-def test_finding_469_reproduces_at_each_tier():
+def test_finding_469_maps_to_work_tokens():
     rows = [row("2026-10-09", "unknown", 70_600_000, 8_600_000, "eval-7b", "", "Python-urllib")]
-    got = {t: build(rows=rows, tier=t)["mapped"]["usd"] for t in ("haiku", "sonnet", "opus")}
-    assert got == pytest.approx({"haiku": 11.36, "sonnet": 227.2, "opus": 454.4})
+    assert build(rows=rows)["mapped"]["tokens"] == {"requests": 1, "input": 70_600_000, "output": 8_600_000}
 
 
 def test_eval_and_smoke_are_cost_and_never_displaced():
     rows = [row("2026-10-08", "eval", 5_000_000, 500_000), row("2026-10-08", "smoke", 10, 5)]
     L = build(rows=rows)
-    assert L["displaced"]["usd"] == 0
+    assert L["displaced"]["tokens"]["requests"] == 0
     assert L["days"][0]["cost"] == {"eval": {"requests": 1, "input": 5_000_000, "output": 500_000},
                                     "smoke": {"requests": 1, "input": 10, "output": 5}}
 
@@ -137,7 +114,7 @@ def test_unknown_rows_stay_apart_and_the_mapping_is_bounded_by_its_days():
     assert "eval-7b -> work" in d8["mapped"]["rows"][0]["mapping"]
     assert L["days"][-1]["unknown"] == {"requests": 1, "input": 100, "output": 10}
     assert d8["cost"]["eval"]["requests"] == 1
-    assert L["displaced"]["usd"] == 0
+    assert L["displaced"]["tokens"]["requests"] == 0
     assert L["mapped"]["note"].startswith("untagged history assigned by the alias mapping")
 
 
@@ -149,12 +126,12 @@ def test_a_delegation_is_counted_once_through_its_call_id():
             ("gw-b", at("2026-10-08"), "decide", None, 1_000_000, 0),
             ("local-c", at("2026-10-09"), "code", "discarded", 500, 50)]
     L = build(rows=rows, delegations=dels)
-    assert L["displaced"]["usd"] == pytest.approx(6.0)
+    assert L["displaced"]["tokens"] == {"requests": 3, "input": 3_000_000, "output": 0}
     assert L["local"]["work"] == {"requests": 3, "input": 3_000_000, "output": 0}
     assert L["delegated"]["requests"] == 2
     assert L["delegated"]["outcomes"] == {"used": 1, "pending": 1}
     assert L["delegated"]["unjoined"] == {"requests": 1, "input": 500, "output": 50}
-    assert L["days"][1]["displaced"]["usd"] == 0
+    assert L["days"][1]["displaced"]["tokens"]["requests"] == 0
 
 
 def test_the_delegations_table_is_read_from_the_store_and_joins_the_gateway_row():
@@ -187,27 +164,6 @@ def test_a_store_before_schema_68_reads_every_row_as_unknown(tmp_path):
     assert ledger.delegation_rows(conn, 0) == []
     with pytest.raises(sqlite3.OperationalError):
         conn.execute("INSERT INTO gateway_requests (at) VALUES (1)")
-
-
-def test_no_price_at_the_pin_says_so_instead_of_pricing_at_zero():
-    L = build(rows=[row("2026-10-08", "work", 10, 10)], table={})
-    assert L["displaced"]["complete"] is False
-    assert "no price at the pin" in L["displaced"]["tier"]
-    assert L["days"][0]["displaced"]["lanes"][0]["usd"] is None
-
-
-def test_prices_come_from_litellm_at_the_pin_and_are_cached(tmp_path):
-    calls = []
-
-    def runner(argv, **kw):
-        calls.append(argv)
-        return subprocess.CompletedProcess(argv, 0, json.dumps(TABLE), "")
-
-    cache = tmp_path / "p.json"
-    assert ledger.prices("litellm[proxy]==1.100.0", runner=runner, cache=cache) == TABLE
-    assert ledger.prices("litellm[proxy]==1.100.0", runner=runner, cache=cache) == TABLE
-    assert len(calls) == 1 and "litellm[proxy]==1.100.0" in calls[0]
-    assert ledger.pin("LITELLM_PIN") == "litellm[proxy]==1.100.0"
 
 
 # --- plan headroom --------------------------------------------------------------------------------
@@ -327,8 +283,7 @@ def test_record_upserts_one_row_per_day():
     finally:
         conn.close()
     assert [r["day"] for r in got] == ["2026-10-08", "2026-10-09", "2026-10-10"]
-    assert got[0]["displaced_usd"] == pytest.approx(2.0) and got[0]["recorded_at"] == 2.0
-    assert got[0]["tier"].startswith("sonnet")
+    assert got[0]["recorded_at"] == 2.0 and set(got[0]) == {"day", "recorded_at", "energy_kwh", "cloud_tokens"}
 
 
 SECRET = "sk-THIS-IS-A-KEY-0123456789"
@@ -360,29 +315,26 @@ def test_ledger_json_is_aggregates_only(monkeypatch, capsys, tmp_path, _home):
             argv, 0, json.dumps(ccusage_doc()), ""), which=lambda n: "/x/npx")
 
     monkeypatch.setattr(ledger, "cloud", fake_cloud)
-    monkeypatch.setattr(ledger, "prices", lambda pin: TABLE)
     assert cli.main(["ledger", "--since", "2026-10-08", "--json"]) == 0
     out = capsys.readouterr().out
     doc = json.loads(out)
     for key in ("window", "assumptions", "cloud", "headroom", "local", "delegated", "displaced", "mapped",
                 "energy", "days"):
         assert key in doc
-    assert doc["cloud"]["unpriced_models"] == ["claude-haiku-5-5", "claude-sonnet-5-5"]
+    assert doc["cloud"]["tokens"]["input"] == 1015
     assert doc["local"]["work"] == {"requests": 1, "input": 1000, "output": 100}
-    assert doc["displaced"]["tier"].startswith("sonnet")
+    assert doc["displaced"]["tokens"] == {"requests": 1, "input": 1000, "output": 100}
     assert doc["energy"]["samples"] == 3 and doc["headroom"]["samples"] == 2
     for leak in (str(fake_home), str(_home), str(tmp_path), SECRET, "sk-", "PROMPT-MARKER", "secret-project", "s-1"):
         assert leak not in out, leak
 
 
-def test_the_text_report_names_the_tier_and_the_unpriced_models(monkeypatch, capsys):
+def test_the_text_report_counts_claude_in_tokens(monkeypatch, capsys):
     monkeypatch.setattr(ledger, "cloud", lambda first_day, **kw: {
         "available": True, "source": "ccusage@x", **ledger.parse_ccusage(ccusage_doc())})
-    monkeypatch.setattr(ledger, "prices", lambda pin: TABLE)
     assert cli.main(["ledger", "--since", "2026-10-08"]) == 0
     out = capsys.readouterr().out
-    assert "unpriced, not counted: claude-haiku-5-5, claude-sonnet-5-5" in out
-    assert "at sonnet (claude-sonnet-5-5 $2.00/$10.00 per M in/out)" in out
+    assert "cloud     1,015 in, 2,027 out, 4,000 cache read, 3,000 cache write (ccusage@x)" in out
     assert "energy unavailable" in out or "no power samples" in out
 
 
