@@ -15,7 +15,7 @@ def head(tmp_path):
     ms.decide(conn, "org/a", "queued", tier=ms.INSPECT, detail="fits: 1 GiB",
               reason="candidate")
     ms.decide(conn, "org/b", "declined", tier=ms.INSPECT,
-              detail="too-big: 90 GiB", reason="machine")
+              detail="too-big: 90 GiB", reason="machine", until="ceiling_gb:>90.0")
     yield conn
     conn.close()
 

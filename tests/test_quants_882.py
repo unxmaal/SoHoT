@@ -162,10 +162,10 @@ def test_a_derivative_that_failed_to_load_is_followed_through_its_quantized_pare
                   detail="the installed runtime could not load it")
         ms.record(conn, ms.Seen(name="org/Huge", source="t", registry=ms.HUGGINGFACE, lane="code"))
         ms.decide(conn, "org/Huge", "declined", tier=ms.INSPECT, reason=reasons.MACHINE,
-                  detail="too-big: smallest weight it names is 67.0 GiB")
+                  detail="too-big: smallest weight it names is 67.0 GiB", until="ceiling_gb:>67.0")
         ms.record(conn, ms.Seen(name="org/Dead", source="t", registry=ms.HUGGINGFACE, lane="code"))
         ms.decide(conn, "org/Dead", "declined", tier=ms.INSPECT, reason=reasons.UPSTREAM,
-                  detail="dead: last commit 3 years ago")
+                  detail="dead: last commit 3 years ago", until="commit_after:2023-01-01T00:00:00Z")
         assert quants.unrunnable(conn) == [BASE, "org/Huge"]
     finally:
         conn.close()

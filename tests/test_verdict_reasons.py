@@ -500,11 +500,11 @@ def test_the_backfill_classifies_every_old_row_and_reopens_only_ours(tmp_path):
         assert again.execute("SELECT id, outcome FROM verdicts WHERE id <= ? "
                              "ORDER BY id", (before[-1][0],)).fetchall() == before
         now = dict(again.execute("SELECT name, state FROM proposals").fetchall())
-        # A harness fact and a timeout the warm-up now absorbs are reopened.
-        assert {n for n in now if now[n] != states[n]} == {"org/m0", "org/m2"}
-        assert now["org/m0"] == now["org/m2"] == "queued"
+        # A harness fact and a timeout the warm-up now absorbs are reopened; a budget is no broken candidate. #991.
+        assert {n for n in now if now[n] != states[n]} == {"org/m0", "org/m1", "org/m2"}
+        assert now["org/m0"] == now["org/m2"] == "queued" and now["org/m1"] == "declined"
         kinds = again.execute("SELECT detail, reopen_kind, reason FROM verdicts "
-                              "WHERE id > ? ORDER BY id", (before[-1][0],)).fetchall()
+                              "WHERE id > ? AND reopen_kind != '' ORDER BY id", (before[-1][0],)).fetchall()
         assert [(k[1], k[2]) for k in kinds] == [("retraction", "reopened")] * 2
         assert "refused_by_gateway" in kinds[0][0] or "server_dead" in kinds[0][0]
         assert "warms the model" in kinds[1][0]

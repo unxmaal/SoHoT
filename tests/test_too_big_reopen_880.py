@@ -91,8 +91,9 @@ def test_a_refusal_judged_against_a_smaller_ceiling_is_stale(store):
     _decline(store, "org/current", 66.0, until="ceiling_gb:>140.0")
     _decline(store, "org/unrecorded", None)
     _see(store, "org/source")
-    ms.decide(store, "org/source", "declined", tier=ms.INSPECT, reason="machine",
-              detail="too-big: source tree is 900 MB, which is weights in git", ceiling_gb=22.0)
+    vid = ms.decide(store, "org/source", "declined", tier=ms.INSPECT, reason="machine", until="x:y",
+                    detail="too-big: source tree is 900 MB, which is weights in git", ceiling_gb=22.0)
+    store.execute("UPDATE verdicts SET until = '' WHERE id = ?", (vid,))  # as written before #991
     assert [r["name"] for r in ms.stale_too_big(store, 66.0)] == ["org/stale"]
     assert ms.stale_too_big(store, 22.5) == []
 

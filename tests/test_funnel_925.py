@@ -114,7 +114,8 @@ def _skip_store(conn, tmp_path):
               until="limit:download_budget_gib>12")
     ms.decide(conn, "org/format", "queued", tier="fetch", detail="pth only", reason="harness",
               until="format:.pth")
-    ms.decide(conn, "org/reopened", "declined", tier="inspect", detail="too-big", reason="machine")
+    ms.decide(conn, "org/reopened", "declined", tier="inspect", detail="too-big", reason="machine",
+              until="ceiling_gb:>99.0")
     ms.retract(conn, "org/reopened", "re-inspect against a bigger ceiling")
     rid = downloads.start(conn, "org/failed", downloads.GGUF, tmp_path / "gguf" / "failed.gguf",
                           file="failed.gguf", proposal="org/failed")

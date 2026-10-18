@@ -69,8 +69,7 @@ def ceiling_bytes(acc=None) -> int:
     if acc.total_gb > 0:
         return int(MEMORY_CEILING * acc.total_gb / MEMORY_CEILING_RAM_GB)
     return MEMORY_CEILING
-#: A "source" repo past this is carrying weights or datasets in git, and
-#: cloning it is the download this tier exists to avoid.
+#: Weight files past this many KB in a shallow clone's tree mean weights in git, not source. #991.
 CLONE_KB_CAP = 250_000
 #: No commits in this long and it is not where this month's technique lives.
 #: How long a candidate's UPSTREAM may sit without a commit before the
@@ -92,9 +91,12 @@ SIZE_DELAY = 2.0
 #: hand-written list said "needs-cuda" long after decide() had learned to say
 #: needs-mlx and needs-rocm, and a stale list of this kind reads as
 #: authoritative.
+WEIGHTS_IN_GIT = "weights-in-git"
+
+
 def verdicts() -> tuple[str, ...]:
     from harness import machine
-    return (("fits", "too-big", "no-entry-point", "dead", "unknown")
+    return (("fits", "too-big", "no-entry-point", "dead", "unknown", WEIGHTS_IN_GIT)
             + tuple(f"needs-{r}" for r in sorted(machine._RUNTIME_PROBES)))
 
 #: HuggingFace's own task label -> the lane that can actually measure it.
@@ -482,6 +484,15 @@ def clone(repo: str, dest: Path, run=_run) -> Path:
     return dest
 
 
+def weight_kb(tree: Path) -> int:
+    """KB of weight files checked out in a clone, .git left out."""
+    from harness.downloads import WEIGHT_SUFFIXES
+    tree = Path(tree)
+    return sum(p.stat().st_size for p in tree.rglob("*")
+               if p.suffix.lower() in WEIGHT_SUFFIXES and p.is_file()
+               and ".git" not in p.relative_to(tree).parts) // 1000
+
+
 def files(tree: Path) -> list[Path]:
     out = []
     for p in Path(tree).rglob("*"):
@@ -705,9 +716,24 @@ def hf_model(model_id: str, fetch=None) -> dict:
         raise InspectError(f"{model_id}: {detail[:160]}") from exc
 
 
+def gone_until(at: float | None = None) -> str:
+    """The until of a name its registry no longer has: any commit after `at` (default now) brings it back. #991."""
+    import time
+    from datetime import datetime, timezone
+    when = datetime.fromtimestamp(time.time() if at is None else at, timezone.utc)
+    return f"commit_after:{when.strftime('%Y-%m-%dT%H:%M:%SZ')}"
+
+
 def upstream_commit(repo: str, registry: str, fetch=None, client=None) -> str | None:
     """When `repo` last committed: HF lastModified or GitHub pushed_at; '' unknown, None once rate-limited. #961."""
     from harness import github
+    if not registry:
+        # A name neither registry had: whichever answers first is where it came back. #991.
+        for reg in (ms.HUGGINGFACE, ms.GITHUB):
+            seen = upstream_commit(repo, reg, fetch=fetch, client=client)
+            if seen is None or seen:
+                return seen
+        return ""
     if registry == ms.HUGGINGFACE:
         try:
             return (hf_model(repo, fetch=fetch).get("lastModified") or "").strip()
@@ -1238,12 +1264,14 @@ def inspect(repo: str, workdir: Path, *, meta: dict | None = None,
     fit = Fit(repo=repo, source_kb=int((meta or {}).get("size") or 0),
               description=((meta or {}).get("description") or "")[:200],
               card=repo_facts(meta or {}))
-    if fit.source_kb and fit.source_kb > kb_cap:
-        fit.verdict = "too-big"
-        fit.why = (f"source tree is {fit.source_kb / 1000:.0f} MB, which is "
-                   f"weights in git, not a source repo")
-        return fit
     tree = clone(repo, Path(workdir) / repo.replace("/", "__"), run=run)
+    # GitHub's size counts every commit; only the shallow clone's own weight files say weights in git. #991.
+    in_git = weight_kb(tree)
+    if in_git > kb_cap:
+        fit.verdict = WEIGHTS_IN_GIT
+        fit.why = (f"{in_git / 1000:.0f} MB of weight files in the source tree, "
+                   f"which is weights in git, not a source repo")
+        return fit
     found = scan(tree)
     try:
         fit.last_commit = run(["git", "log", "-1", "--format=%cI"],

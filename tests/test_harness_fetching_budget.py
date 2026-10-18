@@ -177,8 +177,9 @@ def test_a_candidate_already_settled_by_a_full_disk_is_requeued_by_the_migration
     conn = ms.connect(path)
     _seed(conn, "org/settled", 5.0)
     _seed(conn, "org/too-big", 900.0)
-    ms.decide(conn, "org/settled", "declined", tier="fetch", reason="machine",
-              detail="5.0 GiB would leave 40 GiB free, under the 50 GiB floor")
+    vid = ms.decide(conn, "org/settled", "declined", tier="fetch", reason="machine", until="x:y",
+                    detail="5.0 GiB would leave 40 GiB free, under the 50 GiB floor")
+    conn.execute("UPDATE verdicts SET until = '' WHERE id = ?", (vid,))  # as written before #991
     ms.decide(conn, "org/too-big", "declined", tier="fetch", reason="limit",
               detail="over the download cap", until="limit:download_gib>100")
     conn.execute("UPDATE meta SET value = '49' WHERE key = 'schema'")

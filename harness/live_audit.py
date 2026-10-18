@@ -122,31 +122,22 @@ def _too_big_names_variant(conn, reopened_at=...) -> tuple[list, list]:
             say(fresh, "and await the next loop's variant requeue"))
 
 
-#: Reasons that name a fact outside the candidate, so the verdict needs a condition that can reopen it.
-CONDITIONAL = ("runtime", "machine", "limit")
-
-
-#: Incoherent rows the check started with (store of 2026-10-17); they warn until fixed, any other fails.
-PINNED_INCOHERENT = frozenset({686, 687, 9143, 11513})
+#: Incoherent rows the check started with (store of 2026-10-17); they warn until fixed, any other fails. #991 fixed all four.
+PINNED_INCOHERENT: frozenset = frozenset()
 
 
 def _terminal_reason_coherent(conn, pinned=None) -> tuple[list, list]:
     """(failures, warnings): terminal state verdicts whose reason contradicts the outcome or nothing can reopen. #918."""
+    from harness.memory_store.transitions import incoherent
     pinned = PINNED_INCOHERENT if pinned is None else pinned
     bad, known = [], []
     for r in conn.execute(
             "SELECT v.id, p.name, p.state, v.reason, v.until, p.next_retest_at FROM proposals p "
             "JOIN verdicts v ON v.id = p.state_verdict_id "
             "WHERE p.state IN ('broken', 'declined', 'ignored') ORDER BY v.id"):
-        if r["reason"] == "harness":
-            why = "a harness fault holds a terminal state"
-        elif r["state"] == "broken" and r["reason"] != "candidate":
-            why = f"broken with reason {r['reason'] or 'empty'}"
-        elif r["reason"] in CONDITIONAL and not r["until"] and r["next_retest_at"] is None:
-            why = f"reason {r['reason']} with no until and no retest"
-        else:
-            continue
-        (known if r["id"] in pinned else bad).append(f"verdict {r['id']} {r['name']}: {why}")
+        why = incoherent(r["state"], r["reason"], r["until"], retest=r["next_retest_at"] is not None)
+        if why:
+            (known if r["id"] in pinned else bad).append(f"verdict {r['id']} {r['name']}: {why}")
     return bad, known
 
 
