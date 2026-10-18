@@ -61,14 +61,11 @@ def _check(plants) -> int:
 
 def _spend(a) -> int:
     """The loop's spend (fetch, screen, measure, adopt) in an isolated home; refused in the live one."""
-    import argparse
-
-    from harness import ceiling, cli, heartbeat, paths, power
-    from harness.commands import loop as loop_cmd
+    from harness import ceiling, heartbeat, paths, power
+    from harness.commands import common, loop as loop_cmd
     if paths.is_live(paths.home() / "discovery.db"):
         return err("soh canary spend runs only under an isolated LOCALHARNESS_HOME; soh canary --run makes one")
-    sub = cli.build_parser().parse_args(["discover", "--loop", "--run", "--lane", a.lane, "--top", str(a.top)])
-    sub = argparse.Namespace(**{**vars(sub), "json": False})
+    sub = common.parsed("discover", "--loop", "--run", "--lane", a.lane, "--top", str(a.top), json=False)
     sweep = ceiling.Sweep(float(power.SWEEP_CEILING_H) * 3600)
     heartbeat.start(lane=a.lane, total=loop_cmd.LOOP_TOTAL)
     try:

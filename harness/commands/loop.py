@@ -242,11 +242,10 @@ def _run_loop_held(a, keep=None) -> int:
             # inspect it first", immediately after the loop's own inspect step
             # had run. Two tiers in one command, reading different sources.
             extra = {"from_store": True, "top": LOOP_INSPECT}
-            _reopen_stale_too_big()
-            _reopen_unranked()
-            _reopen_upstream_committed()
-            _reread_runtime_declines(a)
-            _rederive_attachments()
+            for repair, args in ((_reopen_stale_too_big, ()), (_reopen_unranked, ()),
+                                 (_reopen_upstream_committed, ()), (_reread_runtime_declines, (a,)),
+                                 (_rederive_attachments, ())):
+                rc = _repair(label, repair, args, failed) or rc
         sub = _ap.Namespace(**{**vars(a), **flags, **extra, "loop": False})
         rc = _step(label, discover_cmd.cmd_discover(sub), failed) or rc
 
@@ -306,6 +305,18 @@ def _step(label: str, got, failed: list) -> int:
     if got:
         failed.append(label)
     return got or 0
+
+
+def _repair(label: str, repair, args, failed: list) -> int:
+    """Run one pre-step repair; a crash is a failed step under its label, never the end of the sweep. #974."""
+    import traceback
+    try:
+        repair(*args)
+    except Exception as exc:
+        traceback.print_exc()
+        print(f"  {label}: {repair.__name__} failed ({type(exc).__name__}: {exc}); going on", flush=True)
+        return _step(f"{label} ({repair.__name__})", 1, failed)
+    return 0
 
 
 def _why_nonzero(rc: int, failed: list) -> int:
@@ -391,8 +402,9 @@ def _loop_spend(a, rc: int, failed: list | None = None, sweep=None) -> int:
     if held:
         print(f"  skipped: {held[1]}")
     else:
-        sub = _ap.Namespace(**{**vars(a), "loop": False, "run": True,
-                               "limit": top, "json": False})
+        from harness.commands import common
+        sub = common.parsed("fetch", "--run", limit=top, lane=getattr(a, "lane", ""),
+                            budget_gib=getattr(a, "budget_gib", None))
         rc = _step("fetch", screen_cmd.cmd_fetch(sub), failed) or rc
 
     print(f"\n=== screen ===")
@@ -561,9 +573,8 @@ REREAD_PER_LOOP = 25
 
 def _reread_runtime_declines(a) -> list[str]:
     """Re-read the cards of screen runtime declines that predate model_type, then rewrite every runtime until by its cause. #950."""
-    import argparse as _argparse
-
     from harness import heartbeat, memory_store as ms
+    from harness.commands import common
     began = heartbeat.clock()
     store = ms.connect()
     try:
@@ -572,8 +583,8 @@ def _reread_runtime_declines(a) -> list[str]:
         store.close()
     if names:
         print(f"  re-reading {len(names)} runtime decline card(s) for their model type")
-        discover_cmd._report_inspect(_argparse.Namespace(
-            repos=names, budget=getattr(a, "budget", 900), top=len(names), shard=""))
+        discover_cmd._report_inspect(common.parsed(
+            "discover", "--inspect", repos=names, budget=getattr(a, "budget", 900), top=len(names)))
     store = ms.connect()
     try:
         moved = ms.rewrite_runner_gap_untils(store)

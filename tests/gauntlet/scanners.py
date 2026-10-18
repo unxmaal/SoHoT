@@ -652,3 +652,57 @@ def unwaited_repairs(audit, loop, stores):
             out.append(f"{AUDIT_FILE}:{check.lineno}: {name} waits on heartbeat.{waits[name]}, which its repair "
                        f"{', '.join(sorted(repairs))} never marks")
     return out
+
+
+#: Namespaces spread from the very parser the callee's verb reads; "rel:function->callee" -> why. #974.
+SAME_PARSER = {
+    "harness/commands/loop.py:_run_loop_held->cmd_discover":
+        "a is the namespace `soh discover --loop` parsed, handed back to soh discover with one tier flag set",
+    "harness/commands/loop.py:_loop_spend->cmd_discover":
+        "a is the namespace `soh discover --loop` parsed, handed back to soh discover for its screen tier",
+    "harness/commands/discover.py:_report_sweep->cmd_discover":
+        "a is soh discover's own namespace, re-dispatched one source tier at a time",
+}
+_VERB = re.compile(r"^(?:cmd_|_report_)")
+
+
+def _is_namespace(node):
+    return isinstance(node, ast.Call) and _call_name(node) == "Namespace"
+
+
+def _another_verb(call):
+    f = call.func
+    return bool(_VERB.match(_call_name(call))) or (
+        isinstance(f, ast.Attribute) and isinstance(f.value, ast.Name) and f.value.id.endswith("_cmd"))
+
+
+def namespace_handoffs(text, rel):
+    """Every argparse.Namespace built by hand and passed to a verb: [(rel:function->callee, line)]."""
+    tree, _ = _parse(text, rel)
+    if tree is None:
+        return []
+    out = []
+    for fn in ast.walk(tree):
+        if not isinstance(fn, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            continue
+        bound = sorted((n.lineno, t.id, n.value) for n in ast.walk(fn) if isinstance(n, ast.Assign)
+                       for t in n.targets if isinstance(t, ast.Name))
+
+        def last(name, before):
+            values = [v for line, i, v in bound if i == name and line < before]
+            return values[-1] if values else None
+
+        for n in ast.walk(fn):
+            if not (isinstance(n, ast.Call) and _another_verb(n)):
+                continue
+            for arg in list(n.args) + [k.value for k in n.keywords]:
+                value = last(arg.id, n.lineno) if isinstance(arg, ast.Name) else arg
+                if value is not None and _is_namespace(value):
+                    out.append((f"{rel}:{fn.name}->{_call_name(n)}", value.lineno))
+    return out
+
+
+def handmade_namespaces(text, rel):
+    return [f"{rel}:{line}: {key.partition(':')[2]} is handed a hand-made argparse.Namespace, which carries only "
+            f"the fields its writer thought of; build it with common.parsed(<verb>, ...)"
+            for key, line in namespace_handoffs(text, rel) if key not in SAME_PARSER]
