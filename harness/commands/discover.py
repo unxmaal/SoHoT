@@ -488,8 +488,8 @@ def _report_inspect(a) -> int:
                 except ins.Gone as exc:
                     err(f"{repo}: {exc}")
                     try:
-                        ms.decide(store, repo, "broken", tier=ms.INSPECT,
-                                  detail=str(exc)[:200], reason=reasons.UPSTREAM)
+                        ms.decide(store, repo, "declined", tier=ms.INSPECT, detail=str(exc)[:200],
+                                  reason=reasons.UPSTREAM, until=ins.gone_until())
                     except ms.IllegalTransition:
                         pass   # a later tier already answered it
                     continue
@@ -510,8 +510,8 @@ def _report_inspect(a) -> int:
                     # recorded as one. An unreachable registry is not.
                     err(f"{repo}: {exc}")
                     try:
-                        ms.decide(store, repo, "broken", tier=ms.INSPECT,
-                                  detail=str(exc)[:200], reason=reasons.UPSTREAM)
+                        ms.decide(store, repo, "declined", tier=ms.INSPECT, detail=str(exc)[:200],
+                                  reason=reasons.UPSTREAM, until=ins.gone_until())
                     except KeyError:
                         pass   # named on the command line, never proposed
                     except ms.IllegalTransition:

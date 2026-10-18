@@ -28,7 +28,8 @@ MODULES = {
     "harness/memory_store/transitions.py": [
         "tests/test_store_state.py", "tests/test_store_retest.py", "tests/test_harness_store_retraction.py",
         "tests/test_store_retract_screens.py", "tests/test_harness_memory_store.py",
-        "tests/test_verdict_reasons.py", "tests/test_harness_store.py", "tests/test_rank_881.py"],
+        "tests/test_verdict_reasons.py", "tests/test_harness_store.py", "tests/test_rank_881.py",
+        "tests/test_coherence_991.py"],
     "harness/reasons.py": [
         "tests/test_gguf_first_911.py", "tests/test_verdict_reasons.py", "tests/test_refusal_shapes.py", "tests/test_screen_server_death.py",
         "tests/test_screen_evidence.py", "tests/test_harness_engines_repo_id.py",
@@ -75,7 +76,7 @@ MODULES = {
 # a constant or a type only, too slow, or crashes the forkserver (#596; test_mlx_backlog imports mlx, whose Metal
 # thread segfaults a forked worker). A new importer goes in one or the other (#840).
 LEFT_OUT = {
-    "harness/memory_store/transitions.py": ("test_blame_audit.py",),
+    "harness/memory_store/transitions.py": ("test_blame_audit.py", "test_live_audit.py"),
     "harness/reasons.py": (
         "test_attachment_tags_949.py",
         "test_chaos.py", "test_claims_lane.py", "test_gateway_key.py", "test_harness_checks_ocr.py",

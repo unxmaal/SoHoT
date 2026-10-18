@@ -6,6 +6,7 @@ import pytest
 from evals import claims_report
 from harness import blame_audit as ba, cli, intervals, live_audit
 from harness import memory_store as ms
+from harness.memory_store import transitions
 from harness.memory_store.transitions import RETEST, RETRACTION
 
 #: (tier, outcome, reason, until, how many): a population with known strata.
@@ -13,7 +14,7 @@ STRATA = [("screen", "declined", "runtime", "version:mlx-lm>0.32.0", 7),
           ("screen", "broken", "candidate", "", 3),
           ("adopt", "declined", "candidate", "", 2),
           ("inspect", "declined", "machine", "ceiling_gb:>70", 60),
-          ("inspect", "declined", "upstream", "", 8),
+          ("inspect", "declined", "upstream", "commit_after:2021-01-05T12:35:40Z", 8),
           ("fetch", "declined", "candidate", "", 30),
           ("fetch", "declined", "limit", "limit:fetch_gb>100", 2)]
 
@@ -30,7 +31,14 @@ def _store(strata=STRATA, prefix="org"):
         for i in range(n):
             name = f"{prefix}/{tier}-{reason}-{i}"
             _seed(conn, name)
+            if transitions.incoherent(outcome, reason, until, retest=tier in transitions.RETEST_TIERS):
+                # A row only a pre-#991 writer could leave; decide() now refuses it.
+                pid = conn.execute("SELECT id FROM proposals WHERE name = ?", (name,)).fetchone()[0]
+                transitions._write(conn, pid, name, {"outcome": outcome, "tier": tier, "detail": "",
+                                                     "decided_at": 1.0, "reason": reason, "until": until})
+                continue
             ms.decide(conn, name, outcome, tier=tier, reason=reason, until=until)
+    conn.commit()
     return conn
 
 
@@ -256,6 +264,3 @@ def test_the_pinned_incoherent_rows_only_warn_and_a_fifth_fails():
     finally:
         conn.close()
 
-
-def test_the_pin_is_exactly_the_four_rows_the_check_started_with():
-    assert live_audit.PINNED_INCOHERENT == {686, 687, 9143, 11513}

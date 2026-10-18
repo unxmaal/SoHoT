@@ -119,11 +119,16 @@ def test_an_unparseable_commit_date_does_not_decide_anything():
 
 # ---- guards ----------------------------------------------------------------
 
-def test_a_repo_carrying_weights_in_git_is_refused_before_cloning(tmp_path):
-    """Cloning it IS the download this tier exists to avoid."""
-    got = ins.inspect("a/b", tmp_path, meta={"size": 900_000},
-                      run=lambda *a, **k: pytest.fail("must not clone"))
-    assert got.verdict == "too-big" and "weights in git" in got.why
+def test_a_repo_carrying_weights_in_git_is_refused_from_its_shallow_clone(tmp_path):
+    def run(argv, cwd=None, timeout=180.0):
+        d = tmp_path / "a__b"
+        d.mkdir(exist_ok=True)
+        (d / "model.safetensors").write_bytes(b"\0" * 3000)
+        return "2026-01-01T00:00:00+00:00"
+
+    got = ins.inspect("a/b", tmp_path, meta={"size": 10}, run=run, kb_cap=2)
+    assert got.verdict == ins.WEIGHTS_IN_GIT and "weights in git" in got.why
+    assert (ins.reason_of(got), ins.until_of(got)) == ("candidate", "")
 
 
 def test_the_clone_is_shallow_and_single_branch(tmp_path):

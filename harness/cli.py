@@ -40,6 +40,7 @@ from harness.commands import gauntlet as gauntlet_cmd
 from harness.commands import jobs as jobs_cmd
 from harness.commands import judge as judge_cmd
 from harness.commands import lanes as lanes_cmd
+from harness.commands import coherence as coherence_cmd
 from harness.commands import load_log as load_log_cmd
 from harness.commands import measure as measure_cmd
 from harness.commands import report as report_cmd
@@ -673,6 +674,11 @@ def build_parser() -> argparse.ArgumentParser:
     llg.add_argument("--log", action="append", help="a router log to read (repeatable; default: this home's)")
     llg.add_argument("--apply", action="store_true", help="write the excerpts and the verdicts")
     llg.set_defaults(func=load_log_cmd.cmd_load_log)
+    coh = sub.add_parser("coherence", help="re-decide terminal verdicts whose reason contradicts the outcome "
+                         "or that nothing can reopen; read-only without --apply. #991")
+    coh.add_argument("--db", default="", help="the store (default: this home's discovery.db)")
+    coh.add_argument("--apply", action="store_true", help="write the re-decided verdicts")
+    coh.set_defaults(func=coherence_cmd.cmd_coherence)
     wd = sub.add_parser("watchdog", help="judge every running SoHoT job against the watchdog's criteria "
                         "and act; a dry run unless LH_WATCHDOG_ACT=1 or --act. #814")
     wd.add_argument("--act", action="store_true", help="take the actions this once")

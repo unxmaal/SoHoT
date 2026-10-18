@@ -4,12 +4,13 @@ from __future__ import annotations
 import sqlite3
 from datetime import datetime, timezone
 import re
+import time
 
 from harness.memory_store.cards import set_card
 from harness.memory_store.machines import remember_machine
 from harness.memory_store.revisit import _UNTIL_FROM_DETAIL, until_for
-from harness.memory_store.schema import GIB, HUGGINGFACE, INSPECT, SCREEN, TERMINAL
-from harness.memory_store.transitions import _migration_retraction
+from harness.memory_store.schema import GIB, HUGGINGFACE, INSPECT, SCREEN, TERMINAL, _columns
+from harness.memory_store.transitions import _migration_retraction, _write
 
 
 def _backfill_until(conn: sqlite3.Connection) -> None:
@@ -269,6 +270,15 @@ _BUDGET = re.compile(r"(\d+)-token budget")
 _CAP = re.compile(r"over the ([\d.]+) GiB cap")
 
 
+def _limit_declined(conn, r, until: str) -> int:
+    """A broken row held by a limit, re-decided declined at its own tier with that until, in this schema's columns."""
+    row = {"outcome": "declined", "tier": r["tier"] or SCREEN, "detail": r["detail"] or "",
+           "decided_at": time.time(), "until": until, "reason": "limit"}
+    if "machine_id" in _columns(conn, "verdicts"):
+        row["machine_id"] = remember_machine(conn)
+    return _write(conn, r["id"], r["name"], row)
+
+
 def _reopen_terminal_harness_and_limit_facts(conn) -> list:
     """A terminal state held by a harness fact or a harness limit is not a
     verdict on the candidate. Only rows backfill_reasons labelled harness or
@@ -276,7 +286,7 @@ def _reopen_terminal_harness_and_limit_facts(conn) -> list:
     from harness import reasons
     done = []
     for r in conn.execute(
-            "SELECT p.id, p.name, v.id AS vid, v.tier, v.detail, v.reason, "
+            "SELECT p.id, p.name, p.state, v.id AS vid, v.tier, v.detail, v.reason, "
             "v.until FROM proposals p JOIN verdicts v "
             "ON v.id = p.state_verdict_id WHERE p.state IN "
             f"({', '.join('?' * len(TERMINAL))}) AND v.reason IN (?, ?)",
@@ -297,6 +307,10 @@ def _reopen_terminal_harness_and_limit_facts(conn) -> list:
                 conn.execute("UPDATE verdicts SET until = ? WHERE id = ?",
                              (until, r["vid"]))
                 done.append((r["name"], f"until {until}"))
+            if r["state"] == "broken":
+                # A limit we chose is not a broken candidate: declined, reopened by its until. #991.
+                _limit_declined(conn, r, r["until"] or until)
+                done.append((r["name"], "declined: a limit, not broken"))
             continue
         else:
             continue

@@ -1867,7 +1867,10 @@ the first error: an unknown architecture waits on `version:llama.cpp>BUILD`,
 a GGUF header that disagrees with itself is the file's fault and waits on its
 repo committing again, a read past the end of our copy goes back to fetch, and
 no log at all is the harness's. `soh load-log` does the same for verdicts
-decided before the log was kept. A chat template that has
+decided before the log was kept. The one verdict writer refuses a terminal
+state its reason contradicts (a limit or a vanished upstream written broken, a
+refusal for an outside fact with nothing to reopen it), and `soh coherence`
+re-decides the ones written before it did, read-only without `--apply`. A chat template that has
 no system role (Gemma 2, Mistral v0.3) is neither: the request is retried
 once with the system prompt at the top of the user turn.
 

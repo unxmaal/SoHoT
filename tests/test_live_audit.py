@@ -245,13 +245,23 @@ def test_no_fallback_says_none(live, capsys):
     assert "node fallbacks in the last hour: none" in capsys.readouterr().out
 
 
+def _broken_by_a_limit(conn, name):
+    """The 9143 shape, which only a pre-#991 writer could leave; decide() now refuses it."""
+    from harness.memory_store import transitions
+    pid = conn.execute("SELECT id FROM proposals WHERE name = ?", (name,)).fetchone()[0]
+    vid = transitions._write(conn, pid, name, {"outcome": "broken", "tier": "screen", "detail": "", "decided_at": 1.0,
+                                               "reason": "limit", "until": "limit:max_tokens>4000"})
+    conn.commit()
+    return vid
+
+
 def test_a_broken_row_with_a_limit_reason_fails_the_audit(live):
     conn = ms.connect()
     try:
         ms.record(conn, ms.Seen(name="org/limited", source="s", kind="candidate", registry=ms.HUGGINGFACE,
                                 lane="code", resolved="org/limited"))
         ms.decide(conn, "org/limited", "queued", tier="inspect", detail="fits")
-        ms.decide(conn, "org/limited", "broken", tier="screen", reason="limit", until="limit:max_tokens>4000")
+        _broken_by_a_limit(conn, "org/limited")
     finally:
         conn.close()
     got = live_audit.audit(live)
@@ -265,7 +275,7 @@ def test_a_pinned_incoherent_row_warns_without_failing_the_audit(live, monkeypat
         ms.record(conn, ms.Seen(name="org/pinned", source="s", kind="candidate", registry=ms.HUGGINGFACE,
                                 lane="code", resolved="org/pinned"))
         ms.decide(conn, "org/pinned", "queued", tier="inspect", detail="fits", reason="candidate")
-        vid = ms.decide(conn, "org/pinned", "broken", tier="screen", reason="limit", until="limit:max_tokens>4000")
+        vid = _broken_by_a_limit(conn, "org/pinned")
     finally:
         conn.close()
     monkeypatch.setattr(live_audit, "PINNED_INCOHERENT", frozenset({vid}))

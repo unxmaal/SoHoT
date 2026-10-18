@@ -188,13 +188,7 @@ def _repos_on_disk() -> list[str]:
 
 
 def _meta(client, repo: str) -> dict:
-    """The repo's cached GitHub metadata, or {}.
-
-    Not optional. `size` is what CLONE_KB_CAP compares against, and without it
-    every source_kb is 0, the cap can never fire, and the constant reports
-    INERT no matter what value it is given -- a false negative produced by the
-    probe rather than by the code under test.
-    """
+    """The repo's cached GitHub metadata, or {}."""
     try:
         return client.repo(repo) or {}
     except github.GitHubError:
@@ -246,7 +240,7 @@ def probe_dead_days() -> Finding:
 def probe_clone_kb_cap() -> Finding:
     return measure("CLONE_KB_CAP", *_range("clone_kb_cap"),
                    lambda v: verdicts(kb_cap=v),
-                   note="source tree size above which a repo is weights in git")
+                   note="KB of weight files in a shallow clone above which a repo is weights in git (#991)")
 
 
 PROBES = {

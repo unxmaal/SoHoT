@@ -383,11 +383,12 @@ def test_decide_no_longer_reads_a_condition_out_of_the_detail(store):
     """Negative control for #408: the sentence is prose, never parsed live."""
     ms.record(store, ms.Seen(name="org/g", source="t", kind="weights",
                              lane="code", why="seeded"))
-    ms.decide(store, "org/g", "declined", tier=ms.INSPECT, reason="machine",
-              detail="needs-llamacpp: depends on GGUF weights")
-    got = store.execute("SELECT until, reason FROM verdicts ORDER BY id DESC "
-                        "LIMIT 1").fetchone()
-    assert tuple(got) == ("", "machine")
+    # Read from the detail, the until would be runtime:llamacpp and the write accepted; unread, it is refused. #991.
+    with pytest.raises(ms.IllegalTransition, match="no until"):
+        ms.decide(store, "org/g", "declined", tier=ms.INSPECT, reason="machine",
+                  detail="needs-llamacpp: depends on GGUF weights")
+    assert store.execute("SELECT COUNT(*) FROM verdicts v JOIN proposals p ON p.id = v.proposal_id "
+                         "WHERE p.name = 'org/g'").fetchone()[0] == 0
 
 
 def test_schema_18_backfills_refusals_written_after_266(tmp_path):

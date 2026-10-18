@@ -67,6 +67,23 @@ def retest_eligible(state: str, tier: str, until: str = "") -> bool:
             and not (until or "").strip())
 
 
+#: Reasons that name a fact outside the candidate, so a terminal verdict needs a condition that can reopen it.
+CONDITIONAL = ("runtime", "machine", "limit", "upstream")
+
+
+def incoherent(state: str, reason: str, until: str = "", retest: bool = False) -> str:
+    """Why a `state` held for `reason` contradicts itself or can never reopen, or ''; `retest` says one may. #918, #991."""
+    if state not in TERMINAL:
+        return ""
+    if reason == "harness":
+        return "a harness fault holds a terminal state"
+    if state == "broken" and reason != "candidate":
+        return f"broken with reason {reason or 'empty'}"
+    if reason in CONDITIONAL and not (until or "").strip() and not retest:
+        return f"reason {reason} with no until and no retest"
+    return ""
+
+
 def _schedule_retest(conn, pid: int, row: dict, reopen: str) -> None:
     """Keep retest_count and next_retest_at in step with the state just written."""
     if reopen == RETEST:
@@ -246,6 +263,10 @@ def decide(conn: sqlite3.Connection, name: str, outcome: str, *, tier: str = "",
     if reason and reason not in reasons.REASONS:
         raise ValueError(f"unknown reason {reason!r}; "
                          f"known: {', '.join(reasons.REASONS)}")
+    # A retest tier may schedule the reopen itself; any other tier must name its until. #991.
+    contradiction = incoherent(outcome, reason, until, retest=tier in RETEST_TIERS) if reason and not reopen else ""
+    if contradiction:
+        raise IllegalTransition(f"{name}: {outcome} at {tier or '-'}: {contradiction}")
     # A RUN PATH THAT IS NOT A PATH IS NOT EVIDENCE. #266.
     if run_path and not (Path(run_path).is_absolute() or "/" in run_path
                          or "\\" in run_path):
