@@ -315,3 +315,26 @@ def test_a_clean_run_matching_the_pin_passes_and_a_new_survivor_fails(monkeypatc
     assert mutation.main(["run", "--module", b, "--workdir", str(tmp_path / "w")]) == 0
     mutation.PIN_FILE.write_text(json.dumps({b: []}), encoding="utf-8")
     assert mutation.main(["run", "--module", b, "--workdir", str(tmp_path / "w")]) == 1
+
+
+def test_a_ci_run_s_found_file_pins_only_its_own_modules(monkeypatch, tmp_path):
+    a, b = "harness/reasons.py", "harness/router.py"
+    _fake_run(monkeypatch, tmp_path, {a: mutation.BrokenRun("boom"), b: ["harness.router:f:k2", "harness.router:f:k1"]})
+    mutation.PIN_FILE.write_text(json.dumps({a: ["harness.reasons:g:old"], b: ["harness.router:f:old"]}),
+                                 encoding="utf-8")
+    found = tmp_path / "ci" / "found.json"
+    assert mutation.main(["run", "--module", a, "--module", b, "--found", str(found),
+                          "--workdir", str(tmp_path / "w")]) == 1
+    assert json.loads(found.read_text(encoding="utf-8")) == {b: ["harness.router:f:k2", "harness.router:f:k1"]}
+    assert mutation.main(["pin", "--from", str(found)]) == 0
+    assert json.loads(mutation.PIN_FILE.read_text(encoding="utf-8")) == {
+        a: ["harness.reasons:g:old"], b: ["harness.router:f:k1", "harness.router:f:k2"]}
+
+
+def test_a_found_file_naming_a_module_that_is_not_mutated_is_refused(monkeypatch, tmp_path):
+    monkeypatch.setattr(mutation, "PIN_FILE", tmp_path / "pin.json")
+    found = tmp_path / "found.json"
+    found.write_text(json.dumps({"harness/nope.py": []}), encoding="utf-8")
+    with pytest.raises(SystemExit, match="harness/nope.py"):
+        mutation.main(["pin", "--from", str(found)])
+    assert not mutation.PIN_FILE.exists()

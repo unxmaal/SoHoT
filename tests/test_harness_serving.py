@@ -172,3 +172,28 @@ def test_a_routed_upstream_with_a_trailing_slash_still_enforces_the_schema(tmp_p
     cfg.write_text(yaml.safe_dump({"model_list": [{"model_name": "alias", "hot_swap": True, "litellm_params": {
         "model": "openai/x", "api_base": "http://127.0.0.1:8082/"}}]}), encoding="utf-8")
     assert serving.enforces_schema("org/a-model", {}, cfg)
+
+
+@pytest.mark.parametrize("optstr,expected", [
+    ("enable_thinking=true", {"enable_thinking": True}), ("enable_thinking=1", {"enable_thinking": True}),
+    ("enable_thinking=FALSE", {"enable_thinking": False}), ("enable_thinking=0", {"enable_thinking": False}),
+    ("temperature=0.2, enable_thinking=false", {"enable_thinking": False}), ("temperature=0.2", {}), ("", {}),
+])
+def test_a_template_flag_is_read_past_sampling_options(optstr, expected):
+    assert serving.template_options(optstr, "org/m") == expected
+
+
+@pytest.mark.parametrize("optstr", ["enable_thinking=maybe", "enable_thinking=true=1", "enable_thinking"])
+def test_a_template_flag_that_is_not_true_or_false_is_refused_naming_the_spec(optstr):
+    with pytest.raises(ValueError, match=r"^org/m,x: enable_thinking must be true or false$"):
+        serving.template_options(optstr, "org/m,x")
+
+
+@pytest.mark.parametrize("spec,message", [
+    ("org/m,enable_thinking=maybe", "org/m,enable_thinking=maybe: enable_thinking must be true or false"),
+    ("org/m,bogus=1", "org/m,bogus=1: unknown option(s) bogus"),
+    ("weird:thing", "'weird:thing' is not served by a text server"),
+])
+def test_a_spec_route_refuses_says_which_spec(spec, message):
+    with pytest.raises(ValueError, match="^" + re.escape(message) + "$"):
+        serving.route(spec)

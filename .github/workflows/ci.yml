@@ -374,7 +374,15 @@ jobs:
 
       - name: make mutation
         # Fails on a new surviving mutant, or on a pinned one that is now killed and still listed.
-        run: make mutation MUTATION_ARGS="--module ${{ matrix.module }}"
+        run: make mutation MUTATION_ARGS="--module ${{ matrix.module }} --found .logs/mutation-found.json"
+
+      - name: Survivors for `python -m tests.gauntlet.mutation pin --from`
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutation-found-${{ strategy.job-index }}
+          path: .logs/mutation-found.json
+          if-no-files-found: ignore
 
       - name: Mutation summary
         if: always()

@@ -402,7 +402,7 @@ def seed_runs(conn, v: int, home: Path, ids: dict, cid: dict) -> dict:
         d.mkdir(parents=True)
         (d / "results.json").write_text(json.dumps(
             {"generated": stamp(hours), "environment": env, "receipt": receipt,
-             "specs": specs, "rows": out}, indent=1, sort_keys=True), encoding="utf-8")
+             "specs": specs, "rows": out}, indent=1, sort_keys=True), encoding="utf-8", newline="\n")
         if not has(conn, "runs"):
             continue
         run_ids[n] = ins(conn, "runs", path=name, lane=lane, tier=tier,
@@ -424,7 +424,7 @@ def seed_runs(conn, v: int, home: Path, ids: dict, cid: dict) -> dict:
                 failure_class="" if ok else "content_failed")
     (runs / "rubric-20260915").mkdir(parents=True)
     (runs / "rubric-20260915" / "results.json").write_text(
-        json.dumps({"rubric": "svg", "scores": {}}), encoding="utf-8")
+        json.dumps({"rubric": "svg", "scores": {}}), encoding="utf-8", newline="\n")
     (runs / "20260916-000000-0004-empty").mkdir(parents=True)
     return run_ids
 
@@ -442,7 +442,7 @@ FILE_MTIME = at(330)
 
 def seed_votes(conn, v: int, home: Path, ids: dict) -> None:
     (home / "human-verdicts.json").write_text(json.dumps(list(VOTES), indent=1),
-                                              encoding="utf-8")
+                                              encoding="utf-8", newline="\n")
     if not has(conn, "human_votes"):
         return
     for r in VOTES:
@@ -461,7 +461,7 @@ GGUF_SOURCES = {"org-g/gguf-llama": "gguf-llama-Q4_K_M.gguf"}
 
 def seed_downloads(conn, v, home, ids, pid, vids) -> None:
     (home / "gguf-sources.json").write_text(json.dumps(GGUF_SOURCES, indent=1),
-                                            encoding="utf-8")
+                                            encoding="utf-8", newline="\n")
     removed = snapshot("org-f/screen-broke")
     if has(conn, "disk_removals"):
         ins(conn, "disk_removals", path=removed, repo="org-f/screen-broke",
@@ -507,16 +507,16 @@ JOBS = (
 def seed_legacy(conn, v: int, home: Path, ids: dict) -> None:
     """The JSON files a home keeps after a migration imported them."""
     (home / "memory-limits.json").write_text(json.dumps(MEMORY_LIMITS, indent=1),
-                                             encoding="utf-8")
+                                             encoding="utf-8", newline="\n")
     (home / "discovery-state.json").write_text(
-        json.dumps({"fetched": FETCHED}, indent=1), encoding="utf-8")
+        json.dumps({"fetched": FETCHED}, indent=1), encoding="utf-8", newline="\n")
     (home / "cache" / "github").mkdir(parents=True)
     (home / "cache" / "github" / "hf-sizes.json").write_text(
-        json.dumps(HF_SIZES, indent=1), encoding="utf-8")
+        json.dumps(HF_SIZES, indent=1), encoding="utf-8", newline="\n")
     (home / "queue" / "jobs").mkdir(parents=True)
     for j in JOBS:
         (home / "queue" / "jobs" / f"{j['id']}.json").write_text(
-            json.dumps(j, indent=1), encoding="utf-8")
+            json.dumps(j, indent=1), encoding="utf-8", newline="\n")
     if has(conn, "memory_limits"):
         for r in MEMORY_LIMITS[old_fingerprint(*MACHINES[0][1:])]:
             ins(conn, "memory_limits", machine_id=ids["m2"], measured_at=at(330),
@@ -555,7 +555,7 @@ def build(version: int, sha: str, out: Path) -> Path:
         if dest.exists():
             shutil.rmtree(dest)
         dest.mkdir(parents=True)
-        (dest / "discovery.sql").write_text(sql, encoding="utf-8")
+        (dest / "discovery.sql").write_text(sql, encoding="utf-8", newline="\n")
         shutil.copytree(home, dest / "home")
     return dest
 

@@ -233,3 +233,18 @@ def test_the_build_reproduces_the_committed_golden(version, sha, tmp_path):
                            for p in committed.rglob("*") if p.is_file())
     for f in files:
         assert (built / f).read_bytes() == (committed / f).read_bytes(), f
+
+
+def test_the_build_writes_lf_where_text_mode_would_write_crlf(tmp_path, monkeypatch):
+    version, sha = gb.ERAS[-1]
+    if not _history_has(sha):
+        pytest.skip(f"{sha} not in this clone (shallow checkout)")
+    real = Path.write_text
+
+    def windows(self, data, encoding=None, errors=None, newline=None):
+        if newline is None:
+            data, newline = data.replace("\n", "\r\n"), ""
+        return real(self, data, encoding, errors, newline)
+    monkeypatch.setattr(Path, "write_text", windows)
+    built = gb.build(version, sha, tmp_path)
+    assert [p.name for p in built.rglob("*") if p.is_file() and b"\r" in p.read_bytes()] == []

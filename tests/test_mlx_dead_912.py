@@ -122,6 +122,8 @@ def test_generating_reads_mlx_lm_s_own_health(stub):
 
 def test_a_stub_server_that_says_its_generation_thread_died_is_restarted_by_the_watchdog(tmp_path, monkeypatch, stub):
     monkeypatch.setattr(serving, "MLX_URL", stub(dead=True))
+    # Hands(platform="darwin") fakes macOS, so fake the uid macOS has; Windows' os has no getuid.
+    monkeypatch.setattr(wd.os, "getuid", lambda: 501, raising=False)
     calls, run = _launchctl()
     conn = ms.connect()
     got = wd.wake(conn, Loaded(tmp_path), wd.Hands(run=run, platform="darwin"), act=True, now=NIGHT, say=lambda m: None)

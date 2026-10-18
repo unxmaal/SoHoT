@@ -260,7 +260,9 @@ def test_a_server_that_never_answers_is_slow_and_is_not_asked_again_while_the_fi
     assert f.wake(conn, 2)["outcome"] == "up" and len(f.state["posts"]) == 2
 
 
-def test_a_server_that_refuses_connections_is_down_without_a_completion(tmp_path, lane):
+def test_a_server_that_refuses_connections_is_down_without_a_completion(tmp_path, lane, monkeypatch):
+    # Windows retries a refused loopback SYN for about 2 s, as long as the residency budget itself.
+    monkeypatch.setattr(delegate, "RESIDENCY_TIMEOUT_S", 10.0)
     lane()
     s = socket.socket()
     s.bind(("127.0.0.1", 0))
