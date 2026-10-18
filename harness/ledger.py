@@ -1,4 +1,4 @@
-"""`soh ledger`: cloud spend (ccusage), plan headroom (statusline), local use by purpose, displaced dollars, energy. #826."""
+"""`soh ledger`: Claude Code tokens (ccusage), plan headroom (statusline), local use by purpose, displaced tokens, energy. #826, #976."""
 from __future__ import annotations
 
 import datetime as _dt
@@ -12,11 +12,6 @@ from pathlib import Path
 
 from harness import paths, statusline
 
-#: Tier names and the cost-map entry each one prices at.
-TIERS = {"haiku": "claude-haiku-5-5", "sonnet": "claude-sonnet-5-5", "opus": "claude-opus-5-5"}
-#: lane -> tier the lane's work stands in for; a lane not named here takes COUNTERFACTUAL_DEFAULT.
-COUNTERFACTUAL: dict[str, str] = {}
-COUNTERFACTUAL_DEFAULT = "sonnet"
 TARIFF_USD_PER_KWH = 0.15
 #: Two power samples farther apart than this leave the time between them uncovered.
 POWER_GAP_S = 180.0
@@ -63,78 +58,25 @@ def day_start(day: str, tz=None) -> float:
 
 # --- cloud: ccusage -------------------------------------------------------------------------------
 
-_BREAKDOWN = (("inputTokens", 0), ("outputTokens", 1), ("cacheReadTokens", 2), ("cacheCreationTokens", 3))
+#: ccusage's token fields and the ledger's names; a Max-plan login pays no per-token price, so none is read. #976.
+TOKEN_KEYS = (("inputTokens", "input"), ("outputTokens", "output"), ("cacheReadTokens", "cache_read"),
+              ("cacheCreationTokens", "cache_write"))
 
 
-def litellm_entry(name: str, table: dict):
-    """The cost-map entry for a ccusage model name: exact, then without a date suffix, then provider-prefixed."""
-    for key in (name, re.sub(r"-\d{8}$", "", name), f"anthropic/{name}"):
-        if key in (table or {}):
-            return table[key]
-    return None
+def _tokens(rec: dict) -> dict:
+    return {name: int(rec.get(key) or 0) for key, name in TOKEN_KEYS}
 
 
-def price_breakdown(b: dict, table: dict) -> float | None:
-    """A ccusage model breakdown priced from LiteLLM's map; None when any nonzero part has no price. #845."""
-    p = litellm_entry(b.get("modelName") or "", table)
-    if not p:
-        return None
-    usd = 0.0
-    for key, i in _BREAKDOWN:
-        n = b.get(key) or 0
-        if not n:
-            continue
-        rate = p[i] if i < len(p) else None
-        if rate is None:
-            return None
-        usd += n * rate
-    return round(usd, 6)
-
-
-def parse_ccusage(doc: dict, table: dict | None = None, price_source: str = "") -> dict:
-    """ccusage daily JSON as {days: {day: {usd, tokens, unpriced, models}}, unpriced_models, litellm_priced_models}.
-
-    A model ccusage leaves unpriced is priced from LiteLLM's map when `table` has it and labelled so; one that
-    neither prices stays out of the cost and is named, never counted as 0. #845."""
-    flagged = set((doc.get("totals") or {}).get("unpricedModels") or [])
-    neither, by_litellm = set(), set()
+def parse_ccusage(doc: dict) -> dict:
+    """ccusage daily JSON as {days: {day: {tokens, models: {model: tokens}}}}."""
     days: dict = {}
     for day in doc.get("daily") or []:
         period = day.get("period") or day.get("date")
         if not period:
             continue
-        breakdowns = day.get("modelBreakdowns") or []
-        tokens = {"input": day.get("inputTokens") or 0, "output": day.get("outputTokens") or 0,
-                  "cache_write": day.get("cacheCreationTokens") or 0,
-                  "cache_read": day.get("cacheReadTokens") or 0}
-        priced, n_priced, unpriced_day, models = 0.0, 0, {}, {}
-        for b in breakdowns:
-            name = b.get("modelName")
-            n_tok = sum(b.get(k) or 0 for k, _ in _BREAKDOWN)
-            if name in flagged:
-                usd = price_breakdown(b, table) if table else None
-                by = "litellm" if usd is not None else None
-            else:
-                usd, by = b.get("cost") or 0, "ccusage"
-            models[name] = {"usd": usd, "priced_by": by, "tokens": n_tok}
-            if usd is None:
-                unpriced_day[name] = n_tok
-                neither.add(name)
-                continue
-            if by == "litellm":
-                by_litellm.add(name)
-            priced += usd
-            n_priced += 1
-        if breakdowns:
-            usd = round(priced, 6) if n_priced else None
-        else:
-            usd = None if flagged else day.get("totalCost")
-        days[period] = {"usd": usd, "tokens": tokens, "unpriced": unpriced_day, "models": models}
-    out = {"days": days, "unpriced_models": sorted(neither),
-           "litellm_priced_models": sorted(by_litellm)}
-    if by_litellm:
-        out["litellm_price_source"] = price_source or "litellm.model_cost"
-    return out
+        models = {b.get("modelName") or "?": _tokens(b) for b in day.get("modelBreakdowns") or []}
+        days[period] = {"tokens": _tokens(day), "models": models}
+    return {"days": days}
 
 
 def ccusage_argv(since_day: str, version: str) -> list[str]:
@@ -142,9 +84,8 @@ def ccusage_argv(since_day: str, version: str) -> list[str]:
             "--offline", "--since", since_day.replace("-", "")]
 
 
-def cloud(since_day: str, runner=subprocess.run, which=shutil.which, versions: Path | None = None,
-          table: dict | None = None, litellm_pin: str = "") -> dict:
-    """Claude Code spend from the pinned ccusage, gaps priced from LiteLLM; {available: False, why} when it cannot run."""
+def cloud(since_day: str, runner=subprocess.run, which=shutil.which, versions: Path | None = None) -> dict:
+    """Claude Code tokens per day from the pinned ccusage; {available: False, why} when it cannot run."""
     version = pin("CCUSAGE_PIN", versions).split("==")[-1]
     out = {"source": f"ccusage@{version}", "mode": "calculate --offline"}
     if not which("npx"):
@@ -156,8 +97,7 @@ def cloud(since_day: str, runner=subprocess.run, which=shutil.which, versions: P
         doc = None
     if not isinstance(doc, dict):
         return {**out, "available": False, "why": "ccusage failed or printed no JSON"}
-    src = f"litellm.model_cost at {litellm_pin}" if litellm_pin else ""
-    return {**out, "available": True, **parse_ccusage(doc, table, src)}
+    return {**out, "available": True, **parse_ccusage(doc)}
 
 
 # --- plan headroom: the statusline's readings -----------------------------------------------------
@@ -254,7 +194,7 @@ def local(rows: list[tuple], tz=None, mapping=None, delegations=()) -> dict:
     """Per day: tokens by purpose; work by lane; untagged rows a mapping names, kept apart from tagged ones.
 
     A delegation is counted through its gateway_requests row (joined on call_id), never on its own;
-    one with no such row in the window is reported as unjoined and priced nowhere."""
+    one with no such row in the window is reported as unjoined and counted nowhere."""
     days: dict = {}
     by_call = {c: (outcome or "pending") for c, _at, _lane, outcome, _i, _o in delegations if c}
     seen = set()
@@ -282,55 +222,6 @@ def local(rows: list[tuple], tz=None, mapping=None, delegations=()) -> dict:
         if c not in seen:
             _add(_day(days, day_of(at, tz))["unjoined"], pin_, pout)
     return days
-
-
-# --- displaced dollars: litellm's cost map at the pin ---------------------------------------------
-
-#: [input, output, cache read, cache write] USD per token for the tiers and every claude-* entry (#845).
-PRICE_PROBE = ("import json, litellm\n"
-               "print(json.dumps({k: [v.get('input_cost_per_token'), v.get('output_cost_per_token'),"
-               " v.get('cache_read_input_token_cost'), v.get('cache_creation_input_token_cost')]"
-               " for k, v in litellm.model_cost.items() if k in %r or k.startswith('claude')}))")
-
-
-def prices(litellm_pin: str, runner=subprocess.run, cache: Path | None = None) -> dict:
-    """{model: [in, out, cache read, cache write] usd per token} for TIERS and claude-*, at the pin; cached per pin."""
-    cache = cache or ledger_dir() / f"prices2-{re.sub(r'[^A-Za-z0-9_.=-]', '_', litellm_pin)}.json"
-    if cache.exists():
-        try:
-            return json.loads(cache.read_text(encoding="utf-8"))
-        except ValueError:
-            cache.unlink(missing_ok=True)
-    argv = ["uv", "run", "--no-project", "--quiet", "--python", "3.12", "--with", litellm_pin,
-            "python", "-I", "-c", PRICE_PROBE % (sorted(TIERS.values()),)]
-    try:
-        proc = runner(argv, capture_output=True, text=True, timeout=600)
-        got = json.loads(proc.stdout) if proc.returncode == 0 else {}
-    except (OSError, ValueError, subprocess.TimeoutExpired):
-        got = {}
-    if got:
-        cache.parent.mkdir(parents=True, exist_ok=True)
-        cache.write_text(json.dumps(got, sort_keys=True), encoding="utf-8")
-    return got
-
-
-def tier_of(lane: str, override: str = "") -> str:
-    return override or COUNTERFACTUAL.get(lane, COUNTERFACTUAL_DEFAULT)
-
-
-def tier_label(tier: str, table: dict) -> str:
-    model = TIERS[tier]
-    p = table.get(model)
-    if not p or p[0] is None or p[1] is None:
-        return f"{tier} ({model}, no price at the pin)"
-    return f"{tier} ({model} ${p[0] * 1e6:.2f}/${p[1] * 1e6:.2f} per M in/out)"
-
-
-def price(bucket: dict, tier: str, table: dict) -> float | None:
-    p = table.get(TIERS[tier])
-    if not p or p[0] is None or p[1] is None:
-        return None
-    return round(bucket["input"] * p[0] + bucket["output"] * p[1], 6)
 
 
 # --- energy: macmon samples -----------------------------------------------------------------------
@@ -407,51 +298,42 @@ def _sum(buckets) -> dict:
     return out
 
 
+def _cloud_sum(days) -> dict:
+    out = {name: 0 for _, name in TOKEN_KEYS}
+    for d in days:
+        for k in out:
+            out[k] += (d.get("tokens") or {}).get(k) or 0
+    return out
+
+
 def build(*, since: float, now: float, cloud_doc: dict, rows: list[tuple], limits: list[dict],
-          power: list[dict], table: dict, tier: str = "", tariff: float | None = None,
-          macmon: bool = False, litellm_pin: str = "", tz=None, mapping=None, delegations=(),
-          context=()) -> dict:
-    """The ledger: aggregates only, no prompts, paths or keys."""
+          power: list[dict], tariff: float | None = None, macmon: bool = False, tz=None, mapping=None,
+          delegations=(), context=()) -> dict:
+    """The ledger: aggregates only, no prompts, paths or keys; Claude usage in tokens, never dollars (#976)."""
     tariff = TARIFF_USD_PER_KWH if tariff is None else tariff
     days = days_between(since, now, tz)
     loc = local(rows, tz, mapping, delegations)
     hr = headroom(limits, since, tz)
     en = energy(power, since, tariff, macmon, tz)
-    cdays = cloud_doc.get("days", {}) if cloud_doc.get("available") else {}
+    available = bool(cloud_doc.get("available"))
+    cdays = cloud_doc.get("days", {}) if available else {}
     ctx = context_days(context, tz)
     out_days = []
-    totals = {"cloud_usd": 0.0, "displaced_usd": 0.0, "mapped_usd": 0.0}
-    priced_ok = True
     for day in days:
-        c = cdays.get(day, {})
+        c = cdays.get(day)
         lday = loc.get(day) or _day({}, day)
-        displaced = []
-        for lane, b in sorted(lday["work_lanes"].items()):
-            t = tier_of(lane, tier)
-            usd = price(b, t, table)
-            priced_ok &= usd is not None
-            displaced.append({"lane": lane, **b, "tier": tier_label(t, table), "usd": usd})
-        mapped_rows = []
-        for key, b in sorted(lday["mapped"].items()):
-            t = tier_of(b["lane"], tier)
-            usd = price(b, t, table) if b["purpose"] == WORK else None
-            mapped_rows.append({"mapping": key, **b, "tier": tier_label(t, table), "usd": usd})
-        d_usd = sum(x["usd"] or 0 for x in displaced)
-        m_usd = sum(x["usd"] or 0 for x in mapped_rows)
-        totals["cloud_usd"] += c.get("usd") or 0
-        totals["displaced_usd"] += d_usd
-        totals["mapped_usd"] += m_usd
+        displaced = [{"lane": lane, **b} for lane, b in sorted(lday["work_lanes"].items())]
+        mapped_rows = [{"mapping": key, **b} for key, b in sorted(lday["mapped"].items())]
         e = en.get("days", {}).get(day) if en.get("available") else None
         out_days.append({
             "day": day,
-            "cloud": {"usd": c.get("usd"), "tokens": c.get("tokens"), "unpriced": c.get("unpriced", {}),
-                      "models": c.get("models", {})},
+            "cloud": {"tokens": c["tokens"] if c else None, "models": c["models"] if c else {}},
             "context": ctx.get(day, {}),
             "local": lday["purposes"],
             "delegated": lday["delegated"],
             "unjoined_delegations": lday["unjoined"],
-            "displaced": {"usd": round(d_usd, 6), "lanes": displaced},
-            "mapped": {"usd": round(m_usd, 6), "rows": mapped_rows},
+            "displaced": {"tokens": _sum(displaced), "lanes": displaced},
+            "mapped": {"tokens": _sum(m for m in mapped_rows if m["purpose"] == WORK), "rows": mapped_rows},
             "cost": {p: lday["purposes"][p] for p in COST if p in lday["purposes"]},
             "unknown": lday["purposes"].get(UNKNOWN),
             "headroom": hr.get("days", {}).get(day, {}) if hr["available"] else {},
@@ -461,26 +343,21 @@ def build(*, since: float, now: float, cloud_doc: dict, rows: list[tuple], limit
     for d in out_days:
         for p, b in d["local"].items():
             purposes.setdefault(p, []).append(b)
-    default_tier = tier or COUNTERFACTUAL_DEFAULT
     return {
         "window": {"since": since, "until": now, "first_day": days[0], "last_day": days[-1]},
         "assumptions": {
-            "counterfactual_default": tier_label(default_tier, table),
-            "counterfactual_lanes": {lane: tier_label(t, table) for lane, t in sorted(COUNTERFACTUAL.items())}
-            if not tier else {},
-            "price_source": f"litellm.model_cost at {litellm_pin}",
             "tariff_usd_per_kwh": tariff,
             "mapping": [{"alias": a, "first_day": f, "last_day": l, "purpose": p, "why": w}
                         for a, f, l, p, w in (ALIAS_PURPOSE if mapping is None else mapping)],
         },
         "cloud": {k: v for k, v in cloud_doc.items() if k != "days"}
-        | {"usd": round(totals["cloud_usd"], 6) if cloud_doc.get("available") else None},
+        | {"tokens": _cloud_sum(d["cloud"] for d in out_days) if available else None},
         "headroom": {k: v for k, v in hr.items() if k != "days"},
         "local": {p: _sum(bs) for p, bs in sorted(purposes.items())},
         "delegated": _delegated(out_days),
-        "displaced": {"usd": round(totals["displaced_usd"], 6), "tier": tier_label(default_tier, table),
-                      "complete": priced_ok},
-        "mapped": {"usd": round(totals["mapped_usd"], 6), "tier": tier_label(default_tier, table),
+        "displaced": {"tokens": _sum(d["displaced"]["tokens"] for d in out_days),
+                      "note": "tagged work served locally, in tokens"},
+        "mapped": {"tokens": _sum(d["mapped"]["tokens"] for d in out_days),
                    "note": "untagged history assigned by the alias mapping, not by a purpose tag"},
         "energy": {k: v for k, v in en.items() if k != "days"},
         "days": out_days,
@@ -506,32 +383,38 @@ def _delegated(days: list[dict]) -> dict:
     return {"requests": sum(d["delegated"]["requests"] for d in days), "outcomes": outcomes,
             "unjoined": _sum(d["unjoined_delegations"] for d in days),
             "note": "delegations are counted inside work through their gateway_requests row (call_id); "
-                    "unjoined ones have no such row and are priced nowhere"}
+                    "unjoined ones have no such row and are counted nowhere"}
 
 
-# --- the daily table (schema 70) ------------------------------------------------------------------
+# --- the daily table (schema 70, dollar columns dropped in 77) -----------------------------------
 
 def record(conn, ledger: dict, now: float) -> int:
     """Upsert one ledger_days row per day of the window."""
     n = 0
     for d in ledger["days"]:
         conn.execute(
-            "INSERT INTO ledger_days (day, recorded_at, cloud_usd, displaced_usd, mapped_usd, tier, "
-            "energy_kwh, detail) VALUES (?, ?, ?, ?, ?, ?, ?, ?) "
-            "ON CONFLICT(day) DO UPDATE SET recorded_at=excluded.recorded_at, cloud_usd=excluded.cloud_usd, "
-            "displaced_usd=excluded.displaced_usd, mapped_usd=excluded.mapped_usd, tier=excluded.tier, "
-            "energy_kwh=excluded.energy_kwh, detail=excluded.detail",
-            (d["day"], now, d["cloud"]["usd"], d["displaced"]["usd"], d["mapped"]["usd"],
-             ledger["displaced"]["tier"], (d["energy"] or {}).get("kwh"), json.dumps(d, sort_keys=True)))
+            "INSERT INTO ledger_days (day, recorded_at, energy_kwh, detail) VALUES (?, ?, ?, ?) "
+            "ON CONFLICT(day) DO UPDATE SET recorded_at=excluded.recorded_at, energy_kwh=excluded.energy_kwh, "
+            "detail=excluded.detail",
+            (d["day"], now, (d["energy"] or {}).get("kwh"), json.dumps(d, sort_keys=True)))
         n += 1
     conn.commit()
     return n
 
 
 def recorded(conn, first_day: str) -> list[dict]:
+    """Each recorded day with its Claude tokens, read from the detail."""
     try:
-        rows = conn.execute("SELECT day, recorded_at, cloud_usd, displaced_usd, mapped_usd, tier, energy_kwh "
-                            "FROM ledger_days WHERE day >= ? ORDER BY day", (first_day,)).fetchall()
+        rows = conn.execute("SELECT day, recorded_at, energy_kwh, detail FROM ledger_days WHERE day >= ? "
+                            "ORDER BY day", (first_day,)).fetchall()
     except sqlite3.OperationalError:
         return []
-    return [dict(r) for r in rows]
+    out = []
+    for r in rows:
+        try:
+            detail = json.loads(r["detail"] or "{}")
+        except ValueError:
+            detail = {}
+        out.append({"day": r["day"], "recorded_at": r["recorded_at"], "energy_kwh": r["energy_kwh"],
+                    "cloud_tokens": (detail.get("cloud") or {}).get("tokens")})
+    return out

@@ -11,8 +11,14 @@ def _hm(t) -> str:
     return datetime.fromtimestamp(float(t)).strftime("%m-%d %H:%M") if t else "--"
 
 
-def _usd(v) -> str:
-    return "n/a" if v is None else f"${v:,.2f}"
+def ledger_line(led: dict) -> str:
+    """Last night's ledger row: Claude in tokens and plan-window peaks, local work in tokens. #976."""
+    from harness.commands.ledger import local_tokens, tokens
+    kwh = "n/a" if led["energy_kwh"] is None else f"{led['energy_kwh']:.2f} kWh"
+    plan = ", ".join(f"{lab} {led['plan'][k]:.0f}%" for k, lab in (("five_hour", "5h"), ("seven_day", "7d"))
+                     if led["plan"].get(k) is not None) or "no readings"
+    return (f"ledger    {led['day']}: cloud {tokens(led['cloud'])}; plan peak {plan}; "
+            f"displaced {local_tokens(led['displaced'])}, energy {kwh} (recorded {_hm(led['recorded_at'])})")
 
 
 def _tally(d: dict) -> str:
@@ -72,9 +78,7 @@ def render(r: dict) -> list[str]:
     elif led.get("missing"):
         out.append(f"ledger    no row for {led['day']}")
     else:
-        kwh = "n/a" if led["energy_kwh"] is None else f"{led['energy_kwh']:.2f} kWh"
-        out.append(f"ledger    {led['day']}: cloud {_usd(led['cloud_usd'])}, displaced {_usd(led['displaced_usd'])} "
-                   f"at {led['tier'] or '-'}, energy {kwh} (recorded {_hm(led['recorded_at'])})")
+        out.append(ledger_line(led))
     out.append(f"stale     {len(r['stale'])} lane(s)")
     for t in r["stale"]:
         out.append(f"          {t['lane']:<9} {t['candidate'][:40]} {t['skip'] or t['why']}")

@@ -519,11 +519,11 @@ def benchmarks(machines: list[dict], now: float | None = None) -> str:
 
 
 def trends_page(machines: list[dict], now: float | None = None) -> str:
-    """Cost, tokens, plan cap and energy over time, one window per machine; its own page so the benchmarks stay on top. #849."""
+    """Tokens, plan cap and energy over time, one window per machine; its own page so the benchmarks stay on top. #849."""
     from harness import trends
     trended = [d for d in machines if trends.has_data(d.get("trends"))]
     intro = window("Trends", (
-        "<p>Daily series from each machine's ledger: what Claude would have cost at list prices, "
+        "<p>Daily series from each machine's ledger: Claude Code tokens by model, "
         "how much of the plan's cap was used, local tokens by purpose, the work moved off Claude, "
         "energy, and the tool output that entered Claude's context. A trend is a benchmark too: "
         "a change should show as a step.</p>"

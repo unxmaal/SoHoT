@@ -538,11 +538,9 @@ def build_parser() -> argparse.ArgumentParser:
     ctx.add_argument("--root", default="",
                      help="transcript root (default $SOH_CLAUDE_PROJECTS or ~/.claude/projects)")
     ctx.set_defaults(func=context_cmd.cmd_context)
-    led = sub.add_parser("ledger", help="cloud spend (ccusage), plan headroom, local use by purpose, "
-                         "displaced dollars and energy, per day")
+    led = sub.add_parser("ledger", help="Claude Code tokens (ccusage), plan headroom, local use by purpose, "
+                         "displaced tokens and energy, per day")
     led.add_argument("--since", default="7d", help="7d, 12h, or a date such as 2026-10-06")
-    led.add_argument("--tier", choices=("haiku", "sonnet", "opus"), default="",
-                     help="price all local work at this tier (default: per lane, knob ledger_counterfactual)")
     led.add_argument("--tariff", type=float, default=None,
                      help="USD per kWh (default: knob ledger_tariff)")
     led.add_argument("--record", action="store_true", help="upsert each day into ledger_days")

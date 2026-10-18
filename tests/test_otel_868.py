@@ -94,7 +94,7 @@ def test_a_recorded_claude_code_export_parses_and_its_events_agree_with_its_metr
     mt = [r for doc in load("recorded-metrics.json") for r in otel.parse_metrics(doc, 0)]
     e, m = otel.from_events(ev), otel.from_metrics(mt)
     assert e["requests"] == 2 and e["tool_results"] == 1 and e["sessions"] == 1
-    for k in ("usd", "input", "output", "cache_read", "cache_write"):
+    for k in ("input", "output", "cache_read", "cache_write", "models"):
         assert e[k] == m[k], k
     assert e["cache_write_5m"] + e["cache_write_1h"] == e["cache_write"]
     assert e["tool_tokens"] == 2
@@ -176,7 +176,6 @@ def _sources(monkeypatch, tmp_path):
             argv, 0, (FIX / "ccusage-daily.json").read_text(encoding="utf-8"), ""), which=lambda n: "/x/npx")
 
     monkeypatch.setattr(ledger, "cloud", fake_cloud)
-    monkeypatch.setattr(ledger, "prices", lambda pin: {})
 
 
 def test_one_day_side_by_side_matches_the_hand_totals(monkeypatch, tmp_path):
@@ -184,7 +183,6 @@ def test_one_day_side_by_side_matches_the_hand_totals(monkeypatch, tmp_path):
     C = ledger_cmd.gather_compare(DAY, tz=UTC)
     rows = {r["row"]: r for r in C["rows"]}
     want = {  # by hand from tests/fixtures/otel: two api_requests, two tool_results on the day
-        "usd": (0.35, 0.35, 0.40, None),
         "input": (150, 150, 150, None),
         "output": (50, 50, 50, None),
         "cache_read": (1000, 1000, 1000, None),
@@ -200,7 +198,8 @@ def test_one_day_side_by_side_matches_the_hand_totals(monkeypatch, tmp_path):
         assert tuple(rows[k][s] for s in otel.SOURCES) == w, k
     models = {m["model"]: m for m in C["models"]}
     assert (models["claude-opus-5-5"]["otel_events"], models["claude-opus-5-5"]["otel_metrics"],
-            models["claude-opus-5-5"]["ccusage"]) == (0.10, 0.10, 0.12)
+            models["claude-opus-5-5"]["ccusage"]) == (1120, 1120, 1120)
+    assert "usd" not in rows
 
 
 def test_the_compare_verb_prints_every_source(monkeypatch, tmp_path, capsys):
@@ -210,13 +209,13 @@ def test_the_compare_verb_prints_every_source(monkeypatch, tmp_path, capsys):
     assert cli.main(["ledger", "--compare", DAY]) == 0
     out = capsys.readouterr().out
     assert "otel_events" in out and "ccusage" in out and "transcripts" in out
-    assert "$0.35" in out and "$0.40" in out
+    assert "tokens by model" in out and "1,120" in out and "$" not in out
 
 
 def test_the_ledger_shows_otel_beside_ccusage(monkeypatch):
     _, ev = fixture_rows()
     days = ledger_cmd.otel_days(ev, tz=UTC)
-    assert days[DAY]["usd"] == 0.35 and days["2026-10-15"]["usd"] == 9.0
+    assert (days[DAY]["input"], days["2026-10-15"]["input"]) == (150, 9000) and "usd" not in days[DAY]
     assert days[DAY]["requests"] == 2
 
 

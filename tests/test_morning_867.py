@@ -89,8 +89,10 @@ def _store(stops=0, ledger=True):
         conn.execute("INSERT INTO watchdog_actions (at, criterion, subject, action, escalated, dry_run, outcome) "
                      "VALUES (?, 'overrun', ?, 'stop', 1, 0, 'group term')", (NIGHT + 1500 + i, f"eval pgid {i + 2}"))
     if ledger:
-        conn.execute("INSERT INTO ledger_days (day, recorded_at, cloud_usd, displaced_usd, mapped_usd, tier, energy_kwh) "
-                     "VALUES (?, ?, 35.76, 0.0, NULL, 'sonnet', 0.06)", (YESTERDAY, NIGHT + 7200))
+        detail = {"cloud": {"tokens": {"input": 1200, "output": 3400, "cache_read": 5_600_000, "cache_write": 78_000}},
+                  "headroom": {"five_hour": 61.0, "seven_day": 40.0}, "displaced": {"lanes": []}}
+        conn.execute("INSERT INTO ledger_days (day, recorded_at, energy_kwh, detail) VALUES (?, ?, 0.06, ?)",
+                     (YESTERDAY, NIGHT + 7200, json.dumps(detail)))
     conn.commit()
     return conn
 
@@ -115,7 +117,7 @@ def test_a_fixture_night_produces_the_expected_report(deploy_dir):
     assert r["ci"]["available"] and r["ci"]["fresh"]
     assert {j["name"]: j["conclusion"] for j in r["ci"]["jobs"]} == {"check-macos": "success",
                                                                     "check-windows": "failure"}
-    assert r["ledger"]["day"] == YESTERDAY and r["ledger"]["cloud_usd"] == pytest.approx(35.76)
+    assert r["ledger"]["day"] == YESTERDAY and r["ledger"]["cloud"]["output"] == 3400
     assert r["deploy"]["behind"] == 2 and len(r["deploy"]["missing"]) == 2
     assert r["needs"] == [
         "watchdog stop: overrun on eval pgid 2 at 21:25",
@@ -126,7 +128,8 @@ def test_a_fixture_night_produces_the_expected_report(deploy_dir):
     text = "\n".join(morning_cmd.render(r))
     for want in ("screened  broken 1, screened 1", "measured  1 run(s): code", "paused    #1 code chal paused at 114/270",
                  "stopped   1", "settled   declined 1", "watchdog  2 action(s)", "failure    check-windows",
-                 f"ledger    {YESTERDAY}: cloud $35.76", "stale     1 lane(s)", "2 commit(s) behind"):
+                 f"ledger    {YESTERDAY}: cloud 1,200 in, 3,400 out, 5.60M cache read, 78,000 cache write; "
+                 "plan peak 5h 61%, 7d 40%; displaced 0 in, 0 out", "stale     1 lane(s)", "2 commit(s) behind"):
         assert want in text, want
 
 

@@ -61,8 +61,8 @@ def ledger_rows(conn, first_day: str) -> list[dict]:
     """ledger_days rows with their detail parsed; [] before schema 70."""
     import sqlite3
     try:
-        rows = conn.execute("SELECT day, cloud_usd, displaced_usd, mapped_usd, tier, energy_kwh, detail "
-                            "FROM ledger_days WHERE day >= ? ORDER BY day", (first_day,)).fetchall()
+        rows = conn.execute("SELECT day, energy_kwh, detail FROM ledger_days WHERE day >= ? ORDER BY day",
+                            (first_day,)).fetchall()
     except sqlite3.OperationalError:
         return []
     out = []
@@ -91,21 +91,20 @@ def _chart(title: str, unit: str, series: dict, note: str = "", **extra) -> dict
 
 
 def cloud_chart(rows: list[dict]) -> dict:
+    """Claude Code tokens by model; a Max-plan login pays no per-token price, so none is charted. #976."""
     series: dict = {}
-    litellm = set()
     for r in rows:
-        models = ((r["detail"].get("cloud") or {}).get("models")) or {}
+        cloud = r["detail"].get("cloud") or {}
+        models = cloud.get("models") or {}
         if models:
             for name, m in models.items():
-                if m.get("priced_by") == "litellm":
-                    litellm.add(_safe(name))
-                _put(series, name, r["day"], m.get("usd"))
-        elif r.get("cloud_usd") is not None:
-            _put(series, "all models (recorded before #827)", r["day"], r["cloud_usd"])
-    note = "Claude Code at API list prices (ccusage)."
-    if litellm:
-        note += f" Priced from LiteLLM's map where ccusage has no price: {', '.join(sorted(litellm))}."
-    return _chart("Cloud API-equivalent dollars by model", "usd", fold(series), note)
+                n = m.get("tokens") if isinstance(m.get("tokens"), (int, float)) else \
+                    sum(v for k, v in m.items() if k in ("input", "output", "cache_read", "cache_write"))
+                _put(series, name, r["day"], n)
+        elif cloud.get("tokens"):
+            _put(series, "all models (recorded before #827)", r["day"], sum(cloud["tokens"].values()))
+    return _chart("Claude Code tokens by model", "tokens", fold(series),
+                  "Input, output and cache tokens from ccusage; the plan-cap chart is what the subscription counts.")
 
 
 def plan_chart(samples: list[dict], since: float) -> dict:
@@ -132,14 +131,11 @@ def local_chart(rows: list[dict]) -> dict:
 
 def displaced_chart(rows: list[dict]) -> dict:
     series: dict = {}
-    tier = ""
     for r in rows:
-        _put(series, "tagged work", r["day"], r.get("displaced_usd"))
-        if r.get("mapped_usd"):
-            _put(series, "untagged history by alias mapping", r["day"], r.get("mapped_usd"))
-        tier = r.get("tier") or tier
-    return _chart("Displaced dollars", "usd", series,
-                  f"What local work would have cost at {tier or 'the stated tier'}.", tier=tier)
+        for b in (r["detail"].get("displaced") or {}).get("lanes") or []:
+            _put(series, b.get("lane") or "unlaned", r["day"], (b.get("input") or 0) + (b.get("output") or 0))
+    return _chart("Displaced tokens by lane", "tokens", fold(series),
+                  "Tagged work served locally instead of by Claude, tokens in and out.")
 
 
 def energy_chart(rows: list[dict]) -> dict:
@@ -250,8 +246,6 @@ def tick(v: float, unit: str) -> str:
 
 
 def fmt(v: float, unit: str) -> str:
-    if unit == "usd":
-        return f"${v:,.2f}" if v < 1000 else f"${v:,.0f}"
     if unit == "pct":
         return f"{v:.0f}%"
     if unit == "rate":
