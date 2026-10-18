@@ -109,3 +109,37 @@ class PlanRunner(BaseRunner):
 
     def cut_off(self) -> str:
         return self.base.cut_off()
+
+
+class TemplateRunner(PlanRunner):
+    """A prompt-transform template's steps through the base's own server and model, the last answered by the base. #993."""
+
+    def __init__(self, base, method, timeout: float | None = None):
+        super().__init__(base, timeout)
+        self.method = method
+        self.steps = method.extra["steps"]
+        self.candidate = f"{method.name}/{base.candidate}"
+
+    def generate(self, case: Case):
+        self.base.screening = self.screening
+        sampling = {**completion.SAMPLING.get(case.modality, {}), **(self.base.sampling or {})}
+        values, spent = {"task": case.prompt}, 0
+        for i, step in enumerate(self.steps[:-1], 1):
+            try:
+                text, usage = completion.complete_with_usage(
+                    methods.fill(step.prompt, values), model=self.base.model,
+                    gateway=self.base.gateway, modality=case.modality if step.answers else "",
+                    context=case.context,
+                    timeout=max(self.timeout, completion.timeout_for(self.base.budget(case))),
+                    max_tokens=self.base.budget(case), sampling=sampling or None)
+            except completion.CompletionError as exc:
+                raise _runner_error(exc, f"{self.method.name} step {i} ({step.name}): ") from exc
+            spent += int(usage.get("completion_tokens") or 0)
+            values[step.name] = text.strip()
+        artifact, peak = self.base.generate(
+            replace(case, prompt=methods.fill(self.steps[-1].prompt, values)))
+        spent += int(self.base.extra_metrics().get("completion_tokens") or 0)
+        self.last_metrics = {"method_calls": len(self.steps)}
+        if spent:
+            self.last_metrics["completion_tokens"] = spent
+        return artifact, peak

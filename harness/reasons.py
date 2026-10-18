@@ -65,6 +65,8 @@ ENVIRONMENT_ERROR = "environment_error"
 UNDERPOWERED = "underpowered"
 #: A verdict's class: the paired run stopped at its deadline, so it decided nothing. #673.
 INCONCLUSIVE = "inconclusive"
+#: A verdict's class: the lane has too few cases for any repeat to see the effect, so nothing ran. #993.
+LANE_TOO_SMALL = "lane_too_small"
 
 #: class -> (screen outcome, reason), in precedence order when rows disagree.
 CLASSES = {

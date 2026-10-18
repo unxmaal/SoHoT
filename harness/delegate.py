@@ -142,8 +142,11 @@ def _call_label(spec: str, n: int, modality: str) -> str:
         parsed = None
     if parsed is None:
         return ""
+    steps = parsed.method.extra.get("steps")
     if parsed.method.name == "plan":
         what = "the answer" if modality else "the plan"
+    elif steps:
+        what = "the answer" if n >= len(steps) else f"the {steps[n - 1].name}"
     else:
         what = f"sample {n}"
     return f"call {n} of {spec} ({what})"

@@ -57,7 +57,7 @@ def comparisons(conn, lane: str, version: str) -> int:
     head = f"{(lane or '').strip()}: "
     return conn.execute(
         "SELECT COUNT(*) FROM verdicts WHERE tier = ? AND split_version = ? "
-        "AND failure_class != 'inconclusive' AND substr(detail, 1, ?) = ?",
+        "AND failure_class NOT IN ('inconclusive', 'lane_too_small') AND substr(detail, 1, ?) = ?",
         (TIER, version, len(head), head)).fetchone()[0]
 
 
@@ -78,6 +78,8 @@ class Verdict:
     forced: bool = False
     all_machines: bool = False
     held: str = ""
+    #: The predicate that reopens a verdict waiting on a fact, as memory_store.decide takes it. #993.
+    until: str = ""
 
 
 def better(incumbent: dict, challenger: dict, lane: str = "") -> bool:
@@ -191,7 +193,7 @@ def decide(lane: str, incumbent: dict, challenger: dict,
     if worse:
         got = Verdict(lane, name_i, name_c, False, f"{got.why}; {worse}")
     elif not got.adopt and plan is not None and rows:
-        got = _null(lane, name_i, name_c, got, plan)
+        got = _lane_too_small(lane, name_i, name_c, got, plan, split, spec) or _null(lane, name_i, name_c, got, plan)
     # A method's calls and latency travel with its verdict, won or lost. #576.
     from harness import methods
     cost = methods.cost_note(incumbent, challenger, spec) if spec else ""
@@ -199,7 +201,33 @@ def decide(lane: str, incumbent: dict, challenger: dict,
         evidence["cost"] = methods.cost(incumbent, challenger, spec)
     why = "; ".join([got.why, *notes, *([cost] if cost else [])])
     return Verdict(lane, name_i, name_c, got.adopt, why, got.how,
-                   got.failure_class, evidence)
+                   got.failure_class, evidence, until=got.until)
+
+
+def _lane_too_small(lane, name_i, name_c, got: Verdict, plan, split, spec: str) -> Verdict | None:
+    """A method's null on a lane no repeat could power is a fact about the lane, waiting on its cases. #993."""
+    import math
+
+    from harness import holdout, methods, power, reasons
+    if not spec or not methods.is_method(spec) or plan.enough or plan.unmeasured:
+        return None
+    split = split if split is not None else holdout.for_lane(lane)
+    have = len(set(split.dev) | set(split.holdout)) or plan.cases
+    need = power.too_small(plan)
+    if need is not None:
+        more = math.ceil((need - plan.cases) / holdout.FRACTION)
+        why = (f"lane too small, needs {need} holdout cases: {plan.cases} cannot show "
+               f"+{plan.effect:.2f} per cell at power {plan.target} at any repeat up to {plan.cap}, "
+               f"so about {more} more {lane} cases are needed before this null says anything "
+               f"about {name_c} ({got.why})")
+    elif plan.odds is not None and plan.odds[0] <= 0:
+        more = 1
+        why = (f"lane too small, needs cases the incumbent fails: it passes all {plan.cases} "
+               f"holdout cases, so no method can show a gain on them ({got.why})")
+    else:
+        return None
+    return Verdict(lane, name_i, name_c, False, why, failure_class=reasons.LANE_TOO_SMALL,
+                   until=f"cases:{lane}>{have + more - 1}")
 
 
 def _null(lane, name_i, name_c, got: Verdict, plan) -> Verdict:
@@ -329,7 +357,7 @@ def outcome_of(verdict: Verdict) -> tuple[str, str]:
     from harness import reasons
     outcome, reason = reasons.CLASSES.get(verdict.failure_class, (
         "declined", reasons.LIMIT
-        if verdict.failure_class in (reasons.UNDERPOWERED, reasons.INCONCLUSIVE)
+        if verdict.failure_class in (reasons.UNDERPOWERED, reasons.INCONCLUSIVE, reasons.LANE_TOO_SMALL)
         else reasons.CANDIDATE))
     return ("measured" if verdict.adopt else outcome), reason
 
@@ -353,6 +381,7 @@ def record(conn, verdict: Verdict, spec: str = "",
                           False, f"reference model; never a lane default "
                           f"({verdict.why})", verdict.how)
     spec = spec or verdict.challenger
+    verdict = _control_guard(verdict, spec)
     verdict = _schema_guard(verdict, spec)
     outcome, reason = outcome_of(verdict)
     serve = verdict.adopt
@@ -369,7 +398,7 @@ def record(conn, verdict: Verdict, spec: str = "",
             raise Held(f"refused on this machine: {spec} {why}")
     vid = ms.decide(conn, row["proposal"] or "", outcome, tier=TIER,
                     detail=detail[:200], candidate_id=cid, run_id=run_id,
-                    reason=reason)
+                    reason=reason, until=verdict.until)
     if verdict.failure_class or verdict.evidence:
         conn.execute(
             "UPDATE verdicts SET failure_class = ?, split_version = ?, "
@@ -411,6 +440,17 @@ def record(conn, verdict: Verdict, spec: str = "",
             except OSError:
                 pass
     return vid
+
+
+def _control_guard(verdict: Verdict, spec: str) -> Verdict:
+    """A negative control is never a lane default; one that wins says the gate or the cases are suspect. #993."""
+    from harness import methods
+    if not verdict.adopt or not methods.is_control(spec):
+        return verdict
+    return Verdict(verdict.lane, verdict.incumbent, verdict.challenger, False,
+                   f"negative control won, so this lane's method verdicts are suspect until it is "
+                   f"explained; a control is never a lane default ({verdict.why})", verdict.how,
+                   verdict.failure_class, verdict.evidence)
 
 
 def _schema_guard(verdict: Verdict, spec: str) -> Verdict:
