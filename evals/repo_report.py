@@ -44,9 +44,10 @@ def load(conn, run_ids) -> tuple[list[dict], list[dict]]:
                      "receipt": json.loads(receipt or "{}"), "environment": json.loads(env or "{}"),
                      "generated_at": at})
         rows += [{"run_id": rid, "candidate": c, "case_id": k, "repeat_index": i, "passed": bool(p),
-                  "failure_class": fc or "", "hit_limit": hl or ""}
-                 for c, k, i, p, fc, hl in conn.execute(
-                     "SELECT candidate, case_id, repeat_index, passed, failure_class, hit_limit "
+                  "failure_class": fc or "", "hit_limit": hl or "", "seconds": sec,
+                  "metrics": json.loads(m or "{}")}
+                 for c, k, i, p, fc, hl, sec, m in conn.execute(
+                     "SELECT candidate, case_id, repeat_index, passed, failure_class, hit_limit, seconds, metrics "
                      "FROM results WHERE run_id = ? ORDER BY seq", (rid,))]
     return runs, rows
 
@@ -138,9 +139,11 @@ def _view(draws: dict, task: dict, candidates: list[str], skip, *, alpha, resamp
     solved = {c: {t: any(by[c][k][0] for k in cases if task[k][0] == t) for t in keys} for c in candidates}
     only = {c: [t for t in keys if solved[c][t] and not solved[o][t]] for c, o in (candidates, candidates[::-1])}
     both = [t for t in keys if solved[base][t] and solved[cand][t]]
+    higher = task_wins(by, cases, task, base, cand)
     out = {"cases": len(cases), "tasks": len(keys), "rates": rates,
            "tasks_resolved": {c: sum(solved[c].values()) for c in candidates},
-           "only": only, "both": both, **_verdict(len(only[cand]), len(only[base]), alpha)}
+           "only": only, "both": both, "higher": higher,
+           **_verdict(len(higher[cand]), len(higher[base]), alpha)}
     if cases:
         iv = compare.interval(by, cases, cand, base, resamples=resamples, seed=seed,
                               clusters={k: task[k][0] for k in cases})
@@ -149,6 +152,23 @@ def _view(draws: dict, task: dict, candidates: list[str], skip, *, alpha, resamp
     out["power"] = {c: _power(by[c], cases, task, [r for k in cases for r in _as_rows(draws[k][c], c, k)],
                               c, alpha) for c in candidates}
     return out
+
+
+def task_rates(by_c: dict, cases, task) -> dict:
+    """task -> pass rate over every draw of every variant of it: repeats are replicates within the task. #995."""
+    got: dict = {}
+    for k in cases:
+        n = got.setdefault(task[k][0], [0, 0])
+        n[0] += by_c[k][0]
+        n[1] += by_c[k][1]
+    return {t: k / n for t, (k, n) in got.items() if n}
+
+
+def task_wins(by: dict, cases, task, base: str, cand: str) -> dict:
+    """candidate -> the tasks where its per-task pass rate is the higher one; ties are neither. #995."""
+    rb, rc = task_rates(by[base], cases, task), task_rates(by[cand], cases, task)
+    keys = sorted(set(rb) & set(rc))
+    return {cand: [t for t in keys if rc[t] > rb[t]], base: [t for t in keys if rb[t] > rc[t]]}
 
 
 def _as_rows(draws, candidate, case):
@@ -218,6 +238,9 @@ def sent(r: dict, spec: str) -> dict:
             per.setdefault(k, []).append(v)
     vals = {k: v[0] if len(set(map(str, v))) == 1 and len(v) == len(reqs) else "/".join(map(str, v))
             for k, v in per.items()}
+    ctx = (rec.get("contexts") or {}).get(spec)
+    if ctx:
+        vals["context"] = f"{ctx.get('spec')}@{ctx.get('digest')}"
     return {"max_tokens": [q.get("max_tokens") for q in reqs], **vals}
 
 
@@ -367,7 +390,8 @@ def _block(rep: dict, title: str, v: dict, limits: bool) -> list:
     name_of = rep["labels"]
     out.append(f"  tasks: {nc} only {_named(v['only'][cand], name_of)}, {nb} only "
                f"{_named(v['only'][base], name_of)}, both {_named(v['both'], name_of)}; "
-               f"exact sign p = {v['p']}: {v['verdict']}")
+               f"per-task pass rate higher for {nc} on {_named(v['higher'][cand], name_of)}, for {nb} on "
+               f"{_named(v['higher'][base], name_of)}: exact sign p = {v['p']}: {v['verdict']}")
     if "difference" in v:
         d = v["difference"]
         out.append(f"  case resolve rate {nc} minus {nb}: {d['difference']:+.3f}, 95% task bootstrap "
@@ -402,22 +426,31 @@ def _named(keys, name_of) -> str:
     return f"{len(keys)}" + (f" ({', '.join(sorted(name_of.get(k, k[:12]) for k in keys))})" if keys else "")
 
 
-def run(run_ids, *, store=None, cases_dir=None, resamples: int = compare.DEFAULT_RESAMPLES, seed: int = 1) -> dict:
-    """The report for stored runs, read with SQLite mode=ro."""
+def stored(run_ids, *, store=None, cases_dir=None, match: bool = True) -> tuple[list, list, list, str]:
+    """(runs, rows, cases, where the cases came from) for stored runs, read with SQLite mode=ro; match=False keeps today's cases."""
     from evals.core import load_cases
     from evals.importers import CASES
     from harness import live_audit
     from harness import memory_store as ms
-    conn = live_audit.open_readonly(Path(store) if store else ms.db_path())
-    try:
-        runs, rows = load(conn, run_ids)
-    finally:
-        conn.close()
+    runs, rows = [], []
+    if run_ids:
+        conn = live_audit.open_readonly(Path(store) if store else ms.db_path())
+        try:
+            runs, rows = load(conn, run_ids)
+        finally:
+            conn.close()
     cases = load_cases(Path(cases_dir) if cases_dir else CASES / "repo")
     source = f"case files {cases_dir}" if cases_dir else "local case files"
-    if not cases_dir:
-        cases, source = cases_for(runs, cases)
-    check_runs(runs, cases)
+    if runs and match:
+        if not cases_dir:
+            cases, source = cases_for(runs, cases)
+        check_runs(runs, cases)
+    return runs, rows, cases, source
+
+
+def run(run_ids, *, store=None, cases_dir=None, resamples: int = compare.DEFAULT_RESAMPLES, seed: int = 1) -> dict:
+    """The report for stored runs, read with SQLite mode=ro."""
+    runs, rows, cases, source = stored(run_ids, store=store, cases_dir=cases_dir)
     return {**report(runs, rows, cases, resamples=resamples, seed=seed), "cases_from": source}
 
 

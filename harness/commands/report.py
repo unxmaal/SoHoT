@@ -243,9 +243,24 @@ def cmd_repo_report(a) -> int:
     """The repo lane's paired report over one or two stored runs, the task as the unit. #923."""
     import sqlite3
 
-    from evals import repo_report
+    from evals import arms_report, repo_report
     from harness.commands.common import emit, err, note
     try:
+        if getattr(a, "plan", False) or getattr(a, "arms", False):
+            # A plan is for the next run, so it reads today's cases and takes rates from rows by case id.
+            runs, rows, cases, source = repo_report.stored(a.runs, store=a.store or None, cases_dir=a.cases or None,
+                                                           match=not a.plan)
+            if a.plan:
+                got = arms_report.plan(cases, runs, rows, baseline=a.baseline or None, effect=a.effect)
+                note(arms_report.plan_text(got))
+            else:
+                got = arms_report.report(runs, rows, cases, baseline=a.baseline or None, effect=a.effect,
+                                         resamples=a.resamples, seed=a.seed)
+                note(arms_report.text(got))
+            emit(True, **got, cases_from=source)
+            return 0
+        if not a.runs:
+            return err("repo report needs a run, or --plan")
         got = repo_report.run(a.runs, store=a.store or None, cases_dir=a.cases or None,
                               resamples=a.resamples, seed=a.seed)
     except (repo_report.Refused, OSError, sqlite3.Error) as exc:

@@ -42,6 +42,10 @@ TRANSFORM = ("issue title and body from `gh issue view` at survey time, home pat
              f"{RUNS} sandboxed pytest runs of the fix's test files at base+hidden tests and at "
              "base+reference diff, in the lane's own environment and sandbox (evals/repo.py)")
 
+#: The held-out split of tasks, frozen per fix commit by this seed and never by a case's text. #995.
+SPLIT_SEED = 995
+HOLDOUT_FRACTION = 0.5
+
 #: Cases dropped after the survey because validation fails, with why; unfair cases stay, tagged in labels.json. #920.
 DROPPED: dict[str, str] = {
     "sohot-455-spec": "validation error: tests/test_live_store_guard.py does not collect at base",
@@ -305,7 +309,21 @@ def survey(source: str, revision: str, limit: int, log, get_issue=issue, timeout
                          "order": "newest first", "limit": limit},
             "examined": len(kept) + len(drops),
             "dropped": dict(sorted(Counter(d["reason"] for d in drops).items())),
-            "tasks": kept, "drops": drops}
+            "tasks": kept, "split": split(kept), "drops": drops}
+
+
+def side_of(fix: str, seed: int = SPLIT_SEED, fraction: float = HOLDOUT_FRACTION) -> str:
+    """'holdout' or 'dev' for a task: a draw on its fix sha alone, so a new task never moves an old one."""
+    import hashlib
+    h = hashlib.sha256(f"{seed}\0{fix}".encode("utf-8")).hexdigest()
+    return "holdout" if int(h[:12], 16) / 16 ** 12 < fraction else "dev"
+
+
+def split(tasks) -> dict:
+    """The manifest's split record for these task rows."""
+    sides = {t["id"]: side_of(t["fix"]) for t in tasks}
+    return {"seed": SPLIT_SEED, "fraction": HOLDOUT_FRACTION,
+            **{s: sorted(k for k, v in sides.items() if v == s) for s in ("dev", "holdout")}}
 
 
 def manifest(path: Path = MANIFEST) -> dict:

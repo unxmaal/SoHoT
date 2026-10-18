@@ -1,6 +1,7 @@
 """A frontier model through headless Claude Code, on a subscription login. #359."""
 from __future__ import annotations
 
+import dataclasses
 import json
 import subprocess
 import tempfile
@@ -9,13 +10,15 @@ import time
 
 from evals.core import Case
 from evals.runners.base import BaseRunner, RunnerError
-from harness import completion, reasons
+from harness import arms, completion, reasons
 
 PREFIX = "claude-code"
 #: Seconds one `claude -p` reference answer may take; a knob (#693), read at call time.
 TIMEOUT_S = 600.0
 USAGE_METRICS = {"input_tokens": "prompt_tokens", "cache_read_input_tokens": "cache_read_tokens",
                  "cache_creation_input_tokens": "cache_creation_tokens"}
+#: Metrics a multi-call arm adds up across its calls.
+SUMMED = ("completion_tokens", "prompt_tokens", "cache_read_tokens", "cache_creation_tokens", "turns")
 
 
 class EmptyResult(RunnerError):
@@ -108,9 +111,10 @@ def result_of(stdout: str) -> dict:
 
 class ClaudeCodeRunner(BaseRunner):
     def __init__(self, model: str, timeout: float | None = None, execute=stream_run,
-                 binary: str = "claude"):
+                 binary: str = "claude", context: str = "none"):
         self.model = model
-        self.candidate = f"{PREFIX}:{model}"
+        self.context = arms.parse(context)
+        self.candidate = arms.key(f"{PREFIX}:{model}", self.context.spec)
         self.timeout = timeout
         self.execute = execute
         self.binary = binary
@@ -128,6 +132,25 @@ class ClaudeCodeRunner(BaseRunner):
                 "--system-prompt", system, "--tools", ""]
 
     def generate(self, case: Case):
+        """One answer under the arm's context; a prompt template's earlier steps are calls of their own. #995."""
+        ctx = self.context
+        if not ctx.steps:
+            return self._answer(dataclasses.replace(case, prompt=ctx.prompt(case.prompt)))
+        from harness import methods
+        values, spent = {"task": case.prompt}, {}
+        for step in ctx.steps[:-1]:
+            text, _ = self._answer(dataclasses.replace(case, prompt=methods.fill(step.prompt, values)))
+            values[step.name] = text.strip()
+            for k, v in self.last_metrics.items():
+                if k in SUMMED:
+                    spent[k] = spent.get(k, 0) + v
+        got = self._answer(dataclasses.replace(case, prompt=methods.fill(ctx.steps[-1].prompt, values)))
+        for k, v in spent.items():
+            self.last_metrics[k] = self.last_metrics.get(k, 0) + v
+        self.last_metrics["method_calls"] = len(ctx.steps)
+        return got
+
+    def _answer(self, case: Case):
         # One retry on an empty result: 1 in 45 calls came back empty and
         # never reproduced. Empty twice is the model's answer. #366.
         try:
@@ -175,6 +198,8 @@ class ClaudeCodeRunner(BaseRunner):
         for key, name in USAGE_METRICS.items():
             if usage.get(key) is not None:
                 self.last_metrics[name] = int(usage[key])
+        if body.get("num_turns") is not None:
+            self.last_metrics["turns"] = int(body["num_turns"])
         if retries:
             self.last_metrics["retries"] = retries
         # A fresh CLI per case loads no weights, so no row is cold.
