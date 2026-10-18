@@ -1,0 +1,40 @@
+# Prompt-transform methods `<name>:<base>` (#993): a step names {task} and earlier steps' `as`; the last answers.
+version: 1
+templates:
+  # Other copy of these four questions: unxmaal/dotfiles claude/skills/deepen/SKILL.md; change both together.
+  - name: deepen
+    note: rewrite the task with four questions a top professional would ask, then answer the rewrite
+    source: https://felixrieseberg.com/how-to-be-more-ambitious-a-tutorial-for-humans-with-models/
+    lanes: [code, extract, web]
+    steps:
+      - as: rewrite
+        prompt: |
+          Do not answer the task below yet. First rewrite it into a better task.
+
+          Answer these four questions for yourself:
+          1. What would a top professional do here that the task doesn't ask for?
+          2. What raw material would they start from?
+          3. Which specific methods and tools would they use?
+          4. What, other than the author, would show the result is right?
+
+          Then write the rewritten task: the original task plus what your answers add.
+          Keep every requirement, name, format and constraint of the original exactly as
+          stated; add to them, never drop or loosen one. Reply with the rewritten task
+          only, and no answer to it.
+
+          TASK:
+          {task}
+      - prompt: "{rewrite}"
+
+  - name: neutral
+    note: the negative control; a neutral paragraph before the task, which should change nothing
+    control: true
+    lanes: [code, extract, web]
+    steps:
+      - prompt: |
+          The reading room of the old county library has tall windows that face east, and in
+          the morning the light falls across the long oak tables. The shelves are numbered by
+          hand, and the clock above the door has run a few minutes slow for as long as anyone
+          remembers.
+
+          {task}

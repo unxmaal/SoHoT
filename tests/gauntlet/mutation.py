@@ -39,7 +39,7 @@ MODULES = {
         "tests/test_new_lane_loop_faults.py", "tests/test_shared_store_703.py", "tests/test_ocr_lane.py",
         "tests/test_fetch_inspected_798.py", "tests/test_retrieval_lane.py",
         "tests/test_adopt_assumptions.py", "tests/test_cold_load.py", "tests/test_degenerate_955.py",
-        "tests/test_load_log_953.py", "tests/test_runner_gap_until_950.py"],
+        "tests/test_load_log_953.py", "tests/test_runner_gap_until_950.py", "tests/test_deepen_993.py"],
     "harness/screen.py": [
         "tests/test_runner_gap_until_950.py", "tests/test_gguf_first_911.py", "tests/test_harness_screen.py", "tests/test_harness_screen_spec.py", "tests/test_screen_evidence.py",
         "tests/test_screen_server_death.py", "tests/test_decide_lane.py", "tests/test_refusal_shapes.py",
@@ -60,7 +60,7 @@ MODULES = {
         "tests/test_reverify.py", "tests/test_loop_end_to_end.py", "tests/test_candidates.py",
         "tests/test_claims_balanced_metric.py", "tests/test_gateway_switch.py", "tests/test_live_audit.py",
         "tests/test_shared_store_703.py", "tests/test_screen_evidence.py", "tests/test_harness_winners.py",
-        "tests/test_lane_routes.py", "tests/test_remote_upstreams.py"],
+        "tests/test_lane_routes.py", "tests/test_remote_upstreams.py", "tests/test_deepen_993.py"],
     "harness/serving.py": [
         "tests/test_harness_serving.py", "tests/test_lane_routes.py", "tests/test_gguf_route.py",
         "tests/test_schema_lanes.py", "tests/test_ds4.py", "tests/test_remote_upstreams.py",

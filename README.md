@@ -1572,7 +1572,26 @@ trace-icon:<image engine>   svg     the same with the icon preset
 best-of:<n>:<base>          code, web, svg      sample n at the lane's temperature,
                                     keep the one the lane's own checks score highest
 plan:<base>                 code, web, svg, extract   a plan, then the answer: two calls
+deepen:<base>               code, extract, web  rewrite the task with four questions, then answer the rewrite
+neutral:<base>              code, extract, web  the negative control: a neutral paragraph before the task
 ```
+
+A prompt-transform method is data, not code: a template in
+`harness/method_templates.yaml` is a list of steps, each a prompt naming
+`{task}` and the replies of earlier steps by their `as`, the last step being
+the answer. A pre-prompt is one step, a rewrite two, critique-then-revise
+three. A new template needs no code; the loop crosses it like any method, its
+calls are its steps, and its verdict's cost carries the template's digest so a
+changed prompt is a different measurement. A template marked `control` is
+measured beside the others and never adopted; one that wins says the lane's
+gate or cases are suspect.
+
+A method crossing that loses no significant ground on a lane too small for any
+repeat to see +0.20 is not declined as underpowered. Its verdict reads `lane
+too small, needs N holdout cases` (or `needs cases the incumbent fails` when
+the incumbent passes every holdout case), carries failure class
+`lane_too_small` and waits on `until cases:<lane>>M`, which reopens it once the
+lane has the cases. It spends no comparison on the holdout.
 
 The base is any spec its runner already takes (a gateway model id, `llamacpp:<stem>`, a
 repo id, `mflux:flux2-klein-4b`), and the method runs over that runner and its

@@ -161,6 +161,9 @@ class World:
             return "ok", []
         if self.decide_answer is not None:
             return self.decide_answer
+        if "rewrite it into a better task" in user:
+            # deepen's first call (#993): a faithful rewrite, so its second call is the case again.
+            return next((p for p in self.prompts.values() if p in user), ""), []
         for case_id, prompt in self.prompts.items():
             if prompt in user:
                 good = (payload["model"] == CHALLENGER
@@ -296,9 +299,10 @@ def test_the_loop_ends_with_the_lane_alias_serving_the_challenger(world):
 def test_a_method_crossed_with_the_incumbent_climbs_the_same_ladder(world):
     """Nobody typed `plan:<incumbent>`: the loop crossed it, screened it and measured it
     against the incumbent with the paired gate, and its verdict carries its cost. #576."""
-    loop("--top", "3")
+    loop("--top", "5")
     assert adopted() == {"code": CHALLENGER}
-    for spec in (f"plan:{INCUMBENT_UPSTREAM}", f"best-of:3:{INCUMBENT_UPSTREAM}"):
+    for spec in (f"plan:{INCUMBENT_UPSTREAM}", f"best-of:3:{INCUMBENT_UPSTREAM}",
+                 f"deepen:{INCUMBENT_UPSTREAM}", f"neutral:{INCUMBENT_UPSTREAM}"):
         conn = ms.connect()
         try:
             tiers = [r["tier"] for r in conn.execute(
@@ -318,7 +322,8 @@ def test_a_method_crossed_with_the_incumbent_climbs_the_same_ladder(world):
             conn.close()
         cost = json.loads(power)["cost"]
         # The fake's first sample passes clean, so best-of stops there. #807.
-        assert cost["base"] == INCUMBENT_UPSTREAM and cost["calls"] == (2.0 if spec[0] == "p" else 1.0)
+        assert cost["base"] == INCUMBENT_UPSTREAM and cost["calls"] == (2.0 if spec[0] in "pd" else 1.0)
+        assert ("template" in cost) == (spec[0] in "dn"), cost
 
 
 def test_a_model_server_that_dies_mid_screen_is_the_harnesss_fault(world):

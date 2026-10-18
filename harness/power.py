@@ -329,6 +329,13 @@ def plan(rates, effect: float | None = None, *, stochastic: bool = True,
                 f"capped at repeat {cap} with power {powers[-1]:.2f}; {more}")
 
 
+def too_small(plan: Plan) -> int | None:
+    """Holdout cases needed before any repeat can see the plan's effect, when the holdout has fewer; else None. #993."""
+    if plan.enough or plan.unmeasured or plan.cases_needed is None:
+        return None
+    return plan.cases_needed if plan.cases_needed > plan.cases else None
+
+
 def _more_cases(rates, effect, k: int, need: int | None, target: float) -> str:
     if need is None:
         if not rates or _cell_odds(rates, effect)[0] <= 0:

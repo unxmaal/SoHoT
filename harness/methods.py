@@ -2,7 +2,11 @@
 run over the base's own runner and route. #576."""
 from __future__ import annotations
 
+import hashlib
+import json
+import re
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Callable
 
 #: Where the loop's crossings are recorded: the sighting's source and the proposal's kind.
@@ -248,7 +252,7 @@ def run(spec: str, lane: str, prompt: str, ask, slots: int | None = None) -> tup
 
 
 def text_method(spec: str) -> bool:
-    """Whether `spec` is a method a text call serves (best-of, plan)."""
+    """Whether `spec` is a method a text call serves (best-of, plan, a template)."""
     try:
         parsed = parse(spec)
     except ValueError:
@@ -304,10 +308,12 @@ def cost(incumbent: dict, challenger: dict, spec: str) -> dict:
         return {}
     mine = float(challenger.get("median_s") or 0.0)
     theirs = float(incumbent.get("median_s") or 0.0)
+    template = parsed.method.extra.get("digest")
     return {"method": parsed.method.name, "base": parsed.base,
             "calls": float(((challenger.get("metrics") or {}).get("method_calls")) or 1.0),
             "median_s": mine, "incumbent_median_s": theirs,
-            "latency_ratio": round(mine / theirs, 2) if theirs > 0 else None}
+            "latency_ratio": round(mine / theirs, 2) if theirs > 0 else None,
+            **({"template": template} if template else {})}
 
 
 def cost_note(incumbent: dict, challenger: dict, spec: str) -> str:
@@ -351,7 +357,128 @@ def _plan(parsed: Parsed, base_builder, outdir):
     return PlanRunner(base)
 
 
-REGISTRY: dict[str, Method] = {m.name: m for m in (
+# ---- prompt-transform methods, read from data (#993) ------------------------------
+
+#: The templates each become a method `<name>:<base>`.
+TEMPLATES = Path(__file__).with_name("method_templates.yaml")
+_SLOT = re.compile(r"\{([A-Za-z_][A-Za-z0-9_]*)\}")
+_NAME = re.compile(r"[a-z][a-z0-9-]*")
+
+
+@dataclass(frozen=True)
+class Step:
+    prompt: str
+    #: The name later steps read this step's reply by; "" for the answer.
+    name: str = ""
+    #: Sent with the lane's modality, as an answer is; the last step always is.
+    answers: bool = False
+
+
+def fill(prompt: str, values: dict) -> str:
+    """`prompt` with each {slot} replaced once; text put in is never read for slots again."""
+    return _SLOT.sub(lambda m: values[m.group(1)], prompt)
+
+
+def steps_of(spec: str) -> tuple:
+    """The steps of a template method spec, () for anything else."""
+    try:
+        parsed = parse(spec)
+    except ValueError:
+        return ()
+    return parsed.method.extra.get("steps", ()) if parsed else ()
+
+
+def is_control(spec: str) -> bool:
+    """Whether `spec` is a negative control, measured so a method has something to beat and never adopted."""
+    try:
+        parsed = parse(spec)
+    except ValueError:
+        return False
+    return bool(parsed and parsed.method.extra.get("control"))
+
+
+def from_template(row: dict, where: str = "a template") -> Method:
+    """The method a template row describes. ValueError naming the row for anything that would not run."""
+    name = str(row.get("name") or "").strip()
+    if not _NAME.fullmatch(name):
+        raise ValueError(f"{where}: name {name!r} must be lower-case letters, digits and dashes")
+    lanes = tuple(row.get("lanes") or TEXT_LANES)
+    if not set(lanes) <= set(TEXT_LANES):
+        raise ValueError(f"{name}: lanes {sorted(set(lanes) - set(TEXT_LANES))} are not text "
+                         f"lanes; a template answers in {', '.join(TEXT_LANES)}")
+    raw = row.get("steps") or []
+    if not raw:
+        raise ValueError(f"{name}: a template needs at least one step")
+    steps, known, unread = [], {"task"}, {}
+    for i, s in enumerate(raw, 1):
+        prompt, label = str(s.get("prompt") or ""), str(s.get("as") or "").strip()
+        if not prompt.strip():
+            raise ValueError(f"{name}: step {i} has no prompt")
+        for slot in _SLOT.findall(prompt):
+            if slot not in known:
+                raise ValueError(f"{name}: step {i} reads {{{slot}}}, which is not {{task}} or an "
+                                 f"earlier step's `as`")
+            unread.pop(slot, None)
+        last = i == len(raw)
+        if not last and not label:
+            raise ValueError(f"{name}: step {i} is not the answer, so it needs an `as` a later step reads")
+        if label:
+            if label in known or not label.isidentifier():
+                raise ValueError(f"{name}: step {i}'s `as` {label!r} is taken or not a name")
+            known.add(label)
+            unread[label] = i
+        steps.append(Step(prompt, label, bool(s.get("answers")) or last))
+    unread.pop(steps[-1].name, None)
+    if unread:
+        raise ValueError(f"{name}: no later step reads step {min(unread.values())}'s reply")
+    body = json.dumps([[s.prompt, s.name, s.answers] for s in steps])
+    digest = hashlib.sha256(body.encode("utf-8")).hexdigest()[:12]
+    control = bool(row.get("control"))
+    return Method(name, f"{name}:<base>", lanes, "", str(row.get("note") or ""), _template,
+                  serve=_serve_template, per_attempt=lambda p: len(p.method.extra["steps"]),
+                  crosses=bool(row.get("crosses", True)),
+                  extra={"steps": tuple(steps), "digest": digest, "control": control,
+                         "source": str(row.get("source") or "")})
+
+
+def load_templates(path: Path = TEMPLATES) -> list[Method]:
+    import yaml
+    data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    return [from_template(r, f"{path.name} template {i}")
+            for i, r in enumerate(data.get("templates") or [], 1)]
+
+
+def _serve_template(parsed: Parsed, lane: str, prompt: str, ask, slots=None) -> tuple[str, dict]:
+    steps = parsed.method.extra["steps"]
+    values, text = {"task": prompt}, ""
+    for step in steps:
+        text = ask(fill(step.prompt, values), lane if step.answers else "")
+        if step.name:
+            values[step.name] = text.strip()
+    return text, {"method": parsed.method.name, "base": parsed.base, "calls": len(steps),
+                  "template": parsed.method.extra["digest"]}
+
+
+def _template(parsed: Parsed, base_builder, outdir):
+    from evals.runners.method import TemplateRunner
+    from evals.runners.text import CompletionRunner
+    base = base_builder(parsed.base)
+    if not isinstance(base, CompletionRunner):
+        raise SystemExit(f"{parsed.spec}: {parsed.method.name} needs a text base served through a "
+                         f"text server, and {parsed.base} is not one")
+    return TemplateRunner(base, parsed.method)
+
+
+def _registry(coded, templated) -> dict[str, Method]:
+    out = {m.name: m for m in coded}
+    for m in templated:
+        if m.name in out:
+            raise ValueError(f"template {m.name!r} takes the name of a method already registered")
+        out[m.name] = m
+    return out
+
+
+REGISTRY: dict[str, Method] = _registry((
     Method("trace", "trace:<image engine>", ("svg",), "trace",
            "draw a raster with an image engine, then vectorize it", _trace,
            modality="svg", base_lane="image", preset="illustration"),
@@ -365,7 +492,7 @@ REGISTRY: dict[str, Method] = {m.name: m for m in (
     Method("plan", "plan:<base>", TEXT_LANES, "",
            "ask for a plan, then answer with it: two calls", _plan,
            serve=_serve_plan, per_attempt=lambda p: 2),
-)}
+), load_templates())
 
 
 #: candidate prefix -> vector.TRACE_PRESETS key, read by evals.run.

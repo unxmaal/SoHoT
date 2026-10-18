@@ -285,6 +285,8 @@ def method_receipts(specs: dict) -> dict:
         if got is not None:
             out[key] = {"spec": spec, "method": got.method.name,
                         "args": list(got.args), "base": got.base}
+            if got.method.extra.get("digest"):
+                out[key]["template"] = got.method.extra["digest"]
     return out
 
 
