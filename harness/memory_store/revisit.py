@@ -306,7 +306,7 @@ def unranked_terminal(conn) -> list[dict]:
     """Proposals held terminal by a parent's ranking, which says nothing about them. #954."""
     from harness.memory_store.proposals import UNRANKED
     return [dict(r) for r in conn.execute(
-        "SELECT p.name, v.id AS verdict_id FROM proposals p JOIN verdicts v ON v.id = p.state_verdict_id "
+        "SELECT p.name, v.id AS verdict_id, v.decided_at FROM proposals p JOIN verdicts v ON v.id = p.state_verdict_id "
         f"WHERE p.state IN ({','.join('?' * len(TERMINAL))}) AND v.tier = ? AND v.detail = ? ORDER BY p.name",
         (*TERMINAL, INSPECT, UNRANKED))]
 
@@ -386,7 +386,7 @@ RUNNER_WAITS = ("runner", "format", "policy")
 def _runtime_declines(conn) -> list:
     return conn.execute(
         "SELECT p.name, p.lane, p.hf_task, p.library, p.card_tags, p.model_type, p.remote_code, "
-        "v.id, v.until, v.detail, v.failure_class, coalesce(c.spec, '') AS spec "
+        "v.id, v.until, v.detail, v.failure_class, v.decided_at, coalesce(c.spec, '') AS spec "
         "FROM proposals p JOIN verdicts v ON v.id = p.state_verdict_id "
         "LEFT JOIN candidates c ON c.id = v.candidate_id "
         "WHERE p.state = 'declined' AND v.tier = ? AND v.reason = 'runtime' ORDER BY v.id",
@@ -420,7 +420,8 @@ def runner_gap_rewrites(conn) -> list[dict]:
         cls = _screen_class(r)
         new = runner_gaps.cause_until(cls, r["detail"], r["spec"] or r["name"], dict(r)) if cls else ""
         if new and new != until:
-            out.append({"id": r["id"], "name": r["name"], "until": until, "new": new, "class": cls})
+            out.append({"id": r["id"], "name": r["name"], "until": until, "new": new, "class": cls,
+                        "decided_at": r["decided_at"]})
     return out
 
 
@@ -500,7 +501,8 @@ def stale_attachments(conn, every: bool = False) -> list[dict]:
     """HF proposals whose attaches_to an older rule set: a description backfill, or a word its tags no longer give. #949."""
     from harness import screen
     from harness.memory_store.schema import HUGGINGFACE
-    rows = conn.execute("SELECT p.name, p.attaches_to, p.card_read, p.card_tags, p.state, v.detail "
+    rows = conn.execute("SELECT p.name, p.attaches_to, p.card_read, p.card_tags, p.state, v.detail, "
+                        "COALESCE(v.decided_at, p.first_seen) AS decided_at "
                         "FROM proposals p LEFT JOIN verdicts v ON v.id = p.state_verdict_id "
                         "WHERE p.attaches_to != '' AND p.registry = ? ORDER BY p.name",
                         (HUGGINGFACE,)).fetchall()

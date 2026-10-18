@@ -99,9 +99,9 @@ def test_an_unreadable_card_is_left_for_the_next_sweep(db):
 
 def test_the_audit_counts_attachments_no_card_reading_gives(db):
     _seed(db, "inclusionAI/VISTA-9B", "image", "gui", card_read="card")
-    assert live_audit._attachment_by_tag(db) == ["inclusionAI/VISTA-9B: attaches_to gui (card)"]
+    assert live_audit._attachment_by_tag(db, None) == ([], ["inclusionAI/VISTA-9B: attaches_to gui (card)"])
     ms.rederive_attachments(db, read=_card)
-    assert live_audit._attachment_by_tag(db) == []
+    assert live_audit._attachment_by_tag(db, None) == ([], [])
 
 
 def test_a_full_model_no_lane_runs_is_queued_as_a_runner_gap(db, monkeypatch):
