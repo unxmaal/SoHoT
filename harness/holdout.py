@@ -61,8 +61,37 @@ def _draw(case) -> float:
     return int(h.hexdigest()[:12], 16) / 16 ** 12
 
 
+def task_of(case) -> str:
+    """The task a history case belongs to (params.fix), "" for a case that stands alone."""
+    from evals.importers.history import VARIANTS
+    params = getattr(case, "params", None) or {}
+    return str(params["fix"]) if params.get("fix") and params.get("variant") in VARIANTS else ""
+
+
+def version(lane: str) -> str:
+    """The assignment version a lane's split records: a task-split lane adds the frozen task seed. #995."""
+    from evals.importers import history
+    return f"{VERSION}+tasks-{history.SPLIT_SEED}" if (lane or "").strip().lower() == history.LANE else VERSION
+
+
+def _assign_tasks(lane: str, cases) -> Split:
+    """A task's variants share one side, frozen by the manifest's seed; a lone case draws as any other. #995."""
+    from evals.importers import history
+    sides = {c.id: (history.side_of(task_of(c)) if task_of(c) else
+                    "holdout" if _draw(c) < FRACTION else "dev") for c in cases}
+    hold = tuple(sorted(k for k, v in sides.items() if v == "holdout"))
+    dev = tuple(sorted(k for k, v in sides.items() if v == "dev"))
+    if len(hold) < MIN_HOLDOUT or len(dev) < MIN_DEV:
+        every = tuple(sorted(sides))
+        return Split(lane, every, every, True, version(lane))
+    return Split(lane, dev, hold, False, version(lane))
+
+
 def assign(lane: str, cases) -> Split:
-    """Holdout is every case drawing under FRACTION, floored at MIN_HOLDOUT."""
+    """Holdout is every case drawing under FRACTION, floored at MIN_HOLDOUT; history tasks split whole."""
+    cases = list(cases)
+    if any(task_of(c) for c in cases):
+        return _assign_tasks(lane, cases)
     drawn = sorted(((_draw(c), c.id) for c in cases), key=lambda t: (t[0], t[1]))
     ids = [cid for _, cid in drawn]
     if len(ids) < MIN_HOLDOUT + MIN_DEV:

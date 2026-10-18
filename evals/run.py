@@ -73,6 +73,8 @@ REPAIR_OPTIONS = {"attempts"}
 OMNISVG_PREFIX = "omnisvg"
 #: A frontier model through headless Claude Code (#359): `claude-code:claude-opus-5-5`.
 CLAUDE_CODE_PREFIX = "claude-code"
+#: Draws per case of a claude-code arm when --repeat is not given: replicates within a task. #995.
+ARM_REPEAT = 3
 OMNISVG_OPTIONS = {"candidates"}
 #: Two-stage image workflows, named for their second stage. See
 #: evals/runners/chain.py -- this is the ComfyUI vocabulary mflux already ships.
@@ -512,9 +514,9 @@ def _agent_runner(candidate: str, gateway: str, max_tokens: int = 0):
     kind = kind_of(candidate)
     if kind == CLAUDE_CODE_PREFIX:
         from evals.runners.claude_agent import ClaudeAgentRunner
-        model = candidate.partition(":")[2].strip()
-        if not model:
-            raise SystemExit("claude-code needs a model, e.g. claude-code:claude-opus-5-5")
+        model, ctx = claude_code_parts(candidate)
+        if ctx != "none":
+            raise SystemExit(f"{candidate}: the agent lane runs claude-code with no context yet")
         return ClaudeAgentRunner(model)
     if kind == NEEDLE_KIND:
         from evals.runners.needle import needle_agent_runner
@@ -541,15 +543,56 @@ def _agent_runner(candidate: str, gateway: str, max_tokens: int = 0):
                        count=served_counter(where.base, where.model))
 
 
+def claude_code_parts(candidate: str) -> tuple[str, str]:
+    """(model, context spec) of `claude-code:<model>[,context=<spec>]`. #995."""
+    model, _, optstr = candidate.partition(":")[2].partition(",")
+    if not model.strip():
+        raise SystemExit("claude-code needs a model, e.g. claude-code:claude-opus-5-5")
+    try:
+        options = parse_options(optstr, candidate)
+    except ValueError as exc:
+        raise SystemExit(str(exc)) from None
+    unknown = set(options) - {"context"}
+    if unknown:
+        raise SystemExit(f"{candidate}: unknown option(s) {', '.join(sorted(unknown))}; allowed: context")
+    return model.strip(), options.get("context") or "none"
+
+
+def is_arm(candidate: str) -> bool:
+    """A claude-code candidate that names its context, so it runs as one arm of an experiment. #995."""
+    return kind_of(candidate) == CLAUDE_CODE_PREFIX and "context" in parse_options(
+        candidate.partition(":")[2].partition(",")[2], candidate)
+
+
+def default_repeat(candidates: str) -> int:
+    """--repeat when none was given: ARM_REPEAT for a run holding a claude-code arm, else 1. #995."""
+    return ARM_REPEAT if any(is_arm(c) for c in split_candidates(candidates)) else 1
+
+
+def _arm(cls, candidate: str):
+    model, ctx = claude_code_parts(candidate)
+    try:
+        return cls(model, context=ctx)
+    except ValueError as exc:
+        raise SystemExit(f"{candidate}: {exc}") from None
+
+
+def context_receipts(planned: list) -> dict:
+    """receipt key -> the context an arm ran with and its digest, for each claude-code arm. #995."""
+    out = {}
+    for _, runner, _ in planned:
+        ctx = getattr(runner, "context", None)
+        if ctx is not None and ctx.kind != "none":
+            out[runner.candidate] = ctx.as_receipt()
+    return out
+
+
 def _repo_runner(candidate: str, gateway: str, max_tokens: int):
     """One completion asked for a diff against a restored commit, for a text or claude-code candidate. #887, #905."""
     kind = kind_of(candidate)
     if kind == CLAUDE_CODE_PREFIX:
         from evals.runners.repo import ClaudeRepoRunner
-        model = candidate.partition(":")[2].strip()
-        if not model:
-            raise SystemExit("claude-code needs a model, e.g. claude-code:claude-opus-5-5")
-        return ClaudeRepoRunner(model)
+        return _arm(ClaudeRepoRunner, candidate)
     if kind not in TEXT_KINDS:
         raise SystemExit(f"{candidate} cannot answer with a diff; the repo lane takes a text "
                          f"candidate or claude-code:<model>")
@@ -594,10 +637,7 @@ def _build_runner(candidate: str, gateway: str, outdir: Path | None,
         return _transcription_runner(candidate)
     if kind == CLAUDE_CODE_PREFIX:
         from evals.runners.claude_code import ClaudeCodeRunner
-        model = candidate.partition(":")[2].strip()
-        if not model:
-            raise SystemExit("claude-code needs a model, e.g. claude-code:claude-opus-5-5")
-        return ClaudeCodeRunner(model)
+        return _arm(ClaudeCodeRunner, candidate)
     if kind == REPAIR_PREFIX:
         _, _, rest = candidate.partition(":")
         model, _, optstr = rest.partition(",")
@@ -962,10 +1002,11 @@ def _parser():
                    help="cheapest tier: one case per candidate at minimal "
                         "settings, answering only whether it runs. Never a "
                         "ranking")
-    ap.add_argument("--repeat", type=int, default=1,
+    ap.add_argument("--repeat", type=int, default=None,
                     help="samples per case, each with a different seed. One "
                          "sample per prompt ranks noise; 3 is the usual "
-                         "minimum for an image comparison you would act on")
+                         "minimum for an image comparison you would act on. "
+                         f"Default 1, or {ARM_REPEAT} when a candidate is a claude-code arm (context=)")
     ap.add_argument("--split", choices=("all", "dev", "holdout"), default="all",
                     help="which side of the per-lane holdout split to run; the "
                          "screen always runs dev (#479)")
@@ -1050,6 +1091,8 @@ def _execute(args) -> int:
 
 
 def _execute_at(args, overrides: dict) -> int:
+    if args.repeat is None:
+        args.repeat = default_repeat(args.candidates or "")
     if args.screen:
         # A screen is allowed to be statistically worthless. Its job is to
         # reject what does not run at all, which is how most things here have
@@ -1087,7 +1130,7 @@ def _execute_at(args, overrides: dict) -> int:
     if outdir:
         outdir.mkdir(parents=True, exist_ok=True)
     identity = {"modality": args.modality, "candidates": candidates, "repeat": args.repeat,
-                "split": side, "split_version": holdout.VERSION, "cases_digest": cases_digest(cases),
+                "split": side, "split_version": holdout.version(args.modality), "cases_digest": cases_digest(cases),
                 "max_tokens": budget, "budget_ladder": list(ladder),
                 "knobs": knobs.settings(args.modality, overrides)}
     had = watch.read(outdir) if getattr(args, "resume", False) else None
@@ -1203,7 +1246,7 @@ def _execute_at(args, overrides: dict) -> int:
             swap_used_mb=0 if away else swap_used_mb(),
             pressure={} if away else pressed.as_dict(),
             cases_digest=cases_digest(cases),
-            split=side, split_version=holdout.VERSION,
+            split=side, split_version=holdout.version(args.modality),
             methods=method_receipts(specs),
             devices=devices(results),
             launch=launches,
@@ -1216,6 +1259,7 @@ def _execute_at(args, overrides: dict) -> int:
             served=served_shapes(specs, resolved, completion.served(), away, args.gateway),
             template=effective_template(args.modality, candidates),
             requests=sent_requests(planned),
+            contexts=context_receipts(planned),
             server_sampling=server_sampling(specs),
             validation=validation)
         now = time.time()

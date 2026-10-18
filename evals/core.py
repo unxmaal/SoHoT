@@ -457,6 +457,8 @@ METRIC_DIRECTION = {
     # claude -p usage token counts; reported, never ranked on. #907.
     "cache_read_tokens": "neutral",
     "cache_creation_tokens": "neutral",
+    # claude -p agent turns per row (#995): an arm's cost, reported beside its gain.
+    "turns": "neutral",
     # methods (#576): what a method paid for its row; cost is reported, never ranked on.
     "method_calls": "neutral",
     "method_samples": "neutral",
@@ -768,6 +770,8 @@ class Receipt:
     server_sampling: dict = field(default_factory=dict)
     #: case id -> this machine's latest repo-case validation verdict (evals.repo.verdicts). Not an axis. #920.
     validation: dict = field(default_factory=dict)
+    #: receipt key -> the context a claude-code arm ran with, digest included. #995.
+    contexts: dict = field(default_factory=dict)
 
     def as_dict(self) -> dict:
         return {"modality": self.modality, "case_ids": list(self.case_ids),
@@ -794,7 +798,8 @@ class Receipt:
                 "template": None if self.template is None else {k: dict(v) for k, v in self.template.items()},
                 "requests": {k: [dict(r) for r in v] for k, v in self.requests.items()},
                 "server_sampling": {k: dict(v) for k, v in self.server_sampling.items()},
-                "validation": dict(self.validation)}
+                "validation": dict(self.validation),
+                "contexts": {k: dict(v) for k, v in self.contexts.items()}}
 
     @classmethod
     def from_dict(cls, raw: dict) -> "Receipt":
@@ -821,7 +826,8 @@ class Receipt:
                    served=raw.get("served") or {}, template=raw.get("template"),
                    requests=raw.get("requests") or {},
                    server_sampling=raw.get("server_sampling") or {},
-                   validation=raw.get("validation") or {})
+                   validation=raw.get("validation") or {},
+                   contexts=raw.get("contexts") or {})
 
 
 def legacy_knobs(raw: dict) -> dict:

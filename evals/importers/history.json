@@ -1146,6 +1146,34 @@
    "new_files": []
   }
  ],
+ "split": {
+  "seed": 995,
+  "fraction": 0.5,
+  "dev": [
+   "sohot-368",
+   "sohot-376",
+   "sohot-404",
+   "sohot-570",
+   "sohot-632",
+   "sohot-720",
+   "sohot-858"
+  ],
+  "holdout": [
+   "sohot-363",
+   "sohot-371",
+   "sohot-374",
+   "sohot-396",
+   "sohot-399",
+   "sohot-438",
+   "sohot-455",
+   "sohot-598",
+   "sohot-642",
+   "sohot-647",
+   "sohot-788",
+   "sohot-859",
+   "sohot-879"
+  ]
+ },
  "drops": [
   {
    "issue": 880,

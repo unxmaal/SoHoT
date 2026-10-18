@@ -450,8 +450,15 @@ def build_parser() -> argparse.ArgumentParser:
     rep.set_defaults(func=report_cmd.cmd_report)
     rr = sub.add_parser("repo-report", help="repo-lane resolve rates, paired comparison and power over "
                         "stored runs, with the task as the unit of analysis (#923)")
-    rr.add_argument("runs", nargs="+", type=int, metavar="RUN", help="one run with two candidates, or two runs; "
+    rr.add_argument("runs", nargs="*", type=int, metavar="RUN", help="one run with two candidates, or two runs; "
                     "the first run's candidate is the baseline")
+    rr.add_argument("--arms", action="store_true", help="every arm of the runs against a baseline arm, per split "
+                    "side, repeats as within-task replicates, with token cost (#995)")
+    rr.add_argument("--plan", action="store_true", help="before a run: tasks x repeats each split side needs to "
+                    "see --effect, from the runs' baseline rates when given (#995)")
+    rr.add_argument("--baseline", default="", help="the baseline arm: a receipt key or a context spec "
+                    "(default: the arm with no context)")
+    rr.add_argument("--effect", type=float, default=0.2, help="per-task lift to plan for or report power at")
     rr.add_argument("--store", default="", help="the store to read, read-only (default: this home's discovery.db)")
     rr.add_argument("--cases", default="", help="the repo cases the task keys come from (default: evals/cases/repo)")
     rr.add_argument("--resamples", type=int, default=3000, help="task bootstrap resamples")

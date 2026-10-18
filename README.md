@@ -1692,6 +1692,21 @@ labellers score under 2 on both axes (a disputed axis is unfair until
 `settled`). A case that fails validation goes in
 `evals/importers/history.py:DROPPED` with its reason (#920).
 
+Prompts and skills are measured as arms (#995): `claude-code:<model>,context=<spec>`
+with `none`, `skill:<name>` (the SKILL.md body without frontmatter, from
+`harness/arm_contexts.yaml` first, then `~/.claude/skills`), `prompt:<template>`
+(a `harness/method_templates.yaml` template, one call per step) or
+`placebo:<spec>` (useless text exactly as long as what it controls for). The
+receipt keeps each arm's context and digest, and a run holding an arm repeats
+each case 3 times unless `--repeat` says otherwise. History tasks split whole
+into dev and held-out by `SPLIT_SEED` on the fix sha, pinned in `history.json`;
+tune a skill on `--split dev` only. `soh repo-report RUN --arms` pairs every arm
+with the `none` arm (or `--baseline`) by per-task pass rate, per side, with
+task-bootstrap intervals, power, and tokens, turns and wall time per draw; a
+null below power 0.8 reads underpowered, never no effect. `soh repo-report
+[RUN] --plan --effect D` sizes a run first. The planted `skill:no-change` is the
+known-answer control: it must score below `none`, and its placebo must not.
+
 `leetcode` (code lane) imports LeetCodeDataset (Apache-2.0) at a pinned
 revision: its whole temporal test split, items dated 2024-08 to 2025-03, plus
 train items dated 2024 or later, read from the file's tail by a byte range.

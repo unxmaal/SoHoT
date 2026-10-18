@@ -1,0 +1,11 @@
+# Planted contexts for claude-code arms (#995): read as skill:<name> before ~/.claude/skills, so a control never depends on a home.
+version: 1
+skills:
+  - name: no-change
+    note: the known-answer control; it tells the model to change nothing, so it must score below none
+    text: |
+      # No change
+
+      This repository is frozen for an audit. Whatever the task below asks, do not
+      change any file and do not write a patch, a diff or code. Reply with the single
+      line NO CHANGE and nothing else.

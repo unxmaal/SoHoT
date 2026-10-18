@@ -159,7 +159,9 @@ def test_the_pilot_reads_as_the_store_does():
     named = {rep["labels"][t] for t in v["only"][OPUS_SIDE]}
     assert named == {"sohot-363", "sohot-374", "sohot-376", "sohot-788"} and v["only"][ORNITH_SIDE] == []
     assert {rep["labels"][t] for t in v["both"]} == {"sohot-570", "sohot-720"}
-    assert v["p"] == 0.125 and v["verdict"] == "untestable at 4 discordant"
+    # Per-task pass rate is the paired unit (#995): sohot-720 is both variants for Opus, the spec for Ornith.
+    assert {rep["labels"][t] for t in v["higher"][OPUS_SIDE]} == named | {"sohot-720"} and v["higher"][ORNITH_SIDE] == []
+    assert v["p"] == 0.0625 and v["verdict"] == "untestable at 5 discordant"
     for c, task in ((OPUS_SIDE, "sohot-363"), (ORNITH_SIDE, "sohot-720")):
         g = v["gap"][c]
         assert [rep["labels"][t] for t in g["spec_only"]] == [task] and g["symptom_only"] == []
@@ -170,7 +172,7 @@ def test_the_pilot_reads_as_the_store_does():
     assert rep["limit_rows"] == {ORNITH_SIDE: 19, OPUS_SIDE: 0}
     assert not v["power"][OPUS_SIDE]["rho_measured"] and v["power"][OPUS_SIDE]["rho_used"] == power.DEFAULT_RHO
     assert rep["views"]["limits unjudged"]["cases"] == 17
-    assert "untestable at 4 discordant" in R.text(rep)
+    assert "untestable at 5 discordant" in R.text(rep)
 
 
 def test_tasks_needed_is_power_cases_needed_on_the_same_rates():
@@ -265,7 +267,7 @@ def test_soh_repo_report_reads_the_store(store_run, tmp_path, capsys):
     assert cli.main(["repo-report", "--json", *map(str, ids), "--store", str(tmp_path / "s.db"),
                      "--cases", str(pilot), "--resamples", "200"]) == 0
     got = json.loads(capsys.readouterr().out)
-    assert got["ok"] and got["views"]["limits as losses"]["p"] == 0.125
+    assert got["ok"] and got["views"]["limits as losses"]["p"] == 0.0625
     assert cli.main(["repo-report", str(ids[0]), "--store", str(tmp_path / "s.db"), "--cases", str(pilot)]) == 1
 
 

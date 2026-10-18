@@ -15,4 +15,6 @@ NOT_GATING = {
     "harness/completion.py:LADDER[repo]": "rungs only a --budget-ladder run climbs, recorded as Receipt.budget_ladder; "
     "a plain run asks the one reply_budget (#887)",
     "evals/repo.py:Grade.test_s": "how long the graded tests took, as reported (#887)",
+    "evals/importers/history.py:HOLDOUT_FRACTION": "share of history tasks frozen into the held-out split by "
+    "SPLIT_SEED and pinned in history.json; moving it reshuffles which tasks are quoted, so it is never swept (#995)",
 }
