@@ -217,3 +217,25 @@ def test_the_load_log_command_is_read_only_without_apply(tmp_path):
 @pytest.mark.parametrize("name", ["eval.log", "llamacpp.err.log"])
 def test_the_router_log_is_found_where_each_service_manager_writes_it(name):
     assert paths.logs() / name in load_log.router_logs()
+
+
+def test_the_alias_is_read_from_the_500_and_nothing_else_names_one():
+    assert reasons.llamacpp_alias(_500(K2_ALIAS)) == K2_ALIAS
+    assert reasons.llamacpp_alias("gateway returned HTTP 500: out of memory") == ""
+    assert reasons.llamacpp_alias(None) == ""
+
+
+def test_a_child_error_line_starts_with_its_port_and_its_message_is_folded():
+    assert reasons.child_errors(["[55991] 10:00:00.1 E  unknown   model architecture: 'k2' \n",
+                                 "[55991] 10:00:00.2 I loaded\n",
+                                 "  [55991] 10:00:00.3 E an indented line is not the child's\n"]) == [
+        "unknown model architecture: 'k2'"]
+
+
+@pytest.mark.parametrize("body", [
+    "unknown model architecture: 'k2'",
+    "[55991] 10:00:00.1 E llama_model_load: error loading model",
+])
+def test_either_a_newer_llama_cpp_phrase_or_a_child_error_line_is_a_runtime_gap(body):
+    text = f"{_500(K2_ALIAS)}\n{body}"
+    assert reasons.classify(text, reasons.RUNNER, f"llamacpp:{K2_ALIAS}") == reasons.LOAD_FAILED_RUNTIME

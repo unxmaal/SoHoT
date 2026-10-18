@@ -491,3 +491,12 @@ def test_decide_without_a_ceiling_leaves_it_unrecorded(tmp_path):
     conn = _store(tmp_path)
     vid = ms.decide(conn, "org/thing", "declined", tier=ms.INSPECT, detail="too-big")
     assert conn.execute("SELECT ceiling_gb FROM verdicts WHERE id = ?", (vid,)).fetchone()[0] is None
+
+
+def test_decide_records_the_failure_class_and_no_class_when_none_is_given(tmp_path):
+    conn = _store(tmp_path)
+    plain = ms.decide(conn, "org/thing", "declined", tier=ms.INSPECT, detail="too-big")
+    named = ms.decide(conn, "org/thing", "declined", tier=ms.INSPECT, detail="too-big again",
+                      failure_class="timeout")
+    got = dict(conn.execute("SELECT id, failure_class FROM verdicts WHERE id IN (?, ?)", (plain, named)).fetchall())
+    assert got == {plain: "", named: "timeout"}

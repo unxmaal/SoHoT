@@ -252,3 +252,17 @@ def test_head_to_head_pairs_on_the_case_not_the_candidate():
     rows = head_to_head_rows([False, False, True], [True, True, True])
     cell = paired.head_to_head(rows, "inc", "ch")
     assert (cell.lost, cell.gained, cell.unchanged) == (0, 2, 1)
+
+
+@pytest.mark.parametrize("failure_class,expected", [
+    ("", ("declined", "candidate")),
+    ("underpowered", ("declined", "limit")),
+    ("inconclusive", ("declined", "limit")),
+    ("timeout", ("declined", "limit")),
+    ("crashed", ("broken", "candidate")),
+])
+def test_a_loss_is_the_candidate_s_unless_its_class_says_the_gate_could_not_tell(failure_class, expected):
+    v = adopt.Verdict("tts", "old", "org/new", False, "lost", failure_class=failure_class)
+    assert adopt.outcome_of(v) == expected
+    assert adopt.outcome_of(adopt.Verdict("tts", "old", "org/new", True, "won", failure_class=failure_class)) == (
+        "measured", expected[1])

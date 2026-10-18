@@ -1,6 +1,7 @@
 """Nightly mutation testing of the core modules, ratcheted against a pinned inventory (#492 F3).
 
-python -m tests.gauntlet.mutation run [--module M ...] [--pin] [--workdir DIR]
+python -m tests.gauntlet.mutation run [--module M ...] [--pin] [--workdir DIR] [--found FILE]
+python -m tests.gauntlet.mutation pin --from FILE [FILE ...]
 """
 
 import argparse
@@ -47,7 +48,8 @@ MODULES = {
         "tests/test_loop_end_to_end.py", "tests/test_retrieval_lane.py", "tests/test_harness_lanes.py",
         "tests/test_liveness_705.py", "tests/test_runner_base_weights.py", "tests/test_ladder_seams.py",
         "tests/test_harness_lane_provenance.py", "tests/test_pii_lane.py", "tests/test_remote_code.py",
-        "tests/test_ocr_lane.py", "tests/test_degenerate_955.py", "tests/test_load_log_953.py"],
+        "tests/test_ocr_lane.py", "tests/test_degenerate_955.py", "tests/test_load_log_953.py",
+        "tests/test_screen_listing_984.py"],
     "harness/adopt.py": [
         "tests/test_harness_adopt.py", "tests/test_harness_adopt_receipt.py", "tests/test_adopt_by_spec.py",
         "tests/test_adoptions.py", "tests/test_adopt_cmd.py", "tests/test_human_verdicts.py",
@@ -250,6 +252,12 @@ def gate(found_by_module, pin):
     return problems, notes
 
 
+def tally(found_by_module, pin):
+    """One count line per pinned module, printed last so a log tail that cuts the key lists still shows both."""
+    return [f"{m}: {len(set(f) - set(pin[m]))} new survivor(s), {len(set(pin[m]) - set(f))} pinned now killed"
+            for m, f in sorted(found_by_module.items()) if m in pin]
+
+
 def _paths(tree, module):
     base = Path(tree) / "mutants" / module
     return base, Path(f"{base}.meta")
@@ -313,6 +321,11 @@ def load_pin():
     return json.loads(PIN_FILE.read_text(encoding="utf-8")) if PIN_FILE.exists() else {}
 
 
+def write_pin(pin):
+    PIN_FILE.write_text(json.dumps(dict(sorted(pin.items())), indent=1, ensure_ascii=False) + "\n",
+                        encoding="utf-8")
+
+
 def cmd_run(a):
     modules = a.module or list(MODULES)
     workdir = Path(a.workdir) if a.workdir else Path(tempfile.mkdtemp(prefix="mutation-"))
@@ -331,19 +344,35 @@ def cmd_run(a):
                 print(f"{module}: BROKEN {e}", flush=True)
                 continue
             print(f"{module}: {len(found[module])} survivor(s)", flush=True)
+    if a.found:
+        Path(a.found).parent.mkdir(parents=True, exist_ok=True)
+        Path(a.found).write_text(json.dumps(found, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
     pin = load_pin()
     if a.pin:
         pin.update(found)
-        PIN_FILE.write_text(json.dumps(dict(sorted(pin.items())), indent=1, ensure_ascii=False) + "\n",
-                            encoding="utf-8")
+        write_pin(pin)
         print(f"pinned {', '.join(found)} -> {PIN_FILE.name}")
         return 1 if broken else 0
     problems, notes = gate(found, pin)
     problems += broken
-    for line in notes + problems:
+    for line in notes + problems + tally(found, pin):
         print(line)
     print(f"mutmut log: {workdir / 'mutmut.log'}")
     return 1 if problems else 0
+
+
+def cmd_pin(a):
+    """Pin the survivors a CI run found (its --found artifact), so no pin waits on a quiet local machine."""
+    pin = load_pin()
+    for path in a.sources:
+        found = json.loads(Path(path).read_text(encoding="utf-8"))
+        unknown = sorted(set(found) - set(MODULES))
+        if unknown:
+            raise SystemExit(f"{path}: not mutated modules: {', '.join(unknown)}")
+        pin.update({m: sorted(set(keys)) for m, keys in found.items()})
+        print(f"pinned {', '.join(sorted(found))} from {path}")
+    write_pin(pin)
+    return 0
 
 
 def main(argv=None):
@@ -353,7 +382,11 @@ def main(argv=None):
     r.add_argument("--module", action="append", choices=sorted(MODULES), help="default: all")
     r.add_argument("--pin", action="store_true", help="write today's survivors as the pin instead of gating")
     r.add_argument("--workdir", help="default: a fresh temporary directory")
+    r.add_argument("--found", help="also write each module's survivors here as JSON, for `pin --from`")
     r.set_defaults(fn=cmd_run)
+    q = sub.add_parser("pin", help="pin the survivors in --found files from a CI run")
+    q.add_argument("--from", dest="sources", nargs="+", required=True, metavar="FILE")
+    q.set_defaults(fn=cmd_pin)
     a = p.parse_args(argv)
     return a.fn(a)
 

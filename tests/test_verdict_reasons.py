@@ -519,3 +519,8 @@ def test_the_backfill_classifies_every_old_row_and_reopens_only_ours(tmp_path):
         assert ms.reason_audit(again)["terminal_harness_or_limit"] == 2
     finally:
         again.close()
+
+
+@pytest.mark.parametrize("text", ["unsupported model type foo", "failed to load model"])
+def test_a_load_phrase_is_a_runtime_gap_only_from_the_runner_whose_phrase_it_is(text):
+    assert reasons.classify(text, reasons.RUNNER, "org/model") == reasons.CRASHED
