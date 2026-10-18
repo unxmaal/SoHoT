@@ -80,3 +80,12 @@ def default_output(kind: str, suffix: str) -> Path:
     standing in.
     """
     return paths.artifact(kind, suffix)
+
+
+def parsed(*argv: str, **overrides):
+    """The namespace `soh <argv>` parses to, overrides on top, so one verb calling another never misses a field. #974."""
+    from harness import cli
+    a = cli.build_parser().parse_args(list(argv))
+    for k, v in overrides.items():
+        setattr(a, k, v)
+    return a

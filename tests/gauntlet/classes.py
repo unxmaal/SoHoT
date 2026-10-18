@@ -43,8 +43,8 @@ INDEX = {
                 "a person's override of the fetched needle weights; nothing in this repo sets it (#534)",
         },
         "instances": _i(72, 77, 81, 167, 183, 214, 219, 240, 297, 335, 343, 378, 384, 389, 420, 424, 521,
-                        542, rules=(247, 379, 474)),
-        "scanners": []},
+                        542, rules=(247, 379, 474, 853)),
+        "scanners": ["tests/test_loop_namespace_974.py::test_no_verb_is_handed_a_hand_made_namespace"]},
     "a-metric-quoted-without-a-negative-control": {
         "review": r"\b(?:auc|brier|ece|accuracy|precision|recall|win_rate|p_value|significan\w*|kendall\w*|spearman\w*)\b",
         "instances": _i(5, 85, 86, 175, 308, rules=(211, 217, 349)),
