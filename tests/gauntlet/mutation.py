@@ -81,7 +81,7 @@ LEFT_OUT = {
         "test_holdout_power.py", "test_inspect_method_specs.py", "test_inspect_ratelimit.py",
         "test_knob_sweeps.py", "test_knobs.py", "test_loop_backpressure.py", "test_method_serving.py", "test_pii_lane.py",
         "test_power_budget.py", "test_quants_882.py", "test_repo_claude_905.py", "test_repo_lane.py", "test_runner_base_weights.py", "test_schema_lanes.py",
-        "test_planted_919.py", "test_trajectory_921.py", "test_unranked_weight_954.py",
+        "test_planted_919.py", "test_trajectory_921.py", "test_unranked_weight_954.py", "test_inventory_heartbeat_972.py",
         "test_silent_truncation.py", "test_slots_memory.py", "test_store_downloads.py"),
     "harness/screen.py": (
         "test_attachment_tags_949.py",

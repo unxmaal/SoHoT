@@ -84,14 +84,14 @@ def test_the_loop_reopens_weights_a_ranking_retired_and_the_audit_reads_zero(sto
     _queue(store, PARENT, "funasr/campplus")
     ms.decide(store, "funasr/campplus", "ignored", tier=ms.INSPECT, reason=reasons.CANDIDATE,
               detail="an auxiliary model, not a candidate")
-    assert len(live_audit._no_ranking_verdict(store)) == 1
+    assert len(live_audit._no_ranking_verdict(store, None)[1]) == 1
     assert loop_cmd._reopen_unranked() == [WEIGHT]
     assert loop_cmd._reopen_unranked() == []
     store.rollback()
     held = _held(store, WEIGHT)
     assert (held["state"], held["tier"], held["reopen_kind"]) == ("queued", ms.INSPECT, "retraction")
     assert _held(store, "funasr/campplus")["state"] == "ignored"
-    assert live_audit._no_ranking_verdict(store) == []
+    assert live_audit._no_ranking_verdict(store, None) == ([], [])
     row = next(r for r in fetching.queued(store, needs_lane=False) if r["name"] == WEIGHT)
     assert not row["inspected"]
 

@@ -475,12 +475,14 @@ def _reopen_missing_in_snapshot() -> list[str]:
 
 def _reopen_unranked() -> list[str]:
     """Requeue for inspect the weights a parent's ranking retired before #954."""
-    from harness import memory_store as ms
+    from harness import heartbeat, memory_store as ms
+    began = heartbeat.clock()
     store = ms.connect()
     try:
         names = ms.requeue_unranked(store)
     finally:
         store.close()
+    heartbeat.mark(heartbeat.REOPENED_UNRANKED, began)
     print(f"  requeued {len(names)} weight(s) a parent's ranking had retired")
     for n in names:
         print(f"    {n}")
@@ -516,14 +518,15 @@ def upstream_line(got: dict, requeued: bool = True) -> str:
 def _rederive_attachments() -> dict:
     """Re-read the cards whose attachment an older rule set; every one, the first time. #949."""
     from harness import heartbeat, memory_store as ms
-    every = not (heartbeat.read() or {}).get(heartbeat.REDERIVED_ATTACHMENTS)
+    every = not heartbeat.marked(heartbeat.REDERIVED_ATTACHMENTS)
+    began = heartbeat.clock()
     store = ms.connect()
     try:
         got = ms.rederive_attachments(store, every=every)
     finally:
         store.close()
     if every and not got["unread"]:
-        heartbeat.mark(heartbeat.REDERIVED_ATTACHMENTS)
+        heartbeat.mark(heartbeat.REDERIVED_ATTACHMENTS, began)
     print(f"  re-read {got['read']} attachment card(s): {len(got['changed'])} changed, "
           f"{len(got['requeued'])} requeued, {len(got['unread'])} unread, {len(got['gone'])} gone")
     for c in got["changed"]:
@@ -542,6 +545,7 @@ def _reopen_stale_too_big() -> list[str]:
     finally:
         store.close()
     heartbeat.mark(heartbeat.REOPENED_TOO_BIG, began)
+    heartbeat.mark(heartbeat.REQUEUED_OLD_SIZING, began)
     print(f"  requeued {len(names)} too-big refusal(s) judged against a smaller ceiling")
     for n in names:
         print(f"    {n}")
@@ -559,7 +563,8 @@ def _reread_runtime_declines(a) -> list[str]:
     """Re-read the cards of screen runtime declines that predate model_type, then rewrite every runtime until by its cause. #950."""
     import argparse as _argparse
 
-    from harness import memory_store as ms
+    from harness import heartbeat, memory_store as ms
+    began = heartbeat.clock()
     store = ms.connect()
     try:
         names = ms.cards_to_reread(store)[:REREAD_PER_LOOP]
@@ -575,6 +580,7 @@ def _reread_runtime_declines(a) -> list[str]:
         store.commit()
     finally:
         store.close()
+    heartbeat.mark(heartbeat.REWROTE_RUNNER_GAPS, began)
     print(f"  {len(moved)} runtime decline(s) now wait on their cause")
     for n in moved:
         print(f"    {n}")

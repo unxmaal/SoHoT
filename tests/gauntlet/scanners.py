@@ -578,3 +578,77 @@ def scan_tree(root, scanner, want, only=None):
             continue
         out += scanner(path.read_text(encoding="utf-8", errors="replace"), rel)
     return out
+
+
+AUDIT_FILE = "harness/live_audit.py"
+LOOP_FILE = "harness/commands/loop.py"
+
+
+def _top_functions(tree):
+    return {f.name: f for f in tree.body if isinstance(f, ast.FunctionDef)}
+
+
+def _calls(node):
+    return {_call_name(n) for n in ast.walk(node) if isinstance(n, ast.Call)} - {""}
+
+
+def _reach(names, store):
+    seen, todo = set(), [n for n in names if n in store]
+    while todo:
+        name = todo.pop()
+        if name not in seen:
+            seen.add(name)
+            todo += [n for n in _calls(store[name]) if n in store]
+    return seen
+
+
+def _walked(func):
+    return {_call_name(n.iter) for n in ast.walk(func)
+            if isinstance(n, (ast.For, ast.comprehension)) and isinstance(n.iter, ast.Call)} - {""}
+
+
+def _assigned(tree, name):
+    return next((n.value for n in tree.body if isinstance(n, ast.Assign)
+                 and any(isinstance(t, ast.Name) and t.id == name for t in n.targets)), None)
+
+
+def _marks(func):
+    return {n.args[0].attr for n in ast.walk(func) if isinstance(n, ast.Call) and _call_name(n) == "mark"
+            and n.args and isinstance(n.args[0], ast.Attribute)}
+
+
+def unwaited_repairs(audit, loop, stores):
+    """live_audit checks a loop step repairs, where REPAIRED_BY names no heartbeat key that step marks (#972)."""
+    atree, out = _parse(audit, AUDIT_FILE)
+    ltree, more = _parse(loop, LOOP_FILE)
+    out += more
+    store = {}
+    for rel, text in stores.items():
+        tree, more = _parse(text, rel)
+        out += more
+        store.update(_top_functions(tree) if tree else {})
+    if atree is None or ltree is None:
+        return out
+    verdicts = _assigned(atree, "VERDICTS")
+    names = [e.value for e in verdicts.elts] if isinstance(verdicts, ast.Tuple) else []
+    table = _assigned(atree, "REPAIRED_BY")
+    waits = {k.value: v.attr for k, v in zip(table.keys, table.values)} if isinstance(table, ast.Dict) else {}
+    checks = _top_functions(atree)
+    # A step repairs the queries whose rows a store function it reaches walks, not every helper it shares.
+    steps = {name: (set().union(*(_walked(store[w]) for w in _reach(_calls(f), store))), _marks(f))
+             for name, f in _top_functions(ltree).items()}
+    for name in names:
+        check = checks.get(f"_{name}")
+        if check is None:
+            continue
+        asks = {n for n in _calls(check) if n in store}
+        repairs = {step: marked for step, (reach, marked) in steps.items() if asks & reach}
+        if not repairs:
+            continue
+        if name not in waits:
+            out.append(f"{AUDIT_FILE}:{check.lineno}: {name} is repaired by the loop's {', '.join(sorted(repairs))}; "
+                       "name the heartbeat key it waits on in REPAIRED_BY, or it gates on a backlog from the deploy")
+        elif not any(waits[name] in marked for marked in repairs.values()):
+            out.append(f"{AUDIT_FILE}:{check.lineno}: {name} waits on heartbeat.{waits[name]}, which its repair "
+                       f"{', '.join(sorted(repairs))} never marks")
+    return out

@@ -9,7 +9,7 @@ from __future__ import annotations
 import sqlite3
 from pathlib import Path
 
-from harness import migration_check as mc
+from harness import heartbeat, migration_check as mc
 
 #: An alias needs this many requests in the window before its error rate says anything.
 MIN_REQUESTS = 20
@@ -21,6 +21,12 @@ VERDICTS = ("too_big_ceiling_current", "too_big_names_variant", "terminal_reason
             "load_log_kept", "runner_gap_until_current", "broken_runner_layout",
             "attachment_by_tag")
 CHECKS = mc.INVARIANTS + SERVING + SCHEDULE + VERDICTS
+#: Checks a loop step repairs, and the heartbeat key that step marks: each warns until its own repair has run. #972.
+REPAIRED_BY = {"too_big_ceiling_current": heartbeat.REOPENED_TOO_BIG,
+               "too_big_names_variant": heartbeat.REQUEUED_OLD_SIZING,
+               "no_ranking_verdict": heartbeat.REOPENED_UNRANKED,
+               "attachment_by_tag": heartbeat.REDERIVED_ATTACHMENTS,
+               "runner_gap_until_current": heartbeat.REWROTE_RUNNER_GAPS}
 
 
 def open_readonly(path) -> sqlite3.Connection:
@@ -82,15 +88,19 @@ def _gateway_errors(conn) -> list:
     return out
 
 
+def _survived(check: str, rows: list, at=...) -> tuple[list, list, float | None]:
+    """(rows decided before the check's repair last ran, the rest, when it ran): only the first fail. #904, #972."""
+    swept = heartbeat.marked(REPAIRED_BY[check]) if at is ... else at
+    survived = [r for r in rows if swept and float(r["decided_at"] or 0) < swept]
+    return survived, [r for r in rows if r not in survived], swept
+
+
 def _too_big_ceiling_current(conn, ceiling_gb: float | None = None, reopened_at=...) -> tuple[list, list]:
     """(failures, warnings) for too-big refusals judged under this machine's ceiling. #880, #904.
     The backlog is an inventory until a loop's requeue has run since it was decided; one that survives fails."""
-    from harness import heartbeat, memory_store as ms
+    from harness import memory_store as ms
     here = ms.this_machine()["ceiling_gb"] if ceiling_gb is None else ceiling_gb
-    swept = heartbeat.reopened_too_big() if reopened_at is ... else reopened_at
-    stale = ms.stale_too_big(conn, here)
-    survived = [r for r in stale if swept and float(r["decided_at"] or 0) < swept]
-    fresh = [r for r in stale if r not in survived]
+    survived, fresh, swept = _survived("too_big_ceiling_current", ms.stale_too_big(conn, here), reopened_at)
 
     def say(rows, what):
         named = ", ".join(f"{r['name']} ({r['ceiling_gb']:g} GiB)" for r in rows[:5])
@@ -101,18 +111,15 @@ def _too_big_ceiling_current(conn, ceiling_gb: float | None = None, reopened_at=
 
 
 def _too_big_names_variant(conn, reopened_at=...) -> tuple[list, list]:
-    """(failures, warnings) for too-big refusals sized by the listing's sum; one that survived a requeue fails. #947."""
-    from harness import heartbeat, memory_store as ms
-    swept = heartbeat.reopened_too_big() if reopened_at is ... else reopened_at
-    rows = ms.sized_by_repo_total(conn)
-    survived = [r for r in rows if swept and float(r["decided_at"] or 0) < swept]
-    fresh = [r for r in rows if r not in survived]
+    """(failures, warnings) for too-big refusals sized by the listing's sum; one that survived a requeue fails. #947, #972."""
+    from harness import memory_store as ms
+    survived, fresh, swept = _survived("too_big_names_variant", ms.sized_by_repo_total(conn), reopened_at)
 
     def say(group, what):
         return [f"{len(group)} too-big verdict(s) name no variant {what}, e.g. "
                 + ", ".join(r["name"] for r in group[:5])] if group else []
-    return (say(survived, f"after the loop's requeue at {_when(swept)}"),
-            say(fresh, "and await the next loop's requeue"))
+    return (say(survived, f"after the loop's variant requeue at {_when(swept)}"),
+            say(fresh, "and await the next loop's variant requeue"))
 
 
 #: Reasons that name a fact outside the candidate, so the verdict needs a condition that can reopen it.
@@ -143,11 +150,14 @@ def _terminal_reason_coherent(conn, pinned=None) -> tuple[list, list]:
     return bad, known
 
 
-def _no_ranking_verdict(conn) -> list:
-    """Terminal states a parent's download ranking wrote, held at 0. #954."""
+def _no_ranking_verdict(conn, reopened_at=...) -> tuple[list, list]:
+    """(failures, warnings): terminal states a parent's download ranking wrote; one that survived the reopen fails. #954, #972."""
     from harness import memory_store as ms
-    return [f"verdict {r['verdict_id']} {r['name']}: ignored because a parent stopped ranking it"
-            for r in ms.unranked_terminal(conn)]
+    survived, fresh, swept = _survived("no_ranking_verdict", ms.unranked_terminal(conn), reopened_at)
+
+    def say(r):
+        return f"verdict {r['verdict_id']} {r['name']}: ignored because a parent stopped ranking it"
+    return [say(r) + f", after the loop's reopen at {_when(swept)}" for r in survived], [say(r) for r in fresh]
 
 
 #: Held llama.cpp load failures decided before #953 kept the child's log; they warn until `soh load-log --apply`.
@@ -165,11 +175,14 @@ def _load_log_kept(conn, pinned=None) -> tuple[list, list]:
     return bad, known
 
 
-def _runner_gap_until_current(conn) -> list:
-    """Live screen runtime declines whose until is not what their detail and card name: a release that cannot help. #950."""
+def _runner_gap_until_current(conn, rewrote_at=...) -> tuple[list, list]:
+    """(failures, warnings): screen runtime declines whose until is not what their cause names; one the loop's rewrite left fails. #950, #972."""
     from harness.memory_store.revisit import runner_gap_rewrites
-    return [f"verdict {r['id']} {r['name']}: {r['until']}, its cause names {r['new']}"
-            for r in runner_gap_rewrites(conn)]
+    survived, fresh, swept = _survived("runner_gap_until_current", runner_gap_rewrites(conn), rewrote_at)
+
+    def say(r):
+        return f"verdict {r['id']} {r['name']}: {r['until']}, its cause names {r['new']}"
+    return [say(r) + f", after the loop's rewrite at {_when(swept)}" for r in survived], [say(r) for r in fresh]
 
 
 def _broken_runner_layout(conn) -> list:
@@ -183,11 +196,14 @@ def _broken_runner_layout(conn) -> list:
             if reasons.classify(r["detail"] or "", reasons.RUNNER, r["spec"]) == reasons.LOAD_FAILED_LAYOUT]
 
 
-def _attachment_by_tag(conn) -> list:
-    """Attachment words no current card reading gives, held at 0 once the loop re-reads them. #949."""
+def _attachment_by_tag(conn, rederived_at=...) -> tuple[list, list]:
+    """(failures, warnings): attachment words no current card reading gives; one the loop's re-read left fails. #949, #972."""
     from harness import memory_store as ms
-    return [f"{r['name']}: attaches_to {r['attaches_to']} ({r['card_read'] or 'unread'})"
-            for r in ms.stale_attachments(conn)]
+    survived, fresh, swept = _survived("attachment_by_tag", ms.stale_attachments(conn), rederived_at)
+
+    def say(r):
+        return f"{r['name']}: attaches_to {r['attaches_to']} ({r['card_read'] or 'unread'})"
+    return [say(r) + f", after the loop's re-read at {_when(swept)}" for r in survived], [say(r) for r in fresh]
 
 
 def _when(at) -> str:
@@ -254,21 +270,18 @@ def audit(path=None, config=None) -> dict:
             mc._check("gateway_errors", _gateway_errors(conn)),
             mc._check("sweep_on_schedule", _sweep_on_schedule()),
         ]
-        stale, backlog = _too_big_ceiling_current(conn)
-        checks.append(mc._check("too_big_ceiling_current", stale))
-        summed, unswept = _too_big_names_variant(conn)
-        checks.append(mc._check("too_big_names_variant", summed))
+        inventories = {"too_big_ceiling_current": _too_big_ceiling_current(conn),
+                       "too_big_names_variant": _too_big_names_variant(conn),
+                       "no_ranking_verdict": _no_ranking_verdict(conn),
+                       "runner_gap_until_current": _runner_gap_until_current(conn),
+                       "attachment_by_tag": _attachment_by_tag(conn)}
         incoherent, pinned = _terminal_reason_coherent(conn)
-        checks.append(mc._check("terminal_reason_coherent", incoherent))
-        checks.append(mc._check("no_ranking_verdict", _no_ranking_verdict(conn)))
         unkept, waiting = _load_log_kept(conn)
-        checks.append(mc._check("load_log_kept", unkept))
-        checks.append(mc._check("runner_gap_until_current", _runner_gap_until_current(conn)))
-        checks.append(mc._check("broken_runner_layout", _broken_runner_layout(conn)))
-        checks.append(mc._check("attachment_by_tag", _attachment_by_tag(conn)))
-        warnings = {"too_big_ceiling_current": mc._say(backlog)} if backlog and not stale else {}
-        if unswept and not summed:
-            warnings["too_big_names_variant"] = mc._say(unswept)
+        failed = {**{name: bad for name, (bad, _) in inventories.items()}, "terminal_reason_coherent": incoherent,
+                  "load_log_kept": unkept, "broken_runner_layout": _broken_runner_layout(conn)}
+        checks += [mc._check(name, failed[name]) for name in VERDICTS]
+        warnings = {name: f"awaiting the loop's {REPAIRED_BY[name]}: " + mc._say(fresh)
+                    for name, (bad, fresh) in inventories.items() if fresh and not bad}
         if pinned and not incoherent:
             warnings["terminal_reason_coherent"] = "pinned, awaiting a fix: " + mc._say(pinned)
         if waiting and not unkept:

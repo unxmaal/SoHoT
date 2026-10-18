@@ -78,7 +78,13 @@ def _mine() -> dict | None:
 REOPENED_TOO_BIG = "reopened_too_big"
 #: When a loop last re-read every attachment's card under #949's rule; kept across loops.
 REDERIVED_ATTACHMENTS = "rederived_attachments_949"
-KEPT = (REOPENED_TOO_BIG, REDERIVED_ATTACHMENTS)
+#: When a loop last requeued the refusals sized by the listing's sum, on code that sizes by variant. #947, #972.
+REQUEUED_OLD_SIZING = "requeued_old_sizing_947"
+#: When a loop last requeued the weights a parent's ranking retired. #954, #972.
+REOPENED_UNRANKED = "reopened_unranked_954"
+#: When a loop last rewrote every screen runtime decline's until by its cause. #950, #972.
+REWROTE_RUNNER_GAPS = "rewrote_runner_gaps_950"
+KEPT = (REOPENED_TOO_BIG, REDERIVED_ATTACHMENTS, REQUEUED_OLD_SIZING, REOPENED_UNRANKED, REWROTE_RUNNER_GAPS)
 
 
 def start(lane: str = "", total: int = 0) -> dict:
@@ -143,11 +149,16 @@ def mark(key: str, at: float | None = None) -> None:
     _write(data)
 
 
+def marked(key: str, data=None) -> float | None:
+    """When a loop last did `key`, or None. #972."""
+    data = read() if data is None else data
+    got = (data or {}).get(key)
+    return float(got) if got else None
+
+
 def reopened_too_big(data=None) -> float | None:
     """When a loop last requeued the stale too-big refusals, or None. #904."""
-    data = read() if data is None else data
-    got = (data or {}).get(REOPENED_TOO_BIG)
-    return float(got) if got else None
+    return marked(REOPENED_TOO_BIG, data)
 
 
 def stall_after(data: dict) -> float:

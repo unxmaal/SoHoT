@@ -280,3 +280,43 @@ def test_numbers_without_their_configuration_are_an_inventory_that_only_shrinks(
     found = [str(c) for c in assertions.collect(REPO) if c.config_less]
     msg = scanners.ratchet(found, CONFIG_LESS_PIN, "numbers in prose with no configuration beside them")
     assert msg is None, msg
+
+
+_AUDIT = ('VERDICTS = ("stale_rows", "plain_rows")\n'
+          'REPAIRED_BY = {"stale_rows": heartbeat.FIXED_ROWS}\n'
+          'def _stale_rows(conn):\n    return ms.stale(conn, ms.here())\n'
+          'def _plain_rows(conn):\n    return [r for r in conn.execute("SELECT 1")]\n')
+_LOOP = ('def _fix_rows():\n    began = heartbeat.clock()\n    ms.requeue_stale(ms.connect())\n'
+         '    heartbeat.mark(heartbeat.FIXED_ROWS, began)\n')
+_STORE = {"harness/memory_store/revisit.py":
+          'def here():\n    return 1\ndef stale(conn, at):\n    return []\n'
+          'def requeue_stale(conn):\n    return [retract(r) for r in stale(conn, here())]\n'
+          'def retract(r):\n    return r\ndef other(conn):\n    return []\n'
+          'def fix_other(conn):\n    for r in other(conn):\n        retract(r)\n'}
+
+
+def test_a_loop_repaired_check_that_waits_on_nothing_is_found():
+    got = scanners.unwaited_repairs(_AUDIT.replace('REPAIRED_BY = {"stale_rows": heartbeat.FIXED_ROWS}',
+                                                   'REPAIRED_BY = {}'), _LOOP, _STORE)
+    assert len(got) == 1 and "stale_rows is repaired by the loop's _fix_rows" in got[0]
+    got = scanners.unwaited_repairs(_AUDIT, _LOOP.replace("heartbeat.mark(heartbeat.FIXED_ROWS, began)",
+                                                          "heartbeat.mark(heartbeat.OTHER, began)"), _STORE)
+    assert len(got) == 1 and "waits on heartbeat.FIXED_ROWS" in got[0]
+
+
+def test_a_check_its_repair_marks_or_no_loop_step_touches_is_left_alone():
+    assert scanners.unwaited_repairs(_AUDIT, _LOOP, _STORE) == []
+    other = _AUDIT + 'def _plain_rows(conn):\n    return ms.other(conn)\n'
+    assert scanners.unwaited_repairs(other, _LOOP, _STORE) == []
+    assert scanners.unwaited_repairs(other, _LOOP + 'def _peek():\n    ms.other(ms.connect())\n', _STORE) == []
+    fires = _LOOP + 'def _also():\n    ms.fix_other(ms.connect())\n'
+    assert len(scanners.unwaited_repairs(other, fires, _STORE)) == 1
+
+
+def test_every_live_audit_check_a_loop_step_repairs_waits_on_that_steps_heartbeat_key():
+    stores = {p.relative_to(REPO).as_posix(): p.read_text(encoding="utf-8")
+              for p in sorted((REPO / "harness/memory_store").glob("*.py"))}
+    _fail_with(scanners.unwaited_repairs((REPO / scanners.AUDIT_FILE).read_text(encoding="utf-8"),
+                                         (REPO / scanners.LOOP_FILE).read_text(encoding="utf-8"), stores),
+               "a check whose backlog a loop step repairs is an inventory until that step has run; it gated the "
+               "deploy smoke on the backlog it started with (#972, #904, gauntlet a-rule-change-leaves-old-decisions-standing)")

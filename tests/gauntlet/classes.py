@@ -216,7 +216,8 @@ INDEX = {
         "instances": _i(68, 101, 173, 196, 283, 322, 365), "scanners": []},
     "a-rule-change-leaves-old-decisions-standing": {
         "review": r"\bTRANSITIONS\b|\bREOPENS\b|\bthreshold\w*\s*=|\bpolicy\s*=",
-        "instances": _i(73, 230, 295, 301, rules=(333,)), "scanners": []},
+        "instances": _i(73, 230, 295, 301, rules=(333, 780)),
+        "scanners": ["tests/test_gauntlet_scanners.py::test_every_live_audit_check_a_loop_step_repairs_waits_on_that_steps_heartbeat_key"]},
     "one-default-tuned-for-one-member-applied-to-all": {
         "detector": "member_defaults",
         "waivers": {

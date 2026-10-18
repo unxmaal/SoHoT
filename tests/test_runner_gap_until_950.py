@@ -299,7 +299,7 @@ def test_the_backfill_rewrites_live_untils_and_takes_layout_gaps_out_of_broken(t
               spec="diffusers:kpsss34/Walkyrie-1.3B-v1.0")
         _seed(conn, "org/really-broken", "code", _text("llama"), "broken", ms.SCREEN,
               "it ran and passed nothing: chunk-bytes: Traceback: KeyError: 'x'", reason=reasons.CANDIDATE)
-        assert live_audit._runner_gap_until_current(conn)
+        assert live_audit._runner_gap_until_current(conn, None)[1]
         assert live_audit._broken_runner_layout(conn)
         retractions._decline_runner_layout_gaps(conn)
         retractions._rewrite_runner_gap_untils(conn)
@@ -311,7 +311,7 @@ def test_the_backfill_rewrites_live_untils_and_takes_layout_gaps_out_of_broken(t
             "state": "declined", "until": "runner:diffusers/WalkyriePipeline",
             "failure_class": reasons.LOAD_FAILED_LAYOUT}
         assert _state(conn, "org/really-broken")["state"] == "broken"
-        assert live_audit._runner_gap_until_current(conn) == []
+        assert live_audit._runner_gap_until_current(conn, None) == ([], [])
         assert live_audit._broken_runner_layout(conn) == []
         waits = {r["name"] for r in ms.runner_waits(conn)}
         assert waits == {"LiquidAI/LFM2.5-VL-3B"}, "a migration retraction is reason reopened, not runtime"
