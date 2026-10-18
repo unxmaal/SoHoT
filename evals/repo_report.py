@@ -201,6 +201,55 @@ def _config(r: dict) -> dict:
             if at else None}
 
 
+def sent(r: dict, spec: str) -> dict:
+    """What run r sent for spec: max_tokens per rung plus sampling and template keys; legacy receipts from their lane fields."""
+    rec = r["receipt"]
+    reqs = (rec.get("requests") or {}).get(spec)
+    if not reqs:
+        ladder = rec.get("budget_ladder") or ([rec["max_tokens"]] if rec.get("max_tokens") else [])
+        reqs = [{"max_tokens": m, "sampling": (rec.get("sampling") or {}).get("repo") or {},
+                 "template": (rec.get("template") or {}).get("repo") or {}} for m in ladder] or [{}]
+    per: dict = {}
+    for q in reqs:
+        got = {**(q.get("sampling") or {}), **(q.get("template") or {})}
+        if q.get("system_sha"):
+            got["system_sha"] = q["system_sha"]
+        for k, v in got.items():
+            per.setdefault(k, []).append(v)
+    vals = {k: v[0] if len(set(map(str, v))) == 1 and len(v) == len(reqs) else "/".join(map(str, v))
+            for k, v in per.items()}
+    return {"max_tokens": [q.get("max_tokens") for q in reqs], **vals}
+
+
+def _setting(k: str, s: dict, server: dict | None = None) -> str:
+    if k == "max_tokens":
+        return "max_tokens " + "/".join(map(str, s[k]))
+    if k in s:
+        return f"{k}={s[k]}"
+    v = (server or {}).get(k)
+    return f"{k} default" + ("" if v is None else f" (server {v:.4g})" if isinstance(v, float) else f" (server {v})")
+
+
+def _sides(runs: list[dict], rows: list[dict]) -> dict:
+    """Two runs: side key -> run, spec and what it sent, labelled by the settings the two sides differ on. #975."""
+    specs = []
+    for r in runs:
+        held = sorted({row["candidate"] for row in rows if row["run_id"] == r["id"]})
+        if len(held) != 1:
+            raise Refused(f"run {r['id']} holds {len(held)} candidates; a two-run report pairs one per run")
+        specs.append(held[0])
+    settings = [sent(r, s) for r, s in zip(runs, specs)]
+    keys = [k for k in dict.fromkeys(k for s in settings for k in s) if settings[0].get(k) != settings[1].get(k)]
+    out = {}
+    for r, spec, s in zip(runs, specs, settings):
+        server = (r["receipt"].get("server_sampling") or {}).get(spec) or {}
+        short = f"run {r['id']}" + ("" if specs[0] == specs[1] else f" {spec}")
+        what = ", ".join(_setting(k, s, server) for k in keys) or "same settings sent"
+        out[f"run {r['id']} {spec}"] = {"run": r["id"], "spec": spec, "sent": s, "server": server,
+                                        "short": short, "label": f"{short}: {what}"}
+    return out
+
+
 def fair_cases(case_ids, labels=None) -> set:
     """Case ids both fairness labellers score under 2 on both axes (evals/fairness.py). #920."""
     from evals import fairness
@@ -215,11 +264,15 @@ def report(runs: list[dict], rows: list[dict], cases, *, resamples: int = compar
            seed: int = 1, fair=None) -> dict:
     """Everything the text prints, as data, over the valid cases and their fair subset. The first run's candidate is the baseline."""
     alpha = _alpha()
-    order = []
-    for r in runs:
-        for row in rows:
-            if row["run_id"] == r["id"] and row["candidate"] not in order:
-                order.append(row["candidate"])
+    if len(runs) == 2:
+        sides = _sides(runs, rows)
+        key = {v["run"]: k for k, v in sides.items()}
+        rows = [{**row, "candidate": key[row["run_id"]]} for row in rows if row["run_id"] in key]
+        order = list(sides)
+    else:
+        order = list(dict.fromkeys(row["candidate"] for r in runs for row in rows if row["run_id"] == r["id"]))
+        sides = {c: {"run": runs[0]["id"], "spec": c, "sent": sent(runs[0], c), "short": c, "label": c}
+                 for c in order} if runs else {}
     if len(order) != 2:
         raise Refused(f"a repo report compares two candidates; these runs hold {len(order)}: {', '.join(order)}")
     task = tasks_of(cases)
@@ -239,10 +292,11 @@ def report(runs: list[dict], rows: list[dict], cases, *, resamples: int = compar
     never_ran = sorted(k for k, d in suite.items() if any(fc in reasons.NEVER_RAN for x in d.values() for _, fc in x))
     limits = {c: sum(fc in LIMIT_CLASSES for k in suite if k not in never_ran for _, fc in suite[k][c])
               for c in order}
-    return {"baseline": order[0], "candidate": order[1], "alpha": alpha, "runs": [{**_config(r), "candidates": [c for c in order if any(
-                row["run_id"] == r["id"] and row["candidate"] == c for row in rows)]} for r in runs],
+    return {"baseline": order[0], "candidate": order[1], "alpha": alpha, "sides": sides,
+            "runs": [{**_config(r), "candidates": sorted({v["spec"] for v in sides.values() if v["run"] == r["id"]}
+                                                         if len(runs) == 2 else order)} for r in runs],
             "labels": labels({k: task[k] for k in suite}),
-            "differ_on": [a for a in paired.AXES + ("engines",)
+            "differ_on": [a for a in paired.AXES + ("engines", "template", "requests")
                           if len(runs) == 2 and runs[0]["receipt"].get(a) != runs[1]["receipt"].get(a)],
             "set_aside": {"no_task_key": no_key, "unpaired": unpaired, "single_variant": single,
                           "not_valid": invalid},
@@ -268,6 +322,11 @@ def text(rep: dict) -> str:
                    f"at {c['generated_at']}")
         out.append(f"  engines {c['engines'] or 'none recorded'}, served {c['served'] or 'none recorded'}, "
                    f"free memory {c['pressure'].get('free_pct', '?')}%")
+    for c in (base, cand):
+        sd = (rep.get("sides") or {}).get(c)
+        if sd and len(rep["runs"]) == 2:
+            out.append(f"{'baseline' if c == base else 'candidate'} {sd['label']}")
+            out.append(f"  {sd['spec']} sent " + ", ".join(_setting(k, sd["sent"]) for k in sd["sent"]))
     if rep.get("cases_from"):
         out.append(f"task keys from {rep['cases_from']}")
     if rep["differ_on"]:
@@ -287,26 +346,35 @@ def text(rep: dict) -> str:
     return "\n".join(out)
 
 
+def _name(rep: dict, c: str) -> str:
+    return (rep.get("sides") or {}).get(c, {}).get("short", c)
+
+
+def _width(rep: dict) -> int:
+    return max([40] + [len(_name(rep, c)) for c in (rep["baseline"], rep["candidate"])])
+
+
 def _block(rep: dict, title: str, v: dict, limits: bool) -> list:
     base, cand = rep["baseline"], rep["candidate"]
+    w, nb, nc = _width(rep), _name(rep, base), _name(rep, cand)
     out = [f"\n{title}: {v['cases']} cases from {v['tasks']} tasks; a task is resolved when either variant is",
-           f"  {'candidate':40s} {'all':>18s} {'spec':>18s} {'symptom':>18s} {'tasks':>6s}"
+           f"  {'candidate':{w}s} {'all':>18s} {'spec':>18s} {'symptom':>18s} {'tasks':>6s}"
            + (f" {'LIMIT':>6s}" if limits else "")]
     for c in (base, cand):
         r = v["rates"][c]
-        out.append(f"  {c:40.40s} {_ci(r['all']):>18s} {_ci(r['spec']):>18s} {_ci(r['symptom']):>18s} "
+        out.append(f"  {_name(rep, c):{w}s} {_ci(r['all']):>18s} {_ci(r['spec']):>18s} {_ci(r['symptom']):>18s} "
                    f"{v['tasks_resolved'][c]:>6d}" + (f" {rep['limit_rows'][c]:>6d}" if limits else ""))
     name_of = rep["labels"]
-    out.append(f"  tasks: {cand} only {_named(v['only'][cand], name_of)}, {base} only "
+    out.append(f"  tasks: {nc} only {_named(v['only'][cand], name_of)}, {nb} only "
                f"{_named(v['only'][base], name_of)}, both {_named(v['both'], name_of)}; "
                f"exact sign p = {v['p']}: {v['verdict']}")
     if "difference" in v:
         d = v["difference"]
-        out.append(f"  case resolve rate {cand} minus {base}: {d['difference']:+.3f}, 95% task bootstrap "
+        out.append(f"  case resolve rate {nc} minus {nb}: {d['difference']:+.3f}, 95% task bootstrap "
                    f"[{d['low']:+.3f}, {d['high']:+.3f}] (descriptive; the sign test is the verdict)")
     for c in (base, cand):
         g = v["gap"][c]
-        line = (f"  spec minus symptom, {c}: spec only {_named(g['spec_only'], name_of)}, symptom only "
+        line = (f"  spec minus symptom, {_name(rep, c)}: spec only {_named(g['spec_only'], name_of)}, symptom only "
                 f"{_named(g['symptom_only'], name_of)} of {g['tasks']} tasks: {g['verdict']}")
         if g["testable"]:
             line += f", p = {g['p']}"
@@ -325,7 +393,7 @@ def _power_lines(rep: dict, which: str, v: dict) -> list:
         for var in VARIANTS:
             p = pw[var]
             need = " / ".join(str(p["needed"][str(e)]) for e in LIFTS)
-            out.append(f"  {c:40.40s} {var:8s} base: tasks needed {need} for lifts "
+            out.append(f"  {_name(rep, c):{_width(rep)}s} {var:8s} base: tasks needed {need} for lifts "
                        f"{' / '.join(map(str, LIFTS))}; MDE at {p['tasks']} tasks {p['mde']}; {rho}")
     return out
 

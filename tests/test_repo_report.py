@@ -24,6 +24,8 @@ sohot-647-spec|TC sohot-647-symptom|IC sohot-720-spec|PP sohot-720-symptom|CP so
 sohot-788-symptom|IP sohot-858-spec|EE sohot-858-symptom|EE sohot-859-spec|TC sohot-859-symptom|TC
 sohot-879-spec|TI sohot-879-symptom|TI"""
 ORNITH, OPUS = "llamacpp:Ornith-1.5-35B-Q4_K_M", "claude-code:claude-opus-5-5"
+#: Two-run sides are keyed by run, not spec. #975.
+BASE_SIDE, CAND_SIDE, ORNITH_SIDE, OPUS_SIDE = f"run 1 {BASE}", f"run 2 {CAND}", f"run 466 {ORNITH}", f"run 467 {OPUS}"
 
 
 def _case(cid, fix, variant):
@@ -70,7 +72,7 @@ def test_two_identical_candidates_never_differ():
 def test_three_task_wins_on_both_variants_do_not_reject_though_six_case_wins_would():
     v = _losses(_suite([("C", "C", "P", "P")] * 3 + [("C", "C", "C", "C")] * 17))
     assert paired.sign_test(0, 6) == pytest.approx(0.03125)
-    assert (len(v["only"][CAND]), len(v["only"][BASE])) == (3, 0)
+    assert (len(v["only"][CAND_SIDE]), len(v["only"][BASE_SIDE])) == (3, 0)
     assert v["p"] == 0.25 and v["verdict"] == "untestable at 3 discordant"
     assert v["difference"]["low"] <= 0.0
 
@@ -146,27 +148,27 @@ def _repo_cases():
 def test_the_pilot_reads_as_the_store_does():
     rep = R.report(_runs(466, 467), _pilot_rows(), _repo_cases(), resamples=500)
     v = _losses(rep)
-    assert (rep["baseline"], rep["candidate"]) == (ORNITH, OPUS)
-    assert (v["rates"][OPUS]["all"]["resolved"], v["rates"][OPUS]["all"]["n"]) == (11, 36)
-    assert (v["rates"][ORNITH]["all"]["resolved"], v["rates"][ORNITH]["all"]["n"]) == (3, 36)
+    assert (rep["baseline"], rep["candidate"]) == (ORNITH_SIDE, OPUS_SIDE)
+    assert (v["rates"][OPUS_SIDE]["all"]["resolved"], v["rates"][OPUS_SIDE]["all"]["n"]) == (11, 36)
+    assert (v["rates"][ORNITH_SIDE]["all"]["resolved"], v["rates"][ORNITH_SIDE]["all"]["n"]) == (3, 36)
     f = rep["fair"]["views"]["limits as losses"]
     assert (f["cases"], f["tasks"]) == (12, 7) and "sohot-858-spec" in rep["fair"]["unfair"]
-    assert (f["rates"][OPUS]["all"]["resolved"], f["rates"][ORNITH]["all"]["resolved"]) == (9, 3)
+    assert (f["rates"][OPUS_SIDE]["all"]["resolved"], f["rates"][ORNITH_SIDE]["all"]["resolved"]) == (9, 3)
     assert "limits as losses, fair subset: 12 cases from 7 tasks" in R.text(rep)
-    assert v["rates"][OPUS]["all"]["ci95"] == [0.18, 0.4686] and v["rates"][ORNITH]["all"]["ci95"] == [0.0287, 0.2183]
-    named = {rep["labels"][t] for t in v["only"][OPUS]}
-    assert named == {"sohot-363", "sohot-374", "sohot-376", "sohot-788"} and v["only"][ORNITH] == []
+    assert v["rates"][OPUS_SIDE]["all"]["ci95"] == [0.18, 0.4686] and v["rates"][ORNITH_SIDE]["all"]["ci95"] == [0.0287, 0.2183]
+    named = {rep["labels"][t] for t in v["only"][OPUS_SIDE]}
+    assert named == {"sohot-363", "sohot-374", "sohot-376", "sohot-788"} and v["only"][ORNITH_SIDE] == []
     assert {rep["labels"][t] for t in v["both"]} == {"sohot-570", "sohot-720"}
     assert v["p"] == 0.125 and v["verdict"] == "untestable at 4 discordant"
-    for c, task in ((OPUS, "sohot-363"), (ORNITH, "sohot-720")):
+    for c, task in ((OPUS_SIDE, "sohot-363"), (ORNITH_SIDE, "sohot-720")):
         g = v["gap"][c]
         assert [rep["labels"][t] for t in g["spec_only"]] == [task] and g["symptom_only"] == []
         assert g["verdict"] == "untestable at 1 discordant" and "difference" not in g
     assert rep["excluded_never_ran"] == ["sohot-598-spec", "sohot-598-symptom", "sohot-858-spec",
                                          "sohot-858-symptom"]
     assert rep["set_aside"]["single_variant"] == ["sohot-318-omnisvg-spelling"]
-    assert rep["limit_rows"] == {ORNITH: 19, OPUS: 0}
-    assert not v["power"][OPUS]["rho_measured"] and v["power"][OPUS]["rho_used"] == power.DEFAULT_RHO
+    assert rep["limit_rows"] == {ORNITH_SIDE: 19, OPUS_SIDE: 0}
+    assert not v["power"][OPUS_SIDE]["rho_measured"] and v["power"][OPUS_SIDE]["rho_used"] == power.DEFAULT_RHO
     assert rep["views"]["limits unjudged"]["cases"] == 17
     assert "untestable at 4 discordant" in R.text(rep)
 
@@ -176,13 +178,13 @@ def test_tasks_needed_is_power_cases_needed_on_the_same_rates():
     v = _losses(_suite(outcomes, resamples=50))
     rates = [1.0] * 5 + [0.0] * 15
     want = power.cases_needed(rates, 0.2, rho=1.0, stochastic=False, alpha=0.05)
-    assert want == 52 and v["power"][BASE]["symptom"]["needed"]["0.2"] == want
+    assert want == 52 and v["power"][BASE_SIDE]["symptom"]["needed"]["0.2"] == want
 
 
 def test_a_limit_counts_as_a_loss_in_one_view_and_drops_out_in_the_other():
     v = _suite([("T", "C", "P", "C")] + [("C", "C", "C", "C")] * 3, resamples=50)["views"]
-    assert v["limits as losses"]["only"][CAND] and v["limits as losses"]["cases"] == 8
-    assert not v["limits unjudged"]["only"][CAND] and v["limits unjudged"]["cases"] == 7
+    assert v["limits as losses"]["only"][CAND_SIDE] and v["limits as losses"]["cases"] == 8
+    assert not v["limits unjudged"]["only"][CAND_SIDE] and v["limits unjudged"]["cases"] == 7
 
 
 def test_two_runs_over_different_case_sets_are_refused():
@@ -286,3 +288,57 @@ def test_a_case_the_receipt_validated_as_not_valid_is_set_aside():
     rep = R.report(runs, _pilot_rows(), _repo_cases(), resamples=50)
     assert rep["set_aside"]["not_valid"] == ["sohot-371-spec"]
     assert rep["views"]["limits as losses"]["cases"] == 35
+
+
+def _arms(sent_a, sent_b, server=None):
+    runs = _runs(472, 474)
+    for r, sent in zip(runs, (sent_a, sent_b)):
+        r["receipt"]["requests"] = {ORNITH: sent}
+        r["receipt"]["server_sampling"] = {ORNITH: server or {}}
+    rows = []
+    for t in range(8):
+        for v in R.VARIANTS:
+            rows += [_row(472, ORNITH, f"t{t}-{v}", "I"), _row(474, ORNITH, f"t{t}-{v}", "P" if t < 7 else "I")]
+    cases = [_case(f"t{t}-{v}", f"{t:040x}", v) for t in range(8) for v in R.VARIANTS]
+    return R.report(runs, rows, cases, resamples=50, fair=set())
+
+
+def test_two_runs_of_one_spec_with_different_settings_are_two_sides():
+    a = [{"max_tokens": 32768, "sampling": {"temperature": 0.2}, "template": {}, "system_sha": "s"}]
+    b = [{"max_tokens": m, "sampling": {"temperature": 1.0, "top_k": 20}, "template": {"enable_thinking": True},
+          "system_sha": "s"} for m in (32768, 65536)]
+    rep = _arms(a, b, server={"top_k": 20, "min_p": 0.05000000074505806})
+    base, cand = rep["baseline"], rep["candidate"]
+    assert base != cand and {rep["sides"][base]["run"], rep["sides"][cand]["run"]} == {472, 474}
+    v = _losses(rep)
+    assert (v["rates"][base]["all"]["resolved"], v["rates"][cand]["all"]["resolved"]) == (0, 14)
+    assert (v["rates"][base]["all"]["n"], v["rates"][cand]["all"]["n"]) == (16, 16)
+    assert len(v["only"][cand]) == 7 and v["verdict"] == "differs"
+    assert rep["sides"][base]["label"] == "run 472: max_tokens 32768, temperature=0.2, top_k default (server 20), enable_thinking default"
+    assert rep["sides"][cand]["label"] == ("run 474: max_tokens 32768/65536, temperature=1.0, top_k=20, "
+                                           "enable_thinking=True")
+    assert rep["sides"][cand]["label"] in R.text(rep) and "\n  run 474 " in R.text(rep)
+
+
+def test_two_runs_of_one_spec_with_identical_settings_still_pair_by_run():
+    same = [{"max_tokens": 32768, "sampling": {"temperature": 0.2}, "template": {}, "system_sha": "s"}]
+    rep = _arms(same, same)
+    assert rep["sides"][rep["baseline"]]["label"] == "run 472: same settings sent"
+    assert _losses(rep)["rates"][rep["candidate"]]["all"]["n"] == 16
+
+
+def test_a_legacy_receipt_reads_its_settings_from_the_lane_fields():
+    runs = _runs(466)
+    runs[0]["receipt"].update(max_tokens=32768, sampling={"repo": {"temperature": 0.2}}, budget_ladder=[])
+    assert R.sent(runs[0], ORNITH) == {"max_tokens": [32768], "temperature": 0.2}
+    runs[0]["receipt"].update(budget_ladder=[32768, 65536], template={"repo": {"enable_thinking": False}})
+    assert R.sent(runs[0], ORNITH) == {"max_tokens": [32768, 65536], "temperature": 0.2, "enable_thinking": False}
+    runs[0]["receipt"]["requests"] = {ORNITH: [{"max_tokens": 4000, "sampling": {"temperature": 0.2}},
+                                               {"max_tokens": 8000, "sampling": {"temperature": 0.6}}]}
+    assert R.sent(runs[0], ORNITH) == {"max_tokens": [4000, 8000], "temperature": "0.2/0.6"}
+
+
+def test_a_two_run_report_refuses_a_run_holding_two_candidates():
+    rows = [_row(1, BASE, "t0-spec", "P"), _row(1, CAND, "t0-spec", "P"), _row(2, CAND, "t0-spec", "P")]
+    with pytest.raises(R.Refused, match="run 1 holds 2 candidates"):
+        R.report(_runs(1, 2), rows, [_case("t0-spec", "0" * 40, "spec")], resamples=50, fair=set())
