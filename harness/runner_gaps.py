@@ -51,6 +51,10 @@ _VENV_ENV = {"diffusers-cuda": "DIFFUSERS_VENV", "hf-task": "HF_TASK_VENV", WHIS
 #: The script that builds each process engine's venv and the bash array of pins it installs. #1024.
 VENV_SCRIPTS = {"diffusers-cuda": ("scripts/diffusers-venv.sh", "DIFFUSERS_VENV_PINS", "DIFFUSERS_TORCH"),
                 "hf-task": ("scripts/hf-task-venv.sh", "HF_TASK_PINS", "HF_TASK_TORCH")}
+#: The audio server's env: its script's `uv run --no-project --with` pins layered over the checkout's .venv. #1030.
+AUDIO_ENV = "audio-server"
+#: Envs uv builds when their run or service starts, so the deploy declaring a package ends a wait on it.
+LAUNCH_BUILT = frozenset({*GROUP_VENVS, AUDIO_ENV})
 
 _NAMED_TYPE = re.compile(r"model type ([\w.\-]+?)\.? not supported")
 _PARAMS = re.compile(r"parameters not in model:(.*)", re.S)
@@ -296,11 +300,16 @@ def _options(spec: str) -> dict:
 
 
 def venv_of(spec: str) -> str:
-    """The venv the spec's runner imports from: a process engine's, the whisper group's, or "" (this interpreter). #1024."""
+    """The venv the spec's runner imports from: a process engine's, the whisper group's, the audio server's, or "" (this interpreter). #1024, #1030."""
     options = _options(spec)
     if options.get("backend") == "whisper" or options.get("ear", "").partition(":")[0] == "whisper":
         return WHISPER_VENV
-    return RUNNER_VENVS.get(head_of(spec), "")
+    from harness import reasons
+    head = head_of(spec)
+    if head in reasons._AUDIO_HEADS:
+        # The audio server loads the model unless `backend=` names another runner.
+        return AUDIO_ENV if options.get("backend", "server") == "server" else ""
+    return RUNNER_VENVS.get(head, "")
 
 
 def launcher(specs, default: list[str]) -> list[str]:
@@ -343,22 +352,45 @@ def _bash_values(text: str, name: str) -> list[str]:
     return words
 
 
-def _script_pins(repo: Path, script: str, *arrays: str) -> frozenset:
-    """The distributions a venv script's pin arrays name, each `$X_PIN` read from scripts/versions.sh."""
+def _pinned(repo: Path, words) -> frozenset:
+    """The distributions `words` name, each `$X_PIN` read from scripts/versions.sh."""
     try:
-        text = (repo / script).read_text(encoding="utf-8")
         versions = (repo / "scripts" / "versions.sh").read_text(encoding="utf-8")
     except OSError:
         return frozenset()
     pins = dict(re.findall(r'^([A-Z0-9_]+)="([^"]*)"', versions, re.M))
     found = []
-    for array in arrays:
-        for word in _bash_values(text, array):
-            ref = re.fullmatch(r"\$\{?([A-Z0-9_]+)\}?", word)
-            value = pins.get(ref.group(1), "") if ref else word
-            if value and not value.startswith(("-", "http")):
-                found.append(value)
+    for word in words:
+        ref = re.fullmatch(r"\$\{?([A-Z0-9_]+)\}?", word)
+        value = pins.get(ref.group(1), "") if ref else word
+        if value and not value.startswith(("-", "http")):
+            found.append(value)
     return _requirements(found)
+
+
+def _script_pins(repo: Path, script: str, *arrays: str) -> frozenset:
+    """The distributions a venv script's pin arrays name."""
+    try:
+        text = (repo / script).read_text(encoding="utf-8")
+    except OSError:
+        return frozenset()
+    return _pinned(repo, [w for array in arrays for w in _bash_values(text, array)])
+
+
+def audio_script() -> str:
+    """The script that starts the audio server on this platform, read at call time."""
+    return "scripts/serve-tts.sh" if sys.platform == "darwin" else "scripts/serve-audio-cuda.sh"
+
+
+def _service_pins(repo: Path, script: str) -> frozenset:
+    """The distributions the `--with` words of a service script's `exec uv run` install."""
+    try:
+        text = (repo / script).read_text(encoding="utf-8")
+    except OSError:
+        return frozenset()
+    command = next((line for line in text.replace("\\\n", " ").splitlines()
+                    if line.strip().startswith("exec uv run")), "")
+    return _pinned(repo, [w.strip("\"'") for w in re.findall(r"--with\s+(\"[^\"]*\"|'[^']*'|\S+)", command)])
 
 
 def installs(venv: str, repo: Path | None = None) -> frozenset:
@@ -367,6 +399,8 @@ def installs(venv: str, repo: Path | None = None) -> frozenset:
     repo = repo or paths.REPO
     if venv in VENV_SCRIPTS:
         return _script_pins(repo, *VENV_SCRIPTS[venv])
+    if venv == AUDIO_ENV:
+        return installs("", repo) | _service_pins(repo, audio_script())
     if venv and venv not in GROUP_VENVS:
         return frozenset()
     project = _pyproject(repo)
@@ -385,7 +419,7 @@ def provides(dist: str, venv: str, repo: Path | None = None) -> bool:
 def uninstalled_runner_packages(repo: Path | None = None) -> list[str]:
     """The reasons.RUNNER_PACKAGES distributions no deploy step installs into any venv here. #1024."""
     from harness import reasons
-    venvs = ("", *VENV_SCRIPTS, *GROUP_VENVS)
+    venvs = ("", *VENV_SCRIPTS, *LAUNCH_BUILT)
     have = frozenset().union(*(installs(v, repo) for v in venvs))
     return sorted({_canonical(d) for d in reasons.RUNNER_PACKAGES.values()} - have)
 
