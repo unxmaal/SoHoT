@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 120">
+  <g id="juniper">
+    <circle cx="40" cy="20" r="12" fill="#6a4c93"/>
+    <circle cx="120" cy="20" r="12" fill="#6a4c93"/>
+    <circle cx="200" cy="20" r="12" fill="#6a4c93"/>
+  </g>
+  <g id="delta">
+    <rect x="48" y="48" width="24" height="24" fill="#b5838d"/>
+    <rect x="168" y="48" width="24" height="24" fill="#b5838d"/>
+  </g>
+  <g id="alpha">
+    <ellipse cx="24" cy="100" rx="12" ry="6" fill="#264653"/>
+    <ellipse cx="72" cy="100" rx="12" ry="6" fill="#264653"/>
+    <ellipse cx="120" cy="100" rx="12" ry="6" fill="#264653"/>
+    <ellipse cx="168" cy="100" rx="12" ry="6" fill="#264653"/>
+    <ellipse cx="216" cy="100" rx="12" ry="6" fill="#264653"/>
+  </g>
+</svg>

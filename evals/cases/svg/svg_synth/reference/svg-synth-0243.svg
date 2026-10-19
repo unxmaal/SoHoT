@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 200">
+  <rect x="4" y="5.71429" width="17.1429" height="17.1429" fill="#b5838d"/>
+  <text x="25.1429" y="19.4286" font-size="13.7143">fjord</text>
+  <rect x="4" y="34.2857" width="17.1429" height="17.1429" fill="#f4a261"/>
+  <text x="25.1429" y="48" font-size="13.7143">maple</text>
+  <rect x="4" y="62.8571" width="17.1429" height="17.1429" fill="#8ab17d"/>
+  <text x="25.1429" y="76.5714" font-size="13.7143">alpha</text>
+  <rect x="4" y="91.4286" width="17.1429" height="17.1429" fill="#264653"/>
+  <text x="25.1429" y="105.143" font-size="13.7143">cedar</text>
+  <rect x="4" y="120" width="17.1429" height="17.1429" fill="#e63946"/>
+  <text x="25.1429" y="133.714" font-size="13.7143">juniper</text>
+  <rect x="4" y="148.571" width="17.1429" height="17.1429" fill="#1d3557"/>
+  <text x="25.1429" y="162.286" font-size="13.7143">pike</text>
+  <rect x="4" y="177.143" width="17.1429" height="17.1429" fill="#457b9d"/>
+  <text x="25.1429" y="190.857" font-size="13.7143">harbor</text>
+</svg>

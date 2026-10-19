@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 160">
+  <rect x="4" y="10.6667" width="32" height="32" fill="#2a9d8f"/>
+  <text x="40" y="36.2667" font-size="25.6">ember</text>
+  <rect x="4" y="64" width="32" height="32" fill="#457b9d"/>
+  <text x="40" y="89.6" font-size="25.6">bravo</text>
+  <rect x="4" y="117.333" width="32" height="32" fill="#8ab17d"/>
+  <text x="40" y="142.933" font-size="25.6">juniper</text>
+</svg>

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <g id="indigo">
+    <circle cx="100" cy="33.3333" r="20" fill="#b5838d"/>
+  </g>
+  <g id="bravo">
+    <rect x="10" y="85" width="30" height="30" fill="#1d3557"/>
+    <rect x="60" y="85" width="30" height="30" fill="#1d3557"/>
+    <rect x="110" y="85" width="30" height="30" fill="#1d3557"/>
+    <rect x="160" y="85" width="30" height="30" fill="#1d3557"/>
+  </g>
+  <g id="pike">
+    <ellipse cx="33.3333" cy="166.667" rx="20" ry="10" fill="#2a9d8f"/>
+    <ellipse cx="100" cy="166.667" rx="20" ry="10" fill="#2a9d8f"/>
+    <ellipse cx="166.667" cy="166.667" rx="20" ry="10" fill="#2a9d8f"/>
+  </g>
+</svg>

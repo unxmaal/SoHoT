@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 160">
+  <g id="kelp">
+    <circle cx="40" cy="26.6667" r="16" fill="#e76f51"/>
+    <circle cx="120" cy="26.6667" r="16" fill="#e76f51"/>
+    <circle cx="200" cy="26.6667" r="16" fill="#e76f51"/>
+    <circle cx="280" cy="26.6667" r="16" fill="#e76f51"/>
+  </g>
+  <g id="harbor">
+    <rect x="64" y="64" width="32" height="32" fill="#f4a261"/>
+    <rect x="224" y="64" width="32" height="32" fill="#f4a261"/>
+  </g>
+  <g id="fjord">
+    <ellipse cx="40" cy="133.333" rx="16" ry="8" fill="#457b9d"/>
+    <ellipse cx="120" cy="133.333" rx="16" ry="8" fill="#457b9d"/>
+    <ellipse cx="200" cy="133.333" rx="16" ry="8" fill="#457b9d"/>
+    <ellipse cx="280" cy="133.333" rx="16" ry="8" fill="#457b9d"/>
+  </g>
+</svg>

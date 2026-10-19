@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <g id="maple">
+    <circle cx="10" cy="16.6667" r="6" fill="#2a9d8f"/>
+    <circle cx="30" cy="16.6667" r="6" fill="#2a9d8f"/>
+    <circle cx="50" cy="16.6667" r="6" fill="#2a9d8f"/>
+    <circle cx="70" cy="16.6667" r="6" fill="#2a9d8f"/>
+    <circle cx="90" cy="16.6667" r="6" fill="#2a9d8f"/>
+  </g>
+  <g id="fjord">
+    <rect x="5" y="42.5" width="15" height="15" fill="#f4a261"/>
+    <rect x="30" y="42.5" width="15" height="15" fill="#f4a261"/>
+    <rect x="55" y="42.5" width="15" height="15" fill="#f4a261"/>
+    <rect x="80" y="42.5" width="15" height="15" fill="#f4a261"/>
+  </g>
+  <g id="nova">
+    <ellipse cx="12.5" cy="83.3333" rx="7.5" ry="3.75" fill="#8ab17d"/>
+    <ellipse cx="37.5" cy="83.3333" rx="7.5" ry="3.75" fill="#8ab17d"/>
+    <ellipse cx="62.5" cy="83.3333" rx="7.5" ry="3.75" fill="#8ab17d"/>
+    <ellipse cx="87.5" cy="83.3333" rx="7.5" ry="3.75" fill="#8ab17d"/>
+  </g>
+</svg>

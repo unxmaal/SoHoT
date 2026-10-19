@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <rect x="5" y="133.5" width="15" height="55.5" fill="#457b9d"/>
+  <text x="12.5" y="131.5" font-size="7.5" text-anchor="middle">37</text>
+  <rect x="30" y="138" width="15" height="51" fill="#457b9d"/>
+  <text x="37.5" y="136" font-size="7.5" text-anchor="middle">34</text>
+  <rect x="55" y="162" width="15" height="27" fill="#457b9d"/>
+  <text x="62.5" y="160" font-size="7.5" text-anchor="middle">18</text>
+  <rect x="80" y="159" width="15" height="30" fill="#457b9d"/>
+  <text x="87.5" y="157" font-size="7.5" text-anchor="middle">20</text>
+  <rect x="105" y="180" width="15" height="9" fill="#457b9d"/>
+  <text x="112.5" y="178" font-size="7.5" text-anchor="middle">6</text>
+  <rect x="130" y="154.5" width="15" height="34.5" fill="#457b9d"/>
+  <text x="137.5" y="152.5" font-size="7.5" text-anchor="middle">23</text>
+  <rect x="155" y="177" width="15" height="12" fill="#457b9d"/>
+  <text x="162.5" y="175" font-size="7.5" text-anchor="middle">8</text>
+  <rect x="180" y="145.5" width="15" height="43.5" fill="#457b9d"/>
+  <text x="187.5" y="143.5" font-size="7.5" text-anchor="middle">29</text>
+</svg>

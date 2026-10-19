@@ -1,0 +1,26 @@
+# SoHoT generated svg cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/svg_synth.py).
+# Imported by evals/importers from generated:evals.importers.svg_synth v1 seed 1050@1878dddb4e7787e9870bf9adfc18239059c29347; re-import, do not edit.
+id: svg-synth-0210
+modality: svg
+prompt: 'Draw exactly 8 separate filled shapes of any kind: 3 filled #e63946 and 5 filled #8ab17d. Set
+  every colour with a fill attribute. Draw nothing else: no background, border, axis or other extra shapes.'
+assert:
+  structure:
+    marks: 8
+    tally:
+      '#e63946': 3
+      '#8ab17d': 5
+attribution:
+  dataset: SoHoT generated svg cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/svg_synth.py
+  license: generated
+  source: generated:evals.importers.svg_synth v1 seed 1050
+  revision: 1878dddb4e7787e9870bf9adfc18239059c29347
+  item: '210'
+  date: ''
+  transform: a seeded scene described as a prompt, asserted on its structure
+  importer: evals.importers.svg_synth
+  version: '1'
+  seed: 1050
+  kind: blobs
+  stratum: easy

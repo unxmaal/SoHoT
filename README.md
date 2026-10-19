@@ -2348,6 +2348,20 @@ v2 one; no hand-written tts or LibriSpeech reference normalizes differently.
 `tests/test_generated_cases.py` pins: another case's text on ocr, marking
 nothing or everything on pii, silence or one fixed sentence on tts.
 
+The svg lane's generated source is `svg_synth` (#1050). Each row draws a
+scene, and the scene gives the prompt, a `structure` assertion and the
+generator's own drawing under `reference/`. `structure()` in
+`harness/checks/svg.py` reads every property from the markup with no judge: the viewBox, exact
+element counts outside `<defs>`, effective fills (inherited, attribute or
+style), fill order left to right or row by row, `<text>` labels, closed paths,
+what each `<g id>` holds, bars on a baseline at a given scale, shapes inside
+the viewBox, dots evenly round a ring, clock hand angles and the paint order
+of concentric circles. A case reading positions refuses `transform`, and its
+prompt says so. Every kind but "any shapes" declares `methods: [llm]`, since a
+tracer or OmniSVG emits paths only. The attribution records kind and stratum
+(easy, medium, hard). The negative control: the reference passes, one black
+square and the next case's drawing do not.
+
 `repair` costs nothing extra, so it is the one to understand. Everything already
 checks its own output. It runs the code it wrote, draws the SVG to see whether
 anything is visible, opens the web page in a browser. All of that was

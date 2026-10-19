@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300">
+  <g id="fjord">
+    <circle cx="40" cy="50" r="24" fill="#e63946"/>
+    <circle cx="120" cy="50" r="24" fill="#e63946"/>
+    <circle cx="200" cy="50" r="24" fill="#e63946"/>
+    <circle cx="280" cy="50" r="24" fill="#e63946"/>
+    <circle cx="360" cy="50" r="24" fill="#e63946"/>
+  </g>
+  <g id="quartz">
+    <rect x="20" y="120" width="60" height="60" fill="#1d3557"/>
+    <rect x="120" y="120" width="60" height="60" fill="#1d3557"/>
+    <rect x="220" y="120" width="60" height="60" fill="#1d3557"/>
+    <rect x="320" y="120" width="60" height="60" fill="#1d3557"/>
+  </g>
+  <g id="nova">
+    <ellipse cx="40" cy="250" rx="24" ry="12" fill="#457b9d"/>
+    <ellipse cx="120" cy="250" rx="24" ry="12" fill="#457b9d"/>
+    <ellipse cx="200" cy="250" rx="24" ry="12" fill="#457b9d"/>
+    <ellipse cx="280" cy="250" rx="24" ry="12" fill="#457b9d"/>
+    <ellipse cx="360" cy="250" rx="24" ry="12" fill="#457b9d"/>
+  </g>
+</svg>

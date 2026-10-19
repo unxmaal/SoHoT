@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 160">
+  <rect x="0" y="40" width="80" height="80" fill="#2a9d8f"/>
+  <text x="40" y="92" font-size="24" text-anchor="middle" fill="#1d3557">pike</text>
+  <rect x="80" y="40" width="80" height="80" fill="#8ab17d"/>
+  <text x="120" y="92" font-size="24" text-anchor="middle" fill="#1d3557">rook</text>
+  <rect x="160" y="40" width="80" height="80" fill="#e63946"/>
+  <text x="200" y="92" font-size="24" text-anchor="middle" fill="#1d3557">lumen</text>
+  <rect x="240" y="40" width="80" height="80" fill="#1d3557"/>
+  <text x="280" y="92" font-size="24" text-anchor="middle" fill="#1d3557">v3.5.82</text>
+</svg>

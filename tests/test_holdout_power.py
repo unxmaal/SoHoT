@@ -70,7 +70,9 @@ def test_repeat_suffixes_map_to_their_case():
 def test_the_shipped_lanes_split_where_they_can():
     decide = holdout.for_lane("decide")
     assert not decide.too_small and len(decide.holdout) >= 3
-    assert holdout.for_lane("svg").too_small
+    svg = holdout.for_lane("svg")
+    assert not svg.too_small and len(svg.holdout) >= 130
+    assert holdout.for_lane("video").too_small
 
 
 # --- the adopt gate decides on holdout only --------------------------------

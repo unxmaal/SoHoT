@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 120">
+  <rect x="0" y="30" width="60" height="60" fill="#2a9d8f"/>
+  <text x="30" y="69" font-size="18" text-anchor="middle" fill="#1d3557">nova</text>
+  <rect x="60" y="30" width="60" height="60" fill="#b5838d"/>
+  <text x="90" y="69" font-size="18" text-anchor="middle" fill="#1d3557">alpha</text>
+  <rect x="120" y="30" width="60" height="60" fill="#264653"/>
+  <text x="150" y="69" font-size="18" text-anchor="middle" fill="#1d3557">indigo</text>
+  <rect x="180" y="30" width="60" height="60" fill="#8ab17d"/>
+  <text x="210" y="69" font-size="18" text-anchor="middle" fill="#1d3557">v5.5.43</text>
+</svg>

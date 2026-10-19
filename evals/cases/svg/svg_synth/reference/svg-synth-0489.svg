@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300">
+  <g id="ember">
+    <circle cx="50" cy="50" r="30" fill="#8ab17d"/>
+    <circle cx="150" cy="50" r="30" fill="#8ab17d"/>
+    <circle cx="250" cy="50" r="30" fill="#8ab17d"/>
+    <circle cx="350" cy="50" r="30" fill="#8ab17d"/>
+  </g>
+  <g id="lumen">
+    <rect x="170" y="120" width="60" height="60" fill="#457b9d"/>
+  </g>
+  <g id="garnet">
+    <ellipse cx="100" cy="250" rx="30" ry="15" fill="#264653"/>
+    <ellipse cx="300" cy="250" rx="30" ry="15" fill="#264653"/>
+  </g>
+</svg>

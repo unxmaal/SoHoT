@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 200">
+  <rect x="0" y="50" width="75" height="100" fill="#6a4c93"/>
+  <text x="37.5" y="115" font-size="30" text-anchor="middle" fill="#1d3557">harbor</text>
+  <rect x="75" y="50" width="75" height="100" fill="#1d3557"/>
+  <text x="112.5" y="115" font-size="30" text-anchor="middle" fill="#1d3557">alpha</text>
+  <rect x="150" y="50" width="75" height="100" fill="#8ab17d"/>
+  <text x="187.5" y="115" font-size="30" text-anchor="middle" fill="#1d3557">delta</text>
+  <rect x="225" y="50" width="75" height="100" fill="#264653"/>
+  <text x="262.5" y="115" font-size="30" text-anchor="middle" fill="#1d3557">v7.16.82</text>
+</svg>

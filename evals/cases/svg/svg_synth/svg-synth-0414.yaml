@@ -1,0 +1,42 @@
+# SoHoT generated svg cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/svg_synth.py).
+# Imported by evals/importers from generated:evals.importers.svg_synth v1 seed 1050@1878dddb4e7787e9870bf9adfc18239059c29347; re-import, do not edit.
+id: svg-synth-0414
+modality: svg
+prompt: 'On a viewBox of "0 0 320 160", draw exactly 12 dots as <circle> elements of radius 5, filled
+  #e76f51, evenly spaced around a ring of radius 39 centred at (103, 112): the first dot straight above
+  the centre, the rest following clockwise. Give each centre to two decimal places. Set every colour with
+  a fill attribute. Do not use transform attributes. Draw nothing else: no background, border, axis or
+  other extra shapes.'
+methods:
+- llm
+assert:
+  structure:
+    viewbox:
+    - 0
+    - 0
+    - 320
+    - 160
+    count:
+      circle: 12
+    fill:
+      circle: '#e76f51'
+    ring:
+      cx: 103
+      cy: 112
+      r: 39
+      n: 12
+    inside: true
+attribution:
+  dataset: SoHoT generated svg cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/svg_synth.py
+  license: generated
+  source: generated:evals.importers.svg_synth v1 seed 1050
+  revision: 1878dddb4e7787e9870bf9adfc18239059c29347
+  item: '414'
+  date: ''
+  transform: a seeded scene described as a prompt, asserted on its structure
+  importer: evals.importers.svg_synth
+  version: '1'
+  seed: 1050
+  kind: ring
+  stratum: hard

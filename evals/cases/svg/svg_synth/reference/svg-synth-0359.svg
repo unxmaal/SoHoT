@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 200">
+  <g id="harbor">
+    <circle cx="30" cy="33.3333" r="18" fill="#f4a261"/>
+    <circle cx="90" cy="33.3333" r="18" fill="#f4a261"/>
+    <circle cx="150" cy="33.3333" r="18" fill="#f4a261"/>
+    <circle cx="210" cy="33.3333" r="18" fill="#f4a261"/>
+    <circle cx="270" cy="33.3333" r="18" fill="#f4a261"/>
+  </g>
+  <g id="cedar">
+    <rect x="130" y="80" width="40" height="40" fill="#6a4c93"/>
+  </g>
+  <g id="delta">
+    <ellipse cx="75" cy="166.667" rx="20" ry="10" fill="#e63946"/>
+    <ellipse cx="225" cy="166.667" rx="20" ry="10" fill="#e63946"/>
+  </g>
+</svg>

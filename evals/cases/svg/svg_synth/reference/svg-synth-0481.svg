@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <rect x="0" y="50" width="50" height="100" fill="#264653"/>
+  <text x="25" y="115" font-size="30" text-anchor="middle" fill="#1d3557">bravo</text>
+  <rect x="50" y="50" width="50" height="100" fill="#6a4c93"/>
+  <text x="75" y="115" font-size="30" text-anchor="middle" fill="#1d3557">ember</text>
+  <rect x="100" y="50" width="50" height="100" fill="#457b9d"/>
+  <text x="125" y="115" font-size="30" text-anchor="middle" fill="#1d3557">rook</text>
+  <rect x="150" y="50" width="50" height="100" fill="#e76f51"/>
+  <text x="175" y="115" font-size="30" text-anchor="middle" fill="#1d3557">v8.12.98</text>
+</svg>

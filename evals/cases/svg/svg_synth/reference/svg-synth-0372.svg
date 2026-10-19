@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 200">
+  <g id="kelp">
+    <circle cx="50" cy="33.3333" r="20" fill="#1d3557"/>
+    <circle cx="150" cy="33.3333" r="20" fill="#1d3557"/>
+    <circle cx="250" cy="33.3333" r="20" fill="#1d3557"/>
+  </g>
+  <g id="garnet">
+    <rect x="17.5" y="80" width="40" height="40" fill="#e63946"/>
+    <rect x="92.5" y="80" width="40" height="40" fill="#e63946"/>
+    <rect x="167.5" y="80" width="40" height="40" fill="#e63946"/>
+    <rect x="242.5" y="80" width="40" height="40" fill="#e63946"/>
+  </g>
+  <g id="maple">
+    <ellipse cx="150" cy="166.667" rx="20" ry="10" fill="#8ab17d"/>
+  </g>
+</svg>

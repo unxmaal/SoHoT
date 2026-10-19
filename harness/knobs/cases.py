@@ -9,3 +9,8 @@ KNOBS = [
     _k("tts_max_wer", ["evals/importers/tts_synth.py:MAX_WER"], [0.1, 0.2, 0.3],
        note="read-back WER a generated tts case passes at, joint with the ear; floor unmeasured (#701)"),
 ]
+
+NOT_GATING = {
+    "evals/importers/svg_synth.py:ATTEMPTS": "redraws of one row before the generator refuses a kind too small "
+                                             "for its share; it raises, it never changes a case (#1050)",
+}

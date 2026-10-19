@@ -1,0 +1,48 @@
+# SoHoT generated svg cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/svg_synth.py).
+# Imported by evals/importers from generated:evals.importers.svg_synth v1 seed 1050@1878dddb4e7787e9870bf9adfc18239059c29347; re-import, do not edit.
+id: svg-synth-0499
+modality: svg
+prompt: 'On a viewBox of "0 0 400 300", draw 4 concentric filled circles centred at (196, 136): radius
+  69 filled #1d3557; radius 47 filled #f4a261; radius 36 filled #6a4c93; radius 46 filled #264653. Every
+  circle must stay visible as a ring or disc, so order them so that no circle hides another. Set every
+  colour with a fill attribute. Do not use transform attributes. Draw nothing else: no background, border,
+  axis or other extra shapes.'
+methods:
+- llm
+assert:
+  structure:
+    viewbox:
+    - 0
+    - 0
+    - 400
+    - 300
+    count:
+      circle: 4
+    stack:
+      cx: 196
+      cy: 136
+      radii:
+      - 69
+      - 47
+      - 46
+      - 36
+      fills:
+      - '#1d3557'
+      - '#f4a261'
+      - '#264653'
+      - '#6a4c93'
+    inside: true
+attribution:
+  dataset: SoHoT generated svg cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/svg_synth.py
+  license: generated
+  source: generated:evals.importers.svg_synth v1 seed 1050
+  revision: 1878dddb4e7787e9870bf9adfc18239059c29347
+  item: '499'
+  date: ''
+  transform: a seeded scene described as a prompt, asserted on its structure
+  importer: evals.importers.svg_synth
+  version: '1'
+  seed: 1050
+  kind: concentric
+  stratum: hard

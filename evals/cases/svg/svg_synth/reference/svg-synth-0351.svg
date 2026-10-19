@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 120">
+  <rect x="0" y="30" width="120" height="60" fill="#b5838d"/>
+  <text x="60" y="69" font-size="18" text-anchor="middle" fill="#1d3557">ember</text>
+  <rect x="120" y="30" width="120" height="60" fill="#e76f51"/>
+  <text x="180" y="69" font-size="18" text-anchor="middle" fill="#1d3557">v1.2.63</text>
+</svg>

@@ -227,6 +227,9 @@ def _check_svg(artifact, case: Case) -> CheckResult:
     r = svg_check.check(artifact)
     if not r.ok:
         return r
+    missed = svg_check.structure(artifact, case.assertions.get("structure") or {})
+    if missed:
+        return CheckResult(False, missed, r.warnings, shape_count=r.shape_count)
 
     drawn = render_check.check(extract(artifact, ("svg",)))
     out = CheckResult(drawn.ok, drawn.reason, r.warnings + drawn.warnings,
@@ -559,7 +562,7 @@ def contains(artifact: str, needle: str) -> bool:
 #: `equals` is the narrowest and most useful shape for a delegated lookup: one
 #: token out and nothing else, so the answer can be used without parsing.
 EXTRACT_ASSERTIONS = {"must_contain", "must_not_contain", "equals"}
-ASSERTION_KEYS = {"svg": TEXT_ASSERTIONS, "web": TEXT_ASSERTIONS,
+ASSERTION_KEYS = {"svg": TEXT_ASSERTIONS | {"structure"}, "web": TEXT_ASSERTIONS,
                   "extract": EXTRACT_ASSERTIONS,
                   "code": {"checks"},
                   # `text` is OCR'd out of the produced image; `max_cer` is how
@@ -1106,6 +1109,11 @@ def load_case(path: Path, private: bool = False) -> Case:
         raise ValueError(f"{path.name}: an ocr case needs assert.text, the reference")
     if assertions.get("text") and "max_cer" not in assertions:
         raise ValueError(f"{path.name}: a case asserting text needs assert.max_cer; no lenient default (#701)")
+    if "structure" in assertions:
+        try:
+            svg_check.validate_structure(assertions["structure"])
+        except ValueError as exc:
+            raise ValueError(f"{path.name}: {exc}") from exc
     if modality == "retrieval":
         _check_relevant(path, input_file, assertions.get("relevant"))
     if modality == "pii":

@@ -1,0 +1,47 @@
+# SoHoT generated svg cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/svg_synth.py).
+# Imported by evals/importers from generated:evals.importers.svg_synth v1 seed 1050@1878dddb4e7787e9870bf9adfc18239059c29347; re-import, do not edit.
+id: svg-synth-0125
+modality: svg
+prompt: 'Draw three groups: a <g id="quartz"> holding exactly 5 <circle> filled #b5838d, a <g id="kelp">
+  holding exactly 3 <rect> filled #f4a261, a <g id="nova"> holding exactly 5 <ellipse> filled #e63946.
+  Each shape type goes only in its own group. Set every colour with a fill attribute. Draw nothing else:
+  no background, border, axis or other extra shapes.'
+methods:
+- llm
+assert:
+  structure:
+    count:
+      circle: 5
+      rect: 3
+      ellipse: 5
+    fill:
+      circle: '#b5838d'
+      rect: '#f4a261'
+      ellipse: '#e63946'
+    groups:
+      quartz:
+        circle: 5
+        rect: 0
+        ellipse: 0
+      kelp:
+        circle: 0
+        rect: 3
+        ellipse: 0
+      nova:
+        circle: 0
+        rect: 0
+        ellipse: 5
+attribution:
+  dataset: SoHoT generated svg cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/svg_synth.py
+  license: generated
+  source: generated:evals.importers.svg_synth v1 seed 1050
+  revision: 1878dddb4e7787e9870bf9adfc18239059c29347
+  item: '125'
+  date: ''
+  transform: a seeded scene described as a prompt, asserted on its structure
+  importer: evals.importers.svg_synth
+  version: '1'
+  seed: 1050
+  kind: groups
+  stratum: hard

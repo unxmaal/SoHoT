@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300">
+  <rect x="10" y="223" width="30" height="60" fill="#264653"/>
+  <text x="25" y="221" font-size="15" text-anchor="middle">24</text>
+  <rect x="60" y="258" width="30" height="25" fill="#264653"/>
+  <text x="75" y="256" font-size="15" text-anchor="middle">10</text>
+  <rect x="110" y="190.5" width="30" height="92.5" fill="#264653"/>
+  <text x="125" y="188.5" font-size="15" text-anchor="middle">37</text>
+  <rect x="160" y="223" width="30" height="60" fill="#264653"/>
+  <text x="175" y="221" font-size="15" text-anchor="middle">24</text>
+  <rect x="210" y="220.5" width="30" height="62.5" fill="#264653"/>
+  <text x="225" y="218.5" font-size="15" text-anchor="middle">25</text>
+  <rect x="260" y="263" width="30" height="20" fill="#264653"/>
+  <text x="275" y="261" font-size="15" text-anchor="middle">8</text>
+  <rect x="310" y="235.5" width="30" height="47.5" fill="#264653"/>
+  <text x="325" y="233.5" font-size="15" text-anchor="middle">19</text>
+  <rect x="360" y="280.5" width="30" height="2.5" fill="#264653"/>
+  <text x="375" y="278.5" font-size="15" text-anchor="middle">1</text>
+</svg>

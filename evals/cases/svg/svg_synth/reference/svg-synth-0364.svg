@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <rect x="0" y="25" width="50" height="50" fill="#e63946"/>
+  <text x="25" y="57.5" font-size="15" text-anchor="middle" fill="#1d3557">pike</text>
+  <rect x="50" y="25" width="50" height="50" fill="#457b9d"/>
+  <text x="75" y="57.5" font-size="15" text-anchor="middle" fill="#1d3557">v3.19.3</text>
+</svg>

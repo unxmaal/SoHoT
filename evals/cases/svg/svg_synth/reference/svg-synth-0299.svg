@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 160">
+  <rect x="0" y="40" width="160" height="80" fill="#6a4c93"/>
+  <text x="80" y="92" font-size="24" text-anchor="middle" fill="#1d3557">indigo</text>
+  <rect x="160" y="40" width="160" height="80" fill="#1d3557"/>
+  <text x="240" y="92" font-size="24" text-anchor="middle" fill="#1d3557">v6.6.36</text>
+</svg>

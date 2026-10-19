@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <g id="cedar">
+    <circle cx="100" cy="33.3333" r="20" fill="#2a9d8f"/>
+  </g>
+  <g id="kelp">
+    <rect x="80" y="80" width="40" height="40" fill="#b5838d"/>
+  </g>
+  <g id="quartz">
+    <ellipse cx="33.3333" cy="166.667" rx="20" ry="10" fill="#e76f51"/>
+    <ellipse cx="100" cy="166.667" rx="20" ry="10" fill="#e76f51"/>
+    <ellipse cx="166.667" cy="166.667" rx="20" ry="10" fill="#e76f51"/>
+  </g>
+</svg>

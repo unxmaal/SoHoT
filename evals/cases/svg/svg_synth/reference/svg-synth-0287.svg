@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <rect x="4.44444" y="168" width="13.3333" height="12" fill="#6a4c93"/>
+  <text x="11.1111" y="166" font-size="6.66667" text-anchor="middle">8</text>
+  <rect x="26.6667" y="123" width="13.3333" height="57" fill="#6a4c93"/>
+  <text x="33.3333" y="121" font-size="6.66667" text-anchor="middle">38</text>
+  <rect x="48.8889" y="151.5" width="13.3333" height="28.5" fill="#6a4c93"/>
+  <text x="55.5556" y="149.5" font-size="6.66667" text-anchor="middle">19</text>
+  <rect x="71.1111" y="129" width="13.3333" height="51" fill="#6a4c93"/>
+  <text x="77.7778" y="127" font-size="6.66667" text-anchor="middle">34</text>
+  <rect x="93.3333" y="145.5" width="13.3333" height="34.5" fill="#6a4c93"/>
+  <text x="100" y="143.5" font-size="6.66667" text-anchor="middle">23</text>
+  <rect x="115.556" y="135" width="13.3333" height="45" fill="#6a4c93"/>
+  <text x="122.222" y="133" font-size="6.66667" text-anchor="middle">30</text>
+  <rect x="137.778" y="120" width="13.3333" height="60" fill="#6a4c93"/>
+  <text x="144.444" y="118" font-size="6.66667" text-anchor="middle">40</text>
+  <rect x="160" y="154.5" width="13.3333" height="25.5" fill="#6a4c93"/>
+  <text x="166.667" y="152.5" font-size="6.66667" text-anchor="middle">17</text>
+  <rect x="182.222" y="165" width="13.3333" height="15" fill="#6a4c93"/>
+  <text x="188.889" y="163" font-size="6.66667" text-anchor="middle">10</text>
+</svg>

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <g id="onyx">
+    <circle cx="50" cy="16.6667" r="10" fill="#6a4c93"/>
+  </g>
+  <g id="pike">
+    <rect x="15" y="40" width="20" height="20" fill="#264653"/>
+    <rect x="65" y="40" width="20" height="20" fill="#264653"/>
+  </g>
+  <g id="nova">
+    <ellipse cx="50" cy="83.3333" rx="10" ry="5" fill="#f4a261"/>
+  </g>
+</svg>
