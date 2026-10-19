@@ -23,13 +23,24 @@ if [ "$(git -C "$NIMBLE_ROOT" rev-parse HEAD)" != "$NIMBLE_REV" ]; then
   git -C "$NIMBLE_ROOT" checkout --quiet "$NIMBLE_REV" >&2
 fi
 
+NIMBLE_VENV_PINS=("$NIMBLE_MLX_PIN" "$NIMBLE_MLX_LM_PIN" "$TRANSFORMERS_PIN" "$NIMBLE_TORCH_PIN" "$PEFT_PIN"
+                  "$ACCELERATE_PIN" "$SAFETENSORS_PIN" "$HUGGINGFACE_HUB_PIN")
+
+# The stamp carries the pins and every installed dist, so a moved pin or a hand install rebuilds it. #1037.
+_nimble_dists() {
+  local d
+  for d in "$NIMBLE_VENV"/lib/python*/site-packages/*.dist-info; do
+    if [ -d "$d" ]; then printf '%s\n' "${d##*/}"; fi
+  done | LC_ALL=C sort
+}
+
 PY="$NIMBLE_VENV/bin/python"
-if [ ! -x "$PY" ]; then
+if [ ! -x "$PY" ] || [ "$(cat "$NIMBLE_VENV/.pins" 2>/dev/null)" != "$(printf '%s\n' "${NIMBLE_VENV_PINS[*]}"; _nimble_dists)" ]; then
   echo "nimble: building its environment in $NIMBLE_VENV" >&2
-  uv venv --python 3.12 "$NIMBLE_VENV" >&2
-  VIRTUAL_ENV="$NIMBLE_VENV" uv pip install "$NIMBLE_MLX_PIN" "$NIMBLE_MLX_LM_PIN" \
-    "$TRANSFORMERS_PIN" "$NIMBLE_TORCH_PIN" "$PEFT_PIN" "$ACCELERATE_PIN" \
-    "$SAFETENSORS_PIN" huggingface_hub >&2
+  # From empty: uv pip install never removes what an older pin or a hand install left. #1037.
+  uv venv --clear --python 3.12 "$NIMBLE_VENV" >&2
+  VIRTUAL_ENV="$NIMBLE_VENV" uv pip install "${NIMBLE_VENV_PINS[@]}" >&2
+  [ ! -x "$PY" ] || { printf '%s\n' "${NIMBLE_VENV_PINS[*]}"; _nimble_dists; } > "$NIMBLE_VENV/.pins"
 fi
 if [ ! -x "$PY" ]; then
   echo "FATAL: no interpreter in $NIMBLE_VENV after building it" >&2

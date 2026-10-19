@@ -14,26 +14,37 @@ fi
 if [ "$(git -C "$DECIDER_ROOT" rev-parse HEAD)" != "$DECIDER_REV" ]; then
   git -C "$DECIDER_ROOT" fetch --quiet origin >&2
   git -C "$DECIDER_ROOT" checkout --quiet "$DECIDER_REV" >&2
-  rm -f "$DECIDER_VENV/.rev"
 fi
 
-EXTRA=""
-MLX_PINS=()
 if [ "$(uname -s)" = "Darwin" ] && [ "$(uname -m)" = "arm64" ]; then
   EXTRA="[mlx]"
-  MLX_PINS=("$NIMBLE_MLX_PIN" "$DECIDER_MLX_LM_PIN")
+  DECIDER_MLX=("$NIMBLE_MLX_PIN" "$DECIDER_MLX_LM_PIN")
+else
+  EXTRA=""
+  DECIDER_MLX=()
 fi
+# The checkout is the first word; venv_drift starts its closure from the dist that install leaves. #1037.
+DECIDER_VENV_PINS=("${DECIDER_ROOT}${EXTRA}" "$NIMBLE_TORCH_PIN" "$TRANSFORMERS_PIN" "$PEFT_PIN" "$ACCELERATE_PIN"
+                   "$SAFETENSORS_PIN")
+DECIDER_STAMP="$DECIDER_REV ${DECIDER_MLX[*]+${DECIDER_MLX[*]}} ${DECIDER_VENV_PINS[*]}"
+
+# The stamp carries the revision, the pins and every installed dist, so any of them moving rebuilds it. #1037.
+_decider_dists() {
+  local d
+  for d in "$DECIDER_VENV"/lib/python*/site-packages/*.dist-info; do
+    if [ -d "$d" ]; then printf '%s\n' "${d##*/}"; fi
+  done | LC_ALL=C sort
+}
 
 PY="$DECIDER_VENV/bin/python"
-if [ ! -x "$PY" ] || [ "$(cat "$DECIDER_VENV/.rev" 2>/dev/null)" != "$DECIDER_REV" ]; then
+if [ ! -x "$PY" ] || [ "$(cat "$DECIDER_VENV/.pins" 2>/dev/null)" != "$(printf '%s\n' "$DECIDER_STAMP"; _decider_dists)" ]; then
   echo "decider: building its environment in $DECIDER_VENV" >&2
-  # From empty: uv pip install never removes what an older revision left. #1032.
+  # From empty: uv pip install never removes what an older revision, pin or hand install left. #1032, #1037.
   uv venv --clear --python 3.12 "$DECIDER_VENV" >&2
   # SETUPTOOLS_SCM_PRETEND_VERSION: the clone has no release tag to version from.
   SETUPTOOLS_SCM_PRETEND_VERSION="0.1.0+g${DECIDER_REV:0:7}" VIRTUAL_ENV="$DECIDER_VENV" \
-    uv pip install "${DECIDER_ROOT}${EXTRA}" ${MLX_PINS[@]+"${MLX_PINS[@]}"} "$NIMBLE_TORCH_PIN" \
-    "$TRANSFORMERS_PIN" "$PEFT_PIN" "$ACCELERATE_PIN" "$SAFETENSORS_PIN" >&2
-  echo "$DECIDER_REV" > "$DECIDER_VENV/.rev"
+    uv pip install "${DECIDER_VENV_PINS[@]}" ${DECIDER_MLX[@]+"${DECIDER_MLX[@]}"} >&2
+  [ ! -x "$PY" ] || { printf '%s\n' "$DECIDER_STAMP"; _decider_dists; } > "$DECIDER_VENV/.pins"
 fi
 if [ ! -x "$PY" ]; then
   echo "FATAL: no interpreter in $DECIDER_VENV after building it" >&2

@@ -4,38 +4,71 @@
 """
 from __future__ import annotations
 
+import json
+import platform
 import re
 import sys
 from email.parser import HeaderParser
 from pathlib import Path
 
-#: The script's per-platform branch: Darwin pins on the Mac, the CUDA index elsewhere.
-_UNAME = re.compile(r'^\s*if \[ "\$\(uname -s\)" = "Darwin" \]; then\n(.*?)^\s*else\n(.*?)^\s*fi\b', re.M | re.S)
+#: The script's per-platform branch: Darwin (or Apple Silicon) pins on the Mac, the CUDA index elsewhere.
+_UNAME = re.compile(r'^\s*if \[ "\$\(uname -s\)" = "Darwin" \]( && \[ "\$\(uname -m\)" = "arm64" \])?; then\n'
+                    r'(.*?)^\s*else\n(.*?)^\s*fi\b', re.M | re.S)
 
 
 def _this_platform(text: str) -> str:
-    darwin = sys.platform == "darwin"
-    return _UNAME.sub(lambda m: m.group(1) if darwin else m.group(2), text)
+    def branch(m):
+        mac = sys.platform == "darwin" and (not m.group(1) or platform.machine() == "arm64")
+        return m.group(2) if mac else m.group(3)
+    return _UNAME.sub(branch, text)
 
 
-def pins(venv: str, repo: Path) -> dict[str, str]:
-    """Canonical name -> the pin `venv`'s script installs on this platform, each `$X_PIN` read from scripts/versions.sh."""
+def _words(venv: str, repo: Path) -> list[str]:
+    """Each word of `venv`'s script pin arrays on this platform, a `$X_PIN` replaced by its value in scripts/versions.sh."""
     from harness import runner_gaps
     script, *arrays = runner_gaps.VENV_SCRIPTS[venv]
     try:
         text = _this_platform((repo / script).read_text(encoding="utf-8"))
         versions = (repo / "scripts" / "versions.sh").read_text(encoding="utf-8")
     except OSError:
-        return {}
+        return []
     values = dict(re.findall(r'^([A-Z0-9_]+)="([^"]*)"', versions, re.M))
-    out = {}
+    out = []
     for array in arrays:
         for word in runner_gaps._bash_values(text, array):
             ref = re.fullmatch(r"\$\{?([A-Z0-9_]+)\}?", word)
-            value = values.get(ref.group(1), "") if ref else word
-            name = re.match(r"[A-Za-z0-9][A-Za-z0-9._-]*", value)
-            if name and not value.startswith(("-", "http")):
-                out[runner_gaps._canonical(name.group(0))] = value
+            out.append(values.get(ref.group(1), "") if ref else word)
+    return out
+
+
+def pins(venv: str, repo: Path) -> dict[str, str]:
+    """Canonical name -> the pin `venv`'s script installs on this platform."""
+    from harness import runner_gaps
+    out = {}
+    for value in _words(venv, repo):
+        name = re.match(r"[A-Za-z0-9][A-Za-z0-9._-]*", value)
+        if name and not value.startswith(("-", "http")):
+            out[runner_gaps._canonical(name.group(0))] = value
+    return out
+
+
+def checkouts(venv: str, repo: Path) -> list[str]:
+    """The words of `venv`'s pin arrays that install a local checkout by its path. #1037."""
+    return [w for w in _words(venv, repo) if w.startswith(("$", "/", "."))]
+
+
+def from_checkout(root: Path) -> set[str]:
+    """Canonical names of the venv's dists installed from a local directory, per their direct_url.json. #1037."""
+    from harness import runner_gaps
+    out = set()
+    for site in _site(root):
+        for info in site.glob("*.dist-info"):
+            try:
+                url = json.loads((info / "direct_url.json").read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                continue
+            if isinstance(url, dict) and "dir_info" in url:
+                out.add(runner_gaps._canonical(info.name[:-len(".dist-info")].rpartition("-")[0]))
     return out
 
 
@@ -70,7 +103,7 @@ def installed(root: Path) -> dict[str, tuple[str, list[str]]]:
     return out
 
 
-def _closure(wanted: dict[str, str], have: dict, python: str) -> set[str]:
+def _closure(wanted, have: dict, python: str) -> set[str]:
     from packaging.requirements import InvalidRequirement, Requirement
     from harness import runner_gaps
     full = python if python.count(".") == 2 else python + ".0"
@@ -100,13 +133,16 @@ def drift(venv: str, repo: Path, root: Path | None = None) -> dict[str, list[str
     root = root or runner_gaps.venv_path(venv)
     wanted = pins(venv, repo)
     have = installed(root)
-    reached = _closure(wanted, have, _python_version(root))
+    # A local checkout's dist is no pin, so the closure starts from it too. #1037.
+    local = checkouts(venv, repo)
+    built = from_checkout(root) if local else set()
+    reached = _closure([*wanted, *built], have, _python_version(root))
     off = []
     for name, pin in sorted(wanted.items()):
         if name in have and not Requirement(pin).specifier.contains(have[name][0], prereleases=True):
             off.append(f"{name} {have[name][0]} (pins {pin})")
     return {"extra": [f"{n} {have[n][0]}" for n in sorted(set(have) - reached)],
-            "missing": sorted(pin for name, pin in wanted.items() if name not in have),
+            "missing": sorted([pin for name, pin in wanted.items() if name not in have] + ([] if built else local)),
             "version": off}
 
 
