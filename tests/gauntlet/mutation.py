@@ -41,7 +41,8 @@ MODULES = {
         "tests/test_fetch_inspected_798.py", "tests/test_retrieval_lane.py",
         "tests/test_adopt_assumptions.py", "tests/test_cold_load.py", "tests/test_degenerate_955.py",
         "tests/test_load_log_953.py", "tests/test_runner_gap_until_950.py", "tests/test_deepen_993.py", "tests/test_missing_package_1008.py",
-        "tests/test_diffusers_dtype_1013.py", "tests/test_live_screen_blame_1021.py", "tests/test_whisper_group_1024.py"],
+        "tests/test_diffusers_dtype_1013.py", "tests/test_live_screen_blame_1021.py", "tests/test_whisper_group_1024.py",
+        "tests/test_runner_packages_1027.py"],
     "harness/screen.py": [
         "tests/test_runner_gap_until_950.py", "tests/test_gguf_first_911.py", "tests/test_harness_screen.py", "tests/test_harness_screen_spec.py", "tests/test_screen_evidence.py",
         "tests/test_screen_server_death.py", "tests/test_decide_lane.py", "tests/test_refusal_shapes.py",

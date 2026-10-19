@@ -75,6 +75,12 @@ FTFY_PIN="ftfy==6.3.1"
 BEAUTIFULSOUP4_PIN="beautifulsoup4==4.15.0"
 # The retrieval lane's rerank: and embed: engines (CrossEncoder, SentenceTransformer). #563.
 SENTENCE_TRANSFORMERS_PIN="sentence-transformers==6.1.0"
+# Schedulers a diffusers repo's own config can name: beta sigmas, LMS (scipy), DPMSolverSDE (torchsde). #1027.
+SCIPY_PIN="scipy==1.18.1"
+TORCHSDE_PIN="torchsde==0.2.6"
+# hf-task: Gemma 3n and timm-backbone vision towers (timm); tiktoken-format tokenizers. #1027.
+TIMM_PIN="timm==1.0.30"
+TIKTOKEN_PIN="tiktoken==0.14.0"
 
 # The decide lane's nimble engine (#423), built by scripts/nimble-venv.sh. The
 # checkout is pinned by commit; its requirements/mlx.txt and training.txt pins
