@@ -34,12 +34,12 @@
   }
  ],
  "export_version": 4,
- "generated_at": "2026-10-19T13:27:17Z",
+ "generated_at": "2026-10-19T15:43:59Z",
  "lanes": [
   {
    "adopted": true,
    "adopted_how": "by-hand",
-   "age_days": 6.51,
+   "age_days": 6.6,
    "comparison": [
     {
      "about": "family unknown, unknown params, unknown, by mflux",
@@ -234,7 +234,7 @@
   {
    "adopted": true,
    "adopted_how": "measured",
-   "age_days": 0.48,
+   "age_days": 0.57,
    "comparison": [
     {
      "about": "family unknown, 35B (3B active) params, Q4_K_M, by ornith-ai",
@@ -1535,7 +1535,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 0.48,
+   "age_days": 0.57,
    "comparison": [
     {
      "about": "family unknown, 4B params, 4bit, by mlx-community",
@@ -1936,7 +1936,7 @@
   {
    "adopted": true,
    "adopted_how": "measured",
-   "age_days": 0.06,
+   "age_days": 0.16,
    "comparison": [
     {
      "about": "family unknown, 30B (3B active) params, 4bit, by mlx-community",
@@ -2252,7 +2252,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 6.51,
+   "age_days": 6.6,
    "comparison": [
     {
      "about": "family unknown, unknown params, unknown, by h3",
@@ -2370,7 +2370,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 4.76,
+   "age_days": 4.86,
    "comparison": [
     {
      "about": "family unknown, unknown params, unknown, by acestep",
@@ -2477,7 +2477,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 3.51,
+   "age_days": 3.6,
    "comparison": [
     {
      "about": "family unknown, 4B params, Q8_0, by mindchain",
@@ -2902,15 +2902,15 @@
    "parked_until": "",
    "pass_rate": 0.464,
    "real_use": {
-    "completion_tokens": 20836,
+    "completion_tokens": 20848,
     "error_rate": 0.0,
     "errors": 0,
     "gateway_error_rate": 0.0,
     "gateway_errors": 0,
     "invalid_calls": 0,
     "invalid_rate": null,
-    "prompt_tokens": 417301,
-    "requests": 723,
+    "prompt_tokens": 417334,
+    "requests": 724,
     "tool_calls": 0,
     "ttft_p50": null,
     "ttft_p95": null
@@ -2926,7 +2926,7 @@
   {
    "adopted": true,
    "adopted_how": "measured",
-   "age_days": 4.76,
+   "age_days": 4.85,
    "comparison": [
     {
      "about": "family unknown, 35B (3B active) params, Q4_K_M, by ornith-ai",
@@ -3142,7 +3142,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 4.51,
+   "age_days": 4.61,
    "comparison": [
     {
      "about": "family unknown, unknown params, unknown, by osocr",
@@ -3271,7 +3271,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 4.51,
+   "age_days": 4.61,
    "comparison": [
     {
      "about": "family unknown, unknown params, unknown, by bm25",
@@ -3405,7 +3405,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 4.51,
+   "age_days": 4.61,
    "comparison": [
     {
      "about": "family unknown, unknown params, unknown, by pii-regex",
@@ -3544,7 +3544,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 6.57,
+   "age_days": 6.67,
    "comparison": [
     {
      "about": "family unknown, 7B params, Q4_K_M, by bartowski",
@@ -3861,7 +3861,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 0.33,
+   "age_days": 0.43,
    "comparison": [
     {
      "about": "family unknown, 4B params, 4bit, by mlx-community",
@@ -4286,7 +4286,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 11.52,
+   "age_days": 11.62,
    "comparison": [
     {
      "about": "family unknown, 7B params, 4bit, by mlx-community",
@@ -4547,15 +4547,15 @@
    "parked_until": "",
    "pass_rate": null,
    "real_use": {
-    "completion_tokens": 996,
+    "completion_tokens": 998,
     "error_rate": 0.0,
     "errors": 0,
     "gateway_error_rate": 0.0,
     "gateway_errors": 0,
     "invalid_calls": 0,
     "invalid_rate": null,
-    "prompt_tokens": 6201,
-    "requests": 17,
+    "prompt_tokens": 6235,
+    "requests": 18,
     "tool_calls": 0,
     "ttft_p50": null,
     "ttft_p95": null
@@ -4571,30 +4571,101 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 11.03,
+   "age_days": 0.0,
    "comparison": [
     {
      "about": "family unknown, 0.6B params, unknown, by unknown",
      "candidate": "parakeet-tdt-0.6b-v2",
-     "first_s": 0.153,
-     "median_s": 0.074,
+     "first_s": 0.146,
+     "median_s": 0.071,
      "metrics": {
-      "wer": 0.0201
+      "wer": 0.0219
      },
      "model": "parakeet-tdt-0.6b-v2",
      "not_run": "",
-     "pass_rate": 0.827,
-     "passed": 110,
+     "pass_rate": 0.823,
+     "passed": 395,
      "peak_gb": 0.0,
      "reference": false,
      "served_as": "",
      "source": "",
-     "total": 133,
+     "total": 480,
+     "ttft_median_s": null,
+     "ttft_p95_s": null
+    },
+    {
+     "about": "family unknown, 0.6B params, 8bit, by unknown",
+     "candidate": "Qwen3-ASR-0.6B-8bit",
+     "first_s": 0.127,
+     "median_s": 0.131,
+     "metrics": {
+      "wer": 0.0258
+     },
+     "model": "Qwen3-ASR-0.6B-8bit",
+     "not_run": "",
+     "pass_rate": 0.794,
+     "passed": 381,
+     "peak_gb": 0.0,
+     "reference": false,
+     "served_as": "",
+     "source": "",
+     "total": 480,
      "ttft_median_s": null,
      "ttft_p95_s": null
     }
    ],
    "exams": [
+    {
+     "cases": 480,
+     "first_run_at": "2026-10-19T15:43:59Z",
+     "repeat": 1,
+     "rows": [
+      {
+       "about": "family unknown, 0.6B params, unknown, by unknown",
+       "candidate": "parakeet-tdt-0.6b-v2",
+       "first_s": 0.146,
+       "median_s": 0.071,
+       "metrics": {
+        "wer": 0.0219
+       },
+       "model": "parakeet-tdt-0.6b-v2",
+       "not_run": "",
+       "pass_rate": 0.823,
+       "passed": 395,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-10-19T15:43:59Z",
+       "served_as": "",
+       "source": "",
+       "total": 480,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      },
+      {
+       "about": "family unknown, 0.6B params, 8bit, by unknown",
+       "candidate": "Qwen3-ASR-0.6B-8bit",
+       "first_s": 0.127,
+       "median_s": 0.131,
+       "metrics": {
+        "wer": 0.0258
+       },
+       "model": "Qwen3-ASR-0.6B-8bit",
+       "not_run": "",
+       "pass_rate": 0.794,
+       "passed": 381,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-10-19T15:43:59Z",
+       "served_as": "",
+       "source": "",
+       "total": 480,
+       "ttft_median_s": null,
+       "ttft_p95_s": null
+      }
+     ],
+     "run_at": "2026-10-19T15:43:59Z",
+     "runs": 1
+    },
     {
      "cases": 133,
      "first_run_at": "2026-10-08T12:47:44Z",
@@ -4657,20 +4728,20 @@
     }
    ],
    "lane": "stt",
-   "last_run_at": "2026-10-08T12:47:44Z",
-   "measured_at": "2026-10-08T12:47:44Z",
-   "median_s": 0.074,
+   "last_run_at": "2026-10-19T15:43:59Z",
+   "measured_at": "2026-10-19T15:43:59Z",
+   "median_s": 0.071,
    "metrics": {
-    "wer": 0.0201
+    "wer": 0.0219
    },
    "not_run": "",
    "parked": "",
    "parked_until": "",
-   "pass_rate": 0.827,
+   "pass_rate": 0.823,
    "real_use": null,
    "serves": "mlx-community/parakeet-tdt-0.6b-v2",
    "serves_model": "mlx-community/parakeet-tdt-0.6b-v2; family unknown, 0.6B params, unknown, by mlx-community",
-   "stale": true,
+   "stale": false,
    "ttft_median_s": null,
    "ttft_p95_s": null,
    "unverified": false,
@@ -4679,7 +4750,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 11.05,
+   "age_days": 11.15,
    "comparison": [
     {
      "about": "family unknown, 82M params, bf16, by Kokoro-82M-bf16",
@@ -4843,7 +4914,7 @@
   "first_seen": "2026-10-05T19:28:52Z",
   "hw_model": "Mac17,15",
   "label": "Mac Studio M5 Ultra 96 GB",
-  "last_seen": "2026-10-19T13:27:17Z",
+  "last_seen": "2026-10-19T15:43:59Z",
   "memory_gb": 96.0,
   "os": "macOS 27.0.1",
   "runtimes": [
@@ -5026,7 +5097,7 @@
       "2026-10-16": 323844.0,
       "2026-10-17": 1156259.0,
       "2026-10-18": 286565.0,
-      "2026-10-19": 476616.0
+      "2026-10-19": 612471.0
      },
      "Read": {
       "2026-07-25": 88284.0,
@@ -5065,7 +5136,7 @@
       "2026-10-16": 163339.0,
       "2026-10-17": 451166.0,
       "2026-10-18": 102099.0,
-      "2026-10-19": 106773.0
+      "2026-10-19": 125777.0
      },
      "WebFetch": {
       "2026-08-16": 52992.0,
@@ -5131,7 +5202,7 @@
       "2026-10-16": 2639.0,
       "2026-10-17": 9622.0,
       "2026-10-18": 2436.0,
-      "2026-10-19": 3748.0
+      "2026-10-19": 4807.0
      },
      "mcm-engine get_entry": {
       "2026-09-13": 713.0,
@@ -5148,7 +5219,7 @@
       "2026-10-16": 4361.0,
       "2026-10-17": 15096.0,
       "2026-10-18": 8020.0,
-      "2026-10-19": 31009.0
+      "2026-10-19": 34770.0
      },
      "mcm-engine report_error": {
       "2026-07-28": 39.0,
@@ -5186,7 +5257,7 @@
       "2026-10-16": 84174.0,
       "2026-10-17": 88227.0,
       "2026-10-18": 30965.0,
-      "2026-10-19": 51223.0
+      "2026-10-19": 65160.0
      },
      "mcm-engine search": {
       "2026-07-25": 44.0,
@@ -5235,7 +5306,7 @@
       "2026-10-16": 346164.0,
       "2026-10-17": 999366.0,
       "2026-10-18": 289589.0,
-      "2026-10-19": 508894.0
+      "2026-10-19": 641663.0
      },
      "other": {
       "2026-07-25": 5159.0,
@@ -5285,7 +5356,7 @@
       "2026-10-16": 16269.0,
       "2026-10-17": 29633.0,
       "2026-10-18": 12460.0,
-      "2026-10-19": 10116.0
+      "2026-10-19": 12773.0
      }
     },
     "title": "Tool-result tokens into Claude's context",
@@ -5409,7 +5480,7 @@
       "2026-10-16": 12.0,
       "2026-10-17": 48.0,
       "2026-10-18": 6.0,
-      "2026-10-19": 13.0
+      "2026-10-19": 18.0
      },
      "7-day window, daily peak": {
       "2026-10-13": 59.0,
@@ -5418,7 +5489,7 @@
       "2026-10-16": 12.0,
       "2026-10-17": 28.0,
       "2026-10-18": 32.0,
-      "2026-10-19": 35.0
+      "2026-10-19": 37.0
      }
     },
     "title": "Plan cap used",
