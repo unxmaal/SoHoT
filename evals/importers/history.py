@@ -169,9 +169,14 @@ def screen(c: dict) -> str | None:
 
 
 def issue(number: int) -> dict | None:
+    """The issue's title and body; None only when GitHub says it does not exist, never when gh fails. #997."""
     got = subprocess.run(["gh", "issue", "view", str(number), "-R", "unxmaal/SoHoT", "--json",
                           "title,body"], capture_output=True, text=True)
-    return json.loads(got.stdout) if got.returncode == 0 else None
+    if got.returncode == 0:
+        return json.loads(got.stdout)
+    if re.search(r"could not resolve to an? (issue|pullrequest)", got.stderr, re.I):
+        return None
+    raise RuntimeError(f"gh issue view {number}: {got.stderr.strip()[-300:]}")
 
 
 def _junit(xml: Path) -> dict:
@@ -267,15 +272,31 @@ def area(source_files) -> str:
     return ",".join(sorted({str(Path(p).parent) for p in source_files}))
 
 
-def survey(source: str, revision: str, limit: int, log, get_issue=issue, timeout=TIMEOUT_S,
-           env=None) -> dict:
-    """Examine fix commits newest first until `limit` tasks are kept; the manifest dict."""
+def _fetch(mirror: Path, revision: str) -> None:
+    """Fetch the mirror unless `revision` is a commit it already holds: a cached mirror never moves by itself. #997."""
+    if not (re.fullmatch(r"[0-9a-f]{40}", revision) and repo._has(mirror, revision)):
+        git(mirror, "fetch", "--quiet", "--prune", "origin")
+
+
+def survey(source: str, revision: str, limit: int | None, log, get_issue=issue, timeout=TIMEOUT_S,
+           env=None, keep: dict | None = None, probes: int | None = None) -> dict:
+    """Examine fix commits newest first until `limit` tasks are kept (None: all); `keep`'s tasks stay as they are. #997."""
     mirror = repo.mirror(source)
+    _fetch(mirror, revision)
     revision = git(mirror, "rev-parse", revision).strip()
-    kept, drops, seen = [], [], set()
-    for c in candidates(mirror, revision):
-        if len(kept) >= limit:
+    pool = candidates(mirror, revision)
+    old = {t["fix"]: t for t in (keep or {}).get("tasks", [])}
+    lost = sorted(t["id"] for f, t in old.items() if f not in {c["fix"] for c in pool})
+    if lost:
+        raise RuntimeError(f"tasks not on {revision[:10]}'s fix history, so they cannot be kept: {lost}")
+    kept, drops, seen = [], [], {t["issue"] for t in old.values()}
+    ran = 0
+    for c in pool:
+        if limit is not None and len(kept) >= limit or probes is not None and ran >= probes:
             break
+        if c["fix"] in old:
+            kept.append(old[c["fix"]])
+            continue
         why = "duplicate_issue" if c["issue"] in seen else screen(c)
         text = res = None
         if why is None:
@@ -283,7 +304,7 @@ def survey(source: str, revision: str, limit: int, log, get_issue=issue, timeout
             text = prompts(got["title"], got["body"] or "") if got else None
             why = "no_issue" if not got else ("no_fix_section" if text["symptom"] is None else None)
         if why is None:
-            t0 = time.monotonic()
+            t0, ran = time.monotonic(), ran + 1
             res = probe(mirror, c, log, timeout, env=env)
             why = res.get("drop")
             print(f"{c['issue']:>4} {c['fix'][:10]} {why or 'kept'} {time.monotonic() - t0:.0f}s",
@@ -300,16 +321,38 @@ def survey(source: str, revision: str, limit: int, log, get_issue=issue, timeout
                      "pass_to_pass": res["pass_to_pass"], "prompts": text,
                      "strata": {"files": len(c["source_files"]), "lines": c["lines"],
                                 "test_s": res["test_s"], "area": area(c["source_files"])}})
+    kept += [t for f, t in old.items() if t not in kept]
     return {"version": VERSION, "source": SOURCE, "repo": source, "revision": revision,
             "criteria": {"subject": SUBJECT.pattern, "first_parent": True,
                          "max_source_files": MAX_SOURCE_FILES, "max_lines": MAX_LINES,
                          "tests_changed": "a test_*.py the grader would install",
                          "no_env_file_change": list(repo.ENV_FILES), "runs": RUNS,
                          "markers": MARKERS, "pytest_timeout_s": timeout,
-                         "order": "newest first", "limit": limit},
-            "examined": len(kept) + len(drops),
+                         "order": "newest first", "limit": limit, "probes": probes,
+                         "kept_from": (keep or {}).get("revision")},
+            "candidates": len(pool), "examined": len(kept) + len(drops),
             "dropped": dict(sorted(Counter(d["reason"] for d in drops).items())),
             "tasks": kept, "split": split(kept), "drops": drops}
+
+
+def yield_table(got: dict, dropped=None) -> list[str]:
+    """`N candidates, M tasks, K dropped` and the count per reason, cases dropped after the survey included."""
+    dropped = DROPPED if dropped is None else dropped
+    ids = {t["id"] for t in got["tasks"]}
+    gone = sorted(i for i in ids if all(f"{i}-{v}" in dropped for v in VARIANTS))
+    reasons = Counter(got["dropped"])
+    if gone:
+        reasons["validation"] += len(gone)
+    pool = got.get("candidates", got["examined"])
+    usable = len(ids) - len(gone)
+    lines = [f"{pool} candidates, {usable} tasks, {sum(reasons.values())} dropped"
+             + (f", {pool - got['examined']} not examined (limit {got['criteria']['limit']}, "
+                f"probes {got['criteria'].get('probes')})"
+                if pool > got["examined"] else "")]
+    lines += [f"  {n:>4}  {r}" for r, n in sorted(reasons.items(), key=lambda kv: (-kv[1], kv[0]))]
+    sides = Counter(side_of(t["fix"]) for t in got["tasks"] if t["id"] not in gone)
+    lines.append(f"split: {sides['holdout']} held out, {sides['dev']} dev")
+    return lines
 
 
 def side_of(fix: str, seed: int = SPLIT_SEED, fraction: float = HOLDOUT_FRACTION) -> str:
@@ -377,7 +420,12 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="python -m evals.importers.history")
     ap.add_argument("--source", default=REPO_URL)
     ap.add_argument("--revision", default="HEAD")
-    ap.add_argument("--limit", type=int, default=20)
+    ap.add_argument("--limit", type=int, default=None, help="stop at this many tasks; default the whole pool")
+    ap.add_argument("--probes", type=int, default=None, help="stop after running this many candidates (a dry run)")
+    ap.add_argument("--restart", action="store_true",
+                    help="start over instead of keeping the committed manifest's tasks as they are")
+    ap.add_argument("--yield", dest="table", action="store_true",
+                    help="print the yield of the manifest at --out; no survey")
     ap.add_argument("--log", type=Path)
     ap.add_argument("--out", type=Path, default=MANIFEST)
     ap.add_argument("--refresh", action="store_true",
@@ -389,12 +437,18 @@ def main(argv: list[str] | None = None) -> int:
         moved = {t["id"]: t["new_files"] for t in got["tasks"] if t["new_files"]}
         print(f"refreshed {len(got['tasks'])} tasks; files to create: {moved}", file=sys.stderr)
         return 0
+    if a.table:
+        print("\n".join(yield_table(manifest(a.out))))
+        return 0
     if a.log is None:
         ap.error("--log is required for a survey")
-    got = survey(a.source, a.revision, a.limit, a.log)
+    a.out.parent.mkdir(parents=True, exist_ok=True)
+    got = survey(a.source, a.revision, a.limit, a.log, keep=None if a.restart else manifest(),
+                 probes=a.probes)
     a.out.write_text(json.dumps(got, indent=1) + "\n", encoding="utf-8")
-    print(f"{len(got['tasks'])} tasks of {got['examined']} examined, dropped {got['dropped']}; "
-          f"set REVISION = {got['revision']!r}, then `soh cases import history`", file=sys.stderr)
+    print("\n".join(yield_table(got)), file=sys.stderr)
+    print(f"set REVISION = {got['revision']!r}, copy {a.out} to {MANIFEST.name}, then "
+          "`soh cases import history`", file=sys.stderr)
     return 0
 
 
