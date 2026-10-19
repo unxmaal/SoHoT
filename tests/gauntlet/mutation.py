@@ -104,7 +104,8 @@ LEFT_OUT = {
         "test_machine_identity.py", "test_mlx_dead_912.py", "test_purpose_825.py", "test_usage_gateway.py",
         "test_vllm.py", "test_repo_failures_921.py"),
     "harness/router.py": (
-        "test_delegate_resident.py", "test_machine_host.py", "test_sweep_ceiling_806.py", "test_watchdog.py"),
+        "test_delegate_resident.py", "test_machine_host.py", "test_router_ready_1012.py", "test_sweep_ceiling_806.py",
+        "test_watchdog.py"),
 }
 
 # mutmut 3 exit codes: survived and untested are gaps; anything unrecognised means the run is not trustworthy.

@@ -11,6 +11,10 @@ _SPLIT = re.compile(r"-\d{5}-of-\d{5}\.gguf$", re.I)
 _PART = re.compile(r"^(.*)-(\d{5})-of-(\d{5})\.gguf$", re.I)
 #: A single file under this fraction of the smallest split variant is not the model. #438.
 STRAY = 16
+#: How long a restarted router has to answer before refresh_router says it gave up. #1012.
+READY_TIMEOUT_S = 120.0
+#: How often a restarted router is asked whether it answers yet. #1012.
+READY_POLL_S = 0.5
 
 def models_dir() -> Path:
     """Where llama-server's router reads (scripts/serve-llamacpp.sh)."""
@@ -138,16 +142,18 @@ def adopt(conn, repo: str) -> str:
 def adopt_pending(conn) -> list[str]:
     """adopt() each complete text-lane hub download that has no GGUF row."""
     from harness import downloads, lanes
-    out = []
+    out, linked = [], []
     for row in downloads.complete_hub(conn):
         got = conn.execute(
             "SELECT lane FROM proposals WHERE id = ? OR lower(name) = ?",
             (row["proposal_id"], row["repo"].lower())).fetchone()
-        if got and lanes.canonical(got["lane"] or "") in lanes.GGUF_SERVED \
-                and adopt(conn, row["repo"]):
+        name = got and lanes.canonical(got["lane"] or "") in lanes.GGUF_SERVED \
+            and adopt(conn, row["repo"])
+        if name:
             out.append(row["repo"])
+            linked.append(Path(name).stem)
     if out:
-        refresh_router()
+        refresh_router(expect=tuple(linked))
     return out
 
 
@@ -161,11 +167,44 @@ def router_restart_argv(platform: str) -> list[str]:
             str(scripts / "services.sh"), "restart", "llamacpp"]
 
 
-def refresh_router() -> None:
-    """Restart the eval server so its router sees a new file. #319."""
+def router_ready(expect=(), get=None) -> bool:
+    """True when the router answers /health ok and lists every stem in `expect`. #1012."""
+    from harness import router
+    ask = get or router._get
+    try:
+        if (ask("/health") or {}).get("status") != "ok":
+            return False
+    except Exception:  # noqa: BLE001
+        return False
+    have = router.statuses(get) if expect else {}
+    return have is not None and all(s in have for s in expect if s)
+
+
+def wait_router(expect=(), timeout=None, get=None, clock=None, sleep=None) -> str:
+    """"" once router_ready, else why the wait gave up after `timeout` seconds. #1012."""
+    import time
+    from harness import router
+    timeout = READY_TIMEOUT_S if timeout is None else timeout
+    clock, sleep = clock or time.monotonic, sleep or time.sleep
+    end = clock() + timeout
+    while not router_ready(expect, get):
+        if clock() >= end:
+            listing = f" listing {', '.join(s for s in expect if s)}" if any(expect) else ""
+            return (f"the router at {router.url()} did not answer /health ok{listing} "
+                    f"within {timeout:g} s of its restart")
+        sleep(READY_POLL_S)
+    return ""
+
+
+def refresh_router(expect=(), run=None, wait=None) -> str:
+    """Restart the eval server so its router sees a new file, then wait until it answers. #319, #1012."""
     import subprocess
     import sys
-    subprocess.run(router_restart_argv(sys.platform), check=False)
+    (run or subprocess.run)(router_restart_argv(sys.platform), check=False)
+    why = (wait or wait_router)(tuple(expect))
+    if why:
+        print(f"  router restart: {why}; a screen now would be refused_by_gateway", file=sys.stderr)
+    return why
 
 
 def download(repo: str, filename: str, hf_download=None, refresh=None,
@@ -187,7 +226,7 @@ def download(repo: str, filename: str, hf_download=None, refresh=None,
             downloads.finish(c, rid, failed=True)
             raise
         downloads.finish(c, rid)
-    (refresh or refresh_router)()
+    refresh() if refresh else refresh_router(expect=(Path(filename).stem,))
     return str(where)
 
 
@@ -229,7 +268,7 @@ def record_existing(path, repo: str = "", refresh=None, conn=None,
                          origin=origin or downloads.SCRIPT)
     # The file was already visible to the router; the PLAN is what is new, and
     # the preset is only read at startup.
-    (refresh or refresh_router)()
+    refresh() if refresh else refresh_router(expect=(path.stem,))
     return path.name
 
 
