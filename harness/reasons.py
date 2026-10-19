@@ -196,6 +196,8 @@ RUNNER_PACKAGES = {"ftfy": "ftfy", "bs4": "beautifulsoup4", "beautifulsoup": "be
                    "google.protobuf": "protobuf", "torchsde": "torchsde", "tiktoken": "tiktoken",
                    "timm": "timm", "accelerate": "accelerate", "scipy": "scipy", "soundfile": "soundfile"}
 _MISSING_NAME = re.compile(r"nameerror: name '([\w.]+)' is not defined|no module named '([\w.]+)'")
+#: diffusers' and transformers' requires_backends texts, which name the library in words ("Beautiful Soup", "Torchvision"). #1031.
+_MISSING_LIBRARY = re.compile(r"requires the ([\w. -]+?) library but it was not found|make sure to install `?([\w.-]*\w)")
 
 
 def _any(low: str, phrases) -> str:
@@ -253,14 +255,19 @@ def _llamacpp_load(low: str) -> str:
     return LOAD_LOG_UNREAD
 
 
+def _runner_dist(name: str) -> str:
+    """The RUNNER_PACKAGES distribution a module, bound name or distribution name stands for, or ""."""
+    got = RUNNER_PACKAGES.get(name) or RUNNER_PACKAGES.get(name.partition(".")[0])
+    canon = re.sub(r"[-_.]+", "-", name)
+    return got or next((d for d in RUNNER_PACKAGES.values() if re.sub(r"[-_.]+", "-", d) == canon), "")
+
+
 def missing_package(text: str) -> str:
-    """The distribution a runner's NameError or ModuleNotFoundError says its venv lacks, or "" for any other name. #1008."""
-    for m in _MISSING_NAME.finditer((text or "").lower()):
-        name = m.group(1) or m.group(2)
-        got = RUNNER_PACKAGES.get(name) or RUNNER_PACKAGES.get(name.partition(".")[0])
-        if got:
-            return got
-    return ""
+    """The runner package a NameError, ModuleNotFoundError or requires_backends text says the venv lacks, or "". #1008, #1031."""
+    low = (text or "").lower()
+    names = [m.group(1) or m.group(2) for m in _MISSING_NAME.finditer(low)]
+    names += [(m.group(1) or m.group(2)).replace(" ", "") for m in _MISSING_LIBRARY.finditer(low)]
+    return next((d for d in map(_runner_dist, names) if d), "")
 
 
 def runner_layout_gap(text: str, head: str = "") -> bool:
