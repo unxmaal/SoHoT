@@ -51,8 +51,9 @@ def test_hf_task_names_the_missing_package_on_its_last_stderr_line(tmp_path, cap
     last = capsys.readouterr().err.strip().splitlines()[-1]
     assert rc == hf_task.MISSING_PACKAGE
     assert "Torchvision" in last
+    # The library it names is a runner package, so the screen waits on it rather than retrying. #1031.
     assert reasons.classify(f"exit {rc}: {last}", candidate="hf-ocr:m/x") \
-        == reasons.HARNESS_ERROR
+        == reasons.MISSING_PACKAGE
 
 
 def _shell_var(text: str, name: str) -> str:

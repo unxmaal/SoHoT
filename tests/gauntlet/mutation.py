@@ -42,7 +42,7 @@ MODULES = {
         "tests/test_adopt_assumptions.py", "tests/test_cold_load.py", "tests/test_degenerate_955.py",
         "tests/test_load_log_953.py", "tests/test_runner_gap_until_950.py", "tests/test_deepen_993.py", "tests/test_missing_package_1008.py",
         "tests/test_diffusers_dtype_1013.py", "tests/test_live_screen_blame_1021.py", "tests/test_whisper_group_1024.py",
-        "tests/test_runner_packages_1027.py"],
+        "tests/test_runner_packages_1027.py", "tests/test_requires_backends_1031.py"],
     "harness/screen.py": [
         "tests/test_runner_gap_until_950.py", "tests/test_gguf_first_911.py", "tests/test_harness_screen.py", "tests/test_harness_screen_spec.py", "tests/test_screen_evidence.py",
         "tests/test_screen_server_death.py", "tests/test_decide_lane.py", "tests/test_refusal_shapes.py",
@@ -54,7 +54,8 @@ MODULES = {
         "tests/test_harness_lane_provenance.py", "tests/test_pii_lane.py", "tests/test_remote_code.py",
         "tests/test_ocr_lane.py", "tests/test_degenerate_955.py", "tests/test_load_log_953.py",
         "tests/test_screen_listing_984.py", "tests/test_missing_package_1008.py", "tests/test_diffusers_dtype_1013.py",
-        "tests/test_live_screen_blame_1021.py", "tests/test_whisper_group_1024.py"],
+        "tests/test_live_screen_blame_1021.py", "tests/test_whisper_group_1024.py",
+        "tests/test_requires_backends_1031.py"],
     "harness/adopt.py": [
         "tests/test_adopt_retest_1001.py", "tests/test_harness_adopt.py", "tests/test_harness_adopt_receipt.py", "tests/test_adopt_by_spec.py",
         "tests/test_adoptions.py", "tests/test_adopt_cmd.py", "tests/test_human_verdicts.py",
