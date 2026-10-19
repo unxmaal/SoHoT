@@ -82,6 +82,20 @@ def declared_dtype(root) -> str:
     return BF16 if BF16 in named else FP16 if FP16 in named else ""
 
 
+def snapshot(model: str, marker: str = "config.json", revision: str | None = None):
+    """The local directory a repo id or path resolves to, without the network, else None. #1013, #1018."""
+    from pathlib import Path
+    if Path(model).is_dir():
+        return Path(model)
+    # Not snapshot_download(local_files_only): it refuses a snapshot fetched as one variant as incomplete.
+    try:
+        from huggingface_hub import try_to_load_from_cache
+        got = try_to_load_from_cache(model, marker, revision=revision)
+    except Exception:  # noqa: BLE001 - any miss means "no declaration to read"
+        return None
+    return Path(got).parent if isinstance(got, str) else None
+
+
 def load_dtype(declared: str, device: str, default: str = "") -> str:
     """The dtype to load on `device`: what the repo declares, else `default` or the device's half, fp32 off an accelerator. #1013."""
     if device not in HALF:

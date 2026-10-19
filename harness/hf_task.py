@@ -24,6 +24,8 @@ RUNTIME_SUFFIX = ".runtime.json"
 FALLBACKS = ((None, ""), (None, "eager"), ("cpu", ""))
 #: New tokens an ocr reply may take; a reply that fills it records hf_max_new_tokens on its row. #700.
 MAX_NEW_TOKENS = 512
+#: The dtypes an ocr case may be forced to load at. #1018.
+DTYPES = ("bfloat16", "float16", "float32")
 
 
 def runtime_path(out) -> str:
@@ -52,9 +54,15 @@ def limit_hit(generated: int, max_new_tokens: int) -> str:
     return f"hf_max_new_tokens>{max_new_tokens}" if generated >= max_new_tokens else ""
 
 
+def model_dtype(model: str, device: str, revision: str | None = None, forced: str = "") -> str:
+    """The dtype an ocr model loads at: `forced`, else what its snapshot declares, else fp16 on an accelerator. #1018."""
+    from harness.torch_device import FP16, declared_dtype, load_dtype, snapshot
+    return load_dtype(forced or declared_dtype(snapshot(model, revision=revision)), device, FP16)
+
+
 def read_image(model: str, image: str, prompt: str, revision: str | None = None,
                max_new_tokens: int | None = None, device: str | None = None, attn: str = "",
-               runtime: dict | None = None) -> str:
+               runtime: dict | None = None, dtype: str = "") -> str:
     """The model's transcription of `image`: a chat VLM is prompted, an encoder-decoder is not.
 
     Not a pipeline: transformers 5 has no image-to-text task, and its image-text-to-text
@@ -64,18 +72,18 @@ def read_image(model: str, image: str, prompt: str, revision: str | None = None,
     from PIL import Image
     from transformers import AutoModelForImageTextToText, AutoProcessor, AutoTokenizer
 
-    from harness.torch_device import HALF
     dev = _device(torch, device)
     max_new_tokens = MAX_NEW_TOKENS if max_new_tokens is None else max_new_tokens
     runtime = {} if runtime is None else runtime
-    dtype = torch.float16 if dev in HALF else torch.float32
+    name = model_dtype(model, dev, revision, dtype)
+    dtype = getattr(torch, name)
     picture = Image.open(image).convert("RGB")
     # Eager attention repeats grouped KV heads, which MPS's sdpa matmul cannot type. #604.
     net = AutoModelForImageTextToText.from_pretrained(
         model, revision=revision, dtype=dtype,
         **({"attn_implementation": attn} if attn else {})).to(dev)
     runtime.update(device=dev, attn=str(getattr(net.config, "_attn_implementation", "")
-                                        or attn or "default"))
+                                        or attn or "default"), dtype=name)
     proc = AutoProcessor.from_pretrained(model, revision=revision)
     if getattr(proc, "chat_template", None):
         messages = [{"role": "user", "content": [{"type": "image", "image": picture},
@@ -196,6 +204,7 @@ def main(argv=None, read=None, score=None, tag=None) -> int:
     o.add_argument("--max-new-tokens", type=int, default=None)
     o.add_argument("--device")
     o.add_argument("--attn", default="")
+    o.add_argument("--dtype", default="", choices=("", *DTYPES))
     o.add_argument("--one-attempt", action="store_true")
     r = sub.add_parser("rank")
     r.add_argument("--mode", choices=("cross", "bi"), required=True)
@@ -221,7 +230,7 @@ def main(argv=None, read=None, score=None, tag=None) -> int:
             runtime: dict = {}
             reader = read or functools.partial(read_image, revision=a.revision,
                                                max_new_tokens=a.max_new_tokens, device=a.device,
-                                               attn=a.attn, runtime=runtime)
+                                               attn=a.attn, runtime=runtime, dtype=a.dtype)
             ocr(a.model, a.image, a.prompt, a.out, read=reader)
             if runtime:
                 Path(runtime_path(a.out)).write_text(json.dumps(runtime), encoding="utf-8")

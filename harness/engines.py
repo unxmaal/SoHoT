@@ -666,7 +666,7 @@ OSOCR_BACKENDS = ("auto", "vision", "windows", "rapidocr")
 
 HF_TASK_DEFAULT_BIN = str(
     Path(__file__).resolve().parent.parent / "scripts" / "hf-task.sh")
-_HF_OCR_OPTIONS = {"revision", "prompt", "max_new_tokens", "device"}
+_HF_OCR_OPTIONS = {"revision", "prompt", "max_new_tokens", "device", "dtype"}
 
 
 def _input_of(params: dict, what: str) -> str:
@@ -700,6 +700,9 @@ def _hf_ocr(spec: str, model: str, options: dict) -> Engine:
         raise ValueError(f"{spec_error(spec)}: hf-ocr needs a model, e.g. "
                          f"hf-ocr:PaddlePaddle/PaddleOCR-VL-1.6")
     _check_options(options, _HF_OCR_OPTIONS, spec)
+    from harness.hf_task import DTYPES
+    if options.get("dtype") and options["dtype"] not in DTYPES:
+        raise ValueError(f"{spec_error(spec)}: unknown dtype {options['dtype']!r}; known: {', '.join(DTYPES)}")
     defaults = dict(options)
 
     def argv(prompt: str, out: Path, params: dict) -> list[str]:
@@ -710,7 +713,7 @@ def _hf_ocr(spec: str, model: str, options: dict) -> Engine:
         # Read at call time, so a knob override reaches the child. #700.
         tokens = defaults.get("max_new_tokens") or hf_task.MAX_NEW_TOKENS
         for key, value in (("revision", defaults.get("revision")), ("max_new_tokens", tokens),
-                           ("device", defaults.get("device"))):
+                           ("device", defaults.get("device")), ("dtype", defaults.get("dtype"))):
             _flag(cmd, f"--{key.replace('_', '-')}", value)
         return cmd
 
