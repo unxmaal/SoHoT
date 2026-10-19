@@ -48,8 +48,17 @@ def test_the_gguf_architecture_alone_names_the_llama_cpp_drafter():
     assert not screen.is_drafter([], gguf={"architecture": "qwen3"})
 
 
+def _machine(*runtimes):
+    from harness.machine import Machine
+    from harness.memory import Accelerator
+    return Machine(runtimes=frozenset(runtimes), accelerator=Accelerator("unified", "test", 32.0, 32.0))
+
+
+@pytest.mark.parametrize("runtimes", [("llamacpp", "mlx", "cpu"), ("mlx", "cpu")], ids=["llamacpp", "no-llamacpp"])
 @pytest.mark.parametrize("repo", [LITTLE, ANBEELD])
-def test_inspect_then_fetch_declines_a_drafter_without_downloading_it(tmp_path, repo):
+def test_inspect_then_fetch_declines_a_drafter_without_downloading_it(tmp_path, monkeypatch, repo, runtimes):
+    from harness import machine
+    monkeypatch.setattr(machine, "detect", lambda *a, **k: _machine(*runtimes))
     conn = ms.connect(tmp_path / "d.db")
     try:
         ms.record(conn, ms.Seen(name=repo, source="t", lane="code", registry=ms.HUGGINGFACE, resolved=repo))
