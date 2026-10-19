@@ -2393,8 +2393,12 @@ runs at different settings, and `--across knobs.request_timeout` reads a sweep.
 A knob whose limit shows up on enough of a lane's recent rows is binding: the
 loop and `soh audit` say so, and the loop queues a sweep of the lane's served
 model across the knob's range (`soh sensitivity --sweeps` shows what it would
-queue and what earlier sweeps decided). A sweep records the cheapest value the
-paired test cannot tell from the best, and what the sweep cost. It runs again
+queue and what earlier sweeps decided). A served model that passes no case in
+the lane here, or whose reverify failed, is not swept: the lane's best passing
+model is, or the sweep says the lane has none. A sweep records the cheapest
+value the paired test cannot tell from the best, and what the sweep cost; when
+every value passed nothing, or every value passed everything, it is
+uninformative and chooses nothing. It runs again
 when the model or the machine changes. Changing the constant stays a person's
 decision.
 

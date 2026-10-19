@@ -172,7 +172,7 @@ def test_a_sweep_waits_while_any_of_its_jobs_is_pending(conn, serving):
 def test_a_settled_sweep_is_not_run_again_until_the_model_or_machine_changes(conn, serving):
     binding_budget(conn)
     sweeps.check(conn, now=NOW)
-    _finish(conn, {v: (20, 1.0) for v in knobs.KNOBS["reply_budget"].values})
+    _finish(conn, {v: (19 if v == 2000 else 20, 1.0) for v in knobs.KNOBS["reply_budget"].values})
     sweeps.check(conn, now=NOW + 120)
     before = len(queued(conn))
     again = sweeps.check(conn, now=NOW + 240)
@@ -186,10 +186,10 @@ def test_a_settled_sweep_is_not_run_again_until_the_model_or_machine_changes(con
 def test_the_report_names_the_decision(conn, serving):
     binding_budget(conn)
     sweeps.check(conn, now=NOW)
-    _finish(conn, {v: (20, 1.0) for v in knobs.KNOBS["reply_budget"].values})
+    _finish(conn, {v: (19 if v == 2000 else 20, 1.0) for v in knobs.KNOBS["reply_budget"].values})
     got = sweeps.check(conn, now=NOW + 120)
     text = sweeps.render(got)
-    assert "reply_budget" in text and "chose 2000" in text
+    assert "reply_budget" in text and "chose 4000" in text
 
 
 def test_the_loop_runs_the_sweep_check(monkeypatch, capsys):
