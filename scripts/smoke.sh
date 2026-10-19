@@ -168,6 +168,15 @@ else
   no "tts speech"
 fi
 
+# misaki downloads its spaCy model from GitHub per request when the server env lacks it. #1045
+if [ "$(uname -s)" = "Darwin" ] && { [ "$H" = 127.0.0.1 ] || [ "$H" = localhost ]; }; then
+  if scripts/serve-tts.sh --check >/dev/null 2>&1; then
+    ok "tts G2P builds offline"
+  else
+    no "tts G2P needs the network: run scripts/serve-tts.sh --check"
+  fi
+fi
+
 if [ -s "$WAV" ]; then
   curl -sf --max-time 60 "$A/audio/transcriptions" \
     -F "file=@$WAV" -F "model=$SMOKE_STT_MODEL" \
