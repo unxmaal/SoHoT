@@ -23,6 +23,8 @@ import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from harness import reasons
+
 # Below this, consecutive frames are the same picture. A real generation lands
 # far above it; a stalled sampler sits at exactly 0.
 MIN_MOTION = 0.001
@@ -54,6 +56,7 @@ class VideoResult:
     info: VideoInfo | None = None
     motion: float = 0.0
     stddev: float = 0.0
+    failure_class: str = ""
 
     @property
     def metrics(self) -> dict:
@@ -181,7 +184,7 @@ def check(path: str | Path, expect: tuple[int, int] | None = None,
         return VideoResult(
             False,
             f"every sampled frame is a uniform canvas (stddev {worst:.2f})",
-            info=info, stddev=worst)
+            info=info, stddev=worst, failure_class=reasons.BLANK_OUTPUT)
 
     moved = motion(path)
     if moved < min_motion:

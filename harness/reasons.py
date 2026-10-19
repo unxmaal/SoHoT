@@ -56,6 +56,8 @@ CONTENT_FAILED = "content_failed"
 RUNAWAY = "runaway"
 #: A reply cut at the token budget that was looping or collapsed: no budget limit; a screen declines it per #691. #955.
 DEGENERATE = "degenerate"
+#: An image or video of one colour, as a NaN decode casts to black: a numeric fault, not the model's content. #1013.
+BLANK_OUTPUT = "blank_output"
 #: An abort inside Apple's MPS backend (LLVM ERROR on an mps op, MPSGraph assertion). #604.
 BACKEND_FAULT = "backend_fault"
 #: A repo-lane reply whose diff git cannot apply: the candidate's own failure. #887.
@@ -89,6 +91,7 @@ CLASSES = {
     LOAD_FAILED_FILE: ("declined", CANDIDATE),
     LOAD_FAILED_LAYOUT: ("declined", RUNTIME),
     BACKEND_FAULT: ("declined", RUNTIME),
+    BLANK_OUTPUT: ("declined", RUNTIME),
     MISSING_FILE_IN_SNAPSHOT: ("broken", CANDIDATE),
     CRASHED: ("broken", CANDIDATE),
     DEGENERATE: ("broken", CANDIDATE),

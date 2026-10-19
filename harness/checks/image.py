@@ -12,6 +12,8 @@ from pathlib import Path
 
 from PIL import Image, UnidentifiedImageError
 
+from harness import reasons
+
 # Below this, the pixels carry no structure worth calling an image. A real
 # generation lands orders of magnitude above it; a solid fill sits at 0.
 MIN_STDDEV = 2.0
@@ -27,6 +29,7 @@ class ImageResult:
     height: int = 0
     stddev: float = 0.0
     bytes: int = 0
+    failure_class: str = ""
 
 
 def check(path: str | Path, expect: tuple[int, int] | None = None) -> ImageResult:
@@ -41,10 +44,7 @@ def check(path: str | Path, expect: tuple[int, int] | None = None) -> ImageResul
         with Image.open(path) as im:
             im.load()
             width, height = im.size
-            rgb = im.convert("RGB")
-            # Per-channel stddev; a uniform fill is 0 on every channel.
-            stat_bands = rgb.split()
-            stddev = max(_stddev(b) for b in stat_bands)
+            stddev = spread(im)
     except UnidentifiedImageError:
         return ImageResult(False, f"not a decodable image: {path.name}",
                            bytes=size)
@@ -64,9 +64,19 @@ def check(path: str | Path, expect: tuple[int, int] | None = None) -> ImageResul
         return ImageResult(False,
                            f"uniform canvas (stddev {stddev:.2f}): the pipeline "
                            f"produced a blank image",
-                           warnings, width, height, stddev, size)
+                           warnings, width, height, stddev, size, reasons.BLANK_OUTPUT)
 
     return ImageResult(True, "", warnings, width, height, stddev, size)
+
+
+def spread(im: Image.Image) -> float:
+    """The largest per-channel stddev of an image; a uniform fill is 0 on every channel."""
+    return max(_stddev(b) for b in im.convert("RGB").split())
+
+
+def blank(im: Image.Image) -> bool:
+    """An image with no structure: one colour, as a NaN decode casts to black. #1013."""
+    return spread(im) < MIN_STDDEV
 
 
 def _stddev(band: Image.Image) -> float:

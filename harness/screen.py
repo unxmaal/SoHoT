@@ -627,6 +627,8 @@ def _sentence(cls: str, why: str, limit: str) -> str:
         return f"the GPU faulted running it on this machine{tail}"
     if cls == reasons.BACKEND_FAULT:
         return f"the MPS backend aborted running it{tail}"
+    if cls == reasons.BLANK_OUTPUT:
+        return f"it rendered a blank canvas, a numeric fault in the runtime rather than the model's content{tail}"
     if cls == reasons.DEGENERATE:
         return f"its replies looped or collapsed until the token budget cut them{tail}"
     if reasons.CLASSES[cls][1] == reasons.LIMIT:
