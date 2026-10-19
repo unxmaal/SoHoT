@@ -19,7 +19,7 @@ SERVING = ("adoptions_pass_here", "no_reference_served", "served_matches_adoptio
 SCHEDULE = ("sweep_on_schedule", "sweep_on_deployed_code")
 VERDICTS = ("too_big_ceiling_current", "too_big_names_variant", "terminal_reason_coherent", "no_ranking_verdict",
             "load_log_kept", "runner_gap_until_current", "broken_runner_layout",
-            "attachment_by_tag", "package_until_reachable")
+            "attachment_by_tag", "package_until_reachable", "revisitable")
 #: Inventories that never fail the audit: what a runner venv holds beyond its script's pins. #1032.
 VENVS = ("venv_matches_script",)
 CHECKS = mc.INVARIANTS + SERVING + SCHEDULE + VERDICTS + VENVS
@@ -28,7 +28,8 @@ REPAIRED_BY = {"too_big_ceiling_current": heartbeat.REOPENED_TOO_BIG,
                "too_big_names_variant": heartbeat.REQUEUED_OLD_SIZING,
                "no_ranking_verdict": heartbeat.REOPENED_UNRANKED,
                "attachment_by_tag": heartbeat.REDERIVED_ATTACHMENTS,
-               "runner_gap_until_current": heartbeat.REWROTE_RUNNER_GAPS}
+               "runner_gap_until_current": heartbeat.REWROTE_RUNNER_GAPS,
+               "revisitable": heartbeat.REOPENED_REVISITABLE}
 
 
 def open_readonly(path) -> sqlite3.Connection:
@@ -180,6 +181,31 @@ def _runner_gap_until_current(conn, rewrote_at=...) -> tuple[list, list]:
     return [say(r) + f", after the loop's rewrite at {_when(swept)}" for r in survived], [say(r) for r in fresh]
 
 
+def _facts_here(conn) -> dict:
+    """This machine's recorded facts, read without remember_machine's write. #1055."""
+    from harness import memory_store as ms
+    mid = ms.machine_row(conn)
+    return (ms.recorded_facts(conn, mid) if mid is not None else {}) or ms.this_machine()
+
+
+def _revisitable(conn, facts=None, reopened_at=...) -> tuple[list, list]:
+    """(failures, warnings): state-holding refusals whose until is met here; one the loop's requeue left fails. #1055."""
+    from harness import memory_store as ms
+    facts = _facts_here(conn) if facts is None else facts
+    survived, fresh, swept = _survived("revisitable", ms.revisitable(conn, facts), reopened_at)
+
+    def say(r):
+        return f"verdict {r['verdict_id']} {r['name']}: {r['until']} is met here"
+    return [say(r) + f", after the loop's requeue at {_when(swept)}" for r in survived], [say(r) for r in fresh]
+
+
+def _spent_revisits(conn, facts=None) -> list:
+    """Met untils already reopened once and declined again under the same until: a writer that wrote a spent condition. #1055."""
+    from harness import memory_store as ms
+    facts = _facts_here(conn) if facts is None else facts
+    return [f"verdict {r['verdict_id']} {r['name']}: {r['until']}" for r in ms.revisitable(conn, facts, spent=True)]
+
+
 #: Broken screens the plan-refusal classifier (#1047) found on the 2026-10-19 store; they warn until `soh coherence --apply`.
 PINNED_LAYOUT = frozenset({12930})
 
@@ -311,6 +337,7 @@ def audit(path=None, config=None) -> dict:
     try:
         with ms.lend(conn):
             served, wanted = serving(conn, config)
+        here = _facts_here(conn)
         checks = mc.invariants(conn) + [
             mc._check("adoptions_pass_here", _adoptions_pass_here(conn)),
             mc._check("no_reference_served", _no_reference_served(conn, served or {})),
@@ -323,7 +350,8 @@ def audit(path=None, config=None) -> dict:
                        "too_big_names_variant": _too_big_names_variant(conn),
                        "no_ranking_verdict": _no_ranking_verdict(conn),
                        "runner_gap_until_current": _runner_gap_until_current(conn),
-                       "attachment_by_tag": _attachment_by_tag(conn)}
+                       "attachment_by_tag": _attachment_by_tag(conn),
+                       "revisitable": _revisitable(conn, here)}
         incoherent, pinned = _terminal_reason_coherent(conn)
         unkept, waiting = _load_log_kept(conn)
         layout, misread = _broken_runner_layout(conn)
@@ -348,6 +376,9 @@ def audit(path=None, config=None) -> dict:
         moved = _sweep_on_deployed_code()
         if moved:
             warnings["sweep_on_deployed_code"] = moved
+        spent = _spent_revisits(conn, here)
+        if spent and "revisitable" not in warnings and not failed["revisitable"]:
+            warnings["revisitable"] = "met, but already reopened once and declined again: " + mc._say(spent)
         if misread and not layout:
             warnings["broken_runner_layout"] = "pinned, awaiting soh coherence --apply: " + mc._say(misread)
         if waiting and not unkept:
