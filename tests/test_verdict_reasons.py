@@ -38,6 +38,7 @@ EXPECTED = {
     reasons.CONTEXT_EXCEEDED: ("declined", "limit"),
     reasons.LOAD_FAILED_RUNTIME: ("declined", "runtime"),
     reasons.LOAD_FAILED_LAYOUT: ("declined", "runtime"),
+    reasons.MISSING_PACKAGE: ("declined", "runtime"),
     reasons.BACKEND_FAULT: ("declined", "runtime"),
     reasons.MISSING_FILE_IN_SNAPSHOT: ("broken", "candidate"),
     reasons.CRASHED: ("broken", "candidate"),

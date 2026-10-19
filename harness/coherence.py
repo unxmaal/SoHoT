@@ -19,6 +19,38 @@ def incoherent(conn) -> list[dict]:
     return out
 
 
+BROKEN_SCREENS = ("SELECT v.id, p.name, p.hf_task, p.library, p.card_tags, p.model_type, p.remote_code, v.detail, "
+                  "v.run_path, v.run_id, v.candidate_id, coalesce(c.spec, p.name) AS spec FROM proposals p "
+                  "JOIN verdicts v ON v.id = p.state_verdict_id LEFT JOIN candidates c ON c.id = v.candidate_id "
+                  "WHERE p.state = 'broken' AND v.tier = 'screen' AND v.reason = 'candidate' ORDER BY v.id")
+
+
+def misclassed(conn) -> list[dict]:
+    """Broken screens whose own detail today's classifier reads as a fault outside the candidate. #1008."""
+    from harness import reasons
+    out = []
+    for r in conn.execute(BROKEN_SCREENS).fetchall():
+        cls = reasons.classify(r["detail"] or "", reasons.RUNNER, r["spec"])
+        if reasons.CLASSES.get(cls, ("", reasons.CANDIDATE))[1] != reasons.CANDIDATE:
+            out.append({**dict(r), "class": cls})
+    return out
+
+
+def _reclassed(r: dict) -> dict:
+    """A misclassed broken screen re-decided from its detail as screen.decide_class decides that class now."""
+    from harness import screen
+    why = (r["detail"] or "").removeprefix("it ran and passed nothing: ")
+    v = screen.decide_class(r["class"], why, r["spec"], card=r)
+    base = {"verdict_id": r["id"], "name": r["name"], "why": f"its detail classes as {r['class']}",
+            "was": ["broken", "screen", "candidate", ""]}
+    if v.outcome == "queued":
+        return {**base, "now": ["queued", "screen", v.reason, ""],
+                "detail": f"re-decided (#1008): {v.detail}"[:600]}
+    return {**base, "now": [v.outcome, "screen", v.reason, v.until], "run_path": r["run_path"],
+            "run_id": r["run_id"], "candidate_id": r["candidate_id"], "failure_class": v.failure_class,
+            "detail": f"re-decided (#1008): {v.detail}"[:600]}
+
+
 def scoped(until: str, lane: str) -> str:
     """`limit:name>N` as the lane-scoped `limit:name.<lane>>N` when that limit exists; #628 scoped them."""
     from harness import reasons
@@ -53,7 +85,7 @@ def changes(conn) -> list[dict]:
             found.append(_unreopenable(conn, r, base))
         else:
             found.append({**base, "skipped": "no repair names this kind; a person decides it"})
-    return found
+    return found + [_reclassed(r) for r in misclassed(conn)]
 
 
 def _unreopenable(conn, r, base: dict) -> dict:

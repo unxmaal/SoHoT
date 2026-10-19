@@ -15,7 +15,7 @@ REASONS = {
     "harness": "this harness could not deliver the request; nothing is known "
                "about the candidate",
     "runtime": "the installed runtimes cannot build it; a newer version, or a runner, format "
-               "reader or policy this harness lacks (the until names which), may",
+               "reader, package or policy this harness lacks (the until names which), may",
     "machine": "this machine lacks the runtime, ceiling or disk it needs, or "
                "faulted running it; another machine may not",
     "memory": "not enough free memory right now",
@@ -32,6 +32,8 @@ GPU_FAULT = "gpu_fault"
 REFUSED_BY_GATEWAY = "refused_by_gateway"
 HARNESS_ERROR = "harness_error"
 LOAD_FAILED_RUNTIME = "load_failed_runtime"
+#: The runner's venv lacks a package its library imports when installed (ftfy for diffusers): ours, not the model's. #1008.
+MISSING_PACKAGE = "missing_package"
 LOAD_FAILED_LAYOUT = "load_failed_layout"
 #: llama-server said it failed to load and no loader log says why: nothing is known yet. #953.
 LOAD_LOG_UNREAD = "load_log_unread"
@@ -82,6 +84,7 @@ CLASSES = {
     TOKEN_BUDGET_EXHAUSTED: ("declined", LIMIT),
     STEP_CAP: ("declined", LIMIT),
     CONTEXT_EXCEEDED: ("declined", LIMIT),
+    MISSING_PACKAGE: ("declined", RUNTIME),
     LOAD_FAILED_RUNTIME: ("declined", RUNTIME),
     LOAD_FAILED_FILE: ("declined", CANDIDATE),
     LOAD_FAILED_LAYOUT: ("declined", RUNTIME),
@@ -181,6 +184,15 @@ _REMOTE_CODE = ("trust_remote_code",)
 _AUDIO_HEADS = ("tts", "stt")
 _AUDIO_LOAD_FAILED = ("failed to load model",)
 _RUNAWAY = ("tts ran away",)
+#: Module (or the name it binds) -> the distribution that installs it: the optional imports our runners' libraries guard. #1008.
+RUNNER_PACKAGES = {"ftfy": "ftfy", "bs4": "beautifulsoup4", "beautifulsoup": "beautifulsoup4",
+                   "sentencepiece": "sentencepiece", "torchvision": "torchvision",
+                   "google.protobuf": "protobuf", "imwatermark": "invisible-watermark",
+                   "cv2": "opencv-python", "librosa": "librosa", "torchsde": "torchsde",
+                   "note_seq": "note-seq", "onnx": "onnx", "peft": "peft", "tiktoken": "tiktoken",
+                   "timm": "timm", "accelerate": "accelerate", "scipy": "scipy", "einops": "einops",
+                   "soundfile": "soundfile"}
+_MISSING_NAME = re.compile(r"nameerror: name '([\w.]+)' is not defined|no module named '([\w.]+)'")
 
 
 def _any(low: str, phrases) -> str:
@@ -238,6 +250,16 @@ def _llamacpp_load(low: str) -> str:
     return LOAD_LOG_UNREAD
 
 
+def missing_package(text: str) -> str:
+    """The distribution a runner's NameError or ModuleNotFoundError says its venv lacks, or "" for any other name. #1008."""
+    for m in _MISSING_NAME.finditer((text or "").lower()):
+        name = m.group(1) or m.group(2)
+        got = RUNNER_PACKAGES.get(name) or RUNNER_PACKAGES.get(name.partition(".")[0])
+        if got:
+            return got
+    return ""
+
+
 def runner_layout_gap(text: str, head: str = "") -> bool:
     """A runner that cannot open the repo's layout, unless the file it missed is in our own snapshot. #951, #911."""
     low = (text or "").lower()
@@ -260,6 +282,8 @@ def classify(text: str, where: str = RUNNER, candidate: str = "") -> str:
         return BACKEND_FAULT
     if _any(low, _POOL_FULL):
         return POOL_FULL
+    if missing_package(low):
+        return MISSING_PACKAGE
     if runner_layout_gap(low, head):
         return LOAD_FAILED_LAYOUT
     if candidate.startswith(LLAMACPP_PREFIX) and all(

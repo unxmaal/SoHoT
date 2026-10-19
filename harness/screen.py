@@ -613,6 +613,8 @@ def _sentence(cls: str, why: str, limit: str) -> str:
     tail = f": {why}" if why else ""
     if cls == reasons.LOAD_FAILED_RUNTIME:
         return f"the installed runtime could not load it{tail}"
+    if cls == reasons.MISSING_PACKAGE:
+        return f"the runner's environment is missing a package its library imports{tail}"
     if cls == reasons.LOAD_FAILED_FILE:
         return f"the file is malformed, its header disagrees with itself{tail}"
     if cls == reasons.LOAD_LOG_UNREAD:

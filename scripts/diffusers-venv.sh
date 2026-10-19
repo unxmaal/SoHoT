@@ -27,23 +27,24 @@ _diffusers_python() {
 # published only on PyTorch's own index and does not exist for macOS arm64 at
 # all, while Metal support ships in the ordinary PyPI wheel. Installing the
 # CUDA pin unconditionally is why this venv had never been built on the Mac.
-_install_torch() {
-  if [ "$(uname -s)" = "Darwin" ]; then
-    VIRTUAL_ENV="$DIFFUSERS_VENV" uv pip install "$TORCH_MPS_PIN" >&2
-  else
-    VIRTUAL_ENV="$DIFFUSERS_VENV" uv pip install \
-      --index-url "$TORCH_CUDA_INDEX" "$TORCH_CUDA_PIN" >&2
-  fi
-}
+if [ "$(uname -s)" = "Darwin" ]; then
+  DIFFUSERS_TORCH=("$TORCH_MPS_PIN" "$TORCHVISION_MPS_PIN")
+else
+  DIFFUSERS_TORCH=(--index-url "$TORCH_CUDA_INDEX" "$TORCH_CUDA_PIN" "$TORCHVISION_CUDA_PIN")
+fi
+# The optional packages its pipelines import when present; one missing is a runtime gap, not the model. #1008.
+DIFFUSERS_VENV_PINS=("$DIFFUSERS_PIN" "$TRANSFORMERS_PIN" "$ACCELERATE_PIN" "$SAFETENSORS_PIN" "$PILLOW_PIN"
+                "$FTFY_PIN" "$BEAUTIFULSOUP4_PIN" "$SENTENCEPIECE_PIN")
+DIFFUSERS_STAMP="${DIFFUSERS_TORCH[*]} ${DIFFUSERS_VENV_PINS[*]}"
 
 PY="$(_diffusers_python)"
-if [ -z "$PY" ]; then
+if [ -z "$PY" ] || [ "$(cat "$DIFFUSERS_VENV/.pins" 2>/dev/null)" != "$DIFFUSERS_STAMP" ]; then
   echo "diffusers: building the generators' environment in $DIFFUSERS_VENV" >&2
-  uv venv --python 3.12 "$DIFFUSERS_VENV" >&2
-  _install_torch
-  VIRTUAL_ENV="$DIFFUSERS_VENV" uv pip install "$DIFFUSERS_PIN" \
-    "$TRANSFORMERS_PIN" "$ACCELERATE_PIN" "$SAFETENSORS_PIN" "$PILLOW_PIN" >&2
+  [ -n "$PY" ] || uv venv --python 3.12 "$DIFFUSERS_VENV" >&2
+  VIRTUAL_ENV="$DIFFUSERS_VENV" uv pip install "${DIFFUSERS_TORCH[@]}" >&2
+  VIRTUAL_ENV="$DIFFUSERS_VENV" uv pip install "${DIFFUSERS_VENV_PINS[@]}" >&2
   PY="$(_diffusers_python)"
+  [ -z "$PY" ] || printf '%s' "$DIFFUSERS_STAMP" > "$DIFFUSERS_VENV/.pins"
 fi
 if [ -z "$PY" ]; then
   echo "FATAL: no interpreter in $DIFFUSERS_VENV after building it" >&2
