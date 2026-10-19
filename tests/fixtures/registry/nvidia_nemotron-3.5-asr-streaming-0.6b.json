@@ -1,0 +1,421 @@
+{
+ "id": "nvidia/nemotron-3.5-asr-streaming-0.6b",
+ "pipeline_tag": "automatic-speech-recognition",
+ "tags": [
+  "nemo",
+  "safetensors",
+  "gguf",
+  "nemotron3_5_asr",
+  "feature-extraction",
+  "transformers",
+  "speech-recognition",
+  "cache-aware ASR",
+  "automatic-speech-recognition",
+  "streaming-asr",
+  "multilingual",
+  "speech",
+  "audio",
+  "FastConformer",
+  "RNNT",
+  "Parakeet",
+  "ASR",
+  "pytorch",
+  "NeMo",
+  "en",
+  "es",
+  "de",
+  "fr",
+  "it",
+  "ar",
+  "ja",
+  "ko",
+  "pt",
+  "ru",
+  "hi",
+  "zh",
+  "vi",
+  "he",
+  "nl",
+  "cs",
+  "da",
+  "pl",
+  "no",
+  "sv",
+  "th",
+  "tr",
+  "bg",
+  "el",
+  "et",
+  "fi",
+  "hr",
+  "hu",
+  "lt",
+  "lv",
+  "ro",
+  "sk",
+  "uk",
+  "mt",
+  "sl",
+  "dataset:nvidia/Granary",
+  "dataset:multilingual_librispeech",
+  "dataset:fleurs",
+  "dataset:mozilla-foundation/common_voice_8_0",
+  "dataset:voxpopuli",
+  "dataset:europarl",
+  "arxiv:2312.17279",
+  "arxiv:2305.05084",
+  "license:other",
+  "model-index",
+  "eval-results",
+  "deploy:sagemaker",
+  "region:us"
+ ],
+ "library_name": "nemo",
+ "cardData": {
+  "license": "other",
+  "license_name": "openmdw-1.1",
+  "license_link": "https://openmdw.ai/license/1-1/",
+  "library_name": "nemo",
+  "language": [
+   "en",
+   "es",
+   "de",
+   "fr",
+   "it",
+   "ar",
+   "ja",
+   "ko",
+   "pt",
+   "ru",
+   "hi",
+   "zh",
+   "vi",
+   "he",
+   "nl",
+   "cs",
+   "da",
+   "pl",
+   "no",
+   "sv",
+   "th",
+   "tr",
+   "bg",
+   "el",
+   "et",
+   "fi",
+   "hr",
+   "hu",
+   "lt",
+   "lv",
+   "ro",
+   "sk",
+   "uk",
+   "mt",
+   "sl"
+  ],
+  "datasets": [
+   "nvidia/Granary",
+   "multilingual_librispeech",
+   "fleurs",
+   "mozilla-foundation/common_voice_8_0",
+   "voxpopuli",
+   "europarl"
+  ],
+  "thumbnail": null,
+  "tags": [
+   "transformers",
+   "speech-recognition",
+   "cache-aware ASR",
+   "automatic-speech-recognition",
+   "streaming-asr",
+   "multilingual",
+   "speech",
+   "audio",
+   "FastConformer",
+   "RNNT",
+   "Parakeet",
+   "ASR",
+   "pytorch",
+   "NeMo"
+  ],
+  "widget": [
+   {
+    "example_title": "Librispeech sample 1",
+    "src": "https://cdn-media.huggingface.co/speech_samples/sample1.flac"
+   },
+   {
+    "example_title": "Librispeech sample 2",
+    "src": "https://cdn-media.huggingface.co/speech_samples/sample2.flac"
+   }
+  ],
+  "model-index": [
+   {
+    "name": "nemotron-asr-streaming-multilingual-0.6b",
+    "results": [
+     {
+      "task": {
+       "name": "Automatic Speech Recognition",
+       "type": "automatic-speech-recognition"
+      },
+      "dataset": {
+       "name": "FLEURS (English)",
+       "type": "google/fleurs",
+       "config": "en_us",
+       "split": "test"
+      },
+      "metrics": [
+       {
+        "name": "WER (1.12s frame size, LangID)",
+        "type": "wer",
+        "value": 7.91,
+        "verified": false
+       }
+      ]
+     },
+     {
+      "task": {
+       "name": "Automatic Speech Recognition",
+       "type": "automatic-speech-recognition"
+      },
+      "dataset": {
+       "name": "FLEURS (Spanish)",
+       "type": "google/fleurs",
+       "config": "es_419",
+       "split": "test"
+      },
+      "metrics": [
+       {
+        "name": "WER (1.12s frame size, LangID)",
+        "type": "wer",
+        "value": 4.11,
+        "verified": false
+       }
+      ]
+     },
+     {
+      "task": {
+       "name": "Automatic Speech Recognition",
+       "type": "automatic-speech-recognition"
+      },
+      "dataset": {
+       "name": "FLEURS (French)",
+       "type": "google/fleurs",
+       "config": "fr_fr",
+       "split": "test"
+      },
+      "metrics": [
+       {
+        "name": "WER (1.12s frame size, LangID)",
+        "type": "wer",
+        "value": 9.03,
+        "verified": false
+       }
+      ]
+     },
+     {
+      "task": {
+       "name": "Automatic Speech Recognition",
+       "type": "automatic-speech-recognition"
+      },
+      "dataset": {
+       "name": "FLEURS (Italian)",
+       "type": "google/fleurs",
+       "config": "it_it",
+       "split": "test"
+      },
+      "metrics": [
+       {
+        "name": "WER (1.12s frame size, LangID)",
+        "type": "wer",
+        "value": 4.25,
+        "verified": false
+       }
+      ]
+     },
+     {
+      "task": {
+       "name": "Automatic Speech Recognition",
+       "type": "automatic-speech-recognition"
+      },
+      "dataset": {
+       "name": "FLEURS (Portuguese)",
+       "type": "google/fleurs",
+       "config": "pt_br",
+       "split": "test"
+      },
+      "metrics": [
+       {
+        "name": "WER (1.12s frame size, LangID)",
+        "type": "wer",
+        "value": 5.48,
+        "verified": false
+       }
+      ]
+     },
+     {
+      "task": {
+       "name": "Automatic Speech Recognition",
+       "type": "automatic-speech-recognition"
+      },
+      "dataset": {
+       "name": "FLEURS (German)",
+       "type": "google/fleurs",
+       "config": "de_de",
+       "split": "test"
+      },
+      "metrics": [
+       {
+        "name": "WER (1.12s frame size, LangID)",
+        "type": "wer",
+        "value": 8.31,
+        "verified": false
+       }
+      ]
+     },
+     {
+      "task": {
+       "name": "Automatic Speech Recognition",
+       "type": "automatic-speech-recognition"
+      },
+      "dataset": {
+       "name": "FLEURS (Hindi)",
+       "type": "google/fleurs",
+       "config": "hi_in",
+       "split": "test"
+      },
+      "metrics": [
+       {
+        "name": "WER (1.12s frame size, LangID)",
+        "type": "wer",
+        "value": 6.81,
+        "verified": false
+       }
+      ]
+     },
+     {
+      "task": {
+       "name": "Automatic Speech Recognition",
+       "type": "automatic-speech-recognition"
+      },
+      "dataset": {
+       "name": "FLEURS (Korean)",
+       "type": "google/fleurs",
+       "config": "ko_kr",
+       "split": "test"
+      },
+      "metrics": [
+       {
+        "name": "WER (1.12s frame size, LangID)",
+        "type": "wer",
+        "value": 7.12,
+        "verified": false
+       }
+      ]
+     }
+    ]
+   }
+  ],
+  "metrics": [
+   "wer"
+  ],
+  "pipeline_tag": "automatic-speech-recognition"
+ },
+ "siblings": [
+  {
+   "rfilename": ".gitattributes",
+   "size": 1647
+  },
+  {
+   "rfilename": "README.md",
+   "size": 54239
+  },
+  {
+   "rfilename": "arch_slide10.png",
+   "size": 87843
+  },
+  {
+   "rfilename": "avg_wer_summary.png",
+   "size": 65515
+  },
+  {
+   "rfilename": "bias.md",
+   "size": 2104
+  },
+  {
+   "rfilename": "config.json",
+   "size": 1376
+  },
+  {
+   "rfilename": "explainability.md",
+   "size": 2388
+  },
+  {
+   "rfilename": "fleurs_langid_vs_auto.png",
+   "size": 83849
+  },
+  {
+   "rfilename": "fleurs_wer_vs_chunk_size.png",
+   "size": 92234
+  },
+  {
+   "rfilename": "generation_config.json",
+   "size": 193
+  },
+  {
+   "rfilename": "latency_vs_parallel.png",
+   "size": 139167
+  },
+  {
+   "rfilename": "model.safetensors",
+   "size": 2552062944
+  },
+  {
+   "rfilename": "model_architecture.png",
+   "size": 150586
+  },
+  {
+   "rfilename": "model_overview.png",
+   "size": 114032
+  },
+  {
+   "rfilename": "nemotron-3.5-asr-streaming-0.6b.nemo",
+   "size": 2368284501
+  },
+  {
+   "rfilename": "nemotron-3.5-asr-streaming-0.6b.q8_0.gguf",
+   "size": 742090464
+  },
+  {
+   "rfilename": "privacy.md",
+   "size": 2097
+  },
+  {
+   "rfilename": "processor_config.json",
+   "size": 2519
+  },
+  {
+   "rfilename": "safety.md",
+   "size": 737
+  },
+  {
+   "rfilename": "throughput_vs_chunk.png",
+   "size": 69454
+  },
+  {
+   "rfilename": "tokenizer.json",
+   "size": 752051
+  },
+  {
+   "rfilename": "tokenizer_config.json",
+   "size": 881
+  }
+ ],
+ "lastModified": "2026-09-10T16:49:07.000Z",
+ "downloads": 1221712,
+ "config": {
+  "architectures": [
+   "Nemotron3_5AsrForRNNT"
+  ],
+  "model_type": "nemotron3_5_asr"
+ }
+}

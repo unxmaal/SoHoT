@@ -477,12 +477,16 @@ def _reopen_missing_in_snapshot() -> list[str]:
     store = ms.connect()
     try:
         names = ms.requeue_missing_in_snapshot(store)
+        copies = ms.requeue_incomplete_copies(store)
     finally:
         store.close()
     print(f"  requeued {len(names)} screen(s) that failed on our own snapshot")
     for n in names:
         print(f"    {n}")
-    return names
+    print(f"  refetching {len(copies)} snapshot(s) missing files their runner opens (#1040)")
+    for n in copies:
+        print(f"    {n}")
+    return names + copies
 
 
 def _reopen_unranked() -> list[str]:

@@ -1,6 +1,7 @@
 """A model listing grouped into the variants a runner loads one of, for size and runtime. #947."""
 from __future__ import annotations
 
+import fnmatch
 import re
 from dataclasses import dataclass
 
@@ -24,6 +25,9 @@ COMFY_DIRS = COMFY_CORE | COMFY_ENCODERS | COMFY_VAE | COMFY_WHOLE | COMFY_OPTIO
 #: A single checkpoint this many times smaller than the largest beside it is an add-on, not a variant.
 LORA_FRACTION = 8
 PRECISIONS = {"fp16", "bf16", "fp32", "fp8", "int8", "int4", "nf4"}
+#: mlx-audio 0.5.3 utils.DEFAULT_ALLOW_PATTERNS: its stt and tts loaders open a snapshot offline with these. #1040.
+MLX_AUDIO_FILES = ("*.json", "*.safetensors", "*.py", "*.model", "*.tiktoken", "*.txt", "*.jinja",
+                   "*.jsonl", "*.yaml", "*.npz", "*.pth")
 _SHARD = re.compile(r"^(.*)-(\d{5})-of-(\d{5})\.safetensors$", re.I)
 
 
@@ -187,6 +191,37 @@ def variants(siblings, ceiling: int | None = None, model_type: str = "") -> list
     return out
 
 
+def matches(name: str, patterns) -> bool:
+    """huggingface_hub's allow_patterns test: fnmatch, where * crosses folders."""
+    return any(fnmatch.fnmatch(name, p) for p in patterns)
+
+
+def opens(lane: str, model: str = "", card=None, runtimes=()) -> tuple[str, ...]:
+    """The allow patterns the lane's runner opens a snapshot with on this machine, () when it reads only a variant. #1040."""
+    from harness import lanes, runner_gaps
+    if lanes.canonical(lane) in ("stt", "tts") and "mlx" in runtimes \
+            and not runner_gaps.whisper_repo(model, card):
+        return MLX_AUDIO_FILES
+    return ()
+
+
+def for_lane(found: list[Variant], lane: str = "") -> list[Variant]:
+    """The variants a runner of `lane` loads: a GGUF only where llama.cpp serves the lane. #1040."""
+    from harness import lanes
+    if not lane or lanes.canonical(lane) in lanes.GGUF_SERVED:
+        return list(found)
+    return [v for v in found if v.format != GGUF]
+
+
+def runnable(siblings, ceiling: int | None = None, model_type: str = "", lane: str = "",
+             patterns=()) -> list[Variant]:
+    """The variants the lane's runner loads; a runner that opens by patterns loads the one set they match. #1040."""
+    if patterns:
+        files = [(n, s) for n, s in _weights(siblings) if s > 0 and matches(n, patterns)]
+        return [_variant(HF, files)] if files else []
+    return for_lane(variants(siblings, ceiling, model_type), lane)
+
+
 def weight_bytes(siblings) -> int:
     return sum(s for _, s in _weights(siblings))
 
@@ -215,10 +250,12 @@ def needs(found: list[Variant]) -> str:
     return runtimes.pop() if len(runtimes) == 1 else ""
 
 
-def download_files(siblings, chosen: Variant) -> list[str] | None:
-    """The files fetch takes for `chosen`: its weights and every non-weight file; None when it is the only variant."""
+def download_files(siblings, chosen: Variant, patterns=()) -> list[str] | None:
+    """The files fetch takes for `chosen`: what the runner's patterns match, else its weights and every non-weight file; None for all."""
     from harness import downloads
     names = [str(s.get("rfilename", "")) for s in siblings or []]
+    if patterns:
+        return [n for n in names if matches(n, patterns)]
     weights = [n for n in names if n.lower().endswith(downloads.WEIGHT_SUFFIXES)]
     if set(weights) <= set(chosen.files):
         return None

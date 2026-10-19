@@ -36,6 +36,7 @@ from harness.memory_store.retests import (due_retests, recovered_false_negatives
     reopen_due_retests, retest_counts)  # noqa: F401
 from harness.memory_store.revisit import (ATTACHMENT_DECLINE, _version_tuple, cards_to_reread, dangling_receipts,
     rederive_attachments, stale_attachments,
+    gguf_sized_off_lane, incomplete_copies, requeue_incomplete_copies,
     requeue_missing_in_snapshot, requeue_old_sizing, requeue_revisitable, requeue_stale_too_big,
     requeue_unranked, requeue_upstream_committed, resolved_run_paths, revisitable,
     rewrite_runner_gap_untils, runner_gap_rewrites, runner_waits, runtime_by_library, sized_by_repo_total,

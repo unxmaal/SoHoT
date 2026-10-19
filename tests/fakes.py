@@ -54,6 +54,13 @@ WHY = {
     "Wan-AI/Wan2.2-TI2V-5B-Diffusers":
         "the video lane had NO spelling at all, and `h3:{model}` -- the "
         "obvious fix -- silently discards the repo id (#264)",
+    "nvidia/nemotron-3.5-asr-streaming-0.6b":
+        "an stt repo with safetensors, a .nemo and a GGUF: the fetch took the two mlx-audio "
+        "cannot load and skipped the one it opens (#1040)",
+    "nvidia/magpie_tts_multilingual_357m":
+        "a tts repo of only .nemo and GGUF, formats no tts runner here loads (#1040)",
+    "microsoft/VibeVoice-ASR-BitNet":
+        "an stt repo sized by its GGUF beside safetensors shards mlx-audio loads (#1040)",
     "nvidia/parakeet-tdt-0.6b-v2":
         "the stt lane's own incumbent, so a filter that refuses it is "
         "refusing the thing this machine already runs (#264)",

@@ -41,6 +41,8 @@ LOAD_LOG_UNREAD = "load_log_unread"
 LOAD_FAILED_FILE = "load_failed_file"
 #: Our copy of the GGUF is shorter than its header says: refetch it. #953.
 SHORT_COPY = "short_copy"
+#: Our snapshot lacks files the runner opens (huggingface_hub IncompleteSnapshotError): the fetch's fault, refetch. #1040.
+INCOMPLETE_COPY = "incomplete_copy"
 TIMEOUT = "timeout"
 TOKEN_BUDGET_EXHAUSTED = "token_budget_exhausted"
 #: An agent run stopped at the step cap we chose. #695.
@@ -81,6 +83,7 @@ CLASSES = {
     ENVIRONMENT_ERROR: ("queued", HARNESS),
     LOAD_LOG_UNREAD: ("queued", HARNESS),
     SHORT_COPY: ("queued", HARNESS),
+    INCOMPLETE_COPY: ("queued", HARNESS),
     POOL_FULL: ("queued", LIMIT),
     TIMEOUT: ("declined", LIMIT),
     TOKEN_BUDGET_EXHAUSTED: ("declined", LIMIT),
@@ -102,6 +105,9 @@ CLASSES = {
 
 #: After one of these the shared server or the GPU is suspect, so a loop stops.
 STOPS = (SERVER_DEAD, GPU_FAULT)
+
+#: Classes that mean our copy of the weights is wrong: the screen stands it down and fetch takes it again.
+REFETCH = (SHORT_COPY, INCOMPLETE_COPY)
 
 #: Classes that mean the request never reached a model.
 NEVER_RAN = tuple(c for c, (_, r) in CLASSES.items() if r == HARNESS)
@@ -128,6 +134,7 @@ RUNNER, STDERR = "runner", "stderr"
 _SERVER_DEAD = ("generation thread died",)
 #: llama-server 0.5.0's error to every in-flight task when a decode finds no room in the pool. #748.
 _POOL_FULL = ("context size has been exceeded",)
+_INCOMPLETE_COPY = re.compile(r"cached snapshot .{0,400}? is incomplete: \d+ file\(s\) are missing")
 _GPU_FAULT = ("kiogpucommandbuffercallbackerrortimeout", "gpu timeout error")
 _GATEWAY = ("invalid model name", "gateway returned http 400",
             "is the gateway up", "connection refused",
@@ -293,6 +300,8 @@ def classify(text: str, where: str = RUNNER, candidate: str = "") -> str:
         return BACKEND_FAULT
     if _any(low, _POOL_FULL):
         return POOL_FULL
+    if _INCOMPLETE_COPY.search(low):
+        return INCOMPLETE_COPY
     if missing_package(low):
         return MISSING_PACKAGE
     if runner_layout_gap(low, head):

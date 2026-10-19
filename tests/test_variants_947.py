@@ -42,10 +42,11 @@ def _fit(repo, card=None, ceiling=CEILING, machine=MAC):
         + _file(c, "vae/minimax_h3_audio_vae_fp32.safetensors")),
     ("lodestones/Kroma", lambda c: _file(c, "kroma-sensei-booru-e6-teacher-velocity-v0.3.safetensors")),
     ("mistralai/Shieldstral-1.0-3B", lambda c: _file(c, "model.safetensors")),
-    ("mistralai/Voxtral-Mini-4B-Realtime-2602", lambda c: _file(c, "consolidated.safetensors")),
+    # mlx-audio opens every *.safetensors offline, so both copies are what it runs from. #1040.
+    ("mistralai/Voxtral-Mini-4B-Realtime-2602", lambda c: _file(c, "consolidated.safetensors")
+        + _file(c, "model.safetensors")),
     ("mistralai/Mistral-7B-Instruct-v0.3", lambda c: sum(
         _file(c, f"model-0000{i}-of-00003.safetensors") for i in (1, 2, 3))),
-    ("Abiray/Kroma-v0.3.1-Turbo-OPD-GGUF", lambda c: _file(c, "kroma-v0.3.1-turbo-opd-Q4_K_M.gguf")),
 ])
 def test_a_recorded_listing_is_sized_by_one_variant_and_is_not_refused(repo, expect):
     card = fakes.card(repo)
@@ -265,7 +266,7 @@ def test_the_loop_runs_the_sizing_requeue_with_the_ceiling_one(monkeypatch):
 
 def test_a_listing_with_no_weight_files_keeps_its_old_sum():
     card = {"id": "org/nemo", "pipeline_tag": "automatic-speech-recognition", "tags": [],
-            "siblings": [{"rfilename": "m.nemo", "size": 2 * GIB}, {"rfilename": "README.md", "size": 10}]}
+            "siblings": [{"rfilename": "m.tflite", "size": 2 * GIB}, {"rfilename": "README.md", "size": 10}]}
     fit = _fit("org/nemo", card)
     assert fit.largest == 2 * GIB + 10 and not fit.variant and not fit.layout
 

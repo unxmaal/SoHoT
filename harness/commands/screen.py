@@ -328,7 +328,7 @@ def _report_screen(a) -> int:
                 from harness import load_log
                 verdict = load_log.redecide(verdict, r["candidate"], r["name"], outdir, store)
             tier = ms.SCREEN
-            if verdict.failure_class == reasons.SHORT_COPY:
+            if verdict.failure_class in reasons.REFETCH:
                 from harness import downloads
                 downloads.stand_down(store, r["name"])
                 tier = ms.FETCH
