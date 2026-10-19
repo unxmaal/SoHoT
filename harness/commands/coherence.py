@@ -31,5 +31,5 @@ def cmd_coherence(a) -> int:
              f"{' / '.join(x or '-' for x in c['now']) if 'now' in c else c['skipped']}")
     note(f"{sum('now' in c for c in found)} of {len(found)} incoherent verdict(s) re-decided"
          + (f"; wrote {ids}" if a.apply else "; --apply writes them"))
-    emit(True, changes=found, written=ids)
+    emit(True, changes=[{k: v for k, v in c.items() if k != "excerpt"} for c in found], written=ids)
     return 0

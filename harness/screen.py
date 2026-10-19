@@ -265,6 +265,11 @@ def candidate_for(lane: str, model: str, attaches_to: str = "",
         stem = gguf.fetched(model, conn)
         if stem:
             return f"{LLAMACPP_PREFIX}{stem}"
+    if lanes.canonical(lane) == "stt":
+        from harness import runner_gaps
+        if runner_gaps.whisper_in_process(model, card):
+            # mlx-audio's server cannot load the mlx whisper repos; mlx-whisper runs them here (RULE #188). #1021.
+            return f"stt:{model},backend=whisper"
     for spec in specs:
         prefix = spec.split("{model}", 1)[0]
         if prefix and model.startswith(prefix):
@@ -601,7 +606,7 @@ def _installed(pkg: str) -> str:
 
 def load_until(candidate: str = "", evidence: str = "", card=None, cls: str = "") -> str:
     """The predicate that reopens a load failure: what its cause lacks, else a newer runtime. #950."""
-    if candidate.startswith(LLAMACPP_PREFIX):
+    if candidate.startswith(LLAMACPP_PREFIX) or reasons.llamacpp_alias(evidence):
         return f"version:llama.cpp>{_installed('llama.cpp')}"
     from harness import runner_gaps
     runtime = engine_runtime(candidate) or LOAD_RUNTIME

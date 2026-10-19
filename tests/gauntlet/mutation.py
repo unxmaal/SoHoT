@@ -29,7 +29,8 @@ MODULES = {
         "tests/test_store_state.py", "tests/test_store_retest.py", "tests/test_harness_store_retraction.py",
         "tests/test_store_retract_screens.py", "tests/test_harness_memory_store.py",
         "tests/test_verdict_reasons.py", "tests/test_harness_store.py", "tests/test_rank_881.py",
-        "tests/test_coherence_991.py", "tests/test_adopt_retest_1001.py", "tests/test_missing_package_1008.py"],
+        "tests/test_coherence_991.py", "tests/test_adopt_retest_1001.py", "tests/test_missing_package_1008.py",
+        "tests/test_live_screen_blame_1021.py"],
     "harness/reasons.py": [
         "tests/test_gguf_first_911.py", "tests/test_verdict_reasons.py", "tests/test_refusal_shapes.py", "tests/test_screen_server_death.py",
         "tests/test_screen_evidence.py", "tests/test_harness_engines_repo_id.py",
@@ -40,7 +41,7 @@ MODULES = {
         "tests/test_fetch_inspected_798.py", "tests/test_retrieval_lane.py",
         "tests/test_adopt_assumptions.py", "tests/test_cold_load.py", "tests/test_degenerate_955.py",
         "tests/test_load_log_953.py", "tests/test_runner_gap_until_950.py", "tests/test_deepen_993.py", "tests/test_missing_package_1008.py",
-        "tests/test_diffusers_dtype_1013.py"],
+        "tests/test_diffusers_dtype_1013.py", "tests/test_live_screen_blame_1021.py"],
     "harness/screen.py": [
         "tests/test_runner_gap_until_950.py", "tests/test_gguf_first_911.py", "tests/test_harness_screen.py", "tests/test_harness_screen_spec.py", "tests/test_screen_evidence.py",
         "tests/test_screen_server_death.py", "tests/test_decide_lane.py", "tests/test_refusal_shapes.py",
@@ -51,7 +52,8 @@ MODULES = {
         "tests/test_liveness_705.py", "tests/test_runner_base_weights.py", "tests/test_ladder_seams.py",
         "tests/test_harness_lane_provenance.py", "tests/test_pii_lane.py", "tests/test_remote_code.py",
         "tests/test_ocr_lane.py", "tests/test_degenerate_955.py", "tests/test_load_log_953.py",
-        "tests/test_screen_listing_984.py", "tests/test_missing_package_1008.py", "tests/test_diffusers_dtype_1013.py"],
+        "tests/test_screen_listing_984.py", "tests/test_missing_package_1008.py", "tests/test_diffusers_dtype_1013.py",
+        "tests/test_live_screen_blame_1021.py"],
     "harness/adopt.py": [
         "tests/test_adopt_retest_1001.py", "tests/test_harness_adopt.py", "tests/test_harness_adopt_receipt.py", "tests/test_adopt_by_spec.py",
         "tests/test_adoptions.py", "tests/test_adopt_cmd.py", "tests/test_human_verdicts.py",

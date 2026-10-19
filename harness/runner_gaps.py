@@ -43,6 +43,8 @@ REMOTE_CODE = "policy:trust_remote_code"
 RUNNER_VENVS = {"diffusers": "diffusers-cuda", "diffusers-video": "diffusers-cuda",
                 "hf-ocr": "hf-task", "rerank": "hf-task", "embed": "hf-task", "hf-pii": "hf-task"}
 _VENV_ENV = {"diffusers-cuda": "DIFFUSERS_VENV", "hf-task": "HF_TASK_VENV"}
+#: The in-process stt runner (audio.transcribe_whisper); the uv `whisper` group installs it. #1021.
+WHISPER_PACKAGE = "mlx-whisper"
 
 _NAMED_TYPE = re.compile(r"model type ([\w.\-]+?)\.? not supported")
 _PARAMS = re.compile(r"parameters not in model:(.*)", re.S)
@@ -269,6 +271,19 @@ def has_package(dist: str, venv: str = "") -> bool:
     return True
 
 
+def whisper_repo(model: str, card=None) -> bool:
+    """An mlx whisper checkpoint, the layout mlx-whisper reads, by its card or its repo name. #1021."""
+    name = (model or "").partition(",")[0].lower()
+    mtype = str((card or {}).get("model_type") or "").strip().lower()
+    mlx = "mlx" in name or _library(card) == "mlx" or "mlx" in [t.lower() for t in tags_of(card)]
+    return mlx and (mtype == "whisper" or "whisper" in name)
+
+
+def whisper_in_process(model: str, card=None) -> bool:
+    """Whether a whisper repo can screen through mlx-whisper in this interpreter. #1021."""
+    return whisper_repo(model, card) and has_package(WHISPER_PACKAGE)
+
+
 def package_until(evidence: str, candidate: str) -> str:
     """`package:<dist>@<venv>` for a package the candidate's runner venv lacks, or "". #1008."""
     from harness import reasons
@@ -290,6 +305,9 @@ def cause_until(cls: str, evidence: str, candidate: str, card=None) -> str:
     head = head_of(candidate)
     low = (evidence or "").lower()
     mtype = model_type(card, low)
+    if head == "stt" and "processor not found" in low and whisper_repo(candidate.partition(":")[2], card):
+        # A whisper repo mlx-audio's server cannot load reopens once mlx-whisper is installed. #1021.
+        return f"package:{WHISPER_PACKAGE}"
     if not head:
         if _task(card) in VLM_TASKS:
             return f"runner:{VLM_RUNNER}"
