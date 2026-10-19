@@ -138,6 +138,8 @@ _GATEWAY = ("invalid model name", "gateway returned http 400",
 #: What a server says when a request does not fit the context it is served at: llama-server, vLLM, LiteLLM. #695, #692.
 OVER_CONTEXT = re.compile(r"exceeds? the available context|context.?window.?exceeded|maximum context length"
                           r"|context length exceeded|exceeds? (the )?context (size|window|length)|max_model_len", re.I)
+#: A tts stream the audio server dropped and logged no traceback for (harness.audio.StreamDropped). #1036.
+NO_SERVER_TRACEBACK = "no traceback in the audio server's log"
 _HARNESS = ("no cases of a modality it can run", "no candidate matched any case",
             "no module named", "error while finding module specification",
             "command not found", "guidance_scale has to be",
@@ -148,7 +150,9 @@ _HARNESS = ("no cases of a modality it can run", "no candidate matched any case"
             # huggingface_hub offline with no snapshot its refs resolve to, through the gateway. #799.
             "cannot find an appropriate cached snapshot folder",
             # transformers' requires_backends tail: a backend the venv lacks (torchvision). #601.
-            "restart your runtime after installation", "venv lacks a package")
+            "restart your runtime after installation", "venv lacks a package", NO_SERVER_TRACEBACK,
+            # urllib3's pool failing to reach a host from the serving process: the network, not the model. #1036.
+            "httpsconnectionpool(", "httpconnectionpool(")
 #: In stderr this is our missing script; in a loader's error it is the snapshot's.
 _ABOUT_THE_SNAPSHOT = ("no such file or directory",
                        "does not appear to have a file named")

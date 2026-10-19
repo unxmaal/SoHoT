@@ -1,0 +1,88 @@
+INFO:     127.0.0.1:63844 - "POST /v1/audio/speech HTTP/1.1" 200 OK
+Traceback (most recent call last):
+  File "/Users/eric/.cache/uv/archive-v0/tg31vCnlEaz8tlbT/lib/python3.12/site-packages/mlx_audio/server_inference.py", line 247, in _run
+    adapter.run_serial(request)
+  File "/Users/eric/.cache/uv/archive-v0/tg31vCnlEaz8tlbT/lib/python3.12/site-packages/mlx_audio/server.py", line 654, in run_serial
+    for result in model.generate(speech_request.input, **generate_kwargs):
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/private/tmp/claude-504/-Users-eric-projects/7cd755a6-7d73-4594-a086-5d6e134616e2/scratchpad/drop/serve.py", line 12, in generate
+    yield Model._load_reference_audio(self, kw["ref_audio"])
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/eric/.cache/uv/archive-v0/tg31vCnlEaz8tlbT/lib/python3.12/site-packages/mlx_audio/tts/models/arktts/arktts.py", line 986, in _load_reference_audio
+    import soundfile as sf
+ModuleNotFoundError: No module named 'soundfile'
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "/Users/eric/.cache/uv/archive-v0/tg31vCnlEaz8tlbT/lib/python3.12/site-packages/uvicorn/protocols/http/h11_impl.py", line 416, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/eric/.cache/uv/archive-v0/tg31vCnlEaz8tlbT/lib/python3.12/site-packages/uvicorn/middleware/proxy_headers.py", line 63, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/eric/.cache/uv/archive-v0/tg31vCnlEaz8tlbT/lib/python3.12/site-packages/fastapi/applications.py", line 1163, in __call__
+    await super().__call__(scope, receive, send)
+  File "/Users/eric/.cache/uv/archive-v0/tg31vCnlEaz8tlbT/lib/python3.12/site-packages/starlette/applications.py", line 96, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/eric/.cache/uv/archive-v0/tg31vCnlEaz8tlbT/lib/python3.12/site-packages/starlette/middleware/errors.py", line 186, in __call__
+    raise exc
+  File "/Users/eric/.cache/uv/archive-v0/tg31vCnlEaz8tlbT/lib/python3.12/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/Users/eric/.cache/uv/archive-v0/tg31vCnlEaz8tlbT/lib/python3.12/site-packages/starlette/middleware/cors.py", line 91, in __call__
+    await self.simple_response(scope, receive, send, request_headers=headers)
+  File "/Users/eric/.cache/uv/archive-v0/tg31vCnlEaz8tlbT/lib/python3.12/site-packages/starlette/middleware/cors.py", line 149, in simple_response
+    await self.app(scope, receive, send)
+  File "/Users/eric/.cache/uv/archive-v0/tg31vCnlEaz8tlbT/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/Users/eric/.cache/uv/archive-v0/tg31vCnlEaz8tlbT/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/eric/.cache/uv/archive-v0/tg31vCnlEaz8tlbT/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/eric/.cache/uv/archive-v0/tg31vCnlEaz8tlbT/lib/python3.12/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/Users/eric/.cache/uv/archive-v0/tg31vCnlEaz8tlbT/lib/python3.12/site-packages/starlette/routing.py", line 678, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/eric/.cache/uv/archive-v0/tg31vCnlEaz8tlbT/lib/python3.12/site-packages/fastapi/routing.py", line 2734, in app
+    await route.handle(scope, receive, send)
+  File "/Users/eric/.cache/uv/archive-v0/tg31vCnlEaz8tlbT/lib/python3.12/site-packages/fastapi/routing.py", line 1281, in handle
+    await super().handle(scope, receive, send)
+  File "/Users/eric/.cache/uv/archive-v0/tg31vCnlEaz8tlbT/lib/python3.12/site-packages/starlette/routing.py", line 284, in handle
+    await self.app(scope, receive, send)
+  File "/Users/eric/.cache/uv/archive-v0/tg31vCnlEaz8tlbT/lib/python3.12/site-packages/fastapi/routing.py", line 158, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/Users/eric/.cache/uv/archive-v0/tg31vCnlEaz8tlbT/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/eric/.cache/uv/archive-v0/tg31vCnlEaz8tlbT/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/eric/.cache/uv/archive-v0/tg31vCnlEaz8tlbT/lib/python3.12/site-packages/fastapi/routing.py", line 145, in app
+    await response(scope, receive, send)
+  File "/Users/eric/.cache/uv/archive-v0/tg31vCnlEaz8tlbT/lib/python3.12/site-packages/starlette/responses.py", line 278, in __call__
+    async with create_collapsing_task_group() as task_group:
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.12/3.12.15/Frameworks/Python.framework/Versions/3.12/lib/python3.12/contextlib.py", line 231, in __aexit__
+    await self.gen.athrow(value)
+  File "/Users/eric/.cache/uv/archive-v0/tg31vCnlEaz8tlbT/lib/python3.12/site-packages/starlette/_utils.py", line 112, in create_collapsing_task_group
+    raise exc from exc.__cause__ or context
+  File "/Users/eric/.cache/uv/archive-v0/tg31vCnlEaz8tlbT/lib/python3.12/site-packages/anyio/_core/_tasks.py", line 327, in _run_coro
+    retval = await self._coro
+             ^^^^^^^^^^^^^^^^
+  File "/Users/eric/.cache/uv/archive-v0/tg31vCnlEaz8tlbT/lib/python3.12/site-packages/starlette/responses.py", line 281, in wrap
+    await func()
+  File "/Users/eric/.cache/uv/archive-v0/tg31vCnlEaz8tlbT/lib/python3.12/site-packages/starlette/responses.py", line 255, in stream_response
+    async for chunk in self.body_iterator:
+  File "/Users/eric/.cache/uv/archive-v0/tg31vCnlEaz8tlbT/lib/python3.12/site-packages/mlx_audio/server.py", line 864, in _stream_inference_results
+    raise chunk.error
+  File "/Users/eric/.cache/uv/archive-v0/tg31vCnlEaz8tlbT/lib/python3.12/site-packages/mlx_audio/server_inference.py", line 247, in _run
+    adapter.run_serial(request)
+  File "/Users/eric/.cache/uv/archive-v0/tg31vCnlEaz8tlbT/lib/python3.12/site-packages/mlx_audio/server.py", line 654, in run_serial
+    for result in model.generate(speech_request.input, **generate_kwargs):
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/private/tmp/claude-504/-Users-eric-projects/7cd755a6-7d73-4594-a086-5d6e134616e2/scratchpad/drop/serve.py", line 12, in generate
+    yield Model._load_reference_audio(self, kw["ref_audio"])
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/eric/.cache/uv/archive-v0/tg31vCnlEaz8tlbT/lib/python3.12/site-packages/mlx_audio/tts/models/arktts/arktts.py", line 986, in _load_reference_audio
+    import soundfile as sf
+ModuleNotFoundError: No module named 'soundfile'
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [76985]
