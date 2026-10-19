@@ -8,6 +8,8 @@ from typing import NamedTuple
 
 #: The excerpt's name in a run directory.
 FILE = "server-load.log"
+#: The home whose services an isolated home's screen goes through; their router logs there. #1006.
+SERVING_ENV = "LH_SERVING_HOME"
 
 _SPAWN = re.compile(r"spawning server instance with name=(\S+) on port (\d+)")
 _ARGS = re.compile(r"^\S+ I srv +load: ")
@@ -23,9 +25,12 @@ class Excerpt(NamedTuple):
 
 
 def router_logs() -> list[Path]:
-    """Where the router's stderr lands: launchd's eval service, else services.sh's llamacpp files."""
+    """Where the serving router's stderr lands: launchd's eval service, else services.sh's llamacpp files."""
+    import os
+
     from harness import paths
-    d = paths.logs()
+    serving = os.environ.get(SERVING_ENV)
+    d = Path(serving).expanduser() / "logs" if serving else paths.logs()
     return [d / "eval.log", d / "llamacpp.err.log", d / "llamacpp.log"]
 
 

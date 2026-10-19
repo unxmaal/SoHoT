@@ -78,7 +78,7 @@ MODULES = {
 LEFT_OUT = {
     "harness/memory_store/transitions.py": ("test_blame_audit.py", "test_live_audit.py"),
     "harness/reasons.py": (
-        "test_adopt_retest_1001.py", "test_attachment_tags_949.py",
+        "test_adopt_retest_1001.py", "test_attachment_tags_949.py", "test_canary_919.py",
         "test_chaos.py", "test_claims_lane.py", "test_gateway_key.py", "test_harness_checks_ocr.py",
         "test_harness_paired.py", "test_harness_screen.py", "test_harness_screen_spec.py",
         "test_holdout_power.py", "test_inspect_method_specs.py", "test_inspect_ratelimit.py",

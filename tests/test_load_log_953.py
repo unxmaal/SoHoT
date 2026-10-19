@@ -239,3 +239,26 @@ def test_a_child_error_line_starts_with_its_port_and_its_message_is_folded():
 def test_either_a_newer_llama_cpp_phrase_or_a_child_error_line_is_a_runtime_gap(body):
     text = f"{_500(K2_ALIAS)}\n{body}"
     assert reasons.classify(text, reasons.RUNNER, f"llamacpp:{K2_ALIAS}") == reasons.LOAD_FAILED_RUNTIME
+
+
+#: eval.log lines 1090950-1091012: Qwengram-0.8B on llama.cpp 11146, the canary's first gguf-first plant (#1006).
+QWENGRAM = (FIXTURES / "qwengram-wrong-tensor-count.log").read_text(encoding="utf-8").splitlines(keepends=True)
+QWENGRAM_ALIAS = "QwenGram-0.8B-Q4_K_M"
+
+
+def test_an_isolated_home_reads_the_router_log_of_the_home_it_is_served_by(monkeypatch, tmp_path):
+    """#1006: the canary's home screened through the live router, then looked for its log in its own empty logs/."""
+    from harness import canary
+    monkeypatch.setattr(screen, "_installed", lambda pkg: "11146")
+    (paths.logs() / "eval.log").write_text("".join(QWENGRAM), encoding="utf-8")
+    iso = tmp_path / "iso"
+    env = canary.child_env(iso)
+    for key in (paths.ENV_VAR, load_log.SERVING_ENV):
+        monkeypatch.setenv(key, env[key])
+    assert paths.home() == iso.resolve()
+    candidate = f"llamacpp:{QWENGRAM_ALIAS}"
+    unread = screen.decide_class(reasons.LOAD_LOG_UNREAD, _500(QWENGRAM_ALIAS), candidate)
+    got = load_log.redecide(unread, candidate, "Ninnix96/Qwengram-0.8B", tmp_path / "run", None)
+    assert got.failure_class == reasons.LOAD_FAILED_RUNTIME, got
+    assert "wrong number of tensors; expected 346, got 335" in got.detail
+    assert (tmp_path / "run" / load_log.FILE).is_file()
