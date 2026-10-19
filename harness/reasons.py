@@ -43,6 +43,8 @@ LOAD_FAILED_FILE = "load_failed_file"
 SHORT_COPY = "short_copy"
 #: Our snapshot lacks files the runner opens (huggingface_hub IncompleteSnapshotError): the fetch's fault, refetch. #1040.
 INCOMPLETE_COPY = "incomplete_copy"
+#: A speculative-decoding drafter llama-server will not load without its target's context. #1039.
+ATTACHMENT = "attachment"
 TIMEOUT = "timeout"
 TOKEN_BUDGET_EXHAUSTED = "token_budget_exhausted"
 #: An agent run stopped at the step cap we chose. #695.
@@ -89,6 +91,7 @@ CLASSES = {
     TOKEN_BUDGET_EXHAUSTED: ("declined", LIMIT),
     STEP_CAP: ("declined", LIMIT),
     CONTEXT_EXCEEDED: ("declined", LIMIT),
+    ATTACHMENT: ("declined", CANDIDATE),
     MISSING_PACKAGE: ("declined", RUNTIME),
     LOAD_FAILED_RUNTIME: ("declined", RUNTIME),
     LOAD_FAILED_FILE: ("declined", CANDIDATE),
@@ -180,6 +183,8 @@ _GGUF_SHORT = ("not within the file bounds", "unexpectedly reached end of file",
 _GGUF_HEADER_FAULT = re.compile(r"tensor '[^']*' has offset \d+, expected \d+|invalid magic characters"
                                 r"|failed to read key-value pairs|failed to read tensor info"
                                 r"|duplicate key|duplicate tensor name|not a multiple of block size")
+#: llama.cpp's refusal to load a drafter without the target model's context (ctx_other). #1039.
+_NEEDS_TARGET = ("requires ctx_other",)
 #: What a newer llama.cpp can add. #953.
 _LLAMACPP_GAPS = ("unknown model architecture", "unknown pre-tokenizer type", "invalid ggml type")
 _DIFFUSERS_LAYOUT_GAPS = ("can't find a pipeline linked to", "were passed")
@@ -261,9 +266,16 @@ def _llamacpp_load(low: str) -> str:
         return SHORT_COPY
     if _GGUF_HEADER_FAULT.search(low):
         return LOAD_FAILED_FILE
+    if needs_target(low):
+        return ATTACHMENT
     if _any(low, _LLAMACPP_GAPS) or _CHILD_ERROR.search(low):
         return LOAD_FAILED_RUNTIME
     return LOAD_LOG_UNREAD
+
+
+def needs_target(text: str) -> bool:
+    """llama.cpp refused a drafter that loads only beside its target model. #1039."""
+    return bool(_any((text or "").lower(), _NEEDS_TARGET))
 
 
 def _runner_dist(name: str) -> str:

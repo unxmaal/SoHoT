@@ -1,0 +1,61 @@
+{
+ "id": "z-lab/Qwen3.6-35B-A3B-DFlash",
+ "pipeline_tag": "text-generation",
+ "library_name": "transformers",
+ "tags": [
+  "transformers",
+  "safetensors",
+  "qwen3",
+  "feature-extraction",
+  "dflash",
+  "speculative-decoding",
+  "speculative-decoding-draft",
+  "block-diffusion",
+  "draft-model",
+  "diffusion-language-model",
+  "efficiency",
+  "qwen",
+  "qwen3.6",
+  "sglang",
+  "text-generation",
+  "custom_code",
+  "arxiv:2602.06036",
+  "base_model:Qwen/Qwen3.6-35B-A3B",
+  "base_model:finetune:Qwen/Qwen3.6-35B-A3B",
+  "license:apache-2.0",
+  "text-generation-inference",
+  "region:us"
+ ],
+ "siblings": [
+  {
+   "rfilename": ".gitattributes",
+   "size": 1580
+  },
+  {
+   "rfilename": "README.md",
+   "size": 6749
+  },
+  {
+   "rfilename": "assets/dflash_system.png",
+   "size": 338153
+  },
+  {
+   "rfilename": "assets/speedup.png",
+   "size": 66921
+  },
+  {
+   "rfilename": "config.json",
+   "size": 1222
+  },
+  {
+   "rfilename": "model.safetensors",
+   "size": 771819674
+  }
+ ],
+ "config": {
+  "architectures": [
+   "DFlashDraftModel"
+  ],
+  "model_type": "qwen3"
+ }
+}

@@ -44,6 +44,11 @@ def set_card(conn, name: str, card, read: str = "card") -> bool:
     return True
 
 
+def set_attachment(conn, name: str, kind: str) -> None:
+    """Record what a load failure proved this attaches to, where its card did not say. #1039."""
+    conn.execute("UPDATE proposals SET attaches_to = ? WHERE name = ?", (kind, name))
+
+
 def parents_of(conn, names) -> dict[str, list[tuple[str, str]]]:
     """name -> [(parent, kind)] from the lineage table. #414."""
     names = list(dict.fromkeys(names))

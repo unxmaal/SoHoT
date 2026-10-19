@@ -40,6 +40,35 @@ def misclassed(conn) -> list[dict]:
     return out
 
 
+DRAFTER_ROWS = ("SELECT v.id, p.name, p.state, p.card_tags, v.tier, v.reason, v.until, v.detail, v.run_path, "
+                "v.run_id, v.candidate_id FROM proposals p JOIN verdicts v ON v.id = p.state_verdict_id "
+                "WHERE p.attaches_to = '' AND p.state IN ('queued', 'declined', 'broken') ORDER BY v.id")
+
+
+def drafters(conn) -> list[dict]:
+    """Proposals not yet held as attachments whose card or llama.cpp load log says drafter. #1039."""
+    import json
+
+    from harness import reasons, screen
+    out = []
+    for r in conn.execute(DRAFTER_ROWS).fetchall():
+        try:
+            tags = json.loads(r["card_tags"] or "[]")
+        except ValueError:
+            tags = []
+        why = ("its load log says it needs a target model's context" if reasons.needs_target(r["detail"])
+               else "its card names a speculative-decoding drafter" if screen.is_drafter(tags) else "")
+        if why:
+            out.append({"verdict_id": r["id"], "name": r["name"], "why": why,
+                        "was": [r["state"], r["tier"], r["reason"], r["until"]],
+                        "now": ["declined", "fetch", reasons.CANDIDATE, ""], "attach": screen.DRAFTER,
+                        "run_path": r["run_path"], "run_id": r["run_id"], "candidate_id": r["candidate_id"],
+                        "failure_class": reasons.ATTACHMENT,
+                        "detail": f"re-decided (#1039): {screen.DRAFTER} in its own card or load log: this "
+                                  f"attaches to a model rather than being one, and no lane can run it alone"})
+    return out
+
+
 def _reclassed(conn, r: dict, logs=None, root=None) -> dict:
     """A misclassed broken screen re-decided from its detail as screen.decide_class decides that class now."""
     from harness import load_log, reasons, screen
@@ -99,7 +128,9 @@ def changes(conn, logs=None, root=None) -> list[dict]:
             found.append(_unreopenable(conn, r, base))
         else:
             found.append({**base, "skipped": "no repair names this kind; a person decides it"})
-    return found + [_reclassed(conn, r, logs, root) for r in misclassed(conn)]
+    found += [_reclassed(conn, r, logs, root) for r in misclassed(conn)]
+    held = {c["verdict_id"] for c in found}
+    return found + [c for c in drafters(conn) if c["verdict_id"] not in held]
 
 
 def _unreopenable(conn, r, base: dict) -> dict:
@@ -144,6 +175,11 @@ def apply(conn, found: list[dict]) -> list[int]:
         if outcome == "queued":
             ids.append(ms.retract(conn, c["name"], c["detail"], tier=tier))
             continue
+        if c.get("attach"):
+            ms.set_attachment(conn, c["name"], c["attach"])
+            if c["was"][0] != "queued":
+                # The ladder refuses a fetch verdict over a screen one; the retraction is the way back. #1039.
+                ids.append(ms.retract(conn, c["name"], f"a {c['attach']} loads only beside its target (#1039)"))
         if c.get("excerpt"):
             from harness import load_log
             load_log.write(Path(c["run_path"]), c["excerpt"])

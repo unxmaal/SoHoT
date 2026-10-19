@@ -1,0 +1,55 @@
+{
+ "id": "Alittlehammmer/Qwen3.6-35B-A3B-DFlash-GGUF-llama.cpp",
+ "pipeline_tag": "text-generation",
+ "library_name": "gguf",
+ "tags": [
+  "gguf",
+  "quantized",
+  "llama.cpp",
+  "text-generation",
+  "agentic-coding",
+  "dflash",
+  "base_model:z-lab/Qwen3.6-35B-A3B-DFlash",
+  "base_model:quantized:z-lab/Qwen3.6-35B-A3B-DFlash",
+  "license:apache-2.0",
+  "endpoints_compatible",
+  "region:us",
+  "conversational"
+ ],
+ "siblings": [
+  {
+   "rfilename": ".gitattributes",
+   "size": 1866
+  },
+  {
+   "rfilename": "Qwen3.6-35B-A3B-DFlash-BF16.gguf",
+   "size": 782819520
+  },
+  {
+   "rfilename": "Qwen3.6-35B-A3B-DFlash-Q4_K_M.gguf",
+   "size": 235692224
+  },
+  {
+   "rfilename": "Qwen3.6-35B-A3B-DFlash-Q5_K.gguf",
+   "size": 280256704
+  },
+  {
+   "rfilename": "Qwen3.6-35B-A3B-DFlash-Q6_K.gguf",
+   "size": 327606464
+  },
+  {
+   "rfilename": "Qwen3.6-35B-A3B-DFlash-Q8_0.gguf",
+   "size": 421060800
+  },
+  {
+   "rfilename": "README.md",
+   "size": 1587
+  }
+ ],
+ "gguf": {
+  "total": 385906176,
+  "architecture": "dflash",
+  "context_length": 262144
+ },
+ "config": {}
+}
