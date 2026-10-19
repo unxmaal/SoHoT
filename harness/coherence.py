@@ -110,7 +110,7 @@ def changes(conn, logs=None, root=None) -> list[dict]:
     from harness import reasons
     from harness.memory_store.schema import INSPECT
     from harness.memory_store.transitions import CONDITIONAL, RETEST_TIERS
-    found = lane_bound(conn)
+    found = lane_bound(conn) + past_growth(conn)
     bound = {c["verdict_id"] for c in found}
     for r in incoherent(conn):
         if r["id"] in bound:
@@ -158,10 +158,7 @@ def lane_bound(conn) -> list[dict]:
         if limit is None:
             continue
         more, why = limit
-        have = adopt.lane_cases(lane)
-        if plan.get("side") == "all" and plan.get("cases_run"):
-            have = min(have, int(plan["cases_run"]))
-        until = adopt.cases_until(lane, have, more)
+        until = adopt.cases_until(lane, adopt.decided_cases(lane, plan=plan), more)
         out.append({"verdict_id": r["id"], "name": r["name"], "why": why,
                     "was": [r["state"], r["tier"], r["reason"], r["until"]],
                     "now": ["declined", ADOPT, reasons.LIMIT, until], "run_path": r["run_path"],
@@ -169,6 +166,49 @@ def lane_bound(conn) -> list[dict]:
                     "failure_class": reasons.LANE_TOO_SMALL,
                     "evidence": {"power": r["power"], "split_version": r["split_version"]},
                     "detail": f"{lane}: re-decided (#1049): {why}; {r['detail']}"[:600]})
+    return out
+
+
+def past_growth(conn) -> list[dict]:
+    """Adopt limits waiting on more lane cases than the lane can have had when they were decided. #1053."""
+    import json
+    import math
+
+    from harness import adopt, holdout, reasons
+    from harness.memory_store.schema import ADOPT
+    out = []
+    for r in conn.execute(HELD).fetchall():
+        lane = r["lane"] or (r["detail"] or "").partition(":")[0].strip()
+        head, _, n = (r["until"] or "").partition(">")
+        if (r["state"], r["tier"], r["reason"]) != ("declined", ADOPT, reasons.LIMIT) \
+                or head != f"cases:{lane}" or not n.isdigit():
+            continue
+        try:
+            plan = json.loads(r["power"] or "{}")
+        except ValueError:
+            plan = {}
+        held = int(plan.get("cases") or 0)
+        if plan.get("side") == "all" and plan.get("cases_run"):
+            most = int(plan["cases_run"])
+        elif held:
+            # Three standard deviations of the holdout draw above the cases a holdout this size comes from.
+            most = math.ceil((held + 3 * math.sqrt(held)) / holdout.FRACTION)
+        else:
+            continue
+        limit = adopt.lane_limit(lane, plan, r["name"])
+        more = limit[0] if limit else adopt.more_cases(held, plan.get("cases_needed"))
+        if int(n) <= most + more - 1:
+            continue
+        until = adopt.cases_until(lane, adopt.decided_cases(lane, plan=plan), more)
+        out.append({"verdict_id": r["id"], "name": r["name"], "why": f"{r['until']} is past the {most} cases "
+                    f"the {lane} lane can have had when it was decided",
+                    "was": [r["state"], r["tier"], r["reason"], r["until"]],
+                    "now": ["declined", ADOPT, reasons.LIMIT, until], "run_path": r["run_path"],
+                    "run_id": r["run_id"], "candidate_id": r["candidate_id"],
+                    "failure_class": r["failure_class"] or "",
+                    "evidence": {"power": r["power"], "split_version": r["split_version"]},
+                    "detail": f"{lane}: re-decided (#1053): {r['until']} counted the lane after it grew; "
+                              f"{r['detail']}"[:600]})
     return out
 
 
@@ -189,7 +229,7 @@ def _unreopenable(conn, r, base: dict) -> dict:
         plan = json.loads(r["power"] or "{}")
     except ValueError:
         plan = {}
-    until = adopt.cases_until(lane, adopt.lane_cases(lane),
+    until = adopt.cases_until(lane, adopt.decided_cases(lane, plan=plan),
                               adopt.more_cases(plan.get("cases") or 0, plan.get("cases_needed")))
     return {**base, "now": ["declined", ADOPT, r["reason"], until], "run_path": r["run_path"],
             "run_id": r["run_id"], "candidate_id": r["candidate_id"], "failure_class": r["failure_class"] or "",

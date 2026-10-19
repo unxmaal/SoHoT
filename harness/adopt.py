@@ -275,15 +275,28 @@ def cases_until(lane: str, have: int, more: int = 1) -> str:
     return f"cases:{lane}>{int(have) + int(more) - 1}"
 
 
-def lane_cases(lane: str, split: dict | None = None) -> int:
-    """Cases the lane has: the verdict's own split when it carries one, else the lane's shipped split."""
+def lane_cases(lane: str) -> int:
+    """Cases the lane's shipped split has now."""
     from harness import holdout
-    split = split or {}
-    have = len(set(split.get("dev") or ()) | set(split.get("holdout") or ()))
-    if have:
-        return have
     now = holdout.for_lane(lane)
     return len(set(now.dev) | set(now.holdout))
+
+
+def decided_cases(lane: str, split: dict | None = None, plan: dict | None = None) -> int:
+    """The lane's cases when a verdict was decided: its split, else its plan, never more than the lane has now. #1053."""
+    import math
+
+    from harness import holdout
+    split, plan = split or {}, plan or {}
+    have = len(set(split.get("dev") or ()) | set(split.get("holdout") or ()))
+    held = int(plan.get("cases") or 0)
+    if not have and plan.get("side") == "all" and plan.get("cases_run"):
+        have = int(plan["cases_run"])
+    elif not have and held:
+        # Under MIN_HOLDOUT + MIN_DEV cases a lane is too small to split, and its holdout is every case.
+        have = held if held < holdout.MIN_HOLDOUT + holdout.MIN_DEV else math.ceil(held / holdout.FRACTION)
+    now = lane_cases(lane)
+    return min(have, now) if have and now else have or now
 
 
 def _spent_until(conn, name: str, verdict: Verdict, reason: str) -> str:
@@ -296,7 +309,7 @@ def _spent_until(conn, name: str, verdict: Verdict, reason: str) -> str:
     if pid is None or not retest_spent(conn, pid[0], TIER, pending=1):
         return ""
     plan = verdict.evidence.get("power") or {}
-    return cases_until(verdict.lane, lane_cases(verdict.lane, verdict.evidence.get("split")),
+    return cases_until(verdict.lane, decided_cases(verdict.lane, verdict.evidence.get("split"), plan),
                        more_cases(plan.get("cases") or 0, plan.get("cases_needed")))
 
 

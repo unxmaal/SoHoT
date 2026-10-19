@@ -67,7 +67,7 @@ MODULES = {
         "tests/test_claims_balanced_metric.py", "tests/test_gateway_switch.py", "tests/test_live_audit.py",
         "tests/test_shared_store_703.py", "tests/test_screen_evidence.py", "tests/test_harness_winners.py",
         "tests/test_lane_routes.py", "tests/test_remote_upstreams.py", "tests/test_deepen_993.py",
-        "tests/test_lane_too_small_1049.py"],
+        "tests/test_lane_too_small_1049.py", "tests/test_lane_until_1053.py"],
     "harness/serving.py": [
         "tests/test_harness_serving.py", "tests/test_lane_routes.py", "tests/test_gguf_route.py",
         "tests/test_schema_lanes.py", "tests/test_ds4.py", "tests/test_remote_upstreams.py",
@@ -83,7 +83,8 @@ MODULES = {
 # a constant or a type only, too slow, or crashes the forkserver (#596; test_mlx_backlog imports mlx, whose Metal
 # thread segfaults a forked worker). A new importer goes in one or the other (#840).
 LEFT_OUT = {
-    "harness/memory_store/transitions.py": ("test_blame_audit.py", "test_live_audit.py", "test_lane_too_small_1049.py"),
+    "harness/memory_store/transitions.py": ("test_blame_audit.py", "test_live_audit.py", "test_lane_too_small_1049.py",
+                                            "test_lane_until_1053.py"),
     "harness/reasons.py": (
         "test_adopt_retest_1001.py", "test_attachment_tags_949.py", "test_canary_919.py",
         "test_chaos.py", "test_claims_lane.py", "test_gateway_key.py", "test_harness_checks_ocr.py",
@@ -94,7 +95,8 @@ LEFT_OUT = {
         "test_power_budget.py", "test_quants_882.py", "test_repo_claude_905.py", "test_repo_lane.py", "test_runner_base_weights.py", "test_schema_lanes.py",
         "test_planted_919.py", "test_trajectory_921.py", "test_unranked_weight_954.py", "test_inventory_heartbeat_972.py",
         "test_silent_truncation.py", "test_slots_memory.py", "test_store_downloads.py",
-        "test_trocr_tokenizer_1025.py", "test_fetch_files_1040.py", "test_lane_too_small_1049.py"),
+        "test_trocr_tokenizer_1025.py", "test_fetch_files_1040.py", "test_lane_too_small_1049.py",
+        "test_lane_until_1053.py"),
     "harness/screen.py": (
         "test_attachment_tags_949.py", "test_lane_too_small_1049.py",
         "test_variants_947.py", "test_chaos.py", "test_claims_balanced_metric.py", "test_harness_engines_repo_id.py",
