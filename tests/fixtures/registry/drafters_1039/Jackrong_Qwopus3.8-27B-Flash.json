@@ -1,0 +1,160 @@
+{
+ "id": "Jackrong/Qwopus3.8-27B-Flash",
+ "pipeline_tag": "image-text-to-text",
+ "library_name": "transformers",
+ "tags": [
+  "transformers",
+  "safetensors",
+  "qwen3_5",
+  "image-text-to-text",
+  "gguf",
+  "llama.cpp",
+  "vision",
+  "multimodal",
+  "text-generation-inference",
+  "unsloth",
+  "conversational",
+  "text-generation",
+  "qwen3_8",
+  "qwen3",
+  "qwen",
+  "27b",
+  "fine-tuned",
+  "instruction-tuned",
+  "reasoning",
+  "agent",
+  "agentic",
+  "tool-use",
+  "function-calling",
+  "code-generation",
+  "mtp",
+  "speculative-decoding",
+  "local-inference",
+  "en",
+  "zh",
+  "es",
+  "ru",
+  "ja",
+  "base_model:Qwen/Qwen3.8-27B",
+  "base_model:finetune:Qwen/Qwen3.8-27B",
+  "license:apache-2.0",
+  "endpoints_compatible",
+  "region:us"
+ ],
+ "siblings": [
+  {
+   "rfilename": ".gitattributes",
+   "size": 1570
+  },
+  {
+   "rfilename": "README.md",
+   "size": 19400
+  },
+  {
+   "rfilename": "chat_template.jinja",
+   "size": 4718
+  },
+  {
+   "rfilename": "config.json",
+   "size": 4475
+  },
+  {
+   "rfilename": "generation_config.json",
+   "size": 213
+  },
+  {
+   "rfilename": "model-00001-of-00018.safetensors",
+   "size": 3966730552
+  },
+  {
+   "rfilename": "model-00002-of-00018.safetensors",
+   "size": 3043080328
+  },
+  {
+   "rfilename": "model-00003-of-00018.safetensors",
+   "size": 2542796952
+  },
+  {
+   "rfilename": "model-00004-of-00018.safetensors",
+   "size": 3988973152
+  },
+  {
+   "rfilename": "model-00005-of-00018.safetensors",
+   "size": 2099339864
+  },
+  {
+   "rfilename": "model-00006-of-00018.safetensors",
+   "size": 3979553696
+  },
+  {
+   "rfilename": "model-00007-of-00018.safetensors",
+   "size": 2108759344
+  },
+  {
+   "rfilename": "model-00008-of-00018.safetensors",
+   "size": 3979553696
+  },
+  {
+   "rfilename": "model-00009-of-00018.safetensors",
+   "size": 2108759344
+  },
+  {
+   "rfilename": "model-00010-of-00018.safetensors",
+   "size": 3979553696
+  },
+  {
+   "rfilename": "model-00011-of-00018.safetensors",
+   "size": 2108759344
+  },
+  {
+   "rfilename": "model-00012-of-00018.safetensors",
+   "size": 3979553696
+  },
+  {
+   "rfilename": "model-00013-of-00018.safetensors",
+   "size": 2108759344
+  },
+  {
+   "rfilename": "model-00014-of-00018.safetensors",
+   "size": 3979553696
+  },
+  {
+   "rfilename": "model-00015-of-00018.safetensors",
+   "size": 2108759344
+  },
+  {
+   "rfilename": "model-00016-of-00018.safetensors",
+   "size": 3979564040
+  },
+  {
+   "rfilename": "model-00017-of-00018.safetensors",
+   "size": 2108759344
+  },
+  {
+   "rfilename": "model-00018-of-00018.safetensors",
+   "size": 3392197344
+  },
+  {
+   "rfilename": "model.safetensors.index.json",
+   "size": 112216
+  },
+  {
+   "rfilename": "processor_config.json",
+   "size": 1191
+  },
+  {
+   "rfilename": "tokenizer.json",
+   "size": 19989343
+  },
+  {
+   "rfilename": "tokenizer_config.json",
+   "size": 12078
+  }
+ ],
+ "config": {
+  "architectures": [
+   "Qwen3_5ForConditionalGeneration"
+  ],
+  "model_type": "qwen3_5"
+ }
+}

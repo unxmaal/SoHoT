@@ -898,7 +898,7 @@ def card_facts(data: dict) -> Card:
     from harness import variants
     found = variants.variants(data.get("siblings") or [], model_type=_model_type(data))
     return Card(task=task, library=library, tags=plain, parents=parents,
-                attaches_to=screen.is_attachment(words, data.get("siblings"), config, found),
+                attaches_to=screen.is_attachment(words, data.get("siblings"), config, found, data.get("gguf")),
                 runtime_needed=runtime_needed(library, plain, found),
                 lane=lane, lane_source=source, category="model",
                 model_type=str(config.get("model_type") or "").strip(),

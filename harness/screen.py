@@ -97,6 +97,13 @@ FOREIGN_NAMESPACES = ("dataset", "base_model", "diffusers", "license", "arxiv", 
 #: A weight file under this, with nothing saying "full model", is adapter-sized. #949.
 ADAPTER_FLOOR_BYTES = 4 * 2**30
 
+#: A speculative-decoding drafter: it loads only beside its target model. #1039.
+DRAFTER = "drafter"
+#: Whole tags only a drafter carries; `dflash` alone does not (XiaomiMiMo's full model has it). #1039.
+DRAFTER_TAGS = ("draft-model", "speculative-decoding-draft")
+#: GGUF general.architecture values llama.cpp loads only with a target's context. #1039.
+DRAFTER_ARCHITECTURES = ("dflash",)
+
 #: listing_kind's answers; None is a listing nobody read.
 ADAPTER, MODEL, LOOSE, BULK, EMPTY = "adapter", "model", "loose", "bulk", "empty"
 
@@ -159,8 +166,19 @@ def listing_kind(files, config=None, found=None) -> str | None:
     return BULK
 
 
-def is_attachment(words, files=None, config=None, found=None) -> str:
+def is_drafter(words, config=None, gguf=None) -> bool:
+    """A drafter by whole tag, config architecture (DFlashDraftModel) or GGUF architecture. #1039."""
+    if any(t in DRAFTER_TAGS for t in _tags(words)):
+        return True
+    if any(str(a).lower().endswith("draftmodel") for a in (config or {}).get("architectures") or ()):
+        return True
+    return str((gguf or {}).get("architecture") or "").strip().lower().rstrip("0123456789") in DRAFTER_ARCHITECTURES
+
+
+def is_attachment(words, files=None, config=None, found=None, gguf=None) -> str:
     """The kind that says this attaches to a model, or "": whole tags only, and a read listing decides. #949."""
+    if is_drafter(words, config, gguf):
+        return DRAFTER
     tags = _tags(words)
     weight, whole = _weight_word(tags)
     kind = listing_kind(files, config, found)
@@ -178,7 +196,7 @@ def is_attachment(words, files=None, config=None, found=None) -> str:
 def tags_support(word: str, tags) -> bool:
     """Whether the current rule could store `word` from these tags; False marks an older rule's answer. #949."""
     word = (word or "").strip().lower()
-    if word == ADAPTER:
+    if word in (ADAPTER, DRAFTER):
         return True
     return word in NOT_A_MODEL and word in _tags(tags)
 
@@ -621,6 +639,8 @@ def _sentence(cls: str, why: str, limit: str) -> str:
         return f"the installed runtime could not load it{tail}"
     if cls == reasons.MISSING_PACKAGE:
         return f"the runner's environment is missing a package its library imports{tail}"
+    if cls == reasons.ATTACHMENT:
+        return f"a speculative-decoding drafter: it loads only beside its target model{tail}"
     if cls == reasons.LOAD_FAILED_FILE:
         return f"the file is malformed, its header disagrees with itself{tail}"
     if cls == reasons.LOAD_LOG_UNREAD:

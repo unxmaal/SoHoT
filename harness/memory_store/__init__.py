@@ -23,8 +23,8 @@ from harness.memory_store.schema import (ADOPT, CATEGORIES, FETCH, GIB, GITHUB, 
     TECHNIQUE, TIERS, TOOL, VERDICTS, WAYPOINTS, _DDL, _columns)  # noqa: F401
 from harness.memory_store.machines import (machine_row, recorded_facts,
     remember_machine, this_machine)  # noqa: F401
-from harness.memory_store.cards import (CARD_COLUMNS, card_of, parents_of, set_card,
-    with_lineage)  # noqa: F401
+from harness.memory_store.cards import (CARD_COLUMNS, card_of, parents_of, set_attachment,
+    set_card, with_lineage)  # noqa: F401
 from harness.memory_store.sources import (DEFERRED, record_source, source_row)  # noqa: F401
 from harness.memory_store.benchmarks import (benchmarks, probe_summary,
     record_benchmark, record_probe, set_training, training)  # noqa: F401

@@ -53,6 +53,7 @@ EXPECTED = {
     reasons.SHORT_COPY: ("queued", "harness"),
     reasons.INCOMPLETE_COPY: ("queued", "harness"),
     reasons.LOAD_FAILED_FILE: ("declined", "candidate"),
+    reasons.ATTACHMENT: ("declined", "candidate"),
 }
 
 

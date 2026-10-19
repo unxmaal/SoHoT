@@ -332,6 +332,10 @@ def _report_screen(a) -> int:
                 from harness import downloads
                 downloads.stand_down(store, r["name"])
                 tier = ms.FETCH
+            if verdict.failure_class == reasons.ATTACHMENT:
+                # A drafter is the fetch tier's attachment decline, so no retest refetches it. #1039.
+                ms.set_attachment(store, r["name"], screen.DRAFTER)
+                tier = ms.FETCH
             got, why = verdict.outcome, verdict.detail
             print(f"   {got.upper()}: {why}")
             if proc.returncode != 0:

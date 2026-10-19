@@ -621,6 +621,15 @@ def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=N
         # merely sized would be downloaded and handed to a runner that cannot
         # load it. `declined` rather than `queued`, because unlike "no measured
         # size" this is a fact about the candidate and not about us.
+        attachment = row.get("attaches_to") or ""
+        # An attachment is one on every machine, so it is decided before this machine's runtimes. #1039.
+        if attachment and not screen.takes_attachment(row.get("lane") or "", attachment):
+            why = (f"{attachment} in its own card: this attaches to a model "
+                   f"rather than being one, and no lane can run it alone")
+            ms.decide_or_skip(conn, row["name"], "declined", tier="fetch", detail=why,
+                              reason=reasons.CANDIDATE)
+            done.append({"repo": row["name"], "ok": False, "why": why})
+            continue
         # A RUNTIME THIS MACHINE DOES NOT HAVE IS AN ANSWER, not a gap to
         # come back to. rank.unrunnable already drops these from the ordering,
         # so they never reach a fetch and never receive a verdict: the queue
@@ -653,20 +662,12 @@ def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=N
         # back on the next sweep and would have forever. `queued`, not
         # `declined`: the candidate did nothing wrong and an engine entry
         # would make it runnable, so it is reported to a person instead.
-        attachment = row.get("attaches_to") or ""
         gap = screen.runner_gap(row.get("lane") or "", row["name"], attachment,
                                 conn=conn)
         if gap:
             why = f"{gap}: no runner in the {row['lane']} lane can load it"
             ms.decide_or_skip(conn, row["name"], "queued", tier="fetch", detail=why,
                               reason=reasons.HARNESS)
-            done.append({"repo": row["name"], "ok": False, "why": why})
-            continue
-        if attachment and not screen.takes_attachment(row.get("lane") or "", attachment):
-            why = (f"{attachment} in its own card: this attaches to a model "
-                   f"rather than being one, and no lane can run it alone")
-            ms.decide_or_skip(conn, row["name"], "declined", tier="fetch", detail=why,
-                              reason=reasons.CANDIDATE)
             done.append({"repo": row["name"], "ok": False, "why": why})
             continue
         from harness import ds4

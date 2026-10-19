@@ -1,0 +1,243 @@
+{
+ "id": "XiaomiMiMo/MiMo-V2.5-Pro-FP4-DFlash",
+ "pipeline_tag": "text-generation",
+ "library_name": "transformers",
+ "tags": [
+  "transformers",
+  "safetensors",
+  "mimo_v2",
+  "text-generation",
+  "agent",
+  "long-context",
+  "code",
+  "mxfp4",
+  "fp4-quantization",
+  "dflash",
+  "speculative-decoding",
+  "block-diffusion",
+  "conversational",
+  "custom_code",
+  "en",
+  "zh",
+  "license:mit",
+  "8-bit",
+  "fp8",
+  "region:us"
+ ],
+ "siblings": [
+  {
+   "rfilename": ".gitattributes",
+   "size": 1635
+  },
+  {
+   "rfilename": "README.md",
+   "size": 8193
+  },
+  {
+   "rfilename": "added_tokens.json",
+   "size": 707
+  },
+  {
+   "rfilename": "assets/fp4_compare.png",
+   "size": 88407
+  },
+  {
+   "rfilename": "config.json",
+   "size": 5233
+  },
+  {
+   "rfilename": "configuration_mimo_v2.py",
+   "size": 8538
+  },
+  {
+   "rfilename": "dflash/config.json",
+   "size": 1251
+  },
+  {
+   "rfilename": "dflash/dflash.py",
+   "size": 14255
+  },
+  {
+   "rfilename": "dflash/dflash_draft_model-00001-of-00002.safetensors",
+   "size": 4957800504
+  },
+  {
+   "rfilename": "dflash/dflash_draft_model-00002-of-00002.safetensors",
+   "size": 578838928
+  },
+  {
+   "rfilename": "dflash/mask_embedding.pt",
+   "size": 13978
+  },
+  {
+   "rfilename": "dflash/model.safetensors.index.json",
+   "size": 5633
+  },
+  {
+   "rfilename": "merges.txt",
+   "size": 1671853
+  },
+  {
+   "rfilename": "model.safetensors.index.json",
+   "size": 15091460
+  },
+  {
+   "rfilename": "model_mtp.safetensors",
+   "size": 2463641280
+  },
+  {
+   "rfilename": "model_pp0_ep0_shard0.safetensors",
+   "size": 19896046736
+  },
+  {
+   "rfilename": "model_pp0_ep0_shard1.safetensors",
+   "size": 27180576120
+  },
+  {
+   "rfilename": "model_pp0_ep10_shard0.safetensors",
+   "size": 16605357208
+  },
+  {
+   "rfilename": "model_pp0_ep11_shard0.safetensors",
+   "size": 16605357208
+  },
+  {
+   "rfilename": "model_pp0_ep12_shard0.safetensors",
+   "size": 16605357208
+  },
+  {
+   "rfilename": "model_pp0_ep13_shard0.safetensors",
+   "size": 16605357208
+  },
+  {
+   "rfilename": "model_pp0_ep14_shard0.safetensors",
+   "size": 16605357208
+  },
+  {
+   "rfilename": "model_pp0_ep15_shard0.safetensors",
+   "size": 16605357208
+  },
+  {
+   "rfilename": "model_pp0_ep16_shard0.safetensors",
+   "size": 16605357208
+  },
+  {
+   "rfilename": "model_pp0_ep17_shard0.safetensors",
+   "size": 16605357208
+  },
+  {
+   "rfilename": "model_pp0_ep18_shard0.safetensors",
+   "size": 16605357208
+  },
+  {
+   "rfilename": "model_pp0_ep19_shard0.safetensors",
+   "size": 16605357208
+  },
+  {
+   "rfilename": "model_pp0_ep1_shard0.safetensors",
+   "size": 16605352240
+  },
+  {
+   "rfilename": "model_pp0_ep20_shard0.safetensors",
+   "size": 16605357208
+  },
+  {
+   "rfilename": "model_pp0_ep21_shard0.safetensors",
+   "size": 16605357208
+  },
+  {
+   "rfilename": "model_pp0_ep22_shard0.safetensors",
+   "size": 16605357208
+  },
+  {
+   "rfilename": "model_pp0_ep23_shard0.safetensors",
+   "size": 16605357208
+  },
+  {
+   "rfilename": "model_pp0_ep24_shard0.safetensors",
+   "size": 16605357208
+  },
+  {
+   "rfilename": "model_pp0_ep25_shard0.safetensors",
+   "size": 16605357208
+  },
+  {
+   "rfilename": "model_pp0_ep26_shard0.safetensors",
+   "size": 16605357208
+  },
+  {
+   "rfilename": "model_pp0_ep27_shard0.safetensors",
+   "size": 16605357208
+  },
+  {
+   "rfilename": "model_pp0_ep28_shard0.safetensors",
+   "size": 16605357208
+  },
+  {
+   "rfilename": "model_pp0_ep29_shard0.safetensors",
+   "size": 16605357208
+  },
+  {
+   "rfilename": "model_pp0_ep2_shard0.safetensors",
+   "size": 16605352240
+  },
+  {
+   "rfilename": "model_pp0_ep30_shard0.safetensors",
+   "size": 16605357208
+  },
+  {
+   "rfilename": "model_pp0_ep31_shard0.safetensors",
+   "size": 16605357208
+  },
+  {
+   "rfilename": "model_pp0_ep3_shard0.safetensors",
+   "size": 16605352240
+  },
+  {
+   "rfilename": "model_pp0_ep4_shard0.safetensors",
+   "size": 16605352240
+  },
+  {
+   "rfilename": "model_pp0_ep5_shard0.safetensors",
+   "size": 16605352240
+  },
+  {
+   "rfilename": "model_pp0_ep6_shard0.safetensors",
+   "size": 16605352240
+  },
+  {
+   "rfilename": "model_pp0_ep7_shard0.safetensors",
+   "size": 16605352240
+  },
+  {
+   "rfilename": "model_pp0_ep8_shard0.safetensors",
+   "size": 16605355552
+  },
+  {
+   "rfilename": "model_pp0_ep9_shard0.safetensors",
+   "size": 16605357208
+  },
+  {
+   "rfilename": "special_tokens_map.json",
+   "size": 613
+  },
+  {
+   "rfilename": "tokenizer.json",
+   "size": 11422654
+  },
+  {
+   "rfilename": "tokenizer_config.json",
+   "size": 14480
+  },
+  {
+   "rfilename": "vocab.json",
+   "size": 2776833
+  }
+ ],
+ "config": {
+  "architectures": [
+   "MiMoV2ForCausalLM"
+  ],
+  "model_type": "mimo_v2"
+ }
+}
