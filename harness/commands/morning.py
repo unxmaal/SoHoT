@@ -14,7 +14,9 @@ def _hm(t) -> str:
 def ledger_line(led: dict) -> str:
     """Last night's ledger row: Claude in tokens and plan-window peaks, local work in tokens. #976."""
     from harness.commands.ledger import local_tokens, tokens
-    kwh = "n/a" if led["energy_kwh"] is None else f"{led['energy_kwh']:.2f} kWh"
+    pe = led.get("energy") or {}
+    kwh = ("n/a" if led["energy_kwh"] is None else f"{led['energy_kwh']:.2f} kWh") if not pe.get("partial") else \
+        f"PARTIAL, at least {pe.get('lower_bound_kwh') or 0:.2f} kWh without the CPU ({(pe.get('why') or '').split(';')[0]})"
     plan = ", ".join(f"{lab} {led['plan'][k]:.0f}%" for k, lab in (("five_hour", "5h"), ("seven_day", "7d"))
                      if led["plan"].get(k) is not None) or "no readings"
     return (f"ledger    {led['day']}: cloud {tokens(led['cloud'])}; plan peak {plan}; "

@@ -4,8 +4,12 @@ from harness.knobs.base import _k
 KNOBS = [
     _k("energy_every", ["scripts/launchd.sh:ENERGY_EVERY_MIN"], [1, 5, 15],
        note="minutes between macmon power readings from the energy unit (#826)"),
+    _k("ledger_cpu_unread_share", ["harness/ledger.py:CPU_UNREAD_SHARE"], [0.5, 0.9, 0.99],
+       note="share of a day's active samples reading CPU 0 W beyond which its energy is partial (#1005)"),
     _k("ledger_hours", ["scripts/launchd.sh:LEDGER_HOURS"], [21, 23],
        note="local hour the ledger unit upserts today's and yesterday's ledger_days rows (#826)"),
+    _k("ledger_power_ceiling", ["harness/ledger.py:POWER_CEILING_W"], [300.0, 480.0, 1000.0],
+       note="watts above which a macmon reading is a stalled counter catching up, not power drawn (#1005)"),
     _k("ledger_power_gap", ["harness/ledger.py:POWER_GAP_S"], [120.0, 180.0, 600.0],
        note="seconds between two power samples beyond which the time between is uncovered, not integrated (#826)"),
     _k("ledger_power_window", ["harness/ledger.py:POWER_WINDOW_MS"], [1000, 5000, 15000],
@@ -21,5 +25,7 @@ NOT_GATING = {
                                     "presentation only, the totals are unchanged (#827)",
     "harness/trends.py:TREND_DAYS": "how many days back the published trend charts reach; presentation only (#827)",
     "harness/ledger.py:cloud->runner(timeout)": "how long ccusage may take; a timeout reports the cloud unavailable (#826)",
+    "harness/ledger.py:macmon_version->runner(timeout)": "how long macmon --version may take; a timeout reports "
+                                                         "the version unknown (#1005)",
     "harness/commands/ledger.py:gather_compare->_dt.timedelta(days)": "one calendar day, the compared window (#868)",
 }

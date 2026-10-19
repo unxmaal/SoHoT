@@ -1012,7 +1012,12 @@ Local is `gateway_requests` by purpose: work is what local displaced, in tokens
 by lane; eval and smoke are cost; untagged rows stay `unknown` except where
 `ledger.ALIAS_PURPOSE` maps an alias and day range, shown as "mapped". Energy is
 the `energy` unit's `macmon pipe` readings times `ledger_tariff`; without macmon
-the ledger says energy is unavailable. The `ledger` unit upserts `ledger_days`
+the ledger says energy is unavailable. A 0 W reading counts; readings above
+`ledger_power_ceiling` are a stalled counter catching up and are dropped. A day
+whose CPU reads 0 W on more than `ledger_cpu_unread_share` of its active samples
+is partial: no kWh, only a lower bound without the CPU, and the reason. macmon
+before 0.9.0 does that on macOS 27 (vladkens/macmon#76); Homebrew stable is
+0.8.2, so `brew install --HEAD macmon` until a newer bottle lands. The `ledger` unit upserts `ledger_days`
 nightly, and `soh morning` prints last night's row in tokens. `--json` carries
 aggregates only.
 
