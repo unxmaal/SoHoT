@@ -529,7 +529,8 @@ def _stop_group(proc, grace_s: float) -> None:
 
 def _argv(lane: str, plan, out, inc_spec: str, spec: str, resume: bool = False) -> list[str]:
     """The paired evals.run: pause at this sweep's slice, a plan per case for a watchdog, resume when held. #813, #810."""
-    argv = ["uv", "run", "python", "-m", "evals.run", "--modality", lane,
+    from harness import runner_gaps
+    argv = [*runner_gaps.launcher([inc_spec, spec], ["uv", "run", "python"]), "-m", "evals.run", "--modality", lane,
             "--repeat", str(plan.repeat), "--out", str(out),
             "--candidates", f"{inc_spec},{spec}"]
     if plan.side != "all":

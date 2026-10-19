@@ -19,7 +19,7 @@ SERVING = ("adoptions_pass_here", "no_reference_served", "served_matches_adoptio
 SCHEDULE = ("sweep_on_schedule", "sweep_on_deployed_code")
 VERDICTS = ("too_big_ceiling_current", "too_big_names_variant", "terminal_reason_coherent", "no_ranking_verdict",
             "load_log_kept", "runner_gap_until_current", "broken_runner_layout",
-            "attachment_by_tag")
+            "attachment_by_tag", "package_until_reachable")
 CHECKS = mc.INVARIANTS + SERVING + SCHEDULE + VERDICTS
 #: Checks a loop step repairs, and the heartbeat key that step marks: each warns until its own repair has run. #972.
 REPAIRED_BY = {"too_big_ceiling_current": heartbeat.REOPENED_TOO_BIG,
@@ -189,6 +189,26 @@ def _broken_runner_layout(conn) -> list:
             if reasons.classify(r["detail"] or "", reasons.RUNNER, r["spec"]) == reasons.LOAD_FAILED_LAYOUT]
 
 
+def unreachable_packages(conn, repo=None) -> list[dict]:
+    """{until, ids} per held package: until no deploy step installs, past those the loop's runner-gap rewrite changes. #1024."""
+    from harness import runner_gaps
+    from harness.memory_store.revisit import runner_gap_rewrites
+    rewriting = {r["id"] for r in runner_gap_rewrites(conn)}
+    by: dict = {}
+    for r in conn.execute("SELECT v.id, v.until FROM proposals p JOIN verdicts v ON v.id = p.state_verdict_id "
+                          "WHERE v.until LIKE 'package:%' ORDER BY v.id"):
+        dist, _, venv = r["until"].removeprefix("package:").partition("@")
+        if r["id"] not in rewriting and not runner_gaps.has_package(dist, venv) \
+                and not runner_gaps.provides(dist, venv, repo):
+            by.setdefault(r["until"], []).append(r["id"])
+    return [{"until": u, "ids": ids} for u, ids in sorted(by.items())]
+
+
+def _package_until_reachable(conn) -> list:
+    return [f"{r['until']}: no deploy step installs it (verdicts {', '.join(map(str, r['ids']))})"
+            for r in unreachable_packages(conn)]
+
+
 def _attachment_by_tag(conn, rederived_at=...) -> tuple[list, list]:
     """(failures, warnings): attachment words no current card reading gives; one the loop's re-read left fails. #949, #972."""
     from harness import memory_store as ms
@@ -290,12 +310,19 @@ def audit(path=None, config=None) -> dict:
         incoherent, pinned = _terminal_reason_coherent(conn)
         unkept, waiting = _load_log_kept(conn)
         failed = {**{name: bad for name, (bad, _) in inventories.items()}, "terminal_reason_coherent": incoherent,
-                  "load_log_kept": unkept, "broken_runner_layout": _broken_runner_layout(conn)}
+                  "load_log_kept": unkept, "broken_runner_layout": _broken_runner_layout(conn),
+                  "package_until_reachable": _package_until_reachable(conn)}
         checks += [mc._check(name, failed[name]) for name in VERDICTS]
         warnings = {name: f"awaiting the loop's {REPAIRED_BY[name]}: " + mc._say(fresh)
                     for name, (bad, fresh) in inventories.items() if fresh and not bad}
         if pinned and not incoherent:
             warnings["terminal_reason_coherent"] = "pinned, awaiting a fix: " + mc._say(pinned)
+        if not failed["package_until_reachable"]:
+            from harness import runner_gaps
+            missing = runner_gaps.uninstalled_runner_packages()
+            if missing:
+                warnings["package_until_reachable"] = ("runner packages no deploy step installs, so a screen "
+                                                       "waiting on one waits for a pin: " + ", ".join(missing))
         moved = _sweep_on_deployed_code()
         if moved:
             warnings["sweep_on_deployed_code"] = moved

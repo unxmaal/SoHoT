@@ -42,9 +42,15 @@ REMOTE_CODE = "policy:trust_remote_code"
 #: The venv each process engine runs in, under <home>/venvs or the env var its script reads. #1008.
 RUNNER_VENVS = {"diffusers": "diffusers-cuda", "diffusers-video": "diffusers-cuda",
                 "hf-ocr": "hf-task", "rerank": "hf-task", "embed": "hf-task", "hf-pii": "hf-task"}
-_VENV_ENV = {"diffusers-cuda": "DIFFUSERS_VENV", "hf-task": "HF_TASK_VENV"}
 #: The in-process stt runner (audio.transcribe_whisper); the uv `whisper` group installs it. #1021.
 WHISPER_PACKAGE = "mlx-whisper"
+WHISPER_VENV = "whisper"
+#: Runner venvs uv syncs from this project's lock plus one dependency group when a run first needs them: venv -> group. #1024.
+GROUP_VENVS = {WHISPER_VENV: "whisper"}
+_VENV_ENV = {"diffusers-cuda": "DIFFUSERS_VENV", "hf-task": "HF_TASK_VENV", WHISPER_VENV: "WHISPER_VENV"}
+#: The script that builds each process engine's venv and the bash array of pins it installs. #1024.
+VENV_SCRIPTS = {"diffusers-cuda": ("scripts/diffusers-venv.sh", "DIFFUSERS_VENV_PINS", "DIFFUSERS_TORCH"),
+                "hf-task": ("scripts/hf-task-venv.sh", "HF_TASK_PINS", "HF_TASK_TORCH")}
 
 _NAMED_TYPE = re.compile(r"model type ([\w.\-]+?)\.? not supported")
 _PARAMS = re.compile(r"parameters not in model:(.*)", re.S)
@@ -280,8 +286,108 @@ def whisper_repo(model: str, card=None) -> bool:
 
 
 def whisper_in_process(model: str, card=None) -> bool:
-    """Whether a whisper repo can screen through mlx-whisper in this interpreter. #1021."""
-    return whisper_repo(model, card) and has_package(WHISPER_PACKAGE)
+    """Whether a whisper repo can screen through mlx-whisper, in the whisper group's env. #1021, #1024."""
+    return whisper_repo(model, card) and provides(WHISPER_PACKAGE, WHISPER_VENV)
+
+
+def _options(spec: str) -> dict:
+    tail = (spec or "").partition(",")[2]
+    return {k.strip(): v.strip() for k, _, v in (kv.partition("=") for kv in tail.split(",")) if k.strip()}
+
+
+def venv_of(spec: str) -> str:
+    """The venv the spec's runner imports from: a process engine's, the whisper group's, or "" (this interpreter). #1024."""
+    options = _options(spec)
+    if options.get("backend") == "whisper" or options.get("ear", "").partition(":")[0] == "whisper":
+        return WHISPER_VENV
+    return RUNNER_VENVS.get(head_of(spec), "")
+
+
+def launcher(specs, default: list[str]) -> list[str]:
+    """The interpreter an evals.run over `specs` starts with: a group venv's uv run when a spec needs one, else `default`. #1024."""
+    venv = next((v for v in map(venv_of, specs) if v in GROUP_VENVS), "")
+    if not venv:
+        return list(default)
+    return ["env", "-u", "VIRTUAL_ENV", f"UV_PROJECT_ENVIRONMENT={venv_path(venv)}",
+            "uv", "run", "--group", GROUP_VENVS[venv], "python"]
+
+
+def _requirements(names) -> frozenset:
+    """Canonical names of the requirements whose markers hold on this interpreter."""
+    from packaging.requirements import InvalidRequirement, Requirement
+    out = set()
+    for text in names:
+        try:
+            req = Requirement(text)
+        except InvalidRequirement:
+            continue
+        # packaging caches its marker environment per process; sys.platform is read here, at call time.
+        if req.marker is None or req.marker.evaluate({"sys_platform": sys.platform}):
+            out.add(_canonical(req.name))
+    return frozenset(out)
+
+
+def _pyproject(repo: Path) -> dict:
+    import tomllib
+    try:
+        return tomllib.loads((repo / "pyproject.toml").read_text(encoding="utf-8"))
+    except (OSError, tomllib.TOMLDecodeError):
+        return {}
+
+
+def _bash_values(text: str, name: str) -> list[str]:
+    """Each word of the bash array `name=(...)`, in every branch that assigns it."""
+    words = []
+    for body in re.findall(rf"^\s*{re.escape(name)}=\((.*?)\)", text, re.M | re.S):
+        words += [w.strip("\"'") for w in body.split()]
+    return words
+
+
+def _script_pins(repo: Path, script: str, *arrays: str) -> frozenset:
+    """The distributions a venv script's pin arrays name, each `$X_PIN` read from scripts/versions.sh."""
+    try:
+        text = (repo / script).read_text(encoding="utf-8")
+        versions = (repo / "scripts" / "versions.sh").read_text(encoding="utf-8")
+    except OSError:
+        return frozenset()
+    pins = dict(re.findall(r'^([A-Z0-9_]+)="([^"]*)"', versions, re.M))
+    found = []
+    for array in arrays:
+        for word in _bash_values(text, array):
+            ref = re.fullmatch(r"\$\{?([A-Z0-9_]+)\}?", word)
+            value = pins.get(ref.group(1), "") if ref else word
+            if value and not value.startswith(("-", "http")):
+                found.append(value)
+    return _requirements(found)
+
+
+def installs(venv: str, repo: Path | None = None) -> frozenset:
+    """The distributions some deploy step installs into `venv` ("" is the project's own) on this platform, directly. #1024."""
+    from harness import paths
+    repo = repo or paths.REPO
+    if venv in VENV_SCRIPTS:
+        return _script_pins(repo, *VENV_SCRIPTS[venv])
+    if venv and venv not in GROUP_VENVS:
+        return frozenset()
+    project = _pyproject(repo)
+    groups = project.get("dependency-groups") or {}
+    wanted = list((project.get("project") or {}).get("dependencies") or [])
+    for group in ("dev", *([GROUP_VENVS[venv]] if venv else [])):
+        wanted += [g for g in groups.get(group) or () if isinstance(g, str)]
+    return _requirements(wanted)
+
+
+def provides(dist: str, venv: str, repo: Path | None = None) -> bool:
+    """Whether a deploy step installs `dist` into `venv` here, so a wait on it can end. #1024."""
+    return _canonical(dist) in installs(venv, repo)
+
+
+def uninstalled_runner_packages(repo: Path | None = None) -> list[str]:
+    """The reasons.RUNNER_PACKAGES distributions no deploy step installs into any venv here. #1024."""
+    from harness import reasons
+    venvs = ("", *VENV_SCRIPTS, *GROUP_VENVS)
+    have = frozenset().union(*(installs(v, repo) for v in venvs))
+    return sorted({_canonical(d) for d in reasons.RUNNER_PACKAGES.values()} - have)
 
 
 def package_until(evidence: str, candidate: str) -> str:
@@ -290,7 +396,7 @@ def package_until(evidence: str, candidate: str) -> str:
     dist = reasons.missing_package(evidence)
     if not dist:
         return ""
-    venv = RUNNER_VENVS.get(head_of(candidate), "")
+    venv = venv_of(candidate)
     return f"package:{dist}@{venv}" if venv else f"package:{dist}"
 
 
@@ -306,8 +412,8 @@ def cause_until(cls: str, evidence: str, candidate: str, card=None) -> str:
     low = (evidence or "").lower()
     mtype = model_type(card, low)
     if head == "stt" and "processor not found" in low and whisper_repo(candidate.partition(":")[2], card):
-        # A whisper repo mlx-audio's server cannot load reopens once mlx-whisper is installed. #1021.
-        return f"package:{WHISPER_PACKAGE}"
+        # A whisper repo mlx-audio's server cannot load waits on the whisper group's env. #1021, #1024.
+        return f"package:{WHISPER_PACKAGE}@{WHISPER_VENV}"
     if not head:
         if _task(card) in VLM_TASKS:
             return f"runner:{VLM_RUNNER}"
