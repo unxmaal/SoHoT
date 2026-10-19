@@ -22,6 +22,10 @@ MISSING_PACKAGE = 4
 RUNTIME_SUFFIX = ".runtime.json"
 #: (device, attention) tried in turn while the MPS backend aborts; None is the default device. #604.
 FALLBACKS = ((None, ""), (None, "eager"), ("cpu", ""))
+#: What transformers' sentencepiece extractor imports before it falls back to tiktoken. #1025.
+SENTENCEPIECE_MODULES = ("sentencepiece", "google.protobuf")
+#: Words in a slow-to-fast tokenizer conversion failure.
+CONVERTERS = ("sentencepiece", "tiktoken")
 #: New tokens an ocr reply may take; a reply that fills it records hf_max_new_tokens on its row. #700.
 MAX_NEW_TOKENS = 512
 #: The dtypes an ocr case may be forced to load at. #1018.
@@ -95,12 +99,13 @@ def read_image(model: str, image: str, prompt: str, revision: str | None = None,
         new = out[:, inputs["input_ids"].shape[1]:]
         runtime["limit"] = limit_hit(new.shape[1], max_new_tokens)
         return proc.batch_decode(new, skip_special_tokens=True)[0].strip()
+    # Built before generating, so a tokenizer the venv cannot build fails in seconds. #1025.
+    decoder = getattr(proc, "tokenizer", None) or _tokenizer(model, revision, AutoTokenizer)
     pixels = getattr(proc, "image_processor", proc)(images=picture, return_tensors="pt")
     out = net.generate(pixel_values=pixels.pixel_values.to(dev, dtype=dtype),
                        max_new_tokens=max_new_tokens, do_sample=False)
     # The decoder's start token is not a new one.
     runtime["limit"] = limit_hit(out.shape[1] - 1, max_new_tokens)
-    decoder = getattr(proc, "tokenizer", None) or _tokenizer(model, revision, AutoTokenizer)
     return decoder.batch_decode(out, skip_special_tokens=True)[0].strip()
 
 
@@ -112,18 +117,52 @@ def _tokenizer(model: str, revision, auto):
     """
     try:
         return auto.from_pretrained(model, revision=revision)
-    except ValueError:
-        import json
+    except ValueError as exc:
+        try:
+            return _named_tokenizer(model, revision, exc)
+        except ValueError as again:
+            gap = _converter_gap(again)
+            if not gap:
+                raise
+            raise ModuleNotFoundError(f"No module named '{gap}'", name=gap) from again
 
-        import transformers
-        from huggingface_hub import hf_hub_download
-        path = hf_hub_download(model, "tokenizer_config.json", revision=revision)
-        with open(path, encoding="utf-8") as f:
-            named = json.load(f).get("tokenizer_class") or ""
-        cls = getattr(transformers, named, None)
-        if cls is None:
-            raise
-        return cls.from_pretrained(model, revision=revision)
+
+def _named_tokenizer(model: str, revision, exc: ValueError):
+    import transformers
+    from transformers.utils import cached_file
+    path = cached_file(model, "tokenizer_config.json", revision=revision)
+    with open(path, encoding="utf-8") as f:
+        named = json.load(f).get("tokenizer_class") or ""
+    cls = getattr(transformers, named, None)
+    if cls is None:
+        raise exc
+    return cls.from_pretrained(model, revision=revision)
+
+
+def _converter_gap(exc: BaseException) -> str:
+    """The module a failed slow-tokenizer conversion lacked: sentencepiece's pair before tiktoken, its fallback. #1025."""
+    if not any(w in str(e).lower() for e in _chain(exc) for w in CONVERTERS):
+        return ""
+    import importlib
+    for name in SENTENCEPIECE_MODULES:
+        try:
+            importlib.import_module(name)
+        except ImportError:
+            return name
+    return import_gap(exc)
+
+
+def _chain(exc: BaseException | None):
+    seen = set()
+    while exc is not None and id(exc) not in seen:
+        seen.add(id(exc))
+        yield exc
+        exc = exc.__cause__ or exc.__context__
+
+
+def import_gap(exc: BaseException) -> str:
+    """The module an ImportError under this exception names, or "". #1025."""
+    return next((e.name for e in _chain(exc) if isinstance(e, ImportError) and e.name), "")
 
 
 def ocr(model: str, image: str, prompt: str, out, read=read_image) -> None:
@@ -192,6 +231,13 @@ def pii(model: str, text: str, out, tag=tag_text) -> None:
     Path(out).write_text(json.dumps({"spans": spans}), encoding="utf-8")
 
 
+def _lacks(exc: ImportError) -> int:
+    print(exc, file=sys.stderr)
+    what = next((ln.strip() for ln in str(exc).splitlines() if ln.strip()), repr(exc))
+    print(f"hf-task venv lacks a package: {what}", file=sys.stderr)
+    return MISSING_PACKAGE
+
+
 def main(argv=None, read=None, score=None, tag=None) -> int:
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = p.add_subparsers(dest="task", required=True)
@@ -242,11 +288,12 @@ def main(argv=None, read=None, score=None, tag=None) -> int:
             tagger = tag or functools.partial(tag_text, revision=a.revision, device=a.device)
             pii(a.model, a.text, a.out, tag=tagger)
     except ImportError as exc:
-        print(exc, file=sys.stderr)
-        what = next((ln.strip() for ln in str(exc).splitlines() if ln.strip()), repr(exc))
-        print(f"hf-task venv lacks a package: {what}", file=sys.stderr)
-        return MISSING_PACKAGE
+        return _lacks(exc)
     except ValueError as exc:
+        gap = import_gap(exc)
+        if gap and "trust_remote_code" not in str(exc):
+            print(exc, file=sys.stderr)
+            return _lacks(ModuleNotFoundError(f"No module named '{gap}'", name=gap))
         if "trust_remote_code" not in str(exc):
             raise
         print(f"needs its own runner: {a.model} ships its own modelling code "

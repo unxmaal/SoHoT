@@ -89,7 +89,8 @@ LEFT_OUT = {
         "test_method_serving.py", "test_pii_lane.py",
         "test_power_budget.py", "test_quants_882.py", "test_repo_claude_905.py", "test_repo_lane.py", "test_runner_base_weights.py", "test_schema_lanes.py",
         "test_planted_919.py", "test_trajectory_921.py", "test_unranked_weight_954.py", "test_inventory_heartbeat_972.py",
-        "test_silent_truncation.py", "test_slots_memory.py", "test_store_downloads.py"),
+        "test_silent_truncation.py", "test_slots_memory.py", "test_store_downloads.py",
+        "test_trocr_tokenizer_1025.py"),
     "harness/screen.py": (
         "test_attachment_tags_949.py",
         "test_variants_947.py", "test_chaos.py", "test_claims_balanced_metric.py", "test_harness_engines_repo_id.py",
