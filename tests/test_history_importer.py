@@ -197,7 +197,7 @@ def test_the_committed_manifest_is_pinned_versioned_and_a_pilot_sized_set_of_fli
     got = history.manifest()
     assert got["revision"] == history.REVISION and got["version"] == history.VERSION
     tasks = got["tasks"]
-    assert 12 <= len(tasks) <= 20
+    assert len(tasks) >= 12
     assert len({t["id"] for t in tasks}) == len(tasks)
     assert got["examined"] == len(tasks) + sum(got["dropped"].values()) == len(tasks) + len(got["drops"])
     for t in tasks:
@@ -255,3 +255,152 @@ def test_a_task_whose_fix_creates_a_file_names_it_to_create_and_its_reference_re
         a.close()
     assert "--- mod.py ---" in asked and "--- helper.py ---" not in asked
     assert "Files to create (they do not exist at the commit to fix): helper.py" in asked
+
+
+# --- growing the set (#997) -----------------------------------------------------------
+
+#: The pilot's tasks as #996 froze them: fix sha, split side and a digest of the whole row. A grown manifest keeps every one.
+PILOT = {
+    "sohot-363": ("bf4586bc2951", "holdout", "0055d7accb2b"),
+    "sohot-368": ("5839a3552153", "dev", "2dc141b03b71"),
+    "sohot-371": ("467550a8e0da", "holdout", "da55fcb8daf7"),
+    "sohot-374": ("fee4061ce915", "holdout", "f9b5e28ae1a9"),
+    "sohot-376": ("67dc663cb680", "dev", "d5bb2cdc5c39"),
+    "sohot-396": ("8f2219efa0bf", "holdout", "c60c3b145556"),
+    "sohot-399": ("7d44a19c8fc4", "holdout", "be97c54bf9e5"),
+    "sohot-404": ("73432117367a", "dev", "b32fc66a8bdc"),
+    "sohot-438": ("295ba9e5b47a", "holdout", "e6ca767b4c68"),
+    "sohot-455": ("93b0d696963a", "holdout", "58711bdce933"),
+    "sohot-570": ("fd1698fba9aa", "dev", "bf663ad10268"),
+    "sohot-598": ("6fcaf37ed54e", "holdout", "b3aa3cfe3650"),
+    "sohot-632": ("5068697ae0ec", "dev", "6fa1af686307"),
+    "sohot-642": ("50a5aba1dfff", "holdout", "2907a5182b1e"),
+    "sohot-647": ("29cad057045f", "holdout", "85e294997b95"),
+    "sohot-720": ("78b0d43faa3c", "dev", "6d5e2666318d"),
+    "sohot-788": ("9f042f9d5230", "holdout", "7065a769beae"),
+    "sohot-858": ("df54638acb63", "dev", "0f3b2deeb33c"),
+    "sohot-859": ("8ae08a76bd29", "holdout", "75792e5f3aba"),
+    "sohot-879": ("9382f449fa0e", "holdout", "53069d376a4b"),
+}
+
+
+def _row_digest(task) -> str:
+    import hashlib
+    import json
+    return hashlib.sha256(json.dumps(task, sort_keys=True).encode()).hexdigest()[:12]
+
+
+def test_the_pilot_tasks_keep_their_ids_fix_commits_rows_and_split_sides():
+    m = history.manifest()
+    tasks = {t["id"]: t for t in m["tasks"]}
+    sides = {i: s for s in ("dev", "holdout") for i in m["split"][s]}
+    for tid, (fix, side, digest) in PILOT.items():
+        assert tid in tasks, f"{tid} left the manifest"
+        assert tasks[tid]["fix"].startswith(fix) and sides[tid] == side == history.side_of(tasks[tid]["fix"])
+        assert _row_digest(tasks[tid]) == digest, f"{tid}'s row changed"
+
+
+def _mul(src):
+    _commit(src, {"mod.py": FIXED + "\ndef mul(a, b):\n    return a * b\n",
+                  "tests/test_mul.py": "import mod\n\ndef test_mul():\n    assert mod.mul(2, 3) == 6\n"},
+            "mul multiplies (#7) (#8)")
+
+
+def _old(src) -> dict:
+    """A manifest holding the fixture's #5 fix as an already surveyed task, with a row no survey would write."""
+    fix, base = subprocess.run(["git", "-C", str(src), "rev-parse", "main", "main^"],
+                               capture_output=True, text=True).stdout.split()
+    return {"revision": fix, "tasks": [{"id": "sohot-5", "issue": 5, "pr": 6, "fix": fix, "base": base,
+                                       "prompts": {"spec": "kept as written", "symptom": "s"}}]}
+
+
+def test_growing_keeps_an_old_task_as_it_was_and_fetches_the_commits_since(tmp_path):
+    src = _repo(tmp_path, FIXED, ADD_TEST)
+    keep = _old(src)
+    history.survey(str(src), "main", None, tmp_path / "log.txt", get_issue=lambda n: None,
+                   env=lambda task: pytest.fail("nothing runs"), keep=keep)
+    _mul(src)
+    asked = []
+    got = history.survey(str(src), "main", None, tmp_path / "log.txt",
+                         get_issue=lambda n: asked.append(n) or {"title": "t", "body": "## Problem\nno mul\n"},
+                         env=lambda task: pytest.fail("nothing runs"), keep=keep)
+    assert got["tasks"] == keep["tasks"] and asked == [7]
+    assert got["candidates"] == 2 and [d["issue"] for d in got["drops"]] == [7]
+    assert got["split"] == history.split(keep["tasks"]) and got["criteria"]["kept_from"] == keep["revision"]
+
+
+def test_a_newer_fix_for_an_old_tasks_issue_is_a_duplicate_and_the_old_task_stays(tmp_path):
+    src = _repo(tmp_path, FIXED, ADD_TEST)
+    keep = _old(src)
+    _commit(src, {"mod.py": FIXED + "\n", "tests/test_mod.py": ADD_TEST + "\n"}, "add again (#5) (#9)")
+    got = history.survey(str(src), "main", None, tmp_path / "log.txt",
+                         get_issue=lambda n: pytest.fail("no issue is read"),
+                         env=lambda task: pytest.fail("nothing runs"), keep=keep)
+    assert got["tasks"] == keep["tasks"] and got["dropped"] == {"duplicate_issue": 1}
+
+
+def test_a_kept_task_the_revision_does_not_hold_stops_the_survey(tmp_path):
+    src = _repo(tmp_path, FIXED, ADD_TEST)
+    keep = {"tasks": [{"id": "sohot-1", "issue": 1, "fix": "e" * 40}]}
+    with pytest.raises(RuntimeError, match="sohot-1"):
+        history.survey(str(src), "main", None, tmp_path / "log.txt", get_issue=lambda n: None, keep=keep)
+
+
+@DARWIN
+def test_a_grown_task_is_probed_and_takes_the_side_its_fix_draws(tmp_path):
+    src = _repo(tmp_path, FIXED, ADD_TEST)
+    keep = _old(src)
+    _mul(src)
+    got = _survey(src, tmp_path, keep=keep)
+    new = next(t for t in got["tasks"] if t["id"] == "sohot-7")
+    assert new["fail_to_pass"] == ["tests/test_mul.py::test_mul"] and got["tasks"][1:] == keep["tasks"]
+    assert new["id"] in got["split"][history.side_of(new["fix"])]
+
+
+def test_the_yield_counts_every_candidate_once_with_post_survey_drops_and_the_unexamined():
+    got = {"candidates": 10, "examined": 7, "criteria": {"limit": 3, "probes": None},
+           "tasks": [{"id": "sohot-1", "fix": "a" * 40}, {"id": "sohot-2", "fix": "b" * 40},
+                     {"id": "sohot-3", "fix": "c" * 40}],
+           "dropped": {"too_big": 3, "flaky": 1}}
+    lines = history.yield_table(got, dropped={"sohot-2-spec": "x", "sohot-2-symptom": "x", "sohot-3-spec": "x"})
+    assert lines[0] == "10 candidates, 2 tasks, 5 dropped, 3 not examined (limit 3, probes None)"
+    assert lines[1:4] == ["     3  too_big", "     1  flaky", "     1  validation"]
+    assert lines[-1].startswith("split: ") and "2 tasks" not in lines[-1]
+
+
+def test_the_committed_manifest_yield_adds_up():
+    m = history.manifest()
+    head = history.yield_table(m)[0]
+    pool, usable, dropped = (int(w) for w in head.replace(",", "").split()[0:6:2])
+    gone = sum(all(f"{t['id']}-{v}" in history.DROPPED for v in history.VARIANTS) for t in m["tasks"])
+    assert usable == len(m["tasks"]) - gone and pool == m.get("candidates", m["examined"])
+    assert pool >= usable + dropped
+
+
+def test_an_issue_lookup_that_fails_raises_and_only_a_missing_issue_is_none(monkeypatch):
+    def gh(rc, err):
+        return lambda *a, **k: subprocess.CompletedProcess(a, rc, stdout="", stderr=err)
+    monkeypatch.setattr(history.subprocess, "run", gh(1, "GraphQL: Could not resolve to an issue or pull "
+                                                         "request with the number of 9. (repository.issue)"))
+    assert history.issue(9) is None
+    monkeypatch.setattr(history.subprocess, "run", gh(1, "error connecting to api.github.com"))
+    with pytest.raises(RuntimeError, match="api.github.com"):
+        history.issue(9)
+
+
+def test_a_dry_run_stops_after_its_probes_and_counts_the_rest_unexamined(tmp_path):
+    src = _repo(tmp_path, FIXED, ADD_TEST)
+    _mul(src)
+    got = history.survey(str(src), "main", None, tmp_path / "log.txt", get_issue=lambda n: ISSUE,
+                         env=lambda task: pytest.fail("nothing runs"), probes=0)
+    assert got["candidates"] == 2 and got["examined"] == 0 and got["tasks"] == []
+    assert "2 not examined" in history.yield_table(got, dropped={})[0]
+
+
+def test_a_survey_from_the_command_line_keeps_the_committed_tasks_unless_told_to_restart(tmp_path, monkeypatch):
+    seen = []
+    monkeypatch.setattr(history, "survey", lambda *a, keep=None, probes=None: seen.append(keep) or
+                        {**history.manifest(), "candidates": 1})
+    for extra in ([], ["--restart"]):
+        assert history.main(["--log", str(tmp_path / "l"), "--out", str(tmp_path / "m.json"), *extra]) == 0
+    assert seen == [history.manifest(), None]

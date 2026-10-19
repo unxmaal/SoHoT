@@ -1692,6 +1692,15 @@ labellers score under 2 on both axes (a disputed axis is unfair until
 `settled`). A case that fails validation goes in
 `evals/importers/history.py:DROPPED` with its reason (#920).
 
+`python -m evals.importers.history --out DIR/history.json --log DIR/survey.log`
+surveys the whole fix-commit pool (fetching the mirror first) and keeps every
+committed task's row as it is unless `--restart`; a new task takes its side from
+its fix sha, so no old side moves. `--probes N` stops after running N
+candidates (a dry run). `--yield` prints `N candidates, M tasks, K dropped`
+with the count per drop reason, cases in `DROPPED` included (#997). The survey
+runs SoHoT's tests twice at two commits per candidate, so it goes to the night
+queue.
+
 Prompts and skills are measured as arms (#995): `claude-code:<model>,context=<spec>`
 with `none`, `skill:<name>` (the SKILL.md body without frontmatter, from
 `harness/arm_contexts.yaml` first, then `~/.claude/skills`), `prompt:<template>`
