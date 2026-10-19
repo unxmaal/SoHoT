@@ -283,3 +283,33 @@ def test_a_pinned_incoherent_row_warns_without_failing_the_audit(live, monkeypat
     check = _checks(got)["terminal_reason_coherent"]
     assert check["ok"] and check["warn"] and f"verdict {vid} " in check["detail"], got
     assert got["ok"], got
+
+
+def test_no_served_config_is_one_finding_naming_its_path_not_one_per_lane(live, config):
+    gateway.served_path(config).unlink()
+    check = _checks(live_audit.audit(live))["served_matches_adoption"]
+    assert not check["ok"]
+    assert str(gateway.served_path(config)) in check["detail"] and "sohot-" not in check["detail"]
+
+
+def test_the_live_store_audited_from_a_checkout_reads_the_deploys_served_config(live, tmp_path, monkeypatch):
+    from harness import paths
+    deploy = tmp_path / "deploy"
+    (deploy / "gateway").mkdir(parents=True)
+    base = deploy / "gateway" / "config.yaml"
+    base.write_text(yaml.safe_dump(BASE), encoding="utf-8")
+    gateway.write_served(base)
+    monkeypatch.delenv(gateway.ENV_VAR)
+    monkeypatch.setattr(paths, "is_live", lambda p: True)
+    monkeypatch.setattr(paths, "runs_elsewhere", lambda: deploy)
+    got = live_audit.audit(live)
+    assert got["served_config"] == str(gateway.served_path(base))
+    assert _checks(got)["served_matches_adoption"]["ok"], got
+    assert f"served config {gateway.served_path(base)}" in live_audit.report_text(got)
+
+
+def test_a_store_that_is_not_the_live_one_keeps_this_checkouts_config(live, monkeypatch):
+    from harness import paths
+    monkeypatch.delenv(gateway.ENV_VAR)
+    monkeypatch.setattr(paths, "runs_elsewhere", lambda: pytest.fail("asked for the deploy"))
+    assert live_audit.gateway_config(live) == gateway.config_path()
