@@ -128,9 +128,11 @@ def changes(conn, logs=None, root=None) -> list[dict]:
             found.append(_unreopenable(conn, r, base))
         else:
             found.append({**base, "skipped": "no repair names this kind; a person decides it"})
-    found += [_reclassed(conn, r, logs, root) for r in misclassed(conn)]
     held = {c["verdict_id"] for c in found}
-    return found + [c for c in drafters(conn) if c["verdict_id"] not in held]
+    # A drafter is an attachment whatever else its detail says, so it never reopens to fail again. #1047.
+    attach = [c for c in drafters(conn) if c["verdict_id"] not in held]
+    named = {c["verdict_id"] for c in attach}
+    return found + [_reclassed(conn, r, logs, root) for r in misclassed(conn) if r["id"] not in named] + attach
 
 
 def _unreopenable(conn, r, base: dict) -> dict:

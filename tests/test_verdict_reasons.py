@@ -54,6 +54,7 @@ EXPECTED = {
     reasons.INCOMPLETE_COPY: ("queued", "harness"),
     reasons.LOAD_FAILED_FILE: ("declined", "candidate"),
     reasons.ATTACHMENT: ("declined", "candidate"),
+    reasons.PLAN_REFUSED: ("declined", "limit"),
 }
 
 

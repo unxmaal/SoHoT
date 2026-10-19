@@ -672,6 +672,11 @@ def decide_class(cls: str, why: str = "", candidate: str = "",
                  limits=(), facts: dict | None = None, evidence: str = "", card=None) -> Verdict:
     """The verdict a failure class means, with its reason and until; `evidence` is the failure text when `why` is not. #408, #950."""
     got, reason = reasons.CLASSES[cls]
+    stem, refused = reasons.plan_refusal(" ".join(x for x in (why, evidence) if x))
+    if stem and got == "declined":
+        # Our own plan refused it before any load, so it waits on a plan that serves the stem, never llama.cpp. #1047.
+        return Verdict(got, f"not served: this harness's llama-server plan refused it before any load: {refused}",
+                       reason, f"plan:{stem}", cls)
     limit = sorted(limits)[0] if limits else ""
     until = ""
     if reason == reasons.RUNTIME:
