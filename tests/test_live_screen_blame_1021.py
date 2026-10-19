@@ -1,6 +1,7 @@
 """#1021: a llama-server load failure on a bare GGUF repo id and mlx-audio's whisper gap are runtime, not the candidate; a sighting of a queued name writes no verdict."""
 import argparse
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -93,7 +94,7 @@ def test_mlx_audios_missing_processor_on_whisper_is_a_runner_gap(monkeypatch):
     cls = reasons.classify(NO_PROCESSOR, reasons.RUNNER, spec)
     assert cls == reasons.LOAD_FAILED_LAYOUT
     v = screen.decide_class(cls, NO_PROCESSOR.removeprefix("it ran and passed nothing: "), spec)
-    assert (v.outcome, v.reason, v.until) == ("declined", reasons.RUNTIME, "package:mlx-whisper")
+    assert (v.outcome, v.reason, v.until) == ("declined", reasons.RUNTIME, "package:mlx-whisper@whisper")
     assert not transitions.incoherent(v.outcome, v.reason, v.until)
     # Another stt repo without a processor waits on a runner for its layout, still not the candidate.
     other = screen.decide_class(cls, NO_PROCESSOR, "stt:org/some-asr")
@@ -103,15 +104,14 @@ def test_mlx_audios_missing_processor_on_whisper_is_a_runner_gap(monkeypatch):
 
 
 def test_the_whisper_until_is_met_once_mlx_whisper_is_installed():
-    assert revisit.until_met("package:mlx-whisper", {"packages": {"": {"mlx-whisper"}}})
-    assert not revisit.until_met("package:mlx-whisper", {"packages": {"": set()}})
+    assert revisit.until_met("package:mlx-whisper@whisper", {"packages": {"whisper": {"mlx-whisper"}}})
+    assert not revisit.until_met("package:mlx-whisper@whisper", {"packages": {"whisper": set()}})
 
 
-def test_a_whisper_repo_screens_through_mlx_whisper_when_it_is_installed(monkeypatch):
-    have = {"mlx-whisper": False}
-    monkeypatch.setattr(runner_gaps, "has_package", lambda dist, venv="": have.get(dist, False))
+def test_a_whisper_repo_screens_through_mlx_whisper_when_its_group_installs_it(monkeypatch):
+    monkeypatch.setattr(sys, "platform", "linux")
     assert screen.candidate_for("stt", WHISPER) == f"stt:{WHISPER}"
-    have["mlx-whisper"] = True
+    monkeypatch.setattr(sys, "platform", "darwin")
     assert screen.candidate_for("stt", WHISPER) == f"stt:{WHISPER},backend=whisper"
     # openai's own repo is a PyTorch checkpoint mlx-whisper does not read; parakeet is no whisper.
     assert screen.candidate_for("stt", "openai/whisper-large-v3") == "stt:openai/whisper-large-v3"
@@ -145,7 +145,7 @@ def test_coherence_re_decides_both_live_verdicts(tmp_path, monkeypatch, llama):
         _broken(conn, WHISPER, NO_PROCESSOR, f"stt:{WHISPER}")
         found = {c["name"]: c for c in coherence.changes(conn, logs=[log])}
         assert found[REPO]["now"] == ["declined", "screen", reasons.RUNTIME, "version:llama.cpp>11146"]
-        assert found[WHISPER]["now"] == ["declined", "screen", reasons.RUNTIME, "package:mlx-whisper"]
+        assert found[WHISPER]["now"] == ["declined", "screen", reasons.RUNTIME, "package:mlx-whisper@whisper"]
         coherence.apply(conn, list(found.values()))
         assert (run / load_log.FILE).is_file()
         for name, cls in ((REPO, reasons.LOAD_FAILED_RUNTIME), (WHISPER, reasons.LOAD_FAILED_LAYOUT)):

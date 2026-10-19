@@ -225,7 +225,8 @@ def argv(item: dict, base: dict | None = None) -> list[str]:
     """The evals.run command the job runs: the served spec, its incumbent when there is one, at the baseline's repeat and split."""
     from harness import screen
     specs = [item["spec"]] + ([item["incumbent"]] if item["incumbent"] else [])
-    out = ["uv", "run", "python", "-m", "evals.run", "--modality", item["lane"],
+    from harness import runner_gaps
+    out = [*runner_gaps.launcher(specs, ["uv", "run", "python"]), "-m", "evals.run", "--modality", item["lane"],
            "--candidates", ",".join(specs)]
     route = screen.routed_gateway(item["spec"])
     if route:

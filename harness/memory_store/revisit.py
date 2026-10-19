@@ -174,6 +174,9 @@ def until_met(until: str, facts: dict | None = None) -> bool:
         if have is not None:
             return dist in (have.get(venv) or ())
         from harness import runner_gaps
+        if venv in runner_gaps.GROUP_VENVS:
+            # uv builds a group's venv when a run first needs it, so the deploy declaring it ends the wait. #1024.
+            return runner_gaps.provides(dist, venv)
         return runner_gaps.has_package(dist, venv)
     if key == "commit_after":
         seen = (facts.get("last_commit") or "").strip()
@@ -389,7 +392,7 @@ def requeue_missing_in_snapshot(conn) -> list[str]:
 
 
 #: Until keys a screen runtime decline may hold; before #950 every one was `version`.
-GAP_KEYS = ("version", "runner", "format", "policy")
+GAP_KEYS = ("version", "runner", "format", "policy", "package")
 #: The ones a runner gap waits on, for the runners-wanted report.
 RUNNER_WAITS = ("runner", "format", "policy", "package")
 

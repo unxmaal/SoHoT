@@ -505,7 +505,8 @@ def argv(row: dict, outdir=None) -> list[str]:
     """The exact command a screen runs. A few cases, one repeat, no quality
     metrics: the screen answers whether it runs, and a metric here would invite
     ranking a screen against a measurement."""
-    out = [sys.executable or "python", "-m", "evals.run",
+    from harness import runner_gaps
+    out = [*runner_gaps.launcher([row["candidate"]], [sys.executable or "python"]), "-m", "evals.run",
            "--modality", row["modality"],
            "--screen", "--repeat", "1", "--candidates", row["candidate"]]
     upstream = routed_gateway(row.get("name") or "")

@@ -98,7 +98,8 @@ def plan(lanes_state, *, only: str = "", include_stale: bool = True,
                          f"ask for it by name with --lane {name}")
         else:
             spec = screen.candidate_for(name, default) or default
-            task.argv = ["uv", "run", "python", "-m", "evals.run",
+            from harness import runner_gaps
+            task.argv = [*runner_gaps.launcher([spec], ["uv", "run", "python"]), "-m", "evals.run",
                          "--modality", name, "--candidates", spec]
             route = screen.routed_gateway(default)
             if route:
