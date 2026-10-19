@@ -38,14 +38,23 @@ DIFFUSERS_VENV_PINS=("$DIFFUSERS_PIN" "$TRANSFORMERS_PIN" "$ACCELERATE_PIN" "$SA
                 "$SCIPY_PIN" "$TORCHSDE_PIN")
 DIFFUSERS_STAMP="${DIFFUSERS_TORCH[*]} ${DIFFUSERS_VENV_PINS[*]}"
 
+# The stamp carries every installed dist, so a hand install after the build rebuilds it too. #1032.
+_diffusers_dists() {
+  local d
+  for d in "$DIFFUSERS_VENV"/lib/python*/site-packages/*.dist-info "$DIFFUSERS_VENV"/Lib/site-packages/*.dist-info; do
+    if [ -d "$d" ]; then printf '%s\n' "${d##*/}"; fi
+  done | LC_ALL=C sort
+}
+
 PY="$(_diffusers_python)"
-if [ -z "$PY" ] || [ "$(cat "$DIFFUSERS_VENV/.pins" 2>/dev/null)" != "$DIFFUSERS_STAMP" ]; then
+if [ -z "$PY" ] || [ "$(cat "$DIFFUSERS_VENV/.pins" 2>/dev/null)" != "$(printf '%s\n' "$DIFFUSERS_STAMP"; _diffusers_dists)" ]; then
   echo "diffusers: building the generators' environment in $DIFFUSERS_VENV" >&2
-  [ -n "$PY" ] || uv venv --python 3.12 "$DIFFUSERS_VENV" >&2
+  # From empty: uv pip install never removes what an older pin or a hand install left. #1032.
+  uv venv --clear --python 3.12 "$DIFFUSERS_VENV" >&2
   VIRTUAL_ENV="$DIFFUSERS_VENV" uv pip install "${DIFFUSERS_TORCH[@]}" >&2
   VIRTUAL_ENV="$DIFFUSERS_VENV" uv pip install "${DIFFUSERS_VENV_PINS[@]}" >&2
   PY="$(_diffusers_python)"
-  [ -z "$PY" ] || printf '%s' "$DIFFUSERS_STAMP" > "$DIFFUSERS_VENV/.pins"
+  [ -z "$PY" ] || { printf '%s\n' "$DIFFUSERS_STAMP"; _diffusers_dists; } > "$DIFFUSERS_VENV/.pins"
 fi
 if [ -z "$PY" ]; then
   echo "FATAL: no interpreter in $DIFFUSERS_VENV after building it" >&2
