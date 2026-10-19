@@ -1,4 +1,5 @@
 """Adopt gate power, effect size and multiplicity: a null is not a loss it could not have seen. #698."""
+import dataclasses
 import json
 
 import pytest
@@ -178,8 +179,8 @@ def test_effect_alpha_and_the_unseen_rate_are_registered_knobs():
 
 def test_an_underpowered_null_names_the_smallest_gain_the_run_could_see():
     rows = _small_gain(150)
-    weak = power.plan([0.5] * 150, 0.2, stochastic=False, observed=150, rho=0.0, repeat=1,
-                      alpha=0.05, target=0.999)
+    weak = dataclasses.replace(power.plan([0.5] * 150, 0.2, stochastic=False, observed=150, rho=0.0, repeat=1,
+                                          alpha=0.05, target=0.999), cases_needed=150)
     assert not weak.enough
     got = adopt.decide("code", _summary("inc", rows), _summary("ch", rows), rows,
                        split=_split(150), plan=weak)

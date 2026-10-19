@@ -278,10 +278,10 @@ def test_a_methods_null_on_a_saturated_lane_asks_for_cases_the_incumbent_fails()
     assert got.until == "cases:extract>8"
 
 
-def test_a_models_null_on_the_same_lane_stays_underpowered():
+def test_a_models_null_on_the_same_lane_is_lane_too_small_too():
     got = _decide_small("org/model", [True, True, True, False, False],
                         [True, True, True, False, False], _plan([0.6] * 5))
-    assert got.failure_class == reasons.UNDERPOWERED and not got.until
+    assert got.failure_class == reasons.LANE_TOO_SMALL and got.until.startswith("cases:extract>")
 
 
 def test_a_method_that_is_significantly_worse_is_a_loss_whatever_the_lane_size():

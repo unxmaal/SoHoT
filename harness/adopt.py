@@ -205,27 +205,59 @@ def decide(lane: str, incumbent: dict, challenger: dict,
 
 
 def _lane_too_small(lane, name_i, name_c, got: Verdict, plan, split, spec: str) -> Verdict | None:
-    """A method's null on a lane no repeat could power is a fact about the lane, waiting on its cases. #993."""
-    from harness import holdout, methods, power, reasons
-    if not spec or not methods.is_method(spec) or plan.enough or plan.unmeasured:
+    """A null on a lane no repeat could power is a fact about the lane, waiting on its cases, for a model or a method. #993, #1049."""
+    from harness import reasons
+    limit = lane_limit(lane, plan.as_dict(), name_c)
+    if limit is None:
         return None
+    more, why = limit
+    return Verdict(lane, name_i, name_c, False, f"{why} ({got.why}){_sees(plan)}",
+                   failure_class=reasons.LANE_TOO_SMALL,
+                   until=cases_until(lane, _have(lane, split, plan.cases), more))
+
+
+def lane_limit(lane: str, plan: dict, name_c: str = "") -> tuple[int, str] | None:
+    """(more lane cases, why) when the plan's holdout is too small or saturated for any repeat, else None. #993, #1049."""
+    from harness import power
+    cases, need = int(plan.get("cases") or 0), plan.get("cases_needed")
+    target = plan.get("target") or power.TARGET
+    if plan.get("unmeasured") or float(plan.get("power") or 0.0) >= target:
+        return None
+    odds = plan.get("odds")
+    if need is not None and int(need) > cases:
+        more = more_cases(cases, need)
+        return more, (f"lane too small, needs {need} holdout cases: {cases} cannot show "
+                      f"+{float(plan.get('effect') or 0):.2f} per cell at power {target} at any repeat "
+                      f"up to {plan.get('cap')}, so about {more} more {lane} cases are needed before "
+                      f"a null says anything about {name_c or 'a challenger'}")
+    if odds is not None and float(odds[0]) <= 0:
+        return 1, (f"lane too small, needs cases the incumbent fails: it passes all {cases} "
+                   f"holdout cases, so no challenger can show a gain on them")
+    if plan.get("max_power") is not None and float(plan["max_power"]) <= 0:
+        return 1, (f"lane too small: {cases} holdout cases give power 0 even at +1.00 per cell "
+                   f"at every repeat up to {plan.get('cap')}")
+    return None
+
+
+def undecidable(lane: str, name_i: str, name_c: str, plan, split=None) -> Verdict | None:
+    """The verdict a run whose plan cannot decide at any effect would reach, written instead of running it. #1049."""
+    from harness import power, reasons
+    if not power.undecidable(plan):
+        return None
+    more, why = lane_limit(lane, plan.as_dict(), name_c)
+    evidence: dict = {"power": plan.as_dict()}
+    if split is not None:
+        evidence["split"] = split.as_dict()
+    return Verdict(lane, name_i, name_c, False,
+                   f"{why}; not run: power {plan.max_power:.2f} at +1.00 per cell, so no run "
+                   f"of this holdout can decide", failure_class=reasons.LANE_TOO_SMALL,
+                   evidence=evidence, until=cases_until(lane, _have(lane, split, plan.cases), more))
+
+
+def _have(lane: str, split, cases: int) -> int:
+    from harness import holdout
     split = split if split is not None else holdout.for_lane(lane)
-    have = len(set(split.dev) | set(split.holdout)) or plan.cases
-    need = power.too_small(plan)
-    if need is not None:
-        more = more_cases(plan.cases, need)
-        why = (f"lane too small, needs {need} holdout cases: {plan.cases} cannot show "
-               f"+{plan.effect:.2f} per cell at power {plan.target} at any repeat up to {plan.cap}, "
-               f"so about {more} more {lane} cases are needed before this null says anything "
-               f"about {name_c} ({got.why})")
-    elif plan.odds is not None and plan.odds[0] <= 0:
-        more = 1
-        why = (f"lane too small, needs cases the incumbent fails: it passes all {plan.cases} "
-               f"holdout cases, so no method can show a gain on them ({got.why})")
-    else:
-        return None
-    return Verdict(lane, name_i, name_c, False, why, failure_class=reasons.LANE_TOO_SMALL,
-                   until=cases_until(lane, have, more))
+    return len(set(split.dev) | set(split.holdout)) or cases
 
 
 def more_cases(cases: int, need) -> int:
@@ -268,6 +300,12 @@ def _spent_until(conn, name: str, verdict: Verdict, reason: str) -> str:
                        more_cases(plan.get("cases") or 0, plan.get("cases_needed")))
 
 
+def _sees(plan) -> str:
+    mde = getattr(plan, "mde", None)
+    return (f"; smallest gain this run could see: +{mde:.2f} per cell at power {plan.target}"
+            if mde is not None else f"; no gain up to +1.00 is detectable at power {plan.target}")
+
+
 def _null(lane, name_i, name_c, got: Verdict, plan) -> Verdict:
     """A null is a loss only when the plan could see the smallest gain this lane cares about. #479, #698."""
     from harness import power, reasons
@@ -275,10 +313,7 @@ def _null(lane, name_i, name_c, got: Verdict, plan) -> Verdict:
     seen = getattr(plan, "mde", None)
     seen = plan.effect if seen is None and plan.enough else seen
     tail = f"{'; ' + plan.why if plan.why else ''}"
-    mde = getattr(plan, "mde", None)
-    sees = (f"; smallest gain this run could see: +{mde:.2f} per cell at power {plan.target}"
-            if mde is not None else
-            f"; no gain up to +1.00 is detectable at power {plan.target}")
+    sees = _sees(plan)
     if getattr(plan, "unmeasured", False):
         return Verdict(lane, name_i, name_c, False,
                        f"underpowered: the incumbent has no stored draws, so the plan's "
