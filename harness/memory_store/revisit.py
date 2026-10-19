@@ -74,7 +74,7 @@ UNTIL = {
     "cases": "how many cases a lane has (holdout.for_lane)",
     "commit_after": "the upstream's last commit date (inspect.upstream_commit, per row)",
     "format": "a weight format a runner reads; fetching.format_waits reads it, not until_met",
-    "layout": "a weight layout harness.variants groups; inspect re-reads it each sweep, not until_met",
+    "layout": "a weight layout harness.variants groups, on a queued row; proposals.pending reads it, not until_met",
     "runner": "an engine this harness registers (engines.names); none by that name exists yet",
     "policy": "a model type the pinned transformers ships natively (remote_code.native_types)",
     "package": "a distribution installed in a runner venv (runner_gaps.has_package)",
@@ -217,7 +217,7 @@ def _version_tuple(v) -> tuple | None:
     return tuple(int(x) for x in parts) if all(x.isdigit() for x in parts) else None
 
 
-def revisitable(conn: sqlite3.Connection, facts: dict | None = None) -> list:
+def revisitable(conn: sqlite3.Connection, facts: dict | None = None, *, spent: bool = False) -> list:
     """Verdicts decided elsewhere whose condition THIS machine now satisfies.
 
     The read path the columns exist for. A candidate declined on a machine
@@ -225,14 +225,16 @@ def revisitable(conn: sqlite3.Connection, facts: dict | None = None) -> list:
     nothing could find those rows: the reason was a sentence.
 
     Only the verdict holding the state counts, so a condition that was
-    already retracted does not resurrect.
+    already retracted does not resurrect. A condition already met once and
+    re-declined under the same until is spent: reopening it again would only
+    loop, so it is left out, or listed alone with spent=True. #1055.
     """
     if facts is None:
         # What this machine recorded, versions included, not a second probe. #415.
         facts = recorded_facts(conn, remember_machine(conn)) or ms.this_machine()
     rows = conn.execute("""
-        SELECT p.name, p.lane, v.outcome, v.detail, v.until, v.tier,
-               m.fingerprint AS decided_on
+        SELECT p.id AS proposal_id, p.name, p.lane, v.id AS verdict_id, v.outcome, v.detail, v.until, v.tier,
+               v.decided_at, m.fingerprint AS decided_on
           FROM proposals p
           JOIN verdicts v ON v.id = p.state_verdict_id
           LEFT JOIN machines m ON m.id = v.machine_id
@@ -240,14 +242,33 @@ def revisitable(conn: sqlite3.Connection, facts: dict | None = None) -> list:
     """).fetchall()
     # Wherever it was decided: a refusal is written because its condition is
     # unmet, so meeting it later means the machine changed. #295.
-    return [dict(r) for r in rows
-            if r["outcome"] in TERMINAL and until_met(r["until"], facts)]
+    met = [dict(r) for r in rows if r["outcome"] in TERMINAL and _met_here(r["until"], r["lane"], facts)]
+    return [r for r in met if _spent(conn, r) == spent]
 
 
-def requeue_revisitable(conn, facts: dict | None = None) -> list[str]:
-    """Retract every revisitable verdict back to the inspect tier. #295."""
+def _met_here(until: str, lane: str | None, facts: dict) -> bool:
+    """until_met, and a terminal format wait met once a runner of the row's lane reads the format. #1056."""
+    from harness import fetching
+    if until.startswith(fetching.FORMAT_WAIT):
+        have = facts.get("runtimes")
+        runtimes = None if have is None else tuple(r for r in str(have).split(",") if r)
+        return bool(lane) and not fetching.format_waits(until, lane, runtimes)
+    return until_met(until, facts)
+
+
+def _spent(conn, row: dict) -> bool:
+    """Whether this proposal was already reopened because this very until was met, and declined under it again. #1055."""
+    said = f"retracted: {row['until']} is met"
+    return conn.execute(
+        "SELECT 1 FROM verdicts r JOIN verdicts o ON o.id = r.reopens "
+        "WHERE r.proposal_id = ? AND r.id < ? AND o.until = ? AND substr(r.detail, 1, ?) = ? LIMIT 1",
+        (row["proposal_id"], row["verdict_id"], row["until"], len(said), said)).fetchone() is not None
+
+
+def requeue_revisitable(conn, facts: dict | None = None, rows: list | None = None) -> list[str]:
+    """Retract every revisitable verdict (or `rows`, already read) back to the inspect tier. #295, #1055."""
     names = []
-    for r in revisitable(conn, facts):
+    for r in revisitable(conn, facts) if rows is None else rows:
         retract(conn, r["name"], f"{r['until']} is met here")
         names.append(r["name"])
     conn.commit()

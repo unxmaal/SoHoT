@@ -84,7 +84,10 @@ REQUEUED_OLD_SIZING = "requeued_old_sizing_947"
 REOPENED_UNRANKED = "reopened_unranked_954"
 #: When a loop last rewrote every screen runtime decline's until by its cause. #950, #972.
 REWROTE_RUNNER_GAPS = "rewrote_runner_gaps_950"
-KEPT = (REOPENED_TOO_BIG, REDERIVED_ATTACHMENTS, REQUEUED_OLD_SIZING, REOPENED_UNRANKED, REWROTE_RUNNER_GAPS)
+#: When a loop last requeued the refusals whose until this machine meets. #1055.
+REOPENED_REVISITABLE = "reopened_revisitable_1055"
+KEPT = (REOPENED_TOO_BIG, REDERIVED_ATTACHMENTS, REQUEUED_OLD_SIZING, REOPENED_UNRANKED, REWROTE_RUNNER_GAPS,
+        REOPENED_REVISITABLE)
 
 
 def code_commit(repo: Path | None = None) -> str:

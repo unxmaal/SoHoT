@@ -244,7 +244,7 @@ def _run_loop_held(a, keep=None) -> int:
             extra = {"from_store": True, "top": LOOP_INSPECT}
             for repair, args in ((_reopen_stale_too_big, ()), (_reopen_unranked, ()),
                                  (_reopen_upstream_committed, ()), (_reread_runtime_declines, (a,)),
-                                 (_rederive_attachments, ())):
+                                 (_reopen_revisitable, ()), (_rederive_attachments, ())):
                 rc = _repair(label, repair, args, failed) or rc
         sub = _ap.Namespace(**{**vars(a), **flags, **extra, "loop": False})
         rc = _step(label, discover_cmd.cmd_discover(sub), failed) or rc
@@ -520,6 +520,28 @@ def _reopen_upstream_committed(fetch=None, client=None) -> dict:
     for r in got["committed"]:
         print(f"    {r['name']}  ({r['until']}, last commit {r['last_commit']})")
     return got
+
+
+def _reopen_revisitable() -> list[dict]:
+    """Requeue for inspect the refusals whose until this machine now meets, after the runner-gap rewrite. #1055."""
+    from harness import heartbeat, memory_store as ms
+    began = heartbeat.clock()
+    store = ms.connect()
+    try:
+        rows = ms.revisitable(store)
+        ms.requeue_revisitable(store, rows=rows)
+        spent = ms.revisitable(store, spent=True)
+    finally:
+        store.close()
+    heartbeat.mark(heartbeat.REOPENED_REVISITABLE, began)
+    print(f"  requeued {len(rows)} refusal(s) whose until is met here")
+    for r in rows:
+        print(f"    {r['name']}  ({r['until']})")
+    if spent:
+        print(f"  left {len(spent)} met until(s) already spent on a reopen that was declined again")
+        for r in spent:
+            print(f"    {r['name']}  ({r['until']})")
+    return rows
 
 
 def upstream_line(got: dict, requeued: bool = True) -> str:

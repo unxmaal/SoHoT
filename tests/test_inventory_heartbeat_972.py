@@ -112,6 +112,7 @@ STEPS = {
     "attachment_by_tag": (lambda: loop_cmd._rederive_attachments(),
                           {"rederive_attachments": lambda *a, **k: {"read": 0, "changed": [], "requeued": [],
                                                                     "unread": [], "gone": []}}),
+    "revisitable": (lambda: loop_cmd._reopen_revisitable(), {"revisitable": _noop, "requeue_revisitable": _noop}),
     "runner_gap_until_current": (lambda: loop_cmd._reread_runtime_declines(None),
                                  {"cards_to_reread": _noop, "rewrite_runner_gap_untils": _noop}),
 }
