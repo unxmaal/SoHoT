@@ -268,8 +268,9 @@ def _fake_gh(bin_):
 
 def _deploy(work, deploy, check="success", **extra):
     bin_ = _fake_gh(work.parent / "ghbin")
+    # The sweep guard reads this home's heartbeat; never the real one, where a sweep may be running. #1000.
     env = {**os.environ, "PATH": f"{bin_}{os.pathsep}{os.environ['PATH']}", "LH_REPO": str(work),
-           "LH_DEPLOY": str(deploy), "FAKE_GH_CHECK": check, **extra}
+           "LH_DEPLOY": str(deploy), "FAKE_GH_CHECK": check, "LOCALHARNESS_HOME": str(work.parent / "lh"), **extra}
     env = {k: v for k, v in env.items() if k != "LH_DEPLOY_UNCHECKED" or k in extra}
     return subprocess.run([shells.BASH, str(GEN), "deploy"], env=env,
                           capture_output=True, text=True)

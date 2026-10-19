@@ -87,12 +87,56 @@ REWROTE_RUNNER_GAPS = "rewrote_runner_gaps_950"
 KEPT = (REOPENED_TOO_BIG, REDERIVED_ATTACHMENTS, REQUEUED_OLD_SIZING, REOPENED_UNRANKED, REWROTE_RUNNER_GAPS)
 
 
+def code_commit(repo: Path | None = None) -> str:
+    """The commit the checkout this code was imported from has checked out, read from .git; '' when unreadable. #1000."""
+    from harness import paths
+    repo = paths.REPO if repo is None else Path(repo)
+    try:
+        git = repo / ".git"
+        gitdir = git
+        if git.is_file():
+            gitdir = Path(git.read_text(encoding="utf-8").split("gitdir:", 1)[1].strip())
+            gitdir = gitdir if gitdir.is_absolute() else repo / gitdir
+        head = (gitdir / "HEAD").read_text(encoding="utf-8").strip()
+        if not head.startswith("ref:"):
+            return head
+        ref = head[4:].strip()
+        common = gitdir
+        if (gitdir / "commondir").is_file():
+            common = (gitdir / (gitdir / "commondir").read_text(encoding="utf-8").strip()).resolve()
+        for d in (gitdir, common):
+            if (d / ref).is_file():
+                return (d / ref).read_text(encoding="utf-8").strip()
+        packed = (common / "packed-refs").read_text(encoding="utf-8").splitlines()
+    except (OSError, IndexError, UnicodeDecodeError):
+        return ""
+    return next((line.split()[0] for line in packed if line.endswith(f" {ref}")), "")
+
+
+def code_moved(data: dict | None, head: str = "", alive=alive) -> str:
+    """How the commit a loop started on differs from the one it finished on, or from `head` while it runs; '' when not. #1000."""
+    start = (data or {}).get("commit") or ""
+    if not start:
+        return ""
+    if data.get("state") == FINISHED:
+        end, how = data.get("finished_commit") or "", "finished on"
+    elif alive(data.get("pid") or 0):
+        end, how = head, "is still running under"
+    else:
+        return ""
+    if not end or end == start:
+        return ""
+    return (f"the sweep started on {start[:8]} and {how} {end[:8]}: a deploy landed under it, "
+            f"so it ran {start[:8]}'s code")
+
+
 def start(lane: str = "", total: int = 0) -> dict:
     now = clock()
     kept = {k: v for k, v in (read() or {}).items() if k in KEPT}
     data = {**kept, "state": RUNNING, "pid": os.getpid(), "lane": lane, "tier": "",
             "candidate": "", "step": 0, "total": int(total), "item": 0, "items": 0,
-            "started": now, "updated": now, "finished": None, "rc": None, "error": ""}
+            "started": now, "updated": now, "finished": None, "rc": None, "error": "",
+            "commit": code_commit()}
     _write(data)
     return data
 
@@ -171,7 +215,7 @@ def finish(rc: int | None = None, error: str = "") -> None:
     if data is None:
         return
     now = clock()
-    data.update(state=FINISHED, rc=rc, error=error, finished=now, updated=now)
+    data.update(state=FINISHED, rc=rc, error=error, finished=now, updated=now, finished_commit=code_commit())
     _write(data)
 
 

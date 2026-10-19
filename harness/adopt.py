@@ -206,8 +206,6 @@ def decide(lane: str, incumbent: dict, challenger: dict,
 
 def _lane_too_small(lane, name_i, name_c, got: Verdict, plan, split, spec: str) -> Verdict | None:
     """A method's null on a lane no repeat could power is a fact about the lane, waiting on its cases. #993."""
-    import math
-
     from harness import holdout, methods, power, reasons
     if not spec or not methods.is_method(spec) or plan.enough or plan.unmeasured:
         return None
@@ -215,7 +213,7 @@ def _lane_too_small(lane, name_i, name_c, got: Verdict, plan, split, spec: str) 
     have = len(set(split.dev) | set(split.holdout)) or plan.cases
     need = power.too_small(plan)
     if need is not None:
-        more = math.ceil((need - plan.cases) / holdout.FRACTION)
+        more = more_cases(plan.cases, need)
         why = (f"lane too small, needs {need} holdout cases: {plan.cases} cannot show "
                f"+{plan.effect:.2f} per cell at power {plan.target} at any repeat up to {plan.cap}, "
                f"so about {more} more {lane} cases are needed before this null says anything "
@@ -227,7 +225,47 @@ def _lane_too_small(lane, name_i, name_c, got: Verdict, plan, split, spec: str) 
     else:
         return None
     return Verdict(lane, name_i, name_c, False, why, failure_class=reasons.LANE_TOO_SMALL,
-                   until=f"cases:{lane}>{have + more - 1}")
+                   until=cases_until(lane, have, more))
+
+
+def more_cases(cases: int, need) -> int:
+    """Lane cases to add before a holdout of `cases` reaches `need`, at least one."""
+    import math
+
+    from harness import holdout
+    if need is None or int(need) <= int(cases or 0):
+        return 1
+    return max(1, math.ceil((int(need) - int(cases or 0)) / holdout.FRACTION))
+
+
+def cases_until(lane: str, have: int, more: int = 1) -> str:
+    """The predicate a lane-size limit waits on: the lane's `have` cases plus `more`. #993, #1001."""
+    return f"cases:{lane}>{int(have) + int(more) - 1}"
+
+
+def lane_cases(lane: str, split: dict | None = None) -> int:
+    """Cases the lane has: the verdict's own split when it carries one, else the lane's shipped split."""
+    from harness import holdout
+    split = split or {}
+    have = len(set(split.get("dev") or ()) | set(split.get("holdout") or ()))
+    if have:
+        return have
+    now = holdout.for_lane(lane)
+    return len(set(now.dev) | set(now.holdout))
+
+
+def _spent_until(conn, name: str, verdict: Verdict, reason: str) -> str:
+    """A limit decline no retest will reopen waits on its lane growing instead. #1001."""
+    from harness import reasons
+    from harness.memory_store.transitions import retest_spent
+    if verdict.adopt or reason != reasons.LIMIT or not name or verdict.until:
+        return verdict.until
+    pid = conn.execute("SELECT id FROM proposals WHERE name = ?", (name,)).fetchone()
+    if pid is None or not retest_spent(conn, pid[0], TIER, pending=1):
+        return ""
+    plan = verdict.evidence.get("power") or {}
+    return cases_until(verdict.lane, lane_cases(verdict.lane, verdict.evidence.get("split")),
+                       more_cases(plan.get("cases") or 0, plan.get("cases_needed")))
 
 
 def _null(lane, name_i, name_c, got: Verdict, plan) -> Verdict:
@@ -398,7 +436,7 @@ def record(conn, verdict: Verdict, spec: str = "",
             raise Held(f"refused on this machine: {spec} {why}")
     vid = ms.decide(conn, row["proposal"] or "", outcome, tier=TIER,
                     detail=detail[:200], candidate_id=cid, run_id=run_id,
-                    reason=reason, until=verdict.until)
+                    reason=reason, until=_spent_until(conn, row["proposal"] or "", verdict, reason))
     if verdict.failure_class or verdict.evidence:
         conn.execute(
             "UPDATE verdicts SET failure_class = ?, split_version = ?, "

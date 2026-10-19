@@ -29,7 +29,7 @@ MODULES = {
         "tests/test_store_state.py", "tests/test_store_retest.py", "tests/test_harness_store_retraction.py",
         "tests/test_store_retract_screens.py", "tests/test_harness_memory_store.py",
         "tests/test_verdict_reasons.py", "tests/test_harness_store.py", "tests/test_rank_881.py",
-        "tests/test_coherence_991.py"],
+        "tests/test_coherence_991.py", "tests/test_adopt_retest_1001.py"],
     "harness/reasons.py": [
         "tests/test_gguf_first_911.py", "tests/test_verdict_reasons.py", "tests/test_refusal_shapes.py", "tests/test_screen_server_death.py",
         "tests/test_screen_evidence.py", "tests/test_harness_engines_repo_id.py",
@@ -52,7 +52,7 @@ MODULES = {
         "tests/test_ocr_lane.py", "tests/test_degenerate_955.py", "tests/test_load_log_953.py",
         "tests/test_screen_listing_984.py"],
     "harness/adopt.py": [
-        "tests/test_harness_adopt.py", "tests/test_harness_adopt_receipt.py", "tests/test_adopt_by_spec.py",
+        "tests/test_adopt_retest_1001.py", "tests/test_harness_adopt.py", "tests/test_harness_adopt_receipt.py", "tests/test_adopt_by_spec.py",
         "tests/test_adoptions.py", "tests/test_adopt_cmd.py", "tests/test_human_verdicts.py",
         "tests/test_schema_lanes.py", "tests/test_holdout_power.py", "tests/test_power_budget.py",
         "tests/test_methods.py", "tests/test_adopt_scope.py", "tests/test_method_serving.py",
@@ -78,7 +78,7 @@ MODULES = {
 LEFT_OUT = {
     "harness/memory_store/transitions.py": ("test_blame_audit.py", "test_live_audit.py"),
     "harness/reasons.py": (
-        "test_attachment_tags_949.py",
+        "test_adopt_retest_1001.py", "test_attachment_tags_949.py",
         "test_chaos.py", "test_claims_lane.py", "test_gateway_key.py", "test_harness_checks_ocr.py",
         "test_harness_paired.py", "test_harness_screen.py", "test_harness_screen_spec.py",
         "test_holdout_power.py", "test_inspect_method_specs.py", "test_inspect_ratelimit.py",

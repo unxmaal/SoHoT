@@ -87,7 +87,8 @@ def sweep(conn, since: float, beat: dict | None) -> dict:
         started = float(beat.get("started") or 0)
         out["loop"] = {"status": beat.get("status", ""), "rc": beat.get("rc"), "error": beat.get("error", ""),
                        "started": started, "finished": beat.get("finished"),
-                       "in_window": started >= since, "line": beat.get("line", "")}
+                       "in_window": started >= since, "line": beat.get("line", ""),
+                       "commit": beat.get("commit", ""), "finished_commit": beat.get("finished_commit", "")}
     return out
 
 
@@ -236,6 +237,8 @@ def needs(r: dict) -> list[str]:
         out.append(f"the sweep stalled: {loop['line']}")
     elif loop["status"] == "finished" and loop["rc"] != 0:
         out.append(f"the sweep exited {loop['rc'] if loop['rc'] is not None else 'with ' + loop['error']}")
+    if loop is not None and loop["in_window"] and loop.get("code_moved"):
+        out.append(loop["code_moved"])
     for w in r["watchdog"]:
         if w["action"] == "stop" or w["escalated"]:
             dry = " (dry run)" if w["dry_run"] else ""
@@ -268,6 +271,9 @@ def gather(conn, now: float, since: float, *, beat=None, gh=None, git=None, wher
          "ci": ci(now, gh=gh or _gh), "ledger": ledger_row(conn, now), "stale": (lanes or stale_lanes)(conn),
          "stalled": (stalls or stalled)(conn), "deploy": deploy(where, git=git or _git),
          "canary": canary(now) if canary else "", "incidents": incidents(conn, since, now)}
+    if r["sweep"]["loop"] is not None:
+        from harness import heartbeat
+        r["sweep"]["loop"]["code_moved"] = heartbeat.code_moved(beat, r["deploy"].get("head", ""))
     r["needs"] = needs(r)
     return r
 

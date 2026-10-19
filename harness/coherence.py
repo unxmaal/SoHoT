@@ -1,8 +1,9 @@
 """Re-decide terminal verdicts whose reason contradicts their outcome or that nothing can reopen. #991."""
 from __future__ import annotations
 
-HELD = ("SELECT v.id, p.name, p.lane, p.state, v.tier, v.reason, v.until, v.detail, v.decided_at, "
-        "v.run_path, v.run_id, v.candidate_id, p.next_retest_at FROM proposals p "
+HELD = ("SELECT v.id, p.id AS pid, p.name, p.lane, p.state, v.tier, v.reason, v.until, v.detail, v.decided_at, "
+        "v.run_path, v.run_id, v.candidate_id, v.failure_class, v.power, v.split_version, p.next_retest_at "
+        "FROM proposals p "
         "JOIN verdicts v ON v.id = p.state_verdict_id "
         "WHERE p.state IN ('broken', 'declined', 'ignored') ORDER BY v.id")
 
@@ -33,7 +34,7 @@ def changes(conn) -> list[dict]:
     from harness import inspect as ins
     from harness import reasons
     from harness.memory_store.schema import INSPECT
-    from harness.memory_store.transitions import CONDITIONAL
+    from harness.memory_store.transitions import CONDITIONAL, RETEST_TIERS
     found = []
     for r in incoherent(conn):
         base = {"verdict_id": r["id"], "name": r["name"], "why": r["why"],
@@ -48,24 +49,61 @@ def changes(conn) -> list[dict]:
         elif r["reason"] == reasons.HARNESS or (r["state"] != "broken" and r["tier"] in (INSPECT, "fetch")):
             found.append({**base, "now": ["queued", INSPECT, reasons.REOPENED, ""],
                           "detail": f"{r['why']}: inspect asks again with today's code (#991)"})
+        elif r["state"] == "declined" and r["tier"] in RETEST_TIERS and r["reason"] in CONDITIONAL and not until:
+            found.append(_unreopenable(conn, r, base))
         else:
             found.append({**base, "skipped": "no repair names this kind; a person decides it"})
     return found
+
+
+def _unreopenable(conn, r, base: dict) -> dict:
+    """A retest-tier decline nothing reopens: schedule the retest it still has, or at adopt wait on the lane. #1001."""
+    import json
+
+    from harness import adopt, reasons
+    from harness.memory_store.schema import ADOPT
+    from harness.memory_store.transitions import RETEST_AFTER_SECONDS, retest_spent
+    if not retest_spent(conn, r["pid"], r["tier"]):
+        return {**base, "now": [r["state"], r["tier"], r["reason"], ""], "pid": r["pid"],
+                "retest_at": float(r["decided_at"]) + RETEST_AFTER_SECONDS}
+    lane = r["lane"] or (r["detail"] or "").partition(":")[0].strip()
+    if r["tier"] != ADOPT or r["reason"] != reasons.LIMIT or not lane:
+        return {**base, "skipped": "no repair names this kind; a person decides it"}
+    try:
+        plan = json.loads(r["power"] or "{}")
+    except ValueError:
+        plan = {}
+    until = adopt.cases_until(lane, adopt.lane_cases(lane),
+                              adopt.more_cases(plan.get("cases") or 0, plan.get("cases_needed")))
+    return {**base, "now": ["declined", ADOPT, r["reason"], until], "run_path": r["run_path"],
+            "run_id": r["run_id"], "candidate_id": r["candidate_id"], "failure_class": r["failure_class"] or "",
+            "evidence": {"power": r["power"], "split_version": r["split_version"]},
+            "detail": f"re-decided (#1001): {r['why']}; no retest is left, so it waits on the {lane} "
+                      f"lane growing; {r['detail']}"[:600]}
 
 
 def apply(conn, found: list[dict]) -> list[int]:
     """Write each change through the one state writer."""
     from harness import memory_store as ms
     ids = []
+    from harness.memory_store.transitions import _schedule_retest
     for c in found:
         if "now" not in c:
             continue
         outcome, tier, reason, until = c["now"]
+        if "retest_at" in c:
+            _schedule_retest(conn, c["pid"], {"outcome": outcome, "tier": tier, "until": until,
+                                              "decided_at": c["retest_at"] - ms.RETEST_AFTER_SECONDS}, "")
+            continue
         if outcome == "queued":
             ids.append(ms.retract(conn, c["name"], c["detail"], tier=tier))
             continue
-        ids.append(ms.decide(conn, c["name"], outcome, tier=tier, reason=reason, until=until,
-                             detail=c["detail"], run_path=c["run_path"] or "", run_id=c["run_id"],
-                             candidate_id=c["candidate_id"]))
+        vid = ms.decide(conn, c["name"], outcome, tier=tier, reason=reason, until=until,
+                        detail=c["detail"], run_path=c["run_path"] or "", run_id=c["run_id"],
+                        candidate_id=c["candidate_id"], failure_class=c.get("failure_class", ""))
+        if c.get("evidence"):
+            conn.execute("UPDATE verdicts SET power = ?, split_version = ? WHERE id = ?",
+                         (c["evidence"]["power"], c["evidence"]["split_version"] or "", vid))
+        ids.append(vid)
     conn.commit()
     return ids

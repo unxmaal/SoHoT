@@ -44,8 +44,8 @@ def retest_limit(tier: str) -> int:
     return RETESTS_AT_ADOPT if tier == ADOPT else RETESTS
 
 
-def retest_spent(conn, pid: int, tier: str) -> bool:
-    """No retest left: three in all, or more adopt declines than RETESTS_AT_ADOPT retests them."""
+def retest_spent(conn, pid: int, tier: str, pending: int = 0) -> bool:
+    """No retest left: three in all, or more adopt declines (`pending` not yet written) than RETESTS_AT_ADOPT retests them."""
     spent = conn.execute("SELECT retest_count FROM proposals WHERE id = ?", (pid,)).fetchone()[0]
     if spent >= RETESTS:
         return True
@@ -53,7 +53,7 @@ def retest_spent(conn, pid: int, tier: str) -> bool:
         return False
     lost = conn.execute("SELECT COUNT(*) FROM verdicts WHERE proposal_id = ? AND tier = ? "
                         "AND outcome = 'declined'", (pid, ADOPT)).fetchone()[0]
-    return lost > RETESTS_AT_ADOPT
+    return lost + pending > RETESTS_AT_ADOPT
 
 
 #: Tiers whose rejection can be the harness's fault; the measure step records
