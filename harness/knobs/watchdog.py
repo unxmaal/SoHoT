@@ -56,6 +56,8 @@ NOT_GATING = {
     "harness/workqueue.py:at_clock->timedelta(days)": "one calendar day: a clock time already past today means tomorrow (#900)",
     "harness/workqueue.py:night_start->timedelta(days)": "one calendar day: the night window's edges on yesterday, today "
                                                          "and tomorrow (#900)",
+    "harness/workqueue.py:night_window->timedelta(days)": "one calendar day: a day start already past means "
+                                                          "tomorrow's (#1020)",
     f"{P}:CLAIMS_FORMAT[json_schema][schema][properties][c][items][maxItems]":
         "the claims tuple's shape in the probe's known question, as smoke sends it; not a limit (#924)",
     f"{P}:CLAIMS_FORMAT[json_schema][schema][properties][c][items][minItems]":

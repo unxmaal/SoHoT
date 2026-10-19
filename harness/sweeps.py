@@ -19,6 +19,8 @@ REQUESTED_BY = binding.SWEEP
 #: Below a person's jobs and beside reverify's.
 PRIORITY = -10
 CHOSEN, UNRUN, CANCELLED, UNINFORMATIVE = "chosen", "unrun", "cancelled", "uninformative"
+#: The stored runs show no reply cut at the budget passes with more room, so nothing was queued. #1020.
+NOT_BINDING = "not_binding"
 
 
 def _flag(k, value) -> list[str]:
@@ -43,7 +45,7 @@ def _key(conn, knob: str, lane: str, spec: str, mid) -> dict | None:
 def _skip(conn, last: dict | None, now: float) -> str:
     """Why a sweep is not queued: one is waiting, one decided, or one the harness could not run is still recent."""
     from harness import reverify
-    if last is None:
+    if last is None or last["outcome"] == NOT_BINDING:
         return ""
     if not last["outcome"]:
         return f"already queued as sweep {last['id']}"
@@ -108,9 +110,46 @@ def model(conn, item: dict, machines) -> tuple[dict | None, str]:
             f"{why}; sweeping {m['spec']}, the best passing ({m['passed']} of {m['n']} in run {m['run_id']})")
 
 
+def _base_run(conn, swept: dict, machines) -> int | None:
+    seen = passing(conn, swept["lane"], machines)
+    own = (seen.get(swept["candidate_id"]) if swept["candidate_id"] is not None
+           else next((m for m in seen.values() if m["spec"] == swept["spec"]), None))
+    return own["run_id"] if own else None
+
+
+def projected(conn, swept: dict, k, values, machines) -> float | None:
+    """Seconds the sweep's jobs take one after another: the swept model's newest run, its cut rows scaled to each value. #1020."""
+    from harness import runs
+    rid = _base_run(conn, swept, machines)
+    if rid is None:
+        return None
+    rows = runs.rows(conn, rid, swept["candidate_id"])
+    head = k.limit_name(swept["lane"]) + ">"
+    total = 0.0
+    for v in values:
+        for r in rows:
+            at = (r["limit"] or "").removeprefix(head) if (r["limit"] or "").startswith(head) else ""
+            scale = float(v) / float(at) if at.replace(".", "", 1).isdigit() and float(at) > 0 else 1.0
+            total += float(r["seconds"] or 0) * scale
+    return total
+
+
+def _night(conn, entry: dict, k, swept: dict, machines, now: float) -> str:
+    """Set the entry's start and projection; why it is refused when it would run past the night. #1020."""
+    from harness import power, workqueue as wq
+    start, end = wq.night_window(now)
+    entry["not_before"], entry["night_end"] = start, end
+    entry["projected_s"] = got = projected(conn, swept, k, list(entry["argv"]), machines)
+    if got is None or got <= end - start:
+        return ""
+    return (f"projected {power._hm(got)} for {len(entry['argv'])} values, over the night's "
+            f"{power._hm(end - start)} ({time.strftime('%H:%M', time.localtime(start))} to "
+            f"{time.strftime('%H:%M', time.localtime(end))})")
+
+
 def plan(conn, *, now: float | None = None) -> list[dict]:
     """Every binding knob an eval can set, on a lane this machine serves, with the commands that would sweep it."""
-    from harness import binding, memory_store as ms, reverify, runs
+    from harness import binding, convertible, memory_store as ms, reverify, runs
     now = time.time() if now is None else now
     served = reverify.served(conn)
     mid = ms.machine_row(conn)
@@ -128,11 +167,36 @@ def plan(conn, *, now: float | None = None) -> list[dict]:
                         "candidate_id": item["candidate_id"], "machine_id": mid, "trigger": trigger,
                         "argv": {}, "model": note, "skip": note})
             continue
-        out.append({"knob": k.name, "lane": row["lane"], "spec": swept["spec"],
-                    "candidate_id": swept["candidate_id"], "machine_id": mid, "trigger": trigger,
-                    "argv": {v: argv(swept, k, v) for v in k.values_for(row["lane"])}, "model": note,
-                    "skip": _skip(conn, _key(conn, k.name, row["lane"], swept["spec"], mid), now)})
+        entry = {"knob": k.name, "lane": row["lane"], "spec": swept["spec"], "candidate_id": swept["candidate_id"],
+                 "machine_id": mid, "trigger": trigger, "model": note, "evidence": None}
+        if k.receipt == "max_tokens":
+            ev = entry["evidence"] = convertible.evidence(conn, row["lane"], swept["spec"], row["value"], machines)
+            if ev["binding"] is not None:
+                trigger.update(cut=ev["cut"], convertible=ev["passed"], at=ev["top"])
+            if ev["binding"] is False:
+                out.append({**entry, "argv": {}, "skip": ev["detail"]})
+                continue
+        entry["argv"] = {v: argv(swept, k, v) for v in k.values_for(row["lane"])}
+        entry["skip"] = (_skip(conn, _key(conn, k.name, row["lane"], swept["spec"], mid), now)
+                         or _night(conn, entry, k, swept, machines, now))
+        out.append(entry)
     return out
+
+
+def _not_binding(conn, entry: dict, now: float) -> dict | None:
+    """Record a knob the stored runs show is not binding, once per distinct finding. #1020."""
+    last = _key(conn, entry["knob"], entry["lane"], entry["spec"], entry["machine_id"])
+    if last and last["outcome"] == NOT_BINDING and last["detail"] == entry["skip"][:500]:
+        return None
+    ev = entry["evidence"]
+    cost = {k: ev[k] for k in ("cut", "passed", "wrong", "again", "top", "low", "high", "clean", "confounded")}
+    cur = conn.execute(
+        "INSERT INTO knob_sweeps (knob, lane, spec, candidate_id, machine_id, jobs, trigger, queued_at, settled_at, "
+        "outcome, cost, detail) VALUES (?,?,?,?,?,'[]',?,?,?,?,?,?)",
+        (entry["knob"], entry["lane"], entry["spec"], entry["candidate_id"], entry["machine_id"],
+         json.dumps(entry["trigger"]), now, now, NOT_BINDING, json.dumps(cost), entry["skip"][:500]))
+    conn.commit()
+    return {**entry, "sweep": cur.lastrowid}
 
 
 def _queue(conn, entry: dict, now: float, add) -> dict:
@@ -140,7 +204,8 @@ def _queue(conn, entry: dict, now: float, add) -> dict:
     jobs = []
     for value, cmd in entry["argv"].items():
         job = add(cmd, title=f"sweep {entry['knob']}={value:g} on {entry['lane']}: {entry['spec']}",
-                  cwd=str(paths.REPO), priority=PRIORITY, requested_by=REQUESTED_BY, conn=conn)
+                  cwd=str(paths.REPO), priority=PRIORITY, requested_by=REQUESTED_BY,
+                  not_before=entry.get("not_before"), conn=conn)
         jobs.append([value, int(job["id"])])
     cur = conn.execute(
         "INSERT INTO knob_sweeps (knob, lane, spec, candidate_id, machine_id, jobs, trigger, queued_at) "
@@ -312,15 +377,19 @@ def check(conn, *, now: float | None = None, dry_run: bool = False, add=None) ->
     now = time.time() if now is None else now
     settled = settle(conn, now=now, write=not dry_run)
     planned = plan(conn, now=now)
-    queued = []
+    queued, refused = [], []
     if not dry_run:
         for entry in planned:
             if not entry["skip"]:
                 queued.append(_queue(conn, entry, now, add or wq.add))
-    return {"settled": settled, "planned": planned, "queued": queued, "dry_run": dry_run}
+            elif entry.get("evidence") and entry["evidence"]["binding"] is False:
+                got = _not_binding(conn, entry, now)
+                refused += [got] if got else []
+    return {"settled": settled, "planned": planned, "queued": queued, "not_binding": refused, "dry_run": dry_run}
 
 
 def render(got: dict) -> str:
+    from harness import power
     lines = [f"  {s['detail'] or s['outcome']}" for s in got["settled"]]
     for p in got["planned"]:
         t = p["trigger"]
@@ -328,6 +397,11 @@ def render(got: dict) -> str:
         if not p["argv"]:
             lines.append(f"  {p['knob']} on {p['lane']} ({t['limit']}: {t['hits']} of {t['of']}): not swept, {why}")
             continue
+        if not p["skip"] and p.get("not_before"):
+            why += (f" to start {time.strftime('%a %H:%M', time.localtime(p['not_before']))}"
+                    + (f", projected {power._hm(p['projected_s'])}" if p.get("projected_s") is not None else ""))
+        ev = p.get("evidence")
         lines.append(f"  {p['knob']} on {p['lane']} ({t['limit']}: {t['hits']} of {t['of']}): "
-                     f"{len(p['argv'])} values, {why}" + (f" ({p['model']})" if p.get("model") else ""))
+                     f"{len(p['argv'])} values, {why}" + (f" ({p['model']})" if p.get("model") else "")
+                     + (f"; {ev['detail']}" if ev else ""))
     return "\n".join(lines) or "  no binding knob to sweep"
