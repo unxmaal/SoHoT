@@ -225,7 +225,13 @@ $(_hf_env)$(_watchdog_env "$service")  </dict>
 PLIST
 }
 
+# A running loop keeps the code it imported, so a deploy under it leaves it on the old code. #1000.
+sweep_guard() {
+  python3 -I "$REPO/harness/sweep_guard.py" "$LH_HOME" || exit 1
+}
+
 deploy() {
+  sweep_guard
   git -C "$SRC" fetch -q origin main
   local want; want="$(git -C "$SRC" rev-parse origin/main)"
   # Two green PRs can merge into a red main; deploy only a commit whose own push run passed. #870.
@@ -476,6 +482,7 @@ case "${1:-}" in
     # Restarting a model server mid-run killed 32 requests on 2026-10-04, so
     # wait for any model-loading run to finish first. #314.
     if [ "${LH_GPU_LOCK_HELD:-}" != 1 ]; then
+      sweep_guard
       exec "$REPO/scripts/with-gpu-lock" "$0" install
     fi
     install_units ;;

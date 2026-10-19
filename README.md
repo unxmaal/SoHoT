@@ -1359,6 +1359,10 @@ edits made inside the deploy worktree, and refuses a commit until check-macos
 has passed in that commit's own push run on main (asked through `gh`), so two
 PRs that were green apart but break main together never reach the agents.
 `LH_DEPLOY_UNCHECKED=1` deploys without asking, with a warning.
+`deploy` and `install` also refuse while a discover loop or an eval is running, naming its pid and
+start time: a running loop keeps the code it imported, so a deploy under it leaves it on the old code.
+`LH_DEPLOY_DURING_SWEEP=1` stops it first; a paused measurement resumes next sweep. The loop records
+the commit it started on, and `soh morning` and `soh audit` say when a sweep ran under a deploy.
 
 **Before deploying to a machine that has not deployed in a while, run
 `soh store dry-run` there from a checkout of the commit you are about to deploy.**

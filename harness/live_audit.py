@@ -16,7 +16,7 @@ MIN_REQUESTS = 20
 ERROR_RATE_MAX = 0.10
 
 SERVING = ("adoptions_pass_here", "no_reference_served", "served_matches_adoption", "gateway_errors")
-SCHEDULE = ("sweep_on_schedule",)
+SCHEDULE = ("sweep_on_schedule", "sweep_on_deployed_code")
 VERDICTS = ("too_big_ceiling_current", "too_big_names_variant", "terminal_reason_coherent", "no_ranking_verdict",
             "load_log_kept", "runner_gap_until_current", "broken_runner_layout",
             "attachment_by_tag")
@@ -210,6 +210,12 @@ def _sweep_on_schedule() -> list:
     return [late] if late else []
 
 
+def _sweep_on_deployed_code() -> str:
+    """A warning when the last sweep's code moved under it: rows it wrote came from the commit it started on. #1000."""
+    from harness import heartbeat
+    return heartbeat.code_moved(heartbeat.read(), heartbeat.code_commit())
+
+
 #: How far back the audit looks for requests a serving node handed to this machine. #739.
 FALLBACK_WINDOW_S = 3600.0
 
@@ -274,6 +280,7 @@ def audit(path=None, config=None) -> dict:
             mc._check("served_matches_adoption", _served_matches(served, wanted, gateway.served_path(config))),
             mc._check("gateway_errors", _gateway_errors(conn)),
             mc._check("sweep_on_schedule", _sweep_on_schedule()),
+            mc._check("sweep_on_deployed_code", []),
         ]
         inventories = {"too_big_ceiling_current": _too_big_ceiling_current(conn),
                        "too_big_names_variant": _too_big_names_variant(conn),
@@ -289,6 +296,9 @@ def audit(path=None, config=None) -> dict:
                     for name, (bad, fresh) in inventories.items() if fresh and not bad}
         if pinned and not incoherent:
             warnings["terminal_reason_coherent"] = "pinned, awaiting a fix: " + mc._say(pinned)
+        moved = _sweep_on_deployed_code()
+        if moved:
+            warnings["sweep_on_deployed_code"] = moved
         if waiting and not unkept:
             warnings["load_log_kept"] = "pinned, awaiting soh load-log --apply: " + mc._say(waiting)
         have = mc.schema(conn)
