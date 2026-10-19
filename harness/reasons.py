@@ -190,13 +190,11 @@ _AUDIO_HEADS = ("tts", "stt")
 _AUDIO_LOAD_FAILED = ("failed to load model",)
 _RUNAWAY = ("tts ran away",)
 #: Module (or the name it binds) -> the distribution that installs it: the optional imports our runners' libraries guard. #1008.
+#: Each is pinned in the venv whose runner imports it; one no runner here can raise is not listed. #1027.
 RUNNER_PACKAGES = {"ftfy": "ftfy", "bs4": "beautifulsoup4", "beautifulsoup": "beautifulsoup4",
                    "sentencepiece": "sentencepiece", "torchvision": "torchvision",
-                   "google.protobuf": "protobuf", "imwatermark": "invisible-watermark",
-                   "cv2": "opencv-python", "librosa": "librosa", "torchsde": "torchsde",
-                   "note_seq": "note-seq", "onnx": "onnx", "peft": "peft", "tiktoken": "tiktoken",
-                   "timm": "timm", "accelerate": "accelerate", "scipy": "scipy", "einops": "einops",
-                   "soundfile": "soundfile"}
+                   "google.protobuf": "protobuf", "torchsde": "torchsde", "tiktoken": "tiktoken",
+                   "timm": "timm", "accelerate": "accelerate", "scipy": "scipy", "soundfile": "soundfile"}
 _MISSING_NAME = re.compile(r"nameerror: name '([\w.]+)' is not defined|no module named '([\w.]+)'")
 
 

@@ -131,9 +131,9 @@ def test_installs_reads_each_venvs_deploy_step(monkeypatch):
     assert "torch" in runner_gaps.installs("diffusers-cuda")
 
 
-#: Runner packages a screen can name that no deploy step installs; shrinks as pins land. #1024.
-UNINSTALLED = ["einops", "invisible-watermark", "librosa", "note-seq", "onnx", "opencv-python", "peft",
-               "protobuf", "scipy", "soundfile", "tiktoken", "timm", "torchsde"]
+#: Runner packages a screen can name that no deploy step installs, each with why. #1024, #1027.
+UNINSTALLED = {"soundfile": "only mlx-audio's server reads a path through it (granite-speech-nar, arktts); "
+                            "serve-tts.sh's uv --with env is not a venv runner_gaps models"}
 
 
 def test_the_runner_packages_no_deploy_step_installs_are_an_inventory_that_only_shrinks(monkeypatch):

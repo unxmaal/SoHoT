@@ -34,7 +34,8 @@ else
 fi
 # The optional packages its pipelines import when present; one missing is a runtime gap, not the model. #1008.
 DIFFUSERS_VENV_PINS=("$DIFFUSERS_PIN" "$TRANSFORMERS_PIN" "$ACCELERATE_PIN" "$SAFETENSORS_PIN" "$PILLOW_PIN"
-                "$FTFY_PIN" "$BEAUTIFULSOUP4_PIN" "$SENTENCEPIECE_PIN" "$PROTOBUF_PIN")
+                "$FTFY_PIN" "$BEAUTIFULSOUP4_PIN" "$SENTENCEPIECE_PIN" "$PROTOBUF_PIN"
+                "$SCIPY_PIN" "$TORCHSDE_PIN")
 DIFFUSERS_STAMP="${DIFFUSERS_TORCH[*]} ${DIFFUSERS_VENV_PINS[*]}"
 
 PY="$(_diffusers_python)"
