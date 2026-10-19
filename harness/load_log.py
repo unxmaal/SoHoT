@@ -99,7 +99,7 @@ def decided(text: str, ex: Excerpt, candidate: str, repo: str, conn, where: str)
     cls = reasons.classify(text + "\n" + "".join(ex.lines), reasons.RUNNER, candidate)
     errors = reasons.child_errors(ex.lines)
     why = f"llama-server: {errors[0] if errors else f'exited {ex.status}'} ({where})"
-    got = screen.decide_class(cls, why, candidate)
+    got = screen.decide_class(cls, why, candidate, evidence=text)
     return got._replace(until=file_until(conn, repo)) if cls == reasons.LOAD_FAILED_FILE else got
 
 

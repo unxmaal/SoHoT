@@ -604,6 +604,9 @@ def _report_inspect(a) -> int:
                     print(f"    lane corrected from the card: {model_id} "
                           f"-> {fit.lanes[model_id]}")
                 ms.link(store, repo, model_id, "needs")
+                if (ms.latest(store, model_id) or {}).get("outcome") == "queued":
+                    # Another parent naming a queued name is a sighting, recorded above, not a verdict. #1021.
+                    continue
                 # A sighting never reopens a decided name; decide() refuses. #399.
                 try:
                     ms.decide(store, model_id, "queued", tier=ms.INSPECT,

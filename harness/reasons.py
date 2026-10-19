@@ -179,6 +179,8 @@ _RUNNER_LAYOUT_GAPS = ("does not appear to have a file named model_index.json",
                        "dit init failed")
 _NO_PIPELINE_CLASS = re.compile(r"has no attribute \w+pipeline\b")
 _ACESTEP_INIT_EXIT = re.compile(r"\bexit 3\b")
+#: mlx-audio's stt server on a repo with no HuggingFace processor (the mlx whisper repos, RULE #188). #1021.
+_STT_NO_PROCESSOR = "processor not found"
 _ENGINE_HEADS = ("mflux", "diffusers", "diffusers-video", "acestep", "hf-ocr",
                  "rerank", "embed", "hf-pii")
 #: A repo whose modelling code is its own: hf-task never executes it. #562.
@@ -269,7 +271,8 @@ def runner_layout_gap(text: str, head: str = "") -> bool:
     if _OUR_SNAPSHOT.search(low):
         return False
     return bool(_any(low, _RUNNER_LAYOUT_GAPS) or _NO_PIPELINE_CLASS.search(low)
-                or (head == "acestep" and _ACESTEP_INIT_EXIT.search(low)))
+                or (head == "acestep" and _ACESTEP_INIT_EXIT.search(low))
+                or (head == "stt" and _STT_NO_PROCESSOR in low))
 
 
 def classify(text: str, where: str = RUNNER, candidate: str = "") -> str:
@@ -289,8 +292,9 @@ def classify(text: str, where: str = RUNNER, candidate: str = "") -> str:
         return MISSING_PACKAGE
     if runner_layout_gap(low, head):
         return LOAD_FAILED_LAYOUT
-    if candidate.startswith(LLAMACPP_PREFIX) and all(
+    if _LLAMACPP_ALIAS.search(low) or candidate.startswith(LLAMACPP_PREFIX) and all(
             p in low for p in _LLAMACPP_LOAD_FAILED):
+        # llama-server's own 500 body, whatever spec reached it: a GGUF repo id routes there too (#583). #1021.
         return _llamacpp_load(low)
     if (_LOAD_FAILED in low or head in _ENGINE_HEADS) and _any(
             low, _ARCHITECTURE_GAPS):

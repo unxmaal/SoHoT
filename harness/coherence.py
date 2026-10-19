@@ -1,6 +1,8 @@
 """Re-decide terminal verdicts whose reason contradicts their outcome or that nothing can reopen. #991."""
 from __future__ import annotations
 
+from pathlib import Path
+
 HELD = ("SELECT v.id, p.id AS pid, p.name, p.lane, p.state, v.tier, v.reason, v.until, v.detail, v.decided_at, "
         "v.run_path, v.run_id, v.candidate_id, v.failure_class, v.power, v.split_version, p.next_retest_at "
         "FROM proposals p "
@@ -20,8 +22,10 @@ def incoherent(conn) -> list[dict]:
 
 
 BROKEN_SCREENS = ("SELECT v.id, p.name, p.hf_task, p.library, p.card_tags, p.model_type, p.remote_code, v.detail, "
-                  "v.run_path, v.run_id, v.candidate_id, coalesce(c.spec, p.name) AS spec FROM proposals p "
+                  "v.run_path, v.run_id, v.candidate_id, coalesce(c.spec, p.name) AS spec, "
+                  "coalesce(r.path, v.run_path, '') AS run_dir FROM proposals p "
                   "JOIN verdicts v ON v.id = p.state_verdict_id LEFT JOIN candidates c ON c.id = v.candidate_id "
+                  "LEFT JOIN runs r ON r.id = v.run_id "
                   "WHERE p.state = 'broken' AND v.tier = 'screen' AND v.reason = 'candidate' ORDER BY v.id")
 
 
@@ -36,13 +40,23 @@ def misclassed(conn) -> list[dict]:
     return out
 
 
-def _reclassed(r: dict) -> dict:
+def _reclassed(conn, r: dict, logs=None, root=None) -> dict:
     """A misclassed broken screen re-decided from its detail as screen.decide_class decides that class now."""
-    from harness import screen
+    from harness import load_log, reasons, screen
     why = (r["detail"] or "").removeprefix("it ran and passed nothing: ")
     v = screen.decide_class(r["class"], why, r["spec"], card=r)
     base = {"verdict_id": r["id"], "name": r["name"], "why": f"its detail classes as {r['class']}",
             "was": ["broken", "screen", "candidate", ""]}
+    where = load_log._run_dir(r["run_dir"], root)
+    ex = load_log.find(reasons.llamacpp_alias(r["detail"]), logs) if (
+        r["class"] == reasons.LOAD_LOG_UNREAD and where) else None
+    if ex is not None:
+        # The router log says why llama-server could not load it; the cut is kept with the run. #1021.
+        v = load_log.decided(r["detail"], ex, r["spec"], r["name"], conn,
+                             f"{load_log.source(ex)}, cut after the verdict, not kept by the run")
+        return {**base, "now": [v.outcome, "screen", v.reason, v.until], "run_path": str(where),
+                "run_id": r["run_id"], "candidate_id": r["candidate_id"], "failure_class": v.failure_class,
+                "excerpt": ex, "detail": f"re-decided from the router log (#1021): {v.detail}"[:600]}
     if v.outcome == "queued":
         return {**base, "now": ["queued", "screen", v.reason, ""],
                 "detail": f"re-decided (#1008): {v.detail}"[:600]}
@@ -61,7 +75,7 @@ def scoped(until: str, lane: str) -> str:
     return f"limit:{name}.{lane}>{want}" if f"{name}.{lane}" in reasons.limits() else until
 
 
-def changes(conn) -> list[dict]:
+def changes(conn, logs=None, root=None) -> list[dict]:
     """What each incoherent verdict becomes: declined with an until, requeued for inspect, or skipped."""
     from harness import inspect as ins
     from harness import reasons
@@ -85,7 +99,7 @@ def changes(conn) -> list[dict]:
             found.append(_unreopenable(conn, r, base))
         else:
             found.append({**base, "skipped": "no repair names this kind; a person decides it"})
-    return found + [_reclassed(r) for r in misclassed(conn)]
+    return found + [_reclassed(conn, r, logs, root) for r in misclassed(conn)]
 
 
 def _unreopenable(conn, r, base: dict) -> dict:
@@ -130,6 +144,9 @@ def apply(conn, found: list[dict]) -> list[int]:
         if outcome == "queued":
             ids.append(ms.retract(conn, c["name"], c["detail"], tier=tier))
             continue
+        if c.get("excerpt"):
+            from harness import load_log
+            load_log.write(Path(c["run_path"]), c["excerpt"])
         vid = ms.decide(conn, c["name"], outcome, tier=tier, reason=reason, until=until,
                         detail=c["detail"], run_path=c["run_path"] or "", run_id=c["run_id"],
                         candidate_id=c["candidate_id"], failure_class=c.get("failure_class", ""))
