@@ -47,10 +47,15 @@ WHISPER_PACKAGE = "mlx-whisper"
 WHISPER_VENV = "whisper"
 #: Runner venvs uv syncs from this project's lock plus one dependency group when a run first needs them: venv -> group. #1024.
 GROUP_VENVS = {WHISPER_VENV: "whisper"}
-_VENV_ENV = {"diffusers-cuda": "DIFFUSERS_VENV", "hf-task": "HF_TASK_VENV", WHISPER_VENV: "WHISPER_VENV"}
-#: The script that builds each process engine's venv and the bash array of pins it installs. #1024.
+_VENV_ENV = {"diffusers-cuda": "DIFFUSERS_VENV", "hf-task": "HF_TASK_VENV", WHISPER_VENV: "WHISPER_VENV",
+             "nimble": "NIMBLE_VENV", "decider": "DECIDER_VENV"}
+#: Venvs kept at <home>/<name>/venv beside the checkout their script clones, and the env var that moves that home. #1037.
+_CHECKOUT_VENVS = {"nimble": "NIMBLE_HOME", "decider": "DECIDER_HOME"}
+#: The script that builds each process engine's venv and the bash arrays of pins it installs. #1024, #1037.
 VENV_SCRIPTS = {"diffusers-cuda": ("scripts/diffusers-venv.sh", "DIFFUSERS_VENV_PINS", "DIFFUSERS_TORCH"),
-                "hf-task": ("scripts/hf-task-venv.sh", "HF_TASK_PINS", "HF_TASK_TORCH")}
+                "hf-task": ("scripts/hf-task-venv.sh", "HF_TASK_PINS", "HF_TASK_TORCH"),
+                "nimble": ("scripts/nimble-venv.sh", "NIMBLE_VENV_PINS"),
+                "decider": ("scripts/decider-venv.sh", "DECIDER_VENV_PINS", "DECIDER_MLX")}
 #: The audio server's env: its script's `uv run --no-project --with` pins layered over the checkout's .venv. #1030.
 AUDIO_ENV = "audio-server"
 #: Envs uv builds when their run or service starts, so the deploy declaring a package ends a wait on it.
@@ -254,7 +259,11 @@ def layout_name(card, evidence: str) -> str:
 def venv_path(name: str) -> Path:
     import os
     from harness import paths
-    return Path(os.environ.get(_VENV_ENV.get(name, "")) or paths.home() / "venvs" / name)
+    if os.environ.get(_VENV_ENV.get(name, "")):
+        return Path(os.environ[_VENV_ENV[name]])
+    if name in _CHECKOUT_VENVS:
+        return Path(os.environ.get(_CHECKOUT_VENVS[name]) or paths.home() / name) / "venv"
+    return paths.home() / "venvs" / name
 
 
 def _canonical(dist: str) -> str:

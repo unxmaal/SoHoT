@@ -113,8 +113,8 @@ def test_the_hand_installed_packages_on_record_are_not_pinned_in_the_diffusers_v
 def test_drift_is_an_audit_inventory_that_never_fails(tmp_path, monkeypatch):
     from harness import memory_store as ms
     monkeypatch.setenv("LOCALHARNESS_HOME", str(tmp_path))
-    monkeypatch.delenv("DIFFUSERS_VENV", raising=False)
-    monkeypatch.delenv("HF_TASK_VENV", raising=False)
+    for var in (*runner_gaps._VENV_ENV.values(), *runner_gaps._CHECKOUT_VENVS.values()):
+        monkeypatch.delenv(var, raising=False)
     monkeypatch.setattr(sys, "platform", "darwin")
     ms.connect(tmp_path / "discovery.db").close()
     root = tmp_path / "venvs" / "diffusers-cuda"

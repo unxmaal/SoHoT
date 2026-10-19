@@ -94,6 +94,8 @@ NIMBLE_MLX_PIN="mlx==0.32.2"
 NIMBLE_MLX_LM_PIN="mlx-lm==0.31.3"
 NIMBLE_TORCH_PIN="torch==2.8.0"
 PEFT_PIN="peft==0.21.0"
+# The version the live venv held when nimble-venv.sh still installed it unpinned. #1037.
+HUGGINGFACE_HUB_PIN="huggingface-hub==1.33.0"
 
 # The decide lane's decider engine (#467), built by scripts/decider-venv.sh.
 # PyPI 0.1.0 lacks the mlx extra, so it installs from a clone at this commit.

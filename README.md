@@ -2155,7 +2155,9 @@ Silicon (`device=mlx`, the default there; `device=cuda|mps|cpu` elsewhere). An
 enum field is asked as a choice question over its choices, a boolean as a
 yes/no (`noul`) question whose P(true) is the field's probability. The first
 case downloads the checkpoint and its base (Qwen/Qwen3.5-2B-Base, about 4.5 GB),
-so run it once with `HF_HUB_OFFLINE=0`.
+so run it once with `HF_HUB_OFFLINE=0`. Each of the two venvs rebuilds from
+empty when a pin in `scripts/versions.sh` moves or anything else lands in it,
+and `soh audit` lists what it holds beyond its script (`venv_matches_script`).
 
 Which engine an adapter in the queue is spelled for comes from its card, not
 its lane: a repo id, base model, library or tag naming `strands-decider` goes
