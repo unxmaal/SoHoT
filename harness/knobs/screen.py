@@ -8,6 +8,8 @@ KNOBS = [
        note="chance a model as good as the incumbent passes one screen case; sets how many it draws (#691)"),
     _k("screen_size", ["evals/run.py:SCREEN_PARAMS[width]", "evals/run.py:SCREEN_PARAMS[height]"], [256, 512, 1024],
        limit="screen_size", note="pixels an image or video screen is shrunk to; a zero-pass media screen waits on it (#691)"),
+    _k("stt_screen_max_wer", ["harness/screen.py:SCREEN_MAX_WER"], [0.3, 0.5, 0.8],
+       note="corpus WER under which an stt screen counts as transcribed; a plausibility bound, unmeasured (#1007)"),
 ]
 
 NOT_GATING = {

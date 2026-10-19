@@ -334,7 +334,7 @@ def paired_p(rows, name_i: str, name_c: str, lane: str = "", against: str = "cha
                                  {0: claims.RECALL_WEIGHT, 1: 1 - claims.RECALL_WEIGHT}, against)
     else:
         cell = paired.head_to_head(rows, name_i, name_c, winners.PRIMARY.get(lane, ""))
-    rho, repeat = power.rows_icc(rows, (name_i, name_c))
+    rho, repeat = power.rows_icc([{**r, "passed": power.draw(r, lane)} for r in rows], (name_i, name_c))
     used = power.DEFAULT_RHO if rho is None else rho
     deff = power.design_effect(repeat, used)
     if deff <= 1.0 + 1e-9:

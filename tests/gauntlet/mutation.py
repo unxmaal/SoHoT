@@ -93,11 +93,11 @@ LEFT_OUT = {
         "test_harness_report.py", "test_incumbent_lookup.py", "test_lane_metric_validity.py", "test_loop_backpressure.py",
         "test_canary_919.py", "test_mps_backend_abort.py", "test_new_lane_loop_faults.py", "test_rank_881.py",
         "test_remote_upstreams.py", "test_router_unload.py", "test_slots_memory.py", "test_store_card_facts.py",
-        "test_store_state.py", "test_until_keys_928.py"),
+        "test_store_state.py", "test_until_keys_928.py", "test_stt_screen_power_1007.py"),
     "harness/adopt.py": (
         "test_harness_paired.py", "test_harness_report.py", "test_loop_circuit.py", "test_measure_budget.py",
         "test_over_budget_796.py", "test_planted_919.py", "test_projection_696.py", "test_rank_893.py", "test_router_unload.py",
-        "test_store_state.py", "test_sweep_ceiling_806.py"),
+        "test_store_state.py", "test_stt_screen_power_1007.py", "test_sweep_ceiling_806.py"),
     "harness/serving.py": (
         "test_mlx_backlog.py", "test_runner_gap_until_950.py", "test_agent_limits.py", "test_claims_lane.py", "test_decide_lane.py",
         "test_delegate_resident.py", "test_delegations.py", "test_lane_probe_924.py", "test_machine_host.py",

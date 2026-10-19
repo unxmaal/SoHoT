@@ -45,9 +45,10 @@ PRECONDITIONS = {
 
 
 PLANTS = (
+    # The 133-clip holdout separates tdt-1.1b from tdt-0.6b-v3 (12 gained, 2 lost) but not v2 from v3 (7, 3). #1007.
     Plant("stt-known-worse", "stt", "mlx-community/parakeet-tdt-0.6b-v3",
-          ("declined", "adopt", "candidate"), incumbent="mlx-community/parakeet-tdt-0.6b-v2"),
-    Plant("stt-known-better", "stt", "mlx-community/parakeet-tdt-0.6b-v2",
+          ("declined", "adopt", "candidate"), incumbent="mlx-community/parakeet-tdt-1.1b"),
+    Plant("stt-known-better", "stt", "mlx-community/parakeet-tdt-1.1b",
           ("measured", "adopt", ""), incumbent="mlx-community/parakeet-tdt-0.6b-v3"),
     Plant("gguf-first", "code", "HauhauCS/Nemotron3-Nano-4B-Uncensored-HauhauCS-Aggressive",
           ("screened", "screen", ""), through="screen", requires="loads"),
@@ -113,7 +114,9 @@ def matches(plant: Plant, got: dict) -> bool:
         return False
     if tier != "adopt":
         return True
-    return (got.get("serves") == plant.challenger) == (outcome == "measured")
+    from harness import screen
+    serves = got.get("serves") in (plant.challenger, screen.candidate_for(plant.lane, plant.challenger))
+    return serves == (outcome == "measured")
 
 
 def runtime_version(plant: Plant) -> str:

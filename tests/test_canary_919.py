@@ -182,7 +182,7 @@ def test_check_says_whether_the_stored_results_separate_each_pair(tmp_path):
     from harness import screen
     conn = ms.connect(tmp_path / "s.db")
     try:
-        v2, v3 = (screen.candidate_for("stt", f"mlx-community/parakeet-tdt-0.6b-{v}") for v in ("v2", "v3"))
+        v2, v3 = (screen.candidate_for("stt", f"mlx-community/parakeet-tdt-{v}") for v in ("1.1b", "0.6b-v3"))
         _stored_pair(conn, "stt", v2, v3)
         got = {p.name: canary.separable(conn, p) for p in canary.PLANTS}
     finally:
@@ -195,7 +195,7 @@ def test_check_misses_a_pair_the_gate_cannot_separate(tmp_path):
     from harness import screen
     conn = ms.connect(tmp_path / "s.db")
     try:
-        v2, v3 = (screen.candidate_for("stt", f"mlx-community/parakeet-tdt-0.6b-{v}") for v in ("v2", "v3"))
+        v2, v3 = (screen.candidate_for("stt", f"mlx-community/parakeet-tdt-{v}") for v in ("1.1b", "0.6b-v3"))
         _stored_pair(conn, "stt", v3, v2)
         got = canary.separable(conn, next(p for p in canary.PLANTS if p.name == "stt-known-worse"))
     finally:
@@ -225,7 +225,7 @@ def test_check_reads_the_newest_run_holding_both(tmp_path):
     from harness import screen
     conn = ms.connect(tmp_path / "s.db")
     try:
-        v2, v3 = (screen.candidate_for("stt", f"mlx-community/parakeet-tdt-0.6b-{v}") for v in ("v2", "v3"))
+        v2, v3 = (screen.candidate_for("stt", f"mlx-community/parakeet-tdt-{v}") for v in ("1.1b", "0.6b-v3"))
         # Inserted first, generated last: recency is the run's own time, not its row id.
         _stored_pair(conn, "stt", v2, v3, path="old")
         _stored_pair(conn, "stt", v3, v2, path="new")
