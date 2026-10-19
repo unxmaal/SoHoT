@@ -63,8 +63,10 @@ def _no_reference_served(conn, served: dict) -> list:
     return bad
 
 
-def _served_matches(served: dict, wanted: dict) -> list:
+def _served_matches(served: dict | None, wanted: dict, path=None) -> list:
     from harness import gateway
+    if served is None:
+        return [f"no served config at {path}, so nothing says what the gateway serves"] if wanted else []
     return [f"{gateway.LANE_ALIAS.format(lane)} serves {served.get(lane, {}).get('model')!r}, "
             f"the adoption is {wanted.get(lane, {}).get('model')!r}"
             for lane in sorted(set(served) | set(wanted))
@@ -232,32 +234,44 @@ def node_fallbacks(conn, config=None, now=None) -> list[dict]:
     return [{**v, "aliases": sorted(v["aliases"])} for _, v in sorted(by.items())]
 
 
-def serving(conn, config=None) -> tuple[dict, dict]:
-    """(what the served config's sohot-<lane> aliases name, what the adoptions say they should)."""
+def gateway_config(store, config=None) -> Path:
+    """The base gateway config whose services read `store`: the deploy checkout's for the live store. #1002."""
+    import os
+
+    from harness import gateway, paths
+    if config or os.environ.get(gateway.ENV_VAR):
+        return gateway.config_path(config)
+    deploy = paths.runs_elsewhere() if paths.is_live(store) else None
+    return deploy / gateway.DEFAULT.relative_to(gateway.REPO) if deploy else gateway.config_path()
+
+
+def serving(conn, config=None) -> tuple[dict | None, dict]:
+    """(what the served config's sohot-<lane> aliases name, None when it does not exist; what the adoptions say)."""
     from harness import adopt, gateway
     from harness.gateway_switch import _aliases
     path = gateway.served_path(config)
-    served = _aliases(gateway.load(path)) if path.exists() else {}
+    served = _aliases(gateway.load(path)) if path.exists() else None
     wanted = _aliases(gateway.served(config, adopt.lane_defaults(conn)))
     return served, wanted
 
 
 def audit(path=None, config=None) -> dict:
     """Every check on the store at `path` (default: this home's), opened read-only."""
-    from harness import memory_store as ms, store
+    from harness import gateway, memory_store as ms, store
     if store.backend() != store.SQLITE:
         raise RuntimeError("soh audit reads a SQLite store; this home uses another backend")
     path = Path(path if path is not None else ms.db_path())
     if not path.is_file():
         raise FileNotFoundError(f"no store at {path}")
+    config = gateway_config(path, config)
     conn = open_readonly(path)
     try:
         with ms.lend(conn):
             served, wanted = serving(conn, config)
         checks = mc.invariants(conn) + [
             mc._check("adoptions_pass_here", _adoptions_pass_here(conn)),
-            mc._check("no_reference_served", _no_reference_served(conn, served)),
-            mc._check("served_matches_adoption", _served_matches(served, wanted)),
+            mc._check("no_reference_served", _no_reference_served(conn, served or {})),
+            mc._check("served_matches_adoption", _served_matches(served, wanted, gateway.served_path(config))),
             mc._check("gateway_errors", _gateway_errors(conn)),
             mc._check("sweep_on_schedule", _sweep_on_schedule()),
         ]
@@ -282,7 +296,7 @@ def audit(path=None, config=None) -> dict:
         fell = node_fallbacks(conn, config)
     finally:
         conn.close()
-    return {"source": str(path), "schema": have, "ok": all(c.ok for c in checks),
+    return {"source": str(path), "served_config": str(gateway.served_path(config)), "schema": have, "ok": all(c.ok for c in checks),
             "checks": [{"name": c.name, "ok": c.ok, "detail": c.detail or warnings.get(c.name, ""),
                         "warn": c.name in warnings} for c in checks],
             "binding": bound, "fallbacks": fell}
@@ -297,6 +311,8 @@ def _binding(conn) -> list[dict]:
 
 def report_text(got: dict) -> str:
     lines = [f"audit of {got['source']} (schema {got['schema']}, read-only)"]
+    if got.get("served_config"):
+        lines.append(f"  served config {got['served_config']}")
     lines += [f"  {'FAIL' if not c['ok'] else 'warn' if c.get('warn') else 'ok  '} {c['name']}" + (f": {c['detail']}" if c["detail"] else "")
               for c in got["checks"]]
     if "binding" in got:
