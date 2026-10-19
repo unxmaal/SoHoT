@@ -387,7 +387,7 @@ def test_the_sweep_schedule_and_the_overdue_check_agree(tmp_path, monkeypatch):
 def test_install_audits_what_it_just_deployed():
     body = GEN.read_text(encoding="utf-8").split("install_units() {", 1)[1].split("\n}\n", 1)[0]
     assert "serve-audit.sh" in body, "a deploy is checked by `soh audit` once its units are loaded"
-    assert body.index("serve-audit.sh") > body.index("launchctl bootstrap")
+    assert body.index("serve-audit.sh") > body.index('_reload "$service"')
 
 
 def test_the_audit_script_runs_soh_audit_from_its_checkout():
@@ -399,7 +399,7 @@ def test_install_lets_a_running_job_finish_before_reloading_the_worker():
     """#577: a reload under a running job killed it and recorded it as failed."""
     body = GEN.read_text(encoding="utf-8").split("install_units() {", 1)[1].split("\n}\n", 1)[0]
     assert "harness.workqueue quiesce" in body
-    assert body.index("harness.workqueue quiesce") < body.index("launchctl bootout")
+    assert body.index("harness.workqueue quiesce") < body.index('_reload "$service"')
     assert "was-running" in body and "jobs resume" in body, (
         "the queue is resumed after the reload only if the owner had not paused it")
 
@@ -416,6 +416,8 @@ FAKE_LAUNCHCTL_794 = r"""#!/usr/bin/env bash
 echo "$*" >> "$FAKE_STATE/log"
 case "$1" in
   print) l="${2##*/}"; [ -f "$FAKE_STATE/$l" ] || exit 113
+         r="$FAKE_STATE/$l.running"
+         if [ -s "$r" ]; then n="$(cat "$r")"; [ "$n" -gt 0 ] && echo $((n - 1)) > "$r" || rm -f "$r"; fi
          printf '%s = {\n\tstate = %s\n' "$2" "$([ -f "$FAKE_STATE/$l.running" ] && echo running || echo waiting)"
          [ -f "$FAKE_STATE/$l.running" ] && printf '\tpid = 4242\n'
          printf '}\n' ;;
@@ -426,7 +428,7 @@ exit 0
 """
 
 
-def _install(tmp_path, role="scheduler", running=()):
+def _install(tmp_path, role="scheduler", running=(), defer_wait=0):
     """install_units against a fake launchctl, with deploy and preflight stubbed out."""
     scripts, bin_, state, deploy = (tmp_path / d for d in ("scripts", "bin", "state", "deploy"))
     for d in (scripts, bin_, state, deploy / "scripts"):
@@ -444,11 +446,14 @@ def _install(tmp_path, role="scheduler", running=()):
         (deploy / "scripts" / name).write_text("exit 0\n", encoding="utf-8")
     for service in SERVICES:
         (state / f"com.unxmaal.localharness.{service}").touch()
+    # A name runs for good; a (name, n) pair stays live for its next n prints, then ends. #1058.
     for service in running:
-        (state / f"com.unxmaal.localharness.{service}.running").touch()
+        name, prints = service if isinstance(service, tuple) else (service, None)
+        live = state / f"com.unxmaal.localharness.{name}.running"
+        live.write_text("" if prints is None else str(prints), encoding="utf-8")
     env = {**os.environ, "PATH": f"{bin_}{os.pathsep}{os.environ['PATH']}", "HOME": str(tmp_path / "home"),
            "LOCALHARNESS_HOME": str(tmp_path / "lh"), "LH_DEPLOY": str(deploy), "LH_ROLE": role,
-           "FAKE_STATE": str(state)}
+           "FAKE_STATE": str(state), "LH_DEFER_WAIT_S": str(defer_wait)}
     got = subprocess.run([shells.BASH, str(scripts / "run.sh")], env=env, capture_output=True,
                          text=True, timeout=120)
     return got, (state / "log").read_text(encoding="utf-8").splitlines()
@@ -469,6 +474,22 @@ def test_install_reloads_an_idle_periodic_unit(tmp_path):
     assert got.returncode == 0, got.stderr
     assert any(c.startswith("bootout") and c.endswith(".discover") for c in calls)
     assert "deferred" not in got.stderr
+
+
+def test_install_reloads_a_deferred_unit_once_its_run_ends(tmp_path):
+    got, calls = _install(tmp_path, running=(("energy", 2),), defer_wait=30)
+    assert got.returncode == 0, got.stderr
+    assert "NOT reloading com.unxmaal.localharness.energy" in got.stderr
+    assert "loaded com.unxmaal.localharness.energy" in got.stdout, got.stdout
+    assert "deferred:" not in got.stderr, got.stderr
+    assert any(c.startswith("bootstrap") and c.endswith(".energy.plist") for c in calls)
+
+
+def test_install_defers_a_unit_still_live_at_the_deadline(tmp_path):
+    got, calls = _install(tmp_path, running=("energy",), defer_wait=1)
+    assert got.returncode != 0
+    assert "deferred: energy" in got.stderr, got.stderr
+    assert not [c for c in calls if c.startswith("bootout") and c.endswith(".energy")], calls
 
 
 def test_a_node_still_drops_the_periodic_units(tmp_path):

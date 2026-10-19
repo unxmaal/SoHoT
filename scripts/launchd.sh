@@ -37,6 +37,8 @@ AUDIT_HOURS="${AUDIT_HOURS:-3}"                   # nightly, #492
 WATCHDOG_EVERY_MIN="${WATCHDOG_EVERY_MIN:-5}"
 # This machine's power through macmon, one reading a minute; every role samples its own. #826.
 ENERGY_EVERY_MIN="${ENERGY_EVERY_MIN:-1}"
+# How long install waits for a deferred periodic run to end before leaving it on the old unit. #1058.
+DEFER_WAIT_S="${LH_DEFER_WAIT_S:-120}"
 # The day's ledger row, written late each evening and rewritten the next. #826.
 LEDGER_HOURS="${LEDGER_HOURS:-23}"
 # The morning report, before Eric's day starts; it notifies only when something needs a person. #867.
@@ -397,23 +399,35 @@ install_units() {
         was=""
       fi
     fi
-    # bootout first so `install` is re-runnable: bootstrap on an already-loaded
-    # label fails, and "already loaded" is the normal state when reinstalling.
-    launchctl bootout "gui/$UID/$PREFIX.$service" 2>/dev/null || true
-    _await_unload "$PREFIX.$service" || true
     # KEEP GOING AND REPORT. `set -e` here left the machine running a MIX of
     # old and new agents and said only that something failed, which is worse
     # than either all-old or all-new because nothing on it is a known state.
-    if launchctl bootstrap "gui/$UID" "$AGENTS/$PREFIX.$service.plist"; then
-      echo "loaded $PREFIX.$service"
+    if _reload "$service"; then
       if [ "$service" = worker ] && [ "$was" = was-running ]; then
         (cd "$DEPLOY" && uv run soh jobs resume >/dev/null)
       fi
     else
       failed="$failed $service"
-      echo "FAILED to load $PREFIX.$service" >&2
     fi
   done
+  # An every-minute unit is nearly always mid-run when install reaches it, so wait out the run. #1058.
+  if [ -n "$deferred" ]; then
+    local end=$((SECONDS + DEFER_WAIT_S)) still
+    echo "waiting up to ${DEFER_WAIT_S}s for the live run of:$deferred"
+    while :; do
+      still=""
+      for service in $deferred; do
+        if [ -n "$(_live_pid "$PREFIX.$service")" ]; then
+          still="$still $service"
+        elif ! _reload "$service"; then
+          failed="$failed $service"
+        fi
+      done
+      deferred="$still"
+      [ -n "$deferred" ] && [ "$SECONDS" -lt "$end" ] || break
+      sleep 1
+    done
+  fi
   [ "$LH_ROLE" = node ] && drop_periodic
   if [ -n "$deferred" ]; then
     echo >&2
@@ -445,6 +459,18 @@ install_units() {
   [ "$blocked" -eq 0 ] || return 1
   echo
   echo "Give them a moment, then: ./scripts/smoke.sh"
+}
+
+# bootout first so `install` is re-runnable: bootstrap on an already-loaded label fails.
+_reload() {
+  launchctl bootout "gui/$UID/$PREFIX.$1" 2>/dev/null || true
+  _await_unload "$PREFIX.$1" || true
+  if launchctl bootstrap "gui/$UID" "$AGENTS/$PREFIX.$1.plist"; then
+    echo "loaded $PREFIX.$1"
+    return 0
+  fi
+  echo "FAILED to load $PREFIX.$1" >&2
+  return 1
 }
 
 uninstall_units() {
