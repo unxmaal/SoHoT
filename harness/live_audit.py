@@ -20,7 +20,9 @@ SCHEDULE = ("sweep_on_schedule", "sweep_on_deployed_code")
 VERDICTS = ("too_big_ceiling_current", "too_big_names_variant", "terminal_reason_coherent", "no_ranking_verdict",
             "load_log_kept", "runner_gap_until_current", "broken_runner_layout",
             "attachment_by_tag", "package_until_reachable")
-CHECKS = mc.INVARIANTS + SERVING + SCHEDULE + VERDICTS
+#: Inventories that never fail the audit: what a runner venv holds beyond its script's pins. #1032.
+VENVS = ("venv_matches_script",)
+CHECKS = mc.INVARIANTS + SERVING + SCHEDULE + VERDICTS + VENVS
 #: Checks a loop step repairs, and the heartbeat key that step marks: each warns until its own repair has run. #972.
 REPAIRED_BY = {"too_big_ceiling_current": heartbeat.REOPENED_TOO_BIG,
                "too_big_names_variant": heartbeat.REQUEUED_OLD_SIZING,
@@ -219,6 +221,13 @@ def _attachment_by_tag(conn, rederived_at=...) -> tuple[list, list]:
     return [say(r) + f", after the loop's re-read at {_when(swept)}" for r in survived], [say(r) for r in fresh]
 
 
+def _venv_drift(store) -> list:
+    """Runner venvs whose contents differ from what the script that built them resolves to. #1032."""
+    from harness import paths, venv_drift
+    deploy = paths.runs_elsewhere() if paths.is_live(store) else None
+    return venv_drift.report(deploy or paths.REPO)
+
+
 def _when(at) -> str:
     import time
     return time.strftime("%Y-%m-%d %H:%M", time.localtime(at)) if at else "never"
@@ -313,6 +322,7 @@ def audit(path=None, config=None) -> dict:
                   "load_log_kept": unkept, "broken_runner_layout": _broken_runner_layout(conn),
                   "package_until_reachable": _package_until_reachable(conn)}
         checks += [mc._check(name, failed[name]) for name in VERDICTS]
+        checks += [mc._check(name, []) for name in VENVS]
         warnings = {name: f"awaiting the loop's {REPAIRED_BY[name]}: " + mc._say(fresh)
                     for name, (bad, fresh) in inventories.items() if fresh and not bad}
         if pinned and not incoherent:
@@ -323,6 +333,9 @@ def audit(path=None, config=None) -> dict:
             if missing:
                 warnings["package_until_reachable"] = ("runner packages no deploy step installs, so a screen "
                                                        "waiting on one waits for a pin: " + ", ".join(missing))
+        drifted = _venv_drift(path)
+        if drifted:
+            warnings["venv_matches_script"] = "rebuilt from empty on its next run: " + mc._say(drifted)
         moved = _sweep_on_deployed_code()
         if moved:
             warnings["sweep_on_deployed_code"] = moved

@@ -27,7 +27,8 @@ fi
 PY="$DECIDER_VENV/bin/python"
 if [ ! -x "$PY" ] || [ "$(cat "$DECIDER_VENV/.rev" 2>/dev/null)" != "$DECIDER_REV" ]; then
   echo "decider: building its environment in $DECIDER_VENV" >&2
-  [ -x "$PY" ] || uv venv --python 3.12 "$DECIDER_VENV" >&2
+  # From empty: uv pip install never removes what an older revision left. #1032.
+  uv venv --clear --python 3.12 "$DECIDER_VENV" >&2
   # SETUPTOOLS_SCM_PRETEND_VERSION: the clone has no release tag to version from.
   SETUPTOOLS_SCM_PRETEND_VERSION="0.1.0+g${DECIDER_REV:0:7}" VIRTUAL_ENV="$DECIDER_VENV" \
     uv pip install "${DECIDER_ROOT}${EXTRA}" ${MLX_PINS[@]+"${MLX_PINS[@]}"} "$NIMBLE_TORCH_PIN" \
