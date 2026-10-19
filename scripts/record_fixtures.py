@@ -17,7 +17,6 @@ from __future__ import annotations
 
 import json
 import sys
-import urllib.request
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -41,11 +40,9 @@ def trim(card: dict) -> dict:
 
 
 def record(model_id: str) -> Path:
-    req = urllib.request.Request(
-        MODEL_URL.format(model_id=model_id),
-        headers={"User-Agent": "localharness-fixtures"})
-    with urllib.request.urlopen(req, timeout=30) as r:
-        card = json.load(r)
+    # The harness's own client: its token sees gated listings an anonymous read does not. #1040.
+    from harness import ratelimit
+    card = ratelimit.get_json(MODEL_URL.format(model_id=model_id))
     out = trim({k: card.get(k) for k in KEEP})
     if out.get("siblings"):
         out["siblings"] = [{"rfilename": s.get("rfilename"),

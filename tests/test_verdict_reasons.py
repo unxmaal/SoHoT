@@ -51,6 +51,7 @@ EXPECTED = {
     reasons.ENVIRONMENT_ERROR: ("queued", "harness"),
     reasons.LOAD_LOG_UNREAD: ("queued", "harness"),
     reasons.SHORT_COPY: ("queued", "harness"),
+    reasons.INCOMPLETE_COPY: ("queued", "harness"),
     reasons.LOAD_FAILED_FILE: ("declined", "candidate"),
 }
 

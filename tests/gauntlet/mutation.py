@@ -92,14 +92,14 @@ LEFT_OUT = {
         "test_power_budget.py", "test_quants_882.py", "test_repo_claude_905.py", "test_repo_lane.py", "test_runner_base_weights.py", "test_schema_lanes.py",
         "test_planted_919.py", "test_trajectory_921.py", "test_unranked_weight_954.py", "test_inventory_heartbeat_972.py",
         "test_silent_truncation.py", "test_slots_memory.py", "test_store_downloads.py",
-        "test_trocr_tokenizer_1025.py"),
+        "test_trocr_tokenizer_1025.py", "test_fetch_files_1040.py"),
     "harness/screen.py": (
         "test_attachment_tags_949.py",
         "test_variants_947.py", "test_chaos.py", "test_claims_balanced_metric.py", "test_harness_engines_repo_id.py",
         "test_harness_report.py", "test_incumbent_lookup.py", "test_lane_metric_validity.py", "test_loop_backpressure.py",
         "test_canary_919.py", "test_mps_backend_abort.py", "test_new_lane_loop_faults.py", "test_rank_881.py",
         "test_remote_upstreams.py", "test_router_unload.py", "test_slots_memory.py", "test_store_card_facts.py",
-        "test_store_state.py", "test_until_keys_928.py", "test_stt_screen_power_1007.py"),
+        "test_store_state.py", "test_until_keys_928.py", "test_stt_screen_power_1007.py", "test_fetch_files_1040.py"),
     "harness/adopt.py": (
         "test_harness_paired.py", "test_harness_report.py", "test_loop_circuit.py", "test_measure_budget.py",
         "test_over_budget_796.py", "test_planted_919.py", "test_projection_696.py", "test_rank_893.py", "test_router_unload.py",

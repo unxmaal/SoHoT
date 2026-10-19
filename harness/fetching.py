@@ -76,19 +76,37 @@ RUNNER_FORMATS = (".safetensors", ".gguf", ".bin", ".npz", ".onnx")
 FORMAT_WAIT = "format:"
 
 
-def foreign_formats(siblings) -> list[str]:
-    """Weight formats in the listing when none of it is in RUNNER_FORMATS, else []."""
+def lane_formats(lane: str = "", patterns=()) -> tuple[str, ...]:
+    """The RUNNER_FORMATS a runner of `lane` loads: GGUF only on llama.cpp's lanes, an opener's only what its patterns match. #1040."""
+    got = RUNNER_FORMATS
+    if lane and lanes.canonical(lane) not in lanes.GGUF_SERVED:
+        got = tuple(f for f in got if f != ".gguf")
+    if patterns:
+        got = tuple(f for f in got if variants.matches("w" + f, patterns))
+    return got
+
+
+def _lane_patterns(lane: str, runtimes=None) -> tuple[str, ...]:
+    if runtimes is None:
+        from harness import machine
+        runtimes = machine.detect().runtimes
+    return variants.opens(lane, runtimes=runtimes)
+
+
+def foreign_formats(siblings, lane: str = "", patterns=()) -> list[str]:
+    """Weight formats in the listing when none of it is one the lane's runner loads, else []."""
     names = [str(s.get("rfilename", "")).lower() for s in siblings or []]
-    if any(n.endswith(RUNNER_FORMATS) for n in names):
+    if any(n.endswith(lane_formats(lane, patterns)) for n in names):
         return []
     return sorted({Path(n).suffix for n in names if n.endswith(downloads.WEIGHT_SUFFIXES)})
 
 
-def format_waits(until) -> bool:
-    """True while a row waits on a runner for formats RUNNER_FORMATS still lacks."""
+def format_waits(until, lane: str = "", runtimes=None) -> bool:
+    """True while a row waits on a runner for formats its lane's runners still lack."""
     if not (until or "").startswith(FORMAT_WAIT):
         return False
-    return not any(f in RUNNER_FORMATS for f in until.removeprefix(FORMAT_WAIT).split("|"))
+    have = lane_formats(lane, _lane_patterns(lane, runtimes) if lane else ())
+    return not any(f in have for f in until.removeprefix(FORMAT_WAIT).split("|"))
 
 
 #: why_not reasons, and the ones fetch skips on without trying or writing anything. #925.
@@ -119,7 +137,7 @@ def why_not(row: dict, *, budget: int | None = None, backlog: int = 0,
     until = row.get("until") or ""
     if not budget_allows(until, budget):
         return BUDGET, f"waits for a download budget over {until.removeprefix(_BUDGET_WAIT)} GiB"
-    if format_waits(until):
+    if format_waits(until, row.get("lane") or ""):
         return FORMAT, f"waits for a runner that loads {until.removeprefix(FORMAT_WAIT).replace('|', ', ')}"
     if not row.get("lane"):
         return NO_LANE, "nothing here could measure it, so nothing fetches it"
@@ -139,21 +157,23 @@ def format_wanted(conn, lane: str = "") -> list[dict]:
     rows = conn.execute("""
         SELECT p.name, p.lane, st.detail, st.until FROM proposals p
           JOIN verdicts st ON st.id = p.state_verdict_id
-         WHERE p.state = 'queued' AND st.tier = 'fetch' AND st.until LIKE ?""",
+         WHERE p.state = 'queued' AND st.tier IN ('fetch', 'inspect') AND st.until LIKE ?""",
                         (FORMAT_WAIT + "%",)).fetchall()
     return [{"name": r["name"], "lane": r["lane"], "why_not": r["detail"]} for r in rows
-            if format_waits(r["until"]) and (not lane or lanes.serves(r["lane"], lane))]
+            if format_waits(r["until"], r["lane"] or "") and (not lane or lanes.serves(r["lane"], lane))]
 
 
-def weights_gap(siblings) -> str:
-    """Why nothing in this listing is weights a runner here loads, or "". #798."""
+def weights_gap(siblings, lane: str = "", patterns=()) -> str:
+    """Why nothing in this listing is weights a runner of the lane here loads, or "". #798, #1040."""
     names = [str(s.get("rfilename", "")).lower() for s in siblings or []]
-    if any(n.endswith(RUNNER_FORMATS) for n in names):
+    have = lane_formats(lane, patterns)
+    if any(n.endswith(have) for n in names):
         return ""
-    other = foreign_formats(siblings)
+    other = foreign_formats(siblings, lane, patterns)
     if other:
-        return (f"runners wanted: its weights are {', '.join(other)}, and no runner here "
-                f"loads that format (only {', '.join(RUNNER_FORMATS)})")
+        whose = f"{lanes.canonical(lane)} runner" if lane else "runner"
+        return (f"runners wanted: its weights are {', '.join(other)}, and no {whose} here "
+                f"loads that format (only {', '.join(have)})")
     return f"no weights: none of its {len(names)} file(s) is a weight file"
 
 
@@ -275,7 +295,7 @@ def queued(conn, tiers=FETCHABLE_TIERS, kind: str = FETCHABLE_KIND,
         SELECT p.name, p.resolved, p.kind, p.lane, p.registry,
                -- The card's facts, so this tier can refuse an adapter or a
                -- foreign runtime before spending gigabytes on it. #414.
-               p.attaches_to, p.runtime_needed, p.model_type,
+               p.attaches_to, p.runtime_needed, p.model_type, p.library, p.card_tags,
                -- The state and the verdict that set it. #409.
                p.state AS outcome, st.tier AS tier, st.detail AS detail, st.until AS until,
                -- The candidate's measured size, whatever verdict is newest. #211, #413.
@@ -370,7 +390,7 @@ def in_rank_order(rows: list[dict], conn=None) -> list[dict]:
 
 def download(repo: str, snapshot=None, listing=None, hf_download=None,
              text: bool = True, conn=None, require_weights: bool = False,
-             model_type: str = "") -> str:
+             model_type: str = "", lane: str = "", card=None) -> str:
     """Weights into the shared cache. Returns the path.
 
     HF_HUB_OFFLINE is 1 everywhere else in this project on purpose: an eval
@@ -381,21 +401,23 @@ def download(repo: str, snapshot=None, listing=None, hf_download=None,
     from harness import env
     with env.online():
         return _download(repo, snapshot, listing, hf_download, text, conn, require_weights,
-                         model_type)
+                         model_type, lane, card)
 
 
 def _download(repo, snapshot, listing, hf_download, text, conn, require_weights,
-              model_type="") -> str:
+              model_type="", lane="", card=None) -> str:
     try:
         allow = None
         if require_weights and (listing is not None or snapshot is None):
             siblings = _siblings(repo, listing or _listing)
-            gap = weights_gap(siblings)
+            # The files the lane's runner opens, not a variant some other runner loads. #1040.
+            patterns = _patterns(repo, lane, card)
+            gap = weights_gap(siblings, lane, patterns)
             if gap:
-                raise Unloadable(gap, foreign_formats(siblings))
+                raise Unloadable(gap, foreign_formats(siblings, lane, patterns))
             listing = lambda _repo, s=siblings: s  # noqa: E731
-            chosen = _chosen(siblings, model_type)
-            allow = variants.download_files(siblings, chosen) if chosen else None
+            chosen = _chosen(siblings, model_type, lane, patterns)
+            allow = variants.download_files(siblings, chosen, patterns) if chosen else None
         single = _gguf_pick(repo, listing, snapshot, model_type) if text else None
         if single == ():
             raise FetchError("no single GGUF file fits the ceiling")
@@ -441,12 +463,17 @@ def _siblings(repo: str, listing) -> list:
         raise FetchError(f"listing failed: {_reason(exc)}") from exc
 
 
-def _chosen(siblings, model_type: str = ""):
-    """The variant inspect sizes this listing by on this machine. #947."""
+def _patterns(repo: str, lane: str, card=None) -> tuple[str, ...]:
+    from harness import machine
+    return variants.opens(lane, repo, card, machine.detect().runtimes)
+
+
+def _chosen(siblings, model_type: str = "", lane: str = "", patterns=()):
+    """The variant inspect sizes this listing by on this machine, for the lane's runner. #947, #1040."""
     from harness import inspect as ins
     from harness import machine
     here = machine.detect()
-    return variants.pick(variants.variants(siblings, ins.ceiling_bytes(), model_type),
+    return variants.pick(variants.runnable(siblings, ins.ceiling_bytes(), model_type, lane, patterns),
                          has=lambda rt: not here.refuses(rt))
 
 
@@ -685,10 +712,12 @@ def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=N
             if listing is not None or hf_download is not None or not text:
                 where = download(name, snapshot=snapshot, listing=listing,
                                  hf_download=hf_download, text=text, conn=conn,
-                                 require_weights=True, model_type=row.get("model_type") or "")
+                                 require_weights=True, model_type=row.get("model_type") or "",
+                                 lane=row.get("lane") or "", card=row)
             else:
                 where = download(name, snapshot=snapshot, conn=conn, require_weights=True,
-                                 model_type=row.get("model_type") or "")
+                                 model_type=row.get("model_type") or "",
+                                 lane=row.get("lane") or "", card=row)
         except FetchDeferred as exc:
             done.append({"repo": name, "ok": False, "why": str(exc), "deferred": True})
             break

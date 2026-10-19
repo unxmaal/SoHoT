@@ -1,0 +1,117 @@
+{
+ "id": "microsoft/VibeVoice-ASR-BitNet",
+ "pipeline_tag": "automatic-speech-recognition",
+ "tags": [
+  "ggml",
+  "safetensors",
+  "gguf",
+  "vibevoice",
+  "ASR",
+  "quantization",
+  "cpu-inference",
+  "bitnet",
+  "multilingual",
+  "automatic-speech-recognition",
+  "en",
+  "zh",
+  "fr",
+  "it",
+  "ko",
+  "pt",
+  "vi",
+  "arxiv:2607.21075",
+  "license:mit",
+  "endpoints_compatible",
+  "region:us",
+  "conversational"
+ ],
+ "library_name": "ggml",
+ "cardData": {
+  "language": [
+   "en",
+   "zh",
+   "fr",
+   "it",
+   "ko",
+   "pt",
+   "vi"
+  ],
+  "license": "mit",
+  "pipeline_tag": "automatic-speech-recognition",
+  "tags": [
+   "ASR",
+   "quantization",
+   "cpu-inference",
+   "gguf",
+   "bitnet",
+   "multilingual"
+  ],
+  "library_name": "ggml"
+ },
+ "siblings": [
+  {
+   "rfilename": ".gitattributes",
+   "size": 306
+  },
+  {
+   "rfilename": "README.md",
+   "size": 4124
+  },
+  {
+   "rfilename": "config.json",
+   "size": 3527
+  },
+  {
+   "rfilename": "figures/report_overview.png",
+   "size": 223086
+  },
+  {
+   "rfilename": "generation_config.json",
+   "size": 138
+  },
+  {
+   "rfilename": "model-00001-of-00003.safetensors",
+   "size": 4996674400
+  },
+  {
+   "rfilename": "model-00002-of-00003.safetensors",
+   "size": 4963184724
+  },
+  {
+   "rfilename": "model-00003-of-00003.safetensors",
+   "size": 1296761656
+  },
+  {
+   "rfilename": "model.safetensors.index.json",
+   "size": 120151
+  },
+  {
+   "rfilename": "tokenizer.json",
+   "size": 7028015
+  },
+  {
+   "rfilename": "tokenizer_config.json",
+   "size": 1289
+  },
+  {
+   "rfilename": "vibeasr-lm-i2_s-embed-q6_k.gguf",
+   "size": 992877600
+  },
+  {
+   "rfilename": "vibeasr-vae-encoder-i8_s.gguf",
+   "size": 703080064
+  },
+  {
+   "rfilename": "vocab.json",
+   "size": 2776833
+  }
+ ],
+ "lastModified": "2026-07-24T06:03:32.000Z",
+ "downloads": 62919,
+ "config": {
+  "architectures": [
+   "VibeVoiceForASRTraining"
+  ],
+  "model_type": "vibevoice"
+ }
+}

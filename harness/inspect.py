@@ -435,6 +435,8 @@ class Fit:
     variant: str = ""
     #: Where its weights sit when no variant groups them; its sum is then no size it runs at. #947.
     layout: str = ""
+    #: Weight formats in the listing that no runner of its lane loads, when it has no other. #1040.
+    formats: list[str] = field(default_factory=list)
     #: GitHub's own one-line description, carried so the judge can be shown the
     #: prose AND the source facts in one place.
     description: str = ""
@@ -1050,11 +1052,18 @@ def size_listing(fit: Fit, model_id: str, data: dict, *, ceiling: int | None = N
         return total
     if not variants.weight_bytes(siblings):
         return variants.listing_bytes(siblings)
-    found = variants.variants(siblings, ceiling, model_type=_model_type(data))
+    from harness import fetching
+    lane = lane_for(data)
+    card = {"model_type": _model_type(data), "library": data.get("library_name") or "",
+            "tags": data.get("tags") or []}
+    # What the lane's runner opens, never a variant only another lane's runner loads. #1040.
+    patterns = variants.opens(lane, model_id, card, getattr(machine, "runtimes", ()))
+    found = variants.runnable(siblings, ceiling, _model_type(data), lane, patterns)
     chosen = variants.pick(found, has=lambda rt: not machine.refuses(rt))
     if chosen:
         fit.variant = chosen.describe()
         return chosen.bytes
+    fit.formats = fetching.foreign_formats(siblings, lane, patterns)
     fit.layout = variants.layout(siblings)
     return variants.weight_bytes(siblings)
 
@@ -1140,6 +1149,12 @@ def decide(fit: Fit, ceiling: int | None = None, dead_days: int = UPSTREAM_DEAD_
     # floor, not the floor. Blaizzy/mlx-video was refused on exactly this.
     if fit.ds4:
         return _decide_ds4(fit, ceiling)
+    if fit.formats:
+        lane = fit.lanes.get(fit.repo, "")
+        fit.verdict = "unknown"
+        fit.why = (f"runners wanted: its weights are {', '.join(fit.formats)}, and no "
+                   f"{lane + ' ' if lane else ''}runner here loads that format")
+        return fit
     if fit.smallest > ceiling and len(fit.unsized) > len(fit.weights):
         fit.verdict = "unknown"
         fit.why = (f"smallest of {len(fit.weights)} sized weights is "
@@ -1220,7 +1235,7 @@ def reason_of(fit: Fit) -> str:
         return reasons.UPSTREAM
     if fit.verdict == "too-big" or fit.verdict.startswith("needs-"):
         return reasons.MACHINE
-    if fit.verdict == "unknown" and fit.layout:
+    if fit.verdict == "unknown" and (fit.layout or fit.formats):
         return reasons.HARNESS
     return reasons.CANDIDATE
 
@@ -1236,6 +1251,9 @@ def until_of(fit: Fit) -> str:
         return f"ceiling_gb:>{fit.smallest / GIB:.1f}"
     if fit.verdict == "dead" and fit.last_commit:
         return f"commit_after:{fit.last_commit}"
+    if fit.verdict == "unknown" and fit.formats:
+        from harness import fetching
+        return fetching.FORMAT_WAIT + "|".join(fit.formats)
     if fit.verdict == "unknown" and fit.layout:
         return f"layout:{fit.layout}"
     return ""

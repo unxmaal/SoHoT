@@ -1,6 +1,5 @@
 """Recorded cards must be what the inspect tier actually reads. #257."""
 import importlib.util
-import io
 import json
 from pathlib import Path
 
@@ -21,10 +20,8 @@ def test_a_card_is_recorded_from_the_url_inspect_reads_with_every_file(
     card = {"id": "org/m", "siblings": [{"rfilename": f"m-{i}.gguf", "size": i + 1}
                                         for i in range(89)]}
 
-    def urlopen(req, timeout=0):
-        seen.append(req.full_url)
-        return io.BytesIO(json.dumps(card).encode())
-    monkeypatch.setattr(rec.urllib.request, "urlopen", urlopen)
+    from harness import ratelimit
+    monkeypatch.setattr(ratelimit, "get_json", lambda url, **kw: seen.append(url) or card)
     monkeypatch.setattr(rec, "FIXTURES", tmp_path)
     got = json.loads(rec.record("org/m").read_text(encoding="utf-8"))
     assert seen == [ins.MODEL_URL.format(model_id="org/m")]

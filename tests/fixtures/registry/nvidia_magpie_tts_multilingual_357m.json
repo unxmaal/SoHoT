@@ -1,0 +1,140 @@
+{
+ "id": "nvidia/magpie_tts_multilingual_357m",
+ "pipeline_tag": "text-to-speech",
+ "tags": [
+  "nemo",
+  "gguf",
+  "NeMo",
+  "TTS",
+  "PyTorch",
+  "Speech",
+  "Multilingual-TTS",
+  "text-to-speech",
+  "ar",
+  "de",
+  "en",
+  "es",
+  "fr",
+  "hi",
+  "it",
+  "ja",
+  "ko",
+  "pt",
+  "vi",
+  "zh",
+  "dataset:MBZUAI/ClArTTS",
+  "dataset:tunis-ai/arabic_speech_corpus",
+  "dataset:mrfakename/Emilia-YODAS",
+  "dataset:MushanW/GLOBE_V2",
+  "dataset:nvidia/hifitts-2",
+  "dataset:ai4bharat/Kathbath",
+  "dataset:joujiboi/japanese-anime-speech",
+  "dataset:OpenSpeechHub/Common-Voice-17-Ja",
+  "dataset:amphion/Emilia-Dataset",
+  "dataset:seastar105/Emilia-YODAS-KO-filtered",
+  "dataset:firstpixel/pt-br_char",
+  "dataset:doof-ferb/infore1_25hours",
+  "arxiv:2509.21718",
+  "arxiv:2509.19592",
+  "arxiv:2502.05236",
+  "arxiv:2508.05835",
+  "arxiv:2506.04152",
+  "arxiv:2409.12117",
+  "arxiv:2406.17957",
+  "license:other",
+  "endpoints_compatible",
+  "region:us"
+ ],
+ "library_name": "nemo",
+ "cardData": {
+  "license": "other",
+  "license_name": "nvidia-open-model-license",
+  "license_link": "https://www.nvidia.com/en-us/agreements/enterprise-software/nvidia-open-model-license",
+  "language": [
+   "ar",
+   "de",
+   "en",
+   "es",
+   "fr",
+   "hi",
+   "it",
+   "ja",
+   "ko",
+   "pt",
+   "vi",
+   "zh"
+  ],
+  "metrics": [
+   "CER",
+   "SSIM"
+  ],
+  "datasets": [
+   "MBZUAI/ClArTTS",
+   "tunis-ai/arabic_speech_corpus",
+   "mrfakename/Emilia-YODAS",
+   "MushanW/GLOBE_V2",
+   "nvidia/hifitts-2",
+   "ai4bharat/Kathbath",
+   "joujiboi/japanese-anime-speech",
+   "OpenSpeechHub/Common-Voice-17-Ja",
+   "amphion/Emilia-Dataset",
+   "seastar105/Emilia-YODAS-KO-filtered",
+   "firstpixel/pt-br_char",
+   "doof-ferb/infore1_25hours"
+  ],
+  "library_name": "nemo",
+  "tags": [
+   "NeMo",
+   "TTS",
+   "PyTorch",
+   "Speech",
+   "Multilingual-TTS"
+  ],
+  "pipeline_tag": "text-to-speech"
+ },
+ "siblings": [
+  {
+   "rfilename": ".gitattributes",
+   "size": 2697
+  },
+  {
+   "rfilename": "README.md",
+   "size": 31738
+  },
+  {
+   "rfilename": "magpie_tts_multilingual_357m.nemo",
+   "size": 1470208000
+  },
+  {
+   "rfilename": "magpie_tts_multilingual_357m.v2607.f16.gguf",
+   "size": 568663392
+  },
+  {
+   "rfilename": "magpie_tts_multilingual_357m.v2607.q8_0.gguf",
+   "size": 331812192
+  },
+  {
+   "rfilename": "magpietts_architecture.png",
+   "size": 59670
+  },
+  {
+   "rfilename": "modelcard/bias.md",
+   "size": 544
+  },
+  {
+   "rfilename": "modelcard/explainability.md",
+   "size": 3707
+  },
+  {
+   "rfilename": "modelcard/privacy.md",
+   "size": 2081
+  },
+  {
+   "rfilename": "modelcard/safety.md",
+   "size": 852
+  }
+ ],
+ "lastModified": "2026-10-15T13:16:03.000Z",
+ "downloads": 10633,
+ "config": {}
+}

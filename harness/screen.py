@@ -627,6 +627,8 @@ def _sentence(cls: str, why: str, limit: str) -> str:
         return f"not screened: llama-server failed to load it and no load log says why{tail}"
     if cls == reasons.SHORT_COPY:
         return f"not screened: our copy is shorter than its header says; refetch{tail}"
+    if cls == reasons.INCOMPLETE_COPY:
+        return f"not screened: our snapshot lacks files its runner opens; refetch{tail}"
     if cls == reasons.LOAD_FAILED_LAYOUT:
         return f"needs its own runner: the stock loader could not assemble it{tail}"
     if cls == reasons.GPU_FAULT:

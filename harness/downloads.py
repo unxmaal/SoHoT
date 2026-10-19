@@ -32,7 +32,7 @@ FETCH, LINK, SCRIPT, SCAN, BACKFILL, PARTIAL = (
 #: adapter_config.json: a peft adapter is loadable onto the base it names. #423.
 LOADABLE = ("config.json", "model_index.json", "adapter_config.json")
 WEIGHT_SUFFIXES = (".safetensors", ".bin", ".gguf", ".npz", ".pt", ".pth",
-                   ".ckpt", ".onnx")
+                   ".ckpt", ".onnx", ".nemo")
 
 #: Config keys whose value names a repo you must ALSO have on disk. #196.
 REQUIRES_KEYS = ("text_tokenizer", "tokenizer_name", "audio_tokenizer",

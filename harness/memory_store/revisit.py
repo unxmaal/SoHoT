@@ -364,9 +364,26 @@ def runtime_by_library(conn) -> list[dict]:
     return [dict(r) for r in rows]
 
 
+def gguf_sized_off_lane(conn) -> list[dict]:
+    """Inspect verdicts holding state that sized a lane llama.cpp does not serve by a GGUF variant. #1040."""
+    from harness import lanes, variants
+    rows = conn.execute("""
+        SELECT p.name, p.lane, v.detail
+          FROM proposals p JOIN verdicts v ON v.id = p.state_verdict_id
+         WHERE p.state IN ('queued', 'declined') AND v.tier = ? AND v.detail LIKE ?
+         ORDER BY p.name
+    """, (INSPECT, f"%{variants.MARK}%.gguf%")).fetchall()
+    return [dict(r) for r in rows
+            if r["lane"] and lanes.canonical(r["lane"]) not in lanes.GGUF_SERVED]
+
+
 def requeue_old_sizing(conn) -> list[str]:
     """Hand back to inspect each refusal sized by the repo total or refused on the library tag. #947."""
     names = []
+    for r in gguf_sized_off_lane(conn):
+        retract(conn, r["name"], f"sized by a GGUF, which no {r['lane']} runner loads; "
+                                 "re-inspected by what its runner opens")
+        names.append(r["name"])
     for r in sized_by_repo_total(conn):
         retract(conn, r["name"], "too-big on the listing's sum; re-inspected by its smallest variant")
         names.append(r["name"])
@@ -387,6 +404,29 @@ def requeue_missing_in_snapshot(conn) -> list[str]:
     for name in names:
         retract(conn, name, "a loader missed a file in our own snapshot; the harness's routing, "
                             f"not a verdict on {name}", tier=SCREEN)
+    conn.commit()
+    return names
+
+
+def incomplete_copies(conn) -> list[dict]:
+    """Screen verdicts holding state whose runner found our snapshot missing files, classed before #1040."""
+    from harness import reasons
+    rows = conn.execute(
+        "SELECT p.name, v.id, v.detail FROM proposals p JOIN verdicts v ON v.id = p.state_verdict_id "
+        "WHERE p.state IN ('declined', 'broken') AND v.tier = ? AND v.detail LIKE '%is incomplete:%' "
+        "ORDER BY p.name", (SCREEN,)).fetchall()
+    return [dict(r) for r in rows if reasons.classify(r["detail"]) == reasons.INCOMPLETE_COPY]
+
+
+def requeue_incomplete_copies(conn) -> list[str]:
+    """Stand down each such snapshot and hand it back to inspect, so fetch takes what the runner opens. #1040."""
+    from harness import downloads
+    names = []
+    for r in incomplete_copies(conn):
+        downloads.stand_down(conn, r["name"])
+        retract(conn, r["name"], f"verdict {r['id']} blamed the runtime for files our fetch never took; "
+                                 "refetched by what its runner opens")
+        names.append(r["name"])
     conn.commit()
     return names
 
