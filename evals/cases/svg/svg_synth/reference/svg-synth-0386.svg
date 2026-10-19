@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <rect x="4" y="2.5" width="7.5" height="7.5" fill="#6a4c93"/>
+  <text x="15.5" y="8.5" font-size="6">juniper</text>
+  <rect x="4" y="15" width="7.5" height="7.5" fill="#e76f51"/>
+  <text x="15.5" y="21" font-size="6">kelp</text>
+  <rect x="4" y="27.5" width="7.5" height="7.5" fill="#b5838d"/>
+  <text x="15.5" y="33.5" font-size="6">nova</text>
+  <rect x="4" y="40" width="7.5" height="7.5" fill="#2a9d8f"/>
+  <text x="15.5" y="46" font-size="6">delta</text>
+  <rect x="4" y="52.5" width="7.5" height="7.5" fill="#1d3557"/>
+  <text x="15.5" y="58.5" font-size="6">fjord</text>
+  <rect x="4" y="65" width="7.5" height="7.5" fill="#8ab17d"/>
+  <text x="15.5" y="71" font-size="6">cedar</text>
+  <rect x="4" y="77.5" width="7.5" height="7.5" fill="#264653"/>
+  <text x="15.5" y="83.5" font-size="6">ember</text>
+  <rect x="4" y="90" width="7.5" height="7.5" fill="#457b9d"/>
+  <text x="15.5" y="96" font-size="6">maple</text>
+</svg>

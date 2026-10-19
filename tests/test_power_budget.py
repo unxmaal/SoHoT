@@ -186,10 +186,14 @@ def _store_incumbent(store_run, lane, spec, by_case, seconds):
     store_run("20261007-000000-adopt-" + lane, lane, rows=rows)
 
 
-def _svg_rates(store_run, seconds):
+#: A text lane still too small to split, so power has to come from repeat (svg grew past this in #1050).
+SMALL = "web"
+
+
+def _small_rates(store_run, seconds):
     from harness import holdout
-    ids = holdout.for_lane("svg").holdout
-    _store_incumbent(store_run, "svg", "inc", {c: [1, 0, 1, 0, 1, 0] for c in ids},
+    ids = holdout.for_lane(SMALL).holdout
+    _store_incumbent(store_run, SMALL, "inc", {c: [1, 0, 1, 0, 1, 0] for c in ids},
                      seconds)
     return len(ids)
 
@@ -201,17 +205,17 @@ def _ns(**kw):
 
 def test_the_loop_spends_the_needed_repeat_when_it_fits(store_run):
     from harness.commands import measure as measure_cmd
-    _svg_rates(store_run, seconds=1.0)
-    _, plan = measure_cmd._plan(_ns(power_budget_min=600), "svg", "inc")
+    n = _small_rates(store_run, seconds=1.0)
+    _, plan = measure_cmd._plan(_ns(power_budget_min=600), SMALL, "inc")
     assert plan.enough and plan.repeat > 3
-    assert plan.projected_s == pytest.approx(plan.repeat * 3 * 2 * 1.0)
+    assert plan.projected_s == pytest.approx(plan.repeat * n * 2 * 1.0)
 
 
 def test_over_budget_runs_the_fallback_and_says_what_power_would_cost(store_run):
     from harness.commands import measure as measure_cmd
-    _svg_rates(store_run, seconds=100.0)
-    _, needed = measure_cmd._plan(_ns(power_budget_min=10_000), "svg", "inc")
-    _, plan = measure_cmd._plan(_ns(power_budget_min=10), "svg", "inc")
+    _small_rates(store_run, seconds=100.0)
+    _, needed = measure_cmd._plan(_ns(power_budget_min=10_000), SMALL, "inc")
+    _, plan = measure_cmd._plan(_ns(power_budget_min=10), SMALL, "inc")
     assert plan.repeat < needed.repeat and plan.repeat <= power.FALLBACK_REPEAT
     assert plan.needed_repeat == needed.repeat
     assert f"repeat {needed.repeat}" in plan.why and "budget" in plan.why
@@ -236,8 +240,8 @@ def test_an_unmeasured_text_lane_is_priced_at_its_reply_budget(store_run):
 
 def test_an_explicit_repeat_is_honoured(store_run):
     from harness.commands import measure as measure_cmd
-    _svg_rates(store_run, seconds=100.0)
-    _, plan = measure_cmd._plan(_ns(repeat=5, power_budget_min=1), "svg", "inc")
+    _small_rates(store_run, seconds=100.0)
+    _, plan = measure_cmd._plan(_ns(repeat=5, power_budget_min=1), SMALL, "inc")
     assert plan.repeat == 5
 
 

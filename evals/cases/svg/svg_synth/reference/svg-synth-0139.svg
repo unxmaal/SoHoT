@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 160">
+  <rect x="4" y="4.57143" width="13.7143" height="13.7143" fill="#264653"/>
+  <text x="21.7143" y="15.5429" font-size="10.9714">garnet</text>
+  <rect x="4" y="27.4286" width="13.7143" height="13.7143" fill="#e63946"/>
+  <text x="21.7143" y="38.4" font-size="10.9714">fjord</text>
+  <rect x="4" y="50.2857" width="13.7143" height="13.7143" fill="#f4a261"/>
+  <text x="21.7143" y="61.2571" font-size="10.9714">nova</text>
+  <rect x="4" y="73.1429" width="13.7143" height="13.7143" fill="#1d3557"/>
+  <text x="21.7143" y="84.1143" font-size="10.9714">maple</text>
+  <rect x="4" y="96" width="13.7143" height="13.7143" fill="#b5838d"/>
+  <text x="21.7143" y="106.971" font-size="10.9714">ember</text>
+  <rect x="4" y="118.857" width="13.7143" height="13.7143" fill="#2a9d8f"/>
+  <text x="21.7143" y="129.829" font-size="10.9714">bravo</text>
+  <rect x="4" y="141.714" width="13.7143" height="13.7143" fill="#457b9d"/>
+  <text x="21.7143" y="152.686" font-size="10.9714">lumen</text>
+</svg>

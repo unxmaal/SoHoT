@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 120">
+  <rect x="0" y="30" width="120" height="60" fill="#f4a261"/>
+  <text x="60" y="69" font-size="18" text-anchor="middle" fill="#1d3557">delta</text>
+  <rect x="120" y="30" width="120" height="60" fill="#8ab17d"/>
+  <text x="180" y="69" font-size="18" text-anchor="middle" fill="#1d3557">v6.3.56</text>
+</svg>

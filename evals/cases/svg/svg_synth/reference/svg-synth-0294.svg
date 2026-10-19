@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 120">
+  <g id="quartz">
+    <circle cx="24" cy="20" r="12" fill="#e63946"/>
+    <circle cx="72" cy="20" r="12" fill="#e63946"/>
+    <circle cx="120" cy="20" r="12" fill="#e63946"/>
+    <circle cx="168" cy="20" r="12" fill="#e63946"/>
+    <circle cx="216" cy="20" r="12" fill="#e63946"/>
+  </g>
+  <g id="cedar">
+    <rect x="18" y="48" width="24" height="24" fill="#457b9d"/>
+    <rect x="78" y="48" width="24" height="24" fill="#457b9d"/>
+    <rect x="138" y="48" width="24" height="24" fill="#457b9d"/>
+    <rect x="198" y="48" width="24" height="24" fill="#457b9d"/>
+  </g>
+  <g id="juniper">
+    <ellipse cx="60" cy="100" rx="12" ry="6" fill="#8ab17d"/>
+    <ellipse cx="180" cy="100" rx="12" ry="6" fill="#8ab17d"/>
+  </g>
+</svg>

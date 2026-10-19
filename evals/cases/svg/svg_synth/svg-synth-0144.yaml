@@ -1,0 +1,57 @@
+# SoHoT generated svg cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/svg_synth.py).
+# Imported by evals/importers from generated:evals.importers.svg_synth v1 seed 1050@1878dddb4e7787e9870bf9adfc18239059c29347; re-import, do not edit.
+id: svg-synth-0144
+modality: svg
+prompt: 'Draw a bar chart on a viewBox of "0 0 200 200" with exactly 7 bars, left to right, of values
+  16, 8, 27, 9, 34, 15, 10. Each bar is one <rect> filled #f4a261, 4 user units tall per unit of value,
+  all bars standing on the line y=188. Label each bar with its value in a <text> element and add no other
+  text. Use no other <rect>. Set every colour with a fill attribute. Do not use transform attributes.
+  Draw nothing else: no background, border, axis or other extra shapes.'
+methods:
+- llm
+assert:
+  structure:
+    viewbox:
+    - 0
+    - 0
+    - 200
+    - 200
+    count:
+      rect: 7
+      text: 7
+    fill:
+      rect: '#f4a261'
+    heights:
+      values:
+      - 16
+      - 8
+      - 27
+      - 9
+      - 34
+      - 15
+      - 10
+      unit: 4
+      base: 188
+    labels:
+    - '16'
+    - '8'
+    - '27'
+    - '9'
+    - '34'
+    - '15'
+    - '10'
+    inside: true
+attribution:
+  dataset: SoHoT generated svg cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/svg_synth.py
+  license: generated
+  source: generated:evals.importers.svg_synth v1 seed 1050
+  revision: 1878dddb4e7787e9870bf9adfc18239059c29347
+  item: '144'
+  date: ''
+  transform: a seeded scene described as a prompt, asserted on its structure
+  importer: evals.importers.svg_synth
+  version: '1'
+  seed: 1050
+  kind: bars
+  stratum: hard

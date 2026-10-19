@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 120">
+  <ellipse cx="10.9091" cy="60" rx="7.63636" ry="3.81818" fill="#8ab17d"/>
+  <rect x="25.0909" y="52.3636" width="15.2727" height="15.2727" fill="#264653"/>
+  <circle cx="54.5455" cy="60" r="7.63636" fill="#457b9d"/>
+  <circle cx="76.3636" cy="60" r="7.63636" fill="#457b9d"/>
+  <circle cx="98.1818" cy="60" r="7.63636" fill="#457b9d"/>
+  <rect x="112.364" y="52.3636" width="15.2727" height="15.2727" fill="#264653"/>
+  <circle cx="141.818" cy="60" r="7.63636" fill="#457b9d"/>
+  <rect x="156" y="52.3636" width="15.2727" height="15.2727" fill="#264653"/>
+  <ellipse cx="185.455" cy="60" rx="7.63636" ry="3.81818" fill="#8ab17d"/>
+  <circle cx="207.273" cy="60" r="7.63636" fill="#457b9d"/>
+  <ellipse cx="229.091" cy="60" rx="7.63636" ry="3.81818" fill="#8ab17d"/>
+</svg>

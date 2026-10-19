@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 120">
+  <g id="kelp">
+    <circle cx="60" cy="20" r="12" fill="#e63946"/>
+    <circle cx="180" cy="20" r="12" fill="#e63946"/>
+  </g>
+  <g id="alpha">
+    <rect x="18" y="48" width="24" height="24" fill="#6a4c93"/>
+    <rect x="78" y="48" width="24" height="24" fill="#6a4c93"/>
+    <rect x="138" y="48" width="24" height="24" fill="#6a4c93"/>
+    <rect x="198" y="48" width="24" height="24" fill="#6a4c93"/>
+  </g>
+  <g id="harbor">
+    <ellipse cx="60" cy="100" rx="12" ry="6" fill="#457b9d"/>
+    <ellipse cx="180" cy="100" rx="12" ry="6" fill="#457b9d"/>
+  </g>
+</svg>

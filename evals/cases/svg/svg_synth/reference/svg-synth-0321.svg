@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 200">
+  <rect x="4" y="13.3333" width="40" height="40" fill="#e76f51"/>
+  <text x="48" y="45.3333" font-size="32">indigo</text>
+  <rect x="4" y="80" width="40" height="40" fill="#264653"/>
+  <text x="48" y="112" font-size="32">cedar</text>
+  <rect x="4" y="146.667" width="40" height="40" fill="#1d3557"/>
+  <text x="48" y="178.667" font-size="32">alpha</text>
+</svg>

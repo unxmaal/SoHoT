@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 120">
+  <g id="quartz">
+    <circle cx="40" cy="20" r="12" fill="#2a9d8f"/>
+    <circle cx="120" cy="20" r="12" fill="#2a9d8f"/>
+    <circle cx="200" cy="20" r="12" fill="#2a9d8f"/>
+  </g>
+  <g id="indigo">
+    <rect x="12" y="48" width="24" height="24" fill="#457b9d"/>
+    <rect x="60" y="48" width="24" height="24" fill="#457b9d"/>
+    <rect x="108" y="48" width="24" height="24" fill="#457b9d"/>
+    <rect x="156" y="48" width="24" height="24" fill="#457b9d"/>
+    <rect x="204" y="48" width="24" height="24" fill="#457b9d"/>
+  </g>
+  <g id="cedar">
+    <ellipse cx="60" cy="100" rx="12" ry="6" fill="#8ab17d"/>
+    <ellipse cx="180" cy="100" rx="12" ry="6" fill="#8ab17d"/>
+  </g>
+</svg>

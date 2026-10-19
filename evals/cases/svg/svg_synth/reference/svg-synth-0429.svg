@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 200">
+  <rect x="0" y="50" width="75" height="100" fill="#2a9d8f"/>
+  <text x="37.5" y="115" font-size="30" text-anchor="middle" fill="#1d3557">quartz</text>
+  <rect x="75" y="50" width="75" height="100" fill="#e63946"/>
+  <text x="112.5" y="115" font-size="30" text-anchor="middle" fill="#1d3557">delta</text>
+  <rect x="150" y="50" width="75" height="100" fill="#457b9d"/>
+  <text x="187.5" y="115" font-size="30" text-anchor="middle" fill="#1d3557">nova</text>
+  <rect x="225" y="50" width="75" height="100" fill="#6a4c93"/>
+  <text x="262.5" y="115" font-size="30" text-anchor="middle" fill="#1d3557">v4.16.56</text>
+</svg>

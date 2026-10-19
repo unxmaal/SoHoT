@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 160">
+  <rect x="0" y="40" width="106.667" height="80" fill="#e63946"/>
+  <text x="53.3333" y="92" font-size="24" text-anchor="middle" fill="#1d3557">delta</text>
+  <rect x="106.667" y="40" width="106.667" height="80" fill="#6a4c93"/>
+  <text x="160" y="92" font-size="24" text-anchor="middle" fill="#1d3557">juniper</text>
+  <rect x="213.333" y="40" width="106.667" height="80" fill="#8ab17d"/>
+  <text x="266.667" y="92" font-size="24" text-anchor="middle" fill="#1d3557">v1.13.2</text>
+</svg>

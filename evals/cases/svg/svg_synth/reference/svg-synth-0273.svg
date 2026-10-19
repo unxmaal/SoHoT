@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 160">
+  <rect x="0" y="40" width="160" height="80" fill="#b5838d"/>
+  <text x="80" y="92" font-size="24" text-anchor="middle" fill="#1d3557">maple</text>
+  <rect x="160" y="40" width="160" height="80" fill="#264653"/>
+  <text x="240" y="92" font-size="24" text-anchor="middle" fill="#1d3557">v7.11.80</text>
+</svg>

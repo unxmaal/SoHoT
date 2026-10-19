@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 200">
+  <g id="harbor">
+    <circle cx="37.5" cy="33.3333" r="20" fill="#b5838d"/>
+    <circle cx="112.5" cy="33.3333" r="20" fill="#b5838d"/>
+    <circle cx="187.5" cy="33.3333" r="20" fill="#b5838d"/>
+    <circle cx="262.5" cy="33.3333" r="20" fill="#b5838d"/>
+  </g>
+  <g id="rook">
+    <rect x="12" y="82" width="36" height="36" fill="#6a4c93"/>
+    <rect x="72" y="82" width="36" height="36" fill="#6a4c93"/>
+    <rect x="132" y="82" width="36" height="36" fill="#6a4c93"/>
+    <rect x="192" y="82" width="36" height="36" fill="#6a4c93"/>
+    <rect x="252" y="82" width="36" height="36" fill="#6a4c93"/>
+  </g>
+  <g id="juniper">
+    <ellipse cx="30" cy="166.667" rx="18" ry="9" fill="#264653"/>
+    <ellipse cx="90" cy="166.667" rx="18" ry="9" fill="#264653"/>
+    <ellipse cx="150" cy="166.667" rx="18" ry="9" fill="#264653"/>
+    <ellipse cx="210" cy="166.667" rx="18" ry="9" fill="#264653"/>
+    <ellipse cx="270" cy="166.667" rx="18" ry="9" fill="#264653"/>
+  </g>
+</svg>

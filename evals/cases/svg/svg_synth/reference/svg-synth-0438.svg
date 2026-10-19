@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <rect x="4" y="6.66667" width="20" height="20" fill="#e63946"/>
+  <text x="28" y="22.6667" font-size="16">juniper</text>
+  <rect x="4" y="40" width="20" height="20" fill="#1d3557"/>
+  <text x="28" y="56" font-size="16">pike</text>
+  <rect x="4" y="73.3333" width="20" height="20" fill="#2a9d8f"/>
+  <text x="28" y="89.3333" font-size="16">garnet</text>
+</svg>

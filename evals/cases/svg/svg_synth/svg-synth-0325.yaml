@@ -1,0 +1,49 @@
+# SoHoT generated svg cases, generated (https://github.com/unxmaal/SoHoT/blob/main/evals/importers/svg_synth.py).
+# Imported by evals/importers from generated:evals.importers.svg_synth v1 seed 1050@1878dddb4e7787e9870bf9adfc18239059c29347; re-import, do not edit.
+id: svg-synth-0325
+modality: svg
+prompt: 'Draw a 4-part badge on a viewBox of "0 0 100 100", its parts side by side from left to right:
+  a <rect> filled #2a9d8f reading "maple"; a <rect> filled #457b9d reading "kelp"; a <rect> filled #6a4c93
+  reading "delta"; a <rect> filled #e63946 reading "v3.6.27". Each word is in its own <text> element.
+  Exactly 4 <rect> and 4 <text>, and no other text. Set every colour with a fill attribute. Do not use
+  transform attributes. Draw nothing else: no background, border, axis or other extra shapes.'
+methods:
+- llm
+assert:
+  structure:
+    viewbox:
+    - 0
+    - 0
+    - 100
+    - 100
+    count:
+      rect: 4
+      text: 4
+    order:
+      tag: rect
+      axis: x
+      fills:
+      - '#2a9d8f'
+      - '#457b9d'
+      - '#6a4c93'
+      - '#e63946'
+    labels:
+    - maple
+    - kelp
+    - delta
+    - v3.6.27
+    inside: true
+attribution:
+  dataset: SoHoT generated svg cases
+  url: https://github.com/unxmaal/SoHoT/blob/main/evals/importers/svg_synth.py
+  license: generated
+  source: generated:evals.importers.svg_synth v1 seed 1050
+  revision: 1878dddb4e7787e9870bf9adfc18239059c29347
+  item: '325'
+  date: ''
+  transform: a seeded scene described as a prompt, asserted on its structure
+  importer: evals.importers.svg_synth
+  version: '1'
+  seed: 1050
+  kind: badge
+  stratum: hard

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 120">
+  <rect x="0" y="30" width="60" height="60" fill="#e76f51"/>
+  <text x="30" y="69" font-size="18" text-anchor="middle" fill="#1d3557">quartz</text>
+  <rect x="60" y="30" width="60" height="60" fill="#8ab17d"/>
+  <text x="90" y="69" font-size="18" text-anchor="middle" fill="#1d3557">bravo</text>
+  <rect x="120" y="30" width="60" height="60" fill="#1d3557"/>
+  <text x="150" y="69" font-size="18" text-anchor="middle" fill="#1d3557">fjord</text>
+  <rect x="180" y="30" width="60" height="60" fill="#6a4c93"/>
+  <text x="210" y="69" font-size="18" text-anchor="middle" fill="#1d3557">v5.2.44</text>
+</svg>

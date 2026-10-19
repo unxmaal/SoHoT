@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 120">
+  <g id="quartz">
+    <circle cx="120" cy="20" r="12" fill="#6a4c93"/>
+  </g>
+  <g id="ember">
+    <rect x="28" y="48" width="24" height="24" fill="#264653"/>
+    <rect x="108" y="48" width="24" height="24" fill="#264653"/>
+    <rect x="188" y="48" width="24" height="24" fill="#264653"/>
+  </g>
+  <g id="nova">
+    <ellipse cx="60" cy="100" rx="12" ry="6" fill="#f4a261"/>
+    <ellipse cx="180" cy="100" rx="12" ry="6" fill="#f4a261"/>
+  </g>
+</svg>

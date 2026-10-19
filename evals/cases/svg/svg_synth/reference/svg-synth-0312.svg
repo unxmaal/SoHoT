@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <rect x="0" y="50" width="66.6667" height="100" fill="#2a9d8f"/>
+  <text x="33.3333" y="115" font-size="30" text-anchor="middle" fill="#1d3557">pike</text>
+  <rect x="66.6667" y="50" width="66.6667" height="100" fill="#f4a261"/>
+  <text x="100" y="115" font-size="30" text-anchor="middle" fill="#1d3557">kelp</text>
+  <rect x="133.333" y="50" width="66.6667" height="100" fill="#b5838d"/>
+  <text x="166.667" y="115" font-size="30" text-anchor="middle" fill="#1d3557">v3.0.12</text>
+</svg>

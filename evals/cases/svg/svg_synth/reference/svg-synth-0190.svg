@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 200">
+  <g id="indigo">
+    <circle cx="150" cy="33.3333" r="20" fill="#8ab17d"/>
+  </g>
+  <g id="pike">
+    <rect x="12" y="82" width="36" height="36" fill="#1d3557"/>
+    <rect x="72" y="82" width="36" height="36" fill="#1d3557"/>
+    <rect x="132" y="82" width="36" height="36" fill="#1d3557"/>
+    <rect x="192" y="82" width="36" height="36" fill="#1d3557"/>
+    <rect x="252" y="82" width="36" height="36" fill="#1d3557"/>
+  </g>
+  <g id="kelp">
+    <ellipse cx="150" cy="166.667" rx="20" ry="10" fill="#457b9d"/>
+  </g>
+</svg>

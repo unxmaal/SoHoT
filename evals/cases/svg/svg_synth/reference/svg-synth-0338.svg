@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 200">
+  <rect x="0" y="50" width="150" height="100" fill="#b5838d"/>
+  <text x="75" y="115" font-size="30" text-anchor="middle" fill="#1d3557">lumen</text>
+  <rect x="150" y="50" width="150" height="100" fill="#457b9d"/>
+  <text x="225" y="115" font-size="30" text-anchor="middle" fill="#1d3557">v1.13.75</text>
+</svg>

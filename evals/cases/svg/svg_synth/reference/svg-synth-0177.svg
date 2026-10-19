@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 160">
+  <g id="ember">
+    <circle cx="80" cy="26.6667" r="16" fill="#f4a261"/>
+    <circle cx="240" cy="26.6667" r="16" fill="#f4a261"/>
+  </g>
+  <g id="nova">
+    <rect x="144" y="64" width="32" height="32" fill="#e63946"/>
+  </g>
+  <g id="rook">
+    <ellipse cx="53.3333" cy="133.333" rx="16" ry="8" fill="#8ab17d"/>
+    <ellipse cx="160" cy="133.333" rx="16" ry="8" fill="#8ab17d"/>
+    <ellipse cx="266.667" cy="133.333" rx="16" ry="8" fill="#8ab17d"/>
+  </g>
+</svg>

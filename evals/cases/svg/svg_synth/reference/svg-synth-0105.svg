@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 200">
+  <rect x="6" y="141" width="18" height="40" fill="#264653"/>
+  <text x="15" y="139" font-size="9" text-anchor="middle">16</text>
+  <rect x="36" y="88.5" width="18" height="92.5" fill="#264653"/>
+  <text x="45" y="86.5" font-size="9" text-anchor="middle">37</text>
+  <rect x="66" y="98.5" width="18" height="82.5" fill="#264653"/>
+  <text x="75" y="96.5" font-size="9" text-anchor="middle">33</text>
+  <rect x="96" y="136" width="18" height="45" fill="#264653"/>
+  <text x="105" y="134" font-size="9" text-anchor="middle">18</text>
+  <rect x="126" y="161" width="18" height="20" fill="#264653"/>
+  <text x="135" y="159" font-size="9" text-anchor="middle">8</text>
+  <rect x="156" y="118.5" width="18" height="62.5" fill="#264653"/>
+  <text x="165" y="116.5" font-size="9" text-anchor="middle">25</text>
+  <rect x="186" y="128.5" width="18" height="52.5" fill="#264653"/>
+  <text x="195" y="126.5" font-size="9" text-anchor="middle">21</text>
+  <rect x="216" y="98.5" width="18" height="82.5" fill="#264653"/>
+  <text x="225" y="96.5" font-size="9" text-anchor="middle">33</text>
+  <rect x="246" y="98.5" width="18" height="82.5" fill="#264653"/>
+  <text x="255" y="96.5" font-size="9" text-anchor="middle">33</text>
+  <rect x="276" y="118.5" width="18" height="62.5" fill="#264653"/>
+  <text x="285" y="116.5" font-size="9" text-anchor="middle">25</text>
+</svg>

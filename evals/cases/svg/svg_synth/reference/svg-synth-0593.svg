@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <g id="pike">
+    <circle cx="20" cy="33.3333" r="12" fill="#1d3557"/>
+    <circle cx="60" cy="33.3333" r="12" fill="#1d3557"/>
+    <circle cx="100" cy="33.3333" r="12" fill="#1d3557"/>
+    <circle cx="140" cy="33.3333" r="12" fill="#1d3557"/>
+    <circle cx="180" cy="33.3333" r="12" fill="#1d3557"/>
+  </g>
+  <g id="nova">
+    <rect x="8" y="88" width="24" height="24" fill="#8ab17d"/>
+    <rect x="48" y="88" width="24" height="24" fill="#8ab17d"/>
+    <rect x="88" y="88" width="24" height="24" fill="#8ab17d"/>
+    <rect x="128" y="88" width="24" height="24" fill="#8ab17d"/>
+    <rect x="168" y="88" width="24" height="24" fill="#8ab17d"/>
+  </g>
+  <g id="delta">
+    <ellipse cx="20" cy="166.667" rx="12" ry="6" fill="#e76f51"/>
+    <ellipse cx="60" cy="166.667" rx="12" ry="6" fill="#e76f51"/>
+    <ellipse cx="100" cy="166.667" rx="12" ry="6" fill="#e76f51"/>
+    <ellipse cx="140" cy="166.667" rx="12" ry="6" fill="#e76f51"/>
+    <ellipse cx="180" cy="166.667" rx="12" ry="6" fill="#e76f51"/>
+  </g>
+</svg>

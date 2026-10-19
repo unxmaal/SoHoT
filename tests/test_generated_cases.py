@@ -1,4 +1,4 @@
-"""Generated cases for the ocr, pii and tts lanes: deterministic, attributed, controlled. #603."""
+"""Generated cases for the ocr, pii, tts and svg lanes: deterministic, attributed, controlled. #603, #1050."""
 import functools
 import importlib
 import json
@@ -12,7 +12,7 @@ from evals.core import load_cases, score, summarize
 from harness import holdout, privacy
 
 ROOT = Path(__file__).resolve().parents[1]
-GENERATORS = ("ocr_synth", "pii_synth", "tts_synth")
+GENERATORS = ("ocr_synth", "pii_synth", "tts_synth", "svg_synth")
 #: #595: about 132 holdout cases give power 0.8 at +0.20 when a case is the unit.
 HOLDOUT_TARGET = 130
 #: CER ceiling for the positive control, per OCR instrument; windows measured 0.148 on windows-latest (#623).
@@ -116,6 +116,7 @@ def test_an_imported_file_is_written_beside_its_case_and_may_not_escape(tmp_path
     ("ocr_synth", {"reference": 440, "other-case": 0, "empty": 0}),
     ("pii_synth", {"reference": 540, "nothing": 120, "everything": 0}),
     ("tts_synth", {"reference": 460, "silence": 0, "fixed": 0}),
+    ("svg_synth", {"reference": 640, "square": 0, "other-case": 0}),
 ])
 def test_the_registered_negative_control_separates_reference_from_responders(committed, name,
                                                                               want):
@@ -282,3 +283,42 @@ def test_every_degradation_has_a_strength_and_an_unknown_one_is_refused():
     assert set(ocr_synth.STRENGTH) == set(ocr_synth.DEGRADE) - {"none"}
     with pytest.raises(ValueError, match="degradation"):
         ocr_synth._degrade(Image.new("L", (4, 4), 255), "fog", 1, 255)
+
+
+# --- svg -------------------------------------------------------------------
+
+def test_svg_cases_cover_every_kind_and_stratum_and_say_which_methods_they_fit(committed):
+    mod = _mod("svg_synth")
+    cases = committed["svg_synth"]
+    assert {_prov(c)["kind"] for c in cases} == set(mod.KINDS)
+    assert {_prov(c)["stratum"] for c in cases} == {"easy", "medium", "hard"}
+    # Only shapes of any kind fit a tracer or OmniSVG; naming an element type measures the method (RULE #219).
+    assert {_prov(c)["kind"] for c in cases if not c.methods} == {"blobs"}
+    assert all(c.methods == ("llm",) for c in cases if _prov(c)["kind"] != "blobs")
+
+
+def test_every_svg_reference_passes_the_full_checker_with_the_rasterizer(committed):
+    """Positive control through score(): the drawing the generator made parses, meets its structure and has ink."""
+    from harness.checks import render
+    mod = _mod("svg_synth")
+    if render.rasterizer_path() is None:
+        pytest.skip("no SVG rasterizer on this machine")
+    sample = committed["svg_synth"][::5]
+    rows = _rows(sample, mod.reference)
+    assert rows["passed"] == len(sample)
+
+
+def test_svg_reference_fails_once_one_asserted_property_is_broken(committed):
+    """Each kind's reference, nudged off its spec in one way, is refused by the structure check."""
+    import re as _re
+    from harness.checks import svg
+    mod = _mod("svg_synth")
+    seen = {}
+    for c in committed["svg_synth"]:
+        seen.setdefault(_prov(c)["kind"], c)
+    for kind, c in seen.items():
+        ref = mod.reference(c)
+        broken = _re.sub(r'fill="#[0-9a-f]{6}"', 'fill="#000001"', ref, count=1)
+        if kind == "clock":
+            broken = _re.sub(r'x2="[^"]+"', 'x2="0"', ref, count=1)
+        assert svg.structure(broken, c.assertions["structure"]), kind

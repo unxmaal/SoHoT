@@ -13,6 +13,10 @@ KNOBS = [
     _k("code_check_timeout", ["harness/checks/code.py:DEFAULT_TIMEOUT"], [5.0, 15.0, 30.0, 60.0, 120.0],
        lanes=("code",), limit="code_check_timeout_s", receipt="knobs",
        note="wall clock a code answer and its checks may run; a case may set params.check_timeout (#693)", unrecorded=15.0),
+    _k("svg_angle_tolerance", ["harness/checks/svg.py:ANGLE_TOLERANCE"], [2.0, 4.0, 8.0],
+       note="svg: degrees a clock hand may point off its true angle in a structure assertion (#1050)"),
+    _k("svg_coord_tolerance", ["harness/checks/svg.py:COORD_TOLERANCE"], [0.5, 1.0, 2.0],
+       note="svg: user units a coordinate may sit from where a structure assertion puts it (#1050)"),
     _k("svg_render_timeout", ["harness/checks/render.py:SVG_TIMEOUT_S"], [10.0, 30.0, 60.0, 120.0],
        lanes=("svg",), limit="svg_render_timeout_s", receipt="knobs", note="seconds rsvg-convert may take to draw one SVG (#693)", unrecorded=30.0),
 ]

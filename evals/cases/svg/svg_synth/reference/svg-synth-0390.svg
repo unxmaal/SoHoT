@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <rect x="0" y="25" width="33.3333" height="50" fill="#8ab17d"/>
+  <text x="16.6667" y="57.5" font-size="15" text-anchor="middle" fill="#1d3557">ember</text>
+  <rect x="33.3333" y="25" width="33.3333" height="50" fill="#e76f51"/>
+  <text x="50" y="57.5" font-size="15" text-anchor="middle" fill="#1d3557">harbor</text>
+  <rect x="66.6667" y="25" width="33.3333" height="50" fill="#264653"/>
+  <text x="83.3333" y="57.5" font-size="15" text-anchor="middle" fill="#1d3557">v8.7.36</text>
+</svg>

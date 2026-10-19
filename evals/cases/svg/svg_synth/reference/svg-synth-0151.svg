@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <g id="harbor">
+    <circle cx="25" cy="33.3333" r="15" fill="#6a4c93"/>
+    <circle cx="75" cy="33.3333" r="15" fill="#6a4c93"/>
+    <circle cx="125" cy="33.3333" r="15" fill="#6a4c93"/>
+    <circle cx="175" cy="33.3333" r="15" fill="#6a4c93"/>
+  </g>
+  <g id="quartz">
+    <rect x="13.3333" y="80" width="40" height="40" fill="#e76f51"/>
+    <rect x="80" y="80" width="40" height="40" fill="#e76f51"/>
+    <rect x="146.667" y="80" width="40" height="40" fill="#e76f51"/>
+  </g>
+  <g id="fjord">
+    <ellipse cx="100" cy="166.667" rx="20" ry="10" fill="#457b9d"/>
+  </g>
+</svg>
