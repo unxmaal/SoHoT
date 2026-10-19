@@ -4,7 +4,7 @@ from __future__ import annotations
 from harness import store
 
 
-SCHEMA_VERSION = 77
+SCHEMA_VERSION = 78
 
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
@@ -482,7 +482,7 @@ CREATE TABLE IF NOT EXISTS knob_sweeps (
     trigger      TEXT NOT NULL DEFAULT '{}',
     queued_at    REAL NOT NULL,
     settled_at   REAL,
-    -- '' until settled, then chosen, unrun or cancelled.
+    -- '' until settled, then chosen, uninformative, unrun or cancelled.
     outcome      TEXT NOT NULL DEFAULT '',
     -- JSON value: the cheapest value statistically tied with the best.
     chosen       TEXT NOT NULL DEFAULT '',

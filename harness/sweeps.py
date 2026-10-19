@@ -18,7 +18,7 @@ from harness import binding, knobs
 REQUESTED_BY = binding.SWEEP
 #: Below a person's jobs and beside reverify's.
 PRIORITY = -10
-CHOSEN, UNRUN, CANCELLED = "chosen", "unrun", "cancelled"
+CHOSEN, UNRUN, CANCELLED, UNINFORMATIVE = "chosen", "unrun", "cancelled", "uninformative"
 
 
 def _flag(k, value) -> list[str]:
@@ -55,23 +55,83 @@ def _skip(conn, last: dict | None, now: float) -> str:
     return ""
 
 
+def passing(conn, lane: str, machines) -> dict:
+    """(candidate_id or spec) -> {spec, candidate_id, passed, n, run_id} from each model's newest measured run here that no flag or sweep marks. #1009."""
+    from harness import reverify, runs
+    flagged = reverify._flagged_runs(conn)
+    sql = ("SELECT runs.id AS run_id, res.candidate_id, res.candidate, c.spec, res.passed "
+           "FROM results res JOIN runs ON res.run_id = runs.id LEFT JOIN jobs ON jobs.id = runs.job_id "
+           "LEFT JOIN candidates c ON c.id = res.candidate_id "
+           "WHERE runs.lane = ? AND runs.tier = ? "
+           f"AND COALESCE(jobs.requested_by, '') != '{REQUESTED_BY}'")
+    clause, ids = runs._in("runs.machine_id", machines) if machines is not None else ("", ())
+    out: dict = {}
+    for r in conn.execute(sql + clause + " ORDER BY COALESCE(runs.generated_at, runs.recorded_at) DESC, "
+                          "runs.id DESC", (lane, runs.MEASURE, *ids)).fetchall():
+        if r["run_id"] in flagged:
+            continue
+        key = r["candidate_id"] if r["candidate_id"] is not None else r["candidate"]
+        got = out.setdefault(key, {"spec": r["spec"] or r["candidate"], "candidate_id": r["candidate_id"],
+                                   "passed": 0, "n": 0, "run_id": r["run_id"]})
+        if got["run_id"] == r["run_id"]:
+            got["passed"] += int(bool(r["passed"]))
+            got["n"] += 1
+    return out
+
+
+def _failed(conn, lane: str, cid) -> str:
+    from harness import reverify
+    last = reverify._latest(conn, lane, cid, settled=True) if cid is not None else None
+    return last["detail"] if last and last["outcome"] in (reverify.FAILED, reverify.REGRESSED) else ""
+
+
+def model(conn, item: dict, machines) -> tuple[dict | None, str]:
+    """The model a lane's sweep runs: the served one when it passes a case here, else the lane's best passing one, else None and why. #1009."""
+    from harness import adopt
+    lane = item["lane"]
+    seen = passing(conn, lane, machines)
+    own = (seen.get(item["candidate_id"]) if item["candidate_id"] is not None
+           else next((m for m in seen.values() if m["spec"] == item["spec"]), None))
+    why = _failed(conn, lane, item["candidate_id"])
+    if own and own["passed"] and not why:
+        return item, ""
+    why = why or (f"{item['spec']} passed 0 of {own['n']} in run {own['run_id']}" if own
+                  else f"{item['spec']} has no measured run in {lane} here")
+    best = sorted((m for m in seen.values() if m["passed"] and not adopt.is_reference(m["spec"])
+                   and not _failed(conn, lane, m["candidate_id"])),
+                  key=lambda m: (-m["passed"] / m["n"], -m["passed"]))
+    if not best:
+        return None, f"{why}, and no model passes a case in {lane} here, so a sweep could see nothing"
+    m = best[0]
+    return ({"lane": lane, "spec": m["spec"], "candidate_id": m["candidate_id"], "incumbent": "",
+             "incumbent_id": None},
+            f"{why}; sweeping {m['spec']}, the best passing ({m['passed']} of {m['n']} in run {m['run_id']})")
+
+
 def plan(conn, *, now: float | None = None) -> list[dict]:
     """Every binding knob an eval can set, on a lane this machine serves, with the commands that would sweep it."""
     from harness import binding, memory_store as ms, reverify, runs
     now = time.time() if now is None else now
     served = reverify.served(conn)
     mid = ms.machine_row(conn)
+    machines = runs.here(conn)
     out = []
-    for row in binding.binding(binding.count(conn, now=now, machines=runs.here(conn))):
+    for row in binding.binding(binding.count(conn, now=now, machines=machines)):
         k = knobs.KNOBS[row["knob"]]
         item = served.get(row["lane"])
         if not k.receipt or item is None:
             continue
-        out.append({"knob": k.name, "lane": row["lane"], "spec": item["spec"],
-                    "candidate_id": item["candidate_id"], "machine_id": mid,
-                    "trigger": {"limit": row["limit"], "hits": row["hits"], "of": row["of"]},
-                    "argv": {v: argv(item, k, v) for v in k.values_for(row["lane"])},
-                    "skip": _skip(conn, _key(conn, k.name, row["lane"], item["spec"], mid), now)})
+        swept, note = model(conn, item, machines)
+        trigger = {"limit": row["limit"], "hits": row["hits"], "of": row["of"]}
+        if swept is None:
+            out.append({"knob": k.name, "lane": row["lane"], "spec": item["spec"],
+                        "candidate_id": item["candidate_id"], "machine_id": mid, "trigger": trigger,
+                        "argv": {}, "model": note, "skip": note})
+            continue
+        out.append({"knob": k.name, "lane": row["lane"], "spec": swept["spec"],
+                    "candidate_id": swept["candidate_id"], "machine_id": mid, "trigger": trigger,
+                    "argv": {v: argv(swept, k, v) for v in k.values_for(row["lane"])}, "model": note,
+                    "skip": _skip(conn, _key(conn, k.name, row["lane"], swept["spec"], mid), now)})
     return out
 
 
@@ -123,17 +183,31 @@ def decide(values, outcomes: dict, alpha: float, effect: float | None = None) ->
         cell = paired.pair(stats[best]["rows"], stats[v]["rows"], same_repeat=True,
                            unjudged=paired.UNJUDGED_ON_A_TIMEOUT_AXIS)
         worse = cell.lost > cell.gained and cell.p <= alpha
-        pw = 1.0 if v == best else (0.0 if cell.refused else
-                                    _power_to_see_a_loss(stats[best]["rows"], cell, alpha, effect))
+        pw = None if v == best else (0.0 if cell.refused else
+                                     _power_to_see_a_loss(stats[best]["rows"], cell, alpha, effect))
         ok = v == best or (not worse and pw >= power.TARGET)
         table[str(v)] = {"passed": stats[v]["passed"], "n": stats[v]["n"],
                          "seconds": round(stats[v]["seconds"], 3), "lost": cell.lost, "gained": cell.gained,
-                         "p": round(cell.p, 4), "power": round(pw, 3), "tied": ok,
+                         "p": round(cell.p, 4), "power": None if pw is None else round(pw, 3), "tied": ok,
                          "underpowered": not ok and not worse and not cell.refused,
                          "refused": cell.refused, "best": v == best}
         if ok:
             tied.append(v)
+    if flat(table):
+        for row in table.values():
+            row.update(tied=False, best=False, underpowered=False)
+        return None, table
     return min(tied, key=lambda v: (stats[v]["seconds"], pos[v])), table
+
+
+def flat(cost: dict) -> str:
+    """Why the cases cannot tell the values apart: every one at the floor or every one at the ceiling; '' when they can. #1009."""
+    rows = list(cost.values())
+    if rows and all(r["passed"] == 0 for r in rows):
+        return "every value passed 0 of its cases"
+    if rows and all(r["passed"] == r["n"] for r in rows):
+        return "every value passed every case"
+    return ""
 
 
 def caveats(cost: dict) -> str:
@@ -166,11 +240,13 @@ def judge(conn, sw: dict) -> tuple[str, object, dict, str]:
         outcomes[value] = (runs.rows(conn, rid, sw["candidate_id"]) if sw["candidate_id"] is not None
                            else runs.rows(conn, rid))
     chosen, cost = decide(k.values_for(sw["lane"]), outcomes, adopt.ALPHA, power.effect_for(sw["lane"]))
-    if chosen is None:
+    if not cost:
         return UNRUN, None, {}, f"none of the {len(json.loads(sw['jobs']))} jobs stored a run"
     for value, rid in ran.items():
         if str(value) in cost:
             cost[str(value)]["run_id"] = rid
+    if chosen is None:
+        return UNINFORMATIVE, None, cost, uninformative(k, sw, cost)
     best = next(v for v in k.values_for(sw["lane"]) if cost.get(str(v), {}).get("best"))
     spent = sum(c["seconds"] for c in cost.values())
     c, b = cost[str(chosen)], cost[str(best)]
@@ -179,6 +255,32 @@ def judge(conn, sw: dict) -> tuple[str, object, dict, str]:
               f"{best:g} ({b['passed']} of {b['n']}, {b['seconds']:g}s); now {k.default(sw['lane']):g}; the sweep spent {spent:g}s"
               + caveats(cost))
     return CHOSEN, chosen, cost, detail
+
+
+def uninformative(k, sw: dict, cost: dict) -> str:
+    """The detail of a sweep whose cases cannot tell its values apart: nothing is chosen. #1009."""
+    each = ", ".join(f"{v} {c['passed']} of {c['n']}" for v, c in cost.items())
+    spent = sum(c["seconds"] for c in cost.values())
+    return (f"{k.name} on {sw['lane']} for {sw['spec']}: chose nothing, {flat(cost)} ({each}), so the cases "
+            f"cannot tell the values apart; still {k.default(sw['lane']):g}; the sweep spent {spent:g}s")
+
+
+def refile(conn) -> int:
+    """Re-decide as uninformative every chosen sweep whose values all sat at the floor or the ceiling; the count changed. #1009."""
+    n = 0
+    for r in conn.execute("SELECT * FROM knob_sweeps WHERE outcome = ?", (CHOSEN,)).fetchall():
+        sw, cost = dict(r), json.loads(r["cost"] or "{}")
+        k = knobs.KNOBS.get(sw["knob"])
+        if k is None or not flat(cost):
+            continue
+        for row in cost.values():
+            row.update(tied=False, underpowered=False, power=None if row.get("best") else row.get("power"),
+                       best=False)
+        conn.execute("UPDATE knob_sweeps SET outcome = ?, chosen = '', cost = ?, detail = ? WHERE id = ?",
+                     (UNINFORMATIVE, json.dumps(cost), uninformative(k, sw, cost)[:500], sw["id"]))
+        n += 1
+    conn.commit()
+    return n
 
 
 def settle(conn, *, now: float, write: bool = True) -> list[dict]:
@@ -223,6 +325,9 @@ def render(got: dict) -> str:
     for p in got["planned"]:
         t = p["trigger"]
         why = p["skip"] or ("would queue" if got.get("dry_run") else "queued")
+        if not p["argv"]:
+            lines.append(f"  {p['knob']} on {p['lane']} ({t['limit']}: {t['hits']} of {t['of']}): not swept, {why}")
+            continue
         lines.append(f"  {p['knob']} on {p['lane']} ({t['limit']}: {t['hits']} of {t['of']}): "
-                     f"{len(p['argv'])} values, {why}")
+                     f"{len(p['argv'])} values, {why}" + (f" ({p['model']})" if p.get("model") else ""))
     return "\n".join(lines) or "  no binding knob to sweep"
