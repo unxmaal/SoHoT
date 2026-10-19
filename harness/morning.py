@@ -115,7 +115,9 @@ def ledger_row(conn, now: float) -> dict | None:
         d = {}
     lanes = (d.get("displaced") or {}).get("lanes") or []
     displaced = {k: sum(x.get(k) or 0 for x in lanes) for k in ("requests", "input", "output")}
+    e = (d.get("energy") or {})
     return {"day": r["day"], "recorded_at": r["recorded_at"], "energy_kwh": r["energy_kwh"],
+            "energy": {k: e.get(k) for k in ("partial", "lower_bound_kwh", "why")} if e.get("partial") else {},
             "cloud": (d.get("cloud") or {}).get("tokens"), "plan": d.get("headroom") or {}, "displaced": displaced}
 
 

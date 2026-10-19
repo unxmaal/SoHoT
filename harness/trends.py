@@ -141,16 +141,22 @@ def displaced_chart(rows: list[dict]) -> dict:
 def energy_chart(rows: list[dict]) -> dict:
     series: dict = {}
     labels: dict = {}
+    partial = []
     for r in rows:
         e = r["detail"].get("energy") or {}
+        if e.get("partial"):
+            partial.append(r["day"])
+            continue
         kwh = r.get("energy_kwh") if r.get("energy_kwh") is not None else e.get("kwh")
         if kwh is None:
             continue
         _put(series, "kWh", r["day"], kwh)
         if e.get("usd") is not None:
             labels.setdefault("kWh", {})[r["day"]] = f"${e['usd']:.2f}"
-    return _chart("Energy, kWh per day", "kwh", series, "macmon whole-system power, integrated per day; "
-                  "the dollar figure at the ledger's tariff is in each point's label.", labels=labels)
+    gap = (f" {len(partial)} days are left out because their CPU was not read ({partial[0]} .. {partial[-1]})."
+           if partial else "")
+    return _chart("Energy, kWh per day", "kwh", series, "macmon power, integrated per day; "
+                  "the dollar figure at the ledger's tariff is in each point's label." + gap, labels=labels)
 
 
 def context_chart(rows: list[dict], live: dict, first: str = "", last: str = "9999") -> dict:

@@ -17,6 +17,12 @@ TARIFF_USD_PER_KWH = 0.15
 POWER_GAP_S = 180.0
 #: How long one macmon sample averages over, in milliseconds.
 POWER_WINDOW_MS = 5000
+#: A reading above this is a stalled counter catching up, not power drawn (vladkens/macmon#76).
+POWER_CEILING_W = 480.0
+#: A day whose CPU reads 0 W on more than this share of its active samples has energy partial. #1005.
+CPU_UNREAD_SHARE = 0.9
+#: The first macmon that reads CPU power on macOS 27 without sudo (AppleCLPC counters).
+MACMON_CLPC = (0, 9, 0)
 
 #: Untagged history known to be one purpose: (alias, first day, last day, purpose, why). A mapping, labelled as one.
 ALIAS_PURPOSE = (
@@ -231,12 +237,22 @@ def macmon_argv() -> list[str]:
 
 
 def watts(sample: dict) -> float | None:
-    """macmon's whole-system power, else the SoC's."""
-    for key in ("sys_power", "all_power"):
-        v = sample.get(key)
-        if isinstance(v, (int, float)) and v > 0:
-            return float(v)
-    return None
+    """macmon's whole-system power, else the SoC's; 0 W is a reading, a missing field is not. #1005."""
+    got = [float(v) for v in (sample.get(k) for k in ("sys_power", "all_power"))
+           if isinstance(v, (int, float)) and not isinstance(v, bool) and v >= 0]
+    return next((v for v in got if v > 0), got[0] if got else None)
+
+
+def macmon_version(runner=subprocess.run, which=shutil.which) -> str | None:
+    """The installed macmon's version, None when it is absent or says nothing."""
+    if not which("macmon"):
+        return None
+    try:
+        out = runner(["macmon", "--version"], capture_output=True, text=True, timeout=10).stdout
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    m = re.search(r"(\d+)\.(\d+)\.(\d+)", out or "")
+    return m.group(0) if m else None
 
 
 def sample_power(runner=subprocess.run, which=shutil.which, now=None, path: Path | None = None) -> dict:
@@ -245,15 +261,23 @@ def sample_power(runner=subprocess.run, which=shutil.which, now=None, path: Path
         return {"ok": False, "why": "macmon is not installed (brew install macmon)"}
     try:
         proc = runner(macmon_argv(), capture_output=True, text=True, timeout=POWER_WINDOW_MS / 1000 + 30)
-        line = next((ln for ln in proc.stdout.splitlines() if ln.strip()), "")
-        got = json.loads(line) if proc.returncode == 0 and line else None
-    except (OSError, ValueError, subprocess.TimeoutExpired):
+    except (OSError, subprocess.TimeoutExpired) as e:
+        return {"ok": False, "why": f"macmon did not run: {type(e).__name__}"}
+    if proc.returncode != 0:
+        return {"ok": False, "why": f"macmon exited {proc.returncode}"}
+    line = next((ln for ln in proc.stdout.splitlines() if ln.strip()), "")
+    try:
+        got = json.loads(line) if line else None
+    except ValueError:
         got = None
-    w = watts(got) if isinstance(got, dict) else None
+    if not isinstance(got, dict):
+        return {"ok": False, "why": "macmon printed no JSON"}
+    w = watts(got)
     if w is None:
-        return {"ok": False, "why": "macmon printed no power reading"}
+        return {"ok": False, "why": "macmon JSON has no sys_power or all_power"}
     rec = {"at": time.time() if now is None else now, "watts": w,
-           **{k: got.get(k) for k in ("cpu_power", "gpu_power", "ane_power", "all_power", "sys_power")}}
+           **{k: got.get(k) for k in ("cpu_power", "gpu_power", "ane_power", "all_power", "sys_power",
+                                      "ram_power", "cpu_active_ratio", "gpu_active_ratio")}}
     path = path or ledger_dir() / "power.jsonl"
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a", encoding="utf-8") as fh:
@@ -261,9 +285,24 @@ def sample_power(runner=subprocess.run, which=shutil.which, now=None, path: Path
     return {"ok": True, **rec}
 
 
-def integrate_power(samples: list[dict], max_gap_s: float, tz=None) -> dict:
+def _num(v) -> bool:
+    return isinstance(v, (int, float)) and not isinstance(v, bool)
+
+
+def _plausible(s: dict, ceiling: float) -> bool:
+    return _num(s.get("watts")) and 0 <= s["watts"] <= ceiling
+
+
+def without_cpu(s: dict) -> dict:
+    """The sample less its CPU figure: what is left when the CPU channel is not a reading."""
+    cpu = s.get("cpu_power") if _num(s.get("cpu_power")) else 0.0
+    return {**s, "watts": max(0.0, s["watts"] - cpu)}
+
+
+def integrate_power(samples: list[dict], max_gap_s: float, tz=None, ceiling: float | None = None) -> dict:
     """Trapezoid energy over samples no further apart than max_gap_s; kWh in all and per local day."""
-    ordered = sorted((s for s in samples if isinstance(s.get("watts"), (int, float))), key=lambda s: s["at"])
+    ceiling = POWER_CEILING_W if ceiling is None else ceiling
+    ordered = sorted((s for s in samples if _plausible(s, ceiling)), key=lambda s: s["at"])
     joules, covered, days = 0.0, 0.0, {}
     for a, b in zip(ordered, ordered[1:]):
         dt = b["at"] - a["at"]
@@ -277,15 +316,78 @@ def integrate_power(samples: list[dict], max_gap_s: float, tz=None) -> dict:
             "mean_watts": joules / covered if covered else None, "days": days}
 
 
-def energy(samples: list[dict], since: float, tariff: float, installed: bool, tz=None) -> dict:
+def cpu_unread(samples: list[dict], tz=None) -> dict:
+    """{day: (CPU 0 W while active, samples with a CPU figure)}; no recorded ratio counts as active. #1005."""
+    out: dict = {}
+    for s in samples:
+        if not _num(s.get("cpu_power")):
+            continue
+        d = out.setdefault(day_of(s["at"], tz), [0, 0])
+        d[1] += 1
+        if s["cpu_power"] == 0 and s.get("cpu_active_ratio") != 0:
+            d[0] += 1
+    return {d: tuple(v) for d, v in out.items()}
+
+
+def is_partial(zero: int, counted: int, share: float | None = None) -> bool:
+    share = CPU_UNREAD_SHARE if share is None else share
+    return counted > 0 and zero / counted > share
+
+
+def _older(version: str | None, than: tuple) -> bool | None:
+    if not version:
+        return None
+    return tuple(int(x) for x in version.split(".")) < than
+
+
+def partial_why(zero: int, counted: int, version: str | None) -> str:
+    head = f"CPU read 0 W on {zero} of {counted} samples with the CPU active, so the CPU is not counted"
+    old = _older(version, MACMON_CLPC)
+    if old is False:
+        return f"{head}; macmon {version} still reads no CPU power on this machine"
+    who = f"macmon {version}" if version else "macmon before 0.9.0"
+    return (f"{head}; {who} reads the IOReport CPU Energy channel that macOS 27 stalls, and 0.9.0 and later "
+            "read the AppleCLPC counters without sudo (vladkens/macmon#76; brew has 0.8.2, so install --HEAD)")
+
+
+def _scope(samples: list[dict]) -> str | None:
+    both = [s for s in samples if _num(s.get("sys_power")) and _num(s.get("all_power"))]
+    if not both:
+        return None
+    return "system" if any(s["sys_power"] > s["all_power"] + 0.01 for s in both) else "soc"
+
+
+def energy(samples: list[dict], since: float, tariff: float, installed: bool, tz=None,
+           macmon_version: str | None = None) -> dict:
     inside = [s for s in samples if s["at"] >= since]
     if not inside:
         why = ("no power samples yet; the energy unit samples macmon every minute" if installed
                else "energy unavailable: macmon is not installed (brew install macmon)")
         return {"available": False, "why": why}
     got = integrate_power(inside, POWER_GAP_S, tz)
-    return {"available": True, **got, "tariff_usd_per_kwh": tariff, "usd": round(got["kwh"] * tariff, 6),
-            "days": {d: {"kwh": k, "usd": round(k * tariff, 6)} for d, k in got["days"].items()}}
+    rest = integrate_power([without_cpu(s) for s in inside if _num(s.get("watts"))], POWER_GAP_S, tz)
+    unread = cpu_unread(inside, tz)
+    days, lower, zero, counted = {}, 0.0, 0, 0
+    for d, k in got["days"].items():
+        z, n = unread.get(d, (0, 0))
+        if is_partial(z, n):
+            lb = rest["days"].get(d, 0.0)
+            days[d] = {"kwh": None, "usd": None, "partial": True, "lower_bound_kwh": lb,
+                       "why": partial_why(z, n, macmon_version)}
+            zero, counted = zero + z, counted + n
+        else:
+            lb = k
+            days[d] = {"kwh": k, "usd": round(k * tariff, 6)}
+        lower += lb
+    partial = any(v.get("partial") for v in days.values())
+    out = {"available": True, **got, "tariff_usd_per_kwh": tariff, "usd": round(got["kwh"] * tariff, 6),
+           "partial": partial, "implausible": sum(1 for s in inside if _num(s.get("watts"))
+                                                  and not _plausible(s, POWER_CEILING_W)),
+           "ceiling_w": POWER_CEILING_W, "scope": _scope(inside), "macmon": macmon_version, "days": days}
+    if partial:
+        out.update(kwh=None, usd=None, mean_watts=None, lower_bound_kwh=lower,
+                   why=partial_why(zero, counted, macmon_version))
+    return out
 
 
 # --- the join -------------------------------------------------------------------------------------
@@ -308,13 +410,13 @@ def _cloud_sum(days) -> dict:
 
 def build(*, since: float, now: float, cloud_doc: dict, rows: list[tuple], limits: list[dict],
           power: list[dict], tariff: float | None = None, macmon: bool = False, tz=None, mapping=None,
-          delegations=(), context=()) -> dict:
+          delegations=(), context=(), macmon_version: str | None = None) -> dict:
     """The ledger: aggregates only, no prompts, paths or keys; Claude usage in tokens, never dollars (#976)."""
     tariff = TARIFF_USD_PER_KWH if tariff is None else tariff
     days = days_between(since, now, tz)
     loc = local(rows, tz, mapping, delegations)
     hr = headroom(limits, since, tz)
-    en = energy(power, since, tariff, macmon, tz)
+    en = energy(power, since, tariff, macmon, tz, macmon_version)
     available = bool(cloud_doc.get("available"))
     cdays = cloud_doc.get("days", {}) if available else {}
     ctx = context_days(context, tz)

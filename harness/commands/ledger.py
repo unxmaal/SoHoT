@@ -51,7 +51,8 @@ def gather(a, now: float) -> dict:
         since=start, now=now, cloud_doc=ledger.cloud(first_day), rows=rows,
         limits=ledger.read_jsonl(ledger.ledger_dir() / "ratelimits.jsonl"),
         power=ledger.read_jsonl(ledger.ledger_dir() / "power.jsonl"),
-        tariff=a.tariff, macmon=bool(shutil.which("macmon")), delegations=dels, context=ctx)
+        tariff=a.tariff, macmon=bool(shutil.which("macmon")), delegations=dels, context=ctx,
+        macmon_version=ledger.macmon_version())
     out["recorded"] = history
     out["otel"] = otel_days(ev)
     return out
@@ -103,14 +104,19 @@ def show(L: dict) -> None:
         for m in s["mapping"]:
             note(f"          {m['alias']} {m['first_day']}..{m['last_day']} -> {m['purpose']}: {m['why']}")
     e = L["energy"]
-    if e.get("available"):
+    if e.get("partial"):
+        note(f"energy    PARTIAL: at least {e['lower_bound_kwh']:.2f} kWh without the CPU, "
+             f"over {e['covered_s'] / 3600:.1f} h covered; {e['why']}")
+    elif e.get("available"):
         note(f"energy    {e['kwh']:.2f} kWh, ${e['usd']:,.2f} at ${e['tariff_usd_per_kwh']}/kWh "
              f"(mean {e['mean_watts'] or 0:.0f} W over {e['covered_s'] / 3600:.1f} h covered)")
     else:
         note(f"energy    {e.get('why')}")
+    if e.get("available"):
+        note(f"          {energy_scope(e)}")
     note("")
     note(f"{'day':<10} {'cloud in':>9} {'cloud out':>9} {'cache rd':>9} {'displaced':>9} "
-         f"{'eval out':>9} {'unknown out':>11} {'kWh':>6} {'5h peak':>7} {'7d peak':>7}")
+         f"{'eval out':>9} {'unknown out':>11} {'kWh':>7} {'5h peak':>7} {'7d peak':>7}")
     for d in L["days"]:
         loc = d["local"]
         en = d["energy"] or {}
@@ -121,8 +127,23 @@ def show(L: dict) -> None:
         note(f"{d['day']:<10} {cell('input'):>9} {cell('output'):>9} {cell('cache_read'):>9} "
              f"{_tok(dt['input'] + dt['output']):>9} "
              f"{_tok(loc.get('eval', {}).get('output', 0)):>9} {_tok(loc.get('unknown', {}).get('output', 0)):>11} "
-             f"{en.get('kwh', 0):>6.2f} {peaks[0]:>7} {peaks[1]:>7}")
+             f"{kwh_cell(en):>7} {peaks[0]:>7} {peaks[1]:>7}")
     note("\nClaude Code on a subscription is counted in tokens and plan-window use, not priced (#976)")
+
+
+def kwh_cell(en: dict) -> str:
+    """A day's kWh, or 'partial' when its CPU was not read. #1005."""
+    if en.get("partial"):
+        return "partial"
+    return f"{en.get('kwh') or 0:.2f}"
+
+
+def energy_scope(e: dict) -> str:
+    """What the power figure covers, and how many readings were dropped as a counter catching up."""
+    what = {"soc": "SoC power (CPU, GPU, ANE): no DRAM, SSD, fans or PSU loss, so below wall power",
+            "system": "macmon system power (SMC PSTR)"}.get(e.get("scope"), "macmon power")
+    drop = e.get("implausible") or 0
+    return what + (f"; {drop} readings above {e['ceiling_w']:.0f} W dropped" if drop else "")
 
 
 def _otel_sum(od: dict) -> dict:
