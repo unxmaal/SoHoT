@@ -155,4 +155,4 @@ def test_launchd_install_fails_on_the_node_check():
     gen = (REPO / "scripts" / "launchd.sh").read_text(encoding="utf-8")
     body = gen.split("install_units() {", 1)[1].split("\n}\n", 1)[0]
     assert "harness.nodes check" in body
-    assert body.index("harness.nodes check") > body.index("launchctl bootstrap")
+    assert body.index("harness.nodes check") > body.index('_reload "$service"')

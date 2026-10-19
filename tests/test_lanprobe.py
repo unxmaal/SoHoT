@@ -164,7 +164,7 @@ def _install_body() -> str:
 def test_install_probes_the_lan_after_the_gateway_is_reloaded():
     body = _install_body()
     assert "scripts/lan-probe.sh" in body
-    assert body.index("scripts/lan-probe.sh") > body.index("launchctl bootstrap")
+    assert body.index("scripts/lan-probe.sh") > body.index('_reload "$service"')
 
 
 def test_install_fails_when_the_lan_probe_fails():
