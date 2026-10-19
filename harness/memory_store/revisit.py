@@ -174,8 +174,8 @@ def until_met(until: str, facts: dict | None = None) -> bool:
         if have is not None:
             return dist in (have.get(venv) or ())
         from harness import runner_gaps
-        if venv in runner_gaps.GROUP_VENVS:
-            # uv builds a group's venv when a run first needs it, so the deploy declaring it ends the wait. #1024.
+        if venv in runner_gaps.LAUNCH_BUILT:
+            # uv builds the env when a run or service starts, so the deploy declaring it ends the wait. #1024, #1030.
             return runner_gaps.provides(dist, venv)
         return runner_gaps.has_package(dist, venv)
     if key == "commit_after":

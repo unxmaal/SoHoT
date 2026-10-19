@@ -29,9 +29,10 @@ mkdir -p "$LH_LOGS"
 # The setuptools pin is RULE #143: webrtcvad still imports pkg_resources, uv does
 # not install setuptools into venvs on py3.12+, and setuptools >=81 removed
 # pkg_resources outright. Unpinned resolves to 84.x and fails the same way.
+# soundfile: granite-speech-nar and arktts read an audio path through it; mlx-audio does not require it. #1030
 exec uv run --no-project \
   --with "$MLX_AUDIO_PIN" --with "$UVICORN_PIN" --with "$WEBRTCVAD_PIN" \
   --with "$FASTAPI_PIN" --with "$MULTIPART_PIN" --with "$SETUPTOOLS_PIN" \
-  --with "$MISAKI_PIN" \
+  --with "$MISAKI_PIN" --with "$SOUNDFILE_PIN" \
   python -m mlx_audio.server \
   --host "${TTS_HOST:-0.0.0.0}" --port "${TTS_PORT:-8890}"
