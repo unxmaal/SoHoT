@@ -29,7 +29,7 @@ import json
 import sys
 from pathlib import Path
 
-from harness.torch_device import HALF, accelerator
+from harness.torch_device import BF16, FP16, accelerator, declared_dtype, load_dtype, other_half
 
 DEFAULT_SIZE = 512
 #: Steps and guidance each distilled family's own model card names; any other model gets its pipeline's defaults. #691.
@@ -97,21 +97,77 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     return p.parse_args(argv)
 
 
-def _pipeline(model: str, device: str):
+def snapshot(model: str):
+    """The local directory a repo id or path resolves to, without the network, else None. #1013."""
+    if Path(model).is_dir():
+        return Path(model)
+    # Not snapshot_download(local_files_only): it refuses a snapshot fetched as one variant as incomplete.
+    try:
+        from huggingface_hub import try_to_load_from_cache
+        got = try_to_load_from_cache(model, "model_index.json")
+    except Exception:  # noqa: BLE001 - any miss means "no declaration to read"
+        return None
+    return Path(got).parent if isinstance(got, str) else None
+
+
+def _pipeline(model: str, device: str, dtype: str):
     import diffusers
     import torch
 
-    # HALF PRECISION ON BOTH ACCELERATORS. Metal supports float16 and the
-    # weights are published in it; loading fp32 on a 32 GB unified machine
-    # doubles the working set for no gain. `variant="fp16"` is a request for a
-    # separate set of files that many repos do not publish, so it stays cuda-
-    # only rather than becoming a download that 404s.
-    half = device in HALF
-    pipe = load(diffusers, model,
-                torch_dtype=torch.float16 if half else torch.float32,
-                variant="fp16" if device == "cuda" else None,
+    # `variant="fp16"` asks for a separate set of files many repos do not publish, so only CUDA at fp16 asks.
+    pipe = load(diffusers, model, torch_dtype=getattr(torch, dtype),
+                variant="fp16" if device == "cuda" and dtype == FP16 else None,
                 safety_checker=None)
     return pipe.to(device)
+
+
+def _release(torch, device: str) -> None:
+    import gc
+    gc.collect()
+    if device == "mps":
+        torch.mps.empty_cache()
+    elif device == "cuda":
+        torch.cuda.empty_cache()
+
+
+def unsupported(exc: BaseException, dtype: str) -> bool:
+    """An error saying this device cannot run bf16, so fp16 may. #1013."""
+    low = str(exc).lower()
+    return dtype == BF16 and ("bfloat16" in low or "bf16" in low)
+
+
+def render(args, device: str, torch, first: str, build=None):
+    """The image, the pipeline and the dtype that drew it, retrying the other half once on a blank canvas or a bf16 refusal. #1013."""
+    from harness.checks.image import blank
+    build = build or _pipeline
+    tried: list[str] = []
+    dtypes = [first] + ([other_half(first)] if other_half(first) else [])
+    for i, dtype in enumerate(dtypes):
+        last = i == len(dtypes) - 1
+        pipe = generator = None
+        if args.seed is not None:
+            generator = torch.Generator(device=device).manual_seed(args.seed)
+        try:
+            pipe = build(args.model, device, dtype)
+            image = pipe(prompt=args.prompt, width=args.width, height=args.height,
+                         generator=generator,
+                         **sampling(args.model, args.steps, args.guidance)).images[0]
+        except (RuntimeError, TypeError, ValueError) as exc:
+            if last or not unsupported(exc, dtype):
+                raise
+            print(f"image-diffusers: {dtype} failed on {device} ({exc}); retrying at {dtypes[i + 1]}",
+                  file=sys.stderr)
+            tried.append(dtype)
+            pipe = None
+            _release(torch, device)
+            continue
+        if last or not blank(image):
+            return image, pipe, dtype, tried
+        print(f"image-diffusers: blank image at {dtype}; retrying at {dtypes[i + 1]}", file=sys.stderr)
+        tried.append(dtype)
+        del pipe, image
+        _release(torch, device)
+    raise AssertionError("unreachable")
 
 
 def load(diffusers, model: str, **kw):
@@ -143,18 +199,14 @@ def main(argv: list[str] | None = None) -> int:
     out = Path(args.output)
     out.parent.mkdir(parents=True, exist_ok=True)
 
-    generator = None
-    if args.seed is not None:
-        generator = torch.Generator(device=device).manual_seed(args.seed)
-
-    pipe = _pipeline(args.model, device)
-    image = pipe(prompt=args.prompt, width=args.width, height=args.height,
-                 generator=generator,
-                 **sampling(args.model, args.steps, args.guidance)).images[0]
+    first = load_dtype(declared_dtype(snapshot(args.model)), device)
+    image, pipe, dtype, tried = render(args, device, torch, first)
     image.save(out)
 
-    out.with_suffix(".json").write_text(json.dumps(
-        metadata(args, pipe, device, torch.__version__), indent=2), encoding="utf-8")
+    meta = {**metadata(args, pipe, device, torch.__version__), "dtype": dtype}
+    if tried:
+        meta["retried_from"] = tried
+    out.with_suffix(".json").write_text(json.dumps(meta, indent=2), encoding="utf-8")
     print(out)
     return 0
 

@@ -93,7 +93,7 @@ def _check_image(artifact, case: Case, adherence: str | None = None,
     # Pixels first, always. "no text found" is a true and useless diagnosis for
     # a uniform grey square, and it would send you looking at the wrong thing.
     if not r.ok:
-        return CheckResult(r.ok, r.reason, r.warnings)
+        return CheckResult(r.ok, r.reason, r.warnings, failure_class=r.failure_class)
 
     metrics: dict = {}
     warnings_out = list(r.warnings)
@@ -252,7 +252,7 @@ def _check_video(artifact, case: Case) -> CheckResult:
     if frames is None and p.get("seconds"):
         frames = int(p["seconds"]) * FPS
     r = video_check.check(artifact, expect=expect, frames=frames)
-    out = CheckResult(r.ok, r.reason, r.warnings)
+    out = CheckResult(r.ok, r.reason, r.warnings, failure_class=r.failure_class)
     out.metrics = r.metrics
     return out
 

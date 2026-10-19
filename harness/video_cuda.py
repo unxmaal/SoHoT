@@ -117,7 +117,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
 
     import torch
-    from harness.torch_device import HALF, accelerator
+    from harness.torch_device import BF16, accelerator, declared_dtype, load_dtype
 
     device = accelerator(torch)
     if not device:
@@ -131,9 +131,8 @@ def main(argv: list[str] | None = None) -> int:
 
     from diffusers import DiffusionPipeline
 
-    pipe = DiffusionPipeline.from_pretrained(
-        args.model,
-        torch_dtype=torch.bfloat16 if device in HALF else torch.float32)
+    dtype = load_dtype(declared_dtype(image_diffusers.snapshot(args.model)), device, BF16)
+    pipe = DiffusionPipeline.from_pretrained(args.model, torch_dtype=getattr(torch, dtype))
     # cpu offload is a CUDA facility. On Metal the whole pipeline goes to the
     # device or nowhere, which is the reason video is parked here: see
     # lanes.PARKED.
@@ -155,7 +154,7 @@ def main(argv: list[str] | None = None) -> int:
     encode(frames, out, args.fps)
 
     out.with_suffix(".json").write_text(json.dumps(
-        metadata(args, pipe, device, torch.__version__), indent=2), encoding="utf-8")
+        {**metadata(args, pipe, device, torch.__version__), "dtype": dtype}, indent=2), encoding="utf-8")
     print(out)
     return 0
 
