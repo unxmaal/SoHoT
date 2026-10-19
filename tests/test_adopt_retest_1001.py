@@ -138,8 +138,8 @@ def test_soh_coherence_gives_a_spent_adopt_limit_its_lane_until(store, lane_case
     found = coherence.changes(store)
     assert {c["name"]: c["now"] for c in found} == {
         "LiquidAI/LFM2.5-2.6B": ["declined", "adopt", "limit", f"cases:code>{LANE_CASES}"],
-        "plan:q3-4b": ["declined", "adopt", "limit", f"cases:web>{LANE_CASES}"],
-        "best-of:3:q3-4b": ["declined", "adopt", "limit", f"cases:web>{LANE_CASES}"],
+        "plan:q3-4b": ["declined", "adopt", "limit", "cases:web>5"],
+        "best-of:3:q3-4b": ["declined", "adopt", "limit", "cases:web>5"],
     }
     assert len(coherence.apply(store, found)) == 3
     assert live_audit._terminal_reason_coherent(store) == ([], [])
