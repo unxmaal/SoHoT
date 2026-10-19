@@ -238,6 +238,11 @@ def _measure(a, row: dict, loaded: list, sweep=None) -> int:
     if held:
         # A resume runs the exam it started: the stored plan's repeat and side, this sweep's slice. #813.
         plan = _resumed_plan(held["plan"], plan) if held.get("plan") is not None else _recovered_plan(held, plan)
+    blank = None if held else adopt.undecidable(lane, inc_spec, spec, plan, split)
+    if blank is not None:
+        print(f"\n  {lane}: {name} against {incumbent}: not run, {blank.why}", flush=True)
+        _record_unrun(blank, spec)
+        return 0
     if sweep is not None and sweep.remaining() <= 0:
         print(f"  {name}: not started, the sweep ceiling is reached; it waits for the next sweep", flush=True)
         return 0
@@ -691,6 +696,19 @@ def _record(verdict, spec: str, run_id, out) -> None:
         store.execute("UPDATE verdicts SET planned_s_per_case = ?, observed_s_per_case = ? WHERE id = ?",
                       (planned, seen, vid))
         store.commit()
+    except ms.IllegalTransition as exc:
+        print(f"  skipped {exc}", flush=True)
+    finally:
+        store.close()
+
+
+def _record_unrun(verdict, spec: str) -> None:
+    """Record a verdict the plan reached without a run. #1049."""
+    from harness import adopt
+    from harness import memory_store as ms
+    store = ms.connect()
+    try:
+        adopt.record(store, verdict, spec=spec)
     except ms.IllegalTransition as exc:
         print(f"  skipped {exc}", flush=True)
     finally:

@@ -261,6 +261,8 @@ class Plan:
     odds: tuple | None = None
     #: Budgets (sweeps) the projection spans; a run past one pauses and resumes. #813.
     sweeps: int | None = None
+    #: Power at +1.00 per cell at the most repeat any run spends; 0 means no run of this holdout can decide. #1049.
+    max_power: float | None = None
 
     def as_dict(self) -> dict:
         return asdict(self)
@@ -289,8 +291,10 @@ def plan(rates, effect: float | None = None, *, stochastic: bool = True,
     rho = DEFAULT_RHO if rho is None else rho
     need = cases_needed(rates, effect, rho=rho, stochastic=stochastic,
                         alpha=alpha, target=target, cap=cap)
+    most = max(cap, repeat or 0) if stochastic else 1
     extra = {"rho": rho, "rho_measured": measured, "cases_needed": need,
-             "unmeasured": observed <= 0 if unmeasured is None else unmeasured}
+             "unmeasured": observed <= 0 if unmeasured is None else unmeasured,
+             "max_power": power(rates, 1.0, most, alpha, rho if measured else 0.0) if rates else None}
 
     def at(r: int) -> float:
         return power(rates, effect, r, alpha, rho)
@@ -327,6 +331,11 @@ def plan(rates, effect: float | None = None, *, stochastic: bool = True,
         return made(r, powers[r - 1], False, why)
     return made(cap, powers[-1], True,
                 f"capped at repeat {cap} with power {powers[-1]:.2f}; {more}")
+
+
+def undecidable(plan: Plan) -> bool:
+    """No run of this holdout can decide: power 0 even at +1.00 per cell and every repeat up to cap. #1049."""
+    return not plan.unmeasured and plan.max_power is not None and plan.max_power <= 0.0
 
 
 def too_small(plan: Plan) -> int | None:

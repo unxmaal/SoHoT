@@ -110,8 +110,11 @@ def changes(conn, logs=None, root=None) -> list[dict]:
     from harness import reasons
     from harness.memory_store.schema import INSPECT
     from harness.memory_store.transitions import CONDITIONAL, RETEST_TIERS
-    found = []
+    found = lane_bound(conn)
+    bound = {c["verdict_id"] for c in found}
     for r in incoherent(conn):
+        if r["id"] in bound:
+            continue
         base = {"verdict_id": r["id"], "name": r["name"], "why": r["why"],
                 "was": [r["state"], r["tier"], r["reason"], r["until"]]}
         until = scoped(r["until"], r["lane"])
@@ -133,6 +136,40 @@ def changes(conn, logs=None, root=None) -> list[dict]:
     attach = [c for c in drafters(conn) if c["verdict_id"] not in held]
     named = {c["verdict_id"] for c in attach}
     return found + [_reclassed(conn, r, logs, root) for r in misclassed(conn) if r["id"] not in named] + attach
+
+
+def lane_bound(conn) -> list[dict]:
+    """Adopt nulls left on a time retest or no until whose stored plan says the lane is too small: they wait on its cases. #1049."""
+    import json
+
+    from harness import adopt, reasons
+    from harness.memory_store.schema import ADOPT
+    out = []
+    for r in conn.execute(HELD).fetchall():
+        if (r["state"], r["tier"], r["reason"]) != ("declined", ADOPT, reasons.LIMIT) or r["until"] \
+                or r["failure_class"] == reasons.LANE_TOO_SMALL:
+            continue
+        lane = r["lane"] or (r["detail"] or "").partition(":")[0].strip()
+        try:
+            plan = json.loads(r["power"] or "{}")
+        except ValueError:
+            plan = {}
+        limit = adopt.lane_limit(lane, plan, r["name"]) if lane and plan else None
+        if limit is None:
+            continue
+        more, why = limit
+        have = adopt.lane_cases(lane)
+        if plan.get("side") == "all" and plan.get("cases_run"):
+            have = min(have, int(plan["cases_run"]))
+        until = adopt.cases_until(lane, have, more)
+        out.append({"verdict_id": r["id"], "name": r["name"], "why": why,
+                    "was": [r["state"], r["tier"], r["reason"], r["until"]],
+                    "now": ["declined", ADOPT, reasons.LIMIT, until], "run_path": r["run_path"],
+                    "run_id": r["run_id"], "candidate_id": r["candidate_id"],
+                    "failure_class": reasons.LANE_TOO_SMALL,
+                    "evidence": {"power": r["power"], "split_version": r["split_version"]},
+                    "detail": f"{lane}: re-decided (#1049): {why}; {r['detail']}"[:600]})
+    return out
 
 
 def _unreopenable(conn, r, base: dict) -> dict:
