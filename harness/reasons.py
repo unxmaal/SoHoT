@@ -51,6 +51,8 @@ TOKEN_BUDGET_EXHAUSTED = "token_budget_exhausted"
 STEP_CAP = "step_cap"
 #: A case whose prompt and reply budget do not fit the context the candidate is served at. #695.
 CONTEXT_EXCEEDED = "context_exceeded"
+#: Our llama-server plan (harness.context) does not serve the stem under the limits we chose; nothing loaded. #1047.
+PLAN_REFUSED = "plan_refused"
 #: llama-server's shared KV pool filled and it failed every request in flight; says nothing about the model. #748.
 POOL_FULL = "pool_full"
 MISSING_FILE_IN_SNAPSHOT = "missing_file_in_snapshot"
@@ -91,6 +93,7 @@ CLASSES = {
     TOKEN_BUDGET_EXHAUSTED: ("declined", LIMIT),
     STEP_CAP: ("declined", LIMIT),
     CONTEXT_EXCEEDED: ("declined", LIMIT),
+    PLAN_REFUSED: ("declined", LIMIT),
     ATTACHMENT: ("declined", CANDIDATE),
     MISSING_PACKAGE: ("declined", RUNTIME),
     LOAD_FAILED_RUNTIME: ("declined", RUNTIME),
@@ -162,7 +165,13 @@ _HARNESS = ("no cases of a modality it can run", "no candidate matched any case"
             # transformers' requires_backends tail: a backend the venv lacks (torchvision). #601.
             "restart your runtime after installation", "venv lacks a package", NO_SERVER_TRACEBACK,
             # urllib3's pool failing to reach a host from the serving process: the network, not the model. #1036.
-            "httpsconnectionpool(", "httpconnectionpool(")
+            "httpsconnectionpool(", "httpconnectionpool(",
+            # serving.route or ds4 refused the spec before anything loaded. #1047.
+            "is not served")
+#: serving._servable's refusal of a stem the recorded llama-server plan does not serve. #1047.
+_PLAN_REFUSAL = re.compile(r"llamacpp:(\S+) is not served: (refused: [^|\n]*)", re.I)
+#: Plan refusals that are our GGUF header reader's gap rather than a limit. #1047.
+_PLAN_READER_GAPS = ("gives no trained context or kv shape", "unreadable gguf header")
 #: In stderr this is our missing script; in a loader's error it is the snapshot's.
 _ABOUT_THE_SNAPSHOT = ("no such file or directory",
                        "does not appear to have a file named")
@@ -273,6 +282,18 @@ def _llamacpp_load(low: str) -> str:
     return LOAD_LOG_UNREAD
 
 
+def plan_refusal(text: str) -> tuple[str, str]:
+    """(stem, why) when the text carries our llama-server plan's refusal of a stem, else ("", ""). #1047."""
+    got = _PLAN_REFUSAL.search(text or "")
+    return (got.group(1), got.group(2).strip()) if got else ("", "")
+
+
+def _plan_class(low: str) -> str:
+    if "truncated gguf header" in low:
+        return SHORT_COPY
+    return LOAD_FAILED_LAYOUT if _any(low, _PLAN_READER_GAPS) else PLAN_REFUSED
+
+
 def needs_target(text: str) -> bool:
     """llama.cpp refused a drafter that loads only beside its target model. #1039."""
     return bool(_any((text or "").lower(), _NEEDS_TARGET))
@@ -308,6 +329,8 @@ def classify(text: str, where: str = RUNNER, candidate: str = "") -> str:
     from harness.serving import LLAMACPP_PREFIX
     low = (text or "").lower()
     head = candidate.partition(",")[0].partition(":")[0].strip()
+    if _PLAN_REFUSAL.search(low):
+        return _plan_class(plan_refusal(low)[1])
     if _any(low, _SERVER_DEAD):
         return SERVER_DEAD
     if _any(low, _GPU_FAULT):

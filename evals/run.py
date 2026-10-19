@@ -1421,7 +1421,7 @@ def _servable(candidate: str) -> None:
     try:
         ds4.preflight(candidate)
     except (ds4.Unservable, ValueError) as exc:
-        raise SystemExit(f"{candidate}: {exc}") from None
+        raise SystemExit(f"{candidate} is not served: {exc}") from None
 
 
 @contextlib.contextmanager
@@ -1434,7 +1434,7 @@ def _served(candidate: str):
         with ds4.serving(candidate) as state:
             yield state
     except ds4.Unservable as exc:
-        raise SystemExit(f"{candidate}: {exc}") from None
+        raise SystemExit(f"{candidate} is not served: {exc}") from None
 
 
 #: Cases per candidate in turn when the candidates' models cannot all be held at once. #816.

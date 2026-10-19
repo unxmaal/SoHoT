@@ -78,6 +78,7 @@ UNTIL = {
     "runner": "an engine this harness registers (engines.names); none by that name exists yet",
     "policy": "a model type the pinned transformers ships natively (remote_code.native_types)",
     "package": "a distribution installed in a runner venv (runner_gaps.has_package)",
+    "plan": "a GGUF stem the recorded llama-server plan serves (context.planned)",
 }
 
 
@@ -178,6 +179,12 @@ def until_met(until: str, facts: dict | None = None) -> bool:
             # uv builds the env when a run or service starts, so the deploy declaring it ends the wait. #1024, #1030.
             return runner_gaps.provides(dist, venv)
         return runner_gaps.has_package(dist, venv)
+    if key == "plan":
+        # Our llama-server plan refused the stem; met once a recorded plan serves it. #1047.
+        if "planned" in facts:
+            return bool(want) and want in (facts.get("planned") or ())
+        from harness import context
+        return bool(want) and context.planned(want)
     if key == "commit_after":
         seen = (facts.get("last_commit") or "").strip()
         # STRING COMPARISON IS CORRECT FOR ISO-8601 AND ONLY FOR IT, so both

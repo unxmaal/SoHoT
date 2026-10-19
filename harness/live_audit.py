@@ -180,15 +180,23 @@ def _runner_gap_until_current(conn, rewrote_at=...) -> tuple[list, list]:
     return [say(r) + f", after the loop's rewrite at {_when(swept)}" for r in survived], [say(r) for r in fresh]
 
 
-def _broken_runner_layout(conn) -> list:
-    """Live broken screens whose runner could not open the repo's layout: a runner gap written as a verdict. #951."""
+#: Broken screens the plan-refusal classifier (#1047) found on the 2026-10-19 store; they warn until `soh coherence --apply`.
+PINNED_LAYOUT = frozenset({12930})
+
+
+def _broken_runner_layout(conn, pinned=None) -> tuple[list, list]:
+    """(failures, warnings): live broken screens whose runner could not open the repo's layout, a runner gap written as a verdict. #951."""
     from harness import reasons
-    return [f"verdict {r['id']} {r['name']}: {reasons.LOAD_FAILED_LAYOUT} recorded broken"
-            for r in conn.execute(
-                "SELECT v.id, p.name, v.detail, coalesce(c.spec, p.name) AS spec FROM proposals p "
-                "JOIN verdicts v ON v.id = p.state_verdict_id LEFT JOIN candidates c ON c.id = v.candidate_id "
-                "WHERE p.state = 'broken' AND v.tier = 'screen' ORDER BY v.id")
-            if reasons.classify(r["detail"] or "", reasons.RUNNER, r["spec"]) == reasons.LOAD_FAILED_LAYOUT]
+    pinned = PINNED_LAYOUT if pinned is None else pinned
+    bad, known = [], []
+    for r in conn.execute(
+            "SELECT v.id, p.name, v.detail, coalesce(c.spec, p.name) AS spec FROM proposals p "
+            "JOIN verdicts v ON v.id = p.state_verdict_id LEFT JOIN candidates c ON c.id = v.candidate_id "
+            "WHERE p.state = 'broken' AND v.tier = 'screen' ORDER BY v.id"):
+        if reasons.classify(r["detail"] or "", reasons.RUNNER, r["spec"]) == reasons.LOAD_FAILED_LAYOUT:
+            (known if r["id"] in pinned else bad).append(
+                f"verdict {r['id']} {r['name']}: {reasons.LOAD_FAILED_LAYOUT} recorded broken")
+    return bad, known
 
 
 def unreachable_packages(conn, repo=None) -> list[dict]:
@@ -318,8 +326,9 @@ def audit(path=None, config=None) -> dict:
                        "attachment_by_tag": _attachment_by_tag(conn)}
         incoherent, pinned = _terminal_reason_coherent(conn)
         unkept, waiting = _load_log_kept(conn)
+        layout, misread = _broken_runner_layout(conn)
         failed = {**{name: bad for name, (bad, _) in inventories.items()}, "terminal_reason_coherent": incoherent,
-                  "load_log_kept": unkept, "broken_runner_layout": _broken_runner_layout(conn),
+                  "load_log_kept": unkept, "broken_runner_layout": layout,
                   "package_until_reachable": _package_until_reachable(conn)}
         checks += [mc._check(name, failed[name]) for name in VERDICTS]
         checks += [mc._check(name, []) for name in VENVS]
@@ -339,6 +348,8 @@ def audit(path=None, config=None) -> dict:
         moved = _sweep_on_deployed_code()
         if moved:
             warnings["sweep_on_deployed_code"] = moved
+        if misread and not layout:
+            warnings["broken_runner_layout"] = "pinned, awaiting soh coherence --apply: " + mc._say(misread)
         if waiting and not unkept:
             warnings["load_log_kept"] = "pinned, awaiting soh load-log --apply: " + mc._say(waiting)
         have = mc.schema(conn)

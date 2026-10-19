@@ -645,6 +645,17 @@ def refusal(stem: str, conn=None) -> str:
     return row["ctx_why"] if row and not row["ctx"] else ""
 
 
+def planned(stem: str, conn=None) -> bool:
+    """Whether the recorded llama-server plan serves this stem with a context. #1047."""
+    from harness import downloads
+    try:
+        with downloads.store(conn) as c:
+            row = served(c, stem)
+    except Exception:  # noqa: BLE001 - an unreadable store serves nothing
+        return False
+    return bool(row and row["ctx"])
+
+
 def preset_text(plans: list[dict], default_ctx: int, slots: int, cache_type: str = "f16") -> str:
     """llama-server's --models-preset INI: [*] for unrecorded files, one section per servable stem."""
     def args(ctx: int, n: int) -> list[str]:
