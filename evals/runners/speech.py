@@ -19,7 +19,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from harness import audio, reasons
+from harness import audio, audio_log, reasons
 
 from evals.core import Case
 from evals.runners.base import BaseRunner, RunnerError
@@ -81,6 +81,10 @@ class SpeechRunner(BaseRunner):
         except audio.TokenCap as exc:
             raise RunnerError(str(exc), failure_class=reasons.TOKEN_BUDGET_EXHAUSTED,
                               limit=f"{exc.limit[0]}>{exc.limit[1]:g}") from exc
+        except audio.StreamDropped as exc:
+            if exc.excerpt is not None:
+                audio_log.write(self.outdir, exc.excerpt)
+            raise RunnerError(str(exc)) from exc
         except audio.AudioError as exc:
             raise RunnerError(str(exc)) from exc
         # Peak memory is not observable across HTTP; the server holds the model.

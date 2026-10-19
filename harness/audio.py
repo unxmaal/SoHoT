@@ -22,6 +22,8 @@ from pathlib import Path
 
 import httpx
 
+from harness import audio_log, reasons
+
 DEFAULT_BASE_URL = "http://127.0.0.1:8890/v1"
 #: The same lane runs a different model on each machine, and the default says
 #: WHICH. parakeet is MLX and does not run under CUDA; the Windows box
@@ -170,12 +172,15 @@ def token_budget(text: str, model: str = "", hz: float | None = None) -> int:
 def measure_codec_hz(payload: dict, out: Path, base_url: str, timeout: float) -> float:
     """Tokens per second of audio, from a clip of CALIBRATION_TEXT cut at CALIBRATION_TOKENS; cached per model. #700."""
     probe = out.with_name(f"{out.stem}.calibration.wav")
+    marks = audio_log.mark(base_url)
     try:
         r = httpx.post(f"{base_url.rstrip('/')}/audio/speech", timeout=timeout,
                        json={**payload, "input": CALIBRATION_TEXT, "max_tokens": CALIBRATION_TOKENS})
         r.raise_for_status()
     except httpx.TimeoutException as exc:
         raise AudioTimeout("tts calibration", timeout) from exc
+    except httpx.RemoteProtocolError as exc:
+        raise StreamDropped(exc, audio_log.since(marks), "tts calibration clip") from exc
     except httpx.HTTPError as exc:
         raise AudioError(f"tts calibration clip failed: {exc}") from exc
     probe.parent.mkdir(parents=True, exist_ok=True)
@@ -215,6 +220,19 @@ class TokenCap(AudioError):
     def __init__(self, seconds: float, budget: int):
         super().__init__(f"tts filled its token budget: {seconds:.2f}s of audio at max_tokens {budget}")
         self.limit = ("tts_tokens", budget)
+
+
+class StreamDropped(AudioError):
+    """The server cut a tts stream; `excerpt` is its log's traceback for it, None when the log has none. #1036."""
+
+    def __init__(self, exc: Exception, excerpt=None, what: str = "tts"):
+        self.excerpt = excerpt
+        if excerpt is None:
+            why = (f"the stream dropped with {reasons.NO_SERVER_TRACEBACK}, so nothing is known about the model. "
+                   f"If you passed --voice, check it is one of: {', '.join(KNOWN_VOICES)}")
+        else:
+            why = f"the audio server's log says: {' <- '.join(excerpt.errors)[:400]} ({audio_log.source(excerpt)})"
+        super().__init__(f"{what} failed while generating: {exc}. {why}")
 
 
 class Runaway(AudioError):
@@ -269,6 +287,7 @@ def speak(text: str, out: str | Path, voice: str = DEFAULT_KOKORO_VOICE,
         payload["ref_audio"] = str(ref_audio)
         hz = codec_hz(model) or measure_codec_hz(payload, out, base_url, timeout)
         payload["max_tokens"] = token_budget(text, model, hz)
+    marks = audio_log.mark(base_url)
     try:
         r = httpx.post(f"{base_url.rstrip('/')}/audio/speech", json=payload,
                        timeout=timeout)
@@ -280,15 +299,8 @@ def speak(text: str, out: str | Path, voice: str = DEFAULT_KOKORO_VOICE,
             f"tts failed: HTTP {exc.response.status_code}: "
             f"{exc.response.text[:400]}") from exc
     except httpx.RemoteProtocolError as exc:
-        # The server accepted the request and then died part way through
-        # streaming. Sending the user to start a server that is already running
-        # is the wrong place: the traceback is in its log. The usual cause is a
-        # voice that is not in the local cache.
-        raise AudioError(
-            f"tts failed while generating: {exc}. The server is up but the "
-            f"request failed; the traceback is in its log ($LOCALHARNESS_HOME/logs/tts.log). "
-            f"If you passed --voice, check it is one of: "
-            f"{', '.join(KNOWN_VOICES)}") from exc
+        # The server accepted the request and died part way through streaming: its own traceback says why. #1036.
+        raise StreamDropped(exc, audio_log.since(marks)) from exc
     except httpx.HTTPError as exc:
         raise AudioError(f"tts unreachable at {base_url}: {exc} ({_START_HINT})") from exc
 
