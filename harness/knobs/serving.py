@@ -42,6 +42,9 @@ NOT_GATING = {
     "harness/batch.py:BUSY_WAIT_S": "how long a request waits out another batch; past it the request is "
                                     "refused_by_gateway, charged to the harness, never to the model (#769)",
     "harness/batch.py:BUSY_POLL_S": "how often a request refused as busy asks again; never a result (#769)",
+    "harness/gguf.py:READY_TIMEOUT_S": "how long a fetch waits for a restarted router before saying so; a screen "
+                                       "after it is refused_by_gateway, charged to the harness, never the model (#1012)",
+    "harness/gguf.py:READY_POLL_S": "how often a restarted router is asked whether it answers yet; never a result (#1012)",
     "harness/exclusive.py:_renewing->t.join(timeout)": "how long a batch lease renewer may take to stop (#769)",
     "harness/gateway_switch.py:IDLE_S": "the quiet window a switch restarts in; it never cuts a request (#703)",
     "harness/gateway_switch.py:MAX_WAIT_S": "how long a switch waits for a quiet window before draining; the bound "

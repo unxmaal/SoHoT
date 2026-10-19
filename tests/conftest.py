@@ -84,7 +84,7 @@ def _no_real_services(monkeypatch):
     lock, and it restarted the eval server under a live measurement. #319."""
     from harness import gateway, gguf
     restarts = []
-    monkeypatch.setattr(gguf, "refresh_router", lambda: restarts.append(True))
+    monkeypatch.setattr(gguf, "refresh_router", lambda *a, **k: restarts.append(k.get("expect", True)))
     monkeypatch.setattr(gateway, "refresh_gateway", lambda: restarts.append("gateway"))
     return restarts
 

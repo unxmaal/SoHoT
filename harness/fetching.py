@@ -711,7 +711,10 @@ def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=N
         if text:
             # A whole GGUF-only repo is served through the router. #301, #303.
             from harness import gguf
-            gguf.adopt(conn, name)
+            linked = gguf.adopt(conn, name)
+            if linked:
+                # The router lists a new file only after a restart, and the screen tier comes next. #1012.
+                gguf.refresh_router(expect=(Path(linked).stem,))
         # WHAT IT NEEDS BESIDE ITSELF, as its config recorded it on landing.
         # A tokenizer in another repo makes a whole download unloadable. #196.
         # Where it landed is a downloads row, not this verdict's run_path. #411.
