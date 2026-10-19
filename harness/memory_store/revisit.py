@@ -77,6 +77,7 @@ UNTIL = {
     "layout": "a weight layout harness.variants groups; inspect re-reads it each sweep, not until_met",
     "runner": "an engine this harness registers (engines.names); none by that name exists yet",
     "policy": "a model type the pinned transformers ships natively (remote_code.native_types)",
+    "package": "a distribution installed in a runner venv (runner_gaps.has_package)",
 }
 
 
@@ -164,6 +165,16 @@ def until_met(until: str, facts: dict | None = None) -> bool:
             from harness import remote_code
             native = remote_code.native_types()[1]
         return mtype in native
+    if key == "package":
+        # A package a runner's venv lacked; met once that venv has it. #1008.
+        dist, _, venv = want.partition("@")
+        if not dist:
+            return False
+        have = facts.get("packages")
+        if have is not None:
+            return dist in (have.get(venv) or ())
+        from harness import runner_gaps
+        return runner_gaps.has_package(dist, venv)
     if key == "commit_after":
         seen = (facts.get("last_commit") or "").strip()
         # STRING COMPARISON IS CORRECT FOR ISO-8601 AND ONLY FOR IT, so both
@@ -380,7 +391,7 @@ def requeue_missing_in_snapshot(conn) -> list[str]:
 #: Until keys a screen runtime decline may hold; before #950 every one was `version`.
 GAP_KEYS = ("version", "runner", "format", "policy")
 #: The ones a runner gap waits on, for the runners-wanted report.
-RUNNER_WAITS = ("runner", "format", "policy")
+RUNNER_WAITS = ("runner", "format", "policy", "package")
 
 
 def _runtime_declines(conn) -> list:

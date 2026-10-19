@@ -68,6 +68,9 @@ SAFETENSORS_PIN="safetensors==0.8.0"
 PILLOW_PIN="pillow==12.3.0"
 # The hf-task engines: OCR tokenizers ship slow sentencepiece models (trocr). #562.
 SENTENCEPIECE_PIN="sentencepiece==0.2.2"
+# The diffusers pipelines' text cleaners: Wan, Sana, PRX call ftfy unguarded; PixArt drops clean_caption without bs4. #1008.
+FTFY_PIN="ftfy==6.3.1"
+BEAUTIFULSOUP4_PIN="beautifulsoup4==4.15.0"
 # The retrieval lane's rerank: and embed: engines (CrossEncoder, SentenceTransformer). #563.
 SENTENCE_TRANSFORMERS_PIN="sentence-transformers==6.1.0"
 

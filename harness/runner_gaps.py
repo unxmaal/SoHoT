@@ -39,6 +39,10 @@ CARD_CHECKED = DIFFUSERS_HEADS + ("acestep",)
 _STOCK_LEAVES = frozenset({"weight", "bias", "scales", "biases"})
 
 REMOTE_CODE = "policy:trust_remote_code"
+#: The venv each process engine runs in, under <home>/venvs or the env var its script reads. #1008.
+RUNNER_VENVS = {"diffusers": "diffusers-cuda", "diffusers-video": "diffusers-cuda",
+                "hf-ocr": "hf-task", "rerank": "hf-task", "embed": "hf-task", "hf-pii": "hf-task"}
+_VENV_ENV = {"diffusers-cuda": "DIFFUSERS_VENV", "hf-task": "HF_TASK_VENV"}
 
 _NAMED_TYPE = re.compile(r"model type ([\w.\-]+?)\.? not supported")
 _PARAMS = re.compile(r"parameters not in model:(.*)", re.S)
@@ -235,9 +239,51 @@ def layout_name(card, evidence: str) -> str:
     return model_type(card) or ("no-model-type" if "could not determine model type" in low else "layout")
 
 
+def venv_path(name: str) -> Path:
+    import os
+    from harness import paths
+    return Path(os.environ.get(_VENV_ENV.get(name, "")) or paths.home() / "venvs" / name)
+
+
+def _canonical(dist: str) -> str:
+    return re.sub(r"[-_.]+", "-", dist).lower()
+
+
+def venv_packages(name: str) -> frozenset:
+    """The distributions installed in a runner venv, read from its dist-info directories, never imported."""
+    root = venv_path(name)
+    sites = [*root.glob("lib/python*/site-packages"), root / "Lib" / "site-packages"]
+    return frozenset(_canonical(d.name[:-len(".dist-info")].rpartition("-")[0])
+                     for site in sites if site.is_dir() for d in site.glob("*.dist-info"))
+
+
+def has_package(dist: str, venv: str = "") -> bool:
+    """Whether the venv (or, unnamed, this interpreter) has the distribution installed. #1008."""
+    if venv:
+        return _canonical(dist) in venv_packages(venv)
+    from importlib import metadata
+    try:
+        metadata.distribution(dist)
+    except metadata.PackageNotFoundError:
+        return False
+    return True
+
+
+def package_until(evidence: str, candidate: str) -> str:
+    """`package:<dist>@<venv>` for a package the candidate's runner venv lacks, or "". #1008."""
+    from harness import reasons
+    dist = reasons.missing_package(evidence)
+    if not dist:
+        return ""
+    venv = RUNNER_VENVS.get(head_of(candidate), "")
+    return f"package:{dist}@{venv}" if venv else f"package:{dist}"
+
+
 def cause_until(cls: str, evidence: str, candidate: str, card=None) -> str:
     """The until a runtime-class screen failure waits on, from its cause; "" when a newer runtime release is the wait. #950."""
     from harness import reasons
+    if cls == reasons.MISSING_PACKAGE:
+        return package_until(evidence, candidate)
     if cls not in (reasons.LOAD_FAILED_RUNTIME, reasons.LOAD_FAILED_LAYOUT):
         return ""
     card = card or {}
