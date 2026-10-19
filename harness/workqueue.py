@@ -162,6 +162,19 @@ def night_start(now: float) -> float:
     return min(later).timestamp()
 
 
+def night_window(now: float) -> tuple[float, float]:
+    """(start, end) of the night a job queued now runs in: night_start(now) until the watchdog's next day start. #1020."""
+    from datetime import datetime, timedelta
+
+    from harness import watchdog
+    start = night_start(now)
+    t = datetime.fromtimestamp(start)
+    end = t.replace(hour=watchdog.DAY_START_HOUR, minute=0, second=0, microsecond=0)
+    if end <= t:
+        end += timedelta(days=1)
+    return start, end.timestamp()
+
+
 def at_clock(hhmm: str, now: float) -> float:
     """The next local HH:MM at or after now. #900."""
     from datetime import datetime, timedelta
