@@ -43,7 +43,7 @@ def _receipts(files) -> dict[str, list[dict]]:
 
 def _row(r: dict) -> dict:
     return {"candidate": r.get("candidate"), "case_id": r.get("case_id"),
-            "passed": r.get("passed"), "seconds": r.get("seconds")}
+            "passed": r.get("passed"), "seconds": r.get("seconds"), "metrics": r.get("metrics")}
 
 
 def _profile(lane: str, receipts: dict, conn) -> tuple[str, str, dict, float | None, tuple, list]:
@@ -60,7 +60,7 @@ def _profile(lane: str, receipts: dict, conn) -> tuple[str, str, dict, float | N
     if lane in receipts:
         sets = [[_row(r) for r in got["rows"]] for got in receipts[lane]]
         key = power.control_of(sets, prefer=[k for k in (key, spec, served) if k])
-        draws, _ = power.draws_from([r for rows in sets for r in rows], key)
+        draws, _ = power.draws_from([r for rows in sets for r in rows], key, lane)
         timed = [_row(r) for got in receipts[lane] if power.receipt_here(got["environment"])
                  and power.reply_settings(json.dumps(got["receipt"]), lane) == settings for r in got["rows"]]
         return key, spec or served, draws, power.draws_from(timed, key)[1], settings, machines

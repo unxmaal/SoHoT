@@ -434,15 +434,41 @@ def within_budget(chosen: Plan, rates, *, cases_run: int, median_s: float | None
                    why="; ".join(x for x in (note, got.why) if x))
 
 
-def draws_from(rows, key: str) -> tuple[dict[str, list[int]], float | None]:
-    """case -> one candidate's pass/fail draws, and its mean seconds per case: wall time is a sum. #796."""
+def _row_metric(row, name: str):
+    try:
+        got = row["metrics"]
+    except (KeyError, IndexError):
+        return None
+    if isinstance(got, str):
+        import json
+        try:
+            got = json.loads(got or "{}")
+        except ValueError:
+            return None
+    value = (got or {}).get(name)
+    return float(value) if isinstance(value, (int, float)) else None
+
+
+def draw(row, lane: str = "") -> int:
+    """A row's planning draw: where the gate pairs on a lane metric, whether the row's is at its best, else its pass bit. #1007."""
+    from harness import winners
+    name = winners.PRIMARY.get((lane or "").strip().lower(), "")
+    value = _row_metric(row, name) if name else None
+    if value is None:
+        return int(bool(row["passed"]))
+    from evals.core import direction_of
+    return int(value >= 1.0 if direction_of(name) == "higher" else value <= 0.0)
+
+
+def draws_from(rows, key: str, lane: str = "") -> tuple[dict[str, list[int]], float | None]:
+    """case -> one candidate's draws (see draw), and its mean seconds per case: wall time is a sum. #796, #1007."""
     from harness import holdout
     by: dict[str, list[int]] = {}
     secs = []
     for r in rows:
         if r["candidate"] != key:
             continue
-        by.setdefault(holdout.base_id(r["case_id"]), []).append(int(bool(r["passed"])))
+        by.setdefault(holdout.base_id(r["case_id"]), []).append(draw(r, lane))
         if r["seconds"] is not None:
             secs.append(float(r["seconds"]))
     return by, (statistics.fmean(secs) if secs else None)
@@ -465,7 +491,7 @@ def _candidate_rows(conn, lane: str, key: str, tiers=("measure",)) -> list:
     lane = (lane or "").strip().lower()
     marks = ",".join("?" * len(tiers))
     return conn.execute(
-        "SELECT x.case_id, x.passed, x.seconds, x.candidate, u.receipt, u.machine_id FROM results x "
+        "SELECT x.case_id, x.passed, x.seconds, x.candidate, x.metrics, u.receipt, u.machine_id FROM results x "
         f"JOIN runs u ON u.id = x.run_id WHERE u.lane = ? AND u.tier IN ({marks}) AND x.candidate = ?",
         (lane, *tiers, key)).fetchall()
 
@@ -513,22 +539,22 @@ def served_keys(conn, lane: str, spec: str = "", cid: int | None = None) -> list
     return keys if keys or not spec else [key(spec)]
 
 
-def _served_rows(conn, lane: str, spec: str = "", cid: int | None = None):
+def _served_rows(conn, lane: str, spec: str = "", cid: int | None = None, on_metric: bool = True):
     lane = (lane or "").strip().lower()
     draws: dict[str, list[int]] = {}
     rows = []
     for key in served_keys(conn, lane, spec, cid):
         got = _candidate_rows(conn, lane, key)
-        for case, oks in draws_from(got, key)[0].items():
+        for case, oks in draws_from(got, key, lane if on_metric else "")[0].items():
             draws.setdefault(case, []).extend(oks)
         rows += [dict(r, candidate="") for r in got]
     return draws, rows
 
 
 def served_profile(conn, lane: str, spec: str = "", settings: tuple | None = None, machines=None,
-                   cid: int | None = None) -> tuple[dict[str, list[int]], float | None]:
+                   cid: int | None = None, on_metric: bool = True) -> tuple[dict[str, list[int]], float | None]:
     """The served incumbent's draws per case over every key its rows carry, store-wide; its mean seconds only at `settings` on `machines`. #673, #696, #740."""
-    draws, rows = _served_rows(conn, lane, spec, cid)
+    draws, rows = _served_rows(conn, lane, spec, cid, on_metric)
     return draws, _median(rows, (lane or "").strip().lower(), "", settings, machines)
 
 

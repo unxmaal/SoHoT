@@ -671,7 +671,7 @@ def incumbent_draws(lane: str, conn) -> dict[str, list[int]]:
     cid = winners.served_ids(conn).get(lane)
     if cid is None:
         return {}
-    return power.served_profile(conn, lane, cid=cid)[0]
+    return power.served_profile(conn, lane, cid=cid, on_metric=False)[0]
 
 
 def incumbent_measure(lane: str, case_ids, conn=None) -> tuple[float, bool]:
@@ -722,9 +722,25 @@ SAMPLER_CHECK = ("check the receipt's sampler against the model card's recommend
                  "(temperature, repetition or presence penalty) before reading this as the model's")
 
 
+#: Corpus WER over the screen's clips a model that ran and transcribed stays under; exact words are the measure's question. #1007.
+SCREEN_MAX_WER = 0.5
+#: Lanes whose screen asks only for a plausible transcript, since their cases pass on exact words. #1007.
+WER_SCREENED = ("stt",)
+
+
+def plausible_wer(summary: dict | None, lane: str, candidate: str = "", key: str = "") -> float | None:
+    """The candidate's corpus WER over its screen clips when a WER-screened lane heard them plausibly, else None. #1007."""
+    if (lane or "").strip().lower() not in WER_SCREENED or not summary:
+        return None
+    mine = [row_for(summary, candidate, key) or {}] if candidate else list(summary.values())
+    rates = [float(r["metrics"]["wer"]) for r in mine
+             if (r.get("metrics") or {}).get("wer") is not None and (r.get("metric_n") or {}).get("wer", 1)]
+    return max(rates) if rates and max(rates) <= SCREEN_MAX_WER else None
+
+
 def outcome(returncode: int, summary: dict | None, candidate: str = "",
             key: str = "", stderr_class: str = "",
-            facts: dict | None = None, evidence: str = "", card=None) -> Verdict:
+            facts: dict | None = None, evidence: str = "", card=None, lane: str = "") -> Verdict:
     """A store verdict from one screen run, decided from failure classes.
 
     `broken` is TERMINAL and `screened` is not. A request the harness could
@@ -756,6 +772,11 @@ def outcome(returncode: int, summary: dict | None, candidate: str = "",
     # A decide case passes only when every field is right; a right field shows the model ran. #701.
     if any(float((v.get("metrics") or {}).get("decide_accuracy") or 0.0) > 0 for v in summary.values()):
         return Verdict("screened", "it answered decide fields correctly though no case was right in full",
+                       reasons.CANDIDATE)
+    heard = plausible_wer(summary, lane, candidate, key)
+    if heard is not None:
+        return Verdict("screened", f"it transcribed the screen at corpus WER {heard:.2f}, under the "
+                       f"{SCREEN_MAX_WER:g} plausibility limit, though no clip was word-perfect",
                        reasons.CANDIDATE)
     mine = ([row_for(summary, candidate, key) or {}] if candidate
             else list(summary.values()))

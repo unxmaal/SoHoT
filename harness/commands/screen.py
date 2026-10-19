@@ -187,13 +187,13 @@ def snapshot_gap(row: dict, conn) -> str:
 
 
 def verdict_of_run(returncode: int, stderr: str, summary, candidate: str,
-                   key: str = "", facts: dict | None = None, card=None):
+                   key: str = "", facts: dict | None = None, card=None, lane: str = ""):
     """One finished screen process's verdict; stderr is classed only without a receipt, and the card picks a runtime gap's until."""
     from harness import screen
     tail = "" if summary is not None else (stderr or "")[-2000:]
     stderr_class = reasons.classify(tail, reasons.STDERR, candidate) if tail else ""
     return screen.outcome(returncode, summary, candidate=candidate, key=key,
-                          stderr_class=stderr_class, facts=facts, evidence=tail, card=card)
+                          stderr_class=stderr_class, facts=facts, evidence=tail, card=card, lane=lane)
 
 
 _PY_WARNING = re.compile(r"^\S.*:\d+: \w*Warning: ")
@@ -321,7 +321,8 @@ def _report_screen(a) -> int:
             key = candidates.key_for(store, r["candidate"])
             # Read once, here, and only when the run wrote no receipt. #408.
             verdict = verdict_of_run(proc.returncode, proc.stderr, summary,
-                                     r["candidate"], key=key, facts=ms.this_machine(), card=r)
+                                     r["candidate"], key=key, facts=ms.this_machine(), card=r,
+                                     lane=r["modality"])
             if verdict.failure_class == reasons.LOAD_LOG_UNREAD:
                 # The router's log says why; its child's lines are kept with the run. #953.
                 from harness import load_log
