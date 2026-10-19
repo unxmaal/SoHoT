@@ -191,7 +191,7 @@ def test_an_explicit_device_is_one_attempt_with_no_fallback(tmp_path, monkeypatc
     got = {}
 
     def fake_read(model, image, prompt, *, revision=None, max_new_tokens=512,
-                  device=None, attn="", runtime=None):
+                  device=None, attn="", runtime=None, dtype=""):
         got.update(device=device, attn=attn)
         runtime.update(device=device, attn="sdpa")
         return "text"
@@ -207,7 +207,7 @@ def test_one_attempt_passes_its_attention_and_records_what_answered(tmp_path, mo
     from harness import hf_task
 
     def fake_read(model, image, prompt, *, revision=None, max_new_tokens=512,
-                  device=None, attn="", runtime=None):
+                  device=None, attn="", runtime=None, dtype=""):
         runtime.update(device="mps", attn=attn)
         return "Invoice #4471"
     monkeypatch.setattr(hf_task, "read_image", fake_read)

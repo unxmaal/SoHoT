@@ -99,15 +99,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 def snapshot(model: str):
     """The local directory a repo id or path resolves to, without the network, else None. #1013."""
-    if Path(model).is_dir():
-        return Path(model)
-    # Not snapshot_download(local_files_only): it refuses a snapshot fetched as one variant as incomplete.
-    try:
-        from huggingface_hub import try_to_load_from_cache
-        got = try_to_load_from_cache(model, "model_index.json")
-    except Exception:  # noqa: BLE001 - any miss means "no declaration to read"
-        return None
-    return Path(got).parent if isinstance(got, str) else None
+    from harness.torch_device import snapshot as resolve
+    return resolve(model, "model_index.json")
 
 
 def _pipeline(model: str, device: str, dtype: str):

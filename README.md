@@ -2215,7 +2215,7 @@ images under 0.1, so a miss is the candidate's and not the fixture's.
 
 `osocr:auto` is the incumbent: the reader the image lane's text check already
 uses (Apple Vision here, Windows.Media.Ocr or RapidOCR elsewhere).
-`hf-ocr:<repo>[,prompt=...,max_new_tokens=...,device=...]` runs a
+`hf-ocr:<repo>[,prompt=...,max_new_tokens=...,device=...,dtype=...]` runs a
 transformers image-text-to-text or image-to-text model through
 `scripts/hf-task.sh`, which builds its own venv under
 `~/localharness/venvs/hf-task` (torch, torchvision, transformers, accelerate,
@@ -2229,8 +2229,11 @@ runtime fault, declined until the runtime moves rather than broken: hf-ocr
 runs each attempt as its own process and retries such an abort with
 `attn_implementation="eager"`, then on the CPU (PaddleOCR-VL-1.6's
 grouped-query attention aborts torch 2.6.0's MPS matmul and answers with eager
-attention). The device and attention that answered are written beside the
-artifact as `<artifact>.runtime.json` and land in the receipt's `devices`,
+attention). A model loads at the half precision its snapshot's config or
+safetensors headers declare (PaddleOCR-VL-1.6 is bfloat16), else float16 on an
+accelerator and float32 on the CPU; `dtype=` pins one as its own candidate. The
+device, attention and dtype that answered are written beside the artifact as
+`<artifact>.runtime.json`; device and attention land in the receipt's `devices`,
 which `comparable()` refuses to mix. An MLX conversion
 (card tagged `mlx`, such as mlx-community/DeepSeek-OCR-bf16) has no hf-task
 runner and is refused before download. It never passes `trust_remote_code`: a repo that ships its own
