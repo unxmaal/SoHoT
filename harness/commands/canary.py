@@ -33,12 +33,15 @@ def cmd_canary(a) -> int:
         return err(str(exc))
     for p in r["plants"]:
         o = p["observed"]
+        if p.get("invalid"):
+            note(f"INVALID {p['plant']:15} plant invalid: {p['invalid']}")
+            continue
         note(f"{'ok  ' if p['ok'] else 'MISS'} {p['plant']:18} expected {'/'.join(p['expected'])}, "
              f"observed {o.get('outcome')}/{o.get('tier')}/{o.get('reason')} (verdict {o.get('id')})")
     if r.get("skipped"):
         note(f"not run: {r['skipped']}")
     note(f"leaked into the live store: {r['leaked']}\nreceipt {r['path']}")
-    emit(r["ok"], **r)
+    emit(**r)
     return 0 if r["ok"] else 1
 
 

@@ -10,7 +10,7 @@ import time
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
-from harness import paths
+from harness import paths, reasons
 
 #: `soh morning` calls the canary stale when its newest receipt is older than this.
 STALE_DAYS = 8
@@ -33,6 +33,15 @@ class Plant:
     incumbent: str = ""
     #: "adopt" runs the loop's spend; "screen" stops after the screen, so nothing is measured.
     through: str = "adopt"
+    #: A PRECONDITIONS key: what must hold on this machine for the expectation to be fixed. #1006.
+    requires: str = ""
+
+
+#: requires -> (what must hold, the runtime it is judged against, failure classes that say it does not).
+PRECONDITIONS = {
+    "loads": ("the GGUF loads under this llama.cpp build", "llama.cpp",
+              (reasons.LOAD_FAILED_FILE, reasons.LOAD_FAILED_RUNTIME)),
+}
 
 
 PLANTS = (
@@ -40,7 +49,8 @@ PLANTS = (
           ("declined", "adopt", "candidate"), incumbent="mlx-community/parakeet-tdt-0.6b-v2"),
     Plant("stt-known-better", "stt", "mlx-community/parakeet-tdt-0.6b-v2",
           ("measured", "adopt", ""), incumbent="mlx-community/parakeet-tdt-0.6b-v3"),
-    Plant("gguf-first", "code", "Ninnix96/Qwengram-0.8B", ("screened", "screen", ""), through="screen"),
+    Plant("gguf-first", "code", "HauhauCS/Nemotron3-Nano-4B-Uncensored-HauhauCS-Aggressive",
+          ("screened", "screen", ""), through="screen", requires="loads"),
 )
 
 
@@ -49,6 +59,8 @@ def unsafe(plant: Plant) -> str:
     from harness import gateway
     if plant.through not in ("adopt", "screen"):
         return f"{plant.name}: through must be adopt or screen, not {plant.through!r}"
+    if plant.requires and plant.requires not in PRECONDITIONS:
+        return f"{plant.name}: no precondition named {plant.requires!r}"
     if plant.through == "adopt" and plant.lane in gateway.TEXT_LANES:
         return (f"{plant.name}: an adoption in the {plant.lane} lane re-points the live gateway; "
                 f"plant it through the screen only")
@@ -88,9 +100,9 @@ def observe(conn, plant: Plant) -> dict:
     """The plant's final verdict in its isolated store, and what the lane serves afterwards."""
     from harness import adopt, winners
     row = conn.execute(
-        "SELECT v.id, v.outcome, v.tier, v.reason, v.detail FROM proposals p "
+        "SELECT v.id, v.outcome, v.tier, v.reason, v.detail, v.failure_class FROM proposals p "
         "JOIN verdicts v ON v.id = p.state_verdict_id WHERE p.name = ?", (plant.challenger,)).fetchone()
-    got = dict(row) if row else {"id": None, "outcome": "", "tier": "", "reason": "", "detail": ""}
+    got = dict(row) if row else {"id": None, "outcome": "", "tier": "", "reason": "", "detail": "", "failure_class": ""}
     got["serves"] = adopt.default_for(plant.lane, winners.typed().get(plant.lane, ""), conn=conn)
     return got
 
@@ -102,6 +114,31 @@ def matches(plant: Plant, got: dict) -> bool:
     if tier != "adopt":
         return True
     return (got.get("serves") == plant.challenger) == (outcome == "measured")
+
+
+def runtime_version(plant: Plant) -> str:
+    from harness import memory_store as ms
+    if not plant.requires:
+        return ""
+    return str(ms.this_machine().get("versions", {}).get(PRECONDITIONS[plant.requires][1]) or "")
+
+
+def violated(plant: Plant, got: dict, version: str) -> str:
+    """Why the plant's own run shows its precondition does not hold here, else ""."""
+    if not plant.requires:
+        return ""
+    what, runtime, classes = PRECONDITIONS[plant.requires]
+    if got.get("failure_class") not in classes:
+        return ""
+    return f"{what} does not hold ({runtime} {version or '?'}): {(got.get('detail') or '')[:300]}"
+
+
+def still_invalid(plant: Plant, prior: dict | None, version: str) -> str:
+    """The invalidity a previous receipt found for this plant, while the runtime it was judged on is unchanged."""
+    for p in (prior or {}).get("plants") or []:
+        if p.get("plant") == plant.name and p.get("invalid") and version and p.get("version") == version:
+            return p["invalid"]
+    return ""
 
 
 def leaked(live: Path, names, since: float) -> int:
@@ -120,16 +157,24 @@ def leaked(live: Path, names, since: float) -> int:
 
 
 def child_env(home: Path) -> dict:
-    """The isolated home, under the GPU lock the canary already holds on the live one."""
-    from harness import exclusive
-    return {**os.environ, paths.ENV_VAR: str(home), exclusive.HELD_ENV: "1"}
+    """The isolated home, under the GPU lock the canary already holds on the live one, whose services it uses."""
+    from harness import exclusive, load_log
+    serving = os.environ.get(load_log.SERVING_ENV) or str(paths.home())
+    return {**os.environ, paths.ENV_VAR: str(home), exclusive.HELD_ENV: "1", load_log.SERVING_ENV: serving}
 
 
-def run_plant(plant: Plant, home: Path, run=subprocess.run, say=print) -> dict:
+def run_plant(plant: Plant, home: Path, run=subprocess.run, say=print, prior: dict | None = None) -> dict:
     """Seed `home`, run the plant's steps in it, and read back what it decided."""
     from harness import memory_store as ms
     if paths.is_live(home / "discovery.db") or home.resolve() == paths.home().resolve():
         raise RuntimeError(f"{home} is the live home; the canary runs only in an isolated one")
+    version = runtime_version(plant)
+    base = {"plant": plant.name, "lane": plant.lane, "challenger": plant.challenger,
+            "expected": list(plant.expect), "home": str(home), "version": version}
+    known = still_invalid(plant, prior, version)
+    if known:
+        say(f"  {plant.name}: not planted, still invalid on this machine")
+        return {**base, "observed": {}, "rcs": [], "invalid": known, "ok": False}
     home.mkdir(parents=True, exist_ok=True)
     conn = ms.connect(home / "discovery.db")
     try:
@@ -147,9 +192,8 @@ def run_plant(plant: Plant, home: Path, run=subprocess.run, say=print) -> dict:
         got = observe(conn, plant)
     finally:
         conn.close()
-    return {"plant": plant.name, "lane": plant.lane, "challenger": plant.challenger,
-            "expected": list(plant.expect), "observed": got, "rcs": rcs, "home": str(home),
-            "ok": matches(plant, got)}
+    bad = violated(plant, got, version)
+    return {**base, "observed": got, "rcs": rcs, "invalid": bad, "ok": not bad and matches(plant, got)}
 
 
 def loop_running() -> bool:
@@ -174,10 +218,11 @@ def run(plants=PLANTS, run=subprocess.run, now=time.time, sleep=time.sleep, wait
         sleep(POLL_S)
     started = now()
     stamp = time.strftime("%Y%m%d-%H%M%S", time.localtime(started))
-    out = []
+    prior, out = latest(), []
     with exclusive.held("eval", announce=say, deadline_s=PLANT_DEADLINE_S * len(plants)):
         for plant in plants:
-            out.append(run_plant(plant, receipts() / "homes" / stamp / plant.name, run=run, say=say))
+            out.append(run_plant(plant, receipts() / "homes" / stamp / plant.name, run=run, say=say,
+                                 prior=prior))
     n = leaked(paths.home() / "discovery.db", [p.challenger for p in plants], started)
     return write({"started": started, "finished": now(), "plants": out, "leaked": n,
                   "ok": bool(out) and all(p["ok"] for p in out) and n == 0})
@@ -212,11 +257,14 @@ def morning_line(now: float | None = None) -> str:
     r = latest()
     if r is None or now - float(r.get("started") or 0) > STALE_DAYS * 86400:
         return f"the canary has no receipt newer than {STALE_DAYS} days"
-    wrong = [p["plant"] for p in r.get("plants") or [] if not p.get("ok")]
+    wrong = [p["plant"] for p in r.get("plants") or [] if not p.get("ok") and not p.get("invalid")]
+    invalid = [p["plant"] for p in r.get("plants") or [] if p.get("invalid")]
     if r.get("skipped"):
         return f"the canary did not run: {r['skipped']}"
     if wrong:
         return f"the canary's plants missed their expected verdicts: {', '.join(wrong)}"
+    if invalid:
+        return f"the canary's plants are invalid on this machine and need replacing: {', '.join(invalid)}"
     if r.get("leaked"):
         return f"the canary leaked {r['leaked']} verdict(s) into the live store"
     return ""

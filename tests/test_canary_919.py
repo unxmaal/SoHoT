@@ -24,7 +24,8 @@ if argv[:2] != ["canary", "spend"] and argv[:2] != ["discover", "--screen"]:
 home = plan.get("write_to") or os.environ["LOCALHARNESS_HOME"]
 conn = ms.connect(os.path.join(home, "discovery.db"))
 ms.record(conn, ms.Seen(name=plan["name"], source="t", lane=plan["lane"]))
-ms.decide(conn, plan["name"], plan["outcome"], tier=plan["tier"], detail="t", reason=plan["reason"])
+ms.decide(conn, plan["name"], plan["outcome"], tier=plan["tier"], detail=plan.get("detail", "t"),
+          reason=plan["reason"], failure_class=plan.get("failure_class", ""))
 conn.commit()
 """
 
@@ -233,3 +234,71 @@ def test_check_reads_the_newest_run_holding_both(tmp_path):
     finally:
         conn.close()
     assert got["ok"] and got["run_id"] == 1, got
+
+
+LOADS = canary.Plant("loads", "code", "org/load", ("screened", "screen", ""), through="screen", requires="loads")
+
+
+def _llamacpp(monkeypatch, build):
+    monkeypatch.setattr(ms, "this_machine", lambda: {"versions": {"llama.cpp": build}})
+
+
+def test_the_children_are_told_whose_router_log_their_screen_lands_in(child, _home):
+    child.plan(name="org/load", lane="code", outcome="screened", tier="screen", reason="")
+    canary.run([SCREEN], run=child.run)
+    from harness import load_log
+    assert {env[load_log.SERVING_ENV] for _, env, _ in child.run.seen} == {str(paths.home())}
+
+
+def test_a_plant_whose_gguf_does_not_load_here_is_invalid_not_a_miss(child, monkeypatch):
+    """#1006: Qwengram's nextn tensors fail on llama.cpp 11146, so the canary checked the plant, not the pipeline."""
+    from harness import reasons
+    _llamacpp(monkeypatch, "11146")
+    child.plan(name="org/load", lane="code", outcome="declined", tier="screen", reason="runtime",
+               failure_class=reasons.LOAD_FAILED_RUNTIME, detail="llama-server: wrong number of tensors")
+    r = canary.run([LOADS], run=child.run)
+    p = r["plants"][0]
+    assert not r["ok"] and not p["ok"] and p["version"] == "11146"
+    assert "the GGUF loads under this llama.cpp build" in p["invalid"] and "wrong number of tensors" in p["invalid"]
+    assert "invalid" in canary.morning_line() and "missed" not in canary.morning_line()
+
+
+def test_an_invalid_plant_is_not_planted_again_until_its_runtime_changes(child, monkeypatch):
+    from harness import reasons
+    _llamacpp(monkeypatch, "11146")
+    child.plan(name="org/load", lane="code", outcome="declined", tier="screen", reason="runtime",
+               failure_class=reasons.LOAD_FAILED_RUNTIME)
+    canary.run([LOADS], run=child.run)
+    planted = len(child.run.seen)
+    again = canary.run([LOADS], run=child.run, now=lambda: time.time() + 60)
+    assert len(child.run.seen) == planted and again["plants"][0]["invalid"] and not again["ok"]
+    _llamacpp(monkeypatch, "11200")
+    child.plan(name="org/load", lane="code", outcome="screened", tier="screen", reason="")
+    upgraded = canary.run([LOADS], run=child.run, now=lambda: time.time() + 120)
+    assert len(child.run.seen) > planted and upgraded["ok"], upgraded
+
+
+def test_a_screen_the_harness_could_not_read_is_still_a_miss(child, monkeypatch):
+    from harness import reasons
+    _llamacpp(monkeypatch, "11146")
+    child.plan(name="org/load", lane="code", outcome="queued", tier="screen", reason="harness",
+               failure_class=reasons.LOAD_LOG_UNREAD)
+    p = canary.run([LOADS], run=child.run)["plants"][0]
+    assert not p["ok"] and not p["invalid"]
+
+
+def test_run_json_prints_the_receipt_and_exits_nonzero_on_a_miss(child, monkeypatch, capsys):
+    """#1006: emit(r["ok"], **r) raised TypeError after the report, so --json never printed."""
+    child.plan(name="org/load", lane="code", outcome="broken", tier="screen", reason="candidate")
+    monkeypatch.setattr(canary, "PLANTS", (SCREEN,))
+    real = canary.run
+    monkeypatch.setattr(canary, "run", lambda plants, wait_h: real(plants, run=child.run, wait_h=wait_h))
+    assert cli.main(["canary", "--run", "--plant", "load", "--json"]) == 1
+    got = json.loads(capsys.readouterr().out.strip().splitlines()[-1])
+    assert got["ok"] is False and got["plants"][0]["plant"] == "load" and got["path"]
+
+
+def test_every_shipped_precondition_is_known():
+    assert all(p.requires in canary.PRECONDITIONS for p in canary.PLANTS if p.requires)
+    assert canary.unsafe(canary.Plant("x", "code", "org/x", ("screened", "screen", ""), through="screen",
+                                      requires="nonsense"))

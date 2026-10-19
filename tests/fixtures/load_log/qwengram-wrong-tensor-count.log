@@ -1,0 +1,61 @@
+0.01.116.722 I srv          join: request for name=QwenGram-0.8B-Q4_K_M queued at position 1
+0.01.116.727 I srv  ensure_model: waiting until model name=QwenGram-0.8B-Q4_K_M is fully loaded...
+0.01.116.748 I srv  ensure_model: slot available, loading queued model name=QwenGram-0.8B-Q4_K_M
+0.01.116.835 I srv          load: spawning server instance with name=QwenGram-0.8B-Q4_K_M on port 50345
+0.01.116.850 I srv          load: spawning server instance with args:
+0.01.116.851 I srv          load:   /opt/homebrew/Cellar/llama.cpp/0.5.0/bin/llama-server
+0.01.116.851 I srv          load:   --host
+0.01.116.851 I srv          load:   127.0.0.1
+0.01.116.851 I srv          load:   --jinja
+0.01.116.852 I srv          load:   --port
+0.01.116.852 I srv          load:   50345
+0.01.116.852 I srv          load:   --sleep-idle-seconds
+0.01.116.852 I srv          load:   -1
+0.01.116.853 I srv          load:   --alias
+0.01.116.853 I srv          load:   QwenGram-0.8B-Q4_K_M
+0.01.116.853 I srv          load:   --ctx-size
+0.01.116.853 I srv          load:   16384
+0.01.116.854 I srv          load:   --cache-type-k
+0.01.116.854 I srv          load:   f16
+0.01.116.854 I srv          load:   --cache-type-v
+0.01.116.854 I srv          load:   f16
+0.01.116.854 I srv          load:   --kv-unified
+0.01.116.855 I srv          load:   --model
+0.01.116.855 I srv          load:   /Volumes/Models/hf/gguf/QwenGram-0.8B-Q4_K_M.gguf
+0.01.116.855 I srv          load:   --n-gpu-layers
+0.01.116.855 I srv          load:   999
+0.01.116.856 I srv          load:   --parallel
+0.01.116.856 I srv          load:   4
+0.01.116.856 I srv          load:   --timeout
+0.01.116.856 I srv          load:   7200
+[50345] 0.00.000.116 I srv  llama_server: initializing ...
+[50345] 0.00.030.737 I cmn  common_param: common_params_print_info: verbosity = 3 (adjust with the `-lv N` CLI arg)
+[50345] 0.00.030.910 W srv  llama_server: security: no API key is set and CORS allows all origins (see https://github.com/ggml-org/llama.cpp/pull/25655)
+[50345] 
+[50345] 0.00.032.724 I srv    load_model: loading model '/Volumes/Models/hf/gguf/QwenGram-0.8B-Q4_K_M.gguf'
+[50345] 0.00.228.862 E llama_model_load: error loading model: done_getting_tensors: wrong number of tensors; expected 346, got 335
+[50345] 0.00.228.952 E llama_model_load_from_file_impl: failed to load model
+[50345] 0.00.228.981 E common_fit_params: encountered an error while trying to fit params to free device memory: failed to load model
+[50345] 0.00.385.034 W model has unused tensor blk.24.attn_norm.weight (size = 4096 bytes) -- ignoring
+[50345] 0.00.385.041 W model has unused tensor blk.24.post_attention_norm.weight (size = 4096 bytes) -- ignoring
+[50345] 0.00.385.046 W model has unused tensor blk.24.attn_q.weight (size = 2359296 bytes) -- ignoring
+[50345] 0.00.385.048 W model has unused tensor blk.24.attn_k.weight (size = 294912 bytes) -- ignoring
+[50345] 0.00.385.050 W model has unused tensor blk.24.attn_v.weight (size = 430080 bytes) -- ignoring
+[50345] 0.00.385.059 W model has unused tensor blk.24.attn_output.weight (size = 1179648 bytes) -- ignoring
+[50345] 0.00.385.063 W model has unused tensor blk.24.attn_q_norm.weight (size = 1024 bytes) -- ignoring
+[50345] 0.00.385.065 W model has unused tensor blk.24.attn_k_norm.weight (size = 1024 bytes) -- ignoring
+[50345] 0.00.385.067 W model has unused tensor blk.24.ffn_gate.weight (size = 2064384 bytes) -- ignoring
+[50345] 0.00.385.069 W model has unused tensor blk.24.ffn_down.weight (size = 3010560 bytes) -- ignoring
+[50345] 0.00.385.071 W model has unused tensor blk.24.ffn_up.weight (size = 2064384 bytes) -- ignoring
+[50345] 0.00.385.074 W model has unused tensor blk.24.nextn.eh_proj.weight (size = 1179648 bytes) -- ignoring
+[50345] 0.00.385.077 W model has unused tensor blk.24.nextn.enorm.weight (size = 4096 bytes) -- ignoring
+[50345] 0.00.385.079 W model has unused tensor blk.24.nextn.hnorm.weight (size = 4096 bytes) -- ignoring
+[50345] 0.00.385.085 W model has unused tensor blk.24.nextn.shared_head_norm.weight (size = 4096 bytes) -- ignoring
+[50345] 0.00.398.013 E llama_model_load: error loading model: done_getting_tensors: wrong number of tensors; expected 346, got 335
+[50345] 0.00.398.017 E llama_model_load_from_file_impl: failed to load model
+[50345] 0.00.398.019 E cmn  common_init_: failed to load model '/Volumes/Models/hf/gguf/QwenGram-0.8B-Q4_K_M.gguf'
+[50345] 0.00.398.020 E srv    load_model: failed to load model, '/Volumes/Models/hf/gguf/QwenGram-0.8B-Q4_K_M.gguf'
+[50345] 0.00.398.025 I srv    operator(): operator(): cleaning up before exit...
+[50345] 0.00.398.475 E srv  llama_server: exiting due to model loading error
+0.01.597.455 I srv           run: instance name=QwenGram-0.8B-Q4_K_M exited with status 1
+0.01.597.536 W srv    operator(): got exception: {"error":{"code":500,"message":"model name=QwenGram-0.8B-Q4_K_M failed to load","type":"server_error"}}
