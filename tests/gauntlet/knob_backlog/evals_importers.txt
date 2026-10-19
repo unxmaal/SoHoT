@@ -1,5 +1,3 @@
-evals/importers/history.py:MAX_LINES
-evals/importers/history.py:MAX_SOURCE_FILES
 evals/importers/history.py:TIMEOUT_S
 evals/importers/leetcode.py:MAX_CHECKS
 evals/importers/leetcode.py:MAX_CHECK_CHARS

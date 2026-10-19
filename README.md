@@ -1699,7 +1699,16 @@ its fix sha, so no old side moves. `--probes N` stops after running N
 candidates (a dry run). `--yield` prints `N candidates, M tasks, K dropped`
 with the count per drop reason, cases in `DROPPED` included (#997). The survey
 runs SoHoT's tests twice at two commits per candidate, so it goes to the night
-queue.
+queue. `--project` screens the pool and reads its issues without running
+anything, and prices what awaits a probe at the committed manifest's probe yield.
+A fix may change up to `MAX_SOURCE_FILES` (8) source files and `MAX_LINES` (400)
+lines, registered knobs; one at or under the #888 pilot cap (`history.SMALL`, 3
+files and 150 lines) is the `small` stratum, the rest `large`. `evals.run
+--modality repo --size small` runs only small tasks, and `soh repo-report`
+prints a block per stratum. An issue with no Fix section keeps its spec variant
+and drops only the symptom (`variant_drops`); a task is whole with the variants
+its cases offer, and the symptom-minus-spec interaction counts only tasks that
+hold both.
 
 Prompts and skills are measured as arms (#995): `claude-code:<model>,context=<spec>`
 with `none`, `skill:<name>` (the SKILL.md body without frontmatter, from

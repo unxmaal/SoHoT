@@ -116,11 +116,21 @@ def test_a_case_bootstrap_of_clustered_variants_under_covers():
 def test_a_task_is_its_fix_commit_not_its_case_name():
     cases = [_case("alpha-spec", "a" * 40, "spec"), _case("beta", "a" * 40, "symptom"),
              _case("gamma-spec", "b" * 40, "spec"), _case("gamma-symptom", "c" * 40, "symptom")]
-    rows = [_row(r, c, k.id, "P") for k in cases for r, c in ((1, BASE), (2, CAND))]
+    rows = [_row(r, c, k.id, "P") for k in cases for r, c in ((1, BASE), (2, CAND)) if k.id != "beta"]
     rep = R.report(_runs(1, 2), rows, cases, resamples=50)
     assert {t for t, _ in R.tasks_of(cases).values()} == {"a" * 40, "b" * 40, "c" * 40}
-    assert _losses(rep)["tasks"] == 1 and _losses(rep)["cases"] == 2
-    assert rep["set_aside"]["single_variant"] == ["gamma-spec", "gamma-symptom"]
+    assert _losses(rep)["tasks"] == 2 and _losses(rep)["cases"] == 2
+    assert rep["set_aside"]["single_variant"] == ["alpha-spec"]
+
+
+def test_a_task_whose_cases_offer_one_variant_is_whole_and_reports_by_size_stratum():
+    cases = [_case("a-spec", "a" * 40, "spec"), _case("b-spec", "b" * 40, "spec"),
+             _case("b-symptom", "b" * 40, "symptom")]
+    rows = [_row(r, c, k.id, "P") for k in cases for r, c in ((1, BASE), (2, CAND))]
+    rep = R.report(_runs(1, 2), rows, cases, resamples=50, sizes={"a" * 40: "large", "b" * 40: "small"})
+    assert rep["set_aside"]["single_variant"] == [] and _losses(rep)["tasks"] == 2
+    assert {s: (v["tasks"], v["cases"]) for s, v in rep["strata"].items()} == {"small": (1, 2), "large": (1, 1)}
+    assert "limits as losses, large tasks (size stratum, #997): 1 cases from 1 tasks" in R.text(rep)
 
 
 def _pilot_rows():
@@ -149,16 +159,16 @@ def test_the_pilot_reads_as_the_store_does():
     rep = R.report(_runs(466, 467), _pilot_rows(), _repo_cases(), resamples=500)
     v = _losses(rep)
     assert (rep["baseline"], rep["candidate"]) == (ORNITH_SIDE, OPUS_SIDE)
-    assert (v["rates"][OPUS_SIDE]["all"]["resolved"], v["rates"][OPUS_SIDE]["all"]["n"]) == (11, 36)
-    assert (v["rates"][ORNITH_SIDE]["all"]["resolved"], v["rates"][ORNITH_SIDE]["all"]["n"]) == (3, 36)
+    assert (v["rates"][OPUS_SIDE]["all"]["resolved"], v["rates"][OPUS_SIDE]["all"]["n"]) == (12, 37)
+    assert (v["rates"][ORNITH_SIDE]["all"]["resolved"], v["rates"][ORNITH_SIDE]["all"]["n"]) == (4, 37)
     f = rep["fair"]["views"]["limits as losses"]
-    assert (f["cases"], f["tasks"]) == (12, 7) and "sohot-858-spec" in rep["fair"]["unfair"]
-    assert (f["rates"][OPUS_SIDE]["all"]["resolved"], f["rates"][ORNITH_SIDE]["all"]["resolved"]) == (9, 3)
-    assert "limits as losses, fair subset: 12 cases from 7 tasks" in R.text(rep)
-    assert v["rates"][OPUS_SIDE]["all"]["ci95"] == [0.18, 0.4686] and v["rates"][ORNITH_SIDE]["all"]["ci95"] == [0.0287, 0.2183]
+    assert (f["cases"], f["tasks"]) == (13, 8) and "sohot-858-spec" in rep["fair"]["unfair"]
+    assert (f["rates"][OPUS_SIDE]["all"]["resolved"], f["rates"][ORNITH_SIDE]["all"]["resolved"]) == (10, 4)
+    assert "limits as losses, fair subset: 13 cases from 8 tasks" in R.text(rep)
+    assert v["rates"][OPUS_SIDE]["all"]["ci95"] == [0.1963, 0.4854] and v["rates"][ORNITH_SIDE]["all"]["ci95"] == [0.0429, 0.2471]
     named = {rep["labels"][t] for t in v["only"][OPUS_SIDE]}
     assert named == {"sohot-363", "sohot-374", "sohot-376", "sohot-788"} and v["only"][ORNITH_SIDE] == []
-    assert {rep["labels"][t] for t in v["both"]} == {"sohot-570", "sohot-720"}
+    assert {rep["labels"][t] for t in v["both"]} == {"sohot-318-omnisvg-spelling", "sohot-570", "sohot-720"}
     # Per-task pass rate is the paired unit (#995): sohot-720 is both variants for Opus, the spec for Ornith.
     assert {rep["labels"][t] for t in v["higher"][OPUS_SIDE]} == named | {"sohot-720"} and v["higher"][ORNITH_SIDE] == []
     assert v["p"] == 0.0625 and v["verdict"] == "untestable at 5 discordant"
@@ -168,10 +178,10 @@ def test_the_pilot_reads_as_the_store_does():
         assert g["verdict"] == "untestable at 1 discordant" and "difference" not in g
     assert rep["excluded_never_ran"] == ["sohot-598-spec", "sohot-598-symptom", "sohot-858-spec",
                                          "sohot-858-symptom"]
-    assert rep["set_aside"]["single_variant"] == ["sohot-318-omnisvg-spelling"]
+    assert rep["set_aside"]["single_variant"] == []
     assert rep["limit_rows"] == {ORNITH_SIDE: 19, OPUS_SIDE: 0}
     assert not v["power"][OPUS_SIDE]["rho_measured"] and v["power"][OPUS_SIDE]["rho_used"] == power.DEFAULT_RHO
-    assert rep["views"]["limits unjudged"]["cases"] == 17
+    assert rep["views"]["limits unjudged"]["cases"] == 18
     assert "untestable at 5 discordant" in R.text(rep)
 
 
@@ -289,7 +299,7 @@ def test_a_case_the_receipt_validated_as_not_valid_is_set_aside():
         r["receipt"]["validation"] = {"sohot-371-spec": "flaky: x"}
     rep = R.report(runs, _pilot_rows(), _repo_cases(), resamples=50)
     assert rep["set_aside"]["not_valid"] == ["sohot-371-spec"]
-    assert rep["views"]["limits as losses"]["cases"] == 35
+    assert rep["views"]["limits as losses"]["cases"] == 36
 
 
 def _arms(sent_a, sent_b, server=None):
