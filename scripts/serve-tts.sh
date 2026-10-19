@@ -30,9 +30,17 @@ mkdir -p "$LH_LOGS"
 # not install setuptools into venvs on py3.12+, and setuptools >=81 removed
 # pkg_resources outright. Unpinned resolves to 84.x and fails the same way.
 # soundfile: granite-speech-nar and arktts read an audio path through it; mlx-audio does not require it. #1030
+# --check builds misaki's English G2P in this env without the network, as smoke does. #1045
+if [ "${1:-}" = "--check" ]; then
+  RUN=(-c 'import sys, spacy.util
+spacy.util.is_package("en_core_web_sm") or sys.exit("en_core_web_sm is not in the audio server env; misaki would download it per request")
+from misaki import en
+en.G2P()')
+else
+  RUN=(-m mlx_audio.server --host "${TTS_HOST:-0.0.0.0}" --port "${TTS_PORT:-8890}")
+fi
 exec uv run --no-project \
   --with "$MLX_AUDIO_PIN" --with "$UVICORN_PIN" --with "$WEBRTCVAD_PIN" \
   --with "$FASTAPI_PIN" --with "$MULTIPART_PIN" --with "$SETUPTOOLS_PIN" \
-  --with "$MISAKI_PIN" --with "$SOUNDFILE_PIN" \
-  python -m mlx_audio.server \
-  --host "${TTS_HOST:-0.0.0.0}" --port "${TTS_PORT:-8890}"
+  --with "$MISAKI_PIN" --with "$SOUNDFILE_PIN" --with "$SPACY_PIN" --with "$EN_CORE_WEB_SM_PIN" \
+  python "${RUN[@]}"

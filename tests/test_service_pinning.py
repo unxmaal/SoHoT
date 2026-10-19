@@ -56,8 +56,8 @@ def test_pins_are_exact_unless_the_range_is_argued_for():
             if (m := re.match(r'^[A-Z_]+_PIN="([^"]+)"', line))]
     assert pins, "versions.sh defines no pins"
     for index, pin in pins:
-        if "==" in pin:
-            continue
+        if "==" in pin or re.search(r" @ https://\S+-\d+(\.\d+)+-py3-none-any\.whl$", pin):
+            continue  # a direct URL to one versioned wheel is exact
         preceding = " ".join(lines[max(0, index - 6):index]).lower()
         assert "on purpose" in preceding, (
             f"{pin!r} is a range with no argument for why; either pin it "
