@@ -954,6 +954,18 @@ def load_selected(args) -> list[Case]:
     return select_cases(loaded, args.modality)
 
 
+def sized(chosen: list[Case], args) -> list[Case]:
+    """The chosen cases cut to --size's stratum of history tasks. #997."""
+    size = getattr(args, "size", "all") or "all"
+    if size == "all":
+        return chosen
+    from evals.importers import history
+    got = history.only_size(chosen, size)
+    if not got:
+        raise SystemExit(f"no {args.modality} cases of size {size}")
+    return got
+
+
 def parse_args(argv: list[str] | None = None):
     return _parser().parse_args(argv)
 
@@ -1010,6 +1022,9 @@ def _parser():
     ap.add_argument("--split", choices=("all", "dev", "holdout"), default="all",
                     help="which side of the per-lane holdout split to run; the "
                          "screen always runs dev (#479)")
+    ap.add_argument("--size", choices=("all", "small", "large"), default="all",
+                    help="repo lane: only history tasks of this size stratum; small is the #888 "
+                         "pilot cap the local models were sized for (#997)")
     ap.add_argument("--knob", action="append", default=[], metavar="NAME=VALUE",
                     help="run at this setting of a registered exam knob, recorded on the "
                          "receipt; repeatable (harness/knobs/, #636)")
@@ -1101,7 +1116,7 @@ def _execute_at(args, overrides: dict) -> int:
         args.adherence = ""
     from harness import holdout
     side = "dev" if args.screen else (getattr(args, "split", "") or "all")
-    chosen = load_selected(args)
+    chosen = sized(load_selected(args), args)
     cases = expand_cases(screen_pool(chosen) if args.screen
                          else holdout.only(chosen, side), args.repeat)
     # An engine spec contains commas, which are also the candidate separator.

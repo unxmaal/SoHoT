@@ -118,12 +118,16 @@ def test_a_pytest_run_past_its_timeout_is_killed_and_the_task_dropped(tmp_path):
     assert got["dropped"] == {"timeout": 1}
 
 
-def test_an_issue_with_no_solution_section_is_dropped_before_anything_runs(tmp_path):
+@DARWIN
+def test_an_issue_with_no_solution_section_keeps_its_spec_variant_and_drops_only_the_symptom(tmp_path):
     src = _repo(tmp_path, FIXED, ADD_TEST)
     got = history.survey(str(src), "main", 20, tmp_path / "log.txt",
-                         get_issue=lambda n: {"title": "t", "body": "## Problem\nbroken\n"},
-                         env=lambda task: pytest.fail("nothing runs"))
-    assert got["dropped"] == {"no_fix_section": 1}
+                         get_issue=lambda n: {"title": "t", "body": "## Problem\nbroken\n"}, env=_here)
+    (task,) = got["tasks"]
+    assert got["dropped"] == {} and task["variant_drops"] == {"symptom": "no_fix_section"}
+    assert task["prompts"]["symptom"] is None and task["prompts"]["spec"]
+    assert [r["variant"] for r in history.fetch_rows(got)] == ["spec"]
+    assert "cases: 1; symptom dropped on 1 tasks (no_fix_section)" in history.yield_table(got, dropped={})
 
 
 @DARWIN
@@ -204,13 +208,14 @@ def test_the_committed_manifest_is_pinned_versioned_and_a_pilot_sized_set_of_fli
         assert t["fail_to_pass"] and not set(t["fail_to_pass"]) & set(t["pass_to_pass"])
         assert {"files", "lines", "test_s", "area"} <= set(t["strata"])
         assert len(t["context_files"]) <= history.MAX_SOURCE_FILES
-        assert t["prompts"]["symptom"] and t["prompts"]["symptom"] != t["prompts"]["spec"]
+        assert (t["prompts"]["symptom"] and t["prompts"]["symptom"] != t["prompts"]["spec"]
+                or t["variant_drops"] == {"symptom": "no_fix_section"})
 
 
 def test_the_committed_manifest_converts_to_both_variants_of_every_task():
     rows = history.fetch()
     cases = [history.convert(r).case for r in rows]
-    variants = {f"{t['id']}-{v}" for t in history.manifest()["tasks"] for v in history.VARIANTS}
+    variants = {f"{t['id']}-{v}" for t in history.manifest()["tasks"] for v in history.VARIANTS if t["prompts"].get(v)}
     assert set(history.DROPPED) <= variants
     assert len(cases) == len(variants) - len(history.DROPPED)
     for c in cases:
@@ -322,10 +327,10 @@ def test_growing_keeps_an_old_task_as_it_was_and_fetches_the_commits_since(tmp_p
     _mul(src)
     asked = []
     got = history.survey(str(src), "main", None, tmp_path / "log.txt",
-                         get_issue=lambda n: asked.append(n) or {"title": "t", "body": "## Problem\nno mul\n"},
-                         env=lambda task: pytest.fail("nothing runs"), keep=keep)
-    assert got["tasks"] == keep["tasks"] and asked == [7]
-    assert got["candidates"] == 2 and [d["issue"] for d in got["drops"]] == [7]
+                         get_issue=lambda n: asked.append(n) or ISSUE,
+                         env=lambda task: pytest.fail("nothing runs"), keep=keep, run=False)
+    assert got["tasks"] == keep["tasks"] and asked == [7] and got["drops"] == []
+    assert got["candidates"] == 2 and [p["issue"] for p in got["pending"]] == [7]
     assert got["split"] == history.split(keep["tasks"]) and got["criteria"]["kept_from"] == keep["revision"]
 
 
@@ -354,13 +359,14 @@ def test_a_grown_task_is_probed_and_takes_the_side_its_fix_draws(tmp_path):
     got = _survey(src, tmp_path, keep=keep)
     new = next(t for t in got["tasks"] if t["id"] == "sohot-7")
     assert new["fail_to_pass"] == ["tests/test_mul.py::test_mul"] and got["tasks"][1:] == keep["tasks"]
+    assert new["strata"]["size"] == "small" and "variant_drops" not in new
     assert new["id"] in got["split"][history.side_of(new["fix"])]
 
 
 def test_the_yield_counts_every_candidate_once_with_post_survey_drops_and_the_unexamined():
     got = {"candidates": 10, "examined": 7, "criteria": {"limit": 3, "probes": None},
-           "tasks": [{"id": "sohot-1", "fix": "a" * 40}, {"id": "sohot-2", "fix": "b" * 40},
-                     {"id": "sohot-3", "fix": "c" * 40}],
+           "tasks": [{"id": f"sohot-{i}", "fix": c * 40, "prompts": {"spec": "p", "symptom": "q"},
+                      "strata": {"files": 1, "lines": 9}} for i, c in ((1, "a"), (2, "b"), (3, "c"))],
            "dropped": {"too_big": 3, "flaky": 1}}
     lines = history.yield_table(got, dropped={"sohot-2-spec": "x", "sohot-2-symptom": "x", "sohot-3-spec": "x"})
     assert lines[0] == "10 candidates, 2 tasks, 5 dropped, 3 not examined (limit 3, probes None)"
@@ -399,8 +405,35 @@ def test_a_dry_run_stops_after_its_probes_and_counts_the_rest_unexamined(tmp_pat
 
 def test_a_survey_from_the_command_line_keeps_the_committed_tasks_unless_told_to_restart(tmp_path, monkeypatch):
     seen = []
-    monkeypatch.setattr(history, "survey", lambda *a, keep=None, probes=None: seen.append(keep) or
+    monkeypatch.setattr(history, "survey", lambda *a, keep=None, **kw: seen.append(keep) or
                         {**history.manifest(), "candidates": 1})
     for extra in ([], ["--restart"]):
         assert history.main(["--log", str(tmp_path / "l"), "--out", str(tmp_path / "m.json"), *extra]) == 0
     assert seen == [history.manifest(), None]
+
+
+def test_the_size_stratum_is_the_pilot_cap_and_the_survey_takes_fixes_up_to_the_raised_one():
+    assert history.size_of({"files": 3, "lines": 150}) == "small"
+    assert history.size_of({"files": 4, "lines": 10}) == history.size_of({"files": 1, "lines": 151}) == "large"
+    c = {"test_files": ["tests/test_x.py"], "source_files": [f"m{i}.py" for i in range(8)],
+         "context_files": ["m0.py"], "lines": 400}
+    assert history.screen(c) is None
+    assert history.screen({**c, "lines": 401}) == history.screen({**c, "source_files": c["source_files"] + ["z.py"]}) == "too_big"
+
+
+def test_a_run_cut_to_a_size_keeps_only_that_strata_of_history_tasks(monkeypatch):
+    from types import SimpleNamespace
+
+    from evals import run
+    got = {"tasks": [{"fix": "a" * 40, "strata": {"files": 1, "lines": 5}},
+                     {"fix": "b" * 40, "strata": {"files": 6, "lines": 300}}]}
+    monkeypatch.setattr(history, "manifest", lambda path=history.MANIFEST: got)
+    cases = [SimpleNamespace(id=f"{x}-spec", params={"fix": x * 40, "variant": "spec"}) for x in "ab"] + \
+        [SimpleNamespace(id="hand", params={})]
+    args = SimpleNamespace(size="large", modality="repo")
+    assert [c.id for c in run.sized(cases, args)] == ["b-spec"]
+    assert [c.id for c in run.sized(cases, SimpleNamespace(size="small", modality="repo"))] == ["a-spec"]
+    assert run.sized(cases, SimpleNamespace(size="all", modality="repo")) == cases
+    assert run.parse_args(["--modality", "repo", "--size", "small"]).size == "small"
+    with pytest.raises(SystemExit):
+        run.sized(cases[2:], args)

@@ -12,6 +12,7 @@ import json
 from pathlib import Path
 
 from evals import compare
+from evals.importers import history
 from evals.importers.history import VARIANTS
 from harness import intervals, paired, power, reasons
 
@@ -83,6 +84,20 @@ def tasks_of(cases) -> dict[str, tuple[str, str]]:
         if params.get("fix") and params.get("variant") in VARIANTS:
             out[c.id] = (str(params["fix"]), params["variant"])
     return out
+
+
+def offered(task: dict) -> dict[str, set]:
+    """task key -> the variants its cases offer: a task imported spec only is whole with one. #997."""
+    out: dict = {}
+    for t, v in task.values():
+        out.setdefault(t, set()).add(v)
+    return out
+
+
+def strata(task: dict, sizes=None) -> dict[str, str]:
+    """case id -> size stratum of its task, for tasks the history manifest holds. #997."""
+    sizes = history.sizes() if sizes is None else sizes
+    return {k: sizes[t] for k, (t, _) in task.items() if t in sizes}
 
 
 def labels(task: dict) -> dict[str, str]:
@@ -284,7 +299,7 @@ def fair_cases(case_ids, labels=None) -> set:
 
 
 def report(runs: list[dict], rows: list[dict], cases, *, resamples: int = compare.DEFAULT_RESAMPLES,
-           seed: int = 1, fair=None) -> dict:
+           seed: int = 1, fair=None, sizes=None) -> dict:
     """Everything the text prints, as data, over the valid cases and their fair subset. The first run's candidate is the baseline."""
     alpha = _alpha()
     if len(runs) == 2:
@@ -306,13 +321,15 @@ def report(runs: list[dict], rows: list[dict], cases, *, resamples: int = compar
     for k in draws:
         if k in task and k not in unpaired:
             variants.setdefault(task[k][0], set()).add(task[k][1])
-    single = sorted(k for k in draws if k in task and k not in unpaired and variants[task[k][0]] != set(VARIANTS))
+    whole = offered(task)
+    single = sorted(k for k in draws if k in task and k not in unpaired and variants[task[k][0]] != whole[task[k][0]])
     invalid = sorted({k for r in runs for k, v in ((r["receipt"] or {}).get("validation") or {}).items()
                       if v != "valid" and k in draws})
     suite = {k: d for k, d in draws.items() if k in task and k not in unpaired and k not in single
              and k not in invalid}
     fair = fair_cases(list(suite)) if fair is None else set(fair)
     never_ran = sorted(k for k, d in suite.items() if any(fc in reasons.NEVER_RAN for x in d.values() for _, fc in x))
+    size = strata(task, sizes)
     limits = {c: sum(fc in LIMIT_CLASSES for k in suite if k not in never_ran for _, fc in suite[k][c])
               for c in order}
     return {"baseline": order[0], "candidate": order[1], "alpha": alpha, "sides": sides,
@@ -326,6 +343,9 @@ def report(runs: list[dict], rows: list[dict], cases, *, resamples: int = compar
             "excluded_never_ran": never_ran, "limit_rows": limits,
             "views": {name: _view(suite, task, order, skip, alpha=alpha, resamples=resamples, seed=seed)
                       for name, skip in VIEWS.items()},
+            "strata": {s: _view({k: d for k, d in suite.items() if size.get(k) == s}, task, order,
+                                VIEWS["limits as losses"], alpha=alpha, resamples=resamples, seed=seed)
+                       for s in history.SIZES if any(size.get(k) == s for k in suite)},
             "fair": {"unfair": sorted(k for k in suite if k not in fair),
                      "views": {name: _view({k: d for k, d in suite.items() if k in fair}, task, order, skip,
                                            alpha=alpha, resamples=resamples, seed=seed)
@@ -364,6 +384,8 @@ def text(rep: dict) -> str:
     for name in rep["views"]:
         for which, v in (("valid set", rep["views"][name]), ("fair subset", rep["fair"]["views"][name])):
             out += _block(rep, f"{name}, {which}", v, name == "limits as losses")
+    for s, v in (rep.get("strata") or {}).items():
+        out += _block(rep, f"limits as losses, {s} tasks (size stratum, #997)", v, False)
     for which, views in (("valid set", rep["views"]), ("fair subset", rep["fair"]["views"])):
         out += _power_lines(rep, which, views["limits as losses"])
     return "\n".join(out)

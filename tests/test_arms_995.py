@@ -289,10 +289,10 @@ def test_the_plan_is_power_on_the_baselines_task_rates_per_side():
     assert "tasks needed" in A.plan_text(p)
 
 
-def test_the_plan_with_no_runs_assumes_unseen_rates_and_counts_two_variant_tasks():
+def test_the_plan_with_no_runs_assumes_unseen_rates_and_counts_a_spec_only_task():
     cases = _tasks(10) + [SimpleNamespace(id="lone", params={"fix": "e" * 40, "variant": "spec"})]
     p = A.plan(cases)
-    assert p["unseen"] and p["sides"]["all"]["tasks"] == 10
+    assert p["unseen"] and p["sides"]["all"]["tasks"] == 11
 
 
 def test_soh_repo_report_arms_and_plan_read_the_store(store_run, tmp_path, capsys):
@@ -345,3 +345,20 @@ def test_a_cost_the_rows_never_recorded_is_unknown_not_zero():
     assert arms_[NONE]["cost"]["tokens_out"] == 7 and arms_[NOCHANGE]["cost"]["tokens_out"] is None
     assert arms_[NONE]["cost"]["tokens_in"] is None and arms_[NOCHANGE]["cost_vs"]["tokens_out"] is None
     assert "?" in A.text({**A.report(_runs({}), rows, _tasks(4), resamples=5)})
+
+
+def test_a_spec_only_task_counts_for_the_arm_and_stays_out_of_the_symptom_interaction():
+    tasks = 19
+    rows, cases = [], _tasks(tasks) + [SimpleNamespace(id=f"s{t}-spec", params={"fix": f"{100 + t:040x}", "variant": "spec"})
+                                       for t in range(5)]
+    for c in cases:
+        v = c.params["variant"]
+        rows += [{"run_id": 1, "candidate": NONE, "case_id": c.id, "passed": v == "spec" and not c.id.startswith("s"),
+                  "failure_class": "", "metrics": {}, "seconds": 0},
+                 {"run_id": 1, "candidate": NOCHANGE, "case_id": c.id, "passed": True,
+                  "failure_class": "", "metrics": {}, "seconds": 0}]
+    rep = A.report(_runs({}), rows, cases, resamples=50)
+    arm = rep["sides"]["all"]["arms"][NOCHANGE]
+    assert rep["sides"]["all"]["tasks"] == tasks + 5 and rep["set_aside"]["single_variant"] == []
+    g = arm["symptom_gain_minus_spec_gain"]
+    assert g["tasks"] == tasks and g["higher"] == tasks and g["lower"] == 0 and g["difference"] == 1.0

@@ -24,8 +24,11 @@ REVISION = "35ac01f5c487124fb40fc7a94680178c22b78ac6"
 MANIFEST = Path(__file__).with_name("history.json")
 VERSION = 1
 SUBJECT = re.compile(r"\(#(\d+)\) \(#(\d+)\)$")
-MAX_SOURCE_FILES = 3
-MAX_LINES = 150
+MAX_SOURCE_FILES = 8
+MAX_LINES = 400
+#: The #888 pilot's cap: a task at or under both is the small stratum, the one local models were sized for. #997.
+SMALL = {"files": 3, "lines": 150}
+SIZES = ("small", "large")
 TIMEOUT_S = 300.0
 RUNS = 2
 #: The repo's default deselection, kept although the grader's `-o addopts=` drops it, so no slow test enters the ids.
@@ -168,6 +171,24 @@ def screen(c: dict) -> str | None:
     return None
 
 
+def size_of(strata: dict) -> str:
+    """small or large: a task's stratum from its source file and line counts. #997."""
+    return "small" if strata["files"] <= SMALL["files"] and strata["lines"] <= SMALL["lines"] else "large"
+
+
+def sizes(got: dict | None = None) -> dict:
+    """fix sha -> size stratum for every task in the manifest. #997."""
+    return {t["fix"]: size_of(t["strata"]) for t in (got or manifest())["tasks"]}
+
+
+def only_size(cases, size: str, got: dict | None = None) -> list:
+    """The cases of history tasks in one size stratum; "all" keeps every case. #997."""
+    if size == "all":
+        return list(cases)
+    by = sizes(got)
+    return [c for c in cases if by.get(str((getattr(c, "params", None) or {}).get("fix", ""))) == size]
+
+
 def issue(number: int) -> dict | None:
     """The issue's title and body; None only when GitHub says it does not exist, never when gh fails. #997."""
     got = subprocess.run(["gh", "issue", "view", str(number), "-R", "unxmaal/SoHoT", "--json",
@@ -279,8 +300,11 @@ def _fetch(mirror: Path, revision: str) -> None:
 
 
 def survey(source: str, revision: str, limit: int | None, log, get_issue=issue, timeout=TIMEOUT_S,
-           env=None, keep: dict | None = None, probes: int | None = None) -> dict:
-    """Examine fix commits newest first until `limit` tasks are kept (None: all); `keep`'s tasks stay as they are. #997."""
+           env=None, keep: dict | None = None, probes: int | None = None, run: bool = True) -> dict:
+    """Examine fix commits newest first until `limit` tasks are kept (None: all); `keep`'s tasks stay as they are.
+
+    run=False screens and reads issues but probes nothing: what would be probed is listed in "pending". #997.
+    """
     mirror = repo.mirror(source)
     _fetch(mirror, revision)
     revision = git(mirror, "rev-parse", revision).strip()
@@ -289,7 +313,7 @@ def survey(source: str, revision: str, limit: int | None, log, get_issue=issue, 
     lost = sorted(t["id"] for f, t in old.items() if f not in {c["fix"] for c in pool})
     if lost:
         raise RuntimeError(f"tasks not on {revision[:10]}'s fix history, so they cannot be kept: {lost}")
-    kept, drops, seen = [], [], {t["issue"] for t in old.values()}
+    kept, drops, pending, seen = [], [], [], {t["issue"] for t in old.values()}
     ran = 0
     for c in pool:
         if limit is not None and len(kept) >= limit or probes is not None and ran >= probes:
@@ -302,7 +326,12 @@ def survey(source: str, revision: str, limit: int | None, log, get_issue=issue, 
         if why is None:
             got = get_issue(c["issue"])
             text = prompts(got["title"], got["body"] or "") if got else None
-            why = "no_issue" if not got else ("no_fix_section" if text["symptom"] is None else None)
+            why = "no_issue" if not got else None
+        if why is None and not run:
+            pending.append({"issue": c["issue"], "fix": c["fix"],
+                            "size": size_of({"files": len(c["source_files"]), "lines": c["lines"]}),
+                            "variants": [v for v in VARIANTS if text[v]]})
+            continue
         if why is None:
             t0, ran = time.monotonic(), ran + 1
             res = probe(mirror, c, log, timeout, env=env)
@@ -313,6 +342,7 @@ def survey(source: str, revision: str, limit: int | None, log, get_issue=issue, 
             drops.append({"issue": c["issue"], "pr": c["pr"], "fix": c["fix"], "reason": why})
             continue
         seen.add(c["issue"])
+        lost_variants = {v: "no_fix_section" for v in VARIANTS if not text[v]}
         kept.append({"id": f"sohot-{c['issue']}", "issue": c["issue"], "pr": c["pr"],
                      "base": c["base"], "fix": c["fix"], "date": c["date"],
                      "subject": c["subject"], "context_files": c["context_files"],
@@ -320,38 +350,72 @@ def survey(source: str, revision: str, limit: int | None, log, get_issue=issue, 
                      "test_files": c["test_files"], "fail_to_pass": res["fail_to_pass"],
                      "pass_to_pass": res["pass_to_pass"], "prompts": text,
                      "strata": {"files": len(c["source_files"]), "lines": c["lines"],
-                                "test_s": res["test_s"], "area": area(c["source_files"])}})
+                                "test_s": res["test_s"], "area": area(c["source_files"]),
+                                "size": size_of({"files": len(c["source_files"]), "lines": c["lines"]})},
+                     **({"variant_drops": lost_variants} if lost_variants else {})})
     kept += [t for f, t in old.items() if t not in kept]
     return {"version": VERSION, "source": SOURCE, "repo": source, "revision": revision,
             "criteria": {"subject": SUBJECT.pattern, "first_parent": True,
                          "max_source_files": MAX_SOURCE_FILES, "max_lines": MAX_LINES,
+                         "small": SMALL, "symptom_without_fix_section": "spec kept, symptom dropped",
                          "tests_changed": "a test_*.py the grader would install",
                          "no_env_file_change": list(repo.ENV_FILES), "runs": RUNS,
                          "markers": MARKERS, "pytest_timeout_s": timeout,
                          "order": "newest first", "limit": limit, "probes": probes,
                          "kept_from": (keep or {}).get("revision")},
-            "candidates": len(pool), "examined": len(kept) + len(drops),
+            "candidates": len(pool), "examined": len(kept) + len(drops) + len(pending),
             "dropped": dict(sorted(Counter(d["reason"] for d in drops).items())),
-            "tasks": kept, "split": split(kept), "drops": drops}
+            "tasks": kept, "split": split(kept), "drops": drops,
+            **({} if run else {"pending": pending})}
 
 
-def yield_table(got: dict, dropped=None) -> list[str]:
-    """`N candidates, M tasks, K dropped` and the count per reason, cases dropped after the survey included."""
+#: Reasons only a probe gives: the share of probed candidates kept is the yield a projection prices pending ones at.
+PROBE_DROPS = ("environment_error", "flaky", "no_flip", "pytest_crashed", "reference_fails",
+               "reference_unappliable", "timeout")
+
+
+def probe_yield(got: dict) -> tuple[int, int]:
+    """(kept, probed) over a manifest's candidates that a probe decided."""
+    probed = len(got["tasks"]) + sum(n for r, n in got["dropped"].items() if r in PROBE_DROPS)
+    return len(got["tasks"]), probed
+
+
+def yield_table(got: dict, dropped=None, priced=None) -> list[str]:
+    """`N candidates, M tasks, K dropped`, the count per reason and per lost variant, and a projection of what awaits a probe."""
     dropped = DROPPED if dropped is None else dropped
     ids = {t["id"] for t in got["tasks"]}
     gone = sorted(i for i in ids if all(f"{i}-{v}" in dropped for v in VARIANTS))
     reasons = Counter(got["dropped"])
     if gone:
         reasons["validation"] += len(gone)
-    pool = got.get("candidates", got["examined"])
-    usable = len(ids) - len(gone)
-    lines = [f"{pool} candidates, {usable} tasks, {sum(reasons.values())} dropped"
-             + (f", {pool - got['examined']} not examined (limit {got['criteria']['limit']}, "
-                f"probes {got['criteria'].get('probes')})"
-                if pool > got["examined"] else "")]
+    pool, pending = got.get("candidates", got["examined"]), got.get("pending", [])
+    usable = [t for t in got["tasks"] if t["id"] not in gone]
+    unexamined = pool - got["examined"]
+    lines = [f"{pool} candidates, {len(usable)} tasks, {sum(reasons.values())} dropped"
+             + (f", {len(pending)} awaiting a probe" if pending else "")
+             + (f", {unexamined} not examined (limit {got['criteria']['limit']}, "
+                f"probes {got['criteria'].get('probes')})" if unexamined else "")]
     lines += [f"  {n:>4}  {r}" for r, n in sorted(reasons.items(), key=lambda kv: (-kv[1], kv[0]))]
-    sides = Counter(side_of(t["fix"]) for t in got["tasks"] if t["id"] not in gone)
+    lost = Counter()
+    for t in usable:
+        for v in VARIANTS:
+            why = (t.get("variant_drops") or {}).get(v) or ("validation" if f"{t['id']}-{v}" in dropped else None)
+            if why:
+                lost[(v, why)] += 1
+    cases = sum(1 for t in usable for v in VARIANTS if t["prompts"].get(v) and f"{t['id']}-{v}" not in dropped)
+    lines.append(f"cases: {cases}" + "".join(f"; {v} dropped on {n} tasks ({why})" for (v, why), n in sorted(lost.items())))
+    by = Counter(size_of(t["strata"]) for t in usable)
+    lines.append("size: " + ", ".join(f"{by[s]} {s}" for s in SIZES))
+    sides = Counter(side_of(t["fix"]) for t in usable)
     lines.append(f"split: {sides['holdout']} held out, {sides['dev']} dev")
+    if pending:
+        k, n = probe_yield(priced or got)
+        rate = k / n if n else 0.0
+        size = Counter(p["size"] for p in pending)
+        each = {s: by[s] + round(size[s] * rate) for s in SIZES}
+        spec_only = sum(1 for p in pending if p["variants"] == ["spec"])
+        lines.append(f"projected: {len(usable)} + {len(pending)} x {k}/{n} probed kept = {sum(each.values())} tasks ("
+                     + ", ".join(f"{each[s]} {s}" for s in SIZES) + f"); {spec_only} pending are spec only")
     return lines
 
 
@@ -373,13 +437,19 @@ def manifest(path: Path = MANIFEST) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def fetch_rows(got: dict, dropped=None) -> list[dict]:
+    """One row per task and variant a manifest holds a prompt for, less the cases dropped after the survey."""
+    dropped = DROPPED if dropped is None else dropped
+    return [{**t, "variant": v} for t in got["tasks"] for v in VARIANTS
+            if t["prompts"].get(v) and f"{t['id']}-{v}" not in dropped]
+
+
 def fetch(path: Path = MANIFEST) -> list[dict]:
     """One row per task and variant, from the committed manifest."""
     got = manifest(path)
     if got["revision"] != REVISION:
         raise RuntimeError(f"{path.name} was surveyed at {got['revision']}, not REVISION")
-    return [{**t, "variant": v} for t in got["tasks"] for v in VARIANTS
-            if t["prompts"].get(v) and f"{t['id']}-{v}" not in DROPPED]
+    return fetch_rows(got)
 
 
 def convert(row: dict) -> Imported | None:
@@ -421,6 +491,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--source", default=REPO_URL)
     ap.add_argument("--revision", default="HEAD")
     ap.add_argument("--limit", type=int, default=None, help="stop at this many tasks; default the whole pool")
+    ap.add_argument("--project", action="store_true",
+                    help="screen the pool and read its issues but probe nothing; prints the projected yield")
     ap.add_argument("--probes", type=int, default=None, help="stop after running this many candidates (a dry run)")
     ap.add_argument("--restart", action="store_true",
                     help="start over instead of keeping the committed manifest's tasks as they are")
@@ -444,9 +516,9 @@ def main(argv: list[str] | None = None) -> int:
         ap.error("--log is required for a survey")
     a.out.parent.mkdir(parents=True, exist_ok=True)
     got = survey(a.source, a.revision, a.limit, a.log, keep=None if a.restart else manifest(),
-                 probes=a.probes)
+                 probes=a.probes, run=not a.project)
     a.out.write_text(json.dumps(got, indent=1) + "\n", encoding="utf-8")
-    print("\n".join(yield_table(got)), file=sys.stderr)
+    print("\n".join(yield_table(got, priced=manifest())), file=sys.stderr)
     print(f"set REVISION = {got['revision']!r}, copy {a.out} to {MANIFEST.name}, then "
           "`soh cases import history`", file=sys.stderr)
     return 0

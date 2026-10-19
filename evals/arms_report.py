@@ -71,8 +71,9 @@ def _suite(rows, order, task, runs) -> tuple[dict, dict]:
     for k in draws:
         if k in task and k not in unpaired:
             variants.setdefault(task[k][0], set()).add(task[k][1])
+    whole = R.offered(task)
     single = sorted(k for k in draws if k in task and k not in unpaired
-                    and variants[task[k][0]] != set(history.VARIANTS))
+                    and variants[task[k][0]] != whole[task[k][0]])
     invalid = sorted({k for r in runs for k, v in ((r["receipt"] or {}).get("validation") or {}).items()
                       if v != "valid" and k in draws})
     never = sorted(k for k, d in draws.items() if any(fc in reasons.NEVER_RAN for x in d.values() for _, fc, _ in x))
@@ -196,10 +197,12 @@ def _side(units: dict, order, base, suite, task, *, effect, alpha, resamples, se
                 s, p = _rate(x, arm, ("symptom",)), _rate(x, arm, ("spec",))
                 bs, bp = _rate(x, base, ("symptom",)), _rate(x, base, ("spec",))
                 return None if None in (s, p, bs, bp) else (s - bs) - (p - bp)
+            # Only a task holding both variants can say whether the symptom gained more than the spec. #997.
+            both = [u for u in us if all(u[base][v][1] for v in history.VARIANTS)]
             a["symptom_gain_minus_spec_gain"] = {
-                **(_boot(us, gap, resamples=resamples, seed=seed) or {}),
+                **(_boot(both, gap, resamples=resamples, seed=seed) or {}), "tasks": len(both),
                 **_sign([(_task_rate(u, arm, ("symptom",)) - _task_rate(u, base, ("symptom",)))
-                         - (_task_rate(u, arm, ("spec",)) - _task_rate(u, base, ("spec",))) for u in us], alpha)}
+                         - (_task_rate(u, arm, ("spec",)) - _task_rate(u, base, ("spec",))) for u in both], alpha)}
         out["arms"][arm] = a
     return out
 
@@ -291,11 +294,6 @@ def plan(cases, runs=(), rows=(), *, baseline: str | None = None, effect: float 
     """Tasks x repeats needed per side to see `effect`, from a stored baseline's per-task rates or UNSEEN."""
     alpha = R._alpha()
     task = R.tasks_of(cases)
-    variants: dict = {}
-    for t, v in task.values():
-        variants.setdefault(t, set()).add(v)
-    # A task missing a variant is set aside by the report, so the plan does not count it.
-    task = {k: tv for k, tv in task.items() if variants[tv[0]] == set(history.VARIANTS)}
     by_task: dict = {t: [] for t, _ in task.values()}
     rho = None
     measured_from = ""
