@@ -34,12 +34,12 @@
   }
  ],
  "export_version": 4,
- "generated_at": "2026-10-19T20:31:15Z",
+ "generated_at": "2026-10-19T21:42:44Z",
  "lanes": [
   {
    "adopted": true,
    "adopted_how": "by-hand",
-   "age_days": 6.8,
+   "age_days": 6.85,
    "comparison": [
     {
      "about": "family unknown, unknown params, unknown, by mflux",
@@ -239,46 +239,48 @@
     {
      "about": "family unknown, 35B (3B active) params, Q4_K_M, by ornith-ai",
      "candidate": "llamacpp:Ornith-1.5-35B-Q4_K_M",
-     "first_s": 0.82,
-     "median_s": 6.445,
+     "first_s": 2.222,
+     "median_s": 5.299,
      "metrics": {
-      "code_pass": 0.7778,
-      "completion_tokens": 1606.5556,
-      "tokens_per_s": 114.4222
+      "code_pass": 0.8889,
+      "completion_tokens": 2915.3333,
+      "tokens_per_s": 133.0889
      },
      "model": "llamacpp:Ornith-1.5-35B-Q4_K_M",
      "not_run": "",
-     "pass_rate": 0.7,
-     "passed": 7,
+     "pass_rate": 0.8,
+     "passed": 16,
      "peak_gb": 0.0,
      "reference": false,
      "served_as": "",
      "source": "https://huggingface.co/ornith-ai/Ornith-1.5-35B-A3B-GGUF",
-     "total": 10,
-     "ttft_median_s": 4.396,
-     "ttft_p95_s": 77.958
+     "total": 20,
+     "ttft_median_s": 3.383,
+     "ttft_p95_s": 216.822
     },
     {
-     "about": "family Qwen/Qwen3.6-35B-A3B, 35B (3B active) params, Q4_K_M, by HauhauCS",
-     "candidate": "llamacpp:Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-Q4_K_M",
-     "first_s": 7.296,
-     "median_s": 26.448,
+     "about": "family LiquidAI/LFM2.5-350M, 350M params, Q4_K_M, by SupraLabs",
+     "candidate": "llamacpp:LiquidAI_LFM2.5-350M-Base_1781204855.Q4_K_M",
+     "first_s": 0.086,
+     "median_s": 0.291,
      "metrics": {
-      "code_pass": 0.7111,
-      "completion_tokens": 5850.3333,
-      "tokens_per_s": 117.2667
+      "code_pass": 0.0667,
+      "completion_tokens": 2809.6667,
+      "tail_entropy": 3.6787,
+      "tail_repeat": 0.986,
+      "tokens_per_s": 324.5333
      },
-     "model": "llamacpp:Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-Q4_K_M",
+     "model": "llamacpp:LiquidAI_LFM2.5-350M-Base_1781204855.Q4_K_M",
      "not_run": "",
-     "pass_rate": 0.667,
-     "passed": 6,
+     "pass_rate": 0.0,
+     "passed": 0,
      "peak_gb": 0.0,
      "reference": false,
      "served_as": "",
-     "source": "https://huggingface.co/HauhauCS/Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive",
-     "total": 9,
-     "ttft_median_s": 24.985,
-     "ttft_p95_s": 186.822
+     "source": "https://huggingface.co/SupraLabs/Supra-Title-350M-exp-GGUF",
+     "total": 12,
+     "ttft_median_s": 0.043,
+     "ttft_p95_s": 0.135
     }
    ],
    "exams": [
@@ -313,6 +315,29 @@
        "ttft_p95_s": null
       },
       {
+       "about": "family unknown, 35B (3B active) params, Q4_K_M, by ornith-ai",
+       "candidate": "llamacpp:Ornith-1.5-35B-Q4_K_M",
+       "first_s": 2.222,
+       "median_s": 5.299,
+       "metrics": {
+        "code_pass": 0.8889,
+        "completion_tokens": 2915.3333,
+        "tokens_per_s": 133.0889
+       },
+       "model": "llamacpp:Ornith-1.5-35B-Q4_K_M",
+       "not_run": "",
+       "pass_rate": 0.8,
+       "passed": 16,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-10-19T21:42:44Z",
+       "served_as": "",
+       "source": "https://huggingface.co/ornith-ai/Ornith-1.5-35B-A3B-GGUF",
+       "total": 20,
+       "ttft_median_s": 3.383,
+       "ttft_p95_s": 216.822
+      },
+      {
        "about": "family Qwen/Qwen2.5-Coder-3B, 3B params, unknown, by WeiboAI",
        "candidate": "WeiboAI/VibeThinker-3B",
        "first_s": 5.277,
@@ -334,29 +359,6 @@
        "total": 80,
        "ttft_median_s": 25.404,
        "ttft_p95_s": 252.226
-      },
-      {
-       "about": "family unknown, 35B (3B active) params, Q4_K_M, by ornith-ai",
-       "candidate": "llamacpp:Ornith-1.5-35B-Q4_K_M",
-       "first_s": 0.82,
-       "median_s": 6.445,
-       "metrics": {
-        "code_pass": 0.7778,
-        "completion_tokens": 1606.5556,
-        "tokens_per_s": 114.4222
-       },
-       "model": "llamacpp:Ornith-1.5-35B-Q4_K_M",
-       "not_run": "",
-       "pass_rate": 0.7,
-       "passed": 7,
-       "peak_gb": 0.0,
-       "reference": false,
-       "run_at": "2026-10-19T20:31:15Z",
-       "served_as": "",
-       "source": "https://huggingface.co/ornith-ai/Ornith-1.5-35B-A3B-GGUF",
-       "total": 10,
-       "ttft_median_s": 4.396,
-       "ttft_p95_s": 77.958
       },
       {
        "about": "family llama, 2B params, unknown, by openbmb",
@@ -385,22 +387,22 @@
        "about": "family Qwen/Qwen3.6-35B-A3B, 35B (3B active) params, Q4_K_M, by HauhauCS",
        "candidate": "llamacpp:Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-Q4_K_M",
        "first_s": 7.296,
-       "median_s": 26.448,
+       "median_s": 28.032,
        "metrics": {
-        "code_pass": 0.7111,
-        "completion_tokens": 5850.3333,
-        "tokens_per_s": 117.2667
+        "code_pass": 0.7636,
+        "completion_tokens": 7213.8182,
+        "tokens_per_s": 121.3909
        },
        "model": "llamacpp:Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-Q4_K_M",
        "not_run": "",
        "pass_rate": 0.667,
-       "passed": 6,
+       "passed": 8,
        "peak_gb": 0.0,
        "reference": false,
-       "run_at": "2026-10-19T20:31:15Z",
+       "run_at": "2026-10-19T21:26:53Z",
        "served_as": "",
        "source": "https://huggingface.co/HauhauCS/Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive",
-       "total": 9,
+       "total": 12,
        "ttft_median_s": 24.985,
        "ttft_p95_s": 186.822
       },
@@ -472,10 +474,35 @@
        "total": 33,
        "ttft_median_s": 2.443,
        "ttft_p95_s": 2.443
+      },
+      {
+       "about": "family LiquidAI/LFM2.5-350M, 350M params, Q4_K_M, by SupraLabs",
+       "candidate": "llamacpp:LiquidAI_LFM2.5-350M-Base_1781204855.Q4_K_M",
+       "first_s": 0.086,
+       "median_s": 0.291,
+       "metrics": {
+        "code_pass": 0.0667,
+        "completion_tokens": 2809.6667,
+        "tail_entropy": 3.6787,
+        "tail_repeat": 0.986,
+        "tokens_per_s": 324.5333
+       },
+       "model": "llamacpp:LiquidAI_LFM2.5-350M-Base_1781204855.Q4_K_M",
+       "not_run": "",
+       "pass_rate": 0.0,
+       "passed": 0,
+       "peak_gb": 0.0,
+       "reference": false,
+       "run_at": "2026-10-19T21:42:44Z",
+       "served_as": "",
+       "source": "https://huggingface.co/SupraLabs/Supra-Title-350M-exp-GGUF",
+       "total": 12,
+       "ttft_median_s": 0.043,
+       "ttft_p95_s": 0.135
       }
      ],
-     "run_at": "2026-10-19T20:31:15Z",
-     "runs": 7
+     "run_at": "2026-10-19T21:42:44Z",
+     "runs": 8
     },
     {
      "cases": 118,
@@ -1521,28 +1548,28 @@
     }
    ],
    "lane": "code",
-   "last_run_at": "2026-10-19T20:31:15Z",
-   "measured_at": "2026-10-19T20:31:15Z",
-   "median_s": 6.445,
+   "last_run_at": "2026-10-19T21:42:44Z",
+   "measured_at": "2026-10-19T21:42:44Z",
+   "median_s": 5.299,
    "metrics": {
-    "code_pass": 0.7778,
-    "completion_tokens": 1606.5556,
-    "tokens_per_s": 114.4222
+    "code_pass": 0.8889,
+    "completion_tokens": 2915.3333,
+    "tokens_per_s": 133.0889
    },
    "not_run": "",
    "parked": "",
    "parked_until": "",
-   "pass_rate": 0.7,
+   "pass_rate": 0.8,
    "real_use": {
-    "completion_tokens": 13359,
+    "completion_tokens": 13373,
     "error_rate": 0.0,
     "errors": 0,
     "gateway_error_rate": 0.0,
     "gateway_errors": 0,
     "invalid_calls": 0,
     "invalid_rate": null,
-    "prompt_tokens": 28610,
-    "requests": 303,
+    "prompt_tokens": 28729,
+    "requests": 310,
     "tool_calls": 0,
     "ttft_p50": 0.3103,
     "ttft_p95": 2.0342841148376465
@@ -1550,15 +1577,15 @@
    "serves": "llamacpp:Ornith-1.5-35B-Q4_K_M",
    "serves_model": "llamacpp:Ornith-1.5-35B-Q4_K_M; family unknown, 35B (3B active) params, Q4_K_M, by ornith-ai",
    "stale": false,
-   "ttft_median_s": 4.396,
-   "ttft_p95_s": 77.958,
+   "ttft_median_s": 3.383,
+   "ttft_p95_s": 216.822,
    "unverified": false,
    "wanted": true
   },
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 0.77,
+   "age_days": 0.82,
    "comparison": [
     {
      "about": "family unknown, 4B params, 4bit, by mlx-community",
@@ -1959,7 +1986,7 @@
   {
    "adopted": true,
    "adopted_how": "measured",
-   "age_days": 0.14,
+   "age_days": 0.19,
    "comparison": [
     {
      "about": "family unknown, 30B (3B active) params, 4bit, by mlx-community",
@@ -2426,7 +2453,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 6.8,
+   "age_days": 6.85,
    "comparison": [
     {
      "about": "family unknown, unknown params, unknown, by h3",
@@ -2544,7 +2571,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 5.05,
+   "age_days": 5.1,
    "comparison": [
     {
      "about": "family unknown, unknown params, unknown, by acestep",
@@ -2651,7 +2678,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 3.8,
+   "age_days": 3.85,
    "comparison": [
     {
      "about": "family unknown, 4B params, Q8_0, by mindchain",
@@ -3076,15 +3103,15 @@
    "parked_until": "",
    "pass_rate": 0.464,
    "real_use": {
-    "completion_tokens": 20872,
+    "completion_tokens": 20884,
     "error_rate": 0.0,
     "errors": 0,
     "gateway_error_rate": 0.0,
     "gateway_errors": 0,
     "invalid_calls": 0,
     "invalid_rate": null,
-    "prompt_tokens": 417400,
-    "requests": 726,
+    "prompt_tokens": 417433,
+    "requests": 727,
     "tool_calls": 0,
     "ttft_p50": null,
     "ttft_p95": null
@@ -3100,7 +3127,7 @@
   {
    "adopted": true,
    "adopted_how": "measured",
-   "age_days": 5.05,
+   "age_days": 5.1,
    "comparison": [
     {
      "about": "family unknown, 35B (3B active) params, Q4_K_M, by ornith-ai",
@@ -3292,15 +3319,15 @@
    "parked_until": "",
    "pass_rate": 1.0,
    "real_use": {
-    "completion_tokens": 24259,
+    "completion_tokens": 24273,
     "error_rate": 0.0,
     "errors": 0,
     "gateway_error_rate": 0.0,
     "gateway_errors": 0,
     "invalid_calls": 0,
     "invalid_rate": 0.0,
-    "prompt_tokens": 422022,
-    "requests": 379,
+    "prompt_tokens": 422141,
+    "requests": 386,
     "tool_calls": 31,
     "ttft_p50": 0.1533501148223877,
     "ttft_p95": 0.4350011348724365
@@ -3316,7 +3343,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 4.81,
+   "age_days": 4.86,
    "comparison": [
     {
      "about": "family unknown, unknown params, unknown, by osocr",
@@ -3445,7 +3472,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 4.81,
+   "age_days": 4.86,
    "comparison": [
     {
      "about": "family unknown, unknown params, unknown, by bm25",
@@ -3579,7 +3606,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 4.81,
+   "age_days": 4.86,
    "comparison": [
     {
      "about": "family unknown, unknown params, unknown, by pii-regex",
@@ -3718,7 +3745,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 6.87,
+   "age_days": 6.92,
    "comparison": [
     {
      "about": "family unknown, 7B params, Q4_K_M, by bartowski",
@@ -4035,7 +4062,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 0.63,
+   "age_days": 0.67,
    "comparison": [
     {
      "about": "family unknown, 4B params, 4bit, by mlx-community",
@@ -4460,7 +4487,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 11.81,
+   "age_days": 11.86,
    "comparison": [
     {
      "about": "family unknown, 7B params, 4bit, by mlx-community",
@@ -4721,15 +4748,15 @@
    "parked_until": "",
    "pass_rate": null,
    "real_use": {
-    "completion_tokens": 1002,
+    "completion_tokens": 1004,
     "error_rate": 0.0,
     "errors": 0,
     "gateway_error_rate": 0.0,
     "gateway_errors": 0,
     "invalid_calls": 0,
     "invalid_rate": null,
-    "prompt_tokens": 6303,
-    "requests": 20,
+    "prompt_tokens": 6337,
+    "requests": 21,
     "tool_calls": 0,
     "ttft_p50": null,
     "ttft_p95": null
@@ -4745,7 +4772,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 0.2,
+   "age_days": 0.25,
    "comparison": [
     {
      "about": "family unknown, 0.6B params, unknown, by unknown",
@@ -4924,7 +4951,7 @@
   {
    "adopted": false,
    "adopted_how": "",
-   "age_days": 11.35,
+   "age_days": 11.4,
    "comparison": [
     {
      "about": "family unknown, 82M params, bf16, by Kokoro-82M-bf16",
@@ -5088,7 +5115,7 @@
   "first_seen": "2026-10-05T19:28:52Z",
   "hw_model": "Mac17,15",
   "label": "Mac Studio M5 Ultra 96 GB",
-  "last_seen": "2026-10-19T20:31:15Z",
+  "last_seen": "2026-10-19T21:42:44Z",
   "memory_gb": 96.0,
   "os": "macOS 27.0.1",
   "runtimes": [
@@ -5271,7 +5298,7 @@
       "2026-10-16": 323844.0,
       "2026-10-17": 1156259.0,
       "2026-10-18": 286565.0,
-      "2026-10-19": 726584.0
+      "2026-10-19": 727437.0
      },
      "Read": {
       "2026-07-25": 88284.0,
@@ -5530,7 +5557,7 @@
       "2026-10-16": 16269.0,
       "2026-10-17": 29633.0,
       "2026-10-18": 12460.0,
-      "2026-10-19": 15794.0
+      "2026-10-19": 15996.0
      }
     },
     "title": "Tool-result tokens into Claude's context",
