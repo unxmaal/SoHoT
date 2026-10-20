@@ -228,10 +228,10 @@ def _report_revisit(a) -> int:
               f"{(r['detail'] or '')[:70]}")
         print(f"           waiting on {r['until']}, which this machine meets")
     if getattr(a, "requeue", False):
-        print(f"\nre-queued {len(rows)} for the inspect tier.")
+        print(f"\nre-queued {len(rows)}: a cases or limit decline past its screen to measure, the rest to inspect.")
     else:
-        print("\n--requeue sends them back to inspect: a verdict is never "
-              "deleted.")
+        print("\n--requeue reopens a cases or limit decline past its screen to measure and the rest to inspect: "
+              "a verdict is never deleted.")
     return 0
 
 

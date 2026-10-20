@@ -84,7 +84,8 @@ MODULES = {
 # thread segfaults a forked worker). A new importer goes in one or the other (#840).
 LEFT_OUT = {
     "harness/memory_store/transitions.py": ("test_blame_audit.py", "test_live_audit.py", "test_lane_too_small_1049.py",
-                                            "test_lane_until_1053.py", "test_loop_revisit_1055.py"),
+                                            "test_lane_until_1053.py", "test_loop_revisit_1055.py",
+                                            "test_revisit_tier_1060.py"),
     "harness/reasons.py": (
         "test_adopt_retest_1001.py", "test_attachment_tags_949.py", "test_canary_919.py",
         "test_chaos.py", "test_claims_lane.py", "test_gateway_key.py", "test_harness_checks_ocr.py",
@@ -96,7 +97,7 @@ LEFT_OUT = {
         "test_planted_919.py", "test_trajectory_921.py", "test_unranked_weight_954.py", "test_inventory_heartbeat_972.py",
         "test_silent_truncation.py", "test_slots_memory.py", "test_store_downloads.py",
         "test_trocr_tokenizer_1025.py", "test_fetch_files_1040.py", "test_lane_too_small_1049.py",
-        "test_lane_until_1053.py", "test_loop_revisit_1055.py"),
+        "test_lane_until_1053.py", "test_loop_revisit_1055.py", "test_revisit_tier_1060.py"),
     "harness/screen.py": (
         "test_attachment_tags_949.py", "test_lane_too_small_1049.py",
         "test_variants_947.py", "test_chaos.py", "test_claims_balanced_metric.py", "test_harness_engines_repo_id.py",

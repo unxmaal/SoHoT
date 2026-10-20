@@ -41,7 +41,7 @@ def _state(conn, name):
                               "JOIN verdicts v ON v.id = p.state_verdict_id WHERE p.name = ?", (name,)).fetchone())
 
 
-def test_one_loop_discover_step_reopens_a_met_cases_until_to_inspect(grown, capsys):
+def test_one_loop_discover_step_reopens_a_met_cases_until_to_the_measure_queue(grown, capsys):
     conn = ms.connect()
     _declined(conn, "OmniSVG/OmniSVG1.1_4B", SVG)
     conn.close()
@@ -51,7 +51,7 @@ def test_one_loop_discover_step_reopens_a_met_cases_until_to_inspect(grown, caps
     assert "OmniSVG/OmniSVG1.1_4B  (cases:svg>3)" in capsys.readouterr().out
     conn = ms.connect()
     try:
-        assert _state(conn, "OmniSVG/OmniSVG1.1_4B") == ("queued", ms.INSPECT, "")
+        assert _state(conn, "OmniSVG/OmniSVG1.1_4B") == ("screened", ms.SCREEN, "")
     finally:
         conn.close()
     assert heartbeat.marked(heartbeat.REOPENED_REVISITABLE) is not None

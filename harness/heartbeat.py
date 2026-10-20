@@ -86,8 +86,10 @@ REOPENED_UNRANKED = "reopened_unranked_954"
 REWROTE_RUNNER_GAPS = "rewrote_runner_gaps_950"
 #: When a loop last requeued the refusals whose until this machine meets. #1055.
 REOPENED_REVISITABLE = "reopened_revisitable_1055"
+#: When a loop last moved past-screen reopens from inspect to the measure queue. #1060.
+MOVED_PAST_SCREEN = "moved_past_screen_1060"
 KEPT = (REOPENED_TOO_BIG, REDERIVED_ATTACHMENTS, REQUEUED_OLD_SIZING, REOPENED_UNRANKED, REWROTE_RUNNER_GAPS,
-        REOPENED_REVISITABLE)
+        REOPENED_REVISITABLE, MOVED_PAST_SCREEN)
 
 
 def code_commit(repo: Path | None = None) -> str:
