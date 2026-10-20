@@ -78,7 +78,7 @@ def rows(lane: str, store=None) -> list[dict]:
     finally:
         conn.close()
     for receipt in sorted(root.glob("**/results.json")):
-        rel = str(receipt.parent.relative_to(root))
+        rel = receipt.parent.relative_to(root).as_posix()
         if rel in known or str(receipt.parent) in known:
             continue
         try:

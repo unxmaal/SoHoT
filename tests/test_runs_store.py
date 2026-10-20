@@ -217,6 +217,16 @@ def test_the_backfill_records_what_it_can_and_names_what_it_cannot(conn):
     assert run["generated_at"] is not None and run["machine_id"]
 
 
+def test_the_backfill_names_a_nested_receipt_it_cannot_record_by_posix_path(conn, windows_relative_paths):
+    """#1079: str() of a relative path is a\\b on Windows."""
+    (paths.runs() / "a" / "b").mkdir(parents=True)
+    (paths.runs() / "a" / "b" / "results.json").write_text("{", encoding="utf-8")
+    (paths.runs() / "a" / "c").mkdir(parents=True)
+    (paths.runs() / "a" / "c" / "results.json").write_text(json.dumps({"rows": [{"id": 1}]}), encoding="utf-8")
+    got = runs.backfill(conn)
+    assert (got["unreadable"], got["not_eval_receipts"]) == (["a/b"], ["a/c"])
+
+
 def test_the_backfill_is_idempotent(conn):
     _seed_dir()
     first = runs.backfill(conn)

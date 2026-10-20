@@ -105,13 +105,12 @@ def test_no_test_runs_a_bare_shell_name():
     assert not offenders, "a bare shell name in a subprocess argv:\n  " + "\n  ".join(offenders)
 
 
-def test_no_test_spells_a_relative_path_with_native_separators():
-    """#1077: f.relative_to(REPO).as_posix() is harness\\x.py on Windows, so a posix-spelled expected set never matches."""
+def test_no_source_spells_a_relative_path_with_native_separators():
+    """#1077, #1079: str(f.relative_to(root)) is a\\b on Windows, so it never matches a posix-spelled key."""
     offenders = []
     for path in _sources():
         rel = path.relative_to(REPO).as_posix()
-        if rel.startswith("tests/"):
-            offenders += scanners.native_relpaths(path.read_text(encoding="utf-8"), rel)
+        offenders += scanners.native_relpaths(path.read_text(encoding="utf-8"), rel)
     assert not offenders, "a relative path spelled with native separators:\n  " + "\n  ".join(offenders)
 
 

@@ -1,7 +1,9 @@
 """#769: the batch lock lives with the serving machine, carried by an x-sohot-batch header."""
 import asyncio
+import contextlib
 import importlib.util
 import os
+import queue
 import subprocess
 import sys
 import threading
@@ -87,40 +89,57 @@ def test_a_request_with_no_batch_is_never_refused_for_one():
 _IMAGE_JOB = """
 import sys, time
 from harness import exclusive
-start = time.monotonic()
-with exclusive.held("image", poll=0.05):
-    print(round(time.monotonic() - start, 2), flush=True)
+time.sleep(float(sys.argv[1]))
+with exclusive.held("image", announce=lambda s: print("waiting", flush=True), poll=0.05) as waited:
+    print("waited" if waited else "entered", flush=True)
 """
+#: A bound on a hung job, never the test's verdict: the verdict is what the job says it did. #1080.
+_HUNG_S = 120
 
 
-def _image_job_waits_s() -> float:
+@contextlib.contextmanager
+def _image_job(delay: float = 0.0):
+    """Start this machine's image job; yields next() for its next report: waiting, entered or waited."""
     env = {k: v for k, v in os.environ.items() if k not in (exclusive.HELD_ENV, "SOHOT_BATCH")}
     env.pop(completion.GATEWAY_ENV, None)
-    proc = subprocess.run([sys.executable, "-c", _IMAGE_JOB], cwd=REPO, env=env,
-                          capture_output=True, text=True, timeout=60)
-    assert proc.returncode == 0, proc.stderr
-    return float(proc.stdout.strip())
+    proc = subprocess.Popen([sys.executable, "-c", _IMAGE_JOB, str(delay)], cwd=REPO, env=env,
+                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8")
+    lines, other = queue.Queue(), []
+    threading.Thread(target=lambda: [lines.put(ln.strip()) for ln in proc.stdout] + [lines.put(None)],
+                     daemon=True).start()
 
+    def next_report() -> str | None:
+        while (got := lines.get(timeout=_HUNG_S)) not in ("waiting", "entered", "waited", None):
+            other.append(got)
+        assert got is not None, f"the image job exited {proc.wait()} without a report: {other}"
+        return got
 
-def _blocked(seconds: float) -> bool:
-    def run():
-        out["s"] = _image_job_waits_s()
-    out = {}
-    t = threading.Thread(target=run, daemon=True)
-    t.start()
-    t.join(timeout=seconds)
-    return t.is_alive()
+    try:
+        yield next_report
+        assert proc.wait(timeout=_HUNG_S) == 0, other
+    finally:
+        if proc.poll() is None:
+            proc.kill()
+            proc.wait()
 
 
 def test_a_remote_eval_does_not_block_this_machines_image_job(monkeypatch):
     monkeypatch.setenv(completion.GATEWAY_ENV, REMOTE)
     with exclusive.held("eval"):
-        assert not _blocked(20.0)
+        with _image_job() as report:
+            assert report() == "entered"
 
 
 def test_a_local_eval_still_blocks_this_machines_image_job():
-    with exclusive.held("eval"):
-        assert _blocked(3.0)
+    with contextlib.ExitStack() as eval_:
+        eval_.enter_context(exclusive.held("eval"))
+        with _image_job() as report:
+            assert report() == "waiting"
+            eval_.close()
+            got = report()
+            while got == "waiting":
+                got = report()
+            assert got == "waited"
 
 
 @respx.mock

@@ -525,14 +525,14 @@ def backfill(conn, root=None) -> dict:
         try:
             data = json.loads(f.read_text(encoding="utf-8"))
         except (OSError, ValueError):
-            counts["unreadable"].append(str(f.parent.relative_to(root)))
+            counts["unreadable"].append(f.parent.relative_to(root).as_posix())
             continue
         loaded.append((f, data if isinstance(data, dict) else {}))
     _seed_typed(conn, _unspecified_keys(data for _, data in loaded))
     for f, data in loaded:
         run_id = record(conn, f.parent, data)
         if run_id is None:
-            counts["not_eval_receipts"].append(str(f.parent.relative_to(root)))
+            counts["not_eval_receipts"].append(f.parent.relative_to(root).as_posix())
             continue
         counts["runs"] += 1
     if root.is_dir():
