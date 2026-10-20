@@ -193,7 +193,7 @@ def decide(lane: str, incumbent: dict, challenger: dict,
     if worse:
         got = Verdict(lane, name_i, name_c, False, f"{got.why}; {worse}")
     elif not got.adopt and plan is not None and rows:
-        got = _lane_too_small(lane, name_i, name_c, got, plan, split, spec) or _null(lane, name_i, name_c, got, plan)
+        got = _lane_too_small(lane, name_i, name_c, got, plan, split) or _null(lane, name_i, name_c, got, plan)
     # A method's calls and latency travel with its verdict, won or lost. #576.
     from harness import methods
     cost = methods.cost_note(incumbent, challenger, spec) if spec else ""
@@ -204,7 +204,7 @@ def decide(lane: str, incumbent: dict, challenger: dict,
                    got.failure_class, evidence, until=got.until)
 
 
-def _lane_too_small(lane, name_i, name_c, got: Verdict, plan, split, spec: str) -> Verdict | None:
+def _lane_too_small(lane, name_i, name_c, got: Verdict, plan, split) -> Verdict | None:
     """A null on a lane no repeat could power is a fact about the lane, waiting on its cases, for a model or a method. #993, #1049."""
     from harness import reasons
     limit = lane_limit(lane, plan.as_dict(), name_c)
@@ -267,7 +267,7 @@ def more_cases(cases: int, need) -> int:
     from harness import holdout
     if need is None or int(need) <= int(cases or 0):
         return 1
-    return max(1, math.ceil((int(need) - int(cases or 0)) / holdout.FRACTION))
+    return math.ceil((int(need) - int(cases or 0)) / holdout.FRACTION)
 
 
 def cases_until(lane: str, have: int, more: int = 1) -> str:

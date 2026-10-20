@@ -147,3 +147,11 @@ def test_a_held_package_until_the_venv_already_has_is_not_unreachable(store, mon
     _decline(store, "b/pipe", "package:opencv-python@diffusers-cuda", reasons.MISSING_PACKAGE, "x", "diffusers:b/pipe")
     monkeypatch.setattr(runner_gaps, "has_package", lambda dist, venv="": dist == "opencv-python")
     assert live_audit.unreachable_packages(store) == []
+
+
+def test_a_whisper_repo_known_only_by_its_card_screens_through_the_whisper_runner(home, monkeypatch):
+    monkeypatch.setattr(sys, "platform", "darwin")
+    name = "someone/large-v3-turbo"
+    card = {"library_name": "mlx", "model_type": "whisper"}
+    assert screen.candidate_for("stt", name, card=card) == f"stt:{name},backend=whisper"
+    assert screen.candidate_for("stt", name) == f"stt:{name}"

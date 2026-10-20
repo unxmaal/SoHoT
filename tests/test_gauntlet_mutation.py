@@ -281,8 +281,10 @@ def test_the_committed_pin_is_well_formed():
         assert all(k.startswith(dotted + ":") for k in keys), module
 
 
-def _fake_run(monkeypatch, tmp_path, results):
-    def run_module(tree, module, pyproject, log):
+def _fake_run(monkeypatch, tmp_path, results, seen=None):
+    seen = [] if seen is None else seen
+    def run_module(tree, module, pyproject, log, functions=(), jobs=None):
+        seen.append((module, tuple(functions), jobs))
         if isinstance(results[module], Exception):
             raise results[module]
         return results[module]
@@ -347,3 +349,57 @@ def test_a_found_file_naming_a_module_that_is_not_mutated_is_refused(monkeypatch
     with pytest.raises(SystemExit, match="harness/nope.py"):
         mutation.main(["pin", "--from", str(found)])
     assert not mutation.PIN_FILE.exists()
+
+
+def test_a_function_run_mutates_only_that_functions_mutants(monkeypatch, tmp_path):
+    """#1071: a daytime run on a shared machine mutates the functions under test, never a whole module."""
+    import fnmatch
+    rel = "harness/thing.py"
+    pats = mutation.globs(rel, ["pick", "Box.open"])
+    match = [n for n in ("harness.thing.x_pick__mutmut_1", "harness.thing.x_pick_more__mutmut_1",
+                         "harness.thing.xǁBoxǁopen__mutmut_2", "harness.other.x_pick__mutmut_1")
+             if any(fnmatch.fnmatch(n, p) for p in pats)]
+    assert match == ["harness.thing.x_pick__mutmut_1", "harness.thing.xǁBoxǁopen__mutmut_2"]
+    calls = []
+
+    def fake(tree, env, log, names, **kw):
+        calls.append((list(names), kw))
+        base = tree / "mutants" / "harness/reasons.py"
+        base.parent.mkdir(parents=True, exist_ok=True)
+        base.write_text(MUTATED, encoding="utf-8")
+        Path(f"{base}.meta").write_text(json.dumps({"exit_code_by_key": {
+            "harness.thing.x_pick__mutmut_1": 0, "harness.thing.xǁBoxǁopen__mutmut_1": None}}), encoding="utf-8")
+    monkeypatch.setattr(mutation, "_mutmut", fake)
+    got = mutation.run_module(tmp_path, "harness/reasons.py", "", None, ("pick",), 3)
+    assert got == ["harness.thing:pick:x '>'->'>='"]
+    assert calls == [(["harness.reasons.x_pick__mutmut_*"], {"jobs": 3})]
+
+
+def test_a_function_run_ratchets_and_pins_only_that_functions_keys(monkeypatch, tmp_path, capsys):
+    b, seen = "harness/router.py", []
+    _fake_run(monkeypatch, tmp_path, {b: ["harness.router:f:k1", "harness.router:f:new"]}, seen)
+    mutation.PIN_FILE.write_text(json.dumps({b: ["harness.router:f:k1", "harness.router:g:other"]}),
+                                 encoding="utf-8")
+    run = ["run", "--module", b, "--function", "f", "--jobs", "2", "--workdir", str(tmp_path / "w")]
+    assert mutation.main(run) == 1
+    assert seen[-1] == (b, ("f",), 2)
+    out = capsys.readouterr().out
+    assert "harness.router:f:new" in out and "harness.router:g:other" not in out
+    assert mutation.main([*run, "--pin"]) == 0
+    assert json.loads(mutation.PIN_FILE.read_text(encoding="utf-8")) == {
+        b: ["harness.router:f:k1", "harness.router:f:new", "harness.router:g:other"]}
+    assert mutation.main(run) == 0
+    for bad in (["--module", b, "--module", "harness/reasons.py"], ["--module", b, "--found", str(tmp_path / "f")]):
+        with pytest.raises(SystemExit, match="--function"):
+            mutation.main(["run", *bad, "--function", "f", "--workdir", str(tmp_path / "w")])
+
+
+def test_a_jobs_cap_reaches_mutmut_and_no_cap_leaves_it_one_worker_per_cpu(monkeypatch, tmp_path):
+    import subprocess
+    seen = []
+    monkeypatch.setattr(mutation.subprocess, "run",
+                        lambda argv, **kw: seen.append(argv) or subprocess.CompletedProcess(argv, 0))
+    mutation._mutmut(tmp_path, {}, None, ["m.x_f__mutmut_*"], jobs=3)
+    mutation._mutmut(tmp_path, {}, None, [])
+    assert seen[0][-4:] == ["run", "--max-children", "3", "m.x_f__mutmut_*"]
+    assert seen[1][-1] == "run"

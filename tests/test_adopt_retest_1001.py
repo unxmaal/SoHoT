@@ -192,3 +192,12 @@ def test_the_repair_is_read_only_through_soh_coherence_without_apply(tmp_path, l
         assert len(live_audit._terminal_reason_coherent(ro)[0]) == 3
     finally:
         ro.close()
+
+
+def test_a_plan_that_names_no_holdout_size_counts_its_need_from_none(store, lane_cases):
+    _retested_once(store)
+    v = _underpowered(need=6)
+    del v.evidence["power"]["cases"]
+    adopt.record(store, v, spec="org/m")
+    assert _held(store, "org/m")["until"] == f"cases:code>{LANE_CASES + 20 - 1}"
+

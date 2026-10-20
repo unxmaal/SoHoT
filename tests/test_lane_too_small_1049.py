@@ -172,3 +172,105 @@ def test_a_lane_that_grew_since_the_plan_is_reopened_by_its_until(monkeypatch, t
         assert ms.revisitable(conn, {"cases": {"svg": 13}}), "planned on 3 cases, the lane now has 13"
     finally:
         conn.close()
+
+
+# --- the limit and its until, exactly -----------------------------------------------
+
+SHORT = {"cases": 10, "cases_needed": 40, "effect": 0.2, "cap": 16, "power": 0.3, "target": 0.8}
+
+
+def test_a_holdout_short_of_its_need_says_how_many_more_cases_and_for_whom():
+    assert adopt.lane_limit("svg", SHORT, "org/m") == (100, (
+        "lane too small, needs 40 holdout cases: 10 cannot show +0.20 per cell at power 0.8 at any repeat "
+        "up to 16, so about 100 more svg cases are needed before a null says anything about org/m"))
+    assert adopt.lane_limit("svg", SHORT)[1].endswith("says anything about a challenger")
+    bare = adopt.lane_limit("svg", {"cases_needed": 3, "power": 0.1})
+    assert bare[1].startswith("lane too small, needs 3 holdout cases: 0 cannot show +0.00 per cell")
+
+
+@pytest.mark.parametrize("plan", [
+    {**SHORT, "power": 0.8}, {**SHORT, "power": 0.9}, {**SHORT, "target": 0.3, "power": 0.3},
+    {**SHORT, "unmeasured": True}, {**SHORT, "unmeasured": True, "power": 0.0},
+    {**SHORT, "cases_needed": 10}, {**SHORT, "cases_needed": None},
+    {"cases": 3, "odds": [0.1, 0.0]}, {"cases": 3, "max_power": 0.01}])
+def test_a_plan_with_power_left_at_some_repeat_is_no_lane_limit(plan):
+    assert adopt.lane_limit("svg", plan, "org/m") is None
+
+
+def test_a_target_the_plan_names_is_the_one_its_message_quotes():
+    assert "at power 0.5 at any repeat" in adopt.lane_limit("svg", {**SHORT, "target": 0.5, "power": 0.4})[1]
+
+
+@pytest.mark.parametrize("odds", [[0.0, 0.3], [0.0, 0.0], [-0.1, 0.2]])
+def test_an_incumbent_passing_every_case_is_a_limit_one_case_away(odds):
+    assert adopt.lane_limit("svg", {"cases": 3, "odds": odds, "power": 0.0, "cap": 16}) == (
+        1, "lane too small, needs cases the incumbent fails: it passes all 3 holdout cases, "
+           "so no challenger can show a gain on them")
+
+
+@pytest.mark.parametrize("max_power", [0.0, -0.0])
+def test_a_plan_at_power_0_at_the_largest_effect_is_a_limit_one_case_away(max_power):
+    assert adopt.lane_limit("svg", {"cases": 3, "max_power": max_power, "power": 0.0, "cap": 16}) == (
+        1, "lane too small: 3 holdout cases give power 0 even at +1.00 per cell at every repeat up to 16")
+
+
+@pytest.mark.parametrize("cases,need,more", [
+    (10, 40, 100), (None, 10, 34), (0, 10, 34), (10, 20, 34), (10, 11, 4), (None, 1, 4),
+    (10, 10, 1), (10, 5, 1), (10, None, 1)])
+def test_the_cases_a_lane_needs_scale_by_the_holdout_fraction(cases, need, more):
+    assert adopt.more_cases(cases, need) == more
+
+
+def test_a_lane_until_waits_on_one_more_case_unless_told_more():
+    assert adopt.cases_until("svg", 3) == "cases:svg>3"
+    assert adopt.cases_until("svg", 3, 5) == "cases:svg>7"
+
+
+def _sized(monkeypatch, sizes):
+    def for_lane(lane, *a, **k):
+        n = sizes[lane]
+        return holdout.Split(lane, tuple(f"d{i}" for i in range(n)), tuple(f"h{i}" for i in range(n)), False)
+    monkeypatch.setattr(holdout, "for_lane", for_lane)
+
+
+def test_the_cases_a_lane_has_are_its_own_split_s_else_the_plan_s(monkeypatch):
+    _sized(monkeypatch, {"svg": 4, "code": 9})
+    assert adopt._have("svg", None, 99) == 8
+    assert adopt._have("code", None, 99) == 18
+    assert adopt._have("svg", holdout.Split("svg", ("a",), ("a", "b"), False), 99) == 2
+    assert adopt._have("svg", holdout.Split("svg", (), (), False), 7) == 7
+
+
+SHORT_PLAN = power.plan([0.6] * 5, 0.2, stochastic=False, observed=5, rho=1.0)
+EXTRACT = holdout.Split("extract", ("d1", "d2", "d3"), ("h1", "h2", "h3", "h4", "h5"), False)
+NEEDS = ("lane too small, needs 91 holdout cases: 5 cannot show +0.20 per cell at power 0.8 at any repeat up to 16, "
+         "so about 287 more extract cases are needed before a null says anything about ch")
+
+
+def _decided(split):
+    rows = [r for c in EXTRACT.holdout for r in ({"candidate": "inc", "case_id": c, "passed": True, "seconds": 1.0},
+                                                 {"candidate": "ch", "case_id": c, "passed": True, "seconds": 1.0})]
+    summary = {"pass_rate": 1.0, "median_s": 1.0, "metrics": {}}
+    return adopt.decide("extract", {**summary, "candidate": "inc"}, {**summary, "candidate": "ch"}, rows,
+                        split=split, plan=SHORT_PLAN, spec="org/model")
+
+
+def test_a_null_on_a_too_small_lane_names_both_sides_and_waits_on_that_lane(monkeypatch):
+    _sized(monkeypatch, {"extract": 0})
+    for split, until in ((EXTRACT, "cases:extract>294"), (None, "cases:extract>291")):
+        got = _decided(split)
+        assert (got.lane, got.incumbent, got.challenger, got.adopt) == ("extract", "inc", "ch", False)
+        assert (got.failure_class, got.until) == (reasons.LANE_TOO_SMALL, until)
+        assert got.why.startswith(f"{NEEDS} (") and "no gain up to +1.00 is detectable at power 0.8" in got.why
+
+
+def test_a_plan_no_run_can_decide_is_a_verdict_written_without_running_it(monkeypatch):
+    _sized(monkeypatch, {"extract": 0})
+    why = f"{NEEDS}; not run: power 0.00 at +1.00 per cell, so no run of this holdout can decide"
+    assert adopt.undecidable("extract", "inc", "ch", SHORT_PLAN, EXTRACT) == adopt.Verdict(
+        "extract", "inc", "ch", False, why, failure_class=reasons.LANE_TOO_SMALL,
+        evidence={"power": SHORT_PLAN.as_dict(), "split": EXTRACT.as_dict()}, until="cases:extract>294")
+    assert adopt.undecidable("extract", "inc", "ch", SHORT_PLAN) == adopt.Verdict(
+        "extract", "inc", "ch", False, why, failure_class=reasons.LANE_TOO_SMALL,
+        evidence={"power": SHORT_PLAN.as_dict()}, until="cases:extract>291")
+    assert adopt.undecidable("extract", "inc", "ch", dataclasses.replace(SHORT_PLAN, max_power=0.1)) is None

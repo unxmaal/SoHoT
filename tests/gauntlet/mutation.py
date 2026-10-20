@@ -1,6 +1,7 @@
 """Nightly mutation testing of the core modules, ratcheted against a pinned inventory (#492 F3).
 
 python -m tests.gauntlet.mutation run [--module M ...] [--pin] [--workdir DIR] [--found FILE]
+python -m tests.gauntlet.mutation run --module M --function F [--function G ...] [--jobs N] [--pin]
 python -m tests.gauntlet.mutation pin --from FILE [FILE ...]
 """
 
@@ -56,7 +57,8 @@ MODULES = {
         "tests/test_ocr_lane.py", "tests/test_degenerate_955.py", "tests/test_load_log_953.py",
         "tests/test_screen_listing_984.py", "tests/test_missing_package_1008.py", "tests/test_diffusers_dtype_1013.py",
         "tests/test_live_screen_blame_1021.py", "tests/test_whisper_group_1024.py",
-        "tests/test_requires_backends_1031.py", "tests/test_audio_env_1030.py", "tests/test_tts_drop_1036.py", "tests/test_drafters_1039.py", "tests/test_plan_refusal_1047.py"],
+        "tests/test_requires_backends_1031.py", "tests/test_audio_env_1030.py", "tests/test_tts_drop_1036.py", "tests/test_drafters_1039.py", "tests/test_plan_refusal_1047.py",
+        "tests/test_stt_screen_power_1007.py"],
     "harness/adopt.py": [
         "tests/test_adopt_retest_1001.py", "tests/test_harness_adopt.py", "tests/test_harness_adopt_receipt.py", "tests/test_adopt_by_spec.py",
         "tests/test_adoptions.py", "tests/test_adopt_cmd.py", "tests/test_human_verdicts.py",
@@ -104,7 +106,7 @@ LEFT_OUT = {
         "test_harness_report.py", "test_incumbent_lookup.py", "test_lane_metric_validity.py", "test_loop_backpressure.py",
         "test_canary_919.py", "test_mps_backend_abort.py", "test_new_lane_loop_faults.py", "test_rank_881.py",
         "test_remote_upstreams.py", "test_router_unload.py", "test_slots_memory.py", "test_store_card_facts.py",
-        "test_store_state.py", "test_until_keys_928.py", "test_stt_screen_power_1007.py", "test_fetch_files_1040.py"),
+        "test_store_state.py", "test_until_keys_928.py", "test_fetch_files_1040.py"),
     "harness/adopt.py": (
         "test_harness_paired.py", "test_harness_report.py", "test_loop_circuit.py", "test_measure_budget.py",
         "test_over_budget_796.py", "test_planted_919.py", "test_projection_696.py", "test_rank_893.py", "test_router_unload.py",
@@ -211,6 +213,29 @@ def kind(orig, mutant):
     return "; ".join(pieces) or "identical"
 
 
+def shown(key):
+    """The function a survivor key names, `Cls.fn` for a method."""
+    return key.split(":", 2)[1]
+
+
+def globs(module, functions):
+    """mutmut name patterns for these functions' mutants, so a daytime run mutates a few functions, not a module."""
+    dotted = module[:-3].replace("/", ".")
+    out = []
+    for f in functions:
+        cls, _, fn = f.rpartition(".")
+        out.append(f"{dotted}.x{SEP}{cls}{SEP}{fn}__mutmut_*" if cls else f"{dotted}.x_{fn}__mutmut_*")
+    return out
+
+
+def within(meta, functions):
+    """The meta cut to these functions' mutants; mutmut leaves the rest unrun."""
+    if not functions:
+        return meta
+    return {**meta, "exit_code_by_key": {k: v for k, v in meta["exit_code_by_key"].items()
+                                         if _split(k)[2] in functions}}
+
+
 def unsettled(meta):
     return sorted(k for k, v in meta["exit_code_by_key"].items() if v in UNSETTLED)
 
@@ -276,8 +301,9 @@ def _paths(tree, module):
     return base, Path(f"{base}.meta")
 
 
-def _mutmut(tree, env, log, names):
-    r = subprocess.run(["uv", "run", "--python", "3.12", *MUTMUT_GROUPS, "mutmut", "run", *names],
+def _mutmut(tree, env, log, names, jobs=None):
+    cap = ["--max-children", str(jobs)] if jobs else []
+    r = subprocess.run(["uv", "run", "--python", "3.12", *MUTMUT_GROUPS, "mutmut", "run", *cap, *names],
                        cwd=tree, env=env, stdout=log, stderr=subprocess.STDOUT, check=False)
     if r.returncode != 0:
         raise BrokenRun(f"mutmut exited {r.returncode}")
@@ -304,7 +330,7 @@ def _baseline(tree, env, module):
                     + "\n  ".join(failed or (r.stdout + r.stderr).splitlines()[-20:]))
 
 
-def run_module(tree, module, pyproject, log):
+def run_module(tree, module, pyproject, log, functions=(), jobs=None):
     (tree / "pyproject.toml").write_text(pyproject + config(module), encoding="utf-8")
     shutil.rmtree(tree / "mutants", ignore_errors=True)
     # no_proxy: urllib's macOS proxy lookup reads CFPreferences, which segfaults a forked worker (#840).
@@ -317,13 +343,13 @@ def run_module(tree, module, pyproject, log):
     except BrokenRun as e:
         raise BrokenRun(f"{module}: {e}") from None
     base, meta_path = _paths(tree, module)
-    names = []
+    names = globs(module, functions)
     for _ in range(1 + RETRIES):
         try:
-            _mutmut(tree, env, log, names)
+            _mutmut(tree, env, log, names, **({"jobs": jobs} if jobs else {}))
         except BrokenRun as e:
             raise BrokenRun(f"{module}: {e}") from None
-        meta = json.loads(meta_path.read_text(encoding="utf-8"))
+        meta = within(json.loads(meta_path.read_text(encoding="utf-8")), functions)
         names = unsettled(meta)
         if not names:
             break
@@ -341,6 +367,9 @@ def write_pin(pin):
 
 def cmd_run(a):
     modules = a.module or list(MODULES)
+    functions = tuple(a.function or ())
+    if functions and (len(modules) != 1 or a.found):
+        raise SystemExit("--function takes exactly one --module and no --found")
     workdir = Path(a.workdir) if a.workdir else Path(tempfile.mkdtemp(prefix="mutation-"))
     tree = workdir / "tree"
     tree.mkdir(parents=True, exist_ok=True)
@@ -351,7 +380,7 @@ def cmd_run(a):
         for module in modules:
             print(f"{module}: running", flush=True)
             try:
-                found[module] = run_module(tree, module, pyproject, log)
+                found[module] = run_module(tree, module, pyproject, log, functions, a.jobs)
             except BrokenRun as e:
                 broken.append(str(e))
                 print(f"{module}: BROKEN {e}", flush=True)
@@ -361,6 +390,12 @@ def cmd_run(a):
         Path(a.found).parent.mkdir(parents=True, exist_ok=True)
         Path(a.found).write_text(json.dumps(found, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
     pin = load_pin()
+    if functions:
+        rest = {m: [k for k in keys if shown(k) not in functions] for m, keys in pin.items() if m in found}
+        if a.pin:
+            found = {m: sorted(rest.get(m, []) + keys) for m, keys in found.items()}
+        else:
+            pin = {**pin, **{m: [k for k in pin[m] if shown(k) in functions] for m in rest}}
     if a.pin:
         pin.update(found)
         write_pin(pin)
@@ -396,6 +431,9 @@ def main(argv=None):
     r.add_argument("--pin", action="store_true", help="write today's survivors as the pin instead of gating")
     r.add_argument("--workdir", help="default: a fresh temporary directory")
     r.add_argument("--found", help="also write each module's survivors here as JSON, for `pin --from`")
+    r.add_argument("--function", action="append", help="mutate only this function (Cls.fn for a method); "
+                   "the ratchet and --pin cover only these")
+    r.add_argument("--jobs", type=int, help="mutmut workers (default: one per CPU)")
     r.set_defaults(fn=cmd_run)
     q = sub.add_parser("pin", help="pin the survivors in --found files from a CI run")
     q.add_argument("--from", dest="sources", nargs="+", required=True, metavar="FILE")
