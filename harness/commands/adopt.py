@@ -12,7 +12,7 @@ from harness.commands import measure as measure_cmd
 def _run_name(run: Path) -> str:
     """A run under the runs dir by its directory name, anything else by path."""
     try:
-        return str(run.resolve().relative_to((paths.home() / "runs").resolve()))
+        return run.resolve().relative_to((paths.home() / "runs").resolve()).as_posix()
     except ValueError:
         return str(run)
 

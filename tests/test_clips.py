@@ -175,3 +175,15 @@ def test_the_cli_prints_the_worst_clips(store, cases, capsys):
     assert rc == 0
     text = out.out + out.err
     assert "u2" in text and "a dog ran" in text and "fog" in text
+
+
+def test_a_stored_nested_run_is_not_imported_again_from_a_windows_spelled_receipt(tmp_path, windows_relative_paths):
+    """#1079: the store keys runs/a/b as a/b; str() of the receipt's relative path is a\\b on Windows."""
+    rows = [{"case_id": "u1", "candidate": "a", "passed": False, "output": "the bat sat", "metrics": {"wer": 0.33}}]
+    conn = ms.connect()
+    try:
+        run = record(conn, "a/b", "stt", rows)
+    finally:
+        conn.close()
+    (run / "results.json").write_text(json.dumps({"rows": rows}), encoding="utf-8")
+    assert [r["run"] for r in clips.rows("stt")] == ["a/b"]
