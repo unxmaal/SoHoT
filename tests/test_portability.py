@@ -63,6 +63,14 @@ def test_no_text_file_is_read_or_written_without_an_explicit_encoding():
 _BSD_DF = re.compile(r"df\s+-[A-Za-z]*g")
 
 
+def test_no_temp_file_is_opened_as_text_without_an_explicit_encoding():
+    """#1068: rsvg-convert reads the SVG render.py wrote as UTF-8; Windows wrote it in the locale codepage."""
+    offenders = []
+    for path in _sources():
+        offenders += scanners.text_tempfiles(path.read_text(encoding="utf-8"), path.relative_to(REPO).as_posix())
+    assert not offenders, "\n  ".join(["text-mode temp files with no encoding:", *offenders])
+
+
 def test_no_script_uses_a_bsd_only_df_flag():
     offenders = []
     for path in sorted((REPO / "scripts").glob("*.sh")):

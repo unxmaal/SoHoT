@@ -153,6 +153,18 @@ def test_a_small_or_shrinking_truncate_is_left_alone():
     _quiet_then_fires(scanners.grown_files, innocent, "fh.truncate(60 * GIB)\n", "t.py")
 
 
+def test_a_text_mode_tempfile_without_an_encoding_is_found():
+    src = ("tempfile.NamedTemporaryFile(\"w\", suffix=\".svg\")\nTemporaryFile(\"w+\")\n"
+           "tempfile.SpooledTemporaryFile(mode=\"r+\")\n")
+    assert [f.split(":")[1] for f in scanners.text_tempfiles(src, "t.py")] == ["1", "2", "3"]
+
+
+def test_a_binary_or_encoded_tempfile_is_left_alone():
+    innocent = ("tempfile.NamedTemporaryFile(suffix=\".wav\")\ntempfile.TemporaryFile(\"w+b\")\n"
+                "tempfile.NamedTemporaryFile(\"w\", encoding=\"utf-8\")\n")
+    _quiet_then_fires(scanners.text_tempfiles, innocent, "tempfile.TemporaryFile(\"w+\")\n", "t.py")
+
+
 def test_an_unguarded_import_is_found_and_a_guarded_one_is_not():
     src = ("import yaml\ntry:\n    import torch\nexcept ImportError:\n    torch = None\n"
            "def f():\n    from huggingface_hub import snapshot_download\n    from . import local\n")

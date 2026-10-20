@@ -2,6 +2,7 @@
 import json
 import re
 import sys
+import types
 from pathlib import Path
 
 import pytest
@@ -48,17 +49,32 @@ def _raises(exc):
     return named
 
 
+def _venv_has(monkeypatch, **present):
+    """Pin each converter module present or missing, so no test reads what this machine installed. #1067."""
+    for name, has in present.items():
+        module = name.replace("_", ".")
+        monkeypatch.setitem(sys.modules, module, types.ModuleType(module) if has else None)
+
+
 def test_without_protobuf_the_decoder_names_protobuf_not_tiktoken(monkeypatch):
     monkeypatch.setattr(hf_task, "_named_tokenizer", _raise_the_fallback)
-    monkeypatch.setitem(sys.modules, "google.protobuf", None)
+    _venv_has(monkeypatch, sentencepiece=True, google_protobuf=False)
     with pytest.raises(ModuleNotFoundError) as got:
         hf_task._tokenizer("microsoft/trocr-small-printed", None, _Auto)
     assert got.value.name == "google.protobuf"
 
 
+@pytest.mark.parametrize("protobuf", [True, False])
+def test_without_sentencepiece_the_decoder_names_sentencepiece_before_protobuf(monkeypatch, protobuf):
+    monkeypatch.setattr(hf_task, "_named_tokenizer", _raise_the_fallback)
+    _venv_has(monkeypatch, sentencepiece=False, google_protobuf=protobuf)
+    with pytest.raises(ModuleNotFoundError) as got:
+        hf_task._tokenizer("microsoft/trocr-small-printed", None, _Auto)
+    assert got.value.name == "sentencepiece"
+
+
 def test_with_sentencepiece_and_protobuf_a_tiktoken_repo_names_tiktoken(monkeypatch):
-    pytest.importorskip("sentencepiece")
-    pytest.importorskip("google.protobuf")
+    _venv_has(monkeypatch, sentencepiece=True, google_protobuf=True)
     monkeypatch.setattr(hf_task, "_named_tokenizer", _raise_the_fallback)
     with pytest.raises(ModuleNotFoundError) as got:
         hf_task._tokenizer("m/x", None, _Auto)

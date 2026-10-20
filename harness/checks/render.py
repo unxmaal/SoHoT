@@ -342,7 +342,7 @@ def _shoot(argv: list[str], out: Path, cwd: str, timeout: float = 60.0) -> str:
     With its own --user-data-dir chrome writes the screenshot and then does not
     exit, so waiting for the process is waiting for the timeout. Issue #29.
     """
-    err = tempfile.TemporaryFile("w+")
+    err = tempfile.TemporaryFile("w+", encoding="utf-8", errors="replace")
     # A file, not a pipe: chrome's grandchildren inherit the handle and keep a
     # pipe open long after we terminate it, so reading one would block.
     proc = subprocess.Popen(argv, stdout=subprocess.DEVNULL, stderr=err, cwd=cwd)
@@ -425,7 +425,7 @@ def rasterize_svg(svg: str, out: str | Path, width: int = DEFAULT_WIDTH) -> Path
     out.parent.mkdir(parents=True, exist_ok=True)
     # Through a file rather than stdin: rsvg-convert reports the offending line
     # number for a file, and that is the whole diagnostic for broken markup.
-    with tempfile.NamedTemporaryFile("w", suffix=".svg", delete=False) as fh:
+    with tempfile.NamedTemporaryFile("w", encoding="utf-8", suffix=".svg", delete=False) as fh:
         fh.write(svg)
         src = fh.name
     timeout = SVG_TIMEOUT_S

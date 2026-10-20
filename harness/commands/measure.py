@@ -475,10 +475,12 @@ def _run_group(argv, deadline_s, cwd, grace_s) -> Launched:
     group = ({"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP}
              if sys.platform == "win32" else {"start_new_session": True})
     started = time.monotonic()
-    with _term_raises():
+    with _term_raises() as term:
+        term.hold()
         proc = subprocess.Popen(argv, cwd=cwd, stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE, text=True, **group)
         try:
+            term.release()
             _, stderr = proc.communicate(timeout=deadline_s)
         except subprocess.TimeoutExpired:
             _stop_group(proc, grace_s)
@@ -491,23 +493,47 @@ def _run_group(argv, deadline_s, cwd, grace_s) -> Launched:
     return Launched(proc.returncode, stderr or "", False, time.monotonic() - started)
 
 
+class _Term:
+    """While held, a SIGTERM waits for release(), so one landing inside Popen cannot orphan the child. #1073."""
+
+    def __init__(self):
+        self.held, self.pending = False, 0
+
+    def hold(self):
+        self.held = True
+
+    def release(self):
+        self.held = False
+        if self.pending:
+            raise SystemExit(128 + self.pending)
+
+
 @contextlib.contextmanager
 def _term_raises():
     """SIGTERM unwinds instead of killing outright, so the eval's own session is stopped with us. #805."""
     import signal
     import threading
 
+    term = _Term()
     if threading.current_thread() is not threading.main_thread():
-        yield
+        yield term
         return
 
     def _raise(signum, frame):
         signal.signal(signal.SIGTERM, signal.SIG_IGN)
+        if term.held:
+            term.pending = signum
+            return
         raise SystemExit(128 + signum)
 
     before = signal.signal(signal.SIGTERM, _raise)
     try:
-        yield
+        yield term
+        term.release()
+    except BaseException:
+        if term.held and term.pending:
+            raise SystemExit(128 + term.pending)
+        raise
     finally:
         signal.signal(signal.SIGTERM, before)
 

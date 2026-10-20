@@ -172,7 +172,7 @@ class Probes:
         if sys.platform == "win32":
             return None
         try:
-            got = subprocess.run(["ps", "-axo", "pid=,ppid=,pgid=,etime=,command="], capture_output=True,
+            got = subprocess.run(["ps", "-ww", "-axo", "pid=,ppid=,pgid=,etime=,command="], capture_output=True,
                                  text=True, timeout=PROBE_TIMEOUT_S)
         except (OSError, subprocess.SubprocessError):
             return None

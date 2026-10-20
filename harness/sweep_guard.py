@@ -43,7 +43,8 @@ def command_of(pid: int) -> str | None:
     if sys.platform == "win32":
         return None
     try:
-        got = subprocess.run(["ps", "-o", "command=", "-p", str(int(pid))], capture_output=True, text=True,
+        # -ww: procps cuts the command at the screen width (COLUMNS), which can drop `--loop`. #1065.
+        got = subprocess.run(["ps", "-ww", "-o", "command=", "-p", str(int(pid))], capture_output=True, text=True,
                              timeout=PS_TIMEOUT_S)
     except (OSError, subprocess.SubprocessError):
         return None
