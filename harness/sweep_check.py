@@ -42,13 +42,17 @@ def parse_launchctl(text: str) -> dict:
             "signal": got.get("last terminating signal", "")}
 
 
-def launchd(service: str = SERVICE, run=subprocess.run, platform: str | None = None) -> dict | None:
+def launchd(service: str = SERVICE, run=subprocess.run, platform: str | None = None,
+            uid: int | None = None) -> dict | None:
     """The discover unit as launchd sees it; None where there is no launchd."""
     if (platform or sys.platform) != "darwin":
         return None
+    getuid = getattr(os, "getuid", None)
+    if uid is None and getuid is None:
+        return {"loaded": None, "why": f"no user id to name the launchd domain with on {sys.platform}"}
     from harness import volume
     try:
-        got = run(["launchctl", "print", f"gui/{os.getuid()}/{volume.PREFIX}.{service}"],
+        got = run(["launchctl", "print", f"gui/{getuid() if uid is None else uid}/{volume.PREFIX}.{service}"],
                   capture_output=True, text=True, timeout=PROBE_TIMEOUT_S)
     except (OSError, subprocess.SubprocessError) as exc:
         return {"loaded": None, "why": f"launchctl could not be asked: {exc}"}

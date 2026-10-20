@@ -15,6 +15,7 @@ from harness import memory_store as ms
 from harness import sweep_check as sc
 from harness.commands import morning as morning_cmd
 from tests import shells
+from tests.gauntlet import scanners
 
 REPO = Path(__file__).resolve().parents[1]
 FIX = REPO / "tests" / "fixtures" / "launchctl"
@@ -101,10 +102,17 @@ def test_the_probe_reads_the_discover_unit_from_launchctl_print(monkeypatch):
     def run(argv, **kw):
         seen.append(argv)
         return subprocess.CompletedProcess(argv, 0, (FIX / "discover-running.txt").read_text(encoding="utf-8"), "")
-    monkeypatch.setattr("sys.platform", "darwin")
-    got = sc.launchd(run=run)
-    assert seen[0][:2] == ["launchctl", "print"] and seen[0][2].endswith("/com.unxmaal.localharness.discover")
+    got = sc.launchd(run=run, platform="darwin", uid=501)
+    assert seen[0][:2] == ["launchctl", "print"] and seen[0][2] == "gui/501/com.unxmaal.localharness.discover"
     assert got["pid"] == 41207
+
+
+def test_a_darwin_probe_with_no_getuid_is_unknown_without_asking_launchctl(monkeypatch):
+    monkeypatch.delattr(sc.os, "getuid", raising=False)
+    seen = []
+    got = sc.launchd(run=lambda argv, **kw: seen.append(argv), platform="darwin")
+    assert seen == [] and got["loaded"] is None
+    assert judge(got, None)["verdict"] == sc.UNKNOWN
 
 
 def test_tonight_is_the_latest_scheduled_start_before_now():
@@ -196,13 +204,18 @@ def test_the_unit_runs_at_22_and_hourly_to_06(tmp_path):
 PGREP_KNOWN = {"scripts/h3-weights-status.sh"}
 
 
+def _pgrep(text, rel):
+    return [rel] if re.search(r"\bpgrep\b", text) else []
+
+
 def test_no_supervision_code_reads_process_state_with_pgrep():
-    found = set()
-    for root in ("harness", "scripts"):
-        for f in (REPO / root).rglob("*"):
-            if f.suffix in (".py", ".sh") and re.search(r"\bpgrep\b", f.read_text(encoding="utf-8", errors="ignore")):
-                found.add(str(f.relative_to(REPO)))
+    found = set(scanners.scan_tree(REPO, _pgrep, lambda p: p.suffix in (".py", ".sh"),
+                                   lambda rel: rel.startswith(("harness/", "scripts/"))))
     assert found <= PGREP_KNOWN, sorted(found - PGREP_KNOWN)
+
+
+def test_the_pgrep_scan_keys_files_by_posix_path_under_windows_separators(windows_relative_paths):
+    test_no_supervision_code_reads_process_state_with_pgrep()
 
 
 def test_the_cli_prints_the_verdict_and_records_only_with_notify(monkeypatch, capsys):

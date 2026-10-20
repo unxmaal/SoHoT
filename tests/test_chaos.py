@@ -20,7 +20,7 @@ def tree(root: Path) -> dict:
     out = {}
     for p in sorted(root.rglob("*")):
         st = p.stat()
-        out[str(p.relative_to(root))] = (p.is_dir(), st.st_size, st.st_mtime_ns)
+        out[p.relative_to(root).as_posix()] = (p.is_dir(), st.st_size, st.st_mtime_ns)
     return out
 
 
@@ -494,5 +494,5 @@ def test_the_schedule_scanner_fires_on_a_chaos_line():
 
 def test_nothing_schedules_chaos():
     assert all(p.exists() for p in SCHEDULERS[:3])
-    assert [str(p.relative_to(REPO)) for p in SCHEDULERS
+    assert [p.relative_to(REPO).as_posix() for p in SCHEDULERS
             if scheduled(p.read_text(encoding="utf-8"))] == []
