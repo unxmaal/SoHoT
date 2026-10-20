@@ -25,12 +25,12 @@ SRC="${LH_REPO:-$REPO}"
 DEPLOY="${LH_DEPLOY:-$LH_HOME/deploy}"
 # `discover` is not a server. It is the scheduled sweep, and it is in this
 # list because the thing that must survive a reboot is the SCHEDULE. #261.
-SERVICES="gateway mlx eval tts mcp discover worker audit ds4 watchdog energy ledger morning claude-news otel canary"
+SERVICES="gateway mlx eval tts mcp discover worker audit ds4 watchdog energy ledger morning claude-news otel canary sweep-check"
 
 #: Services that RUN AND EXIT rather than serve, at fixed local hours. KeepAlive
 #: would rerun a finished sweep at once; StartInterval counts from load, so a day
 #: of installs never lets it fire (#625). harness/heartbeat reads the installed hours (#705).
-declare -a PERIODIC=(discover audit watchdog energy ledger morning claude-news canary)
+declare -a PERIODIC=(discover audit watchdog energy ledger morning claude-news canary sweep-check)
 DISCOVER_HOURS="${DISCOVER_HOURS:-21}"
 AUDIT_HOURS="${AUDIT_HOURS:-3}"                   # nightly, #492
 # The watchdog watches this machine's own jobs, so every role runs it. #814.
@@ -50,8 +50,10 @@ CLAUDE_NEWS_HOUR="${CLAUDE_NEWS_HOUR:-9}"
 # The planted-candidate canary, weekly after the night's sweep; it waits for a sweep still running. #919.
 CANARY_WEEKDAY="${CANARY_WEEKDAY:-6}"
 CANARY_HOUR="${CANARY_HOUR:-4}"
+# Tonight's sweep checked from launchd state and its heartbeat, an hour after it starts and hourly to 06:00. #1062.
+SWEEP_CHECK_HOURS="${SWEEP_CHECK_HOURS:-22 23 0 1 2 3 4 5 6}"
 # Periodic jobs that read or write the shared store: only the scheduler runs them. #703.
-declare -a SCHEDULER_ONLY=(discover audit ledger morning claude-news canary)
+declare -a SCHEDULER_ONLY=(discover audit ledger morning claude-news canary sweep-check)
 # Machines sharing one store run the periodic jobs on one of them: scheduler, or node for the rest. #703.
 # A role given once is kept in $LH_HOME/role, so a later plain `make install` keeps it.
 ROLE_FILE="$LH_HOME/role"
@@ -180,6 +182,7 @@ _schedule() {
       [ "$service" = audit ] && hours="$AUDIT_HOURS"
       [ "$service" = ledger ] && hours="$LEDGER_HOURS"
       [ "$service" = morning ] && hours="$MORNING_HOURS" && minute="$MORNING_MINUTE"
+      [ "$service" = sweep-check ] && hours="$SWEEP_CHECK_HOURS"
       printf '  <key>StartCalendarInterval</key>\n  <array>\n'
       for h in $hours; do
         printf '    <dict><key>Hour</key><integer>%s</integer><key>Minute</key><integer>%s</integer></dict>\n' "$h" "$minute"

@@ -304,10 +304,14 @@ def node_fallbacks(conn, config=None, now=None) -> list[dict]:
     entries = {str(e.get("model_name", "")): e for e in (gateway.load(path) if path.exists() else {})
                .get("model_list") or []}
     by: dict = {}
+    # A parked node's requests are this machine's by design until the gateway reloads without it. #1061.
+    rested = set(nodes.parked_names())
     for r in conn.execute("SELECT alias FROM gateway_requests WHERE at >= ? AND alias LIKE ?",
                           (now - FALLBACK_WINDOW_S, f"%{nodes.LOCAL_SUFFIX}")):
         asked = r["alias"].removesuffix(nodes.LOCAL_SUFFIX)
         node = str(entries.get(asked, {}).get(nodes.NODE_KEY) or "an unlisted node")
+        if node in rested:
+            continue
         got = by.setdefault(node, {"node": node, "requests": 0, "aliases": set()})
         got["requests"] += 1
         got["aliases"].add(asked)

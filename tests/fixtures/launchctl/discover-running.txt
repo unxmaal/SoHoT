@@ -1,0 +1,80 @@
+gui/504/com.unxmaal.localharness.discover = {
+	active count = 1
+	path = /Users/USER/Library/LaunchAgents/com.unxmaal.localharness.discover.plist
+	type = LaunchAgent
+	state = running
+
+	program = /bin/bash
+	arguments = {
+		/bin/bash
+		/Users/USER/localharness/deploy/scripts/serve-discover.sh
+	}
+
+	working directory = /Users/USER/localharness/deploy
+
+	stdout path = /Users/USER/localharness/logs/discover.log
+	stderr path = /Users/USER/localharness/logs/discover.log
+	inherited environment = {
+		DISPLAY => /var/run/com.apple.launchd.XXXXXXXXXX/org.xquartz:0
+		DISPLAY => /var/run/com.apple.launchd.XXXXXXXXXX/org.macports:0
+		SSH_AUTH_SOCK => /var/run/com.apple.launchd.XXXXXXXXXX/Listeners
+	}
+
+	default environment = {
+		PATH => /usr/bin:/bin:/usr/sbin:/sbin
+	}
+
+	environment = {
+		OSLogRateLimit => 64
+		HF_ROOT => /Volumes/MODELS/hf
+		HF_HOME => /Volumes/MODELS/hf
+		PYTHONUNBUFFERED => 1
+		PATH => /Users/USER/.local/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
+		HOME => /Users/USER
+		XPC_SERVICE_NAME => com.unxmaal.localharness.discover
+	}
+
+	domain = gui/504 [100002]
+	asid = 100002
+	minimum runtime = 10
+	exit timeout = 5
+	runs = 1
+	pid = 41207
+	immediate reason = calendar interval
+	last exit code = (never exited)
+
+	event triggers = {
+		com.unxmaal.localharness.discover.268436825 => {
+			keepalive = 0
+			service = com.unxmaal.localharness.discover
+			stream = com.apple.launchd.calendarinterval
+			monitor = com.apple.UserEventAgent-Aqua
+			descriptor = {
+				"Minute" => 0
+				"Hour" => 21
+			}
+		}
+	}
+
+	event channels = {
+		"com.apple.launchd.calendarinterval" = {
+			port = 0x0
+			active = 0
+			managed = 1
+			reset = 0
+			hide = 0
+			watching = 1
+		}
+	}
+
+	spawn type = interactive (4)
+	jetsam priority = 40
+	jetsam memory limit (active) = (unlimited)
+	jetsam memory limit (inactive) = (unlimited)
+	jetsamproperties category = daemon
+	jetsam thread limit = 32
+	cpumon = default
+	sanitizer flags = 0x0
+
+	properties = inferred program
+}

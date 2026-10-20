@@ -21,3 +21,5 @@ nodes:
     cooldown: 30
     # Connect over IPv4: an mDNS name can resolve to a link-local IPv6 address that never answers.
     ipv4: true
+    # true keeps this entry but leaves the node out of routing, fallbacks, probes and checks (#1061).
+    parked: false
