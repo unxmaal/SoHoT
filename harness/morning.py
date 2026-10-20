@@ -93,11 +93,18 @@ def sweep(conn, since: float, beat: dict | None) -> dict:
 
 
 def watchdog(conn, since: float) -> list[dict]:
+    from harness import sweep_check
     if not _has(conn, "watchdog_actions"):
         return []
     return [dict(r) for r in conn.execute(
         "SELECT id, at, criterion, subject, action, escalated, dry_run, outcome FROM watchdog_actions "
-        "WHERE at >= ? ORDER BY at", (since,))]
+        "WHERE at >= ? AND criterion != ? ORDER BY at", (since, sweep_check.CRITERION))]
+
+
+def sweep_checks(conn, since: float) -> list[dict]:
+    """The night's `soh sweep-check` rows. #1062."""
+    from harness import sweep_check
+    return sweep_check.rows(conn, since) if _has(conn, "watchdog_actions") else []
 
 
 def ledger_row(conn, now: float) -> dict | None:
@@ -239,6 +246,10 @@ def needs(r: dict) -> list[str]:
         out.append(f"the sweep stalled: {loop['line']}")
     elif loop["status"] == "finished" and loop["rc"] != 0:
         out.append(f"the sweep exited {loop['rc'] if loop['rc'] is not None else 'with ' + loop['error']}")
+    from harness import sweep_check
+    for c in r.get("checks") or []:
+        if c["verdict"] == sweep_check.STALLED:
+            out.append(f"the {datetime.fromtimestamp(c['at']).strftime('%H:%M')} sweep check: {c['line']}")
     if loop is not None and loop["in_window"] and loop.get("code_moved"):
         out.append(loop["code_moved"])
     for w in r["watchdog"]:
@@ -265,14 +276,21 @@ def needs(r: dict) -> list[str]:
     return out
 
 
+def parked_nodes() -> list[str]:
+    """Serving nodes nodes.yaml keeps parked, named so a parked node is not forgotten. #1061."""
+    from harness import nodes
+    return nodes.parked_names()
+
+
 def gather(conn, now: float, since: float, *, beat=None, gh=None, git=None, where=None, lanes=None,
-           health=None, stalls=None, canary=None) -> dict:
+           health=None, stalls=None, canary=None, parked=None) -> dict:
     """`health` probes the headline's lane (lane_health), `canary` reads its receipts (canary.morning_line); None skips either."""
     r = {"lane": health(MODEL_LANE) if health else {"lane": MODEL_LANE, "generating": None, "why": "not probed"},
          "generated": now, "since": since, "sweep": sweep(conn, since, beat), "watchdog": watchdog(conn, since),
          "ci": ci(now, gh=gh or _gh), "ledger": ledger_row(conn, now), "stale": (lanes or stale_lanes)(conn),
          "stalled": (stalls or stalled)(conn), "deploy": deploy(where, git=git or _git),
-         "canary": canary(now) if canary else "", "incidents": incidents(conn, since, now)}
+         "canary": canary(now) if canary else "", "incidents": incidents(conn, since, now),
+         "parked": parked() if parked else [], "checks": sweep_checks(conn, since)}
     if r["sweep"]["loop"] is not None:
         from harness import heartbeat
         r["sweep"]["loop"]["code_moved"] = heartbeat.code_moved(beat, r["deploy"].get("head", ""))

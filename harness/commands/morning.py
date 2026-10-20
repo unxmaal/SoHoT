@@ -45,6 +45,10 @@ def render(r: dict) -> list[str]:
     else:
         when = "" if loop["in_window"] else " (not last night)"
         out.append(f"sweep     started {_hm(loop['started'])}{when}; {loop['line']}")
+    checks = r.get("checks") or []
+    out.append(f"checks    {len(checks)} sweep check(s)")
+    out.extend(f"          {_hm(c['at'])} {c['verdict']:<14} {c['line']}{' [notified]' if c['notified'] else ''}"
+               for c in checks)
     out.append(f"screened  {_tally(s['screened'])}")
     runs = s["measured"]["runs"]
     out.append(f"measured  {len(runs)} run(s){': ' + ', '.join(x['lane'] for x in runs) if runs else ''}; "
@@ -90,6 +94,8 @@ def render(r: dict) -> list[str]:
                    f"{t['in_state_days']:.0f}d: {t['reason']}: {t['why']}")
     if r.get("canary"):
         out.append(f"canary    {r['canary']}")
+    if r.get("parked"):
+        out.append("nodes     " + ", ".join(f"{n} parked" for n in r["parked"]))
     d = r["deploy"]
     if not d.get("available"):
         out.append(f"deploy    unavailable: {d.get('why')}")
@@ -113,7 +119,7 @@ def cmd_morning(a) -> int:
     conn = morning.snapshot()
     try:
         r = morning.gather(conn, now, since, beat=heartbeat.summary(), where=paths.deploy_checkout(),
-                           health=morning.lane_health, canary=canary.morning_line)
+                           health=morning.lane_health, canary=canary.morning_line, parked=morning.parked_nodes)
     finally:
         conn.close()
     lines = render(r)

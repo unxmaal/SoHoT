@@ -52,6 +52,7 @@ from harness.commands import availability as availability_cmd
 from harness.commands import ledger as ledger_cmd
 from harness.commands import funnel as funnel_cmd
 from harness.commands import morning as morning_cmd
+from harness.commands import sweep_check as sweep_check_cmd
 from harness.commands import otel as otel_cmd
 from harness.commands import usage as usage_cmd
 from harness.commands import canary as canary_cmd
@@ -565,6 +566,11 @@ def build_parser() -> argparse.ArgumentParser:
     mor.add_argument("--no-model", action="store_true",
                      help="deterministic headline; do not ask the local model to condense it")
     mor.set_defaults(func=morning_cmd.cmd_morning)
+    swc = sub.add_parser("sweep-check", help="whether tonight's discovery sweep is running and progressing, "
+                         "read from launchd and the loop heartbeat; --notify records a row and notifies on a change")
+    swc.add_argument("--notify", action="store_true",
+                     help="record the check for soh morning and notify when it is not healthy (the sweep-check unit)")
+    swc.set_defaults(func=sweep_check_cmd.cmd_sweep_check)
     fun = sub.add_parser("funnel", help="every proposal's stage, time in it, age since first seen, and why "
                          "it waits; read from a copy of the store")
     fun.add_argument("--since", default="", help="only proposals first seen since: 30d, or a date")
@@ -846,6 +852,7 @@ VERB_PURPOSE = {
                      "sensitivity", "gauntlet", "chaos"), "eval"),
     "watchdog": "watchdog",
     "morning": "watchdog",
+    "sweep-check": "watchdog",
     "availability": "watchdog",
 }
 

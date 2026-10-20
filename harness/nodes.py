@@ -54,6 +54,8 @@ class Node:
     ipv4: bool = True
     #: (gateway id, the id the node advertises) where they differ, e.g. a router's models-dir stem.
     renamed: tuple[tuple[str, str], ...] = ()
+    #: Kept in nodes.yaml but left out of routing, fallbacks, probes and checks. #1061.
+    parked: bool = False
 
     def node_id(self, model: str) -> str:
         """The id this node is sent for a gateway model id."""
@@ -149,6 +151,9 @@ def parse(data: dict, where: str = FILE) -> list[Node]:
         if not models:
             raise ValueError(f"{at}: models must be a list of model ids, or of {{id, as}} where the "
                              f"node advertises a model under another id")
+        parked = raw.get("parked", False)
+        if not isinstance(parked, bool):
+            raise ValueError(f"{at}: parked must be true or false")
         key = str(raw.get("key") or "").strip()
         if key and not _KEY.match(key):
             raise ValueError(f"{at}: key must be env:<VAR> or keychain:<service>/<account>, "
@@ -159,12 +164,11 @@ def parse(data: dict, where: str = FILE) -> list[Node]:
                         _number(raw, "connect_timeout", CONNECT_TIMEOUT_S, at),
                         _number(raw, "timeout", TIMEOUT_S, at),
                         _number(raw, "cooldown", COOLDOWN_S, at),
-                        bool(raw.get("ipv4", True)), tuple(renamed)))
+                        bool(raw.get("ipv4", True)), tuple(renamed), parked))
     return out
 
 
-def load(file=None) -> list[Node]:
-    """This machine's nodes; [] when it has no nodes.yaml."""
+def _all(file=None) -> list[Node]:
     import yaml
     where = Path(file) if file else path()
     try:
@@ -172,6 +176,28 @@ def load(file=None) -> list[Node]:
     except FileNotFoundError:
         return []
     return parse(yaml.safe_load(text) or {}, str(where))
+
+
+def load(file=None) -> list[Node]:
+    """This machine's serving nodes, parked ones left out; [] when it has no nodes.yaml."""
+    return [n for n in _all(file) if not n.parked]
+
+
+def parked(file=None) -> list[Node]:
+    """The nodes nodes.yaml keeps but marks `parked: true`. #1061."""
+    return [n for n in _all(file) if n.parked]
+
+
+def parked_names(file=None) -> list[str]:
+    """Parked node names; [] when nodes.yaml is missing or malformed, for reports that must not fail on it."""
+    try:
+        return [n.name for n in parked(file)]
+    except ValueError:
+        return []
+
+
+def parked_lines(names: list[str]) -> list[str]:
+    return [f"PARK  node {n} is parked (parked: true in {path()}): not routed, probed or checked" for n in names]
 
 
 def keychain(service: str, account: str) -> str:
@@ -381,6 +407,9 @@ def main(argv=None) -> int:
         print(environment.identity()["fingerprint"])
         return 0
     nodes = load()
+    rested = [n.name for n in parked()] if args.cmd in ("check", "show", "smoke") else []
+    for line in parked_lines(rested):
+        print(line)
     if args.cmd == "check":
         bad = [why for why in map(unidentified, nodes) if why]
         for why in bad:
@@ -402,7 +431,7 @@ def main(argv=None) -> int:
     rows = smoke(args.gateway, gateway_key.key(), nodes)
     for passed, line in rows:
         print(f"{'PASS' if passed else 'FAIL'}  {line}")
-    if not rows:
+    if not rows and not rested:
         print("SKIP  no serving nodes in " + str(path()))
     return 0 if all(p for p, _ in rows) else 1
 
