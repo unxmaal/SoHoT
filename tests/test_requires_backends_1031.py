@@ -53,3 +53,19 @@ def test_hf_task_s_last_line_waits_on_the_package_rather_than_retrying():
 def test_a_library_no_runner_package_names_keeps_its_class(text, cls):
     assert reasons.missing_package(text) == ""
     assert reasons.classify(text, reasons.RUNNER, "diffusers:org/m") == cls
+
+
+@pytest.mark.parametrize("module,dist", [("bs4.element", "beautifulsoup4"), ("timm.models.layers", "timm")])
+def test_a_missing_submodule_waits_on_its_top_level_package(module, dist):
+    assert reasons.missing_package(f"ModuleNotFoundError: No module named '{module}'") == dist
+
+
+def test_an_unmapped_name_does_not_hide_a_mapped_one_after_it():
+    text = "No module named 'einops'\nMarkupLMFeatureExtractor requires the Beautiful Soup library but it was not found"
+    assert reasons.missing_package(text) == "beautifulsoup4"
+
+
+@pytest.mark.parametrize("spelling", ["ruamel_yaml", "ruamel-yaml", "ruamel.yaml", "ruamel__yaml"])
+def test_a_distribution_matches_in_any_pep503_spelling(monkeypatch, spelling):
+    monkeypatch.setitem(reasons.RUNNER_PACKAGES, "ruamel_yaml_shim", "ruamel.yaml")
+    assert reasons.missing_package(f"Make sure to install `{spelling}` to load this model") == "ruamel.yaml"
