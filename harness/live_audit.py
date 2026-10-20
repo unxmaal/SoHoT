@@ -19,7 +19,7 @@ SERVING = ("adoptions_pass_here", "no_reference_served", "served_matches_adoptio
 SCHEDULE = ("sweep_on_schedule", "sweep_on_deployed_code")
 VERDICTS = ("too_big_ceiling_current", "too_big_names_variant", "terminal_reason_coherent", "no_ranking_verdict",
             "load_log_kept", "runner_gap_until_current", "broken_runner_layout",
-            "attachment_by_tag", "package_until_reachable", "revisitable")
+            "attachment_by_tag", "package_until_reachable", "revisitable", "reopened_past_screen")
 #: Inventories that never fail the audit: what a runner venv holds beyond its script's pins. #1032.
 VENVS = ("venv_matches_script",)
 CHECKS = mc.INVARIANTS + SERVING + SCHEDULE + VERDICTS + VENVS
@@ -29,7 +29,8 @@ REPAIRED_BY = {"too_big_ceiling_current": heartbeat.REOPENED_TOO_BIG,
                "no_ranking_verdict": heartbeat.REOPENED_UNRANKED,
                "attachment_by_tag": heartbeat.REDERIVED_ATTACHMENTS,
                "runner_gap_until_current": heartbeat.REWROTE_RUNNER_GAPS,
-               "revisitable": heartbeat.REOPENED_REVISITABLE}
+               "revisitable": heartbeat.REOPENED_REVISITABLE,
+               "reopened_past_screen": heartbeat.MOVED_PAST_SCREEN}
 
 
 def open_readonly(path) -> sqlite3.Connection:
@@ -199,6 +200,16 @@ def _revisitable(conn, facts=None, reopened_at=...) -> tuple[list, list]:
     return [say(r) + f", after the loop's requeue at {_when(swept)}" for r in survived], [say(r) for r in fresh]
 
 
+def _reopened_past_screen(conn, moved_at=...) -> tuple[list, list]:
+    """(failures, warnings): cases/limit declines past their screen that a met until reopened to inspect; one the loop's move left fails. #1060."""
+    from harness import memory_store as ms
+    survived, fresh, swept = _survived("reopened_past_screen", ms.reopened_too_far(conn), moved_at)
+
+    def say(r):
+        return f"verdict {r['verdict_id']} {r['name']}: {r['until']} reopened to inspect after its screen passed"
+    return [say(r) + f", after the loop's move at {_when(swept)}" for r in survived], [say(r) for r in fresh]
+
+
 def _spent_revisits(conn, facts=None) -> list:
     """Met untils already reopened once and declined again under the same until: a writer that wrote a spent condition. #1055."""
     from harness import memory_store as ms
@@ -351,7 +362,8 @@ def audit(path=None, config=None) -> dict:
                        "no_ranking_verdict": _no_ranking_verdict(conn),
                        "runner_gap_until_current": _runner_gap_until_current(conn),
                        "attachment_by_tag": _attachment_by_tag(conn),
-                       "revisitable": _revisitable(conn, here)}
+                       "revisitable": _revisitable(conn, here),
+                       "reopened_past_screen": _reopened_past_screen(conn)}
         incoherent, pinned = _terminal_reason_coherent(conn)
         unkept, waiting = _load_log_kept(conn)
         layout, misread = _broken_runner_layout(conn)

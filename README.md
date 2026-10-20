@@ -1911,7 +1911,7 @@ standing.
 
 ```bash
 soh discover --revisit             # refusals this machine now satisfies
-soh discover --revisit --requeue   # send them back to inspect
+soh discover --revisit --requeue   # reopen them: cases/limit past the screen to measure, the rest to inspect
 ```
 
 A screen runs one case once, so text candidates are screened at

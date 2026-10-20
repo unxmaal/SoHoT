@@ -10,7 +10,7 @@ import re
 from harness import memory_store as ms
 
 from harness.memory_store.machines import recorded_facts, remember_machine
-from harness.memory_store.schema import INSPECT, SCREEN, TERMINAL, _columns
+from harness.memory_store.schema import ADOPT, INSPECT, MEASURE, SCREEN, TERMINAL, _columns
 from harness.memory_store.transitions import retract
 
 
@@ -265,11 +265,46 @@ def _spent(conn, row: dict) -> bool:
         (row["proposal_id"], row["verdict_id"], row["until"], len(said), said)).fetchone() is not None
 
 
+#: Until keys a lane or a harness limit meets, not the machine: a decline past its screen waits only on them. #1060.
+PAST_SCREEN_KEYS = ("cases", "limit")
+
+
+def reopens_to(until: str, tier: str) -> tuple[str, str]:
+    """(outcome, tier) a met until reopens to: the measure queue for a cases/limit decline past its screen, else inspect. #1060."""
+    if until.partition(":")[0] in PAST_SCREEN_KEYS and tier in (MEASURE, ADOPT):
+        return "screened", SCREEN
+    return "queued", INSPECT
+
+
 def requeue_revisitable(conn, facts: dict | None = None, rows: list | None = None) -> list[str]:
-    """Retract every revisitable verdict (or `rows`, already read) back to the inspect tier. #295, #1055."""
+    """Retract every revisitable verdict (or `rows`, already read) to the tier its until gates. #295, #1055, #1060."""
     names = []
     for r in revisitable(conn, facts) if rows is None else rows:
-        retract(conn, r["name"], f"{r['until']} is met here")
+        outcome, tier = reopens_to(r["until"], r["tier"])
+        retract(conn, r["name"], f"{r['until']} is met here", outcome=outcome, tier=tier)
+        names.append(r["name"])
+    conn.commit()
+    return names
+
+
+def reopened_too_far(conn) -> list[dict]:
+    """State-holding met-until reopens to inspect that reopens_to now sends to the measure queue. #1060."""
+    rows = conn.execute(
+        "SELECT p.name, v.id AS verdict_id, v.decided_at, o.until, o.tier FROM proposals p JOIN verdicts v ON v.id = p.state_verdict_id "
+        "JOIN verdicts o ON o.id = v.reopens WHERE p.state = 'queued' AND v.tier = ? "
+        "AND v.reopen_kind = 'retraction' AND o.until != '' "
+        "AND substr(v.detail, 1, 11 + length(o.until) + 7) = 'retracted: ' || o.until || ' is met' "
+        "ORDER BY p.name", (INSPECT,)).fetchall()
+    return [dict(r) for r in rows if reopens_to(r["until"], r["tier"]) != ("queued", INSPECT)]
+
+
+def requeue_reopened_too_far(conn) -> list[str]:
+    """Move each reopened_too_far row on to the tier its until gates. #1060."""
+    names = []
+    for r in reopened_too_far(conn):
+        outcome, tier = reopens_to(r["until"], r["tier"])
+        retract(conn, r["name"], f"{r['until']} is met and its screen passed: reopened to {outcome} at {tier}",
+                outcome=outcome, tier=tier)
         names.append(r["name"])
     conn.commit()
     return names

@@ -244,7 +244,8 @@ def _run_loop_held(a, keep=None) -> int:
             extra = {"from_store": True, "top": LOOP_INSPECT}
             for repair, args in ((_reopen_stale_too_big, ()), (_reopen_unranked, ()),
                                  (_reopen_upstream_committed, ()), (_reread_runtime_declines, (a,)),
-                                 (_reopen_revisitable, ()), (_rederive_attachments, ())):
+                                 (_move_past_screen, ()), (_reopen_revisitable, ()),
+                                 (_rederive_attachments, ())):
                 rc = _repair(label, repair, args, failed) or rc
         sub = _ap.Namespace(**{**vars(a), **flags, **extra, "loop": False})
         rc = _step(label, discover_cmd.cmd_discover(sub), failed) or rc
@@ -522,8 +523,24 @@ def _reopen_upstream_committed(fetch=None, client=None) -> dict:
     return got
 
 
+def _move_past_screen() -> list[str]:
+    """Move to the measure queue the cases/limit declines past their screen that an older requeue reopened to inspect. #1060."""
+    from harness import heartbeat, memory_store as ms
+    began = heartbeat.clock()
+    store = ms.connect()
+    try:
+        moved = ms.requeue_reopened_too_far(store)
+    finally:
+        store.close()
+    heartbeat.mark(heartbeat.MOVED_PAST_SCREEN, began)
+    print(f"  moved {len(moved)} past-screen reopen(s) from inspect to the measure queue")
+    for n in moved:
+        print(f"    {n}")
+    return moved
+
+
 def _reopen_revisitable() -> list[dict]:
-    """Requeue for inspect the refusals whose until this machine now meets, after the runner-gap rewrite. #1055."""
+    """Reopen, to the tier each until gates, the refusals whose until this machine now meets, after the runner-gap rewrite. #1055, #1060."""
     from harness import heartbeat, memory_store as ms
     began = heartbeat.clock()
     store = ms.connect()
@@ -536,7 +553,8 @@ def _reopen_revisitable() -> list[dict]:
     heartbeat.mark(heartbeat.REOPENED_REVISITABLE, began)
     print(f"  requeued {len(rows)} refusal(s) whose until is met here")
     for r in rows:
-        print(f"    {r['name']}  ({r['until']})")
+        outcome, tier = ms.reopens_to(r["until"], r["tier"])
+        print(f"    {r['name']}  ({r['until']}) -> {outcome} at {tier}")
     if spent:
         print(f"  left {len(spent)} met until(s) already spent on a reopen that was declined again")
         for r in spent:

@@ -113,6 +113,7 @@ STEPS = {
                           {"rederive_attachments": lambda *a, **k: {"read": 0, "changed": [], "requeued": [],
                                                                     "unread": [], "gone": []}}),
     "revisitable": (lambda: loop_cmd._reopen_revisitable(), {"revisitable": _noop, "requeue_revisitable": _noop}),
+    "reopened_past_screen": (lambda: loop_cmd._move_past_screen(), {"requeue_reopened_too_far": _noop}),
     "runner_gap_until_current": (lambda: loop_cmd._reread_runtime_declines(None),
                                  {"cards_to_reread": _noop, "rewrite_runner_gap_untils": _noop}),
 }
