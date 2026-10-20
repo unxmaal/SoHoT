@@ -51,6 +51,24 @@ def test_the_one_writer_refuses_a_verdict_the_audit_calls_incoherent(store, outc
     assert _held(store, "org/x") is None
 
 
+@pytest.mark.parametrize("tier,at", [("", "-"), ("inspect", "inspect")])
+def test_the_refusal_names_the_proposal_the_outcome_the_tier_and_why(store, tier, at):
+    _see(store, "org/x")
+    with pytest.raises(ms.IllegalTransition) as got:
+        ms.decide(store, "org/x", "declined", tier=tier, reason="harness")
+    assert str(got.value) == f"org/x: declined at {at}: a harness fault holds a terminal state"
+
+
+@pytest.mark.parametrize("state,reason,why", [
+    ("declined", "harness", "a harness fault holds a terminal state"),
+    ("broken", "", "broken with reason empty"),
+    ("broken", "machine", "broken with reason machine"),
+    ("declined", "runtime", "reason runtime with no until and no retest"),
+])
+def test_incoherent_says_which_contradiction_it_found(state, reason, why):
+    assert transitions.incoherent(state, reason) == why
+
+
 def test_a_retest_tier_and_a_named_reopen_may_still_write_without_an_until(store):
     _see(store, "org/x")
     ms.decide(store, "org/x", "declined", tier="screen", reason="machine")
