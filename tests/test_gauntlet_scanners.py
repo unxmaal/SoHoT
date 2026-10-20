@@ -165,6 +165,18 @@ def test_a_binary_or_encoded_tempfile_is_left_alone():
     _quiet_then_fires(scanners.text_tempfiles, innocent, "tempfile.TemporaryFile(\"w+\")\n", "t.py")
 
 
+def test_a_native_relative_path_key_is_found():
+    src = ("found.add(str(f.relative_to(REPO)))\nwhere = f\"{p.relative_to(root)}:{n}\"\n"
+           "k = [str(q.relative_to(REPO)) for q in qs]\n")
+    assert [f.split(":")[1] for f in scanners.native_relpaths(src, "t.py")] == ["1", "2", "3"]
+
+
+def test_a_posix_relative_path_key_is_left_alone():
+    innocent = ("found.add(f.relative_to(REPO).as_posix())\nwhere = f\"{p.relative_to(root).as_posix()}:{n}\"\n"
+                "parts = f.relative_to(REPO).parts\nsame = sorted(p.relative_to(a) for p in ps)\nname = str(p)\n")
+    _quiet_then_fires(scanners.native_relpaths, innocent, "k = str(p.relative_to(r))\n", "t.py")
+
+
 def test_an_unguarded_import_is_found_and_a_guarded_one_is_not():
     src = ("import yaml\ntry:\n    import torch\nexcept ImportError:\n    torch = None\n"
            "def f():\n    from huggingface_hub import snapshot_download\n    from . import local\n")

@@ -364,6 +364,24 @@ def text_tempfiles(text, rel):
     return out
 
 
+def _relative_to(node):
+    return isinstance(node, ast.Call) and getattr(node.func, "attr", "") == "relative_to"
+
+
+def native_relpaths(text, rel):
+    """str() or an f-string of Path.relative_to(): backslashes on Windows, so a posix spelling never matches (#1077)."""
+    tree, out = _parse(text, rel)
+    if tree is None:
+        return out
+    for n in sorted(ast.walk(tree), key=lambda n: getattr(n, "lineno", 0)):
+        if isinstance(n, ast.Call) and getattr(n.func, "id", "") == "str" and n.args and _relative_to(n.args[0]):
+            out.append(f"{rel}:{n.lineno}: str() of a relative path is native-separated; use .as_posix()")
+        elif isinstance(n, ast.JoinedStr):
+            out += [f"{rel}:{n.lineno}: an f-string of a relative path is native-separated; use .as_posix()"
+                    for v in n.values if isinstance(v, ast.FormattedValue) and _relative_to(v.value)]
+    return out
+
+
 def unguarded_imports(text, rel):
     """(line, top-level module) for each absolute import no ImportError handler covers."""
     tree, _ = _parse(text, rel)

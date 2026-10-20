@@ -86,7 +86,7 @@ def _repo_metrics() -> dict[str, str]:
     out: dict[str, str] = {}
     for top in SOURCES:
         for p in sorted((REPO / top).rglob("*.py")):
-            for name, where in emitted_metrics(p.read_text(encoding="utf-8"), str(p.relative_to(REPO))).items():
+            for name, where in emitted_metrics(p.read_text(encoding="utf-8"), p.relative_to(REPO).as_posix()).items():
                 out.setdefault(name, where)
     return out
 

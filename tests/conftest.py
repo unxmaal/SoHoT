@@ -418,3 +418,12 @@ def _no_inherited_purpose():
     os.environ.pop(purpose.ENV, None)
     if saved is not None:
         os.environ[purpose.ENV] = saved
+
+
+@pytest.fixture
+def windows_relative_paths(monkeypatch):
+    """Path.relative_to answers a PureWindowsPath, so str() of a relative path has backslashes as on Windows. #1077."""
+    import pathlib
+    cls = type(pathlib.Path())
+    real = cls.relative_to
+    monkeypatch.setattr(cls, "relative_to", lambda self, *a, **k: pathlib.PureWindowsPath(real(self, *a, **k).as_posix()))

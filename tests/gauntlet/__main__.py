@@ -37,14 +37,14 @@ def cmd_review(a):
 def cmd_snapshot_skill(a):
     found = core.read_skill(Path(a.skill_dir) if a.skill_dir else core.skill_dir())
     core.SNAPSHOT_FILE.write_text(json.dumps(found, indent=1) + "\n", encoding="utf-8")
-    print(f"{len(found)} classes -> {core.SNAPSHOT_FILE.relative_to(REPO)}")
+    print(f"{len(found)} classes -> {core.SNAPSHOT_FILE.relative_to(REPO).as_posix()}")
     return 0
 
 
 def cmd_snapshot_defects(a):
     rows = [{"number": n, **v} for n, v in sorted(core.gh_defects().items())]
     core.DEFECTS_FILE.write_text(json.dumps(rows, indent=1) + "\n", encoding="utf-8")
-    print(f"{len(rows)} defects -> {core.DEFECTS_FILE.relative_to(REPO)}")
+    print(f"{len(rows)} defects -> {core.DEFECTS_FILE.relative_to(REPO).as_posix()}")
     return 0
 
 

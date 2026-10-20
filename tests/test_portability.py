@@ -49,7 +49,7 @@ def test_no_text_file_is_read_or_written_without_an_explicit_encoding():
                     and node.func.attr in _TEXT_IO
                     and not any(kw.arg == "encoding" for kw in node.keywords)):
                 offenders.append(
-                    f"{path.relative_to(REPO)}:{node.lineno}: .{node.func.attr}()")
+                    f"{path.relative_to(REPO).as_posix()}:{node.lineno}: .{node.func.attr}()")
     assert not offenders, (
         "text I/O without an explicit encoding defaults to the locale codepage "
         "on Windows:\n  " + "\n  ".join(offenders))
@@ -80,7 +80,7 @@ def test_no_script_uses_a_bsd_only_df_flag():
                 continue
             if _BSD_DF.search(line):
                 offenders.append(
-                    f"{path.relative_to(REPO)}:{number}: {line.strip()}")
+                    f"{path.relative_to(REPO).as_posix()}:{number}: {line.strip()}")
     assert not offenders, (
         "df -g is BSD-only; use `df -Pk` and divide by 1048576 -- "
         + "; ".join(offenders))
@@ -103,6 +103,16 @@ def test_no_test_runs_a_bare_shell_name():
         if rel.startswith("tests/"):
             offenders += scanners.bare_shells(path.read_text(encoding="utf-8"), rel)
     assert not offenders, "a bare shell name in a subprocess argv:\n  " + "\n  ".join(offenders)
+
+
+def test_no_test_spells_a_relative_path_with_native_separators():
+    """#1077: f.relative_to(REPO).as_posix() is harness\\x.py on Windows, so a posix-spelled expected set never matches."""
+    offenders = []
+    for path in _sources():
+        rel = path.relative_to(REPO).as_posix()
+        if rel.startswith("tests/"):
+            offenders += scanners.native_relpaths(path.read_text(encoding="utf-8"), rel)
+    assert not offenders, "a relative path spelled with native separators:\n  " + "\n  ".join(offenders)
 
 
 def test_no_test_grows_a_file_to_fake_its_size():

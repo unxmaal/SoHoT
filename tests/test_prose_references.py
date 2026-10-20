@@ -79,7 +79,7 @@ def test_every_path_named_in_prose_reaches_the_reader(doc):
                if r not in have and r not in dirs
                and r not in BUILT_BY_A_DOCUMENTED_STEP]
     assert not missing, (
-        f"{doc.relative_to(REPO)} names paths a clone does not have: "
+        f"{doc.relative_to(REPO).as_posix()} names paths a clone does not have: "
         + ", ".join(f"line {n}: {r}" for n, r in missing))
 
 

@@ -260,7 +260,7 @@ def test_no_client_in_the_repo_sends_a_made_up_key():
                 text = path.read_text(encoding="utf-8", errors="replace")
                 for bad in ("sk-local", "Bearer sk-x", "x-api-key: sk-x"):
                     if bad in text:
-                        hits.append(f"{path.relative_to(REPO)}: {bad}")
+                        hits.append(f"{path.relative_to(REPO).as_posix()}: {bad}")
     assert hits == []
 
 
