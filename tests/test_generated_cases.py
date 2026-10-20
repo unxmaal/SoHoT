@@ -304,8 +304,8 @@ def test_every_svg_reference_passes_the_full_checker_with_the_rasterizer(committ
     if render.rasterizer_path() is None:
         pytest.skip("no SVG rasterizer on this machine")
     sample = committed["svg_synth"][::5]
-    rows = _rows(sample, mod.reference)
-    assert rows["passed"] == len(sample)
+    failed = [(c.id, r.failure_class, r.detail) for c in sample if not (r := score(c, mod.reference(c))).passed]
+    assert failed == [], f"{len(failed)} of {len(sample)} references fail on {render.rasterizer_path()}: {failed}"
 
 
 def test_svg_reference_fails_once_one_asserted_property_is_broken(committed):

@@ -574,6 +574,42 @@ def test_a_terminated_measure_stops_the_eval_in_its_own_session(tmp_path):
     assert _gone(eval_pid), "the eval outlived its terminated measure step"
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="SIGTERM to a POSIX process")
+def test_a_term_that_lands_while_the_eval_spawns_still_stops_it(monkeypatch):
+    """#1073: a TERM inside Popen, once the child exists, left the eval running in its own session."""
+    from harness.commands import measure
+    real, spawned = subprocess.Popen, []
+
+    def popen(*a, **kw):
+        spawned.append(real(*a, **kw))
+        os.kill(os.getpid(), signal.SIGTERM)
+        return spawned[-1]
+    monkeypatch.setattr(subprocess, "Popen", popen)
+    try:
+        with pytest.raises(SystemExit) as got:
+            measure._run_group([sys.executable, "-c", "import time; time.sleep(60)"], None, None, 5.0)
+        assert got.value.code == 128 + signal.SIGTERM
+        assert spawned[0].poll() is not None, "the eval outlived a TERM that landed while it spawned"
+    finally:
+        for proc in spawned:
+            if proc.poll() is None:
+                proc.kill()
+                proc.wait()
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="SIGTERM to a POSIX process")
+def test_a_term_held_while_the_spawn_fails_is_still_a_term(monkeypatch):
+    from harness.commands import measure
+
+    def popen(*a, **kw):
+        os.kill(os.getpid(), signal.SIGTERM)
+        raise OSError("no such interpreter")
+    monkeypatch.setattr(subprocess, "Popen", popen)
+    with pytest.raises(SystemExit) as got:
+        measure._run_group(["/nonexistent"], None, None, 5.0)
+    assert got.value.code == 128 + signal.SIGTERM
+
+
 # --- the watchdog: every role, every few minutes, dry run until enabled. #814 -------
 
 def _generate(out, **extra):

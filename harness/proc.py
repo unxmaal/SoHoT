@@ -158,7 +158,7 @@ def run(argv: list[str], timeout: float | None = None,
         return Outcome(proc.returncode, round(time.perf_counter() - started, 3),
                        _peak_kb(proc.stderr), "", "")
 
-    with tempfile.NamedTemporaryFile("w+", suffix=".err") as errf:
+    with tempfile.NamedTemporaryFile("w+", encoding="utf-8", errors="replace", suffix=".err") as errf:
         wrapped = [TIME_BIN, TIME_FLAG, "/bin/sh", "-c",
                    'exec "$@" 2>"$_H_ERR"', "sh", *argv]
         proc = subprocess.run(wrapped, capture_output=True, text=True,

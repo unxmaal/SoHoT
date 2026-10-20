@@ -109,12 +109,16 @@ def test_the_override_must_be_exactly_one(tmp_path):
                              command_of=lambda p: LOOP_CMD, stopper=lambda f: []) == sweep_guard.REFUSED
 
 
-def test_stop_terms_then_kills_what_outlives_the_grace():
+@pytest.mark.parametrize("has_sigkill", [True, False], ids=["posix", "windows"])
+def test_stop_terms_then_kills_what_outlives_the_grace(has_sigkill, monkeypatch):
+    if not has_sigkill:
+        monkeypatch.delattr(signal, "SIGKILL", raising=False)
     live, sent = {7}, []
 
     def kill(pid, sig):
+        # By call order, not signal value: Windows escalates with SIGTERM again. #1066.
         sent.append(sig)
-        if sig != signal.SIGTERM:
+        if len(sent) > 1:
             live.discard(pid)
     now = iter(range(100))
     left = sweep_guard.stop([{"pid": 7}], grace=3, alive=lambda p: p in live, kill=kill, sleep=lambda s: None,

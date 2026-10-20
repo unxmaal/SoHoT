@@ -345,6 +345,25 @@ def grown_files(text, rel):
     return out
 
 
+TEMPFILES = {"NamedTemporaryFile", "TemporaryFile", "SpooledTemporaryFile"}
+
+
+def text_tempfiles(text, rel):
+    """A tempfile opened in text mode with no encoding=: the locale codepage, cp1252, on Windows (#1068)."""
+    tree, out = _parse(text, rel)
+    if tree is None:
+        return out
+    for n in sorted(ast.walk(tree), key=lambda n: getattr(n, "lineno", 0)):
+        if not (isinstance(n, ast.Call) and getattr(n.func, "attr", getattr(n.func, "id", "")) in TEMPFILES):
+            continue
+        mode = n.args[0] if n.args else next((k.value for k in n.keywords if k.arg == "mode"), None)
+        binary = mode is None or (isinstance(mode, ast.Constant) and "b" in str(mode.value))
+        if binary or any(k.arg == "encoding" for k in n.keywords):
+            continue
+        out.append(f"{rel}:{n.lineno}: a text-mode temp file with no encoding= writes cp1252 on Windows")
+    return out
+
+
 def unguarded_imports(text, rel):
     """(line, top-level module) for each absolute import no ImportError handler covers."""
     tree, _ = _parse(text, rel)
