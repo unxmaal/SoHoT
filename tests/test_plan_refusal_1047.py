@@ -202,3 +202,10 @@ def test_the_audit_warns_on_a_pinned_misread_broken_screen_and_fails_a_new_one(t
         assert live_audit._broken_runner_layout(store, pinned=frozenset()) == ([], [])
     finally:
         store.close()
+
+
+def test_a_refusal_in_the_reason_reads_on_into_its_evidence_as_one_sentence():
+    v = screen.decide_class(reasons.PLAN_REFUSED, f"llamacpp:{STEM} is not served: refused: too big for",
+                            evidence="the plan")
+    assert v == screen.Verdict("declined", "not served: this harness's llama-server plan refused it before any "
+                               "load: refused: too big for the plan", reasons.LIMIT, f"plan:{STEM}", reasons.PLAN_REFUSED)

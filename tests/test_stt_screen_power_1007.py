@@ -75,3 +75,82 @@ def test_a_known_better_plant_matches_when_the_lane_serves_its_engine_spelling()
     assert canary.matches(better, {"outcome": "measured", "tier": "adopt", "reason": "candidate", "serves": served})
     assert canary.matches(worse, {"outcome": "declined", "tier": "adopt", "reason": "candidate", "serves": served})
     assert not canary.matches(better, {"outcome": "measured", "tier": "adopt", "serves": "stt:mlx-community/parakeet-tdt-0.6b-v3"})
+
+
+def _row(wer, n=None):
+    row = {"passed": 0, "metrics": {} if wer is None else {"wer": wer}}
+    if n is not None:
+        row["metric_n"] = {"wer": n}
+    return row
+
+
+@pytest.mark.parametrize("lane", ["stt", " STT ", "Stt"])
+def test_the_plausible_wer_is_the_worst_heard_clip_set_on_an_stt_lane(lane):
+    assert screen.plausible_wer({"a": _row(0.2), "b": _row("0.4", n=3)}, lane) == pytest.approx(0.4)
+
+
+@pytest.mark.parametrize("summary", [None, {}])
+@pytest.mark.parametrize("lane", ["stt", "tts", "", None])
+def test_no_summary_or_another_lane_has_no_plausible_wer(summary, lane):
+    assert screen.plausible_wer(summary, lane) is None
+
+
+@pytest.mark.parametrize("lane", ["tts", "code", "", None])
+def test_another_lane_has_no_plausible_wer_however_well_it_heard(lane):
+    assert screen.plausible_wer({"a": _row(0.1)}, lane) is None
+    assert screen.plausible_wer({"m": _row(0.1)}, lane, "m") is None
+
+
+def test_the_limit_is_inclusive_and_one_clip_set_over_it_fails_the_screen():
+    at = screen.SCREEN_MAX_WER
+    assert screen.plausible_wer({"a": _row(at)}, "stt") == at
+    assert screen.plausible_wer({"a": _row(at + 0.01)}, "stt") is None
+    assert screen.plausible_wer({"a": _row(0.1), "b": _row(0.9)}, "stt") is None
+
+
+def test_a_row_with_no_wer_or_no_words_scored_is_not_heard():
+    assert screen.plausible_wer({"a": _row(None)}, "stt") is None
+    assert screen.plausible_wer({"a": {"passed": 0}}, "stt") is None
+    assert screen.plausible_wer({"a": _row(0.3, n=0)}, "stt") is None
+    assert screen.plausible_wer({"a": _row(0.3, n=0), "b": _row(0.2, n=1)}, "stt") == pytest.approx(0.2)
+    assert screen.plausible_wer({"a": {"passed": 0, "metrics": {"wer": None}, "metric_n": {"wer": 2}}}, "stt") is None
+
+
+def test_a_named_candidate_is_judged_on_its_own_row_alone():
+    summary = {"m": _row(0.2), "other": _row(0.9)}
+    assert screen.plausible_wer(summary, "stt", "m") == pytest.approx(0.2)
+    assert screen.plausible_wer(summary, "stt", "other") is None
+    assert screen.plausible_wer(summary, "stt", "absent") is None
+    # The key its runner wrote wins over the spec's own key.
+    assert screen.plausible_wer({"k": _row(0.1), "m": _row(0.8)}, "stt", "m", "k") == pytest.approx(0.1)
+
+
+def test_the_screen_counts_on_the_incumbents_pass_bits_where_adopt_counts_on_its_wer(store_run, monkeypatch):
+    from harness import candidates, winners
+    from harness import memory_store as ms
+    rows = [r for r in _run9() if r["candidate"] == V2][:4]
+    for r in rows:
+        r["metrics"] = {**r["metrics"], "wer": 0.125}
+    spec = f"stt:mlx-community/{V2}"
+    store_run("20261019-000000-stt", "stt", specs={V2: spec},
+              rows=[{**r, "seconds": 0.1, "peak_kb": 0, "detail": ""} for r in rows])
+    conn = ms.connect()
+    try:
+        # The typed stt default differs by platform (whisper on win32), so the served row is named here.
+        cid = candidates.served(conn, spec, lane="stt")
+        monkeypatch.setattr(winners, "served_ids", lambda c: {"stt": cid})
+        ids = [r["case_id"] for r in rows]
+        assert screen.incumbent_draws("stt", conn) == {i: [1] for i in ids}
+    finally:
+        conn.close()
+    assert screen.incumbent_rate("stt", ids) == 1.0
+
+
+def test_a_plausible_transcript_screens_the_candidate_on_its_own_row_under_its_runners_key():
+    summary = {"stt:org/k": {**_row(0.2), "failure_classes": {"content_failed": 1}},
+               "m": {**_row(0.9), "failure_classes": {"content_failed": 1}}}
+    got = screen.outcome(0, summary, candidate="m", key="stt:org/k", lane="stt")
+    assert got == screen.Verdict(
+        "screened", "it transcribed the screen at corpus WER 0.20, under the 0.5 plausibility limit, "
+        "though no clip was word-perfect", "candidate")
+    assert screen.outcome(0, summary, candidate="m", lane="stt").outcome == "declined"

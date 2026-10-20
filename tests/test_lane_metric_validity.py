@@ -277,3 +277,17 @@ def test_the_live_audit_says_a_window_dropped_rows_beside_model_and_gateway_erro
     assert "dropped" in drop
     assert "failed in the model" in model and "gateway" not in model
     assert "gateway or client refused" in gateway
+
+
+def test_a_wer_lane_counts_its_repeats_correlation_on_the_wer_it_pairs_on():
+    """#1007: repeats whose pass bits alternate but whose WER never moves are one case each, not two."""
+    rows = []
+    for i in range(8):
+        for k in (1, 2):
+            rows.append({"candidate": "inc", "case_id": f"c{i}#{k}", "passed": k == 1, "seconds": 1.0,
+                         "metrics": {"wer": 0.1 if i % 2 else 0.0}})
+            rows.append({"candidate": "ch", "case_id": f"c{i}#{k}", "passed": k == 2, "seconds": 1.0,
+                         "metrics": {"wer": 0.0}})
+    cell, p, note = adopt.paired_p(rows, "inc", "ch", "stt")
+    assert (cell.gained, cell.lost, p) == (8, 0, 0.125)
+    assert note == "4 gained against 0 lost once correlated repeats are counted as cases (rho 1.00, repeat 2.0)"

@@ -48,6 +48,33 @@ def test_the_gguf_architecture_alone_names_the_llama_cpp_drafter():
     assert not screen.is_drafter([], gguf={"architecture": "qwen3"})
 
 
+@pytest.mark.parametrize("arch", ["DFlashDraftModel", "dflashdraftmodel", "Qwen3DraftModel"])
+def test_a_config_architecture_ending_draftmodel_is_a_drafter_and_an_attachment(arch):
+    config = {"architectures": ["LlamaForCausalLM", arch]}
+    assert screen.is_drafter([], config) is True
+    assert screen.is_attachment([], config=config) == screen.DRAFTER
+
+
+@pytest.mark.parametrize("arch", ["Qwen3ForCausalLM", "DraftModelForCausalLM"])
+def test_a_config_architecture_that_does_not_end_draftmodel_is_not(arch):
+    assert screen.is_drafter([], {"architectures": [arch]}) is False
+
+
+@pytest.mark.parametrize("arch", ["dflash", "DFlash2", " dflash3 "])
+def test_a_numbered_gguf_dflash_architecture_is_a_drafter(arch):
+    assert screen.is_drafter([], gguf={"architecture": arch})
+
+
+@pytest.mark.parametrize("arch", ["2dflash", "dflashx", "", None])
+def test_another_gguf_architecture_is_not(arch):
+    assert not screen.is_drafter([], gguf={"architecture": arch})
+
+
+def test_a_drafter_tag_alone_makes_an_attachment():
+    assert screen.is_attachment(["draft-model"]) == screen.DRAFTER
+    assert screen.is_attachment("speculative-decoding-draft") == screen.DRAFTER
+
+
 def _machine(*runtimes):
     from harness.machine import Machine
     from harness.memory import Accelerator

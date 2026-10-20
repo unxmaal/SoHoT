@@ -781,3 +781,17 @@ def test_the_fetch_tier_queues_an_adapter_no_engine_is_known_to_load(tmp_path):
         assert state == "queued"
     finally:
         conn.close()
+
+
+@pytest.mark.parametrize("accuracy", [0.2, "0.2", 1e-6])
+def test_a_decide_screen_with_a_right_field_and_no_whole_case_right_is_screened(accuracy):
+    summary = {"m": {"passed": 0, "metrics": {"decide_accuracy": accuracy}, "failure_classes": {"content_failed": 3}}}
+    assert screen.outcome(0, summary, candidate="m") == screen.Verdict(
+        "screened", "it answered decide fields correctly though no case was right in full", "candidate")
+
+
+@pytest.mark.parametrize("row", [{"metrics": {"decide_accuracy": 0.0}}, {"metrics": {"decide_accuracy": None}},
+                                 {"metrics": {}}, {}])
+def test_a_decide_screen_with_no_field_right_is_declined(row):
+    summary = {"m": {"passed": 0, "failure_classes": {"content_failed": 3}, **row}}
+    assert screen.outcome(0, summary, candidate="m").outcome == "declined"

@@ -5,6 +5,7 @@ import contextlib
 import io
 import json
 import math
+import dataclasses
 from dataclasses import replace
 
 import httpx
@@ -200,6 +201,18 @@ def test_a_control_that_wins_is_never_adopted(tmp_path):
         assert row["outcome"] == "declined" and "negative control won" in row["detail"]
     finally:
         conn.close()
+
+
+def test_a_winning_control_keeps_everything_but_its_win():
+    v = adopt.Verdict("code", "q3-4b", "neutral/q3-4b", True, "beats q3-4b", adopt.BY_HAND,
+                      reasons.UNDERPOWERED, {"power": {"cases": 3}})
+    assert adopt._control_guard(v, "neutral:q3-4b") == adopt.Verdict(
+        "code", "q3-4b", "neutral/q3-4b", False, "negative control won, so this lane's method verdicts are "
+        "suspect until it is explained; a control is never a lane default (beats q3-4b)", adopt.BY_HAND,
+        reasons.UNDERPOWERED, {"power": {"cases": 3}})
+    assert adopt._control_guard(v, "deepen:q3-4b") is v
+    lost = dataclasses.replace(v, adopt=False)
+    assert adopt._control_guard(lost, "neutral:q3-4b") is lost
 
 
 def test_the_loop_crosses_deepen_and_its_control_over_each_text_lanes_incumbent(monkeypatch, tmp_path):
