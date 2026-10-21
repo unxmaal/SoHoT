@@ -84,12 +84,21 @@ def sweep(conn, since: float, beat: dict | None) -> dict:
             "ON c.id = a.candidate_id WHERE a.adopted_at >= ? ORDER BY a.adopted_at", (since,))]
     out["stopped"] = [w for w in watchdog(conn, since) if w["action"] == "stop"]
     if beat:
+        from harness import heartbeat
         started = float(beat.get("started") or 0)
         out["loop"] = {"status": beat.get("status", ""), "rc": beat.get("rc"), "error": beat.get("error", ""),
                        "started": started, "finished": beat.get("finished"),
                        "in_window": started >= since, "line": beat.get("line", ""),
-                       "commit": beat.get("commit", ""), "finished_commit": beat.get("finished_commit", "")}
+                       "commit": beat.get("commit", ""), "finished_commit": beat.get("finished_commit", ""),
+                       "ceiling_unused": beat.get(heartbeat.CEILING_UNUSED)}
     return out
+
+
+def unused_line(u: dict) -> str:
+    """The sweep ceiling a loop left unused, and why. #1082."""
+    from harness import power
+    return (f"{power._hm(u.get('left_s') or 0)} of the {power._hm(u.get('ceiling_s') or 0)} sweep ceiling unused: "
+            f"{u.get('why') or 'no reason recorded'}")
 
 
 def watchdog(conn, since: float) -> list[dict]:
@@ -252,6 +261,9 @@ def needs(r: dict) -> list[str]:
             out.append(f"the {datetime.fromtimestamp(c['at']).strftime('%H:%M')} sweep check: {c['line']}")
     if loop is not None and loop["in_window"] and loop.get("code_moved"):
         out.append(loop["code_moved"])
+    unused = (loop or {}).get("ceiling_unused") if loop is not None and loop["in_window"] else None
+    if unused and unused.get("waiting"):
+        out.append(f"the sweep left {unused_line(unused)}")
     for w in r["watchdog"]:
         if w["action"] == "stop" or w["escalated"]:
             dry = " (dry run)" if w["dry_run"] else ""

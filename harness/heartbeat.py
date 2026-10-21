@@ -198,6 +198,19 @@ def mark(key: str, at: float | None = None) -> None:
     _write(data)
 
 
+#: The sweep ceiling a finished loop left unused and why, or None. #1082.
+CEILING_UNUSED = "ceiling_unused"
+
+
+def note(key: str, value) -> None:
+    """Record a JSON value under `key` on this loop's heartbeat; a no-op unless this process started it."""
+    data = _mine()
+    if data is None or data.get("state") != RUNNING:
+        return
+    data[key] = value
+    _write(data)
+
+
 def marked(key: str, data=None) -> float | None:
     """When a loop last did `key`, or None. #972."""
     data = read() if data is None else data

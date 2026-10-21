@@ -12,6 +12,9 @@ from harness import lanes, paths, reasons
 from harness.commands.common import emit, err, note
 from harness.commands import jobs as jobs_cmd
 
+#: The watchdog criteria whose pause frees memory rather than asking the sweep to stop. #1082.
+MEMORY_PAUSES = ("memory", "memory_warn")
+
 
 def cmd_verify(a) -> int:
     """Establish that each lane works, by running its own default. #234."""
@@ -172,15 +175,38 @@ def resume_first(store, fresh: list[dict], want: str = "") -> list[dict]:
     return held + [r for r in fresh if r.get("name") not in names]
 
 
+def room_for(row: dict) -> tuple[bool, float | None, str]:
+    """(fits now, GB its load needs or None, why) for one queued measurement, by the screen's headroom check. #1082."""
+    from harness import candidates, memory, methods
+    from harness import memory_store as ms
+    name = row.get("name", "")
+    target = methods.weights_of(name) if methods.is_method(name) else name
+    if not target:
+        return True, None, f"{name}: its size is unknown; proceeding unchecked"
+    try:
+        store = ms.connect()
+        try:
+            spec = candidates.for_proposal(store, lanes.canonical(row.get("lane")), name,
+                                           row.get("attaches_to") or "") or ""
+        finally:
+            store.close()
+    except Exception:  # noqa: BLE001 - an unbuildable spec is priced by its weights alone
+        spec = ""
+    need = memory.need_gb(target, spec=spec, parallel=1)
+    ok, why = memory.check_model(target, spec=spec, parallel=1)
+    return ok, need if isinstance(need, (int, float)) else None, why
+
+
 def _measure_and_adopt(a, row: dict, sweep=None) -> int:
     """_measure, then unload the challenger it loaded. #444."""
-    from harness import router
+    from harness import mlx_server, router
     loaded: list[str] = []
     try:
         return _measure(a, row, loaded, sweep)
     finally:
         for spec in loaded:
             router.release_spec(spec, f"measured {row['name']}")
+            mlx_server.release_spec(spec, f"measured {row['name']}")
 
 
 def _measure(a, row: dict, loaded: list, sweep=None) -> int:
@@ -705,7 +731,11 @@ def _paused(name: str, lane: str, inc_spec: str, spec: str, split, plan, out, he
     if sweep is not None:
         sweep.lines.append(f"{name}: {why}")
         if str(progress.get("why") or "").startswith("paused on request"):
-            sweep.halted = why
+            # A memory pause frees this run's model for smaller ones; any other request stops the sweep. #1082.
+            if watch.pause_reason(out) in MEMORY_PAUSES:
+                sweep.squeezed = why
+            else:
+                sweep.halted = why
     return 0
 
 

@@ -15,6 +15,8 @@ KNOBS = [
        note="conditional power under the plan's effect below which a paused run that is not ahead stops for futility (#813)"),
     _k("sweep_ceiling_h", ["harness/power.py:SWEEP_CEILING_H"], [4.0, 6.0, 8.0],
        note="hours a discover loop runs from its start; a measurement running at it pauses and resumes next sweep (#806, #813)"),
+    _k("sweep_unused_s", ["harness/ceiling.py:UNUSED_S"], [1800.0, 3600.0, 7200.0],
+       note="ceiling seconds a finished sweep may leave unused before soh morning names why (#1082)"),
     _k("unseen_rate", ["harness/power.py:UNSEEN"], [0.25, 0.5, 0.75],
        note="pass rate a plan assumes for an incumbent with no draws; such a plan is unmeasured (#698)"),
 ]
