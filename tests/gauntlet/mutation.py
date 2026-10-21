@@ -106,7 +106,7 @@ LEFT_OUT = {
         "test_harness_report.py", "test_incumbent_lookup.py", "test_lane_metric_validity.py", "test_loop_backpressure.py",
         "test_canary_919.py", "test_mps_backend_abort.py", "test_new_lane_loop_faults.py", "test_rank_881.py",
         "test_remote_upstreams.py", "test_router_unload.py", "test_slots_memory.py", "test_store_card_facts.py",
-        "test_store_state.py", "test_until_keys_928.py", "test_fetch_files_1040.py"),
+        "test_store_state.py", "test_until_keys_928.py", "test_fetch_files_1040.py", "test_lane_heads_1084.py"),
     "harness/adopt.py": (
         "test_harness_paired.py", "test_harness_report.py", "test_loop_circuit.py", "test_measure_budget.py",
         "test_over_budget_796.py", "test_planted_919.py", "test_projection_696.py", "test_rank_893.py", "test_router_unload.py",

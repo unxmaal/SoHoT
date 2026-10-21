@@ -369,7 +369,7 @@ def _loop_spend(a, rc: int, failed: list | None = None, sweep=None) -> int:
     """
     import argparse as _ap
 
-    from harness import adopt, fetching, screen
+    from harness import adopt, ceiling, fetching, screen
     from harness import memory_store as ms
 
     from harness import disk
@@ -393,34 +393,44 @@ def _loop_spend(a, rc: int, failed: list | None = None, sweep=None) -> int:
     _beat("disk")
     disk.sweep()
 
-    top = int(getattr(a, "top", 3) or 3)
+    # `--top` is an override; unset, the sweep ceiling sizes the fetch, screen and measure. #1084.
+    top = int(getattr(a, "top", 0) or 0)
     budget = fetching.budget_gib(getattr(a, "budget_gib", None))
+    plan = _sized(top, sweep)
 
     want = (getattr(a, "lane", "") or "").strip().lower()
     if want:
         print(f"\n(spending only on the {want} lane)")
-    print(f"\n=== fetch (up to {top}, budget {budget:g} GiB) ===")
+    print(f"\n=== fetch (up to {plan['screens']}, budget {budget:g} GiB) ===")
+    print(f"  {plan['why']}")
     _beat("fetch")
-    held = fetching.held(len(screen_cmd.screenable_backlog(want)), top)
+    backlog = len(screen_cmd.screenable_backlog(want))
+    held = fetching.held(backlog, plan["screens"])
     if held:
         print(f"  skipped: {held[1]}")
     else:
         from harness.commands import common
-        sub = common.parsed("fetch", "--run", limit=top, lane=getattr(a, "lane", ""),
+        sub = common.parsed("fetch", "--run", limit=plan["screens"] - backlog, lane=getattr(a, "lane", ""),
                             budget_gib=getattr(a, "budget_gib", None))
         rc = _step("fetch", screen_cmd.cmd_fetch(sub), failed) or rc
 
     print(f"\n=== screen ===")
     _beat("screen")
-    sub = _ap.Namespace(**{**vars(a), "loop": False, "screen": True,
-                           "run": True, "limit": top, "json": False})
+    from harness import gguf
+    if gguf.unlisted():
+        print("  restarting the router once for the GGUF files day fetches downloaded")
+        gguf.relist()
+    import time
+    until = None if top or sweep is None else time.time() + sweep.remaining() * ceiling.SCREEN_FRACTION
+    sub = _ap.Namespace(**{**vars(a), "loop": False, "screen": True, "run": True, "json": False,
+                           "limit": top or EVERY, "screen_until": until, "screen_s": plan["per_s"]})
     rc = _step("screen", discover_cmd.cmd_discover(sub), failed) or rc
 
     print(f"\n=== measure and adopt ===")
     _beat("measure")
     store = ms.connect()
     try:
-        fresh = measure_cmd.resume_first(store, measure_cmd.measurable(store, top, want), want)
+        fresh = measure_cmd.resume_first(store, measure_cmd.measurable(store, top or EVERY, want), want)
     finally:
         store.close()
     if not fresh:
@@ -432,6 +442,28 @@ def _loop_spend(a, rc: int, failed: list | None = None, sweep=None) -> int:
     if sweep is not None:
         sweep.stopped = ""
     return _measure_all(a, fresh, sweep, failed, rc)
+
+
+#: No count cap: the ceiling stops the screen and measure steps. #1084.
+EVERY = 1_000_000
+
+
+def _sized(top: int, sweep) -> dict:
+    """How many screens this sweep fetches for, and the seconds one screen is taken to need. #1084."""
+    from harness import ceiling, power
+    from harness import memory_store as ms
+    if top:
+        return {"screens": top, "per_s": 0.0, "why": f"--top {top} sets it"}
+    store = ms.connect()
+    try:
+        per = ceiling.screen_s(store)
+    finally:
+        store.close()
+    left = sweep.remaining() if sweep is not None else float(power.SWEEP_CEILING_H) * 3600
+    n = ceiling.screens_that_fit(left * ceiling.SCREEN_FRACTION, per)
+    return {"screens": n, "per_s": per,
+            "why": (f"{n} screen(s) of about {power._hm(per)} fit {ceiling.SCREEN_FRACTION:.0%} "
+                    f"of the {power._hm(left)} left of the sweep ceiling")}
 
 
 def _measure_all(a, fresh: list[dict], sweep, failed: list, rc: int = 0, room=None) -> int:

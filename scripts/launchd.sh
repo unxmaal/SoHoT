@@ -25,12 +25,12 @@ SRC="${LH_REPO:-$REPO}"
 DEPLOY="${LH_DEPLOY:-$LH_HOME/deploy}"
 # `discover` is not a server. It is the scheduled sweep, and it is in this
 # list because the thing that must survive a reboot is the SCHEDULE. #261.
-SERVICES="gateway mlx eval tts mcp discover worker audit ds4 watchdog energy ledger morning claude-news otel canary sweep-check"
+SERVICES="gateway mlx eval tts mcp discover worker audit ds4 watchdog energy ledger morning claude-news otel canary sweep-check fetch"
 
 #: Services that RUN AND EXIT rather than serve, at fixed local hours. KeepAlive
 #: would rerun a finished sweep at once; StartInterval counts from load, so a day
 #: of installs never lets it fire (#625). harness/heartbeat reads the installed hours (#705).
-declare -a PERIODIC=(discover audit watchdog energy ledger morning claude-news canary sweep-check)
+declare -a PERIODIC=(discover audit watchdog energy ledger morning claude-news canary sweep-check fetch)
 DISCOVER_HOURS="${DISCOVER_HOURS:-21}"
 AUDIT_HOURS="${AUDIT_HOURS:-3}"                   # nightly, #492
 # The watchdog watches this machine's own jobs, so every role runs it. #814.
@@ -52,8 +52,10 @@ CANARY_WEEKDAY="${CANARY_WEEKDAY:-6}"
 CANARY_HOUR="${CANARY_HOUR:-4}"
 # Tonight's sweep checked from launchd state and its heartbeat, an hour after it starts and hourly to 06:00. #1062.
 SWEEP_CHECK_HOURS="${SWEEP_CHECK_HOURS:-22 23 0 1 2 3 4 5 6}"
+# Downloads for the next night's screen, by day; it starts nothing 20:00-08:00 or beside a sweep, and is off until LH_DAY_FETCH=1. #1084.
+FETCH_HOURS="${FETCH_HOURS:-8 11 14 17}"
 # Periodic jobs that read or write the shared store: only the scheduler runs them. #703.
-declare -a SCHEDULER_ONLY=(discover audit ledger morning claude-news canary sweep-check)
+declare -a SCHEDULER_ONLY=(discover audit ledger morning claude-news canary sweep-check fetch)
 # Machines sharing one store run the periodic jobs on one of them: scheduler, or node for the rest. #703.
 # A role given once is kept in $LH_HOME/role, so a later plain `make install` keeps it.
 ROLE_FILE="$LH_HOME/role"
@@ -126,11 +128,15 @@ _hf_root() {
   _hf_var HF_HOME
 }
 
-# The watchdog acts and files issues only once Eric sets these; a value given once is kept. #814.
+# The watchdog acts and files issues, and the day fetch runs, only once Eric sets these; a value given once is kept. #814, #1084.
 _watchdog_env() {
-  local var val
-  [ "$1" = watchdog ] || return 0
-  for var in LH_WATCHDOG_ACT LH_WATCHDOG_FILE; do
+  local var val vars
+  case "$1" in
+    watchdog) vars="LH_WATCHDOG_ACT LH_WATCHDOG_FILE" ;;
+    fetch) vars="LH_DAY_FETCH" ;;
+    *) return 0 ;;
+  esac
+  for var in $vars; do
     val="${!var:-}"
     if [ -n "$val" ]; then
       mkdir -p "$LH_HOME"
@@ -183,6 +189,7 @@ _schedule() {
       [ "$service" = ledger ] && hours="$LEDGER_HOURS"
       [ "$service" = morning ] && hours="$MORNING_HOURS" && minute="$MORNING_MINUTE"
       [ "$service" = sweep-check ] && hours="$SWEEP_CHECK_HOURS"
+      [ "$service" = fetch ] && hours="$FETCH_HOURS"
       printf '  <key>StartCalendarInterval</key>\n  <array>\n'
       for h in $hours; do
         printf '    <dict><key>Hour</key><integer>%s</integer><key>Minute</key><integer>%s</integer></dict>\n' "$h" "$minute"
