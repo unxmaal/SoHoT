@@ -76,6 +76,19 @@ def test_nothing_is_unloaded_while_a_run_holds_the_machine(fake):
     assert router.release_spec("llamacpp:command-a-plus-IQ1_S", "x") != []
 
 
+def test_a_model_proven_idle_is_unloaded_even_while_a_run_holds_the_machine(fake):
+    fd = os.open(exclusive.lock_path(), os.O_RDWR | os.O_CREAT, 0o644)
+    assert exclusive._take(fd)
+    try:
+        assert router.release_spec("llamacpp:command-a-plus-IQ1_S", "x", say=lambda m: None) == []
+        assert router.release_spec("llamacpp:command-a-plus-IQ1_S", "x", proven_idle=True,
+                                   say=lambda m: None) == ["command-a-plus-IQ1_S"]
+    finally:
+        exclusive._release(fd)
+        os.close(fd)
+    assert fake.unloads == ["command-a-plus-IQ1_S"]
+
+
 def test_unreadable_keepers_unload_nothing(fake, monkeypatch):
     def boom(*a, **k):
         raise RuntimeError("store locked")
