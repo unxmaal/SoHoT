@@ -18,6 +18,7 @@ NOTHING IS EXECUTED. Fetching weights is not running them.
 """
 from __future__ import annotations
 
+import json
 import re
 import shutil
 import time
@@ -274,9 +275,32 @@ def requires(model_id: str, conn=None) -> list[str]:
             parents = ms.parents_of(c, [model_id]).get(model_id, [])
         except Exception:  # noqa: BLE001
             parents = []
-        got.update(p for p, kind in parents if kind == "adapter" and p != model_id)
+        adapted = [p for p, kind in parents if kind == "adapter" and p != model_id]
+        if adapted and loads_its_base(model_id, c):
+            got.update(adapted)
     got.update(runner_bases(model_id))
     return sorted(got)
+
+
+def loads_its_base(model_id: str, conn) -> bool:
+    """Whether the runner loads an adapter's lineage parent beside it: for a GGUF, only a LoRA GGUF does. #1091."""
+    from harness import context, gguf
+    path = gguf.path_of(model_id, conn)
+    try:
+        kind = str(context.read_meta(path).get("general.type") or "") if path is not None else ""
+    except (OSError, ValueError):
+        kind = ""
+    if kind:
+        return kind.lower() == "adapter"
+    row = conn.execute("SELECT attaches_to, library, card_tags FROM proposals WHERE name = ?", (model_id,)).fetchone()
+    try:
+        tags = [str(t).lower() for t in json.loads(row["card_tags"] or "[]")] if row else []
+    except (TypeError, ValueError):
+        tags = []
+    if path is None and not (model_id.lower().endswith("gguf") or "gguf" in tags
+                             or (row and (row["library"] or "").lower() == "gguf")):
+        return True
+    return bool(row) and (row["attaches_to"] or "").lower() in screen.ADAPTER_KINDS
 
 
 def missing(model_id: str, conn=None) -> list[str]:
@@ -532,39 +556,29 @@ def _reason(exc: Exception) -> str:
 
 def _fetch_needs(name: str, needs: list[str], *, bases: list[str], sizes: dict, sizer,
                  budget: int | None, spent: int, free: int | None, floor: int, fetch):
-    """Download what `name` needs beside itself: (done, bytes spent, (reason, why) of the first base not fetched)."""
+    """Download what `name` needs beside itself, each under the budget and floor: (done, bytes spent, first wait). #1091."""
     done: list[dict] = []
     spent_now = 0
     waiting: tuple[str, str] | None = None
     for dep in needs:
-        if dep not in bases:
-            try:
-                fetch(dep)
-            except FetchDeferred as exc:
-                done.append({"repo": dep, "ok": False, "why": f"needed by {name}: {exc}", "deferred": True})
-                return done, spent_now, waiting
-            except FetchError as exc:
-                done.append({"repo": dep, "ok": False, "why": f"needed by {name}: {exc}"})
-            else:
-                done.append({"repo": dep, "ok": True, "why": f"needed by {name}"})
-            continue
+        what = f"{dep}, the base its runner needs" if dep in bases else f"{dep}, needed by {name}"
         size = (sizes or {}).get(dep) or sizer(dep) or -1
         if budget is not None and size > 0 and spent + spent_now + size > budget:
-            why = (f"{dep}, the base its runner needs, is {size / GIB:.1f} GiB and would take "
-                   f"this run past its {budget / GIB:.0f} GiB budget")
+            why = (f"{what}, is {size / GIB:.1f} GiB and would take this run past its "
+                   f"{budget / GIB:.0f} GiB budget ({(spent + spent_now) / GIB:.1f} GiB already fetched)")
             done.append({"repo": dep, "ok": False, "why": why})
             waiting = waiting or (reasons.LIMIT, why)
             continue
         p = plan(dep, size, free=free, floor=floor)
         if not p.ok:
-            why = f"{dep}, the base its runner needs: {p.why}"
+            why = f"{what}: {p.why}"
             done.append({"repo": dep, "ok": False, "why": why})
             waiting = waiting or (p.reason, why)
             continue
         try:
             fetch(dep)
         except FetchError as exc:
-            why = f"{dep}, the base its runner needs: {exc}"
+            why = f"{what}: {exc}"
             done.append({"repo": dep, "ok": False, "why": why,
                          **({"deferred": True} if isinstance(exc, FetchDeferred) else {})})
             waiting = waiting or (reasons.HARNESS, why)
@@ -572,18 +586,19 @@ def _fetch_needs(name: str, needs: list[str], *, bases: list[str], sizes: dict, 
                 return done, spent_now, waiting
         else:
             spent_now += size
-            done.append({"repo": dep, "ok": True, "why": f"base weights for {name}"})
+            done.append({"repo": dep, "ok": True, "bytes": size,
+                         "why": f"base weights for {name}" if dep in bases else f"needed by {name}"})
     return done, spent_now, waiting
 
 
 def _on_disk_waiting(conn, lane: str = "") -> list[str]:
-    """Queued candidates already downloaded whose runner base is still missing. #632."""
+    """Queued candidates already downloaded whose base or other need is still missing. #632, #1091."""
     out = []
     for r in conn.execute("SELECT name, resolved, lane FROM proposals WHERE state = 'queued'"):
         name = r["resolved"] or r["name"]
         if lane and not lanes.serves(r["lane"], lane):
             continue
-        if runner_bases(name) and have(name, conn) and missing(name, conn):
+        if have(name, conn) and missing(name, conn):
             out.append(name)
     return out
 
@@ -789,7 +804,7 @@ def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=N
                           detail=DOWNLOADED, reason=reasons.CANDIDATE)
         # What it needs beside itself: what its config named on landing (#196) and its runner's base (#632).
         cost = needs_of(name)
-        done.append({"repo": name, "ok": True, "why": where})
+        done.append({"repo": name, "ok": True, "bytes": size, "why": where})
         if cost is None:
             break
         spent += cost

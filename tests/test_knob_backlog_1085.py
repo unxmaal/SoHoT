@@ -18,7 +18,7 @@ CARRIES = {
     "harness/fetching.py": {
         "attachment": "", "backlog": "", "budget": DOWNLOAD_BUDGET, "dep": "", "exc": "", "gap": "", "have": "",
         "lane": "", "name": "", "names": "", "needs": "", "other": "", "p.why": "", "row": "", "size": "",
-        "spent": "", "status": "", "top": DISCOVER_TOP, "until": "", "when": "", "whose": ""},
+        "spent": "", "spent_now": "", "status": "", "top": DISCOVER_TOP, "until": "", "what": "", "when": "", "whose": ""},
 }
 
 
