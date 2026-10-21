@@ -20,13 +20,16 @@ def cmd_fetch(a) -> int:
         from harness import day_fetch
         # launchd ends a job with SIGTERM: raise, so the child is continued and ended, never left stopped.
         signal.signal(signal.SIGTERM, day_fetch.terminated)
+        cleared = day_fetch.clear()
+        for line in cleared:
+            note(f"day fetch: cleared {line}, left by a controller that died")
         got = day_fetch.run(a)
         note(f"day fetch: {'ran' if got['started'] else 'nothing started'}: {got['why']}")
         if got.get("started"):
             rate = got.get("capped_rate_mb_s")
             note(f"  {got['bytes'] / 1e9:.2f} GB in {got['seconds'] / 60:.0f} min, rc {got['rc']}"
                  + (f"; {rate:.2f} MB/s over {got['capped_s'] / 60:.0f} capped min" if rate else ""))
-        emit(**got)
+        emit(**got, cleared=cleared)
         return 0
     want = (getattr(a, "lane", "") or "").strip().lower()
     store = ms.connect()
@@ -39,6 +42,9 @@ def cmd_fetch(a) -> int:
             emit(queued=[], orphans=[])
             return 0
         if not a.run:
+            from harness import throttle
+            for pid, what in throttle.strays():
+                note(f"left by a dead controller (soh fetch --day clears it): pid {pid}, {what}")
             testable = [r for r in rows if r.get("lane")]
             orphans = [r for r in rows if not r.get("lane")]
             note(f"\n{len(testable)} queued, "
@@ -69,6 +75,9 @@ def cmd_fetch(a) -> int:
                                 refresh=not getattr(a, "hold_router", False), stop_at=getattr(a, "until", None)):
             fetched.append(got)
             note(f"  {'OK  ' if got['ok'] else 'skip'} {got['repo']}: {got['why']}")
+        spent = sum(g.get("bytes") or 0 for g in fetched if g["ok"])
+        # Needs included, so this agrees with each budget skip's "already fetched". #1091.
+        note(f"fetched {spent / fetching.GIB:.1f} GiB of its {budget / fetching.GIB:.0f} GiB budget")
     finally:
         store.close()
     emit(fetched=fetched)

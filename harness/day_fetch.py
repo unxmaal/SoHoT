@@ -112,6 +112,12 @@ def _release(proc) -> None:
         proc.kill()
 
 
+def clear(strays=None, kill=None) -> list[str]:
+    """Continue and end what a dead controller left: a stopped download, a spinning nettop. #1092."""
+    from harness import throttle
+    return throttle.reap(throttle.strays() if strays is None else strays, kill=kill)
+
+
 def run(a, *, clock=time.time, popen=subprocess.Popen, counter=None, hold=None, backlog=None, store=None,
          running=None, environ=None) -> dict:
     """One day fetch: refuse, or start the fetch as a child and hold its rate under the cap in the capped hours."""

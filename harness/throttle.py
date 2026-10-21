@@ -10,6 +10,37 @@ import sys
 import time
 
 MB = 1_000_000
+#: The monitor this module starts, as `ps` prints it; a copy whose parent is launchd lost its controller. #1092.
+NETTOP = "nettop -P -x -J bytes_in -p "
+#: Continues and ends its pids at EOF on stdin, which a dead controller's closed pipe gives, however it died. #1092.
+_GUARD = 'read ok || { kill -CONT "$@"; kill -TERM "$@"; } 2>/dev/null'
+
+
+class Guard:
+    """Ends `pids` once this process dies without standing the guard down, SIGKILL included: macOS has no pdeathsig."""
+
+    def __init__(self, *pids: int):
+        if sys.platform == "win32":
+            raise OSError("the guard is a POSIX shell")
+        r, self._w = os.pipe()
+        try:
+            self._proc = subprocess.Popen(["sh", "-c", _GUARD, "guard", *map(str, pids)], stdin=r,
+                                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                                          start_new_session=True)
+        finally:
+            os.close(r)
+
+    def release(self) -> None:
+        """Stand down: the controller ends its own processes."""
+        if self._w is None:
+            return
+        try:
+            os.write(self._w, b"ok\n")
+        except OSError:
+            self._proc.kill()
+        os.close(self._w)
+        self._w = None
+        self._proc.wait()
 
 
 class Received:
@@ -22,9 +53,10 @@ class Received:
         self.pid, self.bytes, self._buf = int(pid), 0, b""
         master, slave = pty.openpty()
         self._fd = master
-        self._proc = subprocess.Popen(["nettop", "-P", "-x", "-J", "bytes_in", "-p", str(self.pid), "-L", "0", "-s", "1"],
+        self._proc = subprocess.Popen([*NETTOP.split(), str(self.pid), "-L", "0", "-s", "1"],
                                       stdin=subprocess.DEVNULL, stdout=slave, stderr=subprocess.DEVNULL)
         os.close(slave)
+        self._guard = Guard(self._proc.pid)
 
     def poll(self, wait: float) -> int:
         """The newest cumulative count, after waiting up to `wait` seconds for a sample."""
@@ -47,6 +79,7 @@ class Received:
             self._proc.wait(timeout=5)
         except subprocess.TimeoutExpired:
             self._proc.kill()
+        self._guard.release()
         os.close(self._fd)
 
 
@@ -57,6 +90,51 @@ def parse(line: str, pid: int) -> int | None:
         if part.rpartition(".")[2] == str(pid) and parts[i + 1].isdigit():
             return int(parts[i + 1])
     return None
+
+
+def _ps() -> str:
+    return subprocess.run(["ps", "-ww", "-axo", "pid=,ppid=,stat=,command="], capture_output=True, text=True,
+                          check=False).stdout
+
+
+def strays(ps: str | None = None) -> list[tuple[int, str]]:
+    """(pid, what) of each nettop or stopped download whose controller died, so launchd adopted it. #1092."""
+    if ps is None:
+        if sys.platform != "darwin":
+            return []
+        ps = _ps()
+    procs = {}
+    for line in ps.splitlines():
+        parts = line.split(None, 3)
+        if len(parts) == 4 and parts[0].isdigit() and parts[1].isdigit():
+            procs[int(parts[0])] = (int(parts[1]), parts[2], parts[3])
+    watched = {int(w[0]) for _, _, cmd in procs.values() if cmd.startswith(NETTOP)
+               for w in [cmd[len(NETTOP):].split()[:1]] if w and w[0].isdigit()}
+    out = []
+    for pid, (ppid, stat, cmd) in procs.items():
+        if ppid != 1:
+            continue
+        if cmd.startswith(NETTOP):
+            out.append((pid, f"nettop: {cmd}"))
+        elif stat.startswith("T") and (pid in watched or "harness.cli fetch" in cmd):
+            out.append((pid, f"stopped download: {cmd}"))
+    return out
+
+
+def reap(found, kill=None) -> list[str]:
+    """Continue and end each stray; what was cleared, one line each."""
+    if sys.platform == "win32":
+        return []
+    send = kill or os.kill
+    out = []
+    for pid, what in found:
+        try:
+            send(pid, signal.SIGCONT)
+            send(pid, signal.SIGTERM)
+        except OSError:
+            continue
+        out.append(f"pid {pid}, {what}")
+    return out
 
 
 def available() -> bool:
@@ -73,6 +151,18 @@ def hold(proc, cap_bps: float, read, *, capped=lambda: True, stop=lambda: "", cl
          sleep=time.sleep, tick: float = 1.0, signal_to=None) -> dict:
     """Run `proc` to its end; while capped(), let it run only the slice of each tick its byte allowance buys."""
     send = signal_to or (lambda sig: os.kill(proc.pid, sig))
+    guard = Guard(proc.pid) if signal_to is None and sys.platform != "win32" else None
+    try:
+        return _hold(proc, cap_bps, read, send, capped, stop, clock, sleep, tick)
+    finally:
+        if guard is not None:
+            # Never left stopped once the guard stands down.
+            if sys.platform != "win32" and proc.poll() is None:
+                send(signal.SIGCONT)
+            guard.release()
+
+
+def _hold(proc, cap_bps, read, send, capped, stop, clock, sleep, tick) -> dict:
     start = last = clock()
     got = base = read(0)
     allowed, running, full = float(got), True, True

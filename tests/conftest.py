@@ -107,6 +107,13 @@ def _no_real_launchd_units(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def _no_real_strays(monkeypatch):
+    """No test lists, and so none reaps, this machine's real stopped downloads or nettops. #1092."""
+    from harness import throttle
+    monkeypatch.setattr(throttle, "_ps", lambda: "")
+
+
+@pytest.fixture(autouse=True)
 def _no_real_lane_probes(monkeypatch):
     """No watchdog wake sends a real lane a completion; a test that wants the real probe restores Probes.lanes.real. #924."""
     from harness import watchdog
