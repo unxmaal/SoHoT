@@ -8,6 +8,8 @@ KNOBS = [
        probe="clone_kb_cap", note="KB of weight files in a shallow clone above which a repo is weights in git (#991)"),
     _k("dead_days", ["harness/inspect.py:UPSTREAM_DEAD_DAYS"], [180, 365, 730, 1095, 3650], probe="dead_days",
        note="when a repo counts as abandoned"),
+    _k("disk_floor", ["harness/fetching.py:DISK_FLOOR"], [10 * GIB, 25 * GIB, 50 * GIB, 100 * GIB],
+       note="room a download must leave free on the volume; one that would go under it waits (#1085)"),
     _k("download_budget", ["scripts/serve-discover.sh:DISCOVER_BUDGET_GIB"], [20, 40, 80, 160],
        limit="download_budget_gib", note="GiB one scheduled sweep may download in all (#704)"),
     _k("download_cap", ["harness/fetching.py:MAX_DOWNLOAD"],

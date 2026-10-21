@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from harness import knobs, lanes, probes, reasons
+from harness import knob_backlog, knobs, lanes, probes, reasons
 
 REPO = Path(__file__).resolve().parent.parent
 BACKLOG_DIR = REPO / "tests" / "gauntlet" / "knob_backlog"
@@ -254,6 +254,41 @@ def test_the_knob_backlog_only_shrinks():
     gone = sorted(set(_backlog()) - found)
     assert not gone, "registered or gone: remove from tests/gauntlet/knob_backlog/:\n  " + "\n  ".join(
         f"{_backlog_file(s).name}: {s}" for s in gone)
+
+
+def _assert_no_site_joins_the_backlog(root):
+    got = knob_backlog.added(root)
+    if got is None:
+        pytest.skip(f"{knob_backlog.BASE} is not in this clone")
+    assert not got, ("not in the backlog at the merge base with origin/main: register these in an area of "
+                     "harness/knobs/, or name why one gates nothing in that area's NOT_GATING (#1085):\n  "
+                     + "\n  ".join(f"{_backlog_file(s).name}: {s}" for s in got))
+
+
+def test_no_site_joins_the_knob_backlog():
+    _assert_no_site_joins_the_backlog(REPO)
+
+
+def test_a_branch_that_adds_a_backlog_line_fails_and_one_that_removes_a_line_passes(tmp_path):
+    from tests.test_knob_merge import git
+    backlog = tmp_path / knob_backlog.DIR
+    backlog.mkdir(parents=True)
+    (backlog / "harness.txt").write_text("harness/a.py:MAX_A\nharness/b.py:MAX_B\n", encoding="utf-8")
+    git(tmp_path, "init", "-q", "-b", "main")
+    git(tmp_path, "add", "-A")
+    git(tmp_path, "commit", "-q", "-m", "base")
+    git(tmp_path, "update-ref", "refs/remotes/origin/main", "HEAD")
+    git(tmp_path, "checkout", "-q", "-b", "work")
+    (backlog / "harness.txt").write_text("harness/a.py:MAX_A\n", encoding="utf-8")
+    git(tmp_path, "commit", "-q", "-am", "register MAX_B")
+    _assert_no_site_joins_the_backlog(tmp_path)
+    (backlog / "harness.txt").write_text("harness/a.py:MAX_A\nharness/c.py:MAX_C\n", encoding="utf-8")
+    with pytest.raises(AssertionError, match=r"harness\.txt: harness/c\.py:MAX_C"):
+        _assert_no_site_joins_the_backlog(tmp_path)
+    git(tmp_path, "commit", "-q", "-am", "backlog MAX_C")
+    (backlog / "evals.txt").write_text("evals/d.py:MAX_D\n", encoding="utf-8")
+    with pytest.raises(AssertionError, match=r"evals\.txt: evals/d\.py:MAX_D\s+harness\.txt: harness/c\.py:MAX_C"):
+        _assert_no_site_joins_the_backlog(tmp_path)
 
 
 def test_each_knob_backlog_file_is_sorted_unique_and_holds_only_its_own_directory():
