@@ -24,6 +24,22 @@ def clock() -> float:
     return time.time()
 
 
+def ask_pause(outdir, reason: str = "") -> Path:
+    """Write the run's pause file: a timestamp, then the reason a reader can act on. #1082."""
+    target = Path(outdir) / PAUSE_FILE
+    target.write_text(f"{time.strftime('%Y-%m-%dT%H:%M:%S')} {reason}".strip(), encoding="utf-8")
+    return target
+
+
+def pause_reason(outdir) -> str:
+    """The reason a pause file names after its timestamp; "" for a bare touch, SIGUSR1 or no file. #1082."""
+    try:
+        text = (Path(outdir) / PAUSE_FILE).read_text(encoding="utf-8").strip()
+    except (OSError, ValueError):
+        return ""
+    return text.partition(" ")[2].strip()
+
+
 class Stop(Exception):
     """The run pauses between cases."""
 

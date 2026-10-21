@@ -127,9 +127,11 @@ def test_the_port_follows_llamacpp_port(monkeypatch):
 # --- the tiers call it -------------------------------------------------------
 
 def test_the_measure_unloads_its_challenger_however_it_ends(monkeypatch):
-    released = []
+    from harness import mlx_server
+    released, mlx = [], []
     monkeypatch.setattr(router, "release_spec",
                         lambda spec, why, **k: released.append(spec))
+    monkeypatch.setattr(mlx_server, "release_spec", lambda spec, why, **k: mlx.append(spec))
 
     def measure(a, row, loaded, sweep=None):
         loaded.append("llamacpp:Challenger-Q4_K_M")
@@ -138,6 +140,7 @@ def test_the_measure_unloads_its_challenger_however_it_ends(monkeypatch):
     with pytest.raises(RuntimeError):
         cli._measure_and_adopt(argparse.Namespace(), {"name": "org/c"})
     assert released == ["llamacpp:Challenger-Q4_K_M"]
+    assert mlx == ["llamacpp:Challenger-Q4_K_M"], "the mlx server lets go of a challenger it was left holding (#1082)"
 
 
 def test_the_loop_ends_by_settling_the_router(monkeypatch):
@@ -176,12 +179,15 @@ def test_the_screen_unloads_each_candidate_it_ran(monkeypatch, tmp_path):
     monkeypatch.setattr(measure_cmd, "_launch", lambda argv, **kw: subprocess.run(argv, **kw))
     monkeypatch.setattr(subprocess, "run", lambda argv, **kw: _Done())
     monkeypatch.setattr(measure_cmd, "_receipt_at", lambda out: None)
-    released = []
+    from harness import mlx_server
+    released, mlx = [], []
     monkeypatch.setattr(router, "release_spec",
                         lambda spec, why, **k: released.append((spec, why)))
+    monkeypatch.setattr(mlx_server, "release_spec", lambda spec, why, **k: mlx.append((spec, why)))
     cli._report_screen(argparse.Namespace(lane="", top=5, limit=5, run=True,
                                           json=False))
     assert released == [("llamacpp:C-Q4_K_M", "screened org/c-GGUF")]
+    assert mlx == released, "an mlx screen's model is not left resident after it (#1082)"
 
 
 def test_the_suite_never_reaches_the_real_router():

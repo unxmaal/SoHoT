@@ -1052,6 +1052,14 @@ run of down rows, bounded by the last up before it and the first up after;
 soh availability --days 7
 ```
 
+Memory pressure at warn with no swapping (#1082) never pauses a job: the
+watchdog notifies, then gives back models resident beside it that no running
+eval names and no lane serves, the mlx server's included (swapped back to its
+boot model). Swapping past `watchdog_swapout_max` or critical pressure still
+notifies, then pauses. A memory pause does not end the sweep: the measure step
+goes on with the measurements that fit, smallest first, and `soh morning`
+names any sweep that left more than `sweep_unused_s` of its ceiling unused.
+
 ---
 
 # Setup and upkeep

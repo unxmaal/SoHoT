@@ -155,8 +155,9 @@ def _no_run_in_flight():
         os.close(fd)
 
 
-def release(stems, why: str, *, get=None, post=None, keep=None, say=print, base: str = "") -> list[str]:
-    """Unload each resident stem nothing protects from the router at `base`, while no run is in flight."""
+def release(stems, why: str, *, get=None, post=None, keep=None, say=print, base: str = "",
+            proven_idle: bool = False) -> list[str]:
+    """Unload each resident stem nothing protects from the router at `base`, while no run is in flight or no run uses it."""
     wanted = [s for s in dict.fromkeys(stems) if s]
     if not wanted:
         return []
@@ -170,7 +171,7 @@ def release(stems, why: str, *, get=None, post=None, keep=None, say=print, base:
         say(f"  router: kept {', '.join(wanted)}: the lane defaults could not be read ({exc})")
         return []
     gone = []
-    with _no_run_in_flight() as free:
+    with (contextlib.nullcontext(True) if proven_idle else _no_run_in_flight()) as free:
         for stem in wanted:
             if stem in keepers:
                 continue

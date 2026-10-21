@@ -45,6 +45,8 @@ def render(r: dict) -> list[str]:
     else:
         when = "" if loop["in_window"] else " (not last night)"
         out.append(f"sweep     started {_hm(loop['started'])}{when}; {loop['line']}")
+        if loop.get("ceiling_unused"):
+            out.append(f"ceiling   {morning.unused_line(loop['ceiling_unused'])}")
     checks = r.get("checks") or []
     out.append(f"checks    {len(checks)} sweep check(s)")
     out.extend(f"          {_hm(c['at'])} {c['verdict']:<14} {c['line']}{' [notified]' if c['notified'] else ''}"

@@ -121,6 +121,10 @@ class World:
     resident: list | None = None
     pressure: object = None
     swap_per_min: float | None = None
+    #: The model the mlx server holds; None when it holds none or cannot be asked.
+    mlx_held: str | None = None
+    #: Models a lane, an adoption or a gateway alias serves; None when unreadable.
+    protected: set | None = None
     gateway_up: bool | None = None
     mlx_generating: bool | None = None
     fallbacks: list | None = None
@@ -247,6 +251,19 @@ class Probes:
         from harness import pressure
         return pressure.sample()
 
+    def mlx_held(self) -> str | None:
+        if not self.launchd_loaded("mlx"):
+            return None
+        from harness import mlx_server, serving
+        return mlx_server.held(serving.MLX_URL, timeout=PROBE_TIMEOUT_S)
+
+    def protected(self) -> set | None:
+        from harness import router
+        try:
+            return set(router.protected())
+        except Exception:  # noqa: BLE001 - unknown protection means nothing is free to unload
+            return None
+
     def gateway_up(self) -> bool | None:
         if not self.launchd_loaded("gateway"):
             return None
@@ -317,14 +334,14 @@ class ProgressFiles:
                 out.append({**got, "_dir": str(path.parent)})
         return out
 
-    def pause(self, run: dict) -> str:
-        """Touch the run's pause file; the run checkpoints and exits between cases."""
+    def pause(self, run: dict, reason: str = "") -> str:
+        """Write the run's pause file naming why; the run checkpoints and exits between cases."""
+        from evals.watch import ask_pause
         where = Path(run["_dir"])
         target = Path(run.get("pause_file") or where / self.PAUSE_FILE)
-        if target.parent.resolve() != where.resolve():
+        if target.parent.resolve() != where.resolve() or target.name != self.PAUSE_FILE:
             return f"refused: pause file {target} is outside the run directory {where}"
-        target.write_text(time.strftime("%Y-%m-%dT%H:%M:%S"), encoding="utf-8")
-        return f"pause file written: {target}"
+        return f"pause file written: {ask_pause(where, reason)}"
 
 
 # --- observe ---------------------------------------------------------------------
@@ -419,6 +436,8 @@ def observe(probes: Probes, conn=None, now: float | None = None) -> World:
     world.resident = probes.resident()
     world.pressure = probes.pressure()
     world.swap_per_min = _swap_rate(probes, world.pressure, now)
+    world.mlx_held = probes.mlx_held()
+    world.protected = probes.protected() if world.mlx_held else None
     world.gateway_up = probes.gateway_up()
     world.mlx_generating = probes.mlx_generating()
     world.fallbacks = probes.fallbacks(conn)
@@ -583,15 +602,50 @@ def _idle_model(w: World) -> list[Finding]:
             for stem in w.resident]
 
 
-def _memory(w: World) -> list[Finding]:
+def _memory_state(w: World) -> tuple[dict, bool, bool]:
+    """(evidence, swapping or critical, warn without either)."""
+    from harness import pressure
     level = getattr(w.pressure, "level", None)
-    alarming = bool(getattr(w.pressure, "alarming", False))
     swapping = w.swap_per_min is not None and w.swap_per_min > SWAPOUT_MAX_PER_MIN
-    if not (alarming or swapping):
-        return []
+    critical = level is not None and level >= pressure.CRITICAL
     ev = {"pressure_level": level, "swapouts_per_min": None if w.swap_per_min is None else round(w.swap_per_min),
           "limit_per_min": SWAPOUT_MAX_PER_MIN}
-    return [Finding("memory", s, ev) for s in w.top if not s.orphan]
+    return ev, swapping or critical, bool(getattr(w.pressure, "alarming", False)) and not (swapping or critical)
+
+
+def _memory(w: World) -> list[Finding]:
+    ev, trouble, _ = _memory_state(w)
+    return [Finding("memory", s, ev) for s in w.top if not s.orphan] if trouble else []
+
+
+def _in_use(w: World) -> list[str] | None:
+    """The spec text of every running eval, None when one wrote no progress file: unknown use is not idle."""
+    specs = []
+    for s in w.evals:
+        if not s.progress:
+            return None
+        specs += [str(v) for v in (s.progress.get("specs") or {}).values()]
+    return specs
+
+
+def idle(w: World) -> list[dict]:
+    """Resident models no running eval names and nothing serves: what a warn can give back. #1082."""
+    used = _in_use(w)
+    if used is None:
+        return []
+    out = [{"server": "router", "model": m} for m in w.resident or [] if not any(m in u for u in used)]
+    if w.mlx_held and w.protected is not None and w.mlx_held not in w.protected \
+            and not any(w.mlx_held in u for u in used):
+        out.append({"server": "mlx", "model": w.mlx_held})
+    return out
+
+
+def _memory_warn(w: World) -> list[Finding]:
+    ev, _, warn = _memory_state(w)
+    if not warn:
+        return []
+    ev = {**ev, "idle": idle(w)}
+    return [Finding("memory_warn", s, ev) for s in w.top if not s.orphan]
 
 
 def _gateway_down(w: World) -> list[Finding]:
@@ -645,7 +699,9 @@ CRITERIA = (
     Criterion("idle_model", (), NOTE, UNLOAD, ("processes", "resident"), _idle_model,
               "a router model resident with nothing running and nothing serving it"),
     Criterion("memory", ("watchdog_swapout_max",), NOTIFY, PAUSE, ("processes", "pressure"), _memory,
-              "memory pressure or swap growth while a job runs"),
+              "swapping or critical memory pressure while a job runs"),
+    Criterion("memory_warn", ("watchdog_swapout_max",), NOTIFY, UNLOAD, ("processes", "pressure"), _memory_warn,
+              "memory pressure at warn with no swapping while a job runs: give back idle models, never pause"),
     Criterion("gateway_down", (), NOTIFY, RESTART, ("gateway",), _gateway_down,
               "the gateway's liveliness probe fails"),
     Criterion("mlx_dead", (), RESTART, NOTIFY, ("mlx",), _mlx_dead,
@@ -763,7 +819,7 @@ class Hands:
         runs = f.subject.runs()
         if not runs:
             return "pause unavailable: no progress file to pause through"
-        return "; ".join(self.reader.pause(r) for r in runs)
+        return "; ".join(self.reader.pause(r, f.criterion) for r in runs)
 
     def _group(self, s: Subject) -> str:
         from harness import workqueue
@@ -781,9 +837,26 @@ class Hands:
 
     def unload(self, f: Finding) -> str:
         from harness import router
+        if f.criterion == "memory_warn":
+            return self._unload_idle(f.evidence.get("idle") or [])
         stem = f.subject.detail.get("stem", "")
         gone = router.release([stem], "watchdog: resident with nothing running", say=self.say)
         return f"unloaded {stem}" if gone else f"kept {stem}: protected, gone, or a run is in flight"
+
+    def _unload_idle(self, idle: list) -> str:
+        """Give back each idle model the memory_warn finding named. #1082."""
+        from harness import mlx_server, router
+        if not idle:
+            return "nothing idle to unload: every resident model is in use or served"
+        why = "watchdog: memory at warn, resident with no running eval using it"
+        out = []
+        for m in idle:
+            if m.get("server") == "mlx":
+                gone = mlx_server.release(m["model"], why, say=self.say)
+            else:
+                gone = bool(router.release([m["model"]], why, say=self.say, proven_idle=True))
+            out.append(f"{'unloaded' if gone else 'kept'} {m['server']} {m['model']}")
+        return "; ".join(out)
 
     def restart(self, f: Finding) -> str:
         from harness import paths

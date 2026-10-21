@@ -337,6 +337,8 @@ def _spend_and_settle(a, rc: int, failed: list | None = None, sweep=None) -> int
         router.settle("the discovery loop is done")
         if sweep is not None:
             print("\n".join(sweep.summary()))
+            from harness import heartbeat
+            heartbeat.note(heartbeat.CEILING_UNUSED, sweep.unused())
     _publish_if_enabled()
     return rc
 
@@ -424,16 +426,58 @@ def _loop_spend(a, rc: int, failed: list | None = None, sweep=None) -> int:
     if not fresh:
         print("  nothing survived the screen, so there is nothing to measure. "
               "A screen that rejects everything is the tier doing its job.")
+        if sweep is not None:
+            sweep.stopped = "nothing survived the screen to measure"
         return rc
-    for i, row in enumerate(fresh, 1):
-        held = _held_back(sweep, len(fresh) - i + 1)
+    if sweep is not None:
+        sweep.stopped = ""
+    return _measure_all(a, fresh, sweep, failed, rc)
+
+
+def _measure_all(a, fresh: list[dict], sweep, failed: list, rc: int = 0, room=None) -> int:
+    """Each measurement in turn; after a memory pause, only those that fit now, smallest first. #813, #1082."""
+    room = room or measure_cmd.room_for
+    queue, total, i, tight = list(fresh), len(fresh), 0, False
+    while queue:
+        held = _held_back(sweep, len(queue))
         if held:
             sweep.lines.append(held)
+            sweep.stopped, sweep.waiting = held, len(queue)
             break
-        _beat("measure", candidate=row.get("name", ""), item=i, items=len(fresh))
+        if tight:
+            row, why = _next_fitting(queue, room)
+            if row is None:
+                line = f"memory: {len(queue)} measurement(s) do not fit now and wait for the next sweep; {why}"
+                print(f"  {line}", flush=True)
+                sweep.lines.append(line)
+                sweep.stopped, sweep.waiting = line, len(queue)
+                break
+            queue.remove(row)
+        else:
+            row = queue.pop(0)
+        i += 1
+        _beat("measure", candidate=row.get("name", ""), item=i, items=total)
         rc = _step(f"measure {row.get('name', '')}".strip(),
                    measure_cmd._measure_and_adopt(a, row, sweep), failed) or rc
+        if sweep is not None and sweep.squeezed:
+            # Its model is released by now: re-sample memory before each start from here on.
+            print(f"  {row.get('name', '')} was paused for memory; going on with what fits, smallest first",
+                  flush=True)
+            sweep.squeezed, tight = "", True
     return rc
+
+
+def _next_fitting(queue: list[dict], room) -> tuple[dict | None, str]:
+    """The smallest queued measurement that fits now (unknown sizes last), or None and why the smallest does not."""
+    sized = []
+    for n, row in enumerate(queue):
+        ok, need, why = room(row)
+        sized.append((need is None, need or 0.0, n, ok, why, row))
+    sized.sort(key=lambda t: t[:3])
+    for _, _, _, ok, _, row in sized:
+        if ok:
+            return row, ""
+    return None, f"{sized[0][5].get('name', '')}: {sized[0][4]}" if sized else ""
 
 
 def _held_back(sweep, waiting: int) -> str:

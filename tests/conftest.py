@@ -100,6 +100,10 @@ def _no_real_launchd_units(monkeypatch):
     live = {u.rstrip("/") for u in ("http://127.0.0.1:8081", "http://localhost:8081")}
     monkeypatch.setattr(mlx_server, "generating",
                         lambda base, *a, **kw: None if base.rstrip("/") in live else real(base, *a, **kw))
+    # No test asks the live mlx unit what it holds, so none swaps it off its model. #1082.
+    held = mlx_server.held
+    monkeypatch.setattr(mlx_server, "held",
+                        lambda base, *a, **kw: None if base.rstrip("/") in live else held(base, *a, **kw))
 
 
 @pytest.fixture(autouse=True)

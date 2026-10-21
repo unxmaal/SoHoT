@@ -22,6 +22,8 @@ KNOBS = [
             "generation thread (#912)"),
     _k("mlx_request_ctx", ["harness/serving.py:MLX_REQUEST_CTX"], [8192, 16384, 32768, 65536],
        note="context one MLX request's KV is priced at when the parallel cap is sized (#699)"),
+    _k("mlx_swap_timeout", ["harness/mlx_server.py:SWAP_TIMEOUT_S"], [30.0, 120.0, 300.0],
+       note="seconds a swap of the mlx server back to its boot model may take before the idle model is kept (#1082)"),
     _k("ornith_slot_ctx", ["harness/context.py:ORNITH_SLOT_CTX"], [131072, 262144],
        note="context each Ornith-1.5-35B-Q4_K_M slot is sized for; never under context.MIN_LONG_SLOT_CTX (#682)"),
     _k("ornith_slots", ["harness/context.py:ORNITH_SLOTS"], [1, 2, 4, 8],

@@ -232,7 +232,7 @@ def _report_screen(a) -> int:
     """
     import subprocess
 
-    from harness import candidates, heartbeat, rank, router, screen
+    from harness import candidates, heartbeat, mlx_server, rank, router, screen
     from harness import memory_store as ms
 
     want = (getattr(a, "lane", "") or "").strip().lower()
@@ -347,6 +347,7 @@ def _report_screen(a) -> int:
                               reason=verdict.reason, until=verdict.until,
                               candidate_id=cid, failure_class=verdict.failure_class)
             router.release_spec(r["candidate"], f"screened {r['name']}")
+            mlx_server.release_spec(r["candidate"], f"screened {r['name']}")
             if verdict.failure_class in reasons.STOPS:
                 print(f"   {verdict.failure_class}: the model server or GPU is "
                       f"suspect; stopping the screen so the rest are not "
