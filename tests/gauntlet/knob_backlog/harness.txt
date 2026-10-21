@@ -72,7 +72,6 @@ harness/feeds.py:RETRIES
 harness/feeds.py:RETRY_DELAY
 harness/feeds.py:fetch(timeout)
 harness/feeds.py:find_feed->probe(retries)
-harness/fetching.py:DISK_FLOOR
 harness/fetching.py:in_rank_order->_ms.judgeable(limit)
 harness/fetching.py:run(limit)
 harness/gateway_switch.py:BACKOFF_S
@@ -123,7 +122,6 @@ harness/proc.py:_JOB_EXTENDED_LIMIT_INFORMATION
 harness/publish.py:STALE_DAYS
 harness/ramp.py:run(floor_pct)
 harness/ramp.py:run(settle_s)
-harness/ratelimit.py:ATTEMPTS
 harness/ratelimit.py:MAX_WAIT_S
 harness/ratelimit.py:get_json(timeout)
 harness/report.py:STALE_LANE_DAYS
