@@ -291,8 +291,11 @@ def test_with_no_byte_counter_the_capped_hours_start_nothing(monkeypatch):
 def test_a_held_router_is_not_restarted_and_the_night_restarts_it_once(store, monkeypatch, _no_real_services):
     _seed(store, "org/coder-GGUF", 4)
     monkeypatch.setattr(fetching.lanes, "GGUF_SERVED", tuple(fetching.lanes.GGUF_SERVED) + ("code",))
+    # A GGUF needs llama.cpp, which a CI runner lacks: this machine's runtimes are not the question here.
+    monkeypatch.setattr(rank, "unrunnable", lambda row, machine=None: "")
     monkeypatch.setattr(gguf, "adopt", lambda conn, name: "/models/coder-Q4_K_M.gguf")
-    fetching.run(store, limit=1, free=1000 * GIB, budget=40 * GIB, refresh=False)
+    got = fetching.run(store, limit=1, free=1000 * GIB, budget=40 * GIB, refresh=False)
+    assert [g["repo"] for g in got if g["ok"]] == ["org/coder-GGUF"], got
     assert _no_real_services == [] and gguf.unlisted() == ["coder-Q4_K_M"]
     gguf.relist()
     assert _no_real_services == [("coder-Q4_K_M",)] and gguf.unlisted() == []
