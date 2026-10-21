@@ -366,8 +366,9 @@ def build_parser() -> argparse.ArgumentParser:
                    help="with --neighbors, how many people to ask")
     d.add_argument("--budget", type=int, default=900,
                    help="with --neighbors, cap on GitHub API requests")
-    d.add_argument("--top", type=int, default=25,
-                   help="with --neighbors, how many to show")
+    d.add_argument("--top", type=int, default=None,
+                   help="with --neighbors, how many to show (25); with --loop, a count that overrides "
+                        "the sweep ceiling sizing the fetch, screen and measure (#1084)")
     d.add_argument("--inspect", action="store_true",
                    help="clone a candidate's source and say whether it can run "
                         "here, before anything is downloaded")
@@ -433,6 +434,15 @@ def build_parser() -> argparse.ArgumentParser:
     f.add_argument("--limit", type=int, default=1,
                    help="how many to fetch. One at a time by default: this "
                         "machine holds one working set")
+    f.add_argument("--budget-gib", type=float, default=None, dest="budget_gib",
+                   help="GiB this fetch may download in all; default: the download_budget knob")
+    f.add_argument("--hold-router", action="store_true",
+                   help="leave the llama-server router as it is; the next sweep restarts it once (#1084)")
+    f.add_argument("--until", type=float, default=None,
+                   help="epoch seconds after which no new download starts (#1084)")
+    f.add_argument("--day", action="store_true",
+                   help="the daytime job: as many downloads as the next night can screen, beside no sweep, "
+                        "rate-capped in the capped hours; off unless LH_DAY_FETCH=1 (#1084)")
     f.set_defaults(func=screen_cmd.cmd_fetch)
 
     rep = sub.add_parser(
@@ -576,7 +586,8 @@ def build_parser() -> argparse.ArgumentParser:
                          "it waits; read from a copy of the store")
     fun.add_argument("--since", default="", help="only proposals first seen since: 30d, or a date")
     fun.add_argument("--lane", default="", help="only this lane")
-    fun.add_argument("--top", type=int, default=3, help="what a sweep fetches and screens, as `--top` (default 3)")
+    fun.add_argument("--top", type=int, default=None,
+                     help="what a sweep fetches and screens, as `--top` (default: what the sweep ceiling fits)")
     fun.add_argument("--budget-gib", type=float, default=None, help="a sweep's download budget (default: knob)")
     fun.add_argument("--head", type=int, default=10, help="how much of each lane's ranked head to list")
     fun.set_defaults(func=funnel_cmd.cmd_funnel)

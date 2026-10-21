@@ -231,7 +231,7 @@ def _report_judge_store(a) -> int:
     store = ms.connect()
     scored = 0
     try:
-        rows = ms.judgeable(store, limit=getattr(a, "top", 25))
+        rows = ms.judgeable(store, limit=getattr(a, "top", None) or 25)
         rows = discover_cmd.shard(rows, getattr(a, "shard", ""))
         waiting = ms.judgeable_total(store)
         if not rows:

@@ -112,6 +112,10 @@ def format_waits(until, lane: str = "", runtimes=None) -> bool:
 #: why_not reasons, and the ones fetch skips on without trying or writing anything. #925.
 BACKPRESSURE, BUDGET, FORMAT, NO_LANE, UNINSPECTED = "backpressure", "budget", "format", "no lane", "uninspected"
 OVER_BUDGET, FAILED = "over budget", "last download failed"
+#: The fetch's own recorded refusal (a runner gap, a budget, a base it waits on), read back by the funnel. #1084.
+SKIPPED = "fetch skipped"
+#: The detail of the fetch verdict that records a download, the one fetch verdict that is not a skip.
+DOWNLOADED = "downloaded"
 SILENT = (BACKPRESSURE, BUDGET, FORMAT, NO_LANE, UNINSPECTED)
 
 
@@ -347,7 +351,32 @@ def queued(conn, tiers=FETCHABLE_TIERS, kind: str = FETCHABLE_KIND,
         # queue report and not the fetch. Issue #211.
         from harness import lanes
         out = [r for r in out if lanes.serves(r.get("lane"), lane)]
-    return in_rank_order(out, conn)
+    return by_lane_turns(in_rank_order(out, conn), conn)
+
+
+def by_lane_turns(rows: list[dict], conn=None) -> list[dict]:
+    """Rank order taken a lane at a time: every lane's #1 before any lane's #2; a parent rides in its child's lane. #1084."""
+    names = [r["name"] for r in rows]
+    child_lane: dict[str, str] = {}
+    if conn is not None and names:
+        try:
+            parents = ms.parents_of(conn, names)
+        except Exception:  # noqa: BLE001
+            parents = {}
+        for r in rows:
+            for parent, _kind in parents.get(r["name"], []):
+                child_lane.setdefault(parent, lanes.canonical(r.get("lane") or ""))
+    queues: dict[str, list[dict]] = {}
+    for r in rows:
+        key = child_lane.get(r["name"]) or child_lane.get(r.get("resolved") or "") \
+            or lanes.canonical(r.get("lane") or "")
+        queues.setdefault(key, []).append(r)
+    at = {id(r): i for i, r in enumerate(rows)}
+    out, turn = [], 0
+    while len(out) < len(rows):
+        out += sorted((q[turn] for q in queues.values() if turn < len(q)), key=lambda r: at[id(r)])
+        turn += 1
+    return out
 
 
 def in_rank_order(rows: list[dict], conn=None) -> list[dict]:
@@ -390,7 +419,7 @@ def in_rank_order(rows: list[dict], conn=None) -> list[dict]:
 
 def download(repo: str, snapshot=None, listing=None, hf_download=None,
              text: bool = True, conn=None, require_weights: bool = False,
-             model_type: str = "", lane: str = "", card=None) -> str:
+             model_type: str = "", lane: str = "", card=None, refresh: bool = True) -> str:
     """Weights into the shared cache. Returns the path.
 
     HF_HUB_OFFLINE is 1 everywhere else in this project on purpose: an eval
@@ -401,11 +430,11 @@ def download(repo: str, snapshot=None, listing=None, hf_download=None,
     from harness import env
     with env.online():
         return _download(repo, snapshot, listing, hf_download, text, conn, require_weights,
-                         model_type, lane, card)
+                         model_type, lane, card, refresh)
 
 
 def _download(repo, snapshot, listing, hf_download, text, conn, require_weights,
-              model_type="", lane="", card=None) -> str:
+              model_type="", lane="", card=None, refresh=True) -> str:
     try:
         allow = None
         if require_weights and (listing is not None or snapshot is None):
@@ -423,8 +452,9 @@ def _download(repo, snapshot, listing, hf_download, text, conn, require_weights,
             raise FetchError("no single GGUF file fits the ceiling")
         if single:
             from harness import gguf
-            return gguf.download(repo, single[0], hf_download=hf_download,
-                                 conn=conn)
+            # A day fetch leaves the router alone; the night's screen restarts it. #1084.
+            return gguf.download(repo, single[0], hf_download=hf_download, conn=conn,
+                                 refresh=None if refresh else (lambda: gguf.note_unlisted((Path(single[0]).stem,))))
         if snapshot is None:
             from huggingface_hub import snapshot_download as snapshot
         with downloads.store(conn) as c:
@@ -561,7 +591,8 @@ def _on_disk_waiting(conn, lane: str = "") -> list[str]:
 def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=None,
         free: int | None = None, lane: str = "",
         budget: int | None = None, listing=None,
-        hf_download=None, floor: int = DISK_FLOOR, sizer=None) -> list[dict]:
+        hf_download=None, floor: int = DISK_FLOOR, sizer=None,
+        refresh: bool = True, stop_at: float | None = None, clock=time.time) -> list[dict]:
     """Fetch up to `limit` queued candidates, recording what happened.
 
     `budget` caps what ONE INVOCATION downloads in total, which is the job
@@ -583,7 +614,7 @@ def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=N
     fetched = 0
     spent = 0
     from harness import gguf
-    gguf.adopt_pending(conn)
+    gguf.adopt_pending(conn, refresh=refresh)
     if sizer is None:
         from harness import inspect as ins
         sizer = ins.hf_size
@@ -594,7 +625,7 @@ def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=N
             name, [m for m in requires(name, conn) if not have(m, conn)],
             bases=runner_bases(name), sizes=sizes or {}, sizer=sizer, budget=budget,
             spent=spent, free=free, floor=floor,
-            fetch=lambda dep: download(dep, snapshot=snapshot, conn=conn))
+            fetch=lambda dep: download(dep, snapshot=snapshot, conn=conn, refresh=refresh))
         done.extend(got)
         if waiting:
             reason, why = waiting
@@ -686,6 +717,10 @@ def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=N
         # budget, so nothing was ever fetched.
         if fetched >= limit:
             break
+        if stop_at is not None and clock() >= stop_at:
+            done.append({"repo": row["resolved"] or row["name"], "ok": False,
+                         "why": "this fetch's window has closed; the next one takes it"})
+            break
         name = row["resolved"] or row["name"]
         # Each row's own measured size; an override map covering only the
         # first `limit` rows left the rest at 0 for 22 sweeps. #292.
@@ -714,11 +749,11 @@ def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=N
                 where = download(name, snapshot=snapshot, listing=listing,
                                  hf_download=hf_download, text=text, conn=conn,
                                  require_weights=True, model_type=row.get("model_type") or "",
-                                 lane=row.get("lane") or "", card=row)
+                                 lane=row.get("lane") or "", card=row, refresh=refresh)
             else:
                 where = download(name, snapshot=snapshot, conn=conn, require_weights=True,
                                  model_type=row.get("model_type") or "",
-                                 lane=row.get("lane") or "", card=row)
+                                 lane=row.get("lane") or "", card=row, refresh=refresh)
         except FetchDeferred as exc:
             done.append({"repo": name, "ok": False, "why": str(exc), "deferred": True})
             break
@@ -742,14 +777,16 @@ def run(conn, sizes: dict[str, int] | None = None, *, limit: int = 1, snapshot=N
             # A whole GGUF-only repo is served through the router. #301, #303.
             from harness import gguf
             linked = gguf.adopt(conn, name)
-            if linked:
+            if linked and not refresh:
+                gguf.note_unlisted((Path(linked).stem,))
+            elif linked:
                 # The router lists a new file only after a restart, and the screen tier comes next. #1012.
                 gguf.refresh_router(expect=(Path(linked).stem,))
         # WHAT IT NEEDS BESIDE ITSELF, as its config recorded it on landing.
         # A tokenizer in another repo makes a whole download unloadable. #196.
         # Where it landed is a downloads row, not this verdict's run_path. #411.
         ms.decide_or_skip(conn, row["name"], "queued", tier="fetch",
-                          detail="downloaded", reason=reasons.CANDIDATE)
+                          detail=DOWNLOADED, reason=reasons.CANDIDATE)
         # What it needs beside itself: what its config named on landing (#196) and its runner's base (#632).
         cost = needs_of(name)
         done.append({"repo": name, "ok": True, "why": where})

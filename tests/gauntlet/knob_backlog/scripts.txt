@@ -3,7 +3,6 @@ scripts/h3-weights-status.sh:H3_TARGET_GIB
 scripts/launchd.sh:AUDIT_HOURS
 scripts/launchd.sh:DISCOVER_HOURS
 scripts/router-sleep-idle.sh:LLAMACPP_SLEEP_IDLE
-scripts/serve-discover.sh:DISCOVER_TOP
 scripts/serve-llamacpp.sh:LLAMACPP_GPU_LAYERS
 scripts/services.sh:SERVICES_SETTLE_S
 scripts/slots-sweep.sh:SWEEP_BUDGET_S

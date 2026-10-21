@@ -139,7 +139,7 @@ def adopt(conn, repo: str) -> str:
     return name
 
 
-def adopt_pending(conn) -> list[str]:
+def adopt_pending(conn, refresh: bool = True) -> list[str]:
     """adopt() each complete text-lane hub download that has no GGUF row."""
     from harness import downloads, lanes
     out, linked = [], []
@@ -153,8 +153,46 @@ def adopt_pending(conn) -> list[str]:
             out.append(row["repo"])
             linked.append(Path(name).stem)
     if out:
-        refresh_router(expect=tuple(linked))
+        refresh_router(expect=tuple(linked)) if refresh else note_unlisted(linked)
     return out
+
+
+#: GGUF stems a day fetch linked without restarting the router, under the soh home. #1084.
+UNLISTED = "router-unlisted.json"
+
+
+def _unlisted_path() -> Path:
+    from harness import paths
+    return paths.home() / UNLISTED
+
+
+def unlisted() -> list[str]:
+    import json
+    try:
+        got = json.loads(_unlisted_path().read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return []
+    return [str(s) for s in got] if isinstance(got, list) else []
+
+
+def note_unlisted(stems) -> None:
+    """Remember stems the router does not list yet, for the next sweep to restart it once. #1084."""
+    import json
+    got = sorted(set(unlisted()) | {s for s in stems if s})
+    path = _unlisted_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(got), encoding="utf-8")
+
+
+def relist() -> str:
+    """Restart the router once for what day fetches left unlisted; '' when there was nothing or it answered. #1084."""
+    stems = tuple(unlisted())
+    if not stems:
+        return ""
+    why = refresh_router(expect=stems)
+    if not why:
+        _unlisted_path().unlink(missing_ok=True)
+    return why or ""
 
 
 def router_restart_argv(platform: str) -> list[str]:

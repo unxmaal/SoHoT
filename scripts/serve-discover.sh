@@ -20,12 +20,13 @@ mkdir -p "$LH_LOGS"
 # ceiling fills the disk overnight and is discovered the next morning; the loop
 # already refuses to exceed these and they are here so the answer is visible in
 # the place that sets the schedule.
-TOP="${DISCOVER_TOP:-3}"
+# 0: the sweep ceiling sizes the fetch, screen and measure; a count overrides it. #1084.
+TOP="${DISCOVER_TOP:-0}"
 BUDGET="${DISCOVER_BUDGET_GIB:-40}"
 # Unset, the loop's power plan picks the repeat per lane within its time budget (#479, #591, #696).
 REPEAT="${DISCOVER_REPEAT:-}"
 
-echo "=== sweep $(date -u +%Y-%m-%dT%H:%M:%SZ) top=$TOP budget=${BUDGET}GiB ==="
+echo "=== sweep $(date -u +%Y-%m-%dT%H:%M:%SZ) top=${TOP/#0/ceiling} budget=${BUDGET}GiB ==="
 # Not exec: a sweep killed by a bootout or ^C must leave a line in discover.log. #794.
 child=""
 _killed() {
@@ -39,7 +40,8 @@ trap '_killed INT 130' INT
 trap '_killed HUP 129' HUP
 # Its own process group, so the trap reaches every descendant, not just uv. #805.
 set -m
+[ "$TOP" = 0 ] && TOP=""
 uv run soh discover --loop --run \
-  --top "$TOP" --budget-gib "$BUDGET" ${REPEAT:+--repeat "$REPEAT"} &
+  ${TOP:+--top "$TOP"} --budget-gib "$BUDGET" ${REPEAT:+--repeat "$REPEAT"} &
 child=$!
 wait "$child"

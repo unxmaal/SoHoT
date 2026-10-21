@@ -41,7 +41,7 @@ def cmd_funnel(a) -> int:
         note(str(exc))
         emit(False, error=str(exc))
         return 2
-    top = int(a.top)
+    top = int(a.top or 0)
     budget = int(fetching.budget_gib(a.budget_gib) * fetching.GIB)
     try:
         backlog = len(screen_cmd.screenable_backlog(""))

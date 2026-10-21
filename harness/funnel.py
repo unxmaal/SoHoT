@@ -55,9 +55,23 @@ def _downloads(conn) -> dict[int, dict]:
     return out
 
 
-def _reason(row: dict, *, budget, backlog, top, position: int | None) -> tuple[str, str]:
-    """Why a queued, undownloaded proposal waits: fetch's own why_not, else its place in fetch order."""
+def _skipped(history: list[dict], since: float) -> dict | None:
+    """The fetch tier's newest skip of this row since its state began: a queued fetch verdict that downloaded nothing. #1084."""
+    said = [v for v in history if v["tier"] == "fetch" and v["outcome"] == "queued" and v["decided_at"] >= since]
+    if not said or said[-1]["detail"] == fetching.DOWNLOADED:
+        return None
+    return said[-1]
+
+
+def _reason(row: dict, *, budget, backlog, top, position: int | None,
+            skipped: dict | None = None) -> tuple[str, str]:
+    """Why a queued, undownloaded proposal waits: a gate fetch applies now, else the fetch's own recorded skip, else its place in fetch order."""
     got = fetching.why_not(row, budget=budget, backlog=backlog, top=top)
+    if got and got[0] in fetching.SILENT:
+        return got
+    if skipped and (not row.get("failed_at") or skipped["decided_at"] >= row["failed_at"]):
+        when = time.strftime("%Y-%m-%d", time.localtime(skipped["decided_at"]))
+        return fetching.SKIPPED, f"{skipped['detail']} (fetch, {when})"
     if got:
         return got
     if position is not None and position < top:
@@ -86,10 +100,12 @@ def _said(history: list[dict], since: float) -> str:
 
 
 def proposals(conn, *, lane: str = "", since: float | None = None, now: float | None = None,
-              budget: int | None = None, backlog: int = 0, top: int = 3) -> list[dict]:
+              budget: int | None = None, backlog: int = 0, top: int | None = None) -> list[dict]:
     """One row per proposal: stage, entry into its state, age since first sighting, and why it waits."""
-    from harness import downloads, rank, report
+    from harness import ceiling, downloads, rank, report
     now = time.time() if now is None else now
+    # What a sweep screens: an explicit count, else what the ceiling has room for. #1084.
+    top = top or ceiling.screen_capacity(conn, now=now)
     budget = int(fetching.budget_gib() * fetching.GIB) if budget is None else budget
     histories, dls = _histories(conn), _downloads(conn)
     per_lane: dict[str, list[str]] = {}
@@ -130,7 +146,8 @@ def proposals(conn, *, lane: str = "", since: float | None = None, now: float | 
         if state == "queued" and not downloaded:
             got = fetchable.get(p["name"])
             row["reason"], row["why"] = _reason(got, budget=budget, backlog=backlog, top=top,
-                                                position=position.get(p["name"])) if got else _unfetchable(p)
+                                                position=position.get(p["name"]),
+                                                skipped=_skipped(history, start)) if got else _unfetchable(p)
         out.append(row)
     return out
 

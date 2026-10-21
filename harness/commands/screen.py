@@ -15,6 +15,19 @@ def cmd_fetch(a) -> int:
     from harness import fetching, inspect as ins
     from harness import memory_store as ms
 
+    if getattr(a, "day", False):
+        import signal
+        from harness import day_fetch
+        # launchd ends a job with SIGTERM: raise, so the child is continued and ended, never left stopped.
+        signal.signal(signal.SIGTERM, day_fetch.terminated)
+        got = day_fetch.run(a)
+        note(f"day fetch: {'ran' if got['started'] else 'nothing started'}: {got['why']}")
+        if got.get("started"):
+            rate = got.get("capped_rate_mb_s")
+            note(f"  {got['bytes'] / 1e9:.2f} GB in {got['seconds'] / 60:.0f} min, rc {got['rc']}"
+                 + (f"; {rate:.2f} MB/s over {got['capped_s'] / 60:.0f} capped min" if rate else ""))
+        emit(**got)
+        return 0
     want = (getattr(a, "lane", "") or "").strip().lower()
     store = ms.connect()
     try:
@@ -52,8 +65,8 @@ def cmd_fetch(a) -> int:
             return 0
         budget = int(fetching.budget_gib(getattr(a, "budget_gib", None)) * fetching.GIB)
         fetched = []
-        for got in fetching.run(store, limit=a.limit, lane=want,
-                                budget=budget):
+        for got in fetching.run(store, limit=a.limit, lane=want, budget=budget,
+                                refresh=not getattr(a, "hold_router", False), stop_at=getattr(a, "until", None)):
             fetched.append(got)
             note(f"  {'OK  ' if got['ok'] else 'skip'} {got['repo']}: {got['why']}")
     finally:
@@ -167,6 +180,11 @@ def screenable_backlog(want: str = "", plan=None, room=None, deferred=None) -> l
             and not methods.is_method(r["name"]) and not deferred(r["name"]) and room(r)]
 
 
+def out_of_time(until: float | None, per_s: float, now: float) -> bool:
+    """A screen of `per_s` seconds started now would end past `until`. #1084."""
+    return until is not None and now + per_s > until
+
+
 def snapshot_gap(row: dict, conn) -> str:
     """Why an offline load cannot open a ready row's recorded weights, its rows stood down; "" when it can. #799."""
     from harness import downloads, fetching, methods
@@ -243,7 +261,7 @@ def _report_screen(a) -> int:
     # Ready rows come from the whole plan: the rank head is often rows the
     # fetch skipped for budget, which crowded out what it fetched. #376.
     ready = [r for r in full if r["state"] == screen.READY]
-    planned = full[:getattr(a, "top", 5)]
+    planned = full[:getattr(a, "top", None) or 25]
     planned += [r for r in ready if r not in planned]
     if not getattr(a, "run", False):
         print(f"\n{len(planned)} candidate(s), {len(ready)} ready to screen:")
@@ -264,8 +282,15 @@ def _report_screen(a) -> int:
     store = ms.connect()
     try:
         limit, taken = getattr(a, "limit", 1), 0
+        until, per = getattr(a, "screen_until", None), float(getattr(a, "screen_s", 0) or 0)
         for r in ready:
             if taken >= limit:
+                break
+            # The sweep ceiling's screen share, not a count, ends the step. #1084.
+            if out_of_time(until, per, time.time()):
+                left = len(ready) - ready.index(r)
+                print(f"\n   the screen share of the sweep ceiling is spent: {left} ready candidate(s) "
+                      f"wait for the next sweep", flush=True)
                 break
             print(f"\n── {r['name']}", flush=True)
             # Weights an offline load cannot open go back to fetch, never to a verdict. #799.

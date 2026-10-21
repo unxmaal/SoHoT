@@ -443,7 +443,7 @@ def _report_inspect(a) -> int:
             # how 227 of 235 swept candidates 404ed: every name the sweep
             # writes is a HuggingFace id and this tier only knew how to clone
             # from GitHub. Issue #167.
-            limit = getattr(a, "top", 10) * 5
+            limit = (getattr(a, "top", None) or 25) * 5
             work_items = [(n, r) for r in ms.REGISTRIES
                           for n in ms.pending(store, limit=limit, registry=r,
                                               screened=False)]
@@ -464,7 +464,7 @@ def _report_inspect(a) -> int:
         else:
             work_items = [(n.repo, ms.GITHUB) for n in
                           __import__("harness.neighbors", fromlist=["x"])
-                          .neighbors(client=client, top=getattr(a, "top", 10))]
+                          .neighbors(client=client, top=getattr(a, "top", None) or 25)]
         work_items = shard(work_items, getattr(a, "shard", ""))
         out = []
         ins.PACE.start()
@@ -668,7 +668,7 @@ def _report_neighbors(a) -> int:
             print(f"    {r}")
         return 0
 
-    found = nb.neighbors(people, client, top=getattr(a, "top", 25),
+    found = nb.neighbors(people, client, top=getattr(a, "top", None) or 25,
                          exclude=nb.DEFAULT_SEEDS)
     if a.json:
         print(json.dumps({"crowd": len(people),

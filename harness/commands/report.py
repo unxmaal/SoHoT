@@ -116,7 +116,7 @@ def _report_queue(a) -> int:
     # after that or it counts rows that will never be offered. The image lane
     # held 11 waiting of which 6 were LoRAs. Issue #209.
     ranked = ranked_all
-    waiting, ranked = len(ranked), ranked[:getattr(a, "top", 25)]
+    waiting, ranked = len(ranked), ranked[:getattr(a, "top", None) or 25]
     if a.json:
         print(json.dumps({"queue": ranked, "waiting": waiting,
                           "retests": retests}, indent=2))

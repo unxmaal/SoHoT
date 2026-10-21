@@ -14,7 +14,7 @@ DISCOVER_TOP = "scripts/serve-discover.sh:DISCOVER_TOP"
 DOWNLOAD_BUDGET = "scripts/serve-discover.sh:DISCOVER_BUDGET_GIB"
 #: Per file, each name a reason's hole reads that resolves to no site: the limit it carries, or "" for a measured value.
 CARRIES = {
-    "harness/funnel.py": {"p": "", "position": "", "said": "", "top": DISCOVER_TOP},
+    "harness/funnel.py": {"p": "", "position": "", "said": "", "skipped": "", "top": DISCOVER_TOP, "when": ""},
     "harness/fetching.py": {
         "attachment": "", "backlog": "", "budget": DOWNLOAD_BUDGET, "dep": "", "exc": "", "gap": "", "have": "",
         "lane": "", "name": "", "names": "", "needs": "", "other": "", "p.why": "", "row": "", "size": "",
@@ -58,12 +58,10 @@ def test_every_limit_a_funnel_or_fetch_reason_quotes_is_a_registered_knob():
     assert ("harness/fetching.py", "floor") in limits and ("harness/fetching.py", "cap") in limits
     known = knobs.registered()
     loose = sorted(f"{rel}: {{{name}}} quotes {s}" for (rel, name), sites in limits.items()
-                   for s in sites if s not in known and s != DISCOVER_TOP)
+                   for s in sites if s not in known)
     assert not loose, "register these in an area of harness/knobs/:\n  " + "\n  ".join(loose)
 
 
-@pytest.mark.xfail(DISCOVER_TOP not in knobs.registered(), strict=True,
-                   reason="#1084 registers DISCOVER_TOP, the cap the funnel quotes as 'a sweep downloads at most'")
 def test_the_cap_a_sweep_downloads_at_most_is_a_registered_knob():
     quoted = {key for key, sites in _limits().items() if DISCOVER_TOP in sites}
     assert ("harness/funnel.py", "top") in quoted
