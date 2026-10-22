@@ -99,9 +99,14 @@ def asks_pause(eye: Watch):
         signal.signal(sig, before)
 
 
+#: Identity fields a checkpoint from before they were recorded lacks; their absence there is not a change. #1094.
+LATER = ("identities",)
+
+
 def differs(had: dict, now: dict) -> list[str]:
     """The identity fields a checkpoint and this run disagree on."""
-    return sorted(k for k in set(had) | set(now) if had.get(k) != now.get(k))
+    return sorted(k for k in set(had) | set(now) if had.get(k) != now.get(k)
+                  and not (k in LATER and k not in had))
 
 
 def read(outdir) -> tuple[dict, list[dict]] | None:

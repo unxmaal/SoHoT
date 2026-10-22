@@ -498,6 +498,11 @@ def _cells(run: dict):
         cell[0] += float(r.get("wall_s") or r.get("seconds") or 0.0)
         cell[1] = cell[1] + toks if toks and cell[1] is not None else None
         cell[2] += 1
+    if ident.get("reuse"):
+        # The incumbent cells taken from stored draws keep their stored time, so a challenger is still judged against it. #1094.
+        from harness import reuse
+        for case, (seconds, toks) in reuse.timing(run["_dir"]).items():
+            by.setdefault(order[0], {}).setdefault(case, [float(seconds or 0.0), toks or None, 1])
     return order[0], by
 
 

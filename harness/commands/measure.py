@@ -157,6 +157,38 @@ def cmd_throughput(a) -> int:
     return 0
 
 
+def cmd_reuse_replay(a) -> int:
+    """Replay a paused paired run with the incumbent's draws from earlier matching runs; exit 1 when the verdict moves. #1094."""
+    import sqlite3
+
+    from harness import ledger, reuse
+    from harness import memory_store as ms
+    if a.store:
+        conn = sqlite3.connect(f"{Path(a.store).resolve().as_uri()}?immutable=1", uri=True)
+        conn.row_factory = sqlite3.Row
+    else:
+        conn = ledger.open_ro(ms.db_path())
+    try:
+        got = reuse.replay(conn, a.run)
+    except ValueError as exc:
+        return err(str(exc))
+    finally:
+        conn.close()
+    note(f"run {got['run_id']} ({got['lane']}): {got['challenger']} against {got['incumbent']}")
+    note(f"  matching earlier runs: {got['matching_runs'] or 'none'}; {got['reused']} incumbent cell(s) "
+         f"reused ({', '.join(f'run {k}: {v}' for k, v in got['runs'].items()) or '-'}), {got['fresh']} fresh")
+    for name in ("control", "replay"):
+        note(f"  {name}:")
+        for line in got[name]["looks"]:
+            note(f"    {line}")
+    was, now = got["control"]["verdict"], got["replay"]["verdict"]
+    same = bool(was and now and (was["adopt"], was["decision"]) == (now["adopt"], now["decision"]))
+    note(f"  {'same verdict' if same else 'VERDICT MOVED'}: control "
+         f"{was and was['decision']}, replay {now and now['decision']}")
+    emit(**got, same=same)
+    return 0 if same else 1
+
+
 def measurable(store, top: int, want: str = "") -> list[dict]:
     """Survivors in the scoped lane, filtered before the limit. #386."""
     from harness import memory_store as ms
@@ -277,6 +309,9 @@ def _measure(a, row: dict, loaded: list, sweep=None) -> int:
         # took a stranger's run (`legacy-...` sorts above timestamps). #222.
         out = (Path(held["out"]) if held else paths.home() / "runs"
                / f"{time.strftime('%Y%m%d-%H%M%S')}-adopt-{lane}")
+        if (getattr(plan, "reuse", None) or {}).get("reused"):
+            from harness import reuse
+            reuse.write(out, inc_spec, plan.reuse)
         argv = _argv(lane, plan, out, inc_spec, spec, resume=bool(held))
         # ROUTE IT THE WAY THE SCREEN DOES: LiteLLM refuses a repo id it has no alias for. #223, #206.
         route = screen.routed_gateway(name)
@@ -317,6 +352,7 @@ def _measure(a, row: dict, loaded: list, sweep=None) -> int:
                                 proposals={spec: name})
         inc_key = candidates.key_for(store, inc_spec)
         ch_key = candidates.key_for(store, spec)
+        rows, summary, taken_from = _merge_reused(store, out, plan, rows, summary, inc_key)
     finally:
         store.close()
     inc_row = _summary_row(summary, inc_key)
@@ -382,6 +418,8 @@ def _measure(a, row: dict, loaded: list, sweep=None) -> int:
                            tested=tested, alpha=adopt.alpha_for(tested) - spent if taken else None)
     if taken:
         verdict = replace(verdict, evidence={**verdict.evidence, "looks": taken})
+    if taken_from:
+        verdict = replace(verdict, evidence={**verdict.evidence, "reuse": taken_from})
     print(f"    {'ADOPTED' if verdict.adopt else 'kept the incumbent'}: "
           f"{verdict.why}")
     _record(verdict, spec, data.get("run_id"), out)
@@ -443,6 +481,7 @@ def _plan(a, lane: str, inc_spec: str, spec: str = "", sweep=None):
         plan, [rates[c] for c in split.holdout],
         cases_run=every if side == "all" else len(split.holdout), median_s=median_s,
         budget_s=per, explicit=bool(explicit), calls=calls)
+    plan = _with_reuse(plan, lane, inc_spec, est, side)
     if est["challenger_source"] not in ("measured", "like incumbent", "bounded") and est["challenger_s"] is not None:
         estimated = "; ".join(x for x in (estimated, f"challenger seconds per call "
                                           f"{est['challenger_s']:.0f}s by {est['challenger_source']}") if x)
@@ -465,12 +504,45 @@ def _plan(a, lane: str, inc_spec: str, spec: str = "", sweep=None):
               f"{power._hm(plan.budget_s)}", flush=True)
     if dev_skipped:
         print(f"    {dev_skipped}", flush=True)
+    from harness import reuse
+    if reuse.line(plan.reuse):
+        print(f"    reuse: {reuse.line(plan.reuse)}", flush=True)
+    elif (plan.reuse or {}).get("unresolved"):
+        print(f"    reuse: none, the incumbent's identity is unreadable: {'; '.join(plan.reuse['unresolved'])}",
+              flush=True)
     missing = power.unmeasured(draws, split.holdout)
     if missing and any(draws.values()):
         print(f"    projected: {len(missing)} of {len(split.holdout)} holdout "
               f"unmeasured, drawn from the incumbent's measured per-case rates",
               flush=True)
     return split, plan
+
+
+def _with_reuse(plan, lane: str, inc_spec: str, est: dict, side: str):
+    """The plan with the incumbent cells stored draws under its identity cover, priced without them. #1094."""
+    from evals import run
+    from harness import holdout, reuse
+    from harness import memory_store as ms
+    try:
+        cases = run.load_selected(run.parse_args(["--modality", lane]))
+    except SystemExit as exc:
+        return replace(plan, reuse={"digest": "", "unresolved": [f"cases: {exc}"]})
+    on = holdout.only(cases, side)
+    ident = run.content_identity(lane, inc_spec, run.run_budget(lane, None), (), {}, on)
+    if not ident["digest"]:
+        return replace(plan, reuse={"digest": "", "unresolved": ident["unresolved"]})
+    cells = [c.id for c in run.expand_cases(on, plan.repeat)]
+    store = ms.connect()
+    try:
+        got = reuse.plan(store, lane, ident["digest"], cells, cases=ident["cases"])
+    finally:
+        store.close()
+    inc = (est.get("incumbent_s") or 0.0) * (est.get("incumbent_calls") or 1)
+    ch = (est.get("challenger_s") or 0.0) * (est.get("challenger_calls") or 1)
+    share = inc / (inc + ch) if inc + ch else 0.5
+    saved = share * got["reused"] / max(len(cells), 1)
+    projected = plan.projected_s * (1 - saved) if plan.projected_s is not None else None
+    return replace(plan, reuse=got, projected_s=projected)
 
 
 #: Seconds a stopped run's process group gets between SIGTERM and SIGKILL. #673.
@@ -599,6 +671,9 @@ def _argv(lane: str, plan, out, inc_spec: str, spec: str, resume: bool = False) 
             for who in ("incumbent", "challenger")]
     if all(each):
         argv += [x for s_ in each for x in ("--plan-s", f"{s_:.2f}")]
+    if (getattr(plan, "reuse", None) or {}).get("reused"):
+        from harness import reuse
+        argv += ["--reuse", str(Path(out) / reuse.REUSE_FILE)]
     if resume:
         argv.append("--resume")
     return argv
@@ -694,6 +769,7 @@ def _paused(name: str, lane: str, inc_spec: str, spec: str, split, plan, out, he
     store = ms.connect()
     try:
         tested = adopt.comparisons(store, lane, split.version)
+        rows, _, taken_from = _merge_reused(store, out, plan, rows, {}, inc_key)
     finally:
         store.close()
     look, verdict = looks.look(rows, lane=lane, inc_key=inc_key, ch_key=ch_key, split=split,
@@ -702,11 +778,12 @@ def _paused(name: str, lane: str, inc_spec: str, spec: str, split, plan, out, he
                                spec=spec, tested=tested)
     taken.append(look.as_dict())
     print(f"    {look.text}", flush=True)
-    done = len(rows)
+    done = len(rows) - (taken_from or {}).get("reused", 0)
     total = int(progress.get("total") or (plan.cases_run or 0) * plan.repeat * 2 or done)
     if verdict is not None:
         verdict = replace(verdict, evidence={**verdict.evidence, "split": split.as_dict(),
-                                             "power": plan.as_dict(), "looks": taken})
+                                             "power": plan.as_dict(), "looks": taken,
+                                             **({"reuse": taken_from} if taken_from else {})})
         print(f"    {'ADOPTED' if verdict.adopt else 'kept the incumbent'}: {verdict.why}", flush=True)
         _record(verdict, spec, progress.get("run_id"), out)
         if held:
@@ -737,6 +814,22 @@ def _paused(name: str, lane: str, inc_spec: str, spec: str, split, plan, out, he
             else:
                 sweep.halted = why
     return 0
+
+
+def _merge_reused(store, out, plan, rows: list, summary: dict, inc_key: str):
+    """(rows with the stored incumbent cells the run skipped, the summary over them, the reuse evidence). #1094."""
+    from harness import reuse
+    got = watch.read(out)
+    applied = reuse.narrowed((got[0] if got else {}).get("reuse"), getattr(plan, "reuse", None))
+    if not applied:
+        return rows, summary, {}
+    extra, gone = reuse.rows(store, applied, inc_key)
+    rows = [*rows, *extra]
+    summary = {**summary, inc_key: reuse.summary(rows, inc_key)} if summary else summary
+    evidence = reuse.evidence(applied, gone)
+    print(f"    {reuse.line({**applied, 'reused': len(extra)})}"
+          f"{f'; {len(gone)} stored row(s) gone, unpaired' if gone else ''}", flush=True)
+    return rows, summary, evidence
 
 
 def _record(verdict, spec: str, run_id, out) -> None:

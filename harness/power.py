@@ -263,6 +263,8 @@ class Plan:
     sweeps: int | None = None
     #: Power at +1.00 per cell at the most repeat any run spends; 0 means no run of this holdout can decide. #1049.
     max_power: float | None = None
+    #: Incumbent cells taken from stored draws under its content identity (harness.reuse.plan). #1094.
+    reuse: dict | None = None
 
     def as_dict(self) -> dict:
         return asdict(self)
