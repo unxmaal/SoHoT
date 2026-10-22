@@ -108,7 +108,7 @@ def parents(row) -> set[str]:
 def value(row: dict, *, serving: set[str] = frozenset(),
           measured_lanes: set[str] = frozenset(),
           ceiling_gib: float, incumbent: str = "", bases=(),
-          now: float | None = None) -> tuple[float, list[str]]:
+          now: float | None = None, standing=None) -> tuple[float, list[str]]:
     """What a screen would teach us about this candidate, and why.
 
     The reasons travel with the number. A ranking whose rows cannot say why
@@ -186,6 +186,13 @@ def value(row: dict, *, serving: set[str] = frozenset(),
             score += FAMILY
             why.append(f"the family the incumbent is built on "
                        f"({', '.join(sorted(mine & set(bases)))})")
+
+    if standing is not None and lane:
+        # A family that keeps losing in this lane is a settled question for the rest of it. #1100.
+        got, said = standing.demotion(row, lane)
+        score += got
+        if said:
+            why.append(said)
 
     declines = min(int(row.get("adopt_declines") or 0), 3)
     if declines:
@@ -280,7 +287,7 @@ def quantised_children(rows) -> dict[str, list[str]]:
 
 def rank(rows, *, serving=(), measured_lanes=(), ceiling_gib: float | None = None,
          keep_laneless: bool = False, incumbents_by_lane: dict | None = None,
-         bases_by_lane: dict | None = None, now: float | None = None, conn):
+         bases_by_lane: dict | None = None, now: float | None = None, standing=None, conn):
     """Best first. Ties break on name so the order is stable across runs.
 
     A candidate NO LANE CAN TEST IS DROPPED rather than ranked last. Penalising
@@ -308,6 +315,9 @@ def rank(rows, *, serving=(), measured_lanes=(), ceiling_gib: float | None = Non
     if bases_by_lane is None:
         bases_by_lane = {lane: incumbent_bases(conn, inc)
                          for lane, inc in incumbents_by_lane.items()}
+    if standing is None:
+        from harness import family
+        standing = family.standing(conn)
     rows = list(rows)
     quants = quantised_children(rows)
     out = []
@@ -327,7 +337,7 @@ def rank(rows, *, serving=(), measured_lanes=(), ceiling_gib: float | None = Non
         got, why = value(row, serving=serving, measured_lanes=measured,
                          ceiling_gib=ceiling_gib,
                          incumbent=incumbents_by_lane.get(lane_of(row), ""),
-                         bases=bases_by_lane.get(lane_of(row), ()), now=now)
+                         bases=bases_by_lane.get(lane_of(row), ()), now=now, standing=standing)
         kids = quants.get(row["name"].lower())
         if kids:
             got += QUANT_QUEUED

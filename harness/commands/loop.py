@@ -434,8 +434,7 @@ def _loop_spend(a, rc: int, failed: list | None = None, sweep=None) -> int:
         print(f"  incumbent from measurement: not checked ({type(exc).__name__}: {exc})", flush=True)
     store = ms.connect()
     try:
-        fresh = measure_cmd.resume_first(store, measure_cmd.measurable(store, top or EVERY, want), want)
-        fresh = repo_gate.order(fresh, store, want)
+        fresh = measure_queue(store, want, top, sweep)
     finally:
         store.close()
     if not fresh:
@@ -451,6 +450,38 @@ def _loop_spend(a, rc: int, failed: list | None = None, sweep=None) -> int:
 
 #: No count cap: the ceiling stops the screen and measure steps. #1084.
 EVERY = 1_000_000
+
+
+def measure_queue(store, want: str, top: int, sweep=None, room=None, slots=None, say=print) -> list[dict]:
+    """What the measure step takes, in order: paused runs, repo-lane comparisons, then the families' order. #1100, #1111."""
+    queue = _by_family(store, measure_cmd.measurable(store, top or EVERY, want), sweep, room, slots, say)
+    return repo_gate.order(measure_cmd.resume_first(store, queue, want), store, want)
+
+
+def _by_family(store, rows: list[dict], sweep, room=None, slots=None, say=print) -> list[dict]:
+    """Demoted families after the rest, then the diversity slots at the head; both said and noted for the morning. #1100, #1111."""
+    from harness import family, heartbeat
+    st = family.standing(store)
+    ordered = family.measure_order(rows, st)
+    for r in ordered:
+        got, said = st.demotion(r, r.get("lane", ""))
+        if said:
+            say(f"  family: {r.get('name', '')} {'waits behind the rest' if got else 'keeps its place'}: {said}")
+    room = room or measure_cmd.room_for
+
+    def fits(row):
+        if sweep is not None and sweep.remaining() <= 0:
+            return False, "the sweep ceiling is reached"
+        ok, _, why = room(row)
+        return ok, why
+
+    queue, picks, lines = family.reserve(ordered, st, fits=fits, slots=slots)
+    for line in lines:
+        say(f"  {line}")
+        if sweep is not None:
+            sweep.lines.append(line)
+    heartbeat.note(heartbeat.DIVERSITY, {"picks": picks, "lines": lines})
+    return queue
 
 
 def _sized(top: int, sweep) -> dict:

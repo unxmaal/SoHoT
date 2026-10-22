@@ -191,6 +191,19 @@ def stalls(rows: list[dict], days: float, head: int) -> list[dict]:
             and r["stage"] in ("ranked", "inspected") and r["in_state_days"] >= days]
 
 
+def families(conn, rows: list[dict]) -> list[dict]:
+    """Each family demoted in a lane by paired losses: its count and how many of its queued members rank lower. #1100."""
+    from harness import family
+    st = family.standing(conn)
+    out = []
+    for f in st.demoted():
+        held = [r["name"] for r in rows if r["state"] == "queued" and r["lane"] == f.lane
+                and st.demotion(r, r["lane"])[0]]
+        out.append({"lane": f.lane, "family": f.key, "losses": len(f.lost), "lost": list(f.lost), "demoted": held})
+    return out
+
+
 def gather(conn, **kw) -> dict:
     rows = proposals(conn, **kw)
-    return {"stages": stages(rows), "by_lane": by_lane(rows), "untried": untried(rows), "proposals": rows}
+    return {"stages": stages(rows), "by_lane": by_lane(rows), "untried": untried(rows), "proposals": rows,
+            "families": families(conn, rows)}
