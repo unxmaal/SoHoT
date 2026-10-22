@@ -14,7 +14,9 @@ prompt: '# Phase 2: background consolidation \"sleep\" pass (gaps 3/4)
   The hidden tests call these names from the repository (signatures as a correct fix defines them):
 
   - `mcm_engine.consolidate.consolidation_report(storage: Any, *, max_age_days: int=90, now: Optional[datetime]=None)
-  -> dict`'
+  -> dict`
+
+  - CLI option: `--from`'
 params:
   source_repo: https://github.com/unxmaal/mcm-engine.git
   base: ef9bee78d735ed81b2c3d6422410b1f6918a5bfa
@@ -34,6 +36,7 @@ params:
   interface:
   - 'mcm_engine.consolidate.consolidation_report(storage: Any, *, max_age_days: int=90, now: Optional[datetime]=None)
     -> dict'
+  - 'CLI option: --from'
   fail_to_pass:
   - tests/test_consolidate.py::test_cli_consolidate_dispatch
   - tests/test_consolidate.py::test_near_duplicate_is_not_also_a_conflict

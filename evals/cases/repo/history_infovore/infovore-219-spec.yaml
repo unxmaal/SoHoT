@@ -7,7 +7,14 @@ prompt: '# judge report --by-channel: per-channel label breakdown
 
   Per channel: labelled, relevant, irrelevant, % irrelevant, total exchanges, excluded flag. Latest human_exchange
   label (bad_grouping excluded), reusing triage/human.training_labels. Sort by % irrelevant desc then
-  labelled desc; --min-labels N (default 1); excluded channels marked, not hidden.'
+  labelled desc; --min-labels N (default 1); excluded channels marked, not hidden.
+
+
+  The hidden tests call these names from the repository (signatures as a correct fix defines them):
+
+  - CLI option: `--by-channel`
+
+  - CLI option: `--min-labels`'
 params:
   source_repo: https://github.com/unxmaal/infovore.git
   base: 93cdcc9b8bb3d5595073e027256a4b185f8f34bf
@@ -21,6 +28,9 @@ params:
   - infovore/eval/channel_report.py
   pytest_args:
   - --import-mode=importlib
+  interface:
+  - 'CLI option: --by-channel'
+  - 'CLI option: --min-labels'
   fail_to_pass:
   - tests/eval/test_channel_report.py::test_by_channel_sorted_with_latest_label_and_excluded_marked
   - tests/eval/test_channel_report.py::test_min_labels_filters_and_empty_says_so

@@ -43,7 +43,11 @@ prompt: '# 4.0 C6: characterization replay (legacy vs unified) + Postgres rehear
   - `mcm_engine.replay_queries.prefix_agreement(a: list, b: list) -> float`
 
   - `mcm_engine.replay_queries.replay(ctx: Context, queries: list[ReplayQuery], *, store: str='''', project_name:
-  str='''', jaccard_threshold: float=0.9) -> ReplayReport`'
+  str='''', jaccard_threshold: float=0.9) -> ReplayReport`
+
+  - CLI option: `--out`
+
+  - CLI option: `--store`'
 params:
   source_repo: https://github.com/unxmaal/mcm-engine.git
   base: 9c2d65dde91aa3d4e6e53471f26579fb71d6d5e4
@@ -68,6 +72,8 @@ params:
   - 'mcm_engine.replay_queries.prefix_agreement(a: list, b: list) -> float'
   - 'mcm_engine.replay_queries.replay(ctx: Context, queries: list[ReplayQuery], *, store: str='''', project_name:
     str='''', jaccard_threshold: float=0.9) -> ReplayReport'
+  - 'CLI option: --out'
+  - 'CLI option: --store'
   fail_to_pass:
   - tests/test_replay_queries.py::test_cli_writes_a_json_report
   - tests/test_replay_queries.py::test_extract_queries_keeps_only_replayable_tool_uses

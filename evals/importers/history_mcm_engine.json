@@ -137,7 +137,9 @@
     "mcm_engine.replay_queries.jaccard(a: list, b: list) -> float",
     "mcm_engine.replay_queries.open_context(store: str, *, query_mode: str='strict') -> Context",
     "mcm_engine.replay_queries.prefix_agreement(a: list, b: list) -> float",
-    "mcm_engine.replay_queries.replay(ctx: Context, queries: list[ReplayQuery], *, store: str='', project_name: str='', jaccard_threshold: float=0.9) -> ReplayReport"
+    "mcm_engine.replay_queries.replay(ctx: Context, queries: list[ReplayQuery], *, store: str='', project_name: str='', jaccard_threshold: float=0.9) -> ReplayReport",
+    "CLI option: --out",
+    "CLI option: --store"
    ]
   },
   {
@@ -304,7 +306,8 @@
    "admitted_by": "base_collect_repo_symbol",
    "interface": [
     "mcm_engine.sanitize.clean_error(pattern: str | None, context: str | None, root_cause: str | None, fix: str | None) -> tuple[str | None, str | None, str | None, str | None, bool]",
-    "mcm_engine.sanitize.clean_negative(what_failed: str | None, why_failed: str | None, correct_approach: str | None) -> tuple[str | None, str | None, str | None, bool]"
+    "mcm_engine.sanitize.clean_negative(what_failed: str | None, why_failed: str | None, correct_approach: str | None) -> tuple[str | None, str | None, str | None, bool]",
+    "MCP tool: sanitize_corpus(entity_type: str='all', dry_run: bool=True, limit: int=0) -> str"
    ]
   },
   {
@@ -521,7 +524,8 @@
     "mcm_engine.tracker.ScopedTracker.record_coverage(self, *args, **kwargs)",
     "mcm_engine.tracker.SessionTracker.is_covered(self, topic: str, *, require_resident: bool=True) -> bool",
     "mcm_engine.tracker.SessionTracker.reconcile_coverage(self, *, resident: bool=False) -> None",
-    "mcm_engine.tracker.SessionTracker.record_coverage(self, topic: str, query: str, result_ids=None, *, resident: bool=True) -> None"
+    "mcm_engine.tracker.SessionTracker.record_coverage(self, topic: str, query: str, result_ids=None, *, resident: bool=True) -> None",
+    "MCP tool: save_snapshot(goal: str='', progress: str='', open_questions: str='', blockers: str='', next_steps: str='', active_files: str='', key_decisions: str='', compaction: bool=False) -> str"
    ]
   },
   {
@@ -571,7 +575,8 @@
    "interface": [
     "mcm_engine.sanitize.clean_summary_detail(summary: str | None, detail: str | None) -> tuple[str | None, str | None, bool]",
     "mcm_engine.sanitize.is_polluted(text: str | None) -> bool",
-    "mcm_engine.sanitize.strip_tool_call_fragments(text: str | None) -> str"
+    "mcm_engine.sanitize.strip_tool_call_fragments(text: str | None) -> str",
+    "MCP tool: sanitize_knowledge(dry_run: bool=True, limit: int=0) -> str"
    ]
   },
   {
@@ -623,7 +628,13 @@
    "admitted_by": "base_collect_repo_symbol",
    "interface": [
     "mcm_engine.tunables.env_float(name: str, default: float) -> float",
-    "mcm_engine.tunables.env_int(name: str, default: int) -> int"
+    "mcm_engine.tunables.env_int(name: str, default: int) -> int",
+    "environment variable: MCM_DEDUP_MIN_ENTROPY",
+    "environment variable: MCM_DEDUP_TOPIC_THRESHOLD",
+    "environment variable: MCM_RULESIFT_KNOWN_THRESHOLD",
+    "environment variable: MCM_SCORE_W_RELEVANCE",
+    "environment variable: MCM_SEARCH_RANK_THRESHOLD",
+    "environment variable: MCM_SEARCH_STALE_DAYS"
    ]
   },
   {
@@ -814,7 +825,9 @@
     "mcm_engine.cli._export_remote_call(url, headers, offset, limit, *, timeout=None)",
     "mcm_engine.cli._export_remote_fetch(url, headers, *, page=100, timeout=30.0)",
     "mcm_engine.mirror.git_commit_tree(out_dir: str | Path, written: int) -> bool",
-    "mcm_engine.mirror.render_rules_to_tree(rows: Iterable[Any], out_dir: str | Path) -> int"
+    "mcm_engine.mirror.render_rules_to_tree(rows: Iterable[Any], out_dir: str | Path) -> int",
+    "MCP tool: export_rules(offset: int=0, limit: int=100) -> str",
+    "environment variable: MCM_EXPORT_PAGE_MAX"
    ]
   },
   {
@@ -1216,7 +1229,9 @@
     "mcm_engine.cli._sift_remote_call(url, spans, *, headers=None, timeout=None, strict=True)",
     "mcm_engine.ingest.rulesift.is_substantive(text: str) -> bool",
     "mcm_engine.ingest.rulesift.passes_gate(text: str, *, strict: bool) -> bool",
-    "mcm_engine.ingest.rulesift.sift_spans(spans: Iterable[tuple[str, str]], existing_rules: Iterable[tuple[int, str]], *, strict: bool=True) -> list[RuleCandidate]"
+    "mcm_engine.ingest.rulesift.sift_spans(spans: Iterable[tuple[str, str]], existing_rules: Iterable[tuple[int, str]], *, strict: bool=True) -> list[RuleCandidate]",
+    "MCP tool: sift_candidates(candidates: list[dict], strict: bool=True) -> str",
+    "CLI option: --remote-loose"
    ]
   },
   {
@@ -1357,7 +1372,8 @@
    },
    "admitted_by": "base_collect_repo_symbol",
    "interface": [
-    "mcm_engine.consolidate.consolidation_report(storage: Any, *, max_age_days: int=90, now: Optional[datetime]=None) -> dict"
+    "mcm_engine.consolidate.consolidation_report(storage: Any, *, max_age_days: int=90, now: Optional[datetime]=None) -> dict",
+    "CLI option: --from"
    ]
   },
   {
@@ -1403,7 +1419,8 @@
    },
    "admitted_by": "base_collect_repo_symbol",
    "interface": [
-    "mcm_engine.dedup.find_conflicts(items: Iterable[tuple], *, topic_threshold: float=TOPIC_THRESHOLD, body_threshold: float=BODY_THRESHOLD, min_entropy: float=MIN_ENTROPY) -> list[tuple]"
+    "mcm_engine.dedup.find_conflicts(items: Iterable[tuple], *, topic_threshold: float=TOPIC_THRESHOLD, body_threshold: float=BODY_THRESHOLD, min_entropy: float=MIN_ENTROPY) -> list[tuple]",
+    "MCP tool: find_conflicting_rules(topic_threshold: float=0.5, body_threshold: float=0.4) -> str"
    ]
   },
   {
@@ -1455,7 +1472,8 @@
     "mcm_engine.dedup.find_near_duplicates(items: Iterable[tuple], *, threshold: float=0.9, num_perm: int=NUM_PERM, min_entropy: float=MIN_ENTROPY) -> list[list]",
     "mcm_engine.dedup.jaccard_estimate(a_text: str, b_text: str, num_perm: int=NUM_PERM) -> float",
     "mcm_engine.dedup.normalize(text: str) -> str",
-    "mcm_engine.dedup.shannon_entropy(text: str) -> float"
+    "mcm_engine.dedup.shannon_entropy(text: str) -> float",
+    "MCP tool: find_duplicate_rules(threshold: float=0.9) -> str"
    ]
   },
   {
@@ -1497,7 +1515,9 @@
    },
    "admitted_by": "base_collect_repo_symbol",
    "interface": [
-    "mcm_engine.mirror.export_mirror(storage: Any, out_dir: str | Path) -> dict"
+    "mcm_engine.mirror.export_mirror(storage: Any, out_dir: str | Path) -> dict",
+    "CLI option: --from",
+    "CLI option: --out"
    ]
   },
   {

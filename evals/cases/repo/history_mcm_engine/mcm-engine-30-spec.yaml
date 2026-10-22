@@ -20,7 +20,9 @@ prompt: '# Phase 2: deterministic dedup via MinHash/LSH (gap 4)
 
   - `mcm_engine.dedup.normalize(text: str) -> str`
 
-  - `mcm_engine.dedup.shannon_entropy(text: str) -> float`'
+  - `mcm_engine.dedup.shannon_entropy(text: str) -> float`
+
+  - MCP tool: `find_duplicate_rules(threshold: float=0.9) -> str`'
 params:
   source_repo: https://github.com/unxmaal/mcm-engine.git
   base: 7efde17de487535aaef1c081a8eba844bd9b8a96
@@ -42,6 +44,7 @@ params:
   - 'mcm_engine.dedup.jaccard_estimate(a_text: str, b_text: str, num_perm: int=NUM_PERM) -> float'
   - 'mcm_engine.dedup.normalize(text: str) -> str'
   - 'mcm_engine.dedup.shannon_entropy(text: str) -> float'
+  - 'MCP tool: find_duplicate_rules(threshold: float=0.9) -> str'
   fail_to_pass:
   - tests/test_dedup.py::test_clusters_near_dups_not_distinct
   - tests/test_dedup.py::test_determinism_same_input_same_clusters

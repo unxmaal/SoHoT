@@ -30,7 +30,13 @@ prompt: '# sift seed: random sample from deeper ranks for a base rate
   list[SeedRow]`
 
   - `infovore.sift.seed.write_seed_queue(rows: list[SeedRow], out_dir: Path, now: datetime, prefix: str=SEED_SOURCE_REF_PREFIX)
-  -> str`'
+  -> str`
+
+  - CLI option: `--ranks`
+
+  - CLI option: `--sample`
+
+  - CLI option: `--seed`'
 params:
   source_repo: https://github.com/unxmaal/infovore.git
   base: 463d292e260a014d606fa40c22ed5fc1db57ddb4
@@ -50,6 +56,9 @@ params:
     list[SeedRow]'
   - 'infovore.sift.seed.write_seed_queue(rows: list[SeedRow], out_dir: Path, now: datetime, prefix: str=SEED_SOURCE_REF_PREFIX)
     -> str'
+  - 'CLI option: --ranks'
+  - 'CLI option: --sample'
+  - 'CLI option: --seed'
   fail_to_pass:
   - tests/sift/test_seed.py::test_cli_deep_sample_out_and_validation
   - tests/sift/test_seed.py::test_cli_out_then_serve_labels_carry_seed_source_ref

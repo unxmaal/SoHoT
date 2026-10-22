@@ -232,7 +232,8 @@
     "infovore.wiki.build.compute_stats(claims: Iterable[WikiClaim], min_claims: int, background: float | None=None) -> Stats",
     "infovore.wiki.build.established(claim: WikiClaim, background: float | None) -> bool",
     "infovore.wiki.build.load_claims(conn: sqlite3.Connection, tech_only: bool=False, salt: str | None=None, runs: Sequence[int] | None=None, tag_runs: Sequence[int] | None=None, verdicts: frozenset[str] | None=None, background: float | None=None) -> tuple[list[WikiClaim], Excluded]",
-    "infovore.wiki.build.render_page(name: str, claims: Collection[WikiClaim], files: Mapping[str, str], article: Article | None=None, min_section: int=1, grouper: 'Grouper | None'=None, background: float | None=None) -> str"
+    "infovore.wiki.build.render_page(name: str, claims: Collection[WikiClaim], files: Mapping[str, str], article: Article | None=None, min_section: int=1, grouper: 'Grouper | None'=None, background: float | None=None) -> str",
+    "CLI option: --background"
    ]
   },
   {
@@ -497,7 +498,12 @@
     "infovore.claims.controls.overlap_floor(rows: Sequence[ReviewRow], lexicon: Lexicon, threshold: float, rng: random.Random, floor: float=FLOOR) -> Floor",
     "infovore.claims.controls.read_drops(path: Path) -> list[list[str]]",
     "infovore.claims.controls.shuffled_citations(rows: Sequence[ReviewRow], lexicon: Lexicon, threshold: float, rng: random.Random) -> tuple[Tally, Tally, float]",
-    "infovore.claims.controls.worst(verdicts: Iterable[str | None]) -> str"
+    "infovore.claims.controls.worst(verdicts: Iterable[str | None]) -> str",
+    "CLI option: --article-run",
+    "CLI option: --drops-log",
+    "CLI option: --json",
+    "CLI option: --run",
+    "CLI option: --sample"
    ]
   },
   {
@@ -660,7 +666,8 @@
     "infovore.wiki.groups.load_embedder(model_id: str, revision: str) -> SentenceTransformerEmbedder",
     "infovore.wiki.groups.make_grouper(embedder: Embedder, claims: Sequence[WikiClaim], vector_threshold: float=VECTOR_THRESHOLD) -> Grouper",
     "infovore.wiki.groups.make_grouper_for(grouping: str, claims: Sequence[WikiClaim]) -> Grouper",
-    "infovore.wiki.groups.summarise(groups_by_page: Sequence[Sequence[ClaimGroup]]) -> Corroboration"
+    "infovore.wiki.groups.summarise(groups_by_page: Sequence[Sequence[ClaimGroup]]) -> Corroboration",
+    "CLI option: --grouping"
    ]
   },
   {
@@ -719,7 +726,10 @@
     "infovore.sift.seed.SEED_DEEP_SOURCE_REF_PREFIX: Final",
     "infovore.sift.seed.parse_ranks(text: str) -> tuple[int, int]",
     "infovore.sift.seed.sample_window(rows: list[SeedRow], start: int, end: int, n: int, seed: int) -> list[SeedRow]",
-    "infovore.sift.seed.write_seed_queue(rows: list[SeedRow], out_dir: Path, now: datetime, prefix: str=SEED_SOURCE_REF_PREFIX) -> str"
+    "infovore.sift.seed.write_seed_queue(rows: list[SeedRow], out_dir: Path, now: datetime, prefix: str=SEED_SOURCE_REF_PREFIX) -> str",
+    "CLI option: --ranks",
+    "CLI option: --sample",
+    "CLI option: --seed"
    ]
   },
   {
@@ -921,7 +931,10 @@
    "variant_drops": {
     "symptom": "no_fix_section"
    },
-   "interface": []
+   "interface": [
+    "CLI option: --include-excluded-channels",
+    "CLI option: --jsonl"
+   ]
   },
   {
    "id": "infovore-252",
@@ -1107,7 +1120,8 @@
    "interface": [
     "infovore.triage.embed_stage.build_embed_stage(conn: sqlite3.Connection, exclude_channels: frozenset[str], cache_path: Path, model: str=DEFAULT_MODEL, revision: str=DEFAULT_REVISION, loader: Callable[[str, str], Embedder] | None=None, relevant_precision: float=RELEVANT_PRECISION) -> EmbedStage",
     "infovore.triage.embed_stage.fit_embed_stage(conn: sqlite3.Connection, embedder: Embedder, cache: EmbeddingCache, exclude_channels: frozenset[str], max_chars: int=MAX_CHARS, folds: int=FOLDS, relevant_precision: float=RELEVANT_PRECISION) -> EmbedStage",
-    "infovore.triage.embed_stage.threshold_stats(samples: Sequence[tuple[float, bool]], t_irrelevant: float, t_relevant: float) -> dict[str, dict[str, float]]"
+    "infovore.triage.embed_stage.threshold_stats(samples: Sequence[tuple[float, bool]], t_irrelevant: float, t_relevant: float) -> dict[str, dict[str, float]]",
+    "CLI option: --relevant-precision"
    ]
   },
   {
@@ -1227,7 +1241,10 @@
    "variant_drops": {
     "symptom": "no_fix_section"
    },
-   "interface": []
+   "interface": [
+    "CLI option: --by-channel",
+    "CLI option: --min-labels"
+   ]
   },
   {
    "id": "infovore-217",

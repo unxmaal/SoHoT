@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import ast
 import re
+from collections import Counter
 from pathlib import Path
 
 from evals import repo
@@ -10,6 +11,11 @@ from evals import repo
 HEAD = "The hidden tests call these names from the repository (signatures as a correct fix defines them):"
 _DOTTED = re.compile(r"^[A-Za-z_]\w*(\.[A-Za-z_]\w*)+$")
 _FOLLOW = 3
+#: Line prefixes for interface a test names in a string, not an import. #1105.
+TOOL, FLAG, ENV = "MCP tool: ", "CLI option: ", "environment variable: "
+KINDS = (TOOL, FLAG, ENV)
+_FLAG = re.compile(r"(?<![\w-])--[a-z][a-z0-9]*(?:-[a-z0-9]+)*")
+_ENV = re.compile(r"^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+$")
 
 
 class Tree:
@@ -160,12 +166,53 @@ def references(tree: Tree, node) -> tuple[set, set]:
     return names, attrs
 
 
+_EMPTY = ast.Module(body=[], type_ignores=[])
+
+
+def offered(node) -> dict:
+    """What a source file offers by name: {"tools": name -> def decorated as a tool, "literals"/"env": Counter of uses}."""
+    tools, literals, env = {}, Counter(), Counter()
+    for n in ast.walk(node):
+        if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)) and any("tool" in ast.unparse(d) for d in n.decorator_list):
+            tools[n.name] = n
+        elif isinstance(n, ast.Constant) and isinstance(n.value, str):
+            literals[n.value] += 1
+        elif isinstance(n, ast.Call) and n.args and "env" in ast.unparse(n.func).lower() \
+                and isinstance(n.args[0], ast.Constant) and isinstance(n.args[0].value, str):
+            env[n.args[0].value] += 1
+        elif isinstance(n, ast.Subscript) and "environ" in ast.unparse(n.value) \
+                and isinstance(n.slice, ast.Constant) and isinstance(n.slice.value, str):
+            env[n.slice.value] += 1
+    return {"tools": tools, "literals": literals, "env": Counter({e: k for e, k in env.items() if _ENV.match(e)})}
+
+
+def named(new: Tree, old: Tree, tests, sources) -> list[str]:
+    """Tools, CLI options and environment variables the tests name in a string and the fix's source adds. #1105."""
+    strings = {n.value for p in tests for n in ast.walk(new.parse(p) or _EMPTY)
+               if isinstance(n, ast.Constant) and isinstance(n.value, str)}
+    tools, flags, env = {}, Counter(), Counter()
+    for path in sources:
+        if new.parse(path) is None:
+            continue
+        now, was = offered(new.parse(path)), offered((old.parse(path) if path in old.files else None) or _EMPTY)
+        tools.update({n: fn for n, fn in now["tools"].items()
+                      if n not in was["tools"] or signature(n, was["tools"][n]) != signature(n, fn)})
+        # A flag or variable the fix uses more often than base did is one it adds, so a new subcommand's --out counts.
+        flags += now["literals"] - was["literals"]
+        env += now["env"] - was["env"]
+    used = {f for s in strings for f in _FLAG.findall(s)}
+    return (sorted(TOOL + signature(n, fn) for n, fn in tools.items() if n in strings)
+            + sorted(FLAG + f for f in set(flags) & used)
+            + sorted(ENV + e for e in env if any(re.search(rf"\b{e}\b", t) for t in strings)))
+
+
 def tests_call(mirror: Path, base: str, fix: str, tests=None) -> list[str]:
-    """Sorted signature lines of what the fix's test files use from the repo that the fix adds or re-signs."""
+    """Signature lines of what the fix's tests use from the repo that the fix adds or re-signs, then named strings."""
     new, old = Tree(mirror, fix), Tree(mirror, base)
+    got = repo._git(["-C", str(mirror), "diff", "--name-status", "--no-renames", base, fix]).stdout.decode()
+    rows = [line.split("\t", 1) for line in got.splitlines() if "\t" in line]
+    sources = [p for s, p in rows if s != "D" and p.endswith(".py") and not repo.is_test_path(p)]
     if tests is None:
-        got = repo._git(["-C", str(mirror), "diff", "--name-status", "--no-renames", base, fix]).stdout.decode()
-        rows = [line.split("\t", 1) for line in got.splitlines() if "\t" in line]
         tests = [p for s, p in rows if s != "D" and p.endswith(".py") and repo.is_test_path(p)]
     refs, attrs = set(), set()
     for path in tests:
@@ -190,9 +237,14 @@ def tests_call(mirror: Path, base: str, fix: str, tests=None) -> list[str]:
                 if m in attrs and not m.startswith("__") and (
                         m not in before or signature(m, before[m]) != signature(m, fn)):
                     out.add(signature(f"{qual}.{m}", fn))
-    return sorted(out)
+    return sorted(out) + named(new, old, tests, sources)
 
 
 def block(lines) -> str:
     """The prompt's "tests call" block, or "" when the tests use nothing new."""
-    return "\n".join([HEAD, *(f"- `{line}`" for line in lines)]) if lines else ""
+    return "\n".join([HEAD, *(_row(line) for line in lines)]) if lines else ""
+
+
+def _row(line: str) -> str:
+    kind = next((k for k in KINDS if line.startswith(k)), "")
+    return f"- {kind}`{line[len(kind):]}`"

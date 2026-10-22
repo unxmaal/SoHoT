@@ -14,7 +14,9 @@ prompt: '# Phase 2: automatic contradiction detection -> supersession (gap 3)
   The hidden tests call these names from the repository (signatures as a correct fix defines them):
 
   - `mcm_engine.dedup.find_conflicts(items: Iterable[tuple], *, topic_threshold: float=TOPIC_THRESHOLD,
-  body_threshold: float=BODY_THRESHOLD, min_entropy: float=MIN_ENTROPY) -> list[tuple]`'
+  body_threshold: float=BODY_THRESHOLD, min_entropy: float=MIN_ENTROPY) -> list[tuple]`
+
+  - MCP tool: `find_conflicting_rules(topic_threshold: float=0.5, body_threshold: float=0.4) -> str`'
 params:
   source_repo: https://github.com/unxmaal/mcm-engine.git
   base: 0b0e41f26cc07d2d674d74d25278fb0987ce361e
@@ -32,6 +34,7 @@ params:
   interface:
   - 'mcm_engine.dedup.find_conflicts(items: Iterable[tuple], *, topic_threshold: float=TOPIC_THRESHOLD,
     body_threshold: float=BODY_THRESHOLD, min_entropy: float=MIN_ENTROPY) -> list[tuple]'
+  - 'MCP tool: find_conflicting_rules(topic_threshold: float=0.5, body_threshold: float=0.4) -> str'
   fail_to_pass:
   - tests/test_conflict.py::test_add_rule_no_conflict_note_when_unrelated
   - tests/test_conflict.py::test_add_rule_surfaces_conflict_note
