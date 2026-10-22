@@ -8,8 +8,8 @@
   "B"
  ],
  "who": {
-  "A": "claude-opus-5-5 subagent, 2026-10-17, read only soh cases labels repo --packets output; #889 mcm-engine and infovore cases: claude-opus-5-5 subagents, 2026-10-22, same packets, ascending order; #1098 mcm-engine and infovore cases: claude-opus-5-5 subagents, 2026-10-22, same packets, ascending order; #1103 cases with the tests-call interface shown: claude-opus-5-5 subagents, 2026-10-22, same packets, ascending order",
-  "B": "claude-opus-5-5 subagent, 2026-10-17, separate context, same packets, reverse order; #889 mcm-engine and infovore cases: claude-opus-5-5 subagents, 2026-10-22, separate contexts, descending order; #1098 mcm-engine and infovore cases: claude-opus-5-5 subagents, 2026-10-22, separate contexts, descending order; #1103 cases with the tests-call interface shown: claude-opus-5-5 subagents, 2026-10-22, separate contexts, descending order"
+  "A": "claude-opus-5-5 subagent, 2026-10-17, read only soh cases labels repo --packets output; #889 mcm-engine and infovore cases: claude-opus-5-5 subagents, 2026-10-22, same packets, ascending order; #1098 mcm-engine and infovore cases: claude-opus-5-5 subagents, 2026-10-22, same packets, ascending order; #1103 cases with the tests-call interface shown: claude-opus-5-5 subagents, 2026-10-22, same packets, ascending order; #1105 cases with tools, CLI options and env vars shown: claude-opus-5-5 subagents, 2026-10-22, same packets, ascending order",
+  "B": "claude-opus-5-5 subagent, 2026-10-17, separate context, same packets, reverse order; #889 mcm-engine and infovore cases: claude-opus-5-5 subagents, 2026-10-22, separate contexts, descending order; #1098 mcm-engine and infovore cases: claude-opus-5-5 subagents, 2026-10-22, separate contexts, descending order; #1103 cases with the tests-call interface shown: claude-opus-5-5 subagents, 2026-10-22, separate contexts, descending order; #1105 cases with tools, CLI options and env vars shown: claude-opus-5-5 subagents, 2026-10-22, separate contexts, descending order"
  },
  "settled": {},
  "labels": {
@@ -588,14 +588,14 @@
     "spec": 1,
     "tests": 2,
     "why": {
-     "tests": "Tests require the exact header tokens (e.g. '%irrelevant'), '100.0%' formatting, 'yes'/'no' excluded markers and the exact empty message 'no channels with at least 9 labels', none of which the issue specifies."
+     "tests": "The tests pin an exact header line, '100.0%' formatting, yes/no markers, thread rows inheriting a parent's exclusion, and an exact empty-result message, none of which the issue specifies."
     }
    },
    "B": {
     "spec": 1,
     "tests": 2,
     "why": {
-     "tests": "Tests require an exact header with a single '%irrelevant' token, '100.0%' formatting, yes/no flags, and the exact empty message 'no channels with at least 9 labels'."
+     "tests": "Tests pin an exact header and row layout ('100.0%', 'yes'/'no'), threads kept as separate rows but excluded through their parent, and an exact empty-result message the issue never asks for."
     }
    }
   },
@@ -619,18 +619,18 @@
   },
   "infovore-256-spec": {
    "A": {
-    "spec": 1,
-    "tests": 2,
-    "why": {
-     "tests": "Tests require unstated derivations and wording: label_source parsed from 'judge:likely-irrelevant:4' to 'likely-irrelevant', gold preferred as slice for held-out rows, thread channel reported as the parent name, and count lines like 'held_out true: 2' and 'cascade_stage none: 2'."
-    }
-   },
-   "B": {
     "spec": 2,
     "tests": 2,
     "why": {
-     "spec": "How label_source, cascade_stage, slice (when there are several) and channel (for threads) are derived is never defined.",
-     "tests": "Tests require label_source parsed as 'judge:likely-irrelevant:4' -> 'likely-irrelevant' and 'rechunk:12' -> 'rechunk', the parent channel name for threads, a preference for the held-out slice, and exact count lines like 'held_out true: 2'."
+     "spec": "label_source and cascade_stage are never defined, and neither is which slice to pick when an exchange is in several, so the correct values are guesswork.",
+     "tests": "The tests assert a specific source_ref parsing, a held-out-first slice choice, parent-channel names for threads and exact count line formats such as 'held_out true: 2' that the issue never states."
+    }
+   },
+   "B": {
+    "spec": 1,
+    "tests": 2,
+    "why": {
+     "tests": "Tests pin unspecified semantics: label_source parsed from source_ref ('judge:x:n' to 'x'), thread channels reported under their parent, slice choice for multi-slice exchanges, and exact count line formats."
     }
    }
   },
@@ -777,14 +777,14 @@
     "spec": 1,
     "tests": 2,
     "why": {
-     "tests": "The tests read a `tracker.coverage` dict with lowercased-stripped keys and tuple result ids and call `save_snapshot(compaction=True)`, internal names and mechanisms the issue never specifies."
+     "tests": "The tests read an internal tracker.coverage dict keyed by the lowercased stripped topic, with result_ids as (ENTITY, id) tuples, and expect a report_error topic derived from the error text, none of which the issue fixes."
     }
    },
    "B": {
     "spec": 1,
     "tests": 2,
     "why": {
-     "tests": "Tests read an unnamed tracker.coverage dict keyed by lowercased topic, expect result_ids as (\"KNOWLEDGE\", id) tuples and a new save_snapshot(compaction=True) parameter as the PreCompact reconciliation path."
+     "tests": "Tests read an unnamed tracker.coverage dict directly and require lowercase/strip key normalization, empty-topic no-op, and (ENTITY_NAME, id) tuple result ids, none of which the issue or the names block specifies."
     }
    }
   },
@@ -871,30 +871,30 @@
     "spec": 1,
     "tests": 2,
     "why": {
-     "tests": "Tests use a --remote-loose CLI flag and 'loose' in stderr, both unnamed in the issue, and require that strict is omitted from the payload when it is the default."
+     "tests": "Tests reject fixes that always send strict in the sift_candidates payload and require the word 'loose' on stderr, details the issue never asks for."
     }
    },
    "B": {
     "spec": 1,
     "tests": 2,
     "why": {
-     "tests": "One test drives a --remote-loose CLI flag the prompt never names and checks for 'loose' in stderr, and another requires that strict be omitted from the payload unless loose, details a reasonable fix would not match."
+     "tests": "Tests require the client payload to omit 'strict' when strict is the default and the stderr output to contain 'loose', so a natural fix that always sends strict or prints no gate line fails."
     }
    }
   },
   "mcm-engine-80-symptom": {
    "A": {
     "spec": 1,
-    "tests": 2,
+    "tests": 3,
     "why": {
-     "tests": "Tests depend on an unstated --remote-loose flag, a 'loose' stderr marker and omitting strict from the default payload, rejecting reasonable variants."
+     "tests": "Without the proposed-fix section, the tests still require is_substantive to reject 'Args:/Returns:/Raises:' boilerplate, the strict key to be omitted from the default payload, and 'loose' on stderr, none of which this issue asks for."
     }
    },
    "B": {
     "spec": 1,
     "tests": 2,
     "why": {
-     "tests": "One test drives an unnamed --remote-loose CLI flag and checks for 'loose' in stderr, and others pin the exact boilerplate rejection and the rule that the strict arg is sent only when loose, none of which the issue states."
+     "tests": "Tests pin details the issue never asks for: boilerplate-only spans like 'Args:/Returns:/Raises:' must be rejected (fails a fix reusing the 3-token floor), the payload must omit 'strict' in default mode, and stderr must mention 'loose'."
     }
    }
   },
@@ -929,14 +929,14 @@
     "spec": 1,
     "tests": 2,
     "why": {
-     "tests": "Tests pin the threshold_stats dict layout, a recipe 'cv' key, the 'cv irrelevant: n=' print format and 0.0 for empty sides, none of which the issue specifies."
+     "tests": "The tests require the recipe key 'cv', the side keys irrelevant/relevant with n/precision/recall, zero-on-empty values and the literal 'cv irrelevant: n=' output text, all unstated layout choices."
     }
    },
    "B": {
     "spec": 1,
     "tests": 2,
     "why": {
-     "tests": "The tests require the CV stats under recipe['cv'] with n/precision/recall keys and exact 'cv irrelevant: n=' print lines, a layout the issue does not specify."
+     "tests": "Tests require a recipe['cv'] key, an exact 'cv irrelevant: n=' print layout and specific dict shapes, none of which the issue names."
     }
    }
   },
@@ -960,11 +960,14 @@
   },
   "infovore-327-spec": {
    "A": {
-    "spec": 0,
-    "tests": 1
+    "spec": 1,
+    "tests": 2,
+    "why": {
+     "tests": "sample_window must return the picks in rank order, and the CLI must print exact output and error text naming the flags, so a fix that returns random.sample order fails."
+    }
    },
    "B": {
-    "spec": 1,
+    "spec": 0,
     "tests": 1
    }
   },
@@ -973,15 +976,14 @@
     "spec": 1,
     "tests": 3,
     "why": {
-     "tests": "The golden page and render tests require '1 speaker(s), 1 conversation(s)' wording that differs from the issue's 'N people, M conversations', plus exact summary strings, a 0.85 cosine default and identity of make_grouper_for('jaccard')."
+     "tests": "The tests require exact page-entry text '1 speaker(s), 1 conversation(s))', an exact Corroboration __str__ string, a golden file, a 'one vector per claim' error message and make_grouper_for returning group_claims by identity, none of which the issue asks for."
     }
    },
    "B": {
-    "spec": 2,
-    "tests": 3,
+    "spec": 1,
+    "tests": 2,
     "why": {
-     "spec": "The build list spans embedding clustering, verdict mix, singleton flagging, a printed distribution, page text and a contradiction audit, leaving the scope and the output formats open.",
-     "tests": "The tests require entry text '1 speaker(s), 1 conversation(s)' where the issue asks for 'N people, M conversations, first/last seen', plus an exact summarise() string and a --grouping flag the issue never names."
+     "tests": "The issue asks pages to show 'N people, M conversations, first/last seen', but tests require the exact 'speaker(s)/conversation(s)' format, a golden file, a specific summarise string and specific sort tie-breaks."
     }
    }
   },
@@ -990,16 +992,16 @@
     "spec": 2,
     "tests": 3,
     "why": {
-     "spec": "Only the motivation and a metric remain; the build steps, output and page format are absent, so a correct fix is unclear beyond the names list.",
-     "tests": "Tests require exact entry and summary wording, a sort order, a cosine default and error text that the issue never describes."
+     "spec": "Without the Build list only the title and the signature block hint at what to change, so ordering, page rendering and stats output have to be guessed.",
+     "tests": "The tests require exact rendering and summary strings, a golden page and a specific error message that this version of the issue does not mention at all."
     }
    },
    "B": {
     "spec": 2,
     "tests": 3,
     "why": {
-     "spec": "Without the build list, the issue gives only a motivation and a metric, and does not say what to cluster, what to show, or where to show it.",
-     "tests": "The tests pin the exact page-entry suffix '; N speaker(s), M conversation(s))', the exact summarise() string, a --grouping embed CLI flag and the vector-mismatch error message, none of which the issue asks for."
+     "spec": "Beyond the title and a metric, the symptom text says nothing about what to build, so the design comes only from the names block.",
+     "tests": "Tests check page entry text ('N speaker(s), M conversation(s)'), a golden page, a stats corroboration line and the exact summarise string, none of which this prompt asks for."
     }
    }
   },
@@ -1044,16 +1046,15 @@
     "spec": 2,
     "tests": 3,
     "why": {
-     "spec": "Four loosely described controls with an unimplemented bootstrap requirement, unspecified CLI flags and sampling rules leave the correct implementation open.",
-     "tests": "Tests check unrequested CLI flags (--sample, --article-run, --drops-log), exact length buckets, verdict severity order, p50/p90/p99 keys and exact output strings."
+     "spec": "The issue asks for same-channel-and-month pairing and an author-cluster bootstrap, and gives article run 0078 without saying where drops come from, so the shape of a correct fix is unclear (the reference omits the bootstrap and adds a drops log).",
+     "tests": "The tests pin private length-bucket labels '0-29'/'200+', a severity order that ranks unchecked above uncheckable, a minimum --sample of 2 and exact output lines such as 'unchecked: dropped 1/2 (0.500)', none of which the issue asks for."
     }
    },
    "B": {
-    "spec": 2,
-    "tests": 3,
+    "spec": 1,
+    "tests": 2,
     "why": {
-     "spec": "The issue lists four loosely described controls plus author-cluster bootstrap intervals, and leaves the inputs (article run 0078, the drops log format), the CLI flags and the output layout unspecified.",
-     "tests": "The tests check CLI flags (--sample, --article-run, --drops-log), config-error rules, exact report lines, length-bucket labels and p50/p90/p99 quantile keys, none of which the issue mentions."
+     "tests": "Tests pin invented details: the length bucket boundaries and labels, p50/p90/p99 keys, severity order, a config error for --sample 1, the drops-log JSON shape, and exact output lines."
     }
    }
   },
@@ -1127,16 +1128,16 @@
     "spec": 2,
     "tests": 3,
     "why": {
-     "spec": "A large multi-part design whose threshold semantics (novelty floor F against cosine above 1 minus F) and storage of novelty versus cosine conflict with the stated signatures.",
-     "tests": "Tests use a '--background' CLI flag the issue never names (it asks for --novelty-floor), store raw cosine in a 'novelty' field, and assert exact 'background: 1 (cosine >= 0.8)' and Background entry formats."
+     "spec": "The issue specifies --novelty-floor F with novelty = 1 - cosine, while the signatures expose --background and a 'novelty' field that actually holds the cosine, so the intended semantics conflict.",
+     "tests": "The tests require a 'novelty' field that holds the raw cosine, exact Background entry text with a Wikipedia URL and a 'reference' fallback, a 'background: 1 (cosine >= 0.8)' stats line, and sorting where an unscored claim leads, none of which the issue describes."
     }
    },
    "B": {
     "spec": 2,
     "tests": 3,
     "why": {
-     "spec": "The issue lays out a five-part design with a --novelty-floor flag and novelty defined as 1 minus the cosine, but the listed signatures point to a different background threshold, so it is unclear what should be built.",
-     "tests": "The tests require a --background flag (the issue says --novelty-floor), store the raw cosine in WikiClaim.novelty when the issue defines novelty as 1 minus the cosine, and pin exact output strings such as 'background: 1 (cosine >= 0.8)' and the Background entry layout."
+     "spec": "The issue specifies a --novelty-floor with novelty = 1 minus cosine, while the names block exposes --background and a novelty field, so which semantics and which design to build is unclear.",
+     "tests": "Tests treat WikiClaim.novelty as the raw max cosine, the reverse of the issue's definition, sort lower-cosine leads first, and pin exact Background entry and stats line text."
     }
    }
   },
@@ -1161,14 +1162,14 @@
     "spec": 1,
     "tests": 2,
     "why": {
-     "tests": "The tests call an unnamed `sanitize_knowledge` tool with a `dry_run` flag and exact output phrases (\"scanned 2\", \"1 polluted\", \"updated 1\"), and require strip-not-reject at store time though the issue allows either."
+     "tests": "The issue allows add_knowledge to reject or strip, but the tests require it to strip and re-split, and they check report text such as 'scanned 2', '1 polluted', '#id' and 'updated 1'."
     }
    },
    "B": {
     "spec": 1,
     "tests": 2,
     "why": {
-     "tests": "Tests require an MCP tool named sanitize_knowledge with exact phrases ('scanned 2', '1 polluted', 'updated 1') and enforce the prevention guard the issue calls optional."
+     "tests": "The issue leaves prevention optional and allows reject or strip, but tests require add_knowledge to strip and salvage detail, and they pin the tool's exact output wording."
     }
    }
   },
@@ -1177,16 +1178,15 @@
     "spec": 2,
     "tests": 3,
     "why": {
-     "spec": "This version only describes the pollution and gives helper names, so whether to add a cleanup tool, a store-time guard, or both, and how the split should work, is unclear.",
-     "tests": "The tests require a `sanitize_knowledge` tool with specific output text and an `add_knowledge` store-time guard, neither of which this version of the issue asks for."
+     "spec": "This version has no fix section, so whether a cleanup tool, a store-time guard or both is wanted, and how detail should be salvaged, is left to inference from the signature block.",
+     "tests": "The tests require add_knowledge to clean content at store time, which this version of the issue never asks for, and they check exact report wording."
     }
    },
    "B": {
-    "spec": 2,
+    "spec": 1,
     "tests": 3,
     "why": {
-     "spec": "The issue diagnoses polluted data but does not say whether the fix is a one-off cleanup, a maintenance tool or a store-time guard.",
-     "tests": "Tests require a sanitize_knowledge tool with specific output phrases and an add_knowledge store-time guard, neither of which the prompt asks for."
+     "tests": "The symptom report asks for no store-time change, yet a test requires add_knowledge to strip and re-split polluted input, and other tests pin exact report strings such as 'scanned 2', '1 polluted' and 'updated 1'."
     }
    }
   },
@@ -1226,18 +1226,17 @@
   },
   "mcm-engine-149-spec": {
    "A": {
-    "spec": 2,
+    "spec": 1,
     "tests": 2,
     "why": {
-     "spec": "This is an umbrella audit issue that is mostly KB provenance work with no specified env-var naming or exact set of knobs to wire.",
-     "tests": "Most graded tests depend on exact env var names such as MCM_SCORE_W_RELEVANCE and MCM_DEDUP_TOPIC_THRESHOLD, plus a source-text check, none of which the issue names."
+     "tests": "The tests demand unstated details such as silently falling back to the default on malformed or whitespace-only values (including rejecting \"3.5\" for env_int rather than raising or truncating) and a literal source-text match on env_float(\"MCM_DEDUP_MIN_ENTROPY\" with exact double-quote call syntax, so many reasonable implementations would fail."
     }
    },
    "B": {
     "spec": 1,
     "tests": 2,
     "why": {
-     "tests": "Tests require exact env var names like MCM_SCORE_W_RELEVANCE and MCM_SEARCH_RANK_THRESHOLD and a literal source string 'env_float(\"MCM_DEDUP_MIN_ENTROPY\"', none of which the issue specifies."
+     "tests": "The tests require malformed and whitespace-only env values to fall back silently to the default (the issue never says whether to fall back or raise), and they grep the dedup source for the literal text env_float(\"MCM_DEDUP_MIN_ENTROPY\", which rejects equivalent wiring such as keyword arguments, single quotes or a different call shape."
     }
    }
   },
@@ -1280,14 +1279,14 @@
     "spec": 1,
     "tests": 3,
     "why": {
-     "tests": "Two graded tests pin exact SQL execute-site counts (71/73) that the issue never mentions, and the sweep test requires the exact phrase \"2 polluted across 3 table(s)\"."
+     "tests": "Graded seam-inventory tests pin the exact count of SQL execute sites in each storage adapter and the dry-run output must contain the literal '2 polluted across 3 table(s)', neither of which the issue asks for."
     }
    },
    "B": {
-    "spec": 0,
+    "spec": 1,
     "tests": 2,
     "why": {
-     "tests": "The issue allows either generalizing to sanitize_corpus or adding passes, but tests require sanitize_corpus with an exact summary string and pin the SQL execute-site count per adapter file."
+     "tests": "Tests pin the exact sanitize_corpus output string '2 polluted across 3 table(s)' and exact per-file SQL execute-site counts, details the issue never specifies."
     }
    }
   },
@@ -1296,14 +1295,14 @@
     "spec": 1,
     "tests": 3,
     "why": {
-     "tests": "The tests require an unmentioned `sanitize_corpus` tool name with exact output phrasing and pin SQL execute-site counts that the issue never asks for."
+     "tests": "Graded tests pin the per-file SQL execute-site counts and an exact '2 polluted across 3 table(s)' output string, and require a report_error store guard that the acceptance list never mentions."
     }
    },
    "B": {
     "spec": 1,
-    "tests": 3,
+    "tests": 2,
     "why": {
-     "tests": "Tests require a tool named sanitize_corpus with the literal output '2 polluted across 3 table(s)', a report_error store-time guard the prompt does not ask for, and exact per-file SQL execute-site counts."
+     "tests": "Tests pin the exact sanitize_corpus output string '2 polluted across 3 table(s)' and per-file SQL execute-site counts in the seam inventory, so a fix that formats the report differently or adds storage SQL differently fails."
     }
    }
   },
@@ -1327,18 +1326,18 @@
   },
   "mcm-engine-182-spec": {
    "A": {
-    "spec": 2,
-    "tests": 3,
-    "why": {
-     "spec": "The harness depends on unspecified legacy/unified read-path mechanics, and the agreement metrics and report structure are only loosely sketched.",
-     "tests": "The CLI test uses `--store`/`--out` where the issue says `--snapshot`, and the tests pin report keys (exact_order, text_identical, gate_flips) and exact printed formatting the issue never describes."
-    }
-   },
-   "B": {
     "spec": 1,
     "tests": 3,
     "why": {
-     "tests": "The CLI test uses --store and --out while the prompt specifies --snapshot, and the tests pin aggregate keys (exact_order, text_identical, gate_flips, mean_ungated_jaccard) and exact column formatting the issue never mentions."
+     "tests": "Tests require report keys the issue never names (exact_order, text_identical, gate_flips, mean_ungated_jaccard), exact format_report spacing ('search        n=3'), a particular prefix_agreement definition, and read-only hit counts."
+    }
+   },
+   "B": {
+    "spec": 2,
+    "tests": 3,
+    "why": {
+     "spec": "The issue mixes an implementable harness with an operational Postgres rehearsal, names a --snapshot option the tests replace with --store, and defines the ranked-overlap metrics only loosely.",
+     "tests": "Tests check report internals the issue never asks for (exact_order, text_identical, gate_flips, mean_ungated_jaccard, counts dict), exact column-aligned output like 'search        n=3', and a specific prefix_agreement formula."
     }
    }
   },
@@ -1380,14 +1379,14 @@
     "spec": 1,
     "tests": 3,
     "why": {
-     "tests": "Tests require a rules/ subdirectory that contradicts the issue's stated <out>/<category>/<slug>.md layout, plus an exact author email, unrequested return-dict keys and an unnamed --from CLI flag."
+     "tests": "Tests require files under <out>/rules/<category>/ when the issue says <out>/<category>/, plus a hard-coded author email 'mcm-engine-mirror@localhost' and specific 'written'/'committed' return keys."
     }
    },
    "B": {
     "spec": 1,
     "tests": 3,
     "why": {
-     "tests": "Tests require a rules/ subdirectory that contradicts the issue's stated <out>/<category>/<slug>.md layout, plus exact written and committed return keys, a --from flag, and the exact commit author mcm-engine-mirror@localhost."
+     "tests": "Tests require files under <out>/rules/<category>/<slug>.md although the issue says <out>/<category>/<slug>.md, and they pin an unstated exact git author email and return-dict keys."
     }
    }
   },
@@ -1396,14 +1395,14 @@
     "spec": 1,
     "tests": 3,
     "why": {
-     "tests": "Tests pin an unstated rules/<category>/<slug>.md layout, a specific git author email, return-dict keys written/committed and a --from CLI flag, none of which the issue asks for."
+     "tests": "Tests pin an unspecified rules/<category>/<slug>.md layout, a markdown body format, a hard-coded commit author email and the 'written'/'committed' return keys, none of which the issue states."
     }
    },
    "B": {
     "spec": 1,
     "tests": 3,
     "why": {
-     "tests": "Tests require an unspecified rules/<category>/<slug>.md layout, a return dict with exact written and committed keys, a --from CLI flag, and the exact commit author mcm-engine-mirror@localhost, none of which the issue asks for."
+     "tests": "Tests pin the exact committer email 'mcm-engine-mirror@localhost', a rules/<category>/<slug>.md layout, a {written, committed} return dict and the rendered markdown shape, none of which the issue states."
     }
    }
   },
@@ -1439,34 +1438,28 @@
   "mcm-engine-30-spec": {
    "A": {
     "spec": 1,
-    "tests": 2,
-    "why": {
-     "tests": "One test calls an MCP tool named find_duplicate_rules with a specific output shape that neither the issue nor the names block mentions."
-    }
+    "tests": 1
    },
    "B": {
     "spec": 1,
-    "tests": 2,
-    "why": {
-     "tests": "One graded test calls a find_duplicate_rules MCP tool the issue never names, so a fix that surfaces candidates any other way fails."
-    }
+    "tests": 1
    }
   },
   "mcm-engine-31-spec": {
    "A": {
     "spec": 2,
+    "tests": 3,
     "why": {
-     "spec": "The issue asks for merges, decay, strengthening and link materialization without defining outputs or saying whether anything is mutated, so the read-only report the reference builds cannot be inferred.",
-     "tests": "Tests require conflict candidates from an unmentioned detector, a specific dict layout (summary.active_rules, a/b pairs, id/title members), zero mutation despite the issue asking for decay, and a consolidate CLI with --from and set output strings."
-    },
-    "tests": 3
+     "spec": "The issue lists merge proposals, decay, strengthening and link materialization with no concrete output or behavior, so the scope and shape of a correct fix are unclear.",
+     "tests": "Tests require a conflict_candidates bucket the issue never mentions, specific dict keys and a summary.active_rules count, a 'consolidate' subcommand name, and the output strings 'Consolidation report' and 'read-only'."
+    }
    },
    "B": {
     "spec": 2,
     "tests": 3,
     "why": {
-     "spec": "A terse roadmap item listing levers (merge, decay, strengthen, materialize links) with no definition of the report, staleness, or which actions are in scope.",
-     "tests": "Tests require a read-only report with exact keys (summary, merge_candidates, conflict_candidates with a/b, stale_candidates), a specific staleness rule, and an unrequested 'consolidate --from' CLI that prints 'read-only', while the issue asks for decay and strengthening mutations."
+     "spec": "The issue lists decay, strengthen, merge proposals, link materialization and eviction with no definitions or report format, so the expected deliverable is unclear.",
+     "tests": "Tests check things the issue never mentions: a conflict_candidates bucket with a/b subkeys, a specific stale heuristic, a summary dict schema, a 'consolidate' subcommand, and 'Consolidation report'/'read-only' output strings, and they require the pass to mutate nothing although the issue asks for decay."
     }
    }
   },
@@ -1475,16 +1468,16 @@
     "spec": 2,
     "tests": 3,
     "why": {
-     "spec": "The issue asks for automatic supersession on add_rule via a keyword heuristic or an LLM; the input tuple shape and the topic-similar/body-divergent definition are left unstated.",
-     "tests": "Tests require an unnamed find_conflicting_rules MCP tool and an add_rule note containing 'conflict' and 'supersede_rule', and they rule out the automatic supersession the issue actually asks for."
+     "spec": "The issue asks for automatic contradiction detection that feeds supersession, but leaves open whether to auto-supersede, the heuristic to use and the input shape, while the reference only surfaces candidates.",
+     "tests": "Tests assume an unstated (id, topic, body) item shape, assert that add_rule output contains a surfacing note naming 'supersede_rule', and expect read-only surfacing where the issue describes automatic supersession."
     }
    },
    "B": {
     "spec": 2,
-    "tests": 3,
+    "tests": 2,
     "why": {
-     "spec": "A one-paragraph roadmap note that leaves heuristic versus LLM, the meaning of contradiction, and automatic versus proposed supersession all open.",
-     "tests": "Tests call a find_conflicting_rules MCP tool the issue never mentions and require a surface-only add_rule note containing 'conflict' and 'supersede_rule', where the issue asks for automatic supersession."
+     "spec": "A one-paragraph roadmap note that offers a keyword heuristic or an LLM and says to feed supersede_rule automatically, so it is unclear whether to auto-supersede or only surface candidates, and what counts as a contradiction.",
+     "tests": "Tests require a (id, topic, body) item layout and a specific topic-similar/body-divergent definition, and they check add_rule output for 'conflict' and 'supersede_rule', none of which the issue specifies."
     }
    }
   },
@@ -1528,14 +1521,14 @@
     "spec": 1,
     "tests": 2,
     "why": {
-     "tests": "Tests require a JSON envelope with rules/offset/limit/returned/total/has_more keys and a fetch loop driven by it, but the issue only describes a list of rule objects, so a bare-list page design fails."
+     "tests": "Tests require an unspecified JSON envelope with total/returned/has_more/limit keys, and a client paging loop that consumes exactly those keys, so fixes using a bare list or a next_offset cursor fail."
     }
    },
    "B": {
     "spec": 1,
     "tests": 2,
     "why": {
-     "tests": "Tests require the export_rules JSON envelope to use the exact keys total, returned, limit, has_more and offset, which the issue never specifies, so a fix using another paging envelope fails."
+     "tests": "Tests pin an unspecified JSON envelope for export_rules (keys rules/total/returned/limit/has_more) and the client paging loop depends on it, so fixes with any other page shape fail."
     }
    }
   },

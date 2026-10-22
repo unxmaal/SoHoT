@@ -65,7 +65,9 @@ prompt: '# Corroboration score per claim cluster: distinct speakers and exchange
 
   - `infovore.wiki.groups.make_grouper_for(grouping: str, claims: Sequence[WikiClaim]) -> Grouper`
 
-  - `infovore.wiki.groups.summarise(groups_by_page: Sequence[Sequence[ClaimGroup]]) -> Corroboration`'
+  - `infovore.wiki.groups.summarise(groups_by_page: Sequence[Sequence[ClaimGroup]]) -> Corroboration`
+
+  - CLI option: `--grouping`'
 params:
   source_repo: https://github.com/unxmaal/infovore.git
   base: 2f7f164a4fea0cb3a61ac2699fa4848bc92df265
@@ -95,6 +97,7 @@ params:
     float=VECTOR_THRESHOLD) -> Grouper'
   - 'infovore.wiki.groups.make_grouper_for(grouping: str, claims: Sequence[WikiClaim]) -> Grouper'
   - 'infovore.wiki.groups.summarise(groups_by_page: Sequence[Sequence[ClaimGroup]]) -> Corroboration'
+  - 'CLI option: --grouping'
   fail_to_pass:
   - tests/wiki/test_command.py::test_grouping_embed_uses_the_embedder_and_stats_report_corroboration
   - tests/wiki/test_groups.py::test_a_claim_joins_the_first_matching_group

@@ -21,7 +21,9 @@ prompt: '# Embed stage: choose relevant threshold by precision target (0.90), re
   float=RELEVANT_PRECISION) -> EmbedStage`
 
   - `infovore.triage.embed_stage.threshold_stats(samples: Sequence[tuple[float, bool]], t_irrelevant:
-  float, t_relevant: float) -> dict[str, dict[str, float]]`'
+  float, t_relevant: float) -> dict[str, dict[str, float]]`
+
+  - CLI option: `--relevant-precision`'
 params:
   source_repo: https://github.com/unxmaal/infovore.git
   base: 640fab4912a9c9c8949d5ba89147ceabd183061e
@@ -42,6 +44,7 @@ params:
     float=RELEVANT_PRECISION) -> EmbedStage'
   - 'infovore.triage.embed_stage.threshold_stats(samples: Sequence[tuple[float, bool]], t_irrelevant:
     float, t_relevant: float) -> dict[str, dict[str, float]]'
+  - 'CLI option: --relevant-precision'
   fail_to_pass:
   - tests/triage/test_cascade.py::test_the_embed_stage_scores_what_the_lexicon_abstained_on
   - tests/triage/test_cascade.py::test_the_relevant_precision_flag_reaches_the_recorded_recipe

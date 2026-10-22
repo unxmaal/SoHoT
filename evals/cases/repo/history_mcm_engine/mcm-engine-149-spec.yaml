@@ -77,7 +77,19 @@ prompt: '# Audit guessed hardcoded constants: provenance, env-override, and evid
 
   - `mcm_engine.tunables.env_float(name: str, default: float) -> float`
 
-  - `mcm_engine.tunables.env_int(name: str, default: int) -> int`'
+  - `mcm_engine.tunables.env_int(name: str, default: int) -> int`
+
+  - environment variable: `MCM_DEDUP_MIN_ENTROPY`
+
+  - environment variable: `MCM_DEDUP_TOPIC_THRESHOLD`
+
+  - environment variable: `MCM_RULESIFT_KNOWN_THRESHOLD`
+
+  - environment variable: `MCM_SCORE_W_RELEVANCE`
+
+  - environment variable: `MCM_SEARCH_RANK_THRESHOLD`
+
+  - environment variable: `MCM_SEARCH_STALE_DAYS`'
 params:
   source_repo: https://github.com/unxmaal/mcm-engine.git
   base: aeda791754fcde22504f4eb0872fa6294a401b82
@@ -99,6 +111,12 @@ params:
   interface:
   - 'mcm_engine.tunables.env_float(name: str, default: float) -> float'
   - 'mcm_engine.tunables.env_int(name: str, default: int) -> int'
+  - 'environment variable: MCM_DEDUP_MIN_ENTROPY'
+  - 'environment variable: MCM_DEDUP_TOPIC_THRESHOLD'
+  - 'environment variable: MCM_RULESIFT_KNOWN_THRESHOLD'
+  - 'environment variable: MCM_SCORE_W_RELEVANCE'
+  - 'environment variable: MCM_SEARCH_RANK_THRESHOLD'
+  - 'environment variable: MCM_SEARCH_STALE_DAYS'
   fail_to_pass:
   - tests/test_tunables.py::test_constant_defaults_and_overrides[MCM_DEDUP_TOPIC_THRESHOLD-mcm_engine.dedup-TOPIC_THRESHOLD-0.5-0.7]
   - tests/test_tunables.py::test_constant_defaults_and_overrides[MCM_RULESIFT_KNOWN_THRESHOLD-mcm_engine.ingest.rulesift-KNOWN_THRESHOLD-0.9-0.95]

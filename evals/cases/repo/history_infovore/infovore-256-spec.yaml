@@ -8,7 +8,14 @@ prompt: '# labels export: JSONL of human relevance labels with cascade stage
   Add `infovore labels export --jsonl PATH [--include-excluded-channels]`: one object per labelled current
   exchange (latest human_exchange label, bad_grouping dropped) with id, text (llm-score render, unwindowed),
   label, held_out, slice, channel, cascade_stage, label_source. Excluded channels omitted by default;
-  ordered by id; prints counts per label, held_out, cascade_stage.'
+  ordered by id; prints counts per label, held_out, cascade_stage.
+
+
+  The hidden tests call these names from the repository (signatures as a correct fix defines them):
+
+  - CLI option: `--include-excluded-channels`
+
+  - CLI option: `--jsonl`'
 params:
   source_repo: https://github.com/unxmaal/infovore.git
   base: 733d7498f580a11b792df1e889bfbe33bf253984
@@ -22,6 +29,9 @@ params:
   - infovore/triage/labels_export.py
   pytest_args:
   - --import-mode=importlib
+  interface:
+  - 'CLI option: --include-excluded-channels'
+  - 'CLI option: --jsonl'
   fail_to_pass:
   - tests/triage/test_labels_export.py::test_counts_are_printed
   - tests/triage/test_labels_export.py::test_excluded_channels_are_omitted_unless_included

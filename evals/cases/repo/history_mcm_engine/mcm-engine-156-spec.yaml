@@ -49,7 +49,10 @@ prompt: '# #137a: server-owned per-session topic-coverage ledger + compaction re
   - `mcm_engine.tracker.SessionTracker.reconcile_coverage(self, *, resident: bool=False) -> None`
 
   - `mcm_engine.tracker.SessionTracker.record_coverage(self, topic: str, query: str, result_ids=None,
-  *, resident: bool=True) -> None`'
+  *, resident: bool=True) -> None`
+
+  - MCP tool: `save_snapshot(goal: str='''', progress: str='''', open_questions: str='''', blockers: str='''',
+  next_steps: str='''', active_files: str='''', key_decisions: str='''', compaction: bool=False) -> str`'
 params:
   source_repo: https://github.com/unxmaal/mcm-engine.git
   base: 68b87f7a66d757ecb914189f84c73f89a459e51e
@@ -76,6 +79,9 @@ params:
   - 'mcm_engine.tracker.SessionTracker.reconcile_coverage(self, *, resident: bool=False) -> None'
   - 'mcm_engine.tracker.SessionTracker.record_coverage(self, topic: str, query: str, result_ids=None,
     *, resident: bool=True) -> None'
+  - 'MCP tool: save_snapshot(goal: str='''', progress: str='''', open_questions: str='''', blockers: str='''',
+    next_steps: str='''', active_files: str='''', key_decisions: str='''', compaction: bool=False) ->
+    str'
   fail_to_pass:
   - tests/test_coverage_ledger.py::test_coverage_is_per_session
   - tests/test_coverage_ledger.py::test_is_covered_requires_resident_by_default

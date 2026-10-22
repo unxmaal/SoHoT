@@ -58,7 +58,17 @@ prompt: '# Negative controls for the claim check and the wiki gates
   - `infovore.claims.controls.shuffled_citations(rows: Sequence[ReviewRow], lexicon: Lexicon, threshold:
   float, rng: random.Random) -> tuple[Tally, Tally, float]`
 
-  - `infovore.claims.controls.worst(verdicts: Iterable[str | None]) -> str`'
+  - `infovore.claims.controls.worst(verdicts: Iterable[str | None]) -> str`
+
+  - CLI option: `--article-run`
+
+  - CLI option: `--drops-log`
+
+  - CLI option: `--json`
+
+  - CLI option: `--run`
+
+  - CLI option: `--sample`'
 params:
   source_repo: https://github.com/unxmaal/infovore.git
   base: beda3c3cff036a10d558acd507fb231f66a72135
@@ -87,6 +97,11 @@ params:
   - 'infovore.claims.controls.shuffled_citations(rows: Sequence[ReviewRow], lexicon: Lexicon, threshold:
     float, rng: random.Random) -> tuple[Tally, Tally, float]'
   - 'infovore.claims.controls.worst(verdicts: Iterable[str | None]) -> str'
+  - 'CLI option: --article-run'
+  - 'CLI option: --drops-log'
+  - 'CLI option: --json'
+  - 'CLI option: --run'
+  - 'CLI option: --sample'
   fail_to_pass:
   - tests/claims/test_controls.py::test_controls_bad_arguments_are_config_errors[argv0]
   - tests/claims/test_controls.py::test_controls_bad_arguments_are_config_errors[argv1]

@@ -41,7 +41,8 @@ prompt: "# Rule-like gate rejects descriptive architectural facts (normative-wor
   \ str, batch_size: int=5, batch_timeout: float=30.0, strict: bool=True) -> None`\n- `mcm_engine.cli._sift_remote_call(url,\
   \ spans, *, headers=None, timeout=None, strict=True)`\n- `mcm_engine.ingest.rulesift.is_substantive(text:\
   \ str) -> bool`\n- `mcm_engine.ingest.rulesift.passes_gate(text: str, *, strict: bool) -> bool`\n- `mcm_engine.ingest.rulesift.sift_spans(spans:\
-  \ Iterable[tuple[str, str]], existing_rules: Iterable[tuple[int, str]], *, strict: bool=True) -> list[RuleCandidate]`"
+  \ Iterable[tuple[str, str]], existing_rules: Iterable[tuple[int, str]], *, strict: bool=True) -> list[RuleCandidate]`\n\
+  - MCP tool: `sift_candidates(candidates: list[dict], strict: bool=True) -> str`\n- CLI option: `--remote-loose`"
 params:
   source_repo: https://github.com/unxmaal/mcm-engine.git
   base: 9e39e9dd3303f9a077a3e86cadb1b17d8198e4f4
@@ -68,6 +69,8 @@ params:
   - 'mcm_engine.ingest.rulesift.passes_gate(text: str, *, strict: bool) -> bool'
   - 'mcm_engine.ingest.rulesift.sift_spans(spans: Iterable[tuple[str, str]], existing_rules: Iterable[tuple[int,
     str]], *, strict: bool=True) -> list[RuleCandidate]'
+  - 'MCP tool: sift_candidates(candidates: list[dict], strict: bool=True) -> str'
+  - 'CLI option: --remote-loose'
   fail_to_pass:
   - tests/test_remote_ingest.py::test_collect_remote_spans_loose_keeps_descriptive
   - tests/test_remote_ingest.py::test_ingest_remote_loose_wires_strict_false

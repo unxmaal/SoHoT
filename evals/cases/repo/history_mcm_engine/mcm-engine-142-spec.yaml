@@ -75,7 +75,9 @@ prompt: '# KB data pollution: some knowledge summaries contain the whole seriali
 
   - `mcm_engine.sanitize.is_polluted(text: str | None) -> bool`
 
-  - `mcm_engine.sanitize.strip_tool_call_fragments(text: str | None) -> str`'
+  - `mcm_engine.sanitize.strip_tool_call_fragments(text: str | None) -> str`
+
+  - MCP tool: `sanitize_knowledge(dry_run: bool=True, limit: int=0) -> str`'
 params:
   source_repo: https://github.com/unxmaal/mcm-engine.git
   base: 36d74ae24174597fd57d190cef2a82612890319d
@@ -98,6 +100,7 @@ params:
     None, str | None, bool]'
   - 'mcm_engine.sanitize.is_polluted(text: str | None) -> bool'
   - 'mcm_engine.sanitize.strip_tool_call_fragments(text: str | None) -> str'
+  - 'MCP tool: sanitize_knowledge(dry_run: bool=True, limit: int=0) -> str'
   fail_to_pass:
   - tests/test_sanitize_knowledge_tool.py::test_add_knowledge_guard_cleans_on_store
   - tests/test_sanitize_knowledge_tool.py::test_sanitize_knowledge_apply_cleans_in_place

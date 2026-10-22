@@ -37,7 +37,9 @@ prompt: '# Sanitize NEGATIVE/ERROR serialized-blob pollution + store-time guard 
   fix: str | None) -> tuple[str | None, str | None, str | None, str | None, bool]`
 
   - `mcm_engine.sanitize.clean_negative(what_failed: str | None, why_failed: str | None, correct_approach:
-  str | None) -> tuple[str | None, str | None, str | None, bool]`'
+  str | None) -> tuple[str | None, str | None, str | None, bool]`
+
+  - MCP tool: `sanitize_corpus(entity_type: str=''all'', dry_run: bool=True, limit: int=0) -> str`'
 params:
   source_repo: https://github.com/unxmaal/mcm-engine.git
   base: d9241414233fc054f0f626043e12619271210a4f
@@ -62,6 +64,7 @@ params:
     fix: str | None) -> tuple[str | None, str | None, str | None, str | None, bool]'
   - 'mcm_engine.sanitize.clean_negative(what_failed: str | None, why_failed: str | None, correct_approach:
     str | None) -> tuple[str | None, str | None, str | None, bool]'
+  - 'MCP tool: sanitize_corpus(entity_type: str=''all'', dry_run: bool=True, limit: int=0) -> str'
   fail_to_pass:
   - tests/test_sanitize_knowledge_tool.py::test_add_negative_guard_cleans_on_store
   - tests/test_sanitize_knowledge_tool.py::test_report_error_guard_cleans_on_store

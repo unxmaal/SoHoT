@@ -51,7 +51,11 @@ prompt: '# Piece C: one-way DB→git review mirror (gap 5, reviewability)
 
   The hidden tests call these names from the repository (signatures as a correct fix defines them):
 
-  - `mcm_engine.mirror.export_mirror(storage: Any, out_dir: str | Path) -> dict`'
+  - `mcm_engine.mirror.export_mirror(storage: Any, out_dir: str | Path) -> dict`
+
+  - CLI option: `--from`
+
+  - CLI option: `--out`'
 params:
   source_repo: https://github.com/unxmaal/mcm-engine.git
   base: 94708d68ff0a29b5300cda5923401ac98676d234
@@ -69,6 +73,8 @@ params:
   - dev
   interface:
   - 'mcm_engine.mirror.export_mirror(storage: Any, out_dir: str | Path) -> dict'
+  - 'CLI option: --from'
+  - 'CLI option: --out'
   fail_to_pass:
   - tests/test_export_mirror.py::test_cli_export_mirror_dispatch
   - tests/test_export_mirror.py::test_mirror_is_read_only_on_source
