@@ -25,15 +25,37 @@ def zero_pass(conn, lane: str, spec: str) -> dict | None:
     return {"spec": spec, "cases": len(draws), "draws": sum(len(d) for d in draws.values())}
 
 
-def exam(lane: str) -> tuple[frozenset, str]:
-    """(case ids, cases digest) of the lane's exam as evals.run loads it now."""
+def exam(lane: str, split: str = "all", repeat: int = 1, suite=None) -> tuple[frozenset, str]:
+    """(case ids, cases digest) of the lane's exam on one split at one repeat, as evals.run loads it now."""
     from evals import core
-    from evals.run import select_cases
+    from evals.run import expand_cases, select_cases
+    from harness import holdout
     try:
-        cases = select_cases(core.load_suite(core.SHIPPED, core.local_root()), _lane(lane))
-    except SystemExit:
+        cases = select_cases(core.load_suite(core.SHIPPED, core.local_root()) if suite is None else suite, _lane(lane))
+        cases = expand_cases(holdout.only(cases, split or "all"), max(1, int(repeat or 1)))
+    except (SystemExit, ValueError):
         return frozenset(), ""
     return frozenset(c.id for c in cases), core.cases_digest(cases)
+
+
+def sat(run: dict, rows, candidate: str, exam_of=None, memo=None) -> bool:
+    """Did `candidate` sit the whole current exam in this stored run: the digest its split and repeat give now, every case. #1120."""
+    memo = {} if memo is None else memo
+    receipt = run.get("receipt") or {}
+    receipt = json.loads(receipt) if isinstance(receipt, str) else receipt
+    key = (_lane(run.get("lane")), run.get("split") or receipt.get("split") or "all", int(run.get("repeat_count") or 1))
+    if key not in memo:
+        if exam_of:
+            memo[key] = exam_of(*key)
+        else:
+            if "suite" not in memo:
+                from evals import core
+                memo["suite"] = core.load_suite(core.SHIPPED, core.local_root())
+            memo[key] = exam(*key, suite=memo["suite"])
+    ids, digest = memo[key]
+    if not digest or (run.get("cases_digest") or "") != digest:
+        return False
+    return {r["case_id"] for r in rows if r.get("candidate") == candidate} >= ids
 
 
 def measured(conn, lane: str, ids, digest: str, machines, skip=()) -> list[dict]:

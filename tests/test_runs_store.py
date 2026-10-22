@@ -93,7 +93,7 @@ def test_evals_run_writes_the_run_and_its_rows(monkeypatch, tmp_path):
 
 # --- each converted reader ignores an unstored receipt ---------------------
 
-def test_winners_read_stored_runs_only(conn, store_run):
+def test_winners_read_stored_runs_only(conn, store_run, sat_exam):
     from harness import winners
     _unstored()
     assert winners.from_receipts(conn) == {} and winners.beaten_in(conn) == {}
@@ -126,7 +126,7 @@ def test_the_memory_guard_reads_stored_peaks_only(conn, store_run):
     assert memory.measured_peak_gb("omnisvg:4B", conn) == 2.0
 
 
-def test_from_winners_reads_stored_runs_only(conn, store_run):
+def test_from_winners_reads_stored_runs_only(conn, store_run, sat_exam):
     _unstored(lane="svg")
     with pytest.raises(SystemExit):
         er.winner_for("svg", conn)

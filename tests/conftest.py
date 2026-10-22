@@ -257,6 +257,13 @@ def _rows_from(summary: dict) -> list[dict]:
 
 
 @pytest.fixture
+def sat_exam(monkeypatch):
+    """Every stored fixture run counts as a whole sitting of its lane's current exam, for tests that rank within one. #1120."""
+    from harness import winners
+    monkeypatch.setattr(winners, "on_exam", lambda *a, **k: True)
+
+
+@pytest.fixture
 def store_conn(tmp_path):
     """A fresh store connection for code that requires one, such as rank.rank. #893."""
     from harness import memory_store as ms

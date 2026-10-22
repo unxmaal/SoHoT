@@ -7,6 +7,8 @@ from evals import core
 from harness import adopt, judge, usage, winners
 from harness.checks import decide, speech
 
+pytestmark = pytest.mark.usefixtures("sat_exam")
+
 SCHEMA = {f"q{i}": {"type": "boolean", "description": f"question {i}"} for i in range(5)}
 GOLD = {f"q{i}": True for i in range(5)}
 

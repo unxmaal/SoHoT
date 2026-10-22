@@ -1754,8 +1754,8 @@ def winner_for(modality: str, conn=None) -> str:
     got = best.get((modality or "").strip().lower())
     if not got:
         raise SystemExit(
-            f"--from-winners: no stored run names a winner for {modality!r} "
-            f"on this machine, so there is nothing to build a run around. "
+            f"--from-winners: no stored run of the current {modality!r} exam names a winner, "
+            f"so there is nothing to build a run around. "
             f"Measure the lane first, or pass --candidates explicitly.")
     return got["candidate"]
 
