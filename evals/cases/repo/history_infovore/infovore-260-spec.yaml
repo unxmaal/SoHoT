@@ -1,0 +1,52 @@
+# infovore fix history (unxmaal/infovore), generated (https://github.com/unxmaal/infovore).
+# Imported by evals/importers from git:unxmaal/infovore@219940e42104c3e625a6642713e856e2bb2305fc; re-import, do not edit.
+id: infovore-260-spec
+modality: repo
+prompt: '# words: drop ids, digit-only tokens, split contractions and gazetteer-matched words from candidates
+
+
+  Live candidates include Discord mention ids, bare numbers, contraction fragments from curly apostrophes
+  (didn, doesn) and SGI terms the gazetteer already matches (octane, o2, indy, iris). Normalise curly
+  apostrophes in tokens(), drop digit-only candidates, and test every candidate against the lexicon''s
+  real matcher (message_hits). Link domains stay.'
+params:
+  source_repo: https://github.com/unxmaal/infovore.git
+  base: d612c929738b4a910f77e111b9139c4ac5c8fba6
+  fix: 0f579895833bc7e35e9f8a470b7c0768a49c2b9a
+  variant: spec
+  context: oracle
+  context_files:
+  - infovore/triage/lexicon.py
+  - infovore/words/review.py
+  pytest_args:
+  - --import-mode=importlib
+  fail_to_pass:
+  - tests/triage/test_lexicon_reviewed.py::test_curly_apostrophes_do_not_split_contractions
+  - tests/words/test_review.py::test_candidates_rank_by_count_minus_common_known_and_reviewed
+  - tests/words/test_review.py::test_ids_digits_contractions_and_gazetteer_words_are_not_candidates
+  pass_to_pass:
+  - tests/triage/test_lexicon_reviewed.py::test_reviewed_words_join_the_lexicon_as_a_category_and_change_the_version
+  - tests/triage/test_lexicon_reviewed.py::test_tokens_reduce_urls_to_their_domain_word_and_drop_punctuation
+  - tests/words/test_review.py::test_a_later_cascade_run_replaces_the_earlier_one
+  - tests/words/test_review.py::test_common_english_is_subtracted_with_a_configurable_size
+  - tests/words/test_review.py::test_gain_counts_undecided_conversations_with_an_approved_word
+  - tests/words/test_review.py::test_only_residue_conversations_are_undecided
+  - tests/words/test_review.py::test_the_pile_counts_every_occurrence
+  - tests/words/test_review.py::test_the_queue_refuses_unknown_words
+  - tests/words/test_review.py::test_the_queue_serves_highest_frequency_first_and_never_repeats
+  - tests/words/test_review.py::test_the_undecided_query_never_searches_annotations_by_scorer
+  - tests/words/test_review.py::test_words_already_in_the_lexicon_are_dropped
+attribution:
+  dataset: infovore fix history (unxmaal/infovore)
+  url: https://github.com/unxmaal/infovore
+  license: generated
+  source: git:unxmaal/infovore
+  revision: 219940e42104c3e625a6642713e856e2bb2305fc
+  item: '#260 (PR #261)'
+  date: '2026-10-04'
+  transform: issue title and body from `gh issue view` at survey time, home paths as ~/, 'Prior art checked'
+    removed (spec), and the Fix/Shape/Design/Options/Remedy/Proposal/Build/What-to sections and labelled
+    paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
+    of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
+    and sandbox (evals/repo.py)
+  importer: evals.importers.history_infovore

@@ -1,4 +1,4 @@
-"""SoHoT's own merged fix commits as repo-lane tasks, in a spec and a symptom variant. #888."""
+"""A repository's merged fix commits as repo-lane tasks, in a spec and a symptom variant; SoHoT's own here. #888, #889."""
 from __future__ import annotations
 
 import argparse
@@ -9,6 +9,7 @@ import sys
 import time
 import xml.etree.ElementTree as ET
 from collections import Counter
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from evals import repo
@@ -23,7 +24,7 @@ LICENSE = "generated"
 REVISION = "35ac01f5c487124fb40fc7a94680178c22b78ac6"
 MANIFEST = Path(__file__).with_name("history.json")
 VERSION = 1
-SUBJECT = re.compile(r"\(#(\d+)\) \(#(\d+)\)$")
+SUBJECT = re.compile(r"\(#(?P<issue>\d+)\) \(#(?P<pr>\d+)\)$")
 MAX_SOURCE_FILES = 8
 MAX_LINES = 400
 #: The #888 pilot's cap: a task at or under both is the small stratum, the one local models were sized for. #997.
@@ -59,6 +60,46 @@ _HEADING = re.compile(r"^(#{1,6})\s+(.*?)\s*#*\s*$")
 _LABEL = re.compile(r"^(?:\*\*([^*\n]{1,60}?)[:.]?\*\*:?|([A-Z][A-Za-z ]{0,40}?):(?=\s|$))")
 _LIST = re.compile(r"^(\s+|[-*+] |\d+[.)] )")
 _HOME = re.compile(r"/(?:Users|home)/[^/\s]+/")
+_HOST = re.compile(r"\b(?:10|192\.168|172\.(?:1[6-9]|2\d|3[01]))\.\d+\.\d+\b"
+                   r"|(?<![\w<])(?!cluster\.local)[a-z0-9-]+\.local\b")
+
+
+@dataclass(frozen=True)
+class Repo:
+    """One source: its history, its issue tracker and how its tests run, so no SoHoT constant leaks into another. #889."""
+    name: str
+    prefix: str
+    url: str
+    tracker: str
+    revision: str
+    subject: re.Pattern = SUBJECT
+    merges: bool = False
+    markers: str = ""
+    pytest_args: tuple = ()
+    extras: tuple = ()
+    #: Headings this tracker gives the fix, cut from symptom beside SOLUTION.
+    solution: tuple = ()
+    dropped: dict = field(default_factory=dict, compare=False, hash=False)
+
+    @property
+    def manifest(self) -> Path:
+        return Path(__file__).with_name(f"{self.name}.json")
+
+    @property
+    def source(self) -> str:
+        return f"git:{self.tracker}"
+
+    @property
+    def dataset(self) -> str:
+        return f"{self.tracker.split('/')[-1]} fix history ({self.tracker})"
+
+    @property
+    def home(self) -> str:
+        return f"https://github.com/{self.tracker}"
+
+
+SOHOT = Repo("history", "sohot", REPO_URL, "unxmaal/SoHoT", REVISION, markers=MARKERS, dropped=DROPPED)
+REPO = SOHOT
 
 
 def _norm(heading: str) -> str:
@@ -96,11 +137,11 @@ def strip_sections(body: str, names) -> str:
     return re.sub(r"\n{3,}", "\n\n", "\n".join(out)).strip()
 
 
-def prompts(title: str, body: str) -> dict[str, str]:
+def prompts(title: str, body: str, solution=()) -> dict[str, str]:
     """variant -> prompt text; symptom is None when it would only repeat spec or say nothing."""
-    body = _HOME.sub("~/", body)
+    body = _HOST.sub("<host>", _HOME.sub("~/", body))
     spec = strip_sections(body, NOT_PROMPT)
-    symptom = strip_sections(body, NOT_PROMPT + SOLUTION)
+    symptom = strip_sections(body, NOT_PROMPT + SOLUTION + tuple(solution))
     head = f"# {title.strip()}\n\n"
     return {"spec": head + spec,
             "symptom": head + symptom if symptom and symptom != spec else None}
@@ -111,23 +152,33 @@ def git(path, *args) -> str:
                           text=True).stdout
 
 
-def candidates(mirror, revision: str) -> list[dict]:
-    """Fix commits on `revision`'s first-parent line, newest first, with their changed files."""
+def private(text: str) -> list:
+    """What the privacy lint would refuse in text bound for a committed case: a prompt or a test id. #889."""
+    from harness import privacy
+    return privacy.scan(text, "prompt", privacy.name_pattern(Path(__file__).resolve().parents[2]))
+
+
+def candidates(mirror, revision: str, src: Repo = SOHOT) -> list[dict]:
+    """Fix commits on `revision`'s first-parent line, newest first, with their changed files.
+
+    A squash source's fix is a one-parent commit; a merge source's is the merge, its base the first parent. #889.
+    """
     out = []
     for line in git(mirror, "log", "--first-parent", "--format=%H%x00%P%x00%cI%x00%s",
                     revision).splitlines():
         sha, parents, date, subject = line.split("\0")
-        m = SUBJECT.search(subject)
-        if not m or len(parents.split()) != 1:
+        m = src.subject.search(subject)
+        if not m or len(parents.split()) != (2 if src.merges else 1):
             continue
+        parents = parents.split()[0]
         files = {}
-        for row in git(mirror, "diff", "--numstat", "--no-renames", f"{sha}^", sha).splitlines():
+        for row in git(mirror, "diff", "--numstat", "--no-renames", parents, sha).splitlines():
             added, deleted, path = row.split("\t")
             files[path] = 10 ** 6 if added == "-" else int(added) + int(deleted)
         source = sorted(p for p in files if not repo.is_test_path(p))
-        context, new = split_new(mirror, parents.strip(), sha, source)
-        out.append({"issue": int(m.group(1)), "pr": int(m.group(2)), "fix": sha,
-                    "base": parents.strip(), "date": date[:10], "subject": subject,
+        context, new = split_new(mirror, parents, sha, source)
+        out.append({"issue": int(m.group("issue")), "pr": int(m.group("pr")), "fix": sha,
+                    "base": parents, "date": date[:10], "subject": subject,
                     "source_files": source, "context_files": context, "new_files": new,
                     "test_files": sorted(p for p in files if repo.is_test_path(p)),
                     "lines": sum(files[p] for p in source)})
@@ -177,8 +228,22 @@ def size_of(strata: dict) -> str:
 
 
 def sizes(got: dict | None = None) -> dict:
-    """fix sha -> size stratum for every task in the manifest. #997."""
-    return {t["fix"]: size_of(t["strata"]) for t in (got or manifest())["tasks"]}
+    """fix sha -> size stratum for every task in the manifest, or in every source's manifest. #997, #889."""
+    every = [got] if got else [manifest(r.manifest) for r in repos()]
+    return {t["fix"]: size_of(t["strata"]) for g in every for t in g["tasks"]}
+
+
+def repos() -> list[Repo]:
+    """Every registered repo-lane history source, SoHoT's first. #889."""
+    from evals import importers
+    return [importers.module(s.name).REPO for s in importers.REGISTRY
+            if s.lane == LANE and hasattr(importers.module(s.name), "REPO")]
+
+
+def source_of(params: dict) -> str:
+    """The source a repo case came from, by its params.source_repo: a registered source's prefix, else the url. #889."""
+    url = str((params or {}).get("source_repo", ""))
+    return next((r.prefix for r in repos() if r.url == url), url)
 
 
 def only_size(cases, size: str, got: dict | None = None) -> list:
@@ -189,9 +254,9 @@ def only_size(cases, size: str, got: dict | None = None) -> list:
     return [c for c in cases if by.get(str((getattr(c, "params", None) or {}).get("fix", ""))) == size]
 
 
-def issue(number: int) -> dict | None:
+def issue(number: int, tracker: str = SOHOT.tracker) -> dict | None:
     """The issue's title and body; None only when GitHub says it does not exist, never when gh fails. #997."""
-    got = subprocess.run(["gh", "issue", "view", str(number), "-R", "unxmaal/SoHoT", "--json",
+    got = subprocess.run(["gh", "issue", "view", str(number), "-R", tracker, "--json",
                           "title,body"], capture_output=True, text=True)
     if got.returncode == 0:
         return json.loads(got.stdout)
@@ -201,19 +266,20 @@ def issue(number: int) -> dict | None:
 
 
 def _junit(xml: Path) -> dict:
-    """junit key -> passed|failed|skipped."""
+    """junit key -> passed|failed|error|skipped; a file that does not collect is keyed `::<dotted module>`."""
     out = {}
     for case in ET.parse(xml).getroot().iter("testcase"):
         key = f"{case.get('classname') or ''}::{case.get('name') or ''}"
         tags = {child.tag for child in case}
-        out[key] = ("failed" if tags & {"failure", "error"} else
+        out[key] = ("failed" if "failure" in tags else "error" if "error" in tags else
                     "skipped" if "skipped" in tags else "passed")
     return out
 
 
-def _pytest(task: Path, python: Path, args, log, timeout) -> int | str:
+def _pytest(task: Path, python: Path, args, log, timeout, src: Repo = SOHOT) -> int | str:
+    mark = ["-m", src.markers] if src.markers else []
     rc, tail, late = repo.run_sandboxed([str(python), "-m", "pytest", "-p", "no:cacheprovider",
-                                         "-q", "-o", "addopts=", "-m", MARKERS, *args],
+                                         "-q", "-o", "addopts=", *src.pytest_args, *mark, *args],
                                         task, timeout)
     with open(log, "a", encoding="utf-8") as f:
         f.write(f"\n$ {task.name}: pytest {' '.join(args)}\n[exit {rc}{' timeout' if late else ''}]\n"
@@ -221,13 +287,13 @@ def _pytest(task: Path, python: Path, args, log, timeout) -> int | str:
     return "timeout" if late else rc
 
 
-def outcomes(task: Path, python: Path, files, log, timeout=TIMEOUT_S) -> dict | str:
+def outcomes(task: Path, python: Path, files, log, timeout=TIMEOUT_S, src: Repo = SOHOT) -> dict | str:
     """{"outcomes": junit key -> outcome, "seconds": s} of one sandboxed run, or a drop reason."""
     report = task / repo.HARNESS_DIR / "survey.xml"
     report.parent.mkdir(parents=True, exist_ok=True)
     report.unlink(missing_ok=True)
     t0 = time.perf_counter()
-    got = _pytest(task, python, [f"--junitxml={report}", *files], log, timeout)
+    got = _pytest(task, python, [f"--junitxml={report}", *files], log, timeout, src)
     if isinstance(got, str):
         return got
     if not report.is_file():
@@ -255,34 +321,39 @@ def classify(base_runs: list[dict], fix_runs: list[dict], files) -> dict:
             any(r["outcomes"] != fix_runs[0]["outcomes"] for r in fix_runs):
         return {"drop": "flaky"}
     base, fix = base_runs[0]["outcomes"], fix_runs[0]["outcomes"]
-    if any(v == "failed" for v in fix.values()):
+    if any(v in ("failed", "error") for v in fix.values()):
         return {"drop": "reference_fails"}
     passing = node_ids([k for k, v in fix.items() if v == "passed"], files)
     f2p = [i for i in passing if base.get(repo.junit_key(i)) != "passed"]
     if not f2p:
         return {"drop": "no_flip"}
+    # The case control calls an id that errors at base (setup, or its file not collecting) an error, not a flip. #889.
+    broken = {k.partition("::")[2].replace(".", "/") + ".py" for k, v in base.items() if k.startswith("::") and v == "error"}
+    if any(base.get(repo.junit_key(i)) == "error" or i.partition("::")[0] in broken for i in f2p):
+        return {"drop": "base_error"}
     return {"fail_to_pass": f2p, "pass_to_pass": [i for i in passing if i not in f2p],
             "test_s": fix_runs[0]["seconds"]}
 
 
-def probe(mirror: Path, c: dict, log, timeout=TIMEOUT_S, runs=RUNS, env=None) -> dict:
+def probe(mirror: Path, c: dict, log, timeout=TIMEOUT_S, runs=RUNS, env=None, src: Repo = SOHOT) -> dict:
     """Run the fix's tests at base+hidden tests, then with the reference diff applied, the grader's way."""
     task = repo.restore(mirror, c["base"])
     try:
         try:
-            python = repo.python_of(Path((env or repo.prepare)(task)))
+            built = env(task) if env else repo.prepare(task, src.extras) if src.extras else repo.prepare(task)
+            python = repo.python_of(Path(built))
         except repo.RepoEnvError:
             return {"drop": "environment_error"}
         repo.install_tests(mirror, task, c["base"], c["fix"])
         files = [p for p in repo.hidden_tests(mirror, c["base"], c["fix"]) if _test_module(p)]
         if not files:
             return {"drop": "no_test_change"}
-        base_runs = [outcomes(task, python, files, log, timeout) for _ in range(runs)]
+        base_runs = [outcomes(task, python, files, log, timeout, src) for _ in range(runs)]
         applied, _ = repo.apply(task, repo.reference_diff(mirror, c["base"], c["fix"]))
         if not applied:
             return {"drop": "reference_unappliable"}
         repo.install_tests(mirror, task, c["base"], c["fix"])
-        fix_runs = [outcomes(task, python, files, log, timeout) for _ in range(runs)]
+        fix_runs = [outcomes(task, python, files, log, timeout, src) for _ in range(runs)]
         bad = next((r for r in [*base_runs, *fix_runs] if isinstance(r, str)), None)
         return {"drop": bad} if bad else classify(base_runs, fix_runs, files)
     finally:
@@ -299,16 +370,18 @@ def _fetch(mirror: Path, revision: str) -> None:
         git(mirror, "fetch", "--quiet", "--prune", "origin")
 
 
-def survey(source: str, revision: str, limit: int | None, log, get_issue=issue, timeout=TIMEOUT_S,
-           env=None, keep: dict | None = None, probes: int | None = None, run: bool = True) -> dict:
+def survey(source: str, revision: str, limit: int | None, log, get_issue=None, timeout=TIMEOUT_S,
+           env=None, keep: dict | None = None, probes: int | None = None, run: bool = True,
+           src: Repo = SOHOT) -> dict:
     """Examine fix commits newest first until `limit` tasks are kept (None: all); `keep`'s tasks stay as they are.
 
     run=False screens and reads issues but probes nothing: what would be probed is listed in "pending". #997.
     """
+    get_issue = get_issue or (lambda n: issue(n, src.tracker))
     mirror = repo.mirror(source)
     _fetch(mirror, revision)
     revision = git(mirror, "rev-parse", revision).strip()
-    pool = candidates(mirror, revision)
+    pool = candidates(mirror, revision, src)
     old = {t["fix"]: t for t in (keep or {}).get("tasks", [])}
     lost = sorted(t["id"] for f, t in old.items() if f not in {c["fix"] for c in pool})
     if lost:
@@ -325,8 +398,9 @@ def survey(source: str, revision: str, limit: int | None, log, get_issue=issue, 
         text = res = None
         if why is None:
             got = get_issue(c["issue"])
-            text = prompts(got["title"], got["body"] or "") if got else None
-            why = "no_issue" if not got else None
+            text = prompts(got["title"], got["body"] or "", src.solution) if got else None
+            why = "no_issue" if not got else "private_text" if any(
+                private(t) for t in text.values() if t) else None
         if why is None and not run:
             pending.append({"issue": c["issue"], "fix": c["fix"],
                             "size": size_of({"files": len(c["source_files"]), "lines": c["lines"]}),
@@ -334,33 +408,28 @@ def survey(source: str, revision: str, limit: int | None, log, get_issue=issue, 
             continue
         if why is None:
             t0, ran = time.monotonic(), ran + 1
-            res = probe(mirror, c, log, timeout, env=env)
-            why = res.get("drop")
+            res = probe(mirror, c, log, timeout, env=env, src=src)
+            why = res.get("drop") or ("private_text" if any(private(i) for i in res["fail_to_pass"]) else None)
+            if not why:
+                # A test id the lint would refuse (a LAN host as a parametrize id) leaves the regression set.
+                res = {**res, "pass_to_pass": [i for i in res["pass_to_pass"] if not private(i)]}
             print(f"{c['issue']:>4} {c['fix'][:10]} {why or 'kept'} {time.monotonic() - t0:.0f}s",
                   file=sys.stderr, flush=True)
         if why:
             drops.append({"issue": c["issue"], "pr": c["pr"], "fix": c["fix"], "reason": why})
             continue
         seen.add(c["issue"])
-        lost_variants = {v: "no_fix_section" for v in VARIANTS if not text[v]}
-        kept.append({"id": f"sohot-{c['issue']}", "issue": c["issue"], "pr": c["pr"],
-                     "base": c["base"], "fix": c["fix"], "date": c["date"],
-                     "subject": c["subject"], "context_files": c["context_files"],
-                     "new_files": c["new_files"],
-                     "test_files": c["test_files"], "fail_to_pass": res["fail_to_pass"],
-                     "pass_to_pass": res["pass_to_pass"], "prompts": text,
-                     "strata": {"files": len(c["source_files"]), "lines": c["lines"],
-                                "test_s": res["test_s"], "area": area(c["source_files"]),
-                                "size": size_of({"files": len(c["source_files"]), "lines": c["lines"]})},
-                     **({"variant_drops": lost_variants} if lost_variants else {})})
+        kept.append(task_row(src.prefix, c, res, text))
     kept += [t for f, t in old.items() if t not in kept]
-    return {"version": VERSION, "source": SOURCE, "repo": source, "revision": revision,
-            "criteria": {"subject": SUBJECT.pattern, "first_parent": True,
+    return {"version": VERSION, "source": src.source, "repo": source, "revision": revision,
+            "criteria": {"subject": src.subject.pattern, "first_parent": True, "merges": src.merges,
                          "max_source_files": MAX_SOURCE_FILES, "max_lines": MAX_LINES,
                          "small": SMALL, "symptom_without_fix_section": "spec kept, symptom dropped",
                          "tests_changed": "a test_*.py the grader would install",
                          "no_env_file_change": list(repo.ENV_FILES), "runs": RUNS,
-                         "markers": MARKERS, "pytest_timeout_s": timeout,
+                         "markers": src.markers, "pytest_args": list(src.pytest_args),
+                         "extras": list(src.extras),
+                         "pytest_timeout_s": timeout,
                          "order": "newest first", "limit": limit, "probes": probes,
                          "kept_from": (keep or {}).get("revision")},
             "candidates": len(pool), "examined": len(kept) + len(drops) + len(pending),
@@ -369,8 +438,23 @@ def survey(source: str, revision: str, limit: int | None, log, get_issue=issue, 
             **({} if run else {"pending": pending})}
 
 
+def task_row(prefix: str, c: dict, res: dict, text: dict) -> dict:
+    """One manifest task from a candidate commit, its probe result and its prompts; any importer may build one. #889."""
+    lost_variants = {v: "no_fix_section" for v in VARIANTS if not text[v]}
+    return {"id": f"{prefix}-{c['issue']}", "issue": c["issue"], "pr": c["pr"],
+            "base": c["base"], "fix": c["fix"], "date": c["date"],
+            "subject": c["subject"], "context_files": c["context_files"],
+            "new_files": c["new_files"],
+            "test_files": c["test_files"], "fail_to_pass": res["fail_to_pass"],
+            "pass_to_pass": res["pass_to_pass"], "prompts": text,
+            "strata": {"files": len(c["source_files"]), "lines": c["lines"],
+                       "test_s": res["test_s"], "area": area(c["source_files"]),
+                       "size": size_of({"files": len(c["source_files"]), "lines": c["lines"]})},
+            **({"variant_drops": lost_variants} if lost_variants else {})}
+
+
 #: Reasons only a probe gives: the share of probed candidates kept is the yield a projection prices pending ones at.
-PROBE_DROPS = ("environment_error", "flaky", "no_flip", "pytest_crashed", "reference_fails",
+PROBE_DROPS = ("base_error", "environment_error", "flaky", "no_flip", "pytest_crashed", "reference_fails",
                "reference_unappliable", "timeout")
 
 
@@ -444,24 +528,28 @@ def fetch_rows(got: dict, dropped=None) -> list[dict]:
             if t["prompts"].get(v) and f"{t['id']}-{v}" not in dropped]
 
 
-def fetch(path: Path = MANIFEST) -> list[dict]:
+def fetch(path: Path | None = None, src: Repo = SOHOT) -> list[dict]:
     """One row per task and variant, from the committed manifest."""
+    path = path or src.manifest
     got = manifest(path)
-    if got["revision"] != REVISION:
+    if got["revision"] != src.revision:
         raise RuntimeError(f"{path.name} was surveyed at {got['revision']}, not REVISION")
-    return fetch_rows(got)
+    return fetch_rows(got, src.dropped)
 
 
-def convert(row: dict) -> Imported | None:
+def convert(row: dict, src: Repo = SOHOT, mod=None, transform: str = TRANSFORM) -> Imported | None:
+    """A manifest row as a repo case; `mod` is the importer module its provenance names (this one by default)."""
     case = {"id": f"{row['id']}-{row['variant']}", "modality": LANE,
             "prompt": row["prompts"][row["variant"]],
-            "params": {"source_repo": REPO_URL, "base": row["base"], "fix": row["fix"],
+            "params": {"source_repo": src.url, "base": row["base"], "fix": row["fix"],
                        "variant": row["variant"], "context": "oracle",
                        "context_files": row["context_files"],
                        **({"new_files": row["new_files"]} if row.get("new_files") else {}),
+                       **({"pytest_args": list(src.pytest_args)} if src.pytest_args else {}),
+                       **({"extras": list(src.extras)} if src.extras else {}),
                        "fail_to_pass": row["fail_to_pass"], "pass_to_pass": row["pass_to_pass"]},
-            "attribution": provenance(sys.modules[__name__], f"#{row['issue']} (PR #{row['pr']})",
-                                      TRANSFORM, row["date"])}
+            "attribution": provenance(mod or sys.modules[__name__], f"#{row['issue']} (PR #{row['pr']})",
+                                      transform, row["date"])}
     return Imported(case)
 
 
@@ -480,7 +568,8 @@ def passes(case, answer: str) -> bool:
         if not answer:
             p = case.params
             repo.install_tests(a.mirror, a.task, p["base"], p["fix"])
-            return repo.grade(a.task, a.python, p["fail_to_pass"], p["pass_to_pass"]).resolved
+            return repo.grade(a.task, a.python, p["fail_to_pass"], p["pass_to_pass"],
+                              p.get("pytest_args") or ()).resolved
         return a.submit(answer).resolved
     finally:
         a.close()
@@ -488,7 +577,8 @@ def passes(case, answer: str) -> bool:
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="python -m evals.importers.history")
-    ap.add_argument("--source", default=REPO_URL)
+    ap.add_argument("--repo", default=None, help="the registered history source (default: SoHoT; --yield: every one)")
+    ap.add_argument("--source", default=None, help="clone this instead of the source's own url")
     ap.add_argument("--revision", default="HEAD")
     ap.add_argument("--limit", type=int, default=None, help="stop at this many tasks; default the whole pool")
     ap.add_argument("--project", action="store_true",
@@ -499,10 +589,18 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--yield", dest="table", action="store_true",
                     help="print the yield of the manifest at --out; no survey")
     ap.add_argument("--log", type=Path)
-    ap.add_argument("--out", type=Path, default=MANIFEST)
+    ap.add_argument("--out", type=Path, default=None)
     ap.add_argument("--refresh", action="store_true",
                     help="recompute context_files and new_files of the committed manifest; no survey")
     a = ap.parse_args(argv)
+    if a.table and a.repo is None and a.out is None:
+        for r in repos():
+            print("\n".join([f"{r.prefix} ({r.tracker}):"] + yield_table(manifest(r.manifest), dropped=r.dropped)))
+        return 0
+    src = next((r for r in repos() if r.name == (a.repo or SOHOT.name)), None)
+    if src is None:
+        ap.error(f"--repo {a.repo}: not a registered history source; known: {', '.join(r.name for r in repos())}")
+    a.source, a.out = a.source or src.url, a.out or src.manifest
     if a.refresh:
         got = refresh(manifest(a.out), repo.mirror(a.source))
         a.out.write_text(json.dumps(got, indent=1) + "\n", encoding="utf-8")
@@ -510,17 +608,18 @@ def main(argv: list[str] | None = None) -> int:
         print(f"refreshed {len(got['tasks'])} tasks; files to create: {moved}", file=sys.stderr)
         return 0
     if a.table:
-        print("\n".join(yield_table(manifest(a.out))))
+        print("\n".join(yield_table(manifest(a.out), dropped=src.dropped)))
         return 0
     if a.log is None:
         ap.error("--log is required for a survey")
     a.out.parent.mkdir(parents=True, exist_ok=True)
-    got = survey(a.source, a.revision, a.limit, a.log, keep=None if a.restart else manifest(),
-                 probes=a.probes, run=not a.project)
+    held = manifest(src.manifest) if src.manifest.is_file() else None
+    got = survey(a.source, a.revision, a.limit, a.log, keep=None if a.restart else held,
+                 probes=a.probes, run=not a.project, src=src)
     a.out.write_text(json.dumps(got, indent=1) + "\n", encoding="utf-8")
-    print("\n".join(yield_table(got, priced=manifest())), file=sys.stderr)
-    print(f"set REVISION = {got['revision']!r}, copy {a.out} to {MANIFEST.name}, then "
-          "`soh cases import history`", file=sys.stderr)
+    print("\n".join(yield_table(got, dropped=src.dropped, priced=held or got)), file=sys.stderr)
+    print(f"set {src.name} REVISION = {got['revision']!r}, copy {a.out} to {src.manifest.name}, then "
+          f"`soh cases import {src.name}`", file=sys.stderr)
     return 0
 
 

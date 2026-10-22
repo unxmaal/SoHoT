@@ -1,0 +1,162 @@
+# mcm-engine fix history (unxmaal/mcm-engine), generated (https://github.com/unxmaal/mcm-engine).
+# Imported by evals/importers from git:unxmaal/mcm-engine@a5b9741db49e7bfbdbfe321b65921dc08664da8e; re-import, do not edit.
+id: mcm-engine-47-spec
+modality: repo
+prompt: '# link_knowledge requires entry ids that no tool surfaces, and its escalated nudge hard-blocks
+  discovery (deadlock)
+
+
+  ## Summary
+
+
+  `link_knowledge` requires integer entry ids (`source_id`, `target_id`), but **no tool surfaces those
+  ids** — `search` and `kb_recall` render titles + bodies, never the row id. So a caller cannot know what
+  to pass.
+
+
+  This compounds into a **deadlock**: the periodic-nudge system escalates an ignored `link_knowledge`
+  nudge into a **hard block that forbids *all* other tools — including `search`** — until `link_knowledge`
+  is called. In that state you must call `link_knowledge` but cannot look up the ids to pass it, forcing
+  a blind guess (which creates wrong edges — the exact opposite of what the relations graph is for) or
+  repeated errors.
+
+
+  ## Repro (hit live)
+
+
+  1. Store several knowledge entries over a session without calling `link_knowledge`.
+
+  2. The nudge escalates: every tool call is rejected with `ESCALATED BLOCK: ''periodic:link_knowledge''
+  ... You MUST call link_knowledge before any other tool.`
+
+  3. Try to discover ids to link → `search` is also blocked.
+
+  4. Only option left: guess ids by insertion order (I guessed knowledge `12 -> 10`). Guess is unverifiable
+  and likely wrong.
+
+
+  ## Why it''s bad
+
+
+  - The feature is unusable as designed: you can''t build correct edges without ids you can''t obtain.
+
+  - The escalation actively drives *garbage* edges (blind guesses), polluting the very graph `get_related`
+  traverses.
+
+  - Blocking the read tool needed to satisfy the nudge is a self-defeating gate.
+
+
+  ## Fix options (pick one or more)
+
+
+  1. **Surface entry ids in `search` / `kb_recall` output.** Cheapest; makes correct linking possible
+  at all. (Probably necessary regardless of the others.)
+
+  2. **Let `link_knowledge` resolve by title/slug** in addition to integer id.
+
+  3. **Don''t put id-requiring tools in the hard-block set** — keep `link_knowledge` advisory, or guarantee
+  at least one read tool (`search`) stays usable while blocked so the nudge is satisfiable.
+
+  4. **Nudge system invariant:** never escalate-to-block a tool whose required inputs cannot be obtained
+  from the blocked state.
+
+
+  ## Relevant code
+
+
+  - `src/mcm_engine/tools/relations.py` — `link_knowledge`
+
+  - `src/mcm_engine/tools/search.py` — `search` result rendering (add ids)
+
+  - `src/mcm_engine/tracker.py` + `mcm-engine.yaml` (`nudges.periodic_tools`, `nudge_escalation_threshold`)
+  — escalation/blocking
+
+
+  Found while dogfooding the mcm KB during the ingest-funnel work.'
+params:
+  source_repo: https://github.com/unxmaal/mcm-engine.git
+  base: a99691d60aac91e6fc66ba9b5524f4187cb09486
+  fix: 63668a0d5cba5e715846e0971adb70bacd101216
+  variant: spec
+  context: oracle
+  context_files:
+  - src/mcm_engine/config.py
+  - src/mcm_engine/tools/search.py
+  pytest_args:
+  - -o
+  - pythonpath=src
+  extras:
+  - dev
+  fail_to_pass:
+  - tests/test_search_scope_and_archived.py::test_scope_all_returns_every_entity_type
+  - tests/test_search_scope_and_archived.py::test_scope_errors_returns_only_errors
+  - tests/test_search_scope_and_archived.py::test_scope_negative_returns_only_negative
+  - tests/test_search_scope_and_archived.py::test_scope_rules_returns_only_rules
+  - tests/test_search_scope_and_archived.py::test_scope_unknown_value_falls_back_to_all
+  - tests/test_search_scope_and_archived.py::test_search_survives_locked_counter_bump
+  - tests/test_search_scope_and_archived.py::test_unarchived_rule_returns_to_search
+  - tests/test_search_shows_ids.py::test_knowledge_result_shows_its_id
+  - tests/test_search_shows_ids.py::test_rule_result_shows_its_id
+  - tests/test_tracker.py::TestAdvisoryPeriodicTools::test_default_marks_link_knowledge_advisory
+  - tests/test_tracker.py::TestAdvisoryPeriodicTools::test_link_knowledge_never_deadlocks_by_default
+  pass_to_pass:
+  - tests/test_search_scope_and_archived.py::test_archived_knowledge_not_filtered
+  - tests/test_search_scope_and_archived.py::test_archived_rule_invisible_even_when_scope_is_rules
+  - tests/test_search_scope_and_archived.py::test_archived_rule_not_in_default_search
+  - tests/test_search_scope_and_archived.py::test_scope_knowledge_returns_only_knowledge
+  - tests/test_tracker.py::TestAdvisoryPeriodicTools::test_advisory_tool_nudges_but_never_blocks
+  - tests/test_tracker.py::TestAdvisoryPeriodicTools::test_default_marks_add_negative_advisory
+  - tests/test_tracker.py::TestAdvisoryPeriodicTools::test_non_advisory_periodic_tool_still_escalates
+  - tests/test_tracker.py::TestNudgeEscalation::test_exempt_tools_not_blocked_by_escalation
+  - tests/test_tracker.py::TestNudgeEscalation::test_multiple_nudge_types_independent
+  - tests/test_tracker.py::TestNudgeEscalation::test_no_escalation_without_nudge
+  - tests/test_tracker.py::TestNudgeEscalation::test_reset_all_clears_escalation
+  - tests/test_tracker.py::TestNudgeEscalation::test_resolving_tool_clears_escalation
+  - tests/test_tracker.py::TestNudgeEscalation::test_rules_check_escalation
+  - tests/test_tracker.py::TestNudgeEscalation::test_rules_check_resolved_by_search
+  - tests/test_tracker.py::TestNudgeEscalation::test_store_reminder_escalation
+  - tests/test_tracker.py::TestPeriodicToolNudges::test_called_this_session_tracked
+  - tests/test_tracker.py::TestPeriodicToolNudges::test_calling_tool_clears_escalation
+  - tests/test_tracker.py::TestPeriodicToolNudges::test_calling_tool_resets_its_counter
+  - tests/test_tracker.py::TestPeriodicToolNudges::test_counter_initialised_from_config
+  - tests/test_tracker.py::TestPeriodicToolNudges::test_default_config_enables_link_and_negative
+  - tests/test_tracker.py::TestPeriodicToolNudges::test_each_tool_counts_independently
+  - tests/test_tracker.py::TestPeriodicToolNudges::test_no_nudge_before_threshold
+  - tests/test_tracker.py::TestPeriodicToolNudges::test_periodic_escalates_to_block
+  - tests/test_tracker.py::TestPeriodicToolNudges::test_periodic_nudge_fires_for_specific_tool
+  - tests/test_tracker.py::TestPeriodicToolNudges::test_reset_all_clears_periodic_state
+  - tests/test_tracker.py::TestSessionTracker::test_blocking_clears_after_reset
+  - tests/test_tracker.py::TestSessionTracker::test_blocking_disabled_by_default
+  - tests/test_tracker.py::TestSessionTracker::test_blocking_enabled
+  - tests/test_tracker.py::TestSessionTracker::test_blocking_exempt_tools
+  - tests/test_tracker.py::TestSessionTracker::test_checkpoint_nudge
+  - tests/test_tracker.py::TestSessionTracker::test_elapsed_seconds
+  - tests/test_tracker.py::TestSessionTracker::test_hyper_focus_nudge
+  - tests/test_tracker.py::TestSessionTracker::test_hyper_focus_threshold_configurable
+  - tests/test_tracker.py::TestSessionTracker::test_initial_state
+  - tests/test_tracker.py::TestSessionTracker::test_mandatory_stop_nudge
+  - tests/test_tracker.py::TestSessionTracker::test_mandatory_stop_overrides_checkpoint
+  - tests/test_tracker.py::TestSessionTracker::test_no_nudge_initially
+  - tests/test_tracker.py::TestSessionTracker::test_plugin_nudge
+  - tests/test_tracker.py::TestSessionTracker::test_record_call
+  - tests/test_tracker.py::TestSessionTracker::test_record_call_no_topic
+  - tests/test_tracker.py::TestSessionTracker::test_record_store_resets_counter
+  - tests/test_tracker.py::TestSessionTracker::test_reset_all
+  - tests/test_tracker.py::TestSessionTracker::test_rules_check_disabled_when_zero
+  - tests/test_tracker.py::TestSessionTracker::test_rules_check_nudge
+  - tests/test_tracker.py::TestSessionTracker::test_store_reminder_nudge
+  - tests/test_tracker.py::TestSessionTracker::test_store_reminder_threshold_configurable
+attribution:
+  dataset: mcm-engine fix history (unxmaal/mcm-engine)
+  url: https://github.com/unxmaal/mcm-engine
+  license: generated
+  source: git:unxmaal/mcm-engine
+  revision: a5b9741db49e7bfbdbfe321b65921dc08664da8e
+  item: '#47 (PR #48)'
+  date: '2026-07-04'
+  transform: issue title and body from `gh issue view` at survey time, home paths as ~/, 'Prior art checked'
+    removed (spec), and the Fix/Shape/Design/Options/Remedy/Proposal/Build/What-to sections and labelled
+    paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
+    of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
+    and sandbox (evals/repo.py)
+  importer: evals.importers.history_mcm_engine

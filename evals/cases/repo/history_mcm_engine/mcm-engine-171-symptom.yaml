@@ -1,0 +1,54 @@
+# mcm-engine fix history (unxmaal/mcm-engine), generated (https://github.com/unxmaal/mcm-engine).
+# Imported by evals/importers from git:unxmaal/mcm-engine@a5b9741db49e7bfbdbfe321b65921dc08664da8e; re-import, do not edit.
+id: mcm-engine-171-symptom
+modality: repo
+prompt: '# Cap retrieval output in summary search: inline Why/Fix length, hit budget, common-token downrank
+
+
+  `search` summary mode is small for KNOWLEDGE/RULE but still bloats on NEGATIVE/ERROR and on low-value
+  matches. A sohot session''s `search("sweep-check")` and `search("deploy guard")` each returned ~20 hits,
+  including the same 6-7 irrelevant NEGATIVEs (#1,#3,#8,#10,#11,#14,#16) matched only on a common token
+  ("check"/"sweep"/"deploy"/"testing"), each inlining its full (and currently polluted) Why/Fix. Even
+  post-sanitize (#170) the Why/Fix is multi-paragraph; a one-line hit is cheap, seven 2 KB inlined bodies
+  are not.
+
+
+  ## Acceptance
+
+  - `search("deploy guard")` and `search("sweep-check")` each return under ~3 KB, with RULE #756 and #868
+  still present for "deploy guard".
+
+  - `detail="full"` is unchanged (still returns whole bodies).'
+params:
+  source_repo: https://github.com/unxmaal/mcm-engine.git
+  base: 5c3e61f92a7c6f6f868e1dc5dcb4e0c88df4b6e3
+  fix: 66b0635047fc4371d34ed4878fe200603bbb86a7
+  variant: symptom
+  context: oracle
+  context_files:
+  - src/mcm_engine/tools/search.py
+  pytest_args:
+  - -o
+  - pythonpath=src
+  extras:
+  - dev
+  fail_to_pass:
+  - tests/test_search_output_caps.py::test_error_inline_fields_capped_in_summary
+  - tests/test_search_output_caps.py::test_neg_err_count_capped_in_all_summary_but_not_scoped
+  - tests/test_search_output_caps.py::test_negative_inline_fields_capped_in_summary
+  pass_to_pass:
+  - tests/test_search_output_caps.py::test_clean_knowledge_rule_hits_not_capped
+attribution:
+  dataset: mcm-engine fix history (unxmaal/mcm-engine)
+  url: https://github.com/unxmaal/mcm-engine
+  license: generated
+  source: git:unxmaal/mcm-engine
+  revision: a5b9741db49e7bfbdbfe321b65921dc08664da8e
+  item: '#171 (PR #174)'
+  date: '2026-10-21'
+  transform: issue title and body from `gh issue view` at survey time, home paths as ~/, 'Prior art checked'
+    removed (spec), and the Fix/Shape/Design/Options/Remedy/Proposal/Build/What-to sections and labelled
+    paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
+    of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
+    and sandbox (evals/repo.py)
+  importer: evals.importers.history_mcm_engine

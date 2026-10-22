@@ -10,6 +10,8 @@ KNOBS = [
             "local-model cap, 8 takes the bigger fixes Claude Code arms can do (#997)"),
     _k("repo_env_timeout", ["evals/repo.py:ENV_TIMEOUT_S"], [600.0, 1800.0, 3600.0],
        note="seconds `uv sync --frozen` may take to build a base commit's environment; a miss is environment_error (#887)"),
+    _k("repo_gate_min_tasks", ["harness/repo_gate.py:MIN_TASKS"], [20, 30, 50],
+       note="repo tasks valid on this machine before a code adoption must first win the repo lane (#889)"),
     _k("repo_git_timeout", ["evals/repo.py:GIT_TIMEOUT_S"], [120.0, 600.0, 1800.0],
        note="seconds one git clone, fetch or worktree step may take; a miss is environment_error (#887)"),
     _k("repo_test_timeout", ["evals/repo.py:TEST_TIMEOUT_S"], [120.0, 300.0, 600.0, 1200.0],

@@ -1,0 +1,589 @@
+{
+ "version": 1,
+ "source": "git:unxmaal/infovore",
+ "repo": "https://github.com/unxmaal/infovore.git",
+ "revision": "219940e42104c3e625a6642713e856e2bb2305fc",
+ "criteria": {
+  "subject": "\\(#(?P<issue>\\d+)\\) \\(#(?P<pr>\\d+)\\)$",
+  "first_parent": true,
+  "merges": false,
+  "max_source_files": 8,
+  "max_lines": 400,
+  "small": {
+   "files": 3,
+   "lines": 150
+  },
+  "symptom_without_fix_section": "spec kept, symptom dropped",
+  "tests_changed": "a test_*.py the grader would install",
+  "no_env_file_change": [
+   "uv.lock",
+   "pyproject.toml",
+   ".python-version"
+  ],
+  "runs": 2,
+  "markers": "",
+  "pytest_args": [
+   "--import-mode=importlib"
+  ],
+  "extras": [],
+  "pytest_timeout_s": 300.0,
+  "order": "newest first",
+  "limit": null,
+  "probes": null,
+  "kept_from": null
+ },
+ "candidates": 42,
+ "examined": 42,
+ "dropped": {
+  "base_error": 12,
+  "dependency_change": 2,
+  "no_test_change": 2,
+  "reference_fails": 8,
+  "too_big": 12
+ },
+ "tasks": [
+  {
+   "id": "infovore-286",
+   "issue": 286,
+   "pr": 287,
+   "base": "19bb448776e764766cf4febd6a3830fff0832265",
+   "fix": "7412661f296f0a929a2b7308e8325ba98581125a",
+   "date": "2026-10-08",
+   "subject": "Constrain the claims speaker slot to the pseudonym format (#286) (#287)",
+   "context_files": [
+    "infovore/claims/extract.py"
+   ],
+   "new_files": [],
+   "test_files": [
+    "tests/claims/test_extract.py"
+   ],
+   "fail_to_pass": [
+    "tests/claims/test_extract.py::test_the_speaker_slot_accepts_every_pseudonym_width",
+    "tests/claims/test_extract.py::test_the_speaker_slot_rejects_anything_but_a_pseudonym[22f9]",
+    "tests/claims/test_extract.py::test_the_speaker_slot_rejects_anything_but_a_pseudonym[I always wondered why]",
+    "tests/claims/test_extract.py::test_the_speaker_slot_rejects_anything_but_a_pseudonym[[12]]",
+    "tests/claims/test_extract.py::test_the_speaker_slot_rejects_anything_but_a_pseudonym[user-XYZ1]",
+    "tests/claims/test_extract.py::test_the_speaker_slot_rejects_anything_but_a_pseudonym[user-]"
+   ],
+   "pass_to_pass": [
+    "tests/claims/test_extract.py::test_a_conversation_with_no_text_sends_nothing",
+    "tests/claims/test_extract.py::test_a_reply_cut_off_at_the_token_cap_is_a_failure",
+    "tests/claims/test_extract.py::test_a_window_citing_a_ref_outside_itself_is_rejected",
+    "tests/claims/test_extract.py::test_a_window_renders_one_ref_and_speaker_per_line",
+    "tests/claims/test_extract.py::test_an_exchange_is_windowed_summed_and_validated",
+    "tests/claims/test_extract.py::test_attribution_is_the_speaker_field_not_the_statement_text[A socketed O2 board may allow a CPU swap.]",
+    "tests/claims/test_extract.py::test_attribution_is_the_speaker_field_not_the_statement_text[The SGI O2 can take an R12000 CPU; one user's runs at 400 MHz.]",
+    "tests/claims/test_extract.py::test_attribution_is_the_speaker_field_not_the_statement_text[sa, which contains sash, is 15.7 MB in the copy on IRIXnet's nonfree.]",
+    "tests/claims/test_extract.py::test_model_id_comes_from_model_info_else_the_alias",
+    "tests/claims/test_extract.py::test_replies_parse_into_claims_and_usage",
+    "tests/claims/test_extract.py::test_the_new_example_output_is_at_least_35_percent_shorter",
+    "tests/claims/test_extract.py::test_the_request_pins_a_strict_schema_and_names_the_scope",
+    "tests/claims/test_extract.py::test_the_schema_is_compact_and_caps_claim_length",
+    "tests/claims/test_extract.py::test_the_token_cap_reaches_every_request",
+    "tests/claims/test_extract.py::test_unusable_replies_raise[bad0]",
+    "tests/claims/test_extract.py::test_unusable_replies_raise[bad1]",
+    "tests/claims/test_extract.py::test_unusable_replies_raise[bad2]",
+    "tests/claims/test_extract.py::test_unusable_replies_raise[bad3]",
+    "tests/claims/test_extract.py::test_unusable_replies_raise[bad4]",
+    "tests/claims/test_extract.py::test_validation_accepts_a_grounded_attributed_claim",
+    "tests/claims/test_extract.py::test_validation_rejects_and_records_why[claim0-unknown ref 9]",
+    "tests/claims/test_extract.py::test_validation_rejects_and_records_why[claim1-no refs]",
+    "tests/claims/test_extract.py::test_validation_rejects_and_records_why[claim2-unknown speaker]",
+    "tests/claims/test_extract.py::test_validation_rejects_and_records_why[claim3-empty statement]",
+    "tests/claims/test_extract.py::test_validation_rejects_and_records_why[claim4-name leak]",
+    "tests/claims/test_extract.py::test_windows_never_split_a_message_and_keep_global_refs"
+   ],
+   "prompts": {
+    "spec": "# claims schema: constrain the speaker slot to user-xxxx\n\nRun 6 (the compact tuple format from #278, eval-7b, gold 50) rejected 16 claims as \"unknown speaker\":\n- 14 dropped the `user-` prefix (`22f9` instead of `user-22f9`).\n- 1 put a ref (`[12]`) in the speaker slot.\n- 1 put the claim text in the speaker slot.\n\nFix: give the speaker item of the tuple a `pattern` matching the pseudonym format. The llama-server grammar then forbids all three at generation time. This is a schema change only, with no lenient parsing.",
+    "symptom": "# claims schema: constrain the speaker slot to user-xxxx\n\nRun 6 (the compact tuple format from #278, eval-7b, gold 50) rejected 16 claims as \"unknown speaker\":\n- 14 dropped the `user-` prefix (`22f9` instead of `user-22f9`).\n- 1 put a ref (`[12]`) in the speaker slot.\n- 1 put the claim text in the speaker slot."
+   },
+   "strata": {
+    "files": 1,
+    "lines": 3,
+    "test_s": 0.7,
+    "area": "infovore/claims",
+    "size": "small"
+   }
+  },
+  {
+   "id": "infovore-260",
+   "issue": 260,
+   "pr": 261,
+   "base": "d612c929738b4a910f77e111b9139c4ac5c8fba6",
+   "fix": "0f579895833bc7e35e9f8a470b7c0768a49c2b9a",
+   "date": "2026-10-04",
+   "subject": "words: drop ids, digit-only tokens, split contractions and gazetteer-matched words (#260) (#261)",
+   "context_files": [
+    "infovore/triage/lexicon.py",
+    "infovore/words/review.py"
+   ],
+   "new_files": [],
+   "test_files": [
+    "tests/triage/test_lexicon_reviewed.py",
+    "tests/words/test_review.py"
+   ],
+   "fail_to_pass": [
+    "tests/triage/test_lexicon_reviewed.py::test_curly_apostrophes_do_not_split_contractions",
+    "tests/words/test_review.py::test_candidates_rank_by_count_minus_common_known_and_reviewed",
+    "tests/words/test_review.py::test_ids_digits_contractions_and_gazetteer_words_are_not_candidates"
+   ],
+   "pass_to_pass": [
+    "tests/triage/test_lexicon_reviewed.py::test_reviewed_words_join_the_lexicon_as_a_category_and_change_the_version",
+    "tests/triage/test_lexicon_reviewed.py::test_tokens_reduce_urls_to_their_domain_word_and_drop_punctuation",
+    "tests/words/test_review.py::test_a_later_cascade_run_replaces_the_earlier_one",
+    "tests/words/test_review.py::test_common_english_is_subtracted_with_a_configurable_size",
+    "tests/words/test_review.py::test_gain_counts_undecided_conversations_with_an_approved_word",
+    "tests/words/test_review.py::test_only_residue_conversations_are_undecided",
+    "tests/words/test_review.py::test_the_pile_counts_every_occurrence",
+    "tests/words/test_review.py::test_the_queue_refuses_unknown_words",
+    "tests/words/test_review.py::test_the_queue_serves_highest_frequency_first_and_never_repeats",
+    "tests/words/test_review.py::test_the_undecided_query_never_searches_annotations_by_scorer",
+    "tests/words/test_review.py::test_words_already_in_the_lexicon_are_dropped"
+   ],
+   "prompts": {
+    "spec": "# words: drop ids, digit-only tokens, split contractions and gazetteer-matched words from candidates\n\nLive candidates include Discord mention ids, bare numbers, contraction fragments from curly apostrophes (didn, doesn) and SGI terms the gazetteer already matches (octane, o2, indy, iris). Normalise curly apostrophes in tokens(), drop digit-only candidates, and test every candidate against the lexicon's real matcher (message_hits). Link domains stay.",
+    "symptom": null
+   },
+   "strata": {
+    "files": 2,
+    "lines": 10,
+    "test_s": 1.27,
+    "area": "infovore/triage,infovore/words",
+    "size": "small"
+   },
+   "variant_drops": {
+    "symptom": "no_fix_section"
+   }
+  },
+  {
+   "id": "infovore-257",
+   "issue": 257,
+   "pr": 258,
+   "base": "aeb0b5eb307c51d60c3e6a6f66d94a262ca7a69d",
+   "fix": "d612c929738b4a910f77e111b9139c4ac5c8fba6",
+   "date": "2026-10-04",
+   "subject": "words: undecided query reads scorer and label from the max-id group (#257) (#258)",
+   "context_files": [
+    "infovore/words/review.py"
+   ],
+   "new_files": [],
+   "test_files": [
+    "tests/words/test_review.py"
+   ],
+   "fail_to_pass": [
+    "tests/words/test_review.py::test_the_undecided_query_never_searches_annotations_by_scorer"
+   ],
+   "pass_to_pass": [
+    "tests/words/test_review.py::test_a_later_cascade_run_replaces_the_earlier_one",
+    "tests/words/test_review.py::test_candidates_rank_by_count_minus_common_known_and_reviewed",
+    "tests/words/test_review.py::test_common_english_is_subtracted_with_a_configurable_size",
+    "tests/words/test_review.py::test_gain_counts_undecided_conversations_with_an_approved_word",
+    "tests/words/test_review.py::test_only_residue_conversations_are_undecided",
+    "tests/words/test_review.py::test_the_pile_counts_every_occurrence",
+    "tests/words/test_review.py::test_the_queue_refuses_unknown_words",
+    "tests/words/test_review.py::test_the_queue_serves_highest_frequency_first_and_never_repeats",
+    "tests/words/test_review.py::test_words_already_in_the_lexicon_are_dropped"
+   ],
+   "prompts": {
+    "spec": "# words report: undecided query plan is quadratic on the live database\n\nwords report ran 10+ minutes at 100% CPU: the planner scans every annotation by scorer index for each latest-annotation row. Fix: read scorer and label as bare columns of the MAX(id) group instead of rejoining annotations. Found after #255.",
+    "symptom": null
+   },
+   "strata": {
+    "files": 1,
+    "lines": 11,
+    "test_s": 1.19,
+    "area": "infovore/words",
+    "size": "small"
+   },
+   "variant_drops": {
+    "symptom": "no_fix_section"
+   }
+  },
+  {
+   "id": "infovore-256",
+   "issue": 256,
+   "pr": 259,
+   "base": "733d7498f580a11b792df1e889bfbe33bf253984",
+   "fix": "aeb0b5eb307c51d60c3e6a6f66d94a262ca7a69d",
+   "date": "2026-10-04",
+   "subject": "Add labels export (#256) (#259)",
+   "context_files": [
+    "README.md",
+    "infovore/cli.py"
+   ],
+   "new_files": [
+    "infovore/triage/labels_export.py"
+   ],
+   "test_files": [
+    "tests/triage/test_labels_export.py"
+   ],
+   "fail_to_pass": [
+    "tests/triage/test_labels_export.py::test_counts_are_printed",
+    "tests/triage/test_labels_export.py::test_excluded_channels_are_omitted_unless_included",
+    "tests/triage/test_labels_export.py::test_export_rows_carry_label_slice_stage_and_source",
+    "tests/triage/test_labels_export.py::test_text_is_the_full_llm_score_render"
+   ],
+   "pass_to_pass": [],
+   "prompts": {
+    "spec": "# labels export: JSONL of human relevance labels with cascade stage\n\nAdd `infovore labels export --jsonl PATH [--include-excluded-channels]`: one object per labelled current exchange (latest human_exchange label, bad_grouping dropped) with id, text (llm-score render, unwindowed), label, held_out, slice, channel, cascade_stage, label_source. Excluded channels omitted by default; ordered by id; prints counts per label, held_out, cascade_stage.",
+    "symptom": null
+   },
+   "strata": {
+    "files": 3,
+    "lines": 150,
+    "test_s": 1.35,
+    "area": ".,infovore,infovore/triage",
+    "size": "small"
+   },
+   "variant_drops": {
+    "symptom": "no_fix_section"
+   }
+  },
+  {
+   "id": "infovore-235",
+   "issue": 235,
+   "pr": 240,
+   "base": "3402ee339fcea95153be4fab23b7879c71ffe0ae",
+   "fix": "ddfde837788403fbfcb447fb4a5aa299ae11caae",
+   "date": "2026-10-03",
+   "subject": "run loop: chunk then relevance cascade for new messages, no extraction; status on cascade outcomes (#235) (#240)",
+   "context_files": [
+    "README.md",
+    "infovore/cli.py",
+    "infovore/db/status.py",
+    "infovore/run.py"
+   ],
+   "new_files": [
+    "infovore/triage/incremental.py"
+   ],
+   "test_files": [
+    "tests/test_cli.py",
+    "tests/test_run.py"
+   ],
+   "fail_to_pass": [
+    "tests/test_cli.py::test_status_on_a_fresh_database_reports_zeros",
+    "tests/test_cli.py::test_status_reports_cascade_outcomes_on_current_exchanges_only",
+    "tests/test_cli.py::test_status_reports_trainable_human_labels",
+    "tests/test_run.py::test_a_second_cycle_cascades_only_exchanges_it_has_not_scored",
+    "tests/test_run.py::test_run_command_once_flag_streams_flushed_progress_lines",
+    "tests/test_run.py::test_run_forever_counts_a_failing_cycle_step_and_continues",
+    "tests/test_run.py::test_run_forever_counts_a_failing_event_and_continues",
+    "tests/test_run.py::test_run_forever_counts_an_ignored_event_and_continues",
+    "tests/test_run.py::test_run_forever_ingests_chunks_and_cascades_a_new_message",
+    "tests/test_run.py::test_run_forever_multiple_cycles_then_stop_between_intervals",
+    "tests/test_run.py::test_run_never_builds_or_calls_an_llm_backend",
+    "tests/test_run.py::test_run_once_annotates_a_denylisted_channel_irrelevant_and_extracts_nothing",
+    "tests/test_run.py::test_run_once_emits_cycle_step_started_events_in_order",
+    "tests/test_run.py::test_run_once_progress_defaults_to_noop",
+    "tests/test_run.py::test_stop_during_interval_wait_returns_promptly"
+   ],
+   "pass_to_pass": [
+    "tests/test_cli.py::test_backend_unavailable_exits_with_backend_code",
+    "tests/test_cli.py::test_builtin_commands_include_status",
+    "tests/test_cli.py::test_builtin_commands_include_sync_optouts",
+    "tests/test_cli.py::test_console_entrypoint_exits_with_mains_code",
+    "tests/test_cli.py::test_default_source_factory_builds_a_context_manager_without_connecting",
+    "tests/test_cli.py::test_dotenv_file_is_read_when_given",
+    "tests/test_cli.py::test_missing_configuration_exits_with_config_code",
+    "tests/test_cli.py::test_no_subcommand_prints_usage_and_exits_with_config_code",
+    "tests/test_cli.py::test_sync_optouts_command_reports_results",
+    "tests/test_cli.py::test_sync_optouts_streams_flushed_opening_line",
+    "tests/test_cli.py::test_sync_optouts_with_unavailable_source_exits_backend_code",
+    "tests/test_cli.py::test_sync_optouts_writes_opening_line_before_connecting_to_source",
+    "tests/test_cli.py::test_unexpected_errors_exit_with_failure_code",
+    "tests/test_cli.py::test_unknown_subcommand_exits_with_config_code",
+    "tests/test_run.py::test_install_stop_handlers_sets_stop_on_sigterm_and_sigint",
+    "tests/test_run.py::test_run_command_configure_defaults",
+    "tests/test_run.py::test_run_command_continuous_mode_stops_on_signal_and_closes_source",
+    "tests/test_run.py::test_run_command_once_flag_counts_a_failing_cycle",
+    "tests/test_run.py::test_run_command_once_flag_runs_one_cycle_and_exits_ok_and_closes_source",
+    "tests/test_run.py::test_run_command_writes_opening_line_before_connecting_to_source",
+    "tests/test_run.py::test_run_is_a_builtin_command"
+   ],
+   "prompts": {
+    "spec": "# run loop: chunk + relevance cascade for new messages, no extraction; status on cascade outcomes\n\nNew messages stop at ingest. Run path should chunk (v2, incremental) then cascade --write new current exchanges, with no LLM stage; extraction becomes explicit-only. status should report current/archived/irrelevant/set aside/residue/last cascade/human labels/excluded channels.",
+    "symptom": null
+   },
+   "strata": {
+    "files": 5,
+    "lines": 216,
+    "test_s": 1.89,
+    "area": ".,infovore,infovore/db,infovore/triage",
+    "size": "large"
+   },
+   "variant_drops": {
+    "symptom": "no_fix_section"
+   }
+  },
+  {
+   "id": "infovore-219",
+   "issue": 219,
+   "pr": 221,
+   "base": "93cdcc9b8bb3d5595073e027256a4b185f8f34bf",
+   "fix": "cfbcf05e310af5cb588a814490fb54e4dfd0c0dd",
+   "date": "2026-10-03",
+   "subject": "judge report --by-channel (#219) (#221)",
+   "context_files": [
+    "README.md",
+    "infovore/eval/command.py"
+   ],
+   "new_files": [
+    "infovore/eval/channel_report.py"
+   ],
+   "test_files": [
+    "tests/eval/test_channel_report.py"
+   ],
+   "fail_to_pass": [
+    "tests/eval/test_channel_report.py::test_by_channel_sorted_with_latest_label_and_excluded_marked",
+    "tests/eval/test_channel_report.py::test_min_labels_filters_and_empty_says_so"
+   ],
+   "pass_to_pass": [],
+   "prompts": {
+    "spec": "# judge report --by-channel: per-channel label breakdown\n\nPer channel: labelled, relevant, irrelevant, % irrelevant, total exchanges, excluded flag. Latest human_exchange label (bad_grouping excluded), reusing triage/human.training_labels. Sort by % irrelevant desc then labelled desc; --min-labels N (default 1); excluded channels marked, not hidden.",
+    "symptom": null
+   },
+   "strata": {
+    "files": 3,
+    "lines": 75,
+    "test_s": 1.05,
+    "area": ".,infovore/eval",
+    "size": "small"
+   },
+   "variant_drops": {
+    "symptom": "no_fix_section"
+   }
+  }
+ ],
+ "split": {
+  "seed": 995,
+  "fraction": 0.5,
+  "dev": [
+   "infovore-219"
+  ],
+  "holdout": [
+   "infovore-235",
+   "infovore-256",
+   "infovore-257",
+   "infovore-260",
+   "infovore-286"
+  ]
+ },
+ "drops": [
+  {
+   "issue": 373,
+   "pr": 374,
+   "fix": "219940e42104c3e625a6642713e856e2bb2305fc",
+   "reason": "base_error"
+  },
+  {
+   "issue": 353,
+   "pr": 356,
+   "fix": "e5ca44f2d1bad9eb3704fa7a59ccab6279c69fa7",
+   "reason": "base_error"
+  },
+  {
+   "issue": 353,
+   "pr": 355,
+   "fix": "6cd771b2a76088d5147821a1ac6129f004868a97",
+   "reason": "too_big"
+  },
+  {
+   "issue": 352,
+   "pr": 354,
+   "fix": "62eabc57fb1d40e6d884e1e5a76cada7c463803d",
+   "reason": "base_error"
+  },
+  {
+   "issue": 349,
+   "pr": 351,
+   "fix": "0bd7a59b15fc0b9784046b466f867f90a4d0abb7",
+   "reason": "base_error"
+  },
+  {
+   "issue": 348,
+   "pr": 350,
+   "fix": "9f79d28e67f158c6de03ec51e6d7cf2135fed401",
+   "reason": "base_error"
+  },
+  {
+   "issue": 340,
+   "pr": 347,
+   "fix": "185fb068c97eadff15361894c2b9e73f3d13105a",
+   "reason": "no_test_change"
+  },
+  {
+   "issue": 340,
+   "pr": 345,
+   "fix": "122a1840c9332500d54665d82f9b4034a5da5d97",
+   "reason": "base_error"
+  },
+  {
+   "issue": 339,
+   "pr": 344,
+   "fix": "beda3c3cff036a10d558acd507fb231f66a72135",
+   "reason": "base_error"
+  },
+  {
+   "issue": 338,
+   "pr": 343,
+   "fix": "223ed6f41e12920afe9ce5410403ba982d2debdf",
+   "reason": "base_error"
+  },
+  {
+   "issue": 337,
+   "pr": 342,
+   "fix": "2f7f164a4fea0cb3a61ac2699fa4848bc92df265",
+   "reason": "reference_fails"
+  },
+  {
+   "issue": 336,
+   "pr": 341,
+   "fix": "5638f7c4d3b5754c686610cc5e96cdfaf16418d5",
+   "reason": "too_big"
+  },
+  {
+   "issue": 332,
+   "pr": 333,
+   "fix": "c08b8b818607d76011b3d71f9018e13c5f28a2fa",
+   "reason": "too_big"
+  },
+  {
+   "issue": 320,
+   "pr": 329,
+   "fix": "a51c0d259028d454775b8172b4eab57286096614",
+   "reason": "too_big"
+  },
+  {
+   "issue": 327,
+   "pr": 328,
+   "fix": "a62b91d40f32e49860b540023ee6ba48f86df485",
+   "reason": "base_error"
+  },
+  {
+   "issue": 301,
+   "pr": 304,
+   "fix": "6856160b269f954dcc8bb7e22d2b072bf903c5f4",
+   "reason": "too_big"
+  },
+  {
+   "issue": 302,
+   "pr": 303,
+   "fix": "49329803f927ff63d61fdbb7049cff3e89fc3692",
+   "reason": "reference_fails"
+  },
+  {
+   "issue": 292,
+   "pr": 293,
+   "fix": "36f23d89cd9ef5b6c7d9d0dc166a44fd0326a45d",
+   "reason": "reference_fails"
+  },
+  {
+   "issue": 280,
+   "pr": 281,
+   "fix": "08b91839c85480d1028ff4f30268a75f4747aa47",
+   "reason": "dependency_change"
+  },
+  {
+   "issue": 266,
+   "pr": 279,
+   "fix": "242435735604bafcc7d6471225088eadcd816630",
+   "reason": "too_big"
+  },
+  {
+   "issue": 275,
+   "pr": 278,
+   "fix": "ff187a29647f1bf6b9c36eb84163e726b3a0cf8f",
+   "reason": "reference_fails"
+  },
+  {
+   "issue": 265,
+   "pr": 274,
+   "fix": "985be87561978622ab551cd56ae9d67f77549bb3",
+   "reason": "too_big"
+  },
+  {
+   "issue": 264,
+   "pr": 273,
+   "fix": "c1fd55262768804759eb95c33116d790bbfbaaea",
+   "reason": "reference_fails"
+  },
+  {
+   "issue": 264,
+   "pr": 270,
+   "fix": "101e1870905ef4eff685cfa2d9ef19b870549b23",
+   "reason": "too_big"
+  },
+  {
+   "issue": 262,
+   "pr": 263,
+   "fix": "01a32cb7e7c60ab27eaf670e2e9f30ebc63dcd2e",
+   "reason": "reference_fails"
+  },
+  {
+   "issue": 252,
+   "pr": 253,
+   "fix": "77b90e10b7752f580ee868539ccc1b9f8b00358f",
+   "reason": "base_error"
+  },
+  {
+   "issue": 250,
+   "pr": 251,
+   "fix": "5076274638cd268161abe428fd445a39adefdf27",
+   "reason": "base_error"
+  },
+  {
+   "issue": 246,
+   "pr": 248,
+   "fix": "640fab4912a9c9c8949d5ba89147ceabd183061e",
+   "reason": "too_big"
+  },
+  {
+   "issue": 236,
+   "pr": 241,
+   "fix": "fae674b70f901625c39c5a5fd20d16093957fc2b",
+   "reason": "too_big"
+  },
+  {
+   "issue": 223,
+   "pr": 224,
+   "fix": "f9ed79dfc026bf296b5b494ae31a5ac372dc45c8",
+   "reason": "reference_fails"
+  },
+  {
+   "issue": 217,
+   "pr": 220,
+   "fix": "93cdcc9b8bb3d5595073e027256a4b185f8f34bf",
+   "reason": "base_error"
+  },
+  {
+   "issue": 215,
+   "pr": 216,
+   "fix": "d8057a4e0a965542c12a2315662821e29903d2e1",
+   "reason": "reference_fails"
+  },
+  {
+   "issue": 211,
+   "pr": 213,
+   "fix": "015b9e11eebe0814edf534670bf322b0eba53669",
+   "reason": "too_big"
+  },
+  {
+   "issue": 209,
+   "pr": 210,
+   "fix": "6172c2f8981cc6bd15d02cc492820340182a4fe4",
+   "reason": "too_big"
+  },
+  {
+   "issue": 201,
+   "pr": 204,
+   "fix": "d18ff0835fd96632885de997f73c619d88fa9203",
+   "reason": "dependency_change"
+  },
+  {
+   "issue": 201,
+   "pr": 202,
+   "fix": "47a083db89bd82d9c7ad06f17b9ed9e6f9ffb63f",
+   "reason": "no_test_change"
+  }
+ ]
+}

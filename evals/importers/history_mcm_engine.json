@@ -1,0 +1,850 @@
+{
+ "version": 1,
+ "source": "git:unxmaal/mcm-engine",
+ "repo": "https://github.com/unxmaal/mcm-engine.git",
+ "revision": "a5b9741db49e7bfbdbfe321b65921dc08664da8e",
+ "criteria": {
+  "subject": "^Merge pull request #(?P<pr>\\d+) from [^/\\s]+/(?:[^/\\s]+/)*(?P<issue>\\d+)-",
+  "first_parent": true,
+  "merges": true,
+  "max_source_files": 8,
+  "max_lines": 400,
+  "small": {
+   "files": 3,
+   "lines": 150
+  },
+  "symptom_without_fix_section": "spec kept, symptom dropped",
+  "tests_changed": "a test_*.py the grader would install",
+  "no_env_file_change": [
+   "uv.lock",
+   "pyproject.toml",
+   ".python-version"
+  ],
+  "runs": 2,
+  "markers": "",
+  "pytest_args": [
+   "-o",
+   "pythonpath=src"
+  ],
+  "extras": [
+   "dev"
+  ],
+  "pytest_timeout_s": 300.0,
+  "order": "newest first",
+  "limit": null,
+  "probes": null,
+  "kept_from": null
+ },
+ "candidates": 49,
+ "examined": 49,
+ "dropped": {
+  "base_error": 18,
+  "flaky": 4,
+  "no_source_change": 1,
+  "no_test_change": 6,
+  "reference_fails": 4,
+  "too_big": 6
+ },
+ "tasks": [
+  {
+   "id": "mcm-engine-171",
+   "issue": 171,
+   "pr": 174,
+   "base": "5c3e61f92a7c6f6f868e1dc5dcb4e0c88df4b6e3",
+   "fix": "66b0635047fc4371d34ed4878fe200603bbb86a7",
+   "date": "2026-10-21",
+   "subject": "Merge pull request #174 from unxmaal/feat/171-search-output-caps",
+   "context_files": [
+    "src/mcm_engine/tools/search.py"
+   ],
+   "new_files": [],
+   "test_files": [
+    "tests/test_search_output_caps.py"
+   ],
+   "fail_to_pass": [
+    "tests/test_search_output_caps.py::test_error_inline_fields_capped_in_summary",
+    "tests/test_search_output_caps.py::test_neg_err_count_capped_in_all_summary_but_not_scoped",
+    "tests/test_search_output_caps.py::test_negative_inline_fields_capped_in_summary"
+   ],
+   "pass_to_pass": [
+    "tests/test_search_output_caps.py::test_clean_knowledge_rule_hits_not_capped"
+   ],
+   "prompts": {
+    "spec": "# Cap retrieval output in summary search: inline Why/Fix length, hit budget, common-token downrank\n\n`search` summary mode is small for KNOWLEDGE/RULE but still bloats on NEGATIVE/ERROR and on low-value matches. A sohot session's `search(\"sweep-check\")` and `search(\"deploy guard\")` each returned ~20 hits, including the same 6-7 irrelevant NEGATIVEs (#1,#3,#8,#10,#11,#14,#16) matched only on a common token (\"check\"/\"sweep\"/\"deploy\"/\"testing\"), each inlining its full (and currently polluted) Why/Fix. Even post-sanitize (#170) the Why/Fix is multi-paragraph; a one-line hit is cheap, seven 2 KB inlined bodies are not.\n\n## Fix (search.py)\n1. Cap the inline NEGATIVE Why/Fix and ERROR root_cause/fix in summary mode at a few hundred chars each, with a \"\u2026 (get_entry for full)\" pointer. `detail=\"full\"` stays uncapped.\n2. Cap total hits returned per query. The public `search` default `limit` is 10 per entity type \u2192 up to 40 + related. Add an overall response ceiling (~8-10 hits) independent of per-scope limit.\n3. Downrank or drop a hit whose only match is a single common token: when a NEGATIVE/ERROR matches on a token that is also a stopword-ish high-frequency term and nothing more distinctive, it should not outrank or crowd out a real RULE hit. Simplest: a relevance floor for NEGATIVE/ERROR in the multi-scope \"all\" path so generic single-token matches drop below the fold.\n\n## Acceptance\n- `search(\"deploy guard\")` and `search(\"sweep-check\")` each return under ~3 KB, with RULE #756 and #868 still present for \"deploy guard\".\n- `detail=\"full\"` is unchanged (still returns whole bodies).",
+    "symptom": "# Cap retrieval output in summary search: inline Why/Fix length, hit budget, common-token downrank\n\n`search` summary mode is small for KNOWLEDGE/RULE but still bloats on NEGATIVE/ERROR and on low-value matches. A sohot session's `search(\"sweep-check\")` and `search(\"deploy guard\")` each returned ~20 hits, including the same 6-7 irrelevant NEGATIVEs (#1,#3,#8,#10,#11,#14,#16) matched only on a common token (\"check\"/\"sweep\"/\"deploy\"/\"testing\"), each inlining its full (and currently polluted) Why/Fix. Even post-sanitize (#170) the Why/Fix is multi-paragraph; a one-line hit is cheap, seven 2 KB inlined bodies are not.\n\n## Acceptance\n- `search(\"deploy guard\")` and `search(\"sweep-check\")` each return under ~3 KB, with RULE #756 and #868 still present for \"deploy guard\".\n- `detail=\"full\"` is unchanged (still returns whole bodies)."
+   },
+   "strata": {
+    "files": 1,
+    "lines": 54,
+    "test_s": 0.75,
+    "area": "src/mcm_engine/tools",
+    "size": "small"
+   }
+  },
+  {
+   "id": "mcm-engine-156",
+   "issue": 156,
+   "pr": 162,
+   "base": "68b87f7a66d757ecb914189f84c73f89a459e51e",
+   "fix": "725cad479181736743fc7ba01da27d2530a1b4a1",
+   "date": "2026-10-16",
+   "subject": "Merge pull request #162 from unxmaal/feat/156-coverage-ledger",
+   "context_files": [
+    "src/mcm_engine/hooks/pre_compact.py",
+    "src/mcm_engine/tools/knowledge.py",
+    "src/mcm_engine/tools/search.py",
+    "src/mcm_engine/tools/session.py",
+    "src/mcm_engine/tracker.py"
+   ],
+   "new_files": [],
+   "test_files": [
+    "tests/test_coverage_ledger.py"
+   ],
+   "fail_to_pass": [
+    "tests/test_coverage_ledger.py::test_coverage_is_per_session",
+    "tests/test_coverage_ledger.py::test_is_covered_requires_resident_by_default",
+    "tests/test_coverage_ledger.py::test_reconcile_flips_resident_false_and_is_covered_follows",
+    "tests/test_coverage_ledger.py::test_reconcile_only_affects_calling_session",
+    "tests/test_coverage_ledger.py::test_reconcile_preserves_searched_at_and_ids",
+    "tests/test_coverage_ledger.py::test_record_coverage_empty_topic_is_noop",
+    "tests/test_coverage_ledger.py::test_record_coverage_key_is_lowercased_stripped",
+    "tests/test_coverage_ledger.py::test_record_coverage_none_ids_is_empty_list",
+    "tests/test_coverage_ledger.py::test_record_coverage_overwrites_same_topic",
+    "tests/test_coverage_ledger.py::test_record_coverage_stores_topic_query_ids_resident",
+    "tests/test_coverage_ledger.py::test_report_error_records_coverage",
+    "tests/test_coverage_ledger.py::test_reset_all_clears_coverage",
+    "tests/test_coverage_ledger.py::test_save_snapshot_compaction_reconciles_routine_does_not",
+    "tests/test_coverage_ledger.py::test_search_tool_records_resident_coverage_with_ids",
+    "tests/test_coverage_ledger.py::test_search_with_no_results_still_records_coverage",
+    "tests/test_coverage_ledger.py::test_session_start_reconciles_coverage_non_resident"
+   ],
+   "pass_to_pass": [],
+   "prompts": {
+    "spec": "# #137a: server-owned per-session topic-coverage ledger + compaction reconciliation\n\nChild of #137 (retrieval scheduling umbrella). **The foundation \u2014 the other layers depend on this.**\n\nGive mcm-engine a lightweight **server-owned, per-FastMCP-session** retrieval ledger: coverage by *topic* (not TTL), each entry carrying `{topic, searched_at, query, result_ids, resident}`. Only the server sees the query + result ids, so the server owns it; the PreToolUse hook (a separate process) reads shared state or asks the server.\n\nCritical requirement \u2014 **coverage is not context residency** (KB CONTEXT #3, the founding anti-amnesia concern): a ledger that says \"topic covered\" after the retrieved bodies were summarized out of context recreates the exact failure mcm-engine exists to defeat. So carry a `resident` flag distinct from `searched_at`, and **reconcile it at the compaction boundary** \u2014 on `PreCompact`/`PostCompact` and `SessionStart`, mark prior coverage non-resident (or re-surface it). A non-resident topic does not satisfy enforcement.\n\nKeyed per FastMCP session (RULE #116 / ScopedTracker), same as the existing tracker state.\n\n### Acceptance\n- Server-owned, per-session, per-topic coverage ledger with a `resident` flag.\n- `search` (and report_error auto-search) record coverage: topic, query, result_ids, searched_at, resident=true.\n- Reconciled at PreCompact/PostCompact/SessionStart (resident flips false on compaction).\n- Unit tests for record + reconcile; no behavior change to enforcement yet (that's the PreToolUse child).",
+    "symptom": null
+   },
+   "strata": {
+    "files": 5,
+    "lines": 109,
+    "test_s": 0.82,
+    "area": "src/mcm_engine,src/mcm_engine/hooks,src/mcm_engine/tools",
+    "size": "large"
+   },
+   "variant_drops": {
+    "symptom": "no_fix_section"
+   }
+  },
+  {
+   "id": "mcm-engine-135",
+   "issue": 135,
+   "pr": 139,
+   "base": "c65579d46828d705aeff24366a5a37b290fcb87f",
+   "fix": "200e1d50cbe9c43c30a4705ecaea29b5be3f8ff7",
+   "date": "2026-10-14",
+   "subject": "Merge pull request #139 from unxmaal/feat/135-search-match-snippet",
+   "context_files": [
+    "CHANGELOG.md",
+    "src/mcm_engine/adapters/opensearch/search.py",
+    "src/mcm_engine/adapters/postgres/search.py",
+    "src/mcm_engine/adapters/sqlite/search.py",
+    "src/mcm_engine/backends/__init__.py",
+    "src/mcm_engine/testing/conformance.py",
+    "src/mcm_engine/tools/search.py"
+   ],
+   "new_files": [],
+   "test_files": [
+    "tests/test_search_match_snippet.py"
+   ],
+   "fail_to_pass": [
+    "tests/test_search_match_snippet.py::test_snippet_is_length_bounded",
+    "tests/test_search_match_snippet.py::test_summary_surfaces_a_body_only_match_via_snippet"
+   ],
+   "pass_to_pass": [
+    "tests/test_search_match_snippet.py::test_like_fallback_hit_has_no_snippet_and_still_renders"
+   ],
+   "prompts": {
+    "spec": "# search summary mode should carry a match snippet (keep 'why it matched' under semantic/non-FTS5 backends)\n\n## Problem\n\n#119 made `search` default to compact summary hits (id, kind, title/topic, one-line summary, tags) and defer bodies to `get_entry`. That progressive-disclosure win rests on an implicit assumption: the agent can judge a hit's relevance *from the summary line* and only fetch the bodies worth paying for.\n\nThat assumption holds under **lexical** search (SQLite FTS5, Postgres FTS), where the query token is literally in the matched text, so the agent knows why a hit came back. It weakens under a **semantic/vector** backend (the direction the live server + lodestone are moving \u2014 FTS5 is being retired): a hit can match on meaning the summary line never surfaces, so the agent can't tell from the one-liner whether the body is relevant. Result: either wasted `get_entry` round-trips on bad hits, or wrongly skipping a good hit. No wrong results, but the ergonomics of summary-first degrade exactly where we're headed.\n\n## Root cause\n\n`detail`/summary rendering (`tools/search.py`) is fully decoupled from the search backend (good \u2014 see `_scope_block`), but `SearchHit` (`backends/__init__.py:323`) carries `entity_type / entity_id / score / is_pinned / is_stale / counters_snapshot / row` and **no matched-text field**. The \"why it matched\" signal every backend computes internally is thrown away before rendering.\n\n## Proposal\n\nAdd an optional `snippet: Optional[str] = None` to `SearchHit`. Each adapter populates it from the highlight it already produces; summary-mode rendering appends it under the one-liner when present. Adapters that can't produce one leave it `None` and rendering falls back to today's behavior \u2014 no regression, no required work for any adapter.\n\nPer-adapter source of the snippet:\n- **SQLite FTS5**: `snippet()` / `highlight()` aux functions.\n- **Postgres**: `ts_headline()` over the indexed document.\n- **OpenSearch**: the `highlight` block already in the response.\n- **Semantic/vector backend (future)**: the matched chunk/passage it ranked on \u2014 this is the case the issue exists for.\n\nSummary rendering: append a short, length-capped snippet line to each hit in `detail=\"summary\"`. `detail=\"full\"` is unchanged (it already has the whole body). Keep the once-per-response `get_entry` footer.\n\n## Acceptance\n- `SearchHit.snippet` optional, defaults `None`; omitting it is valid for any adapter.\n- At least the lexical adapters (SQLite, Postgres) populate it; summary hits render it when present.\n- Snippet length is bounded (config, e.g. `MCM_SNIPPET_MAX`) so this doesn't reintroduce the token bloat #119 removed.\n- Conformance covers: snippet present renders; snippet `None` renders exactly as today.\n\n## Non-goals\n- Not changing matching, ranking, or `include_archived`.\n- Not changing the summary-vs-full default.\n- Not building the semantic backend here \u2014 only making sure summary mode can carry its match signal when it lands.\n\nFollow-up to #119.",
+    "symptom": "# search summary mode should carry a match snippet (keep 'why it matched' under semantic/non-FTS5 backends)\n\n## Problem\n\n#119 made `search` default to compact summary hits (id, kind, title/topic, one-line summary, tags) and defer bodies to `get_entry`. That progressive-disclosure win rests on an implicit assumption: the agent can judge a hit's relevance *from the summary line* and only fetch the bodies worth paying for.\n\nThat assumption holds under **lexical** search (SQLite FTS5, Postgres FTS), where the query token is literally in the matched text, so the agent knows why a hit came back. It weakens under a **semantic/vector** backend (the direction the live server + lodestone are moving \u2014 FTS5 is being retired): a hit can match on meaning the summary line never surfaces, so the agent can't tell from the one-liner whether the body is relevant. Result: either wasted `get_entry` round-trips on bad hits, or wrongly skipping a good hit. No wrong results, but the ergonomics of summary-first degrade exactly where we're headed.\n\n## Root cause\n\n`detail`/summary rendering (`tools/search.py`) is fully decoupled from the search backend (good \u2014 see `_scope_block`), but `SearchHit` (`backends/__init__.py:323`) carries `entity_type / entity_id / score / is_pinned / is_stale / counters_snapshot / row` and **no matched-text field**. The \"why it matched\" signal every backend computes internally is thrown away before rendering.\n\n## Acceptance\n- `SearchHit.snippet` optional, defaults `None`; omitting it is valid for any adapter.\n- At least the lexical adapters (SQLite, Postgres) populate it; summary hits render it when present.\n- Snippet length is bounded (config, e.g. `MCM_SNIPPET_MAX`) so this doesn't reintroduce the token bloat #119 removed.\n- Conformance covers: snippet present renders; snippet `None` renders exactly as today.\n\n## Non-goals\n- Not changing matching, ranking, or `include_archived`.\n- Not changing the summary-vs-full default.\n- Not building the semantic backend here \u2014 only making sure summary mode can carry its match signal when it lands.\n\nFollow-up to #119."
+   },
+   "strata": {
+    "files": 7,
+    "lines": 110,
+    "test_s": 0.8,
+    "area": ".,src/mcm_engine/adapters/opensearch,src/mcm_engine/adapters/postgres,src/mcm_engine/adapters/sqlite,src/mcm_engine/backends,src/mcm_engine/testing,src/mcm_engine/tools",
+    "size": "large"
+   }
+  },
+  {
+   "id": "mcm-engine-136",
+   "issue": 136,
+   "pr": 138,
+   "base": "302a640ef7028ce23a50f767a44385e0a9e4822e",
+   "fix": "c65579d46828d705aeff24366a5a37b290fcb87f",
+   "date": "2026-10-14",
+   "subject": "Merge pull request #138 from unxmaal/fix/136-negative-error-bodies-in-summary",
+   "context_files": [
+    "CHANGELOG.md",
+    "src/mcm_engine/tools/search.py"
+   ],
+   "new_files": [],
+   "test_files": [
+    "tests/test_search_progressive_disclosure.py"
+   ],
+   "fail_to_pass": [
+    "tests/test_search_progressive_disclosure.py::test_error_summary_keeps_root_cause_and_fix",
+    "tests/test_search_progressive_disclosure.py::test_negative_summary_keeps_why_and_fix"
+   ],
+   "pass_to_pass": [
+    "tests/test_search_progressive_disclosure.py::test_default_is_summary",
+    "tests/test_search_progressive_disclosure.py::test_entry_point_defaults_are_the_intended_split",
+    "tests/test_search_progressive_disclosure.py::test_knowledge_full_includes_detail",
+    "tests/test_search_progressive_disclosure.py::test_knowledge_summary_omits_detail_keeps_identity_and_tags",
+    "tests/test_search_progressive_disclosure.py::test_summary_carries_body_fetch_hint_full_does_not",
+    "tests/test_search_progressive_disclosure.py::test_summary_is_materially_smaller_than_full"
+   ],
+   "prompts": {
+    "spec": "# search summary mode must keep Why/Fix inline for NEGATIVE (and ERROR) hits\n\n## Problem\n\n#119 strips the body from a hit in `detail=\"summary\"` (the default). For ordinary knowledge that only makes a hit *incomplete* \u2014 worst case you `get_entry` it. For **negative knowledge** it is a correctness bug, because the body **is** the payload and the failure mode is asymmetric.\n\n`tools/search.py:272` renders a NEGATIVE summary hit as just:\n\n    [NEGATIVE #id] <category>: <what_failed>\n\n`Why` (`why_failed`) and `Fix` (`correct_approach`) are gated behind `detail == \"full\"` (lines 273-277). So a plain `search` tells the agent *that* an approach failed but hides *why it must stay rejected* and *what to do instead*. The agent can then re-attempt the dead end, or be unable to tell whether its current plan is the rejected one \u2014 the exact outcome the anti-pattern store exists to prevent. ERROR hits have the same shape: `root_cause` / `fix` are gated at `tools/search.py:296`.\n\nNote #122 only restored full bodies for the `report_error` auto-search path. A direct `search(scope=\"negative\")` (or an all-scope search that surfaces a negative) still strips Why/Fix.\n\n## Why this is the right asymmetry\n\nThe #119 token win comes from not carrying large *knowledge* bodies. Negative/error bodies are short (a Why line + a Fix line), so keeping them inline barely dents the win, and their whole value is being seen at the moment of the hit, not one `get_entry` later.\n\n## Proposal\n\nIn summary mode, keep `Why`/`Fix` inline for NEGATIVE hits and `root_cause`/`fix` for ERROR hits. Knowledge stays summary-only (its bodies are the token problem). Optionally cap each field's length (reuse whatever `MCM_SNIPPET_MAX`-style bound #135 lands) so a pathologically long negative can't reintroduce bloat.\n\n## Acceptance\n- `search` (summary, default) renders Why + Fix for a NEGATIVE hit and root cause + fix for an ERROR hit.\n- Knowledge summary rendering unchanged.\n- Conformance: a negative/error hit in summary mode contains its Why/Fix (root cause/fix); a knowledge hit in summary mode still omits its body.\n\nFollow-up to #119 / #122. Distinct from #135 (which adds a match *snippet*); this is about which structured fields summary mode keeps per kind.",
+    "symptom": "# search summary mode must keep Why/Fix inline for NEGATIVE (and ERROR) hits\n\n## Problem\n\n#119 strips the body from a hit in `detail=\"summary\"` (the default). For ordinary knowledge that only makes a hit *incomplete* \u2014 worst case you `get_entry` it. For **negative knowledge** it is a correctness bug, because the body **is** the payload and the failure mode is asymmetric.\n\n`tools/search.py:272` renders a NEGATIVE summary hit as just:\n\n    [NEGATIVE #id] <category>: <what_failed>\n\n`Why` (`why_failed`) and `Fix` (`correct_approach`) are gated behind `detail == \"full\"` (lines 273-277). So a plain `search` tells the agent *that* an approach failed but hides *why it must stay rejected* and *what to do instead*. The agent can then re-attempt the dead end, or be unable to tell whether its current plan is the rejected one \u2014 the exact outcome the anti-pattern store exists to prevent. ERROR hits have the same shape: `root_cause` / `fix` are gated at `tools/search.py:296`.\n\nNote #122 only restored full bodies for the `report_error` auto-search path. A direct `search(scope=\"negative\")` (or an all-scope search that surfaces a negative) still strips Why/Fix.\n\n## Why this is the right asymmetry\n\nThe #119 token win comes from not carrying large *knowledge* bodies. Negative/error bodies are short (a Why line + a Fix line), so keeping them inline barely dents the win, and their whole value is being seen at the moment of the hit, not one `get_entry` later.\n\n## Acceptance\n- `search` (summary, default) renders Why + Fix for a NEGATIVE hit and root cause + fix for an ERROR hit.\n- Knowledge summary rendering unchanged.\n- Conformance: a negative/error hit in summary mode contains its Why/Fix (root cause/fix); a knowledge hit in summary mode still omits its body.\n\nFollow-up to #119 / #122. Distinct from #135 (which adds a match *snippet*); this is about which structured fields summary mode keeps per kind."
+   },
+   "strata": {
+    "files": 2,
+    "lines": 39,
+    "test_s": 0.78,
+    "area": ".,src/mcm_engine/tools",
+    "size": "small"
+   }
+  },
+  {
+   "id": "mcm-engine-116",
+   "issue": 116,
+   "pr": 126,
+   "base": "c217b88e3875930a8466f6bd888bc3a48d3db39e",
+   "fix": "d8c98abf2ed8b6f7f9baac4062bcb91b358e31c0",
+   "date": "2026-10-13",
+   "subject": "Merge pull request #126 from unxmaal/fix/116-session-scoping",
+   "context_files": [
+    "CHANGELOG.md",
+    "docs/seam-inventory.md",
+    "src/mcm_engine/adapters/postgres/storage.py",
+    "src/mcm_engine/adapters/sqlite/storage.py",
+    "src/mcm_engine/backends/__init__.py",
+    "src/mcm_engine/schema.py",
+    "src/mcm_engine/testing/conformance.py",
+    "src/mcm_engine/tools/session.py"
+   ],
+   "new_files": [],
+   "test_files": [
+    "tests/test_seam_inventory.py",
+    "tests/test_session_scoping.py"
+   ],
+   "fail_to_pass": [
+    "tests/test_seam_inventory.py::test_sql_site_count_per_file[adapters/postgres/storage.py-71]",
+    "tests/test_seam_inventory.py::test_sql_site_count_per_file[adapters/sqlite/storage.py-69]",
+    "tests/test_seam_inventory.py::test_sql_site_count_per_file[schema.py-67]",
+    "tests/test_session_scoping.py::test_fresh_install_has_sessions_scope_columns",
+    "tests/test_session_scoping.py::test_null_scope_is_a_fallback_only_when_no_scoped_row",
+    "tests/test_session_scoping.py::test_scope_round_trips_through_hydration",
+    "tests/test_session_scoping.py::test_scoped_read_returns_this_principals_latest",
+    "tests/test_session_scoping.py::test_unscoped_read_is_global_latest",
+    "tests/test_session_scoping.py::test_v16_to_v17_adds_sessions_scope_columns",
+    "tests/test_session_scoping.py::test_workspace_separates_one_principals_projects"
+   ],
+   "pass_to_pass": [
+    "tests/test_seam_inventory.py::test_inventory_file_exists",
+    "tests/test_seam_inventory.py::test_inventory_file_non_trivial",
+    "tests/test_seam_inventory.py::test_no_sql_in_unexpected_files",
+    "tests/test_seam_inventory.py::test_sql_site_count_per_file[adapters/postgres/counters.py-5]",
+    "tests/test_seam_inventory.py::test_sql_site_count_per_file[adapters/postgres/search.py-5]",
+    "tests/test_seam_inventory.py::test_sql_site_count_per_file[adapters/sqlite/counters.py-4]",
+    "tests/test_seam_inventory.py::test_sql_site_count_per_file[adapters/sqlite/search.py-5]",
+    "tests/test_seam_inventory.py::test_sql_site_count_per_file[db.py-7]",
+    "tests/test_seam_inventory.py::test_sql_site_count_per_file[plugin.py-0]",
+    "tests/test_seam_inventory.py::test_sql_site_count_per_file[tokens.py-4]",
+    "tests/test_seam_inventory.py::test_sql_site_count_per_file[tools/corpus.py-6]",
+    "tests/test_seam_inventory.py::test_sql_site_count_per_file[tools/knowledge.py-3]",
+    "tests/test_seam_inventory.py::test_sql_site_count_per_file[tools/relations.py-0]",
+    "tests/test_seam_inventory.py::test_sql_site_count_per_file[tools/rules.py-0]",
+    "tests/test_seam_inventory.py::test_sql_site_count_per_file[tools/search.py-0]",
+    "tests/test_seam_inventory.py::test_sql_site_count_per_file[tools/session.py-0]",
+    "tests/test_seam_inventory.py::test_sql_site_count_per_file[transport.py-1]"
+   ],
+   "prompts": {
+    "spec": "# get_last_session returns the global latest handoff \u2014 no per-caller/workspace scoping, so shared deployments resume the wrong session\n\n## Summary\n\nOn any deployment where more than one working context shares a single mcm-engine store (multiple users behind one server, or one user across several projects), `session_start` and `get_resume_context` routinely surface a handoff belonging to a *different* context. The user asks to resume project A and is handed project B's handoff.\n\n## Root cause\n\n`get_last_session` is unscoped in both adapters:\n\n```python\n# adapters/sqlite/storage.py\n\"SELECT * FROM sessions ORDER BY id DESC LIMIT 1\"\n# adapters/postgres/storage.py \u2014 identical\n```\n\nIt returns the single newest row across the entire `sessions` table. There is only ever one candidate, so \"resume\" can't pick correctly \u2014 it picks globally-latest.\n\nContributing facts:\n- The `sessions` table (`schema.py`) has **no scoping column** \u2014 no project, no owner/principal \u2014 unlike `knowledge`/`negative_knowledge`/`errors`, which all carry `project` (and project indexes).\n- `session_handoff` accepts only `status/current_task/next_steps/blockers` \u2014 the client cannot tag a handoff with any scope key at write time.\n- `get_last_session(*, caller=None)` already has a **vestigial `caller` param that is never populated or used** for filtering.\n- Both `session_start` (the \"Last handoff\" block) and `get_resume_context` call `get_last_session()` with no argument.\n\n## Why `project_name` alone doesn't fix it\n\n`MCM_PROJECT_NAME` is a **server-global** config value \u2014 every request through one server carries the same project. Adding a `project` column keyed to `MCM_PROJECT_NAME` would sort every caller into the same bucket and change nothing for the common \"one shared server\" topology. It also wouldn't separate a single user's multiple projects.\n\nThe scoping key has to be **per-request**, not per-server.\n\n## What's already available\n\n`principal.py` exposes `get_transport_principal()` \u2014 the bearer-token identity for the in-flight request, carried in a ContextVar and already used as the fallback in `resolve_actor()`. So an authenticated per-caller identity is reachable from any tool call today; the session tools simply don't consult it.\n\n## Proposed fix\n\n1. **Schema:** add scoping columns to `sessions` \u2014 at minimum `principal TEXT` (who), and an optional client-supplied `workspace TEXT` label (what \u2014 so one principal working on N projects stays separated). Additive migration + index, mirroring the `project` columns on the other tables.\n2. **Write:** `session_handoff` stamps the current transport principal automatically, and accepts an optional `workspace` argument (or derives one \u2014 see open question) so the row is self-describing.\n3. **Read:** `get_last_session(*, principal=None, workspace=None)` \u2192 `WHERE` on the provided keys, `ORDER BY id DESC LIMIT 1`. `session_start` / `get_resume_context` pass the in-flight principal (+ workspace when known).\n4. **Back-compat:** pre-migration rows have NULL scope. Treat a NULL-scope handoff as a **clearly-labeled global fallback**, shown only when no scoped row matches, so existing handoffs aren't orphaned.\n\n## Open question for maintainer\n\nWhat should `workspace` derive from when the client doesn't pass one? Options: (a) principal-only scoping (simplest, but conflates one user's multiple projects); (b) an explicit client-supplied label on `session_handoff`/`session_start`; (c) something the client already sends (e.g. a cwd/repo hint). Leaning (b) with (a) as the fallback, but the right default depends on how you want stdio/unauthenticated contexts (principal = None) to behave \u2014 today they'd all collapse to the NULL bucket.\n\n## Impact\n\nSilent and confusing: the agent confidently narrates the wrong project's state as if it were the current one, and a user who trusts it can act on stale/irrelevant context. Severity scales with the number of concurrent contexts sharing the store.",
+    "symptom": "# get_last_session returns the global latest handoff \u2014 no per-caller/workspace scoping, so shared deployments resume the wrong session\n\n## Summary\n\nOn any deployment where more than one working context shares a single mcm-engine store (multiple users behind one server, or one user across several projects), `session_start` and `get_resume_context` routinely surface a handoff belonging to a *different* context. The user asks to resume project A and is handed project B's handoff.\n\n## Root cause\n\n`get_last_session` is unscoped in both adapters:\n\n```python\n# adapters/sqlite/storage.py\n\"SELECT * FROM sessions ORDER BY id DESC LIMIT 1\"\n# adapters/postgres/storage.py \u2014 identical\n```\n\nIt returns the single newest row across the entire `sessions` table. There is only ever one candidate, so \"resume\" can't pick correctly \u2014 it picks globally-latest.\n\nContributing facts:\n- The `sessions` table (`schema.py`) has **no scoping column** \u2014 no project, no owner/principal \u2014 unlike `knowledge`/`negative_knowledge`/`errors`, which all carry `project` (and project indexes).\n- `session_handoff` accepts only `status/current_task/next_steps/blockers` \u2014 the client cannot tag a handoff with any scope key at write time.\n- `get_last_session(*, caller=None)` already has a **vestigial `caller` param that is never populated or used** for filtering.\n- Both `session_start` (the \"Last handoff\" block) and `get_resume_context` call `get_last_session()` with no argument.\n\n## Why `project_name` alone doesn't fix it\n\n`MCM_PROJECT_NAME` is a **server-global** config value \u2014 every request through one server carries the same project. Adding a `project` column keyed to `MCM_PROJECT_NAME` would sort every caller into the same bucket and change nothing for the common \"one shared server\" topology. It also wouldn't separate a single user's multiple projects.\n\nThe scoping key has to be **per-request**, not per-server.\n\n## What's already available\n\n`principal.py` exposes `get_transport_principal()` \u2014 the bearer-token identity for the in-flight request, carried in a ContextVar and already used as the fallback in `resolve_actor()`. So an authenticated per-caller identity is reachable from any tool call today; the session tools simply don't consult it.\n\n## Open question for maintainer\n\nWhat should `workspace` derive from when the client doesn't pass one? Options: (a) principal-only scoping (simplest, but conflates one user's multiple projects); (b) an explicit client-supplied label on `session_handoff`/`session_start`; (c) something the client already sends (e.g. a cwd/repo hint). Leaning (b) with (a) as the fallback, but the right default depends on how you want stdio/unauthenticated contexts (principal = None) to behave \u2014 today they'd all collapse to the NULL bucket.\n\n## Impact\n\nSilent and confusing: the agent confidently narrates the wrong project's state as if it were the current one, and a user who trusts it can act on stale/irrelevant context. Severity scales with the number of concurrent contexts sharing the store."
+   },
+   "strata": {
+    "files": 8,
+    "lines": 205,
+    "test_s": 0.83,
+    "area": ".,docs,src/mcm_engine,src/mcm_engine/adapters/postgres,src/mcm_engine/adapters/sqlite,src/mcm_engine/backends,src/mcm_engine/testing,src/mcm_engine/tools",
+    "size": "large"
+   }
+  },
+  {
+   "id": "mcm-engine-109",
+   "issue": 109,
+   "pr": 125,
+   "base": "ebcde0b6bc93eb225d26e24de1a357ee86c65b17",
+   "fix": "c217b88e3875930a8466f6bd888bc3a48d3db39e",
+   "date": "2026-10-13",
+   "subject": "Merge pull request #125 from unxmaal/fix/109-stdio-stale-index",
+   "context_files": [
+    "CHANGELOG.md",
+    "src/mcm_engine/server.py",
+    "src/mcm_engine/tools/search.py",
+    "src/mcm_engine/tools/session.py",
+    "src/mcm_engine/wiring.py"
+   ],
+   "new_files": [],
+   "test_files": [
+    "tests/test_stale_index_warning.py",
+    "tests/test_wiring.py"
+   ],
+   "fail_to_pass": [
+    "tests/test_stale_index_warning.py::test_search_clean_when_index_trusted",
+    "tests/test_stale_index_warning.py::test_search_warns_when_index_stale",
+    "tests/test_stale_index_warning.py::test_session_start_warns_when_index_stale",
+    "tests/test_wiring.py::test_context_dataclass_has_four_adapter_slots"
+   ],
+   "pass_to_pass": [
+    "tests/test_stale_index_warning.py::test_session_start_clean_when_index_trusted",
+    "tests/test_wiring.py::test_backends_config_parsed_from_yaml",
+    "tests/test_wiring.py::test_build_context_default_adapter_is_embedded",
+    "tests/test_wiring.py::test_build_context_passes_adapter_kwargs",
+    "tests/test_wiring.py::test_build_context_propagates_unknown_adapter_error",
+    "tests/test_wiring.py::test_build_context_returns_instances_of_resolved_classes",
+    "tests/test_wiring.py::test_unknown_backend_key_raises"
+   ],
+   "prompts": {
+    "spec": "# stdio startup sync failure is invisible to the client: server reports ready and serves a stale index\n\nIn stdio mode, a failed startup sync is invisible to the client. The server comes up, reports ready, and serves a stale index \u2014 searches then return confident \"no results\" for rules that exist on disk and are committed.\n\n`server.py` `run()` catches it and moves on:\n\n```python\ntry:\n    counts = self.watcher.sync_once()\n    log(f\"sync_rules at stdio startup: {counts}\")\nexcept Exception as e:\n    log(f\"sync_rules at stdio startup failed (non-fatal): {e}\")\nself.mcp.run()\n```\n\nThe log line is real and lands in `log_path`, but `log()` writes to file only and deliberately never touches stderr (\"MCP clients treat stderr as failure\"). Nothing reaches the client, and no tool response carries a staleness signal, so neither the agent nor the user has any way to learn the index is behind the files.\n\nObserved twice on a single-user laptop, 2026-07-28 and again 2026-08-08 (v3.8.0, SQLite, `source_of_truth=files`). Six stdio servers alive against one `--project-root`, oldest 12 days; one held a write transaction, so every new server's startup sync failed:\n\n```\n[2026-08-08 20:55:10] sync_rules at stdio startup failed (non-fatal): database is locked\n```\n\nTwo committed rules never reached the cache \u2014 35 rows against 37 `rules/*.md`. Searches for them returned nothing, with no error anywhere in the session. The corroborating symptom is a WAL that has not checkpointed: `knowledge.db-wal` at 2.3 MB against a 278 KB `knowledge.db`.\n\nWidening `busy_timeout` from the hardcoded 5s (`db.py:145`) to four minutes still blocked indefinitely, so the retry path cannot recover from a genuinely held transaction \u2014 the cross-process case is not the intra-process contention fixed in #79/#83. That contention is arguably working as designed for a laptop running many sessions; the defect is that its outcome is unobservable.\n\nSome options, roughly increasing in cost:\n\n- Record the failure in server state and prefix affected `search` / `session_start` responses with a staleness warning, so the agent sees it at the point of use.\n- Expose last-sync status (timestamp, counts, last error) as a tool or resource for explicit checks.\n- Retry the startup sync in the background rather than once at boot, so a transient holder resolves itself.\n- Return a non-fatal notice through the MCP client's logging channel, which is not stderr and is safe to use.\n\nHappy to send a PR for the first if that's the direction you'd want.",
+    "symptom": null
+   },
+   "strata": {
+    "files": 5,
+    "lines": 37,
+    "test_s": 0.82,
+    "area": ".,src/mcm_engine,src/mcm_engine/tools",
+    "size": "large"
+   },
+   "variant_drops": {
+    "symptom": "no_fix_section"
+   }
+  },
+  {
+   "id": "mcm-engine-92",
+   "issue": 92,
+   "pr": 94,
+   "base": "34e747f078b97bba5c1aa24dda8c60705b848edd",
+   "fix": "716e5dfd9168364c55b6889796382023fad36717",
+   "date": "2026-07-21",
+   "subject": "Merge pull request #94 from unxmaal/fix/92-portless-allowed-host",
+   "context_files": [
+    "src/mcm_engine/transport.py"
+   ],
+   "new_files": [
+    "rules/deploy/dns-rebinding-portless-host.md"
+   ],
+   "test_files": [
+    "tests/test_transport.py"
+   ],
+   "fail_to_pass": [
+    "tests/test_transport.py::test_configure_security_registers_bare_host_for_portless_match",
+    "tests/test_transport.py::test_streamable_http_accepts_allowlisted_host[example.internal]"
+   ],
+   "pass_to_pass": [
+    "tests/test_transport.py::test_configure_security_allows_concrete_bind_host",
+    "tests/test_transport.py::test_configure_security_allows_explicit_lan_host",
+    "tests/test_transport.py::test_configure_security_can_disable",
+    "tests/test_transport.py::test_healthz_returns_200",
+    "tests/test_transport.py::test_host_pattern_normalization[  -None]",
+    "tests/test_transport.py::test_host_pattern_normalization[[::1]-[::1]:*]",
+    "tests/test_transport.py::test_host_pattern_normalization[[::1]:8080-[::1]:8080]",
+    "tests/test_transport.py::test_inner_lifespan_falls_back_to_router_lifespan_context",
+    "tests/test_transport.py::test_inner_lifespan_prefers_direct_lifespan_attr",
+    "tests/test_transport.py::test_lifespan_noop_safe_when_no_inner_lifespan",
+    "tests/test_transport.py::test_readyz_reports_per_adapter_failure",
+    "tests/test_transport.py::test_readyz_returns_200_when_all_adapters_ok",
+    "tests/test_transport.py::test_streamable_http_accepts_allowlisted_host[example.internal:8080]",
+    "tests/test_transport.py::test_streamable_http_rejects_unlisted_host",
+    "tests/test_transport.py::test_streamable_http_transport_mounts",
+    "tests/test_transport.py::test_unknown_transport_rejected"
+   ],
+   "prompts": {
+    "spec": "# --allowed-host / MCM_ALLOWED_HOSTS ignored by streamable-http transport (421 on permitted Host)\n\n# `--allowed-host` / `MCM_ALLOWED_HOSTS` is ignored by the streamable-http transport (server 421s a permitted Host)\n\n## Summary\nWhen `mcm-engine serve --transport streamable-http` runs behind a reverse proxy / ingress, requests whose `Host` header is a configured allowed host are still rejected with **HTTP 421 \"Invalid Host header\"**. The allow-list (`--allowed-host` / `MCM_ALLOWED_HOSTS`) has no effect for streamable-http; only the localhost defaults (`127.0.0.1:*`, `localhost:*`, `[::1]:*`) are enforced.\n\n## Environment\n- mcm-engine 3.5.0 (also present on current `main`: `transport.py`).\n- Transport: `streamable-http`, bound `--host 0.0.0.0 --port 8080`.\n- Reached via an internal AWS ALB at `https://mcm.internal.example` (Host = that FQDN).\n\n## Repro\n1. `MCM_ALLOWED_HOSTS=example.internal mcm-engine serve --host 0.0.0.0 --port 8080 --transport streamable-http`\n2. `curl -H 'Host: example.internal' -H 'Authorization: Bearer <valid>' \\\n   -H 'Accept: application/json, text/event-stream' -H 'Content-Type: application/json' \\\n   -X POST http://<addr>:8080/mcp -d '{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{}}'`\n3. \u2192 `421 Invalid Host header` (bearer auth passes first \u2014 an unauthenticated call 401s \u2014 so this is specifically Host validation, after auth).\n\nConfirmed the env is read and passed: `cmd_serve` reads `MCM_ALLOWED_HOSTS` and calls `serve(..., allowed_hosts=...)`, and `_configure_transport_security` builds the expected pattern (`example.internal:*` via `_host_pattern`). Yet a live server still shows only the localhost allow-list enforcing.\n\n## Root cause (ordering)\nIn `transport.py serve()`:\n```python\n_configure_transport_security(server, host=host, allowed_hosts=allowed_hosts, enable=...)  # mutates server.mcp.settings.transport_security\napp = build_asgi_app(server, transport=transport)  # -> server.mcp.streamable_http_app()\n```\n`_configure_transport_security` mutates `server.mcp.settings.transport_security` **after** FastMCP is constructed, but `streamable_http_app()` builds its DNS-rebinding middleware from FastMCP's own (localhost-only) transport-security at app-build time and does not honor the post-construction mutation. So the alignment is discarded and the localhost-only list is what actually enforces. (A freshly built `MCMServer` shows `allowed_hosts=['127.0.0.1:*','localhost:*','[::1]:*']`.)\n\n## Suggested fix\nConfigure FastMCP's `TransportSecuritySettings` **before** the transport app is built \u2014 e.g. construct `FastMCP` with the settings up front, or set them via whatever `streamable_http_app()` reads at build time \u2014 so `--allowed-host` takes effect for streamable-http (it may already work for `sse`; worth confirming both). Add a regression test: build the streamable-http app with an allow-list and assert a request with that Host is accepted.\n\n## Workaround in use\nSetting `MCM_DNS_REBINDING_PROTECTION=0` disables Host validation entirely and unblocks ingress access. Acceptable only on a trusted, non-browser endpoint (internal LB, private DNS) and does **not** weaken bearer auth. Not a fix \u2014 the allow-list should work.",
+    "symptom": null
+   },
+   "strata": {
+    "files": 2,
+    "lines": 56,
+    "test_s": 1.02,
+    "area": "rules/deploy,src/mcm_engine",
+    "size": "small"
+   },
+   "variant_drops": {
+    "symptom": "no_fix_section"
+   }
+  },
+  {
+   "id": "mcm-engine-79",
+   "issue": 79,
+   "pr": 82,
+   "base": "2db0dc9449c194fb92b207d0520bfab6c479bdba",
+   "fix": "ec43e8935cf5cae3aaef79ad2d28a7bd07f82765",
+   "date": "2026-07-07",
+   "subject": "Merge pull request #82 from unxmaal/fix/79-search-lock-shared-connection",
+   "context_files": [
+    "CHANGELOG.md",
+    "src/mcm_engine/server.py",
+    "src/mcm_engine/wiring.py"
+   ],
+   "new_files": [],
+   "test_files": [
+    "tests/test_embedded_shared_connection.py",
+    "tests/test_mcmserver_respects_backends.py"
+   ],
+   "fail_to_pass": [
+    "tests/test_embedded_shared_connection.py::test_distinct_files_get_distinct_connections",
+    "tests/test_embedded_shared_connection.py::test_embedded_adapters_share_one_connection",
+    "tests/test_embedded_shared_connection.py::test_search_over_build_context_bumps_hitcount",
+    "tests/test_embedded_shared_connection.py::test_shared_db_is_reused_when_passed",
+    "tests/test_embedded_shared_connection.py::test_verified_context_shares_one_connection",
+    "tests/test_mcmserver_respects_backends.py::test_mcmserver_uses_build_context_with_loaded_config"
+   ],
+   "pass_to_pass": [
+    "tests/test_embedded_shared_connection.py::test_memory_dbs_are_not_shared",
+    "tests/test_embedded_shared_connection.py::test_separate_connections_to_one_file_contend",
+    "tests/test_mcmserver_respects_backends.py::test_add_knowledge_tool_writes_through_ctx_adapter",
+    "tests/test_mcmserver_respects_backends.py::test_mcmserver_ctx_is_built_via_registry_not_hardcoded"
+   ],
+   "prompts": {
+    "spec": "# search blocks ~20s on SQLite lock from post-search counter bumps\n\n# `search` blocks ~20 seconds on SQLite lock from post-search counter bumps\n\n**Version:** 2.0.0\n\nI've started working this into my homelab setup piece (project) by piece. I think I've hit a performance issue and wanted to share what I found in case it's useful.\n\n## Symptom\n\nEvery `search` call takes ~15\u201330 seconds; longer queries exceed a 30 sec. client timeout and return nothing. Reproduces on a single idle `mcm-engine run` (stdio) against its own copy of a small (27-rule) tree with no external concurrency. Timing is deterministic (~20.9 s for the same 3-term query), so it doesn't look like network or model-load.\n\n## What I found\n\nThe search itself is fine; the stall is a SQLite lock wait, not work:\n\n- `sample <pid>` mid-call is 100% in `sqlite3_step \u2192 unixSleep \u2192 nanosleep` (the `busy_timeout` back-off).\n- Calling the read-only adapter directly: `SqliteSearch.search(...)` returns in **0.4 ms**.\n- The time is in the post-search `hit_count` / `last_hit_at` bumps in `_scope_block` (tools/search.py:243-254) \u2014 up to ~2 writes \u00d7 limit \u00d7 2 scopes per call.\n- Those writes appear to self-contend across the embedded adapters' separate connections to the same file (db.py:117-132, `busy_timeout=5000`). Reproduced in isolation: two connections / one file, second writer blocks **5262 ms** then `database is locked`. A few of those per search \u2248 the ~20 s observed.\n\nThe `try/except` around `counters.increment` (search.py:248-253) swallows the resulting exception so results still return, but the 5 s sleep happens before the exception is raised.\n\n## Possible directions (whatever fits best)\n\n1. Lower `busy_timeout` (e.g. ~250 ms) for the bump path. This bounds the worst case to ~1 s.\n2. Run the best-effort bumps on the same connection that served the read, or off the request path.\n3. A single shared writer connection for the embedded adapters.\n\nHappy to open a PR or provide more detail (sample output, repro script) if that would help.",
+    "symptom": null
+   },
+   "strata": {
+    "files": 3,
+    "lines": 93,
+    "test_s": 0.99,
+    "area": ".,src/mcm_engine",
+    "size": "small"
+   },
+   "variant_drops": {
+    "symptom": "no_fix_section"
+   }
+  },
+  {
+   "id": "mcm-engine-80",
+   "issue": 80,
+   "pr": 81,
+   "base": "9e39e9dd3303f9a077a3e86cadb1b17d8198e4f4",
+   "fix": "2db0dc9449c194fb92b207d0520bfab6c479bdba",
+   "date": "2026-07-07",
+   "subject": "Merge pull request #81 from unxmaal/fix/80-loose-ingest-gate",
+   "context_files": [
+    "CHANGELOG.md",
+    "README.md",
+    "src/mcm_engine/cli.py",
+    "src/mcm_engine/ingest/rulesift.py",
+    "src/mcm_engine/tools/rules.py"
+   ],
+   "new_files": [],
+   "test_files": [
+    "tests/test_remote_ingest.py"
+   ],
+   "fail_to_pass": [
+    "tests/test_remote_ingest.py::test_collect_remote_spans_loose_keeps_descriptive",
+    "tests/test_remote_ingest.py::test_ingest_remote_loose_wires_strict_false",
+    "tests/test_remote_ingest.py::test_is_substantive_accepts_descriptive_prose",
+    "tests/test_remote_ingest.py::test_is_substantive_rejects_pure_api_boilerplate",
+    "tests/test_remote_ingest.py::test_is_substantive_rejects_trivially_short",
+    "tests/test_remote_ingest.py::test_passes_gate_loose_is_strict_superset",
+    "tests/test_remote_ingest.py::test_sift_candidates_loose_keeps_descriptive",
+    "tests/test_remote_ingest.py::test_sift_remote_call_sends_strict_only_when_loose",
+    "tests/test_remote_ingest.py::test_sift_spans_loose_keeps_descriptive"
+   ],
+   "pass_to_pass": [
+    "tests/test_remote_ingest.py::test_classify_remote_error",
+    "tests/test_remote_ingest.py::test_collect_remote_spans_extracts_rulelike",
+    "tests/test_remote_ingest.py::test_endpoint_none_without_url",
+    "tests/test_remote_ingest.py::test_endpoint_reads_headers_from_mcp_json",
+    "tests/test_remote_ingest.py::test_endpoint_token_env_fallback",
+    "tests/test_remote_ingest.py::test_ingest_remote_errors_without_endpoint",
+    "tests/test_remote_ingest.py::test_ingest_remote_incompatible_with_bulk",
+    "tests/test_remote_ingest.py::test_ingest_remote_ships_spans_over_mcp",
+    "tests/test_remote_ingest.py::test_remote_auth_error_exits_1",
+    "tests/test_remote_ingest.py::test_remote_batches_spans",
+    "tests/test_remote_ingest.py::test_remote_permanent_failure_is_fail_open_exit1",
+    "tests/test_remote_ingest.py::test_remote_resume_skips_done",
+    "tests/test_remote_ingest.py::test_remote_retries_transient_then_succeeds",
+    "tests/test_remote_ingest.py::test_remote_timeout_splits_batch",
+    "tests/test_remote_ingest.py::test_sift_candidates_cap_env_override",
+    "tests/test_remote_ingest.py::test_sift_candidates_is_read_only",
+    "tests/test_remote_ingest.py::test_sift_candidates_refuses_over_cap",
+    "tests/test_remote_ingest.py::test_sift_candidates_returns_novel_survivor",
+    "tests/test_remote_ingest.py::test_sift_candidates_strict_default_drops_descriptive",
+    "tests/test_remote_ingest.py::test_sift_candidates_tool_is_registered",
+    "tests/test_remote_ingest.py::test_sift_candidates_zero_when_nothing_rulelike",
+    "tests/test_remote_ingest.py::test_sift_spans_collapses_intra_run_dupes",
+    "tests/test_remote_ingest.py::test_sift_spans_drops_known",
+    "tests/test_remote_ingest.py::test_sift_spans_drops_non_rulelike",
+    "tests/test_remote_ingest.py::test_sift_spans_keeps_rulelike_novel",
+    "tests/test_remote_ingest.py::test_sift_spans_strict_drops_descriptive"
+   ],
+   "prompts": {
+    "spec": "# Rule-like gate rejects descriptive architectural facts (normative-word requirement too strict for ingest)\n\n## Summary\n\n`is_rule_like` (`src/mcm_engine/ingest/rulesift.py`) requires a **normative/warning marker** (`must|never|always|avoid|ensure|require|note|warning|gotcha|\u2026`) for a span to survive the funnel. This drops **descriptive architectural facts** that are genuinely rule-worthy knowledge but phrased declaratively rather than as an imperative.\n\n## Repro\n\nIngesting `DoddE/stork` (a real Terraform artifact-repository project) via `ingest --remote`:\n\n```\n# funnel:   19 raw candidates -> 0 rule-like span(s)\n```\n\nAll 19 candidates were dropped. The README describes a real \"dirty/clean\" artifact-promotion architecture (AWS CodeArtifact intake\u2192scan\u2192clean, Harbor+Trivy, EventBridge-triggered promotion, internal ALB) \u2014 high-value KB content \u2014 but contains no `must`/`never`/`note`/`gotcha`, so `is_rule_like` returns `False` for every span.\n\n## Root cause\n\n`is_rule_like` (rulesift.py:140):\n\n```python\ndef is_rule_like(text: str) -> bool:\n    if len(dedup.normalize(text).split()) < MIN_TOKENS:\n        return False\n    return _NORMATIVE_RE.search(text) is not None   # <-- requires a normative marker\n```\n\n`_NORMATIVE_RE` is deliberately tight (comment: \"over-admitting here just means more spans reach the future model stage, but for Slice 1 the agent eyeballs survivors, so we keep the gate tight\").\n\nNote this gate runs in **two** places and both must agree:\n- client-side in `extract`/funnel (`sift`)\n- **server-side** in `sift_spans` (rulesift.py) behind the `sift_candidates` MCP tool\n\nSo a client can't bypass it alone \u2014 `sift_candidates` re-applies `is_rule_like`.\n\n## Impact\n\nNow that there's a curation/adjudication stage downstream (e.g. an LLM adjudicator deciding keep/skip on survivors \u2014 see the platform's `gitlab_ingest.py` flow), the tight normative gate is the wrong place to enforce precision. It silently discards descriptive architecture, contracts, and conventions before anything smarter can judge them. The \"Slice 1 agent eyeballs survivors\" assumption no longer holds for automated ingest.\n\n## Proposed fix (options)\n\n1. **Broaden `is_rule_like`** to admit descriptive-but-substantive spans: markdown headings + prose, \"X provides/creates/uses Y\" declaratives, tables, module/contract descriptions \u2014 while still dropping trivially short spans and pure API-doc boilerplate (`Args:`/`Returns:`).\n2. **Add a `gate=` / `strict=` parameter** to `sift_spans` (and expose it on the `sift_candidates` tool) so callers can opt into \"band everything, let the caller/adjudicator decide\" while keeping MinHash novelty banding + intra-run dedup. Backward-compatible default = current strict behavior.\n3. Combination: keep a *minimum-substance* floor (token count, not just `MIN_TOKENS=3`; reject nav/boilerplate) but drop the hard normative-marker requirement when `gate=False`.\n\nOption 2 is the least disruptive and unblocks automated descriptive-content ingest without changing default behavior for existing callers.\n\n## Acceptance\n\n- `ingest --remote` on a descriptive repo like stork yields non-zero rule-like spans (via the new mode/broadened gate).\n- Existing strict behavior remains the default (no regression for curated rule ingest).\n- Both client `sift` and server `sift_spans`/`sift_candidates` honor the same setting.",
+    "symptom": "# Rule-like gate rejects descriptive architectural facts (normative-word requirement too strict for ingest)\n\n## Summary\n\n`is_rule_like` (`src/mcm_engine/ingest/rulesift.py`) requires a **normative/warning marker** (`must|never|always|avoid|ensure|require|note|warning|gotcha|\u2026`) for a span to survive the funnel. This drops **descriptive architectural facts** that are genuinely rule-worthy knowledge but phrased declaratively rather than as an imperative.\n\n## Repro\n\nIngesting `DoddE/stork` (a real Terraform artifact-repository project) via `ingest --remote`:\n\n```\n# funnel:   19 raw candidates -> 0 rule-like span(s)\n```\n\nAll 19 candidates were dropped. The README describes a real \"dirty/clean\" artifact-promotion architecture (AWS CodeArtifact intake\u2192scan\u2192clean, Harbor+Trivy, EventBridge-triggered promotion, internal ALB) \u2014 high-value KB content \u2014 but contains no `must`/`never`/`note`/`gotcha`, so `is_rule_like` returns `False` for every span.\n\n## Root cause\n\n`is_rule_like` (rulesift.py:140):\n\n```python\ndef is_rule_like(text: str) -> bool:\n    if len(dedup.normalize(text).split()) < MIN_TOKENS:\n        return False\n    return _NORMATIVE_RE.search(text) is not None   # <-- requires a normative marker\n```\n\n`_NORMATIVE_RE` is deliberately tight (comment: \"over-admitting here just means more spans reach the future model stage, but for Slice 1 the agent eyeballs survivors, so we keep the gate tight\").\n\nNote this gate runs in **two** places and both must agree:\n- client-side in `extract`/funnel (`sift`)\n- **server-side** in `sift_spans` (rulesift.py) behind the `sift_candidates` MCP tool\n\nSo a client can't bypass it alone \u2014 `sift_candidates` re-applies `is_rule_like`.\n\n## Impact\n\nNow that there's a curation/adjudication stage downstream (e.g. an LLM adjudicator deciding keep/skip on survivors \u2014 see the platform's `gitlab_ingest.py` flow), the tight normative gate is the wrong place to enforce precision. It silently discards descriptive architecture, contracts, and conventions before anything smarter can judge them. The \"Slice 1 agent eyeballs survivors\" assumption no longer holds for automated ingest.\n\n## Acceptance\n\n- `ingest --remote` on a descriptive repo like stork yields non-zero rule-like spans (via the new mode/broadened gate).\n- Existing strict behavior remains the default (no regression for curated rule ingest).\n- Both client `sift` and server `sift_spans`/`sift_candidates` honor the same setting."
+   },
+   "strata": {
+    "files": 5,
+    "lines": 128,
+    "test_s": 0.87,
+    "area": ".,src/mcm_engine,src/mcm_engine/ingest,src/mcm_engine/tools",
+    "size": "large"
+   }
+  },
+  {
+   "id": "mcm-engine-47",
+   "issue": 47,
+   "pr": 48,
+   "base": "a99691d60aac91e6fc66ba9b5524f4187cb09486",
+   "fix": "63668a0d5cba5e715846e0971adb70bacd101216",
+   "date": "2026-07-04",
+   "subject": "Merge pull request #48 from unxmaal/fix/47-link-knowledge-ids",
+   "context_files": [
+    "src/mcm_engine/config.py",
+    "src/mcm_engine/tools/search.py"
+   ],
+   "new_files": [],
+   "test_files": [
+    "tests/test_search_scope_and_archived.py",
+    "tests/test_search_shows_ids.py",
+    "tests/test_tracker.py"
+   ],
+   "fail_to_pass": [
+    "tests/test_search_scope_and_archived.py::test_scope_all_returns_every_entity_type",
+    "tests/test_search_scope_and_archived.py::test_scope_errors_returns_only_errors",
+    "tests/test_search_scope_and_archived.py::test_scope_negative_returns_only_negative",
+    "tests/test_search_scope_and_archived.py::test_scope_rules_returns_only_rules",
+    "tests/test_search_scope_and_archived.py::test_scope_unknown_value_falls_back_to_all",
+    "tests/test_search_scope_and_archived.py::test_search_survives_locked_counter_bump",
+    "tests/test_search_scope_and_archived.py::test_unarchived_rule_returns_to_search",
+    "tests/test_search_shows_ids.py::test_knowledge_result_shows_its_id",
+    "tests/test_search_shows_ids.py::test_rule_result_shows_its_id",
+    "tests/test_tracker.py::TestAdvisoryPeriodicTools::test_default_marks_link_knowledge_advisory",
+    "tests/test_tracker.py::TestAdvisoryPeriodicTools::test_link_knowledge_never_deadlocks_by_default"
+   ],
+   "pass_to_pass": [
+    "tests/test_search_scope_and_archived.py::test_archived_knowledge_not_filtered",
+    "tests/test_search_scope_and_archived.py::test_archived_rule_invisible_even_when_scope_is_rules",
+    "tests/test_search_scope_and_archived.py::test_archived_rule_not_in_default_search",
+    "tests/test_search_scope_and_archived.py::test_scope_knowledge_returns_only_knowledge",
+    "tests/test_tracker.py::TestAdvisoryPeriodicTools::test_advisory_tool_nudges_but_never_blocks",
+    "tests/test_tracker.py::TestAdvisoryPeriodicTools::test_default_marks_add_negative_advisory",
+    "tests/test_tracker.py::TestAdvisoryPeriodicTools::test_non_advisory_periodic_tool_still_escalates",
+    "tests/test_tracker.py::TestNudgeEscalation::test_exempt_tools_not_blocked_by_escalation",
+    "tests/test_tracker.py::TestNudgeEscalation::test_multiple_nudge_types_independent",
+    "tests/test_tracker.py::TestNudgeEscalation::test_no_escalation_without_nudge",
+    "tests/test_tracker.py::TestNudgeEscalation::test_reset_all_clears_escalation",
+    "tests/test_tracker.py::TestNudgeEscalation::test_resolving_tool_clears_escalation",
+    "tests/test_tracker.py::TestNudgeEscalation::test_rules_check_escalation",
+    "tests/test_tracker.py::TestNudgeEscalation::test_rules_check_resolved_by_search",
+    "tests/test_tracker.py::TestNudgeEscalation::test_store_reminder_escalation",
+    "tests/test_tracker.py::TestPeriodicToolNudges::test_called_this_session_tracked",
+    "tests/test_tracker.py::TestPeriodicToolNudges::test_calling_tool_clears_escalation",
+    "tests/test_tracker.py::TestPeriodicToolNudges::test_calling_tool_resets_its_counter",
+    "tests/test_tracker.py::TestPeriodicToolNudges::test_counter_initialised_from_config",
+    "tests/test_tracker.py::TestPeriodicToolNudges::test_default_config_enables_link_and_negative",
+    "tests/test_tracker.py::TestPeriodicToolNudges::test_each_tool_counts_independently",
+    "tests/test_tracker.py::TestPeriodicToolNudges::test_no_nudge_before_threshold",
+    "tests/test_tracker.py::TestPeriodicToolNudges::test_periodic_escalates_to_block",
+    "tests/test_tracker.py::TestPeriodicToolNudges::test_periodic_nudge_fires_for_specific_tool",
+    "tests/test_tracker.py::TestPeriodicToolNudges::test_reset_all_clears_periodic_state",
+    "tests/test_tracker.py::TestSessionTracker::test_blocking_clears_after_reset",
+    "tests/test_tracker.py::TestSessionTracker::test_blocking_disabled_by_default",
+    "tests/test_tracker.py::TestSessionTracker::test_blocking_enabled",
+    "tests/test_tracker.py::TestSessionTracker::test_blocking_exempt_tools",
+    "tests/test_tracker.py::TestSessionTracker::test_checkpoint_nudge",
+    "tests/test_tracker.py::TestSessionTracker::test_elapsed_seconds",
+    "tests/test_tracker.py::TestSessionTracker::test_hyper_focus_nudge",
+    "tests/test_tracker.py::TestSessionTracker::test_hyper_focus_threshold_configurable",
+    "tests/test_tracker.py::TestSessionTracker::test_initial_state",
+    "tests/test_tracker.py::TestSessionTracker::test_mandatory_stop_nudge",
+    "tests/test_tracker.py::TestSessionTracker::test_mandatory_stop_overrides_checkpoint",
+    "tests/test_tracker.py::TestSessionTracker::test_no_nudge_initially",
+    "tests/test_tracker.py::TestSessionTracker::test_plugin_nudge",
+    "tests/test_tracker.py::TestSessionTracker::test_record_call",
+    "tests/test_tracker.py::TestSessionTracker::test_record_call_no_topic",
+    "tests/test_tracker.py::TestSessionTracker::test_record_store_resets_counter",
+    "tests/test_tracker.py::TestSessionTracker::test_reset_all",
+    "tests/test_tracker.py::TestSessionTracker::test_rules_check_disabled_when_zero",
+    "tests/test_tracker.py::TestSessionTracker::test_rules_check_nudge",
+    "tests/test_tracker.py::TestSessionTracker::test_store_reminder_nudge",
+    "tests/test_tracker.py::TestSessionTracker::test_store_reminder_threshold_configurable"
+   ],
+   "prompts": {
+    "spec": "# link_knowledge requires entry ids that no tool surfaces, and its escalated nudge hard-blocks discovery (deadlock)\n\n## Summary\n\n`link_knowledge` requires integer entry ids (`source_id`, `target_id`), but **no tool surfaces those ids** \u2014 `search` and `kb_recall` render titles + bodies, never the row id. So a caller cannot know what to pass.\n\nThis compounds into a **deadlock**: the periodic-nudge system escalates an ignored `link_knowledge` nudge into a **hard block that forbids *all* other tools \u2014 including `search`** \u2014 until `link_knowledge` is called. In that state you must call `link_knowledge` but cannot look up the ids to pass it, forcing a blind guess (which creates wrong edges \u2014 the exact opposite of what the relations graph is for) or repeated errors.\n\n## Repro (hit live)\n\n1. Store several knowledge entries over a session without calling `link_knowledge`.\n2. The nudge escalates: every tool call is rejected with `ESCALATED BLOCK: 'periodic:link_knowledge' ... You MUST call link_knowledge before any other tool.`\n3. Try to discover ids to link \u2192 `search` is also blocked.\n4. Only option left: guess ids by insertion order (I guessed knowledge `12 -> 10`). Guess is unverifiable and likely wrong.\n\n## Why it's bad\n\n- The feature is unusable as designed: you can't build correct edges without ids you can't obtain.\n- The escalation actively drives *garbage* edges (blind guesses), polluting the very graph `get_related` traverses.\n- Blocking the read tool needed to satisfy the nudge is a self-defeating gate.\n\n## Fix options (pick one or more)\n\n1. **Surface entry ids in `search` / `kb_recall` output.** Cheapest; makes correct linking possible at all. (Probably necessary regardless of the others.)\n2. **Let `link_knowledge` resolve by title/slug** in addition to integer id.\n3. **Don't put id-requiring tools in the hard-block set** \u2014 keep `link_knowledge` advisory, or guarantee at least one read tool (`search`) stays usable while blocked so the nudge is satisfiable.\n4. **Nudge system invariant:** never escalate-to-block a tool whose required inputs cannot be obtained from the blocked state.\n\n## Relevant code\n\n- `src/mcm_engine/tools/relations.py` \u2014 `link_knowledge`\n- `src/mcm_engine/tools/search.py` \u2014 `search` result rendering (add ids)\n- `src/mcm_engine/tracker.py` + `mcm-engine.yaml` (`nudges.periodic_tools`, `nudge_escalation_threshold`) \u2014 escalation/blocking\n\nFound while dogfooding the mcm KB during the ingest-funnel work.",
+    "symptom": "# link_knowledge requires entry ids that no tool surfaces, and its escalated nudge hard-blocks discovery (deadlock)\n\n## Summary\n\n`link_knowledge` requires integer entry ids (`source_id`, `target_id`), but **no tool surfaces those ids** \u2014 `search` and `kb_recall` render titles + bodies, never the row id. So a caller cannot know what to pass.\n\nThis compounds into a **deadlock**: the periodic-nudge system escalates an ignored `link_knowledge` nudge into a **hard block that forbids *all* other tools \u2014 including `search`** \u2014 until `link_knowledge` is called. In that state you must call `link_knowledge` but cannot look up the ids to pass it, forcing a blind guess (which creates wrong edges \u2014 the exact opposite of what the relations graph is for) or repeated errors.\n\n## Repro (hit live)\n\n1. Store several knowledge entries over a session without calling `link_knowledge`.\n2. The nudge escalates: every tool call is rejected with `ESCALATED BLOCK: 'periodic:link_knowledge' ... You MUST call link_knowledge before any other tool.`\n3. Try to discover ids to link \u2192 `search` is also blocked.\n4. Only option left: guess ids by insertion order (I guessed knowledge `12 -> 10`). Guess is unverifiable and likely wrong.\n\n## Why it's bad\n\n- The feature is unusable as designed: you can't build correct edges without ids you can't obtain.\n- The escalation actively drives *garbage* edges (blind guesses), polluting the very graph `get_related` traverses.\n- Blocking the read tool needed to satisfy the nudge is a self-defeating gate.\n\n## Relevant code\n\n- `src/mcm_engine/tools/relations.py` \u2014 `link_knowledge`\n- `src/mcm_engine/tools/search.py` \u2014 `search` result rendering (add ids)\n- `src/mcm_engine/tracker.py` + `mcm-engine.yaml` (`nudges.periodic_tools`, `nudge_escalation_threshold`) \u2014 escalation/blocking\n\nFound while dogfooding the mcm KB during the ingest-funnel work."
+   },
+   "strata": {
+    "files": 2,
+    "lines": 20,
+    "test_s": 0.87,
+    "area": "src/mcm_engine,src/mcm_engine/tools",
+    "size": "small"
+   }
+  }
+ ],
+ "split": {
+  "seed": 995,
+  "fraction": 0.5,
+  "dev": [
+   "mcm-engine-135",
+   "mcm-engine-171"
+  ],
+  "holdout": [
+   "mcm-engine-109",
+   "mcm-engine-116",
+   "mcm-engine-136",
+   "mcm-engine-156",
+   "mcm-engine-47",
+   "mcm-engine-79",
+   "mcm-engine-80",
+   "mcm-engine-92"
+  ]
+ },
+ "drops": [
+  {
+   "issue": 199,
+   "pr": 200,
+   "fix": "a5b9741db49e7bfbdbfe321b65921dc08664da8e",
+   "reason": "base_error"
+  },
+  {
+   "issue": 197,
+   "pr": 198,
+   "fix": "459fb2cfa5979bad52179f5febf7988cd7493cf9",
+   "reason": "no_test_change"
+  },
+  {
+   "issue": 195,
+   "pr": 196,
+   "fix": "7e849d858370d58364aabb867eb1afc2b05f50ff",
+   "reason": "no_test_change"
+  },
+  {
+   "issue": 183,
+   "pr": 194,
+   "fix": "0d3ba4d9d6524e9ee43eabde52bd373e28e3fc6f",
+   "reason": "too_big"
+  },
+  {
+   "issue": 182,
+   "pr": 191,
+   "fix": "02881a06e172851716f78dfec7c6fb5c5e29b3a8",
+   "reason": "base_error"
+  },
+  {
+   "issue": 181,
+   "pr": 189,
+   "fix": "9c2d65dde91aa3d4e6e53471f26579fb71d6d5e4",
+   "reason": "too_big"
+  },
+  {
+   "issue": 180,
+   "pr": 188,
+   "fix": "4c16cf0c1da9a1702fb3a5ee4a00df692dcd98b0",
+   "reason": "too_big"
+  },
+  {
+   "issue": 179,
+   "pr": 187,
+   "fix": "b7e03ecdbbbe3675d4a72e3c83e292f27a3647d8",
+   "reason": "too_big"
+  },
+  {
+   "issue": 178,
+   "pr": 186,
+   "fix": "de51b0ff4cfb0f5bfd2fa630d53c5b5fa6594fc3",
+   "reason": "no_source_change"
+  },
+  {
+   "issue": 177,
+   "pr": 184,
+   "fix": "f80dbee47b220535b61a40c3c61757b5257a5f2d",
+   "reason": "base_error"
+  },
+  {
+   "issue": 172,
+   "pr": 175,
+   "fix": "bb256115dfea042c4e42dd2601c25fda130f8f5d",
+   "reason": "flaky"
+  },
+  {
+   "issue": 170,
+   "pr": 173,
+   "fix": "5c3e61f92a7c6f6f868e1dc5dcb4e0c88df4b6e3",
+   "reason": "base_error"
+  },
+  {
+   "issue": 160,
+   "pr": 167,
+   "fix": "965c7282309bfd6906b940cb52b71867635bcbba",
+   "reason": "base_error"
+  },
+  {
+   "issue": 159,
+   "pr": 165,
+   "fix": "b80acbbb7afb0f04f8c5205ea23a9ab313faf2fc",
+   "reason": "flaky"
+  },
+  {
+   "issue": 158,
+   "pr": 164,
+   "fix": "3ba155a0f7cc71a04f8d8bfa4265de724433e5d4",
+   "reason": "flaky"
+  },
+  {
+   "issue": 157,
+   "pr": 163,
+   "fix": "8babab3d51b209e8e13f2c0599bdf9f2c8a5ecb4",
+   "reason": "base_error"
+  },
+  {
+   "issue": 142,
+   "pr": 155,
+   "fix": "493a92648e7239367c1237cdb8c513d8a46d1226",
+   "reason": "base_error"
+  },
+  {
+   "issue": 153,
+   "pr": 154,
+   "fix": "36d74ae24174597fd57d190cef2a82612890319d",
+   "reason": "reference_fails"
+  },
+  {
+   "issue": 149,
+   "pr": 151,
+   "fix": "63d1362e50d4887a3c87868a3395c4b165b85c1e",
+   "reason": "base_error"
+  },
+  {
+   "issue": 145,
+   "pr": 150,
+   "fix": "aeda791754fcde22504f4eb0872fa6294a401b82",
+   "reason": "base_error"
+  },
+  {
+   "issue": 144,
+   "pr": 148,
+   "fix": "bc061e331199ad711feda432fab458274a04ff35",
+   "reason": "reference_fails"
+  },
+  {
+   "issue": 146,
+   "pr": 147,
+   "fix": "9cfcc8e38b228652621c61ecbd0ff1ac10fc24fc",
+   "reason": "reference_fails"
+  },
+  {
+   "issue": 140,
+   "pr": 141,
+   "fix": "28ea23505489ff881b913f3bc5047fbaa1d7f792",
+   "reason": "no_test_change"
+  },
+  {
+   "issue": 130,
+   "pr": 131,
+   "fix": "8f7700b076adcf3b8efd5ec22c1d2eb8ba91afaa",
+   "reason": "no_test_change"
+  },
+  {
+   "issue": 78,
+   "pr": 129,
+   "fix": "5dc9f4caa9721680778e190a2dd588f4ce0da5e7",
+   "reason": "base_error"
+  },
+  {
+   "issue": 89,
+   "pr": 128,
+   "fix": "df8a584c6f499acf4051edbee9a1d54b31ed66ab",
+   "reason": "no_test_change"
+  },
+  {
+   "issue": 63,
+   "pr": 127,
+   "fix": "24cc364fb117644fb5b75941fb2f53eaef2173f5",
+   "reason": "base_error"
+  },
+  {
+   "issue": 98,
+   "pr": 101,
+   "fix": "769454aec20780f636315b30daeb97c225d23964",
+   "reason": "too_big"
+  },
+  {
+   "issue": 93,
+   "pr": 95,
+   "fix": "1a229a6ed89fc51e91785087a52fe4076d4b6bb5",
+   "reason": "no_test_change"
+  },
+  {
+   "issue": 83,
+   "pr": 84,
+   "fix": "a2eec3a76a7d6240aa1cc483b60f3630e6ac0195",
+   "reason": "base_error"
+  },
+  {
+   "issue": 35,
+   "pr": 41,
+   "fix": "747690684429e797bf37cad46cf5dbe038397c93",
+   "reason": "flaky"
+  },
+  {
+   "issue": 31,
+   "pr": 40,
+   "fix": "ed2f1a65ed0c06d30660cb6d92da726740b0ac07",
+   "reason": "base_error"
+  },
+  {
+   "issue": 32,
+   "pr": 39,
+   "fix": "ef9bee78d735ed81b2c3d6422410b1f6918a5bfa",
+   "reason": "base_error"
+  },
+  {
+   "issue": 30,
+   "pr": 38,
+   "fix": "0b0e41f26cc07d2d674d74d25278fb0987ce361e",
+   "reason": "base_error"
+  },
+  {
+   "issue": 22,
+   "pr": 29,
+   "fix": "7efde17de487535aaef1c081a8eba844bd9b8a96",
+   "reason": "base_error"
+  },
+  {
+   "issue": 27,
+   "pr": 28,
+   "fix": "94708d68ff0a29b5300cda5923401ac98676d234",
+   "reason": "base_error"
+  },
+  {
+   "issue": 25,
+   "pr": 26,
+   "fix": "4f4b9f67175107d41a027a654efbfe9016b78943",
+   "reason": "base_error"
+  },
+  {
+   "issue": 21,
+   "pr": 24,
+   "fix": "0bced85cbd54e437700c9d956cfd5cd0bf3cc9e4",
+   "reason": "too_big"
+  },
+  {
+   "issue": 19,
+   "pr": 23,
+   "fix": "6ea6f9d6e824ec2f3605542493327eb744877c02",
+   "reason": "reference_fails"
+  }
+ ]
+}

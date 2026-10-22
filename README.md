@@ -1727,6 +1727,27 @@ and drops only the symptom (`variant_drops`); a task is whole with the variants
 its cases offer, and the symptom-minus-spec interaction counts only tasks that
 hold both.
 
+Every source is a `history.Repo` (#889): its url, issue tracker, fix-commit
+subject (a squash `(#issue) (#pr)` or, with `merges`, a GitHub merge commit
+whose branch names the issue), pytest args and uv extras. SoHoT is
+`history`; `history_mcm_engine` and `history_infovore` are their own importers,
+manifests (`evals/importers/<name>.json`) and case directories
+(`evals/cases/repo/<name>/`). `--repo NAME` surveys one; `--yield` with no
+`--repo` prints the yield and drop reasons of every source, and `soh
+repo-report` adds a block per source. A case carries `pytest_args` and
+`extras` only when its source sets them, and the grader and `soh cases control
+repo` pass them on. A prompt or graded test id the privacy lint would refuse
+drops the task as `private_text` (a regression id is left out instead); LAN
+hosts in an issue reach the prompt as `<host>`.
+
+The repo lane gates code adoption (#889). Once this machine has
+`repo_gate_min_tasks` repo tasks whose every case `soh cases control repo`
+found valid, the loop's measure step runs a repo-lane comparison for every
+code-lane survivor before any code-lane one, and a code comparison runs only
+after that candidate's latest repo-lane verdict is a win. A repo winner whose
+code comparison did not fit the night is measured on code the next night.
+`soh adopt` by hand is not gated.
+
 Prompts and skills are measured as arms (#995): `claude-code:<model>,context=<spec>`
 with `none`, `skill:<name>` (the SKILL.md body without frontmatter, from
 `harness/arm_contexts.yaml` first, then `~/.claude/skills`), `prompt:<template>`

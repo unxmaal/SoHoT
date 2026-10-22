@@ -1,0 +1,119 @@
+# mcm-engine fix history (unxmaal/mcm-engine), generated (https://github.com/unxmaal/mcm-engine).
+# Imported by evals/importers from git:unxmaal/mcm-engine@a5b9741db49e7bfbdbfe321b65921dc08664da8e; re-import, do not edit.
+id: mcm-engine-135-spec
+modality: repo
+prompt: '# search summary mode should carry a match snippet (keep ''why it matched'' under semantic/non-FTS5
+  backends)
+
+
+  ## Problem
+
+
+  #119 made `search` default to compact summary hits (id, kind, title/topic, one-line summary, tags) and
+  defer bodies to `get_entry`. That progressive-disclosure win rests on an implicit assumption: the agent
+  can judge a hit''s relevance *from the summary line* and only fetch the bodies worth paying for.
+
+
+  That assumption holds under **lexical** search (SQLite FTS5, Postgres FTS), where the query token is
+  literally in the matched text, so the agent knows why a hit came back. It weakens under a **semantic/vector**
+  backend (the direction the live server + lodestone are moving — FTS5 is being retired): a hit can match
+  on meaning the summary line never surfaces, so the agent can''t tell from the one-liner whether the
+  body is relevant. Result: either wasted `get_entry` round-trips on bad hits, or wrongly skipping a good
+  hit. No wrong results, but the ergonomics of summary-first degrade exactly where we''re headed.
+
+
+  ## Root cause
+
+
+  `detail`/summary rendering (`tools/search.py`) is fully decoupled from the search backend (good — see
+  `_scope_block`), but `SearchHit` (`backends/__init__.py:323`) carries `entity_type / entity_id / score
+  / is_pinned / is_stale / counters_snapshot / row` and **no matched-text field**. The "why it matched"
+  signal every backend computes internally is thrown away before rendering.
+
+
+  ## Proposal
+
+
+  Add an optional `snippet: Optional[str] = None` to `SearchHit`. Each adapter populates it from the highlight
+  it already produces; summary-mode rendering appends it under the one-liner when present. Adapters that
+  can''t produce one leave it `None` and rendering falls back to today''s behavior — no regression, no
+  required work for any adapter.
+
+
+  Per-adapter source of the snippet:
+
+  - **SQLite FTS5**: `snippet()` / `highlight()` aux functions.
+
+  - **Postgres**: `ts_headline()` over the indexed document.
+
+  - **OpenSearch**: the `highlight` block already in the response.
+
+  - **Semantic/vector backend (future)**: the matched chunk/passage it ranked on — this is the case the
+  issue exists for.
+
+
+  Summary rendering: append a short, length-capped snippet line to each hit in `detail="summary"`. `detail="full"`
+  is unchanged (it already has the whole body). Keep the once-per-response `get_entry` footer.
+
+
+  ## Acceptance
+
+  - `SearchHit.snippet` optional, defaults `None`; omitting it is valid for any adapter.
+
+  - At least the lexical adapters (SQLite, Postgres) populate it; summary hits render it when present.
+
+  - Snippet length is bounded (config, e.g. `MCM_SNIPPET_MAX`) so this doesn''t reintroduce the token
+  bloat #119 removed.
+
+  - Conformance covers: snippet present renders; snippet `None` renders exactly as today.
+
+
+  ## Non-goals
+
+  - Not changing matching, ranking, or `include_archived`.
+
+  - Not changing the summary-vs-full default.
+
+  - Not building the semantic backend here — only making sure summary mode can carry its match signal
+  when it lands.
+
+
+  Follow-up to #119.'
+params:
+  source_repo: https://github.com/unxmaal/mcm-engine.git
+  base: c65579d46828d705aeff24366a5a37b290fcb87f
+  fix: 200e1d50cbe9c43c30a4705ecaea29b5be3f8ff7
+  variant: spec
+  context: oracle
+  context_files:
+  - CHANGELOG.md
+  - src/mcm_engine/adapters/opensearch/search.py
+  - src/mcm_engine/adapters/postgres/search.py
+  - src/mcm_engine/adapters/sqlite/search.py
+  - src/mcm_engine/backends/__init__.py
+  - src/mcm_engine/testing/conformance.py
+  - src/mcm_engine/tools/search.py
+  pytest_args:
+  - -o
+  - pythonpath=src
+  extras:
+  - dev
+  fail_to_pass:
+  - tests/test_search_match_snippet.py::test_snippet_is_length_bounded
+  - tests/test_search_match_snippet.py::test_summary_surfaces_a_body_only_match_via_snippet
+  pass_to_pass:
+  - tests/test_search_match_snippet.py::test_like_fallback_hit_has_no_snippet_and_still_renders
+attribution:
+  dataset: mcm-engine fix history (unxmaal/mcm-engine)
+  url: https://github.com/unxmaal/mcm-engine
+  license: generated
+  source: git:unxmaal/mcm-engine
+  revision: a5b9741db49e7bfbdbfe321b65921dc08664da8e
+  item: '#135 (PR #139)'
+  date: '2026-10-14'
+  transform: issue title and body from `gh issue view` at survey time, home paths as ~/, 'Prior art checked'
+    removed (spec), and the Fix/Shape/Design/Options/Remedy/Proposal/Build/What-to sections and labelled
+    paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
+    of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
+    and sandbox (evals/repo.py)
+  importer: evals.importers.history_mcm_engine

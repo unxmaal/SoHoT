@@ -82,9 +82,13 @@ def validate(name: str, params: dict) -> None:
         raise ValueError(f"{name}: params.variant must be spec or symptom")
     if params.get("context") != "oracle":
         raise ValueError(f"{name}: params.context must be oracle")
-    for key in ("fail_to_pass", "pass_to_pass", "context_files", "new_files"):
+    for key in ("fail_to_pass", "pass_to_pass", "context_files", "new_files", "pytest_args", "extras"):
         if not isinstance(params.get(key) or [], list):
             raise ValueError(f"{name}: params.{key} must be a list")
+    for key in ("pytest_args", "extras"):
+        odd = [x for x in params.get(key) or [] if not isinstance(x, str)]
+        if odd:
+            raise ValueError(f"{name}: params.{key} must be strings, not {odd}")
     new = params.get("new_files") or []
     shown = [p for p in [*params["context_files"], *new] if is_test_path(p)]
     if shown:
@@ -177,19 +181,21 @@ def discard(mirror_path: Path, task: Path) -> None:
     _git(["--git-dir", str(mirror_path), "worktree", "prune"], check=False)
 
 
-def env_digest(task: Path) -> str:
+def env_digest(task: Path, extras=()) -> str:
     h = hashlib.sha256()
     for name in ENV_FILES:
         f = task / name
         h.update(name.encode("utf-8") + b"\x00" + (f.read_bytes() if f.is_file() else b"") + b"\x00")
+    if extras:
+        h.update(b"extras\x00" + "\x00".join(sorted(extras)).encode("utf-8"))
     return h.hexdigest()[:16]
 
 
-def prepare(task: Path) -> Path:
-    """The venv `uv sync --frozen` builds from the pristine base checkout, cached per lockfile digest; network only here."""
+def prepare(task: Path, extras=()) -> Path:
+    """The venv `uv sync --frozen` builds from the pristine base checkout, cached per lockfile digest and extras."""
     if not (task / "uv.lock").is_file():
         raise RepoEnvError("the base commit has no uv.lock to build an environment from")
-    venv = cache_root() / "envs" / env_digest(task)
+    venv = cache_root() / "envs" / env_digest(task, extras)
     if (venv / ".built").is_file():
         return venv
     tmp = venv.with_name(f"{venv.name}.{os.getpid()}-{uuid.uuid4().hex[:6]}")
@@ -197,7 +203,8 @@ def prepare(task: Path) -> Path:
     env = {**os.environ, "UV_PROJECT_ENVIRONMENT": str(tmp)}
     env.pop("VIRTUAL_ENV", None)
     try:
-        got = subprocess.run([uv, "sync", "--frozen", "--no-install-project", "--quiet"], cwd=task,
+        got = subprocess.run([uv, "sync", "--frozen", "--no-install-project", "--quiet",
+                              *(a for x in sorted(extras) for a in ("--extra", x))], cwd=task,
                              capture_output=True, text=True, timeout=ENV_TIMEOUT_S, env=env)
     except subprocess.TimeoutExpired as exc:
         shutil.rmtree(tmp, ignore_errors=True)
@@ -205,7 +212,7 @@ def prepare(task: Path) -> Path:
     if got.returncode:
         shutil.rmtree(tmp, ignore_errors=True)
         raise RepoEnvError(f"uv sync --frozen failed: {got.stderr.strip()[-400:]}")
-    (tmp / ".built").write_text(env_digest(task), encoding="utf-8")
+    (tmp / ".built").write_text(env_digest(task, extras), encoding="utf-8")
     try:
         tmp.rename(venv)
     except OSError:
@@ -359,9 +366,11 @@ def _junit_ids(xml: Path) -> tuple[set, set]:
 def junit_key(node: str) -> str:
     """tests/test_x.py::Cls::test_f[p] as junit writes it: tests.test_x.Cls::test_f[p]."""
     path, _, rest = node.partition("::")
-    parts = rest.split("::")
+    head, bracket, param = rest.partition("[")
+    parts = head.split("::")
     module = path.removesuffix(".py").replace("/", ".")
-    return f"{'.'.join([module, *parts[:-1]])}::{parts[-1]}"
+    # A parametrize id may hold "::" itself ([::1]); only the name before "[" is split. #889.
+    return f"{'.'.join([module, *parts[:-1]])}::{parts[-1]}{bracket}{param}"
 
 
 def sandboxed(argv: list, task: Path) -> list:
@@ -395,8 +404,8 @@ def run_sandboxed(argv: list, task: Path, timeout: float) -> tuple[int, str, boo
         return -9, out.decode(errors="replace")[-2000:], True
 
 
-def grade(task: Path, python: Path, fail_to_pass, pass_to_pass) -> Grade:
-    """Run the named tests sandboxed; resolved when pytest reports every one of them passed."""
+def grade(task: Path, python: Path, fail_to_pass, pass_to_pass, args=()) -> Grade:
+    """Run the named tests sandboxed, with the source's own pytest `args`; resolved when every one passed."""
     timeout = TEST_TIMEOUT_S
     ids = [*fail_to_pass, *pass_to_pass]
     report = task / HARNESS_DIR / "junit.xml"
@@ -404,7 +413,7 @@ def grade(task: Path, python: Path, fail_to_pass, pass_to_pass) -> Grade:
     report.unlink(missing_ok=True)
     started = time.perf_counter()
     rc, tail, late = run_sandboxed([str(python), "-m", "pytest", "-p", "no:cacheprovider", "-q",
-                                    "-o", "addopts=", f"--junitxml={report}", *ids], task, timeout)
+                                    "-o", "addopts=", *args, f"--junitxml={report}", *ids], task, timeout)
     took = round(time.perf_counter() - started, 3)
     if late:
         return Grade(False, True, f"tests timed out after {timeout:g}s", took, ids,
@@ -435,7 +444,8 @@ class Attempt:
         m = mirror(str(params["source_repo"]), need=(params["base"], params["fix"]))
         task = restore(m, params["base"])
         try:
-            venv = (env or prepare)(task)
+            extras = params.get("extras") or ()
+            venv = env(task) if env else prepare(task, extras) if extras else prepare(task)
         except BaseException:
             discard(m, task)
             raise
@@ -451,7 +461,8 @@ class Attempt:
             return Grade(False, False, why)
         p = self.params
         install_tests(self.mirror, self.task, p["base"], p["fix"])
-        return grade(self.task, self.python, p["fail_to_pass"], p.get("pass_to_pass") or [])
+        return grade(self.task, self.python, p["fail_to_pass"], p.get("pass_to_pass") or [],
+                     p.get("pytest_args") or ())
 
     def close(self) -> None:
         discard(self.mirror, self.task)
@@ -481,7 +492,7 @@ def _junit_outcomes(xml: Path) -> tuple[dict, set]:
     return out, broken
 
 
-def run_ids(task: Path, python: Path, ids) -> dict:
+def run_ids(task: Path, python: Path, ids, args=()) -> dict:
     """{"ids": id -> passed|failed|skipped|error|missing, "error": why the run said nothing, else ""}."""
     timeout = TEST_TIMEOUT_S
     files = sorted({i.partition("::")[0] for i in ids})
@@ -490,7 +501,7 @@ def run_ids(task: Path, python: Path, ids) -> dict:
     report.unlink(missing_ok=True)
     want.write_text(json.dumps(sorted(ids)), encoding="utf-8")
     rc, tail, late = run_sandboxed([str(python), "-c", _ONLY, str(want), "-p", "no:cacheprovider", "-q",
-                                    "-o", "addopts=", "--continue-on-collection-errors",
+                                    "-o", "addopts=", *args, "--continue-on-collection-errors",
                                     f"--junitxml={report}", *files], task, timeout)
     if late:
         return {"ids": {}, "error": f"tests timed out after {timeout:g}s"}
@@ -540,22 +551,24 @@ def controls(case, env=None, runs=None, memo=None) -> dict:
     except RepoEnvError as exc:
         return {**out, "verdict": f"error: environment: {exc}"}
     try:
-        out["env_digest"] = env_digest(a.task)
+        out["env_digest"] = env_digest(a.task, p.get("extras") or ())
         try:
             a.prompt(case.prompt)
         except RepoEnvError as exc:
             out["prompt"] = str(exc)
             return {**out, "verdict": f"invalid: prompt: {exc}"}
-        key = json.dumps([p["source_repo"], p["base"], p["fix"], f2p, p2p, out["env_digest"], runs])
+        key = json.dumps([p["source_repo"], p["base"], p["fix"], f2p, p2p, out["env_digest"], runs,
+                          *([p["pytest_args"]] if p.get("pytest_args") else [])])
         if memo is not None and key in memo:
             return {**out, **memo[key]}
         install_tests(a.mirror, a.task, p["base"], p["fix"])
-        out["base"] = [run_ids(a.task, a.python, [*f2p, *p2p]) for _ in range(runs)]
+        extra = p.get("pytest_args") or ()
+        out["base"] = [run_ids(a.task, a.python, [*f2p, *p2p], extra) for _ in range(runs)]
         applied, why = apply(a.task, reference_diff(a.mirror, p["base"], p["fix"]))
         if not applied:
             return {**out, "verdict": f"invalid: reference does not apply: {why}"}
         install_tests(a.mirror, a.task, p["base"], p["fix"])
-        out["reference"] = [run_ids(a.task, a.python, [*f2p, *p2p]) for _ in range(runs)]
+        out["reference"] = [run_ids(a.task, a.python, [*f2p, *p2p], extra) for _ in range(runs)]
     finally:
         a.close()
     out["verdict"] = verdict(out["base"], out["reference"], f2p, p2p)

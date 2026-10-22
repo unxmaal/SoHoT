@@ -1,0 +1,80 @@
+# infovore fix history (unxmaal/infovore), generated (https://github.com/unxmaal/infovore).
+# Imported by evals/importers from git:unxmaal/infovore@219940e42104c3e625a6642713e856e2bb2305fc; re-import, do not edit.
+id: infovore-286-spec
+modality: repo
+prompt: '# claims schema: constrain the speaker slot to user-xxxx
+
+
+  Run 6 (the compact tuple format from #278, eval-7b, gold 50) rejected 16 claims as "unknown speaker":
+
+  - 14 dropped the `user-` prefix (`22f9` instead of `user-22f9`).
+
+  - 1 put a ref (`[12]`) in the speaker slot.
+
+  - 1 put the claim text in the speaker slot.
+
+
+  Fix: give the speaker item of the tuple a `pattern` matching the pseudonym format. The llama-server
+  grammar then forbids all three at generation time. This is a schema change only, with no lenient parsing.'
+params:
+  source_repo: https://github.com/unxmaal/infovore.git
+  base: 19bb448776e764766cf4febd6a3830fff0832265
+  fix: 7412661f296f0a929a2b7308e8325ba98581125a
+  variant: spec
+  context: oracle
+  context_files:
+  - infovore/claims/extract.py
+  pytest_args:
+  - --import-mode=importlib
+  fail_to_pass:
+  - tests/claims/test_extract.py::test_the_speaker_slot_accepts_every_pseudonym_width
+  - tests/claims/test_extract.py::test_the_speaker_slot_rejects_anything_but_a_pseudonym[22f9]
+  - tests/claims/test_extract.py::test_the_speaker_slot_rejects_anything_but_a_pseudonym[I always wondered
+    why]
+  - tests/claims/test_extract.py::test_the_speaker_slot_rejects_anything_but_a_pseudonym[[12]]
+  - tests/claims/test_extract.py::test_the_speaker_slot_rejects_anything_but_a_pseudonym[user-XYZ1]
+  - tests/claims/test_extract.py::test_the_speaker_slot_rejects_anything_but_a_pseudonym[user-]
+  pass_to_pass:
+  - tests/claims/test_extract.py::test_a_conversation_with_no_text_sends_nothing
+  - tests/claims/test_extract.py::test_a_reply_cut_off_at_the_token_cap_is_a_failure
+  - tests/claims/test_extract.py::test_a_window_citing_a_ref_outside_itself_is_rejected
+  - tests/claims/test_extract.py::test_a_window_renders_one_ref_and_speaker_per_line
+  - tests/claims/test_extract.py::test_an_exchange_is_windowed_summed_and_validated
+  - tests/claims/test_extract.py::test_attribution_is_the_speaker_field_not_the_statement_text[A socketed
+    O2 board may allow a CPU swap.]
+  - tests/claims/test_extract.py::test_attribution_is_the_speaker_field_not_the_statement_text[The SGI
+    O2 can take an R12000 CPU; one user's runs at 400 MHz.]
+  - tests/claims/test_extract.py::test_attribution_is_the_speaker_field_not_the_statement_text[sa, which
+    contains sash, is 15.7 MB in the copy on IRIXnet's nonfree.]
+  - tests/claims/test_extract.py::test_model_id_comes_from_model_info_else_the_alias
+  - tests/claims/test_extract.py::test_replies_parse_into_claims_and_usage
+  - tests/claims/test_extract.py::test_the_new_example_output_is_at_least_35_percent_shorter
+  - tests/claims/test_extract.py::test_the_request_pins_a_strict_schema_and_names_the_scope
+  - tests/claims/test_extract.py::test_the_schema_is_compact_and_caps_claim_length
+  - tests/claims/test_extract.py::test_the_token_cap_reaches_every_request
+  - tests/claims/test_extract.py::test_unusable_replies_raise[bad0]
+  - tests/claims/test_extract.py::test_unusable_replies_raise[bad1]
+  - tests/claims/test_extract.py::test_unusable_replies_raise[bad2]
+  - tests/claims/test_extract.py::test_unusable_replies_raise[bad3]
+  - tests/claims/test_extract.py::test_unusable_replies_raise[bad4]
+  - tests/claims/test_extract.py::test_validation_accepts_a_grounded_attributed_claim
+  - tests/claims/test_extract.py::test_validation_rejects_and_records_why[claim0-unknown ref 9]
+  - tests/claims/test_extract.py::test_validation_rejects_and_records_why[claim1-no refs]
+  - tests/claims/test_extract.py::test_validation_rejects_and_records_why[claim2-unknown speaker]
+  - tests/claims/test_extract.py::test_validation_rejects_and_records_why[claim3-empty statement]
+  - tests/claims/test_extract.py::test_validation_rejects_and_records_why[claim4-name leak]
+  - tests/claims/test_extract.py::test_windows_never_split_a_message_and_keep_global_refs
+attribution:
+  dataset: infovore fix history (unxmaal/infovore)
+  url: https://github.com/unxmaal/infovore
+  license: generated
+  source: git:unxmaal/infovore
+  revision: 219940e42104c3e625a6642713e856e2bb2305fc
+  item: '#286 (PR #287)'
+  date: '2026-10-08'
+  transform: issue title and body from `gh issue view` at survey time, home paths as ~/, 'Prior art checked'
+    removed (spec), and the Fix/Shape/Design/Options/Remedy/Proposal/Build/What-to sections and labelled
+    paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
+    of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
+    and sandbox (evals/repo.py)
+  importer: evals.importers.history_infovore

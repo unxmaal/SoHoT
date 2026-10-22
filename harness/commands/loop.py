@@ -1,7 +1,7 @@
 """`soh discover --loop`: the tiers chained, the queue they share, and the spend that settles them."""
 from __future__ import annotations
 
-from harness import lanes
+from harness import lanes, repo_gate
 from harness.commands import discover as discover_cmd
 from harness.commands import measure as measure_cmd
 from harness.commands import screen as screen_cmd
@@ -431,6 +431,7 @@ def _loop_spend(a, rc: int, failed: list | None = None, sweep=None) -> int:
     store = ms.connect()
     try:
         fresh = measure_cmd.resume_first(store, measure_cmd.measurable(store, top or EVERY, want), want)
+        fresh = repo_gate.order(fresh, store, want)
     finally:
         store.close()
     if not fresh:
@@ -488,15 +489,29 @@ def _measure_all(a, fresh: list[dict], sweep, failed: list, rc: int = 0, room=No
         else:
             row = queue.pop(0)
         i += 1
+        why = _gated(row, getattr(a, "lane", ""))
+        if why:
+            print(f"  {why}", flush=True)
+            continue
         _beat("measure", candidate=row.get("name", ""), item=i, items=total)
         rc = _step(f"measure {row.get('name', '')}".strip(),
-                   measure_cmd._measure_and_adopt(a, row, sweep), failed) or rc
+                   measure_cmd._measure_and_adopt(repo_gate.args_for(a, row), row, sweep), failed) or rc
         if sweep is not None and sweep.squeezed:
             # Its model is released by now: re-sample memory before each start from here on.
             print(f"  {row.get('name', '')} was paused for memory; going on with what fits, smallest first",
                   flush=True)
             sweep.squeezed, tight = "", True
     return rc
+
+
+def _gated(row: dict, want: str) -> str:
+    """Why the repo gate holds `row` back this sweep, else "". #889."""
+    from harness import memory_store as ms
+    store = ms.connect()
+    try:
+        return repo_gate.blocked(store, row, want)
+    finally:
+        store.close()
 
 
 def _next_fitting(queue: list[dict], room) -> tuple[dict | None, str]:

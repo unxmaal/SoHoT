@@ -1,0 +1,100 @@
+# mcm-engine fix history (unxmaal/mcm-engine), generated (https://github.com/unxmaal/mcm-engine).
+# Imported by evals/importers from git:unxmaal/mcm-engine@a5b9741db49e7bfbdbfe321b65921dc08664da8e; re-import, do not edit.
+id: mcm-engine-79-spec
+modality: repo
+prompt: '# search blocks ~20s on SQLite lock from post-search counter bumps
+
+
+  # `search` blocks ~20 seconds on SQLite lock from post-search counter bumps
+
+
+  **Version:** 2.0.0
+
+
+  I''ve started working this into my homelab setup piece (project) by piece. I think I''ve hit a performance
+  issue and wanted to share what I found in case it''s useful.
+
+
+  ## Symptom
+
+
+  Every `search` call takes ~15–30 seconds; longer queries exceed a 30 sec. client timeout and return
+  nothing. Reproduces on a single idle `mcm-engine run` (stdio) against its own copy of a small (27-rule)
+  tree with no external concurrency. Timing is deterministic (~20.9 s for the same 3-term query), so it
+  doesn''t look like network or model-load.
+
+
+  ## What I found
+
+
+  The search itself is fine; the stall is a SQLite lock wait, not work:
+
+
+  - `sample <pid>` mid-call is 100% in `sqlite3_step → unixSleep → nanosleep` (the `busy_timeout` back-off).
+
+  - Calling the read-only adapter directly: `SqliteSearch.search(...)` returns in **0.4 ms**.
+
+  - The time is in the post-search `hit_count` / `last_hit_at` bumps in `_scope_block` (tools/search.py:243-254)
+  — up to ~2 writes × limit × 2 scopes per call.
+
+  - Those writes appear to self-contend across the embedded adapters'' separate connections to the same
+  file (db.py:117-132, `busy_timeout=5000`). Reproduced in isolation: two connections / one file, second
+  writer blocks **5262 ms** then `database is locked`. A few of those per search ≈ the ~20 s observed.
+
+
+  The `try/except` around `counters.increment` (search.py:248-253) swallows the resulting exception so
+  results still return, but the 5 s sleep happens before the exception is raised.
+
+
+  ## Possible directions (whatever fits best)
+
+
+  1. Lower `busy_timeout` (e.g. ~250 ms) for the bump path. This bounds the worst case to ~1 s.
+
+  2. Run the best-effort bumps on the same connection that served the read, or off the request path.
+
+  3. A single shared writer connection for the embedded adapters.
+
+
+  Happy to open a PR or provide more detail (sample output, repro script) if that would help.'
+params:
+  source_repo: https://github.com/unxmaal/mcm-engine.git
+  base: 2db0dc9449c194fb92b207d0520bfab6c479bdba
+  fix: ec43e8935cf5cae3aaef79ad2d28a7bd07f82765
+  variant: spec
+  context: oracle
+  context_files:
+  - CHANGELOG.md
+  - src/mcm_engine/server.py
+  - src/mcm_engine/wiring.py
+  pytest_args:
+  - -o
+  - pythonpath=src
+  extras:
+  - dev
+  fail_to_pass:
+  - tests/test_embedded_shared_connection.py::test_distinct_files_get_distinct_connections
+  - tests/test_embedded_shared_connection.py::test_embedded_adapters_share_one_connection
+  - tests/test_embedded_shared_connection.py::test_search_over_build_context_bumps_hitcount
+  - tests/test_embedded_shared_connection.py::test_shared_db_is_reused_when_passed
+  - tests/test_embedded_shared_connection.py::test_verified_context_shares_one_connection
+  - tests/test_mcmserver_respects_backends.py::test_mcmserver_uses_build_context_with_loaded_config
+  pass_to_pass:
+  - tests/test_embedded_shared_connection.py::test_memory_dbs_are_not_shared
+  - tests/test_embedded_shared_connection.py::test_separate_connections_to_one_file_contend
+  - tests/test_mcmserver_respects_backends.py::test_add_knowledge_tool_writes_through_ctx_adapter
+  - tests/test_mcmserver_respects_backends.py::test_mcmserver_ctx_is_built_via_registry_not_hardcoded
+attribution:
+  dataset: mcm-engine fix history (unxmaal/mcm-engine)
+  url: https://github.com/unxmaal/mcm-engine
+  license: generated
+  source: git:unxmaal/mcm-engine
+  revision: a5b9741db49e7bfbdbfe321b65921dc08664da8e
+  item: '#79 (PR #82)'
+  date: '2026-07-07'
+  transform: issue title and body from `gh issue view` at survey time, home paths as ~/, 'Prior art checked'
+    removed (spec), and the Fix/Shape/Design/Options/Remedy/Proposal/Build/What-to sections and labelled
+    paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
+    of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
+    and sandbox (evals/repo.py)
+  importer: evals.importers.history_mcm_engine

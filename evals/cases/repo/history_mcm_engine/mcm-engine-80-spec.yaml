@@ -1,0 +1,106 @@
+# mcm-engine fix history (unxmaal/mcm-engine), generated (https://github.com/unxmaal/mcm-engine).
+# Imported by evals/importers from git:unxmaal/mcm-engine@a5b9741db49e7bfbdbfe321b65921dc08664da8e; re-import, do not edit.
+id: mcm-engine-80-spec
+modality: repo
+prompt: "# Rule-like gate rejects descriptive architectural facts (normative-word requirement too strict\
+  \ for ingest)\n\n## Summary\n\n`is_rule_like` (`src/mcm_engine/ingest/rulesift.py`) requires a **normative/warning\
+  \ marker** (`must|never|always|avoid|ensure|require|note|warning|gotcha|…`) for a span to survive the\
+  \ funnel. This drops **descriptive architectural facts** that are genuinely rule-worthy knowledge but\
+  \ phrased declaratively rather than as an imperative.\n\n## Repro\n\nIngesting `DoddE/stork` (a real\
+  \ Terraform artifact-repository project) via `ingest --remote`:\n\n```\n# funnel:   19 raw candidates\
+  \ -> 0 rule-like span(s)\n```\n\nAll 19 candidates were dropped. The README describes a real \"dirty/clean\"\
+  \ artifact-promotion architecture (AWS CodeArtifact intake→scan→clean, Harbor+Trivy, EventBridge-triggered\
+  \ promotion, internal ALB) — high-value KB content — but contains no `must`/`never`/`note`/`gotcha`,\
+  \ so `is_rule_like` returns `False` for every span.\n\n## Root cause\n\n`is_rule_like` (rulesift.py:140):\n\
+  \n```python\ndef is_rule_like(text: str) -> bool:\n    if len(dedup.normalize(text).split()) < MIN_TOKENS:\n\
+  \        return False\n    return _NORMATIVE_RE.search(text) is not None   # <-- requires a normative\
+  \ marker\n```\n\n`_NORMATIVE_RE` is deliberately tight (comment: \"over-admitting here just means more\
+  \ spans reach the future model stage, but for Slice 1 the agent eyeballs survivors, so we keep the gate\
+  \ tight\").\n\nNote this gate runs in **two** places and both must agree:\n- client-side in `extract`/funnel\
+  \ (`sift`)\n- **server-side** in `sift_spans` (rulesift.py) behind the `sift_candidates` MCP tool\n\n\
+  So a client can't bypass it alone — `sift_candidates` re-applies `is_rule_like`.\n\n## Impact\n\nNow\
+  \ that there's a curation/adjudication stage downstream (e.g. an LLM adjudicator deciding keep/skip\
+  \ on survivors — see the platform's `gitlab_ingest.py` flow), the tight normative gate is the wrong\
+  \ place to enforce precision. It silently discards descriptive architecture, contracts, and conventions\
+  \ before anything smarter can judge them. The \"Slice 1 agent eyeballs survivors\" assumption no longer\
+  \ holds for automated ingest.\n\n## Proposed fix (options)\n\n1. **Broaden `is_rule_like`** to admit\
+  \ descriptive-but-substantive spans: markdown headings + prose, \"X provides/creates/uses Y\" declaratives,\
+  \ tables, module/contract descriptions — while still dropping trivially short spans and pure API-doc\
+  \ boilerplate (`Args:`/`Returns:`).\n2. **Add a `gate=` / `strict=` parameter** to `sift_spans` (and\
+  \ expose it on the `sift_candidates` tool) so callers can opt into \"band everything, let the caller/adjudicator\
+  \ decide\" while keeping MinHash novelty banding + intra-run dedup. Backward-compatible default = current\
+  \ strict behavior.\n3. Combination: keep a *minimum-substance* floor (token count, not just `MIN_TOKENS=3`;\
+  \ reject nav/boilerplate) but drop the hard normative-marker requirement when `gate=False`.\n\nOption\
+  \ 2 is the least disruptive and unblocks automated descriptive-content ingest without changing default\
+  \ behavior for existing callers.\n\n## Acceptance\n\n- `ingest --remote` on a descriptive repo like\
+  \ stork yields non-zero rule-like spans (via the new mode/broadened gate).\n- Existing strict behavior\
+  \ remains the default (no regression for curated rule ingest).\n- Both client `sift` and server `sift_spans`/`sift_candidates`\
+  \ honor the same setting."
+params:
+  source_repo: https://github.com/unxmaal/mcm-engine.git
+  base: 9e39e9dd3303f9a077a3e86cadb1b17d8198e4f4
+  fix: 2db0dc9449c194fb92b207d0520bfab6c479bdba
+  variant: spec
+  context: oracle
+  context_files:
+  - CHANGELOG.md
+  - README.md
+  - src/mcm_engine/cli.py
+  - src/mcm_engine/ingest/rulesift.py
+  - src/mcm_engine/tools/rules.py
+  pytest_args:
+  - -o
+  - pythonpath=src
+  extras:
+  - dev
+  fail_to_pass:
+  - tests/test_remote_ingest.py::test_collect_remote_spans_loose_keeps_descriptive
+  - tests/test_remote_ingest.py::test_ingest_remote_loose_wires_strict_false
+  - tests/test_remote_ingest.py::test_is_substantive_accepts_descriptive_prose
+  - tests/test_remote_ingest.py::test_is_substantive_rejects_pure_api_boilerplate
+  - tests/test_remote_ingest.py::test_is_substantive_rejects_trivially_short
+  - tests/test_remote_ingest.py::test_passes_gate_loose_is_strict_superset
+  - tests/test_remote_ingest.py::test_sift_candidates_loose_keeps_descriptive
+  - tests/test_remote_ingest.py::test_sift_remote_call_sends_strict_only_when_loose
+  - tests/test_remote_ingest.py::test_sift_spans_loose_keeps_descriptive
+  pass_to_pass:
+  - tests/test_remote_ingest.py::test_classify_remote_error
+  - tests/test_remote_ingest.py::test_collect_remote_spans_extracts_rulelike
+  - tests/test_remote_ingest.py::test_endpoint_none_without_url
+  - tests/test_remote_ingest.py::test_endpoint_reads_headers_from_mcp_json
+  - tests/test_remote_ingest.py::test_endpoint_token_env_fallback
+  - tests/test_remote_ingest.py::test_ingest_remote_errors_without_endpoint
+  - tests/test_remote_ingest.py::test_ingest_remote_incompatible_with_bulk
+  - tests/test_remote_ingest.py::test_ingest_remote_ships_spans_over_mcp
+  - tests/test_remote_ingest.py::test_remote_auth_error_exits_1
+  - tests/test_remote_ingest.py::test_remote_batches_spans
+  - tests/test_remote_ingest.py::test_remote_permanent_failure_is_fail_open_exit1
+  - tests/test_remote_ingest.py::test_remote_resume_skips_done
+  - tests/test_remote_ingest.py::test_remote_retries_transient_then_succeeds
+  - tests/test_remote_ingest.py::test_remote_timeout_splits_batch
+  - tests/test_remote_ingest.py::test_sift_candidates_cap_env_override
+  - tests/test_remote_ingest.py::test_sift_candidates_is_read_only
+  - tests/test_remote_ingest.py::test_sift_candidates_refuses_over_cap
+  - tests/test_remote_ingest.py::test_sift_candidates_returns_novel_survivor
+  - tests/test_remote_ingest.py::test_sift_candidates_strict_default_drops_descriptive
+  - tests/test_remote_ingest.py::test_sift_candidates_tool_is_registered
+  - tests/test_remote_ingest.py::test_sift_candidates_zero_when_nothing_rulelike
+  - tests/test_remote_ingest.py::test_sift_spans_collapses_intra_run_dupes
+  - tests/test_remote_ingest.py::test_sift_spans_drops_known
+  - tests/test_remote_ingest.py::test_sift_spans_drops_non_rulelike
+  - tests/test_remote_ingest.py::test_sift_spans_keeps_rulelike_novel
+  - tests/test_remote_ingest.py::test_sift_spans_strict_drops_descriptive
+attribution:
+  dataset: mcm-engine fix history (unxmaal/mcm-engine)
+  url: https://github.com/unxmaal/mcm-engine
+  license: generated
+  source: git:unxmaal/mcm-engine
+  revision: a5b9741db49e7bfbdbfe321b65921dc08664da8e
+  item: '#80 (PR #81)'
+  date: '2026-07-07'
+  transform: issue title and body from `gh issue view` at survey time, home paths as ~/, 'Prior art checked'
+    removed (spec), and the Fix/Shape/Design/Options/Remedy/Proposal/Build/What-to sections and labelled
+    paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
+    of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
+    and sandbox (evals/repo.py)
+  importer: evals.importers.history_mcm_engine
