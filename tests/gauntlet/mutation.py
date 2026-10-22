@@ -110,7 +110,8 @@ LEFT_OUT = {
     "harness/adopt.py": (
         "test_harness_paired.py", "test_harness_report.py", "test_loop_circuit.py", "test_measure_budget.py",
         "test_over_budget_796.py", "test_planted_919.py", "test_projection_696.py", "test_rank_893.py", "test_router_unload.py",
-        "test_store_state.py", "test_stt_screen_power_1007.py", "test_sweep_ceiling_806.py", "test_loop_revisit_1055.py"),
+        "test_store_state.py", "test_stt_screen_power_1007.py", "test_sweep_ceiling_806.py", "test_loop_revisit_1055.py",
+        "test_incumbent_from_measurement_1110.py"),
     "harness/serving.py": (
         "test_mlx_backlog.py", "test_runner_gap_until_950.py", "test_agent_limits.py", "test_claims_lane.py", "test_decide_lane.py",
         "test_delegate_resident.py", "test_delegations.py", "test_lane_probe_924.py", "test_machine_host.py",

@@ -428,6 +428,10 @@ def _loop_spend(a, rc: int, failed: list | None = None, sweep=None) -> int:
 
     print(f"\n=== measure and adopt ===")
     _beat("measure")
+    try:
+        measure_cmd.take_incumbents(want)
+    except Exception as exc:  # noqa: BLE001 - a lane that cannot take its incumbent keeps the one it has
+        print(f"  incumbent from measurement: not checked ({type(exc).__name__}: {exc})", flush=True)
     store = ms.connect()
     try:
         fresh = measure_cmd.resume_first(store, measure_cmd.measurable(store, top or EVERY, want), want)

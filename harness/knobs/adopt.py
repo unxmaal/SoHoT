@@ -24,4 +24,9 @@ KNOBS = [
        note="ceiling seconds a finished sweep may leave unused before soh morning names why (#1082)"),
     _k("unseen_rate", ["harness/power.py:UNSEEN"], [0.25, 0.5, 0.75],
        note="pass rate a plan assumes for an incumbent with no draws; such a plan is unmeasured (#698)"),
+    _k("zero_pass_min_cases", ["harness/baseline.py:MIN_CASES"], [20, 30, 50],
+       note="distinct stored cases a typed incumbent must pass none of before its lane takes the incumbent from "
+            "measurement and a paired run against it is only a screen; a model passing 1 in 10 shows none of 30 "
+            "4% of the time (0.9**30); repo's Qwen3-4B passed 0 of 41 (run 470) and 0 of 39 six times (480-485), "
+            "Ornith 2-5 of 39 (472-474) (#1110)"),
 ]
