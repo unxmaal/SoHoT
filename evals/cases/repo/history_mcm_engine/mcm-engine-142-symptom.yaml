@@ -1,0 +1,98 @@
+# mcm-engine fix history (unxmaal/mcm-engine), generated (https://github.com/unxmaal/mcm-engine).
+# Imported by evals/importers from git:unxmaal/mcm-engine@a5b9741db49e7bfbdbfe321b65921dc08664da8e; re-import, do not edit.
+id: mcm-engine-142-symptom
+modality: repo
+prompt: '# KB data pollution: some knowledge summaries contain the whole serialized body (incl. a leaked
+  </invoke> fragment)
+
+
+  ## Observed
+
+  Under 3.12.0 summary-mode `search`, a subset of KNOWLEDGE hits render with stray structural markup —
+  `</summary>`, `<detail>…</detail>`, `<rationale>`, `<references>`, `<tags>`, `<kind>`, `<project>`,
+  and a trailing `</invoke>`.
+
+
+  ## Root cause (verified via get_entry)
+
+  Not a formatter bug. `get_entry("knowledge", 157)` shows the stored **`summary` column** itself contains
+  the entire XML-serialized entry, e.g.:
+
+
+  ```
+
+  summary: Measured 2026-09-20 … permanently inert.</summary>
+
+  <detail>…</detail>
+
+  <rationale>…</rationale>
+
+  <tags>…</tags>
+
+  <kind>finding</kind>
+
+  <project>localharness</project>
+
+  </invoke>
+
+  ```
+
+
+  The renderer prints stored fields faithfully; clean entries (all rules, recent knowledge) render clean.
+  So a batch of entries was created with a pre-serialized blob passed as the `summary`/content, and a
+  tool-call fragment (`</invoke>`) was captured at store time.
+
+
+  ## Scope
+
+  Appears concentrated in imported `localharness`/`sohot` findings. Exact count TBD as part of the fix
+  (FTS can''t easily match raw tags; needs a direct scan of `knowledge.summary` for `</invoke>` / `</detail>`
+  / `</summary>`).
+
+
+  ## Impact
+
+  Cosmetic + token waste: polluted summaries defeat the #119 progressive-disclosure saving (the whole
+  body ships in the "summary"). No correctness impact on search/ranking.'
+params:
+  source_repo: https://github.com/unxmaal/mcm-engine.git
+  base: 36d74ae24174597fd57d190cef2a82612890319d
+  fix: 493a92648e7239367c1237cdb8c513d8a46d1226
+  variant: symptom
+  context: oracle
+  context_files:
+  - CHANGELOG.md
+  - src/mcm_engine/sanitize.py
+  - src/mcm_engine/tools/corpus.py
+  - src/mcm_engine/tools/knowledge.py
+  - src/mcm_engine/tools/rules.py
+  pytest_args:
+  - -o
+  - pythonpath=src
+  extras:
+  - dev
+  fail_to_pass:
+  - tests/test_sanitize_knowledge_tool.py::test_add_knowledge_guard_cleans_on_store
+  - tests/test_sanitize_knowledge_tool.py::test_sanitize_knowledge_apply_cleans_in_place
+  - tests/test_sanitize_knowledge_tool.py::test_sanitize_knowledge_dry_run_reports_without_changing
+  - tests/test_sanitize_pollution.py::test_clean_summary_detail_keeps_existing_detail
+  - tests/test_sanitize_pollution.py::test_clean_summary_detail_leaves_clean_rows_untouched
+  - tests/test_sanitize_pollution.py::test_clean_summary_detail_recovers_when_blob_starts_with_tag
+  - tests/test_sanitize_pollution.py::test_clean_summary_detail_resplits
+  - tests/test_sanitize_pollution.py::test_is_polluted_detects_blob_and_passes_clean_text
+  - tests/test_sanitize_pollution.py::test_strip_tool_call_fragments
+  pass_to_pass: []
+attribution:
+  dataset: mcm-engine fix history (unxmaal/mcm-engine)
+  url: https://github.com/unxmaal/mcm-engine
+  license: generated
+  source: git:unxmaal/mcm-engine
+  revision: a5b9741db49e7bfbdbfe321b65921dc08664da8e
+  item: '#142 (PR #155)'
+  date: '2026-10-16'
+  transform: issue title and body from `gh issue view` at survey time, home paths as ~/, 'Prior art checked'
+    removed (spec), and the Fix/Shape/Design/Options/Remedy/Proposal/Build/What-to sections and labelled
+    paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
+    of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
+    and sandbox (evals/repo.py)
+  importer: evals.importers.history_mcm_engine

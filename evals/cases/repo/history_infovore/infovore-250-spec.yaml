@@ -1,0 +1,71 @@
+# infovore fix history (unxmaal/infovore), generated (https://github.com/unxmaal/infovore).
+# Imported by evals/importers from git:unxmaal/infovore@219940e42104c3e625a6642713e856e2bb2305fc; re-import, do not edit.
+id: infovore-250-spec
+modality: repo
+prompt: '# Embed stage: choose relevant threshold by precision target (0.90), report CV stats
+
+
+  PR #248 strict relevant threshold (0.9876) decided only 24 relevant; residue grew 3,711 -> 19,619 of
+  115,513. Loosen: lowest threshold with CV precision >= 0.90 (--relevant-precision), irrelevant threshold
+  rule (recall >= 0.95) unchanged. Print both thresholds with CV precision/recall/n; record in recipe_json.'
+params:
+  source_repo: https://github.com/unxmaal/infovore.git
+  base: 640fab4912a9c9c8949d5ba89147ceabd183061e
+  fix: 5076274638cd268161abe428fd445a39adefdf27
+  variant: spec
+  context: oracle
+  context_files:
+  - infovore/triage/embed_stage.py
+  - infovore/triage/relevance_command.py
+  pytest_args:
+  - --import-mode=importlib
+  fail_to_pass:
+  - tests/triage/test_cascade.py::test_the_embed_stage_scores_what_the_lexicon_abstained_on
+  - tests/triage/test_cascade.py::test_the_relevant_precision_flag_reaches_the_recorded_recipe
+  - tests/triage/test_embed_stage.py::test_a_database_with_too_few_labels_gets_an_abstaining_stage
+  - tests/triage/test_embed_stage.py::test_a_fitted_stage_keeps_relevant_recall_and_records_its_recipe
+  - tests/triage/test_embed_stage.py::test_a_missing_embed_extra_fails_loudly_with_the_install_command
+  - tests/triage/test_embed_stage.py::test_building_a_stage_loads_the_pinned_model_and_fits
+  - tests/triage/test_embed_stage.py::test_the_cache_sits_beside_the_database
+  - tests/triage/test_embed_stage.py::test_the_cascade_sends_only_lexicon_abstentions_to_the_embed_stage
+  - tests/triage/test_embed_stage.py::test_the_irrelevant_threshold_spares_the_recall_floor_of_relevant_scores
+  - tests/triage/test_embed_stage.py::test_the_relevant_threshold_follows_the_configurable_precision_target
+  - tests/triage/test_embed_stage.py::test_threshold_stats_report_cv_precision_recall_and_n_for_both_sides
+  pass_to_pass:
+  - tests/triage/test_cascade.py::test_a_random_slice_label_after_a_queue_label_still_counts
+  - tests/triage/test_cascade.py::test_all_runs_every_current_exchange_and_reports_share_and_residue_channels
+  - tests/triage/test_cascade.py::test_all_with_a_fitted_embed_stage_reports_the_stage
+  - tests/triage/test_cascade.py::test_all_with_write_annotates_exchanges_outside_every_slice
+  - tests/triage/test_cascade.py::test_batching_gives_the_same_outcomes_as_one_pass
+  - tests/triage/test_cascade.py::test_collisions_lists_lexicon_terms_common_off_topic
+  - tests/triage/test_cascade.py::test_explain_shows_hits_per_message
+  - tests/triage/test_cascade.py::test_mine_prints_candidates
+  - tests/triage/test_cascade.py::test_residue_channels_counts_by_channel_name_and_falls_back_to_the_id
+  - tests/triage/test_cascade.py::test_stage_reports_count_decisions_confusion_and_residue
+  - tests/triage/test_cascade.py::test_text_less_exchanges_are_set_aside_before_the_lexicon
+  - tests/triage/test_cascade.py::test_the_cascade_prints_the_tuning_population
+  - tests/triage/test_cascade.py::test_the_cascade_reports_each_stage_per_slice
+  - tests/triage/test_cascade.py::test_the_denylist_decides_irrelevant_before_the_lexicon
+  - tests/triage/test_cascade.py::test_the_denylist_outranks_no_text
+  - tests/triage/test_cascade.py::test_the_embed_band_decides_only_outside_the_thresholds
+  - tests/triage/test_cascade.py::test_the_lexicon_abstains_without_hits_and_decides_on_share
+  - tests/triage/test_cascade.py::test_the_slices_are_validated
+  - tests/triage/test_cascade.py::test_tuning_ignores_queue_sourced_labels[judge:c1:2]
+  - tests/triage/test_cascade.py::test_tuning_ignores_queue_sourced_labels[judge:likely-irrelevant:3]
+  - tests/triage/test_cascade.py::test_tuning_ignores_queue_sourced_labels[judge:uncertain:9]
+  - tests/triage/test_cascade.py::test_tuning_takes_the_lowest_share_that_keeps_precision
+  - tests/triage/test_cascade.py::test_write_records_derived_annotations_per_stage
+attribution:
+  dataset: infovore fix history (unxmaal/infovore)
+  url: https://github.com/unxmaal/infovore
+  license: generated
+  source: git:unxmaal/infovore
+  revision: 219940e42104c3e625a6642713e856e2bb2305fc
+  item: '#250 (PR #251)'
+  date: '2026-10-04'
+  transform: issue title and body from `gh issue view` at survey time, home paths as ~/, 'Prior art checked'
+    removed (spec), and the Fix/Shape/Design/Options/Remedy/Proposal/Build/What-to sections and labelled
+    paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
+    of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
+    and sandbox (evals/repo.py)
+  importer: evals.importers.history_infovore

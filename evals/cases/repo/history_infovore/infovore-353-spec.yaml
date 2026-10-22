@@ -1,0 +1,126 @@
+# infovore fix history (unxmaal/infovore), generated (https://github.com/unxmaal/infovore).
+# Imported by evals/importers from git:unxmaal/infovore@219940e42104c3e625a6642713e856e2bb2305fc; re-import, do not edit.
+id: infovore-353-spec
+modality: repo
+prompt: '# Net-new check: rank and label claims by novelty against a reference corpus before they reach
+  the wiki
+
+
+  Eric, 2026-10-11: "Are we testing if the claims are net-new before writing them to the wiki? If not
+  we should. Obviously IRIX runs on an Octane. That''s old and well established info."
+
+
+  We are not. Today a claim reaches a page if it passes the verdict gate and its topic has 3 claims; corroboration
+  only orders groups within a section. "The Octane runs IRIX (+3 similar; 4 speakers)" is the first line
+  of Octane / With IRIX because it is the most corroborated statement there, and it is also the least
+  informative.
+
+
+  Design, programmatic throughout (RULE #313: no LLM judgement over the corpus):
+
+
+  1. Reference corpus. Fetch the Wikipedia article (English, REST summary plus the plain-text extract)
+  for every page topic that resolves to an exact title, cache it in a `reference_texts` table keyed by
+  topic and fetched_at. Split into sentences. Expect a few hundred topics to resolve; that covers the
+  hardware, OS and vendor pages where "well established" lives. Later: SGI techpubs and the IRIX Network
+  wiki if their terms allow.
+
+  2. Novelty score. Embed claim statements and reference sentences with bge-small (already in `--extra
+  embed`). For each claim, novelty = 1 minus the max cosine to any reference sentence for its topics.
+  Also an intra-corpus generic score: the fraction of a claim''s content tokens that are topic names or
+  the top 50 corpus-wide tokens; "The Octane runs IRIX" scores 1.0, a war story about a specific PSU fault
+  scores near 0.
+
+  3. Storage. `claim_novelty(claim_id, reference_max_cosine, reference_topic, generic_share, computed_at)`,
+  filled by `infovore claims novelty --run R --tag-run T [--write]`, idempotent, read-only on everything
+  else.
+
+  4. Use. `wiki build|stats --novelty-floor F` drops claims whose reference cosine is above 1 minus F
+  (established elsewhere) from list sections and demotes them to the end of the page as "Background" with
+  the Wikipedia link; group order within a section becomes (corroboration, novelty) so a corroborated
+  novel claim leads. Writer units get only the novel leads.
+
+  5. Controls before anyone trusts it: the novelty distribution for claims on topics with a reference
+  versus topics without; a hand-free sanity check by printing the 20 least novel and 20 most novel claims
+  per sampled topic; and the share of claims on the Octane page above the floor.
+
+
+  Out of scope: judging truth (that is the claim check and #268), and anything that calls a model per
+  claim.'
+params:
+  source_repo: https://github.com/unxmaal/infovore.git
+  base: 6cd771b2a76088d5147821a1ac6129f004868a97
+  fix: e5ca44f2d1bad9eb3704fa7a59ccab6279c69fa7
+  variant: spec
+  context: oracle
+  context_files:
+  - README.md
+  - infovore/claims/novelty.py
+  - infovore/db/novelty.py
+  - infovore/wiki/build.py
+  - infovore/wiki/command.py
+  - infovore/wiki/groups.py
+  - infovore/wiki/write_command.py
+  pytest_args:
+  - --import-mode=importlib
+  fail_to_pass:
+  - tests/wiki/test_build.py::test_article_parts_follow_numbered_continuations_without_gaps
+  - tests/wiki/test_build.py::test_background_claims_leave_the_sections_and_list_their_reference
+  - tests/wiki/test_build.py::test_build_site_folds_small_sections
+  - tests/wiki/test_build.py::test_build_site_keeps_colliding_pages_and_links_to_them
+  - tests/wiki/test_build.py::test_build_site_writes_pages_and_index_deterministically
+  - tests/wiki/test_build.py::test_golden_page
+  - tests/wiki/test_build.py::test_index_lists_pages_by_name_with_counts
+  - tests/wiki/test_build.py::test_load_claims_applies_eligibility_and_topics
+  - tests/wiki/test_build.py::test_load_claims_claim_gate_drops_techless_claims
+  - tests/wiki/test_build.py::test_load_claims_collapses_duplicates_across_runs
+  - tests/wiki/test_build.py::test_load_claims_keeps_only_the_chosen_runs
+  - tests/wiki/test_build.py::test_load_claims_verdict_policy_excludes_unsupported_and_unchecked
+  - tests/wiki/test_build.py::test_page_files_are_unique_and_never_empty_or_index
+  - tests/wiki/test_build.py::test_page_without_cooccurrence_has_no_groups_or_see_also
+  - tests/wiki/test_build.py::test_pages_carry_no_discord_links
+  - tests/wiki/test_build.py::test_render_page_concatenates_section_parts
+  - tests/wiki/test_build.py::test_see_also_only_links_topics_with_pages
+  - tests/wiki/test_build.py::test_small_co_topic_sections_fold_into_general
+  - tests/wiki/test_build.py::test_stats_counts_pages_distribution_and_unassigned
+  - tests/wiki/test_build.py::test_stats_distribution_covers_every_bucket
+  - tests/wiki/test_build.py::test_stats_with_no_pages
+  - tests/wiki/test_build.py::test_untagged_claims_land_on_the_unsorted_page_and_count_as_on_pages
+  - tests/wiki/test_command.py::test_background_flag_counts_established_claims_in_stats
+  - tests/wiki/test_groups.py::test_more_novel_leads_sort_first_within_a_corroboration_level
+  pass_to_pass:
+  - tests/wiki/test_command.py::test_build_default_minimum_is_three
+  - tests/wiki/test_command.py::test_build_writes_pages_for_topics_over_the_minimum
+  - tests/wiki/test_command.py::test_claim_gate_drops_techless_claims_from_stats_and_build
+  - tests/wiki/test_command.py::test_grouping_embed_uses_the_embedder_and_stats_report_corroboration
+  - tests/wiki/test_command.py::test_runs_limits_stats_and_rejects_bad_ids
+  - tests/wiki/test_command.py::test_stats_reports_topics_pages_distribution_and_unassigned
+  - tests/wiki/test_command.py::test_untagged_claims_get_an_unsorted_page
+  - tests/wiki/test_command.py::test_verdicts_supported_only_excludes_uncheckable_and_bad_names_are_refused
+  - tests/wiki/test_groups.py::test_a_claim_joins_the_first_matching_group
+  - tests/wiki/test_groups.py::test_cosine_handles_zero_vectors
+  - tests/wiki/test_groups.py::test_empty_input_returns_nothing
+  - tests/wiki/test_groups.py::test_equal_sizes_sort_by_lead_date_then_claim_id
+  - tests/wiki/test_groups.py::test_groups_sort_by_distinct_speakers_then_conversations_before_size
+  - tests/wiki/test_groups.py::test_groups_sort_by_size_first
+  - tests/wiki/test_groups.py::test_make_grouper_embeds_every_claim_once_in_batches
+  - tests/wiki/test_groups.py::test_make_grouper_for_picks_jaccard_or_the_embedder
+  - tests/wiki/test_groups.py::test_paraphrases_join_and_a_distinct_claim_stays_apart
+  - tests/wiki/test_groups.py::test_statements_without_tokens_never_join
+  - tests/wiki/test_groups.py::test_summarise_counts_groups_by_speakers_and_corroborated_claims
+  - tests/wiki/test_groups.py::test_threshold_is_inclusive_and_configurable
+  - tests/wiki/test_groups.py::test_vectors_replace_tokens_and_must_align
+attribution:
+  dataset: infovore fix history (unxmaal/infovore)
+  url: https://github.com/unxmaal/infovore
+  license: generated
+  source: git:unxmaal/infovore
+  revision: 219940e42104c3e625a6642713e856e2bb2305fc
+  item: '#353 (PR #356)'
+  date: '2026-10-11'
+  transform: issue title and body from `gh issue view` at survey time, home paths as ~/, 'Prior art checked'
+    removed (spec), and the Fix/Shape/Design/Options/Remedy/Proposal/Build/What-to sections and labelled
+    paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
+    of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
+    and sandbox (evals/repo.py)
+  importer: evals.importers.history_infovore

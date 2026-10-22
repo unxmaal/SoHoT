@@ -1,0 +1,146 @@
+# mcm-engine fix history (unxmaal/mcm-engine), generated (https://github.com/unxmaal/mcm-engine).
+# Imported by evals/importers from git:unxmaal/mcm-engine@a5b9741db49e7bfbdbfe321b65921dc08664da8e; re-import, do not edit.
+id: mcm-engine-83-spec
+modality: repo
+prompt: '# SessionTracker is process-global: concurrent clients corrupt each other''s governance counters
+
+
+  ## Summary
+
+
+  `SessionTracker` is instantiated **once per server process** and shared by every client connection.
+  It has no notion of the MCP session id, so **concurrent clients corrupt each other''s governance counters**
+  (`turn_count`, `ignored_counts`, `calls_since`, `last_store_turn`, `last_checkpoint_turn`, `topic_freq`).
+  Two Claude Code instances pointed at the same server — a normal, expected setup — interfere: one client''s
+  tool calls advance the nudge/escalation state that then blocks the *other* client.
+
+
+  ## Root cause
+
+
+  `server.py:115`:
+
+
+  ```python
+
+  self.tracker = SessionTracker(config.nudges)
+
+  ```
+
+
+  Every tool handler closes over this single instance. The streamable-HTTP transport (`StreamableHTTPSessionManager`)
+  *does* assign each client its own `mcp-session-id` at `initialize()`, but the tracker ignores it — all
+  sessions collapse onto one counter.
+
+
+  ## Observed impact
+
+
+  Running `mcm-engine ingest --remote` (which fans out into many `sift_candidates` batch calls) **while
+  a second Claude Code session was connected to the same server** produced erratic, incomplete sift coverage:
+  the *same* repo (`org/skills/example-skills`) surfaced 16 / 21 / 36 / 42 novel spans on successive runs,
+  and the `import_rules` write at the end intermittently hit:
+
+
+  ```
+
+  ESCALATED BLOCK: ''checkpoint'' nudge ignored N times. You MUST call one of: save_snapshot, session_handoff
+  before any other tool.
+
+  ```
+
+
+  The escalation count depended on what the *other* session was doing concurrently — not on this session''s
+  own behavior. A `session_handoff` from the ingest client (to reset its gate) also blows away the other
+  client''s counters, and vice-versa.
+
+
+  ## Expected
+
+
+  Each MCP session gets its own tracker state. One client''s tool calls, nudges, escalations, and `session_handoff`/`reset_all`
+  must not affect another client''s governance state.
+
+
+  ## Proposed fix
+
+
+  Key tracker state by `mcp-session-id`:
+
+
+  - Maintain a `dict[session_id, SessionTracker]` (or store per-session state in a `contextvars.ContextVar`
+  set from the request scope), created lazily on first tool call / `initialize`, evicted on session close
+  or TTL.
+
+  - Thread the per-request session id from the FastMCP request context down to the tool handlers (they
+  currently receive mcm''s own DB `Context`, **not** the FastMCP request `Context` that carries the session
+  id — so this needs wiring, it isn''t a one-liner).
+
+  - `session_handoff` / `save_snapshot` should reset only the calling session''s tracker.
+
+
+  Lifecycle to decide: eviction policy (on transport session-close hook if available, else idle TTL) so
+  long-lived servers don''t leak tracker objects.
+
+
+  ## Secondary hardening (optional, separate)
+
+
+  Independently of isolation, read-only tools (`sift_candidates`, `find_duplicate_rules`, `find_conflicting_rules`,
+  `consolidation_report`, `list_rules`, `get_related`) arguably should not advance **write-hygiene** gates
+  (`store_reminder` / `checkpoint` / `mandatory_stop`) at all — a read query is neither a mutation nor
+  something you must checkpoint before. `sift_candidates` is the load-bearing case: even within a *single*
+  session, one `ingest --remote` run makes enough `sift_candidates` calls to self-escalate the gate and
+  block its own follow-up `import_rules` write. (`search` should stay counted — it resolves `rules_check`
+  and is part of the look-first contract.) This mitigates the single-session case but does **not** substitute
+  for per-session isolation, which is the real bug.
+
+
+  ## Environment
+
+
+  - Transport: `streamable-http` under `/mcp`
+
+  - Reproduced with two Claude Code clients against one server (local kind deployment, mcm-engine at the
+  `3.5.0` image tag).'
+params:
+  source_repo: https://github.com/unxmaal/mcm-engine.git
+  base: ec43e8935cf5cae3aaef79ad2d28a7bd07f82765
+  fix: a2eec3a76a7d6240aa1cc483b60f3630e6ac0195
+  variant: spec
+  context: oracle
+  context_files:
+  - CHANGELOG.md
+  - src/mcm_engine/server.py
+  - src/mcm_engine/tracker.py
+  pytest_args:
+  - -o
+  - pythonpath=src
+  extras:
+  - dev
+  fail_to_pass:
+  - tests/test_session_tracker_isolation.py::test_attribute_write_delegates_to_calling_session
+  - tests/test_session_tracker_isolation.py::test_escalation_block_in_one_session_does_not_block_another
+  - tests/test_session_tracker_isolation.py::test_none_key_uses_one_shared_default_tracker
+  - tests/test_session_tracker_isolation.py::test_plugin_nudge_replayed_into_every_session
+  - tests/test_session_tracker_isolation.py::test_read_only_burst_never_escalates_even_with_pending_nudge
+  - tests/test_session_tracker_isolation.py::test_read_only_tools_do_not_advance_write_gates
+  - tests/test_session_tracker_isolation.py::test_reset_all_only_affects_calling_session
+  - tests/test_session_tracker_isolation.py::test_search_still_counts_toward_store_gate
+  - tests/test_session_tracker_isolation.py::test_sessions_evict_when_key_is_garbage_collected
+  - tests/test_session_tracker_isolation.py::test_sessions_have_independent_turn_counts
+  pass_to_pass: []
+attribution:
+  dataset: mcm-engine fix history (unxmaal/mcm-engine)
+  url: https://github.com/unxmaal/mcm-engine
+  license: generated
+  source: git:unxmaal/mcm-engine
+  revision: a5b9741db49e7bfbdbfe321b65921dc08664da8e
+  item: '#83 (PR #84)'
+  date: '2026-07-07'
+  transform: issue title and body from `gh issue view` at survey time, home paths as ~/, 'Prior art checked'
+    removed (spec), and the Fix/Shape/Design/Options/Remedy/Proposal/Build/What-to sections and labelled
+    paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
+    of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
+    and sandbox (evals/repo.py)
+  importer: evals.importers.history_mcm_engine

@@ -1,0 +1,86 @@
+# mcm-engine fix history (unxmaal/mcm-engine), generated (https://github.com/unxmaal/mcm-engine).
+# Imported by evals/importers from git:unxmaal/mcm-engine@a5b9741db49e7bfbdbfe321b65921dc08664da8e; re-import, do not edit.
+id: mcm-engine-22-symptom
+modality: repo
+prompt: '# Piece C: one-way DB→git review mirror (gap 5, reviewability)
+
+
+  Part of the **mcm v3 Foundation Quad** (`mcm_v3_plan.md`, Piece C). A one-way DB→git review mirror:
+  replay the DB into a git repo of markdown for audit/review (`git blame`, diff, PR review) — never authoritative,
+  never writes `rules_paths`.
+
+
+  ## Depends on Piece A2 (not independent)
+
+  `iter_entries` enumerates superseded rows once A2 lands. The mirror MUST filter to active (`valid_until
+  IS NULL` / `status=active`) by default, OR mirror history under a `superseded/` subtree. Never present
+  dead rules as authoritative markdown. **Land A before C.**
+
+
+  ## git guards
+
+  - Explicit identity: `git -c user.email=… -c user.name=…` (a fresh container has none).
+
+  - Empty case: check for changes or `commit --allow-empty`, so a no-change run doesn''t error.
+
+
+  ## Seams
+
+  New `cmd_export_mirror` in `cli.py`, registered like `cmd_migrate`; storage via `open_storage(dsn)`;
+  `--out <git-dir>`; shell to `git` via `subprocess` (no git dep exists).
+
+
+  ## One-way safety
+
+  Read methods only + writes into the external git dir → structurally cannot trigger the `sync_rules`
+  orphan-archive sweep (`tools/rules.py:743`).
+
+
+  ## Tests (TDD, test-first)
+
+  `test_cli_ingest.py` style: mirror test (temp DB → temp git dir → files + commit + `rules_paths` untouched
+  + DB unchanged); superseded-rule-excluded test; no-change / no-identity guard test.
+
+
+  Phase-2 evolution: Letta-style git-native write path (commit-per-write + per-agent lock) would also
+  solve concurrent-write clobber.
+
+
+  See `mcm_v3_plan.md` for full context.'
+params:
+  source_repo: https://github.com/unxmaal/mcm-engine.git
+  base: 94708d68ff0a29b5300cda5923401ac98676d234
+  fix: 7efde17de487535aaef1c081a8eba844bd9b8a96
+  variant: symptom
+  context: oracle
+  context_files:
+  - src/mcm_engine/cli.py
+  new_files:
+  - src/mcm_engine/mirror.py
+  pytest_args:
+  - -o
+  - pythonpath=src
+  extras:
+  - dev
+  fail_to_pass:
+  - tests/test_export_mirror.py::test_cli_export_mirror_dispatch
+  - tests/test_export_mirror.py::test_mirror_is_read_only_on_source
+  - tests/test_export_mirror.py::test_mirror_reflects_a_later_supersession_as_a_removal
+  - tests/test_export_mirror.py::test_mirror_second_run_reports_no_changes
+  - tests/test_export_mirror.py::test_mirror_uses_explicit_git_identity
+  - tests/test_export_mirror.py::test_mirror_writes_active_excludes_superseded_and_commits
+  pass_to_pass: []
+attribution:
+  dataset: mcm-engine fix history (unxmaal/mcm-engine)
+  url: https://github.com/unxmaal/mcm-engine
+  license: generated
+  source: git:unxmaal/mcm-engine
+  revision: a5b9741db49e7bfbdbfe321b65921dc08664da8e
+  item: '#22 (PR #29)'
+  date: '2026-07-03'
+  transform: issue title and body from `gh issue view` at survey time, home paths as ~/, 'Prior art checked'
+    removed (spec), and the Fix/Shape/Design/Options/Remedy/Proposal/Build/What-to sections and labelled
+    paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
+    of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
+    and sandbox (evals/repo.py)
+  importer: evals.importers.history_mcm_engine

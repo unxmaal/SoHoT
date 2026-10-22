@@ -1,0 +1,93 @@
+# mcm-engine fix history (unxmaal/mcm-engine), generated (https://github.com/unxmaal/mcm-engine).
+# Imported by evals/importers from git:unxmaal/mcm-engine@a5b9741db49e7bfbdbfe321b65921dc08664da8e; re-import, do not edit.
+id: mcm-engine-160-spec
+modality: repo
+prompt: '# #137e: replay evaluation harness + evidence-based retune (absorbs #149)
+
+
+  Child of #137. **Absorbs the remaining work of #149** (evidence-based retune of guessed constants).
+
+
+  Build a replay harness over the historical tool-call workload to evaluate candidate retrieval-trigger
+  policies, reporting the two error rates **weighted asymmetrically**:
+
+  - **False negative** (a lookup should have happened, policy skipped it) — weighted *much* heavier, especially
+  when the missed memory is a prior observed failure or an explicit user constraint.
+
+  - **False positive** (a lookup enforced when nothing relevant existed).
+
+
+  Honest limitation to state up front: replay evaluates *trigger* decisions but cannot predict how Claude
+  behaves *after* receiving different memory — that needs **live paired task evaluations**. Include a
+  plan for those.
+
+
+  Then feed the #149 knobs (scoring weights `W_*`, dedup thresholds, search `RANK_THRESHOLD`/`STALE_DAYS`,
+  rulesift thresholds — all already env-overridable via `tunables.py` from PR #151) into this harness
+  and retune with evidence instead of guessing. Each retune is its own PR with its evidence.
+
+
+  ### Acceptance
+
+  - Replay harness reporting FN/FP rates (FN weighted) for candidate policies.
+
+  - A written plan for live paired eval.
+
+  - At least the ranking weights + search thresholds swept and retuned (or explicitly confirmed) with
+  harness evidence.'
+params:
+  source_repo: https://github.com/unxmaal/mcm-engine.git
+  base: b80acbbb7afb0f04f8c5205ea23a9ab313faf2fc
+  fix: 965c7282309bfd6906b940cb52b71867635bcbba
+  variant: spec
+  context: oracle
+  context_files:
+  - src/mcm_engine/cli.py
+  new_files:
+  - src/mcm_engine/eval/__init__.py
+  - src/mcm_engine/eval/replay.py
+  - src/mcm_engine/eval/trace_transcript.py
+  pytest_args:
+  - -o
+  - pythonpath=src
+  extras:
+  - dev
+  fail_to_pass:
+  - tests/test_eval_replay.py::test_combined_fires_if_either
+  - tests/test_eval_replay.py::test_evaluate_runs_all_default_policies
+  - tests/test_eval_replay.py::test_fixed_interval_fires_every_n
+  - tests/test_eval_replay.py::test_fixed_interval_reset_on_lookup
+  - tests/test_eval_replay.py::test_fn_cost_weights_failure_heavier
+  - tests/test_eval_replay.py::test_label_consequential_no_kb_hit_is_negative
+  - tests/test_eval_replay.py::test_label_consequential_with_kb_hit_is_positive
+  - tests/test_eval_replay.py::test_label_failure_is_positive_regardless_of_oracle
+  - tests/test_eval_replay.py::test_label_lookup_itself_is_negative
+  - tests/test_eval_replay.py::test_label_non_consequential_is_negative
+  - tests/test_eval_replay.py::test_label_unknown_oracle_no_failure_is_unlabeled
+  - tests/test_eval_replay.py::test_live_eval_plan_present
+  - tests/test_eval_replay.py::test_risk_based_beats_fixed_on_a_consequential_heavy_trace
+  - tests/test_eval_replay.py::test_risk_based_fires_on_uncovered_consequential_only
+  - tests/test_eval_replay.py::test_risk_based_lookup_covers_topic
+  - tests/test_eval_replay.py::test_score_counts_tp_fn_fp_with_weights
+  - tests/test_eval_replay.py::test_unlabeled_events_excluded_from_scoring
+  - tests/test_eval_trace_transcript.py::test_missing_file_returns_empty
+  - tests/test_eval_trace_transcript.py::test_non_consequential_tool_is_not_flagged
+  - tests/test_eval_trace_transcript.py::test_order_preserved_and_seq_increments
+  - tests/test_eval_trace_transcript.py::test_parses_tool_use_into_trace
+  - tests/test_eval_trace_transcript.py::test_tolerates_malformed_lines
+  - tests/test_eval_trace_transcript.py::test_tool_result_error_marks_led_to_failure
+  pass_to_pass: []
+attribution:
+  dataset: mcm-engine fix history (unxmaal/mcm-engine)
+  url: https://github.com/unxmaal/mcm-engine
+  license: generated
+  source: git:unxmaal/mcm-engine
+  revision: a5b9741db49e7bfbdbfe321b65921dc08664da8e
+  item: '#160 (PR #167)'
+  date: '2026-10-16'
+  transform: issue title and body from `gh issue view` at survey time, home paths as ~/, 'Prior art checked'
+    removed (spec), and the Fix/Shape/Design/Options/Remedy/Proposal/Build/What-to sections and labelled
+    paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
+    of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
+    and sandbox (evals/repo.py)
+  importer: evals.importers.history_mcm_engine

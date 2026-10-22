@@ -293,12 +293,13 @@ def outcomes(task: Path, python: Path, files, log, timeout=TIMEOUT_S, src: Repo 
     report.parent.mkdir(parents=True, exist_ok=True)
     report.unlink(missing_ok=True)
     t0 = time.perf_counter()
-    got = _pytest(task, python, [f"--junitxml={report}", *files], log, timeout, src)
+    got = _pytest(task, python, ["--continue-on-collection-errors", f"--junitxml={report}", *files], log, timeout, src)
     if isinstance(got, str):
         return got
     if not report.is_file():
         return "pytest_crashed"
-    return {"outcomes": _junit(report), "seconds": round(time.perf_counter() - t0, 2)}
+    return {"outcomes": _junit(report), "seconds": round(time.perf_counter() - t0, 2),
+            "collect": repo.collect_errors(report)}
 
 
 def node_ids(keys, files) -> list[str]:
@@ -315,7 +316,7 @@ def node_ids(keys, files) -> list[str]:
     return sorted(out)
 
 
-def classify(base_runs: list[dict], fix_runs: list[dict], files) -> dict:
+def classify(base_runs: list[dict], fix_runs: list[dict], files, tree: Path | None = None) -> dict:
     """fail_to_pass and pass_to_pass from repeated runs, or {"drop": reason}."""
     if any(r["outcomes"] != base_runs[0]["outcomes"] for r in base_runs) or \
             any(r["outcomes"] != fix_runs[0]["outcomes"] for r in fix_runs):
@@ -327,12 +328,14 @@ def classify(base_runs: list[dict], fix_runs: list[dict], files) -> dict:
     f2p = [i for i in passing if base.get(repo.junit_key(i)) != "passed"]
     if not f2p:
         return {"drop": "no_flip"}
-    # The case control calls an id that errors at base (setup, or its file not collecting) an error, not a flip. #889.
-    broken = {k.partition("::")[2].replace(".", "/") + ".py" for k, v in base.items() if k.startswith("::") and v == "error"}
-    if any(base.get(repo.junit_key(i)) == "error" or i.partition("::")[0] in broken for i in f2p):
-        return {"drop": "base_error"}
+    # An id that errors at base is a base_error, as the case control calls it, unless the control admits it. #889, #1098.
+    causes = {k: repo.collect_cause(e, tree) for k, e in (base_runs[0].get("collect") or {}).items()}
+    why = repo.base_causes(f2p, {i: base.get(repo.junit_key(i)) for i in f2p}, causes)
+    held = sorted({c for c in why.values() if c != repo.ADMIT})
+    if held:
+        return {"drop": "base_error", "cause": ",".join(held)}
     return {"fail_to_pass": f2p, "pass_to_pass": [i for i in passing if i not in f2p],
-            "test_s": fix_runs[0]["seconds"]}
+            "test_s": fix_runs[0]["seconds"], **({"admitted_by": "base_collect_" + repo.ADMIT} if why else {})}
 
 
 def probe(mirror: Path, c: dict, log, timeout=TIMEOUT_S, runs=RUNS, env=None, src: Repo = SOHOT) -> dict:
@@ -355,7 +358,7 @@ def probe(mirror: Path, c: dict, log, timeout=TIMEOUT_S, runs=RUNS, env=None, sr
         repo.install_tests(mirror, task, c["base"], c["fix"])
         fix_runs = [outcomes(task, python, files, log, timeout, src) for _ in range(runs)]
         bad = next((r for r in [*base_runs, *fix_runs] if isinstance(r, str)), None)
-        return {"drop": bad} if bad else classify(base_runs, fix_runs, files)
+        return {"drop": bad} if bad else classify(base_runs, fix_runs, files, task)
     finally:
         repo.discard(mirror, task)
 
@@ -416,7 +419,8 @@ def survey(source: str, revision: str, limit: int | None, log, get_issue=None, t
             print(f"{c['issue']:>4} {c['fix'][:10]} {why or 'kept'} {time.monotonic() - t0:.0f}s",
                   file=sys.stderr, flush=True)
         if why:
-            drops.append({"issue": c["issue"], "pr": c["pr"], "fix": c["fix"], "reason": why})
+            drops.append({"issue": c["issue"], "pr": c["pr"], "fix": c["fix"], "reason": why,
+                          **({"cause": res["cause"]} if res and res.get("cause") else {})})
             continue
         seen.add(c["issue"])
         kept.append(task_row(src.prefix, c, res, text))
@@ -450,7 +454,8 @@ def task_row(prefix: str, c: dict, res: dict, text: dict) -> dict:
             "strata": {"files": len(c["source_files"]), "lines": c["lines"],
                        "test_s": res["test_s"], "area": area(c["source_files"]),
                        "size": size_of({"files": len(c["source_files"]), "lines": c["lines"]})},
-            **({"variant_drops": lost_variants} if lost_variants else {})}
+            **({"variant_drops": lost_variants} if lost_variants else {}),
+            **({"admitted_by": res["admitted_by"]} if res.get("admitted_by") else {})}
 
 
 #: Reasons only a probe gives: the share of probed candidates kept is the yield a projection prices pending ones at.
@@ -480,6 +485,9 @@ def yield_table(got: dict, dropped=None, priced=None) -> list[str]:
              + (f", {unexamined} not examined (limit {got['criteria']['limit']}, "
                 f"probes {got['criteria'].get('probes')})" if unexamined else "")]
     lines += [f"  {n:>4}  {r}" for r, n in sorted(reasons.items(), key=lambda kv: (-kv[1], kv[0]))]
+    causes = Counter(d["cause"] for d in got.get("drops", []) if d.get("cause"))
+    if causes:
+        lines.append("base_error by cause: " + ", ".join(f"{c} {n}" for c, n in sorted(causes.items())))
     lost = Counter()
     for t in usable:
         for v in VARIANTS:

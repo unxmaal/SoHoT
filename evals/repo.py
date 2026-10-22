@@ -478,18 +478,76 @@ _ONLY = ("import json, sys, pytest\n"
          "sys.exit(pytest.main(sys.argv[2:], plugins=[Only()]))\n")
 
 
-def _junit_outcomes(xml: Path) -> tuple[dict, set]:
-    """(junit key -> passed|failed|skipped|error, the test files that failed to collect)."""
-    out, broken = {}, set()
+def _junit_outcomes(xml: Path) -> tuple[dict, dict]:
+    """(junit key -> passed|failed|skipped|error, the test file or directory that failed to collect -> why)."""
+    out, broken = {}, {}
     for case in ET.parse(xml).getroot().iter("testcase"):
         tags = {child.tag for child in case}
         if not case.get("classname") and "error" in tags:
-            broken.add((case.get("name") or "").replace(".", "/") + ".py")
+            broken[(case.get("name") or "").replace(".", "/")] = collect_error(case.find("error").text or "")
             continue
         out[f"{case.get('classname') or ''}::{case.get('name') or ''}"] = (
             "failed" if "failure" in tags else "error" if "error" in tags
             else "skipped" if "skipped" in tags else "passed")
     return out, broken
+
+
+def collect_errors(xml: Path) -> dict:
+    return _junit_outcomes(xml)[1]
+
+
+#: The collection error at base that counts as a failing test (SWE-bench's rule): it names the fix's own symbol. #1098.
+ADMIT = "repo_symbol"
+_RAISED = re.compile(r"^E\s+(ModuleNotFoundError|ImportError|AttributeError|SyntaxError|IndentationError)\b:?\s*(.*)$", re.M)
+_NAMED = re.compile(r"No module named '([\w.]+)'|cannot import name '\w+' from '([\w.]+)'|^module '([\w.]+)' has no attribute ")
+
+
+def collect_error(text: str) -> dict:
+    """{"kind": import|attribute|syntax|conftest|other, "module": the module the error names, else ""}."""
+    raised = _RAISED.findall(text)
+    if re.search(r"^\S*conftest\.py:\d+: in ", text, re.M):
+        return {"kind": "conftest", "module": ""}
+    if not raised:
+        return {"kind": "other", "module": ""}
+    exc, msg = raised[-1]
+    named = _NAMED.search(msg)
+    module = next((g for g in named.groups() if g), "") if named else ""
+    kind = ("syntax" if exc in ("SyntaxError", "IndentationError") else
+            "attribute" if exc == "AttributeError" else "import")
+    return {"kind": kind if module or kind == "syntax" else "other", "module": module}
+
+
+def owns(tree: Path | None, module: str) -> bool:
+    """Whether `module` is a file or package of the checkout at `tree` (its root or a src/ layout)."""
+    rel = module.replace(".", "/")
+    return bool(tree and module) and any(
+        (root / f"{rel}.py").is_file() or (root / rel).is_dir() for root in (tree, tree / "src"))
+
+
+def collect_cause(err: dict, tree: Path | None) -> str:
+    """Why a test file did not collect, judged against the reference checkout: ADMIT, or an environment cause."""
+    kind, module = err.get("kind"), err.get("module") or ""
+    if kind in ("import", "attribute"):
+        return ADMIT if owns(tree, module) else "third_party_module" if kind == "import" else "other"
+    return {"syntax": "syntax_error", "conftest": "conftest"}.get(kind, "other")
+
+
+def broken_key(path: str, broken) -> str | None:
+    """The collection error covering test file `path`: its own, or its directory's (a conftest's)."""
+    stem = path.removesuffix(".py")
+    return next((k for k in broken if stem == k or stem.startswith(k + "/")), None)
+
+
+def base_causes(ids, base: dict, causes: dict) -> dict:
+    """id -> why it errored at base: its file's collection cause, else "setup" for an id that errored itself."""
+    out = {}
+    for i in ids:
+        k = broken_key(i.partition("::")[0], causes)
+        if k is not None:
+            out[i] = causes[k]
+        elif base.get(i) == "error":
+            out[i] = "setup"
+    return out
 
 
 def run_ids(task: Path, python: Path, ids, args=()) -> dict:
@@ -509,12 +567,12 @@ def run_ids(task: Path, python: Path, ids, args=()) -> dict:
         said = "wrote no report" if not report.is_file() else "stopped on an internal or usage error"
         return {"ids": {}, "error": f"pytest {said} (exit {rc}): {tail[-300:]}"}
     got, broken = _junit_outcomes(report)
-    return {"ids": {i: got.get(junit_key(i)) or ("error" if i.partition("::")[0] in broken else "missing")
-                    for i in ids}, "error": ""}
+    return {"ids": {i: got.get(junit_key(i)) or ("error" if broken_key(i.partition("::")[0], broken) else "missing")
+                    for i in ids}, "error": "", "collect": broken}
 
 
-def verdict(base_runs: list, ref_runs: list, fail_to_pass, pass_to_pass) -> str:
-    """SWE-bench's check test by test: valid, invalid: <why>, flaky: <ids> or error: <why>."""
+def verdict(base_runs: list, ref_runs: list, fail_to_pass, pass_to_pass, causes=None) -> str:
+    """SWE-bench's check test by test: valid, invalid: <why>, flaky: <ids> or error: <why>; `causes` from collect_cause."""
     for side, runs in (("base", base_runs), ("reference", ref_runs)):
         bad = next((r["error"] for r in runs if r["error"]), "")
         if bad:
@@ -524,9 +582,12 @@ def verdict(base_runs: list, ref_runs: list, fail_to_pass, pass_to_pass) -> str:
     if shifting:
         return f"flaky: {', '.join(shifting)}"
     base, ref = base_runs[0]["ids"], ref_runs[0]["ids"]
-    errored = [i for i in [*fail_to_pass, *pass_to_pass] if base.get(i) == "error"]
-    if errored:
-        return f"error: base: did not collect or set up: {', '.join(errored)}"
+    why = {i: c for i, c in base_causes([*fail_to_pass, *pass_to_pass], base, causes or {}).items()
+           if base.get(i) == "error"}
+    held = [f"{i} ({c})" for i, c in why.items() if not (c == ADMIT and i in fail_to_pass)]
+    if held:
+        return f"error: base: did not collect or set up: {', '.join(held)}"
+    base = {**base, **{i: "failed" for i in why}}
     checks = (("fail_to_pass passes at base", base, fail_to_pass, {"passed"}),
               ("fail_to_pass does not run at base", base, fail_to_pass, {"skipped"}),
               ("pass_to_pass fails at base", base, pass_to_pass, {"failed", "skipped", "missing", None}),
@@ -545,7 +606,7 @@ def controls(case, env=None, runs=None, memo=None) -> dict:
     p = case.params
     runs = runs or VALIDATION_RUNS
     f2p, p2p = list(p["fail_to_pass"]), list(p.get("pass_to_pass") or [])
-    out = {"verdict": "", "prompt": "", "env_digest": "", "base": [], "reference": []}
+    out = {"verdict": "", "prompt": "", "env_digest": "", "base": [], "reference": [], "collect": {}}
     try:
         a = Attempt.open(p, env)
     except RepoEnvError as exc:
@@ -569,11 +630,15 @@ def controls(case, env=None, runs=None, memo=None) -> dict:
             return {**out, "verdict": f"invalid: reference does not apply: {why}"}
         install_tests(a.mirror, a.task, p["base"], p["fix"])
         out["reference"] = [run_ids(a.task, a.python, [*f2p, *p2p], extra) for _ in range(runs)]
+        out["collect"] = {k: collect_cause(e, a.task) for k, e in (out["base"][0].get("collect") or {}).items()}
     finally:
         a.close()
-    out["verdict"] = verdict(out["base"], out["reference"], f2p, p2p)
+    out["verdict"] = verdict(out["base"], out["reference"], f2p, p2p, out["collect"])
+    if out["verdict"] == "valid":
+        admitted = base_causes(f2p, {}, out["collect"])
+        out["admitted_by"] = "base_collect_" + ADMIT if ADMIT in admitted.values() else "fails_at_base"
     if memo is not None:
-        memo[key] = {k: out[k] for k in ("base", "reference", "verdict")}
+        memo[key] = {k: out[k] for k in ("base", "reference", "verdict", "collect", "admitted_by") if k in out}
     return out
 
 

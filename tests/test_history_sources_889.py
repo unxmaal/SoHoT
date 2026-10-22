@@ -243,19 +243,6 @@ def test_the_repo_report_keeps_each_sources_tasks_in_a_block_of_their_own():
     assert "limits as losses, mcm-engine tasks (source, #889): 2 cases from 1 tasks" in R.text(rep)
 
 
-@DARWIN
-def test_a_fix_whose_tests_do_not_collect_at_base_is_dropped_as_the_control_would_call_it(tmp_path):
-    importing = "from mod import add, sub, mul\n" + ADD_TEST.split("\n", 1)[1] + "\ndef test_mul():\n    assert mul(2, 3) == 6\n"
-    src = _merged(tmp_path)
-    _git(src, "checkout", "-q", "-b", "feat/9-mul")
-    _commit(src, {"mod.py": FIXED + "\ndef mul(a, b):\n    return a * b\n", "tests/test_mod.py": importing}, "mul")
-    _git(src, "checkout", "-q", "main")
-    _git(src, "merge", "-q", "--no-ff", "-m", "Merge pull request #10 from someone/feat/9-mul", "feat/9-mul")
-    got = history.survey(str(src), "main", None, tmp_path / "log.txt", get_issue=lambda n: ISSUE, env=_here,
-                         src=MERGES)
-    assert [t["issue"] for t in got["tasks"]] == [7] and got["dropped"] == {"base_error": 1}
-
-
 def test_a_parametrize_id_holding_a_double_colon_maps_to_its_junit_key():
     assert repo.junit_key("tests/test_t.py::test_h[[::1]-[::1]:*]") == "tests.test_t::test_h[[::1]-[::1]:*]"
     assert repo.junit_key("tests/test_t.py::TestC::test_h[a::b]") == "tests.test_t.TestC::test_h[a::b]"

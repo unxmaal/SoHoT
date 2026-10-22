@@ -30,18 +30,633 @@
   "order": "newest first",
   "limit": null,
   "probes": null,
-  "kept_from": null
+  "kept_from": "219940e42104c3e625a6642713e856e2bb2305fc"
  },
  "candidates": 42,
  "examined": 42,
  "dropped": {
-  "base_error": 12,
   "dependency_change": 2,
+  "duplicate_issue": 1,
   "no_test_change": 2,
   "reference_fails": 8,
-  "too_big": 12
+  "too_big": 11
  },
  "tasks": [
+  {
+   "id": "infovore-373",
+   "issue": 373,
+   "pr": 374,
+   "base": "2e5c25803ebb204df597319e81fd0d00f8a69b2d",
+   "fix": "219940e42104c3e625a6642713e856e2bb2305fc",
+   "date": "2026-10-14",
+   "subject": "Fix a mistake: corrections.toml for claims, a fix page on every build, nav and footer links (#373) (#374)",
+   "context_files": [
+    "README.md",
+    "infovore/wiki/build.py",
+    "infovore/wiki/command.py",
+    "infovore/wiki/html.py"
+   ],
+   "new_files": [
+    "infovore/wiki/corrections.py",
+    "infovore/wiki/corrections.toml"
+   ],
+   "test_files": [
+    "tests/wiki/test_build.py",
+    "tests/wiki/test_command.py",
+    "tests/wiki/test_corrections.py",
+    "tests/wiki/test_html.py"
+   ],
+   "fail_to_pass": [
+    "tests/wiki/test_build.py::test_article_parts_follow_numbered_continuations_without_gaps",
+    "tests/wiki/test_build.py::test_background_claims_leave_the_page_with_one_line_naming_their_reference",
+    "tests/wiki/test_build.py::test_build_site_folds_small_sections",
+    "tests/wiki/test_build.py::test_build_site_keeps_colliding_pages_and_links_to_them",
+    "tests/wiki/test_build.py::test_build_site_writes_pages_and_index_deterministically",
+    "tests/wiki/test_build.py::test_build_site_writes_redirects_disambiguation_and_all_pages",
+    "tests/wiki/test_build.py::test_golden_page",
+    "tests/wiki/test_build.py::test_index_groups_by_kind_nests_children_and_links_the_all_page",
+    "tests/wiki/test_build.py::test_index_lists_groups_and_children_alphabetically_not_by_size",
+    "tests/wiki/test_build.py::test_index_lists_pages_by_name_with_counts",
+    "tests/wiki/test_build.py::test_load_claims_applies_corrections_and_reports_unmatched",
+    "tests/wiki/test_build.py::test_load_claims_applies_eligibility_and_topics",
+    "tests/wiki/test_build.py::test_load_claims_claim_gate_drops_techless_claims",
+    "tests/wiki/test_build.py::test_load_claims_collapses_duplicates_across_runs",
+    "tests/wiki/test_build.py::test_load_claims_keeps_only_the_chosen_runs",
+    "tests/wiki/test_build.py::test_load_claims_verdict_policy_excludes_unsupported_and_unchecked",
+    "tests/wiki/test_build.py::test_page_files_are_unique_and_never_empty_or_index",
+    "tests/wiki/test_build.py::test_page_links_its_parent_subtopics_and_groups_see_also_by_kind",
+    "tests/wiki/test_build.py::test_page_without_cooccurrence_has_no_groups_or_see_also",
+    "tests/wiki/test_build.py::test_pages_carry_no_discord_links",
+    "tests/wiki/test_build.py::test_render_page_concatenates_section_parts",
+    "tests/wiki/test_build.py::test_see_also_only_links_topics_with_pages",
+    "tests/wiki/test_build.py::test_small_co_topic_sections_fold_into_general",
+    "tests/wiki/test_build.py::test_stats_counts_pages_distribution_and_unassigned",
+    "tests/wiki/test_build.py::test_stats_distribution_covers_every_bucket",
+    "tests/wiki/test_build.py::test_stats_with_no_pages",
+    "tests/wiki/test_build.py::test_untagged_claims_land_on_the_unsorted_page_and_count_as_on_pages",
+    "tests/wiki/test_command.py::test_build_writes_pages_for_topics_over_the_minimum",
+    "tests/wiki/test_corrections.py::test_load_corrections_keys_by_exchange_and_normalised_statement",
+    "tests/wiki/test_corrections.py::test_load_corrections_rejects_ambiguous_and_duplicate_entries[[[claim]]\\nexchange = 1\\nstatement = \"x\"\\n]",
+    "tests/wiki/test_corrections.py::test_load_corrections_rejects_ambiguous_and_duplicate_entries[[[claim]]\\nexchange = 1\\nstatement = \"x\"\\ndrop = false\\n]",
+    "tests/wiki/test_corrections.py::test_load_corrections_rejects_ambiguous_and_duplicate_entries[[[claim]]\\nexchange = 1\\nstatement = \"x\"\\ndrop = true\\n[[claim]]\\nexchange = 1\\nstatement = \" x \"\\nreplace = \"y\"\\n]",
+    "tests/wiki/test_corrections.py::test_load_corrections_rejects_ambiguous_and_duplicate_entries[[[claim]]\\nexchange = 1\\nstatement = \"x\"\\ndrop = true\\nreplace = \"y\"\\n]",
+    "tests/wiki/test_html.py::test_body_renders_headings_paragraphs_nested_bullets_and_numbered_sources",
+    "tests/wiki/test_html.py::test_build_site_writes_html_and_search_index",
+    "tests/wiki/test_html.py::test_inline_escapes_links_and_citations",
+    "tests/wiki/test_html.py::test_page_wraps_body_with_title_nav_and_optional_search",
+    "tests/wiki/test_html.py::test_write_html_and_search_entries_directly"
+   ],
+   "pass_to_pass": [
+    "tests/wiki/test_command.py::test_background_flag_counts_established_claims_in_stats",
+    "tests/wiki/test_command.py::test_build_default_minimum_is_three",
+    "tests/wiki/test_command.py::test_claim_gate_drops_techless_claims_from_stats_and_build",
+    "tests/wiki/test_command.py::test_grouping_embed_uses_the_embedder_and_stats_report_corroboration",
+    "tests/wiki/test_command.py::test_runs_limits_stats_and_rejects_bad_ids",
+    "tests/wiki/test_command.py::test_scan_lists_hits_and_fails_on_any",
+    "tests/wiki/test_command.py::test_stats_reports_topics_pages_distribution_and_unassigned",
+    "tests/wiki/test_command.py::test_untagged_claims_get_an_unsorted_page",
+    "tests/wiki/test_command.py::test_verdicts_supported_only_excludes_uncheckable_and_bad_names_are_refused"
+   ],
+   "prompts": {
+    "spec": "# Fix a mistake: reader-facing corrections page, claim corrections file, nav link on every page\n\nThe site is generated, not edited. Readers who spot a wrong claim, a topic on the wrong page or a bad kind have no obvious way to fix it, and the only mechanism that exists today is `topics.toml`. A wrong claim cannot be fixed at all.\n\n## Deliverables\n\n1. **`infovore/wiki/corrections.toml`**, a claim-level correction file. An entry matches a claim by `exchange` id plus the exact `statement` as printed under Sources, and either `drop = true` or `replace = \"new wording\"`. `load_claims` applies it after scrubbing; dropped claims count under `excluded` as `corrected`, replaced claims keep their id. Because `_prose` already keeps only sentences whose cited claims are on the page, a drop removes the dependent prose at the next build with no rewrite. A replace shows at once under Sources and the prose catches up on the next article run. `stats` and `build` print `corrections unmatched: N` when an entry matches nothing, so typos are visible.\n2. **A `fix.md` / `fix.html` page** written by every build: what the site is, why hand edits do not work, the two files a PR can change, with an example entry of each, and the issue tracker for anything else.\n3. **Nav link `Fix a mistake` on every page** plus a footer line `Spotted a mistake? Fix it.`\n4. **README section** pointing at the same two files.\n\nNaming of the site (wiki vs digest) is a separate decision and not changed here.",
+    "symptom": null
+   },
+   "strata": {
+    "files": 6,
+    "lines": 145,
+    "test_s": 1.85,
+    "area": ".,infovore/wiki",
+    "size": "large"
+   },
+   "variant_drops": {
+    "symptom": "no_fix_section"
+   },
+   "admitted_by": "base_collect_repo_symbol"
+  },
+  {
+   "id": "infovore-353",
+   "issue": 353,
+   "pr": 356,
+   "base": "6cd771b2a76088d5147821a1ac6129f004868a97",
+   "fix": "e5ca44f2d1bad9eb3704fa7a59ccab6279c69fa7",
+   "date": "2026-10-11",
+   "subject": "wiki: --background C lists established claims under Background and keeps them out of sections and the writer (#353) (#356)",
+   "context_files": [
+    "README.md",
+    "infovore/claims/novelty.py",
+    "infovore/db/novelty.py",
+    "infovore/wiki/build.py",
+    "infovore/wiki/command.py",
+    "infovore/wiki/groups.py",
+    "infovore/wiki/write_command.py"
+   ],
+   "new_files": [],
+   "test_files": [
+    "tests/wiki/test_build.py",
+    "tests/wiki/test_command.py",
+    "tests/wiki/test_groups.py"
+   ],
+   "fail_to_pass": [
+    "tests/wiki/test_build.py::test_article_parts_follow_numbered_continuations_without_gaps",
+    "tests/wiki/test_build.py::test_background_claims_leave_the_sections_and_list_their_reference",
+    "tests/wiki/test_build.py::test_build_site_folds_small_sections",
+    "tests/wiki/test_build.py::test_build_site_keeps_colliding_pages_and_links_to_them",
+    "tests/wiki/test_build.py::test_build_site_writes_pages_and_index_deterministically",
+    "tests/wiki/test_build.py::test_golden_page",
+    "tests/wiki/test_build.py::test_index_lists_pages_by_name_with_counts",
+    "tests/wiki/test_build.py::test_load_claims_applies_eligibility_and_topics",
+    "tests/wiki/test_build.py::test_load_claims_claim_gate_drops_techless_claims",
+    "tests/wiki/test_build.py::test_load_claims_collapses_duplicates_across_runs",
+    "tests/wiki/test_build.py::test_load_claims_keeps_only_the_chosen_runs",
+    "tests/wiki/test_build.py::test_load_claims_verdict_policy_excludes_unsupported_and_unchecked",
+    "tests/wiki/test_build.py::test_page_files_are_unique_and_never_empty_or_index",
+    "tests/wiki/test_build.py::test_page_without_cooccurrence_has_no_groups_or_see_also",
+    "tests/wiki/test_build.py::test_pages_carry_no_discord_links",
+    "tests/wiki/test_build.py::test_render_page_concatenates_section_parts",
+    "tests/wiki/test_build.py::test_see_also_only_links_topics_with_pages",
+    "tests/wiki/test_build.py::test_small_co_topic_sections_fold_into_general",
+    "tests/wiki/test_build.py::test_stats_counts_pages_distribution_and_unassigned",
+    "tests/wiki/test_build.py::test_stats_distribution_covers_every_bucket",
+    "tests/wiki/test_build.py::test_stats_with_no_pages",
+    "tests/wiki/test_build.py::test_untagged_claims_land_on_the_unsorted_page_and_count_as_on_pages",
+    "tests/wiki/test_command.py::test_background_flag_counts_established_claims_in_stats",
+    "tests/wiki/test_groups.py::test_more_novel_leads_sort_first_within_a_corroboration_level"
+   ],
+   "pass_to_pass": [
+    "tests/wiki/test_command.py::test_build_default_minimum_is_three",
+    "tests/wiki/test_command.py::test_build_writes_pages_for_topics_over_the_minimum",
+    "tests/wiki/test_command.py::test_claim_gate_drops_techless_claims_from_stats_and_build",
+    "tests/wiki/test_command.py::test_grouping_embed_uses_the_embedder_and_stats_report_corroboration",
+    "tests/wiki/test_command.py::test_runs_limits_stats_and_rejects_bad_ids",
+    "tests/wiki/test_command.py::test_stats_reports_topics_pages_distribution_and_unassigned",
+    "tests/wiki/test_command.py::test_untagged_claims_get_an_unsorted_page",
+    "tests/wiki/test_command.py::test_verdicts_supported_only_excludes_uncheckable_and_bad_names_are_refused",
+    "tests/wiki/test_groups.py::test_a_claim_joins_the_first_matching_group",
+    "tests/wiki/test_groups.py::test_cosine_handles_zero_vectors",
+    "tests/wiki/test_groups.py::test_empty_input_returns_nothing",
+    "tests/wiki/test_groups.py::test_equal_sizes_sort_by_lead_date_then_claim_id",
+    "tests/wiki/test_groups.py::test_groups_sort_by_distinct_speakers_then_conversations_before_size",
+    "tests/wiki/test_groups.py::test_groups_sort_by_size_first",
+    "tests/wiki/test_groups.py::test_make_grouper_embeds_every_claim_once_in_batches",
+    "tests/wiki/test_groups.py::test_make_grouper_for_picks_jaccard_or_the_embedder",
+    "tests/wiki/test_groups.py::test_paraphrases_join_and_a_distinct_claim_stays_apart",
+    "tests/wiki/test_groups.py::test_statements_without_tokens_never_join",
+    "tests/wiki/test_groups.py::test_summarise_counts_groups_by_speakers_and_corroborated_claims",
+    "tests/wiki/test_groups.py::test_threshold_is_inclusive_and_configurable",
+    "tests/wiki/test_groups.py::test_vectors_replace_tokens_and_must_align"
+   ],
+   "prompts": {
+    "spec": "# Net-new check: rank and label claims by novelty against a reference corpus before they reach the wiki\n\nEric, 2026-10-11: \"Are we testing if the claims are net-new before writing them to the wiki? If not we should. Obviously IRIX runs on an Octane. That's old and well established info.\"\n\nWe are not. Today a claim reaches a page if it passes the verdict gate and its topic has 3 claims; corroboration only orders groups within a section. \"The Octane runs IRIX (+3 similar; 4 speakers)\" is the first line of Octane / With IRIX because it is the most corroborated statement there, and it is also the least informative.\n\nDesign, programmatic throughout (RULE #313: no LLM judgement over the corpus):\n\n1. Reference corpus. Fetch the Wikipedia article (English, REST summary plus the plain-text extract) for every page topic that resolves to an exact title, cache it in a `reference_texts` table keyed by topic and fetched_at. Split into sentences. Expect a few hundred topics to resolve; that covers the hardware, OS and vendor pages where \"well established\" lives. Later: SGI techpubs and the IRIX Network wiki if their terms allow.\n2. Novelty score. Embed claim statements and reference sentences with bge-small (already in `--extra embed`). For each claim, novelty = 1 minus the max cosine to any reference sentence for its topics. Also an intra-corpus generic score: the fraction of a claim's content tokens that are topic names or the top 50 corpus-wide tokens; \"The Octane runs IRIX\" scores 1.0, a war story about a specific PSU fault scores near 0.\n3. Storage. `claim_novelty(claim_id, reference_max_cosine, reference_topic, generic_share, computed_at)`, filled by `infovore claims novelty --run R --tag-run T [--write]`, idempotent, read-only on everything else.\n4. Use. `wiki build|stats --novelty-floor F` drops claims whose reference cosine is above 1 minus F (established elsewhere) from list sections and demotes them to the end of the page as \"Background\" with the Wikipedia link; group order within a section becomes (corroboration, novelty) so a corroborated novel claim leads. Writer units get only the novel leads.\n5. Controls before anyone trusts it: the novelty distribution for claims on topics with a reference versus topics without; a hand-free sanity check by printing the 20 least novel and 20 most novel claims per sampled topic; and the share of claims on the Octane page above the floor.\n\nOut of scope: judging truth (that is the claim check and #268), and anything that calls a model per claim.",
+    "symptom": null
+   },
+   "strata": {
+    "files": 7,
+    "lines": 104,
+    "test_s": 1.55,
+    "area": ".,infovore/claims,infovore/db,infovore/wiki",
+    "size": "large"
+   },
+   "variant_drops": {
+    "symptom": "no_fix_section"
+   },
+   "admitted_by": "base_collect_repo_symbol"
+  },
+  {
+   "id": "infovore-352",
+   "issue": 352,
+   "pr": 354,
+   "base": "0bd7a59b15fc0b9784046b466f867f90a4d0abb7",
+   "fix": "62eabc57fb1d40e6d884e1e5a76cada7c463803d",
+   "date": "2026-10-11",
+   "subject": "wiki: fold symbol, script, plural and generic-noun tag variants onto one topic (#352) (#354)",
+   "context_files": [
+    "README.md",
+    "infovore/wiki/build.py",
+    "infovore/wiki/canon.py",
+    "infovore/wiki/command.py"
+   ],
+   "new_files": [],
+   "test_files": [
+    "tests/wiki/test_canon.py",
+    "tests/wiki/test_tag_topics.py"
+   ],
+   "fail_to_pass": [
+    "tests/wiki/test_canon.py::test_alias_names_maps_every_alias_to_its_topic",
+    "tests/wiki/test_canon.py::test_canonical[  -]",
+    "tests/wiki/test_canon.py::test_canonical[$ORIGIN-origin]",
+    "tests/wiki/test_canon.py::test_canonical[*BSD-bsd]",
+    "tests/wiki/test_canon.py::test_canonical[-]",
+    "tests/wiki/test_canon.py::test_canonical[6.5.1-6.5.1]",
+    "tests/wiki/test_canon.py::test_canonical[IRIX 6.5-irix6.5]",
+    "tests/wiki/test_canon.py::test_canonical[IRIX 65-irix65]",
+    "tests/wiki/test_canon.py::test_canonical[Indigo-2-indigo2]",
+    "tests/wiki/test_canon.py::test_canonical[Indigo\\xb2-indigo2]",
+    "tests/wiki/test_canon.py::test_canonical[Intel\\xae SC450NX-intelsc450nx]",
+    "tests/wiki/test_canon.py::test_canonical[Let's Encrypt-letsencrypt]",
+    "tests/wiki/test_canon.py::test_canonical[Mr.-mr]",
+    "tests/wiki/test_canon.py::test_canonical[N\\u2013brick-nbrick]",
+    "tests/wiki/test_canon.py::test_canonical[O2\\u673a\\u5668-o2\\u673a\\u5668]",
+    "tests/wiki/test_canon.py::test_canonical[SGI Indigo 2-indigo2]",
+    "tests/wiki/test_canon.py::test_canonical[Sun Microsystems Ultra 10-ultra10]",
+    "tests/wiki/test_canon.py::test_canonical[Sun-sun]",
+    "tests/wiki/test_canon.py::test_canonical[Ultra 10-ultra10]",
+    "tests/wiki/test_canon.py::test_canonical[`fx` command-fxcommand]",
+    "tests/wiki/test_canon.py::test_canonical[bootp()-bootp]",
+    "tests/wiki/test_canon.py::test_canonical[indigo2-indigo2]",
+    "tests/wiki/test_canon.py::test_canonical[v1.2-v1.2]",
+    "tests/wiki/test_canon.py::test_display_names_breaks_ties_by_string_order",
+    "tests/wiki/test_canon.py::test_display_names_empty",
+    "tests/wiki/test_canon.py::test_display_names_fold_merged_spellings_onto_the_target",
+    "tests/wiki/test_canon.py::test_display_names_picks_most_frequent_spelling",
+    "tests/wiki/test_canon.py::test_display_names_skips_tags_that_canonicalise_to_nothing",
+    "tests/wiki/test_canon.py::test_merge_map_folds_plurals_scripts_and_generic_nouns_onto_the_bigger_key",
+    "tests/wiki/test_canon.py::test_merge_map_leaves_acronyms_models_and_small_targets_alone",
+    "tests/wiki/test_canon.py::test_merge_map_resolves_chains_and_stops_on_cycles",
+    "tests/wiki/test_canon.py::test_summarise_merge_counts_keys_and_claim_tags",
+    "tests/wiki/test_tag_topics.py::test_cli_build_and_stats_take_a_tag_run",
+    "tests/wiki/test_tag_topics.py::test_variant_tags_land_on_one_page_with_the_topics_toml_name"
+   ],
+   "pass_to_pass": [
+    "tests/wiki/test_tag_topics.py::test_without_a_tag_run_topics_toml_is_used"
+   ],
+   "prompts": {
+    "spec": "# Topic merge: fold symbol, script, plural and generic-suffix variants of one tag onto one page (refs #142)\n\nMeasured on tag run 1 (74,131 raw tags, 65,978 canonical keys after `canon.canonical`, 9,551 keys with 3+ claims). Four variant classes survive the current canonicalisation, which only casefolds, strips vendor prefixes, spaces, hyphens and dots:\n\n| class | keys folded | claim-tags moved | examples |\n|---|---|---|---|\n| symbols and NFKC (\u00ae, \u2122, *, quotes, `()`, `$`, superscripts) | 131 | 185 | `bootp()` to bootp, Indigo\u00b2 to Indigo2, $ORIGIN to Origin, *BSD to BSD |\n| non-ASCII script around an existing key | 20 | 35 | O2\u673a\u5668 to O2, Fuel\u5de5\u4f5c\u7ad9 to Fuel, Numalink\u2122 to NUMAlink |\n| plural with the singular present | up to 3,326 | up to 13,621 | SGIs, Indys, O2s, Octanes, PSUs, power supplies, capacitors |\n| generic noun suffix or \"the\" prefix | up to 1,220 | up to 2,401 | IRIX systems, O2 systems, Unix workstations, Alpha machines |\n\nThe last two need guards or they merge wrongly: Windows to window, XFS to xf, VMS to VM, Challenge S to Challenge, emacs to eMac, DOSBox to DOS, Xbox to X, Visual Workstation to visual. Guards that hold on the measured list: plural detection on the most common raw spelling (final lowercase `s`, not after a space, not `ss`), the suffix must be a separate word, and the target key must carry at least a quarter of the variant's claim count (so a 287-claim Windows never folds into a 6-claim window).\n\nPlan:\n- `canonical()` applies NFKC and strips \u00ae\u2122\u00a9*, quotes, `()` and a leading `$` (count-independent, so it stays a pure function).\n- `merge_map(spellings)` in canon.py returns variant key to target key for script stripping, plurals and generic suffixes, with the guards above, computed once per build from the tag counts.\n- `load_claims` maps each tag through canonical then merge_map; display names come from the merged spelling counts.\n- `wiki stats` reports how many keys and claim-tags the merge folded.\n\nOut of scope: translation of fully non-Latin tags (14 keys, 18 claim-tags), semantic merges (RS/6k vs RS/6000), and an authority file of canonical hardware names (#142).",
+    "symptom": null
+   },
+   "strata": {
+    "files": 4,
+    "lines": 115,
+    "test_s": 1.22,
+    "area": ".,infovore/wiki",
+    "size": "large"
+   },
+   "variant_drops": {
+    "symptom": "no_fix_section"
+   },
+   "admitted_by": "base_collect_repo_symbol"
+  },
+  {
+   "id": "infovore-349",
+   "issue": 349,
+   "pr": 351,
+   "base": "9f79d28e67f158c6de03ec51e6d7cf2135fed401",
+   "fix": "0bd7a59b15fc0b9784046b466f867f90a4d0abb7",
+   "date": "2026-10-11",
+   "subject": "wiki build: one filename per topic, so colliding slugs no longer overwrite pages (#349) (#351)",
+   "context_files": [
+    "README.md",
+    "infovore/wiki/build.py"
+   ],
+   "new_files": [],
+   "test_files": [
+    "tests/wiki/test_build.py",
+    "tests/wiki/test_render_articles.py"
+   ],
+   "fail_to_pass": [
+    "tests/wiki/test_build.py::test_article_parts_follow_numbered_continuations_without_gaps",
+    "tests/wiki/test_build.py::test_build_site_folds_small_sections",
+    "tests/wiki/test_build.py::test_build_site_keeps_colliding_pages_and_links_to_them",
+    "tests/wiki/test_build.py::test_build_site_writes_pages_and_index_deterministically",
+    "tests/wiki/test_build.py::test_golden_page",
+    "tests/wiki/test_build.py::test_index_lists_pages_by_name_with_counts",
+    "tests/wiki/test_build.py::test_load_claims_applies_eligibility_and_topics",
+    "tests/wiki/test_build.py::test_load_claims_claim_gate_drops_techless_claims",
+    "tests/wiki/test_build.py::test_load_claims_collapses_duplicates_across_runs",
+    "tests/wiki/test_build.py::test_load_claims_keeps_only_the_chosen_runs",
+    "tests/wiki/test_build.py::test_load_claims_verdict_policy_excludes_unsupported_and_unchecked",
+    "tests/wiki/test_build.py::test_page_files_are_unique_and_never_empty_or_index",
+    "tests/wiki/test_build.py::test_page_without_cooccurrence_has_no_groups_or_see_also",
+    "tests/wiki/test_build.py::test_pages_carry_no_discord_links",
+    "tests/wiki/test_build.py::test_render_page_concatenates_section_parts",
+    "tests/wiki/test_build.py::test_see_also_only_links_topics_with_pages",
+    "tests/wiki/test_build.py::test_small_co_topic_sections_fold_into_general",
+    "tests/wiki/test_build.py::test_stats_counts_pages_distribution_and_unassigned",
+    "tests/wiki/test_build.py::test_stats_distribution_covers_every_bucket",
+    "tests/wiki/test_build.py::test_stats_with_no_pages",
+    "tests/wiki/test_build.py::test_untagged_claims_land_on_the_unsorted_page_and_count_as_on_pages",
+    "tests/wiki/test_render_articles.py::test_article_page_has_prose_with_citations_and_a_source_list",
+    "tests/wiki/test_render_articles.py::test_cli_builds_article_pages",
+    "tests/wiki/test_render_articles.py::test_cli_rejects_a_bad_article_run",
+    "tests/wiki/test_render_articles.py::test_fallback_groups_similar_claims",
+    "tests/wiki/test_render_articles.py::test_load_claims_carries_the_check_verdict",
+    "tests/wiki/test_render_articles.py::test_numbers_follow_first_citation_and_are_reused",
+    "tests/wiki/test_render_articles.py::test_only_sections_without_text_fall_back_and_headings_follow_the_rule",
+    "tests/wiki/test_render_articles.py::test_unknown_citations_are_skipped_and_an_empty_section_falls_back"
+   ],
+   "pass_to_pass": [],
+   "prompts": {
+    "spec": "# wiki build: page slugs collide and the later topic overwrites the page; non-ASCII topics slug to an empty filename\n\nOn the full build from tag run 1 (5,695 pages) \\`slug()\\` in \\`infovore/wiki/topics.py\\` lowercases and replaces every non \\`[a-z0-9]\\` run with \\`-\\`, and \\`build_site\\` keys files by it. 12 slugs are shared by 25 topics, and the last topic written wins:\n\n- \\`o2\\`: O2 (one of the largest topics) and O2\u673a\u5668 (4 claims). o2.md is the 4-claim page.\n- \\`c\\`: C, C#, C++. \\`g\\`: g, g++. \\`hfs\\`: HFS, HFS+. \\`prboom\\`: PrBoom, PrBoom+. \\`gtk\\`: GTK, gtk+.\n- \\`origin\\`: $ORIGIN, Origin. \\`path\\`: $PATH, PATH. \\`bootp\\`: bootp, bootp(). \\`indigo\\`: Indigo, Indigo\u00b2. \\`intel-sc450nx\\` with and without \u00ae. \\`radeon-driver\\` with and without asterisks.\n\nThe topic \u7535\u6e90\u4f9b\u5e94 slugs to the empty string, so its page is \\`.md\\` and See-also links point at \\`(.md)\\`.\n\nFix: \\`build_site\\` assigns one filename per topic: the topic with the most claims (then name order) keeps the plain slug, later colliders get \\`-2\\`, \\`-3\\`; an empty slug falls back to \\`topic-<8 hex of sha1(name)>\\`. Index and See-also links use the same mapping, so no link targets a missing or overwritten page.\n\nThe tagger emitting Chinese, \u00ae and bracketed variants of one thing is a separate topic-merge problem (#142).",
+    "symptom": "# wiki build: page slugs collide and the later topic overwrites the page; non-ASCII topics slug to an empty filename\n\nOn the full build from tag run 1 (5,695 pages) \\`slug()\\` in \\`infovore/wiki/topics.py\\` lowercases and replaces every non \\`[a-z0-9]\\` run with \\`-\\`, and \\`build_site\\` keys files by it. 12 slugs are shared by 25 topics, and the last topic written wins:\n\n- \\`o2\\`: O2 (one of the largest topics) and O2\u673a\u5668 (4 claims). o2.md is the 4-claim page.\n- \\`c\\`: C, C#, C++. \\`g\\`: g, g++. \\`hfs\\`: HFS, HFS+. \\`prboom\\`: PrBoom, PrBoom+. \\`gtk\\`: GTK, gtk+.\n- \\`origin\\`: $ORIGIN, Origin. \\`path\\`: $PATH, PATH. \\`bootp\\`: bootp, bootp(). \\`indigo\\`: Indigo, Indigo\u00b2. \\`intel-sc450nx\\` with and without \u00ae. \\`radeon-driver\\` with and without asterisks.\n\nThe topic \u7535\u6e90\u4f9b\u5e94 slugs to the empty string, so its page is \\`.md\\` and See-also links point at \\`(.md)\\`.\n\nThe tagger emitting Chinese, \u00ae and bracketed variants of one thing is a separate topic-merge problem (#142)."
+   },
+   "strata": {
+    "files": 2,
+    "lines": 36,
+    "test_s": 1.31,
+    "area": ".,infovore/wiki",
+    "size": "small"
+   },
+   "admitted_by": "base_collect_repo_symbol"
+  },
+  {
+   "id": "infovore-348",
+   "issue": 348,
+   "pr": 350,
+   "base": "185fb068c97eadff15361894c2b9e73f3d13105a",
+   "fix": "9f79d28e67f158c6de03ec51e6d7cf2135fed401",
+   "date": "2026-10-11",
+   "subject": "wiki write --resume continues the latest matching article run instead of starting a new one (#348) (#350)",
+   "context_files": [
+    "README.md",
+    "infovore/db/wiki_articles.py",
+    "infovore/wiki/write_command.py"
+   ],
+   "new_files": [],
+   "test_files": [
+    "tests/db/test_wiki_articles.py",
+    "tests/wiki/test_write_command.py"
+   ],
+   "fail_to_pass": [
+    "tests/db/test_wiki_articles.py::test_later_run_wins_per_topic_and_section",
+    "tests/db/test_wiki_articles.py::test_latest_article_run_filters_on_model_hash_and_tag_run",
+    "tests/db/test_wiki_articles.py::test_record_then_read_back",
+    "tests/db/test_wiki_articles.py::test_run_sections_reads_one_run_only",
+    "tests/db/test_wiki_articles.py::test_sections_for_without_runs_is_empty",
+    "tests/db/test_wiki_articles.py::test_updates_and_deletes_are_append_only",
+    "tests/wiki/test_write_command.py::test_failed_sections_are_retried_and_written_ones_skipped_on_resume"
+   ],
+   "pass_to_pass": [
+    "tests/wiki/test_write_command.py::test_bad_arguments_are_config_errors",
+    "tests/wiki/test_write_command.py::test_dry_run_prints_the_first_request_and_writes_nothing",
+    "tests/wiki/test_write_command.py::test_dry_run_with_no_eligible_topic",
+    "tests/wiki/test_write_command.py::test_failures_print_their_reason",
+    "tests/wiki/test_write_command.py::test_limit_counts_topics_in_descending_claim_count",
+    "tests/wiki/test_write_command.py::test_log_records_dropped_sentences_and_failures",
+    "tests/wiki/test_write_command.py::test_progress_goes_to_stderr",
+    "tests/wiki/test_write_command.py::test_resume_without_a_matching_run_starts_a_new_one",
+    "tests/wiki/test_write_command.py::test_sections_with_more_groups_than_the_cap_are_written_in_parts",
+    "tests/wiki/test_write_command.py::test_sigint_stops_after_the_sections_in_flight",
+    "tests/wiki/test_write_command.py::test_small_co_topic_sections_fold_into_general_by_default",
+    "tests/wiki/test_write_command.py::test_units_carry_their_part_and_key",
+    "tests/wiki/test_write_command.py::test_writes_a_general_and_a_with_section_and_drops_unsupported_sentences"
+   ],
+   "prompts": {
+    "spec": "# wiki write --resume skips sections from earlier runs, so the resumed run lacks them and build --article-run shows claim lists\n\nSeen on the first full write (SoHoT job 0078, article run 8, 2026-10-11): 6,569 sections written, none failed, yet \\`wiki build --article-run 8\\` renders every part-1 section of IRIX, Indigo2, Indy, O2 and Octane as a claim list. Those 146 sections were written in the 5-topic trial (run 7). \\`written_sections\\` in \\`infovore/db/wiki_articles.py\\` joins every run with the same model id, prompt hash and tag run, so \\`--resume\\` skipped them, while \\`create_article_run\\` still opened a new run. A logical write is therefore spread over several run ids, and the build reads one.\n\nRun 8 has Octane sections \\`General#2\\`..\\`General#37\\` and \\`With O2#2\\`..\\`#7\\` but no \\`General\\`, \\`With O2\\`, \\`With IRIX\\`, ... (run 7 keys: 146, in run 8: 0).\n\nFix: \\`--resume\\` continues the latest run with the same model id, prompt hash and tag run, and skips only that run's sections. A new run is created only without \\`--resume\\` or when no run matches. \\`claims extract --resume\\` keeps its own semantics.\n\nThen a resume job (~146 sections, about 7 minutes on Ornith-35B) fills run 8, queued on SoHoT behind the running code adopt job.",
+    "symptom": "# wiki write --resume skips sections from earlier runs, so the resumed run lacks them and build --article-run shows claim lists\n\nSeen on the first full write (SoHoT job 0078, article run 8, 2026-10-11): 6,569 sections written, none failed, yet \\`wiki build --article-run 8\\` renders every part-1 section of IRIX, Indigo2, Indy, O2 and Octane as a claim list. Those 146 sections were written in the 5-topic trial (run 7). \\`written_sections\\` in \\`infovore/db/wiki_articles.py\\` joins every run with the same model id, prompt hash and tag run, so \\`--resume\\` skipped them, while \\`create_article_run\\` still opened a new run. A logical write is therefore spread over several run ids, and the build reads one.\n\nRun 8 has Octane sections \\`General#2\\`..\\`General#37\\` and \\`With O2#2\\`..\\`#7\\` but no \\`General\\`, \\`With O2\\`, \\`With IRIX\\`, ... (run 7 keys: 146, in run 8: 0).\n\nThen a resume job (~146 sections, about 7 minutes on Ornith-35B) fills run 8, queued on SoHoT behind the running code adopt job."
+   },
+   "strata": {
+    "files": 3,
+    "lines": 54,
+    "test_s": 1.53,
+    "area": ".,infovore/db,infovore/wiki",
+    "size": "small"
+   },
+   "admitted_by": "base_collect_repo_symbol"
+  },
+  {
+   "id": "infovore-340",
+   "issue": 340,
+   "pr": 345,
+   "base": "beda3c3cff036a10d558acd507fb231f66a72135",
+   "fix": "122a1840c9332500d54665d82f9b4034a5da5d97",
+   "date": "2026-10-10",
+   "subject": "claims controls: shuffled citations, overlap floor, matched lexicon recall, writer drops by verdict (#340) (#345)",
+   "context_files": [
+    "README.md",
+    "infovore/claims/command.py"
+   ],
+   "new_files": [
+    "infovore/claims/controls.py"
+   ],
+   "test_files": [
+    "tests/claims/test_controls.py"
+   ],
+   "fail_to_pass": [
+    "tests/claims/test_controls.py::test_controls_bad_arguments_are_config_errors[argv0]",
+    "tests/claims/test_controls.py::test_controls_bad_arguments_are_config_errors[argv1]",
+    "tests/claims/test_controls.py::test_controls_bad_arguments_are_config_errors[argv2]",
+    "tests/claims/test_controls.py::test_controls_bad_arguments_are_config_errors[argv3]",
+    "tests/claims/test_controls.py::test_controls_command_prints_every_table",
+    "tests/claims/test_controls.py::test_drop_rate_reads_the_log_and_buckets_by_worst_verdict",
+    "tests/claims/test_controls.py::test_length_buckets_cover_every_length",
+    "tests/claims/test_controls.py::test_matched_recall_strata_split_cited_from_uncited",
+    "tests/claims/test_controls.py::test_overlap_floor_reports_quantiles_and_shares",
+    "tests/claims/test_controls.py::test_shuffled_citations_score_worse_than_real_ones",
+    "tests/claims/test_controls.py::test_worst_verdict_orders_by_severity"
+   ],
+   "pass_to_pass": [],
+   "prompts": {
+    "spec": "# Negative controls for the claim check and the wiki gates\n\nFrom the 2026-10-10 review. Every metric so far was computed on a target produced by the system under test and with no control.\n\nBuild `infovore claims controls` (read-only, CPU):\n1. Shuffle citations within each exchange and recompute the deterministic check overlap; report the supported rate on shuffled pairs. If it stays near the real rate, the checker is lax and its verdicts mean little.\n2. Pair each claim with a random claim from the same channel and month; its overlap with the wrong messages is the floor for `support.FLOOR`.\n3. From article run 0078 (tonight): sentence drop rate in `keep_supported` by the verdict of the claims the sentence cites (supported / uncheckable / unsupported_fact / low_overlap). This is the free randomized read on #337.\n4. Lexicon recall against a length- and position-matched sample of uncited messages, replacing the raw recall in #334.\n\nOutput: one table per control, JSON with `--json`. Author-cluster bootstrap for every interval (rows cluster by author and by exchange).\n\n\ud83e\udd16 Generated with [Claude Code](https://claude.com/claude-code)\n\nhttps://claude.ai/code/session_018FFkm1LHqCXapmvM9uBMXc",
+    "symptom": null
+   },
+   "strata": {
+    "files": 3,
+    "lines": 385,
+    "test_s": 1.34,
+    "area": ".,infovore/claims",
+    "size": "large"
+   },
+   "variant_drops": {
+    "symptom": "no_fix_section"
+   },
+   "admitted_by": "base_collect_repo_symbol"
+  },
+  {
+   "id": "infovore-339",
+   "issue": 339,
+   "pr": 344,
+   "base": "223ed6f41e12920afe9ce5410403ba982d2debdf",
+   "fix": "beda3c3cff036a10d558acd507fb231f66a72135",
+   "date": "2026-10-10",
+   "subject": "wiki: Unsorted page for untagged claims, section parts instead of a group cap, loss accounting (#339) (#344)",
+   "context_files": [
+    "README.md",
+    "infovore/wiki/build.py",
+    "infovore/wiki/command.py",
+    "infovore/wiki/write_command.py"
+   ],
+   "new_files": [],
+   "test_files": [
+    "tests/wiki/test_build.py",
+    "tests/wiki/test_command.py",
+    "tests/wiki/test_write_command.py"
+   ],
+   "fail_to_pass": [
+    "tests/wiki/test_build.py::test_article_parts_follow_numbered_continuations_without_gaps",
+    "tests/wiki/test_build.py::test_build_site_folds_small_sections",
+    "tests/wiki/test_build.py::test_build_site_writes_pages_and_index_deterministically",
+    "tests/wiki/test_build.py::test_golden_page",
+    "tests/wiki/test_build.py::test_index_lists_pages_by_name_with_counts",
+    "tests/wiki/test_build.py::test_load_claims_applies_eligibility_and_topics",
+    "tests/wiki/test_build.py::test_load_claims_claim_gate_drops_techless_claims",
+    "tests/wiki/test_build.py::test_load_claims_collapses_duplicates_across_runs",
+    "tests/wiki/test_build.py::test_load_claims_keeps_only_the_chosen_runs",
+    "tests/wiki/test_build.py::test_load_claims_verdict_policy_excludes_unsupported_and_unchecked",
+    "tests/wiki/test_build.py::test_page_without_cooccurrence_has_no_groups_or_see_also",
+    "tests/wiki/test_build.py::test_pages_carry_no_discord_links",
+    "tests/wiki/test_build.py::test_render_page_concatenates_section_parts",
+    "tests/wiki/test_build.py::test_see_also_only_links_topics_with_pages",
+    "tests/wiki/test_build.py::test_small_co_topic_sections_fold_into_general",
+    "tests/wiki/test_build.py::test_stats_counts_pages_distribution_and_unassigned",
+    "tests/wiki/test_build.py::test_stats_distribution_covers_every_bucket",
+    "tests/wiki/test_build.py::test_stats_with_no_pages",
+    "tests/wiki/test_build.py::test_untagged_claims_land_on_the_unsorted_page_and_count_as_on_pages",
+    "tests/wiki/test_command.py::test_stats_reports_topics_pages_distribution_and_unassigned",
+    "tests/wiki/test_command.py::test_untagged_claims_get_an_unsorted_page",
+    "tests/wiki/test_write_command.py::test_sections_with_more_groups_than_the_cap_are_written_in_parts",
+    "tests/wiki/test_write_command.py::test_units_carry_their_part_and_key"
+   ],
+   "pass_to_pass": [
+    "tests/wiki/test_command.py::test_build_default_minimum_is_three",
+    "tests/wiki/test_command.py::test_build_writes_pages_for_topics_over_the_minimum",
+    "tests/wiki/test_command.py::test_claim_gate_drops_techless_claims_from_stats_and_build",
+    "tests/wiki/test_command.py::test_grouping_embed_uses_the_embedder_and_stats_report_corroboration",
+    "tests/wiki/test_command.py::test_runs_limits_stats_and_rejects_bad_ids",
+    "tests/wiki/test_command.py::test_verdicts_supported_only_excludes_uncheckable_and_bad_names_are_refused",
+    "tests/wiki/test_write_command.py::test_bad_arguments_are_config_errors",
+    "tests/wiki/test_write_command.py::test_dry_run_prints_the_first_request_and_writes_nothing",
+    "tests/wiki/test_write_command.py::test_dry_run_with_no_eligible_topic",
+    "tests/wiki/test_write_command.py::test_failed_sections_are_retried_and_written_ones_skipped_on_resume",
+    "tests/wiki/test_write_command.py::test_failures_print_their_reason",
+    "tests/wiki/test_write_command.py::test_limit_counts_topics_in_descending_claim_count",
+    "tests/wiki/test_write_command.py::test_log_records_dropped_sentences_and_failures",
+    "tests/wiki/test_write_command.py::test_progress_goes_to_stderr",
+    "tests/wiki/test_write_command.py::test_sigint_stops_after_the_sections_in_flight",
+    "tests/wiki/test_write_command.py::test_small_co_topic_sections_fold_into_general_by_default",
+    "tests/wiki/test_write_command.py::test_writes_a_general_and_a_with_section_and_drops_unsupported_sentences"
+   ],
+   "prompts": {
+    "spec": "# Wiki structural losses: orphan claims, MAX_GROUPS cut, min_claims 10\n\nAudit 2026-10-10 (runs 13/14, tag run 1): after tech_only, 95,228 claims; `min_claims 10` leaves 61,411 on any page; 3,481 kept claims have no topic and appear nowhere; `MAX_GROUPS=40` sorts groups by size and cuts the smallest, dropping 35.4k of 52.6k groups, all singletons, which are the long-tail facts the archive exists to preserve.\n\nFix:\n- Orphan claims (no topic) land on a Misc page keyed by lexicon term or speaker-free entity; never silently lost.\n- Replace the MAX_GROUPS cut with batching: a section with more than 40 groups becomes several writer calls, all groups reach the writer.\n- Default `min_claims` to 3 for write (GPU is free; cost is time).\n- `wiki build` prints the loss accounting at every gate: in, out, dropped, reason.\n\nMetric: claims reaching a page / claims surviving the verdict gate (#337), target above 0.9.\n\n\ud83e\udd16 Generated with [Claude Code](https://claude.com/claude-code)\n\nhttps://claude.ai/code/session_018FFkm1LHqCXapmvM9uBMXc",
+    "symptom": "# Wiki structural losses: orphan claims, MAX_GROUPS cut, min_claims 10\n\nAudit 2026-10-10 (runs 13/14, tag run 1): after tech_only, 95,228 claims; `min_claims 10` leaves 61,411 on any page; 3,481 kept claims have no topic and appear nowhere; `MAX_GROUPS=40` sorts groups by size and cuts the smallest, dropping 35.4k of 52.6k groups, all singletons, which are the long-tail facts the archive exists to preserve.\n\nMetric: claims reaching a page / claims surviving the verdict gate (#337), target above 0.9.\n\n\ud83e\udd16 Generated with [Claude Code](https://claude.com/claude-code)\n\nhttps://claude.ai/code/session_018FFkm1LHqCXapmvM9uBMXc"
+   },
+   "strata": {
+    "files": 4,
+    "lines": 78,
+    "test_s": 1.74,
+    "area": ".,infovore/wiki",
+    "size": "large"
+   },
+   "admitted_by": "base_collect_repo_symbol"
+  },
+  {
+   "id": "infovore-338",
+   "issue": 338,
+   "pr": 343,
+   "base": "2f7f164a4fea0cb3a61ac2699fa4848bc92df265",
+   "fix": "223ed6f41e12920afe9ce5410403ba982d2debdf",
+   "date": "2026-10-10",
+   "subject": "wiki: corroboration per claim group, embedding grouping, ordered by distinct speakers (#338) (#343)",
+   "context_files": [
+    "README.md",
+    "infovore/wiki/build.py",
+    "infovore/wiki/command.py",
+    "infovore/wiki/groups.py",
+    "infovore/wiki/write_command.py"
+   ],
+   "new_files": [],
+   "test_files": [
+    "tests/wiki/golden/o2.md",
+    "tests/wiki/test_command.py",
+    "tests/wiki/test_groups.py",
+    "tests/wiki/test_render_articles.py"
+   ],
+   "fail_to_pass": [
+    "tests/wiki/test_command.py::test_grouping_embed_uses_the_embedder_and_stats_report_corroboration",
+    "tests/wiki/test_groups.py::test_a_claim_joins_the_first_matching_group",
+    "tests/wiki/test_groups.py::test_cosine_handles_zero_vectors",
+    "tests/wiki/test_groups.py::test_empty_input_returns_nothing",
+    "tests/wiki/test_groups.py::test_equal_sizes_sort_by_lead_date_then_claim_id",
+    "tests/wiki/test_groups.py::test_groups_sort_by_distinct_speakers_then_conversations_before_size",
+    "tests/wiki/test_groups.py::test_groups_sort_by_size_first",
+    "tests/wiki/test_groups.py::test_make_grouper_embeds_every_claim_once_in_batches",
+    "tests/wiki/test_groups.py::test_make_grouper_for_picks_jaccard_or_the_embedder",
+    "tests/wiki/test_groups.py::test_paraphrases_join_and_a_distinct_claim_stays_apart",
+    "tests/wiki/test_groups.py::test_statements_without_tokens_never_join",
+    "tests/wiki/test_groups.py::test_summarise_counts_groups_by_speakers_and_corroborated_claims",
+    "tests/wiki/test_groups.py::test_threshold_is_inclusive_and_configurable",
+    "tests/wiki/test_groups.py::test_vectors_replace_tokens_and_must_align",
+    "tests/wiki/test_render_articles.py::test_fallback_groups_similar_claims",
+    "tests/wiki/test_render_articles.py::test_unknown_citations_are_skipped_and_an_empty_section_falls_back"
+   ],
+   "pass_to_pass": [
+    "tests/wiki/test_command.py::test_build_default_minimum_is_three",
+    "tests/wiki/test_command.py::test_build_writes_pages_for_topics_over_the_minimum",
+    "tests/wiki/test_command.py::test_claim_gate_drops_techless_claims_from_stats_and_build",
+    "tests/wiki/test_command.py::test_runs_limits_stats_and_rejects_bad_ids",
+    "tests/wiki/test_command.py::test_stats_reports_topics_pages_distribution_and_unassigned",
+    "tests/wiki/test_command.py::test_verdicts_supported_only_excludes_uncheckable_and_bad_names_are_refused",
+    "tests/wiki/test_render_articles.py::test_article_page_has_prose_with_citations_and_a_source_list",
+    "tests/wiki/test_render_articles.py::test_cli_builds_article_pages",
+    "tests/wiki/test_render_articles.py::test_cli_rejects_a_bad_article_run",
+    "tests/wiki/test_render_articles.py::test_load_claims_carries_the_check_verdict",
+    "tests/wiki/test_render_articles.py::test_numbers_follow_first_citation_and_are_reused",
+    "tests/wiki/test_render_articles.py::test_only_sections_without_text_fall_back_and_headings_follow_the_rule"
+   ],
+   "prompts": {
+    "spec": "# Corroboration score per claim cluster: distinct speakers and exchanges, embedding clustering\n\nFrom the 2026-10-10 review. The only programmatic value signal every reviewer converged on: how many independent people, in how many separate conversations, said the same thing. Tag run 1 has 74,131 topics, 80% single-speaker; the signal exists and nothing uses it.\n\nBuild:\n- Cluster claims within a topic by bge-small embedding similarity (reuse `triage/embed_stage`), not token Jaccard 0.5 (`wiki/groups.py`), which undercounts paraphrases. Keep Jaccard as a fallback when the embed extra is absent.\n- Per cluster: distinct speakers, distinct exchanges, date span, and the verdict mix (#337).\n- Expose it in `load_claims`/`group_claims`: clusters ordered by corroboration; singletons flagged as single-source rather than cut (#339).\n- `wiki build` prints the corroboration distribution; pages show \"N people, M conversations, first/last seen\" per sentence group.\n\nMetric (no labels): share of published sentences resting on clusters with 2+ speakers, before and after. Contradiction audit: sample 200 clusters and count merges of contradictory predicates (negation markers), as a check that embedding clustering does not merge \"crashed\" with \"crashed after the patch\".\n\nThis is the first step of #142 and the reframe recorded in the KB (corroboration-ranked, dated, source-linked index; prose only for corroborated clusters).\n\n\ud83e\udd16 Generated with [Claude Code](https://claude.com/claude-code)\n\nhttps://claude.ai/code/session_018FFkm1LHqCXapmvM9uBMXc",
+    "symptom": "# Corroboration score per claim cluster: distinct speakers and exchanges, embedding clustering\n\nFrom the 2026-10-10 review. The only programmatic value signal every reviewer converged on: how many independent people, in how many separate conversations, said the same thing. Tag run 1 has 74,131 topics, 80% single-speaker; the signal exists and nothing uses it.\n\nMetric (no labels): share of published sentences resting on clusters with 2+ speakers, before and after. Contradiction audit: sample 200 clusters and count merges of contradictory predicates (negation markers), as a check that embedding clustering does not merge \"crashed\" with \"crashed after the patch\".\n\nThis is the first step of #142 and the reframe recorded in the KB (corroboration-ranked, dated, source-linked index; prose only for corroborated clusters).\n\n\ud83e\udd16 Generated with [Claude Code](https://claude.com/claude-code)\n\nhttps://claude.ai/code/session_018FFkm1LHqCXapmvM9uBMXc"
+   },
+   "strata": {
+    "files": 5,
+    "lines": 199,
+    "test_s": 1.39,
+    "area": ".,infovore/wiki",
+    "size": "large"
+   },
+   "admitted_by": "base_collect_repo_symbol"
+  },
+  {
+   "id": "infovore-327",
+   "issue": 327,
+   "pr": 328,
+   "base": "463d292e260a014d606fa40c22ed5fc1db57ddb4",
+   "fix": "a62b91d40f32e49860b540023ee6ba48f86df485",
+   "date": "2026-10-10",
+   "subject": "sift seed: --ranks/--sample deep sample (#327) (#328)",
+   "context_files": [
+    "README.md",
+    "infovore/sift/command.py",
+    "infovore/sift/seed.py"
+   ],
+   "new_files": [],
+   "test_files": [
+    "tests/sift/test_seed.py"
+   ],
+   "fail_to_pass": [
+    "tests/sift/test_seed.py::test_cli_deep_sample_out_and_validation",
+    "tests/sift/test_seed.py::test_cli_out_then_serve_labels_carry_seed_source_ref",
+    "tests/sift/test_seed.py::test_cli_ranked_listing_report_and_floor_validation",
+    "tests/sift/test_seed.py::test_floor_filters_by_word_count",
+    "tests/sift/test_seed.py::test_parse_ranks",
+    "tests/sift/test_seed.py::test_plain_serve_app_keeps_default_source_ref",
+    "tests/sift/test_seed.py::test_render_report",
+    "tests/sift/test_seed.py::test_render_report_with_no_candidates",
+    "tests/sift/test_seed.py::test_sample_window_seeded_and_bounded",
+    "tests/sift/test_seed.py::test_score_tie_breaks_on_hits_then_id",
+    "tests/sift/test_seed.py::test_seed_rows_exclusions_and_ranking",
+    "tests/sift/test_seed.py::test_seed_rows_skip_human_labeled",
+    "tests/sift/test_seed.py::test_top_rows_and_percentile",
+    "tests/sift/test_seed.py::test_value_regime_labels_stay_out_of_training",
+    "tests/sift/test_seed.py::test_without_denylist_food_threads_return",
+    "tests/sift/test_seed.py::test_write_seed_queue_and_format_rows",
+    "tests/sift/test_seed.py::test_write_seed_queue_deep_prefix"
+   ],
+   "pass_to_pass": [],
+   "prompts": {
+    "spec": "# sift seed: random sample from deeper ranks for a base rate\n\nFollows #319. Eric called 49 of the top 50 seed messages valuable, which says nothing about how fast value falls off further down the ranking. Add `sift seed --ranks A-B --sample N [--seed S] --out DIR`: a seeded random sample of N messages from ranks A to B of the same ranking. It writes a manifest with its own source_ref (`sift:seed-lexicon-deep:<date>`) and regime `value`.\n\nFirst use: 30 from ranks 1,000-10,000. That gives #320 a base rate below the top.\n\n\ud83e\udd16 Generated with [Claude Code](https://claude.com/claude-code)\n\nhttps://claude.ai/code/session_018FFkm1LHqCXapmvM9uBMXc",
+    "symptom": null
+   },
+   "strata": {
+    "files": 3,
+    "lines": 51,
+    "test_s": 1.43,
+    "area": ".,infovore/sift",
+    "size": "small"
+   },
+   "variant_drops": {
+    "symptom": "no_fix_section"
+   },
+   "admitted_by": "base_collect_repo_symbol"
+  },
   {
    "id": "infovore-286",
    "issue": 286,
@@ -240,6 +855,174 @@
    }
   },
   {
+   "id": "infovore-252",
+   "issue": 252,
+   "pr": 253,
+   "base": "5076274638cd268161abe428fd445a39adefdf27",
+   "fix": "77b90e10b7752f580ee868539ccc1b9f8b00358f",
+   "date": "2026-10-04",
+   "subject": "Cascade: short_no_tech stage and relevance short-report (#252) (#253)",
+   "context_files": [
+    "infovore/cli.py",
+    "infovore/db/archived.py",
+    "infovore/db/status.py",
+    "infovore/triage/cascade.py",
+    "infovore/triage/incremental.py",
+    "infovore/triage/llm_score.py",
+    "infovore/triage/relevance_command.py"
+   ],
+   "new_files": [
+    "infovore/triage/short_report.py"
+   ],
+   "test_files": [
+    "tests/cascade_marks.py",
+    "tests/test_cli.py",
+    "tests/triage/test_cascade.py",
+    "tests/triage/test_short_report.py"
+   ],
+   "fail_to_pass": [
+    "tests/test_cli.py::test_status_on_a_fresh_database_reports_zeros",
+    "tests/test_cli.py::test_status_reports_cascade_outcomes_on_current_exchanges_only",
+    "tests/triage/test_cascade.py::test_stage_reports_count_decisions_confusion_and_residue",
+    "tests/triage/test_short_report.py::test_buckets_cover_every_length",
+    "tests/triage/test_short_report.py::test_no_limit_means_no_stage",
+    "tests/triage/test_short_report.py::test_the_cascade_reports_the_limit_it_chose",
+    "tests/triage/test_short_report.py::test_the_command_prints_the_table",
+    "tests/triage/test_short_report.py::test_the_cutoff_is_the_largest_that_holds_precision",
+    "tests/triage/test_short_report.py::test_the_cutoff_line_names_the_result_or_the_reason",
+    "tests/triage/test_short_report.py::test_the_limit_comes_from_the_labels_and_is_none_when_none_qualifies",
+    "tests/triage/test_short_report.py::test_the_stage_decides_short_conversations_without_tech_words",
+    "tests/triage/test_short_report.py::test_the_table_splits_build_and_held_out_labels"
+   ],
+   "pass_to_pass": [
+    "tests/test_cli.py::test_backend_unavailable_exits_with_backend_code",
+    "tests/test_cli.py::test_builtin_commands_include_status",
+    "tests/test_cli.py::test_builtin_commands_include_sync_optouts",
+    "tests/test_cli.py::test_console_entrypoint_exits_with_mains_code",
+    "tests/test_cli.py::test_default_source_factory_builds_a_context_manager_without_connecting",
+    "tests/test_cli.py::test_dotenv_file_is_read_when_given",
+    "tests/test_cli.py::test_missing_configuration_exits_with_config_code",
+    "tests/test_cli.py::test_no_subcommand_prints_usage_and_exits_with_config_code",
+    "tests/test_cli.py::test_status_reports_trainable_human_labels",
+    "tests/test_cli.py::test_sync_optouts_command_reports_results",
+    "tests/test_cli.py::test_sync_optouts_streams_flushed_opening_line",
+    "tests/test_cli.py::test_sync_optouts_with_unavailable_source_exits_backend_code",
+    "tests/test_cli.py::test_sync_optouts_writes_opening_line_before_connecting_to_source",
+    "tests/test_cli.py::test_unexpected_errors_exit_with_failure_code",
+    "tests/test_cli.py::test_unknown_subcommand_exits_with_config_code",
+    "tests/triage/test_cascade.py::test_a_random_slice_label_after_a_queue_label_still_counts",
+    "tests/triage/test_cascade.py::test_all_runs_every_current_exchange_and_reports_share_and_residue_channels",
+    "tests/triage/test_cascade.py::test_all_with_a_fitted_embed_stage_reports_the_stage",
+    "tests/triage/test_cascade.py::test_all_with_write_annotates_exchanges_outside_every_slice",
+    "tests/triage/test_cascade.py::test_batching_gives_the_same_outcomes_as_one_pass",
+    "tests/triage/test_cascade.py::test_collisions_lists_lexicon_terms_common_off_topic",
+    "tests/triage/test_cascade.py::test_explain_shows_hits_per_message",
+    "tests/triage/test_cascade.py::test_mine_prints_candidates",
+    "tests/triage/test_cascade.py::test_residue_channels_counts_by_channel_name_and_falls_back_to_the_id",
+    "tests/triage/test_cascade.py::test_text_less_exchanges_are_set_aside_before_the_lexicon",
+    "tests/triage/test_cascade.py::test_the_cascade_prints_the_tuning_population",
+    "tests/triage/test_cascade.py::test_the_cascade_reports_each_stage_per_slice",
+    "tests/triage/test_cascade.py::test_the_denylist_decides_irrelevant_before_the_lexicon",
+    "tests/triage/test_cascade.py::test_the_denylist_outranks_no_text",
+    "tests/triage/test_cascade.py::test_the_embed_band_decides_only_outside_the_thresholds",
+    "tests/triage/test_cascade.py::test_the_embed_stage_scores_what_the_lexicon_abstained_on",
+    "tests/triage/test_cascade.py::test_the_lexicon_abstains_without_hits_and_decides_on_share",
+    "tests/triage/test_cascade.py::test_the_relevant_precision_flag_reaches_the_recorded_recipe",
+    "tests/triage/test_cascade.py::test_the_slices_are_validated",
+    "tests/triage/test_cascade.py::test_tuning_ignores_queue_sourced_labels[judge:c1:2]",
+    "tests/triage/test_cascade.py::test_tuning_ignores_queue_sourced_labels[judge:likely-irrelevant:3]",
+    "tests/triage/test_cascade.py::test_tuning_ignores_queue_sourced_labels[judge:uncertain:9]",
+    "tests/triage/test_cascade.py::test_tuning_takes_the_lowest_share_that_keeps_precision",
+    "tests/triage/test_cascade.py::test_write_records_derived_annotations_per_stage"
+   ],
+   "prompts": {
+    "spec": "# Cascade: measure short conversations with no tech words (short-report)\n\nEric's idea: between the word list and the embedding check, short conversations with no tech words are likely irrelevant. Step 1: add 'infovore relevance short-report' bucketing by length and word-list hits with Eric's labels. Step 2: add stage short_no_tech only if a cutoff reaches 0.95 labelled precision with at least 20 labels.",
+    "symptom": null
+   },
+   "strata": {
+    "files": 8,
+    "lines": 252,
+    "test_s": 1.83,
+    "area": "infovore,infovore/db,infovore/triage",
+    "size": "large"
+   },
+   "variant_drops": {
+    "symptom": "no_fix_section"
+   },
+   "admitted_by": "base_collect_repo_symbol"
+  },
+  {
+   "id": "infovore-250",
+   "issue": 250,
+   "pr": 251,
+   "base": "640fab4912a9c9c8949d5ba89147ceabd183061e",
+   "fix": "5076274638cd268161abe428fd445a39adefdf27",
+   "date": "2026-10-04",
+   "subject": "Embed stage: relevant threshold by precision target (#250) (#251)",
+   "context_files": [
+    "infovore/triage/embed_stage.py",
+    "infovore/triage/relevance_command.py"
+   ],
+   "new_files": [],
+   "test_files": [
+    "tests/triage/test_cascade.py",
+    "tests/triage/test_embed_stage.py"
+   ],
+   "fail_to_pass": [
+    "tests/triage/test_cascade.py::test_the_embed_stage_scores_what_the_lexicon_abstained_on",
+    "tests/triage/test_cascade.py::test_the_relevant_precision_flag_reaches_the_recorded_recipe",
+    "tests/triage/test_embed_stage.py::test_a_database_with_too_few_labels_gets_an_abstaining_stage",
+    "tests/triage/test_embed_stage.py::test_a_fitted_stage_keeps_relevant_recall_and_records_its_recipe",
+    "tests/triage/test_embed_stage.py::test_a_missing_embed_extra_fails_loudly_with_the_install_command",
+    "tests/triage/test_embed_stage.py::test_building_a_stage_loads_the_pinned_model_and_fits",
+    "tests/triage/test_embed_stage.py::test_the_cache_sits_beside_the_database",
+    "tests/triage/test_embed_stage.py::test_the_cascade_sends_only_lexicon_abstentions_to_the_embed_stage",
+    "tests/triage/test_embed_stage.py::test_the_irrelevant_threshold_spares_the_recall_floor_of_relevant_scores",
+    "tests/triage/test_embed_stage.py::test_the_relevant_threshold_follows_the_configurable_precision_target",
+    "tests/triage/test_embed_stage.py::test_threshold_stats_report_cv_precision_recall_and_n_for_both_sides"
+   ],
+   "pass_to_pass": [
+    "tests/triage/test_cascade.py::test_a_random_slice_label_after_a_queue_label_still_counts",
+    "tests/triage/test_cascade.py::test_all_runs_every_current_exchange_and_reports_share_and_residue_channels",
+    "tests/triage/test_cascade.py::test_all_with_a_fitted_embed_stage_reports_the_stage",
+    "tests/triage/test_cascade.py::test_all_with_write_annotates_exchanges_outside_every_slice",
+    "tests/triage/test_cascade.py::test_batching_gives_the_same_outcomes_as_one_pass",
+    "tests/triage/test_cascade.py::test_collisions_lists_lexicon_terms_common_off_topic",
+    "tests/triage/test_cascade.py::test_explain_shows_hits_per_message",
+    "tests/triage/test_cascade.py::test_mine_prints_candidates",
+    "tests/triage/test_cascade.py::test_residue_channels_counts_by_channel_name_and_falls_back_to_the_id",
+    "tests/triage/test_cascade.py::test_stage_reports_count_decisions_confusion_and_residue",
+    "tests/triage/test_cascade.py::test_text_less_exchanges_are_set_aside_before_the_lexicon",
+    "tests/triage/test_cascade.py::test_the_cascade_prints_the_tuning_population",
+    "tests/triage/test_cascade.py::test_the_cascade_reports_each_stage_per_slice",
+    "tests/triage/test_cascade.py::test_the_denylist_decides_irrelevant_before_the_lexicon",
+    "tests/triage/test_cascade.py::test_the_denylist_outranks_no_text",
+    "tests/triage/test_cascade.py::test_the_embed_band_decides_only_outside_the_thresholds",
+    "tests/triage/test_cascade.py::test_the_lexicon_abstains_without_hits_and_decides_on_share",
+    "tests/triage/test_cascade.py::test_the_slices_are_validated",
+    "tests/triage/test_cascade.py::test_tuning_ignores_queue_sourced_labels[judge:c1:2]",
+    "tests/triage/test_cascade.py::test_tuning_ignores_queue_sourced_labels[judge:likely-irrelevant:3]",
+    "tests/triage/test_cascade.py::test_tuning_ignores_queue_sourced_labels[judge:uncertain:9]",
+    "tests/triage/test_cascade.py::test_tuning_takes_the_lowest_share_that_keeps_precision",
+    "tests/triage/test_cascade.py::test_write_records_derived_annotations_per_stage"
+   ],
+   "prompts": {
+    "spec": "# Embed stage: choose relevant threshold by precision target (0.90), report CV stats\n\nPR #248 strict relevant threshold (0.9876) decided only 24 relevant; residue grew 3,711 -> 19,619 of 115,513. Loosen: lowest threshold with CV precision >= 0.90 (--relevant-precision), irrelevant threshold rule (recall >= 0.95) unchanged. Print both thresholds with CV precision/recall/n; record in recipe_json.",
+    "symptom": null
+   },
+   "strata": {
+    "files": 2,
+    "lines": 65,
+    "test_s": 1.6,
+    "area": "infovore/triage",
+    "size": "small"
+   },
+   "variant_drops": {
+    "symptom": "no_fix_section"
+   },
+   "admitted_by": "base_collect_repo_symbol"
+  },
+  {
    "id": "infovore-235",
    "issue": 235,
    "pr": 240,
@@ -352,82 +1135,128 @@
    "variant_drops": {
     "symptom": "no_fix_section"
    }
+  },
+  {
+   "id": "infovore-217",
+   "issue": 217,
+   "pr": 220,
+   "base": "d8057a4e0a965542c12a2315662821e29903d2e1",
+   "fix": "93cdcc9b8bb3d5595073e027256a4b185f8f34bf",
+   "date": "2026-10-03",
+   "subject": "Skip fragments: judge queues need 3 text messages; cascade no_text stage (#217) (#220)",
+   "context_files": [
+    "infovore/eval/judge.py",
+    "infovore/triage/cascade.py",
+    "infovore/triage/relevance_command.py"
+   ],
+   "new_files": [
+    "infovore/db/exchange_text.py"
+   ],
+   "test_files": [
+    "tests/eval/test_judge.py",
+    "tests/triage/test_cascade.py"
+   ],
+   "fail_to_pass": [
+    "tests/eval/test_judge.py::test_a_missing_channel_falls_back_to_its_id",
+    "tests/eval/test_judge.py::test_a_repeat_arrives_unmarked",
+    "tests/eval/test_judge.py::test_an_exchange_with_no_messages_is_refused",
+    "tests/eval/test_judge.py::test_an_unjudged_exchange_has_no_row",
+    "tests/eval/test_judge.py::test_bad_submissions_are_refused_and_write_nothing",
+    "tests/eval/test_judge.py::test_c1_and_likely_irrelevant_queues_skip_excluded_channels",
+    "tests/eval/test_judge.py::test_context_from_the_parent_is_shown_but_marked_as_context",
+    "tests/eval/test_judge.py::test_dynamic_queues_skip_exchanges_with_fewer_than_three_text_messages",
+    "tests/eval/test_judge.py::test_judging_again_appends_and_the_newest_shows",
+    "tests/eval/test_judge.py::test_judging_in_the_uncertain_queue_never_marks_a_different_exchange_judged",
+    "tests/eval/test_judge.py::test_label_counts_use_the_newest_judgment_and_skip_repeats",
+    "tests/eval/test_judge.py::test_labels_needed_counts_down_to_the_bayes_minimum",
+    "tests/eval/test_judge.py::test_likely_irrelevant_ranks_by_lexicon_share_then_p_lore",
+    "tests/eval/test_judge.py::test_nothing_left_means_no_resume_point",
+    "tests/eval/test_judge.py::test_queue_stats_count_judged_from_the_queue_across_rebuilds",
+    "tests/eval/test_judge.py::test_self_agreement_compares_the_two_showings",
+    "tests/eval/test_judge.py::test_slice_progress_counts_judged_per_slice",
+    "tests/eval/test_judge.py::test_submitting_records_one_exchange_annotation",
+    "tests/eval/test_judge.py::test_the_c1_queue_is_the_control_exchanges_nobody_has_judged",
+    "tests/eval/test_judge.py::test_the_likely_irrelevant_pool_is_drawn_after_the_fragment_filter",
+    "tests/eval/test_judge.py::test_the_page_states_the_labelling_definition",
+    "tests/eval/test_judge.py::test_the_queue_is_gold_then_repeats_then_the_rest_of_s1",
+    "tests/eval/test_judge.py::test_the_uncertain_queue_default_ignores_annotations",
+    "tests/eval/test_judge.py::test_the_uncertain_queue_drops_judged_exchanges_and_excluded_channels",
+    "tests/eval/test_judge.py::test_the_uncertain_queue_is_closest_to_a_coin_flip_first",
+    "tests/eval/test_judge.py::test_the_uncertain_queue_ranks_by_the_named_scorers_latest_version",
+    "tests/eval/test_judge.py::test_the_view_carries_channel_link_and_position",
+    "tests/eval/test_judge.py::test_usable_label_counts_skip_excluded_channels",
+    "tests/triage/test_cascade.py::test_stage_reports_count_decisions_confusion_and_residue",
+    "tests/triage/test_cascade.py::test_text_less_exchanges_are_set_aside_before_the_lexicon",
+    "tests/triage/test_cascade.py::test_the_denylist_outranks_no_text"
+   ],
+   "pass_to_pass": [
+    "tests/triage/test_cascade.py::test_bayes_scores_what_the_lexicon_abstained_on",
+    "tests/triage/test_cascade.py::test_collisions_lists_lexicon_terms_common_off_topic",
+    "tests/triage/test_cascade.py::test_explain_shows_hits_per_message",
+    "tests/triage/test_cascade.py::test_mine_prints_candidates",
+    "tests/triage/test_cascade.py::test_the_bayes_band_decides_only_far_from_a_coin_flip",
+    "tests/triage/test_cascade.py::test_the_cascade_reports_each_stage_per_slice",
+    "tests/triage/test_cascade.py::test_the_denylist_decides_irrelevant_before_the_lexicon",
+    "tests/triage/test_cascade.py::test_the_lexicon_abstains_without_hits_and_decides_on_share",
+    "tests/triage/test_cascade.py::test_the_slices_are_validated",
+    "tests/triage/test_cascade.py::test_tuning_takes_the_lowest_share_that_keeps_precision",
+    "tests/triage/test_cascade.py::test_write_records_derived_annotations_per_stage"
+   ],
+   "prompts": {
+    "spec": "# Skip fragment exchanges: judge queues need >=3 text messages; cascade sets text-less aside\n\n54% of exchanges have 1-2 messages; 2,327 singletons are attachment-only. likely-irrelevant serves them first and they teach nothing. Dynamic judge queues (likely-irrelevant, uncertain, c1) serve only exchanges with >=3 non-empty text messages; cascade gets a no_text stage after denylist, excluded from accuracy. trainable_labels unchanged.",
+    "symptom": null
+   },
+   "strata": {
+    "files": 4,
+    "lines": 82,
+    "test_s": 1.43,
+    "area": "infovore/db,infovore/eval,infovore/triage",
+    "size": "large"
+   },
+   "variant_drops": {
+    "symptom": "no_fix_section"
+   },
+   "admitted_by": "base_collect_repo_symbol"
   }
  ],
  "split": {
   "seed": 995,
   "fraction": 0.5,
   "dev": [
-   "infovore-219"
+   "infovore-219",
+   "infovore-339",
+   "infovore-348",
+   "infovore-352",
+   "infovore-373"
   ],
   "holdout": [
+   "infovore-217",
    "infovore-235",
+   "infovore-250",
+   "infovore-252",
    "infovore-256",
    "infovore-257",
    "infovore-260",
-   "infovore-286"
+   "infovore-286",
+   "infovore-327",
+   "infovore-338",
+   "infovore-340",
+   "infovore-349",
+   "infovore-353"
   ]
  },
  "drops": [
   {
-   "issue": 373,
-   "pr": 374,
-   "fix": "219940e42104c3e625a6642713e856e2bb2305fc",
-   "reason": "base_error"
-  },
-  {
-   "issue": 353,
-   "pr": 356,
-   "fix": "e5ca44f2d1bad9eb3704fa7a59ccab6279c69fa7",
-   "reason": "base_error"
-  },
-  {
    "issue": 353,
    "pr": 355,
    "fix": "6cd771b2a76088d5147821a1ac6129f004868a97",
-   "reason": "too_big"
-  },
-  {
-   "issue": 352,
-   "pr": 354,
-   "fix": "62eabc57fb1d40e6d884e1e5a76cada7c463803d",
-   "reason": "base_error"
-  },
-  {
-   "issue": 349,
-   "pr": 351,
-   "fix": "0bd7a59b15fc0b9784046b466f867f90a4d0abb7",
-   "reason": "base_error"
-  },
-  {
-   "issue": 348,
-   "pr": 350,
-   "fix": "9f79d28e67f158c6de03ec51e6d7cf2135fed401",
-   "reason": "base_error"
+   "reason": "duplicate_issue"
   },
   {
    "issue": 340,
    "pr": 347,
    "fix": "185fb068c97eadff15361894c2b9e73f3d13105a",
    "reason": "no_test_change"
-  },
-  {
-   "issue": 340,
-   "pr": 345,
-   "fix": "122a1840c9332500d54665d82f9b4034a5da5d97",
-   "reason": "base_error"
-  },
-  {
-   "issue": 339,
-   "pr": 344,
-   "fix": "beda3c3cff036a10d558acd507fb231f66a72135",
-   "reason": "base_error"
-  },
-  {
-   "issue": 338,
-   "pr": 343,
-   "fix": "223ed6f41e12920afe9ce5410403ba982d2debdf",
-   "reason": "base_error"
   },
   {
    "issue": 337,
@@ -452,12 +1281,6 @@
    "pr": 329,
    "fix": "a51c0d259028d454775b8172b4eab57286096614",
    "reason": "too_big"
-  },
-  {
-   "issue": 327,
-   "pr": 328,
-   "fix": "a62b91d40f32e49860b540023ee6ba48f86df485",
-   "reason": "base_error"
   },
   {
    "issue": 301,
@@ -520,18 +1343,6 @@
    "reason": "reference_fails"
   },
   {
-   "issue": 252,
-   "pr": 253,
-   "fix": "77b90e10b7752f580ee868539ccc1b9f8b00358f",
-   "reason": "base_error"
-  },
-  {
-   "issue": 250,
-   "pr": 251,
-   "fix": "5076274638cd268161abe428fd445a39adefdf27",
-   "reason": "base_error"
-  },
-  {
    "issue": 246,
    "pr": 248,
    "fix": "640fab4912a9c9c8949d5ba89147ceabd183061e",
@@ -548,12 +1359,6 @@
    "pr": 224,
    "fix": "f9ed79dfc026bf296b5b494ae31a5ac372dc45c8",
    "reason": "reference_fails"
-  },
-  {
-   "issue": 217,
-   "pr": 220,
-   "fix": "93cdcc9b8bb3d5595073e027256a4b185f8f34bf",
-   "reason": "base_error"
   },
   {
    "issue": 215,
