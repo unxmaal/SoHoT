@@ -97,7 +97,7 @@ def test_winners_read_stored_runs_only(conn, store_run, sat_exam):
     from harness import winners
     _unstored()
     assert winners.from_receipts(conn) == {} and winners.beaten_in(conn) == {}
-    store_run("r", "svg", {"local-large": {"pass_rate": 1.0}})
+    store_run("r", "svg", {"local-large": {"pass_rate": 1.0}}, specs={"local-large": "local-large"})
     assert winners.from_receipts(conn)["svg"]["candidate"] == "local-large"
 
 

@@ -70,7 +70,8 @@ def test_a_workflow_is_not_a_model_default(store_run, conn):
     a --model default can be set to."""
     store_run("svg", "svg",
             {"local-large": {"pass_rate": 0.6, "median_s": 5.0},
-             "repair/local-large": {"pass_rate": 1.0, "median_s": 8.0}})
+             "repair/local-large": {"pass_rate": 1.0, "median_s": 8.0}},
+            specs={"local-large": "local-large", "repair/local-large": "repair:local-large"})
     assert winners.beaten_in(conn)["svg"]["candidate"] == "local-large"
 
 
@@ -140,7 +141,7 @@ def test_a_higher_is_better_metric_runs_the_other_way(store_run, conn):
         "mflux/a": {"pass_rate": 1.0, "median_s": 1.0,
                     "metrics": {"adherence": 0.9}},
         "mflux/flux2-klein-4b-q8": {"pass_rate": 1.0, "median_s": 1.0,
-                                    "metrics": {"adherence": 0.4}}})
+                                    "metrics": {"adherence": 0.4}}}, specs={"mflux/a": "mflux:a"})
     assert winners.beaten_in(conn)["image"]["candidate"] == "mflux/a"
 
 
