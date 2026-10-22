@@ -8,7 +8,19 @@ prompt: '# Phase 2: deterministic dedup via MinHash/LSH (gap 4)
   Embedding-free near-duplicate detection for rules, Graphiti-style: normalize -> n-gram shingle -> MinHash
   (32 perms) -> Jaccard>=0.9, with a name-entropy gate for short/low-info titles. Runs BEFORE any LLM/review
   step; surfaces merge candidates, never auto-deletes. Attacks KB bloat (title-equality dedup is the only
-  dedup today). See mcm_v3_plan.md Deferred; ref getzep/graphiti dedup_helpers.py.'
+  dedup today). See mcm_v3_plan.md Deferred; ref getzep/graphiti dedup_helpers.py.
+
+
+  The hidden tests call these names from the repository (signatures as a correct fix defines them):
+
+  - `mcm_engine.dedup.find_near_duplicates(items: Iterable[tuple], *, threshold: float=0.9, num_perm:
+  int=NUM_PERM, min_entropy: float=MIN_ENTROPY) -> list[list]`
+
+  - `mcm_engine.dedup.jaccard_estimate(a_text: str, b_text: str, num_perm: int=NUM_PERM) -> float`
+
+  - `mcm_engine.dedup.normalize(text: str) -> str`
+
+  - `mcm_engine.dedup.shannon_entropy(text: str) -> float`'
 params:
   source_repo: https://github.com/unxmaal/mcm-engine.git
   base: 7efde17de487535aaef1c081a8eba844bd9b8a96
@@ -24,6 +36,12 @@ params:
   - pythonpath=src
   extras:
   - dev
+  interface:
+  - 'mcm_engine.dedup.find_near_duplicates(items: Iterable[tuple], *, threshold: float=0.9, num_perm:
+    int=NUM_PERM, min_entropy: float=MIN_ENTROPY) -> list[list]'
+  - 'mcm_engine.dedup.jaccard_estimate(a_text: str, b_text: str, num_perm: int=NUM_PERM) -> float'
+  - 'mcm_engine.dedup.normalize(text: str) -> str'
+  - 'mcm_engine.dedup.shannon_entropy(text: str) -> float'
   fail_to_pass:
   - tests/test_dedup.py::test_clusters_near_dups_not_distinct
   - tests/test_dedup.py::test_determinism_same_input_same_clusters
@@ -48,5 +66,6 @@ attribution:
     removed (spec), and the Fix/Shape/Design/Options/Remedy/Proposal/Build/What-to sections and labelled
     paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
     of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
-    and sandbox (evals/repo.py)
+    and sandbox (evals/repo.py); the names the hidden tests use that the fix adds or re-signs, with the
+    fix's signatures, appended to both variants (evals/interface.py)
   importer: evals.importers.history_mcm_engine

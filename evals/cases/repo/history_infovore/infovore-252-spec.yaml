@@ -8,7 +8,44 @@ prompt: '# Cascade: measure short conversations with no tech words (short-report
   Eric''s idea: between the word list and the embedding check, short conversations with no tech words
   are likely irrelevant. Step 1: add ''infovore relevance short-report'' bucketing by length and word-list
   hits with Eric''s labels. Step 2: add stage short_no_tech only if a cutoff reaches 0.95 labelled precision
-  with at least 20 labels.'
+  with at least 20 labels.
+
+
+  The hidden tests call these names from the repository (signatures as a correct fix defines them):
+
+  - `class infovore.triage.short_report.Cutoff(limit: int, precision: float, n: int)`
+
+  - `class infovore.triage.short_report.Row`
+
+  - `infovore.triage.cascade.run_cascade(conn: sqlite3.Connection, ids: Sequence[int], lexicon: Lexicon,
+  t_high: float, stage: EmbedStage, exclude_channels: frozenset[str]=frozenset(), short_limit: int | None=None)
+  -> list[Outcome]`
+
+  - `infovore.triage.cascade.run_cascade_batched(conn: sqlite3.Connection, ids: Sequence[int], lexicon:
+  Lexicon, t_high: float, stage: EmbedStage, exclude_channels: frozenset[str], batch_size: int, progress:
+  Callable[[int, int], None], short_limit: int | None=None) -> list[Outcome]`
+
+  - `infovore.triage.cascade.write_outcomes(conn: sqlite3.Connection, outcomes: Sequence[Outcome], lexicon:
+  Lexicon, t_high: float, stage: EmbedStage, at: datetime, short_limit: int | None=None) -> dict[str,
+  int]`
+
+  - `infovore.triage.relevance_command.short_limit(conn: sqlite3.Connection, lexicon: Lexicon, t_high:
+  float, exclude: frozenset[str]) -> int | None`
+
+  - `infovore.triage.short_report.PRECISION: Final`
+
+  - `infovore.triage.short_report.best_cutoff(rows: Sequence[Row], labels: dict[int, Label], held: Collection[int],
+  precision: float=PRECISION, minimum: int=MIN_LABELLED) -> Cutoff | None`
+
+  - `infovore.triage.short_report.bucket_of(chars: int) -> str`
+
+  - `infovore.triage.short_report.bucket_table(rows: Sequence[Row], labels: dict[int, Label], held: Collection[int])
+  -> list[BucketLine]`
+
+  - `infovore.triage.short_report.cutoff_line(cutoff: Cutoff | None) -> str`
+
+  - `infovore.triage.short_report.short_limit(conn: sqlite3.Connection, lexicon: Lexicon, t_high: float,
+  exclude: frozenset[str]) -> int | None`'
 params:
   source_repo: https://github.com/unxmaal/infovore.git
   base: 5076274638cd268161abe428fd445a39adefdf27
@@ -27,6 +64,29 @@ params:
   - infovore/triage/short_report.py
   pytest_args:
   - --import-mode=importlib
+  interface:
+  - 'class infovore.triage.short_report.Cutoff(limit: int, precision: float, n: int)'
+  - class infovore.triage.short_report.Row
+  - 'infovore.triage.cascade.run_cascade(conn: sqlite3.Connection, ids: Sequence[int], lexicon: Lexicon,
+    t_high: float, stage: EmbedStage, exclude_channels: frozenset[str]=frozenset(), short_limit: int |
+    None=None) -> list[Outcome]'
+  - 'infovore.triage.cascade.run_cascade_batched(conn: sqlite3.Connection, ids: Sequence[int], lexicon:
+    Lexicon, t_high: float, stage: EmbedStage, exclude_channels: frozenset[str], batch_size: int, progress:
+    Callable[[int, int], None], short_limit: int | None=None) -> list[Outcome]'
+  - 'infovore.triage.cascade.write_outcomes(conn: sqlite3.Connection, outcomes: Sequence[Outcome], lexicon:
+    Lexicon, t_high: float, stage: EmbedStage, at: datetime, short_limit: int | None=None) -> dict[str,
+    int]'
+  - 'infovore.triage.relevance_command.short_limit(conn: sqlite3.Connection, lexicon: Lexicon, t_high:
+    float, exclude: frozenset[str]) -> int | None'
+  - 'infovore.triage.short_report.PRECISION: Final'
+  - 'infovore.triage.short_report.best_cutoff(rows: Sequence[Row], labels: dict[int, Label], held: Collection[int],
+    precision: float=PRECISION, minimum: int=MIN_LABELLED) -> Cutoff | None'
+  - 'infovore.triage.short_report.bucket_of(chars: int) -> str'
+  - 'infovore.triage.short_report.bucket_table(rows: Sequence[Row], labels: dict[int, Label], held: Collection[int])
+    -> list[BucketLine]'
+  - 'infovore.triage.short_report.cutoff_line(cutoff: Cutoff | None) -> str'
+  - 'infovore.triage.short_report.short_limit(conn: sqlite3.Connection, lexicon: Lexicon, t_high: float,
+    exclude: frozenset[str]) -> int | None'
   fail_to_pass:
   - tests/test_cli.py::test_status_on_a_fresh_database_reports_zeros
   - tests/test_cli.py::test_status_reports_cascade_outcomes_on_current_exchanges_only
@@ -92,5 +152,6 @@ attribution:
     removed (spec), and the Fix/Shape/Design/Options/Remedy/Proposal/Build/What-to sections and labelled
     paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
     of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
-    and sandbox (evals/repo.py)
+    and sandbox (evals/repo.py); the names the hidden tests use that the fix adds or re-signs, with the
+    fix's signatures, appended to both variants (evals/interface.py)
   importer: evals.importers.history_infovore

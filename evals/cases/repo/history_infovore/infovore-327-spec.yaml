@@ -17,7 +17,20 @@ prompt: '# sift seed: random sample from deeper ranks for a base rate
   🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 
-  https://claude.ai/code/session_018FFkm1LHqCXapmvM9uBMXc'
+  https://claude.ai/code/session_018FFkm1LHqCXapmvM9uBMXc
+
+
+  The hidden tests call these names from the repository (signatures as a correct fix defines them):
+
+  - `infovore.sift.seed.SEED_DEEP_SOURCE_REF_PREFIX: Final`
+
+  - `infovore.sift.seed.parse_ranks(text: str) -> tuple[int, int]`
+
+  - `infovore.sift.seed.sample_window(rows: list[SeedRow], start: int, end: int, n: int, seed: int) ->
+  list[SeedRow]`
+
+  - `infovore.sift.seed.write_seed_queue(rows: list[SeedRow], out_dir: Path, now: datetime, prefix: str=SEED_SOURCE_REF_PREFIX)
+  -> str`'
 params:
   source_repo: https://github.com/unxmaal/infovore.git
   base: 463d292e260a014d606fa40c22ed5fc1db57ddb4
@@ -30,6 +43,13 @@ params:
   - infovore/sift/seed.py
   pytest_args:
   - --import-mode=importlib
+  interface:
+  - 'infovore.sift.seed.SEED_DEEP_SOURCE_REF_PREFIX: Final'
+  - 'infovore.sift.seed.parse_ranks(text: str) -> tuple[int, int]'
+  - 'infovore.sift.seed.sample_window(rows: list[SeedRow], start: int, end: int, n: int, seed: int) ->
+    list[SeedRow]'
+  - 'infovore.sift.seed.write_seed_queue(rows: list[SeedRow], out_dir: Path, now: datetime, prefix: str=SEED_SOURCE_REF_PREFIX)
+    -> str'
   fail_to_pass:
   - tests/sift/test_seed.py::test_cli_deep_sample_out_and_validation
   - tests/sift/test_seed.py::test_cli_out_then_serve_labels_carry_seed_source_ref
@@ -61,5 +81,6 @@ attribution:
     removed (spec), and the Fix/Shape/Design/Options/Remedy/Proposal/Build/What-to sections and labelled
     paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
     of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
-    and sandbox (evals/repo.py)
+    and sandbox (evals/repo.py); the names the hidden tests use that the fix adds or re-signs, with the
+    fix's signatures, appended to both variants (evals/interface.py)
   importer: evals.importers.history_infovore

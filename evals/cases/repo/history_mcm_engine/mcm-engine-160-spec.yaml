@@ -34,7 +34,47 @@ prompt: '# #137e: replay evaluation harness + evidence-based retune (absorbs #14
   - A written plan for live paired eval.
 
   - At least the ranking weights + search thresholds swept and retuned (or explicitly confirmed) with
-  harness evidence.'
+  harness evidence.
+
+
+  The hidden tests call these names from the repository (signatures as a correct fix defines them):
+
+  - `class mcm_engine.eval.replay.Combined(n: int = 8, name: str = ''combined'', _risk: RiskBased = field(default_factory=RiskBased),
+  _interval: FixedInterval = field(default_factory=lambda: FixedInterval()))`
+
+  - `class mcm_engine.eval.replay.FixedInterval(n: int = 8, name: str = ''fixed-interval'', _count: int
+  = 0)`
+
+  - `class mcm_engine.eval.replay.RiskBased(name: str = ''risk-based'', _covered: set = field(default_factory=set))`
+
+  - `class mcm_engine.eval.replay.TraceEvent(seq: int, tool: str, consequential: bool = False, topic:
+  str = '''', looked_up: bool = False, kb_has_hit: Optional[bool] = None, led_to_failure: bool = False)`
+
+  - `mcm_engine.eval.replay.Combined.reset(self) -> None`
+
+  - `mcm_engine.eval.replay.Combined.step(self, ev: TraceEvent) -> bool`
+
+  - `mcm_engine.eval.replay.FixedInterval.reset(self) -> None`
+
+  - `mcm_engine.eval.replay.FixedInterval.step(self, ev: TraceEvent) -> bool`
+
+  - `mcm_engine.eval.replay.LIVE_PAIRED_EVAL_PLAN`
+
+  - `mcm_engine.eval.replay.RiskBased.reset(self) -> None`
+
+  - `mcm_engine.eval.replay.RiskBased.step(self, ev: TraceEvent) -> bool`
+
+  - `mcm_engine.eval.replay.default_policies() -> list[Policy]`
+
+  - `mcm_engine.eval.replay.evaluate(trace: list[TraceEvent], policies: list[Policy], *, fn_weight: float=DEFAULT_FN_WEIGHT,
+  fp_weight: float=DEFAULT_FP_WEIGHT, failure_multiplier: float=DEFAULT_FAILURE_MULTIPLIER) -> list[PolicyScore]`
+
+  - `mcm_engine.eval.replay.score_policy(trace: list[TraceEvent], policy: Policy, *, fn_weight: float=DEFAULT_FN_WEIGHT,
+  fp_weight: float=DEFAULT_FP_WEIGHT, failure_multiplier: float=DEFAULT_FAILURE_MULTIPLIER) -> PolicyScore`
+
+  - `mcm_engine.eval.replay.should_retrieve(ev: TraceEvent) -> Optional[bool]`
+
+  - `mcm_engine.eval.trace_transcript.load_transcript(path: str | Path) -> list[TraceEvent]`'
 params:
   source_repo: https://github.com/unxmaal/mcm-engine.git
   base: b80acbbb7afb0f04f8c5205ea23a9ab313faf2fc
@@ -52,6 +92,28 @@ params:
   - pythonpath=src
   extras:
   - dev
+  interface:
+  - 'class mcm_engine.eval.replay.Combined(n: int = 8, name: str = ''combined'', _risk: RiskBased = field(default_factory=RiskBased),
+    _interval: FixedInterval = field(default_factory=lambda: FixedInterval()))'
+  - 'class mcm_engine.eval.replay.FixedInterval(n: int = 8, name: str = ''fixed-interval'', _count: int
+    = 0)'
+  - 'class mcm_engine.eval.replay.RiskBased(name: str = ''risk-based'', _covered: set = field(default_factory=set))'
+  - 'class mcm_engine.eval.replay.TraceEvent(seq: int, tool: str, consequential: bool = False, topic:
+    str = '''', looked_up: bool = False, kb_has_hit: Optional[bool] = None, led_to_failure: bool = False)'
+  - mcm_engine.eval.replay.Combined.reset(self) -> None
+  - 'mcm_engine.eval.replay.Combined.step(self, ev: TraceEvent) -> bool'
+  - mcm_engine.eval.replay.FixedInterval.reset(self) -> None
+  - 'mcm_engine.eval.replay.FixedInterval.step(self, ev: TraceEvent) -> bool'
+  - mcm_engine.eval.replay.LIVE_PAIRED_EVAL_PLAN
+  - mcm_engine.eval.replay.RiskBased.reset(self) -> None
+  - 'mcm_engine.eval.replay.RiskBased.step(self, ev: TraceEvent) -> bool'
+  - mcm_engine.eval.replay.default_policies() -> list[Policy]
+  - 'mcm_engine.eval.replay.evaluate(trace: list[TraceEvent], policies: list[Policy], *, fn_weight: float=DEFAULT_FN_WEIGHT,
+    fp_weight: float=DEFAULT_FP_WEIGHT, failure_multiplier: float=DEFAULT_FAILURE_MULTIPLIER) -> list[PolicyScore]'
+  - 'mcm_engine.eval.replay.score_policy(trace: list[TraceEvent], policy: Policy, *, fn_weight: float=DEFAULT_FN_WEIGHT,
+    fp_weight: float=DEFAULT_FP_WEIGHT, failure_multiplier: float=DEFAULT_FAILURE_MULTIPLIER) -> PolicyScore'
+  - 'mcm_engine.eval.replay.should_retrieve(ev: TraceEvent) -> Optional[bool]'
+  - 'mcm_engine.eval.trace_transcript.load_transcript(path: str | Path) -> list[TraceEvent]'
   fail_to_pass:
   - tests/test_eval_replay.py::test_combined_fires_if_either
   - tests/test_eval_replay.py::test_evaluate_runs_all_default_policies
@@ -89,5 +151,6 @@ attribution:
     removed (spec), and the Fix/Shape/Design/Options/Remedy/Proposal/Build/What-to sections and labelled
     paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
     of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
-    and sandbox (evals/repo.py)
+    and sandbox (evals/repo.py); the names the hidden tests use that the fix adds or re-signs, with the
+    fix's signatures, appended to both variants (evals/interface.py)
   importer: evals.importers.history_mcm_engine

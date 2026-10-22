@@ -8,8 +8,8 @@
   "B"
  ],
  "who": {
-  "A": "claude-opus-5-5 subagent, 2026-10-17, read only soh cases labels repo --packets output; #889 mcm-engine and infovore cases: claude-opus-5-5 subagents, 2026-10-22, same packets, ascending order; #1098 mcm-engine and infovore cases: claude-opus-5-5 subagents, 2026-10-22, same packets, ascending order",
-  "B": "claude-opus-5-5 subagent, 2026-10-17, separate context, same packets, reverse order; #889 mcm-engine and infovore cases: claude-opus-5-5 subagents, 2026-10-22, separate contexts, descending order; #1098 mcm-engine and infovore cases: claude-opus-5-5 subagents, 2026-10-22, separate contexts, descending order"
+  "A": "claude-opus-5-5 subagent, 2026-10-17, read only soh cases labels repo --packets output; #889 mcm-engine and infovore cases: claude-opus-5-5 subagents, 2026-10-22, same packets, ascending order; #1098 mcm-engine and infovore cases: claude-opus-5-5 subagents, 2026-10-22, same packets, ascending order; #1103 cases with the tests-call interface shown: claude-opus-5-5 subagents, 2026-10-22, same packets, ascending order",
+  "B": "claude-opus-5-5 subagent, 2026-10-17, separate context, same packets, reverse order; #889 mcm-engine and infovore cases: claude-opus-5-5 subagents, 2026-10-22, separate contexts, descending order; #1098 mcm-engine and infovore cases: claude-opus-5-5 subagents, 2026-10-22, separate contexts, descending order; #1103 cases with the tests-call interface shown: claude-opus-5-5 subagents, 2026-10-22, separate contexts, descending order"
  },
  "settled": {},
  "labels": {
@@ -152,14 +152,14 @@
     "spec": 0,
     "tests": 2,
     "why": {
-     "tests": "tests call a new cli.screenable_backlog(want, plan=, room=) and match the printed phrase 'already on disk wait for a screen', neither named in the prompt"
+     "tests": "The full-backlog test asserts the exact output phrase 'already on disk wait for a screen', which the issue never specifies, so a correct skip with any other message fails."
     }
    },
    "B": {
-    "spec": 1,
+    "spec": 0,
     "tests": 2,
     "why": {
-     "tests": "Requires cli.screenable_backlog(want, plan=, room=) and the exact output text 'already on disk wait for a screen'."
+     "tests": "The full-backlog test asserts the exact printed phrase 'already on disk wait for a screen', a message the issue never specifies."
     }
    }
   },
@@ -168,15 +168,16 @@
     "spec": 2,
     "tests": 3,
     "why": {
-     "spec": "symptom only describes producer outrunning consumer; backpressure, cleanup, larger screen batches are all plausible",
-     "tests": "tests demand fetch-skipping backpressure via cli.screenable_backlog and an exact message, a remedy the symptom never asks for"
+     "spec": "The issue only describes the producer outrunning the consumer and never says what the remedy is (skip the fetch, shrink the fetch limit, cap by bytes, evict), so the intended behaviour of the named backlog function is a guess.",
+     "tests": "The tests demand an all-or-nothing skip of the fetch when the backlog reaches --top and an exact log phrase, neither of which the issue asks for."
     }
    },
    "B": {
-    "spec": 1,
-    "tests": 3,
+    "spec": 2,
+    "tests": 2,
     "why": {
-     "tests": "Tests require backpressure via a named screenable_backlog helper and exact message; the symptom never asks for backpressure (a disk cap or other fix fails)."
+     "spec": "Without the fix paragraph it is unclear whether to throttle the fetch budget, skip fetching, or clean up the disk, and what threshold should apply.",
+     "tests": "The full-backlog test asserts the exact printed phrase 'already on disk wait for a screen', which the issue never specifies."
     }
    }
   },
@@ -185,14 +186,14 @@
     "spec": 1,
     "tests": 2,
     "why": {
-     "tests": "tests need new ms.latest() and a migration function named _requeue_screens_of_missing_weights, names the prompt never gives"
+     "tests": "A graded test is parametrized on the private migration helper name _requeue_screens_of_missing_weights, which the issue never names, so a correct schema-20 migration under any other name fails."
     }
    },
    "B": {
     "spec": 1,
     "tests": 2,
     "why": {
-     "tests": "Graded ids embed the private name _requeue_screens_of_missing_weights, and tests call a new ms.latest(); neither name is in the prompt."
+     "tests": "The graded parametrized ids depend on the migration helper being named exactly _requeue_screens_of_missing_weights, a name the prompt never gives."
     }
    }
   },
@@ -201,14 +202,14 @@
     "spec": 1,
     "tests": 3,
     "why": {
-     "tests": "graded schema-20 migration repairing old broken verdicts is not asked for, plus required names ms.latest and _requeue_screens_of_missing_weights"
+     "tests": "The tests require a schema-20 migration that requeues existing broken verdicts, under a specific private helper name, and the symptom-only issue never asks for any retroactive repair."
     }
    },
    "B": {
     "spec": 1,
     "tests": 3,
     "why": {
-     "tests": "Adds the unrequested schema-20 requeue migration under a fixed private name and a new ms.latest API."
+     "tests": "The graded tests check a schema 20 migration that requeues broken verdicts through a function named _requeue_screens_of_missing_weights, and they block re-queue after a 'screened' verdict, none of which the issue asks for."
     }
    }
   },
@@ -251,14 +252,14 @@
     "spec": 1,
     "tests": 2,
     "why": {
-     "tests": "requires a new gguf.shard_sets() returning {} for incomplete sets and both remedies at once (shard sum and stray exclusion) where the prompt offers either"
+     "tests": "The tests require incomplete split sets to be excluded entirely (shard_sets == {} and smallest == 0), a rule the issue never states, so a fix that sums whatever parts are listed fails."
     }
    },
    "B": {
     "spec": 1,
-    "tests": 3,
+    "tests": 2,
     "why": {
-     "tests": "Requires a new gguf.shard_sets name and that an incomplete split set sizes to 0, not asked; the prompt's alternative 'ignore a far-smaller single file' fix fails smallest()==shard sum."
+     "tests": "The issue offers shard-set sizing or ignoring a stray small file as alternatives, but the tests require both, and also require an incomplete split set to give 0."
     }
    }
   },
@@ -267,14 +268,14 @@
     "spec": 1,
     "tests": 2,
     "why": {
-     "tests": "requires a gguf.shard_sets() function by name, incomplete-set semantics and exact smallest() equal to the full shard-set sum"
+     "tests": "The tests fix unstated details such as dropping incomplete split sets and a stray-file threshold relative to the smallest split variant, rejecting reasonable sizing fixes that differ on those points."
     }
    },
    "B": {
     "spec": 1,
-    "tests": 3,
+    "tests": 2,
     "why": {
-     "tests": "Requires gguf.shard_sets, shard-sum sizing and incomplete-set exclusion, none of which the symptom specifies."
+     "tests": "A fix must both sum complete shard sets and drop a stray small single file, and it must treat an incomplete split set as no variant, a combination the issue never pins down."
     }
    }
   },
@@ -335,42 +336,36 @@
   "sohot-598-spec": {
    "A": {
     "spec": 0,
-    "tests": 1
+    "tests": 0
    },
    "B": {
     "spec": 0,
-    "tests": 1
+    "tests": 0
    }
   },
   "sohot-598-symptom": {
    "A": {
-    "spec": 1,
-    "tests": 2,
-    "why": {
-     "tests": "graded test imports migrations.v58 and calls its data(conn); a repair migration is not asked by the symptom"
-    }
+    "spec": 0,
+    "tests": 1
    },
    "B": {
     "spec": 1,
-    "tests": 2,
-    "why": {
-     "tests": "Graded test calls migrations.v58.data() to repair existing rows; the symptom asks no repair, only the listed v58.py file hints it."
-    }
+    "tests": 0
    }
   },
   "sohot-632-spec": {
    "A": {
     "spec": 1,
-    "tests": 3,
+    "tests": 2,
     "why": {
-     "tests": "tests need fetching.runner_bases, a sizer= kwarg on fetching.run, unknown-size bases refused with 'size' in why, reason LIMIT, and both fetch and wait paths though the prompt offers either"
+     "tests": "The tests pin details the issue never asks for: refusing a base of unknown size with 'size' in the reason, a 'budget' wording, the reasons.LIMIT verdict reason, an exact fetch order, and the base surfacing through requires() for the 8B variant too."
     }
    },
    "B": {
     "spec": 1,
-    "tests": 3,
+    "tests": 2,
     "why": {
-     "tests": "Requires new fetching.runner_bases and a sizer kwarg on fetching.run, and refusing a base of unknown size, none named or asked; the allowed 'wait on a setup step' path fails."
+     "tests": "Refusing a base of unknown size with 'size' in the message, reasons.LIMIT plus 'budget' in the message, and fetching bases for candidates already on disk are details a reasonable fix could easily do differently."
     }
    }
   },
@@ -379,16 +374,16 @@
     "spec": 2,
     "tests": 3,
     "why": {
-     "spec": "symptom names no remedy: run the setup script, fetch the base, park the candidate, or decline it are all plausible",
-     "tests": "same unasked names (runner_bases, sizer=) and fetch/budget/wait behaviours as the spec variant"
+     "spec": "The issue says only that nothing acts on the harness_error, leaving open whether to fetch the base, decline, park the candidate, or stop re-screening it.",
+     "tests": "The tests check budget enforcement, unknown-size refusal, a specific waiting verdict reason and on-disk base backfill, none of which the symptom-only issue asks for."
     }
    },
    "B": {
     "spec": 2,
     "tests": 3,
     "why": {
-     "spec": "No direction on whether to fetch the base, wait on setup, or skip the candidate.",
-     "tests": "Requires runner_bases, sizer kwarg, budget/unknown-size refusals with LIMIT reason; symptom asks none of this."
+     "spec": "The issue says only that nothing acts on the harness_error, so it is unclear whether to fetch the base, park the candidate, or decline it.",
+     "tests": "The tests require fetching the base inside fetching.run, refusing a base of unknown size, a LIMIT reason for a budget overrun, and an 8B size mapping, none of which the issue asks for."
     }
    }
   },
@@ -559,16 +554,16 @@
   "sohot-879-spec": {
    "A": {
     "spec": 1,
-    "tests": 3,
+    "tests": 2,
     "why": {
-     "tests": "tests need a new screen_detail(why, stderr, summary) that drops stderr entirely when a receipt exists, and directions for retries/stages/thinking_disabled the prompt never names"
+     "tests": "The issue says to keep subprocess stderr out of verdict detail, yet the test demands that non-warning stderr be kept in an exact 'why || Traceback ...' format when there is no receipt, and the hidden scanner requires directions for retries, stages and thinking_disabled under its own detection rules."
     }
    },
    "B": {
     "spec": 1,
-    "tests": 3,
+    "tests": 2,
     "why": {
-     "tests": "Tests import a new screen_detail(why, stderr, summary) never named, and require dropping all stderr when a receipt exists, a receipt/no-receipt split the prompt never describes."
+     "tests": "The tests need one exact split, all stderr dropped when a receipt exists and only warnings stripped when there is none, so the literal reading 'keep subprocess stderr out' fails, and so does warning-only filtering."
     }
    }
   },
@@ -577,14 +572,14 @@
     "spec": 1,
     "tests": 3,
     "why": {
-     "tests": "same unasked screen_detail function, receipt/no-receipt split and extra metric directions as the spec variant"
+     "tests": "The repo-wide scanner test requires METRIC_DIRECTION entries for metrics other than attempts (retries, stages, thinking_disabled), which the symptom-only issue never mentions, and the detail format is pinned exactly."
     }
    },
    "B": {
     "spec": 1,
     "tests": 3,
     "why": {
-     "tests": "Requires screen_detail(why, stderr, summary), the receipt split, and an AST scanner forcing directions for retries/stages/thinking_disabled; symptom asks none of it."
+     "tests": "The direction test needs entries for retries, stages and thinking_disabled, which the issue never mentions, and the receipt test drops non-warning stderr like 'loading weights' when the issue only complains about warnings."
     }
    }
   },
@@ -609,15 +604,16 @@
     "spec": 2,
     "tests": 3,
     "why": {
-     "spec": "The one-line issue lists status fields (current/archived/irrelevant/set aside/residue) without defining what each counts, e.g. that archived means cascade relevant plus residue.",
-     "tests": "Tests require exact status lines such as 'archived: 4 (cascade relevant 3, residue 1)' and 'extraction (history): done 1, pending 7', a 'cycle: cascade' step name, and run_once/run_forever signatures without the extractor argument, none stated in the issue."
+     "spec": "The status report lists terse labels (archived, set aside, residue) without defining their buckets or formats, so what each line should count and print is unclear.",
+     "tests": "Tests assert exact unrequested lines such as 'not yet cascaded: 1' and 'extraction (history): done 1, pending 7', a 'cycle: cascade' step name, and the absence of older status lines."
     }
    },
    "B": {
-    "spec": 1,
+    "spec": 2,
     "tests": 3,
     "why": {
-     "tests": "Tests demand exact status lines such as 'archived: 4 (cascade relevant 3, residue 1)' and the never-requested 'extraction (history): done 1, pending 7', a 'cascade' cycle step name, and run_once/run_forever with the extractor parameter removed."
+     "spec": "The issue is a terse two-sentence list of status fields and loop changes, with no formats, field definitions, or a way to cascade only new exchanges.",
+     "tests": "The tests pin exact status lines such as 'archived: 4 (cascade relevant 3, residue 1)', 'irrelevant: N (denylist, bayes)', 'excluded channels: food, memes' and 'extraction (history): done 1, pending 7', plus a 'cascade' step name and the removal of old status lines."
     }
    }
   },
@@ -689,49 +685,50 @@
   "mcm-engine-109-spec": {
    "A": {
     "spec": 1,
-    "tests": 3,
+    "tests": 2,
     "why": {
-     "tests": "Tests require a Context field named stale_index_warning, the literal prefix \"[STALE INDEX]\", and test_wiring asserts that is the only extra Context field; the issue names none of these."
+     "tests": "The tests require the literal marker \"[STALE INDEX]\" in search and session_start output, a string the issue never specifies, so any other staleness wording fails."
     }
    },
    "B": {
     "spec": 1,
-    "tests": 3,
+    "tests": 2,
     "why": {
-     "tests": "Tests require a Context field named exactly stale_index_warning (and test_wiring allows only that extra field) plus the literal '[STALE INDEX]' prefix; the issue names neither."
+     "tests": "Tests require the literal '[STALE INDEX]' marker and exactly one extra Context field, details the issue does not specify."
     }
    }
   },
   "mcm-engine-116-spec": {
    "A": {
     "spec": 1,
-    "tests": 2,
+    "tests": 3,
     "why": {
-     "tests": "test_seam_inventory pins exact SQL execute-site counts (postgres 71, sqlite 69, schema 67), so a correct fix that builds the scoped query in the existing SELECT or adds the Postgres ALTER via its own execute fails."
+     "tests": "Three graded tests pin exact SQL execute-site counts per file (67/69/71), which the issue never mentions and which an issue-requested index or a differently structured query would break."
     }
    },
    "B": {
     "spec": 1,
     "tests": 2,
     "why": {
-     "tests": "test_seam_inventory pins exact SQL execute-site counts (schema.py 67, sqlite 69, postgres 71), so the index the issue asks for, or any different query structure, fails."
+     "tests": "Tests pin exact SQL execute-site counts per file, so a fix that adds the index the issue proposes or structures the scoped query differently fails."
     }
    }
   },
   "mcm-engine-116-symptom": {
    "A": {
-    "spec": 1,
+    "spec": 2,
     "tests": 3,
     "why": {
-     "tests": "Without the proposed-fix section the prompt never names SessionRow.principal/workspace, get_last_session(principal=, workspace=), the NULL-scope fallback ordering, CORE_VERSION 17, or the exact SQL-site counts the tests assert."
+     "spec": "Without the proposed-fix section the NULL-scope fallback, unscoped global-latest behavior and migration shape are left open, and the workspace default is an explicit open question.",
+     "tests": "The tests pin exact SQL execute-site counts per file and require a NULL-scope fallback ordering that this version of the issue never describes."
     }
    },
    "B": {
     "spec": 2,
     "tests": 3,
     "why": {
-     "spec": "The issue ends on an unresolved maintainer question about how the workspace scope is derived and how unauthenticated contexts behave, and it proposes no fix.",
-     "tests": "Tests require principal/workspace kwargs on get_last_session (the prompt points at the existing caller param), a specific NULL-scope fallback ordering, CORE_VERSION 17, and exact SQL execute-site counts in test_seam_inventory."
+     "spec": "The issue ends with an unresolved open question about how workspace and unauthenticated scoping should behave.",
+     "tests": "Tests pin a NULL-scope fallback rule, a schema bump to exactly v17 and exact SQL execute-site counts per file, none of which the symptom prompt asks for."
     }
    }
   },
@@ -778,16 +775,16 @@
   "mcm-engine-156-spec": {
    "A": {
     "spec": 1,
-    "tests": 3,
+    "tests": 2,
     "why": {
-     "tests": "Tests require tracker.coverage dict keyed by lowercased topic, record_coverage/reconcile_coverage/is_covered(require_resident=), a save_snapshot(compaction=True) parameter, and result_ids as (\"KNOWLEDGE\", 1) tuples, none named in the issue."
+     "tests": "The tests read a `tracker.coverage` dict with lowercased-stripped keys and tuple result ids and call `save_snapshot(compaction=True)`, internal names and mechanisms the issue never specifies."
     }
    },
    "B": {
     "spec": 1,
-    "tests": 3,
+    "tests": 2,
     "why": {
-     "tests": "Tests call unnamed tracker methods record_coverage, reconcile_coverage(resident=) and is_covered(require_resident=), read a tracker.coverage dict, and require a compaction=True kwarg on save_snapshot; the issue names none of these."
+     "tests": "Tests read an unnamed tracker.coverage dict keyed by lowercased topic, expect result_ids as (\"KNOWLEDGE\", id) tuples and a new save_snapshot(compaction=True) parameter as the PreCompact reconciliation path."
     }
    }
   },
@@ -829,14 +826,14 @@
     "spec": 1,
     "tests": 2,
     "why": {
-     "tests": "Tests require ids inside the type tag as \"[RULE #\", \"[NEGATIVE #\", \"[ERROR #\" and link_knowledge in NudgeConfig.advisory_periodic_tools, though the issue offers several alternative fixes and no format."
+     "tests": "Tests require the id inside the type tag in the exact form [RULE #id], [NEGATIVE #, [ERROR #, a layout the issue never specifies, so other reasonable id renderings fail."
     }
    },
    "B": {
     "spec": 1,
-    "tests": 3,
+    "tests": 2,
     "why": {
-     "tests": "Although 'pick one or more' is offered, tests require both the exact '[RULE #id]'-style tag format and link_knowledge in advisory_periodic_tools, which rejects other formats and the 'keep search usable' option."
+     "tests": "Most graded tests require ids rendered in the exact form '[RULE #id]', '[NEGATIVE #', '[ERROR #', a layout the issue never specifies, so any other id format fails."
     }
    }
   },
@@ -845,62 +842,59 @@
     "spec": 1,
     "tests": 2,
     "why": {
-     "tests": "Tests require the exact \"[RULE #id]\" tag format and that link_knowledge be added to NudgeConfig.advisory_periodic_tools, which is one of several reasonable ways to break the deadlock."
+     "tests": "Tests pin the unstated [TYPE #id] tag format across all entity types, rejecting other reasonable ways to surface ids in search output."
     }
    },
    "B": {
     "spec": 1,
-    "tests": 3,
+    "tests": 2,
     "why": {
-     "tests": "Nearly every test asserts an exact id format inside the type tag ('[RULE #', '[NEGATIVE #', '[ERROR #'), and a separate test requires link_knowledge in NudgeConfig.advisory_periodic_tools; the prompt asks for neither."
+     "tests": "Most graded tests require ids rendered in the exact form '[RULE #id]', '[NEGATIVE #', '[ERROR #', a layout the issue never specifies, so any other id format fails."
     }
    }
   },
   "mcm-engine-79-spec": {
    "A": {
     "spec": 1,
-    "tests": 2,
-    "why": {
-     "tests": "The issue lists three acceptable directions, but the tests pass only with the shared-connection option and need a shared_db kwarg on build_context/build_verified_context, so lowering busy_timeout or moving bumps off-path fails."
-    }
+    "tests": 1
    },
    "B": {
     "spec": 1,
-    "tests": 3,
+    "tests": 2,
     "why": {
-     "tests": "Tests assert a shared_db kwarg on build_context/build_verified_context and that the adapters share one private _db object, so the issue's other offered directions (lower busy_timeout, off-path bumps) all fail."
+     "tests": "Tests accept only the shared-connection direction, and only when build_context shares by resolved file path without being passed shared_db, which rejects the lower-busy_timeout and off-path-bump fixes the issue offers as equally valid."
     }
    }
   },
   "mcm-engine-80-spec": {
    "A": {
     "spec": 1,
-    "tests": 3,
+    "tests": 2,
     "why": {
-     "tests": "Tests require rulesift.is_substantive and passes_gate(strict=), a --remote-loose CLI flag, and _sift_remote_call omitting strict from the payload in default mode, none of which the issue names."
+     "tests": "Tests use a --remote-loose CLI flag and 'loose' in stderr, both unnamed in the issue, and require that strict is omitted from the payload when it is the default."
     }
    },
    "B": {
     "spec": 1,
-    "tests": 3,
+    "tests": 2,
     "why": {
-     "tests": "Beyond the suggested strict= parameter, tests require the unnamed functions is_substantive/passes_gate, a --remote-loose flag, a 6-token substance floor, and payload details of the private _sift_remote_call."
+     "tests": "One test drives a --remote-loose CLI flag the prompt never names and checks for 'loose' in stderr, and another requires that strict be omitted from the payload unless loose, details a reasonable fix would not match."
     }
    }
   },
   "mcm-engine-80-symptom": {
    "A": {
     "spec": 1,
-    "tests": 3,
+    "tests": 2,
     "why": {
-     "tests": "Tests require is_substantive/passes_gate names, a strict= parameter on sift_spans/sift_candidates/_collect_remote_spans, and a --remote-loose flag, none of which the prompt specifies."
+     "tests": "Tests depend on an unstated --remote-loose flag, a 'loose' stderr marker and omitting strict from the default payload, rejecting reasonable variants."
     }
    },
    "B": {
     "spec": 1,
-    "tests": 3,
+    "tests": 2,
     "why": {
-     "tests": "Tests call rulesift.is_substantive and passes_gate(strict=), a --remote-loose CLI flag, a strict kwarg on sift_candidates and _collect_remote_spans, and check that _sift_remote_call omits strict by default; the prompt names none of these."
+     "tests": "One test drives an unnamed --remote-loose CLI flag and checks for 'loose' in stderr, and others pin the exact boilerplate rejection and the rule that the strict arg is sent only when loose, none of which the issue states."
     }
    }
   },
@@ -917,32 +911,32 @@
   "infovore-217-spec": {
    "A": {
     "spec": 1,
-    "tests": 3,
+    "tests": 2,
     "why": {
-     "tests": "The judge test module imports MIN_TEXT_MESSAGES, a name the prompt never gives, and the cascade tests demand the exact line 'stage no_text: n=3 share=0.600 (set aside, not scored)', a 'no_text' label and '[redacted]' counting as no text, none of which the prompt states."
+     "tests": "Tests require an exact output line '(set aside, not scored)', a 'no_text' annotation label and scorer name, and treat '[redacted]' and deleted messages as text-less, none of which the issue states."
     }
    },
    "B": {
     "spec": 1,
-    "tests": 3,
+    "tests": 2,
     "why": {
-     "tests": "The whole judge test module imports MIN_TEXT_MESSAGES, a constant the issue never names, and the cascade tests pin an exact stage no_text output line and treat [redacted] content as text-less, which the issue does not specify."
+     "tests": "The tests treat '[redacted]' and deleted messages as non-text and pin the exact 'stage no_text: n=3 share=0.600 (set aside, not scored)' output, details a reasonable non-empty-text fix would not match."
     }
    }
   },
   "infovore-250-spec": {
    "A": {
     "spec": 1,
-    "tests": 3,
+    "tests": 2,
     "why": {
-     "tests": "The embed stage test module imports an unstated threshold_stats function with a fixed dict shape, and other tests require a recipe 'cv' key, a relevant_precision keyword and 'cv irrelevant: n=' output, all invented by the reference."
+     "tests": "Tests pin the threshold_stats dict layout, a recipe 'cv' key, the 'cv irrelevant: n=' print format and 0.0 for empty sides, none of which the issue specifies."
     }
    },
    "B": {
     "spec": 1,
-    "tests": 3,
+    "tests": 2,
     "why": {
-     "tests": "The embed stage test module imports threshold_stats, a name the issue never gives, and tests also pin a recipe key cv, a relevant_precision keyword on fit_embed_stage and exact cv irrelevant: n= output lines."
+     "tests": "The tests require the CV stats under recipe['cv'] with n/precision/recall keys and exact 'cv irrelevant: n=' print lines, a layout the issue does not specify."
     }
    }
   },
@@ -951,68 +945,61 @@
     "spec": 2,
     "tests": 3,
     "why": {
-     "spec": "The prompt names the command and stage but leaves the length buckets, report layout, how the stage is switched on, and the status output entirely open.",
-     "tests": "Tests import a new short_report module with Row, Cutoff, bucket_of, bucket_table, best_cutoff and cutoff_line, fixed bucket edges, an exact cutoff line and a changed status line, none of which the prompt states."
+     "spec": "The issue gives no bucket edges, cutoff semantics, output format or stage placement, leaving most of the design open beyond the signature list.",
+     "tests": "Tests check exact bucket labels, a chars+1 cutoff limit, an exact cutoff_line string, and a new 'short no tech' status line the issue never requests."
     }
    },
    "B": {
     "spec": 2,
     "tests": 3,
     "why": {
-     "spec": "The issue does not define length (characters or messages), the buckets, the report columns, or how the stage and cutoff are wired into the cascade, so a correct fix is unclear.",
-     "tests": "Tests import a new infovore.triage.short_report module with Row, Cutoff, bucket_of, bucket_table, best_cutoff, cutoff_line and short_limit, exact bucket labels, a short_limit keyword on run_cascade and exact status and cutoff strings, none stated."
+     "spec": "The two-sentence issue does not define the length buckets, the length unit, the cutoff semantics or the report layout.",
+     "tests": "The tests pin exact bucket labels and edges, the cutoff_line format, a new 'short no tech' field in the status output, the short_limit key in recipe_json and the stage order, none of which the issue asks for."
     }
    }
   },
   "infovore-327-spec": {
    "A": {
-    "spec": 1,
-    "tests": 3,
-    "why": {
-     "tests": "The whole seed test module imports parse_ranks, sample_window and SEED_DEEP_SOURCE_REF_PREFIX, which the prompt never names, and pins write_seed_queue's new prefix argument and a sorted sample order."
-    }
+    "spec": 0,
+    "tests": 1
    },
    "B": {
     "spec": 1,
-    "tests": 3,
-    "why": {
-     "tests": "The test module imports parse_ranks, sample_window and SEED_DEEP_SOURCE_REF_PREFIX and passes a fourth prefix argument to write_seed_queue, names and signatures the issue never gives, so most fixes fail at import."
-    }
+    "tests": 1
    }
   },
   "infovore-338-spec": {
    "A": {
-    "spec": 2,
+    "spec": 1,
     "tests": 3,
     "why": {
-     "spec": "The issue covers clustering, corroboration fields, ordering, page text, stats output, a metric and a contradiction audit with no interface, flag or output format, so many different fixes fit.",
-     "tests": "Tests require unstated names (cosine, make_grouper, make_grouper_for, summarise), a --grouping flag, and the page text '1 speaker(s), 1 conversation(s)' where the issue asks for 'N people, M conversations'."
+     "tests": "The golden page and render tests require '1 speaker(s), 1 conversation(s)' wording that differs from the issue's 'N people, M conversations', plus exact summary strings, a 0.85 cosine default and identity of make_grouper_for('jaccard')."
     }
    },
    "B": {
     "spec": 2,
     "tests": 3,
     "why": {
-     "spec": "The issue leaves the CLI switch for embedding, thresholds, the verdict mix, single-source flagging and the exact page and stats output open, and the metric and contradiction audit have no clear deliverable.",
-     "tests": "Tests import unstated names (cosine, make_grouper, make_grouper_for, summarise), require a --grouping embed flag, an exact corroboration summary string and an exact entry format in the golden page."
+     "spec": "The build list spans embedding clustering, verdict mix, singleton flagging, a printed distribution, page text and a contradiction audit, leaving the scope and the output formats open.",
+     "tests": "The tests require entry text '1 speaker(s), 1 conversation(s)' where the issue asks for 'N people, M conversations, first/last seen', plus an exact summarise() string and a --grouping flag the issue never names."
     }
    }
   },
   "infovore-338-symptom": {
    "A": {
-    "spec": 3,
+    "spec": 2,
     "tests": 3,
     "why": {
-     "spec": "Without the build list the prompt only names a corroboration score and a metric, leaving no indication of which functions, commands, pages or outputs should change.",
-     "tests": "Tests require unstated names (cosine, make_grouper, make_grouper_for, summarise), a --grouping flag, an exact corroboration stats line and a specific page entry format that the prompt never describes."
+     "spec": "Only the motivation and a metric remain; the build steps, output and page format are absent, so a correct fix is unclear beyond the names list.",
+     "tests": "Tests require exact entry and summary wording, a sort order, a cosine default and error text that the issue never describes."
     }
    },
    "B": {
-    "spec": 3,
+    "spec": 2,
     "tests": 3,
     "why": {
-     "spec": "With the Build list removed, the prompt only says a corroboration signal exists and gives a metric, leaving what to build nearly impossible to infer.",
-     "tests": "Tests import cosine, make_grouper, make_grouper_for, summarise and ClaimGroup properties, require a --grouping flag, a new sort order, an exact summary string and a changed golden page format, none of which the prompt states."
+     "spec": "Without the build list, the issue gives only a motivation and a metric, and does not say what to cluster, what to show, or where to show it.",
+     "tests": "The tests pin the exact page-entry suffix '; N speaker(s), M conversation(s))', the exact summarise() string, a --grouping embed CLI flag and the vector-mismatch error message, none of which the issue asks for."
     }
    }
   },
@@ -1021,16 +1008,16 @@
     "spec": 2,
     "tests": 3,
     "why": {
-     "spec": "The orphan page is 'Misc keyed by lexicon term or speaker-free entity' and the loss accounting 'at every gate' has no format, so the intended design is unclear.",
-     "tests": "Tests demand an 'Unsorted' page and unsorted.md where the issue says Misc, plus unstated names UNSORTED, article_parts and part_key, a 'General#2' key format and an 'on pages: 4/6' line."
+     "spec": "The issue asks for a Misc page keyed by lexicon term or entity and loss accounting at every gate, which conflicts with the single-page shape the names suggest and leaves the accounting format undefined.",
+     "tests": "Tests require a single 'Unsorted' page at unsorted.md, a 'General#2' part-key format and an 'on pages: 4/6' line, not the keyed Misc pages or per-gate accounting the issue asks for."
     }
    },
    "B": {
     "spec": 2,
     "tests": 3,
     "why": {
-     "spec": "The orphan page is described as a Misc page keyed by lexicon term or entity and build should print loss accounting at every gate, which the reference does not do, so the intended fix is unclear.",
-     "tests": "Tests require a single Unsorted page named unsorted.md, imported names UNSORTED, article_parts and part_key, a General#N key scheme and an on pages stats line, contradicting the Misc wording and naming details the issue never gives."
+     "spec": "'A Misc page keyed by lexicon term or speaker-free entity' and 'loss accounting at every gate' are too vague to pin down a correct fix.",
+     "tests": "The issue asks for a Misc page, but the tests require unsorted.md, and they also pin the exact 'on pages: 4/6' line and 'General#2' part keys, which the issue never asks for."
     }
    }
   },
@@ -1039,16 +1026,16 @@
     "spec": 2,
     "tests": 3,
     "why": {
-     "spec": "Without the fix list the prompt only describes the losses, so the remedy for orphans, the cut and the min_claims default is left to guesswork.",
-     "tests": "Tests demand an 'Unsorted' page, unstated names UNSORTED, article_parts and part_key, a 'General#2' part key format and an 'on pages: X/Y' line that the prompt never mentions."
+     "spec": "Only the losses are described, with no stated remedy for orphans, the group cap or the default, so many fixes are plausible.",
+     "tests": "Tests pin an Unsorted page and filename, a '#'-numbered part-key scheme, Unit part/key attributes and an 'on pages' stats line, none of which the issue mentions."
     }
    },
    "B": {
     "spec": 2,
     "tests": 3,
     "why": {
-     "spec": "The prompt lists only audit numbers and a metric, so whether to add a page for orphans, batch or drop the group cap, change the default, or how, is left to guesswork.",
-     "tests": "Tests import UNSORTED, article_parts and part_key, require an unsorted.md page, General#2 section keys, Unit.part and Unit.key, and an exact on pages: X/Y stats line, none of which the prompt mentions."
+     "spec": "The issue only reports the audit numbers and a target metric, without saying what should change.",
+     "tests": "The tests require an Unsorted page written as unsorted.md, an exact 'on pages: X/Y' stats line, 'General#2' part keys and Unit.part/Unit.key attributes, none of which the issue asks for."
     }
    }
   },
@@ -1057,112 +1044,99 @@
     "spec": 2,
     "tests": 3,
     "why": {
-     "spec": "Four loosely described controls plus a bootstrap requirement, with no flags, input source for the drop log, or table layout, leave a correct fix unclear.",
-     "tests": "Tests import a new controls module with specific private and public names (_length_bucket, shuffled_citations, overlap_floor, worst, read_drops, Stratum), fixed length buckets, a --drops-log and --sample flag, and exact output strings, none stated in the issue."
+     "spec": "Four loosely described controls with an unimplemented bootstrap requirement, unspecified CLI flags and sampling rules leave the correct implementation open.",
+     "tests": "Tests check unrequested CLI flags (--sample, --article-run, --drops-log), exact length buckets, verdict severity order, p50/p90/p99 keys and exact output strings."
     }
    },
    "B": {
     "spec": 2,
     "tests": 3,
     "why": {
-     "spec": "The issue names four controls but leaves the CLI flags, the input for the article-run drop rate (a drops log), the output layout and the bootstrap undefined, so many differing designs fit.",
-     "tests": "Tests import a new infovore.claims.controls module with specific function, dataclass and private helper names, exact length buckets, exact output strings and flags like --drops-log and --sample, none of which the issue states."
+     "spec": "The issue lists four loosely described controls plus author-cluster bootstrap intervals, and leaves the inputs (article run 0078, the drops log format), the CLI flags and the output layout unspecified.",
+     "tests": "The tests check CLI flags (--sample, --article-run, --drops-log), config-error rules, exact report lines, length-bucket labels and p50/p90/p99 quantile keys, none of which the issue mentions."
     }
    }
   },
   "infovore-348-spec": {
    "A": {
     "spec": 0,
-    "tests": 2,
-    "why": {
-     "tests": "The db test module imports latest_article_run and run_sections and no longer imports written_sections, so fixes that keep or rename the helper differently fail on import although the behaviour tests are fair."
-    }
+    "tests": 0
    },
    "B": {
     "spec": 0,
-    "tests": 3,
-    "why": {
-     "tests": "The db test module imports the unstated names latest_article_run and run_sections, so a correct fix with any other helper names fails the whole module at import."
-    }
+    "tests": 0
    }
   },
   "infovore-348-symptom": {
    "A": {
     "spec": 1,
-    "tests": 2,
-    "why": {
-     "tests": "The db test module imports unstated helpers latest_article_run and run_sections, and the write tests require resume to reuse the existing run id, which rejects a build-side fix the symptom also allows."
-    }
+    "tests": 1
    },
    "B": {
     "spec": 1,
-    "tests": 3,
-    "why": {
-     "tests": "The db test module imports latest_article_run and run_sections, names the prompt never gives, and the command tests demand reusing the old run id rather than other fixes such as copying sections or reading several runs."
-    }
+    "tests": 1
    }
   },
   "infovore-349-spec": {
    "A": {
     "spec": 0,
-    "tests": 3,
+    "tests": 2,
     "why": {
-     "tests": "Every build and render test calls an unstated page_files function and changed render_page and render_index signatures, and one test also requires the 'index' slug to be reserved, which the issue never asks for."
+     "tests": "Tests require page_files to reserve 'index' (Index becomes index-2.md) and to give natural slugs like 'o2-2' to topics by weight order, which the issue never asks for."
     }
    },
    "B": {
     "spec": 0,
-    "tests": 3,
-    "why": {
-     "tests": "Every test in test_build.py and test_render_articles.py imports page_files, a function name the prompt never states, and expects render_page to take a mapping and render_index a second argument, so almost any fix fails at import."
-    }
+    "tests": 1
    }
   },
   "infovore-349-symptom": {
    "A": {
     "spec": 1,
-    "tests": 3,
+    "tests": 2,
     "why": {
-     "tests": "Without the fix paragraph the tests still pin an unstated page_files function, new render signatures, a '-2' suffix ordered by claim count, a 'topic-<8 hex sha1>' fallback and a reserved 'index' slug."
+     "tests": "Without the fix paragraph, tests still demand the exact scheme (largest topic keeps the plain slug, -2/-3 suffixes, topic-<8 hex sha1>, reserved index) that other reasonable de-duplication schemes would not match."
     }
    },
    "B": {
     "spec": 1,
-    "tests": 3,
+    "tests": 2,
     "why": {
-     "tests": "Tests import a new page_files function the prompt never names, change render_page and render_index signatures, and pin a weight-ordered -2/-3 suffix and topic-<8 hex> fallback scheme the symptom-only prompt never asks for."
+     "tests": "The issue states no fix, but the tests require the exact naming scheme (heaviest topic keeps the plain slug, -2/-3 suffixes, topic-<8 hex of sha1>, index-2 for a topic named Index), which rejects other valid ways to make filenames unique."
     }
    }
   },
   "infovore-352-spec": {
    "A": {
     "spec": 1,
-    "tests": 3,
+    "tests": 2,
     "why": {
-     "tests": "The canon test module imports unstated spelling_counts, summarise_merge and Merged, and tests pin exact merge maps from heuristic plural and generic-noun rules plus the exact line 'merged: 3 keys, 3 claim-tags'."
+     "tests": "Tests pin exact merge_map outputs for -es/-ies plurals, en-dash and backtick stripping, chain/cycle handling and a 'merged: 3 keys, 3 claim-tags' format that go beyond the issue's stated rules."
     }
    },
    "B": {
     "spec": 1,
-    "tests": 3,
+    "tests": 2,
     "why": {
-     "tests": "Tests import unstated spelling_counts, summarise_merge and Merged, require a display_names(tags, merge) signature, pin exact merge_map outputs from unstated heuristics (es/ies plurals, chain resolution), and require the 'merged: 3 keys, 3 claim-tags' format."
+     "tests": "The tests pin exact merge_map output for es/ies plurals, en-dash and backtick stripping, the 'the' prefix, and the exact 'merged: K keys, T claim-tags' wording, so many reasonable implementations of the stated guards would fail."
     }
    }
   },
   "infovore-353-spec": {
    "A": {
-    "spec": 1,
+    "spec": 2,
     "tests": 3,
     "why": {
-     "tests": "The issue asks for a --novelty-floor F flag dropping claims above 1 minus F, but the tests require a --background C flag, an established() helper, WikiClaim novelty/reference positional fields, a background kwarg and an exact Background line format, none of which the issue states."
+     "spec": "A large multi-part design whose threshold semantics (novelty floor F against cosine above 1 minus F) and storage of novelty versus cosine conflict with the stated signatures.",
+     "tests": "Tests use a '--background' CLI flag the issue never names (it asks for --novelty-floor), store raw cosine in a 'novelty' field, and assert exact 'background: 1 (cosine >= 0.8)' and Background entry formats."
     }
    },
    "B": {
-    "spec": 1,
+    "spec": 2,
     "tests": 3,
     "why": {
-     "tests": "The issue specifies --novelty-floor F with a 1 minus F cutoff, but tests require a --background C cosine flag, an established() helper, positional novelty/reference fields on WikiClaim, and exact output like 'background: 1 (cosine >= 0.8)'."
+     "spec": "The issue lays out a five-part design with a --novelty-floor flag and novelty defined as 1 minus the cosine, but the listed signatures point to a different background threshold, so it is unclear what should be built.",
+     "tests": "The tests require a --background flag (the issue says --novelty-floor), store the raw cosine in WikiClaim.novelty when the issue defines novelty as 1 minus the cosine, and pin exact output strings such as 'background: 1 (cosine >= 0.8)' and the Background entry layout."
     }
    }
   },
@@ -1171,31 +1145,30 @@
     "spec": 1,
     "tests": 3,
     "why": {
-     "tests": "Tests import an unstated infovore.wiki.corrections module with load_corrections(text) and a positional Correction dataclass, require a corrections kwarg and Excluded.unmatched, and check Markdown indented-code rendering to pre blocks and a reserved fix slug that the issue never asks for."
+     "tests": "Tests check indented-code to <pre> rendering in the HTML body, ValueError validation for ambiguous or duplicate entries, and exact nav and footer HTML placement, none of which the issue asks for."
     }
    },
    "B": {
     "spec": 1,
     "tests": 3,
     "why": {
-     "tests": "Tests import an unstated infovore.wiki.corrections module (load_corrections(text), Correction with .key), a corrections= kwarg and Excluded.unmatched, ValueError on ambiguous or whitespace-duplicate entries, reserved fix-2.md slugs, and <pre> code-block rendering the issue never asks for."
+     "tests": "The tests require body() to render four-space-indented lines as escaped <pre> code blocks, and they also pin the exact nav and footer HTML, whitespace normalisation of statements, and ValueError messages containing 'correction'; the issue asks for none of these."
     }
    }
   },
   "mcm-engine-142-spec": {
    "A": {
-    "spec": 2,
-    "tests": 3,
+    "spec": 1,
+    "tests": 2,
     "why": {
-     "spec": "The main deliverable is a one-off data cleanup through the MCP with an optional code guard, so what code change counts as the fix is unclear.",
-     "tests": "Tests import unstated helpers clean_summary_detail, is_polluted and strip_tool_call_fragments and an unstated sanitize_knowledge tool with a fixed output format."
+     "tests": "The tests call an unnamed `sanitize_knowledge` tool with a `dry_run` flag and exact output phrases (\"scanned 2\", \"1 polluted\", \"updated 1\"), and require strip-not-reject at store time though the issue allows either."
     }
    },
    "B": {
     "spec": 1,
-    "tests": 3,
+    "tests": 2,
     "why": {
-     "tests": "Tests import unstated sanitize helpers and a sanitize_knowledge tool with exact strings like 'scanned 2' and 'updated 1', and require the optional prevention to strip and salvage rather than reject."
+     "tests": "Tests require an MCP tool named sanitize_knowledge with exact phrases ('scanned 2', '1 polluted', 'updated 1') and enforce the prevention guard the issue calls optional."
     }
    }
   },
@@ -1204,32 +1177,32 @@
     "spec": 2,
     "tests": 3,
     "why": {
-     "spec": "The issue only describes polluted stored data and gives no indication whether a cleanup tool, a store guard or a renderer change is wanted.",
-     "tests": "Tests import unstated helpers clean_summary_detail, is_polluted and strip_tool_call_fragments and an unstated sanitize_knowledge tool with a fixed output format."
+     "spec": "This version only describes the pollution and gives helper names, so whether to add a cleanup tool, a store-time guard, or both, and how the split should work, is unclear.",
+     "tests": "The tests require a `sanitize_knowledge` tool with specific output text and an `add_knowledge` store-time guard, neither of which this version of the issue asks for."
     }
    },
    "B": {
     "spec": 2,
     "tests": 3,
     "why": {
-     "spec": "The prompt describes polluted data with no fix section, so it is unclear whether a code change, a one-off data cleanup, or a store-time guard is wanted.",
-     "tests": "Tests import unstated sanitize helpers (is_polluted, clean_summary_detail, strip_tool_call_fragments), call a sanitize_knowledge tool with exact output text, and require an add_knowledge guard that salvages detail."
+     "spec": "The issue diagnoses polluted data but does not say whether the fix is a one-off cleanup, a maintenance tool or a store-time guard.",
+     "tests": "Tests require a sanitize_knowledge tool with specific output phrases and an add_knowledge store-time guard, neither of which the prompt asks for."
     }
    }
   },
   "mcm-engine-145-spec": {
    "A": {
     "spec": 1,
-    "tests": 3,
+    "tests": 2,
     "why": {
-     "tests": "Tests import an unstated mcm_engine.hooks.pre_compact module and patch private names _build_arguments, _write_local, _mcp_http_endpoint and mcp_http_call_tool, so the settings-only mcp_tool handler approach the issue proposes fails entirely."
+     "tests": "The tests pin save_snapshot as the tool (the issue allows session_handoff), `progress`/`open_questions` argument mapping, an \"auto\" default, and the word \"compacted\" in the SessionStart directive, none of which the issue states."
     }
    },
    "B": {
     "spec": 1,
     "tests": 3,
     "why": {
-     "tests": "The issue proposes settings-level mcp_tool hooks shipped by hook install, but tests require a Python hooks.pre_compact module with private helpers _build_arguments and _write_local and specific directive wording."
+     "tests": "The issue asks to call get_resume_context and inject its result (via mcp_tool hooks), but tests require a directive string containing 'compacted' and save_snapshot args with open_questions, which a fix following the issue would not produce."
     }
    }
   },
@@ -1238,50 +1211,49 @@
     "spec": 2,
     "tests": 3,
     "why": {
-     "spec": "Without the fix section only the title hints at hooks, leaving the restore mechanism, the data saved and how it ships unspecified.",
-     "tests": "Tests import an unstated mcm_engine.hooks.pre_compact module and patch private names _build_arguments, _write_local, _mcp_http_endpoint and mcp_http_call_tool."
+     "spec": "Only the problem is described, so the hook design, which tool to call and how restore works must all be guessed from the function names.",
+     "tests": "The tests check a compact-source SessionStart directive containing \"compacted\" and specific save_snapshot argument keys, behavior this version of the issue never asks for."
     }
    },
    "B": {
     "spec": 2,
     "tests": 3,
     "why": {
-     "spec": "The prompt states only the problem with no fix or acceptance, leaving open whether to ship settings-level mcp_tool hooks, CLI hooks, or something else.",
-     "tests": "Tests require an unstated hooks.pre_compact module with private helpers _build_arguments and _write_local and a 'compacted' wording in the SessionStart directive."
+     "spec": "The prompt states only the problem, leaving which tool to call, what to save and how restore works undetermined.",
+     "tests": "Tests require custom_instructions to land in an open_questions argument of save_snapshot and a session-start directive containing 'compacted' and 'get_resume_context', details never asked for."
     }
    }
   },
   "mcm-engine-149-spec": {
    "A": {
     "spec": 2,
-    "tests": 3,
+    "tests": 2,
     "why": {
-     "spec": "It is an umbrella audit mixing KB notes, env overrides and a future retune, with no env var names or helper API defined.",
-     "tests": "Tests import an unstated mcm_engine.tunables module with env_float/env_int, require specific MCM_SCORE_/MCM_DEDUP_/MCM_SEARCH_/MCM_RULESIFT_ env var names, and grep the dedup source for literal strings."
+     "spec": "This is an umbrella audit issue that is mostly KB provenance work with no specified env-var naming or exact set of knobs to wire.",
+     "tests": "Most graded tests depend on exact env var names such as MCM_SCORE_W_RELEVANCE and MCM_DEDUP_TOPIC_THRESHOLD, plus a source-text check, none of which the issue names."
     }
    },
    "B": {
     "spec": 1,
-    "tests": 3,
+    "tests": 2,
     "why": {
-     "tests": "Tests import an unstated tunables module with env_float/env_int, require specific env var names like MCM_SCORE_W_RELEVANCE, and grep dedup source for the literal 'env_float(\"MCM_DEDUP_MIN_ENTROPY\"'."
+     "tests": "Tests require exact env var names like MCM_SCORE_W_RELEVANCE and MCM_SEARCH_RANK_THRESHOLD and a literal source string 'env_float(\"MCM_DEDUP_MIN_ENTROPY\"', none of which the issue specifies."
     }
    }
   },
   "mcm-engine-157-spec": {
    "A": {
-    "spec": 2,
+    "spec": 1,
     "tests": 3,
     "why": {
-     "spec": "The coverage ledger to update is not defined in the visible files and the classifier signals are left open.",
-     "tests": "Tests import unstated modules hooks.coverage and hooks.user_prompt_submit with classify, _pick_keyword, main(search=...), TTL and residency semantics and exact keyword picks the issue never specifies."
+     "tests": "The tests check a hook-side coverage store with a 24-hour TTL and staleness pruning that the issue never asks for, plus exact keyword-picking heuristics and the state-file layout."
     }
    },
    "B": {
     "spec": 1,
     "tests": 3,
     "why": {
-     "tests": "Tests import unstated modules hooks.coverage and hooks.user_prompt_submit with specific functions (classify, _pick_keyword, main(search=), record_topic, is_covered, note_compaction, prune_topics) and pin a keyword-picking heuristic and TTL residency rules the issue never describes."
+     "tests": "Tests check a hook-side coverage module with a 24h TTL, compaction residency and pruning that the issue never mentions, plus exact keyword-picking outcomes and recording coverage even on empty search."
     }
    }
   },
@@ -1290,32 +1262,32 @@
     "spec": 2,
     "tests": 3,
     "why": {
-     "spec": "An open-ended research harness with no defined trace format, labelling rule, candidate policies or weights.",
-     "tests": "Tests pin an invented API in mcm_engine.eval.replay and eval.trace_transcript, including TraceEvent fields, FixedInterval firing pattern, policy names and a proxy labelling rule none of which the issue describes."
+     "spec": "The replay harness is open-ended research with no definition of ground-truth labels, policies, or transcript-to-trace mapping beyond the stated names.",
+     "tests": "The tests pin invented semantics the issue never describes: the should_retrieve proxy-label rules including a None unlabeled case, an exact FixedInterval firing pattern, PolicyScore fields, and topic derivation from transcripts."
     }
    },
    "B": {
     "spec": 2,
     "tests": 3,
     "why": {
-     "spec": "The issue asks for a replay harness and retune with no defined trace format, policy set, proxy label, or interface, so the correct deliverable is open-ended.",
-     "tests": "Tests import an invented eval.replay and eval.trace_transcript API (TraceEvent, should_retrieve, FixedInterval, RiskBased, Combined, score_policy, LIVE_PAIRED_EVAL_PLAN, load_transcript) with exact labelling semantics never stated."
+     "spec": "The issue describes a research program (harness, plan, retunes) without defining the trace model, proxy label or policies, so a correct code change is unclear beyond the listed names.",
+     "tests": "Tests pin an unstated proxy-label scheme (None for unknown oracle, failure always positive), an exact fixed-interval firing pattern, risk-based coverage semantics and topic extraction from paths and commands."
     }
    }
   },
   "mcm-engine-170-spec": {
    "A": {
     "spec": 1,
-    "tests": 2,
+    "tests": 3,
     "why": {
-     "tests": "Tests require the sanitize_corpus name although the issue allows extending sanitize_knowledge instead, pin return tuple shapes and an exact '2 polluted across 3 table(s)' string, and pin exact SQL execute-site counts per storage file."
+     "tests": "Two graded tests pin exact SQL execute-site counts (71/73) that the issue never mentions, and the sweep test requires the exact phrase \"2 polluted across 3 table(s)\"."
     }
    },
    "B": {
     "spec": 0,
-    "tests": 3,
+    "tests": 2,
     "why": {
-     "tests": "Beyond the named cleaners, tests demand the sanitize_corpus option over the allowed per-table passes, the exact string '2 polluted across 3 table(s)', unstated return tuple shapes, and exact SQL site counts per storage file."
+     "tests": "The issue allows either generalizing to sanitize_corpus or adding passes, but tests require sanitize_corpus with an exact summary string and pin the SQL execute-site count per adapter file."
     }
    }
   },
@@ -1324,14 +1296,14 @@
     "spec": 1,
     "tests": 3,
     "why": {
-     "tests": "Tests import clean_negative, clean_error and a sanitize_corpus tool that the prompt never names, with fixed tuple shapes, output strings and SQL site counts."
+     "tests": "The tests require an unmentioned `sanitize_corpus` tool name with exact output phrasing and pin SQL execute-site counts that the issue never asks for."
     }
    },
    "B": {
     "spec": 1,
     "tests": 3,
     "why": {
-     "tests": "Tests import clean_negative and clean_error and call a sanitize_corpus tool with exact output text, none of which the prompt names, and pin exact SQL execute-site counts per storage file."
+     "tests": "Tests require a tool named sanitize_corpus with the literal output '2 polluted across 3 table(s)', a report_error store-time guard the prompt does not ask for, and exact per-file SQL execute-site counts."
     }
    }
   },
@@ -1340,15 +1312,16 @@
     "spec": 2,
     "tests": 3,
     "why": {
-     "spec": "The lossless-fit check against the 4.0 projection is undefined in the prompt, so the census semantics are unclear.",
-     "tests": "Tests import an unstated mcm_engine.corpus_snapshot module with parse_scroll_page, snapshot(call, out, page=) and census returning a fixed nested dict, plus a FileExistsError refusal never asked for."
+     "spec": "The lossless-fit check against an undefined \"4.0 projection\" leaves the census fit criterion unknowable.",
+     "tests": "The tests pin a specific census JSON layout and invented fit semantics, and require snapshot to refuse overwriting with FileExistsError, none of which the issue specifies."
     }
    },
    "B": {
-    "spec": 1,
+    "spec": 2,
     "tests": 3,
     "why": {
-     "tests": "Tests import an unstated corpus_snapshot module (parse_scroll_page, snapshot with an injected call_tool, census), pin a nested report dict shape, and require FileExistsError on an existing output, none of which the issue states."
+     "spec": "The lossless-fit check against an undefined 4.0 projection and the JSON report layout are left to guesswork.",
+     "tests": "Tests demand FileExistsError on an existing output path, a specific census dict layout (tables/columns/polluted/unfit/total_unfit) and a fit rule that counts polluted or title-only rows as unfit, none of which the issue states."
     }
    }
   },
@@ -1357,15 +1330,15 @@
     "spec": 2,
     "tests": 3,
     "why": {
-     "spec": "Replaying under legacy and unified models requires internals not among the visible files, and the agreement metrics and report shape are loosely sketched.",
-     "tests": "Tests use a --store flag where the issue says --snapshot, and import an unstated mcm_engine.replay_queries module with open_context, replay, jaccard, prefix_agreement and an exact report layout."
+     "spec": "The harness depends on unspecified legacy/unified read-path mechanics, and the agreement metrics and report structure are only loosely sketched.",
+     "tests": "The CLI test uses `--store`/`--out` where the issue says `--snapshot`, and the tests pin report keys (exact_order, text_identical, gate_flips) and exact printed formatting the issue never describes."
     }
    },
    "B": {
     "spec": 1,
     "tests": 3,
     "why": {
-     "tests": "Tests import a new replay_queries module with unstated function names (extract_queries, open_context, replay, jaccard, prefix_agreement, format_report), use a --store flag where the issue says --snapshot, and pin report keys and printed layout like 'search        n=3'."
+     "tests": "The CLI test uses --store and --out while the prompt specifies --snapshot, and the tests pin aggregate keys (exact_order, text_identical, gate_flips, mean_ungated_jaccard) and exact column formatting the issue never mentions."
     }
    }
   },
@@ -1374,14 +1347,14 @@
     "spec": 1,
     "tests": 3,
     "why": {
-     "tests": "Tests require unstated wire_bytes (a compact JSON envelope size) and kind_bytes (per-hit-kind attribution) functions and a sizes dict with legacy_ratio keys computed from wire bytes, none of which the issue asks for."
+     "tests": "The tests pin `kind_bytes` per-hit-kind attribution and `wire_bytes` as a compact {\"result\":...} JSON envelope (neither is described), plus a -1 sentinel, the `report.sizes` layout and exact output strings."
     }
    },
    "B": {
     "spec": 1,
     "tests": 3,
     "why": {
-     "tests": "Tests import unnamed kind_bytes and wire_bytes helpers with specific per-kind parsing and a compact JSON envelope definition, plus an exact report.sizes layout and printed strings, none of which the issue specifies."
+     "tests": "Tests require kind_bytes semantics (hit-block attribution by [KIND headers and ---/=/( section lines) and a compact {\"result\": ...} wire envelope that the issue never asks for, plus exact report.sizes keys and format strings."
     }
    }
   },
@@ -1390,14 +1363,15 @@
     "spec": 1,
     "tests": 3,
     "why": {
-     "tests": "Graded tests import kind_bytes and wire_bytes, require a per-hit-kind byte breakdown and a JSON-envelope byte definition, and check a report.sizes dict layout and printed strings, none of which the prompt states."
+     "tests": "The tests pin undescribed `kind_bytes` and `wire_bytes` semantics, a -1 recorded-bytes sentinel, the `report.sizes` structure and exact printed strings."
     }
    },
    "B": {
-    "spec": 1,
+    "spec": 2,
     "tests": 3,
     "why": {
-     "tests": "Tests import unnamed kind_bytes and wire_bytes helpers, define replayed bytes as a compact JSON envelope, and assert an exact report.sizes structure and printed strings, so an import error fails every graded test for most fixes."
+     "spec": "Without the build steps the prompt only names goals (byte totals, a live per-call metric whose scope is undecided) and leaves the data model and report shape open.",
+     "tests": "Tests pin a per-hit-kind byte breakdown parsed from [KIND headers and section lines, a {\"result\": ...} JSON envelope, ReplayQuery.recorded_bytes, report.sizes keys and printed strings, none of which the issue describes."
     }
    }
   },
@@ -1406,14 +1380,14 @@
     "spec": 1,
     "tests": 3,
     "why": {
-     "tests": "Tests import a new mcm_engine.mirror.export_mirror module and function, expect a rules/ subdirectory the issue layout omits, a specific return dict, a --from flag, and an exact author email mcm-engine-mirror@localhost."
+     "tests": "Tests require a rules/ subdirectory that contradicts the issue's stated <out>/<category>/<slug>.md layout, plus an exact author email, unrequested return-dict keys and an unnamed --from CLI flag."
     }
    },
    "B": {
     "spec": 1,
     "tests": 3,
     "why": {
-     "tests": "Tests import an unnamed mcm_engine.mirror.export_mirror with written/committed keys, require an exact git author email and a --from flag, and expect out/rules/<category>/<slug>.md while the issue specifies out/<category>/<slug>.md."
+     "tests": "Tests require a rules/ subdirectory that contradicts the issue's stated <out>/<category>/<slug>.md layout, plus exact written and committed return keys, a --from flag, and the exact commit author mcm-engine-mirror@localhost."
     }
    }
   },
@@ -1422,81 +1396,77 @@
     "spec": 1,
     "tests": 3,
     "why": {
-     "tests": "Tests import an unnamed mcm_engine.mirror.export_mirror, and pin the rules/<category>/<slug>.md layout, the return dict keys, the --from flag and an exact git author email that the prompt never gives."
+     "tests": "Tests pin an unstated rules/<category>/<slug>.md layout, a specific git author email, return-dict keys written/committed and a --from CLI flag, none of which the issue asks for."
     }
    },
    "B": {
     "spec": 1,
     "tests": 3,
     "why": {
-     "tests": "Tests import an unnamed mcm_engine.mirror.export_mirror returning written/committed keys, require a rules/ subdirectory layout, an exact git author email and a --from flag, none stated in the issue."
+     "tests": "Tests require an unspecified rules/<category>/<slug>.md layout, a return dict with exact written and committed keys, a --from CLI flag, and the exact commit author mcm-engine-mirror@localhost, none of which the issue asks for."
     }
    }
   },
   "mcm-engine-25-spec": {
    "A": {
     "spec": 1,
-    "tests": 3,
+    "tests": 2,
     "why": {
-     "tests": "Tests import normalize_relevance and W_RELEVANCE, which the issue never names, and pin the pinned-only score to exactly W_RELEVANCE times normalize_relevance plus specific weight bounds."
+     "tests": "Weights are left open by the issue, yet tests assume reinforcement is bounded near 0.3, relevance outweighs all maxed counters, pinned is a flat additive term and pinned_only equals W_RELEVANCE times normalize_relevance."
     }
    },
    "B": {
     "spec": 1,
-    "tests": 3,
+    "tests": 2,
     "why": {
-     "tests": "test_scoring.py imports unnamed W_RELEVANCE and normalize_relevance, requires a query_terms kwarg on compose_rank, and asserts specific bounds like reinforcement contribution under 0.31, so nearly every independently designed rerank fails."
+     "tests": "Tests require compose_rank_pinned_only to change to W_RELEVANCE times normalized relevance though the issue says to keep it intact, cap the reinforcement contribution below 0.31, and require relevance to outweigh maxed counters, none of which the issue specifies."
     }
    }
   },
   "mcm-engine-27-spec": {
    "A": {
     "spec": 1,
-    "tests": 3,
+    "tests": 2,
     "why": {
-     "tests": "Tests import a minmax_normalize(value, lo, hi) helper the issue never names and require a degenerate batch to map to 1.0, a choice the issue leaves open."
+     "tests": "Tests require the unspecified degenerate-batch value 1.0, including for hi<lo inputs, so plausible choices such as 0.5, 0.0 or an hi==lo-only guard fail."
     }
    },
    "B": {
-    "spec": 1,
-    "tests": 3,
-    "why": {
-     "tests": "test_scoring.py imports a minmax_normalize(value, lo, hi) helper the issue never names and pins the degenerate batch to 1.0, so the whole scoring module fails to import for most fixes that do the normalization inline or under another name."
-    }
+    "spec": 0,
+    "tests": 1
    }
   },
   "mcm-engine-30-spec": {
    "A": {
-    "spec": 2,
-    "tests": 3,
+    "spec": 1,
+    "tests": 2,
     "why": {
-     "spec": "The one-paragraph issue gives the algorithm but not how candidates are surfaced (tool, CLI, report) or any interface.",
-     "tests": "Tests import an unnamed mcm_engine.dedup module with normalize, shannon_entropy, jaccard_estimate and find_near_duplicates, plus a find_duplicate_rules MCP tool with a threshold argument."
+     "tests": "One test calls an MCP tool named find_duplicate_rules with a specific output shape that neither the issue nor the names block mentions."
     }
    },
    "B": {
     "spec": 1,
-    "tests": 3,
+    "tests": 2,
     "why": {
-     "tests": "Tests import mcm_engine.dedup with find_near_duplicates, jaccard_estimate, normalize and shannon_entropy and call a find_duplicate_rules tool, none of which the issue names, so an import error fails nearly every independent fix."
+     "tests": "One graded test calls a find_duplicate_rules MCP tool the issue never names, so a fix that surfaces candidates any other way fails."
     }
    }
   },
   "mcm-engine-31-spec": {
    "A": {
     "spec": 2,
-    "tests": 3,
     "why": {
-     "spec": "The issue lists merge proposals, decay, strengthening and link materialization with no interface or thresholds, while the reference is only a read-only report.",
-     "tests": "Tests import an unnamed mcm_engine.consolidate.consolidation_report with a now keyword, check exact dict buckets and keys, a consolidate --from CLI and the literal text read-only."
-    }
+     "spec": "The issue asks for merges, decay, strengthening and link materialization without defining outputs or saying whether anything is mutated, so the read-only report the reference builds cannot be inferred.",
+     "tests": "Tests require conflict candidates from an unmentioned detector, a specific dict layout (summary.active_rules, a/b pairs, id/title members), zero mutation despite the issue asking for decay, and a consolidate CLI with --from and set output strings."
+    },
+    "tests": 3
    },
    "B": {
     "spec": 2,
     "tests": 3,
     "why": {
-     "spec": "The issue lists many levers (merge, decay, strengthen, materialize links, evict) on a schedule without saying which to build or how, and the reference builds only a read-only report.",
-     "tests": "Tests import an unnamed mcm_engine.consolidate.consolidation_report with a now kwarg and exact bucket keys, require a consolidate CLI with --from, and assert nothing is mutated even though the issue asks for decay and strengthening."
+     "spec": "A terse roadmap item listing levers (merge, decay, strengthen, materialize links) with no definition of the report, staleness, or which actions are in scope.",
+     "tests": "Tests require a read-only report with exact keys (summary, merge_candidates, conflict_candidates with a/b, stale_candidates), a specific staleness rule, and an unrequested 'consolidate --from' CLI that prints 'read-only', while the issue asks for decay and strengthening mutations."
     }
    }
   },
@@ -1505,16 +1475,16 @@
     "spec": 2,
     "tests": 3,
     "why": {
-     "spec": "The issue asks for automatic supersession with either a heuristic or an LLM, but the reference only surfaces candidates, so the intended behavior is unclear.",
-     "tests": "Tests import an unnamed dedup.find_conflicts taking (id, topic, body) tuples, require a find_conflicting_rules MCP tool, and require add_rule output to mention conflict and supersede_rule rather than superseding."
+     "spec": "The issue asks for automatic supersession on add_rule via a keyword heuristic or an LLM; the input tuple shape and the topic-similar/body-divergent definition are left unstated.",
+     "tests": "Tests require an unnamed find_conflicting_rules MCP tool and an add_rule note containing 'conflict' and 'supersede_rule', and they rule out the automatic supersession the issue actually asks for."
     }
    },
    "B": {
     "spec": 2,
     "tests": 3,
     "why": {
-     "spec": "A one-paragraph roadmap item that asks for automatic supersession via heuristic or LLM with temporal-interval logic, while the reference only surfaces candidates, so the intended behavior is unclear.",
-     "tests": "Tests import an unnamed dedup.find_conflicts with a specific (id, topic, body) tuple signature, call an unnamed find_conflicting_rules tool, and require add_rule output to mention supersede_rule, all details the issue never gives."
+     "spec": "A one-paragraph roadmap note that leaves heuristic versus LLM, the meaning of contradiction, and automatic versus proposed supersession all open.",
+     "tests": "Tests call a find_conflicting_rules MCP tool the issue never mentions and require a surface-only add_rule note containing 'conflict' and 'supersede_rule', where the issue asks for automatic supersession."
     }
    }
   },
@@ -1523,66 +1493,65 @@
     "spec": 2,
     "tests": 3,
     "why": {
-     "spec": "The issue is filed for rumination, not build, and leaves where the exemplar lives, cadence and whether a filter or counter is wanted as open questions.",
-     "tests": "Tests import an unnamed mcm_engine.style module with count_style_tics and VOICE_EXEMPLAR, a fixed {emoji, em_dash} result shape, and count a double hyphen as an em-dash."
+     "spec": "The issue is filed for rumination with open questions about where the exemplar lives, cadence and whether a filter or counter is wanted, so the deliverable is not defined.",
+     "tests": "Tests require the exact dict {'emoji','em_dash'} with no other tic keys, count '--' as an em-dash, accept None input and look for literal 'BEFORE:'/'AFTER:' strings, none of which the issue specifies."
     }
    },
    "B": {
-    "spec": 2,
-    "tests": 3,
+    "spec": 1,
+    "tests": 2,
     "why": {
-     "spec": "A direction is sketched but where the exemplar lives, its cadence, and whether the hard layer is a filter or a counter are left as open questions with the note not for immediate build.",
-     "tests": "Tests require a new mcm_engine.style module with count_style_tics and VOICE_EXEMPLAR, exact dict keys, double-hyphen counted as an em-dash and literal BEFORE:/AFTER: markers, none of which the issue states."
+     "tests": "Tests require the exact dict keys emoji and em_dash, count a double hyphen as an em-dash, require None-safety, and need literal BEFORE:/AFTER: markers in the exemplar, details the issue never states."
     }
    }
   },
   "mcm-engine-63-symptom": {
    "A": {
-    "spec": 3,
+    "spec": 2,
     "tests": 3,
     "why": {
-     "spec": "Without the proposed direction the issue is only a problem statement plus open questions and says it is not for immediate build.",
-     "tests": "Tests import an unnamed mcm_engine.style module with count_style_tics and VOICE_EXEMPLAR and pin a dict shape and double-hyphen counting the prompt never describes."
+     "spec": "Without the proposed-direction section, the issue is a rumination with open questions, and only the names block hints at a tic counter and an exemplar constant.",
+     "tests": "Tests pin the exact dict keys emoji/em_dash, treat '--' as an em-dash, require None safety and literal BEFORE:/AFTER: markers, all unrequested."
     }
    },
    "B": {
-    "spec": 3,
-    "tests": 3,
+    "spec": 2,
+    "tests": 2,
     "why": {
-     "spec": "The issue is an explicit rumination with open questions and no proposed direction, ending with not for immediate build, so there is no defined deliverable.",
-     "tests": "Tests require a new mcm_engine.style module with count_style_tics and VOICE_EXEMPLAR, exact dict keys, double-hyphen counted as an em-dash and literal BEFORE:/AFTER: markers, none of which the issue states."
+     "spec": "The issue is filed for rumination with open questions and no proposed direction, so beyond the two names it is unclear which tics to count or what the exemplar must contain.",
+     "tests": "Tests require the exact dict keys emoji and em_dash, count a double hyphen as an em-dash, require None-safety, and need literal BEFORE:/AFTER: markers in the exemplar, none of which the issue asks for."
     }
    }
   },
   "mcm-engine-78-spec": {
    "A": {
     "spec": 1,
-    "tests": 3,
+    "tests": 2,
     "why": {
-     "tests": "Graded tests monkeypatch private cli._export_remote_call and call cli._export_remote_fetch, import an unnamed mirror.git_commit_tree, and require page envelope keys total, returned, has_more and limit that the issue does not specify."
+     "tests": "Tests require a JSON envelope with rules/offset/limit/returned/total/has_more keys and a fetch loop driven by it, but the issue only describes a list of rule objects, so a bare-list page design fails."
     }
    },
    "B": {
     "spec": 1,
-    "tests": 3,
+    "tests": 2,
     "why": {
-     "tests": "The test module imports git_commit_tree from mirror and monkeypatches cli._export_remote_call and cli._export_remote_fetch, none named in the issue, and asserts unstated envelope keys (total, returned, has_more, limit), so an import failure sinks all tests for most fixes."
+     "tests": "Tests require the export_rules JSON envelope to use the exact keys total, returned, limit, has_more and offset, which the issue never specifies, so a fix using another paging envelope fails."
     }
    }
   },
   "mcm-engine-83-spec": {
    "A": {
     "spec": 1,
-    "tests": 3,
+    "tests": 2,
     "why": {
-     "tests": "Tests import an unnamed ScopedTracker with a key_provider keyword, inspect its private _trackers mapping for weakref eviction, and grade the optional read-only hardening with exact watermark semantics."
+     "tests": "Tests check the private _trackers mapping evicting on garbage collection, which a TTL or close-hook design (both allowed by the issue) fails, and they pin the watermark-bump mechanism of the optional read-only hardening."
     }
    },
    "B": {
     "spec": 1,
     "tests": 3,
     "why": {
-     "tests": "Tests import an unnamed ScopedTracker with a key_provider kwarg and check GC eviction via a private _trackers dict, while the issue proposes a session-id dict or ContextVar with TTL eviction, so the proposed designs themselves fail."
+     "tests": "The issue proposes a dict keyed by session id with close or TTL eviction, but the tests require GC-driven eviction visible through the private _trackers WeakKeyDictionary and also grade the secondary hardening the issue marks optional."
     }
    }
   },
@@ -1591,14 +1560,14 @@
     "spec": 1,
     "tests": 3,
     "why": {
-     "tests": "Tests import an unnamed ScopedTracker with a key_provider keyword, rely on WeakKeyDictionary eviction via a private _trackers attribute, and grade the optional read-only gate change with exact counter semantics."
+     "tests": "Tests check GC eviction through a private _trackers attribute that this version of the issue never mentions, and they pin a specific implementation of the optional read-only hardening."
     }
    },
    "B": {
     "spec": 1,
-    "tests": 3,
+    "tests": 2,
     "why": {
-     "tests": "Most graded tests import a ScopedTracker class with a key_provider kwarg and a private _trackers WeakKeyDictionary that the issue never names, and they also require the optional read-only hardening, so nearly every independent isolation fix fails."
+     "tests": "Tests reach into the private _trackers attribute and require WeakKeyDictionary garbage-collection eviction, attribute-level delegation, and the exact read-only watermark behaviour of the section the issue calls optional, so many valid per-session designs fail."
     }
    }
   }

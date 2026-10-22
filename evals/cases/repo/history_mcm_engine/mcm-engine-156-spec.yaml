@@ -32,7 +32,24 @@ prompt: '# #137a: server-owned per-session topic-coverage ledger + compaction re
 
   - Reconciled at PreCompact/PostCompact/SessionStart (resident flips false on compaction).
 
-  - Unit tests for record + reconcile; no behavior change to enforcement yet (that''s the PreToolUse child).'
+  - Unit tests for record + reconcile; no behavior change to enforcement yet (that''s the PreToolUse child).
+
+
+  The hidden tests call these names from the repository (signatures as a correct fix defines them):
+
+  - `mcm_engine.tracker.ScopedTracker.is_covered(self, *args, **kwargs)`
+
+  - `mcm_engine.tracker.ScopedTracker.reconcile_coverage(self, *args, **kwargs)`
+
+  - `mcm_engine.tracker.ScopedTracker.record_coverage(self, *args, **kwargs)`
+
+  - `mcm_engine.tracker.SessionTracker.is_covered(self, topic: str, *, require_resident: bool=True) ->
+  bool`
+
+  - `mcm_engine.tracker.SessionTracker.reconcile_coverage(self, *, resident: bool=False) -> None`
+
+  - `mcm_engine.tracker.SessionTracker.record_coverage(self, topic: str, query: str, result_ids=None,
+  *, resident: bool=True) -> None`'
 params:
   source_repo: https://github.com/unxmaal/mcm-engine.git
   base: 68b87f7a66d757ecb914189f84c73f89a459e51e
@@ -50,6 +67,15 @@ params:
   - pythonpath=src
   extras:
   - dev
+  interface:
+  - mcm_engine.tracker.ScopedTracker.is_covered(self, *args, **kwargs)
+  - mcm_engine.tracker.ScopedTracker.reconcile_coverage(self, *args, **kwargs)
+  - mcm_engine.tracker.ScopedTracker.record_coverage(self, *args, **kwargs)
+  - 'mcm_engine.tracker.SessionTracker.is_covered(self, topic: str, *, require_resident: bool=True) ->
+    bool'
+  - 'mcm_engine.tracker.SessionTracker.reconcile_coverage(self, *, resident: bool=False) -> None'
+  - 'mcm_engine.tracker.SessionTracker.record_coverage(self, topic: str, query: str, result_ids=None,
+    *, resident: bool=True) -> None'
   fail_to_pass:
   - tests/test_coverage_ledger.py::test_coverage_is_per_session
   - tests/test_coverage_ledger.py::test_is_covered_requires_resident_by_default
@@ -80,5 +106,6 @@ attribution:
     removed (spec), and the Fix/Shape/Design/Options/Remedy/Proposal/Build/What-to sections and labelled
     paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
     of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
-    and sandbox (evals/repo.py)
+    and sandbox (evals/repo.py); the names the hidden tests use that the fix adds or re-signs, with the
+    fix's signatures, appended to both variants (evals/interface.py)
   importer: evals.importers.history_mcm_engine

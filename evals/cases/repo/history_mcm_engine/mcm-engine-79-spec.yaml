@@ -56,7 +56,19 @@ prompt: '# search blocks ~20s on SQLite lock from post-search counter bumps
   3. A single shared writer connection for the embedded adapters.
 
 
-  Happy to open a PR or provide more detail (sample output, repro script) if that would help.'
+  Happy to open a PR or provide more detail (sample output, repro script) if that would help.
+
+
+  The hidden tests call these names from the repository (signatures as a correct fix defines them):
+
+  - `mcm_engine.server.build_verified_context(config: MCMConfig, *, registry: Optional[AdapterRegistry]=None,
+  shared_db: Any=None) -> Context`
+
+  - `mcm_engine.wiring.build_context(config: MCMConfig, *, registry: Optional[AdapterRegistry]=None, shared_db:
+  Any=None) -> Context`
+
+  - `mcm_engine.wiring.build_verified_context(config: MCMConfig, *, registry: Optional[AdapterRegistry]=None,
+  shared_db: Any=None) -> Context`'
 params:
   source_repo: https://github.com/unxmaal/mcm-engine.git
   base: 2db0dc9449c194fb92b207d0520bfab6c479bdba
@@ -72,6 +84,13 @@ params:
   - pythonpath=src
   extras:
   - dev
+  interface:
+  - 'mcm_engine.server.build_verified_context(config: MCMConfig, *, registry: Optional[AdapterRegistry]=None,
+    shared_db: Any=None) -> Context'
+  - 'mcm_engine.wiring.build_context(config: MCMConfig, *, registry: Optional[AdapterRegistry]=None, shared_db:
+    Any=None) -> Context'
+  - 'mcm_engine.wiring.build_verified_context(config: MCMConfig, *, registry: Optional[AdapterRegistry]=None,
+    shared_db: Any=None) -> Context'
   fail_to_pass:
   - tests/test_embedded_shared_connection.py::test_distinct_files_get_distinct_connections
   - tests/test_embedded_shared_connection.py::test_embedded_adapters_share_one_connection
@@ -96,5 +115,6 @@ attribution:
     removed (spec), and the Fix/Shape/Design/Options/Remedy/Proposal/Build/What-to sections and labelled
     paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
     of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
-    and sandbox (evals/repo.py)
+    and sandbox (evals/repo.py); the names the hidden tests use that the fix adds or re-signs, with the
+    fix's signatures, appended to both variants (evals/interface.py)
   importer: evals.importers.history_mcm_engine

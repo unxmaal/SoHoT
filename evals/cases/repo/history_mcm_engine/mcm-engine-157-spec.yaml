@@ -29,7 +29,29 @@ prompt: '# #137b: UserPromptSubmit task-aware retrieval + inject
 
   - Retrieval updates the coverage ledger.
 
-  - Tests for the classifier (deterministic cases) + injection shape.'
+  - Tests for the classifier (deterministic cases) + injection shape.
+
+
+  The hidden tests call these names from the repository (signatures as a correct fix defines them):
+
+  - `mcm_engine.hooks.coverage.COVERAGE_TTL_SECONDS`
+
+  - `mcm_engine.hooks.coverage.is_covered(entry: dict, topic: str, *, now: float | None=None, ttl: float=COVERAGE_TTL_SECONDS,
+  require_resident: bool=True) -> bool`
+
+  - `mcm_engine.hooks.coverage.note_compaction(entry: dict, *, now: float | None=None) -> None`
+
+  - `mcm_engine.hooks.coverage.prune_topics(entry: dict, *, now: float | None=None, ttl: float=COVERAGE_TTL_SECONDS)
+  -> None`
+
+  - `mcm_engine.hooks.coverage.record_topic(entry: dict, topic: str, *, now: float | None=None) -> None`
+
+  - `mcm_engine.hooks.user_prompt_submit._pick_keyword(prompt: str) -> str`
+
+  - `mcm_engine.hooks.user_prompt_submit.classify(prompt: str) -> tuple[bool, str]`
+
+  - `mcm_engine.hooks.user_prompt_submit.main(argv: Optional[list[str]]=None, *, search: Optional[Callable[[str,
+  Path], str]]=None) -> int`'
 params:
   source_repo: https://github.com/unxmaal/mcm-engine.git
   base: 725cad479181736743fc7ba01da27d2530a1b4a1
@@ -47,6 +69,18 @@ params:
   - pythonpath=src
   extras:
   - dev
+  interface:
+  - mcm_engine.hooks.coverage.COVERAGE_TTL_SECONDS
+  - 'mcm_engine.hooks.coverage.is_covered(entry: dict, topic: str, *, now: float | None=None, ttl: float=COVERAGE_TTL_SECONDS,
+    require_resident: bool=True) -> bool'
+  - 'mcm_engine.hooks.coverage.note_compaction(entry: dict, *, now: float | None=None) -> None'
+  - 'mcm_engine.hooks.coverage.prune_topics(entry: dict, *, now: float | None=None, ttl: float=COVERAGE_TTL_SECONDS)
+    -> None'
+  - 'mcm_engine.hooks.coverage.record_topic(entry: dict, topic: str, *, now: float | None=None) -> None'
+  - 'mcm_engine.hooks.user_prompt_submit._pick_keyword(prompt: str) -> str'
+  - 'mcm_engine.hooks.user_prompt_submit.classify(prompt: str) -> tuple[bool, str]'
+  - 'mcm_engine.hooks.user_prompt_submit.main(argv: Optional[list[str]]=None, *, search: Optional[Callable[[str,
+    Path], str]]=None) -> int'
   fail_to_pass:
   - tests/test_hook_coverage.py::test_compaction_makes_prior_coverage_non_resident
   - tests/test_hook_coverage.py::test_prune_drops_stale_topics
@@ -95,5 +129,6 @@ attribution:
     removed (spec), and the Fix/Shape/Design/Options/Remedy/Proposal/Build/What-to sections and labelled
     paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
     of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
-    and sandbox (evals/repo.py)
+    and sandbox (evals/repo.py); the names the hidden tests use that the fix adds or re-signs, with the
+    fix's signatures, appended to both variants (evals/interface.py)
   importer: evals.importers.history_mcm_engine

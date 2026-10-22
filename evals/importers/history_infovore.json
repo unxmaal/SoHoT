@@ -131,7 +131,13 @@
    "variant_drops": {
     "symptom": "no_fix_section"
    },
-   "admitted_by": "base_collect_repo_symbol"
+   "admitted_by": "base_collect_repo_symbol",
+   "interface": [
+    "class infovore.wiki.corrections.Correction(exchange: int, statement: str, replace: str | None)",
+    "infovore.wiki.build.load_claims(conn: sqlite3.Connection, tech_only: bool=False, salt: str | None=None, runs: Sequence[int] | None=None, tag_runs: Sequence[int] | None=None, verdicts: frozenset[str] | None=None, background: float | None=None, corrections: Mapping[tuple[int, str], Correction] | None=None) -> tuple[list[WikiClaim], Excluded]",
+    "infovore.wiki.corrections.Correction.key(self) -> tuple[int, str]",
+    "infovore.wiki.corrections.load_corrections(text: str | None=None) -> dict[tuple[int, str], Correction]"
+   ]
   },
   {
    "id": "infovore-353",
@@ -219,7 +225,15 @@
    "variant_drops": {
     "symptom": "no_fix_section"
    },
-   "admitted_by": "base_collect_repo_symbol"
+   "admitted_by": "base_collect_repo_symbol",
+   "interface": [
+    "class infovore.wiki.build.WikiClaim(claim_id: int, exchange_id: int, date: str, speaker: str, statement: str, topics: frozenset[str], check: str | None = None, novelty: float | None = None, reference: str | None = None)",
+    "infovore.wiki.build.build_site(claims: Iterable[WikiClaim], min_claims: int, out: Path, articles: Mapping[str, Article] | None=None, min_section: int=1, grouper: 'Grouper | None'=None, background: float | None=None) -> list[str]",
+    "infovore.wiki.build.compute_stats(claims: Iterable[WikiClaim], min_claims: int, background: float | None=None) -> Stats",
+    "infovore.wiki.build.established(claim: WikiClaim, background: float | None) -> bool",
+    "infovore.wiki.build.load_claims(conn: sqlite3.Connection, tech_only: bool=False, salt: str | None=None, runs: Sequence[int] | None=None, tag_runs: Sequence[int] | None=None, verdicts: frozenset[str] | None=None, background: float | None=None) -> tuple[list[WikiClaim], Excluded]",
+    "infovore.wiki.build.render_page(name: str, claims: Collection[WikiClaim], files: Mapping[str, str], article: Article | None=None, min_section: int=1, grouper: 'Grouper | None'=None, background: float | None=None) -> str"
+   ]
   },
   {
    "id": "infovore-352",
@@ -293,7 +307,14 @@
    "variant_drops": {
     "symptom": "no_fix_section"
    },
-   "admitted_by": "base_collect_repo_symbol"
+   "admitted_by": "base_collect_repo_symbol",
+   "interface": [
+    "class infovore.wiki.canon.Merged(keys: int, tags: int)",
+    "infovore.wiki.canon.display_names(tags: Iterable[str], merge: Mapping[str, str] | None=None) -> dict[str, str]",
+    "infovore.wiki.canon.merge_map(spellings: Spellings) -> dict[str, str]",
+    "infovore.wiki.canon.spelling_counts(tags: Iterable[str]) -> dict[str, Counter[str]]",
+    "infovore.wiki.canon.summarise_merge(spellings: Spellings, merge: Mapping[str, str]) -> Merged"
+   ]
   },
   {
    "id": "infovore-349",
@@ -355,7 +376,12 @@
     "area": ".,infovore/wiki",
     "size": "small"
    },
-   "admitted_by": "base_collect_repo_symbol"
+   "admitted_by": "base_collect_repo_symbol",
+   "interface": [
+    "infovore.wiki.build.page_files(names: Iterable[str], weights: Mapping[str, int] | None=None) -> dict[str, str]",
+    "infovore.wiki.build.render_index(pages: Mapping[str, int], files: Mapping[str, str]) -> str",
+    "infovore.wiki.build.render_page(name: str, claims: Collection[WikiClaim], files: Mapping[str, str], article: Article | None=None, min_section: int=1, grouper: 'Grouper | None'=None) -> str"
+   ]
   },
   {
    "id": "infovore-348",
@@ -410,7 +436,11 @@
     "area": ".,infovore/db,infovore/wiki",
     "size": "small"
    },
-   "admitted_by": "base_collect_repo_symbol"
+   "admitted_by": "base_collect_repo_symbol",
+   "interface": [
+    "infovore.db.wiki_articles.latest_article_run(conn: sqlite3.Connection, model_id: str, prompt_hash: str, tag_run_id: int) -> int | None",
+    "infovore.db.wiki_articles.run_sections(conn: sqlite3.Connection, article_run_id: int) -> set[tuple[str, str]]"
+   ]
   },
   {
    "id": "infovore-340",
@@ -458,7 +488,17 @@
    "variant_drops": {
     "symptom": "no_fix_section"
    },
-   "admitted_by": "base_collect_repo_symbol"
+   "admitted_by": "base_collect_repo_symbol",
+   "interface": [
+    "class infovore.claims.controls.Stratum(length: str, position: str, cited: int, cited_hit: float, uncited: int, uncited_hit: float)",
+    "infovore.claims.controls._length_bucket(length: int) -> str",
+    "infovore.claims.controls.drop_rate_by_verdict(sections: Mapping[str, Mapping[str, Sequence[tuple[str, Sequence[int]]]]], drops: Sequence[Sequence[str]], verdict_of: Mapping[int, str | None], claim_of_statement: Mapping[str, int]) -> dict[str, tuple[int, int]]",
+    "infovore.claims.controls.matched_recall(conn: sqlite3.Connection, runs: Sequence[int], lexicon: Lexicon, rng: random.Random, sample: int) -> list[Stratum]",
+    "infovore.claims.controls.overlap_floor(rows: Sequence[ReviewRow], lexicon: Lexicon, threshold: float, rng: random.Random, floor: float=FLOOR) -> Floor",
+    "infovore.claims.controls.read_drops(path: Path) -> list[list[str]]",
+    "infovore.claims.controls.shuffled_citations(rows: Sequence[ReviewRow], lexicon: Lexicon, threshold: float, rng: random.Random) -> tuple[Tally, Tally, float]",
+    "infovore.claims.controls.worst(verdicts: Iterable[str | None]) -> str"
+   ]
   },
   {
    "id": "infovore-339",
@@ -535,7 +575,13 @@
     "area": ".,infovore/wiki",
     "size": "large"
    },
-   "admitted_by": "base_collect_repo_symbol"
+   "admitted_by": "base_collect_repo_symbol",
+   "interface": [
+    "infovore.wiki.build.UNSORTED: Final",
+    "infovore.wiki.build._by_topic(claims: Iterable[WikiClaim], unsorted: str | None=None) -> dict[str, list[WikiClaim]]",
+    "infovore.wiki.build.article_parts(article: Article, key: str) -> list[tuple[str, Sequence[int]]]",
+    "infovore.wiki.build.part_key(section: str, part: int) -> str"
+   ]
   },
   {
    "id": "infovore-338",
@@ -602,7 +648,20 @@
     "area": ".,infovore/wiki",
     "size": "large"
    },
-   "admitted_by": "base_collect_repo_symbol"
+   "admitted_by": "base_collect_repo_symbol",
+   "interface": [
+    "infovore.wiki.build.render_page(name: str, claims: Collection[WikiClaim], page_names: Collection[str], article: Article | None=None, min_section: int=1, grouper: 'Grouper | None'=None) -> str",
+    "infovore.wiki.groups.ClaimGroup.corroboration(self) -> int",
+    "infovore.wiki.groups.ClaimGroup.exchanges(self) -> frozenset[int]",
+    "infovore.wiki.groups.ClaimGroup.span(self) -> tuple[str, str]",
+    "infovore.wiki.groups.ClaimGroup.speakers(self) -> frozenset[str]",
+    "infovore.wiki.groups.cosine(a: Vector, b: Vector) -> float",
+    "infovore.wiki.groups.group_claims(claims: Sequence[WikiClaim], threshold: float=JACCARD_THRESHOLD, vectors: Sequence[Vector] | None=None, vector_threshold: float=VECTOR_THRESHOLD) -> list[ClaimGroup]",
+    "infovore.wiki.groups.load_embedder(model_id: str, revision: str) -> SentenceTransformerEmbedder",
+    "infovore.wiki.groups.make_grouper(embedder: Embedder, claims: Sequence[WikiClaim], vector_threshold: float=VECTOR_THRESHOLD) -> Grouper",
+    "infovore.wiki.groups.make_grouper_for(grouping: str, claims: Sequence[WikiClaim]) -> Grouper",
+    "infovore.wiki.groups.summarise(groups_by_page: Sequence[Sequence[ClaimGroup]]) -> Corroboration"
+   ]
   },
   {
    "id": "infovore-327",
@@ -655,7 +714,13 @@
    "variant_drops": {
     "symptom": "no_fix_section"
    },
-   "admitted_by": "base_collect_repo_symbol"
+   "admitted_by": "base_collect_repo_symbol",
+   "interface": [
+    "infovore.sift.seed.SEED_DEEP_SOURCE_REF_PREFIX: Final",
+    "infovore.sift.seed.parse_ranks(text: str) -> tuple[int, int]",
+    "infovore.sift.seed.sample_window(rows: list[SeedRow], start: int, end: int, n: int, seed: int) -> list[SeedRow]",
+    "infovore.sift.seed.write_seed_queue(rows: list[SeedRow], out_dir: Path, now: datetime, prefix: str=SEED_SOURCE_REF_PREFIX) -> str"
+   ]
   },
   {
    "id": "infovore-286",
@@ -718,7 +783,8 @@
     "test_s": 0.7,
     "area": "infovore/claims",
     "size": "small"
-   }
+   },
+   "interface": []
   },
   {
    "id": "infovore-260",
@@ -768,7 +834,8 @@
    },
    "variant_drops": {
     "symptom": "no_fix_section"
-   }
+   },
+   "interface": []
   },
   {
    "id": "infovore-257",
@@ -812,7 +879,8 @@
    },
    "variant_drops": {
     "symptom": "no_fix_section"
-   }
+   },
+   "interface": []
   },
   {
    "id": "infovore-256",
@@ -852,7 +920,8 @@
    },
    "variant_drops": {
     "symptom": "no_fix_section"
-   }
+   },
+   "interface": []
   },
   {
    "id": "infovore-252",
@@ -949,7 +1018,21 @@
    "variant_drops": {
     "symptom": "no_fix_section"
    },
-   "admitted_by": "base_collect_repo_symbol"
+   "admitted_by": "base_collect_repo_symbol",
+   "interface": [
+    "class infovore.triage.short_report.Cutoff(limit: int, precision: float, n: int)",
+    "class infovore.triage.short_report.Row",
+    "infovore.triage.cascade.run_cascade(conn: sqlite3.Connection, ids: Sequence[int], lexicon: Lexicon, t_high: float, stage: EmbedStage, exclude_channels: frozenset[str]=frozenset(), short_limit: int | None=None) -> list[Outcome]",
+    "infovore.triage.cascade.run_cascade_batched(conn: sqlite3.Connection, ids: Sequence[int], lexicon: Lexicon, t_high: float, stage: EmbedStage, exclude_channels: frozenset[str], batch_size: int, progress: Callable[[int, int], None], short_limit: int | None=None) -> list[Outcome]",
+    "infovore.triage.cascade.write_outcomes(conn: sqlite3.Connection, outcomes: Sequence[Outcome], lexicon: Lexicon, t_high: float, stage: EmbedStage, at: datetime, short_limit: int | None=None) -> dict[str, int]",
+    "infovore.triage.relevance_command.short_limit(conn: sqlite3.Connection, lexicon: Lexicon, t_high: float, exclude: frozenset[str]) -> int | None",
+    "infovore.triage.short_report.PRECISION: Final",
+    "infovore.triage.short_report.best_cutoff(rows: Sequence[Row], labels: dict[int, Label], held: Collection[int], precision: float=PRECISION, minimum: int=MIN_LABELLED) -> Cutoff | None",
+    "infovore.triage.short_report.bucket_of(chars: int) -> str",
+    "infovore.triage.short_report.bucket_table(rows: Sequence[Row], labels: dict[int, Label], held: Collection[int]) -> list[BucketLine]",
+    "infovore.triage.short_report.cutoff_line(cutoff: Cutoff | None) -> str",
+    "infovore.triage.short_report.short_limit(conn: sqlite3.Connection, lexicon: Lexicon, t_high: float, exclude: frozenset[str]) -> int | None"
+   ]
   },
   {
    "id": "infovore-250",
@@ -1020,7 +1103,12 @@
    "variant_drops": {
     "symptom": "no_fix_section"
    },
-   "admitted_by": "base_collect_repo_symbol"
+   "admitted_by": "base_collect_repo_symbol",
+   "interface": [
+    "infovore.triage.embed_stage.build_embed_stage(conn: sqlite3.Connection, exclude_channels: frozenset[str], cache_path: Path, model: str=DEFAULT_MODEL, revision: str=DEFAULT_REVISION, loader: Callable[[str, str], Embedder] | None=None, relevant_precision: float=RELEVANT_PRECISION) -> EmbedStage",
+    "infovore.triage.embed_stage.fit_embed_stage(conn: sqlite3.Connection, embedder: Embedder, cache: EmbeddingCache, exclude_channels: frozenset[str], max_chars: int=MAX_CHARS, folds: int=FOLDS, relevant_precision: float=RELEVANT_PRECISION) -> EmbedStage",
+    "infovore.triage.embed_stage.threshold_stats(samples: Sequence[tuple[float, bool]], t_irrelevant: float, t_relevant: float) -> dict[str, dict[str, float]]"
+   ]
   },
   {
    "id": "infovore-235",
@@ -1096,7 +1184,11 @@
    },
    "variant_drops": {
     "symptom": "no_fix_section"
-   }
+   },
+   "interface": [
+    "async infovore.run.run_forever(conn: sqlite3.Connection, source: DiscordSource, clock: Clock, sleeper: Sleeper, settings: Settings, *, interval_seconds: float, stop: asyncio.Event, progress: RunProgress=_ignore_run_progress) -> RunReport",
+    "async infovore.run.run_once(conn: sqlite3.Connection, source: DiscordSource, clock: Clock, sleeper: Sleeper, settings: Settings, progress: RunProgress=_ignore_run_progress) -> RunReport"
+   ]
   },
   {
    "id": "infovore-219",
@@ -1134,7 +1226,8 @@
    },
    "variant_drops": {
     "symptom": "no_fix_section"
-   }
+   },
+   "interface": []
   },
   {
    "id": "infovore-217",
@@ -1216,7 +1309,10 @@
    "variant_drops": {
     "symptom": "no_fix_section"
    },
-   "admitted_by": "base_collect_repo_symbol"
+   "admitted_by": "base_collect_repo_symbol",
+   "interface": [
+    "infovore.eval.judge.MIN_TEXT_MESSAGES"
+   ]
   }
  ],
  "split": {

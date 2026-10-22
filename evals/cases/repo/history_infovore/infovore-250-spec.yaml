@@ -7,7 +7,21 @@ prompt: '# Embed stage: choose relevant threshold by precision target (0.90), re
 
   PR #248 strict relevant threshold (0.9876) decided only 24 relevant; residue grew 3,711 -> 19,619 of
   115,513. Loosen: lowest threshold with CV precision >= 0.90 (--relevant-precision), irrelevant threshold
-  rule (recall >= 0.95) unchanged. Print both thresholds with CV precision/recall/n; record in recipe_json.'
+  rule (recall >= 0.95) unchanged. Print both thresholds with CV precision/recall/n; record in recipe_json.
+
+
+  The hidden tests call these names from the repository (signatures as a correct fix defines them):
+
+  - `infovore.triage.embed_stage.build_embed_stage(conn: sqlite3.Connection, exclude_channels: frozenset[str],
+  cache_path: Path, model: str=DEFAULT_MODEL, revision: str=DEFAULT_REVISION, loader: Callable[[str, str],
+  Embedder] | None=None, relevant_precision: float=RELEVANT_PRECISION) -> EmbedStage`
+
+  - `infovore.triage.embed_stage.fit_embed_stage(conn: sqlite3.Connection, embedder: Embedder, cache:
+  EmbeddingCache, exclude_channels: frozenset[str], max_chars: int=MAX_CHARS, folds: int=FOLDS, relevant_precision:
+  float=RELEVANT_PRECISION) -> EmbedStage`
+
+  - `infovore.triage.embed_stage.threshold_stats(samples: Sequence[tuple[float, bool]], t_irrelevant:
+  float, t_relevant: float) -> dict[str, dict[str, float]]`'
 params:
   source_repo: https://github.com/unxmaal/infovore.git
   base: 640fab4912a9c9c8949d5ba89147ceabd183061e
@@ -19,6 +33,15 @@ params:
   - infovore/triage/relevance_command.py
   pytest_args:
   - --import-mode=importlib
+  interface:
+  - 'infovore.triage.embed_stage.build_embed_stage(conn: sqlite3.Connection, exclude_channels: frozenset[str],
+    cache_path: Path, model: str=DEFAULT_MODEL, revision: str=DEFAULT_REVISION, loader: Callable[[str,
+    str], Embedder] | None=None, relevant_precision: float=RELEVANT_PRECISION) -> EmbedStage'
+  - 'infovore.triage.embed_stage.fit_embed_stage(conn: sqlite3.Connection, embedder: Embedder, cache:
+    EmbeddingCache, exclude_channels: frozenset[str], max_chars: int=MAX_CHARS, folds: int=FOLDS, relevant_precision:
+    float=RELEVANT_PRECISION) -> EmbedStage'
+  - 'infovore.triage.embed_stage.threshold_stats(samples: Sequence[tuple[float, bool]], t_irrelevant:
+    float, t_relevant: float) -> dict[str, dict[str, float]]'
   fail_to_pass:
   - tests/triage/test_cascade.py::test_the_embed_stage_scores_what_the_lexicon_abstained_on
   - tests/triage/test_cascade.py::test_the_relevant_precision_flag_reaches_the_recorded_recipe
@@ -67,5 +90,6 @@ attribution:
     removed (spec), and the Fix/Shape/Design/Options/Remedy/Proposal/Build/What-to sections and labelled
     paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
     of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
-    and sandbox (evals/repo.py)
+    and sandbox (evals/repo.py); the names the hidden tests use that the fix adds or re-signs, with the
+    fix's signatures, appended to both variants (evals/interface.py)
   importer: evals.importers.history_infovore

@@ -57,7 +57,22 @@ prompt: '# link_knowledge requires entry ids that no tool surfaces, and its esca
   — escalation/blocking
 
 
-  Found while dogfooding the mcm KB during the ingest-funnel work.'
+  Found while dogfooding the mcm KB during the ingest-funnel work.
+
+
+  The hidden tests call these names from the repository (signatures as a correct fix defines them):
+
+  - `class mcm_engine.config.NudgeConfig(store_reminder_turns: int = 10, checkpoint_turns: int = 25, mandatory_stop_turns:
+  int = 50, hyper_focus_threshold: int = 3, rules_check_interval: int = 15, mandatory_stop_blocking: bool
+  = False, mandatory_stop_grace: int = 5, nudge_escalation_threshold: int = 3, periodic_tools: dict[str,
+  int] = field(default_factory=lambda: {''link_knowledge'': 25, ''add_negative'': 40}), advisory_periodic_tools:
+  list[str] = field(default_factory=lambda: [''add_negative'', ''link_knowledge'']))`
+
+  - `class mcm_engine.tracker.NudgeConfig(store_reminder_turns: int = 10, checkpoint_turns: int = 25,
+  mandatory_stop_turns: int = 50, hyper_focus_threshold: int = 3, rules_check_interval: int = 15, mandatory_stop_blocking:
+  bool = False, mandatory_stop_grace: int = 5, nudge_escalation_threshold: int = 3, periodic_tools: dict[str,
+  int] = field(default_factory=lambda: {''link_knowledge'': 25, ''add_negative'': 40}), advisory_periodic_tools:
+  list[str] = field(default_factory=lambda: [''add_negative'', ''link_knowledge'']))`'
 params:
   source_repo: https://github.com/unxmaal/mcm-engine.git
   base: a99691d60aac91e6fc66ba9b5524f4187cb09486
@@ -72,6 +87,17 @@ params:
   - pythonpath=src
   extras:
   - dev
+  interface:
+  - 'class mcm_engine.config.NudgeConfig(store_reminder_turns: int = 10, checkpoint_turns: int = 25, mandatory_stop_turns:
+    int = 50, hyper_focus_threshold: int = 3, rules_check_interval: int = 15, mandatory_stop_blocking:
+    bool = False, mandatory_stop_grace: int = 5, nudge_escalation_threshold: int = 3, periodic_tools:
+    dict[str, int] = field(default_factory=lambda: {''link_knowledge'': 25, ''add_negative'': 40}), advisory_periodic_tools:
+    list[str] = field(default_factory=lambda: [''add_negative'', ''link_knowledge'']))'
+  - 'class mcm_engine.tracker.NudgeConfig(store_reminder_turns: int = 10, checkpoint_turns: int = 25,
+    mandatory_stop_turns: int = 50, hyper_focus_threshold: int = 3, rules_check_interval: int = 15, mandatory_stop_blocking:
+    bool = False, mandatory_stop_grace: int = 5, nudge_escalation_threshold: int = 3, periodic_tools:
+    dict[str, int] = field(default_factory=lambda: {''link_knowledge'': 25, ''add_negative'': 40}), advisory_periodic_tools:
+    list[str] = field(default_factory=lambda: [''add_negative'', ''link_knowledge'']))'
   fail_to_pass:
   - tests/test_search_scope_and_archived.py::test_scope_all_returns_every_entity_type
   - tests/test_search_scope_and_archived.py::test_scope_errors_returns_only_errors
@@ -143,5 +169,6 @@ attribution:
     removed (spec), and the Fix/Shape/Design/Options/Remedy/Proposal/Build/What-to sections and labelled
     paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
     of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
-    and sandbox (evals/repo.py)
+    and sandbox (evals/repo.py); the names the hidden tests use that the fix adds or re-signs, with the
+    fix's signatures, appended to both variants (evals/interface.py)
   importer: evals.importers.history_mcm_engine

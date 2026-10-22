@@ -97,7 +97,14 @@ prompt: '# In-session style nudge: positive voice exemplar, not a longer denylis
   curating, not just writing once.
 
 
-  Not for immediate build. Filed for rumination.'
+  Not for immediate build. Filed for rumination.
+
+
+  The hidden tests call these names from the repository (signatures as a correct fix defines them):
+
+  - `mcm_engine.style.VOICE_EXEMPLAR`
+
+  - `mcm_engine.style.count_style_tics(text: str) -> dict[str, int]`'
 params:
   source_repo: https://github.com/unxmaal/mcm-engine.git
   base: d8c98abf2ed8b6f7f9baac4062bcb91b358e31c0
@@ -114,6 +121,9 @@ params:
   - pythonpath=src
   extras:
   - dev
+  interface:
+  - mcm_engine.style.VOICE_EXEMPLAR
+  - 'mcm_engine.style.count_style_tics(text: str) -> dict[str, int]'
   fail_to_pass:
   - tests/test_style.py::test_clean_prose_scores_zero
   - tests/test_style.py::test_counts_em_dashes
@@ -134,5 +144,6 @@ attribution:
     removed (spec), and the Fix/Shape/Design/Options/Remedy/Proposal/Build/What-to sections and labelled
     paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
     of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
-    and sandbox (evals/repo.py)
+    and sandbox (evals/repo.py); the names the hidden tests use that the fix adds or re-signs, with the
+    fix's signatures, appended to both variants (evals/interface.py)
   importer: evals.importers.history_mcm_engine

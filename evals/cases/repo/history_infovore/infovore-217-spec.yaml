@@ -8,7 +8,12 @@ prompt: '# Skip fragment exchanges: judge queues need >=3 text messages; cascade
   54% of exchanges have 1-2 messages; 2,327 singletons are attachment-only. likely-irrelevant serves them
   first and they teach nothing. Dynamic judge queues (likely-irrelevant, uncertain, c1) serve only exchanges
   with >=3 non-empty text messages; cascade gets a no_text stage after denylist, excluded from accuracy.
-  trainable_labels unchanged.'
+  trainable_labels unchanged.
+
+
+  The hidden tests call these names from the repository (signatures as a correct fix defines them):
+
+  - `infovore.eval.judge.MIN_TEXT_MESSAGES`'
 params:
   source_repo: https://github.com/unxmaal/infovore.git
   base: d8057a4e0a965542c12a2315662821e29903d2e1
@@ -23,6 +28,8 @@ params:
   - infovore/db/exchange_text.py
   pytest_args:
   - --import-mode=importlib
+  interface:
+  - infovore.eval.judge.MIN_TEXT_MESSAGES
   fail_to_pass:
   - tests/eval/test_judge.py::test_a_missing_channel_falls_back_to_its_id
   - tests/eval/test_judge.py::test_a_repeat_arrives_unmarked
@@ -79,5 +86,6 @@ attribution:
     removed (spec), and the Fix/Shape/Design/Options/Remedy/Proposal/Build/What-to sections and labelled
     paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
     of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
-    and sandbox (evals/repo.py)
+    and sandbox (evals/repo.py); the names the hidden tests use that the fix adds or re-signs, with the
+    fix's signatures, appended to both variants (evals/interface.py)
   importer: evals.importers.history_infovore

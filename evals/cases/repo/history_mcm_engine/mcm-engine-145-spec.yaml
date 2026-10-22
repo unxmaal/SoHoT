@@ -30,7 +30,22 @@ prompt: '# Save and restore session state automatically at compaction (PreCompac
 
 
   Test: a forced `/compact` writes a snapshot row and the next turn''s context has the resume block. With
-  the server unreachable, it fails open.'
+  the server unreachable, it fails open.
+
+
+  The hidden tests call these names from the repository (signatures as a correct fix defines them):
+
+  - `mcm_engine.hooks.pre_compact._build_arguments(trigger: str, custom_instructions: str) -> dict[str,
+  Any]`
+
+  - `mcm_engine.hooks.pre_compact._mcp_http_endpoint(cwd: Path) -> tuple[Optional[str], dict]`
+
+  - `mcm_engine.hooks.pre_compact._write_local(cwd: Path, args: dict[str, Any]) -> None`
+
+  - `mcm_engine.hooks.pre_compact.main(argv: Optional[list[str]]=None) -> int`
+
+  - `mcm_engine.hooks.pre_compact.mcp_http_call_tool(url: str, name: str, arguments: dict, *, headers:
+  Optional[dict]=None, timeout: Optional[float]=None) -> str`'
 params:
   source_repo: https://github.com/unxmaal/mcm-engine.git
   base: bc061e331199ad711feda432fab458274a04ff35
@@ -48,6 +63,14 @@ params:
   - pythonpath=src
   extras:
   - dev
+  interface:
+  - 'mcm_engine.hooks.pre_compact._build_arguments(trigger: str, custom_instructions: str) -> dict[str,
+    Any]'
+  - 'mcm_engine.hooks.pre_compact._mcp_http_endpoint(cwd: Path) -> tuple[Optional[str], dict]'
+  - 'mcm_engine.hooks.pre_compact._write_local(cwd: Path, args: dict[str, Any]) -> None'
+  - 'mcm_engine.hooks.pre_compact.main(argv: Optional[list[str]]=None) -> int'
+  - 'mcm_engine.hooks.pre_compact.mcp_http_call_tool(url: str, name: str, arguments: dict, *, headers:
+    Optional[dict]=None, timeout: Optional[float]=None) -> str'
   fail_to_pass:
   - tests/test_hook_pre_compact.py::test_auto_trigger_has_no_open_questions
   - tests/test_hook_pre_compact.py::test_hook_does_not_read_a_shadow_store_on_the_remote_path
@@ -76,5 +99,6 @@ attribution:
     removed (spec), and the Fix/Shape/Design/Options/Remedy/Proposal/Build/What-to sections and labelled
     paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
     of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
-    and sandbox (evals/repo.py)
+    and sandbox (evals/repo.py); the names the hidden tests use that the fix adds or re-signs, with the
+    fix's signatures, appended to both variants (evals/interface.py)
   importer: evals.importers.history_mcm_engine

@@ -30,7 +30,21 @@ prompt: '# Fix a mistake: reader-facing corrections page, claim corrections file
   4. **README section** pointing at the same two files.
 
 
-  Naming of the site (wiki vs digest) is a separate decision and not changed here.'
+  Naming of the site (wiki vs digest) is a separate decision and not changed here.
+
+
+  The hidden tests call these names from the repository (signatures as a correct fix defines them):
+
+  - `class infovore.wiki.corrections.Correction(exchange: int, statement: str, replace: str | None)`
+
+  - `infovore.wiki.build.load_claims(conn: sqlite3.Connection, tech_only: bool=False, salt: str | None=None,
+  runs: Sequence[int] | None=None, tag_runs: Sequence[int] | None=None, verdicts: frozenset[str] | None=None,
+  background: float | None=None, corrections: Mapping[tuple[int, str], Correction] | None=None) -> tuple[list[WikiClaim],
+  Excluded]`
+
+  - `infovore.wiki.corrections.Correction.key(self) -> tuple[int, str]`
+
+  - `infovore.wiki.corrections.load_corrections(text: str | None=None) -> dict[tuple[int, str], Correction]`'
 params:
   source_repo: https://github.com/unxmaal/infovore.git
   base: 2e5c25803ebb204df597319e81fd0d00f8a69b2d
@@ -47,6 +61,14 @@ params:
   - infovore/wiki/corrections.toml
   pytest_args:
   - --import-mode=importlib
+  interface:
+  - 'class infovore.wiki.corrections.Correction(exchange: int, statement: str, replace: str | None)'
+  - 'infovore.wiki.build.load_claims(conn: sqlite3.Connection, tech_only: bool=False, salt: str | None=None,
+    runs: Sequence[int] | None=None, tag_runs: Sequence[int] | None=None, verdicts: frozenset[str] | None=None,
+    background: float | None=None, corrections: Mapping[tuple[int, str], Correction] | None=None) -> tuple[list[WikiClaim],
+    Excluded]'
+  - infovore.wiki.corrections.Correction.key(self) -> tuple[int, str]
+  - 'infovore.wiki.corrections.load_corrections(text: str | None=None) -> dict[tuple[int, str], Correction]'
   fail_to_pass:
   - tests/wiki/test_build.py::test_article_parts_follow_numbered_continuations_without_gaps
   - tests/wiki/test_build.py::test_background_claims_leave_the_page_with_one_line_naming_their_reference
@@ -112,5 +134,6 @@ attribution:
     removed (spec), and the Fix/Shape/Design/Options/Remedy/Proposal/Build/What-to sections and labelled
     paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
     of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
-    and sandbox (evals/repo.py)
+    and sandbox (evals/repo.py); the names the hidden tests use that the fix adds or re-signs, with the
+    fix's signatures, appended to both variants (evals/interface.py)
   importer: evals.importers.history_infovore

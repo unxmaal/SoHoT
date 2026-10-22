@@ -17,7 +17,19 @@ prompt: '# Wiki structural losses: orphan claims, MAX_GROUPS cut, min_claims 10
   🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 
-  https://claude.ai/code/session_018FFkm1LHqCXapmvM9uBMXc'
+  https://claude.ai/code/session_018FFkm1LHqCXapmvM9uBMXc
+
+
+  The hidden tests call these names from the repository (signatures as a correct fix defines them):
+
+  - `infovore.wiki.build.UNSORTED: Final`
+
+  - `infovore.wiki.build._by_topic(claims: Iterable[WikiClaim], unsorted: str | None=None) -> dict[str,
+  list[WikiClaim]]`
+
+  - `infovore.wiki.build.article_parts(article: Article, key: str) -> list[tuple[str, Sequence[int]]]`
+
+  - `infovore.wiki.build.part_key(section: str, part: int) -> str`'
 params:
   source_repo: https://github.com/unxmaal/infovore.git
   base: 223ed6f41e12920afe9ce5410403ba982d2debdf
@@ -31,6 +43,12 @@ params:
   - infovore/wiki/write_command.py
   pytest_args:
   - --import-mode=importlib
+  interface:
+  - 'infovore.wiki.build.UNSORTED: Final'
+  - 'infovore.wiki.build._by_topic(claims: Iterable[WikiClaim], unsorted: str | None=None) -> dict[str,
+    list[WikiClaim]]'
+  - 'infovore.wiki.build.article_parts(article: Article, key: str) -> list[tuple[str, Sequence[int]]]'
+  - 'infovore.wiki.build.part_key(section: str, part: int) -> str'
   fail_to_pass:
   - tests/wiki/test_build.py::test_article_parts_follow_numbered_continuations_without_gaps
   - tests/wiki/test_build.py::test_build_site_folds_small_sections
@@ -85,5 +103,6 @@ attribution:
     removed (spec), and the Fix/Shape/Design/Options/Remedy/Proposal/Build/What-to sections and labelled
     paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
     of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
-    and sandbox (evals/repo.py)
+    and sandbox (evals/repo.py); the names the hidden tests use that the fix adds or re-signs, with the
+    fix's signatures, appended to both variants (evals/interface.py)
   importer: evals.importers.history_infovore
