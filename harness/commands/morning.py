@@ -37,6 +37,10 @@ def render(r: dict) -> list[str]:
     if h and morning.open_incident(r, h["lane"]) is None:
         state = {True: "generating", False: "CANNOT GENERATE"}.get(h.get("generating"), f"unknown ({h.get('why')})")
         out.append(f"lane      {h['lane']}: {state}")
+    inc = r.get("incumbent")
+    if inc:
+        out.append(f"incumbent {inc['lane']}: {inc['spec']} ({inc['source']})"
+                   + (f"; {inc['detail']}" if inc.get("detail") else ""))
     out.append(f"incidents {len(r.get('incidents') or [])}")
     out.extend(f"          {incident_line(i)}" for i in r.get("incidents") or [])
     loop = s.get("loop")
@@ -121,7 +125,8 @@ def cmd_morning(a) -> int:
     conn = morning.snapshot()
     try:
         r = morning.gather(conn, now, since, beat=heartbeat.summary(), where=paths.deploy_checkout(),
-                           health=morning.lane_health, canary=canary.morning_line, parked=morning.parked_nodes)
+                           health=morning.lane_health, canary=canary.morning_line, parked=morning.parked_nodes,
+                           incumbent=morning.repo_incumbent)
     finally:
         conn.close()
     lines = render(r)

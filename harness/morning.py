@@ -295,19 +295,31 @@ def parked_nodes() -> list[str]:
 
 
 def gather(conn, now: float, since: float, *, beat=None, gh=None, git=None, where=None, lanes=None,
-           health=None, stalls=None, canary=None, parked=None) -> dict:
+           health=None, stalls=None, canary=None, parked=None, incumbent=None) -> dict:
     """`health` probes the headline's lane (lane_health), `canary` reads its receipts (canary.morning_line); None skips either."""
     r = {"lane": health(MODEL_LANE) if health else {"lane": MODEL_LANE, "generating": None, "why": "not probed"},
          "generated": now, "since": since, "sweep": sweep(conn, since, beat), "watchdog": watchdog(conn, since),
          "ci": ci(now, gh=gh or _gh), "ledger": ledger_row(conn, now), "stale": (lanes or stale_lanes)(conn),
          "stalled": (stalls or stalled)(conn), "deploy": deploy(where, git=git or _git),
          "canary": canary(now) if canary else "", "incidents": incidents(conn, since, now),
-         "parked": parked() if parked else [], "checks": sweep_checks(conn, since)}
+         "parked": parked() if parked else [], "checks": sweep_checks(conn, since),
+         "incumbent": incumbent(conn) if incumbent else None}
     if r["sweep"]["loop"] is not None:
         from harness import heartbeat
         r["sweep"]["loop"]["code_moved"] = heartbeat.code_moved(beat, r["deploy"].get("head", ""))
     r["needs"] = needs(r)
     return r
+
+
+def repo_incumbent(conn) -> dict:
+    """The repo lane's incumbent and how it was chosen. #1110."""
+    from harness import baseline, repo_gate, screen, winners
+    typed = winners.typed().get(repo_gate.GATE, "")
+    spec = screen.candidate_for(repo_gate.GATE, typed) or typed
+    try:
+        return baseline.source(conn, repo_gate.GATE, spec)
+    except Exception as exc:  # noqa: BLE001 - the report says it could not tell rather than failing
+        return {"lane": repo_gate.GATE, "spec": spec, "source": "unknown", "detail": f"{type(exc).__name__}: {exc}"}
 
 
 def deterministic_headline(r: dict) -> str:

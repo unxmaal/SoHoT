@@ -21,12 +21,35 @@ def cmd_adopt(a) -> int:
     """The discovery loop's paired measure-and-adopt, for a named challenger."""
     if getattr(a, "power", False):
         return cmd_power(a)
+    if getattr(a, "from_measurement", False):
+        return _from_measurement(a)
     if not a.lane or not a.challenger:
         return err("adopt needs --lane and --challenger, or --power")
     lane = lanes.canonical(a.lane)
     if lane not in lanes.ALL:
         return err(f"unknown lane {a.lane!r}; known: {', '.join(lanes.ALL)}")
     return measure_cmd._measure_and_adopt(a, {"name": a.challenger, "lane": lane})
+
+
+def _from_measurement(a) -> int:
+    """`soh adopt --lane L --from-measurement`: a never-passing typed incumbent gives way to the best measured local candidate. #1110."""
+    from harness import adopt, screen, winners
+    from harness.commands import measure as m
+    lane = lanes.canonical(a.lane or "")
+    typed = winners.typed().get(lane, "")
+    if not typed:
+        return err(f"--from-measurement needs --lane with a typed default; known: {', '.join(sorted(winners.typed()))}")
+    served = adopt.default_for(lane, typed)
+    inc_spec = screen.candidate_for(lane, served) or served
+    zero = m._zero_pass(lane, inc_spec)
+    if not zero:
+        note(f"{lane}: {served} is adopted or has passed a stored case (or has fewer stored cases than the "
+             f"zero_pass_min_cases knob), so its incumbent is not taken from measurement")
+        emit(lane=lane, incumbent=served, taken=None)
+        return 0
+    got = m.take_measured(lane, inc_spec, zero, dry_run=getattr(a, "dry_run", False))
+    emit(lane=lane, incumbent=served, zero_pass=zero, taken=got.challenger if got else None)
+    return 0
 
 
 def _receipts(files) -> dict[str, list[dict]]:

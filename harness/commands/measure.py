@@ -276,6 +276,12 @@ def _measure(a, row: dict, loaded: list, sweep=None) -> int:
               f"is nothing to compare against. Measure it on its own first.")
         return 0
     inc_spec = screen.candidate_for(lane, incumbent) or incumbent
+    zero = _zero_pass(lane, inc_spec)
+    if zero:
+        taken = take_measured(lane, inc_spec, zero)
+        if taken is not None:
+            incumbent, zero = taken.challenger, None
+            inc_spec = screen.candidate_for(lane, incumbent) or incumbent
     if spec == inc_spec:
         # An adopted winner is the incumbent; measuring it against itself
         # wrote `declined` for the lane's own default. #393.
@@ -389,7 +395,7 @@ def _measure(a, row: dict, loaded: list, sweep=None) -> int:
     # the loop reported "does not beat the incumbent on the lane's metric".
     # A candidate measured beside a control that passed nothing says nothing
     # about the candidate. #223, and the lesson the tts lane paid for in #194.
-    if not int(inc_row.get("passed") or 0):
+    if not int(inc_row.get("passed") or 0) and not zero:
         return err(f"{name}: the incumbent {incumbent} passed "
                    f"0 of {inc_row.get('total') or '?'}, so this run has no "
                    f"working control and nothing can be concluded from it. "
@@ -408,6 +414,13 @@ def _measure(a, row: dict, loaded: list, sweep=None) -> int:
         return err(f"{name}: every case was refused before it reached a model "
                    f"({refused}). The incumbent passed, so this says nothing "
                    f"about the candidate and it stays queued.")
+    if zero:
+        from harness import baseline
+        verdict = baseline.screened(lane, incumbent, spec, ch_row, zero)
+        print(f"    kept the incumbent: {verdict.why}", flush=True)
+        _record(verdict, spec, data.get("run_id"), out)
+        take_measured(lane, inc_spec, zero)
+        return 0
     store = ms.connect()
     try:
         tested = adopt.comparisons(store, lane, split.version) if split is not None else 0
@@ -868,6 +881,58 @@ def _per_case(by_key) -> float | None:
     """Wall seconds per paired case: the candidates' seconds per case summed, None when one is unknown."""
     got = list((by_key or {}).values())
     return round(sum(got), 3) if got and all(x is not None for x in got) else None
+
+
+def _zero_pass(lane: str, inc_spec: str) -> dict | None:
+    from harness import baseline
+    from harness import memory_store as ms
+    store = ms.connect()
+    try:
+        return baseline.zero_pass(store, lane, inc_spec)
+    finally:
+        store.close()
+
+
+def take_measured(lane: str, inc_spec: str, zero: dict, dry_run: bool = False):
+    """Adopt the best measured local candidate over a zero-pass typed incumbent when it wins; the verdict if it was adopted. #1110."""
+    from harness import adopt, baseline
+    from harness import memory_store as ms
+    store = ms.connect()
+    try:
+        got = baseline.take(store, lane, inc_spec, zero)
+        if got is None:
+            print(f"    {lane}: {inc_spec} passed 0 of {zero['cases']} stored cases and no local candidate "
+                  f"has a row on every case of the current exam, so the lane keeps it until one does", flush=True)
+            return None
+        print(f"    {lane}: {'ADOPTED' if got.adopt and not dry_run else 'would adopt' if got.adopt else 'not taken'}"
+              f" {got.challenger}: {got.why}", flush=True)
+        if not got.adopt or dry_run:
+            return None
+        try:
+            adopt.record(store, got, spec=got.challenger, run_id=got.evidence["runs"][-1])
+        except (adopt.Held, ms.IllegalTransition, ValueError) as exc:
+            print(f"    not recorded: {exc}", flush=True)
+            return None
+        return got
+    finally:
+        store.close()
+
+
+def take_incumbents(want: str = "") -> list:
+    """Each typed lane that never passes takes its incumbent from measurement before the sweep measures it. #1110."""
+    from harness import adopt, screen, winners
+    typed = winners.typed()
+    out = []
+    for lane in ([lanes.canonical(want)] if want else sorted(typed)):
+        if not typed.get(lane):
+            continue
+        served = adopt.default_for(lane, typed[lane])
+        inc_spec = screen.candidate_for(lane, served) or served
+        zero = _zero_pass(lane, inc_spec)
+        got = take_measured(lane, inc_spec, zero) if zero else None
+        if got is not None:
+            out.append(got)
+    return out
 
 
 def _settle(name: str, outcome: str, detail: str) -> None:
