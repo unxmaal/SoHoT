@@ -1709,6 +1709,16 @@ labellers score under 2 on both axes (a disputed axis is unfair until
 `settled`). A case that fails validation goes in
 `evals/importers/history.py:DROPPED` with its reason (#920).
 
+A fail_to_pass file that does not collect at base counts as failing there
+(SWE-bench's convention) only when its error is an ImportError or
+AttributeError naming a module the reference checkout holds (at its root or
+under `src/`), the reference makes those ids collect and pass, and no
+pass_to_pass id errors (#1098). Any other collection error (a third-party
+module, a syntax error, a conftest) stays `error` in the control and
+`base_error` in the survey, which records the `cause` on the drop and
+`admitted_by` on a task the rule admitted; `--yield` prints base_error by
+cause, and the control keeps `collect` and `admitted_by` beside the verdict.
+
 `python -m evals.importers.history --out DIR/history.json --log DIR/survey.log`
 surveys the whole fix-commit pool (fetching the mirror first) and keeps every
 committed task's row as it is unless `--restart`; a new task takes its side from

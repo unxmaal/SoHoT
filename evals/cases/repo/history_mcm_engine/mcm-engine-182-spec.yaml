@@ -1,0 +1,64 @@
+# mcm-engine fix history (unxmaal/mcm-engine), generated (https://github.com/unxmaal/mcm-engine).
+# Imported by evals/importers from git:unxmaal/mcm-engine@a5b9741db49e7bfbdbfe321b65921dc08664da8e; re-import, do not edit.
+id: mcm-engine-182-spec
+modality: repo
+prompt: '# 4.0 C6: characterization replay (legacy vs unified) + Postgres rehearsal
+
+
+  The outside check for #176.
+
+
+  - `mcm-engine replay-queries <transcripts…> --snapshot <sqlite>`: extract every `search`/`report_error`/`get_entry`/`read_rule`
+  tool_use (arguments) from Claude Code JSONL transcripts (reuse `eval/trace_transcript.py` parsing),
+  replay each against the snapshot under `MCM_ENTRY_MODEL=legacy` and `unified` in one process, and report
+  per-query id-set agreement: exact for get_entry/read_rule, ranked overlap (Jaccard on the returned ids,
+  and top-k order agreement) for search/report_error. JSON report with the disagreeing queries listed.
+
+  - Test: a checked-in mini transcript + seeded store with a pinned agreement result, so the harness itself
+  is verified.
+
+  - Rehearsal: load the C1 snapshot into the local docker Postgres (127.0.0.1:55432) via `migrate.py`,
+  boot 4.0 against it, confirm the C3 verify passes, run the replay there, record the agreement numbers
+  in the KB.
+
+
+  Acceptance: on the real corpus of 1,474 searches / 241 report_errors / 45 get_entry / 53 read_rule,
+  get_entry/read_rule agreement 100%; search ranked-overlap at or above the threshold stated in the umbrella
+  (proposed 0.9 Jaccard on returned ids, disagreements explained by the uniform FTS weighting and listed);
+  rehearsal round-trip identical on Postgres.'
+params:
+  source_repo: https://github.com/unxmaal/mcm-engine.git
+  base: 9c2d65dde91aa3d4e6e53471f26579fb71d6d5e4
+  fix: 02881a06e172851716f78dfec7c6fb5c5e29b3a8
+  variant: spec
+  context: oracle
+  context_files:
+  - src/mcm_engine/cli.py
+  new_files:
+  - src/mcm_engine/replay_queries.py
+  pytest_args:
+  - -o
+  - pythonpath=src
+  extras:
+  - dev
+  fail_to_pass:
+  - tests/test_replay_queries.py::test_cli_writes_a_json_report
+  - tests/test_replay_queries.py::test_extract_queries_keeps_only_replayable_tool_uses
+  - tests/test_replay_queries.py::test_metrics
+  - tests/test_replay_queries.py::test_seeded_store_agrees_completely
+  - tests/test_replay_queries.py::test_tampered_unified_side_is_reported
+  pass_to_pass: []
+attribution:
+  dataset: mcm-engine fix history (unxmaal/mcm-engine)
+  url: https://github.com/unxmaal/mcm-engine
+  license: generated
+  source: git:unxmaal/mcm-engine
+  revision: a5b9741db49e7bfbdbfe321b65921dc08664da8e
+  item: '#182 (PR #191)'
+  date: '2026-10-21'
+  transform: issue title and body from `gh issue view` at survey time, home paths as ~/, 'Prior art checked'
+    removed (spec), and the Fix/Shape/Design/Options/Remedy/Proposal/Build/What-to sections and labelled
+    paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
+    of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
+    and sandbox (evals/repo.py)
+  importer: evals.importers.history_mcm_engine

@@ -1,0 +1,76 @@
+# infovore fix history (unxmaal/infovore), generated (https://github.com/unxmaal/infovore).
+# Imported by evals/importers from git:unxmaal/infovore@219940e42104c3e625a6642713e856e2bb2305fc; re-import, do not edit.
+id: infovore-340-spec
+modality: repo
+prompt: '# Negative controls for the claim check and the wiki gates
+
+
+  From the 2026-10-10 review. Every metric so far was computed on a target produced by the system under
+  test and with no control.
+
+
+  Build `infovore claims controls` (read-only, CPU):
+
+  1. Shuffle citations within each exchange and recompute the deterministic check overlap; report the
+  supported rate on shuffled pairs. If it stays near the real rate, the checker is lax and its verdicts
+  mean little.
+
+  2. Pair each claim with a random claim from the same channel and month; its overlap with the wrong messages
+  is the floor for `support.FLOOR`.
+
+  3. From article run 0078 (tonight): sentence drop rate in `keep_supported` by the verdict of the claims
+  the sentence cites (supported / uncheckable / unsupported_fact / low_overlap). This is the free randomized
+  read on #337.
+
+  4. Lexicon recall against a length- and position-matched sample of uncited messages, replacing the raw
+  recall in #334.
+
+
+  Output: one table per control, JSON with `--json`. Author-cluster bootstrap for every interval (rows
+  cluster by author and by exchange).
+
+
+  🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+
+  https://claude.ai/code/session_018FFkm1LHqCXapmvM9uBMXc'
+params:
+  source_repo: https://github.com/unxmaal/infovore.git
+  base: beda3c3cff036a10d558acd507fb231f66a72135
+  fix: 122a1840c9332500d54665d82f9b4034a5da5d97
+  variant: spec
+  context: oracle
+  context_files:
+  - README.md
+  - infovore/claims/command.py
+  new_files:
+  - infovore/claims/controls.py
+  pytest_args:
+  - --import-mode=importlib
+  fail_to_pass:
+  - tests/claims/test_controls.py::test_controls_bad_arguments_are_config_errors[argv0]
+  - tests/claims/test_controls.py::test_controls_bad_arguments_are_config_errors[argv1]
+  - tests/claims/test_controls.py::test_controls_bad_arguments_are_config_errors[argv2]
+  - tests/claims/test_controls.py::test_controls_bad_arguments_are_config_errors[argv3]
+  - tests/claims/test_controls.py::test_controls_command_prints_every_table
+  - tests/claims/test_controls.py::test_drop_rate_reads_the_log_and_buckets_by_worst_verdict
+  - tests/claims/test_controls.py::test_length_buckets_cover_every_length
+  - tests/claims/test_controls.py::test_matched_recall_strata_split_cited_from_uncited
+  - tests/claims/test_controls.py::test_overlap_floor_reports_quantiles_and_shares
+  - tests/claims/test_controls.py::test_shuffled_citations_score_worse_than_real_ones
+  - tests/claims/test_controls.py::test_worst_verdict_orders_by_severity
+  pass_to_pass: []
+attribution:
+  dataset: infovore fix history (unxmaal/infovore)
+  url: https://github.com/unxmaal/infovore
+  license: generated
+  source: git:unxmaal/infovore
+  revision: 219940e42104c3e625a6642713e856e2bb2305fc
+  item: '#340 (PR #345)'
+  date: '2026-10-10'
+  transform: issue title and body from `gh issue view` at survey time, home paths as ~/, 'Prior art checked'
+    removed (spec), and the Fix/Shape/Design/Options/Remedy/Proposal/Build/What-to sections and labelled
+    paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
+    of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
+    and sandbox (evals/repo.py)
+  importer: evals.importers.history_infovore

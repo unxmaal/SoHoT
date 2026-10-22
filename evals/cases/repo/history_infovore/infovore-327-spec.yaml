@@ -1,0 +1,65 @@
+# infovore fix history (unxmaal/infovore), generated (https://github.com/unxmaal/infovore).
+# Imported by evals/importers from git:unxmaal/infovore@219940e42104c3e625a6642713e856e2bb2305fc; re-import, do not edit.
+id: infovore-327-spec
+modality: repo
+prompt: '# sift seed: random sample from deeper ranks for a base rate
+
+
+  Follows #319. Eric called 49 of the top 50 seed messages valuable, which says nothing about how fast
+  value falls off further down the ranking. Add `sift seed --ranks A-B --sample N [--seed S] --out DIR`:
+  a seeded random sample of N messages from ranks A to B of the same ranking. It writes a manifest with
+  its own source_ref (`sift:seed-lexicon-deep:<date>`) and regime `value`.
+
+
+  First use: 30 from ranks 1,000-10,000. That gives #320 a base rate below the top.
+
+
+  🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+
+  https://claude.ai/code/session_018FFkm1LHqCXapmvM9uBMXc'
+params:
+  source_repo: https://github.com/unxmaal/infovore.git
+  base: 463d292e260a014d606fa40c22ed5fc1db57ddb4
+  fix: a62b91d40f32e49860b540023ee6ba48f86df485
+  variant: spec
+  context: oracle
+  context_files:
+  - README.md
+  - infovore/sift/command.py
+  - infovore/sift/seed.py
+  pytest_args:
+  - --import-mode=importlib
+  fail_to_pass:
+  - tests/sift/test_seed.py::test_cli_deep_sample_out_and_validation
+  - tests/sift/test_seed.py::test_cli_out_then_serve_labels_carry_seed_source_ref
+  - tests/sift/test_seed.py::test_cli_ranked_listing_report_and_floor_validation
+  - tests/sift/test_seed.py::test_floor_filters_by_word_count
+  - tests/sift/test_seed.py::test_parse_ranks
+  - tests/sift/test_seed.py::test_plain_serve_app_keeps_default_source_ref
+  - tests/sift/test_seed.py::test_render_report
+  - tests/sift/test_seed.py::test_render_report_with_no_candidates
+  - tests/sift/test_seed.py::test_sample_window_seeded_and_bounded
+  - tests/sift/test_seed.py::test_score_tie_breaks_on_hits_then_id
+  - tests/sift/test_seed.py::test_seed_rows_exclusions_and_ranking
+  - tests/sift/test_seed.py::test_seed_rows_skip_human_labeled
+  - tests/sift/test_seed.py::test_top_rows_and_percentile
+  - tests/sift/test_seed.py::test_value_regime_labels_stay_out_of_training
+  - tests/sift/test_seed.py::test_without_denylist_food_threads_return
+  - tests/sift/test_seed.py::test_write_seed_queue_and_format_rows
+  - tests/sift/test_seed.py::test_write_seed_queue_deep_prefix
+  pass_to_pass: []
+attribution:
+  dataset: infovore fix history (unxmaal/infovore)
+  url: https://github.com/unxmaal/infovore
+  license: generated
+  source: git:unxmaal/infovore
+  revision: 219940e42104c3e625a6642713e856e2bb2305fc
+  item: '#327 (PR #328)'
+  date: '2026-10-10'
+  transform: issue title and body from `gh issue view` at survey time, home paths as ~/, 'Prior art checked'
+    removed (spec), and the Fix/Shape/Design/Options/Remedy/Proposal/Build/What-to sections and labelled
+    paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
+    of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
+    and sandbox (evals/repo.py)
+  importer: evals.importers.history_infovore

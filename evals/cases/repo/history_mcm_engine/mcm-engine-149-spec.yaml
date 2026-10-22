@@ -1,0 +1,116 @@
+# mcm-engine fix history (unxmaal/mcm-engine), generated (https://github.com/unxmaal/mcm-engine).
+# Imported by evals/importers from git:unxmaal/mcm-engine@a5b9741db49e7bfbdbfe321b65921dc08664da8e; re-import, do not edit.
+id: mcm-engine-149-spec
+modality: repo
+prompt: '# Audit guessed hardcoded constants: provenance, env-override, and evidence-based retune
+
+
+  ## Thesis
+
+  The hook thresholds (`WARN_THRESHOLD`, `BLOCK_THRESHOLD`) were acknowledged by Eric as numbers guessed
+  with no backing evidence, which happened not to need changing until #144/#146. They are almost certainly
+  not the only ones. The codebase carries many module-level numeric constants that shape behavior — scoring
+  weights, similarity thresholds, decay windows — and the KB already records, repeatedly, that invented
+  thresholds mislead (FINDING #163 "any threshold chosen now is invented"; RULE #303 "measuring a configuration
+  nobody runs"; FINDING #5 dedup-threshold false positives).
+
+
+  This issue is the durable inventory + a triage, not a one-time list in a chat.
+
+
+  ## The inventory command (re-run any time)
+
+  ```
+
+  grep -rnE ''^[A-Z][A-Z0-9_]+ *= *-?[0-9]+(\.[0-9]+)?\b'' src/mcm_engine/ | grep -vE ''/__pycache__/''
+
+  ```
+
+  40 hits today. (It over-captures: default-kwarg magic numbers and in-function literals are not caught,
+  and structural constants are. Triage separates them.)
+
+
+  ## Triage
+
+  **Behavior-shaping knobs — need a measured justification in the KB, or an explicit "guessed, unvalidated"
+  acknowledgment, and ideally env-overridable:**
+
+  - `scoring.py`: W_RELEVANCE 2.0, W_HIT 0.1, W_REINFORCEMENT 0.3, W_CORRECTNESS 0.5, W_RECENCY 0.3, W_IMPORTANCE
+  0.5, W_SCOPE 0.1, PINNED_WEIGHT 2.0, HIT_SATURATION 10.0, REINFORCEMENT_SATURATION 3.0, CORRECTNESS_SCALE
+  2.0, RECENCY_WINDOW_DAYS 30.0, RECENCY_MAX_BONUS 1.0 — the entire ranking formula is hand-weighted.
+
+  - `dedup.py`: TOPIC_THRESHOLD 0.5, BODY_THRESHOLD 0.4, SUBSUME_THRESHOLD 0.8, MIN_ENTROPY 1.5 — FINDING
+  #5 already measured these produce false positives / miss semantic conflicts.
+
+  - `tools/search.py`: RANK_THRESHOLD 1.0, STALE_DAYS 90, EXPIRED_PENALTY 0.1.
+
+  - `ingest/rulesift.py`: KNOWN_THRESHOLD 0.9, NOVEL_THRESHOLD 0.5, MIN_TOKENS 3, MIN_SUBSTANCE_TOKENS
+  6.
+
+  - `hooks/mcp_enforcement.py`: WARN_THRESHOLD 8, BLOCK_THRESHOLD 20, FIXATION_THRESHOLD 8, AMBIENT_MAX_PER_SESSION
+  8 (the originating case; retune belongs with #137''s coverage evidence).
+
+  - `destructive.py`: DEFAULT_ARCHIVE_FLOOR 5, DEFAULT_ARCHIVE_FRACTION 0.5.
+
+
+  **Structural / not tunable (leave alone, just confirm):** schema.py CORE_VERSION 17; dedup NUM_PERM
+  32 / LSH_BANDS 8 / SHINGLE_N 2 (algorithm params); hierarchy IMPORTANCE_* ordinals (enum values); the
+  TTL/timeout seconds constants (operational, low-risk).
+
+
+  ## Work
+
+  1. For each behavior-shaping knob, attach a one-line provenance note in the KB: measured (cite the finding)
+  or "guessed, unvalidated". No prose in source comments (project contract).
+
+  2. Where a knob gates a user-visible decision (ranking, dedup, ingest sift), make it env-overridable
+  so it can be swept without a rebuild — same pattern `MCM_FIXATION_THRESHOLD` already uses.
+
+  3. Feed the ranking weights and search thresholds into #137''s evaluation harness (replay workload)
+  rather than guessing again.
+
+
+  Non-blocking. This is the umbrella; individual retunes are separate PRs with their own evidence.'
+params:
+  source_repo: https://github.com/unxmaal/mcm-engine.git
+  base: aeda791754fcde22504f4eb0872fa6294a401b82
+  fix: 63d1362e50d4887a3c87868a3395c4b165b85c1e
+  variant: spec
+  context: oracle
+  context_files:
+  - src/mcm_engine/dedup.py
+  - src/mcm_engine/ingest/rulesift.py
+  - src/mcm_engine/scoring.py
+  - src/mcm_engine/tools/search.py
+  new_files:
+  - src/mcm_engine/tunables.py
+  pytest_args:
+  - -o
+  - pythonpath=src
+  extras:
+  - dev
+  fail_to_pass:
+  - tests/test_tunables.py::test_constant_defaults_and_overrides[MCM_DEDUP_TOPIC_THRESHOLD-mcm_engine.dedup-TOPIC_THRESHOLD-0.5-0.7]
+  - tests/test_tunables.py::test_constant_defaults_and_overrides[MCM_RULESIFT_KNOWN_THRESHOLD-mcm_engine.ingest.rulesift-KNOWN_THRESHOLD-0.9-0.95]
+  - tests/test_tunables.py::test_constant_defaults_and_overrides[MCM_SCORE_W_RELEVANCE-mcm_engine.scoring-W_RELEVANCE-2.0-3.0]
+  - tests/test_tunables.py::test_constant_defaults_and_overrides[MCM_SEARCH_RANK_THRESHOLD-mcm_engine.tools.search-RANK_THRESHOLD-1.0-0.25]
+  - tests/test_tunables.py::test_constant_defaults_and_overrides[MCM_SEARCH_STALE_DAYS-mcm_engine.tools.search-STALE_DAYS-90-30]
+  - tests/test_tunables.py::test_env_float_parses_and_falls_back
+  - tests/test_tunables.py::test_env_float_unset_uses_default
+  - tests/test_tunables.py::test_env_int_parses_and_falls_back
+  - tests/test_tunables.py::test_structural_dedup_params_are_not_env_wired
+  pass_to_pass: []
+attribution:
+  dataset: mcm-engine fix history (unxmaal/mcm-engine)
+  url: https://github.com/unxmaal/mcm-engine
+  license: generated
+  source: git:unxmaal/mcm-engine
+  revision: a5b9741db49e7bfbdbfe321b65921dc08664da8e
+  item: '#149 (PR #151)'
+  date: '2026-10-15'
+  transform: issue title and body from `gh issue view` at survey time, home paths as ~/, 'Prior art checked'
+    removed (spec), and the Fix/Shape/Design/Options/Remedy/Proposal/Build/What-to sections and labelled
+    paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
+    of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
+    and sandbox (evals/repo.py)
+  importer: evals.importers.history_mcm_engine

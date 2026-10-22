@@ -1,0 +1,71 @@
+# mcm-engine fix history (unxmaal/mcm-engine), generated (https://github.com/unxmaal/mcm-engine).
+# Imported by evals/importers from git:unxmaal/mcm-engine@a5b9741db49e7bfbdbfe321b65921dc08664da8e; re-import, do not edit.
+id: mcm-engine-27-spec
+modality: repo
+prompt: '# Follow-up (#25/#26): scale-free relevance via batch min-max (fix adapter-scale mismatch)
+
+
+  #26''s relevance sigmoid uses a fixed midpoint (~8.0) calibrated for SQLite FTS5 **bm25** (magnitudes
+  ~1–20). The production pod is **Postgres**, whose `ts_rank_cd` scores are ~0.1–1 — so the sigmoid collapses
+  relevance to ~0 there and counters dominate (a live ranking regression). Fix: replace the fixed-scale
+  sigmoid with **batch min-max relative normalization** (Generative-Agents style) — normalize each result''s
+  relevance across the candidate batch''s own min/max, in the search layer (two-pass). Scale-free: works
+  for bm25, ts_rank_cd, and any future adapter with zero per-scale tuning. `compose_rank` then takes a
+  pre-normalized `relevance ∈ [0,1]`; drop `query_terms`. TDD in test_scoring.py.'
+params:
+  source_repo: https://github.com/unxmaal/mcm-engine.git
+  base: 4f4b9f67175107d41a027a654efbfe9016b78943
+  fix: 94708d68ff0a29b5300cda5923401ac98676d234
+  variant: spec
+  context: oracle
+  context_files:
+  - src/mcm_engine/scoring.py
+  - src/mcm_engine/tools/search.py
+  pytest_args:
+  - -o
+  - pythonpath=src
+  extras:
+  - dev
+  fail_to_pass:
+  - tests/test_correctness_axis.py::TestCorrectnessRanking::test_correctness_weight_demotes_failures_and_promotes_passes
+  - tests/test_scoring.py::test_accepts_none_counters
+  - tests/test_scoring.py::test_higher_relevance_ranks_higher_all_else_equal
+  - tests/test_scoring.py::test_minmax_clamps_out_of_range
+  - tests/test_scoring.py::test_minmax_degenerate_batch_is_uniform
+  - tests/test_scoring.py::test_minmax_normalize_scale_free[0.0-0.0-10.0-0.0]
+  - tests/test_scoring.py::test_minmax_normalize_scale_free[0.7-0.2-1.2-0.5]
+  - tests/test_scoring.py::test_minmax_normalize_scale_free[10.0-0.0-10.0-1.0]
+  - tests/test_scoring.py::test_minmax_normalize_scale_free[12.0-2.0-22.0-0.5]
+  - tests/test_scoring.py::test_minmax_normalize_scale_free[5.0-0.0-10.0-0.5]
+  - tests/test_scoring.py::test_more_hits_never_lowers_score
+  - tests/test_scoring.py::test_no_outcome_data_and_net_zero_are_both_neutral
+  - tests/test_scoring.py::test_pinned_adds_pinned_weight_holding_signals_equal
+  - tests/test_scoring.py::test_pinned_only_uses_relevance_plus_pin
+  - tests/test_scoring.py::test_positive_outcomes_promote_and_negative_demote
+  - tests/test_scoring.py::test_recency_bonus_linear_and_clamped
+  - tests/test_scoring.py::test_reinforcement_saturates_but_increases_and_is_bounded
+  - tests/test_scoring.py::test_top_of_batch_match_beats_weak_but_maximally_popular
+  pass_to_pass:
+  - tests/test_correctness_axis.py::TestReportOutcome::test_independent_fail_increments_incorrect
+  - tests/test_correctness_axis.py::TestReportOutcome::test_independent_pass_increments_correct
+  - tests/test_correctness_axis.py::TestReportOutcome::test_not_found_reported
+  - tests/test_correctness_axis.py::TestReportOutcome::test_self_report_is_logged_but_uncounted
+  - tests/test_correctness_axis.py::TestSupersedeRule::test_supersede_marks_status_and_event
+  - tests/test_correctness_axis.py::TestSupersedeRule::test_supersede_missing_ids
+  - tests/test_correctness_axis.py::TestSupersededFilteredFromSearch::test_superseded_rule_hidden_from_default_search
+  - tests/test_correctness_axis.py::TestV8ToV9Migration::test_fresh_install_has_v9_columns_and_table
+  - tests/test_correctness_axis.py::TestV8ToV9Migration::test_v8_db_migrates_to_v9_preserving_rows
+attribution:
+  dataset: mcm-engine fix history (unxmaal/mcm-engine)
+  url: https://github.com/unxmaal/mcm-engine
+  license: generated
+  source: git:unxmaal/mcm-engine
+  revision: a5b9741db49e7bfbdbfe321b65921dc08664da8e
+  item: '#27 (PR #28)'
+  date: '2026-07-03'
+  transform: issue title and body from `gh issue view` at survey time, home paths as ~/, 'Prior art checked'
+    removed (spec), and the Fix/Shape/Design/Options/Remedy/Proposal/Build/What-to sections and labelled
+    paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
+    of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
+    and sandbox (evals/repo.py)
+  importer: evals.importers.history_mcm_engine

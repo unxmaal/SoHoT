@@ -33,12 +33,11 @@
   "order": "newest first",
   "limit": null,
   "probes": null,
-  "kept_from": null
+  "kept_from": "a5b9741db49e7bfbdbfe321b65921dc08664da8e"
  },
  "candidates": 49,
  "examined": 49,
  "dropped": {
-  "base_error": 18,
   "flaky": 4,
   "no_source_change": 1,
   "no_test_change": 6,
@@ -46,6 +45,133 @@
   "too_big": 6
  },
  "tasks": [
+  {
+   "id": "mcm-engine-199",
+   "issue": 199,
+   "pr": 200,
+   "base": "459fb2cfa5979bad52179f5febf7988cd7493cf9",
+   "fix": "a5b9741db49e7bfbdbfe321b65921dc08664da8e",
+   "date": "2026-10-21",
+   "subject": "Merge pull request #200 from unxmaal/feat/199-replay-sizes",
+   "context_files": [
+    "src/mcm_engine/replay_queries.py"
+   ],
+   "new_files": [],
+   "test_files": [
+    "tests/fixtures/replay_mini.jsonl",
+    "tests/test_replay_queries.py"
+   ],
+   "fail_to_pass": [
+    "tests/test_replay_queries.py::test_cli_writes_a_json_report",
+    "tests/test_replay_queries.py::test_extract_queries_keeps_only_replayable_tool_uses",
+    "tests/test_replay_queries.py::test_kind_bytes_attributes_each_hit_block_to_its_kind",
+    "tests/test_replay_queries.py::test_metrics",
+    "tests/test_replay_queries.py::test_seeded_store_agrees_completely",
+    "tests/test_replay_queries.py::test_tampered_unified_side_is_reported",
+    "tests/test_replay_queries.py::test_verify_entries_cli_reports_counts_and_exit_code",
+    "tests/test_replay_queries.py::test_wire_bytes_is_the_compact_json_envelope"
+   ],
+   "pass_to_pass": [],
+   "prompts": {
+    "spec": "# Measure retrieval bloat before/after 4.0: recorded transcript bytes vs replayed bytes in replay-queries, and a live per-call size metric\n\n## Why\n4.0.0 shipped the retrieval bloat fixes (#170 sanitize, #171 search caps, #172 hook injection cap) and the unified entries model (#176). Before releasing 4.0.1 or flipping the default (#192) Eric wants evidence that the token burn actually dropped, not a parity score. The replay harness (#182) measures agreement between read paths; it does not measure size, and nothing on the server records how many bytes each tool call returns.\n\n## Raw material\nThe Claude Code session transcripts under ~/.claude/projects/-Users-eric-projects/*.jsonl hold every mcm tool_use together with the tool_result the client actually received from the basement (3.16.x until 2026-10-21). First pass over all transcripts, bytes of `search` results by day, pre-fix:\n\n```\nday         n   total     median   p90     max\n2026-09-07  41  336 KB    6479     16333   46062\n2026-09-14  46  461 KB    10176    16136   23547\n2026-10-02  79  708 KB    6114     20023   48166  (3 persisted as \"Output too large\")\n2026-10-11  88  686 KB    4634     21263   30092\n2026-10-14  28  427 KB    15864    31230   45529\n```\nTypical day: 300 to 700 KB of search output, median 5 to 10 KB per call, p90 15 to 25 KB, max around 45 KB.\n\n## Build\n1. `extract_queries` also captures the recorded result bytes by pairing each tool_use id with its tool_result.\n2. `replay` records `recorded_bytes`, `legacy_bytes`, `unified_bytes` per query and aggregates per tool: total, median, p90, and the ratio replayed/recorded. Printed by `format_report`, written to the JSON.\n3. Run on the mcm_rehearsal Postgres in natural mode (what the basement runs) and on the SQLite snapshot; store the numbers in the KB.\n4. Live metric going forward: record response bytes per tool call on the server so the same statistic can be read from the basement after the fact, not only from client transcripts. Scope to be decided in this issue after the replay numbers are in; `session_metrics` may be the right home.\n\n## Acceptance\n- `mcm-engine replay-queries <transcripts> --store <dsn> --query-mode natural` prints, per tool, recorded vs replayed byte totals, medians and p90s.\n- Harness test: a fixture whose tool_results have known lengths yields the expected recorded bytes, and a replayed result of a known length yields the expected ratio.\n- The before/after numbers for `search` and `report_error` are stored in the KB with the corpus drift stated (snapshot 2026-10-20 vs transcript dates).",
+    "symptom": "# Measure retrieval bloat before/after 4.0: recorded transcript bytes vs replayed bytes in replay-queries, and a live per-call size metric\n\n## Why\n4.0.0 shipped the retrieval bloat fixes (#170 sanitize, #171 search caps, #172 hook injection cap) and the unified entries model (#176). Before releasing 4.0.1 or flipping the default (#192) Eric wants evidence that the token burn actually dropped, not a parity score. The replay harness (#182) measures agreement between read paths; it does not measure size, and nothing on the server records how many bytes each tool call returns.\n\n## Raw material\nThe Claude Code session transcripts under ~/.claude/projects/-Users-eric-projects/*.jsonl hold every mcm tool_use together with the tool_result the client actually received from the basement (3.16.x until 2026-10-21). First pass over all transcripts, bytes of `search` results by day, pre-fix:\n\n```\nday         n   total     median   p90     max\n2026-09-07  41  336 KB    6479     16333   46062\n2026-09-14  46  461 KB    10176    16136   23547\n2026-10-02  79  708 KB    6114     20023   48166  (3 persisted as \"Output too large\")\n2026-10-11  88  686 KB    4634     21263   30092\n2026-10-14  28  427 KB    15864    31230   45529\n```\nTypical day: 300 to 700 KB of search output, median 5 to 10 KB per call, p90 15 to 25 KB, max around 45 KB.\n\n## Acceptance\n- `mcm-engine replay-queries <transcripts> --store <dsn> --query-mode natural` prints, per tool, recorded vs replayed byte totals, medians and p90s.\n- Harness test: a fixture whose tool_results have known lengths yields the expected recorded bytes, and a replayed result of a known length yields the expected ratio.\n- The before/after numbers for `search` and `report_error` are stored in the KB with the corpus drift stated (snapshot 2026-10-20 vs transcript dates)."
+   },
+   "strata": {
+    "files": 1,
+    "lines": 111,
+    "test_s": 0.76,
+    "area": "src/mcm_engine",
+    "size": "small"
+   },
+   "admitted_by": "base_collect_repo_symbol"
+  },
+  {
+   "id": "mcm-engine-182",
+   "issue": 182,
+   "pr": 191,
+   "base": "9c2d65dde91aa3d4e6e53471f26579fb71d6d5e4",
+   "fix": "02881a06e172851716f78dfec7c6fb5c5e29b3a8",
+   "date": "2026-10-21",
+   "subject": "Merge pull request #191 from unxmaal/feat/182-replay-rehearsal",
+   "context_files": [
+    "src/mcm_engine/cli.py"
+   ],
+   "new_files": [
+    "src/mcm_engine/replay_queries.py"
+   ],
+   "test_files": [
+    "tests/fixtures/replay_mini.jsonl",
+    "tests/test_replay_queries.py"
+   ],
+   "fail_to_pass": [
+    "tests/test_replay_queries.py::test_cli_writes_a_json_report",
+    "tests/test_replay_queries.py::test_extract_queries_keeps_only_replayable_tool_uses",
+    "tests/test_replay_queries.py::test_metrics",
+    "tests/test_replay_queries.py::test_seeded_store_agrees_completely",
+    "tests/test_replay_queries.py::test_tampered_unified_side_is_reported"
+   ],
+   "pass_to_pass": [],
+   "prompts": {
+    "spec": "# 4.0 C6: characterization replay (legacy vs unified) + Postgres rehearsal\n\nThe outside check for #176.\n\n- `mcm-engine replay-queries <transcripts\u2026> --snapshot <sqlite>`: extract every `search`/`report_error`/`get_entry`/`read_rule` tool_use (arguments) from Claude Code JSONL transcripts (reuse `eval/trace_transcript.py` parsing), replay each against the snapshot under `MCM_ENTRY_MODEL=legacy` and `unified` in one process, and report per-query id-set agreement: exact for get_entry/read_rule, ranked overlap (Jaccard on the returned ids, and top-k order agreement) for search/report_error. JSON report with the disagreeing queries listed.\n- Test: a checked-in mini transcript + seeded store with a pinned agreement result, so the harness itself is verified.\n- Rehearsal: load the C1 snapshot into the local docker Postgres (127.0.0.1:55432) via `migrate.py`, boot 4.0 against it, confirm the C3 verify passes, run the replay there, record the agreement numbers in the KB.\n\nAcceptance: on the real corpus of 1,474 searches / 241 report_errors / 45 get_entry / 53 read_rule, get_entry/read_rule agreement 100%; search ranked-overlap at or above the threshold stated in the umbrella (proposed 0.9 Jaccard on returned ids, disagreements explained by the uniform FTS weighting and listed); rehearsal round-trip identical on Postgres.",
+    "symptom": null
+   },
+   "strata": {
+    "files": 2,
+    "lines": 345,
+    "test_s": 0.8,
+    "area": "src/mcm_engine",
+    "size": "large"
+   },
+   "variant_drops": {
+    "symptom": "no_fix_section"
+   },
+   "admitted_by": "base_collect_repo_symbol"
+  },
+  {
+   "id": "mcm-engine-177",
+   "issue": 177,
+   "pr": 184,
+   "base": "bb256115dfea042c4e42dd2601c25fda130f8f5d",
+   "fix": "f80dbee47b220535b61a40c3c61757b5257a5f2d",
+   "date": "2026-10-21",
+   "subject": "Merge pull request #184 from unxmaal/feat/177-corpus-snapshot-census",
+   "context_files": [
+    ".gitignore",
+    "src/mcm_engine/cli.py"
+   ],
+   "new_files": [
+    "src/mcm_engine/corpus_snapshot.py"
+   ],
+   "test_files": [
+    "tests/test_corpus_snapshot.py"
+   ],
+   "fail_to_pass": [
+    "tests/test_corpus_snapshot.py::test_census_reports_shape_pollution_and_fit",
+    "tests/test_corpus_snapshot.py::test_parse_handles_empty_page",
+    "tests/test_corpus_snapshot.py::test_parse_round_trips_the_real_renderer[error]",
+    "tests/test_corpus_snapshot.py::test_parse_round_trips_the_real_renderer[knowledge]",
+    "tests/test_corpus_snapshot.py::test_parse_round_trips_the_real_renderer[negative]",
+    "tests/test_corpus_snapshot.py::test_parse_round_trips_the_real_renderer[rule]",
+    "tests/test_corpus_snapshot.py::test_snapshot_copies_every_type_with_ids",
+    "tests/test_corpus_snapshot.py::test_snapshot_refuses_to_overwrite"
+   ],
+   "pass_to_pass": [],
+   "prompts": {
+    "spec": "# 4.0 C1: corpus-snapshot (via scroll_entries) + corpus-census subcommands\n\nFirst durable artifact of the 4.0 program (umbrella #176). Read-only; commits nothing about the design.\n\nTwo subcommands:\n- `mcm-engine corpus-snapshot --out <sqlite>`: walk all four entity types through the MCP `scroll_entries` tool over HTTP (the hooks' `mcp_http_call_tool` path; `MCM_MCP_URL`/`.mcp.json` for the endpoint) and write every entry into a local SQLite in the existing core schema (`migrate_core` + the typed `insert_*`), so the corpus can be loaded into the local docker Postgres with the existing `migrate.py` copy path for rehearsal. Interface-respecting: no DB bypass (DECISION #1).\n- `mcm-engine corpus-census <sqlite>`: per table, per column null rate, text-length percentiles (p50/p90/max), serialized-blob pollution rate (`sanitize._blob_polluted` / `is_polluted`), and a per-row lossless-fit check against the 4.0 projection (every non-null legacy field maps to a unified column or facet). JSON report.\n\nAlso: add `tmp/` to `.gitignore` (CLAUDE.md working-file rule; it is not ignored today).\n\nAcceptance: snapshot of the basement yields row counts equal to `session_start`'s totals; census reports 0 rows failing the fit check (or lists them by id); both subcommands have tests on a seeded SQLite.",
+    "symptom": null
+   },
+   "strata": {
+    "files": 3,
+    "lines": 314,
+    "test_s": 0.79,
+    "area": ".,src/mcm_engine",
+    "size": "large"
+   },
+   "variant_drops": {
+    "symptom": "no_fix_section"
+   },
+   "admitted_by": "base_collect_repo_symbol"
+  },
   {
    "id": "mcm-engine-171",
    "issue": 171,
@@ -80,6 +206,211 @@
     "area": "src/mcm_engine/tools",
     "size": "small"
    }
+  },
+  {
+   "id": "mcm-engine-170",
+   "issue": 170,
+   "pr": 173,
+   "base": "d9241414233fc054f0f626043e12619271210a4f",
+   "fix": "5c3e61f92a7c6f6f868e1dc5dcb4e0c88df4b6e3",
+   "date": "2026-10-21",
+   "subject": "Merge pull request #173 from unxmaal/feat/170-sanitize-negative-error",
+   "context_files": [
+    "docs/seam-inventory.md",
+    "src/mcm_engine/adapters/postgres/storage.py",
+    "src/mcm_engine/adapters/sqlite/storage.py",
+    "src/mcm_engine/backends/__init__.py",
+    "src/mcm_engine/sanitize.py",
+    "src/mcm_engine/tools/corpus.py",
+    "src/mcm_engine/tools/knowledge.py"
+   ],
+   "new_files": [],
+   "test_files": [
+    "tests/test_sanitize_knowledge_tool.py",
+    "tests/test_sanitize_pollution.py",
+    "tests/test_seam_inventory.py"
+   ],
+   "fail_to_pass": [
+    "tests/test_sanitize_knowledge_tool.py::test_add_negative_guard_cleans_on_store",
+    "tests/test_sanitize_knowledge_tool.py::test_report_error_guard_cleans_on_store",
+    "tests/test_sanitize_knowledge_tool.py::test_sanitize_corpus_sweeps_negative_and_error",
+    "tests/test_sanitize_pollution.py::test_clean_error_leaves_clean_rows_untouched",
+    "tests/test_sanitize_pollution.py::test_clean_error_resplits_into_columns",
+    "tests/test_sanitize_pollution.py::test_clean_negative_keeps_existing_columns",
+    "tests/test_sanitize_pollution.py::test_clean_negative_leaves_clean_rows_untouched",
+    "tests/test_sanitize_pollution.py::test_clean_negative_resplits_into_columns",
+    "tests/test_sanitize_pollution.py::test_clean_summary_detail_keeps_existing_detail",
+    "tests/test_sanitize_pollution.py::test_clean_summary_detail_leaves_clean_rows_untouched",
+    "tests/test_sanitize_pollution.py::test_clean_summary_detail_recovers_when_blob_starts_with_tag",
+    "tests/test_sanitize_pollution.py::test_clean_summary_detail_resplits",
+    "tests/test_sanitize_pollution.py::test_is_polluted_detects_blob_and_passes_clean_text",
+    "tests/test_sanitize_pollution.py::test_strip_tool_call_fragments",
+    "tests/test_seam_inventory.py::test_sql_site_count_per_file[adapters/postgres/storage.py-73]",
+    "tests/test_seam_inventory.py::test_sql_site_count_per_file[adapters/sqlite/storage.py-71]"
+   ],
+   "pass_to_pass": [
+    "tests/test_sanitize_knowledge_tool.py::test_add_knowledge_guard_cleans_on_store",
+    "tests/test_sanitize_knowledge_tool.py::test_sanitize_knowledge_apply_cleans_in_place",
+    "tests/test_sanitize_knowledge_tool.py::test_sanitize_knowledge_dry_run_reports_without_changing",
+    "tests/test_seam_inventory.py::test_inventory_file_exists",
+    "tests/test_seam_inventory.py::test_inventory_file_non_trivial",
+    "tests/test_seam_inventory.py::test_no_sql_in_unexpected_files",
+    "tests/test_seam_inventory.py::test_sql_site_count_per_file[adapters/postgres/counters.py-5]",
+    "tests/test_seam_inventory.py::test_sql_site_count_per_file[adapters/postgres/search.py-5]",
+    "tests/test_seam_inventory.py::test_sql_site_count_per_file[adapters/sqlite/counters.py-4]",
+    "tests/test_seam_inventory.py::test_sql_site_count_per_file[adapters/sqlite/search.py-5]",
+    "tests/test_seam_inventory.py::test_sql_site_count_per_file[db.py-7]",
+    "tests/test_seam_inventory.py::test_sql_site_count_per_file[plugin.py-0]",
+    "tests/test_seam_inventory.py::test_sql_site_count_per_file[schema.py-67]",
+    "tests/test_seam_inventory.py::test_sql_site_count_per_file[tokens.py-4]",
+    "tests/test_seam_inventory.py::test_sql_site_count_per_file[tools/corpus.py-6]",
+    "tests/test_seam_inventory.py::test_sql_site_count_per_file[tools/knowledge.py-3]",
+    "tests/test_seam_inventory.py::test_sql_site_count_per_file[tools/relations.py-0]",
+    "tests/test_seam_inventory.py::test_sql_site_count_per_file[tools/rules.py-0]",
+    "tests/test_seam_inventory.py::test_sql_site_count_per_file[tools/search.py-0]",
+    "tests/test_seam_inventory.py::test_sql_site_count_per_file[tools/session.py-0]",
+    "tests/test_seam_inventory.py::test_sql_site_count_per_file[transport.py-1]"
+   ],
+   "prompts": {
+    "spec": "# Sanitize NEGATIVE/ERROR serialized-blob pollution + store-time guard (#142 follow-on)\n\nFollow-on to #142 (closed), which cleaned only the KNOWLEDGE table (94/516 summaries re-split). The same serialized-entry leak exists in the NEGATIVE and ERROR tables and was never covered: `sanitize_knowledge` iterates `EntityType.KNOWLEDGE` only, and `clean_summary_detail` is summary/detail-specific, so it cannot repair the NEGATIVE three-field (`what_failed`/`why_failed`/`correct_approach`) or ERROR (`pattern`/`context`/`root_cause`/`fix`) shape.\n\n## Evidence (live basement, 3.16.0)\n`get_entry('negative', 10|11|16)` show the entire XML-serialized entry crammed into `what_failed`: the real text, then `</what_failed>`, then `<parameter name=\"why_failed\">\u2026</parameter>`, `<parameter name=\"correct_approach\">\u2026`, `<parameter name=\"project\">\u2026`, `<parameter name=\"tags\">\u2026`, `</invoke>`. The real `why_failed`/`correct_approach` columns are empty. ~2 KB each. #3 and #6 are variants. Because #136 keeps NEGATIVE Why/Fix inline in summary search, every hit on one of these ships the whole blob.\n\n## Fix\n1. Add `clean_negative(what_failed, why_failed, correct_approach)` and `clean_error(pattern, context, root_cause, fix)` to `sanitize.py`: when the headline field carries the serialized blob, parse out each `<parameter name=\"FIELD\">\u2026</parameter>` into its proper column, keep the clean prefix before the first marker as the headline, and strip `project`/`tags`/`</invoke>` tails. Reuse the existing marker regexes.\n2. Extend the corpus tool to sweep all three tables. Either generalize `sanitize_knowledge` to a `sanitize_corpus(entity_type=\"all\")` or add NEGATIVE/ERROR passes; keep `dry_run` default True.\n3. Store-time guard: in `add_negative` / `report_error` (and `add_knowledge`), run the field through the cleaner on write so a new serialized blob can never re-enter. Deterministic, fail-open, no reject \u2014 split silently and store clean.\n\n## Acceptance\n- A dry-run reports the polluted NEGATIVE/ERROR ids (incl. #3,#6,#10,#11,#16); apply re-splits them into clean columns with no data loss (salvaged text lands in the right field).\n- A fresh `add_negative` whose field contains a `</invoke>`/`<parameter>` fragment stores clean columns.\n- Re-scan reports 0 polluted across knowledge+negative+error.",
+    "symptom": "# Sanitize NEGATIVE/ERROR serialized-blob pollution + store-time guard (#142 follow-on)\n\nFollow-on to #142 (closed), which cleaned only the KNOWLEDGE table (94/516 summaries re-split). The same serialized-entry leak exists in the NEGATIVE and ERROR tables and was never covered: `sanitize_knowledge` iterates `EntityType.KNOWLEDGE` only, and `clean_summary_detail` is summary/detail-specific, so it cannot repair the NEGATIVE three-field (`what_failed`/`why_failed`/`correct_approach`) or ERROR (`pattern`/`context`/`root_cause`/`fix`) shape.\n\n## Evidence (live basement, 3.16.0)\n`get_entry('negative', 10|11|16)` show the entire XML-serialized entry crammed into `what_failed`: the real text, then `</what_failed>`, then `<parameter name=\"why_failed\">\u2026</parameter>`, `<parameter name=\"correct_approach\">\u2026`, `<parameter name=\"project\">\u2026`, `<parameter name=\"tags\">\u2026`, `</invoke>`. The real `why_failed`/`correct_approach` columns are empty. ~2 KB each. #3 and #6 are variants. Because #136 keeps NEGATIVE Why/Fix inline in summary search, every hit on one of these ships the whole blob.\n\n## Acceptance\n- A dry-run reports the polluted NEGATIVE/ERROR ids (incl. #3,#6,#10,#11,#16); apply re-splits them into clean columns with no data loss (salvaged text lands in the right field).\n- A fresh `add_negative` whose field contains a `</invoke>`/`<parameter>` fragment stores clean columns.\n- Re-scan reports 0 polluted across knowledge+negative+error."
+   },
+   "strata": {
+    "files": 7,
+    "lines": 358,
+    "test_s": 0.81,
+    "area": "docs,src/mcm_engine,src/mcm_engine/adapters/postgres,src/mcm_engine/adapters/sqlite,src/mcm_engine/backends,src/mcm_engine/tools",
+    "size": "large"
+   },
+   "admitted_by": "base_collect_repo_symbol"
+  },
+  {
+   "id": "mcm-engine-160",
+   "issue": 160,
+   "pr": 167,
+   "base": "b80acbbb7afb0f04f8c5205ea23a9ab313faf2fc",
+   "fix": "965c7282309bfd6906b940cb52b71867635bcbba",
+   "date": "2026-10-16",
+   "subject": "Merge pull request #167 from unxmaal/feat/160-replay-eval-harness",
+   "context_files": [
+    "src/mcm_engine/cli.py"
+   ],
+   "new_files": [
+    "src/mcm_engine/eval/__init__.py",
+    "src/mcm_engine/eval/replay.py",
+    "src/mcm_engine/eval/trace_transcript.py"
+   ],
+   "test_files": [
+    "tests/test_eval_replay.py",
+    "tests/test_eval_trace_transcript.py"
+   ],
+   "fail_to_pass": [
+    "tests/test_eval_replay.py::test_combined_fires_if_either",
+    "tests/test_eval_replay.py::test_evaluate_runs_all_default_policies",
+    "tests/test_eval_replay.py::test_fixed_interval_fires_every_n",
+    "tests/test_eval_replay.py::test_fixed_interval_reset_on_lookup",
+    "tests/test_eval_replay.py::test_fn_cost_weights_failure_heavier",
+    "tests/test_eval_replay.py::test_label_consequential_no_kb_hit_is_negative",
+    "tests/test_eval_replay.py::test_label_consequential_with_kb_hit_is_positive",
+    "tests/test_eval_replay.py::test_label_failure_is_positive_regardless_of_oracle",
+    "tests/test_eval_replay.py::test_label_lookup_itself_is_negative",
+    "tests/test_eval_replay.py::test_label_non_consequential_is_negative",
+    "tests/test_eval_replay.py::test_label_unknown_oracle_no_failure_is_unlabeled",
+    "tests/test_eval_replay.py::test_live_eval_plan_present",
+    "tests/test_eval_replay.py::test_risk_based_beats_fixed_on_a_consequential_heavy_trace",
+    "tests/test_eval_replay.py::test_risk_based_fires_on_uncovered_consequential_only",
+    "tests/test_eval_replay.py::test_risk_based_lookup_covers_topic",
+    "tests/test_eval_replay.py::test_score_counts_tp_fn_fp_with_weights",
+    "tests/test_eval_replay.py::test_unlabeled_events_excluded_from_scoring",
+    "tests/test_eval_trace_transcript.py::test_missing_file_returns_empty",
+    "tests/test_eval_trace_transcript.py::test_non_consequential_tool_is_not_flagged",
+    "tests/test_eval_trace_transcript.py::test_order_preserved_and_seq_increments",
+    "tests/test_eval_trace_transcript.py::test_parses_tool_use_into_trace",
+    "tests/test_eval_trace_transcript.py::test_tolerates_malformed_lines",
+    "tests/test_eval_trace_transcript.py::test_tool_result_error_marks_led_to_failure"
+   ],
+   "pass_to_pass": [],
+   "prompts": {
+    "spec": "# #137e: replay evaluation harness + evidence-based retune (absorbs #149)\n\nChild of #137. **Absorbs the remaining work of #149** (evidence-based retune of guessed constants).\n\nBuild a replay harness over the historical tool-call workload to evaluate candidate retrieval-trigger policies, reporting the two error rates **weighted asymmetrically**:\n- **False negative** (a lookup should have happened, policy skipped it) \u2014 weighted *much* heavier, especially when the missed memory is a prior observed failure or an explicit user constraint.\n- **False positive** (a lookup enforced when nothing relevant existed).\n\nHonest limitation to state up front: replay evaluates *trigger* decisions but cannot predict how Claude behaves *after* receiving different memory \u2014 that needs **live paired task evaluations**. Include a plan for those.\n\nThen feed the #149 knobs (scoring weights `W_*`, dedup thresholds, search `RANK_THRESHOLD`/`STALE_DAYS`, rulesift thresholds \u2014 all already env-overridable via `tunables.py` from PR #151) into this harness and retune with evidence instead of guessing. Each retune is its own PR with its evidence.\n\n### Acceptance\n- Replay harness reporting FN/FP rates (FN weighted) for candidate policies.\n- A written plan for live paired eval.\n- At least the ranking weights + search thresholds swept and retuned (or explicitly confirmed) with harness evidence.",
+    "symptom": null
+   },
+   "strata": {
+    "files": 4,
+    "lines": 399,
+    "test_s": 0.78,
+    "area": "src/mcm_engine,src/mcm_engine/eval",
+    "size": "large"
+   },
+   "variant_drops": {
+    "symptom": "no_fix_section"
+   },
+   "admitted_by": "base_collect_repo_symbol"
+  },
+  {
+   "id": "mcm-engine-157",
+   "issue": 157,
+   "pr": 163,
+   "base": "725cad479181736743fc7ba01da27d2530a1b4a1",
+   "fix": "8babab3d51b209e8e13f2c0599bdf9f2c8a5ecb4",
+   "date": "2026-10-16",
+   "subject": "Merge pull request #163 from unxmaal/feat/157-userpromptsubmit-retrieval",
+   "context_files": [
+    "README.md",
+    "src/mcm_engine/cli.py"
+   ],
+   "new_files": [
+    "src/mcm_engine/hooks/coverage.py",
+    "src/mcm_engine/hooks/user_prompt_submit.py"
+   ],
+   "test_files": [
+    "tests/test_hook_coverage.py",
+    "tests/test_hook_user_prompt_submit.py"
+   ],
+   "fail_to_pass": [
+    "tests/test_hook_coverage.py::test_compaction_makes_prior_coverage_non_resident",
+    "tests/test_hook_coverage.py::test_prune_drops_stale_topics",
+    "tests/test_hook_coverage.py::test_prune_noop_without_topics",
+    "tests/test_hook_coverage.py::test_record_and_is_covered",
+    "tests/test_hook_coverage.py::test_record_empty_topic_is_noop",
+    "tests/test_hook_coverage.py::test_stale_topic_not_covered",
+    "tests/test_hook_user_prompt_submit.py::test_bad_stdin_is_fail_open",
+    "tests/test_hook_user_prompt_submit.py::test_classify_detects_historical[can you do that again like last time]",
+    "tests/test_hook_user_prompt_submit.py::test_classify_detects_historical[continue where we left off]",
+    "tests/test_hook_user_prompt_submit.py::test_classify_detects_historical[still failing with the same error]",
+    "tests/test_hook_user_prompt_submit.py::test_classify_detects_historical[we decided to use postgres here, right?]",
+    "tests/test_hook_user_prompt_submit.py::test_classify_detects_historical[what's our convention for staging files]",
+    "tests/test_hook_user_prompt_submit.py::test_classify_detects_historical[why did we cap the mcp dependency]",
+    "tests/test_hook_user_prompt_submit.py::test_classify_detects_historical[you said the healthcheck was on 8090 earlier]",
+    "tests/test_hook_user_prompt_submit.py::test_classify_rejects_non_historical[]",
+    "tests/test_hook_user_prompt_submit.py::test_classify_rejects_non_historical[add a function that reverses a string]",
+    "tests/test_hook_user_prompt_submit.py::test_classify_rejects_non_historical[refactor this loop]",
+    "tests/test_hook_user_prompt_submit.py::test_classify_rejects_non_historical[what is the capital of France]",
+    "tests/test_hook_user_prompt_submit.py::test_classify_rejects_non_historical[write a test for the parser]",
+    "tests/test_hook_user_prompt_submit.py::test_coverage_recorded_even_when_search_empty",
+    "tests/test_hook_user_prompt_submit.py::test_historical_prompt_injects_and_records_coverage",
+    "tests/test_hook_user_prompt_submit.py::test_history_signal_respects_word_boundary",
+    "tests/test_hook_user_prompt_submit.py::test_non_historical_prompt_is_fast_noop",
+    "tests/test_hook_user_prompt_submit.py::test_pick_keyword_empty_when_nothing_distinctive",
+    "tests/test_hook_user_prompt_submit.py::test_pick_keyword_longest_non_stopword",
+    "tests/test_hook_user_prompt_submit.py::test_pick_keyword_prefers_identifier",
+    "tests/test_hook_user_prompt_submit.py::test_search_exception_is_fail_open"
+   ],
+   "pass_to_pass": [],
+   "prompts": {
+    "spec": "# #137b: UserPromptSubmit task-aware retrieval + inject\n\nChild of #137. **Highest implement-today leverage.**\n\nAdd a `UserPromptSubmit` hook: classify each new request; when it references historical decisions, prior failures, established preferences, or ongoing work, search automatically and inject the result via `hookSpecificOutput.additionalContext` *before* the model reasons. Establishes coverage (updates the #137 ledger) without the agent initiating a tool call.\n\nNote: this hook blocks prompt processing until it returns \u2014 keep it fast. Classification deterministic-first (keyword/pattern), LLM only at the ambiguous+consequential margin (mcm runs model-agnostic behind a LiteLLM gateway per DECISION #39 \u2014 an LLM-evaluated hook is a gateway round-trip on the critical path). Fail-open on infra failure (RULE #61).\n\n### Acceptance\n- `mcm-engine` exposes a UserPromptSubmit handler wired in settings.\n- History-referencing prompts auto-retrieve + inject via additionalContext; non-historical prompts do nothing (fast path).\n- Retrieval updates the coverage ledger.\n- Tests for the classifier (deterministic cases) + injection shape.",
+    "symptom": null
+   },
+   "strata": {
+    "files": 4,
+    "lines": 312,
+    "test_s": 0.78,
+    "area": ".,src/mcm_engine,src/mcm_engine/hooks",
+    "size": "large"
+   },
+   "variant_drops": {
+    "symptom": "no_fix_section"
+   },
+   "admitted_by": "base_collect_repo_symbol"
   },
   {
    "id": "mcm-engine-156",
@@ -133,6 +464,150 @@
    "variant_drops": {
     "symptom": "no_fix_section"
    }
+  },
+  {
+   "id": "mcm-engine-142",
+   "issue": 142,
+   "pr": 155,
+   "base": "36d74ae24174597fd57d190cef2a82612890319d",
+   "fix": "493a92648e7239367c1237cdb8c513d8a46d1226",
+   "date": "2026-10-16",
+   "subject": "Merge pull request #155 from unxmaal/fix/142-kb-summary-pollution",
+   "context_files": [
+    "CHANGELOG.md",
+    "src/mcm_engine/sanitize.py",
+    "src/mcm_engine/tools/corpus.py",
+    "src/mcm_engine/tools/knowledge.py",
+    "src/mcm_engine/tools/rules.py"
+   ],
+   "new_files": [],
+   "test_files": [
+    "tests/test_sanitize_knowledge_tool.py",
+    "tests/test_sanitize_pollution.py"
+   ],
+   "fail_to_pass": [
+    "tests/test_sanitize_knowledge_tool.py::test_add_knowledge_guard_cleans_on_store",
+    "tests/test_sanitize_knowledge_tool.py::test_sanitize_knowledge_apply_cleans_in_place",
+    "tests/test_sanitize_knowledge_tool.py::test_sanitize_knowledge_dry_run_reports_without_changing",
+    "tests/test_sanitize_pollution.py::test_clean_summary_detail_keeps_existing_detail",
+    "tests/test_sanitize_pollution.py::test_clean_summary_detail_leaves_clean_rows_untouched",
+    "tests/test_sanitize_pollution.py::test_clean_summary_detail_recovers_when_blob_starts_with_tag",
+    "tests/test_sanitize_pollution.py::test_clean_summary_detail_resplits",
+    "tests/test_sanitize_pollution.py::test_is_polluted_detects_blob_and_passes_clean_text",
+    "tests/test_sanitize_pollution.py::test_strip_tool_call_fragments"
+   ],
+   "pass_to_pass": [],
+   "prompts": {
+    "spec": "# KB data pollution: some knowledge summaries contain the whole serialized body (incl. a leaked </invoke> fragment)\n\n## Observed\nUnder 3.12.0 summary-mode `search`, a subset of KNOWLEDGE hits render with stray structural markup \u2014 `</summary>`, `<detail>\u2026</detail>`, `<rationale>`, `<references>`, `<tags>`, `<kind>`, `<project>`, and a trailing `</invoke>`.\n\n## Root cause (verified via get_entry)\nNot a formatter bug. `get_entry(\"knowledge\", 157)` shows the stored **`summary` column** itself contains the entire XML-serialized entry, e.g.:\n\n```\nsummary: Measured 2026-09-20 \u2026 permanently inert.</summary>\n<detail>\u2026</detail>\n<rationale>\u2026</rationale>\n<tags>\u2026</tags>\n<kind>finding</kind>\n<project>localharness</project>\n</invoke>\n```\n\nThe renderer prints stored fields faithfully; clean entries (all rules, recent knowledge) render clean. So a batch of entries was created with a pre-serialized blob passed as the `summary`/content, and a tool-call fragment (`</invoke>`) was captured at store time.\n\n## Scope\nAppears concentrated in imported `localharness`/`sohot` findings. Exact count TBD as part of the fix (FTS can't easily match raw tags; needs a direct scan of `knowledge.summary` for `</invoke>` / `</detail>` / `</summary>`).\n\n## Impact\nCosmetic + token waste: polluted summaries defeat the #119 progressive-disclosure saving (the whole body ships in the \"summary\"). No correctness impact on search/ranking.\n\n## Fix (two parts, both non-blocking for the next release)\n1. **Data cleanup**: scan `knowledge.summary` for embedded field tags; for each, re-split into clean `summary` + `detail` and update in place (DB is authoritative \u2014 update via the MCP, no file writes).\n2. **Prevention (optional, code)**: `add_knowledge`/`add_rule` could reject or strip content containing tool-call fragments or mismatched field tags, so a malformed store can't recur.\n\nFound 2026-10-14 while characterizing 3.12.0 MCP behavior post-deploy.",
+    "symptom": "# KB data pollution: some knowledge summaries contain the whole serialized body (incl. a leaked </invoke> fragment)\n\n## Observed\nUnder 3.12.0 summary-mode `search`, a subset of KNOWLEDGE hits render with stray structural markup \u2014 `</summary>`, `<detail>\u2026</detail>`, `<rationale>`, `<references>`, `<tags>`, `<kind>`, `<project>`, and a trailing `</invoke>`.\n\n## Root cause (verified via get_entry)\nNot a formatter bug. `get_entry(\"knowledge\", 157)` shows the stored **`summary` column** itself contains the entire XML-serialized entry, e.g.:\n\n```\nsummary: Measured 2026-09-20 \u2026 permanently inert.</summary>\n<detail>\u2026</detail>\n<rationale>\u2026</rationale>\n<tags>\u2026</tags>\n<kind>finding</kind>\n<project>localharness</project>\n</invoke>\n```\n\nThe renderer prints stored fields faithfully; clean entries (all rules, recent knowledge) render clean. So a batch of entries was created with a pre-serialized blob passed as the `summary`/content, and a tool-call fragment (`</invoke>`) was captured at store time.\n\n## Scope\nAppears concentrated in imported `localharness`/`sohot` findings. Exact count TBD as part of the fix (FTS can't easily match raw tags; needs a direct scan of `knowledge.summary` for `</invoke>` / `</detail>` / `</summary>`).\n\n## Impact\nCosmetic + token waste: polluted summaries defeat the #119 progressive-disclosure saving (the whole body ships in the \"summary\"). No correctness impact on search/ranking."
+   },
+   "strata": {
+    "files": 5,
+    "lines": 151,
+    "test_s": 0.77,
+    "area": ".,src/mcm_engine,src/mcm_engine/tools",
+    "size": "large"
+   },
+   "admitted_by": "base_collect_repo_symbol"
+  },
+  {
+   "id": "mcm-engine-149",
+   "issue": 149,
+   "pr": 151,
+   "base": "aeda791754fcde22504f4eb0872fa6294a401b82",
+   "fix": "63d1362e50d4887a3c87868a3395c4b165b85c1e",
+   "date": "2026-10-15",
+   "subject": "Merge pull request #151 from unxmaal/feat/149-tunable-constants",
+   "context_files": [
+    "src/mcm_engine/dedup.py",
+    "src/mcm_engine/ingest/rulesift.py",
+    "src/mcm_engine/scoring.py",
+    "src/mcm_engine/tools/search.py"
+   ],
+   "new_files": [
+    "src/mcm_engine/tunables.py"
+   ],
+   "test_files": [
+    "tests/test_tunables.py"
+   ],
+   "fail_to_pass": [
+    "tests/test_tunables.py::test_constant_defaults_and_overrides[MCM_DEDUP_TOPIC_THRESHOLD-mcm_engine.dedup-TOPIC_THRESHOLD-0.5-0.7]",
+    "tests/test_tunables.py::test_constant_defaults_and_overrides[MCM_RULESIFT_KNOWN_THRESHOLD-mcm_engine.ingest.rulesift-KNOWN_THRESHOLD-0.9-0.95]",
+    "tests/test_tunables.py::test_constant_defaults_and_overrides[MCM_SCORE_W_RELEVANCE-mcm_engine.scoring-W_RELEVANCE-2.0-3.0]",
+    "tests/test_tunables.py::test_constant_defaults_and_overrides[MCM_SEARCH_RANK_THRESHOLD-mcm_engine.tools.search-RANK_THRESHOLD-1.0-0.25]",
+    "tests/test_tunables.py::test_constant_defaults_and_overrides[MCM_SEARCH_STALE_DAYS-mcm_engine.tools.search-STALE_DAYS-90-30]",
+    "tests/test_tunables.py::test_env_float_parses_and_falls_back",
+    "tests/test_tunables.py::test_env_float_unset_uses_default",
+    "tests/test_tunables.py::test_env_int_parses_and_falls_back",
+    "tests/test_tunables.py::test_structural_dedup_params_are_not_env_wired"
+   ],
+   "pass_to_pass": [],
+   "prompts": {
+    "spec": "# Audit guessed hardcoded constants: provenance, env-override, and evidence-based retune\n\n## Thesis\nThe hook thresholds (`WARN_THRESHOLD`, `BLOCK_THRESHOLD`) were acknowledged by Eric as numbers guessed with no backing evidence, which happened not to need changing until #144/#146. They are almost certainly not the only ones. The codebase carries many module-level numeric constants that shape behavior \u2014 scoring weights, similarity thresholds, decay windows \u2014 and the KB already records, repeatedly, that invented thresholds mislead (FINDING #163 \"any threshold chosen now is invented\"; RULE #303 \"measuring a configuration nobody runs\"; FINDING #5 dedup-threshold false positives).\n\nThis issue is the durable inventory + a triage, not a one-time list in a chat.\n\n## The inventory command (re-run any time)\n```\ngrep -rnE '^[A-Z][A-Z0-9_]+ *= *-?[0-9]+(\\.[0-9]+)?\\b' src/mcm_engine/ | grep -vE '/__pycache__/'\n```\n40 hits today. (It over-captures: default-kwarg magic numbers and in-function literals are not caught, and structural constants are. Triage separates them.)\n\n## Triage\n**Behavior-shaping knobs \u2014 need a measured justification in the KB, or an explicit \"guessed, unvalidated\" acknowledgment, and ideally env-overridable:**\n- `scoring.py`: W_RELEVANCE 2.0, W_HIT 0.1, W_REINFORCEMENT 0.3, W_CORRECTNESS 0.5, W_RECENCY 0.3, W_IMPORTANCE 0.5, W_SCOPE 0.1, PINNED_WEIGHT 2.0, HIT_SATURATION 10.0, REINFORCEMENT_SATURATION 3.0, CORRECTNESS_SCALE 2.0, RECENCY_WINDOW_DAYS 30.0, RECENCY_MAX_BONUS 1.0 \u2014 the entire ranking formula is hand-weighted.\n- `dedup.py`: TOPIC_THRESHOLD 0.5, BODY_THRESHOLD 0.4, SUBSUME_THRESHOLD 0.8, MIN_ENTROPY 1.5 \u2014 FINDING #5 already measured these produce false positives / miss semantic conflicts.\n- `tools/search.py`: RANK_THRESHOLD 1.0, STALE_DAYS 90, EXPIRED_PENALTY 0.1.\n- `ingest/rulesift.py`: KNOWN_THRESHOLD 0.9, NOVEL_THRESHOLD 0.5, MIN_TOKENS 3, MIN_SUBSTANCE_TOKENS 6.\n- `hooks/mcp_enforcement.py`: WARN_THRESHOLD 8, BLOCK_THRESHOLD 20, FIXATION_THRESHOLD 8, AMBIENT_MAX_PER_SESSION 8 (the originating case; retune belongs with #137's coverage evidence).\n- `destructive.py`: DEFAULT_ARCHIVE_FLOOR 5, DEFAULT_ARCHIVE_FRACTION 0.5.\n\n**Structural / not tunable (leave alone, just confirm):** schema.py CORE_VERSION 17; dedup NUM_PERM 32 / LSH_BANDS 8 / SHINGLE_N 2 (algorithm params); hierarchy IMPORTANCE_* ordinals (enum values); the TTL/timeout seconds constants (operational, low-risk).\n\n## Work\n1. For each behavior-shaping knob, attach a one-line provenance note in the KB: measured (cite the finding) or \"guessed, unvalidated\". No prose in source comments (project contract).\n2. Where a knob gates a user-visible decision (ranking, dedup, ingest sift), make it env-overridable so it can be swept without a rebuild \u2014 same pattern `MCM_FIXATION_THRESHOLD` already uses.\n3. Feed the ranking weights and search thresholds into #137's evaluation harness (replay workload) rather than guessing again.\n\nNon-blocking. This is the umbrella; individual retunes are separate PRs with their own evidence.",
+    "symptom": null
+   },
+   "strata": {
+    "files": 5,
+    "lines": 106,
+    "test_s": 0.77,
+    "area": "src/mcm_engine,src/mcm_engine/ingest,src/mcm_engine/tools",
+    "size": "large"
+   },
+   "variant_drops": {
+    "symptom": "no_fix_section"
+   },
+   "admitted_by": "base_collect_repo_symbol"
+  },
+  {
+   "id": "mcm-engine-145",
+   "issue": 145,
+   "pr": 150,
+   "base": "bc061e331199ad711feda432fab458274a04ff35",
+   "fix": "aeda791754fcde22504f4eb0872fa6294a401b82",
+   "date": "2026-10-15",
+   "subject": "Merge pull request #150 from unxmaal/feat/145-compaction-state-hooks",
+   "context_files": [
+    "README.md",
+    "src/mcm_engine/cli.py",
+    "src/mcm_engine/hooks/session_start.py"
+   ],
+   "new_files": [
+    "src/mcm_engine/hooks/pre_compact.py"
+   ],
+   "test_files": [
+    "tests/test_hook_pre_compact.py",
+    "tests/test_session_start_hook.py"
+   ],
+   "fail_to_pass": [
+    "tests/test_hook_pre_compact.py::test_auto_trigger_has_no_open_questions",
+    "tests/test_hook_pre_compact.py::test_hook_does_not_read_a_shadow_store_on_the_remote_path",
+    "tests/test_hook_pre_compact.py::test_main_fail_open_on_bad_stdin",
+    "tests/test_hook_pre_compact.py::test_main_fail_open_when_write_raises",
+    "tests/test_hook_pre_compact.py::test_main_routes_to_local_when_no_endpoint",
+    "tests/test_hook_pre_compact.py::test_main_routes_to_remote_when_endpoint_configured",
+    "tests/test_hook_pre_compact.py::test_manual_trigger_keeps_custom_instructions",
+    "tests/test_hook_pre_compact.py::test_missing_trigger_defaults_to_auto",
+    "tests/test_session_start_hook.py::test_compaction_source_gets_a_recovery_directive"
+   ],
+   "pass_to_pass": [
+    "tests/test_session_start_hook.py::test_fail_open_on_bad_stdin",
+    "tests/test_session_start_hook.py::test_fail_open_when_stdin_read_raises",
+    "tests/test_session_start_hook.py::test_hook_never_opens_storage",
+    "tests/test_session_start_hook.py::test_injects_mcp_directive",
+    "tests/test_session_start_hook.py::test_non_compaction_source_keeps_the_startup_directive"
+   ],
+   "prompts": {
+    "spec": "# Save and restore session state automatically at compaction (PreCompact/PostCompact hooks calling MCP tools)\n\n## Problem\nLong sessions compact often: sohot 52 times in 39 days, mcm_engine 16, infovore 16 (counted from transcripts on 2026-10-15). Each compaction's summary drops detail. Twice this week, sohot reported numbers from a summary that turned out to be wrong (KB #459 to #469, #461 to #467). Saving state before a compaction depends on the agent remembering to call `session_handoff`, which is exactly the \"good intentions fail\" case KB CONTEXT #3 describes.\n\n## Fix\nClaude Code has `PreCompact` and `PostCompact` hook events, and hooks can call MCP tools directly with the `mcp_tool` handler type (`server`, `tool`, `input` with `${...}` substitution).\n- `PreCompact`: call `save_snapshot`/`session_handoff` with the session id and the compaction trigger, so the KB has the state before the summary replaces it.\n- `PostCompact` (and `SessionStart` with source=compact): call `get_resume_context` and return it as additionalContext, so the resumed agent starts from the KB record rather than only the summary.\n- Ship it from `mcm-engine hook install` (or a plugin) so every project gets it.\n\nTest: a forced `/compact` writes a snapshot row and the next turn's context has the resume block. With the server unreachable, it fails open.",
+    "symptom": "# Save and restore session state automatically at compaction (PreCompact/PostCompact hooks calling MCP tools)\n\n## Problem\nLong sessions compact often: sohot 52 times in 39 days, mcm_engine 16, infovore 16 (counted from transcripts on 2026-10-15). Each compaction's summary drops detail. Twice this week, sohot reported numbers from a summary that turned out to be wrong (KB #459 to #469, #461 to #467). Saving state before a compaction depends on the agent remembering to call `session_handoff`, which is exactly the \"good intentions fail\" case KB CONTEXT #3 describes."
+   },
+   "strata": {
+    "files": 4,
+    "lines": 195,
+    "test_s": 0.77,
+    "area": ".,src/mcm_engine,src/mcm_engine/hooks",
+    "size": "large"
+   },
+   "admitted_by": "base_collect_repo_symbol"
   },
   {
    "id": "mcm-engine-135",
@@ -213,6 +688,91 @@
     "area": ".,src/mcm_engine/tools",
     "size": "small"
    }
+  },
+  {
+   "id": "mcm-engine-78",
+   "issue": 78,
+   "pr": 129,
+   "base": "df8a584c6f499acf4051edbee9a1d54b31ed66ab",
+   "fix": "5dc9f4caa9721680778e190a2dd588f4ce0da5e7",
+   "date": "2026-10-13",
+   "subject": "Merge pull request #129 from unxmaal/feat/78-export-remote",
+   "context_files": [
+    "CHANGELOG.md",
+    "src/mcm_engine/cli.py",
+    "src/mcm_engine/mirror.py",
+    "src/mcm_engine/tools/rules.py"
+   ],
+   "new_files": [],
+   "test_files": [
+    "tests/test_export_remote.py"
+   ],
+   "fail_to_pass": [
+    "tests/test_export_remote.py::test_export_remote_fetch_auth_error_aborts",
+    "tests/test_export_remote.py::test_export_remote_fetch_pages_until_done",
+    "tests/test_export_remote.py::test_export_rules_clamps_limit_to_cap",
+    "tests/test_export_remote.py::test_export_rules_excludes_superseded",
+    "tests/test_export_remote.py::test_export_rules_output_is_pure_json_no_nudge",
+    "tests/test_export_remote.py::test_export_rules_pages_and_flags_has_more",
+    "tests/test_export_remote.py::test_export_rules_returns_active_with_content",
+    "tests/test_export_remote.py::test_render_rules_to_tree_and_commit"
+   ],
+   "pass_to_pass": [],
+   "prompts": {
+    "spec": "# export --remote: write the KB to .md files over MCP (no pod exec, no direct DB)\n\n## Problem\n\n`mcm-engine export-mirror --from <DSN> --out <DIR>` renders active rules to `rules/<category>/<slug>.md` and commits them \u2014 but `--from` is a **DSN**: it connects directly to the store. For the real deployment (KB in a remote pod, client on a laptop) that means either pointing at the remote Postgres directly (breaks \"the interface is the MCP call, never touch the remote DB directly\") or `kubectl exec` / a Job inside the pod and copying the tree down. Running export from inside the pod is a non-starter operationally.\n\nThere is no MCP-native export today. This is the **export twin of `ingest --remote`** (#72/#73): the same co-location gap, the other direction (KB \u2192 files).\n\n## Design: the symmetric split\n\nData flows KB \u2192 client (bulk read of full rule bodies). Rendering `.md` is client-side; reading the corpus is a server MCP call.\n\n- **Server (new MCP tool `export_rules`):** returns a **page** of active rules with full content \u2014 `[{id, title, keywords, category, content, status}, ...]` \u2014 via `offset`/`limit`, bounded by a per-call cap (like `MCM_SIFT_MAX_SPANS` in #76). Skips archived/superseded, mirroring `export_mirror`. Rules only (matches export-mirror's scope).\n- **Client (`mcm-engine export-mirror --remote --out DIR`):** pages through `export_rules` over MCP, then writes the tree client-side reusing the existing mirror rendering (`_generate_rule_content`, `_slugify`, `rules/<category>/<slug>.md`, slug-collision suffixes). Git commit optional (`--no-commit`), since a fresh client env may lack a git identity \u2014 the operational gotcha in the direct path.\n\n## Scope (one PR, TDD)\n\n1. **Factor the renderer.** Extract `mirror.render_rules_to_tree(rows, out_dir)` (write `rules/<category>/<slug>.md` + collision handling) so both the direct `export_mirror` and the remote client share one code path. `export_mirror` keeps its git-commit behavior on top.\n2. **`export_rules` MCP tool** (in `register_rules_tools`): `export_rules(offset=0, limit=100)` \u2192 structured page of active rules with content; caps `limit` at `MCM_EXPORT_PAGE_MAX` (default e.g. 200); documents that total transfer scales O(rules) so clients must page. Read-only.\n3. **`export-mirror --remote --out DIR`** client: resolve endpoint via `_mcp_http_endpoint` (auth from #74), page with the #75 resilience helpers (`_classify_remote_error`, retry-with-backoff on transient, per-page timeout), render each page to the tree, then optionally `git add -A` + commit. `--remote` is incompatible with `--from`.\n\n## Reuse (already in the tree from remote-ingest)\n\n- **Auth** (#74): `_mcp_http_endpoint` \u2192 headers from `.mcp.json` / `MCM_MCP_TOKEN`, threaded into `mcp_http_call_tool`.\n- **Resilience** (#75): `_classify_remote_error`, retry/backoff, per-call timeout via `mcp_http_call_tool(timeout=\u2026)`. Export is read-only + paged, so resume is optional (a re-run is cheap and idempotent \u2014 it rewrites the tree).\n- **Per-call cap pattern** (#76): a page cap so one call can't outrun the transport.\n\n## Non-goals (this issue)\n\n- Server-side git commit (the client commits, optionally).\n- Delta/incremental export \u2014 full dump for v1.\n- Exporting knowledge / negatives / errors \u2014 rules only, matching `export-mirror`.\n\n## Why it matters\n\nSymmetric with `ingest --remote`: files stay local, corpus logic stays in the pod, everything crosses as an MCP call. Makes \"dump the KB to a diffable `.md` tree\" a first-class laptop operation against a hosted, auth-required KB \u2014 no pod exec, no direct Postgres.\n\n## Related\n- #72 / #73 \u2014 `ingest --remote` (the ingest half of this pattern)\n- #74 \u2014 MCP auth headers (reused)\n- #75 \u2014 client batching/retry/resume (reused)\n- #76 \u2014 per-call cap pattern (reused)",
+    "symptom": null
+   },
+   "strata": {
+    "files": 4,
+    "lines": 271,
+    "test_s": 1.04,
+    "area": ".,src/mcm_engine,src/mcm_engine/tools",
+    "size": "large"
+   },
+   "variant_drops": {
+    "symptom": "no_fix_section"
+   },
+   "admitted_by": "base_collect_repo_symbol"
+  },
+  {
+   "id": "mcm-engine-63",
+   "issue": 63,
+   "pr": 127,
+   "base": "d8c98abf2ed8b6f7f9baac4062bcb91b358e31c0",
+   "fix": "24cc364fb117644fb5b75941fb2f53eaef2173f5",
+   "date": "2026-10-13",
+   "subject": "Merge pull request #127 from unxmaal/fix/63-voice-nudge",
+   "context_files": [
+    "CHANGELOG.md",
+    "src/mcm_engine/hooks/session_start.py"
+   ],
+   "new_files": [
+    "src/mcm_engine/style.py"
+   ],
+   "test_files": [
+    "tests/test_style.py"
+   ],
+   "fail_to_pass": [
+    "tests/test_style.py::test_clean_prose_scores_zero",
+    "tests/test_style.py::test_counts_em_dashes",
+    "tests/test_style.py::test_counts_emoji",
+    "tests/test_style.py::test_empty_and_none_safe",
+    "tests/test_style.py::test_exemplar_is_a_positive_target_not_a_denylist",
+    "tests/test_style.py::test_hyphenated_words_are_not_em_dashes"
+   ],
+   "pass_to_pass": [],
+   "prompts": {
+    "spec": "# In-session style nudge: positive voice exemplar, not a longer denylist\n\n## Problem\n\nStylistic tics (emojis, em-dashes, \"it's not X, it's Y\", rule-of-three cadence, \"great question\", empty intensifiers) leak back into responses over the course of a session, and get worse as context fills. Two mechanisms, and they need different fixes:\n\n1. **Instruction decay.** The style rule lives in CLAUDE.md / MEMORY.md at the top of the window. As the session grows, generation happens further from that instruction and soft stylistic constraints slip first. Well-established behavior.\n2. **Precedent accumulation.** The model conditions on the whole window. As tool output, git logs, PR bodies, and the mandated `Generated with Claude Code` trailer pile up, the local prior for \"an emoji/tic is normal here\" drifts up. Long sessions correlate with high context, but the causal driver is probably *what* accumulated, not raw token count.\n\nA periodic MCP nudge addresses (1). It does little for (2).\n\n## Why the current rule reads clinical\n\nThe existing guidance is a denylist: no em-dashes, no emojis, no LinkedIn-speak, no \"it's not X, it's Y\". Every clause is a prohibition. The safest way to satisfy an all-prohibition rule is to strip out all personality, because personality is where the risk lives. Flat, dry prose violates nothing. So the denylist doesn't just permit clinical, it pulls toward it.\n\nSecond problem: naming a tic primes the tic. A reminder that says \"don't use emojis\" puts emojis in the context. Negative instructions are weak in general and self-defeating here in particular.\n\n## Proposed direction\n\n**Give a positive voice target, phrased as an exemplar, not a longer denylist.** The warmth we want is not surface affect (enthusiasm, \"happy to help\", emoji). It's substance: read the actual situation, take a position, be brief, say the dry true thing when there is one. Directness and judgment read as warmth once the decorative warmth is gone.\n\n**Store examples, not adjectives.** \"Be warm, be direct\" decays into clinical because adjectives are cheap to satisfy. Two or three before/after pairs give the model something to pattern-match, which is what it's actually good at. One paragraph in the target voice sitting in context beats a page of rules about the voice.\n\n**Two layers, mirroring the project's own MCP-nudge + PreToolUse-hook split:**\n- *Soft:* the voice is un-filterable, so it lives in the nudge as a positive exemplar, re-surfaced periodically to fight decay. Keep it terse; over-nudging produces self-conscious, trying-too-hard prose.\n- *Hard:* the absolute bans (zero emojis, em-dash count) are mechanical. Put them in a post-filter or counter, not a polite reminder. You can't regex your way to \"warm,\" but you can regex \"no emoji\", and the same counting yields a real metric instead of eyeballing leakage.\n\n## Example before/after pairs\n\n**A. Opener + rule-of-three + outro**\n\n> Before: Great question! Let's dive into how the dispatcher works. At its core, the ingester registry is powerful, flexible, and easy to extend. By walking each ingester in order, we can seamlessly match the right one. I hope this helps clarify things!\n\n> After: The registry walks each ingester in registration order and takes the first that matches. That order is the precedence: specific ingesters first, text-dir last. To add one, implement `matches` and `stream` and call `register`.\n\n**B. \"It's not X, it's Y\" + em-dash + empty intensifiers**\n\n> Before: This isn't just a bug fix, it's a fundamental rethink of how we handle net-new detection. The new approach is remarkably robust and leverages content hashing to deliver a truly seamless deduplication experience.\n\n> After: The old title-only dedup missed the same rule pasted under a different title. Now we hash the content, so a duplicate body is caught no matter what it's called. Same idea, one more check at the write path.\n\n**C. Hedging + restating the question + bullets-on-everything**\n\n> Before: You asked whether the ingest is idempotent. That's a great thing to verify. It's worth noting that, generally speaking, the system is designed to be idempotent on topic and kind, safe to re-run, and resilient to duplicates. So in most cases, you should be fine re-running it.\n\n> After: Yes. It dedups on (topic, kind) at the write path, so re-running updates in place instead of inserting again. Run it twice and the second pass is a no-op.\n\n## Open questions to ruminate on\n\n- Where does the exemplar live so it re-surfaces without burning tokens every turn? Pinned item, folded into the existing store-reminder nudge, or a dedicated low-frequency channel?\n- Nudge cadence. Frequent enough to fight decay, sparse enough to avoid self-conscious prose. What interval?\n- Does the soft exemplar survive compaction, or does it need to be re-anchored the way MEMORY.md is?\n- Is the hard filter worth it, or does a counter/metric (count tells per response, surface a number) get most of the value without the risk of a filter mangling legitimate output?\n- Whose calibration anchors \"warm but not clinical\"? The exemplar set is the calibration, so it needs curating, not just writing once.\n\nNot for immediate build. Filed for rumination.",
+    "symptom": "# In-session style nudge: positive voice exemplar, not a longer denylist\n\n## Problem\n\nStylistic tics (emojis, em-dashes, \"it's not X, it's Y\", rule-of-three cadence, \"great question\", empty intensifiers) leak back into responses over the course of a session, and get worse as context fills. Two mechanisms, and they need different fixes:\n\n1. **Instruction decay.** The style rule lives in CLAUDE.md / MEMORY.md at the top of the window. As the session grows, generation happens further from that instruction and soft stylistic constraints slip first. Well-established behavior.\n2. **Precedent accumulation.** The model conditions on the whole window. As tool output, git logs, PR bodies, and the mandated `Generated with Claude Code` trailer pile up, the local prior for \"an emoji/tic is normal here\" drifts up. Long sessions correlate with high context, but the causal driver is probably *what* accumulated, not raw token count.\n\nA periodic MCP nudge addresses (1). It does little for (2).\n\n## Why the current rule reads clinical\n\nThe existing guidance is a denylist: no em-dashes, no emojis, no LinkedIn-speak, no \"it's not X, it's Y\". Every clause is a prohibition. The safest way to satisfy an all-prohibition rule is to strip out all personality, because personality is where the risk lives. Flat, dry prose violates nothing. So the denylist doesn't just permit clinical, it pulls toward it.\n\nSecond problem: naming a tic primes the tic. A reminder that says \"don't use emojis\" puts emojis in the context. Negative instructions are weak in general and self-defeating here in particular.\n\n## Example before/after pairs\n\n**A. Opener + rule-of-three + outro**\n\n> Before: Great question! Let's dive into how the dispatcher works. At its core, the ingester registry is powerful, flexible, and easy to extend. By walking each ingester in order, we can seamlessly match the right one. I hope this helps clarify things!\n\n> After: The registry walks each ingester in registration order and takes the first that matches. That order is the precedence: specific ingesters first, text-dir last. To add one, implement `matches` and `stream` and call `register`.\n\n**B. \"It's not X, it's Y\" + em-dash + empty intensifiers**\n\n> Before: This isn't just a bug fix, it's a fundamental rethink of how we handle net-new detection. The new approach is remarkably robust and leverages content hashing to deliver a truly seamless deduplication experience.\n\n> After: The old title-only dedup missed the same rule pasted under a different title. Now we hash the content, so a duplicate body is caught no matter what it's called. Same idea, one more check at the write path.\n\n**C. Hedging + restating the question + bullets-on-everything**\n\n> Before: You asked whether the ingest is idempotent. That's a great thing to verify. It's worth noting that, generally speaking, the system is designed to be idempotent on topic and kind, safe to re-run, and resilient to duplicates. So in most cases, you should be fine re-running it.\n\n> After: Yes. It dedups on (topic, kind) at the write path, so re-running updates in place instead of inserting again. Run it twice and the second pass is a no-op.\n\n## Open questions to ruminate on\n\n- Where does the exemplar live so it re-surfaces without burning tokens every turn? Pinned item, folded into the existing store-reminder nudge, or a dedicated low-frequency channel?\n- Nudge cadence. Frequent enough to fight decay, sparse enough to avoid self-conscious prose. What interval?\n- Does the soft exemplar survive compaction, or does it need to be re-anchored the way MEMORY.md is?\n- Is the hard filter worth it, or does a counter/metric (count tells per response, surface a number) get most of the value without the risk of a filter mangling legitimate output?\n- Whose calibration anchors \"warm but not clinical\"? The exemplar set is the calibration, so it needs curating, not just writing once.\n\nNot for immediate build. Filed for rumination."
+   },
+   "strata": {
+    "files": 3,
+    "lines": 86,
+    "test_s": 0.74,
+    "area": ".,src/mcm_engine,src/mcm_engine/hooks",
+    "size": "small"
+   },
+   "admitted_by": "base_collect_repo_symbol"
   },
   {
    "id": "mcm-engine-116",
@@ -383,6 +943,49 @@
    "variant_drops": {
     "symptom": "no_fix_section"
    }
+  },
+  {
+   "id": "mcm-engine-83",
+   "issue": 83,
+   "pr": 84,
+   "base": "ec43e8935cf5cae3aaef79ad2d28a7bd07f82765",
+   "fix": "a2eec3a76a7d6240aa1cc483b60f3630e6ac0195",
+   "date": "2026-07-07",
+   "subject": "Merge pull request #84 from unxmaal/fix/83-per-session-tracker",
+   "context_files": [
+    "CHANGELOG.md",
+    "src/mcm_engine/server.py",
+    "src/mcm_engine/tracker.py"
+   ],
+   "new_files": [],
+   "test_files": [
+    "tests/test_session_tracker_isolation.py"
+   ],
+   "fail_to_pass": [
+    "tests/test_session_tracker_isolation.py::test_attribute_write_delegates_to_calling_session",
+    "tests/test_session_tracker_isolation.py::test_escalation_block_in_one_session_does_not_block_another",
+    "tests/test_session_tracker_isolation.py::test_none_key_uses_one_shared_default_tracker",
+    "tests/test_session_tracker_isolation.py::test_plugin_nudge_replayed_into_every_session",
+    "tests/test_session_tracker_isolation.py::test_read_only_burst_never_escalates_even_with_pending_nudge",
+    "tests/test_session_tracker_isolation.py::test_read_only_tools_do_not_advance_write_gates",
+    "tests/test_session_tracker_isolation.py::test_reset_all_only_affects_calling_session",
+    "tests/test_session_tracker_isolation.py::test_search_still_counts_toward_store_gate",
+    "tests/test_session_tracker_isolation.py::test_sessions_evict_when_key_is_garbage_collected",
+    "tests/test_session_tracker_isolation.py::test_sessions_have_independent_turn_counts"
+   ],
+   "pass_to_pass": [],
+   "prompts": {
+    "spec": "# SessionTracker is process-global: concurrent clients corrupt each other's governance counters\n\n## Summary\n\n`SessionTracker` is instantiated **once per server process** and shared by every client connection. It has no notion of the MCP session id, so **concurrent clients corrupt each other's governance counters** (`turn_count`, `ignored_counts`, `calls_since`, `last_store_turn`, `last_checkpoint_turn`, `topic_freq`). Two Claude Code instances pointed at the same server \u2014 a normal, expected setup \u2014 interfere: one client's tool calls advance the nudge/escalation state that then blocks the *other* client.\n\n## Root cause\n\n`server.py:115`:\n\n```python\nself.tracker = SessionTracker(config.nudges)\n```\n\nEvery tool handler closes over this single instance. The streamable-HTTP transport (`StreamableHTTPSessionManager`) *does* assign each client its own `mcp-session-id` at `initialize()`, but the tracker ignores it \u2014 all sessions collapse onto one counter.\n\n## Observed impact\n\nRunning `mcm-engine ingest --remote` (which fans out into many `sift_candidates` batch calls) **while a second Claude Code session was connected to the same server** produced erratic, incomplete sift coverage: the *same* repo (`org/skills/example-skills`) surfaced 16 / 21 / 36 / 42 novel spans on successive runs, and the `import_rules` write at the end intermittently hit:\n\n```\nESCALATED BLOCK: 'checkpoint' nudge ignored N times. You MUST call one of: save_snapshot, session_handoff before any other tool.\n```\n\nThe escalation count depended on what the *other* session was doing concurrently \u2014 not on this session's own behavior. A `session_handoff` from the ingest client (to reset its gate) also blows away the other client's counters, and vice-versa.\n\n## Expected\n\nEach MCP session gets its own tracker state. One client's tool calls, nudges, escalations, and `session_handoff`/`reset_all` must not affect another client's governance state.\n\n## Proposed fix\n\nKey tracker state by `mcp-session-id`:\n\n- Maintain a `dict[session_id, SessionTracker]` (or store per-session state in a `contextvars.ContextVar` set from the request scope), created lazily on first tool call / `initialize`, evicted on session close or TTL.\n- Thread the per-request session id from the FastMCP request context down to the tool handlers (they currently receive mcm's own DB `Context`, **not** the FastMCP request `Context` that carries the session id \u2014 so this needs wiring, it isn't a one-liner).\n- `session_handoff` / `save_snapshot` should reset only the calling session's tracker.\n\nLifecycle to decide: eviction policy (on transport session-close hook if available, else idle TTL) so long-lived servers don't leak tracker objects.\n\n## Secondary hardening (optional, separate)\n\nIndependently of isolation, read-only tools (`sift_candidates`, `find_duplicate_rules`, `find_conflicting_rules`, `consolidation_report`, `list_rules`, `get_related`) arguably should not advance **write-hygiene** gates (`store_reminder` / `checkpoint` / `mandatory_stop`) at all \u2014 a read query is neither a mutation nor something you must checkpoint before. `sift_candidates` is the load-bearing case: even within a *single* session, one `ingest --remote` run makes enough `sift_candidates` calls to self-escalate the gate and block its own follow-up `import_rules` write. (`search` should stay counted \u2014 it resolves `rules_check` and is part of the look-first contract.) This mitigates the single-session case but does **not** substitute for per-session isolation, which is the real bug.\n\n## Environment\n\n- Transport: `streamable-http` under `/mcp`\n- Reproduced with two Claude Code clients against one server (local kind deployment, mcm-engine at the `3.5.0` image tag).",
+    "symptom": "# SessionTracker is process-global: concurrent clients corrupt each other's governance counters\n\n## Summary\n\n`SessionTracker` is instantiated **once per server process** and shared by every client connection. It has no notion of the MCP session id, so **concurrent clients corrupt each other's governance counters** (`turn_count`, `ignored_counts`, `calls_since`, `last_store_turn`, `last_checkpoint_turn`, `topic_freq`). Two Claude Code instances pointed at the same server \u2014 a normal, expected setup \u2014 interfere: one client's tool calls advance the nudge/escalation state that then blocks the *other* client.\n\n## Root cause\n\n`server.py:115`:\n\n```python\nself.tracker = SessionTracker(config.nudges)\n```\n\nEvery tool handler closes over this single instance. The streamable-HTTP transport (`StreamableHTTPSessionManager`) *does* assign each client its own `mcp-session-id` at `initialize()`, but the tracker ignores it \u2014 all sessions collapse onto one counter.\n\n## Observed impact\n\nRunning `mcm-engine ingest --remote` (which fans out into many `sift_candidates` batch calls) **while a second Claude Code session was connected to the same server** produced erratic, incomplete sift coverage: the *same* repo (`org/skills/example-skills`) surfaced 16 / 21 / 36 / 42 novel spans on successive runs, and the `import_rules` write at the end intermittently hit:\n\n```\nESCALATED BLOCK: 'checkpoint' nudge ignored N times. You MUST call one of: save_snapshot, session_handoff before any other tool.\n```\n\nThe escalation count depended on what the *other* session was doing concurrently \u2014 not on this session's own behavior. A `session_handoff` from the ingest client (to reset its gate) also blows away the other client's counters, and vice-versa.\n\n## Expected\n\nEach MCP session gets its own tracker state. One client's tool calls, nudges, escalations, and `session_handoff`/`reset_all` must not affect another client's governance state.\n\n## Secondary hardening (optional, separate)\n\nIndependently of isolation, read-only tools (`sift_candidates`, `find_duplicate_rules`, `find_conflicting_rules`, `consolidation_report`, `list_rules`, `get_related`) arguably should not advance **write-hygiene** gates (`store_reminder` / `checkpoint` / `mandatory_stop`) at all \u2014 a read query is neither a mutation nor something you must checkpoint before. `sift_candidates` is the load-bearing case: even within a *single* session, one `ingest --remote` run makes enough `sift_candidates` calls to self-escalate the gate and block its own follow-up `import_rules` write. (`search` should stay counted \u2014 it resolves `rules_check` and is part of the look-first contract.) This mitigates the single-session case but does **not** substitute for per-session isolation, which is the real bug.\n\n## Environment\n\n- Transport: `streamable-http` under `/mcp`\n- Reproduced with two Claude Code clients against one server (local kind deployment, mcm-engine at the `3.5.0` image tag)."
+   },
+   "strata": {
+    "files": 3,
+    "lines": 169,
+    "test_s": 0.77,
+    "area": ".,src/mcm_engine",
+    "size": "large"
+   },
+   "admitted_by": "base_collect_repo_symbol"
   },
   {
    "id": "mcm-engine-79",
@@ -591,6 +1194,306 @@
     "area": "src/mcm_engine,src/mcm_engine/tools",
     "size": "small"
    }
+  },
+  {
+   "id": "mcm-engine-31",
+   "issue": 31,
+   "pr": 40,
+   "base": "ef9bee78d735ed81b2c3d6422410b1f6918a5bfa",
+   "fix": "ed2f1a65ed0c06d30660cb6d92da726740b0ac07",
+   "date": "2026-07-03",
+   "subject": "Merge pull request #40 from unxmaal/feat/31-consolidation-pass",
+   "context_files": [
+    "src/mcm_engine/cli.py",
+    "src/mcm_engine/tools/rules.py"
+   ],
+   "new_files": [
+    "src/mcm_engine/consolidate.py"
+   ],
+   "test_files": [
+    "tests/test_consolidate.py"
+   ],
+   "fail_to_pass": [
+    "tests/test_consolidate.py::test_cli_consolidate_dispatch",
+    "tests/test_consolidate.py::test_near_duplicate_is_not_also_a_conflict",
+    "tests/test_consolidate.py::test_report_is_deterministic",
+    "tests/test_consolidate.py::test_report_mutates_nothing",
+    "tests/test_consolidate.py::test_report_sorts_candidates_into_the_right_buckets",
+    "tests/test_consolidate.py::test_superseded_and_archived_excluded"
+   ],
+   "pass_to_pass": [],
+   "prompts": {
+    "spec": "# Phase 2: background consolidation \\\"sleep\\\" pass (gaps 3/4)\n\nScheduled offline pass over the rule corpus: cluster near-duplicates (via the MinHash dedup issue) and PROPOSE merges (never auto-apply in files mode), decay unreinforced rows, strengthen proven ones, and materialize co-occurrence links into relations. Levers: importance / merge / decay / evict (Vectorize/Letta sleeptime). Emits a consolidation report for review.",
+    "symptom": null
+   },
+   "strata": {
+    "files": 3,
+    "lines": 163,
+    "test_s": 0.75,
+    "area": "src/mcm_engine,src/mcm_engine/tools",
+    "size": "large"
+   },
+   "variant_drops": {
+    "symptom": "no_fix_section"
+   },
+   "admitted_by": "base_collect_repo_symbol"
+  },
+  {
+   "id": "mcm-engine-32",
+   "issue": 32,
+   "pr": 39,
+   "base": "0b0e41f26cc07d2d674d74d25278fb0987ce361e",
+   "fix": "ef9bee78d735ed81b2c3d6422410b1f6918a5bfa",
+   "date": "2026-07-03",
+   "subject": "Merge pull request #39 from unxmaal/feat/32-contradiction-detection",
+   "context_files": [
+    "src/mcm_engine/dedup.py",
+    "src/mcm_engine/tools/rules.py"
+   ],
+   "new_files": [],
+   "test_files": [
+    "tests/test_conflict.py"
+   ],
+   "fail_to_pass": [
+    "tests/test_conflict.py::test_add_rule_no_conflict_note_when_unrelated",
+    "tests/test_conflict.py::test_add_rule_surfaces_conflict_note",
+    "tests/test_conflict.py::test_deterministic",
+    "tests/test_conflict.py::test_empty_body_pair_is_not_flagged",
+    "tests/test_conflict.py::test_find_conflicting_rules_surfaces_pair_and_mutates_nothing",
+    "tests/test_conflict.py::test_near_duplicate_same_body_is_not_a_conflict",
+    "tests/test_conflict.py::test_same_topic_divergent_body_is_a_conflict",
+    "tests/test_conflict.py::test_unrelated_topics_not_a_conflict"
+   ],
+   "pass_to_pass": [],
+   "prompts": {
+    "spec": "# Phase 2: automatic contradiction detection -> supersession (gap 3)\n\nFeed A2 (#21 supersede_rule) automatically: on add_rule, detect which existing rule a new one contradicts (keyword-overlap heuristic, or a cheap LLM that returns only contradicted ids, code applies the temporal-interval logic per Graphiti). This is where the interval-overlap guard finally earns its place (validity intervals actually vary). Explicit supersession already ships in #24.",
+    "symptom": null
+   },
+   "strata": {
+    "files": 2,
+    "lines": 101,
+    "test_s": 0.72,
+    "area": "src/mcm_engine,src/mcm_engine/tools",
+    "size": "small"
+   },
+   "variant_drops": {
+    "symptom": "no_fix_section"
+   },
+   "admitted_by": "base_collect_repo_symbol"
+  },
+  {
+   "id": "mcm-engine-30",
+   "issue": 30,
+   "pr": 38,
+   "base": "7efde17de487535aaef1c081a8eba844bd9b8a96",
+   "fix": "0b0e41f26cc07d2d674d74d25278fb0987ce361e",
+   "date": "2026-07-03",
+   "subject": "Merge pull request #38 from unxmaal/feat/30-minhash-dedup",
+   "context_files": [
+    "src/mcm_engine/tools/rules.py"
+   ],
+   "new_files": [
+    "src/mcm_engine/dedup.py"
+   ],
+   "test_files": [
+    "tests/test_dedup.py"
+   ],
+   "fail_to_pass": [
+    "tests/test_dedup.py::test_clusters_near_dups_not_distinct",
+    "tests/test_dedup.py::test_determinism_same_input_same_clusters",
+    "tests/test_dedup.py::test_distinct_texts_are_low_similarity",
+    "tests/test_dedup.py::test_exact_normalized_duplicate_clustered_at_strict_threshold",
+    "tests/test_dedup.py::test_find_duplicate_rules_surfaces_pair_and_mutates_nothing",
+    "tests/test_dedup.py::test_identical_after_normalize_is_jaccard_one",
+    "tests/test_dedup.py::test_low_entropy_items_are_gated_not_merged",
+    "tests/test_dedup.py::test_minor_edit_is_high_similarity",
+    "tests/test_dedup.py::test_normalize_strips_punct_and_case",
+    "tests/test_dedup.py::test_shannon_entropy_gate_values"
+   ],
+   "pass_to_pass": [],
+   "prompts": {
+    "spec": "# Phase 2: deterministic dedup via MinHash/LSH (gap 4)\n\nEmbedding-free near-duplicate detection for rules, Graphiti-style: normalize -> n-gram shingle -> MinHash (32 perms) -> Jaccard>=0.9, with a name-entropy gate for short/low-info titles. Runs BEFORE any LLM/review step; surfaces merge candidates, never auto-deletes. Attacks KB bloat (title-equality dedup is the only dedup today). See mcm_v3_plan.md Deferred; ref getzep/graphiti dedup_helpers.py.",
+    "symptom": null
+   },
+   "strata": {
+    "files": 2,
+    "lines": 199,
+    "test_s": 0.73,
+    "area": "src/mcm_engine,src/mcm_engine/tools",
+    "size": "large"
+   },
+   "variant_drops": {
+    "symptom": "no_fix_section"
+   },
+   "admitted_by": "base_collect_repo_symbol"
+  },
+  {
+   "id": "mcm-engine-22",
+   "issue": 22,
+   "pr": 29,
+   "base": "94708d68ff0a29b5300cda5923401ac98676d234",
+   "fix": "7efde17de487535aaef1c081a8eba844bd9b8a96",
+   "date": "2026-07-03",
+   "subject": "Merge pull request #29 from unxmaal/feat/22-git-review-mirror",
+   "context_files": [
+    "src/mcm_engine/cli.py"
+   ],
+   "new_files": [
+    "src/mcm_engine/mirror.py"
+   ],
+   "test_files": [
+    "tests/test_export_mirror.py"
+   ],
+   "fail_to_pass": [
+    "tests/test_export_mirror.py::test_cli_export_mirror_dispatch",
+    "tests/test_export_mirror.py::test_mirror_is_read_only_on_source",
+    "tests/test_export_mirror.py::test_mirror_reflects_a_later_supersession_as_a_removal",
+    "tests/test_export_mirror.py::test_mirror_second_run_reports_no_changes",
+    "tests/test_export_mirror.py::test_mirror_uses_explicit_git_identity",
+    "tests/test_export_mirror.py::test_mirror_writes_active_excludes_superseded_and_commits"
+   ],
+   "pass_to_pass": [],
+   "prompts": {
+    "spec": "# Piece C: one-way DB\u2192git review mirror (gap 5, reviewability)\n\nPart of the **mcm v3 Foundation Quad** (`mcm_v3_plan.md`, Piece C). A one-way DB\u2192git review mirror: replay the DB into a git repo of markdown for audit/review (`git blame`, diff, PR review) \u2014 never authoritative, never writes `rules_paths`.\n\n## Design \u2014 v1 = current-state snapshot\nNot per-event replay: historical bodies aren't stored per-event (only `content_hash`), so per-event commits would misrepresent blame. Enumerate via `iter_entries(EntityType.RULE)`, render with `_generate_rule_content` + `_slugify` (`tools/rules.py:97`,`:27`) to `<out>/<category>/<slug>.md`, then commit. Run periodically.\n\n## Depends on Piece A2 (not independent)\n`iter_entries` enumerates superseded rows once A2 lands. The mirror MUST filter to active (`valid_until IS NULL` / `status=active`) by default, OR mirror history under a `superseded/` subtree. Never present dead rules as authoritative markdown. **Land A before C.**\n\n## git guards\n- Explicit identity: `git -c user.email=\u2026 -c user.name=\u2026` (a fresh container has none).\n- Empty case: check for changes or `commit --allow-empty`, so a no-change run doesn't error.\n\n## Seams\nNew `cmd_export_mirror` in `cli.py`, registered like `cmd_migrate`; storage via `open_storage(dsn)`; `--out <git-dir>`; shell to `git` via `subprocess` (no git dep exists).\n\n## One-way safety\nRead methods only + writes into the external git dir \u2192 structurally cannot trigger the `sync_rules` orphan-archive sweep (`tools/rules.py:743`).\n\n## Tests (TDD, test-first)\n`test_cli_ingest.py` style: mirror test (temp DB \u2192 temp git dir \u2192 files + commit + `rules_paths` untouched + DB unchanged); superseded-rule-excluded test; no-change / no-identity guard test.\n\nPhase-2 evolution: Letta-style git-native write path (commit-per-write + per-agent lock) would also solve concurrent-write clobber.\n\nSee `mcm_v3_plan.md` for full context.",
+    "symptom": "# Piece C: one-way DB\u2192git review mirror (gap 5, reviewability)\n\nPart of the **mcm v3 Foundation Quad** (`mcm_v3_plan.md`, Piece C). A one-way DB\u2192git review mirror: replay the DB into a git repo of markdown for audit/review (`git blame`, diff, PR review) \u2014 never authoritative, never writes `rules_paths`.\n\n## Depends on Piece A2 (not independent)\n`iter_entries` enumerates superseded rows once A2 lands. The mirror MUST filter to active (`valid_until IS NULL` / `status=active`) by default, OR mirror history under a `superseded/` subtree. Never present dead rules as authoritative markdown. **Land A before C.**\n\n## git guards\n- Explicit identity: `git -c user.email=\u2026 -c user.name=\u2026` (a fresh container has none).\n- Empty case: check for changes or `commit --allow-empty`, so a no-change run doesn't error.\n\n## Seams\nNew `cmd_export_mirror` in `cli.py`, registered like `cmd_migrate`; storage via `open_storage(dsn)`; `--out <git-dir>`; shell to `git` via `subprocess` (no git dep exists).\n\n## One-way safety\nRead methods only + writes into the external git dir \u2192 structurally cannot trigger the `sync_rules` orphan-archive sweep (`tools/rules.py:743`).\n\n## Tests (TDD, test-first)\n`test_cli_ingest.py` style: mirror test (temp DB \u2192 temp git dir \u2192 files + commit + `rules_paths` untouched + DB unchanged); superseded-rule-excluded test; no-change / no-identity guard test.\n\nPhase-2 evolution: Letta-style git-native write path (commit-per-write + per-agent lock) would also solve concurrent-write clobber.\n\nSee `mcm_v3_plan.md` for full context."
+   },
+   "strata": {
+    "files": 2,
+    "lines": 115,
+    "test_s": 2.14,
+    "area": "src/mcm_engine",
+    "size": "small"
+   },
+   "admitted_by": "base_collect_repo_symbol"
+  },
+  {
+   "id": "mcm-engine-27",
+   "issue": 27,
+   "pr": 28,
+   "base": "4f4b9f67175107d41a027a654efbfe9016b78943",
+   "fix": "94708d68ff0a29b5300cda5923401ac98676d234",
+   "date": "2026-07-03",
+   "subject": "Merge pull request #28 from unxmaal/feat/27-scale-free-relevance",
+   "context_files": [
+    "src/mcm_engine/scoring.py",
+    "src/mcm_engine/tools/search.py"
+   ],
+   "new_files": [],
+   "test_files": [
+    "tests/test_correctness_axis.py",
+    "tests/test_scoring.py"
+   ],
+   "fail_to_pass": [
+    "tests/test_correctness_axis.py::TestCorrectnessRanking::test_correctness_weight_demotes_failures_and_promotes_passes",
+    "tests/test_scoring.py::test_accepts_none_counters",
+    "tests/test_scoring.py::test_higher_relevance_ranks_higher_all_else_equal",
+    "tests/test_scoring.py::test_minmax_clamps_out_of_range",
+    "tests/test_scoring.py::test_minmax_degenerate_batch_is_uniform",
+    "tests/test_scoring.py::test_minmax_normalize_scale_free[0.0-0.0-10.0-0.0]",
+    "tests/test_scoring.py::test_minmax_normalize_scale_free[0.7-0.2-1.2-0.5]",
+    "tests/test_scoring.py::test_minmax_normalize_scale_free[10.0-0.0-10.0-1.0]",
+    "tests/test_scoring.py::test_minmax_normalize_scale_free[12.0-2.0-22.0-0.5]",
+    "tests/test_scoring.py::test_minmax_normalize_scale_free[5.0-0.0-10.0-0.5]",
+    "tests/test_scoring.py::test_more_hits_never_lowers_score",
+    "tests/test_scoring.py::test_no_outcome_data_and_net_zero_are_both_neutral",
+    "tests/test_scoring.py::test_pinned_adds_pinned_weight_holding_signals_equal",
+    "tests/test_scoring.py::test_pinned_only_uses_relevance_plus_pin",
+    "tests/test_scoring.py::test_positive_outcomes_promote_and_negative_demote",
+    "tests/test_scoring.py::test_recency_bonus_linear_and_clamped",
+    "tests/test_scoring.py::test_reinforcement_saturates_but_increases_and_is_bounded",
+    "tests/test_scoring.py::test_top_of_batch_match_beats_weak_but_maximally_popular"
+   ],
+   "pass_to_pass": [
+    "tests/test_correctness_axis.py::TestReportOutcome::test_independent_fail_increments_incorrect",
+    "tests/test_correctness_axis.py::TestReportOutcome::test_independent_pass_increments_correct",
+    "tests/test_correctness_axis.py::TestReportOutcome::test_not_found_reported",
+    "tests/test_correctness_axis.py::TestReportOutcome::test_self_report_is_logged_but_uncounted",
+    "tests/test_correctness_axis.py::TestSupersedeRule::test_supersede_marks_status_and_event",
+    "tests/test_correctness_axis.py::TestSupersedeRule::test_supersede_missing_ids",
+    "tests/test_correctness_axis.py::TestSupersededFilteredFromSearch::test_superseded_rule_hidden_from_default_search",
+    "tests/test_correctness_axis.py::TestV8ToV9Migration::test_fresh_install_has_v9_columns_and_table",
+    "tests/test_correctness_axis.py::TestV8ToV9Migration::test_v8_db_migrates_to_v9_preserving_rows"
+   ],
+   "prompts": {
+    "spec": "# Follow-up (#25/#26): scale-free relevance via batch min-max (fix adapter-scale mismatch)\n\n#26's relevance sigmoid uses a fixed midpoint (~8.0) calibrated for SQLite FTS5 **bm25** (magnitudes ~1\u201320). The production pod is **Postgres**, whose `ts_rank_cd` scores are ~0.1\u20131 \u2014 so the sigmoid collapses relevance to ~0 there and counters dominate (a live ranking regression). Fix: replace the fixed-scale sigmoid with **batch min-max relative normalization** (Generative-Agents style) \u2014 normalize each result's relevance across the candidate batch's own min/max, in the search layer (two-pass). Scale-free: works for bm25, ts_rank_cd, and any future adapter with zero per-scale tuning. `compose_rank` then takes a pre-normalized `relevance \u2208 [0,1]`; drop `query_terms`. TDD in test_scoring.py.",
+    "symptom": null
+   },
+   "strata": {
+    "files": 2,
+    "lines": 142,
+    "test_s": 0.79,
+    "area": "src/mcm_engine,src/mcm_engine/tools",
+    "size": "small"
+   },
+   "variant_drops": {
+    "symptom": "no_fix_section"
+   },
+   "admitted_by": "base_collect_repo_symbol"
+  },
+  {
+   "id": "mcm-engine-25",
+   "issue": 25,
+   "pr": 26,
+   "base": "0bced85cbd54e437700c9d956cfd5cd0bf3cc9e4",
+   "fix": "4f4b9f67175107d41a027a654efbfe9016b78943",
+   "date": "2026-07-03",
+   "subject": "Merge pull request #26 from unxmaal/feat/25-additive-hybrid-rerank",
+   "context_files": [
+    "src/mcm_engine/scoring.py",
+    "src/mcm_engine/tools/search.py"
+   ],
+   "new_files": [],
+   "test_files": [
+    "tests/test_correctness_axis.py",
+    "tests/test_scoring.py"
+   ],
+   "fail_to_pass": [
+    "tests/test_scoring.py::test_accepts_none_counters",
+    "tests/test_scoring.py::test_more_hits_never_lowers_score",
+    "tests/test_scoring.py::test_no_outcome_data_and_net_zero_are_both_neutral",
+    "tests/test_scoring.py::test_pinned_adds_pinned_weight_holding_signals_equal",
+    "tests/test_scoring.py::test_pinned_only_uses_relevance_plus_pin",
+    "tests/test_scoring.py::test_positive_outcomes_promote_and_negative_demote",
+    "tests/test_scoring.py::test_recency_bonus_linear_and_clamped",
+    "tests/test_scoring.py::test_reinforcement_saturates_but_increases_and_is_bounded",
+    "tests/test_scoring.py::test_relevance_is_bounded_0_1[-1.0]",
+    "tests/test_scoring.py::test_relevance_is_bounded_0_1[-50.0]",
+    "tests/test_scoring.py::test_relevance_is_bounded_0_1[0.0]",
+    "tests/test_scoring.py::test_relevance_is_bounded_0_1[1.0]",
+    "tests/test_scoring.py::test_relevance_is_bounded_0_1[1000.0]",
+    "tests/test_scoring.py::test_relevance_is_bounded_0_1[50.0]",
+    "tests/test_scoring.py::test_relevance_is_bounded_0_1[8.0]",
+    "tests/test_scoring.py::test_relevance_monotonic_increasing_in_raw_rank",
+    "tests/test_scoring.py::test_relevance_query_length_adaptive",
+    "tests/test_scoring.py::test_strong_match_beats_weak_but_maximally_popular"
+   ],
+   "pass_to_pass": [
+    "tests/test_correctness_axis.py::TestCorrectnessRanking::test_correctness_weight_demotes_failures_and_promotes_passes",
+    "tests/test_correctness_axis.py::TestReportOutcome::test_independent_fail_increments_incorrect",
+    "tests/test_correctness_axis.py::TestReportOutcome::test_independent_pass_increments_correct",
+    "tests/test_correctness_axis.py::TestReportOutcome::test_not_found_reported",
+    "tests/test_correctness_axis.py::TestReportOutcome::test_self_report_is_logged_but_uncounted",
+    "tests/test_correctness_axis.py::TestSupersedeRule::test_supersede_marks_status_and_event",
+    "tests/test_correctness_axis.py::TestSupersedeRule::test_supersede_missing_ids",
+    "tests/test_correctness_axis.py::TestSupersededFilteredFromSearch::test_superseded_rule_hidden_from_default_search",
+    "tests/test_correctness_axis.py::TestV8ToV9Migration::test_fresh_install_has_v9_columns_and_table",
+    "tests/test_correctness_axis.py::TestV8ToV9Migration::test_v8_db_migrates_to_v9_preserving_rows"
+   ],
+   "prompts": {
+    "spec": "# Follow-up (#21): full additive-hybrid rerank in compose_rank\n\nPiece A (#24) shipped a minimal net `(correct \u2212 incorrect)` correctness term in `compose_rank` to keep regression risk low. This tracks the full **additive-hybrid** reformulation from mcm_v3_plan.md / the SOTA survey: sigmoid-normalize FTS5 `bm25()` (query-length-adaptive, Mem0-style), then additive-combine normalized hit / reinforcement / correctness / recency terms (Generative-Agents normalized weighted sum). Embedding-free. Keep `compose_rank_pinned_only` and the sort direction intact; pinned must still dominate. TDD in `tests/test_scoring.py`.",
+    "symptom": null
+   },
+   "strata": {
+    "files": 2,
+    "lines": 160,
+    "test_s": 0.8,
+    "area": "src/mcm_engine,src/mcm_engine/tools",
+    "size": "large"
+   },
+   "variant_drops": {
+    "symptom": "no_fix_section"
+   },
+   "admitted_by": "base_collect_repo_symbol"
   }
  ],
  "split": {
@@ -598,26 +1501,38 @@
   "fraction": 0.5,
   "dev": [
    "mcm-engine-135",
-   "mcm-engine-171"
+   "mcm-engine-145",
+   "mcm-engine-160",
+   "mcm-engine-171",
+   "mcm-engine-177",
+   "mcm-engine-182",
+   "mcm-engine-22",
+   "mcm-engine-30",
+   "mcm-engine-31"
   ],
   "holdout": [
    "mcm-engine-109",
    "mcm-engine-116",
    "mcm-engine-136",
+   "mcm-engine-142",
+   "mcm-engine-149",
    "mcm-engine-156",
+   "mcm-engine-157",
+   "mcm-engine-170",
+   "mcm-engine-199",
+   "mcm-engine-25",
+   "mcm-engine-27",
+   "mcm-engine-32",
    "mcm-engine-47",
+   "mcm-engine-63",
+   "mcm-engine-78",
    "mcm-engine-79",
    "mcm-engine-80",
+   "mcm-engine-83",
    "mcm-engine-92"
   ]
  },
  "drops": [
-  {
-   "issue": 199,
-   "pr": 200,
-   "fix": "a5b9741db49e7bfbdbfe321b65921dc08664da8e",
-   "reason": "base_error"
-  },
   {
    "issue": 197,
    "pr": 198,
@@ -635,12 +1550,6 @@
    "pr": 194,
    "fix": "0d3ba4d9d6524e9ee43eabde52bd373e28e3fc6f",
    "reason": "too_big"
-  },
-  {
-   "issue": 182,
-   "pr": 191,
-   "fix": "02881a06e172851716f78dfec7c6fb5c5e29b3a8",
-   "reason": "base_error"
   },
   {
    "issue": 181,
@@ -667,28 +1576,10 @@
    "reason": "no_source_change"
   },
   {
-   "issue": 177,
-   "pr": 184,
-   "fix": "f80dbee47b220535b61a40c3c61757b5257a5f2d",
-   "reason": "base_error"
-  },
-  {
    "issue": 172,
    "pr": 175,
    "fix": "bb256115dfea042c4e42dd2601c25fda130f8f5d",
    "reason": "flaky"
-  },
-  {
-   "issue": 170,
-   "pr": 173,
-   "fix": "5c3e61f92a7c6f6f868e1dc5dcb4e0c88df4b6e3",
-   "reason": "base_error"
-  },
-  {
-   "issue": 160,
-   "pr": 167,
-   "fix": "965c7282309bfd6906b940cb52b71867635bcbba",
-   "reason": "base_error"
   },
   {
    "issue": 159,
@@ -703,34 +1594,10 @@
    "reason": "flaky"
   },
   {
-   "issue": 157,
-   "pr": 163,
-   "fix": "8babab3d51b209e8e13f2c0599bdf9f2c8a5ecb4",
-   "reason": "base_error"
-  },
-  {
-   "issue": 142,
-   "pr": 155,
-   "fix": "493a92648e7239367c1237cdb8c513d8a46d1226",
-   "reason": "base_error"
-  },
-  {
    "issue": 153,
    "pr": 154,
    "fix": "36d74ae24174597fd57d190cef2a82612890319d",
    "reason": "reference_fails"
-  },
-  {
-   "issue": 149,
-   "pr": 151,
-   "fix": "63d1362e50d4887a3c87868a3395c4b165b85c1e",
-   "reason": "base_error"
-  },
-  {
-   "issue": 145,
-   "pr": 150,
-   "fix": "aeda791754fcde22504f4eb0872fa6294a401b82",
-   "reason": "base_error"
   },
   {
    "issue": 144,
@@ -757,22 +1624,10 @@
    "reason": "no_test_change"
   },
   {
-   "issue": 78,
-   "pr": 129,
-   "fix": "5dc9f4caa9721680778e190a2dd588f4ce0da5e7",
-   "reason": "base_error"
-  },
-  {
    "issue": 89,
    "pr": 128,
    "fix": "df8a584c6f499acf4051edbee9a1d54b31ed66ab",
    "reason": "no_test_change"
-  },
-  {
-   "issue": 63,
-   "pr": 127,
-   "fix": "24cc364fb117644fb5b75941fb2f53eaef2173f5",
-   "reason": "base_error"
   },
   {
    "issue": 98,
@@ -787,52 +1642,10 @@
    "reason": "no_test_change"
   },
   {
-   "issue": 83,
-   "pr": 84,
-   "fix": "a2eec3a76a7d6240aa1cc483b60f3630e6ac0195",
-   "reason": "base_error"
-  },
-  {
    "issue": 35,
    "pr": 41,
    "fix": "747690684429e797bf37cad46cf5dbe038397c93",
    "reason": "flaky"
-  },
-  {
-   "issue": 31,
-   "pr": 40,
-   "fix": "ed2f1a65ed0c06d30660cb6d92da726740b0ac07",
-   "reason": "base_error"
-  },
-  {
-   "issue": 32,
-   "pr": 39,
-   "fix": "ef9bee78d735ed81b2c3d6422410b1f6918a5bfa",
-   "reason": "base_error"
-  },
-  {
-   "issue": 30,
-   "pr": 38,
-   "fix": "0b0e41f26cc07d2d674d74d25278fb0987ce361e",
-   "reason": "base_error"
-  },
-  {
-   "issue": 22,
-   "pr": 29,
-   "fix": "7efde17de487535aaef1c081a8eba844bd9b8a96",
-   "reason": "base_error"
-  },
-  {
-   "issue": 27,
-   "pr": 28,
-   "fix": "94708d68ff0a29b5300cda5923401ac98676d234",
-   "reason": "base_error"
-  },
-  {
-   "issue": 25,
-   "pr": 26,
-   "fix": "4f4b9f67175107d41a027a654efbfe9016b78943",
-   "reason": "base_error"
   },
   {
    "issue": 21,

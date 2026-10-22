@@ -1,0 +1,103 @@
+# mcm-engine fix history (unxmaal/mcm-engine), generated (https://github.com/unxmaal/mcm-engine).
+# Imported by evals/importers from git:unxmaal/mcm-engine@a5b9741db49e7bfbdbfe321b65921dc08664da8e; re-import, do not edit.
+id: mcm-engine-170-symptom
+modality: repo
+prompt: '# Sanitize NEGATIVE/ERROR serialized-blob pollution + store-time guard (#142 follow-on)
+
+
+  Follow-on to #142 (closed), which cleaned only the KNOWLEDGE table (94/516 summaries re-split). The
+  same serialized-entry leak exists in the NEGATIVE and ERROR tables and was never covered: `sanitize_knowledge`
+  iterates `EntityType.KNOWLEDGE` only, and `clean_summary_detail` is summary/detail-specific, so it cannot
+  repair the NEGATIVE three-field (`what_failed`/`why_failed`/`correct_approach`) or ERROR (`pattern`/`context`/`root_cause`/`fix`)
+  shape.
+
+
+  ## Evidence (live basement, 3.16.0)
+
+  `get_entry(''negative'', 10|11|16)` show the entire XML-serialized entry crammed into `what_failed`:
+  the real text, then `</what_failed>`, then `<parameter name="why_failed">…</parameter>`, `<parameter
+  name="correct_approach">…`, `<parameter name="project">…`, `<parameter name="tags">…`, `</invoke>`.
+  The real `why_failed`/`correct_approach` columns are empty. ~2 KB each. #3 and #6 are variants. Because
+  #136 keeps NEGATIVE Why/Fix inline in summary search, every hit on one of these ships the whole blob.
+
+
+  ## Acceptance
+
+  - A dry-run reports the polluted NEGATIVE/ERROR ids (incl. #3,#6,#10,#11,#16); apply re-splits them
+  into clean columns with no data loss (salvaged text lands in the right field).
+
+  - A fresh `add_negative` whose field contains a `</invoke>`/`<parameter>` fragment stores clean columns.
+
+  - Re-scan reports 0 polluted across knowledge+negative+error.'
+params:
+  source_repo: https://github.com/unxmaal/mcm-engine.git
+  base: d9241414233fc054f0f626043e12619271210a4f
+  fix: 5c3e61f92a7c6f6f868e1dc5dcb4e0c88df4b6e3
+  variant: symptom
+  context: oracle
+  context_files:
+  - docs/seam-inventory.md
+  - src/mcm_engine/adapters/postgres/storage.py
+  - src/mcm_engine/adapters/sqlite/storage.py
+  - src/mcm_engine/backends/__init__.py
+  - src/mcm_engine/sanitize.py
+  - src/mcm_engine/tools/corpus.py
+  - src/mcm_engine/tools/knowledge.py
+  pytest_args:
+  - -o
+  - pythonpath=src
+  extras:
+  - dev
+  fail_to_pass:
+  - tests/test_sanitize_knowledge_tool.py::test_add_negative_guard_cleans_on_store
+  - tests/test_sanitize_knowledge_tool.py::test_report_error_guard_cleans_on_store
+  - tests/test_sanitize_knowledge_tool.py::test_sanitize_corpus_sweeps_negative_and_error
+  - tests/test_sanitize_pollution.py::test_clean_error_leaves_clean_rows_untouched
+  - tests/test_sanitize_pollution.py::test_clean_error_resplits_into_columns
+  - tests/test_sanitize_pollution.py::test_clean_negative_keeps_existing_columns
+  - tests/test_sanitize_pollution.py::test_clean_negative_leaves_clean_rows_untouched
+  - tests/test_sanitize_pollution.py::test_clean_negative_resplits_into_columns
+  - tests/test_sanitize_pollution.py::test_clean_summary_detail_keeps_existing_detail
+  - tests/test_sanitize_pollution.py::test_clean_summary_detail_leaves_clean_rows_untouched
+  - tests/test_sanitize_pollution.py::test_clean_summary_detail_recovers_when_blob_starts_with_tag
+  - tests/test_sanitize_pollution.py::test_clean_summary_detail_resplits
+  - tests/test_sanitize_pollution.py::test_is_polluted_detects_blob_and_passes_clean_text
+  - tests/test_sanitize_pollution.py::test_strip_tool_call_fragments
+  - tests/test_seam_inventory.py::test_sql_site_count_per_file[adapters/postgres/storage.py-73]
+  - tests/test_seam_inventory.py::test_sql_site_count_per_file[adapters/sqlite/storage.py-71]
+  pass_to_pass:
+  - tests/test_sanitize_knowledge_tool.py::test_add_knowledge_guard_cleans_on_store
+  - tests/test_sanitize_knowledge_tool.py::test_sanitize_knowledge_apply_cleans_in_place
+  - tests/test_sanitize_knowledge_tool.py::test_sanitize_knowledge_dry_run_reports_without_changing
+  - tests/test_seam_inventory.py::test_inventory_file_exists
+  - tests/test_seam_inventory.py::test_inventory_file_non_trivial
+  - tests/test_seam_inventory.py::test_no_sql_in_unexpected_files
+  - tests/test_seam_inventory.py::test_sql_site_count_per_file[adapters/postgres/counters.py-5]
+  - tests/test_seam_inventory.py::test_sql_site_count_per_file[adapters/postgres/search.py-5]
+  - tests/test_seam_inventory.py::test_sql_site_count_per_file[adapters/sqlite/counters.py-4]
+  - tests/test_seam_inventory.py::test_sql_site_count_per_file[adapters/sqlite/search.py-5]
+  - tests/test_seam_inventory.py::test_sql_site_count_per_file[db.py-7]
+  - tests/test_seam_inventory.py::test_sql_site_count_per_file[plugin.py-0]
+  - tests/test_seam_inventory.py::test_sql_site_count_per_file[schema.py-67]
+  - tests/test_seam_inventory.py::test_sql_site_count_per_file[tokens.py-4]
+  - tests/test_seam_inventory.py::test_sql_site_count_per_file[tools/corpus.py-6]
+  - tests/test_seam_inventory.py::test_sql_site_count_per_file[tools/knowledge.py-3]
+  - tests/test_seam_inventory.py::test_sql_site_count_per_file[tools/relations.py-0]
+  - tests/test_seam_inventory.py::test_sql_site_count_per_file[tools/rules.py-0]
+  - tests/test_seam_inventory.py::test_sql_site_count_per_file[tools/search.py-0]
+  - tests/test_seam_inventory.py::test_sql_site_count_per_file[tools/session.py-0]
+  - tests/test_seam_inventory.py::test_sql_site_count_per_file[transport.py-1]
+attribution:
+  dataset: mcm-engine fix history (unxmaal/mcm-engine)
+  url: https://github.com/unxmaal/mcm-engine
+  license: generated
+  source: git:unxmaal/mcm-engine
+  revision: a5b9741db49e7bfbdbfe321b65921dc08664da8e
+  item: '#170 (PR #173)'
+  date: '2026-10-21'
+  transform: issue title and body from `gh issue view` at survey time, home paths as ~/, 'Prior art checked'
+    removed (spec), and the Fix/Shape/Design/Options/Remedy/Proposal/Build/What-to sections and labelled
+    paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
+    of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
+    and sandbox (evals/repo.py)
+  importer: evals.importers.history_mcm_engine

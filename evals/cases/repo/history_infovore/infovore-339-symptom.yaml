@@ -1,0 +1,89 @@
+# infovore fix history (unxmaal/infovore), generated (https://github.com/unxmaal/infovore).
+# Imported by evals/importers from git:unxmaal/infovore@219940e42104c3e625a6642713e856e2bb2305fc; re-import, do not edit.
+id: infovore-339-symptom
+modality: repo
+prompt: '# Wiki structural losses: orphan claims, MAX_GROUPS cut, min_claims 10
+
+
+  Audit 2026-10-10 (runs 13/14, tag run 1): after tech_only, 95,228 claims; `min_claims 10` leaves 61,411
+  on any page; 3,481 kept claims have no topic and appear nowhere; `MAX_GROUPS=40` sorts groups by size
+  and cuts the smallest, dropping 35.4k of 52.6k groups, all singletons, which are the long-tail facts
+  the archive exists to preserve.
+
+
+  Metric: claims reaching a page / claims surviving the verdict gate (#337), target above 0.9.
+
+
+  🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+
+  https://claude.ai/code/session_018FFkm1LHqCXapmvM9uBMXc'
+params:
+  source_repo: https://github.com/unxmaal/infovore.git
+  base: 223ed6f41e12920afe9ce5410403ba982d2debdf
+  fix: beda3c3cff036a10d558acd507fb231f66a72135
+  variant: symptom
+  context: oracle
+  context_files:
+  - README.md
+  - infovore/wiki/build.py
+  - infovore/wiki/command.py
+  - infovore/wiki/write_command.py
+  pytest_args:
+  - --import-mode=importlib
+  fail_to_pass:
+  - tests/wiki/test_build.py::test_article_parts_follow_numbered_continuations_without_gaps
+  - tests/wiki/test_build.py::test_build_site_folds_small_sections
+  - tests/wiki/test_build.py::test_build_site_writes_pages_and_index_deterministically
+  - tests/wiki/test_build.py::test_golden_page
+  - tests/wiki/test_build.py::test_index_lists_pages_by_name_with_counts
+  - tests/wiki/test_build.py::test_load_claims_applies_eligibility_and_topics
+  - tests/wiki/test_build.py::test_load_claims_claim_gate_drops_techless_claims
+  - tests/wiki/test_build.py::test_load_claims_collapses_duplicates_across_runs
+  - tests/wiki/test_build.py::test_load_claims_keeps_only_the_chosen_runs
+  - tests/wiki/test_build.py::test_load_claims_verdict_policy_excludes_unsupported_and_unchecked
+  - tests/wiki/test_build.py::test_page_without_cooccurrence_has_no_groups_or_see_also
+  - tests/wiki/test_build.py::test_pages_carry_no_discord_links
+  - tests/wiki/test_build.py::test_render_page_concatenates_section_parts
+  - tests/wiki/test_build.py::test_see_also_only_links_topics_with_pages
+  - tests/wiki/test_build.py::test_small_co_topic_sections_fold_into_general
+  - tests/wiki/test_build.py::test_stats_counts_pages_distribution_and_unassigned
+  - tests/wiki/test_build.py::test_stats_distribution_covers_every_bucket
+  - tests/wiki/test_build.py::test_stats_with_no_pages
+  - tests/wiki/test_build.py::test_untagged_claims_land_on_the_unsorted_page_and_count_as_on_pages
+  - tests/wiki/test_command.py::test_stats_reports_topics_pages_distribution_and_unassigned
+  - tests/wiki/test_command.py::test_untagged_claims_get_an_unsorted_page
+  - tests/wiki/test_write_command.py::test_sections_with_more_groups_than_the_cap_are_written_in_parts
+  - tests/wiki/test_write_command.py::test_units_carry_their_part_and_key
+  pass_to_pass:
+  - tests/wiki/test_command.py::test_build_default_minimum_is_three
+  - tests/wiki/test_command.py::test_build_writes_pages_for_topics_over_the_minimum
+  - tests/wiki/test_command.py::test_claim_gate_drops_techless_claims_from_stats_and_build
+  - tests/wiki/test_command.py::test_grouping_embed_uses_the_embedder_and_stats_report_corroboration
+  - tests/wiki/test_command.py::test_runs_limits_stats_and_rejects_bad_ids
+  - tests/wiki/test_command.py::test_verdicts_supported_only_excludes_uncheckable_and_bad_names_are_refused
+  - tests/wiki/test_write_command.py::test_bad_arguments_are_config_errors
+  - tests/wiki/test_write_command.py::test_dry_run_prints_the_first_request_and_writes_nothing
+  - tests/wiki/test_write_command.py::test_dry_run_with_no_eligible_topic
+  - tests/wiki/test_write_command.py::test_failed_sections_are_retried_and_written_ones_skipped_on_resume
+  - tests/wiki/test_write_command.py::test_failures_print_their_reason
+  - tests/wiki/test_write_command.py::test_limit_counts_topics_in_descending_claim_count
+  - tests/wiki/test_write_command.py::test_log_records_dropped_sentences_and_failures
+  - tests/wiki/test_write_command.py::test_progress_goes_to_stderr
+  - tests/wiki/test_write_command.py::test_sigint_stops_after_the_sections_in_flight
+  - tests/wiki/test_write_command.py::test_small_co_topic_sections_fold_into_general_by_default
+  - tests/wiki/test_write_command.py::test_writes_a_general_and_a_with_section_and_drops_unsupported_sentences
+attribution:
+  dataset: infovore fix history (unxmaal/infovore)
+  url: https://github.com/unxmaal/infovore
+  license: generated
+  source: git:unxmaal/infovore
+  revision: 219940e42104c3e625a6642713e856e2bb2305fc
+  item: '#339 (PR #344)'
+  date: '2026-10-10'
+  transform: issue title and body from `gh issue view` at survey time, home paths as ~/, 'Prior art checked'
+    removed (spec), and the Fix/Shape/Design/Options/Remedy/Proposal/Build/What-to sections and labelled
+    paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
+    of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
+    and sandbox (evals/repo.py)
+  importer: evals.importers.history_infovore

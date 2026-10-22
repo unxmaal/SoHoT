@@ -1,0 +1,75 @@
+# infovore fix history (unxmaal/infovore), generated (https://github.com/unxmaal/infovore).
+# Imported by evals/importers from git:unxmaal/infovore@219940e42104c3e625a6642713e856e2bb2305fc; re-import, do not edit.
+id: infovore-348-spec
+modality: repo
+prompt: '# wiki write --resume skips sections from earlier runs, so the resumed run lacks them and build
+  --article-run shows claim lists
+
+
+  Seen on the first full write (SoHoT job 0078, article run 8, 2026-10-11): 6,569 sections written, none
+  failed, yet \`wiki build --article-run 8\` renders every part-1 section of IRIX, Indigo2, Indy, O2 and
+  Octane as a claim list. Those 146 sections were written in the 5-topic trial (run 7). \`written_sections\`
+  in \`infovore/db/wiki_articles.py\` joins every run with the same model id, prompt hash and tag run,
+  so \`--resume\` skipped them, while \`create_article_run\` still opened a new run. A logical write is
+  therefore spread over several run ids, and the build reads one.
+
+
+  Run 8 has Octane sections \`General#2\`..\`General#37\` and \`With O2#2\`..\`#7\` but no \`General\`,
+  \`With O2\`, \`With IRIX\`, ... (run 7 keys: 146, in run 8: 0).
+
+
+  Fix: \`--resume\` continues the latest run with the same model id, prompt hash and tag run, and skips
+  only that run''s sections. A new run is created only without \`--resume\` or when no run matches. \`claims
+  extract --resume\` keeps its own semantics.
+
+
+  Then a resume job (~146 sections, about 7 minutes on Ornith-35B) fills run 8, queued on SoHoT behind
+  the running code adopt job.'
+params:
+  source_repo: https://github.com/unxmaal/infovore.git
+  base: 185fb068c97eadff15361894c2b9e73f3d13105a
+  fix: 9f79d28e67f158c6de03ec51e6d7cf2135fed401
+  variant: spec
+  context: oracle
+  context_files:
+  - README.md
+  - infovore/db/wiki_articles.py
+  - infovore/wiki/write_command.py
+  pytest_args:
+  - --import-mode=importlib
+  fail_to_pass:
+  - tests/db/test_wiki_articles.py::test_later_run_wins_per_topic_and_section
+  - tests/db/test_wiki_articles.py::test_latest_article_run_filters_on_model_hash_and_tag_run
+  - tests/db/test_wiki_articles.py::test_record_then_read_back
+  - tests/db/test_wiki_articles.py::test_run_sections_reads_one_run_only
+  - tests/db/test_wiki_articles.py::test_sections_for_without_runs_is_empty
+  - tests/db/test_wiki_articles.py::test_updates_and_deletes_are_append_only
+  - tests/wiki/test_write_command.py::test_failed_sections_are_retried_and_written_ones_skipped_on_resume
+  pass_to_pass:
+  - tests/wiki/test_write_command.py::test_bad_arguments_are_config_errors
+  - tests/wiki/test_write_command.py::test_dry_run_prints_the_first_request_and_writes_nothing
+  - tests/wiki/test_write_command.py::test_dry_run_with_no_eligible_topic
+  - tests/wiki/test_write_command.py::test_failures_print_their_reason
+  - tests/wiki/test_write_command.py::test_limit_counts_topics_in_descending_claim_count
+  - tests/wiki/test_write_command.py::test_log_records_dropped_sentences_and_failures
+  - tests/wiki/test_write_command.py::test_progress_goes_to_stderr
+  - tests/wiki/test_write_command.py::test_resume_without_a_matching_run_starts_a_new_one
+  - tests/wiki/test_write_command.py::test_sections_with_more_groups_than_the_cap_are_written_in_parts
+  - tests/wiki/test_write_command.py::test_sigint_stops_after_the_sections_in_flight
+  - tests/wiki/test_write_command.py::test_small_co_topic_sections_fold_into_general_by_default
+  - tests/wiki/test_write_command.py::test_units_carry_their_part_and_key
+  - tests/wiki/test_write_command.py::test_writes_a_general_and_a_with_section_and_drops_unsupported_sentences
+attribution:
+  dataset: infovore fix history (unxmaal/infovore)
+  url: https://github.com/unxmaal/infovore
+  license: generated
+  source: git:unxmaal/infovore
+  revision: 219940e42104c3e625a6642713e856e2bb2305fc
+  item: '#348 (PR #350)'
+  date: '2026-10-11'
+  transform: issue title and body from `gh issue view` at survey time, home paths as ~/, 'Prior art checked'
+    removed (spec), and the Fix/Shape/Design/Options/Remedy/Proposal/Build/What-to sections and labelled
+    paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
+    of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
+    and sandbox (evals/repo.py)
+  importer: evals.importers.history_infovore

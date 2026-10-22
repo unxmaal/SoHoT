@@ -1,0 +1,117 @@
+# infovore fix history (unxmaal/infovore), generated (https://github.com/unxmaal/infovore).
+# Imported by evals/importers from git:unxmaal/infovore@219940e42104c3e625a6642713e856e2bb2305fc; re-import, do not edit.
+id: infovore-352-spec
+modality: repo
+prompt: '# Topic merge: fold symbol, script, plural and generic-suffix variants of one tag onto one page
+  (refs #142)
+
+
+  Measured on tag run 1 (74,131 raw tags, 65,978 canonical keys after `canon.canonical`, 9,551 keys with
+  3+ claims). Four variant classes survive the current canonicalisation, which only casefolds, strips
+  vendor prefixes, spaces, hyphens and dots:
+
+
+  | class | keys folded | claim-tags moved | examples |
+
+  |---|---|---|---|
+
+  | symbols and NFKC (®, ™, *, quotes, `()`, `$`, superscripts) | 131 | 185 | `bootp()` to bootp, Indigo²
+  to Indigo2, $ORIGIN to Origin, *BSD to BSD |
+
+  | non-ASCII script around an existing key | 20 | 35 | O2机器 to O2, Fuel工作站 to Fuel, Numalink™ to NUMAlink
+  |
+
+  | plural with the singular present | up to 3,326 | up to 13,621 | SGIs, Indys, O2s, Octanes, PSUs, power
+  supplies, capacitors |
+
+  | generic noun suffix or "the" prefix | up to 1,220 | up to 2,401 | IRIX systems, O2 systems, Unix workstations,
+  Alpha machines |
+
+
+  The last two need guards or they merge wrongly: Windows to window, XFS to xf, VMS to VM, Challenge S
+  to Challenge, emacs to eMac, DOSBox to DOS, Xbox to X, Visual Workstation to visual. Guards that hold
+  on the measured list: plural detection on the most common raw spelling (final lowercase `s`, not after
+  a space, not `ss`), the suffix must be a separate word, and the target key must carry at least a quarter
+  of the variant''s claim count (so a 287-claim Windows never folds into a 6-claim window).
+
+
+  Plan:
+
+  - `canonical()` applies NFKC and strips ®™©*, quotes, `()` and a leading `$` (count-independent, so
+  it stays a pure function).
+
+  - `merge_map(spellings)` in canon.py returns variant key to target key for script stripping, plurals
+  and generic suffixes, with the guards above, computed once per build from the tag counts.
+
+  - `load_claims` maps each tag through canonical then merge_map; display names come from the merged spelling
+  counts.
+
+  - `wiki stats` reports how many keys and claim-tags the merge folded.
+
+
+  Out of scope: translation of fully non-Latin tags (14 keys, 18 claim-tags), semantic merges (RS/6k vs
+  RS/6000), and an authority file of canonical hardware names (#142).'
+params:
+  source_repo: https://github.com/unxmaal/infovore.git
+  base: 0bd7a59b15fc0b9784046b466f867f90a4d0abb7
+  fix: 62eabc57fb1d40e6d884e1e5a76cada7c463803d
+  variant: spec
+  context: oracle
+  context_files:
+  - README.md
+  - infovore/wiki/build.py
+  - infovore/wiki/canon.py
+  - infovore/wiki/command.py
+  pytest_args:
+  - --import-mode=importlib
+  fail_to_pass:
+  - tests/wiki/test_canon.py::test_alias_names_maps_every_alias_to_its_topic
+  - tests/wiki/test_canon.py::test_canonical[  -]
+  - tests/wiki/test_canon.py::test_canonical[$ORIGIN-origin]
+  - tests/wiki/test_canon.py::test_canonical[*BSD-bsd]
+  - tests/wiki/test_canon.py::test_canonical[-]
+  - tests/wiki/test_canon.py::test_canonical[6.5.1-6.5.1]
+  - tests/wiki/test_canon.py::test_canonical[IRIX 6.5-irix6.5]
+  - tests/wiki/test_canon.py::test_canonical[IRIX 65-irix65]
+  - tests/wiki/test_canon.py::test_canonical[Indigo-2-indigo2]
+  - tests/wiki/test_canon.py::test_canonical[Indigo\xb2-indigo2]
+  - tests/wiki/test_canon.py::test_canonical[Intel\xae SC450NX-intelsc450nx]
+  - tests/wiki/test_canon.py::test_canonical[Let's Encrypt-letsencrypt]
+  - tests/wiki/test_canon.py::test_canonical[Mr.-mr]
+  - tests/wiki/test_canon.py::test_canonical[N\u2013brick-nbrick]
+  - tests/wiki/test_canon.py::test_canonical[O2\u673a\u5668-o2\u673a\u5668]
+  - tests/wiki/test_canon.py::test_canonical[SGI Indigo 2-indigo2]
+  - tests/wiki/test_canon.py::test_canonical[Sun Microsystems Ultra 10-ultra10]
+  - tests/wiki/test_canon.py::test_canonical[Sun-sun]
+  - tests/wiki/test_canon.py::test_canonical[Ultra 10-ultra10]
+  - tests/wiki/test_canon.py::test_canonical[`fx` command-fxcommand]
+  - tests/wiki/test_canon.py::test_canonical[bootp()-bootp]
+  - tests/wiki/test_canon.py::test_canonical[indigo2-indigo2]
+  - tests/wiki/test_canon.py::test_canonical[v1.2-v1.2]
+  - tests/wiki/test_canon.py::test_display_names_breaks_ties_by_string_order
+  - tests/wiki/test_canon.py::test_display_names_empty
+  - tests/wiki/test_canon.py::test_display_names_fold_merged_spellings_onto_the_target
+  - tests/wiki/test_canon.py::test_display_names_picks_most_frequent_spelling
+  - tests/wiki/test_canon.py::test_display_names_skips_tags_that_canonicalise_to_nothing
+  - tests/wiki/test_canon.py::test_merge_map_folds_plurals_scripts_and_generic_nouns_onto_the_bigger_key
+  - tests/wiki/test_canon.py::test_merge_map_leaves_acronyms_models_and_small_targets_alone
+  - tests/wiki/test_canon.py::test_merge_map_resolves_chains_and_stops_on_cycles
+  - tests/wiki/test_canon.py::test_summarise_merge_counts_keys_and_claim_tags
+  - tests/wiki/test_tag_topics.py::test_cli_build_and_stats_take_a_tag_run
+  - tests/wiki/test_tag_topics.py::test_variant_tags_land_on_one_page_with_the_topics_toml_name
+  pass_to_pass:
+  - tests/wiki/test_tag_topics.py::test_without_a_tag_run_topics_toml_is_used
+attribution:
+  dataset: infovore fix history (unxmaal/infovore)
+  url: https://github.com/unxmaal/infovore
+  license: generated
+  source: git:unxmaal/infovore
+  revision: 219940e42104c3e625a6642713e856e2bb2305fc
+  item: '#352 (PR #354)'
+  date: '2026-10-11'
+  transform: issue title and body from `gh issue view` at survey time, home paths as ~/, 'Prior art checked'
+    removed (spec), and the Fix/Shape/Design/Options/Remedy/Proposal/Build/What-to sections and labelled
+    paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
+    of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
+    and sandbox (evals/repo.py)
+  importer: evals.importers.history_infovore

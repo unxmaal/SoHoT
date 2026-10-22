@@ -1,0 +1,80 @@
+# mcm-engine fix history (unxmaal/mcm-engine), generated (https://github.com/unxmaal/mcm-engine).
+# Imported by evals/importers from git:unxmaal/mcm-engine@a5b9741db49e7bfbdbfe321b65921dc08664da8e; re-import, do not edit.
+id: mcm-engine-145-spec
+modality: repo
+prompt: '# Save and restore session state automatically at compaction (PreCompact/PostCompact hooks calling
+  MCP tools)
+
+
+  ## Problem
+
+  Long sessions compact often: sohot 52 times in 39 days, mcm_engine 16, infovore 16 (counted from transcripts
+  on 2026-10-15). Each compaction''s summary drops detail. Twice this week, sohot reported numbers from
+  a summary that turned out to be wrong (KB #459 to #469, #461 to #467). Saving state before a compaction
+  depends on the agent remembering to call `session_handoff`, which is exactly the "good intentions fail"
+  case KB CONTEXT #3 describes.
+
+
+  ## Fix
+
+  Claude Code has `PreCompact` and `PostCompact` hook events, and hooks can call MCP tools directly with
+  the `mcp_tool` handler type (`server`, `tool`, `input` with `${...}` substitution).
+
+  - `PreCompact`: call `save_snapshot`/`session_handoff` with the session id and the compaction trigger,
+  so the KB has the state before the summary replaces it.
+
+  - `PostCompact` (and `SessionStart` with source=compact): call `get_resume_context` and return it as
+  additionalContext, so the resumed agent starts from the KB record rather than only the summary.
+
+  - Ship it from `mcm-engine hook install` (or a plugin) so every project gets it.
+
+
+  Test: a forced `/compact` writes a snapshot row and the next turn''s context has the resume block. With
+  the server unreachable, it fails open.'
+params:
+  source_repo: https://github.com/unxmaal/mcm-engine.git
+  base: bc061e331199ad711feda432fab458274a04ff35
+  fix: aeda791754fcde22504f4eb0872fa6294a401b82
+  variant: spec
+  context: oracle
+  context_files:
+  - README.md
+  - src/mcm_engine/cli.py
+  - src/mcm_engine/hooks/session_start.py
+  new_files:
+  - src/mcm_engine/hooks/pre_compact.py
+  pytest_args:
+  - -o
+  - pythonpath=src
+  extras:
+  - dev
+  fail_to_pass:
+  - tests/test_hook_pre_compact.py::test_auto_trigger_has_no_open_questions
+  - tests/test_hook_pre_compact.py::test_hook_does_not_read_a_shadow_store_on_the_remote_path
+  - tests/test_hook_pre_compact.py::test_main_fail_open_on_bad_stdin
+  - tests/test_hook_pre_compact.py::test_main_fail_open_when_write_raises
+  - tests/test_hook_pre_compact.py::test_main_routes_to_local_when_no_endpoint
+  - tests/test_hook_pre_compact.py::test_main_routes_to_remote_when_endpoint_configured
+  - tests/test_hook_pre_compact.py::test_manual_trigger_keeps_custom_instructions
+  - tests/test_hook_pre_compact.py::test_missing_trigger_defaults_to_auto
+  - tests/test_session_start_hook.py::test_compaction_source_gets_a_recovery_directive
+  pass_to_pass:
+  - tests/test_session_start_hook.py::test_fail_open_on_bad_stdin
+  - tests/test_session_start_hook.py::test_fail_open_when_stdin_read_raises
+  - tests/test_session_start_hook.py::test_hook_never_opens_storage
+  - tests/test_session_start_hook.py::test_injects_mcp_directive
+  - tests/test_session_start_hook.py::test_non_compaction_source_keeps_the_startup_directive
+attribution:
+  dataset: mcm-engine fix history (unxmaal/mcm-engine)
+  url: https://github.com/unxmaal/mcm-engine
+  license: generated
+  source: git:unxmaal/mcm-engine
+  revision: a5b9741db49e7bfbdbfe321b65921dc08664da8e
+  item: '#145 (PR #150)'
+  date: '2026-10-15'
+  transform: issue title and body from `gh issue view` at survey time, home paths as ~/, 'Prior art checked'
+    removed (spec), and the Fix/Shape/Design/Options/Remedy/Proposal/Build/What-to sections and labelled
+    paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
+    of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
+    and sandbox (evals/repo.py)
+  importer: evals.importers.history_mcm_engine

@@ -1,0 +1,138 @@
+# mcm-engine fix history (unxmaal/mcm-engine), generated (https://github.com/unxmaal/mcm-engine).
+# Imported by evals/importers from git:unxmaal/mcm-engine@a5b9741db49e7bfbdbfe321b65921dc08664da8e; re-import, do not edit.
+id: mcm-engine-63-symptom
+modality: repo
+prompt: '# In-session style nudge: positive voice exemplar, not a longer denylist
+
+
+  ## Problem
+
+
+  Stylistic tics (emojis, em-dashes, "it''s not X, it''s Y", rule-of-three cadence, "great question",
+  empty intensifiers) leak back into responses over the course of a session, and get worse as context
+  fills. Two mechanisms, and they need different fixes:
+
+
+  1. **Instruction decay.** The style rule lives in CLAUDE.md / MEMORY.md at the top of the window. As
+  the session grows, generation happens further from that instruction and soft stylistic constraints slip
+  first. Well-established behavior.
+
+  2. **Precedent accumulation.** The model conditions on the whole window. As tool output, git logs, PR
+  bodies, and the mandated `Generated with Claude Code` trailer pile up, the local prior for "an emoji/tic
+  is normal here" drifts up. Long sessions correlate with high context, but the causal driver is probably
+  *what* accumulated, not raw token count.
+
+
+  A periodic MCP nudge addresses (1). It does little for (2).
+
+
+  ## Why the current rule reads clinical
+
+
+  The existing guidance is a denylist: no em-dashes, no emojis, no LinkedIn-speak, no "it''s not X, it''s
+  Y". Every clause is a prohibition. The safest way to satisfy an all-prohibition rule is to strip out
+  all personality, because personality is where the risk lives. Flat, dry prose violates nothing. So the
+  denylist doesn''t just permit clinical, it pulls toward it.
+
+
+  Second problem: naming a tic primes the tic. A reminder that says "don''t use emojis" puts emojis in
+  the context. Negative instructions are weak in general and self-defeating here in particular.
+
+
+  ## Example before/after pairs
+
+
+  **A. Opener + rule-of-three + outro**
+
+
+  > Before: Great question! Let''s dive into how the dispatcher works. At its core, the ingester registry
+  is powerful, flexible, and easy to extend. By walking each ingester in order, we can seamlessly match
+  the right one. I hope this helps clarify things!
+
+
+  > After: The registry walks each ingester in registration order and takes the first that matches. That
+  order is the precedence: specific ingesters first, text-dir last. To add one, implement `matches` and
+  `stream` and call `register`.
+
+
+  **B. "It''s not X, it''s Y" + em-dash + empty intensifiers**
+
+
+  > Before: This isn''t just a bug fix, it''s a fundamental rethink of how we handle net-new detection.
+  The new approach is remarkably robust and leverages content hashing to deliver a truly seamless deduplication
+  experience.
+
+
+  > After: The old title-only dedup missed the same rule pasted under a different title. Now we hash the
+  content, so a duplicate body is caught no matter what it''s called. Same idea, one more check at the
+  write path.
+
+
+  **C. Hedging + restating the question + bullets-on-everything**
+
+
+  > Before: You asked whether the ingest is idempotent. That''s a great thing to verify. It''s worth noting
+  that, generally speaking, the system is designed to be idempotent on topic and kind, safe to re-run,
+  and resilient to duplicates. So in most cases, you should be fine re-running it.
+
+
+  > After: Yes. It dedups on (topic, kind) at the write path, so re-running updates in place instead of
+  inserting again. Run it twice and the second pass is a no-op.
+
+
+  ## Open questions to ruminate on
+
+
+  - Where does the exemplar live so it re-surfaces without burning tokens every turn? Pinned item, folded
+  into the existing store-reminder nudge, or a dedicated low-frequency channel?
+
+  - Nudge cadence. Frequent enough to fight decay, sparse enough to avoid self-conscious prose. What interval?
+
+  - Does the soft exemplar survive compaction, or does it need to be re-anchored the way MEMORY.md is?
+
+  - Is the hard filter worth it, or does a counter/metric (count tells per response, surface a number)
+  get most of the value without the risk of a filter mangling legitimate output?
+
+  - Whose calibration anchors "warm but not clinical"? The exemplar set is the calibration, so it needs
+  curating, not just writing once.
+
+
+  Not for immediate build. Filed for rumination.'
+params:
+  source_repo: https://github.com/unxmaal/mcm-engine.git
+  base: d8c98abf2ed8b6f7f9baac4062bcb91b358e31c0
+  fix: 24cc364fb117644fb5b75941fb2f53eaef2173f5
+  variant: symptom
+  context: oracle
+  context_files:
+  - CHANGELOG.md
+  - src/mcm_engine/hooks/session_start.py
+  new_files:
+  - src/mcm_engine/style.py
+  pytest_args:
+  - -o
+  - pythonpath=src
+  extras:
+  - dev
+  fail_to_pass:
+  - tests/test_style.py::test_clean_prose_scores_zero
+  - tests/test_style.py::test_counts_em_dashes
+  - tests/test_style.py::test_counts_emoji
+  - tests/test_style.py::test_empty_and_none_safe
+  - tests/test_style.py::test_exemplar_is_a_positive_target_not_a_denylist
+  - tests/test_style.py::test_hyphenated_words_are_not_em_dashes
+  pass_to_pass: []
+attribution:
+  dataset: mcm-engine fix history (unxmaal/mcm-engine)
+  url: https://github.com/unxmaal/mcm-engine
+  license: generated
+  source: git:unxmaal/mcm-engine
+  revision: a5b9741db49e7bfbdbfe321b65921dc08664da8e
+  item: '#63 (PR #127)'
+  date: '2026-10-13'
+  transform: issue title and body from `gh issue view` at survey time, home paths as ~/, 'Prior art checked'
+    removed (spec), and the Fix/Shape/Design/Options/Remedy/Proposal/Build/What-to sections and labelled
+    paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
+    of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
+    and sandbox (evals/repo.py)
+  importer: evals.importers.history_mcm_engine

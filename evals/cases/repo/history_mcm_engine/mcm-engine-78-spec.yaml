@@ -1,0 +1,135 @@
+# mcm-engine fix history (unxmaal/mcm-engine), generated (https://github.com/unxmaal/mcm-engine).
+# Imported by evals/importers from git:unxmaal/mcm-engine@a5b9741db49e7bfbdbfe321b65921dc08664da8e; re-import, do not edit.
+id: mcm-engine-78-spec
+modality: repo
+prompt: '# export --remote: write the KB to .md files over MCP (no pod exec, no direct DB)
+
+
+  ## Problem
+
+
+  `mcm-engine export-mirror --from <DSN> --out <DIR>` renders active rules to `rules/<category>/<slug>.md`
+  and commits them — but `--from` is a **DSN**: it connects directly to the store. For the real deployment
+  (KB in a remote pod, client on a laptop) that means either pointing at the remote Postgres directly
+  (breaks "the interface is the MCP call, never touch the remote DB directly") or `kubectl exec` / a Job
+  inside the pod and copying the tree down. Running export from inside the pod is a non-starter operationally.
+
+
+  There is no MCP-native export today. This is the **export twin of `ingest --remote`** (#72/#73): the
+  same co-location gap, the other direction (KB → files).
+
+
+  ## Design: the symmetric split
+
+
+  Data flows KB → client (bulk read of full rule bodies). Rendering `.md` is client-side; reading the
+  corpus is a server MCP call.
+
+
+  - **Server (new MCP tool `export_rules`):** returns a **page** of active rules with full content — `[{id,
+  title, keywords, category, content, status}, ...]` — via `offset`/`limit`, bounded by a per-call cap
+  (like `MCM_SIFT_MAX_SPANS` in #76). Skips archived/superseded, mirroring `export_mirror`. Rules only
+  (matches export-mirror''s scope).
+
+  - **Client (`mcm-engine export-mirror --remote --out DIR`):** pages through `export_rules` over MCP,
+  then writes the tree client-side reusing the existing mirror rendering (`_generate_rule_content`, `_slugify`,
+  `rules/<category>/<slug>.md`, slug-collision suffixes). Git commit optional (`--no-commit`), since a
+  fresh client env may lack a git identity — the operational gotcha in the direct path.
+
+
+  ## Scope (one PR, TDD)
+
+
+  1. **Factor the renderer.** Extract `mirror.render_rules_to_tree(rows, out_dir)` (write `rules/<category>/<slug>.md`
+  + collision handling) so both the direct `export_mirror` and the remote client share one code path.
+  `export_mirror` keeps its git-commit behavior on top.
+
+  2. **`export_rules` MCP tool** (in `register_rules_tools`): `export_rules(offset=0, limit=100)` → structured
+  page of active rules with content; caps `limit` at `MCM_EXPORT_PAGE_MAX` (default e.g. 200); documents
+  that total transfer scales O(rules) so clients must page. Read-only.
+
+  3. **`export-mirror --remote --out DIR`** client: resolve endpoint via `_mcp_http_endpoint` (auth from
+  #74), page with the #75 resilience helpers (`_classify_remote_error`, retry-with-backoff on transient,
+  per-page timeout), render each page to the tree, then optionally `git add -A` + commit. `--remote` is
+  incompatible with `--from`.
+
+
+  ## Reuse (already in the tree from remote-ingest)
+
+
+  - **Auth** (#74): `_mcp_http_endpoint` → headers from `.mcp.json` / `MCM_MCP_TOKEN`, threaded into `mcp_http_call_tool`.
+
+  - **Resilience** (#75): `_classify_remote_error`, retry/backoff, per-call timeout via `mcp_http_call_tool(timeout=…)`.
+  Export is read-only + paged, so resume is optional (a re-run is cheap and idempotent — it rewrites the
+  tree).
+
+  - **Per-call cap pattern** (#76): a page cap so one call can''t outrun the transport.
+
+
+  ## Non-goals (this issue)
+
+
+  - Server-side git commit (the client commits, optionally).
+
+  - Delta/incremental export — full dump for v1.
+
+  - Exporting knowledge / negatives / errors — rules only, matching `export-mirror`.
+
+
+  ## Why it matters
+
+
+  Symmetric with `ingest --remote`: files stay local, corpus logic stays in the pod, everything crosses
+  as an MCP call. Makes "dump the KB to a diffable `.md` tree" a first-class laptop operation against
+  a hosted, auth-required KB — no pod exec, no direct Postgres.
+
+
+  ## Related
+
+  - #72 / #73 — `ingest --remote` (the ingest half of this pattern)
+
+  - #74 — MCP auth headers (reused)
+
+  - #75 — client batching/retry/resume (reused)
+
+  - #76 — per-call cap pattern (reused)'
+params:
+  source_repo: https://github.com/unxmaal/mcm-engine.git
+  base: df8a584c6f499acf4051edbee9a1d54b31ed66ab
+  fix: 5dc9f4caa9721680778e190a2dd588f4ce0da5e7
+  variant: spec
+  context: oracle
+  context_files:
+  - CHANGELOG.md
+  - src/mcm_engine/cli.py
+  - src/mcm_engine/mirror.py
+  - src/mcm_engine/tools/rules.py
+  pytest_args:
+  - -o
+  - pythonpath=src
+  extras:
+  - dev
+  fail_to_pass:
+  - tests/test_export_remote.py::test_export_remote_fetch_auth_error_aborts
+  - tests/test_export_remote.py::test_export_remote_fetch_pages_until_done
+  - tests/test_export_remote.py::test_export_rules_clamps_limit_to_cap
+  - tests/test_export_remote.py::test_export_rules_excludes_superseded
+  - tests/test_export_remote.py::test_export_rules_output_is_pure_json_no_nudge
+  - tests/test_export_remote.py::test_export_rules_pages_and_flags_has_more
+  - tests/test_export_remote.py::test_export_rules_returns_active_with_content
+  - tests/test_export_remote.py::test_render_rules_to_tree_and_commit
+  pass_to_pass: []
+attribution:
+  dataset: mcm-engine fix history (unxmaal/mcm-engine)
+  url: https://github.com/unxmaal/mcm-engine
+  license: generated
+  source: git:unxmaal/mcm-engine
+  revision: a5b9741db49e7bfbdbfe321b65921dc08664da8e
+  item: '#78 (PR #129)'
+  date: '2026-10-13'
+  transform: issue title and body from `gh issue view` at survey time, home paths as ~/, 'Prior art checked'
+    removed (spec), and the Fix/Shape/Design/Options/Remedy/Proposal/Build/What-to sections and labelled
+    paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
+    of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
+    and sandbox (evals/repo.py)
+  importer: evals.importers.history_mcm_engine
