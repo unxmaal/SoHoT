@@ -1,0 +1,305 @@
+# Claude Code session requests, redacted, generated (https://github.com/unxmaal/SoHoT/issues/1095).
+# Imported by evals/importers from claude-code:transcripts@82ea6dc78eb1889c0e2f8b40e602ffc6fb9a3da4; re-import, do not edit.
+id: sohot-pr883-request
+modality: repo
+prompt: "Below is a Claude Code session, cut just before the agent's first edit to the code. Make the\
+  \ change the session is heading toward.\n\n## user\nYeah search around for mentions of Ornith. This\
+  \ is also a test of the discovery sweep that might tell us if we’re missing something\n\n[... 13 earlier\
+  \ entries not shown ...]\n\n## tool mcp__mcm-engine__search\n{\"query\": \"stderr verdict detail\"}\n\
+  [16837 bytes of output not shown]\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-879 && sed -n\
+  \ 1,60p tests/test_gauntlet_scanners.py\n\"\"\"Repo-wide scanners for the tier-1 gauntlet classes, each\
+  \ proven to fire and to stay quiet (#492 C).\"\"\"\n\nfrom pathlib import Path\n\nfrom tests.gauntlet\
+  \ import scanners\n\nREPO = Path(__file__).resolve().parent.parent\n\n\ndef test_a_mutable_default_argument_is_found():\n\
+  \    src = \"def add(x, acc=[]):\\n    return acc\\n\\ndef put(k, *, into=dict()):\\n    return into\\\
+  n\"\n    got = scanners.mutable_defaults(src, \"m.py\")\n    assert [f.split(\":\")[1] for f in got]\
+  \ == [\"1\", \"4\"]\n\n\ndef test_a_swallowed_error_is_found():\n    src = \"try:\\n    go()\\nexcept\
+  \ Exception:\\n    pass\\ntry:\\n    go()\\nexcept:\\n    log()\\n\"\n    assert [f.split(\":\")[1]\
+  \ for f in scanners.swallowed_python(src, \"m.py\")] == [\"3\", \"7\"]\n    sh = \"#!/usr/bin/env bash\\\
+  nrm -rf \\\"$d\\\" || true\\nkill \\\"$p\\\" || :\\n\"\n    assert [f.split(\":\")[1] for f in scanners.swallowed_shell(sh,\
+  \ \"s.sh\")] == [\"2\", \"3\"]\n\n\ndef test_an_unchecked_exit_status_is_found():\n    sh = \"#!/usr/bin/env\
+  \ bash\\nset -u\\nproduce | consume\\ncd \\\"$dir\\\"\\nrm -rf ./out\\n\"\n    got = scanners.unchecked_status_shell(sh,\
+  \ \"s.sh\")\n    assert any(\"pipefail\" in f for f in got)\n    assert any(\":4:\" in f and \"cd\"\
+  \ in f for f in got)\n\n\ndef test_a_fixed_resource_in_a_test_is_found():\n    src = (\"import socket\\\
+  nfrom http.server import HTTPServer\\n\"\n           \"s = socket.socket()\\ns.bind((\\\"127.0.0.1\\\
+  \", 49221))\\n\"\n           \"srv = HTTPServer((\\\"127.0.0.1\\\", 8080), H)\\n\"\n           \"Path(\\\
+  \"/tmp/lh-test.lock\\\").write_text(\\\"x\\\", encoding=\\\"utf-8\\\")\\n\"\n          \n[... 1256 more\
+  \ bytes]\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-879 && grep -n \"stderr\" harness/screen.py\
+  \ | head -40; grep -rln \"stderr\" harness/*.py | head -30\n595:    \"\"\"(the incumbent's mean stored\
+  \ pass rate on these cases, whether any row measured it); unmeasured is power.UNSEEN, said on stderr.\
+  \ #691.\"\"\"\n606:        print(f\"screen: could not read the {lane} incumbent's rows: {exc}\", file=sys.stderr)\n\
+  613:              f\"the screen count assumes {power.UNSEEN:g}\", file=sys.stderr)\n638:           \
+  \ key: str = \"\", stderr_class: str = \"\",\n645:    `stderr_class` is the run's own stderr, classed\
+  \ once by the caller, and\n648:    if summary is None and stderr_class:\n649:        return decide_class(stderr_class,\
+  \ candidate=candidate, facts=facts)\nharness/audio_server.py\nharness/audio.py\nharness/cli.py\nharness/chaos.py\n\
+  harness/context.py\nharness/delegations.py\nharness/deploy_guard.py\nharness/ds4.py\nharness/env.py\n\
+  harness/gateway_key.py\nharness/gateway.py\nharness/github.py\nharness/gateway_switch.py\nharness/hf_task.py\n\
+  harness/inspect.py\nharness/image_diffusers.py\nharness/lanprobe.py\nharness/morning.py\nharness/mcp_server.py\n\
+  harness/nodes.py\nharness/models.py\nharness/nimble_score.py\nharness/proc.py\nharness/needle.py\nharness/paths.py\n\
+  harness/serving.py\nharness/reasons.py\nharness/publish.py\nharness/screen.py\nharness/watchdog.py\n\
+  \n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-879 && grep -rn \"||\" --include='*.py' harness\
+  \ | grep -v \"^\\S*:\\s*#\" | grep \"\\\"\\s*||\\|' || '\\|\\\" || \\\"\\|  || \" | head; grep -rn \"\
+  stderr_class\\|\\.stderr\\b\\|proc.stderr\\|r.stderr\\|tail(\" harness/loop.py harness/commands/*.py\
+  \ harness/screen.py 2>/dev/null | head -30\nharness/reasons.py:278:        head = low.split(\"||\",\
+  \ 1)[0]\nharness/commands/claude_news.py:29:        print(f\"no Claude Code changes since {d['since']\
+  \ or 'the newest version'}\", file=sys.stderr)\nharness/commands/common.py:27:        print(msg, file=sys.stderr)\n\
+  harness/commands/common.py:52:            print(method_note(method), file=sys.stderr)\nharness/commands/common.py:57:\
+  \    \"\"\"One line on what a served method cost, for stderr.\"\"\"\nharness/commands/common.py:65:\
+  \    print(*args, file=sys.stderr if _JSON else sys.stdout, **kw)\nharness/commands/gateway.py:15: \
+  \             \"client that has the old one\", file=sys.stderr)\nharness/commands/lanes.py:72:     \
+  \   print(message, file=sys.stderr)\nharness/commands/lanes.py:88:        return err(f\"{engine.name}\
+  \ exited {r.returncode}\\n{r.stderr.strip()}\")\nharness/commands/lanes.py:98:            print(f\"\
+  warning: {w}\", file=sys.stderr)\nharness/commands/lanes.py:150:              file=sys.stderr)\nharness/commands/lanes.py:175:\
+  \        print(f\"warning: {w}\", file=sys.stderr)\nharness/commands/lanes.py:234:        print(f\"\
+  warning: {w}\", file=sys.stderr)\nharness/commands/lanes.py:268:            print(f\"warning: does not\
+  \ parse, {broken}\", file=sys.stderr)\nharness/commands/lanes.py:272:                  file=sys.stderr)\n\
+  harness/commands/lanes.py:408:            print(f\"warning: {exc}\", file=sys.stderr)\nharness/commands/lanes.py:554:\
+  \        print(f\"listening for {a.seconds}s...\", file=sys.stderr)\nharness/commands/lanes.py:561:\
+  \            return\n[... 1334 more bytes]\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-879\
+  \ && sed -n 140,175p harness/commands/screen.py; echo ----; sed -n 225,300p harness/commands/screen.py;\
+  \ echo; sed -n 265,290p harness/reasons.py\nfrom harness import downloads, fetching, methods\n    name\
+  \ = row[\"name\"]\n    target = methods.weights_of(name) if methods.is_method(name) else name\n    if\
+  \ not target:\n        return \"\"\n    for repo in [target] + fetching.requires(target, conn):\n  \
+  \      path = downloads.path_of(repo, conn)\n        if path is None:\n            continue\n      \
+  \  kind = downloads.GGUF if path.name.lower().endswith(\".gguf\") else downloads.HUB\n        gap =\
+  \ downloads.offline_gap(kind, path)\n        if gap:\n            downloads.stand_down(conn, repo)\n\
+  \            return gap\n    return \"\"\n\n\ndef verdict_of_run(returncode: int, stderr: str, summary,\
+  \ candidate: str,\n                   key: str = \"\", facts: dict | None = None):\n    \"\"\"One finished\
+  \ screen process's verdict; stderr is classed only without a receipt.\"\"\"\n    from harness import\
+  \ screen\n    stderr_class = \"\" if summary is not None else reasons.classify(\n        (stderr or\
+  \ \"\")[-2000:], reasons.STDERR, candidate)\n    return screen.outcome(returncode, summary, candidate=candidate,\
+  \ key=key,\n                          stderr_class=stderr_class, facts=facts)\n\n\ndef _report_screen(a)\
+  \ -> int:\n    \"\"\"Run the cheapest real thing, and record whether it ran at all. #53.\n\n    SAYS\
+  \ WHAT IT WOULD DO AND STOPS, unless told otherwise. `--run` is the same\n    convention `lh fetch`\
+  \ uses, and for the same reason: this is the first tier\n    that spends real time and real memory,\
+  \ and one that starts doing so because\n    something ranked well is how a laptop ends up\n[... 4244\
+  \ more bytes]\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-879 && grep -n \"def decide_or_skip\\\
+  |def decide(\" -A12 harness/memory_store/*.py | head -50; grep -rn \"|| \\|\\\"||\\\"\\|'||'\" --include='*.py'\
+  \ harness tests | grep -v \"^\\S*:\\s*#\" | grep -v \" or \" | head -20\nharness/memory_store/transitions.py:163:def\
+  \ decide_or_skip(conn, name: str, outcome: str, **kw) -> int | None:\nharness/memory_store/transitions.py-164-\
+  \    \"\"\"decide() for a tier loop: a refused move says so and returns None.\"\"\"\nharness/memory_store/transitions.py-165-\
+  \    try:\nharness/memory_store/transitions.py-166-        return ms.decide(conn, name, outcome, **kw)\n\
+  harness/memory_store/transitions.py-167-    except IllegalTransition as exc:\nharness/memory_store/transitions.py-168-\
+  \        print(f\"  skipped {exc}\", flush=True)\nharness/memory_store/transitions.py-169-        return\
+  \ None\nharness/memory_store/transitions.py-170-\nharness/memory_store/transitions.py-171-\nharness/memory_store/transitions.py-172-def\
+  \ state_audit(conn) -> dict:\nharness/memory_store/transitions.py-173-    \"\"\"Proposals whose history\
+  \ the transition table would fold differently,\nharness/memory_store/transitions.py-174-    and those\
+  \ once terminal and now open, for a person to decide. #409.\"\"\"\nharness/memory_store/transitions.py-175-\
+  \    events: dict = {}\n--\nharness/memory_store/transitions.py:198:def decide(conn: sqlite3.Connection,\
+  \ name: str, outcome: str, *, tier: str = \"\",\nharness/memory_store/transitions.py-199-          \
+  \ detail: str = \"\", run_path: str = \"\",\nharness/memory_store/transitions.py-200-           score:\
+  \ float | None = None, rubric: str = \"\", judge: str = \"\",\nharness/memory_store/transitions.py-201-\
+  \           at: float | None = None, until: str = \"\",\nharness/memory_store/transitions.py-202- \n\
+  [... 2833 more bytes]\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-879 && sed -n 630,700p harness/screen.py;\
+  \ grep -n \"def decide_class\" -A30 harness/screen.py | head -45\n\"\"\"The screen limit a zero-pass\
+  \ waits on when its receipt names no screen_until (written before it did). #691.\"\"\"\n    from harness\
+  \ import knobs\n    name = \"screen_size\" if candidate.partition(\":\")[0] in MEDIA_ENGINES else \"\
+  screen_cases\"\n    value = knobs.limits().get(name)\n    return f\"limit:{name}>{value:g}\" if value\
+  \ is not None else \"\"\n\n\ndef outcome(returncode: int, summary: dict | None, candidate: str = \"\"\
+  ,\n            key: str = \"\", stderr_class: str = \"\",\n            facts: dict | None = None) ->\
+  \ Verdict:\n    \"\"\"A store verdict from one screen run, decided from failure classes.\n\n    `broken`\
+  \ is TERMINAL and `screened` is not. A request the harness could\n    not deliver is `queued`; a limit\
+  \ the harness chose, a runtime gap and a\n    GPU fault are `declined` with an `until` that reopens\
+  \ them.\n    `stderr_class` is the run's own stderr, classed once by the caller, and\n    only counts\
+  \ when the run wrote no receipt.\n    \"\"\"\n    if summary is None and stderr_class:\n        return\
+  \ decide_class(stderr_class, candidate=candidate, facts=facts)\n    mismatch = wrong_run(summary, candidate,\
+  \ key) if candidate else \"\"\n    if mismatch:\n        return Verdict(\"queued\", f\"not screened:\
+  \ {mismatch}\", reasons.HARNESS)\n    if returncode != 0:\n        return Verdict(\"broken\", f\"the\
+  \ screen exited {returncode}\",\n                       reasons.CANDIDATE, failure_class=reasons.CRASHED)\n\
+  \    if not summary:\n        return Verdict(\"broken\", \"the screen produced no rows\",\n        \
+  \              \n[... 3195 more bytes]\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-879 &&\
+  \ grep -rln \"_report_screen\\|verdict_of_run\" tests | head; grep -rn \"|| \\S\" tests/test_screen*.py\
+  \ | head\ntests/test_screen_server_death.py\ntests/test_liveness_705.py\ntests/test_harness_screen.py\n\
+  tests/test_harness_screen_spec.py\ntests/test_store_state.py\ntests/test_router_unload.py\ntests/test_harness_cli_queue_scope.py\n\
+  \n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-879 && grep -n \"_report_screen\\|def test\\|detail\\\
+  |stderr\" tests/test_harness_screen.py | head -60\n39 matches in 1 files:\n\n10:def _stderr(text):\n\
+  11:\"\"\"The run's stderr, classed once as cli._report_screen does. #408.\"\"\"\n23:def test_a_candidate_whose_weights_are_absent_is_waiting_not_failed():\n\
+  36:def test_a_lane_with_no_runner_is_named_rather_than_dropped(monkeypatch):\n51:def test_a_candidate_with_no_lane_says_so_in_its_own_terms():\n\
+  57:def test_a_ready_candidate_gets_the_spec_its_lane_actually_takes():\n68:def test_the_command_is_one_case_one_repeat_and_no_metrics():\n\
+  80:def test_a_screen_that_did_not_run_is_broken_and_terminal():\n86:def test_a_screen_that_ran_and_passed_nothing_is_declined_on_the_screen_limit():\n\
+  92:def test_a_screen_that_passed_is_screened_and_not_terminal():\n98:def test_screened_is_a_verdict_the_store_recognises(tmp_path):\n\
+  103:ms.decide(conn, \"org/m\", \"screened\", tier=ms.SCREEN, detail=\"1 passed\")\n111:def test_a_model_whose_config_names_an_absent_repo_is_not_ready():\n\
+  121:def test_a_model_missing_only_itself_reads_as_a_plain_fetch():\n129:def test_a_model_with_everything_present_is_ready():\n\
+  135:def test_a_lane_with_no_runner_is_not_asked_about_weights():\n151:def test_a_lora_is_refused_before_anything_downloads():\n\
+  159:def test_a_comfyui_node_pack_is_refused():\n163:def test_a_real_model_is_still_a_candidate():\n\
+  172:def test_a_candidate_with_no_description_is_not_assumed_to_be_an_adapter():\n179:def test_an_enumerated_exception_survives():\n\
+  185:def test_the_state_says_why_rather_than_no_runner():\n195:def test_the_plan_does_not_parse_the_description():\n\
+  206:def\n[... 180 more bytes]\n\n## tool mcp__mcm-engine__search\n{\"query\": \"UserWarning\"}\n[198\
+  \ bytes of output not shown]\n\n## tool mcp__mcm-engine__report_error\n{\"error_text\": \"sohot #879:\
+  \ metric 'attempts' declares no direction in METRIC_DIRECTION; assuming lower is better (evals/core.py\
+  \ direction_of). Warning text reached verdict detail via\n[... 239 more bytes]\n[7814 bytes of output\
+  \ not shown]\n\n## tool Bash\n$ mkdir -p <PATH_TMP> && cat > <PATH_TMP> <<'EOF'\nimport ast, sys\nfrom\
+  \ pathlib import Path\nrepo = Path(sys.argv[1])\ndef metricish(node):\n    n = node.id if isinstance(node,\
+  \ ast.Name) else node.attr if isinstance(node, ast.Attribute) else \"\"\n    return n.endswith(\"metrics\"\
+  )\ndef keys(d):\n    return [k.value for k in d.keys if isinstance(k, ast.Constant) and isinstance(k.value,\
+  \ str)]\nfound = {}\nfor p in sorted([*repo.glob(\"evals/**/*.py\"), *repo.glob(\"harness/checks/**/*.py\"\
+  )]):\n    tree = ast.parse(p.read_text())\n    for fn in ast.walk(tree):\n        if isinstance(fn,\
+  \ (ast.FunctionDef,)) and (\"metrics\" in fn.name or fn.name == \"rollup\"):\n            local = set()\n\
+  \            for n in ast.walk(fn):\n                if isinstance(n, (ast.Assign, ast.AnnAssign)) and\
+  \ isinstance(n.value, ast.Dict):\n                    for t in (n.targets if isinstance(n, ast.Assign)\
+  \ else [n.target]):\n                        if isinstance(t, ast.Name): local.add(t.id)\n         \
+  \   for n in ast.walk(fn):\n                if isinstance(n, ast.Return) and isinstance(n.value, ast.Dict):\n\
+  \                    for k in keys(n.value): found.setdefault(k, f\"{p.relative_to(repo)}:{n.lineno}\"\
+  )\n                if isinstance(n, (ast.Assign, ast.AnnAssign)) and isinstance(n.value, ast.Dict):\n\
+  \                    ts = n.targets if isinstance(n,\n[... 2360 more bytes]\nUsing CPython 3.13.16 interpreter\
+  \ at: /opt/homebrew/opt/python@3.13/bin/python3.13\nCreating virtual environment at: .venv\n   Building\
+  \ localharness @ file://<PATH_HOME>/projects/github/unxmaal/sohot-879\n      Built localharness @ file://<PATH_HOME>/projects/github/unxmaal/sohot-879\n\
+  Installed 67 packages in 197ms\nOK   adherence harness/checks/adherence.py:170\nOK   agent_model_s evals/runners/agent.py:95\n\
+  OK   agent_no_tool_steps evals/runners/agent.py:95\nOK   agent_steps evals/runners/agent.py:95\nOK \
+  \  agent_tool_calls evals/runners/agent.py:95\nOK   agent_tool_s evals/runners/agent.py:95\nOK   agent_ttft_sum_s\
+  \ evals/runners/agent.py:95\nOK   agent_valid_call_rate evals/runners/agent.py:95\nOK   agent_valid_calls\
+  \ evals/runners/agent.py:95\nOK   agent_wall_s evals/runners/agent.py:95\nMISS attempts evals/runners/repair.py:95\n\
+  OK   calibrated harness/checks/decide.py:285\nOK   cer evals/core.py:330\nMISS cer_chars evals/core.py:330\n\
+  MISS cer_errors evals/core.py:330\nOK   claims_emitted harness/checks/claims.py:285\nOK   claims_empty_cases\
+  \ harness/checks/claims.py:280\nOK   claims_empty_kept harness/checks/claims.py:280\nOK   claims_empty_rate\
+  \ harness/checks/claims.py:280\nOK   claims_judge_calibrated harness/checks/claims.py:285\nOK   claims_matcher_version\
+  \ harness/checks/claims.py:285\nOK   claims_schema_valid harness/checks/claims.py:285\nOK   code_pass\
+  \ harness/checks/code.py:80\nOK   completion_tokens evals/runners/claude_code.py:168\nOK   decide_accuracy\
+  \ harness/checks/decide.py:285\nOK  \n[... 1458 more bytes]\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-879\
+  \ && grep -n \"RATIO_METRICS\\|_COMPONENTS\\|NOT_METRICS\\|isinstance(v, (int, float))\" evals/core.py\
+  \ | head -20; sed -n 1456,1500p evals/core.py\n1427:RATIO_METRICS = {\"wer\": (\"wer_errors\", \"wer_words\"\
+  ),\n1442:_COMPANIONS = {name for pair in RATIO_METRICS.values() for name in pair} | {claims_check.STRATUM}\n\
+  1465:        numerator, denominator = RATIO_METRICS.get(name, (None, None))\n    A candidate that reported\
+  \ nothing gets an empty dict rather than zeros:\n    zero is the best possible error rate and would\
+  \ rank an unmeasured candidate\n    first.\n    \"\"\"\n    gathered = _gather_metrics(rows)\n    out\
+  \ = {}\n    for name, vals in gathered.items():\n        if name in _COMPANIONS:\n            continue\n\
+  \        numerator, denominator = RATIO_METRICS.get(name, (None, None))\n        if numerator in gathered\
+  \ and denominator in gathered:\n            total = sum(gathered[denominator])\n            out[name]\
+  \ = round(sum(gathered[numerator]) / total, 4) if total else 0.0\n        else:\n            out[name]\
+  \ = round(statistics.fmean(vals), 4)\n    return out\n\n\ndef _worst_metrics(rows: list[Result]) ->\
+  \ dict:\n    \"\"\"The worst value of each metric, which way round depending on direction.\"\"\"\n \
+  \   return {name: round(max(vals) if direction_of(name) == \"lower\" else min(vals), 4)\n          \
+  \  for name, vals in _gather_metrics(rows).items()\n            if name not in _COMPANIONS}\n\n## tool\
+  \ Bash\n$ cd ~/projects/github/unxmaal/sohot-879 && sed -n 1420,1445p evals/core.py; grep -n \"def _gather_metrics\"\
+  \ -A15 evals/core.py; grep -n \"stages\\|thinking_disabled\" evals/runners/chain.py evals/runners/text.py\
+  \ | head; sed -n 160,180p evals/runners/claude_code.py\nreturn gathered\n\n\n#: Metrics that are RATIOS,\
+  \ with the numerator and denominator they are made\n#: of. Aggregating these as a mean of per-case rates\
+  \ lets a two-word utterance\n#: weigh as much as a forty-word one; the correct total is sum(errors)\
+  \ over\n#: sum(words), which is what every ASR benchmark means by \"WER\".\nRATIO_METRICS = {\"wer\"\
+  : (\"wer_errors\", \"wer_words\"),\n                 \"agent_valid_call_rate\": (\"agent_valid_calls\"\
+  , \"agent_tool_calls\"),\n                 \"decide_accuracy\": (\"decide_correct\", \"decide_fields\"\
+  ),\n                 \"decide_brier\": (\"decide_brier_sum\", \"decide_fields\"),\n                \
+  \ \"cer\": (\"cer_errors\", \"cer_chars\"),\n                 \"pii_f1\": (\"pii_2tp\", \"pii_f1_den\"\
+  ),\n                 \"pii_precision\": (\"pii_tp\", \"pii_pred\"),\n                 \"pii_recall\"\
+  : (\"pii_tp\", \"pii_gold\"),\n                 \"claims_empty_rate\": (\"claims_empty_kept\", \"claims_empty_cases\"\
+  ),\n                 **{f\"claims_{name}\": (f\"claims_{n}\", f\"claims_{d}\")\n                   \
+  \ for name, (n, d) in claims_check.PER_INTERFACE_RATIOS.items()},\n                 **{claims_check.metric(name,\
+  \ i): (claims_check.metric(n, i), claims_check.metric(d, i))\n                    for i in claims_check.INTERFACES\n\
+  \                    for name, (n, d) in claims_check.PER_INTERFACE_RATIOS.items()}}\n#: Bookkeeping\
+  \ that should not appear as a column of its own.\n_COMPANIONS = {name for pair in RATIO_METRICS.values()\
+  \ for name in pair} | {claims_check.STRATUM}\n\n\ndef _mean_metrics(rows: list[Result]) ->\n[... 2786\
+  \ more bytes]\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-879 && sed -n 283,298p harness/checks/decide.py;\
+  \ sed -n 325,335p evals/core.py; sed -n 200,210p evals/core.py\nout.reason = f\"wrong: {', '.join(wrong)}\"\
+  \n    calibrated = all(r[\"calibrated\"] for r in rows)\n    out.metrics = {\n        \"decide_accuracy\"\
+  : round(right / n, 4), \"decide_correct\": right,\n        \"decide_fields\": n, \"calibrated\": 1.0\
+  \ if calibrated else 0.0,\n    }\n    if calibrated:\n        # One-hot answers give Brier 2*(1-acc)\
+  \ and ECE 1-acc: the engine's missing logprobs, not the model. #701.\n        out.metrics.update({\n\
+  \            \"decide_brier\": round(brier / n, 4), \"decide_brier_sum\": round(brier, 6),\n       \
+  \     \"decisions\": [[round(r[\"confidence\"], 6), int(r[\"correct\"])] for r in rows]})\n    body\
+  \ = artifact if isinstance(artifact, dict) else _json_object(str(artifact or \"\")) or {}\n    if body.get(\"\
+  per_option\") is False:\n        # One score per call spread over the choices, not a distribution. #312.\n\
+  \        out.metrics[\"per_option\"] = 0.0\n    return out\n        artifact = artifact.read_text(encoding=\"\
+  utf-8\")\n    errors, chars = ocr_check.text_cer(case.assertions[\"text\"], str(artifact or \"\"))\n\
+  \    rate = min(1.0, errors / chars) if chars else 1.0\n    limit = case.assertions[\"max_cer\"]\n \
+  \   out = CheckResult(rate <= limit, \"\")\n    out.metrics = {\"cer\": round(rate, 4), \"cer_errors\"\
+  : errors, \"cer_chars\": chars}\n    if not out.ok:\n        out.reason = (f\"character error rate {rate:.2f}\
+  \ over the limit of {limit}; \"\n                      f\"read {str(artifact).strip()[:80]!r}\")\n \
+  \   return out\n\n    joint with whatever reads it back and cannot separate the two.\n    \"\"\"\n \
+  \   rate =\n[... 484 more bytes]\n\n## tool Write <PATH_HOME>/projects/github/unxmaal/sohot-879/tests/test_metric_directions.py\n\
+  \"\"\"Every metric name an eval can emit declares a direction, so a new one fails here instead of warning\
+  \ at rank time (#879).\"\"\"\n\nimport ast\nfrom pathlib import Path\n\nREPO = Path(__file__).resolve().parent.parent\n\
+  SOURCES = (\"evals\", \"harness/checks\")\n\n\ndef _metricish(node) -> bool:\n    name = node.id if\
+  \ isinstance(node, ast.Name) else getattr(node, \"attr\", \"\")\n    return name.endswith(\"metrics\"\
+  )\n\n\ndef _numeric(value) -> bool:\n    return not isinstance(value, (ast.List, ast.ListComp, ast.Tuple,\
+  \ ast.Dict, ast.Set))\n\n\ndef _keys(d: ast.Dict):\n    for k, v in zip(d.keys, d.values):\n       \
+  \ if isinstance(k, ast.Constant) and isinstance(k.value, str) and _numeric(v):\n            yield k.value\n\
+  \n\ndef _subscript_key(t, holders) -> str:\n    if (isinstance(t, ast.Subscript) and holders(t.value)\n\
+  \            and isinstance(t.slice, ast.Constant) and isinstance(t.slice.value, str)):\n        return\
+  \ t.slice.value\n    return \"\"\n\n\ndef emitted_metrics(src: str, rel: str) -> dict[str, str]:\n \
+  \   \"\"\"Literal metric names written into a metrics dict, each with where: `x.metrics = {...}`, `metrics[\"\
+  k\"] = v`,\n    `metrics.update({...})`, `metrics={...}`, `{\"metrics\": {...}}`, and dicts built in\
+  \ a *metrics* function or rollup.\"\"\"\n    found: dict[str, str] = {}\n\n    def add(name: str, node)\
+  \ -> None:\n        if name:\n            found.setdefault(name, f\"{rel}:{node.lineno}\")\n\n    tree\
+  \ = ast.parse(src)\n    for n in ast.walk(tree):\n        if isinstance(n, (ast.Assign, ast.AnnAssign))\
+  \ and n.value is not\n[... 4258 more bytes]\nFile created successfully at: <PATH_HOME>/projects/github/unxmaal/sohot-879/tests/test_metric_directions.py\
+  \ (file state is current in your context — no need to Read it back)\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-879\
+  \ && uv run pytest -q tests/test_metric_directions.py 2>&1 | tail -25\n...F.                       \
+  \                                             [100%]\n=================================== FAILURES ===================================\n\
+  ________________ test_every_emitted_metric_declares_a_direction ________________\ntests/test_metric_directions.py:125:\
+  \ in test_every_emitted_metric_declares_a_direction\n    assert not missing, (\"metrics with no METRIC_DIRECTION\
+  \ entry (direction_of would warn and \"\nE   AssertionError: metrics with no METRIC_DIRECTION entry\
+  \ (direction_of would warn and assume lower):\nE     evals/runners/repair.py:95: attempts\nE     evals/runners/claude_code.py:172:\
+  \ retries\nE     evals/runners/chain.py:186: stages\nE     evals/runners/text.py:170: thinking_disabled\n\
+  E   assert not ['evals/runners/repair.py:95: attempts', 'evals/runners/claude_code.py:172: retries',\
+  \ 'evals/runners/chain.py:186: stages', 'evals/runners/text.py:170: thinking_disabled']\n===============================\
+  \ warnings summary ===============================\ntests/test_metric_directions.py::test_attempts_is_lower_is_better\n\
+  \  <PATH_HOME>/projects/github/unxmaal/sohot-879/tests/test_metric_directions.py:131: UserWarning: metric\
+  \ 'attempts' declares no direction in METRIC_DIRECTION; assuming lower is better\n    assert direction_of(\"\
+  attempts\") == \"lower\"\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html"
+params:
+  source_repo: https://github.com/unxmaal/SoHoT.git
+  base: 396b2a3e9f5158666a97e6cc2ff858bf65390f2b
+  fix: 9382f449fa0ef038da1e439db5cb47ed1fd4c6b6
+  variant: request
+  context: oracle
+  context_files:
+  - evals/core.py
+  - harness/commands/screen.py
+  fail_to_pass:
+  - tests/test_harness_screen.py::test_a_screen_with_a_receipt_records_no_stderr_in_its_detail
+  - tests/test_harness_screen.py::test_a_screen_without_a_receipt_keeps_its_stderr_less_warnings
+  - tests/test_metric_directions.py::test_attempts_is_lower_is_better
+  - tests/test_metric_directions.py::test_every_emitted_metric_declares_a_direction
+  pass_to_pass:
+  - tests/test_harness_screen.py::test_a_candidate_whose_weights_are_absent_is_waiting_not_failed
+  - tests/test_harness_screen.py::test_a_candidate_with_no_description_is_not_assumed_to_be_an_adapter
+  - tests/test_harness_screen.py::test_a_candidate_with_no_lane_says_so_in_its_own_terms
+  - tests/test_harness_screen.py::test_a_comfyui_node_pack_is_refused
+  - tests/test_harness_screen.py::test_a_failing_screen_is_never_screened
+  - tests/test_harness_screen.py::test_a_lane_with_no_runner_is_named_rather_than_dropped
+  - tests/test_harness_screen.py::test_a_lane_with_no_runner_is_not_asked_about_weights
+  - tests/test_harness_screen.py::test_a_lora_is_refused_before_anything_downloads
+  - tests/test_harness_screen.py::test_a_missing_config_routes_nowhere_rather_than_guessing
+  - tests/test_harness_screen.py::test_a_model_missing_only_itself_reads_as_a_plain_fetch
+  - tests/test_harness_screen.py::test_a_model_whose_config_names_an_absent_repo_is_not_ready
+  - tests/test_harness_screen.py::test_a_model_with_everything_present_is_ready
+  - tests/test_harness_screen.py::test_a_passing_screen_is_screened_not_broken
+  - tests/test_harness_screen.py::test_a_ready_candidate_gets_the_spec_its_lane_actually_takes
+  - tests/test_harness_screen.py::test_a_real_failure_is_not_excused_as_a_refusal
+  - tests/test_harness_screen.py::test_a_real_model_is_still_a_candidate
+  - tests/test_harness_screen.py::test_a_recorded_snapshot_offline_loads_cannot_open_goes_back_to_fetch
+  - tests/test_harness_screen.py::test_a_refused_request_is_not_the_candidates_failure
+  - tests/test_harness_screen.py::test_a_repo_id_goes_to_the_upstream
+  - tests/test_harness_screen.py::test_a_screen_that_did_not_run_is_broken_and_terminal
+  - tests/test_harness_screen.py::test_a_screen_that_passed_is_screened_and_not_terminal
+  - tests/test_harness_screen.py::test_a_screen_that_ran_and_passed_nothing_is_declined_on_the_screen_limit
+  - tests/test_harness_screen.py::test_an_alias_goes_through_the_gateway
+  - tests/test_harness_screen.py::test_an_empty_screen_is_a_result_not_a_failure
+  - tests/test_harness_screen.py::test_an_enumerated_exception_survives
+  - tests/test_harness_screen.py::test_screened_is_a_verdict_the_store_recognises
+  - tests/test_harness_screen.py::test_the_command_is_one_case_one_repeat_and_no_metrics
+  - tests/test_harness_screen.py::test_the_fixture_key_is_the_one_the_run_writes
+  - tests/test_harness_screen.py::test_the_plan_does_not_parse_the_description
+  - tests/test_harness_screen.py::test_the_state_says_why_rather_than_no_runner
+  - tests/test_metric_directions.py::test_every_shape_of_metric_write_is_found
+  - tests/test_metric_directions.py::test_the_repo_scan_sees_the_metrics_it_must
+  - tests/test_metric_directions.py::test_what_is_not_a_metric_write_stays_quiet
+attribution:
+  dataset: Claude Code session requests, redacted
+  url: https://github.com/unxmaal/SoHoT/issues/1095
+  license: generated
+  source: claude-code:transcripts
+  revision: 82ea6dc78eb1889c0e2f8b40e602ffc6fb9a3da4
+  item: 'sohot PR #883'
+  date: '2026-10-16'
+  transform: 'a Claude Code session from the person''s request to just before the agent''s first edit
+    of a file the fix changes (evals/session_cut.py: user turns, assistant text, tool calls, reads and
+    searches kept, large outputs dropped, to a byte budget), redacted by evals/redact.py (secrets, ids,
+    emails, home and volume paths, hosts, IPs, pasted chat, handles, account and person names as typed
+    placeholders) and refused if a fix line or a name-like word is left; linked to the merged commit through
+    a commit hash or PR URL printed by a tool in that request or a Claude-Session trailer; base = fix^;
+    fail_to_pass and pass_to_pass from 2 sandboxed pytest runs per side, as evals/importers/history.py'
+  importer: evals.importers.transcripts
+  session: 893fd0505f5eef9e
+  evidence: pr
+  redactions:
+    path: 7

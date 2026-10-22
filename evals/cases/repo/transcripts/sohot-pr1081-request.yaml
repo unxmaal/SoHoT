@@ -1,0 +1,310 @@
+# Claude Code session requests, redacted, generated (https://github.com/unxmaal/SoHoT/issues/1095).
+# Imported by evals/importers from claude-code:transcripts@82ea6dc78eb1889c0e2f8b40e602ffc6fb9a3da4; re-import, do not edit.
+id: sohot-pr1081-request
+modality: repo
+prompt: "Below is a Claude Code session, cut just before the agent's first edit to the code. Make the\
+  \ change the session is heading toward.\n\n## user\ni see some background tasks waiting, 1078 merge?\n\
+  \n## user\nImplement SoHoT issues #1079 (product code spells relative paths with native separators:\
+  \ harness/clips.py:81, harness/commands/adopt.py:15, harness/runs.py:528,535; extend the native_relpaths\
+  \ gate from #1078 to harness/) and #1080 (tests/test_batch_lease_769.py `_blocked` reads a slow image\
+  \ job as a blocked one; make the probe observe an actual lock wait) in one PR; worktree/branch named\
+  \ for 1079. Read both issues; their Fix and Acceptance sections are the spec. #1078 is merged on origin/main\
+  \ and provides the `windows_relative_paths` fixture and `scanners.native_relpaths`. Session URL: https://claude.ai/code/<SESSION_1>\n\
+  \nFor #1079, check whether the store already holds run paths written by any Windows node (read-only\
+  \ on a `.backup` copy of ~/localharness/discovery.db, or mode=ro) so the change doesn't orphan existing\
+  \ keys; say what you found.\nRed-proof both. It's evening and discovery starts at 21:00 on this machine:\
+  \ run targeted tests and `make check` only, finish local test runs before 21:00 if you can, and never\
+  \ touch the GPU or the sweep. To see Windows, trigger one workflow_dispatch run of the check workflow\
+  \ on your branch and report check-windows if it finishes within ~30 minutes. Open the PR, don't merge.\n\
+  \n## tool ToolSearch\n{\"query\": \"select:mcp__mcm-engine__search,mcp__mcm-engine__report_error,mcp__mcm-engine__add_rule,mcp__mcm-engine__session_start,mcp__soh__local_complete\"\
+  , \"max_results\": 5}\n\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot && date && git fetch origin\
+  \ 2>&1 | tail -2 && gh issue view 1079 && echo ======= && gh issue view 1080\nExit code 1\nTue Oct 20\
+  \ 18:29:30 <TZ_1> 2026\nok fetched (1 new refs)\n[open] Issue #1079: Product code spells relative paths\
+  \ with native separators: clips import keys, adopt run labels (follow-up to #1077)\n  Author: @unxmaal\n\
+  \  Status: OPEN\n  URL: https://github.com/unxmaal/SoHoT/issues/1079\n\n  Description:\n    Four product\
+  \ sites turn a `relative_to` result into a key or label with `str()`, which uses backslashes on Windows.\
+  \ The #1077 scanner checks tests/ only, so it leaves these alone.\n    \n    - `harness/clips.py:81`:\
+  \ `rel = str(receipt.parent.relative_to(root))` is checked against `known` run paths from the store.\
+  \ If the store has `a/b` and Windows makes `a\\b`, the receipt does not match and gets imported again.\n\
+  \    - `harness/commands/adopt.py:15`: the run label under the runs dir is built the same way, so it\
+  \ is spelled differently on Windows.\n    - `harness/runs.py:528,535`: the \"unreadable\" and \"not_eval_receipts\"\
+  \ report lists. These are only shown to a person.\n    \n    Retrieve: `git grep -n 'str(.*relative_to'\
+  \ origin/main -- harness`\n    \n    Fix: use `.as_posix()` at all four sites. Extend `scanners.native_relpaths`'s\
+  \ gate from tests/ to harness/ so the problem stays at zero.\n    \n    Acceptance: the gate covers\
+  \ harness/ and passes. A test with the `windows_relative_paths` fixture (from #1078) shows that clips\
+  \ import matches a stored `a/b` run against a Windows-spelled receipt path. It fails before the fix\
+  \ and passes after.\n    \n    Runs at: day, no GPU.\n    \n    Prior\n[... 172 more bytes]\n\n## tool\
+  \ Bash\n$ cd ~/projects/github/unxmaal/sohot && gh issue view 1080; git worktree add ~/projects/github/unxmaal/sohot-1079\
+  \ -b posix-relpaths-1079 origin/main 2>&1 | tail -1\n\n## tool mcp__mcm-engine__search\n{\"query\":\
+  \ \"native_relpaths\"}\n\n## tool mcp__mcm-engine__search\n{\"query\": \"lease\"}\n[2444 bytes of output\
+  \ not shown]\n[10461 bytes of output not shown]\n[18542 bytes of output not shown]\n\n## tool Bash\n\
+  $ cd ~/projects/github/unxmaal/sohot-1079 && git log --oneline -3 && git grep -n 'str(.*relative_to'\
+  \ -- harness; grep -rn \"native_relpaths\" --include=*.py . | head; cat tests/test_batch_lease_769.py\
+  \ | head -120\n39f2561a Key scanned repo files by posix path; sweep_check probe takes a uid (#1077)\
+  \ (#1078)\na5701202 Kill the new screen and adopt mutation survivors; pin the equivalents; mutate single\
+  \ functions by name (#107...\n5528a346 Kill the new reasons and transitions mutation survivors; pin\
+  \ the equivalents (#1069, #1070) (#1075)\nharness/clips.py:81:        rel = str(receipt.parent.relative_to(root))\n\
+  harness/commands/adopt.py:15:        return str(run.resolve().relative_to((paths.home() / \"runs\").resolve()))\n\
+  harness/runs.py:528:            counts[\"unreadable\"].append(str(f.parent.relative_to(root)))\nharness/runs.py:535:\
+  \            counts[\"not_eval_receipts\"].append(str(f.parent.relative_to(root)))\n(eval):1: no matches\
+  \ found: --include=*.py\n\"\"\"#769: the batch lock lives with the serving machine, carried by an x-sohot-batch\
+  \ header.\"\"\"\nimport asyncio\nimport importlib.util\nimport os\nimport subprocess\nimport sys\nimport\
+  \ threading\nimport time\nfrom pathlib import Path\n\nimport httpx\nimport pytest\nimport respx\n\n\
+  from harness import completion, exclusive, reasons\n\nREPO = Path(__file__).resolve().parent.parent\n\
+  #: A gateway on another machine: an address no interface here holds.\nREMOTE = \"http://192.0.2.10:4000\"\
+  \n\n\n@pytest.fixture(autouse=True)\ndef _clean_env(monkeypatch):\n    monkeypatch.delenv(exclusive.HELD_ENV,\
+  \ raising=False)\n    monkeypatch.delenv(\"SOHOT_BATCH\", raising=False)\n    monkeypatch.delenv(completion.GATEWAY_ENV,\
+  \ raising=False)\n\n\ndef _gateway():\n    spec =\n[... 3175 more bytes]\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1079\
+  \ && sed -n 120,400p tests/test_batch_lease_769.py; grep -rn \"native_relpaths\\|windows_relative_paths\"\
+  \ tests harness scripts | head -20\ndef test_a_local_eval_still_blocks_this_machines_image_job():\n\
+  \    with exclusive.held(\"eval\"):\n        assert _blocked(3.0)\n\n\n@respx.mock\ndef test_a_remote_eval_names_its_batch_on_every_request(monkeypatch):\n\
+  \    monkeypatch.setenv(completion.GATEWAY_ENV, REMOTE)\n    route = respx.post(f\"{REMOTE}/v1/chat/completions\"\
+  ).mock(return_value=httpx.Response(\n        200, json={\"choices\": [{\"message\": {\"content\": \"\
+  ok\"}, \"finish_reason\": \"stop\"}]}))\n    with exclusive.held(\"eval\"):\n        completion.complete(\"\
+  hi\", model=\"sohot-code\")\n        completion.chat([{\"role\": \"user\", \"content\": \"hi\"}], model=\"\
+  sohot-code\", stream=False)\n    sent = {c.request.headers.get(\"x-sohot-batch\") for c in route.calls}\n\
+  \    assert len(route.calls) == 2 and len(sent) == 1 and None not in sent and \"\" not in sent\n\n\n\
+  @respx.mock\ndef test_a_busy_gateway_is_waited_out(monkeypatch):\n    from harness import batch\n  \
+  \  monkeypatch.setattr(batch, \"BUSY_POLL_S\", 0.01)\n    gw = \"http://127.0.0.1:4000\"\n    busy =\
+  \ httpx.Response(503, json={\"error\": {\"message\": f\"{batch.BUSY} (batch b-1); retry once it finishes\"\
+  }})\n    ok = httpx.Response(200, json={\"choices\": [{\"message\": {\"content\": \"ok\"}, \"finish_reason\"\
+  : \"stop\"}]})\n    respx.post(f\"{gw}/v1/chat/completions\").mock(side_effect=[busy, busy, ok])\n \
+  \   assert completion.complete(\"hi\", model=\"sohot-code\", gateway=gw) == \"ok\"\n\n\n@respx.mock\n\
+  def test_a_busy_gateway_past_the_clients_deadline_is_charged_to_the_harness(monkeypatch):\n    from\
+  \ harness import batch\n   \n[... 2768 more bytes]\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1079\
+  \ && sed -n 95,125p tests/test_portability.py; sed -n 410,450p tests/conftest.py; sed -n 355,395p tests/gauntlet/scanners.py;\
+  \ sed -n 60,100p harness/clips.py; sed -n 1,30p harness/commands/adopt.py; sed -n 510,540p harness/runs.py\n\
+  <persisted-output>\nOutput too large (8.4KB). Full output saved to: <PATH_HOME>/.claude/projects/-Users-<ACCOUNT_1>-projects/<ID_1>/tool-results/bl5v4pqxl.txt\n\
+  \nPreview (first 2KB):\n    assert not offenders, \"a POSIX-only primitive with no platform guard:\\\
+  n  \" + \"\\n  \".join(offenders)\n\n\ndef test_no_test_runs_a_bare_shell_name():\n    \"\"\"#850: subprocess.run([\"\
+  bash\", ...]) on Windows starts the WSL launcher, which exits 1 with no distribution.\"\"\"\n    offenders\
+  \ = []\n    for path in _sources():\n        rel = path.relative_to(REPO).as_posix()\n        if rel.startswith(\"\
+  tests/\"):\n            offenders += scanners.bare_shells(path.read_text(encoding=\"utf-8\"), rel)\n\
+  \    assert not offenders, \"a bare shell name in a subprocess argv:\\n  \" + \"\\n  \".join(offenders)\n\
+  \n\ndef test_no_test_spells_a_relative_path_with_native_separators():\n    \"\"\"#1077: f.relative_to(REPO).as_posix()\
+  \ is harness\\\\x.py on Windows, so a posix-spelled expected set never matches.\"\"\"\n    offenders\
+  \ = []\n    for path in _sources():\n        rel = path.relative_to(REPO).as_posix()\n        if rel.startswith(\"\
+  tests/\"):\n            offenders += scanners.native_relpaths(path.read_text(encoding=\"utf-8\"), rel)\n\
+  \    assert not offenders, \"a relative path spelled with native separators:\\n  \" + \"\\n  \".join(offenders)\n\
+  \n\ndef test_no_test_grows_a_file_to_fake_its_size():\n    \"\"\"#838: an 18 GiB truncate() is sparse\
+  \ on macOS and filled the Windows runner's disk.\"\"\"\n    offenders = []\n    for path in _sources():\n\
+  \    \n[... 657 more bytes]\n\n## tool Bash\n$ cat <PATH_HOME>/.claude/projects/-Users-<ACCOUNT_1>-projects/<ID_1>/tool-results/bl5v4pqxl.txt\
+  \ | tail -n +38\nsaved = os.environ.pop(purpose.ENV, None)\n    yield\n    os.environ.pop(purpose.ENV,\
+  \ None)\n    if saved is not None:\n        os.environ[purpose.ENV] = saved\n\n\n@pytest.fixture\ndef\
+  \ windows_relative_paths(monkeypatch):\n    \"\"\"Path.relative_to answers a PureWindowsPath, so str()\
+  \ of a relative path has backslashes as on Windows. #1077.\"\"\"\n    import pathlib\n    cls = type(pathlib.Path())\n\
+  \    real = cls.relative_to\n    monkeypatch.setattr(cls, \"relative_to\", lambda self, *a, **k: pathlib.PureWindowsPath(real(self,\
+  \ *a, **k).as_posix()))\n        return out\n    for n in sorted(ast.walk(tree), key=lambda n: getattr(n,\
+  \ \"lineno\", 0)):\n        if not (isinstance(n, ast.Call) and getattr(n.func, \"attr\", getattr(n.func,\
+  \ \"id\", \"\")) in TEMPFILES):\n            continue\n        mode = n.args[0] if n.args else next((k.value\
+  \ for k in n.keywords if k.arg == \"mode\"), None)\n        binary = mode is None or (isinstance(mode,\
+  \ ast.Constant) and \"b\" in str(mode.value))\n        if binary or any(k.arg == \"encoding\" for k\
+  \ in n.keywords):\n            continue\n        out.append(f\"{rel}:{n.lineno}: a text-mode temp file\
+  \ with no encoding= writes cp1252 on Windows\")\n    return out\n\n\ndef _relative_to(node):\n    return\
+  \ isinstance(node, ast.Call) and getattr(node.func, \"attr\", \"\") == \"relative_to\"\n\n\ndef native_relpaths(text,\
+  \ rel):\n    \"\"\"str() or an f-string of Path.relative_to(): backslashes on Windows, so a posix spelling\
+  \ never matches (#1077).\"\"\"\n    tree, out = _parse(text, rel)\n    if tree is None:\n       \n[...\
+  \ 5360 more bytes]\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1079 && grep -n \"def record\\\
+  b\\|def record(\" -A40 harness/runs.py | grep -n \"path\\|relative\" | head -20; grep -rn \"def _run_name\\\
+  |_run_name(\" harness | head; grep -rn \"def run_key\\|def _rel\\b\\|relative_to\" harness/runs.py harness/memory_store.py\
+  \ | head -20\n1:231:def record(conn, path, data: dict, *, at: float | None = None) -> int | None:\n\
+  <CHAT_1>\n16:246-    key = path_key(path)\n27:257-        \"INSERT OR IGNORE INTO runs (path, lane,\
+  \ tier, machine_id, \"\n35:265-        \"specs = ?, split = ?, split_version = ? WHERE path = ?\", (*values,\
+  \ key))\n36:266-    run_id = conn.execute(\"SELECT id FROM runs WHERE path = ?\",\nharness/commands/adopt.py:12:def\
+  \ _run_name(run: Path) -> str:\nharness/commands/judge.py:172:                           run=adopt_cmd._run_name(run))\n\
+  grep: harness/memory_store.py: No such file or directory\nharness/runs.py:44:        return p.resolve().relative_to(root.resolve()).as_posix()\n\
+  harness/runs.py:528:            counts[\"unreadable\"].append(str(f.parent.relative_to(root)))\nharness/runs.py:535:\
+  \            counts[\"not_eval_receipts\"].append(str(f.parent.relative_to(root)))\nharness/runs.py:542:\
+  \                    h.is_relative_to(d.resolve()) for h in have):\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1079\
+  \ && sed -n 30,50p harness/runs.py; sed -n 160,180p harness/commands/judge.py; grep -rn \"run=\" harness/judge*.py\
+  \ harness/commands/judge.py | head -5\ntry:\n        yield opened\n    finally:\n        opened.close()\n\
+  \n\ndef path_key(path) -> str:\n    \"\"\"A run's identity: its path under the runs dir, else its absolute\
+  \ path.\"\"\"\n    from harness import paths\n    p = Path(path).expanduser()\n    root = paths.runs()\n\
+  \    if not p.is_absolute():\n        p = root / p\n    try:\n        return p.resolve().relative_to(root.resolve()).as_posix()\n\
+  \    except ValueError:\n        return str(p.resolve())\n\n\ndef _epoch(generated) -> float | None:\n\
+  \    try:\n            store.close()\n        note(f\"  recorded: {won or 'no preference'} -- {why}\"\
+  )\n\n    # A RUN THAT IS ALREADY JUDGED RECORDS WITHOUT ANYONE CLICKING. Recording\n    # only on a\
+  \ new answer leaves a finished run unrecorded forever, and\n    # recording only at shutdown loses it\
+  \ whenever the server is killed rather\n    # than interrupted -- which is how a service manager stops\
+  \ things.\n    _record(lane, pairs)\n\n    try:\n        judge_server.serve(lane, receipt, port=a.port,\n\
+  \                           open_browser=not a.no_browser, on_answer=_record,\n                    \
+  \       run=adopt_cmd._run_name(run))\n    except OSError as exc:\n        return err(f\"could not serve\
+  \ on port {a.port}: {exc}\")\n    settled = [p for p in pairs\n               if human.decided(lane,\
+  \ p[\"case\"], p[\"a\"], p[\"b\"]) is not None]\n    note(f\"\\n{len(settled)} of {len(pairs)} pairing(s)\
+  \ settled\")\n    for p in pairs:\n        got = human.decided(lane, p[\"case\"], p[\"a\"], p[\"b\"\
+  ])\n        if got is None:\n[... 150 more bytes]\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1079\
+  \ && sed -n 150,170p harness/judge_server.py; grep -n \"self.run\\|run=\" harness/judge_server.py harness/human*.py\
+  \ | head -20; git log -L '/def path_key/,+10:harness/runs.py' --oneline -s | head -5\ndef do_POST(self):\n\
+  \        n = int(self.headers.get(\"Content-Length\") or 0)\n        form = parse_qs(self.rfile.read(n).decode(\"\
+  utf-8\"))\n        get = lambda k: (form.get(k) or [\"\"])[0]\n        pick, first = get(\"pick\"),\
+  \ get(\"first\")\n        a, b = get(\"a\"), get(\"b\")\n        # The buttons say left and right; the\
+  \ store wants the candidate. Which\n        # side each was on is randomised per showing, so this mapping\
+  \ is the\n        # only place that knows.\n        answer = (\"tie\" if pick == \"tie\"\n         \
+  \         else (\"a\" if (pick == \"left\") == (first == a) else \"b\"))\n        human.record(self.lane,\
+  \ get(\"case\"), a, b, answer, shown_first=first,\n                     run=self.run)\n        try:\n\
+  \            self.on_answer(self.lane, self.pairs)\n        except Exception as exc:            # noqa:\
+  \ BLE001\n            # A store that will not take the verdict must not lose the vote,\n           \
+  \ # which is already saved. Report and carry on.\n            print(f\"  could not record the lane verdict:\
+  \ {exc}\")\n        self.send_response(303)\nharness/judge_server.py:163:                     run=self.run)\n\
+  4f9cd606 Run results are store rows, written by evals.run and read by every t...\n\n## tool Bash\n$\
+  \ cd ~/projects/github/unxmaal/sohot-1079 && grep -n \"def record\" -A30 harness/human.py | grep -n\
+  \ \"run\" | head; ls -la ~/localharness/discovery.db*; ls ~/localharness/ | head -30\n<CHAT_2>\n5:98-\
+  \    a later reader can tell whether the side was randomised. `run` names the\n15:108-            \"\
+  INSERT INTO human_votes (lane, run, case_id, left_candidate, \"\n18:111-            (lanes.canonical(lane),\
+  \ run, case, lo, hi, winner, shown_first,\n644  <PATH_HOME>/localharness/discovery.db  48.8M\n644  <PATH_HOME>/localharness/discovery.db-shm\
+  \  32.0K\n644  <PATH_HOME>/localharness/discovery.db-wal  3.9M\n644  <PATH_HOME>/localharness/discovery.db.bak-207\
+  \  488.0K\n644  <PATH_HOME>/localharness/discovery.db.bak-211  488.0K\n644  <PATH_HOME>/localharness/discovery.db.bak-213\
+  \  492.0K\n644  <PATH_HOME>/localharness/discovery.db.bak-223  496.0K\n644  <PATH_HOME>/localharness/discovery.db.bak-227\
+  \  500.0K\n644  <PATH_HOME>/localharness/discovery.db.bak-230  500.0K\n644  <PATH_HOME>/localharness/discovery.db.bak-pre-35e2e10b\
+  \  33.9M\n644  <PATH_HOME>/localharness/discovery.db.bak-pre-4d715b20  31.7M\n644  <PATH_HOME>/localharness/discovery.db.bak-pre-78da9a12\
+  \  32.2M\n644  <PATH_HOME>/localharness/discovery.db.bak-pre-94be76d4  31.7M\n644  <PATH_HOME>/localharness/discovery.db.bak-pre-9f042f9d\
+  \  32.8M\n644  <PATH_HOME>/localharness/discovery.db.bak-pre-b9a8f8a6  34.6M\n644  <PATH_HOME>/localharness/discovery.db.bak-pre-deploy-1013\
+  \  35.0M\n644  <PATH_HOME>/localharness/discovery.db.bak-pre-deploy-1013-shm  32.0K\n644  <PATH_HOME>/localharness/discovery.db.bak-pre-deploy-1013-wal\
+  \  0B\n644 \n[... 2382 more bytes]\n\n## tool mcp__mcm-engine__search\n{\"query\": \"human_votes\"}\n\
+  [14527 bytes of output not shown]\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot && mkdir -p\
+  \ tmp && D=$(mktemp -d tmp/relpaths-1079.XXXXXX) && echo $D && python3 - \"$D\" <<'EOF'\nimport sqlite3,\
+  \ sys, os\nsrc = sqlite3.connect(\"file:\" + os.path.expanduser(\"~/localharness/discovery.db\") + \"\
+  ?mode=ro\", uri=True)\nq = lambda s: src.execute(s).fetchall()\nprint(\"runs total\", q(\"select count(*)\
+  \ from runs\"))\nprint(\"runs with backslash\", q(\"select count(*) from runs where instr(path, char(92))\
+  \ > 0\"))\nprint(\"runs absolute\", q(\"select count(*) from runs where path like '/%' or path like\
+  \ '_:%'\"))\nprint(\"sample\", q(\"select path from runs where instr(path, char(92)) > 0 limit 5\"))\n\
+  cols = [r[1] for r in src.execute(\"pragma table_info(human_votes)\")]\nprint(\"human_votes cols\",\
+  \ cols)\nprint(\"votes\", q(\"select count(*), sum(instr(run, char(92))>0) from human_votes\"))\nprint(\"\
+  machines\", q(\"select * from machines limit 20\") if \"machines\" in [r[0] for r in q(\"select name\
+  \ from sqlite_master where type='table'\")] else None)\nEOF\n[1211 bytes of output not shown]\n\n##\
+  \ tool Bash\n$ cd ~/projects/github/unxmaal/sohot && python3 - <<'EOF'\nimport sqlite3, os\nc = sqlite3.connect(\"\
+  file:\" + os.path.expanduser(\"~/localharness/discovery.db\") + \"?mode=ro\", uri=True)\nq = lambda\
+  \ s: c.execute(s).fetchall()\nprint(\"runs by machine\", q(\"select machine_id, count(*) from runs group\
+  \ by 1\"))\nprint(\"votes by machine\", q(\"select machine_id, count(*) from human_votes group by 1\"\
+  ))\nprint(\"votes run sample\", q(\"select distinct run from human_votes limit 8\"))\nprint(\"results\
+  \ artifact backslash\", q(\"select count(*) from results where instr(artifact_path, char(92))>0\"))\n\
+  print(\"machine 4 refs\", [(t, q(f\"select count(*) from {t} where machine_id=4\")) for (t,) in q(\"\
+  select name from sqlite_master where type='table'\") if 'machine_id' in [r[1] for r in c.execute(f'pragma\
+  \ table_info({t})')]])\nEOF\n[590 bytes of output not shown]\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot\
+  \ && python3 - <<'EOF'\nimport sqlite3, os\nc = sqlite3.connect(\"file:\" + os.path.expanduser(\"~/localharness/discovery.db\"\
+  ) + \"?mode=ro\", uri=True)\nfor r in c.execute(\"select id, path, lane, datetime(at,'unixepoch') from\
+  \ runs where machine_id=4\"): print(r)\nEOF\nExit code 1\nTraceback (most recent call last):\n  File\
+  \ \"<stdin>\", line 3, in <module>\nsqlite3.OperationalError: no such column: at\n\n## tool Bash\n$\
+  \ cd ~/projects/github/unxmaal/sohot && python3 - <<'EOF'\nimport sqlite3, os\nc = sqlite3.connect(\"\
+  file:\" + os.path.expanduser(\"~/localharness/discovery.db\") + \"?mode=ro\", uri=True)\nfor r in c.execute(\"\
+  select id, path, lane from runs where machine_id=4\"): print(r)\nEOF\n(431, '20261011-200751-771-0000-code',\
+  \ 'code')\n(432, '20261011-201829-218-0000-claims', 'claims')\n(433, '20261011-210154-685-0000-code',\
+  \ 'code')\n(434, '20261011-211401-407-0000-claims', 'claims')\n(435, '20261011-211812-540-0000-claims',\
+  \ 'claims')\n(436, '20261011-212250-250-0000-code', 'code')\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1079\
+  \ && git grep -n 'relative_to' -- '*.py' | grep -v '^tests/' | grep -v as_posix | head -30; grep -n\
+  \ \"def _sources\" -A10 tests/test_portability.py\nevals/core.py:1153:                    and p.relative_to(bundle).parts[0]\
+  \ in (\"repo\", \"hidden\")):\nharness/clips.py:81:        rel = str(receipt.parent.relative_to(root))\n\
+  harness/commands/adopt.py:15:        return str(run.resolve().relative_to((paths.home() / \"runs\").resolve()))\n\
+  harness/context_report.py:65:        if main_only and \"subagents\" in p.relative_to(root).parts:\n\
+  harness/disk.py:320:                top = target.relative_to(hub_real).parts[0]\nharness/disk.py:529:\
+  \            path.resolve().relative_to(hub)\nharness/inspect.py:495:               and \".git\" not\
+  \ in p.relative_to(tree).parts) // 1000\nharness/inspect.py:503:        parts = set(p.relative_to(tree).parts[:-1])\n\
+  harness/live_audit.py:329:    return deploy / gateway.DEFAULT.relative_to(gateway.REPO) if deploy else\
+  \ gateway.config_path()\nharness/runs.py:528:            counts[\"unreadable\"].append(str(f.parent.relative_to(root)))\n\
+  harness/runs.py:535:            counts[\"not_eval_receipts\"].append(str(f.parent.relative_to(root)))\n\
+  harness/runs.py:542:                    h.is_relative_to(d.resolve()) for h in have):\n29:def _sources():\n\
+  30-    for package in PACKAGES:\n31-        yield from sorted((REPO / package).rglob(\"*.py\"))\n32-\n\
+  33-\n34-def test_no_text_file_is_read_or_written_without_an_explicit_encoding():\n35-    \"\"\"CAUGHT\
+  \ 17 FAILING TESTS ON WINDOWS AT ONCE.\n36-\n37-    `charmap codec can't decode byte 0x9d` out of a\
+  \ YAML case file, a cached\n38-    feed and a cloned candidate's source. The author's machine cannot\n\
+  [... 90 more bytes]"
+params:
+  source_repo: https://github.com/unxmaal/SoHoT.git
+  base: 39f2561aa1646d81b2fbb1970b0b17b9e4add155
+  fix: 33ca0d0ed9f70165efa0f1733ebfa1ec02679edb
+  variant: request
+  context: oracle
+  context_files:
+  - harness/clips.py
+  - harness/commands/adopt.py
+  - harness/runs.py
+  fail_to_pass:
+  - tests/test_adopt_cmd.py::test_a_nested_run_is_named_by_posix_path
+  - tests/test_clips.py::test_a_stored_nested_run_is_not_imported_again_from_a_windows_spelled_receipt
+  - tests/test_portability.py::test_no_source_spells_a_relative_path_with_native_separators
+  - tests/test_runs_store.py::test_the_backfill_names_a_nested_receipt_it_cannot_record_by_posix_path
+  pass_to_pass:
+  - tests/test_adopt_cmd.py::test_adopt_hands_the_challenger_to_the_paired_measure
+  - tests/test_adopt_cmd.py::test_an_unknown_lane_is_refused_before_anything_runs
+  - tests/test_batch_lease_769.py::test_a_batch_request_still_in_flight_keeps_the_serving_machine
+  - tests/test_batch_lease_769.py::test_a_busy_gateway_is_waited_out
+  - tests/test_batch_lease_769.py::test_a_busy_gateway_past_the_clients_deadline_is_charged_to_the_harness
+  - tests/test_batch_lease_769.py::test_a_local_eval_still_blocks_this_machines_image_job
+  - tests/test_batch_lease_769.py::test_a_local_eval_waits_while_a_remote_eval_holds_the_serving_machine
+  - tests/test_batch_lease_769.py::test_a_local_evals_own_requests_pass_its_own_lease
+  - tests/test_batch_lease_769.py::test_a_remote_eval_does_not_block_this_machines_image_job
+  - tests/test_batch_lease_769.py::test_a_remote_eval_is_refused_while_a_local_eval_holds_the_serving_machine
+  - tests/test_batch_lease_769.py::test_a_remote_eval_names_its_batch_on_every_request
+  - tests/test_batch_lease_769.py::test_a_request_with_no_batch_is_never_refused_for_one
+  - tests/test_batch_lease_769.py::test_chaos_does_not_start_while_a_remote_batch_holds_this_machine
+  - tests/test_batch_lease_769.py::test_this_machines_batch_lease_name_comes_from_the_cached_identity_not_a_fresh_probe
+  - tests/test_clips.py::test_a_clip_every_candidate_got_right_is_not_listed
+  - tests/test_clips.py::test_a_legacy_run_not_in_the_store_is_read_from_its_receipt
+  - tests/test_clips.py::test_every_listed_clip_carries_a_way_to_play_it
+  - tests/test_clips.py::test_heard_is_parsed_from_a_failure_detail[-]
+  - 'tests/test_clips.py::test_heard_is_parsed_from_a_failure_detail[tts failed: HTTP 500-]'
+  - tests/test_clips.py::test_heard_is_parsed_from_a_failure_detail[word error rate 0.44; heard 'porter
+    ce vieux whisky'-porter ce vieux whisky]
+  - tests/test_clips.py::test_heard_is_parsed_from_a_failure_detail[word error rate 0.47; heard "Le frais
+    c'est..."-Le frais c'est...]
+  - tests/test_clips.py::test_n_limits_the_list
+  - tests/test_clips.py::test_rates_split_passing_from_failing_tts_clips
+  - tests/test_clips.py::test_reading_never_writes_the_store
+  - tests/test_clips.py::test_stt_worst_ranks_clips_by_mean_wer_across_candidates
+  - tests/test_clips.py::test_the_cli_prints_the_worst_clips
+  - tests/test_clips.py::test_the_play_line_is_quoted_for_the_shell_it_will_be_pasted_into
+  - tests/test_clips.py::test_the_same_audio_in_two_receipts_is_listed_once
+  - tests/test_clips.py::test_tts_worst_lists_each_clip_with_what_the_ear_heard
+  - tests/test_portability.py::test_every_module_a_test_imports_is_installed_on_every_platform
+  - tests/test_portability.py::test_no_posix_only_primitive_is_used_without_a_platform_guard
+  - tests/test_portability.py::test_no_script_uses_a_bsd_only_df_flag
+  - tests/test_portability.py::test_no_temp_file_is_opened_as_text_without_an_explicit_encoding
+  - tests/test_portability.py::test_no_test_grows_a_file_to_fake_its_size
+  - tests/test_portability.py::test_no_test_runs_a_bare_shell_name
+  - tests/test_portability.py::test_no_text_file_is_read_or_written_without_an_explicit_encoding
+  - tests/test_runs_store.py::test_a_candidate_created_later_claims_its_unlinked_rows
+  - tests/test_runs_store.py::test_a_new_store_imports_an_existing_runs_directory
+  - tests/test_runs_store.py::test_a_stamped_id_this_store_does_not_hold_is_looked_up_again
+  - tests/test_runs_store.py::test_comparable_accepts_the_same_stored_digest
+  - tests/test_runs_store.py::test_comparable_refuses_across_stored_case_digests
+  - tests/test_runs_store.py::test_coverage_dates_a_model_by_its_stored_run
+  - tests/test_runs_store.py::test_evals_run_writes_the_run_and_its_rows
+  - tests/test_runs_store.py::test_from_winners_reads_stored_runs_only
+  - tests/test_runs_store.py::test_no_reader_scans_the_runs_directory
+  - tests/test_runs_store.py::test_rank_reads_stored_lanes_only
+  - tests/test_runs_store.py::test_the_backfill_is_idempotent
+  - tests/test_runs_store.py::test_the_backfill_links_a_typed_default_by_the_key_its_rows_name[other]
+  - tests/test_runs_store.py::test_the_backfill_links_a_typed_default_by_the_key_its_rows_name[win32]
+  - tests/test_runs_store.py::test_the_backfill_links_a_verdict_to_the_run_it_names
+  - tests/test_runs_store.py::test_the_backfill_records_what_it_can_and_names_what_it_cannot
+  - tests/test_runs_store.py::test_the_export_carries_the_candidate_each_row_ran_as
+  - tests/test_runs_store.py::test_the_memory_guard_reads_stored_peaks_only
+  - tests/test_runs_store.py::test_the_retraction_migration_reads_stored_runs
+  - tests/test_runs_store.py::test_the_screen_verdict_names_its_stored_run
+  - tests/test_runs_store.py::test_two_specs_that_run_as_one_key_are_refused_before_either_runs
+  - tests/test_runs_store.py::test_winners_read_stored_runs_only
+attribution:
+  dataset: Claude Code session requests, redacted
+  url: https://github.com/unxmaal/SoHoT/issues/1095
+  license: generated
+  source: claude-code:transcripts
+  revision: 82ea6dc78eb1889c0e2f8b40e602ffc6fb9a3da4
+  item: 'sohot PR #1081'
+  date: '2026-10-20'
+  transform: 'a Claude Code session from the person''s request to just before the agent''s first edit
+    of a file the fix changes (evals/session_cut.py: user turns, assistant text, tool calls, reads and
+    searches kept, large outputs dropped, to a byte budget), redacted by evals/redact.py (secrets, ids,
+    emails, home and volume paths, hosts, IPs, pasted chat, handles, account and person names as typed
+    placeholders) and refused if a fix line or a name-like word is left; linked to the merged commit through
+    a commit hash or PR URL printed by a tool in that request or a Claude-Session trailer; base = fix^;
+    fail_to_pass and pass_to_pass from 2 sandboxed pytest runs per side, as evals/importers/history.py'
+  importer: evals.importers.transcripts
+  session: 893fd0505f5eef9e
+  evidence: pr
+  redactions:
+    account: 2
+    chat: 2
+    id: 2
+    path: 20
+    session: 1
+    tz: 1

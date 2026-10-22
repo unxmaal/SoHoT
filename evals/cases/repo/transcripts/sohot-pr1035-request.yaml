@@ -1,0 +1,292 @@
+# Claude Code session requests, redacted, generated (https://github.com/unxmaal/SoHoT/issues/1095).
+# Imported by evals/importers from claude-code:transcripts@82ea6dc78eb1889c0e2f8b40e602ffc6fb9a3da4; re-import, do not edit.
+id: sohot-pr1035-request
+modality: repo
+prompt: "Below is a Claude Code session, cut just before the agent's first edit to the code. Make the\
+  \ change the session is heading toward.\n\n## user\nApply the deeper skill to the reply budget sweep\
+  \ question\n\n[... 30 earlier entries not shown ...]\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1021\
+  \ && cat evals/runners/transcription.py; grep -n \"def transcribe\\b\\|def transcribe(\" -A30 harness/audio.py\
+  \ | head -60\n\"\"\"Runner for speech-to-text candidates.\n\nThe mirror of the speech runner, and a\
+  \ better measurement than it. There the\nprompt is text to speak and the artifact is audio, so the word\
+  \ error rate is\nJOINT: it scores the TTS model together with whatever reads it back. Here the\naudio\
+  \ is the input and the case's prompt is a transcript a human wrote, so the\nnumber belongs to the STT\
+  \ model alone.\n\nThat is why this lane needs a corpus. `evals/corpora.py` generates cases from\nLibriSpeech\
+  \ test-clean, which ships human transcripts with the audio.\n\nTWO BACKENDS, because one is not enough.\
+  \ Parakeet runs on the audio server and\nis English-only; Whisper is multilingual and cannot run on\
+  \ that server at all\n-- mlx_audio demands a HuggingFace processor, and the mlx whisper repos ship\n\
+  weights.npz and config.json without one -- so it is called in-process instead.\n\"\"\"\nfrom __future__\
+  \ import annotations\n\nfrom harness import audio, reasons\n\nfrom evals.core import Case\nfrom evals.runners.base\
+  \ import BaseRunner, RunnerError\n\n\nclass TranscriptionRunner(BaseRunner):\n    def __init__(self,\
+  \ model: str = audio.DEFAULT_STT_MODEL,\n                 base_url: str = audio.DEFAULT_BASE_URL,\n\
+  \                 timeout: float | None = None,\n                 backend: str = \"server\", language:\
+  \ str = \"\"):\n        self.model = model\n        self.base_url = base_url\n        self.timeout =\
+  \ audio.TIMEOUT_S if timeout is None else timeout\n        self.backend = backend\n        self.language\
+  \ = language\n        # Raises on\n[... 2769 more bytes]\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1021\
+  \ && grep -rn \"backend\" evals/run.py evals/specs.py harness/engines.py 2>/dev/null | head -20; grep\
+  \ -rn \"\\\"stt\\\":\\|'stt':\" harness/engines.py harness/screen.py harness/lanes.py | head\nevals/run.py:83:STT_OPTIONS\
+  \ = {\"backend\", \"language\"}\nevals/run.py:249:            backend=options.get(\"backend\", \"server\"\
+  ),\nevals/run.py:252:        # A bad backend is a bad candidate string, and gets the same treatment\n\
+  evals/run.py:1012:                         \"backends are NOT comparable to each other\")\nevals/run.py:1657:\
+  \        found[\"ocr\"] = ocr.available_backend() or \"\"\nharness/engines.py:681:    backend = model\
+  \ or \"auto\"\nharness/engines.py:682:    if backend not in OSOCR_BACKENDS:\nharness/engines.py:683:\
+  \        raise ValueError(f\"{spec_error(spec)}: unknown osocr backend {backend!r}; \"\nharness/engines.py:689:\
+  \        return [sys.executable, \"-m\", \"harness.checks.ocr\", backend,\nharness/engines.py:692: \
+  \   return Engine(name=f\"osocr/{backend}\", spec=spec, argv=argv, modality=\"ocr\",\nharness/screen.py:74:\
+  \    \"stt\": (\"stt:{model}\",),\nharness/screen.py:582:                   \"tts\": \"mlx-audio\",\
+  \ \"stt\": \"mlx-audio\",\nharness/lanes.py:137:    \"stt\": r\"\\b(transcri\\w+|speech recognition|asr|dictation)\\\
+  b\",\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1021 && grep -n \"whisper\" pyproject.toml\
+  \ uv.lock | head -5; ls ~/localharness/deploy/.venv/lib/python*/site-packages 2>/dev/null | grep -i\
+  \ whisper; sed -n 240,260p evals/run.py; sed -n 60,80p harness/screen.py\npyproject.toml:66:# The multilingual\
+  \ ear. A separate group because mlx-whisper requires torch\npyproject.toml:69:# the audio server; only\
+  \ the eval suite reaches for whisper:\npyproject.toml:70:#   uv run --group whisper python -m evals.run\
+  \ --modality stt \\\npyproject.toml:71:#     --candidates 'stt:mlx-community/whisper-large-v3-mlx,backend=whisper,language=fr'\n\
+  pyproject.toml:73:whisper = [\n    if unknown:\n        raise SystemExit(f\"unknown stt option(s) {',\
+  \ '.join(sorted(unknown))}; \"\n                         f\"allowed: {', '.join(sorted(STT_OPTIONS))}\"\
+  )\n    if not model:\n        raise SystemExit(\"an stt candidate needs a model, e.g. \"\n         \
+  \                \"stt:mlx-community/parakeet-tdt-0.6b-v2\")\n    try:\n        return TranscriptionRunner(\n\
+  \            model=model,\n            backend=options.get(\"backend\", \"server\"),\n            language=options.get(\"\
+  language\", \"\"))\n    except ValueError as exc:\n        # A bad backend is a bad candidate string,\
+  \ and gets the same treatment\n        # as a bad engine spec: named before the corpus runs, not a traceback.\n\
+  \        raise SystemExit(f\"{candidate}: {exc}\") from exc\n\n\ndef is_kokoro(model: str) -> bool:\n\
+  \    \"\"\"Does this model use Kokoro's voice table?\n\n    The voice names are Kokoro's own, so they\
+  \ are meaningful for Kokoro and\n    # h3 is the lane's incumbent, spelled `h3` with nothing after it.\n\
+  \    \"video\": (\"diffusers-video:{model}\",),\n    \"music\": (\"acestep:{model}\",),\n    # A full\
+  \ model is a text candidate; a peft adapter goes\n[... 951 more bytes]\n\n## tool Bash\n$ ls -d ~/localharness/deploy/.venv/lib/python*/site-packages/mlx_whisper*\
+  \ ~/localharness/deploy/.venv/lib/python*/site-packages/mlx_audio* 2>&1 | head; sed -n 60,80p ~/projects/github/unxmaal/sohot-1021/pyproject.toml;\
+  \ grep -n \"uv sync\\|--group\" ~/projects/github/unxmaal/sohot-1021/scripts/launchd.sh ~/projects/github/unxmaal/sohot-1021/Makefile\
+  \ | head\n(eval):1: no matches found: <PATH_HOME>/localharness/deploy/.venv/lib/python*/site-packages/mlx_whisper*\n\
+  \    \"transformers>=4.44\",\n    \"open_clip_torch>=2.24\",\n    \"resemblyzer>=0.1.4\",\n    \"setuptools>=70,<81\"\
+  ,\n]\n\n# The multilingual ear. A separate group because mlx-whisper requires torch\n# UNCONDITIONALLY\
+  \ -- not as an extra -- which puts 528MB into an otherwise\n# MLX-only install for a scoring instrument\
+  \ the CLI never calls. `lh hear` uses\n# the audio server; only the eval suite reaches for whisper:\n\
+  #   uv run --group whisper python -m evals.run --modality stt \\\n#     --candidates 'stt:mlx-community/whisper-large-v3-mlx,backend=whisper,language=fr'\n\
+  # harness.audio imports it lazily, so the fast tests pass without this group.\nwhisper = [\n    \"mlx-whisper>=0.4.3;\
+  \ sys_platform == 'darwin'\",\n]\n\ndev = [\n    \"pytest>=8\",\n    # Coverage is REPORTED, never gated:\
+  \ there is no baseline here, so a\n    # threshold would start red, and the number is blind to whether\
+  \ a line that\n<PATH_HOME>/projects/github/unxmaal/sohot-1021/Makefile:14:\tuv run --group mcp pytest\
+  \ tests/ -q -n auto\n<PATH_HOME>/projects/github/unxmaal/sohot-1021/Makefile:17:\tuv run --group metrics\
+  \ pytest tests/ -q -m slow\n<PATH_HOME>/projects/github/unxmaal/sohot-1021/Makefile:23:\t. scripts/versions.sh\
+  \ && uv run --group mcp --python 3.12 --with \"$$LITELLM_PIN\" pytest tests/ -q -m litellm\n<PATH_HOME>/projects/github/unxmaal/sohot-1021/Makefile:37:\t\
+  uv run --group mutation --group mcp python -m tests.gauntlet.mutation run\n[... 136 more bytes]\n\n\
+  ## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1021 && grep -n \"runner\" harness/memory_store/revisit.py\
+  \ | head -30\n76:    \"format\": \"a weight format a runner reads; fetching.format_waits reads it, not\
+  \ until_met\",\n78:    \"runner\": \"an engine this harness registers (engines.names); none by that\
+  \ name exists yet\",\n80:    \"package\": \"a distribution installed in a runner venv (runner_gaps.has_package)\"\
+  ,\n152:    if key == \"runner\":\n169:        # A package a runner's venv lacked; met once that venv\
+  \ has it. #1008.\n176:        from harness import runner_gaps\n177:        return runner_gaps.has_package(dist,\
+  \ venv)\n392:GAP_KEYS = (\"version\", \"runner\", \"format\", \"policy\")\n393:#: The ones a runner\
+  \ gap waits on, for the runners-wanted report.\n394:RUNNER_WAITS = (\"runner\", \"format\", \"policy\"\
+  , \"package\")\n413:    if low.startswith(\"needs its own runner\"):\n420:def runner_gap_rewrites(conn)\
+  \ -> list[dict]:\n422:    from harness import runner_gaps\n432:        new = runner_gaps.cause_until(cls,\
+  \ r[\"detail\"], r[\"spec\"] or r[\"name\"], dict(r)) if cls else \"\"\n439:def rewrite_runner_gap_untils(conn)\
+  \ -> list[str]:\n440:    \"\"\"Give each runner_gap_rewrites row its new until and class, in place;\
+  \ the caller commits. #950.\"\"\"\n442:    for r in runner_gap_rewrites(conn):\n461:def runner_waits(conn,\
+  \ lane: str = \"\") -> list[dict]:\n462:    \"\"\"Screen declines waiting on a runner, format or policy\
+  \ this harness lacks, for runners wanted. #950.\"\"\"\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1021\
+  \ && sed -n 140,185p harness/memory_store/revisit.py; sed -n 255,280p harness/runner_gaps.py\n# A lane\
+  \ with too few cases to screen at the chosen confidence; met once it has more. #691.\n        lane,\
+  \ _, floor = want.partition(\">\")\n        if \"cases\" in facts:\n            have = (facts.get(\"\
+  cases\") or {}).get(lane)\n        else:\n            from harness import holdout\n            split\
+  \ = holdout.for_lane(lane)\n            have = len(set(split.dev) | set(split.holdout))\n        try:\n\
+  \            return have is not None and int(have) > int(floor)\n        except ValueError:\n      \
+  \      return False\n    if key == \"runner\":\n        have = facts.get(\"engines\")\n        if have\
+  \ is None:\n            from harness import engines\n            have = engines.names()\n        return\
+  \ bool(want) and want in have\n    if key == \"policy\":\n        # A repo's own code is never run;\
+  \ it loads once the pinned transformers ships its type. #950.\n        rule, _, mtype = want.partition(\"\
+  @\")\n        if rule != \"trust_remote_code\" or not mtype:\n            return False\n        native\
+  \ = facts.get(\"native_types\")\n        if native is None:\n            from harness import remote_code\n\
+  \            native = remote_code.native_types()[1]\n        return mtype in native\n    if key == \"\
+  package\":\n        # A package a runner's venv lacked; met once that venv has it. #1008.\n        dist,\
+  \ _, venv = want.partition(\"@\")\n        if not dist:\n            return False\n        have = facts.get(\"\
+  packages\")\n        if have is not None:\n            return dist in (have.get(venv) or ())\n     \
+  \   from harness import\n[... 1609 more bytes]\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1021\
+  \ && grep -rn \"named by\" harness --include='*.py' | head -20\nharness/screen.py:201:#: A GGUF file\
+  \ served by llama-server's router, named by its stem. #295.\nharness/disk.py:5:never named by guessing,\
+  \ and never deleted.\nharness/disk.py:41:#: Engine specs whose weights are not named by the spec itself.\n\
+  harness/models.py:3:A gateway entry is named by the upstream id it sends, except for three kinds of\n\
+  harness/methods.py:221:    # A gateway entry is named by its repo id now (#670); the gateway serves\
+  \ it, as it did its nickname.\nharness/engines.py:430:#: checkout is named by $ACESTEP_ROOT, the pattern\
+  \ $LLAMACPP_BIN already uses.\nharness/engines.py:481:    \"\"\"Music, through the ACE-Step checkout\
+  \ named by $ACESTEP_ROOT.\nharness/checks/render.py:49:# so the deliberate install has to be named by\
+  \ location too -- and Edge is\nharness/coverage.py:22:proposal is named by its spec and is a hole; a\
+  \ result row with no candidate is\nharness/remote_code.py:16:    \"\"\"The repo's own modelling code\
+  \ named by config.json's auto_map, or \"\" when it has none.\"\"\"\nharness/commands/discover.py:598:\
+  \                    why=f\"named by {repo}\"))\nharness/commands/discover.py:612:                 \
+  \                    f\"named by {repo}\")\nharness/quants.py:290:        lane=fit.lanes.get(base, \"\
+  \"), why=\"named by an incumbent's card\",\nharness/report.py:131:    \"\"\"A served spec named by its\
+  \ model id, the alias beside it. #670.\"\"\"\nharness/publish.py:360:    \"\"\"What a lane serves, named\
+  \ by its model id with what it is beside it. #670.\"\"\"\n\n## tool mcp__mcm-engine__search\n{\"query\"\
+  : \"neighbors\", \"project\": \"sohot\"}\n[7559 bytes of output not shown]\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1021\
+  \ && sed -n 540,640p harness/commands/discover.py\nelse f\"https://github.com/{repo}\"),\n         \
+  \       resolved=repo, lane=fit.lanes.get(repo, \"\"), why=fit.why,\n                lane_source=fit.card.lane_source,\n\
+  \                # WHAT IT IS, beside what the verdict said about it. The judge\n                # reads\
+  \ this; with only a name it cannot rank at all (#175).\n                description=fit.description))\n\
+  \            ms.set_size(store, repo, fit.largest)\n            if ms.set_lane(store, repo, fit.lanes.get(repo,\
+  \ \"\"),\n                           source=fit.card.lane_source):\n                print(f\"    lane\
+  \ corrected from the card: {repo} \"\n                      f\"-> {fit.lanes[repo]}\")\n           \
+  \ # The card's facts as columns and lineage rows; readers ask\n            # these, never the description.\
+  \ #414.\n            ms.set_card(store, repo, fit.card)\n            # A thing that cannot run here\
+  \ is ANSWERED, so it is terminal and\n            # never proposed again. \"unknown\" settles nothing,\
+  \ deliberately.\n            # A layout no variant groups is our gap: queued for inspect, never too-big\
+  \ on the sum. #947.\n            outcome = {\"fits\": \"queued\", \"unknown\": \"queued\" if fit.layout\
+  \ else \"\"}.get(\n                fit.verdict, \"declined\")\n            if outcome:\n           \
+  \     # The tier that read the repo writes why and what would end\n                # the wait; nothing\
+  \ re-reads its sentence. #270, #333, #408.\n                try:\n                    ms.decide(store,\
+  \ repo, outcome, tier=ms.INSPECT,\n                         \n[... 3998 more bytes]\n\n## tool Bash\n\
+  $ cd ~/projects/github/unxmaal/sohot-1021 && grep -rn \"^def decide_or_skip\\|^def latest\\|^def state_of\\\
+  |^def latest_verdict\\|^def current\" harness/memory_store/*.py | head; grep -n \"^def decide_or_skip\"\
+  \ -A30 harness/memory_store/*.py | head -45\nharness/memory_store/proposals.py:201:def latest(conn,\
+  \ name: str) -> dict | None:\nharness/memory_store/transitions.py:200:def decide_or_skip(conn, name:\
+  \ str, outcome: str, **kw) -> int | None:\nharness/memory_store/transitions.py:200:def decide_or_skip(conn,\
+  \ name: str, outcome: str, **kw) -> int | None:\nharness/memory_store/transitions.py-201-    \"\"\"\
+  decide() for a tier loop: a refused move says so and returns None.\"\"\"\nharness/memory_store/transitions.py-202-\
+  \    try:\nharness/memory_store/transitions.py-203-        return ms.decide(conn, name, outcome, **kw)\n\
+  harness/memory_store/transitions.py-204-    except IllegalTransition as exc:\nharness/memory_store/transitions.py-205-\
+  \        print(f\"  skipped {exc}\", flush=True)\nharness/memory_store/transitions.py-206-        return\
+  \ None\nharness/memory_store/transitions.py-207-\nharness/memory_store/transitions.py-208-\nharness/memory_store/transitions.py-209-def\
+  \ state_audit(conn) -> dict:\nharness/memory_store/transitions.py-210-    \"\"\"Proposals whose history\
+  \ the transition table would fold differently,\nharness/memory_store/transitions.py-211-    and those\
+  \ once terminal and now open, for a person to decide. #409.\"\"\"\nharness/memory_store/transitions.py-212-\
+  \    events: dict = {}\nharness/memory_store/transitions.py-213-    once_terminal = set()\nharness/memory_store/transitions.py-214-\
+  \    for r in conn.execute(\nharness/memory_store/transitions.py-215-            \"SELECT proposal_id,\
+  \ outcome, tier, reopen_kind, detail \"\n[... 1416 more bytes]\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1021\
+  \ && sed -n 195,230p harness/memory_store/proposals.py; sqlite3 \"file:$HOME/localharness/discovery.db?mode=ro\"\
+  \ \"select v.id,p.name,v.outcome,v.tier,datetime(v.decided_at,'unixepoch'),v.detail from verdicts v\
+  \ join proposals p on p.id=v.proposal_id where v.id between 12779 and 12796 order by v.id\" 2>&1 | cut\
+  \ -c1-200\nORDER BY times DESC, last_seen DESC\n        LIMIT ?\n    \"\"\"\n    return [r[\"name\"\
+  ] for r in conn.execute(q, args)]\n\n\ndef latest(conn, name: str) -> dict | None:\n    \"\"\"A name's\
+  \ state and the tier that set it, or None. #409.\"\"\"\n    row = conn.execute(\n        \"SELECT p.state\
+  \ AS outcome, v.tier FROM proposals p JOIN verdicts v \"\n        \"ON v.id = p.state_verdict_id WHERE\
+  \ p.name = ?\", (name,)).fetchone()\n    return dict(row) if row else None\n\n\ndef set_registry(conn,\
+  \ name: str, registry: str) -> None:\n    \"\"\"Record which registry answered for a name, once something\
+  \ has asked.\n\n    The migration fills what the store already proves and stops there, so a\n    name\
+  \ that arrived as prose keeps an empty registry: the sweep resolved it\n    against a registry and did\
+  \ not write down which one. This is how that\n    answer gets back in -- found by asking, not by guessing\
+  \ from the shape of\n    the string.\n    \"\"\"\n    if registry not in REGISTRIES:\n        raise\
+  \ ValueError(f\"{registry!r} is not one of {', '.join(REGISTRIES)}\")\n    conn.execute(\"UPDATE proposals\
+  \ SET registry = ? WHERE name = ?\",\n                 (registry, name))\n    conn.commit()\n\n\ndef\
+  \ survivors(conn, limit: int = 10) -> list[dict]:\n    \"\"\"Candidates whose LATEST verdict is a passed\
+  \ screen, newest first.\n\n    The latest verdict, not any verdict: a candidate that screened green\
+  \ and\n    was later measured and declined must not be handed to the measure tier\n    again every time\
+  \ the loop runs.\n[... 2310 more bytes]\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1021 &&\
+  \ sed -n 1,200p harness/coherence.py; grep -n \"coherence\" harness/cli.py | head\n\"\"\"Re-decide terminal\
+  \ verdicts whose reason contradicts their outcome or that nothing can reopen. #991.\"\"\"\nfrom __future__\
+  \ import annotations\n\nHELD = (\"SELECT v.id, p.id AS pid, p.name, p.lane, p.state, v.tier, v.reason,\
+  \ v.until, v.detail, v.decided_at, \"\n        \"v.run_path, v.run_id, v.candidate_id, v.failure_class,\
+  \ v.power, v.split_version, p.next_retest_at \"\n        \"FROM proposals p \"\n        \"JOIN verdicts\
+  \ v ON v.id = p.state_verdict_id \"\n        \"WHERE p.state IN ('broken', 'declined', 'ignored') ORDER\
+  \ BY v.id\")\n\n\ndef incoherent(conn) -> list[dict]:\n    \"\"\"State-holding verdicts transitions.incoherent\
+  \ names, each with why.\"\"\"\n    from harness.memory_store.transitions import incoherent as why_of\n\
+  \    out = []\n    for r in conn.execute(HELD).fetchall():\n        why = why_of(r[\"state\"], r[\"\
+  reason\"], r[\"until\"], retest=r[\"next_retest_at\"] is not None)\n        if why:\n            out.append({**dict(r),\
+  \ \"why\": why})\n    return out\n\n\nBROKEN_SCREENS = (\"SELECT v.id, p.name, p.hf_task, p.library,\
+  \ p.card_tags, p.model_type, p.remote_code, v.detail, \"\n                  \"v.run_path, v.run_id,\
+  \ v.candidate_id, coalesce(c.spec, p.name) AS spec FROM proposals p \"\n                  \"JOIN verdicts\
+  \ v ON v.id = p.state_verdict_id LEFT JOIN candidates c ON c.id = v.candidate_id \"\n              \
+  \    \"WHERE p.state = 'broken' AND v.tier = 'screen' AND v.reason = 'candidate' ORDER BY v.id\")\n\n\
+  \ndef misclassed(conn) -> list[dict]:\n    \"\"\"Broken screens whose own detail today's classifier\
+  \ reads as\n[... 6431 more bytes]\n\n## tool Bash\n$ sqlite3 \"file:$HOME/localharness/discovery.db?mode=ro\"\
+  \ \"SELECT v.id,p.name,p.state,v.outcome,v.reason,c.spec,v.until FROM proposals p JOIN verdicts v ON\
+  \ v.id=p.state_verdict_id LEFT JOIN candidates c ON c.id=v.candidate_id WHERE v.tier='screen' AND v.detail\
+  \ LIKE '%failed to load%' ORDER BY v.id\" | cut -c1-200\n12214|owensong/Inflect-Nano-v2|declined|declined|reopened||runner:tts/no-model-type\n\
+  12215|owensong/Inflect-Micro-v2|declined|declined|reopened||runner:tts/no-model-type\n12219|Supertone/supertonic-3|declined|declined|reopened||runner:tts/onnx\n\
+  12797|Ninnix96/Qwengram-0.8B|broken|broken|candidate|Ninnix96/Qwengram-0.8B|\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1021\
+  \ && grep -rn \"classify(\" evals harness --include='*.py' | grep -v \"def classify\" | head -20\nevals/importers/history.py:287:\
+  \        return {\"drop\": bad} if bad else classify(base_runs, fix_runs, files)\nevals/runners/base.py:73:\
+  \        cls = exc.failure_class or reasons.classify(\nharness/disk.py:373:def _classify(e: Entry, k:\
+  \ Keepers, verdicts: dict, conn=None) -> None:\nharness/disk.py:415:        _classify(e, keep, verdicts,\
+  \ conn)\nharness/reasons.py:325:    return classify(detail, RUNNER, candidate)\nharness/coherence.py:33:\
+  \        cls = reasons.classify(r[\"detail\"] or \"\", reasons.RUNNER, r[\"spec\"])\nharness/claude_news.py:164:\
+  \    flags, how = classify(entries, s, model)\nharness/load_log.py:99:    cls = reasons.classify(text\
+  \ + \"\\n\" + \"\".join(ex.lines), reasons.RUNNER, candidate)\nharness/lanprobe.py:61:    kind, why\
+  \ = classify(line)\nharness/live_audit.py:189:            if reasons.classify(r[\"detail\"] or \"\"\
+  , reasons.RUNNER, r[\"spec\"]) == reasons.LOAD_FAILED_LAYOUT]\nharness/memory_store/migrations/retractions.py:538:\
+  \        cls = reasons.classify(detail, reasons.RUNNER, spec)\nharness/commands/screen.py:194:    stderr_class\
+  \ = reasons.classify(tail, reasons.STDERR, candidate) if tail else \"\"\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1021\
+  \ && sed -n 60,85p evals/runners/base.py; sed -n 180,190p harness/live_audit.py; sed -n 525,545p harness/memory_store/migrations/retractions.py\n\
+  \"\"\"The `limit:` body when the last reply stopped at the token budget, else \"\". #628.\"\"\"\n  \
+  \      return \"\"\n\n    def stopped_by(self) -> tuple[str, str]:\n        \"\"\"(failure class, limit\
+  \ body) a failing row is put down to: a budget or cap we chose, else (\"\", \"\"). #695.\"\"\"\n   \
+  \     cut = self.cut_off()\n        return (reasons.TOKEN_BUDGET_EXHAUSTED, cut) if cut else (\"\",\
+  \ \"\")\n\n    def warm(self) -> None:\n        \"\"\"Load the model untimed, so no timed case pays\
+  \ for it. #406.\"\"\"\n\n    def failed(self, case: Case, exc: RunnerError, seconds: float = 0.0) ->\
+  \ Result:\n        \"\"\"The row for a failure, classed at the one place errors are caught.\"\"\"\n\
+  \        cls = exc.failure_class or reasons.classify(\n            exc.detail, reasons.RUNNER, self.spec\
+  \ or self.candidate)\n        return Result(case.id, self.candidate, False, round(seconds, 3),\n   \
+  \                   exc.peak_kb, exc.detail, failure_class=cls,\n                      limit=exc.limit)\n\
+  \n    def generate(self, case: Case):\n        \"\"\"Return (artifact, peak_kb). Raise RunnerError on\
+  \ a real failure.\n\n        `artifact` is completion text for a text modality and the path to the\n\
+  \        produced file for a binary one; score() dispatches on the modality.\n        \"\"\"\n     \
+  \   raise NotImplementedError(\n\ndef _broken_runner_layout(conn) -> list:\n    \"\"\"Live broken screens\
+  \ whose runner could not open the repo's layout: a runner gap written as a verdict. #951.\"\"\"\n  \
+  \  from harness import reasons\n    return [f\"verdict {r['id']} {r['name']}:\n[... 1827 more bytes]\n\
+  \n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1021 && python3 - <<'EOF'\nimport re\np='harness/reasons.py'\n\
+  s=open(p).read()\ns=s.replace('''_NO_PIPELINE_CLASS = re.compile(r\"has no attribute \\\\w+pipeline\\\
+  \\b\")\n_ACESTEP_INIT_EXIT = re.compile(r\"\\\\bexit 3\\\\b\")''','''_NO_PIPELINE_CLASS = re.compile(r\"\
+  has no attribute \\\\w+pipeline\\\\b\")\n_ACESTEP_INIT_EXIT = re.compile(r\"\\\\bexit 3\\\\b\")\n#:\
+  \ mlx-audio's stt server on a repo with no HuggingFace processor (the mlx whisper repos, RULE #188).\
+  \ #1021.\n_STT_NO_PROCESSOR = \"processor not found\"''')\ns=s.replace('''                or (head ==\
+  \ \"acestep\" and _ACESTEP_INIT_EXIT.search(low)))''','''                or (head == \"acestep\" and\
+  \ _ACESTEP_INIT_EXIT.search(low))\n                or (head == \"stt\" and _STT_NO_PROCESSOR in low))''')\n\
+  s=s.replace('''    if candidate.startswith(LLAMACPP_PREFIX) and all(\n            p in low for p in\
+  \ _LLAMACPP_LOAD_FAILED):\n        return _llamacpp_load(low)''','''    if _LLAMACPP_ALIAS.search(low)\
+  \ or candidate.startswith(LLAMACPP_PREFIX) and all(\n            p in low for p in _LLAMACPP_LOAD_FAILED):\n\
+  \        # llama-server's own 500 body, whatever spec reached it: a GGUF repo id routes there too (#583).\
+  \ #1021.\n        return _llamacpp_load(low)''')\nopen(p,'w').write(s)\nEOF\ngit diff --stat\nharness/reasons.py\
+  \ | 8 ++++++--\n 1 file changed, 6 insertions(+), 2 deletions(-)\n\n## tool mcp__mcm-engine__search\n\
+  {\"query\": \"load_until\", \"project\": \"sohot\"}\n[168 bytes of output not shown]\n\n## tool mcp__mcm-engine__add_knowledge\n\
+  {\"topic\": \"sohot-1021-cause-findings\", \"summary\": \"sohot #1021 causes: (1) 12797 Qwengram screened\
+  \ as bare repo id 'Ninnix96/Qwengram-0.8B' (serving._route sends a GGUF-only repo id to the\n[... 1410\
+  \ more bytes]\n[892 bytes of output not shown]\n\n## assistant\nNow screen.load_until and the whisper\
+  \ routing."
+params:
+  source_repo: https://github.com/unxmaal/SoHoT.git
+  base: ecc46507bfb159e8b5d0daddc728dceea246301c
+  fix: a99ccdb36f8370ba866db04787eb2c65385aac5a
+  variant: request
+  context: oracle
+  context_files:
+  - harness/memory_store/revisit.py
+  - harness/runner_gaps.py
+  - scripts/serve-tts.sh
+  fail_to_pass:
+  - tests/test_audio_env_1030.py::test_a_held_soundfile_on_the_servers_env_is_reachable
+  - tests/test_audio_env_1030.py::test_a_soundfile_the_audio_server_lacks_waits_on_the_servers_env_and_the_deploy_ends_it[darwin]
+  - tests/test_audio_env_1030.py::test_a_soundfile_the_audio_server_lacks_waits_on_the_servers_env_and_the_deploy_ends_it[linux]
+  - tests/test_audio_env_1030.py::test_a_soundfile_the_audio_server_lacks_waits_on_the_servers_env_and_the_deploy_ends_it[win32]
+  - tests/test_audio_env_1030.py::test_each_platforms_audio_server_script_is_read_when_asked
+  - tests/test_audio_env_1030.py::test_serve_tts_pins_soundfile_from_versions_sh
+  - tests/test_audio_env_1030.py::test_the_audio_heads_map_to_the_servers_env_unless_another_runner_reads_the_audio
+  - tests/test_audio_env_1030.py::test_the_servers_env_is_never_an_evals_run_interpreter
+  - tests/test_audio_env_1030.py::test_the_wait_holds_while_the_servers_script_does_not_pin_it
+  - tests/test_whisper_group_1024.py::test_the_runner_packages_no_deploy_step_installs_are_an_inventory_that_only_shrinks
+  pass_to_pass:
+  - tests/test_whisper_group_1024.py::test_a_held_package_until_the_venv_already_has_is_not_unreachable
+  - tests/test_whisper_group_1024.py::test_a_package_a_whisper_run_lacks_waits_on_the_whisper_env
+  - tests/test_whisper_group_1024.py::test_an_mlx_audio_spec_keeps_this_interpreter
+  - tests/test_whisper_group_1024.py::test_every_evals_run_launch_of_a_whisper_spec_uses_the_group_env
+  - tests/test_whisper_group_1024.py::test_installs_reads_each_venvs_deploy_step
+  - tests/test_whisper_group_1024.py::test_the_audit_lists_one_row_per_package_no_deploy_step_installs
+  - tests/test_whisper_group_1024.py::test_the_pre_1024_whisper_until_is_rewritten_to_the_groups_env
+  - tests/test_whisper_group_1024.py::test_where_the_group_cannot_install_it_the_screen_names_the_missing_env
+  - tests/test_whisper_group_1024.py::test_whisper_large_v3_screens_through_the_whisper_runner_in_the_groups_env
+attribution:
+  dataset: Claude Code session requests, redacted
+  url: https://github.com/unxmaal/SoHoT/issues/1095
+  license: generated
+  source: claude-code:transcripts
+  revision: 82ea6dc78eb1889c0e2f8b40e602ffc6fb9a3da4
+  item: 'sohot PR #1035'
+  date: '2026-10-19'
+  transform: 'a Claude Code session from the person''s request to just before the agent''s first edit
+    of a file the fix changes (evals/session_cut.py: user turns, assistant text, tool calls, reads and
+    searches kept, large outputs dropped, to a byte budget), redacted by evals/redact.py (secrets, ids,
+    emails, home and volume paths, hosts, IPs, pasted chat, handles, account and person names as typed
+    placeholders) and refused if a fix line or a name-like word is left; linked to the merged commit through
+    a commit hash or PR URL printed by a tool in that request or a Claude-Session trailer; base = fix^;
+    fail_to_pass and pass_to_pass from 2 sandboxed pytest runs per side, as evals/importers/history.py'
+  importer: evals.importers.transcripts
+  session: 893fd0505f5eef9e
+  evidence: pr
+  redactions:
+    path: 5

@@ -1,0 +1,229 @@
+# Claude Code session requests, redacted, generated (https://github.com/unxmaal/SoHoT/issues/1095).
+# Imported by evals/importers from claude-code:transcripts@82ea6dc78eb1889c0e2f8b40e602ffc6fb9a3da4; re-import, do not edit.
+id: sohot-pr1003-request
+modality: repo
+prompt: "Below is a Claude Code session, cut just before the agent's first edit to the code. Make the\
+  \ change the session is heading toward.\n\n## user\nHow’s the sweep?\n\n## user\nImplement SoHoT issue\
+  \ #1002 (soh audit from a checkout reads the checkout's served gateway config and fails served_matches_adoption\
+  \ on every lane). Read it with gh issue view 1002. Worktree ~/projects/github/unxmaal/sohot-1002. Another\
+  \ agent is working on #1000/#1001 (launchd.sh install guard, coherence, transitions retest), so stay\
+  \ out of those files. Session URL: https://claude.ai/code/<SESSION_1>\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot\
+  \ && gh issue view 1002 && git fetch origin -q && git worktree add ~/projects/github/unxmaal/sohot-1002\
+  \ -b audit-served-config-1002 origin/main 2>&1 | tail -2\n\n## tool ToolSearch\n{\"query\": \"select:mcp__mcm-engine__search,mcp__mcm-engine__report_error,mcp__mcm-engine__add_rule,mcp__soh__local_complete\"\
+  , \"max_results\": 4}\n[1633 bytes of output not shown]\n\n\n## tool mcp__mcm-engine__search\n{\"query\"\
+  : \"served_matches_adoption\"}\n[24164 bytes of output not shown]\n\n## tool mcp__mcm-engine__search\n\
+  {\"query\": \"served_path\"}\n[168 bytes of output not shown]\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1002\
+  \ && grep -n \"served\" harness/live_audit.py | head -60; grep -n \"def served_path\" -A15 harness/gateway.py\n\
+  18:SERVING = (\"adoptions_pass_here\", \"no_reference_served\", \"served_matches_adoption\", \"gateway_errors\"\
+  )\n56:def _no_reference_served(conn, served: dict) -> list:\n62:            for lane, params in sorted(served.items())\
+  \ if adopt.is_reference(str(params.get(\"model\") or \"\"))]\n66:def _served_matches(served: dict, wanted:\
+  \ dict) -> list:\n68:    return [f\"{gateway.LANE_ALIAS.format(lane)} serves {served.get(lane, {}).get('model')!r},\
+  \ \"\n70:            for lane in sorted(set(served) | set(wanted))\n71:            if served.get(lane,\
+  \ {}).get(\"model\") != wanted.get(lane, {}).get(\"model\")]\n221:    path = gateway.served_path(config)\n\
+  236:    \"\"\"(what the served config's sohot-<lane> aliases name, what the adoptions say they should).\"\
+  \"\"\n239:    path = gateway.served_path(config)\n240:    served = _aliases(gateway.load(path)) if path.exists()\
+  \ else {}\n241:    wanted = _aliases(gateway.served(config, adopt.lane_defaults(conn)))\n242:    return\
+  \ served, wanted\n256:            served, wanted = serving(conn, config)\n259:            mc._check(\"\
+  no_reference_served\", _no_reference_served(conn, served)),\n260:            mc._check(\"served_matches_adoption\"\
+  , _served_matches(served, wanted)),\n86:def served_path(config=None) -> Path:\n87-    \"\"\"Where the\
+  \ generated config goes: beside its base, so LiteLLM still finds schema_guard.\"\"\"\n88-    base =\
+  \ config_path(config)\n89-    return base.with_name(f\"{base.stem}.served{base.suffix}\")\n90-\n91-\n\
+  92-def served(config=None, defaults=None, nodes=None) -> dict:\n93-   \n[... 503 more bytes]\n\n## tool\
+  \ Bash\n$ cd ~/projects/github/unxmaal/sohot-1002 && sed -n 1,80p harness/live_audit.py; sed -n 210,300p\
+  \ harness/live_audit.py; grep -n \"def config_path\" -A15 harness/gateway.py; grep -n \"def load\\b\\\
+  |def load(\" -A10 harness/gateway.py\n<persisted-output>\nOutput too large (9.5KB). Full output saved\
+  \ to: <PATH_HOME>/.claude/projects/-Users-<ACCOUNT_1>-projects/<ID_1>/tool-results/b6f1zvtcx.txt\n\n\
+  Preview (first 2KB):\n\"\"\"`soh audit`: what a store must hold and what the gateway must serve, checked\
+  \ on the live store read-only. #492.\n\nThe store is opened with SQLite's mode=ro, so the audit can\
+  \ neither migrate nor\nwrite it: an older store is reported, never upgraded. The checks are #478's\n\
+  migration invariants, four about serving and one about the sweep schedule.\n\"\"\"\nfrom __future__\
+  \ import annotations\n\nimport sqlite3\nfrom pathlib import Path\n\nfrom harness import heartbeat, migration_check\
+  \ as mc\n\n#: An alias needs this many requests in the window before its error rate says anything.\n\
+  MIN_REQUESTS = 20\nERROR_RATE_MAX = 0.10\n\nSERVING = (\"adoptions_pass_here\", \"no_reference_served\"\
+  , \"served_matches_adoption\", \"gateway_errors\")\nSCHEDULE = (\"sweep_on_schedule\",)\nVERDICTS =\
+  \ (\"too_big_ceiling_current\", \"too_big_names_variant\", \"terminal_reason_coherent\", \"no_ranking_verdict\"\
+  ,\n            \"load_log_kept\", \"runner_gap_until_current\", \"broken_runner_layout\",\n        \
+  \    \"attachment_by_tag\")\nCHECKS = mc.INVARIANTS + SERVING + SCHEDULE + VERDICTS\n#: Checks a loop\
+  \ step repairs, and the heartbeat key that step marks: each warns until its own repair has run. #972.\n\
+  REPAIRED_BY = {\"too_big_ceiling_current\": heartbeat.REOPENED_TOO_BIG,\n               \"too_big_names_variant\"\
+  : heartbeat.REQUEUED_OLD_SIZING,\n        \n[... 720 more bytes]\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1002\
+  \ && sed -n 210,300p harness/live_audit.py; grep -n \"def config_path\" -A15 harness/gateway.py\n#:\
+  \ How far back the audit looks for requests a serving node handed to this machine. #739.\nFALLBACK_WINDOW_S\
+  \ = 3600.0\n\n\ndef node_fallbacks(conn, config=None, now=None) -> list[dict]:\n    \"\"\"{node, requests,\
+  \ aliases} per node whose requests this machine answered in the window.\"\"\"\n    import time\n\n \
+  \   from harness import gateway, nodes\n    now = time.time() if now is None else now\n    path = gateway.served_path(config)\n\
+  \    entries = {str(e.get(\"model_name\", \"\")): e for e in (gateway.load(path) if path.exists() else\
+  \ {})\n               .get(\"model_list\") or []}\n    by: dict = {}\n    for r in conn.execute(\"SELECT\
+  \ alias FROM gateway_requests WHERE at >= ? AND alias LIKE ?\",\n                          (now - FALLBACK_WINDOW_S,\
+  \ f\"%{nodes.LOCAL_SUFFIX}\")):\n        asked = r[\"alias\"].removesuffix(nodes.LOCAL_SUFFIX)\n   \
+  \     node = str(entries.get(asked, {}).get(nodes.NODE_KEY) or \"an unlisted node\")\n        got =\
+  \ by.setdefault(node, {\"node\": node, \"requests\": 0, \"aliases\": set()})\n        got[\"requests\"\
+  ] += 1\n        got[\"aliases\"].add(asked)\n    return [{**v, \"aliases\": sorted(v[\"aliases\"])}\
+  \ for _, v in sorted(by.items())]\n\n\ndef serving(conn, config=None) -> tuple[dict, dict]:\n    \"\"\
+  \"(what the served config's sohot-<lane> aliases name, what the adoptions say they should).\"\"\"\n\
+  \    from harness import adopt, gateway\n    from harness.gateway_switch import _aliases\n    path =\
+  \ gateway.served_path(config)\n    served = _aliases(gateway.load(path)) if path.exists() else {}\n\
+  \    wanted =\n[... 3956 more bytes]\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1002 && sed\
+  \ -n 1,32p harness/gateway.py; grep -n \"def db_path\\|def home\\b\\|def home(\" -A12 harness/memory_store.py\
+  \ | head -50; grep -rn \"audit\" harness/cli.py | head; ls ~/localharness/deploy/gateway/ 2>&1; ls gateway/\n\
+  \"\"\"Where the gateway config is, asked once.\n\nFive modules resolved this independently -- coverage,\
+  \ discover, rank, and\nscreen twice -- with the same expression copied five times:\n\n    Path(os.environ.get(\"\
+  GATEWAY_CONFIG\", <repo> / \"gateway\" / \"config.yaml\"))\n\nThat is the \"one question, two answers\"\
+  \ class, and the fifth copy was added\nwhile fixing a different instance of it. The copies agree today;\
+  \ nothing made\nthem, and a sixth would agree only by the author remembering.\n\"\"\"\nfrom __future__\
+  \ import annotations\n\nimport copy\nimport os\nfrom pathlib import Path\n\nENV_VAR = \"GATEWAY_CONFIG\"\
+  \n\n#: The repo root, two parents up from this file.\nREPO = Path(__file__).resolve().parent.parent\n\
+  \nDEFAULT = REPO / \"gateway\" / \"config.yaml\"\n\n#: LiteLLM prefixes a provider onto the upstream\
+  \ model id. Stripping is how an\n#: alias resolves to the repo id mlx_lm.server can hot-swap to, so\
+  \ an\n#: UNRECOGNISED prefix silently yields a model name nothing can serve. The\n#: tracked configs\
+  \ are asserted against this list, so adding a provider to one\n#: without adding it here fails rather\
+  \ than producing a wrong id.\nPROVIDER_PREFIXES = (\"openai/\", \"hosted_vllm/\", \"ollama/\", \"anthropic/\"\
+  )\n\n\ngrep: harness/memory_store.py: No such file or directory\nharness/cli.py:655:    aud = sub.add_parser(\"\
+  audit\", help=\"check the live store and what the gateway serves, \"\nharness/cli.py:658:          \
+  \           help=\"the store to audit (default: this home's discovery.db)\")\nharness/cli.py:659:  \
+  \ \n[... 703 more bytes]\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1002 && ls harness |\
+  \ head -80 | tr '\\n' ' '; echo; grep -rn \"def db_path\" -A12 harness/ | head -30; grep -n \"def cmd_audit\"\
+  \ -A25 harness/commands/store_cmd.py; sed -n 650,660p harness/cli.py\n__init__.py adopt.py arm_contexts.yaml\
+  \ arms.py assertions.py audio_server.py audio.py audit.py authoring.py availability.py batch.py benchmarks.py\
+  \ binding.py blame_audit.py canary.py candidates.py ceiling.py chaos.py checks claude_news.py cli.py\
+  \ clips.py coherence.py commands completion.py contamination.py context_report.py context.py covdiff.py\
+  \ coverage.py decider_score.py degenerate.py delegate.py delegations.py deploy_guard.py diffusers_pipelines.txt\
+  \ discover.py disk.py dora.py downloads.py ds4.py engines.py env.py exclusive.py feeds.py fetching.py\
+  \ funnel.py gateway_key.py gateway_switch.py gateway.py gguf.py github.py headless.py heartbeat.py hf_task.py\
+  \ holdout.py how-it-works.workflow.json howitworks.py human.py image_diffusers.py inspect.py intervals.py\
+  \ judge_server.py judge.py knobs label_server.py label.py lane_probe.py lanes.py lanprobe.py lease.py\
+  \ ledger.py lexical_rank.py live_audit.py load_log.py looks.py loopback.py machine.py mcp_server.py\
+  \ memory_store \nharness/memory_store/connection.py:45:def db_path() -> Path:\nharness/memory_store/connection.py-46-\
+  \    return paths.home() / \"discovery.db\"\nharness/memory_store/connection.py-47-\nharness/memory_store/connection.py-48-\n\
+  harness/memory_store/connection.py-49-def connect(path: Path | None = None):\nharness/memory_store/connection.py-50-\
+  \    \"\"\"Open (creating if needed) and migrate to SCHEMA_VERSION.\nharness/memory_store/connection.py-51-\n\
+  harness/memory_store/connection.py-52-    SQLite unless LOCALHARNESS_STORE says\n[... 1481 more bytes]\n\
+  \n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1002 && cat harness/paths.py | head -80; grep -rn\
+  \ \"deploy\\\"\" harness/*.py | head -20; grep -rn \"def cmd_audit\" -A25 harness/commands/\n\"\"\"\
+  One place for everything this project produces.\n\nTHERE WERE FOUR, and one of them was relative:\n\n\
+  \    out/                  the CLI, relative to whatever directory you ran it in\n    ~/localharness-out/\
+  \   the MCP server\n    .logs/                eval runs, mixed in with the service logs\n    /tmp/ \
+  \                whatever anyone was doing at the time\n\nThe relative one is the worst. `lh` installs\
+  \ onto PATH and runs from anywhere,\nso `out/` scattered artifacts into every directory anyone happened\
+  \ to be\nstanding in, and a generation you cannot find is a generation you did not make.\n\n    $LOCALHARNESS_HOME\
+  \              default ~/localharness\n      out/                          artifacts: images, audio,\
+  \ svg, pages\n      out/mcp/                      artifacts asked for over MCP\n      runs/<stamp>-<modality>/\
+  \      one eval run: its artifacts and results.json\n      logs/                         service stdout\
+  \ and stderr\n\n`out` and `logs` are kept apart because a generated artifact and a server's\nstderr\
+  \ are different things and only one of them is worth keeping.\n\"\"\"\nfrom __future__ import annotations\n\
+  \nimport itertools\nimport os\nimport subprocess\nimport sys\nimport time\nfrom pathlib import Path\n\
+  \n#: Process-local tiebreak. The stamp has millisecond resolution, but a caller\n#: can ask for two\
+  \ names inside one millisecond and NEITHER file exists yet, so\n#: an existence check alone hands back\
+  \ the same name twice.\n_SEQ = itertools.count()\n\nENV_VAR = \"LOCALHARNESS_HOME\"\nDEFAULT_HOME =\n\
+  [... 3744 more bytes]\n\n## tool ToolSearch\n{\"query\": \"select:mcp__mcm-engine__add_knowledge\",\
+  \ \"max_results\": 1}\n\n\n## tool mcp__mcm-engine__add_knowledge\n{\"topic\": \"sohot #1002: soh audit\
+  \ resolves the served gateway config from the checkout, not the deploy\", \"summary\": \"live_audit.serving\
+  \ and node_fallbacks read gateway.served_path(config), which\n[... 553 more bytes]\n[644 bytes of output\
+  \ not shown]\n\n## tool mcp__mcm-engine__search\n{\"query\": \"runs_elsewhere\"}\n[27929 bytes of output\
+  \ not shown]\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1002 && grep -rn \"runs_elsewhere\\\
+  |deploy_checkout\" --include=*.py . | grep -v \"^./.venv\" | head -20; ls tests | grep -i audit; grep\
+  \ -n \"def test\\|served\" tests/test_live_audit.py | head -60\n(eval):1: no matches found: --include=*.py\n\
+  test_blame_audit.py\ntest_gauntlet_audit.py\ntest_harness_audit.py\ntest_live_audit.py\n27 matches in\
+  \ 1 files:\n\n46:gateway.write_served(config)\n57:def test_a_healthy_store_passes_every_check(live):\n\
+  63:def test_the_audit_never_writes_the_store(live):\n75:def test_an_older_store_is_reported_not_migrated(live):\n\
+  87:def test_an_adoption_with_no_passing_run_here_fails(tmp_path, config):\n93:gateway.write_served(config)\n\
+  98:def test_a_probe_that_fails_at_the_first_identity_read_does_not_hide_the_run_...\n115:gateway.write_served(config)\n\
+  120:def test_a_reference_model_adopted_for_a_lane_fails(live):\n129:check = _checks(live_audit.audit(live))[\"\
+  no_reference_served\"]\n133:def test_a_served_alias_that_is_not_the_adoption_fails(live, config):\n\
+  134:gateway.write_served(config, defaults={\"code\": \"q3-4b\"})\n135:path = gateway.served_path(config)\n\
+  141:check = _checks(live_audit.audit(live))[\"served_matches_adoption\"]\n145:def test_an_alias_whose_requests_mostly_fail_fails(live):\n\
+  157:def test_a_few_errors_on_little_traffic_say_nothing(live):\n166:def test_soh_audit_is_one_json_object_and_fails_on_a_failed_check(tmp_path,\
+  \ c...\n172:gateway.write_served(config)\n179:def test_soh_audit_prints_each_check(live, capsys):\n\
+  185:def test_the_audit_never_opens_the_store_through_the_migrating_connect(live, ...\n192:def test_while_a_read_only_connection_is_lent_nothing_may_migrate(live):\n\
+  205:def test_a_last_sweep_older_than_its_interval_fails(live, monkeypatch):\n214:path =\n[... 238 more\
+  \ bytes]\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1002 && sed -n 1,60p tests/test_live_audit.py;\
+  \ sed -n 130,145p tests/test_live_audit.py; grep -rn \"runs_elsewhere\\|deploy_checkout\" harness tests\
+  \ scripts | head\n\"\"\"`soh audit`: the store's invariants and the serving facts, against the live\
+  \ store, read-only (#492 F).\"\"\"\nimport hashlib\nimport json\nimport sqlite3\nimport time\n\nimport\
+  \ pytest\nimport yaml\n\nfrom harness import adopt, cli, gateway, live_audit\nfrom harness import memory_store\
+  \ as ms\nfrom harness import runs\n\nSPEC = \"mlx-community/Qwen3-4B-Instruct-2507-4bit\"\nBASE = {\"\
+  model_list\": [{\"model_name\": \"q3-4b\", \"litellm_params\": {\n    \"model\": f\"openai/{SPEC}\"\
+  , \"api_base\": \"http://127.0.0.1:8081/v1\", \"api_key\": \"<SECRET_1>\"}}]}\n\n\n@pytest.fixture(autouse=True)\n\
+  def config(tmp_path, monkeypatch):\n    path = tmp_path / \"config.yaml\"\n    path.write_text(yaml.safe_dump(BASE),\
+  \ encoding=\"utf-8\")\n    monkeypatch.setenv(gateway.ENV_VAR, str(path))\n    return path\n\n\ndef\
+  \ _run(conn, tmp_path, passed, spec=SPEC, name=\"r1\"):\n    run = tmp_path / f\"20261006-000000-{name}\"\
+  \n    run.mkdir(exist_ok=True)\n    return runs.record(conn, run, {\n        \"receipt\": {\"modality\"\
+  : \"code\"}, \"environment\": ms.this_machine(), \"specs\": {spec: spec},\n        \"rows\": [{\"case_id\"\
+  : \"c1\", \"candidate\": spec, \"passed\": passed}]})\n\n\ndef _adopt(conn, run_id, spec=SPEC):\n  \
+  \  adopt.record(conn, adopt.Verdict(\"code\", \"q3-4b\", spec, True, \"won\", adopt.MEASURED), spec,\
+  \ run_id=run_id)\n\n\n@pytest.fixture\ndef live(tmp_path, config):\n    conn = ms.connect()\n    try:\n\
+  \        _adopt(conn, _run(conn, tmp_path, True))\n    finally:\n        conn.close()\n    gateway.write_served(config)\n\
+  \    from harness import heartbeat\n    heartbeat.start()\n\n[... 1801 more bytes]\n\n## tool Bash\n\
+  $ cd ~/projects/github/unxmaal/sohot-1002 && sed -n 56,75p harness/live_audit.py; sed -n 300,330p harness/live_audit.py;\
+  \ grep -n \"_aliases\" -A8 harness/gateway_switch.py | head -12\ndef _no_reference_served(conn, served:\
+  \ dict) -> list:\n    from harness import adopt\n    bad = [f\"{r['lane']}: adoption {r['id']} names\
+  \ reference model {r['spec']}\" for r in conn.execute(\n        \"SELECT a.id, a.lane, c.spec FROM adoptions\
+  \ a JOIN candidates c ON c.id = a.candidate_id ORDER BY a.id\")\n        if adopt.is_reference(r[\"\
+  spec\"])]\n    bad += [f\"sohot-{lane} serves reference model {params.get('model')}\"\n            for\
+  \ lane, params in sorted(served.items()) if adopt.is_reference(str(params.get(\"model\") or \"\"))]\n\
+  \    return bad\n\n\ndef _served_matches(served: dict, wanted: dict) -> list:\n    from harness import\
+  \ gateway\n    return [f\"{gateway.LANE_ALIAS.format(lane)} serves {served.get(lane, {}).get('model')!r},\
+  \ \"\n            f\"the adoption is {wanted.get(lane, {}).get('model')!r}\"\n            for lane in\
+  \ sorted(set(served) | set(wanted))\n            if served.get(lane, {}).get(\"model\") != wanted.get(lane,\
+  \ {}).get(\"model\")]\n\n\ndef _gateway_errors(conn) -> list:\n    import time\n    lines += [f\"  {'FAIL'\
+  \ if not c['ok'] else 'warn' if c.get('warn') else 'ok  '} {c['name']}\" + (f\": {c['detail']}\" if\
+  \ c[\"detail\"] else \"\")\n              for c in got[\"checks\"]]\n    if \"binding\" in got:\n  \
+  \      from harness import binding\n        lines.append(\"binding knobs:\")\n        lines.append(binding.render(got[\"\
+  binding\"]))\n    if \"fallbacks\" in got:\n        lines.append(\"node fallbacks in the last hour:\"\
+  \ + (\"\" if got[\"fallbacks\"] else \" none\"))\n        lines += [f\"  node {f['node']}:\n[... 755\
+  \ more bytes]\n\n## assistant\nNow the edits."
+params:
+  source_repo: https://github.com/unxmaal/SoHoT.git
+  base: 86d6d19ba3d4b26d95a7bafc63dca9c0fd701f1a
+  fix: b21dbf813f1dd086d3192a1934bb329e22a63020
+  variant: request
+  context: oracle
+  context_files:
+  - harness/live_audit.py
+  fail_to_pass:
+  - tests/test_live_audit.py::test_a_store_that_is_not_the_live_one_keeps_this_checkouts_config
+  - tests/test_live_audit.py::test_no_served_config_is_one_finding_naming_its_path_not_one_per_lane
+  - tests/test_live_audit.py::test_the_live_store_audited_from_a_checkout_reads_the_deploys_served_config
+  pass_to_pass:
+  - tests/test_live_audit.py::test_a_broken_row_with_a_limit_reason_fails_the_audit
+  - tests/test_live_audit.py::test_a_few_errors_on_little_traffic_say_nothing
+  - tests/test_live_audit.py::test_a_healthy_store_passes_every_check
+  - tests/test_live_audit.py::test_a_last_sweep_older_than_its_interval_fails
+  - tests/test_live_audit.py::test_a_pinned_incoherent_row_warns_without_failing_the_audit
+  - tests/test_live_audit.py::test_a_probe_that_fails_at_the_first_identity_read_does_not_hide_the_run_here
+  - tests/test_live_audit.py::test_a_reference_model_adopted_for_a_lane_fails
+  - tests/test_live_audit.py::test_a_served_alias_that_is_not_the_adoption_fails
+  - tests/test_live_audit.py::test_an_adoption_with_no_passing_run_here_fails
+  - tests/test_live_audit.py::test_an_alias_whose_requests_mostly_fail_fails
+  - tests/test_live_audit.py::test_an_older_store_is_reported_not_migrated
+  - tests/test_live_audit.py::test_no_fallback_says_none
+  - tests/test_live_audit.py::test_soh_audit_is_one_json_object_and_fails_on_a_failed_check
+  - tests/test_live_audit.py::test_soh_audit_prints_each_check
+  - tests/test_live_audit.py::test_the_audit_lists_a_node_whose_requests_fell_back_in_the_last_hour
+  - tests/test_live_audit.py::test_the_audit_never_opens_the_store_through_the_migrating_connect
+  - tests/test_live_audit.py::test_the_audit_never_writes_the_store
+  - tests/test_live_audit.py::test_while_a_read_only_connection_is_lent_nothing_may_migrate
+attribution:
+  dataset: Claude Code session requests, redacted
+  url: https://github.com/unxmaal/SoHoT/issues/1095
+  license: generated
+  source: claude-code:transcripts
+  revision: 82ea6dc78eb1889c0e2f8b40e602ffc6fb9a3da4
+  item: 'sohot PR #1003'
+  date: '2026-10-19'
+  transform: 'a Claude Code session from the person''s request to just before the agent''s first edit
+    of a file the fix changes (evals/session_cut.py: user turns, assistant text, tool calls, reads and
+    searches kept, large outputs dropped, to a byte budget), redacted by evals/redact.py (secrets, ids,
+    emails, home and volume paths, hosts, IPs, pasted chat, handles, account and person names as typed
+    placeholders) and refused if a fix line or a name-like word is left; linked to the merged commit through
+    a commit hash or PR URL printed by a tool in that request or a Claude-Session trailer; base = fix^;
+    fail_to_pass and pass_to_pass from 2 sandboxed pytest runs per side, as evals/importers/history.py'
+  importer: evals.importers.transcripts
+  session: 893fd0505f5eef9e
+  evidence: pr
+  redactions:
+    account: 1
+    id: 1
+    path: 1
+    secret: 1
+    session: 1

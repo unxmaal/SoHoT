@@ -1,0 +1,120 @@
+# Claude Code session requests, redacted, generated (https://github.com/unxmaal/SoHoT/issues/1095).
+# Imported by evals/importers from claude-code:transcripts@82ea6dc78eb1889c0e2f8b40e602ffc6fb9a3da4; re-import, do not edit.
+id: mcm-engine-pr184-request
+modality: repo
+prompt: "Below is a Claude Code session, cut just before the agent's first edit to the code. Make the\
+  \ change the session is heading toward.\n\n## user\nPlease ensure I have a safe and viable migration\
+  \ plan as well, then run it\n\n## assistant\nStarting with the raw material and repo state before filing\
+  \ anything. Checking PR merge state, the fork inventory, and the basement dump runbook in parallel:\n\
+  \n## tool mcp__mcm-engine__search\n{\"query\": \"pg_dump\"}\n[15501 bytes of output not shown]\n\n##\
+  \ tool Bash\n$ git fetch origin -q && echo \"=== PR states ===\" && gh pr list --state all --limit 5\
+  \ --json number,state,title -q '.[] | \"\\(.number) \\(.state) \\(.title[:60])\"' && echo \"=== EntityType\
+  \ dispatch sites (raw count) ===\" && grep -rn \"EntityType\\.\" src/mcm_engine --include=*.py | grep\
+  \ -v \"__pycache__\" | wc -l && echo \"=== by file ===\" && grep -rc \"EntityType\\.\" src/mcm_engine\
+  \ --include=*.py | grep -v \":0$\" | sort -t: -k2 -nr | head -25\nok fetched\n=== PR states ===\n175\
+  \ OPEN #172: hard byte cap + session dedup on UserPromptSubmit hook\n174 OPEN #171: cap retrieval output\
+  \ in summary search (inline Why/Fix\n173 OPEN #170: sanitize NEGATIVE/ERROR serialized-blob pollution\
+  \ + st\n169 MERGED chore(release): 3.16.0\n167 MERGED feat(eval): replay harness for retrieval-trigger\
+  \ policies (#\n=== EntityType dispatch sites (raw count) ===\n(eval):1: no matches found: --include=*.py\n\
+  \       0\n=== by file ===\n(eval):1: no matches found: --include=*.py\n\n## tool mcp__mcm-engine__search\n\
+  {\"query\": \"basement\"}\n[12074 bytes of output not shown]\n\n## tool Bash\n$ echo \"=== EntityType\
+  \ dispatch sites total ===\" && grep -rn 'EntityType\\.' src/mcm_engine --include='*.py' | wc -l &&\
+  \ echo \"=== by file ===\" && grep -rc 'EntityType\\.' src/mcm_engine --include='*.py' | grep -v ':0$'\
+  \ | sort -t: -k2 -nr && echo \"=== is EntityType.X branch sites ===\" && grep -rn 'is EntityType\\.\\\
+  |== EntityType\\.\\|in (EntityType\\.' src/mcm_engine --include='*.py' | wc -l\n\n## tool Bash\n$ echo\
+  \ \"=== why the split: first commits touching each table ===\" && for t in negative_knowledge errors\
+  \ knowledge rules; do c=$(git log --format='%h %ad %s' --date=short -S \"CREATE TABLE IF NOT EXISTS\
+  \ $t\" -- src/mcm_engine/schema.py | tail -1); echo \"$t: $c\"; done && echo \"=== schema migration\
+  \ versions ===\" && grep -n \"SCHEMA_VERSION\\|_mcm_versions\\|def migrate_core\\|version\" src/mcm_engine/schema.py\
+  \ | head -15 && echo \"=== postgres migration chain ===\" && ls src/mcm_engine/adapters/postgres/ &&\
+  \ grep -n \"version\\|_mcm_versions\\|def ensure_schema\\|def _migrate\" src/mcm_engine/adapters/postgres/storage.py\
+  \ | head -20\n\n## tool Bash\n$ echo \"=== lodestone location ===\" && ls -d <PATH_HOME>/projects/github/unxmaal/lodestone\
+  \ 2>/dev/null || ls -d ~/projects/*/lodestone ~/projects/github/*/lodestone 2>/dev/null; echo \"===\
+  \ mcm tool names called by lodestone ===\" && grep -rhoE '\"(add_knowledge|add_negative|report_error|add_rule|search|get_entry|read_rule|session_start|session_handoff|save_snapshot|get_resume_context|scroll_entries|recall_entry|supersede_[a-z]+|reinforce_[a-z]+|promote_to_rule|sanitize_[a-z]+|list_rules|find_[a-z_]+)\"\
+  ' <PATH_HOME>/projects/github/unxmaal/lodestone 2>/dev/null | sort | uniq -c | sort -nr | head -30;\
+  \ echo \"=== hook configs tool refs ===\" && grep -rhoE 'mcm-engine [a-z-]+' <PATH_HOME>/projects/.claude/settings*.json\
+  \ <PATH_HOME>/.claude/settings*.json 2>/dev/null | sort | uniq -c\n\n## tool Bash\n$ cd ~/.claude/projects/-Users-<ACCOUNT_1>-projects\
+  \ && echo \"=== transcripts ===\" && ls *.jsonl | wc -l && echo \"=== mcm tool_use calls by tool (search/report_error/get_entry/read_rule)\
+  \ across all transcripts ===\" && grep -hoE '\"name\":\"mcp__mcm-engine__(search|report_error|get_entry|read_rule)\"\
+  ' *.jsonl | sort | uniq -c | sort -nr\n=== EntityType dispatch sites total ===\n     217\n=== by file\
+  \ ===\nsrc/mcm_engine/testing/conformance.py:40\nsrc/mcm_engine/tools/search.py:29\nsrc/mcm_engine/adapters/sqlite/storage.py:23\n\
+  src/mcm_engine/adapters/postgres/storage.py:23\nsrc/mcm_engine/tools/rules.py:21\nsrc/mcm_engine/tools/session.py:12\n\
+  src/mcm_engine/tools/knowledge.py:11\nsrc/mcm_engine/migrate.py:8\nsrc/mcm_engine/tools/corpus.py:5\n\
+  src/mcm_engine/tools/relations.py:4\nsrc/mcm_engine/tools/decisions.py:4\nsrc/mcm_engine/ingest/adjudicate.py:4\n\
+  src/mcm_engine/adapters/sqlite/search.py:4\nsrc/mcm_engine/adapters/sqlite/counters.py:4\nsrc/mcm_engine/adapters/redis/counters.py:4\n\
+  src/mcm_engine/adapters/postgres/search.py:4\nsrc/mcm_engine/adapters/postgres/counters.py:4\nsrc/mcm_engine/adapters/opensearch/search.py:4\n\
+  src/mcm_engine/rules_links.py:2\nsrc/mcm_engine/hooks/mcp_enforcement.py:2\nsrc/mcm_engine/admin/service.py:2\n\
+  src/mcm_engine/mirror.py:1\nsrc/mcm_engine/ingest/rulesift.py:1\nsrc/mcm_engine/consolidate.py:1\n===\
+  \ is EntityType.X branch sites ===\n      40\n=== why the split: first commits touching each table ===\n\
+  negative_knowledge: d11168a 2026-03-03 initial\nerrors: d11168a 2026-03-03 initial\nknowledge: d11168a\
+  \ 2026-03-03 initial\nrules: d11168a 2026-03-03 initial\n=== schema migration versions ===\n8:# Full\
+  \ schema for fresh installs (creates everything at latest version)\n113:-- Schema version tracking (core\
+  \ + plugins)\n114:CREATE TABLE IF NOT EXISTS _mcm_versions (\n116:    version INTEGER NOT NULL,\n340:#\
+  \ Incremental migrations: (from_version) -> callable\n341:# Each function upgrades from version N to\
+  \ N+1.\n773:    # (from_version, to_version, function)\n793:def migrate_core(db: KnowledgeDB) -> None:\n\
+  796:    Fresh databases get the full CORE_SCHEMA (latest version).\n797:    Existing databases run incremental\
+  \ migrations from their current version.\n802:    # Check current version\n804:        \"SELECT version\
+  \ FROM _mcm_versions WHERE component = 'core'\"\n810:            \"INSERT INTO _mcm_versions (component,\
+  \ version) VALUES ('core', ?)\",\n814:        log(f\"Core schema initialized at version {CORE_VERSION}\"\
+  )\n815:    elif existing[\"version\"] < CORE_VERSION:\n=== postgres migration chain ===\n__init__.py\n\
+  __pycache__\n_pool.py\ncounters.py\nsearch.py\nstorage.py\n225:    # has no versioned migration framework\
+  \ — CREATE TABLE IF NOT EXISTS\n461:    CREATE TABLE IF NOT EXISTS _mcm_versions (\n463:        version\
+  \     INTEGER NOT NULL,\n595:    \"_mcm_versions\",\n853:    def ensure_schema(self) -> None:\n857:\
+  \            # Record the schema version so\n[... 455 more bytes]\n=== transcripts ===\n      11\n===\
+  \ mcm tool_use calls by tool (search/report_error/get_entry/read_rule) across all transcripts ===\n\
+  1474 \"name\":\"mcp__mcm-engine__search\"\n 241 \"name\":\"mcp__mcm-engine__report_error\"\n  53 \"\
+  name\":\"mcp__mcm-engine__read_rule\"\n  45 \"name\":\"mcp__mcm-engine__get_entry\"\nShell cwd was reset\
+  \ to <PATH_HOME>/projects\n=== lodestone location ===\n(eval):1: no matches found: <PATH_HOME>/projects/*/lodestone\n\
+  === mcm tool names called by lodestone ===\n=== hook configs tool refs ===\n   1 mcm-engine --help\n\
+  \   1 mcm-engine --version\n   1 mcm-engine -h\n   1 mcm-engine -v\n   2 mcm-engine hook\n   1 mcm-engine\
+  \ ingest\n   1 mcm-engine post-tool-use-failure\n   1 mcm-engine run\n   2 mcm-engine serve\n   1 mcm-engine\
+  \ session-end\n   2 mcm-engine session-start\n   1 mcm-engine user-prompt-submit\n\n## tool mcp__mcm-engine__search\n\
+  {\"query\": \"insurance\"}\n\n## tool mcp__mcm-engine__search\n{\"query\": \"lodestone\", \"scope\"\
+  : \"knowledge\", \"limit\": 5}\n[7100 bytes of output not shown]\n[3490 bytes of output not shown]"
+params:
+  source_repo: https://github.com/unxmaal/mcm-engine.git
+  base: bb256115dfea042c4e42dd2601c25fda130f8f5d
+  fix: f80dbee47b220535b61a40c3c61757b5257a5f2d
+  variant: request
+  context: oracle
+  context_files:
+  - .gitignore
+  - src/mcm_engine/cli.py
+  new_files:
+  - src/mcm_engine/corpus_snapshot.py
+  pytest_args:
+  - -o
+  - pythonpath=src
+  extras:
+  - dev
+  fail_to_pass:
+  - tests/test_corpus_snapshot.py::test_census_reports_shape_pollution_and_fit
+  - tests/test_corpus_snapshot.py::test_parse_handles_empty_page
+  - tests/test_corpus_snapshot.py::test_parse_round_trips_the_real_renderer[error]
+  - tests/test_corpus_snapshot.py::test_parse_round_trips_the_real_renderer[knowledge]
+  - tests/test_corpus_snapshot.py::test_parse_round_trips_the_real_renderer[negative]
+  - tests/test_corpus_snapshot.py::test_parse_round_trips_the_real_renderer[rule]
+  - tests/test_corpus_snapshot.py::test_snapshot_copies_every_type_with_ids
+  - tests/test_corpus_snapshot.py::test_snapshot_refuses_to_overwrite
+  pass_to_pass: []
+attribution:
+  dataset: Claude Code session requests, redacted
+  url: https://github.com/unxmaal/SoHoT/issues/1095
+  license: generated
+  source: claude-code:transcripts
+  revision: 82ea6dc78eb1889c0e2f8b40e602ffc6fb9a3da4
+  item: 'mcm-engine PR #184'
+  date: '2026-10-21'
+  transform: 'a Claude Code session from the person''s request to just before the agent''s first edit
+    of a file the fix changes (evals/session_cut.py: user turns, assistant text, tool calls, reads and
+    searches kept, large outputs dropped, to a byte budget), redacted by evals/redact.py (secrets, ids,
+    emails, home and volume paths, hosts, IPs, pasted chat, handles, account and person names as typed
+    placeholders) and refused if a fix line or a name-like word is left; linked to the merged commit through
+    a commit hash or PR URL printed by a tool in that request or a Claude-Session trailer; base = fix^;
+    fail_to_pass and pass_to_pass from 2 sandboxed pytest runs per side, as evals/importers/history.py'
+  importer: evals.importers.transcripts
+  session: 58ac45f60e85cf07
+  evidence: pr
+  redactions:
+    account: 1
+    path: 6

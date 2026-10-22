@@ -5,9 +5,10 @@ import math
 import re
 from collections import Counter
 from dataclasses import dataclass, field
+from pathlib import Path
 
 #: Placeholder classes in the order they apply; earlier classes win an overlap.
-CLASSES = ("paste", "session", "request", "id", "secret", "email", "path", "host", "ip", "chat", "handle",
+CLASSES = ("paste", "session", "request", "id", "secret", "email", "path", "host", "ip", "tz", "chat", "handle",
            "account", "name")
 _SECRETS = [re.compile(p, re.S) for p in (
     r"-----BEGIN [A-Z ]*PRIVATE KEY-----.*?(?:-----END [A-Z ]*PRIVATE KEY-----|\Z)",
@@ -54,7 +55,10 @@ _PATTERNS = {
 }
 _HOME = re.compile(r"(?:/(?:Users|home)/|[A-Za-z]:\\Users\\)(?!USER\b|you\b|user\b|<)[^/\\\s'\"`]+(?=[/\\]|\s|$|['\"`])")
 _VOLUME = re.compile(r"(?<!System)/Volumes/[^/\s'\"`]+")
-_TMP = re.compile(r"/(?:private/)?var/folders/[^\s'\"`]+")
+_TMP = re.compile(r"/(?:private/)?(?:var/folders|tmp/claude-\d+)/[^\s'\"`]+")
+#: A local time zone in a `date` or log line says where the machine is.
+_TZ = re.compile(r"\b(?:[ECMP]|AK|H)[SD]T\b|\b(?:BST|CEST|CET|EEST|EET|IST|JST|AEST|AEDT)\b"
+                 r"|(?:(?<=:\d\d)|(?<=:\d\d \d{4}))(?:\.\d+)?\s?[+-](?:0\d|1[0-4]):?[0-5]\d(?!\d)")
 _CHAT = [re.compile(p) for p in (
     r"^\s*\[\d+\]\s*[^:\n\[\]]{1,64}:\s",
     r"^\s*\[?\d{1,2}:\d{2}(?::\d{2})?\s*(?:[AaPp]\.?[Mm]\.?)?\]?\s*[-–—]?\s*[^:\n]{1,40}:\s",
@@ -111,8 +115,9 @@ def _generic(cls: str, value: str) -> bool:
 
 
 def _words(values) -> re.Pattern | None:
+    """Any of `values` as a whole word, also inside a slug such as "-Users-<name>-projects"."""
     vals = sorted({v.strip() for v in values if v and len(v.strip()) >= 2}, key=len, reverse=True)
-    return re.compile(r"(?<![\w-])(?:" + "|".join(re.escape(v) for v in vals) + r")(?![\w-])", re.I) if vals else None
+    return re.compile(r"(?<![A-Za-z0-9])(?:" + "|".join(re.escape(v) for v in vals) + r")(?![A-Za-z0-9])", re.I) if vals else None
 
 
 def _chat_lines(text: str):
@@ -143,6 +148,7 @@ def _spans(text: str, known: Known):
     for cls, extra in (("host", known.hosts), ("ip", ()), ("handle", ())):
         pats = list(_PATTERNS[cls]) + ([w] if (w := _words(extra)) else [])
         out += [(m.start(), m.end(), cls) for p in pats for m in p.finditer(text) if not _generic(cls, m.group(0))]
+    out += [(m.start(), m.end(), "tz") for m in _TZ.finditer(text)]
     out += [(a, b, "chat") for a, b in _chat_lines(text)]
     for cls, extra in (("account", known.accounts), ("name", known.names)):
         if (w := _words(extra)):
@@ -207,3 +213,47 @@ def known_here(name_files=()) -> Known:
     host = socket.gethostname().split(".")[0]
     return Known(accounts=tuple(sorted(accounts)), names=tuple(sorted(names)),
                  hosts=tuple(sorted({host} if host and host != "localhost" else set())))
+
+
+#: Words that look like a person's name and are not one: projects, libraries, models, tools. One per line.
+SAFE_NAMES = Path(__file__).with_name("safe_names.txt")
+_CAPITAL = re.compile(r"(?<![\w@.$/\\-])[A-Z][a-z]{2,15}(?![\w-])")
+_HANDLE = re.compile(r"(?<![\w.@/])@([A-Za-z_][\w.-]{0,31}[\w])")
+_DECORATOR = re.compile(r"^\s*(?:\d+[\t→ ]+)?@[\w.]+(?:\(|\s*$)")
+_LOWER = re.compile(r"(?<![A-Za-z])[a-z]{3,}(?![A-Za-z])")
+
+
+def safe_names(path: Path = SAFE_NAMES) -> frozenset:
+    return frozenset(w.strip().lower() for w in path.read_text(encoding="utf-8").splitlines()
+                     if w.strip() and not w.startswith("#"))
+
+
+_VOCAB: dict = {}
+
+
+def vocabulary(root: Path | None = None) -> frozenset:
+    """Every lower-case word this repo's own code and README use: a capitalized one of these is a word, not a name."""
+    from harness import repo as tree
+    root = root or Path(__file__).resolve().parent.parent
+    if root not in _VOCAB:
+        words = set()
+        for f in tree.publishable(root):
+            rel = f.relative_to(root).as_posix()
+            if f.suffix in (".py", ".md") and not rel.startswith("evals/cases/") and f.is_file():
+                words |= set(_LOWER.findall(f.read_text(encoding="utf-8", errors="replace")))
+        _VOCAB[root] = frozenset(words)
+    return _VOCAB[root]
+
+
+def name_like(text: str, safe=None, vocab=None) -> list[str]:
+    """Capitalized words and @handles that could be a person: not on the safe list and, for a word, not a word
+    the repo or the text itself uses in lower case."""
+    safe = safe_names() if safe is None else safe
+    words = set(_LOWER.findall(text)) | (vocabulary() if vocab is None else vocab)
+    found = {m.group(0) for m in _CAPITAL.finditer(text)
+             if m.group(0).lower() not in words and m.group(0).lower() not in safe}
+    for line in text.splitlines():
+        if _DECORATOR.match(line):
+            continue
+        found |= {"@" + h for h in _HANDLE.findall(line) if h.split(".")[0].lower() not in safe}
+    return sorted(found)

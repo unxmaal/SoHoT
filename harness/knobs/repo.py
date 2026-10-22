@@ -24,10 +24,16 @@ KNOBS = [
        note="seconds a printed commit's committer date may follow the tool output and still be its evidence (#1095)"),
     _k("transcripts_commit_before", ["evals/importers/transcripts.py:COMMIT_BEFORE_S"], [600, 1800, 3600],
        note="seconds a printed commit's committer date may precede the tool output (hooks, a push after it) (#1095)"),
-    _k("transcripts_max_tasks_per_request", ["evals/importers/transcripts.py:MAX_TASKS_PER_REQUEST"], [1, 2, 3],
-       note="merged tasks one request may resolve in and still be the prompt for each of them (#1095)"),
-    _k("transcripts_min_request_words", ["evals/importers/transcripts.py:MIN_REQUEST_WORDS"], [5, 8, 12],
-       note="words a request needs to say what to do; shorter ones are dropped as request_too_short (#1095)"),
+    _k("transcripts_cut_budget", ["evals/session_cut.py:BUDGET_BYTES"], [12000, 24000, 48000],
+       note="bytes of the session a transcript case's prompt keeps before the first edit (#1095)"),
+    _k("transcripts_cut_command_cap", ["evals/session_cut.py:COMMAND_CAP_BYTES"], [0, 400, 1500],
+       note="bytes of a non-read command's output a cut keeps; past it the body goes, as it may quote other people (#1095)"),
+    _k("transcripts_cut_output_cap", ["evals/session_cut.py:OUTPUT_CAP_BYTES"], [500, 1500, 4000],
+       note="bytes of one tool output a cut keeps; a larger non-read output loses its body (#1095)"),
+    _k("transcripts_leak_min_chars", ["evals/session_cut.py:LEAK_MIN_CHARS"], [8, 16, 32],
+       note="characters an added fix line needs before its presence in a cut counts as a leak (#1095)"),
+    _k("transcripts_min_cut_bytes", ["evals/importers/transcripts.py:MIN_CUT_BYTES"], [500, 1000, 2000],
+       note="bytes a cut needs beyond its header; a smaller one is the request alone and drops as cut_too_short (#1095)"),
 ]
 
 NOT_GATING = {

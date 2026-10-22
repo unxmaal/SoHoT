@@ -1,0 +1,277 @@
+# Claude Code session requests, redacted, generated (https://github.com/unxmaal/SoHoT/issues/1095).
+# Imported by evals/importers from claude-code:transcripts@82ea6dc78eb1889c0e2f8b40e602ffc6fb9a3da4; re-import, do not edit.
+id: sohot-pr957-request
+modality: repo
+prompt: "Below is a Claude Code session, cut just before the agent's first edit to the code. Make the\
+  \ change the session is heading toward.\n\n## user\nCan the new MacOS native containers access the GPU?\n\
+  \n## user\nYou are an independent labeller classifying why 30 failed attempts at a code-repair benchmark\
+  \ failed. Work blind: use ONLY the files under the packet directory below. Do not open anything under\
+  \ ~/projects, ~/localharness or ~/.claude, do not use gh, git log, the web, or any MCP knowledge-base\
+  \ tool, and do not look up issue numbers mentioned in the codebook. Your judgment must come from the\
+  \ codebook and the evidence alone.\n\nPacket: <PATH_TMP>\n- codebook.txt: the label classes, whose fault\
+  \ each is, one-line definitions, and the precedence rule (the first class that fits, in the listed order,\
+  \ wins).\n- rows.tsv: one row per item to label: run name, case id, the case file (relative to the packet),\
+  \ and the base tree (relative to the packet) the model's patch was applied to.\n- <run>/<case file>.json:\
+  \ what the model replied (`reply`), the diff the harness extracted from it (`diff`), and the grader's\
+  \ result (`grade`: patch_applied, detail, failed tests).\n- cases/<case>.yaml: the task: prompt, base\
+  \ commit, context_files shown to the model, fail_to_pass and pass_to_pass tests.\n- bases/<sha10>/:\
+  \ a plain export of the repository at the base commit (not a git repo).\n\nHow the harness applied a\
+  \ diff: it ran `git apply --recount --whitespace=nowarn -` with the diff on stdin in the base tree,\
+  \ then retried with --3way (which always fails on these diffs, so ignore its \"lacks the necessary blob\"\
+  \ message). You may reproduce this yourself: copy a base tree to a temp dir of your own (never modify\
+  \ the packet) and run `git apply --check --recount --whitespace=nowarn` there (git apply works outside\
+  \ a repository), with and without edits to the diff, to decide between the patch classes. For rows where\
+  \ the patch applied, the grade's detail and failed list say which tests failed; you do not need to run\
+  \ tests.\n\nOutput: write one JSON object per line to <PATH_TMP> exactly one line for each of the 30\
+  \ rows, with keys:\n  \"run\" and \"case\" (from rows.tsv), \"class\" (a codebook class), \"file\" (the\
+  \ case file name only, no run directory, e.g. \"claude-code:claude-opus-5-5--sohot-363-spec.json\"),\
+  \ \"offset\" (the byte offset in that case file where your excerpt starts), \"excerpt\" (a short exact\
+  \ byte substring of the case file, as it appears in the raw JSON text, that supports your label), \"\
+  by\": \"second labeller, blind\", and optionally \"note\" (one short line on what you checked).\nCompute\
+  \ offsets with Python over the raw bytes: data = open(path, 'rb').read(); data.find(excerpt.encode()).\
+  \ Verify every excerpt sits at its offset before you finish.\n\nLabel every row on its own evidence;\
+  \ do not assume a pattern from earlier rows. When done, reply with a short summary: the count per class,\
+  \ and any rows you found hard to decide and why.\n\n## tool Bash\n$ cd <PATH_TMP> && cat codebook.txt\
+  \ && cat rows.tsv && ls\nbudget_exhausted (harness): the runner says the reply spent max_tokens with\
+  \ no answer; at_cut says what the reasoning was doing at the cut, or unrecorded when the run kept no\
+  \ reasoning\ntool_call (protocol): the reply holds no diff and calls tools instead (<tool_call>, <function=...>),\
+  \ as an agent would\nno_diff (model): the reply holds no diff and no tool call: prose, a refusal, or\
+  \ code outside a unified diff\nmalformed_hunk (model): a hunk header git cannot parse, such as `@@ def\
+  \ name(...)` or `@@ -def ...` with no line ranges\nrecount_header (harness): git apply --recount rejects\
+  \ a diff only because a file has no `diff --git` line, so the next file's ---/+++ headers count as hunk\
+  \ lines; it applies once one is added before each `--- ` (#940)\ncontext_mismatch (model): the hunks\
+  \ parse, but their context or removed lines are not in the base file, so git apply --recount fails (\"\
+  patch failed: <file>:<line>\")\nwrong_fix (model): the patch applied and at least one fail_to_pass test\
+  \ still fails\nregression (model): the patch applied, every fail_to_pass test passes, and a pass_to_pass\
+  \ test now fails\n\nThe first class that fits wins, in the order above. at_cut is one of looping, rereading,\
+  \ drafting_diff, other, unrecorded.\n20261016-210012-526-0000-repo\tsohot-363-spec\t20261016-210012-526-0000-repo/llamacpp:Ornith-1.5-35B-Q4_K_M--sohot-363-spec.json\t\
+  bases/933cc7418c\n[... 4522 more bytes]\n\n## tool Bash\n$ cd <PATH_TMP> && python3 -I -c \"\nimport\
+  \ json,csv\nfor line in open('rows.tsv'):\n    run,case,f,base=line.rstrip('\\n').split('\\t')\n   \
+  \ d=json.load(open(f))\n    g=d.get('grade')\n    r=d.get('reply') or ''\n    print('=====',f)\n   \
+  \ print('keys',list(d.keys()))\n    print('grade',json.dumps(g)[:600])\n    print('diff len',len(d.get('diff')\
+  \ or ''), 'reply len',len(r))\n    for k in d:\n        if k not in ('reply','diff','grade'): print(k,\
+  \ json.dumps(d[k])[:300])\n\"\n\n[1961 bytes of output not shown]\n\n## tool Bash\n$ grep -E '^=====|^grade|^diff\
+  \ len' <PATH_HOME>/.claude/projects/-Users-<ACCOUNT_1>-projects/<ID_1>/tool-results/bc6xhnbta.txt |\
+  \ sed 's/repository lacks the necessary blob to perform 3-way merge.\\\\nFalling back to direct application...\\\
+  \\n//'\n<persisted-output>\nOutput too large (13.5KB). Full output saved to: <PATH_HOME>/.claude/projects/-Users-<ACCOUNT_1>-projects/<ID_1>/tool-results/b2uotpfvn.txt\n\
+  \nPreview (first 2KB):\n===== 20261016-210012-526-0000-repo/llamacpp:Ornith-1.5-35B-Q4_K_M--sohot-363-spec.json\n\
+  grade {\"resolved\": false, \"patch_applied\": false, \"detail\": \"git apply: error: No valid patches\
+  \ in input (allow with \\\"--allow-empty\\\")\", \"failed\": [], \"limit\": \"\"}\ndiff len 897 reply\
+  \ len 908\n===== 20261016-210012-526-0000-repo/llamacpp:Ornith-1.5-35B-Q4_K_M--sohot-363-symptom.json\n\
+  grade {\"resolved\": false, \"patch_applied\": false, \"detail\": \"git apply: error: error: patch failed:\
+  \ harness/workqueue.py:50\\nerror: harness/workqueue.py: patch does not apply\", \"failed\": [], \"\
+  limit\": \"\"}\ndiff len 1560 reply len 1571\n===== 20261016-210012-526-0000-repo/llamacpp:Ornith-1.5-35B-Q4_K_M--sohot-368-spec.json\n\
+  grade {\"resolved\": false, \"patch_applied\": false, \"detail\": \"git apply: error: error: patch failed:\
+  \ evals/runners/claude_code.py:16\\nerror: evals/runners/claude_code.py: patch does not apply\", \"\
+  failed\": [], \"limit\": \"\"}\ndiff len 1795 reply len 1806\n===== 20261016-210012-526-0000-repo/llamacpp:Ornith-1.5-35B-Q4_K_M--sohot-376-spec.json\n\
+  grade {\"resolved\": false, \"patch_applied\": true, \"detail\": \"pass_to_pass broken: tests/test_harness_cli_queue_scope.py::test_the_screen_tier_scopes_before_limiting_too\"\
+  , \"failed\":\n[... 244 more bytes]\n\n## tool Bash\n$ cd <PATH_TMP> && python3 -I -c \"\nimport json\n\
+  for i,line in enumerate(open('rows.tsv')):\n    run,case,f,base=line.rstrip('\\n').split('\\t')\n  \
+  \  d=json.load(open(f))\n    g=d['grade']\n    det=g['detail'].replace('repository lacks the necessary\
+  \ blob to perform 3-way merge.\\nFalling back to direct application...\\n','')\n    print(i, case, f.split('/')[0][:15],\
+  \ 'applied=',g['patch_applied'], '|', det[:250].replace('\\n',' / '), '| failed:',len(g['failed']),\
+  \ '| difflen',len(d['diff']), 'limit',g.get('limit'))\n\"\n\n[7225 bytes of output not shown]\n\n##\
+  \ tool Bash\n$ cd <PATH_TMP> && python3 -I -c \"\nimport json\nfor i in [0]:\n    line=open('rows.tsv').readlines()[i]\n\
+  \    run,case,f,base=line.rstrip('\\n').split('\\t')\n    d=json.load(open(f))\n    print(repr(d['reply']));\
+  \ print('---DIFF'); print(d['diff'])\n\"\n\n[1837 bytes of output not shown]\n\n## tool Bash\n$ mkdir\
+  \ -p <PATH_TMP> && cat > <PATH_TMP> <<'EOF'\nimport json, subprocess, shutil, os, re, sys\nP='<PATH_TMP>'\n\
+  W='<PATH_TMP>'\nrows=[l.rstrip('\\n').split('\\t') for l in open(P+'/rows.tsv')]\ndef chk(base, diff):\n\
+  \    r=subprocess.run(['git','apply','--check','--recount','--whitespace=nowarn','-'],cwd=base,input=diff.encode(),capture_output=True)\n\
+  \    return r.returncode, r.stderr.decode().strip().replace('\\n',' / ')[:300]\ndef add_dg(diff):\n\
+  \    out=[];lines=diff.split('\\n')\n    for k,l in enumerate(lines):\n        if l.startswith('---\
+  \ ') and k+1<len(lines) and lines[k+1].startswith('+++ ') and not (k>0 and lines[k-1].startswith(('diff\
+  \ --git','index ','new file','deleted file'))):\n            a=l[4:].split('\\t')[0]; b=lines[k+1][4:].split('\\\
+  t')[0]\n            a2=a if a!='/dev/null' else b\n            out.append('diff --git %s %s'%(a2 if\
+  \ a2.startswith('a/') else 'a/'+a2.lstrip('b/'), b))\n        out.append(l)\n    return '\\n'.join(out)\n\
+  for i,(run,case,f,base) in enumerate(rows):\n    d=json.load(open(P+'/'+f))\n    if d['grade']['patch_applied']:\
+  \ continue\n    tmp=W+'/t%d'%i\n    if not os.path.exists(tmp):\n[... 444 more bytes]\n0 sohot-363-spec\
+  \ 20261016-210012 hasdg False files 1\n   asis: (128, 'error: No valid patches in input (allow with\
+  \ \"--allow-empty\")')\n   +dg : (128, 'error: patch with only garbage at <stdin>:4')\n1 sohot-363-symptom\
+  \ 20261016-210012 hasdg False files 1\n   asis: (1, 'error: patch failed: harness/workqueue.py:50 /\
+  \ error: harness/workqueue.py: patch does not apply')\n   +dg : (1, 'error: patch failed: harness/workqueue.py:50\
+  \ / error: harness/workqueue.py: patch does not apply')\n2 sohot-368-spec 20261016-210012 hasdg False\
+  \ files 1\n   asis: (1, 'error: patch failed: evals/runners/claude_code.py:16 / error: evals/runners/claude_code.py:\
+  \ patch does not apply')\n   +dg : (1, 'error: patch failed: evals/runners/claude_code.py:16 / error:\
+  \ evals/runners/claude_code.py: patch does not apply')\n5 sohot-399-symptom 20261016-210012 hasdg False\
+  \ files 3\n   asis: (1, 'error: patch failed: harness/cli.py:739 / error: harness/cli.py: patch does\
+  \ not apply')\n   +dg : (1, 'error: patch failed: harness/fetching.py:60 / error: harness/fetching.py:\
+  \ patch does not apply')\n8 sohot-788-symptom 20261016-210012 hasdg False files 1\n   asis: (1, 'error:\
+  \ patch failed: harness/memory.py:335 / error: harness/memory.py: patch does not apply')\n   +dg : (1,\
+  \ 'error: patch failed: harness/memory.py:335 / error: harness/memory.py: patch does not apply')\n9\
+  \ sohot-368-spec 20261016-225321 hasdg False files 1\n   asis: (1, 'error: patch failed: evals/runners/claude_code.py:30\
+  \ / error: evals/runners/claude_code.py: patch does\n[... 2608 more bytes]\n\n## tool Bash\n$ cd <PATH_TMP>\
+  \ && python3 -I -c \"\nimport json\nline=open('rows.tsv').readlines()[5]\nrun,case,f,base=line.rstrip('\\\
+  n').split('\\t')\nd=json.load(open(f)); print(d['diff'])\n\"; sed -n 50,80p bases/644f528124/harness/fetching.py\n\
+  --- a/harness/cli.py\n+++ b/harness/cli.py\n@@ -739,6 +739,13 @@ def _report_inspect(a) -> int:\n  \
+  \               ms.link(store, repo, model_id, \"needs\")\n+                # A candidate with a terminal\
+  \ verdict is settled. The queue\n+                # reads the LATEST verdict, so writing `queued` over\
+  \ a\n+                # `declined`/`measured`/`broken` reopens a decision a neighbor\n+            \
+  \    # sighting has no business reopening. #397.\n+                if ms.latest_outcome(store, model_id)\
+  \ in ms.TERMINAL:\n+                    continue\n                 ms.decide(store, model_id, \"queued\"\
+  , tier=ms.INSPECT,\n                           size_bytes=size,\n                           detail=f\"\
+  bytes={size} lane={fit.lanes.get(model_id) or '-'} \"\n                                  f\"named by\
+  \ {repo}\")\n--- a/harness/fetching.py\n+++ b/harness/fetching.py\n@@ -60,10 +60,17 @@ def have(model_id:\
+  \ str, root: Path | None = None) -> bool:\n     home = Path(root or os.environ.get(\"HF_HOME\")\n  \
+  \               or Path.home() / \".cache\" / \"huggingface\")\n     from harness import gguf\n-   \
+  \ return ((home / \"hub\" / f\"models--{model_id.replace('/', '--')}\").exists()\n-            or gguf.path_of(model_id)\
+  \ is not None)\n+    if gguf.path_of(model_id) is not None:\n+        return True\n+    d = home / \"\
+  hub\" / f\"models--{model_id.replace('/', '--')}\"\n+    # A directory that exists but holds no usable\
+  \ snapshot -- only LICENSE and\n+    # README, or an interrupted download with no config or weights\
+  \ -- is not a\n+   \n[... 2767 more bytes]\n\n## tool Bash\n$ cd <PATH_TMP> && grep -n \"def have\"\
+  \ -A8 bases/644f528124/harness/fetching.py; grep -n \"ms.link(store, repo, model_id, \\\"needs\\\")\"\
+  \ -A5 bases/644f528124/harness/cli.py\n97:def have(model_id: str, root: Path | None = None) -> bool:\n\
+  98-    \"\"\"Already in the HuggingFace cache, so there is nothing to download.\"\"\"\n99-    import\
+  \ os\n100-    home = Path(root or os.environ.get(\"HF_HOME\")\n101-                or Path.home() /\
+  \ \".cache\" / \"huggingface\")\n102-    from harness import gguf\n103-    return ((home / \"hub\" /\
+  \ f\"models--{model_id.replace('/', '--')}\").exists()\n104-            or gguf.path_of(model_id) is\
+  \ not None)\n105-\n944:                ms.link(store, repo, model_id, \"needs\")\n945-             \
+  \   ms.decide(store, model_id, \"queued\", tier=ms.INSPECT,\n946-                          size_bytes=size,\n\
+  947-                          detail=f\"bytes={size} lane={fit.lanes.get(model_id) or '-'} \"\n948-\
+  \                                 f\"named by {repo}\")\n949-    finally:\n\n## tool Bash\n$ cd <PATH_TMP>\
+  \ && python3 -I -c \"\nimport json,subprocess,sys\nsys.path.insert(0,'.')\nP='<PATH_TMP>'\nline=open(P+'/rows.tsv').readlines()[5]\n\
+  run,case,f,base=line.rstrip('\\n').split('\\t')\nd=json.load(open(P+'/'+f)); diff=d['diff']\nexec(open('check.py').read().split('for\
+  \ i,(run')[0])\ndd=add_dg(diff+'\\n')\ndd=dd.replace('return any(d.glob(\\\"snapshots/*/config.json\\\
+  \"))\\n','return any(d.glob(\\\"snapshots/*/config.json\\\"))\\n \\n')\nprint(chk('t5',dd))\n\"\n(0,\
+  \ '')\n\n## tool Bash\n$ cd <PATH_TMP> && cat > diag.py <<'EOF'\nimport json,re\nP='<PATH_TMP>'\nrows=[l.rstrip('\\\
+  n').split('\\t') for l in open(P+'/rows.tsv')]\nfor i in [1,2,5,8,9,19,20,21,26,27,28]:\n    run,case,f,base=rows[i]\n\
+  \    d=json.load(open(P+'/'+f)); diff=d['diff']\n    cur=None; hunks=[]\n    for l in diff.split('\\\
+  n'):\n        if l.startswith('+++ '): cur=l[4:].strip()[2:]; continue\n        if l.startswith('---\
+  \ ') or l.startswith('diff --git') or l.startswith('index '): continue\n        if l.startswith('@@'):\
+  \ hunks.append([cur,l,[]]); continue\n        if hunks and (l.startswith(' ') or l.startswith('-') or\
+  \ l=='' ):\n            hunks[-1][2].append(l[1:] if l else '')\n    print('##',i,case)\n    for fn,h,old\
+  \ in hunks:\n        try: src=open(P+'/'+base+'/'+fn).read().split('\\n')\n        except Exception\
+  \ as e: print('  ',fn,'MISSING'); continue\n        missing=[o for o in old if o not in src]\n     \
+  \   blk='\\n'.join(old).rstrip('\\n'); whole='\\n'.join(src)\n        print('  ',fn,h[:60],'old',len(old),'contig',blk\
+  \ in whole,'missing',[m[:70] for m in missing[:3]])\nEOF\npython3 -I diag.py\n## 1 sohot-363-symptom\n\
+  \   harness/workqueue.py @@ -4,6 +4,7 @@ old 7 contig True missing []\n   harness/workqueue.py @@ -50,3\
+  \ +51,4 @@ def add(argv: list[str], title: str = \"\",  old 3 contig True missing []\n   harness/workqueue.py\
+  \ @@ -50,3 +52,22 @@ def add(argv: list[str], title: str = \"\", old 9 contig False missing []\n## 2\
+  \ sohot-368-spec\n   evals/runners/claude_code.py @@ -16,19 +16,21 @@ class ClaudeCodeRunner(BaseRunner):\
+  \ old 26 contig True missing []\n## 5 sohot-399-symptom\n   harness/cli.py @@ -739,6 +739,13 @@ def\
+  \ _report_inspect(a) -> int: old 5 contig True missing []\n   harness/fetching.py @@ -60,10 +60,17 @@\
+  \ def have(model_id: str, root: Path | Non old 5 contig True missing []\n   harness/memory_store.py\
+  \ @@ -560,6 +560,23 @@ def settled(conn: sqlite3.Connection) - old 8 contig True missing []\n## 8 sohot-788-symptom\n\
+  \   harness/memory.py @@ -335,14 +335,14 @@ def measured_reserve_gb(conn=None) ->  old 13 contig True\
+  \ missing []\n## 9 sohot-368-spec\n   evals/runners/claude_code.py @@ -30,10 +30,14 @@ old 10 contig\
+  \ True missing []\n   evals/runners/claude_code.py @@ -51,4 +55,5 @@ old 5 contig True missing []\n\
+  ## 19 sohot-318-omnisvg-spelling\n   harness/screen.py @@ -13,6 +13,7 @@ old 6 contig True missing []\n\
+  \   harness/screen.py @@ -105,6 +106,7 @@ old 6 contig False missing ['OMNISVG_PREFIX = \"omnisvg:\"\
+  ']\n   harness/screen.py @@ -139,7 +141,7 @@ old 36 contig False missing ['    # Special handling for\
+  \ OmniSVG', '    if lane.lower() in OMNISVG_LANES:', '        return\n[... 1338 more bytes]\n\n## tool\
+  \ Bash\n$ cd <PATH_TMP> && python3 -I -c \"\nimport json\nL=open('rows.tsv').readlines()\nfor i in [2,8,9]:\n\
+  \    run,case,f,base=L[i].rstrip('\\n').split('\\t')\n    d=json.load(open(f)); print('#####',i); print(repr(d['diff'][-400:]))\n\
+  \"\n[1252 bytes of output not shown]\n\n## tool Bash\n$ cd <PATH_TMP> && python3 -I -c \"\nimport json\n\
+  L=open('rows.tsv').readlines()\nrun,case,f,base=L[9].rstrip('\\n').split('\\t')\nd=json.load(open(f));\
+  \ print(d['diff'])\n\"; cat -n bases/7cf18e0eef/evals/runners/claude_code.py | sed -n 25,60p\n--- a/evals/runners/claude_code.py\n\
+  +++ b/evals/runners/claude_code.py\n@@ -30,10 +30,14 @@\n     def argv(self, case: Case) -> list[str]:\n\
+  \         system = completion.SYSTEM.get(case.modality, completion.NEUTRAL_SYSTEM)\n-        user =\
+  \ completion.user_message(case.prompt, case.context)\n-        # --tools takes a list, so it goes last\
+  \ or it swallows the prompt.\n+        # The user message goes on stdin, never in argv: case content\
+  \ can start\n+        # with '-' (a unified diff) and the CLI would parse it as options.\n+        #\
+  \ --tools takes a list, so it goes last.\n         # --bare cannot be used: it skips the subscription\
+  \ login.\n-        return [self.binary, \"-p\", user, \"--model\", self.model,\n+        return [self.binary,\
+  \ \"-p\", \"--model\", self.model,\n                 \"--output-format\", \"json\", \"--no-session-persistence\"\
+  ,\n                 \"--strict-mcp-config\", \"--setting-sources\", \"\",\n                 \"--system-prompt\"\
+  , system, \"--tools\", \"\"]\n \n+    def stdin(self, case: Case) -> str:\n+        return completion.user_message(case.prompt,\
+  \ case.context)\n+\n@@ -51,4 +55,5 @@\n             try:\n-                proc = self.execute(self.argv(case),\
+  \ cwd=cwd, capture_output=True,\n-                                text=True, timeout=self.timeout)\n\
+  +                proc = self.execute(self.argv(case), input=self.stdin(case),\n+                   \
+  \                 cwd=cwd, capture_output=True, text=True,\n+                                    timeout=self.timeout)\n\
+  \             except\n[... 2010 more bytes]\n\n## tool Bash\n$ cd <PATH_TMP> && ls cases | head -40;\
+  \ grep -n \"test_the_screen_tier_scopes_before_limiting_too\\|fail_to_pass\\|pass_to_pass\" cases/sohot-376-spec.yaml\n\
+  sohot-318-omnisvg-spelling.yaml  1.4K\nsohot-363-spec.yaml  3.7K\nsohot-363-symptom.yaml  3.4K\nsohot-368-spec.yaml\
+  \  3.1K\nsohot-368-symptom.yaml  2.9K\nsohot-376-spec.yaml  2.6K\nsohot-396-spec.yaml  2.1K\nsohot-399-spec.yaml\
+  \  14.6K\nsohot-399-symptom.yaml  14.4K\nsohot-404-spec.yaml  10.3K\nsohot-438-symptom.yaml  4.9K\n\
+  sohot-455-spec.yaml  3.2K\nsohot-455-symptom.yaml  2.8K\nsohot-632-spec.yaml  2.7K\nsohot-632-symptom.yaml\
+  \  2.3K\nsohot-642-symptom.yaml  2.0K\nsohot-720-symptom.yaml  3.0K\nsohot-788-spec.yaml  5.4K\nsohot-788-symptom.yaml\
+  \  5.2K\nsohot-859-spec.yaml  8.3K\nsohot-879-spec.yaml  5.3K\nsohot-879-symptom.yaml  5.0K\n33:  fail_to_pass:\n\
+  35:  pass_to_pass:\n40:  - tests/test_harness_cli_queue_scope.py::test_the_screen_tier_scopes_before_limiting_too\n\
+  51:    paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest\
+  \ runs"
+params:
+  source_repo: https://github.com/unxmaal/SoHoT.git
+  base: 3b4bf7d4f9ffbf5be34110705a0e970709d5ead9
+  fix: deb70f9bd7d42878c0aaba7e4780e7b96a338826
+  variant: request
+  context: oracle
+  context_files:
+  - harness/commands/discover.py
+  - harness/commands/loop.py
+  - harness/live_audit.py
+  - harness/memory_store/__init__.py
+  - harness/memory_store/proposals.py
+  - harness/memory_store/revisit.py
+  fail_to_pass:
+  - tests/test_harness_memory_store.py::test_a_repo_drops_its_claim_on_the_weights_it_no_longer_ranks
+  - tests/test_unranked_weight_954.py::test_a_parent_that_drops_a_weight_hands_it_back_to_inspect
+  - tests/test_unranked_weight_954.py::test_a_weight_a_second_parent_still_ranks_keeps_its_state
+  - tests/test_unranked_weight_954.py::test_the_audit_names_the_check
+  - tests/test_unranked_weight_954.py::test_the_loop_reopens_weights_a_ranking_retired_and_the_audit_reads_zero
+  pass_to_pass:
+  - tests/test_harness_memory_store.py::test_a_changed_detail_is_a_new_verdict
+  - tests/test_harness_memory_store.py::test_a_deterministic_tier_restating_itself_adds_no_row
+  - tests/test_harness_memory_store.py::test_a_newer_schema_is_refused_rather_than_migrated_backwards
+  - tests/test_harness_memory_store.py::test_a_non_terminal_verdict_does_not_suppress
+  - tests/test_harness_memory_store.py::test_a_rescore_is_always_a_new_draw
+  - tests/test_harness_memory_store.py::test_a_resolved_id_is_kept_once_learned
+  - tests/test_harness_memory_store.py::test_a_second_run_is_always_a_new_verdict
+  - tests/test_harness_memory_store.py::test_a_sighting_records_the_machine_whose_runtimes_scored_it
+  - tests/test_harness_memory_store.py::test_a_store_of_survivors_alone_cannot_report_precision
+  - tests/test_harness_memory_store.py::test_a_terminal_verdict_removes_it_for_good
+  - tests/test_harness_memory_store.py::test_a_terminal_verdict_suppresses_re_proposal
+  - tests/test_harness_memory_store.py::test_a_verdict_on_an_unknown_proposal_is_refused
+  - tests/test_harness_memory_store.py::test_a_waypoint_verdict_does_not
+  - tests/test_harness_memory_store.py::test_a_weight_another_repo_still_names_is_not_retired
+  - tests/test_harness_memory_store.py::test_an_edge_to_an_unknown_proposal_is_refused
+  - tests/test_harness_memory_store.py::test_an_unknown_outcome_is_refused
+  - tests/test_harness_memory_store.py::test_an_unknown_rejection_reason_is_refused
+  - tests/test_harness_memory_store.py::test_an_unresolved_name_is_not_offered_as_work
+  - tests/test_harness_memory_store.py::test_decide_records_the_ceiling_rounded_to_a_tenth[21.94-21.9]
+  - tests/test_harness_memory_store.py::test_decide_records_the_ceiling_rounded_to_a_tenth[21.96-22.0]
+  - tests/test_harness_memory_store.py::test_decide_records_the_ceiling_rounded_to_a_tenth[8-8.0]
+  - tests/test_harness_memory_store.py::test_decide_without_a_ceiling_leaves_it_unrecorded
+  - tests/test_harness_memory_store.py::test_first_and_last_seen_span_the_sightings
+  - tests/test_harness_memory_store.py::test_parents_names_who_pointed_at_a_thing
+  - tests/test_harness_memory_store.py::test_pending_returns_what_nothing_has_answered
+  - tests/test_harness_memory_store.py::test_precision_is_a_query_not_a_manual_count
+  - tests/test_harness_memory_store.py::test_recurrence_counts_distinct_sources
+  - tests/test_harness_memory_store.py::test_recurrence_ranks_the_thing_that_keeps_coming_back
+  - tests/test_harness_memory_store.py::test_rejections_are_broken_down_by_reason
+  - tests/test_harness_memory_store.py::test_schema_38_names_the_machine_only_where_the_store_proves_it
+  - tests/test_harness_memory_store.py::test_seeing_the_same_thing_twice_is_two_sightings_one_proposal
+  - tests/test_harness_memory_store.py::test_something_already_settled_is_not_retired_again
+  - tests/test_harness_memory_store.py::test_sources_are_compared_against_each_other
+  - tests/test_harness_memory_store.py::test_the_judge_reads_only_this_machines_relevance
+  - tests/test_harness_memory_store.py::test_the_judge_reads_the_strongest_relevance_a_sweep_recorded
+  - tests/test_harness_memory_store.py::test_the_limit_is_honoured
+  - tests/test_harness_memory_store.py::test_the_most_corroborated_comes_first
+  - tests/test_harness_memory_store.py::test_the_same_rejection_twice_is_recorded_once
+  - tests/test_harness_memory_store.py::test_the_same_sighting_twice_is_recorded_once
+  - tests/test_harness_memory_store.py::test_the_store_reopens_without_losing_anything
+  - tests/test_harness_memory_store.py::test_traversal_terminates_on_a_cycle
+  - tests/test_harness_memory_store.py::test_traversal_walks_forwards_and_backwards
+  - tests/test_harness_memory_store.py::test_two_tiers_saying_the_same_words_are_two_verdicts
+  - tests/test_harness_memory_store.py::test_verdicts_accumulate_rather_than_replace
+  - tests/test_unranked_weight_954.py::test_a_weight_still_ranked_is_left_alone
+attribution:
+  dataset: Claude Code session requests, redacted
+  url: https://github.com/unxmaal/SoHoT/issues/1095
+  license: generated
+  source: claude-code:transcripts
+  revision: 82ea6dc78eb1889c0e2f8b40e602ffc6fb9a3da4
+  item: 'sohot PR #957'
+  date: '2026-10-17'
+  transform: 'a Claude Code session from the person''s request to just before the agent''s first edit
+    of a file the fix changes (evals/session_cut.py: user turns, assistant text, tool calls, reads and
+    searches kept, large outputs dropped, to a byte budget), redacted by evals/redact.py (secrets, ids,
+    emails, home and volume paths, hosts, IPs, pasted chat, handles, account and person names as typed
+    placeholders) and refused if a fix line or a name-like word is left; linked to the merged commit through
+    a commit hash or PR URL printed by a tool in that request or a Claude-Session trailer; base = fix^;
+    fail_to_pass and pass_to_pass from 2 sandboxed pytest runs per side, as evals/importers/history.py'
+  importer: evals.importers.transcripts
+  session: 893fd0505f5eef9e
+  evidence: pr
+  redactions:
+    account: 2
+    id: 2
+    path: 21
