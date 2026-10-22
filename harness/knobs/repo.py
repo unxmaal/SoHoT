@@ -8,6 +8,9 @@ KNOBS = [
     _k("history_max_source_files", ["evals/importers/history.py:MAX_SOURCE_FILES"], [3, 8],
        note="source files a fix may change and still be surveyed as a history task; 3 was the #888 pilot's "
             "local-model cap, 8 takes the bigger fixes Claude Code arms can do (#997)"),
+    _k("repo_doc_patterns", ["evals/repo.py:DOC_PATTERNS"], [(), ("*.md", "*.rst", "docs/**", "CHANGELOG*")],
+       note="files whose hunks may fail to apply and be left out, the rest graded, when no test names them; "
+            "() grades every failed hunk invalid_patch as before #1107"),
     _k("repo_env_timeout", ["evals/repo.py:ENV_TIMEOUT_S"], [600.0, 1800.0, 3600.0],
        note="seconds `uv sync --frozen` may take to build a base commit's environment; a miss is environment_error (#887)"),
     _k("repo_gate_min_tasks", ["harness/repo_gate.py:MIN_TASKS"], [20, 30, 50],

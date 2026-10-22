@@ -42,7 +42,8 @@ class RepoGrading:
         self.last_grade = metrics
         return json.dumps({"case": case.id, "diff": diff, "reply": reply,
                            "grade": {"resolved": got.resolved, "patch_applied": got.patch_applied,
-                                     "detail": got.detail, "failed": got.failed, "limit": got.limit},
+                                     "detail": got.detail, "failed": got.failed, "limit": got.limit,
+                                     "skipped": got.skipped},
                            "metrics": metrics}), 0
 
     def run(self, case: Case):
