@@ -118,6 +118,9 @@ REFETCH = (SHORT_COPY, INCOMPLETE_COPY)
 #: Classes that mean the request never reached a model.
 NEVER_RAN = tuple(c for c, (_, r) in CLASSES.items() if r == HARNESS)
 
+#: Classes of a reply cut at the token budget, which the lane's grader never saw. #1113.
+CUT = (TOKEN_BUDGET_EXHAUSTED, DEGENERATE)
+
 
 def first(classes) -> str:
     """The class that decides a run whose rows report several."""

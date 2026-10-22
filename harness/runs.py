@@ -235,6 +235,7 @@ def record(conn, path, data: dict, *, at: float | None = None) -> int | None:
     keeps its id, so verdicts that cite it stay linked. None when `data` is
     not an eval receipt (no case rows).
     """
+    from evals.core import as_graded
     rows = [r for r in (data.get("rows") or [])
             if isinstance(r, dict) and "case_id" in r and "passed" in r]
     if not rows:
@@ -289,7 +290,7 @@ def record(conn, path, data: dict, *, at: float | None = None) -> int | None:
              str(r.get("case_id") or ""), repeat,
              1 if r.get("passed") else 0, float(r.get("seconds") or 0.0),
              int(r.get("peak_kb") or 0), str(r.get("detail") or ""),
-             json.dumps(r.get("metrics") or {}),
+             json.dumps(as_graded(lane, cls or "", r.get("metrics"))),
              json.dumps(r.get("warnings") or []),
              None if output is None else str(output),
              None if art is None else str(art),
@@ -299,6 +300,27 @@ def record(conn, path, data: dict, *, at: float | None = None) -> int | None:
              json.dumps(r.get("attempts") or [])))
     conn.commit()
     return run_id
+
+
+def grade_cut_rows(conn) -> int:
+    """Give every stored reply cut before grading its lane's graded-failure metrics; the rows changed. #1113."""
+    from evals.core import GRADED_FAILURE, as_graded
+    lanes, cut = tuple(GRADED_FAILURE), reasons.CUT
+    if not lanes:
+        return 0
+    got = conn.execute(
+        "SELECT x.id, x.metrics, x.failure_class, r.lane FROM results x JOIN runs r ON r.id = x.run_id "
+        f"WHERE x.passed = 0 AND r.lane IN ({','.join('?' * len(lanes))}) "
+        f"AND x.failure_class IN ({','.join('?' * len(cut))})", (*lanes, *cut)).fetchall()
+    changed = 0
+    for r in got:
+        before = json.loads(r["metrics"] or "{}")
+        after = as_graded(r["lane"], r["failure_class"], before)
+        if after != before:
+            conn.execute("UPDATE results SET metrics = ? WHERE id = ?", (json.dumps(after), r["id"]))
+            changed += 1
+    conn.commit()
+    return changed
 
 
 def client_machine_id(conn, run_id: int) -> int | None:

@@ -1496,6 +1496,16 @@ def _count(items) -> dict[str, int]:
 RETIRED_METRICS = frozenset({"cost_usd"})
 
 
+#: What a lane's grader records on a failed reply, given to a reply cut before grading so it ranks and pairs as one. #1113.
+GRADED_FAILURE = {"repo": {"resolved": 0, "patch_applied": 0}}
+
+
+def as_graded(lane: str, failure_class: str, metrics: dict | None) -> dict:
+    """`metrics`, with the lane's graded-failure values beneath them when the reply was cut before grading. #1113."""
+    fill = GRADED_FAILURE.get(lane) if failure_class in reasons.CUT else None
+    return {**(fill or {}), **(metrics or {})}
+
+
 def _gather_metrics(rows: list[Result]) -> dict[str, list[float]]:
     gathered: dict[str, list[float]] = {}
     for r in rows:

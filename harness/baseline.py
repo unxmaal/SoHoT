@@ -67,12 +67,11 @@ def measured(conn, lane: str, ids, digest: str, machines, skip=()) -> list[dict]
 
 
 def _baseline_rows(rows: list[dict], name: str, lane: str) -> list[dict]:
-    """The never-passing incumbent's cell on each case the challenger ran: failed, its metric at zero where the challenger's row has it."""
+    """The never-passing incumbent's cell on each case the challenger ran: failed, its metric at zero."""
     from harness import winners
     metric = winners.PRIMARY.get(lane)
-    # A reply cut before grading carries no metric; a zero there would count the cut as a loss.
     return [{"candidate": name, "case_id": r["case_id"], "passed": False, "seconds": 0.0,
-             "metrics": {metric: 0.0} if metric and metric in (r.get("metrics") or {}) else {}} for r in rows]
+             "metrics": {metric: 0.0} if metric else {}} for r in rows]
 
 
 def take(conn, lane: str, incumbent: str, zero: dict, machines=None, exam_of=None):

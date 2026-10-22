@@ -19,7 +19,8 @@ def _rows(key, ids, passes, cut=0):
     ids = sorted(ids)
     return [{"case_id": c, "candidate": key, "passed": i < passes, "seconds": 1.0, "peak_kb": 0,
              "detail": "", "output": None, "artifact_path": None, "warnings": [],
-             "metrics": {} if i >= len(ids) - cut else {"resolved": int(i < passes)}}
+             **({"failure_class": "token_budget_exhausted", "metrics": {}} if i >= len(ids) - cut
+                else {"metrics": {"resolved": int(i < passes)}})}
             for i, c in enumerate(ids)]
 
 
