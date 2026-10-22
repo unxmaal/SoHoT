@@ -889,7 +889,7 @@ def test_from_winners_refuses_when_nothing_measured_the_lane():
     assert "--candidates" in str(caught.value), "say the way out"
 
 
-def test_from_winners_names_the_candidate_the_stored_runs_chose(store_run):
+def test_from_winners_names_the_candidate_the_stored_runs_chose(store_run, sat_exam):
     from evals.run import winner_for
     store_run("run", "image", {"mflux/flux2-klein-4b-q8": {"pass_rate": 1.0,
                                                            "median_s": 19.4}})

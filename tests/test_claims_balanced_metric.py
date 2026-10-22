@@ -8,6 +8,8 @@ from evals import core
 from harness import adopt, screen, winners
 from harness.checks import claims as claims_check
 
+pytestmark = pytest.mark.usefixtures("sat_exam")
+
 STRATA = Path(__file__).parent / "fixtures" / "claims" / "strata-791.json"
 
 

@@ -32,28 +32,92 @@ def is_plain_model(candidate: str) -> bool:
 #: Which lanes a default is an engine spec for, so a composite key can win.
 FAMILIES = {
     "svg": "alias", "web": "alias", "code": "alias", "extract": "alias",
-    "decide": "alias", "agent": "alias", "claims": "alias", "repo": "alias",
+    "decide": "alias", "agent": "alias", "claims": "alias",
+    # Every repo candidate is an engine spec, and #1110 adopts one by measurement. #1120.
+    "repo": "engine",
     "image": "engine", "video": "engine", "music": "engine", "ocr": "engine",
     "retrieval": "engine", "pii": "engine",
     "tts": "speech", "stt": "speech",
 }
 
 
-def from_receipts(conn, plain_only: bool = True) -> dict[str, dict]:
-    """The best candidate per lane over every stored measure run. #410."""
+def from_receipts(conn, plain_only: bool = True, exam_of=None) -> dict[str, dict]:
+    """The best candidate per lane over the stored measure runs of its current exam. #410, #1120.
+
+    plain_only drops a composite key except in a lane whose default is an engine spec (FAMILIES).
+    """
     from harness import runs
     entries: dict[str, list] = {}
-    for run, summary, _ in runs.summaries(conn, tier=runs.MEASURE):
+    memo: dict = {}
+    for run, summary, rows in runs.summaries(conn, tier=runs.MEASURE):
         for candidate, row in summary.items():
-            if plain_only and not is_plain_model(candidate):
+            if plain_only and FAMILIES.get(run["lane"]) != "engine" and not is_plain_model(candidate):
+                continue
+            if not on_exam(run, rows, candidate, exam_of, memo):
                 continue
             entries.setdefault(run["lane"], []).append({
-                "candidate": candidate, "row": row,
+                "candidate": candidate, "row": {**row, "cases_digest": run.get("cases_digest") or ""},
                 "pass_rate": float(row.get("pass_rate") or 0.0),
                 "median_s": float(row.get("median_s") or 0.0),
                 "total": int(row.get("total") or 0), "run": run["path"],
-                "run_id": run["id"]})
-    return {lane: _pick(got, lane=lane) for lane, got in entries.items()}
+                "run_id": run["id"], "cases_digest": run.get("cases_digest") or ""})
+    return {lane: _pick(newest_exam(got), lane=lane) for lane, got in entries.items()}
+
+
+def on_exam(run: dict, rows, candidate: str, exam_of=None, memo=None) -> bool:
+    """Whether the run's rows for `candidate` are a whole sitting of the lane's current exam. #1120."""
+    from harness import baseline
+    return baseline.sat(run, rows, candidate, exam_of, memo)
+
+
+def newest_exam(entries: list[dict]) -> list[dict]:
+    """The entries on the cases digest of the newest run among them (runs.find order), so a lane ranks on one exam. #1120."""
+    return [e for e in entries if e["cases_digest"] == entries[0]["cases_digest"]] if entries else []
+
+
+class ExamMismatch(ValueError):
+    """Two rows ranked against each other sat different exams. #1120."""
+
+
+class OrderKey(tuple):
+    """An order_key that refuses to be compared with one taken on another cases digest. #1120."""
+
+    def __new__(cls, parts, exam=None):
+        key = super().__new__(cls, parts)
+        key.exam = exam
+        return key
+
+    def _same(self, other):
+        theirs = getattr(other, "exam", None)
+        if self.exam is not None and theirs is not None and self.exam != theirs:
+            raise ExamMismatch(f"refusing to rank across exams: cases digest {self.exam or '(none)'} against "
+                               f"{theirs or '(none)'}; a pass rate on one says nothing about the other")
+
+    def __lt__(self, other):
+        self._same(other)
+        return tuple.__lt__(self, other)
+
+    def __le__(self, other):
+        self._same(other)
+        return tuple.__le__(self, other)
+
+    def __gt__(self, other):
+        self._same(other)
+        return tuple.__gt__(self, other)
+
+    def __ge__(self, other):
+        self._same(other)
+        return tuple.__ge__(self, other)
+
+    def __eq__(self, other):
+        self._same(other)
+        return tuple.__eq__(self, other)
+
+    def __ne__(self, other):
+        self._same(other)
+        return tuple.__ne__(self, other)
+
+    __hash__ = tuple.__hash__
 
 
 #: Lanes ranked on a pooled metric before pass rate: an exact-case rate is roughly acc^fields, and stt's is exact orthography. #701.
@@ -126,7 +190,7 @@ def _pick(entries: list[dict], prefer=lambda e: False, lane: str = "") -> dict:
                key=lambda e: (str(e["candidate"]), int(e.get("run_id") or 0)))
 
 
-def order_key(row: dict, names, lane: str = "") -> tuple:
+def order_key(row: dict, names, lane: str = "") -> OrderKey:
     """How good a summary row is, best LAST so `max` picks the winner.
 
     THE LANE'S OWN METRIC COMES FIRST, and getting that wrong is not
@@ -142,6 +206,8 @@ def order_key(row: dict, names, lane: str = "") -> tuple:
     inversion, with no visible symptom. METRIC_DIRECTION exists for exactly
     this and says which way each metric runs; `neutral` ones are reported and
     never ranked on.
+
+    A row carrying `cases_digest` gives a key that refuses comparison with a key from another digest. #1120.
     """
     ranked = ranked_metrics(row)
     rate = judged_rate(row)
@@ -150,7 +216,8 @@ def order_key(row: dict, names, lane: str = "") -> tuple:
     # model that fails half the cases and scores well on the rest is scoring on
     # a different, easier subset.
     # A row missing a shared metric sorts below every row that reports it.
-    return (primary(row, lane), rate, tuple((n in ranked, ranked.get(n, 0.0)) for n in names), -median)
+    return OrderKey((primary(row, lane), rate, tuple((n in ranked, ranked.get(n, 0.0)) for n in names), -median),
+                    row.get("cases_digest"))
 
 
 def typed() -> dict[str, str]:
@@ -211,15 +278,17 @@ def served_ids(conn) -> dict[str, int]:
     return out
 
 
-def beaten_in(conn) -> dict[str, dict]:
+def beaten_in(conn, exam_of=None) -> dict[str, dict]:
     """Per lane, the best candidate from stored runs THE SERVED DEFAULT WAS IN.
 
     Only within one comparison: a default that was never in the room did not
     lose. "In the room" is its candidate id among the run's rows. #429.
+    Only rooms of the lane's current exam, each candidate on all of it. #1120.
     """
     from harness import runs
     wanted = served_ids(conn)
     entries: dict[str, list] = {}
+    memo: dict = {}
     for run, _, rows in runs.summaries(conn, tier=runs.MEASURE):
         lane = run["lane"]
         if lane not in wanted or not any(
@@ -230,14 +299,18 @@ def beaten_in(conn) -> dict[str, dict]:
         for r in rows:
             groups.setdefault(r["candidate_id"] or ("key", r["candidate"]),
                               []).append(r)
-        for cid, group in groups.items():
-            candidate, row = next(iter(runs.summarize(group).items()))
+        sitting = {cid: next(iter(runs.summarize(group).items())) for cid, group in groups.items()}
+        sitting = {cid: got for cid, got in sitting.items() if on_exam(run, groups[cid], got[0], exam_of, memo)}
+        if wanted[lane] not in sitting:
+            continue
+        for cid, (candidate, row) in sitting.items():
             served = cid == wanted[lane]
             if family != "engine" and not is_plain_model(candidate) \
                     and not served:
                 continue
             entries.setdefault(lane, []).append({
-                "candidate": candidate, "row": row,
+                "candidate": candidate, "row": {**row, "cases_digest": run.get("cases_digest") or ""},
+                "cases_digest": run.get("cases_digest") or "",
                 "pass_rate": float(row.get("pass_rate") or 0.0),
                 "median_s": float(row.get("median_s") or 0.0),
                 "metrics": dict(row.get("metrics") or {}),
@@ -247,17 +320,17 @@ def beaten_in(conn) -> dict[str, dict]:
                 "candidate_id": cid if isinstance(cid, int) else None,
                 "family": family})
     # A served default that ties was not beaten.
-    return {lane: _pick(got, prefer=lambda e: bool(e["match"]), lane=lane)
+    return {lane: _pick(newest_exam(got), prefer=lambda e: bool(e["match"]), lane=lane)
             for lane, got in entries.items()}
 
 
-def disagreements(conn) -> list[dict]:
+def disagreements(conn, exam_of=None) -> list[dict]:
     """Where a typed default lost a comparison it was actually in.
 
-    A default in no stored run is `unmeasured`, not a disagreement.
+    A default in no stored run of the current exam is `unmeasured`, not a disagreement.
     """
     from harness import adopt
-    best = beaten_in(conn)
+    best = beaten_in(conn, exam_of)
     out = []
     for modality, name in sorted(adopt.lane_defaults(conn).items()):
         got = best.get(modality)

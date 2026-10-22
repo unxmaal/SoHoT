@@ -4,6 +4,8 @@ import pytest
 from harness import memory_store as ms
 from harness import winners
 
+pytestmark = pytest.mark.usefixtures("sat_exam")
+
 
 @pytest.fixture
 def conn():

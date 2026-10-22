@@ -41,10 +41,12 @@ def test_a_candidate_the_harness_never_ran_has_no_metric_and_sorts_below():
     assert not adopt.better(some, never, "repo")
 
 
-def test_twelve_of_forty_one_with_four_environment_errors_outranks_five_of_thirty_nine(store_run, store_conn):
-    store_run("opus", "repo", rows=_rows("org/opus", 12, 25, env=4), conn=store_conn)
-    store_run("ornith", "repo", rows=_rows("org/ornith", 5, 34), conn=store_conn)
-    assert winners.from_receipts(store_conn, plain_only=False)["repo"]["candidate"] == "org/opus"
+def test_twelve_of_forty_one_with_four_environment_errors_outranks_five_of_forty_one(store_run, store_conn):
+    store_run("opus", "repo", rows=_rows("org/opus", 12, 25, env=4), cases_digest="exam", conn=store_conn)
+    store_run("ornith", "repo", rows=_rows("org/ornith", 5, 36), cases_digest="exam", conn=store_conn)
+    ids = frozenset(f"repo-{i}" for i in range(41))
+    got = winners.from_receipts(store_conn, plain_only=False, exam_of=lambda *k: (ids, "exam"))
+    assert got["repo"]["candidate"] == "org/opus"
 
 
 def test_adoption_and_measured_baselines_see_the_environment_errors(store_run):

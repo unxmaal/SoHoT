@@ -181,7 +181,7 @@ def _lanes(monkeypatch, typed=None, adopted=None):
 
 
 def test_staleness_comes_from_the_newest_run_not_the_winning_one(
-        store_run, monkeypatch):
+        store_run, monkeypatch, sat_exam):
     """`winners` answers "what WON this lane"; staleness asks "when was this
     lane LAST measured". Reading the age off the winner reported svg 12 days
     stale minutes after it was re-run. #234. The age is the receipt's own
@@ -255,7 +255,7 @@ def test_this_machines_newest_run_still_wins(store_run, monkeypatch):
     assert (svg["last_run"], svg["pass_rate"]) == ("20261002-000000-svg", 0.9)
 
 
-def test_the_numbers_are_this_machines_not_the_winners(store_run, monkeypatch):
+def test_the_numbers_are_this_machines_not_the_winners(store_run, monkeypatch, sat_exam):
     """The winner may be another machine's run; its median is a fact about
     that machine. #341."""
     store_run("legacy", "svg", {"local-large": {"pass_rate": 1.0,
@@ -291,7 +291,7 @@ def test_code_shows_the_adopted_candidate_not_a_newer_higher_scorer(
 
 
 def test_svg_shows_local_large_even_when_q3_30b_won_the_run(
-        store_run, monkeypatch):
+        store_run, monkeypatch, sat_exam):
     store_run("20261005-194924-860-0000-svg", "svg",
               {"q3-30b": {"passed": 9, "total": 9},
                "local-large": {"passed": 4, "total": 9}},
