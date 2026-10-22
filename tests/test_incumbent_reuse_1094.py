@@ -131,52 +131,63 @@ def test_a_case_digest_moves_with_its_hidden_tests_its_file_and_the_prompt_the_h
     assert moved["cases"]["c1"] != base and moved["digest"] == first["digest"]
 
 
-GRADER = "def check(answer):\n    return answer == 'ok'\n"
-LANE = "from fakegrade import checks\n\n\ndef check_lane(artifact, case):\n    return checks.check(artifact)\n"
+LANE = ("from fakegrade import checks\n\n\ndef check_lane(artifact, case):\n    return checks.check(artifact)\n\n\n"
+        "def other_lane(artifact, case):\n    return False\n\n\n"
+        "CHECKERS = {\"fake\": lambda a, c: check_lane(a, c), \"other\": other_lane}\n")
+GRADER = ("def check(answer):\n    from fakegrade import deep\n    return answer == deep.WANT\n\n\n"
+          "def unused():\n    from fakegrade import aside\n    return aside.X\n")
 
 
 @pytest.fixture
-def grading(tmp_path, monkeypatch):
-    """A lane whose checker lives in fakegrade.lane and calls fakegrade.checks; fakegrade.unrelated is beside them."""
-    import importlib
-    import sys
+def grading(tmp_path):
+    """fakegrade.lane registers the checker, which calls fakegrade.checks, which imports fakegrade.deep; aside and unrelated are outside."""
     pkg = tmp_path / "pkg" / "fakegrade"
     pkg.mkdir(parents=True)
-    for name, text in (("__init__", ""), ("checks", GRADER), ("lane", LANE), ("unrelated", "X = 1\n")):
+    for name, text in (("__init__", ""), ("lane", LANE), ("checks", GRADER), ("deep", "WANT = 'ok'\n"),
+                       ("aside", "X = 1\n"), ("unrelated", "X = 1\n")):
         (pkg / f"{name}.py").write_text(text, encoding="utf-8")
-    monkeypatch.syspath_prepend(str(tmp_path / "pkg"))
 
     def digest():
-        for name in [m for m in sys.modules if m == "fakegrade" or m.startswith("fakegrade.")]:
-            del sys.modules[name]
-        lane = importlib.import_module("fakegrade.lane")
-        importlib.import_module("fakegrade.unrelated")
-        return identity.grader_digest("fake", checkers={"fake": lane.check_lane}, packages=("fakegrade",), also=())
+        return identity.grader_digest("fake", root=tmp_path / "pkg", packages=("fakegrade",),
+                                      registry=("fakegrade.lane", "CHECKERS"), also=())
     return pkg, digest
 
 
-def test_an_unrelated_harness_file_keeps_the_grader_digest(grading):
+def test_a_module_outside_the_import_closure_keeps_the_grader_digest(grading):
     pkg, digest = grading
     base = digest()
-    assert set(base) == {"fakegrade.lane.check_lane", "fakegrade.checks"}
+    assert base["modules"] == ["fakegrade.checks", "fakegrade.deep", "fakegrade.lane"]
     _rewrite(pkg / "unrelated.py", "X = 2\n")
+    _rewrite(pkg / "aside.py", "X = 2\n")
+    _rewrite(pkg / "lane.py", LANE.replace("return False", "return True"))
     assert digest() == base
+
+
+def test_editing_a_module_two_imports_below_the_checker_moves_the_grader_digest(grading):
+    pkg, digest = grading
+    base = digest()
+    _rewrite(pkg / "deep.py", "WANT = 'yes'\n")
+    assert digest()["names"] != base["names"]
 
 
 def test_editing_the_grader_or_the_lane_checker_moves_the_grader_digest(grading):
     pkg, digest = grading
     base = digest()
-    _rewrite(pkg / "checks.py", GRADER.replace("'ok'", "'yes'"))
+    _rewrite(pkg / "checks.py", GRADER.replace("==", "!="))
     second = digest()
     assert second != base
     _rewrite(pkg / "lane.py", LANE.replace("checks.check(artifact)", "not checks.check(artifact)"))
     assert digest() != second
 
 
-def test_the_lane_digest_names_the_real_code_grader():
-    got = identity.grader_digest("code")
-    assert "harness.checks.code" in got and "evals.core._check_code" in got
-    assert not any(k.startswith("harness.checks.") and k != "harness.checks.code" for k in got)
+def test_the_code_lane_digest_is_stable_and_lists_its_modules(served):
+    first, second = _of()["parts"]["exam"], _of()["parts"]["exam"]
+    assert first == second
+    mods = first["grader_modules"]
+    assert {"evals.core", "harness.checks.code", "harness.checks.base", "harness.reasons"} <= set(mods)
+    assert not any(m.startswith("harness.checks.") and m not in ("harness.checks.code", "harness.checks.base")
+                   for m in mods)
+    assert "harness.serving" not in mods and "evals.core:_check_code" in first["grader"]
 
 
 def test_the_digest_holds_when_only_swap_or_free_memory_or_thermal_change(served):

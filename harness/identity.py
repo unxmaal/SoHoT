@@ -1,6 +1,7 @@
 """A candidate's content identity: the bytes of its runtime and model, what it is sent, the exam, the harness and the machine. #1094."""
 from __future__ import annotations
 
+import ast
 import hashlib
 import json
 import os
@@ -268,60 +269,237 @@ def _small_sha(path) -> str:
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
-#: Packages whose modules are a lane's grading code when its checker refers to them.
-GRADER_PACKAGES = ("harness.checks",)
+#: Repo packages whose code a grader can reach; anything else (stdlib, third party) is pinned by the machine and venv.
+GRADER_PACKAGES = ("harness", "evals")
+#: Where every lane's checker is registered, and the scoring entry every lane runs through.
+CHECKER_REGISTRY = ("evals.core", "CHECKERS")
+SCORE_ENTRY = (("evals.core", "score"),)
+_BODY = "<body>"
 
 
-def _names(code) -> set:
-    got = set(code.co_names)
-    for const in code.co_consts:
-        if hasattr(const, "co_names"):
-            got |= _names(const)
-    return got
+def _repo_root() -> Path:
+    return Path(__file__).resolve().parents[1]
 
 
-def _in(name: str, packages) -> bool:
-    return any(name == p or name.startswith(p + ".") for p in packages)
+class _Module:
+    """One repo module read by ast: its top-level statements by the names they bind, its imports, its loose statements."""
+
+    def __init__(self, name: str, path: Path):
+        self.name, self.package = name, name if path.name == "__init__.py" else name.rpartition(".")[0]
+        self.lines = path.read_text(encoding="utf-8").splitlines()
+        tree = ast.parse("\n".join(self.lines), filename=str(path))
+        self.stmts: dict = {}
+        self.imports: dict = {}
+        self.stars: list = []
+        self.loose: list = []
+        self.main: list = []
+        for node in tree.body:
+            if isinstance(node, (ast.Import, ast.ImportFrom)):
+                bound = self.bind_import(node)
+                self.imports.update(bound)
+                continue
+            names = sorted(_bound(node))
+            if names:
+                for n in names:
+                    self.stmts[n] = (",".join(names), node)
+            elif _is_main(node):
+                self.main.append(node)
+            elif not (isinstance(node, ast.Expr) and isinstance(node.value, ast.Constant)):
+                self.loose.append(node)
+
+    def bind_import(self, node) -> dict:
+        """{local name: (module, attr or "")} for one import statement; star imports go to self.stars."""
+        out = {}
+        if isinstance(node, ast.Import):
+            for a in node.names:
+                out[a.asname or a.name.partition(".")[0]] = (a.name if a.asname else a.name.partition(".")[0], "")
+            return out
+        base = node.module or ""
+        if node.level:
+            parts = self.package.split(".")
+            parts = parts[:len(parts) - node.level + 1]
+            base = ".".join(parts + ([base] if base else []))
+        for a in node.names:
+            if a.name == "*":
+                self.stars.append(base)
+            else:
+                out[a.asname or a.name] = (base, a.name)
+        return out
+
+    def source(self, node) -> str:
+        first = min([node.lineno, *(d.lineno for d in getattr(node, "decorator_list", []))])
+        return "\n".join(self.lines[first - 1:node.end_lineno])
 
 
-def grader_digest(lane: str, checkers=None, packages=GRADER_PACKAGES, also=None) -> dict:
-    """{name: sha256} of the checker a lane scores with, the functions of its module it calls and the grader modules they use."""
-    import importlib
-    import inspect
-    import types
+def _is_main(node) -> bool:
+    test = getattr(node, "test", None) if isinstance(node, ast.If) else None
+    return (isinstance(test, ast.Compare) and isinstance(test.left, ast.Name) and test.left.id == "__name__"
+            and any(isinstance(c, ast.Constant) and c.value == "__main__" for c in test.comparators))
 
-    from evals import core
-    checkers = core.CHECKERS if checkers is None else checkers
-    start = checkers.get(lane)
-    if start is None:
-        return {}
-    todo = [start, *((core.score,) if also is None else also)]
-    home, seen, out = start.__module__, set(), {}
+
+_SCOPES = (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef, ast.Lambda,
+           ast.ListComp, ast.SetComp, ast.DictComp, ast.GeneratorExp)
+
+
+def _bound(node) -> set:
+    """The module-level names a top-level statement binds; names inside a nested scope are not module names."""
+    if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+        return {node.name}
+    out, todo = set(), [node]
     while todo:
-        f = todo.pop()
-        if id(f) in seen:
+        sub = todo.pop()
+        if isinstance(sub, ast.Name) and isinstance(sub.ctx, ast.Store):
+            out.add(sub.id)
+        elif isinstance(sub, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            out.add(sub.name)
             continue
-        seen.add(id(f))
-        code = f.__code__
-        if f.__name__ == "<lambda>":
-            # A lambda's source is the whole statement around it, every other lane's entry included.
-            out[f"{f.__module__}.{f.__qualname__}"] = digest_of([code.co_code.hex(), code.co_names, repr(code.co_consts)])
-        else:
-            out[f"{f.__module__}.{f.__qualname__}"] = _text_sha(inspect.getsource(f))
-        names = _names(f.__code__)
-        wanted = names | {f"{p}.{n}" for p in packages if p in names for n in names}
-        for name in sorted(wanted):
-            obj = f.__globals__.get(name)
-            if obj is None and _in(name, packages):
-                try:
-                    obj = importlib.import_module(name)
-                except ImportError:
-                    continue
-            if isinstance(obj, types.FunctionType) and obj.__module__ == home:
-                todo.append(obj)
-            elif isinstance(obj, types.ModuleType) and _in(obj.__name__, packages) and getattr(obj, "__file__", None):
-                out[obj.__name__] = _small_sha(obj.__file__)
-    return dict(sorted(out.items()))
+        elif isinstance(sub, (ast.Import, ast.ImportFrom)):
+            out |= {(a.asname or a.name).partition(".")[0] for a in sub.names if a.name != "*"}
+        if not isinstance(sub, _SCOPES):
+            todo.extend(ast.iter_child_nodes(sub))
+    return out
+
+
+def _uses(node) -> tuple[set, list]:
+    """(bare names loaded, attribute chains as name lists) in a statement or expression."""
+    chains, inner, heads = [], set(), set()
+    for sub in ast.walk(node):
+        if isinstance(sub, ast.Attribute) and id(sub) not in inner:
+            chain, cur = [], sub
+            while isinstance(cur, ast.Attribute):
+                inner.add(id(cur))
+                chain.insert(0, cur.attr)
+                cur = cur.value
+            if isinstance(cur, ast.Name):
+                heads.add(id(cur))
+                chains.append([cur.id, *chain])
+    names = {sub.id for sub in ast.walk(node)
+             if isinstance(sub, ast.Name) and isinstance(sub.ctx, ast.Load) and id(sub) not in heads}
+    return names, chains
+
+
+def grader_digest(lane: str, *, root=None, packages=GRADER_PACKAGES, registry=CHECKER_REGISTRY,
+                  also=SCORE_ENTRY) -> dict:
+    """{"modules", "names"}: the repo modules a lane's checker reaches by static import and name analysis (nothing is imported), a sha256 per statement reached."""
+    root = Path(root) if root is not None else _repo_root()
+    parsed: dict = {}
+
+    def module(name: str):
+        if not name or not any(name == p or name.startswith(p + ".") for p in packages):
+            return None
+        if name not in parsed:
+            base = root.joinpath(*name.split("."))
+            path = next((f for f in (base / "__init__.py", base.with_suffix(".py")) if f.is_file()), None)
+            try:
+                parsed[name] = _Module(name, path) if path else None
+            except (OSError, SyntaxError, UnicodeDecodeError):
+                parsed[name] = None
+        return parsed[name]
+
+    reg_mod = module(registry[0])
+    entry = None
+    if reg_mod and registry[1] in reg_mod.stmts:
+        value = getattr(reg_mod.stmts[registry[1]][1], "value", None)
+        if isinstance(value, ast.Dict):
+            entry = next((v for k, v in zip(value.keys, value.values)
+                          if isinstance(k, ast.Constant) and k.value == lane), None)
+    if entry is None:
+        return {}
+    out: dict = {}
+    seen: set = set()
+    todo: list = []
+
+    def visit(mod, node, key):
+        out[f"{mod.name}:{key}"] = _text_sha(mod.source(node))
+        local = {}
+        for sub in ast.walk(node):
+            if isinstance(sub, (ast.Import, ast.ImportFrom)) and sub is not node:
+                local.update(mod.bind_import(sub))
+        names, chains = _uses(node)
+        for n in names:
+            todo.append((mod.name, n, local.get(n)))
+        for chain in chains:
+            todo.append((mod.name, chain, local.get(chain[0])))
+
+    def reach_module(name: str, whole: bool) -> None:
+        parts = name.split(".")
+        for i in range(1, len(parts) + 1):
+            todo.append((".".join(parts[:i]), _BODY, None))
+        if whole:
+            todo.append((name, "*", None))
+
+    def resolve(modname: str, ref, binding) -> None:
+        """Reach what `ref` (a name or an attribute chain) names in module `modname`."""
+        mod = module(modname)
+        if mod is None:
+            return
+        chain = ref if isinstance(ref, list) else [ref]
+        head, rest = chain[0], chain[1:]
+        if head == _BODY:
+            if (modname, _BODY) in seen:
+                return
+            seen.add((modname, _BODY))
+            for target, attr in mod.imports.values():
+                reach_module(target if module(f"{target}.{attr}") is None else f"{target}.{attr}", False)
+            for i, node in enumerate(mod.loose):
+                visit(mod, node, f"{_BODY}{i}")
+            return
+        if head == "<main>":
+            if (modname, head) not in seen:
+                seen.add((modname, head))
+                for i, node in enumerate(mod.main):
+                    visit(mod, node, f"<main>{i}")
+            return
+        if head == "*":
+            if (modname, "*") in seen:
+                return
+            seen.add((modname, "*"))
+            for name in list(mod.stmts):
+                todo.append((modname, name, None))
+            for local in mod.imports:
+                todo.append((modname, local, None))
+            return
+        binding = binding or mod.imports.get(head)
+        if binding is None:
+            if head in mod.stmts:
+                key, node = mod.stmts[head]
+                if (modname, key) in seen:
+                    return
+                seen.add((modname, key))
+                reach_module(modname, False)
+                todo.append((modname, "<main>", None))
+                visit(mod, node, key)
+            elif (modname, f"*{head}") not in seen:
+                seen.add((modname, f"*{head}"))
+                for star in mod.stars:
+                    todo.append((star, chain, None))
+            return
+        target, attr = binding
+        path = [*target.split("."), *([attr] if attr else []), *rest]
+        for cut in range(len(path), 0, -1):
+            name = ".".join(path[:cut])
+            if module(name) is not None:
+                if cut == len(path):
+                    reach_module(name, True)
+                else:
+                    reach_module(name, False)
+                    todo.append((name, path[cut], None))
+                return
+
+    out[f"{reg_mod.name}:{registry[1]}[{lane}]"] = _text_sha(ast.get_source_segment("\n".join(reg_mod.lines), entry) or "")
+    seen.add((reg_mod.name, registry[1]))
+    names, chains = _uses(entry)
+    todo += [(reg_mod.name, n, None) for n in names] + [(reg_mod.name, c, None) for c in chains]
+    todo += [(m, n, None) for m, n in also]
+    while todo:
+        modname, ref, binding = todo.pop()
+        resolve(modname, ref, binding)
+    return {"modules": sorted({k.partition(":")[0] for k in out}), "names": dict(sorted(out.items()))}
+
+
+def _grader_part(lane: str) -> dict:
+    got = grader_digest(lane)
+    return {"grader": got.get("names", {}), "grader_modules": got.get("modules", [])}
 
 
 def _request_settings(spec: str) -> tuple[dict, dict]:
@@ -376,7 +554,7 @@ def of(lane: str, spec: str, *, budget: int, ladder=(), overrides=None, cases=No
     serving_part = served(target) if target else {"unresolved": [f"runtime: {spec} is not a text spec"]}
     unresolved = list(serving_part.pop("unresolved", []))
     parts = {"served": serving_part, "settings": settings(lane, spec, budget, ladder, overrides),
-             "exam": {"lane": lane, "split_version": holdout.version(lane), "grader": grader_digest(lane)},
+             "exam": {"lane": lane, "split_version": holdout.version(lane), **_grader_part(lane)},
              "machine": matched}
     return {"digest": "" if unresolved else digest_of(parts), "cases": case_digests(spec, cases, budget),
             "parts": parts, "recorded": {"harness": harness if harness is not None else harness_state()},
