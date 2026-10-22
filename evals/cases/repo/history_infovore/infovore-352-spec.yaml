@@ -50,7 +50,21 @@ prompt: '# Topic merge: fold symbol, script, plural and generic-suffix variants 
 
 
   Out of scope: translation of fully non-Latin tags (14 keys, 18 claim-tags), semantic merges (RS/6k vs
-  RS/6000), and an authority file of canonical hardware names (#142).'
+  RS/6000), and an authority file of canonical hardware names (#142).
+
+
+  The hidden tests call these names from the repository (signatures as a correct fix defines them):
+
+  - `class infovore.wiki.canon.Merged(keys: int, tags: int)`
+
+  - `infovore.wiki.canon.display_names(tags: Iterable[str], merge: Mapping[str, str] | None=None) -> dict[str,
+  str]`
+
+  - `infovore.wiki.canon.merge_map(spellings: Spellings) -> dict[str, str]`
+
+  - `infovore.wiki.canon.spelling_counts(tags: Iterable[str]) -> dict[str, Counter[str]]`
+
+  - `infovore.wiki.canon.summarise_merge(spellings: Spellings, merge: Mapping[str, str]) -> Merged`'
 params:
   source_repo: https://github.com/unxmaal/infovore.git
   base: 0bd7a59b15fc0b9784046b466f867f90a4d0abb7
@@ -64,6 +78,13 @@ params:
   - infovore/wiki/command.py
   pytest_args:
   - --import-mode=importlib
+  interface:
+  - 'class infovore.wiki.canon.Merged(keys: int, tags: int)'
+  - 'infovore.wiki.canon.display_names(tags: Iterable[str], merge: Mapping[str, str] | None=None) -> dict[str,
+    str]'
+  - 'infovore.wiki.canon.merge_map(spellings: Spellings) -> dict[str, str]'
+  - 'infovore.wiki.canon.spelling_counts(tags: Iterable[str]) -> dict[str, Counter[str]]'
+  - 'infovore.wiki.canon.summarise_merge(spellings: Spellings, merge: Mapping[str, str]) -> Merged'
   fail_to_pass:
   - tests/wiki/test_canon.py::test_alias_names_maps_every_alias_to_its_topic
   - tests/wiki/test_canon.py::test_canonical[  -]
@@ -113,5 +134,6 @@ attribution:
     removed (spec), and the Fix/Shape/Design/Options/Remedy/Proposal/Build/What-to sections and labelled
     paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
     of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
-    and sandbox (evals/repo.py)
+    and sandbox (evals/repo.py); the names the hidden tests use that the fix adds or re-signs, with the
+    fix's signatures, appended to both variants (evals/interface.py)
   importer: evals.importers.history_infovore

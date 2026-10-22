@@ -82,10 +82,10 @@ def validate(name: str, params: dict) -> None:
         raise ValueError(f"{name}: params.variant must be spec, symptom or request")
     if params.get("context") != "oracle":
         raise ValueError(f"{name}: params.context must be oracle")
-    for key in ("fail_to_pass", "pass_to_pass", "context_files", "new_files", "pytest_args", "extras"):
+    for key in ("fail_to_pass", "pass_to_pass", "context_files", "new_files", "pytest_args", "extras", "interface"):
         if not isinstance(params.get(key) or [], list):
             raise ValueError(f"{name}: params.{key} must be a list")
-    for key in ("pytest_args", "extras"):
+    for key in ("pytest_args", "extras", "interface"):
         odd = [x for x in params.get(key) or [] if not isinstance(x, str)]
         if odd:
             raise ValueError(f"{name}: params.{key} must be strings, not {odd}")

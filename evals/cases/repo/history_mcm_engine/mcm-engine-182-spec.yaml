@@ -25,7 +25,25 @@ prompt: '# 4.0 C6: characterization replay (legacy vs unified) + Postgres rehear
   Acceptance: on the real corpus of 1,474 searches / 241 report_errors / 45 get_entry / 53 read_rule,
   get_entry/read_rule agreement 100%; search ranked-overlap at or above the threshold stated in the umbrella
   (proposed 0.9 Jaccard on returned ids, disagreements explained by the uniform FTS weighting and listed);
-  rehearsal round-trip identical on Postgres.'
+  rehearsal round-trip identical on Postgres.
+
+
+  The hidden tests call these names from the repository (signatures as a correct fix defines them):
+
+  - `class mcm_engine.replay_queries.EntityType`
+
+  - `mcm_engine.replay_queries.extract_queries(paths: Iterable[str | Path]) -> list[ReplayQuery]`
+
+  - `mcm_engine.replay_queries.format_report(report: ReplayReport) -> str`
+
+  - `mcm_engine.replay_queries.jaccard(a: list, b: list) -> float`
+
+  - `mcm_engine.replay_queries.open_context(store: str, *, query_mode: str=''strict'') -> Context`
+
+  - `mcm_engine.replay_queries.prefix_agreement(a: list, b: list) -> float`
+
+  - `mcm_engine.replay_queries.replay(ctx: Context, queries: list[ReplayQuery], *, store: str='''', project_name:
+  str='''', jaccard_threshold: float=0.9) -> ReplayReport`'
 params:
   source_repo: https://github.com/unxmaal/mcm-engine.git
   base: 9c2d65dde91aa3d4e6e53471f26579fb71d6d5e4
@@ -41,6 +59,15 @@ params:
   - pythonpath=src
   extras:
   - dev
+  interface:
+  - class mcm_engine.replay_queries.EntityType
+  - 'mcm_engine.replay_queries.extract_queries(paths: Iterable[str | Path]) -> list[ReplayQuery]'
+  - 'mcm_engine.replay_queries.format_report(report: ReplayReport) -> str'
+  - 'mcm_engine.replay_queries.jaccard(a: list, b: list) -> float'
+  - 'mcm_engine.replay_queries.open_context(store: str, *, query_mode: str=''strict'') -> Context'
+  - 'mcm_engine.replay_queries.prefix_agreement(a: list, b: list) -> float'
+  - 'mcm_engine.replay_queries.replay(ctx: Context, queries: list[ReplayQuery], *, store: str='''', project_name:
+    str='''', jaccard_threshold: float=0.9) -> ReplayReport'
   fail_to_pass:
   - tests/test_replay_queries.py::test_cli_writes_a_json_report
   - tests/test_replay_queries.py::test_extract_queries_keeps_only_replayable_tool_uses
@@ -60,5 +87,6 @@ attribution:
     removed (spec), and the Fix/Shape/Design/Options/Remedy/Proposal/Build/What-to sections and labelled
     paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
     of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
-    and sandbox (evals/repo.py)
+    and sandbox (evals/repo.py); the names the hidden tests use that the fix adds or re-signs, with the
+    fix's signatures, appended to both variants (evals/interface.py)
   importer: evals.importers.history_mcm_engine

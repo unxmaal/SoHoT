@@ -33,7 +33,32 @@ prompt: '# Negative controls for the claim check and the wiki gates
   🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 
-  https://claude.ai/code/session_018FFkm1LHqCXapmvM9uBMXc'
+  https://claude.ai/code/session_018FFkm1LHqCXapmvM9uBMXc
+
+
+  The hidden tests call these names from the repository (signatures as a correct fix defines them):
+
+  - `class infovore.claims.controls.Stratum(length: str, position: str, cited: int, cited_hit: float,
+  uncited: int, uncited_hit: float)`
+
+  - `infovore.claims.controls._length_bucket(length: int) -> str`
+
+  - `infovore.claims.controls.drop_rate_by_verdict(sections: Mapping[str, Mapping[str, Sequence[tuple[str,
+  Sequence[int]]]]], drops: Sequence[Sequence[str]], verdict_of: Mapping[int, str | None], claim_of_statement:
+  Mapping[str, int]) -> dict[str, tuple[int, int]]`
+
+  - `infovore.claims.controls.matched_recall(conn: sqlite3.Connection, runs: Sequence[int], lexicon: Lexicon,
+  rng: random.Random, sample: int) -> list[Stratum]`
+
+  - `infovore.claims.controls.overlap_floor(rows: Sequence[ReviewRow], lexicon: Lexicon, threshold: float,
+  rng: random.Random, floor: float=FLOOR) -> Floor`
+
+  - `infovore.claims.controls.read_drops(path: Path) -> list[list[str]]`
+
+  - `infovore.claims.controls.shuffled_citations(rows: Sequence[ReviewRow], lexicon: Lexicon, threshold:
+  float, rng: random.Random) -> tuple[Tally, Tally, float]`
+
+  - `infovore.claims.controls.worst(verdicts: Iterable[str | None]) -> str`'
 params:
   source_repo: https://github.com/unxmaal/infovore.git
   base: beda3c3cff036a10d558acd507fb231f66a72135
@@ -47,6 +72,21 @@ params:
   - infovore/claims/controls.py
   pytest_args:
   - --import-mode=importlib
+  interface:
+  - 'class infovore.claims.controls.Stratum(length: str, position: str, cited: int, cited_hit: float,
+    uncited: int, uncited_hit: float)'
+  - 'infovore.claims.controls._length_bucket(length: int) -> str'
+  - 'infovore.claims.controls.drop_rate_by_verdict(sections: Mapping[str, Mapping[str, Sequence[tuple[str,
+    Sequence[int]]]]], drops: Sequence[Sequence[str]], verdict_of: Mapping[int, str | None], claim_of_statement:
+    Mapping[str, int]) -> dict[str, tuple[int, int]]'
+  - 'infovore.claims.controls.matched_recall(conn: sqlite3.Connection, runs: Sequence[int], lexicon: Lexicon,
+    rng: random.Random, sample: int) -> list[Stratum]'
+  - 'infovore.claims.controls.overlap_floor(rows: Sequence[ReviewRow], lexicon: Lexicon, threshold: float,
+    rng: random.Random, floor: float=FLOOR) -> Floor'
+  - 'infovore.claims.controls.read_drops(path: Path) -> list[list[str]]'
+  - 'infovore.claims.controls.shuffled_citations(rows: Sequence[ReviewRow], lexicon: Lexicon, threshold:
+    float, rng: random.Random) -> tuple[Tally, Tally, float]'
+  - 'infovore.claims.controls.worst(verdicts: Iterable[str | None]) -> str'
   fail_to_pass:
   - tests/claims/test_controls.py::test_controls_bad_arguments_are_config_errors[argv0]
   - tests/claims/test_controls.py::test_controls_bad_arguments_are_config_errors[argv1]
@@ -72,5 +112,6 @@ attribution:
     removed (spec), and the Fix/Shape/Design/Options/Remedy/Proposal/Build/What-to sections and labelled
     paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
     of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
-    and sandbox (evals/repo.py)
+    and sandbox (evals/repo.py); the names the hidden tests use that the fix adds or re-signs, with the
+    fix's signatures, appended to both variants (evals/interface.py)
   importer: evals.importers.history_infovore

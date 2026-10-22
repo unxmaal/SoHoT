@@ -219,7 +219,7 @@ def test_the_committed_manifest_converts_to_both_variants_of_every_task():
     assert set(history.DROPPED) <= variants
     assert len(cases) == len(variants) - len(history.DROPPED)
     for c in cases:
-        assert set(c["params"]) - {"new_files"} == PARAMS and len(c["params"]["base"]) == 40
+        assert set(c["params"]) - {"new_files", "interface"} == PARAMS and len(c["params"]["base"]) == 40
         assert c["prompt"].startswith("# ")
 
 
@@ -292,7 +292,9 @@ PILOT = {
 def _row_digest(task) -> str:
     import hashlib
     import json
-    return hashlib.sha256(json.dumps(task, sort_keys=True).encode()).hexdigest()[:12]
+    # interface is derived from the fix commit (#1103); the rest of the row must not move.
+    rest = {k: v for k, v in task.items() if k != "interface"}
+    return hashlib.sha256(json.dumps(rest, sort_keys=True).encode()).hexdigest()[:12]
 
 
 def test_the_pilot_tasks_keep_their_ids_fix_commits_rows_and_split_sides():

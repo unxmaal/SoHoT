@@ -26,7 +26,17 @@ prompt: '# 4.0 C1: corpus-snapshot (via scroll_entries) + corpus-census subcomma
 
 
   Acceptance: snapshot of the basement yields row counts equal to `session_start`''s totals; census reports
-  0 rows failing the fit check (or lists them by id); both subcommands have tests on a seeded SQLite.'
+  0 rows failing the fit check (or lists them by id); both subcommands have tests on a seeded SQLite.
+
+
+  The hidden tests call these names from the repository (signatures as a correct fix defines them):
+
+  - `mcm_engine.corpus_snapshot.census(storage, etypes: Iterable[EntityType]=tuple(EntityType)) -> dict`
+
+  - `mcm_engine.corpus_snapshot.parse_scroll_page(text: str) -> list[ParsedEntry]`
+
+  - `mcm_engine.corpus_snapshot.snapshot(call_tool: Callable[[str, dict], str], out_path: str | Path,
+  *, page: int=100) -> SnapshotReport`'
 params:
   source_repo: https://github.com/unxmaal/mcm-engine.git
   base: bb256115dfea042c4e42dd2601c25fda130f8f5d
@@ -43,6 +53,11 @@ params:
   - pythonpath=src
   extras:
   - dev
+  interface:
+  - 'mcm_engine.corpus_snapshot.census(storage, etypes: Iterable[EntityType]=tuple(EntityType)) -> dict'
+  - 'mcm_engine.corpus_snapshot.parse_scroll_page(text: str) -> list[ParsedEntry]'
+  - 'mcm_engine.corpus_snapshot.snapshot(call_tool: Callable[[str, dict], str], out_path: str | Path,
+    *, page: int=100) -> SnapshotReport'
   fail_to_pass:
   - tests/test_corpus_snapshot.py::test_census_reports_shape_pollution_and_fit
   - tests/test_corpus_snapshot.py::test_parse_handles_empty_page
@@ -65,5 +80,6 @@ attribution:
     removed (spec), and the Fix/Shape/Design/Options/Remedy/Proposal/Build/What-to sections and labelled
     paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
     of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
-    and sandbox (evals/repo.py)
+    and sandbox (evals/repo.py); the names the hidden tests use that the fix adds or re-signs, with the
+    fix's signatures, appended to both variants (evals/interface.py)
   importer: evals.importers.history_mcm_engine

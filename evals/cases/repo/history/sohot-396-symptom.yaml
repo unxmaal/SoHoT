@@ -8,7 +8,12 @@ prompt: '# Discovery fetches faster than it screens: 469 GiB of downloaded candi
   lh disk on the Studio after the shakedown loops: queued 58 entries, 468.8 GiB. Each loop downloads up
   to its budget (40 GiB) but screens at most --top candidates, and a candidate too big for free memory
   (Qwen-Image-Bench, 51 GB) stays ready-but-unscreenable. The producer outruns the consumer and the disk
-  is what absorbs the difference.'
+  is what absorbs the difference.
+
+
+  The hidden tests call these names from the repository (signatures as a correct fix defines them):
+
+  - `harness.cli.screenable_backlog(want: str='''', plan=None, room=None) -> list[str]`'
 params:
   source_repo: https://github.com/unxmaal/SoHoT.git
   base: 840629bbb98b1d77edbe216f28a8bea8248432cc
@@ -17,6 +22,8 @@ params:
   context: oracle
   context_files:
   - harness/cli.py
+  interface:
+  - 'harness.cli.screenable_backlog(want: str='''', plan=None, room=None) -> list[str]'
   fail_to_pass:
   - tests/test_loop_backpressure.py::test_a_full_backlog_skips_the_fetch
   - tests/test_loop_backpressure.py::test_a_short_backlog_still_fetches
@@ -34,5 +41,6 @@ attribution:
     removed (spec), and the Fix/Shape/Design/Options/Remedy/Proposal/Build/What-to sections and labelled
     paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
     of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
-    and sandbox (evals/repo.py)
+    and sandbox (evals/repo.py); the names the hidden tests use that the fix adds or re-signs, with the
+    fix's signatures, appended to both variants (evals/interface.py)
   importer: evals.importers.history

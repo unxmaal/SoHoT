@@ -8,7 +8,13 @@ prompt: '# Phase 2: background consolidation \"sleep\" pass (gaps 3/4)
   Scheduled offline pass over the rule corpus: cluster near-duplicates (via the MinHash dedup issue) and
   PROPOSE merges (never auto-apply in files mode), decay unreinforced rows, strengthen proven ones, and
   materialize co-occurrence links into relations. Levers: importance / merge / decay / evict (Vectorize/Letta
-  sleeptime). Emits a consolidation report for review.'
+  sleeptime). Emits a consolidation report for review.
+
+
+  The hidden tests call these names from the repository (signatures as a correct fix defines them):
+
+  - `mcm_engine.consolidate.consolidation_report(storage: Any, *, max_age_days: int=90, now: Optional[datetime]=None)
+  -> dict`'
 params:
   source_repo: https://github.com/unxmaal/mcm-engine.git
   base: ef9bee78d735ed81b2c3d6422410b1f6918a5bfa
@@ -25,6 +31,9 @@ params:
   - pythonpath=src
   extras:
   - dev
+  interface:
+  - 'mcm_engine.consolidate.consolidation_report(storage: Any, *, max_age_days: int=90, now: Optional[datetime]=None)
+    -> dict'
   fail_to_pass:
   - tests/test_consolidate.py::test_cli_consolidate_dispatch
   - tests/test_consolidate.py::test_near_duplicate_is_not_also_a_conflict
@@ -45,5 +54,6 @@ attribution:
     removed (spec), and the Fix/Shape/Design/Options/Remedy/Proposal/Build/What-to sections and labelled
     paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
     of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
-    and sandbox (evals/repo.py)
+    and sandbox (evals/repo.py); the names the hidden tests use that the fix adds or re-signs, with the
+    fix's signatures, appended to both variants (evals/interface.py)
   importer: evals.importers.history_mcm_engine

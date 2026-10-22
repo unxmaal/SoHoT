@@ -86,7 +86,18 @@ prompt: '# get_last_session returns the global latest handoff — no per-caller/
 
   Silent and confusing: the agent confidently narrates the wrong project''s state as if it were the current
   one, and a user who trusts it can act on stale/irrelevant context. Severity scales with the number of
-  concurrent contexts sharing the store.'
+  concurrent contexts sharing the store.
+
+
+  The hidden tests call these names from the repository (signatures as a correct fix defines them):
+
+  - `class mcm_engine.backends.SessionRow(id: int, status: str, current_task: Optional[str] = None, findings_summary:
+  Optional[str] = None, next_steps: Optional[str] = None, blockers: Optional[str] = None, context_snapshot:
+  Optional[str] = None, created_at: Optional[datetime] = None, principal: Optional[str] = None, workspace:
+  Optional[str] = None)`
+
+  - `mcm_engine.adapters.sqlite.storage.SqliteStorage.get_last_session(self, *, caller: Optional[str]=None,
+  principal: Optional[str]=None, workspace: Optional[str]=None) -> Optional[SessionRow]`'
 params:
   source_repo: https://github.com/unxmaal/mcm-engine.git
   base: c217b88e3875930a8466f6bd888bc3a48d3db39e
@@ -107,6 +118,13 @@ params:
   - pythonpath=src
   extras:
   - dev
+  interface:
+  - 'class mcm_engine.backends.SessionRow(id: int, status: str, current_task: Optional[str] = None, findings_summary:
+    Optional[str] = None, next_steps: Optional[str] = None, blockers: Optional[str] = None, context_snapshot:
+    Optional[str] = None, created_at: Optional[datetime] = None, principal: Optional[str] = None, workspace:
+    Optional[str] = None)'
+  - 'mcm_engine.adapters.sqlite.storage.SqliteStorage.get_last_session(self, *, caller: Optional[str]=None,
+    principal: Optional[str]=None, workspace: Optional[str]=None) -> Optional[SessionRow]'
   fail_to_pass:
   - tests/test_seam_inventory.py::test_sql_site_count_per_file[adapters/postgres/storage.py-71]
   - tests/test_seam_inventory.py::test_sql_site_count_per_file[adapters/sqlite/storage.py-69]
@@ -148,5 +166,6 @@ attribution:
     removed (spec), and the Fix/Shape/Design/Options/Remedy/Proposal/Build/What-to sections and labelled
     paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
     of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
-    and sandbox (evals/repo.py)
+    and sandbox (evals/repo.py); the names the hidden tests use that the fix adds or re-signs, with the
+    fix's signatures, appended to both variants (evals/interface.py)
   importer: evals.importers.history_mcm_engine

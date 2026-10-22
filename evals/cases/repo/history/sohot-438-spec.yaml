@@ -20,7 +20,12 @@ prompt: '# inspect: a stray small top-level .gguf sizes a huge split GGUF repo a
 
   Fix shape: when a repo''s weights are split shards, size the shard set (sum of one quant''s parts) rather
   than falling through to whatever small single file remains, or treat a single file far below the repo
-  total as not the model.'
+  total as not the model.
+
+
+  The hidden tests call these names from the repository (signatures as a correct fix defines them):
+
+  - `harness.gguf.shard_sets(siblings) -> dict[str, int]`'
 params:
   source_repo: https://github.com/unxmaal/SoHoT.git
   base: 209de7482e29e9da65cea2b4af847aebc261bfee
@@ -29,6 +34,8 @@ params:
   context: oracle
   context_files:
   - harness/gguf.py
+  interface:
+  - harness.gguf.shard_sets(siblings) -> dict[str, int]
   fail_to_pass:
   - tests/test_gguf_route.py::test_a_split_repo_is_sized_by_its_cheapest_whole_variant
   - tests/test_gguf_route.py::test_a_stray_small_gguf_beside_a_split_model_is_not_the_model
@@ -80,5 +87,6 @@ attribution:
     removed (spec), and the Fix/Shape/Design/Options/Remedy/Proposal/Build/What-to sections and labelled
     paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
     of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
-    and sandbox (evals/repo.py)
+    and sandbox (evals/repo.py); the names the hidden tests use that the fix adds or re-signs, with the
+    fix's signatures, appended to both variants (evals/interface.py)
   importer: evals.importers.history

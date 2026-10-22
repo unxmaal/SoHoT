@@ -70,7 +70,14 @@ prompt: '# Audit guessed hardcoded constants: provenance, env-override, and evid
   rather than guessing again.
 
 
-  Non-blocking. This is the umbrella; individual retunes are separate PRs with their own evidence.'
+  Non-blocking. This is the umbrella; individual retunes are separate PRs with their own evidence.
+
+
+  The hidden tests call these names from the repository (signatures as a correct fix defines them):
+
+  - `mcm_engine.tunables.env_float(name: str, default: float) -> float`
+
+  - `mcm_engine.tunables.env_int(name: str, default: int) -> int`'
 params:
   source_repo: https://github.com/unxmaal/mcm-engine.git
   base: aeda791754fcde22504f4eb0872fa6294a401b82
@@ -89,6 +96,9 @@ params:
   - pythonpath=src
   extras:
   - dev
+  interface:
+  - 'mcm_engine.tunables.env_float(name: str, default: float) -> float'
+  - 'mcm_engine.tunables.env_int(name: str, default: int) -> int'
   fail_to_pass:
   - tests/test_tunables.py::test_constant_defaults_and_overrides[MCM_DEDUP_TOPIC_THRESHOLD-mcm_engine.dedup-TOPIC_THRESHOLD-0.5-0.7]
   - tests/test_tunables.py::test_constant_defaults_and_overrides[MCM_RULESIFT_KNOWN_THRESHOLD-mcm_engine.ingest.rulesift-KNOWN_THRESHOLD-0.9-0.95]
@@ -112,5 +122,6 @@ attribution:
     removed (spec), and the Fix/Shape/Design/Options/Remedy/Proposal/Build/What-to sections and labelled
     paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
     of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
-    and sandbox (evals/repo.py)
+    and sandbox (evals/repo.py); the names the hidden tests use that the fix adds or re-signs, with the
+    fix's signatures, appended to both variants (evals/interface.py)
   importer: evals.importers.history_mcm_engine

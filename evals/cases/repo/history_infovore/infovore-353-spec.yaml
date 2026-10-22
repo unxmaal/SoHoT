@@ -46,7 +46,31 @@ prompt: '# Net-new check: rank and label claims by novelty against a reference c
 
 
   Out of scope: judging truth (that is the claim check and #268), and anything that calls a model per
-  claim.'
+  claim.
+
+
+  The hidden tests call these names from the repository (signatures as a correct fix defines them):
+
+  - `class infovore.wiki.build.WikiClaim(claim_id: int, exchange_id: int, date: str, speaker: str, statement:
+  str, topics: frozenset[str], check: str | None = None, novelty: float | None = None, reference: str
+  | None = None)`
+
+  - `infovore.wiki.build.build_site(claims: Iterable[WikiClaim], min_claims: int, out: Path, articles:
+  Mapping[str, Article] | None=None, min_section: int=1, grouper: ''Grouper | None''=None, background:
+  float | None=None) -> list[str]`
+
+  - `infovore.wiki.build.compute_stats(claims: Iterable[WikiClaim], min_claims: int, background: float
+  | None=None) -> Stats`
+
+  - `infovore.wiki.build.established(claim: WikiClaim, background: float | None) -> bool`
+
+  - `infovore.wiki.build.load_claims(conn: sqlite3.Connection, tech_only: bool=False, salt: str | None=None,
+  runs: Sequence[int] | None=None, tag_runs: Sequence[int] | None=None, verdicts: frozenset[str] | None=None,
+  background: float | None=None) -> tuple[list[WikiClaim], Excluded]`
+
+  - `infovore.wiki.build.render_page(name: str, claims: Collection[WikiClaim], files: Mapping[str, str],
+  article: Article | None=None, min_section: int=1, grouper: ''Grouper | None''=None, background: float
+  | None=None) -> str`'
 params:
   source_repo: https://github.com/unxmaal/infovore.git
   base: 6cd771b2a76088d5147821a1ac6129f004868a97
@@ -63,6 +87,22 @@ params:
   - infovore/wiki/write_command.py
   pytest_args:
   - --import-mode=importlib
+  interface:
+  - 'class infovore.wiki.build.WikiClaim(claim_id: int, exchange_id: int, date: str, speaker: str, statement:
+    str, topics: frozenset[str], check: str | None = None, novelty: float | None = None, reference: str
+    | None = None)'
+  - 'infovore.wiki.build.build_site(claims: Iterable[WikiClaim], min_claims: int, out: Path, articles:
+    Mapping[str, Article] | None=None, min_section: int=1, grouper: ''Grouper | None''=None, background:
+    float | None=None) -> list[str]'
+  - 'infovore.wiki.build.compute_stats(claims: Iterable[WikiClaim], min_claims: int, background: float
+    | None=None) -> Stats'
+  - 'infovore.wiki.build.established(claim: WikiClaim, background: float | None) -> bool'
+  - 'infovore.wiki.build.load_claims(conn: sqlite3.Connection, tech_only: bool=False, salt: str | None=None,
+    runs: Sequence[int] | None=None, tag_runs: Sequence[int] | None=None, verdicts: frozenset[str] | None=None,
+    background: float | None=None) -> tuple[list[WikiClaim], Excluded]'
+  - 'infovore.wiki.build.render_page(name: str, claims: Collection[WikiClaim], files: Mapping[str, str],
+    article: Article | None=None, min_section: int=1, grouper: ''Grouper | None''=None, background: float
+    | None=None) -> str'
   fail_to_pass:
   - tests/wiki/test_build.py::test_article_parts_follow_numbered_continuations_without_gaps
   - tests/wiki/test_build.py::test_background_claims_leave_the_sections_and_list_their_reference
@@ -122,5 +162,6 @@ attribution:
     removed (spec), and the Fix/Shape/Design/Options/Remedy/Proposal/Build/What-to sections and labelled
     paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
     of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
-    and sandbox (evals/repo.py)
+    and sandbox (evals/repo.py); the names the hidden tests use that the fix adds or re-signs, with the
+    fix's signatures, appended to both variants (evals/interface.py)
   importer: evals.importers.history_infovore

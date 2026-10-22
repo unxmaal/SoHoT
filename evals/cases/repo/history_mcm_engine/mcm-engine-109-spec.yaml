@@ -27,7 +27,10 @@ prompt: "# stdio startup sync failure is invisible to the client: server reports
   \ last error) as a tool or resource for explicit checks.\n- Retry the startup sync in the background\
   \ rather than once at boot, so a transient holder resolves itself.\n- Return a non-fatal notice through\
   \ the MCP client's logging channel, which is not stderr and is safe to use.\n\nHappy to send a PR for\
-  \ the first if that's the direction you'd want."
+  \ the first if that's the direction you'd want.\n\nThe hidden tests call these names from the repository\
+  \ (signatures as a correct fix defines them):\n- `class mcm_engine.wiring.Context(storage: StorageBackend,\
+  \ counters: CounterStore, search: SearchBackend, session: SessionStore, stale_index_warning: Optional[str]\
+  \ = None)`"
 params:
   source_repo: https://github.com/unxmaal/mcm-engine.git
   base: ebcde0b6bc93eb225d26e24de1a357ee86c65b17
@@ -45,6 +48,9 @@ params:
   - pythonpath=src
   extras:
   - dev
+  interface:
+  - 'class mcm_engine.wiring.Context(storage: StorageBackend, counters: CounterStore, search: SearchBackend,
+    session: SessionStore, stale_index_warning: Optional[str] = None)'
   fail_to_pass:
   - tests/test_stale_index_warning.py::test_search_clean_when_index_trusted
   - tests/test_stale_index_warning.py::test_search_warns_when_index_stale
@@ -70,5 +76,6 @@ attribution:
     removed (spec), and the Fix/Shape/Design/Options/Remedy/Proposal/Build/What-to sections and labelled
     paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
     of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
-    and sandbox (evals/repo.py)
+    and sandbox (evals/repo.py); the names the hidden tests use that the fix adds or re-signs, with the
+    fix's signatures, appended to both variants (evals/interface.py)
   importer: evals.importers.history_mcm_engine

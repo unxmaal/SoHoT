@@ -15,7 +15,12 @@ prompt: '# The loop''s cleanup stamps downloads removed but leaves them complete
   Fix: removed() clears complete; schema 58 repairs the rows already written.
 
 
-  🤖 Generated with [Claude Code](https://claude.com/claude-code)'
+  🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+
+  The hidden tests call these names from the repository (signatures as a correct fix defines them):
+
+  - `harness.memory_store.migrations.v58.data(conn) -> None`'
 params:
   source_repo: https://github.com/unxmaal/SoHoT.git
   base: c8ee78916ef58d2906457d8545edff78ec4e422e
@@ -27,6 +32,8 @@ params:
   - harness/memory_store/schema.py
   new_files:
   - harness/memory_store/migrations/v58.py
+  interface:
+  - harness.memory_store.migrations.v58.data(conn) -> None
   fail_to_pass:
   - tests/test_store_downloads.py::test_a_deleted_download_is_no_longer_complete
   - tests/test_store_downloads.py::test_the_migration_repairs_rows_removed_while_complete
@@ -58,5 +65,6 @@ attribution:
     removed (spec), and the Fix/Shape/Design/Options/Remedy/Proposal/Build/What-to sections and labelled
     paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
     of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
-    and sandbox (evals/repo.py)
+    and sandbox (evals/repo.py); the names the hidden tests use that the fix adds or re-signs, with the
+    fix's signatures, appended to both variants (evals/interface.py)
   importer: evals.importers.history

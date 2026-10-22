@@ -11,7 +11,18 @@ prompt: '# Follow-up (#25/#26): scale-free relevance via batch min-max (fix adap
   sigmoid with **batch min-max relative normalization** (Generative-Agents style) — normalize each result''s
   relevance across the candidate batch''s own min/max, in the search layer (two-pass). Scale-free: works
   for bm25, ts_rank_cd, and any future adapter with zero per-scale tuning. `compose_rank` then takes a
-  pre-normalized `relevance ∈ [0,1]`; drop `query_terms`. TDD in test_scoring.py.'
+  pre-normalized `relevance ∈ [0,1]`; drop `query_terms`. TDD in test_scoring.py.
+
+
+  The hidden tests call these names from the repository (signatures as a correct fix defines them):
+
+  - `mcm_engine.scoring.compose_rank(*, relevance: float, hit_count: Optional[int], reinforcement_count:
+  Optional[int], pinned: bool, age_days: Optional[float], correct_count: Optional[int]=None, incorrect_count:
+  Optional[int]=None) -> float`
+
+  - `mcm_engine.scoring.compose_rank_pinned_only(*, relevance: float, pinned: bool) -> float`
+
+  - `mcm_engine.scoring.minmax_normalize(value: float, lo: float, hi: float) -> float`'
 params:
   source_repo: https://github.com/unxmaal/mcm-engine.git
   base: 4f4b9f67175107d41a027a654efbfe9016b78943
@@ -26,6 +37,12 @@ params:
   - pythonpath=src
   extras:
   - dev
+  interface:
+  - 'mcm_engine.scoring.compose_rank(*, relevance: float, hit_count: Optional[int], reinforcement_count:
+    Optional[int], pinned: bool, age_days: Optional[float], correct_count: Optional[int]=None, incorrect_count:
+    Optional[int]=None) -> float'
+  - 'mcm_engine.scoring.compose_rank_pinned_only(*, relevance: float, pinned: bool) -> float'
+  - 'mcm_engine.scoring.minmax_normalize(value: float, lo: float, hi: float) -> float'
   fail_to_pass:
   - tests/test_correctness_axis.py::TestCorrectnessRanking::test_correctness_weight_demotes_failures_and_promotes_passes
   - tests/test_scoring.py::test_accepts_none_counters
@@ -67,5 +84,6 @@ attribution:
     removed (spec), and the Fix/Shape/Design/Options/Remedy/Proposal/Build/What-to sections and labelled
     paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
     of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
-    and sandbox (evals/repo.py)
+    and sandbox (evals/repo.py); the names the hidden tests use that the fix adds or re-signs, with the
+    fix's signatures, appended to both variants (evals/interface.py)
   importer: evals.importers.history_mcm_engine

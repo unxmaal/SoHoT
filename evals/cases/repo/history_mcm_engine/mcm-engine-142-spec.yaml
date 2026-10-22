@@ -65,7 +65,17 @@ prompt: '# KB data pollution: some knowledge summaries contain the whole seriali
   tool-call fragments or mismatched field tags, so a malformed store can''t recur.
 
 
-  Found 2026-10-14 while characterizing 3.12.0 MCP behavior post-deploy.'
+  Found 2026-10-14 while characterizing 3.12.0 MCP behavior post-deploy.
+
+
+  The hidden tests call these names from the repository (signatures as a correct fix defines them):
+
+  - `mcm_engine.sanitize.clean_summary_detail(summary: str | None, detail: str | None) -> tuple[str |
+  None, str | None, bool]`
+
+  - `mcm_engine.sanitize.is_polluted(text: str | None) -> bool`
+
+  - `mcm_engine.sanitize.strip_tool_call_fragments(text: str | None) -> str`'
 params:
   source_repo: https://github.com/unxmaal/mcm-engine.git
   base: 36d74ae24174597fd57d190cef2a82612890319d
@@ -83,6 +93,11 @@ params:
   - pythonpath=src
   extras:
   - dev
+  interface:
+  - 'mcm_engine.sanitize.clean_summary_detail(summary: str | None, detail: str | None) -> tuple[str |
+    None, str | None, bool]'
+  - 'mcm_engine.sanitize.is_polluted(text: str | None) -> bool'
+  - 'mcm_engine.sanitize.strip_tool_call_fragments(text: str | None) -> str'
   fail_to_pass:
   - tests/test_sanitize_knowledge_tool.py::test_add_knowledge_guard_cleans_on_store
   - tests/test_sanitize_knowledge_tool.py::test_sanitize_knowledge_apply_cleans_in_place
@@ -106,5 +121,6 @@ attribution:
     removed (spec), and the Fix/Shape/Design/Options/Remedy/Proposal/Build/What-to sections and labelled
     paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
     of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
-    and sandbox (evals/repo.py)
+    and sandbox (evals/repo.py); the names the hidden tests use that the fix adds or re-signs, with the
+    fix's signatures, appended to both variants (evals/interface.py)
   importer: evals.importers.history_mcm_engine

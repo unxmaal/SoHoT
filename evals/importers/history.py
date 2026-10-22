@@ -12,7 +12,7 @@ from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from evals import repo
+from evals import interface, repo
 from evals.importers import Imported, provenance
 
 LANE = "repo"
@@ -44,7 +44,9 @@ TRANSFORM = ("issue title and body from `gh issue view` at survey time, home pat
              "(spec), and the Fix/Shape/Design/Options/Remedy/Proposal/Build/What-to sections and "
              "labelled paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from "
              f"{RUNS} sandboxed pytest runs of the fix's test files at base+hidden tests and at "
-             "base+reference diff, in the lane's own environment and sandbox (evals/repo.py)")
+             "base+reference diff, in the lane's own environment and sandbox (evals/repo.py); "
+             "the names the hidden tests use that the fix adds or re-signs, with the fix's signatures, "
+             "appended to both variants (evals/interface.py)")
 
 #: The held-out split of tasks, frozen per fix commit by this seed and never by a case's text. #995.
 SPLIT_SEED = 995
@@ -194,13 +196,19 @@ def split_new(mirror, base: str, fix: str, source) -> tuple[list, list]:
 
 
 def refresh(got: dict, mirror) -> dict:
-    """The manifest with every task's context_files and new_files recomputed from the mirror. #913."""
+    """The manifest with every task's context_files, new_files and interface recomputed from the mirror. #913, #1103."""
     tasks = []
     for t in got["tasks"]:
         source = sorted({*t["context_files"], *t.get("new_files", [])})
         context, new = split_new(mirror, t["base"], t["fix"], source)
-        tasks.append({**t, "context_files": context, "new_files": new})
+        tasks.append({**t, "context_files": context, "new_files": new,
+                      "interface": tests_call(mirror, t["base"], t["fix"])})
     return {**got, "tasks": tasks}
+
+
+def tests_call(mirror, base: str, fix: str) -> list[str]:
+    """The interface lines a task's prompts show, with home paths and LAN hosts masked as in the prompt. #1103."""
+    return [_HOST.sub("<host>", _HOME.sub("~/", line)) for line in interface.tests_call(mirror, base, fix)]
 
 
 def _test_module(path: str) -> bool:
@@ -423,7 +431,7 @@ def survey(source: str, revision: str, limit: int | None, log, get_issue=None, t
                           **({"cause": res["cause"]} if res and res.get("cause") else {})})
             continue
         seen.add(c["issue"])
-        kept.append(task_row(src.prefix, c, res, text))
+        kept.append(task_row(src.prefix, c, res, text, tests_call(mirror, c["base"], c["fix"])))
     kept += [t for f, t in old.items() if t not in kept]
     return {"version": VERSION, "source": src.source, "repo": source, "revision": revision,
             "criteria": {"subject": src.subject.pattern, "first_parent": True, "merges": src.merges,
@@ -442,7 +450,7 @@ def survey(source: str, revision: str, limit: int | None, log, get_issue=None, t
             **({} if run else {"pending": pending})}
 
 
-def task_row(prefix: str, c: dict, res: dict, text: dict) -> dict:
+def task_row(prefix: str, c: dict, res: dict, text: dict, calls=()) -> dict:
     """One manifest task from a candidate commit, its probe result and its prompts; any importer may build one. #889."""
     lost_variants = {v: "no_fix_section" for v in VARIANTS if not text[v]}
     return {"id": f"{prefix}-{c['issue']}", "issue": c["issue"], "pr": c["pr"],
@@ -450,7 +458,7 @@ def task_row(prefix: str, c: dict, res: dict, text: dict) -> dict:
             "subject": c["subject"], "context_files": c["context_files"],
             "new_files": c["new_files"],
             "test_files": c["test_files"], "fail_to_pass": res["fail_to_pass"],
-            "pass_to_pass": res["pass_to_pass"], "prompts": text,
+            "pass_to_pass": res["pass_to_pass"], "prompts": text, "interface": list(calls),
             "strata": {"files": len(c["source_files"]), "lines": c["lines"],
                        "test_s": res["test_s"], "area": area(c["source_files"]),
                        "size": size_of({"files": len(c["source_files"]), "lines": c["lines"]})},
@@ -547,14 +555,17 @@ def fetch(path: Path | None = None, src: Repo = SOHOT) -> list[dict]:
 
 def convert(row: dict, src: Repo = SOHOT, mod=None, transform: str = TRANSFORM) -> Imported | None:
     """A manifest row as a repo case; `mod` is the importer module its provenance names (this one by default)."""
+    calls = row.get("interface") or []
+    shown = interface.block(calls)
     case = {"id": f"{row['id']}-{row['variant']}", "modality": LANE,
-            "prompt": row["prompts"][row["variant"]],
+            "prompt": row["prompts"][row["variant"]] + (f"\n\n{shown}" if shown else ""),
             "params": {"source_repo": src.url, "base": row["base"], "fix": row["fix"],
                        "variant": row["variant"], "context": "oracle",
                        "context_files": row["context_files"],
                        **({"new_files": row["new_files"]} if row.get("new_files") else {}),
                        **({"pytest_args": list(src.pytest_args)} if src.pytest_args else {}),
                        **({"extras": list(src.extras)} if src.extras else {}),
+                       **({"interface": list(calls)} if calls else {}),
                        "fail_to_pass": row["fail_to_pass"], "pass_to_pass": row["pass_to_pass"]},
             "attribution": provenance(mod or sys.modules[__name__], f"#{row['issue']} (PR #{row['pr']})",
                                       transform, row["date"])}
@@ -599,7 +610,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--log", type=Path)
     ap.add_argument("--out", type=Path, default=None)
     ap.add_argument("--refresh", action="store_true",
-                    help="recompute context_files and new_files of the committed manifest; no survey")
+                    help="recompute context_files, new_files and interface of the committed manifest; no survey")
     a = ap.parse_args(argv)
     if a.table and a.repo is None and a.out is None:
         for r in repos():

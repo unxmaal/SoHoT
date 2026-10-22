@@ -46,7 +46,12 @@ prompt: '# Piece C: one-way DB→git review mirror (gap 5, reviewability)
   solve concurrent-write clobber.
 
 
-  See `mcm_v3_plan.md` for full context.'
+  See `mcm_v3_plan.md` for full context.
+
+
+  The hidden tests call these names from the repository (signatures as a correct fix defines them):
+
+  - `mcm_engine.mirror.export_mirror(storage: Any, out_dir: str | Path) -> dict`'
 params:
   source_repo: https://github.com/unxmaal/mcm-engine.git
   base: 94708d68ff0a29b5300cda5923401ac98676d234
@@ -62,6 +67,8 @@ params:
   - pythonpath=src
   extras:
   - dev
+  interface:
+  - 'mcm_engine.mirror.export_mirror(storage: Any, out_dir: str | Path) -> dict'
   fail_to_pass:
   - tests/test_export_mirror.py::test_cli_export_mirror_dispatch
   - tests/test_export_mirror.py::test_mirror_is_read_only_on_source
@@ -82,5 +89,6 @@ attribution:
     removed (spec), and the Fix/Shape/Design/Options/Remedy/Proposal/Build/What-to sections and labelled
     paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
     of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
-    and sandbox (evals/repo.py)
+    and sandbox (evals/repo.py); the names the hidden tests use that the fix adds or re-signs, with the
+    fix's signatures, appended to both variants (evals/interface.py)
   importer: evals.importers.history_mcm_engine

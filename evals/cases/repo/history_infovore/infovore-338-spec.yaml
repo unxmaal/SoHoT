@@ -37,7 +37,35 @@ prompt: '# Corroboration score per claim cluster: distinct speakers and exchange
   🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 
-  https://claude.ai/code/session_018FFkm1LHqCXapmvM9uBMXc'
+  https://claude.ai/code/session_018FFkm1LHqCXapmvM9uBMXc
+
+
+  The hidden tests call these names from the repository (signatures as a correct fix defines them):
+
+  - `infovore.wiki.build.render_page(name: str, claims: Collection[WikiClaim], page_names: Collection[str],
+  article: Article | None=None, min_section: int=1, grouper: ''Grouper | None''=None) -> str`
+
+  - `infovore.wiki.groups.ClaimGroup.corroboration(self) -> int`
+
+  - `infovore.wiki.groups.ClaimGroup.exchanges(self) -> frozenset[int]`
+
+  - `infovore.wiki.groups.ClaimGroup.span(self) -> tuple[str, str]`
+
+  - `infovore.wiki.groups.ClaimGroup.speakers(self) -> frozenset[str]`
+
+  - `infovore.wiki.groups.cosine(a: Vector, b: Vector) -> float`
+
+  - `infovore.wiki.groups.group_claims(claims: Sequence[WikiClaim], threshold: float=JACCARD_THRESHOLD,
+  vectors: Sequence[Vector] | None=None, vector_threshold: float=VECTOR_THRESHOLD) -> list[ClaimGroup]`
+
+  - `infovore.wiki.groups.load_embedder(model_id: str, revision: str) -> SentenceTransformerEmbedder`
+
+  - `infovore.wiki.groups.make_grouper(embedder: Embedder, claims: Sequence[WikiClaim], vector_threshold:
+  float=VECTOR_THRESHOLD) -> Grouper`
+
+  - `infovore.wiki.groups.make_grouper_for(grouping: str, claims: Sequence[WikiClaim]) -> Grouper`
+
+  - `infovore.wiki.groups.summarise(groups_by_page: Sequence[Sequence[ClaimGroup]]) -> Corroboration`'
 params:
   source_repo: https://github.com/unxmaal/infovore.git
   base: 2f7f164a4fea0cb3a61ac2699fa4848bc92df265
@@ -52,6 +80,21 @@ params:
   - infovore/wiki/write_command.py
   pytest_args:
   - --import-mode=importlib
+  interface:
+  - 'infovore.wiki.build.render_page(name: str, claims: Collection[WikiClaim], page_names: Collection[str],
+    article: Article | None=None, min_section: int=1, grouper: ''Grouper | None''=None) -> str'
+  - infovore.wiki.groups.ClaimGroup.corroboration(self) -> int
+  - infovore.wiki.groups.ClaimGroup.exchanges(self) -> frozenset[int]
+  - infovore.wiki.groups.ClaimGroup.span(self) -> tuple[str, str]
+  - infovore.wiki.groups.ClaimGroup.speakers(self) -> frozenset[str]
+  - 'infovore.wiki.groups.cosine(a: Vector, b: Vector) -> float'
+  - 'infovore.wiki.groups.group_claims(claims: Sequence[WikiClaim], threshold: float=JACCARD_THRESHOLD,
+    vectors: Sequence[Vector] | None=None, vector_threshold: float=VECTOR_THRESHOLD) -> list[ClaimGroup]'
+  - 'infovore.wiki.groups.load_embedder(model_id: str, revision: str) -> SentenceTransformerEmbedder'
+  - 'infovore.wiki.groups.make_grouper(embedder: Embedder, claims: Sequence[WikiClaim], vector_threshold:
+    float=VECTOR_THRESHOLD) -> Grouper'
+  - 'infovore.wiki.groups.make_grouper_for(grouping: str, claims: Sequence[WikiClaim]) -> Grouper'
+  - 'infovore.wiki.groups.summarise(groups_by_page: Sequence[Sequence[ClaimGroup]]) -> Corroboration'
   fail_to_pass:
   - tests/wiki/test_command.py::test_grouping_embed_uses_the_embedder_and_stats_report_corroboration
   - tests/wiki/test_groups.py::test_a_claim_joins_the_first_matching_group
@@ -94,5 +137,6 @@ attribution:
     removed (spec), and the Fix/Shape/Design/Options/Remedy/Proposal/Build/What-to sections and labelled
     paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
     of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
-    and sandbox (evals/repo.py)
+    and sandbox (evals/repo.py); the names the hidden tests use that the fix adds or re-signs, with the
+    fix's signatures, appended to both variants (evals/interface.py)
   importer: evals.importers.history_infovore

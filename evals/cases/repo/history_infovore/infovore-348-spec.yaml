@@ -24,7 +24,16 @@ prompt: '# wiki write --resume skips sections from earlier runs, so the resumed 
 
 
   Then a resume job (~146 sections, about 7 minutes on Ornith-35B) fills run 8, queued on SoHoT behind
-  the running code adopt job.'
+  the running code adopt job.
+
+
+  The hidden tests call these names from the repository (signatures as a correct fix defines them):
+
+  - `infovore.db.wiki_articles.latest_article_run(conn: sqlite3.Connection, model_id: str, prompt_hash:
+  str, tag_run_id: int) -> int | None`
+
+  - `infovore.db.wiki_articles.run_sections(conn: sqlite3.Connection, article_run_id: int) -> set[tuple[str,
+  str]]`'
 params:
   source_repo: https://github.com/unxmaal/infovore.git
   base: 185fb068c97eadff15361894c2b9e73f3d13105a
@@ -37,6 +46,11 @@ params:
   - infovore/wiki/write_command.py
   pytest_args:
   - --import-mode=importlib
+  interface:
+  - 'infovore.db.wiki_articles.latest_article_run(conn: sqlite3.Connection, model_id: str, prompt_hash:
+    str, tag_run_id: int) -> int | None'
+  - 'infovore.db.wiki_articles.run_sections(conn: sqlite3.Connection, article_run_id: int) -> set[tuple[str,
+    str]]'
   fail_to_pass:
   - tests/db/test_wiki_articles.py::test_later_run_wins_per_topic_and_section
   - tests/db/test_wiki_articles.py::test_latest_article_run_filters_on_model_hash_and_tag_run
@@ -71,5 +85,6 @@ attribution:
     removed (spec), and the Fix/Shape/Design/Options/Remedy/Proposal/Build/What-to sections and labelled
     paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
     of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
-    and sandbox (evals/repo.py)
+    and sandbox (evals/repo.py); the names the hidden tests use that the fix adds or re-signs, with the
+    fix's signatures, appended to both variants (evals/interface.py)
   importer: evals.importers.history_infovore

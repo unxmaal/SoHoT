@@ -15,7 +15,12 @@ prompt: '# A neighbor sighting reopens a decided candidate, and a README-only sn
   2. NemoStation/Marlin-2B''s hub dir holds a snapshot with only LICENSE and README (Sep 20), no config
   or weights. fetching.have() checks only that the dir exists, so fetch skipped it, the screen ran, and
   the candidate got a terminal ''broken'' for ''No such file or directory ... config.json'': a download
-  that never happened, blamed on the model.'
+  that never happened, blamed on the model.
+
+
+  The hidden tests call these names from the repository (signatures as a correct fix defines them):
+
+  - `harness.memory_store.latest(conn, name: str) -> dict | None`'
 params:
   source_repo: https://github.com/unxmaal/SoHoT.git
   base: 644f52812413a7d9849ff21e5aad0bcf32764175
@@ -26,6 +31,8 @@ params:
   - harness/cli.py
   - harness/fetching.py
   - harness/memory_store.py
+  interface:
+  - 'harness.memory_store.latest(conn, name: str) -> dict | None'
   fail_to_pass:
   - tests/test_harness_registry.py::test_a_neighbor_sighting_does_not_reopen_a_decided_name[None-None-queued]
   - tests/test_harness_registry.py::test_a_neighbor_sighting_does_not_reopen_a_decided_name[declined-adopt-declined]
@@ -180,5 +187,6 @@ attribution:
     removed (spec), and the Fix/Shape/Design/Options/Remedy/Proposal/Build/What-to sections and labelled
     paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
     of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
-    and sandbox (evals/repo.py)
+    and sandbox (evals/repo.py); the names the hidden tests use that the fix adds or re-signs, with the
+    fix's signatures, appended to both variants (evals/interface.py)
   importer: evals.importers.history
