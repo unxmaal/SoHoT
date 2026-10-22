@@ -296,9 +296,12 @@ def test_the_loop_ends_with_the_lane_alias_serving_the_challenger(world):
 # --- the faults that bit this project: each one a fact about the harness, never a verdict on the model
 
 
-def test_a_method_crossed_with_the_incumbent_climbs_the_same_ladder(world):
+def test_a_method_crossed_with_the_incumbent_climbs_the_same_ladder(world, monkeypatch):
     """Nobody typed `plan:<incumbent>`: the loop crossed it, screened it and measured it
     against the incumbent with the paired gate, and its verdict carries its cost. #576."""
+    from harness import family
+    # #1111's slot would measure the never-compared challenger first and adopt it before the crossings.
+    monkeypatch.setattr(family, "SLOTS", 0)
     loop("--top", "5")
     assert adopted() == {"code": CHALLENGER}
     for spec in (f"plan:{INCUMBENT_UPSTREAM}", f"best-of:3:{INCUMBENT_UPSTREAM}",

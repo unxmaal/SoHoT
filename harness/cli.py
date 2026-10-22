@@ -52,6 +52,7 @@ from harness.commands import headless as headless_cmd
 from harness.commands import knobs as knobs_cmd
 from harness.commands import availability as availability_cmd
 from harness.commands import ledger as ledger_cmd
+from harness.commands import families as families_cmd
 from harness.commands import funnel as funnel_cmd
 from harness.commands import morning as morning_cmd
 from harness.commands import sweep_check as sweep_check_cmd
@@ -592,6 +593,19 @@ def build_parser() -> argparse.ArgumentParser:
     fun.add_argument("--budget-gib", type=float, default=None, help="a sweep's download budget (default: knob)")
     fun.add_argument("--head", type=int, default=10, help="how much of each lane's ranked head to list")
     fun.set_defaults(func=funnel_cmd.cmd_funnel)
+    fam = sub.add_parser("families", help="each lineage root's paired record per lane, the lane's queue with and "
+                         "without the family term, and tonight's measure plan with and without the diversity slot; "
+                         "read from a copy of the store")
+    fam.add_argument("--lane", default="code", help="the lane whose queue and plan to show (default code)")
+    fam.add_argument("--head", type=int, default=20, help="how much of the lane's queue to list")
+    fam.add_argument("--plan-lane", default="", help="the lane tonight's plan is scoped to, as `discover --lane` "
+                     "(default: every lane, as the nightly sweep runs)")
+    fam.add_argument("--nights", type=int, default=7, help="nights the measurements-per-night median reads")
+    fam.add_argument("--losses", type=int, default=None, help="what-if family_losses_to_demote (default: knob)")
+    fam.add_argument("--window-days", type=float, default=None, help="what-if diversity_family_window_days")
+    fam.add_argument("--slots", type=int, default=None, help="what-if diversity_slots")
+    fam.add_argument("--demotion", type=float, default=None, help="what-if family_demotion")
+    fam.set_defaults(func=families_cmd.cmd_families)
     avl = sub.add_parser("availability", help="per text lane: the share of watchdog probes it answered, and each "
                          "outage with the bounds of its start and end")
     avl.add_argument("--days", type=float, default=7.0, help="window in days (default 7)")

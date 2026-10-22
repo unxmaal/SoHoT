@@ -200,6 +200,8 @@ def mark(key: str, at: float | None = None) -> None:
 
 #: The sweep ceiling a finished loop left unused and why, or None. #1082.
 CEILING_UNUSED = "ceiling_unused"
+#: The measure step's diversity picks and what it said about its reserved slots. #1111.
+DIVERSITY = "diversity"
 
 
 def note(key: str, value) -> None:

@@ -92,8 +92,16 @@ def sweep(conn, since: float, beat: dict | None) -> dict:
                        "started": started, "finished": beat.get("finished"),
                        "in_window": started >= since, "line": beat.get("line", ""),
                        "commit": beat.get("commit", ""), "finished_commit": beat.get("finished_commit", ""),
-                       "ceiling_unused": beat.get(heartbeat.CEILING_UNUSED)}
+                       "ceiling_unused": beat.get(heartbeat.CEILING_UNUSED),
+                       "diversity": beat.get(heartbeat.DIVERSITY)}
     return out
+
+
+def families(conn) -> list[dict]:
+    """Families demoted in a lane by their members' paired losses, with the count. #1100."""
+    from harness import family
+    return [{"lane": f.lane, "family": f.key, "losses": len(f.lost), "lost": list(f.lost)}
+            for f in family.standing(conn).demoted()]
 
 
 def unused_line(u: dict) -> str:
@@ -319,7 +327,8 @@ def gather(conn, now: float, since: float, *, beat=None, gh=None, git=None, wher
          "stalled": (stalls or stalled)(conn), "deploy": deploy(where, git=git or _git),
          "canary": canary(now) if canary else "", "incidents": incidents(conn, since, now),
          "parked": parked() if parked else [], "checks": sweep_checks(conn, since),
-         "incumbent": incumbent(conn) if incumbent else None, "clearances": clearances(conn, since, now)}
+         "incumbent": incumbent(conn) if incumbent else None, "clearances": clearances(conn, since, now),
+         "families": families(conn)}
     if r["sweep"]["loop"] is not None:
         from harness import heartbeat
         r["sweep"]["loop"]["code_moved"] = heartbeat.code_moved(beat, r["deploy"].get("head", ""))

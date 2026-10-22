@@ -27,6 +27,16 @@ def _tally(d: dict) -> str:
     return ", ".join(f"{k} {v}" for k, v in sorted(d.items())) or "none"
 
 
+def diversity_lines(got) -> list[str]:
+    """The night's diversity picks with their family, else what the measure step said of its reserved slots. #1111."""
+    if not got:
+        return []
+    picks = got.get("picks") or []
+    if picks:
+        return [f"diversity {p['name']} took a reserved slot: family {p['why']}" for p in picks]
+    return [f"diversity {ln.split(': ', 1)[-1]}" for ln in (got.get("lines") or [])[-1:]]
+
+
 def render(r: dict) -> list[str]:
     """The deterministic report, one line per fact."""
     s = r["sweep"]
@@ -51,6 +61,7 @@ def render(r: dict) -> list[str]:
         out.append(f"sweep     started {_hm(loop['started'])}{when}; {loop['line']}")
         if loop.get("ceiling_unused"):
             out.append(f"ceiling   {morning.unused_line(loop['ceiling_unused'])}")
+        out.extend(diversity_lines(loop.get("diversity")))
     checks = r.get("checks") or []
     out.append(f"checks    {len(checks)} sweep check(s)")
     out.extend(f"          {_hm(c['at'])} {c['verdict']:<14} {c['line']}{' [notified]' if c['notified'] else ''}"
@@ -92,6 +103,11 @@ def render(r: dict) -> list[str]:
         out.append(f"ledger    no row for {led['day']}")
     else:
         out.append(ledger_line(led))
+    fams = r.get("families") or []
+    out.append(f"families  {len(fams)} demoted in a lane by paired losses")
+    out.extend(f"          {f['lane']:<9} {f['family']}: {f['losses']} member(s) lost since its last win "
+               f"({', '.join(f['lost'][:3])}{', ...' if len(f['lost']) > 3 else ''}); the rest rank lower"
+               for f in fams)
     out.append(f"stale     {len(r['stale'])} lane(s)")
     for t in r["stale"]:
         out.append(f"          {t['lane']:<9} {t['candidate'][:40]} {t['skip'] or t['why']}")

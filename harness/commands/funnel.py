@@ -17,6 +17,9 @@ def render(r: dict, head: int) -> list[str]:
         out.append(f"{s['stage']:<10} {s['count']:>5} {_d(s['median_days']):>7} {_d(s['p90_days']):>7} "
                    f"{_d(s['oldest_days']):>7}  {names}")
     out.append(f"\n{r['untried']} queued with a lane have no fetch verdict or download of any kind")
+    for f in r.get("families") or []:
+        out.append(f"family {f['family']} demoted in {f['lane']}: {f['losses']} member(s) lost at the paired gate "
+                   f"since its last win; {len(f['demoted'])} queued member(s) rank lower")
     waiting = sorted((p for p in r["proposals"] if p["reason"] and p["lane_rank"] and p["lane_rank"] <= head),
                      key=lambda p: (p["lane"], p["lane_rank"]))
     if waiting:
