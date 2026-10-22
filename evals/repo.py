@@ -78,8 +78,8 @@ def validate(name: str, params: dict) -> None:
     for key in ("base", "fix"):
         if not _SHA.match(str(params[key])):
             raise ValueError(f"{name}: params.{key} must be a 40-hex commit sha")
-    if params.get("variant") not in ("spec", "symptom"):
-        raise ValueError(f"{name}: params.variant must be spec or symptom")
+    if params.get("variant") not in ("spec", "symptom", "request"):
+        raise ValueError(f"{name}: params.variant must be spec, symptom or request")
     if params.get("context") != "oracle":
         raise ValueError(f"{name}: params.context must be oracle")
     for key in ("fail_to_pass", "pass_to_pass", "context_files", "new_files", "pytest_args", "extras"):

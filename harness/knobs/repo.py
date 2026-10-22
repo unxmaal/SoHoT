@@ -17,6 +17,14 @@ KNOBS = [
     _k("repo_test_timeout", ["evals/repo.py:TEST_TIMEOUT_S"], [120.0, 300.0, 600.0, 1200.0],
        lanes=("repo",), limit="repo_test_timeout_s", receipt="knobs",
        note="seconds the sandboxed pytest run of a repo case may take before it is killed (#887)"),
+    _k("transcripts_commit_after", ["evals/importers/transcripts.py:COMMIT_AFTER_S"], [30, 120, 600],
+       note="seconds a printed commit's committer date may follow the tool output and still be its evidence (#1095)"),
+    _k("transcripts_commit_before", ["evals/importers/transcripts.py:COMMIT_BEFORE_S"], [600, 1800, 3600],
+       note="seconds a printed commit's committer date may precede the tool output (hooks, a push after it) (#1095)"),
+    _k("transcripts_max_tasks_per_request", ["evals/importers/transcripts.py:MAX_TASKS_PER_REQUEST"], [1, 2, 3],
+       note="merged tasks one request may resolve in and still be the prompt for each of them (#1095)"),
+    _k("transcripts_min_request_words", ["evals/importers/transcripts.py:MIN_REQUEST_WORDS"], [5, 8, 12],
+       note="words a request needs to say what to do; shorter ones are dropped as request_too_short (#1095)"),
 ]
 
 NOT_GATING = {

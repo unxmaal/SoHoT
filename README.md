@@ -1758,6 +1758,20 @@ after that candidate's latest repo-lane verdict is a win. A repo winner whose
 code comparison did not fit the night is measured on code the next night.
 `soh adopt` by hand is not gated.
 
+`python -m evals.importers.transcripts --dry-run` reads every Claude Code
+session under `~/.claude/projects` and links each typed request to the merged
+commit that resolved it: a commit hash printed by `git commit`, a PR URL printed
+by `gh pr create`, or a `Claude-Session:` trailer naming that session. It prints,
+per project, the sessions, linked requests, tasks kept and drops by reason
+(#1095). Without `--dry-run` it probes each task the history way and writes
+`evals/importers/transcripts.json`; `soh cases import transcripts` turns it into
+`request` cases. The prompt is the person's own words after `evals/redact.py`,
+which replaces secrets, ids, emails, home and volume paths, hosts, IPs, pasted
+chat, handles, and account and person names with typed placeholders
+(`<EMAIL_1>`, `<PATH_HOME>`). A case file that still matches a detector or the
+privacy lint is refused. A case records its hashed session, its evidence kind and
+its redaction counts, never the raw text; private repos are never imported.
+
 Prompts and skills are measured as arms (#995): `claude-code:<model>,context=<spec>`
 with `none`, `skill:<name>` (the SKILL.md body without frontmatter, from
 `harness/arm_contexts.yaml` first, then `~/.claude/skills`), `prompt:<template>`
