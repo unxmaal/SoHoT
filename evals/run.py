@@ -1048,6 +1048,9 @@ def _parser():
                          "stored mean on this machine, else --budget-min over the cases")
     ap.add_argument("--budget-min", type=float, default=None,
                     help="a stated budget for the whole run, the plan where no receipt gives one (#810)")
+    ap.add_argument("--reuse", default=None, metavar="REUSE.JSON",
+                    help="incumbent cells a paired measure takes from stored draws under the same "
+                         "content identity; not run here, refused if the identity changed (#1094)")
     return ap
 
 
@@ -1144,10 +1147,15 @@ def _execute_at(args, overrides: dict) -> int:
     outdir = resolve_outdir(args.out, args.modality)
     if outdir:
         outdir.mkdir(parents=True, exist_ok=True)
+    idents = {c: content_identity(args.modality, c, budget, ladder, overrides, chosen) for c in candidates}
+    taken = reused_cells(getattr(args, "reuse", None), idents, cases)
     identity = {"modality": args.modality, "candidates": candidates, "repeat": args.repeat,
                 "split": side, "split_version": holdout.version(args.modality), "cases_digest": cases_digest(cases),
                 "max_tokens": budget, "budget_ladder": list(ladder),
-                "knobs": knobs.settings(args.modality, overrides)}
+                "knobs": knobs.settings(args.modality, overrides),
+                "identities": {c: idents[c]["digest"] for c in candidates}}
+    if taken:
+        identity["reuse"] = {k: v for k, v in taken.items() if k != "runs"}
     had = watch.read(outdir) if getattr(args, "resume", False) else None
     if had and watch.differs(had[0], identity):
         print(f"stale: the checkpoint in {outdir} ran another exam "
@@ -1171,7 +1179,12 @@ def _execute_at(args, overrides: dict) -> int:
         mine = cases_for(candidate, cases)
         if args.screen:
             mine = _screen_each(mine, counts)
-        if not mine:
+        if taken and candidate == taken["spec"]:
+            gone = set(taken["cells"])
+            mine = [c for c in mine if c.id not in gone]
+            print(f"\n── {candidate}: {len(gone)} cell(s) from stored draws under its identity, "
+                  f"{len(mine)} to run (#1094)", flush=True)
+        elif not mine:
             print(f"\n── {candidate}: {unrunnable(candidate, args.modality)}",
                   file=sys.stderr)
             continue
@@ -1285,9 +1298,16 @@ def _execute_at(args, overrides: dict) -> int:
         if stopped:
             # Stored at the path the finished run replaces, so its rows are kept and never doubled. #813.
             stamped["progress"] = {"state": state, "why": why, "done": len(results), "total": total}
+        environment_ = {**serving_environment(client, serving, away),
+                        "identities": {key: idents[spec] for key, spec in specs.items() if spec in idents}}
+        if taken:
+            fresh = sum(len(m) for c, _, m in planned if c == taken["spec"])
+            environment_["reused"] = {key: {"digest": taken["digest"], "reused": len(taken["cells"]),
+                                            "fresh": fresh, "runs": taken["runs"]}
+                                      for key, spec in specs.items() if spec == taken["spec"]}
         payload = {"generated": time.strftime("%Y-%m-%dT%H:%M:%S",
                                               time.localtime(now)),
-                   "environment": serving_environment(client, serving, away),
+                   "environment": environment_,
                    "receipt": stamped,
                    # A name is a label and can drop the repo org; the spec
                    # runs. #337.
@@ -1372,6 +1392,32 @@ def warn_unfiled(serving: str) -> None:
               f"on the node prints it) and restart the gateway.", file=sys.stderr)
         return
     print(f"\nwarning: the host that served this run is unknown ({serving}), {tail}.", file=sys.stderr)
+
+
+def content_identity(lane: str, spec: str, budget: int, ladder, overrides, cases) -> dict:
+    """The candidate's content identity; a failure to read it leaves the digest empty, never the run. #1094."""
+    from harness import identity
+    try:
+        return identity.of(lane, spec, budget=budget, ladder=ladder, overrides=overrides, cases=cases)
+    except Exception as exc:  # noqa: BLE001 - an unreadable identity only disables reuse
+        return {"digest": "", "parts": {}, "timing": {}, "unresolved": [f"{type(exc).__name__}: {exc}"]}
+
+
+def reused_cells(path, idents: dict, cases) -> dict:
+    """{"spec", "digest", "cells", "runs"} a --reuse file names, when its digest is the incumbent's here and now. #1094."""
+    if not path:
+        return {}
+    from harness import reuse
+    got = reuse.read(path)
+    spec, digest = got.get("spec", ""), got.get("digest", "")
+    now = (idents.get(spec) or {}).get("digest", "")
+    if not digest or digest != now:
+        print(f"── reuse refused: {spec or path}'s identity is {now[:12] or 'unreadable'} here, "
+              f"the plan's was {digest[:12] or 'none'}; every incumbent cell runs", file=sys.stderr, flush=True)
+        return {}
+    ids = {c.id for c in cases}
+    cells = sorted(c for c in got.get("cells") or {} if c in ids)
+    return {"spec": spec, "digest": digest, "cells": cells, "runs": got.get("runs") or {}} if cells else {}
 
 
 def serving_environment(client: dict, serving: str, away: bool) -> dict:

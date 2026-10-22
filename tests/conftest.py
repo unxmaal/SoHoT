@@ -6,6 +6,7 @@ on the one machine nobody re-clones. Issue #188 found two such keys, `s` and
 `blocked`, sitting in a real discovery-state.json for ten days.
 """
 import socket
+from pathlib import Path
 
 import pytest
 
@@ -203,6 +204,17 @@ def _no_real_runtime_probe(monkeypatch):
     from harness import machine, serving
     monkeypatch.setattr(serving, "llamacpp_build", lambda binary="": "")
     monkeypatch.setattr(machine, "_mflux_cli", lambda: "")
+
+
+@pytest.fixture(autouse=True)
+def _no_real_runtime_bytes(monkeypatch):
+    """A run's content identity never reads the machine's real llama-server or its libraries; LLAMACPP_BIN names a fake. #1094."""
+    import os
+
+    from harness import identity
+    monkeypatch.setattr(identity, "_linked", lambda exe: [])
+    monkeypatch.setattr(identity, "llama_server",
+                        lambda: Path(os.environ["LLAMACPP_BIN"]) if os.environ.get("LLAMACPP_BIN") else None)
 
 
 @pytest.fixture(autouse=True)

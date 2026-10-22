@@ -105,6 +105,22 @@ def versions_of(run: dict) -> dict:
     return got
 
 
+def bytes_moved(run: dict, spec: str, served=None) -> list[str]:
+    """The runtime or model files whose bytes changed since a run recorded the spec's content identity. #1094."""
+    from evals.run import text_candidate, text_spec
+    from harness import identity
+    try:
+        env = json.loads(run.get("environment") or "{}")
+    except ValueError:
+        return []
+    for ident in (env.get("identities") or {}).values():
+        if (ident.get("parts") or {}).get("settings", {}).get("spec") != spec or not text_candidate(spec):
+            continue
+        now = (served or identity.served)(text_spec(spec))
+        return identity.moved(ident, {"parts": {"served": now}})
+    return []
+
+
 def moved(before: dict, after: dict, keys) -> list[str]:
     """'pkg old -> new' per watched key both sides recorded and that differs."""
     return [f"{k} {before[k]} -> {after[k]}" for k in keys
@@ -193,7 +209,7 @@ def triggers(conn, item: dict, *, now: float, current: dict, machines) -> tuple[
     out = []
     if base is not None:
         changed = moved(versions_of(base), current, runtimes_for(lane, item["spec"]))
-        out += [[VERSIONS, why] for why in changed]
+        out += [[VERSIONS, why] for why in changed + bytes_moved(base, item["spec"])]
     days = days_for(conn, lane)
     if base is None:
         out.append([AGE, "no passing run on this machine"])
