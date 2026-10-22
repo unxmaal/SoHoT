@@ -19,17 +19,32 @@ this compares nothing and must not fail.
 from __future__ import annotations
 
 
-#: A candidate spec that is not a bare model: `repair:<model>` is a
-#: WORKFLOW built on a model, and `trace/mflux/...` a composition. Both can win
-#: a lane on merit, and neither is what a `--model` default can be set to.
-_COMPOSITE = (":", "/")
+def spec_of(conn, run: dict, rows, key: str) -> str:
+    """The stored spec a run's receipt key ran as: the run's specs map, else its rows' candidates row, else "". #1122."""
+    import json
+    got = (json.loads(run.get("specs") or "{}") or {}).get(key)
+    if got or conn is None:
+        return got or ""
+    for cid in {r.get("candidate_id") for r in rows if r.get("candidate") == key} - {None}:
+        row = conn.execute("SELECT spec FROM candidates WHERE id = ?", (cid,)).fetchone()
+        if row and row["spec"]:
+            return row["spec"]
+    return ""
 
 
-def is_plain_model(candidate: str) -> bool:
-    return not any(mark in candidate for mark in _COMPOSITE)
+def can_default(lane: str, spec: str) -> bool:
+    """Whether a lane can serve `spec` as its default: a stored spec, not a workflow, and a method only on its lanes, never a control. #1122."""
+    from harness import methods, models
+    if not spec or spec.startswith(models.WORKFLOW_PREFIXES):
+        return False
+    try:
+        parsed = methods.parse(spec)
+    except ValueError:
+        return False
+    return parsed is None or (lane in parsed.method.lanes and not methods.is_control(spec))
 
 
-#: Which lanes a default is an engine spec for, so a composite key can win.
+#: Which lanes a default is an engine spec for.
 FAMILIES = {
     "svg": "alias", "web": "alias", "code": "alias", "extract": "alias",
     "decide": "alias", "agent": "alias", "claims": "alias",
@@ -44,14 +59,14 @@ FAMILIES = {
 def from_receipts(conn, plain_only: bool = True, exam_of=None) -> dict[str, dict]:
     """The best candidate per lane over the stored measure runs of its current exam. #410, #1120.
 
-    plain_only drops a composite key except in a lane whose default is an engine spec (FAMILIES).
+    plain_only keeps only a candidate whose stored spec the lane can serve as its default (can_default). #1122.
     """
     from harness import runs
     entries: dict[str, list] = {}
     memo: dict = {}
     for run, summary, rows in runs.summaries(conn, tier=runs.MEASURE):
         for candidate, row in summary.items():
-            if plain_only and FAMILIES.get(run["lane"]) != "engine" and not is_plain_model(candidate):
+            if plain_only and not can_default(run["lane"], spec_of(conn, run, rows, candidate)):
                 continue
             if not on_exam(run, rows, candidate, exam_of, memo):
                 continue
@@ -305,8 +320,7 @@ def beaten_in(conn, exam_of=None) -> dict[str, dict]:
             continue
         for cid, (candidate, row) in sitting.items():
             served = cid == wanted[lane]
-            if family != "engine" and not is_plain_model(candidate) \
-                    and not served:
+            if not served and not can_default(lane, spec_of(conn, run, groups[cid], candidate)):
                 continue
             entries.setdefault(lane, []).append({
                 "candidate": candidate, "row": {**row, "cases_digest": run.get("cases_digest") or ""},
