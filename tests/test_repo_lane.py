@@ -218,7 +218,7 @@ def test_model_code_that_exits_0_before_the_tests_run_does_not_resolve(upstream)
 
 
 @pytest.mark.parametrize("key,value,why", [
-    ("base", "abc123", "40-hex"), ("variant", "other", "spec or symptom"),
+    ("base", "abc123", "40-hex"), ("variant", "other", "spec, symptom or request"),
     ("context_files", ["tests/test_mod.py"], "would show the model tests"),
     ("fail_to_pass", [], "fail_to_pass")])
 def test_a_case_that_cannot_be_graded_is_refused_at_load(upstream, key, value, why):

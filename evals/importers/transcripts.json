@@ -1,0 +1,142 @@
+{
+ "version": 1,
+ "source": "claude-code:transcripts",
+ "criteria": {
+  "min_request_words": 8,
+  "max_tasks_per_request": 1,
+  "commit_window_s": [
+   1800,
+   120
+  ],
+  "runs": 2,
+  "max_source_files": 8,
+  "max_lines": 400,
+  "probes": null
+ },
+ "transcripts": {
+  "-Users-eric-projects": {
+   "sessions": 13,
+   "requests": 1143
+  },
+  "-Users-eric-projects-github-unxmaal-instahelp": {
+   "sessions": 2,
+   "requests": 0
+  },
+  "-private-tmp": {
+   "sessions": 7,
+   "requests": 0
+  }
+ },
+ "projects": {
+  "carfindatron": {
+   "sessions": 1,
+   "requests_linked": 18,
+   "tasks": 0,
+   "dropped": {
+    "no_flip": 1,
+    "no_test_change": 1,
+    "not_landed": 15,
+    "root_commit": 1
+   }
+  },
+  "dotfiles": {
+   "sessions": 0,
+   "requests_linked": 0,
+   "tasks": 0,
+   "dropped": {
+    "no_request": 4
+   }
+  },
+  "infovore": {
+   "sessions": 3,
+   "requests_linked": 61,
+   "tasks": 4,
+   "dropped": {
+    "base_error": 8,
+    "command": 3,
+    "no_test_change": 1,
+    "reference_fails": 6,
+    "request_spans_tasks": 56,
+    "request_too_short": 42,
+    "too_big": 3
+   }
+  },
+  "instahelp": {
+   "sessions": 1,
+   "requests_linked": 28,
+   "tasks": 0,
+   "dropped": {
+    "private_repo": 28
+   }
+  },
+  "jinglebamjam": {
+   "sessions": 1,
+   "requests_linked": 1,
+   "tasks": 0,
+   "dropped": {
+    "private_repo": 1
+   }
+  },
+  "mcm-engine": {
+   "sessions": 2,
+   "requests_linked": 38,
+   "tasks": 1,
+   "dropped": {
+    "base_error": 1,
+    "no_request": 5,
+    "no_test_change": 5,
+    "not_landed": 2,
+    "reference_fails": 1,
+    "request_spans_tasks": 32,
+    "request_too_short": 16,
+    "too_big": 4
+   }
+  },
+  "mm-event-gen": {
+   "sessions": 1,
+   "requests_linked": 2,
+   "tasks": 0,
+   "dropped": {
+    "private_repo": 2
+   }
+  },
+  "pagestretch": {
+   "sessions": 1,
+   "requests_linked": 3,
+   "tasks": 0,
+   "dropped": {
+    "not_github": 3
+   }
+  },
+  "sohot": {
+   "sessions": 2,
+   "requests_linked": 231,
+   "tasks": 24,
+   "dropped": {
+    "command": 17,
+    "duplicate_task": 3,
+    "no_flip": 3,
+    "no_request": 42,
+    "no_source_change": 2,
+    "no_test_change": 12,
+    "not_landed": 8,
+    "only_new_files": 1,
+    "pr_not_merged": 1,
+    "reference_fails": 16,
+    "request_spans_tasks": 223,
+    "request_too_short": 144,
+    "too_big": 36
+   }
+  },
+  "vectronator": {
+   "sessions": 1,
+   "requests_linked": 1,
+   "tasks": 0,
+   "dropped": {
+    "no_request": 1,
+    "private_repo": 1
+   }
+  }
+ },
+ "tasks": []
+}

@@ -39,6 +39,7 @@ REGISTRY = [
     Source("history", "repo"),
     Source("history_mcm_engine", "repo"),
     Source("history_infovore", "repo"),
+    Source("transcripts", "repo"),
 ]
 
 

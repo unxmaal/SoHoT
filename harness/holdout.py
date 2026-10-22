@@ -65,7 +65,7 @@ def task_of(case) -> str:
     """The task a history case belongs to (params.fix), "" for a case that stands alone."""
     from evals.importers.history import VARIANTS
     params = getattr(case, "params", None) or {}
-    return str(params["fix"]) if params.get("fix") and params.get("variant") in VARIANTS else ""
+    return str(params["fix"]) if params.get("fix") and params.get("variant") in (*VARIANTS, "request") else ""
 
 
 def version(lane: str) -> str:
