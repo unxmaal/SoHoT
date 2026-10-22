@@ -269,6 +269,29 @@ def test_the_table_names_every_project():
     assert any(line.startswith("widget") and "no_flip 1, too_big 1" in line for line in lines)
 
 
+#: A fixed planted account and name, so the clean check reads the same on every machine; the machine's own account
+#: counts only where an account leaks, in a home path or a project slug, since a CI runner's account ("runner") is
+#: also a word these cases use.
+PLANTED = redact.Known(accounts=("zorblat",), names=("Quentavious",))
+
+
+def _left(values: str) -> dict:
+    import re
+    got = dict(redact.detect(values, PLANTED))
+    for acct in redact.known_here().accounts:
+        if re.search(rf"(?:Users|home)[/\\-]{re.escape(acct)}(?![A-Za-z0-9])", values, re.I):
+            got["account"] = got.get("account", 0) + 1
+    return got
+
+
+def test_the_clean_check_catches_a_planted_account_and_this_machines_in_a_path():
+    import getpass
+    assert _left("all clean here") == {}
+    assert _left("see -Users-zorblat-projects/x") == {"account": 1}
+    assert _left(f"see <PATH_HOME>/.claude/projects/-Users-{getpass.getuser()}-projects") == {"account": 1}
+    assert _left(f"the {getpass.getuser()} word alone") == {}
+
+
 COMMITTED = sorted((ROOT / "evals" / "cases" / "repo" / "transcripts").glob("*.yaml"))
 LOADED = {Path(c.source).name: c for c in load_cases(COMMITTED[0].parent)} if COMMITTED else {}
 
@@ -285,7 +308,7 @@ def test_every_committed_case_is_clean_and_loads(path):
     import yaml
     text = path.read_text(encoding="utf-8")
     values = tr.strings(yaml.safe_load(text))
-    assert redact.detect(values, redact.known_here()) == {} and redact.name_like(values) == []
+    assert _left(values) == {} and redact.name_like(values) == []
     assert privacy.scan(text, path.name) == []
     case = LOADED[path.name]
     assert case.params["variant"] == "request" and case.params["fail_to_pass"]
