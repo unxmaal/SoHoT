@@ -1,0 +1,84 @@
+# mcm-engine fix history (unxmaal/mcm-engine), generated (https://github.com/unxmaal/mcm-engine).
+# Imported by evals/importers from git:unxmaal/mcm-engine@a5b9741db49e7bfbdbfe321b65921dc08664da8e; re-import, do not edit.
+id: mcm-engine-156-spec
+modality: repo
+prompt: '# #137a: server-owned per-session topic-coverage ledger + compaction reconciliation
+
+
+  Child of #137 (retrieval scheduling umbrella). **The foundation — the other layers depend on this.**
+
+
+  Give mcm-engine a lightweight **server-owned, per-FastMCP-session** retrieval ledger: coverage by *topic*
+  (not TTL), each entry carrying `{topic, searched_at, query, result_ids, resident}`. Only the server
+  sees the query + result ids, so the server owns it; the PreToolUse hook (a separate process) reads shared
+  state or asks the server.
+
+
+  Critical requirement — **coverage is not context residency** (KB CONTEXT #3, the founding anti-amnesia
+  concern): a ledger that says "topic covered" after the retrieved bodies were summarized out of context
+  recreates the exact failure mcm-engine exists to defeat. So carry a `resident` flag distinct from `searched_at`,
+  and **reconcile it at the compaction boundary** — on `PreCompact`/`PostCompact` and `SessionStart`,
+  mark prior coverage non-resident (or re-surface it). A non-resident topic does not satisfy enforcement.
+
+
+  Keyed per FastMCP session (RULE #116 / ScopedTracker), same as the existing tracker state.
+
+
+  ### Acceptance
+
+  - Server-owned, per-session, per-topic coverage ledger with a `resident` flag.
+
+  - `search` (and report_error auto-search) record coverage: topic, query, result_ids, searched_at, resident=true.
+
+  - Reconciled at PreCompact/PostCompact/SessionStart (resident flips false on compaction).
+
+  - Unit tests for record + reconcile; no behavior change to enforcement yet (that''s the PreToolUse child).'
+params:
+  source_repo: https://github.com/unxmaal/mcm-engine.git
+  base: 68b87f7a66d757ecb914189f84c73f89a459e51e
+  fix: 725cad479181736743fc7ba01da27d2530a1b4a1
+  variant: spec
+  context: oracle
+  context_files:
+  - src/mcm_engine/hooks/pre_compact.py
+  - src/mcm_engine/tools/knowledge.py
+  - src/mcm_engine/tools/search.py
+  - src/mcm_engine/tools/session.py
+  - src/mcm_engine/tracker.py
+  pytest_args:
+  - -o
+  - pythonpath=src
+  extras:
+  - dev
+  fail_to_pass:
+  - tests/test_coverage_ledger.py::test_coverage_is_per_session
+  - tests/test_coverage_ledger.py::test_is_covered_requires_resident_by_default
+  - tests/test_coverage_ledger.py::test_reconcile_flips_resident_false_and_is_covered_follows
+  - tests/test_coverage_ledger.py::test_reconcile_only_affects_calling_session
+  - tests/test_coverage_ledger.py::test_reconcile_preserves_searched_at_and_ids
+  - tests/test_coverage_ledger.py::test_record_coverage_empty_topic_is_noop
+  - tests/test_coverage_ledger.py::test_record_coverage_key_is_lowercased_stripped
+  - tests/test_coverage_ledger.py::test_record_coverage_none_ids_is_empty_list
+  - tests/test_coverage_ledger.py::test_record_coverage_overwrites_same_topic
+  - tests/test_coverage_ledger.py::test_record_coverage_stores_topic_query_ids_resident
+  - tests/test_coverage_ledger.py::test_report_error_records_coverage
+  - tests/test_coverage_ledger.py::test_reset_all_clears_coverage
+  - tests/test_coverage_ledger.py::test_save_snapshot_compaction_reconciles_routine_does_not
+  - tests/test_coverage_ledger.py::test_search_tool_records_resident_coverage_with_ids
+  - tests/test_coverage_ledger.py::test_search_with_no_results_still_records_coverage
+  - tests/test_coverage_ledger.py::test_session_start_reconciles_coverage_non_resident
+  pass_to_pass: []
+attribution:
+  dataset: mcm-engine fix history (unxmaal/mcm-engine)
+  url: https://github.com/unxmaal/mcm-engine
+  license: generated
+  source: git:unxmaal/mcm-engine
+  revision: a5b9741db49e7bfbdbfe321b65921dc08664da8e
+  item: '#156 (PR #162)'
+  date: '2026-10-16'
+  transform: issue title and body from `gh issue view` at survey time, home paths as ~/, 'Prior art checked'
+    removed (spec), and the Fix/Shape/Design/Options/Remedy/Proposal/Build/What-to sections and labelled
+    paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
+    of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
+    and sandbox (evals/repo.py)
+  importer: evals.importers.history_mcm_engine

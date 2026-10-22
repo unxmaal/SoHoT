@@ -330,6 +330,7 @@ def report(runs: list[dict], rows: list[dict], cases, *, resamples: int = compar
     fair = fair_cases(list(suite)) if fair is None else set(fair)
     never_ran = sorted(k for k, d in suite.items() if any(fc in reasons.NEVER_RAN for x in d.values() for _, fc in x))
     size = strata(task, sizes)
+    origin = {c.id: history.source_of(c.params) for c in cases if (c.params or {}).get("source_repo")}
     limits = {c: sum(fc in LIMIT_CLASSES for k in suite if k not in never_ran for _, fc in suite[k][c])
               for c in order}
     return {"baseline": order[0], "candidate": order[1], "alpha": alpha, "sides": sides,
@@ -346,6 +347,9 @@ def report(runs: list[dict], rows: list[dict], cases, *, resamples: int = compar
             "strata": {s: _view({k: d for k, d in suite.items() if size.get(k) == s}, task, order,
                                 VIEWS["limits as losses"], alpha=alpha, resamples=resamples, seed=seed)
                        for s in history.SIZES if any(size.get(k) == s for k in suite)},
+            "sources": {s: _view({k: d for k, d in suite.items() if origin.get(k) == s}, task, order,
+                                 VIEWS["limits as losses"], alpha=alpha, resamples=resamples, seed=seed)
+                        for s in sorted({origin[k] for k in suite if k in origin})},
             "fair": {"unfair": sorted(k for k in suite if k not in fair),
                      "views": {name: _view({k: d for k, d in suite.items() if k in fair}, task, order, skip,
                                            alpha=alpha, resamples=resamples, seed=seed)
@@ -386,6 +390,8 @@ def text(rep: dict) -> str:
             out += _block(rep, f"{name}, {which}", v, name == "limits as losses")
     for s, v in (rep.get("strata") or {}).items():
         out += _block(rep, f"limits as losses, {s} tasks (size stratum, #997)", v, False)
+    for s, v in (rep.get("sources") or {}).items():
+        out += _block(rep, f"limits as losses, {s} tasks (source, #889)", v, False)
     for which, views in (("valid set", rep["views"]), ("fair subset", rep["fair"]["views"])):
         out += _power_lines(rep, which, views["limits as losses"])
     return "\n".join(out)

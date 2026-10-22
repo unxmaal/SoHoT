@@ -1,0 +1,85 @@
+# mcm-engine fix history (unxmaal/mcm-engine), generated (https://github.com/unxmaal/mcm-engine).
+# Imported by evals/importers from git:unxmaal/mcm-engine@a5b9741db49e7bfbdbfe321b65921dc08664da8e; re-import, do not edit.
+id: mcm-engine-92-spec
+modality: repo
+prompt: "# --allowed-host / MCM_ALLOWED_HOSTS ignored by streamable-http transport (421 on permitted Host)\n\
+  \n# `--allowed-host` / `MCM_ALLOWED_HOSTS` is ignored by the streamable-http transport (server 421s\
+  \ a permitted Host)\n\n## Summary\nWhen `mcm-engine serve --transport streamable-http` runs behind a\
+  \ reverse proxy / ingress, requests whose `Host` header is a configured allowed host are still rejected\
+  \ with **HTTP 421 \"Invalid Host header\"**. The allow-list (`--allowed-host` / `MCM_ALLOWED_HOSTS`)\
+  \ has no effect for streamable-http; only the localhost defaults (`127.0.0.1:*`, `localhost:*`, `[::1]:*`)\
+  \ are enforced.\n\n## Environment\n- mcm-engine 3.5.0 (also present on current `main`: `transport.py`).\n\
+  - Transport: `streamable-http`, bound `--host 0.0.0.0 --port 8080`.\n- Reached via an internal AWS ALB\
+  \ at `https://mcm.internal.example` (Host = that FQDN).\n\n## Repro\n1. `MCM_ALLOWED_HOSTS=example.internal\
+  \ mcm-engine serve --host 0.0.0.0 --port 8080 --transport streamable-http`\n2. `curl -H 'Host: example.internal'\
+  \ -H 'Authorization: Bearer <valid>' \\\n   -H 'Accept: application/json, text/event-stream' -H 'Content-Type:\
+  \ application/json' \\\n   -X POST http://<addr>:8080/mcp -d '{\"jsonrpc\":\"2.0\",\"id\":1,\"method\"\
+  :\"initialize\",\"params\":{}}'`\n3. → `421 Invalid Host header` (bearer auth passes first — an unauthenticated\
+  \ call 401s — so this is specifically Host validation, after auth).\n\nConfirmed the env is read and\
+  \ passed: `cmd_serve` reads `MCM_ALLOWED_HOSTS` and calls `serve(..., allowed_hosts=...)`, and `_configure_transport_security`\
+  \ builds the expected pattern (`example.internal:*` via `_host_pattern`). Yet a live server still shows\
+  \ only the localhost allow-list enforcing.\n\n## Root cause (ordering)\nIn `transport.py serve()`:\n\
+  ```python\n_configure_transport_security(server, host=host, allowed_hosts=allowed_hosts, enable=...)\
+  \  # mutates server.mcp.settings.transport_security\napp = build_asgi_app(server, transport=transport)\
+  \  # -> server.mcp.streamable_http_app()\n```\n`_configure_transport_security` mutates `server.mcp.settings.transport_security`\
+  \ **after** FastMCP is constructed, but `streamable_http_app()` builds its DNS-rebinding middleware\
+  \ from FastMCP's own (localhost-only) transport-security at app-build time and does not honor the post-construction\
+  \ mutation. So the alignment is discarded and the localhost-only list is what actually enforces. (A\
+  \ freshly built `MCMServer` shows `allowed_hosts=['127.0.0.1:*','localhost:*','[::1]:*']`.)\n\n## Suggested\
+  \ fix\nConfigure FastMCP's `TransportSecuritySettings` **before** the transport app is built — e.g.\
+  \ construct `FastMCP` with the settings up front, or set them via whatever `streamable_http_app()` reads\
+  \ at build time — so `--allowed-host` takes effect for streamable-http (it may already work for `sse`;\
+  \ worth confirming both). Add a regression test: build the streamable-http app with an allow-list and\
+  \ assert a request with that Host is accepted.\n\n## Workaround in use\nSetting `MCM_DNS_REBINDING_PROTECTION=0`\
+  \ disables Host validation entirely and unblocks ingress access. Acceptable only on a trusted, non-browser\
+  \ endpoint (internal LB, private DNS) and does **not** weaken bearer auth. Not a fix — the allow-list\
+  \ should work."
+params:
+  source_repo: https://github.com/unxmaal/mcm-engine.git
+  base: 34e747f078b97bba5c1aa24dda8c60705b848edd
+  fix: 716e5dfd9168364c55b6889796382023fad36717
+  variant: spec
+  context: oracle
+  context_files:
+  - src/mcm_engine/transport.py
+  new_files:
+  - rules/deploy/dns-rebinding-portless-host.md
+  pytest_args:
+  - -o
+  - pythonpath=src
+  extras:
+  - dev
+  fail_to_pass:
+  - tests/test_transport.py::test_configure_security_registers_bare_host_for_portless_match
+  - tests/test_transport.py::test_streamable_http_accepts_allowlisted_host[example.internal]
+  pass_to_pass:
+  - tests/test_transport.py::test_configure_security_allows_concrete_bind_host
+  - tests/test_transport.py::test_configure_security_allows_explicit_lan_host
+  - tests/test_transport.py::test_configure_security_can_disable
+  - tests/test_transport.py::test_healthz_returns_200
+  - tests/test_transport.py::test_host_pattern_normalization[  -None]
+  - tests/test_transport.py::test_host_pattern_normalization[[::1]-[::1]:*]
+  - tests/test_transport.py::test_host_pattern_normalization[[::1]:8080-[::1]:8080]
+  - tests/test_transport.py::test_inner_lifespan_falls_back_to_router_lifespan_context
+  - tests/test_transport.py::test_inner_lifespan_prefers_direct_lifespan_attr
+  - tests/test_transport.py::test_lifespan_noop_safe_when_no_inner_lifespan
+  - tests/test_transport.py::test_readyz_reports_per_adapter_failure
+  - tests/test_transport.py::test_readyz_returns_200_when_all_adapters_ok
+  - tests/test_transport.py::test_streamable_http_accepts_allowlisted_host[example.internal:8080]
+  - tests/test_transport.py::test_streamable_http_rejects_unlisted_host
+  - tests/test_transport.py::test_streamable_http_transport_mounts
+  - tests/test_transport.py::test_unknown_transport_rejected
+attribution:
+  dataset: mcm-engine fix history (unxmaal/mcm-engine)
+  url: https://github.com/unxmaal/mcm-engine
+  license: generated
+  source: git:unxmaal/mcm-engine
+  revision: a5b9741db49e7bfbdbfe321b65921dc08664da8e
+  item: '#92 (PR #94)'
+  date: '2026-07-21'
+  transform: issue title and body from `gh issue view` at survey time, home paths as ~/, 'Prior art checked'
+    removed (spec), and the Fix/Shape/Design/Options/Remedy/Proposal/Build/What-to sections and labelled
+    paragraphs too (symptom); base = fix^; fail_to_pass and pass_to_pass from 2 sandboxed pytest runs
+    of the fix's test files at base+hidden tests and at base+reference diff, in the lane's own environment
+    and sandbox (evals/repo.py)
+  importer: evals.importers.history_mcm_engine

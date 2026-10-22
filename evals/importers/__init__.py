@@ -37,6 +37,8 @@ REGISTRY = [
     Source("squad2_retrieval", "retrieval"),
     Source("librispeech", "stt"),
     Source("history", "repo"),
+    Source("history_mcm_engine", "repo"),
+    Source("history_infovore", "repo"),
 ]
 
 

@@ -8,8 +8,8 @@
   "B"
  ],
  "who": {
-  "A": "claude-opus-5-5 subagent, 2026-10-17, read only soh cases labels repo --packets output",
-  "B": "claude-opus-5-5 subagent, 2026-10-17, separate context, same packets, reverse order"
+  "A": "claude-opus-5-5 subagent, 2026-10-17, read only soh cases labels repo --packets output; #889 mcm-engine and infovore cases: claude-opus-5-5 subagents, 2026-10-22, same packets, ascending order",
+  "B": "claude-opus-5-5 subagent, 2026-10-17, separate context, same packets, reverse order; #889 mcm-engine and infovore cases: claude-opus-5-5 subagents, 2026-10-22, separate contexts, descending order"
  },
  "settled": {},
  "labels": {
@@ -586,6 +586,332 @@
     "why": {
      "tests": "Requires screen_detail(why, stderr, summary), the receipt split, and an AST scanner forcing directions for retries/stages/thinking_disabled; symptom asks none of it."
     }
+   }
+  },
+  "infovore-219-spec": {
+   "A": {
+    "spec": 1,
+    "tests": 2,
+    "why": {
+     "tests": "Tests require the exact header tokens (e.g. '%irrelevant'), '100.0%' formatting, 'yes'/'no' excluded markers and the exact empty message 'no channels with at least 9 labels', none of which the issue specifies."
+    }
+   },
+   "B": {
+    "spec": 1,
+    "tests": 2,
+    "why": {
+     "tests": "Tests require an exact header with a single '%irrelevant' token, '100.0%' formatting, yes/no flags, and the exact empty message 'no channels with at least 9 labels'."
+    }
+   }
+  },
+  "infovore-235-spec": {
+   "A": {
+    "spec": 2,
+    "tests": 3,
+    "why": {
+     "spec": "The one-line issue lists status fields (current/archived/irrelevant/set aside/residue) without defining what each counts, e.g. that archived means cascade relevant plus residue.",
+     "tests": "Tests require exact status lines such as 'archived: 4 (cascade relevant 3, residue 1)' and 'extraction (history): done 1, pending 7', a 'cycle: cascade' step name, and run_once/run_forever signatures without the extractor argument, none stated in the issue."
+    }
+   },
+   "B": {
+    "spec": 1,
+    "tests": 3,
+    "why": {
+     "tests": "Tests demand exact status lines such as 'archived: 4 (cascade relevant 3, residue 1)' and the never-requested 'extraction (history): done 1, pending 7', a 'cascade' cycle step name, and run_once/run_forever with the extractor parameter removed."
+    }
+   }
+  },
+  "infovore-256-spec": {
+   "A": {
+    "spec": 1,
+    "tests": 2,
+    "why": {
+     "tests": "Tests require unstated derivations and wording: label_source parsed from 'judge:likely-irrelevant:4' to 'likely-irrelevant', gold preferred as slice for held-out rows, thread channel reported as the parent name, and count lines like 'held_out true: 2' and 'cascade_stage none: 2'."
+    }
+   },
+   "B": {
+    "spec": 2,
+    "tests": 2,
+    "why": {
+     "spec": "How label_source, cascade_stage, slice (when there are several) and channel (for threads) are derived is never defined.",
+     "tests": "Tests require label_source parsed as 'judge:likely-irrelevant:4' -> 'likely-irrelevant' and 'rechunk:12' -> 'rechunk', the parent channel name for threads, a preference for the held-out slice, and exact count lines like 'held_out true: 2'."
+    }
+   }
+  },
+  "infovore-257-spec": {
+   "A": {
+    "spec": 0,
+    "tests": 1
+   },
+   "B": {
+    "spec": 0,
+    "tests": 0
+   }
+  },
+  "infovore-260-spec": {
+   "A": {
+    "spec": 0,
+    "tests": 0
+   },
+   "B": {
+    "spec": 0,
+    "tests": 0
+   }
+  },
+  "infovore-286-spec": {
+   "A": {
+    "spec": 0,
+    "tests": 1
+   },
+   "B": {
+    "spec": 0,
+    "tests": 1
+   }
+  },
+  "infovore-286-symptom": {
+   "A": {
+    "spec": 2,
+    "tests": 3,
+    "why": {
+     "spec": "The prompt only lists the rejected-speaker symptoms, so lenient parsing, a prompt change or a schema constraint are all plausible fixes.",
+     "tests": "Tests check only for a 'pattern' key on SCHEMA['properties']['c']['items']['prefixItems'][0], so any fix other than a schema regex fails."
+    }
+   },
+   "B": {
+    "spec": 2,
+    "tests": 2,
+    "why": {
+     "spec": "Only the failure counts are given. The fix could equally be a schema constraint, a prompt change or lenient parsing.",
+     "tests": "Tests only check a regex pattern on SCHEMA's speaker prefixItem, so lenient-parsing or prompt fixes all fail."
+    }
+   }
+  },
+  "mcm-engine-109-spec": {
+   "A": {
+    "spec": 1,
+    "tests": 3,
+    "why": {
+     "tests": "Tests require a Context field named stale_index_warning, the literal prefix \"[STALE INDEX]\", and test_wiring asserts that is the only extra Context field; the issue names none of these."
+    }
+   },
+   "B": {
+    "spec": 1,
+    "tests": 3,
+    "why": {
+     "tests": "Tests require a Context field named exactly stale_index_warning (and test_wiring allows only that extra field) plus the literal '[STALE INDEX]' prefix; the issue names neither."
+    }
+   }
+  },
+  "mcm-engine-116-spec": {
+   "A": {
+    "spec": 1,
+    "tests": 2,
+    "why": {
+     "tests": "test_seam_inventory pins exact SQL execute-site counts (postgres 71, sqlite 69, schema 67), so a correct fix that builds the scoped query in the existing SELECT or adds the Postgres ALTER via its own execute fails."
+    }
+   },
+   "B": {
+    "spec": 1,
+    "tests": 2,
+    "why": {
+     "tests": "test_seam_inventory pins exact SQL execute-site counts (schema.py 67, sqlite 69, postgres 71), so the index the issue asks for, or any different query structure, fails."
+    }
+   }
+  },
+  "mcm-engine-116-symptom": {
+   "A": {
+    "spec": 1,
+    "tests": 3,
+    "why": {
+     "tests": "Without the proposed-fix section the prompt never names SessionRow.principal/workspace, get_last_session(principal=, workspace=), the NULL-scope fallback ordering, CORE_VERSION 17, or the exact SQL-site counts the tests assert."
+    }
+   },
+   "B": {
+    "spec": 2,
+    "tests": 3,
+    "why": {
+     "spec": "The issue ends on an unresolved maintainer question about how the workspace scope is derived and how unauthenticated contexts behave, and it proposes no fix.",
+     "tests": "Tests require principal/workspace kwargs on get_last_session (the prompt points at the existing caller param), a specific NULL-scope fallback ordering, CORE_VERSION 17, and exact SQL execute-site counts in test_seam_inventory."
+    }
+   }
+  },
+  "mcm-engine-135-spec": {
+   "A": {
+    "spec": 0,
+    "tests": 1
+   },
+   "B": {
+    "spec": 0,
+    "tests": 1
+   }
+  },
+  "mcm-engine-135-symptom": {
+   "A": {
+    "spec": 1,
+    "tests": 1
+   },
+   "B": {
+    "spec": 0,
+    "tests": 1
+   }
+  },
+  "mcm-engine-136-spec": {
+   "A": {
+    "spec": 0,
+    "tests": 0
+   },
+   "B": {
+    "spec": 0,
+    "tests": 0
+   }
+  },
+  "mcm-engine-136-symptom": {
+   "A": {
+    "spec": 0,
+    "tests": 0
+   },
+   "B": {
+    "spec": 0,
+    "tests": 0
+   }
+  },
+  "mcm-engine-156-spec": {
+   "A": {
+    "spec": 1,
+    "tests": 3,
+    "why": {
+     "tests": "Tests require tracker.coverage dict keyed by lowercased topic, record_coverage/reconcile_coverage/is_covered(require_resident=), a save_snapshot(compaction=True) parameter, and result_ids as (\"KNOWLEDGE\", 1) tuples, none named in the issue."
+    }
+   },
+   "B": {
+    "spec": 1,
+    "tests": 3,
+    "why": {
+     "tests": "Tests call unnamed tracker methods record_coverage, reconcile_coverage(resident=) and is_covered(require_resident=), read a tracker.coverage dict, and require a compaction=True kwarg on save_snapshot; the issue names none of these."
+    }
+   }
+  },
+  "mcm-engine-171-spec": {
+   "A": {
+    "spec": 1,
+    "tests": 3,
+    "why": {
+     "tests": "Tests require the pointer text \"get_entry('negative',\" where the issue specifies \"(get_entry for full)\", and they cap NEGATIVE hits at 3 in the all-scope path while a scoped query returns 6, contradicting the issue's 8-10 overall hit ceiling."
+    }
+   },
+   "B": {
+    "spec": 1,
+    "tests": 3,
+    "why": {
+     "tests": "Tests demand an \"get_entry('negative',\" pointer where the spec says '(get_entry for full)', and a per-kind NEGATIVE cap of 3 where the spec proposes an overall ~8-10 hit ceiling that would let all 6 test negatives through."
+    }
+   }
+  },
+  "mcm-engine-171-symptom": {
+   "A": {
+    "spec": 2,
+    "tests": 3,
+    "why": {
+     "spec": "The prompt gives only a ~3 KB size target tied to live rule ids and no direction on what to cap or how.",
+     "tests": "Tests require the exact pointer text \"get_entry('negative',\" and a per-kind NEGATIVE/ERROR cap of 3 in the all-scope path, neither of which the prompt mentions."
+    }
+   },
+   "B": {
+    "spec": 1,
+    "tests": 3,
+    "why": {
+     "tests": "Tests require an exact \"get_entry('negative',\" pointer string and at most 3 NEGATIVE hits in all-scope summary but not in scoped queries; the prompt mentions neither."
+    }
+   }
+  },
+  "mcm-engine-47-spec": {
+   "A": {
+    "spec": 1,
+    "tests": 2,
+    "why": {
+     "tests": "Tests require ids inside the type tag as \"[RULE #\", \"[NEGATIVE #\", \"[ERROR #\" and link_knowledge in NudgeConfig.advisory_periodic_tools, though the issue offers several alternative fixes and no format."
+    }
+   },
+   "B": {
+    "spec": 1,
+    "tests": 3,
+    "why": {
+     "tests": "Although 'pick one or more' is offered, tests require both the exact '[RULE #id]'-style tag format and link_knowledge in advisory_periodic_tools, which rejects other formats and the 'keep search usable' option."
+    }
+   }
+  },
+  "mcm-engine-47-symptom": {
+   "A": {
+    "spec": 1,
+    "tests": 2,
+    "why": {
+     "tests": "Tests require the exact \"[RULE #id]\" tag format and that link_knowledge be added to NudgeConfig.advisory_periodic_tools, which is one of several reasonable ways to break the deadlock."
+    }
+   },
+   "B": {
+    "spec": 1,
+    "tests": 3,
+    "why": {
+     "tests": "Nearly every test asserts an exact id format inside the type tag ('[RULE #', '[NEGATIVE #', '[ERROR #'), and a separate test requires link_knowledge in NudgeConfig.advisory_periodic_tools; the prompt asks for neither."
+    }
+   }
+  },
+  "mcm-engine-79-spec": {
+   "A": {
+    "spec": 1,
+    "tests": 2,
+    "why": {
+     "tests": "The issue lists three acceptable directions, but the tests pass only with the shared-connection option and need a shared_db kwarg on build_context/build_verified_context, so lowering busy_timeout or moving bumps off-path fails."
+    }
+   },
+   "B": {
+    "spec": 1,
+    "tests": 3,
+    "why": {
+     "tests": "Tests assert a shared_db kwarg on build_context/build_verified_context and that the adapters share one private _db object, so the issue's other offered directions (lower busy_timeout, off-path bumps) all fail."
+    }
+   }
+  },
+  "mcm-engine-80-spec": {
+   "A": {
+    "spec": 1,
+    "tests": 3,
+    "why": {
+     "tests": "Tests require rulesift.is_substantive and passes_gate(strict=), a --remote-loose CLI flag, and _sift_remote_call omitting strict from the payload in default mode, none of which the issue names."
+    }
+   },
+   "B": {
+    "spec": 1,
+    "tests": 3,
+    "why": {
+     "tests": "Beyond the suggested strict= parameter, tests require the unnamed functions is_substantive/passes_gate, a --remote-loose flag, a 6-token substance floor, and payload details of the private _sift_remote_call."
+    }
+   }
+  },
+  "mcm-engine-80-symptom": {
+   "A": {
+    "spec": 1,
+    "tests": 3,
+    "why": {
+     "tests": "Tests require is_substantive/passes_gate names, a strict= parameter on sift_spans/sift_candidates/_collect_remote_spans, and a --remote-loose flag, none of which the prompt specifies."
+    }
+   },
+   "B": {
+    "spec": 1,
+    "tests": 3,
+    "why": {
+     "tests": "Tests call rulesift.is_substantive and passes_gate(strict=), a --remote-loose CLI flag, a strict kwarg on sift_candidates and _collect_remote_spans, and check that _sift_remote_call omits strict by default; the prompt names none of these."
+    }
+   }
+  },
+  "mcm-engine-92-spec": {
+   "A": {
+    "spec": 1,
+    "tests": 1
+   },
+   "B": {
+    "spec": 1,
+    "tests": 1
    }
   }
  }
