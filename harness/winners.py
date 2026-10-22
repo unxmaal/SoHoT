@@ -79,13 +79,26 @@ def ranked_metrics(row: dict) -> dict[str, float]:
     return out
 
 
+def judged(row: dict) -> int:
+    """Rows a model was asked: total less the NEVER_RAN rows; total for a summary that predates the count. #1116."""
+    return int(row.get("judged", row.get("total")) or 0)
+
+
+def judged_rate(row: dict) -> float:
+    """Passes over judged rows, so a harness fault is not a failure; pass_rate for a summary without the count. #1116."""
+    if "judged" not in row:
+        return float(row.get("pass_rate") or 0.0)
+    n = judged(row)
+    return round(int(row.get("passed") or 0) / n, 3) if n else 0.0
+
+
 def primary(row: dict, lane: str = "") -> tuple:
-    """The first rank key: the lane's pooled metric, else pass rate; a row missing it, or with it over fewer of its cases, sorts below."""
+    """The first rank key: the lane's pooled metric, else pass rate; a row missing it, or with it over fewer of its judged cases, sorts below."""
     name = PRIMARY.get(lane)
     if not name:
-        return (True, 1.0, float(row.get("pass_rate") or 0.0))
+        return (True, 1.0, judged_rate(row))
     got = ranked_metrics(row)
-    n, total = (row.get("metric_n") or {}).get(name), int(row.get("total") or 0)
+    n, total = (row.get("metric_n") or {}).get(name), judged(row)
     covered = round(min(1.0, n / total), 3) if n is not None and total else 1.0
     return (name in got, covered, got.get(name, 0.0))
 
@@ -131,7 +144,7 @@ def order_key(row: dict, names, lane: str = "") -> tuple:
     never ranked on.
     """
     ranked = ranked_metrics(row)
-    rate = float(row.get("pass_rate") or 0.0)
+    rate = judged_rate(row)
     median = float(row.get("median_s") or 0.0)
     # A candidate that passed less often is worse whatever its metric says: a
     # model that fails half the cases and scores well on the rest is scoring on

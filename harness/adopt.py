@@ -360,7 +360,8 @@ def _summary(rows: list[dict], name: str) -> dict | None:
                    peak_kb=int(r.get("peak_kb") or 0),
                    detail=str(r.get("detail") or ""),
                    metrics=dict(r.get("metrics") or {}),
-                   warnings=list(r.get("warnings") or []))
+                   warnings=list(r.get("warnings") or []),
+                   failure_class=str(r.get("failure_class") or ""))
             for r in rows if r.get("candidate") == name]
     if not mine:
         return None

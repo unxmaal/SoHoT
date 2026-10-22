@@ -1970,7 +1970,7 @@ def _note_ranking_disagreements(summary: dict, metric_names: list) -> None:
         # its first live run it announced that local-mid scored better on ink,
         # from the one case it passed, against a rival scored over two.
         partial = {name for name, s in summary.items()
-                   if s.get("metric_n", {}).get(metric, s["total"]) < s["total"]}
+                   if s.get("metric_n", {}).get(metric, s["total"]) < s.get("judged", s["total"])}
         if partial:
             continue
 
@@ -2145,13 +2145,14 @@ def report(summary: dict, resolved: dict | None = None) -> None:
     # A mean over two of nine cases is not comparable with a mean over nine.
     # local-mid's svg ink of 0.564 was exactly that, printed beside 0.229.
     for name, s in sorted(summary.items(), key=rank):
+        asked = s.get("judged", s.get("total", 0))
         thin = {m: n for m, n in (s.get("metric_n") or {}).items()
-                if m in metric_names and n < s.get("total", 0)}
+                if m in metric_names and n < asked}
         if thin:
-            parts = ", ".join(f"{m} over {n}/{s.get('total', 0)}"
+            parts = ", ".join(f"{m} over {n}/{asked}"
                               for m, n in sorted(thin.items()))
             print(f"  {name}: PARTIAL -- {parts}. Not comparable with a row "
-                  f"scored over all {s.get('total', 0)}.")
+                  f"scored over all {asked}.")
 
     for name, s in summary.items():
         for f in s.get("failures") or []:

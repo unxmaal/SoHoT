@@ -1363,6 +1363,8 @@ def summarize(results: list[Result]) -> dict:
             # 2 of 9 cases printed beside a mean over 9 is not a comparison.
             "metric_n": {**{k: len(v) for k, v in _gather_metrics(rows).items()},
                          **({"decide_ece": _decision_count(rows)} if pooled else {}), **strata_n},
+            # Rows a model was asked: a NEVER_RAN row is the harness's fault, so coverage and a judged rate leave it out. #1116.
+            "judged": sum(1 for r in rows if r.failure_class not in reasons.NEVER_RAN),
             # WHICH cases this candidate actually sat. Two candidates in one
             # run can get different sets -- a case may be unfair to a method,
             # or to a language -- and then their pass rates are not comparable.

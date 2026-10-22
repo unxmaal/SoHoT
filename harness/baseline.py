@@ -45,7 +45,7 @@ def measured(conn, lane: str, ids, digest: str, machines, skip=()) -> list[dict]
     marks = ",".join("?" * len(machines))
     got: dict[str, dict] = {}
     for r in conn.execute(
-            "SELECT x.candidate, x.case_id, x.passed, x.seconds, x.peak_kb, x.metrics, r.id AS run_id, r.specs "
+            "SELECT x.candidate, x.case_id, x.passed, x.seconds, x.peak_kb, x.metrics, x.failure_class, r.id AS run_id, r.specs "
             "FROM results x JOIN runs r ON r.id = x.run_id WHERE r.lane = ? AND r.tier = 'measure' "
             f"AND r.cases_digest = ? AND r.machine_id IN ({marks}) ORDER BY r.id, x.seq",
             (_lane(lane), digest, *machines)):
@@ -57,7 +57,7 @@ def measured(conn, lane: str, ids, digest: str, machines, skip=()) -> list[dict]
         mine = got.setdefault(spec, {"spec": spec, "key": r["candidate"], "rows": [], "runs": []})
         mine["rows"].append({"candidate": r["candidate"], "case_id": r["case_id"], "passed": bool(r["passed"]),
                              "seconds": r["seconds"], "peak_kb": r["peak_kb"],
-                             "metrics": json.loads(r["metrics"] or "{}")})
+                             "metrics": json.loads(r["metrics"] or "{}"), "failure_class": r["failure_class"] or ""})
         if r["run_id"] not in mine["runs"]:
             mine["runs"].append(r["run_id"])
     full = [{**m, "summary": adopt._summary(m["rows"], m["key"])} for m in got.values()
