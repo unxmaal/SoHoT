@@ -103,7 +103,9 @@ class BaseRunner:
         try:
             artifact, peak_kb = self.generate(case)
         except RunnerError as exc:
-            return self.failed(case, exc, time.perf_counter() - started)
+            row = self.failed(case, exc, time.perf_counter() - started)
+            row.metrics = core.as_graded(case.modality, row.failure_class, row.metrics)
+            return row
         elapsed = time.perf_counter() - started
 
         row = core.score(case, artifact, **self.score_kwargs())
@@ -123,7 +125,7 @@ class BaseRunner:
         row.seconds = round(elapsed, 3)
         # A runner may have measured something the checker cannot see,
         # such as tokens/sec from the server's usage block.
-        row.metrics = {**row.metrics, **self.extra_metrics(), **tail}
+        row.metrics = core.as_graded(case.modality, row.failure_class, {**row.metrics, **self.extra_metrics(), **tail})
         row.peak_kb = peak_kb
         if isinstance(artifact, str):
             row.output = artifact
