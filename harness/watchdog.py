@@ -130,6 +130,8 @@ class World:
     fallbacks: list | None = None
     #: This wake's lane_probes rows (#924).
     lanes: list | None = None
+    #: The day clearance in force (soh day clear), or None. #1112.
+    clearance: dict | None = None
     #: observation -> why it could not be made.
     gaps: dict = field(default_factory=dict)
 
@@ -290,6 +292,13 @@ class Probes:
         from harness import lane_probe
         return lane_probe.wake(conn, now, machine_id=_machine(conn))
 
+    def clearance(self, conn, now: float) -> dict | None:
+        """The day clearance in force; None without a store, so an unreadable one never lifts a limit. #1112."""
+        if conn is None:
+            return None
+        from harness import day_clear
+        return day_clear.active(conn, now)
+
     def fallbacks(self, conn) -> list[dict] | None:
         from harness import live_audit
         if conn is None:
@@ -442,6 +451,10 @@ def observe(probes: Probes, conn=None, now: float | None = None) -> World:
     world.mlx_generating = probes.mlx_generating()
     world.fallbacks = probes.fallbacks(conn)
     try:
+        world.clearance = probes.clearance(conn, now)
+    except Exception as exc:  # noqa: BLE001 - an unreadable clearance is none: the day limits stand
+        world.gaps["clearance"] = f"the day clearance could not be read: {type(exc).__name__}: {exc}"[:300]
+    try:
         world.lanes = probes.lanes(conn, now)
     except Exception as exc:  # noqa: BLE001 - a probe that cannot run is a gap, never a lost wake
         world.gaps["lanes"] = f"the lane probes failed: {type(exc).__name__}: {exc}"[:300]
@@ -469,8 +482,15 @@ def daytime(now: float) -> bool:
     return DAY_START_HOUR <= time.localtime(now).tm_hour < DAY_END_HOUR
 
 
+def _cleared(w: World) -> bool:
+    """Eric cleared today's day hours (soh day clear); the night limits are never lifted. #1112."""
+    return daytime(w.now) and w.clearance is not None
+
+
 def _long_run(w: World) -> list[Finding]:
     limit = LONG_RUN_DAY_S if daytime(w.now) else LONG_RUN_S
+    if _cleared(w):
+        return []
     return [Finding("long_run", s, {"elapsed_s": round(s.elapsed_s), "limit_s": limit, "day": daytime(w.now)})
             for s in w.top if s.elapsed_s is not None and s.elapsed_s > limit and not s.orphan]
 
@@ -579,11 +599,23 @@ def _orphan(w: World) -> list[Finding]:
 
 
 def _daytime_gpu(w: World) -> list[Finding]:
-    if not daytime(w.now):
+    if not daytime(w.now) or _cleared(w):
         return []
     return [Finding("daytime_gpu", s, {"elapsed_s": round(s.elapsed_s), "limit_s": DAYTIME_GPU_S,
                                        "hours": [DAY_START_HOUR, DAY_END_HOUR]})
             for s in w.top if s.elapsed_s is not None and s.elapsed_s > DAYTIME_GPU_S and not s.orphan]
+
+
+def _day_clear(w: World) -> list[Finding]:
+    """One row per day limit a job is past and was let off under the clearance. #1112."""
+    if not _cleared(w):
+        return []
+    c = w.clearance
+    return [Finding("day_clear", s, {"skipped": skipped, "elapsed_s": round(s.elapsed_s), "limit_s": limit,
+                                     "clearance": c["id"], "said": c["said"], "until": c["until"]})
+            for s in w.top if s.elapsed_s is not None and not s.orphan
+            for skipped, limit in (("daytime_gpu", DAYTIME_GPU_S), ("long_run", LONG_RUN_DAY_S))
+            if s.elapsed_s > limit]
 
 
 def _idle_lock(w: World) -> list[Finding]:
@@ -699,6 +731,9 @@ CRITERIA = (
               "an eval or job whose sweep, worker or queue row is gone"),
     Criterion("daytime_gpu", ("watchdog_day_start_hour", "watchdog_day_end_hour", "watchdog_daytime_gpu"), PAUSE,
               STOP, ("processes",), _daytime_gpu, "a long GPU job inside Eric's day hours"),
+    Criterion("day_clear", ("watchdog_day_end_hour", "watchdog_daytime_gpu", "watchdog_long_run_day"), NOTE, NOTIFY,
+              ("processes",), _day_clear,
+              "a long day job let off daytime_gpu and long_run's day limit: Eric cleared the day (soh day clear)"),
     Criterion("idle_lock", ("watchdog_idle_hold",), NOTE, FILE, ("processes", "lock"), _idle_lock,
               "the eval lock held with nothing running"),
     Criterion("idle_model", (), NOTE, UNLOAD, ("processes", "resident"), _idle_model,

@@ -89,7 +89,7 @@ def _row(conn, r) -> dict:
             "started": _iso(r["started_at"]), "finished": _iso(r["finished_at"]),
             "rc": r["rc"], "log": r["log"], "note": r["note"],
             "requested_by": r["requested_by"], "machine_id": r["machine_id"],
-            "not_before": _iso(r["not_before"]), "runs": runs}
+            "not_before": _iso(r["not_before"]), "night_gate": bool(r["night_gate"]), "runs": runs}
 
 
 def _select(conn, where: str = "", args=()) -> list[dict]:
@@ -197,7 +197,7 @@ def start_at(spec: str, now: float | None = None) -> float | None:
 
 def add(argv: list[str], title: str = "", cwd: str = "", kind: str = "command",
         output: str = "", priority: int = 0, requested_by: str = "",
-        not_before: float | None = None, conn=None) -> dict:
+        not_before: float | None = None, night: bool = False, conn=None) -> dict:
     if not argv:
         raise ValueError("a job needs a command")
     first = str(argv[0])
@@ -212,11 +212,12 @@ def add(argv: list[str], title: str = "", cwd: str = "", kind: str = "command",
         # The store assigns the id inside the insert, so two writers cannot collide. #418.
         cur = c.execute(
             "INSERT INTO jobs (title, kind, output, priority, argv, cwd, state, "
-            "created_at, requested_by, machine_id, not_before) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+            "created_at, requested_by, machine_id, not_before, night_gate) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
             (title or " ".join(argv), kind, output, int(priority),
              json.dumps([str(a) for a in argv]), cwd or os.getcwd(), PENDING,
              time.time(), requested_by, machine,
-             None if not_before is None else float(not_before)))
+             None if not_before is None else float(not_before),
+             int(bool(night) and not_before is not None)))
         c.commit()
         return _select(c, "WHERE id = ?", (cur.lastrowid,))[0]
 
@@ -241,15 +242,24 @@ def pending(conn=None) -> list[dict]:
         return order(_select(c, f"WHERE state = ? AND {where}", (PENDING, *args)))
 
 
-def due(job: dict, now: float | None = None) -> bool:
-    """Whether a job's earliest start has come. #900."""
+def due(job: dict, now: float | None = None, cleared: bool = False) -> bool:
+    """Whether a job's earliest start has come; a day clearance lifts a night start, never a clock time. #900, #1112."""
     at = _epoch(job.get("not_before")) if job.get("not_before") else None
-    return at is None or at <= (time.time() if now is None else now)
+    return at is None or at <= (time.time() if now is None else now) or (cleared and bool(job.get("night_gate")))
+
+
+def cleared(conn=None, now: float | None = None) -> dict | None:
+    """This machine's day clearance in force at now, or None. #1112."""
+    from harness import day_clear
+    with _store(conn) as c:
+        return day_clear.active(c, now)
 
 
 def ready(conn=None, now: float | None = None) -> list[dict]:
     """Pending jobs whose start time has come, in run order; a later job runs while an earlier one waits. #900."""
-    return [j for j in pending(conn) if due(j, now)]
+    with _store(conn) as c:
+        lifted = cleared(c, now) is not None
+        return [j for j in pending(c) if due(j, now, lifted)]
 
 
 def _claimed(c) -> tuple[str, tuple]:

@@ -227,6 +227,12 @@ def _add_job_not_before(conn) -> None:
         conn.execute("ALTER TABLE jobs ADD COLUMN not_before REAL")
 
 
+def _add_job_night_gate(conn) -> None:
+    """jobs.night_gate on an older store. #1112."""
+    if "night_gate" not in _columns(conn, "jobs"):
+        conn.execute("ALTER TABLE jobs ADD COLUMN night_gate INTEGER NOT NULL DEFAULT 0")
+
+
 def _add_request_purpose(conn) -> None:
     """gateway_requests.purpose on an older store; every earlier row is 'unknown'. #825."""
     if "purpose" not in _columns(conn, "gateway_requests"):

@@ -17,6 +17,8 @@ GIT_TIMEOUT_S = 60.0
 MODEL_LANE = "extract"
 MODEL_TIMEOUT_S = 90.0
 MODEL_MAX_TOKENS = 220
+#: The watchdog criterion that records a day limit let off under a day clearance. #1112.
+CLEARED = "day_clear"
 HEADLINE_LINES = 3
 #: A ranked-head candidate waiting undownloaded in one state this many days needs a person. #925.
 STALL_DAYS = 14.0
@@ -107,7 +109,21 @@ def watchdog(conn, since: float) -> list[dict]:
         return []
     return [dict(r) for r in conn.execute(
         "SELECT id, at, criterion, subject, action, escalated, dry_run, outcome FROM watchdog_actions "
-        "WHERE at >= ? AND criterion != ? ORDER BY at", (since, sweep_check.CRITERION))]
+        "WHERE at >= ? AND criterion NOT IN (?, ?) ORDER BY at", (since, sweep_check.CRITERION, CLEARED))]
+
+
+def clearances(conn, since: float, now: float) -> list[dict]:
+    """Day clearances in force at any point since `since`, each with the day limits the watchdog let jobs off. #1112."""
+    from harness import day_clear
+    if not _has(conn, "day_clearances"):
+        return []
+    out = []
+    for c in day_clear.since(conn, since, now):
+        end = c["revoked_at"] if c["revoked_at"] is not None else c["until"]
+        n = conn.execute("SELECT COUNT(*) AS n FROM watchdog_actions WHERE criterion = ? AND at >= ? AND at <= ?",
+                         (CLEARED, c["cleared_at"], end)).fetchone()["n"] if _has(conn, "watchdog_actions") else 0
+        out.append({**c, "skips": int(n), "line": day_clear.line(c, now)})
+    return out
 
 
 def sweep_checks(conn, since: float) -> list[dict]:
@@ -303,7 +319,7 @@ def gather(conn, now: float, since: float, *, beat=None, gh=None, git=None, wher
          "stalled": (stalls or stalled)(conn), "deploy": deploy(where, git=git or _git),
          "canary": canary(now) if canary else "", "incidents": incidents(conn, since, now),
          "parked": parked() if parked else [], "checks": sweep_checks(conn, since),
-         "incumbent": incumbent(conn) if incumbent else None}
+         "incumbent": incumbent(conn) if incumbent else None, "clearances": clearances(conn, since, now)}
     if r["sweep"]["loop"] is not None:
         from harness import heartbeat
         r["sweep"]["loop"]["code_moved"] = heartbeat.code_moved(beat, r["deploy"].get("head", ""))
