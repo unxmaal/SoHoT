@@ -52,6 +52,11 @@ CANARIES = [
     ("handle", "<@123456789012>", "<HANDLE_"),
     ("handle", "member-a1b2", "<HANDLE_"),
     ("account", "zorblat", "<ACCOUNT_"),
+    ("account", "-Users-zorblat-projects", "<ACCOUNT_"),
+    ("path", "/private/tmp/claude-504/-x/scratchpad", "<PATH_TMP>"),
+    ("tz", "Wed Oct 21 17:53:43 EDT 2026", "<TZ_"),
+    ("tz", "Date:   Wed Oct 21 17:53:43 2026 -0400", "<TZ_"),
+    ("tz", "2026-10-21T17:53:43-04:00", "<TZ_"),
     ("name", "Quentavious", "<NAME_"),
 ]
 CHATS = [
@@ -140,3 +145,35 @@ def test_known_here_reads_names_from_an_untracked_file(tmp_path):
     known = redact.known_here([f])
     assert {"Quentavious", "zorbhandle"} <= set(known.names)
     assert redact.redact("ask zorbhandle", known).text == "ask <NAME_1>"
+
+
+#: Made up, and never written in lower case anywhere in the repo, so the vocabulary cannot vouch for them.
+NAME, HANDLE = "Zorvanna", "@quillfeather"
+
+
+@pytest.mark.parametrize("text", [
+    f"thanks to {NAME} for the report",
+    f"{NAME} said the cache was stale.",
+    f"[3] {NAME}: the build broke",
+])
+def test_a_made_up_name_is_name_like_wherever_it_sits(text):
+    assert redact.name_like(text) == [NAME]
+
+
+@pytest.mark.parametrize("text", [f"ping {HANDLE} about it", f"{HANDLE} hi, any news?"])
+def test_a_handle_is_name_like(text):
+    assert redact.name_like(text) == [HANDLE]
+
+
+def test_words_decorators_and_safe_names_are_not_names():
+    text = ("The importer reads Python files. Read the README before you Run it.\n"
+            "    @pytest.mark.slow\n@property\n" + f"mail a.b@example.org; {NAME} again")
+    assert redact.name_like(text) == [NAME]
+    assert redact.name_like(text, safe=frozenset({NAME.lower()})) == []
+    assert redact.name_like(f"see {HANDLE}", safe=frozenset({HANDLE[1:]})) == []
+
+
+def test_the_committed_safe_list_vouches_for_no_canary():
+    safe = redact.safe_names()
+    assert NAME.lower() not in safe and HANDLE[1:] not in safe
+    assert NAME.lower() not in redact.vocabulary()

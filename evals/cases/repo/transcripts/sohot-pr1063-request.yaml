@@ -1,0 +1,318 @@
+# Claude Code session requests, redacted, generated (https://github.com/unxmaal/SoHoT/issues/1095).
+# Imported by evals/importers from claude-code:transcripts@82ea6dc78eb1889c0e2f8b40e602ffc6fb9a3da4; re-import, do not edit.
+id: sohot-pr1063-request
+modality: repo
+prompt: "Below is a Claude Code session, cut just before the agent's first edit to the code. Make the\
+  \ change the session is heading toward.\n\n## user\nHow’s it going this morning?\n\n[... 23 earlier\
+  \ entries not shown ...]\n\n## tool Bash\n$ mkdir -p <PATH_TMP> && cd <PATH_TMP> && sqlite3 \"file:$HOME/localharness/discovery.db?mode=ro\"\
+  \ \".backup copy.db\" && sqlite3 copy.db \"select p.id,p.name,p.state,p.lane,p.kind from proposals p\
+  \ where p.name in ('OmniSVG/OmniSVG1.1_4B','OmniSVG/OmniSVG1.1_8B','trace:mflux:dev','best-of:3:q3-30b')\"\
+  \ \".mode line\" && sqlite3 -separator ' | ' copy.db \"select v.proposal_id, v.id, v.outcome, v.tier,\
+  \ v.reason, v.failure_class, v.until, v.reopen_kind, substr(v.detail,1,90), datetime(v.decided_at,'unixepoch')\
+  \ from verdicts v join proposals p on p.id=v.proposal_id where p.name in ('OmniSVG/OmniSVG1.1_4B','OmniSVG/OmniSVG1.1_8B','trace:mflux:dev','best-of:3:q3-30b')\
+  \ order by v.proposal_id, v.id\"\n[2183 bytes of output not shown]\n\n## tool Bash\n$ cd <PATH_TMP>\
+  \ && sqlite3 -separator ' | ' copy.db \"select v.proposal_id, v.id, v.outcome, v.tier, v.reason, v.failure_class,\
+  \ v.until, v.reopen_kind, v.reopens, substr(v.detail,1,80), datetime(v.decided_at,'unixepoch') from\
+  \ verdicts v join proposals p on p.id=v.proposal_id where p.name in ('OmniSVG/OmniSVG1.1_4B','OmniSVG/OmniSVG1.1_8B','trace:mflux:dev','best-of:3:q3-30b')\
+  \ and (v.tier!='inspect' or v.reopen_kind!='' ) order by v.proposal_id, v.id\" | tail -40\n321 | 3938\
+  \ | queued | fetch | harness |  |  |  |  | no measured size; inspect it first | 2026-09-29 01:49:19\n\
+  321 | 4040 | queued | fetch | harness |  |  |  |  | no measured size; inspect it first | 2026-09-29\
+  \ 07:56:55\n321 | 4142 | queued | fetch | harness |  |  |  |  | no measured size; inspect it first |\
+  \ 2026-09-29 13:59:23\n321 | 4195 | queued | fetch | harness |  |  |  |  | no measured size; inspect\
+  \ it first | 2026-09-29 20:04:16\n321 | 4239 | queued | fetch | harness |  |  |  |  | no measured size;\
+  \ inspect it first | 2026-09-30 02:09:19\n321 | 4287 | queued | fetch | harness |  |  |  |  | no measured\
+  \ size; inspect it first | 2026-09-30 08:14:19\n321 | 4334 | queued | fetch | harness |  |  |  |  |\
+  \ no measured size; inspect it first | 2026-09-30 14:19:48\n321 | 4373 | queued | fetch | harness |\
+  \  |  |  |  | no measured size; inspect it first | 2026-09-30 20:24:17\n321 | 4472 | queued | fetch\
+  \ | harness |  |  |  |  | no measured size; inspect it first | 2026-10-01 02:30:01\n321 | 4585 | queued\
+  \ | fetch | harness |  |  |  |  | no measured size; inspect it first | 2026-10-01 08:37:26\n321 | 4699\
+  \ | queued | fetch | harness |  |  |  |  | no measured size; inspect it first | 2026-10-01 14:40:04\n\
+  321 | 4752 | queued | fetch | harness |  |  |  |  | no measured size; inspect it first | 2026-10-01\
+  \ 20:44:18\n321 | 5029 | queued | fetch | harness |  |  |  |  | no measured size; inspect it first |\
+  \ 2026-10-02 20:54:25\n321 | 5173 | queued | fetch | limit |  |  |  |  | 16.0 GiB would take this run\n\
+  [... 4013 more bytes]\n\n## tool Bash\n$ cd <PATH_TMP> && sqlite3 -separator ' | ' copy.db \"select\
+  \ v.proposal_id, v.id, v.outcome, v.tier, v.reason, v.until, substr(v.detail,1,100), datetime(v.decided_at,'unixepoch')\
+  \ from verdicts v where v.proposal_id in (552,553) order by v.id\"; sqlite3 copy.db \"select id,name,state,kind,source,lane,resolved,registry,size_bytes\
+  \ from proposals where id in (552,553)\"\n[1185 bytes of output not shown]\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1060\
+  \ && grep -rn \"CROSSING_KIND\\|kind = 'method'\\|kind='method'\\|is_method\" harness --include=*.py\
+  \ | grep -v \"^harness/methods.py\" | head -40\n(eval):1: no matches found: --include=*.py\n\n## tool\
+  \ Bash\n$ cd ~/projects/github/unxmaal/sohot-1060 && grep -rn \"CROSSING_KIND\\|'method'\\|is_method\"\
+  \ harness | grep -v \"^harness/methods.py\" | head -40\nharness/screen.py:417:        target = methods.weights_of(name)\
+  \ if methods.is_method(name) else name\nharness/delegate.py:49:    if methods.is_method(spec) and not\
+  \ methods.text_method(spec):\nharness/funnel.py:71:    if methods.is_method(p[\"name\"]):\nharness/commands/screen.py:167:\
+  \            and not methods.is_method(r[\"name\"]) and not deferred(r[\"name\"]) and room(r)]\nharness/commands/screen.py:174:\
+  \    target = methods.weights_of(name) if methods.is_method(name) else name\nharness/commands/volume.py:63:\
+  \         f\"{row['method']}, at {row['path']}\")\nharness/commands/common.py:60:    return f\"[{method['method']}\
+  \ over {method['base']}: {method['calls']} calls{extra}]\"\nharness/commands/discover.py:390:    while\
+  \ methods.is_method(base) and methods.base_of(base):\nharness/commands/discover.py:478:            if\
+  \ methods.is_method(repo):\nharness/commands/loop.py:647:                    name=spec, source=methods.CROSSING_SOURCE,\
+  \ kind=methods.CROSSING_KIND,\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1060 && sed -n 120,200p\
+  \ harness/commands/screen.py; grep -n \"def screenable\\|def downloaded\\|def fetched\" -A30 harness/memory_store/proposals.py\
+  \ | head -80\n# The same store as the fetch's ranking, so both tiers order by one key. #275, #881.\n\
+  \        ranked = rank.rank(rows, serving=rank.serving(),\n                           measured_lanes=rank.lanes_with_receipts(store),\
+  \ conn=store)\n    finally:\n        store.close()\n    return screen.plan(ranked)\n\n\n#: Consecutive\
+  \ same-need memory deferrals after which the screen stops recording another one. #910.\nMEMORY_DEFERRALS\
+  \ = 3\n\n_NEEDS = re.compile(r\"needs (\\d+(?:\\.\\d+)?) GB\")\n\n\ndef memory_deferrals(conn, name:\
+  \ str) -> tuple[int, str]:\n    \"\"\"How many of a name's newest verdicts in a row are screen memory\
+  \ deferrals of one need, and that need. #910.\"\"\"\n    from harness import memory_store as ms\n  \
+  \  streak, need = 0, \"\"\n    for v in conn.execute(\n            \"SELECT v.tier, v.reason, v.detail\
+  \ FROM verdicts v JOIN proposals p \"\n            \"ON p.id = v.proposal_id WHERE p.name = ? ORDER\
+  \ BY v.id DESC\", (name,)):\n        got = _NEEDS.search(v[\"detail\"] or \"\")\n        if v[\"tier\"\
+  ] != ms.SCREEN or v[\"reason\"] != reasons.MEMORY or not got \\\n                or (need and got.group(1)\
+  \ != need):\n            break\n        streak, need = streak + 1, got.group(1)\n    return streak,\
+  \ need\n\n\ndef screenable_backlog(want: str = \"\", plan=None, room=None, deferred=None) -> list[str]:\n\
+  \    \"\"\"On disk, runnable, fitting in memory now, and not deferred for memory last screen: what a\
+  \ fetch would queue behind. #396, #910.\"\"\"\n    from harness import screen\n    plan = _screen_plan(want)\
+  \ if plan is None else plan\n   \n[... 2230 more bytes]\n\n## tool mcp__mcm-engine__search\n{\"query\"\
+  : \"crossing\", \"scope\": \"rules\"}\n[7458 bytes of output not shown]\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1060\
+  \ && sed -n 95,126p harness/commands/screen.py; grep -n \"def screen_queue\\|def to_screen\\|def fetched_or\\\
+  |def unscreened\" -A30 harness/memory_store/*.py | head -60\nerr(f\"{f.repo}: {exc}\")\n           \
+  \     continue\n            print(f\"    {score:2d}/10  {f.repo:36.36s} {why[:56]}\")\n            try:\n\
+  \                ms.decide(store, f.repo, \"queued\", tier=ms.JUDGE, score=score,\n                \
+  \          reason=reasons.CANDIDATE,\n                          rubric=rubric.stamp, judge=rubric.model,\n\
+  \                          detail=why[:200])\n            except (KeyError, ms.IllegalTransition):\n\
+  \                pass\n    finally:\n        store.close()\n    return 0\n\n\ndef _screen_plan(want:\
+  \ str) -> list[dict]:\n    from harness import rank, screen\n    from harness import memory_store as\
+  \ ms\n    store = ms.connect()\n    try:\n        # THE SAME DEFECT AS _report_queue, at the tier that\
+  \ actually runs the\n        # model. `--top 2` sampled 8 rows of 114 and filtered those, so the\n \
+  \       # loop fetched two image models and then said \"nothing queued to\n        # screen\". Issue\
+  \ #209.\n        rows, _ = loop_cmd._queueable(store, want)\n        # The same store as the fetch's\
+  \ ranking, so both tiers order by one key. #275, #881.\n        ranked = rank.rank(rows, serving=rank.serving(),\n\
+  \                           measured_lanes=rank.lanes_with_receipts(store), conn=store)\n    finally:\n\
+  \        store.close()\n    return screen.plan(ranked)\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1060\
+  \ && grep -n \"measurable\\|resume_first\\|_cross_methods\\|survivors\\|_reopen_revisitable\\|def _run_loop_held\"\
+  \ harness/commands/*.py | head -30\nharness/commands/loop.py:91:           f\"{'fits':7} measurable\"\
+  ]\nharness/commands/loop.py:206:def _run_loop_held(a, keep=None) -> int:\nharness/commands/loop.py:247:\
+  \                                 (_reopen_revisitable, ()), (_rederive_attachments, ())):\nharness/commands/loop.py:255:\
+  \        for line in _methods_lines(_cross_methods(store, want)):\nharness/commands/loop.py:420:   \
+  \     fresh = measure_cmd.resume_first(store, measure_cmd.measurable(store, top, want), want)\nharness/commands/loop.py:525:def\
+  \ _reopen_revisitable() -> list[dict]:\nharness/commands/loop.py:627:def _cross_methods(store, want:\
+  \ str = \"\") -> list[tuple[str, str, bool]]:\nharness/commands/measure.py:157:def measurable(store,\
+  \ top: int, want: str = \"\") -> list[dict]:\nharness/commands/measure.py:160:    rows = ms.survivors(store,\
+  \ limit=1_000_000)\nharness/commands/measure.py:166:def resume_first(store, fresh: list[dict], want:\
+  \ str = \"\") -> list[dict]:\nharness/commands/measure.py:694:        # On the proposal the candidate\
+  \ maps to, so it leaves survivors. #393.\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1060\
+  \ && sed -n 206,300p harness/commands/loop.py; sed -n 400,440p harness/commands/loop.py; sed -n 520,560p\
+  \ harness/commands/loop.py\n<persisted-output>\nOutput too large (8KB). Full output saved to: <PATH_HOME>/.claude/projects/-Users-<ACCOUNT_1>-projects/<ID_1>/tool-results/bhxnhzca8.txt\n\
+  \nPreview (first 2KB):\ndef _run_loop_held(a, keep=None) -> int:\n    \"\"\"Every step from a sweep\
+  \ to an adopted winner. Issue #201.\n\n    SAYS WHAT IT WOULD DO AND STOPS unless --run. Fetching weights\
+  \ and running\n    a lane are the two operations that spend gigabytes and minutes, and a loop\n    that\
+  \ starts doing either because something ranked well is how a laptop ends\n    up unusable overnight.\n\
+  \    \"\"\"\n    import argparse as _ap\n    import sys\n\n    from harness import adopt, ceiling, fetching,\
+  \ power, rank\n    from harness import memory_store as ms\n\n    run = bool(getattr(a, \"run\", False))\n\
+  \    sweep = ceiling.Sweep(float(getattr(a, \"ceiling_h\", None) or power.SWEEP_CEILING_H) * 3600)\n\
+  \    rc = 0\n    failed: list[str] = []\n    for label, attr, needs_run in LOOP_STEPS:\n        if needs_run\
+  \ and not run:\n            print(f\"\\n=== {label} (skipped; --run) ===\")\n            continue\n\
+  \        if keep is not None and not keep():\n            print(f\"the discover loop lost its store\
+  \ lease before {label}; stopping so two \"\n                  f\"machines never sweep together\", file=sys.stderr)\n\
+  \            return 1\n        print(f\"\\n=== {label} ===\")\n        _beat(label)\n        flags =\
+  \ {f: f == attr for _, f, _ in LOOP_STEPS}\n        extra = {}\n        if attr == \"inspect\":\n  \
+  \          # INSPECT WHAT THE SWEEP FOUND,\n[... 667 more bytes]\n\n## tool Read <PATH_HOME>/.claude/projects/-Users-<ACCOUNT_1>-projects/<ID_1>/tool-results/bhxnhzca8.txt\n\
+  1\tdef _run_loop_held(a, keep=None) -> int:\n2\t    \"\"\"Every step from a sweep to an adopted winner.\
+  \ Issue #201.\n3\t\n4\t    SAYS WHAT IT WOULD DO AND STOPS unless --run. Fetching weights and running\n\
+  5\t    a lane are the two operations that spend gigabytes and minutes, and a loop\n6\t    that starts\
+  \ doing either because something ranked well is how a laptop ends\n7\t    up unusable overnight.\n8\t\
+  \    \"\"\"\n9\t    import argparse as _ap\n10\t    import sys\n11\t\n12\t    from harness import adopt,\
+  \ ceiling, fetching, power, rank\n13\t    from harness import memory_store as ms\n14\t\n15\t    run\
+  \ = bool(getattr(a, \"run\", False))\n16\t    sweep = ceiling.Sweep(float(getattr(a, \"ceiling_h\",\
+  \ None) or power.SWEEP_CEILING_H) * 3600)\n17\t    rc = 0\n18\t    failed: list[str] = []\n19\t    for\
+  \ label, attr, needs_run in LOOP_STEPS:\n20\t        if needs_run and not run:\n21\t            print(f\"\
+  \\n=== {label} (skipped; --run) ===\")\n22\t            continue\n23\t        if keep is not None and\
+  \ not keep():\n24\t            print(f\"the discover loop lost its store lease before {label}; stopping\
+  \ so two \"\n25\t                  f\"machines never sweep together\", file=sys.stderr)\n26\t      \
+  \      return 1\n27\t        print(f\"\\n=== {label} ===\")\n28\t        _beat(label)\n29\t        flags\
+  \ = {f: f == attr for _, f, _ in LOOP_STEPS}\n30\t        extra = {}\n31\t        if attr == \"inspect\"\
+  :\n32\t            # INSPECT WHAT THE SWEEP FOUND, not the crowd. cmd_inspect's own\n33\t          \
+  \  # comment calls --from-store \"the rung the ladder was missing\",\n34\t \n[... 7308 more bytes]\n\
+  \n## tool Bash\n$ cd <PATH_TMP> && sqlite3 -separator ' | ' copy.db \"select substr(v.until,1,instr(v.until,':'))\
+  \ k, v.tier, v.outcome, p.kind, count(*) from proposals p join verdicts v on v.id=p.state_verdict_id\
+  \ where v.until!='' group by 1,2,3,4 order by 1,2\"; grep -n \"^UNTIL\\|^    \\\"\" ~/projects/github/unxmaal/sohot-1060/harness/memory_store/revisit.py\
+  \ | head -40\ncases: | adopt | declined | candidate | 2\ncases: | adopt | declined | method | 6\ncases:\
+  \ | adopt | declined | weights | 2\nceiling_gb: | inspect | declined | candidate | 72\nceiling_gb: |\
+  \ inspect | declined | repo | 1\nceiling_gb: | inspect | declined | weights | 1\ncommit_after: | inspect\
+  \ | declined | candidate | 1\ncommit_after: | inspect | declined | repo | 1\ncommit_after: | inspect\
+  \ | declined | weights | 12\ncommit_after: | screen | declined | candidate | 1\nformat: | inspect |\
+  \ queued | candidate | 3\nformat: | inspect | queued | repo | 1\nformat: | inspect | queued | weights\
+  \ | 4\nformat: | screen | declined | candidate | 1\nlayout: | inspect | queued | candidate | 6\nlayout:\
+  \ | inspect | queued | repo | 1\nlimit: | fetch | declined | repo | 1\nlimit: | fetch | queued | weights\
+  \ | 1\nlimit: | screen | declined | candidate | 4\npolicy: | screen | declined | candidate | 7\npolicy:\
+  \ | screen | declined | repo | 1\nroom_gb: | screen | queued | candidate | 1\nroom_gb: | screen | queued\
+  \ | repo | 1\nrunner: | screen | declined | candidate | 22\nrunner: | screen | declined | repo | 2\n\
+  runtime: | fetch | declined | candidate | 3\nruntime: | inspect | declined | repo | 3\nversion: | screen\
+  \ | declined | repo | 3\n55 matches in 1 files:\n\n18:\"\"\"Verdicts citing a run that is no longer\
+  \ on disk.\n35:\"\"\"\n50:\"\"\"Every place `run_path` could mean, most likely first.\n55:\"\"\"\n67:UNTIL\
+  \ = {\n68:\"runtime\": \"a runtime this machine has (machines.runtimes)\",\n69:\"version\": \"the installed\
+  \ version of a package (machines.versions)\",\n[... 1359 more bytes]\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1060\
+  \ && grep -n \"def plan\" -A50 harness/screen.py | head -80; grep -n \"def _queueable\" -A30 harness/commands/loop.py\n\
+  396:def plan(rows, *, missing=None) -> list[dict]:\n397-    \"\"\"What a screen would do to each row,\
+  \ and what stands in the way.\n398-\n399-    `missing` says what a candidate still needs that is not\
+  \ on disk -- ITSELF\n400-    AND WHAT ITS CONFIG NAMES, because a complete repo is not a loadable model.\n\
+  401-    Marvis-AI's 8-bit MLX repo is whole and names a tokenizer in a different\n402-    repo; `ready`\
+  \ on that cost a real run to discover, and the screen tier\n403-    exists to be cheap. Injected so\
+  \ this is testable without a cache and\n404-    without a download. Issue #196.\n405-    \"\"\"\n406-\
+  \    if missing is None:\n407-        from harness.fetching import missing as _missing\n408-       \
+  \ missing = _missing\n409-    out = []\n410-    for row in rows:\n411-        name = row[\"name\"]\n\
+  412-        lane = (row.get(\"lane\") or \"\").strip().lower()\n413-        attached = row.get(\"attaches_to\"\
+  ) or \"\"\n414-        spec = candidate_for(lane, name, attached, card=row)\n415-        # A method\
+  \ downloads its base's weights, or none when its runner finds its own. #576.\n416-        from harness\
+  \ import methods\n417-        target = methods.weights_of(name) if methods.is_method(name) else name\n\
+  418-        absent = [] if not spec or not target else missing(target)\n419-        gap = runner_gap(lane,\
+  \ name, attached, card=row)\n420-        if not spec or gap:\n421-            state, why = NO_RUNNER,\
+  \ (\n422-                gap if gap\n423-                else f\"a {attached}: it attaches to a model\
+  \ rather than being one,\n[... 2903 more bytes]\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1060\
+  \ && grep -n \"screened\" harness/live_audit.py harness/coherence.py harness/commands/measure.py | head\
+  \ -30\nharness/commands/measure.py:213:        return err(f\"{name}: screened in the {lane} lane and\
+  \ no candidate \"\n\n## tool Bash\n$ cd <PATH_TMP> && sqlite3 -separator ' | ' copy.db \"select p.id,p.name,p.state,p.state_verdict_id,v.tier,v.reason,v.reopens,o.tier,o.until,o.reason,\
+  \ (select max(id) from verdicts where proposal_id=p.id) from proposals p join verdicts v on v.id=p.state_verdict_id\
+  \ left join verdicts o on o.id=v.reopens where v.reopen_kind='retraction' and v.detail like 'retracted:\
+  \ %is met%'\"\n[436 bytes of output not shown]\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1060\
+  \ && grep -n \"environ\\|def connect\\|def db_path\" harness/memory_store/connection.py | head; grep\
+  \ -n \"def changes\\|def apply\\|def lane_bound\" harness/coherence.py; grep -rn \"coherence\" harness/commands/*.py\
+  \ | head -5\n45:def db_path() -> Path:\n49:def connect(path: Path | None = None):\n108:    if not paths.is_live(path)\
+  \ or os.environ.get(paths.ALLOW_MIGRATE_ENV) == \"1\":\n107:def changes(conn, logs=None, root=None)\
+  \ -> list[dict]:\n141:def lane_bound(conn) -> list[dict]:\n241:def apply(conn, found: list[dict]) ->\
+  \ list[int]:\nharness/commands/coherence.py:1:\"\"\"`soh coherence`: re-decide terminal verdicts the\
+  \ audit's terminal_reason_coherent names; read-only without --apply. #991.\"\"\"\nharness/commands/coherence.py:6:from\
+  \ harness import coherence\nharness/commands/coherence.py:10:def cmd_coherence(a) -> int:\nharness/commands/coherence.py:17:\
+  \        return err(f\"coherence: no store at {db}\")\nharness/commands/coherence.py:21:        return\
+  \ err(f\"coherence: {exc}\")\n\n## tool mcp__mcm-engine__search\n{\"query\": \"retraction\", \"scope\"\
+  : \"rules\", \"limit\": 6}\n[5149 bytes of output not shown]\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1060\
+  \ && sed -n 40,60p harness/memory_store/connection.py; grep -n \"def \\|DB\\|environ\" harness/paths.py\
+  \ | head -30\nyield conn\n    finally:\n        _LENT.conn = was\n\n\ndef db_path() -> Path:\n    return\
+  \ paths.home() / \"discovery.db\"\n\n\ndef connect(path: Path | None = None):\n    \"\"\"Open (creating\
+  \ if needed) and migrate to SCHEMA_VERSION.\n\n    SQLite unless LOCALHARNESS_STORE says postgres, because\
+  \ `lh` on a laptop\n    must keep working with no cluster at all -- a discovery engine that only\n \
+  \   runs in Kubernetes is a worse tool than the one that already exists.\n    \"\"\"\n    if lent()\
+  \ is not None:\n        raise ReadOnlyStore(\"a read-only connection is lent to this thread; opening\
+  \ the store \"\n                            \"here would migrate it, so the reader must take the lent\
+  \ one\")\n    if store.backend() == store.POSTGRES:\n        _refuse_reentry(None)\n41:def home() ->\
+  \ Path:\n43:    raw = os.environ.get(ENV_VAR)\n53:def is_live(path: Path) -> bool:\n58:def deploy_checkout()\
+  \ -> Path | None:\n71:def runs_elsewhere() -> Path | None:\n79:def _sub(name: str) -> Path:\n85:def\
+  \ outputs() -> Path:\n90:def runs() -> Path:\n95:def logs() -> Path:\n100:def stamp() -> str:\n110:def\
+  \ artifact(kind: str, suffix: str, where: Path | None = None) -> Path:\n122:def new_run(modality: str)\
+  \ -> Path:\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1060 && sed -n 85,130p harness/memory_store/revisit.py;\
+  \ grep -n \"^from\\|^import\\|MEASURE\\|ADOPT\" harness/memory_store/schema.py | head -20\ndef until_met(until:\
+  \ str, facts: dict | None = None) -> bool:\n    \"\"\"Whether `facts` satisfies the condition a verdict\
+  \ is waiting on.\n\n    A PREDICATE, NOT A SENTENCE. The whole point of #266 is that a machine\n   \
+  \ fact buried in prose cannot be queried, so writing the condition as prose\n    would move the defect\
+  \ rather than fix it.\n\n    The forms and the one quantity each reads are UNTIL.\n\n    THE FIRST THREE\
+  \ ARE ABOUT THE MACHINE AND THE FOURTH IS NOT, which is why\n    `facts` is a plain dict rather than\
+  \ a Machine: a verdict waits on whatever\n    would change it, and `dead` waits on somebody else's repository.\n\
+  \    An unrecognised condition is NOT met, so a typo leaves the verdict\n    standing rather than silently\
+  \ re-queueing everything.\n    \"\"\"\n    if not until:\n        return False\n    facts = facts if\
+  \ facts is not None else ms.this_machine()\n    key, _, want = until.partition(\":\")\n    if key ==\
+  \ \"runtime\":\n        have = (facts.get(\"runtimes\") or \"\").split(\",\")\n        return any(rt\
+  \ in have for rt in want.split(\"|\"))\n    if key in (\"memory_gb\", \"ceiling_gb\") and want.startswith(\"\
+  >\"):\n        try:\n            return float(facts.get(key) or 0) > float(want[1:])\n        except\
+  \ ValueError:\n            return False\n    if key == \"room_gb\" and want.startswith(\">\"):\n   \
+  \     if \"room_gb\" in facts:\n            have = facts.get(\"room_gb\")\n        else:\n         \
+  \   from harness import memory\n            have = memory.room_gb()\n        try:\n            return\
+  \ have is not None and\n[... 874 more bytes]\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot &&\
+  \ gh pr list --state open --json number,title,headRefName | head -30; ls tests | grep -i \"revisit\\\
+  |1055\\|1049\" \nExit code 1\n[]\n\n## tool Bash\n$ ls ~/projects/github/unxmaal/sohot-1060/tests |\
+  \ grep -i \"revisit\\|1055\\|1049\\|1001\"; sed -n 1,80p ~/projects/github/unxmaal/sohot-1060/tests/test_loop_revisit_1055.py\n\
+  test_adopt_retest_1001.py\ntest_lane_too_small_1049.py\ntest_loop_revisit_1055.py\n\"\"\"#1055: the\
+  \ loop's discover step reopens a refusal whose until is met; a spent until never loops; every UNTIL\
+  \ key has a reader.\"\"\"\nimport ast\nimport importlib\nimport inspect\nimport re\n\nimport pytest\n\
+  \nfrom harness import adopt, fetching, heartbeat, holdout, live_audit, reasons\nfrom harness import\
+  \ memory_store as ms\nfrom harness.commands import loop as loop_cmd\nfrom harness.memory_store import\
+  \ revisit, transitions\n\nT = 1791000000.0\nGROWN = 643\nSVG = \"cases:svg>3\"\n\n\n@pytest.fixture\n\
+  def grown(monkeypatch):\n    split = holdout.Split(\"svg\", tuple(f\"d{i}\" for i in range(GROWN - 195)),\
+  \ tuple(f\"h{i}\" for i in range(195)),\n                          False)\n    one = holdout.Split(\"\
+  other\", (\"o\",), (\"o\",), True)\n    monkeypatch.setattr(holdout, \"for_lane\", lambda lane, *a,\
+  \ **k: split if lane == \"svg\" else one)\n    return split\n\n\ndef _declined(conn, name, until, lane=\"\
+  svg\", tier=ms.ADOPT, detail=\"svg: lane too small\", at=T):\n    got = conn.execute(\"SELECT id FROM\
+  \ proposals WHERE name = ?\", (name,)).fetchone()\n    if got is None:\n        ms.record(conn, ms.Seen(name=name,\
+  \ source=\"t\", lane=lane, resolved=name))\n        ms.decide(conn, name, \"screened\", tier=ms.SCREEN,\
+  \ reason=reasons.CANDIDATE, at=at)\n        got = conn.execute(\"SELECT id FROM proposals WHERE name\
+  \ = ?\", (name,)).fetchone()\n    transitions._write(conn, got[0], name, {\"outcome\": \"declined\"\
+  , \"tier\": tier, \"reason\": reasons.LIMIT,\n                 \n[... 2042 more bytes]\n\n## tool Bash\n\
+  $ sed -n 80,400p ~/projects/github/unxmaal/sohot-1060/tests/test_loop_revisit_1055.py | grep -n \"INSPECT\\\
+  |queued\\|def test\" \n9:def test_the_cases_writer_after_a_reopen_counts_the_grown_lane_so_it_is_not_met(grown):\n\
+  21:def test_a_terminal_format_wait_reopens_only_once_a_runner_of_its_lane_reads_it(monkeypatch):\n35:def\
+  \ test_the_audit_warns_on_a_met_until_until_the_loop_requeue_has_run_then_fails(grown):\n51:def test_the_audit_names_a_spent_until_as_a_warning(grown):\n\
+  76:def test_every_until_key_is_read_by_until_met_or_names_the_reader_that_handles_it():\n\n## assistant\n\
+  Now write the code in revisit.py."
+params:
+  source_repo: https://github.com/unxmaal/SoHoT.git
+  base: 09393b97d40cf2b89ee128a6eb566b0056f85b3e
+  fix: 97328a1814f99505399cf21813c5945d24116e98
+  variant: request
+  context: oracle
+  context_files:
+  - README.md
+  - harness/commands/discover.py
+  - harness/commands/loop.py
+  - harness/heartbeat.py
+  - harness/live_audit.py
+  - harness/memory_store/__init__.py
+  - harness/memory_store/revisit.py
+  fail_to_pass:
+  - tests/test_inventory_heartbeat_972.py::test_each_repair_step_marks_its_own_key_from_when_it_began[reopened_past_screen]
+  - tests/test_loop_revisit_1055.py::test_one_loop_discover_step_reopens_a_met_cases_until_to_the_measure_queue
+  - tests/test_revisit_tier_1060.py::test_a_cases_decline_at_adopt_reopens_to_the_measure_queue_for_a_model_and_a_method
+  - tests/test_revisit_tier_1060.py::test_a_reopen_for_another_cause_is_not_moved
+  - tests/test_revisit_tier_1060.py::test_a_reopen_that_inspect_has_since_answered_is_not_moved
+  - tests/test_revisit_tier_1060.py::test_each_until_reopens_to_the_tier_it_gates[cases:svg>3-adopt-want0]
+  - tests/test_revisit_tier_1060.py::test_each_until_reopens_to_the_tier_it_gates[ceiling_gb:>60-inspect-want6]
+  - tests/test_revisit_tier_1060.py::test_each_until_reopens_to_the_tier_it_gates[limit:max_tokens.code>4000-adopt-want1]
+  - tests/test_revisit_tier_1060.py::test_each_until_reopens_to_the_tier_it_gates[limit:max_tokens.code>4000-measure-want2]
+  - tests/test_revisit_tier_1060.py::test_each_until_reopens_to_the_tier_it_gates[limit:max_tokens.code>4000-screen-want3]
+  - tests/test_revisit_tier_1060.py::test_each_until_reopens_to_the_tier_it_gates[package:ftfy@diffusers-cuda-adopt-want5]
+  - tests/test_revisit_tier_1060.py::test_each_until_reopens_to_the_tier_it_gates[package:ftfy@diffusers-cuda-screen-want4]
+  - tests/test_revisit_tier_1060.py::test_each_until_reopens_to_the_tier_it_gates[runtime:llamacpp-adopt-want7]
+  - tests/test_revisit_tier_1060.py::test_the_audit_warns_on_a_stranded_reopen_until_the_loop_moves_it_then_fails
+  - tests/test_revisit_tier_1060.py::test_the_discover_step_runs_the_move_before_the_revisit_requeue
+  - tests/test_revisit_tier_1060.py::test_the_loop_moves_an_old_inspect_reopen_on_to_the_measure_queue_once
+  pass_to_pass:
+  - tests/test_inventory_heartbeat_972.py::test_a_backlog_with_no_repair_mark_warns_and_does_not_fail[attachment_by_tag]
+  - tests/test_inventory_heartbeat_972.py::test_a_backlog_with_no_repair_mark_warns_and_does_not_fail[no_ranking_verdict]
+  - tests/test_inventory_heartbeat_972.py::test_a_backlog_with_no_repair_mark_warns_and_does_not_fail[runner_gap_until_current]
+  - tests/test_inventory_heartbeat_972.py::test_a_backlog_with_no_repair_mark_warns_and_does_not_fail[too_big_names_variant]
+  - tests/test_inventory_heartbeat_972.py::test_a_re_read_that_left_cards_unread_marks_nothing
+  - tests/test_inventory_heartbeat_972.py::test_a_requeue_from_code_that_predates_variant_sizing_does_not_fail_the_variant_check
+  - tests/test_inventory_heartbeat_972.py::test_a_row_decided_after_its_repairs_mark_still_only_warns[attachment_by_tag]
+  - tests/test_inventory_heartbeat_972.py::test_a_row_decided_after_its_repairs_mark_still_only_warns[no_ranking_verdict]
+  - tests/test_inventory_heartbeat_972.py::test_a_row_decided_after_its_repairs_mark_still_only_warns[runner_gap_until_current]
+  - tests/test_inventory_heartbeat_972.py::test_a_row_decided_after_its_repairs_mark_still_only_warns[too_big_names_variant]
+  - tests/test_inventory_heartbeat_972.py::test_a_row_decided_before_its_repairs_mark_fails[attachment_by_tag]
+  - tests/test_inventory_heartbeat_972.py::test_a_row_decided_before_its_repairs_mark_fails[no_ranking_verdict]
+  - tests/test_inventory_heartbeat_972.py::test_a_row_decided_before_its_repairs_mark_fails[runner_gap_until_current]
+  - tests/test_inventory_heartbeat_972.py::test_a_row_decided_before_its_repairs_mark_fails[too_big_names_variant]
+  - tests/test_inventory_heartbeat_972.py::test_each_repair_step_marks_its_own_key_from_when_it_began[attachment_by_tag]
+  - tests/test_inventory_heartbeat_972.py::test_each_repair_step_marks_its_own_key_from_when_it_began[no_ranking_verdict]
+  - tests/test_inventory_heartbeat_972.py::test_each_repair_step_marks_its_own_key_from_when_it_began[revisitable]
+  - tests/test_inventory_heartbeat_972.py::test_each_repair_step_marks_its_own_key_from_when_it_began[runner_gap_until_current]
+  - tests/test_inventory_heartbeat_972.py::test_each_repair_step_marks_its_own_key_from_when_it_began[too_big_names_variant]
+  - tests/test_inventory_heartbeat_972.py::test_every_repaired_check_waits_on_a_key_the_next_loop_keeps
+  - tests/test_loop_revisit_1055.py::test_a_re_decline_under_the_same_met_until_is_spent_and_never_reopens_again
+  - tests/test_loop_revisit_1055.py::test_a_reopen_for_another_cause_does_not_spend_the_until
+  - tests/test_loop_revisit_1055.py::test_a_terminal_format_wait_reopens_only_once_a_runner_of_its_lane_reads_it
+  - tests/test_loop_revisit_1055.py::test_every_until_key_is_read_by_until_met_or_names_the_reader_that_handles_it
+  - tests/test_loop_revisit_1055.py::test_the_audit_names_a_spent_until_as_a_warning
+  - tests/test_loop_revisit_1055.py::test_the_audit_warns_on_a_met_until_until_the_loop_requeue_has_run_then_fails
+  - tests/test_loop_revisit_1055.py::test_the_cases_writer_after_a_reopen_counts_the_grown_lane_so_it_is_not_met
+  - tests/test_loop_revisit_1055.py::test_the_discover_step_runs_the_revisit_repair_before_inspect
+  - tests/test_revisit_tier_1060.py::test_a_machine_fact_decline_still_reopens_to_inspect
+attribution:
+  dataset: Claude Code session requests, redacted
+  url: https://github.com/unxmaal/SoHoT/issues/1095
+  license: generated
+  source: claude-code:transcripts
+  revision: 82ea6dc78eb1889c0e2f8b40e602ffc6fb9a3da4
+  item: 'sohot PR #1063'
+  date: '2026-10-20'
+  transform: 'a Claude Code session from the person''s request to just before the agent''s first edit
+    of a file the fix changes (evals/session_cut.py: user turns, assistant text, tool calls, reads and
+    searches kept, large outputs dropped, to a byte budget), redacted by evals/redact.py (secrets, ids,
+    emails, home and volume paths, hosts, IPs, pasted chat, handles, account and person names as typed
+    placeholders) and refused if a fix line or a name-like word is left; linked to the merged commit through
+    a commit hash or PR URL printed by a tool in that request or a Claude-Session trailer; base = fix^;
+    fail_to_pass and pass_to_pass from 2 sandboxed pytest runs per side, as evals/importers/history.py'
+  importer: evals.importers.transcripts
+  session: 893fd0505f5eef9e
+  evidence: pr
+  redactions:
+    account: 2
+    id: 2
+    path: 8

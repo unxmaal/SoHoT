@@ -8,8 +8,8 @@
   "B"
  ],
  "who": {
-  "A": "claude-opus-5-5 subagent, 2026-10-17, read only soh cases labels repo --packets output; #889 mcm-engine and infovore cases: claude-opus-5-5 subagents, 2026-10-22, same packets, ascending order; #1098 mcm-engine and infovore cases: claude-opus-5-5 subagents, 2026-10-22, same packets, ascending order; #1103 cases with the tests-call interface shown: claude-opus-5-5 subagents, 2026-10-22, same packets, ascending order; #1105 cases with tools, CLI options and env vars shown: claude-opus-5-5 subagents, 2026-10-22, same packets, ascending order",
-  "B": "claude-opus-5-5 subagent, 2026-10-17, separate context, same packets, reverse order; #889 mcm-engine and infovore cases: claude-opus-5-5 subagents, 2026-10-22, separate contexts, descending order; #1098 mcm-engine and infovore cases: claude-opus-5-5 subagents, 2026-10-22, separate contexts, descending order; #1103 cases with the tests-call interface shown: claude-opus-5-5 subagents, 2026-10-22, separate contexts, descending order; #1105 cases with tools, CLI options and env vars shown: claude-opus-5-5 subagents, 2026-10-22, separate contexts, descending order"
+  "A": "claude-opus-5-5 subagent, 2026-10-17, read only soh cases labels repo --packets output; #889 mcm-engine and infovore cases: claude-opus-5-5 subagents, 2026-10-22, same packets, ascending order; #1098 mcm-engine and infovore cases: claude-opus-5-5 subagents, 2026-10-22, same packets, ascending order; #1103 cases with the tests-call interface shown: claude-opus-5-5 subagents, 2026-10-22, same packets, ascending order; #1105 cases with tools, CLI options and env vars shown: claude-opus-5-5 subagents, 2026-10-22, same packets, ascending order; #1095 session-cut cases: claude-opus-5-5 subagents, 2026-10-22, packets only, ascending order",
+  "B": "claude-opus-5-5 subagent, 2026-10-17, separate context, same packets, reverse order; #889 mcm-engine and infovore cases: claude-opus-5-5 subagents, 2026-10-22, separate contexts, descending order; #1098 mcm-engine and infovore cases: claude-opus-5-5 subagents, 2026-10-22, separate contexts, descending order; #1103 cases with the tests-call interface shown: claude-opus-5-5 subagents, 2026-10-22, separate contexts, descending order; #1105 cases with tools, CLI options and env vars shown: claude-opus-5-5 subagents, 2026-10-22, separate contexts, descending order; #1095 session-cut cases: claude-opus-5-5 subagents, 2026-10-22, separate contexts, descending order"
  },
  "settled": {},
  "labels": {
@@ -1561,6 +1561,441 @@
     "tests": 2,
     "why": {
      "tests": "Tests reach into the private _trackers attribute and require WeakKeyDictionary garbage-collection eviction, attribute-level delegation, and the exact read-only watermark behaviour of the section the issue calls optional, so many valid per-session designs fail."
+    }
+   }
+  },
+  "mcm-engine-pr138-request": {
+   "A": {
+    "spec": 3,
+    "tests": 3,
+    "why": {
+     "spec": "The prompt only says the agent will start coding #135/#136 after merging #134; neither issue is described, so nothing points at keeping NEGATIVE/ERROR Why/Fix inline in summary mode.",
+     "tests": "The tests assert summary-mode output keeps negative Why/Fix and error root cause/fix, a behaviour the visible prompt never mentions."
+    }
+   },
+   "B": {
+    "spec": 3,
+    "tests": 3,
+    "why": {
+     "spec": "The session ends with merging release PR #134. Issue #136 is only named, never described, so nothing says NEGATIVE/ERROR bodies should stay inline in summary mode.",
+     "tests": "The tests check that NEGATIVE Why/Fix and ERROR root_cause/fix appear in summary search, which the prompt never asks for."
+    }
+   }
+  },
+  "mcm-engine-pr139-request": {
+   "A": {
+    "spec": 3,
+    "tests": 3,
+    "why": {
+     "spec": "Same cut as #138: issues #135/#136 are named but never described, so a match-snippet feature across three search adapters cannot be inferred.",
+     "tests": "The tests require a body-only term to show up in summary output through a length-capped snippet, which the prompt never asks for."
+    }
+   },
+   "B": {
+    "spec": 3,
+    "tests": 3,
+    "why": {
+     "spec": "The session ends with merging release PR #134. Issues #135/#136 are only named, never described, so nothing says the work is a match snippet in summary hits.",
+     "tests": "The tests check that a body-only term appears in summary search via a capped snippet, which the prompt never asks for."
+    }
+   }
+  },
+  "mcm-engine-pr162-request": {
+   "A": {
+    "spec": 2,
+    "tests": 3,
+    "why": {
+     "spec": "The prompt sets the direction (a per-session coverage ledger on SessionTracker for #156) but hides the issue body, so the semantics are unclear: what to record, when residency flips, and whether compaction is signalled.",
+     "tests": "The tests require record_coverage/reconcile_coverage/is_covered with exact dict keys, result_ids as (TYPE, id) tuples, a save_snapshot compaction= kwarg and a reconcile on session_start, none of which the prompt states."
+    }
+   },
+   "B": {
+    "spec": 3,
+    "tests": 3,
+    "why": {
+     "spec": "The #156 issue body is hidden. The prompt only says a per-session coverage ledger belongs on SessionTracker, and never mentions residency, compaction reconciliation, or what an entry should hold.",
+     "tests": "The tests require tracker.coverage, record_coverage/reconcile_coverage/is_covered(require_resident=), set entry keys, (TYPE, id) result tuples and save_snapshot(compaction=True), none of which the prompt specifies."
+    }
+   }
+  },
+  "mcm-engine-pr184-request": {
+   "A": {
+    "spec": 3,
+    "tests": 3,
+    "why": {
+     "spec": "The prompt says only 'ensure I have a safe and viable migration plan, then run it', followed by exploration; nothing calls for a corpus snapshot/census module.",
+     "tests": "The tests require a new mcm_engine.corpus_snapshot module with parse_scroll_page, snapshot and census, plus specific report keys, none of which the prompt asks for."
+    }
+   },
+   "B": {
+    "spec": 3,
+    "tests": 3,
+    "why": {
+     "spec": "'Ensure I have a safe and viable migration plan, then run it' with exploratory greps gives no hint that the deliverable is a corpus-snapshot/census module and CLI.",
+     "tests": "The tests import a new mcm_engine.corpus_snapshot module with parse_scroll_page, snapshot and census and check their exact report shape, none of which the prompt asks for."
+    }
+   }
+  },
+  "sohot-pr1003-request": {
+   "A": {
+    "spec": 1,
+    "tests": 2,
+    "why": {
+     "tests": "The tests require a live_audit.gateway_config(store) function, a 'served_config' key in the audit result, a 'served config <path>' line in report_text, and a single finding naming the path when the file is missing, so many valid fixes fail on names and layout."
+    }
+   },
+   "B": {
+    "spec": 1,
+    "tests": 2,
+    "why": {
+     "tests": "Besides the deploy-config behaviour, the tests require a function named live_audit.gateway_config, a served_config key in the audit result, a 'served config <path>' report line and a single missing-config finding, all names and details the prompt never gives."
+    }
+   }
+  },
+  "sohot-pr1010-request": {
+   "A": {
+    "spec": 2,
+    "tests": 3,
+    "why": {
+     "spec": "The prompt names the symptom (macmon 0.8.2 reads cpu_power 0, zero readings dropped, a 16 kW spike) but not the remedy; marking a day partial, giving a lower bound, using a ceiling and detecting the version are all left open.",
+     "tests": "The tests pin exact messages ('macmon exited 1', 'macmon printed no JSON', 'energy PARTIAL, at least ... without the CPU (CPU read 0 W on 60 of 60 samples'), partial_why/macmon_version names, a 0.9 share threshold and a 480 W ceiling, none of which the prompt asks for."
+    }
+   },
+   "B": {
+    "spec": 2,
+    "tests": 3,
+    "why": {
+     "spec": "The issue text is hidden. The snapshot names the symptoms (macmon 0.8.2 reads cpu_power 0, zero readings dropped, a 16 kW spike), but the remedy is open: partial days with lower bounds, a ceiling, version detection.",
+     "tests": "The tests pin exact messages ('macmon exited 1', 'macmon printed no JSON', 'PARTIAL, at least ... without the CPU'), a 0.9 share threshold, a macmon_version() helper with CLI plumbing and an 'SoC power (CPU, GPU, ANE)' scope line, none of which the prompt asks for."
+    }
+   }
+  },
+  "sohot-pr1026-request": {
+   "A": {
+    "spec": 2,
+    "tests": 3,
+    "why": {
+     "spec": "The user message is unrelated and the #1018 issue is never shown; that an hf-ocr model should load at its snapshot's declared dtype can only be inferred from the worktree name and the files the session read.",
+     "tests": "The tests require hf_task.model_dtype(..., forced=), a DTYPES tuple, a dtype= spec option and --dtype CLI flag, and a dtype key in the runtime file, none of which the prompt specifies."
+    }
+   },
+   "B": {
+    "spec": 2,
+    "tests": 3,
+    "why": {
+     "spec": "The issue body is hidden. The session shows only a dtype grep, the #1013 diffusers dtype tests and 'torch_device gets a generic snapshot reader', so loading at the declared dtype can be guessed but the scope cannot be known.",
+     "tests": "Beyond declared-dtype loading, the tests require a dtype= spec option, a --dtype CLI with choices, hf_task.model_dtype(forced=), td.snapshot(revision=) and a dtype key in the runtime file, none of which the prompt asks for."
+    }
+   }
+  },
+  "sohot-pr1029-request": {
+   "A": {
+    "spec": 3,
+    "tests": 3,
+    "why": {
+     "spec": "The session is heading to the #1018 dtype edit in hf_task, but the reference fix is #1025 (trocr tokenizer, protobuf/tiktoken gap), which the prompt never mentions.",
+     "tests": "The tests check protobuf pins, _tokenizer raising ModuleNotFoundError for google.protobuf/tiktoken, and exit-4 classification, all unrelated to the prompt's dtype work."
+    }
+   },
+   "B": {
+    "spec": 3,
+    "tests": 3,
+    "why": {
+     "spec": "The session ends with 'Now hf_task' in the #1018 dtype work, but the fix is #1025 (trocr tokenizer protobuf gap and PROTOBUF_PIN), which the prompt never describes.",
+     "tests": "The tests require hf_task._named_tokenizer, protobuf-before-tiktoken gap naming and a PROTOBUF_PIN, none of which the prompt asks for."
+    }
+   }
+  },
+  "sohot-pr1033-request": {
+   "A": {
+    "spec": 3,
+    "tests": 3,
+    "why": {
+     "spec": "The prompt continues the #1018 dtype work; the reference fix is #1027 (prune RUNNER_PACKAGES and pin scipy/torchsde/timm/tiktoken), which nothing in the prompt mentions.",
+     "tests": "The tests assert specific packages are pinned or dropped from reasons.RUNNER_PACKAGES, which the prompt never asks for."
+    }
+   },
+   "B": {
+    "spec": 3,
+    "tests": 3,
+    "why": {
+     "spec": "The session is the #1018 hf-ocr dtype change (already editing torch_device and hf_task), while the fix is #1027 (pinning scipy/torchsde/timm/tiktoken and pruning RUNNER_PACKAGES), which the prompt never mentions.",
+     "tests": "The tests check specific venv pins and removal of cv2/einops/peft and others from RUNNER_PACKAGES, which the prompt does not ask for at all."
+    }
+   }
+  },
+  "sohot-pr1035-request": {
+   "A": {
+    "spec": 3,
+    "tests": 3,
+    "why": {
+     "spec": "The prompt is mid-#1021 (stt processor classification, then screen.load_until and whisper routing); the reference fix is #1030 (the audio server env and the soundfile pin), which is never mentioned.",
+     "tests": "The tests require runner_gaps.AUDIO_ENV, audio-head venv_of mapping, service-script pin parsing and a soundfile --with pin, none of which the prompt asks for."
+    }
+   },
+   "B": {
+    "spec": 3,
+    "tests": 3,
+    "why": {
+     "spec": "The session is #1021 work (llama-server load failures and whisper routing, last line 'Now screen.load_until and the whisper routing'), while the fix is #1030 (audio server env and soundfile pin), which the prompt never raises.",
+     "tests": "The tests require runner_gaps.AUDIO_ENV, an audio-server venv_of mapping and a SOUNDFILE_PIN in serve-tts.sh, none of which the prompt asks for."
+    }
+   }
+  },
+  "sohot-pr1038-request": {
+   "A": {
+    "spec": 3,
+    "tests": 3,
+    "why": {
+     "spec": "The prompt is about #1024 (the unmeetable package:mlx-whisper until); the reference fix is #1032 (a venv drift inventory plus rebuild-from-empty venv scripts), which the prompt never mentions.",
+     "tests": "The tests require a new harness.venv_drift module, a venv_matches_script audit check and uv venv --clear in the scripts, all unrelated to the visible prompt."
+    }
+   },
+   "B": {
+    "spec": 3,
+    "tests": 3,
+    "why": {
+     "spec": "The prompt asks for issue #1024 (the package:mlx-whisper until never met under the uv whisper group), but the reference fix is #1032 venv drift and --clear rebuilds, which nothing in the session mentions.",
+     "tests": "The tests import a new harness.venv_drift module and check a venv_matches_script audit inventory plus --clear rebuild behaviour, none of which the prompt asks for."
+    }
+   }
+  },
+  "sohot-pr1042-request": {
+   "A": {
+    "spec": 3,
+    "tests": 3,
+    "why": {
+     "spec": "The prompt is a cut session working on #1018 OCR model dtypes (torch_device.snapshot, hf_task.model_dtype); nothing in it points at the nimble and decider venv drift and rebuild work the reference fix does.",
+     "tests": "The hidden tests check runner_gaps._CHECKOUT_VENVS, venv_drift.checkouts and the nimble/decider rebuild stamps, which the prompt never asks for."
+    }
+   },
+   "B": {
+    "spec": 3,
+    "tests": 3,
+    "why": {
+     "spec": "The session is the same #1018 OCR dtype work, while the reference fix is the #1037 nimble/decider venv drift and rebuild change.",
+     "tests": "The tests require _CHECKOUT_VENVS, venv_drift.checkouts, DECIDER_VENV_PINS and a HUGGINGFACE_HUB_PIN, which the prompt has no connection to."
+    }
+   }
+  },
+  "sohot-pr1046-request": {
+   "A": {
+    "spec": 3,
+    "tests": 3,
+    "why": {
+     "spec": "The prompt is the same #1018 OCR dtype session; it says nothing about misaki, spaCy or en_core_web_sm in the TTS server env.",
+     "tests": "The tests check SPACY_PIN, EN_CORE_WEB_SM_PIN, a serve-tts.sh --check mode and a smoke.sh line, none of which the prompt asks for."
+    }
+   },
+   "B": {
+    "spec": 3,
+    "tests": 3,
+    "why": {
+     "spec": "The session is implementing #1018 OCR dtype handling, while the reference fix adds spaCy pins and a serve-tts --check for #1045.",
+     "tests": "The tests check SPACY_PIN, EN_CORE_WEB_SM_PIN and a serve-tts.sh --check mode that the prompt never mentions."
+    }
+   }
+  },
+  "sohot-pr1051-request": {
+   "A": {
+    "spec": 3,
+    "tests": 3,
+    "why": {
+     "spec": "The session is fixing #1021 (stt whisper routing, the llama.cpp alias classifier); the reference fix is #1049's lane_too_small and undecidable-plan logic, which it never mentions.",
+     "tests": "The tests check power.Plan.max_power, power.undecidable, adopt.lane_limit, coherence.lane_bound and measure skipping a plan at power 0, all unrelated to the prompt."
+    }
+   },
+   "B": {
+    "spec": 3,
+    "tests": 3,
+    "why": {
+     "spec": "The session is mid-way through #1021 stt/whisper routing edits, while the reference fix is the unrelated #1049 lane-too-small and undecidable-plan change.",
+     "tests": "The tests check Plan.max_power, power.undecidable, adopt.lane_limit and coherence.lane_bound, none of which relate to the session's change."
+    }
+   }
+  },
+  "sohot-pr1054-request": {
+   "A": {
+    "spec": 2,
+    "tests": 2,
+    "why": {
+     "spec": "The assistant says it found a bug in coherence --apply but never states it; the reader has to work out from cases:svg>643 against cases:svg>3 that the until counts the grown lane, and nothing says whether untils already written should be repaired too.",
+     "tests": "The tests call a new adopt.decided_cases with exact inference numbers (30 holdout cases giving 100, a clamp to the lane size now) and a 3-sigma past_growth repair of existing untils, details the prompt never fixes."
+    }
+   },
+   "B": {
+    "spec": 2,
+    "tests": 3,
+    "why": {
+     "spec": "The session only notices cases:svg>643 against cases:svg>3 and says it will file a bug; the rule for counting the lane at decision time is never stated.",
+     "tests": "The tests pin a decided_cases helper with specific arithmetic (ceil of held/FRACTION, a min-split threshold, clamping) and a past_growth correction the prompt never describes."
+    }
+   }
+  },
+  "sohot-pr1063-request": {
+   "A": {
+    "spec": 2,
+    "tests": 3,
+    "why": {
+     "spec": "The session queries retractions, survivors and measurable and then says 'write the code in revisit.py' without saying what the change is; a guess that met cases or limit untils past the screen should reopen to measure is possible but unconfirmed.",
+     "tests": "Beyond reopens_to, the tests require a loop step _move_past_screen, ms.reopened_too_far and requeue_reopened_too_far, a heartbeat key MOVED_PAST_SCREEN and a live_audit check reopened_past_screen, none of which the prompt asks for."
+    }
+   },
+   "B": {
+    "spec": 2,
+    "tests": 3,
+    "why": {
+     "spec": "The issue (#1060) is cut from the session; only the store queries hint that met cases/limit untils should reopen past the screen, and the migration of old reopens and the audit check are not stated.",
+     "tests": "The tests require reopens_to, reopened_too_far, requeue_reopened_too_far, loop._move_past_screen, live_audit._reopened_past_screen and a heartbeat key, all invented names."
+    }
+   }
+  },
+  "sohot-pr1081-request": {
+   "A": {
+    "spec": 0,
+    "tests": 0,
+    "why": {}
+   },
+   "B": {
+    "spec": 0,
+    "tests": 0,
+    "why": {}
+   }
+  },
+  "sohot-pr1101-request": {
+   "A": {
+    "spec": 2,
+    "tests": 3,
+    "why": {
+     "spec": "The prompt asks for a digest over the transitive closure of repo-internal imports and says to red-proof 'both tests from the issue', but the issue body is not shown and the session's own prototype found a whole-module closure reaches 233 modules, so what to count is unclear.",
+     "tests": "The tests require name-level reachability (an import inside an unused function and an edit to an unused checker must not move the digest), which a plain import closure as the prompt states would fail, plus exact API details: root=/registry= kwargs, a {modules, names} return, 'evals.core:_check_code' keys and an exam grader_modules field."
+    }
+   },
+   "B": {
+    "spec": 2,
+    "tests": 3,
+    "why": {
+     "spec": "'Transitive closure of repo-internal imports' reads as module-level, but the agent's own prototype shows that pulls in 233 modules, and the intended statement-level reachability is never stated.",
+     "tests": "The tests need a new grader_digest(root=, registry=) signature returning {modules, names}, a grader_modules receipt key, and name-level reachability (editing other_lane or aside must not move the digest), which reject a plain import closure."
+    }
+   }
+  },
+  "sohot-pr861-request": {
+   "A": {
+    "spec": 1,
+    "tests": 0,
+    "why": {}
+   },
+   "B": {
+    "spec": 1,
+    "tests": 0,
+    "why": {}
+   }
+  },
+  "sohot-pr862-request": {
+   "A": {
+    "spec": 2,
+    "tests": 2,
+    "why": {
+     "spec": "The goal (alternate incumbent and challenger case by case so an early pause has paired cells) is visible, but most of the red test is cut and the blocking policy (when to block, the block size, ds4 staying candidate-major, one warm per block) is never stated.",
+     "tests": "The tests pin pair_block's home= injection and its (base, model, cap) tuple, PAIR_BLOCK, and paired_segments(order, rest, block) returning merged (index, cases) pairs, so many reasonable interleavings fail."
+    }
+   },
+   "B": {
+    "spec": 2,
+    "tests": 2,
+    "why": {
+     "spec": "The visible test file is truncated after its first test, so the block rule (router capacity, PAIR_BLOCK, ds4 staying candidate-major) and the paired_segments contract are unknown.",
+     "tests": "Unit tests call pair_block(..., home=) with 3-tuples and check paired_segments' exact merged output and warm counts per block, which most other designs would fail."
+    }
+   }
+  },
+  "sohot-pr883-request": {
+   "A": {
+    "spec": 2,
+    "tests": 2,
+    "why": {
+     "spec": "The METRIC_DIRECTION gap is plain from the red test, but the second half (keep Python warnings out of screen verdict detail) appears only as a cut report_error line, with no word on whether a run that has a receipt keeps any stderr.",
+     "tests": "Two graded tests import a new harness.commands.screen.screen_detail(why, stderr, summary) and assert its exact ' || ' joined output, a name and format the prompt never gives."
+    }
+   },
+   "B": {
+    "spec": 1,
+    "tests": 2,
+    "why": {
+     "tests": "Two graded tests import a screen_detail(why, stderr, summary) helper and require that a run with a receipt records no stderr at all; neither the name nor that rule appears in the prompt."
+    }
+   }
+  },
+  "sohot-pr927-request": {
+   "A": {
+    "spec": 2,
+    "tests": 3,
+    "why": {
+     "spec": "A cut add_knowledge note says screenable_backlog reads memory at fetch time and lets a memory-deferred candidate hold the backlog; what the fix should do beyond that is never stated.",
+     "tests": "The tests also require a memory_deferrals(conn, name) helper and that the screen stops writing a verdict after 3 same-need deferrals, a policy the prompt never asks for."
+    }
+   },
+   "B": {
+    "spec": 2,
+    "tests": 3,
+    "why": {
+     "spec": "The issue text is cut, and the KB note only says screenable_backlog reads memory at the wrong time; the deferral-streak rule and the slot accounting cannot be derived.",
+     "tests": "The tests pin a memory_deferrals(conn, name) -> (streak, need) helper, a threshold of 3 same-need deferrals that stops writing verdicts, and a deferred= kwarg the prompt never mentions."
+    }
+   }
+  },
+  "sohot-pr933-request": {
+   "A": {
+    "spec": 3,
+    "tests": 3,
+    "why": {
+     "spec": "The session writes an issue-scrutiny skill and files audit issues #918 to #926; it is not heading toward any code change, let alone room_gb untils.",
+     "tests": "The tests check revisit.UNTIL, a room_gb until key, memory.wait_for and memory.room_gb, all absent from the prompt."
+    }
+   },
+   "B": {
+    "spec": 3,
+    "tests": 3,
+    "why": {
+     "spec": "The session writes a skill and files audit issues; nothing in it points at the #928 until-key change.",
+     "tests": "The tests require revisit.UNTIL, memory.need_gb, memory.wait_for and a room_gb key, none of which the prompt mentions."
+    }
+   }
+  },
+  "sohot-pr957-request": {
+   "A": {
+    "spec": 3,
+    "tests": 3,
+    "why": {
+     "spec": "The prompt is a blind failure-labelling task over a packet; it says nothing about retire_unlisted or weights a parent no longer ranks.",
+     "tests": "The tests check retire_unlisted returning weights to inspect, ms.UNRANKED, loop._reopen_unranked and a no_ranking_verdict audit check, all unrelated to the prompt."
+    }
+   },
+   "B": {
+    "spec": 3,
+    "tests": 3,
+    "why": {
+     "spec": "The prompt is a blind labelling task over benchmark rows; nothing in it concerns retire_unlisted or the #954 ranking fix.",
+     "tests": "The tests need requeue_unranked, unranked_terminal, a no_ranking_verdict audit check and a loop step, all invisible to the prompt."
+    }
+   }
+  },
+  "sohot-pr966-request": {
+   "A": {
+    "spec": 3,
+    "tests": 3,
+    "why": {
+     "spec": "The session is a read-only issue-scrutiny pass over #947 to #949 that is told not to write code, so no code change follows from it; the #964 listing-size refactor is not asked for.",
+     "tests": "The tests check hf_facts ceiling/machine kwargs, a ceiling key in the cache entry, card_description sizing and a listing_sums gauntlet scanner, none of which the prompt asks for."
+    }
+   },
+   "B": {
+    "spec": 3,
+    "tests": 3,
+    "why": {
+     "spec": "The session is a read-only issue-scrutiny task that says 'Do not write code', so it points at no code change, let alone the #964 listing-size refactor.",
+     "tests": "The tests check a cache 'ceiling' key, new ceiling/machine kwargs on hf_facts and card_description, and a repo-wide scanner, none of which the prompt asks for."
     }
    }
   }

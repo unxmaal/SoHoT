@@ -1,0 +1,277 @@
+# Claude Code session requests, redacted, generated (https://github.com/unxmaal/SoHoT/issues/1095).
+# Imported by evals/importers from claude-code:transcripts@82ea6dc78eb1889c0e2f8b40e602ffc6fb9a3da4; re-import, do not edit.
+id: sohot-pr927-request
+modality: repo
+prompt: "Below is a Claude Code session, cut just before the agent's first edit to the code. Make the\
+  \ change the session is heading toward.\n\n## user\nHow was last night’s discovery?\n\n[... 13 earlier\
+  \ entries not shown ...]\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-910 && sed -n 360,520p\
+  \ harness/memory.py; grep -n \"def _screen_plan\" -A40 harness/commands/screen.py\n<persisted-output>\n\
+  Output too large (8.7KB). Full output saved to: <PATH_HOME>/.claude/projects/-Users-<ACCOUNT_1>-projects/<ID_1>/tool-results/bfbue1bwl.txt\n\
+  \nPreview (first 2KB):\n            for line in fh:\n                if line.startswith(\"MemAvailable:\"\
+  ):\n                    return int(line.split()[1]) / 1024**2\n    except (OSError, ValueError, IndexError):\n\
+  \        pass\n    return 0.0\n\n\n#: A measured margin below this is more likely noise than a safe\
+  \ reserve.\nMIN_RESERVE_GB = 1.0\n\n\ndef measured_reserve_gb(conn=None) -> float:\n    \"\"\"The largest\
+  \ margin `lh memory ramp` stored for this machine, else the\n    default FOR THE ACCELERATOR IT IS BUDGETING\
+  \ FOR. #299, #415, #788.\n\n    The fallback used to be DEFAULT_RESERVE_GB whatever the hardware was.\
+  \ That\n    is the unified figure, right where the GPU draws from system RAM and 6 GiB\n    belongs\
+  \ to the OS. On a discrete card it reserved half a 12 GiB card: the\n    planner budgeted 5.99 GiB,\
+  \ refused a 14B whose weights and KV fit the card\n    with room, and cost a 7B its eighth slot, which\
+  \ is the measured knee in KB\n    #367. reserve_for() already made this distinction; nothing asked it.\n\
+  \    \"\"\"\n    from harness import memory_store as ms\n    from harness import ramp, runs\n    default\
+  \ = reserve_for(detect())\n    try:\n        with runs.store(conn) as c:\n            margins = [r.get(\"\
+  margin_gb\") for r in\n                       ramp.runs(c, ms.machine_row(c))]\n    except Exception:\
+  \  # noqa: BLE001 - the guard\n[... 723 more bytes]\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-910\
+  \ && sed -n 400,520p harness/memory.py\n\"\"\"\n    from harness import candidates, runs\n    with runs.store(conn)\
+  \ as c:\n        key = candidates.key_for(c, spec)\n        best = runs.peak_kb(c, key, runs.here(c))\
+  \ if key else 0\n    return best / 1024 ** 2 if best else None\n\n\ndef fits(need_gb: float, available_gb:\
+  \ float, ceiling_gb: float,\n         resident_gb: float = 0.0,\n         reserve_gb: float = DEFAULT_RESERVE_GB)\
+  \ -> tuple[bool, str]:\n    \"\"\"Can `need_gb` of weights be loaded without taking the machine down?\n\
+  \n    `resident_gb` is what a hot-swapping server may still be holding. Budgeting\n    as if only one\
+  \ model is resident is exactly how this went wrong.\n    \"\"\"\n    budget = min(available_gb, ceiling_gb)\
+  \ - reserve_gb - resident_gb\n    if need_gb > budget:\n        return False, (\n            f\"needs\
+  \ {need_gb:.1f} GB but only {budget:.1f} GB is safely \"\n            f\"available ({available_gb:.1f}\
+  \ GB free, {ceiling_gb:.1f} GB GPU \"\n            f\"ceiling, {reserve_gb:.1f} GB reserved for the\
+  \ system\"\n            + (f\", {resident_gb:.1f} GB still resident\" if resident_gb else \"\")\n  \
+  \          + \")\")\n    return True, f\"{need_gb:.1f} GB into {budget:.1f} GB\"\n\n\ndef cache_path(repo:\
+  \ str) -> str | None:\n    \"\"\"Where this repo's recorded download is, or None if none is. #411.\"\
+  \"\"\n    from harness import downloads\n    found = downloads.path_of(repo)\n    return str(found)\
+  \ if found else None\n\n\ndef size_gb(path: str) -> float | None:\n    \"\"\"Weight size on disk: the\
+  \ best estimate of load cost, and free to get.\n\n    None when\n[... 3603 more bytes]\n\n## tool Bash\n\
+  $ cd ~/projects/github/unxmaal/sohot-910 && sed -n 255,300p harness/reasons.py; grep -rn \"QUEUED\"\
+  \ harness --include='*.py' | head -20\nif low.startswith(\"dead\") or low.startswith(\"404\") \\\n \
+  \               or \"not found\" in low or \"gone\" in low:\n            return UPSTREAM\n        if\
+  \ \"no measured size\" in low or \"no runner in the\" in low:\n            return HARNESS\n        if\
+  \ \"past its\" in low and \"budget\" in low or \" gib cap\" in low:\n            return LIMIT\n    \
+  \    if low.startswith((\"fits\", \"no-entry-point\", \"unknown\", \"bytes=\",\n                   \
+  \        \"downloaded\")) or \"attaches to a model\" in low \\\n                or outcome == \"ignored\"\
+  :\n            return CANDIDATE\n        return \"\"\n    if tier in (\"judge\", \"adopt\"):\n     \
+  \   if low.startswith(\"not measured:\"):\n            return HARNESS\n        return CANDIDATE\n  \
+  \  if low.startswith(\"not screened:\") and \"safely available\" in low:\n        return MEMORY\n  \
+  \  if \"spent the whole\" in low and \"budget\" in low:\n        return LIMIT\n    if \"timed out after\"\
+  \ in low:\n        return LIMIT\n    if low.startswith(\"the installed runtime could not load it\")\
+  \ \\\n            or low.startswith(\"needs its own runner\") \\\n            or low.startswith(\"the\
+  \ mps backend aborted\"):\n        return RUNTIME\n    if _any(low, _GPU_FAULT) or \"[metal]\" in low:\n\
+  \        return MACHINE\n    if low.startswith(\"it ran and passed nothing\"):\n        head = low.split(\"\
+  ||\", 1)[0]\n        return HARNESS if (_any(head, _SERVER_DEAD) or _any(head, _GATEWAY)\n         \
+  \                  or _any(head, _HARNESS)) else CANDIDATE\n    if low.startswith(\"not screened:\"\
+  ) or low.startswith(\"not measured:\")\n[... 749 more bytes]\n\n## tool mcp__mcm-engine__search\n{\"\
+  query\": \"screenable_backlog\"}\n[198 bytes of output not shown]\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-910\
+  \ && sed -n 170,300p harness/commands/screen.py\ndef _without_warnings(stderr: str) -> str:\n    \"\"\
+  \"stderr less Python warnings and the source line each one quotes. #879.\"\"\"\n    kept, skip = [],\
+  \ False\n    for line in (stderr or \"\").splitlines():\n        if _PY_WARNING.match(line):\n     \
+  \       skip = True\n            continue\n        if skip and line[:1].isspace():\n            skip\
+  \ = False\n            continue\n        skip = False\n        kept.append(line)\n    return \"\\n\"\
+  .join(kept)\n\n\ndef screen_detail(why: str, stderr: str, summary) -> str:\n    \"\"\"A screen verdict's\
+  \ detail: the receipt is the evidence when there is one, else the stderr tail less warnings. #281, #879.\"\
+  \"\"\n    if summary is not None:\n        return why[:600]\n    evidence = \" \".join(_without_warnings(stderr).split())[-300:]\n\
+  \    return (f\"{why} || {evidence}\" if evidence else why)[:600]\n\n\ndef _report_screen(a) -> int:\n\
+  \    \"\"\"Run the cheapest real thing, and record whether it ran at all. #53.\n\n    SAYS WHAT IT WOULD\
+  \ DO AND STOPS, unless told otherwise. `--run` is the same\n    convention `lh fetch` uses, and for\
+  \ the same reason: this is the first tier\n    that spends real time and real memory, and one that starts\
+  \ doing so because\n    something ranked well is how a laptop ends up unusable overnight.\n    \"\"\"\
+  \n    import subprocess\n\n    from harness import candidates, heartbeat, rank, router, screen\n   \
+  \ from harness import memory_store as ms\n\n    want = (getattr(a, \"lane\", \"\") or \"\").strip().lower()\n\
+  \    full = _screen_plan(want)\n    if not full:\n        print(\"nothing\n[... 5072 more bytes]\n\n\
+  ## tool ToolSearch\n{\"query\": \"select:mcp__mcm-engine__add_knowledge\", \"max_results\": 1}\n\n\n\
+  ## tool mcp__mcm-engine__add_knowledge\n{\"topic\": \"sohot-910-backpressure-room-race\", \"summary\"\
+  : \"sohot #910 root cause: screenable_backlog (harness/commands/screen.py) already filters by memory.check_model,\
+  \ but it reads memory at fetch\n[... 527 more bytes]\n[690 bytes of output not shown]\n\n## tool mcp__mcm-engine__search\n\
+  {\"query\": \"screen_plan\"}\n[23994 bytes of output not shown]\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-910\
+  \ && grep -n \"def _screen_plan\" -A30 harness/commands/screen.py; grep -n \"def plan\\b\\|def plan(\"\
+  \ -A50 harness/screen.py | head -90\n110:def _screen_plan(want: str) -> list[dict]:\n111-    from harness\
+  \ import rank, screen\n112-    from harness import memory_store as ms\n113-    store = ms.connect()\n\
+  114-    try:\n115-        # THE SAME DEFECT AS _report_queue, at the tier that actually runs the\n116-\
+  \        # model. `--top 2` sampled 8 rows of 114 and filtered those, so the\n117-        # loop fetched\
+  \ two image models and then said \"nothing queued to\n118-        # screen\". Issue #209.\n119-    \
+  \    rows, _ = loop_cmd._queueable(store, want)\n120-        # The same store as the fetch's ranking,\
+  \ so both tiers order by one key. #275, #881.\n121-        ranked = rank.rank(rows, serving=rank.serving(),\n\
+  122-                           measured_lanes=rank.lanes_with_receipts(store), conn=store)\n123-   \
+  \ finally:\n124-        store.close()\n125-    return screen.plan(ranked)\n126-\n127-\n128-def screenable_backlog(want:\
+  \ str = \"\", plan=None, room=None) -> list[str]:\n129-    \"\"\"On disk, runnable, and fitting in memory\
+  \ now: what a fetch would queue behind. #396.\"\"\"\n130-    from harness import screen\n131-    plan\
+  \ = _screen_plan(want) if plan is None else plan\n132-    from harness import methods\n133-    # One\
+  \ screen request's KV beside the weights, where config.json gives a shape. #699.\n134-    room = room\
+  \ or (lambda r: memory.check_model(r[\"name\"], spec=r[\"candidate\"], parallel=1)[0])\n135-    # A\
+  \ method crossing downloads nothing, so no download waits behind it. #576.\n136-    return [r[\"name\"\
+  ] for r in plan if r[\"state\"] ==\n[... 2911 more bytes]\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-910\
+  \ && grep -rn \"memory_gb\" harness --include='*.py' | head -20\nharness/screen.py:568:    elif cls\
+  \ == reasons.GPU_FAULT and (facts or {}).get(\"memory_gb\"):\nharness/screen.py:569:        until =\
+  \ f\"memory_gb:>{float(facts['memory_gb']):.0f}\"\nharness/ramp.py:39:        total = memory._unified_total_gb()\
+  \ or memory.system_memory_gb()\nharness/memory.py:127:def system_memory_gb() -> float:\nharness/memory.py:289:\
+  \    ram = system_memory_gb()\nharness/memory.py:300:    return system_memory_gb()\nharness/memory.py:311:\
+  \    return system_memory_gb() * GPU_FRACTION\nharness/memory_store/migrations/legacy.py:108:      \
+  \          \"last_seen = ?, memory_gb = ?, accelerator = ?, runtimes = ?, \"\nharness/memory_store/migrations/legacy.py:111:\
+  \                 recent[0][\"last_seen\"], latest(\"memory_gb\"),\nharness/memory_store/machines.py:56:\
+  \            \"memory_gb\": float(env.get(\"memory_gb\") or 0),\nharness/memory_store/machines.py:65:\
+  \        got = {\"hw_model\": \"\", \"os\": \"\", \"arch\": \"\", \"host\": \"\", \"memory_gb\": 0.0,\n\
+  harness/memory_store/machines.py:106:               \"ceiling_gb = excluded.ceiling_gb, memory_gb =\
+  \ excluded.memory_gb, \"\nharness/memory_store/machines.py:111:        \"INSERT INTO machines (fingerprint,\
+  \ hw_model, os, arch, memory_gb, \"\nharness/memory_store/machines.py:116:         facts.get(\"arch\"\
+  , \"\"), facts.get(\"memory_gb\", 0.0),\nharness/memory_store/revisit.py:75:        memory_gb:><n> \
+  \    the machine holds more than n GB\nharness/memory_store/revisit.py:92:    if key in (\"memory_gb\"\
+  , \"ceiling_gb\") and want.startswith(\">\"):\n[... 361 more bytes]\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-910\
+  \ && sed -n 55,140p harness/memory_store/revisit.py; grep -rn \"def decide_or_skip\" -A30 harness/memory_store/*.py\
+  \ | head -50\nfrom harness import paths\n\n    raw = (run_path or \"\").strip()\n    if not raw:\n \
+  \       return []\n    if Path(raw).is_absolute():\n        return [raw]\n    return [raw, str(paths.home()\
+  \ / raw)]\n\n\ndef until_met(until: str, facts: dict | None = None) -> bool:\n    \"\"\"Whether `facts`\
+  \ satisfies the condition a verdict is waiting on.\n\n    A PREDICATE, NOT A SENTENCE. The whole point\
+  \ of #266 is that a machine\n    fact buried in prose cannot be queried, so writing the condition as\
+  \ prose\n    would move the defect rather than fix it.\n\n    Five forms, which is all the real rows\
+  \ need:\n        runtime:<name>     the machine has that runtime\n        version:<pkg>><v>  the installed\
+  \ <pkg> is newer than v (#293)\n        memory_gb:><n>     the machine holds more than n GB\n      \
+  \  ceiling_gb:><n>    the machine will load weights larger than n GiB\n        commit_after:<iso> the\
+  \ candidate's upstream has committed since\n\n    THE FIRST THREE ARE ABOUT THE MACHINE AND THE FOURTH\
+  \ IS NOT, which is why\n    `facts` is a plain dict rather than a Machine: a verdict waits on whatever\n\
+  \    would change it, and `dead` waits on somebody else's repository.\n    An unrecognised condition\
+  \ is NOT met, so a typo leaves the verdict\n    standing rather than silently re-queueing everything.\n\
+  \    \"\"\"\n    if not until:\n        return False\n    facts = facts if facts is not None else ms.this_machine()\n\
+  \    key, _, want = until.partition(\":\")\n    if key == \"runtime\":\n        have = (facts.get(\"\
+  runtimes\") or \"\").split(\",\")\n   \n[... 4968 more bytes]\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-910\
+  \ && grep -n \"def _queueable\" -A40 harness/commands/loop.py; grep -rn \"until_met\" harness --include='*.py'\
+  \ | grep -v \"def until_met\" | head\n10:def _queueable(store, want: str = \"\") -> tuple[list[dict],\
+  \ int]:\n11-    \"\"\"The waiting candidates in scope, and how many there are.\n12-\n13-    SCOPE FIRST,\
+  \ THEN LIMIT. cmd_queue used to fetch `top * 4` rows and filter\n14-    those, so `--lane` did not scope\
+  \ the queue: it sampled the backlog in\n15-    whatever order the store returned it and kept whatever\
+  \ matched. At the\n16-    default --top 25 the sample is 100 of 114 and the defect is invisible; at\n\
+  17-    --top 2 it is 8, and the image lane reported empty while holding five\n18-    candidates. A narrow\
+  \ budget is exactly when the scope matters most, and it\n19-    was where the sampling bit hardest.\
+  \ Issue #209.\n20-\n21-    The returned count is the in-scope total, because a scoped queue printing\n\
+  22-    \"5 of 114 waiting\" answers a different question with its denominator than\n23-    with its\
+  \ numerator.\n24-    \"\"\"\n25-    from harness import rank\n26-    from harness import memory_store\
+  \ as ms\n27-\n28-    rows = ms.judgeable(store, limit=1_000_000)\n29-    if want:\n30-        rows =\
+  \ [r for r in rows if lanes.serves(rank.lane_of(r), want)]\n31-    return rows, len(rows)\n32-\n33-\n\
+  34-#: The loop, in order: (label, the attribute cmd_discover dispatches on, does\n35-#: it need --run).\
+  \ Sweeping reads feeds and the GitHub API and takes about a\n36-#: minute, which is the \"find what\
+  \ exists\" step and runs either way. INSPECT\n37-#: CLONES SOURCE, measured at over ten minutes across\
+  \ a full queue, so it is\n38-#: gated with the rest: a dry run that\n[... 1412 more bytes]\n\n## tool\
+  \ Bash\n$ cd ~/projects/github/unxmaal/sohot-910 && grep -n \"CREATE TABLE IF NOT EXISTS verdicts\\\
+  |CREATE TABLE verdicts\" -A22 harness/memory_store/schema.py | head -30; grep -rln \"_report_screen\"\
+  \ tests | head; grep -n \"def latest\\|def history\\|def verdicts_for\\|def last_verdict\" harness/memory_store/*.py\n\
+  144:CREATE TABLE IF NOT EXISTS verdicts (\n145-    id          INTEGER PRIMARY KEY,\n146-    -- NULL\
+  \ only for a verdict about a candidate no proposal names. #407.\n147-    proposal_id INTEGER REFERENCES\
+  \ proposals(id) ON DELETE CASCADE,\n148-    outcome     TEXT NOT NULL,\n149-    tier        TEXT NOT\
+  \ NULL DEFAULT '',\n150-    detail      TEXT NOT NULL DEFAULT '',\n151-    run_path    TEXT NOT NULL\
+  \ DEFAULT '',\n152-    score       REAL,\n153-    rubric      TEXT NOT NULL DEFAULT '',\n154-    judge\
+  \       TEXT NOT NULL DEFAULT '',\n155-    decided_at  REAL NOT NULL,\n156-    -- WHERE IT WAS DECIDED.\
+  \ The store is shared across three machines and a\n157-    -- refusal is routinely a fact about ONE\
+  \ of them: `needs-cuda` is true\n158-    -- here and false on the box with the card. This lived in the\
+  \ detail\n159-    -- string as the word `arm64`, which is an architecture rather than a\n160-    --\
+  \ machine and cannot tell the 4070 under Linux from the same 4070 under\n161-    -- Windows -- two rigs\
+  \ this project's own comparable() already refuses to\n162-    -- pool. Issue #266.\n163-    machine_id\
+  \  INTEGER REFERENCES machines(id),\n164-    -- The size this verdict measured; proposals.size_bytes\
+  \ is what readers read. #266, #413.\n165-    size_bytes  INTEGER NOT NULL DEFAULT 0,\n166-    -- DAYS\
+  \ SINCE THE CANDIDATE'S UPSTREAM LAST COMMITTED, at decision time.\ntests/test_liveness_705.py\ntests/test_harness_screen.py\n\
+  tests/test_screen_server_death.py\ntests/test_harness_screen_spec.py\ntests/test_store_state.py\n[...\
+  \ 148 more bytes]\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-910 && sed -n 166,185p harness/memory_store/schema.py;\
+  \ sed -n 195,225p harness/memory_store/proposals.py; grep -n \"reason\" harness/memory_store/schema.py\
+  \ | head -5; sed -n 1,80p tests/test_screen_server_death.py\n-- DAYS SINCE THE CANDIDATE'S UPSTREAM\
+  \ LAST COMMITTED, at decision time.\n    -- Named `stale_days` first, which says nothing about WHOSE\
+  \ staleness and\n    -- was read as the age of our own row -- this project is days old and the\n   \
+  \ -- repos it refuses are years idle. The column exists to hold a number the\n    -- tier only ever\
+  \ formatted: `last commit 2.9 years ago`. 0 means not\n    -- measured. Issue #270.\n    upstream_idle_days\
+  \ REAL NOT NULL DEFAULT 0,\n    -- WHAT WOULD MAKE THIS WORTH ASKING AGAIN, in the machine's terms.\
+  \ A\n    -- ceiling refusal expires when a bigger machine arrives, and until now\n    -- nothing could\
+  \ find those rows: the reason was prose. Same shape as\n    -- lanes.PARKED, which carries (why, until)\
+  \ for a lane and was the only\n    -- place in the project that said out loud what it was waiting for.\n\
+  \    until       TEXT NOT NULL DEFAULT '',\n    candidate_id INTEGER REFERENCES candidates(id),\n  \
+  \  -- A named reopen: the state verdict it overrode, and which kind. #409.\n    reopens     INTEGER\
+  \ REFERENCES verdicts(id),\n    reopen_kind TEXT NOT NULL DEFAULT '',\n    -- The stored run this verdict\
+  \ was read from. run_path is a download dir. #410.\n    run_id      INTEGER REFERENCES runs(id),\n \
+  \   -- WHY, from reasons.REASONS, written by the tier that knows. #408.\n        ORDER BY times DESC,\
+  \ last_seen DESC\n        LIMIT ?\n    \"\"\"\n    return [r[\"name\"] for r in conn.execute(q, args)]\n\
+  \n\ndef latest(conn, name: str) -> dict | None:\n    \"\"\"A name's state and the tier\n[... 4006 more\
+  \ bytes]\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-910 && grep -n \"def machine_row\\|def\
+  \ this_machine\\|def machine_id\" -A12 harness/memory_store/*.py | head -45; grep -n \"^SCREEN\\|^FETCH\"\
+  \ harness/memory_store/*.py; grep -n \"^MEMORY\" harness/reasons.py\nExit code 1\nharness/memory_store/machines.py:23:def\
+  \ this_machine() -> dict:\nharness/memory_store/machines.py-24-    \"\"\"The identity facts a verdict\
+  \ needs to stay re-askable.\nharness/memory_store/machines.py-25-\nharness/memory_store/machines.py-26-\
+  \    IMPORTED LAZILY. evals.environment already computes exactly these for\nharness/memory_store/machines.py-27-\
+  \    receipts and imports harness.memory, so a module-level import here would\nharness/memory_store/machines.py-28-\
+  \    be a cycle -- and writing a second copy is how this repo collected four\nharness/memory_store/machines.py-29-\
+  \    answers to \"which engines exist\" (RULE #237).\nharness/memory_store/machines.py-30-\nharness/memory_store/machines.py-31-\
+  \    The fingerprint is machine.fingerprint: hw_model + OS family + arch + host\nharness/memory_store/machines.py-32-\
+  \    id (#697). Not a hostname, which changes without the machine changing, and not the\nharness/memory_store/machines.py-33-\
+  \    interpreter's platform string, which differs between two venvs on one\nharness/memory_store/machines.py-34-\
+  \    machine (#415). The 4070 under Linux and under Windows are different rigs\nharness/memory_store/machines.py-35-\
+  \    by comparable()'s own definition and keep different fingerprints.\n--\nharness/memory_store/machines.py:141:def\
+  \ machine_row(conn, fingerprint: str | None = None) -> int | None:\nharness/memory_store/machines.py-142-\
+  \    \"\"\"The id stored for a fingerprint (this machine's by default), or None.\"\"\"\n[... 1043 more\
+  \ bytes]\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-910 && sed -n 50,66p harness/memory_store/schema.py;\
+  \ grep -n \"MEMORY *=\" harness/reasons.py; grep -n \"^def decide\" -A6 harness/memory_store/*.py |\
+  \ head; grep -n \"machine_id\" harness/memory_store/verdicts.py 2>/dev/null | head -5; ls harness/memory_store/\n\
+  #: back to the typed constant when nothing has been adopted. See\n#: harness/adopt.py.\nADOPT = \"adopt\"\
+  \n\n\nTIERS = (INSPECT, JUDGE, SCREEN, MEASURE, ADOPT)\n\n\nFETCH = \"fetch\"\n\n\n#: Ladder order:\
+  \ an earlier tier never replaces a later tier's state. #409.\nLADDER = {INSPECT: 0, JUDGE: 1, FETCH:\
+  \ 2, SCREEN: 3, MEASURE: 4, ADOPT: 5}\n\n\n_DDL = \"\"\"\nCREATE TABLE IF NOT EXISTS meta (key TEXT\
+  \ PRIMARY KEY, value TEXT);\nharness/memory_store/transitions.py:182:def decide_or_skip(conn, name:\
+  \ str, outcome: str, **kw) -> int | None:\nharness/memory_store/transitions.py-183-    \"\"\"decide()\
+  \ for a tier loop: a refused move says so and returns None.\"\"\"\nharness/memory_store/transitions.py-184-\
+  \    try:\nharness/memory_store/transitions.py-185-        return ms.decide(conn, name, outcome, **kw)\n\
+  harness/memory_store/transitions.py-186-    except IllegalTransition as exc:\nharness/memory_store/transitions.py-187-\
+  \        print(f\"  skipped {exc}\", flush=True)\nharness/memory_store/transitions.py-188-        return\
+  \ None\n--\nharness/memory_store/transitions.py:217:def decide(conn: sqlite3.Connection, name: str,\
+  \ outcome: str, *, tier: str = \"\",\nharness/memory_store/transitions.py-218-           detail: str\
+  \ = \"\", run_path: str = \"\",\nmigrations/\n__init__.py  4.7K\nbenchmarks.py  3.8K\ncards.py  3.4K\n\
+  connection.py  4.5K\nmachines.py  7.2K\nproposals.py  24.5K\nretests.py  2.9K\nrevisit.py  10.3K\nschema.py\
+  \  32.2K\nsources.py  1.6K\ntransitions.py  12.6K\n\n## tool mcp__mcm-engine__search\n{\"query\": \"\
+  safely available\", \"project\": \"sohot\"}\n[1616 bytes of output not shown]\n\n## tool Bash\n$ cd\
+  \ ~/projects/github/unxmaal/sohot-910 && grep -n \"MEMORY\" harness/reasons.py | head -3; sed -n 217,260p\
+  \ harness/memory_store/transitions.py | grep -n \"machine\" \nExit code 1\n26:CANDIDATE, HARNESS, RUNTIME,\
+  \ MACHINE, MEMORY, LIMIT, UPSTREAM, REOPENED = REASONS\n272:        return MEMORY\n\n## tool Bash\n\
+  $ cd ~/projects/github/unxmaal/sohot-910 && sed -n 1,30p harness/commands/screen.py; grep -n \"knob\\\
+  |KNOBS\" harness/knobs.py | head -5\n\"\"\"`soh fetch` and the screen tier: what to fetch, what fits,\
+  \ and the screen of what arrived.\"\"\"\nfrom __future__ import annotations\n\nimport re\nimport time\n\
+  \nfrom harness import memory, paths, reasons\nfrom harness.commands.common import emit, err, note\n\
+  from harness.commands import loop as loop_cmd\nfrom harness.commands import measure as measure_cmd\n\
+  \n\ndef cmd_fetch(a) -> int:\n    \"\"\"Download what the inspect tier queued. Issue #62.\"\"\"\n  \
+  \  from harness import fetching, inspect as ins\n    from harness import memory_store as ms\n\n    want\
+  \ = (getattr(a, \"lane\", \"\") or \"\").strip().lower()\n    store = ms.connect()\n    try:\n     \
+  \   rows = fetching.queued(store, lane=want)\n        if not rows:\n            note(f\"nothing queued\
+  \ in the {want} lane. \"\n                 f\"`soh discover --inspect` fills the queue.\" if want else\n\
+  \                 \"nothing queued. `soh discover --inspect` fills the queue.\")\n            emit(queued=[],\
+  \ orphans=[])\n            return 0\n        if not a.run:\n            testable = [r for r in rows\
+  \ if r.get(\"lane\")]\n            orphans = [r for r in rows if not r.get(\"lane\")]\ngrep: harness/knobs.py:\
+  \ No such file or directory"
+params:
+  source_repo: https://github.com/unxmaal/SoHoT.git
+  base: 06b06800f2495d049c28250bf8f0a5ca8cdc7edb
+  fix: 25d50741ee92243872ae6de04b9d107ebcbcecf7
+  variant: request
+  context: oracle
+  context_files:
+  - harness/commands/screen.py
+  fail_to_pass:
+  - tests/test_loop_backpressure.py::test_a_long_same_need_deferral_stops_writing_a_verdict_each_night[3-26.5-0]
+  - tests/test_loop_backpressure.py::test_a_memory_deferred_candidate_is_not_backlog
+  - tests/test_loop_backpressure.py::test_a_memory_deferred_leftover_lets_the_ranked_ones_fetch_and_screen[1]
+  - tests/test_loop_backpressure.py::test_a_memory_deferred_leftover_lets_the_ranked_ones_fetch_and_screen[3]
+  - tests/test_loop_backpressure.py::test_the_streak_counts_one_need_only
+  pass_to_pass:
+  - tests/test_loop_backpressure.py::test_a_full_backlog_skips_the_fetch
+  - tests/test_loop_backpressure.py::test_a_long_same_need_deferral_stops_writing_a_verdict_each_night[2-26.5-1]
+  - tests/test_loop_backpressure.py::test_a_long_same_need_deferral_stops_writing_a_verdict_each_night[3-20.0-1]
+  - tests/test_loop_backpressure.py::test_a_memory_deferral_followed_by_another_verdict_is_backlog_again
+  - tests/test_loop_backpressure.py::test_a_short_backlog_still_fetches
+  - tests/test_loop_backpressure.py::test_the_backlog_counts_only_what_the_screen_could_take_now
+attribution:
+  dataset: Claude Code session requests, redacted
+  url: https://github.com/unxmaal/SoHoT/issues/1095
+  license: generated
+  source: claude-code:transcripts
+  revision: 82ea6dc78eb1889c0e2f8b40e602ffc6fb9a3da4
+  item: 'sohot PR #927'
+  date: '2026-10-17'
+  transform: 'a Claude Code session from the person''s request to just before the agent''s first edit
+    of a file the fix changes (evals/session_cut.py: user turns, assistant text, tool calls, reads and
+    searches kept, large outputs dropped, to a byte budget), redacted by evals/redact.py (secrets, ids,
+    emails, home and volume paths, hosts, IPs, pasted chat, handles, account and person names as typed
+    placeholders) and refused if a fix line or a name-like word is left; linked to the merged commit through
+    a commit hash or PR URL printed by a tool in that request or a Claude-Session trailer; base = fix^;
+    fail_to_pass and pass_to_pass from 2 sandboxed pytest runs per side, as evals/importers/history.py'
+  importer: evals.importers.transcripts
+  session: 893fd0505f5eef9e
+  evidence: pr
+  redactions:
+    account: 1
+    id: 1
+    path: 1

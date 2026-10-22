@@ -1,0 +1,183 @@
+# Claude Code session requests, redacted, generated (https://github.com/unxmaal/SoHoT/issues/1095).
+# Imported by evals/importers from claude-code:transcripts@82ea6dc78eb1889c0e2f8b40e602ffc6fb9a3da4; re-import, do not edit.
+id: mcm-engine-pr162-request
+modality: repo
+prompt: "Below is a Claude Code session, cut just before the agent's first edit to the code. Make the\
+  \ change the session is heading toward.\n\n## user\nahhh yeah that. i want to hold off integrating lodestone\
+  \ until this is complete, so proceed through all of these.\n\n## assistant\nProceeding through #156\
+  \ → #160 in build order, each as its own branch+PR, merged when CI is green. Starting with the foundation,\
+  \ #156.\n\n## tool mcp__mcm-engine__search\n{\"query\": \"ledger\"}\n[16616 bytes of output not shown]\n\
+  \n## tool Bash\n$ echo \"=== full #156 ===\" && gh issue view 156 --json body -q .body\n[1483 bytes\
+  \ of output not shown]\n\n## assistant\nThis is a substantial 5-PR effort. Let me map the relevant server\
+  \ internals first (tracker, search path, hooks, compaction) before touching #156. Delegating the survey\
+  \ to keep context clean.\n\n## tool mcp__mcm-engine__read_rule\n{\"rule_id\": \"116\"}\n[241 bytes of\
+  \ output not shown]\n\n## tool Agent\n{\"description\": \"Map tracker/hook/session internals\", \"subagent_type\"\
+  : \"Explore\", \"prompt\": \"Repo: <PATH_HOME>/projects/github/unxmaal/mcm-engine (FastMCP knowledge\
+  \ server, Python under\n[... 2203 more bytes]\n[1061 bytes of output not shown]\n\n## tool mcp__mcm-engine__get_entry\n\
+  {\"entry_id\": 116, \"entity_type\": \"rule\"}\n[3095 bytes of output not shown]\n\n## assistant\nScopedTracker\
+  \ is clear: per-session `SessionTracker` (fields `turn_count, ignored_counts, calls_since, last_store/checkpoint_turn,\
+  \ topic_freq, pending_nudges`), keyed on the FastMCP `ctx.session` via WeakKeyDictionary. The new coverage\
+  \ ledger is per-session state that belongs on the tracker.\n\nWaiting on the Explore survey for the\
+  \ exact file anchors before I write #156.\n\n## assistant\nFull map received. Design is clear: coverage\
+  \ lives on `SessionTracker` (server-owned, per-session, already keyed per `ctx.session`), delegated\
+  \ through `ScopedTracker`. Let me read the exact insertion points before editing.\n\n## tool Read <PATH_HOME>/projects/github/unxmaal/mcm-engine/src/mcm_engine/tracker.py\n\
+  80\t        ),\n81\t    }\n82\t\n83\t    def __init__(self, config: NudgeConfig | None = None) -> None:\n\
+  84\t        self.config = config or NudgeConfig()\n85\t        self.turn_count: int = 0\n86\t      \
+  \  self.last_store_turn: int = 0\n87\t        self.last_checkpoint_turn: int = 0\n88\t        self.topic_freq:\
+  \ dict[str, int] = {}\n89\t        self.session_start: float = time.time()\n90\t        self._plugin_nudge_fns:\
+  \ list = []\n91\t        # Nudge escalation state\n92\t        self.pending_nudges: set[str] = set()\n\
+  93\t        self.ignored_counts: dict[str, int] = {}\n94\t        # Instrumentation (Phase 0): per-type\
+  \ counts of nudges actually shown\n95\t        # vs suppressed as repeats, so the effect of suppress_repeat_nudges\
+  \ is\n96\t        # measurable per session.\n97\t        self.nudge_fires: dict[str, int] = {}\n98\t\
+  \        self.nudge_suppressed: dict[str, int] = {}\n99\t        # Per-tool deficit counters. calls_since[tool]\
+  \ counts tool calls since\n100\t        # that specific tool last fired; it resets to 0 when the tool\
+  \ fires.\n101\t        self.calls_since: dict[str, int] = {\n102\t            tool: 0 for tool in self.config.periodic_tools\n\
+  103\t        }\n104\t        # Every tool called at least once this session — used by the\n105\t   \
+  \     # session-end gate to surface what was never touched.\n106\t        self.called_this_session:\
+  \ set[str] = set()\n107\t\n108\t    def record_call(self, tool_name: str, topic: str | None = None)\
+  \ -> None:\n109\t        \"\"\"Record a tool invocation. Call this at the start of every\n[... 5800\
+  \ more bytes]\n\n## tool Read <PATH_HOME>/projects/github/unxmaal/mcm-engine/src/mcm_engine/tools/search.py\n\
+  380\t    \"\"\"Search one entity scope and return formatted result strings.\"\"\"\n381\t    # Pull more\
+  \ than `limit` so the threshold filter still has options to\n382\t    # sort across. SqliteSearch already\
+  \ sorts by raw rank desc; the\n383\t    # composite re-sort may reorder a bit.\n384\t    raw_hits =\
+  \ search_backend.search(query, entity_types={etype}, limit=limit * 3)\n385\t    # Batch min-max relevance\
+  \ normalization (#27): scale-free across adapters\n386\t    # (SQLite bm25 vs Postgres ts_rank_cd) because\
+  \ it uses THIS batch's own\n387\t    # score range rather than a fixed, adapter-specific midpoint.\n\
+  388\t    _scores = [h.score for h in raw_hits]\n389\t    _lo = min(_scores) if _scores else 0.0\n390\t\
+  \    _hi = max(_scores) if _scores else 0.0\n391\t\n392\t    scored: list[tuple[float, str, int]] =\
+  \ []  # (composite, formatted, entity_id)\n393\t    for hit in raw_hits:\n394\t        if min_rank >\
+  \ 0 and hit.score < min_rank:\n395\t            continue\n396\t        relevance = minmax_normalize(hit.score,\
+  \ _lo, _hi)\n397\t        if etype is EntityType.KNOWLEDGE:\n398\t            result = _score_and_format_knowledge(hit,\
+  \ storage, counters, project, relevance, include_archived, detail)\n399\t        elif etype is EntityType.RULE:\n\
+  400\t            result = _score_and_format_rule(hit, storage, counters, include_archived, relevance,\
+  \ detail)\n401\t        elif etype is EntityType.NEGATIVE:\n402\t            result = _score_and_format_negative(hit,\
+  \ storage, project, relevance, detail)\n403\t        elif etype is EntityType.ERROR:\n[... 8688 more\
+  \ bytes]\n\n## tool Read <PATH_HOME>/projects/github/unxmaal/mcm-engine/src/mcm_engine/tools/knowledge.py\n\
+  195\t            source_classification=source_classification or None,\n196\t        ))\n197\t      \
+  \  return _with_nudge(\n198\t            f\"Stored negative knowledge: {category} — {what_failed}\"\
+  ,\n199\t            tracker, category,\n200\t        )\n201\t\n202\t    @mcp.tool()\n203\t    def report_error(\n\
+  204\t        error_text: str,\n205\t        context: str = \"\",\n206\t        tags: str = \"\",\n207\t\
+  \        project: str = \"\",\n208\t        source_classification: str = \"\",\n209\t    ) -> str:\n\
+  210\t        \"\"\"Log an error and search all knowledge scopes for matching fixes in\n211\t       \
+  \ one call. Call this the moment you hit an error, before attempting a fix.\n212\t\n213\t        source_classification:\
+  \ optional source-assigned data-classification\n214\t        label. Carried, not interpreted.\"\"\"\n\
+  215\t        tracker.record_call(\"report_error\", topic=error_text[:50])\n216\t        tracker.record_store()\n\
+  217\t\n218\t        storage.insert_error(ErrorRow(\n219\t            id=0,\n220\t            pattern=error_text,\n\
+  221\t            context=context or None,\n222\t            tags=tags or None,\n223\t            project=project\
+  \ or project_name,\n224\t            source_classification=source_classification or None,\n225\t   \
+  \     ))\n226\t\n227\t        parts = [f\"Error logged: {error_text[:100]}\"]\n228\t\n229\t        keywords\
+  \ = _extract_keywords(error_text)\n230\t        if keywords:\n231\t            query = \" \".join(keywords[:5])\n\
+  232\t            search_results = search_all_fn(query, limit=5)\n233\t            if search_results:\n\
+  234\t        \n[... 775 more bytes]\n\n## tool Read <PATH_HOME>/projects/github/unxmaal/mcm-engine/src/mcm_engine/tools/session.py\n\
+  357\t    @mcp.tool()\n358\t    def save_snapshot(\n359\t        goal: str = \"\",\n360\t        progress:\
+  \ str = \"\",\n361\t        open_questions: str = \"\",\n362\t        blockers: str = \"\",\n363\t \
+  \       next_steps: str = \"\",\n364\t        active_files: str = \"\",\n365\t        key_decisions:\
+  \ str = \"\",\n366\t    ) -> str:\n367\t        \"\"\"Save a numbered mid-session checkpoint.\"\"\"\n\
+  368\t        tracker.record_call(\"save_snapshot\")\n369\t        tracker.last_checkpoint_turn = tracker.turn_count\n\
+  370\t\n371\t        last_session = storage.get_last_session(principal=get_transport_principal())\n372\t\
+  \        session_id = last_session.id if last_session else None\n373\t        seq = storage.next_snapshot_seq(session_id)\n\
+  374\t\n375\t        storage.insert_snapshot(SnapshotRow(\n376\t            id=0,\n377\t            session_id=session_id,\n\
+  378\t            sequence_num=seq,\n379\t            goal=goal or None,\n380\t            progress=progress\
+  \ or None,\n381\t            open_questions=open_questions or None,\n382\t            blockers=blockers\
+  \ or None,\n383\t            next_steps=next_steps or None,\n384\t            active_files=active_files\
+  \ or None,\n385\t            key_decisions=key_decisions or None,\n386\t        ))\n387\t        return\
+  \ _with_nudge(\n388\t            f\"Snapshot #{seq} saved (session={session_id}).\", tracker,\n389\t\
+  \        )\n390\t\n391\t    @mcp.tool()\n392\t    def get_resume_context() -> str:\n393\t        \"\"\
+  \"Get structured context for resuming work.\"\"\"\n394\t        tracker.record_call(\"get_resume_context\"\
+  )\n395\t        parts:\n[... 19 more bytes]\n\n## tool Read <PATH_HOME>/projects/github/unxmaal/mcm-engine/src/mcm_engine/tools/session.py\n\
+  118\t    @mcp.tool()\n119\t    def session_start() -> str:\n120\t        \"\"\"Initialize a session.\
+  \ Returns recent knowledge count, last handoff,\n121\t        pinned items, and plugin context.\"\"\"\
+  \n122\t        tracker.record_call(\"session_start\")\n123\t        parts: list[str] = []\n124\t\n125\t\
+  \        # Recent knowledge count (last 7 days).\n126\t        recent_7d = storage.count_recent_knowledge(since_days=7)\n\
+  127\t        parts.append(f\"Recent knowledge (7d): {recent_7d}\")\n128\t\n129\t        # Per-table\
+  \ totals with optional project breakdown.\n\n## tool Read <PATH_HOME>/projects/github/unxmaal/mcm-engine/src/mcm_engine/hooks/pre_compact.py\n\
+  40\tfrom __future__ import annotations\n41\t\n42\timport json\n43\timport os\n44\timport sys\n45\tfrom\
+  \ pathlib import Path\n46\tfrom typing import Any, Optional\n47\t\n48\tfrom .mcp_enforcement import\
+  \ (\n49\t    _find_project_root,\n50\t    _mcp_http_endpoint,\n51\t    mcp_http_call_tool,\n52\t)\n\
+  53\t\n54\tWRITE_TIMEOUT_S = 5.0\n55\t\n56\t\n57\tdef _build_arguments(trigger: str, custom_instructions:\
+  \ str) -> dict[str, Any]:\n58\t    \"\"\"save_snapshot kwargs for the compaction boundary. Only the\
+  \ fields the\n59\t    hook can actually know are populated; the rest the tool defaults to empty.\"\"\
+  \"\n60\t    progress = f\"Auto-checkpoint before {trigger or 'auto'} compaction.\"\n61\t    args: dict[str,\
+  \ Any] = {\"progress\": progress}\n62\t    # A manual /compact may carry the user's stated focus; keep\
+  \ it.\n63\t    if custom_instructions:\n64\t        args[\"open_questions\"] = custom_instructions\n\
+  65\t    return args\n66\t\n67\t\n68\tdef _write_local(cwd: Path, args: dict[str, Any]) -> None:\n69\t\
+  \    \"\"\"Local fallback (stdio / embedded): append a snapshot row to the last\n70\t    session, mirroring\
+  \ the save_snapshot tool's own local logic.\"\"\"\n71\t    from ..backends import SnapshotRow\n72\t\
+  \    from ..config import load_config\n73\t    from ..wiring import build_verified_context\n74\t\n75\t\
+  \    config = load_config(project_root=_find_project_root(cwd))\n76\t    ctx = build_verified_context(config)\n\
+  77\t    last = ctx.storage.get_last_session(principal=None)\n78\t    session_id = last.id if last else\
+  \ None\n79\t    seq = ctx.storage.next_snapshot_seq(session_id)\n80\t   \n[... 1169 more bytes]\n\n\
+  ## tool Read <PATH_HOME>/projects/github/unxmaal/mcm-engine/src/mcm_engine/tracker.py\n335\tclass ScopedTracker:\n\
+  336\t    \"\"\"Per-session facade over ``SessionTracker`` (issue #83).\n337\t\n338\t    One ``SessionTracker``\
+  \ is process-global by construction, but the server\n339\t    process serves MANY client sessions. Sharing\
+  \ one tracker collapses every\n340\t    client's governance state onto a single set of counters, so\
+  \ one client's\n341\t    tool calls advance the nudge/escalation state that then blocks another\n342\t\
+  \    client (and a ``session_handoff`` from one wipes the others' counters).\n343\t\n344\t    This facade\
+  \ presents the exact same surface as ``SessionTracker`` but routes\n345\t    every call/attribute to\
+  \ a per-session tracker resolved from a caller-supplied\n346\t    ``key_provider``. Trackers are keyed\
+  \ in a ``WeakKeyDictionary`` on the session\n347\t    object (the FastMCP ``ServerSession`` — one stable,\
+  \ weak-referenceable object\n348\t    per connection, per the SDK), so they evict automatically when\
+  \ the session\n349\t    ends; no manual TTL. When ``key_provider`` yields ``None`` (stdio outside a\n\
+  350\t    request, tests, startup) a single shared default tracker is used.\n351\t\n352\t    ``key_provider``\
+  \ is injected (not hard-wired to the MCP SDK) so this module\n353\t    stays dependency-light and unit-testable:\
+  \ the server passes a closure that\n354\t    reads the FastMCP request context; tests pass a controllable\
+  \ one.\n355\t    \"\"\"\n356\t\n357\t    def __init__(self, config: NudgeConfig | None = None, *, key_provider=None)\
+  \ -> None:\n358\t        self._config = config\n359\t       \n[... 3158 more bytes]\n\n## assistant\n\
+  Everything needed is confirmed. Implementing #156 on a fresh branch.\n\n## tool Bash\n$ git fetch origin\
+  \ -q && git checkout main -q && git pull origin main -q && git checkout -b feat/156-coverage-ledger\
+  \ -q && git log --oneline -1\nok fetched\n\nok\n\n68b87f7 Merge pull request #161 from unxmaal/release/3.15.0"
+params:
+  source_repo: https://github.com/unxmaal/mcm-engine.git
+  base: 68b87f7a66d757ecb914189f84c73f89a459e51e
+  fix: 725cad479181736743fc7ba01da27d2530a1b4a1
+  variant: request
+  context: oracle
+  context_files:
+  - src/mcm_engine/hooks/pre_compact.py
+  - src/mcm_engine/tools/knowledge.py
+  - src/mcm_engine/tools/search.py
+  - src/mcm_engine/tools/session.py
+  - src/mcm_engine/tracker.py
+  pytest_args:
+  - -o
+  - pythonpath=src
+  extras:
+  - dev
+  fail_to_pass:
+  - tests/test_coverage_ledger.py::test_coverage_is_per_session
+  - tests/test_coverage_ledger.py::test_is_covered_requires_resident_by_default
+  - tests/test_coverage_ledger.py::test_reconcile_flips_resident_false_and_is_covered_follows
+  - tests/test_coverage_ledger.py::test_reconcile_only_affects_calling_session
+  - tests/test_coverage_ledger.py::test_reconcile_preserves_searched_at_and_ids
+  - tests/test_coverage_ledger.py::test_record_coverage_empty_topic_is_noop
+  - tests/test_coverage_ledger.py::test_record_coverage_key_is_lowercased_stripped
+  - tests/test_coverage_ledger.py::test_record_coverage_none_ids_is_empty_list
+  - tests/test_coverage_ledger.py::test_record_coverage_overwrites_same_topic
+  - tests/test_coverage_ledger.py::test_record_coverage_stores_topic_query_ids_resident
+  - tests/test_coverage_ledger.py::test_report_error_records_coverage
+  - tests/test_coverage_ledger.py::test_reset_all_clears_coverage
+  - tests/test_coverage_ledger.py::test_save_snapshot_compaction_reconciles_routine_does_not
+  - tests/test_coverage_ledger.py::test_search_tool_records_resident_coverage_with_ids
+  - tests/test_coverage_ledger.py::test_search_with_no_results_still_records_coverage
+  - tests/test_coverage_ledger.py::test_session_start_reconciles_coverage_non_resident
+  pass_to_pass: []
+attribution:
+  dataset: Claude Code session requests, redacted
+  url: https://github.com/unxmaal/SoHoT/issues/1095
+  license: generated
+  source: claude-code:transcripts
+  revision: 82ea6dc78eb1889c0e2f8b40e602ffc6fb9a3da4
+  item: 'mcm-engine PR #162'
+  date: '2026-10-16'
+  transform: 'a Claude Code session from the person''s request to just before the agent''s first edit
+    of a file the fix changes (evals/session_cut.py: user turns, assistant text, tool calls, reads and
+    searches kept, large outputs dropped, to a byte budget), redacted by evals/redact.py (secrets, ids,
+    emails, home and volume paths, hosts, IPs, pasted chat, handles, account and person names as typed
+    placeholders) and refused if a fix line or a name-like word is left; linked to the merged commit through
+    a commit hash or PR URL printed by a tool in that request or a Claude-Session trailer; base = fix^;
+    fail_to_pass and pass_to_pass from 2 sandboxed pytest runs per side, as evals/importers/history.py'
+  importer: evals.importers.transcripts
+  session: 58ac45f60e85cf07
+  evidence: pr
+  redactions:
+    path: 8

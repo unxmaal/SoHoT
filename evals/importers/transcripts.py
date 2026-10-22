@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
-from evals import redact, repo
+from evals import redact, repo, session_cut
 from evals.importers import Imported, history, provenance
 
 LANE = "repo"
@@ -23,21 +23,33 @@ DATASET = "Claude Code session requests, redacted"
 URL = "https://github.com/unxmaal/SoHoT/issues/1095"
 LICENSE = "generated"
 #: sha1 of the committed manifest's tasks, so a hand edit of the manifest is caught at import.
-REVISION = "97d170e1550eee4afc0af065b78cda302a97674c"
+REVISION = "82ea6dc78eb1889c0e2f8b40e602ffc6fb9a3da4"
 MANIFEST = Path(__file__).with_name("transcripts.json")
 VERSION = 1
 VARIANT = "request"
-#: A request this short ("merge it", "yes, go") says nothing a model could act on.
-MIN_REQUEST_WORDS = 8
-#: A request that resolved in more than this many merged tasks specifies none of them alone.
-MAX_TASKS_PER_REQUEST = 1
+#: Repos whose sessions read a chat archive: their tool outputs hold other people's messages, so none is imported.
+THIRD_PARTY_DATA = ("infovore",)
+#: Cases a privacy read found private in a way no detector names, with why; the survey drops them. #1095.
+EXCLUDED: dict[str, str] = {
+    "sohot-pr860-request": "a tool output lists the owner's project directories",
+    "sohot-pr977-request": "a tool output shows the owner's daily cloud spend",
+    "sohot-pr979-request": "a tool output shows the owner's daily cloud spend",
+    "mcm-engine-pr155-request": "the request ties a project to the owner's employer",
+    "mcm-engine-pr173-request": "a coworker's report and an internal plan file name",
+    "mcm-engine-pr174-request": "a coworker's report and an internal plan file name",
+}
+#: A cut this small is the request and little else: the chatter a model cannot act on.
+MIN_CUT_BYTES = 1000
 #: How long before the tool output a commit's committer date may fall (hooks, a push after it), and after.
 COMMIT_BEFORE_S = 1800
 COMMIT_AFTER_S = 120
-TRANSFORM = ("the user's own message from a Claude Code session, redacted by evals/redact.py "
+TRANSFORM = ("a Claude Code session from the person's request to just before the agent's first edit of a "
+             "file the fix changes (evals/session_cut.py: user turns, assistant text, tool calls, reads and "
+             "searches kept, large outputs dropped, to a byte budget), redacted by evals/redact.py "
              "(secrets, ids, emails, home and volume paths, hosts, IPs, pasted chat, handles, "
-             "account and person names as typed placeholders); linked to the merged commit through a "
-             "commit hash or PR URL printed by a tool in that request; base = fix^; fail_to_pass and "
+             "account and person names as typed placeholders) and refused if a fix line or a name-like word "
+             "is left; linked to the merged commit through a commit hash or PR URL printed by a tool in that "
+             "request or a Claude-Session trailer; base = fix^; fail_to_pass and "
              f"pass_to_pass from {history.RUNS} sandboxed pytest runs per side, as evals/importers/history.py")
 
 #: Prompt sources whose words the model wrote: an accepted suggestion, a system-sent turn.
@@ -204,13 +216,60 @@ def request_for(requests: list[Request], anchor: float) -> Request | None:
     return got
 
 
-def screen_request(text: str) -> str | None:
-    body = text.strip()
-    if re.match(r"<[\w-]+>", body) or re.match(r"/[\w:-]+(\s|$)", body) or body.startswith("[Request interrupted"):
-        return "command"
-    if len(body.split()) < MIN_REQUEST_WORDS:
-        return "request_too_short"
-    return None
+def _sub_text(rec: dict) -> str | None:
+    """What the parent agent sent a subagent: its spawning prompt or a later message."""
+    if rec.get("type") != "user" or rec.get("isMeta"):
+        return None
+    content = (rec.get("message") or {}).get("content")
+    if isinstance(content, list) and any(isinstance(b, dict) and b.get("type") == "tool_result" for b in content):
+        return None
+    return _text(content) or None
+
+
+_STREAMS: dict = {}
+
+
+def _stream(path: Path, main: bool) -> tuple[list, dict, str | None]:
+    """(events, prompt id -> first time, the prompt id that spawned it) of one transcript, read once per run."""
+    key = (str(path), main)
+    if key not in _STREAMS:
+        recs = list(records(path))
+        started = {}
+        for rec in recs:
+            if rec.get("promptId") and _ts(rec.get("timestamp")):
+                started.setdefault(rec["promptId"], _ts(rec.get("timestamp")))
+        spawned = None if main else next((r.get("promptId") for r in recs if r.get("promptId")), None)
+        _STREAMS[key] = (session_cut.events(recs, human_text if main else _sub_text, _ts), started, spawned)
+    return _STREAMS[key]
+
+
+def cut(main: Path, subs, requests: list[Request], req: Request, files) -> tuple[str, dict] | str:
+    """The session cut just before the first edit of `files` made under `req`, as a prompt; or why there is none.
+
+    The main stream counts from `req` to the next request; a subagent counts whole when `req` spawned it, and its
+    cut opens with `req` itself.
+    """
+    main_evs, started, _ = _stream(main, True)
+    after = next((r.at for r in requests if r.at > req.at), float("inf"))
+    streams = [("main", [e for e in main_evs if req.at <= e.at < after])]
+    for sub in subs:
+        evs, _, spawned = _stream(sub, False)
+        if request_for(requests, started.get(spawned) or 0.0) is req:
+            streams.append(("subagent", [session_cut.Event(req.at, "user", body=req.text), *evs]))
+    hits = [(evs[i].at, kind, evs, i) for kind, evs in streams
+            if (i := session_cut.first_edit(evs, files)) is not None]
+    if not hits:
+        return "no_edit"
+    _, kind, evs, i = min(hits, key=lambda h: h[0])
+    text = session_cut.render(evs[:i])
+    return session_cut.HEAD + text, {"stream": kind, "events": i, "bytes": len(text.encode("utf-8"))}
+
+
+def leak_lines(mirror: Path, cand: dict) -> list[str]:
+    """The reference diff's added source lines that base never held: what a cut must not show."""
+    diff = history.git(mirror, "diff", "--no-renames", cand["base"], cand["fix"], "--", *cand["source_files"])
+    base = {p: history.git(mirror, "show", f"{cand['base']}:{p}") for p in cand["context_files"]}
+    return session_cut.added_lines(diff, base)
 
 
 @dataclass(frozen=True)
@@ -311,6 +370,8 @@ def landing(sha: str, index: dict, mirror: Path) -> tuple[int | None, str | None
 
 def describe(mirror: Path, fix: str) -> dict | str:
     """A history-shaped candidate for the change `fix` made over its first parent, or a drop reason."""
+    if not repo._has(mirror, fix):
+        return "fix_not_fetchable"
     parents = history.git(mirror, "rev-list", "--parents", "-n", "1", fix).split()[1:]
     if not parents:
         return "root_commit"
@@ -440,22 +501,43 @@ def survey(root: Path, repo_roots, log, known: redact.Known | None = None, probe
         next(got for s, got in scanned if s == session)[1].extend(extra)
     found, stats = link(scanned, repos, index_of, mirror_of)
     old = {t["fix"]: t for t in (keep or {}).get("tasks", [])}
-    spans = Counter((c["request"].session, c["request"].prompt_id) for c in found)
-    kept, seen, ran, pending = [], set(), 0, []
+    kept, seen, ran, pending, flagged, seen_in, refused = [], set(), 0, [], Counter(), {}, {}
+    files_of = {main.stem: (main, subs) for _, main, subs in sessions(root)}
+    requests_of = {session: got[0] for session, got in scanned}
+    first = {}
     for c in sorted(found, key=lambda c: c["request"].at):
+        first.setdefault(c["fix"], c)
+    order = sorted(first.values(), key=lambda c: -c["request"].at)
+    order += [c for c in found if first[c["fix"]] is not c]
+    for c in order:
         req, r, fix = c["request"], c["repo"], c["fix"]
         s = _unit(stats, r.slug, req)
-        why = ("duplicate_task" if fix in seen else screen_request(req.text)
-               or ("request_spans_tasks" if spans[(req.session, req.prompt_id)] > MAX_TASKS_PER_REQUEST else None))
+        why = ("duplicate_task" if fix in seen else "third_party_data" if r.slug in THIRD_PARTY_DATA
+               else "excluded" if task_id(r.slug, c["pr"], fix) in EXCLUDED else None)
         cand = None
         if why is None:
             cand = describe(mirror_of(r), fix)
             why = cand if isinstance(cand, str) else history.screen(cand)
         if why is None and not _has_path(mirror_of(r), cand["base"], "uv.lock"):
             why = "no_uv_lock"
-        red = redact.redact(req.text, known) if why is None else None
+        got = cut(*files_of[req.session], requests_of[req.session], req, cand["source_files"]) if why is None else None
+        if isinstance(got, str):
+            why = got
+        elif got is not None and got[1]["bytes"] < MIN_CUT_BYTES:
+            why = "cut_too_short"
+        red = redact.redact(got[0], known) if why is None else None
+        if why is None and session_cut.leaks(red.text, leak_lines(mirror_of(r), cand)):
+            why = "leak"
         if why is None and redact.detect(red.text, known):
             why = "redaction_residue"
+        if why is None and _lint(red.text):
+            why = "privacy_lint"
+        if why is None and redact.name_like(red.text):
+            why = "name_guard"
+            for w in redact.name_like(red.text):
+                flagged[w] += 1
+                at = red.text.find(w)
+                seen_in.setdefault(w, red.text[max(0, at - 50):at + len(w) + 30].replace("\n", " "))
         if why is None and not run:
             pending.append({"id": task_id(r.slug, c["pr"], fix), "fix": fix,
                             "size": history.size_of({"files": len(cand["source_files"]), "lines": cand["lines"]})})
@@ -474,9 +556,7 @@ def survey(root: Path, repo_roots, log, known: redact.Known | None = None, probe
         if why:
             s["dropped"][why] += 1
             continue
-        seen.add(fix)
-        s["tasks"] += 1
-        kept.append({"id": task_id(r.slug, c["pr"], fix), "repo": r.url, "slug": r.slug, "pr": c["pr"],
+        row = {"id": task_id(r.slug, c["pr"], fix), "repo": r.url, "slug": r.slug, "pr": c["pr"],
                      "base": cand["base"], "fix": fix, "date": cand["date"],
                      "context_files": cand["context_files"], "new_files": cand["new_files"],
                      "test_files": cand["test_files"],
@@ -488,17 +568,28 @@ def survey(root: Path, repo_roots, log, known: redact.Known | None = None, probe
                                 "area": history.area(cand["source_files"]),
                                 "size": history.size_of({"files": len(cand["source_files"]), "lines": cand["lines"]})},
                      "provenance": {"session": session_hash(req.session), "evidence": c["evidence"],
-                                    "redactions": red.counts}})
+                                    "cut": got[1], "redactions": red.counts}}
+        try:
+            convert(row, known)
+            refuse(row, known=known)
+        except ValueError as exc:
+            s["dropped"]["refused"] += 1
+            refused[row["id"]] = str(exc).split("still matches ", 1)[-1]
+            continue
+        seen.add(fix)
+        s["tasks"] += 1
+        kept.append(row)
     kept += [t for f, t in old.items() if f not in {c["fix"] for c in found}]
     projects = {p: {"sessions": len(s["sessions"]), "requests_linked": len(s["linked"]), "tasks": s["tasks"],
                     "dropped": dict(sorted(s["dropped"].items()))} for p, s in sorted(stats.items())}
     return {"version": VERSION, "source": SOURCE,
-            "criteria": {"min_request_words": MIN_REQUEST_WORDS, "max_tasks_per_request": MAX_TASKS_PER_REQUEST,
-                         "commit_window_s": [COMMIT_BEFORE_S, COMMIT_AFTER_S], "runs": history.RUNS,
+            "criteria": {"budget_bytes": session_cut.BUDGET_BYTES, "output_cap_bytes": session_cut.OUTPUT_CAP_BYTES,
+                         "leak_min_chars": session_cut.LEAK_MIN_CHARS, "commit_window_s": [COMMIT_BEFORE_S, COMMIT_AFTER_S], "runs": history.RUNS,
                          "max_source_files": history.MAX_SOURCE_FILES, "max_lines": history.MAX_LINES,
                          "probes": probes},
             "transcripts": {p: dict(v) for p, v in sorted(by_dir.items())}, "projects": projects,
-            "tasks": sorted(kept, key=lambda t: t["id"]), **({} if run else {"pending": pending})}
+            "tasks": sorted(kept, key=lambda t: t["id"]), **({} if run else {"pending": pending}),
+            "flagged": {w: [n, seen_in[w]] for w, n in flagged.most_common()}, "refused": refused}
 
 
 def _cached(make):
@@ -546,16 +637,36 @@ def fetch(path: Path = MANIFEST) -> list[dict]:
     return got["tasks"]
 
 
-def refuse(case: dict, text: str, known: redact.Known = redact.Known()) -> None:
-    """Raise when a case file's text still matches a redaction detector or the privacy lint; names classes only."""
+def _lint(text: str) -> list:
     from harness import privacy
-    left = redact.detect(text, known)
-    lint = sorted({f.name for f in privacy.scan(text, case["id"])})
-    if left or lint:
-        raise ValueError(f"{case['id']}: refused, still matches {sorted(left) + lint}")
+    return privacy.scan(text, "cut", privacy.name_pattern(Path(__file__).resolve().parents[2]))
 
 
-def convert(row: dict) -> Imported:
+def strings(obj) -> str:
+    """Every string a case or row holds, one per line: what a detector reads, free of JSON's or YAML's escapes."""
+    if isinstance(obj, str):
+        return obj
+    if isinstance(obj, dict):
+        return "\n".join(strings(v) for v in obj.values())
+    if isinstance(obj, (list, tuple)):
+        return "\n".join(strings(v) for v in obj)
+    return ""
+
+
+def refuse(case: dict, text: str = "", known: redact.Known = redact.Known()) -> None:
+    """Raise when a case's strings still match a redaction detector or the name guard, or `text` (the file as written)
+    the privacy lint; names classes only."""
+    from harness import privacy
+    values = strings(case)
+    left = redact.detect(values, known)
+    lint = sorted({f.name for f in privacy.scan(text, case["id"])}) if text else []
+    names = redact.name_like(values)
+    if left or lint or names:
+        more = [f"{len(names)} name-like word(s)"] if names else []
+        raise ValueError(f"{case['id']}: refused, still matches {sorted(left) + lint + more}")
+
+
+def convert(row: dict, known: redact.Known | None = None) -> Imported:
     from evals.importers import _dump
     case = {"id": row["id"], "modality": LANE, "prompt": row["prompt"],
             "params": {"source_repo": row["repo"], "base": row["base"], "fix": row["fix"], "variant": VARIANT,
@@ -567,7 +678,7 @@ def convert(row: dict) -> Imported:
                                          else f"{row['slug']} {row['fix'][:10]}", TRANSFORM, row["date"]),
                             "session": row["provenance"]["session"], "evidence": row["provenance"]["evidence"],
                             "redactions": row["provenance"]["redactions"]}}
-    refuse(case, _dump(sys.modules[__name__], case), redact.known_here())
+    refuse(case, _dump(sys.modules[__name__], case), redact.known_here() if known is None else known)
     return Imported(case)
 
 
@@ -601,13 +712,14 @@ def main(argv: list[str] | None = None) -> int:
                  run=not a.dry_run, keep=keep)
     print("\n".join(report(got)), file=sys.stderr)
     if a.report:
-        a.report.write_text(json.dumps({k: got[k] for k in ("transcripts", "projects", "criteria")}
+        a.report.write_text(json.dumps({k: got[k] for k in ("transcripts", "projects", "criteria", "flagged", "refused")}
                                        | {"tasks": len(got["tasks"]), "pending": len(got.get("pending", []))},
                                        indent=1) + "\n", encoding="utf-8")
     if not a.dry_run:
         for t in got["tasks"]:
-            refuse({"id": t["id"]}, json.dumps(t, indent=1), known)
-        a.out.write_text(json.dumps(got, indent=1) + "\n", encoding="utf-8")
+            refuse(t, known=known)
+        a.out.write_text(json.dumps({k: v for k, v in got.items() if k not in ("flagged", "refused")}, indent=1,
+                                    ensure_ascii=False) + "\n", encoding="utf-8")
         print(f"set REVISION = {revision(got)!r}, then `soh cases import transcripts`", file=sys.stderr)
     return 0
 

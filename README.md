@@ -1765,12 +1765,20 @@ by `gh pr create`, or a `Claude-Session:` trailer naming that session. It prints
 per project, the sessions, linked requests, tasks kept and drops by reason
 (#1095). Without `--dry-run` it probes each task the history way and writes
 `evals/importers/transcripts.json`; `soh cases import transcripts` turns it into
-`request` cases. The prompt is the person's own words after `evals/redact.py`,
-which replaces secrets, ids, emails, home and volume paths, hosts, IPs, pasted
-chat, handles, and account and person names with typed placeholders
-(`<EMAIL_1>`, `<PATH_HOME>`). A case file that still matches a detector or the
-privacy lint is refused. A case records its hashed session, its evidence kind and
-its redaction counts, never the raw text; private repos are never imported.
+`request` cases. The prompt is the session cut just before the agent's first edit
+of a source file the fix changes (`evals/session_cut.py`): the request, the
+assistant's text and its tool calls, reads and searches kept to
+`OUTPUT_CAP_BYTES`, other outputs to `COMMAND_CAP_BYTES`, the whole to
+`BUDGET_BYTES`, so nothing the fix wrote is shown; a cut that already holds one
+of the fix's new lines is dropped as `leak`. `evals/redact.py` then replaces
+secrets, ids, emails, home and volume paths, hosts, IPs, pasted chat, handles,
+and account and person names with typed placeholders (`<EMAIL_1>`,
+`<PATH_HOME>`). A cut that still holds a capitalized word or `@handle` that is
+neither on `evals/safe_names.txt` nor a lower-case word the repo uses is dropped
+as `name_guard`; repos whose sessions read a chat archive (`THIRD_PARTY_DATA`) are
+never imported. A case file that still matches a detector or the privacy lint is
+refused. A case records its hashed session, its evidence kind, its cut and its
+redaction counts, never the raw text; private repos are never imported.
 
 Prompts and skills are measured as arms (#995): `claude-code:<model>,context=<spec>`
 with `none`, `skill:<name>` (the SKILL.md body without frontmatter, from

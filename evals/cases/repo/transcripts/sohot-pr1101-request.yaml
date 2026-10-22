@@ -1,0 +1,298 @@
+# Claude Code session requests, redacted, generated (https://github.com/unxmaal/SoHoT/issues/1095).
+# Imported by evals/importers from claude-code:transcripts@82ea6dc78eb1889c0e2f8b40e602ffc6fb9a3da4; re-import, do not edit.
+id: sohot-pr1101-request
+modality: repo
+prompt: "Below is a Claude Code session, cut just before the agent's first edit to the code. Make the\
+  \ change the session is heading toward.\n\n## user\nRedact the transcripts then they can be included.\
+  \ They’re just test fixtures at that point\n\n## user\nImplement SoHoT issue #1099 (worktree ~/projects/github/unxmaal/sohot-1099,\
+  \ branch grader-closure-1099, from origin/main, which now includes PR #1096 / #1094 harness/identity.py).\
+  \ Session URL: https://claude.ai/code/<SESSION_1>. PR body: `Closes #1099` on its own line.\n\nSmall,\
+  \ focused change: compute the grader digest over the transitive closure of repo-internal imports, found\
+  \ by static AST import analysis of the repo's own packages, not by importing. Record the module list\
+  \ in the receipt next to the digest.\n\nPR #1097 (#889) is open and touches harness/commands/loop.py\
+  \ and evals/repo.py. Avoid those files.\n\nRed-proof both tests from the issue. Report the PR number\
+  \ in under 8 lines.\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot && git fetch origin -q &&\
+  \ gh issue view 1099 && git worktree add ~/projects/github/unxmaal/sohot-1099 -b grader-closure-1099\
+  \ origin/main 2>&1 | tail -2\n\n## tool ToolSearch\n{\"query\": \"select:mcp__mcm-engine__search,mcp__mcm-engine__report_error,mcp__mcm-engine__add_rule\"\
+  , \"max_results\": 3}\n[1422 bytes of output not shown]\n\n\n## tool mcp__mcm-engine__search\n{\"query\"\
+  : \"digest\"}\n[18909 bytes of output not shown]\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1099\
+  \ && cat harness/identity.py && grep -rn \"identity\" --include=*.py . | grep -v \"^./tests\" | head\
+  \ -30\n<persisted-output>\nOutput too large (16.8KB). Full output saved to: <PATH_HOME>/.claude/projects/-Users-<ACCOUNT_1>-projects/<ID_1>/tool-results/bvg97g5gb.txt\n\
+  \nPreview (first 2KB):\n\"\"\"A candidate's content identity: the bytes of its runtime and model, what\
+  \ it is sent, the exam, the harness and the machine. #1094.\"\"\"\nfrom __future__ import annotations\n\
+  \nimport hashlib\nimport json\nimport os\nimport re\nimport sys\nfrom pathlib import Path\n\n#: Machine\
+  \ facts that only time a run; recorded beside the identity, never matched.\nTIMING = (\"swap_used_mb\"\
+  , \"available_gb\", \"thermal\")\n#: Library files of a llama.cpp build that a llama-server binary loads.\n\
+  _RUNTIME_LIB = re.compile(r\"(llama|ggml|mtmd)[^/\\\\]*\\.(dylib|so|dll)$\", re.IGNORECASE)\n#: Installed\
+  \ distributions that are the mlx_lm.server runtime.\nMLX_DISTS = (\"mlx\", \"mlx-metal\", \"mlx-lm\"\
+  )\n_READ = 8 * 1024 * 1024\n\n\ndef _sh(*argv: str) -> str:\n    from evals.environment import _sh as\
+  \ sh\n    return sh(*argv)\n\n\ndef cache_path() -> Path:\n    from harness import paths\n    return\
+  \ paths.home() / \"cache\" / \"digests.json\"\n\n\ndef _load_cache(path: Path) -> dict:\n    try:\n\
+  \        got = json.loads(path.read_text(encoding=\"utf-8\"))\n    except (OSError, ValueError):\n \
+  \       return {}\n    return got if isinstance(got, dict) else {}\n\n\ndef _save_cache(path: Path,\
+  \ got: dict) -> bool:\n    try:\n        path.parent.mkdir(parents=True, exist_ok=True)\n        tmp\
+  \ = path.with_name(f\"{path.name}.{os.getpid()}.tmp\")\n       \n[... 660 more bytes]\n\n## tool Bash\n\
+  $ cd ~/projects/github/unxmaal/sohot-1099 && grep -n \"grader\\|GRADER\\|_CHECK\\|def \\|import\" harness/identity.py\
+  \ | head -80\n69 matches in 1 files:\n\n2:from __future__ import annotations\n4:import hashlib\n5:import\
+  \ json\n6:import os\n7:import re\n8:import sys\n9:from pathlib import Path\n20:def _sh(*argv: str) ->\
+  \ str:\n21:from evals.environment import _sh as sh\n25:def cache_path() -> Path:\n26:from harness import\
+  \ paths\n30:def _load_cache(path: Path) -> dict:\n38:def _save_cache(path: Path, got: dict) -> bool:\n\
+  49:def _sha256(path: Path) -> str:\n53:import fcntl\n61:def file_digest(path, cache: Path | None = None)\
+  \ -> str:\n77:def files_digest(files, cache: Path | None = None) -> dict:\n84:def _linked(exe: Path)\
+  \ -> list[Path]:\n97:def runtime_files(binary) -> list[Path]:\n108:def llama_server() -> Path | None:\n\
+  109:import shutil\n111:from harness import serving\n117:def dist_digest(name: str) -> str:\n119:from\
+  \ importlib import metadata\n128:def preset_path() -> Path:\n  +44 more in harness/identity.py [+44\
+  \ hidden: rtk recall d4d185ab6c9d]\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1099 && sed\
+  \ -n 128,500p harness/identity.py\n<persisted-output>\nOutput too large (12.2KB). Full output saved\
+  \ to: <PATH_HOME>/.claude/projects/-Users-<ACCOUNT_1>-projects/<ID_1>/tool-results/b6y29flfb.txt\n\n\
+  Preview (first 2KB):\ndef preset_path() -> Path:\n    \"\"\"The --models-preset INI scripts/serve-llamacpp.sh\
+  \ writes for the eval router's port.\"\"\"\n    from harness import paths, router\n    return paths.home()\
+  \ / f\"llamacpp-preset-{router.url().rsplit(':', 1)[1]}.ini\"\n\n\ndef preset_section(stem: str, path:\
+  \ Path | None = None) -> dict:\n    \"\"\"The router preset's [*] and [stem] key lines, comments dropped.\"\
+  \"\"\n    path = path or preset_path()\n    try:\n        text = path.read_text(encoding=\"utf-8\")\n\
+  \    except OSError:\n        return {}\n    out: dict = {}\n    section = \"\"\n    for line in text.splitlines():\n\
+  \        line = line.strip()\n        if not line or line.startswith((\";\", \"#\")):\n            continue\n\
+  \        if line.startswith(\"[\") and line.endswith(\"]\"):\n            section = line[1:-1]\n   \
+  \         continue\n        if section in (\"*\", stem):\n            out.setdefault(section, []).append(re.sub(r\"\
+  \\s*=\\s*\", \" = \", line))\n    for line in out.get(stem, []):\n        key, _, value = line.partition(\"\
+  \ = \")\n        if key in (\"chat-template-file\", \"jinja-template-file\") and os.path.isfile(value):\n\
+  \            out.setdefault(\"template_file\", file_digest(value))\n    return out\n\n\ndef snapshot_files(repo:\
+  \ str) -> list[Path]:\n    \"\"\"The hub snapshot main points at for a repo: its weights, index, config\
+  \ and\n[... 730 more bytes]\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1099 && grep -n \"\
+  grader\" -r harness evals tests --include=*.py | head -40\n(eval):1: no matches found: --include=*.py\n\
+  \n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1099 && /usr/bin/grep -rn \"grader\" harness evals\
+  \ tests | /usr/bin/grep \"\\.py:\" | head -40\nharness/checks/ocr.py:91:    #: A reasons class when\
+  \ the grader, not the image, is why it failed.\nharness/commands/cases.py:64:    \"\"\"Each stored diff\
+  \ of a repo run through today's apply and grader; the run and the store are not touched.\"\"\"\nharness/identity.py:267:\
+  \    \"\"\"sha256 of a small file read whole, uncached: a case file or a grader module.\"\"\"\nharness/identity.py:287:def\
+  \ grader_digest(lane: str, checkers=None, packages=GRADER_PACKAGES, also=None) -> dict:\nharness/identity.py:288:\
+  \    \"\"\"{name: sha256} of the checker a lane scores with, the functions of its module it calls and\
+  \ the grader modules they use.\"\"\"\nharness/identity.py:379:             \"exam\": {\"lane\": lane,\
+  \ \"split_version\": holdout.version(lane), \"grader\": grader_digest(lane)},\nevals/analysis/laya_decide.py:1:\"\
+  \"\"Laya zero-shot on the decide cases, graded by the lane's own grader, beside a stored run over those\
+  \ case ids. #970.\nevals/importers/history.py:34:#: The repo's default deselection, kept although the\
+  \ grader's `-o addopts=` drops it, so no slow test enters the ids.\nevals/importers/history.py:239:\
+  \    \"\"\"Junit keys back to the pytest node ids the grader takes, resolved against the files run.\"\
+  \"\"\nevals/importers/history.py:269:    \"\"\"Run the fix's tests at base+hidden tests, then with the\
+  \ reference diff applied, the grader's way.\"\"\"\nevals/importers/history.py:361:                 \
+  \        \"tests_changed\": \"a test_*.py the grader would install\",\nevals/core.py:717:    #: different\
+  \ OCR engines. Those are two\n[... 1460 more bytes]\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1099\
+  \ && sed -n 255,400p harness/identity.py; sed -n 120,200p tests/test_incumbent_reuse_1094.py\n<persisted-output>\n\
+  Output too large (9.8KB). Full output saved to: <PATH_HOME>/.claude/projects/-Users-<ACCOUNT_1>-projects/<ID_1>/tool-results/bo4mfwxjk.txt\n\
+  \nPreview (first 2KB):\n            \"knobs\": knobs.settings(lane, overrides or {})}\n\n\ndef digest_of(parts)\
+  \ -> str:\n    return hashlib.sha256(json.dumps(parts, sort_keys=True, default=str).encode(\"utf-8\"\
+  )).hexdigest()\n\n\ndef _text_sha(text: str) -> str:\n    return hashlib.sha256(text.encode(\"utf-8\"\
+  )).hexdigest()\n\n\ndef _small_sha(path) -> str:\n    \"\"\"sha256 of a small file read whole, uncached:\
+  \ a case file or a grader module.\"\"\"\n    return hashlib.sha256(Path(path).read_bytes()).hexdigest()\n\
+  \n\n#: Packages whose modules are a lane's grading code when its checker refers to them.\nGRADER_PACKAGES\
+  \ = (\"harness.checks\",)\n\n\ndef _names(code) -> set:\n    got = set(code.co_names)\n    for const\
+  \ in code.co_consts:\n        if hasattr(const, \"co_names\"):\n            got |= _names(const)\n \
+  \   return got\n\n\ndef _in(name: str, packages) -> bool:\n    return any(name == p or name.startswith(p\
+  \ + \".\") for p in packages)\n\n\ndef grader_digest(lane: str, checkers=None, packages=GRADER_PACKAGES,\
+  \ also=None) -> dict:\n    \"\"\"{name: sha256} of the checker a lane scores with, the functions of\
+  \ its module it calls and the grader modules they use.\"\"\"\n    import importlib\n    import inspect\n\
+  \    import types\n\n    from evals import core\n    checkers = core.CHECKERS if checkers is None else\
+  \ checkers\n    start = checkers.get(lane)\n    if start\n[... 696 more bytes]\n\n## tool Read <PATH_HOME>/.claude/projects/-Users-<ACCOUNT_1>-projects/<ID_1>/tool-results/bo4mfwxjk.txt\n\
+  1\t            \"knobs\": knobs.settings(lane, overrides or {})}\n2\t\n3\t\n4\tdef digest_of(parts)\
+  \ -> str:\n5\t    return hashlib.sha256(json.dumps(parts, sort_keys=True, default=str).encode(\"utf-8\"\
+  )).hexdigest()\n6\t\n7\t\n8\tdef _text_sha(text: str) -> str:\n9\t    return hashlib.sha256(text.encode(\"\
+  utf-8\")).hexdigest()\n10\t\n11\t\n12\tdef _small_sha(path) -> str:\n13\t    \"\"\"sha256 of a small\
+  \ file read whole, uncached: a case file or a grader module.\"\"\"\n14\t    return hashlib.sha256(Path(path).read_bytes()).hexdigest()\n\
+  15\t\n16\t\n17\t#: Packages whose modules are a lane's grading code when its checker refers to them.\n\
+  18\tGRADER_PACKAGES = (\"harness.checks\",)\n19\t\n20\t\n21\tdef _names(code) -> set:\n22\t    got =\
+  \ set(code.co_names)\n23\t    for const in code.co_consts:\n24\t        if hasattr(const, \"co_names\"\
+  ):\n25\t            got |= _names(const)\n26\t    return got\n27\t\n28\t\n29\tdef _in(name: str, packages)\
+  \ -> bool:\n30\t    return any(name == p or name.startswith(p + \".\") for p in packages)\n31\t\n32\t\
+  \n33\tdef grader_digest(lane: str, checkers=None, packages=GRADER_PACKAGES, also=None) -> dict:\n34\t\
+  \    \"\"\"{name: sha256} of the checker a lane scores with, the functions of its module it calls and\
+  \ the grader modules they use.\"\"\"\n35\t    import importlib\n36\t    import inspect\n37\t    import\
+  \ types\n38\t\n39\t    from evals import core\n40\t    checkers = core.CHECKERS if checkers is None\
+  \ else checkers\n41\t    start = checkers.get(lane)\n42\t    if start is None:\n43\t        return {}\n\
+  44\t    todo = [start, *((core.score,) if also is None\n[... 9302 more bytes]\n\n## tool Bash\n$ cd\
+  \ ~/projects/github/unxmaal/sohot-1099 && ls; /usr/bin/grep -n \"packages\\|\\[tool.setuptools\" pyproject.toml\
+  \ | head; /usr/bin/grep -n \"^def _check_code\\|^def contains\\|^def score\\|^CHECKERS\" evals/core.py;\
+  \ head -30 harness/checks/code.py | /usr/bin/grep -n \"import\"; /usr/bin/grep -rn \"^from\\|^import\\\
+  |^    from\\|^        from\" harness/checks/code.py\ndeploy/\ndocs/\nevals/\ngateway/\nharness/\nscripts/\n\
+  tests/\ntools/\nvoice/\nASSERTIONS.md  15.1K\nDockerfile  2.7K\nMakefile  5.2K\nPLAN.md  50.8K\nREADME.md\
+  \  155.7K\npyproject.toml  5.2K\nuv.lock  459.9K\n44:packages = [\"harness\", \"evals\"]\n57:# 687MB\
+  \ installed on macOS arm64, 36 packages, MPS-capable.\n122:def _check_code(artifact, case: Case) ->\
+  \ CheckResult:\n369:CHECKERS = {\n549:def contains(artifact: str, needle: str) -> bool:\n1244:def score(case:\
+  \ Case, artifact, **checker_kwargs) -> Result:\n20:from __future__ import annotations\n22:import ast\n\
+  23:import importlib.util\n24:import json\n25:import subprocess\n26:import sys\n27:import tempfile\n\
+  28:from dataclasses import dataclass, field\n29:from pathlib import Path\nharness/checks/code.py:20:from\
+  \ __future__ import annotations\nharness/checks/code.py:22:import ast\nharness/checks/code.py:23:import\
+  \ importlib.util\nharness/checks/code.py:24:import json\nharness/checks/code.py:25:import subprocess\n\
+  harness/checks/code.py:26:import sys\nharness/checks/code.py:27:import tempfile\nharness/checks/code.py:28:from\
+  \ dataclasses import dataclass, field\nharness/checks/code.py:29:from pathlib import Path\nharness/checks/code.py:31:from\
+  \ harness import reasons\nharness/checks/code.py:32:from harness.checks.base import extract\nharness/checks/code.py:40:import\
+  \ json as _json, sys as _sys\nharness/checks/code.py:94:        from datetime import datetime\n\n##\
+  \ tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1099 && sed -n 1,60p evals/core.py | /usr/bin/grep\
+  \ -n \"import\"; sed -n 122,140p evals/core.py; sed -n 1244,1300p evals/core.py; cat harness/reasons.py\
+  \ | /usr/bin/grep -n \"import\"; cat harness/checks/base.py | /usr/bin/grep -n \"import\"; /usr/bin/grep\
+  \ -rn \"grader_digest\\|\\\"grader\\\"\" harness evals | /usr/bin/grep -v \"identity.py:2[89]\"\n10:from\
+  \ __future__ import annotations\n12:import hashlib\n13:import json\n14:import re\n15:import statistics\n\
+  16:import warnings\n17:from dataclasses import dataclass, field\n18:from pathlib import Path\n20:import\
+  \ yaml\n22:from harness import reasons\n23:from harness.checks import adherence as adherence_check\n\
+  24:from harness.checks import claims as claims_check\n25:from harness.checks import code as code_check\n\
+  26:from harness.checks import decide as decide_check\n27:from harness.checks import html as html_check\n\
+  28:from harness.checks import image as image_check\n29:from harness.checks import music as music_check\n\
+  30:from harness.checks import ocr as ocr_check\n31:from harness.checks import pii as pii_check\n32:from\
+  \ harness.checks import render as render_check\n33:from harness.checks import retrieval as retrieval_check\n\
+  34:from harness.checks import video as video_check\n35:from harness.checks import speech as speech_check\n\
+  36:from harness.checks import svg as svg_check\n37:from harness.checks.base import CheckResult, extract\n\
+  def _check_code(artifact, case: Case) -> CheckResult:\n    \"\"\"Runs the generated code. See harness/checks/code.py\
+  \ for what that means.\"\"\"\n    r = code_check.check(artifact, case.assertions.get(\"checks\") or\
+  \ [],\n                         timeout=case.params.get(\"check_timeout\"),\n                      \
+  \   preamble=getattr(case, \"preamble\", \"\"))\n    out = CheckResult(r.ok, r.reason, r.warnings, failure_class=r.failure_class,\
+  \ limit=r.limit)\n    out.metrics = r.metrics\n    return out\n[... 3839 more bytes]\n\n## tool mcp__mcm-engine__search\n\
+  {\"query\": \"closure\", \"project\": \"sohot\"}\n\n## tool mcp__mcm-engine__search\n{\"query\": \"\
+  modulefinder\"}\n[8836 bytes of output not shown]\n[222 bytes of output not shown]\n\n## tool Bash\n\
+  $ cd ~/projects/github/unxmaal/sohot-1099 && d=$(mktemp -d ~/projects/github/unxmaal/sohot/tmp/1099.XXXXXX)\
+  \ && echo $d && cat > $d/proto.py <<'EOF'\nimport ast, sys\nfrom pathlib import Path\nroot = Path(sys.argv[1]);\
+  \ pkgs = (\"harness\", \"evals\")\ndef path_of(name):\n    p = root.joinpath(*name.split(\".\"))\n \
+  \   if (p / \"__init__.py\").is_file(): return p / \"__init__.py\"\n    if p.with_suffix(\".py\").is_file():\
+  \ return p.with_suffix(\".py\")\ndef imports(name, toplevel_only):\n    f = path_of(name); tree = ast.parse(f.read_text())\n\
+  \    pkg = name if f.name == \"__init__.py\" else name.rpartition(\".\")[0]\n    nodes = tree.body if\
+  \ toplevel_only else ast.walk(tree)\n    out = set()\n    for n in nodes:\n        if isinstance(n,\
+  \ ast.Import):\n            for a in n.names: out.add(a.name)\n        elif isinstance(n, ast.ImportFrom):\n\
+  \            base = n.module or \"\"\n            if n.level:\n                parts = pkg.split(\"\
+  .\"); base = \".\".join(parts[:len(parts)-n.level+1] + ([base] if base else []))\n            out.add(base)\n\
+  \            for a in n.names: out.add(f\"{base}.{a.name}\")\n    res = set()\n    for m in out:\n \
+  \       while m and not path_of(m): m = m.rpartition(\".\")[0]\n        if m and m.split(\".\")[0] in\
+  \ pkgs: res.add(m)\n            # include parents packages\n    return res\nfor top in (True, False):\n\
+  \    seen, todo = set(), [\"harness.checks.code\", \"harness.reasons\", \"harness.checks.base\"]\n \
+  \   while todo:\n        m = todo.pop()\n        if m in seen: continue\n        seen.add(m); todo +=\
+  \ imports(m,\n[... 76 more bytes]\n<PATH_HOME>/projects/github/unxmaal/sohot/tmp/1099.pDWvqe\nTrue 4\
+  \ ['harness', 'harness.checks.base', 'harness.checks.code', 'harness.reasons']\nFalse 233 ['evals',\
+  \ 'evals.agent_pad', 'evals.arms_report', 'evals.benchmark_import', 'evals.compare', 'evals.core', 'evals.decide_corpus',\
+  \ 'evals.environment', 'evals.fairness', 'evals.headless', 'evals.importers', 'evals.importers.history',\
+  \ 'evals.importers.librispeech', 'evals.private', 'evals.repo', 'evals.repo_report', 'evals.run', 'evals.runners',\
+  \ 'evals.runners.agent', 'evals.runners.base', 'evals.runners.chain', 'evals.runners.claude_agent',\
+  \ 'evals.runners.claude_code', 'evals.runners.method', 'evals.runners.needle', 'evals.runners.omnisvg',\
+  \ 'evals.runners.process', 'evals.runners.repair', 'evals.runners.repo', 'evals.runners.speech', 'evals.runners.text',\
+  \ 'evals.runners.trace', 'evals.runners.transcription', 'evals.sandbox', 'evals.watch', 'harness', 'harness.adopt',\
+  \ 'harness.arms', 'harness.audio', 'harness.audio_log', 'harness.authoring', 'harness.availability',\
+  \ 'harness.batch', 'harness.benchmarks', 'harness.binding', 'harness.blame_audit', 'harness.canary',\
+  \ 'harness.candidates', 'harness.ceiling', 'harness.chaos', 'harness.checks', 'harness.checks.adherence',\
+  \ 'harness.checks.base', 'harness.checks.claims', 'harness.checks.code', 'harness.checks.decide', 'harness.checks.html',\
+  \ 'harness.checks.image', 'harness.checks.music', 'harness.checks.ocr']\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1099\
+  \ && sed -n 365,400p evals/core.py; sed -n 1,40p tests/test_incumbent_reuse_1094.py | head -40; /usr/bin/grep\
+  \ -n \"_rewrite\" -A6 tests/test_incumbent_reuse_1094.py | head -10\nout.metrics = metrics\n    return\
+  \ out\n\n\nCHECKERS = {\n    \"agent\": lambda a, c, **kw: _check_agent(a, c),\n    \"repo\": lambda\
+  \ a, c, **kw: _check_repo(a, c),\n    \"decide\": lambda a, c, **kw: _check_decide(a, c),\n    \"claims\"\
+  : lambda a, c, **kw: _check_claims(a, c),\n    \"ocr\": lambda a, c, **kw: _check_ocr(a, c),\n    \"\
+  retrieval\": lambda a, c, **kw: _check_retrieval(a, c),\n    \"pii\": lambda a, c, **kw: _check_pii(a,\
+  \ c),\n    \"svg\": lambda a, c, **kw: _check_svg(a, c),\n    \"music\": _check_music,\n    \"web\"\
+  : lambda a, c, **kw: _check_web(a, c),\n    \"image\": lambda a, c, **kw: _check_image(a, c, kw.get(\"\
+  adherence\"),\n                                            kw.get(\"expect_size\")),\n    \"video\"\
+  : lambda a, c, **kw: _check_video(a, c),\n    \"code\": lambda a, c, **kw: _check_code(a, c),\n    \"\
+  extract\": lambda a, c, **kw: _check_extract(a, c),\n    \"tts\": _check_tts,\n    \"stt\": lambda a,\
+  \ c, **kw: _check_stt(a, c),\n}\n# Modalities that may appear in a case file. video/tts/stt are declarable\
+  \ but\n# not yet judgeable; score() says so rather than passing them.\nMODALITIES = set(CHECKERS)\n\n\
+  # Which way each metric runs. Not optional metadata: every metric was an error\n# rate to begin with,\
+  \ so \"lower is better\" got baked into both the ranking and\n# the worst-case column, and `ink` and\
+  \ `motion` silently inverted both the\n# moment they arrived -- more ink IS better, and the \"worst\"\
+  \ ink in a run was\n# being reported as the best-drawn case in it.\nMETRIC_DIRECTION = {\n    \"wer\"\
+  : \"lower\",        # word error\n[... 2053 more bytes]\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1099\
+  \ && /usr/bin/grep -rn \"\\\"exam\\\"\\|\\['exam'\\]\\|exam\\b\" harness evals tests --include=*.py\
+  \ 2>/dev/null | /usr/bin/grep -v \"^Binary\" | head; /usr/bin/grep -rn \"exam\" harness/*.py harness/commands/*.py\
+  \ | head; gh pr list --state open --json number,title,files --jq '.[] | \"\\(.number) \\(.title) \\\
+  ([.files[].path]|join(\",\"))\"'\n(eval):1: no matches found: --include=*.py\nharness/assertions.py:33:#:\
+  \ An absolute is the falsifiable kind: one counter-example ends it.\nharness/assertions.py:111:    \
+  \    Only NUM decays this way. An absolute needs a counter-example rather\nharness/assertions.py:143:\
+  \    A reader does not read an example in isolation: the sentence above the\nharness/assertions.py:144:\
+  \    fence says what the example is, and that is where \"Measured 2026-09-12 on\nharness/assertions.py:147:\
+  \    example reads as config-less.\nharness/benchmarks.py:103:    return sum(int(s.get(\"num_examples\"\
+  ) or 0) for s in info.get(\"splits\") or [])\nharness/cli.py:89:# different exam from the suite that\
+  \ chose its engine, which is how two correct\nharness/cli.py:100:# different exam (#90). The names are\
+  \ the gateway nicknames of the time, which\nharness/completion.py:80:             \"explanation, no\
+  \ example usage. A single markdown fence is \"\nharness/discover.py:155:#: engine name -> (lane, the\
+  \ runtime it needs, an example model for the command).\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1099\
+  \ && /usr/bin/grep -rn '\"exam\"' harness evals tests | head; gh pr list --state open --json number,title,files\
+  \ --jq '.[] | \"\\(.number) \\(.title) \\([.files[].path]|join(\",\"))\"'\nharness/identity.py:379:\
+  \             \"exam\": {\"lane\": lane, \"split_version\": holdout.version(lane), \"grader\": grader_digest(lane)},\n\
+  \n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1099 && /usr/bin/grep -n \"GRADER_PACKAGES\\|_names\\\
+  |_in(\\|^import\\|^from\" harness/identity.py; /usr/bin/grep -n \"reasons\\.\\|extract(\" harness/checks/code.py\
+  \ | head; /usr/bin/grep -n \"^def \\|^[A-Z_]* = \" harness/reasons.py | head -50\n2:from __future__\
+  \ import annotations\n4:import hashlib\n5:import json\n6:import os\n7:import re\n8:import sys\n9:from\
+  \ pathlib import Path\n272:GRADER_PACKAGES = (\"harness.checks\",)\n275:def _names(code) -> set:\n276:\
+  \    got = set(code.co_names)\n278:        if hasattr(const, \"co_names\"):\n279:            got |=\
+  \ _names(const)\n283:def _in(name: str, packages) -> bool:\n287:def grader_digest(lane: str, checkers=None,\
+  \ packages=GRADER_PACKAGES, also=None) -> dict:\n308:            out[f\"{f.__module__}.{f.__qualname__}\"\
+  ] = digest_of([code.co_code.hex(), code.co_names, repr(code.co_consts)])\n311:        names = _names(f.__code__)\n\
+  315:            if obj is None and _in(name, packages):\n322:            elif isinstance(obj, types.ModuleType)\
+  \ and _in(obj.__name__, packages) and getattr(obj, \"__file__\", None):\n146:    return extract(text,\
+  \ ())\n175:                              failure_class=reasons.TIMEOUT,\n12:REASONS = {\n30:SERVER_DEAD\
+  \ = \"server_dead\"\n31:GPU_FAULT = \"gpu_fault\"\n32:REFUSED_BY_GATEWAY = \"refused_by_gateway\"\n\
+  33:HARNESS_ERROR = \"harness_error\"\n34:LOAD_FAILED_RUNTIME = \"load_failed_runtime\"\n36:MISSING_PACKAGE\
+  \ = \"missing_package\"\n37:LOAD_FAILED_LAYOUT = \"load_failed_layout\"\n39:LOAD_LOG_UNREAD = \"load_log_unread\"\
+  \n41:LOAD_FAILED_FILE = \"load_failed_file\"\n43:SHORT_COPY = \"short_copy\"\n45:INCOMPLETE_COPY = \"\
+  incomplete_copy\"\n47:ATTACHMENT = \"attachment\"\n48:TIMEOUT = \"timeout\"\n49:TOKEN_BUDGET_EXHAUSTED\
+  \ = \"token_budget_exhausted\"\n51:STEP_CAP = \"step_cap\"\n53:CONTEXT_EXCEEDED = \"context_exceeded\"\
+  \n[... 1702 more bytes]"
+params:
+  source_repo: https://github.com/unxmaal/SoHoT.git
+  base: f8b79c146e791a2d11e156f0561940aa56bc24fa
+  fix: 657e8c1e6a9117a3d392982176c71dcf74c5e09a
+  variant: request
+  context: oracle
+  context_files:
+  - harness/identity.py
+  fail_to_pass:
+  - tests/test_incumbent_reuse_1094.py::test_a_module_outside_the_import_closure_keeps_the_grader_digest
+  - tests/test_incumbent_reuse_1094.py::test_editing_a_module_two_imports_below_the_checker_moves_the_grader_digest
+  - tests/test_incumbent_reuse_1094.py::test_editing_the_grader_or_the_lane_checker_moves_the_grader_digest
+  - tests/test_incumbent_reuse_1094.py::test_the_code_lane_digest_is_stable_and_lists_its_modules
+  pass_to_pass:
+  - tests/test_incumbent_reuse_1094.py::test_a_case_digest_moves_with_its_hidden_tests_its_file_and_the_prompt_the_harness_sends
+  - tests/test_incumbent_reuse_1094.py::test_a_case_without_a_matching_draw_runs_fresh
+  - tests/test_incumbent_reuse_1094.py::test_a_checkpoint_from_before_identities_were_recorded_still_resumes
+  - tests/test_incumbent_reuse_1094.py::test_a_file_is_hashed_once_until_its_size_or_mtime_moves
+  - tests/test_incumbent_reuse_1094.py::test_a_spec_whose_model_file_is_missing_has_no_digest
+  - tests/test_incumbent_reuse_1094.py::test_reverify_names_a_model_whose_bytes_moved
+  - tests/test_incumbent_reuse_1094.py::test_stored_draws_under_the_same_digest_send_no_incumbent_calls
+  - tests/test_incumbent_reuse_1094.py::test_the_digest_holds_when_only_swap_or_free_memory_or_thermal_change
+  - tests/test_incumbent_reuse_1094.py::test_the_digest_moves_when_any_served_or_sent_input_changes[binary]
+  - tests/test_incumbent_reuse_1094.py::test_the_digest_moves_when_any_served_or_sent_input_changes[library]
+  - tests/test_incumbent_reuse_1094.py::test_the_digest_moves_when_any_served_or_sent_input_changes[model
+    file]
+  - tests/test_incumbent_reuse_1094.py::test_the_digest_moves_when_any_served_or_sent_input_changes[preset
+    section]
+  - tests/test_incumbent_reuse_1094.py::test_the_digest_moves_when_any_served_or_sent_input_changes[sampling]
+  - tests/test_incumbent_reuse_1094.py::test_the_digest_moves_when_any_served_or_sent_input_changes[split
+    version]
+  - tests/test_incumbent_reuse_1094.py::test_the_digest_moves_with_the_reply_budget_knobs_and_machine
+  - tests/test_incumbent_reuse_1094.py::test_the_harness_commit_is_recorded_and_never_matched
+  - tests/test_incumbent_reuse_1094.py::test_the_measure_step_pairs_the_stored_cells_with_the_challenger
+  - tests/test_incumbent_reuse_1094.py::test_the_replay_takes_draws_only_from_earlier_runs_that_match_and_reads_the_newest_pause
+  - tests/test_incumbent_reuse_1094.py::test_the_same_rows_under_a_changed_binary_model_or_sampling_run_fresh[binary]
+  - tests/test_incumbent_reuse_1094.py::test_the_same_rows_under_a_changed_binary_model_or_sampling_run_fresh[harness
+    prompt]
+  - tests/test_incumbent_reuse_1094.py::test_the_same_rows_under_a_changed_binary_model_or_sampling_run_fresh[model
+    file]
+  - tests/test_incumbent_reuse_1094.py::test_the_same_rows_under_a_changed_binary_model_or_sampling_run_fresh[sampling]
+  - tests/test_incumbent_reuse_1094.py::test_the_served_bytes_are_read_for_a_llama_server_spec
+  - tests/test_incumbent_reuse_1094.py::test_the_watchdog_judges_the_challenger_against_the_stored_incumbent_time
+attribution:
+  dataset: Claude Code session requests, redacted
+  url: https://github.com/unxmaal/SoHoT/issues/1095
+  license: generated
+  source: claude-code:transcripts
+  revision: 82ea6dc78eb1889c0e2f8b40e602ffc6fb9a3da4
+  item: 'sohot PR #1101'
+  date: '2026-10-22'
+  transform: 'a Claude Code session from the person''s request to just before the agent''s first edit
+    of a file the fix changes (evals/session_cut.py: user turns, assistant text, tool calls, reads and
+    searches kept, large outputs dropped, to a byte budget), redacted by evals/redact.py (secrets, ids,
+    emails, home and volume paths, hosts, IPs, pasted chat, handles, account and person names as typed
+    placeholders) and refused if a fix line or a name-like word is left; linked to the merged commit through
+    a commit hash or PR URL printed by a tool in that request or a Claude-Session trailer; base = fix^;
+    fail_to_pass and pass_to_pass from 2 sandboxed pytest runs per side, as evals/importers/history.py'
+  importer: evals.importers.transcripts
+  session: 893fd0505f5eef9e
+  evidence: pr
+  redactions:
+    account: 4
+    id: 4
+    path: 5
+    session: 1

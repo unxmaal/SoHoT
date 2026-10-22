@@ -1,0 +1,280 @@
+# Claude Code session requests, redacted, generated (https://github.com/unxmaal/SoHoT/issues/1095).
+# Imported by evals/importers from claude-code:transcripts@82ea6dc78eb1889c0e2f8b40e602ffc6fb9a3da4; re-import, do not edit.
+id: sohot-pr862-request
+modality: repo
+prompt: "Below is a Claude Code session, cut just before the agent's first edit to the code. Make the\
+  \ change the session is heading toward.\n\n## user\nDid discovery run?\n\n[... 20 earlier entries not\
+  \ shown ...]\n\n## tool Bash\n$ cd <PATH_HOME>/projects/github/unxmaal/sohot-816 && grep -n \"def _run_candidate\\\
+  |def _served\\|def restored_result\\|def planned_seconds\" evals/run.py\n403:def _served_tokens(base:\
+  \ str, model: str):\n1157:def planned_seconds(args, planned, budget: int, ladder, total: int) -> dict:\n\
+  1183:def restored_result(row: dict) -> core.Result:\n1278:def _served(candidate: str):\n1290:def _run_candidate(args,\
+  \ candidate, runner, mine, results, outdir, evicted=None,\n1353:def _served_ctx(candidate: str) -> int\
+  \ | None:\n\n## tool mcp__mcm-engine__search\n{\"query\": \"ds4\", \"limit\": 4}\n[8263 bytes of output\
+  \ not shown]\n\n## tool Bash\n$ cd <PATH_HOME>/projects/github/unxmaal/sohot-816 && sed -n 1157,1200p\
+  \ evals/run.py; sed -n 1270,1355p evals/run.py\ndef planned_seconds(args, planned, budget: int, ladder,\
+  \ total: int) -> dict:\n    \"\"\"receipt key -> planned seconds per case: --plan-s, else its stored\
+  \ mean here, else --budget-min over the cases. #810.\"\"\"\n    given = getattr(args, \"plan_s\", None)\
+  \ or []\n    if given and len(given) != len(planned):\n        raise SystemExit(f\"--plan-s given {len(given)}\
+  \ time(s) for {len(planned)} candidate(s)\")\n    stated = getattr(args, \"budget_min\", None)\n   \
+  \ out = {}\n    for i, (_, runner, _) in enumerate(planned):\n        each = given[i] if given else\
+  \ stored_seconds(args.modality, runner.candidate, budget, ladder)\n        if each is None and stated\
+  \ and total:\n            each = stated * 60.0 / total\n        out[runner.candidate] = each\n    return\
+  \ out\n\n\ndef stored_seconds(modality: str, key: str, budget: int, ladder) -> float | None:\n    \"\
+  \"\"A receipt key's mean seconds per case in this lane on this machine at this reply budget.\"\"\"\n\
+  \    from harness import memory_store as ms\n    from harness import power, runs\n    conn = ms.connect()\n\
+  \    try:\n        return power.mean_seconds(conn, modality, key, (budget, tuple(ladder or ())), runs.here(conn))\n\
+  \    finally:\n        conn.close()\n\n\ndef restored_result(row: dict) -> core.Result:\n    from dataclasses\
+  \ import fields\n    names = {f.name for f in fields(core.Result)}\n    return core.Result(**{k: v for\
+  \ k, v in row.items() if k in names})\n\n\ndef serving_machine(seen: dict, here: str) -> tuple[str,\
+  \ bool]:\n    \"\"\"(the fingerprint of the host that served,\n[... 3686 more bytes]\n\n## tool Bash\n\
+  $ cd <PATH_HOME>/projects/github/unxmaal/sohot-816 && grep -n \"def \\|models.max\\|models_max\\|class\
+  \ \" harness/router.py | head -60; grep -n \"def warm\" -A15 evals/runners/*.py | head -60\n16:def url()\
+  \ -> str:\n22:def _get(path: str, base: str = \"\") -> dict:\n27:def _post(path: str, body: dict, base:\
+  \ str = \"\") -> dict:\n35:def statuses(get=None, base: str = \"\") -> dict | None:\n50:def resident(get=None,\
+  \ base: str = \"\") -> list[str]:\n55:class Watch:\n58:    def __init__(self, model: str, get=None,\
+  \ base: str = \"\") -> None:\n66:    def look(self, case: str, at: str) -> None:\n87:def _upstream(spec:\
+  \ str, gateway: str = \"\") -> tuple:\n92:def upstream_for(spec: str, gateway: str = \"\", route=None)\
+  \ -> tuple[str, str]:\n103:def model_for(spec: str, gateway: str = \"\", route=None) -> str:\n108:def\
+  \ stem_of(spec: str) -> str:\n112:def protected(conn=None, config=None) -> set[str]:\n139:def _no_run_in_flight():\n\
+  158:def release(stems, why: str, *, get=None, post=None, keep=None, say=print, base: str = \"\") ->\
+  \ list[str]:\n195:def release_spec(spec: str, why: str, **kw) -> list[str]:\n200:def settle(why: str,\
+  \ **kw) -> list[str]:\nevals/runners/agent.py:148:    def warm(self) -> None:\nevals/runners/agent.py-149-\
+  \        \"\"\"One untimed turn at the load allowance, so the first step does not pay the load. #406,\
+  \ #694.\"\"\"\nevals/runners/agent.py-150-        try:\nevals/runners/agent.py-151-            self.chat([{\"\
+  role\": \"user\", \"content\": \"Reply with the word ok.\"}], model=self.model,\nevals/runners/agent.py-152-\
+  \                      gateway=self.gateway, timeout=completion.LOAD_TIMEOUT_S, max_tokens=8,\nevals/runners/agent.py-153-\
+  \                      sampling=self.sampling or None)\n[... 3623 more bytes]\n\n## tool mcp__mcm-engine__search\n\
+  {\"query\": \"models-max\", \"limit\": 4, \"scope\": \"rules\"}\n[2840 bytes of output not shown]\n\n\
+  ## tool Bash\n$ cd <PATH_HOME>/projects/github/unxmaal/sohot-816 && sed -n 1,110p harness/router.py;\
+  \ grep -rn \"models_max\\|max_models\\|router_max\\|MAX_MODELS\" harness/*.py | head -20\n\"\"\"llama-server's\
+  \ router keeps the last model it loaded; give back what discovery loaded. #444.\"\"\"\nfrom __future__\
+  \ import annotations\n\nimport contextlib\nimport json\nimport os\nimport urllib.request\n\nfrom harness.serving\
+  \ import LLAMACPP_PREFIX, LLAMACPP_URL\n\n#: Router statuses that hold memory.\nRESIDENT = {\"loaded\"\
+  , \"loading\", \"sleeping\"}\nTIMEOUT = 5.0\n\n\ndef url() -> str:\n    \"\"\"The eval router, on LLAMACPP_PORT\
+  \ when set (scripts/serve-eval.sh).\"\"\"\n    port = (os.environ.get(\"LLAMACPP_PORT\") or \"\").strip()\n\
+  \    return f\"{LLAMACPP_URL.rsplit(':', 1)[0]}:{port}\" if port.isdigit() else LLAMACPP_URL\n\n\ndef\
+  \ _get(path: str, base: str = \"\") -> dict:\n    with urllib.request.urlopen((base or url()) + path,\
+  \ timeout=TIMEOUT) as r:\n        return json.loads(r.read() or b\"{}\")\n\n\ndef _post(path: str, body:\
+  \ dict, base: str = \"\") -> dict:\n    req = urllib.request.Request((base or url()) + path, data=json.dumps(body).encode(),\n\
+  \                                 headers={\"Content-Type\": \"application/json\"},\n              \
+  \                   method=\"POST\")\n    with urllib.request.urlopen(req, timeout=TIMEOUT) as r:\n\
+  \        return json.loads(r.read() or b\"{}\")\n\n\ndef statuses(get=None, base: str = \"\") -> dict\
+  \ | None:\n    \"\"\"Router model id -> status value, None when the router at `base` (this machine's\
+  \ by default) cannot be asked.\"\"\"\n    try:\n        data = get(\"/models\") if get else _get(\"\
+  /models\", base) if base else _get(\"/models\")\n    except Exception:  # noqa: BLE001\n        return\
+  \ None\n    out =\n[... 4283 more bytes]\n\n## tool Bash\n$ cd <PATH_HOME>/projects/github/unxmaal/sohot-816\
+  \ && grep -rn \"_run_candidate\\|_served\\b\\|\\\"_served\\\"\" tests/ | head -30; sed -n 360,400p harness/context.py\n\
+  tests/test_judge_inline.py:65:def test_svg_and_web_render_inline_and_their_files_are_served(tmp_path,\
+  \ lane, suffix, tag, kind):\ntests/test_shared_store_703.py:377:    gateway.write_served(path)\ntests/test_loop_circuit.py:201:\
+  \    gateway.write_served(config)\ntests/test_node_machine_781.py:48:    gateway.write_served(cfg, defaults={},\
+  \ nodes=nodes_list)\ntests/test_live_audit.py:46:    gateway.write_served(config)\ntests/test_live_audit.py:93:\
+  \    gateway.write_served(config)\ntests/test_live_audit.py:115:    gateway.write_served(config)\ntests/test_live_audit.py:129:\
+  \    check = _checks(live_audit.audit(live))[\"no_reference_served\"]\ntests/test_live_audit.py:134:\
+  \    gateway.write_served(config, defaults={\"code\": \"q3-4b\"})\ntests/test_live_audit.py:172:   \
+  \ gateway.write_served(config)\ntests/test_machine_host.py:97:def test_the_gateway_names_the_machine_that_served(monkeypatch):\n\
+  tests/test_machine_host.py:305:def test_a_remote_run_records_the_context_and_slots_the_host_served(tmp_path,\
+  \ monkeypatch, quiet):\ntests/test_deploy_chart.py:498:def test_the_judge_is_told_where_the_model_is_served():\n\
+  tests/test_node_fallback.py:132:    served = gateway.write_served(cfg, defaults={}, nodes=nodes)\ntests/test_nodes.py:51:\
+  \    out = gateway.write_served(cfg, defaults={}, nodes=nodes_list)\ntests/test_claims_lane.py:535:\
+  \    run._run_candidate(run.parse_args([]), \"fake\", _Echo(False), [case], rows, tmp_path)\ntests/test_claims_balanced_metric.py:186:\
+  \    run._run_candidate(run.parse_args([]), \"fake\",\n[... 2805 more bytes]\n\n## tool Bash\n$ cd <PATH_HOME>/projects/github/unxmaal/sohot-816\
+  \ && grep -rln \"watch.PAUSED\\|checkpoint.jsonl\\|watch.CHECKPOINT\" tests/ ; cat harness/looks.py\
+  \ | sed -n 1,40p\ntests/test_pause_813.py\ntests/test_resume_813.py\n\"\"\"Interim looks at a paused\
+  \ paired run: success only with alpha spent across looks, futility only past a declared bound. #813.\"\
+  \"\"\nfrom __future__ import annotations\n\nimport math\nfrom dataclasses import asdict, dataclass\n\
+  from statistics import NormalDist\n\n#: Futility stops a run only when conditional power under the plan's\
+  \ effect falls below this AND the challenger is not ahead.\nFUTILITY_CP = 0.10\n\n\ndef spent(t: float,\
+  \ alpha: float) -> float:\n    \"\"\"Alpha an O'Brien-Fleming (Lan-DeMets) spending function has used\
+  \ by information fraction t.\"\"\"\n    if t <= 0:\n        return 0.0\n    t = min(1.0, t)\n    z =\
+  \ NormalDist().inv_cdf(1 - alpha / 2)\n    return min(alpha, 2 * (1 - NormalDist().cdf(z / math.sqrt(t))))\n\
+  \n\ndef conditional_power(gained: int, lost: int, remaining: int, gain: float, lose: float,\n      \
+  \                alpha: float) -> float:\n    \"\"\"P(the final sign test adopts) if the remaining cells\
+  \ go at per-cell odds (gain, lose).\"\"\"\n    from harness import power\n    disc = gain + lose\n \
+  \   if remaining <= 0 or disc <= 0:\n        return 1.0 if _wins(gained, lost, alpha) else 0.0\n   \
+  \ r = gain / disc\n    total = 0.0\n    for m in range(remaining + 1):\n        pm = power._pmf(remaining,\
+  \ m, disc)\n        if pm < 1e-12:\n            continue\n        total += pm * sum(power._pmf(m, k,\
+  \ r) for k in range(m + 1)\n                          if _wins(gained + k, lost + m - k, alpha))\n \
+  \   return min(1.0, total)\n\n\ndef _wins(gained: int, lost:\n[... 58 more bytes]\n\n## tool Bash\n\
+  $ cd <PATH_HOME>/projects/github/unxmaal/sohot-816 && sed -n 1,140p tests/test_resume_813.py\n\"\"\"\
+  The measure step pauses at its slice, looks, resumes first next sweep, and restarts a changed exam.\
+  \ #813.\"\"\"\nimport argparse\nimport json\nimport time\nfrom pathlib import Path\n\nimport pytest\n\
+  \nfrom evals import watch\nfrom harness import adopt, ceiling, holdout, looks, paused, power\nfrom harness\
+  \ import memory_store as ms\nfrom harness.commands import measure as measure_cmd\nfrom harness.commands.measure\
+  \ import Launched\n\nINC, CH = \"llamacpp:Inc\", \"llamacpp:Ch\"\n\n\ndef _ns(**kw):\n    return argparse.Namespace(**{\"\
+  repeat\": 1, \"effect\": 0.4, \"power_budget_min\": 60.0, **kw})\n\n\ndef _sweep(left_s: float = 3 *\
+  \ 3600.0) -> ceiling.Sweep:\n    now = time.time()\n    return ceiling.Sweep(6 * 3600.0, clock=lambda:\
+  \ now, started=now - (6 * 3600.0 - left_s))\n\n\ndef _rows(n: int, gained: int = 0, lost: int = 0) ->\
+  \ list[dict]:\n    \"\"\"Paired rows over the first n holdout cases: `gained` cells only the challenger\
+  \ passes, `lost` only the incumbent.\"\"\"\n    out = []\n    for i, c in enumerate(holdout.for_lane(\"\
+  code\").holdout[:n]):\n        inc_ok, ch_ok = ((False, True) if i < gained else (True, False) if i\
+  \ < gained + lost\n                         else (True, True))\n        out += [{\"case_id\": c, \"\
+  candidate\": INC, \"passed\": inc_ok, \"seconds\": 1.0, \"wall_s\": 1.0},\n                {\"case_id\"\
+  : c, \"candidate\": CH, \"passed\": ch_ok, \"seconds\": 1.0, \"wall_s\": 1.0}]\n    return out\n\n\n\
+  class Eval:\n    \"\"\"Stands in for evals.run: writes a checkpoint and progress for the rows it is\
+  \ given, then exits `rc`.\"\"\"\n\n    def\n[... 4134 more bytes]\n\n## tool mcp__mcm-engine__search\n\
+  {\"query\": \"reload\", \"limit\": 4}\n[14747 bytes of output not shown]\n\n## tool Bash\n$ cd <PATH_HOME>/projects/github/unxmaal/sohot-816\
+  \ && sed -n 1,120p tests/test_pause_813.py\n\"\"\"A paused eval keeps its rows and resumes where it\
+  \ stopped; a run writes progress as it goes. #813, #810.\"\"\"\nimport argparse\nimport json\nimport\
+  \ os\nimport signal\nimport sys\nfrom pathlib import Path\nfrom types import SimpleNamespace\n\nimport\
+  \ pytest\n\nfrom evals import environment, watch\nfrom evals import run as R\nfrom evals.runners.base\
+  \ import BaseRunner\nfrom harness import memory_store as ms\nfrom harness import completion, runs\n\n\
+  ROOT = Path(__file__).resolve().parents[1]\n\n\n@pytest.fixture\ndef quiet(monkeypatch):\n    for name,\
+  \ value in ((\"accelerator_id\", \"unified:test\"), (\"where_id\", \"test\"),\n                    \
+  \    (\"swap_used_mb\", 0), (\"instruments\", {}), (\"engines\", {})):\n        monkeypatch.setattr(R,\
+  \ name, lambda *a, _v=value, **k: _v)\n    monkeypatch.setattr(ms.machines, \"_THIS_MACHINE\", None)\n\
+  \    monkeypatch.setattr(environment, \"capture\", lambda: {})\n    monkeypatch.setattr(R, \"warn_if_pressed\"\
+  , lambda *a, **k: SimpleNamespace(as_dict=lambda: {}))\n\n\nclass Clock:\n    def __init__(self):\n\
+  \        self.now = 1_000_000.0\n\n    def __call__(self):\n        return self.now\n\n\nclass Ticking(BaseRunner):\n\
+  \    \"\"\"Each case takes `each` seconds of the fake clock; `on_case` runs before the n-th case returns.\"\
+  \"\"\n\n    def __init__(self, clock, each=10.0, on_case=None):\n        self.candidate = self.spec\
+  \ = \"org/x\"\n        self.clock, self.each, self.on_case = clock, each, on_case\n        self.ran\
+  \ = []\n\n    def generate(self, case):\n        self.ran.append(case.id)\n        self.clock.now\n\
+  [... 2814 more bytes]\n\n## tool Bash\n$ S=<PATH_TMP> mkdir -p $S/run-copy && cp -p ~/localharness/runs/20261013-211356-adopt-code/checkpoint.jsonl\
+  \ ~/localharness/runs/20261013-211356-adopt-code/progress.json $S/run-copy/ && ls ~/localharness/runs/20261013-211356-adopt-code\
+  \ | head; head -c 600 $S/run-copy/checkpoint.jsonl; echo; python3 -c \"\nimport json;L=[json.loads(l)\
+  \ for l in open('$S/run-copy/checkpoint.jsonl')]\nfrom collections import Counter;print(len(L)-1, Counter(x['row']['candidate']\
+  \ for x in L[1:]))\"; python3 -c \"import json;d=json.load(open('$S/run-copy/progress.json'));print({k:d[k]\
+  \ for k in ('state','why','done','total','specs','planned_s_per_case')})\"\ncheckpoint.jsonl  208.7K\n\
+  llamacpp:Ornith-1.5-35B-Q4_K_M--dedupe-stable.py  436B\nllamacpp:Ornith-1.5-35B-Q4_K_M--hevalpro-11.py\
+  \  600B\nllamacpp:Ornith-1.5-35B-Q4_K_M--hevalpro-6.py  937B\nllamacpp:Ornith-1.5-35B-Q4_K_M--lc3005.py\
+  \  281B\nllamacpp:Ornith-1.5-35B-Q4_K_M--lc3007.py  699B\nllamacpp:Ornith-1.5-35B-Q4_K_M--lc3010.py\
+  \  155B\nllamacpp:Ornith-1.5-35B-Q4_K_M--lc3015.py  874B\nllamacpp:Ornith-1.5-35B-Q4_K_M--lc3016.py\
+  \  287B\nllamacpp:Ornith-1.5-35B-Q4_K_M--lc3025.py  896B\n{\"identity\": {\"modality\": \"code\", \"\
+  candidates\": [\"llamacpp:Ornith-1.5-35B-Q4_K_M\", \"LiquidAI/LFM2.5-8B-A1B\"], \"repeat\": 1, \"split\"\
+  : \"holdout\", \"split_version\": \"1\", \"cases_digest\": \"7cf3d49e355f29f6\", \"max_tokens\": 32768,\
+  \ \"budget_ladder\": [], \"knobs\": {\"claude_code_timeout\": 600.0, \"code_check_timeout\": 15.0, \"\
+  load_timeout\": 1800.0, \"request_timeout\": 180.0}}}\n{\"row\": {\"case_id\": \"dedupe-stable\", \"\
+  candidate\": \"llamacpp:Ornith-1.5-35B-Q4_K_M\", \"passed\": true, \"seconds\": 3.347, \"peak_kb\":\
+  \ 0, \"detail\": \"\", \"output\": \"```python\\ndef dedupe(items):\\n    result = []\\n    for item\
+  \ in items:\\n        \n114 Counter({'llamacpp:Ornith-1.5-35B-Q4_K_M': 114})\n{'state': 'paused', 'why':\
+  \ 'paused at its stop time, 156 case(s) left', 'done': 114, 'total': 270, 'specs': {'llamacpp:Ornith-1.5-35B-Q4_K_M':\
+  \ 'llamacpp:Ornith-1.5-35B-Q4_K_M', 'LiquidAI/LFM2.5-8B-A1B': 'LiquidAI/LFM2.5-8B-A1B'}, 'planned_s_per_case':\
+  \ {'llamacpp:Ornith-1.5-35B-Q4_K_M': 58.88, 'LiquidAI/LFM2.5-8B-A1B': 7.19}}\n\n## tool Bash\n$ cd <PATH_HOME>/projects/github/unxmaal/sohot-816\
+  \ && grep -n \"^def engine_at\\|^LLAMACPP\\b\\|^LLAMACPP =\\|^MLX\\b\\|^MLX =\\|^DS4\\|^def bare\\|^def\
+  \ is_loopback\" -A6 harness/serving.py | head -60; grep -n \"DS4_KIND\\|def kind_of\" evals/run.py |\
+  \ head\n68:LLAMACPP = \"llama-server\"\n69-LLAMACPP_PREFIX = \"llamacpp:\"\n70-\n71-#: vLLM on this\
+  \ Mac, an OpenAI-compatible server on its own port. #310.\n72-VLLM_PREFIX = \"vllm:\"\n73-VLLM_URL =\
+  \ \"http://127.0.0.1:8086\"\n74-VLLM_PORT_VAR = \"VLLM_PORT\"\n--\n80:DS4_PREFIX = \"ds4:\"\n81:DS4\
+  \ = \"ds4-server\"\n82-\n83-\n84-def vllm_url(environ=None) -> str:\n85-    \"\"\"The vLLM server, on\
+  \ VLLM_PORT when set.\"\"\"\n86-    environ = os.environ if environ is None else environ\n87-    port\
+  \ = (environ.get(VLLM_PORT_VAR) or \"\").strip()\n--\n129:def bare(base: str) -> str:\n130-    \"\"\"\
+  A server base without a trailing slash or /v1.\"\"\"\n131-    return (base or \"\").strip().rstrip(\"\
+  /\").removesuffix(\"/v1\").rstrip(\"/\")\n132-\n133-\n134-def loopback(base: str) -> bool:\n135-   \
+  \ \"\"\"Whether `base` is on this machine.\"\"\"\n--\n160:def engine_at(base: str, environ=None, config=None,\
+  \ data=None) -> str | None:\n161-    \"\"\"The engine serving `base`: a config entry's engine key, else\
+  \ the local launcher port; None if neither says.\"\"\"\n162-    from harness import ds4, gateway, router\n\
+  163-    want = bare(base)\n164-    if not want:\n165-        return None\n166-    for entry in (gateway.load(config)\
+  \ if data is None else data).get(\"model_list\") or []:\n93:DS4_KIND = DS4_PREFIX.rstrip(\":\")\n95:TEXT_KINDS\
+  \ = (\"gateway\", LLAMACPP_KIND, VLLM_KIND, DS4_KIND)\n98:def kind_of(candidate: str) -> str:\n117:\
+  \    if head in (LLAMACPP_KIND, VLLM_KIND, DS4_KIND, NEEDLE_KIND):\n333:            if kind_of(candidate)\
+  \ == DS4_KIND and key in ds4.OPTIONS:\n1269:    if\n[... 76 more bytes]\n\n## tool mcp__mcm-engine__search\n\
+  {\"query\": \"LFM2.5\", \"limit\": 3}\n[608 bytes of output not shown]\n\n## tool Bash\n$ cd <PATH_HOME>/projects/github/unxmaal/sohot-816\
+  \ && sed -n 160,200p harness/serving.py; grep -n \"^MLX\\|mlx_lm.server\\\"\" harness/serving.py | head\n\
+  def engine_at(base: str, environ=None, config=None, data=None) -> str | None:\n    \"\"\"The engine\
+  \ serving `base`: a config entry's engine key, else the local launcher port; None if neither says.\"\
+  \"\"\n    from harness import ds4, gateway, router\n    want = bare(base)\n    if not want:\n      \
+  \  return None\n    for entry in (gateway.load(config) if data is None else data).get(\"model_list\"\
+  ) or []:\n        got = _declared(entry, environ)\n        if got and api_base(entry) == want:\n   \
+  \         return got\n    if want in (LLAMACPP_URL, router.url()):\n        return LLAMACPP\n    if\
+  \ want == vllm_url(environ):\n        return vllm_engine(environ)\n    if want == ds4.url(environ):\n\
+  \        return DS4\n    if want == MLX_URL:\n        return text_engine(environ)\n    return None\n\
+  \n\ndef engine_for(candidate: str, environ=None, config=None) -> str:\n    \"\"\"The server that answers\
+  \ this candidate, read from where it routes; raises when nothing says.\"\"\"\n    name = (candidate\
+  \ or \"\").partition(\",\")[0].strip()\n    if name.startswith(LLAMACPP_PREFIX):\n        return LLAMACPP\n\
+  \    if name.startswith(VLLM_PREFIX):\n        return vllm_engine(environ)\n    if name.startswith(DS4_PREFIX):\n\
+  \        return DS4\n    from harness import gateway\n    data = gateway.load(config)\n    for entry\
+  \ in data.get(\"model_list\") or []:\n        if str(entry.get(\"model_name\", \"\")).lower() == name.lower():\n\
+  \            base = api_base(entry)\n            got = _declared(entry, environ) or (engine_at(base,\
+  \ environ, data=data) if base else\n[... 379 more bytes]\n\n## tool Bash\n$ cd <PATH_HOME>/projects/github/unxmaal/sohot-816\
+  \ && sed -n 20,52p evals/run.py; grep -n \"^from harness\\|^import\\|^from\" evals/run.py | head -30\n\
+  import argparse\nimport contextlib\nimport json\nimport sys\nimport time\nfrom pathlib import Path\n\
+  \nfrom harness import audio, completion, context, delegate, ds4, env, knobs, paths, reasons, router\n\
+  from harness.engines import Engine, names as engine_names, parse_options, resolve\n\nfrom dataclasses\
+  \ import replace\n\nfrom evals.core import (AGENT_MODALITIES, MODALITIES, TEXT_MODALITIES,\n       \
+  \                 TEXT_SUFFIX, Case,\n                        Receipt, cases_digest, comparable, direction_of,\n\
+  \                        summarize)\nfrom evals import core, environment, private, watch\nfrom evals.runners.base\
+  \ import RunnerError\nfrom evals.runners.process import ProcessRunner\nfrom evals.runners.chain import\
+  \ ChainRunner\nfrom evals.runners.repair import RepairRunner\nfrom evals.runners.speech import SpeechRunner\n\
+  from evals.runners.omnisvg import DEFAULT_CANDIDATES, OmniSVGRunner\nfrom evals.runners.text import\
+  \ CompletionRunner\nfrom evals.runners.transcription import TranscriptionRunner\n\nROOT = Path(__file__).resolve().parent\n\
+  ALL_MODALITIES = sorted(MODALITIES)\n\n\n#: READ FROM THE BUILDER TABLE, not restated. This was a hand-written\
+  \ tuple of\n#: three and `diffusers` was not in it, so kind_of(\"diffusers:org/m\") answered\n19:from\
+  \ __future__ import annotations\n21:import argparse\n22:import contextlib\n23:import json\n24:import\
+  \ sys\n25:import time\n26:from pathlib import Path\n28:from harness import audio, completion, context,\
+  \ delegate, ds4, env, knobs, paths, reasons, router\n29:from harness.engines\n[... 952 more bytes]\n\
+  \n## assistant\nRed test first.\n\n## tool Write <PATH_HOME>/projects/github/unxmaal/sohot-816/tests/test_interleave_816.py\n\
+  \"\"\"A paired run alternates incumbent and challenger case by case, so a run paused early has paired\
+  \ cells to look at. #816.\"\"\"\nfrom collections import Counter\n\nimport pytest\n\nfrom evals import\
+  \ run as R\nfrom evals import watch\nfrom evals.runners.base import BaseRunner\nfrom tests.test_pause_813\
+  \ import _args, clock, quiet  # noqa: F401\n\nINC, CH = \"org/inc\", \"org/ch\"\n\n\nclass Named(BaseRunner):\n\
+  \    \"\"\"Each case takes `each` seconds of the fake clock and records itself in the shared `log`.\"\
+  \"\"\n\n    def __init__(self, name, clock, log, each=10.0):\n        self.candidate = self.spec = name\n\
+  \        self.clock, self.log, self.each = clock, log, each\n        self.ran, self.warms = [], 0\n\n\
+  \    def warm(self):\n        self.warms += 1\n\n    def generate(self, case):\n        self.ran.append(case.id)\n\
+  \        self.log.append(self.candidate)\n        self.clock.now += self.each\n        return \"\",\
+  \ 0\n\n\ndef _pair(monkeypatch, clock, block=1):\n    log = []\n    runners = {INC: Named(INC, clock,\
+  \ log), CH: Named(CH, clock, log)}\n    monkeypatch.setattr(R, \"build_runner\", lambda candidate, *a,\
+  \ **k: runners[candidate])\n    monkeypatch.setattr(R, \"pair_block\", lambda candidates, gateway: block)\n\
+  \    return runners, log\n\n\ndef _paired(rows) -> int:\n    seen = Counter(r[\"case_id\"] for r in\
+  \ rows)\n    return sum(1 for n in seen.values() if n == 2)\n\n\n@pytest.mark.parametrize(\"k\", [1,\
+  \ 2, 7, 9, 10])\ndef test_a_run_paused_after_k_cases_has_half_of_them_paired(monkeypatch, tmp_path,\
+  \ quiet, clock, k):\n    out =\n[... 4169 more bytes]\nFile created successfully at: <PATH_HOME>/projects/github/unxmaal/sohot-816/tests/test_interleave_816.py\
+  \ (file state is current in your context — no need to Read it back)\n\n## tool Bash\n$ cd <PATH_HOME>/projects/github/unxmaal/sohot-816\
+  \ && uv run pytest -q -x tests/test_interleave_816.py > <PATH_TMP> 2>&1; tail -15 <PATH_TMP>\ntests/test_interleave_816.py:48:\
+  \ \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\nmonkeypatch\
+  \ = <_pytest.monkeypatch.MonkeyPatch object at 0x10a90ac40>\nclock = <tests.test_pause_813.Clock object\
+  \ at 0x10a9e7e00>, block = 1\n\n    def _pair(monkeypatch, clock, block=1):\n        log = []\n    \
+  \    runners = {INC: Named(INC, clock, log), CH: Named(CH, clock, log)}\n        monkeypatch.setattr(R,\
+  \ \"build_runner\", lambda candidate, *a, **k: runners[candidate])\n>       monkeypatch.setattr(R, \"\
+  pair_block\", lambda candidates, gateway: block)\nE       AttributeError: <module 'evals.run' from '<PATH_HOME>/projects/github/unxmaal/sohot-816/evals/run.py'>\
+  \ has no attribute 'pair_block'\n\ntests/test_interleave_816.py:36: AttributeError\n!!!!!!!!!!!!!!!!!!!!!!!!!!\
+  \ stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!\n\n## tool mcp__mcm-engine__report_error\n{\"\
+  error_text\": \"sohot #816 red: tests/test_interleave_816.py: evals.run has no pair_block/paired_segments/PAIR_BLOCK;\
+  \ evals.run runs candidate-major so a run paused after K cases has 0 paired cells\n[... 80 more bytes]\n\
+  [336 bytes of output not shown]\n\n## assistant\nNow the implementation. First the loop in `_execute`."
+params:
+  source_repo: https://github.com/unxmaal/SoHoT.git
+  base: 8ae08a76bd2915b41bb353790bc11fb9ff8da315
+  fix: 08c0a7969a7893025552c8fe420d71fec61ec81d
+  variant: request
+  context: oracle
+  context_files:
+  - evals/run.py
+  fail_to_pass:
+  - tests/test_interleave_816.py::test_a_checkpoint_of_the_old_order_resumes_with_the_challenger_catching_up
+  - tests/test_interleave_816.py::test_a_ds4_candidate_keeps_the_candidate_major_order
+  - tests/test_interleave_816.py::test_a_resumed_paired_run_finishes_every_case_once
+  - tests/test_interleave_816.py::test_a_router_that_holds_one_runs_in_blocks
+  - tests/test_interleave_816.py::test_a_run_paused_after_k_cases_has_half_of_them_paired[10]
+  - tests/test_interleave_816.py::test_a_run_paused_after_k_cases_has_half_of_them_paired[1]
+  - tests/test_interleave_816.py::test_a_run_paused_after_k_cases_has_half_of_them_paired[2]
+  - tests/test_interleave_816.py::test_a_run_paused_after_k_cases_has_half_of_them_paired[7]
+  - tests/test_interleave_816.py::test_a_run_paused_after_k_cases_has_half_of_them_paired[9]
+  - tests/test_interleave_816.py::test_blocks_bound_the_swaps_when_both_models_cannot_be_held
+  - tests/test_interleave_816.py::test_both_on_one_router_that_holds_two_alternate_case_by_case
+  - tests/test_interleave_816.py::test_cases_alternate_incumbent_then_challenger_on_the_same_case
+  - tests/test_interleave_816.py::test_no_block_keeps_the_candidate_major_order
+  - tests/test_interleave_816.py::test_one_model_under_two_settings_alternates_on_a_router_that_holds_one
+  - tests/test_interleave_816.py::test_the_segments_merge_consecutive_runs_of_one_candidate
+  - tests/test_interleave_816.py::test_two_servers_each_holding_one_model_alternate
+  pass_to_pass: []
+attribution:
+  dataset: Claude Code session requests, redacted
+  url: https://github.com/unxmaal/SoHoT/issues/1095
+  license: generated
+  source: claude-code:transcripts
+  revision: 82ea6dc78eb1889c0e2f8b40e602ffc6fb9a3da4
+  item: 'sohot PR #862'
+  date: '2026-10-14'
+  transform: 'a Claude Code session from the person''s request to just before the agent''s first edit
+    of a file the fix changes (evals/session_cut.py: user turns, assistant text, tool calls, reads and
+    searches kept, large outputs dropped, to a byte budget), redacted by evals/redact.py (secrets, ids,
+    emails, home and volume paths, hosts, IPs, pasted chat, handles, account and person names as typed
+    placeholders) and refused if a fix line or a name-like word is left; linked to the merged commit through
+    a commit hash or PR URL printed by a tool in that request or a Claude-Session trailer; base = fix^;
+    fail_to_pass and pass_to_pass from 2 sandboxed pytest runs per side, as evals/importers/history.py'
+  importer: evals.importers.transcripts
+  session: 893fd0505f5eef9e
+  evidence: pr
+  redactions:
+    path: 18

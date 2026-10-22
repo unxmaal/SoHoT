@@ -7,13 +7,14 @@ from pathlib import Path
 
 import pytest
 
-from evals import redact
+from evals import redact, session_cut
 from evals.core import load_cases
 from evals.importers import history
 from evals.importers import transcripts as tr
 
 ROOT = Path(__file__).resolve().parents[1]
 T0 = 1_760_000_000
+FIX_LINE = '    return "the widget answer is two now"'
 REQUEST = ("The importer drops every candidate when gh is down; make a gh failure raise instead, and "
            "mail someone.else@example.org the result")
 
@@ -28,8 +29,12 @@ def _human(text, t, pid):
 
 
 def _bash(command, output, t, pid, n):
+    return _tool("Bash", {"command": command}, output, t, pid, n)
+
+
+def _tool(name, args, output, t, pid, n):
     use = {"type": "assistant", "timestamp": _iso(t), "message": {"content": [
-        {"type": "tool_use", "id": f"tu{n}", "name": "Bash", "input": {"command": command}}]}}
+        {"type": "tool_use", "id": f"tu{n}", "name": name, "input": args}]}}
     res = {"type": "user", "promptId": pid, "timestamp": _iso(t), "message": {"content": [
         {"type": "tool_result", "tool_use_id": f"tu{n}", "content": output}]}}
     return [use, res]
@@ -59,8 +64,9 @@ def _commit(path, files: dict, msg: str, at: float) -> str:
 
 
 @pytest.fixture
-def world(tmp_path):
+def world(tmp_path, monkeypatch):
     """A checkout of acme/widget with a feature commit, its squash on main, and a session that printed the first."""
+    monkeypatch.setattr(tr, "MIN_CUT_BYTES", 0)
     repos = tmp_path / "github"
     w = repos / "acme" / "widget"
     w.mkdir(parents=True)
@@ -69,7 +75,7 @@ def world(tmp_path):
     base = _commit(w, {"uv.lock": "x\n", "pkg/mod.py": "def f():\n    return 1\n",
                        "tests/test_mod.py": "from pkg.mod import f\n"}, "base", T0 - 100)
     _git(w, "checkout", "-q", "-b", "feat")
-    feature = _commit(w, {"pkg/mod.py": "def f():\n    return 2\n",
+    feature = _commit(w, {"pkg/mod.py": f"def f():\n{FIX_LINE}\n",
                           "tests/test_mod.py": "from pkg.mod import f\ndef test_f():\n    assert f() == 2\n"},
                       "feat", T0 + 50)
     _git(w, "checkout", "-q", "main")
@@ -78,7 +84,15 @@ def world(tmp_path):
     old = _commit(w, {"README": "old\n"}, "unrelated", T0 - 90_000)
     projects = tmp_path / "projects" / "-home-proj"
     main = projects / "s1.jsonl"
+    mod = str(w / "pkg" / "mod.py")
     _write(main, [_human(REQUEST, T0, "p1"),
+                  {"type": "assistant", "timestamp": _iso(T0 + 10), "message": {"content": [
+                      {"type": "text", "text": "Reading the module first."}]}},
+                  *_tool("Read", {"file_path": mod}, "def f():\n    return 1\n", T0 + 20, "p1", 10),
+                  *_tool("Edit", {"file_path": mod, "old_string": "    return 1", "new_string": FIX_LINE}, "ok",
+                         T0 + 30, "p1", 11),
+                  {"type": "assistant", "timestamp": _iso(T0 + 40), "message": {"content": [
+                      {"type": "text", "text": "AFTER THE EDIT, never in a prompt."}]}},
                   *_bash("git -C x commit -m feat", f"[feat {feature[:7]}] feat\n 2 files changed", T0 + 60, "p1", 1),
                   *_bash("git log --oneline -3", f"{old[:7]} unrelated", T0 + 61, "p1", 2),
                   *_bash("git commit -m z", f"{old[:7]} printed but far older than this commit", T0 + 62, "p1", 3),
@@ -149,24 +163,68 @@ def test_a_kept_task_carries_the_redacted_request_and_no_raw_text(world, monkeyp
     assert task["base"] == world["base"] and task["fix"] == world["squash"] and task["pr"] == 7
     assert task["repo"] == "https://github.com/acme/widget.git"
     assert "someone.else@example.org" not in json.dumps(got)
-    assert "<EMAIL_1>" in task["prompt"] and task["prompt"].startswith("The importer drops")
-    assert task["provenance"] == {"session": tr.session_hash("s1"), "evidence": "commit",
-                                  "redactions": {"email": 1}}
+    prompt = task["prompt"]
+    assert prompt.startswith(session_cut.HEAD) and "<EMAIL_1>" in prompt and "The importer drops" in prompt
+    assert "Reading the module first." in prompt and "## tool Read" in prompt and "return 1" in prompt
+    assert "AFTER THE EDIT" not in prompt and "## tool Edit" not in prompt
+    assert session_cut.leaks(prompt, [FIX_LINE.strip()]) == []
+    prov = task["provenance"]
+    assert prov["session"] == tr.session_hash("s1") and prov["evidence"] == "commit"
+    assert prov["redactions"]["email"] == 1 and prov["cut"]["stream"] == "main"
     case = tr.convert(task).case
     assert case["params"]["variant"] == "request" and case["params"]["fix"] == world["squash"]
     assert case["attribution"]["session"] == tr.session_hash("s1") and "s1" not in json.dumps(case)
 
 
-def test_screens_drop_and_count_by_reason(world):
-    main = world["main"]
-    recs = [json.loads(line) for line in main.read_text(encoding="utf-8").splitlines()]
-    recs[0]["message"]["content"] = "fix it"
-    _write(main, recs)
+def _recs(world):
+    return [json.loads(line) for line in world["main"].read_text(encoding="utf-8").splitlines()]
+
+
+def test_a_task_no_edit_in_its_request_touched_has_no_cut(world):
+    _write(world["main"], [r for r in _recs(world)
+                           if not any(b.get("name") == "Edit" for b in (r.get("message") or {}).get("content") or []
+                                      if isinstance(b, dict))])
     got = _survey(world, run=False)
-    assert got["projects"]["widget"]["dropped"] == {"request_too_short": 1} and not got["pending"]
+    assert got["projects"]["widget"]["dropped"] == {"no_edit": 1} and not got["pending"]
 
 
-def test_a_request_resolved_in_two_merged_tasks_is_dropped(world):
+def test_a_cut_that_already_shows_a_fix_line_is_dropped_as_a_leak(world):
+    recs = _recs(world)
+    recs[0]["message"]["content"] = REQUEST + "\nchange it to:\n" + FIX_LINE
+    _write(world["main"], recs)
+    got = _survey(world, run=False)
+    assert got["projects"]["widget"]["dropped"] == {"leak": 1} and not got["pending"]
+
+
+def test_a_cut_with_a_name_like_word_is_dropped_and_the_word_reported(world):
+    recs = _recs(world)
+    recs[0]["message"]["content"] = REQUEST + ". Ask Zorvanna, she reported it."
+    _write(world["main"], recs)
+    got = _survey(world, run=False)
+    assert got["projects"]["widget"]["dropped"] == {"name_guard": 1} and list(got["flagged"]) == ["Zorvanna"] and got["flagged"]["Zorvanna"][0] == 1
+
+
+def test_a_subagent_that_makes_the_first_edit_is_the_cut_and_opens_with_the_request(world, monkeypatch):
+    recs = [r for r in _recs(world)
+            if not any(b.get("name") == "Edit" for b in (r.get("message") or {}).get("content") or []
+                       if isinstance(b, dict))]
+    _write(world["main"], recs)
+    sub = world["main"].parent / "s1" / "subagents" / "agent-1.jsonl"
+    mod = str(world["repo"] / "pkg" / "mod.py")
+    _write(sub, [{"type": "user", "promptId": "p1", "timestamp": _iso(T0 + 5), "isSidechain": True,
+                  "message": {"content": "Implement the gh failure change in pkg/mod.py"}},
+                 *_tool("Grep", {"pattern": "def f"}, "pkg/mod.py:1:def f():", T0 + 15, None, 20),
+                 *_tool("Write", {"file_path": mod, "content": f"def f():\n{FIX_LINE}\n"}, "ok", T0 + 25, None, 21)])
+    monkeypatch.setattr(history, "probe", lambda *a, **k: {
+        "fail_to_pass": ["tests/test_mod.py::test_f"], "pass_to_pass": [], "test_s": 0.1})
+    (task,) = _survey(world)["tasks"]
+    prompt = task["prompt"]
+    assert task["provenance"]["cut"]["stream"] == "subagent"
+    assert prompt.index("The importer drops") < prompt.index("Implement the gh failure") < prompt.index("## tool Grep")
+    assert FIX_LINE.strip() not in prompt
+
+
+def test_a_request_resolved_in_two_merged_tasks_gives_both(world):
     w = world["repo"]
     other = _commit(w, {"pkg/mod.py": "def f():\n    return 3\n",
                         "tests/test_mod.py": "from pkg.mod import f\ndef test_f():\n    assert f() == 3\n"},
@@ -175,7 +233,7 @@ def test_a_request_resolved_in_two_merged_tasks_is_dropped(world):
     recs[-1:-1] = _bash("git commit -m y", f"[main {other[:8]}] y", T0 + 610, "p1", 9)
     _write(world["main"], recs)
     got = _survey(world, run=False)
-    assert got["projects"]["widget"]["dropped"] == {"request_spans_tasks": 2}
+    assert len(got["pending"]) == 2 and got["projects"]["widget"]["dropped"] == {}
 
 
 def test_a_private_repo_is_never_a_case(world):
@@ -198,6 +256,8 @@ def test_a_case_still_matching_a_detector_is_refused(world, monkeypatch):
         tr.convert({**task, "prompt": task["prompt"] + " cc another@example.net"})
     with pytest.raises(ValueError, match="refused.*home-path"):
         tr.convert({**task, "prompt": task["prompt"] + " see /" + "Users/zorblat/x"})
+    with pytest.raises(ValueError, match="refused.*1 name-like"):
+        tr.convert({**task, "prompt": task["prompt"] + " thanks to @quillfeather"})
 
 
 def test_the_table_names_every_project():
@@ -207,6 +267,29 @@ def test_the_table_names_every_project():
     lines = tr.report(got)
     assert "-p 2 sessions 9 requests" in lines[0]
     assert any(line.startswith("widget") and "no_flip 1, too_big 1" in line for line in lines)
+
+
+#: A fixed planted account and name, so the clean check reads the same on every machine; the machine's own account
+#: counts only where an account leaks, in a home path or a project slug, since a CI runner's account ("runner") is
+#: also a word these cases use.
+PLANTED = redact.Known(accounts=("zorblat",), names=("Quentavious",))
+
+
+def _left(values: str) -> dict:
+    import re
+    got = dict(redact.detect(values, PLANTED))
+    for acct in redact.known_here().accounts:
+        if re.search(rf"(?:Users|home)[/\\-]{re.escape(acct)}(?![A-Za-z0-9])", values, re.I):
+            got["account"] = got.get("account", 0) + 1
+    return got
+
+
+def test_the_clean_check_catches_a_planted_account_and_this_machines_in_a_path():
+    import getpass
+    assert _left("all clean here") == {}
+    assert _left("see -Users-zorblat-projects/x") == {"account": 1}
+    assert _left(f"see <PATH_HOME>/.claude/projects/-Users-{getpass.getuser()}-projects") == {"account": 1}
+    assert _left(f"the {getpass.getuser()} word alone") == {}
 
 
 COMMITTED = sorted((ROOT / "evals" / "cases" / "repo" / "transcripts").glob("*.yaml"))
@@ -222,8 +305,10 @@ def test_the_committed_manifest_matches_revision_and_the_cases():
 @pytest.mark.parametrize("path", COMMITTED, ids=[p.stem for p in COMMITTED])
 def test_every_committed_case_is_clean_and_loads(path):
     from harness import privacy
+    import yaml
     text = path.read_text(encoding="utf-8")
-    assert redact.detect(text, redact.known_here()) == {}
+    values = tr.strings(yaml.safe_load(text))
+    assert _left(values) == {} and redact.name_like(values) == []
     assert privacy.scan(text, path.name) == []
     case = LOADED[path.name]
     assert case.params["variant"] == "request" and case.params["fail_to_pass"]
@@ -241,6 +326,8 @@ def test_a_claude_session_trailer_links_a_commit_no_tool_printed(world):
     recs = [json.loads(line) for line in world["main"].read_text(encoding="utf-8").splitlines()]
     recs.append({"type": "attachment", "attachment": {"type": "remote_session_change", "url": url}})
     recs.append(_human("now make f return four and keep its test honest about it please", T0 + 1900, "p3"))
+    recs += _tool("Edit", {"file_path": str(w / "pkg" / "mod.py"), "old_string": "1", "new_string": "4"}, "ok",
+                  T0 + 1950, "p3", 30)
     _write(world["main"], recs)
     got = _survey(world, run=False)
     assert {p["id"] for p in got["pending"]} == {"widget-pr7-request", "widget-pr8-request"}
@@ -289,3 +376,36 @@ def test_a_repo_with_a_history_source_is_probed_and_graded_its_way(world, monkey
     params = tr.convert(task).case["params"]
     assert params["pytest_args"] == ["--import-mode=importlib"] and params["extras"] == ["dev"]
     assert tr.source_for("https://github.com/acme/other.git", "other").markers == ""
+
+
+@pytest.mark.parametrize("path", COMMITTED, ids=[p.stem for p in COMMITTED])
+def test_no_committed_cut_holds_a_line_its_fix_adds(path):
+    case = LOADED[path.name]
+    p = case.params
+    if p["source_repo"] != history.REPO_URL:
+        pytest.skip("only this checkout's own history is at hand")
+    files = sorted({*p["context_files"], *(p.get("new_files") or [])})
+    try:
+        diff = _git(ROOT, "diff", "--no-renames", p["base"], p["fix"], "--", *files)
+        base = {f: _git(ROOT, "show", f"{p['base']}:{f}") for f in p["context_files"]}
+    except subprocess.CalledProcessError:
+        pytest.skip("a shallow checkout lacks the commits")
+    assert session_cut.leaks(case.prompt, session_cut.added_lines(diff, base)) == []
+
+
+def test_a_repo_whose_sessions_read_a_chat_archive_is_never_imported(world, monkeypatch):
+    monkeypatch.setattr(tr, "THIRD_PARTY_DATA", ("widget",))
+    got = _survey(world, run=False)
+    assert got["projects"]["widget"]["dropped"] == {"third_party_data": 1} and not got["pending"]
+
+
+def test_a_cut_that_is_the_request_and_little_else_is_dropped(world, monkeypatch):
+    monkeypatch.setattr(tr, "MIN_CUT_BYTES", 10 ** 6)
+    got = _survey(world, run=False)
+    assert got["projects"]["widget"]["dropped"] == {"cut_too_short": 1} and not got["pending"]
+
+
+def test_a_case_excluded_by_hand_is_dropped(world, monkeypatch):
+    monkeypatch.setattr(tr, "EXCLUDED", {"widget-pr7-request": "private"})
+    got = _survey(world, run=False)
+    assert got["projects"]["widget"]["dropped"] == {"excluded": 1} and not got["pending"]
