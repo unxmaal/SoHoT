@@ -84,10 +84,11 @@ def _repo_regrade(root: Path, run: Path, only: list[str]) -> int:
         rows.append({"run": run.name, "file": path.name, "case": cid,
                      "was_resolved": bool(was.get("resolved")), "was_applied": bool(was.get("patch_applied")),
                      "resolved": g.resolved,
-                     "patch_applied": g.patch_applied, "detail": g.detail})
+                     "patch_applied": g.patch_applied, "detail": g.detail, "skipped": g.skipped})
         note(f"  {path.name}: {'resolved' if g.resolved else 'applied, unresolved' if g.patch_applied else 'invalid_patch'}"
              f" (was {'resolved' if was.get('resolved') else 'applied' if was.get('patch_applied') else 'invalid_patch'})"
-             f"{'' if g.resolved else ': ' + g.detail[:200]}")
+             f"{'' if g.resolved else ': ' + g.detail[:200]}"
+             f"{''.join(f'; {repo.DOC_HUNK_SKIPPED}: ' + s['path'] for s in g.skipped)}")
     if only and not {r["case"] for r in rows} >= set(only):
         return err(f"no stored diff in {run} for {', '.join(sorted(set(only) - {r['case'] for r in rows}))}")
     emit(bool(rows), regraded=rows)

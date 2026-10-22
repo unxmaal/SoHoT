@@ -11,6 +11,7 @@ import subprocess
 import sys
 import time
 import uuid
+from fnmatch import fnmatchcase
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -24,6 +25,10 @@ VALIDATION_RUNS = 3
 _SHA = re.compile(r"^[0-9a-f]{40}$")
 #: Lock and manifest files whose bytes decide the environment; one venv per digest of them.
 ENV_FILES = ("uv.lock", "pyproject.toml", ".python-version")
+#: Documentation a hunk may fail to apply in and leave the rest graded, when no test names the file. #1107.
+DOC_PATTERNS = ("*.md", "*.rst", "docs/**", "CHANGELOG*")
+#: The warning a row carries for each documentation file whose hunks were left out. #1107.
+DOC_HUNK_SKIPPED = "doc_hunk_skipped"
 PROFILE = """(version 1)
 (allow default)
 (deny network*)
@@ -51,6 +56,8 @@ class Grade:
     failed: list = field(default_factory=list)
     #: The `limit:` body when the tests ran past our timeout, else "".
     limit: str = ""
+    #: {"path", "why"} of each documentation file left out because its hunks did not apply. #1107.
+    skipped: list = field(default_factory=list)
 
 
 #: The grader's own directory in a task: sandbox profile, HOME, TMPDIR, junit report. #899.
@@ -308,6 +315,58 @@ def apply(task: Path, diff: str) -> tuple[bool, str]:
     return False, f"git apply: {why}"
 
 
+def is_doc(path: str) -> bool:
+    """A documentation file by DOC_PATTERNS (a pattern without / matches the file name); never a test or .py file."""
+    if is_test_path(path) or path.endswith(".py"):
+        return False
+    name = Path(path).name
+    return any(fnmatchcase(path if "/" in pat else name, pat) for pat in DOC_PATTERNS)
+
+
+_GIT_LINE = re.compile(r"^diff --git a/(\S+) b/(\S+)")
+
+
+def file_chunks(diff: str) -> list[tuple[str, str]]:
+    """(path, text) of each `diff --git` section of a diff that with_git_headers has headed."""
+    out = []
+    for line in diff.splitlines(keepends=True):
+        m = _GIT_LINE.match(line)
+        if m:
+            out.append([m.group(2), line])
+        elif out:
+            out[-1][1] += line
+    return [(p, t) for p, t in out]
+
+
+def named_by_tests(mirror_path: Path, base: str, fix: str, path: str, ids=()) -> bool:
+    """Whether a test file the grader runs (hidden tests, the ids' files, their conftest.py) names `path`'s file name."""
+    files = set(hidden_tests(mirror_path, base, fix)) | {i.partition("::")[0] for i in ids}
+    files |= {"/".join([*f.split("/")[:n], "conftest.py"]) for f in list(files) for n in range(f.count("/") + 1)}
+    name = Path(path).name.encode("utf-8")
+    return any(name in (_blob(mirror_path, fix, f) or _blob(mirror_path, base, f) or b"") for f in sorted(files))
+
+
+def apply_docs_aside(task: Path, diff: str, named) -> tuple[bool, str, list]:
+    """apply; when it fails and only documentation files no test names (`named(path)`) fail alone, apply the rest."""
+    applied, why = apply(task, diff)
+    if applied or not diff.strip():
+        return applied, why, []
+    chunks = file_chunks(with_git_headers(diff))
+    failed = {}
+    for path, text in chunks:
+        got = _git(["apply", "--check", "--recount", "--whitespace=nowarn", "-"], cwd=task, check=False,
+                   input=text.encode("utf-8"))
+        if got.returncode:
+            failed.setdefault(path, got.stderr.decode(errors="replace").strip()[-300:])
+    rest = "".join(t for p, t in chunks if p not in failed)
+    if not failed or any(not is_doc(p) or named(p) for p in failed):
+        return False, why, []
+    applied, _ = apply(task, rest)
+    if not applied:
+        return False, why, []
+    return True, "", [{"path": p, "why": failed[p]} for p in sorted(failed)]
+
+
 def changed(mirror_path: Path, base: str, fix: str) -> list[tuple[str, str]]:
     """(status, path) of every file base..fix touched."""
     got = _git(["--git-dir", str(mirror_path), "diff", "--name-status", "--no-renames", base, fix])
@@ -456,13 +515,17 @@ class Attempt:
                           self.params.get("new_files") or ())
 
     def submit(self, diff: str) -> Grade:
-        applied, why = apply(self.task, diff)
+        p = self.params
+        ids = [*p["fail_to_pass"], *(p.get("pass_to_pass") or [])]
+        applied, why, skipped = apply_docs_aside(
+            self.task, diff, lambda path: named_by_tests(self.mirror, p["base"], p["fix"], path, ids))
         if not applied:
             return Grade(False, False, why)
-        p = self.params
         install_tests(self.mirror, self.task, p["base"], p["fix"])
-        return grade(self.task, self.python, p["fail_to_pass"], p.get("pass_to_pass") or [],
-                     p.get("pytest_args") or ())
+        got = grade(self.task, self.python, p["fail_to_pass"], p.get("pass_to_pass") or [],
+                    p.get("pytest_args") or ())
+        got.skipped = skipped
+        return got
 
     def close(self) -> None:
         discard(self.mirror, self.task)

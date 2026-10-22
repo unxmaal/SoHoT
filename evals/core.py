@@ -348,6 +348,8 @@ def _check_repo(artifact, case: Case) -> CheckResult:
     out = CheckResult(bool(grade.get("resolved")), grade.get("detail") or "", failure_class=cls,
                       limit=grade.get("limit") or "")
     out.metrics = dict(record.get("metrics") or {})
+    from evals.repo import DOC_HUNK_SKIPPED
+    out.warnings += [f"{DOC_HUNK_SKIPPED}: {s.get('path')}: {s.get('why')}" for s in grade.get("skipped") or ()]
     return out
 
 
