@@ -1147,13 +1147,15 @@ def _execute_at(args, overrides: dict) -> int:
     outdir = resolve_outdir(args.out, args.modality)
     if outdir:
         outdir.mkdir(parents=True, exist_ok=True)
-    idents = {c: content_identity(args.modality, c, budget, ladder, overrides, chosen) for c in candidates}
+    running = {holdout.base_id(c.id) for c in cases}
+    idents = {c: content_identity(args.modality, c, budget, ladder, overrides,
+                                  [x for x in chosen if x.id in running]) for c in candidates}
     taken = reused_cells(getattr(args, "reuse", None), idents, cases)
     identity = {"modality": args.modality, "candidates": candidates, "repeat": args.repeat,
                 "split": side, "split_version": holdout.version(args.modality), "cases_digest": cases_digest(cases),
                 "max_tokens": budget, "budget_ladder": list(ladder),
                 "knobs": knobs.settings(args.modality, overrides),
-                "identities": {c: idents[c]["digest"] for c in candidates}}
+                "identities": {c: combined_identity(idents[c]) for c in candidates}}
     if taken:
         identity["reuse"] = {k: v for k, v in taken.items() if k != "runs"}
     had = watch.read(outdir) if getattr(args, "resume", False) else None
@@ -1400,7 +1402,12 @@ def content_identity(lane: str, spec: str, budget: int, ladder, overrides, cases
     try:
         return identity.of(lane, spec, budget=budget, ladder=ladder, overrides=overrides, cases=cases)
     except Exception as exc:  # noqa: BLE001 - an unreadable identity only disables reuse
-        return {"digest": "", "parts": {}, "timing": {}, "unresolved": [f"{type(exc).__name__}: {exc}"]}
+        return {"digest": "", "cases": {}, "parts": {}, "timing": {}, "unresolved": [f"{type(exc).__name__}: {exc}"]}
+
+
+def combined_identity(ident: dict) -> str:
+    from harness import identity
+    return identity.combined(ident)
 
 
 def reused_cells(path, idents: dict, cases) -> dict:
@@ -1415,8 +1422,11 @@ def reused_cells(path, idents: dict, cases) -> dict:
         print(f"── reuse refused: {spec or path}'s identity is {now[:12] or 'unreadable'} here, "
               f"the plan's was {digest[:12] or 'none'}; every incumbent cell runs", file=sys.stderr, flush=True)
         return {}
-    ids = {c.id for c in cases}
-    cells = sorted(c for c in got.get("cells") or {} if c in ids)
+    from harness import holdout
+    ids, mine = {c.id for c in cases}, idents[spec].get("cases") or {}
+    # A cell is skipped only if its case and the request it is sent are the ones the stored draw answered.
+    cells = sorted(c for c, ref in (got.get("cells") or {}).items()
+                   if c in ids and len(ref) > 5 and ref[5] and ref[5] == mine.get(holdout.base_id(c)))
     return {"spec": spec, "digest": digest, "cells": cells, "runs": got.get("runs") or {}} if cells else {}
 
 

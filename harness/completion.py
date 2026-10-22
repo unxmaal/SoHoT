@@ -307,10 +307,9 @@ def request_of(payload: dict) -> dict:
             "system_sha": hashlib.sha256(system.encode("utf-8")).hexdigest()[:16] if system else ""}
 
 
-def _complete_full(sent: dict, prompt, model, gateway, modality, context, timeout, temperature,
-                   max_tokens, sampling, template, top_logprobs, stream, system,
-                   response_format) -> Completion:
-    gateway = gateway or gateway_url()
+def payload_for(prompt, model, modality, context, temperature, max_tokens, sampling, template,
+                top_logprobs, stream, system, response_format) -> dict:
+    """The chat request body a completion sends, before any server-specific retry. #1094."""
     knobs = dict(SAMPLING.get(modality, {}))
     if temperature is not None:
         knobs["temperature"] = temperature
@@ -342,6 +341,16 @@ def _complete_full(sent: dict, prompt, model, gateway, modality, context, timeou
     if stream and not top_logprobs:
         payload["stream"] = True
         payload["stream_options"] = {"include_usage": True}
+    return payload
+
+
+def _complete_full(sent: dict, prompt, model, gateway, modality, context, timeout, temperature,
+                   max_tokens, sampling, template, top_logprobs, stream, system,
+                   response_format) -> Completion:
+    gateway = gateway or gateway_url()
+    payload = payload_for(prompt, model, modality, context, temperature, max_tokens, sampling, template,
+                          top_logprobs, stream, system, response_format)
+    system, user = (m["content"] for m in payload["messages"])
     sent.update(request_of(payload))
     try:
         r = _post(gateway, payload, timeout)

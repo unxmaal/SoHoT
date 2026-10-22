@@ -527,13 +527,14 @@ def _with_reuse(plan, lane: str, inc_spec: str, est: dict, side: str):
         cases = run.load_selected(run.parse_args(["--modality", lane]))
     except SystemExit as exc:
         return replace(plan, reuse={"digest": "", "unresolved": [f"cases: {exc}"]})
-    ident = run.content_identity(lane, inc_spec, run.run_budget(lane, None), (), {}, cases)
+    on = holdout.only(cases, side)
+    ident = run.content_identity(lane, inc_spec, run.run_budget(lane, None), (), {}, on)
     if not ident["digest"]:
         return replace(plan, reuse={"digest": "", "unresolved": ident["unresolved"]})
-    cells = [c.id for c in run.expand_cases(holdout.only(cases, side), plan.repeat)]
+    cells = [c.id for c in run.expand_cases(on, plan.repeat)]
     store = ms.connect()
     try:
-        got = reuse.plan(store, lane, ident["digest"], cells)
+        got = reuse.plan(store, lane, ident["digest"], cells, cases=ident["cases"])
     finally:
         store.close()
     inc = (est.get("incumbent_s") or 0.0) * (est.get("incumbent_calls") or 1)

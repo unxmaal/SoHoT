@@ -69,6 +69,8 @@ CHANGES = {
     "sampling": lambda f, mp: mp.setitem(completion.SAMPLING, "code", {"temperature": 0.9}),
     "split version": lambda f, mp: mp.setattr("harness.holdout.version", lambda lane: "2"),
 }
+#: A run changes each of these; the harness prompt moves the per-case digest, not the run's.
+RUN_CHANGES = {**CHANGES, "harness prompt": lambda f, mp: mp.setitem(completion.SYSTEM, "code", "Answer tersely.")}
 
 
 @pytest.mark.parametrize("change", sorted(CHANGES))
@@ -79,24 +81,102 @@ def test_the_digest_moves_when_any_served_or_sent_input_changes(served, monkeypa
     assert _of()["digest"] != before
 
 
-def test_the_digest_moves_with_the_reply_budget_knobs_cases_harness_and_machine(served):
-    from harness.holdout import Split  # noqa: F401
-    from evals.core import Case
-    case = Case(id="c1", modality="code", prompt="p")
-    base = _of(cases=[case])["digest"]
+def test_the_digest_moves_with_the_reply_budget_knobs_and_machine(served):
+    base = _of()["digest"]
     moved = {
-        "budget": _of(cases=[case], budget=16000),
-        "spec option": _of("llamacpp:Stem,temperature=0.7", cases=[case]),
-        "knob": _of(cases=[case], overrides={"request_timeout": 30.0}),
-        "cases": _of(cases=[Case(id="c1", modality="code", prompt="q")]),
-        "git sha": _of(cases=[case], harness={**HARNESS, "git_sha": "b" * 40}),
-        "dirty diff": _of(cases=[case], harness={**HARNESS, "git_dirty": True, "diff": "d1"}),
-        "hw_model": _of(cases=[case], machine=({**MACHINE[0], "hw_model": "Mac14,12"}, MACHINE[1])),
-        "os build": _of(cases=[case], machine=({**MACHINE[0], "os_build": "26B1"}, MACHINE[1])),
-        "memory": _of(cases=[case], machine=({**MACHINE[0], "memory_gb": 32}, MACHINE[1])),
-        "power mode": _of(cases=[case], machine=({**MACHINE[0], "power": {"lowpowermode": "1"}}, MACHINE[1])),
+        "budget": _of(budget=16000),
+        "spec option": _of("llamacpp:Stem,temperature=0.7"),
+        "knob": _of(overrides={"request_timeout": 30.0}),
+        "hw_model": _of(machine=({**MACHINE[0], "hw_model": "Mac14,12"}, MACHINE[1])),
+        "os build": _of(machine=({**MACHINE[0], "os_build": "26B1"}, MACHINE[1])),
+        "memory": _of(machine=({**MACHINE[0], "memory_gb": 32}, MACHINE[1])),
+        "power mode": _of(machine=({**MACHINE[0], "power": {"lowpowermode": "1"}}, MACHINE[1])),
     }
     assert {k for k, v in moved.items() if v["digest"] == base} == set()
+
+
+def test_the_harness_commit_is_recorded_and_never_matched(served):
+    base = _of()
+    later = _of(harness={"git_sha": "b" * 40, "git_dirty": True, "diff": "d1"})
+    assert later["digest"] == base["digest"] and later["cases"] == base["cases"]
+    assert later["recorded"]["harness"]["git_sha"] == "b" * 40
+
+
+CASE = """id: c1
+modality: code
+prompt: Write add(a, b).
+assert:
+  checks:
+    - "add(1, 2) == 3"
+"""
+
+
+def _case(tmp_path, text=CASE):
+    from evals import core
+    path = tmp_path / "cases" / "code" / "c1.yaml"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
+    return core.load_case(path)
+
+
+def test_a_case_digest_moves_with_its_hidden_tests_its_file_and_the_prompt_the_harness_sends(tmp_path, served,
+                                                                                            monkeypatch):
+    first = _of(cases=[_case(tmp_path)])
+    base = first["cases"]["c1"]
+    assert _of(cases=[_case(tmp_path)])["cases"]["c1"] == base
+    assert _of(cases=[_case(tmp_path, CASE.replace("== 3", "== 4"))])["cases"]["c1"] != base
+    assert _of(cases=[_case(tmp_path, CASE + "# reviewed\n")])["cases"]["c1"] != base
+    monkeypatch.setitem(completion.SYSTEM, "code", "Answer in Python, tersely.")
+    moved = _of(cases=[_case(tmp_path)])
+    assert moved["cases"]["c1"] != base and moved["digest"] == first["digest"]
+
+
+GRADER = "def check(answer):\n    return answer == 'ok'\n"
+LANE = "from fakegrade import checks\n\n\ndef check_lane(artifact, case):\n    return checks.check(artifact)\n"
+
+
+@pytest.fixture
+def grading(tmp_path, monkeypatch):
+    """A lane whose checker lives in fakegrade.lane and calls fakegrade.checks; fakegrade.unrelated is beside them."""
+    import importlib
+    import sys
+    pkg = tmp_path / "pkg" / "fakegrade"
+    pkg.mkdir(parents=True)
+    for name, text in (("__init__", ""), ("checks", GRADER), ("lane", LANE), ("unrelated", "X = 1\n")):
+        (pkg / f"{name}.py").write_text(text, encoding="utf-8")
+    monkeypatch.syspath_prepend(str(tmp_path / "pkg"))
+
+    def digest():
+        for name in [m for m in sys.modules if m == "fakegrade" or m.startswith("fakegrade.")]:
+            del sys.modules[name]
+        lane = importlib.import_module("fakegrade.lane")
+        importlib.import_module("fakegrade.unrelated")
+        return identity.grader_digest("fake", checkers={"fake": lane.check_lane}, packages=("fakegrade",), also=())
+    return pkg, digest
+
+
+def test_an_unrelated_harness_file_keeps_the_grader_digest(grading):
+    pkg, digest = grading
+    base = digest()
+    assert set(base) == {"fakegrade.lane.check_lane", "fakegrade.checks"}
+    _rewrite(pkg / "unrelated.py", "X = 2\n")
+    assert digest() == base
+
+
+def test_editing_the_grader_or_the_lane_checker_moves_the_grader_digest(grading):
+    pkg, digest = grading
+    base = digest()
+    _rewrite(pkg / "checks.py", GRADER.replace("'ok'", "'yes'"))
+    second = digest()
+    assert second != base
+    _rewrite(pkg / "lane.py", LANE.replace("checks.check(artifact)", "not checks.check(artifact)"))
+    assert digest() != second
+
+
+def test_the_lane_digest_names_the_real_code_grader():
+    got = identity.grader_digest("code")
+    assert "harness.checks.code" in got and "evals.core._check_code" in got
+    assert not any(k.startswith("harness.checks.") and k != "harness.checks.code" for k in got)
 
 
 def test_the_digest_holds_when_only_swap_or_free_memory_or_thermal_change(served):
@@ -153,13 +233,13 @@ def _incumbent_only(tmp_path, name="earlier"):
 
 
 def _planned(lane="code"):
-    cases = R.load_selected(R.parse_args(["--modality", lane]))
     from harness import holdout
-    cells = [c.id for c in R.expand_cases(holdout.only(cases, "holdout"), 1)]
-    ident = R.content_identity(lane, INC, R.run_budget(lane, None), (), {}, cases)
+    on = holdout.only(R.load_selected(R.parse_args(["--modality", lane])), "holdout")
+    cells = [c.id for c in R.expand_cases(on, 1)]
+    ident = R.content_identity(lane, INC, R.run_budget(lane, None), (), {}, on)
     conn = ms.connect()
     try:
-        return reuse.plan(conn, lane, ident["digest"], cells), cells
+        return reuse.plan(conn, lane, ident["digest"], cells, cases=ident["cases"]), cells
     finally:
         conn.close()
 
@@ -202,12 +282,12 @@ def test_a_case_without_a_matching_draw_runs_fresh(tmp_path, quiet, pair):
     assert pair[INC].ran == [first] and got["fresh"] == 1
 
 
-@pytest.mark.parametrize("change", ["binary", "model file", "sampling"])
+@pytest.mark.parametrize("change", ["binary", "model file", "sampling", "harness prompt"])
 def test_the_same_rows_under_a_changed_binary_model_or_sampling_run_fresh(tmp_path, quiet, pair, served,
                                                                           monkeypatch, change):
     _incumbent_only(tmp_path)
     stale, cells = _planned()
-    CHANGES[change](served, monkeypatch)
+    RUN_CHANGES[change](served, monkeypatch)
     got, _ = _planned()
     assert got["reused"] == 0 and got["fresh"] == len(cells)
     # A plan written before the change is refused by the run itself.

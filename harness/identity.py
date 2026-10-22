@@ -244,24 +244,131 @@ def lane_cases(lane: str) -> list:
 
 
 def settings(lane: str, spec: str, budget: int, ladder=(), overrides=None) -> dict:
-    """The reply settings and sampling this spec is sent in this lane."""
+    """The reply settings and sampling this spec is sent in this lane, and a method's template digest."""
     from evals import run
     from harness import knobs
     text = run.text_candidate(spec)
     return {"spec": spec, "max_tokens": int(budget), "budget_ladder": list(ladder),
             "sampling": run.effective_sampling(lane, [spec]).get(lane, {}) if text else {},
             "template": run.effective_template(lane, [spec]).get(lane, {}) if text else {},
+            "method": run.method_receipts({"spec": spec}).get("spec", {}),
             "knobs": knobs.settings(lane, overrides or {})}
 
 
-def digest_of(parts: dict) -> str:
+def digest_of(parts) -> str:
     return hashlib.sha256(json.dumps(parts, sort_keys=True, default=str).encode("utf-8")).hexdigest()
+
+
+def _text_sha(text: str) -> str:
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def _small_sha(path) -> str:
+    """sha256 of a small file read whole, uncached: a case file or a grader module."""
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+#: Packages whose modules are a lane's grading code when its checker refers to them.
+GRADER_PACKAGES = ("harness.checks",)
+
+
+def _names(code) -> set:
+    got = set(code.co_names)
+    for const in code.co_consts:
+        if hasattr(const, "co_names"):
+            got |= _names(const)
+    return got
+
+
+def _in(name: str, packages) -> bool:
+    return any(name == p or name.startswith(p + ".") for p in packages)
+
+
+def grader_digest(lane: str, checkers=None, packages=GRADER_PACKAGES, also=None) -> dict:
+    """{name: sha256} of the checker a lane scores with, the functions of its module it calls and the grader modules they use."""
+    import importlib
+    import inspect
+    import types
+
+    from evals import core
+    checkers = core.CHECKERS if checkers is None else checkers
+    start = checkers.get(lane)
+    if start is None:
+        return {}
+    todo = [start, *((core.score,) if also is None else also)]
+    home, seen, out = start.__module__, set(), {}
+    while todo:
+        f = todo.pop()
+        if id(f) in seen:
+            continue
+        seen.add(id(f))
+        code = f.__code__
+        if f.__name__ == "<lambda>":
+            # A lambda's source is the whole statement around it, every other lane's entry included.
+            out[f"{f.__module__}.{f.__qualname__}"] = digest_of([code.co_code.hex(), code.co_names, repr(code.co_consts)])
+        else:
+            out[f"{f.__module__}.{f.__qualname__}"] = _text_sha(inspect.getsource(f))
+        names = _names(f.__code__)
+        wanted = names | {f"{p}.{n}" for p in packages if p in names for n in names}
+        for name in sorted(wanted):
+            obj = f.__globals__.get(name)
+            if obj is None and _in(name, packages):
+                try:
+                    obj = importlib.import_module(name)
+                except ImportError:
+                    continue
+            if isinstance(obj, types.FunctionType) and obj.__module__ == home:
+                todo.append(obj)
+            elif isinstance(obj, types.ModuleType) and _in(obj.__name__, packages) and getattr(obj, "__file__", None):
+                out[obj.__name__] = _small_sha(obj.__file__)
+    return dict(sorted(out.items()))
+
+
+def _request_settings(spec: str) -> tuple[dict, dict]:
+    """(sampling, template kwargs) the text runner is built with for this spec, as serving.route gives them."""
+    from harness import serving
+    base = spec.partition(",")[0].strip()
+    try:
+        where = serving.route(spec)
+        return dict(where.sampling or {}), dict(getattr(where, "template", None) or {})
+    except ValueError:
+        optstr = spec.partition(",")[2]
+        return serving._sampling(optstr, base), serving.template_options(optstr, base)
+
+
+def case_digests(spec: str, cases, budget: int) -> dict:
+    """{case id: sha256} over each case's content, its case file and, for a text spec, the request body it is sent."""
+    from evals import core, run
+    from evals.runners.text import CompletionRunner
+    from harness import completion
+    text = run.text_candidate(spec)
+    sampling, template = _request_settings(run.text_spec(spec)) if text else ({}, {})
+    out = {}
+    for c in cases:
+        source = getattr(c, "source", None)
+        parts = {"case": core.case_digest(c),
+                 "file": _small_sha(source) if source and Path(source).is_file() else ""}
+        if text:
+            body = completion.payload_for(
+                c.prompt, "", c.modality, c.context, None,
+                budget or completion.budget(c.modality) or completion.MAX_TOKENS,
+                sampling or None, template or None,
+                completion.TOP_LOGPROBS if c.modality == "decide" else 0, True,
+                c.params.get("system") if c.modality == "claims" else None,
+                CompletionRunner._reply_shape(c))
+            body.pop("model", None)
+            parts["request"] = body
+        out[c.id] = digest_of(parts)
+    return out
 
 
 def of(lane: str, spec: str, *, budget: int, ladder=(), overrides=None, cases=None,
        machine=None, harness=None) -> dict:
-    """{"digest", "parts", "timing", "unresolved"}; the digest is "" when any part has no bytes to read."""
-    from evals import core, run
+    """{"digest", "cases", "parts", "recorded", "timing", "unresolved"}; the digest is "" when any part has no bytes to read.
+
+    The digest matches a run; "cases" matches each case. The harness commit is recorded, never matched.
+    """
+    from evals import run
     from harness import holdout
     cases = lane_cases(lane) if cases is None else cases
     matched, timing = machine if machine is not None else machine_state()
@@ -269,11 +376,16 @@ def of(lane: str, spec: str, *, budget: int, ladder=(), overrides=None, cases=No
     serving_part = served(target) if target else {"unresolved": [f"runtime: {spec} is not a text spec"]}
     unresolved = list(serving_part.pop("unresolved", []))
     parts = {"served": serving_part, "settings": settings(lane, spec, budget, ladder, overrides),
-             "exam": {"lane": lane, "split_version": holdout.version(lane),
-                      "cases_digest": core.cases_digest(cases)},
-             "harness": harness if harness is not None else harness_state(), "machine": matched}
-    return {"digest": "" if unresolved else digest_of(parts), "parts": parts, "timing": timing,
-            "unresolved": unresolved}
+             "exam": {"lane": lane, "split_version": holdout.version(lane), "grader": grader_digest(lane)},
+             "machine": matched}
+    return {"digest": "" if unresolved else digest_of(parts), "cases": case_digests(spec, cases, budget),
+            "parts": parts, "recorded": {"harness": harness if harness is not None else harness_state()},
+            "timing": timing, "unresolved": unresolved}
+
+
+def combined(ident: dict) -> str:
+    """One digest over a run's identity and its per-case digests, for a checkpoint to compare."""
+    return digest_of([ident.get("digest", ""), ident.get("cases") or {}]) if ident.get("digest") else ""
 
 
 def moved(before: dict, after: dict) -> list[str]:
