@@ -49,7 +49,7 @@ def cmd_jobs(a) -> int:
             import os
             where = wq.queue_cwd(os.getcwd(), wq.deployed(), explicit=cwd)
             job = wq.add(rest, title=a.title, cwd=where, priority=priority,
-                         requested_by="cli", not_before=wq.start_at(start))
+                         requested_by="cli", not_before=wq.start_at(start), night=start == "night")
             after = f" (not before {job['not_before']})" if job["not_before"] else ""
             note(f"queued {job['id']}{after}: {job['title']}")
             emit(job=job)
@@ -80,12 +80,16 @@ def cmd_jobs(a) -> int:
         emit(paused=wq.paused(), gate_open=ok, why=why)
         return 0
     from harness import heartbeat
+    from harness import day_clear
     got = wq.jobs()
     ok, why = wq.gate()
     loop = heartbeat.summary()
     if loop:
         note(loop["line"])
-    later = sum(j["state"] == wq.PENDING and not wq.due(j) for j in got)
+    clearance = wq.cleared()
+    if clearance:
+        note(f"{day_clear.line(clearance)}; the watchdog's day limits are off and night-start jobs may run now")
+    later = sum(j["state"] == wq.PENDING and not wq.due(j, cleared=clearance is not None) for j in got)
     note(f"{'a job is running' if wq.running() else 'nothing running'}; "
          f"{sum(j['state'] == wq.PENDING for j in got)} pending"
          f"{f' ({later} waiting for their start time)' if later else ''}; next job "
@@ -97,7 +101,7 @@ def cmd_jobs(a) -> int:
         rc = "" if j["rc"] is None else f" rc={j['rc']}"
         pri = int(j.get("priority") or 0)
         at = (f"from {j['not_before'].replace('T', ' ')[:16]} "
-              if j["state"] == wq.PENDING and not wq.due(j) else "")
+              if j["state"] == wq.PENDING and not wq.due(j, cleared=clearance is not None) else "")
         note(f"  {j['id']}  {j['state']:8}{rc:7}  p{pri:<3} {at}{j['title']}")
-    emit(running=wq.running(), gate_open=ok, why=why, jobs=got, loop=loop)
+    emit(running=wq.running(), gate_open=ok, why=why, jobs=got, loop=loop, clearance=clearance)
     return 0

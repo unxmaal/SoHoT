@@ -287,7 +287,7 @@ def _queue(kind: str, prompt: str, argv: list[str], out: Path, start: str = "") 
     job = workqueue.add(argv, title=f"{kind}: {prompt[:80]}", kind=kind,
                         output=str(out), cwd=str(Path(__file__).resolve().parents[1]),
                         priority=INTERACTIVE_PRIORITY, requested_by="mcp",
-                        not_before=not_before)
+                        not_before=not_before, night=start.strip() == "night")
     return _describe(job)
 
 
@@ -376,7 +376,7 @@ def _describe(job: dict) -> JobInfo:
         info.ahead = (sum(1 for j in everyone if j["state"] == workqueue.RUNNING)
                       + line.index(job["id"]))
         running = next((j for j in everyone if j["state"] == workqueue.RUNNING), None)
-        if not workqueue.due(job):
+        if not workqueue.due(job, cleared=workqueue.cleared() is not None):
             info.waiting_for = f"its start time {job['not_before']}"
         elif running:
             info.waiting_for = running.get("kind") or "a job"

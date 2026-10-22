@@ -4,7 +4,7 @@ from __future__ import annotations
 from harness import store
 
 
-SCHEMA_VERSION = 78
+SCHEMA_VERSION = 79
 
 
 #: Outcomes a proposal can reach. TERMINAL ones suppress re-proposal.
@@ -285,7 +285,20 @@ CREATE TABLE IF NOT EXISTS jobs (
     requested_by TEXT NOT NULL DEFAULT '',
     machine_id   INTEGER REFERENCES machines(id),
     -- Epoch before which the worker leaves this job alone; NULL means as soon as it can. #900.
-    not_before   REAL
+    not_before   REAL,
+    -- 1 when not_before is the night start (--night), which a day clearance lifts. #1112.
+    night_gate   INTEGER NOT NULL DEFAULT 0
+);
+
+-- Eric's word that this machine may run jobs all day; the watchdog's day limits and the queue's night gate lift until `until`. #1112.
+CREATE TABLE IF NOT EXISTS day_clearances (
+    id           INTEGER PRIMARY KEY,
+    machine_id   INTEGER REFERENCES machines(id),
+    cleared_at   REAL NOT NULL,
+    -- Who cleared it and why, as given to `soh day clear`.
+    said         TEXT NOT NULL,
+    until        REAL NOT NULL,
+    revoked_at   REAL
 );
 
 -- One eval run, written by evals.run; results.json is its export. #410.

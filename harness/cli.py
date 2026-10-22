@@ -33,6 +33,7 @@ from harness.commands import cases as cases_cmd
 from harness.commands import chaos as chaos_cmd
 from harness.commands import common
 from harness.commands import context as context_cmd
+from harness.commands import day as day_cmd
 from harness.commands import degenerate as degenerate_cmd
 from harness.commands import discover as discover_cmd
 from harness.commands import gateway as gateway_cmd
@@ -726,6 +727,10 @@ def build_parser() -> argparse.ArgumentParser:
     jobs.add_argument("--night", action="store_true",
                       help="add: start no earlier than the night window discovery runs in. #900")
     jobs.set_defaults(func=jobs_cmd.cmd_jobs)
+    day = sub.add_parser("day", help="clear this machine to run jobs all day, until the watchdog's day end. #1112")
+    day.add_argument("action", choices=("clear", "status", "revoke"))
+    day.add_argument("said", nargs="*", help='clear: who cleared it and why, e.g. "eric: the #1110 baseline"')
+    day.set_defaults(func=day_cmd.cmd_day)
     jud = sub.add_parser(
         "judge",
         help="decide a human-judged lane by looking and listening. Issue #273")
