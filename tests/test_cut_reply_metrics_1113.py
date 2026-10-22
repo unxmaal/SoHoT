@@ -29,9 +29,10 @@ def _rows(key, passes, cut):
 
 
 def test_five_passes_with_four_cut_outrank_two_passes_with_none_cut(store_run, store_conn):
-    store_run("cut", "repo", rows=_rows("org/five", 5, 4), conn=store_conn)
-    store_run("graded", "repo", rows=_rows("org/two", 2, 0), conn=store_conn)
-    assert winners.from_receipts(store_conn, plain_only=False)["repo"]["candidate"] == "org/five"
+    store_run("cut", "repo", rows=_rows("org/five", 5, 4), cases_digest="exam", conn=store_conn)
+    store_run("graded", "repo", rows=_rows("org/two", 2, 0), cases_digest="exam", conn=store_conn)
+    got = winners.from_receipts(store_conn, plain_only=False, exam_of=lambda *k: (frozenset(CASES), "exam"))
+    assert got["repo"]["candidate"] == "org/five"
 
 
 def test_a_cut_reply_pairs_as_a_graded_failure_not_a_loss(store_run, store_conn):
