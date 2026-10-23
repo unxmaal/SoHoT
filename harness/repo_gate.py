@@ -5,7 +5,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from harness import lanes
+from harness import lanes, methods
 
 GATE = "repo"
 #: Lanes whose adoption waits on a repo-lane win; leetcode/hevalpro stay the cheap screen before it.
@@ -40,11 +40,8 @@ def active() -> bool:
 
 def lane_of(row: dict, want: str = "") -> str:
     """The lane `row` is measured in, as measure._measure picks it; a repo row stays a repo row."""
-    own = lanes.canonical(row.get("lane"))
-    want = (want or "").strip().lower()
-    if own == GATE:
-        return GATE
-    return want if want and lanes.serves(row.get("lane"), want) else own
+    from harness.commands import measure as measure_cmd
+    return measure_cmd.lane_for(row, want)
 
 
 def verdict(conn, name: str) -> str | None:
@@ -78,14 +75,15 @@ def order(rows, conn, want: str = "") -> list[dict]:
     first = [r for r in rows if lane_of(r, want) == GATE]
     have = {r.get("name") for r in first}
     first += [{**r, "lane": GATE} for r in rows
-              if lane_of(r, want) in GATED and r.get("name") not in have | won]
+              if lane_of(r, want) in GATED and r.get("name") not in have | won
+              and methods.runs_in(r.get("name", ""), GATE)]
     return first + [r for r in rows if lane_of(r, want) != GATE]
 
 
 def blocked(conn, row: dict, want: str = "") -> str:
     """Why `row` is not measured now: a gated comparison waits on a repo-lane win; "" when it may run."""
     lane = lane_of(row, want)
-    if lane not in GATED or not active():
+    if lane not in GATED or not methods.runs_in(row.get("name", ""), GATE) or not active():
         return ""
     got = verdict(conn, row.get("name", ""))
     if got == "measured":

@@ -95,6 +95,22 @@ def is_method(spec: str) -> bool:
         return True
 
 
+def runs_in(spec: str, lane: str) -> bool:
+    """Whether `spec` can run `lane`'s cases: a method only in its own lanes, anything else is not this question. #1134."""
+    try:
+        parsed = parse(spec)
+    except ValueError:
+        return False
+    from harness import lanes
+    return parsed is None or lanes.canonical(lane) in parsed.method.lanes
+
+
+def serves(name: str, filed: str, lane: str) -> bool:
+    """Whether a proposal `name` filed under lane `filed` can be measured in `lane`. #1134."""
+    from harness import lanes
+    return lanes.serves(filed, lane) and runs_in(name, lane)
+
+
 def base_of(spec: str) -> str:
     """The base a method spec composes over, or "" for anything else."""
     try:

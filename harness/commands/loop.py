@@ -1,7 +1,7 @@
 """`soh discover --loop`: the tiers chained, the queue they share, and the spend that settles them."""
 from __future__ import annotations
 
-from harness import lanes, repo_gate
+from harness import lanes, methods, repo_gate
 from harness.commands import discover as discover_cmd
 from harness.commands import measure as measure_cmd
 from harness.commands import screen as screen_cmd
@@ -27,7 +27,7 @@ def _queueable(store, want: str = "") -> tuple[list[dict], int]:
 
     rows = ms.judgeable(store, limit=1_000_000)
     if want:
-        rows = [r for r in rows if lanes.serves(rank.lane_of(r), want)]
+        rows = [r for r in rows if methods.serves(r["name"], rank.lane_of(r), want)]
     return rows, len(rows)
 
 
