@@ -59,3 +59,14 @@ def test_check_macos_stamps_its_start_and_reports_its_budget_on_every_outcome():
     assert steps[budget].get("if") == "always()"
     upload = next(s for s in steps if "upload-artifact" in s.get("uses", ""))
     assert upload["with"]["path"] == "/tmp/junit.xml" and upload.get("if") == "always()"
+
+
+def test_check_macos_runs_one_worker_more_than_its_cores_through_the_variable_xdist_reads():
+    """Three workers left 3 vCPUs a third idle (time -p); -n auto reads this variable (#1146)."""
+    import inspect
+
+    from xdist import plugin
+    doc = yaml.safe_load(ci_budget.WORKFLOW.read_text(encoding="utf-8"))
+    runs = "\n".join(s.get("run", "") for s in doc["jobs"]["check-macos"]["steps"])
+    assert 'PYTEST_XDIST_AUTO_NUM_WORKERS=$(( $(sysctl -n hw.ncpu) + 1 ))' in runs
+    assert "PYTEST_XDIST_AUTO_NUM_WORKERS" in inspect.getsource(plugin)
