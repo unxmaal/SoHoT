@@ -47,6 +47,8 @@ jobs:
         run: |
           echo "JOB_STARTED_S=$(date +%s)" >> "$GITHUB_ENV"
           sysctl -n machdep.cpu.brand_string hw.ncpu hw.perflevel0.physicalcpu hw.memsize || true
+          # Three workers kept 3 vCPUs 68% busy (time -p, #1146): one more overlaps the waits.
+          echo "PYTEST_XDIST_AUTO_NUM_WORKERS=$(( $(sysctl -n hw.ncpu) + 1 ))" >> "$GITHUB_ENV"
 
       - uses: astral-sh/setup-uv@v5
         with:
