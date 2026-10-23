@@ -179,14 +179,19 @@ def test_effort_areas_counts_lines_window_and_sample_agreement():
     prs = [_pr(2, ["harness/watchdog.py", "harness/cli.py", "tests/test_watchdog.py"], closes=[1]),
            _pr(4, ["evals/run.py"], created="2026-09-01T00:00:00Z"),
            _pr(5, ["tests/test_harness_exclusive.py"]),
-           _pr(6, ["README.md"], title="Nightly fixes", state="CLOSED")]
+           _pr(6, ["README.md"], title="Nightly fixes", state="CLOSED"),
+           _pr(7, ["evals/run.py"], title="Watchdog stops an overrun eval", closes=[8])]
     issues = [{"number": 1, "title": "anything", "labels": [], "createdAt": "2026-10-19T00:00:00Z"},
-              {"number": 3, "title": "Screen records broken", "labels": [], "createdAt": "2026-09-02T00:00:00Z"}]
+              {"number": 3, "title": "Screen records broken", "labels": [], "createdAt": "2026-09-02T00:00:00Z"},
+              {"number": 8, "title": "anything", "labels": [], "createdAt": "2026-09-02T00:00:00Z"}]
     areas = it.classify(prs, issues)
-    assert areas == {2: "guards", 4: "measurement", 5: "serving", 6: "meta", 1: "guards", 3: "measurement"}
+    # A title that names an area decides it; paths decide a PR whose title names none, and an issue
+    # without one takes the paths of the merged PR that closed it, never that PR's title.
+    assert areas == {2: "guards", 4: "measurement", 5: "serving", 6: "meta", 7: "guards",
+                     1: "guards", 3: "measurement", 8: "measurement"}
     e = it.effort(prs, issues, now, sample={"1": "guards", "3": "discovery", "999": "meta"})
-    assert e["all"]["guards"] == {"issues": 1, "prs": 1, "merged": 1, "lines": 30}
-    assert e["all"]["measurement"] == {"issues": 1, "prs": 1, "merged": 1, "lines": 10}
+    assert e["all"]["guards"] == {"issues": 1, "prs": 2, "merged": 2, "lines": 40}
+    assert e["all"]["measurement"] == {"issues": 2, "prs": 1, "merged": 1, "lines": 10}
     assert e["all"]["meta"] == {"issues": 0, "prs": 1, "merged": 0, "lines": 0}
     assert e["recent"]["measurement"] == {"issues": 0, "prs": 0, "merged": 0, "lines": 0}
     assert e["sample"]["checked"] == 2 and e["sample"]["agree"] == 1 and e["sample"]["rate"] == 0.5

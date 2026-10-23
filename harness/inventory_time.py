@@ -340,8 +340,8 @@ PATH_AREAS = (
     ("harness/env", "serving"), ("harness/paths", "serving"), ("harness/engines", "serving"),
     ("harness/gguf", "serving"), ("harness/ds4", "serving"), ("harness/completion", "serving"),
     ("harness/slot_probe", "serving"), ("harness/lanprobe", "serving"), ("harness/proc", "serving"),
-    ("harness/batch", "serving"), ("gateway/", "serving"), ("deploy/", "serving"), ("scripts/", "serving"),
-    ("Dockerfile", "serving"), ("pyproject.toml", "serving"), ("uv.lock", "serving"),
+    ("harness/batch", "serving"), ("gateway/", "serving"), ("deploy/", "serving"), ("scripts/smoke", "guards"),
+    ("scripts/", "serving"), ("Dockerfile", "serving"), ("pyproject.toml", "serving"), ("uv.lock", "serving"),
     ("evals/", "measurement"), ("harness/", "measurement"),
 )
 #: Title pattern -> area, for an item with no source path; first match wins, the rest is meta.
@@ -382,14 +382,18 @@ def _path_area(path: str) -> str | None:
     return None
 
 
-def title_area(title: str, labels=()) -> str:
+def title_match(title: str, labels=()) -> str | None:
     if "measurement" in labels:
         return "measurement"
     low = (title or "").lower()
     for pattern, area in TITLE_AREAS:
         if re.search(pattern, low):
             return area
-    return "meta"
+    return None
+
+
+def title_area(title: str, labels=()) -> str:
+    return title_match(title, labels) or "meta"
 
 
 def pr_area(pr: dict) -> str:
@@ -407,20 +411,25 @@ def pr_area(pr: dict) -> str:
     pick = churn or tests or side
     if pick:
         return max(pick, key=lambda a: (pick[a], -AREAS.index(a)))
-    return title_area(pr.get("title", ""), [lb["name"] for lb in pr.get("labels") or []])
+    return title_area(pr.get("title", ""), _labels(pr))
+
+
+def _labels(item: dict) -> list[str]:
+    return [lb["name"] for lb in item.get("labels") or []]
 
 
 def classify(prs: list[dict], issues: list[dict]) -> dict:
-    """number -> area: a PR by its paths, an issue by the merged PR that closed it, else by its title."""
+    """number -> area: the title's when it names one, else a PR's paths, an issue's closing PR's, else meta."""
     out, closed_by = {}, {}
     for pr in prs:
-        out[pr["number"]] = pr_area(pr)
+        paths_ = pr_area(pr)
+        out[pr["number"]] = title_match(pr.get("title", ""), _labels(pr)) or paths_
         if pr.get("state") == "MERGED":
             for ref in pr.get("closingIssuesReferences") or []:
-                closed_by.setdefault(ref["number"], out[pr["number"]])
+                closed_by.setdefault(ref["number"], paths_)
     for i in issues:
-        out[i["number"]] = closed_by.get(i["number"]) or title_area(
-            i.get("title", ""), [lb["name"] for lb in i.get("labels") or []])
+        out[i["number"]] = (title_match(i.get("title", ""), _labels(i)) or closed_by.get(i["number"])
+                            or "meta")
     return out
 
 
