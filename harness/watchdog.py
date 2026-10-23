@@ -118,6 +118,8 @@ class World:
     #: evals.run processes found that are not provably ours; reported, never acted on.
     unowned: list = field(default_factory=list)
     lock: dict | None = None
+    #: Process groups that hold a cloud slot and no GPU lock: their evals load no model here. #1135.
+    cloud: set = field(default_factory=set)
     resident: list | None = None
     pressure: object = None
     swap_per_min: float | None = None
@@ -236,6 +238,16 @@ class Probes:
             return exclusive.holder() or {"kind": "unknown"} if delegate.busy() else {}
         except OSError:
             return None
+
+    def cloud(self) -> set:
+        """The process groups (and pids) holding a cloud slot, not the GPU lock. #1135."""
+        from harness import exclusive
+        try:
+            held = exclusive.holders()
+        except OSError:
+            return set()
+        gpu = {h.get(k) for h in held if h["lock"] == "gpu" for k in ("pgid", "pid")}
+        return {h.get(k) for h in held if h["lock"] == "cloud" for k in ("pgid", "pid")} - gpu - {None}
 
     def resident(self) -> list[str] | None:
         """Router models nothing serves or adopted; None when the router or the defaults cannot be read."""
@@ -442,6 +454,7 @@ def observe(probes: Probes, conn=None, now: float | None = None) -> World:
             world.top.append(s)
 
     world.lock = probes.lock()
+    world.cloud = probes.cloud()
     world.resident = probes.resident()
     world.pressure = probes.pressure()
     world.swap_per_min = _swap_rate(probes, world.pressure, now)
@@ -603,7 +616,17 @@ def _daytime_gpu(w: World) -> list[Finding]:
         return []
     return [Finding("daytime_gpu", s, {"elapsed_s": round(s.elapsed_s), "limit_s": DAYTIME_GPU_S,
                                        "hours": [DAY_START_HOUR, DAY_END_HOUR]})
-            for s in w.top if s.elapsed_s is not None and s.elapsed_s > DAYTIME_GPU_S and not s.orphan]
+            for s in w.top if s.elapsed_s is not None and s.elapsed_s > DAYTIME_GPU_S and not s.orphan
+            and not _cloud_only(w, s)]
+
+
+def _cloud_only(w: World, s: Subject) -> bool:
+    """A subject whose evals all hold a cloud slot, while it holds no GPU lock itself. #1135."""
+    if not w.cloud or {s.pgid, s.pid} & {(w.lock or {}).get("pgid"), (w.lock or {}).get("pid")} - {None}:
+        return False
+    def mine(x):
+        return x.pgid in w.cloud or x.pid in w.cloud
+    return mine(s) or (bool(s.children) and all(mine(c) for c in s.children))
 
 
 def _day_clear(w: World) -> list[Finding]:
@@ -615,7 +638,7 @@ def _day_clear(w: World) -> list[Finding]:
                                      "clearance": c["id"], "said": c["said"], "until": c["until"]})
             for s in w.top if s.elapsed_s is not None and not s.orphan
             for skipped, limit in (("daytime_gpu", DAYTIME_GPU_S), ("long_run", LONG_RUN_DAY_S))
-            if s.elapsed_s > limit]
+            if s.elapsed_s > limit and not (skipped == "daytime_gpu" and _cloud_only(w, s))]
 
 
 def _idle_lock(w: World) -> list[Finding]:

@@ -48,6 +48,12 @@ EXCLUSIVE = {"image", "video"}
 BATCH = {"eval", "ramp", "external", "chaos"}
 #: Batch kinds that reach their models through the gateway, so they load the serving machine, not this one. #769.
 GATEWAY_BATCH = {"eval"}
+#: Batch kinds that load no model anywhere this machine serves: an eval whose every candidate is hosted. #1135.
+CLOUD = {"cloud-eval"}
+#: Cloud-only evals that run at once; their graders still use this machine's CPU and disk. #1135.
+CLOUD_SLOTS = 2
+#: Set while a cloud slot is held, so a child eval does not take a second one.
+CLOUD_HELD_ENV = "LH_CLOUD_LOCK_HELD"
 #: Set while held, so a child that also asks (a helper running `lh ...`)
 #: does not deadlock against its own parent.
 HELD_ENV = "LH_GPU_LOCK_HELD"
@@ -70,13 +76,49 @@ def holder_path() -> Path:
     return _dir() / HOLDER
 
 
+def cloud_lock_path(slot: int) -> Path:
+    return _dir() / f"cloud.{slot}.lock"
+
+
+def cloud_holder_path(slot: int) -> Path:
+    return _dir() / f"cloud.{slot}.holder"
+
+
+def _read(path: Path) -> dict:
+    try:
+        got = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return got if isinstance(got, dict) else {}
+
+
 def holder() -> dict:
     """Who has it, or {}. Never raises: a waiter reporting nothing is fine,
     a waiter crashing because the holder exited mid-read is not."""
+    return _read(holder_path())
+
+
+def _taken(path: Path) -> bool:
+    """Whether some process holds the lock at `path` now. Never waits."""
+    fd = os.open(path, os.O_RDWR | os.O_CREAT, 0o644)
     try:
-        return json.loads(holder_path().read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return {}
+        if _take(fd):
+            _release(fd)
+            return False
+        return True
+    finally:
+        os.close(fd)
+
+
+def holders() -> list[dict]:
+    """Each lock held on this machine now with its holder record: "gpu", then each "cloud" slot. #1135."""
+    out = []
+    if _taken(lock_path()):
+        out.append({**holder(), "lock": "gpu"})
+    for slot in range(max(1, int(CLOUD_SLOTS))):
+        if _taken(cloud_lock_path(slot)):
+            out.append({**_read(cloud_holder_path(slot)), "lock": "cloud", "slot": slot})
+    return out
 
 
 def identity(record: dict) -> tuple:
@@ -234,6 +276,10 @@ def held(kind: str, announce=None, poll: float = POLL_SECONDS, deadline_s: float
     again whenever what it is waiting behind changes. Waiting silently for
     forty minutes is indistinguishable from hanging.
     """
+    if kind in CLOUD:
+        with _cloud(kind, announce, poll, deadline_s) as waited:
+            yield waited
+        return
     if kind not in EXCLUSIVE | BATCH or os.environ.get(HELD_ENV) == "1":
         yield False
         return
@@ -276,6 +322,41 @@ def held(kind: str, announce=None, poll: float = POLL_SECONDS, deadline_s: float
 
 
 @contextlib.contextmanager
+def _cloud(kind: str, announce, poll: float, deadline_s: float | None):
+    """Hold one of CLOUD_SLOTS cloud slots, leaving the GPU lock and the batch lease free. #1135."""
+    if os.environ.get(HELD_ENV) == "1" or os.environ.get(CLOUD_HELD_ENV) == "1":
+        yield False
+        return
+    slots = max(1, int(CLOUD_SLOTS))
+    fds = [os.open(cloud_lock_path(i), os.O_RDWR | os.O_CREAT, 0o644) for i in range(slots)]
+    try:
+        waited, said = False, None
+        while (got := next((i for i, fd in enumerate(fds) if _take(fd)), None)) is None:
+            waited = True
+            records = [_read(cloud_holder_path(i)) for i in range(slots)]
+            who = tuple(identity(r) for r in records)
+            if announce and who != said:
+                announce(f"waiting for one of {slots} cloud evals to finish: "
+                         + ", ".join(describe(r) for r in records))
+                said = who
+            time.sleep(poll)
+        try:
+            _write_holder(kind, deadline_s, path=cloud_holder_path(got))
+            os.environ[CLOUD_HELD_ENV] = "1"
+            try:
+                yield waited
+            finally:
+                os.environ.pop(CLOUD_HELD_ENV, None)
+                with contextlib.suppress(OSError):
+                    cloud_holder_path(got).unlink()
+        finally:
+            _release(fds[got])
+    finally:
+        for fd in fds:
+            os.close(fd)
+
+
+@contextlib.contextmanager
 def try_held(kind: str):
     """Hold the machine for `kind` only if it is free now; yields whether it is held."""
     if os.environ.get(HELD_ENV) == "1":
@@ -311,9 +392,14 @@ def try_held(kind: str):
         os.close(fd)
 
 
-def _write_holder(kind: str, deadline_s: float | None = None) -> None:
+def _write_holder(kind: str, deadline_s: float | None = None, path: Path | None = None) -> None:
+    from harness import workqueue
     record = {"kind": kind, "pid": os.getpid(), "since": time.time()}
+    if hasattr(os, "getpgid"):
+        record["pgid"] = os.getpgid(0)
+    if os.environ.get(workqueue.JOB_ENV, "").strip():
+        record["job"] = os.environ[workqueue.JOB_ENV].strip()
     if deadline_s:
         record["deadline_s"] = float(deadline_s)
     with contextlib.suppress(OSError):
-        holder_path().write_text(json.dumps(record), encoding="utf-8")
+        (path or holder_path()).write_text(json.dumps(record), encoding="utf-8")

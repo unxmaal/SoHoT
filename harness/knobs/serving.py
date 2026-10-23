@@ -2,6 +2,9 @@
 from harness.knobs.base import MACHINE, TEXT_LANES, _k
 
 KNOBS = [
+    _k("cloud_evals", ["harness/exclusive.py:CLOUD_SLOTS"], [1, 2, 3, 4],
+       note="cloud-only evals at once, outside the GPU lock; job 0137 (repo, claude-code Opus) peaked at 0.19 "
+            "cpu_active_ratio on the 30-core Studio, mean 0.08, GPU 0.05 (power.jsonl, 2026-10-22) (#1135)"),
     _k("eval7b_slot_ctx", ["harness/context.py:EVAL_7B_SLOT_CTX"], [3072, 4096, 8192],
        note="context each Qwen2.5-7B-Instruct-Q4_K_M slot is sized for; never under context.MIN_SLOT_CTX (#665)"),
     _k("eval7b_slots", ["harness/context.py:EVAL_7B_SLOTS"], [1, 4, 8, 16, 32],

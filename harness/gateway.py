@@ -28,6 +28,8 @@ DEFAULT = REPO / "gateway" / "config.yaml"
 #: tracked configs are asserted against this list, so adding a provider to one
 #: without adding it here fails rather than producing a wrong id.
 PROVIDER_PREFIXES = ("openai/", "hosted_vllm/", "ollama/", "anthropic/")
+#: Providers LiteLLM sends to their own hosted endpoint when an entry names no api_base. #1135.
+HOSTED_PROVIDERS = ("anthropic/",)
 
 
 def config_path(config=None) -> Path:
@@ -68,6 +70,14 @@ def strip_provider(model: str) -> str:
         if got.startswith(prefix):
             return got[len(prefix):]
     return got
+
+
+def hosted(entry: dict) -> bool:
+    """Whether a config entry is answered by a hosted provider, not a server on this machine or a node. #1135."""
+    from harness import nodes
+    params = entry.get("litellm_params") or {}
+    return (str(params.get("model") or "").startswith(HOSTED_PROVIDERS)
+            and not params.get("api_base") and not entry.get(nodes.NODE_KEY))
 
 
 #: Text lanes the served config names by lane, so a LAN client can ask for `sohot-code`. #297.

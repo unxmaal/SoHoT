@@ -1099,10 +1099,28 @@ def _main(args) -> int:
     if missing:
         raise SystemExit(f"{' and '.join(missing)} required (or use --compare)")
     from harness import exclusive
-    # One model-loading run on the machine at a time, across projects. #314.
-    with exclusive.held("eval", announce=lambda m: print(
+    # One model-loading run on the machine at a time, across projects (#314); a cloud-only run takes a cloud slot (#1135).
+    with exclusive.held(lock_kind(args), announce=lambda m: print(
             f"evals.run: {m}", file=sys.stderr, flush=True), deadline_s=deadline_s(args)):
         return _execute(args)
+
+
+def hosted(candidate: str, config=None) -> bool:
+    """Whether no server on this machine answers `candidate`: claude-code, or a hosted gateway entry. #1135."""
+    kind = kind_of(candidate)
+    if kind == CLAUDE_CODE_PREFIX:
+        return True
+    if kind == REPAIR_PREFIX:
+        return hosted(candidate.partition(":")[2].partition(",")[0].strip(), config)
+    return kind == "gateway" and models.hosted(candidate, config)
+
+
+def lock_kind(args, config=None) -> str:
+    """The lock a run takes: a cloud slot when every candidate is hosted, else the GPU lock. #1135."""
+    if getattr(args, "adherence", None) or getattr(args, "from_winners", False):
+        return "eval"
+    candidates = split_candidates(getattr(args, "candidates", "") or "")
+    return "cloud-eval" if candidates and all(hosted(c, config) for c in candidates) else "eval"
 
 
 def deadline_s(args) -> float | None:
