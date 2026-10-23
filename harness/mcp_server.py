@@ -192,6 +192,8 @@ class LocalCompletion(BaseModel):
     method: dict | None = None
     #: Pass to `delegated` with used, edited or discarded. #829.
     call_id: str
+    #: How to report what became of the answer, and what happens if you do not. #1158.
+    report: str = ""
 
 
 class LocalDecision(BaseModel):
@@ -204,6 +206,7 @@ class LocalDecision(BaseModel):
     prompt_tokens: int | None = None
     completion_tokens: int | None = None
     call_id: str
+    report: str = ""
 
 
 class DelegationOutcome(BaseModel):
@@ -239,7 +242,8 @@ def local_complete(prompt: str, lane: str = "code", system: str | None = None,
                    thinking: bool | None = None) -> LocalCompletion:
     got = _delegated(delegate.complete, lane, prompt, system=system,
                      max_tokens=max_tokens, temperature=temperature,
-                     thinking=thinking)
+                     thinking=thinking, delegated=True)
+    got["report"] = delegations.instruction(got["call_id"])
     return LocalCompletion(**{k: got[k] for k in LocalCompletion.model_fields})
 
 
@@ -252,7 +256,8 @@ def local_complete(prompt: str, lane: str = "code", system: str | None = None,
     "material to judge. Cheap enough for bulk labelling. Report what became of "
     "the answer with `delegated` and the returned call_id."))
 def local_decide(question: str, schema: dict, context: str = "") -> LocalDecision:
-    got = _delegated(delegate.decide, question, schema, context=context)
+    got = _delegated(delegate.decide, question, schema, context=context, delegated=True)
+    got["report"] = delegations.instruction(got["call_id"])
     return LocalDecision(**{k: got[k] for k in LocalDecision.model_fields})
 
 

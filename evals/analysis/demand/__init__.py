@@ -14,6 +14,7 @@ from pathlib import Path
 from evals import redact, session_cut
 from evals.fairness import kappa as _cohen
 from evals.importers import transcripts as tr
+from harness.context_report import SPAWN_TOOLS
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[2]
@@ -78,7 +79,7 @@ LABEL_KEYS = ("shape", "fit", "latency")
 CLOSED = {"shape": SHAPES, "fit": FITS, "latency": LATENCIES}
 CANDIDATES = ("media", "orchestration", "multi_file", "small_edit", "investigate", "chat")
 _MEDIA = re.compile(r"(?i)image|video|svg|music|tts|speech|audio")
-_SPAWN = ("Agent", "Task")
+_SPAWN = SPAWN_TOOLS
 MEDIA_FILES = (".svg", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".wav", ".mp3", ".flac", ".mp4", ".mov")
 _REPO = re.compile(r"/github/([^/\s'\"]+)/([^/\s'\"]+)")
 _WORKTREE = re.compile(r"-\d+[a-z]?(?:-[\w.]+)?$")

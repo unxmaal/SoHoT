@@ -144,7 +144,8 @@ def test_local_work_percentiles_callers_and_outcomes():
     assert callers[("morning unit", "extract")]["pending"] == 1
     assert callers[("python-httpx/0.28.1", "extract")]["used"] == 1
     assert callers[("local", "code")]["pending"] == 1
-    assert got["outcomes"] == {"used": 1, "edited": 0, "discarded": 0, "pending": 2}
+    assert got["outcomes"] == {"used": 1, "edited": 0, "discarded": 0, "accepted": 0, "rejected": 0,
+                               "unknown": 0, "pending": 2}
 
 
 def test_a_sweep_ends_at_its_kill_line_else_its_last_sign_of_life_within_the_next_start():

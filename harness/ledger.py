@@ -410,7 +410,7 @@ def _cloud_sum(days) -> dict:
 
 def build(*, since: float, now: float, cloud_doc: dict, rows: list[tuple], limits: list[dict],
           power: list[dict], tariff: float | None = None, macmon: bool = False, tz=None, mapping=None,
-          delegations=(), context=(), macmon_version: str | None = None) -> dict:
+          delegations=(), context=(), macmon_version: str | None = None, census_doc: dict | None = None) -> dict:
     """The ledger: aggregates only, no prompts, paths or keys; Claude usage in tokens, never dollars (#976)."""
     tariff = TARIFF_USD_PER_KWH if tariff is None else tariff
     days = days_between(since, now, tz)
@@ -457,6 +457,7 @@ def build(*, since: float, now: float, cloud_doc: dict, rows: list[tuple], limit
         "headroom": {k: v for k, v in hr.items() if k != "days"},
         "local": {p: _sum(bs) for p, bs in sorted(purposes.items())},
         "delegated": _delegated(out_days),
+        "accepted": accepted(delegations, days, census_doc, tz),
         "displaced": {"tokens": _sum(d["displaced"]["tokens"] for d in out_days),
                       "note": "tagged work served locally, in tokens"},
         "mapped": {"tokens": _sum(d["mapped"]["tokens"] for d in out_days),
@@ -475,6 +476,61 @@ def context_days(rows, tz=None) -> dict:
         d = out.setdefault(day_of(r["at"], tz), {})
         d[r["tool"]] = d.get(r["tool"], 0) + (r.get("tokens") or 0)
     return out
+
+
+#: The #1151 census shapes of cloud subtasks a lane's delegation could have served instead.
+LANE_SHAPES = {"code": ("small_code_edit",), "extract": ("extract_classify", "summarise_digest"),
+               "decide": ("triage_decide",), "svg": ("media",)}
+
+
+def census_dir() -> Path:
+    return Path(__file__).resolve().parents[1] / "evals" / "analysis" / "demand"
+
+
+def census(where: Path | None = None) -> dict:
+    """Cloud subtasks per day by shape, weighted back from the #1151 census manifest; unavailable without one."""
+    where = census_dir() if where is None else Path(where)
+    try:
+        frame = json.loads((where / "strata.json").read_text(encoding="utf-8"))
+        rows = [json.loads(ln) for ln in (where / "manifest.jsonl").read_text(encoding="utf-8").splitlines()
+                if ln.strip()]
+        days = float(frame["days"])
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        return {"available": False, "why": f"no #1151 census at {where.name} ({type(exc).__name__})"}
+    per: dict = {}
+    for r in rows:
+        shape = ((r.get("final") or {}).get("shape")) or ""
+        if shape:
+            per[shape] = per.get(shape, 0.0) + float(r.get("weight") or 1.0)
+    return {"available": True, "days": days, "now": frame.get("now"),
+            "per_day": {k: round(v / days, 3) for k, v in sorted(per.items())}}
+
+
+def accepted(delegations, days: list[str], cen: dict | None = None, tz=None) -> dict:
+    """Per lane: accepted local tasks per day and in all, against cloud subtasks of the same census shape. #1158."""
+    from harness import delegations as dl
+    lanes: dict = {}
+    for _c, at, lane, outcome, _i, _o in delegations:
+        b = lanes.setdefault(lane or "", {k: 0 for k in dl.KINDS} | {"days": {}})
+        k = dl.kind(outcome)
+        b[k] += 1
+        if k == dl.ACCEPTED:
+            day = day_of(at, tz)
+            b["days"][day] = b["days"].get(day, 0) + 1
+    cen = cen or {"available": False, "why": "no census given"}
+    for lane, b in lanes.items():
+        b["per_day"] = round(b[dl.ACCEPTED] / max(1, len(days)), 3)
+        shapes = LANE_SHAPES.get(lane, ())
+        b["shapes"] = list(shapes)
+        cloud = sum(cen["per_day"].get(s, 0.0) for s in shapes) if cen.get("available") and shapes else None
+        b["cloud_per_day"] = None if cloud is None else round(cloud, 3)
+        b["local_share"] = (None if cloud is None or b["per_day"] + cloud == 0
+                            else round(b["per_day"] / (b["per_day"] + cloud), 4))
+    total = {k: sum(b[k] for b in lanes.values()) for k in dl.KINDS}
+    closed = total[dl.ACCEPTED] + total[dl.REJECTED]
+    return {"lanes": dict(sorted(lanes.items())), "total": total,
+            "accepted_share": round(total[dl.ACCEPTED] / closed, 4) if closed else None,
+            "census": {k: v for k, v in cen.items() if k != "per_day"}}
 
 
 def _delegated(days: list[dict]) -> dict:

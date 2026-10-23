@@ -7,6 +7,8 @@ import re
 import subprocess
 from pathlib import Path
 
+from harness import delegations
+
 WORK, MEASUREMENT, DISCOVERY, INFOVORE, OPS, OTHER = (
     "work", "measurement", "discovery", "infovore", "ops", "other")
 LOADED_IDLE, IDLE, IDLE_UNRECORDED = "idle-but-loaded", "idle", "idle-unrecorded"
@@ -30,7 +32,7 @@ RECENT_DAYS = 14
 
 INFOVORE_CLIENT = "Python-urllib"
 PENDING = "pending"
-OUTCOMES = ("used", "edited", "discarded", PENDING)
+OUTCOMES = (*delegations.OUTCOMES, *delegations.INFERRED, PENDING)
 
 _SWEEP = re.compile(r"^=== sweep (\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ) ")
 _SWEEP_KILLED = re.compile(r"^=== sweep killed by SIG\w+ (\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ) ")
@@ -49,7 +51,7 @@ def request_category(purpose: str, client: str) -> str:
         return MEASUREMENT
     if purpose == "discover":
         return DISCOVERY
-    if purpose in ("smoke", "watchdog"):
+    if purpose in ("smoke", "watchdog", "internal"):
         return OPS
     # Infovore sends no purpose tag; its client is urllib (FINDING #466).
     if (client or "").startswith(INFOVORE_CLIENT):

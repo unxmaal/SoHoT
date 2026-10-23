@@ -174,23 +174,22 @@ def context_chart(rows: list[dict], live: dict, first: str = "", last: str = "99
 
 
 def delegation_chart(rows: list[tuple]) -> dict:
-    from harness import ledger
+    from harness import delegations as dl, ledger
     counts: dict = {}
     for at, lane, outcome in rows:
-        c = counts.setdefault(_safe(lane), {}).setdefault(ledger.day_of(at), {"used": 0, "edited": 0,
-                                                                              "discarded": 0, "pending": 0})
-        c[outcome if outcome in c else "pending"] += 1
+        c = counts.setdefault(_safe(lane), {}).setdefault(ledger.day_of(at), {k: 0 for k in dl.KINDS})
+        c[dl.kind(outcome)] += 1
     series, labels = {}, {}
     for lane, days in counts.items():
         for day, c in days.items():
-            said = c["used"] + c["edited"] + c["discarded"]
+            said = c[dl.ACCEPTED] + c[dl.REJECTED]
             if not said:
                 continue
-            series.setdefault(lane, {})[day] = round((c["used"] + c["edited"]) / said, 4)
-            labels.setdefault(lane, {})[day] = (f"{c['used']} used, {c['edited']} edited, {c['discarded']} "
-                                                f"discarded, {c['pending']} not recorded")
-    return _chart("Delegation acceptance by lane", "rate", fold(series), "Share of recorded outcomes "
-                  "that were used or edited rather than discarded.", labels=labels)
+            series.setdefault(lane, {})[day] = round(c[dl.ACCEPTED] / said, 4)
+            labels.setdefault(lane, {})[day] = (f"{c[dl.ACCEPTED]} accepted, {c[dl.REJECTED]} rejected, "
+                                                f"{c[dl.UNKNOWN]} unknown, {c[dl.PENDING]} pending")
+    return _chart("Delegation acceptance by lane", "rate", fold(series), "Share of closed outcomes, reported "
+                  "or inferred from the caller's transcript, that were accepted rather than rejected.", labels=labels)
 
 
 def scrub_names(charts: dict, flagged) -> dict:

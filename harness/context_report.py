@@ -11,6 +11,8 @@ from pathlib import Path
 
 #: Results above this many estimated tokens count toward the "share over 2k" column.
 BIG = 2000
+#: The Claude Code tools that hand a task to a cloud subagent. #1151, #1158.
+SPAWN_TOOLS = ("Agent", "Task")
 
 
 def default_root() -> Path:

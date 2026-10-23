@@ -25,18 +25,20 @@ SRC="${LH_REPO:-$REPO}"
 DEPLOY="${LH_DEPLOY:-$LH_HOME/deploy}"
 # `discover` is not a server. It is the scheduled sweep, and it is in this
 # list because the thing that must survive a reboot is the SCHEDULE. #261.
-SERVICES="gateway mlx eval tts mcp discover worker audit ds4 watchdog energy ledger morning claude-news otel canary sweep-check fetch"
+SERVICES="gateway mlx eval tts mcp discover worker audit ds4 watchdog energy ledger morning claude-news otel canary sweep-check fetch delegations"
 
 #: Services that RUN AND EXIT rather than serve, at fixed local hours. KeepAlive
 #: would rerun a finished sweep at once; StartInterval counts from load, so a day
 #: of installs never lets it fire (#625). harness/heartbeat reads the installed hours (#705).
-declare -a PERIODIC=(discover audit watchdog energy ledger morning claude-news canary sweep-check fetch)
+declare -a PERIODIC=(discover audit watchdog energy ledger morning claude-news canary sweep-check fetch delegations)
 DISCOVER_HOURS="${DISCOVER_HOURS:-21}"
 AUDIT_HOURS="${AUDIT_HOURS:-3}"                   # nightly, #492
 # The watchdog watches this machine's own jobs, so every role runs it. #814.
 WATCHDOG_EVERY_MIN="${WATCHDOG_EVERY_MIN:-5}"
 # This machine's power through macmon, one reading a minute; every role samples its own. #826.
 ENERGY_EVERY_MIN="${ENERGY_EVERY_MIN:-1}"
+# Delegation outcomes inferred from the callers' transcripts, or expired to unknown, every N minutes. #1158.
+DELEGATIONS_EVERY_MIN="${DELEGATIONS_EVERY_MIN:-60}"
 # How long install waits for a deferred periodic run to end before leaving it on the old unit. #1058.
 DEFER_WAIT_S="${LH_DEFER_WAIT_S:-120}"
 # The day's ledger row, written late each evening and rewritten the next. #826.
@@ -55,7 +57,7 @@ SWEEP_CHECK_HOURS="${SWEEP_CHECK_HOURS:-22 23 0 1 2 3 4 5 6}"
 # Downloads for the next night's screen, by day; it starts nothing 20:00-08:00 or beside a sweep, and is off until LH_DAY_FETCH=1. #1084.
 FETCH_HOURS="${FETCH_HOURS:-8 11 14 17}"
 # Periodic jobs that read or write the shared store: only the scheduler runs them. #703.
-declare -a SCHEDULER_ONLY=(discover audit ledger morning claude-news canary sweep-check fetch)
+declare -a SCHEDULER_ONLY=(discover audit ledger morning claude-news canary sweep-check fetch delegations)
 # Machines sharing one store run the periodic jobs on one of them: scheduler, or node for the rest. #703.
 # A role given once is kept in $LH_HOME/role, so a later plain `make install` keeps it.
 ROLE_FILE="$LH_HOME/role"
@@ -162,10 +164,11 @@ usage() {
 _schedule() {
   local service="$1" p
   for p in "${PERIODIC[@]}"; do
-    if [ "$p" = "$service" ] && { [ "$service" = watchdog ] || [ "$service" = energy ]; }; then
+    if [ "$p" = "$service" ] && { [ "$service" = watchdog ] || [ "$service" = energy ] || [ "$service" = delegations ]; }; then
       # Every N minutes of every hour: a calendar, since an interval restarts at each load (#625).
       local m every="$WATCHDOG_EVERY_MIN"
       [ "$service" = energy ] && every="$ENERGY_EVERY_MIN"
+      [ "$service" = delegations ] && every="$DELEGATIONS_EVERY_MIN"
       printf '  <key>StartCalendarInterval</key>\n  <array>\n'
       for m in $(seq 0 "$every" 59); do
         printf '    <dict><key>Minute</key><integer>%s</integer></dict>\n' "$m"

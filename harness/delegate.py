@@ -302,8 +302,9 @@ def _timing(got: completion.Completion, started: float, replies=()) -> dict:
 
 
 @contextlib.contextmanager
-def as_work(lane: str, spec: str, where: serving.Route, stream: bool, delegation: bool = False):
-    """Send the block's requests tagged work; one that skips the gateway is logged as the gateway would. #825.
+def as_work(lane: str, spec: str, where: serving.Route, stream: bool, delegation: bool = False,
+            tag: str = purpose.WORK):
+    """Send the block's requests tagged `tag`; one that skips the gateway is logged as the gateway would. #825.
 
     `delegation` also records the result as a delegations row sharing the request row's call_id. #829.
     """
@@ -311,29 +312,34 @@ def as_work(lane: str, spec: str, where: serving.Route, stream: bool, delegation
     from harness import usage
     got: dict = {}
     at = time.time()
-    with purpose.using(purpose.WORK):
+    with purpose.using(tag):
         try:
             yield got
         except Exception as exc:
             if direct:
-                usage.record(usage.direct_row(lane, spec, where.model, at, error=exc, stream=stream))
+                usage.record(usage.direct_row(lane, spec, where.model, at, error=exc, stream=stream, tag=tag))
             raise
     from harness import delegations
     # One id for the delegation and its request row: LiteLLM's via the gateway, ours when direct. #829.
     call_id = got.get("call_id") or (delegations.new_id() if delegation else "")
     if direct:
         usage.record({**usage.direct_row(lane, spec, got.get("model") or where.model, at, got,
-                                         stream=stream), "call_id": call_id})
+                                         stream=stream, tag=tag), "call_id": call_id})
     if delegation:
         got.update(delegations.note(got, call_id, gateway=bool(got.get("call_id"))))
 
 
+def _tag(delegated: bool) -> str:
+    return purpose.WORK if delegated else purpose.INTERNAL
+
+
 def complete(lane: str, prompt: str, system: str | None = None,
              max_tokens: int = 2048, temperature: float | None = None,
-             timeout: float | None = None, thinking: bool | None = None) -> dict:
+             timeout: float | None = None, thinking: bool | None = None, delegated: bool = False) -> dict:
     """The lane's adopted model or method, timed; `method` is a method's cost. Raises Refused or CompletionError.
 
     `thinking` None serves the lane as it was measured; False sends enable_thinking false.
+    Only `delegated` (an agent's local_complete) is work with a delegations row; a program's call is internal. #1158.
     """
     lane = check_lane(lane)
     if not (prompt or "").strip():
@@ -374,7 +380,7 @@ def complete(lane: str, prompt: str, system: str | None = None,
             raise completion.CompletionError(
                 f"{label + ': ' if label else ''}{exc}{hint}",
                 exc.failure_class, exc.limit) from exc
-    with as_work(lane, spec, where, stream=True, delegation=True) as out:
+    with as_work(lane, spec, where, stream=True, delegation=delegated, tag=_tag(delegated)) as out:
         text, cost, replies = generate(spec, where, lane, prompt, call)
         got = replies[-1]
         out.update({"text": text, "lane": lane, "spec": spec,
@@ -426,8 +432,8 @@ def ask(question: str, schema: dict, where: serving.Route, context: str = "",
 
 
 def decide(question: str, schema: dict, context: str = "",
-           timeout: float | None = None) -> dict:
-    """`soh decide` on the decide lane's adopted model, timed."""
+           timeout: float | None = None, delegated: bool = False) -> dict:
+    """`soh decide` on the decide lane's adopted model, timed; `delegated` as in complete()."""
     if not (question or "").strip():
         raise Refused("empty question")
     check_schema(schema)
@@ -436,7 +442,7 @@ def decide(question: str, schema: dict, context: str = "",
     timeout = _allowance(where, 0, timeout)
     started = time.perf_counter()
     # Whole, not streamed: the gateway drops logprobs from a stream, and they are the answer.
-    with as_work("decide", spec, where, stream=False, delegation=True) as out:
+    with as_work("decide", spec, where, stream=False, delegation=delegated, tag=_tag(delegated)) as out:
         body, got = ask(question, schema, where, context=context, timeout=timeout)
         out.update({**body, "lane": "decide", "spec": spec,
                     "model": got.model or where.model, "call_id": got.call_id,

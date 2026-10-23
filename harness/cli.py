@@ -633,8 +633,13 @@ def build_parser() -> argparse.ArgumentParser:
     dlg.add_argument("outcome", nargs="?", default="", choices=("", "used", "edited", "discarded"))
     dlg.add_argument("--why", default="", help="what was wrong with it, or why it was kept")
     dlg.add_argument("--report", action="store_true",
-                     help="per lane: calls, recorded rate, used/edited/discarded rates, median seconds")
+                     help="per lane: calls, recorded rate, used/edited/discarded rates, closed kinds, median seconds")
     dlg.add_argument("--since", default="7d", help="report window: 7d, 12h, 30m, 90s")
+    dlg.add_argument("--close", action="store_true", help="infer pending outcomes from the callers' Claude Code "
+                     "transcripts, and record unknown past the expiry")
+    dlg.add_argument("--expiry-h", type=float, default=None,
+                     help="hours before a call with no evidence is unknown (default: knob delegation_expiry)")
+    dlg.add_argument("--root", default="", help="transcripts root (default $SOH_CLAUDE_PROJECTS or ~/.claude/projects)")
     dlg.set_defaults(func=delegated_cmd.cmd_delegated)
     dsk = sub.add_parser("disk", help="what the weights cache holds, what "
                          "uses it, and what is safe to delete")
