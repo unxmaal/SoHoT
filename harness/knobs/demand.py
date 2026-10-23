@@ -1,7 +1,8 @@
-"""Knobs of the demand census (#1151)."""
+"""Knobs of the demand census (#1151) and its shadow replay (#1161)."""
 from harness.knobs.base import _k
 
 _SRC = "evals/analysis/demand/__init__.py"
+_REPLAY = "evals/analysis/demand/replay.py"
 
 KNOBS = [
     _k("demand_cost_slack", [f"{_SRC}:COST_SLACK_S"], [0, 5, 60],
@@ -22,9 +23,21 @@ KNOBS = [
        note="characters of one tool step a labeller's packet keeps (#1151)"),
     _k("demand_steps", [f"{_SRC}:STEPS"], [5, 15, 30],
        note="tool steps a labeller's packet lists (#1151)"),
+    _k("replay_agree_min", [f"{_REPLAY}:AGREE_MIN"], [0.9, 0.95, 0.99],
+       note="share of units two temperature-0 replays must grade alike (#1161)"),
+    _k("replay_control_max", [f"{_REPLAY}:CONTROL_MAX"], [0.05, 0.1, 0.2],
+       note="as-is rate of the does-not-fit control at or below which it reads as near zero (#1161)"),
+    _k("replay_judge_timeout", [f"{_REPLAY}:JUDGE_TIMEOUT_S"], [120.0, 600.0, 1800.0],
+       note="seconds one claude -p judge or plant call may take before it counts as ungraded (#1161)"),
+    _k("replay_reject_min", [f"{_REPLAY}:REJECT_MIN"], [0.8, 0.9, 0.95],
+       note="share of planted wrong answers the judge must grade not_usable before its grades count (#1161)"),
+    _k("replay_result_cap", [f"{_REPLAY}:RESULT_CAP"], [1500, 4000, 12000],
+       note="characters of a unit's final text a replay packet keeps for plants (#1161)"),
 ]
 
 NOT_GATING = {
+    f"{_REPLAY}:ask_local->delegate.complete(temperature)": "the replay asks at temperature 0 by design, so two "
+                                                              "replays can be compared grade for grade (#1161)",
     f"{_SRC}:public_repo->subprocess.run(timeout)": "how long gh may take to say a repo is public; a timeout "
                                                      "counts it private, so its name is masked (#1151)",
     f"{_SRC}:Msg.tokens_in": "a message's measured input tokens (#1151)",
