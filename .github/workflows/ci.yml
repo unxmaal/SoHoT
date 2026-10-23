@@ -65,7 +65,8 @@ jobs:
         # how a repo gets a green badge and a broken checkout.
         env:
           PYTEST_ADDOPTS: --durations=60 --durations-min=0.5 --junitxml=/tmp/junit.xml
-        run: set -o pipefail && make check 2>&1 | tee /tmp/check.log
+        # user+sys over real x cores says whether the runner's cores were busy or waiting (#1146).
+        run: set -o pipefail && /usr/bin/time -p make check 2>&1 | tee /tmp/check.log
 
       - name: Where the time went
         if: always()
