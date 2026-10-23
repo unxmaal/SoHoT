@@ -134,6 +134,11 @@ class World:
     lanes: list | None = None
     #: The day clearance in force (soh day clear), or None. #1112.
     clearance: dict | None = None
+    #: The mcp unit's pid and how long it has run; None when no unit is loaded or launchd cannot be asked.
+    mcp_live: int | None = None
+    mcp_live_s: float | None = None
+    #: harness.mcp_server processes on the live one's port that are not it (#1155).
+    mcp_stale: list = field(default_factory=list)
     #: observation -> why it could not be made.
     gaps: dict = field(default_factory=dict)
 
@@ -453,6 +458,14 @@ def observe(probes: Probes, conn=None, now: float | None = None) -> World:
         else:
             world.top.append(s)
 
+    world.mcp_live = probes.launchd_pid("mcp")
+    if world.mcp_live in procs:
+        from harness import mcp_peers
+        world.mcp_live_s = procs[world.mcp_live].elapsed_s
+        for p in mcp_peers.stale(listed, world.mcp_live):
+            world.mcp_stale.append(Subject("mcp", f"mcp pid {p.pid}", "a harness.mcp_server the mcp unit is not",
+                                           pid=p.pid, elapsed_s=p.elapsed_s, command=p.command,
+                                           orphan=p.ppid == 1, detail={"live_pid": world.mcp_live}))
     world.lock = probes.lock()
     world.cloud = probes.cloud()
     world.resident = probes.resident()
@@ -611,6 +624,14 @@ def _orphan(w: World) -> list[Finding]:
             for s in w.top if s.orphan and (s.elapsed_s or 0) >= ORPHAN_GRACE_S]
 
 
+def _stale_mcp(w: World) -> list[Finding]:
+    from harness import mcp_peers
+    if (w.mcp_live_s or 0) < ORPHAN_GRACE_S:
+        return []
+    return [Finding("stale_mcp", s, {"elapsed_s": round(s.elapsed_s or 0), "live_pid": w.mcp_live,
+                                     "stop": mcp_peers.stop_command([s.pid])}) for s in w.mcp_stale]
+
+
 def _daytime_gpu(w: World) -> list[Finding]:
     if not daytime(w.now) or _cleared(w):
         return []
@@ -752,6 +773,8 @@ CRITERIA = (
               _no_progress, "no case finished for too long: wedged"),
     Criterion("orphan", ("watchdog_orphan_grace",), REAP, FILE, ("processes",), _orphan,
               "an eval or job whose sweep, worker or queue row is gone"),
+    Criterion("stale_mcp", ("watchdog_orphan_grace",), NOTIFY, FILE, ("processes", "mcp_unit"), _stale_mcp,
+              "an old MCP server kept alive by a client's open stream, serving the tool list it started with"),
     Criterion("daytime_gpu", ("watchdog_day_start_hour", "watchdog_day_end_hour", "watchdog_daytime_gpu"), PAUSE,
               STOP, ("processes",), _daytime_gpu, "a long GPU job inside Eric's day hours"),
     Criterion("day_clear", ("watchdog_day_end_hour", "watchdog_daytime_gpu", "watchdog_long_run_day"), NOTE, NOTIFY,
@@ -781,13 +804,15 @@ def _gap(w: World, need: str) -> str:
     if need == "progress" and not any(s.progress for s in w.evals):
         return "no running eval has written a progress file"
     value = {"lock": w.lock, "resident": w.resident, "pressure": w.pressure,
-             "gateway": w.gateway_up, "mlx": w.mlx_generating, "fallbacks": w.fallbacks}.get(need, True)
+             "gateway": w.gateway_up, "mlx": w.mlx_generating, "fallbacks": w.fallbacks,
+             "mcp_unit": w.mcp_live}.get(need, True)
     if value is None:
         return {"lock": "the eval lock could not be read", "resident": "the router or its defaults could not be read",
                 "pressure": "memory pressure could not be sampled",
                 "gateway": "no gateway unit is loaded here, or launchd cannot be asked",
                 "mlx": "no mlx unit is loaded here, or its /health did not answer",
-                "fallbacks": "the store or the served config could not be read"}[need]
+                "fallbacks": "the store or the served config could not be read",
+                "mcp_unit": "no mcp unit is loaded here, or launchd cannot be asked"}[need]
     return ""
 
 

@@ -63,6 +63,7 @@ NOT_GATING = {
                                             "on a request in flight is DRAIN_S, derived from completion.timeout_for "
                                             "over every LADDER rung (#703)",
     "harness/mcp_server.py:MAX_INLINE_BYTES": "how a result is returned, inline or as a path; never what it is",
+    "harness/mcp_server.py:SHUTDOWN_GRACE_S": "how long a stopping MCP server waits on open clients; never what a tool answers (#1155)",
     "harness/context.py:MIN_SLOT_CTX": "the floor the eval7b_slot_ctx range is held to; a preset under it is refused (#665)",
     "harness/context.py:MIN_LONG_SLOT_CTX": "the floor the ornith_slot_ctx range is held to; a preset under it is refused (#682)",
     "harness/context.py:Choice.slot_ctx": "a planned result's value before it is planned (#699)",
