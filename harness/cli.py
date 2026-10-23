@@ -735,6 +735,8 @@ def build_parser() -> argparse.ArgumentParser:
     llg.add_argument("--runs", default="", help="run directories by name (default: this home's runs)")
     llg.add_argument("--log", action="append", help="a router log to read (repeatable; default: this home's)")
     llg.add_argument("--apply", action="store_true", help="write the excerpts and the verdicts")
+    llg.add_argument("--idle", action="store_true", help="print each model's cold-load seconds and what each "
+                     "idle unload limit would cost it in loads and idle hours; read-only. #1157")
     llg.set_defaults(func=load_log_cmd.cmd_load_log)
     coh = sub.add_parser("coherence", help="re-decide terminal verdicts whose reason contradicts the outcome "
                          "or that nothing can reopen; read-only without --apply. #991")

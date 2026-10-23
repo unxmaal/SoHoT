@@ -231,7 +231,7 @@ def test_the_mlx_wrapper_answers_the_loaded_path_and_leaves_the_rest_alone():
     base = f"http://127.0.0.1:{srv.server_address[1]}"
     try:
         with urllib.request.urlopen(base + mlx_server.LOADED_PATH, timeout=5) as r:
-            assert json.loads(r.read()) == {"model": "mlx-community/Qwen3-4B-4bit"}
+            assert json.loads(r.read()) == {"model": "mlx-community/Qwen3-4B-4bit", "boot": None, "in_flight": 0}
         with pytest.raises(urllib.error.HTTPError):
             urllib.request.urlopen(base + "/elsewhere", timeout=5)
     finally:

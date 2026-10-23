@@ -125,7 +125,7 @@ if [ -n "${LLAMACPP_API_KEY_FILE:-}" ]; then
   KEY_ARGS=(--api-key-file "$SERVED_KEY")
 fi
 
-# A dedicated Mac server never sleeps (router-sleep-idle.sh), so no eval case pays a reload (#694).
+# The router's own idle sleep outlasts a paired turn (router-sleep-idle.sh), so no eval case pays a reload (#694, #1157).
 # --timeout outlasts the slowest load plus the longest reply the knobs allow, so the server never cuts a request first (#694).
 exec "$BIN" \
   --jinja \

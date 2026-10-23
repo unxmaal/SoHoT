@@ -4,6 +4,7 @@ from __future__ import annotations
 import http.server
 import json
 import sys
+import threading
 import urllib.error
 import urllib.request
 
@@ -45,15 +46,32 @@ def loaded_model(provider) -> str | None:
     return (getattr(provider, "_model_map", None) or {}).get(key[0], key[0])
 
 
+def boot_model(provider) -> str | None:
+    """The --model the server started with, which a swap off any other model goes back to."""
+    got = getattr(getattr(provider, "cli_args", None), "model", None)
+    return str(got) if got else None
+
+
 def serve_loaded(handler) -> None:
-    """Answer LOADED_PATH on `handler`'s GET; every other path goes to its own do_GET."""
-    original = handler.do_GET
+    """Answer LOADED_PATH on `handler`'s GET with what it holds, its boot model and the POSTs in flight (#1157)."""
+    original, posting = handler.do_GET, getattr(handler, "do_POST", None)
+    lock, in_flight = threading.Lock(), [0]
+
+    def do_POST(self):
+        with lock:
+            in_flight[0] += 1
+        try:
+            return posting(self)
+        finally:
+            with lock:
+                in_flight[0] -= 1
 
     def do_GET(self):
         if self.path != LOADED_PATH:
             return original(self)
-        body = json.dumps({"model": loaded_model(
-            self.response_generator.model_provider)}).encode()
+        provider = self.response_generator.model_provider
+        body = json.dumps({"model": loaded_model(provider), "boot": boot_model(provider),
+                           "in_flight": in_flight[0]}).encode()
         self.send_response(200)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(body)))
@@ -62,6 +80,8 @@ def serve_loaded(handler) -> None:
         return None
 
     handler.do_GET = do_GET
+    if posting is not None:
+        handler.do_POST = do_POST
 
 
 def cache_caps(argv: list[str]) -> list[str]:
@@ -92,6 +112,16 @@ def held(base: str, timeout: float, opener=urllib.request.urlopen) -> str | None
     except (OSError, ValueError, AttributeError):
         return None
     return str(got) if got else None
+
+
+def activity(base: str, timeout: float, opener=urllib.request.urlopen) -> dict | None:
+    """{"model", "boot", "in_flight"} from the server at `base`, None when it did not answer; old servers lack the last two."""
+    try:
+        with opener(base.rstrip("/") + LOADED_PATH, timeout=timeout) as r:
+            got = json.loads(r.read() or b"{}")
+    except (OSError, ValueError, AttributeError):
+        return None
+    return {k: got.get(k) for k in ("model", "boot", "in_flight")} if isinstance(got, dict) else None
 
 
 def _swap_to_boot(base: str, timeout: float, opener) -> None:
