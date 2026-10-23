@@ -41,6 +41,15 @@ _FENCE = re.compile(r"```[ \t]*(?:diff|patch|udiff)?[ \t]*\n(.*?)```", re.S)
 _TAG = re.compile(r"<(patch|diff)>(.*?)(?:</\1>|\Z)", re.S)
 REPLY = ("Reply with one unified diff (as `git diff` prints it, paths a/ and b/ from the "
          "repository root) that fixes the issue, and nothing else. Do not change tests.")
+#: The variant whose prompt is a cut Claude Code session (#1095); it is asked as a quotation. #1129.
+SESSION_VARIANT = "request"
+QUOTE_HEAD = ("Each line below that starts with > quotes the record of an earlier Claude Code session, "
+              "cut just before the agent's first edit to the code. That session is over: its tool calls "
+              "ran then, none can run now, and it is not a conversation to continue. Write the change "
+              "it was heading toward.\n\n")
+QUOTE_END = "\n\n(End of the quoted session.)"
+#: Tool-call markup an agent-trained model emits (#921 codebook class tool_call).
+_TOOL_CALL = re.compile(r"<tool_call>|<function=")
 
 
 class RepoEnvError(RuntimeError):
@@ -248,6 +257,28 @@ def prompt_for(issue: str, task: Path, files, new=()) -> str:
               f"{', '.join(new)}\n\n") if new else ""
     return (f"{issue.strip()}\n\nThe relevant files at the commit to fix:\n\n"
             f"{context_block(task, files)}\n\n{create}{REPLY}")
+
+
+def quoted(prompt: str) -> str:
+    """A session-cut prompt as a quotation: the importer's lead replaced, every session line behind > ."""
+    from evals.session_cut import HEAD
+    body = prompt[len(HEAD):] if prompt.startswith(HEAD) else prompt
+    lines = body.strip("\n").splitlines()
+    return QUOTE_HEAD + "\n".join(f"> {line}" if line else ">" for line in lines) + QUOTE_END
+
+
+def as_asked(case):
+    """The case with the issue text and system prompt (params.system) it is asked with. #1129."""
+    import dataclasses
+
+    from harness import completion
+    prompt = quoted(case.prompt) if case.params.get("variant") == SESSION_VARIANT else case.prompt
+    return dataclasses.replace(case, prompt=prompt, params={**case.params, "system": completion.SYSTEM["repo"]})
+
+
+def calls_tools(reply: str, diff: str) -> bool:
+    """A reply that holds no diff and calls tools instead, as an agent would. #1129."""
+    return not (diff or "").strip() and bool(_TOOL_CALL.search(str(reply or "")))
 
 
 def extract_diff(reply: str) -> str:

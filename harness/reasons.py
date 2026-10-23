@@ -70,6 +70,8 @@ BLANK_OUTPUT = "blank_output"
 BACKEND_FAULT = "backend_fault"
 #: A repo-lane reply whose diff git cannot apply: the candidate's own failure. #887.
 INVALID_PATCH = "invalid_patch"
+#: A repo-lane reply with no diff and tool-call markup: the model acted as an agent with no tools. #1129.
+TOOL_CALL = "tool_call"
 #: The repo lane's mirror, checkout or environment could not be built; the model never ran. #887.
 ENVIRONMENT_ERROR = "environment_error"
 
@@ -108,6 +110,7 @@ CLASSES = {
     CRASHED: ("broken", CANDIDATE),
     DEGENERATE: ("broken", CANDIDATE),
     CONTENT_FAILED: ("broken", CANDIDATE),
+    TOOL_CALL: ("broken", CANDIDATE),
     INVALID_PATCH: ("broken", CANDIDATE),
     RUNAWAY: ("broken", CANDIDATE),
 }

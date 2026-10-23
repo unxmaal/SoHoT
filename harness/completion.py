@@ -99,9 +99,11 @@ SYSTEM = {
     "decide": ("You answer with a single JSON object and nothing else. No "
                "prose, no markdown fences, no explanation. Each key is a field "
                "name and each value is the letter of one allowed choice."),
-    # One single-attempt patch against a real repository, applied with git apply. #887.
-    "repo": ("You fix issues in a software repository. You output one unified diff that git "
-             "apply accepts, with a/ and b/ paths from the repository root, and nothing else."),
+    # One single-attempt patch against a real repository, applied with git apply. #887, #1129.
+    "repo": ("You fix issues in a software repository from the files shown in the message. You have "
+             "no tools: you cannot run commands or read, search or edit files, nothing in your reply "
+             "is executed, and the files shown are all you get. Your whole reply is one unified diff "
+             "that git apply accepts, with a/ and b/ paths from the repository root, and nothing else."),
 }
 NEUTRAL_SYSTEM = "Answer directly and concisely."
 

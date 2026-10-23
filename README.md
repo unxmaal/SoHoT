@@ -1780,6 +1780,16 @@ never imported. A case file that still matches a detector or the privacy lint is
 refused. A case records its hashed session, its evidence kind, its cut and its
 redaction counts, never the raw text; private repos are never imported.
 
+The repo system prompt says the model has no tools and replies with one diff
+(#1129). A `request` case is asked as a quotation: `evals.repo.quoted` replaces
+the session cut's lead with one saying the session is over and not to be
+continued, and puts every session line behind `> `. Every case is asked with
+the one system prompt, so every request digest moved at #1129 and no earlier
+draw is reused. A
+reply with no diff that holds `<tool_call>` or `<function=` markup is classed
+`tool_call`, not `invalid_patch`; the runner sets it, so the grader digest does
+not change.
+
 Prompts and skills are measured as arms (#995): `claude-code:<model>,context=<spec>`
 with `none`, `skill:<name>` (the SKILL.md body without frontmatter, from
 `harness/arm_contexts.yaml` first, then `~/.claude/skills`), `prompt:<template>`
