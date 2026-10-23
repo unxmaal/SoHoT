@@ -1236,7 +1236,7 @@ def _execute_at(args, overrides: dict) -> int:
         models.warn(candidate)
     resolved = resolved_models(specs)
     total = sum(len(mine) for _, _, mine in planned)
-    eye = watch.Watch(planned=planned_seconds(args, planned, budget, ladder, total),
+    eye = watch.Watch(planned=planned_seconds(args, planned, budget, ladder, total, candidates),
                       stop_at=getattr(args, "stop_at", None), outdir=outdir)
     todo = []
     for candidate, runner, mine in planned:
@@ -1357,15 +1357,17 @@ def _execute_at(args, overrides: dict) -> int:
     return code
 
 
-def planned_seconds(args, planned, budget: int, ladder, total: int) -> dict:
-    """receipt key -> planned seconds per case: --plan-s, else its stored mean here, else --budget-min over the cases. #810."""
+def planned_seconds(args, planned, budget: int, ladder, total: int, requested=None) -> dict:
+    """receipt key -> planned seconds per case: --plan-s per requested candidate, else its stored mean here, else --budget-min. #810, #1134."""
     given = getattr(args, "plan_s", None) or []
-    if given and len(given) != len(planned):
-        raise SystemExit(f"--plan-s given {len(given)} time(s) for {len(planned)} candidate(s)")
+    requested = [c for c, _, _ in planned] if requested is None else list(requested)
+    if given and len(given) != len(requested):
+        raise SystemExit(f"--plan-s given {len(given)} time(s) for {len(requested)} candidate(s)")
+    by = dict(zip(requested, given))
     stated = getattr(args, "budget_min", None)
     out = {}
-    for i, (_, runner, _) in enumerate(planned):
-        each = given[i] if given else stored_seconds(args.modality, runner.candidate, budget, ladder)
+    for candidate, runner, _ in planned:
+        each = by[candidate] if given else stored_seconds(args.modality, runner.candidate, budget, ladder)
         if each is None and stated and total:
             each = stated * 60.0 / total
         out[runner.candidate] = each

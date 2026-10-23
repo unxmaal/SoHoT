@@ -9,7 +9,7 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 
 from evals import watch
-from harness import lanes, paths, reasons
+from harness import lanes, methods, paths, reasons
 from harness.commands.common import emit, err, note
 from harness.commands import jobs as jobs_cmd
 
@@ -193,24 +193,30 @@ def cmd_reuse_replay(a) -> int:
 def measurable(store, top: int, want: str = "") -> list[dict]:
     """Survivors in the scoped lane, filtered before the limit. #386."""
     from harness import memory_store as ms
-    rows = ms.survivors(store, limit=1_000_000)
-    if want:
-        rows = [r for r in rows if lanes.serves(r.get("lane"), want)]
+    rows = [r for r in ms.survivors(store, limit=1_000_000) if takes(r, want)]
     return rows[:top]
+
+
+def takes(row: dict, want: str = "") -> bool:
+    """Whether the measure step may plan `row`: in the scoped lane if any, and only where its method runs. #386, #1134."""
+    name = row.get("name", "")
+    if want and not methods.serves(name, row.get("lane"), want):
+        return False
+    return methods.runs_in(name, lane_for(row, want))
 
 
 def resume_first(store, fresh: list[dict], want: str = "") -> list[dict]:
     """Paused measurements before anything new, each once. #813."""
     from harness import paused
-    held = [{"name": p["proposal"] or p["challenger"], "lane": p["lane"]} for p in paused.waiting(store)
-            if not want or lanes.serves(p["lane"], want)]
+    held = [r for r in ({"name": p["proposal"] or p["challenger"], "lane": p["lane"]} for p in paused.waiting(store))
+            if takes(r, want)]
     names = {r["name"] for r in held}
     return held + [r for r in fresh if r.get("name") not in names]
 
 
 def room_for(row: dict) -> tuple[bool, float | None, str]:
     """(fits now, GB its load needs or None, why) for one queued measurement, by the screen's headroom check. #1082."""
-    from harness import candidates, memory, methods
+    from harness import candidates, memory
     from harness import memory_store as ms
     name = row.get("name", "")
     target = methods.weights_of(name) if methods.is_method(name) else name
@@ -228,6 +234,17 @@ def room_for(row: dict) -> tuple[bool, float | None, str]:
     need = memory.need_gb(target, spec=spec, parallel=1)
     ok, why = memory.check_model(target, spec=spec, parallel=1)
     return ok, need if isinstance(need, (int, float)) else None, why
+
+
+def lane_for(row: dict, want: str = "") -> str:
+    """The lane `row` is measured in: a repo row's own, else the scoped lane when it can run there, else its filed lane. #207, #889, #1134."""
+    from harness import repo_gate
+    want = (want or "").strip().lower()
+    if lanes.canonical(row.get("lane")) == repo_gate.GATE:
+        return repo_gate.GATE
+    if want and methods.serves(row.get("name", ""), row.get("lane"), want):
+        return want
+    return lanes.canonical(row.get("lane"))
 
 
 def _measure_and_adopt(a, row: dict, sweep=None) -> int:
@@ -254,14 +271,10 @@ def _measure(a, row: dict, loaded: list, sweep=None) -> int:
     from harness import memory_store as ms
 
     name = row["name"]
-    # A text candidate is filed under `code` and can be measured in web, svg
-    # and extract too. When the caller scoped the loop to one of those, that
-    # is the lane to measure in: the incumbent, the cases and the metric all
-    # belong to the lane being asked about, not the one the row was filed
-    # under. #207.
-    want = (getattr(a, "lane", "") or "").strip().lower()
-    lane = (want if want and lanes.serves(row.get("lane"), want)
-            else lanes.canonical(row.get("lane")))
+    lane = lane_for(row, getattr(a, "lane", ""))
+    if not methods.runs_in(name, lane):
+        print(f"  {name}: its method does not run the {lane} lane, so it is not measured there (#1134)", flush=True)
+        return 0
     store = ms.connect()
     try:
         spec = candidates.for_proposal(store, lane, name,
