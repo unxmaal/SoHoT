@@ -561,7 +561,7 @@ def gather(conn, home: Path, now: float, since: float | None = None) -> dict:
                        "WHERE d.at >= ?", (start,))
     return {
         "start": start, "end": now, "machine_id": mid, "intervals": intervals, "requests": reqs,
-        "sweeps": len(sweep),
+        "sweeps": sum(1 for b, _ in sweep if b >= start),
         "power": [s for s in ledger.read_jsonl(home / "ledger" / "power.jsonl") if s.get("at", 0) >= start],
         "probes": _rows(conn, f"SELECT at, outcome, reason FROM lane_probes WHERE at >= ? AND {mine}",
                         (start, mid)),
