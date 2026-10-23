@@ -20,6 +20,11 @@ mkdir -p "$LH_LOGS"
 HOST="${MCP_HOST:-0.0.0.0}"
 PORT="${MCP_PORT:-8899}"
 echo "mcp   http://$(scutil --get LocalHostName 2>/dev/null || hostname).local:$PORT/mcp" >&2
-exec uv run --group mcp python -m harness.mcp_server \
+# Exec the env's own python: under `uv run` launchd's KILL took uv and left the server running. #1155.
+PY="$(uv run --group mcp python -c 'import sys; print(sys.executable)')"
+VIRTUAL_ENV="$(dirname "$(dirname "$PY")")"
+PATH="$(dirname "$PY"):$PATH"
+export VIRTUAL_ENV PATH
+exec "$PY" -m harness.mcp_server \
   --host "$HOST" --port "$PORT" --transport streamable-http \
   ${MCP_ALLOW:+--allow "$MCP_ALLOW"}

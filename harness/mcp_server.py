@@ -25,6 +25,7 @@ The other machine adds one entry pointing at http://<host>.local:8899/mcp
 """
 from __future__ import annotations
 
+import os
 import subprocess
 import sys
 import time
@@ -68,6 +69,8 @@ OUTDIR: Path | None = None
 #: This interpreter, not `lh` on PATH, which runs whatever checkout installed it. #290.
 LH = [sys.executable, "-m", "harness.cli"]
 DEFAULT_TIMEOUT = 300.0
+#: Under launchd's 20 s exit timeout; without a bound uvicorn waits on a client's GET stream forever. #1155.
+SHUTDOWN_GRACE_S = 10.0
 
 SERVER = MCPServer(
     name="SoHoT",
@@ -446,14 +449,48 @@ def main() -> None:
                          "Studio's name")
     ap.add_argument("--transport", default="streamable-http",
                     choices=["streamable-http", "stdio", "sse"])
+    ap.add_argument("--shutdown-grace", type=float, default=SHUTDOWN_GRACE_S,
+                    help="seconds a stopping server waits for open client streams")
     a = ap.parse_args()
     from harness import purpose
     purpose.set_process(purpose.WORK)
     if a.transport == "stdio":
         SERVER.run(transport="stdio")
         return
-    SERVER.run(transport=a.transport, host=a.host, port=a.port,
-               transport_security=transport_security(a.host, a.port, a.allow))
+    if a.transport == "sse":
+        SERVER.run(transport="sse", host=a.host, port=a.port,
+                   transport_security=transport_security(a.host, a.port, a.allow))
+        return
+    serve(a.host, a.port, a.allow, a.shutdown_grace)
+
+
+def serve(host: str, port: int, allow=(), grace: float = SHUTDOWN_GRACE_S) -> None:
+    """streamable-http under a uvicorn that stops within `grace` and first stops stale servers on its port."""
+    import uvicorn
+
+    app = SERVER.streamable_http_app(transport_security=transport_security(host, port, allow), host=host)
+    config = uvicorn.Config(app, host=host, port=port, log_level=SERVER.settings.log_level.lower(),
+                            timeout_graceful_shutdown=max(1, round(grace)))
+    sock = config.bind_socket()
+    for line in stale_report(port, pid=os.getpid()):
+        print(line, file=sys.stderr, flush=True)
+    uvicorn.Server(config).run(sockets=[sock])
+
+
+def stale_report(port: int, pid: int, procs=None) -> list[str]:
+    """With the port bound here, every other server for it is draining an old client's stream. #1155."""
+    from harness import mcp_peers, watchdog
+    if mcp_peers.port_of(f"-m harness.mcp_server --port {port}") is None:
+        return []
+    procs = watchdog.Probes().processes() if procs is None else procs
+    if procs is None:
+        return ["mcp   stale check skipped: the process table cannot be read here"]
+    found = mcp_peers.stale(procs, pid, port)
+    lines = [f"mcp   STALE server pid {p.pid} (up {p.elapsed_s:.0f}s) holds no listener on :{port} "
+             "and still serves the tool list it started with" for p in found]
+    if found:
+        lines.append(f"mcp   stop them with: {mcp_peers.stop_command([p.pid for p in found])}")
+    return lines
 
 
 if __name__ == "__main__":
