@@ -398,16 +398,29 @@ def probe(mirror: Path, c: dict, log, timeout=TIMEOUT_S, runs=RUNS, env=None, sr
         files = [p for p in repo.hidden_tests(mirror, c["base"], c["fix"]) if _test_module(p)]
         if not files:
             return {"drop": "no_test_change"}
-        base_runs = [outcomes(task, python, files, log, timeout, src) for _ in range(runs)]
+        base_runs = _runs(runs, lambda: outcomes(task, python, files, log, timeout, src))
         applied, _ = repo.apply(task, repo.reference_diff(mirror, c["base"], c["fix"]))
         if not applied:
             return {"drop": "reference_unappliable"}
+        bad = next((r for r in base_runs if isinstance(r, str)), None)
+        if bad:
+            return {"drop": bad}
         repo.install_tests(mirror, task, c["base"], c["fix"])
-        fix_runs = [outcomes(task, python, files, log, timeout, src) for _ in range(runs)]
-        bad = next((r for r in [*base_runs, *fix_runs] if isinstance(r, str)), None)
+        fix_runs = _runs(runs, lambda: outcomes(task, python, files, log, timeout, src))
+        bad = next((r for r in fix_runs if isinstance(r, str)), None)
         return {"drop": bad} if bad else classify(base_runs, fix_runs, files, task)
     finally:
         repo.discard(mirror, task)
+
+
+def _runs(n: int, once) -> list:
+    """Up to n runs, stopping at the first that drops the task: a timeout repeated n times costs n timeouts. #1146."""
+    got = []
+    for _ in range(n):
+        got.append(once())
+        if isinstance(got[-1], str):
+            break
+    return got
 
 
 def area(source_files) -> str:

@@ -297,7 +297,7 @@ def _smoke(env_extra: dict, tmp_path, cwd=REPO, script="scripts/smoke.sh"):
         pytest.skip("needs bash and curl")
     env = {**os.environ, "LOCALHARNESS_HOME": str(tmp_path),
            "SOHOT_GATEWAY_STORE": "file", "READY_TIMEOUT": "2",
-           "MLX_PORT": "9", "TTS_PORT": "9", **env_extra}
+           "MLX_PORT": "9", "TTS_PORT": "9", "SMOKE_G2P_CHECK": "true", **env_extra}
     if "SOHOT_GATEWAY_KEY" not in env_extra:
         env.pop("SOHOT_GATEWAY_KEY", None)
     return subprocess.run([BASH, str(script)], cwd=cwd, env=env,
@@ -311,6 +311,15 @@ def test_smoke_sends_the_key_on_both_routes(gateway, tmp_path):
     assert gateway.seen and set(gateway.seen) <= {"Bearer sk-right", ""}
     assert "Bearer sk-right" in gateway.seen
     assert "sk-right" in gateway.anthropic
+
+
+@pytest.mark.skipif(sys.platform != "darwin", reason="smoke checks the G2P on macOS only")
+def test_smoke_runs_the_g2p_check_it_is_given_never_the_audio_env_build(gateway, tmp_path):
+    """serve-tts.sh --check resolves mlx-audio and spaCy, ~30 s per smoke test on a fresh runner (#1146)."""
+    ran = tmp_path / "g2p-ran"
+    r = _smoke({"SOHOT_GATEWAY_KEY": "sk-right", "GATEWAY_PORT": str(gateway.server_address[1]),
+                "SMOKE_G2P_CHECK": f"touch {ran}"}, tmp_path)
+    assert ran.exists() and "PASS  tts G2P builds offline" in r.stdout
 
 
 def test_smoke_asks_the_decide_alias_for_a_schema(gateway, tmp_path):

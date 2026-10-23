@@ -131,7 +131,9 @@ def test_a_per_layer_sliding_window_pattern_is_read_from_the_header():
 
 
 def test_ds4_context_holds_the_top_ladder_rung_and_the_largest_shipped_case_prompt():
-    pads = [int((yaml.safe_load(f.read_text(encoding="utf-8")).get("params") or {}).get("pad_tokens") or 0)
+    from evals import core
+    # libyaml: the pure-Python loader spent seconds on the ~3800 shipped cases (#1146).
+    pads = [int((yaml.load(f.read_text(encoding="utf-8"), Loader=core._LOADER).get("params") or {}).get("pad_tokens") or 0)
             for f in (knobs.REPO / "evals" / "cases").rglob("*.yaml")]
     top = max(max(completion.ladder(lane) or (0,)) for lane in completion.LADDER)
     assert max(pads) >= 32000

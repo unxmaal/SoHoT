@@ -68,14 +68,54 @@ def _chain(node, aliases, modules):
     return None
 
 
+_FUNCS = (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)
+
+
+def _collect(tree):
+    """One traversal: import nodes, attribute and call nodes, and each bare load with its enclosing functions."""
+    imports, attrs, calls, loads = [], [], [], []
+    deep: dict = {}  # id(function) -> every ImportFrom inside it, at any depth
+    stack = [(tree, ())]
+    while stack:
+        node, fns = stack.pop()
+        if isinstance(node, (ast.Import, ast.ImportFrom)):
+            imports.append(node)
+            if isinstance(node, ast.ImportFrom):
+                for fn in fns:
+                    deep[fn].append(node)
+        elif isinstance(node, ast.Attribute):
+            attrs.append(node)
+        elif isinstance(node, ast.Call):
+            calls.append(node)
+        elif isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load):
+            loads.append((node, fns))
+        if isinstance(node, _FUNCS):
+            deep[id(node)] = []
+            fns = fns + (id(node),)
+        stack.extend((child, fns) for child in ast.iter_child_nodes(node))
+    return imports, attrs, calls, loads, deep
+
+
+_FACTS: dict = {}
+
+
 def facts(mod: str, src: str, modules: set, is_pkg: bool = False) -> Facts:
+    """What `src` binds, reads and patches; the tests of a worker share one scan of each file. #1146."""
+    key = (mod, src, is_pkg, frozenset(modules))
+    if key not in _FACTS:
+        _FACTS[key] = _facts(mod, src, modules, is_pkg)
+    return _FACTS[key]
+
+
+def _facts(mod: str, src: str, modules: set, is_pkg: bool) -> Facts:
     tree = ast.parse(src)
     f = Facts()
     top = set(map(id, tree.body))
     for stmt in tree.body:
         if isinstance(stmt, (ast.If, ast.Try)):
             top.update(map(id, ast.walk(stmt)))
-    for node in ast.walk(tree):
+    imports, attrs, calls, loads, deep = _collect(tree)
+    for node in sorted(imports, key=lambda n: (n.lineno, n.col_offset)):
         if isinstance(node, ast.Import):
             for a in node.names:
                 if a.asname:
@@ -83,7 +123,7 @@ def facts(mod: str, src: str, modules: set, is_pkg: bool = False) -> Facts:
                 else:
                     head = a.name.split(".")[0]
                     f.aliases[head] = head
-        elif isinstance(node, ast.ImportFrom):
+        else:
             src_mod = _absolute(mod, node, is_pkg)
             for a in node.names:
                 local = a.asname or a.name
@@ -93,16 +133,15 @@ def facts(mod: str, src: str, modules: set, is_pkg: bool = False) -> Facts:
                 f.imported.append((src_mod, a.name, node.lineno))
                 if id(node) in top:
                     f.top_from[local] = (src_mod, a.name)
-    _bare_reads(tree, f, mod, is_pkg, modules)
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Attribute):
-            m = _chain(node.value, f.aliases, modules)
-            if m:
-                f.attrs.append((m, node.attr, type(node.ctx).__name__, node.lineno))
-                if isinstance(node.ctx, ast.Store):
-                    f.patches.append((m, node.attr, node.lineno))
-        elif isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) \
-                and node.func.attr == "setattr" and node.args:
+    _bare_reads(loads, deep, f, mod, is_pkg, modules)
+    for node in attrs:
+        m = _chain(node.value, f.aliases, modules)
+        if m:
+            f.attrs.append((m, node.attr, type(node.ctx).__name__, node.lineno))
+            if isinstance(node.ctx, ast.Store):
+                f.patches.append((m, node.attr, node.lineno))
+    for node in calls:
+        if isinstance(node.func, ast.Attribute) and node.func.attr == "setattr" and node.args:
             first = node.args[0]
             if isinstance(first, ast.Constant) and isinstance(first.value, str) \
                     and "." in first.value:
@@ -117,25 +156,26 @@ def facts(mod: str, src: str, modules: set, is_pkg: bool = False) -> Facts:
     return f
 
 
-def _bare_reads(tree, f: Facts, mod: str, is_pkg: bool, modules) -> None:
+def _bare_reads(loads, deep, f: Facts, mod: str, is_pkg: bool, modules) -> None:
     """Bare loads at module scope, or in a function that does not import the name itself."""
-    def visit(node, local: dict):
-        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)):
-            local = dict(local)
-            for sub in ast.walk(node):
-                if isinstance(sub, ast.ImportFrom):
-                    src = _absolute(mod, sub, is_pkg)
-                    for a in sub.names:
-                        if f"{src}.{a.name}" not in modules:
-                            local[a.asname or a.name] = (src, a.name)
-        if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load):
-            if node.id in local:
-                f.local_from.append(local[node.id])
-            else:
-                f.bare.add(node.id)
-        for child in ast.iter_child_nodes(node):
-            visit(child, local)
-    visit(tree, {})
+    local_of: dict = {}
+
+    def local(fns) -> dict:
+        if fns not in local_of:
+            got = dict(local(fns[:-1])) if fns else {}
+            for sub in deep[fns[-1]] if fns else ():
+                src = _absolute(mod, sub, is_pkg)
+                for a in sub.names:
+                    if f"{src}.{a.name}" not in modules:
+                        got[a.asname or a.name] = (src, a.name)
+            local_of[fns] = got
+        return local_of[fns]
+    for node, fns in loads:
+        names = local(fns)
+        if node.id in names:
+            f.local_from.append(names[node.id])
+        else:
+            f.bare.add(node.id)
 
 
 def _is_pkg(mod: str, root: Path = REPO) -> bool:

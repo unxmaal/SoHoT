@@ -108,6 +108,21 @@ def test_a_case_whose_relevant_ids_are_not_in_its_corpus_is_refused(tmp_path):
         load_cases(tmp_path)
 
 
+
+def test_a_corpus_is_read_again_once_it_changes(tmp_path):
+    """Corpus ids are cached per file version; an edit must still reach the check (#1146)."""
+    import os
+    corpus = tmp_path / "corpus.jsonl"
+    corpus.write_text('{"id": "a", "text": "x"}\n', encoding="utf-8")
+    (tmp_path / "c.yaml").write_text("id: c\nmodality: retrieval\nprompt: q\n"
+                                     "input_file: corpus.jsonl\nassert: {relevant: [a]}\n",
+                                     encoding="utf-8")
+    assert [c.id for c in load_cases(tmp_path)] == ["c"]
+    corpus.write_text('{"id": "z", "text": "x"}\n', encoding="utf-8")
+    os.utime(corpus, ns=(1, 1))
+    with pytest.raises(ValueError, match="not in"):
+        load_cases(tmp_path)
+
 # --- the metric and its negative control -----------------------------------
 
 def _rows(rank_for):

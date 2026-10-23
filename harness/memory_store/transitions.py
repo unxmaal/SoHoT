@@ -308,6 +308,11 @@ def decide(conn: sqlite3.Connection, name: str, outcome: str, *, tier: str = "",
             f"VALUES ({', '.join('?' * len(cols))})",
             tuple(cols.values())).lastrowid
     else:
-        vid = _write(conn, pid, name, fields, reopen=reopen, why=reopen_why)
+        try:
+            vid = _write(conn, pid, name, fields, reopen=reopen, why=reopen_why)
+        except IllegalTransition:
+            # remember_machine's write opened a transaction; left open it holds the store's write lock. #1146.
+            conn.commit()
+            raise
     conn.commit()
     return vid

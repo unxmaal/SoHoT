@@ -176,8 +176,10 @@ else
 fi
 
 # misaki downloads its spaCy model from GitHub per request when the server env lacks it. #1045
+# Tests replace the check: it builds the whole audio env, ~30 s on a fresh CI runner. #1146
+G2P_CHECK="${SMOKE_G2P_CHECK:-scripts/serve-tts.sh --check}"
 if [ "$(uname -s)" = "Darwin" ] && { [ "$H" = 127.0.0.1 ] || [ "$H" = localhost ]; }; then
-  if scripts/serve-tts.sh --check >/dev/null 2>&1; then
+  if $G2P_CHECK >/dev/null 2>&1; then
     ok "tts G2P builds offline"
   else
     no "tts G2P needs the network: run scripts/serve-tts.sh --check"

@@ -1365,3 +1365,23 @@ def test_swap_is_recorded_but_is_not_a_comparability_axis():
     quiet = Receipt("image", ("fox",), 3, {}, "", swap_used_mb=0)
     busy = Receipt("image", ("fox",), 3, {}, "", swap_used_mb=19_900)
     assert comparable(quiet, busy)[0]
+
+
+def test_a_case_file_is_parsed_once_while_unchanged_and_each_load_gets_its_own_copy(tmp_path, monkeypatch):
+    """The suite loads ~3800 cases per call; the YAML parse was most of it (#1146)."""
+    import os
+
+    import yaml as _yaml
+
+    from evals import core
+    f = tmp_path / "c.yaml"
+    f.write_text("id: c\nmodality: svg\nprompt: a\nparams: {width: 1}\n", encoding="utf-8")
+    parsed = []
+    real = _yaml.load
+    monkeypatch.setattr(core.yaml, "load", lambda *a, **k: parsed.append(1) or real(*a, **k))
+    one = core.load_case(f)
+    one.params["width"] = 99
+    assert core.load_case(f).params == {"width": 1} and len(parsed) == 1
+    f.write_text("id: c\nmodality: svg\nprompt: b\nparams: {width: 2}\n", encoding="utf-8")
+    os.utime(f, ns=(1, 1))
+    assert core.load_case(f).prompt == "b" and len(parsed) == 2

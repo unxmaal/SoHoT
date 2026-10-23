@@ -386,6 +386,21 @@ class _Done:
     stderr = ""
 
 
+def test_a_refused_decide_does_not_hold_the_stores_write_lock(store, tmp_path):
+    """Its machine write opened a transaction; left open, every other writer waited the busy timeout (#1146)."""
+    _see(store, "org/x")
+    ms.decide(store, "org/x", "declined", tier=ms.INSPECT, detail="dead")
+    with pytest.raises(ms.IllegalTransition):
+        ms.decide(store, "org/x", "queued", tier=ms.INSPECT, detail="again")
+    assert not store.in_transaction
+    other = sqlite3.connect(tmp_path / "s.db", timeout=0)
+    try:
+        other.execute("UPDATE machines SET last_seen = last_seen")
+        other.commit()
+    finally:
+        other.close()
+
+
 def test_a_refused_screen_write_does_not_stop_the_next(monkeypatch, tmp_path,
                                                       capsys):
     import argparse

@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import pickle
 import re
 import statistics
 import warnings
@@ -1048,6 +1049,22 @@ def comparable(a: Receipt, b: Receipt) -> tuple[bool, str]:
 _LOADER = getattr(yaml, "CSafeLoader", yaml.SafeLoader)
 
 
+#: A case file's parsed YAML, pickled, by (path, mtime_ns, size): the suite loads ~3800 cases per call. #1146.
+_PARSED: dict[tuple, bytes] = {}
+
+
+def _parse(path: Path) -> dict:
+    """The YAML of one case file, parsed once while the file is unchanged; a fresh copy each call."""
+    st = path.stat()
+    key = (str(path), st.st_mtime_ns, st.st_size)
+    blob = _PARSED.get(key)
+    if blob is None:
+        raw = yaml.load(path.read_text(encoding="utf-8"), Loader=_LOADER) or {}
+        _PARSED[key] = pickle.dumps(raw, protocol=pickle.HIGHEST_PROTOCOL)
+        return raw
+    return pickle.loads(blob)
+
+
 #: The cases a clone ships.
 SHIPPED = Path(__file__).resolve().parent / "cases"
 
@@ -1073,7 +1090,7 @@ def load_cases(directory: str | Path, private: bool = False) -> list[Case]:
 def load_case(path: Path, private: bool = False) -> Case:
     """One case file, validated."""
     path = Path(path)
-    raw = yaml.load(path.read_text(encoding="utf-8"), Loader=_LOADER) or {}
+    raw = _parse(path)
     # Name the file in every error: a broken case in a 50-case run must not
     # fail anonymously.
     for required in ("id", "modality", "prompt"):
@@ -1215,13 +1232,24 @@ def _pii_spans(path: Path, text: str, labels) -> list[list[int]]:
     return spans
 
 
+_CORPUS_IDS: dict[tuple, frozenset] = {}
+
+
+def _corpus_ids(corpus: Path) -> frozenset:
+    """The document ids of a retrieval corpus, read once while the file is unchanged: hundreds of cases share one. #1146."""
+    st = corpus.stat()
+    key = (str(corpus), st.st_mtime_ns, st.st_size)
+    if key not in _CORPUS_IDS:
+        _CORPUS_IDS[key] = frozenset(json.loads(line)["id"] for line in
+                                     corpus.read_text(encoding="utf-8").splitlines() if line.strip())
+    return _CORPUS_IDS[key]
+
+
 def _check_relevant(path: Path, corpus: Path, relevant) -> None:
     """A retrieval case's labels name documents its corpus holds. #563."""
     if not relevant or not isinstance(relevant, list):
         raise ValueError(f"{path.name}: a retrieval case needs assert.relevant, a list of ids")
-    ids = {json.loads(line)["id"] for line in corpus.read_text(encoding="utf-8").splitlines()
-           if line.strip()}
-    missing = sorted(set(map(str, relevant)) - ids)
+    missing = sorted(set(map(str, relevant)) - _corpus_ids(corpus))
     if missing:
         raise ValueError(f"{path.name}: relevant ids {missing} are not in {corpus.name}")
 

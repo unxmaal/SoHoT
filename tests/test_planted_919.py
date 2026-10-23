@@ -156,8 +156,14 @@ def gguf_first(world, tmp_path, monkeypatch):
             return httpx.Response(404, json={"error": f"[Errno 2] No such file or directory: '{config}'"},
                                   request=httpx.Request("POST", f"{base}/v1/chat/completions"))
         return post(base, payload, timeout)
+    def hub_file(repo_id, filename, local_dir, **kw):
+        assert repo_id == GGUF, repo_id
+        out = Path(local_dir) / filename
+        out.write_bytes(b"GGUF" + bytes(64))
+        return str(out)
     world.snapshot, world.post = snap, gateway
     monkeypatch.setattr("huggingface_hub.snapshot_download", snap)
+    monkeypatch.setattr("huggingface_hub.hf_hub_download", hub_file)
     monkeypatch.setattr("harness.completion._post", gateway)
 
 

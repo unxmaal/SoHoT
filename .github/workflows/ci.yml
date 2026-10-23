@@ -42,6 +42,14 @@ jobs:
             exit 1
           }
 
+      - name: Which runner this is
+        # make check takes 5 or 13 minutes depending on the runner it lands on (#1146).
+        run: |
+          echo "JOB_STARTED_S=$(date +%s)" >> "$GITHUB_ENV"
+          sysctl -n machdep.cpu.brand_string hw.ncpu hw.perflevel0.physicalcpu hw.memsize || true
+          # Three workers kept 3 vCPUs 68% busy (time -p, #1146): one more overlaps the waits.
+          echo "PYTEST_XDIST_AUTO_NUM_WORKERS=$(( $(sysctl -n hw.ncpu) + 1 ))" >> "$GITHUB_ENV"
+
       - uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
@@ -59,7 +67,8 @@ jobs:
         # how a repo gets a green badge and a broken checkout.
         env:
           PYTEST_ADDOPTS: --durations=60 --durations-min=0.5 --junitxml=/tmp/junit.xml
-        run: set -o pipefail && make check 2>&1 | tee /tmp/check.log
+        # user+sys over real x cores says whether the runner's cores were busy or waiting (#1146).
+        run: set -o pipefail && /usr/bin/time -p make check 2>&1 | tee /tmp/check.log
 
       - name: Where the time went
         if: always()
@@ -85,6 +94,20 @@ jobs:
             grep -E '^SKIPPED' /tmp/check.log || echo 'nothing skipped'
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Keep the per-test times
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: junit-macos
+          path: /tmp/junit.xml
+          retention-days: 30
+
+      - name: How much of the timeout this job used
+        # Warns past 80%, so a growing suite is seen before it is cancelled (#1146).
+        if: always()
+        run: uv run python -m harness.ci_budget
 
   check-linux:
     # Deferred to the nightly run; a PR labelled full-ci runs it now.
