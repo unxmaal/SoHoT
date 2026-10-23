@@ -1,0 +1,564 @@
+{
+ "now": 1792774800.0,
+ "days": 14,
+ "seed": 1151,
+ "n": 120,
+ "population": 693,
+ "skipped": {
+  "before_window": 815,
+  "headless_session": 3,
+  "no_model_turn": 26,
+  "stale_file": 9
+ },
+ "output_model": {
+  "final": 7592,
+  "partial": 16324,
+  "coef": [
+   0.4197,
+   0.2555,
+   -28.8619
+  ],
+  "held_out_r2": 0.979,
+  "held_out_ratio": 0.998
+ },
+ "cost_check": [
+  {
+   "session": "34f2d6580832",
+   "cost_state": 197528,
+   "recorded": 197528,
+   "estimated": 197528,
+   "messages": 182
+  },
+  {
+   "session": "907eaacfd4b1",
+   "cost_state": 3388,
+   "recorded": 3388,
+   "estimated": 3388,
+   "messages": 5
+  },
+  {
+   "session": "43d3211a906a",
+   "cost_state": 7500,
+   "recorded": 7435,
+   "estimated": 7435,
+   "messages": 27
+  },
+  {
+   "session": "58ac45f60e85",
+   "cost_state": 1110727,
+   "recorded": 25282,
+   "estimated": 25282,
+   "messages": 42
+  },
+  {
+   "session": "9c1715ed0718",
+   "cost_state": 12055,
+   "recorded": 9802,
+   "estimated": 9802,
+   "messages": 10
+  },
+  {
+   "session": "d54438a23a38",
+   "cost_state": 185353,
+   "recorded": 161198,
+   "estimated": 166495,
+   "messages": 107
+  },
+  {
+   "session": "bcb1b0f7bf6f",
+   "cost_state": 64951,
+   "recorded": 64772,
+   "estimated": 64772,
+   "messages": 84
+  },
+  {
+   "session": "d8cb3b90550c",
+   "cost_state": 4407,
+   "recorded": 4369,
+   "estimated": 4369,
+   "messages": 10
+  },
+  {
+   "session": "893fd0505f5e",
+   "cost_state": 13056028,
+   "recorded": 6159354,
+   "estimated": 12358051,
+   "messages": 19319
+  },
+  {
+   "session": "ad547d69f3b0",
+   "cost_state": 1902720,
+   "recorded": 245970,
+   "estimated": 1328134,
+   "messages": 2030
+  }
+ ],
+ "repos": {
+  "infovore": "unxmaal/infovore",
+  "private-1": "",
+  "mcm-engine": "unxmaal/mcm-engine",
+  "sohot": "unxmaal/sohot"
+ },
+ "totals": {
+  "tokens_out": 16176697,
+  "tokens_in": 4220939767,
+  "tokens_out_recorded": 5347093,
+  "active_s": 824621.6,
+  "kinds": {
+   "main": 400,
+   "subagent": 293
+  }
+ },
+ "strata": {
+  "infovore/chat/S": {
+   "N": 6,
+   "n": 1,
+   "fraction": 0.1667,
+   "tokens_out": 3762,
+   "tokens_in": 753255,
+   "tokens_out_recorded": 3762,
+   "active_s": 613.9
+  },
+  "infovore/investigate/M": {
+   "N": 9,
+   "n": 2,
+   "fraction": 0.2222,
+   "tokens_out": 70679,
+   "tokens_in": 18902141,
+   "tokens_out_recorded": 67392,
+   "active_s": 6315.4
+  },
+  "infovore/investigate/S": {
+   "N": 11,
+   "n": 1,
+   "fraction": 0.0909,
+   "tokens_out": 76730,
+   "tokens_in": 5750525,
+   "tokens_out_recorded": 6350,
+   "active_s": 1399.9
+  },
+  "infovore/multi_file/L": {
+   "N": 8,
+   "n": 8,
+   "fraction": 1.0,
+   "tokens_out": 584454,
+   "tokens_in": 115521309,
+   "tokens_out_recorded": 584454,
+   "active_s": 34177.0
+  },
+  "infovore/multi_file/M": {
+   "N": 1,
+   "n": 1,
+   "fraction": 1.0,
+   "tokens_out": 52943,
+   "tokens_in": 13264023,
+   "tokens_out_recorded": 2249,
+   "active_s": 2497.0
+  },
+  "infovore/multi_file/S": {
+   "N": 4,
+   "n": 1,
+   "fraction": 0.25,
+   "tokens_out": 234845,
+   "tokens_in": 36217714,
+   "tokens_out_recorded": 3396,
+   "active_s": 5056.5
+  },
+  "infovore/orchestration/L": {
+   "N": 3,
+   "n": 3,
+   "fraction": 1.0,
+   "tokens_out": 110951,
+   "tokens_in": 28818321,
+   "tokens_out_recorded": 110951,
+   "active_s": 9365.9
+  },
+  "infovore/orchestration/M": {
+   "N": 2,
+   "n": 1,
+   "fraction": 0.5,
+   "tokens_out": 16165,
+   "tokens_in": 7487793,
+   "tokens_out_recorded": 16165,
+   "active_s": 1288.6
+  },
+  "infovore/small_edit/M": {
+   "N": 1,
+   "n": 1,
+   "fraction": 1.0,
+   "tokens_out": 15922,
+   "tokens_in": 1527394,
+   "tokens_out_recorded": 15922,
+   "active_s": 906.3
+  },
+  "private-1/chat/M": {
+   "N": 1,
+   "n": 1,
+   "fraction": 1.0,
+   "tokens_out": 2586,
+   "tokens_in": 151936,
+   "tokens_out_recorded": 2586,
+   "active_s": 373.1
+  },
+  "private-1/chat/S": {
+   "N": 5,
+   "n": 1,
+   "fraction": 0.2,
+   "tokens_out": 2137,
+   "tokens_in": 551150,
+   "tokens_out_recorded": 2137,
+   "active_s": 656.7
+  },
+  "private-1/investigate/L": {
+   "N": 2,
+   "n": 2,
+   "fraction": 1.0,
+   "tokens_out": 102486,
+   "tokens_in": 14798831,
+   "tokens_out_recorded": 102486,
+   "active_s": 2830.8
+  },
+  "private-1/investigate/M": {
+   "N": 22,
+   "n": 3,
+   "fraction": 0.1364,
+   "tokens_out": 155306,
+   "tokens_in": 28323263,
+   "tokens_out_recorded": 155306,
+   "active_s": 8724.9
+  },
+  "private-1/investigate/S": {
+   "N": 12,
+   "n": 1,
+   "fraction": 0.0833,
+   "tokens_out": 17375,
+   "tokens_in": 5758898,
+   "tokens_out_recorded": 10351,
+   "active_s": 543.9
+  },
+  "private-1/multi_file/L": {
+   "N": 1,
+   "n": 1,
+   "fraction": 1.0,
+   "tokens_out": 40684,
+   "tokens_in": 6346789,
+   "tokens_out_recorded": 40684,
+   "active_s": 1312.5
+  },
+  "private-1/orchestration/M": {
+   "N": 1,
+   "n": 1,
+   "fraction": 1.0,
+   "tokens_out": 8777,
+   "tokens_in": 890324,
+   "tokens_out_recorded": 8777,
+   "active_s": 748.0
+  },
+  "private-1/small_edit/L": {
+   "N": 2,
+   "n": 2,
+   "fraction": 1.0,
+   "tokens_out": 57918,
+   "tokens_in": 7402992,
+   "tokens_out_recorded": 57918,
+   "active_s": 1737.6
+  },
+  "private-1/small_edit/M": {
+   "N": 2,
+   "n": 2,
+   "fraction": 1.0,
+   "tokens_out": 27454,
+   "tokens_in": 4424123,
+   "tokens_out_recorded": 27454,
+   "active_s": 492.9
+  },
+  "mcm-engine/chat/M": {
+   "N": 1,
+   "n": 1,
+   "fraction": 1.0,
+   "tokens_out": 3949,
+   "tokens_in": 225425,
+   "tokens_out_recorded": 3949,
+   "active_s": 669.5
+  },
+  "mcm-engine/chat/S": {
+   "N": 5,
+   "n": 1,
+   "fraction": 0.2,
+   "tokens_out": 3551,
+   "tokens_in": 815554,
+   "tokens_out_recorded": 3551,
+   "active_s": 1163.4
+  },
+  "mcm-engine/investigate/M": {
+   "N": 18,
+   "n": 2,
+   "fraction": 0.1111,
+   "tokens_out": 96482,
+   "tokens_in": 20013075,
+   "tokens_out_recorded": 96482,
+   "active_s": 9457.4
+  },
+  "mcm-engine/investigate/S": {
+   "N": 21,
+   "n": 1,
+   "fraction": 0.0476,
+   "tokens_out": 80074,
+   "tokens_in": 18825752,
+   "tokens_out_recorded": 20660,
+   "active_s": 4456.7
+  },
+  "mcm-engine/multi_file/L": {
+   "N": 14,
+   "n": 13,
+   "fraction": 0.9286,
+   "tokens_out": 856251,
+   "tokens_in": 233760898,
+   "tokens_out_recorded": 856251,
+   "active_s": 32653.9
+  },
+  "mcm-engine/multi_file/M": {
+   "N": 3,
+   "n": 2,
+   "fraction": 0.6667,
+   "tokens_out": 34383,
+   "tokens_in": 7032150,
+   "tokens_out_recorded": 34383,
+   "active_s": 3259.7
+  },
+  "mcm-engine/orchestration/L": {
+   "N": 3,
+   "n": 3,
+   "fraction": 1.0,
+   "tokens_out": 334535,
+   "tokens_in": 110772568,
+   "tokens_out_recorded": 334535,
+   "active_s": 9973.8
+  },
+  "mcm-engine/orchestration/M": {
+   "N": 3,
+   "n": 2,
+   "fraction": 0.6667,
+   "tokens_out": 37331,
+   "tokens_in": 10633017,
+   "tokens_out_recorded": 37331,
+   "active_s": 5277.1
+  },
+  "mcm-engine/small_edit/M": {
+   "N": 4,
+   "n": 2,
+   "fraction": 0.5,
+   "tokens_out": 34637,
+   "tokens_in": 9911586,
+   "tokens_out_recorded": 34637,
+   "active_s": 3060.9
+  },
+  "other/chat/S": {
+   "N": 18,
+   "n": 1,
+   "fraction": 0.0556,
+   "tokens_out": 13086,
+   "tokens_in": 4147009,
+   "tokens_out_recorded": 13086,
+   "active_s": 2379.7
+  },
+  "other/investigate/L": {
+   "N": 2,
+   "n": 2,
+   "fraction": 1.0,
+   "tokens_out": 90152,
+   "tokens_in": 8991995,
+   "tokens_out_recorded": 90152,
+   "active_s": 3067.8
+  },
+  "other/investigate/M": {
+   "N": 42,
+   "n": 4,
+   "fraction": 0.0952,
+   "tokens_out": 350053,
+   "tokens_in": 145986117,
+   "tokens_out_recorded": 196748,
+   "active_s": 56289.3
+  },
+  "other/investigate/S": {
+   "N": 55,
+   "n": 2,
+   "fraction": 0.0364,
+   "tokens_out": 259380,
+   "tokens_in": 54697624,
+   "tokens_out_recorded": 59873,
+   "active_s": 22434.5
+  },
+  "other/multi_file/L": {
+   "N": 2,
+   "n": 2,
+   "fraction": 1.0,
+   "tokens_out": 177475,
+   "tokens_in": 37299619,
+   "tokens_out_recorded": 177475,
+   "active_s": 4175.5
+  },
+  "other/multi_file/M": {
+   "N": 13,
+   "n": 2,
+   "fraction": 0.1538,
+   "tokens_out": 876400,
+   "tokens_in": 222157996,
+   "tokens_out_recorded": 34477,
+   "active_s": 29582.2
+  },
+  "other/multi_file/S": {
+   "N": 16,
+   "n": 1,
+   "fraction": 0.0625,
+   "tokens_out": 727688,
+   "tokens_in": 142093619,
+   "tokens_out_recorded": 19761,
+   "active_s": 20683.6
+  },
+  "other/orchestration/L": {
+   "N": 10,
+   "n": 9,
+   "fraction": 0.9,
+   "tokens_out": 601363,
+   "tokens_in": 219104695,
+   "tokens_out_recorded": 601363,
+   "active_s": 47575.6
+  },
+  "other/orchestration/M": {
+   "N": 21,
+   "n": 3,
+   "fraction": 0.1429,
+   "tokens_out": 171469,
+   "tokens_in": 77156011,
+   "tokens_out_recorded": 171469,
+   "active_s": 24693.1
+  },
+  "other/orchestration/S": {
+   "N": 1,
+   "n": 1,
+   "fraction": 1.0,
+   "tokens_out": 1342,
+   "tokens_in": 354988,
+   "tokens_out_recorded": 1342,
+   "active_s": 423.9
+  },
+  "other/small_edit/L": {
+   "N": 1,
+   "n": 1,
+   "fraction": 1.0,
+   "tokens_out": 21605,
+   "tokens_in": 2713370,
+   "tokens_out_recorded": 21605,
+   "active_s": 931.7
+  },
+  "other/small_edit/M": {
+   "N": 9,
+   "n": 2,
+   "fraction": 0.2222,
+   "tokens_out": 256302,
+   "tokens_in": 75551473,
+   "tokens_out_recorded": 34885,
+   "active_s": 8124.5
+  },
+  "other/small_edit/S": {
+   "N": 10,
+   "n": 1,
+   "fraction": 0.1,
+   "tokens_out": 327437,
+   "tokens_in": 70335206,
+   "tokens_out_recorded": 10489,
+   "active_s": 8930.9
+  },
+  "sohot/chat/S": {
+   "N": 11,
+   "n": 1,
+   "fraction": 0.0909,
+   "tokens_out": 10034,
+   "tokens_in": 2391507,
+   "tokens_out_recorded": 10034,
+   "active_s": 3331.3
+  },
+  "sohot/investigate/M": {
+   "N": 82,
+   "n": 6,
+   "fraction": 0.0732,
+   "tokens_out": 1006074,
+   "tokens_in": 262164089,
+   "tokens_out_recorded": 390146,
+   "active_s": 67588.5
+  },
+  "sohot/investigate/S": {
+   "N": 75,
+   "n": 2,
+   "fraction": 0.0267,
+   "tokens_out": 987822,
+   "tokens_in": 175602401,
+   "tokens_out_recorded": 66604,
+   "active_s": 43375.5
+  },
+  "sohot/multi_file/M": {
+   "N": 34,
+   "n": 3,
+   "fraction": 0.0882,
+   "tokens_out": 2737360,
+   "tokens_in": 824874466,
+   "tokens_out_recorded": 117408,
+   "active_s": 85878.9
+  },
+  "sohot/multi_file/S": {
+   "N": 31,
+   "n": 2,
+   "fraction": 0.0645,
+   "tokens_out": 1501711,
+   "tokens_in": 311697731,
+   "tokens_out_recorded": 40546,
+   "active_s": 40919.2
+  },
+  "sohot/orchestration/L": {
+   "N": 4,
+   "n": 3,
+   "fraction": 0.75,
+   "tokens_out": 147281,
+   "tokens_in": 62298516,
+   "tokens_out_recorded": 147281,
+   "active_s": 24342.8
+  },
+  "sohot/orchestration/M": {
+   "N": 53,
+   "n": 7,
+   "fraction": 0.1321,
+   "tokens_out": 1710913,
+   "tokens_in": 580480845,
+   "tokens_out_recorded": 429226,
+   "active_s": 144994.7
+  },
+  "sohot/orchestration/S": {
+   "N": 1,
+   "n": 1,
+   "fraction": 1.0,
+   "tokens_out": 689,
+   "tokens_in": 1013700,
+   "tokens_out_recorded": 689,
+   "active_s": 1814.7
+  },
+  "sohot/small_edit/M": {
+   "N": 11,
+   "n": 2,
+   "fraction": 0.1818,
+   "tokens_out": 261108,
+   "tokens_in": 56511925,
+   "tokens_out_recorded": 42310,
+   "active_s": 6262.0
+  },
+  "sohot/small_edit/S": {
+   "N": 26,
+   "n": 2,
+   "fraction": 0.0769,
+   "tokens_out": 877586,
+   "tokens_in": 174434059,
+   "tokens_out_recorded": 30005,
+   "active_s": 27808.5
+  }
+ }
+}

@@ -1802,6 +1802,19 @@ never imported. A case file that still matches a detector or the privacy lint is
 refused. A case records its hashed session, its evidence kind, its cut and its
 redaction counts, never the raw text; private repos are never imported.
 
+`python -m evals.analysis.demand census --out tmp/<dir> --now <time>` counts the
+same transcripts from the demand side (#1151). A subtask is one main-loop stretch
+between typed requests or one subagent run, with its tokens (each message once,
+also across forked subagents), its active wall time (gaps over `IDLE_GAP_S`
+count as idle), its tools and the files it read and edited. It draws a seeded
+sample stratified by project, a shape guessed from tool use, and output size,
+and writes redacted packets for two blind labellers (`codebook` prints the
+label sets). `report <dir> --a A --b B [--settled S] --write evals/analysis/demand`
+prints Cohen's kappa with bootstrap intervals and the shape x fit x latency
+table weighted back to the population, and writes `manifest.jsonl` (keys,
+strata, sizes and labels only), `strata.json` and `census.txt`; a private repo's
+name is masked and a file holding any `redact.detect` finding is refused.
+
 The repo system prompt says the model has no tools and replies with one diff
 (#1129). A `request` case is asked as a quotation: `evals.repo.quoted` replaces
 the session cut's lead with one saying the session is over and not to be
