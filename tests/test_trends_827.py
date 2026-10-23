@@ -95,9 +95,9 @@ def test_every_chart_is_a_daily_series_keyed_by_name(store):
     assert c["displaced"]["series"] == {"code": {"2026-10-09": 1100.0}}
     assert c["energy"]["series"]["kWh"]["2026-10-09"] == pytest.approx(120 * 180 / 3.6e6, rel=1e-3)
     assert c["context"]["series"]["mcm-engine search"] == {"2026-10-09": 900.0}
-    # code: used + edited of three recorded; the unrecorded one is in the label, not the rate.
+    # code: used + edited of three closed; the pending one is in the label, not the rate.
     assert c["delegations"]["series"]["code"] == {"2026-10-09": pytest.approx(2 / 3, abs=1e-4)}
-    assert "1 not recorded" in c["delegations"]["labels"]["code"]["2026-10-09"]
+    assert "1 pending" in c["delegations"]["labels"]["code"]["2026-10-09"]
     assert c["delegations"]["series"]["decide"] == {"2026-10-09": 1.0}
 
 

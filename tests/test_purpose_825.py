@@ -284,7 +284,7 @@ def _requests():
 
 
 def test_a_delegation_straight_to_an_engine_is_logged_as_work_on_its_lane(engine):
-    got = delegate.complete("code", "write add")
+    got = delegate.complete("code", "write add", delegated=True)
     assert got["text"] == "ok"
     rows = _requests()
     assert len(rows) == 1
@@ -299,7 +299,7 @@ def test_a_delegation_straight_to_an_engine_is_logged_as_work_on_its_lane(engine
 def test_a_failed_delegation_straight_to_an_engine_is_logged_as_a_work_error(engine, monkeypatch):
     monkeypatch.setattr(completion, "complete_full", _boom)
     with pytest.raises(completion.CompletionError):
-        delegate.complete("code", "write add")
+        delegate.complete("code", "write add", delegated=True)
     (r,) = _requests()
     assert (r["purpose"], r["error_class"], r["error_code"]) == ("work", "CompletionError", "crashed")
 
@@ -311,14 +311,14 @@ def _boom(*a, **kw):
 def test_a_decide_straight_to_an_engine_is_logged_as_work(engine):
     schema = {"kind": {"type": "enum", "choices": ["ok", "no"], "description": "which"}}
     with pytest.raises(ValueError, match="no usable answer"):
-        delegate.decide("is it ok", schema)
+        delegate.decide("is it ok", schema, delegated=True)
     (r,) = _requests()
     assert (r["purpose"], r["lane"], r["stream"]) == ("work", "decide", 0)
 
 
 def test_a_delegation_through_the_gateway_is_left_to_the_gateway_to_log(engine, monkeypatch):
     monkeypatch.setenv(completion.GATEWAY_ENV, engine.url)
-    delegate.complete("code", "write add")
+    delegate.complete("code", "write add", delegated=True)
     assert _requests() == []
     assert engine.headers_seen[0].get("x-litellm-tags") == "purpose:work"
 

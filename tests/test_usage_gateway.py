@@ -253,7 +253,7 @@ def test_a_delegation_through_the_real_gateway_joins_its_request_row(gateway, mo
     monkeypatch.setattr(delegate, "route", lambda lane, chosen=None, via="": (
         "sohot-code", serving.Route(gateway, "sohot-code", {})))
     monkeypatch.setattr(context, "served_ctx", lambda spec: None)
-    got = delegate.complete("code", "hi", max_tokens=20)
+    got = delegate.complete("code", "hi", max_tokens=20, delegated=True)
     (row,) = _wait_rows(1)
     assert row["call_id"] == got["call_id"] and row["client"] != "soh-delegate"
     conn = ms.connect()

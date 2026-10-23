@@ -129,7 +129,7 @@ def test_new_ids_are_distinct_and_marked_local():
 
 def test_a_gateway_completion_is_keyed_by_litellm_s_call_id(fake, gateway_id, conn):
     from harness import delegate
-    got = delegate.complete("code", "write add")
+    got = delegate.complete("code", "write add", delegated=True)
     assert got["call_id"] == CALL_ID
     row = _row(conn, CALL_ID)
     assert (row["lane"], row["spec"], row["model"], row["id_source"]) == (
@@ -140,7 +140,7 @@ def test_a_gateway_completion_is_keyed_by_litellm_s_call_id(fake, gateway_id, co
 
 def test_a_call_with_no_gateway_id_gets_a_generated_one(fake, conn):
     from harness import delegate
-    got = delegate.complete("code", "write add")
+    got = delegate.complete("code", "write add", delegated=True)
     assert got["call_id"].startswith("local-")
     assert _row(conn, got["call_id"])["id_source"] == "local"
 
@@ -152,7 +152,7 @@ def _requests(conn):
 def test_a_direct_call_s_request_row_carries_the_delegation_s_id(fake, conn, monkeypatch):
     from harness import completion, delegate
     monkeypatch.setattr(completion, "is_gateway", lambda base, *a, **k: False)
-    got = delegate.complete("code", "write add")
+    got = delegate.complete("code", "write add", delegated=True)
     (r,) = _requests(conn)
     assert r["call_id"] == got["call_id"] and r["client"] == usage.DIRECT_CLIENT
     joined = conn.execute("SELECT d.lane, d.id_source FROM delegations d JOIN gateway_requests g "
@@ -164,7 +164,7 @@ def test_a_gateway_call_is_left_to_the_gateway_to_log_under_litellm_s_id(fake, g
                                                                          monkeypatch):
     from harness import completion, delegate
     monkeypatch.setattr(completion, "is_gateway", lambda base, *a, **k: True)
-    assert delegate.complete("code", "write add")["call_id"] == CALL_ID
+    assert delegate.complete("code", "write add", delegated=True)["call_id"] == CALL_ID
     assert _requests(conn) == [] and _row(conn, CALL_ID)["id_source"] == "gateway"
 
 
@@ -189,7 +189,7 @@ def fake_route(fake, lane):
 def test_decide_records_its_call_too(fake, gateway_id, conn):
     from harness import delegate
     fake.reply = '{"kind": "B", "urgent": "A"}'
-    got = delegate.decide("triage", SCHEMA)
+    got = delegate.decide("triage", SCHEMA, delegated=True)
     assert got["call_id"] == CALL_ID and _row(conn, CALL_ID)["lane"] == "decide"
 
 
@@ -199,7 +199,7 @@ def test_a_store_that_cannot_be_written_never_fails_the_delegation(fake, monkeyp
     def broken():
         raise RuntimeError("store is locked")
     monkeypatch.setattr(ms, "connect", broken)
-    got = delegate.complete("code", "write add")
+    got = delegate.complete("code", "write add", delegated=True)
     assert got["text"] and got["call_id"].startswith("local-")
     assert "not recorded" in capsys.readouterr().err
 
@@ -254,6 +254,7 @@ def test_the_cli_records_reports_and_refuses_an_unknown_id(conn, capsys):
     assert rc == 0
     assert got["report"] == [{"lane": "code", "count": 1, "recorded": 1, "recorded_rate": 1.0,
                               "used_rate": 0.0, "edited_rate": 0.0, "discarded_rate": 1.0,
+                              "accepted": 0, "rejected": 1, "unknown": 0, "pending": 0,
                               "median_seconds": 4.0}]
 
 

@@ -52,7 +52,7 @@ def gather(a, now: float) -> dict:
         limits=ledger.read_jsonl(ledger.ledger_dir() / "ratelimits.jsonl"),
         power=ledger.read_jsonl(ledger.ledger_dir() / "power.jsonl"),
         tariff=a.tariff, macmon=bool(shutil.which("macmon")), delegations=dels, context=ctx,
-        macmon_version=ledger.macmon_version())
+        macmon_version=ledger.macmon_version(), census_doc=ledger.census())
     out["recorded"] = history
     out["otel"] = otel_days(ev)
     return out
@@ -98,6 +98,8 @@ def show(L: dict) -> None:
     outcomes = ", ".join(f"{k} {v}" for k, v in sorted(dg["outcomes"].items())) or "none"
     note(f"delegated {dg['requests']:,} requests inside work, joined on call_id (outcomes: {outcomes})"
          + (f"; {dg['unjoined']['requests']} with no gateway row, not counted" if dg["unjoined"]["requests"] else ""))
+    for line in accepted_lines(L.get("accepted") or {}):
+        note(line)
     note(f"displaced {local_tokens(L['displaced']['tokens'])} of tagged work served locally")
     if L["mapped"]["tokens"]["requests"]:
         note(f"mapped    {local_tokens(L['mapped']['tokens'])} of untagged history by alias mapping")
@@ -129,6 +131,24 @@ def show(L: dict) -> None:
              f"{_tok(loc.get('eval', {}).get('output', 0)):>9} {_tok(loc.get('unknown', {}).get('output', 0)):>11} "
              f"{kwh_cell(en):>7} {peaks[0]:>7} {peaks[1]:>7}")
     note("\nClaude Code on a subscription is counted in tokens and plan-window use, not priced (#976)")
+
+
+def accepted_lines(A: dict) -> list[str]:
+    """The accepted-share line, then one per lane against the census's cloud subtasks of its shape. #1158."""
+    t = A.get("total") or {}
+    share = A.get("accepted_share")
+    out = [f"accepted  share {'n/a' if share is None else f'{share:.0%}'} of closed delegations: "
+           f"{t.get('accepted', 0)} accepted, {t.get('rejected', 0)} rejected, {t.get('unknown', 0)} unknown, "
+           f"{t.get('pending', 0)} pending"]
+    cen = A.get("census") or {}
+    for lane, b in (A.get("lanes") or {}).items():
+        if b["cloud_per_day"] is None:
+            vs = (f"no census shape for {lane}" if not b["shapes"] else f"census unavailable: {cen.get('why')}")
+        else:
+            vs = (f"vs {b['cloud_per_day']:.1f} cloud {'+'.join(b['shapes'])} subtasks/day, local share "
+                  f"{b['local_share']:.1%}" if b["local_share"] is not None else "no tasks of that shape")
+        out.append(f"          {lane:<8} {b['accepted']} accepted, {b['per_day']:.2f}/day; {vs}")
+    return out
 
 
 def kwh_cell(en: dict) -> str:

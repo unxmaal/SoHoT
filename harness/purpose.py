@@ -6,7 +6,9 @@ import contextvars
 import os
 
 WORK, EVAL, SMOKE, DISCOVER, WATCHDOG = "work", "eval", "smoke", "discover", "watchdog"
-PURPOSES = (WORK, EVAL, SMOKE, DISCOVER, WATCHDOG)
+#: A program's own pipeline call (morning, otel, claude-news, label), not work an agent delegated. #1158.
+INTERNAL = "internal"
+PURPOSES = (WORK, EVAL, SMOKE, DISCOVER, WATCHDOG, INTERNAL)
 UNKNOWN = "unknown"
 #: The purpose a process and its children send when nothing in the process sets one.
 ENV = "SOHOT_PURPOSE"

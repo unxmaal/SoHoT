@@ -56,7 +56,8 @@ def show(L: dict) -> None:
     for r in loc["delegations"]:
         o = r["outcomes"]
         note(f"  {r['caller'][:22]:<22} {r['lane']:<9} {r['delegations']:>4}  used {o['used']} edited {o['edited']} "
-             f"discarded {o['discarded']} pending {o['pending']}  p50 {_s(r['seconds']['p50'])} s")
+             f"discarded {o['discarded']} accepted {o['accepted']} rejected {o['rejected']} "
+             f"unknown {o['unknown']} pending {o['pending']}  p50 {_s(r['seconds']['p50'])} s")
     note("  outcomes: " + ", ".join(f"{k} {v}" for k, v in loc["outcomes"].items()))
     e = L.get("effort")
     if e:
