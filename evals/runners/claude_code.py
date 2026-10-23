@@ -122,8 +122,7 @@ class ClaudeCodeRunner(BaseRunner):
         self.last_timing: dict = {}
 
     def argv(self, case: Case) -> list[str]:
-        system = ((case.params.get("system") if case.modality == "repo" else None)
-                  or completion.SYSTEM.get(case.modality, completion.NEUTRAL_SYSTEM))
+        system = completion.SYSTEM.get(case.modality, completion.NEUTRAL_SYSTEM)
         # The prompt goes on stdin: in argv, a case starting with "-" (a diff)
         # is parsed as options. #368. --bare skips the subscription login.
         return [self.binary, "-p", "--model", self.model,

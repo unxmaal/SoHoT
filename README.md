@@ -1783,9 +1783,9 @@ redaction counts, never the raw text; private repos are never imported.
 The repo system prompt says the model has no tools and replies with one diff
 (#1129). A `request` case is asked as a quotation: `evals.repo.quoted` replaces
 the session cut's lead with one saying the session is over and not to be
-continued, and puts every session line behind `> `. The 39 cases the exam set
-before #1129 (`evals.repo.LEGACY`) keep the old system prompt, so their requests
-and request digests are unchanged and stored draws of them are still reused. A
+continued, and puts every session line behind `> `. Every case is asked with
+the one system prompt, so every request digest moved at #1129 and no earlier
+draw is reused. A
 reply with no diff that holds `<tool_call>` or `<function=` markup is classed
 `tool_call`, not `invalid_patch`; the runner sets it, so the grader digest does
 not change.

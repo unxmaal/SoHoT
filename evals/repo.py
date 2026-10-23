@@ -41,11 +41,6 @@ _FENCE = re.compile(r"```[ \t]*(?:diff|patch|udiff)?[ \t]*\n(.*?)```", re.S)
 _TAG = re.compile(r"<(patch|diff)>(.*?)(?:</\1>|\Z)", re.S)
 REPLY = ("Reply with one unified diff (as `git diff` prints it, paths a/ and b/ from the "
          "repository root) that fixes the issue, and nothing else. Do not change tests.")
-#: The cases the exam set before #1129: they keep its system prompt, so their requests stay byte-identical.
-LEGACY = frozenset({"sohot-318-omnisvg-spelling", *(f"sohot-{n}-{v}" for v in ("spec", "symptom") for n in (
-    363, 368, 371, 374, 376, 396, 399, 404, 438, 570, 598, 632, 642, 647, 720, 788, 858, 859, 879))})
-LEGACY_SYSTEM = ("You fix issues in a software repository. You output one unified diff that git "
-                 "apply accepts, with a/ and b/ paths from the repository root, and nothing else.")
 #: The variant whose prompt is a cut Claude Code session (#1095); it is asked as a quotation. #1129.
 SESSION_VARIANT = "request"
 QUOTE_HEAD = ("Each line below that starts with > quotes the record of an earlier Claude Code session, "
@@ -273,12 +268,10 @@ def quoted(prompt: str) -> str:
 
 
 def as_asked(case):
-    """The case with the issue text and system prompt (params.system) it is asked with; LEGACY cases unchanged. #1129."""
+    """The case with the issue text and system prompt (params.system) it is asked with. #1129."""
     import dataclasses
 
     from harness import completion
-    if case.id.partition("#")[0] in LEGACY:
-        return dataclasses.replace(case, params={**case.params, "system": LEGACY_SYSTEM})
     prompt = quoted(case.prompt) if case.params.get("variant") == SESSION_VARIANT else case.prompt
     return dataclasses.replace(case, prompt=prompt, params={**case.params, "system": completion.SYSTEM["repo"]})
 
