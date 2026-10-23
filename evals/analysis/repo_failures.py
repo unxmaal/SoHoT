@@ -10,6 +10,8 @@ from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from harness import reasons, yield_stop
+
 LABELS = Path(__file__).resolve().parent / "repo_failure_labels.jsonl"
 #: Rows graded again from their stored diffs (`soh cases regrade repo --json`), with the run each came from. #940.
 REGRADES = LABELS.with_name("repo_regrades.jsonl")
@@ -274,9 +276,17 @@ def locate(path, text: str) -> list[int]:
 
 CASES = Path(__file__).resolve().parents[1] / "cases" / "repo"
 #: What `causes` reads off a row with no labeller: the codebook's classes, the budget split by whether an answer began.
-CAUSES = ("pass", "budget_no_answer", "budget_cut_answer", "tool_call", "no_diff", "malformed_hunk",
-          "context_mismatch", "wrong_fix", "regression", "environment_error", "provider_refused", "crashed",
-          "unclassed")
+#: Runner classes `causes` reports as the runner named them, with no finer reading off the reply. #1170.
+AS_RUN = (reasons.STOPPED_LOW_YIELD, reasons.TOOL_CALL, reasons.ENVIRONMENT_ERROR, reasons.DEGENERATE,
+          reasons.RUNAWAY, reasons.TIMEOUT, reasons.STEP_CAP, reasons.CONTEXT_EXCEEDED, reasons.PLAN_REFUSED,
+          reasons.POOL_FULL, reasons.BLANK_OUTPUT, reasons.BACKEND_FAULT, reasons.SERVER_DEAD, reasons.GPU_FAULT,
+          reasons.REFUSED_BY_GATEWAY, reasons.HARNESS_ERROR, reasons.LOAD_LOG_UNREAD, reasons.SHORT_COPY,
+          reasons.INCOMPLETE_COPY, reasons.ATTACHMENT, reasons.MISSING_PACKAGE, reasons.LOAD_FAILED_RUNTIME,
+          reasons.LOAD_FAILED_FILE, reasons.LOAD_FAILED_LAYOUT, reasons.MISSING_FILE_IN_SNAPSHOT)
+CAUSES = ("pass", "budget_no_answer", "budget_cut_answer", "no_diff", "malformed_hunk", "context_mismatch",
+          "wrong_fix", "regression", "provider_refused", "crashed", *AS_RUN, "unclassed")
+#: Causes of a reply cut before the grader saw it.
+CUT = ("budget_no_answer", "budget_cut_answer", reasons.STOPPED_LOW_YIELD, reasons.DEGENERATE)
 #: A crashed row whose provider's usage-policy screen refused the prompt: no reply exists to grade. #1136.
 _REFUSED = re.compile(r"safeguards flagged|anthropic\.com/legal/aup|usage polic", re.I)
 _TOOL = re.compile(r"<tool_call>|<function=")
@@ -298,12 +308,10 @@ def cause(row: dict, stored: dict) -> str:
     reply, diff = str(stored.get("reply") or ""), str(stored.get("diff") or "")
     if row.get("passed"):
         return "pass"
-    if fc == "environment_error":
+    if fc in AS_RUN:
         return fc
     if fc == "token_budget_exhausted":
         return "budget_cut_answer" if reply.strip() else "budget_no_answer"
-    if fc == "tool_call":
-        return fc
     if fc == "invalid_patch":
         if not diff.strip():
             return "tool_call" if _TOOL.search(reply) else "no_diff"
@@ -352,7 +360,7 @@ def cause_table(rows: list[dict]) -> str:
         if any(n[(c, g)] for g in groups):
             lines.append(f"| {c} | " + " | ".join(str(n[(c, g)]) for g in groups)
                          + f" | {sum(n[(c, g)] for g in groups)} |")
-    cut = {"budget_no_answer", "budget_cut_answer"}
+    cut = set(CUT)
     lines.append("| rows | " + " | ".join(str(sum(r["group"] == g for r in rows)) for g in groups) + f" | {len(rows)} |")
     for label, fn in (("cut %", lambda rs: f"{100 * sum(r['cause'] in cut for r in rs) / len(rs):.0f}"),
                       ("median prompt tokens", lambda rs: _median(r["prompt_tokens"] for r in rs)),
@@ -363,6 +371,24 @@ def cause_table(rows: list[dict]) -> str:
     return "\n".join(lines)
 
 
+def yield_stops(run: Run) -> list[dict]:
+    """Per candidate the run stopped rows for: its stop point in tokens, rows stopped, explored, and run past it and passed."""
+    out = []
+    for cand in dict.fromkeys(str(r.get("candidate") or "") for r in run.rows):
+        rows = [r for r in run.rows if str(r.get("candidate") or "") == cand]
+        stops = [n for n in map(yield_stop.stopped_at, rows) if n is not None]
+        point = ((run.receipt.get("yield_stop") or {}).get(cand)) or {}
+        at = point.get("tokens") if isinstance(point.get("tokens"), int) else max(stops, default=None)
+        if at is None or not stops:
+            continue
+        past = [r for r in rows if yield_stop.stopped_at(r) is None and (yield_stop.tokens_of(r) or 0) > at]
+        explored = point.get("explored")
+        out.append({"candidate": cand, "tokens": at, "stopped": len(stops),
+                    "explored": len(explored) if isinstance(explored, list) else None,
+                    "past": len(past), "passed_past": sum(bool(r.get("passed")) for r in past)})
+    return out
+
+
 def _causes(args) -> int:
     old = {r.get("case_id") for p in args.old for r in load_run(p).rows}
     groups = case_groups(args.cases, old)
@@ -370,6 +396,10 @@ def _causes(args) -> int:
         run = load_run(path)
         rows = causes(run, groups)
         print(f"{run.name}\n\n{cause_table(rows)}\n")
+        for y in yield_stops(run):
+            explored = "" if y["explored"] is None else f"{y['explored']} explored, "
+            print(f"yield stop {y['candidate']}: {y['tokens']} tokens, {y['stopped']} row(s) stopped there; "
+                  f"{explored}{y['past']} ran past it, {y['passed_past']} of them passed\n")
         if args.rows:
             for r in sorted(rows, key=lambda r: (CAUSES.index(r["cause"]), r["case"])):
                 print(f"{r['cause']}\t{r['group']}\t{r['case']}\t{r['prompt_tokens']}\t{r['completion_tokens']}")

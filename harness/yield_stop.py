@@ -52,7 +52,8 @@ def tokens_of(row) -> int | None:
     return int(last) if last else None
 
 
-def _stopped_at(row) -> int | None:
+def stopped_at(row) -> int | None:
+    """The stop point a row stopped at, from its yield_stop>N limit; None for a row the stop did not cut."""
     limit = _field(row, "hit_limit") or _field(row, "limit") or ""
     if _field(row, "failure_class") == reasons.STOPPED_LOW_YIELD and limit.startswith(LIMIT + ">"):
         n = limit.rpartition(">")[2]
@@ -67,11 +68,11 @@ def _weights(rows) -> list[float]:
     for i, r in enumerate(rows):
         by.setdefault(_field(r, "run_id"), []).append(i)
     for idx in by.values():
-        stops = [n for n in (_stopped_at(rows[i]) for i in idx) if n is not None]
+        stops = [n for n in (stopped_at(rows[i]) for i in idx) if n is not None]
         if not stops:
             continue
         at = max(stops)
-        cut = [i for i in idx if _stopped_at(rows[i]) is not None]
+        cut = [i for i in idx if stopped_at(rows[i]) is not None]
         past = [i for i in idx if i not in cut and (tokens_of(rows[i]) or 0) > at]
         for i in cut:
             out[i] = 0.0
