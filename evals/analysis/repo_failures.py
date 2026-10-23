@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import json
 import random
+import re
 import sys
 from collections import Counter
 from dataclasses import dataclass, field
@@ -243,6 +244,103 @@ def locate(path, text: str) -> list[int]:
     return out
 
 
+CASES = Path(__file__).resolve().parents[1] / "cases" / "repo"
+#: What `causes` reads off a row with no labeller: the codebook's classes, the budget split by whether an answer began.
+CAUSES = ("pass", "budget_no_answer", "budget_cut_answer", "tool_call", "no_diff", "malformed_hunk",
+          "context_mismatch", "wrong_fix", "regression", "environment_error", "unclassed")
+_TOOL = re.compile(r"<tool_call>|<function=")
+_RANGED = re.compile(r"^@@ -\d+(?:,\d+)? \+\d+(?:,\d+)? @@")
+_MALFORMED = ("garbage", "corrupt patch", "No valid patches", "without header")
+
+
+def _read(path: Path) -> dict:
+    try:
+        got = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return got if isinstance(got, dict) else {}
+
+
+def cause(row: dict, stored: dict) -> str:
+    """The class a row fails at, read from the runner's class, the stored reply and its grade."""
+    fc, detail = row.get("failure_class") or "", str(row.get("detail") or "")
+    reply, diff = str(stored.get("reply") or ""), str(stored.get("diff") or "")
+    if row.get("passed"):
+        return "pass"
+    if fc == "environment_error":
+        return fc
+    if fc == "token_budget_exhausted":
+        return "budget_cut_answer" if reply.strip() else "budget_no_answer"
+    if fc == "invalid_patch":
+        if not diff.strip():
+            return "tool_call" if _TOOL.search(reply) else "no_diff"
+        hunks = [x for x in diff.splitlines() if x.startswith("@@")]
+        if any(m in detail for m in _MALFORMED) or any(not _RANGED.match(h) for h in hunks):
+            return "malformed_hunk"
+        return "context_mismatch" if "patch failed" in detail else "unclassed"
+    if fc == "content_failed":
+        return "wrong_fix" if "fail_to_pass still failing" in detail else "regression"
+    return "unclassed"
+
+
+def case_groups(root=CASES, old=()) -> dict:
+    """Case id -> the case directory it was imported into, or "old" for an id in `old`."""
+    out = {f.stem: (f.parent.name if f.parent != Path(root) else "repo") for f in Path(root).rglob("*.yaml")}
+    return {**out, **{c: "old" for c in old}}
+
+
+def causes(run: Run, groups: dict) -> list[dict]:
+    """Per row: its group, cause, prompt and completion tokens and finish reason from the trajectory."""
+    out = []
+    for row in run.rows:
+        case = row.get("case_id") or ""
+        stem = f"{str(row.get('candidate') or '').replace('/', '_')}--{case}"
+        stored = _read(run.path / f"{stem}.json")
+        last = ((_read(run.path / f"{stem}.trajectory.json").get("requests") or [{}])[-1]) or {}
+        out.append({"case": case, "group": groups.get(case, "unknown"), "cause": cause(row, stored),
+                    "prompt_tokens": last.get("prompt_tokens"), "completion_tokens": last.get("completion_tokens"),
+                    "finish": last.get("finish_reason")})
+    return out
+
+
+def _median(xs) -> str:
+    xs = sorted(x for x in xs if isinstance(x, (int, float)))
+    return "-" if not xs else f"{(xs[(len(xs) - 1) // 2] + xs[len(xs) // 2]) / 2:g}"
+
+
+def cause_table(rows: list[dict]) -> str:
+    """Cause x group counts, then per group the rows, the cut share and median prompt and uncut completion tokens."""
+    groups = sorted({r["group"] for r in rows})
+    n = Counter((r["cause"], r["group"]) for r in rows)
+    lines = ["| cause | " + " | ".join(groups) + " | total |", "|---" * (len(groups) + 2) + "|"]
+    for c in CAUSES:
+        if any(n[(c, g)] for g in groups):
+            lines.append(f"| {c} | " + " | ".join(str(n[(c, g)]) for g in groups)
+                         + f" | {sum(n[(c, g)] for g in groups)} |")
+    cut = {"budget_no_answer", "budget_cut_answer"}
+    lines.append("| rows | " + " | ".join(str(sum(r["group"] == g for r in rows)) for g in groups) + f" | {len(rows)} |")
+    for label, fn in (("cut %", lambda rs: f"{100 * sum(r['cause'] in cut for r in rs) / len(rs):.0f}"),
+                      ("median prompt tokens", lambda rs: _median(r["prompt_tokens"] for r in rs)),
+                      ("median completion, uncut", lambda rs: _median(
+                          r["completion_tokens"] for r in rs if r["cause"] not in cut))):
+        lines.append(f"| {label} | " + " | ".join(fn([r for r in rows if r["group"] == g]) for g in groups)
+                     + f" | {fn(rows) if rows else '-'} |")
+    return "\n".join(lines)
+
+
+def _causes(args) -> int:
+    old = {r.get("case_id") for p in args.old for r in load_run(p).rows}
+    groups = case_groups(args.cases, old)
+    for path in args.runs:
+        run = load_run(path)
+        rows = causes(run, groups)
+        print(f"{run.name}\n\n{cause_table(rows)}\n")
+        if args.rows:
+            for r in sorted(rows, key=lambda r: (CAUSES.index(r["cause"]), r["case"])):
+                print(f"{r['cause']}\t{r['group']}\t{r['case']}\t{r['prompt_tokens']}\t{r['completion_tokens']}")
+    return 0
+
+
 def _tally(args) -> int:
     runs = [load_run(p) for p in args.runs]
     labels = load_labels(args.labels)
@@ -345,7 +443,13 @@ def main(argv: list[str] | None = None) -> int:
     t.add_argument("--regrades", default=str(REGRADES), help="rows graded again from their stored diffs (#940)")
     t.add_argument("--complete", action="store_true", help="exit 1 while any failing row is unlabelled")
     t.set_defaults(fn=_tally)
-    r = sub.add_parser("receipt", help="what the run's receipt says it sent; --arm checks it against an arm")
+    ca = sub.add_parser("causes", help="each row's class read off its reply and grade, counted by case group (#1128)")
+    ca.add_argument("runs", nargs="+")
+    ca.add_argument("--old", action="append", default=[], help="a run whose cases count as the group 'old'")
+    ca.add_argument("--cases", default=str(CASES), help="the repo cases root the groups are read from")
+    ca.add_argument("--rows", action="store_true", help="also print one line per row")
+    ca.set_defaults(fn=_causes)
+    r = sub.add_parser("receipt",help="what the run's receipt says it sent; --arm checks it against an arm")
     r.add_argument("run")
     r.add_argument("--arm", choices=sorted(ARMS))
     r.set_defaults(fn=_receipt)
