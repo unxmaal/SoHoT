@@ -22,6 +22,7 @@ def cmd_coherence(a) -> int:
     try:
         found = coherence.changes(conn)
         ids = coherence.apply(conn, found) if a.apply else []
+        stops = _yield_stops(conn)
     except (sqlite3.Error, ms.IllegalTransition) as exc:
         return err(f"coherence: {exc}")
     finally:
@@ -31,5 +32,16 @@ def cmd_coherence(a) -> int:
              f"{' / '.join(x or '-' for x in c['now']) if 'now' in c else c['skipped']}")
     note(f"{sum('now' in c for c in found)} of {len(found)} incoherent verdict(s) re-decided"
          + (f"; wrote {ids}" if a.apply else "; --apply writes them"))
-    emit(True, changes=[{k: v for k, v in c.items() if k != "excerpt"} for c in found], written=ids)
+    from harness import yield_stop
+    note("yield stop points, in generated tokens:" + ("" if stops else " none"))
+    for y in stops:
+        note(f"  {yield_stop.line(y)}")
+    emit(True, changes=[{k: v for k, v in c.items() if k != "excerpt"} for c in found], written=ids,
+         yield_stops=stops)
     return 0
+
+
+def _yield_stops(conn) -> list[dict]:
+    """Each served lane-model's stop point and the GPU time it saves; [] when the store cannot say. #1127."""
+    from harness import morning
+    return morning.yield_stops(conn)

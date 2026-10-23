@@ -108,6 +108,10 @@ def render(r: dict) -> list[str]:
     out.extend(f"          {f['lane']:<9} {f['family']}: {f['losses']} member(s) lost since its last win "
                f"({', '.join(f['lost'][:3])}{', ...' if len(f['lost']) > 3 else ''}); the rest rank lower"
                for f in fams)
+    if r.get("yield"):
+        from harness import yield_stop
+        out.append("yield     stop points, in generated tokens")
+        out.extend(f"          {yield_stop.line(y)}" for y in r["yield"])
     out.append(f"stale     {len(r['stale'])} lane(s)")
     for t in r["stale"]:
         out.append(f"          {t['lane']:<9} {t['candidate'][:40]} {t['skip'] or t['why']}")

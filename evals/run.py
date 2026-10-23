@@ -433,11 +433,15 @@ def run_ladder(modality: str, asked: str | None) -> tuple[int, ...]:
     return rungs
 
 
-def rungs_for(ladder: tuple[int, ...], ctx: int | None, *texts: str, count=None) -> tuple[int, ...]:
-    """The ladder a case climbs: rungs past the served context less the prompt become that room. #668."""
-    if ctx is None:
+def rungs_for(ladder: tuple[int, ...], ctx: int | None, *texts: str, count=None,
+              stop: int | None = None) -> tuple[int, ...]:
+    """The ladder a case climbs: rungs past the served context less the prompt, or past the yield stop point,
+    become that bound, so no rung past either is sent. #668, #1127."""
+    room = delegate.cap(ctx, *texts, count=count) if ctx is not None else None
+    if stop is not None:
+        room = stop if room is None else min(room, stop)
+    if room is None:
         return tuple(ladder)
-    room = delegate.cap(ctx, *texts, count=count)
     if room < 1:
         return tuple(ladder[:1])
     kept = [rung for rung in ladder if rung < room]
@@ -476,6 +480,32 @@ def set_served(runner, ctx: int | None, count=None) -> None:
     base = getattr(runner, "base", None)
     if base is not None:
         set_served(base, ctx, count)
+
+
+def set_stop(runner, tokens: int | None) -> None:
+    """Point a text runner, and any base a method wraps, at a yield stop point in generated tokens. #1127."""
+    if hasattr(runner, "stop_tokens"):
+        runner.stop_tokens = tokens
+    base = getattr(runner, "base", None)
+    if base is not None:
+        set_stop(base, tokens)
+
+
+def yield_point(lane: str, spec: str) -> dict:
+    """The stop point a measured run of `spec` uses, from the stored rows; {} where the store cannot be read. #1127."""
+    from harness import yield_stop
+    from harness import memory_store as ms
+    try:
+        conn = ms.connect()
+        try:
+            got = yield_stop.point(conn, lane, spec)
+        finally:
+            conn.close()
+    except Exception as exc:  # noqa: BLE001 - no stop point means the reply runs to its budget
+        print(f"  yield stop: the stored rows could not be read ({exc}); replies run to their budget", file=sys.stderr)
+        return {}
+    print(f"  yield stop: {yield_stop.said(got)}", flush=True)
+    return got
 
 
 def climb(runner, case: Case, rungs: tuple[int, ...]) -> core.Result:
@@ -1284,6 +1314,7 @@ def _execute_at(args, overrides: dict) -> int:
             knobs=knobs.settings(args.modality, overrides),
             router_swaps=evicted,
             budget_ladder=ladder,
+            yield_stop={todo[i][1].candidate: k["stop"] for i, k in enumerate(kept) if k.get("stop")},
             resolved=resolved,
             machine=serving,
             served=served_shapes(specs, resolved, completion.served(), away, args.gateway),
@@ -1573,11 +1604,15 @@ def _run_candidate(args, candidate, runner, mine, results, outdir, evicted=None,
         kept["count"] = (_served_tokens(base, model)
                          if kept["ctx"] and base and model else None)
         set_served(runner, kept["ctx"], kept["count"])
+        # A screen asks whether it runs; decide is not streamed, so nothing could stop it. #1127.
+        if not getattr(args, "screen", False) and hasattr(_traced(runner), "stop_tokens") and args.modality != "decide":
+            kept["stop"] = yield_point(args.modality, candidate)
     held, cold, ctx, count = kept["held"], kept["cold"], kept["ctx"], kept["count"]
     try:
         for case in mine:
             eye.before(runner.candidate)
-            results.append(_one_case(runner, case, held, cold, ladder, ctx, count, outdir))
+            stop = _case_stop(kept.get("stop"), case, outdir)
+            results.append(_one_case(runner, case, held, cold, ladder, ctx, count, outdir, stop=stop))
             wall = eye.lap(runner.candidate)
             if ckpt is not None:
                 ckpt.add(export_row(results[-1]), wall)
@@ -1599,7 +1634,20 @@ def _traced(runner):
     return runner
 
 
-def _one_case(runner, case, held, cold, ladder, ctx, count, outdir):
+def _case_stop(point: dict | None, case, outdir) -> int | None:
+    """The stop point this case runs under: none for the explored share, which runs to the budget and extends the curve. #1127."""
+    from harness import yield_stop
+    if not point or point.get("tokens") is None:
+        return None
+    point.setdefault("explore", yield_stop.EXPLORE_SHARE)
+    if yield_stop.explored(case.id, outdir.name if outdir else "", point["explore"]):
+        point.setdefault("explored", []).append(case.id)
+        return None
+    return point["tokens"]
+
+
+def _one_case(runner, case, held, cold, ladder, ctx, count, outdir, stop=None):
+    set_stop(runner, stop)
     traced = _traced(runner)
     if traced is not None:
         traced.trajectories = []
@@ -1608,7 +1656,7 @@ def _one_case(runner, case, held, cold, ladder, ctx, count, outdir):
     if cold:
         r = runner.failed(case, cold)
     elif ladder:
-        r = climb(runner, case, rungs_for(ladder, ctx, case.prompt, case.context, count=count))
+        r = climb(runner, case, rungs_for(ladder, ctx, case.prompt, case.context, count=count, stop=stop))
     else:
         r = runner.run(case)
     if held:

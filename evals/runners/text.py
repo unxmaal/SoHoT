@@ -54,6 +54,8 @@ class CompletionRunner(BaseRunner):
         self.served_ctx = served_ctx
         #: count(text) -> tokens by the served tokenizer; None estimates. #692.
         self.count = count
+        #: Generated tokens past which a reply is stopped as low yield; None runs every reply to its budget. #1127.
+        self.stop_tokens: int | None = None
         #: Overrides on top of completion.SAMPLING for this run. Empty means
         #: the shipped defaults, which is what the product uses.
         self.sampling = dict(sampling or {})
@@ -101,16 +103,18 @@ class CompletionRunner(BaseRunner):
         limit = (f"served_ctx>{self.served_ctx}" if budget < asked
                  else f"max_tokens.{case.modality}>{budget}")
         timeout = max(self.timeout, completion.timeout_for(budget))
+        stop = self.stop_tokens if self.stop_tokens is not None and self.stop_tokens < budget else None
         try:
-            got = completion.complete_full(
-                case.prompt, model=self.model, gateway=self.gateway,
-                modality=case.modality, context=case.context,
-                timeout=timeout + (self.load_timeout if cold else 0.0),
-                max_tokens=budget, sampling=self.sampling or None,
-                template=template or self.template or None, stream=True,
-                top_logprobs=completion.TOP_LOGPROBS if case.modality == "decide" else 0,
-                response_format=self._reply_shape(case),
-                system=system)
+            with completion.stopping_after(stop):
+                got = completion.complete_full(
+                    case.prompt, model=self.model, gateway=self.gateway,
+                    modality=case.modality, context=case.context,
+                    timeout=timeout + (self.load_timeout if cold else 0.0),
+                    max_tokens=budget, sampling=self.sampling or None,
+                    template=template or self.template or None, stream=True,
+                    top_logprobs=completion.TOP_LOGPROBS if case.modality == "decide" else 0,
+                    response_format=self._reply_shape(case),
+                    system=system)
         except completion.CompletionError as exc:
             self._keep(exc.request, exc.reasoning, exc.finish, exc.usage, str(exc))
             if exc.failure_class == reasons.TOKEN_BUDGET_EXHAUSTED:

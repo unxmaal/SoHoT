@@ -104,6 +104,15 @@ def families(conn) -> list[dict]:
             for f in family.standing(conn).demoted()]
 
 
+def yield_stops(conn) -> list[dict]:
+    """Each served lane-model's yield stop point and the GPU time it saves; [] when the store cannot say. #1127."""
+    from harness import yield_stop
+    try:
+        return yield_stop.report(conn)
+    except Exception:  # noqa: BLE001 - the report leaves the line out rather than failing
+        return []
+
+
 def unused_line(u: dict) -> str:
     """The sweep ceiling a loop left unused, and why. #1082."""
     from harness import power
@@ -328,7 +337,7 @@ def gather(conn, now: float, since: float, *, beat=None, gh=None, git=None, wher
          "canary": canary(now) if canary else "", "incidents": incidents(conn, since, now),
          "parked": parked() if parked else [], "checks": sweep_checks(conn, since),
          "incumbent": incumbent(conn) if incumbent else None, "clearances": clearances(conn, since, now),
-         "families": families(conn)}
+         "families": families(conn), "yield": yield_stops(conn)}
     if r["sweep"]["loop"] is not None:
         from harness import heartbeat
         r["sweep"]["loop"]["code_moved"] = heartbeat.code_moved(beat, r["deploy"].get("head", ""))
