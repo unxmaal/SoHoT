@@ -1232,13 +1232,24 @@ def _pii_spans(path: Path, text: str, labels) -> list[list[int]]:
     return spans
 
 
+_CORPUS_IDS: dict[tuple, frozenset] = {}
+
+
+def _corpus_ids(corpus: Path) -> frozenset:
+    """The document ids of a retrieval corpus, read once while the file is unchanged: hundreds of cases share one. #1146."""
+    st = corpus.stat()
+    key = (str(corpus), st.st_mtime_ns, st.st_size)
+    if key not in _CORPUS_IDS:
+        _CORPUS_IDS[key] = frozenset(json.loads(line)["id"] for line in
+                                     corpus.read_text(encoding="utf-8").splitlines() if line.strip())
+    return _CORPUS_IDS[key]
+
+
 def _check_relevant(path: Path, corpus: Path, relevant) -> None:
     """A retrieval case's labels name documents its corpus holds. #563."""
     if not relevant or not isinstance(relevant, list):
         raise ValueError(f"{path.name}: a retrieval case needs assert.relevant, a list of ids")
-    ids = {json.loads(line)["id"] for line in corpus.read_text(encoding="utf-8").splitlines()
-           if line.strip()}
-    missing = sorted(set(map(str, relevant)) - ids)
+    missing = sorted(set(map(str, relevant)) - _corpus_ids(corpus))
     if missing:
         raise ValueError(f"{path.name}: relevant ids {missing} are not in {corpus.name}")
 
