@@ -75,6 +75,8 @@ def root(tmp_path):
         _user(T0 + 3010, "This session is being continued", isCompactSummary=True),
         _asst(T0 + 3020, "m5", 300, 999, _text("mirror"), isSidechain=True),
         _typed(T0 + 4000, "thanks", "p3"),
+        {"type": "cost-state", "startTime": T0 * 1000, "totalDuration": 2100 * 1000,
+         "modelUsage": {"claude-x": {"outputTokens": 2600}}},
         _typed(NOW + 100, "after the window end", "p4"),
         _asst(NOW + 105, "m9", 10, 10, _text("late")),
     ], tail='{"type": "user", "timest')
@@ -101,8 +103,10 @@ def root(tmp_path):
 
 
 def test_units_split_at_typed_requests_and_count_each_message_once(root):
-    units, skipped = d.scan(root, NOW)
-    assert skipped == {"before_window": 1, "headless_session": 1, "no_model_turn": 1, "stale_file": 1}
+    units, facts = d.scan(root, NOW)
+    assert facts["skipped"] == {"before_window": 1, "headless_session": 1, "no_model_turn": 1, "stale_file": 1}
+    assert facts["cost_check"] == [{"session": facts["cost_check"][0]["session"], "cost_state": 2600,
+                                    "recorded": 2560, "estimated": 2560, "messages": 4}]
     r1, sub, fork, r2 = units
     assert (r1.kind, sub.kind, fork.kind, r2.kind) == ("main", "subagent", "subagent", "main")
     assert (fork.tokens_in, fork.tokens_out) == (50, 70)
@@ -118,6 +122,41 @@ def test_units_split_at_typed_requests_and_count_each_message_once(root):
     assert r2.request == "Now summarise the log for me"
     assert (r1.next_request_s, sub.next_request_s, r2.next_request_s) == (1000, 970, 990)
     assert sub.request.startswith("Dig into the parser")
+
+
+def test_partial_output_counts_are_estimated_from_a_fit_on_final_ones():
+    rng = __import__("random").Random(3)
+    final = []
+    for _ in range(60):
+        vis, sig = rng.randrange(50, 4000), rng.randrange(0, 8000)
+        final.append(d.Msg(out=round(0.4 * vis + 0.25 * sig + 3 + rng.uniform(-5, 5)), final=True, visible=vis,
+                           signature=sig))
+    partial = d.Msg(out=12, final=False, visible=1000, signature=2000)
+    model = d.output_model(final + [partial])
+    assert (model["final"], model["partial"]) == (60, 1) and model["held_out_r2"] > 0.99
+    assert d.estimated(partial, model["coef"]) == pytest.approx(903, abs=10)
+    assert d.estimated(final[0], model["coef"]) == final[0].out
+    assert d.estimated(d.Msg(out=900, visible=10), model["coef"]) == 900
+    assert d.output_model(final[:5])["coef"] == (0.0, 0.0, 0.0)
+
+
+def test_a_partial_count_is_read_off_the_stop_reason(tmp_path):
+    recs = [_asst(T0, "m1", 10, 7, _text("x" * 400)), _asst(T0, "m2", 10, 50, _text("y"))]
+    recs[1]["message"]["stop_reason"] = "end_turn"
+    got = d._usage(recs)
+    assert (got["m1"].final, got["m1"].visible, got["m2"].final) == (False, 400, True)
+
+
+def test_strata_follow_the_recorded_count_so_a_new_estimate_keeps_the_draw(monkeypatch):
+    monkeypatch.setattr(d, "TOP_PROJECTS", 1)
+    a, b = d.Unit("a", "main", "s", "main", 0.0), d.Unit("b", "main", "s", "main", 1.0)
+    a.repos["o/alpha"], b.repos["o/beta"] = 1, 1
+    a.tokens_out_recorded, a.tokens_out = 1500, 90000
+    b.tokens_out_recorded, b.tokens_out = 3000, 3000
+    d._classify([a, b])
+    assert (a.stratum, b.stratum) == ("other/chat/S", "beta/chat/M")
+    _, strata = d.draw([a, b], n=2)
+    assert strata["other/chat/S"]["tokens_out"] == 90000
 
 
 def test_repo_of_folds_worktrees():
@@ -148,9 +187,9 @@ def test_census_packets_and_frame_hold_no_planted_secret_path_or_name(root, tmp_
         for planted in (SECRET, "alice", "Zebulon", "Quackenbush", "/Users/"):
             assert planted not in body, (name, planted)
         assert redact.detect(body, KNOWN) == {}
-    rows = [json.loads(x) for x in (out / "packets-a.jsonl").read_text().splitlines()]
+    rows = [json.loads(x) for x in (out / "packets-a.jsonl").read_text(encoding="utf-8").splitlines()]
     assert [r["id"] for r in rows] == ["P001", "P002", "P003", "P004"]
-    b = [json.loads(x)["id"] for x in (out / "packets-b.jsonl").read_text().splitlines()]
+    b = [json.loads(x)["id"] for x in (out / "packets-b.jsonl").read_text(encoding="utf-8").splitlines()]
     assert b == ["P004", "P003", "P002", "P001"]
     assert all("key" not in r and "stratum" not in r for r in rows)
 
@@ -211,7 +250,7 @@ def test_report_kappa_table_and_manifest(root, tmp_path, capsys, monkeypatch):
     b = _labels(tmp_path / "b.jsonl", [_row("P001", "small_code_edit"), _row("P002", "orchestration_chat"),
                                        _row("P003", "investigation_debug", "does_not_fit"),
                                        _row("P004", "summarise_digest", latency="queued")])
-    frame = json.loads((out / "frame.json").read_text())
+    frame = json.loads((out / "frame.json").read_text(encoding="utf-8"))
     got = d.report(frame, d.load_labels(a), d.load_labels(b))
     assert got["kappa"]["shape"]["agree"] == 3 and got["kappa"]["fit"]["kappa"] == 1.0
     assert [x["id"] for x in got["disagreements"]] == ["P003"] and got["unsettled"] == 1
@@ -225,11 +264,12 @@ def test_report_kappa_table_and_manifest(root, tmp_path, capsys, monkeypatch):
     monkeypatch.setattr(d, "public_repo", lambda repo: False)
     assert frame["repos"] == {"widget": "acme/widget"}
     assert cli.main(["report", str(out), "--a", str(a), "--b", str(b), "--write", str(dest)]) == 0
-    rows = [json.loads(x) for x in (dest / "manifest.jsonl").read_text().splitlines()]
+    rows = [json.loads(x) for x in (dest / "manifest.jsonl").read_text(encoding="utf-8").splitlines()]
     assert {r["key"] for r in rows} == {r["key"] for r in frame["sample"]}
     assert {r["stratum"].split("/")[0] for r in rows} == {"private-1", "other"}
+    assert all((r["gist"] == "") == r["stratum"].startswith("private-") for r in rows)
     for name in ("manifest.jsonl", "strata.json", "census.txt"):
-        body = (dest / name).read_text()
+        body = (dest / name).read_text(encoding="utf-8")
         assert "widget" not in body and "acme" not in body, name
         assert SECRET not in body and "alice" not in body and redact.detect(body, redact.known_here()) == {}
     assert "kappa" in capsys.readouterr().out
@@ -240,7 +280,7 @@ def test_write_refuses_a_name_in_a_gist(root, tmp_path):
     d.census(out, root, NOW, n=4, known=KNOWN)
     rows = [_row(p, "small_code_edit", gist="asked Bartholomew for the parser") for p in ("P001", "P002", "P003", "P004")]
     a = d.load_labels(_labels(tmp_path / "a.jsonl", rows))
-    frame = json.loads((out / "frame.json").read_text())
+    frame = json.loads((out / "frame.json").read_text(encoding="utf-8"))
     got = d.report(frame, a, a)
     with pytest.raises(ValueError, match="Bartholomew"):
         d.write(tmp_path / "dest", frame, got, d.manifest(frame, a, a, None, KNOWN), KNOWN, public=lambda r: True)

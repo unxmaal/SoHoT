@@ -44,8 +44,9 @@ def _codebook(args) -> int:
 def _report(args) -> int:
     frame = json.loads((Path(args.dir) / "frame.json").read_text(encoding="utf-8"))
     a, b = d.load_rounds(args.a), d.load_rounds(args.b)
-    settled = d.load_labels(Path(args.settled)) if args.settled else None
+    settled = d.load_labels(Path(args.settled), partial=True) if args.settled else None
     got = d.report(frame, a, b, settled)
+    got["rounds"] = max(len(args.a), len(args.b))
     print(d.text(frame, got), end="")
     if args.disagreements:
         for row in got["disagreements"]:

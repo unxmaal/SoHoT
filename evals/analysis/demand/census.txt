@@ -1,0 +1,124 @@
+population 693 subtasks over 14 days to 2026-10-23 17:00 UTC ({'main': 400, 'subagent': 293}); output tokens 16,176,697, input tokens 4,220,939,767, active hours 229.1
+skipped {'before_window': 815, 'headless_session': 3, 'no_model_turn': 26, 'stale_file': 9}
+output tokens: 16324 of 23916 messages carry a partial count (no stop_reason); recorded 5,347,093, estimated 16,176,697, from 0.4197 per visible char + 0.2555 per signature char -28.8619 fitted on the 7592 final ones (held-out R2 0.979, sum ratio 0.998); strata and allocation use the recorded count, shares the estimate
+  cost-state 34f2d6580832: own total 197,528, recorded 197,528, estimated 197,528 over 182 messages
+  cost-state 907eaacfd4b1: own total 3,388, recorded 3,388, estimated 3,388 over 5 messages
+  cost-state 43d3211a906a: own total 7,500, recorded 7,435, estimated 7,435 over 27 messages
+  cost-state 58ac45f60e85: own total 1,110,727, recorded 25,282, estimated 25,282 over 42 messages
+  cost-state 9c1715ed0718: own total 12,055, recorded 9,802, estimated 9,802 over 10 messages
+  cost-state d54438a23a38: own total 185,353, recorded 161,198, estimated 166,495 over 107 messages
+  cost-state bcb1b0f7bf6f: own total 64,951, recorded 64,772, estimated 64,772 over 84 messages
+  cost-state d8cb3b90550c: own total 4,407, recorded 4,369, estimated 4,369 over 10 messages
+  cost-state 893fd0505f5e: own total 13,056,028, recorded 6,159,354, estimated 12,358,051 over 19319 messages
+  cost-state ad547d69f3b0: own total 1,902,720, recorded 245,970, estimated 1,328,134 over 2030 messages
+sample 120 (seed 1151), 50 strata project/candidate/size, floor 1, rest in proportion to output tokens; labelled 120, missing 0
+
+stratum N n fraction output_tokens
+  infovore/chat/S 6 1 0.167 3,762
+  infovore/investigate/M 9 2 0.222 70,679
+  infovore/investigate/S 11 1 0.091 76,730
+  infovore/multi_file/L 8 8 1.000 584,454
+  infovore/multi_file/M 1 1 1.000 52,943
+  infovore/multi_file/S 4 1 0.250 234,845
+  infovore/orchestration/L 3 3 1.000 110,951
+  infovore/orchestration/M 2 1 0.500 16,165
+  infovore/small_edit/M 1 1 1.000 15,922
+  private-1/chat/M 1 1 1.000 2,586
+  private-1/chat/S 5 1 0.200 2,137
+  private-1/investigate/L 2 2 1.000 102,486
+  private-1/investigate/M 22 3 0.136 155,306
+  private-1/investigate/S 12 1 0.083 17,375
+  private-1/multi_file/L 1 1 1.000 40,684
+  private-1/orchestration/M 1 1 1.000 8,777
+  private-1/small_edit/L 2 2 1.000 57,918
+  private-1/small_edit/M 2 2 1.000 27,454
+  mcm-engine/chat/M 1 1 1.000 3,949
+  mcm-engine/chat/S 5 1 0.200 3,551
+  mcm-engine/investigate/M 18 2 0.111 96,482
+  mcm-engine/investigate/S 21 1 0.048 80,074
+  mcm-engine/multi_file/L 14 13 0.929 856,251
+  mcm-engine/multi_file/M 3 2 0.667 34,383
+  mcm-engine/orchestration/L 3 3 1.000 334,535
+  mcm-engine/orchestration/M 3 2 0.667 37,331
+  mcm-engine/small_edit/M 4 2 0.500 34,637
+  other/chat/S 18 1 0.056 13,086
+  other/investigate/L 2 2 1.000 90,152
+  other/investigate/M 42 4 0.095 350,053
+  other/investigate/S 55 2 0.036 259,380
+  other/multi_file/L 2 2 1.000 177,475
+  other/multi_file/M 13 2 0.154 876,400
+  other/multi_file/S 16 1 0.062 727,688
+  other/orchestration/L 10 9 0.900 601,363
+  other/orchestration/M 21 3 0.143 171,469
+  other/orchestration/S 1 1 1.000 1,342
+  other/small_edit/L 1 1 1.000 21,605
+  other/small_edit/M 9 2 0.222 256,302
+  other/small_edit/S 10 1 0.100 327,437
+  sohot/chat/S 11 1 0.091 10,034
+  sohot/investigate/M 82 6 0.073 1,006,074
+  sohot/investigate/S 75 2 0.027 987,822
+  sohot/multi_file/M 34 3 0.088 2,737,360
+  sohot/multi_file/S 31 2 0.065 1,501,711
+  sohot/orchestration/L 4 3 0.750 147,281
+  sohot/orchestration/M 53 7 0.132 1,710,913
+  sohot/orchestration/S 1 1 1.000 689
+  sohot/small_edit/M 11 2 0.182 261,108
+  sohot/small_edit/S 26 2 0.077 877,586
+
+Cohen's kappa, two blind labellers (95% bootstrap interval)
+  shape: 0.892 [0.819, 0.955], agree 110/120
+  fit: 0.841 [0.73, 0.932], agree 111/120
+  latency: 0.627 [0.502, 0.744], agree 93/120
+  disagreements 41, unsettled 0
+  labels from 2 rounds: a later round relabels some keys under refined definitions
+
+shape: sampled, share of units, output tokens, wall time (95% stratified bootstrap)
+  extract_classify           1  units   3.0%  out   0.5% [0.0%, 0.5%]  wall   0.5% [0.0%, 0.6%]
+  summarise_digest           3  units   5.0%  out   0.9% [0.0%, 2.1%]  wall   0.9% [0.0%, 3.1%]
+  triage_decide             10  units  16.3%  out  11.8% [4.4%, 17.5%]  wall   3.6% [1.7%, 14.5%]
+  draft_prose                5  units   1.8%  out   1.9% [1.6%, 2.5%]  wall   1.6% [1.0%, 1.9%]
+  small_code_edit            8  units   5.7%  out   4.0% [0.9%, 12.5%]  wall   3.2% [1.1%, 8.9%]
+  multi_file_code           45  units  26.5%  out  66.8% [53.4%, 69.8%]  wall  50.0% [35.7%, 59.0%]
+  investigation_debug       14  units   8.0%  out   5.6% [1.9%, 10.1%]  wall   7.9% [3.5%, 14.2%]
+  orchestration_chat        32  units  33.5%  out   7.5% [5.2%, 16.8%]  wall  31.8% [17.2%, 42.8%]
+  media                      2  units   0.3%  out   1.1% [1.1%, 1.2%]  wall   0.5% [0.5%, 0.5%]
+
+fit: sampled, share of units, output tokens, wall time (95% stratified bootstrap)
+  fits_now                   5  units   7.8%  out   0.7% [0.0%, 0.8%]  wall   1.2% [0.1%, 1.3%]
+  fits_with_harness_work    32  units  45.9%  out  19.1% [14.4%, 28.6%]  wall  26.9% [19.8%, 35.6%]
+  does_not_fit              83  units  46.3%  out  80.2% [70.7%, 85.0%]  wall  71.9% [63.3%, 79.5%]
+
+latency: sampled, share of units, output tokens, wall time (95% stratified bootstrap)
+  interactive               12  units  20.0%  out   2.5% [0.9%, 4.1%]  wall   7.6% [1.6%, 10.7%]
+  soon                      48  units  31.1%  out  13.1% [11.3%, 25.2%]  wall  23.1% [17.4%, 33.7%]
+  queued                    60  units  48.9%  out  84.3% [71.8%, 86.0%]  wall  69.3% [61.7%, 75.4%]
+
+shape x fit x latency: sampled, share of units, output tokens, input tokens, wall time
+  multi_file_code      does_not_fit            queued       35  22.7%  61.7%  63.5%  45.8%
+  triage_decide        fits_with_harness_work  queued        5  12.1%   7.9%   4.7%   1.6%
+  triage_decide        does_not_fit            queued        3   3.9%   3.8%   2.8%   1.9%
+  multi_file_code      does_not_fit            soon          9   3.2%   3.6%   3.5%   3.6%
+  investigation_debug  fits_with_harness_work  queued        1   1.9%   2.8%   2.4%   1.9%
+  small_code_edit      does_not_fit            queued        1   1.9%   2.6%   1.8%   1.5%
+  orchestration_chat   fits_with_harness_work  soon          6  13.4%   2.2%   2.9%   8.9%
+  orchestration_chat   does_not_fit            queued        6   2.9%   2.0%   2.7%   8.6%
+  orchestration_chat   does_not_fit            soon          9   4.3%   1.7%   2.2%   3.3%
+  multi_file_code      fits_with_harness_work  queued        1   0.6%   1.5%   0.9%   0.6%
+  investigation_debug  does_not_fit            soon          9   2.8%   1.4%   1.6%   3.3%
+  draft_prose          does_not_fit            soon          4   1.2%   1.4%   0.7%   1.1%
+  small_code_edit      fits_with_harness_work  soon          7   3.8%   1.4%   1.6%   1.7%
+  orchestration_chat   fits_with_harness_work  interactive   2   3.1%   0.8%   1.1%   4.9%
+  investigation_debug  does_not_fit            queued        2   0.3%   0.7%   1.2%   1.9%
+  summarise_digest     fits_with_harness_work  interactive   2   4.8%   0.7%   0.3%   0.8%
+  media                does_not_fit            queued        1   0.1%   0.6%   0.6%   0.3%
+  orchestration_chat   fits_with_harness_work  queued        4   2.5%   0.6%   1.7%   5.1%
+  extract_classify     fits_now                interactive   1   3.0%   0.5%   0.4%   0.5%
+  media                does_not_fit            soon          1   0.1%   0.5%   0.3%   0.2%
+  draft_prose          fits_with_harness_work  soon          1   0.7%   0.5%   1.2%   0.4%
+  investigation_debug  fits_with_harness_work  soon          1   1.5%   0.4%   0.3%   0.4%
+  investigation_debug  fits_with_harness_work  interactive   1   1.5%   0.3%   1.2%   0.4%
+  summarise_digest     fits_with_harness_work  queued        1   0.1%   0.2%   0.1%   0.2%
+  orchestration_chat   fits_now                interactive   4   4.8%   0.2%   0.2%   0.7%
+  orchestration_chat   does_not_fit            interactive   1   2.6%   0.1%   0.1%   0.3%
+  triage_decide        does_not_fit            soon          1   0.1%   0.1%   0.0%   0.0%
+  triage_decide        does_not_fit            interactive   1   0.1%   0.0%   0.0%   0.1%

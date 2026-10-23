@@ -27,6 +27,10 @@ SIZE_EDGES = (2000, 20000)
 #: Projects kept by name in the strata; the rest pool as "other".
 TOP_PROJECTS = 4
 FLOOR = 1
+#: Final-count messages the output model needs before it estimates the partial ones.
+MIN_FINAL = 20
+#: Seconds past a cost-state record's covered span a message may start and still be counted against it.
+COST_SLACK_S = 5
 BOOTSTRAP = 2000
 REQUEST_CAP = 1500
 RESULT_CAP = 600
@@ -92,6 +96,8 @@ class Unit:
     active_s: float = 0.0
     tokens_in: int = 0
     tokens_out: int = 0
+    tokens_out_recorded: int = 0
+    messages: list = field(default_factory=list)
     calls: int = 0
     tools: Counter = field(default_factory=Counter)
     read: set = field(default_factory=set)
@@ -121,8 +127,20 @@ def repo_of(path: str) -> str | None:
     return f"{m.group(1)}/{_WORKTREE.sub('', m.group(2))}" if m else None
 
 
+@dataclass
+class Msg:
+    """One API message: input tokens, the output tokens its records carry, whether one carries the final count (a
+    stop_reason), the characters of its visible text and tool input, the characters of its thinking signatures."""
+    tokens_in: int = 0
+    out: int = 0
+    final: bool = False
+    visible: int = 0
+    signature: int = 0
+    at: float = 0.0
+
+
 def _usage(recs, skip=frozenset()) -> dict:
-    """message id -> (in, out), each the largest any record of that message carries; `skip` ids are counted elsewhere."""
+    """message id -> Msg over every record of that message; `skip` ids are counted in another stream."""
     got: dict = {}
     for rec in recs:
         msg = rec.get("message")
@@ -131,11 +149,59 @@ def _usage(recs, skip=frozenset()) -> dict:
         mid = msg.get("id") or rec.get("uuid")
         if mid in skip:
             continue
-        u = msg["usage"]
-        tin = sum(int(u.get(k) or 0) for k in ("input_tokens", "cache_creation_input_tokens", "cache_read_input_tokens"))
-        old = got.get(mid, (0, 0))
-        got[mid] = (max(old[0], tin), max(old[1], int(u.get("output_tokens") or 0)))
+        u, m = msg["usage"], got.setdefault(mid, Msg(at=tr._ts(rec.get("timestamp"))))
+        m.tokens_in = max(m.tokens_in, sum(int(u.get(k) or 0) for k in
+                                           ("input_tokens", "cache_creation_input_tokens", "cache_read_input_tokens")))
+        m.out = max(m.out, int(u.get("output_tokens") or 0))
+        m.final = m.final or bool(msg.get("stop_reason"))
+        for b in msg.get("content") or []:
+            if isinstance(b, dict):
+                m.visible += len(b.get("text") or "") if b.get("type") == "text" else \
+                    len(json.dumps(b.get("input"), ensure_ascii=False)) if b.get("type") == "tool_use" else 0
+                m.signature += len(b.get("signature") or "") if b.get("type") == "thinking" else 0
     return got
+
+
+def _solve(rows: list[Msg]) -> tuple[float, float, float]:
+    """Least-squares (per visible char, per signature char, intercept) for output tokens over `rows`."""
+    xs = [(m.visible, m.signature, 1.0) for m in rows]
+    a = [[sum(x[i] * x[j] for x in xs) for j in range(3)] + [sum(x[i] * m.out for x, m in zip(xs, rows))]
+         for i in range(3)]
+    for i in range(3):
+        piv = max(range(i, 3), key=lambda r: abs(a[r][i]))
+        a[i], a[piv] = a[piv], a[i]
+        if not a[i][i]:
+            return (0.0, 0.0, 0.0)
+        a[i] = [v / a[i][i] for v in a[i]]
+        for r in range(3):
+            if r != i:
+                a[r] = [v - a[r][i] * w for v, w in zip(a[r], a[i])]
+    return (a[0][3], a[1][3], a[2][3])
+
+
+def output_model(messages: list[Msg], seed: int = SEED) -> dict:
+    """Fit output tokens on the messages whose records carry the final count, check it on a held-out half, and
+    return the coefficients fitted on all of them. Claude Code often writes a message's records before its final
+    usage arrives, so a message with no stop_reason carries a partial count."""
+    final = [m for m in messages if m.final]
+    out = {"final": len(final), "partial": len(messages) - len(final), "coef": (0.0, 0.0, 0.0)}
+    if len(final) < MIN_FINAL:
+        return out
+    shuffled = random.Random(seed).sample(final, len(final))
+    train, test = shuffled[: len(final) // 2], shuffled[len(final) // 2:]
+    c = _solve(train)
+    pred = [c[0] * m.visible + c[1] * m.signature + c[2] for m in test]
+    mean = sum(m.out for m in test) / len(test)
+    ss = sum((p - m.out) ** 2 for p, m in zip(pred, test))
+    st = sum((m.out - mean) ** 2 for m in test) or 1.0
+    out.update(coef=tuple(round(v, 4) for v in _solve(final)), held_out_r2=round(1 - ss / st, 3),
+               held_out_ratio=round(sum(pred) / (sum(m.out for m in test) or 1), 3))
+    return out
+
+
+def estimated(m: Msg, coef) -> int:
+    """A message's output tokens: its own count when final, else the larger of that and the fitted estimate."""
+    return m.out if m.final else max(m.out, round(coef[0] * m.visible + coef[1] * m.signature + coef[2]))
 
 
 def _tool(name: str) -> str:
@@ -171,8 +237,9 @@ def _add(unit: Unit, rec: dict, usage: dict, counted: set) -> None:
         return
     if mid not in counted:
         counted.add(mid)
-        unit.tokens_in += usage[mid][0]
-        unit.tokens_out += usage[mid][1]
+        unit.messages.append(usage[mid])
+        unit.tokens_in += usage[mid].tokens_in
+        unit.tokens_out_recorded += usage[mid].out
     for b in msg.get("content") or []:
         if not isinstance(b, dict):
             continue
@@ -206,12 +273,13 @@ def _headless(recs) -> bool:
 
 
 def scan(root: Path | None = None, now: float | None = None, days: int = DAYS) -> tuple[list[Unit], dict]:
-    """(units, what was skipped): every main-loop stretch between typed requests and every subagent run that starts in
-    the window; a record after `now` is ignored so a fixed `now` re-reads the same population."""
+    """(units, facts): every main-loop stretch between typed requests and every subagent run that starts in the window,
+    and facts {skipped, output_model, cost_check}; a record after `now` is ignored so a fixed `now` re-reads the same
+    population."""
     root = Path(root or tr.default_root())
     now = time.time() if now is None else now
     since = now - days * 86400
-    units, skipped = [], Counter()
+    units, skipped, states = [], Counter(), []
     for _project, main, subs in tr.sessions(root):
         if main.stat().st_mtime < since:
             skipped["stale_file"] += 1
@@ -230,6 +298,8 @@ def scan(root: Path | None = None, now: float | None = None, days: int = DAYS) -
             sub_usage[s] = _usage(rs, claimed)
             claimed |= set(sub_usage[s])
         mine = []
+        if cost := [r for r in recs if r.get("type") == "cost-state"]:
+            states.append((session, cost[-1], [m for u in [usage, *sub_usage.values()] for m in u.values()]))
         for rec in recs:
             if rec.get("isSidechain"):
                 continue
@@ -258,12 +328,29 @@ def scan(root: Path | None = None, now: float | None = None, days: int = DAYS) -
             u.next_request_s = next((t - u.end for t in typed if t >= u.end), None)
             if u.start < since:
                 skipped["before_window"] += 1
-            elif u.tokens_out or u.calls:
+            elif u.tokens_out_recorded or u.calls:
                 units.append(u)
             else:
                 skipped["no_model_turn"] += 1
+    model = output_model([m for u in units for m in u.messages])
+    for u in units:
+        u.tokens_out = sum(estimated(m, model["coef"]) for m in u.messages)
     _classify(units)
-    return sorted(units, key=lambda u: (u.start, u.key)), dict(sorted(skipped.items()))
+    facts = {"skipped": dict(sorted(skipped.items())), "output_model": model,
+             "cost_check": [cost_check(s, st, ms, model["coef"]) for s, st, ms in states]}
+    return sorted(units, key=lambda u: (u.start, u.key)), facts
+
+
+def cost_check(session: str, state: dict, messages: list[Msg], coef) -> dict:
+    """A session's own output-token total (its last cost-state record) beside the recorded and estimated sums of the
+    messages in the span that record covers."""
+    t0 = float(state.get("startTime") or 0) / 1000
+    t1 = t0 + float(state.get("totalDuration") or 0) / 1000
+    inside = [m for m in messages if t0 <= m.at <= t1 + COST_SLACK_S]
+    return {"session": hashlib.sha256(session.encode()).hexdigest()[:12],
+            "cost_state": sum(int(u.get("outputTokens") or 0) for u in (state.get("modelUsage") or {}).values()),
+            "recorded": sum(m.out for m in inside), "estimated": sum(estimated(m, coef) for m in inside),
+            "messages": len(inside)}
 
 
 def candidate(u: Unit) -> str:
@@ -288,11 +375,11 @@ def _classify(units: list[Unit]) -> None:
     volume = Counter()
     for u in units:
         u.repo = u.repos.most_common(1)[0][0] if u.repos else ""
-        volume[u.repo] += u.tokens_out
+        volume[u.repo] += u.tokens_out_recorded
     keep = set(sorted((r for r in volume if r), key=lambda r: (-volume[r], r))[:TOP_PROJECTS])
     for u in units:
         u.project = u.repo.split("/", 1)[1] if u.repo in keep else "other"
-        u.candidate, u.size = candidate(u), size_of(u.tokens_out)
+        u.candidate, u.size = candidate(u), size_of(u.tokens_out_recorded)
 
 
 def allocate(strata: dict, total: int = SAMPLE, floor: int = FLOOR) -> dict:
@@ -319,7 +406,7 @@ def draw(units: list[Unit], n: int = SAMPLE, seed: int = SEED, floor: int = FLOO
     by = defaultdict(list)
     for u in units:
         by[u.stratum].append(u)
-    sizes = {s: (len(v), sum(u.tokens_out for u in v)) for s, v in sorted(by.items())}
+    sizes = {s: (len(v), sum(u.tokens_out_recorded for u in v)) for s, v in sorted(by.items())}
     take = allocate(sizes, n, floor)
     rng = random.Random(seed)
     picked, strata = [], {}
@@ -329,6 +416,7 @@ def draw(units: list[Unit], n: int = SAMPLE, seed: int = SEED, floor: int = FLOO
         picked += chosen
         strata[s] = {"N": len(group), "n": take[s], "fraction": round(take[s] / len(group), 4),
                      "tokens_out": sum(u.tokens_out for u in group), "tokens_in": sum(u.tokens_in for u in group),
+                     "tokens_out_recorded": sum(u.tokens_out_recorded for u in group),
                      "active_s": round(sum(u.active_s for u in group), 1)}
     order = random.Random(seed + 1).sample(picked, len(picked))
     return order, strata
@@ -364,7 +452,7 @@ def census(out: Path, root: Path | None = None, now: float | None = None, days: 
     """Scan, draw, and write frame.json and the labellers' packets (A in draw order, B reversed) under `out`."""
     _outside_tree(out)
     now = time.time() if now is None else now
-    units, skipped = scan(root, now, days)
+    units, facts = scan(root, now, days)
     sample, strata = draw(units, n, seed)
     known = redact.known_here() if known is None else known
     out.mkdir(parents=True, exist_ok=True)
@@ -374,14 +462,16 @@ def census(out: Path, root: Path | None = None, now: float | None = None, days: 
         raise ValueError(f"redaction left findings in packets {leaks}")
     for name, seq in (("packets-a.jsonl", rows), ("packets-b.jsonl", rows[::-1])):
         (out / name).write_text("".join(json.dumps(r, ensure_ascii=False) + "\n" for r in seq), encoding="utf-8")
-    frame = {"now": now, "days": days, "seed": seed, "n": len(sample), "population": len(units), "skipped": skipped,
+    frame = {"now": now, "days": days, "seed": seed, "n": len(sample), "population": len(units), **facts,
              "repos": dict(sorted({u.project: u.repo for u in units if u.project != "other"}.items())),
              "totals": {"tokens_out": sum(u.tokens_out for u in units), "tokens_in": sum(u.tokens_in for u in units),
+                        "tokens_out_recorded": sum(u.tokens_out_recorded for u in units),
                         "active_s": round(sum(u.active_s for u in units), 1),
                         "kinds": dict(Counter(u.kind for u in units))},
              "strata": strata,
              "sample": [{"id": f"P{i + 1:03d}", "key": u.key, "kind": u.kind, "stratum": u.stratum,
-                         "tokens_in": u.tokens_in, "tokens_out": u.tokens_out, "active_s": round(u.active_s, 1),
+                         "tokens_in": u.tokens_in, "tokens_out": u.tokens_out,
+                         "tokens_out_recorded": u.tokens_out_recorded, "active_s": round(u.active_s, 1),
                          "tool_calls": u.calls, "files_edited": len(u.edited)} for i, u in enumerate(sample)]}
     (out / "frame.json").write_text(json.dumps(frame, indent=1) + "\n", encoding="utf-8")
     return frame
@@ -517,6 +607,20 @@ def _pct(x: float) -> str:
     return f"{100 * x:5.1f}%"
 
 
+def _model_lines(frame: dict) -> list[str]:
+    m, t = frame.get("output_model") or {}, frame["totals"]
+    if not m:
+        return []
+    out = [f"output tokens: {m['partial']} of {m['partial'] + m['final']} messages carry a partial count (no "
+           f"stop_reason); recorded {t.get('tokens_out_recorded', 0):,}, estimated {t['tokens_out']:,}, from "
+           f"{m['coef'][0]} per visible char + {m['coef'][1]} per signature char {m['coef'][2]:+} fitted on the "
+           f"{m['final']} final ones (held-out R2 {m.get('held_out_r2')}, sum ratio {m.get('held_out_ratio')}); "
+           f"strata and allocation use the recorded count, shares the estimate"]
+    out += [f"  cost-state {c['session']}: own total {c['cost_state']:,}, recorded {c['recorded']:,}, estimated "
+            f"{c['estimated']:,} over {c['messages']} messages" for c in frame.get("cost_check", [])]
+    return out
+
+
 def text(frame: dict, got: dict) -> str:
     """The report as plain text: population, strata fractions, kappa, margins with intervals, and the cell table."""
     t = frame["totals"]
@@ -524,13 +628,16 @@ def text(frame: dict, got: dict) -> str:
            f"{time.strftime('%Y-%m-%d %H:%M', time.gmtime(frame['now']))} UTC ({t['kinds']}); "
            f"output tokens {t['tokens_out']:,}, input tokens {t['tokens_in']:,}, active hours {t['active_s'] / 3600:.1f}",
            f"skipped {frame['skipped']}",
+           *_model_lines(frame),
            f"sample {frame['n']} (seed {frame['seed']}), {len(frame['strata'])} strata project/candidate/size, "
            f"floor {FLOOR}, rest in proportion to output tokens; labelled {got['n']}, missing {len(got['missing'])}",
            "", "stratum N n fraction output_tokens"]
     out += [f"  {s} {v['N']} {v['n']} {v['fraction']:.3f} {v['tokens_out']:,}" for s, v in frame["strata"].items()]
     out += ["", "Cohen's kappa, two blind labellers (95% bootstrap interval)"]
     out += [f"  {k}: {v['kappa']} [{v['lo']}, {v['hi']}], agree {v['agree']}/{v['n']}" for k, v in got["kappa"].items()]
-    out.append(f"  disagreements {len(got['disagreements'])}, unsettled {got['unsettled']} (A's label used)")
+    out.append(f"  disagreements {len(got['disagreements'])}, unsettled {got['unsettled']}" + (" (A's label used)" if got['unsettled'] else ""))
+    if got.get("rounds", 1) > 1:
+        out.append(f"  labels from {got['rounds']} rounds: a later round relabels some keys under refined definitions")
     for k, rows in got["margins"].items():
         out += ["", f"{k}: sampled, share of units, output tokens, wall time (95% stratified bootstrap)"]
         for r in rows:
@@ -557,7 +664,8 @@ def manifest(frame: dict, a: dict, b: dict, settled: dict | None, known: redact.
         if r["id"] not in labels:
             continue
         v = frame["strata"][r["stratum"]]
-        rows.append({**{k: r[k] for k in ("id", "key", "kind", "stratum", "tokens_in", "tokens_out", "active_s",
+        rows.append({**{k: r[k] for k in ("id", "key", "kind", "stratum", "tokens_in", "tokens_out",
+                                          "tokens_out_recorded", "active_s",
                                           "tool_calls", "files_edited")},
                      "weight": round(v["N"] / v["n"], 4),
                      "a": {k: a[r["id"]][k] for k in LABEL_KEYS}, "b": {k: b[r["id"]][k] for k in LABEL_KEYS},
@@ -577,7 +685,8 @@ def public_repo(repo: str) -> bool:
 
 
 def masked(frame: dict, rows: list[dict], public=public_repo) -> tuple[dict, list[dict]]:
-    """`frame` and manifest `rows` with each project whose repo is not public renamed private-N."""
+    """`frame` and manifest `rows` with each project whose repo is not public renamed private-N and its rows' gist and
+    reason left out."""
     names, k = {}, 0
     for name, repo in frame.get("repos", {}).items():
         if not public(repo):
@@ -590,7 +699,9 @@ def masked(frame: dict, rows: list[dict], public=public_repo) -> tuple[dict, lis
     out = {**frame, "repos": {names.get(n, n): (r if n not in names else "") for n, r in frame.get("repos", {}).items()},
            "strata": {stratum(s): v for s, v in frame["strata"].items()},
            "sample": [dict(r, stratum=stratum(r["stratum"])) for r in frame["sample"]]}
-    return out, [dict(r, stratum=stratum(r["stratum"])) for r in rows]
+    hidden = (lambda r: r["stratum"].partition("/")[0] in names)
+    return out, [dict(r, stratum=stratum(r["stratum"]), **({"fit_reason": "", "gist": ""} if hidden(r) else {}))
+                 for r in rows]
 
 
 def write(dest: Path, frame: dict, got: dict, rows: list[dict], known: redact.Known, public=public_repo) -> list[Path]:
@@ -599,7 +710,8 @@ def write(dest: Path, frame: dict, got: dict, rows: list[dict], known: redact.Kn
     frame, rows = masked(frame, rows, public)
     files = {"manifest.jsonl": "".join(json.dumps(r, ensure_ascii=False) + "\n" for r in rows),
              "strata.json": json.dumps({k: frame.get(k) for k in ("now", "days", "seed", "n", "population", "skipped",
-                                                                     "repos", "totals", "strata")}, indent=1) + "\n",
+                                                                     "output_model", "cost_check", "repos", "totals",
+                                                                     "strata")}, indent=1) + "\n",
              "census.txt": text(frame, got)}
     bad = {name: found for name, body in files.items() if (found := redact.detect(body, known))}
     if named := sorted({w for r in rows for w in redact.name_like(f"{r['fit_reason']} {r['gist']}")}):
