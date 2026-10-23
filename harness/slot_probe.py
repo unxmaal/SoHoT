@@ -11,6 +11,8 @@ import httpx
 MAX_TOKENS = 4096
 #: Seconds the slot has after the stream closes to go idle. #1127.
 SETTLE_S = 5.0
+#: Seconds the probe waits, with its stream open, to see the slot busy before it closes the stream. #1168.
+BUSY_WAIT_S = 5.0
 POLL_S = 0.25
 PROMPT = "Count upward from 1, one number per line, and do not stop."
 FIX = ("a closed stream did not end generation upstream, so a yield stop saves no GPU: send eval text requests "
@@ -81,10 +83,12 @@ def idle(slots) -> bool | None:
 
 
 def probe(gateway: str, router: str, model: str, *, headers=None, get=_get, clock=time.monotonic,
-          sleep=time.sleep, max_tokens: int | None = None, settle_s: float | None = None) -> tuple[bool, str]:
-    """(ok, line): stream a reply, close it after its first token, and watch the slot go idle."""
+          sleep=time.sleep, max_tokens: int | None = None, settle_s: float | None = None,
+          busy_wait_s: float | None = None) -> tuple[bool, str]:
+    """(ok, line): stream a reply, see its slot busy while the stream is open, close it, and watch the slot go idle."""
     max_tokens = MAX_TOKENS if max_tokens is None else max_tokens
     settle_s = SETTLE_S if settle_s is None else settle_s
+    busy_wait_s = BUSY_WAIT_S if busy_wait_s is None else busy_wait_s
 
     def slots():
         try:
@@ -100,10 +104,13 @@ def probe(gateway: str, router: str, model: str, *, headers=None, get=_get, cloc
             if r.status_code >= 400:
                 r.read()
                 return False, f"slot probe: {model} via the gateway answered HTTP {r.status_code}: {r.text[:200]}"
-            for line in r.iter_lines():
+            lines = r.iter_lines()  # held: a for loop that drops its generator closes the stream (#1168)
+            for line in lines:
                 if line.startswith("data:") and '"delta"' in line:
                     break
-            idle_open = idle(slots())
+            opened = clock()
+            while (idle_open := idle(slots())) and clock() - opened < busy_wait_s:
+                sleep(POLL_S)
     except (httpx.HTTPError, ValueError) as exc:
         return False, f"slot probe: {model}: {exc}"
     if idle_open is None:
