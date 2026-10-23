@@ -48,6 +48,7 @@ EXPECTED = {
     reasons.RUNAWAY: ("broken", "candidate"),
     reasons.DEGENERATE: ("declined", "limit"),
     reasons.POOL_FULL: ("queued", "limit"),
+    reasons.TOOL_CALL: ("broken", "candidate"),
     reasons.INVALID_PATCH: ("broken", "candidate"),
     reasons.ENVIRONMENT_ERROR: ("queued", "harness"),
     reasons.LOAD_LOG_UNREAD: ("queued", "harness"),

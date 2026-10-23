@@ -516,7 +516,7 @@ def _request_settings(spec: str) -> tuple[dict, dict]:
 
 def case_digests(spec: str, cases, budget: int) -> dict:
     """{case id: sha256} over each case's content, its case file and, for a text spec, the request body it is sent."""
-    from evals import core, run
+    from evals import core, repo, run
     from evals.runners.text import CompletionRunner
     from harness import completion
     text = run.text_candidate(spec)
@@ -527,12 +527,13 @@ def case_digests(spec: str, cases, budget: int) -> dict:
         parts = {"case": core.case_digest(c),
                  "file": _small_sha(source) if source and Path(source).is_file() else ""}
         if text:
+            asked = repo.as_asked(c) if c.modality == "repo" else c
             body = completion.payload_for(
-                c.prompt, "", c.modality, c.context, None,
+                asked.prompt, "", asked.modality, asked.context, None,
                 budget or completion.budget(c.modality) or completion.MAX_TOKENS,
                 sampling or None, template or None,
                 completion.TOP_LOGPROBS if c.modality == "decide" else 0, True,
-                c.params.get("system") if c.modality == "claims" else None,
+                CompletionRunner._system(asked),
                 CompletionRunner._reply_shape(c))
             body.pop("model", None)
             parts["request"] = body

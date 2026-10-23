@@ -92,7 +92,7 @@ class CompletionRunner(BaseRunner):
                 reasons.REFUSED_BY_GATEWAY)
         cold = not self.answered
         asked = self.budget(case)
-        system = case.params.get("system") if case.modality == "claims" else None
+        system = self._system(case)
         room = self.room(case, system)
         budget = min(asked, room) if room is not None else asked
         if budget < 1:
@@ -145,6 +145,11 @@ class CompletionRunner(BaseRunner):
             "completion_tokens": (usage or {}).get("completion_tokens"),
             "reasoning_tokens": ((usage or {}).get("completion_tokens_details") or {}).get("reasoning_tokens"),
             "reasoning": reasoning or "", "error": error})
+
+    @staticmethod
+    def _system(case: Case) -> str | None:
+        """The case's own system prompt (claims cases carry one; the repo runner sets it, #1129), else None."""
+        return case.params.get("system") if case.modality in ("claims", "repo") else None
 
     @staticmethod
     def _reply_shape(case: Case):

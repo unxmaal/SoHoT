@@ -13,6 +13,14 @@ from evals.runners.text import CompletionRunner
 from harness import reasons
 
 
+def _calls_tools(output) -> bool:
+    try:
+        record = json.loads(output) if isinstance(output, str) else {}
+    except ValueError:
+        return False
+    return repo.calls_tools(record.get("reply"), record.get("diff"))
+
+
 class RepoGrading:
     """Restore, ask the next runner in the MRO once, grade the diff; mixed into a text or claude-code runner."""
     #: (params) -> repo.Attempt; tests hand in a fixture's.
@@ -26,7 +34,8 @@ class RepoGrading:
             raise RunnerError(f"environment: {exc}", failure_class=reasons.ENVIRONMENT_ERROR) from exc
         try:
             started = time.perf_counter()
-            asked = dataclasses.replace(case, prompt=attempt.prompt(case.prompt), context="")
+            framed = repo.as_asked(case)
+            asked = dataclasses.replace(framed, prompt=attempt.prompt(framed.prompt), context="")
             reply, _ = super().generate(asked)
             spent = dict(self.last_metrics)
             diff = repo.extract_diff(reply)
@@ -48,6 +57,8 @@ class RepoGrading:
 
     def run(self, case: Case):
         row = super().run(case)
+        if row.failure_class == reasons.INVALID_PATCH and _calls_tools(row.output):
+            row.failure_class = reasons.TOOL_CALL
         if "wall_s" in (row.metrics or {}):
             # The checkout and its environment are the harness's to build, not the model's to pay for.
             row.seconds = row.metrics["wall_s"]
