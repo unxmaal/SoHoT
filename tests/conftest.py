@@ -169,6 +169,19 @@ def _no_real_registry(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def _no_real_hub_download(request, monkeypatch):
+    """No test downloads from the Hub: one fetched a whole GGUF every run (#1146)."""
+    if request.node.get_closest_marker("network") or request.node.get_closest_marker("slow"):
+        return
+    import huggingface_hub
+
+    def refuse(*a, **k):
+        raise RuntimeError(f"a test asked the real Hugging Face Hub for {a or k}")
+    monkeypatch.setattr(huggingface_hub, "hf_hub_download", refuse)
+    monkeypatch.setattr(huggingface_hub, "snapshot_download", refuse)
+
+
+@pytest.fixture(autouse=True)
 def _no_real_disk_sweep(monkeypatch):
     """No test deletes from the real weights cache. #373."""
     from harness import disk

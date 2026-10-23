@@ -112,10 +112,15 @@ def test_a_test_that_disagrees_with_itself_across_two_runs_is_dropped_as_flaky(t
 @pytest.mark.gauntlet("one-default-tuned-for-one-member-applied-to-all", site="evals/importers/history.py:outcomes(timeout)")
 @pytest.mark.gauntlet("one-default-tuned-for-one-member-applied-to-all", site="evals/importers/history.py:probe(timeout)")
 @pytest.mark.gauntlet("one-default-tuned-for-one-member-applied-to-all", site="evals/importers/history.py:survey(timeout)")
-def test_a_pytest_run_past_its_timeout_is_killed_and_the_task_dropped(tmp_path):
+def test_a_pytest_run_past_its_timeout_is_killed_and_the_task_dropped(tmp_path, monkeypatch):
     slow = ADD_TEST + "\nimport time\ndef test_slow():\n    time.sleep(60)\n"
+    ran = []
+    real = history._pytest
+    monkeypatch.setattr(history, "_pytest", lambda *a, **k: ran.append(1) or real(*a, **k))
     got = _survey(_repo(tmp_path, FIXED, slow), tmp_path, timeout=3)
     assert got["dropped"] == {"timeout": 1}
+    # The first timeout drops the task; repeating it cost RUNS more timeouts on each side (#1146).
+    assert len(ran) == 1
 
 
 @DARWIN
