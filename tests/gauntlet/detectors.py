@@ -56,6 +56,17 @@ def _upper(name):
     return bool(re.fullmatch(r"_?[A-Z][A-Z0-9_]*", name or ""))
 
 
+_WALKED: dict = {}
+
+
+def _walk(node):
+    """ast.walk as a list, built once per node: every detector walks the same trees. #1146."""
+    got = _WALKED.get(id(node))
+    if got is None or got[0] is not node:
+        got = _WALKED[id(node)] = (node, list(ast.walk(node)))
+    return got[1]
+
+
 def _scopes(tree):
     # (qualname, node) for every function, so a hit can name the function it sits in.
     def walk(node, prefix):
@@ -72,11 +83,21 @@ def _scopes(tree):
 
 
 def _innermost(tree):
-    # node id -> qualname of the innermost function holding it.
+    # node id -> qualname of the innermost function holding it, in one traversal.
     owner = {}
-    for name, fn in _scopes(tree):
-        for n in ast.walk(fn):
-            owner[id(n)] = name
+    stack = [(tree, "", None)]
+    while stack:
+        node, prefix, held = stack.pop()
+        for child in ast.iter_child_nodes(node):
+            if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                name = prefix + child.name
+                owner[id(child)] = name
+                stack.append((child, name + ".", name))
+                continue
+            if held is not None:
+                owner[id(child)] = held
+            sub = prefix + child.name + "." if isinstance(child, ast.ClassDef) else prefix
+            stack.append((child, sub, held))
     return owner
 
 
@@ -98,7 +119,7 @@ def closed_tables(trees):
                 tables.setdefault(name, []).append((rel, line))
     out = []
     for rel, tree in prod.items():
-        for n in ast.walk(tree):
+        for n in _walk(tree):
             if not (isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute) and n.func.attr == "get"
                     and n.args and _str(n.args[0]) is None):
                 continue
@@ -133,7 +154,7 @@ def latest_row_state(trees):
     for rel, tree in _prod(trees).items():
         owner = _innermost(tree)
         seen = set()
-        for n in ast.walk(tree):
+        for n in _walk(tree):
             text = _sql_text(n)
             if text is None or not _NEWEST.search(text):
                 continue
@@ -151,7 +172,7 @@ _GUARD = re.compile(r"(?:check|guard|ensure|refuse|require)_\w+")
 def _referenced(trees):
     names = {}
     for rel, tree in trees.items():
-        for n in ast.walk(tree):
+        for n in _walk(tree):
             name = (n.id if isinstance(n, ast.Name) else n.attr if isinstance(n, ast.Attribute)
                     else n.name.split(".")[-1] if isinstance(n, ast.alias) else None)
             if name:
@@ -184,7 +205,7 @@ def _dest(call):
 
 
 def _add_argument_calls(tree):
-    for n in ast.walk(tree):
+    for n in _walk(tree):
         if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute) and n.func.attr == "add_argument":
             yield n
 
@@ -195,7 +216,7 @@ def ignored_options(trees):
                 for a in c.args + [k.value for k in c.keywords if k.arg == "dest"]}
     read = set()
     for tree in prod.values():
-        for n in ast.walk(tree):
+        for n in _walk(tree):
             if isinstance(n, ast.Attribute):
                 read.add(n.attr)
             elif isinstance(n, ast.Constant) and isinstance(n.value, str) and id(n) not in declared:
@@ -237,7 +258,7 @@ _EXIT = re.compile(r"returncode|exit_?code|\bexited\b")
 
 def _verdict_literals(nodes):
     for n in nodes:
-        for m in ast.walk(n):
+        for m in _walk(n):
             if isinstance(m, ast.Constant) and m.value in TERMINAL_VERDICTS:
                 yield m
 
@@ -247,14 +268,14 @@ def harness_verdicts(trees):
     for rel, tree in _prod(trees).items():
         for name, fn in _scopes(tree):
             found = None
-            for n in ast.walk(fn):
+            for n in _walk(fn):
                 if isinstance(n, ast.ExceptHandler):
                     found = found or next(_verdict_literals(n.body), None)
                 elif isinstance(n, (ast.If, ast.IfExp)) and _EXIT.search(ast.unparse(n.test)):
                     body = n.body if isinstance(n.body, list) else [n.body]
                     orelse = n.orelse if isinstance(n.orelse, list) else [n.orelse]
                     found = found or next(_verdict_literals(body + orelse), None)
-            inner = {id(m) for _, sub in _scopes(fn) for m in ast.walk(sub)}
+            inner = {id(m) for _, sub in _scopes(fn) for m in _walk(sub)}
             if found is not None and id(found) not in inner:
                 out.append(Hit(f"{rel}:{name}", found.lineno,
                                "a terminal verdict written from an exception or exit status, which may be the "
@@ -317,7 +338,7 @@ def _is_environ(node):
 def env_seams(trees):
     first = {}
     for rel, tree in sorted(_prod(trees).items()):
-        for n in ast.walk(tree):
+        for n in _walk(tree):
             name = _env_name(n)
             if name and name not in COMMON_ENV and name not in first:
                 first[name] = (rel, n.lineno)
@@ -346,7 +367,7 @@ def loopback_equality(trees):
     out = []
     for rel, tree in sorted(prod.items()):
         owner = _innermost(tree)
-        for n in ast.walk(tree):
+        for n in _walk(tree):
             if not isinstance(n, ast.Compare) or not any(isinstance(op, _EQUALITY) for op in n.ops):
                 continue
             got = next((g for g in map(named, [n.left, *n.comparators]) if g), None)
@@ -357,7 +378,7 @@ def loopback_equality(trees):
 
 
 def _names(node):
-    return {n.id for n in ast.walk(node) if isinstance(n, ast.Name)}
+    return {n.id for n in _walk(node) if isinstance(n, ast.Name)}
 
 
 def row_index_keys(trees):
@@ -365,14 +386,14 @@ def row_index_keys(trees):
     out = []
     for rel, tree in _prod(trees).items():
         owner = _innermost(tree)
-        for loop in ast.walk(tree):
+        for loop in _walk(tree):
             if not (isinstance(loop, (ast.For, ast.comprehension)) and isinstance(loop.iter, ast.Call)
                     and isinstance(loop.iter.func, ast.Name) and loop.iter.func.id == "enumerate"
                     and isinstance(loop.target, ast.Tuple) and isinstance(loop.target.elts[0], ast.Name)):
                 continue
             index = loop.target.elts[0].id
             body = loop.body if isinstance(loop, ast.For) else []
-            for n in (x for stmt in body for x in ast.walk(stmt)):
+            for n in (x for stmt in body for x in _walk(stmt)):
                 key = n.slice if isinstance(n, ast.Subscript) and isinstance(n.ctx, ast.Store) else None
                 if isinstance(key, ast.JoinedStr) and index in _names(key):
                     out.append(Hit(f"{rel}:{owner.get(id(loop), '<module>')}", n.lineno,
