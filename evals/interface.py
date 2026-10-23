@@ -267,6 +267,30 @@ def _defined(node, top: bool = True) -> set:
     return out
 
 
+def _marked(node) -> bool:
+    """`pytest.mark` itself, or a `pytest.mark.<marker>(...)` call other than parametrize."""
+    if isinstance(node, ast.Call):
+        f = node.func
+        return isinstance(f, ast.Attribute) and f.attr != "parametrize" and _marked(f.value)
+    return isinstance(node, ast.Attribute) and node.attr == "mark" and isinstance(node.value, ast.Name) \
+        and node.value.id == "pytest"
+
+
+def spelled(text: str) -> set:
+    """The words a test file spells, less pytest markers and their arguments (a gauntlet site= string is no use). #1144."""
+    try:
+        tree = ast.parse(text)
+    except SyntaxError:
+        return set(_WORD.findall(text))
+    raw = bytearray(text.encode("utf-8"))
+    starts = [0] + [i + 1 for i, c in enumerate(raw) if c == 10]
+    for node in ast.walk(tree):
+        if _marked(node):
+            a, b = starts[node.lineno - 1] + node.col_offset, starts[node.end_lineno - 1] + node.end_col_offset
+            raw[a:b] = b" " * (b - a)
+    return set(_WORD.findall(raw.decode("utf-8", "replace")))
+
+
 def unlisted(mirror: Path, base: str, fix: str, prompt: str, ids=()) -> list[str]:
     """Names the fix's source adds that the hidden tests or graded ids spell and the prompt never does. #1141."""
     new, old = Tree(mirror, fix), Tree(mirror, base)
@@ -278,6 +302,6 @@ def unlisted(mirror: Path, base: str, fix: str, prompt: str, ids=()) -> list[str
         added |= _defined(new.parse(path)) - was
     text = [repo._git(["-C", str(mirror), "show", f"{fix}:{p}"]).stdout.decode("utf-8", "replace")
             for s, p in rows if s != "D" and p.endswith(".py") and repo.is_test_path(p)]
-    spelled = {w for t in [*text, *ids] for w in _WORD.findall(t)}
+    words = {w for t in text for w in spelled(t)} | {w for t in ids for w in _WORD.findall(t)}
     shown = set(_WORD.findall(prompt))
-    return sorted(n for n in added & spelled if n not in shown and not n.startswith("__"))
+    return sorted(n for n in added & words if n not in shown and not n.startswith("__"))

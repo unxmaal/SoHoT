@@ -211,7 +211,8 @@
     },
     "redactions": {}
    },
-   "interface": []
+   "interface": [],
+   "unlisted": []
   },
   {
    "id": "mcm-engine-pr162-request",
@@ -286,7 +287,8 @@
     "mcm_engine.tracker.SessionTracker.reconcile_coverage(self, *, resident: bool=False) -> None",
     "mcm_engine.tracker.SessionTracker.record_coverage(self, topic: str, query: str, result_ids=None, *, resident: bool=True) -> None",
     "MCP tool: save_snapshot(goal: str='', progress: str='', open_questions: str='', blockers: str='', next_steps: str='', active_files: str='', key_decisions: str='', compaction: bool=False) -> str"
-   ]
+   ],
+   "unlisted": []
   },
   {
    "id": "sohot-pr1003-request",
@@ -354,7 +356,8 @@
    },
    "interface": [
     "harness.live_audit.gateway_config(store, config=None) -> Path"
-   ]
+   ],
+   "unlisted": []
   },
   {
    "id": "sohot-pr1014-request",
@@ -813,7 +816,8 @@
      "secret": 1,
      "session": 1
     }
-   }
+   },
+   "unlisted": []
   },
   {
    "id": "sohot-pr1026-request",
@@ -906,7 +910,8 @@
     "harness.hf_task.read_image(model: str, image: str, prompt: str, revision: str | None=None, max_new_tokens: int | None=None, device: str | None=None, attn: str='', runtime: dict | None=None, dtype: str='') -> str",
     "harness.torch_device.snapshot(model: str, marker: str='config.json', revision: str | None=None)",
     "CLI option: --dtype"
-   ]
+   ],
+   "unlisted": []
   },
   {
    "id": "sohot-pr1028-request",
@@ -983,7 +988,8 @@
      "secret": 1,
      "session": 1
     }
-   }
+   },
+   "unlisted": []
   },
   {
    "id": "sohot-pr1044-request",
@@ -1050,7 +1056,10 @@
      "secret": 4,
      "session": 1
     }
-   }
+   },
+   "unlisted": [
+    "errors"
+   ]
   },
   {
    "id": "sohot-pr1063-request",
@@ -1154,7 +1163,8 @@
     "harness.memory_store.reopened_too_far(conn) -> list[dict]",
     "harness.memory_store.reopens_to(until: str, tier: str) -> tuple[str, str]",
     "harness.memory_store.requeue_reopened_too_far(conn) -> list[str]"
-   ]
+   ],
+   "unlisted": []
   },
   {
    "id": "sohot-pr1081-request",
@@ -1268,7 +1278,8 @@
      "tz": 1
     }
    },
-   "interface": []
+   "interface": [],
+   "unlisted": []
   },
   {
    "id": "sohot-pr1101-request",
@@ -1342,6 +1353,9 @@
    },
    "interface": [
     "harness.identity.grader_digest(lane: str, *, root=None, packages=GRADER_PACKAGES, registry=CHECKER_REGISTRY, also=SCORE_ENTRY) -> dict"
+   ],
+   "unlisted": [
+    "source"
    ]
   },
   {
@@ -1401,7 +1415,8 @@
      "tz": 1
     }
    },
-   "interface": []
+   "interface": [],
+   "unlisted": []
   },
   {
    "id": "sohot-pr862-request",
@@ -1461,7 +1476,8 @@
     "evals.run.PAIR_BLOCK",
     "evals.run.pair_block(candidates, gateway: str, home=_home) -> int | None",
     "evals.run.paired_segments(order, rest, block, key=lambda c: c) -> list[tuple[int, list]]"
-   ]
+   ],
+   "unlisted": []
   },
   {
    "id": "sohot-pr883-request",
@@ -1543,7 +1559,8 @@
    },
    "interface": [
     "harness.commands.screen.screen_detail(why: str, stderr: str, summary) -> str"
-   ]
+   ],
+   "unlisted": []
   },
   {
    "id": "sohot-pr927-request",
@@ -1602,7 +1619,8 @@
     "harness.cli.screenable_backlog(want: str='', plan=None, room=None, deferred=None) -> list[str]",
     "harness.commands.screen.memory_deferrals(conn, name: str) -> tuple[int, str]",
     "harness.commands.screen.screenable_backlog(want: str='', plan=None, room=None, deferred=None) -> list[str]"
-   ]
+   ],
+   "unlisted": []
   }
  ]
 }

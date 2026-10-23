@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
-from evals import redact, repo, session_cut
+from evals import interface, redact, repo, session_cut
 from evals.importers import Imported, history, provenance
 
 LANE = "repo"
@@ -23,7 +23,7 @@ DATASET = "Claude Code session requests, redacted"
 URL = "https://github.com/unxmaal/SoHoT/issues/1095"
 LICENSE = "generated"
 #: sha1 of the committed manifest's tasks, so a hand edit of the manifest is caught at import.
-REVISION = "c98bcc30faf7a9d89f885053f9575137956ce2e8"
+REVISION = "1e8faf00a7d7bb3e214f62621310beb1a2a7eed1"
 MANIFEST = Path(__file__).with_name("transcripts.json")
 VERSION = 1
 VARIANT = "request"
@@ -101,6 +101,11 @@ STATED: dict[str, str] = {
         "value outside those three raises `ValueError` mentioning dtype; a pinned spec gets its own candidate"
         " name and `--dtype <value>` in argv, an unpinned one no `--dtype`. The runner copies `dtype` from "
         "the runtime file onto the row."),
+    "sohot-pr1044-request": (
+        "The `Excerpt` that `cut` returns has a property `errors -> list[str]`: the excerpt's exception lines "
+        "(such as `ModuleNotFoundError: No module named 'soundfile'`), with the `|` and `+` bars an exception "
+        "group indents them with stripped, read from the last line back so the exception the chain ends on "
+        "comes first, each line once."),
     "sohot-pr1063-request": (
         "`reopens_to` gives `(\"screened\", SCREEN)` when the until key is `cases` or `limit` and the declined "
         "tier is measure or adopt, else `(\"queued\", INSPECT)`; `requeue_revisitable` retracts to that pair. "
@@ -733,6 +738,7 @@ def survey(root: Path, repo_roots, log, known: redact.Known | None = None, probe
                                 "size": history.size_of({"files": len(cand["source_files"]), "lines": cand["lines"]})},
                      "provenance": {"session": session_hash(req.session), "evidence": c["evidence"],
                                     "cut": {k: v for k, v in got[1].items() if k != "until"}, "redactions": red.counts}}
+        row["unlisted"] = unlisted(mirror_of(r), row)
         try:
             made = convert(row, known)
             refuse(row, known=known)
@@ -759,6 +765,18 @@ def survey(root: Path, repo_roots, log, known: redact.Known | None = None, probe
             "transcripts": {p: dict(v) for p, v in sorted(by_dir.items())}, "projects": projects,
             "tasks": sorted(kept, key=lambda t: t["id"]), **({} if run else {"pending": pending}),
             "flagged": {w: [n, seen_in[w]] for w, n in flagged.most_common()}, "refused": refused}
+
+
+def unlisted(mirror: Path, row: dict) -> list[str]:
+    """The fix's new names its hidden tests or graded ids spell that the quoted request and interface never do. #1144."""
+    return interface.unlisted(mirror, row["base"], row["fix"], f"{row['prompt']}\n\n{interface.block(row['interface'])}",
+                              row["fail_to_pass"])
+
+
+def refresh(got: dict, mirror_of=None) -> dict:
+    """The manifest with every task's unlisted names recomputed from its mirror. #1144."""
+    mirror_of = mirror_of or _mirror
+    return {**got, "tasks": [{**t, "unlisted": unlisted(mirror_of(t["repo"]), t)} for t in got["tasks"]]}
 
 
 def _landed_before(mirror: Path, base: str, others) -> bool:
@@ -886,9 +904,15 @@ def main(argv: list[str] | None = None) -> int:
                     help="untracked files of people's and handles' names to redact, one per line")
     ap.add_argument("--report", type=Path, help="also write the counts as JSON here")
     ap.add_argument("--out", type=Path, default=MANIFEST)
+    ap.add_argument("--refresh", action="store_true", help="recompute each task's unlisted names in the manifest at --out")
     a = ap.parse_args(argv)
     if a.table:
         print("\n".join(report(manifest(a.out))))
+        return 0
+    if a.refresh:
+        got = refresh(manifest(a.out))
+        a.out.write_text(json.dumps(got, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+        print(f"set REVISION = {revision(got)!r}, then `soh cases import transcripts`", file=sys.stderr)
         return 0
     if a.log is None and not a.dry_run:
         ap.error("--log is required unless --dry-run")

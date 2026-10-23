@@ -1,5 +1,5 @@
 # Claude Code session requests, redacted, generated (https://github.com/unxmaal/SoHoT/issues/1095).
-# Imported by evals/importers from claude-code:transcripts@c98bcc30faf7a9d89f885053f9575137956ce2e8; re-import, do not edit.
+# Imported by evals/importers from claude-code:transcripts@1e8faf00a7d7bb3e214f62621310beb1a2a7eed1; re-import, do not edit.
 id: sohot-pr1081-request
 modality: repo
 prompt: "Below is a Claude Code session, cut just before the agent's first edit to the code. Make the\
@@ -288,7 +288,7 @@ attribution:
   url: https://github.com/unxmaal/SoHoT/issues/1095
   license: generated
   source: claude-code:transcripts
-  revision: c98bcc30faf7a9d89f885053f9575137956ce2e8
+  revision: 1e8faf00a7d7bb3e214f62621310beb1a2a7eed1
   item: 'sohot PR #1081'
   date: '2026-10-20'
   transform: 'a Claude Code session from the person''s request to just before the agent''s first edit
