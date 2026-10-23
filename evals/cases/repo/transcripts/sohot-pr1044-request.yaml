@@ -1,0 +1,273 @@
+# Claude Code session requests, redacted, generated (https://github.com/unxmaal/SoHoT/issues/1095).
+# Imported by evals/importers from claude-code:transcripts@c98bcc30faf7a9d89f885053f9575137956ce2e8; re-import, do not edit.
+id: sohot-pr1044-request
+modality: repo
+prompt: "Below is a Claude Code session, cut just before the agent's first edit to the code. Make the\
+  \ change the session is heading toward.\n\n## user\nApply the deeper skill to the reply budget sweep\
+  \ question\n\n## user\nImplement SoHoT issue #1036 (a tts generate failure drops the stream, so its\
+  \ cause is only in tts.log and is never classified). Read it with gh issue view 1036. Worktree ~/projects/github/unxmaal/sohot-1036.\
+  \ Build on origin/main after PR #1035 (#1030, audio-server env) merges; wait for it.\n\nUse fixtures\
+  \ cut from ~/localharness/logs/tts.log (read-only). Do not restart the live tts server. Another agent\
+  \ is on #1032 (scripts/diffusers-venv.sh); stay out of it.\n\nSession URL: https://claude.ai/code/<SESSION_1>\n\
+  \n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot && git fetch origin -q && gh issue view 1036 &&\
+  \ gh pr view 1035 --json state,mergedAt,title\nok fetched\n[open] Issue #1036: A tts generate failure\
+  \ drops the stream, so its cause is only in tts.log and is never classified\n  Author: @unxmaal\n  Status:\
+  \ OPEN\n  URL: https://github.com/unxmaal/SoHoT/issues/1036\n\n  Description:\n    ## Problem\n    When\
+  \ a tts generate call fails inside mlx-audio's server (for example arktts with a reference audio path\
+  \ and no soundfile), the server cuts the stream off. The client sees only a broken connection; the cause\
+  \ (`ModuleNotFoundError: No module named 'soundfile'`, a model error, anything else) is only in `~/localharness/logs/tts.log`.\
+  \ So `reasons.missing_package` and the other classifiers cannot fire on that path, and the failure reaches\
+  \ the screen as a generic connection error. Found by the #1030 agent (PR #1035) reading mlx-audio 0.5.3's\
+  \ error paths; the stt path returns the error in an HTTP 200 body and is classified correctly.\n   \
+  \ \n    ## Fix\n    Same shape as the llama-server load log (RULE #830): when a tts request ends in\
+  \ a dropped connection, cut the server's own traceback for that request from tts.log (by request time,\
+  \ or a request id if mlx-audio logs one), save it as `<run>/server-error.log`, and classify from it.\
+  \ A drop with no traceback stays a harness fault (queued), never candidate.\n    \n    ## Acceptance\n\
+  \    - A fixture tts.log with a soundfile traceback beside a dropped stream classifies as missing_package,\
+  \ until `package:soundfile@audio-server`.\n    - A drop with nothing in the log is harness_error, queued.\n\
+  \    \n    ## Runs at\n    Day, Mac. Fixtures only.\n    \n    ## Prior art checked\n    RULE #830 (#953\
+  \ llama-server log cut), #1030/PR #1035 (audio-server env), KB FINDING sohot-1030-audio-server-error-bodies.\n\
+  {\"mergedAt\":null,\"state\":\"OPEN\",\"title\":\"The audio server's env is a runner env: a package\
+  \ its model reads waits on the server's own pins (#1030)\"}\n\n[... 37 earlier entries not shown ...]\n\
+  \n## tool mcp__mcm-engine__search\n{\"query\": \"verdict_of_run\"}\n[37573 bytes of output not shown]\n\
+  \n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1036 && sed -n 185,260p harness/commands/screen.py;\
+  \ sed -n 300,340p harness/commands/screen.py\nreturn gap\n    return \"\"\n\n\ndef verdict_of_run(returncode:\
+  \ int, stderr: str, summary, candidate: str,\n                   key: str = \"\", facts: dict | None\
+  \ = None, card=None, lane: str = \"\"):\n    \"\"\"One finished screen process's verdict; stderr is\
+  \ classed only without a receipt, and the card picks a runtime gap's until.\"\"\"\n    from harness\
+  \ import screen\n    tail = \"\" if summary is not None else (stderr or \"\")[-2000:]\n    stderr_class\
+  \ = reasons.classify(tail, reasons.STDERR, candidate) if tail else \"\"\n    return screen.outcome(returncode,\
+  \ summary, candidate=candidate, key=key,\n                          stderr_class=stderr_class, facts=facts,\
+  \ evidence=tail, card=card, lane=lane)\n\n\n_PY_WARNING = re.compile(r\"^\\S.*:\\d+: \\w*Warning: \"\
+  )\n\n\ndef _without_warnings(stderr: str) -> str:\n    \"\"\"stderr less Python warnings and the source\
+  \ line each one quotes. #879.\"\"\"\n    kept, skip = [], False\n    for line in (stderr or \"\").splitlines():\n\
+  \        if _PY_WARNING.match(line):\n            skip = True\n            continue\n        if skip\
+  \ and line[:1].isspace():\n            skip = False\n            continue\n        skip = False\n  \
+  \      kept.append(line)\n    return \"\\n\".join(kept)\n\n\ndef screen_detail(why: str, stderr: str,\
+  \ summary) -> str:\n    \"\"\"A screen verdict's detail: the receipt is the evidence when there is one,\
+  \ else the stderr tail less warnings. #281, #879.\"\"\"\n    if summary is not None:\n        return\
+  \ why[:600]\n    evidence = \" \".join(_without_warnings(stderr).split())[-300:]\n    return\n[... 4340\
+  \ more bytes]\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1036 && grep -n \"SpeechRunner(\"\
+  \ -B3 -A6 evals/run.py | head -40; grep -rn \"ASGI\\|server-error\" harness evals tests --include=*.py\
+  \ | head\n218-        voice = options.get(\"voice\")\n219-        if voice is None:\n220-          \
+  \  voice = audio.DEFAULT_KOKORO_VOICE if is_kokoro(model) else \"\"\n221:        return SpeechRunner(model=model,\
+  \ outdir=outdir,\n222-                            voice=voice,\n223-                            ref_audio=ref\
+  \ or None,\n224-                            lang_code=options.get(\"lang_code\", \"\"),\n225-      \
+  \                      ear=options.get(\"ear\", \"server\"))\n226-    except ValueError as exc:\n227-\
+  \        # A bad ear is a bad candidate string, not a traceback.\n(eval):1: no matches found: --include=*.py\n\
+  \n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1036 && grep -n \"def make_runner\\|def build_runner\\\
+  |outdir\" evals/run.py | head -30; grep -rn \"ASGI\\|server-error\" harness evals tests | head\n40 matches\
+  \ in 1 files:\n\n189:def _speech_runner(candidate: str, outdir: Path | None) -> SpeechRunner:\n203:if\
+  \ outdir is None:\n221:return SpeechRunner(model=model, outdir=outdir,\n499:def build_runner(candidate:\
+  \ str, gateway: str, outdir: Path | None,\n507:runner = _build_runner(candidate, gateway, outdir, adherence,\
+  \ max_tokens)\n610:def _build_runner(candidate: str, gateway: str, outdir: Path | None,\n628:if outdir\
+  \ is None:\n631:return NeedleDecideRunner(candidate, outdir)\n635:return _speech_runner(candidate, outdir)\n\
+  667:if outdir is None:\n669:return ChainRunner(engine, stage, outdir)\n690:runner = _build_runner(spec,\
+  \ gateway, outdir, adherence, max_tokens)\n693:return methods.build(candidate, base, outdir)\n699:if\
+  \ outdir is None:\n702:return ProcessRunner(engine, outdir, adherence=adherence)\n1144:outdir = resolve_outdir(args.out,\
+  \ args.modality)\n1145:if outdir:\n1146:outdir.mkdir(parents=True, exist_ok=True)\n1151:had = watch.read(outdir)\
+  \ if getattr(args, \"resume\", False) else None\n1153:print(f\"stale: the checkpoint in {outdir} ran\
+  \ another exam \"\n1159:ckpt = watch.Checkpoint(outdir, identity, keep=bool(had))\n1161:(outdir / watch.PAUSE_FILE).unlink(missing_ok=True)\n\
+  1178:runner = build_runner(candidate, args.gateway, outdir,\n1195:stop_at=getattr(args, \"stop_at\"\
+  , None), outdir=outdir)\n1207:progress = watch.Progress(outdir, eye, specs, total, len(results))\n \
+  \ +15 more in evals/run.py [+15 hidden: rtk recall a5d53158c5c8]\n\n## tool Bash\n$ M=~/.cache/uv/archive-v0/cH2CLL6ODDAt4ccO/lib/python3.12/site-packages;\
+  \ ls $M | grep -i \"mlx_audio-\\|starlette-\\|uvicorn-\\|fastapi-\"; grep -rn \"soundfile\" $M/mlx_audio/tts/models/arktts/*.py\
+  \ | head; grep -n \"def _load_reference_audio\" -A12 $M/mlx_audio/tts/models/arktts/*.py | head -30\n\
+  fastapi-0.141.1.dist-info\nmlx_audio-0.5.3.dist-info\nstarlette-1.6.0.dist-info\nuvicorn-0.52.4.dist-info\n\
+  <PATH_HOME>/.cache/uv/archive-v0/cH2CLL6ODDAt4ccO/lib/python3.12/site-packages/mlx_audio/tts/models/arktts/arktts.py:986:\
+  \        import soundfile as sf\n<PATH_HOME>/.cache/uv/archive-v0/cH2CLL6ODDAt4ccO/lib/python3.12/site-packages/mlx_audio/tts/models/arktts/arktts.py:985:\
+  \    def _load_reference_audio(self, ref_audio) -> mx.array:\n<PATH_HOME>/.cache/uv/archive-v0/cH2CLL6ODDAt4ccO/lib/python3.12/site-packages/mlx_audio/tts/models/arktts/arktts.py-986-\
+  \        import soundfile as sf\n<PATH_HOME>/.cache/uv/archive-v0/cH2CLL6ODDAt4ccO/lib/python3.12/site-packages/mlx_audio/tts/models/arktts/arktts.py-987-\n\
+  <PATH_HOME>/.cache/uv/archive-v0/cH2CLL6ODDAt4ccO/lib/python3.12/site-packages/mlx_audio/tts/models/arktts/arktts.py-988-\
+  \        from mlx_audio.utils import resample_audio\n<PATH_HOME>/.cache/uv/archive-v0/cH2CLL6ODDAt4ccO/lib/python3.12/site-packages/mlx_audio/tts/models/arktts/arktts.py-989-\n\
+  <PATH_HOME>/.cache/uv/archive-v0/cH2CLL6ODDAt4ccO/lib/python3.12/site-packages/mlx_audio/tts/models/arktts/arktts.py-990-\
+  \        if isinstance(ref_audio, (str, Path)):\n<PATH_HOME>/.cache/uv/archive-v0/cH2CLL6ODDAt4ccO/lib/python3.12/site-packages/mlx_audio/tts/models/arktts/arktts.py-991-\
+  \            array, source_rate = sf.read(\n<PATH_HOME>/.cache/uv/archive-v0/cH2CLL6ODDAt4ccO/lib/python3.12/site-packages/mlx_audio/tts/models/arktts/arktts.py-992-\
+  \                str(ref_audio),\n[... 820 more bytes]\n\n## tool Bash\n$ M=~/.cache/uv/archive-v0/cH2CLL6ODDAt4ccO/lib/python3.12/site-packages/mlx_audio;\
+  \ grep -n \"^class \\|def run_serial\\|def _preflight_model_load\\|def get_inference_broker\\|endpoint_kind\
+  \ ==\\|register\\|adapters\\[\" $M/server.py | head -40\n92:class ModelProvider:\n167:class SpeechRequest(BaseModel):\n\
+  189:class TranscriptionRequest(BaseModel):\n204:class SeparationResponse(BaseModel):\n217:class SpeechTaskPayload:\n\
+  222:class TranscriptionTaskPayload:\n230:class SeparationTaskPayload:\n243:async def _preflight_model_load(model_name:\
+  \ str) -> None:\n281:class STTExecutionAdapter(BaseModelExecutionAdapter):\n282:    def run_serial(self,\
+  \ request: InferenceRequest) -> None:\n331:class ModelLoadExecutionAdapter(BaseModelExecutionAdapter):\n\
+  332:    def run_serial(self, request: InferenceRequest) -> None:\n337:class _TTSAdapterContinuousSession:\n\
+  439:class TTSExecutionAdapter(BaseModelExecutionAdapter):\n611:    def run_serial(self, request: InferenceRequest)\
+  \ -> None:\n772:class SeparationExecutionAdapter(BaseModelExecutionAdapter):\n789:    def run_serial(self,\
+  \ request: InferenceRequest) -> None:\n839:def get_inference_broker() -> InferenceBroker:\n843:    \
+  \    broker.register_adapter(\"model-load\", ModelLoadExecutionAdapter())\n844:        broker.register_adapter(\"\
+  stt\", STTExecutionAdapter())\n845:        broker.register_adapter(\"tts\", TTSExecutionAdapter())\n\
+  846:        broker.register_adapter(\"separation\", SeparationExecutionAdapter())\n1966:class MLXAudioStudioServer:\n\
+  \n## tool Bash\n$ M=~/.cache/uv/archive-v0/cH2CLL6ODDAt4ccO/lib/python3.12/site-packages/mlx_audio;\
+  \ sed -n 243,280p $M/server.py; sed -n 611,680p $M/server.py; sed -n 2000,2060p $M/server.py | grep\
+  \ -n \"uvicorn\\|def main\\|argparse\" \nasync def _preflight_model_load(model_name: str) -> None:\n\
+  \    \"\"\"Load ``model_name`` synchronously and translate failures into HTTPException.\n\n    Routes\
+  \ that return a ``StreamingResponse`` commit the HTTP status + headers\n    before the body generator\
+  \ runs, so any failure inside the inference worker\n    surfaces as 200 OK with an empty body. Pre-flighting\
+  \ the load here lets the\n    framework's exception handlers turn the failure into a real HTTP error\n\
+  \    response. Warm models are a no-op (``ModelProvider.load_model`` is cached).\n    \"\"\"\n    try:\n\
+  \        handle = get_inference_broker().submit(\n            endpoint_kind=\"model-load\",\n      \
+  \      model_name=model_name,\n            payload=None,\n        )\n        while True:\n         \
+  \   chunk = await _next_inference_chunk(handle)\n            if chunk.kind == \"error\":\n         \
+  \       raise chunk.error\n            if chunk.kind == \"done\":\n                break\n    except\
+  \ HTTPException:\n        raise\n    except RepositoryNotFoundError as exc:\n        raise HTTPException(\n\
+  \            status_code=404,\n            detail=f\"Model not found: {model_name!r} is not a known\
+  \ HuggingFace repo or local path\",\n        ) from exc\n    except Exception as exc:\n        raise\
+  \ HTTPException(\n            status_code=500,\n            detail=f\"Failed to load model {model_name!r}:\
+  \ {exc}\",\n        ) from exc\n\n\n_STT_EXTRA_KWARGS = {\"word_timestamps\", \"timestamp_granularities\"\
+  }\n\n\n    def run_serial(self, request: InferenceRequest) -> None:\n       \n[... 2703 more bytes]\n\
+  \n## tool Bash\n$ M=~/.cache/uv/archive-v0/cH2CLL6ODDAt4ccO/lib/python3.12/site-packages/mlx_audio;\
+  \ grep -n \"def load_audio\" -A25 $M/tts/generate.py | head -40; grep -n \"^from\\|^import\" $M/tts/generate.py\
+  \ $M/audio_io.py 2>/dev/null | head -30\n<PATH_HOME>/.cache/uv/archive-v0/cH2CLL6ODDAt4ccO/lib/python3.12/site-packages/mlx_audio/tts/generate.py:1:import\
+  \ argparse\n<PATH_HOME>/.cache/uv/archive-v0/cH2CLL6ODDAt4ccO/lib/python3.12/site-packages/mlx_audio/tts/generate.py:2:import\
+  \ inspect\n<PATH_HOME>/.cache/uv/archive-v0/cH2CLL6ODDAt4ccO/lib/python3.12/site-packages/mlx_audio/tts/generate.py:3:import\
+  \ os\n<PATH_HOME>/.cache/uv/archive-v0/cH2CLL6ODDAt4ccO/lib/python3.12/site-packages/mlx_audio/tts/generate.py:4:import\
+  \ sys\n<PATH_HOME>/.cache/uv/archive-v0/cH2CLL6ODDAt4ccO/lib/python3.12/site-packages/mlx_audio/tts/generate.py:5:from\
+  \ os import PathLike\n<PATH_HOME>/.cache/uv/archive-v0/cH2CLL6ODDAt4ccO/lib/python3.12/site-packages/mlx_audio/tts/generate.py:6:from\
+  \ typing import Any, Optional, Tuple, Union\n<PATH_HOME>/.cache/uv/archive-v0/cH2CLL6ODDAt4ccO/lib/python3.12/site-packages/mlx_audio/tts/generate.py:8:import\
+  \ mlx.core as mx\n<PATH_HOME>/.cache/uv/archive-v0/cH2CLL6ODDAt4ccO/lib/python3.12/site-packages/mlx_audio/tts/generate.py:9:import\
+  \ mlx.nn as nn\n<PATH_HOME>/.cache/uv/archive-v0/cH2CLL6ODDAt4ccO/lib/python3.12/site-packages/mlx_audio/tts/generate.py:10:import\
+  \ numpy as np\n<PATH_HOME>/.cache/uv/archive-v0/cH2CLL6ODDAt4ccO/lib/python3.12/site-packages/mlx_audio/tts/generate.py:11:from\
+  \ numpy.lib.stride_tricks import sliding_window_view\n<PATH_HOME>/.cache/uv/archive-v0/cH2CLL6ODDAt4ccO/lib/python3.12/site-packages/mlx_audio/tts/generate.py:13:from\
+  \ mlx_audio.audio_io import write as audio_write\n[... 1182 more bytes]\n\n## tool Bash\n$ mkdir -p\
+  \ <PATH_TMP> && cd <PATH_TMP> && M=~/.cache/uv/archive-v0/cH2CLL6ODDAt4ccO/lib/python3.12/site-packages/mlx_audio;\
+  \ grep -n \"^class \\|def generate\" $M/tts/models/arktts/arktts.py | head; grep -n \"def _get_model_for_request\"\
+  \ -A8 $M/server.py; sed -n 92,130p $M/server.py\n52:class ModelConfig(BaseModelArgs):\n212:class FalconSlowStack(nn.Module):\n\
+  295:class ArkttsRMSNorm(nn.Module):\n307:class ArkttsKVCache:\n322:class ArkttsAttention(nn.Module):\n\
+  383:class ArkttsFeedForward(nn.Module):\n394:class ArkttsTransformerBlock(nn.Module):\n429:class ArkttsModel(nn.Module):\n\
+  778:    def generate_codes(\n891:class Model(nn.Module):\n449:    def _get_model_for_request(self, request:\
+  \ InferenceRequest):\n450-        model = getattr(request, self._REQUEST_MODEL_ATTR, None)\n451-   \
+  \     if model is None:\n452-            model = _load_model_for_inference(request.model_name)\n453-\
+  \            setattr(request, self._REQUEST_MODEL_ATTR, model)\n454-        return model\n455-\n456-\
+  \    def _build_batch_options(self, request: InferenceRequest) -> TTSBatchOptions:\n457-        speech_request:\
+  \ SpeechRequest = request.payload.request\nclass ModelProvider:\n    def __init__(self):\n        self.models:\
+  \ Dict[str, Dict[str, Any]] = {}\n        self.lock = asyncio.Lock()\n\n    def load_model(self, model_name:\
+  \ str):\n        if model_name not in self.models:\n            self.models[model_name] = load_model(model_name)\n\
+  \n        return self.models[model_name]\n\n    async def remove_model(self, model_name: str) -> bool:\n\
+  \        async with self.lock:\n            if model_name in self.models:\n                del self.models[model_name]\n\
+  \                return True\n            return False\n\n    async def get_available_models(self):\n\
+  \        async with self.lock:\n            return\n[... 516 more bytes]\n\n## tool mcp__mcm-engine__search\n\
+  {\"query\": \"arktts\"}\n[2058 bytes of output not shown]\n\n## tool Write <PATH_TMP>\nimport sys\n\n\
+  import mlx_audio.server as server\nfrom mlx_audio.tts.models.arktts.arktts import Model\n\n\nclass Stub:\n\
+  \    model_type = \"arktts\"\n    sample_rate = 24000\n\n    def generate(self, text, **kw):\n     \
+  \   yield Model._load_reference_audio(self, kw[\"ref_audio\"])\n\n\nasync def _preflight(name):\n  \
+  \  return None\n\n\nserver._preflight_model_load = _preflight\nserver._load_model_for_inference = lambda\
+  \ name: Stub()\n\nif __name__ == \"__main__\":\n    import uvicorn\n    uvicorn.run(server.app, host=\"\
+  127.0.0.1\", port=int(sys.argv[1]))\n\nFile created successfully at: <PATH_TMP> (file state is current\
+  \ in your context — no need to Read it back)\n\n## tool Bash\n$ cd <PATH_TMP> && printf 'RIFF' > ref.wav\
+  \ && (uv run --offline --no-project --with mlx-audio==0.5.3 --with uvicorn==0.52.4 --with webrtcvad==2.0.10\
+  \ --with fastapi==0.141.1 --with python-multipart==0.0.32 --with 'setuptools>=70,<81' python serve.py\
+  \ 18936 > drop.log 2>&1 &) ; for i in $(seq 1 60); do curl -s -o /dev/null http://127.0.0.1:18936/v1/models\
+  \ && break; sleep 1; done; uv run --no-project --offline --with httpx python -c \"\nimport httpx\ntry:\n\
+  \    r = httpx.post('http://127.0.0.1:18936/v1/audio/speech', json={'model':'x/arktts','input':'hello','response_format':'wav','ref_audio':'$PWD/ref.wav'},\
+  \ timeout=30)\n    print('status', r.status_code, len(r.content))\nexcept Exception as e:\n    print(type(e).__name__,\
+  \ e)\n\"; sleep 1; pkill -f \"serve.py 18936\"; wc -l drop.log; cut -c1-200 drop.log | grep -v '^  \
+  \  \\|^ *\\^'\nInstalled 7 packages in 15ms\nRemoteProtocolError peer closed connection without sending\
+  \ complete message body (incomplete chunked read)\n     128 drop.log\nInstalled 45 packages in 180ms\n\
+  <PATH_HOME>/.cache/uv/archive-v0/2Q6vS-NZ2AmdQngQ/lib/python3.14/site-packages/webrtcvad.py:1: UserWarning:\
+  \ pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resource\n  import\
+  \ pkg_resources\nINFO:     Started server process [75937]\nINFO:     Waiting for application startup.\n\
+  INFO:     Application startup complete.\nINFO:     Uvicorn running on http://127.0.0.1:18936 (Press\
+  \ CTRL+C to quit)\nINFO:     127.0.0.1:63705 - \"GET /v1/models HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:63706\
+  \ - \"POST /v1/audio/speech HTTP/1.1\" 200 OK\nTraceback (most recent call last):\n  File \"<PATH_HOME>/.cache/uv/archive-v0/2Q6vS-NZ2AmdQngQ/lib/python3.14/site-packages/mlx_audio/server_inference.py\"\
+  , line 247, in _run\n  File \"<PATH_HOME>/.cache/uv/archive-v0/2Q6vS-NZ2AmdQngQ/lib/python3.14/site-packages/mlx_audio/server.py\"\
+  , line 627, in run_serial\n  File \"<PATH_HOME>/.cache/uv/archive-v0/2Q6vS-NZ2AmdQngQ/lib/python3.14/site-packages/mlx_audio/utils.py\"\
+  , line 661, in load_audio\n  File \"<PATH_HOME>/.cache/uv/archive-v0/2Q6vS-NZ2AmdQngQ/lib/python3.14/site-packages/mlx_audio/audio_io.py\"\
+  , line 298, in read\n  File \"<PATH_HOME>/.cache/uv/archive-v0/2Q6vS-NZ2AmdQngQ/lib/python3.14/site-packages/miniaudio.py\"\
+  , line 222, in get_file_info\n  File\n[... 4836 more bytes]\n\n## tool Bash\n$ cd <PATH_TMP> && python3\
+  \ -c \"\nimport wave,struct\nw=wave.open('ref.wav','wb'); w.setnchannels(1); w.setsampwidth(2); w.setframerate(24000);\
+  \ w.writeframes(b'\\x00\\x00'*24000); w.close()\" && (uv run --offline --no-project --python /opt/homebrew/Cellar/python@3.12/3.12.15/bin/python3.12\
+  \ --with mlx-audio==0.5.3 --with uvicorn==0.52.4 --with webrtcvad==2.0.10 --with fastapi==0.141.1 --with\
+  \ python-multipart==0.0.32 --with 'setuptools>=70,<81' python serve.py 18936 > drop.log 2>&1 &) ; for\
+  \ i in $(seq 1 60); do curl -s -o /dev/null http://127.0.0.1:18936/v1/models && break; sleep 1; done;\
+  \ uv run --no-project --offline --with httpx python -c \"\nimport httpx\ntry:\n    r = httpx.post('http://127.0.0.1:18936/v1/audio/speech',\
+  \ json={'model':'x/arktts','input':'hello','response_format':'wav','ref_audio':'$PWD/ref.wav'}, timeout=30)\n\
+  \    print('status', r.status_code, len(r.content))\nexcept Exception as e:\n    print(type(e).__name__,\
+  \ e)\n\"; sleep 1; pkill -f \"serve.py 18936\"; wc -l drop.log; cut -c1-160 drop.log | grep -v '^  \
+  \  \\|^ *\\^' | grep -v \"File.*starlette\\|File.*fastapi\"\nRemoteProtocolError peer closed connection\
+  \ without sending complete message body (incomplete chunked read)\n      92 drop.log\nInstalled 45 packages\
+  \ in 117ms\n<PATH_HOME>/.cache/uv/archive-v0/<SECRET_1>/lib/python3.12/site-packages/webrtcvad.py:1:\
+  \ UserWarning: pkg_resources is deprecated as an API. See https://s\n  import pkg_resources\nINFO: \
+  \    Started server process [76985]\nINFO:     Waiting for application startup.\nINFO:     Application\
+  \ startup complete.\nINFO:     Uvicorn running on http://127.0.0.1:18936 (Press CTRL+C to quit)\nINFO:\
+  \     127.0.0.1:63841 - \"GET /v1/models HTTP/1.1\" 200 OK\nINFO:     127.0.0.1:63844 - \"POST /v1/audio/speech\
+  \ HTTP/1.1\" 200 OK\nTraceback (most recent call last):\n  File \"<PATH_HOME>/.cache/uv/archive-v0/<SECRET_1>/lib/python3.12/site-packages/mlx_audio/server_inference.py\"\
+  , line 247, in _run\n  File \"<PATH_HOME>/.cache/uv/archive-v0/<SECRET_1>/lib/python3.12/site-packages/mlx_audio/server.py\"\
+  , line 654, in run_serial\n  File \"<PATH_TMP>\", line 12, in generate\n  File \"<PATH_HOME>/.cache/uv/archive-v0/<SECRET_1>/lib/python3.12/site-packages/mlx_audio/tts/models/arktts/arktts.py\"\
+  , line 986, in _load_reference_audi\nModuleNotFoundError: No module named 'soundfile'\nERROR:    Exception\
+  \ in ASGI application\nTraceback (most recent call last):\n  File\n[... 1330 more bytes]\n\n## tool\
+  \ Bash\n$ cd ~/projects/github/unxmaal/sohot-1036 && grep -rn \"def is_local\\|def local_host\\|LOOPBACK\\\
+  |def is_loopback\" harness | head; grep -n \"^def \\|^[A-Z_]* = \" harness/loopback.py | head; mkdir\
+  \ -p tests/fixtures/audio_log && sed -n '4447,4700p' ~/localharness/logs/tts.log > tests/fixtures/audio_log/kokoro-drop.log\
+  \ && sed -n '16404,16426p' ~/localharness/logs/tts.log > tests/fixtures/audio_log/stt-no-processor.log\
+  \ && sed -n '/POST \\/v1\\/audio\\/speech/,$p' <PATH_TMP> > tests/fixtures/audio_log/arktts-soundfile-drop.log\
+  \ && wc -l tests/fixtures/audio_log/* && head -3 tests/fixtures/audio_log/stt-no-processor.log | cut\
+  \ -c1-120; tail -2 tests/fixtures/audio_log/stt-no-processor.log | cut -c1-120; ls tests/fixtures |\
+  \ head -30\nharness/serving.py:115:LOOPBACK = (\"127.0.0.1\", \"localhost\", \"::1\")\nharness/serving.py:138:\
+  \        return urlsplit(bare(base)).hostname in LOOPBACK\nharness/batch.py:104:    from harness.machine\
+  \ import LOOPBACK\nharness/batch.py:106:    return not host or host in LOOPBACK or _local_address(host)\n\
+  harness/machine.py:220:LOOPBACK = (\"127.0.0.1\", \"localhost\", \"::1\", \"0.0.0.0\")\nharness/machine.py:223:def\
+  \ is_loopback(url: str) -> bool:\nharness/machine.py:225:    return (urlsplit(url or \"\").hostname\
+  \ or \"\") in LOOPBACK\nharness/otel.py:14:LOOPBACK = (\"127.0.0.1\", \"localhost\")\nharness/otel.py:266:\
+  \    if host not in LOOPBACK:\nharness/otel.py:267:        raise ValueError(f\"the OTLP receiver binds\
+  \ loopback only ({', '.join(LOOPBACK)}), not {host!r}\")\n      88 tests/fixtures/audio_log/arktts-soundfile-drop.log\n\
+  \     254 tests/fixtures/audio_log/kokoro-drop.log\n      23 tests/fixtures/audio_log/stt-no-processor.log\n\
+  \     365 total\nINFO:     127.0.0.1:60156 - \"POST /v1/audio/transcriptions HTTP/1.1\" 200 OK\n<PATH_HOME>/.cache/uv/archive-v0/cH2CLL6ODDAt4ccO/lib/python3.12/site-packages/mlx_audio/stt/models/whisper/whisper.py:7\n\
+  \  warnings.warn(f\"Could not load WhisperProcessor: {e}.\")\nValueError: Processor not found. Make\
+  \ sure the model was loaded with a HuggingFace processor.\nINFO:     127.0.0.1:64694 - \"GET /v1/models\
+  \ HTTP/1.1\" 200 OK\naudio_log\nbenchmarks\nclaims\nfeeds\nimporters\nledger\nload_log\notel\npapers\n\
+  registry\nrepo_recount_940\nsite\nstt_run9\nwatchdog_864"
+params:
+  source_repo: https://github.com/unxmaal/SoHoT.git
+  base: 66487bd4d330a62df2a971d76f72534c0e367e13
+  fix: 3c6daf9a1afbe239c4058ae5b9a2209f9f1df645
+  variant: request
+  context: oracle
+  context_files:
+  - evals/runners/speech.py
+  - harness/audio.py
+  - harness/reasons.py
+  new_files:
+  - harness/audio_log.py
+  interface:
+  - 'class harness.audio.StreamDropped(exc: Exception, excerpt=None, what: str=''tts'')'
+  - harness.audio_log.FILE
+  - 'harness.audio_log.cut(lines, log: str='''', base: int=0) -> Excerpt | None'
+  - harness.audio_log.logs() -> list[Path]
+  fail_to_pass:
+  - tests/test_tts_drop_1036.py::test_a_drop_from_another_machines_server_reads_no_local_log
+  - tests/test_tts_drop_1036.py::test_a_drop_with_nothing_in_the_log_is_the_harness_queued
+  - tests/test_tts_drop_1036.py::test_a_log_rotated_during_the_request_is_read_from_its_start
+  - tests/test_tts_drop_1036.py::test_a_soundfile_traceback_beside_a_dropped_stream_waits_on_the_audio_servers_env[darwin]
+  - tests/test_tts_drop_1036.py::test_a_soundfile_traceback_beside_a_dropped_stream_waits_on_the_audio_servers_env[linux]
+  - tests/test_tts_drop_1036.py::test_a_soundfile_traceback_beside_a_dropped_stream_waits_on_the_audio_servers_env[win32]
+  - tests/test_tts_drop_1036.py::test_a_traceback_the_server_printed_and_answered_in_band_is_not_a_drop
+  - tests/test_tts_drop_1036.py::test_an_exception_group_uvicorn_logs_is_read_through_its_bars
+  - tests/test_tts_drop_1036.py::test_an_isolated_home_reads_the_serving_homes_audio_log
+  - tests/test_tts_drop_1036.py::test_services_sh_stderr_file_is_read_when_launchd_has_no_tts_log
+  - tests/test_tts_drop_1036.py::test_the_live_drop_a_voice_fetch_timed_out_on_is_the_network_queued_not_the_model
+  - tests/test_tts_drop_1036.py::test_the_live_kokoro_drop_is_cut_from_uvicorns_line_to_the_last_exception_of_its_chain
+  pass_to_pass: []
+attribution:
+  dataset: Claude Code session requests, redacted
+  url: https://github.com/unxmaal/SoHoT/issues/1095
+  license: generated
+  source: claude-code:transcripts
+  revision: c98bcc30faf7a9d89f885053f9575137956ce2e8
+  item: 'sohot PR #1044'
+  date: '2026-10-19'
+  transform: 'a Claude Code session from the person''s request to just before the agent''s first edit
+    of a file the fix changes (evals/session_cut.py: user turns, assistant text, tool calls, reads and
+    searches kept, large outputs dropped, to a byte budget), redacted by evals/redact.py (secrets, ids,
+    emails, home and volume paths, hosts, IPs, pasted chat, handles, account and person names as typed
+    placeholders) and refused if a fix line or a name-like word is left; linked to the merged commit through
+    a commit hash or PR URL printed by a tool in that request or a Claude-Session trailer; since #1138
+    the subagent that printed it is the stream cut, `gh issue view` of the repo is kept whole, and a cut
+    whose user turns and issue views never name the fix''s issue is dropped; base = fix^; fail_to_pass
+    and pass_to_pass from 2 sandboxed pytest runs per side, as evals/importers/history.py'
+  importer: evals.importers.transcripts
+  session: 893fd0505f5eef9e
+  evidence: pr
+  redactions:
+    path: 39
+    secret: 4
+    session: 1

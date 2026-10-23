@@ -23,7 +23,7 @@ DATASET = "Claude Code session requests, redacted"
 URL = "https://github.com/unxmaal/SoHoT/issues/1095"
 LICENSE = "generated"
 #: sha1 of the committed manifest's tasks, so a hand edit of the manifest is caught at import.
-REVISION = "1b89af8ec5e330b64fe1b44cc8365c71bb4f96ab"
+REVISION = "c98bcc30faf7a9d89f885053f9575137956ce2e8"
 MANIFEST = Path(__file__).with_name("transcripts.json")
 VERSION = 1
 VARIANT = "request"
@@ -37,6 +37,7 @@ EXCLUDED: dict[str, str] = {
     "mcm-engine-pr155-request": "the request ties a project to the owner's employer",
     "mcm-engine-pr173-request": "a coworker's report and an internal plan file name",
     "mcm-engine-pr174-request": "a coworker's report and an internal plan file name",
+    "sohot-pr1125-request": "a tool output lists the owner's store backups with their local times",
 }
 #: Cases the #1136 audit retired, with why: the cut heads toward another change, or the tests pin a design it never reached.
 RETIRED: dict[str, str] = {
@@ -171,7 +172,9 @@ TRANSFORM = ("a Claude Code session from the person's request to just before the
              "(secrets, ids, emails, home and volume paths, hosts, IPs, pasted chat, handles, "
              "account and person names as typed placeholders) and refused if a fix line or a name-like word "
              "is left; linked to the merged commit through a commit hash or PR URL printed by a tool in that "
-             "request or a Claude-Session trailer; base = fix^; fail_to_pass and "
+             "request or a Claude-Session trailer; since #1138 the subagent that printed it is the stream cut, "
+             "`gh issue view` of the repo is kept whole, and a cut whose user turns and issue views never name "
+             "the fix's issue is dropped; base = fix^; fail_to_pass and "
              f"pass_to_pass from {history.RUNS} sandboxed pytest runs per side, as evals/importers/history.py")
 
 #: Prompt sources whose words the model wrote: an accepted suggestion, a system-sent turn.
@@ -390,7 +393,7 @@ def cut(main: Path, subs, requests: list[Request], req: Request, files, stream: 
     _, kind, _, evs, i = min(hits, key=lambda h: h[0])
     pin = (lambda e: session_cut.views_issue(e, *repo)) if repo else None
     text = session_cut.render(evs[:i], pin=pin)
-    return session_cut.HEAD + text, {"stream": kind, "events": i, "bytes": len(text.encode("utf-8"))}
+    return session_cut.HEAD + text, {"stream": kind, "events": i, "bytes": len(text.encode("utf-8")), "until": evs[i].at}
 
 
 def leak_lines(mirror: Path, cand: dict) -> list[str]:
@@ -587,7 +590,7 @@ def link(scanned, repos, index_of, mirror_of) -> tuple[list[dict], dict]:
             if req is None:
                 _unit(stats, r.slug, None, "no_request")
                 continue
-            units.setdefault((req.session, req.prompt_id, r.slug), (req, r, []))[2].append((e.kind, sha, pr, e.stream))
+            units.setdefault((req.session, req.prompt_id, r.slug), (req, r, []))[2].append((e.kind, sha, pr, e.stream, e.at))
     out, per_request = [], Counter()
     for (_, _, slug), (req, r, items) in units.items():
         if not r.owner:
@@ -603,7 +606,7 @@ def link(scanned, repos, index_of, mirror_of) -> tuple[list[dict], dict]:
             continue
         mirror = mirror_of(r)
         fixes, why = {}, Counter()
-        for kind, sha, pr, stream in sorted(items, key=lambda i: EVIDENCE.index(i[0])):
+        for kind, sha, pr, stream, at in sorted(items, key=lambda i: EVIDENCE.index(i[0])):
             if pr is not None and sha is None:
                 state, merge = index["prs"].get(pr, ("", ""))
                 got = (pr, merge, None) if state == "MERGED" and merge else (pr, None, "pr_not_merged")
@@ -612,13 +615,13 @@ def link(scanned, repos, index_of, mirror_of) -> tuple[list[dict], dict]:
             if got[2]:
                 why[got[2]] += 1
             else:
-                fixes.setdefault(got[1], (got[0], kind, stream))
+                fixes.setdefault(got[1], (got[0], kind, stream, at))
         if not fixes:
             _unit(stats, slug, req, why.most_common(1)[0][0] if why else "not_landed")
             continue
-        for fix, (pr, kind, stream) in fixes.items():
+        for fix, (pr, kind, stream, at) in fixes.items():
             per_request[(req.session, req.prompt_id)] += 1
-            out.append({"request": req, "repo": r, "fix": fix, "pr": pr, "evidence": kind, "stream": stream})
+            out.append({"request": req, "repo": r, "fix": fix, "pr": pr, "evidence": kind, "stream": stream, "at": at})
     for c in out:
         _unit(stats, c["repo"].slug, c["request"])
     return out, stats
@@ -655,10 +658,13 @@ def survey(root: Path, repo_roots, log, known: redact.Known | None = None, probe
         first.setdefault(c["fix"], c)
     order = sorted(first.values(), key=lambda c: -c["request"].at)
     order += [c for c in found if first[c["fix"]] is not c]
+    siblings = defaultdict(dict)
+    for c in found:
+        siblings[(c["request"].session, c["request"].prompt_id, c.get("stream", ""))][c["fix"]] = c.get("at", 0.0)
     for c in order:
         req, r, fix = c["request"], c["repo"], c["fix"]
         s = _unit(stats, r.slug, req)
-        if fix in old and fix not in seen and old[fix]["id"] not in RETIRED:
+        if fix in old and fix not in seen and old[fix]["id"] not in RETIRED and old[fix]["id"] not in EXCLUDED:
             seen.add(fix)
             s["tasks"] += 1
             kept.append(old[fix])
@@ -679,6 +685,10 @@ def survey(root: Path, repo_roots, log, known: redact.Known | None = None, probe
         elif got is not None and got[1]["bytes"] < MIN_CUT_BYTES:
             why = "cut_too_short"
         elif got is not None and not session_cut.on_task(got[0], set(cand["issues"]) - {c["pr"]}, cand["source_files"]):
+            why = "mismatch"
+        elif got is not None and _landed_before(mirror_of(r), cand["base"], {
+                o for o, at in siblings[(req.session, req.prompt_id, c.get("stream", ""))].items()
+                if o != fix and at >= got[1]["until"]}):
             why = "mismatch"
         red = redact.redact(got[0], known) if why is None else None
         if why is None and session_cut.leaks(red.text, leak_lines(mirror_of(r), cand)):
@@ -722,7 +732,7 @@ def survey(root: Path, repo_roots, log, known: redact.Known | None = None, probe
                                 "area": history.area(cand["source_files"]),
                                 "size": history.size_of({"files": len(cand["source_files"]), "lines": cand["lines"]})},
                      "provenance": {"session": session_hash(req.session), "evidence": c["evidence"],
-                                    "cut": got[1], "redactions": red.counts}}
+                                    "cut": {k: v for k, v in got[1].items() if k != "until"}, "redactions": red.counts}}
         try:
             made = convert(row, known)
             refuse(row, known=known)
@@ -737,7 +747,8 @@ def survey(root: Path, repo_roots, log, known: redact.Known | None = None, probe
         seen.add(fix)
         s["tasks"] += 1
         kept.append(row)
-    kept += [t for f, t in old.items() if f not in {c["fix"] for c in found} and t["id"] not in RETIRED]
+    kept += [t for f, t in old.items() if f not in {c["fix"] for c in found} and t["id"] not in RETIRED
+             and t["id"] not in EXCLUDED]
     projects = {p: {"sessions": len(s["sessions"]), "requests_linked": len(s["linked"]), "tasks": s["tasks"],
                     "dropped": dict(sorted(s["dropped"].items()))} for p, s in sorted(stats.items())}
     return {"version": VERSION, "source": SOURCE,
@@ -748,6 +759,12 @@ def survey(root: Path, repo_roots, log, known: redact.Known | None = None, probe
             "transcripts": {p: dict(v) for p, v in sorted(by_dir.items())}, "projects": projects,
             "tasks": sorted(kept, key=lambda t: t["id"]), **({} if run else {"pending": pending}),
             "flagged": {w: [n, seen_in[w]] for w, n in flagged.most_common()}, "refused": refused}
+
+
+def _landed_before(mirror: Path, base: str, others) -> bool:
+    """Whether one of `others` (fixes the stream proved after the cut ends) is already in `base`: the cut heads there."""
+    return any(not subprocess.run(["git", "--git-dir", str(mirror), "merge-base", "--is-ancestor", o, base],
+                                  capture_output=True).returncode for o in sorted(others))
 
 
 def admit(case: dict, env=None) -> str | None:

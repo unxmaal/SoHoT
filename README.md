@@ -1805,6 +1805,10 @@ design, a paragraph of what the finished change does (`params.stated`, kept in
 (`RETIRED`: 13 quote a session heading toward another change) and repaired 10.
 A new task enters the manifest only when `repo.controls` finds its gold patch
 valid as the grader runs it; otherwise it is dropped as `gold_patch_<verdict>`.
+A fix whose stream later proves another fix that is already in its base is a
+`mismatch` too: its cut heads toward that one. The #1138 re-survey probed the
+newest 20 pending tasks and added 3 (14 transcript cases); both blind labellers
+flag all 3 on tests, so the fair subset is unchanged.
 `repo_failures causes` classes a crashed row `provider_refused` when the
 provider's usage-policy screen refused the prompt, and `crashed` otherwise.
 

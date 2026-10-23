@@ -1,0 +1,699 @@
+# Claude Code session requests, redacted, generated (https://github.com/unxmaal/SoHoT/issues/1095).
+# Imported by evals/importers from claude-code:transcripts@c98bcc30faf7a9d89f885053f9575137956ce2e8; re-import, do not edit.
+id: sohot-pr1014-request
+modality: repo
+prompt: "Below is a Claude Code session, cut just before the agent's first edit to the code. Make the\
+  \ change the session is heading toward.\n\n## user\nCan we arbitrarily run the parts that haven’t been\
+  \ run in a while, like canary? If so let’s run that now. If you want to redeploy first and run a discovery,\
+  \ that’s fine, but I think we should exercise the full process (so skip or dry run slower tasks) possibly\
+  \ a few times today. Once a night isn’t enough to find and fix all the bugs.\n\n## user\nImplement SoHoT\
+  \ issue #1008 (a missing runner package, NameError ftfy, is recorded as the candidate broken). Read\
+  \ it with gh issue view 1008. Worktree ~/projects/github/unxmaal/sohot-1008.\n\nOther agents are on\
+  \ #1006 (canary.py, load_log.py) and #1007 (the stt screen and power). Coordinate if you touch harness/reasons.py\
+  \ or harness/screen.py: keep your change narrow, and say in your report which functions you changed.\n\
+  \nYou may install ftfy into a scratch copy of the runner venv to verify the pipeline runs. Do not modify\
+  \ ~/localharness/venvs; the deploy builds those. Say how they get the package after deploy.\n\nSession\
+  \ URL: https://claude.ai/code/<SESSION_1>\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot && gh\
+  \ issue view 1008 && git fetch origin -q && git worktree add ~/projects/github/unxmaal/sohot-1008 -b\
+  \ runner-deps-1008 origin/main 2>&1 | tail -2\n{\"author\":{\"id\":\"<SECRET_1>=\",\"is_bot\":false,\"\
+  login\":\"unxmaal\",\"name\":\"\"},\"body\":\"## Problem\\nThe 2026-10-19 06:42 day loop (log ~/localharness/logs/discover-day-1.log,\
+  \ deploy 416a83e0) screened Photoroom/prxpixel-t2i and wrote verdict 12777, broken/screen/candidate,\
+  \ failure_class crashed:\\n```\\nit ran and passed nothing: fox-snow: exit 1: NameError: name 'ftfy'\
+  \ is not defined; product-shot: exit 1: NameError: name 'ftfy' is not defined\\n```\\nftfy is a pip\
+  \ package (the text cleaner that diffusers' T5/UMT5 prompt pipelines use when it is installed). The\
+  \ pipeline code references it unguarded, and our runner venv does not have it. That makes this a gap\
+  \ in our runner environment (runtime/harness), not a property of the candidate. A broken/candidate verdict\
+  \ is terminal and blames the model, the class #918's blame audit counted.\\n```\\nsqlite3 \\\"file:$HOME/localharness/discovery.db?mode=ro\\\
+  \" \\\"SELECT v.id,v.outcome,v.tier,v.reason,v.failure_class,v.detail FROM verdicts v JOIN proposals\
+  \ p ON p.id=v.proposal_id WHERE p.name='Photoroom/prxpixel-t2i' ORDER BY v.id DESC LIMIT 1\\\"\\nls\
+  \ ~/localharness/venvs   # diffusers-cuda/ hf-task/\\n```\\n\\n## Fix\\n1. `reasons.classify`: a `NameError:\
+  \ name '<x>' is not defined` or `ModuleNotFoundError: No module named '<x>'` from the runner, where\
+  \ `<x>` is an installable distribution, is reason runtime, with until `package:<x>` (or the existing\
+  \ runner-gap until from #950/#959). It is not candidate.\\n2. Add ftfy to the runner venv that serves\
+  \ image pipelines (and check its siblings: sentencepiece, protobuf, and so on, against the diffusers\
+  \ optional-deps list), so the until comes true.\\n3. Re-decide 12777 through `soh coherence` or the\
+  \ runner-gap repair.\\n\\n## Acceptance\\n- A fixture error string gives runtime/package:ftfy, not candidate;\
+  \ a genuine model bug (a shape mismatch in the candidate's own code) still gives candidate.\\n- After\
+  \ the deploy, prxpixel-t2i is rescreened and either screens or fails for a reason other than ftfy.\\\
+  n\\n## Runs at\\nDay, Mac.\\n\\n## Prior art checked\\nRULE #839/#959 (#950/#951 runner gaps), #918\
+  \ blame audit (harness-fault share 0.40), KB FINDING #556.\\n\",\"number\":1008,\"state\":\"OPEN\",\"\
+  title\":\"A missing runner package (NameError: ftfy) is recorded as the candidate broken\",\"url\":\"\
+  https://github.com/unxmaal/SoHoT/issues/1008\"}\nok fetched\nok\n\n[... 27 earlier entries not shown\
+  \ ...]\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1008 && grep -n \"def decide_class\\|def\
+  \ load_until\\|def outcome\\|cause_until\\|LOAD_FAILED\\|HARNESS_ERROR\" harness/screen.py | head -30;\
+  \ grep -n \"def cause_until\" -A40 harness/runner_gaps.py\n602:def load_until(candidate: str = \"\"\
+  , evidence: str = \"\", card=None, cls: str = \"\") -> str:\n608:    return (runner_gaps.cause_until(cls,\
+  \ evidence, candidate, card)\n614:    if cls == reasons.LOAD_FAILED_RUNTIME:\n616:    if cls == reasons.LOAD_FAILED_FILE:\n\
+  622:    if cls == reasons.LOAD_FAILED_LAYOUT:\n639:def decide_class(cls: str, why: str = \"\", candidate:\
+  \ str = \"\",\n723:def outcome(returncode: int, summary: dict | None, candidate: str = \"\",\n741: \
+  \                      failure_class=reasons.HARNESS_ERROR)\n238:def cause_until(cls: str, evidence:\
+  \ str, candidate: str, card=None) -> str:\n239-    \"\"\"The until a runtime-class screen failure waits\
+  \ on, from its cause; \"\" when a newer runtime release is the wait. #950.\"\"\"\n240-    from harness\
+  \ import reasons\n241-    if cls not in (reasons.LOAD_FAILED_RUNTIME, reasons.LOAD_FAILED_LAYOUT):\n\
+  242-        return \"\"\n243-    card = card or {}\n244-    head = head_of(candidate)\n245-    low =\
+  \ (evidence or \"\").lower()\n246-    mtype = model_type(card, low)\n247-    if not head:\n248-    \
+  \    if _task(card) in VLM_TASKS:\n249-            return f\"runner:{VLM_RUNNER}\"\n250-        library\
+  \ = _library(card)\n251-        if library and library not in TEXT_LIBRARIES:\n252-            return\
+  \ f\"runner:{library}\"\n253-    if \"trust_remote_code\" in low or (\n254-            not (not head\
+  \ and mlx_lm_builds(mtype)) and remote_code_gap(card, low)):\n255-        return remote_code_until(mtype)\n\
+  256-    if head:\n257-        return f\"runner:{head}/{layout_name(card,\n[... 1167 more bytes]\n\n\
+  ## tool mcp__mcm-engine__search\n{\"query\": \"KEYED_VENVS\"}\n[13161 bytes of output not shown]\n\n\
+  ## tool Read <PATH_HOME>/projects/github/unxmaal/sohot-1008/harness/screen.py\n575\t    return \"; \"\
+  .join(failures)[:300]\n576\t\n577\t\n578\t#: The package whose version decides what a process engine\
+  \ can load. #385.\n579\tENGINE_RUNTIMES = {\"mflux\": \"mflux\", \"diffusers\": \"diffusers\",\n580\t\
+  \                   \"diffusers-video\": \"diffusers\", \"acestep\": \"ace-step\",\n581\t          \
+  \         # The audio server's runtime, as scripts/versions.sh pins it. #408.\n582\t               \
+  \    \"tts\": \"mlx-audio\", \"stt\": \"mlx-audio\",\n583\t                   # The hf-task venv's own\
+  \ copies, keyed by venv in machine.versions. #950.\n584\t                   \"hf-ocr\": \"hf-task/transformers\"\
+  , \"rerank\": \"hf-task/sentence-transformers\",\n585\t                   \"embed\": \"hf-task/sentence-transformers\"\
+  , \"hf-pii\": \"hf-task/transformers\",\n586\t                   # Its checkout's commit date, which\
+  \ machine.versions records. #611.\n587\t                   \"ds4\": \"ds4\"}\n588\tLOAD_RUNTIME = \"\
+  mlx-lm\"\n589\t\n590\t\n591\tdef engine_runtime(candidate: str) -> str:\n592\t    head = candidate.partition(\"\
+  ,\")[0].partition(\":\")[0].strip()\n593\t    return ENGINE_RUNTIMES.get(head, \"\")\n594\t\n595\t\n\
+  596\tdef _installed(pkg: str) -> str:\n597\t    \"\"\"The recorded version of pkg on this machine, \"\
+  0\" when absent. #415.\"\"\"\n598\t    from harness import memory_store as ms\n599\t    return ms.this_machine().get(\"\
+  versions\", {}).get(pkg) or \"0\"\n600\t\n601\t\n602\tdef load_until(candidate: str = \"\", evidence:\
+  \ str = \"\", card=None, cls: str = \"\") -> str:\n603\t    \"\"\"The predicate that reopens a load\
+  \ failure: what its cause lacks, else a newer runtime.\n[... 8118 more bytes]\n\n## tool Read <PATH_HOME>/projects/github/unxmaal/sohot-1008/harness/screen.py\n\
+  754\t    # A decide case passes only when every field is right; a right field shows the model ran. #701.\n\
+  755\t    if any(float((v.get(\"metrics\") or {}).get(\"decide_accuracy\") or 0.0) > 0 for v in summary.values()):\n\
+  756\t        return Verdict(\"screened\", \"it answered decide fields correctly though no case was right\
+  \ in full\",\n757\t                       reasons.CANDIDATE)\n758\t    mine = ([row_for(summary, candidate,\
+  \ key) or {}] if candidate\n759\t            else list(summary.values()))\n760\t    cls = reasons.first(c\
+  \ for r in mine for c in (r.get(\"failure_classes\") or {}))\n761\t    why = silent or (why_nothing_passed(summary,\
+  \ candidate, key) if candidate else \"\")\n762\t    limits = [lim for r in mine for lim in (r.get(\"\
+  limits\") or [])]\n763\t    if cls in (\"\", reasons.CONTENT_FAILED, reasons.DEGENERATE):\n764\t   \
+  \     # A few cases at screen settings is not enough to call a candidate broken. #691.\n765\t      \
+  \  until = next((r[\"screen_until\"] for r in mine if r.get(\"screen_until\")), \"\")\n766\t       \
+  \ caveat = next((r[\"screen_caveat\"] for r in mine if r.get(\"screen_caveat\")), \"\")\n767\t     \
+  \   if cls == reasons.DEGENERATE:\n768\t            # A loop is often our sampler's (greedy, no repetition\
+  \ penalty), not the model's. #955, #921.\n769\t            caveat = \"; \".join(c for c in (caveat,\
+  \ SAMPLER_CHECK) if c)\n770\t        why = f\"{why}; {caveat}\" if why and caveat else (why or caveat)\n\
+  771\t        return Verdict(\"declined\", _sentence(cls or reasons.CONTENT_FAILED, why, \"\"), reasons.LIMIT,\n\
+  772\t         \n[... 157 more bytes]\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1008 && grep\
+  \ -rn \"reasons.classify\\|classify(\" --include=*.py harness evals | grep -v \"def classify\\|test\"\
+  \ | head -20\n(eval):1: no matches found: --include=*.py\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1008\
+  \ && grep -rn \"reasons.classify\\|reasons\\.legacy_class\" harness evals | grep -v \"/tests/\" | head\
+  \ -20\nharness/completion.py:188:        # Set where the cause is known; \"\" leaves it to reasons.classify.\
+  \ #408.\nharness/load_log.py:94:    cls = reasons.classify(text + \"\\n\" + \"\".join(ex.lines), reasons.RUNNER,\
+  \ candidate)\nharness/live_audit.py:189:            if reasons.classify(r[\"detail\"] or \"\", reasons.RUNNER,\
+  \ r[\"spec\"]) == reasons.LOAD_FAILED_LAYOUT]\nharness/runs.py:279:            cls = reasons.legacy_class(str(r.get(\"\
+  detail\") or \"\"),\nharness/memory_store/migrations/retractions.py:538:        cls = reasons.classify(detail,\
+  \ reasons.RUNNER, spec)\nharness/memory_store/migrations/prose.py:257:        cls = reasons.legacy_class(r[\"\
+  detail\"] or \"\", r[\"spec\"] or \"\")\nharness/memory_store/migrations/prose.py:297:            cls\
+  \ = reasons.legacy_class(detail.split(\":\", 1)[-1]) or \"harness\"\nharness/commands/screen.py:194:\
+  \    stderr_class = reasons.classify(tail, reasons.STDERR, candidate) if tail else \"\"\nevals/runners/base.py:37:\
+  \        # Set where the cause is known; \"\" is read once by reasons.classify.\nevals/runners/base.py:73:\
+  \        cls = exc.failure_class or reasons.classify(\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1008\
+  \ && ls harness/commands/ | tr '\\n' ' '; echo; grep -rn \"coherence\" harness/cli.py | head -5; grep\
+  \ -n \"def \" harness/commands/coherence.py 2>/dev/null | head -30\n__init__.py adopt.py availability.py\
+  \ benchmarks.py blame.py canary.py cases.py chaos.py claude_news.py coherence.py common.py context.py\
+  \ degenerate.py delegated.py discover.py funnel.py gateway.py gauntlet.py headless.py jobs.py judge.py\
+  \ lanes.py ledger.py load_log.py loop.py measure.py morning.py otel.py report.py reverify.py screen.py\
+  \ store.py usage.py volume.py \nharness/cli.py:43:from harness.commands import coherence as coherence_cmd\n\
+  harness/cli.py:684:    coh = sub.add_parser(\"coherence\", help=\"re-decide terminal verdicts whose\
+  \ reason contradicts the outcome \"\nharness/cli.py:688:    coh.set_defaults(func=coherence_cmd.cmd_coherence)\n\
+  10:def cmd_coherence(a) -> int:\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1008 && cat harness/commands/coherence.py;\
+  \ sed -n 680,690p harness/cli.py; grep -rn \"def contradictions\\|def redecide\\|def incoherent\" harness\
+  \ | head\n\"\"\"`soh coherence`: re-decide terminal verdicts the audit's terminal_reason_coherent names;\
+  \ read-only without --apply. #991.\"\"\"\nfrom __future__ import annotations\n\nfrom pathlib import\
+  \ Path\n\nfrom harness import coherence\nfrom harness.commands.common import emit, err, note\n\n\ndef\
+  \ cmd_coherence(a) -> int:\n    import sqlite3\n\n    from harness import live_audit\n    from harness\
+  \ import memory_store as ms\n    db = Path(a.db) if a.db else ms.db_path()\n    if not db.is_file():\n\
+  \        return err(f\"coherence: no store at {db}\")\n    try:\n        conn = ms.connect(db) if a.apply\
+  \ else live_audit.open_readonly(db)\n    except (OSError, sqlite3.Error, RuntimeError) as exc:\n   \
+  \     return err(f\"coherence: {exc}\")\n    try:\n        found = coherence.changes(conn)\n       \
+  \ ids = coherence.apply(conn, found) if a.apply else []\n    except (sqlite3.Error, ms.IllegalTransition)\
+  \ as exc:\n        return err(f\"coherence: {exc}\")\n    finally:\n        conn.close()\n    for c\
+  \ in found:\n        note(f\"  {c['verdict_id']} {c['name']}: {c['why']}; {' / '.join(x or '-' for x\
+  \ in c['was'])} -> \"\n             f\"{' / '.join(x or '-' for x in c['now']) if 'now' in c else c['skipped']}\"\
+  )\n    note(f\"{sum('now' in c for c in found)} of {len(found)} incoherent verdict(s) re-decided\"\n\
+  \         + (f\"; wrote {ids}\" if a.apply else \"; --apply writes them\"))\n    emit(True, changes=found,\
+  \ written=ids)\n    return 0\n    llg.add_argument(\"--runs\", default=\"\", help=\"run directories\
+  \ by name (default: this home's runs)\")\n   \n[... 1180 more bytes]\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1008\
+  \ && cat harness/coherence.py; sed -n 60,110p harness/memory_store/transitions.py\n<persisted-output>\n\
+  Output too large (7.9KB). Full output saved to: <PATH_HOME>/.claude/projects/-Users-<ACCOUNT_1>-projects/<ID_1>/tool-results/bwwuq5xal.txt\n\
+  \nPreview (first 2KB):\n\"\"\"Re-decide terminal verdicts whose reason contradicts their outcome or\
+  \ that nothing can reopen. #991.\"\"\"\nfrom __future__ import annotations\n\nHELD = (\"SELECT v.id,\
+  \ p.id AS pid, p.name, p.lane, p.state, v.tier, v.reason, v.until, v.detail, v.decided_at, \"\n    \
+  \    \"v.run_path, v.run_id, v.candidate_id, v.failure_class, v.power, v.split_version, p.next_retest_at\
+  \ \"\n        \"FROM proposals p \"\n        \"JOIN verdicts v ON v.id = p.state_verdict_id \"\n   \
+  \     \"WHERE p.state IN ('broken', 'declined', 'ignored') ORDER BY v.id\")\n\n\ndef incoherent(conn)\
+  \ -> list[dict]:\n    \"\"\"State-holding verdicts transitions.incoherent names, each with why.\"\"\"\
+  \n    from harness.memory_store.transitions import incoherent as why_of\n    out = []\n    for r in\
+  \ conn.execute(HELD).fetchall():\n        why = why_of(r[\"state\"], r[\"reason\"], r[\"until\"], retest=r[\"\
+  next_retest_at\"] is not None)\n        if why:\n            out.append({**dict(r), \"why\": why})\n\
+  \    return out\n\n\ndef scoped(until: str, lane: str) -> str:\n    \"\"\"`limit:name>N` as the lane-scoped\
+  \ `limit:name.<lane>>N` when that limit exists; #628 scoped them.\"\"\"\n    from harness import reasons\n\
+  \    head, sep, want = (until or \"\").partition(\">\")\n    name = head.removeprefix(\"limit:\")\n\
+  \    if not sep or head == name or \".\" in name or not lane:\n        return\n[... 707 more bytes]\n\
+  \n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1008 && sed -n 30,200p harness/coherence.py; sed\
+  \ -n 520,580p harness/memory_store/migrations/retractions.py; sed -n 180,200p harness/live_audit.py\n\
+  def changes(conn) -> list[dict]:\n    \"\"\"What each incoherent verdict becomes: declined with an until,\
+  \ requeued for inspect, or skipped.\"\"\"\n    from harness import inspect as ins\n    from harness\
+  \ import reasons\n    from harness.memory_store.schema import INSPECT\n    from harness.memory_store.transitions\
+  \ import CONDITIONAL, RETEST_TIERS\n    found = []\n    for r in incoherent(conn):\n        base = {\"\
+  verdict_id\": r[\"id\"], \"name\": r[\"name\"], \"why\": r[\"why\"],\n                \"was\": [r[\"\
+  state\"], r[\"tier\"], r[\"reason\"], r[\"until\"]]}\n        until = scoped(r[\"until\"], r[\"lane\"\
+  ])\n        if not until and r[\"reason\"] == reasons.UPSTREAM:\n            until = ins.gone_until(r[\"\
+  decided_at\"])\n        if r[\"state\"] == \"broken\" and r[\"reason\"] in CONDITIONAL and until:\n\
+  \            found.append({**base, \"now\": [\"declined\", r[\"tier\"], r[\"reason\"], until],\n   \
+  \                       \"run_path\": r[\"run_path\"], \"run_id\": r[\"run_id\"], \"candidate_id\":\
+  \ r[\"candidate_id\"],\n                          \"detail\": f\"re-decided (#991): {r['why']}; {r['detail']}\"\
+  [:600]})\n        elif r[\"reason\"] == reasons.HARNESS or (r[\"state\"] != \"broken\" and r[\"tier\"\
+  ] in (INSPECT, \"fetch\")):\n            found.append({**base, \"now\": [\"queued\", INSPECT, reasons.REOPENED,\
+  \ \"\"],\n                          \"detail\": f\"{r['why']}: inspect asks again with today's code\
+  \ (#991)\"})\n        elif r[\"state\"] == \"declined\" and r[\"tier\"] in RETEST_TIERS and r[\"reason\"\
+  ] in CONDITIONAL and not until:\n           \n[... 5836 more bytes]\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1008\
+  \ && grep -rln \"hf-task-venv\\|diffusers-venv\\|venvs\" scripts/ Makefile harness/commands/*.py | head;\
+  \ grep -rn \"coherence\" scripts/ harness/commands/loop.py harness/commands/discover.py | head\nscripts/transformers-types.sh\n\
+  scripts/hf-task-venv.sh\nscripts/video-cuda.sh\nscripts/versions.sh\nscripts/hf-task.sh\nscripts/image-diffusers.sh\n\
+  scripts/serve-tts.sh\nscripts/diffusers-venv.sh\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1008\
+  \ && ls scripts | tr '\\n' ' '; echo; grep -n \"venv\\|uv sync\\|uv tool\" scripts/deploy*.sh scripts/launchd.sh\
+  \ 2>/dev/null | head -20\nacestep_generate.py api-key.sh audition.sh decider-score.sh decider-venv.sh\
+  \ diffusers-venv.sh ds4-build.sh env.sh fetch-gguf.sh fetch-h3-weights.sh h3-weights-status.sh hf-task-venv.sh\
+  \ hf-task.sh image-diffusers.sh lan-probe.sh launchd.sh logs.sh make-cover-ref.sh nimble-score.sh nimble-venv.sh\
+  \ pool-full-probe.py preflight.sh record_fixtures.py router-max-models.sh router-sleep-idle.sh serve-audio-cuda.sh\
+  \ serve-audit.sh serve-canary.sh serve-claude-news.sh serve-discover.sh serve-ds4.sh serve-energy.sh\
+  \ serve-eval.sh serve-gateway.sh serve-ledger.sh serve-llamacpp.sh serve-mcp.sh serve-mlx.sh serve-morning.sh\
+  \ serve-otel.sh serve-tts.sh serve-watchdog.sh serve-worker.sh services.sh setup-omnisvg.sh slots-sweep.sh\
+  \ smoke.sh statusline.sh transformers-types.sh versions.sh video-cuda.sh with-gpu-lock \n(eval):1: no\
+  \ matches found: scripts/deploy*.sh\n\n## tool mcp__mcm-engine__search\n{\"query\": \"preflight\", \"\
+  limit\": 5}\n[9218 bytes of output not shown]\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1008\
+  \ && head -40 scripts/preflight.sh; grep -n \"venv\" scripts/preflight.sh scripts/launchd.sh scripts/services.sh\
+  \ | head -20\n#!/usr/bin/env bash\n# What a machine needs before it has any lanes at all.\n#\n# This\
+  \ runs BEFORE uv and soh exist, which is why it is shell and not a soh\n# subcommand: half its job is\
+  \ telling you that uv is missing. `soh discover`\n# covers the lane-level question once the project\
+  \ is installed; this covers the\n# host-level preconditions the setup docs state in prose.\n#\n# It\
+  \ reports every failure and then exits, rather than stopping at the first.\n# Stopping first would mean\
+  \ one apt round-trip per missing package.\n#\n# NO pipefail HERE, deliberately. Nearly every check is\
+  \ `producer | grep -q`,\n# and grep -q exits at the first match, so the producer takes a SIGPIPE and\n\
+  # pipefail reports the whole pipeline as failed. That turns present things into\n# absent ones: it marked\
+  \ DejaVu missing on a machine that had both the fonts\n# and fc-list.\nset -u\n\ncd \"$(dirname \"$0\"\
+  )/..\" || exit 2\n\nfail=0\nsection() { printf '\\n%s\\n' \"$1\"; }\nok()      { printf '  ok      \
+  \ %s\\n' \"$1\"; }\nbad()     { printf '  MISSING  %s\\n             -> %s\\n' \"$1\" \"$2\"; fail=1;\
+  \ }\nnote()    { printf '  note     %s\\n             -> %s\\n' \"$1\" \"$2\"; }\nhave()    { command\
+  \ -v \"$1\" >/dev/null 2>&1; }\n\nneed() { # need <command> <how to get it>\n  if have \"$1\"; then\
+  \ ok \"$1\"; else bad \"$1\" \"$2\"; fi\n}\n\nuname_s=\"$(uname -s)\"\ncase \"$uname_s\" in\n  Linux)\
+  \  apt=\"sudo apt install -y\" ;;\n  Darwin) apt=\"brew install\" ;;\n  *)      apt=\"install\" ;;\n\
+  esac\n\nsection \"accelerator\"\nif have nvidia-smi; then\n\n## tool mcp__mcm-engine__search\n{\"query\"\
+  : \"deploy.sh\", \"limit\": 5}\n[13941 bytes of output not shown]\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1008\
+  \ && grep -n \"deploy\" README.md | head -20; grep -n \"^  *install)\\|deploy\\|uv sync\" scripts/launchd.sh\
+  \ | head -20\n328:deploys to Pages.\n897:  deployment down for `cooldown`, and every other name on the\
+  \ node skips it for\n973:drops rows rather than failing a request. Only a gateway run from the deploy\n\
+  1010:`\"statusLine\": {\"type\": \"command\", \"command\": \"~/localharness/deploy/scripts/statusline.sh\"\
+  }`.\n1354:a separate worktree, `$LOCALHARNESS_HOME/deploy`, and points every agent there,\n1356:run\
+  \ `install` again to deploy it; `status` names the commit the agents are\n1357:running and the current\
+  \ `origin/main`. `deploy` refuses to overwrite local\n1358:edits made inside the deploy worktree, and\
+  \ refuses a commit until check-macos\n1361:`LH_DEPLOY_UNCHECKED=1` deploys without asking, with a warning.\n\
+  1362:`deploy` and `install` also refuse while a discover loop or an eval is running, naming its pid\
+  \ and\n1363:start time: a running loop keeps the code it imported, so a deploy under it leaves it on\
+  \ the old code.\n1365:the commit it started on, and `soh morning` and `soh audit` say when a sweep ran\
+  \ under a deploy.\n1367:**Before deploying to a machine that has not deployed in a while, run\n1368:`soh\
+  \ store dry-run` there from a checkout of the commit you are about to deploy.**\n1373:After a deploy,\
+  \ `install` runs `soh audit` from the deploy checkout, and the\n1465:`deploy/localharness` is a Helm\
+  \ chart for the discovery tiers: the weekly\n1474:helm install lh deploy/localharness -f deploy/localharness/values-local.yaml\n\
+  1486:`tests/test_deploy_chart.py` reads the rendered YAML, which catches a job that\n1508:A\n[... 1318\
+  \ more bytes]\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1008 && grep -rn \"versions.sh\\\
+  |_PIN\\b\" harness/*.py | head -20; sed -n 330,380p harness/machine.py\nharness/ds4.py:240:    text\
+  \ = (paths.REPO / \"scripts\" / \"versions.sh\").read_text(encoding=\"utf-8\")\nharness/feeds.py:138:\
+  \    # computable here: DIFFUSERS_PIN is in scripts/versions.sh, so\nharness/ledger.py:36:    \"\"\"\
+  A pin from scripts/versions.sh, '' when absent.\"\"\"\nharness/ledger.py:37:    path = path or paths.REPO\
+  \ / \"scripts\" / \"versions.sh\"\nharness/ledger.py:89:    version = pin(\"CCUSAGE_PIN\", versions).split(\"\
+  ==\")[-1]\nharness/machine.py:378:    path = path or Path(__file__).resolve().parent.parent / \"scripts\"\
+  \ / \"versions.sh\"\nharness/machine.py:384:        r'^[A-Z_]+_PIN=\"([A-Za-z0-9_.-]+)(?:\\[[^\\]]*\\\
+  ])?==([^\"]+)\"', text, re.M)}\nharness/screen.py:581:                   # The audio server's runtime,\
+  \ as scripts/versions.sh pins it. #408.\n    return found\n\n\ndef _imported_versions() -> dict[str,\
+  \ str]:\n    from importlib import metadata\n    found = {}\n    for pkg in WATCHED:\n        try:\n\
+  \            found[pkg] = metadata.version(pkg)\n        except Exception:  # noqa: BLE001 - absent\
+  \ is not an error\n            pass\n    return found\n\n\ndef _other_venvs() -> list[Path]:\n    \"\
+  \"\"The venvs a lane runs through rather than imports: diffusers, ACE-Step.\"\"\"\n    import os\n \
+  \   from harness import engines, paths\n    out = [Path(os.environ.get(\"DIFFUSERS_VENV\")\n       \
+  \         or paths.home() / \"venvs\" / \"diffusers-cuda\")]\n    root = engines.acestep_root()\n  \
+  \  if root:\n        out.append(Path(root) / \".venv\")\n    return out\n\n\n#: Venvs recorded under\
+  \ their own name, because the checkout's\n[... 863 more bytes]\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1008\
+  \ && gh pr list --state open --json number,title,headRefName,files --jq '.[] | \"\\(.number) \\(.headRefName)\
+  \ \\(.title) :: \\([.files[].path] | join(\",\"))\"' | cut -c1-400; ls harness/memory_store/migrations/\
+  \ | sort -V | tail -3\n1010 energy-partial-1005 Mark energy partial when macmon reads the CPU as 0 W,\
+  \ and keep 0 W readings (#1005) :: README.md,harness/commands/ledger.py,harness/commands/morning.py,harness/knobs/ledger.py,harness/ledger.py,harness/morning.py,harness/trends.py,tests/test_energy_1005.py\n\
+  v76.py\nv77.py\n__init__.py"
+params:
+  source_repo: https://github.com/unxmaal/SoHoT.git
+  base: 48a91ce1347cac7572606f5d8cd92d8bb64e42c8
+  fix: 433a0ee159318d498f9b5e9d0f392955e14ea088
+  variant: request
+  context: oracle
+  context_files:
+  - harness/coherence.py
+  - harness/memory_store/revisit.py
+  - harness/reasons.py
+  - harness/runner_gaps.py
+  - harness/screen.py
+  - scripts/diffusers-venv.sh
+  - scripts/versions.sh
+  interface:
+  - harness.reasons.MISSING_PACKAGE
+  - 'harness.reasons.missing_package(text: str) -> str'
+  - 'harness.runner_gaps.package_until(evidence: str, candidate: str) -> str'
+  fail_to_pass:
+  - 'tests/test_missing_package_1008.py::test_a_name_no_runner_package_binds_keeps_its_class[Error while
+    finding module specification for ''evals.run'' (ModuleNotFoundError: No module named ''evals'')-harness_error]'
+  - 'tests/test_missing_package_1008.py::test_a_name_no_runner_package_binds_keeps_its_class[fox-snow:
+    exit 1: NameError: name ''hidden_states'' is not defined-crashed]'
+  - 'tests/test_missing_package_1008.py::test_a_name_no_runner_package_binds_keeps_its_class[fox-snow:
+    exit 1: RuntimeError: mat1 and mat2 shapes cannot be multiplied (77x768 and 1024x320)-crashed]'
+  - 'tests/test_missing_package_1008.py::test_a_runner_package_the_venv_lacks_is_a_runtime_gap[ModuleNotFoundError:
+    No module named ''google.protobuf''-protobuf]'
+  - 'tests/test_missing_package_1008.py::test_a_runner_package_the_venv_lacks_is_a_runtime_gap[exit 1:
+    NameError: name ''BeautifulSoup'' is not defined-beautifulsoup4]'
+  - 'tests/test_missing_package_1008.py::test_a_runner_package_the_venv_lacks_is_a_runtime_gap[fox-snow:
+    exit 1: ModuleNotFoundError: No module named ''ftfy''-ftfy]'
+  - 'tests/test_missing_package_1008.py::test_a_runner_package_the_venv_lacks_is_a_runtime_gap[hf-task
+    venv lacks a package: No module named ''torchvision''-torchvision]'
+  - 'tests/test_missing_package_1008.py::test_a_runner_package_the_venv_lacks_is_a_runtime_gap[it ran
+    and passed nothing: fox-snow: exit 1: NameError: name ''ftfy'' is not defined; product-shot: exit
+    1: NameError: name ''ftfy'' is not defined-ftfy]'
+  - tests/test_missing_package_1008.py::test_coherence_re_decides_a_broken_screen_its_detail_now_calls_a_runtime_gap
+  - tests/test_missing_package_1008.py::test_the_package_until_is_met_once_that_venv_has_it
+  - tests/test_missing_package_1008.py::test_the_screen_declines_it_until_the_runner_venv_has_the_package
+  - tests/test_verdict_reasons.py::test_a_budget_still_exhausted_is_a_limit_a_bigger_budget_meets
+  - tests/test_verdict_reasons.py::test_a_failed_warm_up_becomes_every_cases_row_with_its_class
+  - tests/test_verdict_reasons.py::test_a_genuine_content_failure_is_declined_until_the_screen_draws_more
+  - tests/test_verdict_reasons.py::test_a_harness_class_outranks_a_content_failure_in_the_same_run
+  - tests/test_verdict_reasons.py::test_a_load_phrase_is_a_runtime_gap_only_from_the_runner_whose_phrase_it_is[failed
+    to load model]
+  - tests/test_verdict_reasons.py::test_a_load_phrase_is_a_runtime_gap_only_from_the_runner_whose_phrase_it_is[unsupported
+    model type foo]
+  - tests/test_verdict_reasons.py::test_a_measurement_does_not_change_the_exam
+  - tests/test_verdict_reasons.py::test_a_metal_gpu_timeout_declines_the_candidate_that_caused_it
+  - tests/test_verdict_reasons.py::test_a_refused_sampling_setting_is_the_harnesss
+  - tests/test_verdict_reasons.py::test_a_runner_class_decides_the_screen_verdict[backend_fault]
+  - tests/test_verdict_reasons.py::test_a_runner_class_decides_the_screen_verdict[content_failed]
+  - tests/test_verdict_reasons.py::test_a_runner_class_decides_the_screen_verdict[context_exceeded]
+  - tests/test_verdict_reasons.py::test_a_runner_class_decides_the_screen_verdict[crashed]
+  - tests/test_verdict_reasons.py::test_a_runner_class_decides_the_screen_verdict[degenerate]
+  - tests/test_verdict_reasons.py::test_a_runner_class_decides_the_screen_verdict[environment_error]
+  - tests/test_verdict_reasons.py::test_a_runner_class_decides_the_screen_verdict[gpu_fault]
+  - tests/test_verdict_reasons.py::test_a_runner_class_decides_the_screen_verdict[harness_error]
+  - tests/test_verdict_reasons.py::test_a_runner_class_decides_the_screen_verdict[invalid_patch]
+  - tests/test_verdict_reasons.py::test_a_runner_class_decides_the_screen_verdict[load_failed_file]
+  - tests/test_verdict_reasons.py::test_a_runner_class_decides_the_screen_verdict[load_failed_layout]
+  - tests/test_verdict_reasons.py::test_a_runner_class_decides_the_screen_verdict[load_failed_runtime]
+  - tests/test_verdict_reasons.py::test_a_runner_class_decides_the_screen_verdict[load_log_unread]
+  - tests/test_verdict_reasons.py::test_a_runner_class_decides_the_screen_verdict[missing_file_in_snapshot]
+  - tests/test_verdict_reasons.py::test_a_runner_class_decides_the_screen_verdict[missing_package]
+  - tests/test_verdict_reasons.py::test_a_runner_class_decides_the_screen_verdict[pool_full]
+  - tests/test_verdict_reasons.py::test_a_runner_class_decides_the_screen_verdict[refused_by_gateway]
+  - tests/test_verdict_reasons.py::test_a_runner_class_decides_the_screen_verdict[runaway]
+  - tests/test_verdict_reasons.py::test_a_runner_class_decides_the_screen_verdict[server_dead]
+  - tests/test_verdict_reasons.py::test_a_runner_class_decides_the_screen_verdict[short_copy]
+  - tests/test_verdict_reasons.py::test_a_runner_class_decides_the_screen_verdict[step_cap]
+  - tests/test_verdict_reasons.py::test_a_runner_class_decides_the_screen_verdict[timeout]
+  - tests/test_verdict_reasons.py::test_a_runner_class_decides_the_screen_verdict[token_budget_exhausted]
+  - tests/test_verdict_reasons.py::test_a_terminal_limit_or_runtime_verdict_says_what_reopens_it
+  - tests/test_verdict_reasons.py::test_a_thinking_model_gets_one_retry_with_thinking_off_in_a_screen
+  - tests/test_verdict_reasons.py::test_a_tts_model_that_loaded_and_misspoke_is_still_the_candidates
+  - tests/test_verdict_reasons.py::test_a_warm_up_that_finds_no_cached_snapshot_is_the_harnesss_never_broken
+  - tests/test_verdict_reasons.py::test_a_warm_up_that_times_out_is_a_limit_on_every_case
+  - tests/test_verdict_reasons.py::test_an_audio_server_that_cannot_load_the_model_waits_on_a_runner
+  - tests/test_verdict_reasons.py::test_decide_never_reads_its_condition_out_of_the_detail
+  - tests/test_verdict_reasons.py::test_decide_refuses_a_reason_outside_the_vocabulary
+  - tests/test_verdict_reasons.py::test_evals_run_warms_every_tier[False]
+  - tests/test_verdict_reasons.py::test_evals_run_warms_every_tier[True]
+  - tests/test_verdict_reasons.py::test_every_class_has_an_expected_verdict
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/__init__.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/adopt.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/arms.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/assertions.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/audio.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/audio_server.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/audit.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/authoring.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/availability.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/batch.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/benchmarks.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/binding.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/blame_audit.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/canary.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/candidates.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/ceiling.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/chaos.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/checks/__init__.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/checks/adherence.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/checks/base.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/checks/claims.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/checks/code.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/checks/decide.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/checks/html.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/checks/image.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/checks/music.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/checks/ocr.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/checks/pii.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/checks/render.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/checks/retrieval.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/checks/similarity.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/checks/speech.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/checks/svg.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/checks/video.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/claude_news.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/cli.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/clips.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/coherence.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/commands/__init__.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/commands/adopt.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/commands/availability.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/commands/benchmarks.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/commands/blame.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/commands/canary.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/commands/cases.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/commands/chaos.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/commands/claude_news.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/commands/coherence.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/commands/common.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/commands/context.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/commands/degenerate.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/commands/delegated.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/commands/discover.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/commands/funnel.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/commands/gateway.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/commands/gauntlet.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/commands/headless.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/commands/jobs.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/commands/judge.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/commands/lanes.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/commands/ledger.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/commands/load_log.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/commands/loop.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/commands/measure.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/commands/morning.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/commands/otel.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/commands/report.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/commands/reverify.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/commands/screen.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/commands/store.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/commands/usage.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/commands/volume.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/completion.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/contamination.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/context.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/context_report.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/covdiff.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/coverage.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/decider_score.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/degenerate.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/delegate.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/delegations.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/deploy_guard.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/discover.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/disk.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/dora.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/downloads.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/ds4.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/engines.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/env.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/exclusive.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/feeds.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/fetching.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/funnel.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/gateway.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/gateway_key.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/gateway_switch.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/gguf.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/github.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/headless.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/heartbeat.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/hf_task.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/holdout.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/howitworks.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/human.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/image_diffusers.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/inspect.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/intervals.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/judge.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/judge_server.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/knobs/__init__.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/knobs/adopt.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/knobs/agent.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/knobs/audio.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/knobs/base.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/knobs/binding.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/knobs/canary.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/knobs/cases.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/knobs/checks.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/knobs/claude_news.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/knobs/completion.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/knobs/deploy.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/knobs/feeds.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/knobs/headless.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/knobs/ledger.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/knobs/morning.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/knobs/neighbors.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/knobs/repo.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/knobs/runners.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/knobs/screen.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/knobs/serving.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/knobs/swebench.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/knobs/truncation.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/knobs/usage.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/knobs/watchdog.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/knobs/weights.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/label.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/label_server.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/lane_probe.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/lanes.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/lanprobe.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/lease.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/ledger.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/lexical_rank.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/live_audit.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/load_log.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/looks.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/loopback.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/machine.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/mcp_server.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/__init__.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/benchmarks.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/cards.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/connection.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/machines.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/__init__.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/columns.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/identity.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/legacy.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/prose.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/retractions.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v01.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v02.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v03.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v04.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v05.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v06.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v07.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v08.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v09.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v10.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v11.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v12.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v13.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v14.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v15.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v16.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v17.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v18.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v19.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v20.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v21.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v22.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v23.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v24.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v25.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v26.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v27.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v28.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v29.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v30.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v31.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v32.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v33.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v34.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v35.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v36.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v37.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v38.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v39.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v40.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v41.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v42.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v43.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v44.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v45.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v46.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v47.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v48.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v49.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v50.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v51.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v52.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v53.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v54.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v55.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v56.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v57.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v58.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v59.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v60.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v61.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v62.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v63.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v64.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v65.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v66.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v67.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v68.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v69.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v70.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v71.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v72.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v73.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v74.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v75.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v76.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/migrations/v77.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/proposals.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/retests.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/revisit.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/schema.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/sources.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/memory_store/transitions.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/methods.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/migration_check.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/mlx_server.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/models.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/morning.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/needle.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/neighbors.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/nimble_score.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/nodes.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/obtainable.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/otel.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/paired.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/papers.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/paths.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/pattern_pii.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/paused.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/power.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/pressure.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/privacy.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/probes.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/proc.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/publish.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/purpose.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/quants.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/ramp.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/rank.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/ratelimit.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/reasons.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/remote_code.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/repo.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/report.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/reverify.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/router.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/rubric_eval.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/runner_gaps.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/runs.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/screen.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/sensitivity.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/serving.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/site.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/stages.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/statusline.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/store.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/suite_time.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/sweep_guard.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/sweeps.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/throughput.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/torch_device.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/trends.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/usage.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/variants.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/vector.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/verify.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/video_cuda.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/vllm.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/volume.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/watchdog.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/winners.py]
+  - tests/test_verdict_reasons.py::test_every_production_verdict_says_why[harness/workqueue.py]
+  - tests/test_verdict_reasons.py::test_generation_thread_died_is_the_harnesss_and_stops_the_loop
+  - tests/test_verdict_reasons.py::test_no_decider_reads_a_phrase[evals/run.py]
+  - tests/test_verdict_reasons.py::test_no_decider_reads_a_phrase[harness/adopt.py]
+  - tests/test_verdict_reasons.py::test_no_decider_reads_a_phrase[harness/cli.py]
+  - tests/test_verdict_reasons.py::test_no_decider_reads_a_phrase[harness/commands/__init__.py]
+  - tests/test_verdict_reasons.py::test_no_decider_reads_a_phrase[harness/commands/adopt.py]
+  - tests/test_verdict_reasons.py::test_no_decider_reads_a_phrase[harness/commands/availability.py]
+  - tests/test_verdict_reasons.py::test_no_decider_reads_a_phrase[harness/commands/benchmarks.py]
+  - tests/test_verdict_reasons.py::test_no_decider_reads_a_phrase[harness/commands/blame.py]
+  - tests/test_verdict_reasons.py::test_no_decider_reads_a_phrase[harness/commands/canary.py]
+  - tests/test_verdict_reasons.py::test_no_decider_reads_a_phrase[harness/commands/cases.py]
+  - tests/test_verdict_reasons.py::test_no_decider_reads_a_phrase[harness/commands/chaos.py]
+  - tests/test_verdict_reasons.py::test_no_decider_reads_a_phrase[harness/commands/claude_news.py]
+  - tests/test_verdict_reasons.py::test_no_decider_reads_a_phrase[harness/commands/coherence.py]
+  - tests/test_verdict_reasons.py::test_no_decider_reads_a_phrase[harness/commands/common.py]
+  - tests/test_verdict_reasons.py::test_no_decider_reads_a_phrase[harness/commands/context.py]
+  - tests/test_verdict_reasons.py::test_no_decider_reads_a_phrase[harness/commands/degenerate.py]
+  - tests/test_verdict_reasons.py::test_no_decider_reads_a_phrase[harness/commands/delegated.py]
+  - tests/test_verdict_reasons.py::test_no_decider_reads_a_phrase[harness/commands/discover.py]
+  - tests/test_verdict_reasons.py::test_no_decider_reads_a_phrase[harness/commands/funnel.py]
+  - tests/test_verdict_reasons.py::test_no_decider_reads_a_phrase[harness/commands/gateway.py]
+  - tests/test_verdict_reasons.py::test_no_decider_reads_a_phrase[harness/commands/gauntlet.py]
+  - tests/test_verdict_reasons.py::test_no_decider_reads_a_phrase[harness/commands/headless.py]
+  - tests/test_verdict_reasons.py::test_no_decider_reads_a_phrase[harness/commands/jobs.py]
+  - tests/test_verdict_reasons.py::test_no_decider_reads_a_phrase[harness/commands/judge.py]
+  - tests/test_verdict_reasons.py::test_no_decider_reads_a_phrase[harness/commands/lanes.py]
+  - tests/test_verdict_reasons.py::test_no_decider_reads_a_phrase[harness/commands/ledger.py]
+  - tests/test_verdict_reasons.py::test_no_decider_reads_a_phrase[harness/commands/load_log.py]
+  - tests/test_verdict_reasons.py::test_no_decider_reads_a_phrase[harness/commands/loop.py]
+  - tests/test_verdict_reasons.py::test_no_decider_reads_a_phrase[harness/commands/measure.py]
+  - tests/test_verdict_reasons.py::test_no_decider_reads_a_phrase[harness/commands/morning.py]
+  - tests/test_verdict_reasons.py::test_no_decider_reads_a_phrase[harness/commands/otel.py]
+  - tests/test_verdict_reasons.py::test_no_decider_reads_a_phrase[harness/commands/report.py]
+  - tests/test_verdict_reasons.py::test_no_decider_reads_a_phrase[harness/commands/reverify.py]
+  - tests/test_verdict_reasons.py::test_no_decider_reads_a_phrase[harness/commands/screen.py]
+  - tests/test_verdict_reasons.py::test_no_decider_reads_a_phrase[harness/commands/store.py]
+  - tests/test_verdict_reasons.py::test_no_decider_reads_a_phrase[harness/commands/usage.py]
+  - tests/test_verdict_reasons.py::test_no_decider_reads_a_phrase[harness/commands/volume.py]
+  - tests/test_verdict_reasons.py::test_no_decider_reads_a_phrase[harness/fetching.py]
+  - tests/test_verdict_reasons.py::test_no_decider_reads_a_phrase[harness/screen.py]
+  - tests/test_verdict_reasons.py::test_the_backfill_classifies_every_old_row_and_reopens_only_ours
+  - tests/test_verdict_reasons.py::test_the_phrase_guard_fires_on_a_phrase
+  - tests/test_verdict_reasons.py::test_the_screen_warms_untimed_so_a_cold_load_is_not_the_case_timeout
+  - tests/test_verdict_reasons.py::test_the_writer_guard_sees_the_writers
+  - tests/test_verdict_reasons.py::test_upstream_text_is_classified_at_the_runner_boundary_and_one_stderr_read
+  pass_to_pass: []
+attribution:
+  dataset: Claude Code session requests, redacted
+  url: https://github.com/unxmaal/SoHoT/issues/1095
+  license: generated
+  source: claude-code:transcripts
+  revision: c98bcc30faf7a9d89f885053f9575137956ce2e8
+  item: 'sohot PR #1014'
+  date: '2026-10-19'
+  transform: 'a Claude Code session from the person''s request to just before the agent''s first edit
+    of a file the fix changes (evals/session_cut.py: user turns, assistant text, tool calls, reads and
+    searches kept, large outputs dropped, to a byte budget), redacted by evals/redact.py (secrets, ids,
+    emails, home and volume paths, hosts, IPs, pasted chat, handles, account and person names as typed
+    placeholders) and refused if a fix line or a name-like word is left; linked to the merged commit through
+    a commit hash or PR URL printed by a tool in that request or a Claude-Session trailer; since #1138
+    the subagent that printed it is the stream cut, `gh issue view` of the repo is kept whole, and a cut
+    whose user turns and issue views never name the fix''s issue is dropped; base = fix^; fail_to_pass
+    and pass_to_pass from 2 sandboxed pytest runs per side, as evals/importers/history.py'
+  importer: evals.importers.transcripts
+  session: 893fd0505f5eef9e
+  evidence: pr
+  redactions:
+    account: 1
+    id: 1
+    path: 3
+    secret: 1
+    session: 1

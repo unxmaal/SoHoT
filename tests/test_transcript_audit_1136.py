@@ -34,7 +34,7 @@ def test_a_session_case_shows_its_interface_then_its_stated_change_after_the_quo
 
 @pytest.mark.gauntlet("a-closed-table-fronting-an-open-set", site="evals/importers/transcripts.py:CONTEXT")
 def test_no_retired_case_is_committed_and_every_repair_names_a_committed_case():
-    assert len(COMMITTED) == 11 and not set(tr.RETIRED) & set(COMMITTED)
+    assert len(COMMITTED) == 14 and not (set(tr.RETIRED) | set(tr.EXCLUDED)) & set(COMMITTED)
     assert set(tr.STATED) <= set(COMMITTED) and set(tr.CONTEXT) <= set(COMMITTED)
     for cid, text in tr.STATED.items():
         assert COMMITTED[cid].params["stated"] == text

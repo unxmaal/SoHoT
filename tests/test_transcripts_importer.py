@@ -225,7 +225,7 @@ def test_a_subagent_that_makes_the_first_edit_is_the_cut_and_opens_with_the_requ
     assert FIX_LINE.strip() not in prompt
 
 
-def test_a_request_resolved_in_two_merged_tasks_gives_both(world):
+def test_a_request_resolved_in_two_merged_tasks_drops_the_one_whose_cut_heads_toward_the_other(world):
     w = world["repo"]
     other = _commit(w, {"pkg/mod.py": "def f():\n    return 3\n",
                         "tests/test_mod.py": "from pkg.mod import f\ndef test_f():\n    assert f() == 3\n"},
@@ -234,7 +234,8 @@ def test_a_request_resolved_in_two_merged_tasks_gives_both(world):
     recs[-1:-1] = _bash("git commit -m y", f"[main {other[:8]}] y", T0 + 610, "p1", 9)
     _write(world["main"], recs)
     got = _survey(world, run=False)
-    assert len(got["pending"]) == 2 and got["projects"]["widget"]["dropped"] == {}
+    assert [p["fix"] for p in got["pending"]] == [world["squash"]]
+    assert got["projects"]["widget"]["dropped"] == {"mismatch": 1}
 
 
 def test_a_private_repo_is_never_a_case(world):
@@ -502,3 +503,38 @@ def test_the_mismatch_screen_drops_every_case_1136_retired_as_one_and_keeps_name
     for tid, issues in {"sohot-pr1081-request": [1079, 1080], "sohot-pr1101-request": [1099],
                         "sohot-pr1003-request": [1002], "mcm-engine-pr162-request": [156]}.items():
         assert session_cut.on_task(rows[tid]["prompt"], issues, files(rows[tid])), tid
+
+
+def test_a_second_fix_from_one_subagent_whose_first_is_already_at_its_base_is_a_mismatch(world):
+    _two_tasks(world, fixed_by_sub=True)
+    w = world["repo"]
+    later = _commit(w, {"pkg/mod.py": 'def f():\n    return "the widget answer is four by now"\n',
+                        "tests/test_mod.py": "from pkg.mod import f\ndef test_f():\n    assert 'four' in f()\n"},
+                    "Follow up on f (#6) (#8)", T0 + 900)
+    world["index"]["prs"][8] = ("MERGED", later)
+    sub = world["main"].parent / "s1" / "subagents" / "agent-2.jsonl"
+    recs = [json.loads(line) for line in sub.read_text(encoding="utf-8").splitlines()]
+    recs += _bash("gh pr create --fill", "https://github.com/acme/widget/pull/8", T0 + 800, None, 63)
+    _write(sub, recs)
+    got = _survey(world, run=False)
+    assert [p["id"] for p in got["pending"]] == ["widget-pr7-request"]
+    assert got["projects"]["widget"]["dropped"] == {"mismatch": 1}
+
+
+def test_a_second_fix_from_one_subagent_cut_after_its_first_landed_is_kept(world):
+    _two_tasks(world, fixed_by_sub=True)
+    w = world["repo"]
+    _commit(w, {"pkg/other.py": "def g():\n    return 0\n"}, "add g", T0 + 850)
+    later = _commit(w, {"pkg/other.py": "def g():\n    return 'g is one now and says so'\n",
+                        "tests/test_other.py": "from pkg.other import g\ndef test_g():\n    assert g()\n"},
+                    "Give g a value (#6) (#8)", T0 + 900)
+    world["index"]["prs"][8] = ("MERGED", later)
+    sub = world["main"].parent / "s1" / "subagents" / "agent-2.jsonl"
+    recs = [json.loads(line) for line in sub.read_text(encoding="utf-8").splitlines()]
+    other = str(w / "pkg" / "other.py")
+    recs += [*_tool("Read", {"file_path": other}, "def g():\n    return 0\n", T0 + 860, None, 64),
+             *_tool("Edit", {"file_path": other, "old_string": "0", "new_string": "1"}, "ok", T0 + 870, None, 65),
+             *_bash("gh pr create --fill", "https://github.com/acme/widget/pull/8", T0 + 880, None, 66)]
+    _write(sub, recs)
+    got = _survey(world, run=False)
+    assert sorted(p["id"] for p in got["pending"]) == ["widget-pr7-request", "widget-pr8-request"]
