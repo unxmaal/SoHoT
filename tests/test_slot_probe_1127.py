@@ -11,11 +11,23 @@ import pytest
 from harness import loopback, slot_probe
 
 
+def _eof(sock) -> bool:
+    """The client closed: its socket reads as EOF, whatever a write to it would say on this OS."""
+    try:
+        ready, _, _ = select.select([sock], [], [], 0)
+        return bool(ready) and sock.recv(1, socket.MSG_PEEK) == b""
+    except (OSError, ValueError):
+        return True
+
+
 class Fake:
     """A gateway and router in one, streaming tokens; `frees` says whether a closed stream stops the generation."""
 
-    def __init__(self, frees: bool, slots_shape: str = "is_processing", invisible: bool = False):
-        self.frees, self.shape, self.busy, self.invisible = frees, slots_shape, False, invisible
+    def __init__(self, frees: bool, slots_shape: str = "is_processing", invisible: bool = False, late: bool = False):
+        self.frees, self.shape, self.busy, self.invisible, self.stream = frees, slots_shape, False, invisible, None
+        self.shown, self.read_idle = threading.Event(), threading.Event()
+        if not late:
+            self.shown.set()
         fake = self
 
         class H(http.server.BaseHTTPRequestHandler):
@@ -24,8 +36,11 @@ class Fake:
 
             def do_GET(self):
                 if self.path.startswith("/slots"):
-                    slot = ({"id": 0, "is_processing": fake.busy} if fake.shape == "is_processing"
-                            else {"id": 0, "state": int(fake.busy)} if fake.shape == "state" else {"id": 0})
+                    busy = fake.decoding()
+                    if not busy:
+                        fake.read_idle.set()
+                    slot = ({"id": 0, "is_processing": busy} if fake.shape == "is_processing"
+                            else {"id": 0, "state": int(busy)} if fake.shape == "state" else {"id": 0})
                     body = json.dumps([slot]).encode()
                 else:
                     body = b"{}"
@@ -35,14 +50,9 @@ class Fake:
                 self.end_headers()
                 self.wfile.write(body)
 
-            def _gone(self) -> bool:
-                """The client closed: its socket reads as EOF, whatever a write to it would say on this OS."""
-                ready, _, _ = select.select([self.connection], [], [], 0)
-                return bool(ready) and self.connection.recv(1, socket.MSG_PEEK) == b""
-
             def do_POST(self):
                 asked = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
-                fake.busy = not fake.invisible
+                fake.stream, fake.busy = self.connection, not fake.invisible
                 try:
                     self.send_response(200)
                     self.send_header("Content-Type", "text/event-stream")
@@ -52,7 +62,7 @@ class Fake:
                         self.wfile.write(f"data: {json.dumps(chunk)}\n\n".encode())
                         self.wfile.flush()
                         time.sleep(0.01)
-                        if self._gone():
+                        if _eof(self.connection):
                             raise ConnectionResetError
                 except OSError:
                     if not fake.frees:
@@ -64,6 +74,11 @@ class Fake:
         self.server.daemon_threads = True
         self.url = f"http://127.0.0.1:{self.server.server_address[1]}"
         threading.Thread(target=self.server.serve_forever, daemon=True).start()
+
+    def decoding(self) -> bool:
+        """Read at the moment /slots is asked, so a slot that frees on close is idle exactly once the client closed."""
+        stream = self.stream
+        return self.busy and self.shown.is_set() and not (self.frees and stream is not None and _eof(stream))
 
     def close(self):
         self.server.shutdown()
@@ -125,5 +140,17 @@ def test_idle_reads_each_slot():
 
 def test_a_slot_the_router_never_shows_busy_proves_nothing(fake):
     f = fake(frees=True, invisible=True)
-    ok, line = slot_probe.probe(f.url, f.url, "tiny", max_tokens=2000, settle_s=1.0)
+    ok, line = slot_probe.probe(f.url, f.url, "tiny", max_tokens=2000, settle_s=1.0, busy_wait_s=0.5)
     assert not ok and "proves nothing" in line
+
+
+def test_a_slot_shown_busy_late_is_waited_for_with_the_stream_open(fake):
+    f = fake(frees=True, late=True)
+    out = []
+    t = threading.Thread(target=lambda: out.append(
+        slot_probe.probe(f.url, f.url, "tiny", max_tokens=6000, settle_s=3.0, busy_wait_s=30.0)))
+    t.start()
+    assert f.read_idle.wait(30), "the probe never asked /slots"
+    f.shown.set()
+    t.join(60)
+    assert out and out[0][0], out
