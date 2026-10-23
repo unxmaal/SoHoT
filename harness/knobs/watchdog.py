@@ -53,6 +53,8 @@ KNOBS = [
 ]
 
 NOT_GATING = {
+    "harness/workqueue.py:WATCH_S": "how soon a worker with jobs running sees a job it may start beside them; "
+                                    "it decides when, never whether (#1153)",
     "harness/workqueue.py:at_clock->timedelta(days)": "one calendar day: a clock time already past today means tomorrow (#900)",
     "harness/workqueue.py:night_start->timedelta(days)": "one calendar day: the night window's edges on yesterday, today "
                                                          "and tomorrow (#900)",

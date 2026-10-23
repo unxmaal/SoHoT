@@ -11,6 +11,7 @@ import re
 import signal
 import subprocess
 import sys
+import threading
 import time
 from contextlib import contextmanager
 from pathlib import Path
@@ -19,6 +20,10 @@ from harness import exclusive, paths
 
 PENDING, RUNNING, DONE, FAILED = "pending", "running", "done", "failed"
 CANCELLED = "cancelled"
+#: The lock class a job waits for before the worker starts it. #1153.
+GPU, CLOUD = "gpu", "cloud"
+#: How often a worker with jobs running looks for one it can start beside them. #1153.
+WATCH_S = 5.0
 #: How long a cancelled job's process group gets to exit before it is killed. #628.
 CANCEL_GRACE_S = 30.0
 
@@ -272,12 +277,18 @@ def _claimed(c) -> tuple[str, tuple]:
     return "machine_id = ?", (mid,)
 
 
-def current(conn=None) -> dict | None:
-    """The job this machine's worker is running, or None. #588."""
+def running_here(conn=None) -> list[dict]:
+    """Every job this machine's worker is running, oldest first. #1153."""
     with _store(conn) as c:
         where, args = _claimed(c)
-        got = _select(c, f"WHERE state = ? AND {where}", (RUNNING, *args))
-    return got[-1] if got else None
+        return _select(c, f"WHERE state = ? AND {where}", (RUNNING, *args))
+
+
+def current(conn=None) -> dict | None:
+    """The job this machine's worker is running, the GPU one when cloud evals run beside it, or None. #588, #1153."""
+    got = running_here(conn)
+    gpu = [j for j in got if needs(j) == GPU]
+    return (gpu or got or [None])[-1]
 
 
 def durations(title: str, conn=None, anywhere: bool = False) -> list[float]:
@@ -587,22 +598,75 @@ def _recover() -> None:
         c.commit()
 
 
-def run_pending(popen=None, gate=lambda: (True, ""), clock=time.time) -> list[dict]:
-    """Work the queue in order while the gate stays open. One runner at a time."""
+def needs(job: dict) -> str:
+    """The lock class a job waits for: CLOUD for an eval evals.run would run in a cloud slot, else GPU. #1153."""
+    try:
+        from evals import run
+        kind = run.argv_lock_kind(job.get("argv") or [])
+    except Exception:  # noqa: BLE001 - a job the rule cannot read waits for the GPU, as every job did before
+        return GPU
+    return CLOUD if kind in exclusive.CLOUD else GPU
+
+
+def _free(cls: str, live: dict) -> bool:
+    """Whether a job of this class may start beside the jobs in `live` (thread -> (class, id)). #1153."""
+    mine = sum(1 for c, _ in live.values() if c == cls)
+    if cls == GPU:
+        return mine == 0
+    slots = max(1, int(exclusive.CLOUD_SLOTS))
+    taken = sum(exclusive._taken(exclusive.cloud_lock_path(i)) for i in range(slots))
+    return max(mine, taken) < slots
+
+
+def _startable(live: dict, now: float) -> tuple[dict, str] | None:
+    """The first ready job, in run order, whose lock class is free. #1153."""
+    started = {i for _, i in live.values()}
+    for job in ready(now=now):
+        if job["id"] in started:
+            continue
+        cls = needs(job)
+        if _free(cls, live):
+            return job, cls
+    return None
+
+
+def run_pending(popen=None, gate=lambda: (True, ""), clock=time.time, watch: float = WATCH_S) -> list[dict]:
+    """Work the queue while the gate stays open: one GPU job, and cloud evals beside it in free cloud slots. #1153."""
     fd = _runner_lock()
     if fd is None:
         return []
-    done = []
+    done, errors, live = [], [], {}
+    finished = threading.Event()
+
+    def work(job):
+        try:
+            ran = run_one(job, popen=popen)
+            if ran is not None:
+                done.append(ran)
+        except BaseException as exc:  # noqa: BLE001 - raised again once the other jobs finish
+            errors.append(exc)
+        finally:
+            finished.set()
+
     try:
         _recover()
         while True:
-            nxt = next(iter(ready(now=clock())), None)
-            if nxt is None or not gate()[0]:
+            finished.clear()
+            live = {t: c for t, c in live.items() if t.is_alive()}
+            nxt = None if errors else _startable(live, clock())
+            if nxt is not None and gate()[0]:
+                t = threading.Thread(target=work, args=(nxt[0],), name=f"job-{nxt[0]['id']}")
+                live[t] = (nxt[1], nxt[0]["id"])
+                t.start()
+                continue
+            if not live:
+                if errors:
+                    raise errors[0]
                 return done
-            ran = run_one(nxt, popen=popen)
-            if ran is not None:
-                done.append(ran)
+            finished.wait(watch)
     finally:
+        for t in live:
+            t.join()
         exclusive._release(fd)
         os.close(fd)
 

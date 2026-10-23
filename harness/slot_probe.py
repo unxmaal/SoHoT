@@ -42,14 +42,14 @@ def _timeout() -> float:
 
 
 def busy_text(conn=None) -> str:
-    """The argv of the work-queue job running here, which names the models the probe must leave alone."""
+    """The argv of each work-queue job running here, which names the models the probe must leave alone. #1153."""
     from harness import workqueue as wq
     try:
-        job = wq.current(conn)
+        jobs = wq.running_here(conn)
     except Exception:  # noqa: BLE001 - a store that cannot say leaves nothing marked busy
         return ""
-    argv = (job or {}).get("argv") or ""
-    return argv if isinstance(argv, str) else json.dumps(argv)
+    argvs = [j.get("argv") or "" for j in jobs]
+    return "\n".join(a if isinstance(a, str) else json.dumps(a) for a in argvs)
 
 
 def pick(models: list[dict], busy: str = "") -> str:

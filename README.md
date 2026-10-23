@@ -2574,7 +2574,9 @@ code, or the error) however the loop ends. `soh jobs list`, `soh report` and the
 local report page print it. A heartbeat with no progress for three hours, or
 whose process is gone, reads as stalled rather than running.
 
-The `worker` service runs them in order, one at a time. It does not hold the
+The `worker` service runs them in order, one at a time, except that an eval
+whose every candidate is hosted (the rule `evals.run` uses for its cloud slot)
+starts beside a running job while a cloud slot is free. It does not hold the
 machine lock below for a whole job: each command takes it for the part that
 loads a model, so a job that is downloading does not block a GPU run. It starts
 the next one whenever the queue is not paused and macOS memory pressure is
