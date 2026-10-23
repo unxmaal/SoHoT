@@ -1,0 +1,297 @@
+# Claude Code session requests, redacted, generated (https://github.com/unxmaal/SoHoT/issues/1095).
+# Imported by evals/importers from claude-code:transcripts@c98bcc30faf7a9d89f885053f9575137956ce2e8; re-import, do not edit.
+id: sohot-pr1028-request
+modality: repo
+prompt: "Below is a Claude Code session, cut just before the agent's first edit to the code. Make the\
+  \ change the session is heading toward.\n\n## user\nApply the deeper skill to the reply budget sweep\
+  \ question\n\n## user\nImplement SoHoT issue #1024 (the package:mlx-whisper until can never be met because\
+  \ the loop never runs with the uv whisper group). Read it with gh issue view 1024. Worktree ~/projects/github/unxmaal/sohot-1024.\
+  \ Rebase on PR #1023 (#1021) once it merges; it introduced the package:mlx-whisper until. Wait for it\
+  \ if it hasn't merged.\n\nAnother agent is on #1018 (hf-task dtype, harness/torch_device.py and the\
+  \ hf-task runner); stay out of those. You may run one whisper-large-v3-mlx stt screen on a few clips\
+  \ from your worktree to verify, under 10 minutes.\n\nSession URL: https://claude.ai/code/<SESSION_1>\n\
+  \n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot && git fetch origin -q && gh issue view 1024 &&\
+  \ gh pr view 1023 --json state,mergedAt,title,headRefName\nok fetched\n{\"author\":{\"id\":\"<SECRET_1>=\"\
+  ,\"is_bot\":false,\"login\":\"unxmaal\",\"name\":\"\"},\"body\":\"## Problem\\nAfter #1021 (PR #1023),\
+  \ whisper repos the stt server cannot serve are declined/runtime until `package:mlx-whisper`. The deploy\
+  \ venv never has mlx-whisper:\\n```\\n~/localharness/deploy/.venv/bin/python -c \\\"import mlx_whisper\\\
+  \"   # ModuleNotFoundError\\n```\\npyproject.toml keeps it in a separate uv group, `whisper` (it pulls\
+  \ torch), and only a hand-run `uv run --group whisper python -m evals.run ... backend=whisper` reaches\
+  \ it. The loop's screen and measure run without the group, so the until is never met and whisper candidates\
+  \ (mlx-community/whisper-large-v3-mlx today) wait forever. It is the same class as #1008: an until that\
+  \ names a package nobody installs.\\n\\n## Fix\\nOne of:\\n- the stt screen/measure for a `backend=whisper`\
+  \ spec runs its evals.run under `uv run --group whisper` (the group's own env), and `until_met` for\
+  \ `package:mlx-whisper` checks that env; or\\n- the deploy syncs the whisper group, if torch in the\
+  \ main venv is acceptable (check its size, and that the mlx-audio server is unaffected).\\n\\nPlus a\
+  \ check: every `package:<x>` until written by the harness names a package that some deploy step installs\
+  \ (audit inventory, one row per unreachable package).\\n\\n## Acceptance\\n- A fixture: whisper-large-v3-mlx\
+  \ at screen runs through the whisper runner in the group's env (or is reported with the env that is\
+  \ missing).\\n- The audit lists no `package:` until that no deploy step can satisfy.\\n\\n## Runs at\\\
+  nDay, Mac.\\n\\n## Prior art checked\\n#1008/#1014 (package untils, diffusers-venv), #1021/#1023, RULE\
+  \ #188 (whisper in-process via mlx-whisper), pyproject.toml whisper group.\\n\",\"number\":1024,\"state\"\
+  :\"OPEN\",\"title\":\"package:mlx-whisper until can never be met: the loop never runs with the whisper\
+  \ group\",\"url\":\"https://github.com/unxmaal/SoHoT/issues/1024\"}\n{\"headRefName\":\"screen-blame-1021\"\
+  ,\"mergedAt\":null,\"state\":\"OPEN\",\"title\":\"Live screen: a llama-server load failure and mlx-audio's\
+  \ whisper gap are runtime, not the candidate; no churn verdicts from neighbor sightings (#1021)\"}\n\
+  \n[... 22 earlier entries not shown ...]\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1024\
+  \ && grep -n 'GAP_KEYS' harness/memory_store/revisit.py | head -3; sed -n 270,330p harness/commands/screen.py;\
+  \ grep -n 'def candidate_for' -A40 harness/screen.py | head -60\n392:GAP_KEYS = (\"version\", \"runner\"\
+  , \"format\", \"policy\")\n428:        if until.partition(\":\")[0] not in GAP_KEYS or until.startswith(\"\
+  version:llama.cpp\") \\\n            print(f\"\\n── {r['name']}\", flush=True)\n            # Weights\
+  \ an offline load cannot open go back to fetch, never to a verdict. #799.\n            gap = snapshot_gap(r,\
+  \ store)\n            if gap:\n                print(f\"   QUEUED: {gap}; back to fetch\")\n       \
+  \         ms.decide_or_skip(store, r[\"name\"], \"queued\", tier=ms.FETCH,\n                       \
+  \           detail=f\"not screened: {gap}; soh fetch --run\"[:600],\n                              \
+  \    reason=reasons.HARNESS)\n                continue\n            # Headroom, including what is already\
+  \ resident. #284.\n            room, why_not = memory.check_model(r[\"name\"], spec=r[\"candidate\"\
+  ], parallel=1)\n            if not room:\n                # A memory deferral screens nothing, so it\
+  \ does not spend a slot. #910.\n                print(f\"   QUEUED: {why_not}\")\n                streak,\
+  \ need = memory_deferrals(store, r[\"name\"])\n                got = _NEEDS.search(why_not)\n      \
+  \          if streak >= MEMORY_DEFERRALS and got and got.group(1) == need:\n                    print(f\"\
+  \   deferred {streak} times for {need} GB; left queued \"\n                          f\"and out of the\
+  \ fetch's wait\")\n                    continue\n                ms.decide_or_skip(store, r[\"name\"\
+  ], \"queued\", tier=ms.SCREEN,\n                                  detail=f\"not screened:\n[... 4985\
+  \ more bytes]\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1024 && grep -n 'GAP_KEYS' -r harness\
+  \ | head; grep -n '\"candidate\"\\]\\? *=\\|\"candidate\":' harness/screen.py harness/commands/screen.py\
+  \ | head; git show origin/screen-blame-1021:harness/screen.py | grep -n 'whisper' \nharness/memory_store/revisit.py:392:GAP_KEYS\
+  \ = (\"version\", \"runner\", \"format\", \"policy\")\nharness/memory_store/revisit.py:428:        if\
+  \ until.partition(\":\")[0] not in GAP_KEYS or until.startswith(\"version:llama.cpp\") \\\nharness/screen.py:417:\
+  \        out.append({**row, \"state\": state, \"why_not\": why, \"candidate\": spec,\n270:        if\
+  \ runner_gaps.whisper_in_process(model, card):\n271:            # mlx-audio's server cannot load the\
+  \ mlx whisper repos; mlx-whisper runs them here (RULE #188). #1021.\n272:            return f\"stt:{model},backend=whisper\"\
+  \n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1024 && sed -n 340,420p harness/screen.py; git\
+  \ show origin/screen-blame-1021:harness/screen.py | sed -n 255,285p\ndef runner_gap(lane: str, model:\
+  \ str, attaches_to: str = \"\",\n               conn=None, card=None) -> str:\n    \"\"\"Why no runner\
+  \ here takes this candidate, or \"\". `no_runner` asks of a\n    spec; this also answers for an adapter\
+  \ no engine is known to load. #467.\"\"\"\n    spec = candidate_for(lane, model, attaches_to, conn=conn,\
+  \ card=card)\n    from harness import ds4\n    if spec.startswith(ds4.PREFIX):\n        if lanes.canonical(lane)\
+  \ in ds4.NOT_SERVED:\n            return ds4.NOT_SERVED[lanes.canonical(lane)]\n        try:\n     \
+  \       ds4.parse(spec)\n        except ValueError as exc:\n            return str(exc)\n        return\
+  \ case_gap(lane, spec)\n    if spec:\n        from harness import engines\n        if card is None and\
+  \ conn is not None:\n            from harness import memory_store as ms\n            card = ms.card_of(conn,\
+  \ model)\n        library = str((card or {}).get(\"library\") or (card or {}).get(\"library_name\")\
+  \ or \"\").strip().lower()\n        if library in FOREIGN_LIBRARIES:\n            return f\"needs its\
+  \ own runner: its card names the {library} library, {FOREIGN_LIBRARIES[library]}\"\n        return no_runner(spec)\
+  \ or case_gap(lane, spec) or engines.card_gap(spec, card)\n    if attaches_to and takes_attachment(lane,\
+  \ attaches_to):\n        from harness import engines\n        return (f\"no {lanes.canonical(lane)}\
+  \ engine is known to load this \"\n                f\"{attaches_to}: its name, base model, library and\
+  \ tags name \"\n                f\"none of {',\n[... 3884 more bytes]\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1024\
+  \ && grep -rn '\"evals.run\"' harness evals | grep -v test | head; grep -n '_argv(' harness/commands/measure.py;\
+  \ grep -n 'whisper' -r harness evals --include=*.py | grep -v '^harness/runner_gaps' | head -30\nharness/screen.py:503:\
+  \    out = [sys.executable or \"python\", \"-m\", \"evals.run\",\nharness/reverify.py:228:    out =\
+  \ [\"uv\", \"run\", \"python\", \"-m\", \"evals.run\", \"--modality\", item[\"lane\"],\nharness/verify.py:101:\
+  \            task.argv = [\"uv\", \"run\", \"python\", \"-m\", \"evals.run\",\nharness/commands/measure.py:532:\
+  \    argv = [\"uv\", \"run\", \"python\", \"-m\", \"evals.run\", \"--modality\", lane,\nevals/analysis/repo_failures.py:52:RUN\
+  \ = [\"uv\", \"run\", \"python\", \"-m\", \"evals.run\", \"--modality\", \"repo\", \"--repeat\", \"\
+  1\", \"--split\", \"all\"]\nevals/run.py:981:    ap = argparse.ArgumentParser(prog=\"evals.run\")\n\
+  249:        argv = _argv(lane, plan, out, inc_spec, spec, resume=bool(held))\n530:def _argv(lane: str,\
+  \ plan, out, inc_spec: str, spec: str, resume: bool = False) -> list[str]:\n(eval):1: no matches found:\
+  \ --include=*.py\n\n## tool mcp__mcm-engine__search\n{\"query\": \"transcribe_whisper\"}\n[4585 bytes\
+  \ of output not shown]\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot && gh pr view 1023 --json\
+  \ state,statusCheckRollup --jq '.state, [.statusCheckRollup[]|.name+\":\"+.status+\":\"+.conclusion]';\
+  \ cd ~/projects/github/unxmaal/sohot-1024; grep -n 'whisper\\|backend' evals/runners/transcription.py\
+  \ | head -20; grep -n 'def transcribe_whisper' -A25 harness/audio.py | head -35\nOPEN\n[\"check-macos:IN_PROGRESS:\"\
+  ,\"check-linux:COMPLETED:SKIPPED\",\"check-windows:COMPLETED:SKIPPED\",\"mutation:COMPLETED:SKIPPED\"\
+  ]\n14:-- mlx_audio demands a HuggingFace processor, and the mlx whisper repos ship\n29:            \
+  \     backend: str = \"server\", language: str = \"\"):\n33:        self.backend = backend\n35:    \
+  \    # Raises on an unknown backend, here rather than on the first of forty\n38:            backend=backend,\
+  \ model=model, language=language,\n56:        # The whisper backend does hold it in this process, but\
+  \ what is\n440:def transcribe_whisper(path: str | Path,\n441-                       model: str = DEFAULT_WHISPER_MODEL,\n\
+  442-                       language: str = \"\") -> str:\n443-    \"\"\"Transcribe in-process with mlx_whisper.\
+  \ Returns the text, stripped.\n444-\n445-    Bypasses the audio server entirely, so it costs a model\
+  \ load per process\n446-    rather than per request. That is the right trade for an eval, which runs\n\
+  447-    one process over a whole corpus, and the wrong one for a chat loop.\n448-\n449-    `language`\
+  \ pins the decode. Whisper auto-detects when it is empty, which is\n450-    fine on a paragraph and\
+  \ unreliable on a five-second clip -- and a French\n451-    corpus scored as English produces a WER\
+  \ near 1.0 that looks like a bad TTS\n452-    model rather than a misconfigured ear.\n453-    \"\"\"\
+  \n454-    path = Path(path)\n455-    if not path.exists():\n456-        # A three gigabyte load is a\
+  \ slow way to learn the path was wrong.\n457-        raise AudioError(f\"no\n[... 773 more bytes]\n\n\
+  ## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1024 && grep -n 'FTFY\\|TRANSFORMERS_PIN\\|TORCH_MPS_PIN\\\
+  |SENTENCE' scripts/versions.sh; sed -n 1,40p pyproject.toml; grep -n 'build-system' -A3 pyproject.toml;\
+  \ grep -n '^name = \"packaging\"' uv.lock; grep -n 'default-groups\\|\\[tool.uv' pyproject.toml\nExit\
+  \ code 1\n60:TORCH_MPS_PIN=\"torch==2.6.0\"\n65:TRANSFORMERS_PIN=\"transformers==5.17.0\"\n70:SENTENCEPIECE_PIN=\"\
+  sentencepiece==0.2.2\"\n72:FTFY_PIN=\"ftfy==6.3.1\"\n75:SENTENCE_TRANSFORMERS_PIN=\"sentence-transformers==6.1.0\"\
+  \n[project]\nname = \"localharness\"\nversion = \"0.1.0\"\ndescription = \"Local LLM serving + evaluation\
+  \ harness\"\nrequires-python = \">=3.11,<3.14\"\ndependencies = [\n    \"mlx-lm>=0.32.0; sys_platform\
+  \ == 'darwin'\",\n    \"httpx>=0.27\",\n    \"pyyaml>=6\",\n    \"pillow>=10\",\n    \"jiwer>=4.0.0\"\
+  ,\n    \"num2words>=0.5.14\",\n    \"pyobjc-framework-vision>=12.2.2; sys_platform == 'darwin'\",\n\
+  \    # The same lane's Windows implementation. Both ship with their OS; this is\n    # only the binding\
+  \ to it. See harness/checks/ocr.py.\n    # Bounded to the Pythons winsdk publishes wheels for, which\
+  \ stop at cp312.\n    # Unbounded, uv resolves 3.13 on a Windows box with nothing pinned, finds\n  \
+  \  # no wheel, and tries to build from source, which needs Visual Studio. That\n    # does not fail\
+  \ the OCR lane, it fails every `uv run`: the suite, lint's\n    # privacy step, and serve-llamacpp.sh's\
+  \ call to harness.context, which is\n    # what sizes a GGUF. The last one is silent, because the launcher\
+  \ has a WARN\n    # path, so the store's slot plan just stops arriving. #758.\n    \"winsdk>=1.0.0b10;\
+  \ sys_platform == 'win32' and python_version < '3.13'\",\n    # The same lane on Linux, which ships\
+  \ no OCR engine of its own. An ONNX\n    # detector plus recogniser, CPU, no torch. Measured against\
+  \ Apple's Vision\n    # on\n[... 556 more bytes]\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1024\
+  \ && git reset -q --hard origin/screen-blame-1021 && git log --oneline -3 && ls tests | grep -i 'whisper\\\
+  |1021\\|1008\\|audit' \na919030f A llama-server 500 decides from the load log whatever spec reached\
+  \ it; mlx-audio's whisper gap is a runtime ...\nf90d7afa Load a diffusers pipeline at its repo's dtype;\
+  \ a blank canvas is blank_output, not the model (#1013) (#1019)\n774e58db A knob sweep where every value\
+  \ passes 0 chooses nothing, and sweeps only a passing model (#1009) (#1017)\ntest_blame_audit.py\ntest_gauntlet_audit.py\n\
+  test_harness_audit.py\ntest_live_audit.py\ntest_live_screen_blame_1021.py\ntest_missing_package_1008.py\n\
+  \n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1024 && cat tests/test_live_screen_blame_1021.py\
+  \ | sed -n 1,200p | grep -n 'whisper\\|def test\\|import\\|monkeypatch' | head -50; grep -n 'def test\\\
+  |monkeypatch\\|venv' tests/test_missing_package_1008.py | head -40\n1:\"\"\"#1021: a llama-server load\
+  \ failure on a bare GGUF repo id and mlx-audio's whisper gap are runtime, not the candidate; a sighting\
+  \ of a queued name writes no verdict.\"\"\"\n2:import argparse\n3:import subprocess\n4:from pathlib\
+  \ import Path\n6:import pytest\n8:from evals.core import Result, summarize\n9:from harness import candidates,\
+  \ cli, coherence, load_log, memory, paths, reasons, runner_gaps, screen\n10:from harness import memory_store\
+  \ as ms\n11:from harness.commands import measure as measure_cmd\n12:from harness.commands import screen\
+  \ as screen_cmd\n13:from harness.memory_store import revisit, transitions\n23:WHISPER = \"mlx-community/whisper-large-v3-mlx\"\
+  \n31:def llama(monkeypatch):\n32:    monkeypatch.setattr(screen, \"_installed\", lambda pkg: \"11146\"\
+  )\n35:def test_a_bare_gguf_repo_ids_load_failure_waits_on_its_load_log():\n42:def test_the_load_log_decides_a_bare_spec_with_the_llama_cpp_until(llama):\n\
+  60:def test_the_live_screen_of_a_bare_gguf_repo_keeps_the_load_log_and_declines_it(monkeypatch, tmp_path,\
+  \ llama):\n62:    monkeypatch.setattr(ms, \"connect\", lambda *a, **k: real(tmp_path / \"d.db\"))\n\
+  67:    monkeypatch.setattr(screen_cmd, \"_screen_plan\", lambda want: plan)\n68:    monkeypatch.setattr(screen_cmd,\
+  \ \"snapshot_gap\", lambda r, c: \"\")\n69:    monkeypatch.setattr(memory, \"check_model\", lambda *a,\
+  \ **k: (True, \"\"))\n70:    monkeypatch.setattr(screen, \"argv\", lambda r, **k: [\"screen\", r[\"\
+  name\"]])\n71:    monkeypatch.setattr(subprocess, \"run\", lambda argv, **kw: _Done())\n75:   \n[...\
+  \ 2880 more bytes]\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1024 && grep -rn '\"packages\"\
+  ' harness | head; sed -n 220,240p harness/reverify.py; sed -n 90,110p harness/verify.py; grep -rn 'backend='\
+  \ harness/engines.py evals/run.py | head -8\nharness/memory_store/revisit.py:173:        have = facts.get(\"\
+  packages\")\n        return f\"flagged {last['outcome']}: {last['detail']}; waiting for a person\"\n\
+  \    return \"\"\n\n\ndef argv(item: dict, base: dict | None = None) -> list[str]:\n    \"\"\"The evals.run\
+  \ command the job runs: the served spec, its incumbent when there is one, at the baseline's repeat and\
+  \ split.\"\"\"\n    from harness import screen\n    specs = [item[\"spec\"]] + ([item[\"incumbent\"\
+  ]] if item[\"incumbent\"] else [])\n    out = [\"uv\", \"run\", \"python\", \"-m\", \"evals.run\", \"\
+  --modality\", item[\"lane\"],\n           \"--candidates\", \",\".join(specs)]\n    route = screen.routed_gateway(item[\"\
+  spec\"])\n    if route:\n        out += [\"--gateway\", route]\n    if base is not None:\n        out\
+  \ += [\"--repeat\", str(int(base.get(\"repeat_count\") or 1)),\n                \"--split\", base.get(\"\
+  split\") or \"all\"]\n    return out\n\n\ndef plan(conn, *, now: float, facts: dict, lane: str = \"\"\
+  ) -> list[dict]:\n    \"\"\"Every participating lane with its triggers and why it would not be queued.\"\
+  \"\"\n        elif lane.get(\"parked\") and not want:\n            # PARKED BEATS DELIBERATE as a reason.\
+  \ Both refuse to run it\n            # automatically; only one says somebody decided and why. #244.\n\
+  \            task.skip = (f\"parked: {lane['parked']}. Revisit when \"\n                         f\"\
+  {lane.get('parked_until') or 'the reason changes'}\")\n        elif name in DELIBERATE and not want:\n\
+  \            # Nameable, never automatic: --lane video opts in explicitly.\n           \n[... 678 more\
+  \ bytes]\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1024 && sed -n 225,260p evals/run.py;\
+  \ grep -n 'def parse_spec\\|def split_spec\\|def options_of\\|def _options' evals/run.py harness/*.py\
+  \ | head\near=options.get(\"ear\", \"server\"))\n    except ValueError as exc:\n        # A bad ear\
+  \ is a bad candidate string, not a traceback.\n        raise SystemExit(f\"{candidate}: {exc}\") from\
+  \ exc\n\n\ndef _transcription_runner(candidate: str) -> TranscriptionRunner:\n    _, _, rest = candidate.partition(\"\
+  :\")\n    model, _, optstr = rest.partition(\",\")\n    model = model.strip()\n    try:\n        options\
+  \ = parse_options(optstr, candidate)\n    except ValueError as exc:\n        raise SystemExit(str(exc))\
+  \ from exc\n    unknown = set(options) - STT_OPTIONS\n    if unknown:\n        raise SystemExit(f\"\
+  unknown stt option(s) {', '.join(sorted(unknown))}; \"\n                         f\"allowed: {', '.join(sorted(STT_OPTIONS))}\"\
+  )\n    if not model:\n        raise SystemExit(\"an stt candidate needs a model, e.g. \"\n         \
+  \                \"stt:mlx-community/parakeet-tdt-0.6b-v2\")\n    try:\n        return TranscriptionRunner(\n\
+  \            model=model,\n            backend=options.get(\"backend\", \"server\"),\n            language=options.get(\"\
+  language\", \"\"))\n    except ValueError as exc:\n        # A bad backend is a bad candidate string,\
+  \ and gets the same treatment\n        # as a bad engine spec: named before the corpus runs, not a traceback.\n\
+  \        raise SystemExit(f\"{candidate}: {exc}\") from exc\n\n\ndef is_kokoro(model: str) -> bool:\n\
+  \    \"\"\"Does this model use Kokoro's voice table?\n\n    The voice names are Kokoro's own, so they\
+  \ are meaningful for Kokoro and\nevals/run.py:168:def _options_of(candidate: str) -> dict:\n\n## tool\
+  \ Bash\n$ cd ~/projects/github/unxmaal/sohot-1024 && sed -n 160,224p evals/run.py; grep -n 'def parse_options'\
+  \ -A20 evals/*.py | head -30\nreturn None\n    options = _options_of(candidate)\n    if kind == \"stt\"\
+  :\n        return options.get(\"language\") or \"en\"\n    _, _, language = options.get(\"ear\", \"\
+  server\").partition(\":\")\n    return language.strip() or \"en\"\n\n\ndef _options_of(candidate: str)\
+  \ -> dict:\n    \"\"\"The key=value tail of a candidate spec, or {} if it does not parse.\n\n    Selection\
+  \ must not raise: a bad spec is reported by build_runner, with the\n    full message, rather than here\
+  \ as a filtering accident.\n    \"\"\"\n    _, _, rest = candidate.partition(\":\")\n    _, _, optstr\
+  \ = rest.partition(\",\")\n    try:\n        return parse_options(optstr, candidate)\n    except ValueError:\n\
+  \        return {}\n\n\ndef engine_for(candidate: str) -> Engine | None:\n    try:\n        return resolve(candidate)\n\
+  \    except ValueError:\n        return None\n\n\ndef _speech_runner(candidate: str, outdir: Path |\
+  \ None) -> SpeechRunner:\n    _, _, rest = candidate.partition(\":\")\n    model, _, optstr = rest.partition(\"\
+  ,\")\n    try:\n        options = parse_options(optstr, candidate)\n    except ValueError as exc:\n\
+  \        raise SystemExit(str(exc)) from exc\n    unknown = set(options) - TTS_OPTIONS\n    if unknown:\n\
+  \        raise SystemExit(f\"unknown tts option(s) {', '.join(sorted(unknown))}; \"\n              \
+  \           f\"allowed: {', '.join(sorted(TTS_OPTIONS))}\")\n    if not model:\n        raise SystemExit(\"\
+  a tts candidate needs a model, e.g. \"\n                         \"tts:mlx-community/Kokoro-82M-bf16,voice=am_adam\"\
+  )\n    if outdir is None:\n        raise\n[... 1171 more bytes]\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1024\
+  \ && grep -n '_OPTIONS = ' evals/run.py; grep -n 'whisper' harness/audio.py | grep -i 'ear\\|def ' |\
+  \ head; grep -n 'REPO\\b\\|^REPO' harness/paths.py harness/gateway.py | head -5\n69:REPAIR_OPTIONS =\
+  \ {\"attempts\"}\n78:OMNISVG_OPTIONS = {\"candidates\"}\n82:TTS_OPTIONS = {\"voice\", \"ref_audio\"\
+  , \"lang_code\", \"ear\"}\n83:STT_OPTIONS = {\"backend\", \"language\"}\n432:def _whisper_module():\n\
+  440:def transcribe_whisper(path: str | Path,\n548:def whisperkit_argv(path, model: str = DEFAULT_WHISPERKIT_MODEL,\n\
+  560:def _run_whisperkit(argv: list, timeout: float) -> str:\n573:def transcribe_whisperkit(path, model:\
+  \ str = DEFAULT_WHISPERKIT_MODEL,\nharness/paths.py:48:REPO = Path(__file__).resolve().parents[1]\n\
+  harness/paths.py:63:        out = subprocess.run([\"bash\", str(REPO / \"scripts\" / \"launchd.sh\"\
+  ), \"deploy-path\"],\nharness/paths.py:74:    if deploy is None or deploy == REPO or not (deploy / \"\
+  .git\").exists():\nharness/gateway.py:21:REPO = Path(__file__).resolve().parent.parent\nharness/gateway.py:23:DEFAULT\
+  \ = REPO / \"gateway\" / \"config.yaml\"\n\n## tool mcp__mcm-engine__search\n{\"query\": \"ear=whisper\"\
+  , \"limit\": 5}\n[10053 bytes of output not shown]\n\n## tool Bash\n$ cd ~/projects/github/unxmaal/sohot-1024\
+  \ && sed -n 1,28p harness/runner_gaps.py; sed -n 72,82p harness/runner_gaps.py\n\"\"\"Why a runner here\
+  \ cannot load a repo, and the until naming what would. #950, #951.\n\n    uv run python -m harness.runner_gaps\
+  \   rewrite both snapshots (mlx-lm from this venv, diffusers from its venv)\n\"\"\"\nfrom __future__\
+  \ import annotations\n\nimport ast\nimport functools\nimport json\nimport re\nimport sys\nfrom collections\
+  \ import Counter\nfrom pathlib import Path\n\n#: Model types the locked mlx-lm builds (its models/ modules\
+  \ and MODEL_REMAPPING keys); first line `# <pin>`.\nMLX_LM_SNAPSHOT = Path(__file__).with_name(\"mlx_lm_model_types.txt\"\
+  )\n#: Pipeline classes the pinned diffusers ships; first line `# <pin>`.\nDIFFUSERS_SNAPSHOT = Path(__file__).with_name(\"\
+  diffusers_pipelines.txt\")\n\n#: Runners no engine is registered for; an until naming one is met once\
+  \ engines.names() has it.\nVLM_RUNNER = \"mlx-vlm\"\nTEXT_RUNNER = \"transformers\"\n\n#: Card tasks\
+  \ whose model takes more than text, so the text server builds at most a part of it.\nVLM_TASKS = frozenset({\"\
+  image-text-to-text\", \"any-to-any\", \"image-to-text\", \"video-text-to-text\",\n                 \
+  \      \"visual-question-answering\", \"audio-text-to-text\"})\n#: Text model types mlx-lm declined\
+  \ upstream, so no release of it builds them.\nDECLINED = {\"qwen3_5_text\": \"ml-explore/mlx-lm#869\
+  \ added qwen3_5 and left qwen3_5_text out (RULE #350)\"}\ndef head_of(spec: str) -> str:\n    \"\"\"\
+  The engine a spec names, \"\" for a bare repo id the text server swaps to.\"\"\"\n    first = (spec\
+  \ or \"\").partition(\",\")[0]\n    head = first.partition(\":\")[0].strip()\n    if \":\" in\n[...\
+  \ 144 more bytes]\n\n## assistant\nNow I'll write the runner_gaps changes."
+params:
+  source_repo: https://github.com/unxmaal/SoHoT.git
+  base: 3dca52259408df9b9246eef807409ae9e30b751b
+  fix: 99e5eb1fc76517b362a0f3bd94c1a52d329b6902
+  variant: request
+  context: oracle
+  context_files:
+  - harness/commands/measure.py
+  - harness/live_audit.py
+  - harness/memory_store/revisit.py
+  - harness/reverify.py
+  - harness/runner_gaps.py
+  - harness/screen.py
+  - harness/verify.py
+  interface:
+  - harness.live_audit._package_until_reachable(conn) -> list
+  - harness.live_audit.unreachable_packages(conn, repo=None) -> list[dict]
+  - harness.runner_gaps.WHISPER_VENV
+  - 'harness.runner_gaps.installs(venv: str, repo: Path | None=None) -> frozenset'
+  - 'harness.runner_gaps.launcher(specs, default: list[str]) -> list[str]'
+  - 'harness.runner_gaps.uninstalled_runner_packages(repo: Path | None=None) -> list[str]'
+  - 'harness.runner_gaps.venv_of(spec: str) -> str'
+  - 'CLI option: --group'
+  fail_to_pass:
+  - tests/test_live_screen_blame_1021.py::test_a_whisper_repo_screens_through_mlx_whisper_when_its_group_installs_it
+  - tests/test_live_screen_blame_1021.py::test_coherence_re_decides_both_live_verdicts
+  - tests/test_live_screen_blame_1021.py::test_mlx_audios_missing_processor_on_whisper_is_a_runner_gap
+  - tests/test_whisper_group_1024.py::test_a_held_package_until_the_venv_already_has_is_not_unreachable
+  - tests/test_whisper_group_1024.py::test_a_package_a_whisper_run_lacks_waits_on_the_whisper_env
+  - tests/test_whisper_group_1024.py::test_every_evals_run_launch_of_a_whisper_spec_uses_the_group_env
+  - tests/test_whisper_group_1024.py::test_installs_reads_each_venvs_deploy_step
+  - tests/test_whisper_group_1024.py::test_the_audit_lists_one_row_per_package_no_deploy_step_installs
+  - tests/test_whisper_group_1024.py::test_the_pre_1024_whisper_until_is_rewritten_to_the_groups_env
+  - tests/test_whisper_group_1024.py::test_the_runner_packages_no_deploy_step_installs_are_an_inventory_that_only_shrinks
+  - tests/test_whisper_group_1024.py::test_where_the_group_cannot_install_it_the_screen_names_the_missing_env
+  - tests/test_whisper_group_1024.py::test_whisper_large_v3_screens_through_the_whisper_runner_in_the_groups_env
+  pass_to_pass:
+  - tests/test_live_screen_blame_1021.py::test_a_bare_gguf_repo_ids_load_failure_waits_on_its_load_log
+  - tests/test_live_screen_blame_1021.py::test_the_live_screen_of_a_bare_gguf_repo_keeps_the_load_log_and_declines_it
+  - tests/test_live_screen_blame_1021.py::test_the_load_log_decides_a_bare_spec_with_the_llama_cpp_until
+  - tests/test_live_screen_blame_1021.py::test_the_whisper_until_is_met_once_mlx_whisper_is_installed
+  - tests/test_live_screen_blame_1021.py::test_two_parents_naming_one_queued_weight_write_one_verdict
+  - tests/test_whisper_group_1024.py::test_an_mlx_audio_spec_keeps_this_interpreter
+attribution:
+  dataset: Claude Code session requests, redacted
+  url: https://github.com/unxmaal/SoHoT/issues/1095
+  license: generated
+  source: claude-code:transcripts
+  revision: c98bcc30faf7a9d89f885053f9575137956ce2e8
+  item: 'sohot PR #1028'
+  date: '2026-10-19'
+  transform: 'a Claude Code session from the person''s request to just before the agent''s first edit
+    of a file the fix changes (evals/session_cut.py: user turns, assistant text, tool calls, reads and
+    searches kept, large outputs dropped, to a byte budget), redacted by evals/redact.py (secrets, ids,
+    emails, home and volume paths, hosts, IPs, pasted chat, handles, account and person names as typed
+    placeholders) and refused if a fix line or a name-like word is left; linked to the merged commit through
+    a commit hash or PR URL printed by a tool in that request or a Claude-Session trailer; since #1138
+    the subagent that printed it is the stream cut, `gh issue view` of the repo is kept whole, and a cut
+    whose user turns and issue views never name the fix''s issue is dropped; base = fix^; fail_to_pass
+    and pass_to_pass from 2 sandboxed pytest runs per side, as evals/importers/history.py'
+  importer: evals.importers.transcripts
+  session: 893fd0505f5eef9e
+  evidence: pr
+  redactions:
+    secret: 1
+    session: 1

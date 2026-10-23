@@ -42,7 +42,7 @@ def _pre_1129(monkeypatch):
 
 
 def test_every_case_is_told_it_has_no_tools():
-    assert len(CASES) == 114 and _sha(OLD_SYSTEM) == OLD_SYSTEM_SHA
+    assert len(CASES) == 117 and _sha(OLD_SYSTEM) == OLD_SYSTEM_SHA
     for c in CASES:
         system = repo.as_asked(c).params["system"]
         assert "no tools" in system and "one unified diff" in system
@@ -51,7 +51,7 @@ def test_every_case_is_told_it_has_no_tools():
 
 def test_a_session_is_asked_as_a_quotation_that_loses_nothing():
     sessions = [c for c in CASES if c.params.get("variant") == repo.SESSION_VARIANT]
-    assert len(sessions) == 11
+    assert len(sessions) == 14
     for c in sessions:
         asked = repo.as_asked(c).prompt
         asked = asked[:asked.index(repo.QUOTE_END) + len(repo.QUOTE_END)]

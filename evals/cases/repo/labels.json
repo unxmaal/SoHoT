@@ -8,8 +8,8 @@
   "B"
  ],
  "who": {
-  "A": "claude-opus-5-5 subagent, 2026-10-17, read only soh cases labels repo --packets output; #889 mcm-engine and infovore cases: claude-opus-5-5 subagents, 2026-10-22, same packets, ascending order; #1098 mcm-engine and infovore cases: claude-opus-5-5 subagents, 2026-10-22, same packets, ascending order; #1103 cases with the tests-call interface shown: claude-opus-5-5 subagents, 2026-10-22, same packets, ascending order; #1105 cases with tools, CLI options and env vars shown: claude-opus-5-5 subagents, 2026-10-22, same packets, ascending order; #1095 session-cut cases: claude-opus-5-5 subagents, 2026-10-22, packets only, ascending order; #1136 repaired session-cut cases (interface and stated change shown): claude-opus-5-5 subagents, 2026-10-23, packets only, ascending order",
-  "B": "claude-opus-5-5 subagent, 2026-10-17, separate context, same packets, reverse order; #889 mcm-engine and infovore cases: claude-opus-5-5 subagents, 2026-10-22, separate contexts, descending order; #1098 mcm-engine and infovore cases: claude-opus-5-5 subagents, 2026-10-22, separate contexts, descending order; #1103 cases with the tests-call interface shown: claude-opus-5-5 subagents, 2026-10-22, separate contexts, descending order; #1105 cases with tools, CLI options and env vars shown: claude-opus-5-5 subagents, 2026-10-22, separate contexts, descending order; #1095 session-cut cases: claude-opus-5-5 subagents, 2026-10-22, separate contexts, descending order; #1136 repaired session-cut cases (interface and stated change shown): claude-opus-5-5 subagents, 2026-10-23, packets only, descending order"
+  "A": "claude-opus-5-5 subagent, 2026-10-17, read only soh cases labels repo --packets output; #889 mcm-engine and infovore cases: claude-opus-5-5 subagents, 2026-10-22, same packets, ascending order; #1098 mcm-engine and infovore cases: claude-opus-5-5 subagents, 2026-10-22, same packets, ascending order; #1103 cases with the tests-call interface shown: claude-opus-5-5 subagents, 2026-10-22, same packets, ascending order; #1105 cases with tools, CLI options and env vars shown: claude-opus-5-5 subagents, 2026-10-22, same packets, ascending order; #1095 session-cut cases: claude-opus-5-5 subagents, 2026-10-22, packets only, ascending order; #1136 repaired session-cut cases (interface and stated change shown): claude-opus-5-5 subagents, 2026-10-23, packets only, ascending order; #1138 re-surveyed session-cut cases: claude-opus-5-5 subagents, 2026-10-23, packets only, ascending order",
+  "B": "claude-opus-5-5 subagent, 2026-10-17, separate context, same packets, reverse order; #889 mcm-engine and infovore cases: claude-opus-5-5 subagents, 2026-10-22, separate contexts, descending order; #1098 mcm-engine and infovore cases: claude-opus-5-5 subagents, 2026-10-22, separate contexts, descending order; #1103 cases with the tests-call interface shown: claude-opus-5-5 subagents, 2026-10-22, separate contexts, descending order; #1105 cases with tools, CLI options and env vars shown: claude-opus-5-5 subagents, 2026-10-22, separate contexts, descending order; #1095 session-cut cases: claude-opus-5-5 subagents, 2026-10-22, separate contexts, descending order; #1136 repaired session-cut cases (interface and stated change shown): claude-opus-5-5 subagents, 2026-10-23, packets only, descending order; #1138 re-surveyed session-cut cases: claude-opus-5-5 subagents, 2026-10-23, packets only, descending order"
  },
  "settled": {},
  "labels": {
@@ -1694,6 +1694,54 @@
     "spec": 1,
     "tests": 1,
     "why": {}
+   }
+  },
+  "sohot-pr1014-request": {
+   "A": {
+    "spec": 1,
+    "tests": 2,
+    "why": {
+     "tests": "The issue asks for until package:<x>, but the tests require package:<dist>@<venv> keyed to venv names, a specific module-to-distribution table (BeautifulSoup to beautifulsoup4, google.protobuf to protobuf), dist-info scanning through DIFFUSERS_VENV/HF_TASK_VENV, and a coherence re-decide of broken screens where the issue allowed 'soh coherence or the runner-gap repair'."
+    }
+   },
+   "B": {
+    "spec": 1,
+    "tests": 2,
+    "why": {
+     "tests": "The issue says the until is 'package:<x>', but the tests require a venv-suffixed 'package:ftfy@diffusers-cuda' / '@hf-task' form, until_met that reads dist-info directories under DIFFUSERS_VENV/HF_TASK_VENV with facts['packages'] keyed by venv, and a specific bound-name mapping (BeautifulSoup -> beautifulsoup4)."
+    }
+   }
+  },
+  "sohot-pr1028-request": {
+   "A": {
+    "spec": 1,
+    "tests": 2,
+    "why": {
+     "tests": "The issue offers two fixes (group env, or syncing the whisper group in the deploy) and the tests accept only the first, pinning the exact argv 'env -u VIRTUAL_ENV UV_PROJECT_ENVIRONMENT=<home>/venvs/whisper uv run --group whisper python', the until form package:mlx-whisper@whisper, a fixed list of uninstalled packages, and a rewrite of pre-1024 untils the issue never asks for."
+    }
+   },
+   "B": {
+    "spec": 1,
+    "tests": 2,
+    "why": {
+     "tests": "They accept only the first of the issue's two allowed fixes and demand an exact argv prefix (env -u VIRTUAL_ENV UV_PROJECT_ENVIRONMENT=<home>/venvs/whisper uv run --group whisper python), the 'package:mlx-whisper@whisper' until, a rewrite of pre-existing untils, and an exact 13-package UNINSTALLED inventory."
+    }
+   }
+  },
+  "sohot-pr1044-request": {
+   "A": {
+    "spec": 1,
+    "tests": 3,
+    "why": {
+     "tests": "Besides exact excerpt line bounds and a '# tts.log lines X-Y' header, graded tests check behaviour the issue never asks for: the network-timeout traceback classed as harness via HTTPSConnectionPool, an audio.err.log fallback for services.sh, the serving-home env var, log rotation, exception-group bars and the calibration-clip path's message wording."
+    }
+   },
+   "B": {
+    "spec": 1,
+    "tests": 2,
+    "why": {
+     "tests": "Beyond the two acceptance cases they pin an Excerpt shape (.errors/.first/.last), exact cut bounds from the ASGI line, a '# tts.log lines a-b' header, the calibration-clip path, rotation handling, audio.err.log and SERVING_ENV log locations, and urllib3 timeouts classed as harness_error, most of which the issue never asks for."
+    }
    }
   }
  }

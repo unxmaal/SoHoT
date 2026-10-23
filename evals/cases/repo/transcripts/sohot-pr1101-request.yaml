@@ -1,5 +1,5 @@
 # Claude Code session requests, redacted, generated (https://github.com/unxmaal/SoHoT/issues/1095).
-# Imported by evals/importers from claude-code:transcripts@1b89af8ec5e330b64fe1b44cc8365c71bb4f96ab; re-import, do not edit.
+# Imported by evals/importers from claude-code:transcripts@c98bcc30faf7a9d89f885053f9575137956ce2e8; re-import, do not edit.
 id: sohot-pr1101-request
 modality: repo
 prompt: "Below is a Claude Code session, cut just before the agent's first edit to the code. Make the\
@@ -293,7 +293,7 @@ attribution:
   url: https://github.com/unxmaal/SoHoT/issues/1095
   license: generated
   source: claude-code:transcripts
-  revision: 1b89af8ec5e330b64fe1b44cc8365c71bb4f96ab
+  revision: c98bcc30faf7a9d89f885053f9575137956ce2e8
   item: 'sohot PR #1101'
   date: '2026-10-22'
   transform: 'a Claude Code session from the person''s request to just before the agent''s first edit
@@ -301,8 +301,10 @@ attribution:
     searches kept, large outputs dropped, to a byte budget), redacted by evals/redact.py (secrets, ids,
     emails, home and volume paths, hosts, IPs, pasted chat, handles, account and person names as typed
     placeholders) and refused if a fix line or a name-like word is left; linked to the merged commit through
-    a commit hash or PR URL printed by a tool in that request or a Claude-Session trailer; base = fix^;
-    fail_to_pass and pass_to_pass from 2 sandboxed pytest runs per side, as evals/importers/history.py'
+    a commit hash or PR URL printed by a tool in that request or a Claude-Session trailer; since #1138
+    the subagent that printed it is the stream cut, `gh issue view` of the repo is kept whole, and a cut
+    whose user turns and issue views never name the fix''s issue is dropped; base = fix^; fail_to_pass
+    and pass_to_pass from 2 sandboxed pytest runs per side, as evals/importers/history.py'
   importer: evals.importers.transcripts
   session: 893fd0505f5eef9e
   evidence: pr
