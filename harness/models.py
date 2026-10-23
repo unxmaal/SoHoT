@@ -64,6 +64,12 @@ def on_gateway(spec: str, config=None) -> bool:
     return _entry(_name(spec), config) is not None
 
 
+def hosted(spec: str, config=None) -> bool:
+    """True when the gateway entry `spec` names is a hosted provider's, so no local server answers it. #1135."""
+    e = _entry(_name(spec), config)
+    return e is not None and gateway.hosted(e)
+
+
 def is_alias(spec: str, config=None) -> bool:
     """True for a gateway name that is not the id it sends upstream."""
     name = _name(spec)
