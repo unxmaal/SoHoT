@@ -1,5 +1,5 @@
 # Claude Code session requests, redacted, generated (https://github.com/unxmaal/SoHoT/issues/1095).
-# Imported by evals/importers from claude-code:transcripts@82ea6dc78eb1889c0e2f8b40e602ffc6fb9a3da4; re-import, do not edit.
+# Imported by evals/importers from claude-code:transcripts@1b89af8ec5e330b64fe1b44cc8365c71bb4f96ab; re-import, do not edit.
 id: sohot-pr862-request
 modality: repo
 prompt: "Below is a Claude Code session, cut just before the agent's first edit to the code. Make the\
@@ -240,6 +240,19 @@ params:
   context: oracle
   context_files:
   - evals/run.py
+  interface:
+  - evals.run.PAIR_BLOCK
+  - 'evals.run.pair_block(candidates, gateway: str, home=_home) -> int | None'
+  - 'evals.run.paired_segments(order, rest, block, key=lambda c: c) -> list[tuple[int, list]]'
+  stated: '`pair_block` asks `home(candidate, gateway)` for (server, model, how many models that server
+    holds at once, `None` for no limit), skips candidates with an empty server or model, and returns 1
+    when every server''s distinct models fit its limit, else `PAIR_BLOCK`; any `ds4:` candidate gives
+    `None`. `paired_segments` cuts `order` (case ids in run order) into windows of `block` positions,
+    gives each candidate in turn its cases from `rest` (matched through `key`) inside the window, merges
+    consecutive turns of one candidate, and returns (candidate index, cases) pairs; a falsy `block` returns
+    each non-empty `rest` whole. `_execute` calls `pair_block(candidates, args.gateway)` positionally
+    and runs those turns; a runner warms on its first turn, and on later turns only when `block` is not
+    1.'
   fail_to_pass:
   - tests/test_interleave_816.py::test_a_checkpoint_of_the_old_order_resumes_with_the_challenger_catching_up
   - tests/test_interleave_816.py::test_a_ds4_candidate_keeps_the_candidate_major_order
@@ -263,7 +276,7 @@ attribution:
   url: https://github.com/unxmaal/SoHoT/issues/1095
   license: generated
   source: claude-code:transcripts
-  revision: 82ea6dc78eb1889c0e2f8b40e602ffc6fb9a3da4
+  revision: 1b89af8ec5e330b64fe1b44cc8365c71bb4f96ab
   item: 'sohot PR #862'
   date: '2026-10-14'
   transform: 'a Claude Code session from the person''s request to just before the agent''s first edit

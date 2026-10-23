@@ -1,5 +1,5 @@
 # Claude Code session requests, redacted, generated (https://github.com/unxmaal/SoHoT/issues/1095).
-# Imported by evals/importers from claude-code:transcripts@82ea6dc78eb1889c0e2f8b40e602ffc6fb9a3da4; re-import, do not edit.
+# Imported by evals/importers from claude-code:transcripts@1b89af8ec5e330b64fe1b44cc8365c71bb4f96ab; re-import, do not edit.
 id: sohot-pr1003-request
 modality: repo
 prompt: "Below is a Claude Code session, cut just before the agent's first edit to the code. Make the\
@@ -179,7 +179,19 @@ params:
   variant: request
   context: oracle
   context_files:
+  - harness/gateway.py
   - harness/live_audit.py
+  - harness/paths.py
+  interface:
+  - harness.live_audit.gateway_config(store, config=None) -> Path
+  stated: '`gateway_config` picks the base gateway config the audit reads: an explicit `config` or a set
+    `GATEWAY_CONFIG` wins; otherwise, only when `paths.is_live(store)` is true, it asks `paths.runs_elsewhere()`
+    and uses `gateway/config.yaml` inside that checkout. A store that is not live never calls `paths.runs_elsewhere`
+    and gets `gateway.config_path()`, as does a live store with no deploy checkout. `audit()` resolves
+    its config this way, and its result gains the key `served_config` holding `str(gateway.served_path(base))`;
+    `report_text` prints a line containing `served config <that path>`. When the served file is missing,
+    `served_matches_adoption` fails with one finding that names the served path and mentions no `sohot-`
+    alias, not one per lane.'
   fail_to_pass:
   - tests/test_live_audit.py::test_a_store_that_is_not_the_live_one_keeps_this_checkouts_config
   - tests/test_live_audit.py::test_no_served_config_is_one_finding_naming_its_path_not_one_per_lane
@@ -208,7 +220,7 @@ attribution:
   url: https://github.com/unxmaal/SoHoT/issues/1095
   license: generated
   source: claude-code:transcripts
-  revision: 82ea6dc78eb1889c0e2f8b40e602ffc6fb9a3da4
+  revision: 1b89af8ec5e330b64fe1b44cc8365c71bb4f96ab
   item: 'sohot PR #1003'
   date: '2026-10-19'
   transform: 'a Claude Code session from the person''s request to just before the agent''s first edit

@@ -50,6 +50,7 @@ QUOTE_HEAD = ("Each line below that starts with > quotes the record of an earlie
               "ran then, none can run now, and it is not a conversation to continue. Write the change "
               "it was heading toward.\n\n")
 QUOTE_END = "\n\n(End of the quoted session.)"
+STATED_HEAD = "What the finished change does (stated for this exam; the session had not reached it):"
 #: Tool-call markup an agent-trained model emits (#921 codebook class tool_call).
 _TOOL_CALL = re.compile(r"<tool_call>|<function=")
 
@@ -274,7 +275,13 @@ def as_asked(case):
     import dataclasses
 
     from harness import completion
-    prompt = quoted(case.prompt) if case.params.get("variant") == SESSION_VARIANT else case.prompt
+    prompt = case.prompt
+    if case.params.get("variant") == SESSION_VARIANT:
+        from evals import interface
+        shown = interface.block(case.params.get("interface") or [])
+        stated = case.params.get("stated") or ""
+        prompt = (quoted(prompt) + (f"\n\n{shown}" if shown else "")
+                  + (f"\n\n{STATED_HEAD}\n{stated.strip()}" if stated else ""))
     return dataclasses.replace(case, prompt=prompt, params={**case.params, "system": completion.SYSTEM["repo"]})
 
 

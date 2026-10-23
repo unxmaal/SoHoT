@@ -1,5 +1,5 @@
 # Claude Code session requests, redacted, generated (https://github.com/unxmaal/SoHoT/issues/1095).
-# Imported by evals/importers from claude-code:transcripts@82ea6dc78eb1889c0e2f8b40e602ffc6fb9a3da4; re-import, do not edit.
+# Imported by evals/importers from claude-code:transcripts@1b89af8ec5e330b64fe1b44cc8365c71bb4f96ab; re-import, do not edit.
 id: sohot-pr1026-request
 modality: repo
 prompt: "Below is a Claude Code session, cut just before the agent's first edit to the code. Make the\
@@ -247,6 +247,22 @@ params:
   - harness/hf_task.py
   - harness/image_diffusers.py
   - harness/torch_device.py
+  interface:
+  - 'harness.hf_task.model_dtype(model: str, device: str, revision: str | None=None, forced: str='''')
+    -> str'
+  - 'harness.hf_task.read_image(model: str, image: str, prompt: str, revision: str | None=None, max_new_tokens:
+    int | None=None, device: str | None=None, attn: str='''', runtime: dict | None=None, dtype: str='''')
+    -> str'
+  - 'harness.torch_device.snapshot(model: str, marker: str=''config.json'', revision: str | None=None)'
+  - 'CLI option: --dtype'
+  stated: '`model_dtype` returns `float32` on `cpu` whatever is forced or declared. The accelerator case
+    returns `forced` when given, else the half the snapshot declares (`declared_dtype` of `snapshot(model,
+    revision=revision)`), else `float16`; a repo declaring only `float32`, or not cached, gets `float16`.
+    `read_image` loads the model and feeds pixels at that dtype and sets `runtime["dtype"]` to its name.
+    `--dtype` accepts only `bfloat16`, `float16`, `float32` (others exit through argparse) and reaches
+    `read_image` as `dtype`. `hf-ocr` specs take a `dtype=` option: a value outside those three raises
+    `ValueError` mentioning dtype; a pinned spec gets its own candidate name and `--dtype <value>` in
+    argv, an unpinned one no `--dtype`. The runner copies `dtype` from the runtime file onto the row.'
   fail_to_pass:
   - tests/test_hf_ocr_dtype_1018.py::test_a_cached_repo_id_resolves_to_its_snapshot_at_the_revision_asked
   - tests/test_hf_ocr_dtype_1018.py::test_a_forced_dtype_wins_over_the_declaration_on_an_accelerator
@@ -296,7 +312,7 @@ attribution:
   url: https://github.com/unxmaal/SoHoT/issues/1095
   license: generated
   source: claude-code:transcripts
-  revision: 82ea6dc78eb1889c0e2f8b40e602ffc6fb9a3da4
+  revision: 1b89af8ec5e330b64fe1b44cc8365c71bb4f96ab
   item: 'sohot PR #1026'
   date: '2026-10-19'
   transform: 'a Claude Code session from the person''s request to just before the agent''s first edit

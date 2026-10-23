@@ -1,5 +1,5 @@
 # Claude Code session requests, redacted, generated (https://github.com/unxmaal/SoHoT/issues/1095).
-# Imported by evals/importers from claude-code:transcripts@82ea6dc78eb1889c0e2f8b40e602ffc6fb9a3da4; re-import, do not edit.
+# Imported by evals/importers from claude-code:transcripts@1b89af8ec5e330b64fe1b44cc8365c71bb4f96ab; re-import, do not edit.
 id: sohot-pr1063-request
 modality: repo
 prompt: "Below is a Claude Code session, cut just before the agent's first edit to the code. Make the\
@@ -247,6 +247,23 @@ params:
   - harness/live_audit.py
   - harness/memory_store/__init__.py
   - harness/memory_store/revisit.py
+  - harness/memory_store/transitions.py
+  interface:
+  - harness.commands.loop._move_past_screen() -> list[str]
+  - harness.heartbeat.MOVED_PAST_SCREEN
+  - harness.live_audit._reopened_past_screen(conn, moved_at=...) -> tuple[list, list]
+  - harness.memory_store.reopened_too_far(conn) -> list[dict]
+  - 'harness.memory_store.reopens_to(until: str, tier: str) -> tuple[str, str]'
+  - harness.memory_store.requeue_reopened_too_far(conn) -> list[str]
+  stated: '`reopens_to` gives `("screened", SCREEN)` when the until key is `cases` or `limit` and the
+    declined tier is measure or adopt, else `("queued", INSPECT)`; `requeue_revisitable` retracts to that
+    pair. `reopened_too_far` returns, sorted by name, dicts with `name`, `verdict_id`, `decided_at`, `until`,
+    `tier` for proposals whose state verdict is still an inspect retraction starting `retracted: <until>
+    is met` of a verdict `reopens_to` now sends to screen; other retractions, or ones inspect has since
+    answered, are excluded. `requeue_reopened_too_far` moves them, returning names. `_move_past_screen`
+    runs it, prints each name indented four spaces, marks `MOVED_PAST_SCREEN` from when it began, returns
+    the names, and runs in the discover step before `_reopen_revisitable`. The audit check `reopened_past_screen`,
+    in `REPAIRED_BY`, warns per row until that mark postdates it, then fails.'
   fail_to_pass:
   - tests/test_inventory_heartbeat_972.py::test_each_repair_step_marks_its_own_key_from_when_it_began[reopened_past_screen]
   - tests/test_loop_revisit_1055.py::test_one_loop_discover_step_reopens_a_met_cases_until_to_the_measure_queue
@@ -299,7 +316,7 @@ attribution:
   url: https://github.com/unxmaal/SoHoT/issues/1095
   license: generated
   source: claude-code:transcripts
-  revision: 82ea6dc78eb1889c0e2f8b40e602ffc6fb9a3da4
+  revision: 1b89af8ec5e330b64fe1b44cc8365c71bb4f96ab
   item: 'sohot PR #1063'
   date: '2026-10-20'
   transform: 'a Claude Code session from the person''s request to just before the agent''s first edit

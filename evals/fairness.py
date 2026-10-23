@@ -101,7 +101,7 @@ def packet(case) -> str:
     return "\n\n".join([
         f"# Case {case.id}", "## Questions", *(f"{k}: {q}" for k, q in QUESTIONS.items()),
         "## The prompt the model is given (it also sees these files at the base commit: "
-        f"{', '.join(p['context_files'])})", case.prompt.strip(),
+        f"{', '.join(p['context_files'])})", repo.as_asked(case).prompt.strip(),
         "## The reference fix (non-test changes of the fix commit)", repo.reference_diff(m, p["base"], p["fix"]),
         "## The hidden tests (test changes of the fix commit); graded ids: "
         + ", ".join(p["fail_to_pass"]), hidden])

@@ -1,5 +1,5 @@
 # Claude Code session requests, redacted, generated (https://github.com/unxmaal/SoHoT/issues/1095).
-# Imported by evals/importers from claude-code:transcripts@82ea6dc78eb1889c0e2f8b40e602ffc6fb9a3da4; re-import, do not edit.
+# Imported by evals/importers from claude-code:transcripts@1b89af8ec5e330b64fe1b44cc8365c71bb4f96ab; re-import, do not edit.
 id: sohot-pr1101-request
 modality: repo
 prompt: "Below is a Claude Code session, cut just before the agent's first edit to the code. Make the\
@@ -238,6 +238,21 @@ params:
   context: oracle
   context_files:
   - harness/identity.py
+  interface:
+  - 'harness.identity.grader_digest(lane: str, *, root=None, packages=GRADER_PACKAGES, registry=CHECKER_REGISTRY,
+    also=SCORE_ENTRY) -> dict'
+  stated: '`grader_digest` parses source with `ast` under `root` (default: the repo root) and imports
+    nothing. The walk starts at the lane''s value in the dict literal that `registry` names as (module,
+    attribute), default `("evals.core", "CHECKERS")`, plus each `(module, name)` in `also`, default `(("evals.core",
+    "score"),)`; `packages` defaults to `("harness", "evals")`. The walk follows the names and attribute
+    chains reached code uses, through imports at module level or inside function bodies, into modules
+    of `packages`, and hashes each reached top-level statement only, so an unreached function, or a module
+    imported but never used, changes nothing. The result is `{"modules": [...], "names": {"<module>:<name>":
+    sha256}}`, `modules` being the sorted modules with a hashed statement. The exam part holds `grader`
+    (the `names` map) and `grader_modules`. The registry statement is hashed only as the lane''s own entry,
+    under the key `<module>:<attr>[<lane>]` (such as `evals.core:CHECKERS[code]`), and is then treated
+    as visited, so code that names the whole registry, as `score` does, never reaches the other lanes''
+    checkers.'
   fail_to_pass:
   - tests/test_incumbent_reuse_1094.py::test_a_module_outside_the_import_closure_keeps_the_grader_digest
   - tests/test_incumbent_reuse_1094.py::test_editing_a_module_two_imports_below_the_checker_moves_the_grader_digest
@@ -278,7 +293,7 @@ attribution:
   url: https://github.com/unxmaal/SoHoT/issues/1095
   license: generated
   source: claude-code:transcripts
-  revision: 82ea6dc78eb1889c0e2f8b40e602ffc6fb9a3da4
+  revision: 1b89af8ec5e330b64fe1b44cc8365c71bb4f96ab
   item: 'sohot PR #1101'
   date: '2026-10-22'
   transform: 'a Claude Code session from the person''s request to just before the agent''s first edit

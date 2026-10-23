@@ -23,7 +23,7 @@ DATASET = "Claude Code session requests, redacted"
 URL = "https://github.com/unxmaal/SoHoT/issues/1095"
 LICENSE = "generated"
 #: sha1 of the committed manifest's tasks, so a hand edit of the manifest is caught at import.
-REVISION = "82ea6dc78eb1889c0e2f8b40e602ffc6fb9a3da4"
+REVISION = "1b89af8ec5e330b64fe1b44cc8365c71bb4f96ab"
 MANIFEST = Path(__file__).with_name("transcripts.json")
 VERSION = 1
 VARIANT = "request"
@@ -37,6 +37,128 @@ EXCLUDED: dict[str, str] = {
     "mcm-engine-pr155-request": "the request ties a project to the owner's employer",
     "mcm-engine-pr173-request": "a coworker's report and an internal plan file name",
     "mcm-engine-pr174-request": "a coworker's report and an internal plan file name",
+}
+#: Cases the #1136 audit retired, with why: the cut heads toward another change, or the tests pin a design it never reached.
+RETIRED: dict[str, str] = {
+    "mcm-engine-pr138-request": "mismatch: the cut is mid-release and names the fix's issue only by number",
+    "mcm-engine-pr184-request": "mismatch: the cut is still gathering material; the fix invents a snapshot api",
+    "sohot-pr1010-request": "underspecified: the tests assert messages and keys the session never designed",
+    "sohot-pr1029-request": "mismatch: the session is #1018, already merged at base; the fix is #1025",
+    "sohot-pr1033-request": "mismatch: the session is #1018; the fix is #1027",
+    "sohot-pr1035-request": "mismatch: the session is #1021 and its first edit was a heredoc; the fix is #1030",
+    "sohot-pr1038-request": "mismatch: the session is #1024; the fix is #1032",
+    "sohot-pr1042-request": "mismatch: the session is #1018, edited through heredocs; the fix is #1037",
+    "sohot-pr1046-request": "mismatch: the session is #1018; the fix is #1045",
+    "sohot-pr1051-request": "mismatch: the session is #1021; the fix is #1049",
+    "sohot-pr1054-request": "underspecified: the tests pin arithmetic the fix invented after the cut",
+    "sohot-pr933-request": "mismatch: the session writes a skill and files issues; the fix is #928",
+    "sohot-pr957-request": "mismatch: the session is a labelling job and makes no code change; the fix is #954",
+    "sohot-pr966-request": "mismatch: the session rewrites issue bodies and was told not to code; the fix is #964",
+}
+#: Base files beyond the fix's own that a repaired case shows the model. #1136.
+CONTEXT: dict[str, list[str]] = {
+    "sohot-pr1003-request": ["harness/gateway.py", "harness/paths.py"],
+    "sohot-pr1063-request": ["harness/memory_store/transitions.py"],
+    "sohot-pr861-request": ["harness/memory_store/migrations/__init__.py"],
+}
+#: What the finished change does, stated after the quoted session where the cut had not reached it. #1136.
+STATED: dict[str, str] = {
+    "mcm-engine-pr139-request": (
+        "`SearchHit` gains an optional `snippet`: the backend's own highlight of the passage that matched "
+        "(for `SqliteSearch`, the `FTS5` `snippet()` over all indexed columns; the postgres and opensearch "
+        "adapters may fill theirs the same way). When `detail` is `summary`, each hit with a snippet gets one"
+        " extra line under it showing that passage, whitespace collapsed and cut to 160 characters (env "
+        "`MCM_SNIPPET_MAX`, 0 disables), so a term found only in a knowledge `detail` body still appears in "
+        "summary output while a 500-word body never comes back whole. A hit found only by the `LIKE` fallback"
+        " has no snippet and renders as before; `detail=\"full\"` is unchanged."),
+    "mcm-engine-pr162-request": (
+        "`SessionTracker.coverage` is a dict keyed by the topic lowercased and stripped; each value is a dict"
+        " with `topic` (that key), `query`, `result_ids` (a list, `[]` for `None`), `searched_at` (epoch "
+        "seconds) and `resident`. The same topic recorded again replaces its entry; a blank topic records "
+        "nothing. `reconcile_coverage` changes only `resident`, and `reset_all` empties `coverage`. The "
+        "`search` tool records its query as both topic and query, with the hits it returned as "
+        "`(entity_type_name, id)` tuples such as `(\"KNOWLEDGE\", 1)`, even when nothing matched. "
+        "`report_error` records its auto-search under the first 50 characters of `error_text`. "
+        "`session_start` always marks coverage non-resident; `save_snapshot` does so only when "
+        "`compaction=True`, and the pre-compact hook passes `compaction=True`."),
+    "sohot-pr1003-request": (
+        "`gateway_config` picks the base gateway config the audit reads: an explicit `config` or a set "
+        "`GATEWAY_CONFIG` wins; otherwise, only when `paths.is_live(store)` is true, it asks "
+        "`paths.runs_elsewhere()` and uses `gateway/config.yaml` inside that checkout. A store that is not "
+        "live never calls `paths.runs_elsewhere` and gets `gateway.config_path()`, as does a live store with "
+        "no deploy checkout. `audit()` resolves its config this way, and its result gains the key "
+        "`served_config` holding `str(gateway.served_path(base))`; `report_text` prints a line containing "
+        "`served config <that path>`. When the served file is missing, `served_matches_adoption` fails with "
+        "one finding that names the served path and mentions no `sohot-` alias, not one per lane."),
+    "sohot-pr1026-request": (
+        "`model_dtype` returns `float32` on `cpu` whatever is forced or declared. The accelerator case "
+        "returns `forced` when given, else the half the snapshot declares (`declared_dtype` of "
+        "`snapshot(model, revision=revision)`), else `float16`; a repo declaring only `float32`, or not "
+        "cached, gets `float16`. `read_image` loads the model and feeds pixels at that dtype and sets "
+        "`runtime[\"dtype\"]` to its name. `--dtype` accepts only `bfloat16`, `float16`, `float32` (others exit"
+        " through argparse) and reaches `read_image` as `dtype`. `hf-ocr` specs take a `dtype=` option: a "
+        "value outside those three raises `ValueError` mentioning dtype; a pinned spec gets its own candidate"
+        " name and `--dtype <value>` in argv, an unpinned one no `--dtype`. The runner copies `dtype` from "
+        "the runtime file onto the row."),
+    "sohot-pr1063-request": (
+        "`reopens_to` gives `(\"screened\", SCREEN)` when the until key is `cases` or `limit` and the declined "
+        "tier is measure or adopt, else `(\"queued\", INSPECT)`; `requeue_revisitable` retracts to that pair. "
+        "`reopened_too_far` returns, sorted by name, dicts with `name`, `verdict_id`, `decided_at`, `until`, "
+        "`tier` for proposals whose state verdict is still an inspect retraction starting `retracted: <until>"
+        " is met` of a verdict `reopens_to` now sends to screen; other retractions, or ones inspect has since"
+        " answered, are excluded. `requeue_reopened_too_far` moves them, returning names. `_move_past_screen`"
+        " runs it, prints each name indented four spaces, marks `MOVED_PAST_SCREEN` from when it began, "
+        "returns the names, and runs in the discover step before `_reopen_revisitable`. The audit check "
+        "`reopened_past_screen`, in `REPAIRED_BY`, warns per row until that mark postdates it, then fails."),
+    "sohot-pr1101-request": (
+        "`grader_digest` parses source with `ast` under `root` (default: the repo root) and imports nothing. "
+        "The walk starts at the lane's value in the dict literal that `registry` names as (module, "
+        "attribute), default `(\"evals.core\", \"CHECKERS\")`, plus each `(module, name)` in `also`, default "
+        "`((\"evals.core\", \"score\"),)`; `packages` defaults to `(\"harness\", \"evals\")`. The walk follows the "
+        "names and attribute chains reached code uses, through imports at module level or inside function "
+        "bodies, into modules of `packages`, and hashes each reached top-level statement only, so an "
+        "unreached function, or a module imported but never used, changes nothing. The result is `{\"modules\":"
+        " [...], \"names\": {\"<module>:<name>\": sha256}}`, `modules` being the sorted modules with a hashed "
+        "statement. The exam part holds `grader` (the `names` map) and `grader_modules`. The registry "
+        "statement is hashed only as the lane's own entry, under the key `<module>:<attr>[<lane>]` (such as "
+        "`evals.core:CHECKERS[code]`), and is then treated as visited, so code that names the whole registry,"
+        " as `score` does, never reaches the other lanes' checkers."),
+    "sohot-pr861-request": (
+        "This is schema 71: `SCHEMA_VERSION` becomes 71, and the new step module "
+        "`harness/memory_store/migrations/v71.py` sets `VERSION = 71` and does the requeue in its "
+        "`data(conn)` phase (the loader sorts step modules by `VERSION` and calls each phase function by "
+        "name). The requeue sends a proposal back to `screened` only when its current state verdict is a "
+        "`declined` adopt-tier verdict with reason `limit`, no run id, an empty until and a not-run "
+        "budget-projection detail, and the verdict just before it for that proposal (by id) has outcome "
+        "`screened`. A candidate with any other verdict between the screen and the refusal stays declined, as"
+        " does any limit decline that fails one of these conditions."),
+    "sohot-pr862-request": (
+        "`pair_block` asks `home(candidate, gateway)` for (server, model, how many models that server holds "
+        "at once, `None` for no limit), skips candidates with an empty server or model, and returns 1 when "
+        "every server's distinct models fit its limit, else `PAIR_BLOCK`; any `ds4:` candidate gives `None`. "
+        "`paired_segments` cuts `order` (case ids in run order) into windows of `block` positions, gives each"
+        " candidate in turn its cases from `rest` (matched through `key`) inside the window, merges "
+        "consecutive turns of one candidate, and returns (candidate index, cases) pairs; a falsy `block` "
+        "returns each non-empty `rest` whole. `_execute` calls `pair_block(candidates, args.gateway)` "
+        "positionally and runs those turns; a runner warms on its first turn, and on later turns only when "
+        "`block` is not 1."),
+    "sohot-pr883-request": (
+        "`screen_detail` builds the detail `_report_screen` records for a screen verdict. When a receipt "
+        "exists (`summary is not None`) it returns `why` alone, with no stderr. When there is none it drops "
+        "each python warning line (`<path>:<line>: <Name>Warning: ...`) and the indented source line printed "
+        "under it, collapses the remaining stderr whitespace to single spaces, keeps its last 300 characters,"
+        " and returns `why || <tail>`, or just `why` when nothing is left; the result is capped at 600 "
+        "characters. `METRIC_DIRECTION` also declares `attempts` as `lower` and `retries`, `stages` and "
+        "`thinking_disabled` as `neutral`, so every metric a runner emits has a direction."),
+    "sohot-pr927-request": (
+        "`screenable_backlog` leaves out a ready candidate whose newest verdict is a screen-tier memory "
+        "deferral (`reasons.MEMORY`); a later verdict of any other kind makes it backlog again. `deferred`, "
+        "when given, is a name predicate used instead of reading the store. `memory_deferrals` walks a name's"
+        " verdicts newest first and counts consecutive screen memory deferrals whose detail names the same "
+        "`needs <N> GB` figure, stopping at any other verdict or figure; it returns the count and the figure "
+        "as a string, e.g. `(3, \"26.5\")`, else `(0, \"\")`. The screen `limit` counts only screens actually "
+        "started, so a deferral takes no slot. When the current refusal names the same figure and the count "
+        "is already 3 (`MEMORY_DEFERRALS`), the screen writes no new verdict."),
 }
 #: A cut this small is the request and little else: the chatter a model cannot act on.
 MIN_CUT_BYTES = 1000
@@ -513,7 +635,8 @@ def survey(root: Path, repo_roots, log, known: redact.Known | None = None, probe
         req, r, fix = c["request"], c["repo"], c["fix"]
         s = _unit(stats, r.slug, req)
         why = ("duplicate_task" if fix in seen else "third_party_data" if r.slug in THIRD_PARTY_DATA
-               else "excluded" if task_id(r.slug, c["pr"], fix) in EXCLUDED else None)
+               else "excluded" if task_id(r.slug, c["pr"], fix) in EXCLUDED
+               else "retired" if task_id(r.slug, c["pr"], fix) in RETIRED else None)
         cand = None
         if why is None:
             cand = describe(mirror_of(r), fix)
@@ -564,22 +687,28 @@ def survey(root: Path, repo_roots, log, known: redact.Known | None = None, probe
                      **({"extras": list(src.extras)} if src.extras else {}),
                      "fail_to_pass": res["fail_to_pass"],
                      "pass_to_pass": res["pass_to_pass"], "prompt": red.text,
+                     "interface": old[fix]["interface"] if fix in old and "interface" in old[fix]
+                     else history.tests_call(mirror_of(r), cand["base"], fix),
                      "strata": {"files": len(cand["source_files"]), "lines": cand["lines"], "test_s": res["test_s"],
                                 "area": history.area(cand["source_files"]),
                                 "size": history.size_of({"files": len(cand["source_files"]), "lines": cand["lines"]})},
                      "provenance": {"session": session_hash(req.session), "evidence": c["evidence"],
                                     "cut": got[1], "redactions": red.counts}}
         try:
-            convert(row, known)
+            made = convert(row, known)
             refuse(row, known=known)
         except ValueError as exc:
             s["dropped"]["refused"] += 1
             refused[row["id"]] = str(exc).split("still matches ", 1)[-1]
             continue
+        why = None if fix in old else admit(made.case, env)
+        if why:
+            s["dropped"][why] += 1
+            continue
         seen.add(fix)
         s["tasks"] += 1
         kept.append(row)
-    kept += [t for f, t in old.items() if f not in {c["fix"] for c in found}]
+    kept += [t for f, t in old.items() if f not in {c["fix"] for c in found} and t["id"] not in RETIRED]
     projects = {p: {"sessions": len(s["sessions"]), "requests_linked": len(s["linked"]), "tasks": s["tasks"],
                     "dropped": dict(sorted(s["dropped"].items()))} for p, s in sorted(stats.items())}
     return {"version": VERSION, "source": SOURCE,
@@ -590,6 +719,14 @@ def survey(root: Path, repo_roots, log, known: redact.Known | None = None, probe
             "transcripts": {p: dict(v) for p, v in sorted(by_dir.items())}, "projects": projects,
             "tasks": sorted(kept, key=lambda t: t["id"]), **({} if run else {"pending": pending}),
             "flagged": {w: [n, seen_in[w]] for w, n in flagged.most_common()}, "refused": refused}
+
+
+def admit(case: dict, env=None) -> str | None:
+    """None when the gold patch passes the case as the grader runs it (fail_to_pass and pass_to_pass), else a drop."""
+    from evals.core import Case
+    got = repo.controls(Case(id=case["id"], modality=case["modality"], prompt=case["prompt"], params=case["params"]),
+                        env=env)
+    return None if got["verdict"] == "valid" else "gold_patch_" + got["verdict"].split(":", 1)[0]
 
 
 def _cached(make):
@@ -670,9 +807,12 @@ def convert(row: dict, known: redact.Known | None = None) -> Imported:
     from evals.importers import _dump
     case = {"id": row["id"], "modality": LANE, "prompt": row["prompt"],
             "params": {"source_repo": row["repo"], "base": row["base"], "fix": row["fix"], "variant": VARIANT,
-                       "context": "oracle", "context_files": row["context_files"],
+                       "context": "oracle",
+                       "context_files": sorted({*row["context_files"], *CONTEXT.get(row["id"], [])}),
                        **({"new_files": row["new_files"]} if row.get("new_files") else {}),
                        **{k: row[k] for k in ("pytest_args", "extras") if row.get(k)},
+                       **({"interface": list(row["interface"])} if row.get("interface") else {}),
+                       **({"stated": STATED[row["id"]]} if row["id"] in STATED else {}),
                        "fail_to_pass": row["fail_to_pass"], "pass_to_pass": row["pass_to_pass"]},
             "attribution": {**provenance(sys.modules[__name__], f"{row['slug']} PR #{row['pr']}" if row.get("pr")
                                          else f"{row['slug']} {row['fix'][:10]}", TRANSFORM, row["date"]),

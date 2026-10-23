@@ -1,5 +1,5 @@
 # Claude Code session requests, redacted, generated (https://github.com/unxmaal/SoHoT/issues/1095).
-# Imported by evals/importers from claude-code:transcripts@82ea6dc78eb1889c0e2f8b40e602ffc6fb9a3da4; re-import, do not edit.
+# Imported by evals/importers from claude-code:transcripts@1b89af8ec5e330b64fe1b44cc8365c71bb4f96ab; re-import, do not edit.
 id: mcm-engine-pr139-request
 modality: repo
 prompt: 'Below is a Claude Code session, cut just before the agent''s first edit to the code. Make the
@@ -157,6 +157,13 @@ params:
   - pythonpath=src
   extras:
   - dev
+  stated: '`SearchHit` gains an optional `snippet`: the backend''s own highlight of the passage that matched
+    (for `SqliteSearch`, the `FTS5` `snippet()` over all indexed columns; the postgres and opensearch
+    adapters may fill theirs the same way). When `detail` is `summary`, each hit with a snippet gets one
+    extra line under it showing that passage, whitespace collapsed and cut to 160 characters (env `MCM_SNIPPET_MAX`,
+    0 disables), so a term found only in a knowledge `detail` body still appears in summary output while
+    a 500-word body never comes back whole. A hit found only by the `LIKE` fallback has no snippet and
+    renders as before; `detail="full"` is unchanged.'
   fail_to_pass:
   - tests/test_search_match_snippet.py::test_snippet_is_length_bounded
   - tests/test_search_match_snippet.py::test_summary_surfaces_a_body_only_match_via_snippet
@@ -167,7 +174,7 @@ attribution:
   url: https://github.com/unxmaal/SoHoT/issues/1095
   license: generated
   source: claude-code:transcripts
-  revision: 82ea6dc78eb1889c0e2f8b40e602ffc6fb9a3da4
+  revision: 1b89af8ec5e330b64fe1b44cc8365c71bb4f96ab
   item: 'mcm-engine PR #139'
   date: '2026-10-14'
   transform: 'a Claude Code session from the person''s request to just before the agent''s first edit

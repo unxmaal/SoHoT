@@ -1,5 +1,5 @@
 # Claude Code session requests, redacted, generated (https://github.com/unxmaal/SoHoT/issues/1095).
-# Imported by evals/importers from claude-code:transcripts@82ea6dc78eb1889c0e2f8b40e602ffc6fb9a3da4; re-import, do not edit.
+# Imported by evals/importers from claude-code:transcripts@1b89af8ec5e330b64fe1b44cc8365c71bb4f96ab; re-import, do not edit.
 id: sohot-pr927-request
 modality: repo
 prompt: "Below is a Claude Code session, cut just before the agent's first edit to the code. Make the\
@@ -240,6 +240,19 @@ params:
   context: oracle
   context_files:
   - harness/commands/screen.py
+  interface:
+  - 'harness.cli.screenable_backlog(want: str='''', plan=None, room=None, deferred=None) -> list[str]'
+  - 'harness.commands.screen.memory_deferrals(conn, name: str) -> tuple[int, str]'
+  - 'harness.commands.screen.screenable_backlog(want: str='''', plan=None, room=None, deferred=None) ->
+    list[str]'
+  stated: '`screenable_backlog` leaves out a ready candidate whose newest verdict is a screen-tier memory
+    deferral (`reasons.MEMORY`); a later verdict of any other kind makes it backlog again. `deferred`,
+    when given, is a name predicate used instead of reading the store. `memory_deferrals` walks a name''s
+    verdicts newest first and counts consecutive screen memory deferrals whose detail names the same `needs
+    <N> GB` figure, stopping at any other verdict or figure; it returns the count and the figure as a
+    string, e.g. `(3, "26.5")`, else `(0, "")`. The screen `limit` counts only screens actually started,
+    so a deferral takes no slot. When the current refusal names the same figure and the count is already
+    3 (`MEMORY_DEFERRALS`), the screen writes no new verdict.'
   fail_to_pass:
   - tests/test_loop_backpressure.py::test_a_long_same_need_deferral_stops_writing_a_verdict_each_night[3-26.5-0]
   - tests/test_loop_backpressure.py::test_a_memory_deferred_candidate_is_not_backlog
@@ -258,7 +271,7 @@ attribution:
   url: https://github.com/unxmaal/SoHoT/issues/1095
   license: generated
   source: claude-code:transcripts
-  revision: 82ea6dc78eb1889c0e2f8b40e602ffc6fb9a3da4
+  revision: 1b89af8ec5e330b64fe1b44cc8365c71bb4f96ab
   item: 'sohot PR #927'
   date: '2026-10-17'
   transform: 'a Claude Code session from the person''s request to just before the agent''s first edit
