@@ -10,6 +10,8 @@ not ship.
 """
 from __future__ import annotations
 
+import contextlib
+import contextvars
 import json
 import os
 import time
@@ -294,6 +296,20 @@ def complete_full(prompt: str, model: str, gateway: str = "",
     return got
 
 
+#: Generated tokens past which a streamed reply is stopped at its yield stop point; None runs it to its budget. #1127.
+_STOP_AFTER: contextvars.ContextVar = contextvars.ContextVar("stop_after", default=None)
+
+
+@contextlib.contextmanager
+def stopping_after(tokens: int | None):
+    """Stop streamed replies inside this block once they generate more than `tokens`; the request itself is unchanged. #1127."""
+    held = _STOP_AFTER.set(tokens)
+    try:
+        yield
+    finally:
+        _STOP_AFTER.reset(held)
+
+
 def request_of(payload: dict) -> dict:
     """The parts of a chat request that decide what is asked: budget, sampler, template kwargs, system digest. #921."""
     import hashlib
@@ -404,6 +420,11 @@ def _complete_full(sent: dict, prompt, model, gateway, modality, context, timeou
     except (KeyError, IndexError, TypeError, ValueError) as exc:
         raise CompletionError(f"malformed response: {exc}", reasons.CRASHED) from exc
 
+    if finish == reasons.STOPPED_LOW_YIELD:
+        stop = _STOP_AFTER.get()
+        raise CompletionError(f"stopped after {stop} generated tokens, its yield stop point: tasks still running "
+                              f"there rarely pass", reasons.STOPPED_LOW_YIELD, ("yield_stop", stop),
+                              usage=usage, reasoning=reasoning, finish=finish)
     if text is None or not text.strip():
         # A THINKING MODEL that spent its whole budget reasoning returns null
         # content and a populated reasoning_content. Qwen3-8B and Qwen3-14B do
@@ -561,6 +582,7 @@ def assemble(lines, started: float, timeout: float = TIMEOUT_S):
     content, reasoning, tokens = [], [], []
     calls: dict[int, dict] = {}
     usage, timings, finish, model = {}, None, None, None
+    stop, made = _STOP_AFTER.get(), 0
     first: dict = {"ttft_s": None, "first_reasoning_s": None}
     for line in lines:
         now = time.perf_counter() - started
@@ -595,6 +617,12 @@ def assemble(lines, started: float, timeout: float = TIMEOUT_S):
                 first.setdefault("first_tool_s", round(now, 4))
             tokens.extend((ch.get("logprobs") or {}).get("content") or [])
             finish = ch.get("finish_reason") or finish
+            # llama-server streams one generated token per chunk.
+            made += bool(delta.get("content") or think or delta.get("tool_calls"))
+        if stop is not None and made > stop:
+            # Leaving the stream closes the connection, which ends the generation upstream.
+            finish, usage = reasons.STOPPED_LOW_YIELD, {**usage, "completion_tokens": made}
+            break
     message = {"role": "assistant",
                "content": "".join(content) if content else None,
                "reasoning_content": "".join(reasoning) if reasoning else None}

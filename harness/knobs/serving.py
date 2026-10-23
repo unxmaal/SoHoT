@@ -34,9 +34,16 @@ KNOBS = [
        [8192, 16384, 32768, 65536, 131072], lanes=TEXT_LANES, limit="served_ctx", predicate=MACHINE,
        note="tokens a model is served at: llama-server's unplanned default, ds4 --ctx, vllm-metal --max-model-len; "
             "a planned llama-server context is set by kv_cap; the receipt records it as served ctx (#692)"),
+    _k("slot_probe_max_tokens", ["harness/slot_probe.py:MAX_TOKENS"], [2048, 4096, 8192],
+       note="tokens the smoke slot probe asks for; at the fastest stored llama-server decode (LFM2.5-350M, 310 tok/s "
+            "on 2026-10-22) 4096 runs 13 s, past slot_probe_settle, so a natural finish cannot pass for a freed slot (#1127)"),
+    _k("slot_probe_settle", ["harness/slot_probe.py:SETTLE_S"], [2.0, 5.0, 10.0],
+       note="seconds a slot has to go idle after the probe closes its stream; llama-server checks the connection "
+            "per token, a few ms at the stored decode rates, so 5 s is room for a busy machine (#1127)"),
 ]
 
 NOT_GATING = {
+    "harness/slot_probe.py:POLL_S": "how often the slot probe asks /slots while it waits; slot_probe_settle bounds the wait (#1127)",
     "harness/commands/loop.py:LEASE_S": "how long a discover loop's store lease outlives a holder that died; "
                                         "it picks which machine sweeps, never a result (#703)",
     "harness/batch.py:TTL_S": "how long a batch lease outlives its last request; it picks which batch loads a "

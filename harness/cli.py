@@ -50,6 +50,7 @@ from harness.commands import screen as screen_cmd
 from harness.commands import store as store_cmd
 from harness.commands import headless as headless_cmd
 from harness.commands import knobs as knobs_cmd
+from harness.commands import climb as climb_cmd
 from harness.commands import availability as availability_cmd
 from harness.commands import ledger as ledger_cmd
 from harness.commands import families as families_cmd
@@ -612,6 +613,7 @@ def build_parser() -> argparse.ArgumentParser:
     avl.set_defaults(func=availability_cmd.cmd_availability)
     headless_cmd.add_parser(sub)
     knobs_cmd.add_parser(sub)
+    climb_cmd.add_parser(sub)
     otel_cmd.add_parser(sub)
     dlg = sub.add_parser("delegated", help="record what became of a local_complete or "
                          "local_decide answer, or --report the rates per lane")

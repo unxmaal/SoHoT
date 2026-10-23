@@ -34,6 +34,7 @@ EXPECTED = {
     reasons.HARNESS_ERROR: ("queued", "harness"),
     reasons.TIMEOUT: ("declined", "limit"),
     reasons.TOKEN_BUDGET_EXHAUSTED: ("declined", "limit"),
+    reasons.STOPPED_LOW_YIELD: ("declined", "limit"),
     reasons.STEP_CAP: ("declined", "limit"),
     reasons.CONTEXT_EXCEEDED: ("declined", "limit"),
     reasons.LOAD_FAILED_RUNTIME: ("declined", "runtime"),

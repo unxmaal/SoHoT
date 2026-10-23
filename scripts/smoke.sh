@@ -129,6 +129,13 @@ else
   printf 'SKIP  node checks: the node list lives on the serving machine\n'
 fi
 
+# A yield-stopped reply closes its stream; unless that frees the llama-server slot the stop saves no GPU (#1127).
+if [ "$LOCAL" -eq 1 ]; then
+  SOHOT_GATEWAY_KEY="$KEY" uv run python -m harness.slot_probe --gateway "$G" || FAIL=1
+else
+  printf 'SKIP  slot probe: the router is on the serving machine\n'
+fi
+
 # ---- audio ------------------------------------------------------------------
 #
 # Half the goal, and until now nothing guarded it the way the text seam is

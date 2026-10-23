@@ -13,8 +13,9 @@ def base_of(spec: str) -> str:
 
 
 def _top(receipt: dict, rows: list) -> int | None:
-    """The most room a run gave any reply: its ladder's top rung, else its max_tokens, else the budget its cuts name."""
+    """The most room a run gave any reply: its ladder's top rung or any attempt's, else its max_tokens, else the budget its cuts name."""
     rungs = [int(b) for b in receipt.get("budget_ladder") or [] if b]
+    rungs += [int(a["max_tokens"]) for r in rows for a in json.loads(r["attempts"] or "[]") if a.get("max_tokens")]
     if rungs or receipt.get("max_tokens"):
         return max(rungs + [int(receipt.get("max_tokens") or 0)])
     named = [int(r["hit_limit"].rpartition(">")[2]) for r in rows
@@ -85,7 +86,13 @@ def sources(found: list[dict], spec: str, budget: int) -> list[dict]:
             where = f"run {low['run_id']}'s ladder" if low is high else f"runs {low['run_id']} and {high['run_id']}"
             out.append({**got, "top": high["top"], "clean": clean, "confounded": why, "where": where,
                         "low": low["run_id"], "high": high["run_id"], "rank": (not clean, low["setting"] != swept)})
-    return sorted(out, key=lambda s: s["rank"])
+    return sorted(out, key=lambda s: (s["rank"], -s["cut"]))
+
+
+def best(found: list[dict], spec: str, budget: int) -> dict | None:
+    """The pairing a decision about `budget` rests on: the least confounded, then the most cuts."""
+    got = sources(found, spec, int(budget))
+    return got[0] if got else None
 
 
 def evidence(conn, lane: str, spec: str, budget: int, machines) -> dict:

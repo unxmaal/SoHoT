@@ -47,6 +47,8 @@ INCOMPLETE_COPY = "incomplete_copy"
 ATTACHMENT = "attachment"
 TIMEOUT = "timeout"
 TOKEN_BUDGET_EXHAUSTED = "token_budget_exhausted"
+#: Stopped at its lane-model's yield stop point, where tasks still running rarely pass; a fail. #1127.
+STOPPED_LOW_YIELD = "stopped_low_yield"
 #: An agent run stopped at the step cap we chose. #695.
 STEP_CAP = "step_cap"
 #: A case whose prompt and reply budget do not fit the context the candidate is served at. #695.
@@ -91,6 +93,7 @@ CLASSES = {
     POOL_FULL: ("queued", LIMIT),
     TIMEOUT: ("declined", LIMIT),
     TOKEN_BUDGET_EXHAUSTED: ("declined", LIMIT),
+    STOPPED_LOW_YIELD: ("declined", LIMIT),
     STEP_CAP: ("declined", LIMIT),
     CONTEXT_EXCEEDED: ("declined", LIMIT),
     PLAN_REFUSED: ("declined", LIMIT),
@@ -119,7 +122,7 @@ REFETCH = (SHORT_COPY, INCOMPLETE_COPY)
 NEVER_RAN = tuple(c for c, (_, r) in CLASSES.items() if r == HARNESS)
 
 #: Classes of a reply cut at the token budget, which the lane's grader never saw. #1113.
-CUT = (TOKEN_BUDGET_EXHAUSTED, DEGENERATE)
+CUT = (TOKEN_BUDGET_EXHAUSTED, DEGENERATE, STOPPED_LOW_YIELD)
 
 
 def first(classes) -> str:

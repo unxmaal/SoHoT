@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import contextlib
+import json
 import math
 import time
 from dataclasses import dataclass, replace
@@ -829,14 +830,25 @@ def _paused(name: str, lane: str, inc_spec: str, spec: str, split, plan, out, he
     return 0
 
 
+def _stopped_at(out, key: str) -> int | None:
+    """The yield stop point a finished run's receipt names for `key`; None when it names none. #1127."""
+    try:
+        receipt = json.loads((Path(out) / "results.json").read_text(encoding="utf-8")).get("receipt") or {}
+    except (OSError, ValueError):
+        return None
+    return ((receipt.get("yield_stop") or {}).get(key) or {}).get("tokens")
+
+
 def _merge_reused(store, out, plan, rows: list, summary: dict, inc_key: str):
     """(rows with the stored incumbent cells the run skipped, the summary over them, the reuse evidence). #1094."""
-    from harness import reuse
+    from harness import reuse, yield_stop
     got = watch.read(out)
     applied = reuse.narrowed((got[0] if got else {}).get("reuse"), getattr(plan, "reuse", None))
     if not applied:
         return rows, summary, {}
     extra, gone = reuse.rows(store, applied, inc_key)
+    # Stored draws are graded as this run graded its own: stopped at the incumbent's yield stop point. #1127.
+    extra = yield_stop.rescore(extra, _stopped_at(out, inc_key))["rows"]
     rows = [*rows, *extra]
     summary = {**summary, inc_key: reuse.summary(rows, inc_key)} if summary else summary
     evidence = reuse.evidence(applied, gone)

@@ -779,6 +779,8 @@ class Receipt:
     validation: dict = field(default_factory=dict)
     #: receipt key -> the context a claude-code arm ran with, digest included. #995.
     contexts: dict = field(default_factory=dict)
+    #: receipt key -> the yield stop point its replies were stopped at and the stored curve it came from. Not an axis. #1127.
+    yield_stop: dict = field(default_factory=dict)
 
     def as_dict(self) -> dict:
         return {"modality": self.modality, "case_ids": list(self.case_ids),
@@ -806,7 +808,8 @@ class Receipt:
                 "requests": {k: [dict(r) for r in v] for k, v in self.requests.items()},
                 "server_sampling": {k: dict(v) for k, v in self.server_sampling.items()},
                 "validation": dict(self.validation),
-                "contexts": {k: dict(v) for k, v in self.contexts.items()}}
+                "contexts": {k: dict(v) for k, v in self.contexts.items()},
+                "yield_stop": {k: dict(v) for k, v in self.yield_stop.items()}}
 
     @classmethod
     def from_dict(cls, raw: dict) -> "Receipt":
@@ -834,7 +837,8 @@ class Receipt:
                    requests=raw.get("requests") or {},
                    server_sampling=raw.get("server_sampling") or {},
                    validation=raw.get("validation") or {},
-                   contexts=raw.get("contexts") or {})
+                   contexts=raw.get("contexts") or {},
+                   yield_stop=raw.get("yield_stop") or {})
 
 
 def legacy_knobs(raw: dict) -> dict:

@@ -46,6 +46,27 @@ def _result_hits(conn, lane: str, name: str, since: float, machines) -> tuple[in
     return int(row[0] or 0), int(row[1] or 0)
 
 
+def _conversions(conn, lane: str, name: str, value, since: float, machines) -> dict:
+    """Of the replies cut at `value` in `lane`, how many passed with more room, per model whose recent rows hit `name`. #1124."""
+    from harness import convertible
+    params: list = [_like(name) + ">%", lane, since]
+    sql = ("SELECT COALESCE(c.spec, r.candidate) FROM results r JOIN runs ON r.run_id = runs.id "
+           "LEFT JOIN candidates c ON c.id = r.candidate_id "
+           "WHERE r.hit_limit LIKE ? ESCAPE '\\' AND runs.lane = ? AND COALESCE(runs.generated_at, runs.recorded_at) >= ?")
+    sql = _machines(sql, params, "runs.machine_id", machines) + " ORDER BY COALESCE(runs.generated_at, runs.recorded_at) DESC"
+    newest: dict = {}
+    for row in conn.execute(sql, params):
+        newest.setdefault(convertible.base_of(row[0]), row[0])
+    got = {"converted": 0, "cuts": 0, "where": []}
+    for spec in newest.values():
+        s = convertible.best(convertible.stored(conn, lane, spec, machines), spec, int(value))
+        if s:
+            got["converted"] += s["passed"]
+            got["cuts"] += s["cut"]
+            got["where"].append(s["where"])
+    return got
+
+
 def _verdict_hits(conn, name: str, predicate: str, since: float, machines) -> tuple[int, int]:
     """(inspect and fetch verdicts whose until names `name`, all of them) decided since `since`."""
     head = f"limit:{_like(name)}>" if predicate == knobs.LIMIT else f"{_like(name)}:>"
@@ -76,8 +97,11 @@ def count(conn, *, now: float | None = None, machines=None, days: float | None =
                 hits, of = _result_hits(conn, lane, name, since, machines)
             else:
                 hits, of = _verdict_hits(conn, name, k.predicate, since, machines)
-            out.append({"knob": k.name, "lane": lane, "limit": name, "value": k.limit_value(lane),
-                        "hits": hits, "of": of, "binding": binds(hits, of)})
+            row = {"knob": k.name, "lane": lane, "limit": name, "value": k.limit_value(lane),
+                   "hits": hits, "of": of, "binding": binds(hits, of)}
+            if lane and hits and k.receipt == "max_tokens":
+                row.update(_conversions(conn, lane, name, row["value"], since, machines))
+            out.append(row)
     return out
 
 
@@ -91,4 +115,13 @@ def render(rows: list[dict]) -> str:
     if not found:
         return "  no knob is binding"
     return "\n".join(f"  {r['knob']:16} {r['lane'] or 'any lane':9} {r['limit']} at {r['value']:g}: "
-                     f"{r['hits']} of {r['of']} hit it" for r in found)
+                     f"{_converted(r)}{r['hits']} of {r['of']} hit it" for r in found)
+
+
+def _converted(r: dict) -> str:
+    """A cut binds only if it passes with more room, so a reply budget's line leads with those. #1124."""
+    if "cuts" not in r:
+        return ""
+    if not r["cuts"]:
+        return "no cut reply was given more room; "
+    return f"{r['converted']} of {r['cuts']} cuts converted ({', '.join(r['where'])}); "
